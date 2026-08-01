@@ -1,6 +1,6 @@
 # FindIt-led vanilla surface boundary
 
-**Date:** 2026-08-01  
+**Date:** 2026-08-01
 **Status:** Approved for implementation
 
 ## Context
@@ -133,4 +133,3 @@ Building Lens / vanilla grid / picker UI
 - Extend `docs/verification.md` with the boundary-specific live checklist:
   select/place from lens, place from compare, locate repeatedly and after an
   id change, picker option changes, and vanilla-grid parity with lens disabled.
-

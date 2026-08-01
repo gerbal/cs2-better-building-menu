@@ -170,4 +170,3 @@ identity strings, and raw UI handoff triggers outside their intended owners.
 Do not launch CS2 or deploy to the live Mods directories as part of this
 offline branch. A separate human/live verification step remains required by
 the repository Definition of Done before closing the bead.
-
