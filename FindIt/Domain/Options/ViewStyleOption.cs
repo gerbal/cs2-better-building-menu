@@ -1,0 +1,65 @@
+﻿using FindItBuildingMenu.Domain.Interfaces;
+using FindItBuildingMenu.Domain.UIBinding;
+using FindItBuildingMenu.Systems;
+using FindItBuildingMenu.Utilities;
+using System.Collections.Generic;
+using System.Linq;
+
+namespace FindItBuildingMenu.Domain.Options
+{
+    internal class ViewStyleOption : IOptionSection
+	{
+		private readonly OptionsUISystem _optionsUISystem;
+		private readonly FindItUISystem _findItUISystem;
+		private readonly Dictionary<int, (string Name, string Icon)> _styles;
+
+		public int Id { get; } = -3;
+
+		public ViewStyleOption(OptionsUISystem optionsUISystem)
+		{
+			_optionsUISystem = optionsUISystem;
+			_findItUISystem = optionsUISystem.World.GetOrCreateSystemManaged<FindItUISystem>();
+			_styles = new()
+			{
+				[1] = ("GridWithText", "coui://finditbuildingmenu/Icons/Standard/GridTextViewSmall.svg"),
+				[2] = ("GridNoText", "coui://finditbuildingmenu/Icons/Standard/Image.svg"),
+				[3] = ("GridSmall", "coui://finditbuildingmenu/Icons/Standard/GridView.svg"),
+				[4] = ("ListSimple", "coui://finditbuildingmenu/Icons/Standard/ListViewDense.svg"),
+			};
+		}
+
+		public OptionSectionUIEntry AsUIEntry()
+		{
+			return new OptionSectionUIEntry
+			{
+				Id = Id,
+				Name = LocaleHelper.Translate("Options.LABEL[FindItBuildingMenu.ViewStyle]"),
+				Options = _styles.Select(x => new OptionItemUIEntry
+				{
+					Id = x.Key,
+					Name = LocaleHelper.GetTooltip($"View{x.Value.Name}"),
+					Icon = x.Value.Icon,
+					Selected = _findItUISystem.ViewStyle == x.Value.Name
+				}).ToArray()
+			};
+		}
+
+		public bool IsVisible()
+		{
+			return true;
+		}
+
+		public void OnOptionClicked(int optionId, int value)
+		{
+			_findItUISystem.ViewStyle = _styles[optionId].Name;
+		}
+
+		public void OnReset()
+		{ }
+
+		public bool IsDefault()
+		{
+			return true;
+		}
+	}
+}

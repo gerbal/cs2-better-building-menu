@@ -1,0 +1,104 @@
+using Colossal.UI.Binding;
+
+using FindItBuildingMenu.Domain.Enums;
+
+namespace FindItBuildingMenu.Domain
+{
+	/// <summary>
+	/// The stable, UI-facing projection of a building already present in FindIt's
+	/// prefab index. It intentionally contains no ECS handles or mutable prefab
+	/// objects so catalog work can remain separate from indexing and placement.
+	/// </summary>
+	public sealed record BuildingCatalogEntry(
+		int Id,
+		string PrefabName,
+		string Name,
+		string Category,
+		string SubCategory,
+		string Thumbnail,
+		int LotWidth,
+		int LotDepth,
+		int BuildingLevel,
+		ZoneTypeFilter ZoneType,
+		bool HasParking,
+		bool IsUniqueMesh,
+		bool IsVanilla,
+		bool IsFavorited,
+		string PdxModsId,
+		double? ConstructionCost = null,
+		double? Upkeep = null,
+		double? Workers = null,
+		double? Capacity = null,
+		double? ElectricityConsumption = null,
+		double? WaterConsumption = null,
+		double? GarbageAccumulation = null,
+		double? WaterCapacity = null,
+		double? SewageCapacity = null,
+		double? GroundPollution = null,
+		double? AirPollution = null,
+		double? NoisePollution = null) : IJsonWritable
+	{
+		public void Write(IJsonWriter writer)
+		{
+			writer.TypeBegin(GetType().FullName);
+
+			writer.PropertyName("id");
+			writer.Write(Id);
+			writer.PropertyName("prefabName");
+			writer.Write(PrefabName);
+			writer.PropertyName("name");
+			writer.Write(Name);
+			writer.PropertyName("category");
+			writer.Write(Category);
+			writer.PropertyName("subCategory");
+			writer.Write(SubCategory);
+			writer.PropertyName("thumbnail");
+			writer.Write(Thumbnail);
+			writer.PropertyName("lotWidth");
+			writer.Write(LotWidth);
+			writer.PropertyName("lotDepth");
+			writer.Write(LotDepth);
+			writer.PropertyName("buildingLevel");
+			writer.Write(BuildingLevel);
+			writer.PropertyName("zoneType");
+			writer.Write((int)ZoneType);
+			writer.PropertyName("hasParking");
+			writer.Write(HasParking);
+			writer.PropertyName("isUniqueMesh");
+			writer.Write(IsUniqueMesh);
+			writer.PropertyName("isVanilla");
+			writer.Write(IsVanilla);
+			writer.PropertyName("isFavorited");
+			writer.Write(IsFavorited);
+			writer.PropertyName("pdxModsId");
+			writer.Write(PdxModsId);
+			WriteNullable(writer, "constructionCost", ConstructionCost);
+			WriteNullable(writer, "upkeep", Upkeep);
+			WriteNullable(writer, "workers", Workers);
+			WriteNullable(writer, "capacity", Capacity);
+			WriteNullable(writer, "electricityConsumption", ElectricityConsumption);
+			WriteNullable(writer, "waterConsumption", WaterConsumption);
+			WriteNullable(writer, "garbageAccumulation", GarbageAccumulation);
+			WriteNullable(writer, "waterCapacity", WaterCapacity);
+			WriteNullable(writer, "sewageCapacity", SewageCapacity);
+			WriteNullable(writer, "groundPollution", GroundPollution);
+			WriteNullable(writer, "airPollution", AirPollution);
+			WriteNullable(writer, "noisePollution", NoisePollution);
+
+			writer.TypeEnd();
+		}
+
+		private static void WriteNullable(IJsonWriter writer, string propertyName, double? value)
+		{
+			writer.PropertyName(propertyName);
+			if (value.HasValue)
+			{
+				writer.Write(value.Value);
+			}
+			else
+			{
+				writer.WriteNull();
+			}
+		}
+	}
+}
