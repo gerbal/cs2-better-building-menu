@@ -1,4 +1,5 @@
 import type { BuildingCatalogEntry } from "./buildingCatalog";
+import type { ActivatePrefabAction, LocatePrefabAction, PickerOptionAction } from "./findItSurfaceContracts";
 export type {
   ActivatePrefabAction,
   FindItSurfaceAction,
@@ -41,7 +42,7 @@ export function createTriggerCommand(method: string, ...args: (string | number |
   return { method, args };
 }
 
-export const setCurrentPrefabCommand = (id: number): TriggerCommand => createTriggerCommand("SetCurrentPrefab", id);
+export const setCurrentPrefabCommand = (id: number): ActivatePrefabAction => ({ type: "activatePrefab", prefabId: id });
 export const setSortColumnCommand = (column: SortColumn): TriggerCommand => createTriggerCommand("SetBuildingCatalogSortColumn", column);
 export const setSortDescendingCommand = (descending: boolean): TriggerCommand =>
   createTriggerCommand("SetBuildingCatalogSortDescending", descending);
@@ -51,9 +52,13 @@ export const setBuildingCapacityFloorCommand = (floor: number): TriggerCommand =
 export const searchChangedCommand = (value: string): TriggerCommand => createTriggerCommand("SearchChanged", value);
 export const setCurrentCategoryCommand = (id: number): TriggerCommand => createTriggerCommand("SetCurrentCategory", id);
 export const setCurrentSubCategoryCommand = (id: number): TriggerCommand => createTriggerCommand("SetCurrentSubCategory", id);
-export const locatePrefabCommand = (id: number): TriggerCommand => createTriggerCommand("OnLocateButtonClicked", id);
-export const pickerOptionCommand = (x: number, y: number, z: number): TriggerCommand =>
-  createTriggerCommand("PickerOptionClicked", x, y, z);
+export const locatePrefabCommand = (id: number): LocatePrefabAction => ({ type: "locatePrefab", prefabId: id });
+export const pickerOptionCommand = (sectionId: number, optionId: number, value: number): PickerOptionAction => ({
+  type: "pickerOption",
+  sectionId,
+  optionId,
+  value,
+});
 
 export function nextSortState(current: SortState, column: SortColumn): SortState {
   return {

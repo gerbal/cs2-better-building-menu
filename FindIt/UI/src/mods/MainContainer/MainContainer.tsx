@@ -15,6 +15,7 @@ import {
   BUILDING_LENS_PANEL_CHROME_WIDTH,
   resizedBuildingLensWidth,
 } from "domain/buildingLensLayout";
+import { findItSurfacePort } from "domain/findItSurfacePort";
 
 const PanelWidth$ = bindValue<number>(mod.id, "PanelWidth");
 const IsExpanded$ = bindValue<boolean>(mod.id, "IsExpanded");
@@ -64,7 +65,7 @@ export const FindItMainContainerComponent = () => {
   if (isPhotoMode || !(ShowFindItPanel || IsWindowLocked)) return null;
 
   function onOptionClicked(x: number, y: number, z: number): void {
-    trigger(mod.id, "OptionClicked", x, y, z);
+    findItSurfacePort.findItOption({ sectionId: x, optionId: y, value: z });
   }
 
   function toggleSortingOpen(): void {

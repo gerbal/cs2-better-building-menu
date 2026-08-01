@@ -18,12 +18,12 @@ import {
   removeCompareEntry,
   setCatalogOffsetCommand,
   setBuildingCapacityFloorCommand,
-  setCurrentPrefabCommand,
   setSortColumnCommand,
   setSortDescendingCommand,
   toggleCompareEntry,
 } from "domain/buildingCatalogContracts";
 import type { SortColumn } from "domain/buildingCatalogContracts";
+import { findItSurfacePort } from "domain/findItSurfacePort";
 import styles from "./buildingCatalog.module.scss";
 
 const BuildingCatalog$ = bindValue<BuildingCatalogPage>(mod.id, "BuildingCatalog");
@@ -101,8 +101,7 @@ export const BuildingCatalogComponent = () => {
   function activate(entry: BuildingCatalogEntry): void {
     // Keep the existing FindIt placement path: the backend resolves this id
     // through its single prefab index and activates the normal prefab tool.
-    const command = setCurrentPrefabCommand(entry.id);
-    trigger(mod.id, command.method, ...command.args);
+    findItSurfacePort.activatePrefab({ prefabId: entry.id });
   }
 
   function toggleCompare(entry: BuildingCatalogEntry): void {
