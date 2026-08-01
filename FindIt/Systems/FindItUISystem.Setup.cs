@@ -22,7 +22,7 @@ namespace FindItBuildingMenu.Systems
 		private CancellationTokenSource scrollTokenSource = new();
 		private readonly BuildingCatalogAdapter _buildingCatalogAdapter = new();
 		private BuildingCatalogQuery _buildingCatalogQuery = new();
-		private FindItInteractionBoundary _interactionBoundary = null!;
+		private readonly FindItInteractionBoundary _interactionBoundary = new();
 
 		private ToolSystem _toolSystem;
 		private PrefabSystem _prefabSystem;
@@ -101,7 +101,6 @@ namespace FindItBuildingMenu.Systems
 			_optionsUISystem = World.GetOrCreateSystemManaged<FindItOptionsUISystem>();
 			_defaultToolSystem = World.GetOrCreateSystemManaged<DefaultToolSystem>();
 			_cameraUpdateSystem = World.GetOrCreateSystemManaged<CameraUpdateSystem>();
-			_interactionBoundary = new FindItInteractionBoundary(ActivatePrefabTool);
 
 			// ToolSystem toolSystem = World.DefaultGameObjectInjectionWorld?.GetOrCreateSystemManaged<ToolSystem>(); // I don't know why vanilla game did this.
 			_toolSystem.EventPrefabChanged += OnPrefabChanged;

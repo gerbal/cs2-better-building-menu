@@ -10,23 +10,22 @@ namespace FindItBuildingMenu.Services
 	/// </summary>
 	public sealed class FindItInteractionBoundary
 	{
-		private readonly Action<int> _activatePrefab;
 		private int _lastLocatePrefabId;
 		private int _lastLocateIndex;
 
-		public FindItInteractionBoundary(Action<int> activatePrefab)
-		{
-			_activatePrefab = activatePrefab ?? throw new ArgumentNullException(nameof(activatePrefab));
-		}
-
-		public bool TryActivatePrefab(int prefabId, bool isAvailable, bool isAlreadyActive)
+		public bool TryActivatePrefab(int prefabId, bool isAvailable, bool isAlreadyActive, Action activatePrefab)
 		{
 			if (prefabId <= 0 || !isAvailable || isAlreadyActive)
 			{
 				return false;
 			}
 
-			_activatePrefab(prefabId);
+			if (activatePrefab is null)
+			{
+				throw new ArgumentNullException(nameof(activatePrefab));
+			}
+
+			activatePrefab();
 			return true;
 		}
 

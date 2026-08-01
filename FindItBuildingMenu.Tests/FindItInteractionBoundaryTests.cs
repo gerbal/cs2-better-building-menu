@@ -8,10 +8,10 @@ public sealed class FindItInteractionBoundaryTests
     public void TryActivatePrefab_DoesNotDelegateForInvalidOrUnavailablePrefabs()
     {
         var activatedIds = new List<int>();
-        var boundary = new FindItInteractionBoundary(activatedIds.Add);
+        var boundary = new FindItInteractionBoundary();
 
-        Assert.False(boundary.TryActivatePrefab(0, isAvailable: true, isAlreadyActive: false));
-        Assert.False(boundary.TryActivatePrefab(10, isAvailable: false, isAlreadyActive: false));
+        Assert.False(boundary.TryActivatePrefab(0, isAvailable: true, isAlreadyActive: false, () => activatedIds.Add(0)));
+        Assert.False(boundary.TryActivatePrefab(10, isAvailable: false, isAlreadyActive: false, () => activatedIds.Add(10)));
 
         Assert.Empty(activatedIds);
     }
@@ -20,9 +20,9 @@ public sealed class FindItInteractionBoundaryTests
     public void TryActivatePrefab_DoesNotDelegateForTheActivePrefab()
     {
         var activatedIds = new List<int>();
-        var boundary = new FindItInteractionBoundary(activatedIds.Add);
+        var boundary = new FindItInteractionBoundary();
 
-        Assert.False(boundary.TryActivatePrefab(10, isAvailable: true, isAlreadyActive: true));
+        Assert.False(boundary.TryActivatePrefab(10, isAvailable: true, isAlreadyActive: true, () => activatedIds.Add(10)));
 
         Assert.Empty(activatedIds);
     }
@@ -31,9 +31,9 @@ public sealed class FindItInteractionBoundaryTests
     public void TryActivatePrefab_DelegatesANewAvailablePrefab()
     {
         var activatedIds = new List<int>();
-        var boundary = new FindItInteractionBoundary(activatedIds.Add);
+        var boundary = new FindItInteractionBoundary();
 
-        Assert.True(boundary.TryActivatePrefab(10, isAvailable: true, isAlreadyActive: false));
+        Assert.True(boundary.TryActivatePrefab(10, isAvailable: true, isAlreadyActive: false, () => activatedIds.Add(10)));
 
         Assert.Equal(new[] { 10 }, activatedIds);
     }
@@ -42,7 +42,7 @@ public sealed class FindItInteractionBoundaryTests
     public void TryLocate_UsesZeroThenCyclesForTheSamePrefab()
     {
         var locatedIndices = new List<int>();
-        var boundary = new FindItInteractionBoundary(_ => { });
+        var boundary = new FindItInteractionBoundary();
 
         Assert.True(boundary.TryLocate(10, sequenceLength: 3, locatedIndices.Add));
         Assert.True(boundary.TryLocate(10, sequenceLength: 3, locatedIndices.Add));
@@ -56,7 +56,7 @@ public sealed class FindItInteractionBoundaryTests
     public void TryLocate_ResetsForADifferentPrefabOrAnEmptySequence()
     {
         var locatedIndices = new List<int>();
-        var boundary = new FindItInteractionBoundary(_ => { });
+        var boundary = new FindItInteractionBoundary();
 
         Assert.True(boundary.TryLocate(10, sequenceLength: 2, locatedIndices.Add));
         Assert.True(boundary.TryLocate(10, sequenceLength: 2, locatedIndices.Add));
