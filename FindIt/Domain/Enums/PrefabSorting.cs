@@ -1,0 +1,12 @@
+﻿namespace FindItBuildingMenu.Domain.Enums
+{
+	public enum PrefabSorting
+	{
+		Name,
+		MostUsed,
+		LastUsed,
+		InstalledDate,
+		UpdatedDate,
+		UIOrder
+	}
+}

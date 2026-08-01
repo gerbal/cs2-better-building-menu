@@ -1,0 +1,230 @@
+﻿using FindItBuildingMenu.Domain;
+using FindItBuildingMenu.Domain.Enums;
+using FindItBuildingMenu.Domain.UIBinding;
+using FindItBuildingMenu.Utilities;
+using Game.Prefabs;
+using Game.SceneFlow;
+using Game.Tools;
+using Game.UI;
+
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+
+using Unity.Entities;
+
+namespace FindItBuildingMenu.Systems
+{
+    internal partial class FindItUISystem : ExtendedUISystemBase
+	{
+		internal void UpdateCategoriesAndPrefabList()
+		{
+			_CategoryBinding.Value = FindItUtil.GetCategories().Select(x => new CategoryUIEntry(x)).ToArray();
+			_SubCategoryBinding.Value = FindItUtil.GetSubCategories().Select(x => new SubCategoryUIEntry(x)).ToArray();
+			RefreshBuildingCatalog();
+
+			var prefabs = GetDisplayedPrefabs();
+
+			_PrefabListBinding.Value = prefabs;
+		}
+
+		private void RefreshBuildingCatalog()
+		{
+			var category = FindItUtil.CurrentCategory is PrefabCategory.Buildings or PrefabCategory.ServiceBuildings
+				? FindItUtil.CurrentCategory.ToString()
+				: string.Empty;
+			var subCategory = string.IsNullOrEmpty(category) || FindItUtil.CurrentSubCategory == PrefabSubCategory.Any
+				? string.Empty
+				: FindItUtil.CurrentSubCategory.ToString();
+			var capacityFilterVisible = IsEducationCapacityFilterVisible();
+			if (!capacityFilterVisible)
+			{
+				_BuildingCapacityFloor.Value = 0;
+			}
+
+			_BuildingCapacityFilterVisible.Value = capacityFilterVisible;
+
+			_buildingCatalogQuery = _buildingCatalogQuery with
+			{
+				SearchText = _CurrentSearch.Value ?? string.Empty,
+				Category = category,
+				SubCategory = subCategory,
+				// Keep the successor lens in lockstep with FindIt's common
+				// parking filters. The legacy grid owns the full filter pipeline;
+				// the bounded catalog receives the equivalent typed predicate.
+				HasParking = FindItUtil.Filters.WithParking
+					? true
+					: FindItUtil.Filters.WithoutParking
+						? false
+						: null,
+				MinCapacity = capacityFilterVisible && _BuildingCapacityFloor.Value > 0
+					? _BuildingCapacityFloor.Value
+					: null,
+			};
+
+			_BuildingCatalogBinding.Value = _buildingCatalogAdapter.Query(_buildingCatalogQuery);
+		}
+
+		private static bool IsEducationCapacityFilterVisible()
+		{
+			return FindItUtil.CurrentCategory == PrefabCategory.ServiceBuildings
+				&& FindItUtil.CurrentSubCategory == PrefabSubCategory.ServiceBuildings_EducationResearch;
+		}
+
+		private PrefabUIEntry[] GetDisplayedPrefabs()
+		{
+			// in charge of paging prefabs and getting only the displayed prefabs
+			// also updates display binding values like columns, rows, scroll, etc.
+
+			var list = FindItUtil.GetFilteredPrefabs();
+
+			var columns = GridUtil.GetCurrentColumnCount();
+			var displayedRows = GridUtil.GetCurrentRowCount();
+			var rows = Math.Ceiling(list.Count / (float)columns);
+
+			scrollIndex = Math.Max(Math.Min(scrollIndex, rows - displayedRows), 0);
+
+			_ScrollIndex.Value = scrollIndex;
+			_MaxScrollIndex.Value = rows - displayedRows;
+			_ColumnCount.Value = columns;
+			_RowCount.Value = displayedRows;
+			_PrefabCountBinding.Value = string.Format(LocaleHelper.GetTooltip("ItemCount"), list.Count.ToString("N0"));
+
+			var uiEntries = new List<PrefabUIEntry>();
+			var startIndex = (int)(Math.Floor(scrollIndex) * columns);
+			var maxIndex = startIndex + (columns * (2 + displayedRows));
+
+			for (var i = startIndex; i < maxIndex && i < list.Count; i++)
+			{
+				uiEntries.Add(new PrefabUIEntry(list[i]));
+			}
+
+			return uiEntries.ToArray();
+		}
+
+		internal void TryActivatePrefabTool(int id)
+		{
+			// Activates a prefab using its index from PrefabIndexingSystem
+
+			if (FindItUtil.GetPrefabBase(id) is PrefabBase prefabBase && _toolSystem.activePrefab != prefabBase)
+			{
+				settingPrefab = true;
+				_toolSystem.ActivatePrefabTool(prefabBase);
+				_ActivePrefabId.Value = id;
+				settingPrefab = false;
+			}
+		}
+
+		internal void ScrollTo(int id)
+		{
+			// Scrolls to a specific prefab using its index from PrefabIndexingSystem
+
+			var list = FindItUtil.GetFilteredPrefabs();
+			var index = list.FindIndex(x => x.Id == id);
+
+			if (index > -1)
+			{
+				var columns = (float)GridUtil.GetCurrentColumnCount();
+				var rows = GridUtil.GetCurrentRowCount();
+
+				scrollIndex = Math.Max(0, Math.Floor(index / columns) - (rows / 4));
+			}
+		}
+
+		internal void TriggerSearch()
+		{
+			_IsSearchLoading.Value = true;
+
+			Task.Run(DelayedSearch);
+		}
+
+		internal void ClearSearch()
+		{
+			_ClearSearchBar.Value = true;
+			FindItUtil.Filters.CurrentSearch = string.Empty;
+			filterCompleted = false;
+			_IsSearchLoading.Value = false;
+			_CurrentSearch.Value = string.Empty;
+			RefreshBuildingCatalog();
+			searchTokenSource?.Cancel();
+		}
+
+		private async Task DelayedSearch()
+		{
+			// Asyncronously proesses the search method with a 250ms delay
+			// the Cancellation Token is used to stop any ongoing searches if a new one is requested
+			// and is used to disregard outdated results
+
+			searchTokenSource.Cancel();
+			searchTokenSource = new();
+
+			var token = searchTokenSource.Token;
+
+			await Task.Delay(250);
+
+			if (token.IsCancellationRequested)
+			{
+				return;
+			}
+
+			try
+			{
+				FindItUtil.ProcessSearch(token);
+
+				if (!token.IsCancellationRequested)
+				{
+					// toggle the filterCompleted to signal to the OnUpdate method
+					// that search has concluded and results are ready
+
+					filterCompleted = true;
+				}
+			}
+			catch (Exception ex)
+			{
+				Mod.Log.Error(ex, "Search Failed");
+			}
+		}
+
+		internal void RefreshCategoryAndSubCategory()
+		{
+			_CurrentCategoryBinding.Value = (int)FindItUtil.CurrentCategory;
+			_CurrentSubCategoryBinding.Value = (int)FindItUtil.CurrentSubCategory;
+		}
+
+		private void OnPrefabChanged(PrefabBase prefab)
+		{
+			if (!settingPrefab)
+			{
+				ToggleFindItPanel(false);
+				return;
+			}
+
+			if (prefab == null)
+			{
+				_ActivePrefabId.Value = 0;
+
+				return;
+			}
+
+			if (_prefabSystem.TryGetEntity(prefab, out var entity))
+			{
+				_ActivePrefabId.Value = entity.Index;
+			}
+		}
+
+		private void OnToolChanged(ToolBaseSystem tool)
+		{
+			if ((!settingPrefab && tool == _defaultToolSystem) || tool.toolID is "RoadBuilderTool" or "MoveItTool" or "Terrain Tool" or "Zone Tool")
+			{
+				ToggleFindItPanel(false);
+			}
+		}
+
+		public void SetAllThumbnails(IEnumerable<string> thumbnails)
+		{
+			_AllThumbnails.Value = thumbnails.ToArray();
+		}
+	}
+}

@@ -1,0 +1,242 @@
+@keyframes entry {
+  0% {
+    bottom: 137rem - 20rem;
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes entryTranslate {
+  0% {
+    transform: translateY(10rem);
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.findItMainContainer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: calc(2 * var(--toolbarHeight) );
+  pointer-events: none;
+
+  animation: entry 0.3s ease-in-out;
+
+  &.alignRight {
+    position: absolute;
+    right: 20rem;
+  }
+
+  &.alignLeft {
+    position: absolute;
+    left: 20rem;
+  }
+}
+
+:global(.legacy-interface) .findItMainContainer {
+  bottom: 122rem;
+}
+
+.alignCenter {
+  .toolLayout {
+    position: absolute;
+    top: 10rem;
+    bottom: 6rem;
+    left: 10rem;
+    right: 10rem;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-end;
+  }
+
+  .toolMainColumn {
+    position: relative;
+    margin: 0 6rem;
+  }
+}
+
+.alignRight {
+  .toolLayout {
+    position: absolute;
+    top: 10rem;
+    bottom: 6rem;
+    right: -10rem;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-end;
+  }
+
+  .toolMainColumn {
+    position: relative;
+    pointer-events: none;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+
+  .topPanel > div {
+    width: 400rem;
+    top: 0px;
+    left: -410rem;
+    bottom: auto;
+    right: auto;
+  }
+}
+
+.alignLeft {
+  .toolLayout {
+    position: absolute;
+    top: 10rem;
+    bottom: 6rem;
+    left: -10rem;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-end;
+  }
+
+  .toolMainColumn {
+    position: relative;
+    pointer-events: none;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+
+  .topPanel > div {
+    width: 400rem;
+    top: 0px;
+    right: -410rem;
+    bottom: auto;
+    left: auto;
+  }
+}
+
+.topPanel {
+  position: relative;
+  pointer-events: auto;
+}
+
+.toolContainer {
+  position: relative;
+  pointer-events: auto;
+  animation: entryTranslate 0.2s ease-in-out;
+}
+
+.resizeHandle {
+  position: absolute;
+  top: 0;
+  right: -4rem;
+  bottom: 0;
+  width: 8rem;
+  z-index: 20;
+  pointer-events: auto;
+  cursor: ew-resize;
+  background-color: transparent;
+  transition: background-color 0.15s;
+}
+
+.resizeHandle:hover,
+.resizeHandle:active {
+  background-color: var(--accentColorNormal);
+  opacity: 0.65;
+}
+
+.alignLeft .resizeHandle {
+  right: -4rem;
+  left: auto;
+}
+
+.alignRight .resizeHandle {
+  right: auto;
+  left: -4rem;
+}
+
+.resizeBlocker {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10001;
+  pointer-events: auto;
+  cursor: ew-resize;
+}
+
+.content {
+  border-bottom-left-radius: var(--panelRadius);
+  border-bottom-right-radius: var(--panelRadius);
+  background-color: var(--panelColorNormal);
+  backdrop-filter: var(--panelBlur);
+  background-image: linear-gradient( var(--panelGradientStart) , var(--panelGradientEnd) );
+  color: rgba(255, 255, 255, 1);
+  flex-grow: 1;
+  position: relative;
+}
+
+.topBar {
+  background-color: var(--panelColorDark);
+  backdrop-filter: var(--panelBlur);
+  color: var(--accentColorNormal);
+  border-top-left-radius: var(--panelRadius);
+  border-top-right-radius: var(--panelRadius);
+  overflow: hidden;
+}
+
+.rightPanel {
+  animation: entryTranslate 0.2s ease-in-out;
+}
+
+.rightPanel {
+  position: absolute;
+  width: 300rem;
+  height: 100%;
+  padding-left: 10rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.topPanel > div {
+  position: absolute;
+  width: 350rem;
+  bottom: 10rem;
+  right: 0;
+}
+
+.rightPanel > div:first-child,
+.topPanel > div > div {
+  pointer-events: auto;
+  padding-bottom: 10rem;
+  width: 100%;
+  background-color: var(--panelColorDark);
+  backdrop-filter: var(--panelBlur);
+  color: var(--textColorDim);
+  border-bottom-left-radius: var(--panelRadius);
+  border-bottom-right-radius: var(--panelRadius);
+  border-top-left-radius: var(--panelRadius);
+  border-top-right-radius: var(--panelRadius);
+}
+
+.rightPanel > div:last-child {
+  flex-shrink: 1;
+}
+
+.rightPanel .title,
+.topPanel .title {
+  color: var(--accentColorNormal);
+  text-transform: uppercase;
+  font-size: 12rem;
+  text-align: center;
+  margin: 5rem;
+}

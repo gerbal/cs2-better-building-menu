@@ -1,0 +1,499 @@
+@use "../../base.scss" as _base;
+
+.catalog {
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  // Keep the catalog inside the existing FindIt panel. The panel's top bar
+  // owns close/category/filter/picker controls; an unconstrained 100% child
+  // would consume the viewport and push that bar above the visible region.
+  max-height: calc(100vh - 270rem);
+  min-height: 0;
+  box-sizing: border-box;
+  padding: 8rem;
+  color: var(--menuTitleNormal);
+}
+
+.densityDefault,
+.densityExpanded {
+  padding: 8rem;
+}
+
+.densityCompact {
+  padding: 6rem;
+
+  .heading,
+  .sortBar,
+  .capacityFilter {
+    padding-left: 6rem;
+    padding-right: 6rem;
+  }
+
+  .compare {
+    margin-left: 6rem;
+    margin-right: 6rem;
+  }
+
+  .row {
+    height: 92rem;
+    min-height: 92rem;
+    gap: 2rem;
+  }
+
+  .rowSelect {
+    height: 88rem;
+    min-height: 88rem;
+    gap: 2rem;
+  }
+
+  .identityCell {
+    gap: 6rem;
+  }
+
+  .metricHeader,
+  .metric,
+  .parking {
+    font-size: var(--fontSizeXXS);
+  }
+}
+
+.heading,
+.sortBar,
+.columnHeader,
+.row,
+.paging {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.heading {
+  justify-content: space-between;
+  padding: 4rem 8rem 8rem;
+}
+
+.title {
+  color: var(--accentColorNormal);
+  font-size: 16rem;
+  text-transform: uppercase;
+}
+
+.subtitle,
+.category,
+.sortLabel,
+.columnHeader,
+.pageLabel {
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeXS, 12rem);
+}
+
+.subtitle {
+  margin-top: 2rem;
+}
+
+.count {
+  color: var(--menuText2Normal);
+  font-size: 13rem;
+  padding: 3rem 6rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 3rem;
+}
+
+.sortBar {
+  flex-wrap: wrap;
+  gap: 4rem;
+  padding: 4rem 8rem 8rem;
+  border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
+}
+
+.sortButton,
+.pageButton {
+  @include _base.transparentButton(false, true);
+  min-width: 48rem;
+  min-height: 24rem;
+  padding: 2rem 5rem;
+  color: var(--menuText2Normal);
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+// Button variant="icon" supplies a fixed 24rem width. These controls carry
+// text, so let them grow to their label instead of painting into the next
+// button. Keep the minimum touch target from the original FindIt layout.
+.sortButton {
+  width: auto !important;
+  flex: 0 1 auto;
+  white-space: nowrap;
+}
+
+.sortButtonSelected {
+  color: var(--accentColorNormal);
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.sortDirection {
+  margin-left: 3rem;
+  font-size: var(--fontSizeXXS, 10rem);
+}
+
+.capacityFilter {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 3rem;
+  padding: 4rem 8rem 8rem;
+  border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
+}
+
+.capacityFilterLabel {
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeXS, 12rem);
+  margin-right: 2rem;
+}
+
+.capacityButton {
+  @include _base.transparentButton(false, true);
+  min-width: 42rem;
+  min-height: 24rem;
+  padding: 2rem 5rem;
+  color: var(--menuText2Normal);
+  background-color: rgba(0, 0, 0, 0.2);
+  width: auto !important;
+  flex: 0 1 auto;
+  white-space: nowrap;
+}
+
+.capacityButtonSelected {
+  color: var(--accentColorNormal);
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.columnHeader {
+  gap: 3rem;
+  // Reserve the trailing compare action so the fixed metric columns line up
+  // with the row buttons below it.
+  padding: 5rem 34rem 3rem 8rem;
+  text-transform: uppercase;
+  font-size: var(--fontSizeXS);
+  box-sizing: border-box;
+
+  .identityHeader {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: left;
+    font-size: var(--fontSizeXS);
+  }
+}
+
+.metricHeader {
+  flex: 0 0 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: center;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeXS);
+  box-sizing: border-box;
+  border-left: 1rem solid rgba(255, 255, 255, 0.06);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.row {
+  @include _base.lightButton(false, true);
+  width: 100%;
+  // Keep enough vertical room for the thumbnail and the two identity lines;
+  // every metric remains on the same baseline rather than being folded into
+  // a wrapped analytics string in the left column.
+  height: 104rem;
+  min-height: 104rem;
+  margin: 1rem 0;
+  padding: 0 4rem 0 0;
+  gap: 3rem;
+  justify-content: flex-start;
+  text-align: left;
+  color: var(--menuTitleNormal);
+  overflow: hidden;
+}
+
+.row:hover {
+  background-color: rgba(255, 255, 255, 0.09);
+}
+
+.rowSelect {
+  @include _base.transparentButton(false, true);
+  flex: 1;
+  min-width: 0;
+  height: 100rem;
+  min-height: 100rem;
+  padding: 4rem 4rem 4rem 8rem;
+  gap: 3rem;
+  justify-content: flex-start;
+  align-items: center;
+  text-align: left;
+  color: var(--menuTitleNormal);
+  overflow: hidden;
+}
+
+.rowSelect:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.compareButton {
+  @include _base.transparentButton(false, true);
+  flex: 0 0 26rem;
+  width: 26rem;
+  min-height: 30rem;
+  padding: 2rem;
+  color: var(--menuText2Normal);
+  font-size: 18rem;
+}
+
+.compareButtonSelected {
+  color: var(--accentColorNormal);
+}
+
+.identityCell {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 7rem;
+}
+
+.thumbnail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 68rem;
+  width: 68rem;
+  height: 68rem;
+  border-radius: 4rem;
+  background-color: rgba(0, 0, 0, 0.25);
+
+  img {
+    width: 60rem;
+    height: 60rem;
+    object-fit: contain;
+  }
+}
+
+.identity {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: 1;
+  min-width: 0;
+  height: 78rem;
+  min-height: 78rem;
+  max-height: 78rem;
+  overflow: hidden;
+}
+
+.name {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  flex: 0 0 auto;
+  height: 18rem;
+  min-height: 18rem;
+  max-height: 18rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--menuTitleNormal);
+  font-size: var(--fontSizeM);
+  font-weight: bold;
+  line-height: 18rem;
+}
+
+.category {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  flex: 0 0 auto;
+  height: 16rem;
+  min-height: 16rem;
+  max-height: 16rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  margin-top: 1rem;
+  font-size: var(--fontSizeS);
+  line-height: 16rem;
+}
+
+.metric,
+.parking {
+  flex: 0 0 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: center;
+  font-size: var(--fontSizeXS);
+  line-height: 14rem;
+  color: var(--menuText2Normal);
+  box-sizing: border-box;
+  border-left: 1rem solid rgba(255, 255, 255, 0.06);
+}
+
+.metricCost,
+.metricUpkeep,
+.metricWorkers,
+.metricCapacity {
+  width: 54rem;
+  flex-basis: 54rem;
+}
+
+.metricUpkeep,
+.metricCapacity {
+  width: 58rem;
+  flex-basis: 58rem;
+}
+
+.metricLevel {
+  width: 42rem;
+  flex-basis: 42rem;
+}
+
+.metricLot {
+  width: 54rem;
+  flex-basis: 54rem;
+}
+
+.metricParking {
+  width: 48rem;
+  flex-basis: 48rem;
+}
+
+.parking {
+  text-align: center;
+}
+
+.parkingActive {
+  color: var(--accentColorNormal);
+}
+
+.compare {
+  margin: 3rem 8rem 6rem;
+  padding: 5rem 6rem 6rem;
+  border: 1rem solid rgba(255, 255, 255, 0.12);
+  border-radius: 3rem;
+  background-color: rgba(0, 0, 0, 0.16);
+}
+
+.compareHeading,
+.compareRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.compareHeading {
+  justify-content: space-between;
+  padding-bottom: 4rem;
+}
+
+.compareTitle {
+  color: var(--accentColorNormal);
+  font-size: var(--fontSizeXS, 12rem);
+  text-transform: uppercase;
+}
+
+.compareCount {
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeXXS, 10rem);
+}
+
+.clearCompare,
+.comparePlace,
+.compareRemove {
+  @include _base.transparentButton(false, true);
+  min-height: 22rem;
+  padding: 2rem 5rem;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeXS, 12rem);
+  width: auto !important;
+  flex: 0 1 auto;
+  white-space: nowrap;
+}
+
+.comparePlace {
+  color: var(--accentColorNormal);
+  min-width: 52rem;
+}
+
+.compareRemove {
+  min-width: 22rem;
+  padding: 2rem;
+  font-size: 15rem;
+}
+
+.compareRows {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.compareRow {
+  min-height: 28rem;
+  gap: 4rem;
+}
+
+.compareIdentity {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.compareName,
+.compareMetrics {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.compareName {
+  color: var(--menuTitleNormal);
+  font-size: var(--fontSizeXS, 12rem);
+  line-height: 14rem;
+}
+
+.compareMetrics {
+  margin-top: 1rem;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeXXS, 10rem);
+  line-height: 12rem;
+}
+
+.empty {
+  padding: 28rem 12rem;
+  text-align: center;
+  color: var(--menuText2Normal);
+  font-size: 12rem;
+}
+
+.paging {
+  justify-content: center;
+  gap: 8rem;
+  padding: 8rem 0 2rem;
+}
+
+.pageButton {
+  min-width: 28rem;
+  width: 28rem;
+  font-size: 20rem;
+  line-height: 18rem;
+}
