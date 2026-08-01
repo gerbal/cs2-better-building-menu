@@ -24,6 +24,13 @@ export type PickerOptionAction = {
 
 export type FindItSurfaceAction = ActivatePrefabAction | LocatePrefabAction | FindItOptionAction | PickerOptionAction;
 
+export interface FindItSurfacePort {
+  activatePrefab(args: { prefabId: number }): void;
+  locatePrefab(args: { prefabId: number }): void;
+  findItOption(args: { sectionId: number; optionId: number; value: number }): void;
+  pickerOption(args: { sectionId: number; optionId: number; value: number }): void;
+}
+
 export type FindItSurfaceTrigger =
   | { method: "SetCurrentPrefab"; args: readonly [number] }
   | { method: "OnLocateButtonClicked"; args: readonly [number] }
@@ -44,6 +51,15 @@ export const pickerOptionAction = (sectionId: number, optionId: number, value: n
   optionId,
   value,
 });
+
+export function createFindItSurfacePort(emit: (action: FindItSurfaceAction) => void): FindItSurfacePort {
+  return {
+    activatePrefab: ({ prefabId }) => emit(activatePrefabAction(prefabId)),
+    locatePrefab: ({ prefabId }) => emit(locatePrefabAction(prefabId)),
+    findItOption: ({ sectionId, optionId, value }) => emit(findItOptionAction(sectionId, optionId, value)),
+    pickerOption: ({ sectionId, optionId, value }) => emit(pickerOptionAction(sectionId, optionId, value)),
+  };
+}
 
 export function toFindItSurfaceTrigger(action: FindItSurfaceAction): FindItSurfaceTrigger {
   switch (action.type) {
