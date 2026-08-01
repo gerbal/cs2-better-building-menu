@@ -32,7 +32,7 @@ export const PrefabItemComponent = (props: PrefabButtonProps) => {
     setThumbnailIndex(Math.floor(date.getSeconds() * 10 + date.getMilliseconds() / 250) % props.prefab.thumbnails.length);
   };
 
-  function SetCurrentPrefab(id: number) {
+  function activatePrefab(id: number) {
     findItSurfacePort.activatePrefab({ prefabId: id });
   }
 
@@ -49,7 +49,7 @@ export const PrefabItemComponent = (props: PrefabButtonProps) => {
       <Button
         className={classNames(styles.gridItem, props.selected && styles.selected, props.prefab.favorited && styles.favorited)}
         variant="icon"
-        onSelect={() => SetCurrentPrefab(props.prefab.id)}
+        onSelect={() => activatePrefab(props.prefab.id)}
         style={{ width: props.width, height: props.width }}
         focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED}
         onMouseMove={props.prefab.random ? mouseOver : undefined}
