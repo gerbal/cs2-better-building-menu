@@ -53,11 +53,11 @@ function entry(id: number): BuildingCatalogEntry {
 }
 
 describe("FindItBuildingMenu UI binding contracts", () => {
-  it("keeps placement, paging, and picker payloads typed and ordered", () => {
-    assert.deepEqual(setCurrentPrefabCommand(17), { method: "SetCurrentPrefab", args: [17] });
+  it("keeps catalog helpers semantic while retaining paging commands", () => {
+    assert.deepEqual(setCurrentPrefabCommand(17), { type: "activatePrefab", prefabId: 17 });
     assert.deepEqual(setCatalogOffsetCommand(200), { method: "SetBuildingCatalogOffset", args: [200] });
-    assert.deepEqual(locatePrefabCommand(17), { method: "OnLocateButtonClicked", args: [17] });
-    assert.deepEqual(pickerOptionCommand(1.5, -2, 3), { method: "PickerOptionClicked", args: [1.5, -2, 3] });
+    assert.deepEqual(locatePrefabCommand(17), { type: "locatePrefab", prefabId: 17 });
+    assert.deepEqual(pickerOptionCommand(1.5, -2, 3), { type: "pickerOption", sectionId: 1.5, optionId: -2, value: 3 });
   });
 
   it("keeps search and category/subcategory payloads aligned with the C# bindings", () => {

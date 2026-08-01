@@ -9,7 +9,7 @@ import { PrefabEntry } from "domain/prefabEntry";
 import classNames from "classnames";
 import { BasicButton } from "mods/BasicButton/BasicButton";
 import shuffle from "images/findit_shuffle.svg";
-import { locatePrefabCommand } from "domain/buildingCatalogContracts";
+import { findItSurfacePort } from "domain/findItSurfacePort";
 
 export interface PrefabButtonProps {
   noAssetImage: any;
@@ -33,7 +33,7 @@ export const PrefabItemComponent = (props: PrefabButtonProps) => {
   };
 
   function SetCurrentPrefab(id: number) {
-    trigger(mod.id, "SetCurrentPrefab", id);
+    findItSurfacePort.activatePrefab({ prefabId: id });
   }
 
   function ToggleFavorited(id: number) {
@@ -121,10 +121,7 @@ export const PrefabItemComponent = (props: PrefabButtonProps) => {
               props.prefab.placed.toString()
             )}
             className={styles.placedMarker}
-            onClick={() => {
-              const command = locatePrefabCommand(props.prefab.id);
-              trigger(mod.id, command.method, ...command.args);
-            }}
+            onClick={() => findItSurfacePort.locatePrefab({ prefabId: props.prefab.id })}
             src="Media/Game/Icons/MapMarker.svg"
           />
         )}
