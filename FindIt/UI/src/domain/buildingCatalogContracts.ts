@@ -1,4 +1,9 @@
 import type { BuildingCatalogEntry } from "./buildingCatalog";
+export type {
+  ActivatePrefabAction,
+  FindItSurfaceAction,
+  LocatePrefabAction,
+} from "./findItSurfaceContracts";
 
 /**
  * Keep the UI's bounded comparison and paging rules in a pure module.
@@ -24,7 +29,7 @@ export type SortColumn =
 
 export interface TriggerCommand {
   method: string;
-  args: any[];
+  args: readonly (string | number | boolean)[];
 }
 
 export interface SortState {
@@ -32,7 +37,7 @@ export interface SortState {
   descending: boolean;
 }
 
-export function createTriggerCommand(method: string, ...args: any[]): TriggerCommand {
+export function createTriggerCommand(method: string, ...args: (string | number | boolean)[]): TriggerCommand {
   return { method, args };
 }
 
