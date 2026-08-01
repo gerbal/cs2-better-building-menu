@@ -106,9 +106,16 @@ namespace FindItBuildingMenu.Systems
 
 		internal void TryActivatePrefabTool(int id)
 		{
-			// Activates a prefab using its index from PrefabIndexingSystem
+			var prefabBase = FindItUtil.GetPrefabBase(id);
+			_interactionBoundary.TryActivatePrefab(
+				id,
+				prefabBase is not null,
+				_toolSystem.activePrefab == prefabBase);
+		}
 
-			if (FindItUtil.GetPrefabBase(id) is PrefabBase prefabBase && _toolSystem.activePrefab != prefabBase)
+		private void ActivatePrefabTool(int id)
+		{
+			if (FindItUtil.GetPrefabBase(id) is PrefabBase prefabBase)
 			{
 				settingPrefab = true;
 				_toolSystem.ActivatePrefabTool(prefabBase);

@@ -11,9 +11,6 @@ namespace FindItBuildingMenu.Systems
 {
     internal partial class FindItUISystem : ExtendedUISystemBase
 	{
-		private int lastFindId;
-		private int lastFindIndex;
-
 		private void FindItIconClicked()
 		{
 			if (_ShowFindItPanel)
@@ -307,24 +304,7 @@ namespace FindItBuildingMenu.Systems
 		private void OnLocateButtonClicked(int id)
 		{
 			var entities = PrefabTrackingSystem.GetPlacedEntities(id);
-
-			if (entities.Count == 0)
-			{
-				return;
-			}
-
-			if (lastFindId != id)
-			{
-				lastFindIndex = 0;
-			}
-			else
-			{
-				lastFindIndex = lastFindIndex == entities.Count - 1 ? 0 : (lastFindIndex + 1);
-			}
-
-			lastFindId = id;
-
-			JumpTo(entities[lastFindIndex]);
+			_interactionBoundary.TryLocate(id, entities.Count, index => JumpTo(entities[index]));
 		}
 
 		private void OnPdxModsButtonClicked(int id)
