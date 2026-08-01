@@ -120,6 +120,43 @@ The active playset also contributed `MapPreviewMod` from the Paradox local
 catalog; the two filesystem Mods roots themselves contained only the
 diagnostics and successor folders.
 
+## FindIt surface boundary checklist (manual, not run in this branch)
+
+Verify this checklist only with an isolated `FindItBuildingMenu` successor
+package and a developed save. Do not co-install the old BMO or an upstream
+`FindIt` payload. The checks are:
+
+- In the Building Lens, select a row and confirm it enters the normal FindIt
+  placement flow; fill the bounded compare tray and confirm `Place` uses that
+  same flow.
+- Locate a placed prefab repeatedly and confirm the cursor cycles through its
+  placed instances; change the prefab id and confirm the locate sequence
+  resets before cycling the new id.
+- Change a picker option and a normal FindIt option, confirming each option
+  change reaches its corresponding surface without swapping the three integer
+  arguments.
+- Confirm ordinary placement and tool-options continuity after lens selection,
+  compare placement, picker use, and locate; the active tool, picker, and
+  placement behavior remain FindIt/system behavior.
+- Disable the lens and confirm the legacy FindIt grid retains its normal
+  selection, placement, locate, and option behavior.
+
+Ownership is deliberately narrow: `FindItUtil.CategorizedPrefabs` and the
+existing incremental index own catalog data; `PickerUISystem` and
+`PickerToolSystem` own picker state; `FindItUISystem` delegates placement to
+the game's `ToolSystem`; and its existing tracking/camera path owns locate and
+`JumpTo` camera behavior. The UI `FindItSurfacePort` is only a semantic-command
+translation seam. It maps `activatePrefab`, `locatePrefab`, `findItOption`, and
+`pickerOption` to the existing C# bindings; it is not a second index, picker,
+placement tool, camera controller, or state store.
+
+This branch adds no live evidence. Record a future authorized run's developed
+save, isolated package, and durable artifacts here before describing these
+checks as passed. For rollback, stop the game, remove `FindItBuildingMenu`,
+and restore the old BMO package. Never run both overlapping menu modules
+together, and never leave the old package in a `.disabled` folder because the
+game can still scan its UI bundle and register duplicate modules.
+
 ## Building Lens resize verification (2026-08-01)
 
 The cached-token launch path reproduced the known pre-UI
