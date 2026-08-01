@@ -110,18 +110,16 @@ namespace FindItBuildingMenu.Systems
 			_interactionBoundary.TryActivatePrefab(
 				id,
 				prefabBase is not null,
-				_toolSystem.activePrefab == prefabBase);
+				_toolSystem.activePrefab == prefabBase,
+				() => ActivatePrefabTool(id, prefabBase!));
 		}
 
-		private void ActivatePrefabTool(int id)
+		private void ActivatePrefabTool(int id, PrefabBase prefabBase)
 		{
-			if (FindItUtil.GetPrefabBase(id) is PrefabBase prefabBase)
-			{
-				settingPrefab = true;
-				_toolSystem.ActivatePrefabTool(prefabBase);
-				_ActivePrefabId.Value = id;
-				settingPrefab = false;
-			}
+			settingPrefab = true;
+			_toolSystem.ActivatePrefabTool(prefabBase);
+			_ActivePrefabId.Value = id;
+			settingPrefab = false;
 		}
 
 		internal void ScrollTo(int id)
