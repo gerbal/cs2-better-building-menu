@@ -111,6 +111,21 @@ public static class ZoningSurfaceCatalog
 		("High", ZoneTypeFilter.High),
 	};
 
+	/// <summary>
+	/// UI category group name to family id. The group names are plural
+	/// ("ZonesOffice"), the family ids singular, so they cannot be compared
+	/// directly — logged from a running city after assuming otherwise and
+	/// getting a classifier that never matched anything.
+	/// </summary>
+	private static readonly Dictionary<string, string> GroupFamilies = new(StringComparer.OrdinalIgnoreCase)
+	{
+		["ZonesResidential"] = ZoningFamilies.Residential,
+		["ZonesCommercial"] = ZoningFamilies.Commercial,
+		["ZonesIndustrial"] = ZoningFamilies.Industrial,
+		["ZonesOffice"] = ZoningFamilies.Office,
+		["ZonesExtractors"] = ZoningFamilies.Extractors,
+	};
+
 	private static readonly Dictionary<string, string[]> SpawnedBy = new(StringComparer.OrdinalIgnoreCase)
 	{
 		[ZoningFamilies.Residential] = new[] { "Buildings_Residential", "Buildings_Mixed" },
@@ -121,24 +136,48 @@ public static class ZoningSurfaceCatalog
 	};
 
 	/// <summary>
-	/// The family a zone belongs to, read from its own <c>ZoneData</c>.
+	/// The family a zone belongs to, from the UI category group the game files
+	/// it under.
 	/// </summary>
 	/// <remarks>
-	/// This is the authoritative classifier; <see cref="ResolveFamily(string)"/>
-	/// is a name-based fallback for prefabs that carry no ZoneData.
+	/// This is the authoritative classifier. The vanilla Zones menu's tabs are
+	/// UIAssetCategoryPrefabs and a zone's <c>UIObject.m_Group</c> names the tab
+	/// it appears under, so the family ids here are those group names verbatim.
 	///
-	/// AreaType only distinguishes Residential, Commercial and Industrial. Office
-	/// zones are commercial-area zones carrying <see cref="ZoneFlags.Office"/>,
-	/// so the flag has to split them out — but only within a commercial area,
-	/// since the bit means nothing elsewhere.
+	/// It is preferred because it is the game's own grouping, but note that 13 of
+	/// the 41 zones in a base-game city carry no UIObject at all, so the
+	/// ZoneData fallback below is load-bearing rather than theoretical.
+	/// </remarks>
+	public static string? ResolveFamilyFromGroup(string? groupName)
+	{
+		if (string.IsNullOrWhiteSpace(groupName))
+		{
+			return null;
+		}
+
+		return GroupFamilies.TryGetValue(groupName.Trim(), out var family) ? family : null;
+	}
+
+	/// <summary>
+	/// The family a zone belongs to, from its own <c>ZoneData</c>.
+	/// </summary>
+	/// <remarks>
+	/// Fallback for zones with no UI group. Note this cannot produce Office or
+	/// Extractors.
+	///
+	/// AreaType only distinguishes Residential, Commercial and Industrial, and
+	/// office zones are <em>industrial</em>-area zones carrying
+	/// <see cref="ZoneFlags.Office"/> — verified in a running city, having first
+	/// assumed they were commercial-area, which put every one of them under
+	/// Commercial and lost the Office family.
 	/// </remarks>
 	public static string? ResolveFamily(AreaType areaType, ZoneFlags flags) => areaType switch
 	{
 		AreaType.Residential => ZoningFamilies.Residential,
-		AreaType.Commercial => (flags & ZoneFlags.Office) != 0
+		AreaType.Commercial => ZoningFamilies.Commercial,
+		AreaType.Industrial => (flags & ZoneFlags.Office) != 0
 			? ZoningFamilies.Office
-			: ZoningFamilies.Commercial,
-		AreaType.Industrial => ZoningFamilies.Industrial,
+			: ZoningFamilies.Industrial,
 		_ => null,
 	};
 

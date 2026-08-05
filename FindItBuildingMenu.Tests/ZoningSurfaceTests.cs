@@ -24,26 +24,59 @@ namespace FindItBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void SplitsOfficeOutOfCommercialByItsZoneFlag()
+		public void SplitsOfficeOutOfIndustrialByItsZoneFlag()
 		{
-			// Office zones are commercial-area zones carrying ZoneFlags.Office;
-			// AreaType alone would file them under Commercial.
+			// Office zones are INDUSTRIAL-area zones carrying ZoneFlags.Office —
+			// logged from a running city as "area=Industrial flags=Office".
+			// Assuming they were commercial-area put every one of them under
+			// Commercial and lost the Office family entirely.
 			Assert.Equal(
 				ZoningFamilies.Office,
-				ZoningSurfaceCatalog.ResolveFamily(AreaType.Commercial, ZoneFlags.Office));
+				ZoningSurfaceCatalog.ResolveFamily(AreaType.Industrial, ZoneFlags.Office));
 			Assert.Equal(
-				ZoningFamilies.Commercial,
-				ZoningSurfaceCatalog.ResolveFamily(AreaType.Commercial, ZoneFlags.SupportNarrow));
+				ZoningFamilies.Industrial,
+				ZoningSurfaceCatalog.ResolveFamily(AreaType.Industrial, ZoneFlags.SupportNarrow));
 		}
 
 		[Fact]
-		public void IgnoresTheOfficeFlagOutsideCommercialAreas()
+		public void IgnoresTheOfficeFlagOutsideIndustrialAreas()
 		{
-			// The flag only means "office zone" on a commercial area; a
-			// residential zone carrying it is still residential.
 			Assert.Equal(
 				ZoningFamilies.Residential,
 				ZoningSurfaceCatalog.ResolveFamily(AreaType.Residential, ZoneFlags.Office));
+			Assert.Equal(
+				ZoningFamilies.Commercial,
+				ZoningSurfaceCatalog.ResolveFamily(AreaType.Commercial, ZoneFlags.Office));
+		}
+
+		[Fact]
+		public void PrefersTheGameSOwnCategoryGroupOverInference()
+		{
+			// The vanilla Zones menu's tabs are UIAssetCategoryPrefabs, and a
+			// zone's UIObject.m_Group names the tab it appears under. That is
+			// the game's own answer, and it is the only source that separates
+			// Office from Commercial: ZoneData.m_AreaType has no Office value,
+			// and the ZoneFlags.Office bit did not distinguish them in a real
+			// city.
+			// The UI group names are plural — "ZonesOffice", not "ZoneOffice" —
+			// which is why matching them against the family ids directly never
+			// fired. Logged from a running city.
+			Assert.Equal(ZoningFamilies.Office, ZoningSurfaceCatalog.ResolveFamilyFromGroup("ZonesOffice"));
+			Assert.Equal(ZoningFamilies.Residential, ZoningSurfaceCatalog.ResolveFamilyFromGroup("ZonesResidential"));
+			Assert.Equal(ZoningFamilies.Commercial, ZoningSurfaceCatalog.ResolveFamilyFromGroup("ZonesCommercial"));
+			Assert.Equal(ZoningFamilies.Industrial, ZoningSurfaceCatalog.ResolveFamilyFromGroup("ZonesIndustrial"));
+		}
+
+		[Fact]
+		public void DeclinesAGroupThatIsNotAZoningTab()
+		{
+			// Every prefab has a UI group; only the zoning ones name a family.
+			Assert.Null(ZoningSurfaceCatalog.ResolveFamilyFromGroup("ServiceBuildings"));
+			// Singular is not what the game emits; accepting it would hide a
+			// future rename rather than surface it.
+			Assert.Null(ZoningSurfaceCatalog.ResolveFamilyFromGroup("ZoneOffice"));
+			Assert.Null(ZoningSurfaceCatalog.ResolveFamilyFromGroup(""));
+			Assert.Null(ZoningSurfaceCatalog.ResolveFamilyFromGroup(null));
 		}
 
 		[Fact]
