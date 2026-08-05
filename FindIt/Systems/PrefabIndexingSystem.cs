@@ -806,7 +806,13 @@ namespace FindItBuildingMenu.Systems
 					continue;
 				}
 
-				var family = ZoningSurfaceCatalog.ResolveFamily(zoneData[i].m_AreaType, zoneData[i].m_ZoneFlags)
+				// The game's own answer first: UIObject.m_Group is the Zones
+				// menu tab this zone appears under, and it is the only source
+				// that separates Office from Commercial. ZoneData and the name
+				// are fallbacks for zones with no UI group.
+				var family = ZoningSurfaceCatalog.ResolveFamilyFromGroup(
+						prefab.TryGet<UIObject>(out var zoneUi) ? zoneUi.m_Group?.name : null)
+					?? ZoningSurfaceCatalog.ResolveFamily(zoneData[i].m_AreaType, zoneData[i].m_ZoneFlags)
 					?? ZoningSurfaceCatalog.ResolveFamily(prefab.name);
 
 				if (family is null)
