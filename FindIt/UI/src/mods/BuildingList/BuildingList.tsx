@@ -118,7 +118,19 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
                 : <span className={classNames(styles.iconPlaceholder, cards && styles.iconLarge)} aria-hidden="true" />}
               <span className={styles.text}>
                 <span className={styles.name}>{label}</span>
-                {cards && (
+                {cards && Array.isArray((entry as { facts?: string[] }).facts) && (
+                  <span className={styles.facts}>
+                    {/* A zone carries its own facts: the game measures how tall
+                        it grows and what it trades in, and shows neither. */}
+                    {(entry as unknown as { facts: string[] }).facts.map((fact, index) => (
+                      <span key={fact}>
+                        {index > 0 && <span className={styles.factDot} aria-hidden="true">·</span>}
+                        <span className={styles.fact}>{fact}</span>
+                      </span>
+                    ))}
+                  </span>
+                )}
+                {cards && !Array.isArray((entry as { facts?: string[] }).facts) && (
                   <span className={styles.facts}>
                     {/* Footprint first, and always: it is a constraint rather
                         than a comparison — whether the thing fits the gap you

@@ -19,6 +19,57 @@ export interface ZoneEntry {
   family: string;
   density: string;
   thumbnail: string;
+  /** Tallest spawnable building in metres, measured by the game. 0 = unknown. */
+  maxHeight?: number;
+  supportsNarrow?: boolean;
+  supportsCorners?: boolean;
+  allowedSold?: string;
+  allowedManufactured?: string;
+  allowedStored?: string;
+}
+
+/**
+ * What a zone is worth telling the player, in reading order.
+ *
+ * These are all measured or authored by the game and shown by none of its own
+ * UI. Height is the one that changes a decision — "how tall does this grow" is
+ * the question a density tier only gestures at — so it leads. The resource a
+ * zone trades in matters for commercial and industrial and is absent for
+ * residential, so it simply does not appear there.
+ *
+ * Returned as data rather than as a sentence: the component formats and
+ * translates, and these strings are registered in localizableStrings.
+ */
+export interface ZoneFact {
+  kind: "height" | "narrow" | "corners" | "sold" | "manufactured" | "stored";
+  value: string | number;
+}
+
+export function getZoneFacts(zone: ZoneEntry | null | undefined): ZoneFact[] {
+  if (!zone) return [];
+
+  const facts: ZoneFact[] = [];
+
+  if (typeof zone.maxHeight === "number" && zone.maxHeight > 0) {
+    facts.push({ kind: "height", value: zone.maxHeight });
+  }
+
+  // Only worth stating when true. "Does not support corners" is noise on the
+  // majority of zones that do not.
+  if (zone.supportsNarrow) facts.push({ kind: "narrow", value: "" });
+  if (zone.supportsCorners) facts.push({ kind: "corners", value: "" });
+
+  for (const [kind, value] of [
+    ["sold", zone.allowedSold],
+    ["manufactured", zone.allowedManufactured],
+    ["stored", zone.allowedStored],
+  ] as const) {
+    if (typeof value === "string" && value.trim() !== "") {
+      facts.push({ kind, value: value.trim() });
+    }
+  }
+
+  return facts;
 }
 
 
