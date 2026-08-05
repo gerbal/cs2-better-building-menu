@@ -19,6 +19,8 @@ export interface BuildingCatalogEntry {
   isFavorited: boolean;
   pdxModsId: string;
   buildingType: string;
+  /** SchoolData tier: 1 elementary, 2 high school, 3 college, 4 university. */
+  educationLevel?: number | null;
   provenance: string;
   dlcId: string;
   theme: string;

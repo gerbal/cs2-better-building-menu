@@ -493,6 +493,10 @@ namespace FindItBuildingMenu.Systems
 			{
 				roles.Add("School");
 				capacities.Add(schoolData.m_StudentCapacity);
+				// The tier the school grants. Without it the UI had to guess the
+				// tier from the building's name, which cannot see a modded
+				// "Akademie" and silently dropped it from the forecast.
+				prefabIndex.EducationLevel = schoolData.m_EducationLevel;
 			}
 
 			if (EntityManager.TryGetComponent<HospitalData>(entity, out var hospitalData))

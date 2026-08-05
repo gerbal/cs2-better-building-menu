@@ -38,6 +38,7 @@ namespace FindItBuildingMenu.Domain
 		double? AirPollution = null,
 		double? NoisePollution = null,
 		string? BuildingType = null,
+		int? EducationLevel = null,
 		string? Provenance = null,
 		string? DlcId = null,
 		string? Theme = null,
@@ -91,6 +92,8 @@ namespace FindItBuildingMenu.Domain
 			writer.Write(IsFavorited);
 			writer.PropertyName("pdxModsId");
 			writer.Write(PdxModsId);
+			writer.PropertyName("educationLevel");
+			if (EducationLevel.HasValue) writer.Write(EducationLevel.Value); else writer.WriteNull();
 			writer.PropertyName("buildingType");
 			writer.Write(BuildingType ?? string.Empty);
 			writer.PropertyName("provenance");

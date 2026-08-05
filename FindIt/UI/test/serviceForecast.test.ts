@@ -5,7 +5,8 @@ import {
   getServiceForecastKey,
 } from "../src/domain/serviceForecast.ts";
 
-const entry = (subCategory: string, name = "Something") => ({ subCategory, name });
+const entry = (subCategory: string, name = "Something", educationLevel?: number) =>
+  ({ subCategory, name, educationLevel });
 
 describe("Service forecast mapping", () => {
   it("routes each service subcategory to its own capacity and demand pair", () => {
@@ -27,6 +28,35 @@ describe("Service forecast mapping", () => {
     assert.equal(getServiceForecastKey(entry("ServiceBuildings_Water", "Wastewater Treatment Plant"))!.key, "sewage");
     assert.equal(getServiceForecastKey(entry("ServiceBuildings_Water", "Sewage Outlet"))!.key, "sewage");
     assert.equal(getServiceForecastKey(entry("ServiceBuildings_Water", "Groundwater Pumping Station"))!.key, "water");
+  });
+
+  it("reads the education tier from the prefab's own data when present", () => {
+    // SchoolData.m_EducationLevel is the tier the school grants, and the game
+    // switches on exactly these values: 1 elementary, 2 high school,
+    // 3 college, 4 university. Data beats guessing at the name.
+    const sub = "ServiceBuildings_EducationResearch";
+
+    assert.equal(getServiceForecastKey(entry(sub, "Akademie", 1))!.key, "elementary");
+    assert.equal(getServiceForecastKey(entry(sub, "Akademie", 2))!.key, "highSchool");
+    assert.equal(getServiceForecastKey(entry(sub, "Akademie", 3))!.key, "college");
+    assert.equal(getServiceForecastKey(entry(sub, "Akademie", 4))!.key, "university");
+  });
+
+  it("prefers the data over a name that disagrees with it", () => {
+    // A "High School" prefab granting level 3 is a college by the game's own
+    // reckoning, and the demand series should follow the simulation.
+    assert.equal(
+      getServiceForecastKey(entry("ServiceBuildings_EducationResearch", "High School", 3))!.key,
+      "college"
+    );
+  });
+
+  it("ignores an education level outside the tiers the game switches on", () => {
+    // 0 and 5 exist in the enum but are not schools the infoview counts.
+    const sub = "ServiceBuildings_EducationResearch";
+
+    assert.equal(getServiceForecastKey(entry(sub, "Radio Telescope", 0)), null);
+    assert.equal(getServiceForecastKey(entry(sub, "Radio Telescope", 5)), null);
   });
 
   it("picks the education tier the building actually serves", () => {

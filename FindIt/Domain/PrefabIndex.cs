@@ -21,6 +21,13 @@ namespace FindItBuildingMenu.Domain
 		public int2 LotSize { get; set; }
 		public int BuildingLevel { get; set; }
 		public string? BuildingTypeName { get; set; }
+
+		/// <summary>
+		/// The tier a school grants (SchoolData.m_EducationLevel): 1 elementary,
+		/// 2 high school, 3 college, 4 university. Null for anything that is not
+		/// a school.
+		/// </summary>
+		public int? EducationLevel { get; set; }
 		public BuildingFlags? BuildingFlagsValue { get; set; }
 		public bool IsVanilla { get; set; }
 		public bool IsUniqueMesh { get; set; }
