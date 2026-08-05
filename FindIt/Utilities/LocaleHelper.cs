@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
+using FindItBuildingMenu.Domain;
+
 namespace FindItBuildingMenu.Utilities
 {
     public class LocaleHelper
@@ -64,6 +66,31 @@ namespace FindItBuildingMenu.Utilities
             }
 
             return fallback ?? id;
+        }
+
+        /// <summary>
+        /// A label for one of our identifiers, preferring the game's own string.
+        /// </summary>
+        /// <remarks>
+        /// Category and subcategory labels name the game's own concepts, and it
+        /// ships those in every language it supports while the mod's
+        /// Locale.json is English only. Asking the game first localizes the
+        /// panel's chrome for free; a missing key falls through to the mod's
+        /// string, so nothing regresses.
+        /// </remarks>
+        public static string TranslateLabel(string identifier, string fallback)
+        {
+            string gameKey = GameLocaleKeys.For(identifier);
+            if (gameKey != null)
+            {
+                string localized = Translate(gameKey, string.Empty);
+                if (!string.IsNullOrWhiteSpace(localized))
+                {
+                    return localized;
+                }
+            }
+
+            return Translate($"Tooltip.LABEL[{Mod.Id}.{identifier}]", fallback);
         }
 
         internal static string GetTooltip(string key)

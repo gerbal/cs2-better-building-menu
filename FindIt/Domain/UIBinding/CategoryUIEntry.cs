@@ -15,7 +15,7 @@ namespace FindItBuildingMenu.Domain.UIBinding
 		{
 			Id = (int)category;
 			Icon = CategoryIconAttribute.GetAttribute(category).Icon;
-			ToolTip = LocaleHelper.Translate($"Tooltip.LABEL[FindItBuildingMenu.{category}]");
+			ToolTip = LocaleHelper.TranslateLabel(category.ToString(), category.ToString());
 		}
 
 		public readonly void Write(IJsonWriter writer)
