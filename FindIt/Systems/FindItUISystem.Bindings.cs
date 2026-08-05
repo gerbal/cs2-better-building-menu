@@ -112,9 +112,12 @@ namespace FindItBuildingMenu.Systems
 			// With the lens enabled RefreshBuildingCatalog deliberately ignores
 			// FindItUtil's category and reads the lens's own section and
 			// subcategory instead, so the preset has to be applied there.
-			var section = preset.Category == PrefabCategory.ServiceBuildings
-				? VanillaBuildMenuTaxonomy.ServiceBuildings
-				: VanillaBuildMenuTaxonomy.AllBuildings;
+			var section = preset.Category switch
+			{
+				PrefabCategory.ServiceBuildings => VanillaBuildMenuTaxonomy.ServiceBuildings,
+				PrefabCategory.Networks => VanillaBuildMenuTaxonomy.Networks,
+				_ => VanillaBuildMenuTaxonomy.AllBuildings,
+			};
 			var selection = VanillaBuildMenuSelection.Normalize(
 				section,
 				preset.SubCategory == PrefabSubCategory.Any

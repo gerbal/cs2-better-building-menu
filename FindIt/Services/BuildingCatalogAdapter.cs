@@ -139,9 +139,26 @@ namespace FindItBuildingMenu.Services
 			return true;
 		}
 
+		/// <summary>
+		/// What the lens catalogues.
+		/// </summary>
+		/// <remarks>
+		/// Networks joined buildings here because the vanilla Roads menu is a
+		/// grid of unlabelled icons with no entry for net lanes and fences at
+		/// all — they are reachable only through Find It, and there are a great
+		/// many once mods are counted. The lens browses them; placement still
+		/// hands off to the native net tool, which owns elevation, snapping and
+		/// parallel mode.
+		///
+		/// Trees, props and vehicles stay out for now: the Landscaping menu is
+		/// terrain tooling more than a catalogue, and routing it would need the
+		/// same thought this got rather than an extra enum value here.
+		/// </remarks>
 		private static bool IsBuilding(PrefabIndex prefab)
 		{
-			return prefab.Category is PrefabCategory.Buildings or PrefabCategory.ServiceBuildings;
+			return prefab.Category is PrefabCategory.Buildings
+				or PrefabCategory.ServiceBuildings
+				or PrefabCategory.Networks;
 		}
 
 		private static IEnumerable<PrefabIndex> GetIndexedBuildings()

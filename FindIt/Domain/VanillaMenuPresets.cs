@@ -28,12 +28,19 @@ namespace FindItBuildingMenu.Domain
 	/// why routing them needs no new query surface; Zones opens the zoning
 	/// hierarchy instead, since zones are assignment tools rather than buildings.
 	///
-	/// Roads, Landscaping and Areas are deliberately absent. The networks,
-	/// surfaces and areas they contain are not in the building catalog, so they
-	/// fall through to the vanilla menu rather than opening an empty lens. Note this is about the
-	/// menus, not the categories: ServiceBuildings_Roads and
-	/// ServiceBuildings_Landscaping buildings — maintenance depots and the like
-	/// — remain in the catalog and reachable by filtering.
+	/// Roads now routes to the Networks section. The claim that networks were
+	/// "not in the building catalog" was only half true — Find It has always
+	/// indexed them, the catalog adapter simply filtered them out — and the
+	/// vanilla Roads menu is a grid of unlabelled icons with no entry for net
+	/// lanes at all. Placement still hands off to the native net tool, which
+	/// owns elevation, snapping and parallel mode; the lens only finds things.
+	///
+	/// Landscaping and Areas remain absent. Those are terrain tooling more than
+	/// a catalogue, and routing them wants the same thought this got rather than
+	/// another dictionary entry. Note this is about the menus, not the
+	/// categories: ServiceBuildings_Roads and ServiceBuildings_Landscaping
+	/// buildings — maintenance depots and the like — remain in the catalog and
+	/// reachable by filtering.
 	///
 	/// An unrecognised menu also declines, so a modded toolbar entry falls
 	/// through to vanilla instead of opening the lens on something unrelated.
@@ -53,6 +60,11 @@ namespace FindItBuildingMenu.Domain
 				["Transportation"] = Service(PrefabSubCategory.ServiceBuildings_Transportation),
 				["Parks & Recreation"] = Service(PrefabSubCategory.ServiceBuildings_Parks),
 				["Communications"] = Service(PrefabSubCategory.ServiceBuildings_Communications),
+				// Roads opens the whole Networks section rather than a single
+				// subcategory: the vanilla menu's own tabs (roads, highways,
+				// intersections, paths…) become the lens's grouping, and net
+				// lanes — which that menu does not list at all — come with it.
+				["Roads"] = new(PrefabCategory.Networks, PrefabSubCategory.Any),
 				["Signatures"] = new(PrefabCategory.Buildings, PrefabSubCategory.Any),
 				["Zones"] = new(PrefabCategory.Buildings, PrefabSubCategory.Any, IsZoning: true),
 			};
