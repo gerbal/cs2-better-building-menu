@@ -226,3 +226,50 @@ Two selector traps cost a cycle each. FindIt's search is a `<textarea>`, not an
 bottom bar instead. And `[class*="metricRangeInput"]` matches the container
 `<div>` before the `<textarea>` it wraps, so setting `.value` on the first
 match silently does nothing.
+
+## Coverage overlay: works, but the design is questionable
+
+`ServiceCoverageOverlaySystem` was verified end to end by instrumenting it,
+after screenshots proved useless for the purpose:
+
+```
+COVERAGE: RS_ElementarySchool01: drawing radius 2000 at float3(2897.3, 47.9, 2532.0)
+```
+
+Active prefab resolved, `CoverageData` found, ghost position read off the temp
+preview entity, `DrawCircle` called. All four steps succeed.
+
+### Why it cannot be screenshotted
+
+Two independent reasons, either of which is sufficient:
+
+- The ring is drawn by `OverlayRenderSystem` into the 3D scene. `game_screenshot`
+  captures only the Cohtml UI layer, so CDP can never show it at any cursor
+  position or zoom.
+- The ghost only exists where the game raycasts the **real OS cursor**, which
+  CDP cannot move. Driving it needs xdotool against the XWayland window, and a
+  real screen grab cropped to that window.
+
+### The finding that matters
+
+An elementary school's `m_Range` is **2000**, so the ring is 4000 units across —
+far larger than the viewport at normal play zoom. A ring you cannot see the
+edges of answers nothing.
+
+Worse, the game already renders service coverage properly, as terrain colouring
+in its own education infoview, and does it better than a hard ring can: CS2
+coverage is a falloff (`m_Magnitude`) rather than a boundary, so a crisp circle
+misrepresents it.
+
+So the memo's "radius ring on the ghost" idea does not survive contact with the
+real numbers. Options, none yet taken:
+
+- Drop the ring and instead **activate the game's own infoview** for the armed
+  building's service, which is the visualisation the game already has.
+- Keep a ring but draw it at the *effective* radius where coverage is still
+  useful, rather than at `m_Range`.
+- Replace it with the thing the panel genuinely cannot do: mark the nearest
+  under-served area, rather than drawing the building's own reach.
+
+The system is committed and working, and gated behind ShowCoverageOverlay, so
+this is a design decision rather than a broken feature.
