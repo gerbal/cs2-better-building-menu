@@ -18,6 +18,7 @@ public static class VanillaBuildMenuTaxonomy
     public const string Zones = "Zones";
     public const string SignatureBuildings = "SignatureBuildings";
     public const string ServiceBuildings = "ServiceBuildings";
+    public const string Networks = "Networks";
     public const string Favorites = "Favorites";
 
     private static readonly VanillaBuildMenuDescriptor[] SectionDescriptors =
@@ -26,6 +27,7 @@ public static class VanillaBuildMenuTaxonomy
         new(Zones, "coui://finditbuildingmenu/Icons/Colored/BuildingZoneSignature.svg", "Buildings"),
         new(SignatureBuildings, "Media/Game/Icons/ZoneSignature.svg", "ZoneSignature"),
         new(ServiceBuildings, "coui://finditbuildingmenu/Icons/Colored/ServiceBuilding.svg", "ServiceBuildings"),
+        new(Networks, "coui://finditbuildingmenu/Icons/Colored/Road.svg", "Networks"),
         new(Favorites, "coui://finditbuildingmenu/Icons/Colored/StarFilledSmallIso.svg", "Favorite"),
     };
 
@@ -65,6 +67,28 @@ public static class VanillaBuildMenuTaxonomy
         PrefabSubCategory.ServiceBuildings_Misc,
     };
 
+    /// <summary>
+    /// Every network subcategory Find It indexes.
+    /// </summary>
+    /// <remarks>
+    /// Lanes is the reason this section is worth having. The vanilla Roads menu
+    /// has no entry for net lanes and fences at all, so they are reachable only
+    /// through Find It — and there are a great many of them once mods are
+    /// counted, which is exactly the discoverability case the lens exists for.
+    /// </remarks>
+    private static readonly PrefabSubCategory[] NetworkSubcategories =
+    {
+        PrefabSubCategory.Networks_Roads,
+        PrefabSubCategory.Networks_Highways,
+        PrefabSubCategory.Networks_Intersections,
+        PrefabSubCategory.Networks_Bridges,
+        PrefabSubCategory.Networks_Tracks,
+        PrefabSubCategory.Networks_Paths,
+        PrefabSubCategory.Networks_Stops,
+        PrefabSubCategory.Networks_Pillars,
+        PrefabSubCategory.Networks_Lanes,
+    };
+
     public static IReadOnlyList<VanillaBuildMenuDescriptor> GetSectionDescriptors() => SectionDescriptors;
 
     public static IReadOnlyList<VanillaBuildMenuDescriptor> GetSubcategoryDescriptors(string section)
@@ -80,6 +104,7 @@ public static class VanillaBuildMenuTaxonomy
             Zones => ZoneSubcategories,
             SignatureBuildings => SignatureSubcategories,
             ServiceBuildings => ServiceSubcategories,
+            Networks => NetworkSubcategories,
             _ => Array.Empty<PrefabSubCategory>(),
         };
 
@@ -94,6 +119,11 @@ public static class VanillaBuildMenuTaxonomy
         if (category == PrefabCategory.ServiceBuildings && ServiceSubcategories.Contains(subCategory))
         {
             return new VanillaBuildMenuTag(ServiceBuildings, subCategory.ToString());
+        }
+
+        if (category == PrefabCategory.Networks && NetworkSubcategories.Contains(subCategory))
+        {
+            return new VanillaBuildMenuTag(Networks, subCategory.ToString());
         }
 
         if (category != PrefabCategory.Buildings)

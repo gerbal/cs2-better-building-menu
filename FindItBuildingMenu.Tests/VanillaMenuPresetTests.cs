@@ -41,14 +41,15 @@ namespace FindItBuildingMenu.Tests
 		}
 
 		[Theory]
-		[InlineData("Roads")]
 		[InlineData("Landscaping")]
 		[InlineData("Areas")]
 		public void DeclinesTheMenusThatAreNotBuildings(string menu)
 		{
-			// Roads are networks and Landscaping is surfaces; neither is in the
-			// building catalog. Declining lets the vanilla menu handle them
-			// rather than opening an empty lens.
+			// Roads used to be here. Networks were always indexed — the catalog
+			// adapter simply filtered them out — so Roads now routes to the
+			// Networks section. Landscaping and Areas are terrain tooling more
+			// than a catalogue, and declining lets the vanilla menu handle them
+			// rather than opening the lens on something unrelated.
 			Assert.Null(VanillaMenuPresets.Resolve(menu));
 		}
 
@@ -96,9 +97,9 @@ namespace FindItBuildingMenu.Tests
 		{
 			// Read off the running toolbar. If the game adds a menu, this fails
 			// rather than silently leaving it on the vanilla grid.
-			// Ten service menus, Zones, and Signatures. Roads, Landscaping and
+			// Ten service menus, Zones, Signatures and Roads. Landscaping and
 		// Areas are deliberately absent.
-		Assert.Equal(12, VanillaMenuPresets.Known.Count);
+		Assert.Equal(13, VanillaMenuPresets.Known.Count);
 		}
 	}
 }

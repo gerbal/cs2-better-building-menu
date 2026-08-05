@@ -28,9 +28,16 @@ public sealed class VanillaBuildMenuTaxonomyTests
     [Fact]
     public void Resolve_LeavesUnsupportedRecordsOutOfBuildingSections()
     {
+        // Networks_Roads used to be here. Networks is a section of its own now,
+        // so the unsupported cases are the categories the lens still does not
+        // catalogue, and a category/subcategory pairing that cannot occur.
+        Assert.Null(VanillaBuildMenuTaxonomy.Resolve(
+            PrefabCategory.Trees,
+            PrefabSubCategory.Trees_Trees,
+            ZoneTypeFilter.Any));
         Assert.Null(VanillaBuildMenuTaxonomy.Resolve(
             PrefabCategory.Networks,
-            PrefabSubCategory.Networks_Roads,
+            PrefabSubCategory.ServiceBuildings_Health,
             ZoneTypeFilter.Any));
         Assert.Null(VanillaBuildMenuTaxonomy.Resolve(
             PrefabCategory.Buildings,
@@ -41,9 +48,15 @@ public sealed class VanillaBuildMenuTaxonomyTests
     [Fact]
     public void Normalize_RejectsInheritedAndCrossSectionSelections()
     {
+        // "Networks" is a real section now, so an unknown one stands in for the
+        // case this was protecting; the Networks pairing below keeps the
+        // cross-section rejection honest for it too.
         Assert.Equal(
             new VanillaBuildMenuSelection(VanillaBuildMenuTaxonomy.AllBuildings, VanillaBuildMenuTaxonomy.Any),
-            VanillaBuildMenuSelection.Normalize("Networks", "Networks_Roads"));
+            VanillaBuildMenuSelection.Normalize("Vehicles", "Vehicles_Cars"));
+        Assert.Equal(
+            new VanillaBuildMenuSelection(VanillaBuildMenuTaxonomy.Networks, VanillaBuildMenuTaxonomy.Any),
+            VanillaBuildMenuSelection.Normalize(VanillaBuildMenuTaxonomy.Networks, "ServiceBuildings_Health"));
         Assert.Equal(
             new VanillaBuildMenuSelection(VanillaBuildMenuTaxonomy.Zones, VanillaBuildMenuTaxonomy.Any),
             VanillaBuildMenuSelection.Normalize(VanillaBuildMenuTaxonomy.Zones, "ServiceBuildings_Health"));
@@ -56,7 +69,7 @@ public sealed class VanillaBuildMenuTaxonomyTests
     public void Descriptors_PreserveVanillaSectionAndSubcategoryOrder()
     {
         Assert.Equal(
-            new[] { "AllBuildings", "Zones", "SignatureBuildings", "ServiceBuildings", "Favorites" },
+            new[] { "AllBuildings", "Zones", "SignatureBuildings", "ServiceBuildings", "Networks", "Favorites" },
             VanillaBuildMenuTaxonomy.GetSectionDescriptors().Select(descriptor => descriptor.Id).ToArray());
         Assert.Equal(
             new[]
