@@ -32,6 +32,7 @@ namespace FindItBuildingMenu.Domain
 				"assetpack" => query with { AssetPacks = ToggleValue(query.AssetPacks, normalizedOption), Offset = 0 },
 				"placement" => query with { PlacementFlags = ToggleValue(query.PlacementFlags, normalizedOption), Offset = 0 },
 				"extension" or "extensions" => query with { Extensions = ToggleValue(query.Extensions, normalizedOption), Offset = 0 },
+				"zone" or "zonetype" => query with { ZoneTypes = ToggleValue(query.ZoneTypes, normalizedOption), Offset = 0 },
 				_ => query,
 			};
 		}
@@ -51,6 +52,7 @@ namespace FindItBuildingMenu.Domain
 				Themes = null,
 				AssetPacks = null,
 				PlacementFlags = null,
+				ZoneTypes = null,
 				Extensions = null,
 				Offset = 0,
 			};
