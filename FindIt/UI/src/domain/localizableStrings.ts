@@ -70,6 +70,7 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   // --- Zone facts. Plumbed: the component formats and translates these. ----
   // Data the game measures and never shows: how tall a zone grows, whether it
   // takes narrow or corner lots, and what it trades in.
+  { key: key("ZoneLots"), english: "fits {0}", source: "ZoningHierarchy", plumbed: true },
   { key: key("ZoneMaxHeight"), english: "up to {0}m", source: "ZoningHierarchy", plumbed: true },
   { key: key("ZoneNarrowLots"), english: "narrow lots", source: "ZoningHierarchy", plumbed: true },
   { key: key("ZoneCorners"), english: "corners", source: "ZoningHierarchy", plumbed: true },

@@ -26,6 +26,11 @@ export interface ZoneEntry {
   allowedSold?: string;
   allowedManufactured?: string;
   allowedStored?: string;
+  /** Lot sizes the zone's spawnable buildings occupy. 0 when none are known. */
+  minLotWidth?: number;
+  maxLotWidth?: number;
+  minLotDepth?: number;
+  maxLotDepth?: number;
 }
 
 /**
@@ -41,14 +46,48 @@ export interface ZoneEntry {
  * translates, and these strings are registered in localizableStrings.
  */
 export interface ZoneFact {
-  kind: "height" | "narrow" | "corners" | "sold" | "manufactured" | "stored";
+  kind: "lots" | "height" | "narrow" | "corners" | "sold" | "manufactured" | "stored";
   value: string | number;
+}
+
+/**
+ * The footprints a zone actually grows, as "2×2" or "2–4 wide".
+ *
+ * A zone whose buildings are all 2×2 fills a two-cell strip and nothing wider,
+ * which decides how the block gets drawn — and the density tier does not imply
+ * it, since a low-density zone and a row-housing zone can both be narrow for
+ * different reasons.
+ *
+ * Depth is only stated when it is fixed. Block depth is usually the constraint
+ * in practice, so a depth range is noise next to the width, which is the number
+ * that changes what the player draws.
+ */
+export function formatZoneLots(zone: ZoneEntry | null | undefined): string | null {
+  const minWidth = zone?.minLotWidth ?? 0;
+  const maxWidth = zone?.maxLotWidth ?? 0;
+  const minDepth = zone?.minLotDepth ?? 0;
+  const maxDepth = zone?.maxLotDepth ?? 0;
+
+  if (minWidth <= 0 || maxWidth <= 0) return null;
+
+  const width = minWidth === maxWidth ? `${minWidth}` : `${minWidth}\u2013${maxWidth}`;
+
+  return minDepth > 0 && minDepth === maxDepth
+    ? `${width}\u00a0×\u00a0${minDepth}`
+    : `${width} wide`;
 }
 
 export function getZoneFacts(zone: ZoneEntry | null | undefined): ZoneFact[] {
   if (!zone) return [];
 
   const facts: ZoneFact[] = [];
+
+  // What will grow here, before how tall it gets: a zone that only fills 2x2
+  // is ruled in or out before its height matters.
+  const lots = formatZoneLots(zone);
+  if (lots !== null) {
+    facts.push({ kind: "lots", value: lots });
+  }
 
   if (typeof zone.maxHeight === "number" && zone.maxHeight > 0) {
     facts.push({ kind: "height", value: zone.maxHeight });
