@@ -47,6 +47,8 @@ import {
 } from "domain/buildingLensFilterSummary";
 import type { BuildingLensFacetState } from "domain/buildingCatalogFacets";
 import { findItSurfacePort } from "domain/findItSurfacePort";
+import { BuildingGrid } from "mods/BuildingGrid/BuildingGrid";
+import { getLensDisclosure, setLensDisclosure } from "domain/buildingLensViewState";
 import { BuildingCatalogFilterSummary } from "./BuildingCatalogFilterSummary";
 import { BuildingCatalogFacetPanel } from "./BuildingCatalogFacetPanel";
 import { BuildingCatalogMetricFilters } from "./BuildingCatalogMetricFilters";
@@ -79,6 +81,8 @@ const BuildingLensLegacyFilters$ = bindValue<string[]>(mod.id, "BuildingLensLega
 
 const educationCapacityPresets = [0, 100, 500, 1000];
 
+const LENS_VIEW_MODE_KEY = "tableMode";
+
 const metricColumns: Array<{
   key: BuildingLensMetric;
   localizationKey: string;
@@ -110,6 +114,15 @@ export const BuildingCatalogComponent = () => {
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
   const [sortingExpanded, setSortingExpanded] = useState(false);
+  // Grid by default: recognising a thumbnail is the fast path back to the map,
+  // and the table is for the rarer moment when you are genuinely comparing.
+  // Survives remount for the same reason the drawers do — placing a building
+  // unmounts this panel.
+  const [tableMode, setTableModeState] = useState(() => getLensDisclosure(LENS_VIEW_MODE_KEY, false));
+  const setTableMode = (next: boolean) => {
+    setLensDisclosure(LENS_VIEW_MODE_KEY, next);
+    setTableModeState(next);
+  };
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const compareEntries = useValue(BuildingCatalogCompare$) ?? [];
   const facets = useValue(BuildingLensFacets$);
@@ -157,6 +170,9 @@ export const BuildingCatalogComponent = () => {
 
     return group?.options?.find((option) => option.id === value)?.label ?? null;
   };
+  const viewModeLabel = tableMode
+    ? translate("Tooltip.LABEL[FindItBuildingMenu.ShowGrid]", "Grid") ?? "Grid"
+    : translate("Tooltip.LABEL[FindItBuildingMenu.ShowTable]", "Compare") ?? "Compare";
   const upgradesLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Upgrades]", "Upgrades") ?? "Upgrades";
   const noDetailsLabel = translate(
     "Tooltip.LABEL[FindItBuildingMenu.NoDetailMetrics]",
@@ -242,6 +258,15 @@ export const BuildingCatalogComponent = () => {
           <span className={styles.sortSummaryLabel}>{sortPresentation.compact.label}</span>
           <span className={styles.sortDirection} aria-hidden="true">{sortPresentation.compact.indicator}</span>
         </div>
+        <Button
+          className={styles.sortDisclosure}
+          variant="icon"
+          onSelect={() => setTableMode(!tableMode)}
+          aria-label={viewModeLabel}
+          title={viewModeLabel}
+        >
+          {viewModeLabel}
+        </Button>
         <Button
           className={styles.sortDisclosure}
           variant="icon"
@@ -356,243 +381,250 @@ export const BuildingCatalogComponent = () => {
         </div>
       )}
 
-      <div className={styles.columnHeader}>
-        <span className={styles.identityHeader}>{translate("Tooltip.LABEL[FindItBuildingMenu.Building]", "Building")}</span>
-        {metricColumns.map((column) => {
-          const fullLabel = translate(column.localizationKey, column.fallback) ?? column.fallback;
-          const indicator = getBuildingLensColumnSortIndicator(column.key, { column: sortColumn, descending });
-          const sortTarget = BUILDING_LENS_COLUMN_SORT[column.key];
-          const headerTitle = indicator === ""
-            ? `${fullLabel} — ${translate("Tooltip.LABEL[FindItBuildingMenu.SortByColumn]", "sort by this column") ?? "sort by this column"}`
-            : `${fullLabel} — ${translate("Tooltip.LABEL[FindItBuildingMenu.ReverseSort]", "reverse this sort") ?? "reverse this sort"}`;
-          return (
-            <Button
-              key={column.key}
-              className={classNames(styles.metricHeader, styles[column.className], indicator !== "" && styles.metricHeaderSorted)}
-              variant="icon"
-              onSelect={() => setSort(sortTarget)}
-              title={headerTitle}
-              aria-label={headerTitle}
-              data-sort-indicator={indicator}
-            >
-              {getBuildingLensMetricLabel(column.key, density, fullLabel)}
-              {indicator !== "" && <span className={styles.metricHeaderIndicator} aria-hidden="true">{indicator}</span>}
-            </Button>
-          );
-        })}
-      </div>
-
-      <Scrollable
-        className={styles.rows}
-        vertical
-        trackVisibility="scrollable"
-        data-scrollable={rowsScrollable}
-      >
-        {items.length === 0 && (
-          <div className={styles.empty}>
-            {status === "indexing"
-              ? translate("Tooltip.LABEL[FindItBuildingMenu.IndexingBuildings]", "Indexing buildings…")
-              : emptyStateMessage}
-          </div>
-        )}
-        {items.map((entry) => {
-          const isCompared = compareEntries.some((candidate) => candidate.id === entry.id);
-          const rawCategoryIdentity = entry.subCategory
-            ? `${entry.category} · ${entry.subCategory}`
-            : entry.category;
-          const entryLabel = entry.name || entry.prefabName;
-          const rowPlaceLabel = `${placeLabel}: ${entryLabel}`;
-          const isExpanded = expandedId === entry.id;
-          const rowInspectLabel = `${inspectLabel}: ${entryLabel}`;
-          const detailMetrics = isExpanded ? getBuildingDetailMetrics(entry) : [];
-          const flagGroups = isExpanded ? getBuildingFlagGroups(entry.placementFlags) : [];
-          const extensionLabels = isExpanded ? getBuildingExtensionLabels(entry.extensions) : [];
-          const provenanceChips = isExpanded ? getBuildingProvenanceChips(entry, resolveFacetLabel) : [];
-          // translate() echoes the id back when a key is absent, so an
-          // unlocalized prefab must not render its own locale key as prose.
-          const description = isExpanded
-            ? getBuildingDescriptionKeys(entry.prefabName)
-                .map((key) => translate(key, ""))
-                .find((text) => !!text && text.trim().length > 0 && !text.startsWith("Assets."))
-            : undefined;
-          const compareLabel = isCompared ? "Remove from comparison" : "Add to comparison";
-          const comparePlaceLabel = `${placeLabel}: ${entryLabel}`;
-          const compareRemoveLabel = `Remove ${entryLabel} from comparison`;
-
-          return (
-            <div key={entry.id} className={styles.row} data-expanded={isExpanded ? "true" : undefined}>
+      {tableMode ? (
+        <>
+        <div className={styles.columnHeader}>
+          <span className={styles.identityHeader}>{translate("Tooltip.LABEL[FindItBuildingMenu.Building]", "Building")}</span>
+          {metricColumns.map((column) => {
+            const fullLabel = translate(column.localizationKey, column.fallback) ?? column.fallback;
+            const indicator = getBuildingLensColumnSortIndicator(column.key, { column: sortColumn, descending });
+            const sortTarget = BUILDING_LENS_COLUMN_SORT[column.key];
+            const headerTitle = indicator === ""
+              ? `${fullLabel} — ${translate("Tooltip.LABEL[FindItBuildingMenu.SortByColumn]", "sort by this column") ?? "sort by this column"}`
+              : `${fullLabel} — ${translate("Tooltip.LABEL[FindItBuildingMenu.ReverseSort]", "reverse this sort") ?? "reverse this sort"}`;
+            return (
               <Button
-                className={styles.rowSelect}
+                key={column.key}
+                className={classNames(styles.metricHeader, styles[column.className], indicator !== "" && styles.metricHeaderSorted)}
                 variant="icon"
-                onSelect={() => toggleExpanded(entry.id)}
-                aria-label={inspectLabel}
-                title={rowInspectLabel}
-                data-expanded={isExpanded ? "true" : undefined}
+                onSelect={() => setSort(sortTarget)}
+                title={headerTitle}
+                aria-label={headerTitle}
+                data-sort-indicator={indicator}
               >
-                <div className={styles.identityCell}>
-                  <div className={styles.thumbnail}>
-                    {entry.thumbnail && <img src={entry.thumbnail} />}
-                  </div>
-                  <div className={styles.identity}>
-                    <div className={styles.nameLine}>
-                      <div className={styles.name}>{entryLabel}</div>
-                      <span className={styles.placeHint} aria-hidden="true">{isExpanded ? collapseLabel : inspectLabel}</span>
+                {getBuildingLensMetricLabel(column.key, density, fullLabel)}
+                {indicator !== "" && <span className={styles.metricHeaderIndicator} aria-hidden="true">{indicator}</span>}
+              </Button>
+            );
+          })}
+        </div>
+
+        <Scrollable
+          className={styles.rows}
+          vertical
+          trackVisibility="scrollable"
+          data-scrollable={rowsScrollable}
+        >
+          {items.length === 0 && (
+            <div className={styles.empty}>
+              {status === "indexing"
+                ? translate("Tooltip.LABEL[FindItBuildingMenu.IndexingBuildings]", "Indexing buildings…")
+                : emptyStateMessage}
+            </div>
+          )}
+          {items.map((entry) => {
+            const isCompared = compareEntries.some((candidate) => candidate.id === entry.id);
+            const rawCategoryIdentity = entry.subCategory
+              ? `${entry.category} · ${entry.subCategory}`
+              : entry.category;
+            const entryLabel = entry.name || entry.prefabName;
+            const rowPlaceLabel = `${placeLabel}: ${entryLabel}`;
+            const isExpanded = expandedId === entry.id;
+            const rowInspectLabel = `${inspectLabel}: ${entryLabel}`;
+            const detailMetrics = isExpanded ? getBuildingDetailMetrics(entry) : [];
+            const flagGroups = isExpanded ? getBuildingFlagGroups(entry.placementFlags) : [];
+            const extensionLabels = isExpanded ? getBuildingExtensionLabels(entry.extensions) : [];
+            const provenanceChips = isExpanded ? getBuildingProvenanceChips(entry, resolveFacetLabel) : [];
+            // translate() echoes the id back when a key is absent, so an
+            // unlocalized prefab must not render its own locale key as prose.
+            const description = isExpanded
+              ? getBuildingDescriptionKeys(entry.prefabName)
+                  .map((key) => translate(key, ""))
+                  .find((text) => !!text && text.trim().length > 0 && !text.startsWith("Assets."))
+              : undefined;
+            const compareLabel = isCompared ? "Remove from comparison" : "Add to comparison";
+            const comparePlaceLabel = `${placeLabel}: ${entryLabel}`;
+            const compareRemoveLabel = `Remove ${entryLabel} from comparison`;
+
+            return (
+              <div key={entry.id} className={styles.row} data-expanded={isExpanded ? "true" : undefined}>
+                <Button
+                  className={styles.rowSelect}
+                  variant="icon"
+                  onSelect={() => toggleExpanded(entry.id)}
+                  aria-label={inspectLabel}
+                  title={rowInspectLabel}
+                  data-expanded={isExpanded ? "true" : undefined}
+                >
+                  <div className={styles.identityCell}>
+                    <div className={styles.thumbnail}>
+                      {entry.thumbnail && <img src={entry.thumbnail} />}
                     </div>
-                    <div className={styles.category} title={rawCategoryIdentity}>
-                      {formatBuildingCatalogLabels(entry)}
+                    <div className={styles.identity}>
+                      <div className={styles.nameLine}>
+                        <div className={styles.name}>{entryLabel}</div>
+                        <span className={styles.placeHint} aria-hidden="true">{isExpanded ? collapseLabel : inspectLabel}</span>
+                      </div>
+                      <div className={styles.category} title={rawCategoryIdentity}>
+                        {formatBuildingCatalogLabels(entry)}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className={classNames(styles.metric, styles.metricCost)} title={`Cost ${formatBuildingMetric(entry.constructionCost, "cost")}`}>
-                  {formatBuildingMetric(entry.constructionCost, "cost")}
-                </div>
-                <div className={classNames(styles.metric, styles.metricUpkeep)} title={`Upkeep ${formatBuildingMetric(entry.upkeep, "upkeep")}`}>
-                  {formatBuildingMetric(entry.upkeep, "upkeep")}
-                </div>
-                <div className={classNames(styles.metric, styles.metricWorkers)} title={`Workers ${formatBuildingMetric(entry.workers, "workers")}`}>
-                  {formatBuildingMetric(entry.workers, "workers")}
-                </div>
-                <div className={classNames(styles.metric, styles.metricCapacity)} title={`Capacity ${formatCapacity(entry.capacity, entry.category, entry.subCategory)}`}>
-                  {formatCapacity(entry.capacity, entry.category, entry.subCategory)}
-                </div>
-                <div className={classNames(styles.metric, styles.metricLot)} title="Lot dimensions">
-                  {formatLotDimensions(entry.lotWidth, entry.lotDepth)}
-                </div>
-                <div className={classNames(styles.metric, styles.metricLevel)} title="Building level">
-                  {entry.buildingLevel}
-                </div>
-                <div className={classNames(styles.parking, styles.metricParking, entry.hasParking && styles.parkingActive)} title={entry.hasParking ? "Parking" : "No parking"}>
-                  {/* Not the no-data dash: this building is known to have no
-                      parking, which is a fact rather than a gap. */}
-                  {entry.hasParking ? "P" : "·"}
-                </div>
-              </Button>
-              {/* Placing is now an explicit act. The whole row used to be a
-                  Place button, so there was no way to look at a building
-                  without committing to it — and placement closes the panel. */}
-              <Button
-                className={styles.rowPlaceButton}
-                variant="icon"
-                onSelect={() => activate(entry)}
-                aria-label={rowPlaceLabel}
-                title={rowPlaceLabel}
-              >
-                <span>{placeLabel}</span>
-              </Button>
-              <Button
-                className={classNames(styles.compareButton, isCompared && styles.compareButtonSelected)}
-                variant="icon"
-                disabled={!isCompared && compareEntries.length >= MAX_COMPARE_ENTRIES}
-                onSelect={() => toggleCompare(entry)}
-                aria-label={compareLabel}
-                title={compareLabel}
-              >
-                <span aria-hidden="true">{isCompared ? "✓" : "+"}</span>
-              </Button>
-              {isExpanded && (
-                <div className={styles.rowDetails}>
-                  {/* The game's own copy for this prefab. Free: the entry
-                      already carries prefabName and the game keys descriptions
-                      by it, so this needs no backend projection. */}
-                  {description && <div className={styles.rowDescription}>{description}</div>}
+                  <div className={classNames(styles.metric, styles.metricCost)} title={`Cost ${formatBuildingMetric(entry.constructionCost, "cost")}`}>
+                    {formatBuildingMetric(entry.constructionCost, "cost")}
+                  </div>
+                  <div className={classNames(styles.metric, styles.metricUpkeep)} title={`Upkeep ${formatBuildingMetric(entry.upkeep, "upkeep")}`}>
+                    {formatBuildingMetric(entry.upkeep, "upkeep")}
+                  </div>
+                  <div className={classNames(styles.metric, styles.metricWorkers)} title={`Workers ${formatBuildingMetric(entry.workers, "workers")}`}>
+                    {formatBuildingMetric(entry.workers, "workers")}
+                  </div>
+                  <div className={classNames(styles.metric, styles.metricCapacity)} title={`Capacity ${formatCapacity(entry.capacity, entry.category, entry.subCategory)}`}>
+                    {formatCapacity(entry.capacity, entry.category, entry.subCategory)}
+                  </div>
+                  <div className={classNames(styles.metric, styles.metricLot)} title="Lot dimensions">
+                    {formatLotDimensions(entry.lotWidth, entry.lotDepth)}
+                  </div>
+                  <div className={classNames(styles.metric, styles.metricLevel)} title="Building level">
+                    {entry.buildingLevel}
+                  </div>
+                  <div className={classNames(styles.parking, styles.metricParking, entry.hasParking && styles.parkingActive)} title={entry.hasParking ? "Parking" : "No parking"}>
+                    {/* Not the no-data dash: this building is known to have no
+                        parking, which is a fact rather than a gap. */}
+                    {entry.hasParking ? "P" : "·"}
+                  </div>
+                </Button>
+                {/* Placing is now an explicit act. The whole row used to be a
+                    Place button, so there was no way to look at a building
+                    without committing to it — and placement closes the panel. */}
+                <Button
+                  className={styles.rowPlaceButton}
+                  variant="icon"
+                  onSelect={() => activate(entry)}
+                  aria-label={rowPlaceLabel}
+                  title={rowPlaceLabel}
+                >
+                  <span>{placeLabel}</span>
+                </Button>
+                <Button
+                  className={classNames(styles.compareButton, isCompared && styles.compareButtonSelected)}
+                  variant="icon"
+                  disabled={!isCompared && compareEntries.length >= MAX_COMPARE_ENTRIES}
+                  onSelect={() => toggleCompare(entry)}
+                  aria-label={compareLabel}
+                  title={compareLabel}
+                >
+                  <span aria-hidden="true">{isCompared ? "✓" : "+"}</span>
+                </Button>
+                {isExpanded && (
+                  <div className={styles.rowDetails}>
+                    {/* The game's own copy for this prefab. Free: the entry
+                        already carries prefabName and the game keys descriptions
+                        by it, so this needs no backend projection. */}
+                    {description && <div className={styles.rowDescription}>{description}</div>}
 
-                  <div className={styles.rowDetailMetrics}>
-                    {detailMetrics.length === 0 ? (
-                      <span className={styles.rowDetailEmpty}>{noDetailsLabel}</span>
-                    ) : (
-                      detailMetrics.map((detail) => (
-                        <span className={styles.rowDetail} key={detail.key}>
-                          <span className={styles.rowDetailLabel}>{detail.label}</span>
-                          <span className={styles.rowDetailValue}>{detail.value}</span>
-                        </span>
-                      ))
+                    <div className={styles.rowDetailMetrics}>
+                      {detailMetrics.length === 0 ? (
+                        <span className={styles.rowDetailEmpty}>{noDetailsLabel}</span>
+                      ) : (
+                        detailMetrics.map((detail) => (
+                          <span className={styles.rowDetail} key={detail.key}>
+                            <span className={styles.rowDetailLabel}>{detail.label}</span>
+                            <span className={styles.rowDetailValue}>{detail.value}</span>
+                          </span>
+                        ))
+                      )}
+                    </div>
+
+                    {/* Placement, lot access, network connections and lot
+                        internals: previously reachable only by filtering on them,
+                        never visible on the building itself. */}
+                    {flagGroups.map((group) => (
+                      <div className={styles.rowFlagGroup} key={group.id} data-flag-group={group.id}>
+                        <span className={styles.rowDetailLabel}>{group.label}</span>
+                        {group.values.map((value) => (
+                          <span className={styles.rowFlag} key={value}>{value}</span>
+                        ))}
+                      </div>
+                    ))}
+
+                    {extensionLabels.length > 0 && (
+                      <div className={styles.rowFlagGroup} data-flag-group="extensions">
+                        <span className={styles.rowDetailLabel}>{upgradesLabel}</span>
+                        {extensionLabels.map((extension) => (
+                          <span className={styles.rowFlag} key={extension}>{extension}</span>
+                        ))}
+                      </div>
+                    )}
+
+                    {provenanceChips.length > 0 && (
+                      <div className={styles.rowFlagGroup} data-flag-group="provenance">
+                        {provenanceChips.map((chip) => (
+                          <span className={styles.rowProvenance} key={chip.label}>
+                            <span className={styles.rowDetailLabel}>{chip.label}</span>
+                            <span className={styles.rowDetailValue}>{chip.value}</span>
+                          </span>
+                        ))}
+                      </div>
                     )}
                   </div>
+                )}
+              </div>
+            );
+          })}
+        </Scrollable>
 
-                  {/* Placement, lot access, network connections and lot
-                      internals: previously reachable only by filtering on them,
-                      never visible on the building itself. */}
-                  {flagGroups.map((group) => (
-                    <div className={styles.rowFlagGroup} key={group.id} data-flag-group={group.id}>
-                      <span className={styles.rowDetailLabel}>{group.label}</span>
-                      {group.values.map((value) => (
-                        <span className={styles.rowFlag} key={value}>{value}</span>
-                      ))}
-                    </div>
-                  ))}
+        <div className={styles.paging}>
+          {/* First/last jumps: a 4,000-building catalog is 43 pages, and stepping
+              one page at a time made the far end of any sort effectively
+              unreachable. */}
+          <Button
+            className={styles.pageButton}
+            variant="icon"
+            disabled={!hasPreviousPage}
+            onSelect={() => setPage(0)}
+            aria-label={firstPageLabel}
+            title={firstPageLabel}
+          >
+            <span>«</span>
+          </Button>
+          <Button
+            className={styles.pageButton}
+            variant="icon"
+            disabled={!hasPreviousPage}
+            onSelect={() => setPage(offset - limit)}
+            aria-label={previousPageLabel}
+            title={previousPageLabel}
+          >
+            <span>‹</span>
+          </Button>
+          <span className={styles.pageLabel} title={pageSummary} aria-label={pageSummary}>{pageSummary}</span>
+          <Button
+            className={styles.pageButton}
+            variant="icon"
+            disabled={!hasNextPage}
+            onSelect={() => setPage(offset + limit)}
+            aria-label={nextPageLabel}
+            title={nextPageLabel}
+          >
+            <span>›</span>
+          </Button>
+          <Button
+            className={styles.pageButton}
+            variant="icon"
+            disabled={!hasNextPage}
+            onSelect={() => setPage(lastPageOffset)}
+            aria-label={lastPageLabel}
+            title={lastPageLabel}
+          >
+            <span>»</span>
+          </Button>
+        </div>
+        </>
+      ) : (
+        <BuildingGrid entries={items} onPlace={activate} />
+      )}
 
-                  {extensionLabels.length > 0 && (
-                    <div className={styles.rowFlagGroup} data-flag-group="extensions">
-                      <span className={styles.rowDetailLabel}>{upgradesLabel}</span>
-                      {extensionLabels.map((extension) => (
-                        <span className={styles.rowFlag} key={extension}>{extension}</span>
-                      ))}
-                    </div>
-                  )}
-
-                  {provenanceChips.length > 0 && (
-                    <div className={styles.rowFlagGroup} data-flag-group="provenance">
-                      {provenanceChips.map((chip) => (
-                        <span className={styles.rowProvenance} key={chip.label}>
-                          <span className={styles.rowDetailLabel}>{chip.label}</span>
-                          <span className={styles.rowDetailValue}>{chip.value}</span>
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </Scrollable>
-
-      <div className={styles.paging}>
-        {/* First/last jumps: a 4,000-building catalog is 43 pages, and stepping
-            one page at a time made the far end of any sort effectively
-            unreachable. */}
-        <Button
-          className={styles.pageButton}
-          variant="icon"
-          disabled={!hasPreviousPage}
-          onSelect={() => setPage(0)}
-          aria-label={firstPageLabel}
-          title={firstPageLabel}
-        >
-          <span>«</span>
-        </Button>
-        <Button
-          className={styles.pageButton}
-          variant="icon"
-          disabled={!hasPreviousPage}
-          onSelect={() => setPage(offset - limit)}
-          aria-label={previousPageLabel}
-          title={previousPageLabel}
-        >
-          <span>‹</span>
-        </Button>
-        <span className={styles.pageLabel} title={pageSummary} aria-label={pageSummary}>{pageSummary}</span>
-        <Button
-          className={styles.pageButton}
-          variant="icon"
-          disabled={!hasNextPage}
-          onSelect={() => setPage(offset + limit)}
-          aria-label={nextPageLabel}
-          title={nextPageLabel}
-        >
-          <span>›</span>
-        </Button>
-        <Button
-          className={styles.pageButton}
-          variant="icon"
-          disabled={!hasNextPage}
-          onSelect={() => setPage(lastPageOffset)}
-          aria-label={lastPageLabel}
-          title={lastPageLabel}
-        >
-          <span>»</span>
-        </Button>
-      </div>
     </div>
   );
 };
