@@ -186,6 +186,13 @@ namespace FindItBuildingMenu.Systems
 
 		private void SetBuildingLensSection(string section)
 		{
+			// The zoning hierarchy is armed by the vanilla Zones menu and was
+			// never disarmed by anything else, so choosing a building section
+			// left the zone tiles on screen under a breadcrumb that read
+			// "Buildings" and a count of 3,667. Only the interception path could
+			// see this before; the section picker made it reachable.
+			_ShowZoningHierarchy.Value = false;
+
 			VanillaBuildMenuSelection selection = VanillaBuildMenuSelection.Normalize(section, VanillaBuildMenuTaxonomy.Any);
 			_buildingLensSection = selection.Section;
 			_buildingLensSubCategory = selection.SubCategory;

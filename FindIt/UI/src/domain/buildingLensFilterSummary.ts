@@ -70,11 +70,16 @@ function rangesFromState(state: BuildingLensMetricRangeState | null | undefined)
   };
 }
 
+function selectedFacetLabels(state: BuildingLensFacetState | null | undefined): string[] {
+  return (state?.groups ?? []).flatMap((group) =>
+    (group?.options ?? [])
+      .filter((option) => option.selected)
+      .map((option) => option.label || option.id),
+  );
+}
+
 function selectedFacetCount(state: BuildingLensFacetState | null | undefined): number {
-  return state?.groups.reduce(
-    (count, group) => count + group.options.filter((option) => option.selected).length,
-    0,
-  ) ?? 0;
+  return selectedFacetLabels(state).length;
 }
 
 function formatBound(value: number): string {
@@ -102,13 +107,17 @@ function metricDetails(ranges: Record<MetricRangeId, NormalizedMetricRange>): st
 export function getBuildingLensFilterSummary(
   input: BuildingLensFilterSummaryInput | null | undefined,
 ): BuildingLensFilterSummary {
-  const facets = selectedFacetCount(input?.facets);
+  const facetLabels = selectedFacetLabels(input?.facets);
+  const facets = facetLabels.length;
   const ranges = rangesFromState(input?.metricRanges);
   const activeRanges = metricRangeIds.filter((id) => ranges[id].min !== null || ranges[id].max !== null).length;
   const legacyFilters = (input?.legacyFilters ?? []).filter((label) => typeof label === "string" && label.length > 0);
   const count = facets + activeRanges + legacyFilters.length;
   const details = [
-    ...(facets > 0 ? [`${facets} facet${facets === 1 ? "" : "s"}`] : []),
+    // Named, not counted. "No buildings match 1 facet" told the player nothing
+    // they could act on; with filters composing freely an empty intersection is
+    // easy to reach, so the message has to say which constraint to drop.
+    ...facetLabels,
     ...metricDetails(ranges),
     // Named individually: "3 filters" would not tell the player which legacy
     // toggle to reach for, and the legacy panel is a different surface.

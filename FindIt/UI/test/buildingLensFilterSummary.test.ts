@@ -60,7 +60,9 @@ describe("Building Lens active-filter summary", () => {
 
     assert.equal(summary.count, 3);
     assert.equal(summary.text, "3 active filters");
-    assert.deepEqual(summary.details, ["2 facets", "Cost 100–500"]);
+    // Named, not counted: "2 facets" left the player nothing to act on, and an
+    // empty intersection is easy to reach now that filters compose.
+    assert.deepEqual(summary.details, ["European", "Modern", "Cost 100–500"]);
     assert.equal(summary.hasSelection, true);
   });
 

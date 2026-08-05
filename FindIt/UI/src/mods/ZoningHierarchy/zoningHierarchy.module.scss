@@ -3,7 +3,11 @@
 .zoning {
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
+  // Was flex: 1 1 auto, which took every pixel the panel offered. The zoning
+  // view has 24 tiles: measured, they filled 201px of a 472px scroll area that
+  // never scrolled, leaving 43% of the panel empty. It grows to the cap when
+  // the catalog is long and stops at the panel's floor when it is not.
+  flex: 0 1 auto;
   min-height: 0;
   padding: 8rem;
   color: var(--menuTitleNormal);
@@ -48,7 +52,10 @@
 .tiers {
   display: flex;
   flex-direction: column;
-  flex: 1 1 0;
+  // flex: 1 1 0 forced the scroll area to the full height whether or not it had
+  // anything to scroll. Sizing to content lets the panel's own floor and cap
+  // decide the height instead.
+  flex: 0 1 auto;
   min-height: 0;
 }
 
