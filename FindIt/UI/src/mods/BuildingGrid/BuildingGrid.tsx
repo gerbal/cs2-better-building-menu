@@ -7,11 +7,13 @@ import {
   formatCapacity,
   formatLotDimensions,
 } from "domain/buildingLensMetricFormat";
-import { getShelf, recordPlacement, stableGridOrder } from "domain/buildingShelf";
+import { getShelf, recordPlacement } from "domain/buildingShelf";
+import { rankBuildingMatches } from "domain/buildingSearchRank";
 import styles from "./buildingGrid.module.scss";
 
 interface BuildingGridProps {
   entries: BuildingCatalogEntry[];
+  searchText: string;
   onPlace: (entry: BuildingCatalogEntry) => void;
 }
 
@@ -24,9 +26,12 @@ interface BuildingGridProps {
  * they moved to the hover card, which costs nothing until you actually want
  * them.
  */
-export const BuildingGrid = ({ entries, onPlace }: BuildingGridProps) => {
+export const BuildingGrid = ({ entries, searchText, onPlace }: BuildingGridProps) => {
   const { translate } = useLocalization();
-  const ordered = stableGridOrder(entries);
+  // Relevance while a query is active, stable position while browsing. The two
+  // orders want opposite things and rankBuildingMatches falls back to the
+  // stable one for an empty query and for ties.
+  const ordered = rankBuildingMatches(entries, searchText ?? "");
   const shelfIds = getShelf();
   const byId = new Map(entries.map((entry) => [entry.id, entry]));
   // Only what is in this category; the shelf is global but must not advertise
@@ -68,7 +73,7 @@ export const BuildingGrid = ({ entries, onPlace }: BuildingGridProps) => {
 
   return (
     <div className={styles.grid}>
-      {shelf.length > 0 && (
+      {shelf.length > 0 && !searchText?.trim() && (
         <div className={styles.shelf}>
           <div className={styles.shelfLabel}>
             {translate("Tooltip.LABEL[FindItBuildingMenu.Shelf]", "Frequently placed") ?? "Frequently placed"}

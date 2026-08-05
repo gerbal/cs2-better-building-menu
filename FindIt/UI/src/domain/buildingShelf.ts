@@ -1,8 +1,7 @@
 /**
  * The two things that make a build menu get faster with use.
  *
- * A shelf of what you actually place, at positions that hold still, and a grid
- * order that never depends on mutable state.
+ * A shelf of what you actually place, at positions that hold still.
  *
  * The table this replaces in the placement path ordered itself by sort column,
  * facet state, search text and page offset, so the same school was never twice
@@ -11,15 +10,6 @@
  * after about three uses, which is a cost that decays to nothing. That is the
  * property worth protecting here.
  */
-
-export interface GridEntry {
-  id: number;
-  name: string;
-  thumbnail: string;
-  constructionCost?: number | null;
-  lotWidth?: number | null;
-  lotDepth?: number | null;
-}
 
 /**
  * Bounded deliberately. A shelf you cannot learn the shape of is just another
@@ -54,23 +44,4 @@ export function resetShelf(): void {
   placements.clear();
   seenAt.clear();
   firstSeen = 0;
-}
-
-/**
- * A total order over a category that depends on nothing the player can change.
- *
- * Footprint first because it is what the player is matching against the gap on
- * the map, then cost, then name so the result is deterministic. Entries with no
- * cost sort last rather than sorting as free.
- */
-export function stableGridOrder<T extends GridEntry>(entries: readonly T[]): T[] {
-  const area = (entry: GridEntry) => (entry.lotWidth ?? 0) * (entry.lotDepth ?? 0);
-  const cost = (entry: GridEntry) =>
-    typeof entry.constructionCost === "number" && Number.isFinite(entry.constructionCost)
-      ? entry.constructionCost
-      : Number.POSITIVE_INFINITY;
-
-  return [...entries].sort(
-    (a, b) => area(a) - area(b) || cost(a) - cost(b) || a.name.localeCompare(b.name)
-  );
 }

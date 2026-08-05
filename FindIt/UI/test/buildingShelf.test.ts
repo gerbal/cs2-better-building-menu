@@ -5,18 +5,7 @@ import {
   getShelf,
   recordPlacement,
   resetShelf,
-  stableGridOrder,
-  type GridEntry,
 } from "../src/domain/buildingShelf.ts";
-
-const entry = (id: number, name: string, cost: number | null = 0, lot = 4): GridEntry => ({
-  id,
-  name,
-  thumbnail: "",
-  constructionCost: cost,
-  lotWidth: lot,
-  lotDepth: lot,
-});
 
 describe("Building shelf", () => {
   beforeEach(() => resetShelf());
@@ -62,54 +51,5 @@ describe("Building shelf", () => {
 
     assert.equal(getShelf().length, SHELF_SIZE);
     assert.equal(getShelf()[0], 1);
-  });
-});
-
-describe("Stable grid order", () => {
-  it("orders by size then cost then name, never by mutable state", () => {
-    // The whole point: the same building sits in the same place every time.
-    // Sorting by anything the player can change destroys that.
-    const ordered = stableGridOrder([
-      entry(1, "Big Expensive", 900, 8),
-      entry(2, "Small Cheap", 100, 2),
-      entry(3, "Small Dear", 500, 2),
-    ]);
-
-    assert.deepEqual(ordered.map((e) => e.name), ["Small Cheap", "Small Dear", "Big Expensive"]);
-  });
-
-  it("breaks ties by name so the order is total", () => {
-    const ordered = stableGridOrder([
-      entry(1, "Beta", 100, 2),
-      entry(2, "Alpha", 100, 2),
-    ]);
-
-    assert.deepEqual(ordered.map((e) => e.name), ["Alpha", "Beta"]);
-  });
-
-  it("gives the same answer whatever order it receives", () => {
-    const a = [entry(1, "A", 100, 2), entry(2, "B", 200, 4), entry(3, "C", 50, 6)];
-    const b = [a[2], a[0], a[1]];
-
-    assert.deepEqual(
-      stableGridOrder(a).map((e) => e.id),
-      stableGridOrder(b).map((e) => e.id)
-    );
-  });
-
-  it("sorts entries with no cost last rather than treating them as free", () => {
-    const ordered = stableGridOrder([
-      entry(1, "Unknown", null, 2),
-      entry(2, "Cheap", 10, 2),
-    ]);
-
-    assert.deepEqual(ordered.map((e) => e.name), ["Cheap", "Unknown"]);
-  });
-
-  it("does not mutate its input", () => {
-    const source = [entry(2, "B", 200, 4), entry(1, "A", 100, 2)];
-    stableGridOrder(source);
-
-    assert.deepEqual(source.map((e) => e.id), [2, 1]);
   });
 });
