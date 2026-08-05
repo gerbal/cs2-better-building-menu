@@ -22,6 +22,7 @@ interface FilterRailProps {
 const DIMENSION_ICONS: Record<string, string> = {
   buildingType: "Media/Game/Icons/Healthcare.svg",
   provenance: "coui://finditbuildingmenu/Icons/Colored/BaseGame.svg",
+  availability: "Media/Game/Icons/LockClosed.svg",
   dlc: "coui://finditbuildingmenu/Icons/Colored/BaseGame.svg",
   theme: "coui://finditbuildingmenu/Icons/Colored/HouseAlternative.svg",
   assetPack: "coui://finditbuildingmenu/Icons/Colored/StarFilled.svg",

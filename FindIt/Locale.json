@@ -333,5 +333,8 @@
   "Tooltip.LABEL[FindItBuildingMenu.ZoneSells]": "sells {0}",
   "Tooltip.LABEL[FindItBuildingMenu.ZoneMakes]": "makes {0}",
   "Tooltip.LABEL[FindItBuildingMenu.ZoneStores]": "stores {0}",
-  "Tooltip.LABEL[FindItBuildingMenu.ZoneLots]": "fits {0}"
+  "Tooltip.LABEL[FindItBuildingMenu.ZoneLots]": "fits {0}",
+  "Options.LABEL[FindItBuildingMenu.AvailabilityFilter]": "Availability",
+  "Tooltip.LABEL[FindItBuildingMenu.Locked]": "Locked",
+  "Tooltip.LABEL[FindItBuildingMenu.Unlocked]": "Unlocked"
 }

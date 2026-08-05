@@ -86,6 +86,15 @@ namespace FindItBuildingMenu.Services
 
 			AddValueGroup(groups, "buildingType", "Role", source.Select(entry => entry.BuildingType), query.BuildingTypes, FormatFacetWords);
 			AddValueGroup(groups, "provenance", "Source", source.Select(entry => entry.Provenance), query.Provenance, FormatProvenanceLabel);
+			// Progression, which the vanilla menu shows by greying an asset out
+			// and the lens had no way to ask about at all.
+			AddValueGroup(
+				groups,
+				"availability",
+				"Availability",
+				source.Select(entry => entry.IsLocked ? "Locked" : "Unlocked"),
+				query.Availability,
+				FormatFacetWords);
 			AddValueGroup(groups, "dlc", "DLC", source.Select(entry => entry.DlcId), query.DlcIds, FormatDlcLabel);
 			AddValueGroup(groups, "theme", "Theme", source.Select(entry => entry.Theme), query.Themes, FormatFacetWords);
 			AddArrayGroup(groups, "assetPack", "Asset packs", source.Select(entry => entry.AssetPacks), query.AssetPacks, FormatAssetPackLabel);
@@ -101,7 +110,8 @@ namespace FindItBuildingMenu.Services
 				query.ZoneTypes,
 				FormatFacetWords);
 
-			bool hasSelection = HasValues(query.ZoneTypes)
+			bool hasSelection = HasValues(query.Availability)
+				|| HasValues(query.ZoneTypes)
 				|| HasValues(query.BuildingTypes)
 				|| HasValues(query.Provenance)
 				|| HasValues(query.DlcIds)
@@ -202,6 +212,7 @@ namespace FindItBuildingMenu.Services
 				HasParking: prefab.HasParking,
 				IsUniqueMesh: prefab.IsUniqueMesh,
 				IsVanilla: prefab.IsVanilla,
+				IsLocked: prefab.IsLocked,
 				IsFavorited: prefab.IsFavorited,
 				PdxModsId: prefab.PdxModsId ?? string.Empty,
 				DlcId: prefab.DlcId == DlcId.Invalid ? null : prefab.DlcId.id.ToString(),

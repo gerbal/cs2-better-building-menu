@@ -1,6 +1,7 @@
 using System.Linq;
 using FindItBuildingMenu.Domain;
 using FindItBuildingMenu.Domain.Enums;
+using FindItBuildingMenu.Services;
 using Xunit;
 
 namespace FindItBuildingMenu.Tests
@@ -111,6 +112,114 @@ namespace FindItBuildingMenu.Tests
 			Assert.Null(VanillaMenuPresets.Resolve("Landscaping"));
 			Assert.Null(VanillaMenuPresets.Resolve("Areas"));
 			Assert.Null(VanillaMenuPresets.Resolve("Some Modded Menu"));
+		}
+	}
+}
+
+namespace FindItBuildingMenu.Tests
+{
+	public sealed class AvailabilityFilterTests
+	{
+		private static BuildingCatalogEntry Entry(int id, bool locked) =>
+			new BuildingCatalogEntry(
+				Id: id,
+				PrefabName: $"P{id}",
+				Name: $"P{id}",
+				Category: "ServiceBuildings",
+				SubCategory: "Health",
+				Thumbnail: "",
+				LotWidth: 2,
+				LotDepth: 2,
+				BuildingLevel: 1,
+				ZoneType: 0,
+				HasParking: false,
+				IsUniqueMesh: false,
+				IsVanilla: true,
+				IsFavorited: false,
+				PdxModsId: "",
+				IsLocked: locked);
+
+		private static readonly BuildingCatalogEntry[] Source =
+		{
+			Entry(1, locked: false),
+			Entry(2, locked: true),
+			Entry(3, locked: false),
+		};
+
+		[Fact]
+		public void ShowsBothWhenNothingIsSelected()
+		{
+			// An untouched filter hides nothing, the same rule the zone families
+			// follow.
+			var page = BuildingCatalogQueryEngine.Query(Source, new BuildingCatalogQuery());
+
+			Assert.Equal(3, page.TotalCount);
+		}
+
+		[Fact]
+		public void NarrowsToWhatTheMilestonesHaveEarned()
+		{
+			var page = BuildingCatalogQueryEngine.Query(
+				Source,
+				new BuildingCatalogQuery(Availability: new[] { "Unlocked" }));
+
+			Assert.Equal(2, page.TotalCount);
+			Assert.All(page.Items, entry => Assert.False(entry.IsLocked));
+		}
+
+		[Fact]
+		public void NarrowsToWhatIsStillBehindAMilestone()
+		{
+			// The more interesting direction: "what am I still working towards"
+			// is a question the vanilla menu answers only by greying things out.
+			var page = BuildingCatalogQueryEngine.Query(
+				Source,
+				new BuildingCatalogQuery(Availability: new[] { "Locked" }));
+
+			Assert.Equal(1, page.TotalCount);
+			Assert.True(page.Items[0].IsLocked);
+		}
+
+		[Fact]
+		public void SelectingBothIsTheSameAsSelectingNeither()
+		{
+			var page = BuildingCatalogQueryEngine.Query(
+				Source,
+				new BuildingCatalogQuery(Availability: new[] { "Locked", "Unlocked" }));
+
+			Assert.Equal(3, page.TotalCount);
+		}
+
+		[Fact]
+		public void OffersBothOptionsAsAFacet()
+		{
+			var facets = BuildingCatalogAdapter.BuildFacetState(Source, new BuildingCatalogQuery());
+			var group = facets.Groups.Single(candidate => candidate.Id == "availability");
+
+			Assert.Equal(
+				new[] { "Locked", "Unlocked" },
+				group.Options.Select(option => option.Id).OrderBy(id => id).ToArray());
+		}
+
+		[Fact]
+		public void ClearingFiltersClearsIt()
+		{
+			var query = new BuildingCatalogQuery(Availability: new[] { "Locked" });
+
+			Assert.Null(BuildingCatalogFacetSelection.Clear(query).Availability);
+		}
+
+		[Fact]
+		public void TogglesThroughTheSharedFacetPath()
+		{
+			var query = BuildingCatalogFacetSelection.Toggle(
+				new BuildingCatalogQuery(), "availability", "Locked");
+
+			Assert.Equal(new[] { "Locked" }, query.Availability);
+
+			var cleared = BuildingCatalogFacetSelection.Toggle(query, "availability", "Locked");
+
+			Assert.True(cleared.Availability is null || cleared.Availability.Count == 0);
 		}
 	}
 }

@@ -48,7 +48,16 @@ namespace FindItBuildingMenu.Domain
 		string? VanillaSubCategory = null,
 		string[]? Extensions = null,
 		string? CategoryLabel = null,
-		string? SubCategoryLabel = null) : IJsonWritable
+		string? SubCategoryLabel = null,
+		/// <summary>
+		/// Whether the game still has this behind a milestone.
+		/// </summary>
+		/// <remarks>
+		/// Defaulted, and last, so the construction sites that predate it stay
+		/// untouched — inserting it mid-record broke every test that builds an
+		/// entry positionally, which is a lot of noise for one flag.
+		/// </remarks>
+		bool IsLocked = false) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -88,6 +97,8 @@ namespace FindItBuildingMenu.Domain
 			writer.Write(IsUniqueMesh);
 			writer.PropertyName("isVanilla");
 			writer.Write(IsVanilla);
+			writer.PropertyName("isLocked");
+			writer.Write(IsLocked);
 			writer.PropertyName("isFavorited");
 			writer.Write(IsFavorited);
 			writer.PropertyName("pdxModsId");

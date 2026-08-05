@@ -37,6 +37,7 @@ namespace FindItBuildingMenu.Systems
 		private HashSet<string> _blackList;
 		private ComponentType? roadBuilderDiscarded;
 		private static Dictionary<Entity, ZoneTypeFilter> _zoneTypeCache;
+		private EntityQuery _unlockEventQuery;
 		private static List<ZoneCatalogEntry> _zoneCatalog = new();
 		private static Dictionary<int, string> _assetMenuNames = new();
 		private readonly List<IPrefabCategoryProcessor> _prefabCategoryProcessors = new();
@@ -83,10 +84,21 @@ namespace FindItBuildingMenu.Systems
 				}
 			}
 
+			// Unlock events are the third trigger. UnlockSystem.UnlockPrefab
+			// disables the Locked component and raises an Unlock event, but
+			// never marks the prefab Updated — so without this the lock state
+			// captured at index time would stay stale until the next reload,
+			// and a milestone would silently stop being reflected.
+			_unlockEventQuery = GetEntityQuery(ComponentType.ReadOnly<Unlock>());
+
 			RequireForUpdate(GetEntityQuery(new EntityQueryDesc
 			{
 				All = new[] { ComponentType.ReadOnly<PrefabData>() },
-				Any = new[] { ComponentType.ReadOnly<Created>(), ComponentType.ReadOnly<Updated>() }
+				Any = new[]
+				{
+					ComponentType.ReadOnly<Created>(),
+					ComponentType.ReadOnly<Updated>(),
+				}
 			}));
 
 			Enabled = false;
@@ -121,7 +133,11 @@ namespace FindItBuildingMenu.Systems
 
 		protected override void OnUpdate()
 		{
-			RunIndex(false);
+			// An unlock changes lock state without touching the prefab, so the
+			// incremental pass would not see it. Rare enough that a full pass
+			// is the honest response rather than a targeted patch that could
+			// drift from what the index otherwise holds.
+			RunIndex(!_unlockEventQuery.IsEmptyIgnoreFilter);
 		}
 
 		private void RunIndex(bool full)
@@ -341,6 +357,9 @@ namespace FindItBuildingMenu.Systems
 			prefabIndex.UIOrder = prefab.TryGet<UIObject>(out var uIObject) ? uIObject.m_Priority : int.MaxValue;
 			prefabIndex.IsVanilla = prefab.isBuiltin || prefab.Has<FindItGenerated>();
 			prefabIndex.HasParking = prefabIndex.Category is PrefabCategory.Buildings or PrefabCategory.ServiceBuildings && HasParking(prefab);
+			// Enableable: presence alone would mark every unlockable asset
+			// locked forever, including the ones already earned.
+			prefabIndex.IsLocked = EntityManager.HasEnabledComponent<Locked>(entity);
 			prefabIndex.IsRandom = prefabIndex.SubCategory is not PrefabSubCategory.Networks_Pillars && EntityManager.HasComponent<PlaceholderObjectData>(entity);
 			prefabIndex.IsResourceIntensive = CheckIfResourceIntensive(prefab);
 

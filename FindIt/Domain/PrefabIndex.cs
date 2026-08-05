@@ -30,6 +30,16 @@ namespace FindItBuildingMenu.Domain
 		public int? EducationLevel { get; set; }
 		public BuildingFlags? BuildingFlagsValue { get; set; }
 		public bool IsVanilla { get; set; }
+
+		/// <summary>
+		/// Whether the game still has this behind a milestone.
+		/// </summary>
+		/// <remarks>
+		/// Locked is an enableable component, so presence is not the test —
+		/// HasEnabledComponent is, which is what the game's own toolbar uses
+		/// when it decides to grey an asset out.
+		/// </remarks>
+		public bool IsLocked { get; set; }
 		public bool IsUniqueMesh { get; set; }
 		public ThemePrefab Theme { get; set; }
 		public AssetPackPrefab[] AssetPacks { get; set; }

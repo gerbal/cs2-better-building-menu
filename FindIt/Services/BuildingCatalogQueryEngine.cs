@@ -94,7 +94,8 @@ namespace FindItBuildingMenu.Services
 				return false;
 			}
 
-			if (!MatchesAny(entry.BuildingType, query.BuildingTypes)
+			if (!MatchesAny(entry.IsLocked ? "Locked" : "Unlocked", query.Availability)
+				|| !MatchesAny(entry.BuildingType, query.BuildingTypes)
 				|| !MatchesAny(entry.Provenance, query.Provenance)
 				|| !MatchesAny(entry.DlcId, query.DlcIds)
 				|| !MatchesAny(entry.Theme, query.Themes)

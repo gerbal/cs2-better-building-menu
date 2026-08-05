@@ -27,6 +27,7 @@ namespace FindItBuildingMenu.Domain
 			{
 				"buildingtype" => query with { BuildingTypes = ToggleValue(query.BuildingTypes, normalizedOption), Offset = 0 },
 				"provenance" => query with { Provenance = ToggleValue(query.Provenance, normalizedOption), Offset = 0 },
+				"availability" => query with { Availability = ToggleValue(query.Availability, normalizedOption), Offset = 0 },
 				"dlc" => query with { DlcIds = ToggleValue(query.DlcIds, normalizedOption), Offset = 0 },
 				"theme" => query with { Themes = ToggleValue(query.Themes, normalizedOption), Offset = 0 },
 				"assetpack" => query with { AssetPacks = ToggleValue(query.AssetPacks, normalizedOption), Offset = 0 },
@@ -48,6 +49,7 @@ namespace FindItBuildingMenu.Domain
 			{
 				BuildingTypes = null,
 				Provenance = null,
+				Availability = null,
 				DlcIds = null,
 				Themes = null,
 				AssetPacks = null,
