@@ -98,6 +98,19 @@ namespace FindItBuildingMenu.Systems
 			// "this building does not exist" when it usually means "not here".
 			// Only computed when the scoped result is actually empty, so the
 			// extra pass costs nothing in the common case.
+			// With auto-widen on, a scoped miss drops the scope itself rather
+			// than asking. Cannot recurse: SearchEverything calls back into
+			// this method, and by then the section is AllBuildings so the
+			// branch fails its own guard.
+			if (Mod.Settings.AutoWidenSearch
+				&& page.TotalCount == 0
+				&& !string.IsNullOrWhiteSpace(_buildingCatalogQuery.SearchText)
+				&& _buildingLensSection != VanillaBuildMenuTaxonomy.AllBuildings)
+			{
+				SearchEverything();
+				return;
+			}
+
 			_BuildingCatalogMatchesElsewhere.Value =
 				page.TotalCount == 0 && !string.IsNullOrWhiteSpace(_buildingCatalogQuery.SearchText)
 					? _buildingCatalogAdapter.Query(_buildingCatalogQuery with

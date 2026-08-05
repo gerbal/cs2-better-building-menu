@@ -80,6 +80,18 @@ namespace FindItBuildingMenu.Systems
 			_appliedMenuIndex = menuEntityIndex;
 			_appliedMenuFrame = UnityEngine.Time.frameCount;
 
+			if (preset.IsZoning && !Mod.Settings.ReplaceVanillaZonesMenu)
+			{
+				// The player kept the familiar zone grid; leave it alone and get
+				// out of its way, exactly as for an unmapped menu.
+				if (_ShowFindItPanel)
+				{
+					ToggleFindItPanel(false);
+				}
+
+				return;
+			}
+
 			if (preset.IsZoning)
 			{
 				// Zones are assignment tools rather than buildings, so the
