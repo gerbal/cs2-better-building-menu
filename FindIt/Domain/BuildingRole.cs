@@ -42,6 +42,7 @@ namespace FindItBuildingMenu.Domain
 			"WaterPumpingStation",
 			"WastewaterTreatmentPlant",
 			"SewageOutlet",
+			"PowerPlant",
 			"GarbageFacility",
 			"DeathcareFacility",
 		};

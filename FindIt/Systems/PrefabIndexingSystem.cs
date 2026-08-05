@@ -551,6 +551,29 @@ namespace FindItBuildingMenu.Systems
 				capacities.Add(sewageOutletData.m_Capacity);
 			}
 
+			// Power plants report output as production rather than capacity, so
+			// without this a coal plant has no capacity at all and cannot be
+			// forecast against the city's electricity demand like every other
+			// service. Solar is a separate component with its own field.
+			if (EntityManager.TryGetComponent<PowerPlantData>(entity, out var powerPlantData))
+			{
+				roles.Add("PowerPlant");
+				capacities.Add(powerPlantData.m_ElectricityProduction);
+			}
+
+			if (EntityManager.TryGetComponent<SolarPoweredData>(entity, out var solarData))
+			{
+				roles.Add("PowerPlant");
+				capacities.Add(solarData.m_Production);
+			}
+
+			// Wind is a third component again, with its own production field.
+			if (EntityManager.TryGetComponent<WindPoweredData>(entity, out var windData))
+			{
+				roles.Add("PowerPlant");
+				capacities.Add(windData.m_Production);
+			}
+
 			if (EntityManager.TryGetComponent<WastewaterTreatmentPlantData>(entity, out var wastewaterData))
 			{
 				roles.Add("WastewaterTreatmentPlant");
