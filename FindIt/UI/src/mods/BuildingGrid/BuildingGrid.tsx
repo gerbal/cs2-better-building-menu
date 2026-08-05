@@ -11,16 +11,23 @@ import {
 } from "domain/buildingLensMetricFormat";
 import { getShelf, recordPlacement } from "domain/buildingShelf";
 import { getCapacityForecast, getCostForecast } from "domain/buildingForecast";
+import { SERVICE_FORECAST_BINDINGS, getServiceForecastKey } from "domain/serviceForecast";
 import { groupDigits } from "domain/buildingLensMetricFormat";
 import { rankBuildingMatches, topSearchResult } from "domain/buildingSearchRank";
 import mod from "../../../mod.json";
 import styles from "./buildingGrid.module.scss";
 
 // The game's own live city state, so the hover card compares against the
-// player's city rather than against nothing.
+// player's city rather than against nothing. One pair per demand series;
+// SERVICE_FORECAST_BINDINGS names which pair a given building belongs to.
 const Money$ = bindValue<number>("toolbarBottom", "money", 0);
-const ElementaryCapacity$ = bindValue<number>("educationInfo", "elementaryCapacity", 0);
-const ElementaryEligible$ = bindValue<number>("educationInfo", "elementaryEligible", 0);
+
+const SERIES = Object.entries(SERVICE_FORECAST_BINDINGS).map(([key, b]) => ({
+  key,
+  unit: b.unit,
+  capacity$: bindValue<number>(b.group, b.capacity, 0),
+  demand$: bindValue<number>(b.group, b.demand, 0),
+}));
 
 const ShowShelf$ = bindValue<boolean>(mod.id, "BuildingLensShowShelf", true);
 const ShelfSize$ = bindValue<number>(mod.id, "BuildingLensShelfSize", 12);
@@ -47,8 +54,15 @@ export const BuildingGrid = ({ entries, searchText, onPlace }: BuildingGridProps
   const shelfSize = useValue(ShelfSize$);
   const tileSize = useValue(TileSize$);
   const money = useValue(Money$);
-  const elementaryCapacity = useValue(ElementaryCapacity$);
-  const elementaryEligible = useValue(ElementaryEligible$);
+  // Hooks must not be called conditionally, so every series is read every
+  // render and the relevant one is picked per tile.
+  const series = SERIES.map((s) => ({
+    key: s.key,
+    unit: s.unit,
+    capacity: useValue(s.capacity$),
+    demand: useValue(s.demand$),
+  }));
+  const seriesByKey = new Map(series.map((s) => [s.key, s]));
   // Relevance while a query is active, stable position while browsing. The two
   // orders want opposite things and rankBuildingMatches falls back to the
   // stable one for an empty query and for ties.
@@ -95,13 +109,14 @@ export const BuildingGrid = ({ entries, searchText, onPlace }: BuildingGridProps
     // The forecast is the reason to stop and read: cost against what you have,
     // and coverage against what the city is short of.
     const costForecast = getCostForecast(entry.constructionCost, money);
-    const isSchool = /Education/i.test(entry.subCategory ?? "");
-    const capacityForecast = isSchool
+    const forecastKey = getServiceForecastKey(entry);
+    const live = forecastKey ? seriesByKey.get(forecastKey.key) : null;
+    const capacityForecast = live
       ? getCapacityForecast({
           added: entry.capacity,
-          current: elementaryCapacity,
-          demand: elementaryEligible,
-          unit: "students",
+          current: live.capacity,
+          demand: live.demand,
+          unit: live.unit,
         })
       : null;
 
