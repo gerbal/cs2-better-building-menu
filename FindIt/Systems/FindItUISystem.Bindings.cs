@@ -52,6 +52,14 @@ namespace FindItBuildingMenu.Systems
 				return;
 			}
 
+			// Opening the lens makes the game re-assert the armed tool's menu,
+			// so one click arrives as two selections. Routing the second
+			// reverted the player's choice within the same tick.
+			if (MenuEchoGuard.IsEcho(_appliedMenuFrame, _appliedMenuIndex, UnityEngine.Time.frameCount, menuEntityIndex))
+			{
+				return;
+			}
+
 			var menuName = PrefabIndexingSystem.GetAssetMenuName(menuEntityIndex);
 			var preset = VanillaMenuPresets.Resolve(menuName);
 
@@ -68,6 +76,9 @@ namespace FindItBuildingMenu.Systems
 
 				return;
 			}
+
+			_appliedMenuIndex = menuEntityIndex;
+			_appliedMenuFrame = UnityEngine.Time.frameCount;
 
 			if (preset.IsZoning)
 			{

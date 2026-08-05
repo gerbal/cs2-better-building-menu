@@ -166,7 +166,8 @@ Driven against a running city. PASS means observed working, not merely built.
 | All 8 facet groups populate | PASS |
 | Vanilla menu interception (Healthcare, Education) | PASS |
 | Vanilla menu decline (Roads) | PASS |
-| **Zoning hierarchy via the Zones menu** | **FAIL** |
+| **Zoning hierarchy via the Zones menu** | FAIL, then FIXED |
+| Zone assignment hands off to the native Zone tool | PASS |
 
 ### The failure: the interception fights itself
 
@@ -186,9 +187,19 @@ This hides between two building menus, where the echo lands somewhere
 plausible. It only becomes visible with Zones, where the correct result is a
 different view entirely.
 
-Fix direction: the echo originates in our own handler, so the backend should
-mark the selection it induces and drop the re-entrant call, rather than the UI
-trying to distinguish an echo from a click by timing.
+Root cause: the game re-syncs its toolbar to the *armed tool's* menu. With an
+Elementary School on the tool, clicking Garbage emitted Garbage then Education.
+
+Fixed by MenuEchoGuard. The echo cannot be told from a click by content, so it
+is identified by proximity: a *different* menu arriving within two frames of
+one we just applied is the game talking. Nobody clicks two menus within three
+frames, and the window is deliberately tight so switching menus quickly still
+works. Re-selecting the same menu is never treated as an echo, and a backwards
+frame counter fails open rather than swallowing every later selection.
+
+Verified with a tool armed — the condition that produced the bug: the zoning
+hierarchy now opens and stays, showing 4 families and 21 zones, and selecting
+a zone arms the native Zone tool.
 
 ### Not yet swept
 
