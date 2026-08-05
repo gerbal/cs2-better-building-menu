@@ -3,12 +3,11 @@ namespace FindItBuildingMenu.Domain
 	/// <summary>
 	/// Shared Building Lens filter state and the status vocabulary published to
 	/// Gameface. The legacy FindIt filter state remains outside this transition;
-	/// only lens-owned categorical, metric, and education-capacity state is reset.
+	/// only lens-owned categorical and metric state is reset.
 	/// </summary>
 	public sealed record BuildingCatalogLensState(
 		BuildingCatalogQuery Query,
-		BuildingCatalogMetricRangeState MetricRanges,
-		int EducationCapacityFloor)
+		BuildingCatalogMetricRangeState MetricRanges)
 	{
 		public const string Indexing = "indexing";
 		public const string Ready = "ready";
@@ -23,7 +22,6 @@ namespace FindItBuildingMenu.Domain
 			{
 				Query = query,
 				MetricRanges = BuildingCatalogMetricRangeState.Empty,
-				EducationCapacityFloor = 0,
 			};
 		}
 

@@ -58,8 +58,6 @@ namespace FindItBuildingMenu.Systems
 		private int _appliedMenuIndex;
 		private ValueBindingHelper<bool> _ShowZoningHierarchy = null!;
 		private ValueBindingHelper<ZoneCatalogEntry[]> _ZoneCatalog = null!;
-		private ValueBindingHelper<bool> _BuildingCapacityFilterVisible = null!;
-		private ValueBindingHelper<int> _BuildingCapacityFloor = null!;
 		private ValueBindingHelper<bool> _IsExpanded;
 		private ValueBindingHelper<double> _ScrollIndex;
 		private ValueBindingHelper<double> _MaxScrollIndex;
@@ -155,8 +153,6 @@ namespace FindItBuildingMenu.Systems
 			_IsSearchLoading = CreateBinding("IsSearchLoading", false);
 			_IsWindowLocked = CreateBinding("IsWindowLocked", false);
 			_BuildingLensEnabled = CreateBinding("BuildingLensEnabled", "SetBuildingLensEnabled", false, SetBuildingLensEnabled);
-			_BuildingCapacityFilterVisible = CreateBinding("BuildingCapacityFilterVisible", false);
-			_BuildingCapacityFloor = CreateBinding("BuildingCapacityFloor", 0);
 			_IsExpanded = CreateBinding("IsExpanded", "SetIsExpanded", false, _ => ExpandedToggled());
 			_ActivePrefabId = CreateBinding("ActivePrefabId", 0);
 			// Lets the UI know whether to render the lens in place of the
@@ -240,7 +236,6 @@ namespace FindItBuildingMenu.Systems
 			CreateTrigger<int>("SetBuildingCatalogOffset", SetBuildingCatalogOffset);
 			CreateTrigger<int>("ToggleBuildingCatalogCompare", ToggleBuildingCatalogCompare);
 			CreateTrigger("ClearBuildingCatalogCompare", ClearBuildingCatalogCompare);
-			CreateTrigger<int>("SetBuildingCapacityFloor", SetBuildingCapacityFloor);
 				CreateTrigger<string, string, string>("SetBuildingCatalogMetricRange", SetBuildingCatalogMetricRange);
 				CreateTrigger("ClearBuildingCatalogMetricRanges", ClearBuildingCatalogMetricRanges);
 				CreateTrigger<string, string>("ToggleBuildingLensFacet", ToggleBuildingLensFacet);

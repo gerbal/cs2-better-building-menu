@@ -86,9 +86,12 @@ export const ZoningHierarchyComponent = () => {
         {active.densities.map((tier) => {
           // "Any" is not a tier — it is the absence of one — so it gets its own
           // heading rather than being labelled as a density.
+          // Deliberately not the Zone<density> keys: those read '"Low"
+          // Buildings' because they label buildings of a density, and this
+          // labels the zones themselves.
           const heading = tier.density === "Any"
             ? translate("Tooltip.LABEL[FindItBuildingMenu.ZoneNoDensity]", "No density tier") ?? "No density tier"
-            : translate(`Tooltip.LABEL[FindItBuildingMenu.Zone${tier.density}]`, tier.density) ?? tier.density;
+            : translate(`Tooltip.LABEL[FindItBuildingMenu.ZoneTier${tier.density}]`, tier.density) ?? tier.density;
 
           return (
             <div className={styles.tier} key={tier.density}>

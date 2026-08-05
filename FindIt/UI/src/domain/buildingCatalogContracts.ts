@@ -49,8 +49,6 @@ export const setSortColumnCommand = (column: SortColumn): TriggerCommand => crea
 export const setSortDescendingCommand = (descending: boolean): TriggerCommand =>
   createTriggerCommand("SetBuildingCatalogSortDescending", descending);
 export const setCatalogOffsetCommand = (offset: number): TriggerCommand => createTriggerCommand("SetBuildingCatalogOffset", offset);
-export const setBuildingCapacityFloorCommand = (floor: number): TriggerCommand =>
-  createTriggerCommand("SetBuildingCapacityFloor", normalizeCapacityFloor(floor));
 export const setBuildingCatalogMetricRangeCommand = (id: MetricRangeId, minText: string, maxText: string): TriggerCommand =>
   createTriggerCommand("SetBuildingCatalogMetricRange", id, minText, maxText);
 export const clearBuildingCatalogMetricRangesCommand = (): TriggerCommand =>

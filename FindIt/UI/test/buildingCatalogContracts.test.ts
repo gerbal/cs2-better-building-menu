@@ -12,7 +12,6 @@ import {
   normalizeCatalogOffset,
   pickerOptionCommand,
   searchChangedCommand,
-  setBuildingCapacityFloorCommand,
   setBuildingCatalogMetricRangeCommand,
   setCatalogOffsetCommand,
   setCurrentCategoryCommand,
@@ -76,13 +75,6 @@ describe("FindItBuildingMenu UI binding contracts", () => {
     assert.deepEqual(searchChangedCommand("road"), { method: "SearchChanged", args: ["road"] });
     assert.deepEqual(setCurrentCategoryCommand(4), { method: "SetCurrentCategory", args: [4] });
     assert.deepEqual(setCurrentSubCategoryCommand(12), { method: "SetCurrentSubCategory", args: [12] });
-  });
-
-  it("keeps the Education capacity-floor filter bounded and typed", () => {
-    assert.deepEqual(setBuildingCapacityFloorCommand(500), { method: "SetBuildingCapacityFloor", args: [500] });
-    assert.deepEqual(setBuildingCapacityFloorCommand(-10), { method: "SetBuildingCapacityFloor", args: [0] });
-    assert.deepEqual(setBuildingCapacityFloorCommand(10001), { method: "SetBuildingCapacityFloor", args: [10000] });
-    assert.deepEqual(setBuildingCapacityFloorCommand(Number.NaN), { method: "SetBuildingCapacityFloor", args: [0] });
   });
 
   it("resets direction for a new sort column and toggles repeated clicks", () => {

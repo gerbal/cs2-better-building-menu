@@ -32,7 +32,7 @@ public sealed class BuildingCatalogLensStateTests
             MinLotDepth: null,
             MaxLotDepth: null);
 
-        BuildingCatalogLensState cleared = new BuildingCatalogLensState(query, ranges, 500).ClearFilters();
+        BuildingCatalogLensState cleared = new BuildingCatalogLensState(query, ranges).ClearFilters();
 
         Assert.Null(cleared.Query.BuildingTypes);
         Assert.Null(cleared.Query.Themes);
@@ -43,7 +43,6 @@ public sealed class BuildingCatalogLensStateTests
         Assert.Equal(0, cleared.Query.Offset);
         Assert.False(cleared.MetricRanges.HasSelection);
         Assert.Equal(BuildingCatalogMetricRangeState.Empty, cleared.MetricRanges);
-        Assert.Equal(0, cleared.EducationCapacityFloor);
     }
 
     [Fact]

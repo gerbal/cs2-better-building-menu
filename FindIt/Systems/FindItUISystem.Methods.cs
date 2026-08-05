@@ -40,20 +40,7 @@ namespace FindItBuildingMenu.Systems
 			var subCategory = string.IsNullOrEmpty(category) || FindItUtil.CurrentSubCategory == PrefabSubCategory.Any
 				? string.Empty
 				: FindItUtil.CurrentSubCategory.ToString();
-			var capacityFilterVisible = IsEducationCapacityFilterVisible();
-			if (!capacityFilterVisible)
-			{
-				_BuildingCapacityFloor.Value = 0;
-			}
-
-			_BuildingCapacityFilterVisible.Value = capacityFilterVisible;
 			double? effectiveCapacityMinimum = _buildingMetricRanges.MinCapacity;
-			if (capacityFilterVisible && _BuildingCapacityFloor.Value > 0)
-			{
-				effectiveCapacityMinimum = effectiveCapacityMinimum.HasValue
-					? Math.Max(effectiveCapacityMinimum.Value, _BuildingCapacityFloor.Value)
-					: _BuildingCapacityFloor.Value;
-			}
 
 			BuildingCatalogQuery previousQuery = _buildingCatalogQuery;
 
@@ -221,17 +208,6 @@ namespace FindItBuildingMenu.Systems
 			_ToolSurfaceDescriptorsBinding.Value = ToolSurfaceCatalog.GetDescriptors().ToArray();
 		}
 
-		private bool IsEducationCapacityFilterVisible()
-		{
-			if (_BuildingLensEnabled)
-			{
-				return _buildingLensSection == VanillaBuildMenuTaxonomy.ServiceBuildings
-					&& _buildingLensSubCategory == PrefabSubCategory.ServiceBuildings_EducationResearch.ToString();
-			}
-
-			return FindItUtil.CurrentCategory == PrefabCategory.ServiceBuildings
-				&& FindItUtil.CurrentSubCategory == PrefabSubCategory.ServiceBuildings_EducationResearch;
-		}
 
 		private PrefabUIEntry[] GetDisplayedPrefabs()
 		{
