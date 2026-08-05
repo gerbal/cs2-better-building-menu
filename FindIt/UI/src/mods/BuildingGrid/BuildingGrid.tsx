@@ -1,3 +1,4 @@
+import { bindValue, useValue } from "cs2/api";
 import { Button, Scrollable, Tooltip } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
@@ -9,7 +10,12 @@ import {
 } from "domain/buildingLensMetricFormat";
 import { getShelf, recordPlacement } from "domain/buildingShelf";
 import { rankBuildingMatches } from "domain/buildingSearchRank";
+import mod from "../../../mod.json";
 import styles from "./buildingGrid.module.scss";
+
+const ShowShelf$ = bindValue<boolean>(mod.id, "BuildingLensShowShelf", true);
+const ShelfSize$ = bindValue<number>(mod.id, "BuildingLensShelfSize", 12);
+const TileSize$ = bindValue<number>(mod.id, "BuildingLensTileSize", 88);
 
 interface BuildingGridProps {
   entries: BuildingCatalogEntry[];
@@ -28,6 +34,9 @@ interface BuildingGridProps {
  */
 export const BuildingGrid = ({ entries, searchText, onPlace }: BuildingGridProps) => {
   const { translate } = useLocalization();
+  const showShelf = useValue(ShowShelf$);
+  const shelfSize = useValue(ShelfSize$);
+  const tileSize = useValue(TileSize$);
   // Relevance while a query is active, stable position while browsing. The two
   // orders want opposite things and rankBuildingMatches falls back to the
   // stable one for an empty query and for ties.
@@ -36,7 +45,9 @@ export const BuildingGrid = ({ entries, searchText, onPlace }: BuildingGridProps
   const byId = new Map(entries.map((entry) => [entry.id, entry]));
   // Only what is in this category; the shelf is global but must not advertise
   // buildings the current filter has excluded.
-  const shelf = shelfIds.map((id) => byId.get(id)).filter(Boolean) as BuildingCatalogEntry[];
+  const shelf = (showShelf ? shelfIds.slice(0, shelfSize) : [])
+    .map((id) => byId.get(id))
+    .filter(Boolean) as BuildingCatalogEntry[];
 
   const place = (entry: BuildingCatalogEntry) => {
     recordPlacement(entry.id);
@@ -63,7 +74,13 @@ export const BuildingGrid = ({ entries, searchText, onPlace }: BuildingGridProps
           </div>
         }
       >
-        <Button className={styles.tile} variant="icon" onSelect={() => place(entry)} aria-label={label}>
+        <Button
+          className={styles.tile}
+          style={{ width: `${tileSize}rem` }}
+          variant="icon"
+          onSelect={() => place(entry)}
+          aria-label={label}
+        >
           {entry.thumbnail ? <img className={styles.thumb} src={entry.thumbnail} alt="" /> : null}
           <span className={styles.tileName}>{label}</span>
         </Button>

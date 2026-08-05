@@ -81,6 +81,42 @@ namespace FindItBuildingMenu
 		[SettingsUISection(SETTINGS, BEHAVIOR)]
 		public bool ReplaceVanillaBuildMenu { get; set; }
 
+		// The Zones menu opens a zoning hierarchy rather than a filtered
+		// building table, so it is separable from the rest: a player may want
+		// the service menus replaced but the familiar zone grid kept.
+		[SettingsUISection(SETTINGS, BEHAVIOR)]
+		[SettingsUIDisableByCondition(typeof(FindItSettings), nameof(IsVanillaMenuReplacementOff))]
+		public bool ReplaceVanillaZonesMenu { get; set; } = true;
+
+		// A search that finds nothing in the current section offers to widen by
+		// default rather than widening on its own, so the section scope is not
+		// silently discarded. Players who mostly search globally can flip it.
+		[SettingsUISection(SETTINGS, BEHAVIOR)]
+		public bool AutoWidenSearch { get; set; }
+
+		// Grid by default: recognising a thumbnail is the fast path back to the
+		// map, and the table is for the rarer moment of genuine comparison.
+		[SettingsUISection(SETTINGS, UIUX)]
+		public bool BuildingLensDefaultToTable { get; set; }
+
+		[SettingsUISection(SETTINGS, UIUX)]
+		public bool BuildingLensShowShelf { get; set; } = true;
+
+		// Bounded because a shelf whose shape cannot be learned is just another
+		// list; twelve is about the limit of positions worth memorising.
+		[SettingsUISection(SETTINGS, UIUX)]
+		[SettingsUISlider(min = 4, max = 16, step = 2, scalarMultiplier = 1, unit = Unit.kInteger)]
+		[SettingsUIDisableByCondition(typeof(FindItSettings), nameof(IsShelfHidden))]
+		public int BuildingLensShelfSize { get; set; } = 12;
+
+		[SettingsUISection(SETTINGS, UIUX)]
+		[SettingsUISlider(min = 64, max = 128, step = 8, scalarMultiplier = 1, unit = Unit.kInteger)]
+		public int BuildingLensTileSize { get; set; } = 88;
+
+		public bool IsVanillaMenuReplacementOff() => !ReplaceVanillaBuildMenu;
+
+		public bool IsShelfHidden() => !BuildingLensShowShelf;
+
 		[SettingsUISection(SETTINGS, BEHAVIOR)]
 		public bool OpenPanelOnPicker { get; set; } = true;
 

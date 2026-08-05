@@ -85,6 +85,7 @@ const BuildingLensFacets$ = bindValue<BuildingLensFacetState>(mod.id, "BuildingL
 const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState>(mod.id, "BuildingCatalogMetricRanges");
 const BuildingLensLegacyFilters$ = bindValue<string[]>(mod.id, "BuildingLensLegacyFilters");
 const BuildingCatalogMatchesElsewhere$ = bindValue<number>(mod.id, "BuildingCatalogMatchesElsewhere", 0);
+const LensDefaultToTable$ = bindValue<boolean>(mod.id, "BuildingLensDefaultToTable", false);
 
 const educationCapacityPresets = [0, 100, 500, 1000];
 
@@ -125,7 +126,10 @@ export const BuildingCatalogComponent = () => {
   // and the table is for the rarer moment when you are genuinely comparing.
   // Survives remount for the same reason the drawers do — placing a building
   // unmounts this panel.
-  const [tableMode, setTableModeState] = useState(() => getLensDisclosure(LENS_VIEW_MODE_KEY, false));
+  const defaultToTable = useValue(LensDefaultToTable$);
+  // The setting supplies the default; the in-session toggle overrides it and
+  // survives remounts, so changing view mid-session is not undone by placing.
+  const [tableMode, setTableModeState] = useState(() => getLensDisclosure(LENS_VIEW_MODE_KEY, defaultToTable));
   const setTableMode = (next: boolean) => {
     setLensDisclosure(LENS_VIEW_MODE_KEY, next);
     setTableModeState(next);

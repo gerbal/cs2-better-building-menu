@@ -48,6 +48,10 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<bool> _BuildingLensEnabled = null!;
 		private ValueBindingHelper<bool> _ReplaceVanillaBuildMenu = null!;
 		private ValueBindingHelper<int> _BuildingCatalogMatchesElsewhere = null!;
+		private ValueBindingHelper<bool> _LensDefaultToTable = null!;
+		private ValueBindingHelper<bool> _LensShowShelf = null!;
+		private ValueBindingHelper<int> _LensShelfSize = null!;
+		private ValueBindingHelper<int> _LensTileSize = null!;
 		// Set when a toolbar preset is applied, so the game's echo of the armed
 		// tool's menu can be told apart from a real click. See MenuEchoGuard.
 		private int? _appliedMenuFrame;
@@ -161,6 +165,12 @@ namespace FindItBuildingMenu.Systems
 			_ReplaceVanillaBuildMenu = CreateBinding("ReplaceVanillaBuildMenu", Mod.Settings.ReplaceVanillaBuildMenu);
 			_ShowZoningHierarchy = CreateBinding("ShowZoningHierarchy", false);
 			_BuildingCatalogMatchesElsewhere = CreateBinding("BuildingCatalogMatchesElsewhere", 0);
+			// Layout preferences the UI needs. Read once at setup; these are not
+			// expected to change mid-session.
+			_LensDefaultToTable = CreateBinding("BuildingLensDefaultToTable", Mod.Settings.BuildingLensDefaultToTable);
+			_LensShowShelf = CreateBinding("BuildingLensShowShelf", Mod.Settings.BuildingLensShowShelf);
+			_LensShelfSize = CreateBinding("BuildingLensShelfSize", Mod.Settings.BuildingLensShelfSize);
+			_LensTileSize = CreateBinding("BuildingLensTileSize", Mod.Settings.BuildingLensTileSize);
 			CreateTrigger("SearchEverything", SearchEverything);
 			_ZoneCatalog = CreateBinding("ZoneCatalog", new ZoneCatalogEntry[0]);
 			_PanelHeight = CreateBinding("PanelHeight", 0f);
