@@ -3,9 +3,11 @@ import { useLocalization } from "cs2/l10n";
 import mod from "../../../mod.json";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import { getBuildingLensCatalogMaxHeight } from "domain/buildingLensLayout";
-import { getLensChoice } from "domain/buildingLensViewState";
+import { getLensChoice, setLensChoice } from "domain/buildingLensViewState";
+import { useState } from "react";
 import { getZoneFacts, selectZoneCommand, sortZonesForDisplay, zoneAsCatalogEntry, type ZoneEntry } from "domain/zoningHierarchy";
 import { GroupedResults, type CatalogViewMode } from "mods/GroupedResults/GroupedResults";
+import { ViewModeBar } from "mods/GroupedResults/ViewModeBar";
 import styles from "./zoningHierarchy.module.scss";
 
 const ZoneCatalog$ = bindValue<ZoneEntry[]>(mod.id, "ZoneCatalog", []);
@@ -97,6 +99,19 @@ export const ZoningHierarchyComponent = () => {
       : translate(`Tooltip.LABEL[FindItBuildingMenu.ZoneTier${density}]`, density) ?? density;
   }
 
+  // List by default — zones are chosen by name and their thumbnails are
+  // near-identical coloured squares — but the choice is the player's and is
+  // shared with the catalog, so switching in one holds in the other.
+  const [viewMode, setViewModeState] = useState<CatalogViewMode>(() => {
+    const stored = getLensChoice(LENS_VIEW_MODE_KEY, "list") as CatalogViewMode;
+    return stored === "table" ? "list" : stored;
+  });
+
+  const setViewMode = (next: CatalogViewMode) => {
+    setLensChoice(LENS_VIEW_MODE_KEY, next);
+    setViewModeState(next);
+  };
+
   const maxHeight = getBuildingLensCatalogMaxHeight(
     typeof window === "undefined" ? 720 : window.innerHeight
   );
@@ -114,10 +129,23 @@ export const ZoningHierarchyComponent = () => {
     trigger(command.group, command.method, ...command.args);
   };
 
-  const viewMode = getLensChoice(LENS_VIEW_MODE_KEY, "list") as CatalogViewMode;
-
   return (
     <div className={styles.zoning} style={{ maxHeight: `${maxHeight}rem` }}>
+      {/* The same toolbar the catalog has. Zoning previously inherited whatever
+          view mode the catalog was last set to and offered no way to change it
+          from where the player was standing — the same results deserve the same
+          affordances however you arrived at them. */}
+      <div className={styles.toolbar}>
+        <div className={styles.title}>
+          {translate("Tooltip.LABEL[FindItBuildingMenu.Zones]", "Zones") ?? "Zones"}
+        </div>
+        <div className={styles.count}>{entries.length.toLocaleString()}</div>
+        <div className={styles.toolbarSpacer} />
+        {/* Table is omitted rather than disabled: its columns are building
+            metrics — cost, workers, capacity — that a zone does not have. */}
+        <ViewModeBar value={viewMode} onChange={setViewMode} omit={["table"]} />
+      </div>
+
       <GroupedResults
         entries={entries}
         // Family then density, which is the hierarchy this view always had —
@@ -132,7 +160,7 @@ export const ZoningHierarchyComponent = () => {
         //
         // Table still falls back: there is no zone table, and its columns are
         // all building metrics a zone does not have.
-        viewMode={viewMode === "table" ? "list" : viewMode}
+        viewMode={viewMode}
         searchText={searchText}
         onPlace={assign}
       />

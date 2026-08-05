@@ -90,6 +90,7 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
         // measurement of something that does not exist, so the fact is dropped
         // rather than stated.
         const lotKnown = hasFootprint(entry.lotWidth, entry.lotDepth);
+        const facts = (entry as unknown as { facts?: string[] }).facts ?? [];
         // Category-aware, and it returns nothing for a category where capacity
         // means nothing — so a park bench's card stays as narrow as a
         // hospital's is informative, without a rule per category here.
@@ -103,7 +104,13 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
             tooltip={
               <div className={styles.card}>
                 <div className={styles.cardName}>{label}</div>
-                <div className={styles.cardMeta}>{lotKnown ? `${cost} · ${lot}` : cost}</div>
+                {/* A zone has no cost and no lot, so the building meta line was
+                    a lone em dash — a tooltip that costs a hover and says
+                    nothing. Where the entry carries its own facts, those are
+                    the answer. */}
+                <div className={styles.cardMeta}>
+                  {facts.length > 0 ? facts.join(" · ") : lotKnown ? `${cost} · ${lot}` : cost}
+                </div>
               </div>
             }
           >
@@ -118,11 +125,11 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
                 : <span className={classNames(styles.iconPlaceholder, cards && styles.iconLarge)} aria-hidden="true" />}
               <span className={styles.text}>
                 <span className={styles.name}>{label}</span>
-                {cards && Array.isArray((entry as { facts?: string[] }).facts) && (
+                {cards && facts.length > 0 && (
                   <span className={styles.facts}>
                     {/* A zone carries its own facts: the game measures how tall
                         it grows and what it trades in, and shows neither. */}
-                    {(entry as unknown as { facts: string[] }).facts.map((fact, index) => (
+                    {facts.map((fact, index) => (
                       <span key={fact}>
                         {index > 0 && <span className={styles.factDot} aria-hidden="true">·</span>}
                         <span className={styles.fact}>{fact}</span>
@@ -130,7 +137,7 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
                     ))}
                   </span>
                 )}
-                {cards && !Array.isArray((entry as { facts?: string[] }).facts) && (
+                {cards && facts.length === 0 && (
                   <span className={styles.facts}>
                     {/* Footprint first, and always: it is a constraint rather
                         than a comparison — whether the thing fits the gap you

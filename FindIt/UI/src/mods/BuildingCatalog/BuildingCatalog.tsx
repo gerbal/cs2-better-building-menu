@@ -49,7 +49,8 @@ import { findItSurfacePort } from "domain/findItSurfacePort";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 import { getSearchScopeNotice } from "domain/buildingSearchRank";
 import { getLensChoice, getLensDisclosure, setLensChoice, setLensDisclosure } from "domain/buildingLensViewState";
-import { GroupedResults } from "mods/GroupedResults/GroupedResults";
+import { GroupedResults, type CatalogViewMode } from "mods/GroupedResults/GroupedResults";
+import { ViewModeBar } from "mods/GroupedResults/ViewModeBar";
 import {
   DEFAULT_GROUP_DIMENSION,
   GROUP_DIMENSIONS,
@@ -93,14 +94,8 @@ const LENS_VIEW_MODE_KEY = "viewMode";
 const LENS_GROUP_KEY = "groupBy";
 
 /** Grid recognises, List scans, Table compares. */
-type ViewMode = "grid" | "list" | "cards" | "table";
+type ViewMode = CatalogViewMode;
 
-const VIEW_MODES: Array<{ id: ViewMode; localizationKey: string; fallback: string }> = [
-  { id: "grid", localizationKey: "Tooltip.LABEL[FindItBuildingMenu.ViewGrid]", fallback: "Grid" },
-  { id: "list", localizationKey: "Tooltip.LABEL[FindItBuildingMenu.ViewList]", fallback: "List" },
-  { id: "cards", localizationKey: "Tooltip.LABEL[FindItBuildingMenu.ViewCards]", fallback: "Cards" },
-  { id: "table", localizationKey: "Tooltip.LABEL[FindItBuildingMenu.ViewTable]", fallback: "Table" },
-];
 
 const metricColumns: Array<{
   key: BuildingLensMetric;
@@ -367,36 +362,7 @@ export const BuildingCatalogComponent = () => {
           <span className={styles.sortSummaryLabel}>{sortPresentation.compact.label}</span>
           <span className={styles.sortDirection} aria-hidden="true">{sortPresentation.compact.indicator}</span>
         </div>
-        {/* Three modes, so a two-state toggle no longer says it — and built
-            from the same vanilla ToolButton the game's own Pack and Theme
-            filters use, rather than hand-padded buttons that only resemble
-            them. Selected state comes from the component. */}
-        <div className={styles.viewModes}>
-          {VIEW_MODES.map((option) => {
-            const label = translate(option.localizationKey, option.fallback) ?? option.fallback;
-
-            return (
-              <VanillaComponentResolver.instance.ToolButton
-                key={option.id}
-                selected={option.id === viewMode}
-                tooltip={label}
-                onSelect={() => setViewMode(option.id)}
-                // The vanilla filters are icon-only and this carries a word,
-                // so there is no glyph to pass. Empty is the same thing
-                // OptionsPanel does for its unselected checkbox.
-                src=""
-                focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED}
-                className={classNames(
-                  VanillaComponentResolver.instance.toolButtonTheme.button,
-                  styles.viewMode,
-                  option.id === viewMode && styles.viewModeSelected
-                )}
-              >
-                <span className={styles.viewModeLabel}>{label}</span>
-              </VanillaComponentResolver.instance.ToolButton>
-            );
-          })}
-        </div>
+        <ViewModeBar value={viewMode} onChange={setViewMode} />
         <Button
           className={styles.sortDisclosure}
           variant="icon"
