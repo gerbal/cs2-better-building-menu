@@ -96,6 +96,11 @@ namespace FindItBuildingMenu
 
 		// Grid by default: recognising a thumbnail is the fast path back to the
 		// map, and the table is for the rarer moment of genuine comparison.
+		// Answers "will it reach" in the coordinate system the player is looking
+		// at, rather than as a number in a panel.
+		[SettingsUISection(SETTINGS, UIUX)]
+		public bool ShowCoverageOverlay { get; set; } = true;
+
 		[SettingsUISection(SETTINGS, UIUX)]
 		public bool BuildingLensDefaultToTable { get; set; }
 

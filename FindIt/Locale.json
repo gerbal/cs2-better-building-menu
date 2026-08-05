@@ -301,5 +301,7 @@
   "Options.OPTION_DESCRIPTION[FindItBuildingMenu.FindItBuildingMenu.Mod.FindItSettings.BuildingLensShelfSize]": "How many buildings the shelf holds. Deliberately small: a shelf whose shape you cannot learn is just another list.",
   "Options.OPTION[FindItBuildingMenu.FindItBuildingMenu.Mod.FindItSettings.BuildingLensTileSize]": "Tile size",
   "Options.OPTION_DESCRIPTION[FindItBuildingMenu.FindItBuildingMenu.Mod.FindItSettings.BuildingLensTileSize]": "Width of each building tile in the grid. Larger tiles are easier to recognise by silhouette; smaller ones fit more on screen.",
-  "Tooltip.LABEL[FindItBuildingMenu.RolePowerPlant]": "Power plant"
+  "Tooltip.LABEL[FindItBuildingMenu.RolePowerPlant]": "Power plant",
+  "Options.OPTION[FindItBuildingMenu.FindItBuildingMenu.Mod.FindItSettings.ShowCoverageOverlay]": "Show service radius while placing",
+  "Options.OPTION_DESCRIPTION[FindItBuildingMenu.FindItBuildingMenu.Mod.FindItSettings.ShowCoverageOverlay]": "Draw the service coverage radius on the terrain under the building you are placing, so you can see whether it reaches the neighbourhood that needs it before committing."
 }
