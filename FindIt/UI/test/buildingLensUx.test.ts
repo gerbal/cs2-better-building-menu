@@ -194,3 +194,35 @@ describe("Building Lens chrome budget", () => {
     assert.match(buildingCatalogSource, /data-sort-options="expanded"/);
   });
 });
+
+describe("Vanilla menu interception", () => {
+  it("reads an entity index from every shape the toolbar binding uses", async () => {
+    const { toolbarEntityIndex } = await import("../src/domain/vanillaMenuWatch.ts");
+
+    // The toolbar binding hands back a bare number in some places and an
+    // {index, version} ref in others; ToolbarEntity allows both plus a string.
+    assert.equal(toolbarEntityIndex({ index: 42, version: 1 }), 42);
+    assert.equal(toolbarEntityIndex(42), 42);
+    assert.equal(toolbarEntityIndex("42"), 42);
+  });
+
+  it("treats a missing or null selection as no menu rather than entity 0", async () => {
+    const { toolbarEntityIndex } = await import("../src/domain/vanillaMenuWatch.ts");
+
+    // Entity.Null is index 0, and firing the trigger for it would reopen the
+    // lens every time the player closes a menu.
+    assert.equal(toolbarEntityIndex(null), null);
+    assert.equal(toolbarEntityIndex(undefined), null);
+    assert.equal(toolbarEntityIndex({ index: 0 }), null);
+    assert.equal(toolbarEntityIndex("not-a-number"), null);
+  });
+
+  it("builds the trigger payload the backend expects", async () => {
+    const { vanillaMenuSelectedCommand } = await import("../src/domain/vanillaMenuWatch.ts");
+
+    assert.deepEqual(vanillaMenuSelectedCommand(42), {
+      method: "VanillaMenuSelected",
+      args: [42],
+    });
+  });
+});

@@ -38,6 +38,7 @@ namespace FindItBuildingMenu.Systems
 		private ComponentType? roadBuilderDiscarded;
 		private static Dictionary<Entity, ZoneTypeFilter> _zoneTypeCache;
 		private static List<ZoneCatalogEntry> _zoneCatalog = new();
+		private static Dictionary<int, string> _assetMenuNames = new();
 		private readonly List<IPrefabCategoryProcessor> _prefabCategoryProcessors = new();
 
 		protected override void OnCreate()
@@ -135,6 +136,7 @@ namespace FindItBuildingMenu.Systems
 				AddAllCategories();
 
 				IndexZones();
+				IndexAssetMenus();
 			}
 
 			foreach (var processor in _prefabCategoryProcessors)
@@ -700,6 +702,30 @@ namespace FindItBuildingMenu.Systems
 			}
 		}
 
+		/// <summary>
+		/// Caches the vanilla toolbar's asset menus by entity index, so a menu
+		/// selection arriving from the UI can be resolved to a prefab name.
+		/// </summary>
+		private void IndexAssetMenus()
+		{
+			var query = GetEntityQuery(
+				ComponentType.ReadOnly<UIAssetMenuData>(),
+				ComponentType.ReadOnly<PrefabData>());
+			var menus = query.ToEntityArray(Allocator.Temp);
+			var names = new Dictionary<int, string>();
+
+			for (var i = 0; i < menus.Length; i++)
+			{
+				if (_prefabSystem.TryGetPrefab<PrefabBase>(menus[i], out var prefab) && prefab?.name is not null)
+				{
+					names[menus[i].Index] = prefab.name;
+				}
+			}
+
+			_assetMenuNames = names;
+			Mod.Log.Info($"Indexed Asset Menus Count: {_assetMenuNames.Count}");
+		}
+
 		private void IndexZones()
 		{
 			var zonesQuery = GetEntityQuery(
@@ -805,6 +831,19 @@ namespace FindItBuildingMenu.Systems
 		/// Every assignable zone, grouped by family in the zoning hierarchy.
 		/// </summary>
 		public static IReadOnlyList<ZoneCatalogEntry> GetZoneCatalog() => _zoneCatalog;
+
+		/// <summary>
+		/// The prefab name of a vanilla toolbar asset menu, by entity index.
+		/// </summary>
+		/// <remarks>
+		/// The UI can read the game's toolbar.selectedAssetMenu binding but only
+		/// receives an entity, and entity indices are runtime values that must
+		/// not be persisted. Resolving the name belongs here, where the prefab
+		/// system is available.
+		/// </remarks>
+		public static string? GetAssetMenuName(int entityIndex) => _assetMenuNames.TryGetValue(entityIndex, out var name)
+			? name
+			: null;
 
 		public static ZoneTypeFilter GetZoneType(Entity zonePrefab)
 		{

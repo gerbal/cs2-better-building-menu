@@ -36,6 +36,77 @@ namespace FindItBuildingMenu.Systems
 			SetCurrentSubCategory((int)PrefabSubCategory.Any);
 		}
 
+		/// <summary>
+		/// A vanilla toolbar menu was opened: show the lens filtered to it.
+		/// </summary>
+		/// <remarks>
+		/// Declines quietly whenever the lens has nothing better to offer than
+		/// the vanilla grid — the setting is off, the menu is Roads or
+		/// Landscaping, or it is a modded menu we have no preset for — so the
+		/// vanilla menu keeps working untouched in all those cases.
+		/// </remarks>
+		private void VanillaMenuSelected(int menuEntityIndex)
+		{
+			if (!Mod.Settings.ReplaceVanillaBuildMenu)
+			{
+				return;
+			}
+
+			var menuName = PrefabIndexingSystem.GetAssetMenuName(menuEntityIndex);
+			var preset = VanillaMenuPresets.Resolve(menuName);
+
+			if (preset is null)
+			{
+				// Roads, Landscaping, Areas, or a modded menu. The player asked
+				// for that menu, so get out of its way: the lens panel sits over
+				// exactly where the vanilla asset grid appears, and leaving it up
+				// would hide the menu they just clicked.
+				if (_ShowFindItPanel)
+				{
+					ToggleFindItPanel(false);
+				}
+
+				return;
+			}
+
+			if (preset.IsZoning)
+			{
+				// Zones are assignment tools rather than buildings, so the
+				// zoning hierarchy handles them instead of the building table.
+				_ZoneCatalog.Value = PrefabIndexingSystem.GetZoneCatalog().ToArray();
+				_ShowZoningHierarchy.Value = true;
+				ToggleFindItPanel(true);
+				return;
+			}
+
+			_ShowZoningHierarchy.Value = false;
+			_BuildingLensEnabled.Value = true;
+
+			// With the lens enabled RefreshBuildingCatalog deliberately ignores
+			// FindItUtil's category and reads the lens's own section and
+			// subcategory instead, so the preset has to be applied there.
+			var section = preset.Category == PrefabCategory.ServiceBuildings
+				? VanillaBuildMenuTaxonomy.ServiceBuildings
+				: VanillaBuildMenuTaxonomy.AllBuildings;
+			var selection = VanillaBuildMenuSelection.Normalize(
+				section,
+				preset.SubCategory == PrefabSubCategory.Any
+					? VanillaBuildMenuTaxonomy.Any
+					: preset.SubCategory.ToString());
+
+			_buildingLensSection = selection.Section;
+			_buildingLensSubCategory = selection.SubCategory;
+			_BuildingLensSectionBinding.Value = _buildingLensSection;
+			_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
+			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0 };
+
+			scrollIndex = 0;
+
+			ToggleFindItPanel(true);
+			RefreshBuildingLensNavigation();
+			RefreshBuildingCatalog();
+		}
+
 		private void SetCurrentSubCategory(int category)
 		{
 			FindItUtil.CurrentSubCategory = (PrefabSubCategory)category;

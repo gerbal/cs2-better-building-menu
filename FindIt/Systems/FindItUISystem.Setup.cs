@@ -46,6 +46,9 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<bool> _ClearSearchBar;
 		private ValueBindingHelper<bool> _ShowFindItPanel;
 		private ValueBindingHelper<bool> _BuildingLensEnabled = null!;
+		private ValueBindingHelper<bool> _ReplaceVanillaBuildMenu = null!;
+		private ValueBindingHelper<bool> _ShowZoningHierarchy = null!;
+		private ValueBindingHelper<ZoneCatalogEntry[]> _ZoneCatalog = null!;
 		private ValueBindingHelper<bool> _BuildingCapacityFilterVisible = null!;
 		private ValueBindingHelper<int> _BuildingCapacityFloor = null!;
 		private ValueBindingHelper<bool> _IsExpanded;
@@ -147,6 +150,12 @@ namespace FindItBuildingMenu.Systems
 			_BuildingCapacityFloor = CreateBinding("BuildingCapacityFloor", 0);
 			_IsExpanded = CreateBinding("IsExpanded", "SetIsExpanded", false, _ => ExpandedToggled());
 			_ActivePrefabId = CreateBinding("ActivePrefabId", 0);
+			// Lets the UI know whether to render the lens in place of the
+			// vanilla asset grid. Read once at setup; the setting is not
+			// expected to change mid-session.
+			_ReplaceVanillaBuildMenu = CreateBinding("ReplaceVanillaBuildMenu", Mod.Settings.ReplaceVanillaBuildMenu);
+			_ShowZoningHierarchy = CreateBinding("ShowZoningHierarchy", false);
+			_ZoneCatalog = CreateBinding("ZoneCatalog", new ZoneCatalogEntry[0]);
 			_PanelHeight = CreateBinding("PanelHeight", 0f);
 			_PanelWidth = CreateBinding("PanelWidth", 0f);
 			_ScrollIndex = CreateBinding("ScrollIndex", 0D);
@@ -200,6 +209,10 @@ namespace FindItBuildingMenu.Systems
 			CreateTrigger("FindItCloseToggled", () => ToggleFindItPanel(false));
 			CreateTrigger("FindItIconToggled", FindItIconClicked);
 			CreateTrigger<int>("SetCurrentPrefab", TryActivatePrefabTool);
+			// The UI watches the game's own toolbar.selectedAssetMenu binding and
+			// hands the entity index here; resolving the prefab name and the
+			// preset belongs on this side.
+			CreateTrigger<int>("VanillaMenuSelected", VanillaMenuSelected);
 			CreateTrigger<int>("ToggleFavorited", FindItUtil.ToggleFavorited);
 			CreateTrigger("ToggleLock", ToggleLock);
 			CreateTrigger("OnSearchFocused", () => _FocusSearchBar.Value = false);
