@@ -902,9 +902,11 @@ namespace FindItBuildingMenu.Systems
 					// all 2x2 fills a 2-wide strip and nothing else, which
 					// decides how the block gets drawn and is stated nowhere.
 					MinLotWidth: lotSizes.TryGetValue(zone, out var zoneLots) ? zoneLots.MinWidth : 0,
-					MaxLotWidth: zoneLots.MaxWidth,
-					MinLotDepth: zoneLots.MinDepth,
-					MaxLotDepth: zoneLots.MaxDepth));
+					MaxLotWidth: zoneLots?.MaxWidth ?? 0,
+					MinLotDepth: zoneLots?.MinDepth ?? 0,
+					MaxLotDepth: zoneLots?.MaxDepth ?? 0,
+					Footprints: zoneLots?.Footprints,
+					FootprintOverflow: zoneLots?.FootprintOverflow ?? 0));
 			}
 
 			_zoneCatalog = catalog;

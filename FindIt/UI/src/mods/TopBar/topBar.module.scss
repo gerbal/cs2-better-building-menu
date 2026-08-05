@@ -229,7 +229,10 @@
   height: 32rem;
   padding: 4rem 12rem !important;
   color: var(--menuText2Normal);
-  font-size: var(--fontSizeXXS, 10rem);
+  // --fontSizeXXS is not a variable the game defines; Cohtml logged it as
+  // unresolvable on every frame. fontSizeS is real and is what the rest of
+  // this chrome uses.
+  font-size: var(--fontSizeS);
   letter-spacing: 0.4rem;
   text-transform: uppercase;
 

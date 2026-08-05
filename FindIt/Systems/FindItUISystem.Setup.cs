@@ -61,6 +61,10 @@ namespace FindItBuildingMenu.Systems
 		// Empty means every family. See ZoneFamilySelection.
 		private ValueBindingHelper<string[]> _BuildingLensZoneFamilies = null!;
 		private ValueBindingHelper<string> _BuildingCatalogGroupBy = null!;
+		// Whether the menu the toolbar currently has open is one the lens takes
+		// over. Lets the vanilla menu stay hidden after the panel is closed, so
+		// closing means closed rather than revealing the grid underneath.
+		private ValueBindingHelper<bool> _LensOwnsCurrentMenu = null!;
 		private string[] _zoneFamilies = System.Array.Empty<string>();
 		private ValueBindingHelper<bool> _IsExpanded;
 		private ValueBindingHelper<double> _ScrollIndex;
@@ -164,6 +168,7 @@ namespace FindItBuildingMenu.Systems
 			// expected to change mid-session.
 			_ReplaceVanillaBuildMenu = CreateBinding("ReplaceVanillaBuildMenu", Mod.Settings.ReplaceVanillaBuildMenu);
 			_ShowZoningHierarchy = CreateBinding("ShowZoningHierarchy", false);
+			_LensOwnsCurrentMenu = CreateBinding("LensOwnsCurrentMenu", false);
 			_BuildingCatalogMatchesElsewhere = CreateBinding("BuildingCatalogMatchesElsewhere", 0);
 			// Layout preferences the UI needs. Read once at setup; these are not
 			// expected to change mid-session.
