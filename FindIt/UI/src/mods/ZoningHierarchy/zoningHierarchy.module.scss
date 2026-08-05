@@ -19,33 +19,29 @@
   font-size: var(--fontSizeS);
 }
 
-.families {
+// The family tab strip is gone — families are chips in the shared row now, so
+// what remains here is a heading, shown only when more than one is on screen.
+.family {
+  display: flex;
+  flex-direction: column;
+}
+
+.familyLabel {
   display: flex;
   flex-direction: row;
-  flex-wrap: wrap;
-  gap: 4rem;
-  padding-bottom: 6rem;
+  align-items: center;
+  padding: 6rem 0 2rem;
+  color: var(--menuText1Normal);
+  font-size: var(--fontSizeS);
+  text-transform: uppercase;
+  letter-spacing: 0.6rem;
   border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
 }
 
-.family {
-  @include _base.transparentButton(false, true);
-  width: auto !important;
-  min-width: 38rem;
-  min-height: 34rem;
-  padding: 3rem 6rem;
-  border-radius: 3rem;
-  background-color: rgba(0, 0, 0, 0.2);
-}
-
-.familySelected {
-  background-color: rgba(255, 255, 255, 0.12);
-  border: 1rem solid var(--accentColorNormal);
-}
-
 .familyIcon {
-  width: 24rem;
-  height: 24rem;
+  width: 18rem;
+  height: 18rem;
+  margin-right: 6rem;
   object-fit: contain;
 }
 

@@ -38,13 +38,33 @@ const BuildingLensSubCategory$ = bindValue<string>(mod.id, "BuildingLensSubCateg
 const BuildingLensSectionList$ = bindValue<VanillaBuildMenuTab[]>(mod.id, "BuildingLensSectionList", []);
 const BuildingLensSubCategoryList$ = bindValue<VanillaBuildMenuTab[]>(mod.id, "BuildingLensSubCategoryList", []);
 const BuildingLensFacets$ = bindValue<BuildingLensFacetState | null>(mod.id, "BuildingLensFacets", null);
+const ShowZoningHierarchy$ = bindValue<boolean>(mod.id, "ShowZoningHierarchy", false);
+const BuildingLensZoneFamilies$ = bindValue<string[]>(mod.id, "BuildingLensZoneFamilies", []);
+const ZoneCatalog$ = bindValue<{ family?: string }[]>(mod.id, "ZoneCatalog", []);
+
+/** Family order as the vanilla Zones menu presents its category tabs. */
+const ZONE_FAMILIES = [
+  "ZoneResidential",
+  "ZoneCommercial",
+  "ZoneIndustrial",
+  "ZoneOffice",
+  "ZoneExtractors",
+] as const;
+
+const ZONE_FAMILY_ICONS: Record<string, string> = {
+  ZoneResidential: "Media/Game/Icons/ZoneResidential.svg",
+  ZoneCommercial: "Media/Game/Icons/ZoneCommercial.svg",
+  ZoneIndustrial: "Media/Game/Icons/ZoneIndustrial.svg",
+  ZoneOffice: "Media/Game/Icons/ZoneOffice.svg",
+  ZoneExtractors: "Media/Game/Icons/ZoneExtractors.svg",
+};
 const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState | null>(
   mod.id,
   "BuildingCatalogMetricRanges",
   null
 );
 
-type PickerId = "section" | "subCategory" | null;
+type PickerId = "section" | "subCategory" | "zoneFamily" | null;
 
 export const ChipRow = () => {
   const { translate } = useLocalization();
@@ -56,15 +76,31 @@ export const ChipRow = () => {
   const subCategoryList = useValue(BuildingLensSubCategoryList$) ?? [];
   const facets = useValue(BuildingLensFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
+  const showZoning = useValue(ShowZoningHierarchy$);
+  const zoneFamilies = useValue(BuildingLensZoneFamilies$) ?? [];
+  const zoneCatalog = useValue(ZoneCatalog$) ?? [];
 
   const label = (key: string, fallback: string) => translate(key, fallback) ?? fallback;
 
   const tabLabel = (list: readonly VanillaBuildMenuTab[], id: string) =>
     list.find((tab) => tab.id === id)?.toolTip ?? id;
 
+  const familyLabel = (id: string) =>
+    translate(`Tooltip.LABEL[FindItBuildingMenu.Zoning_${id}]`, id) ?? id;
+
+  // Only the families this city actually has zones for. Offering Extractors to
+  // someone without the DLC would be a filter that empties the view and cannot
+  // be told apart from one that found nothing.
+  const availableFamilies = ZONE_FAMILIES.filter((id) =>
+    zoneCatalog.some((zone) => zone?.family === id)
+  );
+
   const chips = buildFilterChips({
     section: { id: section, label: tabLabel(sectionList, section) },
     subCategory: { id: subCategory, label: tabLabel(subCategoryList, subCategory) },
+    zoneFamilies: showZoning
+      ? zoneFamilies.map((id) => ({ id, label: familyLabel(id) }))
+      : null,
     facets,
     metricRanges,
   });
@@ -112,16 +148,41 @@ export const ChipRow = () => {
     </div>
   );
 
-  const openList = picker === "section" ? sectionList : picker === "subCategory" ? subCategoryList : null;
-  const openSelected = picker === "section" ? section : subCategory;
+  const familyTabs: VanillaBuildMenuTab[] = availableFamilies.map((id) => ({
+    id,
+    icon: ZONE_FAMILY_ICONS[id] ?? "",
+    toolTip: familyLabel(id),
+  }));
+
+  const openList = picker === "section"
+    ? sectionList
+    : picker === "subCategory"
+      ? subCategoryList
+      : picker === "zoneFamily"
+        ? familyTabs
+        : null;
+
+  const isChosen = (id: string) =>
+    picker === "section" ? id === section
+      : picker === "subCategory" ? id === subCategory
+        : zoneFamilies.includes(id);
 
   const choose = (id: string) => {
+    if (picker === "zoneFamily") {
+      // Multi-select, so the picker stays open: families compose, and closing
+      // after each one would make selecting two a four-click job.
+      fire({ method: "ToggleBuildingLensZoneFamily", args: [id] });
+      return;
+    }
+
     fire(picker === "section" ? lensSectionCommand(id) : lensSubCategoryCommand(id));
     setPicker(null);
   };
 
   const clearAllLabel = label("Tooltip.LABEL[FindItBuildingMenu.ClearFilters]", "Clear filters");
   const allTypesLabel = label("Tooltip.LABEL[FindItBuildingMenu.AllTypes]", "All types");
+  const allFamiliesLabel = label("Tooltip.LABEL[FindItBuildingMenu.AllZoneFamilies]", "All families");
+  const familiesLabel = label("Tooltip.LABEL[FindItBuildingMenu.ZoneFamilies]", "Families");
 
   return (
     <div className={styles.chipRow}>
@@ -136,6 +197,18 @@ export const ChipRow = () => {
             subCategory === SUBCATEGORY_ANY ? allTypesLabel : tabLabel(subCategoryList, subCategory),
             picker === "subCategory",
             subCategory === SUBCATEGORY_ANY ? null : () => fire(lensSubCategoryCommand(SUBCATEGORY_ANY))
+          )}
+
+        {/* Replaces the four-icon family tab strip inside the zoning view.
+            One picker, multi-select, and the choices come back as chips. */}
+        {showZoning && availableFamilies.length > 1
+          && renderBreadcrumb(
+            "zoneFamily",
+            // Never names the selection: the chips beside it already do, and
+            // saying "Residential" here as well would read as two controls.
+            zoneFamilies.length === 0 ? allFamiliesLabel : familiesLabel,
+            picker === "zoneFamily",
+            null
           )}
 
         <div className={styles.railSlot}>
@@ -187,7 +260,7 @@ export const ChipRow = () => {
             {openList.map((tab) => (
               <Button
                 key={tab.id}
-                className={classNames(styles.pickerItem, tab.id === openSelected && styles.pickerItemSelected)}
+                className={classNames(styles.pickerItem, isChosen(tab.id) && styles.pickerItemSelected)}
                 variant="icon"
                 onSelect={() => choose(tab.id)}
                 aria-label={tab.toolTip}

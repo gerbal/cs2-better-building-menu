@@ -45,6 +45,12 @@ export interface FilterChip {
 export interface FilterChipInput {
   section?: { id: string; label: string } | null;
   subCategory?: { id: string; label: string } | null;
+  /**
+   * Zoning families currently selected, empty meaning all of them. These are
+   * not part of the catalog facet state: zones are a separate catalog, but they
+   * narrow the visible set the same way and so wear the same chip.
+   */
+  zoneFamilies?: readonly { id: string; label: string }[] | null;
   facets?: BuildingLensFacetState | null;
   metricRanges?: BuildingLensMetricRangeState | null;
 }
@@ -124,6 +130,18 @@ export function buildFilterChips(input: FilterChipInput | null | undefined): Fil
       label: subCategory.label || subCategory.id,
       removable: true,
       remove: { method: "SetBuildingLensSubCategory", args: [SUBCATEGORY_ANY] },
+    });
+  }
+
+  for (const family of input?.zoneFamilies ?? []) {
+    if (!family?.id) continue;
+
+    chips.push({
+      id: `zoneFamily:${family.id}`,
+      dimension: "zoneFamily",
+      label: family.label || family.id,
+      removable: true,
+      remove: { method: "ToggleBuildingLensZoneFamily", args: [family.id] },
     });
   }
 

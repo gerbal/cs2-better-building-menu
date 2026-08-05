@@ -323,7 +323,26 @@ namespace FindItBuildingMenu.Systems
 
 			_buildingCatalogQuery = cleared.Query;
 			_buildingMetricRanges = cleared.MetricRanges;
+			// The zoning families are chips in the same row as the catalog's,
+			// so a Clear that left them standing would visibly fail to do what
+			// the button says.
+			_zoneFamilies = System.Array.Empty<string>();
+			_BuildingLensZoneFamilies.Value = _zoneFamilies;
 			RefreshBuildingCatalog();
+		}
+
+		/// <summary>
+		/// Adds or removes one zoning family from the zone list's filter.
+		/// </summary>
+		/// <remarks>
+		/// This replaces the exclusive family tab strip. The zone catalog is
+		/// already published in full and grouped by family on the UI side, so
+		/// narrowing is a matter of which groups to draw — no requery needed.
+		/// </remarks>
+		private void ToggleBuildingLensZoneFamily(string family)
+		{
+			_zoneFamilies = ZoneFamilySelection.Toggle(_zoneFamilies, family);
+			_BuildingLensZoneFamilies.Value = _zoneFamilies;
 		}
 
 		private void SetBuildingCatalogMetricRange(string metricId, string minText, string maxText)
