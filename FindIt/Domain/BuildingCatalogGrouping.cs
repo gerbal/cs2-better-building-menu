@@ -48,6 +48,17 @@ namespace FindItBuildingMenu.Domain
 		/// </summary>
 		private const string UnrankedKey = "9";
 
+		/// <summary>
+		/// Sorts after every real name, so the "Other" heading lands at the end.
+		/// </summary>
+		/// <remarks>
+		/// An empty key sorts first, which put OTHER above every named group —
+		/// grouping Police &amp; Administration by role opened on the six
+		/// buildings that have no role. Same reasoning as
+		/// <see cref="UnrankedKey"/>, applied to the text dimensions.
+		/// </remarks>
+		private const string UnnamedKey = "\uFFFD";
+
 		public static bool IsGrouped(string? groupBy) =>
 			!string.IsNullOrWhiteSpace(groupBy)
 			&& !string.Equals(groupBy.Trim(), None, StringComparison.OrdinalIgnoreCase);
@@ -134,6 +145,6 @@ namespace FindItBuildingMenu.Domain
 		}
 
 		private static string Normalize(string? value) =>
-			string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+			string.IsNullOrWhiteSpace(value) ? UnnamedKey : value.Trim();
 	}
 }

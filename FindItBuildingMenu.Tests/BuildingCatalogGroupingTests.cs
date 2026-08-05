@@ -172,6 +172,19 @@ namespace FindItBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void SortsTheUnnamedGroupAfterEveryNamedOne()
+		{
+			// An empty key sorts first, which opened Police & Administration
+			// grouped by role on the six buildings that have no role.
+			string unnamed = BuildingCatalogGrouping.PrimaryKey(
+				Entry(1, buildingType: ""), BuildingCatalogGrouping.Role);
+			string named = BuildingCatalogGrouping.PrimaryKey(
+				Entry(2, buildingType: "Zoo"), BuildingCatalogGrouping.Role);
+
+			Assert.True(string.CompareOrdinal(unnamed, named) > 0);
+		}
+
+		[Fact]
 		public void BandsAFootprintByItsLongerSide()
 		{
 			Assert.Equal("0", BuildingCatalogGrouping.FootprintRank(2, 2));
