@@ -32,6 +32,14 @@ namespace FindItBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void NamesPowerPlantsFromTheirProductionComponent()
+		{
+			// Power plants report output as production rather than capacity, so
+			// they had no role and no capacity until the component was read.
+			Assert.Equal("PowerPlant", BuildingRole.ResolvePrimary(new[] { "PowerPlant" }));
+		}
+
+		[Fact]
 		public void ReturnsNullWhenThePrefabHasNoServiceRole()
 		{
 			// Residential, commercial and prop prefabs have no service role, and

@@ -300,5 +300,6 @@
   "Options.OPTION[FindItBuildingMenu.FindItBuildingMenu.Mod.FindItSettings.BuildingLensShelfSize]": "Frequently placed slots",
   "Options.OPTION_DESCRIPTION[FindItBuildingMenu.FindItBuildingMenu.Mod.FindItSettings.BuildingLensShelfSize]": "How many buildings the shelf holds. Deliberately small: a shelf whose shape you cannot learn is just another list.",
   "Options.OPTION[FindItBuildingMenu.FindItBuildingMenu.Mod.FindItSettings.BuildingLensTileSize]": "Tile size",
-  "Options.OPTION_DESCRIPTION[FindItBuildingMenu.FindItBuildingMenu.Mod.FindItSettings.BuildingLensTileSize]": "Width of each building tile in the grid. Larger tiles are easier to recognise by silhouette; smaller ones fit more on screen."
+  "Options.OPTION_DESCRIPTION[FindItBuildingMenu.FindItBuildingMenu.Mod.FindItSettings.BuildingLensTileSize]": "Width of each building tile in the grid. Larger tiles are easier to recognise by silhouette; smaller ones fit more on screen.",
+  "Tooltip.LABEL[FindItBuildingMenu.RolePowerPlant]": "Power plant"
 }
