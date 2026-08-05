@@ -18,11 +18,10 @@ namespace FindItBuildingMenu.Domain
 	public sealed class ZoneLotSizes
 	{
 		/// <summary>
-		/// Beyond this many distinct shapes the glyph strip stops being
-		/// scannable and starts being a texture. Whatever is dropped is counted,
-		/// never silently discarded.
+		/// Beyond this many widths the glyph strip stops being scannable.
+		/// Whatever is dropped is counted, never silently discarded.
 		/// </summary>
-		public const int MaxFootprintsShown = 8;
+		public const int MaxFootprintsShown = 12;
 
 		private readonly HashSet<(int Width, int Depth)> _footprints = new();
 
@@ -57,24 +56,40 @@ namespace FindItBuildingMenu.Domain
 		}
 
 		/// <summary>
-		/// The distinct shapes, narrowest first, then shallowest.
+		/// One shape per distinct width, narrowest first.
 		/// </summary>
 		/// <remarks>
+		/// Every width crossed with every depth is combinatorial noise: one
+		/// residential zone produced 2x2, 2x3, 2x4, 2x5, 2x6, 3x2, 3x3, 3x4 and
+		/// five more, at sizes from 7px to 20px, which reads as texture rather
+		/// than as an answer.
+		///
+		/// Width is also the part the player chooses. Depth is mostly the
+		/// block's, so the strip collapses to one glyph per width and shows the
+		/// shallowest real shape at that width — a lot that actually exists,
+		/// rather than a uniform rectangle that would be tidier and untrue.
+		///
 		/// Sorted here rather than in the UI because the order is a property of
 		/// the answer, not of how it is drawn: narrow to wide is how a player
 		/// scans for the one that fits the gap they have.
 		/// </remarks>
 		public ZoneFootprint[] Footprints => _footprints
-			.OrderBy(size => size.Width)
-			.ThenBy(size => size.Depth)
+			.GroupBy(size => size.Width)
+			.OrderBy(group => group.Key)
+			.Select(group => new ZoneFootprint(group.Key, group.Min(size => size.Depth)))
 			.Take(MaxFootprintsShown)
-			.Select(size => new ZoneFootprint(size.Width, size.Depth))
 			.ToArray();
 
-		/// <summary>How many distinct shapes were left out of that list.</summary>
-		public int FootprintOverflow => _footprints.Count > MaxFootprintsShown
-			? _footprints.Count - MaxFootprintsShown
-			: 0;
+		/// <summary>How many widths were left out of that list.</summary>
+		public int FootprintOverflow
+		{
+			get
+			{
+				int widths = _footprints.Select(size => size.Width).Distinct().Count();
+
+				return widths > MaxFootprintsShown ? widths - MaxFootprintsShown : 0;
+			}
+		}
 
 		/// <summary>True when every building here is the same footprint.</summary>
 		public bool IsSingleSize => MinWidth == MaxWidth && MinDepth == MaxDepth;
