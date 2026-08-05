@@ -111,6 +111,30 @@ namespace FindItBuildingMenu.Systems
 			RefreshBuildingCatalog();
 		}
 
+		/// <summary>
+		/// Widens a search that found nothing here to the whole catalog.
+		/// </summary>
+		private void SearchEverything()
+		{
+			VanillaBuildMenuSelection selection = VanillaBuildMenuSelection.Normalize(
+				VanillaBuildMenuTaxonomy.AllBuildings,
+				VanillaBuildMenuTaxonomy.Any);
+
+			_buildingLensSection = selection.Section;
+			_buildingLensSubCategory = selection.SubCategory;
+			_BuildingLensSectionBinding.Value = _buildingLensSection;
+			_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
+			FindItUtil.CurrentCategory = PrefabCategory.Any;
+			FindItUtil.CurrentSubCategory = PrefabSubCategory.Any;
+			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0 };
+
+			scrollIndex = 0;
+
+			RefreshBuildingLensNavigation();
+			UpdateCategoriesAndPrefabList();
+			RefreshBuildingCatalog();
+		}
+
 		private void SetCurrentSubCategory(int category)
 		{
 			FindItUtil.CurrentSubCategory = (PrefabSubCategory)category;

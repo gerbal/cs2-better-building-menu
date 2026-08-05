@@ -226,3 +226,66 @@ describe("Vanilla menu interception", () => {
     });
   });
 });
+
+describe("Vanilla menu watcher lifecycle", () => {
+  it("ignores the first selection it observes after mounting", async () => {
+    const { shouldRouteSelection } = await import("../src/domain/vanillaMenuWatch.ts");
+
+    // The binding emits current state on subscribe. That is not the player
+    // clicking anything, and acting on it closed the lens panel the moment it
+    // was opened over a stale non-building selection.
+    assert.equal(shouldRouteSelection({ seen: false, last: null }, 17102), false);
+  });
+
+  it("routes a genuine change after the first observation", async () => {
+    const { shouldRouteSelection } = await import("../src/domain/vanillaMenuWatch.ts");
+
+    assert.equal(shouldRouteSelection({ seen: true, last: null }, 17102), true);
+    assert.equal(shouldRouteSelection({ seen: true, last: 17106 }, 17102), true);
+  });
+
+  it("ignores a repeat of the selection already routed", async () => {
+    const { shouldRouteSelection } = await import("../src/domain/vanillaMenuWatch.ts");
+
+    // The binding re-emits on unrelated toolbar churn.
+    assert.equal(shouldRouteSelection({ seen: true, last: 17102 }, 17102), false);
+  });
+
+  it("treats closing a menu as something to remember, not to route", async () => {
+    const { shouldRouteSelection } = await import("../src/domain/vanillaMenuWatch.ts");
+
+    assert.equal(shouldRouteSelection({ seen: true, last: 17102 }, null), false);
+  });
+});
+
+describe("Out-of-scope search", () => {
+  it("offers to widen only when the miss is local", async () => {
+    const { getSearchScopeNotice } = await import("../src/domain/buildingSearchRank.ts");
+
+    // "0 results" reads as "this does not exist" when it usually means "not in
+    // this category". Only worth saying when there is somewhere else to look.
+    assert.deepEqual(getSearchScopeNotice({ searchText: "clinic", shown: 0, elsewhere: 7 }), {
+      elsewhere: 7,
+      canWiden: true,
+    });
+  });
+
+  it("stays silent when the catalog genuinely has nothing", async () => {
+    const { getSearchScopeNotice } = await import("../src/domain/buildingSearchRank.ts");
+
+    assert.equal(getSearchScopeNotice({ searchText: "zzzz", shown: 0, elsewhere: 0 }), null);
+  });
+
+  it("stays silent while results are showing", async () => {
+    const { getSearchScopeNotice } = await import("../src/domain/buildingSearchRank.ts");
+
+    assert.equal(getSearchScopeNotice({ searchText: "clinic", shown: 7, elsewhere: 0 }), null);
+  });
+
+  it("stays silent when nothing was searched for", async () => {
+    const { getSearchScopeNotice } = await import("../src/domain/buildingSearchRank.ts");
+
+    assert.equal(getSearchScopeNotice({ searchText: "", shown: 0, elsewhere: 4 }), null);
+    assert.equal(getSearchScopeNotice({ searchText: "  ", shown: 0, elsewhere: 4 }), null);
+  });
+});

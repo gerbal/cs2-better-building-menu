@@ -47,6 +47,7 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<bool> _ShowFindItPanel;
 		private ValueBindingHelper<bool> _BuildingLensEnabled = null!;
 		private ValueBindingHelper<bool> _ReplaceVanillaBuildMenu = null!;
+		private ValueBindingHelper<int> _BuildingCatalogMatchesElsewhere = null!;
 		private ValueBindingHelper<bool> _ShowZoningHierarchy = null!;
 		private ValueBindingHelper<ZoneCatalogEntry[]> _ZoneCatalog = null!;
 		private ValueBindingHelper<bool> _BuildingCapacityFilterVisible = null!;
@@ -155,6 +156,8 @@ namespace FindItBuildingMenu.Systems
 			// expected to change mid-session.
 			_ReplaceVanillaBuildMenu = CreateBinding("ReplaceVanillaBuildMenu", Mod.Settings.ReplaceVanillaBuildMenu);
 			_ShowZoningHierarchy = CreateBinding("ShowZoningHierarchy", false);
+			_BuildingCatalogMatchesElsewhere = CreateBinding("BuildingCatalogMatchesElsewhere", 0);
+			CreateTrigger("SearchEverything", SearchEverything);
 			_ZoneCatalog = CreateBinding("ZoneCatalog", new ZoneCatalogEntry[0]);
 			_PanelHeight = CreateBinding("PanelHeight", 0f);
 			_PanelWidth = CreateBinding("PanelWidth", 0f);

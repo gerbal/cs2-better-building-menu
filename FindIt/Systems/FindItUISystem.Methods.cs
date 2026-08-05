@@ -93,6 +93,22 @@ namespace FindItBuildingMenu.Systems
 			_buildingCatalogQuery = _buildingCatalogQuery.ResetPagingIfPredicatesChanged(previousQuery);
 
 			BuildingCatalogPage page = _buildingCatalogAdapter.Query(_buildingCatalogQuery);
+
+			// A search that matches nothing in the current section reads as
+			// "this building does not exist" when it usually means "not here".
+			// Only computed when the scoped result is actually empty, so the
+			// extra pass costs nothing in the common case.
+			_BuildingCatalogMatchesElsewhere.Value =
+				page.TotalCount == 0 && !string.IsNullOrWhiteSpace(_buildingCatalogQuery.SearchText)
+					? _buildingCatalogAdapter.Query(_buildingCatalogQuery with
+					{
+						Category = string.Empty,
+						SubCategory = string.Empty,
+						BuildMenuSection = VanillaBuildMenuTaxonomy.AllBuildings,
+						BuildMenuSubCategory = VanillaBuildMenuTaxonomy.Any,
+						Offset = 0,
+					}).TotalCount
+					: 0;
 			_BuildingCatalogBinding.Value = page with
 			{
 				Status = BuildingCatalogLensState.GetPageStatus(FindItUtil.IsReady, page.TotalCount),

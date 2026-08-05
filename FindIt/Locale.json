@@ -283,5 +283,7 @@
   "Tooltip.LABEL[FindItBuildingMenu.NoZonesIndexed]": "No zones indexed",
   "Tooltip.LABEL[FindItBuildingMenu.Shelf]": "Frequently placed",
   "Tooltip.LABEL[FindItBuildingMenu.ShowGrid]": "Grid",
-  "Tooltip.LABEL[FindItBuildingMenu.ShowTable]": "Compare"
+  "Tooltip.LABEL[FindItBuildingMenu.ShowTable]": "Compare",
+  "Tooltip.LABEL[FindItBuildingMenu.MatchesElsewhere]": "No matches here — {0} elsewhere",
+  "Tooltip.LABEL[FindItBuildingMenu.SearchEverything]": "Search everything"
 }

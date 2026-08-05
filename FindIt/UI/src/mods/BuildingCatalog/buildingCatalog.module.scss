@@ -645,6 +645,38 @@
 // This used to be a hand-rolled 8rem ::-webkit-scrollbar plus a decorative
 // 8rem-wide rail in the column header whose thumb was a static ratio and did
 // not scroll anything.
+// Shown only when a search found nothing in this section but did elsewhere.
+.scopeNotice {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8rem;
+  margin: 6rem 8rem;
+  padding: 6rem 8rem;
+  border-radius: 3rem;
+  background-color: rgba(255, 255, 255, 0.08);
+  border: 1rem solid var(--accentColorNormal);
+}
+
+.scopeNoticeText {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--menuText1Normal);
+  font-size: var(--fontSizeS);
+}
+
+.scopeNoticeAction {
+  @include _base.transparentButton(false, true);
+  width: auto !important;
+  flex: 0 0 auto;
+  min-height: 26rem;
+  padding: 3rem 8rem;
+  border-radius: 3rem;
+  color: var(--accentColorNormal);
+  background-color: rgba(0, 0, 0, 0.25);
+  white-space: nowrap;
+}
+
 .rows {
   display: flex;
   flex-direction: column;
