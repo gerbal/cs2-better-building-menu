@@ -1,0 +1,115 @@
+@use "../../base.scss" as _base;
+
+.zoning {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 8rem;
+  color: var(--menuTitleNormal);
+}
+
+.empty {
+  padding: 12rem 8rem;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeS);
+}
+
+.families {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 4rem;
+  padding-bottom: 6rem;
+  border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
+}
+
+.family {
+  @include _base.transparentButton(false, true);
+  width: auto !important;
+  min-width: 38rem;
+  min-height: 34rem;
+  padding: 3rem 6rem;
+  border-radius: 3rem;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.familySelected {
+  background-color: rgba(255, 255, 255, 0.12);
+  border: 1rem solid var(--accentColorNormal);
+}
+
+.familyIcon {
+  width: 24rem;
+  height: 24rem;
+  object-fit: contain;
+}
+
+.tiers {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.tier {
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+  padding: 6rem 0;
+}
+
+.tierLabel {
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeS);
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.zones {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 4rem;
+}
+
+// Wide enough for the zone names the game actually ships, which run to
+// "Medium Density Mixed Housing" rather than one or two words.
+.zone {
+  @include _base.transparentButton(false, true);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: auto !important;
+  min-width: 150rem;
+  max-width: 260rem;
+  min-height: 34rem;
+  gap: 6rem;
+  padding: 3rem 8rem 3rem 4rem;
+  border-radius: 3rem;
+  background-color: rgba(0, 0, 0, 0.2);
+  border: 1rem solid rgba(255, 255, 255, 0.12);
+}
+
+.zone:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--accentColorNormal);
+}
+
+.zoneIcon {
+  flex: 0 0 26rem;
+  width: 26rem;
+  height: 26rem;
+  object-fit: contain;
+}
+
+.zoneName {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: left;
+  color: var(--menuText1Normal);
+  font-size: var(--fontSizeS);
+}

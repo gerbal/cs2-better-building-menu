@@ -816,10 +816,19 @@ namespace FindItBuildingMenu.Systems
 
 				catalog.Add(new ZoneCatalogEntry(
 					Id: zone.Index,
+					Version: zone.Version,
 					PrefabName: prefab.name,
 					Name: GetAssetName(prefab),
 					Family: family,
-					Density: dictionary.TryGetValue(zone, out var density) ? density : ZoneTypeFilter.Any,
+					// The ZonePropertiesData derivation is residential-specific —
+					// it works off m_ResidentialProperties, which is zero for
+					// commercial and office zones, so they all come back as Any.
+					// Their names do carry the tier ("EU Low Density Business"),
+					// so fall back to reading it rather than showing every
+					// non-residential zone as untiered.
+					Density: dictionary.TryGetValue(zone, out var density) && density != ZoneTypeFilter.Any
+						? density
+						: ZoningSurfaceCatalog.ResolveDensity(prefab.name),
 					Thumbnail: IconPath.Normalize(ImageSystem.GetThumbnail(prefab))));
 			}
 

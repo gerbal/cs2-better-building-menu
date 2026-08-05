@@ -75,6 +75,10 @@ namespace FindItBuildingMenu.Systems
 				// zoning hierarchy handles them instead of the building table.
 				_ZoneCatalog.Value = PrefabIndexingSystem.GetZoneCatalog().ToArray();
 				_ShowZoningHierarchy.Value = true;
+				// The container renders the hierarchy only inside the lens, so
+				// without this the panel opens on the plain asset grid.
+				_BuildingLensEnabled.Value = true;
+				_PanelWidth.Value = GridUtil.GetCurrentPanelWidth();
 				ToggleFindItPanel(true);
 				return;
 			}
