@@ -187,11 +187,15 @@ export const ChipRow = () => {
   return (
     <div className={styles.chipRow}>
       <div className={styles.chips}>
-        {renderBreadcrumb("section", tabLabel(sectionList, section), picker === "section", null)}
+        {/* The section and type breadcrumbs describe the building catalog. In
+            the zoning view that catalog is not on screen, so showing "Networks"
+            over a list of zones names something the player cannot see. */}
+        {!showZoning
+          && renderBreadcrumb("section", tabLabel(sectionList, section), picker === "section", null)}
 
         {/* Always offered when the section has types, even at "Any": without
             it the only way back to a type would be the vanilla toolbar. */}
-        {subCategoryList.length > 0
+        {!showZoning && subCategoryList.length > 0
           && renderBreadcrumb(
             "subCategory",
             subCategory === SUBCATEGORY_ANY ? allTypesLabel : tabLabel(subCategoryList, subCategory),

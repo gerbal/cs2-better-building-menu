@@ -930,15 +930,28 @@ namespace FindItBuildingMenu.Systems
 			: null;
 
 		/// <summary>
-		/// A resource's name, or null when the zone trades in none.
+		/// The name of a single allowed resource, or null.
 		/// </summary>
 		/// <remarks>
-		/// Resource is a flags enum whose zero value is NoResource, which
+		/// Resource is a <c>ulong</c> flags enum. Its zero is NoResource, which
 		/// ToString()s as "NoResource" — a string the player would read as a
-		/// kind of resource rather than as its absence.
+		/// kind of resource rather than as its absence. Worse, a composite value
+		/// has no name at all and ToString()s as the raw number: a commercial
+		/// zone sells most things, and the card read "sells 428424300332".
+		///
+		/// So only a single flag is named. That is also the only case worth
+		/// stating — "this industrial zone makes Oil" tells the player
+		/// something, while "this commercial zone sells almost everything" is
+		/// what they already assume.
 		/// </remarks>
-		private static string? ResourceName(Game.Economy.Resource resource) =>
-			resource == Game.Economy.Resource.NoResource ? null : resource.ToString();
+		private static string? ResourceName(Game.Economy.Resource resource)
+		{
+			ulong value = (ulong)resource;
+
+			bool isSingleResource = value != 0UL && (value & (value - 1UL)) == 0UL;
+
+			return isSingleResource ? resource.ToString() : null;
+		}
 
 		public static ZoneTypeFilter GetZoneType(Entity zonePrefab)
 		{

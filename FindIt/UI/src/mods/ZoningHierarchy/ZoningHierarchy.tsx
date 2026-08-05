@@ -123,9 +123,16 @@ export const ZoningHierarchyComponent = () => {
         // Family then density, which is the hierarchy this view always had —
         // now expressed as a grouping rather than as bespoke markup.
         groupBy="category"
-        // Zones default to List: they are chosen by name, their thumbnails are
-        // near-identical coloured squares, and none of the card's facts apply.
-        viewMode={viewMode === "cards" || viewMode === "table" ? "list" : viewMode}
+        // List by default — zones are chosen by name and their thumbnails are
+        // near-identical coloured squares — but Cards is honoured, because a
+        // zone now has facts worth a card: how tall it grows, what lot sizes it
+        // fills, what it trades in. An earlier comment here said none of the
+        // card's facts applied, which was true when it was written and stopped
+        // being true the moment those facts existed.
+        //
+        // Table still falls back: there is no zone table, and its columns are
+        // all building metrics a zone does not have.
+        viewMode={viewMode === "table" ? "list" : viewMode}
         searchText={searchText}
         onPlace={assign}
       />
