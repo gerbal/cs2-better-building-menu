@@ -58,6 +58,9 @@ namespace FindItBuildingMenu.Systems
 		private int _appliedMenuIndex;
 		private ValueBindingHelper<bool> _ShowZoningHierarchy = null!;
 		private ValueBindingHelper<ZoneCatalogEntry[]> _ZoneCatalog = null!;
+		// Empty means every family. See ZoneFamilySelection.
+		private ValueBindingHelper<string[]> _BuildingLensZoneFamilies = null!;
+		private string[] _zoneFamilies = System.Array.Empty<string>();
 		private ValueBindingHelper<bool> _IsExpanded;
 		private ValueBindingHelper<double> _ScrollIndex;
 		private ValueBindingHelper<double> _MaxScrollIndex;
@@ -169,6 +172,7 @@ namespace FindItBuildingMenu.Systems
 			_LensTileSize = CreateBinding("BuildingLensTileSize", Mod.Settings.BuildingLensTileSize);
 			CreateTrigger("SearchEverything", SearchEverything);
 			_ZoneCatalog = CreateBinding("ZoneCatalog", new ZoneCatalogEntry[0]);
+			_BuildingLensZoneFamilies = CreateBinding("BuildingLensZoneFamilies", System.Array.Empty<string>());
 			_PanelHeight = CreateBinding("PanelHeight", 0f);
 			_PanelWidth = CreateBinding("PanelWidth", 0f);
 			_ScrollIndex = CreateBinding("ScrollIndex", 0D);
@@ -241,6 +245,7 @@ namespace FindItBuildingMenu.Systems
 				CreateTrigger<string, string>("ToggleBuildingLensFacet", ToggleBuildingLensFacet);
 				CreateTrigger("ClearBuildingLensFacets", ClearBuildingLensFacets);
 				CreateTrigger("ClearBuildingLensFilters", ClearBuildingLensFilters);
+				CreateTrigger<string>("ToggleBuildingLensZoneFamily", ToggleBuildingLensZoneFamily);
 			CreateTrigger<float>("SetBuildingLensPanelWidth", SetBuildingLensPanelWidth);
 			CreateTrigger("CommitBuildingLensPanelWidth", CommitBuildingLensPanelWidth);
 			CreateTrigger("ClearThumbnails", () => _AllThumbnails.Value = new string[0]);
