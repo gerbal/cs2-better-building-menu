@@ -264,7 +264,7 @@ public sealed class BuildingCatalogQueryEngineTests
             new BuildingCatalogQuery(BuildingTypes: new[] { "hospital" }));
 
         Assert.True(state.HasSelection);
-        Assert.Equal(new[] { "buildingType", "provenance", "dlc", "theme", "assetPack", "placement" }, state.Groups.Select(group => group.Id).ToArray());
+        Assert.Equal(new[] { "buildingType", "provenance", "availability", "dlc", "theme", "assetPack", "placement" }, state.Groups.Select(group => group.Id).ToArray());
         BuildingCatalogFacetGroup role = Assert.Single(state.Groups, group => group.Id == "buildingType");
 		Assert.Equal(new[] { "Hospital", "Library", "School" }, role.Options.Select(option => option.Id).ToArray());
 		Assert.True(role.Options.Single(option => option.Id == "Hospital").Selected);
@@ -751,7 +751,7 @@ public sealed class BuildingCatalogQueryEngineTests
         page.Write(writer);
 
         Assert.Equal(
-            new[] { "items", "id", "prefabName", "name", "category", "subCategory", "categoryLabel", "subCategoryLabel", "vanillaSection", "vanillaSubCategory", "thumbnail", "lotWidth", "lotDepth", "buildingLevel", "zoneType", "hasParking", "isUniqueMesh", "isVanilla", "isFavorited", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "constructionCost", "upkeep", "workers", "capacity", "electricityConsumption", "waterConsumption", "garbageAccumulation", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "totalCount", "offset", "limit" },
+            new[] { "items", "id", "prefabName", "name", "category", "subCategory", "categoryLabel", "subCategoryLabel", "vanillaSection", "vanillaSubCategory", "thumbnail", "lotWidth", "lotDepth", "buildingLevel", "zoneType", "hasParking", "isUniqueMesh", "isVanilla", "isLocked", "isFavorited", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "constructionCost", "upkeep", "workers", "capacity", "electricityConsumption", "waterConsumption", "garbageAccumulation", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "totalCount", "offset", "limit" },
             writer.PropertyNames);
         Assert.Contains("Write:Int32:1", writer.Tokens);
         Assert.Contains("Write:String:Coal Power Plant", writer.Tokens);

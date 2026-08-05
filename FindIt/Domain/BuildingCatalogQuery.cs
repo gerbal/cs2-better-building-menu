@@ -15,6 +15,8 @@ namespace FindItBuildingMenu.Domain
 		// paging the two cannot be independent, or a group splits across a page
 		// boundary and its heading lies about what it contains.
 		string GroupBy = "none",
+		// "Locked" / "Unlocked". Empty means both.
+		IReadOnlyList<string>? Availability = null,
 		bool Descending = false,
 		int Offset = 0,
 		int Limit = 100,
