@@ -124,3 +124,32 @@ describe("Footprint presence", () => {
     assert.equal(hasFootprint(1, 1), true);
   });
 });
+
+describe("Capacity units by role", () => {
+  it("takes the unit from the component the prefab carries", () => {
+    // Find It's own method. The category match below is a fallback for
+    // anything the indexer found no service component on.
+    assert.equal(getCapacityUnitLabel("ServiceBuildings", "ServiceBuildings_Health", "Hospital"), "patients");
+    assert.equal(getCapacityUnitLabel("ServiceBuildings", "ServiceBuildings_EducationResearch", "School"), "students");
+    assert.equal(getCapacityUnitLabel("ServiceBuildings", "ServiceBuildings_Electricity", "PowerPlant"), "MW");
+  });
+
+  it("fixes the two the category match got wrong", () => {
+    // "police" matched a prison and called its prisoners vehicles; deathcare
+    // storage was reported as patients.
+    assert.equal(getCapacityUnitLabel("ServiceBuildings", "ServiceBuildings_Police", "Prison"), "prisoners");
+    assert.equal(getCapacityUnitLabel("ServiceBuildings", "ServiceBuildings_Police"), "vehicles");
+    assert.equal(getCapacityUnitLabel("ServiceBuildings", "ServiceBuildings_Health", "DeathcareFacility"), "plots");
+    assert.equal(getCapacityUnitLabel("ServiceBuildings", "ServiceBuildings_Health"), "patients");
+  });
+
+  it("falls back to the category when there is no role", () => {
+    assert.equal(getCapacityUnitLabel("ServiceBuildings", "ServiceBuildings_Water"), "m³");
+    assert.equal(getCapacityUnitLabel("ServiceBuildings", "ServiceBuildings_Water", ""), "m³");
+    assert.equal(getCapacityUnitLabel("ServiceBuildings", "ServiceBuildings_Water", null), "m³");
+  });
+
+  it("falls back for a role this build has no unit for", () => {
+    assert.equal(getCapacityUnitLabel("ServiceBuildings", "ServiceBuildings_Health", "SomeNewService"), "patients");
+  });
+});

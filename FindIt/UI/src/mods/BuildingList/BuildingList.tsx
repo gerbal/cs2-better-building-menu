@@ -93,7 +93,7 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
         // Category-aware, and it returns nothing for a category where capacity
         // means nothing — so a park bench's card stays as narrow as a
         // hospital's is informative, without a rule per category here.
-        const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory);
+        const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType);
         const hasCapacity = capacity !== "" && capacity !== "—";
         const forecast = getCostForecast(entry.constructionCost, money);
 

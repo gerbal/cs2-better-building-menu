@@ -40,6 +40,35 @@ export interface ServiceForecastKey {
   binding: ServiceForecastBinding;
 }
 
+/**
+ * Role to demand series.
+ *
+ * Find It classifies by component query — one processor per network
+ * subcategory, a component check per service role — and the indexer already
+ * derives exactly the distinctions this module used to guess at from a display
+ * name. DeathcareFacilityData is what makes a building a cemetery;
+ * WastewaterTreatmentPlantData is what makes one a treatment plant. Matching
+ * "Cemetery" or "Wastewater" in a name was reading the label off the box
+ * instead of looking inside it, and it could not see a modded name or a
+ * localized one.
+ *
+ * The education tier stays separate because a school's series depends on
+ * SchoolData.m_EducationLevel rather than on being a school.
+ */
+const ROLE_SERIES: Record<string, string> = {
+  Hospital: "patients",
+  DeathcareFacility: "cemetery",
+  WaterPumpingStation: "water",
+  WastewaterTreatmentPlant: "sewage",
+  SewageOutlet: "sewage",
+  GarbageFacility: "garbage",
+  PowerPlant: "electricity",
+  Prison: "prison",
+  // FireStation, PoliceStation and EmergencyShelter are coverage services: the
+  // game reports no capacity against a demand figure for them, and forecasting
+  // against something unrelated would be worse than staying quiet.
+};
+
 const has = (name: string, ...needles: string[]) =>
   needles.some((needle) => name.toLowerCase().includes(needle.toLowerCase()));
 
@@ -57,8 +86,14 @@ const EDUCATION_LEVEL_TIERS: Record<number, string> = {
   4: "university",
 };
 
-function resolve(subCategory: string, name: string, educationLevel?: number | null): string | null {
-  if (has(subCategory, "EducationResearch")) {
+function resolve(
+  subCategory: string,
+  name: string,
+  educationLevel?: number | null,
+  role?: string | null
+): string | null {
+  // A school's series is its tier, which the role alone does not carry.
+  if (role === "School" || has(subCategory, "EducationResearch")) {
     // No name heuristic here any more. m_EducationLevel is a field of
     // SchoolData, so anything with student capacity always carries it, and a
     // building without SchoolData has no capacity to forecast from. Measured on
@@ -69,42 +104,36 @@ function resolve(subCategory: string, name: string, educationLevel?: number | nu
       : null;
   }
 
-  if (has(subCategory, "_Health")) {
-    // Health & Deathcare is one subcategory with two demand series.
-    return has(name, "Cemetery", "Crematorium", "Burial", "Columbarium", "Mausoleum", "Hearse", "Grave")
-      ? "cemetery"
-      : "patients";
+  // The role decides everything else. It comes from the component the prefab
+  // actually carries, so it is right for a modded building and for every
+  // language, neither of which a name match manages.
+  if (typeof role === "string" && role.trim() !== "") {
+    return ROLE_SERIES[role.trim()] ?? null;
   }
 
-  if (has(subCategory, "_Water")) {
-    return has(name, "Sewage", "Wastewater", "Treatment", "Settling")
-      ? "sewage"
-      : "water";
-  }
-
-  if (has(subCategory, "_Garbage")) return "garbage";
-  if (has(subCategory, "_Electricity")) return "electricity";
-
-  if (has(subCategory, "_Police")) {
-    // Police stations provide coverage, not capacity against a demand figure;
-    // only prisons and jails have a series to forecast against.
-    return has(name, "Prison", "Jail") ? "prison" : null;
-  }
-
+  // No role means no service component, which means no capacity to forecast.
+  // Parks, props and zoned buildings all land here.
   return null;
 }
 
 export function getServiceForecastKey(
   entry:
-    | { subCategory?: string | null; name?: string | null; educationLevel?: number | null }
+    | {
+        subCategory?: string | null;
+        name?: string | null;
+        educationLevel?: number | null;
+        /** The component-derived role, from BuildingRole.ResolvePrimary. */
+        buildingType?: string | null;
+      }
     | null
     | undefined
 ): ServiceForecastKey | null {
   const subCategory = entry?.subCategory ?? "";
   const name = entry?.name ?? "";
-  if (!subCategory) return null;
+  const role = entry?.buildingType ?? null;
+  if (!subCategory && !role) return null;
 
-  const key = resolve(subCategory, name, entry?.educationLevel);
+  const key = resolve(subCategory, name, entry?.educationLevel, role);
   if (!key) return null;
 
   const binding = SERVICE_FORECAST_BINDINGS[key];
