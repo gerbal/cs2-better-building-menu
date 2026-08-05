@@ -11,6 +11,10 @@ namespace FindItBuildingMenu.Domain
 		string Category = "",
 		string SubCategory = "",
 		string SortColumn = "Name",
+		// Grouping is a primary sort key rather than a separate axis: with
+		// paging the two cannot be independent, or a group splits across a page
+		// boundary and its heading lies about what it contains.
+		string GroupBy = "none",
 		bool Descending = false,
 		int Offset = 0,
 		int Limit = 100,

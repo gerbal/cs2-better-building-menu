@@ -312,5 +312,18 @@
   "Tooltip.LABEL[FindItBuildingMenu.ZoneTierRow]": "Row homes",
   "Tooltip.LABEL[FindItBuildingMenu.ZoneTierMedium]": "Medium density",
   "Tooltip.LABEL[FindItBuildingMenu.ZoneTierHigh]": "High density",
-  "Tooltip.LABEL[FindItBuildingMenu.ZoneTierSignature]": "Signature"
+  "Tooltip.LABEL[FindItBuildingMenu.ZoneTierSignature]": "Signature",
+  "Tooltip.LABEL[FindItBuildingMenu.GroupBy]": "Group by",
+  "Tooltip.LABEL[FindItBuildingMenu.ViewGrid]": "Grid",
+  "Tooltip.LABEL[FindItBuildingMenu.ViewList]": "List",
+  "Tooltip.LABEL[FindItBuildingMenu.ViewTable]": "Table",
+  "Tooltip.LABEL[FindItBuildingMenu.GroupBy_none]": "Nothing",
+  "Tooltip.LABEL[FindItBuildingMenu.GroupBy_category]": "Category",
+  "Tooltip.LABEL[FindItBuildingMenu.GroupBy_subCategory]": "Type",
+  "Tooltip.LABEL[FindItBuildingMenu.GroupBy_role]": "Role",
+  "Tooltip.LABEL[FindItBuildingMenu.GroupBy_theme]": "Theme",
+  "Tooltip.LABEL[FindItBuildingMenu.GroupBy_source]": "Source",
+  "Tooltip.LABEL[FindItBuildingMenu.GroupBy_density]": "Density",
+  "Tooltip.LABEL[FindItBuildingMenu.GroupBy_footprint]": "Footprint",
+  "Tooltip.LABEL[FindItBuildingMenu.GroupBy_cost]": "Cost"
 }

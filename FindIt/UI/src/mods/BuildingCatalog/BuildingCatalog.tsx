@@ -46,9 +46,21 @@ import {
 } from "domain/buildingLensFilterSummary";
 import type { BuildingLensFacetState } from "domain/buildingCatalogFacets";
 import { findItSurfacePort } from "domain/findItSurfacePort";
+import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 import { BuildingGrid } from "mods/BuildingGrid/BuildingGrid";
 import { getSearchScopeNotice } from "domain/buildingSearchRank";
-import { getLensDisclosure, setLensDisclosure } from "domain/buildingLensViewState";
+import { getLensChoice, getLensDisclosure, setLensChoice, setLensDisclosure } from "domain/buildingLensViewState";
+import { BuildingList } from "mods/BuildingList/BuildingList";
+import {
+  DEFAULT_GROUP_DIMENSION,
+  GROUP_DIMENSIONS,
+  buildGroupedView,
+  groupDimensionLabel,
+  isGroupDimension,
+  shouldShowHeading,
+  type GroupDimensionId,
+  type GroupNode,
+} from "domain/buildingGroups";
 // The rail, the metric popover and the filter summary all live in the chip row
 // now, so the catalog no longer owns any filter chrome — only results.
 import {
@@ -78,7 +90,17 @@ const BuildingLensLegacyFilters$ = bindValue<string[]>(mod.id, "BuildingLensLega
 const BuildingCatalogMatchesElsewhere$ = bindValue<number>(mod.id, "BuildingCatalogMatchesElsewhere", 0);
 const LensDefaultToTable$ = bindValue<boolean>(mod.id, "BuildingLensDefaultToTable", false);
 
-const LENS_VIEW_MODE_KEY = "tableMode";
+const LENS_VIEW_MODE_KEY = "viewMode";
+const LENS_GROUP_KEY = "groupBy";
+
+/** Grid recognises, List scans, Table compares. */
+type ViewMode = "grid" | "list" | "table";
+
+const VIEW_MODES: Array<{ id: ViewMode; localizationKey: string; fallback: string }> = [
+  { id: "grid", localizationKey: "Tooltip.LABEL[FindItBuildingMenu.ViewGrid]", fallback: "Grid" },
+  { id: "list", localizationKey: "Tooltip.LABEL[FindItBuildingMenu.ViewList]", fallback: "List" },
+  { id: "table", localizationKey: "Tooltip.LABEL[FindItBuildingMenu.ViewTable]", fallback: "Table" },
+];
 
 const metricColumns: Array<{
   key: BuildingLensMetric;
@@ -114,12 +136,32 @@ export const BuildingCatalogComponent = () => {
   // Survives remount for the same reason the drawers do — placing a building
   // unmounts this panel.
   const defaultToTable = useValue(LensDefaultToTable$);
-  // The setting supplies the default; the in-session toggle overrides it and
-  // survives remounts, so changing view mid-session is not undone by placing.
-  const [tableMode, setTableModeState] = useState(() => getLensDisclosure(LENS_VIEW_MODE_KEY, defaultToTable));
-  const setTableMode = (next: boolean) => {
-    setLensDisclosure(LENS_VIEW_MODE_KEY, next);
-    setTableModeState(next);
+  // Three modes now, so a boolean no longer says it. The setting still supplies
+  // the starting point; the in-session choice overrides it and survives the
+  // remount that placing a building causes.
+  const [viewMode, setViewModeState] = useState<ViewMode>(
+    () => getLensChoice(LENS_VIEW_MODE_KEY, defaultToTable ? "table" : "grid") as ViewMode
+  );
+  const setViewMode = (next: ViewMode) => {
+    setLensChoice(LENS_VIEW_MODE_KEY, next);
+    setViewModeState(next);
+  };
+  const tableMode = viewMode === "table";
+  const [groupBy, setGroupByState] = useState<GroupDimensionId>(
+    () => {
+      const stored = getLensChoice(LENS_GROUP_KEY, DEFAULT_GROUP_DIMENSION);
+      return isGroupDimension(stored) ? stored : DEFAULT_GROUP_DIMENSION;
+    }
+  );
+  const [groupPickerOpen, setGroupPickerOpen] = useState(false);
+  const setGroupBy = (next: GroupDimensionId) => {
+    setLensChoice(LENS_GROUP_KEY, next);
+    setGroupByState(next);
+    setGroupPickerOpen(false);
+    // The dimension is also the query's primary sort key, so the backend has
+    // to reorder — grouping the page here alone would split a group across a
+    // page boundary and the heading would describe the wrong rows.
+    trigger(mod.id, "SetBuildingCatalogGroupBy", next);
   };
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const compareEntries = useValue(BuildingCatalogCompare$) ?? [];
@@ -182,9 +224,10 @@ export const BuildingCatalogComponent = () => {
   const searchEverywhereLabel =
     translate("Tooltip.LABEL[FindItBuildingMenu.SearchEverything]", "Search everything")
     ?? "Search everything";
-  const viewModeLabel = tableMode
-    ? translate("Tooltip.LABEL[FindItBuildingMenu.ShowGrid]", "Grid") ?? "Grid"
-    : translate("Tooltip.LABEL[FindItBuildingMenu.ShowTable]", "Compare") ?? "Compare";
+  const groupByLabel = translate(
+    `Tooltip.LABEL[FindItBuildingMenu.GroupBy_${groupBy}]`,
+    groupDimensionLabel(groupBy)
+  ) ?? groupDimensionLabel(groupBy);
   const upgradesLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Upgrades]", "Upgrades") ?? "Upgrades";
   const noDetailsLabel = translate(
     "Tooltip.LABEL[FindItBuildingMenu.NoDetailMetrics]",
@@ -194,6 +237,57 @@ export const BuildingCatalogComponent = () => {
   const moreSortingLabel = sortingExpanded
     ? translate("Tooltip.LABEL[FindItBuildingMenu.HideSorting]", "Hide sorting") ?? "Hide sorting"
     : translate("Tooltip.LABEL[FindItBuildingMenu.MoreSorting]", "More sorting") ?? "More sorting";
+
+  /**
+   * Draws one leaf's entries in whichever mode is active.
+   *
+   * Grouping is a property of the result, not of a mode, so all three render
+   * the same tree. The zoning view is the same idea by hand — family, density,
+   * tiles — which is why it can eventually drop its bespoke component.
+   */
+  function renderLeaf(entries: BuildingCatalogEntry[]): JSX.Element {
+    return viewMode === "list"
+      ? <BuildingList entries={entries} searchText={currentSearch ?? ""} onPlace={activate} />
+      : <BuildingGrid entries={entries} searchText={currentSearch ?? ""} onPlace={activate} standalone={false} />;
+  }
+
+  function renderGroupNodes(nodes: GroupNode<BuildingCatalogEntry>[], depth: number): JSX.Element[] {
+    // A single group covering everything is a label with nothing to
+    // distinguish, which is exactly what a lone SERVICE BUILDINGS heading is
+    // once the player has already navigated there.
+    const showHeadings = shouldShowHeading(nodes);
+
+    return nodes.map((node) => (
+      <div className={styles.group} key={node.path.join("/")} data-group-depth={depth}>
+        {showHeadings && (
+          <div className={classNames(styles.groupHeading, depth > 0 && styles.groupHeadingNested)}>
+            <span className={styles.groupLabel}>{node.label}</span>
+            <span className={styles.groupCount}>{node.count}</span>
+          </div>
+        )}
+        {node.children.length > 0
+          ? renderGroupNodes(node.children, depth + 1)
+          : renderLeaf(node.entries)}
+      </div>
+    ));
+  }
+
+  function renderGrouped(entries: BuildingCatalogEntry[]): JSX.Element {
+    const groups = buildGroupedView(entries, groupBy);
+
+    // Ungrouped grid keeps its own scroll and its shelf; anything else is one
+    // scroll around the whole result, because a scrollbar per heading makes the
+    // set impossible to read as one thing.
+    if (groups.length === 0 && viewMode !== "list") {
+      return <BuildingGrid entries={entries} searchText={currentSearch ?? ""} onPlace={activate} />;
+    }
+
+    return (
+      <Scrollable className={styles.groupScroll} vertical trackVisibility="scrollable">
+        {groups.length === 0 ? renderLeaf(entries) : renderGroupNodes(groups, 0)}
+      </Scrollable>
+    );
+  }
 
   function toggleExpanded(id: number): void {
     setExpandedId((current) => (current === id ? null : id));
@@ -262,6 +356,45 @@ export const BuildingCatalogComponent = () => {
             {translate("Tooltip.LABEL[FindItBuildingMenu.BuildingLensSearchResults]", "Results for {0}")?.replace("{0}", currentSearch)}
           </div>
         )}
+        {/* Group and sort sit together because they are the same kind of
+            control — how the set is ordered. Narrowing lives in the chip row,
+            and keeping that line clean is what the whole rework turned on. */}
+        <span className={styles.sortLabel}>{translate("Tooltip.LABEL[FindItBuildingMenu.GroupBy]", "Group by")}</span>
+        <div className={styles.groupPicker}>
+          <Button
+            className={styles.sortSummary}
+            variant="icon"
+            onSelect={() => setGroupPickerOpen((open) => !open)}
+            aria-expanded={groupPickerOpen}
+            aria-label={groupByLabel}
+            title={groupByLabel}
+          >
+            <span className={styles.sortSummaryLabel}>{groupByLabel}</span>
+            <span className={styles.sortDirection} aria-hidden="true">▾</span>
+          </Button>
+          {groupPickerOpen && (
+            <div className={styles.groupOptions}>
+              {GROUP_DIMENSIONS.map((dimension) => {
+                const label = translate(
+                  `Tooltip.LABEL[FindItBuildingMenu.GroupBy_${dimension.id}]`,
+                  dimension.label
+                ) ?? dimension.label;
+
+                return (
+                  <Button
+                    key={dimension.id}
+                    className={classNames(styles.sortButton, dimension.id === groupBy && styles.sortButtonSelected)}
+                    variant="icon"
+                    onSelect={() => setGroupBy(dimension.id)}
+                    aria-label={label}
+                  >
+                    <span>{label}</span>
+                  </Button>
+                );
+              })}
+            </div>
+          )}
+        </div>
         <div className={styles.toolbarSpacer} />
         <span className={styles.sortLabel}>{translate("Tooltip.LABEL[FindItBuildingMenu.SortBy]", "Sort by")}</span>
         <div
@@ -272,15 +405,36 @@ export const BuildingCatalogComponent = () => {
           <span className={styles.sortSummaryLabel}>{sortPresentation.compact.label}</span>
           <span className={styles.sortDirection} aria-hidden="true">{sortPresentation.compact.indicator}</span>
         </div>
-        <Button
-          className={styles.sortDisclosure}
-          variant="icon"
-          onSelect={() => setTableMode(!tableMode)}
-          aria-label={viewModeLabel}
-          title={viewModeLabel}
-        >
-          {viewModeLabel}
-        </Button>
+        {/* Three modes, so a two-state toggle no longer says it — and built
+            from the same vanilla ToolButton the game's own Pack and Theme
+            filters use, rather than hand-padded buttons that only resemble
+            them. Selected state comes from the component. */}
+        <div className={styles.viewModes}>
+          {VIEW_MODES.map((option) => {
+            const label = translate(option.localizationKey, option.fallback) ?? option.fallback;
+
+            return (
+              <VanillaComponentResolver.instance.ToolButton
+                key={option.id}
+                selected={option.id === viewMode}
+                tooltip={label}
+                onSelect={() => setViewMode(option.id)}
+                // The vanilla filters are icon-only and this carries a word,
+                // so there is no glyph to pass. Empty is the same thing
+                // OptionsPanel does for its unselected checkbox.
+                src=""
+                focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED}
+                className={classNames(
+                  VanillaComponentResolver.instance.toolButtonTheme.button,
+                  styles.viewMode,
+                  option.id === viewMode && styles.viewModeSelected
+                )}
+              >
+                <span className={styles.viewModeLabel}>{label}</span>
+              </VanillaComponentResolver.instance.ToolButton>
+            );
+          })}
+        </div>
         <Button
           className={styles.sortDisclosure}
           variant="icon"
@@ -634,7 +788,7 @@ export const BuildingCatalogComponent = () => {
               Station" is nothing, and silence there reads as a broken panel. */}
           {items.length === 0
             ? <div className={styles.empty}>{emptyStateMessage}</div>
-            : <BuildingGrid entries={items} searchText={currentSearch ?? ""} onPlace={activate} />}
+            : renderGrouped(items)}
         </>
       )}
 

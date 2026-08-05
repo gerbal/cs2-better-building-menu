@@ -276,6 +276,30 @@ namespace FindItBuildingMenu.Systems
 			RefreshBuildingCatalog();
 		}
 
+		/// <summary>
+		/// Chooses the heading dimension, which is also the query's primary key.
+		/// </summary>
+		/// <remarks>
+		/// Offset resets because the grouping reorders the whole result: keeping
+		/// the old offset would land the player somewhere unrelated to where
+		/// they were looking.
+		/// </remarks>
+		private void SetBuildingCatalogGroupBy(string groupBy)
+		{
+			if (string.IsNullOrWhiteSpace(groupBy))
+			{
+				return;
+			}
+
+			_buildingCatalogQuery = _buildingCatalogQuery with
+			{
+				GroupBy = groupBy.Trim(),
+				Offset = 0,
+			};
+
+			RefreshBuildingCatalog();
+		}
+
 		private void SetBuildingCatalogSortDescending(bool descending)
 		{
 			_buildingCatalogQuery = _buildingCatalogQuery with

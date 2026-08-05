@@ -37,6 +37,16 @@ interface BuildingGridProps {
   entries: BuildingCatalogEntry[];
   searchText: string;
   onPlace: (entry: BuildingCatalogEntry) => void;
+  /**
+   * False when this grid is one group among several, which is the grouped view.
+   * A scroll container per group would give every heading its own scrollbar and
+   * make the set impossible to read as one thing; the caller wraps the whole
+   * grouped result in a single scroll instead.
+   *
+   * The shelf goes with it: "frequently placed" repeated above every group is
+   * the same shortlist printed N times.
+   */
+  standalone?: boolean;
 }
 
 /**
@@ -48,7 +58,7 @@ interface BuildingGridProps {
  * they moved to the hover card, which costs nothing until you actually want
  * them.
  */
-export const BuildingGrid = ({ entries, searchText, onPlace }: BuildingGridProps) => {
+export const BuildingGrid = ({ entries, searchText, onPlace, standalone = true }: BuildingGridProps) => {
   const { translate } = useLocalization();
   const showShelf = useValue(ShowShelf$);
   const shelfSize = useValue(ShelfSize$);
@@ -169,6 +179,16 @@ export const BuildingGrid = ({ entries, searchText, onPlace }: BuildingGridProps
     );
   };
 
+  const tiles = (
+    <div className={classNames(styles.tiles, styles.bodyTiles)}>
+      {ordered.map((entry) => tile(entry, `grid-${entry.id}`))}
+    </div>
+  );
+
+  if (!standalone) {
+    return tiles;
+  }
+
   return (
     <div className={styles.grid}>
       {shelf.length > 0 && !searchText?.trim() && (
@@ -181,9 +201,7 @@ export const BuildingGrid = ({ entries, searchText, onPlace }: BuildingGridProps
       )}
 
       <Scrollable className={styles.body} vertical trackVisibility="scrollable">
-        <div className={classNames(styles.tiles, styles.bodyTiles)}>
-          {ordered.map((entry) => tile(entry, `grid-${entry.id}`))}
-        </div>
+        {tiles}
       </Scrollable>
     </div>
   );
