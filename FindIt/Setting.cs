@@ -114,9 +114,15 @@ namespace FindItBuildingMenu
 		[SettingsUIDisableByCondition(typeof(FindItSettings), nameof(IsShelfHidden))]
 		public int BuildingLensShelfSize { get; set; } = 12;
 
+		/// <summary>
+		/// Grid tile width. 88 was sized around a 12rem label; the tiles now
+		/// carry the game's own 16rem one and a 45px thumbnail to match the
+		/// vanilla asset grid, and at 88 a name like "Additional Burial Lot"
+		/// had nowhere to go.
+		/// </summary>
 		[SettingsUISection(SETTINGS, UIUX)]
-		[SettingsUISlider(min = 64, max = 128, step = 8, scalarMultiplier = 1, unit = Unit.kInteger)]
-		public int BuildingLensTileSize { get; set; } = 88;
+		[SettingsUISlider(min = 64, max = 144, step = 8, scalarMultiplier = 1, unit = Unit.kInteger)]
+		public int BuildingLensTileSize { get; set; } = 112;
 
 		public bool IsVanillaMenuReplacementOff() => !ReplaceVanillaBuildMenu;
 

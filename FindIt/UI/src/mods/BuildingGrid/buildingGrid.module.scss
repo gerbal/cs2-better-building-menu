@@ -52,12 +52,23 @@
   align-items: center;
   justify-content: flex-start;
   width: 88rem !important;
-  height: 96rem;
+  height: 112rem;
   padding: 4rem;
   gap: 2rem;
   border-radius: 3rem;
   background-color: rgba(0, 0, 0, 0.22);
   border: 1rem solid rgba(255, 255, 255, 0.1);
+
+  // Two classes, deliberately. The button mixin emits `img { width: 24rem }`,
+  // which is a descendant selector and outranks a bare `.thumb` — so every
+  // thumbnail in this grid rendered 16px wide against the vanilla asset grid's
+  // 45px, for as long as the grid has existed.
+  .thumb {
+    flex: 0 0 68rem;
+    width: 68rem;
+    height: 68rem;
+    object-fit: contain;
+  }
 }
 
 .tile:hover {
@@ -65,24 +76,20 @@
   border-color: var(--accentColorNormal);
 }
 
-.thumb {
-  flex: 0 0 60rem;
-  width: 76rem;
-  height: 60rem;
-  object-fit: contain;
-}
-
 // Two lines, then ellipsis. Names run long ("Additional Clinic Center") and a
 // tile that resizes to its label would break the grid's alignment.
 .tileName {
   display: block;
   width: 100%;
-  max-height: 28rem;
+  max-height: 34rem;
   overflow: hidden;
   text-align: center;
   color: var(--menuText1Normal);
-  font-size: var(--fontSizeXS);
-  line-height: 14rem;
+  // The game's own smallest label — the tool-options "Pack" row — is 16rem.
+  // fontSizeXS is 12rem, so every name here was a step below anything vanilla
+  // uses and read as a different UI.
+  font-size: var(--fontSizeM);
+  line-height: 17rem;
   white-space: normal;
 }
 
