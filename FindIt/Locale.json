@@ -285,5 +285,8 @@
   "Tooltip.LABEL[FindItBuildingMenu.ShowGrid]": "Grid",
   "Tooltip.LABEL[FindItBuildingMenu.ShowTable]": "Compare",
   "Tooltip.LABEL[FindItBuildingMenu.MatchesElsewhere]": "No matches here — {0} elsewhere",
-  "Tooltip.LABEL[FindItBuildingMenu.SearchEverything]": "Search everything"
+  "Tooltip.LABEL[FindItBuildingMenu.SearchEverything]": "Search everything",
+  "Tooltip.LABEL[FindItBuildingMenu.ClearFilters]": "Clear filters",
+  "Tooltip.LABEL[FindItBuildingMenu.FilterOptions]": "Filter options…",
+  "Options.LABEL[FindItBuildingMenu.MetricFilters]": "Metric filters"
 }

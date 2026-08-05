@@ -51,7 +51,12 @@ import { BuildingGrid } from "mods/BuildingGrid/BuildingGrid";
 import { getSearchScopeNotice } from "domain/buildingSearchRank";
 import { getLensDisclosure, setLensDisclosure } from "domain/buildingLensViewState";
 import { BuildingCatalogFilterSummary } from "./BuildingCatalogFilterSummary";
-import { BuildingCatalogFacetPanel } from "./BuildingCatalogFacetPanel";
+import { FilterRail } from "mods/FilterRail/FilterRail";
+import { countActiveMetricRanges } from "domain/filterRail";
+import {
+  clearBuildingLensFacetsCommand,
+  toggleBuildingLensFacetCommand,
+} from "domain/buildingCatalogFacets";
 import { BuildingCatalogMetricFilters } from "./BuildingCatalogMetricFilters";
 import {
   BUILDING_LENS_COLUMN_SORT,
@@ -131,6 +136,8 @@ export const BuildingCatalogComponent = () => {
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
   const legacyFilters = useValue(BuildingLensLegacyFilters$);
   const matchesElsewhere = useValue(BuildingCatalogMatchesElsewhere$);
+  // Badge source for the metrics icon: how many range bounds are actually set.
+  const activeMetricRangeCount = countActiveMetricRanges(metricRanges as unknown as Record<string, unknown>);
 
   // Name the constraints that actually emptied the table; the old copy always
   // blamed search and category, which are often not the cause.
@@ -316,10 +323,22 @@ export const BuildingCatalogComponent = () => {
 
       <BuildingCatalogFilterSummary />
 
-      <div className={styles.catalogFilters}>
-        <BuildingCatalogFacetPanel />
-        <BuildingCatalogMetricFilters />
-      </div>
+      {/* One icon row instead of two stacked drawers. Measured before the
+          change: the facet drawer cost 163px open and the metric drawer 171px,
+          against a 625px panel whose content had 209px. */}
+      <FilterRail
+        facets={facets}
+        metricsActive={activeMetricRangeCount}
+        onToggleOption={(groupId, optionId) => {
+          const command = toggleBuildingLensFacetCommand(groupId, optionId);
+          trigger(mod.id, command.method, ...command.args);
+        }}
+        onClearAll={() => {
+          const command = clearBuildingLensFacetsCommand();
+          trigger(mod.id, command.method, ...command.args);
+        }}
+        renderMetrics={() => <BuildingCatalogMetricFilters />}
+      />
 
       {capacityFilterVisible && (
         <div className={styles.capacityFilter}>
