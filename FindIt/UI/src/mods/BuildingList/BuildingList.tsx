@@ -1,15 +1,35 @@
+import { bindValue, useValue } from "cs2/api";
 import { Button, Tooltip } from "cs2/ui";
 import { useEffect } from "react";
+import classNames from "classnames";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
-import { formatBuildingMetric, formatLotDimensions } from "domain/buildingLensMetricFormat";
+import {
+  formatBuildingMetric,
+  formatCapacity,
+  formatLotDimensions,
+  groupDigits,
+} from "domain/buildingLensMetricFormat";
+import { getCostForecast } from "domain/buildingForecast";
 import { recordPlacement } from "domain/buildingShelf";
 import { rankBuildingMatches, topSearchResult } from "domain/buildingSearchRank";
 import styles from "./buildingList.module.scss";
+
+// Same source the grid's hover card uses, so "can I afford it" is answered the
+// same way wherever it is asked.
+const Money$ = bindValue<number>("toolbarBottom", "money", 0);
+
+/**
+ * compact — icon and name only.
+ * cards — a larger icon and the two questions asked before every placement:
+ * does it fit, and can I afford it.
+ */
+export type BuildingListVariant = "compact" | "cards";
 
 interface BuildingListProps {
   entries: BuildingCatalogEntry[];
   searchText: string;
   onPlace: (entry: BuildingCatalogEntry) => void;
+  variant?: BuildingListVariant;
 }
 
 /**
@@ -26,10 +46,14 @@ interface BuildingListProps {
  * which is the case that arrives with DLC and mods and that the other two
  * modes both handle badly.
  *
- * Deliberately no metrics on the tile and no hover forecast: adding them turns
- * this back into the table, which already exists.
+ * Two variants. Compact is icon and name only. Cards adds a larger icon and one
+ * short line: footprint, cost, and the category's own capacity where that means
+ * anything. Those are constraints rather than comparisons — does it fit, can I
+ * afford it — which is what keeps this from drifting back into the table.
  */
-export const BuildingList = ({ entries, searchText, onPlace }: BuildingListProps) => {
+export const BuildingList = ({ entries, searchText, onPlace, variant = "compact" }: BuildingListProps) => {
+  const money = useValue(Money$);
+  const cards = variant === "cards";
   // Search relevance still applies within whatever order the query returned,
   // so typing narrows to the best match the same way it does in the grid.
   const ordered = rankBuildingMatches(entries, searchText ?? "");
@@ -61,6 +85,12 @@ export const BuildingList = ({ entries, searchText, onPlace }: BuildingListProps
         const label = entry.name || entry.prefabName;
         const cost = formatBuildingMetric(entry.constructionCost, "cost");
         const lot = formatLotDimensions(entry.lotWidth, entry.lotDepth);
+        // Category-aware, and it returns nothing for a category where capacity
+        // means nothing — so a park bench's card stays as narrow as a
+        // hospital's is informative, without a rule per category here.
+        const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory);
+        const hasCapacity = capacity !== "" && capacity !== "—";
+        const forecast = getCostForecast(entry.constructionCost, money);
 
         return (
           <Tooltip
@@ -73,15 +103,43 @@ export const BuildingList = ({ entries, searchText, onPlace }: BuildingListProps
             }
           >
             <Button
-              className={styles.item}
+              className={classNames(styles.item, cards && styles.itemCard)}
               variant="icon"
               onSelect={() => place(entry)}
               aria-label={label}
             >
               {entry.thumbnail
-                ? <img className={styles.icon} src={entry.thumbnail} alt="" aria-hidden="true" />
-                : <span className={styles.iconPlaceholder} aria-hidden="true" />}
-              <span className={styles.name}>{label}</span>
+                ? <img className={classNames(styles.icon, cards && styles.iconLarge)} src={entry.thumbnail} alt="" aria-hidden="true" />
+                : <span className={classNames(styles.iconPlaceholder, cards && styles.iconLarge)} aria-hidden="true" />}
+              <span className={styles.text}>
+                <span className={styles.name}>{label}</span>
+                {cards && (
+                  <span className={styles.facts}>
+                    {/* Footprint first, and always: it is a constraint rather
+                        than a comparison — whether the thing fits the gap you
+                        are looking at, which you ask before anything else. */}
+                    {/* Separators are characters, not flex gap. Cohtml did not
+                        apply the gap here, so "3 × 3" and "8 000" ran together
+                        and read as a single number, "3 × 38 000". */}
+                    <span className={styles.fact}>{lot}</span>
+                    <span className={styles.factDot} aria-hidden="true">·</span>
+                    <span
+                      className={classNames(
+                        styles.fact,
+                        forecast && !forecast.affordable && styles.factUnaffordable
+                      )}
+                    >
+                      {forecast && forecast.treasury !== null ? groupDigits(forecast.cost) : cost}
+                    </span>
+                    {hasCapacity && (
+                      <>
+                        <span className={styles.factDot} aria-hidden="true">·</span>
+                        <span className={styles.fact}>{capacity}</span>
+                      </>
+                    )}
+                  </span>
+                )}
+              </span>
             </Button>
           </Tooltip>
         );

@@ -71,3 +71,54 @@
   font-size: var(--fontSizeS);
   color: var(--menuText2Normal);
 }
+
+// --- Cards variant ---------------------------------------------------------
+// A larger icon and one line of facts. Still wrapped rows, so this sits between
+// the compact list and the table rather than becoming another table.
+
+.itemCard {
+  height: auto;
+  min-height: 44rem;
+  padding: 4rem 10rem 4rem 4rem !important;
+  align-items: center;
+}
+
+.iconLarge {
+  width: 36rem;
+  height: 36rem;
+  margin-right: 7rem;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.facts {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 7rem;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeXS);
+}
+
+.fact {
+  white-space: nowrap;
+}
+
+// Cohtml did not honour flex gap on this row, so the separator is a real
+// character rather than spacing that silently was not there.
+.factDot {
+  padding: 0 5rem;
+  color: var(--menuText2Normal);
+  opacity: 0.6;
+}
+
+// Same signal the grid's hover card gives, so the answer to "can I afford it"
+// looks the same wherever it is asked.
+.factUnaffordable {
+  color: var(--negativeColor, #e06c6c);
+}
