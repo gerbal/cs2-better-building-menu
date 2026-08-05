@@ -61,6 +61,9 @@ export const ZoningHierarchyComponent = () => {
 
   function factLabel(fact: { kind: string; value: string | number }): string {
     switch (fact.kind) {
+      case "lots":
+        return (translate("Tooltip.LABEL[FindItBuildingMenu.ZoneLots]", "fits {0}") ?? "fits {0}")
+          .replace("{0}", String(fact.value));
       case "height":
         return (translate("Tooltip.LABEL[FindItBuildingMenu.ZoneMaxHeight]", "up to {0}m") ?? "up to {0}m")
           .replace("{0}", String(fact.value));

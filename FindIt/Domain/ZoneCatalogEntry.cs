@@ -43,7 +43,12 @@ namespace FindItBuildingMenu.Domain
 		/// <summary>What a commercial or industrial zone trades in, if anything.</summary>
 		string? AllowedSold = null,
 		string? AllowedManufactured = null,
-		string? AllowedStored = null) : IJsonWritable
+		string? AllowedStored = null,
+		/// <summary>Lot sizes the zone's spawnable buildings occupy. 0 = none known.</summary>
+		int MinLotWidth = 0,
+		int MaxLotWidth = 0,
+		int MinLotDepth = 0,
+		int MaxLotDepth = 0) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -74,6 +79,14 @@ namespace FindItBuildingMenu.Domain
 			writer.Write(AllowedManufactured ?? string.Empty);
 			writer.PropertyName("allowedStored");
 			writer.Write(AllowedStored ?? string.Empty);
+			writer.PropertyName("minLotWidth");
+			writer.Write(MinLotWidth);
+			writer.PropertyName("maxLotWidth");
+			writer.Write(MaxLotWidth);
+			writer.PropertyName("minLotDepth");
+			writer.Write(MinLotDepth);
+			writer.PropertyName("maxLotDepth");
+			writer.Write(MaxLotDepth);
 			writer.TypeEnd();
 		}
 	}

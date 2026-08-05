@@ -776,6 +776,27 @@ namespace FindItBuildingMenu.Systems
 			var buildingsData = buildingsQuery.ToComponentDataArray<BuildingData>(Allocator.Temp);
 			var spawnableBuildings = buildingsQuery.ToComponentDataArray<SpawnableBuildingData>(Allocator.Temp);
 
+			// One pass over the buildings rather than a rescan per zone. This
+			// also yields the lot sizes each zone can actually fill, which is
+			// what the row-housing test was really asking about and which the
+			// game never tells the player: some zones only ever grow 2x2.
+			var lotSizes = new Dictionary<Entity, ZoneLotSizes>();
+
+			for (var j = 0; j < spawnableBuildings.Length; j++)
+			{
+				var zonePrefab = spawnableBuildings[j].m_ZonePrefab;
+				if (zonePrefab == Entity.Null)
+				{
+					continue;
+				}
+
+				var lot = buildingsData[j].m_LotSize;
+
+				lotSizes[zonePrefab] = lotSizes.TryGetValue(zonePrefab, out var seen)
+					? seen.Include(lot.x, lot.y)
+					: ZoneLotSizes.From(lot.x, lot.y);
+			}
+
 			var dictionary = new Dictionary<Entity, ZoneTypeFilter>();
 
 			for (var i = 0; i < zones.Length; i++)
@@ -797,16 +818,10 @@ namespace FindItBuildingMenu.Systems
 				}
 				else if (ratio < 1f)
 				{
-					var isRowHousing = true;
-
-					for (var j = 0; j < spawnableBuildings.Length; j++)
-					{
-						if (spawnableBuildings[j].m_ZonePrefab == zone && buildingsData[j].m_LotSize.x > 2)
-						{
-							isRowHousing = false;
-							break;
-						}
-					}
+					// Identical to the old scan: "no spawnable building wider
+					// than 2" is exactly "the widest is at most 2". A zone with
+					// no spawnable buildings at all stays row, as before.
+					var isRowHousing = !lotSizes.TryGetValue(zone, out var sizes) || sizes.MaxWidth <= 2;
 
 					dictionary[zone] = isRowHousing ? ZoneTypeFilter.Row : ZoneTypeFilter.Medium;
 				}
@@ -882,7 +897,14 @@ namespace FindItBuildingMenu.Systems
 						& (ZoneFlags.SupportLeftCorner | ZoneFlags.SupportRightCorner)) != 0,
 					AllowedSold: ResourceName(propertiesData[i].m_AllowedSold),
 					AllowedManufactured: ResourceName(propertiesData[i].m_AllowedManufactured),
-					AllowedStored: ResourceName(propertiesData[i].m_AllowedStored)));
+					AllowedStored: ResourceName(propertiesData[i].m_AllowedStored),
+					// What will actually grow here. A zone whose buildings are
+					// all 2x2 fills a 2-wide strip and nothing else, which
+					// decides how the block gets drawn and is stated nowhere.
+					MinLotWidth: lotSizes.TryGetValue(zone, out var zoneLots) ? zoneLots.MinWidth : 0,
+					MaxLotWidth: zoneLots.MaxWidth,
+					MinLotDepth: zoneLots.MinDepth,
+					MaxLotDepth: zoneLots.MaxDepth));
 			}
 
 			_zoneCatalog = catalog;

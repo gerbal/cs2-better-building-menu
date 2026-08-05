@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  formatZoneLots,
   getZoneFacts,
   selectZoneCommand,
   sortZonesForDisplay,
@@ -164,5 +165,57 @@ describe("Zone facts", () => {
   it("survives an absent zone", () => {
     assert.deepEqual(getZoneFacts(null), []);
     assert.deepEqual(getZoneFacts(undefined), []);
+  });
+});
+
+describe("Zone lot sizes", () => {
+  const lots = (over: Record<string, unknown>) => ({
+    id: 1, version: 1, prefabName: "Z", name: "Z", family: "ZoneResidential",
+    density: "Low", thumbnail: "", ...over,
+  } as ZoneEntry);
+
+  it("states one footprint plainly when every building is the same size", () => {
+    // The case worth knowing: this zone fills a two-cell strip and nothing
+    // wider, which the density tier does not imply.
+    assert.equal(
+      formatZoneLots(lots({ minLotWidth: 2, maxLotWidth: 2, minLotDepth: 2, maxLotDepth: 2 })),
+      "2 × 2"
+    );
+  });
+
+  it("states a width range when the zone takes several", () => {
+    assert.equal(
+      formatZoneLots(lots({ minLotWidth: 1, maxLotWidth: 4, minLotDepth: 2, maxLotDepth: 6 })),
+      "1–4 wide"
+    );
+  });
+
+  it("states the depth whenever it is fixed, whatever the width does", () => {
+    // A depth range is noise beside the width — block depth is usually the
+    // real constraint — but a fixed depth is a fact worth having, and it reads
+    // as a lot spec: widths 1 to 4, always 6 deep.
+    assert.equal(
+      formatZoneLots(lots({ minLotWidth: 1, maxLotWidth: 4, minLotDepth: 6, maxLotDepth: 6 })),
+      // Non-breaking spaces, as the lot column uses: Cohtml takes each text
+      // node boundary as a break opportunity and split "19 × 16" over three
+      // lines in a narrow cell.
+      "1\u20134\u00a0\u00d7\u00a06"
+    );
+    assert.equal(
+      formatZoneLots(lots({ minLotWidth: 3, maxLotWidth: 3, minLotDepth: 2, maxLotDepth: 6 })),
+      "3 wide"
+    );
+  });
+
+  it("declines a zone with no spawnable buildings at all", () => {
+    assert.equal(formatZoneLots(lots({ minLotWidth: 0, maxLotWidth: 0 })), null);
+    assert.equal(formatZoneLots(lots({})), null);
+    assert.equal(formatZoneLots(null), null);
+  });
+
+  it("leads the facts, since size rules a zone in or out before height does", () => {
+    const facts = getZoneFacts(lots({ minLotWidth: 2, maxLotWidth: 2, minLotDepth: 2, maxLotDepth: 2, maxHeight: 12 }));
+
+    assert.deepEqual(facts.map((fact) => fact.kind), ["lots", "height"]);
   });
 });
