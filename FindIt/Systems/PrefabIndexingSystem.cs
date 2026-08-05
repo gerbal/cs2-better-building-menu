@@ -870,7 +870,19 @@ namespace FindItBuildingMenu.Systems
 					Density: dictionary.TryGetValue(zone, out var density) && density != ZoneTypeFilter.Any
 						? density
 						: ZoningSurfaceCatalog.ResolveDensity(prefab.name),
-					Thumbnail: IconPath.Normalize(ImageSystem.GetThumbnail(prefab))));
+					Thumbnail: IconPath.Normalize(ImageSystem.GetThumbnail(prefab)),
+					// Measured by the game, never shown by it. ZoneSystem seeds
+					// MaxHeight to zero and BuildingInitializeSystem raises it to
+					// the tallest mesh of every spawnable building the zone can
+					// grow, so this answers "how tall does this get" from real
+					// geometry rather than from the tier's name.
+					MaxHeight: zoneData[i].m_MaxHeight,
+					SupportsNarrow: (zoneData[i].m_ZoneFlags & ZoneFlags.SupportNarrow) != 0,
+					SupportsCorners: (zoneData[i].m_ZoneFlags
+						& (ZoneFlags.SupportLeftCorner | ZoneFlags.SupportRightCorner)) != 0,
+					AllowedSold: ResourceName(propertiesData[i].m_AllowedSold),
+					AllowedManufactured: ResourceName(propertiesData[i].m_AllowedManufactured),
+					AllowedStored: ResourceName(propertiesData[i].m_AllowedStored)));
 			}
 
 			_zoneCatalog = catalog;
@@ -894,6 +906,17 @@ namespace FindItBuildingMenu.Systems
 		public static string? GetAssetMenuName(int entityIndex) => _assetMenuNames.TryGetValue(entityIndex, out var name)
 			? name
 			: null;
+
+		/// <summary>
+		/// A resource's name, or null when the zone trades in none.
+		/// </summary>
+		/// <remarks>
+		/// Resource is a flags enum whose zero value is NoResource, which
+		/// ToString()s as "NoResource" — a string the player would read as a
+		/// kind of resource rather than as its absence.
+		/// </remarks>
+		private static string? ResourceName(Game.Economy.Resource resource) =>
+			resource == Game.Economy.Resource.NoResource ? null : resource.ToString();
 
 		public static ZoneTypeFilter GetZoneType(Entity zonePrefab)
 		{

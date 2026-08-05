@@ -67,6 +67,16 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   { key: key("ZoneFamilies"), english: "Families", source: "ChipRow", plumbed: true },
   { key: key("Remove"), english: "Remove", source: "ChipRow", plumbed: true },
 
+  // --- Zone facts. Plumbed: the component formats and translates these. ----
+  // Data the game measures and never shows: how tall a zone grows, whether it
+  // takes narrow or corner lots, and what it trades in.
+  { key: key("ZoneMaxHeight"), english: "up to {0}m", source: "ZoningHierarchy", plumbed: true },
+  { key: key("ZoneNarrowLots"), english: "narrow lots", source: "ZoningHierarchy", plumbed: true },
+  { key: key("ZoneCorners"), english: "corners", source: "ZoningHierarchy", plumbed: true },
+  { key: key("ZoneSells"), english: "sells {0}", source: "ZoningHierarchy", plumbed: true },
+  { key: key("ZoneMakes"), english: "makes {0}", source: "ZoningHierarchy", plumbed: true },
+  { key: key("ZoneStores"), english: "stores {0}", source: "ZoningHierarchy", plumbed: true },
+
   // --- Group headings. Returned as text from a pure module. ----------------
   { key: key("GroupOther"), english: "Other", source: "buildingGroups.UNGROUPED_LABEL", plumbed: false },
 

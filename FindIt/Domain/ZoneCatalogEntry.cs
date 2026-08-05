@@ -12,6 +12,15 @@ namespace FindItBuildingMenu.Domain
 	/// family, and the <c>ZonePropertiesData</c> derivation IndexZones already
 	/// performs for the density.
 	///
+	/// The remaining fields are what the game knows about a zone and never shows
+	/// anyone. <c>MaxHeight</c> is not authored: ZoneSystem seeds it to zero and
+	/// BuildingInitializeSystem raises it to the tallest mesh of every spawnable
+	/// building assigned to the zone, so it is a measured answer to "how tall
+	/// does this grow" rather than an estimate. The corner and narrow flags are
+	/// derived the same way, from the level-1 buildings the zone can spawn. The
+	/// allowed resources come from ZonePropertiesData and say what a commercial
+	/// or industrial zone will actually trade in.
+	///
 	/// <c>Id</c> and <c>Version</c> are the ECS entity's two halves. They are
 	/// runtime values and must not be persisted; the UI needs both to hand the
 	/// entity back to the game's own toolbar.selectAsset trigger, which is what
@@ -24,7 +33,17 @@ namespace FindItBuildingMenu.Domain
 		string Name,
 		string Family,
 		ZoneTypeFilter Density,
-		string Thumbnail) : IJsonWritable
+		string Thumbnail,
+		/// <summary>Tallest spawnable building, in metres. 0 when unknown.</summary>
+		int MaxHeight = 0,
+		/// <summary>The zone accepts a one-cell-wide lot.</summary>
+		bool SupportsNarrow = false,
+		/// <summary>The zone has a building that fits a left or right corner.</summary>
+		bool SupportsCorners = false,
+		/// <summary>What a commercial or industrial zone trades in, if anything.</summary>
+		string? AllowedSold = null,
+		string? AllowedManufactured = null,
+		string? AllowedStored = null) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -43,6 +62,18 @@ namespace FindItBuildingMenu.Domain
 			writer.Write(Density.ToString());
 			writer.PropertyName("thumbnail");
 			writer.Write(Thumbnail);
+			writer.PropertyName("maxHeight");
+			writer.Write(MaxHeight);
+			writer.PropertyName("supportsNarrow");
+			writer.Write(SupportsNarrow);
+			writer.PropertyName("supportsCorners");
+			writer.Write(SupportsCorners);
+			writer.PropertyName("allowedSold");
+			writer.Write(AllowedSold ?? string.Empty);
+			writer.PropertyName("allowedManufactured");
+			writer.Write(AllowedManufactured ?? string.Empty);
+			writer.PropertyName("allowedStored");
+			writer.Write(AllowedStored ?? string.Empty);
 			writer.TypeEnd();
 		}
 	}

@@ -326,5 +326,11 @@
   "Tooltip.LABEL[FindItBuildingMenu.GroupBy_density]": "Density",
   "Tooltip.LABEL[FindItBuildingMenu.GroupBy_footprint]": "Footprint",
   "Tooltip.LABEL[FindItBuildingMenu.GroupBy_cost]": "Cost",
-  "Tooltip.LABEL[FindItBuildingMenu.ViewCards]": "Cards"
+  "Tooltip.LABEL[FindItBuildingMenu.ViewCards]": "Cards",
+  "Tooltip.LABEL[FindItBuildingMenu.ZoneMaxHeight]": "up to {0}m",
+  "Tooltip.LABEL[FindItBuildingMenu.ZoneNarrowLots]": "narrow lots",
+  "Tooltip.LABEL[FindItBuildingMenu.ZoneCorners]": "corners",
+  "Tooltip.LABEL[FindItBuildingMenu.ZoneSells]": "sells {0}",
+  "Tooltip.LABEL[FindItBuildingMenu.ZoneMakes]": "makes {0}",
+  "Tooltip.LABEL[FindItBuildingMenu.ZoneStores]": "stores {0}"
 }

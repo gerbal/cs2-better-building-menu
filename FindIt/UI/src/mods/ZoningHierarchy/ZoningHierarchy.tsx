@@ -4,7 +4,7 @@ import mod from "../../../mod.json";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import { getBuildingLensCatalogMaxHeight } from "domain/buildingLensLayout";
 import { getLensChoice } from "domain/buildingLensViewState";
-import { selectZoneCommand, sortZonesForDisplay, zoneAsCatalogEntry, type ZoneEntry } from "domain/zoningHierarchy";
+import { getZoneFacts, selectZoneCommand, sortZonesForDisplay, zoneAsCatalogEntry, type ZoneEntry } from "domain/zoningHierarchy";
 import { GroupedResults, type CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import styles from "./zoningHierarchy.module.scss";
 
@@ -54,7 +54,31 @@ export const ZoningHierarchyComponent = () => {
     categoryLabel: familyLabel(zone.family),
     subCategory: densityLabel(zone.density),
     subCategoryLabel: densityLabel(zone.density),
+    // What the game measured about this zone and never showed anyone. The
+    // renderer takes these verbatim, so they are translated here.
+    facts: getZoneFacts(zone).map(factLabel),
   })) as unknown as BuildingCatalogEntry[];
+
+  function factLabel(fact: { kind: string; value: string | number }): string {
+    switch (fact.kind) {
+      case "height":
+        return (translate("Tooltip.LABEL[FindItBuildingMenu.ZoneMaxHeight]", "up to {0}m") ?? "up to {0}m")
+          .replace("{0}", String(fact.value));
+      case "narrow":
+        return translate("Tooltip.LABEL[FindItBuildingMenu.ZoneNarrowLots]", "narrow lots") ?? "narrow lots";
+      case "corners":
+        return translate("Tooltip.LABEL[FindItBuildingMenu.ZoneCorners]", "corners") ?? "corners";
+      case "sold":
+        return (translate("Tooltip.LABEL[FindItBuildingMenu.ZoneSells]", "sells {0}") ?? "sells {0}")
+          .replace("{0}", String(fact.value));
+      case "manufactured":
+        return (translate("Tooltip.LABEL[FindItBuildingMenu.ZoneMakes]", "makes {0}") ?? "makes {0}")
+          .replace("{0}", String(fact.value));
+      default:
+        return (translate("Tooltip.LABEL[FindItBuildingMenu.ZoneStores]", "stores {0}") ?? "stores {0}")
+          .replace("{0}", String(fact.value));
+    }
+  }
 
   function familyLabel(family: string): string {
     return translate(`Tooltip.LABEL[FindItBuildingMenu.Zoning_${family}]`, family) ?? family;
