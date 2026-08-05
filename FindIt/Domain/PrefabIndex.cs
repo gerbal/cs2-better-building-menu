@@ -20,11 +20,14 @@ namespace FindItBuildingMenu.Domain
 		public BuildingCornerFilter CornerType { get; set; }
 		public int2 LotSize { get; set; }
 		public int BuildingLevel { get; set; }
+		public string? BuildingTypeName { get; set; }
+		public BuildingFlags? BuildingFlagsValue { get; set; }
 		public bool IsVanilla { get; set; }
 		public bool IsUniqueMesh { get; set; }
 		public ThemePrefab Theme { get; set; }
 		public AssetPackPrefab[] AssetPacks { get; set; }
 		public int[] RandomPrefabs { get; set; }
+		public string[]? ExtensionIds { get; set; }
 		public List<string> Tags { get; set; }
 		public int UIOrder { get; set; }
 		public bool HasParking { get; set; }

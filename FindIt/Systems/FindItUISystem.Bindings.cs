@@ -1,4 +1,5 @@
-﻿using FindItBuildingMenu.Domain.Enums;
+﻿using FindItBuildingMenu.Domain;
+using FindItBuildingMenu.Domain.Enums;
 using FindItBuildingMenu.Utilities;
 using System;
 using System.Diagnostics;
@@ -56,7 +57,38 @@ namespace FindItBuildingMenu.Systems
 		private void SetBuildingLensEnabled(bool enabled)
 		{
 			_BuildingLensEnabled.Value = enabled;
+			RefreshBuildingLensNavigation();
 			_PanelWidth.Value = GridUtil.GetCurrentPanelWidth();
+			RefreshBuildingCatalog();
+		}
+
+		private void SetBuildingLensSection(string section)
+		{
+			VanillaBuildMenuSelection selection = VanillaBuildMenuSelection.Normalize(section, VanillaBuildMenuTaxonomy.Any);
+			_buildingLensSection = selection.Section;
+			_buildingLensSubCategory = selection.SubCategory;
+			_buildingCatalogQuery = _buildingCatalogQuery with
+			{
+				Offset = 0,
+				MinCapacity = null,
+			};
+			_BuildingCapacityFloor.Value = 0;
+			RefreshBuildingLensNavigation();
+			RefreshBuildingCatalog();
+		}
+
+		private void SetBuildingLensSubCategory(string subCategory)
+		{
+			VanillaBuildMenuSelection selection = VanillaBuildMenuSelection.Normalize(_buildingLensSection, subCategory);
+			_buildingLensSection = selection.Section;
+			_buildingLensSubCategory = selection.SubCategory;
+			_buildingCatalogQuery = _buildingCatalogQuery with
+			{
+				Offset = 0,
+				MinCapacity = null,
+			};
+			_BuildingCapacityFloor.Value = 0;
+			RefreshBuildingLensNavigation();
 			RefreshBuildingCatalog();
 		}
 
@@ -85,6 +117,20 @@ namespace FindItBuildingMenu.Systems
 
 			Mod.Settings.BuildingLensPanelWidth = width;
 			Mod.Settings.ApplyAndSave();
+		}
+
+		private void ToggleBuildingCatalogCompare(int id)
+		{
+			_buildingCompareIds = BuildingCatalogCompareSelection.Toggle(_buildingCompareIds, id);
+
+			PublishBuildingCompare();
+		}
+
+		private void ClearBuildingCatalogCompare()
+		{
+			_buildingCompareIds = BuildingCatalogCompareSelection.Clear();
+
+			PublishBuildingCompare();
 		}
 
 		private void SetBuildingCatalogSortColumn(string column)
@@ -121,6 +167,56 @@ namespace FindItBuildingMenu.Systems
 				Offset = offset,
 			};
 
+			RefreshBuildingCatalog();
+		}
+
+		private void ToggleBuildingLensFacet(string facetId, string optionId)
+		{
+			BuildingCatalogQuery next = BuildingCatalogFacetSelection.Toggle(_buildingCatalogQuery, facetId, optionId);
+			if (ReferenceEquals(next, _buildingCatalogQuery))
+			{
+				return;
+			}
+
+			_buildingCatalogQuery = next;
+			RefreshBuildingCatalog();
+		}
+
+		private void ClearBuildingLensFacets()
+		{
+			_buildingCatalogQuery = BuildingCatalogFacetSelection.Clear(_buildingCatalogQuery);
+			RefreshBuildingCatalog();
+		}
+
+		private void ClearBuildingLensFilters()
+		{
+			BuildingCatalogLensState cleared = new BuildingCatalogLensState(
+				_buildingCatalogQuery,
+				_buildingMetricRanges,
+				_BuildingCapacityFloor.Value).ClearFilters();
+
+			_buildingCatalogQuery = cleared.Query;
+			_buildingMetricRanges = cleared.MetricRanges;
+			_BuildingCapacityFloor.Value = cleared.EducationCapacityFloor;
+			RefreshBuildingCatalog();
+		}
+
+		private void SetBuildingCatalogMetricRange(string metricId, string minText, string maxText)
+		{
+			if (!BuildingCatalogMetricRange.TryParse(metricId, minText, maxText, out BuildingCatalogMetricRange range))
+			{
+				return;
+			}
+
+			_buildingMetricRanges = _buildingMetricRanges.With(range);
+			_buildingCatalogQuery = BuildingCatalogMetricRange.Apply(_buildingCatalogQuery, metricId, minText, maxText);
+			RefreshBuildingCatalog();
+		}
+
+		private void ClearBuildingCatalogMetricRanges()
+		{
+			_buildingMetricRanges = BuildingCatalogMetricRangeState.Empty;
+			_buildingCatalogQuery = BuildingCatalogMetricRange.Clear(_buildingCatalogQuery);
 			RefreshBuildingCatalog();
 		}
 
@@ -259,8 +355,14 @@ namespace FindItBuildingMenu.Systems
 
 			_CurrentSearch.Value = text;
 			_CurrentSearch.ForceUpdate();
-			RefreshBuildingCatalog();
 
+			// Deliberately no inline RefreshBuildingCatalog() here. Every refresh
+			// projects the whole building index twice — once for the page and
+			// once to rebuild the facets — and doing that per keystroke made the
+			// lens the only search path in the mod without a debounce. The
+			// search worker below already re-runs the refresh once it settles,
+			// via the filterCompleted branch in OnUpdate, which is the same
+			// 250ms debounce the legacy grid has always used.
 			TriggerSearch();
 		}
 

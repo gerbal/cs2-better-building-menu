@@ -3,12 +3,13 @@
 .catalog {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
   height: auto;
-  // Keep the catalog inside the existing FindIt panel. The panel's top bar
-  // owns close/category/filter/picker controls; an unconstrained 100% child
-  // would consume the viewport and push that bar above the visible region.
-  max-height: calc(100vh - 270rem);
+  // The React surface supplies a render-target-aware max-height. Keep this
+  // fallback for the first frame before bindings/window metrics settle.
+  max-height: 100%;
   min-height: 0;
+  overflow: hidden;
   box-sizing: border-box;
   padding: 8rem;
   color: var(--menuTitleNormal);
@@ -22,8 +23,8 @@
 .densityCompact {
   padding: 6rem;
 
-  .heading,
-  .sortBar,
+  .toolbar,
+  .sortOptions,
   .capacityFilter {
     padding-left: 6rem;
     padding-right: 6rem;
@@ -35,14 +36,16 @@
   }
 
   .row {
-    height: 92rem;
-    min-height: 92rem;
+    height: 84rem;
+    min-height: 84rem;
     gap: 2rem;
   }
 
   .rowSelect {
-    height: 88rem;
-    min-height: 88rem;
+    height: 80rem;
+    min-height: 80rem;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
     gap: 2rem;
   }
 
@@ -53,12 +56,11 @@
   .metricHeader,
   .metric,
   .parking {
-    font-size: var(--fontSizeXXS);
+    font-size: var(--fontSizeS);
   }
 }
 
-.heading,
-.sortBar,
+.toolbar,
 .columnHeader,
 .row,
 .paging {
@@ -67,42 +69,106 @@
   align-items: center;
 }
 
-.heading {
-  justify-content: space-between;
-  padding: 4rem 8rem 8rem;
+// One band carrying icon, title, count, search context and sort, replacing the
+// stacked .heading + .sortBar that spent 84px of a 625px panel on two short
+// lines while the rows themselves only got 159px.
+.toolbar {
+  flex-wrap: nowrap;
+  gap: 6rem;
+  padding: 4rem 8rem 6rem;
+  border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
+}
+
+.toolbarSpacer {
+  flex: 1 1 auto;
+  min-width: 4rem;
+}
+
+// Only rendered while a search is active, so it costs nothing at rest.
+.searchContext {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeS);
+}
+
+.titleIcon {
+  flex: 0 0 16rem;
+  width: 16rem;
+  height: 16rem;
+  object-fit: contain;
 }
 
 .title {
+  flex: 0 0 auto;
   color: var(--accentColorNormal);
-  font-size: 16rem;
+  font-size: var(--fontSizeL);
+  margin-left: 2rem;
+  white-space: nowrap;
   text-transform: uppercase;
 }
 
-.subtitle,
 .category,
 .sortLabel,
 .columnHeader,
 .pageLabel {
   color: var(--menuText2Normal);
-  font-size: var(--fontSizeXS, 12rem);
-}
-
-.subtitle {
-  margin-top: 2rem;
+  font-size: var(--fontSizeS, 14rem);
 }
 
 .count {
+  flex: 0 0 auto;
+  white-space: nowrap;
   color: var(--menuText2Normal);
-  font-size: 13rem;
+  font-size: var(--fontSizeS);
   padding: 3rem 6rem;
   background-color: rgba(255, 255, 255, 0.05);
   border-radius: 3rem;
 }
 
-.sortBar {
+.sortSummary {
+  display: flex;
+  flex: 0 1 auto;
+  min-width: 0;
+  flex-direction: row;
+  align-items: center;
+  gap: 4rem;
+  min-height: 24rem;
+  padding: 2rem 6rem;
+  color: var(--accentColorNormal);
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: 3rem;
+  font-size: var(--fontSizeS, 14rem);
+}
+
+.sortSummaryLabel {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sortDisclosure {
+  @include _base.transparentButton(false, true);
+  flex: 0 1 auto;
+  min-width: 92rem;
+  min-height: 24rem;
+  padding: 2rem 6rem;
+  color: var(--menuText2Normal);
+  background-color: rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+}
+
+// Wrapped row revealed under the toolbar by "More sorting".
+.sortOptions {
+  display: flex;
+  flex-direction: row;
   flex-wrap: wrap;
   gap: 4rem;
-  padding: 4rem 8rem 8rem;
+  min-width: 0;
+  padding: 4rem 8rem 6rem;
   border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
 }
 
@@ -132,7 +198,346 @@
 
 .sortDirection {
   margin-left: 3rem;
-  font-size: var(--fontSizeXXS, 10rem);
+  font-size: var(--fontSizeXS, 12rem);
+}
+
+.catalogFilters {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  min-width: 0;
+  border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
+
+  & > .facetPanel,
+  & > .metricRangePanel {
+    flex: 1 1 300rem;
+    min-width: 260rem;
+    border-bottom: 0;
+  }
+}
+
+.facetPanel {
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+  padding: 4rem 8rem 6rem;
+  border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
+}
+
+.facetToolbar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4rem;
+}
+
+.facetToggle,
+.facetClear,
+.facetOption {
+  @include _base.transparentButton(false, true);
+  width: auto !important;
+  min-height: 27rem;
+  padding: 3rem 7rem;
+  color: var(--menuText2Normal);
+  background-color: rgba(0, 0, 0, 0.2);
+  border: 1rem solid rgba(255, 255, 255, 0.12);
+  border-radius: 3rem;
+  flex: 0 1 auto;
+  white-space: nowrap;
+}
+
+.facetToggleActive,
+.facetOptionSelected {
+  color: var(--accentColorNormal);
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--accentColorNormal);
+}
+
+.facetSelectionCount {
+  min-width: 14rem;
+  margin-left: 4rem;
+  padding: 0 3rem;
+  border-radius: 3rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  text-align: center;
+  font-size: var(--fontSizeXS, 12rem);
+}
+
+.facetClear {
+  color: var(--accentColorNormal);
+}
+
+.facetGroups {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 6rem 8rem;
+  // Keep the drawer bounded while allowing dense option groups to scroll
+  // inside their own column instead of painting over the catalog rows.
+  max-height: 192rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 2rem 2rem 2rem 0;
+
+  &::-webkit-scrollbar {
+    width: 7rem;
+  }
+
+  &::-webkit-scrollbar-track {
+    background-color: rgba(var(--scrollbarColor), 0.15);
+    border-radius: 3rem;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(var(--scrollbarColor), 0.6);
+    border-radius: 3rem;
+  }
+}
+
+// DLC and theme options carry names like "Creator Pack: Mediterranean Heritage",
+// which ellipsised down to "Creator Pack: Mediterranean Heri" in a 150rem column
+// and left the packs indistinguishable from one another.
+.facetGroup {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 260rem;
+  min-width: 220rem;
+  min-height: 0;
+  gap: 2rem;
+}
+
+.facetGroupLabel {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeS, 14rem);
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.facetGroupScrollMark {
+  color: var(--accentColorNormal);
+  font-size: var(--fontSizeS, 14rem);
+  line-height: 12rem;
+}
+
+.facetOptions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 3rem;
+  min-height: 0;
+  max-height: 144rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  &::-webkit-scrollbar {
+    width: 6rem;
+  }
+
+  &::-webkit-scrollbar-track {
+    background-color: rgba(var(--scrollbarColor), 0.15);
+    border-radius: 3rem;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(var(--scrollbarColor), 0.6);
+    border-radius: 3rem;
+  }
+}
+
+.facetOptions[data-scrollable="true"] {
+  overflow-y: scroll;
+}
+
+.facetOption {
+  min-height: 27rem;
+  max-width: 100%;
+  min-width: 0;
+  padding: 3rem 7rem;
+  gap: 4rem;
+  font-size: var(--fontSizeS, 14rem);
+  justify-content: flex-start;
+}
+
+.facetOptionMarker {
+  flex: 0 0 12rem;
+  width: 12rem;
+  color: var(--menuText2Normal);
+  text-align: center;
+  font-size: var(--fontSizeS, 14rem);
+  line-height: 14rem;
+}
+
+.facetOptionSelected .facetOptionMarker {
+  color: var(--accentColorNormal);
+}
+
+.facetOptionLabel {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.facetScrollHint {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 27rem;
+  margin-left: auto;
+  padding: 3rem 0 3rem 7rem;
+  color: var(--menuText2Normal);
+  border-left: 1rem solid rgba(255, 255, 255, 0.08);
+  font-size: var(--fontSizeXS, 12rem);
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.facetScrollGlyph {
+  color: var(--accentColorNormal);
+  font-size: var(--fontSizeS, 14rem);
+  line-height: 14rem;
+}
+
+.facetEmpty {
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeXS, 12rem);
+}
+
+.metricRangePanel {
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+  min-width: 0;
+  padding: 4rem 8rem 6rem;
+}
+
+.metricRangeToolbar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4rem;
+  min-width: 0;
+}
+
+.metricRangeToggle,
+.metricRangeClear {
+  @include _base.transparentButton(false, true);
+  width: auto !important;
+  min-height: 27rem;
+  padding: 3rem 7rem;
+  color: var(--menuText2Normal);
+  background-color: rgba(0, 0, 0, 0.2);
+  border: 1rem solid rgba(255, 255, 255, 0.12);
+  border-radius: 3rem;
+  flex: 0 1 auto;
+  white-space: nowrap;
+}
+
+.metricRangeToggleActive {
+  color: var(--accentColorNormal);
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--accentColorNormal);
+}
+
+.metricRangeSelectionCount {
+  min-width: 14rem;
+  margin-left: 4rem;
+  padding: 0 3rem;
+  border-radius: 3rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  text-align: center;
+  font-size: var(--fontSizeXS, 12rem);
+}
+
+.metricRangeClear {
+  color: var(--accentColorNormal);
+}
+
+.metricRangeGroups {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  // Six compact rows need slightly more than the categorical drawer's
+  // two-column budget; keep the whole set visible before the catalog starts.
+  max-height: 240rem;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 2rem 2rem 2rem 0;
+
+  &::-webkit-scrollbar {
+    width: 7rem;
+  }
+
+  &::-webkit-scrollbar-track {
+    background-color: rgba(var(--scrollbarColor), 0.15);
+    border-radius: 3rem;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: rgba(var(--scrollbarColor), 0.6);
+    border-radius: 3rem;
+  }
+}
+
+.metricRangeGroup {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 5rem;
+  min-height: 28rem;
+}
+
+.metricRangeLabel {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeS, 14rem);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.metricRangeInputs {
+  display: flex;
+  flex: 0 0 154rem;
+  flex-direction: row;
+  align-items: center;
+  gap: 3rem;
+}
+
+.metricRangeInput {
+  flex: 1 1 0;
+  width: 68rem;
+  min-width: 0;
+  height: 25rem;
+  min-height: 25rem;
+  padding: 3rem 5rem;
+  color: var(--menuText1Normal);
+  background-color: rgba(0, 0, 0, 0.24);
+  border: 1rem solid rgba(255, 255, 255, 0.14);
+  border-radius: 3rem;
+  font-size: var(--fontSizeS, 14rem);
+  line-height: 18rem;
+  box-sizing: border-box;
+}
+
+.metricRangeSeparator {
+  flex: 0 0 auto;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeS, 14rem);
 }
 
 .capacityFilter {
@@ -147,7 +552,7 @@
 
 .capacityFilterLabel {
   color: var(--menuText2Normal);
-  font-size: var(--fontSizeXS, 12rem);
+  font-size: var(--fontSizeS, 14rem);
   margin-right: 2rem;
 }
 
@@ -174,14 +579,14 @@
   // with the row buttons below it.
   padding: 5rem 34rem 3rem 8rem;
   text-transform: uppercase;
-  font-size: var(--fontSizeXS);
+  font-size: var(--fontSizeS);
   box-sizing: border-box;
 
   .identityHeader {
     flex: 1 1 auto;
     min-width: 0;
     text-align: left;
-    font-size: var(--fontSizeXS);
+    font-size: var(--fontSizeS);
   }
 }
 
@@ -193,17 +598,58 @@
   text-overflow: ellipsis;
   text-align: center;
   color: var(--menuText2Normal);
-  font-size: var(--fontSizeXS);
+  font-size: var(--fontSizeS);
   box-sizing: border-box;
   border-left: 1rem solid rgba(255, 255, 255, 0.06);
+  // The header is a Button so the column can be sorted by clicking it. Strip
+  // the button chrome so the header row still reads as a table header rather
+  // than a strip of seven buttons.
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  padding: 0;
+  margin: 0;
 }
 
+.metricHeader:hover {
+  color: var(--menuText1Normal);
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.metricHeaderSorted {
+  color: var(--menuText1Normal);
+}
+
+.metricHeaderIndicator {
+  margin-left: 2rem;
+  font-size: var(--fontSizeS);
+}
+
+// Invalid metric text used to be dropped in silence while staying on screen,
+// so a typo looked exactly like an applied filter.
+.metricRangeInput[data-invalid="true"] {
+  border-color: var(--negativeColor, rgba(220, 90, 90, 0.9));
+}
+
+.metricRangeNotice {
+  display: block;
+  margin-top: 2rem;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeS);
+  white-space: normal;
+}
+
+// The row list is a cs2/ui <Scrollable>, which brings the game's own scrollbar.
+// This used to be a hand-rolled 8rem ::-webkit-scrollbar plus a decorative
+// 8rem-wide rail in the column header whose thumb was a static ratio and did
+// not scroll anything.
 .rows {
   display: flex;
   flex-direction: column;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
-  overflow-y: auto;
 }
 
 .row {
@@ -212,8 +658,8 @@
   // Keep enough vertical room for the thumbnail and the two identity lines;
   // every metric remains on the same baseline rather than being folded into
   // a wrapped analytics string in the left column.
-  height: 104rem;
-  min-height: 104rem;
+  height: 92rem;
+  min-height: 92rem;
   margin: 1rem 0;
   padding: 0 4rem 0 0;
   gap: 3rem;
@@ -231,9 +677,9 @@
   @include _base.transparentButton(false, true);
   flex: 1;
   min-width: 0;
-  height: 100rem;
-  min-height: 100rem;
-  padding: 4rem 4rem 4rem 8rem;
+  height: 88rem;
+  min-height: 88rem;
+  padding: 2rem 4rem 2rem 8rem;
   gap: 3rem;
   justify-content: flex-start;
   align-items: center;
@@ -292,10 +738,22 @@
   justify-content: center;
   flex: 1;
   min-width: 0;
-  height: 78rem;
-  min-height: 78rem;
-  max-height: 78rem;
+  height: 72rem;
+  min-height: 72rem;
+  max-height: 72rem;
   overflow: hidden;
+}
+
+.nameLine {
+  display: flex;
+  flex: 0 0 auto;
+  min-width: 0;
+  flex-direction: row;
+  align-items: center;
+  gap: 4rem;
+  height: 18rem;
+  min-height: 18rem;
+  max-height: 18rem;
 }
 
 .name {
@@ -303,7 +761,8 @@
   flex-direction: row;
   flex-wrap: nowrap;
   align-items: center;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-width: 0;
   height: 18rem;
   min-height: 18rem;
   max-height: 18rem;
@@ -314,6 +773,25 @@
   font-size: var(--fontSizeM);
   font-weight: bold;
   line-height: 18rem;
+}
+
+.placeHint {
+  flex: 0 0 auto;
+  min-width: 32rem;
+  padding: 1rem 4rem;
+  color: var(--accentColorNormal);
+  background-color: rgba(255, 255, 255, 0.08);
+  border-radius: 3rem;
+  font-size: var(--fontSizeXS, 12rem);
+  line-height: 14rem;
+  opacity: 0;
+  white-space: nowrap;
+}
+
+.rowSelect:hover .placeHint,
+.rowSelect:focus .placeHint,
+.rowSelect:active .placeHint {
+  opacity: 1;
 }
 
 .category {
@@ -341,40 +819,102 @@
   white-space: nowrap;
   text-overflow: ellipsis;
   text-align: center;
-  font-size: var(--fontSizeXS);
-  line-height: 14rem;
+  font-size: var(--fontSizeS);
+  line-height: 18rem;
   color: var(--menuText2Normal);
   box-sizing: border-box;
   border-left: 1rem solid rgba(255, 255, 255, 0.06);
 }
 
+// Keep the compact tier dense, but do not reduce normal/expanded metrics to
+// the tiny FindIt utility label size. The identity block remains the primary
+// anchor while these values stay single-line and column-aligned.
+.catalog[data-metric-text-scale="readable"] {
+  .metric,
+  .parking {
+    font-size: var(--fontSizeM);
+    line-height: 20rem;
+  }
+
+  .metricHeader {
+    font-size: var(--fontSizeS);
+    line-height: 18rem;
+  }
+}
+
+// "Compact" still means the readable body tier, one step down — not the 8-10rem
+// utility tier the lens used to fall back to, which rendered at 8px.
+.catalog[data-metric-text-scale="compact"] {
+  .metric,
+  .parking,
+  .metricHeader {
+    font-size: var(--fontSizeS);
+    line-height: 18rem;
+  }
+}
+
+// Column widths are sized from the widest value each column actually renders
+// in a real city, measured live rather than guessed: a 4206-entry catalog puts
+// "5 600 000" in Cost, "225 000/mo" in Upkeep and "15 000 students" in
+// Capacity. The previous 54-58rem columns clipped 234 of 600 rendered cells.
+// These allow for the readable text tier below; the compact tier reuses them
+// with room to spare.
+// Widths include the 8rem right padding the numeric columns carry, so they are
+// sized from measured content plus that gutter rather than content alone.
+.metricCost {
+  width: 100rem;
+  flex-basis: 100rem;
+}
+
+.metricUpkeep {
+  width: 108rem;
+  flex-basis: 108rem;
+}
+
+.metricWorkers {
+  width: 62rem;
+  flex-basis: 62rem;
+}
+
+.metricCapacity {
+  width: 122rem;
+  flex-basis: 122rem;
+}
+
+.metricLevel {
+  width: 46rem;
+  flex-basis: 46rem;
+}
+
+// Cohtml breaks "33 × 31" across lines at the multiplication sign even under
+// white-space: nowrap, so this column is sized to never need the break rather
+// than relying on nowrap being honoured.
+.metricLot {
+  width: 88rem;
+  flex-basis: 88rem;
+}
+
+.metricParking {
+  width: 52rem;
+  flex-basis: 52rem;
+}
+
+// Numbers compare by magnitude, so they align on their right edge like every
+// other numeric table. Lot ("4 × 6"), level and parking are labels rather than
+// quantities and stay centred.
 .metricCost,
 .metricUpkeep,
 .metricWorkers,
 .metricCapacity {
-  width: 54rem;
-  flex-basis: 54rem;
+  text-align: right;
+  padding-right: 8rem;
 }
 
-.metricUpkeep,
-.metricCapacity {
-  width: 58rem;
-  flex-basis: 58rem;
-}
-
-.metricLevel {
-  width: 42rem;
-  flex-basis: 42rem;
-}
-
-.metricLot {
-  width: 54rem;
-  flex-basis: 54rem;
-}
-
-.metricParking {
-  width: 48rem;
-  flex-basis: 48rem;
+.metricHeader.metricCost,
+.metricHeader.metricUpkeep,
+.metricHeader.metricWorkers,
+.metricHeader.metricCapacity {
+  justify-content: flex-end;
 }
 
 .parking {
@@ -407,13 +947,13 @@
 
 .compareTitle {
   color: var(--accentColorNormal);
-  font-size: var(--fontSizeXS, 12rem);
+  font-size: var(--fontSizeS, 14rem);
   text-transform: uppercase;
 }
 
 .compareCount {
   color: var(--menuText2Normal);
-  font-size: var(--fontSizeXXS, 10rem);
+  font-size: var(--fontSizeXS, 12rem);
 }
 
 .clearCompare,
@@ -423,7 +963,7 @@
   min-height: 22rem;
   padding: 2rem 5rem;
   color: var(--menuText2Normal);
-  font-size: var(--fontSizeXS, 12rem);
+  font-size: var(--fontSizeS, 14rem);
   width: auto !important;
   flex: 0 1 auto;
   white-space: nowrap;
@@ -467,14 +1007,14 @@
 
 .compareName {
   color: var(--menuTitleNormal);
-  font-size: var(--fontSizeXS, 12rem);
+  font-size: var(--fontSizeS, 14rem);
   line-height: 14rem;
 }
 
 .compareMetrics {
   margin-top: 1rem;
   color: var(--menuText2Normal);
-  font-size: var(--fontSizeXXS, 10rem);
+  font-size: var(--fontSizeXS, 12rem);
   line-height: 12rem;
 }
 
@@ -491,9 +1031,148 @@
   padding: 8rem 0 2rem;
 }
 
+.pageLabel {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: center;
+  font-size: var(--fontSizeS, 14rem);
+}
+
 .pageButton {
   min-width: 28rem;
   width: 28rem;
   font-size: 20rem;
   line-height: 18rem;
+}
+
+// Expanded row details: the analytical metrics the adapter always projected
+// (electricity, water, garbage, the three pollution figures) but which the
+// table never rendered.
+.rowDetails {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  width: 100%;
+  padding: 4rem 8rem 6rem 8rem;
+  box-sizing: border-box;
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+// The game's own description for the prefab, above the numbers.
+.rowDescription {
+  width: 100%;
+  margin-bottom: 4rem;
+  color: var(--menuText1Normal);
+  font-size: var(--fontSizeS);
+  line-height: 18rem;
+  white-space: normal;
+}
+
+.rowDetailMetrics {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+// Placement / access / connections / lot flags and provenance. Chips rather
+// than a sentence, so a building with twelve flags stays scannable.
+.rowFlagGroup {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  width: 100%;
+  gap: 3rem;
+  margin-top: 3rem;
+}
+
+.rowFlag {
+  padding: 1rem 5rem;
+  border-radius: 3rem;
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeXS);
+  line-height: 15rem;
+  white-space: nowrap;
+}
+
+.rowFlagGroup[data-flag-group="placement"] .rowFlag {
+  color: var(--accentColorNormal);
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+// Lot internals are the least decision-relevant, so they recede.
+.rowFlagGroup[data-flag-group="lot"] .rowFlag {
+  opacity: 0.65;
+}
+
+.rowProvenance {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 3rem;
+  margin-right: 10rem;
+  font-size: var(--fontSizeXS);
+}
+
+.rowDetail {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  margin-right: 16rem;
+  margin-bottom: 2rem;
+  font-size: var(--fontSizeS);
+}
+
+.rowDetailLabel {
+  color: var(--menuText2Normal);
+  margin-right: 4rem;
+}
+
+.rowDetailValue {
+  color: var(--menuText1Normal);
+}
+
+.rowDetailEmpty {
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeS);
+}
+
+// Placing is an explicit button now rather than the whole row.
+.rowPlaceButton {
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6rem;
+  font-size: var(--fontSizeS);
+  color: var(--menuText1Normal);
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.rowPlaceButton:hover {
+  background-color: rgba(255, 255, 255, 0.16);
+}
+
+// An expanded row grows to fit its details instead of clipping them against
+// the fixed row height the table uses when collapsed.
+//
+// rowSelect is flex:1 1 auto, so under flex-wrap it claimed the whole first
+// line and bumped the Place and compare buttons onto lines of their own. That
+// spent 123rem-equivalent of row on 79 of content and squeezed Place down to
+// 16px wide. Letting rowSelect shrink from a zero basis keeps all three
+// controls on line one and leaves rowDetails (width:100%) as the only wrap.
+.row[data-expanded="true"] {
+  flex-wrap: wrap;
+  height: auto;
+  min-height: 0;
+
+  .rowSelect {
+    flex: 1 1 0;
+    min-width: 0;
+  }
 }

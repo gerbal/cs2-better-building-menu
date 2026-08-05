@@ -316,6 +316,20 @@ namespace FindItBuildingMenu.Systems
 			prefabIndex.CategoryThumbnail ??= CategoryIconAttribute.GetAttribute(prefabIndex.SubCategory).Icon;
 			prefabIndex.Theme ??= prefab.GetComponent<ThemeObject>()?.m_Theme;
 			prefabIndex.AssetPacks ??= prefab.GetComponent<AssetPackItem>()?.m_Packs?.Where(x => x is not null).ToArray() ?? new AssetPackPrefab[0];
+			// Service upgrades are represented by a prefab carrying ServiceUpgrade
+			// and/or an entity carrying ServiceUpgradeData (the latter is the
+			// runtime marker used by the vanilla upgrade rows). Some game versions
+			// expose only the extension component.
+			// Keep the extension identity on the already-indexed row rather than
+			// discovering a second list of upgrade assets. This also covers the
+			// vanilla "Additional ..." BuildingPrefab entries, whose prefab type
+			// is not BuildingExtensionPrefab even though they are extensions.
+			bool isBuildingExtension = prefabIndex.Category is PrefabCategory.Buildings or PrefabCategory.ServiceBuildings
+				&& (prefab is BuildingExtensionPrefab
+					|| EntityManager.HasComponent<BuildingExtensionData>(entity)
+					|| EntityManager.HasComponent<ServiceUpgradeData>(entity)
+					|| prefab.TryGet<ServiceUpgrade>(out _));
+			prefabIndex.ExtensionIds ??= isBuildingExtension ? new[] { prefab.name } : Array.Empty<string>();
 			prefabIndex.ThemeThumbnail = prefabIndex.ThemeThumbnail is not null
 				? IconPath.Normalize(prefabIndex.ThemeThumbnail)
 				: prefabIndex.Theme is null ? null : IconPath.Normalize(ImageSystem.GetThumbnail(prefabIndex.Theme));
@@ -383,6 +397,20 @@ namespace FindItBuildingMenu.Systems
 			if (EntityManager.TryGetComponent<BuildingData>(entity, out var buildingData))
 			{
 				prefabIndex.LotSize = buildingData.m_LotSize;
+				if (prefabIndex.Category is PrefabCategory.Buildings or PrefabCategory.ServiceBuildings)
+				{
+					prefabIndex.BuildingFlagsValue = buildingData.m_Flags;
+				}
+			}
+			else if (EntityManager.TryGetComponent<BuildingExtensionData>(entity, out var extensionData))
+			{
+				prefabIndex.LotSize = extensionData.m_LotSize;
+			}
+
+			if (prefabIndex.Category is PrefabCategory.Buildings or PrefabCategory.ServiceBuildings
+				&& EntityManager.TryGetComponent<BuildingMarkerData>(entity, out var buildingMarkerData))
+			{
+				prefabIndex.BuildingTypeName = buildingMarkerData.m_BuildingType.ToString();
 			}
 
 			PopulateAnalyticalData(entity, prefabIndex);

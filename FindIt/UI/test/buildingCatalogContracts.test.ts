@@ -3,21 +3,33 @@ import { describe, it } from "node:test";
 import {
   MAX_COMPARE_ENTRIES,
   MAX_CATALOG_PAGE_SIZE,
+  getCatalogPageSummary,
+  hasCatalogScroll,
+  clearBuildingCatalogMetricRangesCommand,
+  clearCompareEntriesCommand,
   locatePrefabCommand,
   nextSortState,
   normalizeCatalogOffset,
   pickerOptionCommand,
-  removeCompareEntry,
   searchChangedCommand,
   setBuildingCapacityFloorCommand,
+  setBuildingCatalogMetricRangeCommand,
   setCatalogOffsetCommand,
   setCurrentCategoryCommand,
   setCurrentPrefabCommand,
   setCurrentSubCategoryCommand,
   setSortColumnCommand,
   setSortDescendingCommand,
-  toggleCompareEntry,
+  toggleCompareEntryCommand,
 } from "../src/domain/buildingCatalogContracts.ts";
+import {
+  METRIC_RANGE_DEFINITIONS,
+  countActiveMetricRanges,
+  didSwapMetricBounds,
+  getInvalidMetricBounds,
+  hasMetricRange,
+  normalizeMetricRange,
+} from "../src/domain/buildingCatalogRanges.ts";
 import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog.ts";
 
 function entry(id: number): BuildingCatalogEntry {
@@ -86,18 +98,11 @@ describe("FindItBuildingMenu UI binding contracts", () => {
     assert.deepEqual(setSortDescendingCommand(true), { method: "SetBuildingCatalogSortDescending", args: [true] });
   });
 
-  it("bounds compare state to three unique entries and allows removal", () => {
-    const first = entry(1);
-    const second = entry(2);
-    const third = entry(3);
-    const fourth = entry(4);
-    let selected = toggleCompareEntry([], first);
-    selected = toggleCompareEntry(selected, second);
-    selected = toggleCompareEntry(selected, third);
-    assert.equal(selected.length, MAX_COMPARE_ENTRIES);
-    assert.deepEqual(toggleCompareEntry(selected, fourth), selected);
-    assert.deepEqual(toggleCompareEntry(selected, second).map((item) => item.id), [1, 3]);
-    assert.deepEqual(removeCompareEntry(selected, 1).map((item) => item.id), [2, 3]);
+  it("addresses the backend-owned compare tray by id", () => {
+    // The tray is backend state so it survives the panel unmounting on place;
+    // the client sends intent rather than a projected entry.
+    assert.deepEqual(toggleCompareEntryCommand(42), { method: "ToggleBuildingCatalogCompare", args: [42] });
+    assert.deepEqual(clearCompareEntriesCommand(), { method: "ClearBuildingCatalogCompare", args: [] });
   });
 
   it("normalizes paging to page boundaries, a 500-item maximum, and the last page", () => {
@@ -107,5 +112,79 @@ describe("FindItBuildingMenu UI binding contracts", () => {
     assert.equal(normalizeCatalogOffset(999, 200, MAX_CATALOG_PAGE_SIZE + 1), 0);
     assert.equal(normalizeCatalogOffset(999, 0, 100), 0);
     assert.equal(normalizeCatalogOffset(Number.NaN, Number.NaN, Number.NaN), 0);
+  });
+
+  it("explains the bounded row range and page count", () => {
+    assert.equal(getCatalogPageSummary(0, 4206, 100), "Rows 1–100 of 4,206 · Page 1 of 43");
+    assert.equal(getCatalogPageSummary(4000, 4206, 100), "Rows 4,001–4,100 of 4,206 · Page 41 of 43");
+    assert.equal(getCatalogPageSummary(4200, 4206, 100), "Rows 4,201–4,206 of 4,206 · Page 43 of 43");
+    assert.equal(getCatalogPageSummary(0, 0, 100), "Rows 0–0 of 0 · Page 1 of 1");
+  });
+
+  it("only advertises a row scrollbar when the page is bounded", () => {
+    assert.equal(hasCatalogScroll(4206, 100), true);
+    assert.equal(hasCatalogScroll(100, 100), false);
+    assert.equal(hasCatalogScroll(0, 0), false);
+    assert.equal(hasCatalogScroll(1, 0), true);
+  });
+
+  it("normalizes analytical metric ranges and swaps reversed bounds", () => {
+    assert.deepEqual(normalizeMetricRange("cost", { minText: "500", maxText: "100" }), { min: 100, max: 500 });
+    assert.deepEqual(normalizeMetricRange("capacity", { minText: "12.345", maxText: "9000000000" }), {
+      min: 12.35,
+      max: 1_000_000_000,
+    });
+    assert.deepEqual(normalizeMetricRange("lotWidth", { minText: "3.8", maxText: "1.2" }), { min: 1, max: 4 });
+    assert.deepEqual(normalizeMetricRange("workers", { minText: "", maxText: "not-a-number" }), { min: null, max: null });
+    assert.deepEqual(normalizeMetricRange("upkeep", { minText: "-10", maxText: "2" }), { min: 0, max: 2 });
+  });
+
+  it("keeps metric range definitions bounded and reports active selections", () => {
+    assert.deepEqual(METRIC_RANGE_DEFINITIONS.map((definition) => definition.id), [
+      "cost",
+      "upkeep",
+      "workers",
+      "capacity",
+      "lotWidth",
+      "lotDepth",
+    ]);
+    assert.equal(hasMetricRange({ min: null, max: null }), false);
+    assert.equal(hasMetricRange({ min: 0, max: null }), true);
+    assert.equal(hasMetricRange({ min: null, max: 20 }), true);
+    assert.equal(
+      countActiveMetricRanges({
+        cost: { min: 0, max: null },
+        upkeep: { min: null, max: null },
+        workers: { min: null, max: 20 },
+        capacity: { min: null, max: null },
+        lotWidth: { min: null, max: null },
+        lotDepth: { min: null, max: null },
+      }),
+      2,
+    );
+  });
+
+  it("builds metric range set and clear payloads", () => {
+    assert.deepEqual(setBuildingCatalogMetricRangeCommand("capacity", "100", "500"), {
+      method: "SetBuildingCatalogMetricRange",
+      args: ["capacity", "100", "500"],
+    });
+    assert.deepEqual(clearBuildingCatalogMetricRangesCommand(), {
+      method: "ClearBuildingCatalogMetricRanges",
+      args: [],
+    });
+  });
+  it("flags typed text that will never become a bound", () => {
+    // The old behaviour dropped this silently while leaving it on screen, so a
+    // typo was indistinguishable from an applied filter.
+    assert.deepEqual(getInvalidMetricBounds("cost", { minText: "abc", maxText: "500" }), { min: true, max: false });
+    assert.deepEqual(getInvalidMetricBounds("cost", { minText: "", maxText: "" }), { min: false, max: false });
+    assert.deepEqual(getInvalidMetricBounds("cost", { minText: "100", maxText: "20 000" }), { min: false, max: true });
+  });
+
+  it("reports when reversed bounds were silently swapped", () => {
+    assert.equal(didSwapMetricBounds("cost", { minText: "500", maxText: "100" }), true);
+    assert.equal(didSwapMetricBounds("cost", { minText: "100", maxText: "500" }), false);
+    assert.equal(didSwapMetricBounds("cost", { minText: "", maxText: "500" }), false);
   });
 });

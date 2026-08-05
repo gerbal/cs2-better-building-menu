@@ -129,6 +129,10 @@
 
 .toolContainer {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
   pointer-events: auto;
   animation: entryTranslate 0.2s ease-in-out;
 }
@@ -180,8 +184,19 @@
   backdrop-filter: var(--panelBlur);
   background-image: linear-gradient( var(--panelGradientStart) , var(--panelGradientEnd) );
   color: rgba(255, 255, 255, 1);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
   flex-grow: 1;
   position: relative;
+}
+
+.toolsContent {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  overflow: auto;
 }
 
 .topBar {
@@ -210,8 +225,12 @@
 .topPanel > div {
   position: absolute;
   width: 350rem;
-  bottom: 10rem;
+  top: 0;
+  bottom: auto;
   right: 0;
+  z-index: 30;
+  max-height: calc(100vh - 120rem);
+  overflow-y: auto;
 }
 
 .rightPanel > div:first-child,
@@ -226,6 +245,11 @@
   border-bottom-right-radius: var(--panelRadius);
   border-top-left-radius: var(--panelRadius);
   border-top-right-radius: var(--panelRadius);
+}
+
+.rightPanel > div:first-child {
+  max-height: calc(100vh - 120rem);
+  overflow-y: auto;
 }
 
 .rightPanel > div:last-child {

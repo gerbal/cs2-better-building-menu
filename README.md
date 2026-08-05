@@ -35,6 +35,7 @@ And thank you to **Baka-gourd** (NullPinter) for their help with focus.
 * Integrated Picker
 * Extensive sorting and filtering options.
 * Building lens with cost, upkeep, worker, and capacity metrics.
+* Building lens facets for role, source, DLC, theme, asset pack, and placement/access flags.
 * Bounded three-building compare tray with direct Place actions.
 
 ## Notes

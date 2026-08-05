@@ -34,7 +34,7 @@ namespace FindItBuildingMenu.Domain
 
 		public static Func<string, Func<PrefabIndex, bool>> GetCustomSearchFunction { get; set; }
 
-		public IEnumerable<Func<PrefabIndex, bool>> GetFilterList()
+		public IEnumerable<Func<PrefabIndex, bool>> GetFilterList(bool includeSearch = true)
 		{
 			if (HideAds)
 			{
@@ -121,7 +121,7 @@ namespace FindItBuildingMenu.Domain
 				}
 			}
 
-			if (!string.IsNullOrWhiteSpace(CurrentSearch))
+			if (includeSearch && !string.IsNullOrWhiteSpace(CurrentSearch))
 			{
 				if (GetCustomSearchFunction is null)
 					yield return Mod.Settings.StrictSearch ? DoStrictSearchFilter : DoSearchFilter;

@@ -18,10 +18,10 @@ including YenYang, Algernon, Chameleon, and Baka-gourd (NullPinter).
 The upstream `FindIt/FindIt.csproj` declares `Copyright` as `@2024 MIT license`.
 The checked upstream revision does not contain a `LICENSE` or `COPYING` file,
 and the public repository's `LICENSE` path is absent. A fresh remote check on
-2026-07-27 still resolves `main` to `d865b795b1c00491aa529934b906ba5c5ce6f42c`
-with no canonical license file. A copyright-property comment is not treated as
-permission to redistribute; this remains an open distribution blocker rather
-than silently inventing a license notice.
+2026-08-01 still resolves the public `main` tree without a canonical license
+file; the raw `LICENSE` URL returns 404. A copyright-property comment is not
+treated as permission to redistribute; this remains an open distribution
+blocker rather than silently inventing a license notice.
 
 This checkout is therefore an internal, non-published development fork. It is
 deployed locally only for isolated verification. Before publishing or
