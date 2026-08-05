@@ -377,11 +377,28 @@ namespace FindItBuildingMenu.Systems
 				}
 			}
 
-			if (prefab.TryGet<ContentPrerequisite>(out var contentPrerequisites)
-				&& contentPrerequisites.m_ContentPrerequisite.TryGet<DlcRequirement>(out var dlcRequirements))
+			// Asset packs come off the prefab's own AssetPackItem and are
+			// independent of DLC ownership, so they are read for every prefab.
+			// This used to be hardcoded to an empty array *inside* the DLC
+			// branch, which left the Asset pack facet permanently empty and
+			// broke FindIt's own pack filter (Filters.MatchesAssetPack) for
+			// every asset in the game.
+			if (prefab.TryGet<AssetPackItem>(out var assetPackItem) && assetPackItem.m_Packs is not null)
+			{
+				prefabIndex.AssetPacks = assetPackItem.m_Packs.Where(pack => pack is not null).ToArray();
+				prefabIndex.PackThumbnails = prefabIndex.AssetPacks
+					.Select(pack => IconPath.Normalize(ImageSystem.GetThumbnail(pack)))
+					.ToArray();
+			}
+			else
 			{
 				prefabIndex.AssetPacks = new AssetPackPrefab[0];
 				prefabIndex.PackThumbnails = new string[0];
+			}
+
+			if (prefab.TryGet<ContentPrerequisite>(out var contentPrerequisites)
+				&& contentPrerequisites.m_ContentPrerequisite.TryGet<DlcRequirement>(out var dlcRequirements))
+			{
 				prefabIndex.DlcId = dlcRequirements.m_Dlc;
 				prefabIndex.DlcThumbnail = $"Media/DLC/{PlatformManager.instance.GetDlcName(dlcRequirements.m_Dlc)}.svg";
 			}
@@ -405,12 +422,6 @@ namespace FindItBuildingMenu.Systems
 			else if (EntityManager.TryGetComponent<BuildingExtensionData>(entity, out var extensionData))
 			{
 				prefabIndex.LotSize = extensionData.m_LotSize;
-			}
-
-			if (prefabIndex.Category is PrefabCategory.Buildings or PrefabCategory.ServiceBuildings
-				&& EntityManager.TryGetComponent<BuildingMarkerData>(entity, out var buildingMarkerData))
-			{
-				prefabIndex.BuildingTypeName = buildingMarkerData.m_BuildingType.ToString();
 			}
 
 			PopulateAnalyticalData(entity, prefabIndex);
@@ -472,63 +483,79 @@ namespace FindItBuildingMenu.Systems
 			}
 
 			var capacities = new List<int>();
+			// Doubles as the Role facet source: these are exactly the service
+			// components that make a building a school, a hospital, and so on.
+			var roles = new List<string>();
 			if (EntityManager.TryGetComponent<SchoolData>(entity, out var schoolData))
 			{
+				roles.Add("School");
 				capacities.Add(schoolData.m_StudentCapacity);
 			}
 
 			if (EntityManager.TryGetComponent<HospitalData>(entity, out var hospitalData))
 			{
+				roles.Add("Hospital");
 				capacities.Add(hospitalData.m_PatientCapacity);
 			}
 
 			if (EntityManager.TryGetComponent<GarbageFacilityData>(entity, out var garbageFacilityData))
 			{
+				roles.Add("GarbageFacility");
 				capacities.Add(garbageFacilityData.m_GarbageCapacity);
 			}
 
 			if (EntityManager.TryGetComponent<FireStationData>(entity, out var fireStationData))
 			{
+				roles.Add("FireStation");
 				capacities.Add(fireStationData.m_FireEngineCapacity);
 			}
 
 			if (EntityManager.TryGetComponent<PoliceStationData>(entity, out var policeStationData))
 			{
+				roles.Add("PoliceStation");
 				capacities.Add(policeStationData.m_PatrolCarCapacity);
 			}
 
 			if (EntityManager.TryGetComponent<PrisonData>(entity, out var prisonData))
 			{
+				roles.Add("Prison");
 				capacities.Add(prisonData.m_PrisonerCapacity);
 			}
 
 			if (EntityManager.TryGetComponent<DeathcareFacilityData>(entity, out var deathcareFacilityData))
 			{
+				roles.Add("DeathcareFacility");
 				capacities.Add(deathcareFacilityData.m_StorageCapacity);
 			}
 
 			if (EntityManager.TryGetComponent<EmergencyShelterData>(entity, out var emergencyShelterData))
 			{
+				roles.Add("EmergencyShelter");
 				capacities.Add(emergencyShelterData.m_ShelterCapacity);
 			}
 
 			if (EntityManager.TryGetComponent<WaterPumpingStationData>(entity, out var waterPumpingStationData))
 			{
+				roles.Add("WaterPumpingStation");
 				prefabIndex.WaterCapacity = waterPumpingStationData.m_Capacity;
 				capacities.Add(waterPumpingStationData.m_Capacity);
 			}
 
 			if (EntityManager.TryGetComponent<SewageOutletData>(entity, out var sewageOutletData))
 			{
+				roles.Add("SewageOutlet");
 				prefabIndex.SewageCapacity = sewageOutletData.m_Capacity;
 				capacities.Add(sewageOutletData.m_Capacity);
 			}
 
 			if (EntityManager.TryGetComponent<WastewaterTreatmentPlantData>(entity, out var wastewaterData))
 			{
+				roles.Add("WastewaterTreatmentPlant");
 				prefabIndex.SewageCapacity = wastewaterData.m_Capacity;
 				capacities.Add(wastewaterData.m_Capacity);
 			}
+
+			prefabIndex.BuildingTypeName = BuildingRole.ResolvePrimary(roles);
 
 			if (capacities.Count > 0)
 			{
