@@ -148,3 +148,51 @@ like maintenance depots *are* in scope), **Landscaping** (surfaces; likewise
 ZoneType field — so it cannot be filtered and has no facet. The Zones menu's
 sub-tabs need exactly this, so it has to be added as a query dimension and a
 facet group alongside the other seven.
+
+## Interaction path sweep (2026-08-05)
+
+Driven against a running city. PASS means observed working, not merely built.
+
+| path | result |
+|---|---|
+| Grid place (tile arms the tool) | PASS |
+| Shelf records a placement and pins it | PASS |
+| Search + relevance rank | PASS |
+| Search widen ("N elsewhere" -> Search everything) | PASS |
+| Grid/table toggle | PASS |
+| Sortable column headers | PASS |
+| Row expand (description, 5 flag groups, 12 metrics) | PASS |
+| Compare tray add | PASS |
+| All 8 facet groups populate | PASS |
+| Vanilla menu interception (Healthcare, Education) | PASS |
+| Vanilla menu decline (Roads) | PASS |
+| **Zoning hierarchy via the Zones menu** | **FAIL** |
+
+### The failure: the interception fights itself
+
+`toolbar.selectedAssetMenu` emissions when clicking Zones:
+
+```
+{index: 17109}   Zones          <- the click
+{index: 17098}   Education      <- nobody clicked this
+```
+
+Opening the lens makes FindIt re-assert its *current* category as the vanilla
+asset menu. The watcher cannot tell that echo from a real click, so it routes
+it and overwrites the selection the player actually made. Zones opens the
+zoning hierarchy and is reverted to the previous scope within the same frame.
+
+This hides between two building menus, where the echo lands somewhere
+plausible. It only becomes visible with Zones, where the correct result is a
+different view entirely.
+
+Fix direction: the echo originates in our own handler, so the backend should
+mark the selection it induces and drop the re-entrant call, rather than the UI
+trying to distinguish an echo from a click by timing.
+
+### Not yet swept
+
+Metric range filters, paging first/prev/next/last, category and section
+switching, compare remove and place-from-tray, zone assignment to the native
+Zone tool, the remaining 9 mapped menus, declines for Landscaping and Areas,
+the lens toggle, and panel close/reopen state persistence.
