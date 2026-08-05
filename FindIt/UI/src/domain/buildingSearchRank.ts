@@ -156,3 +156,21 @@ export function getSearchScopeNotice(state: {
 
   return { elsewhere: state.elsewhere, canWiden: true };
 }
+
+/**
+ * The entry Enter should arm, or null when Enter should do nothing.
+ *
+ * Only ever fires with an active query. In browse order the first tile is
+ * simply the smallest, cheapest building in the category, and arming that on a
+ * stray Enter would be a surprise rather than a shortcut.
+ */
+export function topSearchResult<T extends RankableEntry>(
+  ranked: readonly T[],
+  rawQuery: string
+): T | null {
+  if (!rawQuery.trim() || ranked.length === 0) {
+    return null;
+  }
+
+  return ranked[0];
+}

@@ -1,5 +1,6 @@
 import { bindValue, useValue } from "cs2/api";
 import { Button, Scrollable, Tooltip } from "cs2/ui";
+import { useEffect } from "react";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
@@ -9,9 +10,17 @@ import {
   formatLotDimensions,
 } from "domain/buildingLensMetricFormat";
 import { getShelf, recordPlacement } from "domain/buildingShelf";
-import { rankBuildingMatches } from "domain/buildingSearchRank";
+import { getCapacityForecast, getCostForecast } from "domain/buildingForecast";
+import { groupDigits } from "domain/buildingLensMetricFormat";
+import { rankBuildingMatches, topSearchResult } from "domain/buildingSearchRank";
 import mod from "../../../mod.json";
 import styles from "./buildingGrid.module.scss";
+
+// The game's own live city state, so the hover card compares against the
+// player's city rather than against nothing.
+const Money$ = bindValue<number>("toolbarBottom", "money", 0);
+const ElementaryCapacity$ = bindValue<number>("educationInfo", "elementaryCapacity", 0);
+const ElementaryEligible$ = bindValue<number>("educationInfo", "elementaryEligible", 0);
 
 const ShowShelf$ = bindValue<boolean>(mod.id, "BuildingLensShowShelf", true);
 const ShelfSize$ = bindValue<number>(mod.id, "BuildingLensShelfSize", 12);
@@ -37,6 +46,9 @@ export const BuildingGrid = ({ entries, searchText, onPlace }: BuildingGridProps
   const showShelf = useValue(ShowShelf$);
   const shelfSize = useValue(ShelfSize$);
   const tileSize = useValue(TileSize$);
+  const money = useValue(Money$);
+  const elementaryCapacity = useValue(ElementaryCapacity$);
+  const elementaryEligible = useValue(ElementaryEligible$);
   // Relevance while a query is active, stable position while browsing. The two
   // orders want opposite things and rankBuildingMatches falls back to the
   // stable one for an empty query and for ties.
@@ -48,6 +60,25 @@ export const BuildingGrid = ({ entries, searchText, onPlace }: BuildingGridProps
   const shelf = (showShelf ? shelfIds.slice(0, shelfSize) : [])
     .map((id) => byId.get(id))
     .filter(Boolean) as BuildingCatalogEntry[];
+
+  // Enter arms the best match, so a search can be completed without leaving
+  // the keyboard. Bound on the document because the search field belongs to
+  // FindIt's own header, not to this component.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Enter") return;
+
+      const top = topSearchResult(ordered, searchText ?? "");
+      if (!top) return;
+
+      recordPlacement(top.id);
+      onPlace(top);
+    };
+
+    document.addEventListener("keydown", onKey);
+
+    return () => document.removeEventListener("keydown", onKey);
+  }, [ordered, searchText, onPlace]);
 
   const place = (entry: BuildingCatalogEntry) => {
     recordPlacement(entry.id);
@@ -61,6 +92,19 @@ export const BuildingGrid = ({ entries, searchText, onPlace }: BuildingGridProps
     const lot = formatLotDimensions(entry.lotWidth, entry.lotDepth);
     const label = entry.name || entry.prefabName;
 
+    // The forecast is the reason to stop and read: cost against what you have,
+    // and coverage against what the city is short of.
+    const costForecast = getCostForecast(entry.constructionCost, money);
+    const isSchool = /Education/i.test(entry.subCategory ?? "");
+    const capacityForecast = isSchool
+      ? getCapacityForecast({
+          added: entry.capacity,
+          current: elementaryCapacity,
+          demand: elementaryEligible,
+          unit: "students",
+        })
+      : null;
+
     return (
       <Tooltip
         key={key}
@@ -69,8 +113,30 @@ export const BuildingGrid = ({ entries, searchText, onPlace }: BuildingGridProps
           // the hover card grows into the table again.
           <div className={styles.card}>
             <div className={styles.cardName}>{label}</div>
-            <div className={styles.cardLine}>{cost} · {upkeep}</div>
-            <div className={styles.cardLine}>{capacity} · {lot}</div>
+            {costForecast && costForecast.treasury !== null ? (
+              <div className={classNames(styles.cardLine, !costForecast.affordable && styles.cardWarn)}>
+                {groupDigits(costForecast.cost)} of {groupDigits(costForecast.treasury)}
+                {costForecast.share !== null && Number.isFinite(costForecast.share)
+                  ? ` · ${costForecast.share}%`
+                  : ""}
+              </div>
+            ) : (
+              <div className={styles.cardLine}>{cost}</div>
+            )}
+            {capacityForecast ? (
+              <div className={classNames(styles.cardLine, capacityForecast.covers && styles.cardGood)}>
+                {capacityForecast.projected !== null
+                  ? `${groupDigits(capacityForecast.projected)} of ${groupDigits(capacityForecast.demand)}`
+                  : `+${groupDigits(capacityForecast.added)} vs ${groupDigits(capacityForecast.demand)}`}{" "}
+                {capacityForecast.unit}
+                {capacityForecast.covers
+                  ? " · covers it"
+                  : ` · ${groupDigits(capacityForecast.shortfall)} short`}
+              </div>
+            ) : (
+              <div className={styles.cardLine}>{capacity} · {lot}</div>
+            )}
+            <div className={styles.cardLine}>{upkeep} · {lot}</div>
           </div>
         }
       >
