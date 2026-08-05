@@ -48,6 +48,10 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<bool> _BuildingLensEnabled = null!;
 		private ValueBindingHelper<bool> _ReplaceVanillaBuildMenu = null!;
 		private ValueBindingHelper<int> _BuildingCatalogMatchesElsewhere = null!;
+		// Set when a toolbar preset is applied, so the game's echo of the armed
+		// tool's menu can be told apart from a real click. See MenuEchoGuard.
+		private int? _appliedMenuFrame;
+		private int _appliedMenuIndex;
 		private ValueBindingHelper<bool> _ShowZoningHierarchy = null!;
 		private ValueBindingHelper<ZoneCatalogEntry[]> _ZoneCatalog = null!;
 		private ValueBindingHelper<bool> _BuildingCapacityFilterVisible = null!;
