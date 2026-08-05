@@ -32,9 +32,12 @@ namespace FindItBuildingMenu.Tests
 		[Fact]
 		public void IncludesLanes()
 		{
-			// The reason the section is worth having. The vanilla Roads menu has
-			// no entry for net lanes and fences at all, so they are reachable
-			// only through Find It.
+			// The vanilla Roads menu has no entry for net lanes and fences at
+			// all, so they are reachable only through Find It. Note the
+			// subcategory is offered unconditionally here while
+			// LanesPrefabCategoryProcessor only indexes lanes when Extra
+			// Detailing Tools is installed — without it the group is simply
+			// empty, which is the right failure.
 			var ids = VanillaBuildMenuTaxonomy
 				.GetSubcategoryDescriptors(VanillaBuildMenuTaxonomy.Networks)
 				.Select(descriptor => descriptor.Id);

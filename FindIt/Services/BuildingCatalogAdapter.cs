@@ -144,11 +144,12 @@ namespace FindItBuildingMenu.Services
 		/// </summary>
 		/// <remarks>
 		/// Networks joined buildings here because the vanilla Roads menu is a
-		/// grid of unlabelled icons with no entry for net lanes and fences at
-		/// all — they are reachable only through Find It, and there are a great
-		/// many once mods are counted. The lens browses them; placement still
-		/// hands off to the native net tool, which owns elevation, snapping and
-		/// parallel mode.
+		/// grid of unlabelled icons, and the lens can name and group them. Net
+		/// lanes are the sharpest case — that menu has no entry for them at all
+		/// — though they are conditional on Extra Detailing Tools, so the case
+		/// rests on the other eight subcategories rather than on lanes alone.
+		/// The lens browses; placement still hands off to the native net tool,
+		/// which owns elevation, snapping and parallel mode.
 		///
 		/// Trees, props and vehicles stay out for now: the Landscaping menu is
 		/// terrain tooling more than a catalogue, and routing it would need the

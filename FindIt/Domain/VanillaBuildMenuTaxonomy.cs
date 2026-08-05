@@ -71,10 +71,12 @@ public static class VanillaBuildMenuTaxonomy
     /// Every network subcategory Find It indexes.
     /// </summary>
     /// <remarks>
-    /// Lanes is the reason this section is worth having. The vanilla Roads menu
-    /// has no entry for net lanes and fences at all, so they are reachable only
-    /// through Find It — and there are a great many of them once mods are
-    /// counted, which is exactly the discoverability case the lens exists for.
+    /// Lanes is the most striking case: the vanilla Roads menu has no entry for
+    /// net lanes and fences at all, so they are reachable only through Find It.
+    /// Note it is conditional — LanesPrefabCategoryProcessor bails unless Extra
+    /// Detailing Tools is installed — so the section has to earn its place on
+    /// the other eight, which it does: the vanilla menu is unlabelled 48px
+    /// icons, and roads and highways alone run to dozens once mods are counted.
     /// </remarks>
     private static readonly PrefabSubCategory[] NetworkSubcategories =
     {
