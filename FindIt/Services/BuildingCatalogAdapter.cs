@@ -178,6 +178,7 @@ namespace FindItBuildingMenu.Services
 				LotDepth: prefab.LotSize.y,
 				BuildingLevel: prefab.BuildingLevel,
 				BuildingType: prefab.BuildingTypeName,
+				EducationLevel: prefab.EducationLevel,
 				Provenance: prefab.IsVanilla ? "Vanilla" : "Custom",
 				ZoneType: prefab.ZoneType,
 				HasParking: prefab.HasParking,

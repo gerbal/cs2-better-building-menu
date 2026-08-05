@@ -59,8 +59,28 @@ const EDUCATION_TIERS: Array<[string, string[]]> = [
   ["elementary", ["Elementary", "Primary", "Children's Clinic"]],
 ];
 
-function resolve(subCategory: string, name: string): string | null {
+/**
+ * The tier a school grants, straight from `SchoolData.m_EducationLevel`.
+ *
+ * These are the values the game's own education infoview switches on, so this
+ * agrees with the simulation by construction rather than by resemblance. 0 and
+ * 5 exist but are not tiers the infoview counts.
+ */
+const EDUCATION_LEVEL_TIERS: Record<number, string> = {
+  1: "elementary",
+  2: "highSchool",
+  3: "college",
+  4: "university",
+};
+
+function resolve(subCategory: string, name: string, educationLevel?: number | null): string | null {
   if (has(subCategory, "EducationResearch")) {
+    // Data first. The name heuristic below cannot see a modded "Akademie" and
+    // would silently drop it.
+    if (typeof educationLevel === "number") {
+      return EDUCATION_LEVEL_TIERS[educationLevel] ?? null;
+    }
+
     for (const [key, needles] of EDUCATION_TIERS) {
       if (has(name, ...needles)) return key;
     }
@@ -95,13 +115,16 @@ function resolve(subCategory: string, name: string): string | null {
 }
 
 export function getServiceForecastKey(
-  entry: { subCategory?: string | null; name?: string | null } | null | undefined
+  entry:
+    | { subCategory?: string | null; name?: string | null; educationLevel?: number | null }
+    | null
+    | undefined
 ): ServiceForecastKey | null {
   const subCategory = entry?.subCategory ?? "";
   const name = entry?.name ?? "";
   if (!subCategory) return null;
 
-  const key = resolve(subCategory, name);
+  const key = resolve(subCategory, name, entry?.educationLevel);
   if (!key) return null;
 
   const binding = SERVICE_FORECAST_BINDINGS[key];
