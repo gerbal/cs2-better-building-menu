@@ -22,3 +22,30 @@
 // The family strip, the tier headings and the zone tiles all lived here. They
 // are the shared grouped renderer's job now — this file is a container and an
 // empty state, which is the point of the unification.
+
+// Mirrors the catalog's toolbar so the two surfaces read as one UI.
+.toolbar {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 6rem;
+  padding: 2rem 2rem 6rem;
+}
+
+.title {
+  color: var(--accentColorNormal);
+  font-size: var(--fontSizeM);
+  text-transform: uppercase;
+  letter-spacing: 0.6rem;
+  white-space: nowrap;
+}
+
+.count {
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeS);
+}
+
+.toolbarSpacer {
+  flex: 1 1 auto;
+}
