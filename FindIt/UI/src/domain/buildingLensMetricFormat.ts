@@ -164,6 +164,22 @@ export function getBuildingDetailMetrics(entry: {
 }
 
 /**
+ * Whether this thing occupies a lot at all.
+ *
+ * Networks joined the catalog and they have no footprint: a road's lot is 0x0,
+ * which formats as "0 × 0" — a measurement, stated confidently, of something
+ * that does not exist. A zone is the same. Absent and zero are both "no
+ * footprint" here, because the question does not apply either way.
+ */
+export function hasFootprint(
+  width: number | null | undefined,
+  depth: number | null | undefined
+): boolean {
+  return typeof width === "number" && Number.isFinite(width) && width > 0
+    && typeof depth === "number" && Number.isFinite(depth) && depth > 0;
+}
+
+/**
  * A lot's footprint as a single, unbreakable string.
  *
  * Rendering this as JSX (`{width} × {depth}`) emits three separate text nodes,
