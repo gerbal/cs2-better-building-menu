@@ -20,14 +20,17 @@ export const RemoveVanillaAssetMenuComponent: ModuleRegistryExtend = (Component)
 
     // Do not put any Hooks (i.e. UseXXXX) after this point.
     //
-    // The last clause is why closing the lens no longer reveals a second menu.
-    // This component only hid the vanilla grid while the panel was up, so
-    // closing un-hid a menu that had been sitting underneath the whole time and
-    // the armed tool gave it something to show — "close" read as "swap".
+    // Suppressing the vanilla grid after the panel closed was tried and
+    // reverted. It fixed the cosmetic complaint — closing the lens revealed the
+    // menu sitting underneath — but broke a working control: the game still had
+    // that menu selected, so the next press of its toolbar button deselected it
+    // and appeared to do nothing, making the zoning icon take two clicks. A
+    // closing animation is worth less than a button that works.
     //
-    // Scoped to menus the lens actually takes over: Landscaping and Areas are
-    // declined, and hiding those would leave the player with nothing at all.
-    if (ShowFindItPanel || IsWindowLocked || LensOwnsCurrentMenu) {
+    // A real fix needs the game's menu selection cleared when the panel closes,
+    // and ToolbarUISystem.SelectAssetMenu early-returns on Entity.Null — there
+    // is no binding that does it. Left unsolved rather than papered over.
+    if (ShowFindItPanel || IsWindowLocked) {
       return <></>;
     }
 
