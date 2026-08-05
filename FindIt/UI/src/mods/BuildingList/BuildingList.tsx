@@ -8,6 +8,7 @@ import {
   formatCapacity,
   formatLotDimensions,
   groupDigits,
+  hasFootprint,
 } from "domain/buildingLensMetricFormat";
 import { getCostForecast } from "domain/buildingForecast";
 import { recordPlacement } from "domain/buildingShelf";
@@ -85,6 +86,10 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
         const label = entry.name || entry.prefabName;
         const cost = formatBuildingMetric(entry.constructionCost, "cost");
         const lot = formatLotDimensions(entry.lotWidth, entry.lotDepth);
+        // A road's lot is 0x0 and a zone has none at all. "0 × 0" is a
+        // measurement of something that does not exist, so the fact is dropped
+        // rather than stated.
+        const lotKnown = hasFootprint(entry.lotWidth, entry.lotDepth);
         // Category-aware, and it returns nothing for a category where capacity
         // means nothing — so a park bench's card stays as narrow as a
         // hospital's is informative, without a rule per category here.
@@ -98,7 +103,7 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
             tooltip={
               <div className={styles.card}>
                 <div className={styles.cardName}>{label}</div>
-                <div className={styles.cardMeta}>{cost} · {lot}</div>
+                <div className={styles.cardMeta}>{lotKnown ? `${cost} · ${lot}` : cost}</div>
               </div>
             }
           >
@@ -121,8 +126,12 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
                     {/* Separators are characters, not flex gap. Cohtml did not
                         apply the gap here, so "3 × 3" and "8 000" ran together
                         and read as a single number, "3 × 38 000". */}
-                    <span className={styles.fact}>{lot}</span>
-                    <span className={styles.factDot} aria-hidden="true">·</span>
+                    {lotKnown && (
+                      <>
+                        <span className={styles.fact}>{lot}</span>
+                        <span className={styles.factDot} aria-hidden="true">·</span>
+                      </>
+                    )}
                     <span
                       className={classNames(
                         styles.fact,

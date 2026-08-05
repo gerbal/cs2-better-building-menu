@@ -6,6 +6,7 @@ import {
   formatCapacity,
   getCapacityUnitLabel,
   groupDigits,
+  hasFootprint,
 } from "../src/domain/buildingLensMetricFormat.ts";
 
 describe("Building Lens metric formatting", () => {
@@ -100,5 +101,26 @@ describe("Building Lens lot dimensions", () => {
 
     assert.equal(formatLotDimensions(null, 16), METRIC_NO_DATA);
     assert.equal(formatLotDimensions(4, undefined), METRIC_NO_DATA);
+  });
+});
+
+describe("Footprint presence", () => {
+  it("declines a lot that is absent", () => {
+    assert.equal(hasFootprint(null, null), false);
+    assert.equal(hasFootprint(undefined, undefined), false);
+    assert.equal(hasFootprint(4, null), false);
+  });
+
+  it("declines a zero lot, which is what a network has", () => {
+    // A road's LotSize is 0x0 and formats as "0 × 0" — a measurement, stated
+    // confidently, of something that does not exist.
+    assert.equal(hasFootprint(0, 0), false);
+    assert.equal(hasFootprint(4, 0), false);
+    assert.equal(hasFootprint(0, 4), false);
+  });
+
+  it("accepts a real lot", () => {
+    assert.equal(hasFootprint(4, 4), true);
+    assert.equal(hasFootprint(1, 1), true);
   });
 });
