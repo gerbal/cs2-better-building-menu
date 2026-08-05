@@ -1,0 +1,87 @@
+@use "../../base.scss" as _base;
+
+// Measured off the game's own Theme/Pack rows so ours sit in the same rhythm:
+// a 26rem row, the label left, a row of controls right.
+.item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  min-height: 26rem;
+  padding: 2rem 0;
+}
+
+.label {
+  flex: 0 0 auto;
+  min-width: 54rem;
+  padding-right: 8rem;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeM);
+  white-space: nowrap;
+}
+
+.content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+// Chips wrap onto their own lines, so the row grows rather than clipping.
+.itemChips {
+  align-items: flex-start;
+
+  .label {
+    padding-top: 4rem;
+  }
+}
+
+.chip {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 22rem;
+  margin: 0 4rem 3rem 0;
+  padding: 0 2rem 0 7rem;
+  border-radius: 11rem;
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1rem solid rgba(255, 255, 255, 0.12);
+}
+
+.chipText {
+  white-space: nowrap;
+  font-size: var(--fontSizeS);
+  color: var(--menuText1Normal);
+}
+
+.chipRemove {
+  @include _base.transparentButton(false, true);
+  width: 18rem !important;
+  height: 18rem;
+  margin-left: 3rem;
+  padding: 0;
+  border-radius: 9rem;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeS);
+  line-height: 16rem;
+  text-align: center;
+}
+
+.chipRemove:hover {
+  background-color: rgba(255, 255, 255, 0.16);
+  color: var(--menuText1Normal);
+}
+
+.clearAll {
+  @include _base.transparentButton(false, true);
+  width: auto !important;
+  height: 22rem;
+  margin-bottom: 3rem;
+  padding: 0 8rem;
+  border-radius: 11rem;
+  background-color: rgba(0, 0, 0, 0.25);
+  color: var(--accentColorNormal);
+  white-space: nowrap;
+  font-size: var(--fontSizeS);
+}
