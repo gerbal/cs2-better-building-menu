@@ -12,16 +12,14 @@ import styles from "./buildingCatalog.module.scss";
 
 const BuildingLensFacets$ = bindValue<BuildingLensFacetState>(mod.id, "BuildingLensFacets");
 const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState>(mod.id, "BuildingCatalogMetricRanges");
-const BuildingCapacityFloor$ = bindValue<number>(mod.id, "BuildingCapacityFloor");
 const BuildingLensLegacyFilters$ = bindValue<string[]>(mod.id, "BuildingLensLegacyFilters");
 
 export const BuildingCatalogFilterSummary = () => {
   const { translate } = useLocalization();
   const facets = useValue(BuildingLensFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
-  const capacityFloor = useValue(BuildingCapacityFloor$);
   const legacyFilters = useValue(BuildingLensLegacyFilters$);
-  const summary = getBuildingLensFilterSummary({ facets, metricRanges, capacityFloor, legacyFilters });
+  const summary = getBuildingLensFilterSummary({ facets, metricRanges, legacyFilters });
 
   return (
     <div className={styles.capacityFilter} data-filter-summary="true" data-active-count={summary.count}>

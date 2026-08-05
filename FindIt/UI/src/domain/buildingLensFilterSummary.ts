@@ -20,7 +20,6 @@ export interface BuildingLensMetricRangeState {
 export interface BuildingLensFilterSummaryInput {
   facets?: BuildingLensFacetState | null;
   metricRanges?: BuildingLensMetricRangeState | null;
-  capacityFloor?: number | null;
   /**
    * Labels for the legacy FindIt filters that are currently narrowing the lens
    * index. The adapter applies these before the lens query runs, so omitting
@@ -106,21 +105,17 @@ export function getBuildingLensFilterSummary(
   const facets = selectedFacetCount(input?.facets);
   const ranges = rangesFromState(input?.metricRanges);
   const activeRanges = metricRangeIds.filter((id) => ranges[id].min !== null || ranges[id].max !== null).length;
-  const capacityFloor = Number.isFinite(input?.capacityFloor) && (input?.capacityFloor ?? 0) > 0
-    ? input?.capacityFloor ?? 0
-    : 0;
   const legacyFilters = (input?.legacyFilters ?? []).filter((label) => typeof label === "string" && label.length > 0);
-  const count = facets + activeRanges + (capacityFloor > 0 ? 1 : 0) + legacyFilters.length;
+  const count = facets + activeRanges + legacyFilters.length;
   const details = [
     ...(facets > 0 ? [`${facets} facet${facets === 1 ? "" : "s"}`] : []),
     ...metricDetails(ranges),
-    ...(capacityFloor > 0 ? [`Education capacity ${formatBound(capacityFloor)}+`] : []),
     // Named individually: "3 filters" would not tell the player which legacy
     // toggle to reach for, and the legacy panel is a different surface.
     ...legacyFilters.map((label) => `Find It: ${label}`),
   ];
 
-  const lensCount = facets + activeRanges + (capacityFloor > 0 ? 1 : 0);
+  const lensCount = facets + activeRanges;
 
   return {
     count,
@@ -153,18 +148,7 @@ export function getBuildingLensEmptyStateMessage(
     return "No buildings in this category.";
   }
 
-  const ranges = rangesFromState(input?.metricRanges);
-  const capacityFloor = Number.isFinite(input?.capacityFloor) && (input?.capacityFloor ?? 0) > 0
-    ? input?.capacityFloor ?? 0
-    : 0;
-  const capacityMax = ranges.capacity.max;
-  // The backend composes these as max(floor, minCapacity), so a floor above the
-  // capacity maximum silently rejects every row while both controls look fine.
-  const conflict = capacityFloor > 0 && capacityMax !== null && capacityFloor > capacityMax
-    ? ` The Education capacity floor is above the capacity maximum, so nothing can match.`
-    : "";
-
-  return `No buildings match ${constraints.join(", ")}.${conflict}`;
+  return `No buildings match ${constraints.join(", ")}.`;
 }
 
 export function clearBuildingLensFiltersCommand(): BuildingLensFilterTriggerCommand {

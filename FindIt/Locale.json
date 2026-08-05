@@ -303,5 +303,10 @@
   "Options.OPTION_DESCRIPTION[FindItBuildingMenu.FindItBuildingMenu.Mod.FindItSettings.BuildingLensTileSize]": "Width of each building tile in the grid. Larger tiles are easier to recognise by silhouette; smaller ones fit more on screen.",
   "Tooltip.LABEL[FindItBuildingMenu.RolePowerPlant]": "Power plant",
   "Options.OPTION[FindItBuildingMenu.FindItBuildingMenu.Mod.FindItSettings.ShowCoverageOverlay]": "Show coverage map while placing",
-  "Options.OPTION_DESCRIPTION[FindItBuildingMenu.FindItBuildingMenu.Mod.FindItSettings.ShowCoverageOverlay]": "While a service building is on the tool, switch the map to that service’s coverage view, so you can see where it is needed before placing. Your previous map view is restored when you put the tool down."
+  "Options.OPTION_DESCRIPTION[FindItBuildingMenu.FindItBuildingMenu.Mod.FindItSettings.ShowCoverageOverlay]": "While a service building is on the tool, switch the map to that service’s coverage view, so you can see where it is needed before placing. Your previous map view is restored when you put the tool down.",
+  "Tooltip.LABEL[FindItBuildingMenu.ZoneTierLow]": "Low density",
+  "Tooltip.LABEL[FindItBuildingMenu.ZoneTierRow]": "Row homes",
+  "Tooltip.LABEL[FindItBuildingMenu.ZoneTierMedium]": "Medium density",
+  "Tooltip.LABEL[FindItBuildingMenu.ZoneTierHigh]": "High density",
+  "Tooltip.LABEL[FindItBuildingMenu.ZoneTierSignature]": "Signature"
 }

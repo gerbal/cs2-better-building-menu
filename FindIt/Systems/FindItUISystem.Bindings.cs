@@ -194,7 +194,6 @@ namespace FindItBuildingMenu.Systems
 				Offset = 0,
 				MinCapacity = null,
 			};
-			_BuildingCapacityFloor.Value = 0;
 			RefreshBuildingLensNavigation();
 			RefreshBuildingCatalog();
 		}
@@ -209,7 +208,6 @@ namespace FindItBuildingMenu.Systems
 				Offset = 0,
 				MinCapacity = null,
 			};
-			_BuildingCapacityFloor.Value = 0;
 			RefreshBuildingLensNavigation();
 			RefreshBuildingCatalog();
 		}
@@ -314,12 +312,10 @@ namespace FindItBuildingMenu.Systems
 		{
 			BuildingCatalogLensState cleared = new BuildingCatalogLensState(
 				_buildingCatalogQuery,
-				_buildingMetricRanges,
-				_BuildingCapacityFloor.Value).ClearFilters();
+				_buildingMetricRanges).ClearFilters();
 
 			_buildingCatalogQuery = cleared.Query;
 			_buildingMetricRanges = cleared.MetricRanges;
-			_BuildingCapacityFloor.Value = cleared.EducationCapacityFloor;
 			RefreshBuildingCatalog();
 		}
 
@@ -339,24 +335,6 @@ namespace FindItBuildingMenu.Systems
 		{
 			_buildingMetricRanges = BuildingCatalogMetricRangeState.Empty;
 			_buildingCatalogQuery = BuildingCatalogMetricRange.Clear(_buildingCatalogQuery);
-			RefreshBuildingCatalog();
-		}
-
-		private void SetBuildingCapacityFloor(int floor)
-		{
-			var boundedFloor = Math.Min(10000, Math.Max(0, floor));
-			if (!IsEducationCapacityFilterVisible())
-			{
-				boundedFloor = 0;
-			}
-
-			_BuildingCapacityFloor.Value = boundedFloor;
-			_buildingCatalogQuery = _buildingCatalogQuery with
-			{
-				MinCapacity = boundedFloor > 0 ? boundedFloor : null,
-				Offset = 0,
-			};
-
 			RefreshBuildingCatalog();
 		}
 

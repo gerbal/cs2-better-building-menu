@@ -23,7 +23,6 @@ import {
   nextSortState,
   normalizeCatalogOffset,
   setCatalogOffsetCommand,
-  setBuildingCapacityFloorCommand,
   setSortColumnCommand,
   setSortDescendingCommand,
   toggleCompareEntryCommand,
@@ -71,8 +70,6 @@ type BuildingCatalogBindingPage = BuildingCatalogPage & { status?: BuildingCatal
 const BuildingCatalog$ = bindValue<BuildingCatalogBindingPage>(mod.id, "BuildingCatalog");
 const PanelWidth$ = bindValue<number>(mod.id, "PanelWidth");
 const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch");
-const BuildingCapacityFilterVisible$ = bindValue<boolean>(mod.id, "BuildingCapacityFilterVisible");
-const BuildingCapacityFloor$ = bindValue<number>(mod.id, "BuildingCapacityFloor");
 // The order lives in the backend query, which outlives this component. Reading
 // it back keeps the header honest across the remounts that close/reopen, the
 // Catalog/Tools switch, and the lens toggle all cause.
@@ -86,8 +83,6 @@ const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState>(mod
 const BuildingLensLegacyFilters$ = bindValue<string[]>(mod.id, "BuildingLensLegacyFilters");
 const BuildingCatalogMatchesElsewhere$ = bindValue<number>(mod.id, "BuildingCatalogMatchesElsewhere", 0);
 const LensDefaultToTable$ = bindValue<boolean>(mod.id, "BuildingLensDefaultToTable", false);
-
-const educationCapacityPresets = [0, 100, 500, 1000];
 
 const LENS_VIEW_MODE_KEY = "tableMode";
 
@@ -117,8 +112,6 @@ export const BuildingCatalogComponent = () => {
   const page = useValue(BuildingCatalog$);
   const panelWidth = useValue(PanelWidth$);
   const currentSearch = useValue(CurrentSearch$);
-  const capacityFilterVisible = useValue(BuildingCapacityFilterVisible$);
-  const capacityFloor = useValue(BuildingCapacityFloor$);
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
   const [sortingExpanded, setSortingExpanded] = useState(false);
@@ -149,7 +142,6 @@ export const BuildingCatalogComponent = () => {
     searchText: currentSearch,
     facets,
     metricRanges,
-    capacityFloor,
     legacyFilters,
   });
 
@@ -343,27 +335,6 @@ export const BuildingCatalogComponent = () => {
         }}
         renderMetrics={() => <BuildingCatalogMetricFilters />}
       />
-
-      {capacityFilterVisible && (
-        <div className={styles.capacityFilter}>
-          <span className={styles.capacityFilterLabel}>
-            {translate("Tooltip.LABEL[FindItBuildingMenu.EducationCapacityFilter]", "Education capacity")}
-          </span>
-          {educationCapacityPresets.map((floor) => (
-            <Button
-              key={floor}
-              className={classNames(styles.capacityButton, floor === capacityFloor && styles.capacityButtonSelected)}
-              variant="icon"
-              onSelect={() => {
-                const command = setBuildingCapacityFloorCommand(floor);
-                trigger(mod.id, command.method, ...command.args);
-              }}
-            >
-              {floor === 0 ? "Any" : `${floor}+`}
-            </Button>
-          ))}
-        </div>
-      )}
 
       {compareEntries.length > 0 && (
         <div className={styles.compare}>

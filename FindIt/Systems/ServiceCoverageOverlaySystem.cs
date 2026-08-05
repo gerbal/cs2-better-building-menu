@@ -75,11 +75,15 @@ namespace FindItBuildingMenu.Systems
 
 			if (!EntityManager.HasComponent<CoverageData>(prefabEntity))
 			{
-				// No coverage, but a heavy polluter is still a placement whose
-				// consequence is spatial — a coal plant or landfill has no
-				// service radius and every reason to be sited carefully. Falls
-				// through to nothing for a park bench.
-				ShowPollutionOrRestore(prefabEntity);
+				// Most buildings provide no coverage, and switching the map for
+				// a park bench would be noise.
+				//
+				// A pollution fallback lived here briefly, on the theory that
+				// siting a polluter is spatial too. It was unreachable: the game
+				// opens its own infoview for every placeable polluter tried — a
+				// coal plant shows ELECTRICITY, a landfill GARBAGE MANAGEMENT —
+				// and that wins. Removed rather than kept as decoration.
+				Restore();
 
 				return;
 			}
@@ -118,59 +122,6 @@ namespace FindItBuildingMenu.Systems
 			_restoreInfoview = null;
 			_weChangedInfoview = false;
 		}
-
-		/// <summary>
-		/// Switches to the pollution view for a building that fouls its
-		/// surroundings, or restores if it does not.
-		/// </summary>
-		/// <remarks>
-		/// Coverage wins when a building has both: the service is why you are
-		/// placing it, and the pollution is a side effect. Only meaningful
-		/// pollution counts — nearly every building emits a little noise, and
-		/// switching the map for a bus shelter would be noise of another kind.
-		/// </remarks>
-		private void ShowPollutionOrRestore(Entity prefabEntity)
-		{
-			if (!EntityManager.HasComponent<PollutionData>(prefabEntity))
-			{
-				Restore();
-
-				return;
-			}
-
-			var pollution = EntityManager.GetComponentData<PollutionData>(prefabEntity);
-			var worst = math.max(
-				math.max(pollution.m_GroundPollution, pollution.m_AirPollution),
-				pollution.m_NoisePollution);
-
-			if (worst < PollutionThreshold)
-			{
-				Restore();
-
-				return;
-			}
-
-			var infoview = ResolveByName(PollutionAliases);
-			if (infoview is null || ReferenceEquals(_toolSystem.infoview, infoview))
-			{
-				return;
-			}
-
-			if (!_weChangedInfoview)
-			{
-				_restoreInfoview = _toolSystem.infoview;
-				_weChangedInfoview = true;
-			}
-
-			_toolSystem.infoview = infoview;
-		}
-
-		/// <summary>
-		/// Below this, the emission is incidental rather than a siting concern.
-		/// </summary>
-		private const float PollutionThreshold = 20f;
-
-		private static readonly string[] PollutionAliases = { "Pollution" };
 
 		/// <summary>
 		/// Aliases per coverage service, matched against the real infoview prefab

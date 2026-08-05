@@ -24,7 +24,7 @@ const emptyRanges: BuildingLensMetricRangeState = {
 };
 
 describe("Building Lens active-filter summary", () => {
-  it("counts selected facets, metric ranges, and education capacity as one summary", () => {
+  it("counts selected facets and metric ranges as one summary", () => {
     const summary = getBuildingLensFilterSummary(
       {
         facets: {
@@ -55,13 +55,12 @@ describe("Building Lens active-filter summary", () => {
           maxLotDepth: null,
           hasSelection: true,
         },
-        capacityFloor: 500,
       },
     );
 
-    assert.equal(summary.count, 4);
-    assert.equal(summary.text, "4 active filters");
-    assert.deepEqual(summary.details, ["2 facets", "Cost 100–500", "Education capacity 500+"]);
+    assert.equal(summary.count, 3);
+    assert.equal(summary.text, "3 active filters");
+    assert.deepEqual(summary.details, ["2 facets", "Cost 100–500"]);
     assert.equal(summary.hasSelection, true);
   });
 
@@ -91,12 +90,10 @@ describe("Building Lens active-filter summary", () => {
     const message = getBuildingLensEmptyStateMessage({
       searchText: "school",
       legacyFilters: ["Only placed"],
-      capacityFloor: 500,
     });
 
     assert.match(message, /"school"/);
     assert.match(message, /Find It: Only placed/);
-    assert.match(message, /Education capacity 500\+/);
   });
 
   it("does not invent constraints when the category is simply empty", () => {
@@ -104,17 +101,6 @@ describe("Building Lens active-filter summary", () => {
       getBuildingLensEmptyStateMessage({}),
       "No buildings in this category.",
     );
-  });
-
-  it("calls out a capacity floor that cannot be satisfied", () => {
-    // The Education preset composes as max(floor, metricMin), so a floor above
-    // the metric maximum rejects every row while both controls look reasonable.
-    const message = getBuildingLensEmptyStateMessage({
-      capacityFloor: 900,
-      metricRanges: { ...emptyRanges, maxCapacity: 400, hasSelection: true },
-    });
-
-    assert.match(message, /capacity floor .*above/i);
   });
 
   it("publishes one explicit clear-lens-filters trigger payload", () => {

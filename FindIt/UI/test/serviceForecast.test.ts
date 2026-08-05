@@ -59,24 +59,16 @@ describe("Service forecast mapping", () => {
     assert.equal(getServiceForecastKey(entry(sub, "Radio Telescope", 5)), null);
   });
 
-  it("picks the education tier the building actually serves", () => {
-    // One "students" unit covers four separate demand series. The tier is only
-    // discoverable from the name, so this is a heuristic and says so.
-    assert.equal(getServiceForecastKey(entry("ServiceBuildings_EducationResearch", "Elementary School"))!.key, "elementary");
-    assert.equal(getServiceForecastKey(entry("ServiceBuildings_EducationResearch", "High School"))!.key, "highSchool");
-    assert.equal(getServiceForecastKey(entry("ServiceBuildings_EducationResearch", "Community College"))!.key, "college");
-    assert.equal(getServiceForecastKey(entry("ServiceBuildings_EducationResearch", "Medical University"))!.key, "university");
-  });
-
-  it("prefers the more specific education tier when names overlap", () => {
-    // "High School" contains "School"; elementary must not swallow it.
-    assert.equal(getServiceForecastKey(entry("ServiceBuildings_EducationResearch", "Urban High School"))!.key, "highSchool");
-  });
-
-  it("declines an education building with no recognisable tier", () => {
-    // Research institutes and labs teach nobody; a forecast against student
-    // demand would be nonsense.
+  it("declines an education building carrying no tier, whatever it is called", () => {
+    // Research facilities have no SchoolData and so no level. Measured on a
+    // real catalog: 40 of 44 education buildings carry a level, and the four
+    // without are Geological Research Center, Large Hadron Collider, Practice
+    // Clinic and Radio Telescope — none of which teach anyone.
+    //
+    // The name is deliberately not consulted: a name that looks like a school
+    // but carries no SchoolData has no student capacity to forecast from.
     assert.equal(getServiceForecastKey(entry("ServiceBuildings_EducationResearch", "Radio Telescope")), null);
+    assert.equal(getServiceForecastKey(entry("ServiceBuildings_EducationResearch", "Elementary School")), null);
   });
 
   it("declines services with no meaningful demand series", () => {

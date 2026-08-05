@@ -44,22 +44,6 @@ const has = (name: string, ...needles: string[]) =>
   needles.some((needle) => name.toLowerCase().includes(needle.toLowerCase()));
 
 /**
- * Education tiers, most specific first: "High School" contains "School", so
- * testing elementary first would swallow every high school in the game.
- *
- * The tier is only discoverable from the building's name — nothing in the
- * indexed data distinguishes them — so this is frankly a heuristic, and an
- * unrecognised education building returns null rather than being forecast
- * against a tier it may not serve.
- */
-const EDUCATION_TIERS: Array<[string, string[]]> = [
-  ["university", ["University"]],
-  ["college", ["College"]],
-  ["highSchool", ["High School", "Highschool"]],
-  ["elementary", ["Elementary", "Primary", "Children's Clinic"]],
-];
-
-/**
  * The tier a school grants, straight from `SchoolData.m_EducationLevel`.
  *
  * These are the values the game's own education infoview switches on, so this
@@ -75,18 +59,14 @@ const EDUCATION_LEVEL_TIERS: Record<number, string> = {
 
 function resolve(subCategory: string, name: string, educationLevel?: number | null): string | null {
   if (has(subCategory, "EducationResearch")) {
-    // Data first. The name heuristic below cannot see a modded "Akademie" and
-    // would silently drop it.
-    if (typeof educationLevel === "number") {
-      return EDUCATION_LEVEL_TIERS[educationLevel] ?? null;
-    }
-
-    for (const [key, needles] of EDUCATION_TIERS) {
-      if (has(name, ...needles)) return key;
-    }
-
-    // Research institutes, telescopes and labs teach nobody.
-    return null;
+    // No name heuristic here any more. m_EducationLevel is a field of
+    // SchoolData, so anything with student capacity always carries it, and a
+    // building without SchoolData has no capacity to forecast from. Measured on
+    // a real catalog: of 44 education buildings, 40 have a level and the four
+    // without are research facilities that teach nobody.
+    return typeof educationLevel === "number"
+      ? EDUCATION_LEVEL_TIERS[educationLevel] ?? null
+      : null;
   }
 
   if (has(subCategory, "_Health")) {
