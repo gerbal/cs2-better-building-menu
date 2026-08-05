@@ -305,6 +305,37 @@ is filling a gap the game leaves. Worth revisiting if the pollution branch turns
 out never to fire in practice, in which case it should be deleted rather than
 kept as decoration.
 
+## Outstanding work (as of 2026-08-05, end of session)
+
+Durable copy of the session task list, because that list does not survive the
+session and the next person — or the next agent — should not have to
+reconstruct it from the git log.
+
+### Needs the game
+
+| # | item | note |
+|---|---|---|
+| 24 | Verify the Locked/Unlocked filter | C#, needs a restart. In the smoke save everything may already be unlocked, in which case the dimension has one option and the rail correctly hides it — a save with unmet milestones is the real test. |
+| 20 | Localized labels | Half done. The "Services" breadcrumb proves the game's `Editor.ASSET_CATEGORY_TITLE` keys are being read; a language switch would confirm the headings follow while our own vocabulary stays English. Cross-page group contiguity is **verified**. |
+| 22 | Reopening the lens takes two clicks | Closing leaves the game's menu selected, so the next press of that toolbar button deselects it and appears to do nothing. Suppressing the vanilla grid after close fixed the cosmetic pop-back but caused this, and was reverted. A real fix needs the menu selection cleared, and `ToolbarUISystem.SelectAssetMenu` early-returns on `Entity.Null`. |
+
+### Needs a decision
+
+| # | item | note |
+|---|---|---|
+| 25 | Placement is `MatchesAll`, everything else is `MatchesAny` | Two Placement values demand both flags; two Roles give either. Identical UI, opposite behaviour. Defensible for corner flags, inconsistent with what the rest of the rail teaches. Predates this session. |
+| 23 | Expand the tooltip for `+N` footprints | Probably moot: the strip is one glyph per width now, capped at 12, so no real zone should overflow. Revisit only if `+N` is seen. |
+
+### Known debt
+
+- **Fifteen localizable strings are registered but not plumbed** — see
+  `domain/localizableStrings.ts`. They are returned as text from pure domain
+  modules, which cannot call `translate`, so each needs the domain to return a
+  key and the component to render it.
+- **`ZoningSurfaceCatalog.ResolveFamily(string)`** still matches name stems. It
+  now runs only for a zone whose `AreaType` is None with no UI group — a case
+  the game's own data does not distinguish either.
+
 ## Open design notes (2026-08-05, from play)
 
 Raised while validating the chip row. Not yet actioned.
