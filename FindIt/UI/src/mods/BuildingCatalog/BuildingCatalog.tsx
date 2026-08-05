@@ -94,11 +94,12 @@ const LENS_VIEW_MODE_KEY = "viewMode";
 const LENS_GROUP_KEY = "groupBy";
 
 /** Grid recognises, List scans, Table compares. */
-type ViewMode = "grid" | "list" | "table";
+type ViewMode = "grid" | "list" | "cards" | "table";
 
 const VIEW_MODES: Array<{ id: ViewMode; localizationKey: string; fallback: string }> = [
   { id: "grid", localizationKey: "Tooltip.LABEL[FindItBuildingMenu.ViewGrid]", fallback: "Grid" },
   { id: "list", localizationKey: "Tooltip.LABEL[FindItBuildingMenu.ViewList]", fallback: "List" },
+  { id: "cards", localizationKey: "Tooltip.LABEL[FindItBuildingMenu.ViewCards]", fallback: "Cards" },
   { id: "table", localizationKey: "Tooltip.LABEL[FindItBuildingMenu.ViewTable]", fallback: "Table" },
 ];
 
@@ -246,9 +247,18 @@ export const BuildingCatalogComponent = () => {
    * tiles — which is why it can eventually drop its bespoke component.
    */
   function renderLeaf(entries: BuildingCatalogEntry[]): JSX.Element {
-    return viewMode === "list"
-      ? <BuildingList entries={entries} searchText={currentSearch ?? ""} onPlace={activate} />
-      : <BuildingGrid entries={entries} searchText={currentSearch ?? ""} onPlace={activate} standalone={false} />;
+    if (viewMode === "list" || viewMode === "cards") {
+      return (
+        <BuildingList
+          entries={entries}
+          searchText={currentSearch ?? ""}
+          onPlace={activate}
+          variant={viewMode === "cards" ? "cards" : "compact"}
+        />
+      );
+    }
+
+    return <BuildingGrid entries={entries} searchText={currentSearch ?? ""} onPlace={activate} standalone={false} />;
   }
 
   function renderGroupNodes(nodes: GroupNode<BuildingCatalogEntry>[], depth: number): JSX.Element[] {
@@ -278,7 +288,7 @@ export const BuildingCatalogComponent = () => {
     // Ungrouped grid keeps its own scroll and its shelf; anything else is one
     // scroll around the whole result, because a scrollbar per heading makes the
     // set impossible to read as one thing.
-    if (groups.length === 0 && viewMode !== "list") {
+    if (groups.length === 0 && viewMode === "grid") {
       return <BuildingGrid entries={entries} searchText={currentSearch ?? ""} onPlace={activate} />;
     }
 
