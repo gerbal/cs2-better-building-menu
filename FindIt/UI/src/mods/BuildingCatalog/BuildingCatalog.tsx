@@ -622,7 +622,7 @@ export const BuildingCatalogComponent = () => {
         </div>
         </>
       ) : (
-        <BuildingGrid entries={items} onPlace={activate} />
+        <BuildingGrid entries={items} searchText={currentSearch ?? ""} onPlace={activate} />
       )}
 
     </div>
