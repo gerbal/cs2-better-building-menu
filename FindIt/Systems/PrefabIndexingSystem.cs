@@ -37,6 +37,7 @@ namespace FindItBuildingMenu.Systems
 		private HashSet<string> _blackList;
 		private ComponentType? roadBuilderDiscarded;
 		private static Dictionary<Entity, ZoneTypeFilter> _zoneTypeCache;
+		private static List<ZoneCatalogEntry> _zoneCatalog = new();
 		private readonly List<IPrefabCategoryProcessor> _prefabCategoryProcessors = new();
 
 		protected override void OnCreate()
@@ -707,6 +708,7 @@ namespace FindItBuildingMenu.Systems
 				ComponentType.ReadOnly<PrefabData>());
 			var zones = zonesQuery.ToEntityArray(Allocator.Temp);
 			var propertiesData = zonesQuery.ToComponentDataArray<ZonePropertiesData>(Allocator.Temp);
+			var zoneData = zonesQuery.ToComponentDataArray<ZoneData>(Allocator.Temp);
 
 			var buildingsQuery = GetEntityQuery(new EntityQueryDesc
 			{
@@ -762,7 +764,47 @@ namespace FindItBuildingMenu.Systems
 			}
 
 			_zoneTypeCache = dictionary;
+
+			// The same pass that classifies buildings by zone also yields the
+			// zones themselves, which the zoning hierarchy browses. Family comes
+			// from ZoneData rather than the prefab name, and density from the
+			// derivation just performed rather than from a name heuristic.
+			var catalog = new List<ZoneCatalogEntry>();
+
+			for (var i = 0; i < zones.Length; i++)
+			{
+				var zone = zones[i];
+
+				if (!_prefabSystem.TryGetPrefab<PrefabBase>(zone, out var prefab) || prefab?.name is null)
+				{
+					continue;
+				}
+
+				var family = ZoningSurfaceCatalog.ResolveFamily(zoneData[i].m_AreaType, zoneData[i].m_ZoneFlags)
+					?? ZoningSurfaceCatalog.ResolveFamily(prefab.name);
+
+				if (family is null)
+				{
+					continue;
+				}
+
+				catalog.Add(new ZoneCatalogEntry(
+					Id: zone.Index,
+					PrefabName: prefab.name,
+					Name: GetAssetName(prefab),
+					Family: family,
+					Density: dictionary.TryGetValue(zone, out var density) ? density : ZoneTypeFilter.Any,
+					Thumbnail: IconPath.Normalize(ImageSystem.GetThumbnail(prefab))));
+			}
+
+			_zoneCatalog = catalog;
+			Mod.Log.Info($"Indexed Zones Count: {_zoneCatalog.Count}");
 		}
+
+		/// <summary>
+		/// Every assignable zone, grouped by family in the zoning hierarchy.
+		/// </summary>
+		public static IReadOnlyList<ZoneCatalogEntry> GetZoneCatalog() => _zoneCatalog;
 
 		public static ZoneTypeFilter GetZoneType(Entity zonePrefab)
 		{
