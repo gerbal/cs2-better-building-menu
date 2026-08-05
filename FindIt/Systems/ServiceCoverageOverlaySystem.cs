@@ -1,140 +1,160 @@
 using Game;
-using Game.Objects;
+using Game.Net;
 using Game.Prefabs;
-using Game.Rendering;
 using Game.Tools;
+
+using System;
+using System.Collections.Generic;
 
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 
-using Color = UnityEngine.Color;
-using Transform = Game.Objects.Transform;
 
 namespace FindItBuildingMenu.Systems
 {
 	/// <summary>
-	/// Draws the service radius of the building on the tool, on the terrain.
+	/// Shows the city's own coverage map while a service building is on the tool.
 	/// </summary>
 	/// <remarks>
-	/// "Will it reach the neighbourhood that needs it" is a spatial question,
-	/// and the panel could only ever answer it with a number. A ring under the
-	/// ghost answers it in the coordinate system the player is already looking
-	/// at, at the only moment it can still change the decision — while they are
-	/// choosing where, before they commit.
+	/// "Will it reach the neighbourhood that needs it" is a spatial question the
+	/// panel could only ever answer with a number, so the answer belongs on the
+	/// terrain, at the moment it can still change the decision.
 	///
-	/// The radius comes from the prefab's own <see cref="CoverageData"/>, and the
-	/// position from the temp preview entity the object tool creates, so nothing
-	/// here raycasts or duplicates the tool's placement logic.
+	/// This drew a radius ring first. It worked, and was the wrong design: an
+	/// elementary school's range is 2000, so the ring spanned 4000 units — wider
+	/// than the viewport at play zoom, and a ring whose edges you cannot see
+	/// answers nothing. Coverage in this game is also a falloff rather than a
+	/// boundary, so a crisp circle misrepresents it.
+	///
+	/// The game already draws coverage properly, as terrain colouring in its own
+	/// infoview. So this activates that instead of competing with it, and puts
+	/// the player's previous infoview back when they put the tool down — leaving
+	/// someone stuck in a view they never chose would be worse than showing them
+	/// nothing.
 	/// </remarks>
 	public partial class ServiceCoverageOverlaySystem : GameSystemBase
 	{
-		private OverlayRenderSystem _overlayRenderSystem = null!;
 		private ToolSystem _toolSystem = null!;
 		private PrefabSystem _prefabSystem = null!;
-		private EntityQuery _ghostQuery;
+		private EntityQuery _infoviewQuery;
+
+		// What the player was looking at before we changed it, so it can be put
+		// back. Only set when we are the ones who changed it.
+		private InfoviewPrefab? _restoreInfoview;
+		private bool _weChangedInfoview;
 
 		protected override void OnCreate()
 		{
 			base.OnCreate();
 
-			_overlayRenderSystem = World.GetOrCreateSystemManaged<OverlayRenderSystem>();
 			_toolSystem = World.GetOrCreateSystemManaged<ToolSystem>();
 			_prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
 
-			// The object tool's preview object: a Temp entity with a Transform.
-			// Reading it avoids re-implementing the raycast and snapping the
-			// tool has already done.
-			_ghostQuery = GetEntityQuery(
-				ComponentType.ReadOnly<Temp>(),
-				ComponentType.ReadOnly<Transform>(),
-				ComponentType.ReadOnly<PrefabRef>());
-
-			RequireForUpdate(_ghostQuery);
+			_infoviewQuery = GetEntityQuery(ComponentType.ReadOnly<InfoviewData>());
 		}
 
 		protected override void OnUpdate()
 		{
 			if (!Mod.Settings.ShowCoverageOverlay)
 			{
+				Restore();
+
 				return;
 			}
 
 			var prefab = _toolSystem.activePrefab;
 			if (prefab is null)
 			{
+				Restore();
+
 				return;
 			}
 
 			var prefabEntity = _prefabSystem.GetEntity(prefab);
 			if (!EntityManager.HasComponent<CoverageData>(prefabEntity))
 			{
+				// Most buildings provide no coverage, and switching the map to a
+				// service view for a park bench would be noise.
+				Restore();
+
 				return;
 			}
 
 			var coverage = EntityManager.GetComponentData<CoverageData>(prefabEntity);
-			if (coverage.m_Range <= 0f)
-			{
-				// Most buildings have no coverage at all; drawing a zero-radius
-				// ring would be noise on every placement.
-				return;
-			}
-
-			if (!TryGetGhostPosition(prefabEntity, out var position))
+			var infoview = ResolveInfoview(coverage.m_Service);
+			if (infoview is null || ReferenceEquals(_toolSystem.infoview, infoview))
 			{
 				return;
 			}
 
-			var buffer = _overlayRenderSystem.GetBuffer(out var dependencies);
-			// One circle per frame is not worth a job; completing here keeps the
-			// draw on the main thread and the system readable.
-			dependencies.Complete();
+			if (!_weChangedInfoview)
+			{
+				_restoreInfoview = _toolSystem.infoview;
+				_weChangedInfoview = true;
+			}
 
-			var fill = new Color(0.35f, 0.75f, 1f, 0.10f);
-			var outline = new Color(0.45f, 0.85f, 1f, 0.75f);
-
-			buffer.DrawCircle(
-				outline,
-				fill,
-				OutlineWidth,
-				OverlayRenderSystem.StyleFlags.Projected,
-				new float2(0f, 1f),
-				position,
-				coverage.m_Range * 2f);
-
-			_overlayRenderSystem.AddBufferWriter(Dependency);
+			_toolSystem.infoview = infoview;
 		}
 
-		private const float OutlineWidth = 6f;
+		protected override void OnDestroy()
+		{
+			Restore();
+
+			base.OnDestroy();
+		}
+
+		private void Restore()
+		{
+			if (!_weChangedInfoview)
+			{
+				return;
+			}
+
+			_toolSystem.infoview = _restoreInfoview;
+			_restoreInfoview = null;
+			_weChangedInfoview = false;
+		}
 
 		/// <summary>
-		/// Where the tool's preview object currently sits.
+		/// Aliases per coverage service, matched against the real infoview prefab
+		/// names at runtime rather than assumed, because the two vocabularies do
+		/// not line up: the service is "Park", the infoview "ParksAndRecreation".
 		/// </summary>
-		/// <remarks>
-		/// Matched by prefab so a stale temp entity from another tool cannot
-		/// drag the ring somewhere the player is not looking.
-		/// </remarks>
-		private bool TryGetGhostPosition(Entity prefabEntity, out float3 position)
+		private static readonly Dictionary<CoverageService, string[]> InfoviewAliases = new()
 		{
-			position = default;
+			[CoverageService.Healthcare] = new[] { "Healthcare", "Health" },
+			[CoverageService.FireRescue] = new[] { "FireRescue", "Fire" },
+			[CoverageService.Police] = new[] { "Police" },
+			[CoverageService.Park] = new[] { "ParksAndRecreation", "Parks", "Park" },
+			[CoverageService.PostService] = new[] { "PostService", "Post", "Mail" },
+			[CoverageService.Education] = new[] { "Education" },
+			[CoverageService.EmergencyShelter] = new[] { "Disaster", "EmergencyShelter", "Hazard" },
+			[CoverageService.Welfare] = new[] { "Welfare", "Health" },
+		};
 
-			var entities = _ghostQuery.ToEntityArray(Allocator.Temp);
+        private InfoviewPrefab? ResolveInfoview(CoverageService service)
+		{
+			if (!InfoviewAliases.TryGetValue(service, out var aliases))
+			{
+				return null;
+			}
+
+			var entities = _infoviewQuery.ToEntityArray(Allocator.Temp);
 
 			try
 			{
-				foreach (var entity in entities)
+				// Exact match first, so "Health" cannot claim "Healthcare" out
+				// from under a later alias.
+				foreach (var alias in aliases)
 				{
-					if (!EntityManager.HasComponent<PrefabRef>(entity)
-						|| EntityManager.GetComponentData<PrefabRef>(entity).m_Prefab != prefabEntity)
+					foreach (var entity in entities)
 					{
-						continue;
-					}
-
-					if (EntityManager.HasComponent<Transform>(entity))
-					{
-						position = EntityManager.GetComponentData<Transform>(entity).m_Position;
-
-						return true;
+						if (_prefabSystem.TryGetPrefab<InfoviewPrefab>(entity, out var candidate)
+							&& string.Equals(candidate?.name, alias, StringComparison.OrdinalIgnoreCase))
+						{
+							return candidate;
+						}
 					}
 				}
 			}
@@ -143,7 +163,7 @@ namespace FindItBuildingMenu.Systems
 				entities.Dispose();
 			}
 
-			return false;
+			return null;
 		}
 	}
 }

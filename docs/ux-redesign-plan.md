@@ -271,5 +271,16 @@ real numbers. Options, none yet taken:
 - Replace it with the thing the panel genuinely cannot do: mark the nearest
   under-served area, rather than drawing the building's own reach.
 
-The system is committed and working, and gated behind ShowCoverageOverlay, so
-this is a design decision rather than a broken feature.
+**Resolved: took the first option.** The ring is gone. Arming a service
+building now activates the game's own infoview for that service, and putting
+the tool down restores whatever the player was looking at before — leaving
+someone stuck in a view they never chose would be worse than showing nothing.
+
+Verified by real screen capture of the game window, since CDP cannot see the 3D
+layer: arming a Fire House Watch Tower tints the city with the Fire Rescue
+coverage view, and closing the panel returns it to natural colours.
+
+Note the coverage service and infoview vocabularies do not line up — the
+service is `Park`, the infoview `ParksAndRecreation` — so infoviews are
+resolved by matching aliases against the real prefab names at runtime rather
+than assuming either naming.
