@@ -23,6 +23,9 @@ namespace FindItBuildingMenu.Systems
 		private readonly BuildingCatalogAdapter _buildingCatalogAdapter = new();
 		private BuildingCatalogQuery _buildingCatalogQuery = new();
 		private readonly FindItInteractionBoundary _interactionBoundary = new();
+		private BuildingCatalogMetricRangeState _buildingMetricRanges = BuildingCatalogMetricRangeState.Empty;
+		private string _buildingLensSection = VanillaBuildMenuTaxonomy.AllBuildings;
+		private string _buildingLensSubCategory = VanillaBuildMenuTaxonomy.Any;
 
 		private ToolSystem _toolSystem;
 		private PrefabSystem _prefabSystem;
@@ -64,6 +67,18 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<SubCategoryUIEntry[]> _SubCategoryBinding;
 		private ValueBindingHelper<PrefabUIEntry[]> _PrefabListBinding;
 		private ValueBindingHelper<BuildingCatalogPage> _BuildingCatalogBinding = null!;
+		private ValueBindingHelper<BuildingCatalogMetricRangeState> _BuildingCatalogMetricRanges = null!;
+		private ValueBindingHelper<BuildingCatalogFacetState> _BuildingLensFacets = null!;
+		private IReadOnlyList<int> _buildingCompareIds = Array.Empty<int>();
+		private ValueBindingHelper<BuildingCatalogEntry[]> _BuildingCatalogCompare = null!;
+		private ValueBindingHelper<string[]> _BuildingLensLegacyFilters = null!;
+		private ValueBindingHelper<string> _BuildingCatalogSortColumn = null!;
+		private ValueBindingHelper<bool> _BuildingCatalogSortDescending = null!;
+		private ValueBindingHelper<string> _BuildingLensSectionBinding = null!;
+		private ValueBindingHelper<string> _BuildingLensSubCategoryBinding = null!;
+		private ValueBindingHelper<BuildingLensSectionUIEntry[]> _BuildingLensSectionListBinding = null!;
+		private ValueBindingHelper<BuildingLensSubCategoryUIEntry[]> _BuildingLensSubCategoryListBinding = null!;
+		private ValueBindingHelper<ToolSurfaceDescriptor[]> _ToolSurfaceDescriptorsBinding = null!;
 
 		public bool IsExpanded => _IsExpanded;
 		public bool BuildingLensEnabled => _BuildingLensEnabled;
@@ -142,7 +157,35 @@ namespace FindItBuildingMenu.Systems
 			_CategoryBinding = CreateBinding("CategoryList", new CategoryUIEntry[] { new(PrefabCategory.Any) });
 			_SubCategoryBinding = CreateBinding("SubCategoryList", new SubCategoryUIEntry[] { new(PrefabSubCategory.Any) });
 			_PrefabListBinding = CreateBinding("PrefabList", new PrefabUIEntry[0]);
-			_BuildingCatalogBinding = CreateBinding("BuildingCatalog", new BuildingCatalogPage(Array.Empty<BuildingCatalogEntry>(), 0, 0, 100));
+			_BuildingCatalogBinding = CreateBinding("BuildingCatalog", new BuildingCatalogPage(
+				Array.Empty<BuildingCatalogEntry>(),
+				0,
+				0,
+				100,
+				BuildingCatalogLensState.Indexing));
+			_BuildingCatalogMetricRanges = CreateBinding("BuildingCatalogMetricRanges", BuildingCatalogMetricRangeState.Empty);
+			_BuildingLensFacets = CreateBinding("BuildingLensFacets", new BuildingCatalogFacetState(Array.Empty<BuildingCatalogFacetGroup>(), false));
+			_BuildingCatalogCompare = CreateBinding("BuildingCatalogCompare", Array.Empty<BuildingCatalogEntry>());
+			_BuildingLensLegacyFilters = CreateBinding("BuildingLensLegacyFilters", Array.Empty<string>());
+			// Sort is a read/write binding rather than a write-only trigger: the
+			// order lives in the persistent query, so a UI that could only write
+			// it showed a stale indicator over correctly-sorted rows after any
+			// remount (panel close, Catalog/Tools switch, lens toggle).
+			_BuildingCatalogSortColumn = CreateBinding(
+				"BuildingCatalogSortColumn",
+				"SetBuildingCatalogSortColumn",
+				_buildingCatalogQuery.EffectiveSortColumn,
+				SetBuildingCatalogSortColumn);
+			_BuildingCatalogSortDescending = CreateBinding(
+				"BuildingCatalogSortDescending",
+				"SetBuildingCatalogSortDescending",
+				_buildingCatalogQuery.Descending,
+				SetBuildingCatalogSortDescending);
+			_BuildingLensSectionBinding = CreateBinding("BuildingLensSection", "SetBuildingLensSection", _buildingLensSection, SetBuildingLensSection);
+			_BuildingLensSubCategoryBinding = CreateBinding("BuildingLensSubCategory", "SetBuildingLensSubCategory", _buildingLensSubCategory, SetBuildingLensSubCategory);
+			_BuildingLensSectionListBinding = CreateBinding("BuildingLensSectionList", Array.Empty<BuildingLensSectionUIEntry>());
+			_BuildingLensSubCategoryListBinding = CreateBinding("BuildingLensSubCategoryList", Array.Empty<BuildingLensSubCategoryUIEntry>());
+			_ToolSurfaceDescriptorsBinding = CreateBinding("ToolSurfaceDescriptors", ToolSurfaceCatalog.GetDescriptors().ToArray());
 			_PrefabCountBinding = CreateBinding("PrefabCount", string.Empty);
 			_ViewStyle = CreateBinding("ViewStyle", Mod.Settings.DefaultViewStyle);
 			_AlignmentStyle = CreateBinding("AlignmentStyle", Mod.Settings.DefaultAlignmentStyle);
@@ -164,10 +207,15 @@ namespace FindItBuildingMenu.Systems
 			CreateTrigger("OnRandomButtonClicked", OnRandomButtonClicked);
 			CreateTrigger<int>("OnLocateButtonClicked", OnLocateButtonClicked);
 			CreateTrigger<int>("OnPdxModsButtonClicked", OnPdxModsButtonClicked);
-			CreateTrigger<string>("SetBuildingCatalogSortColumn", SetBuildingCatalogSortColumn);
-			CreateTrigger<bool>("SetBuildingCatalogSortDescending", SetBuildingCatalogSortDescending);
 			CreateTrigger<int>("SetBuildingCatalogOffset", SetBuildingCatalogOffset);
+			CreateTrigger<int>("ToggleBuildingCatalogCompare", ToggleBuildingCatalogCompare);
+			CreateTrigger("ClearBuildingCatalogCompare", ClearBuildingCatalogCompare);
 			CreateTrigger<int>("SetBuildingCapacityFloor", SetBuildingCapacityFloor);
+				CreateTrigger<string, string, string>("SetBuildingCatalogMetricRange", SetBuildingCatalogMetricRange);
+				CreateTrigger("ClearBuildingCatalogMetricRanges", ClearBuildingCatalogMetricRanges);
+				CreateTrigger<string, string>("ToggleBuildingLensFacet", ToggleBuildingLensFacet);
+				CreateTrigger("ClearBuildingLensFacets", ClearBuildingLensFacets);
+				CreateTrigger("ClearBuildingLensFilters", ClearBuildingLensFilters);
 			CreateTrigger<float>("SetBuildingLensPanelWidth", SetBuildingLensPanelWidth);
 			CreateTrigger("CommitBuildingLensPanelWidth", CommitBuildingLensPanelWidth);
 			CreateTrigger("ClearThumbnails", () => _AllThumbnails.Value = new string[0]);

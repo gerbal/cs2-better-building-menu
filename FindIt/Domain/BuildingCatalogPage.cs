@@ -8,7 +8,8 @@ namespace FindItBuildingMenu.Domain
 		IReadOnlyList<BuildingCatalogEntry> Items,
 		int TotalCount,
 		int Offset,
-		int Limit) : IJsonWritable
+		int Limit,
+		string? Status = null) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -28,6 +29,11 @@ namespace FindItBuildingMenu.Domain
 			writer.Write(Offset);
 			writer.PropertyName("limit");
 			writer.Write(Limit);
+			if (Status is not null)
+			{
+				writer.PropertyName("status");
+				writer.Write(Status);
+			}
 
 			writer.TypeEnd();
 		}

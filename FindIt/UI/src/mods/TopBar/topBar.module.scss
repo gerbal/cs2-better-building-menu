@@ -23,6 +23,20 @@
   padding: 5rem;
 }
 
+.accessibleLabel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1rem;
+  height: 1rem;
+  margin: -1rem;
+  padding: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
 .topBarSection {
   display: flex;
   flex-direction: row;
@@ -182,6 +196,46 @@
   padding: 5rem 10rem 0rem 10rem;
 }
 
+.lensModeBar {
+  display: flex;
+  flex-direction: row;
+  gap: 4rem;
+  padding: 5rem 10rem 0rem 10rem;
+  border-top: 1rem solid rgba(255, 255, 255, 0.08);
+}
+
+.lensModeButton {
+  @include _base.lightButton(false, true);
+
+  min-width: 96rem;
+  height: 32rem;
+  padding: 4rem 12rem !important;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeXXS, 10rem);
+  letter-spacing: 0.4rem;
+  text-transform: uppercase;
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &.selected,
+  &:active {
+    background-image: linear-gradient(var(--gradientHighlightStart), var(--gradientHighlightEnd));
+    color: var(--menuText1Normal);
+  }
+}
+
+:global(.legacy-interface) .lensModeButton {
+  &.selected,
+  &:active {
+    background-image: none;
+    background-color: var(--accentColorDark) !important;
+  }
+}
+
 .categorySection {
   display: flex;
   flex-direction: row;
@@ -312,4 +366,20 @@
 .tabButton img {
   width: 24rem !important;
   height: 24rem !important;
+}
+
+// The building lens is a mode switch rather than another filter toggle, so it
+// carries a visible word instead of relying on a tooltip like the icon-only
+// controls beside it.
+.buildingLensToggle {
+  flex-direction: row;
+  align-items: center;
+  width: auto;
+  padding-right: 6rem;
+}
+
+.buildingLensToggleLabel {
+  margin-left: 4rem;
+  font-size: var(--fontSizeS);
+  white-space: nowrap;
 }

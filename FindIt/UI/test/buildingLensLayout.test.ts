@@ -1,11 +1,16 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  BUILDING_LENS_TITLE_ICON,
+  BUILDING_LENS_TITLE_GAP,
+  getBuildingLensRowGeometry,
   BUILDING_LENS_MAX_WIDTH,
   BUILDING_LENS_MIN_WIDTH,
   clampBuildingLensWidth,
   getBuildingLensDensity,
   getBuildingLensMetricLabel,
+  getBuildingLensMetricTextScale,
+  getBuildingLensCatalogMaxHeight,
   resizedBuildingLensWidth,
 } from "../src/domain/buildingLensLayout.ts";
 
@@ -46,5 +51,37 @@ describe("Building Lens panel geometry", () => {
     assert.equal(getBuildingLensMetricLabel("workers", "compact", "Workers"), "Wkr");
     assert.equal(getBuildingLensMetricLabel("upkeep", "default", "Unterhalt"), "Unterhalt");
     assert.equal(getBuildingLensMetricLabel("upkeep", "expanded", "Unterhalt"), "Unterhalt");
+  });
+
+  it("uses a readable metric text scale outside compact density", () => {
+    assert.equal(getBuildingLensMetricTextScale("compact"), "compact");
+    assert.equal(getBuildingLensMetricTextScale("default"), "readable");
+    assert.equal(getBuildingLensMetricTextScale("expanded"), "readable");
+  });
+
+  it("keeps the default and compact row geometry dense but readable", () => {
+    assert.deepEqual(getBuildingLensRowGeometry("default"), {
+      rowHeight: 92,
+      selectorHeight: 88,
+      identityHeight: 72,
+      selectorVerticalPadding: 2,
+    });
+    assert.deepEqual(getBuildingLensRowGeometry("compact"), {
+      rowHeight: 84,
+      selectorHeight: 80,
+      identityHeight: 72,
+      selectorVerticalPadding: 2,
+    });
+  });
+
+  it("uses the FindIt building signature as the title icon", () => {
+    assert.equal(BUILDING_LENS_TITLE_ICON, "coui://finditbuildingmenu/Icons/Colored/BuildingZoneSignature.svg");
+    assert.equal(BUILDING_LENS_TITLE_GAP, 6);
+  });
+
+  it("budgets the catalog below the shell chrome at the 1280x720 render target", () => {
+    assert.equal(getBuildingLensCatalogMaxHeight(720), 765);
+    assert.equal(getBuildingLensCatalogMaxHeight(1080), 870);
+    assert.equal(getBuildingLensCatalogMaxHeight(Number.NaN), 765);
   });
 });

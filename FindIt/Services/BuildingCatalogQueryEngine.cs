@@ -27,10 +27,10 @@ namespace FindItBuildingMenu.Services
 				throw new ArgumentNullException(nameof(query));
 			}
 
-			var offset = query.EffectiveOffset;
 			var limit = query.EffectiveLimit;
 			var matching = entries.Where(entry => Matches(entry, query));
 			var totalCount = matching.Count();
+			var offset = ClampOffset(query.EffectiveOffset, totalCount, limit);
 			var items = Order(matching, query)
 				.Skip(offset)
 				.Take(limit)
@@ -39,8 +39,40 @@ namespace FindItBuildingMenu.Services
 			return new BuildingCatalogPage(items, totalCount, offset, limit);
 		}
 
+		/// <summary>
+		/// Holds the requested offset inside the result set. Only the query can
+		/// know the total, so this cannot live on <see cref="BuildingCatalogQuery"/>
+		/// beside the other bound normalizers.
+		/// </summary>
+		/// <remarks>
+		/// Narrowing a query (typing a search, picking a facet) can leave the
+		/// offset past the new total. Skipping every match would return an empty
+		/// page with a non-zero total, which reads on screen as "no buildings
+		/// match" above a footer describing rows that are not there. Clamping to
+		/// the last populated page keeps the player near their position instead
+		/// of resetting them to page 1. The requested offset itself is not
+		/// snapped to a page boundary: the pager only ever moves in whole pages,
+		/// and callers may legitimately ask for an arbitrary window.
+		/// </remarks>
+		private static int ClampOffset(int offset, int totalCount, int limit)
+		{
+			if (totalCount <= 0)
+			{
+				return 0;
+			}
+
+			var lastPopulatedPageStart = (totalCount - 1) / limit * limit;
+
+			return offset > lastPopulatedPageStart ? lastPopulatedPageStart : offset;
+		}
+
 		private static bool Matches(BuildingCatalogEntry entry, BuildingCatalogQuery query)
 		{
+			if (!MatchesBuildMenu(entry, query))
+			{
+				return false;
+			}
+
 			if (!string.IsNullOrWhiteSpace(query.SearchText)
 				&& !Contains(entry.Name, query.SearchText)
 				&& !Contains(entry.PrefabName, query.SearchText)
@@ -61,6 +93,17 @@ namespace FindItBuildingMenu.Services
 				return false;
 			}
 
+			if (!MatchesAny(entry.BuildingType, query.BuildingTypes)
+				|| !MatchesAny(entry.Provenance, query.Provenance)
+				|| !MatchesAny(entry.DlcId, query.DlcIds)
+				|| !MatchesAny(entry.Theme, query.Themes)
+				|| !MatchesAny(entry.AssetPacks, query.AssetPacks)
+				|| !MatchesAll(entry.PlacementFlags, query.PlacementFlags)
+				|| !MatchesAny(entry.Extensions, query.Extensions))
+			{
+				return false;
+			}
+
 			return (!query.MinLotWidth.HasValue || entry.LotWidth >= query.MinLotWidth.Value)
 				&& (!query.MaxLotWidth.HasValue || entry.LotWidth <= query.MaxLotWidth.Value)
 				&& (!query.MinLotDepth.HasValue || entry.LotDepth >= query.MinLotDepth.Value)
@@ -74,6 +117,36 @@ namespace FindItBuildingMenu.Services
 				&& InRange(entry.Capacity, query.MinCapacity, query.MaxCapacity)
 				&& InRange(entry.ElectricityConsumption, query.MinElectricityConsumption, query.MaxElectricityConsumption)
 				&& InRange(entry.WaterConsumption, query.MinWaterConsumption, query.MaxWaterConsumption);
+		}
+
+		private static bool MatchesBuildMenu(BuildingCatalogEntry entry, BuildingCatalogQuery query)
+		{
+			string section = query.BuildMenuSection?.Trim() ?? string.Empty;
+			if (!string.IsNullOrEmpty(section)
+				&& !string.Equals(section, VanillaBuildMenuTaxonomy.AllBuildings, StringComparison.OrdinalIgnoreCase))
+			{
+				if (string.Equals(section, VanillaBuildMenuTaxonomy.Favorites, StringComparison.OrdinalIgnoreCase))
+				{
+					if (!entry.IsFavorited)
+					{
+						return false;
+					}
+				}
+				else if (!VanillaBuildMenuTaxonomy.GetSectionDescriptors()
+					.Any(descriptor => string.Equals(descriptor.Id, section, StringComparison.OrdinalIgnoreCase)))
+				{
+					return false;
+				}
+				else if (!string.Equals(entry.VanillaSection, section, StringComparison.OrdinalIgnoreCase))
+				{
+					return false;
+				}
+			}
+
+			string subCategory = query.BuildMenuSubCategory?.Trim() ?? string.Empty;
+			return string.IsNullOrEmpty(subCategory)
+				|| string.Equals(subCategory, VanillaBuildMenuTaxonomy.Any, StringComparison.OrdinalIgnoreCase)
+				|| string.Equals(entry.VanillaSubCategory, subCategory, StringComparison.OrdinalIgnoreCase);
 		}
 
 		private static bool InRange(double? value, double? minimum, double? maximum)
@@ -93,6 +166,39 @@ namespace FindItBuildingMenu.Services
 			return value is not null
 				&& value.Length > 0
 				&& value.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
+		}
+
+		private static bool MatchesAny(string? value, IReadOnlyList<string>? selected)
+		{
+			if (selected is null || selected.Count == 0)
+			{
+				return true;
+			}
+
+			return value is not null
+				&& selected.Any(option => string.Equals(option, value, StringComparison.OrdinalIgnoreCase));
+		}
+
+		private static bool MatchesAny(IEnumerable<string>? values, IReadOnlyList<string>? selected)
+		{
+			if (selected is null || selected.Count == 0)
+			{
+				return true;
+			}
+
+			return values is not null
+				&& values.Any(value => selected.Any(option => string.Equals(option, value, StringComparison.OrdinalIgnoreCase)));
+		}
+
+		private static bool MatchesAll(IEnumerable<string>? values, IReadOnlyList<string>? selected)
+		{
+			if (selected is null || selected.Count == 0)
+			{
+				return true;
+			}
+
+			string[] available = values?.ToArray() ?? Array.Empty<string>();
+			return selected.All(option => available.Any(value => string.Equals(option, value, StringComparison.OrdinalIgnoreCase)));
 		}
 
 		private static IOrderedEnumerable<BuildingCatalogEntry> Order(

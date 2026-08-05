@@ -5,12 +5,12 @@ Bead: `CS-Modding-b53.9`
 Viewport checked: 1280 × 720 (the current launch-script resolution)
 
 This started as a baseline audit of the internal `FindItBuildingMenu`
-successor. The corrective CSS described below is now applied, but the
-post-change live assertion is still pending: the current CS2 install enters a
-known black-screen/fatal boot loop before Gameface becomes reachable. The
-baseline live check was performed after the game reached the settled main menu
-and a developed save was loaded; no UI assertion was made during a
-logo/loading screen.
+successor. The corrective CSS described below is now applied. The original
+post-change assertion was delayed by a black-screen/fatal boot loop, but a
+settled live assertion was completed on 2026-08-01 after a clean Steam →
+Paradox → CS2 launch. The baseline live check was performed after the game
+reached the settled main menu and a developed save was loaded; no UI assertion
+was made during a logo/loading screen.
 
 ## Sources and comparison baselines
 
@@ -112,12 +112,28 @@ Gameface error buffer was quiet during the observations.
 - preserves flexbox-only layout and the existing FindIt placement/picker path.
 
 Browserless tests and webpack compilation pass after this correction. A
-settled live screenshot/DOM measurement is still required before closing the
-bead; the latest launch attempts were stopped without attaching CDP after
-`AssetDatabase.PopulateFromDataSource` failed and the UI switched to
-`fatal://error`.
+settled live DOM measurement now confirms the corrected layout. The bounded
+page summary and explicit row-scroll marker added after the baseline are
+covered by the follow-up evidence below.
 
-## Recommended follow-up verification
+## Follow-up live assertion (2026-08-01)
+
+The successor was redeployed to both isolated Mods roots and opened on the
+developed save at 1280 × 720. The catalog rendered the readable footer
+`Rows 1–100 of 4206 · Page 1 of 43`; advancing a page produced
+`Rows 101–200 of 4206 · Page 2 of 43`, and Cost sorting returned to page one
+with the `Cost▲` selection. The row viewport measured
+`scrollHeight=6266/clientHeight=374` with `overflow-y=scroll`, and its header
+exposed a visible `↕` marker (`data-scroll-hint=true`, `title="Scroll rows"`).
+The Gameface console error buffer remained empty. The settled observations are
+archived in
+`tools/e2e/artifacts/e2e-20260801-building-lens-scroll-pagination-live/`.
+
+The earlier 2026-07-27 paragraphs and screenshots remain historical baseline
+evidence; they document the defects that motivated the correction and should
+not be read as the current verification result.
+
+## Recommended follow-up verification (historical checklist)
 
 The next implementation pass should be kept focused and verified at the same
 viewport before testing larger UI scales:
@@ -140,6 +156,5 @@ Before any corrective CSS change, the existing contracts and build were green:
 - backend tests: 17/17 (`./build.sh test`)
 - UI webpack build: passed (`./build.sh ui`)
 
-These results validate the current behavior contracts and compilation only;
-they do not close the visibility issue. Bead `CS-Modding-b53.9` remains open
-until the correction pass and a new live screenshot/DOM verification complete.
+These results validate the behavior contracts and compilation; the settled
+live assertion above supplies the previously missing in-game evidence.

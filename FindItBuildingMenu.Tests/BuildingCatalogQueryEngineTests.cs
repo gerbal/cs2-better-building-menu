@@ -5,6 +5,8 @@ using FindItBuildingMenu.Domain.Enums;
 using FindItBuildingMenu.Services;
 using FindItBuildingMenu.Utilities;
 
+using Game.Prefabs;
+
 using System.Collections.Generic;
 
 namespace FindItBuildingMenu.Tests;
@@ -102,6 +104,251 @@ public sealed class BuildingCatalogQueryEngineTests
     }
 
     [Fact]
+    public void Query_BuildMenuSectionsAndSubcategoriesFilterProjectedEntries()
+    {
+        BuildingCatalogEntry[] entries =
+        {
+            SampleEntries[0] with { VanillaSection = VanillaBuildMenuTaxonomy.Zones, VanillaSubCategory = "Buildings_Industrial" },
+            SampleEntries[1] with { VanillaSection = VanillaBuildMenuTaxonomy.Zones, VanillaSubCategory = "Buildings_Specialized" },
+            SampleEntries[2] with { VanillaSection = VanillaBuildMenuTaxonomy.ServiceBuildings, VanillaSubCategory = "ServiceBuildings_Water" },
+            SampleEntries[3] with { VanillaSection = VanillaBuildMenuTaxonomy.ServiceBuildings, VanillaSubCategory = "ServiceBuildings_Health", IsFavorited = true },
+            SampleEntries[4] with { VanillaSection = VanillaBuildMenuTaxonomy.SignatureBuildings, VanillaSubCategory = "Buildings_Office" },
+        };
+
+        BuildingCatalogPage zones = BuildingCatalogQueryEngine.Query(
+            entries,
+            new BuildingCatalogQuery(BuildMenuSection: VanillaBuildMenuTaxonomy.Zones));
+        BuildingCatalogPage serviceHealth = BuildingCatalogQueryEngine.Query(
+            entries,
+            new BuildingCatalogQuery(
+                BuildMenuSection: VanillaBuildMenuTaxonomy.ServiceBuildings,
+                BuildMenuSubCategory: "ServiceBuildings_Health"));
+        BuildingCatalogPage favorites = BuildingCatalogQueryEngine.Query(
+            entries,
+            new BuildingCatalogQuery(BuildMenuSection: VanillaBuildMenuTaxonomy.Favorites));
+
+        Assert.Equal(new[] { 1, 2 }, zones.Items.Select(entry => entry.Id).ToArray());
+        Assert.Equal(2, zones.TotalCount);
+        Assert.Equal(new[] { 4 }, serviceHealth.Items.Select(entry => entry.Id).ToArray());
+        Assert.Equal(new[] { 4 }, favorites.Items.Select(entry => entry.Id).ToArray());
+    }
+
+    [Fact]
+    public void Query_UnknownBuildMenuSectionDoesNotFallBackToAllBuildings()
+    {
+        BuildingCatalogPage invalid = BuildingCatalogQueryEngine.Query(
+            SampleEntries,
+            new BuildingCatalogQuery(BuildMenuSection: "Networks"));
+        BuildingCatalogPage all = BuildingCatalogQueryEngine.Query(
+            SampleEntries,
+            new BuildingCatalogQuery(BuildMenuSection: VanillaBuildMenuTaxonomy.AllBuildings));
+
+        Assert.Empty(invalid.Items);
+        Assert.Equal(0, invalid.TotalCount);
+        Assert.Equal(SampleEntries.Count, all.TotalCount);
+    }
+
+    [Fact]
+    public void Query_FacetValuesOrWithinFacetAndAcrossFacets()
+    {
+        BuildingCatalogEntry schoolEuropean = Entry(6, "SchoolA", "School A", "ServiceBuildings", "ServiceBuildings_EducationResearch", 4, 4, 2, false, "") with
+        {
+            BuildingType = "School",
+            Theme = "European",
+            PlacementFlags = new[] { "RequireRoad" },
+        };
+        BuildingCatalogEntry hospitalEuropean = schoolEuropean with
+        {
+            Id = 7,
+            PrefabName = "HospitalA",
+            Name = "Hospital A",
+            BuildingType = "Hospital",
+        };
+        BuildingCatalogEntry schoolModern = schoolEuropean with
+        {
+            Id = 8,
+            PrefabName = "SchoolB",
+            Name = "School B",
+            Theme = "Modern",
+            PlacementFlags = Array.Empty<string>(),
+        };
+
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+            new[] { schoolEuropean, hospitalEuropean, schoolModern },
+            new BuildingCatalogQuery(
+                BuildingTypes: new[] { "school", "hospital" },
+                Themes: new[] { "european" },
+                PlacementFlags: new[] { "RequireRoad" },
+                SortColumn: "BuildingLevel"));
+
+        Assert.Equal(new[] { 6, 7 }, page.Items.Select(item => item.Id).ToArray());
+        Assert.Equal(2, page.TotalCount);
+    }
+
+    [Fact]
+    public void Query_MissingFacetValuesDoNotMatchSelectedValues()
+    {
+        BuildingCatalogEntry missing = Entry(6, "NoFacet", "No facet", "Buildings", "", 1, 1, 1, false, "");
+
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+            new[] { missing },
+            new BuildingCatalogQuery(BuildingTypes: new[] { "School" }));
+
+        Assert.Empty(page.Items);
+    }
+
+    [Fact]
+    public void Query_ExtensionFacetMatchesStableExtensionIdentity()
+    {
+        BuildingCatalogEntry extension = SampleEntries[2] with
+        {
+            Id = 9,
+            PrefabName = "HospitalWing01",
+            Name = "Hospital Wing",
+            Extensions = new[] { "HospitalWing01" },
+        };
+
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+            SampleEntries.Append(extension),
+            new BuildingCatalogQuery(Extensions: new[] { "hospitalwing01" }));
+
+        BuildingCatalogEntry entry = Assert.Single(page.Items);
+        Assert.Equal(9, entry.Id);
+        Assert.Equal(1, page.TotalCount);
+    }
+
+    [Fact]
+    public void Adapter_ProjectsStablePlacementFlagNames()
+    {
+        BuildingFlags flags = BuildingFlags.RequireRoad
+            | BuildingFlags.HasWaterNode
+            | BuildingFlags.RestrictedCar;
+
+        Assert.Equal(
+            new[] { "RequireRoad", "RestrictedCar", "HasWaterNode" },
+            BuildingCatalogAdapter.GetPlacementFlagNames(flags));
+        Assert.Empty(BuildingCatalogAdapter.GetPlacementFlagNames(null));
+    }
+
+    [Fact]
+    public void Adapter_FacetState_UsesDistinctBoundedOptionsAndSelectionState()
+    {
+        BuildingCatalogEntry school = Entry(6, "SchoolA", "School A", "ServiceBuildings", "", 4, 4, 2, false, "") with
+        {
+            BuildingType = "School",
+            Provenance = "Vanilla",
+            DlcId = "-2009",
+            Theme = "European",
+            AssetPacks = new[] { "PackA" },
+            PlacementFlags = new[] { "RequireRoad", "HasWaterNode" },
+        };
+        BuildingCatalogEntry hospital = school with
+        {
+            Id = 7,
+            BuildingType = "Hospital",
+            Provenance = "Custom",
+            DlcId = "123",
+            Theme = "Modern",
+            AssetPacks = new[] { "PackA", "PackB" },
+            PlacementFlags = new[] { "RequireRoad" },
+        };
+        BuildingCatalogEntry unbundled = school with
+        {
+            Id = 8,
+            BuildingType = "Library",
+            AssetPacks = new[] { "FindIt_NoPack" },
+        };
+
+        BuildingCatalogFacetState state = BuildingCatalogAdapter.BuildFacetState(
+            new[] { school, hospital, unbundled },
+            new BuildingCatalogQuery(BuildingTypes: new[] { "hospital" }));
+
+        Assert.True(state.HasSelection);
+        Assert.Equal(new[] { "buildingType", "provenance", "dlc", "theme", "assetPack", "placement" }, state.Groups.Select(group => group.Id).ToArray());
+        BuildingCatalogFacetGroup role = Assert.Single(state.Groups, group => group.Id == "buildingType");
+		Assert.Equal(new[] { "Hospital", "Library", "School" }, role.Options.Select(option => option.Id).ToArray());
+		Assert.True(role.Options.Single(option => option.Id == "Hospital").Selected);
+		Assert.False(role.Options.Single(option => option.Id == "School").Selected);
+		Assert.False(role.Options.Single(option => option.Id == "Library").Selected);
+
+        BuildingCatalogFacetGroup dlc = Assert.Single(state.Groups, group => group.Id == "dlc");
+        Assert.Equal("No DLC required", dlc.Options.Single(option => option.Id == "-2009").Label);
+        Assert.Equal("Unresolved DLC content (ID 123)", dlc.Options.Single(option => option.Id == "123").Label);
+
+        BuildingCatalogFacetGroup provenance = Assert.Single(state.Groups, group => group.Id == "provenance");
+        Assert.Equal("Base game", provenance.Options.Single(option => option.Id == "Vanilla").Label);
+        Assert.Equal("Custom content", provenance.Options.Single(option => option.Id == "Custom").Label);
+
+        // Source and DLC answer different questions — "who made it" versus
+        // "what does it need" — so they must not offer the same option label in
+        // adjacent groups, which reads as a duplicated control.
+        Assert.NotEqual(
+            provenance.Options.Single(option => option.Id == "Vanilla").Label,
+            dlc.Options.Single(option => option.Id == "-2009").Label);
+
+        BuildingCatalogFacetGroup assetPacks = Assert.Single(state.Groups, group => group.Id == "assetPack");
+        Assert.Equal("Pack A", assetPacks.Options.Single(option => option.Id == "PackA").Label);
+        Assert.Equal("No asset pack", assetPacks.Options.Single(option => option.Id == "FindIt_NoPack").Label);
+    }
+
+    [Fact]
+    public void Adapter_ExtensionFacetUsesReadableStableOptionsAndOmitsEmptyMetadata()
+    {
+        BuildingCatalogEntry extension = SampleEntries[2] with
+        {
+            Id = 9,
+            PrefabName = "HospitalWing01",
+            Extensions = new[] { "HospitalWing01" },
+        };
+
+        BuildingCatalogFacetState state = BuildingCatalogAdapter.BuildFacetState(
+            new[] { SampleEntries[0], extension },
+            new BuildingCatalogQuery(Extensions: new[] { "HospitalWing01" }));
+
+        BuildingCatalogFacetGroup group = Assert.Single(state.Groups, facet => facet.Id == "extension");
+        BuildingCatalogFacetOption option = Assert.Single(group.Options);
+        Assert.Equal("HospitalWing01", option.Id);
+        Assert.Equal("Hospital Wing 01", option.Label);
+        Assert.True(option.Selected);
+
+        BuildingCatalogFacetState empty = BuildingCatalogAdapter.BuildFacetState(
+            new[] { SampleEntries[0] },
+            new BuildingCatalogQuery());
+        Assert.DoesNotContain(empty.Groups, facet => facet.Id == "extension");
+    }
+
+    [Fact]
+    public void FacetSelection_TogglesValuesCaseInsensitivelyAndClearsOnlyLensFacets()
+    {
+        BuildingCatalogQuery selected = BuildingCatalogFacetSelection.Toggle(
+            new BuildingCatalogQuery(SearchText: "school", Offset: 50),
+            "buildingType",
+            "School");
+        selected = BuildingCatalogFacetSelection.Toggle(selected, "buildingType", "Hospital");
+
+        Assert.Equal(new[] { "School", "Hospital" }, selected.BuildingTypes);
+        Assert.Equal(0, selected.Offset);
+        Assert.Equal("school", selected.SearchText);
+
+        BuildingCatalogQuery removed = BuildingCatalogFacetSelection.Toggle(selected, "buildingType", "school");
+        Assert.Equal(new[] { "Hospital" }, removed.BuildingTypes);
+
+        BuildingCatalogQuery cleared = BuildingCatalogFacetSelection.Clear(removed);
+        Assert.Null(cleared.BuildingTypes);
+        Assert.Equal("school", cleared.SearchText);
+        Assert.Equal(0, cleared.Offset);
+
+        BuildingCatalogQuery extensionSelected = BuildingCatalogFacetSelection.Toggle(
+            new BuildingCatalogQuery(SearchText: "wing", Offset: 50),
+            "extension",
+            "HospitalWing01");
+        Assert.Equal(new[] { "HospitalWing01" }, extensionSelected.Extensions);
+        BuildingCatalogQuery extensionCleared = BuildingCatalogFacetSelection.Clear(extensionSelected);
+        Assert.Null(extensionCleared.Extensions);
+        Assert.Equal("wing", extensionCleared.SearchText);
+    }
+
+    [Fact]
     public void Query_NumericSortAndStableIdTieBreak_WorkInBothDirections()
     {
         BuildingCatalogPage ascending = BuildingCatalogQueryEngine.Query(
@@ -126,6 +373,176 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.Equal(1, page.Offset);
         Assert.Equal(2, page.Limit);
         Assert.Equal(new[] { 5, 2 }, page.Items.Select(item => item.Id).ToArray());
+    }
+
+    [Fact]
+    public void LegacyFilterSnapshot_ReportsNothingActiveWhenTheLegacyPanelIsUntouched()
+    {
+        Assert.Empty(BuildingLensLegacyFilterSnapshot.Empty.Describe());
+        Assert.False(BuildingLensLegacyFilterSnapshot.Empty.HasSelection);
+    }
+
+    [Fact]
+    public void LegacyFilterSnapshot_NamesEveryFilterThatShapesTheLensResult()
+    {
+        // These are applied to the lens index by BuildingCatalogAdapter via
+        // Filters.GetFilterList, but the lens summary used to count only its
+        // own facets and ranges — so the panel could claim "No active lens
+        // filters" while silently hiding most of the catalog.
+        BuildingLensLegacyFilterSnapshot snapshot = BuildingLensLegacyFilterSnapshot.Empty with
+        {
+            OnlyPlaced = true,
+            HideVanilla = true,
+            HasDlc = true,
+            WithParking = true,
+            BuildingLevel = 3,
+        };
+
+        Assert.True(snapshot.HasSelection);
+        Assert.Equal(
+            new[] { "Hide vanilla", "Only placed", "DLC", "With parking", "Building level" },
+            snapshot.Describe());
+    }
+
+    [Fact]
+    public void LegacyFilterSnapshot_TreatsParkingAndThemeAsMutuallyExclusive()
+    {
+        // GetFilterList uses if/else for these pairs, so reporting both would
+        // describe a filter the query never applied.
+        BuildingLensLegacyFilterSnapshot parking = BuildingLensLegacyFilterSnapshot.Empty with
+        {
+            WithParking = true,
+            WithoutParking = true,
+        };
+        Assert.Equal(new[] { "With parking" }, parking.Describe());
+
+        BuildingLensLegacyFilterSnapshot theme = BuildingLensLegacyFilterSnapshot.Empty with
+        {
+            ThemeNone = true,
+            HasTheme = true,
+        };
+        Assert.Equal(new[] { "No theme" }, theme.Describe());
+    }
+
+    [Fact]
+    public void CompareSelection_TogglesAndHoldsTheLimit()
+    {
+        IReadOnlyList<int> one = BuildingCatalogCompareSelection.Toggle(Array.Empty<int>(), 1);
+        IReadOnlyList<int> two = BuildingCatalogCompareSelection.Toggle(one, 2);
+        IReadOnlyList<int> three = BuildingCatalogCompareSelection.Toggle(two, 3);
+
+        Assert.Equal(new[] { 1, 2, 3 }, three);
+
+        // At the limit an unselected id is refused rather than silently
+        // evicting one the player already chose.
+        Assert.Equal(new[] { 1, 2, 3 }, BuildingCatalogCompareSelection.Toggle(three, 4));
+
+        // Toggling a selected id always removes it, even at the limit.
+        Assert.Equal(new[] { 1, 3 }, BuildingCatalogCompareSelection.Toggle(three, 2));
+    }
+
+    [Fact]
+    public void CompareSelection_PreservesSelectionOrderAndIgnoresDuplicates()
+    {
+        IReadOnlyList<int> selection = BuildingCatalogCompareSelection.Toggle(
+            BuildingCatalogCompareSelection.Toggle(Array.Empty<int>(), 7),
+            4);
+
+        Assert.Equal(new[] { 7, 4 }, selection);
+        Assert.Equal(new[] { 7 }, BuildingCatalogCompareSelection.Toggle(selection, 4));
+    }
+
+    [Fact]
+    public void CompareSelection_MatchesTheClientLimitContract()
+    {
+        // The tray renders "n / MAX" from the TypeScript MAX_COMPARE_ENTRIES.
+        // If these ever diverge the counter lies about the real limit.
+        Assert.Equal(3, BuildingCatalogCompareSelection.MaxEntries);
+    }
+
+    [Fact]
+    public void ResetPagingIfPredicatesChanged_KeepsThePageWhenOnlyTheOffsetMoved()
+    {
+        // The pager itself must not trip the reset, or paging forward would
+        // snap straight back to page 1.
+        BuildingCatalogQuery previous = new(SearchText: "school", Offset: 0);
+        BuildingCatalogQuery paged = previous with { Offset = 100 };
+
+        Assert.Equal(100, paged.ResetPagingIfPredicatesChanged(previous).Offset);
+    }
+
+    [Fact]
+    public void ResetPagingIfPredicatesChanged_ResetsWhenTheSearchTextChanged()
+    {
+        BuildingCatalogQuery previous = new(SearchText: "", Offset: 200);
+        BuildingCatalogQuery searched = previous with { SearchText = "school" };
+
+        Assert.Equal(0, searched.ResetPagingIfPredicatesChanged(previous).Offset);
+        Assert.Equal("school", searched.ResetPagingIfPredicatesChanged(previous).SearchText);
+    }
+
+    [Fact]
+    public void ResetPagingIfPredicatesChanged_ResetsForLegacyFilterAndRangeChanges()
+    {
+        // The legacy FindIt parking filters and the metric drawer feed the same
+        // query, so they invalidate the page position just as a search does.
+        BuildingCatalogQuery previous = new(Offset: 200);
+
+        Assert.Equal(0, (previous with { HasParking = true }).ResetPagingIfPredicatesChanged(previous).Offset);
+        Assert.Equal(0, (previous with { MinCapacity = 500 }).ResetPagingIfPredicatesChanged(previous).Offset);
+        Assert.Equal(0, (previous with { BuildMenuSection = "Education" }).ResetPagingIfPredicatesChanged(previous).Offset);
+    }
+
+    [Fact]
+    public void ResetPagingIfPredicatesChanged_KeepsThePageWhenNothingChanged()
+    {
+        BuildingCatalogQuery previous = new(SearchText: "school", Offset: 200);
+
+        Assert.Equal(200, (previous with { }).ResetPagingIfPredicatesChanged(previous).Offset);
+    }
+
+    [Fact]
+    public void Query_ClampsOffsetPastTheEndSoAShrunkResultStillShowsRows()
+    {
+        // A player on page 3 who narrows the result set leaves Offset far past
+        // the new TotalCount. Without a clamp the engine skips every match and
+        // returns an empty page while reporting a non-zero total, which the UI
+        // renders as "no buildings match" above a footer describing rows that
+        // are not on screen.
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+            SampleEntries,
+            new BuildingCatalogQuery(Category: "Buildings", Offset: 200, Limit: 100));
+
+        Assert.Equal(3, page.TotalCount);
+        Assert.Equal(0, page.Offset);
+        Assert.Equal(3, page.Items.Count);
+    }
+
+    [Fact]
+    public void Query_ClampsOffsetToTheLastPopulatedPageNotToZero()
+    {
+        // Clamping must land on the last page that actually holds rows, so the
+        // player keeps their position instead of being thrown back to page 1.
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+            SampleEntries,
+            new BuildingCatalogQuery(Category: "Buildings", Offset: 40, Limit: 2));
+
+        // Category "Buildings" orders to [1, 5, 2]; the last page holds id 2.
+        Assert.Equal(3, page.TotalCount);
+        Assert.Equal(2, page.Offset);
+        Assert.Equal(new[] { 2 }, page.Items.Select(item => item.Id).ToArray());
+    }
+
+    [Fact]
+    public void Query_ClampsOffsetToZeroWhenNothingMatches()
+    {
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+            SampleEntries,
+            new BuildingCatalogQuery(SearchText: "nothing-matches-this", Offset: 200));
+
+        Assert.Equal(0, page.TotalCount);
+        Assert.Equal(0, page.Offset);
+        Assert.Empty(page.Items);
     }
 
     [Theory]
@@ -267,6 +684,18 @@ public sealed class BuildingCatalogQueryEngineTests
     }
 
     [Fact]
+    public void Filters_CatalogFilterList_ExcludesSearchForTheTypedLensQuery()
+    {
+        Filters filters = new()
+        {
+            CurrentSearch = "academy",
+            SelectedBuildingCorner = BuildingCornerFilter.Any,
+        };
+
+        Assert.Empty(filters.GetFilterList(includeSearch: false));
+    }
+
+    [Fact]
     public void FindItUtil_WhenIndexCategoriesAreMissing_ReturnsEmptyCollections()
     {
         bool previousReady = FindItUtil.IsReady;
@@ -305,8 +734,15 @@ public sealed class BuildingCatalogQueryEngineTests
     [Fact]
     public void PageWrite_EmitsStablePageAndEntryPropertyNames()
     {
+        BuildingCatalogEntry labeledEntry = SampleEntries[0] with
+        {
+            Category = "ServiceBuildings",
+            SubCategory = "ServiceBuildings_EducationResearch",
+            CategoryLabel = "Service Buildings",
+            SubCategoryLabel = "Education & Research",
+        };
         BuildingCatalogPage page = new(
-            new[] { SampleEntries[0] },
+            new[] { labeledEntry },
             TotalCount: 1,
             Offset: 0,
             Limit: 100);
@@ -315,10 +751,14 @@ public sealed class BuildingCatalogQueryEngineTests
         page.Write(writer);
 
         Assert.Equal(
-            new[] { "items", "id", "prefabName", "name", "category", "subCategory", "thumbnail", "lotWidth", "lotDepth", "buildingLevel", "zoneType", "hasParking", "isUniqueMesh", "isVanilla", "isFavorited", "pdxModsId", "constructionCost", "upkeep", "workers", "capacity", "electricityConsumption", "waterConsumption", "garbageAccumulation", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "totalCount", "offset", "limit" },
+            new[] { "items", "id", "prefabName", "name", "category", "subCategory", "categoryLabel", "subCategoryLabel", "vanillaSection", "vanillaSubCategory", "thumbnail", "lotWidth", "lotDepth", "buildingLevel", "zoneType", "hasParking", "isUniqueMesh", "isVanilla", "isFavorited", "pdxModsId", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "constructionCost", "upkeep", "workers", "capacity", "electricityConsumption", "waterConsumption", "garbageAccumulation", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "totalCount", "offset", "limit" },
             writer.PropertyNames);
         Assert.Contains("Write:Int32:1", writer.Tokens);
         Assert.Contains("Write:String:Coal Power Plant", writer.Tokens);
+        Assert.Contains("Write:String:ServiceBuildings", writer.Tokens);
+        Assert.Contains("Write:String:ServiceBuildings_EducationResearch", writer.Tokens);
+        Assert.Contains("Write:String:Service Buildings", writer.Tokens);
+        Assert.Contains("Write:String:Education & Research", writer.Tokens);
         Assert.Contains("Write:Int32:100", writer.Tokens);
         Assert.Contains("Write:Double:80000", writer.Tokens);
     }

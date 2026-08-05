@@ -5,9 +5,30 @@
 export const BUILDING_LENS_PANEL_CHROME_WIDTH = 35;
 export const BUILDING_LENS_MIN_WIDTH = 700 + BUILDING_LENS_PANEL_CHROME_WIDTH;
 export const BUILDING_LENS_MAX_WIDTH = 1200 + BUILDING_LENS_PANEL_CHROME_WIDTH;
+export const BUILDING_LENS_TITLE_ICON = "coui://finditbuildingmenu/Icons/Colored/BuildingZoneSignature.svg";
+export const BUILDING_LENS_TITLE_GAP = 6;
+// The FindIt shell is bottom-aligned above the native toolbar. Reserve space
+// for that toolbar, the FindIt chrome, and a small top/bottom safety margin so
+// the catalog cannot push the shell's title/search bar outside a short view.
+export const BUILDING_LENS_VIEWPORT_RESERVE = 210;
+export const BUILDING_LENS_MIN_CATALOG_HEIGHT = 320;
+export const BUILDING_LENS_REFERENCE_HEIGHT = 1080;
 
 export type BuildingLensDensityTier = "compact" | "default" | "expanded";
 export type BuildingLensMetric = "cost" | "upkeep" | "workers" | "capacity" | "lot" | "level" | "parking";
+
+export interface BuildingLensRowGeometry {
+  rowHeight: number;
+  selectorHeight: number;
+  identityHeight: number;
+  selectorVerticalPadding: number;
+}
+
+const rowGeometryByTier: Record<BuildingLensDensityTier, BuildingLensRowGeometry> = {
+  compact: { rowHeight: 84, selectorHeight: 80, identityHeight: 72, selectorVerticalPadding: 2 },
+  default: { rowHeight: 92, selectorHeight: 88, identityHeight: 72, selectorVerticalPadding: 2 },
+  expanded: { rowHeight: 92, selectorHeight: 88, identityHeight: 72, selectorVerticalPadding: 2 },
+};
 
 const compactMetricLabels: Record<BuildingLensMetric, string> = {
   cost: "Cost",
@@ -26,6 +47,10 @@ export function getBuildingLensDensity(outerWidth: number): BuildingLensDensityT
   return "expanded";
 }
 
+export function getBuildingLensRowGeometry(tier: BuildingLensDensityTier): BuildingLensRowGeometry {
+  return rowGeometryByTier[tier];
+}
+
 /** Return a compact header label while keeping localized full labels available to callers. */
 export function getBuildingLensMetricLabel(
   metric: BuildingLensMetric,
@@ -33,6 +58,23 @@ export function getBuildingLensMetricLabel(
   fullLabel: string,
 ): string {
   return tier === "compact" ? compactMetricLabels[metric] : fullLabel;
+}
+
+/** Keep compact panels dense while restoring readable metric text at normal widths. */
+export function getBuildingLensMetricTextScale(tier: BuildingLensDensityTier): "compact" | "readable" {
+  return tier === "compact" ? "compact" : "readable";
+}
+
+/**
+ * Return a deterministic max height for the catalog's bounded row viewport.
+ * Gameface's viewport-unit calculation is not reliable across the game's
+ * render targets. Its rem-like panel units are normalized to a 1080px design
+ * height, so convert the physical viewport budget into those units here.
+ */
+export function getBuildingLensCatalogMaxHeight(viewportHeight: number): number {
+  const safeViewportHeight = Number.isFinite(viewportHeight) ? viewportHeight : 720;
+  const physicalHeight = Math.max(BUILDING_LENS_MIN_CATALOG_HEIGHT, safeViewportHeight - BUILDING_LENS_VIEWPORT_RESERVE);
+  return Math.floor((physicalHeight * BUILDING_LENS_REFERENCE_HEIGHT) / safeViewportHeight);
 }
 
 export type BuildingLensAlignment = "Left" | "Center" | "Right" | string;
