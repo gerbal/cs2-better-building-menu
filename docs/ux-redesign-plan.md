@@ -284,3 +284,23 @@ Note the coverage service and infoview vocabularies do not line up — the
 service is `Park`, the infoview `ParksAndRecreation` — so infoviews are
 resolved by matching aliases against the real prefab names at runtime rather
 than assuming either naming.
+
+## Which infoviews the game already handles
+
+Established by running the same building with `ShowCoverageOverlay` on and off,
+rather than assumed:
+
+| service kind | game's own behaviour | our system |
+|---|---|---|
+| Coverage services — fire, police, healthcare, education | Does **not** change the map view. Arming a Fire House Watch Tower with our setting off leaves natural colours and opens no panel. | Adds the coverage view. Genuinely useful. |
+| Network services — electricity, water, sewage | **Already** opens its own infoview and info panel. Arming a coal plant shows the ELECTRICITY legend by itself. | Redundant, and overridden by the game. |
+
+So the pollution fallback added for polluters never shows for power plants: the
+game's Electricity infoview wins. It may still apply to polluters the game does
+not auto-switch for, which is untested.
+
+The honest read is that the system earns its place for coverage services and is
+inert for network ones, which is acceptable — it is not fighting the game, it
+is filling a gap the game leaves. Worth revisiting if the pollution branch turns
+out never to fire in practice, in which case it should be deleted rather than
+kept as decoration.
