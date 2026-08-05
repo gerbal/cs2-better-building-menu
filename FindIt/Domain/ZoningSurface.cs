@@ -21,6 +21,23 @@ public static class ZoningFamilies
 	public const string Commercial = "ZoneCommercial";
 	public const string Industrial = "ZoneIndustrial";
 	public const string Office = "ZoneOffice";
+	/// <summary>
+	/// Kept for the zone-spawned building mapping, but unreachable as a zone
+	/// family.
+	/// </summary>
+	/// <remarks>
+	/// Extractors are not zones. An extractor area is a LotPrefab carrying
+	/// <c>ExtractorAreaData</c> with a <c>MapFeature</c> — fertile land, forest,
+	/// ore, oil — and it has no <c>ZoneData</c> at all, while
+	/// <c>AreaType</c> has only None, Residential, Commercial and Industrial and
+	/// <c>ZoneFlags</c> only Office alongside three corner-support bits. The
+	/// zone index queries ZoneData, so no extractor can ever appear in it.
+	///
+	/// The name stem that used to guess at this family has been removed for that
+	/// reason: it could only ever have matched a zone named "…Extractor…", and
+	/// the family it produced would have had nothing behind it. The family list
+	/// is filtered to what the city actually has, so the chip never offers it.
+	/// </remarks>
 	public const string Extractors = "ZoneExtractors";
 }
 
@@ -84,12 +101,12 @@ public static class ZoningSurfaceCatalog
 	};
 
 	/// <summary>
-	/// Family stems, longest-first so "Extractor" is tested before the shorter
-	/// stems and a name carrying both cannot be misfiled.
+	/// Family stems. "Extractor" used to lead this list; it was removed because
+	/// no extractor is a zone, so it could only ever have produced an empty
+	/// family.
 	/// </summary>
 	private static readonly (string Stem, string Family)[] FamilyStems =
 	{
-		("Extractor", ZoningFamilies.Extractors),
 		("Residential", ZoningFamilies.Residential),
 		("Commercial", ZoningFamilies.Commercial),
 		("Industrial", ZoningFamilies.Industrial),
@@ -140,13 +157,17 @@ public static class ZoningSurfaceCatalog
 	/// it under.
 	/// </summary>
 	/// <remarks>
-	/// This is the authoritative classifier. The vanilla Zones menu's tabs are
-	/// UIAssetCategoryPrefabs and a zone's <c>UIObject.m_Group</c> names the tab
-	/// it appears under, so the family ids here are those group names verbatim.
+	/// The vanilla Zones menu's tabs are UIAssetCategoryPrefabs and a zone's
+	/// <c>UIObject.m_Group</c> names the tab it appears under, so the family ids
+	/// here are those group names verbatim.
 	///
-	/// It is preferred because it is the game's own grouping, but note that 13 of
-	/// the 41 zones in a base-game city carry no UIObject at all, so the
-	/// ZoneData fallback below is load-bearing rather than theoretical.
+	/// This used to be consulted first, on the grounds that it was the only
+	/// source separating Office from Commercial. That was wrong —
+	/// <see cref="ZoneFlags.Office"/> does it, and
+	/// <see cref="ResolveFamily(AreaType, ZoneFlags)"/> has been reading it
+	/// since — and it also meant 13 of the 41 zones in a base-game city, which
+	/// carry no UIObject at all, fell through to a name match. The zone's own
+	/// data goes first now and this is the fallback for AreaType.None.
 	/// </remarks>
 	public static string? ResolveFamilyFromGroup(string? groupName)
 	{
@@ -162,14 +183,19 @@ public static class ZoningSurfaceCatalog
 	/// The family a zone belongs to, from its own <c>ZoneData</c>.
 	/// </summary>
 	/// <remarks>
-	/// Fallback for zones with no UI group. Note this cannot produce Office or
-	/// Extractors.
+	/// The authoritative classifier, and the first one consulted.
 	///
-	/// AreaType only distinguishes Residential, Commercial and Industrial, and
-	/// office zones are <em>industrial</em>-area zones carrying
+	/// AreaType distinguishes Residential, Commercial and Industrial, and office
+	/// zones are <em>industrial</em>-area zones carrying
 	/// <see cref="ZoneFlags.Office"/> — verified in a running city, having first
 	/// assumed they were commercial-area, which put every one of them under
-	/// Commercial and lost the Office family.
+	/// Commercial and lost the Office family. <c>ZonePrefab</c> derives its own
+	/// "ZonesOffice"/"Zones{AreaType}" mod tags from the same two fields, so
+	/// this agrees with the game by construction.
+	///
+	/// Returns null only for <see cref="AreaType.None"/>. It cannot produce
+	/// Extractors because no extractor is a zone; see
+	/// <see cref="ZoningFamilies.Extractors"/>.
 	/// </remarks>
 	public static string? ResolveFamily(AreaType areaType, ZoneFlags flags) => areaType switch
 	{
@@ -191,11 +217,12 @@ public static class ZoningSurfaceCatalog
 	/// The family a zone prefab belongs to, inferred from its name.
 	/// </summary>
 	/// <remarks>
-	/// Fallback only. Prefer <see cref="ResolveFamily(AreaType, ZoneFlags)"/>,
-	/// which reads the zone's own data; this exists for prefabs that carry no
-	/// ZoneData, and for the extractor zones, which are not ZoneData-backed at
-	/// all. Runs over names from the whole prefab index, so declining cleanly
-	/// matters more than guessing.
+	/// Last resort. Prefer <see cref="ResolveFamily(AreaType, ZoneFlags)"/>,
+	/// which reads the zone's own data, then the UI group. Since the zone index
+	/// requires ZoneData, this only runs for a zone whose AreaType is None and
+	/// which carries no UI group — a case the game's own data does not
+	/// distinguish either. Runs over names from the whole prefab index, so
+	/// declining cleanly matters more than guessing.
 	/// </remarks>
 	public static string? ResolveFamily(string? prefabName)
 	{

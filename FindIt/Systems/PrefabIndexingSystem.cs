@@ -833,13 +833,21 @@ namespace FindItBuildingMenu.Systems
 					continue;
 				}
 
-				// The game's own answer first: UIObject.m_Group is the Zones
-				// menu tab this zone appears under, and it is the only source
-				// that separates Office from Commercial. ZoneData and the name
-				// are fallbacks for zones with no UI group.
-				var family = ZoningSurfaceCatalog.ResolveFamilyFromGroup(
+				// The zone's own data first, which is Find It's method applied
+				// here: ZoneData.m_AreaType plus ZoneFlags.Office is what the
+				// game itself switches on, and ZonePrefab derives its
+				// "ZonesOffice"/"Zones{AreaType}" tags from exactly the same two
+				// fields. An earlier comment here claimed the UIObject group was
+				// the only source separating Office from Commercial; that was a
+				// leftover from assuming office zones were commercial-area, and
+				// the flag has been doing the work since.
+				//
+				// The query requires ZoneData, so the fallbacks only run for a
+				// zone whose AreaType is None — which the data does not
+				// distinguish at all.
+				var family = ZoningSurfaceCatalog.ResolveFamily(zoneData[i].m_AreaType, zoneData[i].m_ZoneFlags)
+					?? ZoningSurfaceCatalog.ResolveFamilyFromGroup(
 						prefab.TryGet<UIObject>(out var zoneUi) ? zoneUi.m_Group?.name : null)
-					?? ZoningSurfaceCatalog.ResolveFamily(zoneData[i].m_AreaType, zoneData[i].m_ZoneFlags)
 					?? ZoningSurfaceCatalog.ResolveFamily(prefab.name);
 
 				if (family is null)

@@ -103,13 +103,22 @@ namespace FindItBuildingMenu.Tests
 				ZoningSurfaceCatalog.Families);
 		}
 
+		[Fact]
+		public void CannotNameExtractorsFromANameBecauseNoExtractorIsAZone()
+		{
+			// An extractor area is a LotPrefab carrying ExtractorAreaData with a
+			// MapFeature; it has no ZoneData, and the zone index queries
+			// ZoneData. The stem that used to match this could only ever have
+			// produced a family with nothing behind it.
+			Assert.Null(ZoningSurfaceCatalog.ResolveFamily("ZoneExtractorFarming"));
+		}
+
 		[Theory]
 		[InlineData("ZoneResidentialLow", ZoningFamilies.Residential)]
 		[InlineData("ZoneResidentialHigh", ZoningFamilies.Residential)]
 		[InlineData("ZoneCommercialLow", ZoningFamilies.Commercial)]
 		[InlineData("ZoneIndustrialManufacturing", ZoningFamilies.Industrial)]
 		[InlineData("ZoneOfficeHigh", ZoningFamilies.Office)]
-		[InlineData("ZoneExtractorFarming", ZoningFamilies.Extractors)]
 		public void FilesAZoneUnderItsFamily(string prefabName, string expected)
 		{
 			Assert.Equal(expected, ZoningSurfaceCatalog.ResolveFamily(prefabName));
