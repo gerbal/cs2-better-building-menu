@@ -183,3 +183,31 @@ describe("Stable grid order", () => {
     assert.deepEqual(source.map((e) => e.id), [2, 1]);
   });
 });
+
+describe("Enter arms the top result", () => {
+  it("names the entry Enter should place", async () => {
+    const { topSearchResult } = await import("../src/domain/buildingSearchRank.ts");
+
+    const ranked = rankBuildingMatches(
+      [e(1, "Additional Clinic Center"), e(2, "Medical Clinic")],
+      "clinic"
+    );
+
+    assert.equal(topSearchResult(ranked, "clinic")!.name, "Medical Clinic");
+  });
+
+  it("refuses to arm anything when no search is active", async () => {
+    const { topSearchResult } = await import("../src/domain/buildingSearchRank.ts");
+
+    // Without a query the grid is in browse order, and Enter placing whatever
+    // happens to sort first would be a destructive surprise.
+    assert.equal(topSearchResult([e(1, "Anything")], ""), null);
+    assert.equal(topSearchResult([e(1, "Anything")], "   "), null);
+  });
+
+  it("refuses when the search matched nothing", async () => {
+    const { topSearchResult } = await import("../src/domain/buildingSearchRank.ts");
+
+    assert.equal(topSearchResult([], "zzzz"), null);
+  });
+});

@@ -98,6 +98,15 @@
   font-size: var(--fontSizeM);
 }
 
+// The two states worth colouring: cannot afford, and covers the shortfall.
+.cardWarn {
+  color: var(--negativeColor, rgba(220, 90, 90, 0.95));
+}
+
+.cardGood {
+  color: var(--positiveColor, rgba(120, 200, 120, 0.95));
+}
+
 .cardLine {
   color: var(--menuText2Normal);
   font-size: var(--fontSizeS);
