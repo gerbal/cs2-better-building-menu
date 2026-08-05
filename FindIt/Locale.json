@@ -280,5 +280,8 @@
   "Tooltip.LABEL[FindItBuildingMenu.Zoning_ZoneOffice]": "Office",
   "Tooltip.LABEL[FindItBuildingMenu.Zoning_ZoneExtractors]": "Specialized industry",
   "Tooltip.LABEL[FindItBuildingMenu.ZoneNoDensity]": "No density tier",
-  "Tooltip.LABEL[FindItBuildingMenu.NoZonesIndexed]": "No zones indexed"
+  "Tooltip.LABEL[FindItBuildingMenu.NoZonesIndexed]": "No zones indexed",
+  "Tooltip.LABEL[FindItBuildingMenu.Shelf]": "Frequently placed",
+  "Tooltip.LABEL[FindItBuildingMenu.ShowGrid]": "Grid",
+  "Tooltip.LABEL[FindItBuildingMenu.ShowTable]": "Compare"
 }
