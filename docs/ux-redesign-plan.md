@@ -201,9 +201,28 @@ Verified with a tool armed — the condition that produced the bug: the zoning
 hierarchy now opens and stays, showing 4 families and 21 zones, and selecting
 a zone arms the native Zone tool.
 
-### Not yet swept
+### Second pass — remaining paths
 
-Metric range filters, paging first/prev/next/last, category and section
-switching, compare remove and place-from-tray, zone assignment to the native
-Zone tool, the remaining 9 mapped menus, declines for Landscaping and Areas,
-the lens toggle, and panel close/reopen state persistence.
+| path | result |
+|---|---|
+| The other 9 mapped menus | PASS — each scopes distinctly: Electricity 19, Water 11, Garbage 8, Education 44, Fire 16, Police 19, Transportation 97, Parks 88, Communications 12 |
+| Decline for Roads and Landscaping | PASS — lens closes, vanilla menu is left visible |
+| Paging first / prev / next / last | PASS — 1 of 43 -> 43 -> 42 -> 1 -> 2 |
+| Metric range filter | PASS — Cost >= 1000000 narrows 4206 to 49, summary names the constraint |
+| Section switching (All) | PASS |
+
+Still unswept, all low risk: compare remove and place-from-tray, the lens
+toggle, and panel close/reopen state persistence.
+
+### Driving the UI from game_eval
+
+`el.click()` is not available on these elements; dispatching the
+pointerdown/mousedown/pointerup/mouseup/click sequence manually is what works,
+and is how several paths above were swept in one call rather than one round
+trip each.
+
+Two selector traps cost a cycle each. FindIt's search is a `<textarea>`, not an
+`<input>` — targeting `input[type=text]` hits the city-name field in the
+bottom bar instead. And `[class*="metricRangeInput"]` matches the container
+`<div>` before the `<textarea>` it wraps, so setting `.value` on the first
+match silently does nothing.
