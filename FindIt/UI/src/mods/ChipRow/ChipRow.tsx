@@ -4,17 +4,9 @@ import { Button, Scrollable, Tooltip } from "cs2/ui";
 import classNames from "classnames";
 import { useState } from "react";
 import mod from "../../../mod.json";
-import { buildFilterChips, removableChipCount } from "domain/filterChips";
-import { clearBuildingLensFiltersCommand } from "domain/buildingLensFilterSummary";
-import { toggleBuildingLensFacetCommand } from "domain/buildingCatalogFacets";
 import { lensSectionCommand, lensSubCategoryCommand, type VanillaBuildMenuTab } from "domain/vanillaBuildMenuContracts";
-// The flat-state counter, not the NormalizedMetricRange one of the same name
-// in buildingCatalogRanges — the binding publishes min/max as sibling fields.
-import { countActiveMetricRanges } from "domain/filterRail";
 import type { BuildingLensFacetState } from "domain/buildingCatalogFacets";
 import type { BuildingLensMetricRangeState } from "domain/buildingLensFilterSummary";
-import { FilterRail } from "mods/FilterRail/FilterRail";
-import { BuildingCatalogMetricFilters } from "mods/BuildingCatalog/BuildingCatalogMetricFilters";
 import styles from "./chipRow.module.scss";
 
 /**
@@ -25,10 +17,14 @@ import styles from "./chipRow.module.scss";
  * as tab strips, which meant a permanent band per dimension and no way to ask
  * for two values at once.
  *
- * Reading order is deliberate: breadcrumbs first (what the navigation set),
- * then the rail opener, then the filters the player added. Which is also why
- * this sits between the top bar and the content rather than in a drawer — it is
- * the visible record of what the vanilla toolbar did to the catalog.
+ * What remains here is identity: which section, which type, which zone
+ * families — "what am I looking at", which belongs beside the results.
+ *
+ * The narrowing controls and the chips that record them moved into the game's
+ * own options bank, because that is where the game already puts filters. Theme
+ * and Pack live there as a label and a row of icon buttons, and keeping a
+ * second idiom for the same job taught the player two things where one would
+ * do.
  */
 
 const SUBCATEGORY_ANY = "Any";
@@ -95,20 +91,7 @@ export const ChipRow = () => {
     zoneCatalog.some((zone) => zone?.family === id)
   );
 
-  const chips = buildFilterChips({
-    section: { id: section, label: tabLabel(sectionList, section) },
-    subCategory: { id: subCategory, label: tabLabel(subCategoryList, subCategory) },
-    zoneFamilies: showZoning
-      ? zoneFamilies.map((id) => ({ id, label: familyLabel(id) }))
-      : null,
-    facets,
-    metricRanges,
-  });
 
-  // Breadcrumbs are navigation and render as pickers; everything after them is
-  // a filter the player can remove.
-  const filterChips = chips.filter((chip) => chip.dimension !== "section" && chip.dimension !== "subCategory");
-  const removable = removableChipCount(chips);
 
   // readonly, because TriggerCommand declares its args that way and the facet
   // and chip commands do not.
@@ -179,7 +162,6 @@ export const ChipRow = () => {
     setPicker(null);
   };
 
-  const clearAllLabel = label("Tooltip.LABEL[FindItBuildingMenu.ClearFilters]", "Clear filters");
   const allTypesLabel = label("Tooltip.LABEL[FindItBuildingMenu.AllTypes]", "All types");
   const allFamiliesLabel = label("Tooltip.LABEL[FindItBuildingMenu.AllZoneFamilies]", "All families");
   const familiesLabel = label("Tooltip.LABEL[FindItBuildingMenu.ZoneFamilies]", "Families");
@@ -215,45 +197,7 @@ export const ChipRow = () => {
             null
           )}
 
-        <div className={styles.railSlot}>
-          <FilterRail
-            facets={facets}
-            metricsActive={countActiveMetricRanges(metricRanges as unknown as Record<string, unknown>)}
-            onToggleOption={(groupId, optionId) => fire(toggleBuildingLensFacetCommand(groupId, optionId))}
-            renderMetrics={() => <BuildingCatalogMetricFilters />}
-          />
-        </div>
 
-        {filterChips.map((chip) => (
-          <Tooltip key={chip.id} tooltip={chip.label}>
-            <div className={styles.chip}>
-              <span className={styles.chipText}>{chip.label}</span>
-              <Button
-                className={styles.chipRemove}
-                variant="icon"
-                onSelect={() => chip.remove && fire(chip.remove)}
-                aria-label={`${label("Tooltip.LABEL[FindItBuildingMenu.Remove]", "Remove")} ${chip.label}`}
-              >
-                ×
-              </Button>
-            </div>
-          </Tooltip>
-        ))}
-
-        {removable > 1 && (
-          <Button
-            className={styles.clearAll}
-            variant="icon"
-            onSelect={() => {
-              fire(clearBuildingLensFiltersCommand());
-              fire(lensSubCategoryCommand(SUBCATEGORY_ANY));
-            }}
-            aria-label={clearAllLabel}
-            title={clearAllLabel}
-          >
-            {clearAllLabel}
-          </Button>
-        )}
       </div>
 
       {openList && (

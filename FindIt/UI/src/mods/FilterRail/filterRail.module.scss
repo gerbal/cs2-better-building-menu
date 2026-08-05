@@ -10,44 +10,35 @@
   flex: 0 0 auto;
 }
 
+// Inside the game's options bank now, so no padding or rule of its own — the
+// row it sits in supplies both.
 .icons {
   display: flex;
   flex-direction: row;
   align-items: center;
   flex-wrap: wrap;
-  gap: 3rem;
-  padding: 3rem 8rem 5rem;
-  border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
 }
 
+// Chrome, sizing, hover and selected state all come from the vanilla
+// ToolButton now. What remains is the badge anchor and a marker for the open
+// popover, which the vanilla button has no concept of.
 .icon {
-  @include _base.transparentButton(false, true);
   position: relative;
-  width: 30rem !important;
-  height: 26rem;
-  padding: 2rem;
-  border-radius: 3rem;
-  background-color: rgba(0, 0, 0, 0.22);
-  border: 1rem solid rgba(255, 255, 255, 0.1);
-}
+  // The vanilla ToolButton is 19px, sized for the two or three options Theme
+  // and Pack carry. This row carries eight or nine dimensions and reads as a
+  // dense strip at that size, so it keeps the vanilla chrome and takes more
+  // room — the shape is the game's, the scale is this row's.
+  width: 40rem !important;
+  height: 40rem !important;
 
-.icon:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.iconActive {
-  border-color: var(--accentColorNormal);
-  background-color: rgba(255, 255, 255, 0.12);
+  img {
+    width: 28rem !important;
+    height: 28rem !important;
+  }
 }
 
 .iconOpen {
   background-color: rgba(255, 255, 255, 0.18);
-}
-
-.iconImage {
-  width: 20rem;
-  height: 20rem;
-  object-fit: contain;
 }
 
 // Answers "is anything filtered" without opening anything.

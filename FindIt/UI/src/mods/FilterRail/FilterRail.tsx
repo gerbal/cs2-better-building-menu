@@ -1,4 +1,5 @@
-import { Button, Scrollable, Tooltip } from "cs2/ui";
+import { Button, Scrollable } from "cs2/ui";
+import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 import { useLocalization } from "cs2/l10n";
 import { useState } from "react";
 import classNames from "classnames";
@@ -57,26 +58,31 @@ export const FilterRail = ({
             : dimension.label;
 
           return (
-            <Tooltip key={dimension.id} tooltip={label}>
-              <Button
-                className={classNames(
-                  styles.icon,
-                  open === dimension.id && styles.iconOpen,
-                  dimension.selected > 0 && styles.iconActive
-                )}
-                variant="icon"
-                onSelect={() => toggleOpen(dimension.id)}
-                aria-label={label}
-              >
-                <img className={styles.iconImage} src={DIMENSION_ICONS[dimension.id] ?? ""} alt="" />
-                {/* The badge is the only thing that has to be readable at a
-                    glance: it answers "is anything filtered" without opening
-                    a single popover. */}
-                {dimension.selected > 0 && (
-                  <span className={styles.badge}>{dimension.selected}</span>
-                )}
-              </Button>
-            </Tooltip>
+            // The game's own filter button, the one Theme and Pack are built
+            // from, rather than a hand-styled lookalike sitting next to them in
+            // the same panel. Sizing, hover and selected state all come from
+            // the component.
+            <VanillaComponentResolver.instance.ToolButton
+              key={dimension.id}
+              selected={dimension.selected > 0}
+              tooltip={label}
+              onSelect={() => toggleOpen(dimension.id)}
+              src={DIMENSION_ICONS[dimension.id] ?? ""}
+              focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED}
+              className={classNames(
+                VanillaComponentResolver.instance.toolButtonTheme.button,
+                styles.icon,
+                open === dimension.id && styles.iconOpen
+              )}
+              aria-label={label}
+            >
+              {/* The badge is the only thing that has to be readable at a
+                  glance: it answers "is anything filtered" without opening a
+                  single popover. */}
+              {dimension.selected > 0
+                ? <span className={styles.badge}>{dimension.selected}</span>
+                : <span />}
+            </VanillaComponentResolver.instance.ToolButton>
           );
         })}
 
