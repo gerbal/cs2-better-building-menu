@@ -35,6 +35,21 @@ namespace FindItBuildingMenu.Domain
 			string fallback = Fallback(rawValue, unknownEnumPrefix);
 			try
 			{
+				// The game first, where it names the same concept. These labels
+				// are the game's own categories, and it ships them in every
+				// language it supports while the mod's Locale.json is English
+				// only. A missing key falls through to exactly what was shown
+				// before, so nothing regresses if the game renames one.
+				string? gameKey = GameLocaleKeys.For(rawValue);
+				if (gameKey is not null)
+				{
+					string localized = LocaleHelper.Translate(gameKey, string.Empty);
+					if (!string.IsNullOrWhiteSpace(localized))
+					{
+						return localized;
+					}
+				}
+
 				return LocaleHelper.Translate(
 					$"Tooltip.LABEL[FindItBuildingMenu.{rawValue}]",
 					fallback);

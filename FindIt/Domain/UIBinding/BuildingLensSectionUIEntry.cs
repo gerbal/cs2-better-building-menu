@@ -15,9 +15,7 @@ public struct BuildingLensSectionUIEntry : IJsonWritable
     {
         Id = descriptor.Id;
         Icon = descriptor.Icon;
-        ToolTip = LocaleHelper.Translate(
-            $"Tooltip.LABEL[FindItBuildingMenu.{descriptor.Tooltip}]",
-            descriptor.Tooltip);
+        ToolTip = LocaleHelper.TranslateLabel(descriptor.Tooltip, descriptor.Tooltip);
     }
 
     public readonly void Write(IJsonWriter writer)
