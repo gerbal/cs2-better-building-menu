@@ -205,7 +205,11 @@
   // A floor stops the void without letting the height chase the result count,
   // because both bounds are constants rather than functions of it.
   flex: 0 1 auto;
-  min-height: 400rem;
+  // 400rem first, which was too blunt: filtering the zoning view down to
+  // Office left 100px of content in a 267px box — a 63% void, worse than the
+  // 43% this set out to fix. The floor only has to stop the panel collapsing
+  // to a single row as you type; it does not have to reserve a screenful.
+  min-height: 200rem;
 }
 
 .toolsContent {
