@@ -112,7 +112,7 @@ export const BuildingGrid = ({ entries, searchText, onPlace, standalone = true }
   const tile = (entry: BuildingCatalogEntry, key: string) => {
     const cost = formatBuildingMetric(entry.constructionCost, "cost");
     const upkeep = formatBuildingMetric(entry.upkeep, "upkeep");
-    const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory);
+    const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType);
     const lot = formatLotDimensions(entry.lotWidth, entry.lotDepth);
     const label = entry.name || entry.prefabName;
 

@@ -66,7 +66,43 @@ export function formatBuildingMetric(value: number | null | undefined, metric: B
  * so the figures were mutually incomparable while looking like one series.
  * The unit is derived from the vanilla taxonomy the row already carries.
  */
-export function getCapacityUnitLabel(category: string | null | undefined, subCategory: string | null | undefined): string {
+/**
+ * Units by the component-derived role.
+ *
+ * Find It's own method: classify by what the prefab carries, not by what its
+ * category is called. Substring-matching the category worked but was wrong at
+ * the edges — "police" matched a prison and called its prisoners "vehicles",
+ * and deathcare storage was reported as "patients".
+ */
+const ROLE_UNITS: Record<string, string> = {
+  School: "students",
+  Hospital: "patients",
+  DeathcareFacility: "plots",
+  PowerPlant: "MW",
+  WaterPumpingStation: "m³",
+  SewageOutlet: "m³",
+  WastewaterTreatmentPlant: "m³",
+  GarbageFacility: "t",
+  FireStation: "vehicles",
+  PoliceStation: "vehicles",
+  Prison: "prisoners",
+  EmergencyShelter: "people",
+};
+
+export function getCapacityUnitLabel(
+  category: string | null | undefined,
+  subCategory: string | null | undefined,
+  role?: string | null,
+): string {
+  // The role is authoritative where there is one; the category match below is
+  // the fallback for anything the indexer found no service component on.
+  if (typeof role === "string" && role.trim() !== "") {
+    const unit = ROLE_UNITS[role.trim()];
+    if (unit !== undefined) {
+      return unit;
+    }
+  }
+
   const haystack = `${category ?? ""} ${subCategory ?? ""}`.toLowerCase();
 
   if (haystack.includes("school") || haystack.includes("education")) {
@@ -101,13 +137,14 @@ export function formatCapacity(
   value: number | null | undefined,
   category: string | null | undefined,
   subCategory: string | null | undefined,
+  role?: string | null,
 ): string {
   const formatted = formatBuildingMetric(value, "capacity");
   if (formatted === METRIC_NO_DATA) {
     return formatted;
   }
 
-  const unit = getCapacityUnitLabel(category, subCategory);
+  const unit = getCapacityUnitLabel(category, subCategory, role);
 
   return unit === "" ? formatted : `${formatted} ${unit}`;
 }

@@ -5,29 +5,43 @@ import {
   getServiceForecastKey,
 } from "../src/domain/serviceForecast.ts";
 
-const entry = (subCategory: string, name = "Something", educationLevel?: number) =>
-  ({ subCategory, name, educationLevel });
+const entry = (
+  subCategory: string,
+  name = "Something",
+  educationLevel?: number,
+  buildingType?: string
+) => ({ subCategory, name, educationLevel, buildingType });
 
 describe("Service forecast mapping", () => {
-  it("routes each service subcategory to its own capacity and demand pair", () => {
-    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Health", "Hospital"))!.key, "patients");
-    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Garbage"))!.key, "garbage");
-    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Water", "Water Tower"))!.key, "water");
-    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Electricity"))!.key, "electricity");
+  it("routes a building by the component it carries, not its name", () => {
+    // Find It classifies by component query, and the indexer already derives
+    // these roles. Matching a display name was reading the label off the box.
+    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Health", "x", undefined, "Hospital"))!.key, "patients");
+    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Garbage", "x", undefined, "GarbageFacility"))!.key, "garbage");
+    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Water", "x", undefined, "WaterPumpingStation"))!.key, "water");
+    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Electricity", "x", undefined, "PowerPlant"))!.key, "electricity");
   });
 
   it("separates deathcare from healthcare, which share a subcategory", () => {
     // Health & Deathcare is one subcategory but two demand series: patients
     // against the sick, and cemetery places against burials.
-    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Health", "Cemetery"))!.key, "cemetery");
-    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Health", "Crematorium"))!.key, "cemetery");
-    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Health", "Medical Clinic"))!.key, "patients");
+    // DeathcareFacilityData is what makes the difference, not the word
+    // "Cemetery" in a name.
+    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Health", "x", undefined, "DeathcareFacility"))!.key, "cemetery");
+    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Health", "x", undefined, "Hospital"))!.key, "patients");
   });
 
   it("separates sewage from fresh water, which also share one", () => {
-    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Water", "Wastewater Treatment Plant"))!.key, "sewage");
-    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Water", "Sewage Outlet"))!.key, "sewage");
-    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Water", "Groundwater Pumping Station"))!.key, "water");
+    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Water", "x", undefined, "WastewaterTreatmentPlant"))!.key, "sewage");
+    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Water", "x", undefined, "SewageOutlet"))!.key, "sewage");
+    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Water", "x", undefined, "WaterPumpingStation"))!.key, "water");
+  });
+
+  it("sees a modded or localized name the old matcher could not", () => {
+    // The whole point. "Friedhof" carries DeathcareFacilityData just as
+    // "Cemetery" does, and a substring match on English never saw it.
+    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Health", "Friedhof", undefined, "DeathcareFacility"))!.key, "cemetery");
+    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Water", "Klaerwerk", undefined, "WastewaterTreatmentPlant"))!.key, "sewage");
   });
 
   it("reads the education tier from the prefab's own data when present", () => {
@@ -71,16 +85,21 @@ describe("Service forecast mapping", () => {
     assert.equal(getServiceForecastKey(entry("ServiceBuildings_EducationResearch", "Elementary School")), null);
   });
 
-  it("declines services with no meaningful demand series", () => {
-    // Parks, police stations and fire houses have coverage, not a capacity
-    // the game reports against a demand figure.
-    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Parks", "Bronze Statue")), null);
-    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Fire", "Fire Station")), null);
+  it("routes prisons to the prison series rather than police coverage", () => {
+    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Police", "x", undefined, "Prison"))!.key, "prison");
+    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Police", "x", undefined, "PoliceStation")), null);
   });
 
-  it("routes prisons to the prison series rather than police coverage", () => {
-    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Police", "Prison"))!.key, "prison");
-    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Police", "Police Station")), null);
+  it("declines a building with no service component at all", () => {
+    // No role means nothing to forecast: parks, props and zoned buildings.
+    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Parks", "Bronze Statue")), null);
+    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Health", "Something")), null);
+  });
+
+  it("declines a role this build has no series for", () => {
+    // Coverage services report no capacity against a demand figure.
+    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Fire", "x", undefined, "FireStation")), null);
+    assert.equal(getServiceForecastKey(entry("ServiceBuildings_Misc", "x", undefined, "SomeNewService")), null);
   });
 
   it("declines anything that is not a service building", () => {

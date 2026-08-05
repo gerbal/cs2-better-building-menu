@@ -460,7 +460,7 @@ export const BuildingCatalogComponent = () => {
                   <div className={styles.compareIdentity}>
                     <span className={styles.compareName}>{entryLabel}</span>
                     <span className={styles.compareMetrics}>
-                      Cost {formatBuildingMetric(entry.constructionCost, "cost")} · Upkeep {formatBuildingMetric(entry.upkeep, "upkeep")} · Workers {formatBuildingMetric(entry.workers, "workers")} · Capacity {formatCapacity(entry.capacity, entry.category, entry.subCategory)}
+                      Cost {formatBuildingMetric(entry.constructionCost, "cost")} · Upkeep {formatBuildingMetric(entry.upkeep, "upkeep")} · Workers {formatBuildingMetric(entry.workers, "workers")} · Capacity {formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType)}
                     </span>
                   </div>
                   <Button
@@ -586,8 +586,8 @@ export const BuildingCatalogComponent = () => {
                   <div className={classNames(styles.metric, styles.metricWorkers)} title={`Workers ${formatBuildingMetric(entry.workers, "workers")}`}>
                     {formatBuildingMetric(entry.workers, "workers")}
                   </div>
-                  <div className={classNames(styles.metric, styles.metricCapacity)} title={`Capacity ${formatCapacity(entry.capacity, entry.category, entry.subCategory)}`}>
-                    {formatCapacity(entry.capacity, entry.category, entry.subCategory)}
+                  <div className={classNames(styles.metric, styles.metricCapacity)} title={`Capacity ${formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType)}`}>
+                    {formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType)}
                   </div>
                   <div className={classNames(styles.metric, styles.metricLot)} title="Lot dimensions">
                     {formatLotDimensions(entry.lotWidth, entry.lotDepth)}
