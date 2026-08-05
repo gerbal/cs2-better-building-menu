@@ -19,6 +19,13 @@ namespace FindItBuildingMenu.Domain
 	public static class BuildingRole
 	{
 		/// <summary>
+		/// Every role the indexer can produce, in the same order used to resolve
+		/// a primary. Exposed so the filter UI can offer exactly the set that is
+		/// reachable, rather than inventing options nothing can match.
+		/// </summary>
+		public static IReadOnlyList<string> Known => Priority;
+
+		/// <summary>
 		/// Priority order used when a prefab carries several service components.
 		/// The entry holds one role, so the choice must not depend on the order
 		/// the components happen to be read in. Roles that describe the

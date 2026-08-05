@@ -32,6 +32,12 @@ namespace FindItBuildingMenu.Domain
 		public ValueSign LotDepthSign { get; set; } = ValueSign.Equal;
 		public ValueSign BuildingLevelSign { get; set; } = ValueSign.Equal;
 
+		// Dimensions Building Lens could already filter on while the asset grid
+		// could not, even though PrefabIndex has carried all three all along.
+		public BuildingFlags? RequiredPlacementFlags { get; set; }
+		public List<string> SelectedExtensions { get; set; }
+		public List<string> SelectedRoles { get; set; }
+
 		public static Func<string, Func<PrefabIndex, bool>> GetCustomSearchFunction { get; set; }
 
 		public IEnumerable<Func<PrefabIndex, bool>> GetFilterList(bool includeSearch = true)
@@ -100,6 +106,21 @@ namespace FindItBuildingMenu.Domain
 				yield return DoLotWidthFilter;
 			}
 
+			if (RequiredPlacementFlags.HasValue && RequiredPlacementFlags.Value != default)
+			{
+				yield return DoPlacementFlagFilter;
+			}
+
+			if (SelectedExtensions is { Count: > 0 })
+			{
+				yield return DoExtensionFilter;
+			}
+
+			if (SelectedRoles is { Count: > 0 })
+			{
+				yield return DoRoleFilter;
+			}
+
 			if (SelectedThemeNone)
 			{
 				yield return DoNoThemeFilter;
@@ -128,6 +149,21 @@ namespace FindItBuildingMenu.Domain
 				else
 					yield return GetCustomSearchFunction(CurrentSearch);
 			}
+		}
+
+		private bool DoPlacementFlagFilter(PrefabIndex prefab)
+		{
+			return FindItFilterPredicates.MatchesRequiredFlags(prefab.BuildingFlagsValue, RequiredPlacementFlags);
+		}
+
+		private bool DoExtensionFilter(PrefabIndex prefab)
+		{
+			return FindItFilterPredicates.MatchesAnyExtension(prefab.ExtensionIds, SelectedExtensions);
+		}
+
+		private bool DoRoleFilter(PrefabIndex prefab)
+		{
+			return FindItFilterPredicates.MatchesAnyRole(prefab.BuildingTypeName, SelectedRoles);
 		}
 
 		private bool DoSearchFilter(PrefabIndex prefab)
