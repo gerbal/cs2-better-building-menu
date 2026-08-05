@@ -48,6 +48,7 @@ import {
 import type { BuildingLensFacetState } from "domain/buildingCatalogFacets";
 import { findItSurfacePort } from "domain/findItSurfacePort";
 import { BuildingGrid } from "mods/BuildingGrid/BuildingGrid";
+import { getSearchScopeNotice } from "domain/buildingSearchRank";
 import { getLensDisclosure, setLensDisclosure } from "domain/buildingLensViewState";
 import { BuildingCatalogFilterSummary } from "./BuildingCatalogFilterSummary";
 import { BuildingCatalogFacetPanel } from "./BuildingCatalogFacetPanel";
@@ -78,6 +79,7 @@ const BuildingCatalogCompare$ = bindValue<BuildingCatalogEntry[]>(mod.id, "Build
 const BuildingLensFacets$ = bindValue<BuildingLensFacetState>(mod.id, "BuildingLensFacets");
 const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState>(mod.id, "BuildingCatalogMetricRanges");
 const BuildingLensLegacyFilters$ = bindValue<string[]>(mod.id, "BuildingLensLegacyFilters");
+const BuildingCatalogMatchesElsewhere$ = bindValue<number>(mod.id, "BuildingCatalogMatchesElsewhere", 0);
 
 const educationCapacityPresets = [0, 100, 500, 1000];
 
@@ -128,6 +130,7 @@ export const BuildingCatalogComponent = () => {
   const facets = useValue(BuildingLensFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
   const legacyFilters = useValue(BuildingLensLegacyFilters$);
+  const matchesElsewhere = useValue(BuildingCatalogMatchesElsewhere$);
 
   // Name the constraints that actually emptied the table; the old copy always
   // blamed search and category, which are often not the cause.
@@ -170,6 +173,20 @@ export const BuildingCatalogComponent = () => {
 
     return group?.options?.find((option) => option.id === value)?.label ?? null;
   };
+  const scopeNotice = getSearchScopeNotice({
+    searchText: currentSearch ?? "",
+    shown: items.length,
+    elsewhere: matchesElsewhere ?? 0,
+  });
+  const scopeNoticeText = scopeNotice
+    ? (translate(
+        "Tooltip.LABEL[FindItBuildingMenu.MatchesElsewhere]",
+        "No matches here — {0} elsewhere"
+      ) ?? "No matches here — {0} elsewhere").replace("{0}", `${scopeNotice.elsewhere}`)
+    : "";
+  const searchEverywhereLabel =
+    translate("Tooltip.LABEL[FindItBuildingMenu.SearchEverything]", "Search everything")
+    ?? "Search everything";
   const viewModeLabel = tableMode
     ? translate("Tooltip.LABEL[FindItBuildingMenu.ShowGrid]", "Grid") ?? "Grid"
     : translate("Tooltip.LABEL[FindItBuildingMenu.ShowTable]", "Compare") ?? "Compare";
@@ -622,7 +639,23 @@ export const BuildingCatalogComponent = () => {
         </div>
         </>
       ) : (
-        <BuildingGrid entries={items} searchText={currentSearch ?? ""} onPlace={activate} />
+        <>
+          {scopeNotice && (
+            <div className={styles.scopeNotice}>
+              <span className={styles.scopeNoticeText}>{scopeNoticeText}</span>
+              <Button
+                className={styles.scopeNoticeAction}
+                variant="icon"
+                onSelect={() => trigger(mod.id, "SearchEverything")}
+                aria-label={searchEverywhereLabel}
+                title={searchEverywhereLabel}
+              >
+                {searchEverywhereLabel}
+              </Button>
+            </div>
+          )}
+          <BuildingGrid entries={items} searchText={currentSearch ?? ""} onPlace={activate} />
+        </>
       )}
 
     </div>

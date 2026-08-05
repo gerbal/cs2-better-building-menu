@@ -130,3 +130,29 @@ export function rankBuildingMatches<T extends RankableEntry>(
       || (stableRank.get(a.entry.id) ?? 0) - (stableRank.get(b.entry.id) ?? 0))
     .map(({ entry }) => entry);
 }
+
+export interface SearchScopeNotice {
+  elsewhere: number;
+  canWiden: boolean;
+}
+
+/**
+ * Whether to tell the player their search matched outside the current section.
+ *
+ * A scoped search that finds nothing reports "0", which reads as "this building
+ * does not exist" when it almost always means "not in this category". With a
+ * catalog of thousands across many sections that is the single most misleading
+ * state the search can reach, so it is worth naming — but only when there is
+ * somewhere else to look.
+ */
+export function getSearchScopeNotice(state: {
+  searchText: string;
+  shown: number;
+  elsewhere: number;
+}): SearchScopeNotice | null {
+  if (!state.searchText.trim() || state.shown > 0 || state.elsewhere <= 0) {
+    return null;
+  }
+
+  return { elsewhere: state.elsewhere, canWiden: true };
+}

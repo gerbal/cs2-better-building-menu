@@ -2,7 +2,11 @@ import { bindValue, trigger, useValue } from "cs2/api";
 import { useEffect, useRef } from "react";
 import mod from "../../../mod.json";
 import type { ToolbarEntity } from "domain/toolSurfaceContracts";
-import { toolbarEntityIndex, vanillaMenuSelectedCommand } from "domain/vanillaMenuWatch";
+import {
+  shouldRouteSelection,
+  toolbarEntityIndex,
+  vanillaMenuSelectedCommand,
+} from "domain/vanillaMenuWatch";
 
 const SelectedAssetMenu$ = bindValue<ToolbarEntity | null>("toolbar", "selectedAssetMenu", null);
 const ReplaceVanillaBuildMenu$ = bindValue<boolean>(mod.id, "ReplaceVanillaBuildMenu", false);
@@ -21,31 +25,26 @@ const ReplaceVanillaBuildMenu$ = bindValue<boolean>(mod.id, "ReplaceVanillaBuild
 export const VanillaMenuWatcher = () => {
   const enabled = useValue(ReplaceVanillaBuildMenu$);
   const selected = useValue(SelectedAssetMenu$);
-  // The binding re-emits on unrelated toolbar churn; without this the trigger
-  // would fire repeatedly for a menu that is already open and fight the
-  // player's own navigation inside it.
-  const lastSent = useRef<number | null>(null);
+  // The binding re-emits on unrelated toolbar churn, and emits current state
+  // on subscribe. shouldRouteSelection filters both.
+  const state = useRef<{ seen: boolean; last: number | null }>({ seen: false, last: null });
 
   useEffect(() => {
     if (!enabled) {
-      lastSent.current = null;
+      state.current = { seen: false, last: null };
       return;
     }
 
     const index = toolbarEntityIndex(selected);
+    const route = shouldRouteSelection(state.current, index);
 
-    if (index === null) {
-      // Menu closed. Clear so reopening the same one is seen as a new
-      // selection rather than swallowed as a duplicate.
-      lastSent.current = null;
+    // Observed either way: the first emission is state, not a click, and a
+    // closed menu must be remembered so reopening the same one counts as new.
+    state.current = { seen: true, last: route ? index : (index === null ? null : state.current.last) };
+
+    if (!route || index === null) {
       return;
     }
-
-    if (lastSent.current === index) {
-      return;
-    }
-
-    lastSent.current = index;
 
     const command = vanillaMenuSelectedCommand(index);
     trigger(mod.id, command.method, ...command.args);

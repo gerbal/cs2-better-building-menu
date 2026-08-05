@@ -27,3 +27,30 @@ export function vanillaMenuSelectedCommand(entityIndex: number) {
     args: [entityIndex],
   } as const;
 }
+
+/** What the watcher remembers between emissions. */
+export interface WatchState {
+  /** Whether any selection has been observed since mount. */
+  seen: boolean;
+  /** The last index actually routed to the backend. */
+  last: number | null;
+}
+
+/**
+ * Whether an observed selection is a real user action worth routing.
+ *
+ * The binding emits its current value on subscribe, so the first thing the
+ * watcher sees is existing state rather than a click. Acting on it closed the
+ * lens panel the instant it was opened whenever a non-building menu happened to
+ * be the stale selection — the decline path fighting the player.
+ *
+ * Repeats are ignored too, since the binding re-emits on unrelated toolbar
+ * churn, and a null (menu closed) is remembered but never routed.
+ */
+export function shouldRouteSelection(state: WatchState, index: number | null): boolean {
+  if (!state.seen || index === null) {
+    return false;
+  }
+
+  return state.last !== index;
+}
