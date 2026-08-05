@@ -91,8 +91,18 @@ namespace FindItBuildingMenu.Services
 			AddArrayGroup(groups, "assetPack", "Asset packs", source.Select(entry => entry.AssetPacks), query.AssetPacks, FormatAssetPackLabel);
 			AddArrayGroup(groups, "placement", "Placement", source.Select(entry => entry.PlacementFlags), query.PlacementFlags, FormatFlagLabel);
 			AddArrayGroup(groups, "extension", "Extensions", source.Select(entry => entry.Extensions), query.Extensions, FormatFacetWords);
+			// Density is what the vanilla Zones menu is organised around, so it
+			// belongs beside the other dimensions rather than only in the sort.
+			AddValueGroup(
+				groups,
+				"zone",
+				"Density",
+				source.Select(entry => entry.ZoneType == ZoneTypeFilter.Any ? null : entry.ZoneType.ToString()),
+				query.ZoneTypes,
+				FormatFacetWords);
 
-			bool hasSelection = HasValues(query.BuildingTypes)
+			bool hasSelection = HasValues(query.ZoneTypes)
+				|| HasValues(query.BuildingTypes)
 				|| HasValues(query.Provenance)
 				|| HasValues(query.DlcIds)
 				|| HasValues(query.Themes)

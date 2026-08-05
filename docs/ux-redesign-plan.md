@@ -98,3 +98,53 @@ Confirmed live this session:
 - Digit grouping, `/mo` upkeep suffix, capacity units, `—` for absent vs `0 t`
   for a real zero
 - Detail strip renders the projected metrics; disclosure survives re-render
+
+## Vanilla menu replacement (opt-in)
+
+Decided 2026-08-04: replace the vanilla asset grid in place, keeping the
+toolbar buttons where they are, so nothing has to be relearned. Buildings
+first; networks later.
+
+### Interception point
+
+`ToolbarUISystem` binds:
+
+- `TriggerBinding<Entity>("toolbar", "selectAssetMenu", SelectAssetMenu)`
+- `ValueBinding<Entity>("toolbar", "selectedAssetMenu", Entity.Null)`
+- `RawMapBinding<Entity>("toolbar", "assetCategories", BindAssetCategories)`
+  — the sub-tabs within a menu
+
+Watching `selectedAssetMenu` gives the menu; `assetCategories` gives its
+sub-tabs, which is the second level the presets need.
+
+### Menu -> preset
+
+The 13 toolbar menus map almost 1:1 onto `PrefabSubCategory`, so ten need no
+new query surface at all:
+
+| Toolbar menu | PrefabSubCategory |
+|---|---|
+| Electricity | ServiceBuildings_Electricity |
+| Water | ServiceBuildings_Water |
+| Healthcare | ServiceBuildings_Health |
+| Garbage | ServiceBuildings_Garbage |
+| Education | ServiceBuildings_EducationResearch |
+| FireSafety | ServiceBuildings_Fire |
+| Police | ServiceBuildings_Police |
+| Transportation | ServiceBuildings_Transportation |
+| ParksAndRecreation | ServiceBuildings_Parks |
+| Communications | ServiceBuildings_Communications |
+| Zones | Buildings_Residential/Commercial/Industrial/Office/Mixed/Specialized |
+
+Not buildings, so out of scope until a networks catalog exists:
+**Roads** (the networks themselves; note `ServiceBuildings_Roads` buildings
+like maintenance depots *are* in scope), **Landscaping** (surfaces; likewise
+`ServiceBuildings_Landscaping`).
+
+### Zone density is indexed, sortable, and not filterable
+
+`ZoneTypeFilter` (Any/Low/Row/Medium/High/Signature) is set on every entry and
+`BuildingCatalogQueryEngine` sorts by it, but `BuildingCatalogQuery` has no
+ZoneType field — so it cannot be filtered and has no facet. The Zones menu's
+sub-tabs need exactly this, so it has to be added as a query dimension and a
+facet group alongside the other seven.

@@ -40,6 +40,10 @@ namespace FindItBuildingMenu.Domain
 		IReadOnlyList<string>? AssetPacks = null,
 		IReadOnlyList<string>? PlacementFlags = null,
 		IReadOnlyList<string>? Extensions = null,
+		// Zone density (Low/Row/Medium/High/Signature) was indexed on every
+		// entry and sorted on, but had no query field, so the levels the
+		// vanilla Zones menu is organised around could not be filtered.
+		IReadOnlyList<string>? ZoneTypes = null,
 		string BuildMenuSection = "",
 		string BuildMenuSubCategory = "")
 	{

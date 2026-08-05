@@ -1,4 +1,5 @@
 using FindItBuildingMenu.Domain;
+using FindItBuildingMenu.Domain.Enums;
 
 using System;
 using System.Collections.Generic;
@@ -99,7 +100,8 @@ namespace FindItBuildingMenu.Services
 				|| !MatchesAny(entry.Theme, query.Themes)
 				|| !MatchesAny(entry.AssetPacks, query.AssetPacks)
 				|| !MatchesAll(entry.PlacementFlags, query.PlacementFlags)
-				|| !MatchesAny(entry.Extensions, query.Extensions))
+				|| !MatchesAny(entry.Extensions, query.Extensions)
+				|| !MatchesZoneType(entry.ZoneType, query.ZoneTypes))
 			{
 				return false;
 			}
@@ -166,6 +168,30 @@ namespace FindItBuildingMenu.Services
 			return value is not null
 				&& value.Length > 0
 				&& value.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0;
+		}
+
+		/// <summary>
+		/// Zone density is an enum on the entry rather than a string, so it is
+		/// matched by name. An unrecognised name matches nothing rather than
+		/// everything: a broken preset should look broken, not like a filter
+		/// that happens to be wide open.
+		/// </summary>
+		private static bool MatchesZoneType(ZoneTypeFilter value, IReadOnlyList<string>? selected)
+		{
+			if (selected is null || selected.Count == 0)
+			{
+				return true;
+			}
+
+			foreach (var name in selected)
+			{
+				if (Enum.TryParse<ZoneTypeFilter>(name, ignoreCase: true, out var parsed) && parsed == value)
+				{
+					return true;
+				}
+			}
+
+			return false;
 		}
 
 		private static bool MatchesAny(string? value, IReadOnlyList<string>? selected)
