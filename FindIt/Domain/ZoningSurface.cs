@@ -1,6 +1,9 @@
 using Colossal.UI.Binding;
 using FindItBuildingMenu.Domain.Enums;
 
+using Game.Prefabs;
+using Game.Zones;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -117,6 +120,28 @@ public static class ZoningSurfaceCatalog
 		[ZoningFamilies.Extractors] = new[] { "Buildings_Industrial", "Buildings_Specialized" },
 	};
 
+	/// <summary>
+	/// The family a zone belongs to, read from its own <c>ZoneData</c>.
+	/// </summary>
+	/// <remarks>
+	/// This is the authoritative classifier; <see cref="ResolveFamily(string)"/>
+	/// is a name-based fallback for prefabs that carry no ZoneData.
+	///
+	/// AreaType only distinguishes Residential, Commercial and Industrial. Office
+	/// zones are commercial-area zones carrying <see cref="ZoneFlags.Office"/>,
+	/// so the flag has to split them out — but only within a commercial area,
+	/// since the bit means nothing elsewhere.
+	/// </remarks>
+	public static string? ResolveFamily(AreaType areaType, ZoneFlags flags) => areaType switch
+	{
+		AreaType.Residential => ZoningFamilies.Residential,
+		AreaType.Commercial => (flags & ZoneFlags.Office) != 0
+			? ZoningFamilies.Office
+			: ZoningFamilies.Commercial,
+		AreaType.Industrial => ZoningFamilies.Industrial,
+		_ => null,
+	};
+
 	public static ZoningFamilyDescriptor? Describe(string? family) =>
 		family is null
 			? null
@@ -124,10 +149,15 @@ public static class ZoningSurfaceCatalog
 				string.Equals(descriptor.Id, family, StringComparison.OrdinalIgnoreCase));
 
 	/// <summary>
-	/// The family a zone prefab belongs to, or null when the name is not a zone
-	/// at all. The classifier runs over names from the whole prefab index, so
-	/// declining cleanly matters more than guessing.
+	/// The family a zone prefab belongs to, inferred from its name.
 	/// </summary>
+	/// <remarks>
+	/// Fallback only. Prefer <see cref="ResolveFamily(AreaType, ZoneFlags)"/>,
+	/// which reads the zone's own data; this exists for prefabs that carry no
+	/// ZoneData, and for the extractor zones, which are not ZoneData-backed at
+	/// all. Runs over names from the whole prefab index, so declining cleanly
+	/// matters more than guessing.
+	/// </remarks>
 	public static string? ResolveFamily(string? prefabName)
 	{
 		if (string.IsNullOrWhiteSpace(prefabName))
@@ -155,9 +185,18 @@ public static class ZoningSurfaceCatalog
 
 	/// <summary>
 	/// The density tier a zone name carries, or <see cref="ZoneTypeFilter.Any"/>
-	/// when it carries none. Industrial and extractor zones have no tier, and
-	/// inventing one would filter their buildings away.
+	/// when it carries none.
 	/// </summary>
+	/// <remarks>
+	/// Fallback only. PrefabIndexingSystem.IndexZones already derives density
+	/// from real ZonePropertiesData — residential properties over space
+	/// multiplier, with row housing detected from spawnable lot sizes — and
+	/// that result is available through GetZoneType. Prefer it; this name-based
+	/// reading is for zones missing that data.
+	///
+	/// Industrial and extractor zones have no tier, and inventing one would
+	/// filter their buildings away.
+	/// </remarks>
 	public static ZoneTypeFilter ResolveDensity(string? prefabName)
 	{
 		if (string.IsNullOrWhiteSpace(prefabName))

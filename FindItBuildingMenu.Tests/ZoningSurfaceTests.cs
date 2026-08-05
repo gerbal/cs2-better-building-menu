@@ -1,4 +1,6 @@
 using FindItBuildingMenu.Domain;
+using Game.Prefabs;
+using Game.Zones;
 using FindItBuildingMenu.Domain.Enums;
 using Xunit;
 
@@ -6,6 +8,50 @@ namespace FindItBuildingMenu.Tests
 {
 	public sealed class ZoningSurfaceTests
 	{
+		[Theory]
+		[InlineData(AreaType.Residential, (ZoneFlags)0, ZoningFamilies.Residential)]
+		[InlineData(AreaType.Commercial, (ZoneFlags)0, ZoningFamilies.Commercial)]
+		[InlineData(AreaType.Industrial, (ZoneFlags)0, ZoningFamilies.Industrial)]
+		public void ClassifiesFamilyFromZoneDataRatherThanTheName(
+			AreaType areaType,
+			ZoneFlags flags,
+			string expected)
+		{
+			// ZoneData carries the authority: m_AreaType plus m_ZoneFlags. The
+			// name-based classifier is only a fallback for prefabs that have no
+			// ZoneData at all.
+			Assert.Equal(expected, ZoningSurfaceCatalog.ResolveFamily(areaType, flags));
+		}
+
+		[Fact]
+		public void SplitsOfficeOutOfCommercialByItsZoneFlag()
+		{
+			// Office zones are commercial-area zones carrying ZoneFlags.Office;
+			// AreaType alone would file them under Commercial.
+			Assert.Equal(
+				ZoningFamilies.Office,
+				ZoningSurfaceCatalog.ResolveFamily(AreaType.Commercial, ZoneFlags.Office));
+			Assert.Equal(
+				ZoningFamilies.Commercial,
+				ZoningSurfaceCatalog.ResolveFamily(AreaType.Commercial, ZoneFlags.SupportNarrow));
+		}
+
+		[Fact]
+		public void IgnoresTheOfficeFlagOutsideCommercialAreas()
+		{
+			// The flag only means "office zone" on a commercial area; a
+			// residential zone carrying it is still residential.
+			Assert.Equal(
+				ZoningFamilies.Residential,
+				ZoningSurfaceCatalog.ResolveFamily(AreaType.Residential, ZoneFlags.Office));
+		}
+
+		[Fact]
+		public void DeclinesToClassifyAnUnzonedArea()
+		{
+			Assert.Null(ZoningSurfaceCatalog.ResolveFamily(AreaType.None, (ZoneFlags)0));
+		}
+
 		[Fact]
 		public void OffersTheFiveFamiliesTheVanillaZonesMenuIsBuiltFrom()
 		{
