@@ -66,6 +66,7 @@ namespace FindItBuildingMenu
 			updateSystem.UpdateAt<PickerUISystem>(SystemUpdatePhase.UIUpdate);
 			updateSystem.UpdateAt<PrefabTrackingSystem>(SystemUpdatePhase.PrefabUpdate);
 			updateSystem.UpdateAt<CustomAreaBorderRenderSystem>(SystemUpdatePhase.Rendering);
+			updateSystem.UpdateAt<ServiceCoverageOverlaySystem>(SystemUpdatePhase.Rendering);
 			updateSystem.UpdateAt<PickerTooltipSystem>(SystemUpdatePhase.UITooltip);
 			updateSystem.UpdateAt<AutoVehiclePropGeneratorSystem>(SystemUpdatePhase.MainLoop);
 			updateSystem.UpdateAt<AutoQuantityPropGeneratorSystem>(SystemUpdatePhase.MainLoop);
