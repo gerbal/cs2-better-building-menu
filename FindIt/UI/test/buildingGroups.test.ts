@@ -1,0 +1,206 @@
+import assert from "node:assert/strict";
+import { describe, it } from "node:test";
+import {
+  COST_BANDS,
+  DEFAULT_GROUP_DIMENSION,
+  FOOTPRINT_BANDS,
+  GROUP_DIMENSIONS,
+  UNGROUPED_LABEL,
+  buildGroupedView,
+  costBandLabel,
+  footprintBandLabel,
+  groupLevelsFor,
+  humanizeGroupLabel,
+  isGroupDimension,
+  shouldShowHeading,
+} from "../src/domain/buildingGroups.ts";
+
+const entry = (over: Record<string, unknown> = {}) => ({
+  categoryLabel: "Service Buildings",
+  subCategoryLabel: "Health & Deathcare",
+  buildingType: "Hospital",
+  theme: "European",
+  provenance: "Base game",
+  dlcId: null,
+  zoneType: null,
+  lotWidth: 4,
+  lotDepth: 4,
+  constructionCost: 10_000,
+  ...over,
+});
+
+describe("Group dimensions", () => {
+  it("yields two levels for Category and one for everything else", () => {
+    // Category's second level is what keeps it useful after navigation: once
+    // you are inside Service Buildings a lone SERVICE BUILDINGS heading says
+    // nothing, but the subcategory underneath still chunks the set.
+    assert.deepEqual(groupLevelsFor(entry(), "category"), [
+      "Service Buildings",
+      "Health & Deathcare",
+    ]);
+
+    for (const dimension of GROUP_DIMENSIONS) {
+      if (dimension.id === "none") continue;
+      assert.equal(
+        groupLevelsFor(entry(), dimension.id).length,
+        dimension.depth,
+        `${dimension.id} should yield ${dimension.depth} level(s)`
+      );
+    }
+  });
+
+  it("groups by nothing when asked to", () => {
+    assert.deepEqual(groupLevelsFor(entry(), "none"), []);
+    assert.deepEqual(buildGroupedView([entry()], "none"), []);
+  });
+
+  it("prefers the DLC name over the broad provenance for Source", () => {
+    assert.deepEqual(groupLevelsFor(entry({ dlcId: "Bridges & Ports" }), "source"), ["Bridges & Ports"]);
+    assert.deepEqual(groupLevelsFor(entry({ dlcId: null }), "source"), ["Base game"]);
+  });
+
+  it("falls back to the id when a display label is missing, word-split", () => {
+    // A raw id is better than a blank heading, but "SERVICEBUILDINGS" under the
+    // heading's uppercase styling is not what the player calls it.
+    assert.deepEqual(
+      groupLevelsFor(entry({ categoryLabel: null, category: "ServiceBuildings", subCategoryLabel: null, subCategory: "Health" }), "category"),
+      ["Service Buildings", "Health"]
+    );
+  });
+
+  it("puts an entry with no value under one explicit heading, never a blank one", () => {
+    // A blank heading reads as a rendering bug; "Other" reads as a fact.
+    assert.deepEqual(groupLevelsFor(entry({ theme: null }), "theme"), [UNGROUPED_LABEL]);
+    assert.deepEqual(groupLevelsFor(entry({ theme: "   " }), "theme"), [UNGROUPED_LABEL]);
+    assert.deepEqual(groupLevelsFor(entry({ buildingType: null }), "role"), [UNGROUPED_LABEL]);
+  });
+
+  it("recognises its own dimension ids and rejects anything else", () => {
+    assert.equal(isGroupDimension("category"), true);
+    assert.equal(isGroupDimension("assetPack"), false);
+    assert.equal(isGroupDimension(null), false);
+  });
+
+  it("defaults to a dimension it actually offers", () => {
+    assert.ok(GROUP_DIMENSIONS.some((d) => d.id === DEFAULT_GROUP_DIMENSION));
+  });
+
+  it("offers no array-valued dimension", () => {
+    // An entry belongs to several asset packs, so grouping by one would put it
+    // under several headings and the counts would exceed the result total.
+    for (const banned of ["assetPack", "placement", "extension"]) {
+      assert.equal(GROUP_DIMENSIONS.some((d) => d.id === (banned as never)), false, banned);
+    }
+  });
+});
+
+describe("Bands", () => {
+  it("lands each cost on the correct side of every edge", () => {
+    // Asserted on both sides of every threshold because C# derives the same
+    // bands for ordering; a disagreement would sort a group wrongly.
+    assert.equal(costBandLabel(0), "₡0–₡5k");
+    assert.equal(costBandLabel(COST_BANDS[0] - 1), "₡0–₡5k");
+    assert.equal(costBandLabel(COST_BANDS[0]), "₡5k–₡25k");
+    assert.equal(costBandLabel(COST_BANDS[1] - 1), "₡5k–₡25k");
+    assert.equal(costBandLabel(COST_BANDS[1]), "₡25k–₡100k");
+    assert.equal(costBandLabel(COST_BANDS[2]), "₡100k+");
+    assert.equal(costBandLabel(999_999), "₡100k+");
+  });
+
+  it("declines to band a cost it does not have", () => {
+    assert.equal(costBandLabel(null), UNGROUPED_LABEL);
+    assert.equal(costBandLabel(undefined), UNGROUPED_LABEL);
+    assert.equal(costBandLabel(Number.NaN), UNGROUPED_LABEL);
+  });
+
+  it("bands a footprint by its longer side", () => {
+    // A 2x6 is a big lot however narrow it is, so the longer side decides.
+    assert.equal(footprintBandLabel(2, 2), "2×2 and under");
+    assert.equal(footprintBandLabel(2, 6), "6×6 and under");
+    assert.equal(footprintBandLabel(FOOTPRINT_BANDS[0], FOOTPRINT_BANDS[0]), "2×2 and under");
+    assert.equal(footprintBandLabel(3, 3), "4×4 and under");
+    assert.equal(footprintBandLabel(20, 1), "Larger than 6×6");
+    assert.equal(footprintBandLabel(null, null), UNGROUPED_LABEL);
+    assert.equal(footprintBandLabel(0, 0), UNGROUPED_LABEL);
+  });
+});
+
+describe("Grouped view", () => {
+  const rows = [
+    entry({ subCategoryLabel: "Health & Deathcare", constructionCost: 1 }),
+    entry({ subCategoryLabel: "Health & Deathcare", constructionCost: 2 }),
+    entry({ subCategoryLabel: "Education & Research", constructionCost: 3 }),
+  ];
+
+  it("nests category over subcategory and counts through the tree", () => {
+    const groups = buildGroupedView(rows, "category");
+
+    assert.equal(groups.length, 1);
+    assert.equal(groups[0].label, "Service Buildings");
+    assert.equal(groups[0].count, 3);
+    assert.deepEqual(groups[0].children.map((c) => [c.label, c.count]), [
+      ["Health & Deathcare", 2],
+      ["Education & Research", 1],
+    ]);
+    assert.equal(groups[0].children[0].entries.length, 2);
+  });
+
+  it("reports the full path on a nested node", () => {
+    const groups = buildGroupedView(rows, "category");
+
+    assert.deepEqual(groups[0].path, ["Service Buildings"]);
+    assert.deepEqual(groups[0].children[0].path, ["Service Buildings", "Health & Deathcare"]);
+  });
+
+  it("preserves incoming order rather than sorting", () => {
+    // The caller arrives already ordered by (group key, chosen sort) from C#.
+    // Re-sorting here would disagree with the paging, which is the exact
+    // failure this design exists to prevent.
+    const groups = buildGroupedView(rows, "subCategory");
+
+    assert.deepEqual(groups.map((g) => g.label), ["Health & Deathcare", "Education & Research"]);
+    assert.deepEqual(groups[0].entries.map((e) => e.constructionCost), [1, 2]);
+  });
+
+  it("keeps group counts summing to the result total", () => {
+    // The invariant that excludes array-valued dimensions.
+    for (const dimension of GROUP_DIMENSIONS) {
+      if (dimension.id === "none") continue;
+
+      const groups = buildGroupedView(rows, dimension.id);
+      const total = groups.reduce((sum, group) => sum + group.count, 0);
+      assert.equal(total, rows.length, `${dimension.id} lost or duplicated entries`);
+    }
+  });
+
+  it("survives absent and empty input", () => {
+    assert.deepEqual(buildGroupedView(null, "category"), []);
+    assert.deepEqual(buildGroupedView(undefined, "category"), []);
+    assert.deepEqual(buildGroupedView([], "category"), []);
+  });
+
+  it("suppresses a heading that covers everything", () => {
+    // A lone SERVICE BUILDINGS heading, once you have navigated there, is a
+    // label with nothing to distinguish.
+    assert.equal(shouldShowHeading(buildGroupedView(rows, "category")), false);
+    assert.equal(shouldShowHeading(buildGroupedView(rows, "subCategory")), true);
+  });
+});
+
+describe("Heading labels", () => {
+  it("word-splits an id so the heading does not read as one shout", () => {
+    // Headings are uppercased in CSS, so "DeathcareFacility" rendered as
+    // "DEATHCAREFACILITY". The facet list already splits its own labels.
+    assert.equal(humanizeGroupLabel("DeathcareFacility"), "Deathcare Facility");
+    assert.equal(humanizeGroupLabel("WaterPumpingStation"), "Water Pumping Station");
+    assert.equal(humanizeGroupLabel("ServiceBuildings_Health"), "Service Buildings Health");
+    assert.equal(humanizeGroupLabel("Hospital"), "Hospital");
+  });
+
+  it("applies that splitting to the levels it yields", () => {
+    assert.deepEqual(
+      groupLevelsFor({ buildingType: "DeathcareFacility" }, "role"),
+      ["Deathcare Facility"]
+    );
+  });
+});

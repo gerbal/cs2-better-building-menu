@@ -231,58 +231,85 @@ namespace FindItBuildingMenu.Services
 			IEnumerable<BuildingCatalogEntry> entries,
 			BuildingCatalogQuery query)
 		{
+			// Grouping first, so every member of a group is contiguous and paging
+			// cuts cleanly. Without this a group splits across a page boundary
+			// and its heading describes something other than what follows it.
+			IOrderedEnumerable<BuildingCatalogEntry> seed = SeedByGroup(entries, query);
+
 			IOrderedEnumerable<BuildingCatalogEntry> ordered = query.EffectiveSortColumn.ToLowerInvariant() switch
 			{
 				"category" => query.Descending
-					? entries.OrderByDescending(x => x.Category, StringComparer.OrdinalIgnoreCase)
-					: entries.OrderBy(x => x.Category, StringComparer.OrdinalIgnoreCase),
+					? seed.ThenByDescending(x => x.Category, StringComparer.OrdinalIgnoreCase)
+					: seed.ThenBy(x => x.Category, StringComparer.OrdinalIgnoreCase),
 				"subcategory" => query.Descending
-					? entries.OrderByDescending(x => x.SubCategory, StringComparer.OrdinalIgnoreCase)
-					: entries.OrderBy(x => x.SubCategory, StringComparer.OrdinalIgnoreCase),
+					? seed.ThenByDescending(x => x.SubCategory, StringComparer.OrdinalIgnoreCase)
+					: seed.ThenBy(x => x.SubCategory, StringComparer.OrdinalIgnoreCase),
 				"lotwidth" => query.Descending
-					? entries.OrderByDescending(x => x.LotWidth)
-					: entries.OrderBy(x => x.LotWidth),
+					? seed.ThenByDescending(x => x.LotWidth)
+					: seed.ThenBy(x => x.LotWidth),
 				"lotdepth" => query.Descending
-					? entries.OrderByDescending(x => x.LotDepth)
-					: entries.OrderBy(x => x.LotDepth),
+					? seed.ThenByDescending(x => x.LotDepth)
+					: seed.ThenBy(x => x.LotDepth),
 				"buildinglevel" => query.Descending
-					? entries.OrderByDescending(x => x.BuildingLevel)
-					: entries.OrderBy(x => x.BuildingLevel),
+					? seed.ThenByDescending(x => x.BuildingLevel)
+					: seed.ThenBy(x => x.BuildingLevel),
 				"hasparking" => query.Descending
-					? entries.OrderByDescending(x => x.HasParking)
-					: entries.OrderBy(x => x.HasParking),
+					? seed.ThenByDescending(x => x.HasParking)
+					: seed.ThenBy(x => x.HasParking),
 				"zonetype" => query.Descending
-					? entries.OrderByDescending(x => x.ZoneType)
-					: entries.OrderBy(x => x.ZoneType),
-				"constructioncost" or "cost" => OrderNullable(entries, x => x.ConstructionCost, query.Descending),
-				"upkeep" => OrderNullable(entries, x => x.Upkeep, query.Descending),
-				"workers" => OrderNullable(entries, x => x.Workers, query.Descending),
-				"capacity" => OrderNullable(entries, x => x.Capacity, query.Descending),
-				"electricity" or "electricityconsumption" => OrderNullable(entries, x => x.ElectricityConsumption, query.Descending),
-				"water" or "waterconsumption" => OrderNullable(entries, x => x.WaterConsumption, query.Descending),
-				"garbage" or "garbageaccumulation" => OrderNullable(entries, x => x.GarbageAccumulation, query.Descending),
-				"watercapacity" => OrderNullable(entries, x => x.WaterCapacity, query.Descending),
-				"sewagecapacity" or "sewage" => OrderNullable(entries, x => x.SewageCapacity, query.Descending),
-				"groundpollution" => OrderNullable(entries, x => x.GroundPollution, query.Descending),
-				"airpollution" => OrderNullable(entries, x => x.AirPollution, query.Descending),
-				"noisepollution" or "noise" => OrderNullable(entries, x => x.NoisePollution, query.Descending),
+					? seed.ThenByDescending(x => x.ZoneType)
+					: seed.ThenBy(x => x.ZoneType),
+				"constructioncost" or "cost" => ThenNullable(seed, x => x.ConstructionCost, query.Descending),
+				"upkeep" => ThenNullable(seed, x => x.Upkeep, query.Descending),
+				"workers" => ThenNullable(seed, x => x.Workers, query.Descending),
+				"capacity" => ThenNullable(seed, x => x.Capacity, query.Descending),
+				"electricity" or "electricityconsumption" => ThenNullable(seed, x => x.ElectricityConsumption, query.Descending),
+				"water" or "waterconsumption" => ThenNullable(seed, x => x.WaterConsumption, query.Descending),
+				"garbage" or "garbageaccumulation" => ThenNullable(seed, x => x.GarbageAccumulation, query.Descending),
+				"watercapacity" => ThenNullable(seed, x => x.WaterCapacity, query.Descending),
+				"sewagecapacity" or "sewage" => ThenNullable(seed, x => x.SewageCapacity, query.Descending),
+				"groundpollution" => ThenNullable(seed, x => x.GroundPollution, query.Descending),
+				"airpollution" => ThenNullable(seed, x => x.AirPollution, query.Descending),
+				"noisepollution" or "noise" => ThenNullable(seed, x => x.NoisePollution, query.Descending),
 				_ => query.Descending
-					? entries.OrderByDescending(x => x.Name, StringComparer.OrdinalIgnoreCase)
-					: entries.OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase),
+					? seed.ThenByDescending(x => x.Name, StringComparer.OrdinalIgnoreCase)
+					: seed.ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase),
 			};
 
 			return ordered.ThenBy(x => x.Id);
 		}
 
-		private static IOrderedEnumerable<BuildingCatalogEntry> OrderNullable(
-			IEnumerable<BuildingCatalogEntry> entries,
+		private static IOrderedEnumerable<BuildingCatalogEntry> ThenNullable(
+			IOrderedEnumerable<BuildingCatalogEntry> seed,
 			Func<BuildingCatalogEntry, double?> selector,
 			bool descending)
 		{
-			var presentFirst = entries.OrderBy(entry => selector(entry).HasValue ? 0 : 1);
+			var presentFirst = seed.ThenBy(entry => selector(entry).HasValue ? 0 : 1);
 			return descending
 				? presentFirst.ThenByDescending(selector)
 				: presentFirst.ThenBy(selector);
+		}
+
+		/// <summary>
+		/// The ordering the chosen sort is applied on top of.
+		/// </summary>
+		/// <remarks>
+		/// A constant when nothing is grouped, which makes the sort behave
+		/// exactly as it did before: OrderBy is stable, so seeding with one key
+		/// for every entry changes no relative order.
+		/// </remarks>
+		private static IOrderedEnumerable<BuildingCatalogEntry> SeedByGroup(
+			IEnumerable<BuildingCatalogEntry> entries,
+			BuildingCatalogQuery query)
+		{
+			if (!BuildingCatalogGrouping.IsGrouped(query.GroupBy))
+			{
+				return entries.OrderBy(_ => 0);
+			}
+
+			return entries
+				.OrderBy(entry => BuildingCatalogGrouping.PrimaryKey(entry, query.GroupBy), StringComparer.OrdinalIgnoreCase)
+				.ThenBy(entry => BuildingCatalogGrouping.SecondaryKey(entry, query.GroupBy), StringComparer.OrdinalIgnoreCase);
 		}
 	}
 }

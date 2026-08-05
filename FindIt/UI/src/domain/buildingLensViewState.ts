@@ -26,9 +26,25 @@ export function setLensDisclosure(key: string, value: boolean): void {
   viewState.set(key, value);
 }
 
+// The view mode stopped being a boolean when List joined Grid and Table, and
+// the group dimension was never one. Same lifetime and same reasoning as the
+// booleans above: outlives a React unmount, never reaches the query.
+const choiceState = new Map<string, string>();
+
+export function getLensChoice(key: string, fallback: string): string {
+  const stored = choiceState.get(key);
+
+  return stored === undefined ? fallback : stored;
+}
+
+export function setLensChoice(key: string, value: string): void {
+  choiceState.set(key, value);
+}
+
 /** Test seam; not used by the UI. */
 export function resetLensViewState(): void {
   viewState.clear();
+  choiceState.clear();
 }
 
 export const LENS_DISCLOSURE_KEYS = {

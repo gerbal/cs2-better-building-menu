@@ -60,6 +60,7 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<ZoneCatalogEntry[]> _ZoneCatalog = null!;
 		// Empty means every family. See ZoneFamilySelection.
 		private ValueBindingHelper<string[]> _BuildingLensZoneFamilies = null!;
+		private ValueBindingHelper<string> _BuildingCatalogGroupBy = null!;
 		private string[] _zoneFamilies = System.Array.Empty<string>();
 		private ValueBindingHelper<bool> _IsExpanded;
 		private ValueBindingHelper<double> _ScrollIndex;
@@ -202,6 +203,14 @@ namespace FindItBuildingMenu.Systems
 				"SetBuildingCatalogSortColumn",
 				_buildingCatalogQuery.EffectiveSortColumn,
 				SetBuildingCatalogSortColumn);
+			// Group-by rides with sort for the same reason: it is part of the
+			// persistent query, so a write-only trigger would leave the picker
+			// showing "Nothing" over grouped rows after any remount.
+			_BuildingCatalogGroupBy = CreateBinding(
+				"BuildingCatalogGroupBy",
+				"SetBuildingCatalogGroupBy",
+				_buildingCatalogQuery.GroupBy,
+				SetBuildingCatalogGroupBy);
 			_BuildingCatalogSortDescending = CreateBinding(
 				"BuildingCatalogSortDescending",
 				"SetBuildingCatalogSortDescending",
