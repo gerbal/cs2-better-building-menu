@@ -1,7 +1,7 @@
 import { bindValue, trigger, useValue } from "cs2/api";
 import { Button, Scrollable } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import classNames from "classnames";
 import mod from "../../../mod.json";
 import { BuildingCatalogEntry, BuildingCatalogPage, formatBuildingCatalogLabels } from "domain/buildingCatalog";
@@ -54,6 +54,7 @@ import { BuildingList } from "mods/BuildingList/BuildingList";
 import {
   DEFAULT_GROUP_DIMENSION,
   GROUP_DIMENSIONS,
+  defaultGroupDimensionFor,
   buildGroupedView,
   groupDimensionLabel,
   isGroupDimension,
@@ -89,6 +90,8 @@ const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState>(mod
 const BuildingLensLegacyFilters$ = bindValue<string[]>(mod.id, "BuildingLensLegacyFilters");
 const BuildingCatalogMatchesElsewhere$ = bindValue<number>(mod.id, "BuildingCatalogMatchesElsewhere", 0);
 const LensDefaultToTable$ = bindValue<boolean>(mod.id, "BuildingLensDefaultToTable", false);
+// The section decides the grouping until the player picks one themselves.
+const BuildingLensSection$ = bindValue<string>(mod.id, "BuildingLensSection", "AllBuildings");
 
 const LENS_VIEW_MODE_KEY = "viewMode";
 const LENS_GROUP_KEY = "groupBy";
@@ -130,6 +133,7 @@ export const BuildingCatalogComponent = () => {
   const panelWidth = useValue(PanelWidth$);
   const currentSearch = useValue(CurrentSearch$);
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
+  const section = useValue(BuildingLensSection$);
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
   const [sortingExpanded, setSortingExpanded] = useState(false);
   // Grid by default: recognising a thumbnail is the fast path back to the map,
@@ -148,22 +152,27 @@ export const BuildingCatalogComponent = () => {
     setViewModeState(next);
   };
   const tableMode = viewMode === "table";
-  const [groupBy, setGroupByState] = useState<GroupDimensionId>(
-    () => {
-      const stored = getLensChoice(LENS_GROUP_KEY, DEFAULT_GROUP_DIMENSION);
-      return isGroupDimension(stored) ? stored : DEFAULT_GROUP_DIMENSION;
-    }
-  );
+  // Empty means "nobody has chosen", which is different from having chosen
+  // Nothing — the first follows the section, the second stays flat.
+  const [chosenGroupBy, setChosenGroupBy] = useState<string>(() => getLensChoice(LENS_GROUP_KEY, ""));
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
+  const groupBy: GroupDimensionId = isGroupDimension(chosenGroupBy)
+    ? chosenGroupBy
+    : defaultGroupDimensionFor(section);
   const setGroupBy = (next: GroupDimensionId) => {
     setLensChoice(LENS_GROUP_KEY, next);
-    setGroupByState(next);
+    setChosenGroupBy(next);
     setGroupPickerOpen(false);
-    // The dimension is also the query's primary sort key, so the backend has
-    // to reorder — grouping the page here alone would split a group across a
-    // page boundary and the heading would describe the wrong rows.
-    trigger(mod.id, "SetBuildingCatalogGroupBy", next);
   };
+
+  // The dimension is also the query's primary sort key, so the backend has to
+  // reorder — grouping the page here alone would split a group across a page
+  // boundary and the heading would stop describing the rows under it. This
+  // fires for a section change too, not just an explicit pick, because the
+  // effective dimension moves either way.
+  useEffect(() => {
+    trigger(mod.id, "SetBuildingCatalogGroupBy", groupBy);
+  }, [groupBy]);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const compareEntries = useValue(BuildingCatalogCompare$) ?? [];
   const facets = useValue(BuildingLensFacets$);

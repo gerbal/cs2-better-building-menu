@@ -7,6 +7,7 @@ import {
   GROUP_DIMENSIONS,
   UNGROUPED_LABEL,
   buildGroupedView,
+  defaultGroupDimensionFor,
   costBandLabel,
   footprintBandLabel,
   groupLevelsFor,
@@ -202,5 +203,56 @@ describe("Heading labels", () => {
       groupLevelsFor({ buildingType: "DeathcareFacility" }, "role"),
       ["Deathcare Facility"]
     );
+  });
+});
+
+describe("Per-section defaults", () => {
+  it("opens service buildings on Role", () => {
+    // What the player came looking for. The category level above it would be
+    // one heading reading "Service Buildings" to someone who just clicked
+    // Healthcare.
+    assert.equal(defaultGroupDimensionFor("ServiceBuildings"), "role");
+    assert.equal(defaultGroupDimensionFor("servicebuildings"), "role");
+    assert.equal(defaultGroupDimensionFor("  ServiceBuildings  "), "role");
+  });
+
+  it("does not apply Role anywhere else", () => {
+    // Residential, commercial and industrial prefabs carry no service
+    // component, so every one of them would land under "Other".
+    assert.equal(defaultGroupDimensionFor("AllBuildings"), "category");
+    assert.equal(defaultGroupDimensionFor("SignatureBuildings"), "category");
+    assert.equal(defaultGroupDimensionFor("Favorites"), "category");
+    assert.equal(defaultGroupDimensionFor(null), "category");
+    assert.equal(defaultGroupDimensionFor(undefined), "category");
+    assert.equal(defaultGroupDimensionFor(""), "category");
+  });
+
+  it("only ever returns a dimension the picker offers", () => {
+    for (const section of ["ServiceBuildings", "AllBuildings", "nonsense", ""]) {
+      assert.ok(GROUP_DIMENSIONS.some((d) => d.id === defaultGroupDimensionFor(section)));
+    }
+  });
+});
+
+describe("The Other group", () => {
+  it("comes last however it arrived", () => {
+    // It is the only group defined by absence, so leading with it opens the
+    // view on the entries that matched the grouping least.
+    const groups = buildGroupedView(
+      [
+        entry({ buildingType: null }),
+        entry({ buildingType: "Hospital" }),
+        entry({ buildingType: null }),
+      ],
+      "role"
+    );
+
+    assert.deepEqual(groups.map((g) => [g.label, g.count]), [["Hospital", 1], [UNGROUPED_LABEL, 2]]);
+  });
+
+  it("is not invented when every entry has a value", () => {
+    const groups = buildGroupedView([entry({ buildingType: "Hospital" })], "role");
+
+    assert.deepEqual(groups.map((g) => g.label), ["Hospital"]);
   });
 });

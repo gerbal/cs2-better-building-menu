@@ -58,8 +58,27 @@ export const GROUP_DIMENSIONS: readonly GroupDimension[] = [
   { id: "none", label: "Nothing", depth: 0 },
 ];
 
-/** Default: visible without being sought, and useful in every mode. */
+/** Default when the section is unknown, and the fallback everywhere else. */
 export const DEFAULT_GROUP_DIMENSION: GroupDimensionId = "category";
+
+/**
+ * The grouping a section opens on, before the player chooses anything.
+ *
+ * Service buildings group by Role — Hospital, School, Fire Station — because
+ * that is what the player came looking for, and the category level above it is
+ * a single heading saying "Service Buildings" to someone who just clicked
+ * Healthcare.
+ *
+ * Role deliberately does not generalize. Residential, commercial and industrial
+ * prefabs carry no service component, so BuildingRole resolves null for all of
+ * them and every one would land under "Other" — a default that files 3,667
+ * buildings in one bucket is worse than no grouping at all.
+ */
+export function defaultGroupDimensionFor(section: string | null | undefined): GroupDimensionId {
+  return typeof section === "string" && section.trim().toLowerCase() === "servicebuildings"
+    ? "role"
+    : DEFAULT_GROUP_DIMENSION;
+}
 
 /** Heading for entries with no value for the grouped field. */
 export const UNGROUPED_LABEL = "Other";
@@ -248,7 +267,15 @@ export function buildGroupedView<T extends GroupableEntry>(
     }
   }
 
-  return roots;
+  // "Other" last, whatever order it arrived in. It is the only group that is
+  // defined by absence, so leading with it opens the view on the buildings that
+  // matched the grouping least — Police & Administration by role opened on the
+  // six that have no role at all. C# sorts its key last for the same reason;
+  // doing it here too means the UI is right even when the two disagree.
+  const named = roots.filter((node) => node.label !== UNGROUPED_LABEL);
+  const other = roots.filter((node) => node.label === UNGROUPED_LABEL);
+
+  return [...named, ...other];
 }
 
 /**
