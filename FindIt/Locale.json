@@ -273,5 +273,12 @@
   "Tooltip.LABEL[FindItBuildingMenu.PlacementColorizeLot]": "Lot is colorized",
   "Tooltip.LABEL[FindItBuildingMenu.PlacementHasInsideRoom]": "Has inside room",
   "Options.OPTION[FindItBuildingMenu.FindItSettings.ReplaceVanillaBuildMenu]": "Replace the vanilla build menu",
-  "Options.OPTION_DESCRIPTION[FindItBuildingMenu.FindItSettings.ReplaceVanillaBuildMenu]": "Opens the Building Lens, already filtered, when you click a vanilla toolbar menu such as Electricity or Healthcare, instead of the vanilla asset grid. Roads and Landscaping are unaffected, since they contain networks and surfaces rather than buildings."
+  "Options.OPTION_DESCRIPTION[FindItBuildingMenu.FindItSettings.ReplaceVanillaBuildMenu]": "Opens the Building Lens, already filtered, when you click a vanilla toolbar menu such as Electricity or Healthcare, instead of the vanilla asset grid. Roads and Landscaping are unaffected, since they contain networks and surfaces rather than buildings.",
+  "Tooltip.LABEL[FindItBuildingMenu.Zoning_ZoneResidential]": "Residential",
+  "Tooltip.LABEL[FindItBuildingMenu.Zoning_ZoneCommercial]": "Commercial",
+  "Tooltip.LABEL[FindItBuildingMenu.Zoning_ZoneIndustrial]": "Industrial",
+  "Tooltip.LABEL[FindItBuildingMenu.Zoning_ZoneOffice]": "Office",
+  "Tooltip.LABEL[FindItBuildingMenu.Zoning_ZoneExtractors]": "Specialized industry",
+  "Tooltip.LABEL[FindItBuildingMenu.ZoneNoDensity]": "No density tier",
+  "Tooltip.LABEL[FindItBuildingMenu.NoZonesIndexed]": "No zones indexed"
 }

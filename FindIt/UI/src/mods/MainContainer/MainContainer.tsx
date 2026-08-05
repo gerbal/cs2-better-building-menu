@@ -5,6 +5,7 @@ import mod from "../../../mod.json";
 import { TopBarComponent } from "mods/TopBar/TopBar";
 import { PrefabSelectionComponent } from "mods/PrefabSelection/PrefabSelection";
 import { BuildingCatalogComponent } from "mods/BuildingCatalog/BuildingCatalog";
+import { ZoningHierarchyComponent } from "mods/ZoningHierarchy/ZoningHierarchy";
 import { useState, useRef, useEffect } from "react";
 import styles from "./mainContainer.module.scss";
 import { OptionsPanelComponent } from "mods/OptionsPanel/OptionsPanel";
@@ -26,6 +27,7 @@ const PanelWidth$ = bindValue<number>(mod.id, "PanelWidth", 0);
 const IsExpanded$ = bindValue<boolean>(mod.id, "IsExpanded", false);
 const AlignmentStyle$ = bindValue<string>(mod.id, "AlignmentStyle", "Center");
 const ShowFindItPanel$ = bindValue<boolean>(mod.id, "ShowFindItPanel", false);
+const ShowZoningHierarchy$ = bindValue<boolean>(mod.id, "ShowZoningHierarchy", false);
 const BuildingLensEnabled$ = bindValue<boolean>(mod.id, "BuildingLensEnabled", false);
 const IsWindowLocked$ = bindValue<boolean>(mod.id, "IsWindowLocked", false);
 const OptionsList$ = bindValue<OptionSection[]>(mod.id, "OptionsList", []);
@@ -53,6 +55,7 @@ export const FindItMainContainerComponent = () => {
 
   // These get the value of the bindings. Without C# side game ui will crash. Or they will when we have bindings.
   const ShowFindItPanel = useValue(ShowFindItPanel$);
+  const ShowZoningHierarchy = useValue(ShowZoningHierarchy$);
   const BuildingLensEnabled = useValue(BuildingLensEnabled$);
   const IsWindowLocked = useValue(IsWindowLocked$);
   const IsExpanded = useValue(IsExpanded$);
@@ -165,9 +168,14 @@ export const FindItMainContainerComponent = () => {
               </div>
               <div className={styles.content + " " + AssetMenuTheme.assetPanel}>
                 {BuildingLensEnabled
-                  ? buildingLensModeView.showCatalogContent
-                    ? <BuildingCatalogComponent />
-                    : <div className={styles.toolsContent}><ToolSurfaceBar /></div>
+                  ? ShowZoningHierarchy
+                    // Zones are assignment tools, not buildings, so the Zones
+                    // menu gets the zoning hierarchy rather than a table of
+                    // building rows filtered to nothing.
+                    ? <ZoningHierarchyComponent />
+                    : buildingLensModeView.showCatalogContent
+                      ? <BuildingCatalogComponent />
+                      : <div className={styles.toolsContent}><ToolSurfaceBar /></div>
                   : <PrefabSelectionComponent expanded={IsExpanded}></PrefabSelectionComponent>}
               </div>
               {BuildingLensEnabled && <div className={styles.resizeHandle} onMouseDown={beginResize} title="Resize building lens" />}

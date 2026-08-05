@@ -12,11 +12,14 @@ namespace FindItBuildingMenu.Domain
 	/// family, and the <c>ZonePropertiesData</c> derivation IndexZones already
 	/// performs for the density.
 	///
-	/// <c>Id</c> is the ECS entity index. It is a runtime value and must not be
-	/// persisted; the UI uses it only to ask the backend to activate a zone.
+	/// <c>Id</c> and <c>Version</c> are the ECS entity's two halves. They are
+	/// runtime values and must not be persisted; the UI needs both to hand the
+	/// entity back to the game's own toolbar.selectAsset trigger, which is what
+	/// actually activates the Zone tool.
 	/// </remarks>
 	public sealed record ZoneCatalogEntry(
 		int Id,
+		int Version,
 		string PrefabName,
 		string Name,
 		string Family,
@@ -28,6 +31,8 @@ namespace FindItBuildingMenu.Domain
 			writer.TypeBegin(GetType().FullName);
 			writer.PropertyName("id");
 			writer.Write(Id);
+			writer.PropertyName("version");
+			writer.Write(Version);
 			writer.PropertyName("prefabName");
 			writer.Write(PrefabName);
 			writer.PropertyName("name");
