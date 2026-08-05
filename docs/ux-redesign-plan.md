@@ -304,3 +304,18 @@ inert for network ones, which is acceptable — it is not fighting the game, it
 is filling a gap the game leaves. Worth revisiting if the pollution branch turns
 out never to fire in practice, in which case it should be deleted rather than
 kept as decoration.
+
+## Open design notes (2026-08-05, from play)
+
+Raised while validating the chip row. Not yet actioned.
+
+1. **Zoning categories should be items/index like the other build item lists.**
+   The zoning view still renders its own tile shape rather than reusing the
+   vanilla asset-grid item, so it reads as a different kind of list from every
+   other build menu.
+2. **"Building lens" button text overflows its boundary.** Visible in the top
+   bar at 1280x720 — the label runs past the button and collides with the
+   search field's clear icon.
+3. **"Catalog | Tools" toggle is awkwardly padded.** Check for an existing
+   vanilla toggle/segmented-control component before hand-styling it further;
+   this is currently two lightButtons with hand-tuned padding.
