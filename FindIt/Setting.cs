@@ -76,6 +76,11 @@ namespace FindItBuildingMenu
 		[SettingsUISection(KEYBINDINGS, NAVIGATION)]
 		public ProxyBinding DownArrow { get; set; }
 
+		// Off by default: this takes over the game's primary build UI, which is
+		// not something to opt a player into without asking.
+		[SettingsUISection(SETTINGS, BEHAVIOR)]
+		public bool ReplaceVanillaBuildMenu { get; set; }
+
 		[SettingsUISection(SETTINGS, BEHAVIOR)]
 		public bool OpenPanelOnPicker { get; set; } = true;
 

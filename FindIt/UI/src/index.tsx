@@ -13,6 +13,8 @@ import { RemoveVanillaRightToolbar } from "mods/RemoveVanillaAssetMenu/RemoveVan
 import { PickerComponent } from "mods/PickerComponent/PickerComponent";
 import { ToolOptionsVisibility } from "mods/PickerComponent/ToolOptionsVisibility";
 
+import { VanillaMenuWatcher } from "mods/VanillaMenuWatcher/VanillaMenuWatcher";
+
 const register: ModRegistrar = (moduleRegistry) => {
   // The vanilla component resolver is a singleton that helps extrant and maintain components from game that were not specifically exposed.
   VanillaComponentResolver.setRegistry(moduleRegistry);
@@ -31,6 +33,9 @@ const register: ModRegistrar = (moduleRegistry) => {
 
   // This wraps prefab selection and top bar components.
   moduleRegistry.append("Game", FindItMainContainerComponent);
+  // Renders nothing; watches the vanilla toolbar so its menus can open the
+  // lens when the player has opted into replacing the build menu.
+  moduleRegistry.append("Game", VanillaMenuWatcher);
   moduleRegistry.append("Editor", FindItMainContainerComponent);
   //moduleRegistry.append("Game", AllThumbnailsComponent);
 
