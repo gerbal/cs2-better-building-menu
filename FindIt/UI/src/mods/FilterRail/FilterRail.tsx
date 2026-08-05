@@ -6,7 +6,6 @@ import {
   RAIL_METRICS_ID,
   buildFilterRail,
   filterRailOptions,
-  hasAnyRailSelection,
   type RailFacetState,
 } from "domain/filterRail";
 import styles from "./filterRail.module.scss";
@@ -15,7 +14,6 @@ interface FilterRailProps {
   facets: RailFacetState | null | undefined;
   metricsActive: number;
   onToggleOption: (groupId: string, optionId: string) => void;
-  onClearAll: () => void;
   renderMetrics: () => JSX.Element;
 }
 
@@ -36,7 +34,6 @@ export const FilterRail = ({
   facets,
   metricsActive,
   onToggleOption,
-  onClearAll,
   renderMetrics,
 }: FilterRailProps) => {
   const { translate } = useLocalization();
@@ -44,9 +41,7 @@ export const FilterRail = ({
   const [query, setQuery] = useState("");
 
   const rail = buildFilterRail(facets, { active: metricsActive });
-  const anySelected = hasAnyRailSelection(rail);
   const openDimension = rail.find((dimension) => dimension.id === open);
-  const clearLabel = translate("Tooltip.LABEL[FindItBuildingMenu.ClearFilters]", "Clear filters") ?? "Clear filters";
 
   const toggleOpen = (id: string) => {
     setQuery("");
@@ -85,17 +80,9 @@ export const FilterRail = ({
           );
         })}
 
-        {anySelected && (
-          <Button
-            className={styles.clear}
-            variant="icon"
-            onSelect={onClearAll}
-            aria-label={clearLabel}
-            title={clearLabel}
-          >
-            {clearLabel}
-          </Button>
-        )}
+        {/* No Clear here any more. The chip row owns clearing, and it sits
+            immediately to the right of this rail, so both rendered and the
+            player saw "Clear filters" twice in one band. */}
       </div>
 
       {openDimension && (

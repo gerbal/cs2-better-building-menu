@@ -49,14 +49,8 @@ import { findItSurfacePort } from "domain/findItSurfacePort";
 import { BuildingGrid } from "mods/BuildingGrid/BuildingGrid";
 import { getSearchScopeNotice } from "domain/buildingSearchRank";
 import { getLensDisclosure, setLensDisclosure } from "domain/buildingLensViewState";
-import { BuildingCatalogFilterSummary } from "./BuildingCatalogFilterSummary";
-import { FilterRail } from "mods/FilterRail/FilterRail";
-import { countActiveMetricRanges } from "domain/filterRail";
-import {
-  clearBuildingLensFacetsCommand,
-  toggleBuildingLensFacetCommand,
-} from "domain/buildingCatalogFacets";
-import { BuildingCatalogMetricFilters } from "./BuildingCatalogMetricFilters";
+// The rail, the metric popover and the filter summary all live in the chip row
+// now, so the catalog no longer owns any filter chrome — only results.
 import {
   BUILDING_LENS_COLUMN_SORT,
   getBuildingLensColumnSortIndicator,
@@ -133,8 +127,6 @@ export const BuildingCatalogComponent = () => {
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
   const legacyFilters = useValue(BuildingLensLegacyFilters$);
   const matchesElsewhere = useValue(BuildingCatalogMatchesElsewhere$);
-  // Badge source for the metrics icon: how many range bounds are actually set.
-  const activeMetricRangeCount = countActiveMetricRanges(metricRanges as unknown as Record<string, unknown>);
 
   // Name the constraints that actually emptied the table; the old copy always
   // blamed search and category, which are often not the cause.
@@ -245,6 +237,8 @@ export const BuildingCatalogComponent = () => {
   }
 
   return (
+    // maxHeight is a cap, not a height: a page of three results should not
+    // hold a full-height panel open. The floor lives on the container.
     <div
       className={classNames(styles.catalog, densityClassNames[density])}
       data-density={density}
@@ -252,7 +246,7 @@ export const BuildingCatalogComponent = () => {
       data-selector-height={rowGeometry.selectorHeight}
       data-metric-text-scale={getBuildingLensMetricTextScale(density)}
       data-catalog-max-height={catalogMaxHeight}
-      style={{ height: `${catalogMaxHeight}rem`, maxHeight: `${catalogMaxHeight}rem` }}
+      style={{ maxHeight: `${catalogMaxHeight}rem` }}
     >
       {/* Identity, result count, search context and sort used to be two
           full-width bands stacked above the table, each carrying a single short
@@ -317,24 +311,10 @@ export const BuildingCatalogComponent = () => {
         </div>
       )}
 
-      <BuildingCatalogFilterSummary />
-
-      {/* One icon row instead of two stacked drawers. Measured before the
-          change: the facet drawer cost 163px open and the metric drawer 171px,
-          against a 625px panel whose content had 209px. */}
-      <FilterRail
-        facets={facets}
-        metricsActive={activeMetricRangeCount}
-        onToggleOption={(groupId, optionId) => {
-          const command = toggleBuildingLensFacetCommand(groupId, optionId);
-          trigger(mod.id, command.method, ...command.args);
-        }}
-        onClearAll={() => {
-          const command = clearBuildingLensFacetsCommand();
-          trigger(mod.id, command.method, ...command.args);
-        }}
-        renderMetrics={() => <BuildingCatalogMetricFilters />}
-      />
+      {/* The rail and the filter summary both moved into the chip row above
+          the content. The summary said "3 active filters"; the chips say which
+          three and let each one go, so keeping both was one band restating
+          another less usefully. */}
 
       {compareEntries.length > 0 && (
         <div className={styles.compare}>
@@ -648,7 +628,13 @@ export const BuildingCatalogComponent = () => {
               </Button>
             </div>
           )}
-          <BuildingGrid entries={items} searchText={currentSearch ?? ""} onPlace={activate} />
+          {/* The table names what emptied it; the grid used to show a blank
+              box. Filters compose now, so an empty intersection is easy to
+              reach by accident — "Health & Deathcare" plus role "Police
+              Station" is nothing, and silence there reads as a broken panel. */}
+          {items.length === 0
+            ? <div className={styles.empty}>{emptyStateMessage}</div>
+            : <BuildingGrid entries={items} searchText={currentSearch ?? ""} onPlace={activate} />}
         </>
       )}
 

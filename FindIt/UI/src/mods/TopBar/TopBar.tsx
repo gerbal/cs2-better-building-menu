@@ -23,12 +23,8 @@ import unlock from "images/findit_unlock.svg";
 import sort from "images/findit_sort.svg";
 import { FOCUS_DISABLED } from "cs2/input";
 import { searchChangedCommand, setCurrentCategoryCommand, setCurrentSubCategoryCommand } from "domain/buildingCatalogContracts";
-import {
-  lensSectionCommand,
-  lensSubCategoryCommand,
-  type VanillaBuildMenuTab,
-} from "domain/vanillaBuildMenuContracts";
 import type { BuildingLensMode } from "domain/buildingLensMode";
+import { ChipRow } from "mods/ChipRow/ChipRow";
 
 export interface TopBarProps {
   sortingOpen: any;
@@ -73,10 +69,8 @@ const AlignmentStyle$ = bindValue<string>(mod.id, "AlignmentStyle");
 // binding (which otherwise leaves a Gameface exception in the console).
 const BuildingLensEnabled$ = bindValue<boolean>(mod.id, "BuildingLensEnabled", false);
 const BuildingCatalog$ = bindValue<{ totalCount?: number } | null>(mod.id, "BuildingCatalog", null);
-const BuildingLensSection$ = bindValue<string>(mod.id, "BuildingLensSection", "AllBuildings");
-const BuildingLensSubCategory$ = bindValue<string>(mod.id, "BuildingLensSubCategory", "Any");
-const BuildingLensSectionList$ = bindValue<VanillaBuildMenuTab[]>(mod.id, "BuildingLensSectionList", []);
-const BuildingLensSubCategoryList$ = bindValue<VanillaBuildMenuTab[]>(mod.id, "BuildingLensSubCategoryList", []);
+// Section and subcategory now belong to the chip row, which owns both the
+// breadcrumb and the picker that changes them.
 
 export const TopBarComponent = (props: TopBarProps) => {
   // These get the value of the bindings. Or they will when we have bindings.
@@ -94,10 +88,6 @@ export const TopBarComponent = (props: TopBarProps) => {
   const AlignmentStyle = useValue(AlignmentStyle$);
   const BuildingLensEnabled = useValue(BuildingLensEnabled$);
   const BuildingCatalogTotal = useValue(BuildingCatalog$)?.totalCount ?? 0;
-  const BuildingLensSection = useValue(BuildingLensSection$);
-  const BuildingLensSubCategory = useValue(BuildingLensSubCategory$);
-  const BuildingLensSectionList = useValue(BuildingLensSectionList$);
-  const BuildingLensSubCategoryList = useValue(BuildingLensSubCategoryList$);
   const searchRef = useRef(null);
   // translation handling. Translates using locale keys that are defined in C# or fallback string here.
   const { translate } = useLocalization();
@@ -122,16 +112,6 @@ export const TopBarComponent = (props: TopBarProps) => {
 
   const setCurrentSubCategory = (id: number) => {
     const command = setCurrentSubCategoryCommand(id);
-    trigger(mod.id, command.method, ...command.args);
-  };
-
-  const setBuildingLensSection = (id: string) => {
-    const command = lensSectionCommand(id);
-    trigger(mod.id, command.method, ...command.args);
-  };
-
-  const setBuildingLensSubCategory = (id: string) => {
-    const command = lensSubCategoryCommand(id);
     trigger(mod.id, command.method, ...command.args);
   };
 
@@ -172,38 +152,12 @@ export const TopBarComponent = (props: TopBarProps) => {
     );
   }
 
-  function RenderLensSectionList(): JSX.Element {
-    return (
-      <div className={styles.categorySection}>
-        {BuildingLensSectionList.map((element) => (
-          <>
-            {element.id === "AllBuildings" && <span style={{ flex: 1 }} />}
-            <BasicButton
-              key={element.id}
-              tooltip={element.toolTip}
-              src={element.icon}
-              onClick={element.id === BuildingLensSection ? undefined : () => setBuildingLensSection(element.id)}
-              className={classNames(
-                VanillaComponentResolver.instance.toolButtonTheme.button,
-                element.id === BuildingLensSection && styles.selected
-              )}
-            >
-              <AccessibleLabel label={element.toolTip} />
-              <span />
-            </BasicButton>
-          </>
-        ))}
-      </div>
-    );
-  }
-
-  function RenderCategoryList(): JSX.Element {
-    return BuildingLensEnabled ? RenderLensSectionList() : RenderLegacyCategoryList();
-  }
-
   function RenderLensModeList(): JSX.Element {
+    // Folded into the top bar rather than owning a band. Catalog|Tools is
+    // 128rem of controls; giving it a full-width 25rem row of its own was
+    // 4% of the panel spent on two buttons.
     return (
-      <div className={styles.lensModeBar} data-lens-mode={props.buildingLensMode}>
+      <div className={classNames(styles.lensModeBar, styles.lensModeBarInline)} data-lens-mode={props.buildingLensMode}>
         <BasicButton
           tooltip={translate("Tooltip.LABEL[FindItBuildingMenu.CatalogMode]", "Building catalog")}
           text={translate("Tooltip.LABEL[FindItBuildingMenu.CatalogModeShort]", "Catalog") ?? "Catalog"}
@@ -225,39 +179,17 @@ export const TopBarComponent = (props: TopBarProps) => {
   }
 
   function RenderSubCategoryList(): JSX.Element {
-    if (!BuildingLensEnabled) {
-      return (
-        <>
-          {SubCategoryList.map((element) => (
-            <BasicButton
-              key={element.id}
-              tooltip={element.toolTip}
-              onClick={element.id == CurrentSubCategory ? undefined : () => setCurrentSubCategory(element.id)}
-              className={classNames(
-                VanillaComponentResolver.instance.assetGridTheme.item,
-                styles.tabButton,
-                element.id == CurrentSubCategory && styles.selected
-              )}
-            >
-              <AccessibleLabel label={element.toolTip} />
-              <img src={element.icon} className={VanillaComponentResolver.instance.assetGridTheme.thumbnail + " " + styles.gridThumbnail}></img>
-            </BasicButton>
-          ))}
-        </>
-      );
-    }
-
     return (
       <>
-        {BuildingLensSubCategoryList.map((element) => (
+        {SubCategoryList.map((element) => (
           <BasicButton
             key={element.id}
             tooltip={element.toolTip}
-            onClick={element.id === BuildingLensSubCategory ? undefined : () => setBuildingLensSubCategory(element.id)}
+            onClick={element.id == CurrentSubCategory ? undefined : () => setCurrentSubCategory(element.id)}
             className={classNames(
               VanillaComponentResolver.instance.assetGridTheme.item,
               styles.tabButton,
-              element.id === BuildingLensSubCategory && styles.selected
+              element.id == CurrentSubCategory && styles.selected
             )}
           >
             <AccessibleLabel label={element.toolTip} />
@@ -423,6 +355,8 @@ export const TopBarComponent = (props: TopBarProps) => {
           </div>
 
           <div className={styles.topBarSection}>
+            {BuildingLensEnabled && RenderLensModeList()}
+
             <Tooltip tooltip={translate("Tooltip.LABEL[FindItBuildingMenu.ClosePanel]", "Close Panel")}>
               <Button
                 className={VanillaComponentResolver.instance.assetGridTheme.item + " " + styles.closeIcon}
@@ -439,11 +373,13 @@ export const TopBarComponent = (props: TopBarProps) => {
 
         {AlignmentStyle !== "Center" && <div className={styles.lowerButtonSection}>{RenderButtonSection()}</div>}
 
-        {BuildingLensEnabled && RenderLensModeList()}
-
-        {(!BuildingLensEnabled || props.buildingLensMode === "catalog") && (
+        {/* Legacy Find It keeps its own strips — it is upstream's UI, not ours
+            to redesign. In lens mode the scope and type strips are gone: they
+            were filters drawn as navigation, costing 27rem each and unable to
+            express more than one value at a time. */}
+        {!BuildingLensEnabled && (
           <>
-            <div className={styles.rowCategoryBar}>{RenderCategoryList()}</div>
+            <div className={styles.rowCategoryBar}>{RenderLegacyCategoryList()}</div>
 
             <div className={classNames(AssetCategoryTabTheme.assetCategoryTabBar, styles.subCategoryContainer)}>
               <div className={AssetCategoryTabTheme.items}>
@@ -452,6 +388,8 @@ export const TopBarComponent = (props: TopBarProps) => {
             </div>
           </>
         )}
+
+        {BuildingLensEnabled && props.buildingLensMode === "catalog" && <ChipRow />}
       </div>
     </>
   );

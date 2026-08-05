@@ -33,9 +33,11 @@ export const ZoningHierarchyComponent = () => {
   const zones = useValue(ZoneCatalog$);
   const hierarchy = buildZoningHierarchy(zones);
   const [family, setFamily] = useState<string | null>(null);
-  // The container sizes this panel from its child, exactly as it does for the
-  // catalog. Without an explicit height the hierarchy collapses to its first
-  // row and everything below the family tabs is clipped.
+  // A cap, not a height. This used to set both, which is why 24 zone tiles
+  // filling 201px still held a 510px panel open with 43% of it empty. The
+  // collapse this was guarding against came from `.tiers` being flex: 1 1 0
+  // inside an auto-height column; now that the tier list sizes to its content,
+  // the cap alone is enough.
   const maxHeight = getBuildingLensCatalogMaxHeight(
     typeof window === "undefined" ? 720 : window.innerHeight
   );
@@ -61,7 +63,7 @@ export const ZoningHierarchyComponent = () => {
   return (
     <div
       className={styles.zoning}
-      style={{ height: `${maxHeight}rem`, maxHeight: `${maxHeight}rem` }}
+      style={{ maxHeight: `${maxHeight}rem` }}
     >
       <div className={styles.families}>
         {hierarchy.map((group) => {
