@@ -1,0 +1,60 @@
+@use "../../base.scss" as _base;
+
+// --- Grouped views ---------------------------------------------------------
+// Headings over the result set, in every mode. Grouping is a property of the
+// result rather than of a mode, so the grid, the list and the table all render
+// the same tree.
+
+.group {
+  display: flex;
+  flex-direction: column;
+}
+
+.groupHeading {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6rem 2rem 3rem;
+  border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
+  color: var(--menuText1Normal);
+  font-size: var(--fontSizeS);
+  text-transform: uppercase;
+  letter-spacing: 0.6rem;
+}
+
+// The second level of Category. Quieter than its parent, because it is the
+// level you read once you already know which category you are in.
+.groupHeadingNested {
+  padding-left: 8rem;
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+  color: var(--menuText2Normal);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.groupLabel {
+  white-space: nowrap;
+}
+
+// Answers "is it worth opening this one" before you scroll into it.
+.groupCount {
+  padding-left: 8rem;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeXS);
+}
+
+
+// One scroll for the whole grouped result. The grid and the list were each
+// written as the catalog's only flex child, so they claim the free space and
+// collapse to nothing when nested inside a group that has none to give.
+.groupScroll {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.group > div {
+  flex: 0 0 auto;
+  min-height: 0;
+}
+

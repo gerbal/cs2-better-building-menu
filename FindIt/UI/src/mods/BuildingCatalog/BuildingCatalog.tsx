@@ -47,20 +47,16 @@ import {
 import type { BuildingLensFacetState } from "domain/buildingCatalogFacets";
 import { findItSurfacePort } from "domain/findItSurfacePort";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
-import { BuildingGrid } from "mods/BuildingGrid/BuildingGrid";
 import { getSearchScopeNotice } from "domain/buildingSearchRank";
 import { getLensChoice, getLensDisclosure, setLensChoice, setLensDisclosure } from "domain/buildingLensViewState";
-import { BuildingList } from "mods/BuildingList/BuildingList";
+import { GroupedResults } from "mods/GroupedResults/GroupedResults";
 import {
   DEFAULT_GROUP_DIMENSION,
   GROUP_DIMENSIONS,
   defaultGroupDimensionFor,
-  buildGroupedView,
   groupDimensionLabel,
   isGroupDimension,
-  shouldShowHeading,
   type GroupDimensionId,
-  type GroupNode,
 } from "domain/buildingGroups";
 // The rail, the metric popover and the filter summary all live in the chip row
 // now, so the catalog no longer owns any filter chrome — only results.
@@ -255,59 +251,6 @@ export const BuildingCatalogComponent = () => {
    * the same tree. The zoning view is the same idea by hand — family, density,
    * tiles — which is why it can eventually drop its bespoke component.
    */
-  function renderLeaf(entries: BuildingCatalogEntry[]): JSX.Element {
-    if (viewMode === "list" || viewMode === "cards") {
-      return (
-        <BuildingList
-          entries={entries}
-          searchText={currentSearch ?? ""}
-          onPlace={activate}
-          variant={viewMode === "cards" ? "cards" : "compact"}
-        />
-      );
-    }
-
-    return <BuildingGrid entries={entries} searchText={currentSearch ?? ""} onPlace={activate} standalone={false} />;
-  }
-
-  function renderGroupNodes(nodes: GroupNode<BuildingCatalogEntry>[], depth: number): JSX.Element[] {
-    // A single group covering everything is a label with nothing to
-    // distinguish, which is exactly what a lone SERVICE BUILDINGS heading is
-    // once the player has already navigated there.
-    const showHeadings = shouldShowHeading(nodes);
-
-    return nodes.map((node) => (
-      <div className={styles.group} key={node.path.join("/")} data-group-depth={depth}>
-        {showHeadings && (
-          <div className={classNames(styles.groupHeading, depth > 0 && styles.groupHeadingNested)}>
-            <span className={styles.groupLabel}>{node.label}</span>
-            <span className={styles.groupCount}>{node.count}</span>
-          </div>
-        )}
-        {node.children.length > 0
-          ? renderGroupNodes(node.children, depth + 1)
-          : renderLeaf(node.entries)}
-      </div>
-    ));
-  }
-
-  function renderGrouped(entries: BuildingCatalogEntry[]): JSX.Element {
-    const groups = buildGroupedView(entries, groupBy);
-
-    // Ungrouped grid keeps its own scroll and its shelf; anything else is one
-    // scroll around the whole result, because a scrollbar per heading makes the
-    // set impossible to read as one thing.
-    if (groups.length === 0 && viewMode === "grid") {
-      return <BuildingGrid entries={entries} searchText={currentSearch ?? ""} onPlace={activate} />;
-    }
-
-    return (
-      <Scrollable className={styles.groupScroll} vertical trackVisibility="scrollable">
-        {groups.length === 0 ? renderLeaf(entries) : renderGroupNodes(groups, 0)}
-      </Scrollable>
-    );
-  }
-
   function toggleExpanded(id: number): void {
     setExpandedId((current) => (current === id ? null : id));
   }
@@ -807,7 +750,15 @@ export const BuildingCatalogComponent = () => {
               Station" is nothing, and silence there reads as a broken panel. */}
           {items.length === 0
             ? <div className={styles.empty}>{emptyStateMessage}</div>
-            : renderGrouped(items)}
+            : (
+              <GroupedResults
+                entries={items}
+                groupBy={groupBy}
+                viewMode={viewMode}
+                searchText={currentSearch ?? ""}
+                onPlace={activate}
+              />
+            )}
         </>
       )}
 

@@ -1,54 +1,80 @@
 import { bindValue, trigger, useValue } from "cs2/api";
-import { Button, Scrollable } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
-import classNames from "classnames";
 import mod from "../../../mod.json";
+import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import { getBuildingLensCatalogMaxHeight } from "domain/buildingLensLayout";
-import {
-  buildZoningHierarchy,
-  selectZoneCommand,
-  type ZoneEntry,
-} from "domain/zoningHierarchy";
+import { getLensChoice } from "domain/buildingLensViewState";
+import { selectZoneCommand, sortZonesForDisplay, zoneAsCatalogEntry, type ZoneEntry } from "domain/zoningHierarchy";
+import { GroupedResults, type CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import styles from "./zoningHierarchy.module.scss";
 
 const ZoneCatalog$ = bindValue<ZoneEntry[]>(mod.id, "ZoneCatalog", []);
 // Empty means every family. The selection lives in C# because the chip row
 // renders it, and the chip row is not an ancestor of this component.
 const ZoneFamilies$ = bindValue<string[]>(mod.id, "BuildingLensZoneFamilies", []);
+const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch", "");
 
-const FAMILY_ICONS: Record<string, string> = {
-  ZoneResidential: "Media/Game/Icons/ZoneResidential.svg",
-  ZoneCommercial: "Media/Game/Icons/ZoneCommercial.svg",
-  ZoneIndustrial: "Media/Game/Icons/ZoneIndustrial.svg",
-  ZoneOffice: "Media/Game/Icons/ZoneOffice.svg",
-  ZoneExtractors: "Media/Game/Icons/ZoneExtractors.svg",
-};
+// Shared with the catalog, so switching to Cards in one and opening the other
+// does not land the player in a different presentation than the one they chose.
+const LENS_VIEW_MODE_KEY = "viewMode";
 
 /**
- * Browses zones by family and density, and hands assignment to the Zone tool.
+ * Browses zones, and hands assignment to the Zone tool.
  *
- * The lens owns the hierarchy; `toolbar.selectAsset` does the placing, so there
- * is no second placement implementation here.
+ * This used to hand-write family → density → tiles: its own markup, its own
+ * spacing, no view modes, no sort, and a family tab strip. That is
+ * group-by-family with a density sub-level rendered as a list — the same thing
+ * the catalog does — so it now maps each zone onto a catalog entry and renders
+ * through the shared grouped view. The divergence is deleted rather than
+ * maintained.
+ *
+ * The lens still owns the hierarchy and never the placement:
+ * `toolbar.selectAsset` does the placing, so there is no second placement
+ * implementation here.
  */
 export const ZoningHierarchyComponent = () => {
   const { translate } = useLocalization();
   const zones = useValue(ZoneCatalog$);
   const selectedFamilies = useValue(ZoneFamilies$) ?? [];
-  const all = buildZoningHierarchy(zones);
+  const searchText = useValue(CurrentSearch$) ?? "";
+
   // Empty selects everything: a filter nobody has touched should hide nothing.
-  const hierarchy = selectedFamilies.length === 0
-    ? all
-    : all.filter((group) => selectedFamilies.includes(group.id));
-  // A cap, not a height. This used to set both, which is why 24 zone tiles
-  // filling 201px still held a 510px panel open with 43% of it empty. The
-  // collapse this was guarding against came from `.tiers` being flex: 1 1 0
-  // inside an auto-height column; now that the tier list sizes to its content,
-  // the cap alone is enough.
+  // Sorted here because the grouped renderer preserves input order — it trusts
+  // the query to have ordered things, and the zone catalog is published in
+  // index order rather than in tier order.
+  const visible = sortZonesForDisplay(zones).filter(
+    (zone) => selectedFamilies.length === 0 || selectedFamilies.includes(zone.family)
+  );
+
+  // Family names are ids ("ZoneResidential"); the catalog's headings come
+  // straight from the entry, so the label is resolved here before mapping.
+  const entries = visible.map((zone) => ({
+    ...zoneAsCatalogEntry(zone),
+    category: familyLabel(zone.family),
+    categoryLabel: familyLabel(zone.family),
+    subCategory: densityLabel(zone.density),
+    subCategoryLabel: densityLabel(zone.density),
+  })) as unknown as BuildingCatalogEntry[];
+
+  function familyLabel(family: string): string {
+    return translate(`Tooltip.LABEL[FindItBuildingMenu.Zoning_${family}]`, family) ?? family;
+  }
+
+  function densityLabel(density: string): string {
+    // "Any" is not a tier — it is the absence of one — so it gets its own
+    // heading rather than being labelled as a density. Deliberately not the
+    // Zone<density> keys: those read '"Low" Buildings' because they label
+    // buildings of a density, and this labels the zones themselves.
+    return density === "Any"
+      ? translate("Tooltip.LABEL[FindItBuildingMenu.ZoneNoDensity]", "No density tier") ?? "No density tier"
+      : translate(`Tooltip.LABEL[FindItBuildingMenu.ZoneTier${density}]`, density) ?? density;
+  }
+
   const maxHeight = getBuildingLensCatalogMaxHeight(
     typeof window === "undefined" ? 720 : window.innerHeight
   );
 
-  if (hierarchy.length === 0) {
+  if (entries.length === 0) {
     return (
       <div className={styles.empty}>
         {translate("Tooltip.LABEL[FindItBuildingMenu.NoZonesIndexed]", "No zones indexed") ?? "No zones indexed"}
@@ -56,67 +82,26 @@ export const ZoningHierarchyComponent = () => {
     );
   }
 
-  const assign = (zone: ZoneEntry) => {
-    const command = selectZoneCommand(zone);
+  const assign = (entry: BuildingCatalogEntry): void => {
+    const command = selectZoneCommand(entry as unknown as { id: number; version: number });
     trigger(command.group, command.method, ...command.args);
   };
 
-  return (
-    <div
-      className={styles.zoning}
-      style={{ maxHeight: `${maxHeight}rem` }}
-    >
-      {/* The family tab strip is gone. It cost a permanent row to express one
-          value, and it was the worst case for an exclusive control: office
-          zones are AreaType.Industrial carrying a flag, and density cuts across
-          all four families, so "pick exactly one of R/C/I/O" asserted a
-          partition the data does not have. Families are chips now, they
-          compose, and with none selected every family is on screen. */}
-      <Scrollable className={styles.tiers} vertical trackVisibility="scrollable">
-        {hierarchy.map((group) => (
-          <div className={styles.family} key={group.id}>
-            {/* Only when more than one is showing: a single heading over the
-                only family present is a label with nothing to distinguish. */}
-            {hierarchy.length > 1 && (
-              <div className={styles.familyLabel}>
-                <img className={styles.familyIcon} src={FAMILY_ICONS[group.id] ?? ""} alt="" aria-hidden="true" />
-                {translate(`Tooltip.LABEL[FindItBuildingMenu.Zoning_${group.id}]`, group.id) ?? group.id}
-              </div>
-            )}
-            {group.densities.map((tier) => {
-              // "Any" is not a tier — it is the absence of one — so it gets its
-              // own heading rather than being labelled as a density.
-              // Deliberately not the Zone<density> keys: those read '"Low"
-              // Buildings' because they label buildings of a density, and this
-              // labels the zones themselves.
-              const heading = tier.density === "Any"
-                ? translate("Tooltip.LABEL[FindItBuildingMenu.ZoneNoDensity]", "No density tier") ?? "No density tier"
-                : translate(`Tooltip.LABEL[FindItBuildingMenu.ZoneTier${tier.density}]`, tier.density) ?? tier.density;
+  const viewMode = getLensChoice(LENS_VIEW_MODE_KEY, "list") as CatalogViewMode;
 
-              return (
-                <div className={styles.tier} key={tier.density}>
-                  <div className={styles.tierLabel}>{heading}</div>
-                  <div className={styles.zones}>
-                    {tier.zones.map((zone) => (
-                      <Button
-                        key={zone.id}
-                        className={styles.zone}
-                        variant="icon"
-                        onSelect={() => assign(zone)}
-                        aria-label={zone.name}
-                        title={zone.name}
-                      >
-                        {zone.thumbnail ? <img className={styles.zoneIcon} src={zone.thumbnail} alt="" /> : null}
-                        <span className={styles.zoneName}>{zone.name}</span>
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ))}
-      </Scrollable>
+  return (
+    <div className={styles.zoning} style={{ maxHeight: `${maxHeight}rem` }}>
+      <GroupedResults
+        entries={entries}
+        // Family then density, which is the hierarchy this view always had —
+        // now expressed as a grouping rather than as bespoke markup.
+        groupBy="category"
+        // Zones default to List: they are chosen by name, their thumbnails are
+        // near-identical coloured squares, and none of the card's facts apply.
+        viewMode={viewMode === "cards" || viewMode === "table" ? "list" : viewMode}
+        searchText={searchText}
+        onPlace={assign}
+      />
     </div>
   );
 };
