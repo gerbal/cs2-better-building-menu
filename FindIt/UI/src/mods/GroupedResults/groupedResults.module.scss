@@ -48,9 +48,18 @@
 // One scroll for the whole grouped result. The grid and the list were each
 // written as the catalog's only flex child, so they claim the free space and
 // collapse to nothing when nested inside a group that has none to give.
+// Sizes to its content, capped by the catalog's own max-height.
+//
+// This was flex: 1 1 0, which worked while .catalog carried an explicit height:
+// a zero basis resolves against a definite parent. Turning that height into a
+// cap — so a page of three results stops holding a full-height panel open —
+// left the basis resolving against nothing, so the scroll area contributed zero
+// and the panel sat at its floor with a hundred items inside it. Same failure
+// the grid and the zoning tier list had when they were first nested in a group.
 .groupScroll {
-  flex: 1 1 0;
+  flex: 0 1 auto;
   min-height: 0;
+  max-height: 100%;
 }
 
 .group > div {
