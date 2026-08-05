@@ -49,6 +49,7 @@ namespace FindItBuildingMenu.Systems
 		{
 			if (!Mod.Settings.ReplaceVanillaBuildMenu)
 			{
+				_LensOwnsCurrentMenu.Value = false;
 				return;
 			}
 
@@ -69,6 +70,8 @@ namespace FindItBuildingMenu.Systems
 				// for that menu, so get out of its way: the lens panel sits over
 				// exactly where the vanilla asset grid appears, and leaving it up
 				// would hide the menu they just clicked.
+				_LensOwnsCurrentMenu.Value = false;
+
 				if (_ShowFindItPanel)
 				{
 					ToggleFindItPanel(false);
@@ -84,6 +87,8 @@ namespace FindItBuildingMenu.Systems
 			{
 				// The player kept the familiar zone grid; leave it alone and get
 				// out of its way, exactly as for an unmapped menu.
+				_LensOwnsCurrentMenu.Value = false;
+
 				if (_ShowFindItPanel)
 				{
 					ToggleFindItPanel(false);
@@ -91,6 +96,8 @@ namespace FindItBuildingMenu.Systems
 
 				return;
 			}
+
+			_LensOwnsCurrentMenu.Value = true;
 
 			if (preset.IsZoning)
 			{

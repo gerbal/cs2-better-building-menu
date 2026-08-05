@@ -5,7 +5,7 @@ import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import { getBuildingLensCatalogMaxHeight } from "domain/buildingLensLayout";
 import { getLensChoice, setLensChoice } from "domain/buildingLensViewState";
 import { useState } from "react";
-import { getZoneFacts, selectZoneCommand, sortZonesForDisplay, zoneAsCatalogEntry, type ZoneEntry } from "domain/zoningHierarchy";
+import { getZoneFacts, getZoneFootprints, selectZoneCommand, sortZonesForDisplay, zoneAsCatalogEntry, type ZoneEntry } from "domain/zoningHierarchy";
 import { GroupedResults, type CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import { ViewModeBar } from "mods/GroupedResults/ViewModeBar";
 import styles from "./zoningHierarchy.module.scss";
@@ -59,6 +59,10 @@ export const ZoningHierarchyComponent = () => {
     // What the game measured about this zone and never showed anyone. The
     // renderer takes these verbatim, so they are translated here.
     facts: getZoneFacts(zone).map(factLabel),
+    // The shapes themselves, for the tooltip to draw. A range says roughly
+    // what fits; these say exactly which shapes do.
+    footprints: getZoneFootprints(zone),
+    footprintOverflow: zone.footprintOverflow ?? 0,
   })) as unknown as BuildingCatalogEntry[];
 
   function factLabel(fact: { kind: string; value: string | number }): string {

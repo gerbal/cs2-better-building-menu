@@ -48,7 +48,11 @@ namespace FindItBuildingMenu.Domain
 		int MinLotWidth = 0,
 		int MaxLotWidth = 0,
 		int MinLotDepth = 0,
-		int MaxLotDepth = 0) : IJsonWritable
+		int MaxLotDepth = 0,
+		/// <summary>Distinct lot shapes, narrowest first. Empty when unknown.</summary>
+		ZoneFootprint[]? Footprints = null,
+		/// <summary>Shapes beyond the display cap, counted rather than dropped.</summary>
+		int FootprintOverflow = 0) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -87,6 +91,16 @@ namespace FindItBuildingMenu.Domain
 			writer.Write(MinLotDepth);
 			writer.PropertyName("maxLotDepth");
 			writer.Write(MaxLotDepth);
+			writer.PropertyName("footprints");
+			var footprints = Footprints ?? System.Array.Empty<ZoneFootprint>();
+			writer.ArrayBegin((uint)footprints.Length);
+			foreach (ZoneFootprint footprint in footprints)
+			{
+				footprint.Write(writer);
+			}
+			writer.ArrayEnd();
+			writer.PropertyName("footprintOverflow");
+			writer.Write(FootprintOverflow);
 			writer.TypeEnd();
 		}
 	}

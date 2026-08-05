@@ -122,3 +122,40 @@
 .factUnaffordable {
   color: var(--negativeColor, #e06c6c);
 }
+
+// --- Footprint glyphs ------------------------------------------------------
+// Nested flex rows, not CSS grid: Cohtml supports no grid layout.
+
+.glyphs {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  padding-top: 4rem;
+}
+
+.glyph {
+  display: flex;
+  flex-direction: column;
+  margin-right: 6rem;
+}
+
+.glyphRow {
+  display: flex;
+  flex-direction: row;
+}
+
+// Deliberately tiny. These are read as shapes at a glance, not counted.
+.glyphCell {
+  width: 4rem;
+  height: 4rem;
+  margin: 0 1rem 1rem 0;
+  background-color: var(--accentColorNormal);
+  opacity: 0.75;
+}
+
+.glyphOverflow {
+  align-self: center;
+  padding-left: 2rem;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeXS);
+}

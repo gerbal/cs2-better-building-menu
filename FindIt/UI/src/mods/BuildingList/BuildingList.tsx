@@ -13,6 +13,8 @@ import {
 import { getCostForecast } from "domain/buildingForecast";
 import { recordPlacement } from "domain/buildingShelf";
 import { rankBuildingMatches, topSearchResult } from "domain/buildingSearchRank";
+import { FootprintGlyph } from "mods/ZoningHierarchy/FootprintGlyph";
+import type { ZoneFootprint } from "domain/zoningHierarchy";
 import styles from "./buildingList.module.scss";
 
 // Same source the grid's hover card uses, so "can I afford it" is answered the
@@ -91,6 +93,8 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
         // rather than stated.
         const lotKnown = hasFootprint(entry.lotWidth, entry.lotDepth);
         const facts = (entry as unknown as { facts?: string[] }).facts ?? [];
+        const footprints = (entry as unknown as { footprints?: ZoneFootprint[] }).footprints ?? [];
+        const footprintOverflow = (entry as unknown as { footprintOverflow?: number }).footprintOverflow ?? 0;
         // Category-aware, and it returns nothing for a category where capacity
         // means nothing — so a park bench's card stays as narrow as a
         // hospital's is informative, without a rule per category here.
@@ -111,6 +115,19 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
                 <div className={styles.cardMeta}>
                   {facts.length > 0 ? facts.join(" · ") : lotKnown ? `${cost} · ${lot}` : cost}
                 </div>
+                {/* The shapes, narrowest first. A player choosing a zone is
+                    matching against a block on the map, and a picture of the
+                    lot is closer to that than "2–4 wide" is. */}
+                {footprints.length > 0 && (
+                  <div className={styles.glyphs}>
+                    {footprints.map((footprint) => (
+                      <FootprintGlyph key={`${footprint.width}x${footprint.depth}`} footprint={footprint} />
+                    ))}
+                    {footprintOverflow > 0 && (
+                      <span className={styles.glyphOverflow}>+{footprintOverflow}</span>
+                    )}
+                  </div>
+                )}
               </div>
             }
           >

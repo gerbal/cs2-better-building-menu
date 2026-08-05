@@ -31,6 +31,37 @@ export interface ZoneEntry {
   maxLotWidth?: number;
   minLotDepth?: number;
   maxLotDepth?: number;
+  /** Distinct lot shapes, narrowest first. */
+  footprints?: ZoneFootprint[];
+  /** Shapes beyond the display cap, counted rather than dropped. */
+  footprintOverflow?: number;
+}
+
+export interface ZoneFootprint {
+  width: number;
+  depth: number;
+}
+
+/**
+ * The shapes a zone grows, ready to draw as little grids.
+ *
+ * A range says roughly what fits; the shapes say exactly which, and a shape is
+ * what the player is matching against the block in front of them. Ordering is
+ * narrowest first, which is how you scan for the one that fits a gap.
+ *
+ * Already sorted and capped on the C# side, because the order is a property of
+ * the answer rather than of how it is drawn. This guards the shape anyway:
+ * these arrive over a binding, and a malformed one should draw nothing rather
+ * than a grid with negative rows.
+ */
+export function getZoneFootprints(zone: ZoneEntry | null | undefined): ZoneFootprint[] {
+  return (zone?.footprints ?? []).filter(
+    (footprint) =>
+      typeof footprint?.width === "number"
+      && typeof footprint?.depth === "number"
+      && footprint.width > 0
+      && footprint.depth > 0
+  );
 }
 
 /**
