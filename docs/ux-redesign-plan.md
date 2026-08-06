@@ -390,15 +390,28 @@ Two things worth knowing for future checks:
 
 ## Open design notes (2026-08-05, from play)
 
-Raised while validating the chip row. Not yet actioned.
+Raised while validating the chip row. Resolved 2026-08-06.
 
 1. **Zoning categories should be items/index like the other build item lists.**
-   The zoning view still renders its own tile shape rather than reusing the
-   vanilla asset-grid item, so it reads as a different kind of list from every
-   other build menu.
-2. **"Building lens" button text overflows its boundary.** Visible in the top
-   bar at 1280x720 — the label runs past the button and collides with the
-   search field's clear icon.
-3. **"Catalog | Tools" toggle is awkwardly padded.** Check for an existing
-   vanilla toggle/segmented-control component before hand-styling it further;
-   this is currently two lightButtons with hand-tuned padding.
+   **Mostly stale — see below.** Checked in game in both Grid and List mode:
+   zoning now renders through the same `BuildingGrid` / `BuildingList` /
+   `GroupedResults` as every other lens view, with the same tiles, headings,
+   counts and view modes. The "reads as a different kind of list" half of this
+   note was fixed by the zoning unification itself, before the note was
+   actioned.
+
+   What survives is narrower and is **not zoning-specific**: our grid tile is
+   hand-built (`.tile`, 88×112rem with a 68rem thumbnail) rather than the
+   game's own `assetGridTheme.item`. That is equally true of the catalog, so
+   swapping it is a change to every view, not a zoning fix — and the tile has
+   already been tuned to vanilla's metrics (68rem ≈ 45px icon, `--fontSizeM`
+   label), so the visible gain is small and the regression risk covers the
+   whole lens. Left as an explicit decision rather than folded in silently.
+
+2. **"Building lens" button text overflows its boundary.** **Fixed** — the
+   cause was CSS specificity, not sizing. See the commit; verified in game.
+
+3. **"Catalog | Tools" toggle is awkwardly padded.** **Fixed** by using the
+   game's own `TabBar`/`Tab` from `game-ui/common/tabs/tabs.tsx` instead of two
+   hand-padded buttons. The check the note asked for found a real component,
+   and it brought gamepad tab-switching with it. Verified in game.
