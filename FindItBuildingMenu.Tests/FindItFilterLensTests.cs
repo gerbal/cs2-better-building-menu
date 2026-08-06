@@ -19,42 +19,46 @@ namespace FindItBuildingMenu.Tests
 		[Fact]
 		public void PlacementFlagsDoNotFilterUntilOneIsChosen()
 		{
-			Assert.True(FindItFilterPredicates.MatchesRequiredFlags(BuildingFlags.RequireRoad, null));
-			Assert.True(FindItFilterPredicates.MatchesRequiredFlags(null, null));
+			Assert.True(FindItFilterPredicates.MatchesAnyPlacementFlag(BuildingFlags.RequireRoad, null));
+			Assert.True(FindItFilterPredicates.MatchesAnyPlacementFlag(null, null));
 		}
 
 		[Fact]
 		public void NarrowsToPrefabsCarryingTheChosenFlag()
 		{
-			Assert.True(FindItFilterPredicates.MatchesRequiredFlags(
+			Assert.True(FindItFilterPredicates.MatchesAnyPlacementFlag(
 				BuildingFlags.RequireRoad | BuildingFlags.CanBeRoadSide,
 				BuildingFlags.RequireRoad));
-			Assert.False(FindItFilterPredicates.MatchesRequiredFlags(
+			Assert.False(FindItFilterPredicates.MatchesAnyPlacementFlag(
 				BuildingFlags.NoRoadConnection,
 				BuildingFlags.RequireRoad));
 		}
 
 		[Fact]
-		public void RequiresEveryChosenFlagRatherThanAnyOfThem()
+		public void AcceptsAnyChosenFlagRatherThanRequiringAllOfThem()
 		{
-			// Matches the lens's MatchesAll semantics: picking two placement
-			// constraints means "satisfies both", not "satisfies either".
-			var required = BuildingFlags.RequireRoad | BuildingFlags.HasWaterNode;
+			// Widening two flags must widen the result set, the way it does for
+			// role and theme. This asserted the opposite until the rail made the
+			// inconsistency visible: identical controls, opposite meaning.
+			var selected = BuildingFlags.RequireRoad | BuildingFlags.HasWaterNode;
 
-			Assert.True(FindItFilterPredicates.MatchesRequiredFlags(
+			Assert.True(FindItFilterPredicates.MatchesAnyPlacementFlag(
 				BuildingFlags.RequireRoad | BuildingFlags.HasWaterNode,
-				required));
-			Assert.False(FindItFilterPredicates.MatchesRequiredFlags(
+				selected));
+			Assert.True(FindItFilterPredicates.MatchesAnyPlacementFlag(
 				BuildingFlags.RequireRoad | BuildingFlags.CanBeRoadSide,
-				required));
+				selected));
+			Assert.False(FindItFilterPredicates.MatchesAnyPlacementFlag(
+				BuildingFlags.CanBeRoadSide,
+				selected));
 		}
 
 		[Fact]
-		public void ExcludesPrefabsWithNoFlagsAtAllWhenAFlagIsRequired()
+		public void ExcludesPrefabsWithNoFlagsAtAllWhenAFlagIsChosen()
 		{
 			// BuildingFlagsValue is nullable, and a null must not be read as
 			// "satisfies everything".
-			Assert.False(FindItFilterPredicates.MatchesRequiredFlags(null, BuildingFlags.RequireRoad));
+			Assert.False(FindItFilterPredicates.MatchesAnyPlacementFlag(null, BuildingFlags.RequireRoad));
 		}
 
 		[Fact]

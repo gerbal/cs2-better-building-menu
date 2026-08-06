@@ -64,7 +64,7 @@ namespace FindItBuildingMenu.Domain.Options
 
 		public OptionSectionUIEntry AsUIEntry()
 		{
-			var required = FindItUtil.Filters.RequiredPlacementFlags;
+			var required = FindItUtil.Filters.SelectedPlacementFlags;
 
 			return new OptionSectionUIEntry
 			{
@@ -89,9 +89,9 @@ namespace FindItBuildingMenu.Domain.Options
 		public void OnOptionClicked(int optionId, int value)
 		{
 			var flag = (BuildingFlags)optionId;
-			var current = FindItUtil.Filters.RequiredPlacementFlags ?? default;
+			var current = FindItUtil.Filters.SelectedPlacementFlags ?? default;
 
-			FindItUtil.Filters.RequiredPlacementFlags = (current & flag) == flag
+			FindItUtil.Filters.SelectedPlacementFlags = (current & flag) == flag
 				? current & ~flag
 				: current | flag;
 
@@ -100,12 +100,12 @@ namespace FindItBuildingMenu.Domain.Options
 
 		public void OnReset()
 		{
-			FindItUtil.Filters.RequiredPlacementFlags = null;
+			FindItUtil.Filters.SelectedPlacementFlags = null;
 		}
 
 		public bool IsDefault()
 		{
-			var required = FindItUtil.Filters.RequiredPlacementFlags;
+			var required = FindItUtil.Filters.SelectedPlacementFlags;
 
 			return !required.HasValue || required.Value == default;
 		}

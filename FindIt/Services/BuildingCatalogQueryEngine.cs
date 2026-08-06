@@ -100,7 +100,12 @@ namespace FindItBuildingMenu.Services
 				|| !MatchesAny(entry.DlcId, query.DlcIds)
 				|| !MatchesAny(entry.Theme, query.Themes)
 				|| !MatchesAny(entry.AssetPacks, query.AssetPacks)
-				|| !MatchesAll(entry.PlacementFlags, query.PlacementFlags)
+				// Placement used to require every chosen flag while every other
+				// facet took any. The rail draws them identically, so the same
+				// gesture meant two different things depending on which row it
+				// landed in, and nothing on screen said so. "Road or water"
+				// is also the question a player actually asks.
+				|| !MatchesAny(entry.PlacementFlags, query.PlacementFlags)
 				|| !MatchesAny(entry.Extensions, query.Extensions)
 				|| !MatchesZoneType(entry.ZoneType, query.ZoneTypes))
 			{
@@ -215,17 +220,6 @@ namespace FindItBuildingMenu.Services
 
 			return values is not null
 				&& values.Any(value => selected.Any(option => string.Equals(option, value, StringComparison.OrdinalIgnoreCase)));
-		}
-
-		private static bool MatchesAll(IEnumerable<string>? values, IReadOnlyList<string>? selected)
-		{
-			if (selected is null || selected.Count == 0)
-			{
-				return true;
-			}
-
-			string[] available = values?.ToArray() ?? Array.Empty<string>();
-			return selected.All(option => available.Any(value => string.Equals(option, value, StringComparison.OrdinalIgnoreCase)));
 		}
 
 		private static IOrderedEnumerable<BuildingCatalogEntry> Order(
