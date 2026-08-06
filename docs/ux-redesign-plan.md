@@ -315,15 +315,34 @@ reconstruct it from the git log.
 
 | # | item | note |
 |---|---|---|
-| 24 | Verify the Locked/Unlocked filter | C#, needs a restart. In the smoke save everything may already be unlocked, in which case the dimension has one option and the rail correctly hides it — a save with unmet milestones is the real test. |
 | 20 | Localized labels | Half done. The "Services" breadcrumb proves the game's `Editor.ASSET_CATEGORY_TITLE` keys are being read; a language switch would confirm the headings follow while our own vocabulary stays English. Cross-page group contiguity is **verified**. |
-| 22 | Reopening the lens takes two clicks | Closing leaves the game's menu selected, so the next press of that toolbar button deselects it and appears to do nothing. Suppressing the vanilla grid after close fixed the cosmetic pop-back but caused this, and was reverted. A real fix needs the menu selection cleared, and `ToolbarUISystem.SelectAssetMenu` early-returns on `Entity.Null`. |
 
 ### Needs a decision
 
 | # | item | note |
 |---|---|---|
 | 23 | Expand the tooltip for `+N` footprints | Probably moot: the strip is one glyph per width now, capped at 12, so no real zone should overflow. Revisit only if `+N` is seen. |
+
+### Verified in the game
+
+Checked 2026-08-06 in *Codex Preview Smoke 20260726*, which sits at the
+**Founding** milestone — so almost nothing is unlocked, which is what makes it
+a real test rather than the everything-unlocked case that would have proved
+nothing.
+
+- **24 — Locked/Unlocked filter.** The Availability dimension appears in the
+  rail with both options. Selecting Unlocked alone gives 0 of 15 Health &
+  Deathcare buildings and the empty state reads "No buildings match Unlocked";
+  Locked alone gives all 15. A clean partition, and the panel shrinks to fit
+  the empty result instead of holding its full height.
+- **22 — Reopening the lens.** Close, then one click on the same toolbar
+  button reopens it. The button also stops being highlighted on close, which is
+  the selection actually being released rather than the symptom being hidden.
+  Filter state survives the round trip.
+
+One thing worth knowing for future checks: the vanilla options bank mounts a
+frame or two after the lens opens, so a check that runs immediately can find no
+panel and wrongly conclude the rail is missing. Wait for it.
 
 ### Decided
 
