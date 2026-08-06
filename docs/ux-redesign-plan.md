@@ -317,9 +317,7 @@ Nothing here at the moment — see *Verified in the game* below.
 
 ### Needs a decision
 
-| # | item | note |
-|---|---|---|
-| 23 | Expand the tooltip for `+N` footprints | Probably moot: the strip is one glyph per width now, capped at 12, so no real zone should overflow. Revisit only if `+N` is seen. |
+Nothing outstanding.
 
 ### Verified in the game
 
@@ -363,6 +361,14 @@ Two things worth knowing for future checks:
   looked right and the tests passed.
 
 ### Decided
+
+- **23 — Expand-on-hover for `+N` footprints: dropped** (2026-08-06). `+N` only
+  appears when a zone has more than `MaxFootprintsShown` (12) *distinct lot
+  widths*, and zone lots run 1–6 cells wide, so vanilla data cannot reach it —
+  no `+N` was found anywhere in the live zone list. This is a structural
+  argument rather than an exhaustive check: a mod adding wider zones could
+  still overflow, and the overflow count stays correct if one does. Only the
+  expand affordance is unnecessary.
 
 - **25 — Placement now ORs, like every other facet** (2026-08-06). It required
   every chosen flag while role, theme, pack and the rest took any one. The rail
