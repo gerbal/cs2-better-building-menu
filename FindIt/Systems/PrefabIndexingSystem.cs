@@ -38,6 +38,9 @@ namespace FindItBuildingMenu.Systems
 		private ComponentType? roadBuilderDiscarded;
 		private static Dictionary<Entity, ZoneTypeFilter> _zoneTypeCache;
 		private EntityQuery _unlockEventQuery;
+		// Set from the locale-change event, consumed by the next OnUpdate. See
+		// OnActiveDictionaryChanged.
+		private bool _localeChanged;
 		private static List<ZoneCatalogEntry> _zoneCatalog = new();
 		private static Dictionary<int, string> _assetMenuNames = new();
 		private readonly List<IPrefabCategoryProcessor> _prefabCategoryProcessors = new();
@@ -50,6 +53,8 @@ namespace FindItBuildingMenu.Systems
 			_imageSystem = World.GetOrCreateSystemManaged<ImageSystem>();
 			_prefabUISystem = World.GetOrCreateSystemManaged<PrefabUISystem>();
 			_finditUISystem = World.GetOrCreateSystemManaged<FindItUISystem>();
+
+			GameManager.instance.localizationManager.onActiveDictionaryChanged += OnActiveDictionaryChanged;
 
 			using var stream = typeof(Mod).Assembly.GetManifestResourceStream("FindItBuildingMenu.Resources.Blacklist.txt");
 			using var reader = new StreamReader(stream);
@@ -131,13 +136,48 @@ namespace FindItBuildingMenu.Systems
 			}
 		}
 
+		protected override void OnDestroy()
+		{
+			GameManager.instance.localizationManager.onActiveDictionaryChanged -= OnActiveDictionaryChanged;
+
+			base.OnDestroy();
+		}
+
+		/// <summary>
+		/// Marks the index stale when the player changes language.
+		/// </summary>
+		/// <remarks>
+		/// Names, asset-menu titles and zone labels are resolved against the
+		/// active dictionary once, when the prefab is indexed, and then cached.
+		/// Everything the UI renders through <c>translate</c> follows a language
+		/// change immediately, so switching to German moved the breadcrumbs and
+		/// the group headings but left every building name in English — a
+		/// half-translated menu that looked like missing translations rather
+		/// than a stale cache.
+		///
+		/// Re-indexing wholesale is heavier than repairing the names alone, but
+		/// a language change is rare and player-initiated, and a full pass
+		/// cannot drift from what the index otherwise holds.
+		///
+		/// The event can fire off the simulation thread, so this only sets a
+		/// flag; OnUpdate does the work.
+		/// </remarks>
+		private void OnActiveDictionaryChanged()
+		{
+			_localeChanged = true;
+		}
+
 		protected override void OnUpdate()
 		{
 			// An unlock changes lock state without touching the prefab, so the
 			// incremental pass would not see it. Rare enough that a full pass
 			// is the honest response rather than a targeted patch that could
 			// drift from what the index otherwise holds.
-			RunIndex(!_unlockEventQuery.IsEmptyIgnoreFilter);
+			var full = !_unlockEventQuery.IsEmptyIgnoreFilter || _localeChanged;
+
+			_localeChanged = false;
+
+			RunIndex(full);
 		}
 
 		private void RunIndex(bool full)
