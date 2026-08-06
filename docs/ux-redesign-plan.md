@@ -323,8 +323,17 @@ reconstruct it from the git log.
 
 | # | item | note |
 |---|---|---|
-| 25 | Placement is `MatchesAll`, everything else is `MatchesAny` | Two Placement values demand both flags; two Roles give either. Identical UI, opposite behaviour. Defensible for corner flags, inconsistent with what the rest of the rail teaches. Predates this session. |
 | 23 | Expand the tooltip for `+N` footprints | Probably moot: the strip is one glyph per width now, capped at 12, so no real zone should overflow. Revisit only if `+N` is seen. |
+
+### Decided
+
+- **25 — Placement now ORs, like every other facet** (2026-08-06). It required
+  every chosen flag while role, theme, pack and the rest took any one. The rail
+  draws all of them identically, so the same gesture meant two different things
+  with nothing on screen to distinguish them, and selecting a second Placement
+  value *narrowed* where a second Role *widened*. "Road or water" is also the
+  question a player actually asks. The AND reading is defensible in isolation
+  and was argued for in the original comment; it lost to consistency.
 
 ### Known debt
 

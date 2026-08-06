@@ -18,22 +18,24 @@ namespace FindItBuildingMenu.Domain
 	public static class FindItFilterPredicates
 	{
 		/// <summary>
-		/// True when the prefab carries every required placement flag.
+		/// True when the prefab carries any of the selected placement flags.
 		/// </summary>
 		/// <remarks>
-		/// Deliberately "all" rather than "any", matching the lens's MatchesAll
-		/// semantics: choosing two placement constraints asks for something that
-		/// satisfies both. A prefab with no flags at all satisfies no
-		/// requirement, so a null must not be read as a wildcard.
+		/// "Any", like every other facet. This deliberately used to be "all", on
+		/// the reasoning that placement constraints compose — but the rail draws
+		/// placement exactly like role and theme, so one gesture quietly meant
+		/// two different things and nothing on screen distinguished them. A
+		/// prefab with no flags at all still satisfies nothing, so a null must
+		/// not be read as a wildcard.
 		/// </remarks>
-		public static bool MatchesRequiredFlags(BuildingFlags? value, BuildingFlags? required)
+		public static bool MatchesAnyPlacementFlag(BuildingFlags? value, BuildingFlags? selected)
 		{
-			if (!required.HasValue || required.Value == default)
+			if (!selected.HasValue || selected.Value == default)
 			{
 				return true;
 			}
 
-			return value.HasValue && (value.Value & required.Value) == required.Value;
+			return value.HasValue && (value.Value & selected.Value) != default;
 		}
 
 		/// <summary>

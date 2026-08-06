@@ -34,7 +34,7 @@ namespace FindItBuildingMenu.Domain
 
 		// Dimensions Building Lens could already filter on while the asset grid
 		// could not, even though PrefabIndex has carried all three all along.
-		public BuildingFlags? RequiredPlacementFlags { get; set; }
+		public BuildingFlags? SelectedPlacementFlags { get; set; }
 		public List<string> SelectedExtensions { get; set; }
 		public List<string> SelectedRoles { get; set; }
 
@@ -106,7 +106,7 @@ namespace FindItBuildingMenu.Domain
 				yield return DoLotWidthFilter;
 			}
 
-			if (RequiredPlacementFlags.HasValue && RequiredPlacementFlags.Value != default)
+			if (SelectedPlacementFlags.HasValue && SelectedPlacementFlags.Value != default)
 			{
 				yield return DoPlacementFlagFilter;
 			}
@@ -153,7 +153,7 @@ namespace FindItBuildingMenu.Domain
 
 		private bool DoPlacementFlagFilter(PrefabIndex prefab)
 		{
-			return FindItFilterPredicates.MatchesRequiredFlags(prefab.BuildingFlagsValue, RequiredPlacementFlags);
+			return FindItFilterPredicates.MatchesAnyPlacementFlag(prefab.BuildingFlagsValue, SelectedPlacementFlags);
 		}
 
 		private bool DoExtensionFilter(PrefabIndex prefab)
