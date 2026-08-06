@@ -360,7 +360,36 @@ Two things worth knowing for future checks:
   This cost a full deploy-and-verify cycle to notice, because the flag version
   looked right and the tests passed.
 
+### Chrome versus content
+
+The rule for "should this be a vanilla component?", because the answer kept
+being decided case by case and once got decided the wrong way round.
+
+**Chrome — use vanilla.** Buttons, tabs, filter rails, the tool-options bank,
+tooltips, scrollbars. These are vocabulary the player already knows, and
+divergence here is pure cost: a second idiom to learn, a theme to re-derive by
+eye, and a legacy-interface variant to maintain by hand. Every time we replaced
+hand-styled chrome with the game's own component we deleted code and gained
+behaviour we had not bothered to write (gamepad tab-switching, focus handling,
+the legacy skin).
+
+**Content — ours.** The tiles, the grouping, the headings, the facts on a card,
+the footprint glyphs. This is what the mod is *for*. The lens exists because
+the vanilla menu's presentation of the catalog is not good enough, so adopting
+vanilla's item component in the result area would trade away the product to
+match the thing being replaced.
+
+The confusable middle is **scale**, not components. Content should sit
+naturally in the game — the grid's 45px icons and `--fontSizeM` labels were
+matched to vanilla deliberately — but that is calibrating density so nothing
+looks foreign, not inheriting the component. Matching vanilla's *measurements*
+is good; adopting vanilla's *widgets* for results is not.
+
 ### Decided
+
+- **1 — Keep our own grid tile rather than `assetGridTheme.item`**
+  (2026-08-06). Per the rule above: the tile is content. Verified first that
+  the zoning half of the note was already stale.
 
 - **23 — Expand-on-hover for `+N` footprints: dropped** (2026-08-06). `+N` only
   appears when a zone has more than `MaxFootprintsShown` (12) *distinct lot
@@ -402,11 +431,9 @@ Raised while validating the chip row. Resolved 2026-08-06.
 
    What survives is narrower and is **not zoning-specific**: our grid tile is
    hand-built (`.tile`, 88×112rem with a 68rem thumbnail) rather than the
-   game's own `assetGridTheme.item`. That is equally true of the catalog, so
-   swapping it is a change to every view, not a zoning fix — and the tile has
-   already been tuned to vanilla's metrics (68rem ≈ 45px icon, `--fontSizeM`
-   label), so the visible gain is small and the regression risk covers the
-   whole lens. Left as an explicit decision rather than folded in silently.
+   game's own `assetGridTheme.item`. **Decided 2026-08-06: keep ours.** See
+   *Chrome versus content* below — this note was written as though matching
+   vanilla were the goal, and for the tile it is not.
 
 2. **"Building lens" button text overflows its boundary.** **Fixed** — the
    cause was CSS specificity, not sizing. See the commit; verified in game.
