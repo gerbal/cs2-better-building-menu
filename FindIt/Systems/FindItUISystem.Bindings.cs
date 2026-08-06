@@ -16,7 +16,7 @@ namespace FindItBuildingMenu.Systems
 		{
 			if (_ShowFindItPanel)
 			{
-				ToggleFindItPanel(false);
+				CloseLens();
 
 				// Clear the selected prefab
 				_toolSystem.ActivatePrefabTool(null);
@@ -24,6 +24,43 @@ namespace FindItBuildingMenu.Systems
 			else
 			{
 				ToggleFindItPanel(true);
+			}
+		}
+
+		/// <summary>
+		/// Closes the lens and, when it was standing in for a vanilla menu,
+		/// releases that menu's selection on the toolbar.
+		/// </summary>
+		/// <remarks>
+		/// Closing the panel used to leave the toolbar button still selected,
+		/// because the game never learned the menu went away. The next press of
+		/// that button was therefore read as "deselect", which does nothing
+		/// visible, and the lens only came back on the second click.
+		///
+		/// A previous attempt fixed the same symptom by suppressing the vanilla
+		/// grid, which traded the extra click for a worse one. Clearing the
+		/// selection tells the game the truth instead.
+		///
+		/// Only the deliberate close paths call this. When the player picks a
+		/// different vanilla menu the lens also closes, but there the selection
+		/// is their new choice and clearing it would undo the click.
+		/// </remarks>
+		private void CloseLens()
+		{
+			bool ownedMenu = _LensOwnsCurrentMenu.Value;
+
+			ToggleFindItPanel(false);
+
+			// The window lock refuses the close, so the menu is still on screen.
+			if (_ShowFindItPanel)
+			{
+				return;
+			}
+
+			if (ownedMenu)
+			{
+				_LensOwnsCurrentMenu.Value = false;
+				_toolbarUISystem.ClearAssetSelection();
 			}
 		}
 
