@@ -313,9 +313,7 @@ reconstruct it from the git log.
 
 ### Needs the game
 
-| # | item | note |
-|---|---|---|
-| 20 | Localized labels | Half done. The "Services" breadcrumb proves the game's `Editor.ASSET_CATEGORY_TITLE` keys are being read; a language switch would confirm the headings follow while our own vocabulary stays English. Cross-page group contiguity is **verified**. |
+Nothing here at the moment — see *Verified in the game* below.
 
 ### Needs a decision
 
@@ -340,9 +338,29 @@ nothing.
   the selection actually being released rather than the symptom being hidden.
   Filter state survives the round trip.
 
-One thing worth knowing for future checks: the vanilla options bank mounts a
-frame or two after the lens opens, so a check that runs immediately can find no
-panel and wrongly conclude the rail is missing. Wait for it.
+- **20 — Localized labels.** Switched the running game to German. Breadcrumbs
+  ("Dienstleistungen", "Gesundheitsfürsorge & Bestattung") and network
+  subcategories ("Brücken", "Autobahnen", "Kreuzungen") all follow, while our
+  own vocabulary — *Building Lens*, *Group by*, the role headings — correctly
+  stays English. Cross-page group contiguity was already verified.
+
+  The switch also **found a real bug**: building names are resolved against the
+  active dictionary once, at index time, so a mid-session language change left
+  every name in English beside German headings. That reads as missing
+  translations rather than a stale cache, which is worse — it blames the game's
+  data for our bug. Fixed by re-indexing on `onActiveDictionaryChanged`.
+
+Two things worth knowing for future checks:
+
+- The vanilla options bank mounts a frame or two after the lens opens, so a
+  check that runs immediately can find no panel and wrongly conclude the rail
+  is missing. Wait for it.
+- `PrefabIndexingSystem` declares `RequireForUpdate` on prefabs carrying
+  `Created`/`Updated`, so **anything that does not touch an entity will never
+  reach `OnUpdate`**. Setting a flag there is a silent no-op. Work triggered by
+  a non-ECS event has to go through `MainThreadDispatcher.RunOnMainThread`.
+  This cost a full deploy-and-verify cycle to notice, because the flag version
+  looked right and the tests passed.
 
 ### Decided
 
