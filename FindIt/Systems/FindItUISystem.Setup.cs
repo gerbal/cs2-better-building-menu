@@ -23,12 +23,18 @@ namespace FindItBuildingMenu.Systems
 		private readonly BuildingCatalogAdapter _buildingCatalogAdapter = new();
 		private BuildingCatalogQuery _buildingCatalogQuery = new();
 		private readonly FindItInteractionBoundary _interactionBoundary = new();
+		private BuildingCatalogMetricRangeState _buildingMetricRanges = BuildingCatalogMetricRangeState.Empty;
+		private string _buildingLensSection = VanillaBuildMenuTaxonomy.AllBuildings;
+		private string _buildingLensSubCategory = VanillaBuildMenuTaxonomy.Any;
 
 		private ToolSystem _toolSystem;
 		private PrefabSystem _prefabSystem;
 		private FindItOptionsUISystem _optionsUISystem;
 		private DefaultToolSystem _defaultToolSystem;
 		private CameraUpdateSystem _cameraUpdateSystem;
+		// Only for releasing the toolbar's menu selection when the lens closes;
+		// see CloseLens.
+		private Game.UI.InGame.ToolbarUISystem _toolbarUISystem;
 
 		private ProxyAction _searchKeyBinding;
 		private ProxyAction _randomKeyBinding;
@@ -43,8 +49,26 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<bool> _ClearSearchBar;
 		private ValueBindingHelper<bool> _ShowFindItPanel;
 		private ValueBindingHelper<bool> _BuildingLensEnabled = null!;
-		private ValueBindingHelper<bool> _BuildingCapacityFilterVisible = null!;
-		private ValueBindingHelper<int> _BuildingCapacityFloor = null!;
+		private ValueBindingHelper<bool> _ReplaceVanillaBuildMenu = null!;
+		private ValueBindingHelper<int> _BuildingCatalogMatchesElsewhere = null!;
+		private ValueBindingHelper<bool> _LensDefaultToTable = null!;
+		private ValueBindingHelper<bool> _LensShowShelf = null!;
+		private ValueBindingHelper<int> _LensShelfSize = null!;
+		private ValueBindingHelper<int> _LensTileSize = null!;
+		// Set when a toolbar preset is applied, so the game's echo of the armed
+		// tool's menu can be told apart from a real click. See MenuEchoGuard.
+		private int? _appliedMenuFrame;
+		private int _appliedMenuIndex;
+		private ValueBindingHelper<bool> _ShowZoningHierarchy = null!;
+		private ValueBindingHelper<ZoneCatalogEntry[]> _ZoneCatalog = null!;
+		// Empty means every family. See ZoneFamilySelection.
+		private ValueBindingHelper<string[]> _BuildingLensZoneFamilies = null!;
+		private ValueBindingHelper<string> _BuildingCatalogGroupBy = null!;
+		// Whether the menu the toolbar currently has open is one the lens takes
+		// over. Lets the vanilla menu stay hidden after the panel is closed, so
+		// closing means closed rather than revealing the grid underneath.
+		private ValueBindingHelper<bool> _LensOwnsCurrentMenu = null!;
+		private string[] _zoneFamilies = System.Array.Empty<string>();
 		private ValueBindingHelper<bool> _IsExpanded;
 		private ValueBindingHelper<double> _ScrollIndex;
 		private ValueBindingHelper<double> _MaxScrollIndex;
@@ -64,6 +88,18 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<SubCategoryUIEntry[]> _SubCategoryBinding;
 		private ValueBindingHelper<PrefabUIEntry[]> _PrefabListBinding;
 		private ValueBindingHelper<BuildingCatalogPage> _BuildingCatalogBinding = null!;
+		private ValueBindingHelper<BuildingCatalogMetricRangeState> _BuildingCatalogMetricRanges = null!;
+		private ValueBindingHelper<BuildingCatalogFacetState> _BuildingLensFacets = null!;
+		private IReadOnlyList<int> _buildingCompareIds = Array.Empty<int>();
+		private ValueBindingHelper<BuildingCatalogEntry[]> _BuildingCatalogCompare = null!;
+		private ValueBindingHelper<string[]> _BuildingLensLegacyFilters = null!;
+		private ValueBindingHelper<string> _BuildingCatalogSortColumn = null!;
+		private ValueBindingHelper<bool> _BuildingCatalogSortDescending = null!;
+		private ValueBindingHelper<string> _BuildingLensSectionBinding = null!;
+		private ValueBindingHelper<string> _BuildingLensSubCategoryBinding = null!;
+		private ValueBindingHelper<BuildingLensSectionUIEntry[]> _BuildingLensSectionListBinding = null!;
+		private ValueBindingHelper<BuildingLensSubCategoryUIEntry[]> _BuildingLensSubCategoryListBinding = null!;
+		private ValueBindingHelper<ToolSurfaceDescriptor[]> _ToolSurfaceDescriptorsBinding = null!;
 
 		public bool IsExpanded => _IsExpanded;
 		public bool BuildingLensEnabled => _BuildingLensEnabled;
@@ -101,6 +137,7 @@ namespace FindItBuildingMenu.Systems
 			_optionsUISystem = World.GetOrCreateSystemManaged<FindItOptionsUISystem>();
 			_defaultToolSystem = World.GetOrCreateSystemManaged<DefaultToolSystem>();
 			_cameraUpdateSystem = World.GetOrCreateSystemManaged<CameraUpdateSystem>();
+			_toolbarUISystem = World.GetOrCreateSystemManaged<Game.UI.InGame.ToolbarUISystem>();
 
 			// ToolSystem toolSystem = World.DefaultGameObjectInjectionWorld?.GetOrCreateSystemManaged<ToolSystem>(); // I don't know why vanilla game did this.
 			_toolSystem.EventPrefabChanged += OnPrefabChanged;
@@ -128,10 +165,24 @@ namespace FindItBuildingMenu.Systems
 			_IsSearchLoading = CreateBinding("IsSearchLoading", false);
 			_IsWindowLocked = CreateBinding("IsWindowLocked", false);
 			_BuildingLensEnabled = CreateBinding("BuildingLensEnabled", "SetBuildingLensEnabled", false, SetBuildingLensEnabled);
-			_BuildingCapacityFilterVisible = CreateBinding("BuildingCapacityFilterVisible", false);
-			_BuildingCapacityFloor = CreateBinding("BuildingCapacityFloor", 0);
 			_IsExpanded = CreateBinding("IsExpanded", "SetIsExpanded", false, _ => ExpandedToggled());
 			_ActivePrefabId = CreateBinding("ActivePrefabId", 0);
+			// Lets the UI know whether to render the lens in place of the
+			// vanilla asset grid. Read once at setup; the setting is not
+			// expected to change mid-session.
+			_ReplaceVanillaBuildMenu = CreateBinding("ReplaceVanillaBuildMenu", Mod.Settings.ReplaceVanillaBuildMenu);
+			_ShowZoningHierarchy = CreateBinding("ShowZoningHierarchy", false);
+			_LensOwnsCurrentMenu = CreateBinding("LensOwnsCurrentMenu", false);
+			_BuildingCatalogMatchesElsewhere = CreateBinding("BuildingCatalogMatchesElsewhere", 0);
+			// Layout preferences the UI needs. Read once at setup; these are not
+			// expected to change mid-session.
+			_LensDefaultToTable = CreateBinding("BuildingLensDefaultToTable", Mod.Settings.BuildingLensDefaultToTable);
+			_LensShowShelf = CreateBinding("BuildingLensShowShelf", Mod.Settings.BuildingLensShowShelf);
+			_LensShelfSize = CreateBinding("BuildingLensShelfSize", Mod.Settings.BuildingLensShelfSize);
+			_LensTileSize = CreateBinding("BuildingLensTileSize", Mod.Settings.BuildingLensTileSize);
+			CreateTrigger("SearchEverything", SearchEverything);
+			_ZoneCatalog = CreateBinding("ZoneCatalog", new ZoneCatalogEntry[0]);
+			_BuildingLensZoneFamilies = CreateBinding("BuildingLensZoneFamilies", System.Array.Empty<string>());
 			_PanelHeight = CreateBinding("PanelHeight", 0f);
 			_PanelWidth = CreateBinding("PanelWidth", 0f);
 			_ScrollIndex = CreateBinding("ScrollIndex", 0D);
@@ -142,7 +193,43 @@ namespace FindItBuildingMenu.Systems
 			_CategoryBinding = CreateBinding("CategoryList", new CategoryUIEntry[] { new(PrefabCategory.Any) });
 			_SubCategoryBinding = CreateBinding("SubCategoryList", new SubCategoryUIEntry[] { new(PrefabSubCategory.Any) });
 			_PrefabListBinding = CreateBinding("PrefabList", new PrefabUIEntry[0]);
-			_BuildingCatalogBinding = CreateBinding("BuildingCatalog", new BuildingCatalogPage(Array.Empty<BuildingCatalogEntry>(), 0, 0, 100));
+			_BuildingCatalogBinding = CreateBinding("BuildingCatalog", new BuildingCatalogPage(
+				Array.Empty<BuildingCatalogEntry>(),
+				0,
+				0,
+				100,
+				BuildingCatalogLensState.Indexing));
+			_BuildingCatalogMetricRanges = CreateBinding("BuildingCatalogMetricRanges", BuildingCatalogMetricRangeState.Empty);
+			_BuildingLensFacets = CreateBinding("BuildingLensFacets", new BuildingCatalogFacetState(Array.Empty<BuildingCatalogFacetGroup>(), false));
+			_BuildingCatalogCompare = CreateBinding("BuildingCatalogCompare", Array.Empty<BuildingCatalogEntry>());
+			_BuildingLensLegacyFilters = CreateBinding("BuildingLensLegacyFilters", Array.Empty<string>());
+			// Sort is a read/write binding rather than a write-only trigger: the
+			// order lives in the persistent query, so a UI that could only write
+			// it showed a stale indicator over correctly-sorted rows after any
+			// remount (panel close, Catalog/Tools switch, lens toggle).
+			_BuildingCatalogSortColumn = CreateBinding(
+				"BuildingCatalogSortColumn",
+				"SetBuildingCatalogSortColumn",
+				_buildingCatalogQuery.EffectiveSortColumn,
+				SetBuildingCatalogSortColumn);
+			// Group-by rides with sort for the same reason: it is part of the
+			// persistent query, so a write-only trigger would leave the picker
+			// showing "Nothing" over grouped rows after any remount.
+			_BuildingCatalogGroupBy = CreateBinding(
+				"BuildingCatalogGroupBy",
+				"SetBuildingCatalogGroupBy",
+				_buildingCatalogQuery.GroupBy,
+				SetBuildingCatalogGroupBy);
+			_BuildingCatalogSortDescending = CreateBinding(
+				"BuildingCatalogSortDescending",
+				"SetBuildingCatalogSortDescending",
+				_buildingCatalogQuery.Descending,
+				SetBuildingCatalogSortDescending);
+			_BuildingLensSectionBinding = CreateBinding("BuildingLensSection", "SetBuildingLensSection", _buildingLensSection, SetBuildingLensSection);
+			_BuildingLensSubCategoryBinding = CreateBinding("BuildingLensSubCategory", "SetBuildingLensSubCategory", _buildingLensSubCategory, SetBuildingLensSubCategory);
+			_BuildingLensSectionListBinding = CreateBinding("BuildingLensSectionList", Array.Empty<BuildingLensSectionUIEntry>());
+			_BuildingLensSubCategoryListBinding = CreateBinding("BuildingLensSubCategoryList", Array.Empty<BuildingLensSubCategoryUIEntry>());
+			_ToolSurfaceDescriptorsBinding = CreateBinding("ToolSurfaceDescriptors", ToolSurfaceCatalog.GetDescriptors().ToArray());
 			_PrefabCountBinding = CreateBinding("PrefabCount", string.Empty);
 			_ViewStyle = CreateBinding("ViewStyle", Mod.Settings.DefaultViewStyle);
 			_AlignmentStyle = CreateBinding("AlignmentStyle", Mod.Settings.DefaultAlignmentStyle);
@@ -154,9 +241,13 @@ namespace FindItBuildingMenu.Systems
 			CreateTrigger<string>("SearchChanged", t => SearchChanged(t));
 			CreateTrigger<int>("OnScroll", OnScroll);
 			CreateTrigger<double>("SetScrollIndex", SetScrollIndex);
-			CreateTrigger("FindItCloseToggled", () => ToggleFindItPanel(false));
+			CreateTrigger("FindItCloseToggled", CloseLens);
 			CreateTrigger("FindItIconToggled", FindItIconClicked);
 			CreateTrigger<int>("SetCurrentPrefab", TryActivatePrefabTool);
+			// The UI watches the game's own toolbar.selectedAssetMenu binding and
+			// hands the entity index here; resolving the prefab name and the
+			// preset belongs on this side.
+			CreateTrigger<int>("VanillaMenuSelected", VanillaMenuSelected);
 			CreateTrigger<int>("ToggleFavorited", FindItUtil.ToggleFavorited);
 			CreateTrigger("ToggleLock", ToggleLock);
 			CreateTrigger("OnSearchFocused", () => _FocusSearchBar.Value = false);
@@ -164,10 +255,15 @@ namespace FindItBuildingMenu.Systems
 			CreateTrigger("OnRandomButtonClicked", OnRandomButtonClicked);
 			CreateTrigger<int>("OnLocateButtonClicked", OnLocateButtonClicked);
 			CreateTrigger<int>("OnPdxModsButtonClicked", OnPdxModsButtonClicked);
-			CreateTrigger<string>("SetBuildingCatalogSortColumn", SetBuildingCatalogSortColumn);
-			CreateTrigger<bool>("SetBuildingCatalogSortDescending", SetBuildingCatalogSortDescending);
 			CreateTrigger<int>("SetBuildingCatalogOffset", SetBuildingCatalogOffset);
-			CreateTrigger<int>("SetBuildingCapacityFloor", SetBuildingCapacityFloor);
+			CreateTrigger<int>("ToggleBuildingCatalogCompare", ToggleBuildingCatalogCompare);
+			CreateTrigger("ClearBuildingCatalogCompare", ClearBuildingCatalogCompare);
+				CreateTrigger<string, string, string>("SetBuildingCatalogMetricRange", SetBuildingCatalogMetricRange);
+				CreateTrigger("ClearBuildingCatalogMetricRanges", ClearBuildingCatalogMetricRanges);
+				CreateTrigger<string, string>("ToggleBuildingLensFacet", ToggleBuildingLensFacet);
+				CreateTrigger("ClearBuildingLensFacets", ClearBuildingLensFacets);
+				CreateTrigger("ClearBuildingLensFilters", ClearBuildingLensFilters);
+				CreateTrigger<string>("ToggleBuildingLensZoneFamily", ToggleBuildingLensZoneFamily);
 			CreateTrigger<float>("SetBuildingLensPanelWidth", SetBuildingLensPanelWidth);
 			CreateTrigger("CommitBuildingLensPanelWidth", CommitBuildingLensPanelWidth);
 			CreateTrigger("ClearThumbnails", () => _AllThumbnails.Value = new string[0]);

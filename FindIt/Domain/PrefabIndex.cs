@@ -20,11 +20,31 @@ namespace FindItBuildingMenu.Domain
 		public BuildingCornerFilter CornerType { get; set; }
 		public int2 LotSize { get; set; }
 		public int BuildingLevel { get; set; }
+		public string? BuildingTypeName { get; set; }
+
+		/// <summary>
+		/// The tier a school grants (SchoolData.m_EducationLevel): 1 elementary,
+		/// 2 high school, 3 college, 4 university. Null for anything that is not
+		/// a school.
+		/// </summary>
+		public int? EducationLevel { get; set; }
+		public BuildingFlags? BuildingFlagsValue { get; set; }
 		public bool IsVanilla { get; set; }
+
+		/// <summary>
+		/// Whether the game still has this behind a milestone.
+		/// </summary>
+		/// <remarks>
+		/// Locked is an enableable component, so presence is not the test —
+		/// HasEnabledComponent is, which is what the game's own toolbar uses
+		/// when it decides to grey an asset out.
+		/// </remarks>
+		public bool IsLocked { get; set; }
 		public bool IsUniqueMesh { get; set; }
 		public ThemePrefab Theme { get; set; }
 		public AssetPackPrefab[] AssetPacks { get; set; }
 		public int[] RandomPrefabs { get; set; }
+		public string[]? ExtensionIds { get; set; }
 		public List<string> Tags { get; set; }
 		public int UIOrder { get; set; }
 		public bool HasParking { get; set; }

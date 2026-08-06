@@ -23,6 +23,8 @@ import unlock from "images/findit_unlock.svg";
 import sort from "images/findit_sort.svg";
 import { FOCUS_DISABLED } from "cs2/input";
 import { searchChangedCommand, setCurrentCategoryCommand, setCurrentSubCategoryCommand } from "domain/buildingCatalogContracts";
+import type { BuildingLensMode } from "domain/buildingLensMode";
+import { ChipRow } from "mods/ChipRow/ChipRow";
 
 export interface TopBarProps {
   sortingOpen: any;
@@ -33,7 +35,11 @@ export interface TopBarProps {
   toggleOptionsOpen: () => void;
   toggleSortingOpen: () => void;
   toggleEnlarge: () => void;
+  buildingLensMode: BuildingLensMode;
+  onBuildingLensModeChange: (mode: BuildingLensMode) => void;
 }
+
+const AccessibleLabel = ({ label }: { label: string }) => <span className={styles.accessibleLabel}>{label}</span>;
 
 const TextInput = getModule("game-ui/common/input/text/text-input.tsx", "TextInput");
 
@@ -57,7 +63,14 @@ const CurrentSubCategory$ = bindValue<number>(mod.id, "CurrentSubCategory");
 const CategoryList$ = bindValue<PrefabCategory[]>(mod.id, "CategoryList");
 const SubCategoryList$ = bindValue<PrefabSubCategory[]>(mod.id, "SubCategoryList");
 const AlignmentStyle$ = bindValue<string>(mod.id, "AlignmentStyle");
-const BuildingLensEnabled$ = bindValue<boolean>(mod.id, "BuildingLensEnabled");
+// The lens navigation bindings can be read during a view recreation before
+// the first C# refresh tick. Keep the React tree on a valid, inert shape until
+// that update arrives instead of calling getValueUnsafe on an uninitialized
+// binding (which otherwise leaves a Gameface exception in the console).
+const BuildingLensEnabled$ = bindValue<boolean>(mod.id, "BuildingLensEnabled", false);
+const BuildingCatalog$ = bindValue<{ totalCount?: number } | null>(mod.id, "BuildingCatalog", null);
+// Section and subcategory now belong to the chip row, which owns both the
+// breadcrumb and the picker that changes them.
 
 export const TopBarComponent = (props: TopBarProps) => {
   // These get the value of the bindings. Or they will when we have bindings.
@@ -74,9 +87,12 @@ export const TopBarComponent = (props: TopBarProps) => {
   const FocusSearchBar = useValue(FocusSearchBar$);
   const AlignmentStyle = useValue(AlignmentStyle$);
   const BuildingLensEnabled = useValue(BuildingLensEnabled$);
+  const BuildingCatalogTotal = useValue(BuildingCatalog$)?.totalCount ?? 0;
   const searchRef = useRef(null);
   // translation handling. Translates using locale keys that are defined in C# or fallback string here.
   const { translate } = useLocalization();
+
+  const localizedLabel = (key: string, fallback: string): string => translate(key, fallback) ?? fallback;
 
   const handleInputChange = (value: Event) => {
     if (value?.target instanceof HTMLTextAreaElement) {
@@ -115,7 +131,7 @@ export const TopBarComponent = (props: TopBarProps) => {
     setSearchText("");
   }
 
-  function RenderCategoryList(): JSX.Element {
+  function RenderLegacyCategoryList(): JSX.Element {
     return (
       <div className={styles.categorySection}>
         {CategoryList.map((element) => (
@@ -127,6 +143,7 @@ export const TopBarComponent = (props: TopBarProps) => {
               onClick={element.id == CurrentCategory ? undefined : () => setCurrentCategory(element.id)}
               className={classNames(VanillaComponentResolver.instance.toolButtonTheme.button, element.id == CurrentCategory && styles.selected)}
             >
+              <AccessibleLabel label={element.toolTip} />
               <span />
             </BasicButton>
           </>
@@ -135,65 +152,188 @@ export const TopBarComponent = (props: TopBarProps) => {
     );
   }
 
+  function RenderLensModeList(): JSX.Element {
+    // Folded into the top bar rather than owning a band. Catalog|Tools is
+    // 128rem of controls; giving it a full-width 25rem row of its own was
+    // 4% of the panel spent on two buttons.
+    //
+    // Built from the game's own TabBar/Tab rather than two hand-padded
+    // lightButtons. This is exactly the control the game uses for a small
+    // set of mutually exclusive views, so it already carries the right
+    // padding, the selected treatment, and the legacy-interface variant that
+    // our hand-styled version had to reproduce by eye and got subtly wrong.
+    // TabNav adds gamepad and keyboard "Switch Tab", which the buttons never
+    // had.
+    const { TabBar, Tab, TabNav } = VanillaComponentResolver.instance;
+    const modes: BuildingLensMode[] = ["catalog", "tools"];
+    const modeLabels: Record<BuildingLensMode, { long: string; short: string }> = {
+      catalog: {
+        long: localizedLabel("Tooltip.LABEL[FindItBuildingMenu.CatalogMode]", "Building catalog"),
+        short: localizedLabel("Tooltip.LABEL[FindItBuildingMenu.CatalogModeShort]", "Catalog"),
+      },
+      tools: {
+        long: localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ToolsMode]", "Construction tools"),
+        short: localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ToolsModeShort]", "Tools"),
+      },
+    };
+
+    return (
+      <TabNav
+        tabs={modes}
+        selectedTab={props.buildingLensMode}
+        onSelect={(id) => props.onBuildingLensModeChange(id as BuildingLensMode)}
+      >
+        <TabBar className={styles.lensModeTabBar}>
+          {modes.map((mode) => (
+            <Tab
+              key={mode}
+              id={mode}
+              selectedId={props.buildingLensMode}
+              className={styles.lensModeTab}
+              onSelect={(id) => props.onBuildingLensModeChange(id as BuildingLensMode)}
+            >
+              {modeLabels[mode].short}
+              <AccessibleLabel label={modeLabels[mode].long} />
+            </Tab>
+          ))}
+        </TabBar>
+      </TabNav>
+    );
+  }
+
+  function RenderSubCategoryList(): JSX.Element {
+    return (
+      <>
+        {SubCategoryList.map((element) => (
+          <BasicButton
+            key={element.id}
+            tooltip={element.toolTip}
+            onClick={element.id == CurrentSubCategory ? undefined : () => setCurrentSubCategory(element.id)}
+            className={classNames(
+              VanillaComponentResolver.instance.assetGridTheme.item,
+              styles.tabButton,
+              element.id == CurrentSubCategory && styles.selected
+            )}
+          >
+            <AccessibleLabel label={element.toolTip} />
+            <img src={element.icon} className={VanillaComponentResolver.instance.assetGridTheme.thumbnail + " " + styles.gridThumbnail}></img>
+          </BasicButton>
+        ))}
+      </>
+    );
+  }
+
   function RenderButtonSection(): JSX.Element {
+    const enlargeLabel = localizedLabel(
+      props.expanded ? "Tooltip.LABEL[FindItBuildingMenu.Shrink]" : "Tooltip.LABEL[FindItBuildingMenu.Expand]",
+      props.expanded ? "Shrink" : "Expand"
+    );
+    const lockLabel = localizedLabel("Tooltip.LABEL[FindItBuildingMenu.LockWindow]", "Lock Window Open");
+    const sortingLabel = localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ToggleSorting]", "Sorting");
+    const filtersLabel = localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ToggleFilters]", "Filters");
+    const buildingLensLabel = localizedLabel(
+      BuildingLensEnabled
+        ? "Tooltip.LABEL[FindItBuildingMenu.DisableBuildingLens]"
+        : "Tooltip.LABEL[FindItBuildingMenu.EnableBuildingLens]",
+      BuildingLensEnabled ? "Disable building lens" : "Enable building lens"
+    );
+    const clearFilterLabel = localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClearFilter]", "Clear Filters");
+    const randomLabel = localizedLabel("Tooltip.LABEL[FindItBuildingMenu.Random]", "Random");
+
     return (
       <div className={styles.buttonsSection}>
         {AlignmentStyle === "Center" && (
           <BasicButton
-            tooltip={props.expanded ? translate("Tooltip.LABEL[FindItBuildingMenu.Shrink]", "Shrink") : translate("Tooltip.LABEL[FindItBuildingMenu.Expand]", "Expand")}
+            tooltip={enlargeLabel}
             onClick={props.toggleEnlarge}
             mask={props.expanded ? shrink : expand}
             className={props.expanded && styles.selected}
-          />
+          >
+            <AccessibleLabel label={enlargeLabel} />
+          </BasicButton>
         )}
 
         <BasicButton
-          tooltip={translate("Tooltip.LABEL[FindItBuildingMenu.LockWindow]", "Lock Window Open")}
+          tooltip={lockLabel}
           onClick={() => trigger(mod.id, "ToggleLock")}
           mask={!IsWindowLocked ? unlock : lock}
           className={IsWindowLocked && styles.selected}
-        />
+        >
+          <AccessibleLabel label={lockLabel} />
+        </BasicButton>
+
+        {/* The legacy sort applies to the grid, not to the lens table, which
+            sorts through its own column headers. Leaving it visible in lens
+            mode offered a control that silently did nothing. */}
+        {!BuildingLensEnabled && (
+          <BasicButton
+            tooltip={sortingLabel}
+            onClick={props.toggleSortingOpen}
+            mask={sort}
+            className={props.sortingOpen && styles.selected}
+          >
+            <AccessibleLabel label={sortingLabel} />
+          </BasicButton>
+        )}
 
         <BasicButton
-          tooltip={translate("Tooltip.LABEL[FindItBuildingMenu.ToggleSorting]", "Sorting")}
-          onClick={props.toggleSortingOpen}
-          mask={sort}
-          className={props.sortingOpen && styles.selected}
-        />
-
-        <BasicButton
-          tooltip={translate("Tooltip.LABEL[FindItBuildingMenu.ToggleFilters]", "Filters")}
+          tooltip={filtersLabel}
           onClick={props.toggleOptionsOpen}
           mask={filter}
           className={props.optionsOpen && styles.selected}
-        />
+        >
+          <AccessibleLabel label={filtersLabel} />
+        </BasicButton>
 
+        {/* The lens is a mode switch, not another filter toggle, but it read as
+            one more unlabelled icon in a row of nine. A visible word makes the
+            entry point findable without hovering every icon in turn. */}
         <BasicButton
-          tooltip={translate("Tooltip.LABEL[FindItBuildingMenu.ToggleBuildingLens]", "Building lens")}
+          tooltip={buildingLensLabel}
           onClick={() => trigger(mod.id, "SetBuildingLensEnabled", !BuildingLensEnabled)}
           src="coui://finditbuildingmenu/Icons/Colored/BuildingZoneSignature.svg"
-          className={BuildingLensEnabled && styles.selected}
-        />
+          className={BuildingLensEnabled
+            ? `${styles.buildingLensToggle} ${styles.selected}`
+            : styles.buildingLensToggle}
+        >
+          <span className={styles.buildingLensToggleLabel}>
+            {localizedLabel("Tooltip.LABEL[FindItBuildingMenu.BuildingLens]", "Buildings")}
+          </span>
+          <AccessibleLabel label={buildingLensLabel} />
+        </BasicButton>
 
         <div className={styles.seperator} />
 
         <BasicButton
-          tooltip={translate("Tooltip.LABEL[FindItBuildingMenu.ClearFilter]", "Clear Filters")}
+          tooltip={clearFilterLabel}
           disabled={!AreFiltersSet}
           onClick={() => trigger(mod.id, "ClearFilters")}
           mask={filterX}
-        />
+        >
+          <AccessibleLabel label={clearFilterLabel} />
+        </BasicButton>
 
-        <BasicButton
-          tooltip={translate("Tooltip.LABEL[FindItBuildingMenu.Random]", "Random")}
-          onClick={() => trigger(mod.id, "OnRandomButtonClicked")}
-          mask={random}
-        />
+        {/* Random picks from the legacy grid result and ignores every lens
+            facet and metric range, so in lens mode it would hand back a
+            building the player's own filters had excluded. */}
+        {!BuildingLensEnabled && (
+          <BasicButton
+            tooltip={randomLabel}
+            onClick={() => trigger(mod.id, "OnRandomButtonClicked")}
+            mask={random}
+          >
+            <AccessibleLabel label={randomLabel} />
+          </BasicButton>
+        )}
 
         {AlignmentStyle === "Center" && <div className={styles.seperator} />}
 
+        {/* One count, not two. The legacy PrefabCount describes the grid
+            result; in lens mode the visible table is the bounded catalog, and
+            showing the grid's number beside it invited the player to trust a
+            total that did not describe anything on screen. */}
         <div className={styles.itemCount}>
-          <span>{PrefabCount}</span>
+          <span>{BuildingLensEnabled ? String(BuildingCatalogTotal) : PrefabCount}</span>
         </div>
       </div>
     );
@@ -223,11 +363,13 @@ export const TopBarComponent = (props: TopBarProps) => {
                 <Button
                   className={classNames(VanillaComponentResolver.instance.assetGridTheme.item, styles.clearIcon)}
                   variant="icon"
+                  aria-label={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClearSearch]", "Clear search")}
+                  title={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClearSearch]", "Clear search")}
                   onSelect={() => {
                     setSearchText("");
                   }}
                 >
-                  <img src="coui://finditbuildingmenu/Icons/Standard/ArrowLeftClear.svg"></img>
+                  <img src="coui://finditbuildingmenu/Icons/Standard/ArrowLeftClear.svg" alt="" aria-hidden="true"></img>
                 </Button>
               )}
             </div>
@@ -236,13 +378,17 @@ export const TopBarComponent = (props: TopBarProps) => {
           </div>
 
           <div className={styles.topBarSection}>
+            {BuildingLensEnabled && RenderLensModeList()}
+
             <Tooltip tooltip={translate("Tooltip.LABEL[FindItBuildingMenu.ClosePanel]", "Close Panel")}>
               <Button
                 className={VanillaComponentResolver.instance.assetGridTheme.item + " " + styles.closeIcon}
                 variant="icon"
+                aria-label={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClosePanel]", "Close Panel")}
+                title={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClosePanel]", "Close Panel")}
                 onSelect={() => trigger(mod.id, "FindItCloseToggled")}
               >
-                <img src="coui://finditbuildingmenu/Icons/Standard/XClose.svg"></img>
+                <img src="coui://finditbuildingmenu/Icons/Standard/XClose.svg" alt="" aria-hidden="true"></img>
               </Button>
             </Tooltip>
           </div>
@@ -250,26 +396,23 @@ export const TopBarComponent = (props: TopBarProps) => {
 
         {AlignmentStyle !== "Center" && <div className={styles.lowerButtonSection}>{RenderButtonSection()}</div>}
 
-        <div className={styles.rowCategoryBar}>{RenderCategoryList()}</div>
+        {/* Legacy Find It keeps its own strips — it is upstream's UI, not ours
+            to redesign. In lens mode the scope and type strips are gone: they
+            were filters drawn as navigation, costing 27rem each and unable to
+            express more than one value at a time. */}
+        {!BuildingLensEnabled && (
+          <>
+            <div className={styles.rowCategoryBar}>{RenderLegacyCategoryList()}</div>
 
-        <div className={classNames(AssetCategoryTabTheme.assetCategoryTabBar, styles.subCategoryContainer)}>
-          <div className={AssetCategoryTabTheme.items}>
-            {SubCategoryList.map((element) => (
-              <BasicButton
-                key={element.id}
-                tooltip={element.toolTip}
-                onClick={element.id == CurrentSubCategory ? undefined : () => setCurrentSubCategory(element.id)}
-                className={classNames(
-                  VanillaComponentResolver.instance.assetGridTheme.item,
-                  styles.tabButton,
-                  element.id == CurrentSubCategory && styles.selected
-                )}
-              >
-                <img src={element.icon} className={VanillaComponentResolver.instance.assetGridTheme.thumbnail + " " + styles.gridThumbnail}></img>
-              </BasicButton>
-            ))}
-          </div>
-        </div>
+            <div className={classNames(AssetCategoryTabTheme.assetCategoryTabBar, styles.subCategoryContainer)}>
+              <div className={AssetCategoryTabTheme.items}>
+                {RenderSubCategoryList()}
+              </div>
+            </div>
+          </>
+        )}
+
+        {BuildingLensEnabled && props.buildingLensMode === "catalog" && <ChipRow />}
       </div>
     </>
   );

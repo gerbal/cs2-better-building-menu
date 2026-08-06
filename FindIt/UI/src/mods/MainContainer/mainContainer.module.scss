@@ -129,6 +129,10 @@
 
 .toolContainer {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
   pointer-events: auto;
   animation: entryTranslate 0.2s ease-in-out;
 }
@@ -180,8 +184,39 @@
   backdrop-filter: var(--panelBlur);
   background-image: linear-gradient( var(--panelGradientStart) , var(--panelGradientEnd) );
   color: rgba(255, 255, 255, 1);
-  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   position: relative;
+  // Explicit, and below the chip row's 30. Both are positioned siblings, and
+  // with z-index auto the later one in the DOM won on paint order — the section
+  // picker was visible, opaque and correctly placed with the zoning tiles drawn
+  // straight over it.
+  z-index: 0;
+
+  // Fixed floor, grow to the cap the parent sets.
+  //
+  // This was flex-grow: 1, so the panel took every pixel the layout offered
+  // whatever it had to show. Measured on the zoning view: content filled 201px
+  // of a 472px scrollable that never scrolled — 43% of the panel was empty.
+  //
+  // Sizing purely to content was the obvious fix and the wrong one: the panel
+  // would change height on every keystroke, moving controls under the cursor.
+  // A floor stops the void without letting the height chase the result count,
+  // because both bounds are constants rather than functions of it.
+  flex: 0 1 auto;
+  // 400rem first, which was too blunt: filtering the zoning view down to
+  // Office left 100px of content in a 267px box — a 63% void, worse than the
+  // 43% this set out to fix. The floor only has to stop the panel collapsing
+  // to a single row as you type; it does not have to reserve a screenful.
+  min-height: 200rem;
+}
+
+.toolsContent {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  overflow: auto;
 }
 
 .topBar {
@@ -190,7 +225,19 @@
   color: var(--accentColorNormal);
   border-top-left-radius: var(--panelRadius);
   border-top-right-radius: var(--panelRadius);
-  overflow: hidden;
+  // Not hidden. The chip row lives here now, and both its section picker and
+  // the filter rail's popovers hang below the bar — clipped to the bar's 64rem
+  // they were in the DOM, correctly positioned, and invisible. Only the two top
+  // corners are rounded and nothing paints into them, so the radius survives
+  // without the clip.
+  overflow: visible;
+
+  // The comparison that decides whether a popover is visible happens between
+  // this element and .content, because those are the siblings. Raising the
+  // chip row instead did nothing: a z-index on a nested descendant does not
+  // reorder its ancestor against that ancestor's sibling.
+  position: relative;
+  z-index: 40;
 }
 
 .rightPanel {
@@ -210,8 +257,12 @@
 .topPanel > div {
   position: absolute;
   width: 350rem;
-  bottom: 10rem;
+  top: 0;
+  bottom: auto;
   right: 0;
+  z-index: 30;
+  max-height: calc(100vh - 120rem);
+  overflow-y: auto;
 }
 
 .rightPanel > div:first-child,
@@ -226,6 +277,11 @@
   border-bottom-right-radius: var(--panelRadius);
   border-top-left-radius: var(--panelRadius);
   border-top-right-radius: var(--panelRadius);
+}
+
+.rightPanel > div:first-child {
+  max-height: calc(100vh - 120rem);
+  overflow-y: auto;
 }
 
 .rightPanel > div:last-child {

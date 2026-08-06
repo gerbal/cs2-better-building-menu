@@ -4,7 +4,9 @@ export type {
   ActivatePrefabAction,
   FindItSurfaceAction,
   LocatePrefabAction,
+  PickerOptionAction,
 } from "./findItSurfaceContracts";
+import type { MetricRangeId } from "./buildingCatalogRanges";
 
 /**
  * Keep the UI's bounded comparison and paging rules in a pure module.
@@ -47,8 +49,13 @@ export const setSortColumnCommand = (column: SortColumn): TriggerCommand => crea
 export const setSortDescendingCommand = (descending: boolean): TriggerCommand =>
   createTriggerCommand("SetBuildingCatalogSortDescending", descending);
 export const setCatalogOffsetCommand = (offset: number): TriggerCommand => createTriggerCommand("SetBuildingCatalogOffset", offset);
-export const setBuildingCapacityFloorCommand = (floor: number): TriggerCommand =>
-  createTriggerCommand("SetBuildingCapacityFloor", normalizeCapacityFloor(floor));
+export const setBuildingCatalogMetricRangeCommand = (id: MetricRangeId, minText: string, maxText: string): TriggerCommand =>
+  createTriggerCommand("SetBuildingCatalogMetricRange", id, minText, maxText);
+export const clearBuildingCatalogMetricRangesCommand = (): TriggerCommand =>
+  createTriggerCommand("ClearBuildingCatalogMetricRanges");
+export const toggleCompareEntryCommand = (id: number): TriggerCommand =>
+  createTriggerCommand("ToggleBuildingCatalogCompare", id);
+export const clearCompareEntriesCommand = (): TriggerCommand => createTriggerCommand("ClearBuildingCatalogCompare");
 export const searchChangedCommand = (value: string): TriggerCommand => createTriggerCommand("SearchChanged", value);
 export const setCurrentCategoryCommand = (id: number): TriggerCommand => createTriggerCommand("SetCurrentCategory", id);
 export const setCurrentSubCategoryCommand = (id: number): TriggerCommand => createTriggerCommand("SetCurrentSubCategory", id);
@@ -59,32 +66,14 @@ export const pickerOptionCommand = (sectionId: number, optionId: number, value: 
   optionId,
   value,
 });
+export const optionClickedCommand = (sectionId: number, optionId: number, value: number): TriggerCommand =>
+  createTriggerCommand("OptionClicked", sectionId, optionId, value);
 
 export function nextSortState(current: SortState, column: SortColumn): SortState {
   return {
     column,
     descending: column === current.column ? !current.descending : false,
   };
-}
-
-export function toggleCompareEntry(
-  current: readonly BuildingCatalogEntry[],
-  entry: BuildingCatalogEntry,
-  maxEntries: number = MAX_COMPARE_ENTRIES
-): BuildingCatalogEntry[] {
-  if (current.some((candidate) => candidate.id === entry.id)) {
-    return current.filter((candidate) => candidate.id !== entry.id);
-  }
-
-  if (current.length >= Math.max(0, maxEntries)) {
-    return [...current];
-  }
-
-  return [...current, entry];
-}
-
-export function removeCompareEntry(current: readonly BuildingCatalogEntry[], id: number): BuildingCatalogEntry[] {
-  return current.filter((entry) => entry.id !== id);
 }
 
 export function normalizeCatalogPageSize(limit: number): number {
@@ -111,3 +100,28 @@ export function normalizeCatalogOffset(offset: number, totalCount: number, limit
 
   return Math.min(maxOffset, Math.floor(safeOffset / pageSize) * pageSize);
 }
+
+/**
+ * Make the bounded catalog semantics explicit to the player. The table is
+ * paged, not an infinite scroll: show both the visible row range and the
+ * current page so the footer cannot be mistaken for an unbounded feed.
+ */
+export function getCatalogPageSummary(offset: number, totalCount: number, limit: number): string {
+  const pageSize = normalizeCatalogPageSize(limit);
+  const safeTotal = Math.max(0, Math.floor(Number.isFinite(totalCount) ? totalCount : 0));
+  const safeOffset = normalizeCatalogOffset(offset, safeTotal, pageSize);
+  const firstRow = safeTotal === 0 ? 0 : safeOffset + 1;
+  const lastRow = safeTotal === 0 ? 0 : Math.min(safeOffset + pageSize, safeTotal);
+  const pageCount = Math.max(1, Math.ceil(safeTotal / pageSize));
+  const page = Math.floor(safeOffset / pageSize) + 1;
+
+  return `Rows ${firstRow.toLocaleString()}–${lastRow.toLocaleString()} of ${safeTotal.toLocaleString()} · Page ${page} of ${pageCount}`;
+}
+
+/** True when the bounded page has more records than are currently rendered. */
+export function hasCatalogScroll(totalCount: number, renderedCount: number): boolean {
+  const safeTotal = Math.max(0, Math.floor(Number.isFinite(totalCount) ? totalCount : 0));
+  const safeRendered = Math.max(0, Math.floor(Number.isFinite(renderedCount) ? renderedCount : 0));
+  return safeTotal > safeRendered;
+}
+

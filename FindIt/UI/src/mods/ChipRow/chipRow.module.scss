@@ -1,0 +1,173 @@
+@use "../../base.scss" as _base;
+
+// One band, wrapping only once the player has actually narrowed something.
+// It replaces four stacked selector bands that cost 142rem of a 625rem panel.
+.chipRow {
+  position: relative;
+  // The picker overhangs the content, which is a later sibling and would
+  // otherwise paint over it: z-index inside the popover cannot win against a
+  // sibling stacking context, so the row itself has to be raised.
+  z-index: 30;
+  flex: 0 0 auto;
+  background-color: rgba(0, 0, 0, 0.35);
+  border-top: 1rem solid rgba(255, 255, 255, 0.08);
+}
+
+.chips {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4rem;
+  padding: 4rem 10rem;
+}
+
+.chip {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 26rem;
+  padding: 0 2rem 0 8rem;
+  border-radius: 13rem;
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1rem solid rgba(255, 255, 255, 0.1);
+}
+
+.chipText {
+  // Cohtml breaks lines at characters this UI treats as glue, so ranges like
+  // "1,000–5,000" must be pinned explicitly.
+  white-space: nowrap;
+  font-size: var(--fontSizeS);
+  color: var(--menuText1Normal);
+}
+
+.chipRemove {
+  @include _base.transparentButton(false, true);
+  width: 20rem !important;
+  height: 20rem;
+  margin-left: 3rem;
+  padding: 0;
+  border-radius: 10rem;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeM);
+  line-height: 18rem;
+  text-align: center;
+}
+
+.chipRemove:hover {
+  background-color: rgba(255, 255, 255, 0.16);
+  color: var(--menuText1Normal);
+}
+
+// The breadcrumbs are navigation, not filters, so they read differently: an
+// accent edge and a caret rather than a removal affordance.
+.breadcrumb {
+  padding-left: 0;
+  border-color: rgba(255, 255, 255, 0.18);
+  background-color: rgba(0, 0, 0, 0.45);
+}
+
+.breadcrumbActive {
+  border-color: var(--accentColorNormal);
+}
+
+.breadcrumbLabel {
+  @include _base.transparentButton(false, true);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: auto !important;
+  height: 24rem;
+  padding: 0 6rem 0 8rem !important;
+  border-radius: 13rem;
+}
+
+.breadcrumbLabel:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.caret {
+  margin-left: 4rem;
+  font-size: var(--fontSizeXS);
+  color: var(--accentColorNormal);
+}
+
+// The rail keeps its own popover positioning; this only reserves its place in
+// the flow between the breadcrumbs and the filters they produced.
+.railSlot {
+  display: flex;
+  align-items: center;
+
+  // The rail was a band of its own with padding and a rule under it. Inside the
+  // chip row it is one control among several.
+  :global(*) > div {
+    border-bottom: none;
+  }
+}
+
+.clearAll {
+  @include _base.transparentButton(false, true);
+  width: auto !important;
+  height: 26rem;
+  margin-left: auto;
+  padding: 0 8rem;
+  border-radius: 13rem;
+  background-color: rgba(0, 0, 0, 0.25);
+  color: var(--accentColorNormal);
+  white-space: nowrap;
+  font-size: var(--fontSizeXS);
+}
+
+.clearAll:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.picker {
+  position: absolute;
+  top: 100%;
+  left: 10rem;
+  z-index: 20;
+  min-width: 200rem;
+  max-width: 320rem;
+  padding: 4rem;
+  border-radius: 4rem;
+  background-color: rgba(12, 16, 20, 0.98);
+  border: 1rem solid rgba(255, 255, 255, 0.14);
+}
+
+.pickerList {
+  max-height: 260rem;
+}
+
+.pickerItem {
+  @include _base.transparentButton(false, true);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100% !important;
+  height: 28rem;
+  padding: 0 6rem !important;
+  border-radius: 3rem;
+  justify-content: flex-start;
+}
+
+.pickerItem:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.pickerItemSelected {
+  background-color: rgba(255, 255, 255, 0.16);
+}
+
+.pickerIcon {
+  width: 18rem;
+  height: 18rem;
+  margin-right: 6rem;
+  object-fit: contain;
+}
+
+.pickerLabel {
+  font-size: var(--fontSizeS);
+  color: var(--menuText1Normal);
+  white-space: nowrap;
+}

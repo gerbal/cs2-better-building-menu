@@ -15,7 +15,9 @@ namespace FindItBuildingMenu.Domain.UIBinding
 		{
 			Id = (int)category;
 			Icon = CategoryIconAttribute.GetAttribute(category).Icon;
-			ToolTip = LocaleHelper.Translate($"Tooltip.LABEL[FindItBuildingMenu.{category}]");
+			// Legacy Find It's own strip. Same labels, same reason to prefer the
+			// game's string where it has one.
+			ToolTip = LocaleHelper.TranslateLabel(category.ToString(), category.ToString());
 		}
 
 		public readonly void Write(IJsonWriter writer)

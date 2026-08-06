@@ -34,10 +34,19 @@ placement, or broad asset coverage that make Find It useful.
    during the existing prefab index pass when their components are present.
 4. **Constraint workflows** — extend the bounded query contract with range
    filters, category-scoped filters, saved filter presets, and multi-column
-   sorting without moving the catalog into a giant client-side list. The first
-   category-scoped control is now a bounded Education & Research capacity-floor
-   preset; it maps to the existing nullable capacity metric and clears when the
-   active subcategory changes.
+   sorting without moving the catalog into a giant client-side list. The
+   Building Lens now has a compact metric drawer for normalized Cost, Upkeep,
+   Workers, Capacity, Lot Width, and Lot Depth ranges; the drawer composes its
+   Capacity floor with the Education & Research preset and keeps all six
+   predicates in the bounded C# query. The first category-scoped control is a
+   bounded Education & Research capacity-floor preset; it maps to the existing
+   nullable capacity metric and clears when the active subcategory changes. The
+   first typed facet slice now also exposes role, vanilla/custom source, DLC,
+   theme, asset-pack, and static placement/access dimensions with bounded
+   multi-select controls; runtime and map-context predicates remain deferred.
+   Building extensions are also a separate toggleable facet, projected from
+   the existing prefab index; a future refinement can expose parent/extension
+   relationships in saved presets and category summaries.
 5. **Compare and place** — compare up to three candidates, inspect their
    analytical summaries, and enter the normal placement tool without losing
    the panel context. This first bounded tray is implemented and live-smoked.

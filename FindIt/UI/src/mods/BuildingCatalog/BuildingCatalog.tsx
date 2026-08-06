@@ -1,51 +1,101 @@
 import { bindValue, trigger, useValue } from "cs2/api";
-import { Button } from "cs2/ui";
+import { Button, Scrollable } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import classNames from "classnames";
 import mod from "../../../mod.json";
-import { BuildingCatalogEntry, BuildingCatalogPage } from "domain/buildingCatalog";
+import { BuildingCatalogEntry, BuildingCatalogPage, formatBuildingCatalogLabels } from "domain/buildingCatalog";
 import {
   BUILDING_LENS_PANEL_CHROME_WIDTH,
+  BUILDING_LENS_TITLE_ICON,
+  getBuildingLensCatalogMaxHeight,
   getBuildingLensDensity,
+  getBuildingLensRowGeometry,
   getBuildingLensMetricLabel,
+  getBuildingLensMetricTextScale,
 } from "domain/buildingLensLayout";
 import type { BuildingLensDensityTier, BuildingLensMetric } from "domain/buildingLensLayout";
 import {
   MAX_COMPARE_ENTRIES,
+  getCatalogPageSummary,
+  hasCatalogScroll,
+  clearCompareEntriesCommand,
   nextSortState,
   normalizeCatalogOffset,
-  removeCompareEntry,
   setCatalogOffsetCommand,
-  setBuildingCapacityFloorCommand,
   setSortColumnCommand,
   setSortDescendingCommand,
-  toggleCompareEntry,
+  toggleCompareEntryCommand,
 } from "domain/buildingCatalogContracts";
 import type { SortColumn } from "domain/buildingCatalogContracts";
+import {
+  formatBuildingMetric,
+  formatCapacity,
+  formatLotDimensions,
+  getBuildingDetailMetrics,
+} from "domain/buildingLensMetricFormat";
+import {
+  getBuildingDescriptionKeys,
+  getBuildingExtensionLabels,
+  getBuildingFlagGroups,
+  getBuildingProvenanceChips,
+} from "domain/buildingLensRowDetails";
+import {
+  getBuildingLensEmptyStateMessage,
+  type BuildingLensMetricRangeState,
+} from "domain/buildingLensFilterSummary";
+import type { BuildingLensFacetState } from "domain/buildingCatalogFacets";
 import { findItSurfacePort } from "domain/findItSurfacePort";
+import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
+import { getSearchScopeNotice } from "domain/buildingSearchRank";
+import { getLensChoice, getLensDisclosure, setLensChoice, setLensDisclosure } from "domain/buildingLensViewState";
+import { GroupedResults, type CatalogViewMode } from "mods/GroupedResults/GroupedResults";
+import { ViewModeBar } from "mods/GroupedResults/ViewModeBar";
+import {
+  DEFAULT_GROUP_DIMENSION,
+  GROUP_DIMENSIONS,
+  defaultGroupDimensionFor,
+  groupDimensionLabel,
+  isGroupDimension,
+  type GroupDimensionId,
+} from "domain/buildingGroups";
+// The rail, the metric popover and the filter summary all live in the chip row
+// now, so the catalog no longer owns any filter chrome — only results.
+import {
+  BUILDING_LENS_COLUMN_SORT,
+  getBuildingLensColumnSortIndicator,
+  getBuildingLensSortPresentation,
+} from "domain/buildingLensSortPresentation";
 import styles from "./buildingCatalog.module.scss";
 
-const BuildingCatalog$ = bindValue<BuildingCatalogPage>(mod.id, "BuildingCatalog");
+type BuildingCatalogPageStatus = "indexing" | "ready" | "empty";
+type BuildingCatalogBindingPage = BuildingCatalogPage & { status?: BuildingCatalogPageStatus };
+
+const BuildingCatalog$ = bindValue<BuildingCatalogBindingPage>(mod.id, "BuildingCatalog");
 const PanelWidth$ = bindValue<number>(mod.id, "PanelWidth");
 const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch");
-const BuildingCapacityFilterVisible$ = bindValue<boolean>(mod.id, "BuildingCapacityFilterVisible");
-const BuildingCapacityFloor$ = bindValue<number>(mod.id, "BuildingCapacityFloor");
+// The order lives in the backend query, which outlives this component. Reading
+// it back keeps the header honest across the remounts that close/reopen, the
+// Catalog/Tools switch, and the lens toggle all cause.
+const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "BuildingCatalogSortColumn");
+const BuildingCatalogSortDescending$ = bindValue<boolean>(mod.id, "BuildingCatalogSortDescending");
+// Backend-owned too: placing a building unmounts this panel, which used to
+// throw away the shortlist the player built in order to make that choice.
+const BuildingCatalogCompare$ = bindValue<BuildingCatalogEntry[]>(mod.id, "BuildingCatalogCompare");
+const BuildingLensFacets$ = bindValue<BuildingLensFacetState>(mod.id, "BuildingLensFacets");
+const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState>(mod.id, "BuildingCatalogMetricRanges");
+const BuildingLensLegacyFilters$ = bindValue<string[]>(mod.id, "BuildingLensLegacyFilters");
+const BuildingCatalogMatchesElsewhere$ = bindValue<number>(mod.id, "BuildingCatalogMatchesElsewhere", 0);
+const LensDefaultToTable$ = bindValue<boolean>(mod.id, "BuildingLensDefaultToTable", false);
+// The section decides the grouping until the player picks one themselves.
+const BuildingLensSection$ = bindValue<string>(mod.id, "BuildingLensSection", "AllBuildings");
 
-const educationCapacityPresets = [0, 100, 500, 1000];
+const LENS_VIEW_MODE_KEY = "viewMode";
+const LENS_GROUP_KEY = "groupBy";
 
-const sortColumns: Array<{ key: SortColumn; label: string }> = [
-  { key: "Name", label: "Name" },
-  { key: "Category", label: "Category" },
-  { key: "ConstructionCost", label: "Cost" },
-  { key: "Upkeep", label: "Upkeep" },
-  { key: "Workers", label: "Workers" },
-  { key: "Capacity", label: "Capacity" },
-  { key: "LotWidth", label: "Width" },
-  { key: "LotDepth", label: "Depth" },
-  { key: "BuildingLevel", label: "Level" },
-  { key: "HasParking", label: "Parking" },
-];
+/** Grid recognises, List scans, Table compares. */
+type ViewMode = CatalogViewMode;
+
 
 const metricColumns: Array<{
   key: BuildingLensMetric;
@@ -68,35 +118,137 @@ const densityClassNames: Record<BuildingLensDensityTier, string> = {
   expanded: styles.densityExpanded,
 };
 
-function formatMetric(value: number | null): string {
-  if (value === null || value === undefined) {
-    return "—";
-  }
-
-  return Number.isInteger(value)
-    ? value.toLocaleString()
-    : value.toLocaleString(undefined, { maximumFractionDigits: 1 });
-}
-
 export const BuildingCatalogComponent = () => {
   const { translate } = useLocalization();
   const page = useValue(BuildingCatalog$);
   const panelWidth = useValue(PanelWidth$);
   const currentSearch = useValue(CurrentSearch$);
-  const capacityFilterVisible = useValue(BuildingCapacityFilterVisible$);
-  const capacityFloor = useValue(BuildingCapacityFloor$);
-  const [sortColumn, setSortColumn] = useState<SortColumn>("Name");
-  const [descending, setDescending] = useState(false);
-  const [compareEntries, setCompareEntries] = useState<BuildingCatalogEntry[]>([]);
+  const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
+  const section = useValue(BuildingLensSection$);
+  const descending = useValue(BuildingCatalogSortDescending$) ?? false;
+  const [sortingExpanded, setSortingExpanded] = useState(false);
+  // Grid by default: recognising a thumbnail is the fast path back to the map,
+  // and the table is for the rarer moment when you are genuinely comparing.
+  // Survives remount for the same reason the drawers do — placing a building
+  // unmounts this panel.
+  const defaultToTable = useValue(LensDefaultToTable$);
+  // Three modes now, so a boolean no longer says it. The setting still supplies
+  // the starting point; the in-session choice overrides it and survives the
+  // remount that placing a building causes.
+  const [viewMode, setViewModeState] = useState<ViewMode>(
+    () => getLensChoice(LENS_VIEW_MODE_KEY, defaultToTable ? "table" : "grid") as ViewMode
+  );
+  const setViewMode = (next: ViewMode) => {
+    setLensChoice(LENS_VIEW_MODE_KEY, next);
+    setViewModeState(next);
+  };
+  const tableMode = viewMode === "table";
+  // Empty means "nobody has chosen", which is different from having chosen
+  // Nothing — the first follows the section, the second stays flat.
+  const [chosenGroupBy, setChosenGroupBy] = useState<string>(() => getLensChoice(LENS_GROUP_KEY, ""));
+  const [groupPickerOpen, setGroupPickerOpen] = useState(false);
+  const groupBy: GroupDimensionId = isGroupDimension(chosenGroupBy)
+    ? chosenGroupBy
+    : defaultGroupDimensionFor(section);
+  const setGroupBy = (next: GroupDimensionId) => {
+    setLensChoice(LENS_GROUP_KEY, next);
+    setChosenGroupBy(next);
+    setGroupPickerOpen(false);
+  };
+
+  // The dimension is also the query's primary sort key, so the backend has to
+  // reorder — grouping the page here alone would split a group across a page
+  // boundary and the heading would stop describing the rows under it. This
+  // fires for a section change too, not just an explicit pick, because the
+  // effective dimension moves either way.
+  useEffect(() => {
+    trigger(mod.id, "SetBuildingCatalogGroupBy", groupBy);
+  }, [groupBy]);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const compareEntries = useValue(BuildingCatalogCompare$) ?? [];
+  const facets = useValue(BuildingLensFacets$);
+  const metricRanges = useValue(BuildingCatalogMetricRanges$);
+  const legacyFilters = useValue(BuildingLensLegacyFilters$);
+  const matchesElsewhere = useValue(BuildingCatalogMatchesElsewhere$);
+
+  // Name the constraints that actually emptied the table; the old copy always
+  // blamed search and category, which are often not the cause.
+  const emptyStateMessage = getBuildingLensEmptyStateMessage({
+    searchText: currentSearch,
+    facets,
+    metricRanges,
+    legacyFilters,
+  });
 
   const items = page?.items ?? [];
   const totalCount = page?.totalCount ?? 0;
   const offset = page?.offset ?? 0;
   const limit = page?.limit ?? 100;
+  const status: BuildingCatalogPageStatus = page?.status
+    ?? (page ? (totalCount === 0 ? "empty" : "ready") : "indexing");
   const hasPreviousPage = offset > 0;
   const hasNextPage = offset + items.length < totalCount;
-  const pageNumber = Math.floor(offset / Math.max(1, limit)) + 1;
+  const pageSummary = getCatalogPageSummary(offset, totalCount, limit);
+  const rowsScrollable = hasCatalogScroll(totalCount, items.length);
   const density = getBuildingLensDensity(panelWidth + BUILDING_LENS_PANEL_CHROME_WIDTH);
+  const rowGeometry = getBuildingLensRowGeometry(density);
+  const catalogMaxHeight = getBuildingLensCatalogMaxHeight(typeof window === "undefined" ? 720 : window.innerHeight);
+  const sortPresentation = getBuildingLensSortPresentation({ column: sortColumn, descending });
+  const placeLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Place]", "Place") ?? "Place";
+  const firstPageLabel = translate("Tooltip.LABEL[FindItBuildingMenu.FirstPage]", "First page") ?? "First page";
+  const previousPageLabel = translate("Tooltip.LABEL[FindItBuildingMenu.PreviousPage]", "Previous page") ?? "Previous page";
+  const nextPageLabel = translate("Tooltip.LABEL[FindItBuildingMenu.NextPage]", "Next page") ?? "Next page";
+  const lastPageLabel = translate("Tooltip.LABEL[FindItBuildingMenu.LastPage]", "Last page") ?? "Last page";
+  const lastPageOffset = normalizeCatalogOffset(totalCount, totalCount, limit);
+  const inspectLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Inspect]", "Details") ?? "Details";
+  const collapseLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Collapse]", "Hide") ?? "Hide";
+  // Row and filter should name the same asset the same way: the entry carries
+  // raw ids (DlcId is the numeric platform id) while the facet groups already
+  // hold the display names, so resolve through those rather than duplicating a
+  // lookup table that would drift.
+  const resolveFacetLabel = (groupId: string, value: string): string | null => {
+    const group = facets?.groups?.find((candidate) => candidate.id === groupId);
+
+    return group?.options?.find((option) => option.id === value)?.label ?? null;
+  };
+  const scopeNotice = getSearchScopeNotice({
+    searchText: currentSearch ?? "",
+    shown: items.length,
+    elsewhere: matchesElsewhere ?? 0,
+  });
+  const scopeNoticeText = scopeNotice
+    ? (translate(
+        "Tooltip.LABEL[FindItBuildingMenu.MatchesElsewhere]",
+        "No matches here — {0} elsewhere"
+      ) ?? "No matches here — {0} elsewhere").replace("{0}", `${scopeNotice.elsewhere}`)
+    : "";
+  const searchEverywhereLabel =
+    translate("Tooltip.LABEL[FindItBuildingMenu.SearchEverything]", "Search everything")
+    ?? "Search everything";
+  const groupByLabel = translate(
+    `Tooltip.LABEL[FindItBuildingMenu.GroupBy_${groupBy}]`,
+    groupDimensionLabel(groupBy)
+  ) ?? groupDimensionLabel(groupBy);
+  const upgradesLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Upgrades]", "Upgrades") ?? "Upgrades";
+  const noDetailsLabel = translate(
+    "Tooltip.LABEL[FindItBuildingMenu.NoDetailMetrics]",
+    "No further data for this building",
+  ) ?? "No further data for this building";
+  const clearCompareLabel = translate("Tooltip.LABEL[FindItBuildingMenu.ClearCompare]", "Clear comparison") ?? "Clear comparison";
+  const moreSortingLabel = sortingExpanded
+    ? translate("Tooltip.LABEL[FindItBuildingMenu.HideSorting]", "Hide sorting") ?? "Hide sorting"
+    : translate("Tooltip.LABEL[FindItBuildingMenu.MoreSorting]", "More sorting") ?? "More sorting";
+
+  /**
+   * Draws one leaf's entries in whichever mode is active.
+   *
+   * Grouping is a property of the result, not of a mode, so all three render
+   * the same tree. The zoning view is the same idea by hand — family, density,
+   * tiles — which is why it can eventually drop its bespoke component.
+   */
+  function toggleExpanded(id: number): void {
+    setExpandedId((current) => (current === id ? null : id));
+  }
 
   function activate(entry: BuildingCatalogEntry): void {
     // Keep the existing FindIt placement path: the backend resolves this id
@@ -105,18 +257,26 @@ export const BuildingCatalogComponent = () => {
   }
 
   function toggleCompare(entry: BuildingCatalogEntry): void {
-    setCompareEntries((current) => toggleCompareEntry(current, entry));
+    const command = toggleCompareEntryCommand(entry.id);
+    trigger(mod.id, command.method, ...command.args);
   }
 
   function removeCompare(id: number): void {
-    setCompareEntries((current) => removeCompareEntry(current, id));
+    // Removal is the same backend toggle: the id is known to be selected.
+    const command = toggleCompareEntryCommand(id);
+    trigger(mod.id, command.method, ...command.args);
+  }
+
+  function clearCompare(): void {
+    const command = clearCompareEntriesCommand();
+    trigger(mod.id, command.method, ...command.args);
   }
 
   function setSort(column: SortColumn): void {
     const next = nextSortState({ column: sortColumn, descending }, column);
 
-    setSortColumn(next.column);
-    setDescending(next.descending);
+    // No local echo: the backend owns the order and publishes it back, so
+    // mirroring it here would just reintroduce a second source of truth.
     for (const command of [setSortColumnCommand(next.column), setSortDescendingCommand(next.descending), setCatalogOffsetCommand(0)]) {
       trigger(mod.id, command.method, ...command.args);
     }
@@ -128,54 +288,115 @@ export const BuildingCatalogComponent = () => {
   }
 
   return (
-    <div className={classNames(styles.catalog, densityClassNames[density])} data-density={density}>
-      <div className={styles.heading}>
-        <div>
-          <div className={styles.title}>{translate("Tooltip.LABEL[FindItBuildingMenu.BuildingLens]", "Building lens")}</div>
-          <div className={styles.subtitle}>
-            {currentSearch?.trim()
-              ? translate("Tooltip.LABEL[FindItBuildingMenu.BuildingLensSearchResults]", "Results for {0}")?.replace("{0}", currentSearch)
-              : translate("Tooltip.LABEL[FindItBuildingMenu.BuildingLensDescription]", "Buildings from the FindIt index")}
-          </div>
-        </div>
+    // maxHeight is a cap, not a height: a page of three results should not
+    // hold a full-height panel open. The floor lives on the container.
+    <div
+      className={classNames(styles.catalog, densityClassNames[density])}
+      data-density={density}
+      data-row-height={rowGeometry.rowHeight}
+      data-selector-height={rowGeometry.selectorHeight}
+      data-metric-text-scale={getBuildingLensMetricTextScale(density)}
+      data-catalog-max-height={catalogMaxHeight}
+      style={{ maxHeight: `${catalogMaxHeight}rem` }}
+    >
+      {/* Identity, result count, search context and sort used to be two
+          full-width bands stacked above the table, each carrying a single short
+          line. Measured against a real city they cost 84px of a 625px panel
+          while the rows themselves only got 159px. One toolbar carries all of
+          it. */}
+      <div className={styles.toolbar}>
+        <img className={styles.titleIcon} src={BUILDING_LENS_TITLE_ICON} alt="" />
+        <div className={styles.title}>{translate("Tooltip.LABEL[FindItBuildingMenu.BuildingLens]", "Building lens")}</div>
         <div className={styles.count}>{totalCount.toLocaleString()}</div>
-      </div>
-
-      <div className={styles.sortBar}>
-        <span className={styles.sortLabel}>{translate("Tooltip.LABEL[FindItBuildingMenu.SortBy]", "Sort by")}</span>
-        {sortColumns.map((column) => (
+        {currentSearch?.trim() && (
+          <div className={styles.searchContext} title={currentSearch}>
+            {translate("Tooltip.LABEL[FindItBuildingMenu.BuildingLensSearchResults]", "Results for {0}")?.replace("{0}", currentSearch)}
+          </div>
+        )}
+        {/* Group and sort sit together because they are the same kind of
+            control — how the set is ordered. Narrowing lives in the chip row,
+            and keeping that line clean is what the whole rework turned on. */}
+        <span className={styles.sortLabel}>{translate("Tooltip.LABEL[FindItBuildingMenu.GroupBy]", "Group by")}</span>
+        <div className={styles.groupPicker}>
           <Button
-            key={column.key}
-            className={classNames(styles.sortButton, column.key === sortColumn && styles.sortButtonSelected)}
+            className={styles.sortSummary}
             variant="icon"
-            onSelect={() => setSort(column.key)}
+            onSelect={() => setGroupPickerOpen((open) => !open)}
+            aria-expanded={groupPickerOpen}
+            aria-label={groupByLabel}
+            title={groupByLabel}
           >
-            <span>{column.label}</span>
-            {column.key === sortColumn && <span className={styles.sortDirection}>{descending ? "▼" : "▲"}</span>}
+            <span className={styles.sortSummaryLabel}>{groupByLabel}</span>
+            <span className={styles.sortDirection} aria-hidden="true">▾</span>
           </Button>
-        ))}
+          {groupPickerOpen && (
+            <div className={styles.groupOptions}>
+              {GROUP_DIMENSIONS.map((dimension) => {
+                const label = translate(
+                  `Tooltip.LABEL[FindItBuildingMenu.GroupBy_${dimension.id}]`,
+                  dimension.label
+                ) ?? dimension.label;
+
+                return (
+                  <Button
+                    key={dimension.id}
+                    className={classNames(styles.sortButton, dimension.id === groupBy && styles.sortButtonSelected)}
+                    variant="icon"
+                    onSelect={() => setGroupBy(dimension.id)}
+                    aria-label={label}
+                  >
+                    <span>{label}</span>
+                  </Button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+        <div className={styles.toolbarSpacer} />
+        <span className={styles.sortLabel}>{translate("Tooltip.LABEL[FindItBuildingMenu.SortBy]", "Sort by")}</span>
+        <div
+          className={styles.sortSummary}
+          title={`${sortPresentation.compact.label} · ${sortPresentation.compact.direction}`}
+          aria-label={`Sorted by ${sortPresentation.compact.label}, ${sortPresentation.compact.direction}`}
+        >
+          <span className={styles.sortSummaryLabel}>{sortPresentation.compact.label}</span>
+          <span className={styles.sortDirection} aria-hidden="true">{sortPresentation.compact.indicator}</span>
+        </div>
+        <ViewModeBar value={viewMode} onChange={setViewMode} />
+        <Button
+          className={styles.sortDisclosure}
+          variant="icon"
+          onSelect={() => setSortingExpanded((expanded) => !expanded)}
+          aria-expanded={sortingExpanded}
+          aria-label={moreSortingLabel}
+          title={moreSortingLabel}
+        >
+          {moreSortingLabel}
+        </Button>
       </div>
 
-      {capacityFilterVisible && (
-        <div className={styles.capacityFilter}>
-          <span className={styles.capacityFilterLabel}>
-            {translate("Tooltip.LABEL[FindItBuildingMenu.EducationCapacityFilter]", "Education capacity")}
-          </span>
-          {educationCapacityPresets.map((floor) => (
+      {sortingExpanded && (
+        <div className={styles.sortOptions} data-sort-options="expanded">
+          {sortPresentation.expanded.map((option) => (
             <Button
-              key={floor}
-              className={classNames(styles.capacityButton, floor === capacityFloor && styles.capacityButtonSelected)}
+              key={option.key}
+              className={classNames(styles.sortButton, option.selected && styles.sortButtonSelected)}
               variant="icon"
-              onSelect={() => {
-                const command = setBuildingCapacityFloorCommand(floor);
-                trigger(mod.id, command.method, ...command.args);
-              }}
+              onSelect={() => setSort(option.key)}
+              aria-label={`Sort by ${option.label}`}
+              title={`Sort by ${option.label}`}
             >
-              {floor === 0 ? "Any" : `${floor}+`}
+              <span>{option.label}</span>
+              {option.selected && <span className={styles.sortDirection} aria-hidden="true">{sortPresentation.compact.indicator}</span>}
             </Button>
           ))}
         </div>
       )}
+
+      {/* The rail and the filter summary both moved into the chip row above
+          the content. The summary said "3 active filters"; the chips say which
+          three and let each one go, so keeping both was one band restating
+          another less usefully. */}
 
       {compareEntries.length > 0 && (
         <div className={styles.compare}>
@@ -184,126 +405,329 @@ export const BuildingCatalogComponent = () => {
               {translate("Tooltip.LABEL[FindItBuildingMenu.CompareBuildings]", "Compare buildings")}
               <span className={styles.compareCount}> {compareEntries.length} / {MAX_COMPARE_ENTRIES}</span>
             </span>
-            <Button className={styles.clearCompare} variant="icon" onSelect={() => setCompareEntries([])}>
-              {translate("Tooltip.LABEL[FindItBuildingMenu.ClearCompare]", "Clear")}
+            <Button
+              className={styles.clearCompare}
+              variant="icon"
+              onSelect={clearCompare}
+              aria-label={clearCompareLabel}
+              title={clearCompareLabel}
+            >
+              {clearCompareLabel}
             </Button>
           </div>
           <div className={styles.compareRows}>
-            {compareEntries.map((entry) => (
-              <div className={styles.compareRow} key={entry.id}>
-                <div className={styles.compareIdentity}>
-                  <span className={styles.compareName}>{entry.name || entry.prefabName}</span>
-                  <span className={styles.compareMetrics}>
-                    Cost {formatMetric(entry.constructionCost)} · Upkeep {formatMetric(entry.upkeep)} · Workers {formatMetric(entry.workers)} · Capacity {formatMetric(entry.capacity)}
-                  </span>
+            {compareEntries.map((entry) => {
+              const entryLabel = entry.name || entry.prefabName;
+              const comparePlaceLabel = `${placeLabel}: ${entryLabel}`;
+              const compareRemoveLabel = `Remove ${entryLabel} from comparison`;
+
+              return (
+                <div className={styles.compareRow} key={entry.id}>
+                  <div className={styles.compareIdentity}>
+                    <span className={styles.compareName}>{entryLabel}</span>
+                    <span className={styles.compareMetrics}>
+                      Cost {formatBuildingMetric(entry.constructionCost, "cost")} · Upkeep {formatBuildingMetric(entry.upkeep, "upkeep")} · Workers {formatBuildingMetric(entry.workers, "workers")} · Capacity {formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType)}
+                    </span>
+                  </div>
+                  <Button
+                    className={styles.comparePlace}
+                    variant="icon"
+                    onSelect={() => activate(entry)}
+                    aria-label={comparePlaceLabel}
+                    title={comparePlaceLabel}
+                  >
+                    {placeLabel}
+                  </Button>
+                  <Button
+                    className={styles.compareRemove}
+                    variant="icon"
+                    onSelect={() => removeCompare(entry.id)}
+                    aria-label={compareRemoveLabel}
+                    title={compareRemoveLabel}
+                  >
+                    <span aria-hidden="true">×</span>
+                  </Button>
                 </div>
-                <Button className={styles.comparePlace} variant="icon" onSelect={() => activate(entry)}>
-                  {translate("Tooltip.LABEL[FindItBuildingMenu.Place", "Place")}
-                </Button>
-                <Button className={styles.compareRemove} variant="icon" onSelect={() => removeCompare(entry.id)}>
-                  ×
-                </Button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
 
-      <div className={styles.columnHeader}>
-        <span className={styles.identityHeader}>{translate("Tooltip.LABEL[FindItBuildingMenu.Building]", "Building")}</span>
-        {metricColumns.map((column) => {
-          const fullLabel = translate(column.localizationKey, column.fallback) ?? column.fallback;
-          return (
-            <span
-              key={column.key}
-              className={classNames(styles.metricHeader, styles[column.className])}
-              title={fullLabel}
-            >
-              {getBuildingLensMetricLabel(column.key, density, fullLabel)}
-            </span>
-          );
-        })}
-      </div>
+      {tableMode ? (
+        <>
+        <div className={styles.columnHeader}>
+          <span className={styles.identityHeader}>{translate("Tooltip.LABEL[FindItBuildingMenu.Building]", "Building")}</span>
+          {metricColumns.map((column) => {
+            const fullLabel = translate(column.localizationKey, column.fallback) ?? column.fallback;
+            const indicator = getBuildingLensColumnSortIndicator(column.key, { column: sortColumn, descending });
+            const sortTarget = BUILDING_LENS_COLUMN_SORT[column.key];
+            const headerTitle = indicator === ""
+              ? `${fullLabel} — ${translate("Tooltip.LABEL[FindItBuildingMenu.SortByColumn]", "sort by this column") ?? "sort by this column"}`
+              : `${fullLabel} — ${translate("Tooltip.LABEL[FindItBuildingMenu.ReverseSort]", "reverse this sort") ?? "reverse this sort"}`;
+            return (
+              <Button
+                key={column.key}
+                className={classNames(styles.metricHeader, styles[column.className], indicator !== "" && styles.metricHeaderSorted)}
+                variant="icon"
+                onSelect={() => setSort(sortTarget)}
+                title={headerTitle}
+                aria-label={headerTitle}
+                data-sort-indicator={indicator}
+              >
+                {getBuildingLensMetricLabel(column.key, density, fullLabel)}
+                {indicator !== "" && <span className={styles.metricHeaderIndicator} aria-hidden="true">{indicator}</span>}
+              </Button>
+            );
+          })}
+        </div>
 
-      <div className={styles.rows}>
-        {items.length === 0 && (
-          <div className={styles.empty}>
-            {translate("Tooltip.LABEL[FindItBuildingMenu.NoBuildings]", "No buildings match the current search and category.")}
-          </div>
-        )}
-        {items.map((entry) => {
-          const isCompared = compareEntries.some((candidate) => candidate.id === entry.id);
+        <Scrollable
+          className={styles.rows}
+          vertical
+          trackVisibility="scrollable"
+          data-scrollable={rowsScrollable}
+        >
+          {items.length === 0 && (
+            <div className={styles.empty}>
+              {status === "indexing"
+                ? translate("Tooltip.LABEL[FindItBuildingMenu.IndexingBuildings]", "Indexing buildings…")
+                : emptyStateMessage}
+            </div>
+          )}
+          {items.map((entry) => {
+            const isCompared = compareEntries.some((candidate) => candidate.id === entry.id);
+            const rawCategoryIdentity = entry.subCategory
+              ? `${entry.category} · ${entry.subCategory}`
+              : entry.category;
+            const entryLabel = entry.name || entry.prefabName;
+            const rowPlaceLabel = `${placeLabel}: ${entryLabel}`;
+            const isExpanded = expandedId === entry.id;
+            const rowInspectLabel = `${inspectLabel}: ${entryLabel}`;
+            const detailMetrics = isExpanded ? getBuildingDetailMetrics(entry) : [];
+            const flagGroups = isExpanded ? getBuildingFlagGroups(entry.placementFlags) : [];
+            const extensionLabels = isExpanded ? getBuildingExtensionLabels(entry.extensions) : [];
+            const provenanceChips = isExpanded ? getBuildingProvenanceChips(entry, resolveFacetLabel) : [];
+            // translate() echoes the id back when a key is absent, so an
+            // unlocalized prefab must not render its own locale key as prose.
+            const description = isExpanded
+              ? getBuildingDescriptionKeys(entry.prefabName)
+                  .map((key) => translate(key, ""))
+                  .find((text) => !!text && text.trim().length > 0 && !text.startsWith("Assets."))
+              : undefined;
+            const compareLabel = isCompared ? "Remove from comparison" : "Add to comparison";
+            const comparePlaceLabel = `${placeLabel}: ${entryLabel}`;
+            const compareRemoveLabel = `Remove ${entryLabel} from comparison`;
 
-          return (
-            <div key={entry.id} className={styles.row}>
-              <Button className={styles.rowSelect} variant="icon" onSelect={() => activate(entry)}>
-                <div className={styles.identityCell}>
-                  <div className={styles.thumbnail}>
-                    {entry.thumbnail && <img src={entry.thumbnail} />}
-                  </div>
-                  <div className={styles.identity}>
-                    <div className={styles.name}>{entry.name || entry.prefabName}</div>
-                    <div className={styles.category}>
-                      {entry.category}
-                      {entry.subCategory && ` · ${entry.subCategory}`}
+            return (
+              <div key={entry.id} className={styles.row} data-expanded={isExpanded ? "true" : undefined}>
+                <Button
+                  className={styles.rowSelect}
+                  variant="icon"
+                  onSelect={() => toggleExpanded(entry.id)}
+                  aria-label={inspectLabel}
+                  title={rowInspectLabel}
+                  data-expanded={isExpanded ? "true" : undefined}
+                >
+                  <div className={styles.identityCell}>
+                    <div className={styles.thumbnail}>
+                      {entry.thumbnail && <img src={entry.thumbnail} />}
+                    </div>
+                    <div className={styles.identity}>
+                      <div className={styles.nameLine}>
+                        <div className={styles.name}>{entryLabel}</div>
+                        <span className={styles.placeHint} aria-hidden="true">{isExpanded ? collapseLabel : inspectLabel}</span>
+                      </div>
+                      <div className={styles.category} title={rawCategoryIdentity}>
+                        {formatBuildingCatalogLabels(entry)}
+                      </div>
                     </div>
                   </div>
-                </div>
-                <div className={classNames(styles.metric, styles.metricCost)} title={`Cost ${formatMetric(entry.constructionCost)}`}>
-                  {formatMetric(entry.constructionCost)}
-                </div>
-                <div className={classNames(styles.metric, styles.metricUpkeep)} title={`Upkeep ${formatMetric(entry.upkeep)}`}>
-                  {formatMetric(entry.upkeep)}
-                </div>
-                <div className={classNames(styles.metric, styles.metricWorkers)} title={`Workers ${formatMetric(entry.workers)}`}>
-                  {formatMetric(entry.workers)}
-                </div>
-                <div className={classNames(styles.metric, styles.metricCapacity)} title={`Capacity ${formatMetric(entry.capacity)}`}>
-                  {formatMetric(entry.capacity)}
-                </div>
-                <div className={classNames(styles.metric, styles.metricLot)} title="Lot dimensions">
-                  {entry.lotWidth} × {entry.lotDepth}
-                </div>
-                <div className={classNames(styles.metric, styles.metricLevel)} title="Building level">
-                  {entry.buildingLevel}
-                </div>
-                <div className={classNames(styles.parking, styles.metricParking, entry.hasParking && styles.parkingActive)} title={entry.hasParking ? "Parking" : "No parking"}>
-                  {entry.hasParking ? "P" : "—"}
-                </div>
-              </Button>
+                  <div className={classNames(styles.metric, styles.metricCost)} title={`Cost ${formatBuildingMetric(entry.constructionCost, "cost")}`}>
+                    {formatBuildingMetric(entry.constructionCost, "cost")}
+                  </div>
+                  <div className={classNames(styles.metric, styles.metricUpkeep)} title={`Upkeep ${formatBuildingMetric(entry.upkeep, "upkeep")}`}>
+                    {formatBuildingMetric(entry.upkeep, "upkeep")}
+                  </div>
+                  <div className={classNames(styles.metric, styles.metricWorkers)} title={`Workers ${formatBuildingMetric(entry.workers, "workers")}`}>
+                    {formatBuildingMetric(entry.workers, "workers")}
+                  </div>
+                  <div className={classNames(styles.metric, styles.metricCapacity)} title={`Capacity ${formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType)}`}>
+                    {formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType)}
+                  </div>
+                  <div className={classNames(styles.metric, styles.metricLot)} title="Lot dimensions">
+                    {formatLotDimensions(entry.lotWidth, entry.lotDepth)}
+                  </div>
+                  <div className={classNames(styles.metric, styles.metricLevel)} title="Building level">
+                    {entry.buildingLevel}
+                  </div>
+                  <div className={classNames(styles.parking, styles.metricParking, entry.hasParking && styles.parkingActive)} title={entry.hasParking ? "Parking" : "No parking"}>
+                    {/* Not the no-data dash: this building is known to have no
+                        parking, which is a fact rather than a gap. */}
+                    {entry.hasParking ? "P" : "·"}
+                  </div>
+                </Button>
+                {/* Placing is now an explicit act. The whole row used to be a
+                    Place button, so there was no way to look at a building
+                    without committing to it — and placement closes the panel. */}
+                <Button
+                  className={styles.rowPlaceButton}
+                  variant="icon"
+                  onSelect={() => activate(entry)}
+                  aria-label={rowPlaceLabel}
+                  title={rowPlaceLabel}
+                >
+                  <span>{placeLabel}</span>
+                </Button>
+                <Button
+                  className={classNames(styles.compareButton, isCompared && styles.compareButtonSelected)}
+                  variant="icon"
+                  disabled={!isCompared && compareEntries.length >= MAX_COMPARE_ENTRIES}
+                  onSelect={() => toggleCompare(entry)}
+                  aria-label={compareLabel}
+                  title={compareLabel}
+                >
+                  <span aria-hidden="true">{isCompared ? "✓" : "+"}</span>
+                </Button>
+                {isExpanded && (
+                  <div className={styles.rowDetails}>
+                    {/* The game's own copy for this prefab. Free: the entry
+                        already carries prefabName and the game keys descriptions
+                        by it, so this needs no backend projection. */}
+                    {description && <div className={styles.rowDescription}>{description}</div>}
+
+                    <div className={styles.rowDetailMetrics}>
+                      {detailMetrics.length === 0 ? (
+                        <span className={styles.rowDetailEmpty}>{noDetailsLabel}</span>
+                      ) : (
+                        detailMetrics.map((detail) => (
+                          <span className={styles.rowDetail} key={detail.key}>
+                            <span className={styles.rowDetailLabel}>{detail.label}</span>
+                            <span className={styles.rowDetailValue}>{detail.value}</span>
+                          </span>
+                        ))
+                      )}
+                    </div>
+
+                    {/* Placement, lot access, network connections and lot
+                        internals: previously reachable only by filtering on them,
+                        never visible on the building itself. */}
+                    {flagGroups.map((group) => (
+                      <div className={styles.rowFlagGroup} key={group.id} data-flag-group={group.id}>
+                        <span className={styles.rowDetailLabel}>{group.label}</span>
+                        {group.values.map((value) => (
+                          <span className={styles.rowFlag} key={value}>{value}</span>
+                        ))}
+                      </div>
+                    ))}
+
+                    {extensionLabels.length > 0 && (
+                      <div className={styles.rowFlagGroup} data-flag-group="extensions">
+                        <span className={styles.rowDetailLabel}>{upgradesLabel}</span>
+                        {extensionLabels.map((extension) => (
+                          <span className={styles.rowFlag} key={extension}>{extension}</span>
+                        ))}
+                      </div>
+                    )}
+
+                    {provenanceChips.length > 0 && (
+                      <div className={styles.rowFlagGroup} data-flag-group="provenance">
+                        {provenanceChips.map((chip) => (
+                          <span className={styles.rowProvenance} key={chip.label}>
+                            <span className={styles.rowDetailLabel}>{chip.label}</span>
+                            <span className={styles.rowDetailValue}>{chip.value}</span>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </Scrollable>
+
+        <div className={styles.paging}>
+          {/* First/last jumps: a 4,000-building catalog is 43 pages, and stepping
+              one page at a time made the far end of any sort effectively
+              unreachable. */}
+          <Button
+            className={styles.pageButton}
+            variant="icon"
+            disabled={!hasPreviousPage}
+            onSelect={() => setPage(0)}
+            aria-label={firstPageLabel}
+            title={firstPageLabel}
+          >
+            <span>«</span>
+          </Button>
+          <Button
+            className={styles.pageButton}
+            variant="icon"
+            disabled={!hasPreviousPage}
+            onSelect={() => setPage(offset - limit)}
+            aria-label={previousPageLabel}
+            title={previousPageLabel}
+          >
+            <span>‹</span>
+          </Button>
+          <span className={styles.pageLabel} title={pageSummary} aria-label={pageSummary}>{pageSummary}</span>
+          <Button
+            className={styles.pageButton}
+            variant="icon"
+            disabled={!hasNextPage}
+            onSelect={() => setPage(offset + limit)}
+            aria-label={nextPageLabel}
+            title={nextPageLabel}
+          >
+            <span>›</span>
+          </Button>
+          <Button
+            className={styles.pageButton}
+            variant="icon"
+            disabled={!hasNextPage}
+            onSelect={() => setPage(lastPageOffset)}
+            aria-label={lastPageLabel}
+            title={lastPageLabel}
+          >
+            <span>»</span>
+          </Button>
+        </div>
+        </>
+      ) : (
+        <>
+          {scopeNotice && (
+            <div className={styles.scopeNotice}>
+              <span className={styles.scopeNoticeText}>{scopeNoticeText}</span>
               <Button
-                className={classNames(styles.compareButton, isCompared && styles.compareButtonSelected)}
+                className={styles.scopeNoticeAction}
                 variant="icon"
-                disabled={!isCompared && compareEntries.length >= MAX_COMPARE_ENTRIES}
-                onSelect={() => toggleCompare(entry)}
-                title={isCompared ? "Remove from comparison" : "Add to comparison"}
+                onSelect={() => trigger(mod.id, "SearchEverything")}
+                aria-label={searchEverywhereLabel}
+                title={searchEverywhereLabel}
               >
-                {isCompared ? "✓" : "+"}
+                {searchEverywhereLabel}
               </Button>
             </div>
-          );
-        })}
-      </div>
+          )}
+          {/* The table names what emptied it; the grid used to show a blank
+              box. Filters compose now, so an empty intersection is easy to
+              reach by accident — "Health & Deathcare" plus role "Police
+              Station" is nothing, and silence there reads as a broken panel. */}
+          {items.length === 0
+            ? <div className={styles.empty}>{emptyStateMessage}</div>
+            : (
+              <GroupedResults
+                entries={items}
+                groupBy={groupBy}
+                viewMode={viewMode}
+                searchText={currentSearch ?? ""}
+                onPlace={activate}
+              />
+            )}
+        </>
+      )}
 
-      <div className={styles.paging}>
-        <Button
-          className={styles.pageButton}
-          variant="icon"
-          disabled={!hasPreviousPage}
-          onSelect={() => setPage(offset - limit)}
-        >
-          <span>‹</span>
-        </Button>
-        <span className={styles.pageLabel}>{pageNumber} / {Math.max(1, Math.ceil(totalCount / Math.max(1, limit)))}</span>
-        <Button
-          className={styles.pageButton}
-          variant="icon"
-          disabled={!hasNextPage}
-          onSelect={() => setPage(offset + limit)}
-        >
-          <span>›</span>
-        </Button>
-      </div>
     </div>
   );
 };
