@@ -1,4 +1,5 @@
-﻿using Colossal.Entities;
+﻿using Colossal.Core;
+using Colossal.Entities;
 using Colossal.IO.AssetDatabase;
 using Colossal.Logging;
 using Colossal.PSI.Common;
@@ -38,7 +39,8 @@ namespace FindItBuildingMenu.Systems
 		private ComponentType? roadBuilderDiscarded;
 		private static Dictionary<Entity, ZoneTypeFilter> _zoneTypeCache;
 		private EntityQuery _unlockEventQuery;
-		// Set from the locale-change event, consumed by the next OnUpdate. See
+		// Guards against queueing a second pass while one is already pending:
+		// the locale event fires more than once per change. See
 		// OnActiveDictionaryChanged.
 		private bool _localeChanged;
 		private static List<ZoneCatalogEntry> _zoneCatalog = new();
@@ -159,12 +161,28 @@ namespace FindItBuildingMenu.Systems
 		/// a language change is rare and player-initiated, and a full pass
 		/// cannot drift from what the index otherwise holds.
 		///
-		/// The event can fire off the simulation thread, so this only sets a
-		/// flag; OnUpdate does the work.
+		/// The work cannot be deferred to OnUpdate: this system declares
+		/// RequireForUpdate on prefabs carrying Created or Updated, and a
+		/// language change touches no entity at all, so OnUpdate would never
+		/// run to notice a flag. Setting one looked right and did nothing.
+		/// Dispatching to the main thread instead runs the pass on the next
+		/// frame regardless of what the ECS gate thinks.
 		/// </remarks>
 		private void OnActiveDictionaryChanged()
 		{
+			if (_localeChanged)
+			{
+				return;
+			}
+
 			_localeChanged = true;
+
+			MainThreadDispatcher.RunOnMainThread(() =>
+			{
+				_localeChanged = false;
+
+				RunIndex(true);
+			});
 		}
 
 		protected override void OnUpdate()
@@ -173,11 +191,7 @@ namespace FindItBuildingMenu.Systems
 			// incremental pass would not see it. Rare enough that a full pass
 			// is the honest response rather than a targeted patch that could
 			// drift from what the index otherwise holds.
-			var full = !_unlockEventQuery.IsEmptyIgnoreFilter || _localeChanged;
-
-			_localeChanged = false;
-
-			RunIndex(full);
+			RunIndex(!_unlockEventQuery.IsEmptyIgnoreFilter);
 		}
 
 		private void RunIndex(bool full)
