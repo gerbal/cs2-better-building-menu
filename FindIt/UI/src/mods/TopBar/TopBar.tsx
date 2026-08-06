@@ -156,25 +156,48 @@ export const TopBarComponent = (props: TopBarProps) => {
     // Folded into the top bar rather than owning a band. Catalog|Tools is
     // 128rem of controls; giving it a full-width 25rem row of its own was
     // 4% of the panel spent on two buttons.
+    //
+    // Built from the game's own TabBar/Tab rather than two hand-padded
+    // lightButtons. This is exactly the control the game uses for a small
+    // set of mutually exclusive views, so it already carries the right
+    // padding, the selected treatment, and the legacy-interface variant that
+    // our hand-styled version had to reproduce by eye and got subtly wrong.
+    // TabNav adds gamepad and keyboard "Switch Tab", which the buttons never
+    // had.
+    const { TabBar, Tab, TabNav } = VanillaComponentResolver.instance;
+    const modes: BuildingLensMode[] = ["catalog", "tools"];
+    const modeLabels: Record<BuildingLensMode, { long: string; short: string }> = {
+      catalog: {
+        long: localizedLabel("Tooltip.LABEL[FindItBuildingMenu.CatalogMode]", "Building catalog"),
+        short: localizedLabel("Tooltip.LABEL[FindItBuildingMenu.CatalogModeShort]", "Catalog"),
+      },
+      tools: {
+        long: localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ToolsMode]", "Construction tools"),
+        short: localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ToolsModeShort]", "Tools"),
+      },
+    };
+
     return (
-      <div className={classNames(styles.lensModeBar, styles.lensModeBarInline)} data-lens-mode={props.buildingLensMode}>
-        <BasicButton
-          tooltip={translate("Tooltip.LABEL[FindItBuildingMenu.CatalogMode]", "Building catalog")}
-          text={translate("Tooltip.LABEL[FindItBuildingMenu.CatalogModeShort]", "Catalog") ?? "Catalog"}
-          onClick={props.buildingLensMode === "catalog" ? undefined : () => props.onBuildingLensModeChange("catalog")}
-          className={classNames(styles.lensModeButton, props.buildingLensMode === "catalog" && styles.selected)}
-        >
-          <AccessibleLabel label={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.CatalogMode]", "Building catalog")} />
-        </BasicButton>
-        <BasicButton
-          tooltip={translate("Tooltip.LABEL[FindItBuildingMenu.ToolsMode]", "Construction tools")}
-          text={translate("Tooltip.LABEL[FindItBuildingMenu.ToolsModeShort]", "Tools") ?? "Tools"}
-          onClick={props.buildingLensMode === "tools" ? undefined : () => props.onBuildingLensModeChange("tools")}
-          className={classNames(styles.lensModeButton, props.buildingLensMode === "tools" && styles.selected)}
-        >
-          <AccessibleLabel label={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ToolsMode]", "Construction tools")} />
-        </BasicButton>
-      </div>
+      <TabNav
+        tabs={modes}
+        selectedTab={props.buildingLensMode}
+        onSelect={(id) => props.onBuildingLensModeChange(id as BuildingLensMode)}
+      >
+        <TabBar className={styles.lensModeTabBar}>
+          {modes.map((mode) => (
+            <Tab
+              key={mode}
+              id={mode}
+              selectedId={props.buildingLensMode}
+              className={styles.lensModeTab}
+              onSelect={(id) => props.onBuildingLensModeChange(id as BuildingLensMode)}
+            >
+              {modeLabels[mode].short}
+              <AccessibleLabel label={modeLabels[mode].long} />
+            </Tab>
+          ))}
+        </TabBar>
+      </TabNav>
     );
   }
 
