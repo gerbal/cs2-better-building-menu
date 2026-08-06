@@ -32,6 +32,9 @@ namespace FindItBuildingMenu.Systems
 		private FindItOptionsUISystem _optionsUISystem;
 		private DefaultToolSystem _defaultToolSystem;
 		private CameraUpdateSystem _cameraUpdateSystem;
+		// Only for releasing the toolbar's menu selection when the lens closes;
+		// see CloseLens.
+		private Game.UI.InGame.ToolbarUISystem _toolbarUISystem;
 
 		private ProxyAction _searchKeyBinding;
 		private ProxyAction _randomKeyBinding;
@@ -134,6 +137,7 @@ namespace FindItBuildingMenu.Systems
 			_optionsUISystem = World.GetOrCreateSystemManaged<FindItOptionsUISystem>();
 			_defaultToolSystem = World.GetOrCreateSystemManaged<DefaultToolSystem>();
 			_cameraUpdateSystem = World.GetOrCreateSystemManaged<CameraUpdateSystem>();
+			_toolbarUISystem = World.GetOrCreateSystemManaged<Game.UI.InGame.ToolbarUISystem>();
 
 			// ToolSystem toolSystem = World.DefaultGameObjectInjectionWorld?.GetOrCreateSystemManaged<ToolSystem>(); // I don't know why vanilla game did this.
 			_toolSystem.EventPrefabChanged += OnPrefabChanged;
@@ -237,7 +241,7 @@ namespace FindItBuildingMenu.Systems
 			CreateTrigger<string>("SearchChanged", t => SearchChanged(t));
 			CreateTrigger<int>("OnScroll", OnScroll);
 			CreateTrigger<double>("SetScrollIndex", SetScrollIndex);
-			CreateTrigger("FindItCloseToggled", () => ToggleFindItPanel(false));
+			CreateTrigger("FindItCloseToggled", CloseLens);
 			CreateTrigger("FindItIconToggled", FindItIconClicked);
 			CreateTrigger<int>("SetCurrentPrefab", TryActivatePrefabTool);
 			// The UI watches the game's own toolbar.selectedAssetMenu binding and
