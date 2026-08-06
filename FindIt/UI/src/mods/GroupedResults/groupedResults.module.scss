@@ -1,0 +1,122 @@
+@use "../../base.scss" as _base;
+
+// --- Grouped views ---------------------------------------------------------
+// Headings over the result set, in every mode. Grouping is a property of the
+// result rather than of a mode, so the grid, the list and the table all render
+// the same tree.
+
+.group {
+  display: flex;
+  flex-direction: column;
+}
+
+.groupHeading {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6rem 2rem 3rem;
+  border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
+  color: var(--menuText1Normal);
+  font-size: var(--fontSizeS);
+  text-transform: uppercase;
+  letter-spacing: 0.6rem;
+}
+
+// The second level of Category. Quieter than its parent, because it is the
+// level you read once you already know which category you are in.
+.groupHeadingNested {
+  padding-left: 8rem;
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+  color: var(--menuText2Normal);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.groupLabel {
+  white-space: nowrap;
+}
+
+// Answers "is it worth opening this one" before you scroll into it.
+.groupCount {
+  padding-left: 8rem;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeXS);
+}
+
+
+// One scroll for the whole grouped result. The grid and the list were each
+// written as the catalog's only flex child, so they claim the free space and
+// collapse to nothing when nested inside a group that has none to give.
+// Sizes to its content, capped by the catalog's own max-height.
+//
+// This was flex: 1 1 0, which worked while .catalog carried an explicit height:
+// a zero basis resolves against a definite parent. Turning that height into a
+// cap — so a page of three results stops holding a full-height panel open —
+// left the basis resolving against nothing, so the scroll area contributed zero
+// and the panel sat at its floor with a hundred items inside it. Same failure
+// the grid and the zoning tier list had when they were first nested in a group.
+.groupScroll {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 100%;
+}
+
+.group > div {
+  flex: 0 0 auto;
+  min-height: 0;
+}
+
+
+// The view-mode control. These lived in buildingCatalog.module.scss while the
+// catalog owned the markup; they came with the component when zoning needed the
+// same control, and without them the buttons rendered unstyled and stacked.
+.viewModes {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-left: 6rem;
+  border-radius: 3rem;
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+.viewMode {
+  @include _base.transparentButton(false, true);
+  width: auto !important;
+  height: 22rem;
+  padding: 0 8rem !important;
+  border-radius: 3rem;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeXS);
+  white-space: nowrap;
+}
+
+.viewMode:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--menuText1Normal);
+}
+
+.viewModeSelected {
+  background-color: var(--accentColorNormal);
+  color: rgba(0, 0, 0, 0.85);
+}
+
+// The group summary is a Button, and vanilla's icon variant sizes those as a
+// square — so the label overflowed it and printed over "Group by".
+.groupPicker .sortSummary {
+  width: auto !important;
+  flex: 0 0 auto;
+  margin-right: 4rem;
+  white-space: nowrap;
+}
+
+// The vanilla ToolButton is sized for an icon; these carry a word.
+.viewMode {
+  width: auto !important;
+  padding: 0 7rem !important;
+}
+
+.viewModeLabel {
+  white-space: nowrap;
+  font-size: var(--fontSizeXS);
+}

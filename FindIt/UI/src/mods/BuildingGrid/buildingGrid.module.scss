@@ -1,0 +1,121 @@
+@use "../../base.scss" as _base;
+
+.grid {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+// The shelf sits above the grid and never scrolls: a position that moves is a
+// position you cannot learn.
+.shelf {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  gap: 3rem;
+  padding: 4rem 8rem 6rem;
+  border-bottom: 1rem solid rgba(255, 255, 255, 0.1);
+}
+
+.shelfLabel {
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeS);
+  text-transform: uppercase;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.bodyTiles {
+  padding: 6rem 8rem;
+}
+
+.tiles {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 4rem;
+}
+
+// Big enough to recognise by silhouette without reading the label. This is the
+// whole trade against the table: fewer rows on screen, but each one identified
+// by a glance instead of a line of text.
+.tile {
+  @include _base.transparentButton(false, true);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 88rem !important;
+  height: 112rem;
+  padding: 4rem;
+  gap: 2rem;
+  border-radius: 3rem;
+  background-color: rgba(0, 0, 0, 0.22);
+  border: 1rem solid rgba(255, 255, 255, 0.1);
+
+  // Two classes, deliberately. The button mixin emits `img { width: 24rem }`,
+  // which is a descendant selector and outranks a bare `.thumb` — so every
+  // thumbnail in this grid rendered 16px wide against the vanilla asset grid's
+  // 45px, for as long as the grid has existed.
+  .thumb {
+    flex: 0 0 68rem;
+    width: 68rem;
+    height: 68rem;
+    object-fit: contain;
+  }
+}
+
+.tile:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-color: var(--accentColorNormal);
+}
+
+// Two lines, then ellipsis. Names run long ("Additional Clinic Center") and a
+// tile that resizes to its label would break the grid's alignment.
+.tileName {
+  display: block;
+  width: 100%;
+  max-height: 34rem;
+  overflow: hidden;
+  text-align: center;
+  color: var(--menuText1Normal);
+  // The game's own smallest label — the tool-options "Pack" row — is 16rem.
+  // fontSizeXS is 12rem, so every name here was a step below anything vanilla
+  // uses and read as a different UI.
+  font-size: var(--fontSizeM);
+  line-height: 17rem;
+  white-space: normal;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  max-width: 260rem;
+}
+
+.cardName {
+  color: var(--menuTitleNormal);
+  font-size: var(--fontSizeM);
+}
+
+// The two states worth colouring: cannot afford, and covers the shortfall.
+.cardWarn {
+  color: var(--negativeColor, rgba(220, 90, 90, 0.95));
+}
+
+.cardGood {
+  color: var(--positiveColor, rgba(120, 200, 120, 0.95));
+}
+
+.cardLine {
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeS);
+  white-space: nowrap;
+}

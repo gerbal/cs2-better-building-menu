@@ -1,0 +1,181 @@
+@use "../../base.scss" as _base;
+
+// The rail itself is one row. Its popover is absolutely positioned, so an open
+// filter costs nothing in the layout — which is the whole reason this replaces
+// the stacked facet and metric drawers.
+.rail {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+}
+
+// Inside the game's options bank now, so no padding or rule of its own — the
+// row it sits in supplies both.
+.icons {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+// Chrome, sizing, hover and selected state all come from the vanilla
+// ToolButton now. What remains is the badge anchor and a marker for the open
+// popover, which the vanilla button has no concept of.
+.icon {
+  position: relative;
+  // The vanilla ToolButton is 19px, sized for the two or three options Theme
+  // and Pack carry. This row carries eight or nine dimensions and reads as a
+  // dense strip at that size, so it keeps the vanilla chrome and takes more
+  // room — the shape is the game's, the scale is this row's.
+  width: 40rem !important;
+  height: 40rem !important;
+
+  img {
+    width: 28rem !important;
+    height: 28rem !important;
+  }
+}
+
+.iconOpen {
+  background-color: rgba(255, 255, 255, 0.18);
+}
+
+// Answers "is anything filtered" without opening anything.
+.badge {
+  position: absolute;
+  top: -3rem;
+  right: -3rem;
+  min-width: 13rem;
+  padding: 0 3rem;
+  border-radius: 7rem;
+  background-color: var(--accentColorNormal);
+  color: rgba(0, 0, 0, 0.85);
+  font-size: var(--fontSizeXS);
+  line-height: 13rem;
+  text-align: center;
+}
+
+.clear {
+  @include _base.transparentButton(false, true);
+  width: auto !important;
+  min-height: 26rem;
+  margin-left: 4rem;
+  padding: 2rem 7rem;
+  border-radius: 3rem;
+  color: var(--accentColorNormal);
+  background-color: rgba(0, 0, 0, 0.25);
+  white-space: nowrap;
+  font-size: var(--fontSizeXS);
+}
+
+.popover {
+  position: absolute;
+  top: 34rem;
+  left: 8rem;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  width: 300rem;
+  max-height: 300rem;
+  gap: 4rem;
+  padding: 6rem;
+  border-radius: 4rem;
+  background-color: rgba(12, 16, 20, 0.97);
+  border: 1rem solid rgba(255, 255, 255, 0.18);
+}
+
+.popoverHead {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6rem;
+}
+
+.popoverTitle {
+  color: var(--menuTitleNormal);
+  font-size: var(--fontSizeM);
+  text-transform: uppercase;
+}
+
+.popoverCount {
+  padding: 1rem 5rem;
+  border-radius: 3rem;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeXS);
+}
+
+.popoverSearch {
+  flex: 0 0 auto;
+  min-height: 24rem;
+  padding: 2rem 6rem;
+  border-radius: 3rem;
+  background-color: rgba(0, 0, 0, 0.4);
+  border: 1rem solid rgba(255, 255, 255, 0.16);
+  color: var(--menuText1Normal);
+  font-size: var(--fontSizeS);
+}
+
+.popoverList {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  gap: 2rem;
+}
+
+.popoverMetrics {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+// Full-width rows inside the popover: a 109-option group is unreadable as
+// wrapped chips, and the popover has the width to spare.
+.option {
+  @include _base.transparentButton(false, true);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100% !important;
+  min-height: 24rem;
+  gap: 5rem;
+  padding: 2rem 5rem;
+  border-radius: 3rem;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.option:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.optionSelected {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.optionMark {
+  flex: 0 0 12rem;
+  width: 12rem;
+  text-align: center;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeS);
+}
+
+.optionSelected .optionMark {
+  color: var(--accentColorNormal);
+}
+
+.optionLabel {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: left;
+  color: var(--menuText1Normal);
+  font-size: var(--fontSizeS);
+}

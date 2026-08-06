@@ -48,8 +48,8 @@ covers search, categories, analytical ranges, nullable sorting, paging,
 bounded limits, empty sources, null inputs, and the native `IJsonWriter`
 property shape.
 
-Latest local result: backend build, UI webpack build, 22 backend catalog/icon tests, 6 UI
-contract tests, package identity guard, isolated deployment to both game Mods
+Latest local result: backend build, UI webpack build, 23 backend catalog/icon/filter tests, 17 UI
+contract/layout tests, package identity guard, isolated deployment to both game Mods
 roots, and packaging all passed. The backend also avoids Unity `SystemAPI` calls that
 require the user-scoped source-generator/postprocessor toolchain; explicit
 `EntityQuery` and system-handle APIs keep the successor self-contained. The
@@ -72,6 +72,29 @@ Research reset the selected preset to `Any` and restored 44 entries. Evidence
 is archived in
 `tools/e2e/artifacts/e2e-20260727-findit-education-capacity-live/` (manifest,
 observations, and two screenshots).
+
+## Building Lens facet contract verification (2026-08-01)
+
+The typed facet slice is locally verified and has a live Gameface assertion.
+The backend suite passes 28/28 tests and covers
+case-insensitive OR-within-facet matching, AND-across-facet matching,
+missing-value exclusion, stable `BuildingFlags` names, bounded distinct facet
+options, JSON property shape, and toggle/clear selection transitions. The UI
+contract suite passes 19/19 tests and covers exact toggle/clear trigger payloads
+and selected-option state reduction. `npm run build` and `./build.sh backend`
+also pass; the isolated package/deploy completed to both game Mods roots. The
+backend emits only the repository's existing nullable warnings.
+
+The first facet groups are Role, Source (vanilla/custom), DLC, Theme, Asset
+packs, and Placement. Their values are projected from the existing FindIt
+index during `AddPrefab`; no second ECS scan or unbounded browser payload was
+introduced. Runtime/map-context dimensions remain deferred. In the developed
+save `Codex Preview Smoke 20260726`, the live panel exposed Source, DLC, Theme,
+and Placement values (Role and Asset packs correctly omit empty indexed
+values). Selecting Placement → `Back access` changed the catalog count from
+4,206 to 167 and marked the option selected; Clear restored 4,206 and removed
+the selected state. The bounded option columns kept the longer DLC/Placement
+lists inside the drawer, and no Gameface console errors were captured.
 
 Earlier failed retries remain useful diagnostics: the attempt
 `e2e-20260727-findit-capacity-filter-base-loop` reached platform initialization
@@ -156,6 +179,52 @@ checks as passed. For rollback, stop the game, remove `FindItBuildingMenu`,
 and restore the old BMO package. Never run both overlapping menu modules
 together, and never leave the old package in a `.disabled` folder because the
 game can still scan its UI bundle and register duplicate modules.
+## Building Lens metric range verification (2026-08-01)
+
+The metric range slice is covered by the typed backend and UI contracts before
+the live smoke test:
+
+- `FindItBuildingMenu.Tests` passes 48/48, including normalization, reversed
+  bounds, invalid input, nullable-value exclusion, facet composition, and
+  Education capacity-floor composition.
+- `FindIt/UI/npm test` passes 41/41, including the six metric definitions,
+  active-selection count, and exact set/clear trigger payloads.
+- `FindIt/UI/npm run build` and `./build.sh package` pass the UI webpack and
+  successor identity guard.
+
+The isolated live run completed on the developed save `Codex Preview Smoke
+20260726` at 1280×720. The following checklist passed through real Gameface
+interactions:
+
+1. Open Building Lens and confirm the collapsed `Metric filters` drawer sits
+   beside the categorical `Filters` drawer.
+2. Open the drawer and confirm Cost, Upkeep, Workers, Capacity, Lot Width, and
+   Lot Depth each expose minimum and maximum inputs without covering the table.
+3. Enter a bounded range (for example Capacity `500`–`1000`) and confirm the
+   catalog count changes, every visible row satisfies the range, the active
+   count becomes `1`, and the normalized values remain visible after refresh.
+4. Enter reversed bounds and confirm the drawer swaps them; enter a blank bound
+   and confirm that side becomes unbounded. Confirm lot dimensions round to
+   integer bounds and analytical values stay at two decimal places.
+5. In Service Buildings → Education & Research, select a capacity preset while
+   a Capacity minimum is active. Confirm the effective floor is the greater of
+   the two values; clear the preset and confirm the metric minimum remains.
+6. Use `Clear` in the metric drawer and confirm all six inputs clear, the active
+   count disappears, and the unfiltered catalog returns without clearing
+   categorical facets.
+7. Reopen the lens after closing it and confirm the metric state is still
+   reflected by the binding; capture a screenshot and record the final
+   Gameface error buffer and mod log.
+
+The run reduced the unfiltered Education & Research catalog from 44 entries to
+24 with Capacity `500` minimum. Reversed input `1000`–`500` normalized back to
+`500`–`1000`; the `1000+` Education preset composed with the metric minimum and
+returned 16 entries, all with capacity ≥ 1000. Clearing metric ranges restored
+44 entries while a selected `Source → Base game` facet remained selected. The
+Gameface console reported zero exceptions and `FindItBuildingMenu.log` had zero
+error/exception/failure markers (its `MISSINGICON` lines are informational).
+The screenshot and machine-readable observations are archived in
+[`e2e-20260801-building-lens-metric-range-live/`](../../tools/e2e/artifacts/e2e-20260801-building-lens-metric-range-live/).
 
 ## Building Lens resize verification (2026-08-01)
 
@@ -242,6 +311,67 @@ at `0`; `FindItBuildingMenu.log` had no `ERROR`, `Exception`,
 `InvalidOperation`, `KeyNotFound`, `NullReference`, or `failed` markers. The
 remaining `MISSINGICON` lines are informational index fallbacks.
 
+## Building Lens title, density, and filter verification (2026-08-01)
+
+The title/icon spacing and filter-drawer fixes were deployed through
+`just deploy-isolated findit-building-menu` while the existing CS2 process
+(PID 910214) remained protected by the adopted
+`codex-building-lens-filters-1` lock. The final live run is archived at
+`tools/e2e/artifacts/e2e-20260801-080945-rvwp6m/`.
+
+At the settled 1280×720 Gameface viewport, the expanded Building Lens
+reported:
+
+- title icon/text gap: `4px` (the 6-rem design gap after Gameface scaling);
+- row/selector data geometry: `92/88rem`, with a measured row of `61.33px`;
+- title icon: `10.67px` rendered `BuildingZoneSignature.svg` before the title;
+- 100 visible catalog rows in the settled viewport.
+
+Opening Filters produced three visible option sections and 23 toggle buttons.
+The drawer measured `233.33×118.67px`, began at `y=6.33px`, and used
+`position:absolute`, `overflow-y:auto`, and a `640px` max-height, so it remains
+visible and bounded instead of rendering above the viewport. Clicking the
+Custom Assets toggle added its selected class and enabled Clear Filters;
+clicking Clear Filters removed the selected class and restored the disabled
+attribute. The run ended with `exceptionCount: 0`.
+
+A separate live result-change probe is archived at
+`tools/e2e/artifacts/e2e-20260801-082358-aw5rtx/`. With the Buildings category
+selected, the bounded catalog moved from `3,820` entries to `2,176` after
+activating With Parking, with 100 rendered rows in both states and no
+Gameface exceptions. The table adapter now applies FindIt's existing
+non-search filter predicates (theme, DLC, extra filters, placement, and
+building options) to the same indexed source; the typed query continues to
+own search/category/range paging. Clear Filters also resets both parking
+toggles so its disabled state cannot drift from the active catalog predicate.
+
+## Vanilla-aligned Building Lens taxonomy verification (2026-08-01)
+
+After a controlled restart with the rebuilt DLL, the lens opened from the
+normal FindIt magnifier and rendered its independent taxonomy. Its top-level
+tabs were exactly `All`, `Zones`, `Signature`, `Service`, and `Favorites`;
+FindIt's inherited Networks, Nature, Props, and Vehicles tabs were not shown
+while the lens was active. The table rendered the title/icon, analytical
+columns, visible rows, and the page indicator together.
+
+The live filter matrix was exercised through real Gameface clicks:
+
+- `All` showed mixed building/service rows and `1 / 43` paging for 4,206
+  indexed records.
+- `Zones` changed the result to building rows (`1 / 37`) and exposed zone
+  subcategories; `Zones → Residential` changed again to only
+  `Buildings_Residential` rows (`1 / 17`).
+- `Service` changed to service rows (`1 / 4`) and exposed service
+  subcategories; `Service → Education & Research` showed only
+  `ServiceBuildings_EducationResearch` rows (`1 / 1`).
+
+The selected tab and subcategory changed with each result set, proving the
+controls are query-backed rather than visual-only. The rebuilt scalar bindings
+published their initial values before the React view read them; no
+`getValueUnsafe`/binding initialization error appeared after restart, and the
+Gameface error buffer stayed quiet. The run ended on the `All` view with the
+panel open and its state stable.
+
 ## Icon-host audit
 
 The isolated successor must not rely on the optional Unified Icon Library
@@ -280,6 +410,76 @@ catalog populated; it is likewise not counted as a new live assertion. These
 failures are tracked in `cm-8e0` and are not counted as successor runtime
 evidence.
 
+## Tool-first construction surfaces
+
+The Building Lens Tools mode is separate from the five building sections. Verify
+the following path in a settled world:
+
+1. Open FindIt, enable Building Lens, and confirm the `Catalog` / `Tools` mode
+   switch is visible above the building-section navigation.
+2. Select `Tools` and confirm the `Construction tools` surface replaces the
+   building-section and subcategory rows rather than appearing as another
+   building filter row.
+3. Confirm Roads, Paths, Lot and terrain tools, Vegetation, Props, and Vehicles
+   each have an icon, label, and tooltip. A target that is not exposed by the
+   current vanilla toolbar remains visible but disabled with a reason.
+4. For each enabled surface, click once and confirm the built-in `toolbar`
+   trigger fires first, the native construction menu/tool becomes active, and
+   FindIt/Building Lens closes. No building rows or Building Lens page count
+   may remain visible after handoff.
+5. For loading, locked, missing, or ambiguous targets, confirm the disabled
+   entry does not change the current building query, section, subcategory, or
+   panel visibility.
+6. Return to `Catalog` and confirm the last valid building section/query is
+   preserved. Exercise one legacy FindIt category and one normal building
+   placement to verify that the native handoff did not rewrite legacy state.
+
+The live matrix was exercised after a controlled restart on 2026-08-01. All
+six entries resolved to runtime vanilla toolbar targets and rendered enabled:
+Roads, Paths, Lot and terrain tools, Vegetation, Props, and Vehicles. Clicking
+each entry closed FindIt after the toolbar trigger; the native selection probes
+reported Roads, Pathways, Terraforming, Vegetation, Landscaping, and
+Transportation respectively. A second fresh process confirmed the same six
+enabled entries and a Roads handoff with no new Gameface errors. The clipped
+settled Tools row and DOM model are archived at
+`tools/e2e/artifacts/e2e-20260801-tool-surfaces-live/`.
+
+The second restart also covered the binding-recreation path. TopBar and shell
+bindings now have inert fallbacks while their first C# update is pending, so
+opening Building Lens after a view reload no longer emits the previous
+`BuildingLensSection.update`/`getValueUnsafe` exception.
+
+## Building Lens Catalog/Tools mode verification (2026-08-01)
+
+The dedicated mode slice was built and deployed through
+`just deploy-isolated findit-building-menu`. Backend tests passed 41/41, UI
+tests passed 34/34, `npm run build` and `./build.sh all` passed, and
+`git diff --check` was clean for the slice. A full Steam → Paradox → CS2 retry
+was required after one direct-launch attempt reproduced the known
+`AssetDatabase.PopulateFromDataSource` fatal; the retry reached a settled
+developed world and was stopped cleanly afterward.
+
+At the settled 1280×720 viewport, the `Tools` button rendered a selected state
+and the mode DOM reported `data-lens-mode="tools"`. Tools mode rendered all six
+native descriptors (`Roads`, `Paths`, `Lot and terrain tools`, `Vegetation`,
+`Props`, and `Vehicles`) while the building table had zero row elements, zero
+`n / m` paging labels, and zero building category/subcategory buttons. Returning
+to `Catalog` restored the prior input value, first row, 100-row page, and
+`1 / 43` paging without issuing a catalog query mutation. Evidence is archived
+in `tools/e2e/artifacts/e2e-20260801-building-lens-tools-mode/`:
+`catalog.png`, `tools.png`, `catalog.json`, and `tools.json`.
+
+The Gameface console contained only normal view-reload and BootDiagnostics
+registration entries during the mode transition; no new UI exceptions were
+captured. The six native handoff matrix remains covered by the preceding
+Tool-first construction surfaces run.
+
+Use `just cs2-status` before any game action. Protect an external running game
+with `just game-adopt <agent>` or launch with `just launch-cs2 <agent>`; never
+attach Gameface CDP during the logo/loading screen and never kill a foreign lock
+holder. Archive the settled UI screenshot, toolbar observations, and final
+Gameface error/log summary under a timestamped `tools/e2e/artifacts/` directory.
+
 ## Current gate
 
 - Confirm `docs/FORK.md` records the exact upstream revision.
@@ -309,3 +509,108 @@ evidence.
    PDX publisher identity before publishing or enabling a public migration.
 6. Record the game log and a screenshot for each failed step; do not close the
    successor work item based on a build alone.
+
+## Building Lens facet affordance and readable-label verification (2026-08-01)
+
+The facet readability pass was built, packaged, and deployed with
+`just deploy-isolated findit-building-menu`. The backend suite passed 41/41,
+the UI contract suite passed 31/31, `./build.sh all` passed, and the package
+identity guard passed. The live check used a fresh Steam → Paradox → CS2
+process on the developed save `Codex Preview Smoke 20260726` at 1280×720.
+
+The facet drawer now provides a persistent selected/unselected marker (`✓` / `○`),
+larger bordered targets, readable source/DLC/asset-pack labels, group-level
+scroll arrows, and a toolbar hint when any option column is scrollable. The
+settled DOM reported `DLC scrollHeight=237/clientHeight=96` and
+`Placement scrollHeight=345/clientHeight=96`; the hint exposed
+`data-scroll-hint="true"` and identified two scrollable groups. Long labels are
+bounded to their columns with title attributes for the full text.
+
+The live result-change proof selected `DLC → Landmark Buildings`: the catalog
+count changed from 4,206 to 9, the selected option rendered `✓`, and paging
+changed to `1 / 1`. Clear removed the marker and restored 4,206. No new
+Gameface console entries were captured during the interaction. Evidence is
+archived in
+`tools/e2e/artifacts/e2e-20260801-building-lens-ux-facets/` (selected-state
+screenshot and DOM metrics).
+
+## Building Lens extensions facet (2026-08-01)
+
+Building extensions are now a first-class, toggleable facet rather than being
+implicitly mixed into role, DLC, or theme filters. The facet is projected from
+the existing FindIt prefab index: `BuildingExtensionPrefab`,
+`BuildingExtensionData`, and the vanilla `ServiceUpgradeData` marker all retain
+the indexed prefab name as a stable extension query ID. Extension rows remain
+the same catalog rows as their parent identity; no second discovery path or
+duplicate browser entries is introduced. Extension lot dimensions also fall
+back to `BuildingExtensionData.m_LotSize` when a row has no `BuildingData`.
+
+The backend suite passes 43/43 tests and the UI contract suite passes 36/36.
+Coverage includes case-insensitive extension matching, readable camel-case
+labels, selected-marker/toggle payloads, clear-state transitions, and omission
+of the group when indexed metadata is empty. The successor rebuilt and was
+deployed through `just deploy-isolated findit-building-menu` to both isolated
+Mods roots after the `ServiceUpgradeData` runtime detection was added.
+
+The settled-world Gameface assertion passed on the developed save
+`Codex Preview Smoke 20260726`: the facet drawer exposed 109 extension options.
+Selecting `Bicycle Parking Hall 03 Side Entrance` changed the catalog count
+from 4,206 to 1, rendered the single `Side Entrance` row, and changed the
+option marker from `○` to `✓`; paging became `1 / 1`. Clear restored 4,206
+records, 100 rows, and the unselected marker. The console error buffer stayed
+at zero. DOM observations and the inline settled screenshot are archived in
+`tools/e2e/artifacts/e2e-20260801-building-lens-extensions-live/`.
+
+## Building Lens bounded paging and row-scroll affordance (2026-08-01)
+
+The catalog footer now distinguishes the visible row range from the bounded
+page count. Instead of the ambiguous `n / m` label, it reports text such as
+`Rows 1–100 of 4206 · Page 1 of 43`; changing pages updates both the range and
+page number, while changing sort order resets the range to page one. The
+summary is generated by the pure `getCatalogPageSummary` contract so empty,
+middle, and final pages have deterministic wording.
+
+The row viewport advertises scrolling in two ways: the native scrollbar is
+forced for pages with more records than the rendered rows, and the column
+header shows a visible `↕` marker with `title` and `aria-label` of `Scroll
+rows`. The marker is omitted when the page has no additional records, keeping
+the affordance meaningful for filtered one-row results.
+
+The final settled 1280×720 Gameface check used `Codex Preview Smoke 20260726`.
+It reported 4,206 records, `scrollHeight=6266` against
+`clientHeight=374`, `overflow-y=scroll`, `data-scrollable=true`, and one
+`data-scroll-hint=true` marker. Next-page and Cost-sort interactions produced
+the summaries recorded above; the Gameface console error buffer remained at
+zero. The final local gates passed with backend tests 43/43, UI tests 38/38,
+webpack, package identity checks, and `git diff --check`. Evidence is archived in
+`tools/e2e/artifacts/e2e-20260801-building-lens-scroll-pagination-live/`.
+
+## Building Lens UX follow-through verification (2026-08-02)
+
+The accepted UX audit follow-through was built and deployed through
+`just deploy-isolated findit-building-menu` while the isolated successor was
+the only FindIt-family payload in both Mods roots. The backend suite passed
+58/58, the UI suite passed 60/60 after the final pager-label fix, the workspace
+build passed, the successor webpack build passed, and `git diff --check` was
+clean.
+
+The live check used the adopted process `2016483` at a 1280×720 Gameface
+viewport (`Cohtml/1.64.0.7`) in the developed `Small City` / `Porterville`
+world. The Building Lens exposed 4,206 indexed records and 43 pages. The
+settled UI showed player-facing category/subcategory labels, compact `Name ▲`
+sorting with all ten existing choices behind `More sorting`, a unified active
+filter summary with `Clear lens filters`, and explicit placement/compare/pager
+labels. Metric input `Cost minimum = 100000` settled to `Cost ≥ 100000` and
+reduced the result count to 176, demonstrating the debounced binding path.
+
+The live pass also selected and cleared a placement facet, exercised row
+placement and comparison actions, and searched for `zzzz-no-match` to verify
+the ready-empty copy. After clearing the Gameface event buffer, the action
+pass captured zero new console entries and zero new exceptions. The initial
+`indexing` copy was not visually captured because the populated save completed
+indexing before the first settled observation; its distinct readiness contract
+is covered by the backend/UI tests and remains called out in the artifact.
+
+Durable evidence is archived in
+`tools/e2e/artifacts/e2e-20260802-findit-ux-followthrough/` (manifest,
+observations, and settled screenshot).

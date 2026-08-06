@@ -21,6 +21,7 @@ namespace FindItBuildingMenu.Domain.Options
 			return new OptionSectionUIEntry
 			{
 				Id = Id,
+				IsToggle = true,
 				Name = LocaleHelper.Translate("Options.LABEL[FindItBuildingMenu.ExtraFilters]"),
 				Options = new[]
 				{
@@ -127,6 +128,8 @@ namespace FindItBuildingMenu.Domain.Options
 			FindItUtil.Filters.HideRandoms = false;
 			FindItUtil.Filters.OnlyPlaced = false;
 			FindItUtil.Filters.UniqueMesh = false;
+			FindItUtil.Filters.WithParking = false;
+			FindItUtil.Filters.WithoutParking = false;
 		}
 
 		public bool IsDefault()

@@ -7,6 +7,7 @@ import equal from "images/findit_equal.svg";
 import notequal from "images/findit_notequal.svg";
 import greaterthan from "images/findit_greaterthan.svg";
 import lessthan from "images/findit_lessthan.svg";
+import { getFilterOptionState } from "domain/filterContracts";
 
 type _Props = {
   options: OptionSection[];
@@ -73,7 +74,7 @@ export const OptionsPanelComponent = (props: _Props) => {
                   <img style={{ maskImage: `url(${section.options[0].icon})` }} />
                   {section.options[0].name}
                 </Button>
-              ) : (
+                  ) : (
                 section.options?.map((option) =>
                   option.isValue ? (
                     <>
@@ -122,20 +123,20 @@ export const OptionsPanelComponent = (props: _Props) => {
                     </>
                   ) : (
                     <VanillaComponentResolver.instance.ToolButton
-                      selected={option.selected && !option.disabled}
+                      selected={getFilterOptionState(option.selected, option.disabled).selected}
                       tooltip={option.name}
-                      disabled={option.disabled}
-                      onSelect={option.disabled ? undefined : () => props.OnChange(section.id, option.id, 0)}
+                      disabled={getFilterOptionState(option.selected, option.disabled).disabled}
+                      onSelect={getFilterOptionState(option.selected, option.disabled).interactive ? () => props.OnChange(section.id, option.id, 0) : undefined}
                       src={option.icon}
                       focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED}
                       className={classNames(
                         VanillaComponentResolver.instance.toolButtonTheme.button,
                         styles.singleButton,
-                        option.selected && !option.disabled && styles.selected,
-                        option.disabled && styles.disabled
+                        getFilterOptionState(option.selected, option.disabled).selected && styles.selected,
+                        getFilterOptionState(option.selected, option.disabled).disabled && styles.disabled
                       )}
                     >
-                      {option.selected && !option.disabled ? <div className={styles.border} /> : undefined}
+                      {getFilterOptionState(option.selected, option.disabled).selected ? <div className={styles.border} /> : undefined}
                     </VanillaComponentResolver.instance.ToolButton>
                   )
                 )

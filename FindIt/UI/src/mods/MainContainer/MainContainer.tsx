@@ -5,25 +5,32 @@ import mod from "../../../mod.json";
 import { TopBarComponent } from "mods/TopBar/TopBar";
 import { PrefabSelectionComponent } from "mods/PrefabSelection/PrefabSelection";
 import { BuildingCatalogComponent } from "mods/BuildingCatalog/BuildingCatalog";
+import { ZoningHierarchyComponent } from "mods/ZoningHierarchy/ZoningHierarchy";
 import { useState, useRef, useEffect } from "react";
 import styles from "./mainContainer.module.scss";
 import { OptionsPanelComponent } from "mods/OptionsPanel/OptionsPanel";
 import { OptionSection } from "domain/ContentViewType";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
+import { ToolSurfaceBar } from "mods/ToolSurfaceBar/ToolSurfaceBar";
 import {
   BUILDING_LENS_PANEL_CHROME_WIDTH,
   resizedBuildingLensWidth,
 } from "domain/buildingLensLayout";
 import { findItSurfacePort } from "domain/findItSurfacePort";
+import { getBuildingLensModeView, type BuildingLensMode } from "domain/buildingLensMode";
 
-const PanelWidth$ = bindValue<number>(mod.id, "PanelWidth");
-const IsExpanded$ = bindValue<boolean>(mod.id, "IsExpanded");
-const AlignmentStyle$ = bindValue<string>(mod.id, "AlignmentStyle");
-const ShowFindItPanel$ = bindValue<boolean>(mod.id, "ShowFindItPanel");
-const BuildingLensEnabled$ = bindValue<boolean>(mod.id, "BuildingLensEnabled");
-const IsWindowLocked$ = bindValue<boolean>(mod.id, "IsWindowLocked");
-const OptionsList$ = bindValue<OptionSection[]>(mod.id, "OptionsList");
+// View contexts can be recreated before the first binding update is emitted.
+// Safe fallbacks keep the shell hidden and prevent an early getValueUnsafe
+// read from turning a normal reload into a Gameface exception.
+const PanelWidth$ = bindValue<number>(mod.id, "PanelWidth", 0);
+const IsExpanded$ = bindValue<boolean>(mod.id, "IsExpanded", false);
+const AlignmentStyle$ = bindValue<string>(mod.id, "AlignmentStyle", "Center");
+const ShowFindItPanel$ = bindValue<boolean>(mod.id, "ShowFindItPanel", false);
+const ShowZoningHierarchy$ = bindValue<boolean>(mod.id, "ShowZoningHierarchy", false);
+const BuildingLensEnabled$ = bindValue<boolean>(mod.id, "BuildingLensEnabled", false);
+const IsWindowLocked$ = bindValue<boolean>(mod.id, "IsWindowLocked", false);
+const OptionsList$ = bindValue<OptionSection[]>(mod.id, "OptionsList", []);
 
 const GameMainScreneTheme: Theme | any = getModule("game-ui/game/components/game-main-screen.module.scss", "classes");
 
@@ -41,18 +48,27 @@ export const FindItMainContainerComponent = () => {
 
   const [sortingOpen, setSortingOpen] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
+  const [buildingLensMode, setBuildingLensMode] = useState<BuildingLensMode>("catalog");
   const [containerLeft, setContainerLeft] = useState(0);
   const [isResizing, setIsResizing] = useState(false);
   const resizeState = useRef({ active: false, startX: 0, startWidth: 0 });
 
   // These get the value of the bindings. Without C# side game ui will crash. Or they will when we have bindings.
   const ShowFindItPanel = useValue(ShowFindItPanel$);
+  const ShowZoningHierarchy = useValue(ShowZoningHierarchy$);
   const BuildingLensEnabled = useValue(BuildingLensEnabled$);
   const IsWindowLocked = useValue(IsWindowLocked$);
   const IsExpanded = useValue(IsExpanded$);
   const PanelWidth = useValue(PanelWidth$) + 15 + 20;
   const OptionsList = useValue(OptionsList$);
   const AlignmentStyle = useValue(AlignmentStyle$);
+  const buildingLensModeView = getBuildingLensModeView(buildingLensMode);
+
+  useEffect(() => {
+    if (!BuildingLensEnabled && buildingLensMode !== "catalog") {
+      setBuildingLensMode("catalog");
+    }
+  }, [BuildingLensEnabled, buildingLensMode]);
 
   const optionsOverflow = () => AlignmentStyle !== "Center" || window.innerWidth < containerLeft + ((PanelWidth + 300) * window.innerHeight) / 1080;
 
@@ -146,10 +162,21 @@ export const FindItMainContainerComponent = () => {
                   toggleSortingOpen={toggleSortingOpen}
                   toggleOptionsOpen={toggleOptionsOpen}
                   toggleEnlarge={toggleEnlarge}
+                  buildingLensMode={buildingLensMode}
+                  onBuildingLensModeChange={setBuildingLensMode}
                 ></TopBarComponent>
               </div>
               <div className={styles.content + " " + AssetMenuTheme.assetPanel}>
-                {BuildingLensEnabled ? <BuildingCatalogComponent /> : <PrefabSelectionComponent expanded={IsExpanded}></PrefabSelectionComponent>}
+                {BuildingLensEnabled
+                  ? ShowZoningHierarchy
+                    // Zones are assignment tools, not buildings, so the Zones
+                    // menu gets the zoning hierarchy rather than a table of
+                    // building rows filtered to nothing.
+                    ? <ZoningHierarchyComponent />
+                    : buildingLensModeView.showCatalogContent
+                      ? <BuildingCatalogComponent />
+                      : <div className={styles.toolsContent}><ToolSurfaceBar /></div>
+                  : <PrefabSelectionComponent expanded={IsExpanded}></PrefabSelectionComponent>}
               </div>
               {BuildingLensEnabled && <div className={styles.resizeHandle} onMouseDown={beginResize} title="Resize building lens" />}
             </div>

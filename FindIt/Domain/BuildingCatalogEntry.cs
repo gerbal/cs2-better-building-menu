@@ -36,7 +36,28 @@ namespace FindItBuildingMenu.Domain
 		double? SewageCapacity = null,
 		double? GroundPollution = null,
 		double? AirPollution = null,
-		double? NoisePollution = null) : IJsonWritable
+		double? NoisePollution = null,
+		string? BuildingType = null,
+		int? EducationLevel = null,
+		string? Provenance = null,
+		string? DlcId = null,
+		string? Theme = null,
+		string[]? AssetPacks = null,
+		string[]? PlacementFlags = null,
+		string? VanillaSection = null,
+		string? VanillaSubCategory = null,
+		string[]? Extensions = null,
+		string? CategoryLabel = null,
+		string? SubCategoryLabel = null,
+		/// <summary>
+		/// Whether the game still has this behind a milestone.
+		/// </summary>
+		/// <remarks>
+		/// Defaulted, and last, so the construction sites that predate it stay
+		/// untouched — inserting it mid-record broke every test that builds an
+		/// entry positionally, which is a lot of noise for one flag.
+		/// </remarks>
+		bool IsLocked = false) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -52,6 +73,14 @@ namespace FindItBuildingMenu.Domain
 			writer.Write(Category);
 			writer.PropertyName("subCategory");
 			writer.Write(SubCategory);
+			writer.PropertyName("categoryLabel");
+			writer.Write(CategoryLabel ?? Category);
+			writer.PropertyName("subCategoryLabel");
+			writer.Write(SubCategoryLabel ?? SubCategory);
+			writer.PropertyName("vanillaSection");
+			writer.Write(VanillaSection ?? string.Empty);
+			writer.PropertyName("vanillaSubCategory");
+			writer.Write(VanillaSubCategory ?? string.Empty);
 			writer.PropertyName("thumbnail");
 			writer.Write(Thumbnail);
 			writer.PropertyName("lotWidth");
@@ -68,10 +97,25 @@ namespace FindItBuildingMenu.Domain
 			writer.Write(IsUniqueMesh);
 			writer.PropertyName("isVanilla");
 			writer.Write(IsVanilla);
+			writer.PropertyName("isLocked");
+			writer.Write(IsLocked);
 			writer.PropertyName("isFavorited");
 			writer.Write(IsFavorited);
 			writer.PropertyName("pdxModsId");
 			writer.Write(PdxModsId);
+			writer.PropertyName("educationLevel");
+			if (EducationLevel.HasValue) writer.Write(EducationLevel.Value); else writer.WriteNull();
+			writer.PropertyName("buildingType");
+			writer.Write(BuildingType ?? string.Empty);
+			writer.PropertyName("provenance");
+			writer.Write(Provenance ?? string.Empty);
+			writer.PropertyName("dlcId");
+			writer.Write(DlcId ?? string.Empty);
+			writer.PropertyName("theme");
+			writer.Write(Theme ?? string.Empty);
+			WriteStringArray(writer, "assetPacks", AssetPacks);
+			WriteStringArray(writer, "placementFlags", PlacementFlags);
+			WriteStringArray(writer, "extensions", Extensions);
 			WriteNullable(writer, "constructionCost", ConstructionCost);
 			WriteNullable(writer, "upkeep", Upkeep);
 			WriteNullable(writer, "workers", Workers);
@@ -99,6 +143,18 @@ namespace FindItBuildingMenu.Domain
 			{
 				writer.WriteNull();
 			}
+		}
+
+		private static void WriteStringArray(IJsonWriter writer, string propertyName, IEnumerable<string>? values)
+		{
+			writer.PropertyName(propertyName);
+			string[] normalized = values?.Where(value => !string.IsNullOrWhiteSpace(value)).ToArray() ?? Array.Empty<string>();
+			writer.ArrayBegin((uint)normalized.Length);
+			foreach (string value in normalized)
+			{
+				writer.Write(value);
+			}
+			writer.ArrayEnd();
 		}
 	}
 }
