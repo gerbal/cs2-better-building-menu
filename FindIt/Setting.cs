@@ -48,6 +48,18 @@ namespace FindItBuildingMenu
 		[SettingsUISection(SETTINGS, OTHER)]
 		public bool ResetFavorites { set => FindItUtil.ResetFavorites(); }
 
+		// Ctrl+F also collides with vanilla — "Toggle Follow Selected Citizen" —
+		// but it is kept, deliberately. It is FindIt's signature shortcut, the
+		// vanilla action needs a citizen selected before it does anything, and
+		// the alternative (giving this binding a custom usage so the conflict
+		// check stops matching it) would hide the collision rather than resolve
+		// it: both actions would still fire on the same key. Moving the key is
+		// the honest alternative if the notification is judged worse than the
+		// overlap. See CS-Modding cm-q9x9.
+		//
+		// This machine does not show it: Settings.coc carries a local override
+		// clearing the vanilla binding, and an unset binding cannot conflict. It
+		// fires on any fresh profile.
 		[SettingsUIKeyboardBinding(BindingKeyboard.F, nameof(SearchKeyBinding), ctrl: true)]
 		[SettingsUISection(KEYBINDINGS, ACTIONS)]
 		public ProxyBinding SearchKeyBinding { get; set; }
@@ -56,7 +68,13 @@ namespace FindItBuildingMenu
 		[SettingsUISection(KEYBINDINGS, ACTIONS)]
 		public ProxyBinding PickerKeyBinding { get; set; }
 
-		[SettingsUIKeyboardBinding(BindingKeyboard.R, nameof(RandomKeyBinding), ctrl: true)]
+		// Ctrl+N, not Ctrl+R: vanilla binds Ctrl+R to "Relocate Selected Object"
+		// (Shortcuts map, same default usages as ours), which is a real collision
+		// and the source of the "Key binding conflict detected" notification the
+		// mod showed on every boot. N is bound nowhere in the game's InputActions
+		// asset at all, so it stays clear even under the modifier-insensitive
+		// comparison ProxyBinding.PathEquals falls back to.
+		[SettingsUIKeyboardBinding(BindingKeyboard.N, nameof(RandomKeyBinding), ctrl: true)]
 		[SettingsUISection(KEYBINDINGS, ACTIONS)]
 		public ProxyBinding RandomKeyBinding { get; set; }
 
