@@ -9,6 +9,11 @@ building-comparison workflow are developed. See [docs/FORK.md](docs/FORK.md) for
 provenance, [PLANNING.md](PLANNING.md) for implementation phases, and
 [docs/roadmap.md](docs/roadmap.md) for the successor capability plan.
 
+It also replaces [`cs2-building-menu-overhaul`](../cs2-building-menu-overhaul/README.md)
+as this repository's building-browser mod. The two ship the same feature area and
+must not be installed side by side, so the successor stays out of `ALL_MODS` and is
+installed with `just deploy-isolated findit-building-menu`.
+
 **Do not publish this checkout yet.** Its runtime identity is now unique, but a
 new PDX Mods publisher ID and the upstream license confirmation are still
 required before distribution.
