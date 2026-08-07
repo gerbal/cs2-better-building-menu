@@ -101,14 +101,12 @@
   color: rgba(0, 0, 0, 0.85);
 }
 
-// The group summary is a Button, and vanilla's icon variant sizes those as a
-// square — so the label overflowed it and printed over "Group by".
-.groupPicker .sortSummary {
-  width: auto !important;
-  flex: 0 0 auto;
-  margin-right: 4rem;
-  white-space: nowrap;
-}
+// The group summary's icon-variant sizing fix used to live here, against
+// .groupPicker .sortSummary. No component renders GroupedResults' groupPicker —
+// the picker is BuildingCatalog's — so CSS modules hashed this into a namespace
+// nothing used and the header kept printing "Category" over "Group by" with an
+// apparent fix in the tree. It now lives with the control it styles, in
+// buildingCatalog.module.scss, alongside the other word-carrying buttons.
 
 // The vanilla ToolButton is sized for an icon; these carry a word.
 .viewMode {

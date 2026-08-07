@@ -9,6 +9,14 @@ export interface BuildingCatalogEntry {
   vanillaSection?: string;
   vanillaSubCategory?: string;
   thumbnail: string;
+  /**
+   * Drawn when `thumbnail` resolves to nothing. The game's thumbnail camera
+   * hands back a URL for every prefab but only renders the ones vanilla shows
+   * in a menu, so a spawnable zone building has a `thumbnail` that loads as an
+   * empty box. Only the image's error tells us that, hence a second field
+   * rather than a choice made server-side.
+   */
+  fallbackThumbnail?: string;
   lotWidth: number;
   lotDepth: number;
   buildingLevel: number;

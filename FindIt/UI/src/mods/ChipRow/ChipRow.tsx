@@ -116,7 +116,9 @@ export const ChipRow = () => {
         title={text}
       >
         <span className={styles.chipText}>{text}</span>
-        <span className={styles.caret} aria-hidden="true">▾</span>
+        {/* U+25BC, not the small U+25BE — the game's font stack has no small
+            triangles, so the breadcrumb carets drew as notdef boxes. */}
+        <span className={styles.caret} aria-hidden="true">▼</span>
       </Button>
       {onClear && (
         <Button

@@ -55,7 +55,9 @@ export const GROUP_DIMENSIONS: readonly GroupDimension[] = [
   { id: "density", label: "Density", depth: 1 },
   { id: "footprint", label: "Footprint", depth: 1 },
   { id: "cost", label: "Cost", depth: 1 },
-  { id: "none", label: "Nothing", depth: 0 },
+  // "None", not "Nothing": vanilla's vocabulary for an absent selection, and
+  // this dropdown is chrome, so it speaks the game's language.
+  { id: "none", label: "None", depth: 0 },
 ];
 
 /** Default when the section is unknown, and the fallback everywhere else. */

@@ -11,6 +11,13 @@ import type { BuildingLensMetric } from "./buildingLensLayout";
  * are grouped explicitly here so a cost reads as 80 000 rather than 80000, and
  * so the result does not depend on a runtime capability we cannot rely on.
  *
+ * Which separator is a second question, and not one this module should answer
+ * on its own: a hardcoded space made our numbers disagree with the game's on
+ * the same screen. The game groups with the same regex used below and takes the
+ * separator from its loc dictionary, so we ask the same dictionary — see
+ * `getNumberSeparators`. No locale tag is exposed to mods, so this is not only
+ * the tidier route, it is the only one that can agree with the screen.
+ *
  * Second, units. A bare "5000" in an Upkeep column does not say per what, and
  * an empty cell did not distinguish "this building has no parking" from "we
  * have no data". Both are now stated.
@@ -22,18 +29,70 @@ export const METRIC_NO_DATA = "—";
 /** Rendered when a building genuinely has none of a countable thing. */
 export const METRIC_NONE = "0";
 
-// A plain space, deliberately. A thin space (U+2009) would suit a dense table
-// better, but Cohtml's font coverage for it is unverified here and a missing
-// glyph would put a replacement box in every numeric cell. A comma would
-// mislead the locales that use it as a decimal separator.
-const GROUP_SEPARATOR = " ";
+/**
+ * A construction cost of exactly zero — real, and different from unknown.
+ *
+ * English here rather than a locale key because this module is pure and cannot
+ * call `translate`; it is registered in `localizableStrings` as debt alongside
+ * the rest of the strings the domain returns as text.
+ */
+export const METRIC_FREE = "Free";
 
-export function groupDigits(value: number): string {
+// Fallbacks only. The separator a player expects is the one the game is already
+// using two panels away, and the game reads it from its own loc dictionary
+// rather than hardcoding it — index.js groups digits with a regex identical to
+// the one below and substitutes Common.THOUSANDS_SEPARATOR. Asking the same
+// dictionary is what makes our "1,416,788" agree with the game's.
+//
+// The earlier note here was right to reject a hardcoded comma (a decimal
+// separator in much of Europe) and wrong to conclude a hardcoded space. A
+// no-break space is the fallback because Cohtml treats a plain U+0020 between
+// digits as a line-break opportunity and will split a number across two lines —
+// the same trap formatLotDimensions was written to dodge, and the game itself
+// normalizes a plain space to U+00A0 for exactly this reason.
+const FALLBACK_GROUP_SEPARATOR = " ";
+const FALLBACK_DECIMAL_SEPARATOR = ".";
+const THOUSANDS_SEPARATOR_KEY = "Common.THOUSANDS_SEPARATOR";
+const DECIMAL_SEPARATOR_KEY = "Common.DECIMAL_SEPARATOR";
+
+/** The `translate` from `useLocalization`, kept structural so this stays pure. */
+export type Translate = (id: string, fallback?: string | null) => string | null;
+
+export interface NumberSeparators {
+  group: string;
+  decimal: string;
+}
+
+export const FALLBACK_SEPARATORS: NumberSeparators = {
+  group: FALLBACK_GROUP_SEPARATOR,
+  decimal: FALLBACK_DECIMAL_SEPARATOR,
+};
+
+function resolveSeparator(translate: Translate | undefined, key: string, fallback: string): string {
+  if (!translate) return fallback;
+
+  const value = translate(key, fallback);
+  // translate() echoes the id back when a key is missing, and an id is not a
+  // separator — without this check a missing key renders "1Common.THOUSANDS_SEPARATOR416".
+  if (typeof value !== "string" || value === "" || value === key) return fallback;
+
+  return value === " " ? FALLBACK_GROUP_SEPARATOR : value;
+}
+
+/** The player's own separators, read from the game's dictionary. */
+export function getNumberSeparators(translate?: Translate): NumberSeparators {
+  return {
+    group: resolveSeparator(translate, THOUSANDS_SEPARATOR_KEY, FALLBACK_GROUP_SEPARATOR),
+    decimal: resolveSeparator(translate, DECIMAL_SEPARATOR_KEY, FALLBACK_DECIMAL_SEPARATOR),
+  };
+}
+
+export function groupDigits(value: number, separators: NumberSeparators = FALLBACK_SEPARATORS): string {
   const rounded = Number.isInteger(value) ? value : Math.round(value * 10) / 10;
   const negative = rounded < 0;
   const [whole, fraction] = Math.abs(rounded).toString().split(".");
-  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, GROUP_SEPARATOR);
-  const rendered = fraction ? `${grouped}.${fraction}` : grouped;
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, separators.group);
+  const rendered = fraction ? `${grouped}${separators.decimal}${fraction}` : grouped;
 
   return negative ? `-${rendered}` : rendered;
 }
@@ -42,18 +101,29 @@ export function groupDigits(value: number): string {
  * Formats one metric cell. `null` means the metric was never projected for this
  * building, which is different from a real zero.
  */
-export function formatBuildingMetric(value: number | null | undefined, metric: BuildingLensMetric): string {
+export function formatBuildingMetric(
+  value: number | null | undefined,
+  metric: BuildingLensMetric,
+  separators: NumberSeparators = FALLBACK_SEPARATORS,
+): string {
   if (value === null || value === undefined || !Number.isFinite(value)) {
     return METRIC_NO_DATA;
   }
 
-  const digits = groupDigits(value);
+  const digits = groupDigits(value, separators);
 
   switch (metric) {
     case "upkeep":
       // The game bills upkeep monthly; without this the column is a bare
       // number the player cannot compare against anything.
       return `${digits}/mo`;
+    case "cost":
+      // A zero here is real, not missing: the indexer leaves the cost null when
+      // no PlaceableObjectData is present, and vanilla likewise renders an
+      // authored zero as a zero. But a lone "0" beside the "—" that Workers and
+      // Capacity show for absence reads as a third kind of nothing. Naming it
+      // says which kind it is, and leaves the dash meaning only "not known".
+      return value === 0 ? METRIC_FREE : digits;
     default:
       return digits;
   }
@@ -138,8 +208,9 @@ export function formatCapacity(
   category: string | null | undefined,
   subCategory: string | null | undefined,
   role?: string | null,
+  separators: NumberSeparators = FALLBACK_SEPARATORS,
 ): string {
-  const formatted = formatBuildingMetric(value, "capacity");
+  const formatted = formatBuildingMetric(value, "capacity", separators);
   if (formatted === METRIC_NO_DATA) {
     return formatted;
   }
@@ -177,7 +248,7 @@ export function getBuildingDetailMetrics(entry: {
   groundPollution?: number | null;
   airPollution?: number | null;
   noisePollution?: number | null;
-}): BuildingDetailMetric[] {
+}, separators: NumberSeparators = FALLBACK_SEPARATORS): BuildingDetailMetric[] {
   const candidates: Array<{ key: string; label: string; value: number | null | undefined; unit?: string }> = [
     { key: "electricity", label: "Electricity", value: entry.electricityConsumption, unit: "MW" },
     { key: "water", label: "Water", value: entry.waterConsumption, unit: "m³" },
@@ -195,8 +266,8 @@ export function getBuildingDetailMetrics(entry: {
       key: candidate.key,
       label: candidate.label,
       value: candidate.unit
-        ? `${groupDigits(candidate.value as number)} ${candidate.unit}`
-        : groupDigits(candidate.value as number),
+        ? `${groupDigits(candidate.value as number, separators)} ${candidate.unit}`
+        : groupDigits(candidate.value as number, separators),
     }));
 }
 

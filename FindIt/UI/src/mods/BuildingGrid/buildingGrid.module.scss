@@ -83,6 +83,11 @@
   width: 100%;
   max-height: 34rem;
   overflow: hidden;
+  // Belt and braces. shortenTileLabel already fits the name to the tile, but if
+  // it is ever out by a character the cut should read as a cut: this used to
+  // clip mid-word with no mark, which is how sixty different buildings all came
+  // out as "EU Commercia".
+  text-overflow: ellipsis;
   text-align: center;
   color: var(--menuText1Normal);
   // The game's own smallest label — the tool-options "Pack" row — is 16rem.

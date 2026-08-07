@@ -201,7 +201,14 @@ namespace FindItBuildingMenu.Services
 				SubCategoryLabel: BuildingCatalogLabels.ForSubCategory(prefab.SubCategory, prefab.SubCategory.ToString()),
 				VanillaSection: vanillaTag?.Section,
 				VanillaSubCategory: vanillaTag?.SubCategory,
+				// Both, not one coalesced into the other: the thumbnail camera
+				// returns a URL for every prefab but only renders the ones
+				// vanilla shows in a menu, so a spawnable zone building has a
+				// non-null Thumbnail that draws nothing. A ?? here cannot see
+				// that; the renderer can, and falls back on the image error.
 				Thumbnail: IconPath.Normalize(prefab.Thumbnail ?? prefab.FallbackThumbnail ?? string.Empty),
+				FallbackThumbnail: IconPath.Normalize(
+					prefab.FallbackThumbnail ?? prefab.CategoryThumbnail ?? string.Empty),
 				LotWidth: prefab.LotSize.x,
 				LotDepth: prefab.LotSize.y,
 				BuildingLevel: prefab.BuildingLevel,

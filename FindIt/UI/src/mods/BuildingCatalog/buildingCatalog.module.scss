@@ -1,5 +1,39 @@
 @use "../../base.scss" as _base;
 
+// ---------------------------------------------------------------------------
+// Table column geometry.
+//
+// The header row and the data rows are two separate flex containers describing
+// one table, so a column lines up only if both reserve identical space. Two
+// things ate the difference and put every value 26.6px left of its heading:
+//
+//   - the rows scroll and the header does not, so the scrollbar narrows the
+//     rows by its track width and nothing narrowed the header;
+//   - the header's right padding was a hand-guessed 34rem standing in for the
+//     trailing Place and compare controls, which actually occupy far more.
+//
+// Both are named here and derived once, so the header cannot drift from the
+// rows again when one of those controls is resized. Anything that changes a
+// trailing control's width changes it HERE.
+// ---------------------------------------------------------------------------
+$row-gap: 3rem;
+// Inside .rowSelect, after its last metric cell.
+$row-padding-right: 4rem;
+// On .row itself, after the compare button.
+$row-outer-padding-right: 4rem;
+// Wide enough for the word and its glyph. It had no width at all, so vanilla's
+// icon variant squared it to 24rem and the label printed over itself.
+$row-place-width: 64rem;
+$row-compare-width: 26rem;
+$rows-scrollbar-width: 16rem;
+
+// Everything to the right of .rowSelect's last metric cell. Measured against a
+// live row rather than assumed: .row lays its three children out with NO gap
+// between them, so a first attempt at this that added $row-gap twice overshot
+// by 2rem and left a uniform 1.3px lean. If a gap is ever introduced there, it
+// belongs in this sum.
+$table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-width + $row-outer-padding-right;
+
 .catalog {
   display: flex;
   flex-direction: column;
@@ -129,9 +163,31 @@
   border-radius: 3rem;
 }
 
+// Vanilla's icon variant sizes a Button as a 24rem square. Every control listed
+// here carries a word rather than a glyph, so each has to opt out of that width:
+// left alone, the label is centred on a 16rem box and bleeds symmetrically over
+// its neighbours — this is what printed "Category" across "Group by".
+//
+// Collected into one rule because the same fix had been rediscovered per-site in
+// three different spellings (width: auto !important, a hand-picked min-width, and
+// min-width: 0, which permits the collapse rather than resisting it), and a fourth
+// copy already sits dead in groupedResults.module.scss against a class no
+// component renders. Glyph buttons — .pageButton, .compareRemove — are genuinely
+// square and stay out of this.
+.sortSummary,
+.sortDisclosure,
+.sortButton,
+.scopeNoticeAction,
+.comparePlace,
+.clearCompare {
+  width: auto !important;
+}
+
 .sortSummary {
   display: flex;
   flex: 0 1 auto;
+  // Paired with the ellipsis on .sortSummaryLabel: the box sizes to its label
+  // (above) but may still shrink under pressure rather than push the row wide.
   min-width: 0;
   flex-direction: row;
   align-items: center;
@@ -153,7 +209,11 @@
 .sortDisclosure {
   @include _base.transparentButton(false, true);
   flex: 0 1 auto;
-  min-width: 92rem;
+  // Was min-width: 92rem, a hand-measured number that existed only to out-size
+  // the icon variant's square. The shared width: auto rule above does that job
+  // now, so the button sizes to whichever of "More sorting" / "Hide sorting" it
+  // is showing.
+  min-width: 0;
   min-height: 24rem;
   padding: 2rem 6rem;
   color: var(--menuText2Normal);
@@ -186,7 +246,6 @@
 // text, so let them grow to their label instead of painting into the next
 // button. Keep the minimum touch target from the original FindIt layout.
 .sortButton {
-  width: auto !important;
   flex: 0 1 auto;
   white-space: nowrap;
 }
@@ -196,9 +255,20 @@
   background-color: rgba(255, 255, 255, 0.1);
 }
 
+// Which way the order runs (▲/▼ as ascending/descending).
 .sortDirection {
   margin-left: 3rem;
   font-size: var(--fontSizeXS, 12rem);
+}
+
+// "This opens a menu". Same glyph as .sortDirection and previously the same
+// class, which meant one class carried two unrelated meanings on one line: a
+// caret beside "Category" and a direction beside "Name". Split so a reader of
+// either the markup or the screen can tell them apart.
+.disclosureCaret {
+  margin-left: 3rem;
+  font-size: var(--fontSizeXS, 12rem);
+  color: var(--menuText2Normal);
 }
 
 .catalogFilters {
@@ -574,10 +644,15 @@
 }
 
 .columnHeader {
-  gap: 3rem;
-  // Reserve the trailing compare action so the fixed metric columns line up
-  // with the row buttons below it.
-  padding: 5rem 34rem 3rem 8rem;
+  gap: $row-gap;
+  // Right padding reserves exactly what the row spends after its last metric
+  // cell — see the geometry block at the top of this file. The rows' scrollbar
+  // is added on top of it when the rows actually scroll.
+  padding: 5rem $table-trailing-reserve 3rem 8rem;
+
+  &[data-rows-scrollable="true"] {
+    padding-right: $table-trailing-reserve + $rows-scrollbar-width;
+  }
   text-transform: uppercase;
   font-size: var(--fontSizeS);
   box-sizing: border-box;
@@ -667,7 +742,6 @@
 
 .scopeNoticeAction {
   @include _base.transparentButton(false, true);
-  width: auto !important;
   flex: 0 0 auto;
   min-height: 26rem;
   padding: 3rem 8rem;
@@ -677,11 +751,18 @@
   white-space: nowrap;
 }
 
+// The table's scroll area. This was flex: 1 1 0, and a zero basis only resolves
+// against a parent with a definite height — .catalog is height: auto capped by a
+// max-height, so the basis resolved against nothing and the rows contributed no
+// height at all: the panel sat at 192rem with a hundred rows laid out below the
+// viewport, none of them visible. Same failure, and the same fix, as
+// .groupScroll in groupedResults.module.scss — see the note there.
 .rows {
   display: flex;
   flex-direction: column;
-  flex: 1 1 0;
+  flex: 0 1 auto;
   min-height: 0;
+  max-height: 100%;
 }
 
 .row {
@@ -693,8 +774,11 @@
   height: 92rem;
   min-height: 92rem;
   margin: 1rem 0;
-  padding: 0 4rem 0 0;
-  gap: 3rem;
+  padding: 0 $row-outer-padding-right 0 0;
+  // Declared, but measured at 0 between this row's three children on Cohtml
+  // 1.64 — so the header's trailing reserve is computed WITHOUT it. Do not
+  // trust this value when reasoning about the row's width; measure.
+  gap: $row-gap;
   justify-content: flex-start;
   text-align: left;
   color: var(--menuTitleNormal);
@@ -711,8 +795,8 @@
   min-width: 0;
   height: 88rem;
   min-height: 88rem;
-  padding: 2rem 4rem 2rem 8rem;
-  gap: 3rem;
+  padding: 2rem $row-padding-right 2rem 8rem;
+  gap: $row-gap;
   justify-content: flex-start;
   align-items: center;
   text-align: left;
@@ -726,8 +810,8 @@
 
 .compareButton {
   @include _base.transparentButton(false, true);
-  flex: 0 0 26rem;
-  width: 26rem;
+  flex: 0 0 $row-compare-width;
+  width: $row-compare-width;
   min-height: 30rem;
   padding: 2rem;
   color: var(--menuText2Normal);
@@ -744,7 +828,9 @@
   align-items: center;
   flex: 1 1 auto;
   min-width: 0;
-  gap: 7rem;
+  // A wide thumbnail fills its 60rem image box edge to edge, so a 7rem gap left
+  // the name touching the picture. This is the space between them, not decoration.
+  gap: 12rem;
 }
 
 .thumbnail {
@@ -1177,7 +1263,11 @@
 
 // Placing is an explicit button now rather than the whole row.
 .rowPlaceButton {
-  flex: 0 0 auto;
+  // Fixed, and the same constant the header reserves. It was flex: 0 0 auto
+  // with no width, so vanilla's icon variant sized it as a 24rem square and
+  // "Place +" printed across its own edges.
+  flex: 0 0 $row-place-width;
+  width: $row-place-width;
   align-items: center;
   justify-content: center;
   padding: 0 6rem;
@@ -1215,10 +1305,19 @@
   align-items: center;
 }
 
-.groupOptions {
+// The sort picker is the group picker's twin — same chrome, same gesture. It
+// was a bare <div> with no handler while its twin opened a menu, so the pair
+// taught two opposite lessons about one affordance.
+.sortPicker {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.groupOptions,
+.sortPickerOptions {
   position: absolute;
   top: 100%;
-  left: 0;
   z-index: 25;
   display: flex;
   flex-direction: column;
@@ -1227,5 +1326,22 @@
   border-radius: 3rem;
   background-color: rgba(12, 16, 20, 0.98);
   border: 1rem solid rgba(255, 255, 255, 0.14);
+
+  // Vanilla's menus read down a left edge; these were centred, which makes a
+  // column of short words scan as a poster rather than a list.
+  .sortButton {
+    justify-content: space-between;
+    text-align: left;
+  }
+}
+
+.groupOptions {
+  left: 0;
+}
+
+// Anchored to its right edge: this picker sits near the panel's right side, so
+// opening leftward keeps the menu on the panel instead of off it.
+.sortPickerOptions {
+  right: 0;
 }
 

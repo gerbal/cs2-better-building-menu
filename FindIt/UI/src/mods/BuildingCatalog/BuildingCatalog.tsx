@@ -33,6 +33,7 @@ import {
   formatCapacity,
   formatLotDimensions,
   getBuildingDetailMetrics,
+  getNumberSeparators,
 } from "domain/buildingLensMetricFormat";
 import {
   getBuildingDescriptionKeys,
@@ -48,6 +49,7 @@ import type { BuildingLensFacetState } from "domain/buildingCatalogFacets";
 import { findItSurfacePort } from "domain/findItSurfacePort";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 import { getSearchScopeNotice } from "domain/buildingSearchRank";
+import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { getLensChoice, getLensDisclosure, setLensChoice, setLensDisclosure } from "domain/buildingLensViewState";
 import { GroupedResults, type CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import { ViewModeBar } from "mods/GroupedResults/ViewModeBar";
@@ -120,6 +122,9 @@ const densityClassNames: Record<BuildingLensDensityTier, string> = {
 
 export const BuildingCatalogComponent = () => {
   const { translate } = useLocalization();
+  // The player's own thousands/decimal marks, so our columns agree with the
+  // numbers the game is drawing elsewhere on the same screen.
+  const separators = getNumberSeparators(translate);
   const page = useValue(BuildingCatalog$);
   const panelWidth = useValue(PanelWidth$);
   const currentSearch = useValue(CurrentSearch$);
@@ -144,9 +149,10 @@ export const BuildingCatalogComponent = () => {
   };
   const tableMode = viewMode === "table";
   // Empty means "nobody has chosen", which is different from having chosen
-  // Nothing — the first follows the section, the second stays flat.
+  // None — the first follows the section, the second stays flat.
   const [chosenGroupBy, setChosenGroupBy] = useState<string>(() => getLensChoice(LENS_GROUP_KEY, ""));
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
+  const [sortPickerOpen, setSortPickerOpen] = useState(false);
   const groupBy: GroupDimensionId = isGroupDimension(chosenGroupBy)
     ? chosenGroupBy
     : defaultGroupDimensionFor(section);
@@ -238,6 +244,24 @@ export const BuildingCatalogComponent = () => {
   const moreSortingLabel = sortingExpanded
     ? translate("Tooltip.LABEL[FindItBuildingMenu.HideSorting]", "Hide sorting") ?? "Hide sorting"
     : translate("Tooltip.LABEL[FindItBuildingMenu.MoreSorting]", "More sorting") ?? "More sorting";
+  // One register for both pickers. These used to disagree: the sort control
+  // announced "Sorted by Name, ascending" while the group control announced a
+  // bare "Category", so the two halves of a matched pair read as different
+  // kinds of thing to anyone listening rather than looking.
+  const groupedByLabel = (
+    translate("Tooltip.LABEL[FindItBuildingMenu.GroupedBy]", "Grouped by {0}") ?? "Grouped by {0}"
+  ).replace("{0}", groupByLabel);
+  const sortDirectionLabel = descending
+    ? translate("Tooltip.LABEL[FindItBuildingMenu.SortDirectionDescending]", "descending") ?? "descending"
+    : translate("Tooltip.LABEL[FindItBuildingMenu.SortDirectionAscending]", "ascending") ?? "ascending";
+  const sortedByLabel = (
+    translate("Tooltip.LABEL[FindItBuildingMenu.SortedBy]", "Sorted by {0}, {1}") ?? "Sorted by {0}, {1}"
+  )
+    .replace("{0}", sortPresentation.compact.label)
+    .replace("{1}", sortDirectionLabel);
+  const sortByOptionLabel = (label: string): string =>
+    (translate("Tooltip.LABEL[FindItBuildingMenu.SortByOption]", "Sort by {0}") ?? "Sort by {0}")
+      .replace("{0}", label);
 
   /**
    * Draws one leaf's entries in whichever mode is active.
@@ -270,6 +294,31 @@ export const BuildingCatalogComponent = () => {
   function clearCompare(): void {
     const command = clearCompareEntriesCommand();
     trigger(mod.id, command.method, ...command.args);
+  }
+
+  // Only one of the two pickers is ever open. They sit on the same line and
+  // overlay the results, so both at once is two popovers competing for the
+  // same space.
+  function openSortPicker(): void {
+    setGroupPickerOpen(false);
+    setSortPickerOpen((open) => !open);
+  }
+
+  function openGroupPicker(): void {
+    setSortPickerOpen(false);
+    setGroupPickerOpen((open) => !open);
+  }
+
+  // Picking from either menu closes it. They overlay the results, and a menu
+  // that stays up after it has been used hides the change it just made.
+  function chooseSort(column: SortColumn): void {
+    setSortPickerOpen(false);
+    setSort(column);
+  }
+
+  function chooseGroupBy(id: GroupDimensionId): void {
+    setGroupPickerOpen(false);
+    setGroupBy(id);
   }
 
   function setSort(column: SortColumn): void {
@@ -321,13 +370,18 @@ export const BuildingCatalogComponent = () => {
           <Button
             className={styles.sortSummary}
             variant="icon"
-            onSelect={() => setGroupPickerOpen((open) => !open)}
+            onSelect={openGroupPicker}
             aria-expanded={groupPickerOpen}
-            aria-label={groupByLabel}
+            aria-label={groupedByLabel}
             title={groupByLabel}
           >
             <span className={styles.sortSummaryLabel}>{groupByLabel}</span>
-            <span className={styles.sortDirection} aria-hidden="true">▾</span>
+            {/* A disclosure caret, not a sort direction — separate classes
+                because they looked identical and meant different things.
+                U+25BC, not the small U+25BE: the game's font stack has no small
+                triangles, so ▾ drew as a notdef box — the one mark saying this
+                control opens was the one glyph that would not render. */}
+            <span className={styles.disclosureCaret} aria-hidden="true">▼</span>
           </Button>
           {groupPickerOpen && (
             <div className={styles.groupOptions}>
@@ -342,7 +396,7 @@ export const BuildingCatalogComponent = () => {
                     key={dimension.id}
                     className={classNames(styles.sortButton, dimension.id === groupBy && styles.sortButtonSelected)}
                     variant="icon"
-                    onSelect={() => setGroupBy(dimension.id)}
+                    onSelect={() => chooseGroupBy(dimension.id)}
                     aria-label={label}
                   >
                     <span>{label}</span>
@@ -354,13 +408,48 @@ export const BuildingCatalogComponent = () => {
         </div>
         <div className={styles.toolbarSpacer} />
         <span className={styles.sortLabel}>{translate("Tooltip.LABEL[FindItBuildingMenu.SortBy]", "Sort by")}</span>
-        <div
-          className={styles.sortSummary}
-          title={`${sortPresentation.compact.label} · ${sortPresentation.compact.direction}`}
-          aria-label={`Sorted by ${sortPresentation.compact.label}, ${sortPresentation.compact.direction}`}
-        >
-          <span className={styles.sortSummaryLabel}>{sortPresentation.compact.label}</span>
-          <span className={styles.sortDirection} aria-hidden="true">{sortPresentation.compact.indicator}</span>
+        {/* Built the same way as the group picker above, because it is the same
+            kind of control and was drawn to look like one. It used to be a bare
+            <div> with no handler: identical chrome, identical position, and
+            clicking it did nothing, so the pair taught two opposite lessons
+            about the same affordance. Sorting was reachable only from "More
+            sorting" at the far right. */}
+        <div className={styles.sortPicker}>
+          <Button
+            className={styles.sortSummary}
+            variant="icon"
+            onSelect={openSortPicker}
+            aria-expanded={sortPickerOpen}
+            aria-label={sortedByLabel}
+            title={sortedByLabel}
+          >
+            <span className={styles.sortSummaryLabel}>{sortPresentation.compact.label}</span>
+            <span className={styles.sortDirection} aria-hidden="true">{sortPresentation.compact.indicator}</span>
+          </Button>
+          {sortPickerOpen && (
+            <div className={styles.sortPickerOptions}>
+              {sortPresentation.expanded.map((option) => (
+                <Button
+                  key={option.key}
+                  className={classNames(styles.sortButton, option.selected && styles.sortButtonSelected)}
+                  variant="icon"
+                  onSelect={() => chooseSort(option.key)}
+                  aria-label={sortByOptionLabel(option.label)}
+                  title={sortByOptionLabel(option.label)}
+                >
+                  <span>{option.label}</span>
+                  {/* Choosing the active field again reverses it — the same
+                      gesture the chip row and the column headers already use,
+                      so the indicator has to be here to say which way. */}
+                  {option.selected && (
+                    <span className={styles.sortDirection} aria-hidden="true">
+                      {sortPresentation.compact.indicator}
+                    </span>
+                  )}
+                </Button>
+              ))}
+            </div>
+          )}
         </div>
         <ViewModeBar value={viewMode} onChange={setViewMode} />
         <Button
@@ -383,8 +472,8 @@ export const BuildingCatalogComponent = () => {
               className={classNames(styles.sortButton, option.selected && styles.sortButtonSelected)}
               variant="icon"
               onSelect={() => setSort(option.key)}
-              aria-label={`Sort by ${option.label}`}
-              title={`Sort by ${option.label}`}
+              aria-label={sortByOptionLabel(option.label)}
+              title={sortByOptionLabel(option.label)}
             >
               <span>{option.label}</span>
               {option.selected && <span className={styles.sortDirection} aria-hidden="true">{sortPresentation.compact.indicator}</span>}
@@ -426,7 +515,7 @@ export const BuildingCatalogComponent = () => {
                   <div className={styles.compareIdentity}>
                     <span className={styles.compareName}>{entryLabel}</span>
                     <span className={styles.compareMetrics}>
-                      Cost {formatBuildingMetric(entry.constructionCost, "cost")} · Upkeep {formatBuildingMetric(entry.upkeep, "upkeep")} · Workers {formatBuildingMetric(entry.workers, "workers")} · Capacity {formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType)}
+                      Cost {formatBuildingMetric(entry.constructionCost, "cost", separators)} · Upkeep {formatBuildingMetric(entry.upkeep, "upkeep", separators)} · Workers {formatBuildingMetric(entry.workers, "workers", separators)} · Capacity {formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators)}
                     </span>
                   </div>
                   <Button
@@ -456,7 +545,10 @@ export const BuildingCatalogComponent = () => {
 
       {tableMode ? (
         <>
-        <div className={styles.columnHeader}>
+        {/* The rows scroll and this header does not, so the scrollbar narrows
+            them and would leave every value sitting left of its heading. The
+            header reserves the track only while there is one. */}
+        <div className={styles.columnHeader} data-rows-scrollable={rowsScrollable ? "true" : undefined}>
           <span className={styles.identityHeader}>{translate("Tooltip.LABEL[FindItBuildingMenu.Building]", "Building")}</span>
           {metricColumns.map((column) => {
             const fullLabel = translate(column.localizationKey, column.fallback) ?? column.fallback;
@@ -504,7 +596,7 @@ export const BuildingCatalogComponent = () => {
             const rowPlaceLabel = `${placeLabel}: ${entryLabel}`;
             const isExpanded = expandedId === entry.id;
             const rowInspectLabel = `${inspectLabel}: ${entryLabel}`;
-            const detailMetrics = isExpanded ? getBuildingDetailMetrics(entry) : [];
+            const detailMetrics = isExpanded ? getBuildingDetailMetrics(entry, separators) : [];
             const flagGroups = isExpanded ? getBuildingFlagGroups(entry.placementFlags) : [];
             const extensionLabels = isExpanded ? getBuildingExtensionLabels(entry.extensions) : [];
             const provenanceChips = isExpanded ? getBuildingProvenanceChips(entry, resolveFacetLabel) : [];
@@ -531,7 +623,12 @@ export const BuildingCatalogComponent = () => {
                 >
                   <div className={styles.identityCell}>
                     <div className={styles.thumbnail}>
-                      {entry.thumbnail && <img src={entry.thumbnail} />}
+                      {entry.thumbnail && (
+                        <img
+                          src={entry.thumbnail}
+                          onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
+                        />
+                      )}
                     </div>
                     <div className={styles.identity}>
                       <div className={styles.nameLine}>
@@ -543,17 +640,17 @@ export const BuildingCatalogComponent = () => {
                       </div>
                     </div>
                   </div>
-                  <div className={classNames(styles.metric, styles.metricCost)} title={`Cost ${formatBuildingMetric(entry.constructionCost, "cost")}`}>
-                    {formatBuildingMetric(entry.constructionCost, "cost")}
+                  <div className={classNames(styles.metric, styles.metricCost)} title={`Cost ${formatBuildingMetric(entry.constructionCost, "cost", separators)}`}>
+                    {formatBuildingMetric(entry.constructionCost, "cost", separators)}
                   </div>
-                  <div className={classNames(styles.metric, styles.metricUpkeep)} title={`Upkeep ${formatBuildingMetric(entry.upkeep, "upkeep")}`}>
-                    {formatBuildingMetric(entry.upkeep, "upkeep")}
+                  <div className={classNames(styles.metric, styles.metricUpkeep)} title={`Upkeep ${formatBuildingMetric(entry.upkeep, "upkeep", separators)}`}>
+                    {formatBuildingMetric(entry.upkeep, "upkeep", separators)}
                   </div>
-                  <div className={classNames(styles.metric, styles.metricWorkers)} title={`Workers ${formatBuildingMetric(entry.workers, "workers")}`}>
-                    {formatBuildingMetric(entry.workers, "workers")}
+                  <div className={classNames(styles.metric, styles.metricWorkers)} title={`Workers ${formatBuildingMetric(entry.workers, "workers", separators)}`}>
+                    {formatBuildingMetric(entry.workers, "workers", separators)}
                   </div>
-                  <div className={classNames(styles.metric, styles.metricCapacity)} title={`Capacity ${formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType)}`}>
-                    {formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType)}
+                  <div className={classNames(styles.metric, styles.metricCapacity)} title={`Capacity ${formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators)}`}>
+                    {formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators)}
                   </div>
                   <div className={classNames(styles.metric, styles.metricLot)} title="Lot dimensions">
                     {formatLotDimensions(entry.lotWidth, entry.lotDepth)}

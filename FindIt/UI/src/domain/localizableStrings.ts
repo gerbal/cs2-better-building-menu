@@ -47,11 +47,20 @@ const key = (name: string) => `${PREFIX}${name}]`;
 export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   // --- View modes and grouping controls. Already behind translate(). --------
   { key: key("GroupBy"), english: "Group by", source: "BuildingCatalog", plumbed: true },
+  // The spoken form of the two pickers. Separate from the "Group by" / "Sort by"
+  // labels because these announce current state to a screen reader rather than
+  // labelling the control, and because they must match each other's register —
+  // one used to say "Sorted by Name, ascending" while its twin said "Category".
+  { key: key("GroupedBy"), english: "Grouped by {0}", source: "BuildingCatalog", plumbed: true },
+  { key: key("SortedBy"), english: "Sorted by {0}, {1}", source: "BuildingCatalog", plumbed: true },
+  { key: key("SortByOption"), english: "Sort by {0}", source: "BuildingCatalog", plumbed: true },
+  { key: key("SortDirectionAscending"), english: "ascending", source: "BuildingCatalog", plumbed: true },
+  { key: key("SortDirectionDescending"), english: "descending", source: "BuildingCatalog", plumbed: true },
   { key: key("ViewGrid"), english: "Grid", source: "BuildingCatalog", plumbed: true },
   { key: key("ViewList"), english: "List", source: "BuildingCatalog", plumbed: true },
   { key: key("ViewCards"), english: "Cards", source: "BuildingCatalog", plumbed: true },
   { key: key("ViewTable"), english: "Table", source: "BuildingCatalog", plumbed: true },
-  { key: key("GroupBy_none"), english: "Nothing", source: "buildingGroups", plumbed: true },
+  { key: key("GroupBy_none"), english: "None", source: "buildingGroups", plumbed: true },
   { key: key("GroupBy_category"), english: "Category", source: "buildingGroups", plumbed: true },
   { key: key("GroupBy_subCategory"), english: "Type", source: "buildingGroups", plumbed: true },
   { key: key("GroupBy_role"), english: "Role", source: "buildingGroups", plumbed: true },
@@ -110,6 +119,7 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
 
   // --- Units and no-data markers. Pure module. -----------------------------
   { key: key("MetricNoData"), english: "—", source: "buildingLensMetricFormat", plumbed: false },
+  { key: key("MetricFree"), english: "Free", source: "buildingLensMetricFormat", plumbed: false },
   { key: key("UpkeepPerMonth"), english: "{0}/mo", source: "buildingLensMetricFormat", plumbed: false },
   { key: key("UnitStudents"), english: "students", source: "buildingLensMetricFormat", plumbed: false },
   { key: key("UnitPatients"), english: "patients", source: "buildingLensMetricFormat", plumbed: false },
