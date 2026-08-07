@@ -141,7 +141,7 @@ describe("Building Lens action affordances", () => {
   });
 
   it("renders the projected analytical metrics when a row is expanded", () => {
-    assert.match(buildingCatalogSource, /getBuildingDetailMetrics\(entry\)/);
+    assert.match(buildingCatalogSource, /getBuildingDetailMetrics\(entry\b/);
     assert.match(buildingCatalogStyles, /\.rowDetails/);
   });
 

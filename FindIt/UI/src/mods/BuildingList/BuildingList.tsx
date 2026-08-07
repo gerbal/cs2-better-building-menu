@@ -1,5 +1,6 @@
 import { bindValue, useValue } from "cs2/api";
 import { Button, Tooltip } from "cs2/ui";
+import { useLocalization } from "cs2/l10n";
 import { useEffect } from "react";
 import classNames from "classnames";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
@@ -7,12 +8,14 @@ import {
   formatBuildingMetric,
   formatCapacity,
   formatLotDimensions,
+  getNumberSeparators,
   groupDigits,
   hasFootprint,
 } from "domain/buildingLensMetricFormat";
 import { getCostForecast } from "domain/buildingForecast";
 import { recordPlacement } from "domain/buildingShelf";
 import { rankBuildingMatches, topSearchResult } from "domain/buildingSearchRank";
+import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { FootprintGlyph } from "mods/ZoningHierarchy/FootprintGlyph";
 import type { ZoneFootprint } from "domain/zoningHierarchy";
 import styles from "./buildingList.module.scss";
@@ -55,6 +58,8 @@ interface BuildingListProps {
  * afford it — which is what keeps this from drifting back into the table.
  */
 export const BuildingList = ({ entries, searchText, onPlace, variant = "compact" }: BuildingListProps) => {
+  const { translate } = useLocalization();
+  const separators = getNumberSeparators(translate);
   const money = useValue(Money$);
   const cards = variant === "cards";
   // Search relevance still applies within whatever order the query returned,
@@ -86,7 +91,7 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
     <div className={styles.list}>
       {ordered.map((entry) => {
         const label = entry.name || entry.prefabName;
-        const cost = formatBuildingMetric(entry.constructionCost, "cost");
+        const cost = formatBuildingMetric(entry.constructionCost, "cost", separators);
         const lot = formatLotDimensions(entry.lotWidth, entry.lotDepth);
         // A road's lot is 0x0 and a zone has none at all. "0 × 0" is a
         // measurement of something that does not exist, so the fact is dropped
@@ -98,7 +103,7 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
         // Category-aware, and it returns nothing for a category where capacity
         // means nothing — so a park bench's card stays as narrow as a
         // hospital's is informative, without a rule per category here.
-        const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType);
+        const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators);
         const hasCapacity = capacity !== "" && capacity !== "—";
         const forecast = getCostForecast(entry.constructionCost, money);
 
@@ -138,7 +143,13 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
               aria-label={label}
             >
               {entry.thumbnail
-                ? <img className={classNames(styles.icon, cards && styles.iconLarge)} src={entry.thumbnail} alt="" aria-hidden="true" />
+                ? <img
+                    className={classNames(styles.icon, cards && styles.iconLarge)}
+                    src={entry.thumbnail}
+                    onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
+                    alt=""
+                    aria-hidden="true"
+                  />
                 : <span className={classNames(styles.iconPlaceholder, cards && styles.iconLarge)} aria-hidden="true" />}
               <span className={styles.text}>
                 <span className={styles.name}>{label}</span>
@@ -174,7 +185,7 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
                         forecast && !forecast.affordable && styles.factUnaffordable
                       )}
                     >
-                      {forecast && forecast.treasury !== null ? groupDigits(forecast.cost) : cost}
+                      {forecast && forecast.treasury !== null ? groupDigits(forecast.cost, separators) : cost}
                     </span>
                     {hasCapacity && (
                       <>

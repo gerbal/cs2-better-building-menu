@@ -8,12 +8,15 @@ import {
   formatBuildingMetric,
   formatCapacity,
   formatLotDimensions,
+  getNumberSeparators,
 } from "domain/buildingLensMetricFormat";
 import { getShelf, recordPlacement } from "domain/buildingShelf";
 import { getCapacityForecast, getCostForecast } from "domain/buildingForecast";
 import { SERVICE_FORECAST_BINDINGS, getServiceForecastKey } from "domain/serviceForecast";
 import { groupDigits } from "domain/buildingLensMetricFormat";
 import { rankBuildingMatches, topSearchResult } from "domain/buildingSearchRank";
+import { thumbnailErrorHandler } from "domain/thumbnailFallback";
+import { shortenTileLabel, stripRedundantNamePrefix, tileLabelCharBudget } from "domain/tileLabel";
 import mod from "../../../mod.json";
 import styles from "./buildingGrid.module.scss";
 
@@ -60,6 +63,7 @@ interface BuildingGridProps {
  */
 export const BuildingGrid = ({ entries, searchText, onPlace, standalone = true }: BuildingGridProps) => {
   const { translate } = useLocalization();
+  const separators = getNumberSeparators(translate);
   const showShelf = useValue(ShowShelf$);
   const shelfSize = useValue(ShelfSize$);
   const tileSize = useValue(TileSize$);
@@ -110,9 +114,9 @@ export const BuildingGrid = ({ entries, searchText, onPlace, standalone = true }
   };
 
   const tile = (entry: BuildingCatalogEntry, key: string) => {
-    const cost = formatBuildingMetric(entry.constructionCost, "cost");
-    const upkeep = formatBuildingMetric(entry.upkeep, "upkeep");
-    const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType);
+    const cost = formatBuildingMetric(entry.constructionCost, "cost", separators);
+    const upkeep = formatBuildingMetric(entry.upkeep, "upkeep", separators);
+    const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators);
     const lot = formatLotDimensions(entry.lotWidth, entry.lotDepth);
     const label = entry.name || entry.prefabName;
 
@@ -140,7 +144,7 @@ export const BuildingGrid = ({ entries, searchText, onPlace, standalone = true }
             <div className={styles.cardName}>{label}</div>
             {costForecast && costForecast.treasury !== null ? (
               <div className={classNames(styles.cardLine, !costForecast.affordable && styles.cardWarn)}>
-                {groupDigits(costForecast.cost)} of {groupDigits(costForecast.treasury)}
+                {groupDigits(costForecast.cost, separators)} of {groupDigits(costForecast.treasury, separators)}
                 {costForecast.share !== null && Number.isFinite(costForecast.share)
                   ? ` · ${costForecast.share}%`
                   : ""}
@@ -151,12 +155,12 @@ export const BuildingGrid = ({ entries, searchText, onPlace, standalone = true }
             {capacityForecast ? (
               <div className={classNames(styles.cardLine, capacityForecast.covers && styles.cardGood)}>
                 {capacityForecast.projected !== null
-                  ? `${groupDigits(capacityForecast.projected)} of ${groupDigits(capacityForecast.demand)}`
-                  : `+${groupDigits(capacityForecast.added)} vs ${groupDigits(capacityForecast.demand)}`}{" "}
+                  ? `${groupDigits(capacityForecast.projected, separators)} of ${groupDigits(capacityForecast.demand, separators)}`
+                  : `+${groupDigits(capacityForecast.added, separators)} vs ${groupDigits(capacityForecast.demand, separators)}`}{" "}
                 {capacityForecast.unit}
                 {capacityForecast.covers
                   ? " · covers it"
-                  : ` · ${groupDigits(capacityForecast.shortfall)} short`}
+                  : ` · ${groupDigits(capacityForecast.shortfall, separators)} short`}
               </div>
             ) : (
               <div className={styles.cardLine}>{capacity} · {lot}</div>
@@ -172,8 +176,26 @@ export const BuildingGrid = ({ entries, searchText, onPlace, standalone = true }
           onSelect={() => place(entry)}
           aria-label={label}
         >
-          {entry.thumbnail ? <img className={styles.thumb} src={entry.thumbnail} alt="" /> : null}
-          <span className={styles.tileName}>{label}</span>
+          {entry.thumbnail
+            ? <img
+                className={styles.thumb}
+                src={entry.thumbnail}
+                onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
+                alt=""
+              />
+            : null}
+          {/* Shortened for drawing only. The tooltip above and the aria-label on
+              the Button both still carry the whole name. */}
+          <span className={styles.tileName}>
+            {shortenTileLabel(
+              stripRedundantNamePrefix(label, {
+                category: entry.categoryLabel ?? entry.category,
+                subCategory: entry.subCategoryLabel ?? entry.subCategory,
+                theme: entry.theme,
+              }),
+              tileLabelCharBudget(tileSize)
+            )}
+          </span>
         </Button>
       </Tooltip>
     );

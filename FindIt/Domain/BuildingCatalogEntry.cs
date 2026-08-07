@@ -57,7 +57,19 @@ namespace FindItBuildingMenu.Domain
 		/// untouched — inserting it mid-record broke every test that builds an
 		/// entry positionally, which is a lot of noise for one flag.
 		/// </remarks>
-		bool IsLocked = false) : IJsonWritable
+		bool IsLocked = false,
+		/// <summary>
+		/// Icon to draw when <see cref="Thumbnail"/> resolves to nothing.
+		/// </summary>
+		/// <remarks>
+		/// Kept separate rather than folded into Thumbnail with a null-coalesce.
+		/// The failure this exists for is not a null URL, it is a non-null one
+		/// that renders nothing: the game's thumbnail camera has no render for
+		/// spawnable zone buildings, because vanilla never shows them in a menu.
+		/// Only the renderer can tell that happened, so both have to reach it.
+		/// Last and defaulted, for the same reason as IsLocked above.
+		/// </remarks>
+		string? FallbackThumbnail = null) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -83,6 +95,8 @@ namespace FindItBuildingMenu.Domain
 			writer.Write(VanillaSubCategory ?? string.Empty);
 			writer.PropertyName("thumbnail");
 			writer.Write(Thumbnail);
+			writer.PropertyName("fallbackThumbnail");
+			writer.Write(FallbackThumbnail ?? string.Empty);
 			writer.PropertyName("lotWidth");
 			writer.Write(LotWidth);
 			writer.PropertyName("lotDepth");

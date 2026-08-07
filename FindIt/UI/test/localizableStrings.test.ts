@@ -77,4 +77,22 @@ describe("Localizable strings register", () => {
       );
     }
   });
+
+  it("declares each Locale.json key exactly once", () => {
+    // JSON parsers keep the last of a repeated key, so a duplicate silently
+    // overrides whatever came before it and every check that reads the parsed
+    // object still passes. This file also carries upstream FindIt's own strings,
+    // so a lens key that happens to collide — Ascending, Descending — quietly
+    // rewrites an upstream tooltip. Only the raw text can see it.
+    const raw = readFileSync(new URL("../../Locale.json", import.meta.url), "utf8");
+    const seen = new Set<string>();
+    const duplicates: string[] = [];
+
+    for (const [, declared] of raw.matchAll(/^\s*"((?:[^"\\]|\\.)*)"\s*:/gm)) {
+      if (seen.has(declared)) duplicates.push(declared);
+      seen.add(declared);
+    }
+
+    assert.deepEqual(duplicates, [], `duplicate key(s) in Locale.json: ${duplicates.join(", ")}`);
+  });
 });
