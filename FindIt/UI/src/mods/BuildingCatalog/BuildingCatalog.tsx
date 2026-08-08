@@ -120,7 +120,14 @@ const densityClassNames: Record<BuildingLensDensityTier, string> = {
   expanded: styles.densityExpanded,
 };
 
-export const BuildingCatalogComponent = () => {
+interface BuildingCatalogComponentProps {
+  // A table is not a strip-shaped thing: the view-mode toggle and whatever
+  // mode it last chose only apply once the panel has bought the room for
+  // them via MainContainer's effectiveExpanded.
+  expanded: boolean;
+}
+
+export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentProps) => {
   const { translate } = useLocalization();
   // The player's own thousands/decimal marks, so our columns agree with the
   // numbers the game is drawing elsewhere on the same screen.
@@ -147,7 +154,11 @@ export const BuildingCatalogComponent = () => {
     setLensChoice(LENS_VIEW_MODE_KEY, next);
     setViewModeState(next);
   };
-  const tableMode = viewMode === "table";
+  // Force grid when resting at strip height, so a player who left the
+  // control on List or Table does not get a mode clipped down to a sliver
+  // instead of the grid that height was designed to hold.
+  const effectiveViewMode = expanded ? viewMode : "grid";
+  const tableMode = effectiveViewMode === "table";
   // Empty means "nobody has chosen", which is different from having chosen
   // None — the first follows the section, the second stays flat.
   const [chosenGroupBy, setChosenGroupBy] = useState<string>(() => getLensChoice(LENS_GROUP_KEY, ""));
@@ -451,7 +462,11 @@ export const BuildingCatalogComponent = () => {
             </div>
           )}
         </div>
-        <ViewModeBar value={viewMode} onChange={setViewMode} />
+        {/* A table is not a strip-shaped thing, so the toggle has nothing to
+            offer at strip height. It is hidden here, not removed: expanding
+            brings it back, so "more room" never silently means "now you get
+            a table". */}
+        {expanded && <ViewModeBar value={viewMode} onChange={setViewMode} />}
         <Button
           className={styles.sortDisclosure}
           variant="icon"
@@ -817,7 +832,7 @@ export const BuildingCatalogComponent = () => {
               <GroupedResults
                 entries={items}
                 groupBy={groupBy}
-                viewMode={viewMode}
+                viewMode={effectiveViewMode}
                 searchText={currentSearch ?? ""}
                 onPlace={activate}
               />
