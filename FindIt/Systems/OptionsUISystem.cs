@@ -1,4 +1,5 @@
-﻿using FindItBuildingMenu.Utilities;
+﻿using FindItBuildingMenu.Domain;
+using FindItBuildingMenu.Utilities;
 using Game.Prefabs;
 using Game.SceneFlow;
 using Game.UI.InGame;
@@ -23,6 +24,14 @@ namespace FindItBuildingMenu.Systems
 		public abstract void TriggerSearch();
 		public abstract void RefreshOptions();
 		public abstract void UpdateCategoriesAndPrefabList();
+
+		// The three members below bridge the building-lens facet state (query
+		// engine + filter rail) into the options bank, for short facet groups
+		// that belong beside Theme and Pack rather than in the rail. See
+		// FindItBuildingMenu.Domain.Options.BuildingLensFacetOptionBase.
+		public abstract bool BuildingLensEnabled { get; }
+		public abstract BuildingCatalogFacetGroup? GetBuildingLensFacetGroup(string facetId);
+		public abstract void ToggleBuildingLensFacetOption(string facetId, string optionId);
 
 		public string GetAssetName(PrefabBase prefab)
 		{

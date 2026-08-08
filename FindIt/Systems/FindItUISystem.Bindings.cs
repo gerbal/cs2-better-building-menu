@@ -87,6 +87,7 @@ namespace FindItBuildingMenu.Systems
 			if (!Mod.Settings.ReplaceVanillaBuildMenu)
 			{
 				_LensOwnsCurrentMenu.Value = false;
+				_LensMenuToolTip.Value = string.Empty;
 				return;
 			}
 
@@ -108,6 +109,7 @@ namespace FindItBuildingMenu.Systems
 				// exactly where the vanilla asset grid appears, and leaving it up
 				// would hide the menu they just clicked.
 				_LensOwnsCurrentMenu.Value = false;
+				_LensMenuToolTip.Value = string.Empty;
 
 				if (_ShowFindItPanel)
 				{
@@ -125,6 +127,7 @@ namespace FindItBuildingMenu.Systems
 				// The player kept the familiar zone grid; leave it alone and get
 				// out of its way, exactly as for an unmapped menu.
 				_LensOwnsCurrentMenu.Value = false;
+				_LensMenuToolTip.Value = string.Empty;
 
 				if (_ShowFindItPanel)
 				{
@@ -135,6 +138,7 @@ namespace FindItBuildingMenu.Systems
 			}
 
 			_LensOwnsCurrentMenu.Value = true;
+			_LensMenuToolTip.Value = PrefabIndexingSystem.GetAssetMenuToolTip(menuEntityIndex) ?? string.Empty;
 
 			if (preset.IsZoning)
 			{
@@ -379,6 +383,13 @@ namespace FindItBuildingMenu.Systems
 			_buildingCatalogQuery = next;
 			RefreshBuildingCatalog();
 		}
+
+		/// <summary>
+		/// Same toggle the filter rail uses, exposed for the options bank's
+		/// short-facet sections (see <see cref="Domain.Options.BuildingLensFacetOptionBase"/>).
+		/// </summary>
+		public void ToggleBuildingLensFacetOption(string facetId, string optionId) =>
+			ToggleBuildingLensFacet(facetId, optionId);
 
 		private void ClearBuildingLensFacets()
 		{

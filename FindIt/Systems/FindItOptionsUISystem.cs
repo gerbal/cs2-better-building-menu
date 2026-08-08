@@ -1,5 +1,6 @@
 ﻿using Colossal.UI;
 
+using FindItBuildingMenu.Domain;
 using FindItBuildingMenu.Domain.Interfaces;
 using FindItBuildingMenu.Domain.UIBinding;
 using FindItBuildingMenu.Utilities;
@@ -134,5 +135,13 @@ namespace FindItBuildingMenu.Systems
 		{
 			_findItUISystem.UpdateCategoriesAndPrefabList();
 		}
+
+		public override bool BuildingLensEnabled => _findItUISystem.BuildingLensEnabled;
+
+		public override BuildingCatalogFacetGroup? GetBuildingLensFacetGroup(string facetId) =>
+			_findItUISystem.GetBuildingLensFacetGroup(facetId);
+
+		public override void ToggleBuildingLensFacetOption(string facetId, string optionId) =>
+			_findItUISystem.ToggleBuildingLensFacetOption(facetId, optionId);
 	}
 }

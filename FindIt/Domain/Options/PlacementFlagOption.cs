@@ -53,6 +53,27 @@ namespace FindItBuildingMenu.Domain.Options
 			(BuildingFlags.HasInsideRoom, "coui://finditbuildingmenu/Icons/Colored/FurnitureIso.svg"),
 		};
 
+		/// <summary>
+		/// This table's icon for a flag, keyed by the flag's own name — the
+		/// same string <see cref="Services.BuildingCatalogAdapter"/> uses as the
+		/// building lens's "placement" facet option id. Lets
+		/// <see cref="BuildingLensPlacementOption"/> show the same icons for
+		/// the same flags instead of keeping a second table that could drift
+		/// from this one.
+		/// </summary>
+		internal static string? IconForFlagName(string flagName)
+		{
+			foreach (var entry in Flags)
+			{
+				if (entry.Flag.ToString() == flagName)
+				{
+					return entry.Icon;
+				}
+			}
+
+			return null;
+		}
+
 		private readonly OptionsUISystem _optionsUISystem;
 
 		public int Id { get; } = 17;
