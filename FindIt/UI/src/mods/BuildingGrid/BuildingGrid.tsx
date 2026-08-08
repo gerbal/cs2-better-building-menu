@@ -34,7 +34,7 @@ const SERIES = Object.entries(SERVICE_FORECAST_BINDINGS).map(([key, b]) => ({
 
 const ShowShelf$ = bindValue<boolean>(mod.id, "BuildingLensShowShelf", true);
 const ShelfSize$ = bindValue<number>(mod.id, "BuildingLensShelfSize", 12);
-const TileSize$ = bindValue<number>(mod.id, "BuildingLensTileSize", 88);
+const TileSize$ = bindValue<number>(mod.id, "BuildingLensTileSize", 72);
 
 interface BuildingGridProps {
   entries: BuildingCatalogEntry[];
