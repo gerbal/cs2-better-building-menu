@@ -1,5 +1,5 @@
-import { Button, Scrollable } from "cs2/ui";
-import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
+import { Button, Dropdown, DropdownItem, DropdownToggle, Scrollable } from "cs2/ui";
+import { getModule } from "cs2/modding";
 import { useLocalization } from "cs2/l10n";
 import { useState } from "react";
 import classNames from "classnames";
@@ -7,9 +7,12 @@ import {
   RAIL_METRICS_ID,
   buildFilterRail,
   filterRailOptions,
+  railHomeFor,
   type RailFacetState,
 } from "domain/filterRail";
 import styles from "./filterRail.module.scss";
+
+const TextInput = getModule("game-ui/common/input/text/text-input.tsx", "TextInput");
 
 interface FilterRailProps {
   facets: RailFacetState | null | undefined;
@@ -39,16 +42,9 @@ export const FilterRail = ({
   renderMetrics,
 }: FilterRailProps) => {
   const { translate } = useLocalization();
-  const [open, setOpen] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
   const rail = buildFilterRail(facets, { active: metricsActive });
-  const openDimension = rail.find((dimension) => dimension.id === open);
-
-  const toggleOpen = (id: string) => {
-    setQuery("");
-    setOpen((current) => (current === id ? null : id));
-  };
 
   return (
     <div className={styles.rail}>
@@ -57,33 +53,50 @@ export const FilterRail = ({
           const label = dimension.id === RAIL_METRICS_ID
             ? translate("Options.LABEL[FindItBuildingMenu.MetricFilters]", "Metric filters") ?? "Metric filters"
             : dimension.label;
+          const home = railHomeFor(dimension.optionCount);
+          const searchable = home === "searchableDropdown";
 
           return (
-            // The game's own filter button, the one Theme and Pack are built
-            // from, rather than a hand-styled lookalike sitting next to them in
-            // the same panel. Sizing, hover and selected state all come from
-            // the component.
-            <VanillaComponentResolver.instance.ToolButton
+            <Dropdown
               key={dimension.id}
-              selected={dimension.selected > 0}
-              tooltip={label}
-              onSelect={() => toggleOpen(dimension.id)}
-              src={DIMENSION_ICONS[dimension.id] ?? ""}
-              focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED}
-              className={classNames(
-                VanillaComponentResolver.instance.toolButtonTheme.button,
-                styles.icon,
-                open === dimension.id && styles.iconOpen
-              )}
-              aria-label={label}
+              content={
+                <div className={styles.menu}>
+                  {searchable && (
+                    <TextInput
+                      className={styles.menuSearch}
+                      value={query}
+                      placeholder={translate("Tooltip.LABEL[FindItBuildingMenu.FilterOptions]", "Filter options…") ?? "Filter options…"}
+                      onChange={setQuery}
+                    />
+                  )}
+                  {dimension.id === RAIL_METRICS_ID ? (
+                    renderMetrics()
+                  ) : (
+                    <Scrollable className={styles.menuList} vertical trackVisibility="scrollable">
+                      {filterRailOptions(facets, dimension.id, query).map((option) => (
+                        // closeOnSelect={false} is what makes a vanilla dropdown a
+                        // multi-select control; onToggleSelected is its own API for it,
+                        // so nothing here reimplements selection.
+                        <DropdownItem<string>
+                          key={option.id}
+                          value={option.id}
+                          selected={option.selected}
+                          closeOnSelect={false}
+                          onToggleSelected={() => onToggleOption(dimension.id, option.id)}
+                        >
+                          {option.label}
+                        </DropdownItem>
+                      ))}
+                    </Scrollable>
+                  )}
+                </div>
+              }
             >
-              {/* The badge is the only thing that has to be readable at a
-                  glance: it answers "is anything filtered" without opening a
-                  single popover. */}
-              {dimension.selected > 0
-                ? <span className={styles.badge}>{dimension.selected}</span>
-                : <span />}
-            </VanillaComponentResolver.instance.ToolButton>
+              <DropdownToggle className={classNames(styles.icon, dimension.selected > 0 && styles.iconActive)}>
+                <img src={DIMENSION_ICONS[dimension.id] ?? ""} className={styles.iconImage} />
+                {dimension.selected > 0 && <span className={styles.badge}>{dimension.selected}</span>}
+              </DropdownToggle>
+            </Dropdown>
           );
         })}
 
@@ -91,46 +104,6 @@ export const FilterRail = ({
             immediately to the right of this rail, so both rendered and the
             player saw "Clear filters" twice in one band. */}
       </div>
-
-      {openDimension && (
-        // Absolutely positioned: an open popover costs nothing in the layout,
-        // which is the entire point of replacing the drawers.
-        <div className={styles.popover}>
-          <div className={styles.popoverHead}>
-            <span className={styles.popoverTitle}>{openDimension.label}</span>
-            <span className={styles.popoverCount}>{openDimension.optionCount}</span>
-          </div>
-
-          {openDimension.needsSearch && (
-            <input
-              className={styles.popoverSearch}
-              type="text"
-              value={query}
-              placeholder={translate("Tooltip.LABEL[FindItBuildingMenu.FilterOptions]", "Filter options…") ?? "Filter options…"}
-              onChange={(event) => setQuery((event.target as HTMLInputElement).value)}
-            />
-          )}
-
-          {openDimension.id === RAIL_METRICS_ID ? (
-            <div className={styles.popoverMetrics}>{renderMetrics()}</div>
-          ) : (
-            <Scrollable className={styles.popoverList} vertical trackVisibility="scrollable">
-              {filterRailOptions(facets, openDimension.id, query).map((option) => (
-                <Button
-                  key={option.id}
-                  className={classNames(styles.option, option.selected && styles.optionSelected)}
-                  variant="icon"
-                  onSelect={() => onToggleOption(openDimension.id, option.id)}
-                  aria-label={option.label}
-                >
-                  <span className={styles.optionMark} aria-hidden="true">{option.selected ? "✓" : "○"}</span>
-                  <span className={styles.optionLabel}>{option.label}</span>
-                </Button>
-              ))}
-            </Scrollable>
-          )}
-        </div>
-      )}
     </div>
   );
 };

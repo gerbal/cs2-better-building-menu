@@ -1,8 +1,9 @@
 @use "../../base.scss" as _base;
 
-// The rail itself is one row. Its popover is absolutely positioned, so an open
-// filter costs nothing in the layout — which is the whole reason this replaces
-// the stacked facet and metric drawers.
+// The rail itself is one row. Each dimension opens the game's own dropdown,
+// which floats above the layout — so an open filter costs nothing in the
+// layout, the whole reason this replaces the stacked facet and metric
+// drawers.
 .rail {
   position: relative;
   display: flex;
@@ -19,15 +20,14 @@
   flex-wrap: wrap;
 }
 
-// Chrome, sizing, hover and selected state all come from the vanilla
-// ToolButton now. What remains is the badge anchor and a marker for the open
-// popover, which the vanilla button has no concept of.
+// The DropdownToggle underneath supplies its own chrome and hover state.
+// What remains here is the badge anchor and the row's own scale — see below.
 .icon {
   position: relative;
-  // The vanilla ToolButton is 19px, sized for the two or three options Theme
-  // and Pack carry. This row carries eight or nine dimensions and reads as a
-  // dense strip at that size, so it keeps the vanilla chrome and takes more
-  // room — the shape is the game's, the scale is this row's.
+  // The vanilla DropdownToggle is sized for a single labeled control, not a
+  // dense icon strip. This row carries eight or nine dimensions and reads as
+  // cramped at that size, so it keeps the vanilla chrome and takes more room
+  // — the shape is the game's, the scale is this row's.
   width: 40rem !important;
   height: 40rem !important;
 
@@ -37,7 +37,9 @@
   }
 }
 
-.iconOpen {
+// Dropdown owns its own open/close chrome; this only flags "something in
+// this dimension is filtered", replacing the old open-state highlight.
+.iconActive {
   background-color: rgba(255, 255, 255, 0.18);
 }
 
@@ -69,113 +71,18 @@
   font-size: var(--fontSizeXS);
 }
 
-.popover {
-  position: absolute;
-  top: 34rem;
-  left: 8rem;
-  z-index: 20;
-  display: flex;
-  flex-direction: column;
-  width: 300rem;
-  max-height: 300rem;
-  gap: 4rem;
-  padding: 6rem;
-  border-radius: 4rem;
-  background-color: rgba(12, 16, 20, 0.97);
-  border: 1rem solid rgba(255, 255, 255, 0.18);
+// The dropdown's own surface. Sizing only — colour, border and hover all come
+// from the game's dropdown theme.
+.menu {
+  min-width: 160rem;
+  max-width: 260rem;
 }
 
-.popoverHead {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6rem;
+.menuSearch {
+  width: 100%;
+  margin-bottom: 4rem;
 }
 
-.popoverTitle {
-  color: var(--menuTitleNormal);
-  font-size: var(--fontSizeM);
-  text-transform: uppercase;
-}
-
-.popoverCount {
-  padding: 1rem 5rem;
-  border-radius: 3rem;
-  background-color: rgba(255, 255, 255, 0.1);
-  color: var(--menuText2Normal);
-  font-size: var(--fontSizeXS);
-}
-
-.popoverSearch {
-  flex: 0 0 auto;
-  min-height: 24rem;
-  padding: 2rem 6rem;
-  border-radius: 3rem;
-  background-color: rgba(0, 0, 0, 0.4);
-  border: 1rem solid rgba(255, 255, 255, 0.16);
-  color: var(--menuText1Normal);
-  font-size: var(--fontSizeS);
-}
-
-.popoverList {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 0;
-  min-height: 0;
-  gap: 2rem;
-}
-
-.popoverMetrics {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 0;
-  min-height: 0;
-  overflow-y: auto;
-}
-
-// Full-width rows inside the popover: a 109-option group is unreadable as
-// wrapped chips, and the popover has the width to spare.
-.option {
-  @include _base.transparentButton(false, true);
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  width: 100% !important;
-  min-height: 24rem;
-  gap: 5rem;
-  padding: 2rem 5rem;
-  border-radius: 3rem;
-  background-color: rgba(0, 0, 0, 0.2);
-}
-
-.option:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.optionSelected {
-  background-color: rgba(255, 255, 255, 0.12);
-}
-
-.optionMark {
-  flex: 0 0 12rem;
-  width: 12rem;
-  text-align: center;
-  color: var(--menuText2Normal);
-  font-size: var(--fontSizeS);
-}
-
-.optionSelected .optionMark {
-  color: var(--accentColorNormal);
-}
-
-.optionLabel {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  text-align: left;
-  color: var(--menuText1Normal);
-  font-size: var(--fontSizeS);
+.menuList {
+  max-height: 220rem;
 }
