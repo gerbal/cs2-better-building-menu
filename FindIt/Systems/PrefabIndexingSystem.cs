@@ -943,9 +943,24 @@ namespace FindItBuildingMenu.Systems
 					: zoneName;
 			}
 
-			if (EntityManager.TryGetComponent<ObjectBuiltRequirementData>(entity, out var built))
+			// Only the STRICT variant names the object it wants. Plain
+			// ObjectBuiltRequirementPrefab carries a count and nothing else — no
+			// m_Requirement, no reference of any kind — so it can only ever say
+			// "build 1", which is what made Switchon's card read "build 1 +1".
+			// A count with no subject is worse than silence: returning nothing
+			// lets the asset's OTHER requirements have the line instead.
+			if (prefab is StrictObjectBuiltRequirementPrefab strict && strict.m_Requirement is not null)
 			{
-				return Format("Requirement.OBJECTS_BUILT", "build {0}", built.m_MinimumCount.ToString("N0"));
+				return Format(
+					"Requirement.OBJECTS_BUILT",
+					"build {0} × {1}",
+					strict.m_MinimumCount.ToString("N0"),
+					GetAssetName(strict.m_Requirement));
+			}
+
+			if (EntityManager.HasComponent<ObjectBuiltRequirementData>(entity))
+			{
+				return string.Empty;
 			}
 
 			// A dev tree node's own name is near-redundant beside the building it
