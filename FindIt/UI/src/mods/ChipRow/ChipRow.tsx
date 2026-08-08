@@ -7,6 +7,11 @@ import mod from "../../../mod.json";
 import { lensSectionCommand, lensSubCategoryCommand, type VanillaBuildMenuTab } from "domain/vanillaBuildMenuContracts";
 import { orderedCategories, type VanillaMenuCategory } from "domain/vanillaMenuCategories";
 import { lensScopeChipsFor } from "domain/lensScopeChips";
+import {
+  resolveVanillaLabel,
+  vanillaCategoryNameKeys,
+  vanillaMenuNameKeys,
+} from "domain/vanillaServiceLabels";
 import type { BuildingLensFacetState } from "domain/buildingCatalogFacets";
 import type { BuildingLensMetricRangeState } from "domain/buildingLensFilterSummary";
 import styles from "./chipRow.module.scss";
@@ -102,9 +107,11 @@ export const ChipRow = () => {
   const familyLabel = (id: string) =>
     translate(`Tooltip.LABEL[FindItBuildingMenu.Zoning_${id}]`, id) ?? id;
 
-  // The game's own word for a menu or a category, both under one key family:
-  // Services.NAME[GarbageManagement] and Services.NAME[TransportationRoad].
-  const serviceLabel = (id: string) => translate(`Services.NAME[${id}]`, null) ?? id;
+  // The game's own word for a menu or a category. Two key families, not one —
+  // see vanillaServiceLabels.ts for what the running game actually answers.
+  const lookup = (key: string) => translate(key, null);
+  const menuLabel = (id: string) => resolveVanillaLabel(vanillaMenuNameKeys(id), lookup, id);
+  const categoryLabel = (id: string) => resolveVanillaLabel(vanillaCategoryNameKeys(id), lookup, id);
 
   // Only the families this city actually has zones for. Offering Extractors to
   // someone without the DLC would be a filter that empties the view and cannot
@@ -188,7 +195,7 @@ export const ChipRow = () => {
   const categoryTabs: VanillaBuildMenuTab[] = orderedCategories(menuCategories).map((category) => ({
     id: category.id,
     icon: category.icon,
-    toolTip: serviceLabel(category.id),
+    toolTip: categoryLabel(category.id),
   }));
 
   const openList = picker === "section"
@@ -243,7 +250,7 @@ export const ChipRow = () => {
         {chips.menu
           && renderStaticChip(
             "menu",
-            serviceLabel(menu),
+            menuLabel(menu),
             () => fire({ method: "ClearBuildingLensMenuScope", args: [] })
           )}
 
@@ -254,7 +261,7 @@ export const ChipRow = () => {
         {chips.menuCategory
           && renderBreadcrumb(
             "menuCategory",
-            menuCategory === "" ? allCategoriesLabel : serviceLabel(menuCategory),
+            menuCategory === "" ? allCategoriesLabel : categoryLabel(menuCategory),
             picker === "menuCategory",
             menuCategory === "" ? null : () => fire({ method: "SetBuildingLensMenuCategory", args: [""] })
           )}
