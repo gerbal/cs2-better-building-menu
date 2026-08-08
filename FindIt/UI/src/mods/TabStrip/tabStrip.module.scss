@@ -1,41 +1,8 @@
 // Vanilla spends 45rem of chrome above its grid, all of it on this strip.
 // Icons are 39rem there, so these match rather than approximate.
-//
-// Now rendered inline on the search row (see TopBar's tabStripSlot) rather
-// than on a stacked band of its own, so this fills whatever width that slot
-// hands it instead of sizing to its own content.
-//
-// `position: static !important` is load-bearing, not decorative. Vanilla's
-// asset-category-tab-bar theme was designed to be its own full-width band —
-// exactly how this strip used to render before this change — and its class
-// carries a `position` rule tuned for that job. Dropped into a flex row
-// beside other controls without neutralising it, that rule takes the strip
-// out of flow entirely and it paints wherever vanilla anchors it, on top of
-// whatever real content happens to sit there (here: the CATALOG/TOOLS tab
-// bar and the close button). Forcing it back to `static` is what makes the
-// strip a normal flex item that flows after the search controls instead of
-// a layer stacked over them.
 .strip {
-  position: static !important;
-  flex: 1 1 auto;
-  min-width: 0;
-  max-width: 100%;
-  width: 100%;
+  flex: 0 0 auto;
   height: 45rem;
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-}
-
-// Overrides the vanilla item row's wrap so a long tab list scrolls
-// side-to-side instead of wrapping to a second line — the search controls
-// beside it have nowhere to go if this strip grows taller than 45rem.
-.itemsRow {
-  display: flex;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  overflow-y: hidden;
-  min-width: 0;
 }
 
 .tab {
