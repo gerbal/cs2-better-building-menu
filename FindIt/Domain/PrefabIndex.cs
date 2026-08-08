@@ -66,6 +66,20 @@ namespace FindItBuildingMenu.Domain
 		/// exactly the way asset names are.
 		/// </remarks>
 		public string[] UnlockRequirements { get; set; } = Array.Empty<string>();
+
+		/// <summary>
+		/// What the building gives the city, already phrased for display.
+		/// </summary>
+		/// <remarks>
+		/// Signature buildings are bought with progress rather than money — the
+		/// cost column reads "Free" for every one of them — so the effect IS the
+		/// reason to choose one over another, and it was the one thing the card
+		/// did not say.
+		///
+		/// Read from the two buffers the game applies: CityModifierData for
+		/// citywide effects and LocalModifierData for radius ones.
+		/// </remarks>
+		public string[] Bonuses { get; set; } = Array.Empty<string>();
 		public bool IsUniqueMesh { get; set; }
 		public ThemePrefab Theme { get; set; }
 		public AssetPackPrefab[] AssetPacks { get; set; }

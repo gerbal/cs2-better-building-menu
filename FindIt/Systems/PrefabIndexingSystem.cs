@@ -11,6 +11,7 @@ using FindItBuildingMenu.Domain.Interfaces;
 using FindItBuildingMenu.Utilities;
 
 using Game;
+using Game.City;
 using Game.Common;
 using Game.Prefabs;
 using Game.SceneFlow;
@@ -484,6 +485,8 @@ namespace FindItBuildingMenu.Systems
 			// Restricted this way the cost is highest at load, when a full index
 			// runs anyway, and falls towards zero exactly as unlocks get more
 			// frequent.
+			prefabIndex.Bonuses = GetBonuses(entity);
+
 			if (prefabIndex.IsLocked)
 			{
 				(prefabIndex.UnlockMilestone, prefabIndex.UnlockRequirements) = GetUnlockRequirements(entity);
@@ -886,6 +889,85 @@ namespace FindItBuildingMenu.Systems
 			{
 				required.Dispose();
 			}
+		}
+
+		/// <summary>
+		/// What this building does for the city, phrased for a hover card.
+		/// </summary>
+		/// <remarks>
+		/// Both buffers the game applies: CityModifierData for citywide effects,
+		/// LocalModifierData for the ones with a radius. The arithmetic is
+		/// vanilla's own — ModifierUIUtils.GetModifierDelta scales a relative
+		/// mode by 100 and leaves an absolute one alone — so our numbers agree
+		/// with the ones the game prints elsewhere on the same screen.
+		///
+		/// m_Range.max is the figure vanilla binds. Range carries a min too, but
+		/// the effect a player gets from a finished building is the top of it.
+		/// </remarks>
+		private string[] GetBonuses(Entity entity)
+		{
+			var bonuses = new List<string>();
+
+			if (EntityManager.TryGetBuffer<CityModifierData>(entity, true, out var cityModifiers))
+			{
+				for (var i = 0; i < cityModifiers.Length; i++)
+				{
+					var modifier = cityModifiers[i];
+
+					// Vanilla hides this one from its own effect list, so a card
+					// that showed it would be inventing an effect the game does
+					// not acknowledge.
+					if (modifier.m_Type == CityModifierType.CriminalMonitorProbability)
+					{
+						continue;
+					}
+
+					bonuses.Add(DescribeModifier(
+						modifier.m_Type.ToString(),
+						modifier.m_Mode,
+						modifier.m_Range.max));
+				}
+			}
+
+			if (EntityManager.TryGetBuffer<LocalModifierData>(entity, true, out var localModifiers))
+			{
+				for (var i = 0; i < localModifiers.Length; i++)
+				{
+					var modifier = localModifiers[i];
+
+					bonuses.Add(DescribeModifier(
+						modifier.m_Type.ToString(),
+						modifier.m_Mode,
+						modifier.m_Delta.max));
+				}
+			}
+
+			return bonuses.Where(b => !string.IsNullOrEmpty(b)).Distinct().ToArray();
+		}
+
+		/// <summary>One effect, signed, with the unit its mode implies.</summary>
+		private static string DescribeModifier(string type, ModifierValueMode mode, float value)
+		{
+			// ModifierUIUtils.GetModifierDelta, transcribed: a relative mode is a
+			// fraction and reads as a percentage; absolute is already the number.
+			var scaled = mode switch
+			{
+				ModifierValueMode.Relative => 100f * value,
+				ModifierValueMode.InverseRelative => 100f * (1f / Math.Max(0.001f, 1f + value) - 1f),
+				_ => value,
+			};
+
+			if (Math.Abs(scaled) < 0.005f)
+			{
+				return string.Empty;
+			}
+
+			var unit = mode == ModifierValueMode.Absolute ? string.Empty : "%";
+			// The sign is the point — a modifier can make something worse, and an
+			// unsigned number would read as a benefit either way.
+			var sign = scaled > 0 ? "+" : string.Empty;
+
+			return $"{type.FormatWords()} {sign}{scaled:0.##}{unit}";
 		}
 
 		/// <summary>

@@ -16,7 +16,7 @@ import {
 import { getCapacityForecast, getCostForecast } from "domain/buildingForecast";
 import { SERVICE_FORECAST_BINDINGS, getServiceForecastKey } from "domain/serviceForecast";
 import { buildTileTooltipLines, isMetricPresent } from "domain/buildingTileTooltip";
-import { describeLockReason, isEntryLocked } from "domain/buildingLockState";
+import { isEntryLocked, listLockConditions } from "domain/buildingLockState";
 import { FootprintGlyph } from "mods/ZoningHierarchy/FootprintGlyph";
 import type { ZoneFootprint } from "domain/zoningHierarchy";
 import styles from "./buildingHoverCard.module.scss";
@@ -51,6 +51,7 @@ export interface HoverCardContext {
     short: string;
     locked: string;
     lockedValue: string;
+    bonuses: string;
   };
 }
 
@@ -83,11 +84,12 @@ export const useHoverCardContext = (): HoverCardContext => {
       shareOfFunds:
         translate("Tooltip.LABEL[FindItBuildingMenu.ShareOfFunds]", "{0}% of funds") ?? "{0}% of funds",
       short: translate("Tooltip.LABEL[FindItBuildingMenu.ShortBy]", "{0} short") ?? "{0} short",
-      // Both keys already exist in Locale.json. The label names the field and
-      // the value states it, because a card line carrying a label and no value
-      // reads as missing data rather than as a state.
-      locked: translate("Tooltip.LABEL[FindItBuildingMenu.Availability]", "Availability") ?? "Availability",
+      // "Requires", not "Availability". The line lists what the player has to
+      // go and do; naming it after the state it describes made the reader work
+      // out the implication for themselves.
+      locked: translate("Tooltip.LABEL[FindItBuildingMenu.Requires]", "Requires") ?? "Requires",
       lockedValue: translate("Tooltip.LABEL[FindItBuildingMenu.Locked]", "Locked") ?? "Locked",
+      bonuses: translate("Tooltip.LABEL[FindItBuildingMenu.Provides]", "Provides") ?? "Provides",
     },
   };
 };
@@ -147,11 +149,10 @@ export const BuildingHoverCard = ({
       key: "locked",
       label: labels.locked,
       applicable: isEntryLocked(entry),
-      // Names what the player is waiting on — the milestone the rest of the
-      // game names, or the requirement itself for the signature buildings that
-      // hang off something other than a milestone. Falls back to the bare word
-      // when the asset carries no requirement we can read.
-      value: describeLockReason(entry, milestoneNames, labels.lockedValue),
+      // Every condition, one per line. A signature building can sit behind a
+      // milestone, a tech node and a zone target at once.
+      value: labels.lockedValue,
+      values: listLockConditions(entry, milestoneNames, labels.lockedValue),
       tone: "warn",
     },
     {
@@ -177,6 +178,17 @@ export const BuildingHoverCard = ({
         ? `${capacity} · ${labels.short.replace("{0}", groupDigits(capacityForecast.shortfall, separators))}`
         : capacity,
     },
+    // Above upkeep: what the building DOES outranks what it costs to run,
+    // and for a signature building — which is always free — the effect is the
+    // only thing distinguishing one from the next.
+    {
+      key: "bonuses",
+      label: labels.bonuses,
+      applicable: (entry.bonuses?.length ?? 0) > 0,
+      value: labels.bonuses,
+      values: entry.bonuses ?? [],
+      tone: "good",
+    },
     { key: "upkeep", label: labels.upkeep, applicable: isMetricPresent(entry.upkeep), value: upkeep },
     { key: "lot", label: labels.lot, applicable: hasFootprint(entry.lotWidth, entry.lotDepth), value: lot },
   ]);
@@ -196,7 +208,15 @@ export const BuildingHoverCard = ({
               )}
             >
               <span className={styles.cardLabel}>{line.label}</span>
-              <span className={styles.cardValue}>{line.value}</span>
+              {line.values
+                ? (
+                  <span className={classNames(styles.cardValue, styles.cardValueList)}>
+                    {line.values.map((entryValue) => (
+                      <span key={entryValue} className={styles.cardValueLine}>{entryValue}</span>
+                    ))}
+                  </span>
+                )
+                : <span className={styles.cardValue}>{line.value}</span>}
             </div>
           ))}
           {facts.length > 0 && <div className={styles.cardFacts}>{facts.join(" · ")}</div>}

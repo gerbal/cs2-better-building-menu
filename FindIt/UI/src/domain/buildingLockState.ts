@@ -48,26 +48,25 @@ export interface UnlockableEntry extends LockableEntry {
 /**
  * Everything the player is waiting on, in the order it gates them.
  *
- * All of them, not the first with a "+2" after it. A signature building can sit
- * behind a milestone AND a tech node AND a zone target, and knowing only one of
- * three is not knowing what to do — the count told you something was hidden
- * without telling you what.
+ * A list, not a sentence. A signature building can sit behind a milestone AND a
+ * tech node AND a zone target, and three conditions run together on one line
+ * read as one long condition — the reader has to find the separators before
+ * they can count them. One per line is countable at a glance.
  *
- * Milestone leads because it is the coarsest gate and clears first. The card's
- * value wraps, so a long list costs height rather than truncation.
+ * Milestone leads because it is the coarsest gate and clears first.
  *
  * Falls back to the bare "Locked" word when we know it is locked but not why,
  * which is honest rather than lazy: some assets carry no UnlockRequirement
  * buffer at all, and inventing a reason for those is worse than admitting we
  * do not have one.
  */
-export function describeLockReason(
+export function listLockConditions(
   entry: UnlockableEntry | null | undefined,
   milestoneNames: readonly string[] | null | undefined,
   lockedWord: string
-): string {
+): string[] {
   if (!isEntryLocked(entry)) {
-    return "";
+    return [];
   }
 
   const conditions: string[] = [];
@@ -86,5 +85,5 @@ export function describeLockReason(
     }
   }
 
-  return conditions.length > 0 ? conditions.join(" · ") : lockedWord;
+  return conditions.length > 0 ? conditions : [lockedWord];
 }

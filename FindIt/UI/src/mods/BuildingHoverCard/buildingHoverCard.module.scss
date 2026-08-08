@@ -88,3 +88,25 @@
   color: var(--menuText2Normal);
   font-size: var(--fontSizeXS);
 }
+
+// One entry per line.
+//
+// The column has to be declared. .cardValue computes to display: flex here
+// (measured, not assumed), so display: block on the children did NOT stack them
+// — they became flex items in a row and "Industrial Efficiency +2" and "College
+// Graduation +1" printed side by side as one run-on line, which is precisely
+// the defect this markup exists to avoid.
+//
+// align-items rather than a gap for the spacing: gap between flex children
+// measures 0 on this engine, so line separation comes from the line boxes
+// themselves.
+.cardValueList {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.cardValueLine {
+  display: block;
+  width: 100%;
+}
