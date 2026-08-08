@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { RAIL_BANK_THRESHOLD, railHomeFor, railPlacement } from "../src/domain/railPlacement.ts";
+import { RAIL_BANK_THRESHOLD, railHomeFor, railPlacement } from "../src/domain/filterRail.ts";
 
 const group = (id: string, n: number) => ({
   id,
