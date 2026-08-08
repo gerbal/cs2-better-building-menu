@@ -102,8 +102,8 @@ namespace FindItBuildingMenu.Domain
 		public bool HasParking { get; set; }
 
 		/// <summary>
-		/// Approximate parking bays. See PrefabIndexingSystem.GetParkingSlots for
-		/// why exact is not available before placement.
+		/// Parking bays, matching what the building has once placed. See
+		/// PrefabIndexingSystem.GetParkingSlots.
 		/// </summary>
 		public int ParkingSlots { get; set; }
 		// Nullable analytical values are populated from the same prefab entity

@@ -1536,14 +1536,18 @@ namespace FindItBuildingMenu.Systems
 		/// A boolean could not answer the question anyone actually asks. It also
 		/// made sorting by Parking a no-op, because every entry tied.
 		///
-		/// APPROXIMATE, and deliberately so. The game's own count is
-		/// NetUtils.GetParkingSlotCount: floor((slotSpace + 0.01) / slotInterval),
-		/// where slotSpace trims the curve by the lane's StartingLane and
-		/// EndingLane flags and by a slot-angle term. Those flags live on
-		/// Game.Net.ParkingLane, a component that exists only once a lane has
-		/// been placed, so they cannot be known for a prefab sitting in a menu.
-		/// What is left — curve length over slot interval — is within a slot or
-		/// two on a real lot, which is the resolution the question deserves.
+		/// EXACT for an object's own lanes, which is what a parking lot has.
+		/// The game's count is NetUtils.GetParkingSlotCount, floor((slotSpace +
+		/// 0.01) / slotInterval), and slotSpace trims the curve only when
+		/// ParkingLaneFlags.FindConnections is CLEAR. LaneSystem.CreateObjectLane
+		/// — the path every object sub-lane takes — sets StartingLane, EndingLane
+		/// and FindConnections together, so the trimming branch never runs and
+		/// slotSpace is the raw curve length. The same arithmetic therefore
+		/// reproduces the placed count rather than approximating it.
+		///
+		/// An earlier version of this comment called the figure approximate, on
+		/// the assumption that the runtime flags were unknowable. They are
+		/// knowable: they are unconditional for this path.
 		///
 		/// The interval is derived exactly as NetInitializeSystem bakes it from
 		/// the lane's slot size and angle, so at least that half is the game's.
@@ -1580,11 +1584,26 @@ namespace FindItBuildingMenu.Systems
 						continue;
 					}
 
+					// A lane with no slot width is Virtual (NetInitializeSystem:1608),
+					// and the game's own capacity sum skips those —
+					// RoadsInfoviewUISystem drops VirtualLane before adding slots.
+					// Two of the three interval branches already yield 0 for such
+					// a lane and fall out below, but a slot angle near zero takes
+					// the interval from slotSize.y and would have counted bays the
+					// game does not.
+					if (parkingLane.m_SlotSize.x < 0.001f)
+					{
+						continue;
+					}
+
 					var interval = GetParkingSlotInterval(parkingLane);
 
 					if (interval > 0.001f)
 					{
-						slots += (int)Math.Floor(MathUtils.Length(lane.m_BezierCurve) / interval);
+						// The +0.01 is the game's, not a fudge: GetParkingSlotCount
+						// adds it before the divide, and dropping it loses a bay
+						// whenever the length divides exactly.
+						slots += (int)Math.Floor((MathUtils.Length(lane.m_BezierCurve) + 0.01f) / interval);
 					}
 				}
 			}
