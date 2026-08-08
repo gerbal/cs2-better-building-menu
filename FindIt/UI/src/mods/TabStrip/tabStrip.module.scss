@@ -24,6 +24,44 @@
   padding: 0;
 }
 
+// Role tabs carry text (see TabStrip.tsx for why), so they cannot share the
+// icon tabs' fixed 39rem square — a label needs room to breathe and a place
+// to truncate. The row is shared with the search field pinned at x=957 (see
+// .catalogStripRow in topBar.module.scss): tabs start at x=416, leaving
+// ~541px total, and a role strip tops out at 4 tabs — All plus the richest
+// measured grouping, Police & Administration or Education & Research at 3
+// real roles each (see BuildingLensRoleScope). 150rem (100px) per tab keeps
+// 4 tabs at 400px, comfortably inside that budget even before vanilla's own
+// item gaps/padding are subtracted — the remainder is deliberate slack, not
+// a tight fit, since "Water Pumping Station" is a measured English label,
+// not a proven worst case across every locale.
+.roleTab {
+  width: auto;
+  max-width: 150rem;
+  height: 39rem;
+  padding: 0 10rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// Belt-and-suspenders alongside .roleTab's max-width: the vanilla items
+// container is not ours to restyle directly, but stacking a local class on
+// it (same trick as .strip beside assetCategoryTabBar above) lets us forbid
+// wrap and clip overflow, so a measurement gap ellipsises a label instead of
+// wrapping the row and pushing the search field off it.
+.roleItems {
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.tabLabel {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .tabIcon {
   width: 100%;
   height: 100%;
