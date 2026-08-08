@@ -6,6 +6,7 @@ import classNames from "classnames";
 import mod from "../../../mod.json";
 import { resolveAxis, type AxisCandidate } from "domain/menuAxisMap";
 import {
+  lensRoleCommand,
   lensSectionCommand,
   lensSubCategoryCommand,
   type VanillaBuildMenuTab,
@@ -21,8 +22,10 @@ const AssetCategoryTabTheme: any = getModule(
 
 const Section$ = bindValue<string>(mod.id, "BuildingLensSection", "AllBuildings");
 const SubCategory$ = bindValue<string>(mod.id, "BuildingLensSubCategory", "Any");
+const Role$ = bindValue<string>(mod.id, "BuildingLensRole", "Any");
 const SectionList$ = bindValue<VanillaBuildMenuTab[]>(mod.id, "BuildingLensSectionList", []);
 const SubCategoryList$ = bindValue<VanillaBuildMenuTab[]>(mod.id, "BuildingLensSubCategoryList", []);
+const RoleList$ = bindValue<VanillaBuildMenuTab[]>(mod.id, "BuildingLensRoleList", []);
 const MenuToolTip$ = bindValue<string>(mod.id, "BuildingLensMenuToolTip", "");
 
 // The game's balloon tooltip has no delay prop of its own (see TooltipProps
@@ -36,8 +39,10 @@ const HOVER_DELAY_MS = 150;
 export const TabStrip = () => {
   const section = useValue(Section$);
   const subCategory = useValue(SubCategory$);
+  const role = useValue(Role$);
   const sections = useValue(SectionList$) ?? [];
   const subCategories = useValue(SubCategoryList$) ?? [];
+  const roles = useValue(RoleList$) ?? [];
   const menuToolTip = useValue(MenuToolTip$) ?? "";
 
   // Only one tab id at a time, so forcing tab A's tooltip visible always
@@ -59,6 +64,7 @@ export const TabStrip = () => {
   const candidates: AxisCandidate[] = [
     { id: "section", optionCount: sections.length },
     { id: "subCategory", optionCount: subCategories.length },
+    { id: "role", optionCount: roles.length },
   ];
   const axis = resolveAxis(menuToolTip, candidates);
 
@@ -67,9 +73,10 @@ export const TabStrip = () => {
   // second, competing navigation for a view that is not on screen.
   if (axis === "zoneFamily") return null;
 
-  const tabs = axis === "subCategory" ? subCategories : axis === "section" ? sections : [];
-  const selected = axis === "subCategory" ? subCategory : section;
-  const command = axis === "subCategory" ? lensSubCategoryCommand : lensSectionCommand;
+  const tabs = axis === "role" ? roles : axis === "subCategory" ? subCategories : axis === "section" ? sections : [];
+  const selected = axis === "role" ? role : axis === "subCategory" ? subCategory : section;
+  const command = axis === "role" ? lensRoleCommand : axis === "subCategory" ? lensSubCategoryCommand : lensSectionCommand;
+  const isRoleAxis = axis === "role";
 
   // One tab is not navigation, and no axis means no strip. Either way the
   // ChipRow identity beneath is left to say what is being looked at.
@@ -77,13 +84,14 @@ export const TabStrip = () => {
 
   return (
     <div className={classNames(AssetCategoryTabTheme.assetCategoryTabBar, styles.strip)}>
-      <div className={AssetCategoryTabTheme.items}>
+      <div className={classNames(AssetCategoryTabTheme.items, isRoleAxis && styles.roleItems)}>
         {tabs.map((tab) => (
           <Tooltip key={tab.id} tooltip={tab.toolTip} forceVisible={hoveredTabId === tab.id}>
             <button
               className={classNames(
                 AssetCategoryTabTheme.item,
                 styles.tab,
+                isRoleAxis && styles.roleTab,
                 tab.id === selected && styles.tabSelected
               )}
               aria-label={tab.toolTip}
@@ -100,7 +108,23 @@ export const TabStrip = () => {
                 setHoveredTabId(null);
               }}
             >
-              <img src={tab.icon} className={styles.tabIcon} />
+              {isRoleAxis ? (
+                // Role tabs carry a text label instead of an icon — this is
+                // the one deliberate departure from the icon-only chrome
+                // every other axis uses. RoleOption's icon map (the source
+                // this strip's icons would otherwise come from, see
+                // BuildingLensRoleUIEntry/BuildingLensRoleScope on the C#
+                // side) gives Police Station and Prison the *same*
+                // Police.svg, and Hospital and Deathcare Facility the same
+                // Healthcare.svg — exactly the two menus this strip exists
+                // to distinguish. An icon there is not just uninformative,
+                // it is actively misleading, so it is dropped rather than
+                // shown alongside text. Do not "fix" this back to icons for
+                // consistency with the other axes.
+                <span className={styles.tabLabel}>{tab.toolTip}</span>
+              ) : (
+                <img src={tab.icon} className={styles.tabIcon} />
+              )}
             </button>
           </Tooltip>
         ))}

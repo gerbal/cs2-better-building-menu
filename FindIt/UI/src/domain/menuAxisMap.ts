@@ -6,12 +6,13 @@
  * relationship constant is what makes an adaptive axis read as familiar rather
  * than arbitrary.
  */
-export type AxisId = "section" | "subCategory" | "zoneFamily" | "buildingType" | "zone";
+export type AxisId = "section" | "subCategory" | "role" | "zoneFamily" | "buildingType" | "zone";
 
 /** Dimensions that can be a tab axis: they name what a thing *is*. */
 export const TAXONOMIC_AXIS_IDS: readonly AxisId[] = [
   "section",
   "subCategory",
+  "role",
   "zoneFamily",
   "buildingType",
   "zone",
@@ -91,6 +92,43 @@ export function computeAxis(candidates: AxisCandidate[]): AxisId | null {
   return best.id as AxisId;
 }
 
+/**
+ * Role is the finest real subdivision of the menu the player actually
+ * opened — section and subCategory are both at or above the menu itself
+ * (subCategory for a service menu enumerates its *siblings*, the 13 service
+ * menus, not what is inside the one already selected). So whenever the
+ * backend has found two or more roles in the current scope, role wins
+ * outright rather than competing with subCategory/section on option count:
+ * it is not "the best-scoring axis", it is "the one below where we are".
+ *
+ * The backend (BuildingLensRoleScope) already applies the two-role floor
+ * before publishing BuildingLensRoleList, so "present" here just means
+ * non-empty — there is no separate MIN_AXIS_OPTIONS check to duplicate.
+ * The Zones menu never produces a role list (it doesn't render the catalog
+ * at all), so this can't fire ahead of the zoneFamily short-circuit below.
+ */
+function roleAxisApplies(candidates: AxisCandidate[]): boolean {
+  const role = (candidates ?? []).find((c) => c.id === "role");
+  return !!role && Number.isFinite(role.optionCount) && role.optionCount > 0;
+}
+
 export function resolveAxis(menuToolTip: string, candidates: AxisCandidate[]): AxisId | null {
-  return authoredAxisFor(menuToolTip) ?? computeAxis(candidates);
+  if (roleAxisApplies(candidates)) return "role";
+
+  const authored = authoredAxisFor(menuToolTip);
+
+  // Every AUTHORED entry that resolves to "subCategory" is one of the ten
+  // ServiceBuildings toolbar tooltips (electricity, water, healthcare, …),
+  // and subCategory at that point is not a subdivision of the menu the
+  // player opened — GetSubcategoryDescriptors on the C# side is keyed by
+  // section, not by the specific submenu, so it hands back the *siblings*:
+  // the same 13 service menus vanilla's own toolbar already shows. That is
+  // the exact "redraws the game's own toolbar inside the panel" bug role
+  // exists to fix, for all ten of these menus, not only the ones the
+  // backend happens to find roles in. So when role has nothing (e.g.
+  // Transportation: 41 buildings, zero role groups), the answer is no
+  // strip, not "fall back to the wrong axis instead".
+  if (authored === "subCategory") return null;
+
+  return authored ?? computeAxis(candidates);
 }

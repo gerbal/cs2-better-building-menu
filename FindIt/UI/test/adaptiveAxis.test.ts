@@ -36,4 +36,44 @@ describe("Adaptive axis", () => {
   it("falls back to computing for an unauthored menu", () => {
     assert.equal(resolveAxis("SomeModdedMenu", [{ id: "buildingType", optionCount: 4 }]), "buildingType");
   });
+
+  it("outranks even the authored answer once the backend publishes roles", () => {
+    // Role is one level below the menu the player already opened — finer
+    // than the authored subCategory answer service menus otherwise get —
+    // so a non-empty role list wins outright rather than competing on
+    // option count.
+    assert.equal(
+      resolveAxis("Healthcare", [
+        { id: "subCategory", optionCount: 13 },
+        { id: "role", optionCount: 3 },
+      ]),
+      "role"
+    );
+  });
+
+  it("does not preempt the zoneFamily short-circuit, since Zones never has roles", () => {
+    assert.equal(
+      resolveAxis("Zones", [
+        { id: "buildingType", optionCount: 9 },
+        { id: "role", optionCount: 0 },
+      ]),
+      "zoneFamily"
+    );
+  });
+
+  it("shows no strip on Transportation, since its authored subCategory answer is the same wrong sibling list", () => {
+    // Transportation: 41 buildings, zero role groups — the backend publishes
+    // BuildingLensRoleList empty. The authored "subCategory" answer for a
+    // ServiceBuildings submenu is the 13-sibling list (GetSubcategoryDescriptors
+    // is keyed by section, not by which submenu is open), which is exactly
+    // the bug role exists to fix — so an empty role list means no strip, not
+    // reverting to that stale answer.
+    assert.equal(
+      resolveAxis("Transportation", [
+        { id: "subCategory", optionCount: 13 },
+        { id: "role", optionCount: 0 },
+      ]),
+      null
+    );
+  });
 });
