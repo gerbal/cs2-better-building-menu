@@ -74,7 +74,25 @@ namespace FindItBuildingMenu.Services
 				return false;
 			}
 
-			if (!MatchesBuildMenu(entry, query))
+			// The menu tree REPLACES the section overlay rather than layering on
+			// it. Both describe where an asset lives in the build menu, but only
+			// one of them is the game's own answer: UIObject.m_Group is what
+			// vanilla itself reads, while VanillaSection is a shape we
+			// reconstruct from (Category, SubCategory, ZoneType).
+			//
+			// Applying both meant a menu member could be dropped for indexing
+			// into a section the preset did not name. Roads is pinned to
+			// Networks, so its 34 parking lots and 1 service building — which
+			// index as ServiceBuildings — vanished: 122 of 157 shown. The same
+			// arithmetic cost Transportation 23 of its 53, because bus stops,
+			// taxi stops, tram stops and tracks are networks inside a menu
+			// pinned to ServiceBuildings.
+			//
+			// The section stays SET while scoped, and is merely not applied. It
+			// is still what the auto-widen brake reads to answer "am I scoped?"
+			// (FindItUISystem.Methods.cs), and clearing it would make that check
+			// lie.
+			if (!IsScopedToMenuTree(query) && !MatchesBuildMenu(entry, query))
 			{
 				return false;
 			}
@@ -143,6 +161,15 @@ namespace FindItBuildingMenu.Services
 		/// An asset that is in no menu at all fails a menu constraint, which is
 		/// also vanilla's behaviour — it only ever lists group members.
 		/// </summary>
+		/// <summary>
+		/// Whether this query is asking about a place in the vanilla build menu.
+		/// </summary>
+		private static bool IsScopedToMenuTree(BuildingCatalogQuery query)
+		{
+			return !string.IsNullOrEmpty(query.UiMenu?.Trim())
+				|| !string.IsNullOrEmpty(query.UiCategory?.Trim());
+		}
+
 		private static bool MatchesVanillaMenuTree(BuildingCatalogEntry entry, BuildingCatalogQuery query)
 		{
 			string menu = query.UiMenu?.Trim() ?? string.Empty;

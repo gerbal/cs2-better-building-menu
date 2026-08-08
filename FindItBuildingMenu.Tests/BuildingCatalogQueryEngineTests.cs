@@ -806,6 +806,39 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.Equal(41, Assert.Single(unscoped.Items).Id);
     }
 
+    [Fact]
+    public void Query_MenuScopeReplacesTheSectionOverlayRatherThanLayeringOnIt()
+    {
+        // A menu member that indexes into a different section than the preset
+        // pins. Roads is pinned to Networks, but its parking lots index as
+        // ServiceBuildings — 35 of 157 members used to vanish for exactly this.
+        BuildingCatalogEntry parkingLot = SampleEntries[3] with
+        {
+            Id = 51,
+            PrefabName = "ParkingLot01",
+            Name = "Parking Lot",
+            UiMenu = "Roads",
+            UiCategory = "RoadsParking",
+            VanillaSection = "ServiceBuildings",
+        };
+
+        // Scoped to the menu: the game says it is in Roads, so it is in Roads,
+        // whatever our own section reconstruction thinks.
+        BuildingCatalogPage scoped = BuildingCatalogQueryEngine.Query(
+            new[] { parkingLot },
+            new BuildingCatalogQuery(UiMenu: "Roads", BuildMenuSection: "Networks"));
+
+        Assert.Equal(51, Assert.Single(scoped.Items).Id);
+
+        // Unscoped, the section overlay still applies — it is the only scope
+        // there is when no menu is named.
+        BuildingCatalogPage unscoped = BuildingCatalogQueryEngine.Query(
+            new[] { parkingLot },
+            new BuildingCatalogQuery(BuildMenuSection: "Networks"));
+
+        Assert.Empty(unscoped.Items);
+    }
+
     private static BuildingCatalogEntry Entry(
         int id,
         string prefabName,
