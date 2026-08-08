@@ -244,10 +244,80 @@ namespace FindItBuildingMenu.Systems
 		/// </remarks>
 		private void SetBuildingLensMenuCategory(string category)
 		{
+			// The zoning view is not the building catalog: it renders the zone
+			// catalog narrowed by family, and reads none of the query the
+			// category scope feeds. So the strip's five Zones tabs — which are
+			// the five families, under the game's own plural names — were a row
+			// of buttons that took the selected treatment and changed nothing on
+			// screen, while the "All families" picker beside them worked.
+			//
+			// Both now write the one selection. The strip picks a single family
+			// because a tab strip is single-select; the picker still composes
+			// several, and whichever set that leaves is what both controls read
+			// back.
+			if (_ShowZoningHierarchy.Value)
+			{
+				var family = ZoningSurfaceCatalog.ResolveFamilyFromGroup(category);
+
+				_zoneFamilies = family is null
+					? System.Array.Empty<string>()
+					: new[] { family };
+				_BuildingLensZoneFamilies.Value = _zoneFamilies;
+				PublishSelectedZoneFamilyTab();
+				return;
+			}
+
 			_buildingLensUiCategory = category ?? string.Empty;
 			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0 };
 
+			RefreshBuildingCatalog();
+		}
+
+		/// <summary>
+		/// Lights the strip tab for the family selection, when one tab can say it.
+		/// </summary>
+		/// <remarks>
+		/// A tab strip can show one choice, the picker can compose several, and
+		/// they share a state — so two families selected lights no tab rather
+		/// than lying about which. Empty means every family, which is what the
+		/// strip's "All" tab already stands for.
+		/// </remarks>
+		private void PublishSelectedZoneFamilyTab()
+		{
+			_BuildingLensMenuCategoryBinding.Value = _zoneFamilies.Length == 1
+				? ZoningSurfaceCatalog.ResolveGroupFromFamily(_zoneFamilies[0]) ?? string.Empty
+				: string.Empty;
+		}
+
+		/// <summary>
+		/// Drops the vanilla-menu scope and shows the whole catalog.
+		/// </summary>
+		/// <remarks>
+		/// The bottom-bar icons are shortcuts to a preconfigured view, not a box
+		/// the player is locked inside. Removing the menu chip is how you say
+		/// "same filters, everything" — the widening that SearchEverything only
+		/// offered for a search that already found nothing.
+		///
+		/// The facets deliberately survive. This clears the scope, not the
+		/// narrowing the player chose within it, and dropping both would make
+		/// one × do two jobs.
+		/// </remarks>
+		private void ClearBuildingLensMenuScope()
+		{
+			_buildingLensUiMenu = string.Empty;
+			_buildingLensUiCategory = string.Empty;
+			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0 };
+			scrollIndex = 0;
+
+			// The zoning view is a different renderer over a different catalog,
+			// so leaving it scoped to zones while the query widens would show
+			// the player zones and tell them "all menus". Send them to the
+			// catalog, which is what "everything" means here.
+			_ShowZoningHierarchy.Value = false;
+
+			RefreshBuildingLensMenuCategories();
+			RefreshBuildingLensNavigation();
 			RefreshBuildingCatalog();
 		}
 
@@ -260,6 +330,17 @@ namespace FindItBuildingMenu.Systems
 				string.IsNullOrEmpty(_buildingLensUiMenu) ? null : _buildingLensUiMenu);
 
 			_BuildingLensMenuCategoriesBinding.Value = tabs.ToArray();
+			_BuildingLensMenuBinding.Value = _buildingLensUiMenu;
+
+			// In the zoning view the strip's selection IS the family selection,
+			// and _buildingLensUiCategory stays empty there — republishing it
+			// would blank the lit tab under a filter that is still applied.
+			if (_ShowZoningHierarchy.Value)
+			{
+				PublishSelectedZoneFamilyTab();
+				return;
+			}
+
 			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
 		}
 
@@ -511,6 +592,9 @@ namespace FindItBuildingMenu.Systems
 		{
 			_zoneFamilies = ZoneFamilySelection.Toggle(_zoneFamilies, family);
 			_BuildingLensZoneFamilies.Value = _zoneFamilies;
+			// The strip above shows the same selection, so it has to follow the
+			// picker as well as drive it.
+			PublishSelectedZoneFamilyTab();
 		}
 
 		private void SetBuildingCatalogMetricRange(string metricId, string minText, string maxText)

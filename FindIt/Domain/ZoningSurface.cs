@@ -180,6 +180,38 @@ public static class ZoningSurfaceCatalog
 	}
 
 	/// <summary>
+	/// The UI category group a family is filed under — <see cref="ResolveFamilyFromGroup"/>
+	/// read backwards.
+	/// </summary>
+	/// <remarks>
+	/// The category strip above the zoning view is built from the Zones menu's
+	/// own tabs, so it speaks in group names while the view filters on family
+	/// ids. Something has to translate, and it is this map rather than the UI:
+	/// the plural/singular mismatch is exactly the assumption that produced a
+	/// classifier matching nothing, and teaching it to a second place would
+	/// invite the same mistake twice.
+	/// </remarks>
+	public static string? ResolveGroupFromFamily(string? family)
+	{
+		if (string.IsNullOrWhiteSpace(family))
+		{
+			return null;
+		}
+
+		string trimmed = family.Trim();
+
+		foreach (var pair in GroupFamilies)
+		{
+			if (string.Equals(pair.Value, trimmed, StringComparison.OrdinalIgnoreCase))
+			{
+				return pair.Key;
+			}
+		}
+
+		return null;
+	}
+
+	/// <summary>
 	/// The family a zone belongs to, from its own <c>ZoneData</c>.
 	/// </summary>
 	/// <remarks>
