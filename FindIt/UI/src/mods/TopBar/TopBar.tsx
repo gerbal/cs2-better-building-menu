@@ -25,6 +25,7 @@ import { FOCUS_DISABLED } from "cs2/input";
 import { searchChangedCommand, setCurrentCategoryCommand, setCurrentSubCategoryCommand } from "domain/buildingCatalogContracts";
 import type { BuildingLensMode } from "domain/buildingLensMode";
 import { ChipRow } from "mods/ChipRow/ChipRow";
+import { TabStrip } from "mods/TabStrip/TabStrip";
 
 export interface TopBarProps {
   sortingOpen: any;
@@ -412,7 +413,12 @@ export const TopBarComponent = (props: TopBarProps) => {
           </>
         )}
 
-        {BuildingLensEnabled && props.buildingLensMode === "catalog" && <ChipRow />}
+        {BuildingLensEnabled && props.buildingLensMode === "catalog" && (
+          <>
+            <TabStrip />
+            <ChipRow />
+          </>
+        )}
       </div>
     </>
   );

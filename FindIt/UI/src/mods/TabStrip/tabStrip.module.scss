@@ -1,0 +1,22 @@
+// Vanilla spends 45rem of chrome above its grid, all of it on this strip.
+// Icons are 39rem there, so these match rather than approximate.
+.strip {
+  flex: 0 0 auto;
+  height: 45rem;
+}
+
+.tab {
+  width: 39rem;
+  height: 39rem;
+  padding: 0;
+}
+
+.tabIcon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.tabSelected {
+  background-color: var(--accentColorNormal);
+}
