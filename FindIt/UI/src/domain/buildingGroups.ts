@@ -23,6 +23,7 @@ export type GroupDimensionId =
   | "none"
   | "category"
   | "subCategory"
+  | "menuCategory"
   | "role"
   | "theme"
   | "source"
@@ -47,7 +48,15 @@ export interface GroupDimension {
  * and answering it badly by default is worse than leaving it out.
  */
 export const GROUP_DIMENSIONS: readonly GroupDimension[] = [
-  { id: "category", label: "Category", depth: 2 },
+  // The game's own categories — the same split the tab strip shows. First,
+  // because inside a vanilla menu it is the division the player already has in
+  // mind, and it is the only dimension that works for a menu holding both
+  // networks and buildings.
+  { id: "menuCategory", label: "Category", depth: 1 },
+  // Ours, not the game's: Buildings, Networks, Service Buildings. Renamed from
+  // "Category" so it does not compete with the game's own word for a different
+  // idea.
+  { id: "category", label: "Asset type", depth: 2 },
   { id: "subCategory", label: "Type", depth: 1 },
   { id: "role", label: "Role", depth: 1 },
   { id: "theme", label: "Theme", depth: 1 },
@@ -76,10 +85,57 @@ export const DEFAULT_GROUP_DIMENSION: GroupDimensionId = "category";
  * them and every one would land under "Other" — a default that files 3,667
  * buildings in one bucket is worse than no grouping at all.
  */
-export function defaultGroupDimensionFor(section: string | null | undefined): GroupDimensionId {
+export function defaultGroupDimensionFor(
+  section: string | null | undefined,
+  menuHasCategories: boolean = false,
+): GroupDimensionId {
+  // Inside a vanilla menu, the game's own categories win. They are the split
+  // the tab strip already shows, so grouping by anything else asks the player
+  // to hold two organisations of the same 53 assets at once.
+  //
+  // Role was the default here and produced NO grouping at all on Transportation:
+  // role is buildingType, networks do not have one, and half that menu is stops
+  // and tracks — so everything fell into a single unnamed bucket and the
+  // headings were suppressed as redundant. One flat wall of 53 tiles.
+  if (menuHasCategories) {
+    return "menuCategory";
+  }
+
   return typeof section === "string" && section.trim().toLowerCase() === "servicebuildings"
     ? "role"
     : DEFAULT_GROUP_DIMENSION;
+}
+
+/**
+ * A group heading for the game's own category.
+ *
+ * The id is a prefab name — "TransportationRoad", "PropsNature", "BikePaths" —
+ * so it needs both splitting into words and, where the convention holds,
+ * relieving of the menu name it repeats. "TransportationRoad" inside
+ * Transportation is "Road"; "PropsNature" inside Landscaping keeps both words,
+ * because that menu does not prefix its categories.
+ */
+export function menuCategoryLabel(entry: GroupableEntry): string {
+  const raw = typeof entry.uiCategory === "string" ? entry.uiCategory.trim() : "";
+
+  if (raw === "") {
+    return UNGROUPED_LABEL;
+  }
+
+  const menu = (typeof entry.uiMenu === "string" ? entry.uiMenu : "").replace(/[^A-Za-z]/g, "");
+  const withoutMenu = menu !== "" && raw.toLowerCase().startsWith(menu.toLowerCase())
+    ? raw.slice(menu.length)
+    : raw;
+
+  return splitWords(withoutMenu === "" ? raw : withoutMenu);
+}
+
+/** "BikePaths" -> "Bike Paths". The ids are camel case, not sentences. */
+function splitWords(value: string): string {
+  return value
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
+    .trim();
 }
 
 /** Heading for entries with no value for the grouped field. */
@@ -98,6 +154,9 @@ export const COST_BANDS: readonly number[] = [5_000, 25_000, 100_000];
 export const FOOTPRINT_BANDS: readonly number[] = [2, 4, 6];
 
 export interface GroupableEntry {
+  /** The game's own menu placement, indexed from UIObject.m_Group. */
+  uiMenu?: string | null;
+  uiCategory?: string | null;
   category?: string | null;
   categoryLabel?: string | null;
   subCategory?: string | null;
@@ -189,6 +248,8 @@ export function groupLevelsFor(
         text(entry.categoryLabel) ?? text(entry.category) ?? UNGROUPED_LABEL,
         text(entry.subCategoryLabel) ?? text(entry.subCategory) ?? UNGROUPED_LABEL,
       ];
+    case "menuCategory":
+      return [menuCategoryLabel(entry)];
     case "subCategory":
       return [text(entry.subCategoryLabel) ?? text(entry.subCategory) ?? UNGROUPED_LABEL];
     case "role":

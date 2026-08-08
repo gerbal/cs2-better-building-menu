@@ -28,6 +28,16 @@ namespace FindItBuildingMenu.Domain
 	{
 		public const string None = "none";
 		public const string Category = "category";
+		/// <summary>
+		/// The game's own category — the tab strip's dimension.
+		/// </summary>
+		/// <remarks>
+		/// Distinct from Category, which is OUR taxonomy (Buildings, Networks,
+		/// ServiceBuildings). Grouping a scoped menu by that says almost nothing;
+		/// grouping by the game's own categories reproduces the split the tab
+		/// strip already shows, which is the model the player is holding.
+		/// </remarks>
+		public const string MenuCategory = "menuCategory";
 		public const string SubCategory = "subCategory";
 		public const string Role = "role";
 		public const string Theme = "theme";
@@ -77,6 +87,7 @@ namespace FindItBuildingMenu.Domain
 			return groupBy!.Trim().ToLowerInvariant() switch
 			{
 				Category => Normalize(entry.Category),
+				MenuCategory => Normalize(entry.UiCategory),
 				"subcategory" => Normalize(entry.SubCategory),
 				Role => Normalize(entry.BuildingType),
 				Theme => Normalize(entry.Theme),
