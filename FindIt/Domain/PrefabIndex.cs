@@ -40,6 +40,32 @@ namespace FindItBuildingMenu.Domain
 		/// when it decides to grey an asset out.
 		/// </remarks>
 		public bool IsLocked { get; set; }
+
+		/// <summary>
+		/// The milestone index this asset waits on, or 0 for none.
+		/// </summary>
+		/// <remarks>
+		/// An index rather than a name. The requirement is static — which
+		/// milestone unlocks a building never changes — so it costs an int per
+		/// asset, and the ~20 milestone names are resolved once into their own
+		/// table instead of being re-resolved across 17,898 prefabs every time an
+		/// unlock triggers a full re-index.
+		/// </remarks>
+		public int UnlockMilestone { get; set; }
+
+		/// <summary>
+		/// Everything else the asset is waiting on, already localized.
+		/// </summary>
+		/// <remarks>
+		/// Signature buildings are the reason this is not just a milestone.
+		/// They hang off requirement prefabs — zone built, objects built,
+		/// citizens, processing — which vanilla renders through about eight
+		/// separately composed sentences (PrefabUISystem.BindUnlockRequirement).
+		/// Reproducing that grammar is where this would start drifting from the
+		/// game, so each requirement contributes its OWN title instead, resolved
+		/// exactly the way asset names are.
+		/// </remarks>
+		public string[] UnlockRequirements { get; set; } = Array.Empty<string>();
 		public bool IsUniqueMesh { get; set; }
 		public ThemePrefab Theme { get; set; }
 		public AssetPackPrefab[] AssetPacks { get; set; }

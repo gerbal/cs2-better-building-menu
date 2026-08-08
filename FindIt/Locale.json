@@ -345,5 +345,13 @@
   "Tooltip.LABEL[FindItBuildingMenu.Locked]": "Locked",
   "Tooltip.LABEL[FindItBuildingMenu.Availability]": "Availability",
   "Tooltip.LABEL[FindItBuildingMenu.AllCategories]": "All",
+  "Requirement.POPULATION": "{0} population",
+  "Requirement.HAPPINESS": "{0} happiness",
+  "Requirement.PROCESSING": "produce {0} {1}",
+  "Requirement.ZONE_SQUARES": "{0} squares of {1}",
+  "Requirement.ZONE_COUNT": "{0} × {1}",
+  "Requirement.OBJECTS_BUILT": "build {0}",
+  "Requirement.DEV_TREE_COST": "{0} tech, {1} pts",
+  "Requirement.DEV_TREE": "{0} tech",
   "Tooltip.LABEL[FindItBuildingMenu.Unlocked]": "Unlocked"
 }

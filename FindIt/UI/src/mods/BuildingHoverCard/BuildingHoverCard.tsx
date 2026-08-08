@@ -2,6 +2,7 @@ import { bindValue, useValue } from "cs2/api";
 import { Tooltip } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
+import mod from "../../../mod.json";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
   formatBuildingMetric,
@@ -15,7 +16,7 @@ import {
 import { getCapacityForecast, getCostForecast } from "domain/buildingForecast";
 import { SERVICE_FORECAST_BINDINGS, getServiceForecastKey } from "domain/serviceForecast";
 import { buildTileTooltipLines, isMetricPresent } from "domain/buildingTileTooltip";
-import { isEntryLocked } from "domain/buildingLockState";
+import { describeLockReason, isEntryLocked } from "domain/buildingLockState";
 import { FootprintGlyph } from "mods/ZoningHierarchy/FootprintGlyph";
 import type { ZoneFootprint } from "domain/zoningHierarchy";
 import styles from "./buildingHoverCard.module.scss";
@@ -24,6 +25,10 @@ import styles from "./buildingHoverCard.module.scss";
 // city rather than against nothing. One pair per demand series;
 // SERVICE_FORECAST_BINDINGS names which pair a given building belongs to.
 const Money$ = bindValue<number>("toolbarBottom", "money", 0);
+
+// Milestone index -> name, dense by index. A locked asset carries only the
+// index, so this is read once here rather than resolved per asset in C#.
+const BuildingLensMilestones$ = bindValue<string[]>(mod.id, "BuildingLensMilestones", []);
 
 const SERIES = Object.entries(SERVICE_FORECAST_BINDINGS).map(([key, b]) => ({
   key,
@@ -34,6 +39,7 @@ const SERIES = Object.entries(SERVICE_FORECAST_BINDINGS).map(([key, b]) => ({
 
 export interface HoverCardContext {
   money: number;
+  milestoneNames: string[];
   seriesByKey: Map<string, { capacity: number; demand: number; unit: string }>;
   separators: NumberSeparators;
   labels: {
@@ -59,12 +65,14 @@ export interface HoverCardContext {
 export const useHoverCardContext = (): HoverCardContext => {
   const { translate } = useLocalization();
   const money = useValue(Money$);
+  const milestoneNames = useValue(BuildingLensMilestones$) ?? [];
   const seriesByKey = new Map(
     SERIES.map((s) => [s.key, { capacity: useValue(s.capacity$), demand: useValue(s.demand$), unit: s.unit }])
   );
 
   return {
     money,
+    milestoneNames,
     seriesByKey,
     separators: getNumberSeparators(translate),
     labels: {
@@ -103,7 +111,7 @@ export const BuildingHoverCard = ({
   context: HoverCardContext;
   children: JSX.Element;
 }) => {
-  const { money, seriesByKey, separators, labels } = context;
+  const { money, milestoneNames, seriesByKey, separators, labels } = context;
   const label = entry.name || entry.prefabName;
 
   const cost = formatBuildingMetric(entry.constructionCost, "cost", separators);
@@ -139,7 +147,11 @@ export const BuildingHoverCard = ({
       key: "locked",
       label: labels.locked,
       applicable: isEntryLocked(entry),
-      value: labels.lockedValue,
+      // Names what the player is waiting on — the milestone the rest of the
+      // game names, or the requirement itself for the signature buildings that
+      // hang off something other than a milestone. Falls back to the bare word
+      // when the asset carries no requirement we can read.
+      value: describeLockReason(entry, milestoneNames, labels.lockedValue),
       tone: "warn",
     },
     {

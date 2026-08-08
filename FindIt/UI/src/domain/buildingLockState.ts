@@ -39,3 +39,50 @@ export function isEntryLocked(entry: LockableEntry | null | undefined): boolean 
 export function canPlace(entry: LockableEntry | null | undefined): boolean {
   return !isEntryLocked(entry);
 }
+
+export interface UnlockableEntry extends LockableEntry {
+  unlockMilestone?: number;
+  unlockRequirements?: string[];
+}
+
+/**
+ * What to tell the player they are waiting on.
+ *
+ * Falls back to the bare "Locked" word when we know it is locked but not why,
+ * which is honest rather than lazy: some assets carry no UnlockRequirement
+ * buffer at all, and inventing a reason for those is worse than admitting we
+ * do not have one.
+ *
+ * Milestone wins when both are present. It is the coarser gate, so it has to
+ * clear first, and naming a tech node behind a milestone the player has not
+ * reached would send them somewhere they cannot act on.
+ */
+export function describeLockReason(
+  entry: UnlockableEntry | null | undefined,
+  milestoneNames: readonly string[] | null | undefined,
+  lockedWord: string
+): string {
+  if (!isEntryLocked(entry)) {
+    return "";
+  }
+
+  const milestone = entry?.unlockMilestone ?? 0;
+  const milestoneName = milestone > 0 ? milestoneNames?.[milestone] : undefined;
+
+  if (milestoneName) {
+    return milestoneName;
+  }
+
+  const requirements = entry?.unlockRequirements ?? [];
+
+  if (requirements.length > 0) {
+    // One line's worth. A signature building can list several and the card is
+    // about 184px wide, so naming the first and counting the rest beats
+    // truncating a sentence mid-word.
+    return requirements.length === 1
+      ? requirements[0]
+      : `${requirements[0]} +${requirements.length - 1}`;
+  }
+
+  return lockedWord;
+}
