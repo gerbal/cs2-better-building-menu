@@ -52,15 +52,17 @@
   align-items: center;
   justify-content: flex-start;
   // Matches the measured vanilla card (72rem) so two rows fit a vanilla-sized
-  // strip: 4 padding + 48 thumb + 2 gap + 17 label + 4 padding + 2 border = 77rem.
+  // strip: 2 padding + 48 thumb + 2 gap + 17 label + 2 padding = 71rem.
   box-sizing: border-box;
   width: 72rem !important;
-  height: 77rem;
-  padding: 4rem;
+  height: 71rem;
+  padding: 2rem;
   gap: 2rem;
   border-radius: 3rem;
+  // No border: the background tint below is what reads as the tile's edge.
+  // Spending 2rem of the box on a border on top of that tint was a box drawn
+  // twice.
   background-color: rgba(0, 0, 0, 0.22);
-  border: 1rem solid rgba(255, 255, 255, 0.1);
 
   // Two classes, deliberately. The button mixin emits `img { width: 24rem }`,
   // which is a descendant selector and outranks a bare `.thumb` — so every
@@ -78,9 +80,12 @@
   }
 }
 
+// No border to swap a color on anymore, so the hover cue is a background
+// lift instead — brighter than the base 0.22 tint and now also brighter
+// than the old un-hovered fallback (0.1), so the affordance still reads
+// against the tile's own edge tint rather than disappearing into it.
 .tile:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-color: var(--accentColorNormal);
+  background-color: rgba(255, 255, 255, 0.16);
 }
 
 // One line, then ellipsis. Names run long ("Additional Clinic Center") and a
