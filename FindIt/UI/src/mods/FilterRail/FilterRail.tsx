@@ -1,4 +1,4 @@
-import { Button, Dropdown, DropdownItem, DropdownToggle, Scrollable } from "cs2/ui";
+import { Button, Dropdown, DropdownItem, DropdownToggle, Scrollable, Tooltip } from "cs2/ui";
 import { getModule } from "cs2/modding";
 import { useLocalization } from "cs2/l10n";
 import { useState } from "react";
@@ -92,10 +92,15 @@ export const FilterRail = ({
                 </div>
               }
             >
-              <DropdownToggle className={classNames(styles.icon, dimension.selected > 0 && styles.iconActive)}>
-                <img src={DIMENSION_ICONS[dimension.id] ?? ""} className={styles.iconImage} />
-                {dimension.selected > 0 && <span className={styles.badge}>{dimension.selected}</span>}
-              </DropdownToggle>
+              <Tooltip tooltip={label}>
+                <DropdownToggle
+                  className={classNames(styles.icon, dimension.selected > 0 && styles.iconActive)}
+                  aria-label={label}
+                >
+                  <img src={DIMENSION_ICONS[dimension.id] ?? ""} className={styles.iconImage} />
+                  {dimension.selected > 0 && <span className={styles.badge}>{dimension.selected}</span>}
+                </DropdownToggle>
+              </Tooltip>
             </Dropdown>
           );
         })}
