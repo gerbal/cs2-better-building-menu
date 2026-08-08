@@ -7,6 +7,8 @@ import {
   type GroupDimensionId,
   type GroupNode,
 } from "domain/buildingGroups";
+import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
+import { useLocalization } from "cs2/l10n";
 import { BuildingGrid } from "mods/BuildingGrid/BuildingGrid";
 import { BuildingList } from "mods/BuildingList/BuildingList";
 import styles from "./groupedResults.module.scss";
@@ -42,6 +44,25 @@ export const GroupedResults = ({
   searchText,
   onPlace,
 }: GroupedResultsProps) => {
+  const { translate } = useLocalization();
+
+  /**
+   * The game's word for a heading, where the game has one.
+   *
+   * Category headings name vanilla categories, so "TransportationRoad" is
+   * "Road" in the game's own localized string — and our camel-case splitter
+   * only ever arrived at that by coincidence, in English. Everything else keeps
+   * the derived label, because nothing owns those names but us.
+   */
+  const headingLabel = (node: GroupNode<BuildingCatalogEntry>): string =>
+    node.labelId === undefined
+      ? node.label
+      : resolveVanillaLabel(
+        vanillaCategoryNameKeys(node.labelId),
+        (key) => translate(key, null),
+        node.label
+      );
+
   const renderLeaf = (leaf: BuildingCatalogEntry[]): JSX.Element => {
     if (viewMode === "list" || viewMode === "cards") {
       return (
@@ -68,7 +89,7 @@ export const GroupedResults = ({
       <div className={styles.group} key={node.path.join("/")} data-group-depth={depth}>
         {showHeadings && (
           <div className={classNames(styles.groupHeading, depth > 0 && styles.groupHeadingNested)}>
-            <span className={styles.groupLabel}>{node.label}</span>
+            <span className={styles.groupLabel}>{headingLabel(node)}</span>
             <span className={styles.groupCount}>{node.count}</span>
           </div>
         )}
