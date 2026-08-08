@@ -51,8 +51,10 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  width: 88rem !important;
-  height: 112rem;
+  // Matches the measured vanilla card (72rem) so two rows fit a vanilla-sized
+  // strip: 4 padding + 48 thumb + 2 gap + 17 label + 4 padding = 75rem.
+  width: 72rem !important;
+  height: 75rem;
   padding: 4rem;
   gap: 2rem;
   border-radius: 3rem;
@@ -64,9 +66,13 @@
   // thumbnail in this grid rendered 16px wide against the vanilla asset grid's
   // 45px, for as long as the grid has existed.
   .thumb {
-    flex: 0 0 68rem;
-    width: 68rem;
-    height: 68rem;
+    // Down from 68rem. This is a knowing regression: 68rem matched vanilla's
+    // 45px icon, and the name label is what the height was spent on instead.
+    // If 32px thumbnails do not read at a glance in game, the choice is
+    // between one row and no label — not between this and 68rem.
+    flex: 0 0 48rem;
+    width: 48rem;
+    height: 48rem;
     object-fit: contain;
   }
 }
@@ -81,7 +87,7 @@
 .tileName {
   display: block;
   width: 100%;
-  max-height: 34rem;
+  max-height: 17rem;
   overflow: hidden;
   // Belt and braces. shortenTileLabel already fits the name to the tile, but if
   // it is ever out by a character the cut should read as a cut: this used to
@@ -95,7 +101,7 @@
   // uses and read as a different UI.
   font-size: var(--fontSizeM);
   line-height: 17rem;
-  white-space: normal;
+  white-space: nowrap;
 }
 
 .card {
