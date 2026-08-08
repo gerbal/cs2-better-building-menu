@@ -14,6 +14,14 @@ export interface TileTooltipLine {
   key: string;
   label: string;
   value: string;
+  /**
+   * Rendered one per line when present, with `value` ignored.
+   *
+   * Unlock conditions are the case: three of them run together on one line read
+   * as one long condition, and the reader has to find the separators before
+   * they can count them.
+   */
+  values?: string[];
   /** Drives the affordability / coverage colouring the forecasts already had. */
   tone?: "warn" | "good";
 }
@@ -29,15 +37,17 @@ export interface TileTooltipCandidate extends TileTooltipLine {
 
 /**
  * The cap is deliberate: the grid exists because it is faster to read than the
- * table, and a hover card that grows to eight lines is the table again with
+ * table, and a hover card that grows without limit is the table again with
  * worse manners.
  *
- * Four rather than three, because dropping the inapplicable lines freed the
- * room. At three, a service building spent every slot on cost, capacity and
- * upkeep and silently lost its lot size — which is the one figure that decides
- * whether the thing fits where you are standing.
+ * Six, because the fields that can appear grew — unlock conditions and city
+ * effects joined cost, capacity, upkeep and lot — and at four a locked
+ * signature building silently lost its footprint to make room. The cap is a
+ * ceiling on a card that has already dropped every field that does not apply,
+ * so a typical asset still shows three or four; only one carrying everything
+ * reaches six.
  */
-export const TILE_TOOLTIP_MAX_LINES = 4;
+export const TILE_TOOLTIP_MAX_LINES = 6;
 
 /**
  * Whether a metric has a value worth printing.
@@ -60,5 +70,10 @@ export function buildTileTooltipLines(
   return candidates
     .filter((candidate) => candidate.applicable && candidate.value.trim() !== "")
     .slice(0, limit)
-    .map(({ key, label, value, tone }) => (tone ? { key, label, value, tone } : { key, label, value }));
+    .map(({ key, label, value, values, tone }) => {
+      const line: TileTooltipLine = { key, label, value };
+      if (values && values.length > 0) line.values = values;
+      if (tone) line.tone = tone;
+      return line;
+    });
 }

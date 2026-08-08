@@ -344,6 +344,8 @@
   "Options.LABEL[FindItBuildingMenu.AvailabilityFilter]": "Availability",
   "Tooltip.LABEL[FindItBuildingMenu.Locked]": "Locked",
   "Tooltip.LABEL[FindItBuildingMenu.Availability]": "Availability",
+  "Tooltip.LABEL[FindItBuildingMenu.Requires]": "Requires",
+  "Tooltip.LABEL[FindItBuildingMenu.Provides]": "Provides",
   "Tooltip.LABEL[FindItBuildingMenu.AllCategories]": "All",
   "Requirement.POPULATION": "{0} population",
   "Requirement.HAPPINESS": "{0} happiness",

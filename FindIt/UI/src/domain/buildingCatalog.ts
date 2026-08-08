@@ -44,6 +44,11 @@ export interface BuildingCatalogEntry {
    * milestones, and those have no shared ordinal to look up.
    */
   unlockRequirements: string[];
+  /**
+   * What the building does for the city, already phrased. Signature buildings
+   * cost nothing, so this is the whole basis for choosing between them.
+   */
+  bonuses: string[];
   isFavorited: boolean;
   pdxModsId: string;
   buildingType: string;

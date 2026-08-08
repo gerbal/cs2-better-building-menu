@@ -75,16 +75,11 @@ describe("tile tooltip lines", () => {
   });
 
   it("caps the card — the grid's whole advantage is being shorter than the table", () => {
-    const lines = buildTileTooltipLines([
-      candidate({ key: "a" }),
-      candidate({ key: "b" }),
-      candidate({ key: "c" }),
-      candidate({ key: "d" }),
-      candidate({ key: "e" }),
-    ]);
+    const keys = ["a", "b", "c", "d", "e", "f", "g", "h"];
+    const lines = buildTileTooltipLines(keys.map((key) => candidate({ key })));
 
     assert.equal(lines.length, TILE_TOOLTIP_MAX_LINES);
-    assert.deepEqual(lines.map((line) => line.key), ["a", "b", "c", "d"]);
+    assert.deepEqual(lines.map((line) => line.key), keys.slice(0, TILE_TOOLTIP_MAX_LINES));
   });
 
   it("counts only the lines that survived, so dropping one promotes the next", () => {
@@ -97,6 +92,20 @@ describe("tile tooltip lines", () => {
     ]);
 
     assert.deepEqual(lines.map((line) => line.key), ["a", "c", "d", "e"]);
+  });
+
+  it("carries a multi-line value through, for the fields that are lists", () => {
+    const [line] = buildTileTooltipLines([
+      candidate({ key: "requires", values: ["Small City", "Healthcare tech, 8 pts"] }),
+    ]);
+
+    assert.deepEqual(line.values, ["Small City", "Healthcare tech, 8 pts"]);
+  });
+
+  it("omits an empty values array rather than rendering an empty list", () => {
+    const [line] = buildTileTooltipLines([candidate({ key: "cost", values: [] })]);
+
+    assert.equal("values" in line, false);
   });
 
   it("honours an explicit lower cap", () => {

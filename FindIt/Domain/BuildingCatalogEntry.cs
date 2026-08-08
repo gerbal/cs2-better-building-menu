@@ -86,7 +86,12 @@ namespace FindItBuildingMenu.Domain
 		/// milestones do.
 		/// </remarks>
 		int UnlockMilestone = 0,
-		string[]? UnlockRequirements = null) : IJsonWritable
+		string[]? UnlockRequirements = null,
+		/// <summary>
+		/// What the building gives the city. Signature buildings are free, so
+		/// the effect is the whole basis for choosing one over another.
+		/// </summary>
+		string[]? Bonuses = null) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -137,6 +142,7 @@ namespace FindItBuildingMenu.Domain
 			writer.PropertyName("unlockMilestone");
 			writer.Write(UnlockMilestone);
 			WriteStringArray(writer, "unlockRequirements", UnlockRequirements);
+			WriteStringArray(writer, "bonuses", Bonuses);
 			writer.PropertyName("isFavorited");
 			writer.Write(IsFavorited);
 			writer.PropertyName("pdxModsId");
