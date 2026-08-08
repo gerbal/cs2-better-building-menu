@@ -363,7 +363,17 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
           full-width bands stacked above the table, each carrying a single short
           line. Measured against a real city they cost 84px of a 625px panel
           while the rows themselves only got 159px. One toolbar carries all of
-          it. */}
+          it.
+
+          The whole band is analytical chrome — Group by, Sort by, and the
+          identity line that names what you're already looking at — and none
+          of it is something a two-row strip can afford. At strip height the
+          tab strip above already carries identity, so this toolbar, like
+          ViewModeBar below, renders only once the panel is expanded. A
+          measured strip had this band plus a group heading eating a 51rem
+          tile down to ~50px of clipped remainder; two rows need the room
+          back. */}
+      {expanded && (
       <div className={styles.toolbar}>
         <img className={styles.titleIcon} src={BUILDING_LENS_TITLE_ICON} alt="" />
         <div className={styles.title}>{translate("Tooltip.LABEL[FindItBuildingMenu.BuildingLens]", "Building lens")}</div>
@@ -478,8 +488,13 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
           {moreSortingLabel}
         </Button>
       </div>
+      )}
 
-      {sortingExpanded && (
+      {/* Reachable only from the toolbar above, which is itself gated on
+          expanded — gate this the same way so a stale sortingExpanded=true
+          from before the panel was last shrunk cannot leave this row drawn
+          with no toolbar above it to close it. */}
+      {expanded && sortingExpanded && (
         <div className={styles.sortOptions} data-sort-options="expanded">
           {sortPresentation.expanded.map((option) => (
             <Button

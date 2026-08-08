@@ -416,7 +416,15 @@ export const TopBarComponent = (props: TopBarProps) => {
         {BuildingLensEnabled && props.buildingLensMode === "catalog" && (
           <>
             <TabStrip />
-            <ChipRow />
+            {/* TabStrip and the chip row's sub-category breadcrumb are two
+                controls for the same single-select value — the same
+                BuildingLensSubCategoryList, driven by the same
+                lensSubCategoryCommand — stacked directly on top of each
+                other, ~34rem of duplicated identity. At strip height the tab
+                strip alone carries it; the section is implied by the toolbar
+                menu the player just clicked. Same pattern as ViewModeBar:
+                hidden at rest, back on expand. */}
+            {props.expanded && <ChipRow />}
           </>
         )}
       </div>

@@ -223,7 +223,21 @@
   // a contradiction, and min-height wins, so the strip would never reach its
   // measured height.
   min-height: 0;
-  max-height: 163rem;
+  // Was 163rem — vanilla's measured content region at 1280x720. That number
+  // fit vanilla's own content, not ours: vanilla's card is a bare 72rem
+  // square with no label and no group headings, so two rows plus vanilla's
+  // padding is what 163rem was sized to. Ours is a 77rem tile (the extra 5rem
+  // is the name line) with group headings above each cluster, so the same two
+  // rows cost more even after the catalog toolbar (BuildingCatalog.tsx's
+  // Group by/Sort by band) and the chip row breadcrumb (TopBar.tsx) were both
+  // moved behind expand. Measured live, fewer than one row was visible at
+  // 163rem with that chrome still inside it.
+  //
+  // 2 tiles * 77rem + 4rem gap + 16rem .catalog padding + 12rem .bodyTiles
+  // padding = 186rem for two bare rows of tiles. 200rem leaves ~14rem of
+  // headroom for one group heading above the first cluster, which stays —
+  // group headings are meaningful content, not chrome.
+  max-height: 200rem;
 }
 
 .contentExpanded {
