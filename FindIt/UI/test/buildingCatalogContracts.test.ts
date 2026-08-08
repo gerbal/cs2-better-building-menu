@@ -5,6 +5,7 @@ import {
   MAX_CATALOG_PAGE_SIZE,
   getCatalogPageSummary,
   hasCatalogScroll,
+  isCatalogPaged,
   clearBuildingCatalogMetricRangesCommand,
   clearCompareEntriesCommand,
   locatePrefabCommand,
@@ -178,5 +179,29 @@ describe("FindItBuildingMenu UI binding contracts", () => {
     assert.equal(didSwapMetricBounds("cost", { minText: "500", maxText: "100" }), true);
     assert.equal(didSwapMetricBounds("cost", { minText: "100", maxText: "500" }), false);
     assert.equal(didSwapMetricBounds("cost", { minText: "", maxText: "500" }), false);
+  });
+});
+
+describe("whether the result is paged at all", () => {
+  it("is not paged when everything fits on one page", () => {
+    // Every vanilla menu now asks for the 500-row ceiling, and the largest —
+    // Landscaping at 366 — fits inside it. A pager there could only report
+    // that it has nothing to do, from below a scroll.
+    assert.equal(isCatalogPaged(366, 500), false);
+    assert.equal(isCatalogPaged(157, 500), false);
+    assert.equal(isCatalogPaged(0, 100), false);
+    assert.equal(isCatalogPaged(100, 100), false);
+  });
+
+  it("is paged the moment one row does not fit", () => {
+    assert.equal(isCatalogPaged(101, 100), true);
+    // The unscoped catalog, which no page size makes into one thing.
+    assert.equal(isCatalogPaged(3667, 100), true);
+  });
+
+  it("survives nonsense totals and limits", () => {
+    assert.equal(isCatalogPaged(Number.NaN, 100), false);
+    assert.equal(isCatalogPaged(-5, 100), false);
+    assert.equal(isCatalogPaged(50, Number.NaN), false);
   });
 });
