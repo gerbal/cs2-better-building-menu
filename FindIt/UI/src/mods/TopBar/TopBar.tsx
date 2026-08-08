@@ -444,7 +444,16 @@ export const TopBarComponent = (props: TopBarProps) => {
                 here as a sibling rather than inside TabStrip — it keeps
                 rendering in both of those cases. */}
             <div className={styles.catalogStripRow}>
-              <MenuCategoryStrip />
+              {/* Wrapped rather than styled directly: MenuCategoryStrip owns
+                  its own class and sizes itself flex: 0 0 auto, which on this
+                  shared row parked it against the search field with 354px of
+                  empty row to its left. The wrapper is also what holds the
+                  search at the right edge when the strip renders nothing at
+                  all — a menu with fewer than two categories, which is
+                  Water & Sewage and Zones. */}
+              <div className={styles.catalogStripTabs}>
+                <MenuCategoryStrip />
+              </div>
               <div className={styles.catalogStripSearch}>
                 {IsSearchLoading && (
                   <img

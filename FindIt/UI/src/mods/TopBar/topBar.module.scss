@@ -85,16 +85,24 @@
 // showTopBarRow — so the strip is the only row left to put it on. Sized to
 // the strip's own 45rem so the panel does not grow a row: this shares that
 // height rather than adding one.
-// flex-end holds the search field at the right edge on its own, for the case
-// where TabStrip returns null (zoneFamily axis, or fewer than two tabs) and
-// the field is the row's only child. When the strip is present it grows to
-// fill the row, so there is no slack left for this to distribute.
 .catalogStripRow {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: flex-end;
   height: 45rem;
+  overflow: hidden;
+}
+
+// Takes all the slack so the search field lands at the right edge, and does it
+// whether or not the strip inside has anything to draw. That second case is
+// real: MenuCategoryStrip renders nothing for a menu with fewer than two
+// categories, which is vanilla's own rule and covers Water & Sewage and Zones.
+// min-width: 0 because a flex item defaults to min-width: auto and would
+// refuse to shrink below its tabs, pushing the search field off the row on a
+// menu with many categories.
+.catalogStripTabs {
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
 }
 
