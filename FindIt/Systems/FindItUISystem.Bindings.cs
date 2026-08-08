@@ -43,7 +43,12 @@ namespace FindItBuildingMenu.Systems
 		///
 		/// Only the deliberate close paths call this. When the player picks a
 		/// different vanilla menu the lens also closes, but there the selection
-		/// is their new choice and clearing it would undo the click.
+		/// is their new choice and clearing it would undo the click — that path
+		/// arms a tool, so it never reaches OnToolChanged's default-tool branch.
+		///
+		/// Escape counts as deliberate and arrives through OnToolChanged: the
+		/// game cancels the armed tool in its own input layer, never touching the
+		/// DOM, so this is the only place we hear about it.
 		/// </remarks>
 		private void CloseLens()
 		{

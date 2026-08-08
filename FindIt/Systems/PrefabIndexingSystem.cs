@@ -912,6 +912,20 @@ namespace FindItBuildingMenu.Systems
 					continue;
 				}
 
+				// A category with no members is not a tab. Vanilla drops these in
+				// GetSortedCategories (ToolbarUISystem.cs:335-347) before it binds
+				// the row, so showing one is showing something the game hides.
+				//
+				// Not hypothetical: Transportation ships a ferry category that is
+				// empty in a base-game save, and it surfaced as a tab whose icon
+				// really is Media/Placeholder.svg — the game never intended anyone
+				// to see it, so it never gave it an icon.
+				if (!EntityManager.TryGetBuffer<UIGroupElement>(categories[i], true, out var members)
+					|| members.Length == 0)
+				{
+					continue;
+				}
+
 				prefab.TryGet<UIObject>(out var uIObject);
 
 				if (!byMenu.TryGetValue(menuName, out var tabs))
