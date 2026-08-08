@@ -15,12 +15,16 @@
 /**
  * Characters that fit on a tile.
  *
- * The tile now matches vanilla's 72rem card and carries a single 17rem line,
- * so the budget is one line rather than two. Derived from the same measurement
- * as before: about eight characters across a 72rem tile at 720p.
+ * The tile carries a single 17rem line, so the budget is one line rather than
+ * two. At vanilla's 72rem card this measured to about eight characters —
+ * "Sma…ri…", "Hea…r…" — which was too little tail to tell two different
+ * buildings apart. The tile is now 100rem wide (see buildingGrid's .tile), and
+ * this constant is the same character-per-rem density as before (8/72 ≈
+ * 11/100 ≈ 0.11 chars/rem) carried forward to the new width: about eleven
+ * characters across a 100rem tile at 720p.
  */
-const CHARS_PER_LINE_AT_DEFAULT_TILE = 8;
-const DEFAULT_TILE_SIZE = 72;
+const CHARS_PER_LINE_AT_DEFAULT_TILE = 11;
+const DEFAULT_TILE_SIZE = 100;
 const TILE_LABEL_LINES = 1;
 
 export const tileLabelCharBudget = (tileSize: number): number => {
