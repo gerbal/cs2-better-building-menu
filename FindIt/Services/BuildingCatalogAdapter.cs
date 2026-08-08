@@ -209,6 +209,8 @@ namespace FindItBuildingMenu.Services
 				Thumbnail: IconPath.Normalize(prefab.Thumbnail ?? prefab.FallbackThumbnail ?? string.Empty),
 				FallbackThumbnail: IconPath.Normalize(
 					prefab.FallbackThumbnail ?? prefab.CategoryThumbnail ?? string.Empty),
+				UiMenu: prefab.UiMenuName,
+				UiCategory: prefab.UiCategoryName,
 				LotWidth: prefab.LotSize.x,
 				LotDepth: prefab.LotSize.y,
 				BuildingLevel: prefab.BuildingLevel,

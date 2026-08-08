@@ -751,7 +751,7 @@ public sealed class BuildingCatalogQueryEngineTests
         page.Write(writer);
 
         Assert.Equal(
-            new[] { "items", "id", "prefabName", "name", "category", "subCategory", "categoryLabel", "subCategoryLabel", "vanillaSection", "vanillaSubCategory", "thumbnail", "fallbackThumbnail", "lotWidth", "lotDepth", "buildingLevel", "zoneType", "hasParking", "isUniqueMesh", "isVanilla", "isLocked", "isFavorited", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "constructionCost", "upkeep", "workers", "capacity", "electricityConsumption", "waterConsumption", "garbageAccumulation", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "totalCount", "offset", "limit" },
+            new[] { "items", "id", "prefabName", "name", "category", "subCategory", "categoryLabel", "subCategoryLabel", "vanillaSection", "vanillaSubCategory", "thumbnail", "fallbackThumbnail", "uiMenu", "uiCategory", "lotWidth", "lotDepth", "buildingLevel", "zoneType", "hasParking", "isUniqueMesh", "isVanilla", "isLocked", "isFavorited", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "constructionCost", "upkeep", "workers", "capacity", "electricityConsumption", "waterConsumption", "garbageAccumulation", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "totalCount", "offset", "limit" },
             writer.PropertyNames);
         Assert.Contains("Write:Int32:1", writer.Tokens);
         Assert.Contains("Write:String:Coal Power Plant", writer.Tokens);
@@ -761,6 +761,49 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.Contains("Write:String:Education & Research", writer.Tokens);
         Assert.Contains("Write:Int32:100", writer.Tokens);
         Assert.Contains("Write:Double:80000", writer.Tokens);
+    }
+
+    [Fact]
+    public void Query_MenuScopeDropsUpgradesButUnscopedQueriesKeepThem()
+    {
+        // Vanilla drops service upgrades from every build menu
+        // (ToolbarUISystem.FilterOutUpgrades), so a menu-scoped query must not
+        // offer something the player cannot place. An UNSCOPED query is not
+        // looking at a menu and must still find them, or the Extensions facet
+        // offers values that match nothing.
+        //
+        // This exact exclusion once ran outside the menu guard, which deleted
+        // every upgrade-bearing asset from the whole catalog.
+        BuildingCatalogEntry upgrade = SampleEntries[3] with
+        {
+            Id = 41,
+            PrefabName = "HospitalWing02",
+            Name = "Hospital Wing",
+            UiMenu = "Health & Deathcare",
+            UiCategory = "Healthcare",
+            Extensions = new[] { "HospitalWing02" },
+        };
+        BuildingCatalogEntry placeable = SampleEntries[3] with
+        {
+            Id = 42,
+            PrefabName = "Hospital01",
+            Name = "Hospital",
+            UiMenu = "Health & Deathcare",
+            UiCategory = "Healthcare",
+        };
+        BuildingCatalogEntry[] entries = { upgrade, placeable };
+
+        BuildingCatalogPage scoped = BuildingCatalogQueryEngine.Query(
+            entries,
+            new BuildingCatalogQuery(UiMenu: "Health & Deathcare"));
+
+        Assert.Equal(42, Assert.Single(scoped.Items).Id);
+
+        BuildingCatalogPage unscoped = BuildingCatalogQueryEngine.Query(
+            entries,
+            new BuildingCatalogQuery(Extensions: new[] { "hospitalwing02" }));
+
+        Assert.Equal(41, Assert.Single(unscoped.Items).Id);
     }
 
     private static BuildingCatalogEntry Entry(

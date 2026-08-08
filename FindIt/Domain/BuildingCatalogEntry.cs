@@ -69,7 +69,12 @@ namespace FindItBuildingMenu.Domain
 		/// Only the renderer can tell that happened, so both have to reach it.
 		/// Last and defaulted, for the same reason as IsLocked above.
 		/// </remarks>
-		string? FallbackThumbnail = null) : IJsonWritable
+		string? FallbackThumbnail = null,
+		/// <summary>
+		/// SPIKE (cm-e98i): where the GAME puts this asset in the build menu.
+		/// </summary>
+		string? UiMenu = null,
+		string? UiCategory = null) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -97,6 +102,10 @@ namespace FindItBuildingMenu.Domain
 			writer.Write(Thumbnail);
 			writer.PropertyName("fallbackThumbnail");
 			writer.Write(FallbackThumbnail ?? string.Empty);
+			writer.PropertyName("uiMenu");
+			writer.Write(UiMenu ?? string.Empty);
+			writer.PropertyName("uiCategory");
+			writer.Write(UiCategory ?? string.Empty);
 			writer.PropertyName("lotWidth");
 			writer.Write(LotWidth);
 			writer.PropertyName("lotDepth");

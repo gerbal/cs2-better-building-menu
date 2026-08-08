@@ -26,6 +26,10 @@ namespace FindItBuildingMenu.Systems
 		private BuildingCatalogMetricRangeState _buildingMetricRanges = BuildingCatalogMetricRangeState.Empty;
 		private string _buildingLensSection = VanillaBuildMenuTaxonomy.AllBuildings;
 		private string _buildingLensSubCategory = VanillaBuildMenuTaxonomy.Any;
+		// SPIKE (cm-e98i): the vanilla menu the lens was opened from, by name.
+		// Empty means "not opened from a vanilla menu", which leaves the query
+		// unconstrained by the tree.
+		private string _buildingLensUiMenu = string.Empty;
 
 		private ToolSystem _toolSystem;
 		private PrefabSystem _prefabSystem;

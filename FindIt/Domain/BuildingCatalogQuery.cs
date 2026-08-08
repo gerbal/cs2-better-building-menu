@@ -51,7 +51,11 @@ namespace FindItBuildingMenu.Domain
 		// vanilla Zones menu is organised around could not be filtered.
 		IReadOnlyList<string>? ZoneTypes = null,
 		string BuildMenuSection = "",
-		string BuildMenuSubCategory = "")
+		string BuildMenuSubCategory = "",
+		// SPIKE (cm-e98i): the game's own menu placement, used instead of our
+		// reconstructed section when the lens was opened from a vanilla menu.
+		string UiMenu = "",
+		string UiCategory = "")
 	{
 		public int EffectiveOffset => Offset < 0 ? 0 : Offset;
 
