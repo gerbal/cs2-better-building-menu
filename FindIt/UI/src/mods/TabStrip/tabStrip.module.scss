@@ -9,9 +9,12 @@
 // row sibling of the search field in TopBar rather than a lone full-width
 // child, which is exactly the shape that broke before — keep this pinned so
 // a future vanilla update can't silently take it out of flow again.
+// Grows to eat the row's slack so the search field beside it lands at the
+// right edge. The tabs inside stay left-aligned — they sit in the vanilla
+// theme's own items container, which does not stretch with us.
 .strip {
   position: static;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
   height: 45rem;
 }
 

@@ -68,24 +68,29 @@
 // showTopBarRow — so the strip is the only row left to put it on. Sized to
 // the strip's own 45rem so the panel does not grow a row: this shares that
 // height rather than adding one.
+// flex-end holds the search field at the right edge on its own, for the case
+// where TabStrip returns null (zoneFamily axis, or fewer than two tabs) and
+// the field is the row's only child. When the strip is present it grows to
+// fill the row, so there is no slack left for this to distribute.
 .catalogStripRow {
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: flex-end;
   height: 45rem;
   overflow: hidden;
 }
 
-// margin-left: auto pins this to the row's right edge whether TabStrip
-// renders tabs beside it or returns null (zoneFamily axis, or fewer than 2
-// tabs) — unlike justify-content on the row, which would left-align a lone
-// child instead of holding it at the right.
+// Do NOT reach for margin-left: auto here. It is the usual way to pin a flex
+// child to the far edge and Gameface accepts it without complaint, but it
+// distributes nothing: measured in game, the field sat against the last tab
+// at x=767 rather than the row's right edge. The strip's flex-grow is what
+// actually moves it.
 .catalogStripSearch {
   display: flex;
   flex-direction: row;
   align-items: center;
   flex: 0 0 auto;
-  margin-left: auto;
   padding-right: 6rem;
 }
 
