@@ -51,10 +51,13 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  // Matches the measured vanilla card (72rem) so two rows fit a vanilla-sized
-  // strip: 2 padding + 48 thumb + 2 gap + 17 label + 2 padding = 71rem.
+  // Height matches the measured vanilla card: 2 padding + 48 thumb + 2 gap +
+  // 17 label + 2 padding = 71rem. Width is no longer vanilla's 72rem — at that
+  // width the one-line label budgeted 8 characters, and 8 characters could not
+  // tell "Sma…ri…" from a different "Sma…" building. 100rem is the width that
+  // lets tileLabel.ts's char budget clear a legible ~11 characters instead.
   box-sizing: border-box;
-  width: 72rem !important;
+  width: 100rem !important;
   height: 71rem;
   padding: 2rem;
   gap: 2rem;

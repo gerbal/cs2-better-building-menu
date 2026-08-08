@@ -112,16 +112,21 @@ describe("grid tile label shortening", () => {
   });
 
   it("keeps a usable budget for nonsense tile sizes", () => {
-    assert.equal(tileLabelCharBudget(Number.NaN), 8);
-    assert.equal(tileLabelCharBudget(0), 8);
+    // Falls back to DEFAULT_TILE_SIZE (100rem), which budgets 11.
+    assert.equal(tileLabelCharBudget(Number.NaN), 11);
+    assert.equal(tileLabelCharBudget(0), 11);
     assert.ok(tileLabelCharBudget(1) >= 4);
   });
 });
 
-describe("Tile label budget at the vanilla-matched tile", () => {
-  it("budgets one line, not two, at the new default", () => {
-    // 72rem tile, one 17rem line. The old budget assumed two lines at 88rem
-    // and would have allowed twice what now fits.
+describe("Tile label budget at the tile's actual width", () => {
+  it("budgets one line, not two, at the current 100rem default", () => {
+    // 100rem tile (buildingGrid's .tile), one 17rem line. 72rem's 8-character
+    // budget read "Sma…ri…" for two different buildings; 100rem clears enough
+    // tail to tell them apart. 72rem is no longer the tile's own width, but it
+    // still scales at the same ~0.11 chars/rem density (8/72 before, 11/100
+    // now), so it stays worth asserting on.
+    assert.equal(tileLabelCharBudget(100), 11);
     assert.equal(tileLabelCharBudget(72), 8);
   });
 
