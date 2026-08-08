@@ -52,7 +52,7 @@ export const TabStrip = () => {
 
   return (
     <div className={classNames(AssetCategoryTabTheme.assetCategoryTabBar, styles.strip)}>
-      <div className={classNames(AssetCategoryTabTheme.items, styles.itemsRow)}>
+      <div className={AssetCategoryTabTheme.items}>
         {tabs.map((tab) => (
           <Tooltip key={tab.id} tooltip={tab.toolTip}>
             <button

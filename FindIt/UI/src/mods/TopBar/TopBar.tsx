@@ -343,12 +343,7 @@ export const TopBarComponent = (props: TopBarProps) => {
   return (
     <>
       <div className={classNames(props.large && styles.large, props.small && styles.small)}>
-        <div
-          className={classNames(
-            styles.topBar,
-            BuildingLensEnabled && props.buildingLensMode === "catalog" && styles.topBarWithStrip
-          )}
-        >
+        <div className={styles.topBar}>
           <div className={classNames(styles.topBarSection, AlignmentStyle !== "Center" && styles.expandedSearchArea)}>
             {IsSearchLoading && <img style={{ maskImage: "url(coui://finditbuildingmenu/Icons/Standard/HalfCircleProgress.svg)" }} className={styles.loadingIcon}></img>}
             {!IsSearchLoading && <img style={{ maskImage: `url(${find})` }} className={styles.searchIcon}></img>}
@@ -382,21 +377,6 @@ export const TopBarComponent = (props: TopBarProps) => {
 
             {AlignmentStyle === "Center" && RenderButtonSection()}
           </div>
-
-          {/* Folded onto the search row instead of owning a stacked 45rem band
-              beneath it: the search controls above are narrow, the tab icons
-              are only 39rem tall, and both fit the same 45rem line. Sits
-              between the two topBarSections so it inherits their flex row
-              instead of needing one of its own. flex:1 with min-width:0 lets
-              it take whatever width the search controls and the lens/close
-              section do not need; the strip itself scrolls sideways rather
-              than wrapping to a second line if there are too many tabs to
-              fit. */}
-          {BuildingLensEnabled && props.buildingLensMode === "catalog" && (
-            <div className={styles.tabStripSlot}>
-              <TabStrip />
-            </div>
-          )}
 
           <div className={styles.topBarSection}>
             {BuildingLensEnabled && RenderLensModeList()}
@@ -433,16 +413,20 @@ export const TopBarComponent = (props: TopBarProps) => {
           </>
         )}
 
-        {/* TabStrip itself now renders inline in the search row above (see
-            tabStripSlot). What is left here is only the chip row: TabStrip
-            and its sub-category breadcrumb are two controls for the same
-            single-select value — the same BuildingLensSubCategoryList,
-            driven by the same lensSubCategoryCommand — and stacking both was
-            ~34rem of duplicated identity. At strip height the tab strip
-            alone carries it; the section is implied by the toolbar menu the
-            player just clicked. Same pattern as ViewModeBar: hidden at rest,
-            back on expand. */}
-        {BuildingLensEnabled && props.buildingLensMode === "catalog" && props.expanded && <ChipRow />}
+        {BuildingLensEnabled && props.buildingLensMode === "catalog" && (
+          <>
+            <TabStrip />
+            {/* TabStrip and the chip row's sub-category breadcrumb are two
+                controls for the same single-select value — the same
+                BuildingLensSubCategoryList, driven by the same
+                lensSubCategoryCommand — stacked directly on top of each
+                other, ~34rem of duplicated identity. At strip height the tab
+                strip alone carries it; the section is implied by the toolbar
+                menu the player just clicked. Same pattern as ViewModeBar:
+                hidden at rest, back on expand. */}
+            {props.expanded && <ChipRow />}
+          </>
+        )}
       </div>
     </>
   );
