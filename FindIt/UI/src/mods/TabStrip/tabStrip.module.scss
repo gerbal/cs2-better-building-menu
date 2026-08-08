@@ -55,11 +55,22 @@
   overflow: hidden;
 }
 
+// The vanilla tab item never carries text, only a masked icon, so it sets no
+// text colour at all and a label inherits black. Measured in game: unselected
+// tabs are transparent over --panelColorNormal (rgba(42,55,83)), so black on
+// dark read as no label at all. The selected tab is the one case that works
+// unaided — black on the #4bc3f1 accent fill is high contrast — so it keeps a
+// dark label rather than inheriting the light one.
 .tabLabel {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: var(--menuText1Normal);
+}
+
+.tabSelected .tabLabel {
+  color: rgba(0, 0, 0, 0.85);
 }
 
 .tabIcon {
