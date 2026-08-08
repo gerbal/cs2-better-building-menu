@@ -4,6 +4,42 @@ import {
   SERVICE_FORECAST_BINDINGS,
   getServiceForecastKey,
 } from "../src/domain/serviceForecast.ts";
+import { SCHOOL_TIERS } from "../src/domain/buildingGroups.ts";
+
+describe("school tiers agree across the two modules that name them", () => {
+  // The forecast keys its series off m_EducationLevel and the group headings
+  // label the same four rows, but they hold separate tables: TypeScript 4.9
+  // rejects the `.ts` import specifier this test runner's resolver needs, and
+  // the resolver cannot find the `.js` one TypeScript wants. So the drift is
+  // caught here instead of prevented by a shared module.
+  it("forecasts every tier the headings offer, under the same id", () => {
+    for (const tier of SCHOOL_TIERS) {
+      const resolved = getServiceForecastKey({
+        subCategory: "ServiceBuildings_EducationResearch",
+        buildingType: "School",
+        educationLevel: tier.level,
+      });
+
+      assert.equal(resolved?.key, tier.id, `level ${tier.level} (${tier.label})`);
+      assert.ok(SERVICE_FORECAST_BINDINGS[tier.id], `no series bound for ${tier.id}`);
+    }
+  });
+
+  it("forecasts nothing for the two values that are not tiers", () => {
+    // 0 is a capacity-only school upgrade, 5 is the outside connection.
+    for (const level of [0, 5]) {
+      assert.equal(
+        getServiceForecastKey({
+          subCategory: "ServiceBuildings_EducationResearch",
+          buildingType: "School",
+          educationLevel: level,
+        }),
+        null,
+        `education level ${level} should bind to no series`
+      );
+    }
+  });
+});
 
 const entry = (
   subCategory: string,

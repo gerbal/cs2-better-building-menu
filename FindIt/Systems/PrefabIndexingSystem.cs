@@ -475,6 +475,23 @@ namespace FindItBuildingMenu.Systems
 			// names its menu. Two managed references, no ECS lookup.
 			prefabIndex.UiCategoryName = uIObject?.m_Group?.name;
 			prefabIndex.UiMenuName = (uIObject?.m_Group as UIAssetCategoryPrefab)?.m_Menu?.name;
+			// The category's own priority, so a group of assets can be ordered
+			// the way the tab strip above it is ordered. m_Group is a
+			// UIGroupPrefab : PrefabBase, so its UIObject is one managed lookup
+			// from here — the same two dereferences the lines above already do.
+			//
+			// Guarded on UIAssetCategoryPrefab, not on m_Group being non-null:
+			// UIAssetMenuPrefab derives from UIGroupPrefab too, so an asset
+			// parked directly on a menu rather than in one of its categories
+			// would otherwise be ranked by the MENU's priority. Those are a
+			// different ordering space — menus rank against each other in the
+			// toolbar — and mixing the two would interleave the headings with
+			// numbers that mean nothing to one another.
+			prefabIndex.UiCategoryPriority =
+				uIObject?.m_Group is UIAssetCategoryPrefab category
+				&& category.TryGet<UIObject>(out var categoryUi)
+					? categoryUi.m_Priority
+					: 0;
 			prefabIndex.IsVanilla = prefab.isBuiltin || prefab.Has<FindItGenerated>();
 			// Not gated to Buildings and ServiceBuildings any more: a parking
 			// lot reached through the Roads menu is a network, and reporting no

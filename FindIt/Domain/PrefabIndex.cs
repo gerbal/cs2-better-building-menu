@@ -99,6 +99,21 @@ namespace FindItBuildingMenu.Domain
 		// Remove these two, or commit to them, once that question is answered.
 		public string? UiCategoryName { get; set; }
 		public string? UiMenuName { get; set; }
+
+		/// <summary>
+		/// The category's own UIObject.m_Priority — the game's tab order.
+		/// </summary>
+		/// <remarks>
+		/// Read off the category prefab rather than the asset: two assets in the
+		/// same category must rank identically, or grouping by category would
+		/// split one heading in two.
+		///
+		/// Defaults to 0 like vanilla's, not to <see cref="UIOrder"/>'s
+		/// int.MaxValue sentinel. Vanilla reads a missing UIObjectData as
+		/// priority 0 (UIObjectInfo.GetObjects), so a category that never set
+		/// one belongs in the middle of the strip, not at the end of it.
+		/// </remarks>
+		public int UiCategoryPriority { get; set; }
 		public bool HasParking { get; set; }
 
 		/// <summary>

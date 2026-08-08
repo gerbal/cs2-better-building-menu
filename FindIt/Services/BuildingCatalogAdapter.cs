@@ -235,6 +235,7 @@ namespace FindItBuildingMenu.Services
 					prefab.FallbackThumbnail ?? prefab.CategoryThumbnail ?? string.Empty),
 				UiMenu: prefab.UiMenuName,
 				UiCategory: prefab.UiCategoryName,
+				UiCategoryPriority: prefab.UiCategoryPriority,
 				LotWidth: prefab.LotSize.x,
 				LotDepth: prefab.LotSize.y,
 				BuildingLevel: prefab.BuildingLevel,

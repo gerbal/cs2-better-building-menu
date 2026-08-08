@@ -13,6 +13,7 @@
  * unrelated would be worse than staying quiet.
  */
 
+
 export interface ServiceForecastBinding {
   group: string;
   capacity: string;
@@ -78,6 +79,14 @@ const has = (name: string, ...needles: string[]) =>
  * These are the values the game's own education infoview switches on, so this
  * agrees with the simulation by construction rather than by resemblance. 0 and
  * 5 exist but are not tiers the infoview counts.
+ *
+ * The same four rows also head the School tier grouping, as SCHOOL_TIERS in
+ * buildingGroups.ts. They are duplicated rather than shared because this
+ * toolchain cannot express a value import between two src modules — TypeScript
+ * 4.9 rejects the `.ts` specifier the test runner's ESM resolver requires, and
+ * accepts a `.js` one the resolver cannot find. So drift is caught by a test
+ * instead: "the forecast knows every tier the headings do", in
+ * serviceForecast.test.ts.
  */
 const EDUCATION_LEVEL_TIERS: Record<number, string> = {
   1: "elementary",
