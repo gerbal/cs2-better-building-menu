@@ -54,6 +54,13 @@ export function buildFilterRail(
     // A group with no options opens an empty popover, which is worse than no
     // icon — Role and Asset packs were both empty catalog-wide until recently.
     .filter((group) => (group.options?.length ?? 0) > 0)
+    // A dimension short enough for railHomeFor to call it "bank" now renders
+    // in the options bank instead (see BuildingLensFacetOptionBase on the C#
+    // side). Keeping it here too would draw Availability, Provenance, and
+    // Placement in both places at once — the split idiom this design set out
+    // to end. RAIL_METRICS_ID never reaches this filter: it is appended below,
+    // after this array is built from `groups`, not derived from it.
+    .filter((group) => railHomeFor(group.options.length) !== "bank")
     .map((group) => ({
       id: group.id,
       label: group.label,
