@@ -45,6 +45,13 @@ namespace FindItBuildingMenu.Systems
 		private bool _localeChanged;
 		private static List<ZoneCatalogEntry> _zoneCatalog = new();
 		private static Dictionary<int, string> _assetMenuNames = new();
+		// Keyed the same as _assetMenuNames, but by the menu's icon basename
+		// (e.g. "Water" for Media/Game/Icons/Water.svg) rather than its prefab
+		// name ("Water & Sewage"). The UI's authored axis lookup is keyed on
+		// this identifier — see menuAxisMap.ts — because it is what the real
+		// toolbar icons are named, unlike the prefab name or its localised
+		// tooltip.
+		private static Dictionary<int, string> _assetMenuToolTips = new();
 		private readonly List<IPrefabCategoryProcessor> _prefabCategoryProcessors = new();
 
 		protected override void OnCreate()
@@ -813,16 +820,25 @@ namespace FindItBuildingMenu.Systems
 				ComponentType.ReadOnly<PrefabData>());
 			var menus = query.ToEntityArray(Allocator.Temp);
 			var names = new Dictionary<int, string>();
+			var toolTips = new Dictionary<int, string>();
 
 			for (var i = 0; i < menus.Length; i++)
 			{
 				if (_prefabSystem.TryGetPrefab<PrefabBase>(menus[i], out var prefab) && prefab?.name is not null)
 				{
 					names[menus[i].Index] = prefab.name;
+
+					var toolTip = MenuToolTip.FromIconPath(ImageSystem.GetIcon(prefab));
+
+					if (toolTip is not null)
+					{
+						toolTips[menus[i].Index] = toolTip;
+					}
 				}
 			}
 
 			_assetMenuNames = names;
+			_assetMenuToolTips = toolTips;
 			Mod.Log.Info($"Indexed Asset Menus Count: {_assetMenuNames.Count}");
 		}
 
@@ -1002,6 +1018,23 @@ namespace FindItBuildingMenu.Systems
 		/// </remarks>
 		public static string? GetAssetMenuName(int entityIndex) => _assetMenuNames.TryGetValue(entityIndex, out var name)
 			? name
+			: null;
+
+		/// <summary>
+		/// The identifier a vanilla toolbar asset menu's own icon is named
+		/// after, by entity index — e.g. "Water" for the menu whose icon is
+		/// Media/Game/Icons/Water.svg.
+		/// </summary>
+		/// <remarks>
+		/// The tab strip's authored axis lookup (menuAxisMap.ts) is keyed on
+		/// this identifier rather than <see cref="GetAssetMenuName"/>'s prefab
+		/// name, because the prefab name is a display string ("Health &amp;
+		/// Deathcare", "Water &amp; Sewage") while the icon basename is stable
+		/// and matches the identifiers confirmed against the running game's
+		/// toolbar icons.
+		/// </remarks>
+		public static string? GetAssetMenuToolTip(int entityIndex) => _assetMenuToolTips.TryGetValue(entityIndex, out var toolTip)
+			? toolTip
 			: null;
 
 		/// <summary>

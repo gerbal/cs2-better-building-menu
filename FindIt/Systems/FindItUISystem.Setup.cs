@@ -68,6 +68,11 @@ namespace FindItBuildingMenu.Systems
 		// over. Lets the vanilla menu stay hidden after the panel is closed, so
 		// closing means closed rather than revealing the grid underneath.
 		private ValueBindingHelper<bool> _LensOwnsCurrentMenu = null!;
+		// Which toolbar menu the lens is scoped to, by icon identifier (e.g.
+		// "Water"). The tab strip needs it to pick its axis; the UI cannot read
+		// it from the game's own toolbar bindings because interception may have
+		// already moved the selection on.
+		private ValueBindingHelper<string> _LensMenuToolTip = null!;
 		private string[] _zoneFamilies = System.Array.Empty<string>();
 		private ValueBindingHelper<bool> _IsExpanded;
 		private ValueBindingHelper<double> _ScrollIndex;
@@ -103,6 +108,16 @@ namespace FindItBuildingMenu.Systems
 
 		public bool IsExpanded => _IsExpanded;
 		public bool BuildingLensEnabled => _BuildingLensEnabled;
+
+		/// <summary>
+		/// The live building-lens facet group for one dimension (e.g.
+		/// "availability", "provenance", "placement"), or null when the
+		/// current catalog offers no options for it. Lets the options bank's
+		/// short-facet sections read the same state the filter rail does,
+		/// rather than keeping a second copy.
+		/// </summary>
+		public BuildingCatalogFacetGroup? GetBuildingLensFacetGroup(string facetId) =>
+			System.Array.Find(_BuildingLensFacets.Value.Groups, group => group.Id == facetId);
 		public string ViewStyle
 		{
 			get => _ViewStyle;
@@ -173,6 +188,11 @@ namespace FindItBuildingMenu.Systems
 			_ReplaceVanillaBuildMenu = CreateBinding("ReplaceVanillaBuildMenu", Mod.Settings.ReplaceVanillaBuildMenu);
 			_ShowZoningHierarchy = CreateBinding("ShowZoningHierarchy", false);
 			_LensOwnsCurrentMenu = CreateBinding("LensOwnsCurrentMenu", false);
+			// Which toolbar menu the lens is scoped to. The tab strip needs it to
+			// pick its axis; the UI cannot read it from the game's own toolbar
+			// bindings because interception may have already moved the selection
+			// on.
+			_LensMenuToolTip = CreateBinding("BuildingLensMenuToolTip", string.Empty);
 			_BuildingCatalogMatchesElsewhere = CreateBinding("BuildingCatalogMatchesElsewhere", 0);
 			// Layout preferences the UI needs. Read once at setup; these are not
 			// expected to change mid-session.

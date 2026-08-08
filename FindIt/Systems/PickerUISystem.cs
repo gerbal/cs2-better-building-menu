@@ -1,4 +1,5 @@
-﻿using FindItBuildingMenu.Domain.Interfaces;
+﻿using FindItBuildingMenu.Domain;
+using FindItBuildingMenu.Domain.Interfaces;
 using FindItBuildingMenu.Domain.UIBinding;
 using FindItBuildingMenu.Utilities;
 using Game.Input;
@@ -139,5 +140,16 @@ namespace FindItBuildingMenu.Systems
 		public override void UpdateCategoriesAndPrefabList()
 		{
 		}
+
+		// The picker's own options bank has nothing to do with the building
+		// lens catalog, but it shares the OptionsUISystem base with
+		// FindItOptionsUISystem, so these still need an implementation.
+		public override bool BuildingLensEnabled => _findItUISystem.BuildingLensEnabled;
+
+		public override BuildingCatalogFacetGroup? GetBuildingLensFacetGroup(string facetId) =>
+			_findItUISystem.GetBuildingLensFacetGroup(facetId);
+
+		public override void ToggleBuildingLensFacetOption(string facetId, string optionId) =>
+			_findItUISystem.ToggleBuildingLensFacetOption(facetId, optionId);
 	}
 }
