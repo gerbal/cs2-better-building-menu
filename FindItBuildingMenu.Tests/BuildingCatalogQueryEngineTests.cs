@@ -134,6 +134,97 @@ public sealed class BuildingCatalogQueryEngineTests
     }
 
     [Fact]
+    public void Query_RoleScopesToTheSingleSelectedRoleAndTreatsAnyAsUnscoped()
+    {
+        BuildingCatalogEntry[] entries =
+        {
+            SampleEntries[0] with { Id = 10, BuildingType = "PoliceStation" },
+            SampleEntries[1] with { Id = 11, BuildingType = "Prison" },
+            SampleEntries[2] with { Id = 12, BuildingType = null },
+        };
+
+        BuildingCatalogPage policeOnly = BuildingCatalogQueryEngine.Query(
+            entries,
+            new BuildingCatalogQuery(Role: "PoliceStation"));
+        BuildingCatalogPage caseInsensitive = BuildingCatalogQueryEngine.Query(
+            entries,
+            new BuildingCatalogQuery(Role: "policestation"));
+        BuildingCatalogPage unscopedEmpty = BuildingCatalogQueryEngine.Query(entries, new BuildingCatalogQuery());
+        BuildingCatalogPage unscopedAny = BuildingCatalogQueryEngine.Query(
+            entries,
+            new BuildingCatalogQuery(Role: VanillaBuildMenuTaxonomy.Any));
+
+        Assert.Equal(new[] { 10 }, policeOnly.Items.Select(item => item.Id).ToArray());
+        Assert.Equal(new[] { 10 }, caseInsensitive.Items.Select(item => item.Id).ToArray());
+        Assert.Equal(3, unscopedEmpty.TotalCount);
+        Assert.Equal(3, unscopedAny.TotalCount);
+    }
+
+    [Fact]
+    public void Query_RoleIsASingleSelectScopeNotAFilterOnASet()
+    {
+        // BuildingRole.ResolvePrimary already picks one role per entry, so the
+        // tab strip this backs must express identity — "which role is
+        // current" — rather than a multi-select facet like BuildingTypes
+        // above. A prefab can therefore only ever match one Role scope at a
+        // time, which this asserts by scoping to a role no entry carries.
+        BuildingCatalogEntry entry = SampleEntries[0] with { BuildingType = "PoliceStation" };
+
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+            new[] { entry },
+            new BuildingCatalogQuery(Role: "Prison"));
+
+        Assert.Empty(page.Items);
+    }
+
+    [Fact]
+    public void Query_StaleRoleScopeAcrossASectionChangeHidesEveryBuildingUntilItIsReset()
+    {
+        // The bug SetBuildingLensSection/SubCategory's role reset exists to
+        // prevent: a role chosen under one section (Police & Administration's
+        // Prison) has no members under a different section (Water & Sewage),
+        // so leaving it selected across the section change lands on an empty
+        // result set with no visible cause. FindItUISystem cannot be
+        // constructed in this test project — see FindItUISystem.Bindings.cs's
+        // SetBuildingLensSection/SetBuildingLensSubCategory for the actual
+        // reset — so this pins the query-level contract those handlers rely
+        // on: resetting Role back to the "Any" sentinel is what recovers the
+        // section's real results.
+        BuildingCatalogEntry[] entries =
+        {
+            SampleEntries[0] with
+            {
+                Id = 20,
+                BuildingType = "Prison",
+                VanillaSection = VanillaBuildMenuTaxonomy.ServiceBuildings,
+                VanillaSubCategory = "ServiceBuildings_Police",
+            },
+            SampleEntries[1] with
+            {
+                Id = 21,
+                BuildingType = "WaterPumpingStation",
+                VanillaSection = VanillaBuildMenuTaxonomy.ServiceBuildings,
+                VanillaSubCategory = "ServiceBuildings_Water",
+            },
+        };
+
+        BuildingCatalogQuery staleRoleAfterSectionChange = new(
+            BuildMenuSection: VanillaBuildMenuTaxonomy.ServiceBuildings,
+            BuildMenuSubCategory: "ServiceBuildings_Water",
+            Role: "Prison");
+        BuildingCatalogPage stale = BuildingCatalogQueryEngine.Query(entries, staleRoleAfterSectionChange);
+
+        BuildingCatalogQuery resetRoleAfterSectionChange = staleRoleAfterSectionChange with
+        {
+            Role = VanillaBuildMenuTaxonomy.Any,
+        };
+        BuildingCatalogPage reset = BuildingCatalogQueryEngine.Query(entries, resetRoleAfterSectionChange);
+
+        Assert.Empty(stale.Items);
+        Assert.Equal(new[] { 21 }, reset.Items.Select(item => item.Id).ToArray());
+    }
+
+    [Fact]
     public void Query_UnknownBuildMenuSectionDoesNotFallBackToAllBuildings()
     {
         BuildingCatalogPage invalid = BuildingCatalogQueryEngine.Query(

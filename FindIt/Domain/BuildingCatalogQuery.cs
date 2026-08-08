@@ -51,7 +51,14 @@ namespace FindItBuildingMenu.Domain
 		// vanilla Zones menu is organised around could not be filtered.
 		IReadOnlyList<string>? ZoneTypes = null,
 		string BuildMenuSection = "",
-		string BuildMenuSubCategory = "")
+		string BuildMenuSubCategory = "",
+		// The lens role tab strip, one level below section/subCategory. Single
+		// id rather than a set: BuildingRole.ResolvePrimary already picks one
+		// role per entry, and the tab strip has to express identity, never a
+		// filter, or a set-valued role would make the tabs a filter instead of
+		// a place. Empty and the "Any" sentinel both mean unscoped, matching
+		// BuildMenuSubCategory's convention above.
+		string Role = "")
 	{
 		public int EffectiveOffset => Offset < 0 ? 0 : Offset;
 

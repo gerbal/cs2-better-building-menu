@@ -51,6 +51,7 @@ namespace FindItBuildingMenu.Systems
 				SubCategory = subCategory,
 				BuildMenuSection = _BuildingLensEnabled ? _buildingLensSection : string.Empty,
 				BuildMenuSubCategory = _BuildingLensEnabled ? _buildingLensSubCategory : string.Empty,
+				Role = _BuildingLensEnabled ? _buildingLensRole : string.Empty,
 				// Keep the successor lens in lockstep with FindIt's common
 				// parking filters. The legacy grid owns the full filter pipeline;
 				// the bounded catalog receives the equivalent typed predicate.
@@ -106,6 +107,11 @@ namespace FindItBuildingMenu.Systems
 						SubCategory = string.Empty,
 						BuildMenuSection = VanillaBuildMenuTaxonomy.AllBuildings,
 						BuildMenuSubCategory = VanillaBuildMenuTaxonomy.Any,
+						// Otherwise a role scoped to the section the search came
+						// up empty in would also scope this "does it match
+						// anywhere at all" probe, undercounting matches that
+						// exist under a different role or no role at all.
+						Role = VanillaBuildMenuTaxonomy.Any,
 						Offset = 0,
 					}).TotalCount
 					: 0;
@@ -206,11 +212,20 @@ namespace FindItBuildingMenu.Systems
 			_buildingLensSubCategory = selection.SubCategory;
 			_BuildingLensSectionBinding.Value = _buildingLensSection;
 			_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
+			_BuildingLensRoleBinding.Value = _buildingLensRole;
 			_BuildingLensSectionListBinding.Value = VanillaBuildMenuTaxonomy.GetSectionDescriptors()
 				.Select(descriptor => new BuildingLensSectionUIEntry(descriptor))
 				.ToArray();
 			_BuildingLensSubCategoryListBinding.Value = VanillaBuildMenuTaxonomy.GetSubcategoryDescriptors(_buildingLensSection)
 				.Select(descriptor => new BuildingLensSubCategoryUIEntry(descriptor))
+				.ToArray();
+			// Unlike the section and subCategory lists above, which come from
+			// a static taxonomy, the roles present under this section
+			// +subCategory are a fact about the live catalog. See
+			// BuildingLensRoleScope.
+			_BuildingLensRoleListBinding.Value = _buildingCatalogAdapter
+				.GetRoleDescriptors(_buildingLensSection, _buildingLensSubCategory)
+				.Select(descriptor => new BuildingLensRoleUIEntry(descriptor))
 				.ToArray();
 			// Publish the static tool catalog alongside the lens navigation values.
 			// CreateBinding's initial value can be emitted before the Gameface module

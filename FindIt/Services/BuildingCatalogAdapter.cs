@@ -133,6 +133,22 @@ namespace FindItBuildingMenu.Services
 			return BuildingCatalogQueryEngine.Query(GetIndexedBuildings().Select(Project), query);
 		}
 
+		/// <summary>
+		/// The role tab strip for one section/subCategory scope. See
+		/// <see cref="BuildingLensRoleScope"/> for why this reads the live
+		/// catalog rather than a static taxonomy like the section and
+		/// subCategory lists.
+		/// </summary>
+		public IReadOnlyList<VanillaBuildMenuDescriptor> GetRoleDescriptors(string section, string subCategory)
+		{
+			BuildingCatalogQuery scopeQuery = new(BuildMenuSection: section, BuildMenuSubCategory: subCategory);
+			IEnumerable<BuildingCatalogEntry> scoped = BuildingCatalogQueryEngine.Filter(
+				GetIndexedBuildings().Select(Project),
+				scopeQuery);
+
+			return BuildingLensRoleScope.GetDescriptors(scoped);
+		}
+
 		public bool TryGet(int id, out BuildingCatalogEntry? entry)
 		{
 			entry = null;

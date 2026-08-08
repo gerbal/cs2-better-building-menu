@@ -26,6 +26,11 @@ namespace FindItBuildingMenu.Systems
 		private BuildingCatalogMetricRangeState _buildingMetricRanges = BuildingCatalogMetricRangeState.Empty;
 		private string _buildingLensSection = VanillaBuildMenuTaxonomy.AllBuildings;
 		private string _buildingLensSubCategory = VanillaBuildMenuTaxonomy.Any;
+		// The role tab strip, one level below subCategory. Reset to Any
+		// whenever the section or subCategory changes; see
+		// FindItUISystem.Bindings' SetBuildingLensSection/SubCategory and
+		// VanillaMenuSelected/SearchEverything.
+		private string _buildingLensRole = VanillaBuildMenuTaxonomy.Any;
 
 		private ToolSystem _toolSystem;
 		private PrefabSystem _prefabSystem;
@@ -102,8 +107,10 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<bool> _BuildingCatalogSortDescending = null!;
 		private ValueBindingHelper<string> _BuildingLensSectionBinding = null!;
 		private ValueBindingHelper<string> _BuildingLensSubCategoryBinding = null!;
+		private ValueBindingHelper<string> _BuildingLensRoleBinding = null!;
 		private ValueBindingHelper<BuildingLensSectionUIEntry[]> _BuildingLensSectionListBinding = null!;
 		private ValueBindingHelper<BuildingLensSubCategoryUIEntry[]> _BuildingLensSubCategoryListBinding = null!;
+		private ValueBindingHelper<BuildingLensRoleUIEntry[]> _BuildingLensRoleListBinding = null!;
 		private ValueBindingHelper<ToolSurfaceDescriptor[]> _ToolSurfaceDescriptorsBinding = null!;
 
 		public bool IsExpanded => _IsExpanded;
@@ -247,8 +254,14 @@ namespace FindItBuildingMenu.Systems
 				SetBuildingCatalogSortDescending);
 			_BuildingLensSectionBinding = CreateBinding("BuildingLensSection", "SetBuildingLensSection", _buildingLensSection, SetBuildingLensSection);
 			_BuildingLensSubCategoryBinding = CreateBinding("BuildingLensSubCategory", "SetBuildingLensSubCategory", _buildingLensSubCategory, SetBuildingLensSubCategory);
+			// Role, one level below subCategory. Follows the same read/write
+			// shape as the section and subCategory bindings above: the setter
+			// is the trigger a UI tab strip invokes, and the list binding is
+			// the roles that strip has to offer for the current scope.
+			_BuildingLensRoleBinding = CreateBinding("BuildingLensRole", "SetBuildingLensRole", _buildingLensRole, SetBuildingLensRole);
 			_BuildingLensSectionListBinding = CreateBinding("BuildingLensSectionList", Array.Empty<BuildingLensSectionUIEntry>());
 			_BuildingLensSubCategoryListBinding = CreateBinding("BuildingLensSubCategoryList", Array.Empty<BuildingLensSubCategoryUIEntry>());
+			_BuildingLensRoleListBinding = CreateBinding("BuildingLensRoleList", Array.Empty<BuildingLensRoleUIEntry>());
 			_ToolSurfaceDescriptorsBinding = CreateBinding("ToolSurfaceDescriptors", ToolSurfaceCatalog.GetDescriptors().ToArray());
 			_PrefabCountBinding = CreateBinding("PrefabCount", string.Empty);
 			_ViewStyle = CreateBinding("ViewStyle", Mod.Settings.DefaultViewStyle);

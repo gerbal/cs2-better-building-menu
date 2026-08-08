@@ -31,9 +31,22 @@ namespace FindItBuildingMenu.Domain.Options
 			["WaterPumpingStation"] = "Media/Game/Icons/Water.svg",
 			["WastewaterTreatmentPlant"] = "Media/Game/Icons/Water.svg",
 			["SewageOutlet"] = "Media/Game/Icons/Water.svg",
+			["PowerPlant"] = "Media/Game/Icons/Electricity.svg",
 			["GarbageFacility"] = "Media/Game/Icons/Garbage.svg",
 			["DeathcareFacility"] = "Media/Game/Icons/Healthcare.svg",
 		};
+
+		/// <summary>
+		/// The icon for a role, falling back to the generic service-building
+		/// icon for a role this map has no entry for. Exposed so the Building
+		/// Lens role tab strip (<see cref="BuildingLensRoleScope"/>) draws the
+		/// same icon this facet already does, rather than keeping a second map
+		/// that could drift out of sync with this one.
+		/// </summary>
+		internal static string IconFor(string role) =>
+			Icons.TryGetValue(role, out var icon)
+				? icon
+				: "coui://finditbuildingmenu/Icons/Colored/ServiceBuilding.svg";
 
 		private readonly OptionsUISystem _optionsUISystem;
 
@@ -56,9 +69,7 @@ namespace FindItBuildingMenu.Domain.Options
 				{
 					Id = index,
 					Name = LocaleHelper.GetTooltip($"Role{role}"),
-					Icon = Icons.TryGetValue(role, out var icon)
-						? icon
-						: "coui://finditbuildingmenu/Icons/Colored/ServiceBuilding.svg",
+					Icon = IconFor(role),
 					Selected = selected is not null && selected.Contains(role),
 				}).ToArray(),
 			};
