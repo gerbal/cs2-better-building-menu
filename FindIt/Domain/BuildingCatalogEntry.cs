@@ -101,7 +101,22 @@ namespace FindItBuildingMenu.Domain
 		/// Approximate parking bays. Zero means none; a boolean could not say
 		/// how many, and made sorting by parking a no-op.
 		/// </summary>
-		int ParkingSlots = 0) : IJsonWritable
+		int ParkingSlots = 0,
+		/// <summary>
+		/// The game's sort order for <see cref="UiCategory"/> within its menu.
+		/// </summary>
+		/// <remarks>
+		/// Ordering only, never rendered — so it is deliberately absent from
+		/// <see cref="Write"/>. The UI derives its headings from UiCategory and
+		/// preserves the order C# sent, so the rank has no work to do there and
+		/// serialising it would cost a field on all ~3,667 entries to say
+		/// something the wire already implies.
+		///
+		/// Zero, not int.MaxValue, when the category has no UIObject: that is
+		/// vanilla's own default (UIObjectInfo.GetObjects), and it sorts such a
+		/// category into the middle rather than pushing it to the end.
+		/// </remarks>
+		int UiCategoryPriority = 0) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{

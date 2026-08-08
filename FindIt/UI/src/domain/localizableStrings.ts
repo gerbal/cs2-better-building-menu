@@ -68,6 +68,7 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   { key: key("GroupBy_category"), english: "Asset type", source: "buildingGroups", plumbed: true },
   { key: key("GroupBy_subCategory"), english: "Type", source: "buildingGroups", plumbed: true },
   { key: key("GroupBy_role"), english: "Role", source: "buildingGroups", plumbed: true },
+  { key: key("GroupBy_schoolTier"), english: "School tier", source: "buildingGroups", plumbed: true },
   { key: key("GroupBy_theme"), english: "Theme", source: "buildingGroups", plumbed: true },
   { key: key("GroupBy_source"), english: "Source", source: "buildingGroups", plumbed: true },
   { key: key("GroupBy_density"), english: "Density", source: "buildingGroups", plumbed: true },

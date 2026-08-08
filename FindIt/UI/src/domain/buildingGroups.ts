@@ -19,12 +19,14 @@
  * by tests rather than prevented by construction.
  */
 
+
 export type GroupDimensionId =
   | "none"
   | "category"
   | "subCategory"
   | "menuCategory"
   | "role"
+  | "schoolTier"
   | "theme"
   | "source"
   | "density"
@@ -59,6 +61,12 @@ export const GROUP_DIMENSIONS: readonly GroupDimension[] = [
   { id: "category", label: "Asset type", depth: 2 },
   { id: "subCategory", label: "Type", depth: 1 },
   { id: "role", label: "Role", depth: 1 },
+  // Directly under Role, because it is the level below it: Role answers
+  // "school", School tier answers "which one". Narrow on purpose — of 44
+  // education buildings 40 carry a tier, and nothing else in the catalog does
+  // — but Role is equally narrow the moment you pick it outside a service
+  // menu, and the picker is opened deliberately.
+  { id: "schoolTier", label: "School tier", depth: 1 },
   { id: "theme", label: "Theme", depth: 1 },
   { id: "source", label: "Source", depth: 1 },
   { id: "density", label: "Density", depth: 1 },
@@ -153,6 +161,58 @@ export const COST_BANDS: readonly number[] = [5_000, 25_000, 100_000];
 /** Footprint bands by the larger lot dimension. Mirrored in C#. */
 export const FOOTPRINT_BANDS: readonly number[] = [2, 4, 6];
 
+/**
+ * The four school tiers, from the game's own `SchoolLevel` enum.
+ *
+ * `SchoolLevel { Elementary = 1, HighSchool, College, University, Outside }`
+ * (Game/Prefabs/SchoolLevel.cs), reaching us as `SchoolData.m_EducationLevel`
+ * — a plain 1-based tier index. Not a bitmask, and not cumulative: a
+ * university grants exactly its own tier, which is why
+ * CitizenPathfindSetup requires `m_EducationLevel == value` rather than a
+ * range, and why SchoolData.Combine takes max rather than OR.
+ *
+ * The two values that are not tiers are deliberately missing. 0 is a school
+ * upgrade that adds capacity without a tier of its own, and 5 (`Outside`) is
+ * the outside connection that teaches nobody here. Both are real values on
+ * real indexed prefabs, and both must fall through to "no tier" rather than
+ * becoming headings called "0" and "5".
+ *
+ * `label` is the game's own wording, shipped as
+ * `SelectedInfoPanel.EDUCATION_LEVELS[Elementary|HighSchool|College|University]`
+ * in Locale.cok. It is English here because every group heading in this module
+ * renders raw, so a translated school tier would be the only translated
+ * heading on screen — the key above is where to read from when headings do get
+ * plumbed.
+ *
+ * `id` is duplicated as EDUCATION_LEVEL_TIERS in serviceForecast.ts, which
+ * keys the capacity forecast's series off the same four rows. See the note
+ * there for why they are not one table, and serviceForecast.test.ts for the
+ * test that keeps them honest.
+ */
+export interface SchoolTier {
+  /** `SchoolData.m_EducationLevel`. */
+  level: number;
+  /** Stable id, shared with the capacity forecast's series. */
+  id: string;
+  /** Heading text, in the game's own wording. */
+  label: string;
+}
+
+export const SCHOOL_TIERS: readonly SchoolTier[] = [
+  { level: 1, id: "elementary", label: "Elementary School" },
+  { level: 2, id: "highSchool", label: "High School" },
+  { level: 3, id: "college", label: "College" },
+  { level: 4, id: "university", label: "University" },
+];
+
+export function schoolTierFor(level: number | null | undefined): SchoolTier | null {
+  if (typeof level !== "number" || !Number.isFinite(level)) {
+    return null;
+  }
+
+  return SCHOOL_TIERS.find((tier) => tier.level === level) ?? null;
+}
+
 export interface GroupableEntry {
   /** The game's own menu placement, indexed from UIObject.m_Group. */
   uiMenu?: string | null;
@@ -162,6 +222,7 @@ export interface GroupableEntry {
   subCategory?: string | null;
   subCategoryLabel?: string | null;
   buildingType?: string | null;
+  educationLevel?: number | null;
   theme?: string | null;
   provenance?: string | null;
   dlcId?: string | null;
@@ -254,6 +315,12 @@ export function groupLevelsFor(
       return [text(entry.subCategoryLabel) ?? text(entry.subCategory) ?? UNGROUPED_LABEL];
     case "role":
       return [text(entry.buildingType) ?? UNGROUPED_LABEL];
+    case "schoolTier":
+      // Not word-split through text(): these are the game's own labels, and
+      // "Elementary School" is already a phrase. Anything with no tier — every
+      // non-school, plus the capacity-only upgrades and outside connections —
+      // is "Other".
+      return [schoolTierFor(entry.educationLevel)?.label ?? UNGROUPED_LABEL];
     case "theme":
       return [text(entry.theme) ?? UNGROUPED_LABEL];
     case "source":

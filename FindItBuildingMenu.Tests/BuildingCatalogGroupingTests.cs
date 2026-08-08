@@ -121,7 +121,9 @@ namespace FindItBuildingMenu.Tests
 			foreach (var dimension in new[]
 			{
 				BuildingCatalogGrouping.SubCategory,
+				BuildingCatalogGrouping.MenuCategory,
 				BuildingCatalogGrouping.Role,
+				BuildingCatalogGrouping.SchoolTier,
 				BuildingCatalogGrouping.Theme,
 				BuildingCatalogGrouping.Source,
 				BuildingCatalogGrouping.Cost,
@@ -130,6 +132,130 @@ namespace FindItBuildingMenu.Tests
 			{
 				Assert.Equal(string.Empty, BuildingCatalogGrouping.SecondaryKey(Entry(1), dimension));
 			}
+		}
+
+		[Fact]
+		public void EveryDimensionProducesAKeyForAnEntryThatCarriesItsValue()
+		{
+			// PrimaryKey used to lowercase its input and switch on the
+			// constants, so a dimension whose id is not all-lowercase could
+			// never match its own case: "menuCategory" fell through to the
+			// empty key and emitted no ordering at all. SubCategory had a
+			// hand-written literal hiding the same fault. Nothing failed,
+			// because the UI regroups whatever order it is handed — so only a
+			// test that asks each dimension directly can catch the next one.
+			var entry = Entry(1) with { UiCategory = "TransportationRoad", UiCategoryPriority = 20 };
+
+			foreach (var dimension in new[]
+			{
+				BuildingCatalogGrouping.Category,
+				BuildingCatalogGrouping.MenuCategory,
+				BuildingCatalogGrouping.SubCategory,
+				BuildingCatalogGrouping.Role,
+				BuildingCatalogGrouping.SchoolTier,
+				BuildingCatalogGrouping.Theme,
+				BuildingCatalogGrouping.Source,
+				BuildingCatalogGrouping.Density,
+				BuildingCatalogGrouping.Footprint,
+				BuildingCatalogGrouping.Cost,
+			})
+			{
+				Assert.False(
+					string.IsNullOrEmpty(BuildingCatalogGrouping.PrimaryKey(entry, dimension)),
+					$"{dimension} produced no group key, so grouping by it orders nothing");
+			}
+		}
+
+		[Fact]
+		public void SchoolTiersOrderByCareerRatherThanByName()
+		{
+			// "College" and "High School" alphabetise into the wrong career
+			// order, which is why this ranks rather than naming.
+			var source = new[] { 4, 1, 3, 2 }
+				.Select(level => Entry(level, name: $"School{level}") with { EducationLevel = level })
+				.ToArray();
+
+			var page = BuildingCatalogQueryEngine.Query(
+				source,
+				new BuildingCatalogQuery(GroupBy: BuildingCatalogGrouping.SchoolTier));
+
+			Assert.Equal(new int?[] { 1, 2, 3, 4 }, page.Items.Select(entry => entry.EducationLevel).ToArray());
+		}
+
+		[Fact]
+		public void EveryNonTierEducationLevelLandsInOneUnrankedGroup()
+		{
+			// 0 is a capacity-only school upgrade, 5 is the outside connection,
+			// and null is every building in the catalog that is not a school.
+			var unranked = BuildingCatalogGrouping.SchoolTierRank(null);
+
+			Assert.Equal(unranked, BuildingCatalogGrouping.SchoolTierRank(0));
+			Assert.Equal(unranked, BuildingCatalogGrouping.SchoolTierRank(5));
+			Assert.True(
+				string.CompareOrdinal(unranked, BuildingCatalogGrouping.SchoolTierRank(4)) > 0,
+				"the tier-less group must sort after every real tier");
+		}
+
+		private static BuildingCatalogEntry MenuEntry(int id, string category, int priority, string name = "Thing") =>
+			Entry(id, name: name) with { UiMenu = "Transportation", UiCategory = category, UiCategoryPriority = priority };
+
+		[Fact]
+		public void MenuCategoryGroupsFollowTheGamesTabOrderRatherThanTheAlphabet()
+		{
+			// Transportation's real strip order. Alphabetically this is Air,
+			// Road, Ship, Subway, Train, Tram — so any test that passes both
+			// ways is not testing anything.
+			var source = new[]
+			{
+				MenuEntry(1, "TransportationTram", 60),
+				MenuEntry(2, "TransportationAir", 10),
+				MenuEntry(3, "TransportationSubway", 40),
+				MenuEntry(4, "TransportationRoad", 20),
+			};
+
+			var page = BuildingCatalogQueryEngine.Query(
+				source,
+				new BuildingCatalogQuery(GroupBy: BuildingCatalogGrouping.MenuCategory));
+
+			Assert.Equal(
+				new[] { "TransportationAir", "TransportationRoad", "TransportationSubway", "TransportationTram" },
+				page.Items.Select(entry => entry.UiCategory));
+		}
+
+		[Fact]
+		public void MenuCategoryRankHandlesNegativePriorities()
+		{
+			// Signed int, so a naive zero-pad would sort every negative after
+			// every positive, and -100 ahead of -99.
+			var keys = new[] { 5, -100, -99, 0 }
+				.Select(priority => BuildingCatalogGrouping.MenuCategoryRank("Category", priority))
+				.ToArray();
+
+			Assert.Equal(
+				new[] { -100, -99, 0, 5 }.Select(priority => BuildingCatalogGrouping.MenuCategoryRank("Category", priority)),
+				keys.OrderBy(key => key, System.StringComparer.OrdinalIgnoreCase));
+		}
+
+		[Fact]
+		public void MenuCategoriesSharingAPriorityStayDistinctGroups()
+		{
+			// Vanilla's comparator has no tiebreak, but a group key must be a
+			// function of the group: one key for two categories interleaves
+			// their members and draws the same heading twice.
+			Assert.NotEqual(
+				BuildingCatalogGrouping.MenuCategoryRank("TransportationRoad", 20),
+				BuildingCatalogGrouping.MenuCategoryRank("TransportationShip", 20));
+		}
+
+		[Fact]
+		public void AssetsInNoMenuCategorySortAfterEveryNamedOne()
+		{
+			var unnamed = BuildingCatalogGrouping.PrimaryKey(
+				Entry(1) with { UiCategory = null },
+				BuildingCatalogGrouping.MenuCategory);
+
+			Assert.True(
+				string.CompareOrdinal(unnamed, BuildingCatalogGrouping.MenuCategoryRank("Anything", int.MaxValue)) > 0);
 		}
 
 		[Fact]
