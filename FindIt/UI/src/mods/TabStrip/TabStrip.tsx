@@ -109,19 +109,18 @@ export const TabStrip = () => {
               }}
             >
               {isRoleAxis ? (
-                // Role tabs carry a text label instead of an icon — this is
-                // the one deliberate departure from the icon-only chrome
-                // every other axis uses. RoleOption's icon map (the source
-                // this strip's icons would otherwise come from, see
-                // BuildingLensRoleUIEntry/BuildingLensRoleScope on the C#
-                // side) gives Police Station and Prison the *same*
-                // Police.svg, and Hospital and Deathcare Facility the same
-                // Healthcare.svg — exactly the two menus this strip exists
-                // to distinguish. An icon there is not just uninformative,
-                // it is actively misleading, so it is dropped rather than
-                // shown alongside text. Do not "fix" this back to icons for
-                // consistency with the other axes.
-                <span className={styles.tabLabel}>{tab.toolTip}</span>
+                // Role tabs carry an icon AND a label, where every other axis
+                // is icon-only. The label is not decoration: the game serves
+                // no icon of its own for Prison or Emergency Shelter at any
+                // name probed against a running build, so RoleOption falls
+                // back to Police.svg and FireSafety.svg for them — and those
+                // are exactly the tabs sitting beside Police Station and Fire
+                // Station. Icons alone cannot tell those pairs apart. Keep
+                // both; dropping either one loses a menu.
+                <>
+                  <img src={tab.icon} className={styles.roleTabIcon} />
+                  <span className={styles.tabLabel}>{tab.toolTip}</span>
+                </>
               ) : (
                 <img src={tab.icon} className={styles.tabIcon} />
               )}

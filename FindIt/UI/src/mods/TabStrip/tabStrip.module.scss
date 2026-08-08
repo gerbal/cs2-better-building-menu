@@ -37,7 +37,13 @@
 // not a proven worst case across every locale.
 .roleTab {
   width: auto;
-  max-width: 150rem;
+  // Raised from 150rem when the icon joined the label: "Deathcare facility"
+  // measured 79px of text, and 17px of icon plus its gap and the tab's own
+  // padding put the pair at ~112px, which the old 100px cap would have
+  // ellipsised. Four tabs at this cap still come to 532px against the 541px
+  // the row has left of the search field, and real tabs size to content well
+  // under it — the widest measured menu, Water & Sewage, totals ~314px.
+  max-width: 200rem;
   height: 39rem;
   padding: 0 10rem;
   display: flex;
@@ -76,6 +82,18 @@
 .tabIcon {
   width: 100%;
   height: 100%;
+  object-fit: contain;
+}
+
+// Sized against the label rather than the tab: an icon tab spends its whole
+// 39rem square on the picture, but here the picture is the smaller half of a
+// pair and has to leave the words room. 26rem matches the label's cap height
+// closely enough that the two read as one object.
+.roleTabIcon {
+  width: 26rem;
+  height: 26rem;
+  margin-right: 5rem;
+  flex: 0 0 auto;
   object-fit: contain;
 }
 

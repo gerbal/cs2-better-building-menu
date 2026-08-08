@@ -29,12 +29,22 @@ namespace FindItBuildingMenu.Domain.Options
 			["Prison"] = "Media/Game/Icons/Police.svg",
 			["EmergencyShelter"] = "Media/Game/Icons/FireSafety.svg",
 			["WaterPumpingStation"] = "Media/Game/Icons/Water.svg",
-			["WastewaterTreatmentPlant"] = "Media/Game/Icons/Water.svg",
-			["SewageOutlet"] = "Media/Game/Icons/Water.svg",
+			["WastewaterTreatmentPlant"] = "Media/Game/Icons/Sewage.svg",
+			["SewageOutlet"] = "Media/Game/Icons/Sewage.svg",
 			["PowerPlant"] = "Media/Game/Icons/Electricity.svg",
 			["GarbageFacility"] = "Media/Game/Icons/Garbage.svg",
-			["DeathcareFacility"] = "Media/Game/Icons/Healthcare.svg",
+			["DeathcareFacility"] = "Media/Game/Icons/Deathcare.svg",
 		};
+
+		// Which of these paths the game actually serves was probed against a
+		// running build rather than assumed: Deathcare and Sewage resolve,
+		// which is what lets Health & Deathcare and Water & Sewage give each
+		// role its own icon. Prison, EmergencyShelter, PowerPlant,
+		// WaterPumpingStation, WastewaterTreatmentPlant and SewageOutlet have
+		// no icon of their own at any name tried, so Prison shares Police and
+		// EmergencyShelter shares FireSafety. Those two pairs are the reason
+		// the tab strip labels its role tabs as well as icons them — within
+		// one menu the icons alone would not tell them apart.
 
 		/// <summary>
 		/// The icon for a role, falling back to the generic service-building
