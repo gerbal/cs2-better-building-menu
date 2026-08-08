@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace FindItBuildingMenu.Domain
@@ -59,12 +60,47 @@ namespace FindItBuildingMenu.Domain
 	{
 		public int EffectiveOffset => Offset < 0 ? 0 : Offset;
 
-		public int EffectiveLimit => Limit switch
+		/// <summary>The most rows one page will ever hold.</summary>
+		public const int MaxLimit = 500;
+
+		/// <summary>
+		/// Page size, which a menu-scoped query does not really have.
+		/// </summary>
+		/// <remarks>
+		/// A vanilla menu is one set, not a sequence of pages. The player
+		/// clicked Roads and is looking at "the roads"; splitting that into
+		/// "Rows 1-100 of 157, page 1 of 2" invents a boundary the game does
+		/// not have — vanilla scrolls a menu and never pages it — and buries
+		/// the far half behind a control at the bottom of a list you have to
+		/// scroll to reach.
+		///
+		/// The largest vanilla menu is Landscaping at 366 assets, measured on a
+		/// real catalog, so <see cref="MaxLimit"/> already covers every one of
+		/// them and a menu-scoped query simply asks for the ceiling. A modded
+		/// menu larger than that pages again, which is the right way to
+		/// degrade.
+		///
+		/// Unscoped queries keep their 100. There the set is the whole catalog
+		/// — 3,667 buildings — and no page size makes that one thing.
+		/// </remarks>
+		public int EffectiveLimit
 		{
-			< 1 => 1,
-			> 500 => 500,
-			_ => Limit,
-		};
+			get
+			{
+				int requested = IsScopedToMenu ? Math.Max(Limit, MaxLimit) : Limit;
+
+				return requested switch
+				{
+					< 1 => 1,
+					> MaxLimit => MaxLimit,
+					_ => requested,
+				};
+			}
+		}
+
+		/// <summary>Whether this query is pinned to a place in the vanilla build menu.</summary>
+		public bool IsScopedToMenu =>
+			!string.IsNullOrWhiteSpace(UiMenu) || !string.IsNullOrWhiteSpace(UiCategory);
 
 		public string EffectiveSortColumn => string.IsNullOrWhiteSpace(SortColumn) ? "Name" : SortColumn;
 

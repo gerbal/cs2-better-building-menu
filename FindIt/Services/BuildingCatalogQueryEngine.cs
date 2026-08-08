@@ -164,11 +164,12 @@ namespace FindItBuildingMenu.Services
 		/// <summary>
 		/// Whether this query is asking about a place in the vanilla build menu.
 		/// </summary>
-		private static bool IsScopedToMenuTree(BuildingCatalogQuery query)
-		{
-			return !string.IsNullOrEmpty(query.UiMenu?.Trim())
-				|| !string.IsNullOrEmpty(query.UiCategory?.Trim());
-		}
+		/// <remarks>
+		/// The query owns this now, because the page size depends on the same
+		/// answer: a menu-scoped query does not page. Two copies of "am I
+		/// looking at a menu?" would be two places to disagree.
+		/// </remarks>
+		private static bool IsScopedToMenuTree(BuildingCatalogQuery query) => query.IsScopedToMenu;
 
 		private static bool MatchesVanillaMenuTree(BuildingCatalogEntry entry, BuildingCatalogQuery query)
 		{
