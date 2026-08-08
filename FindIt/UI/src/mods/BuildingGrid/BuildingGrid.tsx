@@ -10,9 +10,13 @@ import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/B
 import { rankBuildingMatches, topSearchResult } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { shortenTileLabel, stripRedundantNamePrefix, tileLabelCharBudget } from "domain/tileLabel";
+import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
+import { formatBuildingMetric, getNumberSeparators } from "domain/buildingLensMetricFormat";
+import type { SortColumn } from "domain/buildingCatalogContracts";
 import mod from "../../../mod.json";
 import styles from "./buildingGrid.module.scss";
 
+const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "BuildingCatalogSortColumn", "Name");
 const ShowShelf$ = bindValue<boolean>(mod.id, "BuildingLensShowShelf", true);
 const ShelfSize$ = bindValue<number>(mod.id, "BuildingLensShelfSize", 12);
 const TileSize$ = bindValue<number>(mod.id, "BuildingLensTileSize", 88);
@@ -48,6 +52,11 @@ export const BuildingGrid = ({ entries, searchText, onPlace, standalone = true }
   // dozen live bindings, and a grid of 125 subscribing per row would open
   // sixteen hundred of them to draw one hover at a time.
   const hoverCard = useHoverCardContext();
+  // The figure the result is currently ordered by, drawn on the tile. Sorting
+  // by Capacity moved these tiles and nothing on screen said so; see
+  // sortedMetric.ts. Null for Name and Category, which the tile already shows.
+  const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
+  const separators = getNumberSeparators(translate);
   // Already in Locale.json — an orphaned key with no consumer until now.
   const lockedLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Locked]", "Locked") ?? "Locked";
   const showShelf = useValue(ShowShelf$);
@@ -93,6 +102,33 @@ export const BuildingGrid = ({ entries, searchText, onPlace, standalone = true }
 
     recordPlacement(entry.id);
     onPlace(entry);
+  };
+
+  /**
+   * The sorted figure, or nothing.
+   *
+   * `lot` prints the pair the table's combined cell prints, because sorting by
+   * width and reading only "6" invites the reader to think that is the lot.
+   * A metric this entry never carried draws nothing at all rather than a dash:
+   * the badge exists to explain an order, and "—" explains none.
+   */
+  const sortedBadge = (entry: BuildingCatalogEntry) => {
+    if (sortedMetric === null) {
+      return null;
+    }
+
+    const text = sortedMetric === "lot"
+      ? (typeof entry.lotWidth === "number" && typeof entry.lotDepth === "number"
+        ? `${entry.lotWidth}×${entry.lotDepth}`
+        : null)
+      : (() => {
+        const value = sortedMetricValue(entry, sortedMetric);
+        return value === null
+          ? null
+          : formatBuildingMetric(value, sortedMetric, separators, entry.costIsPerDistance);
+      })();
+
+    return text === null ? null : <span className={styles.sortedMetric}>{text}</span>;
   };
 
   const tile = (entry: BuildingCatalogEntry, key: string) => {
@@ -147,6 +183,7 @@ export const BuildingGrid = ({ entries, searchText, onPlace, standalone = true }
               tileLabelCharBudget(tileSize)
             )}
           </span>
+          {sortedBadge(entry)}
         </Button>
       </BuildingHoverCard>
     );

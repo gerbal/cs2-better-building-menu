@@ -96,6 +96,18 @@
   justify-content: center;
 }
 
+// The figure this list is ordered by, pushed to the right edge so the values
+// stack into a readable column. `margin-left: auto` rather than a spacer or
+// `justify-content: space-between`: the row is flex-start so the name keeps its
+// place beside the icon, and the auto margin claims only what is left over.
+.sortedMetric {
+  margin-left: auto;
+  padding-left: 8rem;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeS);
+  white-space: nowrap;
+}
+
 .facts {
   display: flex;
   flex-direction: row;
