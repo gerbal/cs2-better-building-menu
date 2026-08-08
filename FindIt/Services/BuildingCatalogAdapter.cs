@@ -64,7 +64,7 @@ namespace FindItBuildingMenu.Services
 				throw new ArgumentNullException(nameof(query));
 			}
 
-			return BuildFacetState(GetIndexedBuildings().Select(Project), query);
+			return BuildFacetState(GetIndexedBuildings(query.UiMenu).Select(Project), query);
 		}
 
 		public static BuildingCatalogFacetState BuildFacetState(
@@ -130,7 +130,7 @@ namespace FindItBuildingMenu.Services
 				throw new ArgumentNullException(nameof(query));
 			}
 
-			return BuildingCatalogQueryEngine.Query(GetIndexedBuildings().Select(Project), query);
+			return BuildingCatalogQueryEngine.Query(GetIndexedBuildings(query.UiMenu).Select(Project), query);
 		}
 
 		public bool TryGet(int id, out BuildingCatalogEntry? entry)
@@ -161,9 +161,10 @@ namespace FindItBuildingMenu.Services
 		/// The lens browses; placement still hands off to the native net tool,
 		/// which owns elevation, snapping and parallel mode.
 		///
-		/// Trees, props and vehicles stay out for now: the Landscaping menu is
-		/// terrain tooling more than a catalogue, and routing it would need the
-		/// same thought this got rather than an extra enum value here.
+		/// Trees, props and vehicles stay out of the UNSCOPED catalog — an "all
+		/// buildings" view that includes 317 chairs and barrels is not a
+		/// building list. But this is no longer the last word on membership: see
+		/// GetIndexedBuildings, where a vanilla menu speaks for its own contents.
 		/// </remarks>
 		private static bool IsBuilding(PrefabIndex prefab)
 		{
@@ -172,7 +173,26 @@ namespace FindItBuildingMenu.Services
 				or PrefabCategory.Networks;
 		}
 
-		private static IEnumerable<PrefabIndex> GetIndexedBuildings()
+		/// <summary>
+		/// The candidate set, widened to whatever menu the player has open.
+		/// </summary>
+		/// <remarks>
+		/// IsBuilding decides what belongs in an unscoped catalog. It is the
+		/// wrong question once the player has opened a specific vanilla menu:
+		/// there, the menu is the authority on its own contents, and our
+		/// taxonomy has no standing to overrule it.
+		///
+		/// Landscaping is why. It holds 362 assets across 13 categories, of
+		/// which IsBuilding admitted 20 — the bike paths, pathways and quays —
+		/// and dropped 317 props and 25 vegetation. Twenty rows is worse than
+		/// zero: an empty panel reads as "nothing here", while twenty reads as
+		/// "here is the menu" and is wrong. Areas was the same failure at the
+		/// other extreme, both of its members being area prefabs.
+		///
+		/// Scoping to a menu therefore admits that menu's members whatever they
+		/// are, and unscoped views are untouched.
+		/// </remarks>
+		private static IEnumerable<PrefabIndex> GetIndexedBuildings(string? uiMenu = null)
 		{
 			if (!FindItUtil.IsReady
 				|| !FindItUtil.CategorizedPrefabs.TryGetValue(PrefabCategory.Any, out var allCategories)
@@ -181,9 +201,13 @@ namespace FindItBuildingMenu.Services
 				return Array.Empty<PrefabIndex>();
 			}
 
+			string menu = uiMenu?.Trim() ?? string.Empty;
 			var filters = FindItUtil.Filters.GetFilterList(includeSearch: false).ToArray();
+
 			return allPrefabs
-				.Where(IsBuilding)
+				.Where(prefab => IsBuilding(prefab)
+					|| (!string.IsNullOrEmpty(menu)
+						&& string.Equals(prefab.UiMenuName, menu, StringComparison.OrdinalIgnoreCase)))
 				.Where(prefab => filters.All(filter => filter(prefab)));
 		}
 
