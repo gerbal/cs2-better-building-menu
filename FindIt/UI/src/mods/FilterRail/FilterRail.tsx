@@ -1,4 +1,4 @@
-import { Button, Dropdown, DropdownItem, DropdownToggle, Scrollable, Tooltip } from "cs2/ui";
+import { Dropdown, DropdownItem, DropdownToggle, Scrollable, Tooltip } from "cs2/ui";
 import { getModule } from "cs2/modding";
 import { useLocalization } from "cs2/l10n";
 import { useState } from "react";
@@ -59,6 +59,11 @@ export const FilterRail = ({
           return (
             <Dropdown
               key={dimension.id}
+              // Opening a dropdown resets the search: `query` is one piece of
+              // state shared by every dimension's menu, so a stale value would
+              // otherwise leak from one dimension into the next, or between
+              // two searchable dropdowns opened in turn.
+              onToggle={(visible) => visible && setQuery("")}
               content={
                 <div className={styles.menu}>
                   {searchable && (
@@ -73,7 +78,7 @@ export const FilterRail = ({
                     renderMetrics()
                   ) : (
                     <Scrollable className={styles.menuList} vertical trackVisibility="scrollable">
-                      {filterRailOptions(facets, dimension.id, query).map((option) => (
+                      {filterRailOptions(facets, dimension.id, searchable ? query : "").map((option) => (
                         // closeOnSelect={false} is what makes a vanilla dropdown a
                         // multi-select control; onToggleSelected is its own API for it,
                         // so nothing here reimplements selection.
@@ -97,7 +102,7 @@ export const FilterRail = ({
                   className={classNames(styles.icon, dimension.selected > 0 && styles.iconActive)}
                   aria-label={label}
                 >
-                  <img src={DIMENSION_ICONS[dimension.id] ?? ""} className={styles.iconImage} />
+                  <img src={DIMENSION_ICONS[dimension.id] ?? ""} />
                   {dimension.selected > 0 && <span className={styles.badge}>{dimension.selected}</span>}
                 </DropdownToggle>
               </Tooltip>
