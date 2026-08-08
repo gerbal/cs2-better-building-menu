@@ -1,8 +1,27 @@
 // Vanilla spends 45rem of chrome above its grid, all of it on this strip.
 // Icons are 39rem there, so these match rather than approximate.
+//
+// Now rendered inline on the search row (see TopBar's tabStripSlot) rather
+// than on a stacked band of its own, so this fills whatever width that slot
+// hands it instead of sizing to its own content.
 .strip {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
   height: 45rem;
+  display: flex;
+  align-items: center;
+}
+
+// Overrides the vanilla item row's wrap so a long tab list scrolls
+// side-to-side instead of wrapping to a second line — the search controls
+// beside it have nowhere to go if this strip grows taller than 45rem.
+.itemsRow {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-width: 0;
 }
 
 .tab {
