@@ -109,6 +109,8 @@ namespace FindItBuildingMenu.Systems
 		// how vanilla renders a menu with fewer than two categories.
 		private ValueBindingHelper<VanillaMenuCategory[]> _BuildingLensMenuCategoriesBinding = null!;
 		private ValueBindingHelper<string> _BuildingLensMenuCategoryBinding = null!;
+		// Milestone index -> name, published once. Locked assets carry the index.
+		private ValueBindingHelper<string[]> _BuildingLensMilestonesBinding = null!;
 		private ValueBindingHelper<ToolSurfaceDescriptor[]> _ToolSurfaceDescriptorsBinding = null!;
 
 		public bool IsExpanded => _IsExpanded;
@@ -240,6 +242,7 @@ namespace FindItBuildingMenu.Systems
 			_BuildingLensSectionListBinding = CreateBinding("BuildingLensSectionList", Array.Empty<BuildingLensSectionUIEntry>());
 			_BuildingLensSubCategoryListBinding = CreateBinding("BuildingLensSubCategoryList", Array.Empty<BuildingLensSubCategoryUIEntry>());
 			_BuildingLensMenuCategoriesBinding = CreateBinding("BuildingLensMenuCategories", Array.Empty<VanillaMenuCategory>());
+			_BuildingLensMilestonesBinding = CreateBinding("BuildingLensMilestones", Array.Empty<string>());
 			_BuildingLensMenuCategoryBinding = CreateBinding(
 				"BuildingLensMenuCategory",
 				"SetBuildingLensMenuCategory",

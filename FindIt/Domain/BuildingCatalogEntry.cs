@@ -74,7 +74,19 @@ namespace FindItBuildingMenu.Domain
 		/// SPIKE (cm-e98i): where the GAME puts this asset in the build menu.
 		/// </summary>
 		string? UiMenu = null,
-		string? UiCategory = null) : IJsonWritable
+		string? UiCategory = null,
+		/// <summary>
+		/// What the asset is waiting on. Meaningful only while IsLocked.
+		/// </summary>
+		/// <remarks>
+		/// Milestone as an index rather than a name: the ~20 names are published
+		/// once in their own table, so a locked asset costs an int instead of a
+		/// string re-resolved on every unlock-triggered re-index. Requirements
+		/// arrive already localized, because they have no shared ordinal the way
+		/// milestones do.
+		/// </remarks>
+		int UnlockMilestone = 0,
+		string[]? UnlockRequirements = null) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -122,6 +134,9 @@ namespace FindItBuildingMenu.Domain
 			writer.Write(IsVanilla);
 			writer.PropertyName("isLocked");
 			writer.Write(IsLocked);
+			writer.PropertyName("unlockMilestone");
+			writer.Write(UnlockMilestone);
+			WriteStringArray(writer, "unlockRequirements", UnlockRequirements);
 			writer.PropertyName("isFavorited");
 			writer.Write(IsFavorited);
 			writer.PropertyName("pdxModsId");

@@ -47,6 +47,9 @@ namespace FindItBuildingMenu.Systems
 		private static Dictionary<int, string> _assetMenuNames = new();
 		// Vanilla's second tier, keyed by menu name. See VanillaMenuCategory.
 		private static Dictionary<string, List<VanillaMenuCategory>> _assetCategories = new();
+		// Milestone index -> the name the rest of the game calls it. ~20 entries,
+		// resolved once per index pass rather than per locked asset.
+		private static Dictionary<int, string> _milestoneNames = new();
 		private readonly List<IPrefabCategoryProcessor> _prefabCategoryProcessors = new();
 
 		protected override void OnCreate()
@@ -210,6 +213,7 @@ namespace FindItBuildingMenu.Systems
 				IndexZones();
 				IndexAssetMenus();
 				IndexAssetCategories();
+				IndexMilestones();
 			}
 
 			foreach (var processor in _prefabCategoryProcessors)
@@ -473,6 +477,22 @@ namespace FindItBuildingMenu.Systems
 			// Enableable: presence alone would mark every unlockable asset
 			// locked forever, including the ones already earned.
 			prefabIndex.IsLocked = EntityManager.HasEnabledComponent<Locked>(entity);
+			// Only for what is actually locked. The walk allocates a hash map and
+			// recurses per prefab, and an unlock event triggers a FULL re-index
+			// (see OnUpdate) — so running it across all 17,898 prefabs every time
+			// the player passes a milestone would be the expensive thing here.
+			// Restricted this way the cost is highest at load, when a full index
+			// runs anyway, and falls towards zero exactly as unlocks get more
+			// frequent.
+			if (prefabIndex.IsLocked)
+			{
+				(prefabIndex.UnlockMilestone, prefabIndex.UnlockRequirements) = GetUnlockRequirements(entity);
+			}
+			else
+			{
+				prefabIndex.UnlockMilestone = 0;
+				prefabIndex.UnlockRequirements = Array.Empty<string>();
+			}
 			prefabIndex.IsRandom = prefabIndex.SubCategory is not PrefabSubCategory.Networks_Pillars && EntityManager.HasComponent<PlaceholderObjectData>(entity);
 			prefabIndex.IsResourceIntensive = CheckIfResourceIntensive(prefab);
 
@@ -754,6 +774,211 @@ namespace FindItBuildingMenu.Systems
 
 				return lodCount < 2;
 			});
+		}
+
+		/// <summary>
+		/// Names every milestone once, so locked assets can carry a bare index.
+		/// </summary>
+		/// <remarks>
+		/// Resolved here rather than in the UI because the modding API's
+		/// translate(id, fallback) takes no arguments, and the game's own
+		/// milestone name is a parameterised lookup — Progression.MILESTONE_NAME
+		/// keyed by index. Doing it at index time also means it follows a
+		/// language change for free: OnActiveDictionaryChanged already forces a
+		/// full pass.
+		/// </remarks>
+		private void IndexMilestones()
+		{
+			var query = GetEntityQuery(
+				ComponentType.ReadOnly<MilestoneData>(),
+				ComponentType.ReadOnly<PrefabData>());
+			var milestones = query.ToEntityArray(Allocator.Temp);
+			var names = new Dictionary<int, string>();
+
+			for (var i = 0; i < milestones.Length; i++)
+			{
+				if (EntityManager.TryGetComponent<MilestoneData>(milestones[i], out var data)
+					&& _prefabSystem.TryGetPrefab<PrefabBase>(milestones[i], out var prefab))
+				{
+					names[data.m_Index] = GetAssetName(prefab);
+				}
+			}
+
+			_milestoneNames = names;
+			Mod.Log.Info($"Indexed Milestones: {names.Count}");
+		}
+
+		/// <summary>The name the game gives a milestone index.</summary>
+		public static string GetMilestoneName(int index) =>
+			_milestoneNames.TryGetValue(index, out var name) ? name : string.Empty;
+
+		/// <summary>
+		/// What the game still wants before this asset can be built.
+		/// </summary>
+		/// <remarks>
+		/// Mirrors PrefabUISystem.GetRequirements: collect the transitive
+		/// requirements the game itself collects, then take the highest milestone
+		/// and name everything else.
+		///
+		/// Milestones are separated out because they are ordinal and shared —
+		/// one index names a milestone every player recognises. Everything else
+		/// contributes its own localized title, which covers dev tree nodes and
+		/// the requirement prefabs signature buildings hang off without this
+		/// having to know one requirement type from another.
+		/// </remarks>
+		private (int Milestone, string[] Requirements) GetUnlockRequirements(Entity entity)
+		{
+			if (!EntityManager.HasComponent<UnlockRequirement>(entity))
+			{
+				return (0, Array.Empty<string>());
+			}
+
+			var required = new NativeParallelHashMap<Entity, UnlockFlags>(10, Allocator.TempJob);
+
+			try
+			{
+				ProgressionUtils.CollectSubRequirements(EntityManager, entity, required);
+
+				var milestone = 0;
+				var requirements = new List<string>();
+
+				foreach (var item in required)
+				{
+					// RequireAll, matching ProgressionUtils.GetRequiredMilestone:
+					// a milestone reachable through a RequireAny branch is one of
+					// several ways in, so it is not "the" milestone.
+					if (EntityManager.TryGetComponent<MilestoneData>(item.Key, out var milestoneData))
+					{
+						if ((item.Value & UnlockFlags.RequireAll) != 0 && milestoneData.m_Index > milestone)
+						{
+							milestone = milestoneData.m_Index;
+						}
+
+						continue;
+					}
+
+					// Tutorials are not a requirement the player can act on, and
+					// their titles are internal. A census across every locked
+					// asset in a live save found TutorialBalloonPrefab was 124 of
+					// 362 requirements — the single biggest source of the
+					// "Tutorials Intro List New +3" noise this used to print.
+					// Vanilla special-cases tutorials too: BindUnlockRequirement
+					// tests m_TutorialRequirementEntity before anything else.
+					if (!_prefabSystem.TryGetPrefab<PrefabBase>(item.Key, out var requirementPrefab)
+						|| requirementPrefab is TutorialPrefab
+						|| requirementPrefab is TutorialListPrefab
+						|| requirementPrefab is TutorialBalloonPrefab)
+					{
+						continue;
+					}
+
+					var described = DescribeRequirement(item.Key, requirementPrefab);
+
+					if (!string.IsNullOrEmpty(described))
+					{
+						requirements.Add(described);
+					}
+				}
+
+				return (milestone, requirements.Distinct().ToArray());
+			}
+			finally
+			{
+				required.Dispose();
+			}
+		}
+
+		/// <summary>
+		/// Says what a requirement actually asks of the player.
+		/// </summary>
+		/// <remarks>
+		/// Composed from each requirement's own data, the way vanilla does it in
+		/// PrefabUISystem, because the strings do not exist as data: requirement
+		/// prefabs carry no localized title, so resolving their names produced
+		/// prettified internal ids like "Commercial Zoning Tutorial Low Density".
+		///
+		/// A census across every locked asset in a live save says which types are
+		/// worth composing — dev tree nodes 149, zone built 61, object built 17,
+		/// processing 8, citizen 3 — so this covers the five that occur rather
+		/// than the eight the game defines.
+		/// </remarks>
+		private string DescribeRequirement(Entity entity, PrefabBase prefab)
+		{
+			if (EntityManager.TryGetComponent<CitizenRequirementData>(entity, out var citizens))
+			{
+				if (citizens.m_MinimumPopulation > 0)
+				{
+					return Format("Requirement.POPULATION", "{0} population", citizens.m_MinimumPopulation.ToString("N0"));
+				}
+
+				return citizens.m_MinimumHappiness > 0
+					? Format("Requirement.HAPPINESS", "{0} happiness", citizens.m_MinimumHappiness.ToString())
+					: string.Empty;
+			}
+
+			if (EntityManager.TryGetComponent<ProcessingRequirementData>(entity, out var processing))
+			{
+				return Format(
+					"Requirement.PROCESSING",
+					"produce {0} {1}",
+					processing.m_MinimumProducedAmount.ToString("N0"),
+					processing.m_ResourceType.ToString());
+			}
+
+			if (EntityManager.TryGetComponent<ZoneBuiltRequirementData>(entity, out var zone))
+			{
+				var zoneName = _prefabSystem.TryGetPrefab<PrefabBase>(zone.m_RequiredZone, out var zonePrefab)
+					? GetAssetName(zonePrefab)
+					: string.Empty;
+
+				// Squares and count are alternative measures of the same demand;
+				// the game sets whichever it means, so report the one it set.
+				if (zone.m_MinimumSquares > 0)
+				{
+					return Format("Requirement.ZONE_SQUARES", "{0} squares of {1}", zone.m_MinimumSquares.ToString("N0"), zoneName);
+				}
+
+				return zone.m_MinimumCount > 0
+					? Format("Requirement.ZONE_COUNT", "{0} × {1}", zone.m_MinimumCount.ToString("N0"), zoneName)
+					: zoneName;
+			}
+
+			if (EntityManager.TryGetComponent<ObjectBuiltRequirementData>(entity, out var built))
+			{
+				return Format("Requirement.OBJECTS_BUILT", "build {0}", built.m_MinimumCount.ToString("N0"));
+			}
+
+			// A dev tree node's own name is near-redundant beside the building it
+			// unlocks — "Health Research Institute Node" under Health Research
+			// Institute. What the player cannot see from the card is where to go
+			// and what it costs, so say that instead.
+			if (prefab is DevTreeNodePrefab node)
+			{
+				var service = node.m_Service is not null ? GetAssetName(node.m_Service) : string.Empty;
+
+				return node.m_Cost > 0
+					? Format("Requirement.DEV_TREE_COST", "{0} tech, {1} pts", service, node.m_Cost.ToString())
+					: Format("Requirement.DEV_TREE", "{0} tech", service);
+			}
+
+			return GetAssetName(prefab);
+		}
+
+		/// <summary>
+		/// Localized requirement phrasing, falling back to the English shape.
+		/// </summary>
+		private static string Format(string key, string fallback, params string[] args)
+		{
+			var template = GameManager.instance.localizationManager.activeDictionary.TryGetValue(key, out var localized)
+				? localized
+				: fallback;
+
+			for (var i = 0; i < args.Length; i++)
+			{
+				template = template.Replace("{" + i + "}", args[i]);
+			}
+
+			return template.Trim();
 		}
 
 		private string GetAssetName(PrefabBase prefab)

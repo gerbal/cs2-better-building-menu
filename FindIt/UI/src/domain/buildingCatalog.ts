@@ -32,6 +32,18 @@ export interface BuildingCatalogEntry {
    * to land. No component was ignoring it; the type made it unreachable.
    */
   isLocked: boolean;
+  /**
+   * Milestone index the asset waits on, 0 for none. Meaningful only while
+   * isLocked. An index rather than a name because the ~20 names arrive once in
+   * their own table — see BuildingLensMilestones.
+   */
+  unlockMilestone: number;
+  /**
+   * Everything else it waits on, already localized. Signature buildings are the
+   * reason this exists: they hang off requirement prefabs rather than
+   * milestones, and those have no shared ordinal to look up.
+   */
+  unlockRequirements: string[];
   isFavorited: boolean;
   pdxModsId: string;
   buildingType: string;

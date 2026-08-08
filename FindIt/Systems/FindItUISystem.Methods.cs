@@ -191,6 +191,20 @@ namespace FindItBuildingMenu.Systems
 
 		private void RefreshBuildingLensNavigation()
 		{
+			// Dense by index: entry N is milestone N's name. A locked asset ships
+			// a bare index and the UI reads it out of here, so the ~20 names are
+			// resolved once per index pass instead of once per locked asset on
+			// every unlock-triggered re-index.
+			var milestoneCount = 0;
+			for (var i = 0; i < 64 && !string.IsNullOrEmpty(PrefabIndexingSystem.GetMilestoneName(i)); i++)
+			{
+				milestoneCount = i + 1;
+			}
+
+			_BuildingLensMilestonesBinding.Value = Enumerable.Range(0, milestoneCount)
+				.Select(PrefabIndexingSystem.GetMilestoneName)
+				.ToArray();
+
 			VanillaBuildMenuSelection selection = VanillaBuildMenuSelection.Normalize(
 				_buildingLensSection,
 				_buildingLensSubCategory);
