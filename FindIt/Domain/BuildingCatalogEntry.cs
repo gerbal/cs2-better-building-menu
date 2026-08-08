@@ -91,7 +91,12 @@ namespace FindItBuildingMenu.Domain
 		/// What the building gives the city. Signature buildings are free, so
 		/// the effect is the whole basis for choosing one over another.
 		/// </summary>
-		string[]? Bonuses = null) : IJsonWritable
+		string[]? Bonuses = null,
+		/// <summary>
+		/// Cost and Upkeep are per kilometre, not per instance. True for
+		/// networks, which price by length.
+		/// </summary>
+		bool CostIsPerDistance = false) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -143,6 +148,8 @@ namespace FindItBuildingMenu.Domain
 			writer.Write(UnlockMilestone);
 			WriteStringArray(writer, "unlockRequirements", UnlockRequirements);
 			WriteStringArray(writer, "bonuses", Bonuses);
+			writer.PropertyName("costIsPerDistance");
+			writer.Write(CostIsPerDistance);
 			writer.PropertyName("isFavorited");
 			writer.Write(IsFavorited);
 			writer.PropertyName("pdxModsId");

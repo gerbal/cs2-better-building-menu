@@ -49,6 +49,13 @@ export interface BuildingCatalogEntry {
    * cost nothing, so this is the whole basis for choosing between them.
    */
   bonuses: string[];
+  /**
+   * Cost and upkeep are per kilometre rather than per instance — true for
+   * networks, which price by length. Without this the figures invite a
+   * comparison they do not support: 12,500 for a road is a rate, 12,500 for a
+   * hospital is a total.
+   */
+  costIsPerDistance: boolean;
   isFavorited: boolean;
   pdxModsId: string;
   buildingType: string;

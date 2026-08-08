@@ -225,6 +225,7 @@ namespace FindItBuildingMenu.Services
 				UnlockMilestone: prefab.UnlockMilestone,
 				UnlockRequirements: prefab.UnlockRequirements,
 				Bonuses: prefab.Bonuses,
+				CostIsPerDistance: prefab.CostIsPerDistance,
 				IsFavorited: prefab.IsFavorited,
 				PdxModsId: prefab.PdxModsId ?? string.Empty,
 				DlcId: prefab.DlcId == DlcId.Invalid ? null : prefab.DlcId.id.ToString(),

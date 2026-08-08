@@ -116,12 +116,17 @@ export const BuildingHoverCard = ({
   const { money, milestoneNames, seriesByKey, separators, labels } = context;
   const label = entry.name || entry.prefabName;
 
-  const cost = formatBuildingMetric(entry.constructionCost, "cost", separators);
-  const upkeep = formatBuildingMetric(entry.upkeep, "upkeep", separators);
+  const cost = formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance);
+  const upkeep = formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance);
   const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators);
   const lot = formatLotDimensions(entry.lotWidth, entry.lotDepth);
 
-  const costForecast = getCostForecast(entry.constructionCost, money);
+  // No affordability forecast for a rate. A road's figure is per kilometre, so
+  // "67% of funds" would be answering a question the player did not ask — they
+  // might lay 300m of it. The cost still shows; only the comparison is dropped.
+  const costForecast = entry.costIsPerDistance
+    ? null
+    : getCostForecast(entry.constructionCost, money);
   const forecastKey = getServiceForecastKey(entry);
   const live = forecastKey ? seriesByKey.get(forecastKey.key) : null;
   const capacityForecast = live

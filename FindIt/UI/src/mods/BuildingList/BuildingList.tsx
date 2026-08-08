@@ -102,7 +102,7 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
     <div className={styles.list}>
       {ordered.map((entry) => {
         const label = entry.name || entry.prefabName;
-        const cost = formatBuildingMetric(entry.constructionCost, "cost", separators);
+        const cost = formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance);
         const lot = formatLotDimensions(entry.lotWidth, entry.lotDepth);
         // A road's lot is 0x0 and a zone has none at all. "0 × 0" is a
         // measurement of something that does not exist, so the fact is dropped
