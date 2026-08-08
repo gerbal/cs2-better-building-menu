@@ -123,6 +123,17 @@ namespace FindItBuildingMenu.Systems
 			// At most three ids, so re-projecting alongside the page keeps the
 			// tray current once indexing finishes without measurable cost.
 			PublishBuildingCompare();
+
+			// The options bank's short-facet rows (Availability, Provenance,
+			// Placement) decide their own visibility and Selected flags from
+			// _BuildingLensFacets, just written above. Nothing else refreshes
+			// them when that state changes underneath them — not a rail toggle,
+			// not a section switch with the panel already open — so this has to
+			// be the one place that always runs after a facet binding changes.
+			// FindItOptionsUISystem guards its own re-entrancy for the callers
+			// that already refresh the bank themselves (OptionClicked,
+			// ClearFilters), so this cannot compound into a double refresh.
+			_optionsUISystem.RefreshOptions();
 		}
 
 		/// <summary>
