@@ -114,12 +114,47 @@ describe("Ranking", () => {
   });
 
   it("returns everything unranked for an empty query", () => {
-    // No query means browsing, and browsing wants the stable order, not a
-    // relevance order that would move tiles around under the cursor.
+    // No query means browsing, and browsing must not get a relevance order
+    // that would move tiles around under the cursor.
     const all = [e(2, "B"), e(1, "A")];
 
     assert.equal(rankBuildingMatches(all, "").length, 2);
     assert.equal(rankBuildingMatches(all, "   ").length, 2);
+  });
+
+  it("keeps the order it was handed when there is no query", () => {
+    // THE regression. This used to return stableGridOrder — lot area, then
+    // cost, then name — which discarded whatever sort the query had applied.
+    // The table renders the page directly and looked fine; the grid, list and
+    // cards all came through here, so sorting appeared to work in exactly one
+    // view. Sort by capacity over four garbage buildings gave 100,000 /
+    // 50,000,000 / 1,500,000 / 3,000,000, which is ascending lot area.
+    const sortedByCapacity = [
+      { ...e(1, "Landfill"), lotWidth: 6, lotDepth: 6 },
+      { ...e(2, "Recycling Center"), lotWidth: 4, lotDepth: 4 },
+      { ...e(3, "Incineration Plant"), lotWidth: 8, lotDepth: 8 },
+      { ...e(4, "Industrial Waste Processing Site"), lotWidth: 2, lotDepth: 2 },
+    ];
+
+    assert.deepEqual(
+      rankBuildingMatches(sortedByCapacity, "").map((entry) => entry.id),
+      [1, 2, 3, 4],
+      "the incoming order is the order the player asked for"
+    );
+  });
+
+  it("breaks relevance ties on incoming position, not on lot area", () => {
+    // Same score and same name length, so the tie-break decides. The entry
+    // handed over first wins, whatever its footprint.
+    const ranked = rankBuildingMatches(
+      [
+        { ...e(1, "Clinic Aa"), lotWidth: 9, lotDepth: 9 },
+        { ...e(2, "Clinic Bb"), lotWidth: 1, lotDepth: 1 },
+      ],
+      "clinic"
+    );
+
+    assert.deepEqual(ranked.map((entry) => entry.id), [1, 2]);
   });
 
   it("survives an empty catalog", () => {

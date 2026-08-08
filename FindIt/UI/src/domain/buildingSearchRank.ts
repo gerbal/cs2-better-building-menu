@@ -27,11 +27,17 @@ export interface RankableEntry extends GridEntry {
 /**
  * A total order over a category that depends on nothing the player can change.
  *
- * This is what buys back the property the table lost: a building that keeps its
- * position becomes a memorised gesture rather than a lookup. Footprint first
- * because it is what the player matches against the gap on the map, then cost,
- * then name so the result is deterministic. Entries with no cost sort last
- * rather than sorting as free.
+ * Footprint first because it is what the player matches against the gap on the
+ * map, then cost, then name so the result is deterministic. Entries with no
+ * cost sort last rather than sorting as free.
+ *
+ * NOT the grid's order any more. This was applied to every result the grid,
+ * list and cards rendered, including when the player had explicitly chosen a
+ * sort — so "sort by capacity" reordered nothing and the table was the only
+ * view where sorting appeared to work. The chosen sort now survives to the
+ * screen; keeping this exported because the idea is sound and a
+ * "browse order" sort option is the honest place for it, offered rather than
+ * imposed.
  */
 export function stableGridOrder<T extends GridEntry>(entries: readonly T[]): T[] {
   const area = (entry: GridEntry) => (entry.lotWidth ?? 0) * (entry.lotDepth ?? 0);
@@ -101,8 +107,8 @@ export function matchScore(entry: RankableEntry, rawQuery: string): number {
 }
 
 /**
- * Matching entries, best first. An empty query returns everything in the grid's
- * stable browse order.
+ * Matching entries, best first. An empty query returns them in the order they
+ * arrived — which is the order the query sorted them into.
  */
 export function rankBuildingMatches<T extends RankableEntry>(
   entries: readonly T[] | null | undefined,
@@ -110,15 +116,26 @@ export function rankBuildingMatches<T extends RankableEntry>(
 ): T[] {
   if (!entries?.length) return [];
 
-  const stable = stableGridOrder(entries);
   const query = rawQuery.trim();
-  if (!query) return stable;
 
-  // Rank position within the stable order is the tie-break, so equally relevant
-  // results keep a fixed relative order between keystrokes.
-  const stableRank = new Map(stable.map((entry, index) => [entry.id, index]));
+  // The incoming order IS the order the player asked for. This used to return
+  // stableGridOrder here, which re-sorted by lot area then cost then name and
+  // threw the chosen sort away — the whole reason "sorting does not work
+  // outside table view": the table renders the page directly, and the grid,
+  // list and cards all came through here. Sort by capacity on four garbage
+  // buildings gave 100,000 / 50,000,000 / 1,500,000 / 3,000,000, which is
+  // ascending lot area.
+  //
+  // Nothing is lost. The C# query has always had its own default order, so
+  // "stable browse position" was already being provided one layer down; what
+  // this added was a second, competing default that silently won.
+  if (!query) return [...entries];
 
-  return stable
+  // Incoming position is the tie-break, so equally relevant results keep a
+  // fixed relative order between keystrokes.
+  const incomingRank = new Map(entries.map((entry, index) => [entry.id, index]));
+
+  return [...entries]
     .map((entry) => ({ entry, score: matchScore(entry, query) }))
     .filter(({ score }) => score > 0)
     .sort((a, b) =>
@@ -127,7 +144,7 @@ export function rankBuildingMatches<T extends RankableEntry>(
       // Clinic with Additional Clinic Center and Small Medical Clinic, and the
       // plain one is nearly always what was meant — extra words mean a variant.
       || a.entry.name.length - b.entry.name.length
-      || (stableRank.get(a.entry.id) ?? 0) - (stableRank.get(b.entry.id) ?? 0))
+      || (incomingRank.get(a.entry.id) ?? 0) - (incomingRank.get(b.entry.id) ?? 0))
     .map(({ entry }) => entry);
 }
 

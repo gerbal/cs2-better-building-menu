@@ -9,6 +9,7 @@ import {
   shouldShowCategoryStrip,
   type VanillaMenuCategory,
 } from "domain/vanillaMenuCategories";
+import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 import styles from "./menuCategoryStrip.module.scss";
 
@@ -46,15 +47,16 @@ export const MenuCategoryStrip = () => {
   const choose = (id: string) => trigger(mod.id, "SetBuildingLensMenuCategory", id);
 
   // The category prefab's own name is the id, and the game ships a localized
-  // string under exactly that id — Services.NAME[TransportationRoad] is "Road".
-  //
-  // This asked for Assets.SUB_SERVICE_NAME and Assets.NAME first, and neither
-  // is a key family the game has: measured against Locale.cok there are 67
-  // Services.NAME entries covering menus AND categories together, and zero of
-  // either of the others. So every tab in this strip has been falling back to
-  // the raw prefab name in every language.
+  // string under exactly that id — SubServices.NAME[TransportationRoad] is
+  // "Road". This asked for Assets.SUB_SERVICE_NAME then Assets.NAME, neither of
+  // which is a key family CS2 has, so every tab here fell back to the raw
+  // prefab name in every language. See vanillaServiceLabels.ts.
   const label = (category: VanillaMenuCategory) =>
-    translate(`Services.NAME[${category.id}]`, null) ?? category.name;
+    resolveVanillaLabel(
+      vanillaCategoryNameKeys(category.id),
+      (key) => translate(key, null),
+      category.name
+    );
 
   const allLabel = translate("Tooltip.LABEL[FindItBuildingMenu.AllCategories]", "All") ?? "All";
   const { ToolButton, toolButtonTheme, FOCUS_DISABLED } = VanillaComponentResolver.instance;
