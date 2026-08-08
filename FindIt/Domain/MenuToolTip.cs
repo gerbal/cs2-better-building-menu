@@ -19,7 +19,27 @@ namespace FindItBuildingMenu.Domain
 	/// </remarks>
 	public static class MenuToolTip
 	{
-		public static string? FromIconPath(string? icon) =>
-			string.IsNullOrEmpty(icon) ? null : Path.GetFileNameWithoutExtension(icon);
+		public static string? FromIconPath(string? icon)
+		{
+			if (string.IsNullOrEmpty(icon))
+			{
+				return null;
+			}
+
+			try
+			{
+				return Path.GetFileNameWithoutExtension(icon);
+			}
+			catch (System.ArgumentException)
+			{
+				// Path.GetFileNameWithoutExtension throws on a small set of
+				// characters, and this value comes from prefab data a mod could
+				// supply. An unrecognised menu is meant to degrade quietly to
+				// the tab strip's computed fallback (see menuAxisMap.ts), not
+				// throw — an empty result reaches that fallback the same way a
+				// missing icon already does.
+				return string.Empty;
+			}
+		}
 	}
 }

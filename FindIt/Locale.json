@@ -342,5 +342,6 @@
   "Options.LABEL[FindItBuildingMenu.AvailabilityFilter]": "Availability",
   "Tooltip.LABEL[FindItBuildingMenu.Locked]": "Locked",
   "Tooltip.LABEL[FindItBuildingMenu.Unlocked]": "Unlocked",
-  "Options.LABEL[FindItBuildingMenu.ProvenanceFilter]": "Source"
+  "Options.LABEL[FindItBuildingMenu.ProvenanceFilter]": "Source",
+  "Options.LABEL[FindItBuildingMenu.LensPlacement]": "Placement access"
 }
