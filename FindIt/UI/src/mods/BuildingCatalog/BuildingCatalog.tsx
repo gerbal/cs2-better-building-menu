@@ -93,6 +93,9 @@ const BuildingCatalogMatchesElsewhere$ = bindValue<number>(mod.id, "BuildingCata
 const LensDefaultToTable$ = bindValue<boolean>(mod.id, "BuildingLensDefaultToTable", false);
 // The section decides the grouping until the player picks one themselves.
 const BuildingLensSection$ = bindValue<string>(mod.id, "BuildingLensSection", "AllBuildings");
+// Non-empty means the lens is standing in for a vanilla menu that has a tab
+// strip, which decides the default grouping.
+const BuildingLensMenuCategories$ = bindValue<unknown[]>(mod.id, "BuildingLensMenuCategories", []);
 
 const LENS_VIEW_MODE_KEY = "viewMode";
 const LENS_GROUP_KEY = "groupBy";
@@ -135,6 +138,7 @@ export const BuildingCatalogComponent = () => {
   const currentSearch = useValue(CurrentSearch$);
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
   const section = useValue(BuildingLensSection$);
+  const menuHasCategories = (useValue(BuildingLensMenuCategories$) ?? []).length > 0;
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
   const [sortingExpanded, setSortingExpanded] = useState(false);
   // Grid by default: recognising a thumbnail is the fast path back to the map,
@@ -159,7 +163,7 @@ export const BuildingCatalogComponent = () => {
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
   const groupBy: GroupDimensionId = isGroupDimension(chosenGroupBy)
     ? chosenGroupBy
-    : defaultGroupDimensionFor(section);
+    : defaultGroupDimensionFor(section, menuHasCategories);
   const setGroupBy = (next: GroupDimensionId) => {
     setLensChoice(LENS_GROUP_KEY, next);
     setChosenGroupBy(next);
