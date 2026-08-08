@@ -45,13 +45,16 @@ export const MenuCategoryStrip = () => {
 
   const choose = (id: string) => trigger(mod.id, "SetBuildingLensMenuCategory", id);
 
-  // The category prefab's own name is the id. It is a code name — "Transportation
-  // Road" — so prefer the game's string for it and fall back to the raw name
-  // rather than inventing a prettifier that would drift from vanilla's wording.
+  // The category prefab's own name is the id, and the game ships a localized
+  // string under exactly that id — Services.NAME[TransportationRoad] is "Road".
+  //
+  // This asked for Assets.SUB_SERVICE_NAME and Assets.NAME first, and neither
+  // is a key family the game has: measured against Locale.cok there are 67
+  // Services.NAME entries covering menus AND categories together, and zero of
+  // either of the others. So every tab in this strip has been falling back to
+  // the raw prefab name in every language.
   const label = (category: VanillaMenuCategory) =>
-    translate(`Assets.SUB_SERVICE_NAME[${category.id}]`, null)
-      ?? translate(`Assets.NAME[${category.id}]`, null)
-      ?? category.name;
+    translate(`Services.NAME[${category.id}]`, null) ?? category.name;
 
   const allLabel = translate("Tooltip.LABEL[FindItBuildingMenu.AllCategories]", "All") ?? "All";
   const { ToolButton, toolButtonTheme, FOCUS_DISABLED } = VanillaComponentResolver.instance;
