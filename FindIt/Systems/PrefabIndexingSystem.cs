@@ -2,6 +2,7 @@
 using Colossal.Entities;
 using Colossal.IO.AssetDatabase;
 using Colossal.Logging;
+using Colossal.Mathematics;
 using Colossal.PSI.Common;
 using Colossal.Serialization.Entities;
 
@@ -27,6 +28,7 @@ using System.Reflection;
 
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
 
 namespace FindItBuildingMenu.Systems
 {
@@ -474,7 +476,12 @@ namespace FindItBuildingMenu.Systems
 			prefabIndex.UiCategoryName = uIObject?.m_Group?.name;
 			prefabIndex.UiMenuName = (uIObject?.m_Group as UIAssetCategoryPrefab)?.m_Menu?.name;
 			prefabIndex.IsVanilla = prefab.isBuiltin || prefab.Has<FindItGenerated>();
-			prefabIndex.HasParking = prefabIndex.Category is PrefabCategory.Buildings or PrefabCategory.ServiceBuildings && HasParking(prefab);
+			// Not gated to Buildings and ServiceBuildings any more: a parking
+			// lot reached through the Roads menu is a network, and reporting no
+			// parking for the one asset class whose whole purpose is parking was
+			// the most conspicuous case of the old boolean being useless.
+			prefabIndex.ParkingSlots = GetParkingSlots(prefab);
+			prefabIndex.HasParking = prefabIndex.ParkingSlots > 0;
 			// Enableable: presence alone would mark every unlockable asset
 			// locked forever, including the ones already earned.
 			prefabIndex.IsLocked = EntityManager.HasEnabledComponent<Locked>(entity);
@@ -1522,20 +1529,62 @@ namespace FindItBuildingMenu.Systems
 			return ZoneTypeFilter.Any;
 		}
 
-		private bool HasParking(PrefabBase prefab)
+		/// <summary>
+		/// How many cars the asset can park, counted rather than merely detected.
+		/// </summary>
+		/// <remarks>
+		/// A boolean could not answer the question anyone actually asks. It also
+		/// made sorting by Parking a no-op, because every entry tied.
+		///
+		/// APPROXIMATE, and deliberately so. The game's own count is
+		/// NetUtils.GetParkingSlotCount: floor((slotSpace + 0.01) / slotInterval),
+		/// where slotSpace trims the curve by the lane's StartingLane and
+		/// EndingLane flags and by a slot-angle term. Those flags live on
+		/// Game.Net.ParkingLane, a component that exists only once a lane has
+		/// been placed, so they cannot be known for a prefab sitting in a menu.
+		/// What is left — curve length over slot interval — is within a slot or
+		/// two on a real lot, which is the resolution the question deserves.
+		///
+		/// The interval is derived exactly as NetInitializeSystem bakes it from
+		/// the lane's slot size and angle, so at least that half is the game's.
+		/// </remarks>
+		private int GetParkingSlots(PrefabBase prefab)
 		{
-			if (prefab.TryGet<SpawnLocation>(out var spawnLocation) && spawnLocation.m_ConnectionType == RouteConnectionType.Parking)
+			var slots = 0;
+
+			// A garage parks cars inside rather than along marked lanes, so it
+			// has no sub-lanes to divide up and declares its capacity outright.
+			// Counting its spawn point as one space made the Automated Parking
+			// Building — a multi-storey car park — report a single bay, which
+			// the live table showed plainly.
+			if (prefab.TryGet<ParkingFacility>(out var parkingFacility)
+				&& parkingFacility.m_GarageMarkerCapacity > 0)
 			{
-				return true;
+				slots += parkingFacility.m_GarageMarkerCapacity;
+			}
+			else if (prefab.TryGet<SpawnLocation>(out var spawnLocation)
+				&& spawnLocation.m_ConnectionType == RouteConnectionType.Parking)
+			{
+				// A parking connection with no declared capacity really is one
+				// dedicated space — a driveway rather than a car park.
+				slots++;
 			}
 
 			if (prefab.TryGet<ObjectSubLanes>(out var subLanes) && subLanes.m_SubLanes is not null)
 			{
 				foreach (var lane in subLanes.m_SubLanes)
 				{
-					if (lane.m_LanePrefab.Has<ParkingLane>())
+					if (lane?.m_LanePrefab is null
+						|| !lane.m_LanePrefab.TryGet<ParkingLane>(out var parkingLane))
 					{
-						return true;
+						continue;
+					}
+
+					var interval = GetParkingSlotInterval(parkingLane);
+
+					if (interval > 0.001f)
+					{
+						slots += (int)Math.Floor(MathUtils.Length(lane.m_BezierCurve) / interval);
 					}
 				}
 			}
@@ -1544,14 +1593,45 @@ namespace FindItBuildingMenu.Systems
 			{
 				foreach (var obj in subObjects.m_SubObjects)
 				{
-					if (obj.m_Object is not null && HasParking(obj.m_Object))
+					if (obj.m_Object is not null)
 					{
-						return true;
+						slots += GetParkingSlots(obj.m_Object);
 					}
 				}
 			}
 
-			return false;
+			return slots;
+		}
+
+		/// <summary>
+		/// The spacing between bays, derived the way the game bakes it.
+		/// </summary>
+		/// <remarks>
+		/// Transcribed from NetInitializeSystem, which computes this into
+		/// ParkingLaneData.m_SlotInterval from the managed component's slot size
+		/// and angle. Deriving it here rather than reading the baked component
+		/// keeps this to the managed prefab graph the rest of the walk uses.
+		/// </remarks>
+		private static float GetParkingSlotInterval(ParkingLane parkingLane)
+		{
+			var angle = math.radians(math.clamp(parkingLane.m_SlotAngle, 0f, 90f));
+			var slotSize = math.select(parkingLane.m_SlotSize, 0f, parkingLane.m_SlotSize < 0.001f);
+			var y = new float2(math.cos(angle), math.sin(angle));
+
+			if (y.y < 0.001f)
+			{
+				return slotSize.y;
+			}
+
+			if (y.x < 0.001f)
+			{
+				return slotSize.x;
+			}
+
+			var scaled = slotSize / new float2(y.y, y.x);
+			scaled = math.select(scaled, 0f, scaled < 0.001f);
+
+			return math.min(scaled.x, scaled.y);
 		}
 	}
 }

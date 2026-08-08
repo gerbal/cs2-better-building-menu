@@ -329,8 +329,12 @@ namespace FindItBuildingMenu.Services
 					? seed.ThenByDescending(x => x.BuildingLevel)
 					: seed.ThenBy(x => x.BuildingLevel),
 				"hasparking" => query.Descending
-					? seed.ThenByDescending(x => x.HasParking)
-					: seed.ThenBy(x => x.HasParking),
+					// By count, not by the boolean. Sorting on a flag put every
+					// entry in one of two buckets and left the order inside them
+					// untouched, so on any set that agreed — all of Water &
+					// Sewage, for instance — the sort visibly did nothing.
+					? seed.ThenByDescending(x => x.ParkingSlots)
+					: seed.ThenBy(x => x.ParkingSlots),
 				"zonetype" => query.Descending
 					? seed.ThenByDescending(x => x.ZoneType)
 					: seed.ThenBy(x => x.ZoneType),

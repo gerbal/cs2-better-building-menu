@@ -250,6 +250,7 @@ namespace FindItBuildingMenu.Services
 				UnlockRequirements: prefab.UnlockRequirements,
 				Bonuses: prefab.Bonuses,
 				CostIsPerDistance: prefab.CostIsPerDistance,
+				ParkingSlots: prefab.ParkingSlots,
 				IsFavorited: prefab.IsFavorited,
 				PdxModsId: prefab.PdxModsId ?? string.Empty,
 				DlcId: prefab.DlcId == DlcId.Invalid ? null : prefab.DlcId.id.ToString(),

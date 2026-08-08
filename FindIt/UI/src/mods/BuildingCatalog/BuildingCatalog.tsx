@@ -670,10 +670,16 @@ export const BuildingCatalogComponent = () => {
                   <div className={classNames(styles.metric, styles.metricLevel)} title="Building level">
                     {entry.buildingLevel}
                   </div>
-                  <div className={classNames(styles.parking, styles.metricParking, entry.hasParking && styles.parkingActive)} title={entry.hasParking ? "Parking" : "No parking"}>
-                    {/* Not the no-data dash: this building is known to have no
-                        parking, which is a fact rather than a gap. */}
-                    {entry.hasParking ? "P" : "·"}
+                  <div
+                    className={classNames(styles.parking, styles.metricParking, entry.hasParking && styles.parkingActive)}
+                    title={entry.hasParking ? `${entry.parkingSlots} parking bays (approximate)` : "No parking"}
+                  >
+                    {/* The count, not a "P". A glyph answered "does it park
+                        cars", which is rarely the question — between two car
+                        parks the answer is yes either way. Still not the no-data
+                        dash for zero: a building with no parking is a fact
+                        rather than a gap. */}
+                    {entry.hasParking ? entry.parkingSlots : "·"}
                   </div>
                 </Button>
                 </BuildingHoverCard>
