@@ -15,6 +15,7 @@ import {
 import { getCapacityForecast, getCostForecast } from "domain/buildingForecast";
 import { SERVICE_FORECAST_BINDINGS, getServiceForecastKey } from "domain/serviceForecast";
 import { buildTileTooltipLines, isMetricPresent } from "domain/buildingTileTooltip";
+import { isEntryLocked } from "domain/buildingLockState";
 import { FootprintGlyph } from "mods/ZoningHierarchy/FootprintGlyph";
 import type { ZoneFootprint } from "domain/zoningHierarchy";
 import styles from "./buildingHoverCard.module.scss";
@@ -42,6 +43,8 @@ export interface HoverCardContext {
     lot: string;
     shareOfFunds: string;
     short: string;
+    locked: string;
+    lockedValue: string;
   };
 }
 
@@ -72,6 +75,11 @@ export const useHoverCardContext = (): HoverCardContext => {
       shareOfFunds:
         translate("Tooltip.LABEL[FindItBuildingMenu.ShareOfFunds]", "{0}% of funds") ?? "{0}% of funds",
       short: translate("Tooltip.LABEL[FindItBuildingMenu.ShortBy]", "{0} short") ?? "{0} short",
+      // Both keys already exist in Locale.json. The label names the field and
+      // the value states it, because a card line carrying a label and no value
+      // reads as missing data rather than as a state.
+      locked: translate("Tooltip.LABEL[FindItBuildingMenu.Availability]", "Availability") ?? "Availability",
+      lockedValue: translate("Tooltip.LABEL[FindItBuildingMenu.Locked]", "Locked") ?? "Locked",
     },
   };
 };
@@ -123,6 +131,17 @@ export const BuildingHoverCard = ({
   const footprintOverflow = (entry as unknown as { footprintOverflow?: number }).footprintOverflow ?? 0;
 
   const lines = buildTileTooltipLines([
+    // First, because it changes what every line under it means: a cost you
+    // cannot pay yet is a different fact from a cost you can. Value is the bare
+    // word — vanilla does not bind unlock requirements per asset, so there is no
+    // honest "unlocks at N" to put here.
+    {
+      key: "locked",
+      label: labels.locked,
+      applicable: isEntryLocked(entry),
+      value: labels.lockedValue,
+      tone: "warn",
+    },
     {
       key: "cost",
       label: labels.cost,

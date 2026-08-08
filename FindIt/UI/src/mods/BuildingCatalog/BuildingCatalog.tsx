@@ -211,6 +211,7 @@ export const BuildingCatalogComponent = () => {
   const lastPageLabel = translate("Tooltip.LABEL[FindItBuildingMenu.LastPage]", "Last page") ?? "Last page";
   const lastPageOffset = normalizeCatalogOffset(totalCount, totalCount, limit);
   const inspectLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Inspect]", "Details") ?? "Details";
+  const lockedLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Locked]", "Locked") ?? "Locked";
   const collapseLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Collapse]", "Hide") ?? "Hide";
   // Row and filter should name the same asset the same way: the entry carries
   // raw ids (DlcId is the numeric platform id) while the facet groups already
@@ -607,7 +608,12 @@ export const BuildingCatalogComponent = () => {
             const compareRemoveLabel = `Remove ${entryLabel} from comparison`;
 
             return (
-              <div key={entry.id} className={styles.row} data-expanded={isExpanded ? "true" : undefined}>
+              <div
+                key={entry.id}
+                className={styles.row}
+                data-expanded={isExpanded ? "true" : undefined}
+                data-locked={isEntryLocked(entry) ? "true" : undefined}
+              >
                 {/* The same card the grid, list and cards show. The table had
                     none at all, so it was the one mode that could not answer a
                     question its own columns did not have room for.
@@ -677,9 +683,12 @@ export const BuildingCatalogComponent = () => {
                 <Button
                   className={styles.rowPlaceButton}
                   variant="icon"
+                  // activate() already refuses, but a Place button that looks
+                  // live and does nothing is worse than one that says it cannot.
+                  disabled={isEntryLocked(entry)}
                   onSelect={() => activate(entry)}
-                  aria-label={rowPlaceLabel}
-                  title={rowPlaceLabel}
+                  aria-label={isEntryLocked(entry) ? `${rowPlaceLabel} — ${lockedLabel}` : rowPlaceLabel}
+                  title={isEntryLocked(entry) ? lockedLabel : rowPlaceLabel}
                 >
                   <span>{placeLabel}</span>
                 </Button>

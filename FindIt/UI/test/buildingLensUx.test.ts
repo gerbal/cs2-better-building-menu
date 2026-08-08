@@ -130,8 +130,12 @@ describe("Building Lens action affordances", () => {
     // that text, because the row now shows the shared hover card and two
     // tooltips on one control is one too many.
     assert.match(buildingCatalogSource, /aria-label=\{rowInspectLabel\}/);
-    assert.match(buildingCatalogSource, /aria-label=\{rowPlaceLabel\}/);
-    assert.match(buildingCatalogSource, /title=\{rowPlaceLabel\}/);
+    // Place still names the building, and now also says when it cannot place
+    // it: a locked row disables the button, so the label has to explain the
+    // refusal rather than leave a dead control with a normal name.
+    assert.match(buildingCatalogSource, /aria-label=\{isEntryLocked\(entry\) \? `\$\{rowPlaceLabel\}/);
+    assert.match(buildingCatalogSource, /title=\{isEntryLocked\(entry\) \? lockedLabel : rowPlaceLabel\}/);
+    assert.match(buildingCatalogSource, /disabled=\{isEntryLocked\(entry\)\}/);
     assert.match(buildingCatalogSource, /aria-label=\{compareLabel\}/);
     assert.match(buildingCatalogSource, /aria-label=\{comparePlaceLabel\}/);
     assert.match(buildingCatalogSource, /aria-label=\{compareRemoveLabel\}/);
