@@ -1344,3 +1344,21 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   left: 0;
 }
 
+
+// Milestone-locked. The table states it in words rather than only in treatment:
+// the row carries the same silhouette the grid and list use, and the Place
+// button is genuinely disabled, so the one control that would fail is the one
+// that stops offering.
+.row[data-locked="true"] {
+  .thumbnail img {
+    filter: grayscale(100%) contrast(80%) brightness(0%);
+  }
+
+  .name {
+    opacity: 0.6;
+  }
+
+  .rowPlaceButton {
+    opacity: 0.4;
+  }
+}

@@ -68,6 +68,7 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
   // game would tell you about a building depended on which view mode you
   // happened to be in.
   const hoverCard = useHoverCardContext();
+  const lockedLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Locked]", "Locked") ?? "Locked";
   const cards = variant === "cards";
   // Search relevance still applies within whatever order the query returned,
   // so typing narrows to the best match the same way it does in the grid.
@@ -123,7 +124,9 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
               className={classNames(styles.item, cards && styles.itemCard)}
               variant="icon"
               onSelect={() => place(entry)}
-              aria-label={label}
+              aria-label={isEntryLocked(entry) ? `${label} — ${lockedLabel}` : label}
+              aria-disabled={isEntryLocked(entry) ? "true" : undefined}
+              data-locked={isEntryLocked(entry) ? "true" : undefined}
             >
               {entry.thumbnail
                 ? <img

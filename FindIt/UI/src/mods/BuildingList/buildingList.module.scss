@@ -159,3 +159,25 @@
   color: var(--menuText2Normal);
   font-size: var(--fontSizeXS);
 }
+
+// Milestone-locked. Same treatment as the grid tile and vanilla's own item
+// grid: the thumbnail becomes a black silhouette, the row lightens, and hover
+// still responds so it reads as disabled rather than dead. No lock glyph here —
+// at this icon size it would sit on top of the silhouette rather than beside
+// it, and the row already carries the name at full length.
+.item[data-locked="true"] {
+  background-color: rgba(255, 255, 255, 0.08);
+
+  .icon,
+  .iconLarge {
+    filter: grayscale(100%) contrast(80%) brightness(0%);
+  }
+
+  .name {
+    opacity: 0.55;
+  }
+}
+
+.item[data-locked="true"]:hover {
+  background-color: rgba(255, 255, 255, 0.13);
+}
