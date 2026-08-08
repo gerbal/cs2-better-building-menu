@@ -40,14 +40,17 @@ export interface TileTooltipCandidate extends TileTooltipLine {
  * table, and a hover card that grows without limit is the table again with
  * worse manners.
  *
- * Six, because the fields that can appear grew — unlock conditions and city
+ * Seven, which is now every field there is — requires, cost, capacity,
+ * parking, provides, upkeep, lot. At that point the cap has stopped doing the
+ * work: applicability is what keeps a card short, and this only guards against
+ * future growth going unnoticed. Originally four, which — unlock conditions and city
  * effects joined cost, capacity, upkeep and lot — and at four a locked
  * signature building silently lost its footprint to make room. The cap is a
  * ceiling on a card that has already dropped every field that does not apply,
  * so a typical asset still shows three or four; only one carrying everything
  * reaches six.
  */
-export const TILE_TOOLTIP_MAX_LINES = 6;
+export const TILE_TOOLTIP_MAX_LINES = 7;
 
 /**
  * Whether a metric has a value worth printing.

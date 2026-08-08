@@ -52,6 +52,8 @@ export interface HoverCardContext {
     locked: string;
     lockedValue: string;
     bonuses: string;
+    parking: string;
+    parkingBays: string;
   };
 }
 
@@ -90,6 +92,10 @@ export const useHoverCardContext = (): HoverCardContext => {
       locked: translate("Tooltip.LABEL[FindItBuildingMenu.Requires]", "Requires") ?? "Requires",
       lockedValue: translate("Tooltip.LABEL[FindItBuildingMenu.Locked]", "Locked") ?? "Locked",
       bonuses: translate("Tooltip.LABEL[FindItBuildingMenu.Provides]", "Provides") ?? "Provides",
+      parking: translate("Tooltip.LABEL[FindItBuildingMenu.Parking]", "Parking") ?? "Parking",
+      // "bays" rather than a bare number: the count is approximate for marked
+      // lanes, and naming the unit keeps it from reading as an exact capacity.
+      parkingBays: translate("Tooltip.LABEL[FindItBuildingMenu.ParkingBays]", "bays") ?? "bays",
     },
   };
 };
@@ -182,6 +188,15 @@ export const BuildingHoverCard = ({
       value: capacityForecast && !capacityForecast.covers
         ? `${capacity} · ${labels.short.replace("{0}", groupDigits(capacityForecast.shortfall, separators))}`
         : capacity,
+    },
+    // Beside capacity, because it is one: how many cars the thing holds. Only
+    // when there are bays — a zero here is a fact, but it is a fact about
+    // something the player was not asking after on a building with no parking.
+    {
+      key: "parking",
+      label: labels.parking,
+      applicable: (entry.parkingSlots ?? 0) > 0,
+      value: `${groupDigits(entry.parkingSlots ?? 0, separators)} ${labels.parkingBays}`,
     },
     // Above upkeep: what the building DOES outranks what it costs to run,
     // and for a signature building — which is always free — the effect is the
