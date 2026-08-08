@@ -10,15 +10,23 @@
   flex-direction: column;
 }
 
+// Thinned from 43rem to fit two tile rows in the 200rem content strip instead
+// of one. font-size is a literal 16rem rather than a token: that is vanilla's
+// own smallest label (see buildingGrid.module.scss's tileName comment), and
+// --fontSizeS/--fontSizeXS both undershoot it. line-height is set tighter than
+// the font-size on purpose — the text is uppercase, so there are no descenders
+// for the extra leading to protect, and the tail of the label is what the
+// budget was spent on.
 .groupHeading {
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  padding: 6rem 2rem 3rem;
+  padding: 1rem 2rem 0;
   border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
   color: var(--menuText1Normal);
-  font-size: var(--fontSizeS);
+  font-size: 16rem;
+  line-height: 14rem;
   text-transform: uppercase;
   letter-spacing: 0.6rem;
 }
