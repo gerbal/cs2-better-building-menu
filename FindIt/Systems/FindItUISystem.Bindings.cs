@@ -57,6 +57,13 @@ namespace FindItBuildingMenu.Systems
 				return;
 			}
 
+			// A closed lens stands in for no menu, so the menu scope goes with
+			// it. It was set on every vanilla menu click and never cleared, so
+			// it outlived the panel: reopening the lens from FindIt's own
+			// toolbar button still filtered the whole catalog down to whichever
+			// menu had been clicked last, with nothing on screen saying so.
+			_buildingLensUiMenu = string.Empty;
+
 			if (ownedMenu)
 			{
 				_LensOwnsCurrentMenu.Value = false;
@@ -100,6 +107,39 @@ namespace FindItBuildingMenu.Systems
 
 			var menuName = PrefabIndexingSystem.GetAssetMenuName(menuEntityIndex);
 			var preset = VanillaMenuPresets.Resolve(menuName);
+
+			// SPIKE (cm-e98i). The menu's own name is the whole constraint the
+			// query needs: assets carry the menu the game placed them in, so a
+			// name is enough to reproduce vanilla's set exactly. Set before the
+			// preset check, because a menu with no preset is precisely the case
+			// the tree rescues.
+			// GetAssetMenuName resolves the UIAssetMenuPrefab's name, which is the
+			// same string assets carry as UiMenu, so it needs no translation.
+			_buildingLensUiMenu = menuName ?? string.Empty;
+
+			// SPIKE (cm-e98i): Roads, Landscaping and Areas resolve to no preset
+			// and used to close the panel — the lens simply could not show them.
+			// The tree covers them (Roads alone is 9 categories, 157 assets), so
+			// when it knows the menu, open the lens on it instead of retreating.
+			if (preset is null && !string.IsNullOrEmpty(_buildingLensUiMenu))
+			{
+				_appliedMenuIndex = menuEntityIndex;
+				_appliedMenuFrame = UnityEngine.Time.frameCount;
+				_LensOwnsCurrentMenu.Value = true;
+				_ShowZoningHierarchy.Value = false;
+				_BuildingLensEnabled.Value = true;
+				_buildingLensSection = VanillaBuildMenuTaxonomy.AllBuildings;
+				_buildingLensSubCategory = VanillaBuildMenuTaxonomy.Any;
+				_BuildingLensSectionBinding.Value = _buildingLensSection;
+				_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
+				_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0 };
+				scrollIndex = 0;
+
+				ToggleFindItPanel(true);
+				RefreshBuildingLensNavigation();
+				RefreshBuildingCatalog();
+				return;
+			}
 
 			if (preset is null)
 			{
@@ -192,6 +232,12 @@ namespace FindItBuildingMenu.Systems
 
 			_buildingLensSection = selection.Section;
 			_buildingLensSubCategory = selection.SubCategory;
+			// The menu scope has to go too, or "search everything" searches the
+			// one menu the player already knows has nothing. Widening the
+			// section alone left MatchesVanillaMenuTree still filtering every
+			// candidate down to that menu, so the control that exists to escape
+			// an empty result could not escape it.
+			_buildingLensUiMenu = string.Empty;
 			_BuildingLensSectionBinding.Value = _buildingLensSection;
 			_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
 			FindItUtil.CurrentCategory = PrefabCategory.Any;
@@ -273,6 +319,13 @@ namespace FindItBuildingMenu.Systems
 				return;
 			}
 
+			// Dragging is an explicit width choice, so it ends the expanded
+			// state. Leaving the flag set would light the button while showing a
+			// width the player set by hand, and the next restore would jump back
+			// to a width they had already replaced. Assigning Value does not
+			// re-enter the trigger callback (ExtendedUISystemBase.cs:132-140), so
+			// this cannot clobber the width being set on the next line.
+			_IsExpanded.Value = false;
 			_PanelWidth.Value = GridUtil.ClampBuildingLensWidth(width);
 		}
 

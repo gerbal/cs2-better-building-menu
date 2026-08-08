@@ -368,7 +368,58 @@ namespace FindItBuildingMenu.Systems
 
 			Mod.Log.Info($"{(full ? "Full" : "Partial")} Prefab Indexing completed in {stopWatch.Elapsed.TotalSeconds:0.000}s");
 			Mod.Log.Info($"Indexed Prefabs Count: {FindItUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any].Count}");
+
+			if (full)
+			{
+				LogVanillaMenuTree();
+			}
 		}
+
+			/// <summary>
+			/// SPIKE (cm-e98i). Dumps the build-menu tree as the GAME describes it,
+			/// so it can be diffed against what the vanilla menu actually renders.
+			///
+			/// The question this exists to answer: does reading UIObject.m_Group
+			/// reproduce vanilla's menus exactly? If it does, VanillaBuildMenuTaxonomy
+			/// — which reconstructs the same relationship from our own category
+			/// enums, and which is why Healthcare showed 15 against vanilla's 8 —
+			/// can be deleted rather than patched.
+			///
+			/// Counts are reported both raw and with vanilla's own exclusion applied
+			/// (ToolbarUISystem.FilterOutUpgrades drops service upgrades), because
+			/// that single rule is the whole of the Healthcare discrepancy.
+			///
+			/// Delete this method with the two PrefabIndex fields once decided.
+			/// </summary>
+			private void LogVanillaMenuTree()
+			{
+				try
+				{
+					var indexed = FindItUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any];
+					var placed = indexed.Where(p => p.UiMenuName is not null).ToList();
+
+					Mod.Log.Info($"[MENU-TREE] indexed={indexed.Count} placedInAMenu={placed.Count} unplaced={indexed.Count - placed.Count}");
+
+					foreach (var menu in placed.GroupBy(p => p.UiMenuName).OrderBy(g => g.Key, StringComparer.Ordinal))
+					{
+						foreach (var category in menu.GroupBy(p => p.UiCategoryName).OrderBy(g => g.Key, StringComparer.Ordinal))
+						{
+							// An upgrade is an extension by our own detection, which is
+							// the same population vanilla removes.
+							var buildable = category.Where(p => p.ExtensionIds is null || p.ExtensionIds.Length == 0).ToList();
+							var names = string.Join(",", buildable.OrderBy(p => p.UIOrder).Select(p => p.PrefabName));
+
+							Mod.Log.Info(
+								$"[MENU-TREE] menu=\"{menu.Key}\" category=\"{category.Key}\" "
+								+ $"all={category.Count()} buildable={buildable.Count} names={names}");
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					Mod.Log.Error(ex, "[MENU-TREE] dump failed");
+				}
+			}
 
 			private static bool IsFindItCategoryOverride(string category)
 			{
@@ -409,6 +460,11 @@ namespace FindItBuildingMenu.Systems
 			prefabIndex.PackThumbnails ??= prefabIndex.AssetPacks.Select(pack => IconPath.Normalize(ImageSystem.GetThumbnail(pack))).ToArray();
 			prefabIndex.Tags ??= new();
 			prefabIndex.UIOrder = prefab.TryGet<UIObject>(out var uIObject) ? uIObject.m_Priority : int.MaxValue;
+			// SPIKE (cm-e98i): the menu placement the game itself uses. m_Group is
+			// the asset's UI category; a category that is a UIAssetCategoryPrefab
+			// names its menu. Two managed references, no ECS lookup.
+			prefabIndex.UiCategoryName = uIObject?.m_Group?.name;
+			prefabIndex.UiMenuName = (uIObject?.m_Group as UIAssetCategoryPrefab)?.m_Menu?.name;
 			prefabIndex.IsVanilla = prefab.isBuiltin || prefab.Has<FindItGenerated>();
 			prefabIndex.HasParking = prefabIndex.Category is PrefabCategory.Buildings or PrefabCategory.ServiceBuildings && HasParking(prefab);
 			// Enableable: presence alone would mark every unlockable asset

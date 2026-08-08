@@ -69,6 +69,11 @@ namespace FindItBuildingMenu.Services
 
 		private static bool Matches(BuildingCatalogEntry entry, BuildingCatalogQuery query)
 		{
+			if (!MatchesVanillaMenuTree(entry, query))
+			{
+				return false;
+			}
+
 			if (!MatchesBuildMenu(entry, query))
 			{
 				return false;
@@ -125,6 +130,54 @@ namespace FindItBuildingMenu.Services
 				&& InRange(entry.Capacity, query.MinCapacity, query.MaxCapacity)
 				&& InRange(entry.ElectricityConsumption, query.MinElectricityConsumption, query.MaxElectricityConsumption)
 				&& InRange(entry.WaterConsumption, query.MinWaterConsumption, query.MaxWaterConsumption);
+		}
+
+		/// <summary>
+		/// SPIKE (cm-e98i). Filters by the placement the GAME gives an asset —
+		/// UIObject.m_Group and its menu — rather than by the section we
+		/// reconstruct in VanillaBuildMenuTaxonomy.
+		///
+		/// Vanilla's menu is set membership, not a predicate: an asset is in a
+		/// category iff UIObjectData.m_Group is that category. Asking the same
+		/// question is what makes our Healthcare view agree with the game's.
+		/// An asset that is in no menu at all fails a menu constraint, which is
+		/// also vanilla's behaviour — it only ever lists group members.
+		/// </summary>
+		private static bool MatchesVanillaMenuTree(BuildingCatalogEntry entry, BuildingCatalogQuery query)
+		{
+			string menu = query.UiMenu?.Trim() ?? string.Empty;
+			string category = query.UiCategory?.Trim() ?? string.Empty;
+
+			// Unscoped queries are not looking at a vanilla menu, so none of the
+			// menu's rules apply to them — including the upgrade exclusion below,
+			// which used to sit outside this guard and therefore ran on EVERY
+			// query. That contradicted the comment right next to it and deleted
+			// every upgrade-bearing asset from the whole catalog: the Extensions
+			// facet could select a value and then match nothing, which is what
+			// Query_ExtensionFacetMatchesStableExtensionIdentity caught.
+			if (string.IsNullOrEmpty(menu) && string.IsNullOrEmpty(category))
+			{
+				return true;
+			}
+
+			if (!string.IsNullOrEmpty(menu)
+				&& !string.Equals(entry.UiMenu, menu, StringComparison.OrdinalIgnoreCase))
+			{
+				return false;
+			}
+
+			// Vanilla drops service upgrades from every menu unconditionally
+			// (ToolbarUISystem.FilterOutUpgrades). They are things you attach to a
+			// building, not things you build, so a build list that offers them is
+			// offering something you cannot place. Scoped to a menu constraint:
+			// asking for "everything" should still find them.
+			if (entry.Extensions is { Length: > 0 })
+			{
+				return false;
+			}
+
+			return string.IsNullOrEmpty(category)
+				|| string.Equals(entry.UiCategory, category, StringComparison.OrdinalIgnoreCase);
 		}
 
 		private static bool MatchesBuildMenu(BuildingCatalogEntry entry, BuildingCatalogQuery query)
