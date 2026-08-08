@@ -340,60 +340,72 @@ export const TopBarComponent = (props: TopBarProps) => {
     );
   }
 
+  // In lens catalog mode this row is 42rem of chrome — search, the icon
+  // buttons, the lens toggle, the result count, the CATALOG/TOOLS tabs, and
+  // close — duplicating controls the chip row and toolbar icon already
+  // provide. It stays for the legacy panel (upstream's UI, not ours to
+  // redesign) and for tools mode, where the CATALOG/TOOLS tabs are the only
+  // way back to catalog: ToolSurfaceBar has no back control of its own.
+  // Closing the panel without this row's button still works — the game
+  // toolbar's FindIt icon toggles it closed the same way it opened it.
+  const showTopBarRow = !BuildingLensEnabled || props.buildingLensMode === "tools";
+
   return (
     <>
       <div className={classNames(props.large && styles.large, props.small && styles.small)}>
-        <div className={styles.topBar}>
-          <div className={classNames(styles.topBarSection, AlignmentStyle !== "Center" && styles.expandedSearchArea)}>
-            {IsSearchLoading && <img style={{ maskImage: "url(coui://finditbuildingmenu/Icons/Standard/HalfCircleProgress.svg)" }} className={styles.loadingIcon}></img>}
-            {!IsSearchLoading && <img style={{ maskImage: `url(${find})` }} className={styles.searchIcon}></img>}
-            <div className={styles.searchArea}>
-              <TextInput
-                ref={searchRef}
-                multiline={1}
-                value={CurrentSearch}
-                disabled={false}
-                type="text"
-                className={classNames(TextInputTheme.input, styles.textBox)}
-                focusKey={FOCUS_DISABLED}
-                onChange={handleInputChange}
-                placeholder={translate("Editor.SEARCH_PLACEHOLDER", "Search...")}
-              ></TextInput>
+        {showTopBarRow && (
+          <div className={styles.topBar}>
+            <div className={classNames(styles.topBarSection, AlignmentStyle !== "Center" && styles.expandedSearchArea)}>
+              {IsSearchLoading && <img style={{ maskImage: "url(coui://finditbuildingmenu/Icons/Standard/HalfCircleProgress.svg)" }} className={styles.loadingIcon}></img>}
+              {!IsSearchLoading && <img style={{ maskImage: `url(${find})` }} className={styles.searchIcon}></img>}
+              <div className={styles.searchArea}>
+                <TextInput
+                  ref={searchRef}
+                  multiline={1}
+                  value={CurrentSearch}
+                  disabled={false}
+                  type="text"
+                  className={classNames(TextInputTheme.input, styles.textBox)}
+                  focusKey={FOCUS_DISABLED}
+                  onChange={handleInputChange}
+                  placeholder={translate("Editor.SEARCH_PLACEHOLDER", "Search...")}
+                ></TextInput>
 
-              {CurrentSearch.trim() !== "" && (
-                <Button
-                  className={classNames(VanillaComponentResolver.instance.assetGridTheme.item, styles.clearIcon)}
-                  variant="icon"
-                  aria-label={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClearSearch]", "Clear search")}
-                  title={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClearSearch]", "Clear search")}
-                  onSelect={() => {
-                    setSearchText("");
-                  }}
-                >
-                  <img src="coui://finditbuildingmenu/Icons/Standard/ArrowLeftClear.svg" alt="" aria-hidden="true"></img>
-                </Button>
-              )}
+                {CurrentSearch.trim() !== "" && (
+                  <Button
+                    className={classNames(VanillaComponentResolver.instance.assetGridTheme.item, styles.clearIcon)}
+                    variant="icon"
+                    aria-label={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClearSearch]", "Clear search")}
+                    title={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClearSearch]", "Clear search")}
+                    onSelect={() => {
+                      setSearchText("");
+                    }}
+                  >
+                    <img src="coui://finditbuildingmenu/Icons/Standard/ArrowLeftClear.svg" alt="" aria-hidden="true"></img>
+                  </Button>
+                )}
+              </div>
+
+              {AlignmentStyle === "Center" && RenderButtonSection()}
             </div>
 
-            {AlignmentStyle === "Center" && RenderButtonSection()}
-          </div>
+            <div className={styles.topBarSection}>
+              {BuildingLensEnabled && RenderLensModeList()}
 
-          <div className={styles.topBarSection}>
-            {BuildingLensEnabled && RenderLensModeList()}
-
-            <Tooltip tooltip={translate("Tooltip.LABEL[FindItBuildingMenu.ClosePanel]", "Close Panel")}>
-              <Button
-                className={VanillaComponentResolver.instance.assetGridTheme.item + " " + styles.closeIcon}
-                variant="icon"
-                aria-label={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClosePanel]", "Close Panel")}
-                title={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClosePanel]", "Close Panel")}
-                onSelect={() => trigger(mod.id, "FindItCloseToggled")}
-              >
-                <img src="coui://finditbuildingmenu/Icons/Standard/XClose.svg" alt="" aria-hidden="true"></img>
-              </Button>
-            </Tooltip>
+              <Tooltip tooltip={translate("Tooltip.LABEL[FindItBuildingMenu.ClosePanel]", "Close Panel")}>
+                <Button
+                  className={VanillaComponentResolver.instance.assetGridTheme.item + " " + styles.closeIcon}
+                  variant="icon"
+                  aria-label={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClosePanel]", "Close Panel")}
+                  title={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClosePanel]", "Close Panel")}
+                  onSelect={() => trigger(mod.id, "FindItCloseToggled")}
+                >
+                  <img src="coui://finditbuildingmenu/Icons/Standard/XClose.svg" alt="" aria-hidden="true"></img>
+                </Button>
+              </Tooltip>
+            </div>
           </div>
-        </div>
+        )}
 
         {AlignmentStyle !== "Center" && <div className={styles.lowerButtonSection}>{RenderButtonSection()}</div>}
 
