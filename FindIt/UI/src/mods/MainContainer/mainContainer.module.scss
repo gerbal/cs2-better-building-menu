@@ -200,11 +200,16 @@
   // whatever it had to show. Measured on the zoning view: content filled 201px
   // of a 472px scrollable that never scrolled — 43% of the panel was empty.
   flex: 0 1 auto;
-  // No floor. Vanilla's menu is 208rem including chrome, and a floor is what
-  // made the panel hold full height over an empty result set. This applies
-  // whether or not the Building Lens is on — the void it fixed was the same
-  // void either way.
-  min-height: 0;
+  // Sizing purely to content was the obvious fix and the wrong one: the panel
+  // would change height on every keystroke, moving controls under the cursor.
+  // A floor stops the void without letting the height chase the result count,
+  // because both bounds are constants rather than functions of it.
+  //
+  // 400rem first, which was too blunt: filtering the zoning view down to
+  // Office left 100px of content in a 267px box — a 63% void, worse than the
+  // 43% this set out to fix. The floor only has to stop the panel collapsing
+  // to a single row as you type; it does not have to reserve a screenful.
+  min-height: 200rem;
   // Unset here: the legacy FindIt panel (Building Lens off) is upstream's
   // UI and keeps the height it always had. Only the Building Lens rests at
   // a strip, via .contentStrip below.
@@ -214,6 +219,10 @@
 // Only the Building Lens rests at a strip. The legacy FindIt panel is
 // upstream's UI and keeps the height it always had.
 .contentStrip {
+  // The floor has to go here specifically: 200rem against a 163rem ceiling is
+  // a contradiction, and min-height wins, so the strip would never reach its
+  // measured height.
+  min-height: 0;
   max-height: 163rem;
 }
 
