@@ -74,11 +74,20 @@
 // need, and lets it shrink below its content size instead of forcing the
 // row wider — the strip itself scrolls sideways if its tabs still do not
 // fit (see TabStrip's itemsRow).
+//
+// `position: relative` makes this slot the containing block for anything
+// inside it that ends up positioned (vanilla's tab-bar theme normally is —
+// see the `.strip` override in tabStrip.module.scss). Between that override
+// and this containing block, an absolutely-positioned descendant has
+// nowhere to escape to but this box: `overflow: hidden` clips it there
+// instead of letting it paint over the CATALOG/TOOLS tabs or the close
+// button in the section beside it.
 .tabStripSlot {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
   align-items: center;
+  position: relative;
   margin: 0 8rem;
   overflow: hidden;
 }
