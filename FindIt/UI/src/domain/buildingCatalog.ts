@@ -24,6 +24,14 @@ export interface BuildingCatalogEntry {
   hasParking: boolean;
   isUniqueMesh: boolean;
   isVanilla: boolean;
+  /**
+   * Milestone-gated, per the game's own enableable Locked component.
+   *
+   * Serialised since BuildingCatalogEntry.cs wrote it, but absent from this
+   * interface until now — so the field crossed the binding and then had nowhere
+   * to land. No component was ignoring it; the type made it unreachable.
+   */
+  isLocked: boolean;
   isFavorited: boolean;
   pdxModsId: string;
   buildingType: string;

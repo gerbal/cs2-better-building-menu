@@ -343,7 +343,7 @@ export const TopBarComponent = (props: TopBarProps) => {
     <>
       <div className={classNames(props.large && styles.large, props.small && styles.small)}>
         <div className={styles.topBar}>
-          <div className={classNames(styles.topBarSection, AlignmentStyle !== "Center" && styles.expandedSearchArea)}>
+          <div className={classNames(styles.topBarSection, styles.topBarSearchSection, AlignmentStyle !== "Center" && styles.expandedSearchArea)}>
             {IsSearchLoading && <img style={{ maskImage: "url(coui://finditbuildingmenu/Icons/Standard/HalfCircleProgress.svg)" }} className={styles.loadingIcon}></img>}
             {!IsSearchLoading && <img style={{ maskImage: `url(${find})` }} className={styles.searchIcon}></img>}
             <div className={styles.searchArea}>
@@ -377,7 +377,7 @@ export const TopBarComponent = (props: TopBarProps) => {
             {AlignmentStyle === "Center" && RenderButtonSection()}
           </div>
 
-          <div className={styles.topBarSection}>
+          <div className={classNames(styles.topBarSection, styles.topBarControlsSection)}>
             {BuildingLensEnabled && RenderLensModeList()}
 
             <Tooltip tooltip={translate("Tooltip.LABEL[FindItBuildingMenu.ClosePanel]", "Close Panel")}>

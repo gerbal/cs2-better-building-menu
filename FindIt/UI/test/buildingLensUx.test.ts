@@ -124,7 +124,12 @@ describe("Building Lens action affordances", () => {
     assert.match(buildingCatalogSource, /className=\{styles\.placeHint\}/);
     // The row itself now opens details; Place is its own button, so the row's
     // label describes inspection and the Place label sits on the Place control.
-    assert.match(buildingCatalogSource, /aria-label=\{inspectLabel\}/);
+    // rowInspectLabel rather than inspectLabel: it names the building too
+    // ("Details: Small Medical Clinic"), which a row of otherwise identical
+    // "Details" controls needs. It also replaced the title= that used to carry
+    // that text, because the row now shows the shared hover card and two
+    // tooltips on one control is one too many.
+    assert.match(buildingCatalogSource, /aria-label=\{rowInspectLabel\}/);
     assert.match(buildingCatalogSource, /aria-label=\{rowPlaceLabel\}/);
     assert.match(buildingCatalogSource, /title=\{rowPlaceLabel\}/);
     assert.match(buildingCatalogSource, /aria-label=\{compareLabel\}/);

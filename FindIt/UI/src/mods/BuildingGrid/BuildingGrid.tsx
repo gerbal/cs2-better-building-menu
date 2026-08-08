@@ -1,36 +1,17 @@
 import { bindValue, useValue } from "cs2/api";
-import { Button, Scrollable, Tooltip } from "cs2/ui";
+import { Button, Scrollable } from "cs2/ui";
 import { useEffect } from "react";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
-import {
-  formatBuildingMetric,
-  formatCapacity,
-  formatLotDimensions,
-  getNumberSeparators,
-} from "domain/buildingLensMetricFormat";
 import { getShelf, recordPlacement } from "domain/buildingShelf";
-import { getCapacityForecast, getCostForecast } from "domain/buildingForecast";
-import { SERVICE_FORECAST_BINDINGS, getServiceForecastKey } from "domain/serviceForecast";
-import { groupDigits } from "domain/buildingLensMetricFormat";
+import { canPlace, isEntryLocked } from "domain/buildingLockState";
+import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { rankBuildingMatches, topSearchResult } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { shortenTileLabel, stripRedundantNamePrefix, tileLabelCharBudget } from "domain/tileLabel";
 import mod from "../../../mod.json";
 import styles from "./buildingGrid.module.scss";
-
-// The game's own live city state, so the hover card compares against the
-// player's city rather than against nothing. One pair per demand series;
-// SERVICE_FORECAST_BINDINGS names which pair a given building belongs to.
-const Money$ = bindValue<number>("toolbarBottom", "money", 0);
-
-const SERIES = Object.entries(SERVICE_FORECAST_BINDINGS).map(([key, b]) => ({
-  key,
-  unit: b.unit,
-  capacity$: bindValue<number>(b.group, b.capacity, 0),
-  demand$: bindValue<number>(b.group, b.demand, 0),
-}));
 
 const ShowShelf$ = bindValue<boolean>(mod.id, "BuildingLensShowShelf", true);
 const ShelfSize$ = bindValue<number>(mod.id, "BuildingLensShelfSize", 12);
@@ -63,20 +44,15 @@ interface BuildingGridProps {
  */
 export const BuildingGrid = ({ entries, searchText, onPlace, standalone = true }: BuildingGridProps) => {
   const { translate } = useLocalization();
-  const separators = getNumberSeparators(translate);
+  // One card for every view mode. Read once here rather than per tile: it is a
+  // dozen live bindings, and a grid of 125 subscribing per row would open
+  // sixteen hundred of them to draw one hover at a time.
+  const hoverCard = useHoverCardContext();
+  // Already in Locale.json — an orphaned key with no consumer until now.
+  const lockedLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Locked]", "Locked") ?? "Locked";
   const showShelf = useValue(ShowShelf$);
   const shelfSize = useValue(ShelfSize$);
   const tileSize = useValue(TileSize$);
-  const money = useValue(Money$);
-  // Hooks must not be called conditionally, so every series is read every
-  // render and the relevant one is picked per tile.
-  const series = SERIES.map((s) => ({
-    key: s.key,
-    unit: s.unit,
-    capacity: useValue(s.capacity$),
-    demand: useValue(s.demand$),
-  }));
-  const seriesByKey = new Map(series.map((s) => [s.key, s]));
   // Relevance while a query is active, stable position while browsing. The two
   // orders want opposite things and rankBuildingMatches falls back to the
   // stable one for an empty query and for ties.
@@ -109,72 +85,33 @@ export const BuildingGrid = ({ entries, searchText, onPlace, standalone = true }
   }, [ordered, searchText, onPlace]);
 
   const place = (entry: BuildingCatalogEntry) => {
+    // Vanilla refuses the same selection rather than hiding the tile
+    // (ToolbarUISystem.cs:924), and its own grid routes a locked click to a
+    // disabled sound instead of a placement. Recording it in the shelf would
+    // also promote something the player cannot build.
+    if (!canPlace(entry)) return;
+
     recordPlacement(entry.id);
     onPlace(entry);
   };
 
   const tile = (entry: BuildingCatalogEntry, key: string) => {
-    const cost = formatBuildingMetric(entry.constructionCost, "cost", separators);
-    const upkeep = formatBuildingMetric(entry.upkeep, "upkeep", separators);
-    const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators);
-    const lot = formatLotDimensions(entry.lotWidth, entry.lotDepth);
     const label = entry.name || entry.prefabName;
-
-    // The forecast is the reason to stop and read: cost against what you have,
-    // and coverage against what the city is short of.
-    const costForecast = getCostForecast(entry.constructionCost, money);
-    const forecastKey = getServiceForecastKey(entry);
-    const live = forecastKey ? seriesByKey.get(forecastKey.key) : null;
-    const capacityForecast = live
-      ? getCapacityForecast({
-          added: entry.capacity,
-          current: live.capacity,
-          demand: live.demand,
-          unit: live.unit,
-        })
-      : null;
+    const locked = isEntryLocked(entry);
 
     return (
-      <Tooltip
-        key={key}
-        tooltip={
-          // Three lines, hard cap. The whole argument for the grid collapses if
-          // the hover card grows into the table again.
-          <div className={styles.card}>
-            <div className={styles.cardName}>{label}</div>
-            {costForecast && costForecast.treasury !== null ? (
-              <div className={classNames(styles.cardLine, !costForecast.affordable && styles.cardWarn)}>
-                {groupDigits(costForecast.cost, separators)} of {groupDigits(costForecast.treasury, separators)}
-                {costForecast.share !== null && Number.isFinite(costForecast.share)
-                  ? ` · ${costForecast.share}%`
-                  : ""}
-              </div>
-            ) : (
-              <div className={styles.cardLine}>{cost}</div>
-            )}
-            {capacityForecast ? (
-              <div className={classNames(styles.cardLine, capacityForecast.covers && styles.cardGood)}>
-                {capacityForecast.projected !== null
-                  ? `${groupDigits(capacityForecast.projected, separators)} of ${groupDigits(capacityForecast.demand, separators)}`
-                  : `+${groupDigits(capacityForecast.added, separators)} vs ${groupDigits(capacityForecast.demand, separators)}`}{" "}
-                {capacityForecast.unit}
-                {capacityForecast.covers
-                  ? " · covers it"
-                  : ` · ${groupDigits(capacityForecast.shortfall, separators)} short`}
-              </div>
-            ) : (
-              <div className={styles.cardLine}>{capacity} · {lot}</div>
-            )}
-            <div className={styles.cardLine}>{upkeep} · {lot}</div>
-          </div>
-        }
-      >
+      <BuildingHoverCard key={key} entry={entry} context={hoverCard}>
         <Button
           className={styles.tile}
           style={{ width: `${tileSize}rem` }}
           variant="icon"
           onSelect={() => place(entry)}
-          aria-label={label}
+          // Locked is announced, not just drawn. The visual treatment is a
+          // silhouette, which says nothing to a screen reader and little to
+          // anyone whose thumbnail has not generated yet.
+          aria-label={locked ? `${label} — ${lockedLabel}` : label}
+          aria-disabled={locked ? "true" : undefined}
+          data-locked={locked ? "true" : undefined}
         >
           {entry.thumbnail
             ? <img
@@ -184,6 +121,20 @@ export const BuildingGrid = ({ entries, searchText, onPlace, standalone = true }
                 alt=""
               />
             : null}
+          {/* Vanilla draws this only when the legacy interface is on, so on a
+              default install its entire locked signal is the black silhouette.
+              We draw it always: at this tile size a silhouette alone is not
+              distinguishable from a thumbnail that has not rendered yet.
+              Inline maskImage rather than a stylesheet url() — webpack's
+              css-loader runs with url: true and would try to resolve a bare
+              path as a module request from src/. */}
+          {locked && (
+            <span
+              className={styles.lockGlyph}
+              style={{ maskImage: "url(assetdb://gameui/Media/Glyphs/Lock.svg)" }}
+              aria-hidden="true"
+            />
+          )}
           {/* Shortened for drawing only. The tooltip above and the aria-label on
               the Button both still carry the whole name. */}
           <span className={styles.tileName}>
@@ -197,7 +148,7 @@ export const BuildingGrid = ({ entries, searchText, onPlace, standalone = true }
             )}
           </span>
         </Button>
-      </Tooltip>
+      </BuildingHoverCard>
     );
   };
 

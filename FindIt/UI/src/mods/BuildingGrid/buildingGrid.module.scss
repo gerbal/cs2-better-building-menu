@@ -51,6 +51,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
+  // Anchors the lock glyph, which sits over the thumbnail.
+  position: relative;
   width: 88rem !important;
   height: 112rem;
   padding: 4rem;
@@ -98,11 +100,48 @@
   white-space: normal;
 }
 
+// Milestone-locked. The treatment is vanilla's own, read off the shipped
+// bundle rather than invented: item-grid draws a locked tile with
+// `filter: grayscale(100%) contrast(80%) brightness(0%)` on the thumbnail — a
+// black silhouette — over a lighter background, and keeps hover responding so
+// the tile reads as disabled rather than dead.
+.tile[data-locked="true"] {
+  background-color: rgba(255, 255, 255, 0.1);
+
+  .thumb {
+    filter: grayscale(100%) contrast(80%) brightness(0%);
+  }
+
+  .tileName {
+    opacity: 0.55;
+  }
+}
+
+.tile[data-locked="true"]:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+// Vanilla's own placement and colour: bottom-right of the tile, 16rem, #ffaa00.
+.lockGlyph {
+  position: absolute;
+  right: 2rem;
+  bottom: 2rem;
+  width: 16rem;
+  height: 16rem;
+  background-color: #ffaa00;
+  mask-size: contain;
+  mask-position: center;
+  mask-repeat: no-repeat;
+}
+
 .card {
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  max-width: 260rem;
+  // A ceiling, not a width: the vanilla Tooltip container it renders into is
+  // narrower than this anyway — measured 184px at 720p — so raising the cap
+  // does nothing on its own. The long lines wrap instead; see .cardValue.
+  max-width: 400rem;
 }
 
 .cardName {
@@ -111,16 +150,51 @@
 }
 
 // The two states worth colouring: cannot afford, and covers the shortfall.
-.cardWarn {
-  color: var(--negativeColor, rgba(220, 90, 90, 0.95));
+// Both have to reach the value as well as the line, or .cardValue's own colour
+// below wins on specificity and the state goes silent.
+//
+// Literal colours, NOT var(--positiveColor) / var(--negativeColor). Those
+// resolved to rgba(0,0,0,1) here — measured on the live card — which is black
+// text on a near-black tooltip, so the coloured states were invisible rather
+// than merely wrong. A declared fallback does not help: the variable exists, it
+// just carries a value this context cannot use.
+.cardWarn,
+.cardWarn .cardValue {
+  color: rgb(232, 122, 122);
 }
 
-.cardGood {
-  color: var(--positiveColor, rgba(120, 200, 120, 0.95));
+.cardGood,
+.cardGood .cardValue {
+  color: rgb(130, 205, 130);
 }
 
 .cardLine {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
   color: var(--menuText2Normal);
   font-size: var(--fontSizeS);
+}
+
+// The word recedes and the number leads: the figure is what is being compared,
+// the label is only there so you know which figure it is. Margin, not gap —
+// this engine measured 0 for gap between flex-row children (the trap is
+// written up at buildingCatalog.module.scss:778).
+// The label never wraps — a field name broken across two lines stops reading as
+// a label — so the value is what gives way.
+.cardLabel {
+  flex: 0 0 auto;
+  margin-right: 5rem;
+  opacity: 0.7;
   white-space: nowrap;
+}
+
+// Wraps rather than truncates. A capacity forecast is the longest thing here
+// and it is also the reason to stop and read the card, so an ellipsis would cut
+// exactly the figure the hover was for.
+.cardValue {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--menuText1Normal);
+  white-space: normal;
 }
