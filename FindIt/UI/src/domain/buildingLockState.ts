@@ -46,16 +46,20 @@ export interface UnlockableEntry extends LockableEntry {
 }
 
 /**
- * What to tell the player they are waiting on.
+ * Everything the player is waiting on, in the order it gates them.
+ *
+ * All of them, not the first with a "+2" after it. A signature building can sit
+ * behind a milestone AND a tech node AND a zone target, and knowing only one of
+ * three is not knowing what to do — the count told you something was hidden
+ * without telling you what.
+ *
+ * Milestone leads because it is the coarsest gate and clears first. The card's
+ * value wraps, so a long list costs height rather than truncation.
  *
  * Falls back to the bare "Locked" word when we know it is locked but not why,
  * which is honest rather than lazy: some assets carry no UnlockRequirement
  * buffer at all, and inventing a reason for those is worse than admitting we
  * do not have one.
- *
- * Milestone wins when both are present. It is the coarser gate, so it has to
- * clear first, and naming a tech node behind a milestone the player has not
- * reached would send them somewhere they cannot act on.
  */
 export function describeLockReason(
   entry: UnlockableEntry | null | undefined,
@@ -66,23 +70,21 @@ export function describeLockReason(
     return "";
   }
 
+  const conditions: string[] = [];
   const milestone = entry?.unlockMilestone ?? 0;
   const milestoneName = milestone > 0 ? milestoneNames?.[milestone] : undefined;
 
   if (milestoneName) {
-    return milestoneName;
+    conditions.push(milestoneName);
   }
 
-  const requirements = entry?.unlockRequirements ?? [];
-
-  if (requirements.length > 0) {
-    // One line's worth. A signature building can list several and the card is
-    // about 184px wide, so naming the first and counting the rest beats
-    // truncating a sentence mid-word.
-    return requirements.length === 1
-      ? requirements[0]
-      : `${requirements[0]} +${requirements.length - 1}`;
+  for (const requirement of entry?.unlockRequirements ?? []) {
+    // The backend can emit the same requirement twice when two branches of the
+    // walk reach it; the player should not read it twice.
+    if (requirement && !conditions.includes(requirement)) {
+      conditions.push(requirement);
+    }
   }
 
-  return lockedWord;
+  return conditions.length > 0 ? conditions.join(" · ") : lockedWord;
 }

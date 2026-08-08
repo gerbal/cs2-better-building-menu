@@ -46,9 +46,10 @@ namespace FindItBuildingMenu.Systems
 		/// is their new choice and clearing it would undo the click — that path
 		/// arms a tool, so it never reaches OnToolChanged's default-tool branch.
 		///
-		/// Escape counts as deliberate and arrives through OnToolChanged: the
-		/// game cancels the armed tool in its own input layer, never touching the
-		/// DOM, so this is the only place we hear about it.
+		/// Notably NOT called from OnToolChanged. That branch fires on every
+		/// return to the default tool, so clearing the selection there released
+		/// the menu long before the player pressed Escape — and the game's own
+		/// Escape chain, finding nothing left to close, opened the pause menu.
 		/// </remarks>
 		private void CloseLens()
 		{
