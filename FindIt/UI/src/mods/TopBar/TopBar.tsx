@@ -427,7 +427,63 @@ export const TopBarComponent = (props: TopBarProps) => {
 
         {BuildingLensEnabled && props.buildingLensMode === "catalog" && (
           <>
-            <TabStrip />
+            {/* Commit 834f72d dropped the whole top bar row in this mode to
+                buy back its 30px, which took search off screen along with it
+                — a conditional render, not a deletion, so CurrentSearch,
+                setSearchText, handleInputChange, IsSearchLoading and
+                searchRef below are all still live. The earlier attempt to
+                reunite search with the strip (46106a5) was reverted
+                (7458a02) because the strip shared its row with the *whole*
+                top bar row back then — search, lock/filter/lens-toggle/
+                sort/random, the result count, and the CATALOG/TOOLS tabs —
+                leaving 13 tabs 27px of a 718px row. With that row gone
+                entirely in catalog mode, the strip owns the full 718px
+                again: 13 tabs at 26px cost 338px, leaving 367px free next to
+                them, plenty for a compact field. TabStrip returns null on
+                the zoneFamily axis and below two tabs, so the field lives
+                here as a sibling rather than inside TabStrip — it keeps
+                rendering in both of those cases. */}
+            <div className={styles.catalogStripRow}>
+              <TabStrip />
+              <div className={styles.catalogStripSearch}>
+                {IsSearchLoading && (
+                  <img
+                    style={{ maskImage: "url(coui://finditbuildingmenu/Icons/Standard/HalfCircleProgress.svg)" }}
+                    className={styles.loadingIcon}
+                  ></img>
+                )}
+                {!IsSearchLoading && <img style={{ maskImage: `url(${find})` }} className={styles.searchIcon}></img>}
+                <div className={styles.searchArea}>
+                  <TextInput
+                    ref={searchRef}
+                    multiline={1}
+                    value={CurrentSearch}
+                    disabled={false}
+                    type="text"
+                    className={classNames(TextInputTheme.input, styles.stripTextBox)}
+                    focusKey={FOCUS_DISABLED}
+                    onChange={handleInputChange}
+                    placeholder={translate("Editor.SEARCH_PLACEHOLDER", "Search...")}
+                  ></TextInput>
+
+                  {CurrentSearch.trim() !== "" && (
+                    <Tooltip tooltip={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClearSearch]", "Clear search")}>
+                      <Button
+                        className={classNames(VanillaComponentResolver.instance.assetGridTheme.item, styles.clearIcon)}
+                        variant="icon"
+                        aria-label={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClearSearch]", "Clear search")}
+                        onSelect={() => {
+                          setSearchText("");
+                        }}
+                      >
+                        <img src="coui://finditbuildingmenu/Icons/Standard/ArrowLeftClear.svg" alt="" aria-hidden="true"></img>
+                      </Button>
+                    </Tooltip>
+                  )}
+                </div>
+              </div>
+            </div>
+
             {/* TabStrip and the chip row's sub-category breadcrumb are two
                 controls for the same single-select value — the same
                 BuildingLensSubCategoryList, driven by the same

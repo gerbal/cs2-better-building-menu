@@ -63,6 +63,46 @@
   margin: 0 8rem;
 }
 
+// Search on the tab strip row, Building Lens catalog mode. The row that used
+// to carry search (.topBar above) doesn't render at all in this mode — see
+// showTopBarRow — so the strip is the only row left to put it on. Sized to
+// the strip's own 45rem so the panel does not grow a row: this shares that
+// height rather than adding one.
+.catalogStripRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 45rem;
+  overflow: hidden;
+}
+
+// margin-left: auto pins this to the row's right edge whether TabStrip
+// renders tabs beside it or returns null (zoneFamily axis, or fewer than 2
+// tabs) — unlike justify-content on the row, which would left-align a lone
+// child instead of holding it at the right.
+.catalogStripSearch {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding-right: 6rem;
+}
+
+// Narrower than .textBox's 225rem. Measured at 1280x720 with 13 tabs: the
+// strip has 367px free to the right of the last tab, not the whole row's
+// width the legacy top bar's search field could spend. At 1rem = 0.667px,
+// 200rem plus the icon, margins and padding lands around 158px total,
+// leaving ~209px to spare — comfortable rather than exact.
+.stripTextBox {
+  width: 200rem;
+  padding: 6rem 8rem 4rem 8rem;
+  line-height: 21rem;
+  font-size: 16rem;
+  border-width: 2.5rem;
+  border-radius: 5rem;
+}
+
 .searchIcon,
 .loadingIcon {
   height: 24rem;

@@ -1,6 +1,16 @@
 // Vanilla spends 45rem of chrome above its grid, all of it on this strip.
 // Icons are 39rem there, so these match rather than approximate.
+//
+// position: static is defensive, not currently load-bearing: an earlier
+// merge (46106a5/a66e74e, reverted by 7458a02) found the strip painting on
+// top of the row above it and traced it to vanilla's assetCategoryTabBar
+// theme carrying its own `position` rule. The rule shipping in the current
+// game build has none (checked against index.css), but this class is now a
+// row sibling of the search field in TopBar rather than a lone full-width
+// child, which is exactly the shape that broke before — keep this pinned so
+// a future vanilla update can't silently take it out of flow again.
 .strip {
+  position: static;
   flex: 0 0 auto;
   height: 45rem;
 }
