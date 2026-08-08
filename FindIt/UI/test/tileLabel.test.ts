@@ -106,14 +106,30 @@ describe("grid tile label shortening", () => {
   });
 
   it("scales the budget with the configured tile size", () => {
-    assert.equal(tileLabelCharBudget(88), 20);
+    assert.equal(tileLabelCharBudget(88), 10);
     assert.ok(tileLabelCharBudget(132) > tileLabelCharBudget(88));
     assert.ok(tileLabelCharBudget(60) < tileLabelCharBudget(88));
   });
 
   it("keeps a usable budget for nonsense tile sizes", () => {
-    assert.equal(tileLabelCharBudget(Number.NaN), 20);
-    assert.equal(tileLabelCharBudget(0), 20);
-    assert.ok(tileLabelCharBudget(1) >= 8);
+    assert.equal(tileLabelCharBudget(Number.NaN), 8);
+    assert.equal(tileLabelCharBudget(0), 8);
+    assert.ok(tileLabelCharBudget(1) >= 4);
+  });
+});
+
+describe("Tile label budget at the vanilla-matched tile", () => {
+  it("budgets one line, not two, at the new default", () => {
+    // 72rem tile, one 17rem line. The old budget assumed two lines at 88rem
+    // and would have allowed twice what now fits.
+    assert.equal(tileLabelCharBudget(72), 8);
+  });
+
+  it("scales with a larger tile", () => {
+    assert.equal(tileLabelCharBudget(144), 16);
+  });
+
+  it("never budgets below four characters", () => {
+    assert.equal(tileLabelCharBudget(1), 4);
   });
 });

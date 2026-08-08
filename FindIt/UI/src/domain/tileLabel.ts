@@ -13,17 +13,15 @@
  */
 
 /**
- * Characters that fit on a tile, derived from the live measurement at the
- * default tile size: an 88rem tile renders a 52px label box in a 10.67px font
- * over two 17rem lines, which lands at about ten characters a line.
+ * Characters that fit on a tile.
  *
- * Approximate on purpose. Glyph widths vary, and the cost of being one
- * character out is a slightly short label, while the cost of measuring text
- * properly is a layout pass per tile per render.
+ * The tile now matches vanilla's 72rem card and carries a single 17rem line,
+ * so the budget is one line rather than two. Derived from the same measurement
+ * as before: about eight characters across a 72rem tile at 720p.
  */
-const CHARS_PER_LINE_AT_DEFAULT_TILE = 10;
-const DEFAULT_TILE_SIZE = 88;
-const TILE_LABEL_LINES = 2;
+const CHARS_PER_LINE_AT_DEFAULT_TILE = 8;
+const DEFAULT_TILE_SIZE = 72;
+const TILE_LABEL_LINES = 1;
 
 export const tileLabelCharBudget = (tileSize: number): number => {
   const size = Number.isFinite(tileSize) && tileSize > 0 ? tileSize : DEFAULT_TILE_SIZE;

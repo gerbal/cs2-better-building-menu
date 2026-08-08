@@ -140,7 +140,7 @@ namespace FindItBuildingMenu
 		/// </summary>
 		[SettingsUISection(SETTINGS, UIUX)]
 		[SettingsUISlider(min = 64, max = 144, step = 8, scalarMultiplier = 1, unit = Unit.kInteger)]
-		public int BuildingLensTileSize { get; set; } = 112;
+		public int BuildingLensTileSize { get; set; } = 72;
 
 		public bool IsVanillaMenuReplacementOff() => !ReplaceVanillaBuildMenu;
 
