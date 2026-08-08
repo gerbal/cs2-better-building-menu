@@ -362,7 +362,17 @@ namespace FindItBuildingMenu.Systems
 		{
 			if ((!settingPrefab && tool == _defaultToolSystem) || tool.toolID is "RoadBuilderTool" or "MoveItTool" or "Terrain Tool" or "Zone Tool")
 			{
-				ToggleFindItPanel(false);
+				// CloseLens, not a bare ToggleFindItPanel(false). This is the path
+				// Escape arrives on — the game cancels the armed tool natively and
+				// we hear about it here — and hiding the panel alone left the
+				// toolbar menu still selected. The game then drew the vanilla asset
+				// grid in the space the lens had just vacated, so Escape read as
+				// "swap my menu for the old one" rather than "close the menu".
+				//
+				// CloseLens releases that selection, and only when the lens was
+				// actually standing in for a menu, so the other tools listed above
+				// still just take the panel down.
+				CloseLens();
 			}
 		}
 
