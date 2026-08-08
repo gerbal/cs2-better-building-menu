@@ -46,14 +46,16 @@ describe("lock reason", () => {
     assert.equal(describeLockReason({ isLocked: true, unlockMilestone: 5 }, names, "Locked"), "Small City");
   });
 
-  it("prefers the milestone over a tech requirement, since it gates first", () => {
+  it("lists the milestone AND the other conditions, milestone first", () => {
+    // Knowing one of three gates is not knowing what to do. Milestone leads
+    // because it is the coarsest and clears first.
     const reason = describeLockReason(
       { isLocked: true, unlockMilestone: 1, unlockRequirements: ["Advanced Waste Management"] },
       names,
       "Locked"
     );
 
-    assert.equal(reason, "Tiny Village");
+    assert.equal(reason, "Tiny Village · Advanced Waste Management");
   });
 
   it("falls back to the requirement when there is no milestone — the signature-building case", () => {
@@ -66,14 +68,24 @@ describe("lock reason", () => {
     assert.equal(reason, "Build 5 High Density Residential");
   });
 
-  it("names the first requirement and counts the rest rather than truncating", () => {
+  it("lists every condition rather than hiding them behind a count", () => {
     const reason = describeLockReason(
       { isLocked: true, unlockRequirements: ["Population 5,000", "Two Universities", "A Harbour"] },
       names,
       "Locked"
     );
 
-    assert.equal(reason, "Population 5,000 +2");
+    assert.equal(reason, "Population 5,000 · Two Universities · A Harbour");
+  });
+
+  it("does not print the same condition twice when two branches reach it", () => {
+    const reason = describeLockReason(
+      { isLocked: true, unlockRequirements: ["Population 5,000", "Population 5,000"] },
+      names,
+      "Locked"
+    );
+
+    assert.equal(reason, "Population 5,000");
   });
 
   it("admits it does not know rather than inventing a reason", () => {

@@ -376,17 +376,23 @@ namespace FindItBuildingMenu.Systems
 		{
 			if ((!settingPrefab && tool == _defaultToolSystem) || tool.toolID is "RoadBuilderTool" or "MoveItTool" or "Terrain Tool" or "Zone Tool")
 			{
-				// CloseLens, not a bare ToggleFindItPanel(false). This is the path
-				// Escape arrives on — the game cancels the armed tool natively and
-				// we hear about it here — and hiding the panel alone left the
-				// toolbar menu still selected. The game then drew the vanilla asset
-				// grid in the space the lens had just vacated, so Escape read as
-				// "swap my menu for the old one" rather than "close the menu".
+				// Deliberately NOT CloseLens here, though the vanilla grid showing
+				// through on Escape makes it tempting.
 				//
-				// CloseLens releases that selection, and only when the lens was
-				// actually standing in for a menu, so the other tools listed above
-				// still just take the panel down.
-				CloseLens();
+				// CloseLens calls ClearAssetSelection, and this branch fires on
+				// every return to the default tool — not just Escape, but also
+				// after a placement and on a right-click cancel. Releasing the
+				// toolbar selection that eagerly meant that by the time the player
+				// actually pressed Escape there was no menu left for the game to
+				// close, so its own Escape chain fell through to the pause menu.
+				// Trading "Escape reveals the old menu" for "Escape pauses the
+				// game mid-build" is a bad trade.
+				//
+				// The real fix has to distinguish Escape from the other ways the
+				// tool returns to default, which this handler cannot see: Escape
+				// is consumed by the game's native input layer and never reaches
+				// the DOM, so it arrives here indistinguishable from a placement.
+				ToggleFindItPanel(false);
 			}
 		}
 
