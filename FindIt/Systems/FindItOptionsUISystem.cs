@@ -23,6 +23,24 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<OptionSectionUIEntry[]> _optionsList;
 		private ValueBindingHelper<bool> _filtersSet;
 
+		/// <summary>
+		/// True while a section is applying its own click or reset inside
+		/// <see cref="OptionClicked"/> or <see cref="ClearFilters"/>.
+		/// </summary>
+		/// <remarks>
+		/// The three building-lens facet sections write straight through to
+		/// <see cref="FindItUISystem.ToggleBuildingLensFacetOption"/>, which now
+		/// refreshes this bank itself once the catalog's facet bindings settle
+		/// (see FindItUISystem.Methods.cs's RefreshBuildingCatalog). Without this
+		/// guard that inner refresh would run, and then the explicit call these
+		/// two methods make afterward would run again on the same click — same
+		/// result both times, but computed twice. The guard collapses that to
+		/// the single call made once the section has finished reacting, which
+		/// is also the only one guaranteed to run after every section's state —
+		/// facet-backed or not — has settled.
+		/// </remarks>
+		private bool _applyingOptionChange;
+
 		protected override void OnCreate()
 		{
 			base.OnCreate();
@@ -40,6 +58,11 @@ namespace FindItBuildingMenu.Systems
 
 		public override void RefreshOptions()
 		{
+			if (_applyingOptionChange)
+			{
+				return;
+			}
+
 			if (!FindItUtil.IsReady)
 			{
 				return;
@@ -98,7 +121,15 @@ namespace FindItBuildingMenu.Systems
 				return;
 			}
 
-			section.OnOptionClicked(optionId, value);
+			_applyingOptionChange = true;
+			try
+			{
+				section.OnOptionClicked(optionId, value);
+			}
+			finally
+			{
+				_applyingOptionChange = false;
+			}
 
 			RefreshOptions();
 		}
@@ -107,15 +138,23 @@ namespace FindItBuildingMenu.Systems
 		{
 			var requireRefresh = false;
 
-			foreach (var section in _sections.Values)
+			_applyingOptionChange = true;
+			try
 			{
-				if (section.IsDefault())
+				foreach (var section in _sections.Values)
 				{
-					continue;
-				}
+					if (section.IsDefault())
+					{
+						continue;
+					}
 
-				requireRefresh = true;
-				section.OnReset();
+					requireRefresh = true;
+					section.OnReset();
+				}
+			}
+			finally
+			{
+				_applyingOptionChange = false;
 			}
 
 			if (requireRefresh)

@@ -224,7 +224,10 @@ namespace FindItBuildingMenu.Systems
 				TriggerSearch();
 			}
 
-			_optionsUISystem.RefreshOptions();
+			// UpdateCategoriesAndPrefabList already ran RefreshBuildingCatalog
+			// above, which now refreshes the options bank itself once its facet
+			// bindings are current. A second call here would just repeat that
+			// with nothing having changed in between.
 		}
 
 		private void SetBuildingLensEnabled(bool enabled)
@@ -467,7 +470,10 @@ namespace FindItBuildingMenu.Systems
 
 			UpdateCategoriesAndPrefabList();
 
-			_optionsUISystem.RefreshOptions();
+			// UpdateCategoriesAndPrefabList already ran RefreshBuildingCatalog
+			// above, which now refreshes the options bank itself once its facet
+			// bindings are current. A second call here would just repeat that
+			// with nothing having changed in between.
 
 			if (activatePrefab && Mod.Settings.SelectPrefabOnOpen)
 			{
