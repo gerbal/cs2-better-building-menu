@@ -842,7 +842,7 @@ public sealed class BuildingCatalogQueryEngineTests
         page.Write(writer);
 
         Assert.Equal(
-            new[] { "items", "id", "prefabName", "name", "category", "subCategory", "categoryLabel", "subCategoryLabel", "vanillaSection", "vanillaSubCategory", "thumbnail", "fallbackThumbnail", "lotWidth", "lotDepth", "buildingLevel", "zoneType", "hasParking", "isUniqueMesh", "isVanilla", "isLocked", "isFavorited", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "constructionCost", "upkeep", "workers", "capacity", "electricityConsumption", "waterConsumption", "garbageAccumulation", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "totalCount", "offset", "limit" },
+            new[] { "items", "id", "prefabName", "name", "category", "subCategory", "categoryLabel", "subCategoryLabel", "vanillaSection", "vanillaSubCategory", "thumbnail", "fallbackThumbnail", "uiMenu", "uiCategory", "lotWidth", "lotDepth", "buildingLevel", "zoneType", "hasParking", "isUniqueMesh", "isVanilla", "isLocked", "unlockMilestone", "unlockRequirements", "bonuses", "costIsPerDistance", "parkingSlots", "isFavorited", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "constructionCost", "upkeep", "workers", "capacity", "electricityConsumption", "waterConsumption", "garbageAccumulation", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "totalCount", "offset", "limit" },
             writer.PropertyNames);
         Assert.Contains("Write:Int32:1", writer.Tokens);
         Assert.Contains("Write:String:Coal Power Plant", writer.Tokens);
@@ -852,6 +852,99 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.Contains("Write:String:Education & Research", writer.Tokens);
         Assert.Contains("Write:Int32:100", writer.Tokens);
         Assert.Contains("Write:Double:80000", writer.Tokens);
+    }
+
+    [Fact]
+    public void Query_MenuScopeDropsUpgradesButUnscopedQueriesKeepThem()
+    {
+        // Vanilla drops service upgrades from every build menu
+        // (ToolbarUISystem.FilterOutUpgrades), so a menu-scoped query must not
+        // offer something the player cannot place. An UNSCOPED query is not
+        // looking at a menu and must still find them, or the Extensions facet
+        // offers values that match nothing.
+        //
+        // This exact exclusion once ran outside the menu guard, which deleted
+        // every upgrade-bearing asset from the whole catalog.
+        BuildingCatalogEntry upgrade = SampleEntries[3] with
+        {
+            Id = 41,
+            PrefabName = "HospitalWing02",
+            Name = "Hospital Wing",
+            UiMenu = "Health & Deathcare",
+            UiCategory = "Healthcare",
+            Extensions = new[] { "HospitalWing02" },
+        };
+        BuildingCatalogEntry placeable = SampleEntries[3] with
+        {
+            Id = 42,
+            PrefabName = "Hospital01",
+            Name = "Hospital",
+            UiMenu = "Health & Deathcare",
+            UiCategory = "Healthcare",
+        };
+        BuildingCatalogEntry[] entries = { upgrade, placeable };
+
+        BuildingCatalogPage scoped = BuildingCatalogQueryEngine.Query(
+            entries,
+            new BuildingCatalogQuery(UiMenu: "Health & Deathcare"));
+
+        Assert.Equal(42, Assert.Single(scoped.Items).Id);
+
+        BuildingCatalogPage unscoped = BuildingCatalogQueryEngine.Query(
+            entries,
+            new BuildingCatalogQuery(Extensions: new[] { "hospitalwing02" }));
+
+        Assert.Equal(41, Assert.Single(unscoped.Items).Id);
+    }
+
+    [Fact]
+    public void Query_MenuScopeReplacesTheSectionOverlayRatherThanLayeringOnIt()
+    {
+        // A menu member that indexes into a different section than the preset
+        // pins. Roads is pinned to Networks, but its parking lots index as
+        // ServiceBuildings — 35 of 157 members used to vanish for exactly this.
+        BuildingCatalogEntry parkingLot = SampleEntries[3] with
+        {
+            Id = 51,
+            PrefabName = "ParkingLot01",
+            Name = "Parking Lot",
+            UiMenu = "Roads",
+            UiCategory = "RoadsParking",
+            VanillaSection = "ServiceBuildings",
+        };
+
+        // Scoped to the menu: the game says it is in Roads, so it is in Roads,
+        // whatever our own section reconstruction thinks.
+        BuildingCatalogPage scoped = BuildingCatalogQueryEngine.Query(
+            new[] { parkingLot },
+            new BuildingCatalogQuery(UiMenu: "Roads", BuildMenuSection: "Networks"));
+
+        Assert.Equal(51, Assert.Single(scoped.Items).Id);
+
+        // Unscoped, the section overlay still applies — it is the only scope
+        // there is when no menu is named.
+        BuildingCatalogPage unscoped = BuildingCatalogQueryEngine.Query(
+            new[] { parkingLot },
+            new BuildingCatalogQuery(BuildMenuSection: "Networks"));
+
+        Assert.Empty(unscoped.Items);
+    }
+
+    [Fact]
+    public void Query_SortsParkingByCountRatherThanByTheFlag()
+    {
+        // The flag put everything into two buckets and left the order inside
+        // them alone, so a set that agreed — all of Water & Sewage — appeared
+        // not to sort at all.
+        BuildingCatalogEntry small = SampleEntries[3] with { Id = 61, HasParking = true, ParkingSlots = 12 };
+        BuildingCatalogEntry large = SampleEntries[3] with { Id = 62, HasParking = true, ParkingSlots = 240 };
+        BuildingCatalogEntry none = SampleEntries[3] with { Id = 63, HasParking = false, ParkingSlots = 0 };
+
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+            new[] { small, none, large },
+            new BuildingCatalogQuery(SortColumn: "HasParking", Descending: true));
+
+        Assert.Equal(new[] { 62, 61, 63 }, page.Items.Select(entry => entry.Id).ToArray());
     }
 
     private static BuildingCatalogEntry Entry(

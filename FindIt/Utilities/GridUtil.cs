@@ -9,7 +9,6 @@ namespace FindItBuildingMenu.Utilities
     {
         internal const float BuildingLensMinWidth = 700f;
         internal const float BuildingLensMaxWidth = 1200f;
-        internal const float BuildingLensExpandedWidth = 1005f;
 
         private static readonly FindItUISystem _findItUISystem = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<FindItUISystem>();
 
@@ -27,8 +26,20 @@ namespace FindItBuildingMenu.Utilities
         {
             if (_findItUISystem.BuildingLensEnabled)
             {
+                // Maximise and restore, not a floor.
+                //
+                // This used to return max(savedWidth, BuildingLensExpandedWidth)
+                // against a fixed 1005f while the resize handle clamps to
+                // BuildingLensMaxWidth (1200f). Any panel the player had already
+                // dragged past 1005 made the button permanently inert: it swapped
+                // its own icon, took the selected treatment, and changed the width
+                // by nothing at all — verified live at a saved width of 1042.
+                //
+                // Restoring reads the saved width back, which is the width the
+                // player last chose by hand, because CommitBuildingLensPanelWidth
+                // only writes the setting on a drag.
                 return _findItUISystem.IsExpanded
-                    ? Math.Max(GetBuildingLensWidth(), BuildingLensExpandedWidth)
+                    ? BuildingLensMaxWidth
                     : GetBuildingLensWidth();
             }
 

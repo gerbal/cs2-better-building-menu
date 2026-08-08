@@ -69,7 +69,54 @@ namespace FindItBuildingMenu.Domain
 		/// Only the renderer can tell that happened, so both have to reach it.
 		/// Last and defaulted, for the same reason as IsLocked above.
 		/// </remarks>
-		string? FallbackThumbnail = null) : IJsonWritable
+		string? FallbackThumbnail = null,
+		/// <summary>
+		/// SPIKE (cm-e98i): where the GAME puts this asset in the build menu.
+		/// </summary>
+		string? UiMenu = null,
+		string? UiCategory = null,
+		/// <summary>
+		/// What the asset is waiting on. Meaningful only while IsLocked.
+		/// </summary>
+		/// <remarks>
+		/// Milestone as an index rather than a name: the ~20 names are published
+		/// once in their own table, so a locked asset costs an int instead of a
+		/// string re-resolved on every unlock-triggered re-index. Requirements
+		/// arrive already localized, because they have no shared ordinal the way
+		/// milestones do.
+		/// </remarks>
+		int UnlockMilestone = 0,
+		string[]? UnlockRequirements = null,
+		/// <summary>
+		/// What the building gives the city. Signature buildings are free, so
+		/// the effect is the whole basis for choosing one over another.
+		/// </summary>
+		string[]? Bonuses = null,
+		/// <summary>
+		/// Cost and Upkeep are per kilometre, not per instance. True for
+		/// networks, which price by length.
+		/// </summary>
+		bool CostIsPerDistance = false,
+		/// <summary>
+		/// Approximate parking bays. Zero means none; a boolean could not say
+		/// how many, and made sorting by parking a no-op.
+		/// </summary>
+		int ParkingSlots = 0,
+		/// <summary>
+		/// The game's sort order for <see cref="UiCategory"/> within its menu.
+		/// </summary>
+		/// <remarks>
+		/// Ordering only, never rendered — so it is deliberately absent from
+		/// <see cref="Write"/>. The UI derives its headings from UiCategory and
+		/// preserves the order C# sent, so the rank has no work to do there and
+		/// serialising it would cost a field on all ~3,667 entries to say
+		/// something the wire already implies.
+		///
+		/// Zero, not int.MaxValue, when the category has no UIObject: that is
+		/// vanilla's own default (UIObjectInfo.GetObjects), and it sorts such a
+		/// category into the middle rather than pushing it to the end.
+		/// </remarks>
+		int UiCategoryPriority = 0) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -97,6 +144,10 @@ namespace FindItBuildingMenu.Domain
 			writer.Write(Thumbnail);
 			writer.PropertyName("fallbackThumbnail");
 			writer.Write(FallbackThumbnail ?? string.Empty);
+			writer.PropertyName("uiMenu");
+			writer.Write(UiMenu ?? string.Empty);
+			writer.PropertyName("uiCategory");
+			writer.Write(UiCategory ?? string.Empty);
 			writer.PropertyName("lotWidth");
 			writer.Write(LotWidth);
 			writer.PropertyName("lotDepth");
@@ -113,6 +164,14 @@ namespace FindItBuildingMenu.Domain
 			writer.Write(IsVanilla);
 			writer.PropertyName("isLocked");
 			writer.Write(IsLocked);
+			writer.PropertyName("unlockMilestone");
+			writer.Write(UnlockMilestone);
+			WriteStringArray(writer, "unlockRequirements", UnlockRequirements);
+			WriteStringArray(writer, "bonuses", Bonuses);
+			writer.PropertyName("costIsPerDistance");
+			writer.Write(CostIsPerDistance);
+			writer.PropertyName("parkingSlots");
+			writer.Write(ParkingSlots);
 			writer.PropertyName("isFavorited");
 			writer.Write(IsFavorited);
 			writer.PropertyName("pdxModsId");

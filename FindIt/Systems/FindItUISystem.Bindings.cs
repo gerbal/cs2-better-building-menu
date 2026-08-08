@@ -43,7 +43,13 @@ namespace FindItBuildingMenu.Systems
 		///
 		/// Only the deliberate close paths call this. When the player picks a
 		/// different vanilla menu the lens also closes, but there the selection
-		/// is their new choice and clearing it would undo the click.
+		/// is their new choice and clearing it would undo the click — that path
+		/// arms a tool, so it never reaches OnToolChanged's default-tool branch.
+		///
+		/// Notably NOT called from OnToolChanged. That branch fires on every
+		/// return to the default tool, so clearing the selection there released
+		/// the menu long before the player pressed Escape — and the game's own
+		/// Escape chain, finding nothing left to close, opened the pause menu.
 		/// </remarks>
 		private void CloseLens()
 		{
@@ -56,6 +62,15 @@ namespace FindItBuildingMenu.Systems
 			{
 				return;
 			}
+
+			// A closed lens stands in for no menu, so the menu scope goes with
+			// it. It was set on every vanilla menu click and never cleared, so
+			// it outlived the panel: reopening the lens from FindIt's own
+			// toolbar button still filtered the whole catalog down to whichever
+			// menu had been clicked last, with nothing on screen saying so.
+			_buildingLensUiMenu = string.Empty;
+			_buildingLensUiCategory = string.Empty;
+			RefreshBuildingLensMenuCategories();
 
 			if (ownedMenu)
 			{
@@ -101,6 +116,43 @@ namespace FindItBuildingMenu.Systems
 
 			var menuName = PrefabIndexingSystem.GetAssetMenuName(menuEntityIndex);
 			var preset = VanillaMenuPresets.Resolve(menuName);
+
+			// SPIKE (cm-e98i). The menu's own name is the whole constraint the
+			// query needs: assets carry the menu the game placed them in, so a
+			// name is enough to reproduce vanilla's set exactly. Set before the
+			// preset check, because a menu with no preset is precisely the case
+			// the tree rescues.
+			// GetAssetMenuName resolves the UIAssetMenuPrefab's name, which is the
+			// same string assets carry as UiMenu, so it needs no translation.
+			_buildingLensUiMenu = menuName ?? string.Empty;
+			// A different menu has different tabs, so the old selection cannot
+			// survive the switch.
+			_buildingLensUiCategory = string.Empty;
+			RefreshBuildingLensMenuCategories();
+
+			// SPIKE (cm-e98i): Roads, Landscaping and Areas resolve to no preset
+			// and used to close the panel — the lens simply could not show them.
+			// The tree covers them (Roads alone is 9 categories, 157 assets), so
+			// when it knows the menu, open the lens on it instead of retreating.
+			if (preset is null && !string.IsNullOrEmpty(_buildingLensUiMenu))
+			{
+				_appliedMenuIndex = menuEntityIndex;
+				_appliedMenuFrame = UnityEngine.Time.frameCount;
+				_LensOwnsCurrentMenu.Value = true;
+				_ShowZoningHierarchy.Value = false;
+				_BuildingLensEnabled.Value = true;
+				_buildingLensSection = VanillaBuildMenuTaxonomy.AllBuildings;
+				_buildingLensSubCategory = VanillaBuildMenuTaxonomy.Any;
+				_BuildingLensSectionBinding.Value = _buildingLensSection;
+				_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
+				_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0 };
+				scrollIndex = 0;
+
+				ToggleFindItPanel(true);
+				RefreshBuildingLensNavigation();
+				RefreshBuildingCatalog();
+				return;
+			}
 
 			if (preset is null)
 			{
@@ -193,6 +245,117 @@ namespace FindItBuildingMenu.Systems
 		}
 
 		/// <summary>
+		/// Picks one of the scoped menu's category tabs, or all of them.
+		/// </summary>
+		/// <remarks>
+		/// The empty string is "every category in this menu", which is the state
+		/// a menu opens in. Vanilla has no such tab — it always opens on the
+		/// first category — but the lens can show a whole menu at once and that
+		/// is worth keeping, so the strip carries one more option than vanilla's.
+		/// </remarks>
+		private void SetBuildingLensMenuCategory(string category)
+		{
+			// The zoning view is not the building catalog: it renders the zone
+			// catalog narrowed by family, and reads none of the query the
+			// category scope feeds. So the strip's five Zones tabs — which are
+			// the five families, under the game's own plural names — were a row
+			// of buttons that took the selected treatment and changed nothing on
+			// screen, while the "All families" picker beside them worked.
+			//
+			// Both now write the one selection. The strip picks a single family
+			// because a tab strip is single-select; the picker still composes
+			// several, and whichever set that leaves is what both controls read
+			// back.
+			if (_ShowZoningHierarchy.Value)
+			{
+				var family = ZoningSurfaceCatalog.ResolveFamilyFromGroup(category);
+
+				_zoneFamilies = family is null
+					? System.Array.Empty<string>()
+					: new[] { family };
+				_BuildingLensZoneFamilies.Value = _zoneFamilies;
+				PublishSelectedZoneFamilyTab();
+				return;
+			}
+
+			_buildingLensUiCategory = category ?? string.Empty;
+			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
+			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0 };
+
+			RefreshBuildingCatalog();
+		}
+
+		/// <summary>
+		/// Lights the strip tab for the family selection, when one tab can say it.
+		/// </summary>
+		/// <remarks>
+		/// A tab strip can show one choice, the picker can compose several, and
+		/// they share a state — so two families selected lights no tab rather
+		/// than lying about which. Empty means every family, which is what the
+		/// strip's "All" tab already stands for.
+		/// </remarks>
+		private void PublishSelectedZoneFamilyTab()
+		{
+			_BuildingLensMenuCategoryBinding.Value = _zoneFamilies.Length == 1
+				? ZoningSurfaceCatalog.ResolveGroupFromFamily(_zoneFamilies[0]) ?? string.Empty
+				: string.Empty;
+		}
+
+		/// <summary>
+		/// Drops the vanilla-menu scope and shows the whole catalog.
+		/// </summary>
+		/// <remarks>
+		/// The bottom-bar icons are shortcuts to a preconfigured view, not a box
+		/// the player is locked inside. Removing the menu chip is how you say
+		/// "same filters, everything" — the widening that SearchEverything only
+		/// offered for a search that already found nothing.
+		///
+		/// The facets deliberately survive. This clears the scope, not the
+		/// narrowing the player chose within it, and dropping both would make
+		/// one × do two jobs.
+		/// </remarks>
+		private void ClearBuildingLensMenuScope()
+		{
+			_buildingLensUiMenu = string.Empty;
+			_buildingLensUiCategory = string.Empty;
+			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0 };
+			scrollIndex = 0;
+
+			// The zoning view is a different renderer over a different catalog,
+			// so leaving it scoped to zones while the query widens would show
+			// the player zones and tell them "all menus". Send them to the
+			// catalog, which is what "everything" means here.
+			_ShowZoningHierarchy.Value = false;
+
+			RefreshBuildingLensMenuCategories();
+			RefreshBuildingLensNavigation();
+			RefreshBuildingCatalog();
+		}
+
+		/// <summary>
+		/// Republishes the tab strip for whatever menu is currently scoped.
+		/// </summary>
+		private void RefreshBuildingLensMenuCategories()
+		{
+			var tabs = PrefabIndexingSystem.GetMenuCategories(
+				string.IsNullOrEmpty(_buildingLensUiMenu) ? null : _buildingLensUiMenu);
+
+			_BuildingLensMenuCategoriesBinding.Value = tabs.ToArray();
+			_BuildingLensMenuBinding.Value = _buildingLensUiMenu;
+
+			// In the zoning view the strip's selection IS the family selection,
+			// and _buildingLensUiCategory stays empty there — republishing it
+			// would blank the lit tab under a filter that is still applied.
+			if (_ShowZoningHierarchy.Value)
+			{
+				PublishSelectedZoneFamilyTab();
+				return;
+			}
+
+			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
+		}
+
+		/// <summary>
 		/// Widens a search that found nothing here to the whole catalog.
 		/// </summary>
 		private void SearchEverything()
@@ -204,6 +367,14 @@ namespace FindItBuildingMenu.Systems
 			_buildingLensSection = selection.Section;
 			_buildingLensSubCategory = selection.SubCategory;
 			_buildingLensRole = VanillaBuildMenuTaxonomy.Any;
+			// The menu scope has to go too, or "search everything" searches the
+			// one menu the player already knows has nothing. Widening the
+			// section alone left MatchesVanillaMenuTree still filtering every
+			// candidate down to that menu, so the control that exists to escape
+			// an empty result could not escape it.
+			_buildingLensUiMenu = string.Empty;
+			_buildingLensUiCategory = string.Empty;
+			RefreshBuildingLensMenuCategories();
 			_BuildingLensSectionBinding.Value = _buildingLensSection;
 			_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
 			_BuildingLensRoleBinding.Value = _buildingLensRole;
@@ -314,6 +485,13 @@ namespace FindItBuildingMenu.Systems
 				return;
 			}
 
+			// Dragging is an explicit width choice, so it ends the expanded
+			// state. Leaving the flag set would light the button while showing a
+			// width the player set by hand, and the next restore would jump back
+			// to a width they had already replaced. Assigning Value does not
+			// re-enter the trigger callback (ExtendedUISystemBase.cs:132-140), so
+			// this cannot clobber the width being set on the next line.
+			_IsExpanded.Value = false;
 			_PanelWidth.Value = GridUtil.ClampBuildingLensWidth(width);
 		}
 
@@ -462,6 +640,9 @@ namespace FindItBuildingMenu.Systems
 		{
 			_zoneFamilies = ZoneFamilySelection.Toggle(_zoneFamilies, family);
 			_BuildingLensZoneFamilies.Value = _zoneFamilies;
+			// The strip above shows the same selection, so it has to follow the
+			// picker as well as drive it.
+			PublishSelectedZoneFamilyTab();
 		}
 
 		private void SetBuildingCatalogMetricRange(string metricId, string minText, string maxText)

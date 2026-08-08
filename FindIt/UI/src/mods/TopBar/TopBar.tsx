@@ -25,7 +25,7 @@ import { FOCUS_DISABLED } from "cs2/input";
 import { searchChangedCommand, setCurrentCategoryCommand, setCurrentSubCategoryCommand } from "domain/buildingCatalogContracts";
 import type { BuildingLensMode } from "domain/buildingLensMode";
 import { ChipRow } from "mods/ChipRow/ChipRow";
-import { TabStrip } from "mods/TabStrip/TabStrip";
+import { MenuCategoryStrip } from "mods/MenuCategoryStrip/MenuCategoryStrip";
 
 export interface TopBarProps {
   sortingOpen: any;
@@ -355,7 +355,7 @@ export const TopBarComponent = (props: TopBarProps) => {
       <div className={classNames(props.large && styles.large, props.small && styles.small)}>
         {showTopBarRow && (
           <div className={styles.topBar}>
-            <div className={classNames(styles.topBarSection, AlignmentStyle !== "Center" && styles.expandedSearchArea)}>
+            <div className={classNames(styles.topBarSection, styles.topBarSearchSection, AlignmentStyle !== "Center" && styles.expandedSearchArea)}>
               {IsSearchLoading && <img style={{ maskImage: "url(coui://finditbuildingmenu/Icons/Standard/HalfCircleProgress.svg)" }} className={styles.loadingIcon}></img>}
               {!IsSearchLoading && <img style={{ maskImage: `url(${find})` }} className={styles.searchIcon}></img>}
               <div className={styles.searchArea}>
@@ -389,7 +389,7 @@ export const TopBarComponent = (props: TopBarProps) => {
               {AlignmentStyle === "Center" && RenderButtonSection()}
             </div>
 
-            <div className={styles.topBarSection}>
+            <div className={classNames(styles.topBarSection, styles.topBarControlsSection)}>
               {BuildingLensEnabled && RenderLensModeList()}
 
               <Tooltip tooltip={translate("Tooltip.LABEL[FindItBuildingMenu.ClosePanel]", "Close Panel")}>
@@ -444,7 +444,7 @@ export const TopBarComponent = (props: TopBarProps) => {
                 here as a sibling rather than inside TabStrip — it keeps
                 rendering in both of those cases. */}
             <div className={styles.catalogStripRow}>
-              <TabStrip />
+              <MenuCategoryStrip />
               <div className={styles.catalogStripSearch}>
                 {IsSearchLoading && (
                   <img

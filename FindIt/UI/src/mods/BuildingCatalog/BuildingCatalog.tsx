@@ -50,6 +50,8 @@ import { findItSurfacePort } from "domain/findItSurfacePort";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 import { getSearchScopeNotice } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
+import { canPlace, isEntryLocked } from "domain/buildingLockState";
+import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { getLensChoice, getLensDisclosure, setLensChoice, setLensDisclosure } from "domain/buildingLensViewState";
 import { GroupedResults, type CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import { ViewModeBar } from "mods/GroupedResults/ViewModeBar";
@@ -91,6 +93,9 @@ const BuildingCatalogMatchesElsewhere$ = bindValue<number>(mod.id, "BuildingCata
 const LensDefaultToTable$ = bindValue<boolean>(mod.id, "BuildingLensDefaultToTable", false);
 // The section decides the grouping until the player picks one themselves.
 const BuildingLensSection$ = bindValue<string>(mod.id, "BuildingLensSection", "AllBuildings");
+// Non-empty means the lens is standing in for a vanilla menu that has a tab
+// strip, which decides the default grouping.
+const BuildingLensMenuCategories$ = bindValue<unknown[]>(mod.id, "BuildingLensMenuCategories", []);
 
 const LENS_VIEW_MODE_KEY = "viewMode";
 const LENS_GROUP_KEY = "groupBy";
@@ -132,11 +137,15 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
   // The player's own thousands/decimal marks, so our columns agree with the
   // numbers the game is drawing elsewhere on the same screen.
   const separators = getNumberSeparators(translate);
+  // The same card every other view mode shows. The table had none, so it was
+  // the one mode that could not answer a question its columns had no room for.
+  const hoverCard = useHoverCardContext();
   const page = useValue(BuildingCatalog$);
   const panelWidth = useValue(PanelWidth$);
   const currentSearch = useValue(CurrentSearch$);
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
   const section = useValue(BuildingLensSection$);
+  const menuHasCategories = (useValue(BuildingLensMenuCategories$) ?? []).length > 0;
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
   const [sortingExpanded, setSortingExpanded] = useState(false);
   // Grid by default: recognising a thumbnail is the fast path back to the map,
@@ -163,10 +172,9 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
   // None — the first follows the section, the second stays flat.
   const [chosenGroupBy, setChosenGroupBy] = useState<string>(() => getLensChoice(LENS_GROUP_KEY, ""));
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
-  const [sortPickerOpen, setSortPickerOpen] = useState(false);
   const groupBy: GroupDimensionId = isGroupDimension(chosenGroupBy)
     ? chosenGroupBy
-    : defaultGroupDimensionFor(section);
+    : defaultGroupDimensionFor(section, menuHasCategories);
   const setGroupBy = (next: GroupDimensionId) => {
     setLensChoice(LENS_GROUP_KEY, next);
     setChosenGroupBy(next);
@@ -218,6 +226,7 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
   const lastPageLabel = translate("Tooltip.LABEL[FindItBuildingMenu.LastPage]", "Last page") ?? "Last page";
   const lastPageOffset = normalizeCatalogOffset(totalCount, totalCount, limit);
   const inspectLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Inspect]", "Details") ?? "Details";
+  const lockedLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Locked]", "Locked") ?? "Locked";
   const collapseLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Collapse]", "Hide") ?? "Hide";
   // Row and filter should name the same asset the same way: the entry carries
   // raw ids (DlcId is the numeric platform id) while the facet groups already
@@ -273,6 +282,9 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
   const sortByOptionLabel = (label: string): string =>
     (translate("Tooltip.LABEL[FindItBuildingMenu.SortByOption]", "Sort by {0}") ?? "Sort by {0}")
       .replace("{0}", label);
+  // The same string the sorted column header uses for the same gesture.
+  const reverseSortLabel =
+    translate("Tooltip.LABEL[FindItBuildingMenu.ReverseSort]", "reverse this sort") ?? "reverse this sort";
 
   /**
    * Draws one leaf's entries in whichever mode is active.
@@ -286,6 +298,13 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
   }
 
   function activate(entry: BuildingCatalogEntry): void {
+    // A milestone-locked asset cannot be placed, and vanilla refuses the same
+    // selection (ToolbarUISystem.cs:924). Guarded here rather than in the C#
+    // TryActivatePrefabTool, which the arrow-key grid navigation also calls to
+    // move the selection — refusing there would stop the cursor dead on a
+    // locked tile instead of stepping past it.
+    if (!canPlace(entry)) return;
+
     // Keep the existing FindIt placement path: the backend resolves this id
     // through its single prefab index and activates the normal prefab tool.
     findItSurfacePort.activatePrefab({ prefabId: entry.id });
@@ -307,29 +326,33 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
     trigger(mod.id, command.method, ...command.args);
   }
 
-  // Only one of the two pickers is ever open. They sit on the same line and
-  // overlay the results, so both at once is two popovers competing for the
-  // same space.
-  function openSortPicker(): void {
+  // "Sort by <field>" opens the sort options, and that is the only thing that
+  // does. There used to be three controls for one job: this chip dropped its
+  // own menu, a "More sorting" button at the far right revealed a second copy
+  // of the same list, and the direction arrow — nested inside the chip — could
+  // only open the menu it sat in. One toggle, one list.
+  function toggleSortOptions(): void {
     setGroupPickerOpen(false);
-    setSortPickerOpen((open) => !open);
+    setSortingExpanded((expanded) => !expanded);
   }
 
   function openGroupPicker(): void {
-    setSortPickerOpen(false);
+    setSortingExpanded(false);
     setGroupPickerOpen((open) => !open);
   }
 
-  // Picking from either menu closes it. They overlay the results, and a menu
-  // that stays up after it has been used hides the change it just made.
-  function chooseSort(column: SortColumn): void {
-    setSortPickerOpen(false);
-    setSort(column);
-  }
-
+  // Picking a group closes the menu. It overlays the results, and a menu that
+  // stays up after it has been used hides the change it just made. The sort
+  // options are a band rather than an overlay, so they stay: re-picking the
+  // active field is how you reverse it.
   function chooseGroupBy(id: GroupDimensionId): void {
     setGroupPickerOpen(false);
     setGroupBy(id);
+  }
+
+  /** Reverse without changing the field: nextSortState flips on a repeat. */
+  function reverseSort(): void {
+    setSort(sortColumn);
   }
 
   function setSort(column: SortColumn): void {
@@ -439,38 +462,25 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
           <Button
             className={styles.sortSummary}
             variant="icon"
-            onSelect={openSortPicker}
-            aria-expanded={sortPickerOpen}
+            onSelect={toggleSortOptions}
+            aria-expanded={sortingExpanded}
             aria-label={sortedByLabel}
-            title={sortedByLabel}
+            title={moreSortingLabel}
           >
             <span className={styles.sortSummaryLabel}>{sortPresentation.compact.label}</span>
+          </Button>
+          {/* Its own button, deliberately. As a <span> inside the chip above,
+              the one gesture that reads as "reverse this" was the one that
+              could not: the click bubbled to the chip and opened a menu. */}
+          <Button
+            className={styles.sortDirectionButton}
+            variant="icon"
+            onSelect={reverseSort}
+            aria-label={reverseSortLabel}
+            title={reverseSortLabel}
+          >
             <span className={styles.sortDirection} aria-hidden="true">{sortPresentation.compact.indicator}</span>
           </Button>
-          {sortPickerOpen && (
-            <div className={styles.sortPickerOptions}>
-              {sortPresentation.expanded.map((option) => (
-                <Button
-                  key={option.key}
-                  className={classNames(styles.sortButton, option.selected && styles.sortButtonSelected)}
-                  variant="icon"
-                  onSelect={() => chooseSort(option.key)}
-                  aria-label={sortByOptionLabel(option.label)}
-                  title={sortByOptionLabel(option.label)}
-                >
-                  <span>{option.label}</span>
-                  {/* Choosing the active field again reverses it — the same
-                      gesture the chip row and the column headers already use,
-                      so the indicator has to be here to say which way. */}
-                  {option.selected && (
-                    <span className={styles.sortDirection} aria-hidden="true">
-                      {sortPresentation.compact.indicator}
-                    </span>
-                  )}
-                </Button>
-              ))}
-            </div>
-          )}
         </div>
         {/* A table is not a strip-shaped thing, so the toggle has nothing to
             offer at strip height. It is hidden here, not removed: expanding
@@ -545,7 +555,7 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
                   <div className={styles.compareIdentity}>
                     <span className={styles.compareName}>{entryLabel}</span>
                     <span className={styles.compareMetrics}>
-                      Cost {formatBuildingMetric(entry.constructionCost, "cost", separators)} · Upkeep {formatBuildingMetric(entry.upkeep, "upkeep", separators)} · Workers {formatBuildingMetric(entry.workers, "workers", separators)} · Capacity {formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators)}
+                      Cost {formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance)} · Upkeep {formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance)} · Workers {formatBuildingMetric(entry.workers, "workers", separators)} · Capacity {formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators)}
                     </span>
                   </div>
                   <Button
@@ -642,13 +652,29 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
             const compareRemoveLabel = `Remove ${entryLabel} from comparison`;
 
             return (
-              <div key={entry.id} className={styles.row} data-expanded={isExpanded ? "true" : undefined}>
+              <div
+                key={entry.id}
+                className={styles.row}
+                data-expanded={isExpanded ? "true" : undefined}
+                data-locked={isEntryLocked(entry) ? "true" : undefined}
+              >
+                {/* The same card the grid, list and cards show. The table had
+                    none at all, so it was the one mode that could not answer a
+                    question its own columns did not have room for.
+
+                    Wrapping .rowSelect rather than the row: the row also holds
+                    Place and the compare control, which are not this building's
+                    description. cs2/ui's Tooltip clones its child instead of
+                    wrapping it in an element, so the flex row is unaffected.
+
+                    No title= alongside it — that would put two tooltips on one
+                    control. */}
+                <BuildingHoverCard entry={entry} context={hoverCard}>
                 <Button
                   className={styles.rowSelect}
                   variant="icon"
                   onSelect={() => toggleExpanded(entry.id)}
-                  aria-label={inspectLabel}
-                  title={rowInspectLabel}
+                  aria-label={rowInspectLabel}
                   data-expanded={isExpanded ? "true" : undefined}
                 >
                   <div className={styles.identityCell}>
@@ -670,11 +696,11 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
                       </div>
                     </div>
                   </div>
-                  <div className={classNames(styles.metric, styles.metricCost)} title={`Cost ${formatBuildingMetric(entry.constructionCost, "cost", separators)}`}>
-                    {formatBuildingMetric(entry.constructionCost, "cost", separators)}
+                  <div className={classNames(styles.metric, styles.metricCost)} title={`Cost ${formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance)}`}>
+                    {formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance)}
                   </div>
-                  <div className={classNames(styles.metric, styles.metricUpkeep)} title={`Upkeep ${formatBuildingMetric(entry.upkeep, "upkeep", separators)}`}>
-                    {formatBuildingMetric(entry.upkeep, "upkeep", separators)}
+                  <div className={classNames(styles.metric, styles.metricUpkeep)} title={`Upkeep ${formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance)}`}>
+                    {formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance)}
                   </div>
                   <div className={classNames(styles.metric, styles.metricWorkers)} title={`Workers ${formatBuildingMetric(entry.workers, "workers", separators)}`}>
                     {formatBuildingMetric(entry.workers, "workers", separators)}
@@ -688,21 +714,31 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
                   <div className={classNames(styles.metric, styles.metricLevel)} title="Building level">
                     {entry.buildingLevel}
                   </div>
-                  <div className={classNames(styles.parking, styles.metricParking, entry.hasParking && styles.parkingActive)} title={entry.hasParking ? "Parking" : "No parking"}>
-                    {/* Not the no-data dash: this building is known to have no
-                        parking, which is a fact rather than a gap. */}
-                    {entry.hasParking ? "P" : "·"}
+                  <div
+                    className={classNames(styles.parking, styles.metricParking, entry.hasParking && styles.parkingActive)}
+                    title={entry.hasParking ? `${entry.parkingSlots} parking bays (approximate)` : "No parking"}
+                  >
+                    {/* The count, not a "P". A glyph answered "does it park
+                        cars", which is rarely the question — between two car
+                        parks the answer is yes either way. Still not the no-data
+                        dash for zero: a building with no parking is a fact
+                        rather than a gap. */}
+                    {entry.hasParking ? entry.parkingSlots : "·"}
                   </div>
                 </Button>
+                </BuildingHoverCard>
                 {/* Placing is now an explicit act. The whole row used to be a
                     Place button, so there was no way to look at a building
                     without committing to it — and placement closes the panel. */}
                 <Button
                   className={styles.rowPlaceButton}
                   variant="icon"
+                  // activate() already refuses, but a Place button that looks
+                  // live and does nothing is worse than one that says it cannot.
+                  disabled={isEntryLocked(entry)}
                   onSelect={() => activate(entry)}
-                  aria-label={rowPlaceLabel}
-                  title={rowPlaceLabel}
+                  aria-label={isEntryLocked(entry) ? `${rowPlaceLabel} — ${lockedLabel}` : rowPlaceLabel}
+                  title={isEntryLocked(entry) ? lockedLabel : rowPlaceLabel}
                 >
                   <span>{placeLabel}</span>
                 </Button>

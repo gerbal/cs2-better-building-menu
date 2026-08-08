@@ -52,12 +52,13 @@ namespace FindItBuildingMenu.Domain
 		IReadOnlyList<string>? ZoneTypes = null,
 		string BuildMenuSection = "",
 		string BuildMenuSubCategory = "",
-		// The lens role tab strip, one level below section/subCategory. Single
-		// id rather than a set: BuildingRole.ResolvePrimary already picks one
-		// role per entry, and the tab strip has to express identity, never a
-		// filter, or a set-valued role would make the tabs a filter instead of
-		// a place. Empty and the "Any" sentinel both mean unscoped, matching
-		// BuildMenuSubCategory's convention above.
+		// SPIKE (cm-e98i): the game's own menu placement, used instead of our
+		// reconstructed section when the lens was opened from a vanilla menu.
+		string UiMenu = "",
+		string UiCategory = "",
+		// Single id rather than a set: BuildingRole.ResolvePrimary already picks
+		// one role per entry. Empty and the "Any" sentinel both mean unscoped,
+		// matching BuildMenuSubCategory's convention above.
 		string Role = "")
 	{
 		public int EffectiveOffset => Offset < 0 ? 0 : Offset;

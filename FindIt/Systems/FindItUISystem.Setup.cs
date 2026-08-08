@@ -31,6 +31,11 @@ namespace FindItBuildingMenu.Systems
 		// FindItUISystem.Bindings' SetBuildingLensSection/SubCategory and
 		// VanillaMenuSelected/SearchEverything.
 		private string _buildingLensRole = VanillaBuildMenuTaxonomy.Any;
+		// SPIKE (cm-e98i): the vanilla menu the lens was opened from, by name.
+		// Empty means "not opened from a vanilla menu", which leaves the query
+		// unconstrained by the tree.
+		private string _buildingLensUiMenu = string.Empty;
+		private string _buildingLensUiCategory = string.Empty;
 
 		private ToolSystem _toolSystem;
 		private PrefabSystem _prefabSystem;
@@ -111,6 +116,23 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<BuildingLensSectionUIEntry[]> _BuildingLensSectionListBinding = null!;
 		private ValueBindingHelper<BuildingLensSubCategoryUIEntry[]> _BuildingLensSubCategoryListBinding = null!;
 		private ValueBindingHelper<BuildingLensRoleUIEntry[]> _BuildingLensRoleListBinding = null!;
+		// Vanilla's second tier: the tab strip for whichever menu is scoped, and
+		// which of its tabs is active. Empty list means "no strip", which is also
+		// how vanilla renders a menu with fewer than two categories.
+		private ValueBindingHelper<VanillaMenuCategory[]> _BuildingLensMenuCategoriesBinding = null!;
+		private ValueBindingHelper<string> _BuildingLensMenuCategoryBinding = null!;
+		/// <summary>
+		/// The vanilla menu the lens is scoped to, or empty for the whole catalog.
+		/// </summary>
+		/// <remarks>
+		/// Published so the chip row can say so. The scope was set by clicking a
+		/// toolbar icon and then applied invisibly: nothing on screen named it,
+		/// and the Section and Type chips that WERE on screen are the ones the
+		/// scope switches off (BuildingCatalogQueryEngine.cs:95).
+		/// </remarks>
+		private ValueBindingHelper<string> _BuildingLensMenuBinding = null!;
+		// Milestone index -> name, published once. Locked assets carry the index.
+		private ValueBindingHelper<string[]> _BuildingLensMilestonesBinding = null!;
 		private ValueBindingHelper<ToolSurfaceDescriptor[]> _ToolSurfaceDescriptorsBinding = null!;
 
 		public bool IsExpanded => _IsExpanded;
@@ -262,6 +284,14 @@ namespace FindItBuildingMenu.Systems
 			_BuildingLensSectionListBinding = CreateBinding("BuildingLensSectionList", Array.Empty<BuildingLensSectionUIEntry>());
 			_BuildingLensSubCategoryListBinding = CreateBinding("BuildingLensSubCategoryList", Array.Empty<BuildingLensSubCategoryUIEntry>());
 			_BuildingLensRoleListBinding = CreateBinding("BuildingLensRoleList", Array.Empty<BuildingLensRoleUIEntry>());
+			_BuildingLensMenuCategoriesBinding = CreateBinding("BuildingLensMenuCategories", Array.Empty<VanillaMenuCategory>());
+			_BuildingLensMenuBinding = CreateBinding("BuildingLensMenu", string.Empty);
+			_BuildingLensMilestonesBinding = CreateBinding("BuildingLensMilestones", Array.Empty<string>());
+			_BuildingLensMenuCategoryBinding = CreateBinding(
+				"BuildingLensMenuCategory",
+				"SetBuildingLensMenuCategory",
+				string.Empty,
+				SetBuildingLensMenuCategory);
 			_ToolSurfaceDescriptorsBinding = CreateBinding("ToolSurfaceDescriptors", ToolSurfaceCatalog.GetDescriptors().ToArray());
 			_PrefabCountBinding = CreateBinding("PrefabCount", string.Empty);
 			_ViewStyle = CreateBinding("ViewStyle", Mod.Settings.DefaultViewStyle);
@@ -297,6 +327,11 @@ namespace FindItBuildingMenu.Systems
 				CreateTrigger("ClearBuildingLensFacets", ClearBuildingLensFacets);
 				CreateTrigger("ClearBuildingLensFilters", ClearBuildingLensFilters);
 				CreateTrigger<string>("ToggleBuildingLensZoneFamily", ToggleBuildingLensZoneFamily);
+				// Its own trigger, not folded into SetBuildingLensSubCategory:
+				// that one is also the reset path ("All types", and removing a
+				// type chip), so clearing the menu there would silently drop
+				// Garbage Management back to the whole catalog.
+				CreateTrigger("ClearBuildingLensMenuScope", ClearBuildingLensMenuScope);
 			CreateTrigger<float>("SetBuildingLensPanelWidth", SetBuildingLensPanelWidth);
 			CreateTrigger("CommitBuildingLensPanelWidth", CommitBuildingLensPanelWidth);
 			CreateTrigger("ClearThumbnails", () => _AllThumbnails.Value = new string[0]);

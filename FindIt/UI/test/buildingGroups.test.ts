@@ -55,6 +55,49 @@ describe("Group dimensions", () => {
     assert.deepEqual(buildGroupedView([entry()], "none"), []);
   });
 
+  it("names each school tier the way the game names it", () => {
+    // SchoolLevel { Elementary = 1, HighSchool, College, University, Outside }.
+    assert.deepEqual(groupLevelsFor(entry({ educationLevel: 1 }), "schoolTier"), ["Elementary School"]);
+    assert.deepEqual(groupLevelsFor(entry({ educationLevel: 2 }), "schoolTier"), ["High School"]);
+    assert.deepEqual(groupLevelsFor(entry({ educationLevel: 3 }), "schoolTier"), ["College"]);
+    assert.deepEqual(groupLevelsFor(entry({ educationLevel: 4 }), "schoolTier"), ["University"]);
+  });
+
+  it("files the non-tiers with everything that has no tier at all", () => {
+    // 0 is a school upgrade that adds capacity without a tier and 5 is the
+    // outside connection, so neither is a heading — and neither is a building
+    // that is not a school.
+    for (const level of [0, 5, null, undefined]) {
+      assert.deepEqual(
+        groupLevelsFor(entry({ educationLevel: level as never }), "schoolTier"),
+        ["Other"],
+        `education level ${level} should not become a tier heading`
+      );
+    }
+  });
+
+  it("orders school tiers by career, which the alphabet does not", () => {
+    // C# ranks these, so the UI only preserves what it is sent — but the two
+    // still have to agree on which order that is. College before University
+    // and after High School is the case the alphabet gets wrong.
+    const ordered = buildGroupedView(
+      [
+        entry({ educationLevel: 1 }),
+        entry({ educationLevel: 2 }),
+        entry({ educationLevel: 3 }),
+        entry({ educationLevel: 4 }),
+      ],
+      "schoolTier"
+    );
+
+    assert.deepEqual(ordered.map((node) => node.label), [
+      "Elementary School",
+      "High School",
+      "College",
+      "University",
+    ]);
+  });
+
   it("prefers the DLC name over the broad provenance for Source", () => {
     assert.deepEqual(groupLevelsFor(entry({ dlcId: "Bridges & Ports" }), "source"), ["Bridges & Ports"]);
     assert.deepEqual(groupLevelsFor(entry({ dlcId: null }), "source"), ["Base game"]);
