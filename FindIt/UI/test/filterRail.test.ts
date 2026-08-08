@@ -28,10 +28,13 @@ const facets = {
 };
 
 describe("Filter rail", () => {
-  it("gives every facet group one entry", () => {
+  it("gives every rail-sized facet group one entry", () => {
+    // "zone" only holds 5 options here, at or under RAIL_BANK_THRESHOLD, so it
+    // now lives in the options bank instead of the rail — see the "excludes a
+    // dimension short enough..." case below.
     const rail = buildFilterRail(facets, { active: 0 });
 
-    assert.deepEqual(rail.map((d) => d.id), ["buildingType", "dlc", "extension", "zone", "metrics"]);
+    assert.deepEqual(rail.map((d) => d.id), ["buildingType", "dlc", "extension", "metrics"]);
   });
 
   it("always ends with metrics so its position never moves", () => {
@@ -71,6 +74,32 @@ describe("Filter rail", () => {
   it("survives absent facet state", () => {
     assert.deepEqual(buildFilterRail(undefined, { active: 0 }).map((d) => d.id), ["metrics"]);
     assert.deepEqual(buildFilterRail(null, undefined).map((d) => d.id), ["metrics"]);
+  });
+
+  it("excludes a dimension short enough to live in the options bank", () => {
+    // The C# side draws any facet at or under RAIL_BANK_THRESHOLD (8) options
+    // as an icon row in the options bank. Drawing it here too would show
+    // Availability, Provenance, or Placement twice in two different idioms —
+    // exactly the split this design ended.
+    const rail = buildFilterRail({ groups: [group("availability", "Availability", 3)], hasSelection: false }, { active: 0 });
+
+    assert.deepEqual(rail.map((d) => d.id), ["metrics"]);
+  });
+
+  it("keeps a dimension too large for the bank in the rail", () => {
+    const rail = buildFilterRail({ groups: [group("dlc", "DLC", 13)], hasSelection: false }, { active: 0 });
+
+    assert.deepEqual(rail.map((d) => d.id), ["dlc", "metrics"]);
+  });
+
+  it("never drops the metrics entry, even though its own optionCount reads as bank-sized", () => {
+    // RAIL_METRICS_ID carries optionCount: 0, and railHomeFor(0) returns
+    // "bank" — metric ranges are not a facet group, and the rail is the only
+    // place the player can reach them, so a naive `home !== "bank"` filter
+    // must not catch this entry.
+    const rail = buildFilterRail({ groups: [group("availability", "Availability", 3)], hasSelection: false }, { active: 0 });
+
+    assert.ok(rail.some((d) => d.id === "metrics"));
   });
 });
 
