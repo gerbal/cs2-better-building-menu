@@ -23,6 +23,16 @@
   padding: 5rem;
 }
 
+// The tab strip slot below carries an exact vanilla-matched 45rem — icons
+// included. topBar's own 5rem top/bottom is tuned for the search row alone;
+// stacked on top of an already-complete 45rem strip it would just pad the
+// same edge twice, growing the row past what vanilla spends. Horizontal
+// padding stays since it still frames the row inside the panel.
+.topBarWithStrip {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
 .accessibleLabel {
   position: absolute;
   top: 0;
@@ -56,6 +66,21 @@
       width: auto;
     }
   }
+}
+
+// Sits between the two topBarSections so search, tab strip and close/lens
+// mode all share one 45rem row. flex:1 + min-width:0 hands the tab strip
+// whatever width the search controls and the close/lens section do not
+// need, and lets it shrink below its content size instead of forcing the
+// row wider — the strip itself scrolls sideways if its tabs still do not
+// fit (see TabStrip's itemsRow).
+.tabStripSlot {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  margin: 0 8rem;
+  overflow: hidden;
 }
 
 .searchArea {
