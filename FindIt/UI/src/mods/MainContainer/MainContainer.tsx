@@ -67,13 +67,20 @@ export const FindItMainContainerComponent = () => {
   const BuildingLensSection = useValue(BuildingLensSection$);
   const buildingLensModeView = getBuildingLensModeView(buildingLensMode);
 
-  // Height follows the task. Search and the unscoped "all buildings" browse are
-  // cross-scope and cannot be read two rows at a time; a menu-scoped browse can.
+  // Height follows the task. Search and the unscoped "All buildings"/
+  // "Favorites" browses are cross-scope and cannot be read two rows at a
+  // time; a menu-scoped browse can. This only applies to the Building Lens
+  // — the legacy panel has no scope concept and BuildingLensSection defaults
+  // to "AllBuildings" on both sides regardless of whether the lens is even
+  // on, so gating on BuildingLensEnabled keeps this from firing there.
   // A manual expand always wins — this raises the floor, it does not seize the
   // control.
   const searchText = useValue(CurrentSearch$) ?? "";
-  const unscoped = searchText.trim().length > 0 || BuildingLensSection === "AllBuildings";
+  const unscoped = BuildingLensEnabled && (searchText.trim().length > 0 || BuildingLensSection === "AllBuildings" || BuildingLensSection === "Favorites");
   const effectiveExpanded = IsExpanded || unscoped;
+  // Strip height is a Building Lens concept only; the legacy panel keeps
+  // whatever height behaviour it always had.
+  const restingAsStrip = BuildingLensEnabled && !effectiveExpanded;
 
   useEffect(() => {
     if (!BuildingLensEnabled && buildingLensMode !== "catalog") {
@@ -167,7 +174,7 @@ export const FindItMainContainerComponent = () => {
                 <TopBarComponent
                   sortingOpen={sortingOpen}
                   optionsOpen={optionsOpen}
-                  expanded={effectiveExpanded}
+                  expanded={IsExpanded}
                   small={PanelWidth <= 685}
                   large={PanelWidth >= 850}
                   toggleSortingOpen={toggleSortingOpen}
@@ -177,7 +184,14 @@ export const FindItMainContainerComponent = () => {
                   onBuildingLensModeChange={setBuildingLensMode}
                 ></TopBarComponent>
               </div>
-              <div className={classNames(styles.content, effectiveExpanded && styles.contentExpanded, AssetMenuTheme.assetPanel)}>
+              <div
+                className={classNames(
+                  styles.content,
+                  restingAsStrip && styles.contentStrip,
+                  BuildingLensEnabled && effectiveExpanded && styles.contentExpanded,
+                  AssetMenuTheme.assetPanel
+                )}
+              >
                 {BuildingLensEnabled
                   ? ShowZoningHierarchy
                     // Zones are assignment tools, not buildings, so the Zones
@@ -187,7 +201,7 @@ export const FindItMainContainerComponent = () => {
                     : buildingLensModeView.showCatalogContent
                       ? <BuildingCatalogComponent expanded={effectiveExpanded} />
                       : <div className={styles.toolsContent}><ToolSurfaceBar /></div>
-                  : <PrefabSelectionComponent expanded={effectiveExpanded}></PrefabSelectionComponent>}
+                  : <PrefabSelectionComponent expanded={IsExpanded}></PrefabSelectionComponent>}
               </div>
               {BuildingLensEnabled && <div className={styles.resizeHandle} onMouseDown={beginResize} title="Resize building lens" />}
             </div>

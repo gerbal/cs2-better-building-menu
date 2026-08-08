@@ -201,9 +201,19 @@
   // of a 472px scrollable that never scrolled — 43% of the panel was empty.
   flex: 0 1 auto;
   // No floor. Vanilla's menu is 208rem including chrome, and a floor is what
-  // made the panel hold full height over an empty result set.
+  // made the panel hold full height over an empty result set. This applies
+  // whether or not the Building Lens is on — the void it fixed was the same
+  // void either way.
   min-height: 0;
-  // At rest the panel is a strip; expanding is what buys height.
+  // Unset here: the legacy FindIt panel (Building Lens off) is upstream's
+  // UI and keeps the height it always had. Only the Building Lens rests at
+  // a strip, via .contentStrip below.
+  max-height: 100%;
+}
+
+// Only the Building Lens rests at a strip. The legacy FindIt panel is
+// upstream's UI and keeps the height it always had.
+.contentStrip {
   max-height: 163rem;
 }
 
