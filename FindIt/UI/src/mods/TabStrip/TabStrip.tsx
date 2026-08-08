@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { bindValue, trigger, useValue } from "cs2/api";
 import { getModule } from "cs2/modding";
 import { Tooltip } from "cs2/ui";
@@ -24,12 +25,36 @@ const SectionList$ = bindValue<VanillaBuildMenuTab[]>(mod.id, "BuildingLensSecti
 const SubCategoryList$ = bindValue<VanillaBuildMenuTab[]>(mod.id, "BuildingLensSubCategoryList", []);
 const MenuToolTip$ = bindValue<string>(mod.id, "BuildingLensMenuToolTip", "");
 
+// The game's balloon tooltip has no delay prop of its own (see TooltipProps
+// in types/ui.d.ts) — it just appears on hover, on whatever schedule the
+// native implementation picks. On an icon-only strip that reads as slow, so
+// we drive `forceVisible` on our own clock instead. 150ms is short enough
+// that a deliberate pause on one icon feels immediate, long enough that
+// sweeping the cursor across the row does not flash a tooltip per icon.
+const HOVER_DELAY_MS = 150;
+
 export const TabStrip = () => {
   const section = useValue(Section$);
   const subCategory = useValue(SubCategory$);
   const sections = useValue(SectionList$) ?? [];
   const subCategories = useValue(SubCategoryList$) ?? [];
   const menuToolTip = useValue(MenuToolTip$) ?? "";
+
+  // Only one tab id at a time, so forcing tab A's tooltip visible always
+  // implies every other tab's Tooltip gets forceVisible={false}.
+  const [hoveredTabId, setHoveredTabId] = useState<string | null>(null);
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearHoverTimer = () => {
+    if (hoverTimer.current !== null) {
+      clearTimeout(hoverTimer.current);
+      hoverTimer.current = null;
+    }
+  };
+
+  // Closing the panel mid-hover unmounts this before the timer fires; without
+  // this the callback would still land and call setState on a dead component.
+  useEffect(() => clearHoverTimer, []);
 
   const candidates: AxisCandidate[] = [
     { id: "section", optionCount: sections.length },
@@ -54,7 +79,7 @@ export const TabStrip = () => {
     <div className={classNames(AssetCategoryTabTheme.assetCategoryTabBar, styles.strip)}>
       <div className={AssetCategoryTabTheme.items}>
         {tabs.map((tab) => (
-          <Tooltip key={tab.id} tooltip={tab.toolTip}>
+          <Tooltip key={tab.id} tooltip={tab.toolTip} forceVisible={hoveredTabId === tab.id}>
             <button
               className={classNames(
                 AssetCategoryTabTheme.item,
@@ -65,6 +90,14 @@ export const TabStrip = () => {
               onClick={() => {
                 const c = command(tab.id);
                 trigger(mod.id, c.method, ...c.args);
+              }}
+              onMouseEnter={() => {
+                clearHoverTimer();
+                hoverTimer.current = setTimeout(() => setHoveredTabId(tab.id), HOVER_DELAY_MS);
+              }}
+              onMouseLeave={() => {
+                clearHoverTimer();
+                setHoveredTabId(null);
               }}
             >
               <img src={tab.icon} className={styles.tabIcon} />
