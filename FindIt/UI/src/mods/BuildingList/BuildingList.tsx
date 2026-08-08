@@ -20,11 +20,15 @@ import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { FootprintGlyph } from "mods/ZoningHierarchy/FootprintGlyph";
 import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import type { ZoneFootprint } from "domain/zoningHierarchy";
+import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
+import type { SortColumn } from "domain/buildingCatalogContracts";
+import mod from "../../../mod.json";
 import styles from "./buildingList.module.scss";
 
 // Same source the grid's hover card uses, so "can I afford it" is answered the
 // same way wherever it is asked.
 const Money$ = bindValue<number>("toolbarBottom", "money", 0);
+const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "BuildingCatalogSortColumn", "Name");
 
 /**
  * compact — icon and name only.
@@ -68,6 +72,7 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
   // game would tell you about a building depended on which view mode you
   // happened to be in.
   const hoverCard = useHoverCardContext();
+  const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
   const lockedLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Locked]", "Locked") ?? "Locked";
   const cards = variant === "cards";
   // Search relevance still applies within whatever order the query returned,
@@ -96,6 +101,26 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
 
     recordPlacement(entry.id);
     onPlace(entry);
+  };
+
+  /** The figure this list is ordered by. See sortedMetric.ts. */
+  const sortedBadge = (entry: BuildingCatalogEntry) => {
+    if (sortedMetric === null) {
+      return null;
+    }
+
+    const text = sortedMetric === "lot"
+      ? (hasFootprint(entry.lotWidth, entry.lotDepth)
+        ? formatLotDimensions(entry.lotWidth, entry.lotDepth)
+        : null)
+      : (() => {
+        const value = sortedMetricValue(entry, sortedMetric);
+        return value === null
+          ? null
+          : formatBuildingMetric(value, sortedMetric, separators, entry.costIsPerDistance);
+      })();
+
+    return text === null ? null : <span className={styles.sortedMetric}>{text}</span>;
   };
 
   return (
@@ -182,6 +207,10 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
                   </span>
                 )}
               </span>
+              {/* Right-aligned, so the sorted figures line up as a column and
+                  the order can be read down the page — which is the one thing
+                  the table had and this view did not. */}
+              {sortedBadge(entry)}
             </Button>
           </BuildingHoverCard>
         );

@@ -121,6 +121,27 @@
   background-color: rgba(255, 255, 255, 0.15);
 }
 
+// The figure the grid is currently ordered by.
+//
+// Top-left, because the lock glyph already owns bottom-right and the name owns
+// the bottom edge. A pill rather than bare text: it sits over a thumbnail whose
+// colours we do not control, and light text on a pale roof was unreadable.
+.sortedMetric {
+  position: absolute;
+  top: 2rem;
+  left: 2rem;
+  max-width: calc(100% - 4rem);
+  padding: 0 3rem;
+  border-radius: 2rem;
+  background-color: rgba(0, 0, 0, 0.65);
+  color: var(--menuText1Normal);
+  font-size: var(--fontSizeXS);
+  line-height: 15rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 // Vanilla's own placement and colour: bottom-right of the tile, 16rem, #ffaa00.
 .lockGlyph {
   position: absolute;
