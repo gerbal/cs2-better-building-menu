@@ -1,5 +1,5 @@
 import { bindValue, useValue } from "cs2/api";
-import { Button, Tooltip } from "cs2/ui";
+import { Button } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import { useEffect } from "react";
 import classNames from "classnames";
@@ -14,9 +14,11 @@ import {
 } from "domain/buildingLensMetricFormat";
 import { getCostForecast } from "domain/buildingForecast";
 import { recordPlacement } from "domain/buildingShelf";
+import { canPlace, isEntryLocked } from "domain/buildingLockState";
 import { rankBuildingMatches, topSearchResult } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { FootprintGlyph } from "mods/ZoningHierarchy/FootprintGlyph";
+import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import type { ZoneFootprint } from "domain/zoningHierarchy";
 import styles from "./buildingList.module.scss";
 
@@ -61,6 +63,11 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
   const { translate } = useLocalization();
   const separators = getNumberSeparators(translate);
   const money = useValue(Money$);
+  // The same card the grid and the table show. This view used to carry its own
+  // thinner one — a name and a single "cost · lot" line — so which facts the
+  // game would tell you about a building depended on which view mode you
+  // happened to be in.
+  const hoverCard = useHoverCardContext();
   const cards = variant === "cards";
   // Search relevance still applies within whatever order the query returned,
   // so typing narrows to the best match the same way it does in the grid.
@@ -83,6 +90,9 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
   }, [ordered, searchText, onPlace]);
 
   const place = (entry: BuildingCatalogEntry) => {
+    // See BuildingGrid: locked assets are shown and refused, not hidden.
+    if (!canPlace(entry)) return;
+
     recordPlacement(entry.id);
     onPlace(entry);
   };
@@ -108,34 +118,7 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
         const forecast = getCostForecast(entry.constructionCost, money);
 
         return (
-          <Tooltip
-            key={entry.id}
-            tooltip={
-              <div className={styles.card}>
-                <div className={styles.cardName}>{label}</div>
-                {/* A zone has no cost and no lot, so the building meta line was
-                    a lone em dash — a tooltip that costs a hover and says
-                    nothing. Where the entry carries its own facts, those are
-                    the answer. */}
-                <div className={styles.cardMeta}>
-                  {facts.length > 0 ? facts.join(" · ") : lotKnown ? `${cost} · ${lot}` : cost}
-                </div>
-                {/* The shapes, narrowest first. A player choosing a zone is
-                    matching against a block on the map, and a picture of the
-                    lot is closer to that than "2–4 wide" is. */}
-                {footprints.length > 0 && (
-                  <div className={styles.glyphs}>
-                    {footprints.map((footprint) => (
-                      <FootprintGlyph key={`${footprint.width}x${footprint.depth}`} footprint={footprint} />
-                    ))}
-                    {footprintOverflow > 0 && (
-                      <span className={styles.glyphOverflow}>+{footprintOverflow}</span>
-                    )}
-                  </div>
-                )}
-              </div>
-            }
-          >
+          <BuildingHoverCard key={entry.id} entry={entry} context={hoverCard}>
             <Button
               className={classNames(styles.item, cards && styles.itemCard)}
               variant="icon"
@@ -197,7 +180,7 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
                 )}
               </span>
             </Button>
-          </Tooltip>
+          </BuildingHoverCard>
         );
       })}
     </div>

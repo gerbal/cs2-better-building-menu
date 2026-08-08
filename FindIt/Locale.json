@@ -202,6 +202,8 @@
   "Tooltip.LABEL[FindItBuildingMenu.Upkeep]": "Upkeep",
   "Tooltip.LABEL[FindItBuildingMenu.Workers]": "Workers",
   "Tooltip.LABEL[FindItBuildingMenu.Capacity]": "Capacity",
+  "Tooltip.LABEL[FindItBuildingMenu.ShareOfFunds]": "{0}% of funds",
+  "Tooltip.LABEL[FindItBuildingMenu.ShortBy]": "{0} short",
   "Tooltip.LABEL[FindItBuildingMenu.Tools]": "Construction tools",
   "Tooltip.LABEL[FindItBuildingMenu.CatalogMode]": "Building catalog",
   "Tooltip.LABEL[FindItBuildingMenu.CatalogModeShort]": "Catalog",

@@ -71,7 +71,21 @@
 
 .popover {
   position: absolute;
-  top: 34rem;
+  // Upward, because this rail lives in the game's options bank at the bottom
+  // left of the screen — measured at 720p, its two rows sit at y=577 and y=604
+  // with only ~85px below them. Opening downward put the list at y=600..657,
+  // underneath the bottom toolbar: nothing clipped it (every ancestor is
+  // overflow: visible) but the toolbar is a later sibling stacking context, so
+  // it simply painted over the options. Anchoring to the rail's top edge puts
+  // the list in the empty space above, which is where the room is.
+  // Anchored by `top` and lifted with a transform, NOT by `bottom: 100%`.
+  // Measured on Cohtml 1.64: with bottom-anchoring the popover laid out in the
+  // right place (rect 187,520 200x57, head at 525-541, topmost under
+  // elementFromPoint, colour rgba(240,251,255,1)) and the head still did not
+  // paint — only the option rows drew. Top-anchoring keeps the layout box
+  // where the engine expects it and moves the painted layer instead.
+  top: -4rem;
+  transform: translateY(-100%);
   left: 8rem;
   z-index: 20;
   display: flex;
@@ -85,12 +99,25 @@
   border: 1rem solid rgba(255, 255, 255, 0.18);
 }
 
+// Promoted to its own layer, which is the only reason its text draws.
+//
+// Once the popover moved above the rail (see .popover), this row's TEXT stopped
+// rasterising on Cohtml 1.64 while its background still painted and the option
+// rows below it — which sit inside a vanilla Scrollable, and so already own a
+// layer — kept drawing normally. Verified by elimination in the live game: the
+// element measured 191x16 at the right place, was topmost under
+// elementFromPoint, and stayed invisible at 16px in bright magenta until this
+// hint was applied, at which point it drew immediately. A freshly injected
+// sibling div painted fine over the same pixels, so nothing was clipping it.
 .popoverHead {
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
   gap: 6rem;
+  position: relative;
+  z-index: 1;
+  transform: translateZ(0);
 }
 
 .popoverTitle {

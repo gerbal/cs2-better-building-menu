@@ -43,6 +43,23 @@
   justify-content: flex-start;
   align-items: center;
   padding: 5rem 5rem 2.5rem 5rem;
+  // A flex item's default min-width: auto refuses to shrink below its content,
+  // so this row could not fit itself: at 720p the two sections wanted 410 + 315
+  // = 725px inside a 713px panel, and the 12px of excess pushed the Close
+  // button 13px past the right edge of the panel it closes.
+  min-width: 0;
+}
+
+// The search box is what gives way. It is the one control here that stays
+// usable at any width, and everything to its right — the mode tabs, the icon
+// buttons, Close — has a size it cannot go under without becoming unhittable.
+.topBarSearchSection {
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.topBarControlsSection {
+  flex: 0 1 auto;
 }
 
 .expandedSearchArea {
