@@ -227,6 +227,30 @@ bottom bar instead. And `[class*="metricRangeInput"]` matches the container
 `<div>` before the `<textarea>` it wraps, so setting `.value` on the first
 match silently does nothing.
 
+#### Modal dialogs cannot be driven this way at all (2026-08-07)
+
+The pointer sequence drives the **main menu** and the **in-game toolbar**. It
+does **not** drive the buttons in a modal dialog. Getting from the main menu
+into a city over CDP is therefore impossible: the Load Game dialog opens fine,
+the save row selects fine and reports `class="selected item_OsC"`, and the
+footer `<button>` then ignores every gesture — the full pointer sequence, a
+double-click on the row, a bare dispatched `MouseEvent`, and `el.click()`.
+`SceneFlow.log` records nothing after `MainMenu reached` for any of them.
+
+So **a human has to click Load once**, or real input has to come from xdotool
+against the XWayland window. Everything after the city loads is drivable as
+normal. Budget for this rather than rediscovering it — it is not a selector
+problem and no amount of event-sequence tuning fixes it.
+
+Two smaller things from the same session:
+
+- **Generated class names are kebab-case with a hash suffix** — `toolbar_QYu`,
+  `asset-panel_VFR`, `tool-main-column_PaC`. A camelCase guess like
+  `[class*="assetPanel"]` matches nothing. When container names are unknown,
+  walk up `parentElement` from a known child instead of guessing.
+- **`client.screenshot()` does not enable the Page domain**, so it fails with
+  `Page agent was not enabled (code -32000)` unless `enableEvents()` ran first.
+
 ## Coverage overlay: works, but the design is questionable
 
 `ServiceCoverageOverlaySystem` was verified end to end by instrumenting it,
