@@ -61,3 +61,36 @@ const AUTHORED: Record<string, AxisId> = {
 export function authoredAxisFor(menuToolTip: string): AxisId | null {
   return AUTHORED[normalise(menuToolTip)] ?? null;
 }
+
+/**
+ * The fallback for menus the authored map does not name.
+ *
+ * Optimises for information scent, not partition quality: only taxonomic
+ * dimensions are eligible, and where none partitions the scope the answer is
+ * no strip. A well-scoring wrong label is worse than none.
+ */
+export interface AxisCandidate {
+  id: string;
+  optionCount: number;
+}
+
+/** Fewer than this many options and a tab bar is noise rather than navigation. */
+const MIN_AXIS_OPTIONS = 2;
+
+export function computeAxis(candidates: AxisCandidate[]): AxisId | null {
+  const eligible = (candidates ?? [])
+    .filter((c) => isTaxonomicAxis(c.id))
+    .filter((c) => Number.isFinite(c.optionCount) && c.optionCount >= MIN_AXIS_OPTIONS);
+  if (!eligible.length) return null;
+
+  // Most options wins; ties break on declaration order for determinism.
+  let best = eligible[0];
+  for (const candidate of eligible) {
+    if (candidate.optionCount > best.optionCount) best = candidate;
+  }
+  return best.id as AxisId;
+}
+
+export function resolveAxis(menuToolTip: string, candidates: AxisCandidate[]): AxisId | null {
+  return authoredAxisFor(menuToolTip) ?? computeAxis(candidates);
+}
