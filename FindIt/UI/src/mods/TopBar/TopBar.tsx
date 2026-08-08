@@ -25,6 +25,7 @@ import { FOCUS_DISABLED } from "cs2/input";
 import { searchChangedCommand, setCurrentCategoryCommand, setCurrentSubCategoryCommand } from "domain/buildingCatalogContracts";
 import type { BuildingLensMode } from "domain/buildingLensMode";
 import { ChipRow } from "mods/ChipRow/ChipRow";
+import { MenuCategoryStrip } from "mods/MenuCategoryStrip/MenuCategoryStrip";
 
 export interface TopBarProps {
   sortingOpen: any;
@@ -413,6 +414,11 @@ export const TopBarComponent = (props: TopBarProps) => {
         )}
 
         {BuildingLensEnabled && props.buildingLensMode === "catalog" && <ChipRow />}
+        {/* Below the chips, above the results: the chips say what the whole
+            result is scoped to, the strip narrows within it. It renders
+            nothing at all unless the scoped menu has two or more categories,
+            so an unscoped lens and a single-category menu both cost no row. */}
+        {BuildingLensEnabled && props.buildingLensMode === "catalog" && <MenuCategoryStrip />}
       </div>
     </>
   );

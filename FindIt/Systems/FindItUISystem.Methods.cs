@@ -52,6 +52,7 @@ namespace FindItBuildingMenu.Systems
 				BuildMenuSection = _BuildingLensEnabled ? _buildingLensSection : string.Empty,
 				BuildMenuSubCategory = _BuildingLensEnabled ? _buildingLensSubCategory : string.Empty,
 				UiMenu = _BuildingLensEnabled ? _buildingLensUiMenu : string.Empty,
+				UiCategory = _BuildingLensEnabled ? _buildingLensUiCategory : string.Empty,
 				// Keep the successor lens in lockstep with FindIt's common
 				// parking filters. The legacy grid owns the full filter pipeline;
 				// the bounded catalog receives the equivalent typed predicate.

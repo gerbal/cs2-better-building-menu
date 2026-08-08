@@ -45,6 +45,8 @@ namespace FindItBuildingMenu.Systems
 		private bool _localeChanged;
 		private static List<ZoneCatalogEntry> _zoneCatalog = new();
 		private static Dictionary<int, string> _assetMenuNames = new();
+		// Vanilla's second tier, keyed by menu name. See VanillaMenuCategory.
+		private static Dictionary<string, List<VanillaMenuCategory>> _assetCategories = new();
 		private readonly List<IPrefabCategoryProcessor> _prefabCategoryProcessors = new();
 
 		protected override void OnCreate()
@@ -207,6 +209,7 @@ namespace FindItBuildingMenu.Systems
 
 				IndexZones();
 				IndexAssetMenus();
+				IndexAssetCategories();
 			}
 
 			foreach (var processor in _prefabCategoryProcessors)
@@ -882,6 +885,60 @@ namespace FindItBuildingMenu.Systems
 			Mod.Log.Info($"Indexed Asset Menus Count: {_assetMenuNames.Count}");
 		}
 
+		/// <summary>
+		/// Caches each menu's category tabs, which are vanilla's second tier.
+		/// </summary>
+		/// <remarks>
+		/// Deliberately the same shape as IndexAssetMenus above: query the data
+		/// component the game itself groups by, resolve the managed prefab, read
+		/// its name. A category that names no menu is not a build-menu tab —
+		/// UIAssetCategoryPrefab.GetPrefabComponents only adds UIAssetCategoryData
+		/// when m_Menu is set, so this is belt and braces rather than a real case.
+		/// </remarks>
+		private void IndexAssetCategories()
+		{
+			var query = GetEntityQuery(
+				ComponentType.ReadOnly<UIAssetCategoryData>(),
+				ComponentType.ReadOnly<PrefabData>());
+			var categories = query.ToEntityArray(Allocator.Temp);
+			var byMenu = new Dictionary<string, List<VanillaMenuCategory>>();
+
+			for (var i = 0; i < categories.Length; i++)
+			{
+				if (!_prefabSystem.TryGetPrefab<PrefabBase>(categories[i], out var prefab)
+					|| prefab is not UIAssetCategoryPrefab category
+					|| category.m_Menu?.name is not string menuName)
+				{
+					continue;
+				}
+
+				prefab.TryGet<UIObject>(out var uIObject);
+
+				if (!byMenu.TryGetValue(menuName, out var tabs))
+				{
+					tabs = new List<VanillaMenuCategory>();
+					byMenu[menuName] = tabs;
+				}
+
+				tabs.Add(new VanillaMenuCategory(
+					Id: prefab.name,
+					Name: prefab.name,
+					Icon: IconPath.Normalize(uIObject?.m_Icon ?? ImageSystem.GetIcon(prefab)) ?? string.Empty,
+					// Vanilla orders its tabs by this and defaults it to 0, so
+					// categories that never set one keep their query order rather
+					// than being pushed to the end.
+					Priority: uIObject?.m_Priority ?? 0));
+			}
+
+			foreach (var tabs in byMenu.Values)
+			{
+				tabs.Sort((left, right) => left.Priority.CompareTo(right.Priority));
+			}
+
+			_assetCategories = byMenu;
+			Mod.Log.Info($"Indexed Asset Categories: {byMenu.Count} menus, {byMenu.Values.Sum(list => list.Count)} tabs");
+		}
+
 		private void IndexZones()
 		{
 			var zonesQuery = GetEntityQuery(
@@ -1056,6 +1113,12 @@ namespace FindItBuildingMenu.Systems
 		/// not be persisted. Resolving the name belongs here, where the prefab
 		/// system is available.
 		/// </remarks>
+		/// <summary>The tab strip for a menu, empty when the menu has none.</summary>
+		public static IReadOnlyList<VanillaMenuCategory> GetMenuCategories(string? menuName) =>
+			menuName is not null && _assetCategories.TryGetValue(menuName, out var tabs)
+				? tabs
+				: Array.Empty<VanillaMenuCategory>();
+
 		public static string? GetAssetMenuName(int entityIndex) => _assetMenuNames.TryGetValue(entityIndex, out var name)
 			? name
 			: null;
