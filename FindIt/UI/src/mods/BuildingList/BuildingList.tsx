@@ -1,5 +1,5 @@
 import { bindValue, useValue } from "cs2/api";
-import { Button, Tooltip } from "cs2/ui";
+import { Button } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import { useEffect } from "react";
 import classNames from "classnames";
@@ -14,15 +14,21 @@ import {
 } from "domain/buildingLensMetricFormat";
 import { getCostForecast } from "domain/buildingForecast";
 import { recordPlacement } from "domain/buildingShelf";
+import { canPlace, isEntryLocked } from "domain/buildingLockState";
 import { rankBuildingMatches, topSearchResult } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { FootprintGlyph } from "mods/ZoningHierarchy/FootprintGlyph";
+import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import type { ZoneFootprint } from "domain/zoningHierarchy";
+import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
+import type { SortColumn } from "domain/buildingCatalogContracts";
+import mod from "../../../mod.json";
 import styles from "./buildingList.module.scss";
 
 // Same source the grid's hover card uses, so "can I afford it" is answered the
 // same way wherever it is asked.
 const Money$ = bindValue<number>("toolbarBottom", "money", 0);
+const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "BuildingCatalogSortColumn", "Name");
 
 /**
  * compact — icon and name only.
@@ -61,6 +67,13 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
   const { translate } = useLocalization();
   const separators = getNumberSeparators(translate);
   const money = useValue(Money$);
+  // The same card the grid and the table show. This view used to carry its own
+  // thinner one — a name and a single "cost · lot" line — so which facts the
+  // game would tell you about a building depended on which view mode you
+  // happened to be in.
+  const hoverCard = useHoverCardContext();
+  const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
+  const lockedLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Locked]", "Locked") ?? "Locked";
   const cards = variant === "cards";
   // Search relevance still applies within whatever order the query returned,
   // so typing narrows to the best match the same way it does in the grid.
@@ -83,15 +96,38 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
   }, [ordered, searchText, onPlace]);
 
   const place = (entry: BuildingCatalogEntry) => {
+    // See BuildingGrid: locked assets are shown and refused, not hidden.
+    if (!canPlace(entry)) return;
+
     recordPlacement(entry.id);
     onPlace(entry);
+  };
+
+  /** The figure this list is ordered by. See sortedMetric.ts. */
+  const sortedBadge = (entry: BuildingCatalogEntry) => {
+    if (sortedMetric === null) {
+      return null;
+    }
+
+    const text = sortedMetric === "lot"
+      ? (hasFootprint(entry.lotWidth, entry.lotDepth)
+        ? formatLotDimensions(entry.lotWidth, entry.lotDepth)
+        : null)
+      : (() => {
+        const value = sortedMetricValue(entry, sortedMetric);
+        return value === null
+          ? null
+          : formatBuildingMetric(value, sortedMetric, separators, entry.costIsPerDistance);
+      })();
+
+    return text === null ? null : <span className={styles.sortedMetric}>{text}</span>;
   };
 
   return (
     <div className={styles.list}>
       {ordered.map((entry) => {
         const label = entry.name || entry.prefabName;
-        const cost = formatBuildingMetric(entry.constructionCost, "cost", separators);
+        const cost = formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance);
         const lot = formatLotDimensions(entry.lotWidth, entry.lotDepth);
         // A road's lot is 0x0 and a zone has none at all. "0 × 0" is a
         // measurement of something that does not exist, so the fact is dropped
@@ -108,39 +144,14 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
         const forecast = getCostForecast(entry.constructionCost, money);
 
         return (
-          <Tooltip
-            key={entry.id}
-            tooltip={
-              <div className={styles.card}>
-                <div className={styles.cardName}>{label}</div>
-                {/* A zone has no cost and no lot, so the building meta line was
-                    a lone em dash — a tooltip that costs a hover and says
-                    nothing. Where the entry carries its own facts, those are
-                    the answer. */}
-                <div className={styles.cardMeta}>
-                  {facts.length > 0 ? facts.join(" · ") : lotKnown ? `${cost} · ${lot}` : cost}
-                </div>
-                {/* The shapes, narrowest first. A player choosing a zone is
-                    matching against a block on the map, and a picture of the
-                    lot is closer to that than "2–4 wide" is. */}
-                {footprints.length > 0 && (
-                  <div className={styles.glyphs}>
-                    {footprints.map((footprint) => (
-                      <FootprintGlyph key={`${footprint.width}x${footprint.depth}`} footprint={footprint} />
-                    ))}
-                    {footprintOverflow > 0 && (
-                      <span className={styles.glyphOverflow}>+{footprintOverflow}</span>
-                    )}
-                  </div>
-                )}
-              </div>
-            }
-          >
+          <BuildingHoverCard key={entry.id} entry={entry} context={hoverCard}>
             <Button
               className={classNames(styles.item, cards && styles.itemCard)}
               variant="icon"
               onSelect={() => place(entry)}
-              aria-label={label}
+              aria-label={isEntryLocked(entry) ? `${label} — ${lockedLabel}` : label}
+              aria-disabled={isEntryLocked(entry) ? "true" : undefined}
+              data-locked={isEntryLocked(entry) ? "true" : undefined}
             >
               {entry.thumbnail
                 ? <img
@@ -196,8 +207,12 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
                   </span>
                 )}
               </span>
+              {/* Right-aligned, so the sorted figures line up as a column and
+                  the order can be read down the page — which is the one thing
+                  the table had and this view did not. */}
+              {sortedBadge(entry)}
             </Button>
-          </Tooltip>
+          </BuildingHoverCard>
         );
       })}
     </div>

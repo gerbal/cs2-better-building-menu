@@ -73,6 +73,16 @@
 
 // The dropdown's own surface. Sizing only — colour, border and hover all come
 // from the game's dropdown theme.
+//
+// This replaces a hand-rolled .popover that master carried, along with two
+// hard-won Cohtml 1.64 workarounds it needed: anchoring by `top` plus a
+// translateY rather than `bottom: 100%`, because bottom-anchoring laid out
+// correctly and then refused to paint its head; and a transform: translateZ(0)
+// on that head to promote it to its own layer, without which its text did not
+// rasterise at all. Both findings are real and both are moot here — the vanilla
+// Dropdown owns its own positioning and painting, which is the point of using
+// it. Recorded rather than deleted silently, in case anything else in this mod
+// ever hand-rolls a floating surface again.
 .menu {
   min-width: 160rem;
   max-width: 260rem;

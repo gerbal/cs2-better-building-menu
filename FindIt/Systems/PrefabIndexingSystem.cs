@@ -2,6 +2,7 @@
 using Colossal.Entities;
 using Colossal.IO.AssetDatabase;
 using Colossal.Logging;
+using Colossal.Mathematics;
 using Colossal.PSI.Common;
 using Colossal.Serialization.Entities;
 
@@ -11,6 +12,7 @@ using FindItBuildingMenu.Domain.Interfaces;
 using FindItBuildingMenu.Utilities;
 
 using Game;
+using Game.City;
 using Game.Common;
 using Game.Prefabs;
 using Game.SceneFlow;
@@ -26,6 +28,7 @@ using System.Reflection;
 
 using Unity.Collections;
 using Unity.Entities;
+using Unity.Mathematics;
 
 namespace FindItBuildingMenu.Systems
 {
@@ -52,6 +55,11 @@ namespace FindItBuildingMenu.Systems
 		// toolbar icons are named, unlike the prefab name or its localised
 		// tooltip.
 		private static Dictionary<int, string> _assetMenuToolTips = new();
+		// Vanilla's second tier, keyed by menu name. See VanillaMenuCategory.
+		private static Dictionary<string, List<VanillaMenuCategory>> _assetCategories = new();
+		// Milestone index -> the name the rest of the game calls it. ~20 entries,
+		// resolved once per index pass rather than per locked asset.
+		private static Dictionary<int, string> _milestoneNames = new();
 		private readonly List<IPrefabCategoryProcessor> _prefabCategoryProcessors = new();
 
 		protected override void OnCreate()
@@ -214,6 +222,8 @@ namespace FindItBuildingMenu.Systems
 
 				IndexZones();
 				IndexAssetMenus();
+				IndexAssetCategories();
+				IndexMilestones();
 			}
 
 			foreach (var processor in _prefabCategoryProcessors)
@@ -375,7 +385,58 @@ namespace FindItBuildingMenu.Systems
 
 			Mod.Log.Info($"{(full ? "Full" : "Partial")} Prefab Indexing completed in {stopWatch.Elapsed.TotalSeconds:0.000}s");
 			Mod.Log.Info($"Indexed Prefabs Count: {FindItUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any].Count}");
+
+			if (full)
+			{
+				LogVanillaMenuTree();
+			}
 		}
+
+			/// <summary>
+			/// SPIKE (cm-e98i). Dumps the build-menu tree as the GAME describes it,
+			/// so it can be diffed against what the vanilla menu actually renders.
+			///
+			/// The question this exists to answer: does reading UIObject.m_Group
+			/// reproduce vanilla's menus exactly? If it does, VanillaBuildMenuTaxonomy
+			/// — which reconstructs the same relationship from our own category
+			/// enums, and which is why Healthcare showed 15 against vanilla's 8 —
+			/// can be deleted rather than patched.
+			///
+			/// Counts are reported both raw and with vanilla's own exclusion applied
+			/// (ToolbarUISystem.FilterOutUpgrades drops service upgrades), because
+			/// that single rule is the whole of the Healthcare discrepancy.
+			///
+			/// Delete this method with the two PrefabIndex fields once decided.
+			/// </summary>
+			private void LogVanillaMenuTree()
+			{
+				try
+				{
+					var indexed = FindItUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any];
+					var placed = indexed.Where(p => p.UiMenuName is not null).ToList();
+
+					Mod.Log.Info($"[MENU-TREE] indexed={indexed.Count} placedInAMenu={placed.Count} unplaced={indexed.Count - placed.Count}");
+
+					foreach (var menu in placed.GroupBy(p => p.UiMenuName).OrderBy(g => g.Key, StringComparer.Ordinal))
+					{
+						foreach (var category in menu.GroupBy(p => p.UiCategoryName).OrderBy(g => g.Key, StringComparer.Ordinal))
+						{
+							// An upgrade is an extension by our own detection, which is
+							// the same population vanilla removes.
+							var buildable = category.Where(p => p.ExtensionIds is null || p.ExtensionIds.Length == 0).ToList();
+							var names = string.Join(",", buildable.OrderBy(p => p.UIOrder).Select(p => p.PrefabName));
+
+							Mod.Log.Info(
+								$"[MENU-TREE] menu=\"{menu.Key}\" category=\"{category.Key}\" "
+								+ $"all={category.Count()} buildable={buildable.Count} names={names}");
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					Mod.Log.Error(ex, "[MENU-TREE] dump failed");
+				}
+			}
 
 			private static bool IsFindItCategoryOverride(string category)
 			{
@@ -416,11 +477,56 @@ namespace FindItBuildingMenu.Systems
 			prefabIndex.PackThumbnails ??= prefabIndex.AssetPacks.Select(pack => IconPath.Normalize(ImageSystem.GetThumbnail(pack))).ToArray();
 			prefabIndex.Tags ??= new();
 			prefabIndex.UIOrder = prefab.TryGet<UIObject>(out var uIObject) ? uIObject.m_Priority : int.MaxValue;
+			// SPIKE (cm-e98i): the menu placement the game itself uses. m_Group is
+			// the asset's UI category; a category that is a UIAssetCategoryPrefab
+			// names its menu. Two managed references, no ECS lookup.
+			prefabIndex.UiCategoryName = uIObject?.m_Group?.name;
+			prefabIndex.UiMenuName = (uIObject?.m_Group as UIAssetCategoryPrefab)?.m_Menu?.name;
+			// The category's own priority, so a group of assets can be ordered
+			// the way the tab strip above it is ordered. m_Group is a
+			// UIGroupPrefab : PrefabBase, so its UIObject is one managed lookup
+			// from here — the same two dereferences the lines above already do.
+			//
+			// Guarded on UIAssetCategoryPrefab, not on m_Group being non-null:
+			// UIAssetMenuPrefab derives from UIGroupPrefab too, so an asset
+			// parked directly on a menu rather than in one of its categories
+			// would otherwise be ranked by the MENU's priority. Those are a
+			// different ordering space — menus rank against each other in the
+			// toolbar — and mixing the two would interleave the headings with
+			// numbers that mean nothing to one another.
+			prefabIndex.UiCategoryPriority =
+				uIObject?.m_Group is UIAssetCategoryPrefab category
+				&& category.TryGet<UIObject>(out var categoryUi)
+					? categoryUi.m_Priority
+					: 0;
 			prefabIndex.IsVanilla = prefab.isBuiltin || prefab.Has<FindItGenerated>();
-			prefabIndex.HasParking = prefabIndex.Category is PrefabCategory.Buildings or PrefabCategory.ServiceBuildings && HasParking(prefab);
+			// Not gated to Buildings and ServiceBuildings any more: a parking
+			// lot reached through the Roads menu is a network, and reporting no
+			// parking for the one asset class whose whole purpose is parking was
+			// the most conspicuous case of the old boolean being useless.
+			prefabIndex.ParkingSlots = GetParkingSlots(prefab);
+			prefabIndex.HasParking = prefabIndex.ParkingSlots > 0;
 			// Enableable: presence alone would mark every unlockable asset
 			// locked forever, including the ones already earned.
 			prefabIndex.IsLocked = EntityManager.HasEnabledComponent<Locked>(entity);
+			// Only for what is actually locked. The walk allocates a hash map and
+			// recurses per prefab, and an unlock event triggers a FULL re-index
+			// (see OnUpdate) — so running it across all 17,898 prefabs every time
+			// the player passes a milestone would be the expensive thing here.
+			// Restricted this way the cost is highest at load, when a full index
+			// runs anyway, and falls towards zero exactly as unlocks get more
+			// frequent.
+			prefabIndex.Bonuses = GetBonuses(entity);
+
+			if (prefabIndex.IsLocked)
+			{
+				(prefabIndex.UnlockMilestone, prefabIndex.UnlockRequirements) = GetUnlockRequirements(entity);
+			}
+			else
+			{
+				prefabIndex.UnlockMilestone = 0;
+				prefabIndex.UnlockRequirements = Array.Empty<string>();
+			}
 			prefabIndex.IsRandom = prefabIndex.SubCategory is not PrefabSubCategory.Networks_Pillars && EntityManager.HasComponent<PlaceholderObjectData>(entity);
 			prefabIndex.IsResourceIntensive = CheckIfResourceIntensive(prefab);
 
@@ -533,9 +639,26 @@ namespace FindItBuildingMenu.Systems
 			//FindItUtil.UpdateFavoritesPack(prefabIndex);
 		}
 
+		/// <summary>
+		/// Cells per kilometre, so a network's per-cell cost reads as a per-km one.
+		/// </summary>
+		/// <remarks>
+		/// Vanilla's own factor — PrefabUISystem binds int2(cost, cost * 125) for
+		/// PlaceableNetData — and the shipped UI renders that unit through
+		/// Common.VALUE_MONEY_PER_KILOMETER, so 125 cells is a kilometre and a
+		/// cell is 8m. Read off the bundle rather than assumed.
+		/// </remarks>
+		private const float NetCellsPerKilometre = 125f;
+
 		private void PopulateAnalyticalData(Entity entity, PrefabIndex prefabIndex)
 		{
-			if (prefabIndex.Category is not PrefabCategory.Buildings and not PrefabCategory.ServiceBuildings)
+			// Networks were excluded here, which is why every one of the 157
+			// assets under Roads showed a blank Cost. The rest of this method
+			// reads building-only components, so they simply do not match for a
+			// network and leave their fields absent.
+			if (prefabIndex.Category is not PrefabCategory.Buildings
+				and not PrefabCategory.ServiceBuildings
+				and not PrefabCategory.Networks)
 			{
 				return;
 			}
@@ -543,6 +666,18 @@ namespace FindItBuildingMenu.Systems
 			if (EntityManager.TryGetComponent<PlaceableObjectData>(entity, out var placeableData))
 			{
 				prefabIndex.ConstructionCost = placeableData.m_ConstructionCost;
+			}
+			else if (EntityManager.TryGetComponent<PlaceableNetData>(entity, out var netData))
+			{
+				// A network prices by length, not by instance: m_DefaultConstruction
+				// Cost is the sum of its composition pieces for ONE cell. Reporting
+				// that raw in a column beside a building's total would be wrong by
+				// two orders of magnitude, so it is converted to the per-kilometre
+				// figure the game itself shows and flagged as a rate — the UI has
+				// to say "/km" or the number lies about what it measures.
+				prefabIndex.ConstructionCost = (uint)Math.Round(netData.m_DefaultConstructionCost * NetCellsPerKilometre);
+				prefabIndex.Upkeep = (int)Math.Round(netData.m_DefaultUpkeepCost * NetCellsPerKilometre);
+				prefabIndex.CostIsPerDistance = true;
 			}
 
 			if (EntityManager.TryGetComponent<ConsumptionData>(entity, out var consumptionData))
@@ -704,6 +839,305 @@ namespace FindItBuildingMenu.Systems
 			});
 		}
 
+		/// <summary>
+		/// Names every milestone once, so locked assets can carry a bare index.
+		/// </summary>
+		/// <remarks>
+		/// Resolved here rather than in the UI because the modding API's
+		/// translate(id, fallback) takes no arguments, and the game's own
+		/// milestone name is a parameterised lookup — Progression.MILESTONE_NAME
+		/// keyed by index. Doing it at index time also means it follows a
+		/// language change for free: OnActiveDictionaryChanged already forces a
+		/// full pass.
+		/// </remarks>
+		private void IndexMilestones()
+		{
+			var query = GetEntityQuery(
+				ComponentType.ReadOnly<MilestoneData>(),
+				ComponentType.ReadOnly<PrefabData>());
+			var milestones = query.ToEntityArray(Allocator.Temp);
+			var names = new Dictionary<int, string>();
+
+			for (var i = 0; i < milestones.Length; i++)
+			{
+				if (EntityManager.TryGetComponent<MilestoneData>(milestones[i], out var data)
+					&& _prefabSystem.TryGetPrefab<PrefabBase>(milestones[i], out var prefab))
+				{
+					names[data.m_Index] = GetAssetName(prefab);
+				}
+			}
+
+			_milestoneNames = names;
+			Mod.Log.Info($"Indexed Milestones: {names.Count}");
+		}
+
+		/// <summary>The name the game gives a milestone index.</summary>
+		public static string GetMilestoneName(int index) =>
+			_milestoneNames.TryGetValue(index, out var name) ? name : string.Empty;
+
+		/// <summary>
+		/// What the game still wants before this asset can be built.
+		/// </summary>
+		/// <remarks>
+		/// Mirrors PrefabUISystem.GetRequirements: collect the transitive
+		/// requirements the game itself collects, then take the highest milestone
+		/// and name everything else.
+		///
+		/// Milestones are separated out because they are ordinal and shared —
+		/// one index names a milestone every player recognises. Everything else
+		/// contributes its own localized title, which covers dev tree nodes and
+		/// the requirement prefabs signature buildings hang off without this
+		/// having to know one requirement type from another.
+		/// </remarks>
+		private (int Milestone, string[] Requirements) GetUnlockRequirements(Entity entity)
+		{
+			if (!EntityManager.HasComponent<UnlockRequirement>(entity))
+			{
+				return (0, Array.Empty<string>());
+			}
+
+			var required = new NativeParallelHashMap<Entity, UnlockFlags>(10, Allocator.TempJob);
+
+			try
+			{
+				ProgressionUtils.CollectSubRequirements(EntityManager, entity, required);
+
+				var milestone = 0;
+				var requirements = new List<string>();
+
+				foreach (var item in required)
+				{
+					// RequireAll, matching ProgressionUtils.GetRequiredMilestone:
+					// a milestone reachable through a RequireAny branch is one of
+					// several ways in, so it is not "the" milestone.
+					if (EntityManager.TryGetComponent<MilestoneData>(item.Key, out var milestoneData))
+					{
+						if ((item.Value & UnlockFlags.RequireAll) != 0 && milestoneData.m_Index > milestone)
+						{
+							milestone = milestoneData.m_Index;
+						}
+
+						continue;
+					}
+
+					// Tutorials are not a requirement the player can act on, and
+					// their titles are internal. A census across every locked
+					// asset in a live save found TutorialBalloonPrefab was 124 of
+					// 362 requirements — the single biggest source of the
+					// "Tutorials Intro List New +3" noise this used to print.
+					// Vanilla special-cases tutorials too: BindUnlockRequirement
+					// tests m_TutorialRequirementEntity before anything else.
+					if (!_prefabSystem.TryGetPrefab<PrefabBase>(item.Key, out var requirementPrefab)
+						|| requirementPrefab is TutorialPrefab
+						|| requirementPrefab is TutorialListPrefab
+						|| requirementPrefab is TutorialBalloonPrefab)
+					{
+						continue;
+					}
+
+					var described = DescribeRequirement(item.Key, requirementPrefab);
+
+					if (!string.IsNullOrEmpty(described))
+					{
+						requirements.Add(described);
+					}
+				}
+
+				return (milestone, requirements.Distinct().ToArray());
+			}
+			finally
+			{
+				required.Dispose();
+			}
+		}
+
+		/// <summary>
+		/// What this building does for the city, phrased for a hover card.
+		/// </summary>
+		/// <remarks>
+		/// Both buffers the game applies: CityModifierData for citywide effects,
+		/// LocalModifierData for the ones with a radius. The arithmetic is
+		/// vanilla's own — ModifierUIUtils.GetModifierDelta scales a relative
+		/// mode by 100 and leaves an absolute one alone — so our numbers agree
+		/// with the ones the game prints elsewhere on the same screen.
+		///
+		/// m_Range.max is the figure vanilla binds. Range carries a min too, but
+		/// the effect a player gets from a finished building is the top of it.
+		/// </remarks>
+		private string[] GetBonuses(Entity entity)
+		{
+			var bonuses = new List<string>();
+
+			if (EntityManager.TryGetBuffer<CityModifierData>(entity, true, out var cityModifiers))
+			{
+				for (var i = 0; i < cityModifiers.Length; i++)
+				{
+					var modifier = cityModifiers[i];
+
+					// Vanilla hides this one from its own effect list, so a card
+					// that showed it would be inventing an effect the game does
+					// not acknowledge.
+					if (modifier.m_Type == CityModifierType.CriminalMonitorProbability)
+					{
+						continue;
+					}
+
+					bonuses.Add(DescribeModifier(
+						modifier.m_Type.ToString(),
+						modifier.m_Mode,
+						modifier.m_Range.max));
+				}
+			}
+
+			if (EntityManager.TryGetBuffer<LocalModifierData>(entity, true, out var localModifiers))
+			{
+				for (var i = 0; i < localModifiers.Length; i++)
+				{
+					var modifier = localModifiers[i];
+
+					bonuses.Add(DescribeModifier(
+						modifier.m_Type.ToString(),
+						modifier.m_Mode,
+						modifier.m_Delta.max));
+				}
+			}
+
+			return bonuses.Where(b => !string.IsNullOrEmpty(b)).Distinct().ToArray();
+		}
+
+		/// <summary>One effect, signed, with the unit its mode implies.</summary>
+		private static string DescribeModifier(string type, ModifierValueMode mode, float value)
+		{
+			// ModifierUIUtils.GetModifierDelta, transcribed: a relative mode is a
+			// fraction and reads as a percentage; absolute is already the number.
+			var scaled = mode switch
+			{
+				ModifierValueMode.Relative => 100f * value,
+				ModifierValueMode.InverseRelative => 100f * (1f / Math.Max(0.001f, 1f + value) - 1f),
+				_ => value,
+			};
+
+			if (Math.Abs(scaled) < 0.005f)
+			{
+				return string.Empty;
+			}
+
+			var unit = mode == ModifierValueMode.Absolute ? string.Empty : "%";
+			// The sign is the point — a modifier can make something worse, and an
+			// unsigned number would read as a benefit either way.
+			var sign = scaled > 0 ? "+" : string.Empty;
+
+			return $"{type.FormatWords()} {sign}{scaled:0.##}{unit}";
+		}
+
+		/// <summary>
+		/// Says what a requirement actually asks of the player.
+		/// </summary>
+		/// <remarks>
+		/// Composed from each requirement's own data, the way vanilla does it in
+		/// PrefabUISystem, because the strings do not exist as data: requirement
+		/// prefabs carry no localized title, so resolving their names produced
+		/// prettified internal ids like "Commercial Zoning Tutorial Low Density".
+		///
+		/// A census across every locked asset in a live save says which types are
+		/// worth composing — dev tree nodes 149, zone built 61, object built 17,
+		/// processing 8, citizen 3 — so this covers the five that occur rather
+		/// than the eight the game defines.
+		/// </remarks>
+		private string DescribeRequirement(Entity entity, PrefabBase prefab)
+		{
+			if (EntityManager.TryGetComponent<CitizenRequirementData>(entity, out var citizens))
+			{
+				if (citizens.m_MinimumPopulation > 0)
+				{
+					return Format("Requirement.POPULATION", "{0} population", citizens.m_MinimumPopulation.ToString("N0"));
+				}
+
+				return citizens.m_MinimumHappiness > 0
+					? Format("Requirement.HAPPINESS", "{0} happiness", citizens.m_MinimumHappiness.ToString())
+					: string.Empty;
+			}
+
+			if (EntityManager.TryGetComponent<ProcessingRequirementData>(entity, out var processing))
+			{
+				return Format(
+					"Requirement.PROCESSING",
+					"produce {0} {1}",
+					processing.m_MinimumProducedAmount.ToString("N0"),
+					processing.m_ResourceType.ToString());
+			}
+
+			if (EntityManager.TryGetComponent<ZoneBuiltRequirementData>(entity, out var zone))
+			{
+				var zoneName = _prefabSystem.TryGetPrefab<PrefabBase>(zone.m_RequiredZone, out var zonePrefab)
+					? GetAssetName(zonePrefab)
+					: string.Empty;
+
+				// Squares and count are alternative measures of the same demand;
+				// the game sets whichever it means, so report the one it set.
+				if (zone.m_MinimumSquares > 0)
+				{
+					return Format("Requirement.ZONE_SQUARES", "{0} squares of {1}", zone.m_MinimumSquares.ToString("N0"), zoneName);
+				}
+
+				return zone.m_MinimumCount > 0
+					? Format("Requirement.ZONE_COUNT", "{0} × {1}", zone.m_MinimumCount.ToString("N0"), zoneName)
+					: zoneName;
+			}
+
+			// Only the STRICT variant names the object it wants. Plain
+			// ObjectBuiltRequirementPrefab carries a count and nothing else — no
+			// m_Requirement, no reference of any kind — so it can only ever say
+			// "build 1", which is what made Switchon's card read "build 1 +1".
+			// A count with no subject is worse than silence: returning nothing
+			// lets the asset's OTHER requirements have the line instead.
+			if (prefab is StrictObjectBuiltRequirementPrefab strict && strict.m_Requirement is not null)
+			{
+				return Format(
+					"Requirement.OBJECTS_BUILT",
+					"build {0} × {1}",
+					strict.m_MinimumCount.ToString("N0"),
+					GetAssetName(strict.m_Requirement));
+			}
+
+			if (EntityManager.HasComponent<ObjectBuiltRequirementData>(entity))
+			{
+				return string.Empty;
+			}
+
+			// A dev tree node's own name is near-redundant beside the building it
+			// unlocks — "Health Research Institute Node" under Health Research
+			// Institute. What the player cannot see from the card is where to go
+			// and what it costs, so say that instead.
+			if (prefab is DevTreeNodePrefab node)
+			{
+				var service = node.m_Service is not null ? GetAssetName(node.m_Service) : string.Empty;
+
+				return node.m_Cost > 0
+					? Format("Requirement.DEV_TREE_COST", "{0} tech, {1} pts", service, node.m_Cost.ToString())
+					: Format("Requirement.DEV_TREE", "{0} tech", service);
+			}
+
+			return GetAssetName(prefab);
+		}
+
+		/// <summary>
+		/// Localized requirement phrasing, falling back to the English shape.
+		/// </summary>
+		private static string Format(string key, string fallback, params string[] args)
+		{
+			var template = GameManager.instance.localizationManager.activeDictionary.TryGetValue(key, out var localized)
+				? localized
+				: fallback;
+
+			for (var i = 0; i < args.Length; i++)
+			{
+				template = template.Replace("{" + i + "}", args[i]);
+			}
+
+			return template.Trim();
+		}
+
 		private string GetAssetName(PrefabBase prefab)
 		{
 			_prefabUISystem.GetTitleAndDescription(_prefabSystem.GetEntity(prefab), out var titleId, out var _);
@@ -840,6 +1274,74 @@ namespace FindItBuildingMenu.Systems
 			_assetMenuNames = names;
 			_assetMenuToolTips = toolTips;
 			Mod.Log.Info($"Indexed Asset Menus Count: {_assetMenuNames.Count}");
+		}
+
+		/// <summary>
+		/// Caches each menu's category tabs, which are vanilla's second tier.
+		/// </summary>
+		/// <remarks>
+		/// Deliberately the same shape as IndexAssetMenus above: query the data
+		/// component the game itself groups by, resolve the managed prefab, read
+		/// its name. A category that names no menu is not a build-menu tab —
+		/// UIAssetCategoryPrefab.GetPrefabComponents only adds UIAssetCategoryData
+		/// when m_Menu is set, so this is belt and braces rather than a real case.
+		/// </remarks>
+		private void IndexAssetCategories()
+		{
+			var query = GetEntityQuery(
+				ComponentType.ReadOnly<UIAssetCategoryData>(),
+				ComponentType.ReadOnly<PrefabData>());
+			var categories = query.ToEntityArray(Allocator.Temp);
+			var byMenu = new Dictionary<string, List<VanillaMenuCategory>>();
+
+			for (var i = 0; i < categories.Length; i++)
+			{
+				if (!_prefabSystem.TryGetPrefab<PrefabBase>(categories[i], out var prefab)
+					|| prefab is not UIAssetCategoryPrefab category
+					|| category.m_Menu?.name is not string menuName)
+				{
+					continue;
+				}
+
+				// A category with no members is not a tab. Vanilla drops these in
+				// GetSortedCategories (ToolbarUISystem.cs:335-347) before it binds
+				// the row, so showing one is showing something the game hides.
+				//
+				// Not hypothetical: Transportation ships a ferry category that is
+				// empty in a base-game save, and it surfaced as a tab whose icon
+				// really is Media/Placeholder.svg — the game never intended anyone
+				// to see it, so it never gave it an icon.
+				if (!EntityManager.TryGetBuffer<UIGroupElement>(categories[i], true, out var members)
+					|| members.Length == 0)
+				{
+					continue;
+				}
+
+				prefab.TryGet<UIObject>(out var uIObject);
+
+				if (!byMenu.TryGetValue(menuName, out var tabs))
+				{
+					tabs = new List<VanillaMenuCategory>();
+					byMenu[menuName] = tabs;
+				}
+
+				tabs.Add(new VanillaMenuCategory(
+					Id: prefab.name,
+					Name: prefab.name,
+					Icon: IconPath.Normalize(uIObject?.m_Icon ?? ImageSystem.GetIcon(prefab)) ?? string.Empty,
+					// Vanilla orders its tabs by this and defaults it to 0, so
+					// categories that never set one keep their query order rather
+					// than being pushed to the end.
+					Priority: uIObject?.m_Priority ?? 0));
+			}
+
+			foreach (var tabs in byMenu.Values)
+			{
+				tabs.Sort((left, right) => left.Priority.CompareTo(right.Priority));
+			}
+
+			_assetCategories = byMenu;
+			Mod.Log.Info($"Indexed Asset Categories: {byMenu.Count} menus, {byMenu.Values.Sum(list => list.Count)} tabs");
 		}
 
 		private void IndexZones()
@@ -1016,6 +1518,12 @@ namespace FindItBuildingMenu.Systems
 		/// not be persisted. Resolving the name belongs here, where the prefab
 		/// system is available.
 		/// </remarks>
+		/// <summary>The tab strip for a menu, empty when the menu has none.</summary>
+		public static IReadOnlyList<VanillaMenuCategory> GetMenuCategories(string? menuName) =>
+			menuName is not null && _assetCategories.TryGetValue(menuName, out var tabs)
+				? tabs
+				: Array.Empty<VanillaMenuCategory>();
+
 		public static string? GetAssetMenuName(int entityIndex) => _assetMenuNames.TryGetValue(entityIndex, out var name)
 			? name
 			: null;
@@ -1071,20 +1579,81 @@ namespace FindItBuildingMenu.Systems
 			return ZoneTypeFilter.Any;
 		}
 
-		private bool HasParking(PrefabBase prefab)
+		/// <summary>
+		/// How many cars the asset can park, counted rather than merely detected.
+		/// </summary>
+		/// <remarks>
+		/// A boolean could not answer the question anyone actually asks. It also
+		/// made sorting by Parking a no-op, because every entry tied.
+		///
+		/// EXACT for an object's own lanes, which is what a parking lot has.
+		/// The game's count is NetUtils.GetParkingSlotCount, floor((slotSpace +
+		/// 0.01) / slotInterval), and slotSpace trims the curve only when
+		/// ParkingLaneFlags.FindConnections is CLEAR. LaneSystem.CreateObjectLane
+		/// — the path every object sub-lane takes — sets StartingLane, EndingLane
+		/// and FindConnections together, so the trimming branch never runs and
+		/// slotSpace is the raw curve length. The same arithmetic therefore
+		/// reproduces the placed count rather than approximating it.
+		///
+		/// An earlier version of this comment called the figure approximate, on
+		/// the assumption that the runtime flags were unknowable. They are
+		/// knowable: they are unconditional for this path.
+		///
+		/// The interval is derived exactly as NetInitializeSystem bakes it from
+		/// the lane's slot size and angle, so at least that half is the game's.
+		/// </remarks>
+		private int GetParkingSlots(PrefabBase prefab)
 		{
-			if (prefab.TryGet<SpawnLocation>(out var spawnLocation) && spawnLocation.m_ConnectionType == RouteConnectionType.Parking)
+			var slots = 0;
+
+			// A garage parks cars inside rather than along marked lanes, so it
+			// has no sub-lanes to divide up and declares its capacity outright.
+			// Counting its spawn point as one space made the Automated Parking
+			// Building — a multi-storey car park — report a single bay, which
+			// the live table showed plainly.
+			if (prefab.TryGet<ParkingFacility>(out var parkingFacility)
+				&& parkingFacility.m_GarageMarkerCapacity > 0)
 			{
-				return true;
+				slots += parkingFacility.m_GarageMarkerCapacity;
+			}
+			else if (prefab.TryGet<SpawnLocation>(out var spawnLocation)
+				&& spawnLocation.m_ConnectionType == RouteConnectionType.Parking)
+			{
+				// A parking connection with no declared capacity really is one
+				// dedicated space — a driveway rather than a car park.
+				slots++;
 			}
 
 			if (prefab.TryGet<ObjectSubLanes>(out var subLanes) && subLanes.m_SubLanes is not null)
 			{
 				foreach (var lane in subLanes.m_SubLanes)
 				{
-					if (lane.m_LanePrefab.Has<ParkingLane>())
+					if (lane?.m_LanePrefab is null
+						|| !lane.m_LanePrefab.TryGet<ParkingLane>(out var parkingLane))
 					{
-						return true;
+						continue;
+					}
+
+					// A lane with no slot width is Virtual (NetInitializeSystem:1608),
+					// and the game's own capacity sum skips those —
+					// RoadsInfoviewUISystem drops VirtualLane before adding slots.
+					// Two of the three interval branches already yield 0 for such
+					// a lane and fall out below, but a slot angle near zero takes
+					// the interval from slotSize.y and would have counted bays the
+					// game does not.
+					if (parkingLane.m_SlotSize.x < 0.001f)
+					{
+						continue;
+					}
+
+					var interval = GetParkingSlotInterval(parkingLane);
+
+					if (interval > 0.001f)
+					{
+						// The +0.01 is the game's, not a fudge: GetParkingSlotCount
+						// adds it before the divide, and dropping it loses a bay
+						// whenever the length divides exactly.
+						slots += (int)Math.Floor((MathUtils.Length(lane.m_BezierCurve) + 0.01f) / interval);
 					}
 				}
 			}
@@ -1093,14 +1662,45 @@ namespace FindItBuildingMenu.Systems
 			{
 				foreach (var obj in subObjects.m_SubObjects)
 				{
-					if (obj.m_Object is not null && HasParking(obj.m_Object))
+					if (obj.m_Object is not null)
 					{
-						return true;
+						slots += GetParkingSlots(obj.m_Object);
 					}
 				}
 			}
 
-			return false;
+			return slots;
+		}
+
+		/// <summary>
+		/// The spacing between bays, derived the way the game bakes it.
+		/// </summary>
+		/// <remarks>
+		/// Transcribed from NetInitializeSystem, which computes this into
+		/// ParkingLaneData.m_SlotInterval from the managed component's slot size
+		/// and angle. Deriving it here rather than reading the baked component
+		/// keeps this to the managed prefab graph the rest of the walk uses.
+		/// </remarks>
+		private static float GetParkingSlotInterval(ParkingLane parkingLane)
+		{
+			var angle = math.radians(math.clamp(parkingLane.m_SlotAngle, 0f, 90f));
+			var slotSize = math.select(parkingLane.m_SlotSize, 0f, parkingLane.m_SlotSize < 0.001f);
+			var y = new float2(math.cos(angle), math.sin(angle));
+
+			if (y.y < 0.001f)
+			{
+				return slotSize.y;
+			}
+
+			if (y.x < 0.001f)
+			{
+				return slotSize.x;
+			}
+
+			var scaled = slotSize / new float2(y.y, y.x);
+			scaled = math.select(scaled, 0f, scaled < 0.001f);
+
+			return math.min(scaled.x, scaled.y);
 		}
 	}
 }

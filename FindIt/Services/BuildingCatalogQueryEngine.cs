@@ -95,7 +95,30 @@ namespace FindItBuildingMenu.Services
 
 		private static bool Matches(BuildingCatalogEntry entry, BuildingCatalogQuery query)
 		{
-			if (!MatchesBuildMenu(entry, query))
+			if (!MatchesVanillaMenuTree(entry, query))
+			{
+				return false;
+			}
+
+			// The menu tree REPLACES the section overlay rather than layering on
+			// it. Both describe where an asset lives in the build menu, but only
+			// one of them is the game's own answer: UIObject.m_Group is what
+			// vanilla itself reads, while VanillaSection is a shape we
+			// reconstruct from (Category, SubCategory, ZoneType).
+			//
+			// Applying both meant a menu member could be dropped for indexing
+			// into a section the preset did not name. Roads is pinned to
+			// Networks, so its 34 parking lots and 1 service building — which
+			// index as ServiceBuildings — vanished: 122 of 157 shown. The same
+			// arithmetic cost Transportation 23 of its 53, because bus stops,
+			// taxi stops, tram stops and tracks are networks inside a menu
+			// pinned to ServiceBuildings.
+			//
+			// The section stays SET while scoped, and is merely not applied. It
+			// is still what the auto-widen brake reads to answer "am I scoped?"
+			// (FindItUISystem.Methods.cs), and clearing it would make that check
+			// lie.
+			if (!IsScopedToMenuTree(query) && !MatchesBuildMenu(entry, query))
 			{
 				return false;
 			}
@@ -156,6 +179,63 @@ namespace FindItBuildingMenu.Services
 				&& InRange(entry.Capacity, query.MinCapacity, query.MaxCapacity)
 				&& InRange(entry.ElectricityConsumption, query.MinElectricityConsumption, query.MaxElectricityConsumption)
 				&& InRange(entry.WaterConsumption, query.MinWaterConsumption, query.MaxWaterConsumption);
+		}
+
+		/// <summary>
+		/// SPIKE (cm-e98i). Filters by the placement the GAME gives an asset —
+		/// UIObject.m_Group and its menu — rather than by the section we
+		/// reconstruct in VanillaBuildMenuTaxonomy.
+		///
+		/// Vanilla's menu is set membership, not a predicate: an asset is in a
+		/// category iff UIObjectData.m_Group is that category. Asking the same
+		/// question is what makes our Healthcare view agree with the game's.
+		/// An asset that is in no menu at all fails a menu constraint, which is
+		/// also vanilla's behaviour — it only ever lists group members.
+		/// </summary>
+		/// <summary>
+		/// Whether this query is asking about a place in the vanilla build menu.
+		/// </summary>
+		private static bool IsScopedToMenuTree(BuildingCatalogQuery query)
+		{
+			return !string.IsNullOrEmpty(query.UiMenu?.Trim())
+				|| !string.IsNullOrEmpty(query.UiCategory?.Trim());
+		}
+
+		private static bool MatchesVanillaMenuTree(BuildingCatalogEntry entry, BuildingCatalogQuery query)
+		{
+			string menu = query.UiMenu?.Trim() ?? string.Empty;
+			string category = query.UiCategory?.Trim() ?? string.Empty;
+
+			// Unscoped queries are not looking at a vanilla menu, so none of the
+			// menu's rules apply to them — including the upgrade exclusion below,
+			// which used to sit outside this guard and therefore ran on EVERY
+			// query. That contradicted the comment right next to it and deleted
+			// every upgrade-bearing asset from the whole catalog: the Extensions
+			// facet could select a value and then match nothing, which is what
+			// Query_ExtensionFacetMatchesStableExtensionIdentity caught.
+			if (string.IsNullOrEmpty(menu) && string.IsNullOrEmpty(category))
+			{
+				return true;
+			}
+
+			if (!string.IsNullOrEmpty(menu)
+				&& !string.Equals(entry.UiMenu, menu, StringComparison.OrdinalIgnoreCase))
+			{
+				return false;
+			}
+
+			// Vanilla drops service upgrades from every menu unconditionally
+			// (ToolbarUISystem.FilterOutUpgrades). They are things you attach to a
+			// building, not things you build, so a build list that offers them is
+			// offering something you cannot place. Scoped to a menu constraint:
+			// asking for "everything" should still find them.
+			if (entry.Extensions is { Length: > 0 })
+			{
+				return false;
+			}
+
+			return string.IsNullOrEmpty(category)
+				|| string.Equals(entry.UiCategory, category, StringComparison.OrdinalIgnoreCase);
 		}
 
 		private static bool MatchesBuildMenu(BuildingCatalogEntry entry, BuildingCatalogQuery query)
@@ -294,8 +374,12 @@ namespace FindItBuildingMenu.Services
 					? seed.ThenByDescending(x => x.BuildingLevel)
 					: seed.ThenBy(x => x.BuildingLevel),
 				"hasparking" => query.Descending
-					? seed.ThenByDescending(x => x.HasParking)
-					: seed.ThenBy(x => x.HasParking),
+					// By count, not by the boolean. Sorting on a flag put every
+					// entry in one of two buckets and left the order inside them
+					// untouched, so on any set that agreed — all of Water &
+					// Sewage, for instance — the sort visibly did nothing.
+					? seed.ThenByDescending(x => x.ParkingSlots)
+					: seed.ThenBy(x => x.ParkingSlots),
 				"zonetype" => query.Descending
 					? seed.ThenByDescending(x => x.ZoneType)
 					: seed.ThenBy(x => x.ZoneType),

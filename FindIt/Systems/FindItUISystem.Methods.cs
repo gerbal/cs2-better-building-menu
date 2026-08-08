@@ -52,6 +52,8 @@ namespace FindItBuildingMenu.Systems
 				BuildMenuSection = _BuildingLensEnabled ? _buildingLensSection : string.Empty,
 				BuildMenuSubCategory = _BuildingLensEnabled ? _buildingLensSubCategory : string.Empty,
 				Role = _BuildingLensEnabled ? _buildingLensRole : string.Empty,
+				UiMenu = _BuildingLensEnabled ? _buildingLensUiMenu : string.Empty,
+				UiCategory = _BuildingLensEnabled ? _buildingLensUiCategory : string.Empty,
 				// Keep the successor lens in lockstep with FindIt's common
 				// parking filters. The legacy grid owns the full filter pipeline;
 				// the bounded catalog receives the equivalent typed predicate.
@@ -112,6 +114,7 @@ namespace FindItBuildingMenu.Systems
 						// anywhere at all" probe, undercounting matches that
 						// exist under a different role or no role at all.
 						Role = VanillaBuildMenuTaxonomy.Any,
+						UiMenu = string.Empty,
 						Offset = 0,
 					}).TotalCount
 					: 0;
@@ -205,6 +208,20 @@ namespace FindItBuildingMenu.Systems
 
 		private void RefreshBuildingLensNavigation()
 		{
+			// Dense by index: entry N is milestone N's name. A locked asset ships
+			// a bare index and the UI reads it out of here, so the ~20 names are
+			// resolved once per index pass instead of once per locked asset on
+			// every unlock-triggered re-index.
+			var milestoneCount = 0;
+			for (var i = 0; i < 64 && !string.IsNullOrEmpty(PrefabIndexingSystem.GetMilestoneName(i)); i++)
+			{
+				milestoneCount = i + 1;
+			}
+
+			_BuildingLensMilestonesBinding.Value = Enumerable.Range(0, milestoneCount)
+				.Select(PrefabIndexingSystem.GetMilestoneName)
+				.ToArray();
+
 			VanillaBuildMenuSelection selection = VanillaBuildMenuSelection.Normalize(
 				_buildingLensSection,
 				_buildingLensSubCategory);
@@ -385,6 +402,22 @@ namespace FindItBuildingMenu.Systems
 		{
 			if ((!settingPrefab && tool == _defaultToolSystem) || tool.toolID is "RoadBuilderTool" or "MoveItTool" or "Terrain Tool" or "Zone Tool")
 			{
+				// Deliberately NOT CloseLens here, though the vanilla grid showing
+				// through on Escape makes it tempting.
+				//
+				// CloseLens calls ClearAssetSelection, and this branch fires on
+				// every return to the default tool — not just Escape, but also
+				// after a placement and on a right-click cancel. Releasing the
+				// toolbar selection that eagerly meant that by the time the player
+				// actually pressed Escape there was no menu left for the game to
+				// close, so its own Escape chain fell through to the pause menu.
+				// Trading "Escape reveals the old menu" for "Escape pauses the
+				// game mid-build" is a bad trade.
+				//
+				// The real fix has to distinguish Escape from the other ways the
+				// tool returns to default, which this handler cannot see: Escape
+				// is consumed by the game's native input layer and never reaches
+				// the DOM, so it arrives here indistinguishable from a placement.
 				ToggleFindItPanel(false);
 			}
 		}

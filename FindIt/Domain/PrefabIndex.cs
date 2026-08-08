@@ -40,6 +40,46 @@ namespace FindItBuildingMenu.Domain
 		/// when it decides to grey an asset out.
 		/// </remarks>
 		public bool IsLocked { get; set; }
+
+		/// <summary>
+		/// The milestone index this asset waits on, or 0 for none.
+		/// </summary>
+		/// <remarks>
+		/// An index rather than a name. The requirement is static — which
+		/// milestone unlocks a building never changes — so it costs an int per
+		/// asset, and the ~20 milestone names are resolved once into their own
+		/// table instead of being re-resolved across 17,898 prefabs every time an
+		/// unlock triggers a full re-index.
+		/// </remarks>
+		public int UnlockMilestone { get; set; }
+
+		/// <summary>
+		/// Everything else the asset is waiting on, already localized.
+		/// </summary>
+		/// <remarks>
+		/// Signature buildings are the reason this is not just a milestone.
+		/// They hang off requirement prefabs — zone built, objects built,
+		/// citizens, processing — which vanilla renders through about eight
+		/// separately composed sentences (PrefabUISystem.BindUnlockRequirement).
+		/// Reproducing that grammar is where this would start drifting from the
+		/// game, so each requirement contributes its OWN title instead, resolved
+		/// exactly the way asset names are.
+		/// </remarks>
+		public string[] UnlockRequirements { get; set; } = Array.Empty<string>();
+
+		/// <summary>
+		/// What the building gives the city, already phrased for display.
+		/// </summary>
+		/// <remarks>
+		/// Signature buildings are bought with progress rather than money — the
+		/// cost column reads "Free" for every one of them — so the effect IS the
+		/// reason to choose one over another, and it was the one thing the card
+		/// did not say.
+		///
+		/// Read from the two buffers the game applies: CityModifierData for
+		/// citywide effects and LocalModifierData for radius ones.
+		/// </remarks>
+		public string[] Bonuses { get; set; } = Array.Empty<string>();
 		public bool IsUniqueMesh { get; set; }
 		public ThemePrefab Theme { get; set; }
 		public AssetPackPrefab[] AssetPacks { get; set; }
@@ -47,10 +87,53 @@ namespace FindItBuildingMenu.Domain
 		public string[]? ExtensionIds { get; set; }
 		public List<string> Tags { get; set; }
 		public int UIOrder { get; set; }
+		// SPIKE (cm-e98i): the game's own answer to "where does this asset live
+		// in the build menu". Vanilla's menu is not a predicate over a flat list
+		// — each category IS its own UIGroupElement buffer and membership is
+		// exactly UIObjectData.m_Group == that category. We currently rebuild
+		// that relationship from (Category, SubCategory, ZoneType) in
+		// VanillaBuildMenuTaxonomy, which is a second source of truth and the
+		// reason our Healthcare view showed 15 where vanilla shows 8.
+		//
+		// Recorded here to test whether reading it reproduces vanilla exactly.
+		// Remove these two, or commit to them, once that question is answered.
+		public string? UiCategoryName { get; set; }
+		public string? UiMenuName { get; set; }
+
+		/// <summary>
+		/// The category's own UIObject.m_Priority — the game's tab order.
+		/// </summary>
+		/// <remarks>
+		/// Read off the category prefab rather than the asset: two assets in the
+		/// same category must rank identically, or grouping by category would
+		/// split one heading in two.
+		///
+		/// Defaults to 0 like vanilla's, not to <see cref="UIOrder"/>'s
+		/// int.MaxValue sentinel. Vanilla reads a missing UIObjectData as
+		/// priority 0 (UIObjectInfo.GetObjects), so a category that never set
+		/// one belongs in the middle of the strip, not at the end of it.
+		/// </remarks>
+		public int UiCategoryPriority { get; set; }
 		public bool HasParking { get; set; }
+
+		/// <summary>
+		/// Parking bays, matching what the building has once placed. See
+		/// PrefabIndexingSystem.GetParkingSlots.
+		/// </summary>
+		public int ParkingSlots { get; set; }
 		// Nullable analytical values are populated from the same prefab entity
 		// already being indexed. A missing component stays missing instead of
 		// being serialized as a misleading zero.
+		/// <summary>
+		/// Whether Cost and Upkeep are per kilometre rather than per instance.
+		/// </summary>
+		/// <remarks>
+		/// True for networks, which price by length. The figure is meaningless
+		/// without this: 12,500 for a road is a rate, 12,500 for a hospital is a
+		/// total, and a column that shows both unqualified invites the reader to
+		/// compare them.
+		/// </remarks>
+		public bool CostIsPerDistance { get; set; }
 		public uint? ConstructionCost { get; set; }
 		public int? Upkeep { get; set; }
 		public int? Workers { get; set; }

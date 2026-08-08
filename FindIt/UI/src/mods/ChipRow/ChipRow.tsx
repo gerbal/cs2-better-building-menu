@@ -5,6 +5,8 @@ import classNames from "classnames";
 import { useState } from "react";
 import mod from "../../../mod.json";
 import { lensSectionCommand, lensSubCategoryCommand, type VanillaBuildMenuTab } from "domain/vanillaBuildMenuContracts";
+import { orderedCategories, type VanillaMenuCategory } from "domain/vanillaMenuCategories";
+import { lensScopeChipsFor } from "domain/lensScopeChips";
 import type { BuildingLensFacetState } from "domain/buildingCatalogFacets";
 import type { BuildingLensMetricRangeState } from "domain/buildingLensFilterSummary";
 import styles from "./chipRow.module.scss";
@@ -34,6 +36,9 @@ const BuildingLensSubCategory$ = bindValue<string>(mod.id, "BuildingLensSubCateg
 const BuildingLensSectionList$ = bindValue<VanillaBuildMenuTab[]>(mod.id, "BuildingLensSectionList", []);
 const BuildingLensSubCategoryList$ = bindValue<VanillaBuildMenuTab[]>(mod.id, "BuildingLensSubCategoryList", []);
 const BuildingLensFacets$ = bindValue<BuildingLensFacetState | null>(mod.id, "BuildingLensFacets", null);
+const BuildingLensMenu$ = bindValue<string>(mod.id, "BuildingLensMenu", "");
+const BuildingLensMenuCategory$ = bindValue<string>(mod.id, "BuildingLensMenuCategory", "");
+const BuildingLensMenuCategories$ = bindValue<VanillaMenuCategory[]>(mod.id, "BuildingLensMenuCategories", []);
 const ShowZoningHierarchy$ = bindValue<boolean>(mod.id, "ShowZoningHierarchy", false);
 const BuildingLensZoneFamilies$ = bindValue<string[]>(mod.id, "BuildingLensZoneFamilies", []);
 const ZoneCatalog$ = bindValue<{ family?: string }[]>(mod.id, "ZoneCatalog", []);
@@ -60,7 +65,7 @@ const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState | nu
   null
 );
 
-type PickerId = "section" | "subCategory" | "zoneFamily" | null;
+type PickerId = "section" | "subCategory" | "zoneFamily" | "menuCategory" | null;
 
 export const ChipRow = () => {
   const { translate } = useLocalization();
@@ -75,6 +80,19 @@ export const ChipRow = () => {
   const showZoning = useValue(ShowZoningHierarchy$);
   const zoneFamilies = useValue(BuildingLensZoneFamilies$) ?? [];
   const zoneCatalog = useValue(ZoneCatalog$) ?? [];
+  const menu = useValue(BuildingLensMenu$) ?? "";
+  const menuCategory = useValue(BuildingLensMenuCategory$) ?? "";
+  const menuCategories = useValue(BuildingLensMenuCategories$) ?? [];
+
+  // One rule, in its own module so it can be tested: a chip is drawn only when
+  // the state it writes is applied to the result. See lensScopeChips.ts.
+  const chips = lensScopeChipsFor({
+    menu,
+    menuCategory,
+    menuCategoryCount: menuCategories.length,
+    showZoning,
+    subCategoryCount: subCategoryList.length,
+  });
 
   const label = (key: string, fallback: string) => translate(key, fallback) ?? fallback;
 
@@ -83,6 +101,10 @@ export const ChipRow = () => {
 
   const familyLabel = (id: string) =>
     translate(`Tooltip.LABEL[FindItBuildingMenu.Zoning_${id}]`, id) ?? id;
+
+  // The game's own word for a menu or a category, both under one key family:
+  // Services.NAME[GarbageManagement] and Services.NAME[TransportationRoad].
+  const serviceLabel = (id: string) => translate(`Services.NAME[${id}]`, null) ?? id;
 
   // Only the families this city actually has zones for. Offering Extractors to
   // someone without the DLC would be a filter that empties the view and cannot
@@ -133,10 +155,40 @@ export const ChipRow = () => {
     </div>
   );
 
+  /**
+   * A chip that states something and offers only to remove it.
+   *
+   * The menu chip has no list behind it: the way to a different menu is the
+   * toolbar the player already used, and a dropdown of all sixteen would be a
+   * second toolbar drawn worse. So it gets no caret, because a caret that opens
+   * nothing is the same lie the section chip was telling.
+   */
+  const renderStaticChip = (id: string, text: string, onClear: () => void) => (
+    <div className={classNames(styles.chip, styles.breadcrumb, styles.breadcrumbActive)} key={id}>
+      <span className={styles.breadcrumbLabel}>
+        <span className={styles.chipText}>{text}</span>
+      </span>
+      <Button
+        className={styles.chipRemove}
+        variant="icon"
+        onSelect={onClear}
+        aria-label={`${label("Tooltip.LABEL[FindItBuildingMenu.Remove]", "Remove")} ${text}`}
+      >
+        ×
+      </Button>
+    </div>
+  );
+
   const familyTabs: VanillaBuildMenuTab[] = availableFamilies.map((id) => ({
     id,
     icon: ZONE_FAMILY_ICONS[id] ?? "",
     toolTip: familyLabel(id),
+  }));
+
+  const categoryTabs: VanillaBuildMenuTab[] = orderedCategories(menuCategories).map((category) => ({
+    id: category.id,
+    icon: category.icon,
+    toolTip: serviceLabel(category.id),
   }));
 
   const openList = picker === "section"
@@ -145,12 +197,15 @@ export const ChipRow = () => {
       ? subCategoryList
       : picker === "zoneFamily"
         ? familyTabs
-        : null;
+        : picker === "menuCategory"
+          ? categoryTabs
+          : null;
 
   const isChosen = (id: string) =>
     picker === "section" ? id === section
       : picker === "subCategory" ? id === subCategory
-        : zoneFamilies.includes(id);
+        : picker === "menuCategory" ? id === menuCategory
+          : zoneFamilies.includes(id);
 
   const choose = (id: string) => {
     if (picker === "zoneFamily") {
@@ -160,26 +215,65 @@ export const ChipRow = () => {
       return;
     }
 
+    if (picker === "menuCategory") {
+      fire({ method: "SetBuildingLensMenuCategory", args: [id] });
+      setPicker(null);
+      return;
+    }
+
     fire(picker === "section" ? lensSectionCommand(id) : lensSubCategoryCommand(id));
     setPicker(null);
   };
 
   const allTypesLabel = label("Tooltip.LABEL[FindItBuildingMenu.AllTypes]", "All types");
+  // The same word the strip's extra tab carries, because they are the same
+  // choice reached two ways.
+  const allCategoriesLabel = label("Tooltip.LABEL[FindItBuildingMenu.AllCategories]", "All");
   const allFamiliesLabel = label("Tooltip.LABEL[FindItBuildingMenu.AllZoneFamilies]", "All families");
   const familiesLabel = label("Tooltip.LABEL[FindItBuildingMenu.ZoneFamilies]", "Families");
 
   return (
     <div className={styles.chipRow}>
       <div className={styles.chips}>
+        {/* The menu the bottom-bar icon opened, as a chip you can drop.
+            A toolbar icon is a shortcut to a preconfigured view, not a box the
+            player is shut inside, and until now the scope it applied was
+            invisible: nothing on screen said the catalog had been cut to eight
+            buildings, and the only way back out was to close the panel. */}
+        {chips.menu
+          && renderStaticChip(
+            "menu",
+            serviceLabel(menu),
+            () => fire({ method: "ClearBuildingLensMenuScope", args: [] })
+          )}
+
+        {/* The category within it, which the strip also picks. Two ways to the
+            same state on purpose: the strip is the fast one, and the chip is
+            what makes the row a complete account of why these rows and not
+            others. */}
+        {chips.menuCategory
+          && renderBreadcrumb(
+            "menuCategory",
+            menuCategory === "" ? allCategoriesLabel : serviceLabel(menuCategory),
+            picker === "menuCategory",
+            menuCategory === "" ? null : () => fire({ method: "SetBuildingLensMenuCategory", args: [""] })
+          )}
+
         {/* The section and type breadcrumbs describe the building catalog. In
             the zoning view that catalog is not on screen, so showing "Networks"
-            over a list of zones names something the player cannot see. */}
-        {!showZoning
+            over a list of zones names something the player cannot see.
+
+            They are also gone while a menu is scoped, because that is exactly
+            when the query stops applying them (BuildingCatalogQueryEngine.cs:95
+            skips MatchesBuildMenu for a menu-tree query). They stayed on screen
+            through all of it — clickable, restyling themselves on selection,
+            and changing nothing. */}
+        {chips.section
           && renderBreadcrumb("section", tabLabel(sectionList, section), picker === "section", null)}
 
         {/* Always offered when the section has types, even at "Any": without
             it the only way back to a type would be the vanilla toolbar. */}
-        {!showZoning && subCategoryList.length > 0
+        {chips.subCategory
           && renderBreadcrumb(
             "subCategory",
             subCategory === SUBCATEGORY_ANY ? allTypesLabel : tabLabel(subCategoryList, subCategory),

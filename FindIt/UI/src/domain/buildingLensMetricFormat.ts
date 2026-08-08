@@ -101,16 +101,37 @@ export function groupDigits(value: number, separators: NumberSeparators = FALLBA
  * Formats one metric cell. `null` means the metric was never projected for this
  * building, which is different from a real zero.
  */
+/**
+ * Cost and upkeep for a network are rates, not totals.
+ *
+ * A road prices by length, so its figure is per kilometre. Printing it beside a
+ * building's total unqualified invites a comparison it does not support —
+ * 12,500 for a road is a rate, 12,500 for a hospital is the whole bill — so the
+ * unit travels with the number rather than living in a column heading the
+ * reader has to remember.
+ */
+export const PER_DISTANCE_SUFFIX = "/km";
+
 export function formatBuildingMetric(
   value: number | null | undefined,
   metric: BuildingLensMetric,
   separators: NumberSeparators = FALLBACK_SEPARATORS,
+  perDistance: boolean = false,
 ): string {
   if (value === null || value === undefined || !Number.isFinite(value)) {
     return METRIC_NO_DATA;
   }
 
   const digits = groupDigits(value, separators);
+
+  if (perDistance) {
+    // Free is a statement about a total, so it has no meaning for a rate — a
+    // road that costs nothing per kilometre costs nothing at all, and "0/km"
+    // says that without implying the asset is a gift.
+    const suffix = metric === "upkeep" ? `/mo${PER_DISTANCE_SUFFIX}` : PER_DISTANCE_SUFFIX;
+
+    return `${digits}${suffix}`;
+  }
 
   switch (metric) {
     case "upkeep":

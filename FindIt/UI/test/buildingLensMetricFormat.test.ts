@@ -204,3 +204,27 @@ describe("Capacity units by role", () => {
     assert.equal(getCapacityUnitLabel("ServiceBuildings", "ServiceBuildings_Health", "SomeNewService"), "patients");
   });
 });
+
+describe("per-distance metrics", () => {
+  it("marks a network cost as a rate, not a total", () => {
+    // 12,500 for a road is per kilometre; the same number on a hospital is the
+    // whole bill. The unit has to travel with the figure.
+    // Built from groupDigits rather than a literal: the fallback group
+    // separator is U+00A0, indistinguishable from a space on screen and in a
+    // diff.
+    assert.equal(formatBuildingMetric(12500, "cost", undefined, true), `${groupDigits(12500)}/km`);
+  });
+
+  it("keeps upkeep's monthly sense alongside the distance", () => {
+    assert.equal(formatBuildingMetric(340, "upkeep", undefined, true), `${groupDigits(340)}/mo/km`);
+  });
+
+  it("does not call a zero rate Free, which is a claim about a total", () => {
+    assert.equal(formatBuildingMetric(0, "cost", undefined, true), "0/km");
+    assert.equal(formatBuildingMetric(0, "cost", undefined, false), METRIC_FREE);
+  });
+
+  it("still reports absence as absence", () => {
+    assert.equal(formatBuildingMetric(null, "cost", undefined, true), METRIC_NO_DATA);
+  });
+});

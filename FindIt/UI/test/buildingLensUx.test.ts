@@ -124,9 +124,18 @@ describe("Building Lens action affordances", () => {
     assert.match(buildingCatalogSource, /className=\{styles\.placeHint\}/);
     // The row itself now opens details; Place is its own button, so the row's
     // label describes inspection and the Place label sits on the Place control.
-    assert.match(buildingCatalogSource, /aria-label=\{inspectLabel\}/);
-    assert.match(buildingCatalogSource, /aria-label=\{rowPlaceLabel\}/);
-    assert.match(buildingCatalogSource, /title=\{rowPlaceLabel\}/);
+    // rowInspectLabel rather than inspectLabel: it names the building too
+    // ("Details: Small Medical Clinic"), which a row of otherwise identical
+    // "Details" controls needs. It also replaced the title= that used to carry
+    // that text, because the row now shows the shared hover card and two
+    // tooltips on one control is one too many.
+    assert.match(buildingCatalogSource, /aria-label=\{rowInspectLabel\}/);
+    // Place still names the building, and now also says when it cannot place
+    // it: a locked row disables the button, so the label has to explain the
+    // refusal rather than leave a dead control with a normal name.
+    assert.match(buildingCatalogSource, /aria-label=\{isEntryLocked\(entry\) \? `\$\{rowPlaceLabel\}/);
+    assert.match(buildingCatalogSource, /title=\{isEntryLocked\(entry\) \? lockedLabel : rowPlaceLabel\}/);
+    assert.match(buildingCatalogSource, /disabled=\{isEntryLocked\(entry\)\}/);
     assert.match(buildingCatalogSource, /aria-label=\{compareLabel\}/);
     assert.match(buildingCatalogSource, /aria-label=\{comparePlaceLabel\}/);
     assert.match(buildingCatalogSource, /aria-label=\{compareRemoveLabel\}/);
