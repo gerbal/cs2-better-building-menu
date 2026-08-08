@@ -511,7 +511,7 @@ export const BuildingCatalogComponent = () => {
                   <div className={styles.compareIdentity}>
                     <span className={styles.compareName}>{entryLabel}</span>
                     <span className={styles.compareMetrics}>
-                      Cost {formatBuildingMetric(entry.constructionCost, "cost", separators)} · Upkeep {formatBuildingMetric(entry.upkeep, "upkeep", separators)} · Workers {formatBuildingMetric(entry.workers, "workers", separators)} · Capacity {formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators)}
+                      Cost {formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance)} · Upkeep {formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance)} · Workers {formatBuildingMetric(entry.workers, "workers", separators)} · Capacity {formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators)}
                     </span>
                   </div>
                   <Button
@@ -652,11 +652,11 @@ export const BuildingCatalogComponent = () => {
                       </div>
                     </div>
                   </div>
-                  <div className={classNames(styles.metric, styles.metricCost)} title={`Cost ${formatBuildingMetric(entry.constructionCost, "cost", separators)}`}>
-                    {formatBuildingMetric(entry.constructionCost, "cost", separators)}
+                  <div className={classNames(styles.metric, styles.metricCost)} title={`Cost ${formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance)}`}>
+                    {formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance)}
                   </div>
-                  <div className={classNames(styles.metric, styles.metricUpkeep)} title={`Upkeep ${formatBuildingMetric(entry.upkeep, "upkeep", separators)}`}>
-                    {formatBuildingMetric(entry.upkeep, "upkeep", separators)}
+                  <div className={classNames(styles.metric, styles.metricUpkeep)} title={`Upkeep ${formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance)}`}>
+                    {formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance)}
                   </div>
                   <div className={classNames(styles.metric, styles.metricWorkers)} title={`Workers ${formatBuildingMetric(entry.workers, "workers", separators)}`}>
                     {formatBuildingMetric(entry.workers, "workers", separators)}

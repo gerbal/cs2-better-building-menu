@@ -608,9 +608,26 @@ namespace FindItBuildingMenu.Systems
 			//FindItUtil.UpdateFavoritesPack(prefabIndex);
 		}
 
+		/// <summary>
+		/// Cells per kilometre, so a network's per-cell cost reads as a per-km one.
+		/// </summary>
+		/// <remarks>
+		/// Vanilla's own factor — PrefabUISystem binds int2(cost, cost * 125) for
+		/// PlaceableNetData — and the shipped UI renders that unit through
+		/// Common.VALUE_MONEY_PER_KILOMETER, so 125 cells is a kilometre and a
+		/// cell is 8m. Read off the bundle rather than assumed.
+		/// </remarks>
+		private const float NetCellsPerKilometre = 125f;
+
 		private void PopulateAnalyticalData(Entity entity, PrefabIndex prefabIndex)
 		{
-			if (prefabIndex.Category is not PrefabCategory.Buildings and not PrefabCategory.ServiceBuildings)
+			// Networks were excluded here, which is why every one of the 157
+			// assets under Roads showed a blank Cost. The rest of this method
+			// reads building-only components, so they simply do not match for a
+			// network and leave their fields absent.
+			if (prefabIndex.Category is not PrefabCategory.Buildings
+				and not PrefabCategory.ServiceBuildings
+				and not PrefabCategory.Networks)
 			{
 				return;
 			}
@@ -618,6 +635,18 @@ namespace FindItBuildingMenu.Systems
 			if (EntityManager.TryGetComponent<PlaceableObjectData>(entity, out var placeableData))
 			{
 				prefabIndex.ConstructionCost = placeableData.m_ConstructionCost;
+			}
+			else if (EntityManager.TryGetComponent<PlaceableNetData>(entity, out var netData))
+			{
+				// A network prices by length, not by instance: m_DefaultConstruction
+				// Cost is the sum of its composition pieces for ONE cell. Reporting
+				// that raw in a column beside a building's total would be wrong by
+				// two orders of magnitude, so it is converted to the per-kilometre
+				// figure the game itself shows and flagged as a rate — the UI has
+				// to say "/km" or the number lies about what it measures.
+				prefabIndex.ConstructionCost = (uint)Math.Round(netData.m_DefaultConstructionCost * NetCellsPerKilometre);
+				prefabIndex.Upkeep = (int)Math.Round(netData.m_DefaultUpkeepCost * NetCellsPerKilometre);
+				prefabIndex.CostIsPerDistance = true;
 			}
 
 			if (EntityManager.TryGetComponent<ConsumptionData>(entity, out var consumptionData))

@@ -103,6 +103,16 @@ namespace FindItBuildingMenu.Domain
 		// Nullable analytical values are populated from the same prefab entity
 		// already being indexed. A missing component stays missing instead of
 		// being serialized as a misleading zero.
+		/// <summary>
+		/// Whether Cost and Upkeep are per kilometre rather than per instance.
+		/// </summary>
+		/// <remarks>
+		/// True for networks, which price by length. The figure is meaningless
+		/// without this: 12,500 for a road is a rate, 12,500 for a hospital is a
+		/// total, and a column that shows both unqualified invites the reader to
+		/// compare them.
+		/// </remarks>
+		public bool CostIsPerDistance { get; set; }
 		public uint? ConstructionCost { get; set; }
 		public int? Upkeep { get; set; }
 		public int? Workers { get; set; }
