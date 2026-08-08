@@ -63,6 +63,8 @@ namespace FindItBuildingMenu.Systems
 			// toolbar button still filtered the whole catalog down to whichever
 			// menu had been clicked last, with nothing on screen saying so.
 			_buildingLensUiMenu = string.Empty;
+			_buildingLensUiCategory = string.Empty;
+			RefreshBuildingLensMenuCategories();
 
 			if (ownedMenu)
 			{
@@ -116,6 +118,10 @@ namespace FindItBuildingMenu.Systems
 			// GetAssetMenuName resolves the UIAssetMenuPrefab's name, which is the
 			// same string assets carry as UiMenu, so it needs no translation.
 			_buildingLensUiMenu = menuName ?? string.Empty;
+			// A different menu has different tabs, so the old selection cannot
+			// survive the switch.
+			_buildingLensUiCategory = string.Empty;
+			RefreshBuildingLensMenuCategories();
 
 			// SPIKE (cm-e98i): Roads, Landscaping and Areas resolve to no preset
 			// and used to close the panel — the lens simply could not show them.
@@ -222,6 +228,36 @@ namespace FindItBuildingMenu.Systems
 		}
 
 		/// <summary>
+		/// Picks one of the scoped menu's category tabs, or all of them.
+		/// </summary>
+		/// <remarks>
+		/// The empty string is "every category in this menu", which is the state
+		/// a menu opens in. Vanilla has no such tab — it always opens on the
+		/// first category — but the lens can show a whole menu at once and that
+		/// is worth keeping, so the strip carries one more option than vanilla's.
+		/// </remarks>
+		private void SetBuildingLensMenuCategory(string category)
+		{
+			_buildingLensUiCategory = category ?? string.Empty;
+			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
+			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0 };
+
+			RefreshBuildingCatalog();
+		}
+
+		/// <summary>
+		/// Republishes the tab strip for whatever menu is currently scoped.
+		/// </summary>
+		private void RefreshBuildingLensMenuCategories()
+		{
+			var tabs = PrefabIndexingSystem.GetMenuCategories(
+				string.IsNullOrEmpty(_buildingLensUiMenu) ? null : _buildingLensUiMenu);
+
+			_BuildingLensMenuCategoriesBinding.Value = tabs.ToArray();
+			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
+		}
+
+		/// <summary>
 		/// Widens a search that found nothing here to the whole catalog.
 		/// </summary>
 		private void SearchEverything()
@@ -238,6 +274,8 @@ namespace FindItBuildingMenu.Systems
 			// candidate down to that menu, so the control that exists to escape
 			// an empty result could not escape it.
 			_buildingLensUiMenu = string.Empty;
+			_buildingLensUiCategory = string.Empty;
+			RefreshBuildingLensMenuCategories();
 			_BuildingLensSectionBinding.Value = _buildingLensSection;
 			_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
 			FindItUtil.CurrentCategory = PrefabCategory.Any;

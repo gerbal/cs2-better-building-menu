@@ -344,5 +344,6 @@
   "Options.LABEL[FindItBuildingMenu.AvailabilityFilter]": "Availability",
   "Tooltip.LABEL[FindItBuildingMenu.Locked]": "Locked",
   "Tooltip.LABEL[FindItBuildingMenu.Availability]": "Availability",
+  "Tooltip.LABEL[FindItBuildingMenu.AllCategories]": "All",
   "Tooltip.LABEL[FindItBuildingMenu.Unlocked]": "Unlocked"
 }

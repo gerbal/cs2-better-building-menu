@@ -1,0 +1,48 @@
+@use "../../base.scss" as _base;
+
+// Vanilla's category row, above the results. One line, wrapping rather than
+// scrolling: Roads carries nine categories and a horizontal scroller for nine
+// icons hides half of them behind a gesture.
+.strip {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  flex: 0 0 auto;
+  padding: 4rem 8rem 5rem;
+  border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
+}
+
+// Chrome, sizing, hover and selected treatment all come from the vanilla
+// ToolButton. What is left is the spacing between tabs, and that has to be a
+// margin: gap between flex-row children measured 0 on Cohtml 1.64 (written up
+// at buildingCatalog.module.scss:31-35).
+.tab {
+  position: relative;
+  margin-right: 3rem;
+  width: 32rem !important;
+  height: 32rem !important;
+
+  img {
+    width: 24rem !important;
+    height: 24rem !important;
+  }
+}
+
+.tabSelected {
+  background-color: rgba(255, 255, 255, 0.18);
+}
+
+// The All tab carries a word rather than a glyph, so it opts out of the
+// ToolButton's square the same way every other worded control in this mod does.
+.allTab {
+  width: auto !important;
+  min-width: 32rem;
+  padding: 0 6rem;
+}
+
+.allLabel {
+  color: var(--menuText1Normal);
+  font-size: var(--fontSizeS);
+  white-space: nowrap;
+}
