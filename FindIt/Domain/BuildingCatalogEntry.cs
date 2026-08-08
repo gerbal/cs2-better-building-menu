@@ -96,7 +96,12 @@ namespace FindItBuildingMenu.Domain
 		/// Cost and Upkeep are per kilometre, not per instance. True for
 		/// networks, which price by length.
 		/// </summary>
-		bool CostIsPerDistance = false) : IJsonWritable
+		bool CostIsPerDistance = false,
+		/// <summary>
+		/// Approximate parking bays. Zero means none; a boolean could not say
+		/// how many, and made sorting by parking a no-op.
+		/// </summary>
+		int ParkingSlots = 0) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -150,6 +155,8 @@ namespace FindItBuildingMenu.Domain
 			WriteStringArray(writer, "bonuses", Bonuses);
 			writer.PropertyName("costIsPerDistance");
 			writer.Write(CostIsPerDistance);
+			writer.PropertyName("parkingSlots");
+			writer.Write(ParkingSlots);
 			writer.PropertyName("isFavorited");
 			writer.Write(IsFavorited);
 			writer.PropertyName("pdxModsId");

@@ -56,6 +56,8 @@ export interface BuildingCatalogEntry {
    * hospital is a total.
    */
   costIsPerDistance: boolean;
+  /** Approximate parking bays; 0 for none. See hasParking for the plain fact. */
+  parkingSlots: number;
   isFavorited: boolean;
   pdxModsId: string;
   buildingType: string;

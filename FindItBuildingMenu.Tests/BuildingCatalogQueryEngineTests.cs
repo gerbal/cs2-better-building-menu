@@ -751,7 +751,7 @@ public sealed class BuildingCatalogQueryEngineTests
         page.Write(writer);
 
         Assert.Equal(
-            new[] { "items", "id", "prefabName", "name", "category", "subCategory", "categoryLabel", "subCategoryLabel", "vanillaSection", "vanillaSubCategory", "thumbnail", "fallbackThumbnail", "uiMenu", "uiCategory", "lotWidth", "lotDepth", "buildingLevel", "zoneType", "hasParking", "isUniqueMesh", "isVanilla", "isLocked", "unlockMilestone", "unlockRequirements", "bonuses", "costIsPerDistance", "isFavorited", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "constructionCost", "upkeep", "workers", "capacity", "electricityConsumption", "waterConsumption", "garbageAccumulation", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "totalCount", "offset", "limit" },
+            new[] { "items", "id", "prefabName", "name", "category", "subCategory", "categoryLabel", "subCategoryLabel", "vanillaSection", "vanillaSubCategory", "thumbnail", "fallbackThumbnail", "uiMenu", "uiCategory", "lotWidth", "lotDepth", "buildingLevel", "zoneType", "hasParking", "isUniqueMesh", "isVanilla", "isLocked", "unlockMilestone", "unlockRequirements", "bonuses", "costIsPerDistance", "parkingSlots", "isFavorited", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "constructionCost", "upkeep", "workers", "capacity", "electricityConsumption", "waterConsumption", "garbageAccumulation", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "totalCount", "offset", "limit" },
             writer.PropertyNames);
         Assert.Contains("Write:Int32:1", writer.Tokens);
         Assert.Contains("Write:String:Coal Power Plant", writer.Tokens);
@@ -837,6 +837,23 @@ public sealed class BuildingCatalogQueryEngineTests
             new BuildingCatalogQuery(BuildMenuSection: "Networks"));
 
         Assert.Empty(unscoped.Items);
+    }
+
+    [Fact]
+    public void Query_SortsParkingByCountRatherThanByTheFlag()
+    {
+        // The flag put everything into two buckets and left the order inside
+        // them alone, so a set that agreed — all of Water & Sewage — appeared
+        // not to sort at all.
+        BuildingCatalogEntry small = SampleEntries[3] with { Id = 61, HasParking = true, ParkingSlots = 12 };
+        BuildingCatalogEntry large = SampleEntries[3] with { Id = 62, HasParking = true, ParkingSlots = 240 };
+        BuildingCatalogEntry none = SampleEntries[3] with { Id = 63, HasParking = false, ParkingSlots = 0 };
+
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+            new[] { small, none, large },
+            new BuildingCatalogQuery(SortColumn: "HasParking", Descending: true));
+
+        Assert.Equal(new[] { 62, 61, 63 }, page.Items.Select(entry => entry.Id).ToArray());
     }
 
     private static BuildingCatalogEntry Entry(

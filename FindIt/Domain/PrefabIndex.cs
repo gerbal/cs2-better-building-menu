@@ -100,6 +100,12 @@ namespace FindItBuildingMenu.Domain
 		public string? UiCategoryName { get; set; }
 		public string? UiMenuName { get; set; }
 		public bool HasParking { get; set; }
+
+		/// <summary>
+		/// Approximate parking bays. See PrefabIndexingSystem.GetParkingSlots for
+		/// why exact is not available before placement.
+		/// </summary>
+		public int ParkingSlots { get; set; }
 		// Nullable analytical values are populated from the same prefab entity
 		// already being indexed. A missing component stays missing instead of
 		// being serialized as a misleading zero.
