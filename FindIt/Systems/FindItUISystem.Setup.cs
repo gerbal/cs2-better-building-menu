@@ -279,6 +279,9 @@ namespace FindItBuildingMenu.Systems
 			// hands the entity index here; resolving the prefab name and the
 			// preset belongs on this side.
 			CreateTrigger<int>("VanillaMenuSelected", VanillaMenuSelected);
+			// Its other half: the same binding going to Entity.Null, which is how
+			// a toolbar menu reports being closed.
+			CreateTrigger("VanillaMenuDeselected", VanillaMenuDeselected);
 			CreateTrigger<int>("ToggleFavorited", FindItUtil.ToggleFavorited);
 			CreateTrigger("ToggleLock", ToggleLock);
 			CreateTrigger("OnSearchFocused", () => _FocusSearchBar.Value = false);
