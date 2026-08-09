@@ -13,6 +13,10 @@ import {
   setSortDescendingCommand,
 } from "domain/buildingCatalogContracts";
 import { getNumberSeparators } from "domain/buildingLensMetricFormat";
+import {
+  canToggleBuildingLensHeight,
+  isBuildingLensExpanded,
+} from "domain/buildingLensLayout";
 import { getBuildingLensSortPresentation } from "domain/buildingLensSortPresentation";
 import {
   GROUP_DIMENSIONS,
@@ -35,6 +39,7 @@ const BuildingLensSection$ = bindValue<string>(mod.id, "BuildingLensSection", "A
 const BuildingLensMenuCategories$ = bindValue<unknown[]>(mod.id, "BuildingLensMenuCategories", []);
 const ShowZoningHierarchy$ = bindValue<boolean>(mod.id, "ShowZoningHierarchy", false);
 const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch");
+const IsExpanded$ = bindValue<boolean>(mod.id, "IsExpanded", false);
 
 /**
  * What the pane takes out of the panel's width: its own 379rem plus the 6rem
@@ -86,6 +91,12 @@ export const LensControlPane = () => {
   const menuHasCategories = (useValue(BuildingLensMenuCategories$) ?? []).length > 0;
   const showZoning = useValue(ShowZoningHierarchy$);
   const currentSearch = useValue(CurrentSearch$);
+  const isExpanded = useValue(IsExpanded$);
+
+  // Height, from the same rule the panel draws itself with.
+  const heightState = { isExpanded, section, searchText: currentSearch };
+  const expanded = isBuildingLensExpanded(heightState);
+  const canToggleHeight = canToggleBuildingLensHeight(heightState);
 
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
   const [sortPickerOpen, setSortPickerOpen] = useState(false);
@@ -266,6 +277,54 @@ export const LensControlPane = () => {
           </div>
         </>
       )}
+
+      {/* Height, and deliberately outside the block above.
+          Group, sort and view describe rows the zoning hierarchy does not
+          have; how tall the panel is applies to it just as much.
+
+          This control exists because caf59a8 removed the panel's top bar in
+          lens mode as duplicated chrome, and the expand toggle went with it —
+          but unlike search, close and the count, nothing else could do its job.
+          SetIsExpanded had exactly one caller, so the lens was left resting at
+          the strip with no way to grow it, while the automatic floor's own
+          comment still promised "a manual expand always wins". This is that
+          manual expand, in the column the other relocated controls moved to. */}
+      <div className={styles.row}>
+        <span className={styles.rowLabel}>
+          {label("Tooltip.LABEL[FindItBuildingMenu.PanelHeight]", "Height")}
+        </span>
+        <div className={styles.rowValue}>
+          <Button
+            className={classNames(styles.heightToggle, expanded && styles.heightToggleOn)}
+            variant="icon"
+            disabled={!canToggleHeight}
+            onSelect={() => canToggleHeight && trigger(mod.id, "SetIsExpanded", !isExpanded)}
+            aria-pressed={expanded}
+            title={
+              canToggleHeight
+                ? label(
+                    expanded
+                      ? "Tooltip.LABEL[FindItBuildingMenu.Shrink]"
+                      : "Tooltip.LABEL[FindItBuildingMenu.Expand]",
+                    expanded ? "Shrink Panel" : "Expand Panel",
+                  )
+                : label(
+                    "Tooltip.LABEL[FindItBuildingMenu.PanelHeightAutomatic]",
+                    "Kept tall while the results are not narrowed to one category",
+                  )
+            }
+          >
+            <span className={styles.heightLabel}>
+              {label(
+                expanded
+                  ? "Tooltip.LABEL[FindItBuildingMenu.Shrink]"
+                  : "Tooltip.LABEL[FindItBuildingMenu.Expand]",
+                expanded ? "Shrink Panel" : "Expand Panel",
+              )}
+            </span>
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };

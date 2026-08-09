@@ -216,3 +216,53 @@ $pane-width: 379rem;
 .direction:hover {
   background-color: rgba(52, 63, 74, 1);
 }
+
+// The height toggle. Same ground and radius as the pickers above it, but it
+// states its own action rather than summarising a value, so it sizes to its
+// text instead of filling the row.
+.heightToggle {
+  @include _base.transparentButton(false, true);
+
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  // `width: auto !important` is load-bearing, exactly as it is on
+  // .pickerSummary above: the icon variant pins a square width, which squeezed
+  // this button to 16px around 33px of text and clipped it to "S…l".
+  width: auto !important;
+  flex: 0 0 auto;
+  height: 29rem;
+  padding: 0 8rem;
+  border-radius: 4rem;
+  background-color: rgba(20, 27, 34, 1);
+  color: var(--menuText1Normal);
+  font-size: var(--fontSizeM);
+}
+
+.heightToggle:hover {
+  background-color: rgba(52, 63, 74, 1);
+}
+
+// Selected, not merely on: the same treatment .pickerOptionSelected uses, so
+// "the panel is currently tall" reads the same way a chosen option does.
+.heightToggleOn {
+  background-color: rgba(30, 131, 170, 1);
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.heightToggleOn:hover {
+  background-color: rgba(40, 151, 194, 1);
+}
+
+// Disabled means the automatic floor is holding the catalog tall and the
+// choice cannot move it. Dimmed rather than hidden: a control that disappears
+// when the rule fires is one the player never learns exists.
+.heightToggle:disabled {
+  background-color: rgba(20, 27, 34, 0.5);
+  color: var(--menuText2Disabled);
+}
+
+.heightLabel {
+  white-space: nowrap;
+}

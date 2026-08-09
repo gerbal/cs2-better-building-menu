@@ -24,6 +24,8 @@
   "Tooltip.LABEL[FindItBuildingMenu.BaseGame]": "Base Game",
   "Tooltip.LABEL[FindItBuildingMenu.Expand]": "Expand Panel",
   "Tooltip.LABEL[FindItBuildingMenu.Shrink]": "Shrink Panel",
+  "Tooltip.LABEL[FindItBuildingMenu.PanelHeight]": "Height",
+  "Tooltip.LABEL[FindItBuildingMenu.PanelHeightAutomatic]": "Kept tall while the results are not narrowed to one category",
   "Tooltip.LABEL[FindItBuildingMenu.ToggleFilters]": "Toggle Filters Panel",
   "Tooltip.LABEL[FindItBuildingMenu.ToggleSorting]": "Toggle View & Sorting Panel",
   "Tooltip.LABEL[FindItBuildingMenu.Filters]": "Filters",
