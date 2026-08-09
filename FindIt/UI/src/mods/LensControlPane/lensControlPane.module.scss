@@ -59,6 +59,24 @@ $pane-width: 379rem;
   justify-content: flex-end;
 }
 
+// The scope breadcrumbs at the head of the pane.
+//
+// ChipRow was written for a full-width band under the top bar, where it drew
+// its own dark ground and a rule to separate itself from the row above. Inside
+// the pane it is the first thing in the column, on the pane's own ground, so
+// both would be a box drawn twice. The wrap is what the narrow column needs:
+// four breadcrumbs that sat on one 718px line have to stack in 253px.
+.scope {
+  margin: -6rem -8rem 4rem;
+  padding: 4rem 8rem;
+  border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
+
+  > * {
+    background-color: rgba(0, 0, 0, 0) !important;
+    border-top: none !important;
+  }
+}
+
 // The count and, while a search is active, what it is counting.
 .countRow {
   display: flex;

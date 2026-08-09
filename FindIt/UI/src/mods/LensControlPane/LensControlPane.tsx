@@ -19,6 +19,7 @@ import {
   isGroupDimension,
   type GroupDimensionId,
 } from "domain/buildingGroups";
+import { ChipRow } from "mods/ChipRow/ChipRow";
 import { ViewModeBar } from "mods/GroupedResults/ViewModeBar";
 import type { CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import { useLensChoice } from "mods/useLensChoice";
@@ -107,6 +108,14 @@ export const LensControlPane = () => {
 
   return (
     <div className={styles.pane}>
+      {/* Identity first: which menu, which section, which category — "what am
+          I looking at", above the count of what that scope holds and the
+          controls that reorder it. It was gated on `expanded` in the top bar,
+          so the answer was missing at the height the lens rests at; here it
+          costs the panel no row and is always on screen. */}
+      <div className={styles.scope}>
+        <ChipRow />
+      </div>
       <div className={styles.countRow}>
         <div className={styles.countLine}>
           <span className={styles.count}>{totalCount.toLocaleString()}</span>
