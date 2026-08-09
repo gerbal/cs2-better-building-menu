@@ -382,26 +382,55 @@ namespace FindItBuildingMenu.Systems
 
 		private void OnToolChanged(ToolBaseSystem tool)
 		{
-			if ((!settingPrefab && tool == _defaultToolSystem) || tool.toolID is "RoadBuilderTool" or "MoveItTool" or "Terrain Tool" or "Zone Tool")
+			if (tool.toolID is "RoadBuilderTool" or "MoveItTool" or "Terrain Tool" or "Zone Tool")
 			{
-				// Deliberately NOT CloseLens here, though the vanilla grid showing
-				// through on Escape makes it tempting.
-				//
-				// CloseLens calls ClearAssetSelection, and this branch fires on
-				// every return to the default tool — not just Escape, but also
-				// after a placement and on a right-click cancel. Releasing the
-				// toolbar selection that eagerly meant that by the time the player
-				// actually pressed Escape there was no menu left for the game to
-				// close, so its own Escape chain fell through to the pause menu.
-				// Trading "Escape reveals the old menu" for "Escape pauses the
-				// game mid-build" is a bad trade.
-				//
-				// The real fix has to distinguish Escape from the other ways the
-				// tool returns to default, which this handler cannot see: Escape
-				// is consumed by the game's native input layer and never reaches
-				// the DOM, so it arrives here indistinguishable from a placement.
+				// Another tool wants the screen. Ours goes.
 				ToggleFindItPanel(false);
+				return;
 			}
+
+			if (settingPrefab || tool != _defaultToolSystem)
+			{
+				return;
+			}
+
+			// The tool went back to default. That is Escape, a right-click
+			// cancel, or a finished placement, and this handler cannot tell them
+			// apart — Escape is consumed by the game's native input layer and
+			// never reaches the DOM.
+			//
+			// So it stops trying to. While the lens is standing in for a vanilla
+			// menu, that menu is STILL SELECTED on the toolbar, and the game
+			// draws its own asset grid the instant we vacate the space. Hiding
+			// the panel here is what produced "Escape swapped my menu for the old
+			// one"; it did the same after every placement, which is why the lens
+			// had to learn to restore its scroll position at all.
+			//
+			// Vanilla's own menu does not close when a tool is cancelled either
+			// — it stays open with the grid up, ready for the next pick — so
+			// staying open IS the vanilla behaviour, not a departure from it.
+			//
+			// Escape still closes the menu; it just takes the press the game
+			// already spends on it. The first press cancels the tool and we hold
+			// still. The second is the game's own "close the open menu", which
+			// deselects the toolbar button — and that arrives here as
+			// VanillaMenuDeselected, which closes the lens.
+			//
+			// Deliberately NOT CloseLens, and deliberately not touching the
+			// selection. A previous attempt released it here and, because this
+			// branch fires on every return to default, the menu was gone long
+			// before the player pressed Escape — so the game's Escape chain found
+			// nothing to close and opened the pause menu instead. Escape pausing
+			// the game mid-build is worse than the defect it fixed.
+			if (_LensOwnsCurrentMenu.Value)
+			{
+				return;
+			}
+
+			// Opened from FindIt's own button, so there is no vanilla menu behind
+			// us and nothing will be drawn into the gap. Here a cancel closing
+			// the panel is the only close Escape can reach.
+			ToggleFindItPanel(false);
 		}
 
 		public void SetAllThumbnails(IEnumerable<string> thumbnails)
