@@ -97,8 +97,10 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
     gap: 2rem;
   }
 
-  .identityCell {
-    gap: 6rem;
+  .thumbnail {
+    // Tighter at compact density. On .thumbnail, not as a gap on the cell —
+    // see the note there.
+    margin-right: 6rem;
   }
 
   .metricHeader,
@@ -884,9 +886,16 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   // narrows, which hands those units back here: the same name measures 77px at
   // the minimum panel and 180px at a typical one, up from 0 and 111.
   min-width: 0;
-  // A wide thumbnail fills its 60rem image box edge to edge, so a 7rem gap left
-  // the name touching the picture. This is the space between them, not decoration.
-  gap: 12rem;
+  // The space between the picture and the name lives on .thumbnail as a
+  // margin, NOT here as a gap. This rule used to say `gap: 12rem` and got
+  // nothing: measured on a live row, the thumbnail box ended at x=458.7 and the
+  // name began at x=458.7 — a gap of 0.0px. The only visible daylight was the
+  // 2.7px of slack from the image being centred in its box, so a thumbnail wide
+  // enough to fill the box touched the name outright.
+  //
+  // That is exactly what the comment this replaces described ("a 7rem gap left
+  // the name touching the picture"), so the value had already been raised once,
+  // from 7rem to 12rem, without ever taking effect.
 }
 
 .thumbnail {
@@ -896,6 +905,10 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   flex: 0 0 68rem;
   width: 68rem;
   height: 68rem;
+  // The separation from the name. A margin because `gap` does nothing in this
+  // engine — probed directly: a flex container declaring `gap: 20rem` measured
+  // 0px between its children in BOTH row and column direction.
+  margin-right: 12rem;
   border-radius: 4rem;
   background-color: rgba(0, 0, 0, 0.25);
 
