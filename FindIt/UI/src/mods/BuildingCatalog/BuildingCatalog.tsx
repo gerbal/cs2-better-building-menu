@@ -56,10 +56,8 @@ import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/B
 import { getLensDisclosure, setLensDisclosure } from "domain/buildingLensViewState";
 import { useLensChoice } from "mods/useLensChoice";
 import { GroupedResults, type CatalogViewMode } from "mods/GroupedResults/GroupedResults";
-import { ViewModeBar } from "mods/GroupedResults/ViewModeBar";
 import {
   DEFAULT_GROUP_DIMENSION,
-  GROUP_DIMENSIONS,
   defaultGroupDimensionFor,
   groupDimensionLabel,
   isGroupDimension,
@@ -70,7 +68,6 @@ import {
 import {
   BUILDING_LENS_COLUMN_SORT,
   getBuildingLensColumnSortIndicator,
-  getBuildingLensSortPresentation,
 } from "domain/buildingLensSortPresentation";
 import styles from "./buildingCatalog.module.scss";
 
@@ -149,7 +146,6 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
   const section = useValue(BuildingLensSection$);
   const menuHasCategories = (useValue(BuildingLensMenuCategories$) ?? []).length > 0;
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
-  const [sortingExpanded, setSortingExpanded] = useState(false);
   // Grid by default: recognising a thumbnail is the fast path back to the map,
   // and the table is for the rarer moment when you are genuinely comparing.
   // Survives remount for the same reason the drawers do — placing a building
@@ -160,14 +156,11 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
   // remount that placing a building causes.
   // Shared with the control plane, which is a sibling of this panel rather
   // than a descendant, so a plain useState here would let the two disagree.
-  const [viewModeChoice, setViewModeChoice] = useLensChoice(
+  const [viewModeChoice] = useLensChoice(
     LENS_VIEW_MODE_KEY,
     defaultToTable ? "table" : "grid"
   );
   const viewMode = viewModeChoice as ViewMode;
-  const setViewMode = (next: ViewMode) => {
-    setViewModeChoice(next);
-  };
   // Force grid when resting at strip height, so a player who left the
   // control on List or Table does not get a mode clipped down to a sliver
   // instead of the grid that height was designed to hold.
@@ -175,16 +168,10 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
   const tableMode = effectiveViewMode === "table";
   // Empty means "nobody has chosen", which is different from having chosen
   // None — the first follows the section, the second stays flat.
-  const [chosenGroupBy, setChosenGroupBy] = useLensChoice(LENS_GROUP_KEY, "");
-  const [groupPickerOpen, setGroupPickerOpen] = useState(false);
+  const [chosenGroupBy] = useLensChoice(LENS_GROUP_KEY, "");
   const groupBy: GroupDimensionId = isGroupDimension(chosenGroupBy)
     ? chosenGroupBy
     : defaultGroupDimensionFor(section, menuHasCategories);
-  const setGroupBy = (next: GroupDimensionId) => {
-    setChosenGroupBy(next);
-    setGroupPickerOpen(false);
-  };
-
   // The dimension is also the query's primary sort key, so the backend has to
   // reorder — grouping the page here alone would split a group across a page
   // boundary and the heading would stop describing the rows under it. This
@@ -225,7 +212,6 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
   const density = getBuildingLensDensity(panelWidth + BUILDING_LENS_PANEL_CHROME_WIDTH);
   const rowGeometry = getBuildingLensRowGeometry(density);
   const catalogMaxHeight = getBuildingLensCatalogMaxHeight(typeof window === "undefined" ? 720 : window.innerHeight);
-  const sortPresentation = getBuildingLensSortPresentation({ column: sortColumn, descending });
   const placeLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Place]", "Place") ?? "Place";
   const firstPageLabel = translate("Tooltip.LABEL[FindItBuildingMenu.FirstPage]", "First page") ?? "First page";
   const previousPageLabel = translate("Tooltip.LABEL[FindItBuildingMenu.PreviousPage]", "Previous page") ?? "Previous page";
@@ -291,30 +277,6 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
     "No further data for this building",
   ) ?? "No further data for this building";
   const clearCompareLabel = translate("Tooltip.LABEL[FindItBuildingMenu.ClearCompare]", "Clear comparison") ?? "Clear comparison";
-  const moreSortingLabel = sortingExpanded
-    ? translate("Tooltip.LABEL[FindItBuildingMenu.HideSorting]", "Hide sorting") ?? "Hide sorting"
-    : translate("Tooltip.LABEL[FindItBuildingMenu.MoreSorting]", "More sorting") ?? "More sorting";
-  // One register for both pickers. These used to disagree: the sort control
-  // announced "Sorted by Name, ascending" while the group control announced a
-  // bare "Category", so the two halves of a matched pair read as different
-  // kinds of thing to anyone listening rather than looking.
-  const groupedByLabel = (
-    translate("Tooltip.LABEL[FindItBuildingMenu.GroupedBy]", "Grouped by {0}") ?? "Grouped by {0}"
-  ).replace("{0}", groupByLabel);
-  const sortDirectionLabel = descending
-    ? translate("Tooltip.LABEL[FindItBuildingMenu.SortDirectionDescending]", "descending") ?? "descending"
-    : translate("Tooltip.LABEL[FindItBuildingMenu.SortDirectionAscending]", "ascending") ?? "ascending";
-  const sortedByLabel = (
-    translate("Tooltip.LABEL[FindItBuildingMenu.SortedBy]", "Sorted by {0}, {1}") ?? "Sorted by {0}, {1}"
-  )
-    .replace("{0}", sortPresentation.compact.label)
-    .replace("{1}", sortDirectionLabel);
-  const sortByOptionLabel = (label: string): string =>
-    (translate("Tooltip.LABEL[FindItBuildingMenu.SortByOption]", "Sort by {0}") ?? "Sort by {0}")
-      .replace("{0}", label);
-  // The same string the sorted column header uses for the same gesture.
-  const reverseSortLabel =
-    translate("Tooltip.LABEL[FindItBuildingMenu.ReverseSort]", "reverse this sort") ?? "reverse this sort";
 
   /**
    * Draws one leaf's entries in whichever mode is active.
@@ -361,30 +323,6 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
   // own menu, a "More sorting" button at the far right revealed a second copy
   // of the same list, and the direction arrow — nested inside the chip — could
   // only open the menu it sat in. One toggle, one list.
-  function toggleSortOptions(): void {
-    setGroupPickerOpen(false);
-    setSortingExpanded((expanded) => !expanded);
-  }
-
-  function openGroupPicker(): void {
-    setSortingExpanded(false);
-    setGroupPickerOpen((open) => !open);
-  }
-
-  // Picking a group closes the menu. It overlays the results, and a menu that
-  // stays up after it has been used hides the change it just made. The sort
-  // options are a band rather than an overlay, so they stay: re-picking the
-  // active field is how you reverse it.
-  function chooseGroupBy(id: GroupDimensionId): void {
-    setGroupPickerOpen(false);
-    setGroupBy(id);
-  }
-
-  /** Reverse without changing the field: nextSortState flips on a repeat. */
-  function reverseSort(): void {
-    setSort(sortColumn);
-  }
-
   function setSort(column: SortColumn): void {
     const next = nextSortState({ column: sortColumn, descending }, column);
 
@@ -412,145 +350,12 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
       data-catalog-max-height={catalogMaxHeight}
       style={{ maxHeight: `${catalogMaxHeight}rem` }}
     >
-      {/* Identity, result count, search context and sort used to be two
-          full-width bands stacked above the table, each carrying a single short
-          line. Measured against a real city they cost 84px of a 625px panel
-          while the rows themselves only got 159px. One toolbar carries all of
-          it.
-
-          The whole band is analytical chrome — Group by, Sort by, and the
-          identity line that names what you're already looking at — and none
-          of it is something a two-row strip can afford. At strip height the
-          tab strip above already carries identity, so this toolbar, like
-          ViewModeBar below, renders only once the panel is expanded. A
-          measured strip had this band plus a group heading eating a 51rem
-          tile down to ~50px of clipped remainder; two rows need the room
-          back. */}
-      {expanded && (
-      <div className={styles.toolbar}>
-        <img className={styles.titleIcon} src={BUILDING_LENS_TITLE_ICON} alt="" />
-        <div className={styles.title}>{translate("Tooltip.LABEL[FindItBuildingMenu.BuildingLens]", "Building lens")}</div>
-        <div className={styles.count}>{totalCount.toLocaleString()}</div>
-        {currentSearch?.trim() && (
-          <div className={styles.searchContext} title={currentSearch}>
-            {translate("Tooltip.LABEL[FindItBuildingMenu.BuildingLensSearchResults]", "Results for {0}")?.replace("{0}", currentSearch)}
-          </div>
-        )}
-        {/* Group and sort sit together because they are the same kind of
-            control — how the set is ordered. Narrowing lives in the chip row,
-            and keeping that line clean is what the whole rework turned on. */}
-        <span className={styles.sortLabel}>{translate("Tooltip.LABEL[FindItBuildingMenu.GroupBy]", "Group by")}</span>
-        <div className={styles.groupPicker}>
-          <Button
-            className={styles.sortSummary}
-            variant="icon"
-            onSelect={openGroupPicker}
-            aria-expanded={groupPickerOpen}
-            aria-label={groupedByLabel}
-            title={groupByLabel}
-          >
-            <span className={styles.sortSummaryLabel}>{groupByLabel}</span>
-            {/* A disclosure caret, not a sort direction — separate classes
-                because they looked identical and meant different things.
-                U+25BC, not the small U+25BE: the game's font stack has no small
-                triangles, so ▾ drew as a notdef box — the one mark saying this
-                control opens was the one glyph that would not render. */}
-            <span className={styles.disclosureCaret} aria-hidden="true">▼</span>
-          </Button>
-          {groupPickerOpen && (
-            <div className={styles.groupOptions}>
-              {GROUP_DIMENSIONS.map((dimension) => {
-                const label = translate(
-                  `Tooltip.LABEL[FindItBuildingMenu.GroupBy_${dimension.id}]`,
-                  dimension.label
-                ) ?? dimension.label;
-
-                return (
-                  <Button
-                    key={dimension.id}
-                    className={classNames(styles.sortButton, dimension.id === groupBy && styles.sortButtonSelected)}
-                    variant="icon"
-                    onSelect={() => chooseGroupBy(dimension.id)}
-                    aria-label={label}
-                  >
-                    <span>{label}</span>
-                  </Button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-        <div className={styles.toolbarSpacer} />
-        <span className={styles.sortLabel}>{translate("Tooltip.LABEL[FindItBuildingMenu.SortBy]", "Sort by")}</span>
-        {/* Built the same way as the group picker above, because it is the same
-            kind of control and was drawn to look like one. It used to be a bare
-            <div> with no handler: identical chrome, identical position, and
-            clicking it did nothing, so the pair taught two opposite lessons
-            about the same affordance. Sorting was reachable only from "More
-            sorting" at the far right. */}
-        <div className={styles.sortPicker}>
-          <Button
-            className={styles.sortSummary}
-            variant="icon"
-            onSelect={toggleSortOptions}
-            aria-expanded={sortingExpanded}
-            aria-label={sortedByLabel}
-            title={moreSortingLabel}
-          >
-            <span className={styles.sortSummaryLabel}>{sortPresentation.compact.label}</span>
-          </Button>
-          {/* Its own button, deliberately. As a <span> inside the chip above,
-              the one gesture that reads as "reverse this" was the one that
-              could not: the click bubbled to the chip and opened a menu. */}
-          <Button
-            className={styles.sortDirectionButton}
-            variant="icon"
-            onSelect={reverseSort}
-            aria-label={reverseSortLabel}
-            title={reverseSortLabel}
-          >
-            <span className={styles.sortDirection} aria-hidden="true">{sortPresentation.compact.indicator}</span>
-          </Button>
-        </div>
-        {/* A table is not a strip-shaped thing, so the toggle has nothing to
-            offer at strip height. It is hidden here, not removed: expanding
-            brings it back, so "more room" never silently means "now you get
-            a table". */}
-        {expanded && <ViewModeBar value={viewMode} onChange={setViewMode} />}
-        <Button
-          className={styles.sortDisclosure}
-          variant="icon"
-          onSelect={() => setSortingExpanded((expanded) => !expanded)}
-          aria-expanded={sortingExpanded}
-          aria-label={moreSortingLabel}
-          title={moreSortingLabel}
-        >
-          {moreSortingLabel}
-        </Button>
-      </div>
-      )}
-
-      {/* Reachable only from the toolbar above, which is itself gated on
-          expanded — gate this the same way so a stale sortingExpanded=true
-          from before the panel was last shrunk cannot leave this row drawn
-          with no toolbar above it to close it. */}
-      {expanded && sortingExpanded && (
-        <div className={styles.sortOptions} data-sort-options="expanded">
-          {sortPresentation.expanded.map((option) => (
-            <Button
-              key={option.key}
-              className={classNames(styles.sortButton, option.selected && styles.sortButtonSelected)}
-              variant="icon"
-              onSelect={() => setSort(option.key)}
-              aria-label={sortByOptionLabel(option.label)}
-              title={sortByOptionLabel(option.label)}
-            >
-              <span>{option.label}</span>
-              {option.selected && <span className={styles.sortDirection} aria-hidden="true">{sortPresentation.compact.indicator}</span>}
-            </Button>
-          ))}
-        </div>
-      )}
+      {/* The toolbar band that used to sit here — identity, count, search
+          context, Group by, Sort by, view mode and "More sorting" — is gone.
+          It lives in the control plane beside the panel now (LensControlPane),
+          which is visible at the strip height this panel rests at. The band
+          was gated on `expanded`, so every control it carried was missing
+          exactly when the panel was smallest and needed them most. */}
 
       {/* The rail and the filter summary both moved into the chip row above
           the content. The summary said "3 active filters"; the chips say which

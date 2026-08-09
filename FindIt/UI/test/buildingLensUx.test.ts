@@ -16,6 +16,14 @@ const buildingCatalogSource = readFileSync(
   new URL("../src/mods/BuildingCatalog/BuildingCatalog.tsx", import.meta.url),
   "utf8"
 );
+const lensControlPaneSource = readFileSync(
+  new URL("../src/mods/LensControlPane/LensControlPane.tsx", import.meta.url),
+  "utf8"
+);
+const lensControlPaneStyles = readFileSync(
+  new URL("../src/mods/LensControlPane/lensControlPane.module.scss", import.meta.url),
+  "utf8"
+);
 const buildingCatalogStyles = readFileSync(
   new URL("../src/mods/BuildingCatalog/buildingCatalog.module.scss", import.meta.url),
   "utf8"
@@ -184,23 +192,37 @@ describe("Building Lens action affordances", () => {
 });
 
 describe("Building Lens chrome budget", () => {
-  it("carries identity and sort in one toolbar rather than stacked bands", () => {
-    // Measured live: chrome took 334px of a 625px panel and left the rows 159px
-    // (25%). The title band and the sort band were two full-width rows carrying
-    // one short line each.
-    assert.match(buildingCatalogSource, /className=\{styles\.toolbar\}/);
-    assert.doesNotMatch(buildingCatalogSource, /className=\{styles\.heading\}/);
-    assert.doesNotMatch(buildingCatalogSource, /className=\{styles\.sortBar\}/);
+  it("keeps no control chrome in the panel at all", () => {
+    // The history this guards: chrome once took 334px of a 625px panel and
+    // left the rows 159px, first as two stacked bands and then as one toolbar.
+    // The toolbar was gated on `expanded`, which meant every control it held
+    // was missing at exactly the strip height the lens rests at. All of it
+    // lives in the control plane beside the panel now, so the panel carries
+    // results and nothing else.
+    for (const gone of [/className=\{styles\.toolbar\}/, /className=\{styles\.heading\}/, /className=\{styles\.sortBar\}/, /data-sort-options="expanded"/]) {
+      assert.doesNotMatch(buildingCatalogSource, gone);
+    }
   });
 
-  it("spends a line on search context only while a search is active", () => {
-    // "Buildings from the FindIt index" is a static caption that cost a whole
-    // row on every frame; the search variant is the only informative case.
-    assert.match(buildingCatalogSource, /searchContext/);
+  it("carries the count, grouping, sorting and view mode in the control plane", () => {
+    // Each of these was unreachable at rest before the pane existed.
+    assert.match(lensControlPaneSource, /styles\.count/);
+    assert.match(lensControlPaneSource, /GroupBy/);
+    assert.match(lensControlPaneSource, /SortBy/);
+    assert.match(lensControlPaneSource, /ViewModeBar/);
   });
 
-  it("keeps the sort options as a wrapped row under the toolbar", () => {
-    assert.match(buildingCatalogSource, /data-sort-options="expanded"/);
+  it("still names the search the count is counting", () => {
+    // "Buildings from the FindIt index" was a static caption costing a row on
+    // every frame; the search variant is the informative case, and it moved
+    // with the count rather than being dropped with the toolbar around it.
+    assert.match(lensControlPaneSource, /searchContext/);
+  });
+
+  it("opens the pane's menus upward, away from the bottom bar", () => {
+    // The pane is bottom-aligned against the bottom bar, so a menu growing
+    // downward opens off the screen.
+    assert.match(lensControlPaneStyles, /\.pickerOptions\s*\{[^}]*bottom:/);
   });
 });
 
