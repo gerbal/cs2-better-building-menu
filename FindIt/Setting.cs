@@ -46,6 +46,24 @@ namespace FindItBuildingMenu
 		// See GridUtil for how 1232 is derived.
 		public float BuildingLensPanelWidth { get; set; } = 1232f;
 
+		/// <summary>
+		/// Whether <see cref="BuildingLensPanelWidth"/> has been widened to
+		/// include the control plane.
+		/// </summary>
+		/// <remarks>
+		/// The width used to mean the build menu alone. Once the control plane
+		/// arrived it means the whole assembly, and the pane takes its share out
+		/// of it — so every value saved before that quietly buys a narrower grid
+		/// than it used to, and the new default cannot help because a saved
+		/// value always wins over a default.
+		///
+		/// This marker is what makes the fix run exactly once. Without it the
+		/// migration either never runs (no way to know a value is old) or runs
+		/// on every boot, growing the panel by the pane's width each time.
+		/// </remarks>
+		[SettingsUIHidden]
+		public bool BuildingLensWidthIncludesPane { get; set; }
+
 		[SettingsUIButton]
 		[SettingsUIConfirmation]
 		[SettingsUISection(SETTINGS, OTHER)]
