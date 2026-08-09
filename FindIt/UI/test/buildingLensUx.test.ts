@@ -238,6 +238,23 @@ describe("Building Lens chrome budget", () => {
     assert.match(lensControlPaneSource, /canToggleBuildingLensHeight/);
   });
 
+  it("keeps a way out of the lens, and the window lock, reachable", () => {
+    // Both lived in the top bar caf59a8 deleted, and an audit of that bank
+    // found neither had anywhere else to go: ToggleLock has no other caller in
+    // the UI, and nor has SetBuildingLensEnabled — which made the lens a
+    // one-way door, because the only control that could turn it off sat inside
+    // the bank that stops rendering (showTopBarRow = !BuildingLensEnabled) the
+    // moment it is turned on. No keybinding and no setting for either.
+    assert.match(lensControlPaneSource, /"ToggleLock"/);
+    assert.match(lensControlPaneSource, /"SetBuildingLensEnabled",\s*false/);
+  });
+
+  it("draws the lock as a mask, not a glyph", () => {
+    // The font stack has no padlock; a missing character is the one mark that
+    // says nothing. Same reasoning as the caret using U+25BC over U+25BE.
+    assert.match(lensControlPaneSource, /maskImage.*isWindowLocked \? lock : unlock/);
+  });
+
   it("puts the height control where the zoning view can reach it as well", () => {
     // Group, sort and view sit inside `!showZoning` because the hierarchy has
     // no rows to order. Height is not about rows, and a zoning tree is exactly
