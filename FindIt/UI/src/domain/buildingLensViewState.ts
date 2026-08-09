@@ -38,13 +38,44 @@ export function getLensChoice(key: string, fallback: string): string {
 }
 
 export function setLensChoice(key: string, value: string): void {
+  if (choiceState.get(key) === value) {
+    return;
+  }
+
   choiceState.set(key, value);
+  listeners.forEach((listener) => listener());
+}
+
+/**
+ * Notify on every choice change.
+ *
+ * The control plane and the catalog live in different React subtrees — the
+ * pane is a sibling of the panel, not a descendant — so a module map alone
+ * lets them disagree: the pane would set the group dimension and the grid
+ * would go on rendering the old one until something else remounted it. A
+ * subscription is the smallest thing that keeps them one value rather than
+ * two copies.
+ *
+ * Deliberately not a backend binding, for the same reason the state is not:
+ * this is presentation with no bearing on the query.
+ */
+type LensChoiceListener = () => void;
+
+const listeners = new Set<LensChoiceListener>();
+
+export function subscribeLensChoice(listener: LensChoiceListener): () => void {
+  listeners.add(listener);
+
+  return () => {
+    listeners.delete(listener);
+  };
 }
 
 /** Test seam; not used by the UI. */
 export function resetLensViewState(): void {
   viewState.clear();
   choiceState.clear();
+  listeners.clear();
 }
 
 export const LENS_DISCLOSURE_KEYS = {

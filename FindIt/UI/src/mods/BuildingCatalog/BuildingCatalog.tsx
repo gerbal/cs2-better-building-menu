@@ -53,7 +53,8 @@ import { getSearchScopeNotice } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { canPlace, isEntryLocked } from "domain/buildingLockState";
 import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
-import { getLensChoice, getLensDisclosure, setLensChoice, setLensDisclosure } from "domain/buildingLensViewState";
+import { getLensDisclosure, setLensDisclosure } from "domain/buildingLensViewState";
+import { useLensChoice } from "mods/useLensChoice";
 import { GroupedResults, type CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import { ViewModeBar } from "mods/GroupedResults/ViewModeBar";
 import {
@@ -157,12 +158,15 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
   // Three modes now, so a boolean no longer says it. The setting still supplies
   // the starting point; the in-session choice overrides it and survives the
   // remount that placing a building causes.
-  const [viewMode, setViewModeState] = useState<ViewMode>(
-    () => getLensChoice(LENS_VIEW_MODE_KEY, defaultToTable ? "table" : "grid") as ViewMode
+  // Shared with the control plane, which is a sibling of this panel rather
+  // than a descendant, so a plain useState here would let the two disagree.
+  const [viewModeChoice, setViewModeChoice] = useLensChoice(
+    LENS_VIEW_MODE_KEY,
+    defaultToTable ? "table" : "grid"
   );
+  const viewMode = viewModeChoice as ViewMode;
   const setViewMode = (next: ViewMode) => {
-    setLensChoice(LENS_VIEW_MODE_KEY, next);
-    setViewModeState(next);
+    setViewModeChoice(next);
   };
   // Force grid when resting at strip height, so a player who left the
   // control on List or Table does not get a mode clipped down to a sliver
@@ -171,13 +175,12 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
   const tableMode = effectiveViewMode === "table";
   // Empty means "nobody has chosen", which is different from having chosen
   // None — the first follows the section, the second stays flat.
-  const [chosenGroupBy, setChosenGroupBy] = useState<string>(() => getLensChoice(LENS_GROUP_KEY, ""));
+  const [chosenGroupBy, setChosenGroupBy] = useLensChoice(LENS_GROUP_KEY, "");
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
   const groupBy: GroupDimensionId = isGroupDimension(chosenGroupBy)
     ? chosenGroupBy
     : defaultGroupDimensionFor(section, menuHasCategories);
   const setGroupBy = (next: GroupDimensionId) => {
-    setLensChoice(LENS_GROUP_KEY, next);
     setChosenGroupBy(next);
     setGroupPickerOpen(false);
   };

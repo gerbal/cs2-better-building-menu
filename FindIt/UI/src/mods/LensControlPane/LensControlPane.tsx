@@ -1,10 +1,36 @@
-import { bindValue, useValue } from "cs2/api";
+import { bindValue, trigger, useValue } from "cs2/api";
+import { Button } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
+import classNames from "classnames";
 import mod from "../../../mod.json";
 import type { BuildingCatalogPage } from "domain/buildingCatalog";
+import type { SortColumn } from "domain/buildingCatalogContracts";
+import {
+  nextSortState,
+  setCatalogOffsetCommand,
+  setSortColumnCommand,
+  setSortDescendingCommand,
+} from "domain/buildingCatalogContracts";
+import { getBuildingLensSortPresentation } from "domain/buildingLensSortPresentation";
+import {
+  GROUP_DIMENSIONS,
+  defaultGroupDimensionFor,
+  groupDimensionLabel,
+  isGroupDimension,
+  type GroupDimensionId,
+} from "domain/buildingGroups";
+import { ViewModeBar } from "mods/GroupedResults/ViewModeBar";
+import type { CatalogViewMode } from "mods/GroupedResults/GroupedResults";
+import { useLensChoice } from "mods/useLensChoice";
+import { useState } from "react";
 import styles from "./lensControlPane.module.scss";
 
 const BuildingCatalog$ = bindValue<BuildingCatalogPage>(mod.id, "BuildingCatalog");
+const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "BuildingCatalogSortColumn");
+const BuildingCatalogSortDescending$ = bindValue<boolean>(mod.id, "BuildingCatalogSortDescending");
+const BuildingLensSection$ = bindValue<string>(mod.id, "BuildingLensSection", "AllBuildings");
+const BuildingLensMenuCategories$ = bindValue<unknown[]>(mod.id, "BuildingLensMenuCategories", []);
+const ShowZoningHierarchy$ = bindValue<boolean>(mod.id, "ShowZoningHierarchy", false);
 
 /**
  * What the pane takes out of the panel's width: its own 379rem plus the 6rem
@@ -16,6 +42,9 @@ const BuildingCatalog$ = bindValue<BuildingCatalogPage>(mod.id, "BuildingCatalog
  * BuildingLensTileSize and in lensToolOptions' row height.
  */
 export const LENS_CONTROL_PANE_TOTAL = 385;
+
+const LENS_VIEW_MODE_KEY = "viewMode";
+const LENS_GROUP_KEY = "groupBy";
 
 /**
  * The Building Lens control plane.
@@ -38,15 +67,173 @@ export const LensControlPane = () => {
   const { translate } = useLocalization();
   const page = useValue(BuildingCatalog$);
   const totalCount = page?.totalCount ?? 0;
+  const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
+  const descending = useValue(BuildingCatalogSortDescending$) ?? false;
+  const section = useValue(BuildingLensSection$);
+  const menuHasCategories = (useValue(BuildingLensMenuCategories$) ?? []).length > 0;
+  const showZoning = useValue(ShowZoningHierarchy$);
+
+  const [groupPickerOpen, setGroupPickerOpen] = useState(false);
+  const [sortPickerOpen, setSortPickerOpen] = useState(false);
+
+  const [viewModeChoice, setViewModeChoice] = useLensChoice(LENS_VIEW_MODE_KEY, "grid");
+  const [chosenGroupBy, setChosenGroupBy] = useLensChoice(LENS_GROUP_KEY, "");
+  const groupBy: GroupDimensionId = isGroupDimension(chosenGroupBy)
+    ? chosenGroupBy
+    : defaultGroupDimensionFor(section, menuHasCategories);
+
+  const sortPresentation = getBuildingLensSortPresentation({ column: sortColumn, descending });
+  const label = (key: string, fallback: string) => translate(key, fallback) ?? fallback;
+
+  const groupByLabel =
+    translate(`Tooltip.LABEL[FindItBuildingMenu.GroupBy_${groupBy}]`, groupDimensionLabel(groupBy))
+    ?? groupDimensionLabel(groupBy);
+
+  const setSort = (column: SortColumn) => {
+    const next = nextSortState({ column: sortColumn, descending }, column);
+
+    // No local echo: the backend owns the order and publishes it back, so
+    // mirroring it here would reintroduce a second source of truth.
+    for (const command of [
+      setSortColumnCommand(next.column),
+      setSortDescendingCommand(next.descending),
+      setCatalogOffsetCommand(0),
+    ]) {
+      trigger(mod.id, command.method, ...command.args);
+    }
+  };
 
   return (
     <div className={styles.pane}>
       <div className={styles.row}>
         <span className={styles.count}>{totalCount.toLocaleString()}</span>
         <span className={styles.countUnit}>
-          {translate("Tooltip.LABEL[FindItBuildingMenu.Buildings]", "buildings")}
+          {label("Tooltip.LABEL[FindItBuildingMenu.Buildings]", "buildings")}
         </span>
       </div>
+
+      {/* The zoning view is a different renderer over a different catalog:
+          there are no rows to order, group or switch the shape of. The count
+          still means something, so it stays above. */}
+      {!showZoning && (
+        <>
+          <div className={styles.row}>
+            <span className={styles.rowLabel}>
+              {label("Tooltip.LABEL[FindItBuildingMenu.GroupBy]", "Group by")}
+            </span>
+            <div className={styles.rowValue}>
+              <div className={styles.picker}>
+                <Button
+                  className={styles.pickerSummary}
+                  variant="icon"
+                  onSelect={() => setGroupPickerOpen((open) => !open)}
+                  aria-expanded={groupPickerOpen}
+                  title={groupByLabel}
+                >
+                  <span className={styles.pickerLabel}>{groupByLabel}</span>
+                  {/* U+25BC, not the small U+25BE: the game's font stack has no
+                      small triangles, so the one mark saying this control opens
+                      would be the one glyph that would not render. */}
+                  <span className={styles.caret} aria-hidden="true">▼</span>
+                </Button>
+                {groupPickerOpen && (
+                  <div className={styles.pickerOptions}>
+                    {GROUP_DIMENSIONS.map((dimension) => {
+                      const optionLabel = translate(
+                        `Tooltip.LABEL[FindItBuildingMenu.GroupBy_${dimension.id}]`,
+                        dimension.label
+                      ) ?? dimension.label;
+
+                      return (
+                        <Button
+                          key={dimension.id}
+                          className={classNames(
+                            styles.pickerOption,
+                            dimension.id === groupBy && styles.pickerOptionSelected
+                          )}
+                          variant="icon"
+                          onSelect={() => {
+                            setChosenGroupBy(dimension.id);
+                            setGroupPickerOpen(false);
+                          }}
+                          aria-label={optionLabel}
+                        >
+                          <span>{optionLabel}</span>
+                        </Button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.row}>
+            <span className={styles.rowLabel}>
+              {label("Tooltip.LABEL[FindItBuildingMenu.SortBy]", "Sort by")}
+            </span>
+            <div className={styles.rowValue}>
+              <div className={styles.picker}>
+                <Button
+                  className={styles.pickerSummary}
+                  variant="icon"
+                  onSelect={() => setSortPickerOpen((open) => !open)}
+                  aria-expanded={sortPickerOpen}
+                  title={sortPresentation.compact.label}
+                >
+                  <span className={styles.pickerLabel}>{sortPresentation.compact.label}</span>
+                  <span className={styles.caret} aria-hidden="true">▼</span>
+                </Button>
+                {sortPickerOpen && (
+                  <div className={styles.pickerOptions}>
+                    {sortPresentation.expanded.map((option) => (
+                      <Button
+                        key={option.key}
+                        className={classNames(
+                          styles.pickerOption,
+                          option.selected && styles.pickerOptionSelected
+                        )}
+                        variant="icon"
+                        onSelect={() => {
+                          setSort(option.key);
+                          setSortPickerOpen(false);
+                        }}
+                        aria-label={option.label}
+                      >
+                        <span>{option.label}</span>
+                      </Button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {/* Its own button, deliberately. As a span inside the summary
+                  above, the one gesture that reads as "reverse this" was the
+                  one that could not: the click bubbled and opened the menu. */}
+              <Button
+                className={styles.direction}
+                variant="icon"
+                onSelect={() => setSort(sortColumn)}
+                aria-label={label("Tooltip.LABEL[FindItBuildingMenu.ReverseSort]", "Reverse sort")}
+                title={label("Tooltip.LABEL[FindItBuildingMenu.ReverseSort]", "Reverse sort")}
+              >
+                <span aria-hidden="true">{sortPresentation.compact.indicator}</span>
+              </Button>
+            </div>
+          </div>
+
+          <div className={styles.row}>
+            <span className={styles.rowLabel}>
+              {label("Tooltip.LABEL[FindItBuildingMenu.ViewMode]", "View")}
+            </span>
+            <div className={styles.rowValue}>
+              <ViewModeBar
+                value={viewModeChoice as CatalogViewMode}
+                onChange={(next) => setViewModeChoice(next)}
+              />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };
