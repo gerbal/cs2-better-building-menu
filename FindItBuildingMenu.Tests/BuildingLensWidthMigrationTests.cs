@@ -121,6 +121,25 @@ namespace FindItBuildingMenu.Tests
 				float.Parse(band.Groups[1].Value) - float.Parse(chrome.Groups[1].Value));
 		}
 
+		[Fact]
+		public void Height_AgreesWithTheDragRangeTheUiClampsTo()
+		{
+			// Same arrangement as the width twins above, and the same failure if it
+			// drifts: the drag clamps with the TS numbers and the setting is stored
+			// through these, so a gap is a height the player can reach and not keep.
+			var source = File.ReadAllText(Path.Combine(
+				RepoRoot(), "FindIt", "UI", "src", "domain", "buildingLensLayout.ts"));
+
+			var min = Regex.Match(source, @"BUILDING_LENS_MIN_HEIGHT\s*=\s*(\d+)");
+			var max = Regex.Match(source, @"BUILDING_LENS_MAX_HEIGHT\s*=\s*(\d+)");
+			var def = Regex.Match(source, @"BUILDING_LENS_DEFAULT_HEIGHT\s*=\s*(\d+)");
+
+			Assert.True(min.Success && max.Success && def.Success, "height constants not found in buildingLensLayout.ts");
+			Assert.Equal(BuildingLensHeight.Min, float.Parse(min.Groups[1].Value));
+			Assert.Equal(BuildingLensHeight.Max, float.Parse(max.Groups[1].Value));
+			Assert.Equal(BuildingLensHeight.Default, float.Parse(def.Groups[1].Value));
+		}
+
 		private static string RepoRoot()
 		{
 			var dir = new DirectoryInfo(Directory.GetCurrentDirectory());

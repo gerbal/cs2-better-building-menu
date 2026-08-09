@@ -565,6 +565,36 @@ namespace FindItBuildingMenu.Systems
 			Mod.Settings.ApplyAndSave();
 		}
 
+		private void SetBuildingLensPanelHeight(float height)
+		{
+			if (!_BuildingLensEnabled)
+			{
+				return;
+			}
+
+			_BuildingLensPanelHeight.Value = BuildingLensHeight.Clamp(height);
+		}
+
+		private void CommitBuildingLensPanelHeight()
+		{
+			if (!_BuildingLensEnabled)
+			{
+				return;
+			}
+
+			// Only on release, like the width: a drag publishes on every mouse
+			// move, and writing the settings file at that rate is what the live
+			// binding exists to avoid.
+			var height = BuildingLensHeight.Clamp(_BuildingLensPanelHeight);
+			if (Math.Abs(Mod.Settings.BuildingLensPanelHeight - height) < 0.1f)
+			{
+				return;
+			}
+
+			Mod.Settings.BuildingLensPanelHeight = height;
+			Mod.Settings.ApplyAndSave();
+		}
+
 		private void ToggleBuildingCatalogCompare(int id)
 		{
 			_buildingCompareIds = BuildingCatalogCompareSelection.Toggle(_buildingCompareIds, id);

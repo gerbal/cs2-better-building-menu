@@ -12,9 +12,11 @@ import {
   getBuildingLensMetricTextScale,
   getBuildingLensCatalogMaxHeight,
   resizedBuildingLensWidth,
-  isBuildingLensUnscoped,
-  isBuildingLensExpanded,
-  canToggleBuildingLensHeight,
+  clampBuildingLensHeight,
+  draggedBuildingLensHeight,
+  BUILDING_LENS_MIN_HEIGHT,
+  BUILDING_LENS_MAX_HEIGHT,
+  BUILDING_LENS_DEFAULT_HEIGHT,
 } from "../src/domain/buildingLensLayout.ts";
 
 describe("Building Lens panel geometry", () => {
@@ -90,40 +92,31 @@ describe("Building Lens panel geometry", () => {
 });
 
 describe("Building Lens catalog height", () => {
-  const scoped = { section: "Transportation", searchText: "" };
-
-  it("rests as a strip while a category bounds the list", () => {
-    assert.equal(isBuildingLensUnscoped(scoped), false);
-    assert.equal(isBuildingLensExpanded({ ...scoped, isExpanded: false }), false);
+  it("holds the drag inside the range", () => {
+    assert.equal(clampBuildingLensHeight(BUILDING_LENS_MIN_HEIGHT - 50), BUILDING_LENS_MIN_HEIGHT);
+    assert.equal(clampBuildingLensHeight(BUILDING_LENS_MAX_HEIGHT + 50), BUILDING_LENS_MAX_HEIGHT);
+    assert.equal(clampBuildingLensHeight(500), 500);
   });
 
-  it("raises the floor for sets no category narrows", () => {
-    for (const section of ["AllBuildings", "Favorites"]) {
-      assert.equal(isBuildingLensUnscoped({ section, searchText: "" }), true);
-      assert.equal(isBuildingLensExpanded({ section, searchText: "", isExpanded: false }), true);
-    }
+  it("falls back to the default rather than passing a non-finite height through", () => {
+    // It goes straight into an inline style: height: NaNrem leaves the catalog
+    // unsized rather than merely the wrong size.
+    assert.equal(clampBuildingLensHeight(Number.NaN), BUILDING_LENS_DEFAULT_HEIGHT);
+    assert.equal(clampBuildingLensHeight(Number.POSITIVE_INFINITY), BUILDING_LENS_DEFAULT_HEIGHT);
   });
 
-  it("raises the floor while a search is running, whatever the section", () => {
-    assert.equal(isBuildingLensUnscoped({ ...scoped, searchText: "clinic" }), true);
-    // Whitespace is not a query — it would hold the panel open on a stray space.
-    assert.equal(isBuildingLensUnscoped({ ...scoped, searchText: "   " }), false);
+  it("grows when the top edge is dragged upward", () => {
+    // The panel is bottom-anchored and the handle is on its top edge, so a
+    // smaller clientY means a taller panel. Getting this sign wrong gives a
+    // handle that shrinks the panel when you pull it open.
+    const taller = draggedBuildingLensHeight(400, 500, 400);
+    const shorter = draggedBuildingLensHeight(400, 500, 600);
+
+    assert.ok(taller > 400);
+    assert.ok(shorter < 400);
   });
 
-  it("treats a missing section or search text as scoped rather than throwing", () => {
-    assert.equal(isBuildingLensUnscoped({ section: undefined, searchText: undefined }), false);
-  });
-
-  it("lets the player's choice raise a scoped catalog", () => {
-    assert.equal(isBuildingLensExpanded({ ...scoped, isExpanded: true }), true);
-  });
-
-  it("reports the control as inert exactly when the floor already holds it tall", () => {
-    // The regression this guards: the pane would otherwise draw an enabled
-    // toggle that moves and changes nothing, because the automatic floor wins
-    // in BOTH directions — you cannot manually shrink an unscoped catalog.
-    assert.equal(canToggleBuildingLensHeight(scoped), true);
-    assert.equal(canToggleBuildingLensHeight({ section: "AllBuildings", searchText: "" }), false);
-    assert.equal(canToggleBuildingLensHeight({ ...scoped, searchText: "clinic" }), false);
+  it("treats a non-finite pointer as no movement", () => {
+    assert.equal(draggedBuildingLensHeight(400, Number.NaN, 300), 400);
   });
 });

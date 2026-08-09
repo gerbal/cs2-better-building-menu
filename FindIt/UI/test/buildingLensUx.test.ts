@@ -232,25 +232,18 @@ describe("Building Lens chrome budget", () => {
     assert.match(lensControlPaneSource, /ViewModeBar/);
   });
 
-  it("carries the expand control too, the one the deleted top bar left homeless", () => {
-    // Search, close and the count all had somewhere else to go when the top
-    // bar was deleted; expand did not. SetIsExpanded has exactly one caller,
-    // so with that button gone the lens rested at the strip and no gesture
-    // could grow it — while the automatic floor's own comment still promised
-    // "a manual expand always wins".
-    assert.match(lensControlPaneSource, /SetIsExpanded/);
-    assert.match(lensControlPaneSource, /canToggleBuildingLensHeight/);
-  });
-
   it("keeps a way out of the lens, and the window lock, reachable", () => {
-    // Both lived in the top bar caf59a8 deleted, and an audit of that bank
-    // found neither had anywhere else to go: ToggleLock has no other caller in
-    // the UI, and nor has SetBuildingLensEnabled — which made the lens a
-    // one-way door, because the only control that could turn it off sat inside
-    // the bank that stops rendering (showTopBarRow = !BuildingLensEnabled) the
-    // moment it is turned on. No keybinding and no setting for either.
+    // Both lived in the top bar caf59a8 deleted, and neither had anywhere else
+    // to go: ToggleLock has no other caller in the UI, and nor has
+    // SetBuildingLensEnabled — which made the lens a one-way door, because the
+    // only control that could turn it off sat inside the bank that stops
+    // rendering the moment it is turned on.
+    //
+    // The expand toggle was restored here too and has since been replaced by a
+    // drag on the panel's top edge, which is why it is no longer in this list.
     assert.match(lensControlPaneSource, /"ToggleLock"/);
     assert.match(lensControlPaneSource, /"SetBuildingLensEnabled",\s*false/);
+    assert.doesNotMatch(lensControlPaneSource, /SetIsExpanded/);
   });
 
   it("draws the lock as a mask, not a glyph", () => {

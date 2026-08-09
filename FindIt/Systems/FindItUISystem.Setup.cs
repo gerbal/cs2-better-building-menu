@@ -89,6 +89,7 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<int> _CurrentSubCategoryBinding;
 		private ValueBindingHelper<float> _PanelHeight;
 		private ValueBindingHelper<float> _PanelWidth;
+		private ValueBindingHelper<float> _BuildingLensPanelHeight;
 		private ValueBindingHelper<string> _CurrentSearch;
 		private ValueBindingHelper<string> _ViewStyle;
 		private ValueBindingHelper<string> _AlignmentStyle;
@@ -228,6 +229,12 @@ namespace FindItBuildingMenu.Systems
 			_BuildingLensZoneFamilies = CreateBinding("BuildingLensZoneFamilies", System.Array.Empty<string>());
 			_PanelHeight = CreateBinding("PanelHeight", 0f);
 			_PanelWidth = CreateBinding("PanelWidth", 0f);
+			// Seeded from the setting rather than 0: the panel draws from this
+			// on its first frame, and a zero height would flash a collapsed
+			// catalog before the first drag published anything.
+			_BuildingLensPanelHeight = CreateBinding(
+				"BuildingLensPanelHeight",
+				BuildingLensHeight.Clamp(Mod.Settings.BuildingLensPanelHeight));
 			_ScrollIndex = CreateBinding("ScrollIndex", 0D);
 			_MaxScrollIndex = CreateBinding("MaxScrollIndex", 0D);
 			_ColumnCount = CreateBinding("ColumnCount", 0D);
@@ -326,6 +333,8 @@ namespace FindItBuildingMenu.Systems
 				CreateTrigger<string>("SetBuildingLensMenu", SetBuildingLensMenu);
 			CreateTrigger<float>("SetBuildingLensPanelWidth", SetBuildingLensPanelWidth);
 			CreateTrigger("CommitBuildingLensPanelWidth", CommitBuildingLensPanelWidth);
+			CreateTrigger<float>("SetBuildingLensPanelHeight", SetBuildingLensPanelHeight);
+			CreateTrigger("CommitBuildingLensPanelHeight", CommitBuildingLensPanelHeight);
 			CreateTrigger("ClearThumbnails", () => _AllThumbnails.Value = new string[0]);
 		}
 
