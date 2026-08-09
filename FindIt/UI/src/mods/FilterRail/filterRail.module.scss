@@ -20,27 +20,49 @@
   flex-wrap: wrap;
 }
 
-// The DropdownToggle underneath supplies its own chrome and hover state.
-// What remains here is the badge anchor and the row's own scale — see below.
+// Vanilla's own icon-button treatment, measured off the Theme row this rail
+// sits directly under: a 19px box, 4rem radius, a 16px glyph, 2px of gap, and
+// #141b22 unselected against #1e83aa selected.
+//
+// DropdownToggle's own chrome is NOT that. It is the game's light form control
+// — the one that belongs on a settings surface — and measured here it drew a
+// 27px near-white square (#dcdcdc) with a 2px border and no radius. Four of
+// those sat in a dark options bank beside two dark rounded 19px buttons doing
+// the same job. So the chrome is overridden rather than inherited: `!important`
+// throughout, because DropdownToggle's own rules are what is being displaced.
 .icon {
   position: relative;
-  // The vanilla DropdownToggle is sized for a single labeled control, not a
-  // dense icon strip. This row carries eight or nine dimensions and reads as
-  // cramped at that size, so it keeps the vanilla chrome and takes more room
-  // — the shape is the game's, the scale is this row's.
-  width: 40rem !important;
-  height: 40rem !important;
+  width: 29rem !important;
+  height: 29rem !important;
+  // Vanilla's 2px horizontally, on the right so the row starts flush with the
+  // label the way Theme's does. The bottom margin is 2rem rather than a
+  // matching 3rem because our box is 29rem (19.33px) against vanilla's 19: at
+  // 3rem the row measured 27px where vanilla's measures 26, and the row rhythm
+  // is the thing being matched. Margin rather than a gap on .icons: this
+  // engine measures 0 for gap between flex-row children (written up at
+  // buildingCatalog.module.scss:778).
+  margin: 0 3rem 2rem 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 4rem !important;
+  background-color: rgba(20, 27, 34, 1) !important;
 
   img {
-    width: 28rem !important;
-    height: 28rem !important;
+    width: 24rem !important;
+    height: 24rem !important;
   }
 }
 
+.icon:hover {
+  background-color: rgba(52, 63, 74, 1) !important;
+}
+
 // Dropdown owns its own open/close chrome; this only flags "something in
-// this dimension is filtered", replacing the old open-state highlight.
+// this dimension is filtered", replacing the old open-state highlight. Vanilla
+// says that with its accent fill, which is what its own multi-select buttons
+// use for the same meaning one row above.
 .iconActive {
-  background-color: rgba(255, 255, 255, 0.18);
+  background-color: rgba(30, 131, 170, 1) !important;
 }
 
 // Answers "is anything filtered" without opening anything.
