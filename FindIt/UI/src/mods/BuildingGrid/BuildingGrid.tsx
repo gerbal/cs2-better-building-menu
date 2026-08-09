@@ -9,7 +9,7 @@ import { canPlace, isEntryLocked } from "domain/buildingLockState";
 import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { rankBuildingMatches, topSearchResult } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
-import { shortenTileLabel, stripRedundantNamePrefix, tileLabelCharBudget } from "domain/tileLabel";
+import { stripRedundantNamePrefix, tileLabelLineBudget, wrapTileLabel } from "domain/tileLabel";
 import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
 import { formatBuildingMetric, getNumberSeparators } from "domain/buildingLensMetricFormat";
 import type { SortColumn } from "domain/buildingCatalogContracts";
@@ -172,16 +172,27 @@ export const BuildingGrid = ({ entries, searchText, onPlace, standalone = true }
             />
           )}
           {/* Shortened for drawing only. The tooltip above and the aria-label on
-              the Button both still carry the whole name. */}
+              the Button both still carry the whole name.
+
+              One element per line rather than one element that wraps: the
+              wrapping is decided in tileLabel.ts, where it is testable and
+              where the last line can be elided by the same rule that keeps a
+              distinguishing suffix. Leaving it to the engine would put the
+              break wherever 64px happened to fall and clip the overflow
+              unmarked. */}
           <span className={styles.tileName}>
-            {shortenTileLabel(
+            {wrapTileLabel(
               stripRedundantNamePrefix(label, {
                 category: entry.categoryLabel ?? entry.category,
                 subCategory: entry.subCategoryLabel ?? entry.subCategory,
                 theme: entry.theme,
               }),
-              tileLabelCharBudget(tileSize)
-            )}
+              tileLabelLineBudget(tileSize)
+            ).map((line, index) => (
+              <span key={index} className={styles.tileNameLine}>
+                {line}
+              </span>
+            ))}
           </span>
           {sortedBadge(entry)}
         </Button>
