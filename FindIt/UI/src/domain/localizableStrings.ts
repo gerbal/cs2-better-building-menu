@@ -77,6 +77,12 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
 
   // --- Chip row. Already behind translate(). -------------------------------
   { key: key("AllMenus"), english: "All menus", source: "ChipRow", plumbed: true },
+  // The one menu the lens renamed, because it is the one whose contents it
+  // changed: Roads gathers every network now, so the game's own "Roads" is
+  // ~230 assets short of describing it. Offered ahead of the game's string
+  // rather than instead of it, so an untranslated language still gets "Roads"
+  // rather than the raw prefab id.
+  { key: key("MenuRoadsAndNetworks"), english: "Roads & Networks", source: "vanillaServiceLabels", plumbed: true },
   { key: key("AllTypes"), english: "All types", source: "ChipRow", plumbed: true },
   { key: key("Remove"), english: "Remove", source: "ChipRow", plumbed: true },
 
