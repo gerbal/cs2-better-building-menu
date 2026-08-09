@@ -3,9 +3,12 @@ import { useEffect, useRef } from "react";
 import mod from "../../../mod.json";
 import type { ToolbarEntity } from "domain/toolbarEntity";
 import {
-  shouldRouteSelection,
+  nextWatchState,
   toolbarEntityIndex,
+  vanillaMenuDeselectedCommand,
   vanillaMenuSelectedCommand,
+  watchAction,
+  type WatchState,
 } from "domain/vanillaMenuWatch";
 
 const SelectedAssetMenu$ = bindValue<ToolbarEntity | null>("toolbar", "selectedAssetMenu", null);
@@ -27,7 +30,10 @@ export const VanillaMenuWatcher = () => {
   const selected = useValue(SelectedAssetMenu$);
   // The binding re-emits on unrelated toolbar churn, and emits current state
   // on subscribe. shouldRouteSelection filters both.
-  const state = useRef<{ seen: boolean; last: number | null }>({ seen: false, last: null });
+  const state = useRef<WatchState>({ seen: false, last: null });
+  // Bumped on every observation so a deferred close can tell whether the
+  // toolbar moved on after it was scheduled.
+  const generation = useRef(0);
 
   useEffect(() => {
     if (!enabled) {
@@ -36,18 +42,36 @@ export const VanillaMenuWatcher = () => {
     }
 
     const index = toolbarEntityIndex(selected);
-    const route = shouldRouteSelection(state.current, index);
+    const action = watchAction(state.current, index);
 
-    // Observed either way: the first emission is state, not a click, and a
-    // closed menu must be remembered so reopening the same one counts as new.
-    state.current = { seen: true, last: route ? index : (index === null ? null : state.current.last) };
+    state.current = nextWatchState(state.current, index, action);
 
-    if (!route || index === null) {
+    const observed = ++generation.current;
+
+    if (action === "open" && index !== null) {
+      const command = vanillaMenuSelectedCommand(index);
+      trigger(mod.id, command.method, ...command.args);
       return;
     }
 
-    const command = vanillaMenuSelectedCommand(index);
-    trigger(mod.id, command.method, ...command.args);
+    if (action !== "close") {
+      return;
+    }
+
+    // Switching menus passes through Entity.Null on the way. Measured on the
+    // live toolbar as 16934 -> 0 -> 16928, all three delivered inside one JS
+    // tick, before any microtask ran. Closing the moment a null arrives would
+    // therefore dismiss the lens every time the player moved between menus.
+    // Deferring to a microtask lets the replacement selection land first, and
+    // the generation check turns this into a no-op when it does.
+    Promise.resolve().then(() => {
+      if (generation.current !== observed) {
+        return;
+      }
+
+      const command = vanillaMenuDeselectedCommand();
+      trigger(mod.id, command.method, ...command.args);
+    });
   }, [enabled, selected]);
 
   return null;

@@ -265,6 +265,53 @@ describe("Vanilla menu watcher lifecycle", () => {
 
     assert.equal(shouldRouteSelection({ seen: true, last: 17102 }, null), false);
   });
+
+  it("reads a dropped selection as a close once a menu has been opened", async () => {
+    const { watchAction } = await import("../src/domain/vanillaMenuWatch.ts");
+
+    // Clicking the open menu's icon deselects it: the vanilla button fires
+    // toolbar.clearAssetSelection and the binding goes to Entity.Null. Before
+    // this, that arrived as "nothing to do" and the panel stayed up.
+    assert.equal(watchAction({ seen: true, last: 17102 }, null), "close");
+  });
+
+  it("does not close on the null the binding emits before anything is open", async () => {
+    const { watchAction } = await import("../src/domain/vanillaMenuWatch.ts");
+
+    assert.equal(watchAction({ seen: false, last: null }, null), "ignore");
+    assert.equal(watchAction({ seen: true, last: null }, null), "ignore");
+  });
+
+  it("forgets the menu after a close, so the same icon reopens it", async () => {
+    const { nextWatchState, watchAction } = await import("../src/domain/vanillaMenuWatch.ts");
+
+    const opened = nextWatchState({ seen: true, last: null }, 17102, "open");
+    assert.deepEqual(opened, { seen: true, last: 17102 });
+
+    const closed = nextWatchState(opened, null, "close");
+    assert.deepEqual(closed, { seen: true, last: null });
+
+    // Without the reset this would read as a repeat and the icon would go dead.
+    assert.equal(watchAction(closed, 17102), "open");
+  });
+
+  it("keeps what it knew when an observation says nothing", async () => {
+    const { nextWatchState } = await import("../src/domain/vanillaMenuWatch.ts");
+
+    assert.deepEqual(nextWatchState({ seen: true, last: 17102 }, 17102, "ignore"), {
+      seen: true,
+      last: 17102,
+    });
+  });
+
+  it("names the close trigger the backend registers", async () => {
+    const { vanillaMenuDeselectedCommand } = await import("../src/domain/vanillaMenuWatch.ts");
+
+    assert.deepEqual(vanillaMenuDeselectedCommand(), {
+      method: "VanillaMenuDeselected",
+      args: [],
+    });
+  });
 });
 
 describe("Out-of-scope search", () => {

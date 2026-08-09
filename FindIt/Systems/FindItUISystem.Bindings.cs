@@ -234,6 +234,40 @@ namespace FindItBuildingMenu.Systems
 		}
 
 		/// <summary>
+		/// Closes the lens when the toolbar drops the menu it was standing in for.
+		/// </summary>
+		/// <remarks>
+		/// A toolbar menu button toggles: clicking the one that is already open
+		/// deselects it. The lens only ever heard about the opening half of that,
+		/// so a second click on the same icon un-lit the button, closed the menu it
+		/// stood for, and left the panel covering the screen with no way to read it
+		/// as anything but stuck.
+		///
+		/// Only acts when the lens owns the current menu. Roads and Landscaping
+		/// hand the screen back to vanilla (see VanillaMenuSelected), and their
+		/// deselection is the vanilla grid's business, not ours.
+		/// </remarks>
+		private void VanillaMenuDeselected()
+		{
+			if (!Mod.Settings.ReplaceVanillaBuildMenu || !_LensOwnsCurrentMenu)
+			{
+				return;
+			}
+
+			// The echo guard compares against the menu last applied. Leaving the
+			// old index here would make reopening that same menu look like an echo
+			// of a menu that is no longer on screen.
+			_appliedMenuIndex = 0;
+			_appliedMenuFrame = null;
+			_LensOwnsCurrentMenu.Value = false;
+
+			if (_ShowFindItPanel)
+			{
+				ToggleFindItPanel(false);
+			}
+		}
+
+		/// <summary>
 		/// Picks one of the scoped menu's category tabs, or all of them.
 		/// </summary>
 		/// <remarks>
