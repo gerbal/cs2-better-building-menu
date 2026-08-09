@@ -324,3 +324,122 @@ describe("The Other group", () => {
     assert.deepEqual(groups.map((g) => g.label), ["Hospital"]);
   });
 });
+
+describe("Flattening groups for the table", () => {
+  const entry = (id: number, category: string, name: string) =>
+    ({ id, name, category, subCategory: "", prefabName: name } as never);
+  const entry2 = (id: number, category: string, subCategory: string, name: string) =>
+    ({ id, name, category, subCategory, prefabName: name } as never);
+  const key = (e: { id: number }) => String(e.id);
+
+  it("puts a heading before each group's rows, at every level", async () => {
+    const { flattenGroupedRows } = await import("../src/domain/buildingGroups.ts");
+
+    // "category" nests: asset type, then subcategory. These entries carry no
+    // subCategory, so each root has exactly one child — a lone "Other" — and
+    // the per-level rule drops those inner headings while keeping the roots,
+    // which is the point of deciding it per level rather than once.
+    const rows = flattenGroupedRows(
+      [entry(1, "Networks", "Alley"), entry(2, "Buildings", "School"), entry(3, "Networks", "Road")],
+      "category",
+      key,
+    );
+
+    assert.deepEqual(
+      rows.map((r) => (r.kind === "heading" ? `${"  ".repeat(r.depth)}# ${r.label}` : (r.entry as { name: string }).name)),
+      ["# Networks", "Alley", "Road", "# Buildings", "School"],
+    );
+  });
+
+  it("still labels the level below a lone parent", async () => {
+    const { flattenGroupedRows } = await import("../src/domain/buildingGroups.ts");
+
+    // The case reported from play: grouping the Roads menu by asset type puts
+    // every entry under one root, because they are all Networks. Judging the
+    // whole tree by that root suppressed the headings underneath it as well,
+    // so the table reordered into Roads, Bridges and Tracks and named none of
+    // them.
+    const rows = flattenGroupedRows(
+      [
+        entry2(1, "Networks", "Roads", "Alley"),
+        entry2(2, "Networks", "Bridges", "Quay"),
+        entry2(3, "Networks", "Roads", "Road"),
+      ],
+      "category",
+      key,
+    );
+
+    assert.deepEqual(
+      rows.map((r) => (r.kind === "heading" ? `${"  ".repeat(r.depth)}# ${r.label}` : (r.entry as { name: string }).name)),
+      ["  # Roads", "Alley", "Road", "  # Bridges", "Quay"],
+    );
+  });
+
+  it("emits a flat list when nothing is grouped", async () => {
+    const { flattenGroupedRows } = await import("../src/domain/buildingGroups.ts");
+
+    const rows = flattenGroupedRows([entry(1, "Networks", "Alley"), entry(2, "Networks", "Road")], "none", key);
+
+    assert.deepEqual(rows.map((r) => r.kind), ["row", "row"]);
+  });
+
+  it("draws no heading when one group covers everything", async () => {
+    const { flattenGroupedRows } = await import("../src/domain/buildingGroups.ts");
+
+    // A lone heading names nothing the reader did not already know — the same
+    // rule GroupedResults applies.
+    const rows = flattenGroupedRows([entry(1, "Networks", "Alley"), entry(2, "Networks", "Road")], "category", key);
+
+    assert.deepEqual(rows.map((r) => r.kind), ["row", "row"]);
+  });
+
+  it("counts every entry beneath a heading", async () => {
+    const { flattenGroupedRows } = await import("../src/domain/buildingGroups.ts");
+
+    const rows = flattenGroupedRows(
+      [entry(1, "Networks", "Alley"), entry(2, "Networks", "Road"), entry(3, "Buildings", "School")],
+      "category",
+      key,
+    );
+    const heading = rows.find((r) => r.kind === "heading" && r.label === "Networks");
+
+    assert.equal(heading && heading.kind === "heading" ? heading.count : null, 2);
+  });
+
+  it("keeps the order the backend already sorted", async () => {
+    const { flattenGroupedRows } = await import("../src/domain/buildingGroups.ts");
+
+    // The C# side orders by (group key, chosen sort). Re-sorting here would
+    // silently disagree with the window the backend published.
+    const rows = flattenGroupedRows(
+      [entry(1, "Networks", "Zebra"), entry(2, "Networks", "Alpha"), entry(3, "Buildings", "School")],
+      "category",
+      key,
+    );
+
+    assert.deepEqual(
+      rows.filter((r) => r.kind === "row").map((r) => (r.kind === "row" ? (r.entry as { name: string }).name : "")),
+      ["Zebra", "Alpha", "School"],
+    );
+  });
+
+  it("gives every line a stable key", async () => {
+    const { flattenGroupedRows } = await import("../src/domain/buildingGroups.ts");
+
+    const rows = flattenGroupedRows(
+      [entry(1, "Networks", "Alley"), entry(2, "Buildings", "School")],
+      "category",
+      key,
+    );
+    const keys = rows.map((r) => r.key);
+
+    assert.equal(new Set(keys).size, keys.length);
+  });
+
+  it("has nothing to say about an empty result", async () => {
+    const { flattenGroupedRows } = await import("../src/domain/buildingGroups.ts");
+
+    assert.deepEqual(flattenGroupedRows([], "category", key), []);
+    assert.deepEqual(flattenGroupedRows(null, "category", key), []);
+  });
+});
