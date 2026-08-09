@@ -56,6 +56,20 @@
     align-items: flex-end;
   }
 
+  // With the lens open, MainContainer left-aligns vanilla's column trio so the
+  // options column sits at the screen edge (see the effect that does it). This
+  // is the matching half: our own layout mirrors vanilla's, so it has to stop
+  // centring too, or the panel would stay at x=403 and leave a 143px hole
+  // where the options column used to be.
+  //
+  // 379rem is the options column's own width — the same measurement the
+  // control plane matches on the other side — so the panel lands directly
+  // beside it with the 6rem gap tool-main-column already carries.
+  .lensLeftAligned.toolLayout {
+    justify-content: flex-start;
+    padding-left: 379rem;
+  }
+
   .toolMainColumn {
     position: relative;
     margin: 0 6rem;

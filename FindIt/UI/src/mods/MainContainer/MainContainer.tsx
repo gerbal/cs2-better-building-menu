@@ -93,6 +93,38 @@ export const FindItMainContainerComponent = () => {
     if (newLeft !== 0) setContainerLeft(newLeft);
   });
 
+  /**
+   * Stop vanilla centring its column trio while the lens is open.
+   *
+   * The build menu's left edge is not ours: it is vanilla's 475rem
+   * tool-main-column, and tool-layout centres side + main + side (253 + 475 +
+   * 253 = 990px) inside 1267px, which is what puts everything at x=145 and the
+   * menu at x=403. Left-aligning that trio moves the options column to the
+   * screen edge and frees the 253px it was holding in the middle, which the
+   * panel then takes (see BuildingLensWidth.Max).
+   *
+   * Done imperatively because vanilla renders this element and we do not. The
+   * class comes from the game's own stylesheet rather than a guessed selector,
+   * and the effect restores whatever was there on the way out, so turning the
+   * lens off — or unmounting — leaves vanilla's layout exactly as found. Only
+   * justifyContent is touched: React does not set it inline, so there is
+   * nothing for a re-render to fight over.
+   */
+  useEffect(() => {
+    const layout = document.querySelector<HTMLElement>(
+      GameMainScreneTheme?.toolLayout ? `.${GameMainScreneTheme.toolLayout}` : ".__no_such_class"
+    );
+
+    if (!layout) return;
+
+    const previous = layout.style.justifyContent;
+    layout.style.justifyContent = BuildingLensEnabled && AlignmentStyle === "Center" ? "flex-start" : previous;
+
+    return () => {
+      layout.style.justifyContent = previous;
+    };
+  }, [BuildingLensEnabled, AlignmentStyle]);
+
   if (isPhotoMode || !(ShowFindItPanel || IsWindowLocked)) return null;
 
   function onOptionClicked(x: number, y: number, z: number): void {
@@ -141,7 +173,7 @@ export const FindItMainContainerComponent = () => {
   return (
     <div className={classNames(styles.findItMainContainer, styles["align" + AlignmentStyle])}>
       {BuildingLensEnabled && isResizing && <div className={styles.resizeBlocker} onMouseMove={moveResize} onMouseUp={endResize} onMouseLeave={endResize} />}
-      <div className={styles.toolLayout}>
+      <div className={classNames(styles.toolLayout, BuildingLensEnabled && styles.lensLeftAligned)}>
         <div
           className={AlignmentStyle !== "Center" ? styles.toolMainColumn : GameMainScreneTheme.toolMainColumn}
           style={AlignmentStyle === "Center" ? undefined : { width: PanelWidth + "rem" }}

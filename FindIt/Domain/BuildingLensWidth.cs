@@ -14,12 +14,23 @@ namespace FindItBuildingMenu.Domain
 	public static class BuildingLensWidth
 	{
 		/// <summary>
-		/// The band, measured at 1280x720: vanilla's tool-side-column ends at
-		/// 399px and the social column begins at 1248, giving 845px. At 0.6667px
-		/// per rem that is 1267rem, less the 35rem MainContainer adds on top of
-		/// this value.
+		/// The band, measured at 1280x720.
 		/// </summary>
-		public const float Max = 1232f;
+		/// <remarks>
+		/// It used to start at 399px, where vanilla's tool-side-column ended
+		/// when tool-layout centred its column trio, giving 845px to the social
+		/// column at 1248. With the lens open that trio is left-aligned, so the
+		/// options column now ends at 260 and the band starts at 264 — 984px.
+		/// At 0.6667px per rem that is 1476rem, less the 35rem MainContainer
+		/// adds on top of this value.
+		///
+		/// Widening the ceiling needs no migration. A saved width still means
+		/// the same thing it did — the assembly, pane included — so every
+		/// existing value stays valid and simply has more room to grow into.
+		/// That is the difference between this change and the one
+		/// <see cref="Migrate"/> exists for, which altered what the number meant.
+		/// </remarks>
+		public const float Max = 1441f;
 
 		/// <summary>
 		/// Raised from 700 when the control plane arrived: 700 left the grid
