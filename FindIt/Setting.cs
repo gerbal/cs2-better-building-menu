@@ -41,7 +41,10 @@ namespace FindItBuildingMenu
 		// user-selected width independent from FindIt's grid sizing settings so
 		// switching views never resets the table layout.
 		[SettingsUIHidden]
-		public float BuildingLensPanelWidth { get; set; } = 765f;
+		// The full band by default: the assembly spans from vanilla's
+		// tool-options column to the social column with nothing left over.
+		// See GridUtil for how 1232 is derived.
+		public float BuildingLensPanelWidth { get; set; } = 1232f;
 
 		[SettingsUIButton]
 		[SettingsUIConfirmation]

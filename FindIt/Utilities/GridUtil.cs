@@ -7,8 +7,20 @@ namespace FindItBuildingMenu.Utilities
 {
     internal static class GridUtil
     {
-        internal const float BuildingLensMinWidth = 700f;
-        internal const float BuildingLensMaxWidth = 1200f;
+        // These bound the WHOLE assembly — the build menu and the control pane
+        // beside it — because that is what the layout lays out and what the
+        // resize handle drags. LensControlPane takes 385rem off the top for
+        // itself; the rest is grid.
+        //
+        // The maximum is the band, measured at 1280x720: vanilla's
+        // tool-side-column ends at 399px and the social column begins at 1248,
+        // giving 845px. At 0.6667px per rem that is 1267rem, less the 35rem
+        // MainContainer adds on top of this value = 1232.
+        //
+        // The minimum rose from 700 with the pane: 700 left the grid 350rem,
+        // barely three tiles wide, which is not a grid.
+        internal const float BuildingLensMinWidth = 1000f;
+        internal const float BuildingLensMaxWidth = 1232f;
 
         private static readonly FindItUISystem _findItUISystem = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<FindItUISystem>();
 

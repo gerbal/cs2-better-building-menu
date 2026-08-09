@@ -9,6 +9,7 @@ import { ZoningHierarchyComponent } from "mods/ZoningHierarchy/ZoningHierarchy";
 import { useState, useRef, useEffect } from "react";
 import styles from "./mainContainer.module.scss";
 import { OptionsPanelComponent } from "mods/OptionsPanel/OptionsPanel";
+import { LensControlPane, LENS_CONTROL_PANE_TOTAL } from "mods/LensControlPane/LensControlPane";
 import { OptionSection } from "domain/ContentViewType";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
@@ -140,11 +141,21 @@ export const FindItMainContainerComponent = () => {
           style={AlignmentStyle === "Center" ? undefined : { width: PanelWidth + "rem" }}
         >
           <div
-            className={GameMainScreneTheme.toolPanel}
+            className={classNames(GameMainScreneTheme.toolPanel, BuildingLensEnabled && styles.lensRow)}
             ref={containerRef}
             style={AlignmentStyle !== "Center" ? undefined : { width: PanelWidth + "rem" }}
           >
-            <div className={styles.toolContainer}>
+            {/* The pane is carved OUT of the panel's own width rather than
+                added beside it. The assembly's left edge is fixed by vanilla
+                centring a 475px column, and its right edge by the social
+                column at 1248px — so growing rightward runs off the band, and
+                widening the column to re-centre slides the panel underneath
+                vanilla's Filters box instead of shifting it along. Both were
+                measured; see the design doc. */}
+            <div
+              className={styles.toolContainer}
+              style={BuildingLensEnabled ? { width: (PanelWidth - LENS_CONTROL_PANE_TOTAL) + "rem" } : undefined}
+            >
               {(optionsOpen || sortingOpen) && optionsOverflow() && (
                 <div className={styles.topPanel}>
                   <div>
@@ -191,6 +202,7 @@ export const FindItMainContainerComponent = () => {
               </div>
               {BuildingLensEnabled && <div className={styles.resizeHandle} onMouseDown={beginResize} title="Resize building lens" />}
             </div>
+            {BuildingLensEnabled && <LensControlPane />}
             {(optionsOpen || sortingOpen) && !optionsOverflow() && (
               <div className={styles.rightPanel} style={{ left: PanelWidth + "rem" }}>
                 <div>
