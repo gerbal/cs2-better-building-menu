@@ -144,7 +144,7 @@ namespace FindItBuildingMenu.Systems
 				_buildingLensSubCategory = VanillaBuildMenuTaxonomy.Any;
 				_BuildingLensSectionBinding.Value = _buildingLensSection;
 				_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
-				_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0 };
+				_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 				scrollIndex = 0;
 
 				ToggleFindItPanel(true);
@@ -224,7 +224,7 @@ namespace FindItBuildingMenu.Systems
 			_buildingLensSubCategory = selection.SubCategory;
 			_BuildingLensSectionBinding.Value = _buildingLensSection;
 			_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
-			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0 };
+			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 
 			scrollIndex = 0;
 
@@ -303,7 +303,7 @@ namespace FindItBuildingMenu.Systems
 
 			_buildingLensUiCategory = category ?? string.Empty;
 			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
-			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0 };
+			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 
 			RefreshBuildingCatalog();
 		}
@@ -352,7 +352,7 @@ namespace FindItBuildingMenu.Systems
 			// A different menu has different tabs, so the old selection cannot
 			// survive the switch — same reason as VanillaMenuSelected.
 			_buildingLensUiCategory = string.Empty;
-			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0 };
+			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 			scrollIndex = 0;
 
 			// Zones are assignment tools rather than buildings, so that menu gets
@@ -391,7 +391,7 @@ namespace FindItBuildingMenu.Systems
 		{
 			_buildingLensUiMenu = string.Empty;
 			_buildingLensUiCategory = string.Empty;
-			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0 };
+			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 			scrollIndex = 0;
 
 			// The zoning view is a different renderer over a different catalog,
@@ -452,7 +452,7 @@ namespace FindItBuildingMenu.Systems
 			_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
 			FindItUtil.CurrentCategory = PrefabCategory.Any;
 			FindItUtil.CurrentSubCategory = PrefabSubCategory.Any;
-			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0 };
+			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 
 			scrollIndex = 0;
 
@@ -502,6 +502,7 @@ namespace FindItBuildingMenu.Systems
 			_buildingCatalogQuery = _buildingCatalogQuery with
 			{
 				Offset = 0,
+				Limit = BuildingCatalogQuery.DefaultLimit,
 				MinCapacity = null,
 			};
 			RefreshBuildingLensNavigation();
@@ -516,6 +517,7 @@ namespace FindItBuildingMenu.Systems
 			_buildingCatalogQuery = _buildingCatalogQuery with
 			{
 				Offset = 0,
+				Limit = BuildingCatalogQuery.DefaultLimit,
 				MinCapacity = null,
 			};
 			RefreshBuildingLensNavigation();
@@ -581,6 +583,7 @@ namespace FindItBuildingMenu.Systems
 			{
 				SortColumn = column,
 				Offset = 0,
+				Limit = BuildingCatalogQuery.DefaultLimit,
 			};
 
 			RefreshBuildingCatalog();
@@ -590,9 +593,9 @@ namespace FindItBuildingMenu.Systems
 		/// Chooses the heading dimension, which is also the query's primary key.
 		/// </summary>
 		/// <remarks>
-		/// Offset resets because the grouping reorders the whole result: keeping
-		/// the old offset would land the player somewhere unrelated to where
-		/// they were looking.
+		/// The window shrinks back to the base chunk because the grouping
+		/// reorders the whole result: the rows the player grew the window to
+		/// reach are not the rows that would come back.
 		/// </remarks>
 		private void SetBuildingCatalogGroupBy(string groupBy)
 		{
@@ -605,6 +608,7 @@ namespace FindItBuildingMenu.Systems
 			{
 				GroupBy = groupBy.Trim(),
 				Offset = 0,
+				Limit = BuildingCatalogQuery.DefaultLimit,
 			};
 
 			RefreshBuildingCatalog();
@@ -616,16 +620,35 @@ namespace FindItBuildingMenu.Systems
 			{
 				Descending = descending,
 				Offset = 0,
+				Limit = BuildingCatalogQuery.DefaultLimit,
 			};
 
 			RefreshBuildingCatalog();
 		}
 
-		private void SetBuildingCatalogOffset(int offset)
+		/// <summary>
+		/// Grows the window by one step, keeping the offset at zero.
+		/// </summary>
+		/// <remarks>
+		/// The window is owned here rather than accumulated on the client
+		/// because placing a building unmounts the lens panel, which would take
+		/// any client-side list of rows with it. A bigger Limit over the same
+		/// predicates re-runs the order across the whole match set and returns a
+		/// longer prefix of it, so the rows already on screen keep their
+		/// identity and there is no seam to stitch.
+		/// </remarks>
+		private void LoadMoreBuildingCatalog()
 		{
+			if (_buildingCatalogQuery.Limit >= BuildingCatalogQuery.MaxLimit)
+			{
+				return;
+			}
+
 			_buildingCatalogQuery = _buildingCatalogQuery with
 			{
-				Offset = offset,
+				Limit = Math.Min(
+					_buildingCatalogQuery.Limit + BuildingCatalogQuery.WindowStep,
+					BuildingCatalogQuery.MaxLimit),
 			};
 
 			RefreshBuildingCatalog();

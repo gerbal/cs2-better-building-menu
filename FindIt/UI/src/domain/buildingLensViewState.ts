@@ -41,10 +41,64 @@ export function setLensChoice(key: string, value: string): void {
   choiceState.set(key, value);
 }
 
+/**
+ * Where the player was in the list, as the id of the entry they were looking
+ * at — never a pixel offset.
+ *
+ * Rows are not a uniform height: an expanded row is `height: auto`, the density
+ * tiers disagree by eight units, and a grid tile changes height when a metric
+ * sort puts a figure on it. The window itself comes back from the backend at
+ * whatever length it has grown to, so the same scrollTop lands on a different
+ * building. An id survives all of that, and the row that no longer exists after
+ * a predicate change simply fails to match.
+ */
+const anchorState = new Map<string, number>();
+
+export interface LensAnchorKeyParts {
+  /** Which lens is asking. See the note below on why this is not optional. */
+  surface: string;
+  viewMode: string;
+  groupBy?: string;
+}
+
+/**
+ * Build the composite key an anchor is stored under.
+ *
+ * The choice store above is one flat namespace of unprefixed strings, and both
+ * BuildingCatalog and ZoningHierarchy write "viewMode" into it — two unrelated
+ * lists sharing one slot, which nothing in the type system notices. Anchors
+ * cannot afford that: restoring one list to a row that only exists in the other
+ * scrolls to nothing, or worse, to a coincidence. So the surface is part of the
+ * key, along with the view mode and group dimension, because grouping and mode
+ * both rebuild the list and an entry's place in one says nothing about its
+ * place in another.
+ */
+export function getLensAnchorKey({ surface, viewMode, groupBy = "" }: LensAnchorKeyParts): string {
+  return `${surface}|${viewMode}|${groupBy}`;
+}
+
+export function getLensAnchor(key: string): number | null {
+  const stored = anchorState.get(key);
+
+  return stored === undefined ? null : stored;
+}
+
+export function setLensAnchor(key: string, entryId: number | null): void {
+  // A stored NaN can never equal an entry id, so the restore would quietly do
+  // nothing and be indistinguishable from an anchor that was never taken.
+  if (entryId === null || !Number.isFinite(entryId)) {
+    anchorState.delete(key);
+    return;
+  }
+
+  anchorState.set(key, entryId);
+}
+
 /** Test seam; not used by the UI. */
 export function resetLensViewState(): void {
   viewState.clear();
   choiceState.clear();
+  anchorState.clear();
 }
 
 export const LENS_DISCLOSURE_KEYS = {

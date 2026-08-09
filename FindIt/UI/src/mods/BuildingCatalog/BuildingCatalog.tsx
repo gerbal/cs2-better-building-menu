@@ -1,7 +1,7 @@
 import { bindValue, trigger, useValue } from "cs2/api";
 import { Button, Scrollable } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import classNames from "classnames";
 import mod from "../../../mod.json";
 import { BuildingCatalogEntry, BuildingCatalogPage, formatBuildingCatalogLabels } from "domain/buildingCatalog";
@@ -17,17 +17,15 @@ import {
 import type { BuildingLensDensityTier, BuildingLensMetric } from "domain/buildingLensLayout";
 import {
   MAX_COMPARE_ENTRIES,
-  isCatalogPaged,
-  getCatalogPageSummary,
-  hasCatalogScroll,
+  getCatalogWindowSummary,
   clearCompareEntriesCommand,
+  loadMoreCatalogCommand,
   nextSortState,
-  normalizeCatalogOffset,
-  setCatalogOffsetCommand,
   setSortColumnCommand,
   setSortDescendingCommand,
   toggleCompareEntryCommand,
 } from "domain/buildingCatalogContracts";
+import { shouldLoadMore } from "domain/catalogWindow";
 import type { SortColumn } from "domain/buildingCatalogContracts";
 import {
   formatBuildingMetric,
@@ -134,6 +132,9 @@ export const BuildingCatalogComponent = () => {
   // The same card every other view mode shows. The table had none, so it was
   // the one mode that could not answer a question its columns had no room for.
   const hoverCard = useHoverCardContext();
+  // The table's scroll container, read by the passive load-more check.
+  // cs2/ui's Scrollable forwards its ref to the scrolling div.
+  const rowsRef = useRef<HTMLDivElement | null>(null);
   const page = useValue(BuildingCatalog$);
   const panelWidth = useValue(PanelWidth$);
   const currentSearch = useValue(CurrentSearch$);
@@ -201,23 +202,19 @@ export const BuildingCatalogComponent = () => {
   const limit = page?.limit ?? 100;
   const status: BuildingCatalogPageStatus = page?.status
     ?? (page ? (totalCount === 0 ? "empty" : "ready") : "indexing");
-  const hasPreviousPage = offset > 0;
-  const hasNextPage = offset + items.length < totalCount;
-  const pageSummary = getCatalogPageSummary(offset, totalCount, limit);
-  // A pager over a single page can only report that it has nothing to do, and
-  // it sits below a scroll, so the player travels to it to learn that.
-  const paged = isCatalogPaged(totalCount, limit);
-  const rowsScrollable = hasCatalogScroll(totalCount, items.length);
+  // The window is the backend's: it grows by Limit and always comes back as a
+  // prefix of the same ordering, so there is nothing to accumulate here and
+  // nothing to page. hasMore is C#'s answer, because it is the only side that
+  // knows both the match count and the ceiling — a client computing
+  // `rendered < total` would keep offering to load rows the backend has
+  // already refused to serve.
+  const hasMore = page?.hasMore ?? false;
+  const windowSummary = getCatalogWindowSummary(items.length, totalCount, separators);
   const density = getBuildingLensDensity(panelWidth + BUILDING_LENS_PANEL_CHROME_WIDTH);
   const rowGeometry = getBuildingLensRowGeometry(density);
   const catalogMaxHeight = getBuildingLensCatalogMaxHeight(typeof window === "undefined" ? 720 : window.innerHeight);
   const sortPresentation = getBuildingLensSortPresentation({ column: sortColumn, descending });
   const placeLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Place]", "Place") ?? "Place";
-  const firstPageLabel = translate("Tooltip.LABEL[FindItBuildingMenu.FirstPage]", "First page") ?? "First page";
-  const previousPageLabel = translate("Tooltip.LABEL[FindItBuildingMenu.PreviousPage]", "Previous page") ?? "Previous page";
-  const nextPageLabel = translate("Tooltip.LABEL[FindItBuildingMenu.NextPage]", "Next page") ?? "Next page";
-  const lastPageLabel = translate("Tooltip.LABEL[FindItBuildingMenu.LastPage]", "Last page") ?? "Last page";
-  const lastPageOffset = normalizeCatalogOffset(totalCount, totalCount, limit);
   const inspectLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Inspect]", "Details") ?? "Details";
   const lockedLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Locked]", "Locked") ?? "Locked";
   const collapseLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Collapse]", "Hide") ?? "Hide";
@@ -352,16 +349,76 @@ export const BuildingCatalogComponent = () => {
     const next = nextSortState({ column: sortColumn, descending }, column);
 
     // No local echo: the backend owns the order and publishes it back, so
-    // mirroring it here would just reintroduce a second source of truth.
-    for (const command of [setSortColumnCommand(next.column), setSortDescendingCommand(next.descending), setCatalogOffsetCommand(0)]) {
+    // mirroring it here would just reintroduce a second source of truth. The
+    // window shrinks back to one chunk on the C# side, because a sort change
+    // reorders everything and holding 2,000 rows open across it would spend the
+    // cost of a window the player is no longer looking through.
+    for (const command of [setSortColumnCommand(next.column), setSortDescendingCommand(next.descending)]) {
       trigger(mod.id, command.method, ...command.args);
     }
   }
 
-  function setPage(nextOffset: number): void {
-    const command = setCatalogOffsetCommand(normalizeCatalogOffset(nextOffset, totalCount, limit));
+  /**
+   * Asks the backend for the next chunk.
+   *
+   * Guarded against re-entry by `hasMore` alone rather than by a local "loading"
+   * flag: the backend republishes the whole window, so a second request that
+   * overtakes the first is idempotent, while a stale local flag could latch on
+   * and stop the list growing for the rest of the session.
+   */
+  function loadMore(): void {
+    if (!hasMore) {
+      return;
+    }
+
+    const command = loadMoreCatalogCommand();
     trigger(mod.id, command.method, ...command.args);
   }
+
+  /**
+   * The passive half of the trigger.
+   *
+   * cs2/ui's Scrollable declares an onScroll prop, and NOTHING in this repo has
+   * ever used it, so whether the engine fires it is unproven — synthetic wheel
+   * and thumb-drag events cannot be constructed in Cohtml (WheelEvent and
+   * PointerEvent are both undefined), so it could not be measured from the
+   * outside either. That is why the visible Load more control below is the
+   * mechanism and this is the upgrade: if it fires, the list grows before the
+   * player reaches the button; if it never fires, nothing is lost.
+   */
+  function onCatalogScroll(container: HTMLElement | null): void {
+    if (!container || !hasMore) {
+      return;
+    }
+
+    if (shouldLoadMore({
+      scrollTop: container.scrollTop,
+      clientHeight: container.clientHeight,
+      scrollHeight: container.scrollHeight,
+    })) {
+      loadMore();
+    }
+  }
+
+  /*
+   * The end of the feed, rendered as the last child INSIDE whichever element
+   * owns the scroll — which differs by view mode, so it is passed down rather
+   * than placed here. Below the scroll is where the pager used to live, and the
+   * reason nobody read it.
+   *
+   * It is the MECHANISM, not a fallback. cs2/ui's Scrollable declares an
+   * onScroll prop that nothing in this repo has ever used, and it could not be
+   * measured from outside the game: Cohtml has no IntersectionObserver, and
+   * neither WheelEvent nor PointerEvent can be constructed, so no synthetic
+   * scroll exists to test it with. If onScroll does fire, the passive check
+   * grows the list before the player ever reaches this button. If it never
+   * fires, this still works.
+   */
+  const catalogFooter = hasMore ? (
+    <Button className={styles.loadMore} variant="flat" onSelect={loadMore}>
+      {translate("Tooltip.LABEL[FindItBuildingMenu.LoadMore]", "Load more") ?? "Load more"}
+    </Button>
+  ) : null;
 
   return (
     // maxHeight is a cap, not a height: a page of three results should not
@@ -383,7 +440,11 @@ export const BuildingCatalogComponent = () => {
       <div className={styles.toolbar}>
         <img className={styles.titleIcon} src={BUILDING_LENS_TITLE_ICON} alt="" />
         <div className={styles.title}>{translate("Tooltip.LABEL[FindItBuildingMenu.BuildingLens]", "Building lens")}</div>
-        <div className={styles.count}>{totalCount.toLocaleString()}</div>
+        {/* How much of the match set is on screen, in the one part of the panel
+            that never scrolls. The old count lived in the pager below the
+            scroll, so reading it meant travelling to the end of the list — and
+            it only existed in table view at all. */}
+        <div className={styles.count} title={windowSummary}>{windowSummary}</div>
         {currentSearch?.trim() && (
           <div className={styles.searchContext} title={currentSearch}>
             {translate("Tooltip.LABEL[FindItBuildingMenu.BuildingLensSearchResults]", "Results for {0}")?.replace("{0}", currentSearch)}
@@ -552,7 +613,13 @@ export const BuildingCatalogComponent = () => {
         {/* The rows scroll and this header does not, so the scrollbar narrows
             them and would leave every value sitting left of its heading. The
             header reserves the track only while there is one. */}
-        <div className={styles.columnHeader} data-rows-scrollable={rowsScrollable ? "true" : undefined}>
+        {/* The scrollbar gutter is reserved unconditionally now. It used to
+            be reserved only when total > rendered, which was a has-more-pages
+            test doing duty as a will-this-overflow test — under a growing
+            window that flips false exactly when the list is longest, so every
+            metric value shifted out from under its heading at the end of a
+            load. A few rem of padding cannot desync. */}
+        <div className={styles.columnHeader} data-rows-scrollable="true">
           <span className={styles.identityHeader}>{translate("Tooltip.LABEL[FindItBuildingMenu.Building]", "Building")}</span>
           {metricColumns.map((column) => {
             const fullLabel = translate(column.localizationKey, column.fallback) ?? column.fallback;
@@ -582,7 +649,9 @@ export const BuildingCatalogComponent = () => {
           className={styles.rows}
           vertical
           trackVisibility="scrollable"
-          data-scrollable={rowsScrollable}
+          data-scrollable="true"
+          ref={rowsRef}
+          onScroll={() => onCatalogScroll(rowsRef.current)}
         >
           {items.length === 0 && (
             <div className={styles.empty}>
@@ -772,54 +841,8 @@ export const BuildingCatalogComponent = () => {
               </div>
             );
           })}
+          {catalogFooter}
         </Scrollable>
-
-        {paged && <div className={styles.paging}>
-          {/* First/last jumps: a 4,000-building catalog is 43 pages, and stepping
-              one page at a time made the far end of any sort effectively
-              unreachable. */}
-          <Button
-            className={styles.pageButton}
-            variant="icon"
-            disabled={!hasPreviousPage}
-            onSelect={() => setPage(0)}
-            aria-label={firstPageLabel}
-            title={firstPageLabel}
-          >
-            <span>«</span>
-          </Button>
-          <Button
-            className={styles.pageButton}
-            variant="icon"
-            disabled={!hasPreviousPage}
-            onSelect={() => setPage(offset - limit)}
-            aria-label={previousPageLabel}
-            title={previousPageLabel}
-          >
-            <span>‹</span>
-          </Button>
-          <span className={styles.pageLabel} title={pageSummary} aria-label={pageSummary}>{pageSummary}</span>
-          <Button
-            className={styles.pageButton}
-            variant="icon"
-            disabled={!hasNextPage}
-            onSelect={() => setPage(offset + limit)}
-            aria-label={nextPageLabel}
-            title={nextPageLabel}
-          >
-            <span>›</span>
-          </Button>
-          <Button
-            className={styles.pageButton}
-            variant="icon"
-            disabled={!hasNextPage}
-            onSelect={() => setPage(lastPageOffset)}
-            aria-label={lastPageLabel}
-            title={lastPageLabel}
-          >
-            <span>»</span>
-          </Button>
-        </div>}
         </>
       ) : (
         <>
@@ -850,6 +873,8 @@ export const BuildingCatalogComponent = () => {
                 viewMode={viewMode}
                 searchText={currentSearch ?? ""}
                 onPlace={activate}
+                footer={catalogFooter}
+                onScrolled={onCatalogScroll}
               />
             )}
         </>

@@ -94,6 +94,7 @@
   "Tooltip.LABEL[FindItBuildingMenu.Networks_Pillars]": "Bridge Pillars",
   "Tooltip.LABEL[FindItBuildingMenu.Networks_Lanes]": "Net Lanes & Fences",
   "Tooltip.LABEL[FindItBuildingMenu.MenuRoadsAndNetworks]": "Roads & Networks",
+  "Tooltip.LABEL[FindItBuildingMenu.LoadMore]": "Load more",
   "Tooltip.LABEL[FindItBuildingMenu.Networks_Waterways]": "Seaways",
   "Tooltip.LABEL[FindItBuildingMenu.Networks_PowerLines]": "Power Lines",
   "Tooltip.LABEL[FindItBuildingMenu.Networks_Pipes]": "Pipes",

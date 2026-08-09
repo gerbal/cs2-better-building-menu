@@ -1,4 +1,5 @@
 import { Scrollable } from "cs2/ui";
+import { useRef, type ReactNode } from "react";
 import classNames from "classnames";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
@@ -22,6 +23,18 @@ interface GroupedResultsProps {
   viewMode: CatalogViewMode;
   searchText: string;
   onPlace: (entry: BuildingCatalogEntry) => void;
+  /**
+   * Rendered as the last child INSIDE the scroll, below every group.
+   *
+   * Passed down rather than rendered by the catalog because which element owns
+   * the scroll depends on runtime state: the ungrouped grid keeps its own (see
+   * the escape hatch below), everything else shares one here. A footer rendered
+   * outside would sit below the scroll, which is where the pager used to be and
+   * the reason nobody read it.
+   */
+  footer?: ReactNode;
+  /** Called with the scrolling element whenever it scrolls. */
+  onScrolled?: (container: HTMLElement | null) => void;
 }
 
 /**
@@ -43,8 +56,11 @@ export const GroupedResults = ({
   viewMode,
   searchText,
   onPlace,
+  footer,
+  onScrolled,
 }: GroupedResultsProps) => {
   const { translate } = useLocalization();
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   /**
    * The game's word for a heading, where the game has one.
@@ -104,12 +120,27 @@ export const GroupedResults = ({
   // one scroll around the whole result, because a scrollbar per heading makes
   // the set impossible to read as one thing.
   if (groups.length === 0 && viewMode === "grid") {
-    return <BuildingGrid entries={entries} searchText={searchText} onPlace={onPlace} />;
+    return (
+      <BuildingGrid
+        entries={entries}
+        searchText={searchText}
+        onPlace={onPlace}
+        footer={footer}
+        onScrolled={onScrolled}
+      />
+    );
   }
 
   return (
-    <Scrollable className={styles.groupScroll} vertical trackVisibility="scrollable">
+    <Scrollable
+      className={styles.groupScroll}
+      vertical
+      trackVisibility="scrollable"
+      ref={scrollRef}
+      onScroll={() => onScrolled?.(scrollRef.current)}
+    >
       {groups.length === 0 ? renderLeaf(entries) : renderNodes(groups, 0)}
+      {footer}
     </Scrollable>
   );
 };

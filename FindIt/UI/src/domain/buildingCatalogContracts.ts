@@ -7,9 +7,10 @@ export type {
   PickerOptionAction,
 } from "./findItSurfaceContracts";
 import type { MetricRangeId } from "./buildingCatalogRanges";
+import type { NumberSeparators } from "./buildingLensMetricFormat";
 
 /**
- * Keep the UI's bounded comparison and paging rules in a pure module.
+ * Keep the UI's bounded comparison and windowing rules in a pure module.
  *
  * The Gameface components call the trigger commands from this module, while
  * the same contract can be exercised by Node's browserless test runner. This
@@ -48,7 +49,10 @@ export const setCurrentPrefabCommand = (id: number): ActivatePrefabAction => ({ 
 export const setSortColumnCommand = (column: SortColumn): TriggerCommand => createTriggerCommand("SetBuildingCatalogSortColumn", column);
 export const setSortDescendingCommand = (descending: boolean): TriggerCommand =>
   createTriggerCommand("SetBuildingCatalogSortDescending", descending);
-export const setCatalogOffsetCommand = (offset: number): TriggerCommand => createTriggerCommand("SetBuildingCatalogOffset", offset);
+// Takes no argument on purpose. The window is the backend's: it knows the
+// current Limit, the step and the ceiling, so a client that named the next size
+// would be a second opinion about all three.
+export const loadMoreCatalogCommand = (): TriggerCommand => createTriggerCommand("LoadMoreBuildingCatalog");
 export const setBuildingCatalogMetricRangeCommand = (id: MetricRangeId, minText: string, maxText: string): TriggerCommand =>
   createTriggerCommand("SetBuildingCatalogMetricRange", id, minText, maxText);
 export const clearBuildingCatalogMetricRangesCommand = (): TriggerCommand =>
@@ -92,52 +96,41 @@ export function normalizeCapacityFloor(floor: number): number {
   return Math.min(10000, Math.max(0, Math.floor(floor)));
 }
 
-export function normalizeCatalogOffset(offset: number, totalCount: number, limit: number): number {
-  const pageSize = normalizeCatalogPageSize(limit);
-  const safeTotalCount = Math.max(0, Math.floor(Number.isFinite(totalCount) ? totalCount : 0));
-  const safeOffset = Math.max(0, Math.floor(Number.isFinite(offset) ? offset : 0));
-  const maxOffset = Math.max(0, Math.floor(Math.max(0, safeTotalCount - 1) / pageSize) * pageSize);
-
-  return Math.min(maxOffset, Math.floor(safeOffset / pageSize) * pageSize);
-}
-
 /**
- * Make the bounded catalog semantics explicit to the player. The table is
- * paged, not an infinite scroll: show both the visible row range and the
- * current page so the footer cannot be mistaken for an unbounded feed.
- */
-export function getCatalogPageSummary(offset: number, totalCount: number, limit: number): string {
-  const pageSize = normalizeCatalogPageSize(limit);
-  const safeTotal = Math.max(0, Math.floor(Number.isFinite(totalCount) ? totalCount : 0));
-  const safeOffset = normalizeCatalogOffset(offset, safeTotal, pageSize);
-  const firstRow = safeTotal === 0 ? 0 : safeOffset + 1;
-  const lastRow = safeTotal === 0 ? 0 : Math.min(safeOffset + pageSize, safeTotal);
-  const pageCount = Math.max(1, Math.ceil(safeTotal / pageSize));
-  const page = Math.floor(safeOffset / pageSize) + 1;
-
-  return `Rows ${firstRow.toLocaleString()}–${lastRow.toLocaleString()} of ${safeTotal.toLocaleString()} · Page ${page} of ${pageCount}`;
-}
-
-/**
- * Whether the result is split across pages at all.
+ * Group digits the way `groupDigits` does, for counts.
  *
- * A single page needs no pager. Five buttons and a "Page 1 of 1" caption below
- * a list that already holds everything is a control that can only tell you it
- * has nothing to do — and it sits at the bottom of a scroll, so the player
- * scrolls to it to find that out. Menu-scoped queries are all one page now
- * (see BuildingCatalogQuery.EffectiveLimit), so this is the common case.
+ * The regex is `buildingLensMetricFormat`'s, and the test asserts this function
+ * agrees with it, because the import that would have shared it cannot exist:
+ * these modules are imported extensionlessly, which webpack and tsc resolve and
+ * `node --test` does not, and the `.ts` specifier node wants is a hard error in
+ * TypeScript 4.9. Every runtime import between src modules would break the
+ * suite, so today there are none.
+ *
+ * `toLocaleString` is not the answer either — it groups in Node and does
+ * nothing in Cohtml, which is how the page summary this replaces asserted
+ * "4,206" in a passing test while the game rendered "4206". The separator comes
+ * from the caller because it comes from the game's own loc dictionary; a
+ * hardcoded one disagrees with the numbers in the rows above it.
  */
-export function isCatalogPaged(totalCount: number, limit: number): boolean {
-  const pageSize = normalizeCatalogPageSize(limit);
-  const safeTotal = Math.max(0, Math.floor(Number.isFinite(totalCount) ? totalCount : 0));
-
-  return safeTotal > pageSize;
+function groupCount(value: number, separators: NumberSeparators): string {
+  return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, separators.group);
 }
 
-/** True when the bounded page has more records than are currently rendered. */
-export function hasCatalogScroll(totalCount: number, renderedCount: number): boolean {
+/**
+ * Say how much of the match set is on screen, for a window that grows rather
+ * than a page that turns.
+ */
+export function getCatalogWindowSummary(
+  renderedCount: number,
+  totalCount: number,
+  separators: NumberSeparators,
+): string {
   const safeTotal = Math.max(0, Math.floor(Number.isFinite(totalCount) ? totalCount : 0));
   const safeRendered = Math.max(0, Math.floor(Number.isFinite(renderedCount) ? renderedCount : 0));
-  return safeTotal > safeRendered;
+  // A narrowing predicate shrinks the total while the previous rows are still
+  // mounted, and "Showing 500 of 120" reads as a bug rather than as a stale frame.
+  const shown = Math.min(safeRendered, safeTotal);
+
+  return `Showing ${groupCount(shown, separators)} of ${groupCount(safeTotal, separators)}`;
 }
 

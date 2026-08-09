@@ -2,8 +2,11 @@ import assert from "node:assert/strict";
 import { describe, it, beforeEach } from "node:test";
 import {
   LENS_DISCLOSURE_KEYS,
+  getLensAnchor,
+  getLensAnchorKey,
   getLensDisclosure,
   resetLensViewState,
+  setLensAnchor,
   setLensDisclosure,
 } from "../src/domain/buildingLensViewState.ts";
 
@@ -35,5 +38,83 @@ describe("Building Lens view state", () => {
     setLensDisclosure(LENS_DISCLOSURE_KEYS.facets, false);
 
     assert.equal(getLensDisclosure(LENS_DISCLOSURE_KEYS.facets, true), false);
+  });
+});
+
+describe("Building Lens scroll anchor", () => {
+  const tableByCategory = getLensAnchorKey({ surface: "catalog", viewMode: "table", groupBy: "category" });
+
+  beforeEach(() => resetLensViewState());
+
+  it("has no anchor until a row has been seen", () => {
+    assert.equal(getLensAnchor(tableByCategory), null);
+  });
+
+  it("remembers the entry the player was looking at across a remount", () => {
+    // Placing a building unmounts the whole lens, and the window comes back
+    // from the backend possibly a different length, so the anchor is the entry
+    // to scroll back to rather than a pixel offset that would no longer point
+    // at the same row.
+    setLensAnchor(tableByCategory, 4206);
+
+    assert.equal(getLensAnchor(tableByCategory), 4206);
+  });
+
+  it("does not let two surfaces collide on the same view mode", () => {
+    // The choice store already has "viewMode" written by both the catalog and
+    // ZoningHierarchy; anchors are keyed by surface so the same mistake cannot
+    // scroll one list to a row that only exists in the other.
+    const catalogList = getLensAnchorKey({ surface: "catalog", viewMode: "list" });
+    const zoningList = getLensAnchorKey({ surface: "zoning", viewMode: "list" });
+
+    assert.notEqual(catalogList, zoningList);
+
+    setLensAnchor(catalogList, 17);
+
+    assert.equal(getLensAnchor(zoningList), null);
+  });
+
+  it("keeps a separate anchor per view mode and group dimension", () => {
+    // Grouping rebuilds the list, so row 4206's position under "category" says
+    // nothing about where it sits ungrouped or as a grid tile.
+    const gridByCategory = getLensAnchorKey({ surface: "catalog", viewMode: "grid", groupBy: "category" });
+    const tableUngrouped = getLensAnchorKey({ surface: "catalog", viewMode: "table" });
+
+    setLensAnchor(tableByCategory, 4206);
+
+    assert.equal(getLensAnchor(gridByCategory), null);
+    assert.equal(getLensAnchor(tableUngrouped), null);
+  });
+
+  it("treats an absent group dimension as its own key rather than any group", () => {
+    assert.equal(
+      getLensAnchorKey({ surface: "catalog", viewMode: "table" }),
+      getLensAnchorKey({ surface: "catalog", viewMode: "table", groupBy: "" }),
+    );
+    assert.notEqual(
+      getLensAnchorKey({ surface: "catalog", viewMode: "table" }),
+      getLensAnchorKey({ surface: "catalog", viewMode: "table", groupBy: "category" }),
+    );
+  });
+
+  it("forgets an anchor rather than storing one no row can match", () => {
+    // A stored NaN never equals an entry id, so the restore would silently do
+    // nothing and look like the anchor was never taken.
+    setLensAnchor(tableByCategory, 4206);
+    setLensAnchor(tableByCategory, Number.NaN);
+
+    assert.equal(getLensAnchor(tableByCategory), null);
+
+    setLensAnchor(tableByCategory, 4206);
+    setLensAnchor(tableByCategory, null);
+
+    assert.equal(getLensAnchor(tableByCategory), null);
+  });
+
+  it("is cleared with the rest of the view state", () => {
+    setLensAnchor(tableByCategory, 4206);
+    resetLensViewState();
+
+    assert.equal(getLensAnchor(tableByCategory), null);
   });
 });

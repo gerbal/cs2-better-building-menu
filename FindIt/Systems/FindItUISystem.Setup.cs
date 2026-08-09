@@ -289,7 +289,7 @@ namespace FindItBuildingMenu.Systems
 			CreateTrigger("OnRandomButtonClicked", OnRandomButtonClicked);
 			CreateTrigger<int>("OnLocateButtonClicked", OnLocateButtonClicked);
 			CreateTrigger<int>("OnPdxModsButtonClicked", OnPdxModsButtonClicked);
-			CreateTrigger<int>("SetBuildingCatalogOffset", SetBuildingCatalogOffset);
+			CreateTrigger("LoadMoreBuildingCatalog", LoadMoreBuildingCatalog);
 			CreateTrigger<int>("ToggleBuildingCatalogCompare", ToggleBuildingCatalogCompare);
 			CreateTrigger("ClearBuildingCatalogCompare", ClearBuildingCatalogCompare);
 				CreateTrigger<string, string, string>("SetBuildingCatalogMetricRange", SetBuildingCatalogMetricRange);

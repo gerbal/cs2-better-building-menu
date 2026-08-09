@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 
 namespace FindItBuildingMenu.Domain
@@ -60,43 +59,43 @@ namespace FindItBuildingMenu.Domain
 	{
 		public int EffectiveOffset => Offset < 0 ? 0 : Offset;
 
-		/// <summary>The most rows one page will ever hold.</summary>
-		public const int MaxLimit = 500;
+		/// <summary>
+		/// The most rows one window will ever hold — a render ceiling now, not a
+		/// page ceiling. 500 was as far as one page was allowed to reach; the
+		/// window grows into this instead, and the whole catalog is 3,667, so a
+		/// limit the player can hit by holding Load more has to sit well above
+		/// the largest set they might reasonably read through.
+		/// </summary>
+		public const int MaxLimit = 2000;
+
+		/// <summary>The window every fresh result set starts at.</summary>
+		public const int DefaultLimit = 100;
+
+		/// <summary>How much one Load more adds to the window.</summary>
+		public const int WindowStep = 100;
 
 		/// <summary>
-		/// Page size, which a menu-scoped query does not really have.
+		/// How many rows this window holds.
 		/// </summary>
 		/// <remarks>
-		/// A vanilla menu is one set, not a sequence of pages. The player
-		/// clicked Roads and is looking at "the roads"; splitting that into
-		/// "Rows 1-100 of 157, page 1 of 2" invents a boundary the game does
-		/// not have — vanilla scrolls a menu and never pages it — and buries
-		/// the far half behind a control at the bottom of a list you have to
-		/// scroll to reach.
+		/// A menu-scoped query used to be forced to <see cref="MaxLimit"/>, on
+		/// the argument that a vanilla menu is one set rather than a sequence of
+		/// pages: the player clicked Roads and is looking at "the roads", not at
+		/// "rows 1-100 of 157". That argument was against a PAGER, and the pager
+		/// is gone — one growing window plus search covers a menu without
+		/// inventing a boundary the game does not have.
 		///
-		/// The largest vanilla menu is Landscaping at 366 assets, measured on a
-		/// real catalog, so <see cref="MaxLimit"/> already covers every one of
-		/// them and a menu-scoped query simply asks for the ceiling. A modded
-		/// menu larger than that pages again, which is the right way to
-		/// degrade.
-		///
-		/// Unscoped queries keep their 100. There the set is the whole catalog
-		/// — 3,667 buildings — and no page size makes that one thing.
+		/// What the special case did cost is that the window size changed under
+		/// the player the moment they entered a menu, and changed back when they
+		/// left, for no reason they could see. So the limit is now whatever was
+		/// asked for, scoped or not.
 		/// </remarks>
-		public int EffectiveLimit
+		public int EffectiveLimit => Limit switch
 		{
-			get
-			{
-				int requested = IsScopedToMenu ? Math.Max(Limit, MaxLimit) : Limit;
-
-				return requested switch
-				{
-					< 1 => 1,
-					> MaxLimit => MaxLimit,
-					_ => requested,
-				};
-			}
-		}
+			< 1 => 1,
+			> MaxLimit => MaxLimit,
+			_ => Limit,
+		};
 
 		/// <summary>Whether this query is pinned to a place in the vanilla build menu.</summary>
 		public bool IsScopedToMenu =>
@@ -105,33 +104,37 @@ namespace FindItBuildingMenu.Domain
 		public string EffectiveSortColumn => string.IsNullOrWhiteSpace(SortColumn) ? "Name" : SortColumn;
 
 		/// <summary>
-		/// Returns this query with paging reset to the first page when any
-		/// predicate differs from <paramref name="previous"/>, and unchanged
-		/// when only the offset moved.
+		/// Returns this query with the window shrunk back to the base chunk when
+		/// any predicate differs from <paramref name="previous"/>, and unchanged
+		/// when only the window itself moved.
 		/// </summary>
 		/// <remarks>
-		/// The individual facet, range, and sort handlers each reset the offset
+		/// The individual facet, range, and sort handlers each reset the window
 		/// themselves, but the query is also rebuilt wholesale from ambient
 		/// state on every refresh — search text, the legacy FindIt parking
 		/// filters, the lens section, and the metric drawer all arrive that way
-		/// and previously left the offset untouched. A player who narrowed a
-		/// result set from a later page kept an offset past the new total. The
-		/// engine clamps that to a populated page, but landing on the last page
-		/// of a brand-new result set is still wrong: a fresh predicate means
-		/// page one. Comparing whole queries rather than enumerating fields
-		/// keeps new predicates covered by default instead of silently opting
-		/// out until someone remembers to add them here.
+		/// and previously left it untouched. A player who narrowed a result set
+		/// after growing the window kept a window sized for the old one. A fresh
+		/// predicate is a fresh set, so it starts at <see cref="DefaultLimit"/>.
+		/// Comparing whole queries rather than enumerating fields keeps new
+		/// predicates covered by default instead of silently opting out until
+		/// someone remembers to add them here.
+		///
+		/// Both Offset and Limit are masked out of that comparison. Load more
+		/// changes nothing but Limit, so counting Limit as a predicate would
+		/// make the window reset itself the instant it grew.
 		/// </remarks>
-		public BuildingCatalogQuery ResetPagingIfPredicatesChanged(BuildingCatalogQuery previous)
+		public BuildingCatalogQuery ResetWindowIfPredicatesChanged(BuildingCatalogQuery previous)
 		{
 			if (previous is null)
 			{
 				return this;
 			}
 
-			return (this with { Offset = 0 }) == (previous with { Offset = 0 })
-				? this
-				: this with { Offset = 0 };
+			return (this with { Offset = 0, Limit = DefaultLimit })
+				== (previous with { Offset = 0, Limit = DefaultLimit })
+					? this
+					: this with { Offset = 0, Limit = DefaultLimit };
 		}
 	}
 }

@@ -97,10 +97,24 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 .toolbar,
 .columnHeader,
 .row,
-.paging {
+// The end of the feed, inside the scroll. Full width so it is unmissable when
+// the rows run out, and generous vertically because it is the one control a
+// player reaches by scrolling rather than by aiming.
+.loadMore {
   display: flex;
-  flex-direction: row;
   align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin: 6rem 0 10rem;
+  padding: 8rem 0;
+  color: var(--menuText1Normal);
+  font-size: var(--fontSizeM);
+  background-color: var(--menuControlNormal);
+  border-radius: 2rem;
+
+  &:hover {
+    background-color: var(--menuControlHovered);
+  }
 }
 
 // One band carrying icon, title, count, search context and sort, replacing the
@@ -1146,12 +1160,6 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   text-align: center;
   color: var(--menuText2Normal);
   font-size: 12rem;
-}
-
-.paging {
-  justify-content: center;
-  gap: 8rem;
-  padding: 8rem 0 2rem;
 }
 
 .pageLabel {
