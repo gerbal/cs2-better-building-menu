@@ -76,6 +76,101 @@ export function getBuildingLensMetricTextScale(tier: BuildingLensDensityTier): "
 }
 
 /**
+ * What each metric column costs at a comfortable width.
+ *
+ * Measured content, not guesses: "5 600 000" in Cost, "225 000/mo" in Upkeep,
+ * "15 000 students" in Capacity, plus the 8rem right gutter the numeric columns
+ * carry. Sized so nothing clips — an earlier set of 54-58rem columns clipped 234
+ * of 600 rendered cells.
+ */
+export const BUILDING_LENS_COLUMN_MAX: Record<BuildingLensMetric, number> = {
+  cost: 100,
+  upkeep: 108,
+  workers: 62,
+  capacity: 122,
+  lot: 88,
+  level: 46,
+  parking: 52,
+};
+
+/**
+ * What each column may be squeezed to before the name gives up any more.
+ *
+ * These clip the rare widest value and fit the common one, which is the trade
+ * this whole function exists to make. Roughly three quarters of the comfortable
+ * width, rounded to whole units, and never below what a two-digit figure and
+ * its gutter need.
+ */
+export const BUILDING_LENS_COLUMN_MIN: Record<BuildingLensMetric, number> = {
+  cost: 76,
+  upkeep: 80,
+  workers: 48,
+  capacity: 88,
+  lot: 68,
+  level: 38,
+  parking: 44,
+};
+
+/**
+ * What the identity column is expected to keep at the narrowest panel.
+ *
+ * Not a CSS min-width — that was tried and it backfires. In Cohtml a min-width
+ * on a flex item disables its flex-grow: measured on the live row, the identity
+ * cell froze at exactly 120px with 112px of free space unclaimed beside it, and
+ * setting min-width back to 0 grew it to 225px on the spot. So the floor cannot
+ * be declared; it has to be left over.
+ *
+ * This is therefore a budget, and the column floors below are chosen so that
+ * roughly this much survives at BUILDING_LENS_MIN_WIDTH. Measured after: the
+ * name renders 77px at the narrowest panel, where it used to be ZERO — squeezed
+ * out of existence while Capacity held 122 units to draw "—".
+ */
+export const BUILDING_LENS_IDENTITY_MIN = 180;
+
+export type BuildingLensColumnWidths = Record<BuildingLensMetric, number>;
+
+/**
+ * Spend the panel's width on the name when it is scarce and on the numbers when
+ * it is not.
+ *
+ * The metric columns are fixed-width by necessity — Gameface has no CSS grid and
+ * no table column sizing, so the table is a stack of independent flex rows and
+ * only identical fixed widths keep them in line. The identity column is the
+ * flexible remainder, and that arrangement had one failure mode: because the
+ * metric cells are `flex: 0 0 auto`, they never yield, so every unit the panel
+ * lacks comes out of the name alone.
+ *
+ * So the columns interpolate: at the widest panel they get their comfortable
+ * width, at the narrowest they get their floor, and the difference goes to the
+ * name. This deliberately inverts the note on cm-kvf2 that narrowing should
+ * "crowd the name rather than truncate a number" — measurement changed the
+ * answer. A clipped "225 000/mo" is a number you can still get from the hover
+ * card; a title of zero width is a row you cannot identify at all.
+ */
+export function getBuildingLensColumnWidths(outerWidth: number): BuildingLensColumnWidths {
+  const width = Number.isFinite(outerWidth) ? outerWidth : BUILDING_LENS_MIN_WIDTH;
+  const span = BUILDING_LENS_MAX_WIDTH - BUILDING_LENS_MIN_WIDTH;
+  // A degenerate range would divide by zero; every column simply gets its
+  // comfortable width, which is what a single supported panel size deserves.
+  const ratio = span <= 0
+    ? 1
+    : Math.max(0, Math.min(1, (width - BUILDING_LENS_MIN_WIDTH) / span));
+
+  const widths = {} as BuildingLensColumnWidths;
+
+  for (const metric of Object.keys(BUILDING_LENS_COLUMN_MAX) as BuildingLensMetric[]) {
+    const min = BUILDING_LENS_COLUMN_MIN[metric];
+    const max = BUILDING_LENS_COLUMN_MAX[metric];
+    // Whole units: a fractional width is a column that lands on a different
+    // pixel in the header than in the rows, which is the alignment bug this
+    // table has already been fixed for once.
+    widths[metric] = Math.round(min + (max - min) * ratio);
+  }
+
+  return widths;
+}
+
+/**
  * Return a deterministic max height for the catalog's bounded row viewport.
  * Gameface's viewport-unit calculation is not reliable across the game's
  * render targets. Its rem-like panel units are normalized to a 1080px design

@@ -27,9 +27,12 @@ export interface LockableEntry {
 /**
  * Strict `=== true`, because absent is not locked.
  *
- * Zones reach the catalog through zoneAsCatalogEntry, which builds an entry
- * without this field. "We were never told" has to read as placeable — a
- * placement guard that defaults to refusing would make every zone unbuildable.
+ * Zones now carry the field — zoneAsCatalogEntry passes it through from the
+ * indexer, which reads the same enableable Locked component the building index
+ * does. Before that they never did, and a locked zone drew exactly like an
+ * unlocked one. The strictness still matters: "we were never told" has to read
+ * as placeable, because a placement guard that defaults to refusing would make
+ * every asset that skips the field unbuildable.
  */
 export function isEntryLocked(entry: LockableEntry | null | undefined): boolean {
   return entry?.isLocked === true;

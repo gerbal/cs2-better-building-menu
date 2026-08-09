@@ -1814,6 +1814,11 @@ namespace FindItBuildingMenu.Systems
 					continue;
 				}
 
+				var isZoneLocked = EntityManager.HasEnabledComponent<Locked>(zone);
+				var (zoneMilestone, zoneRequirements) = isZoneLocked
+					? GetUnlockRequirements(zone)
+					: (0, Array.Empty<string>());
+
 				catalog.Add(new ZoneCatalogEntry(
 					Id: zone.Index,
 					Version: zone.Version,
@@ -1850,7 +1855,13 @@ namespace FindItBuildingMenu.Systems
 					MinLotDepth: zoneLots?.MinDepth ?? 0,
 					MaxLotDepth: zoneLots?.MaxDepth ?? 0,
 					Footprints: zoneLots?.Footprints,
-					FootprintOverflow: zoneLots?.FootprintOverflow ?? 0));
+					FootprintOverflow: zoneLots?.FootprintOverflow ?? 0,
+					// Same source as the building index: the enableable Locked
+					// component, not its mere presence, which would mark every
+					// unlockable zone locked forever including the earned ones.
+					IsLocked: isZoneLocked,
+					UnlockMilestone: zoneMilestone,
+					UnlockRequirements: zoneRequirements));
 			}
 
 			_zoneCatalog = catalog;
@@ -1860,6 +1871,66 @@ namespace FindItBuildingMenu.Systems
 		/// <summary>
 		/// Every assignable zone, grouped by family in the zoning hierarchy.
 		/// </summary>
+
+		/// <summary>
+		/// What the game's own toolbar filter row knows about a prefab.
+		/// </summary>
+		/// <remarks>
+		/// Deliberately identity-free: it records WHICH requirement and pack
+		/// entities an asset carries, never which themes or packs those are. A
+		/// mod that ships a new theme or a new asset pack therefore needs no
+		/// change here — its entities flow through the same comparison as
+		/// vanilla's, because vanilla's own filter compares entities too.
+		///
+		/// Transcribed from ToolbarUISystem: the theme half reads the
+		/// ObjectRequirementElement buffer and keeps the requirements that carry
+		/// ThemeData (FilterByThemes, :1357), NOT ThemeObject.m_Theme, which is a
+		/// different fact and is what the building indexer reads for its own
+		/// facet.
+		/// </remarks>
+		private VanillaAssetFacts GetVanillaAssetFacts(Entity entity)
+		{
+			var themeRequirements = new List<int>();
+
+			if (EntityManager.TryGetBuffer<ObjectRequirementElement>(entity, true, out var requirements))
+			{
+				for (var i = 0; i < requirements.Length; i++)
+				{
+					var requirement = requirements[i].m_Requirement;
+
+					if (EntityManager.HasComponent<ThemeData>(requirement))
+					{
+						themeRequirements.Add(requirement.Index);
+					}
+				}
+			}
+
+			var packs = new List<int>();
+			var hasPackBuffer = EntityManager.TryGetBuffer<AssetPackElement>(entity, true, out var packElements);
+
+			// IsModAsset, and the second half of it is easy to get backwards: an
+			// asset carrying ModPrerequisiteData is NOT a mod asset when one of
+			// its packs carries it too — vanilla returns false there, so the pack
+			// filter governs it instead of the Mods toggle (ToolbarUISystem:963).
+			var isModAsset = EntityManager.HasComponent<ModPrerequisiteData>(entity);
+
+			if (hasPackBuffer)
+			{
+				for (var i = 0; i < packElements.Length; i++)
+				{
+					var pack = packElements[i].m_Pack;
+					packs.Add(pack.Index);
+
+					if (isModAsset && EntityManager.HasComponent<ModPrerequisiteData>(pack))
+					{
+						isModAsset = false;
+					}
+				}
+			}
+
+			return new VanillaAssetFacts(themeRequirements, packs, hasPackBuffer, isModAsset);
+		}
+
 		public static IReadOnlyList<ZoneCatalogEntry> GetZoneCatalog() => _zoneCatalog;
 
 		/// <summary>
