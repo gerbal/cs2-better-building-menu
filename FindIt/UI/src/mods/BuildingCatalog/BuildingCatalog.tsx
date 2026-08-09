@@ -461,8 +461,14 @@ export const BuildingCatalogComponent = () => {
       data-row-height={rowGeometry.rowHeight}
       data-selector-height={rowGeometry.selectorHeight}
       data-metric-text-scale={getBuildingLensMetricTextScale(density)}
+      // No max-height. The panel states its own height now (MainContainer sets
+      // it from the player's setting), and .catalog is flex: 1 1 auto inside
+      // it, so filling the panel is the correct behaviour and a second ceiling
+      // here can only be lower than the first. It was: this capped at 765rem
+      // against a panel that now reaches 960rem, so a fully expanded menu left
+      // ~130px of empty panel below the last row — reported on the networks
+      // list, but true of every view at that height.
       data-catalog-max-height={catalogMaxHeight}
-      style={{ maxHeight: `${catalogMaxHeight}rem` }}
     >
       {/* The toolbar band that used to sit here — identity, count, search
           context, Group by, Sort by, view mode and "More sorting" — is gone.

@@ -212,6 +212,21 @@ export const FindItMainContainerComponent = () => {
                   </div>
                 </div>
               )}
+              {/* On the panel's top edge, overlaying it rather than sitting in
+                  the flow. In the flow it landed between the tab strip and the
+                  catalog and read as a divider between the controls and the
+                  results — a strip of chrome, not the edge of the window. The
+                  panel is bottom-anchored, so the top edge is the one that
+                  moves, and grabbing an edge is what this is. */}
+              {BuildingLensEnabled && (
+                <div
+                  className={styles.resizeHandle}
+                  onMouseDown={beginResize}
+                  title={translate("Tooltip.LABEL[FindItBuildingMenu.ResizeHeight]", "Drag to resize") ?? "Drag to resize"}
+                >
+                  <div className={classNames(styles.resizeGrip, isResizing && styles.resizeGripActive)} />
+                </div>
+              )}
               <div className={styles.topBar}>
                 <TopBarComponent
                   sortingOpen={sortingOpen}
@@ -224,21 +239,6 @@ export const FindItMainContainerComponent = () => {
                   toggleEnlarge={toggleEnlarge}
                 ></TopBarComponent>
               </div>
-              {/* The drag handle sits above the catalog, on the panel's top
-                  edge: the panel is bottom-anchored, so that is the edge that
-                  moves when the height changes. */}
-              {BuildingLensEnabled && (
-                <div
-                  className={styles.resizeHandle}
-                  onMouseDown={beginResize}
-                  title={translate("Tooltip.LABEL[FindItBuildingMenu.ResizeHeight]", "Drag to resize") ?? "Drag to resize"}
-                >
-                  {/* The grip is drawn by the child so the parent can be a
-                      target worth aiming at. A 5rem bar is a 5rem bar to hit,
-                      and this is the only way to change the height. */}
-                  <div className={classNames(styles.resizeGrip, isResizing && styles.resizeGripActive)} />
-                </div>
-              )}
               <div
                 className={classNames(styles.content, AssetMenuTheme.assetPanel)}
                 // The height is stated rather than left to the content, which
