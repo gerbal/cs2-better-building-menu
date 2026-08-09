@@ -275,3 +275,40 @@ describe("A locked zone", () => {
     assert.deepEqual(entry.unlockRequirements, ["Milestone 4", "1 500 population"]);
   });
 });
+
+describe("Extractor areas in the zoning surface", () => {
+  const area = (over: Record<string, unknown> = {}) => ({
+    id: 500,
+    version: 1,
+    prefabName: "Grain Farm",
+    name: "Grain Farm",
+    family: "ZoneExtractors",
+    density: "Any",
+    thumbnail: "",
+    mapFeature: "FertileLand",
+    ...over,
+  });
+
+  it("carries the natural resource through to the shared entry", async () => {
+    const { zoneAsCatalogEntry } = await import("../src/domain/zoningHierarchy.ts");
+
+    // The only thing separating grain from cotton in the game's data. Both are
+    // LotPrefabs with ExtractorArea on FertileLand; neither is a zone, because
+    // Game.Zones.AreaType has no specialised value for them to take.
+    const entry = zoneAsCatalogEntry(area() as never) as { mapFeature: string };
+
+    assert.equal(entry.mapFeature, "FertileLand");
+  });
+
+  it("leaves the field empty for a real zone", async () => {
+    const { zoneAsCatalogEntry } = await import("../src/domain/zoningHierarchy.ts");
+
+    const entry = zoneAsCatalogEntry(
+      area({ mapFeature: undefined, family: "ZoneResidential", density: "Low" }) as never
+    ) as { mapFeature: string };
+
+    // Empty is what marks an entry as a zone rather than an area, so it has to
+    // stay empty rather than becoming "undefined" or "None".
+    assert.equal(entry.mapFeature, "");
+  });
+});

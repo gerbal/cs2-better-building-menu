@@ -48,6 +48,14 @@ export interface ZoneEntry {
   unlockMilestone?: number;
   /** Everything standing between the player and this zone. */
   unlockRequirements?: string[];
+  /**
+   * The natural resource an extractor area works; absent for a zone.
+   *
+   * Non-empty marks the entry as an AREA rather than a zone — a LotPrefab
+   * carrying ExtractorArea, placed by the Area tool. It is the only thing
+   * separating grain from cotton in the game's data.
+   */
+  mapFeature?: string;
 }
 
 export interface ZoneFootprint {
@@ -240,6 +248,7 @@ export function zoneAsCatalogEntry(zone: ZoneEntry): Record<string, unknown> {
     // silhouetted thumbnail, a Requires line — instead of each surface needing
     // its own idea of what locked looks like.
     isLocked: zone.isLocked === true,
+    mapFeature: zone.mapFeature ?? "",
     unlockMilestone: zone.unlockMilestone ?? 0,
     unlockRequirements: zone.unlockRequirements ?? [],
     category: zone.family,

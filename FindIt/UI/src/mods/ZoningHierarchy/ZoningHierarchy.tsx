@@ -54,8 +54,8 @@ export const ZoningHierarchyComponent = () => {
     ...zoneAsCatalogEntry(zone),
     category: familyLabel(zone.family),
     categoryLabel: familyLabel(zone.family),
-    subCategory: densityLabel(zone.density),
-    subCategoryLabel: densityLabel(zone.density),
+    subCategory: subLevelLabel(zone),
+    subCategoryLabel: subLevelLabel(zone),
     // What the game measured about this zone and never showed anyone. The
     // renderer takes these verbatim, so they are translated here.
     facts: getZoneFacts(zone).map(factLabel),
@@ -91,6 +91,30 @@ export const ZoningHierarchyComponent = () => {
 
   function familyLabel(family: string): string {
     return translate(`Tooltip.LABEL[FindItBuildingMenu.Zoning_${family}]`, family) ?? family;
+  }
+
+  /**
+   * What separates one entry from its siblings within a family.
+   *
+   * A density tier for a zone; the natural resource for an extractor AREA,
+   * which has no density and never could — grain and cotton differ only by the
+   * MapFeature they work, so labelling both "No density tier" would put every
+   * specialised industry under one indistinguishable heading.
+   */
+  function subLevelLabel(zone: ZoneEntry): string {
+    const feature = zone.mapFeature?.trim();
+
+    if (feature) {
+      return translate(`Tooltip.LABEL[FindItBuildingMenu.MapFeature${feature}]`, humanizeFeature(feature))
+        ?? humanizeFeature(feature);
+    }
+
+    return densityLabel(zone.density);
+  }
+
+  /** "FertileLand" -> "Fertile Land", for a feature we have no key for yet. */
+  function humanizeFeature(feature: string): string {
+    return feature.replace(/([a-z])([A-Z])/g, "$1 $2");
   }
 
   function densityLabel(density: string): string {

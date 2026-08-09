@@ -67,7 +67,18 @@ namespace FindItBuildingMenu.Domain
 		/// <summary>Milestone index it unlocks at, 0 when not locked.</summary>
 		int UnlockMilestone = 0,
 		/// <summary>Everything standing between the player and this zone.</summary>
-		string[]? UnlockRequirements = null) : IJsonWritable
+		string[]? UnlockRequirements = null,
+		/// <summary>
+		/// The natural resource an extractor area works, empty for a zone.
+		/// </summary>
+		/// <remarks>
+		/// Non-empty marks this entry as an AREA rather than a zone: a LotPrefab
+		/// carrying ExtractorArea, painted with the Area tool. Grain, livestock
+		/// and cotton live here, not in any zone — Game.Zones.AreaType has only
+		/// None, Residential, Commercial and Industrial, so there is no
+		/// specialised zone type for them to be.
+		/// </remarks>
+		string? MapFeature = null) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -120,6 +131,8 @@ namespace FindItBuildingMenu.Domain
 			writer.Write(IsLocked);
 			writer.PropertyName("unlockMilestone");
 			writer.Write(UnlockMilestone);
+			writer.PropertyName("mapFeature");
+			writer.Write(MapFeature ?? string.Empty);
 			writer.PropertyName("unlockRequirements");
 			var requirements = UnlockRequirements ?? System.Array.Empty<string>();
 			writer.ArrayBegin((uint)requirements.Length);
