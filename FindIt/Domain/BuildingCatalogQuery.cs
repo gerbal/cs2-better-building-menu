@@ -75,6 +75,30 @@ namespace FindItBuildingMenu.Domain
 		public const int WindowStep = 100;
 
 		/// <summary>
+		/// The window a menu-scoped query opens with.
+		/// </summary>
+		/// <remarks>
+		/// A vanilla menu is one set, not a sequence of pages. That argument was
+		/// made for the old EffectiveLimit special case, it was right, and removing
+		/// it with the pager was the error: opening Roads &amp; Networks then showed
+		/// 100 of its 401 assets, and everything past the hundredth was reachable
+		/// only by finding a control at the end of a list the player had no reason
+		/// to think was incomplete. Reported from play within the hour.
+		///
+		/// It comes back as a STARTING size rather than a forced one. The old code
+		/// pinned EffectiveLimit so a scoped view could never grow at all; this is
+		/// just where the window begins, so a menu larger than the ceiling still
+		/// grows the same way everything else does. The largest vanilla menu is
+		/// Roads &amp; Networks at 401, so in practice one window covers every menu.
+		/// </remarks>
+		public const int MenuLimit = MaxLimit;
+
+		/// <summary>
+		/// The window size a fresh set of predicates starts at.
+		/// </summary>
+		public int StartingLimit => IsScopedToMenu ? MenuLimit : DefaultLimit;
+
+		/// <summary>
 		/// How many rows this window holds.
 		/// </summary>
 		/// <remarks>
@@ -134,7 +158,7 @@ namespace FindItBuildingMenu.Domain
 			return (this with { Offset = 0, Limit = DefaultLimit })
 				== (previous with { Offset = 0, Limit = DefaultLimit })
 					? this
-					: this with { Offset = 0, Limit = DefaultLimit };
+					: this with { Offset = 0, Limit = StartingLimit };
 		}
 	}
 }

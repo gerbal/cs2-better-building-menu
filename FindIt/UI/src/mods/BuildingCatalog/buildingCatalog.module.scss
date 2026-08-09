@@ -96,10 +96,20 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 
 .toolbar,
 .columnHeader,
-.row,
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
 // The end of the feed, inside the scroll. Full width so it is unmissable when
 // the rows run out, and generous vertically because it is the one control a
 // player reaches by scrolling rather than by aiming.
+//
+// Its own rule, deliberately. It replaced .paging in the shared list above, and
+// a button's centring, padding and control background went to .toolbar,
+// .columnHeader and every .row with it — the whole catalog rendered as a column
+// of centred buttons.
 .loadMore {
   display: flex;
   align-items: center;
