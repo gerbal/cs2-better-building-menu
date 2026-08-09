@@ -9,6 +9,7 @@ import {
   BUILDING_LENS_PANEL_CHROME_WIDTH,
   BUILDING_LENS_TITLE_ICON,
   getBuildingLensCatalogMaxHeight,
+  getBuildingLensColumnWidths,
   getBuildingLensDensity,
   getBuildingLensRowGeometry,
   getBuildingLensMetricLabel,
@@ -249,6 +250,14 @@ export const BuildingCatalogComponent = () => {
   const windowSummary = getCatalogWindowSummary(items.length, totalCount, separators);
   const windowBadge = getCatalogWindowBadge(items.length, totalCount, separators);
   const density = getBuildingLensDensity(panelWidth + BUILDING_LENS_PANEL_CHROME_WIDTH);
+  // One set of numbers for the header and every row. The columns line up only
+  // because both read the same widths; computing them twice is how a table with
+  // no CSS grid drifts out of alignment.
+  const columnWidths = getBuildingLensColumnWidths(panelWidth + BUILDING_LENS_PANEL_CHROME_WIDTH);
+  const columnStyle = (metric: BuildingLensMetric) => ({
+    width: `${columnWidths[metric]}rem`,
+    flexBasis: `${columnWidths[metric]}rem`,
+  });
   const rowGeometry = getBuildingLensRowGeometry(density);
   const catalogMaxHeight = getBuildingLensCatalogMaxHeight(typeof window === "undefined" ? 720 : window.innerHeight);
   const sortPresentation = getBuildingLensSortPresentation({ column: sortColumn, descending });
@@ -833,6 +842,7 @@ export const BuildingCatalogComponent = () => {
               <Button
                 key={column.key}
                 className={classNames(styles.metricHeader, styles[column.className], indicator !== "" && styles.metricHeaderSorted)}
+                style={columnStyle(column.key)}
                 variant="icon"
                 onSelect={() => setSort(sortTarget)}
                 title={headerTitle}
@@ -929,26 +939,27 @@ export const BuildingCatalogComponent = () => {
                       </div>
                     </div>
                   </div>
-                  <div className={classNames(styles.metric, styles.metricCost)} title={`Cost ${formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance)}`}>
+                  <div className={classNames(styles.metric, styles.metricCost)} style={columnStyle("cost")} title={`Cost ${formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance)}`}>
                     {formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance)}
                   </div>
-                  <div className={classNames(styles.metric, styles.metricUpkeep)} title={`Upkeep ${formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance)}`}>
+                  <div className={classNames(styles.metric, styles.metricUpkeep)} style={columnStyle("upkeep")} title={`Upkeep ${formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance)}`}>
                     {formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance)}
                   </div>
-                  <div className={classNames(styles.metric, styles.metricWorkers)} title={`Workers ${formatBuildingMetric(entry.workers, "workers", separators)}`}>
+                  <div className={classNames(styles.metric, styles.metricWorkers)} style={columnStyle("workers")} title={`Workers ${formatBuildingMetric(entry.workers, "workers", separators)}`}>
                     {formatBuildingMetric(entry.workers, "workers", separators)}
                   </div>
-                  <div className={classNames(styles.metric, styles.metricCapacity)} title={`Capacity ${formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators)}`}>
+                  <div className={classNames(styles.metric, styles.metricCapacity)} style={columnStyle("capacity")} title={`Capacity ${formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators)}`}>
                     {formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators)}
                   </div>
-                  <div className={classNames(styles.metric, styles.metricLot)} title="Lot dimensions">
+                  <div className={classNames(styles.metric, styles.metricLot)} style={columnStyle("lot")} title="Lot dimensions">
                     {formatLotDimensions(entry.lotWidth, entry.lotDepth)}
                   </div>
-                  <div className={classNames(styles.metric, styles.metricLevel)} title="Building level">
+                  <div className={classNames(styles.metric, styles.metricLevel)} style={columnStyle("level")} title="Building level">
                     {entry.buildingLevel}
                   </div>
                   <div
                     className={classNames(styles.parking, styles.metricParking, entry.hasParking && styles.parkingActive)}
+                    style={columnStyle("parking")}
                     title={entry.hasParking ? `${entry.parkingSlots} parking bays (approximate)` : "No parking"}
                   >
                     {/* The count, not a "P". A glyph answered "does it park

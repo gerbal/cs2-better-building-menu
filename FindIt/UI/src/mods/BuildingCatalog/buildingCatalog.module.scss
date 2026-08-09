@@ -856,6 +856,19 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   flex-direction: row;
   align-items: center;
   flex: 1 1 auto;
+  // Zero, and it has to be: in Cohtml a min-width on a flex item DISABLES its
+  // flex-grow. Measured on the live row — with min-width 180rem the identity
+  // cell sat at exactly 120px while 112px of free space went unclaimed beside
+  // it; setting min-width to 0 on the same element grew it to 225px on the
+  // spot. So a floor written here does not protect the column, it freezes it.
+  //
+  // The floor is arithmetic instead. Every metric cell is flex: 0 0 auto and
+  // never yields, so the name absorbs the whole deficit — measured at the
+  // minimum panel width, the identity cell was 39px and the name inside it was
+  // ZERO while Capacity held its full width to render "—".
+  // getBuildingLensColumnWidths now narrows the metric columns as the panel
+  // narrows, which hands those units back here: the same name measures 77px at
+  // the minimum panel and 180px at a typical one, up from 0 and 111.
   min-width: 0;
   // A wide thumbnail fills its 60rem image box edge to edge, so a 7rem gap left
   // the name touching the picture. This is the space between them, not decoration.
@@ -1034,41 +1047,48 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 // Widths include the 8rem right padding the numeric columns carry, so they are
 // sized from measured content plus that gutter rather than content alone.
 .metricCost {
-  width: 100rem;
-  flex-basis: 100rem;
+  // Width is set inline from getBuildingLensColumnWidths, so the header
+  // and every row read one number. A constant here would be a second
+  // opinion that only shows up as misalignment.
 }
 
 .metricUpkeep {
-  width: 108rem;
-  flex-basis: 108rem;
+  // Width is set inline from getBuildingLensColumnWidths, so the header
+  // and every row read one number. A constant here would be a second
+  // opinion that only shows up as misalignment.
 }
 
 .metricWorkers {
-  width: 62rem;
-  flex-basis: 62rem;
+  // Width is set inline from getBuildingLensColumnWidths, so the header
+  // and every row read one number. A constant here would be a second
+  // opinion that only shows up as misalignment.
 }
 
 .metricCapacity {
-  width: 122rem;
-  flex-basis: 122rem;
+  // Width is set inline from getBuildingLensColumnWidths, so the header
+  // and every row read one number. A constant here would be a second
+  // opinion that only shows up as misalignment.
 }
 
 .metricLevel {
-  width: 46rem;
-  flex-basis: 46rem;
+  // Width is set inline from getBuildingLensColumnWidths, so the header
+  // and every row read one number. A constant here would be a second
+  // opinion that only shows up as misalignment.
 }
 
 // Cohtml breaks "33 × 31" across lines at the multiplication sign even under
 // white-space: nowrap, so this column is sized to never need the break rather
 // than relying on nowrap being honoured.
 .metricLot {
-  width: 88rem;
-  flex-basis: 88rem;
+  // Width is set inline from getBuildingLensColumnWidths, so the header
+  // and every row read one number. A constant here would be a second
+  // opinion that only shows up as misalignment.
 }
 
 .metricParking {
-  width: 52rem;
-  flex-basis: 52rem;
+  // Width is set inline from getBuildingLensColumnWidths, so the header
+  // and every row read one number. A constant here would be a second
+  // opinion that only shows up as misalignment.
 }
 
 // Numbers compare by magnitude, so they align on their right edge like every
