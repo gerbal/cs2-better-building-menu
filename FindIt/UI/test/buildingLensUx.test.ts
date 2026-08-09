@@ -301,11 +301,18 @@ describe("Building Lens chrome budget", () => {
     const grip = mainContainerStylesFor().match(/\.resizeGrip\s*\{[^}]*\}/)?.[0] ?? "";
 
     assert.match(strip, /cursor:\s*ns-resize/);
-    assert.match(strip, /height:\s*24rem/);
-    assert.match(strip, /width:\s*100%/);
-    // The grip has to stay at least as visible as the 8rem bar it replaced —
-    // the first split made the target easier to hit and the mark harder to see.
-    assert.match(grip, /height:\s*9rem/);
+    // Absolute, so it overlays the panel's top edge instead of taking a row.
+    // In the flow it sat between the tab strip and the catalog and read as a
+    // divider between the controls and the results.
+    assert.match(strip, /position:\s*absolute/);
+    assert.match(strip, /top:\s*0/);
+    // Still taller than the mark it draws, so the edge is grabbable.
+    assert.match(strip, /height:\s*14rem/);
+    // A short bar on the edge. Anything wider is a border between two regions.
+    // 8rem, because 1rem is 0.6667px: a 5px grip is 8rem, and 5rem draws 3px.
+    // Written as 5rem the first time — the fourth px/rem slip on this branch.
+    assert.match(grip, /height:\s*8rem/);
+    assert.match(grip, /width:\s*75rem/);
   });
 
   it("left-aligns both layouts together, or not at all", () => {
