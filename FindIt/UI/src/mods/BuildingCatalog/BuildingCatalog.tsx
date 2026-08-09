@@ -44,10 +44,10 @@ import {
   getNumberSeparators,
 } from "domain/buildingLensMetricFormat";
 import {
-  getBuildingDescriptionKeys,
   getBuildingExtensionLabels,
   getBuildingFlagGroups,
   getBuildingProvenanceChips,
+  resolveAssetDescription,
 } from "domain/buildingLensRowDetails";
 import {
   getBuildingLensEmptyStateMessage,
@@ -874,13 +874,7 @@ export const BuildingCatalogComponent = () => {
             const flagGroups = isExpanded ? getBuildingFlagGroups(entry.placementFlags) : [];
             const extensionLabels = isExpanded ? getBuildingExtensionLabels(entry.extensions) : [];
             const provenanceChips = isExpanded ? getBuildingProvenanceChips(entry, resolveFacetLabel) : [];
-            // translate() echoes the id back when a key is absent, so an
-            // unlocalized prefab must not render its own locale key as prose.
-            const description = isExpanded
-              ? getBuildingDescriptionKeys(entry.prefabName)
-                  .map((key) => translate(key, ""))
-                  .find((text) => !!text && text.trim().length > 0 && !text.startsWith("Assets."))
-              : undefined;
+            const description = isExpanded ? resolveAssetDescription(entry.prefabName, translate) : null;
             const compareLabel = isCompared ? "Remove from comparison" : "Add to comparison";
             const comparePlaceLabel = `${placeLabel}: ${entryLabel}`;
             const compareRemoveLabel = `Remove ${entryLabel} from comparison`;
