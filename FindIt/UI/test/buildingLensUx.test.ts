@@ -211,6 +211,9 @@ describe("Building Lens action affordances", () => {
   });
 });
 
+const mainContainerStylesFor = () =>
+  readFileSync(new URL("../src/mods/MainContainer/mainContainer.module.scss", import.meta.url), "utf8");
+
 describe("Building Lens chrome budget", () => {
   it("keeps no control chrome in the panel at all", () => {
     // The history this guards: chrome once took 334px of a 625px panel and
@@ -284,6 +287,25 @@ describe("Building Lens chrome budget", () => {
     // That is the player's call to make, not ours to make silently.
     assert.doesNotMatch(buildingCatalogSource, /expanded \? viewMode/);
     assert.doesNotMatch(buildingCatalogSource, /effectiveViewMode/);
+  });
+
+  it("gives the height drag a target worth aiming at", () => {
+    // The only way to change the height now that the Expand toggle is gone, so
+    // it has to be both findable and hittable. Measured at 40x5px on the first
+    // attempt: a 5px-tall grab target, at 25% white on a dark panel.
+    //
+    // The strip is the target and the grip is the mark, which is why they are
+    // two elements — a bar sized to be easy to hit would be a bar too heavy to
+    // sit on the panel edge.
+    const strip = mainContainerStylesFor().match(/\.resizeHandle\s*\{[^}]*\}/)?.[0] ?? "";
+    const grip = mainContainerStylesFor().match(/\.resizeGrip\s*\{[^}]*\}/)?.[0] ?? "";
+
+    assert.match(strip, /cursor:\s*ns-resize/);
+    assert.match(strip, /height:\s*24rem/);
+    assert.match(strip, /width:\s*100%/);
+    // The grip has to stay at least as visible as the 8rem bar it replaced —
+    // the first split made the target easier to hit and the mark harder to see.
+    assert.match(grip, /height:\s*9rem/);
   });
 
   it("left-aligns both layouts together, or not at all", () => {
