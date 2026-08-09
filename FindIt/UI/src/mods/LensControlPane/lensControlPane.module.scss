@@ -1,3 +1,5 @@
+@use "../../base.scss" as _base;
+
 // The control plane: a column to the right of the build menu, mirroring
 // vanilla's tool-options column on the left.
 //
@@ -69,4 +71,109 @@ $pane-width: 379rem;
   padding-left: 4rem;
   color: var(--menuText2Normal);
   font-size: var(--fontSizeS);
+}
+
+// The pickers. Same shape as the pair the in-panel band used to carry, but
+// stacked in a column rather than strung along a row, so the summary takes the
+// width left after its label rather than sizing to its own text.
+.picker {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pickerSummary {
+  @include _base.transparentButton(false, true);
+
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: auto !important;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 29rem;
+  padding: 0 4rem 0 8rem;
+  border-radius: 4rem;
+  // Vanilla's own control fill — the same #141b22 the filter rail's toggles
+  // take from the Theme row opposite, so the two banks read as one idiom.
+  background-color: rgba(20, 27, 34, 1);
+  color: var(--menuText1Normal);
+  font-size: var(--fontSizeM);
+}
+
+.pickerSummary:hover {
+  background-color: rgba(52, 63, 74, 1);
+}
+
+.pickerLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.caret {
+  flex: 0 0 auto;
+  padding-left: 4rem;
+  color: var(--menuText2Normal);
+}
+
+// Opens UPWARD, over the pane. The pane is bottom-aligned against the bottom
+// bar, so a menu growing downward would open off the bottom of the screen.
+.pickerOptions {
+  position: absolute;
+  right: 0;
+  bottom: 33rem;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  min-width: 100%;
+  padding: 3rem;
+  border-radius: 4rem;
+  // The in-game surface, matching what the filter rail's popovers take from
+  // game-dropdown.module.scss — NOT cs2/ui's light settings-screen default,
+  // which drew a solid white panel over the map until 9ad2692.
+  background-color: rgba(15, 16, 19, 1);
+  border: 1rem solid rgba(60, 64, 76, 1);
+}
+
+.pickerOption {
+  @include _base.transparentButton(false, true);
+
+  width: auto !important;
+  height: 25rem;
+  padding: 0 7rem;
+  border-radius: 3rem;
+  color: var(--menuText1Normal);
+  font-size: var(--fontSizeM);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.pickerOption:hover {
+  background-color: rgba(52, 63, 74, 1);
+}
+
+.pickerOptionSelected {
+  background-color: rgba(30, 131, 170, 1);
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.direction {
+  @include _base.transparentButton(false, true);
+
+  flex: 0 0 auto;
+  width: 29rem !important;
+  height: 29rem;
+  margin-left: 4rem;
+  border-radius: 4rem;
+  background-color: rgba(20, 27, 34, 1);
+  color: var(--menuText1Normal);
+}
+
+.direction:hover {
+  background-color: rgba(52, 63, 74, 1);
 }
