@@ -70,6 +70,19 @@ export function getBuildingLensMetricTextScale(tier: BuildingLensDensityTier): "
  * Gameface's viewport-unit calculation is not reliable across the game's
  * render targets. Its rem-like panel units are normalized to a 1080px design
  * height, so convert the physical viewport budget into those units here.
+ *
+ * In practice this is a constant, and knowing that saves the next reader an
+ * experiment: the cohtml layer renders at a FIXED 1280x720 logical viewport
+ * and scales it to the window, so `window.innerHeight` is always 720 and the
+ * only value this is ever called with is 720 — giving 765 every time.
+ * Measured 2026-08-09 with the game window at 1920x1080 (confirmed in
+ * Player.log): window.innerWidth/innerHeight still read 1280x720 and
+ * Page.captureScreenshot still returned a 1280x720 image.
+ *
+ * The parameter stays because the arithmetic is the honest statement of what
+ * the number means, and because it is what makes the function testable. But
+ * nothing here adapts to a real resolution change, and no layout in this mod
+ * needs to — 1rem is 0.6667px at every resolution, not just at 720p.
  */
 export function getBuildingLensCatalogMaxHeight(viewportHeight: number): number {
   const safeViewportHeight = Number.isFinite(viewportHeight) ? viewportHeight : 720;
