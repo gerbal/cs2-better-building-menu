@@ -57,8 +57,6 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 .densityCompact {
   padding: 6rem;
 
-  .toolbar,
-  .sortOptions,
   .capacityFilter {
     padding-left: 6rem;
     padding-right: 6rem;
@@ -94,7 +92,6 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   }
 }
 
-.toolbar,
 .columnHeader,
 .row,
 .paging {
@@ -103,65 +100,15 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   align-items: center;
 }
 
-// One band carrying icon, title, count, search context and sort, replacing the
-// stacked .heading + .sortBar that spent 84px of a 625px panel on two short
-// lines while the rows themselves only got 159px.
-.toolbar {
-  flex-wrap: nowrap;
-  gap: 6rem;
-  padding: 4rem 8rem 6rem;
-  border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
-}
 
-.toolbarSpacer {
-  flex: 1 1 auto;
-  min-width: 4rem;
-}
-
-// Only rendered while a search is active, so it costs nothing at rest.
-.searchContext {
-  flex: 0 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  color: var(--menuText2Normal);
-  font-size: var(--fontSizeS);
-}
-
-.titleIcon {
-  flex: 0 0 16rem;
-  width: 16rem;
-  height: 16rem;
-  object-fit: contain;
-}
-
-.title {
-  flex: 0 0 auto;
-  color: var(--accentColorNormal);
-  font-size: var(--fontSizeL);
-  margin-left: 2rem;
-  white-space: nowrap;
-  text-transform: uppercase;
-}
 
 .category,
-.sortLabel,
 .columnHeader,
 .pageLabel {
   color: var(--menuText2Normal);
   font-size: var(--fontSizeS, 14rem);
 }
 
-.count {
-  flex: 0 0 auto;
-  white-space: nowrap;
-  color: var(--menuText2Normal);
-  font-size: var(--fontSizeS);
-  padding: 3rem 6rem;
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 3rem;
-}
 
 // Vanilla's icon variant sizes a Button as a 24rem square. Every control listed
 // here carries a word rather than a glyph, so each has to opt out of that width:
@@ -174,70 +121,12 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 // copy already sits dead in groupedResults.module.scss against a class no
 // component renders. Glyph buttons — .pageButton, .compareRemove — are genuinely
 // square and stay out of this.
-.sortSummary,
-.sortDirectionButton,
-.sortButton,
 .scopeNoticeAction,
 .comparePlace,
 .clearCompare {
   width: auto !important;
 }
 
-.sortSummary {
-  display: flex;
-  flex: 0 1 auto;
-  // Paired with the ellipsis on .sortSummaryLabel: the box sizes to its label
-  // (above) but may still shrink under pressure rather than push the row wide.
-  min-width: 0;
-  flex-direction: row;
-  align-items: center;
-  gap: 4rem;
-  min-height: 24rem;
-  padding: 2rem 6rem;
-  color: var(--accentColorNormal);
-  background-color: rgba(255, 255, 255, 0.08);
-  border-radius: 3rem;
-  font-size: var(--fontSizeS, 14rem);
-}
-
-.sortSummaryLabel {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-// The direction arrow, split out of the summary chip so that clicking it
-// reverses instead of opening the options. It has to carry the shared
-// width: auto rule above for the same reason every other control here does:
-// vanilla's icon variant would otherwise draw it as a fixed square.
-.sortDirectionButton {
-  @include _base.transparentButton(false, true);
-  flex: 0 0 auto;
-  min-width: 0;
-  min-height: 24rem;
-  margin-left: 2rem;
-  padding: 2rem 5rem;
-  border-radius: 3rem;
-  color: var(--accentColorNormal);
-  background-color: rgba(255, 255, 255, 0.08);
-}
-
-.sortDirectionButton:hover {
-  background-color: rgba(255, 255, 255, 0.16);
-}
-
-// Wrapped row revealed by the "Sort by" chip.
-.sortOptions {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 4rem;
-  min-width: 0;
-  padding: 4rem 8rem 6rem;
-  border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
-}
-
-.sortButton,
 .pageButton {
   @include _base.transparentButton(false, true);
   min-width: 48rem;
@@ -247,50 +136,6 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   background-color: rgba(0, 0, 0, 0.2);
 }
 
-// Button variant="icon" supplies a fixed 24rem width. These controls carry
-// text, so let them grow to their label instead of painting into the next
-// button. Keep the minimum touch target from the original FindIt layout.
-.sortButton {
-  flex: 0 1 auto;
-  white-space: nowrap;
-}
-
-.sortButtonSelected {
-  color: var(--accentColorNormal);
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-// Which way the order runs (▲/▼ as ascending/descending).
-.sortDirection {
-  margin-left: 3rem;
-  font-size: var(--fontSizeXS, 12rem);
-}
-
-// "This opens a menu". Same glyph as .sortDirection and previously the same
-// class, which meant one class carried two unrelated meanings on one line: a
-// caret beside "Category" and a direction beside "Name". Split so a reader of
-// either the markup or the screen can tell them apart.
-.disclosureCaret {
-  margin-left: 3rem;
-  font-size: var(--fontSizeXS, 12rem);
-  color: var(--menuText2Normal);
-}
-
-.catalogFilters {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  min-width: 0;
-  border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
-
-  & > .facetPanel,
-  & > .metricRangePanel {
-    flex: 1 1 300rem;
-    min-width: 260rem;
-    border-bottom: 0;
-  }
-}
 
 .facetPanel {
   display: flex;
@@ -631,22 +476,7 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   margin-right: 2rem;
 }
 
-.capacityButton {
-  @include _base.transparentButton(false, true);
-  min-width: 42rem;
-  min-height: 24rem;
-  padding: 2rem 5rem;
-  color: var(--menuText2Normal);
-  background-color: rgba(0, 0, 0, 0.2);
-  width: auto !important;
-  flex: 0 1 auto;
-  white-space: nowrap;
-}
 
-.capacityButtonSelected {
-  color: var(--accentColorNormal);
-  background-color: rgba(255, 255, 255, 0.1);
-}
 
 .columnHeader {
   gap: $row-gap;
@@ -1304,45 +1134,7 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   }
 }
 
-.groupPicker {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
 
-// The sort chip and its direction arrow. No menu of its own any more: it
-// toggles the one .sortOptions band, which is the only list of sort fields
-// there is. Still position: relative — the group picker beside it anchors its
-// menu the same way and the two must stay symmetrical.
-.sortPicker {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.groupOptions {
-  position: absolute;
-  top: 100%;
-  z-index: 25;
-  display: flex;
-  flex-direction: column;
-  min-width: 120rem;
-  padding: 3rem;
-  border-radius: 3rem;
-  background-color: rgba(12, 16, 20, 0.98);
-  border: 1rem solid rgba(255, 255, 255, 0.14);
-
-  // Vanilla's menus read down a left edge; these were centred, which makes a
-  // column of short words scan as a poster rather than a list.
-  .sortButton {
-    justify-content: space-between;
-    text-align: left;
-  }
-}
-
-.groupOptions {
-  left: 0;
-}
 
 
 // Milestone-locked. The table states it in words rather than only in treatment:
