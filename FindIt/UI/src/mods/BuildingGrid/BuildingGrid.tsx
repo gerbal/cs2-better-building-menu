@@ -1,5 +1,6 @@
 import { bindValue, useValue } from "cs2/api";
 import { Button, Scrollable } from "cs2/ui";
+import { useRef, type ReactNode } from "react";
 import { useEffect } from "react";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
@@ -25,6 +26,10 @@ interface BuildingGridProps {
   entries: BuildingCatalogEntry[];
   searchText: string;
   onPlace: (entry: BuildingCatalogEntry) => void;
+  /** The end of the feed, rendered inside this grid's own scroll. */
+  footer?: ReactNode;
+  /** Called with the scrolling element whenever it scrolls. */
+  onScrolled?: (container: HTMLElement | null) => void;
   /**
    * False when this grid is one group among several, which is the grouped view.
    * A scroll container per group would give every heading its own scrollbar and
@@ -46,8 +51,9 @@ interface BuildingGridProps {
  * they moved to the hover card, which costs nothing until you actually want
  * them.
  */
-export const BuildingGrid = ({ entries, searchText, onPlace, standalone = true }: BuildingGridProps) => {
+export const BuildingGrid = ({ entries, searchText, onPlace, footer, onScrolled, standalone = true }: BuildingGridProps) => {
   const { translate } = useLocalization();
+  const scrollRef = useRef<HTMLDivElement | null>(null);
   // One card for every view mode. Read once here rather than per tile: it is a
   // dozen live bindings, and a grid of 125 subscribing per row would open
   // sixteen hundred of them to draw one hover at a time.
@@ -141,6 +147,9 @@ export const BuildingGrid = ({ entries, searchText, onPlace, standalone = true }
           className={classNames(styles.tile, sortedMetric !== null && styles.tileSorted)}
           style={{ width: `${tileSize}rem` }}
           variant="icon"
+          // See the table row: this is how the scroll anchor finds the tile
+          // again after placement rebuilds the panel.
+          data-catalog-entry={entry.id}
           onSelect={() => place(entry)}
           // Locked is announced, not just drawn. The visual treatment is a
           // silhouette, which says nothing to a screen reader and little to
@@ -221,8 +230,15 @@ export const BuildingGrid = ({ entries, searchText, onPlace, standalone = true }
         </div>
       )}
 
-      <Scrollable className={styles.body} vertical trackVisibility="scrollable">
+      <Scrollable
+        className={styles.body}
+        vertical
+        trackVisibility="scrollable"
+        ref={scrollRef}
+        onScroll={() => onScrolled?.(scrollRef.current)}
+      >
         {tiles}
+        {footer}
       </Scrollable>
     </div>
   );

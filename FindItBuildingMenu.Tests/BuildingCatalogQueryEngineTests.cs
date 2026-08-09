@@ -57,6 +57,42 @@ public sealed class BuildingCatalogQueryEngineTests
         },
     };
 
+		[Fact]
+		public void AMenuScopedQueryOpensWideEnoughToHoldTheWholeMenu()
+		{
+			// Reported from play: opening Roads & Networks showed 100 of its 401
+			// assets, and the rest were reachable only by finding a control at the
+			// end of a list nothing said was incomplete. A menu is one set.
+			var scoped = new BuildingCatalogQuery { UiMenu = "Roads" };
+			var unscoped = new BuildingCatalogQuery();
+
+			Assert.Equal(BuildingCatalogQuery.MenuLimit, scoped.StartingLimit);
+			Assert.Equal(BuildingCatalogQuery.DefaultLimit, unscoped.StartingLimit);
+		}
+
+		[Fact]
+		public void EnteringAMenuWidensTheWindowRatherThanKeepingTheCatalogsChunk()
+		{
+			var browsing = new BuildingCatalogQuery { Limit = BuildingCatalogQuery.DefaultLimit };
+			var entered = (browsing with { UiMenu = "Roads" })
+				.ResetWindowIfPredicatesChanged(browsing);
+
+			Assert.Equal(BuildingCatalogQuery.MenuLimit, entered.Limit);
+			Assert.Equal(0, entered.Offset);
+		}
+
+		[Fact]
+		public void LeavingAMenuGoesBackToTheCatalogsChunk()
+		{
+			// The other direction matters too: carrying a menu-sized window out to
+			// the unscoped catalog would render two thousand rows on the way out.
+			var scoped = new BuildingCatalogQuery { UiMenu = "Roads", Limit = BuildingCatalogQuery.MenuLimit };
+			var left = (scoped with { UiMenu = string.Empty })
+				.ResetWindowIfPredicatesChanged(scoped);
+
+			Assert.Equal(BuildingCatalogQuery.DefaultLimit, left.Limit);
+		}
+
     [Fact]
     public void Query_SearchAndCategoryFilters_AreCaseInsensitive()
     {
@@ -461,44 +497,51 @@ public sealed class BuildingCatalogQueryEngineTests
     }
 
     [Fact]
-    public void ResetPagingIfPredicatesChanged_KeepsThePageWhenOnlyTheOffsetMoved()
+    public void ResetWindowIfPredicatesChanged_KeepsTheWindowWhenOnlyItsSizeMoved()
     {
-        // The pager itself must not trip the reset, or paging forward would
-        // snap straight back to page 1.
-        BuildingCatalogQuery previous = new(SearchText: "school", Offset: 0);
-        BuildingCatalogQuery paged = previous with { Offset = 100 };
+        // Load-more is a Limit change and nothing else. If Limit counted as a
+        // predicate the window would reset itself the instant it grew, so the
+        // button would appear to do nothing.
+        BuildingCatalogQuery previous = new(SearchText: "school", Limit: 100);
+        BuildingCatalogQuery grown = previous with { Limit = 200 };
 
-        Assert.Equal(100, paged.ResetPagingIfPredicatesChanged(previous).Offset);
+        Assert.Equal(200, grown.ResetWindowIfPredicatesChanged(previous).Limit);
+        // Offset is masked for the same reason, though nothing moves it now.
+        Assert.Equal(100, (previous with { Offset = 100 }).ResetWindowIfPredicatesChanged(previous).Offset);
     }
 
     [Fact]
-    public void ResetPagingIfPredicatesChanged_ResetsWhenTheSearchTextChanged()
+    public void ResetWindowIfPredicatesChanged_ShrinksTheWindowWhenTheSearchTextChanged()
     {
-        BuildingCatalogQuery previous = new(SearchText: "", Offset: 200);
+        // A new predicate is a new result set, so the player starts over at the
+        // base chunk rather than keeping a window they grew against other rows.
+        BuildingCatalogQuery previous = new(SearchText: "", Offset: 200, Limit: 600);
         BuildingCatalogQuery searched = previous with { SearchText = "school" };
 
-        Assert.Equal(0, searched.ResetPagingIfPredicatesChanged(previous).Offset);
-        Assert.Equal("school", searched.ResetPagingIfPredicatesChanged(previous).SearchText);
+        Assert.Equal(0, searched.ResetWindowIfPredicatesChanged(previous).Offset);
+        Assert.Equal(BuildingCatalogQuery.DefaultLimit, searched.ResetWindowIfPredicatesChanged(previous).Limit);
+        Assert.Equal("school", searched.ResetWindowIfPredicatesChanged(previous).SearchText);
     }
 
     [Fact]
-    public void ResetPagingIfPredicatesChanged_ResetsForLegacyFilterAndRangeChanges()
+    public void ResetWindowIfPredicatesChanged_ResetsForLegacyFilterAndRangeChanges()
     {
         // The legacy FindIt parking filters and the metric drawer feed the same
-        // query, so they invalidate the page position just as a search does.
-        BuildingCatalogQuery previous = new(Offset: 200);
+        // query, so they invalidate the window just as a search does.
+        BuildingCatalogQuery previous = new(Offset: 200, Limit: 600);
 
-        Assert.Equal(0, (previous with { HasParking = true }).ResetPagingIfPredicatesChanged(previous).Offset);
-        Assert.Equal(0, (previous with { MinCapacity = 500 }).ResetPagingIfPredicatesChanged(previous).Offset);
-        Assert.Equal(0, (previous with { BuildMenuSection = "Education" }).ResetPagingIfPredicatesChanged(previous).Offset);
+        Assert.Equal(0, (previous with { HasParking = true }).ResetWindowIfPredicatesChanged(previous).Offset);
+        Assert.Equal(0, (previous with { MinCapacity = 500 }).ResetWindowIfPredicatesChanged(previous).Offset);
+        Assert.Equal(0, (previous with { BuildMenuSection = "Education" }).ResetWindowIfPredicatesChanged(previous).Offset);
     }
 
     [Fact]
-    public void ResetPagingIfPredicatesChanged_KeepsThePageWhenNothingChanged()
+    public void ResetWindowIfPredicatesChanged_KeepsTheWindowWhenNothingChanged()
     {
-        BuildingCatalogQuery previous = new(SearchText: "school", Offset: 200);
+        BuildingCatalogQuery previous = new(SearchText: "school", Offset: 200, Limit: 600);
 
-        Assert.Equal(200, (previous with { }).ResetPagingIfPredicatesChanged(previous).Offset);
+        Assert.Equal(200, (previous with { }).ResetWindowIfPredicatesChanged(previous).Offset);
+        Assert.Equal(600, (previous with { }).ResetWindowIfPredicatesChanged(previous).Limit);
     }
 
     [Fact]
@@ -549,7 +592,7 @@ public sealed class BuildingCatalogQueryEngineTests
     [InlineData(-1, 1)]
     [InlineData(0, 1)]
     [InlineData(37, 37)]
-    [InlineData(501, 500)]
+    [InlineData(2001, 2000)]
     public void Query_NormalizesBoundsBeforePaging(int requestedLimit, int expectedLimit)
     {
         BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
@@ -561,28 +604,21 @@ public sealed class BuildingCatalogQueryEngineTests
     }
 
     [Fact]
-    public void Query_DoesNotPageAMenu()
+    public void Query_GivesAMenuScopedQueryTheWindowItAskedFor()
     {
-        // A vanilla menu is one set, not a sequence of pages. Roads is 157
-        // assets and was arriving as "Rows 1-100 of 157, page 1 of 2" — a
-        // boundary the game does not have, with the far half behind a control
-        // at the bottom of a scroll.
-        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+        // Menu scope used to force the limit to the ceiling, so the window size
+        // changed under the player the moment they entered a menu and changed
+        // back when they left. The growing window covers a whole menu without
+        // that: it just keeps asking for more.
+        BuildingCatalogPage menu = BuildingCatalogQueryEngine.Query(
             SampleEntries,
             new BuildingCatalogQuery(UiMenu: "Roads", Limit: 100));
-
-        Assert.Equal(BuildingCatalogQuery.MaxLimit, page.Limit);
-    }
-
-    [Fact]
-    public void Query_DoesNotPageASingleCategoryEither()
-    {
-        // Scoping further is still scoping to the menu tree.
-        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+        BuildingCatalogPage category = BuildingCatalogQueryEngine.Query(
             SampleEntries,
             new BuildingCatalogQuery(UiCategory: "RoadsSmallRoads", Limit: 100));
 
-        Assert.Equal(BuildingCatalogQuery.MaxLimit, page.Limit);
+        Assert.Equal(100, menu.Limit);
+        Assert.Equal(100, category.Limit);
     }
 
     [Fact]
@@ -595,6 +631,56 @@ public sealed class BuildingCatalogQueryEngineTests
             new BuildingCatalogQuery(Limit: 100));
 
         Assert.Equal(100, page.Limit);
+    }
+
+    [Fact]
+    public void Query_AGrownWindowIsAStrictSupersetPrefixOfTheSmallerOne()
+    {
+        // The property the whole growing-window design rests on. The client
+        // never accumulates rows — placing a building unmounts the lens panel,
+        // which would destroy any UI-side accumulator — so it re-renders the
+        // page it is handed. That only works if a larger Limit returns the same
+        // leading rows in the same order, which it does because Order runs over
+        // the whole match set every call and the window is only ever a prefix.
+        BuildingCatalogEntry[] many = Enumerable
+            .Range(1, 30)
+            .Select(i => Entry(i, $"Prefab{i:D2}", $"Building {i:D2}", "Buildings", "", 2, 2, 1, false, ""))
+            .ToArray();
+        // Sorted against the order the entries arrive in, so that taking the
+        // first n of the SOURCE cannot pass this by accident.
+        BuildingCatalogQuery window = new(SortColumn: "Name", Descending: true, Limit: 10);
+
+        BuildingCatalogPage small = BuildingCatalogQueryEngine.Query(many, window);
+        BuildingCatalogPage grown = BuildingCatalogQueryEngine.Query(many, window with { Limit = 20 });
+
+        Assert.Equal(30, small.Items[0].Id);
+
+        Assert.Equal(10, small.Items.Count);
+        Assert.Equal(20, grown.Items.Count);
+        Assert.Equal(
+            small.Items.Select(item => item.Id).ToArray(),
+            grown.Items.Take(small.Items.Count).Select(item => item.Id).ToArray());
+    }
+
+    [Fact]
+    public void Query_ReportsHasMoreUntilTheWindowCoversEveryMatch()
+    {
+        // C# is authoritative about whether more exists: the client cannot work
+        // it out from TotalCount without duplicating the clamp, and a Load more
+        // button that stays lit on a complete list is worse than none.
+        BuildingCatalogPage partial = BuildingCatalogQueryEngine.Query(
+            SampleEntries,
+            new BuildingCatalogQuery(Limit: 2));
+        BuildingCatalogPage exact = BuildingCatalogQueryEngine.Query(
+            SampleEntries,
+            new BuildingCatalogQuery(Limit: SampleEntries.Count));
+        BuildingCatalogPage roomToSpare = BuildingCatalogQueryEngine.Query(
+            SampleEntries,
+            new BuildingCatalogQuery(Limit: 100));
+
+        Assert.True(partial.HasMore);
+        Assert.False(exact.HasMore);
+        Assert.False(roomToSpare.HasMore);
     }
 
     [Fact]
@@ -669,6 +755,7 @@ public sealed class BuildingCatalogQueryEngineTests
 		BuildingCatalogEntry entry = Assert.Single(page.Items);
 		Assert.Equal(7, entry.Id);
 		Assert.Equal(1, page.TotalCount);
+
 	}
 
     [Fact]
@@ -708,11 +795,11 @@ public sealed class BuildingCatalogQueryEngineTests
             FindItUtil.IsReady = false;
 
             BuildingCatalogPage page = new BuildingCatalogAdapter().Query(
-                new BuildingCatalogQuery(Limit: 501));
+                new BuildingCatalogQuery(Limit: BuildingCatalogQuery.MaxLimit + 1));
 
             Assert.Empty(page.Items);
             Assert.Equal(0, page.TotalCount);
-            Assert.Equal(500, page.Limit);
+            Assert.Equal(BuildingCatalogQuery.MaxLimit, page.Limit);
         }
         finally
         {
@@ -788,7 +875,7 @@ public sealed class BuildingCatalogQueryEngineTests
         page.Write(writer);
 
         Assert.Equal(
-            new[] { "items", "id", "prefabName", "name", "category", "subCategory", "categoryLabel", "subCategoryLabel", "vanillaSection", "vanillaSubCategory", "thumbnail", "fallbackThumbnail", "uiMenu", "uiCategory", "lotWidth", "lotDepth", "buildingLevel", "zoneType", "hasParking", "isUniqueMesh", "isVanilla", "isLocked", "unlockMilestone", "unlockRequirements", "bonuses", "costIsPerDistance", "parkingSlots", "isFavorited", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "constructionCost", "upkeep", "workers", "capacity", "electricityConsumption", "waterConsumption", "garbageAccumulation", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "totalCount", "offset", "limit" },
+            new[] { "items", "id", "prefabName", "name", "category", "subCategory", "categoryLabel", "subCategoryLabel", "vanillaSection", "vanillaSubCategory", "thumbnail", "fallbackThumbnail", "uiMenu", "uiCategory", "lotWidth", "lotDepth", "buildingLevel", "zoneType", "hasParking", "isUniqueMesh", "isVanilla", "isLocked", "unlockMilestone", "unlockRequirements", "bonuses", "costIsPerDistance", "parkingSlots", "isFavorited", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "constructionCost", "upkeep", "workers", "capacity", "electricityConsumption", "waterConsumption", "garbageAccumulation", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "totalCount", "offset", "limit", "hasMore" },
             writer.PropertyNames);
         Assert.Contains("Write:Int32:1", writer.Tokens);
         Assert.Contains("Write:String:Coal Power Plant", writer.Tokens);

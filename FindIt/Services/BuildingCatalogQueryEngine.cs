@@ -29,15 +29,33 @@ namespace FindItBuildingMenu.Services
 			}
 
 			var limit = query.EffectiveLimit;
-			var matching = entries.Where(entry => Matches(entry, query));
+			// Reframed before ordering, because the Roads menu's extra networks are
+			// placed behind its own categories by a rewritten priority, and ordering
+			// a page that has already been cut would only relabel them in place.
+			var matching = entries
+				.Where(entry => Matches(entry, query))
+				.Select(entry => NetworkMenuExtension.Reframe(entry, query.UiMenu));
 			var totalCount = matching.Count();
 			var offset = ClampOffset(query.EffectiveOffset, totalCount, limit);
 			var items = Order(matching, query)
 				.Skip(offset)
 				.Take(limit)
 				.ToArray();
+			// Measured from what was actually taken, not from the limit: the last
+			// window is short, and the offset here is the clamped one rather
+			// than the one that was asked for.
+			// Both halves, because the window has a ceiling as well as an end.
+			// Reporting only "matches remain" left the Load more control lit at
+			// MaxLimit, where growing the window is a guaranteed no-op — a button
+			// that stays lit and does nothing is worse than no button, which is the
+			// argument BuildingCatalogPage makes about this very flag. The count
+			// beside it still says "Showing 2,000 of 3,677", so the remaining
+			// matches are named rather than hidden; reaching them is what search is
+			// for.
+			var hasMore = offset + items.Length < totalCount
+				&& limit < BuildingCatalogQuery.MaxLimit;
 
-			return new BuildingCatalogPage(items, totalCount, offset, limit);
+			return new BuildingCatalogPage(items, totalCount, offset, limit, HasMore: hasMore);
 		}
 
 		/// <summary>
@@ -188,7 +206,14 @@ namespace FindItBuildingMenu.Services
 				return true;
 			}
 
-			if (!string.IsNullOrEmpty(menu)
+			// The Roads menu is the one place the lens shows more than the game
+			// does: every network belongs there, not only the ones vanilla files
+			// under Roads. See NetworkMenuExtension for why, and for the fact that
+			// nothing is taken out of the menus that already hold them.
+			var extraNetwork = NetworkMenuExtension.IsExtraNetwork(entry.Category, entry.UiMenu, menu);
+
+			if (!extraNetwork
+				&& !string.IsNullOrEmpty(menu)
 				&& !string.Equals(entry.UiMenu, menu, StringComparison.OrdinalIgnoreCase))
 			{
 				return false;
@@ -204,8 +229,15 @@ namespace FindItBuildingMenu.Services
 				return false;
 			}
 
+			// Against the category this entry answers to IN THIS MENU. An extra
+			// network's own UiCategory names where the game keeps it — a seaway's is
+			// TransportationShip — and comparing a Roads tab against that would make
+			// every extra tab select nothing.
 			return string.IsNullOrEmpty(category)
-				|| string.Equals(entry.UiCategory, category, StringComparison.OrdinalIgnoreCase);
+				|| string.Equals(
+					NetworkMenuExtension.EffectiveCategory(entry, menu),
+					category,
+					StringComparison.OrdinalIgnoreCase);
 		}
 
 		private static bool MatchesBuildMenu(BuildingCatalogEntry entry, BuildingCatalogQuery query)

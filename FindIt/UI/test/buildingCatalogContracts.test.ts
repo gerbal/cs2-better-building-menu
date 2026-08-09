@@ -2,19 +2,15 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   MAX_COMPARE_ENTRIES,
-  MAX_CATALOG_PAGE_SIZE,
-  getCatalogPageSummary,
-  hasCatalogScroll,
-  isCatalogPaged,
+  getCatalogWindowSummary,
   clearBuildingCatalogMetricRangesCommand,
   clearCompareEntriesCommand,
   locatePrefabCommand,
   nextSortState,
-  normalizeCatalogOffset,
   pickerOptionCommand,
   searchChangedCommand,
   setBuildingCatalogMetricRangeCommand,
-  setCatalogOffsetCommand,
+  loadMoreCatalogCommand,
   setCurrentCategoryCommand,
   setCurrentPrefabCommand,
   setCurrentSubCategoryCommand,
@@ -30,6 +26,7 @@ import {
   hasMetricRange,
   normalizeMetricRange,
 } from "../src/domain/buildingCatalogRanges.ts";
+import { FALLBACK_SEPARATORS, groupDigits } from "../src/domain/buildingLensMetricFormat.ts";
 import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog.ts";
 
 function entry(id: number): BuildingCatalogEntry {
@@ -65,9 +62,12 @@ function entry(id: number): BuildingCatalogEntry {
 }
 
 describe("FindItBuildingMenu UI binding contracts", () => {
-  it("keeps catalog helpers semantic while retaining paging commands", () => {
+  it("keeps catalog helpers semantic while naming the window command", () => {
     assert.deepEqual(setCurrentPrefabCommand(17), { type: "activatePrefab", prefabId: 17 });
-    assert.deepEqual(setCatalogOffsetCommand(200), { method: "SetBuildingCatalogOffset", args: [200] });
+    // No argument: the backend owns the window's size, its step and its
+    // ceiling, so a client naming the next size would be a second opinion on
+    // all three. The name must match the CreateTrigger in FindItUISystem.Setup.
+    assert.deepEqual(loadMoreCatalogCommand(), { method: "LoadMoreBuildingCatalog", args: [] });
     assert.deepEqual(locatePrefabCommand(17), { type: "locatePrefab", prefabId: 17 });
     assert.deepEqual(pickerOptionCommand(1.5, -2, 3), { type: "pickerOption", sectionId: 1.5, optionId: -2, value: 3 });
   });
@@ -96,29 +96,6 @@ describe("FindItBuildingMenu UI binding contracts", () => {
     // the client sends intent rather than a projected entry.
     assert.deepEqual(toggleCompareEntryCommand(42), { method: "ToggleBuildingCatalogCompare", args: [42] });
     assert.deepEqual(clearCompareEntriesCommand(), { method: "ClearBuildingCatalogCompare", args: [] });
-  });
-
-  it("normalizes paging to page boundaries, a 500-item maximum, and the last page", () => {
-    assert.equal(normalizeCatalogOffset(-10, 1200, 100), 0);
-    assert.equal(normalizeCatalogOffset(250, 501, 100), 200);
-    assert.equal(normalizeCatalogOffset(999, 501, 100), 500);
-    assert.equal(normalizeCatalogOffset(999, 200, MAX_CATALOG_PAGE_SIZE + 1), 0);
-    assert.equal(normalizeCatalogOffset(999, 0, 100), 0);
-    assert.equal(normalizeCatalogOffset(Number.NaN, Number.NaN, Number.NaN), 0);
-  });
-
-  it("explains the bounded row range and page count", () => {
-    assert.equal(getCatalogPageSummary(0, 4206, 100), "Rows 1–100 of 4,206 · Page 1 of 43");
-    assert.equal(getCatalogPageSummary(4000, 4206, 100), "Rows 4,001–4,100 of 4,206 · Page 41 of 43");
-    assert.equal(getCatalogPageSummary(4200, 4206, 100), "Rows 4,201–4,206 of 4,206 · Page 43 of 43");
-    assert.equal(getCatalogPageSummary(0, 0, 100), "Rows 0–0 of 0 · Page 1 of 1");
-  });
-
-  it("only advertises a row scrollbar when the page is bounded", () => {
-    assert.equal(hasCatalogScroll(4206, 100), true);
-    assert.equal(hasCatalogScroll(100, 100), false);
-    assert.equal(hasCatalogScroll(0, 0), false);
-    assert.equal(hasCatalogScroll(1, 0), true);
   });
 
   it("normalizes analytical metric ranges and swaps reversed bounds", () => {
@@ -182,26 +159,71 @@ describe("FindItBuildingMenu UI binding contracts", () => {
   });
 });
 
-describe("whether the result is paged at all", () => {
-  it("is not paged when everything fits on one page", () => {
-    // Every vanilla menu now asks for the 500-row ceiling, and the largest —
-    // Landscaping at 366 — fits inside it. A pager there could only report
-    // that it has nothing to do, from below a scroll.
-    assert.equal(isCatalogPaged(366, 500), false);
-    assert.equal(isCatalogPaged(157, 500), false);
-    assert.equal(isCatalogPaged(0, 100), false);
-    assert.equal(isCatalogPaged(100, 100), false);
+describe("how much of the match set is on screen", () => {
+  const summarize = (rendered: number, total: number) =>
+    getCatalogWindowSummary(rendered, total, FALLBACK_SEPARATORS);
+
+  it("states the rendered count against the whole match set", () => {
+    assert.equal(summarize(100, 3677), "Showing 100 of 3\u00a0677");
+    assert.equal(summarize(3677, 3677), "Showing 3\u00a0677 of 3\u00a0677");
+    assert.equal(summarize(0, 0), "Showing 0 of 0");
   });
 
-  it("is paged the moment one row does not fit", () => {
-    assert.equal(isCatalogPaged(101, 100), true);
-    // The unscoped catalog, which no page size makes into one thing.
-    assert.equal(isCatalogPaged(3667, 100), true);
+  it("groups digits exactly as the metric cells do", () => {
+    // This module cannot import groupDigits — see the note on groupCount — so
+    // the agreement it would have guaranteed is asserted instead.
+    for (const count of [999, 1000, 4206, 12345, 1234567]) {
+      assert.equal(
+        summarize(count, count),
+        `Showing ${groupDigits(count, FALLBACK_SEPARATORS)} of ${groupDigits(count, FALLBACK_SEPARATORS)}`,
+      );
+    }
   });
 
-  it("survives nonsense totals and limits", () => {
-    assert.equal(isCatalogPaged(Number.NaN, 100), false);
-    assert.equal(isCatalogPaged(-5, 100), false);
-    assert.equal(isCatalogPaged(50, Number.NaN), false);
+  it("groups digits itself instead of calling toLocaleString", () => {
+    // toLocaleString groups in Node and does nothing in Cohtml, so the page
+    // summary this replaces passed its test while the game rendered "4206".
+    const summary = summarize(1200, 4206);
+
+    assert.equal(summary.includes("4206"), false);
+    assert.equal(summary.includes("1200"), false);
+  });
+
+  it("uses the separator the rest of the screen is using", () => {
+    assert.equal(getCatalogWindowSummary(1200, 4206, { group: ",", decimal: "." }), "Showing 1,200 of 4,206");
+    assert.equal(getCatalogWindowSummary(1200, 4206, { group: ".", decimal: "," }), "Showing 1.200 of 4.206");
+  });
+
+  it("never claims to show more than exists", () => {
+    // The rendered rows and the total arrive in the same page, but a narrowed
+    // predicate can shrink the total while the old rows are still mounted.
+    assert.equal(summarize(500, 120), "Showing 120 of 120");
+  });
+
+  it("survives nonsense counts", () => {
+    assert.equal(summarize(Number.NaN, Number.NaN), "Showing 0 of 0");
+    assert.equal(summarize(-5, 100), "Showing 0 of 100");
+    assert.equal(summarize(100.7, 3677.2), "Showing 100 of 3\u00a0677");
+  });
+});
+
+describe("the count badge in the header", () => {
+  it("stays short enough for a fixed-width pill", async () => {
+    const { getCatalogWindowBadge } = await import("../src/domain/buildingCatalogContracts.ts");
+    const separators = { group: ",", decimal: "." };
+
+    // The pill is flex: 0 0 auto with nowrap, between the title and the search
+    // context. A sentence in it shoved both sideways.
+    assert.equal(getCatalogWindowBadge(100, 401, separators), "100 / 401");
+    assert.equal(getCatalogWindowBadge(1200, 4206, separators), "1,200 / 4,206");
+  });
+
+  it("drops to one figure once the window covers everything", async () => {
+    const { getCatalogWindowBadge } = await import("../src/domain/buildingCatalogContracts.ts");
+    const separators = { group: ",", decimal: "." };
+
+    // "401 / 401" asks the reader to compare two numbers to learn they match.
+    assert.equal(getCatalogWindowBadge(401, 401, separators), "401");
+    assert.equal(getCatalogWindowBadge(0, 0, separators), "0");
   });
 });

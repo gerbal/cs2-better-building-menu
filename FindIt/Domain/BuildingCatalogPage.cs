@@ -9,7 +9,19 @@ namespace FindItBuildingMenu.Domain
 		int TotalCount,
 		int Offset,
 		int Limit,
-		string? Status = null) : IJsonWritable
+		string? Status = null,
+		/// <summary>
+		/// Whether the match set holds rows this window does not reach.
+		/// </summary>
+		/// <remarks>
+		/// This side owns the answer. The client could not derive it without
+		/// repeating the engine's offset clamp, and a Load more control that
+		/// stays lit on a complete list is worse than no control at all.
+		///
+		/// Last and defaulted, so the construction sites that predate it stay
+		/// untouched — the same reason BuildingCatalogEntry gives for IsLocked.
+		/// </remarks>
+		bool HasMore = false) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -29,6 +41,8 @@ namespace FindItBuildingMenu.Domain
 			writer.Write(Offset);
 			writer.PropertyName("limit");
 			writer.Write(Limit);
+			writer.PropertyName("hasMore");
+			writer.Write(HasMore);
 			if (Status is not null)
 			{
 				writer.PropertyName("status");

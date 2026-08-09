@@ -6,11 +6,13 @@ import mod from "../../../mod.json";
 import type { BuildingCatalogPage } from "domain/buildingCatalog";
 import type { SortColumn } from "domain/buildingCatalogContracts";
 import {
+  getCatalogWindowBadge,
+  getCatalogWindowSummary,
   nextSortState,
-  setCatalogOffsetCommand,
   setSortColumnCommand,
   setSortDescendingCommand,
 } from "domain/buildingCatalogContracts";
+import { getNumberSeparators } from "domain/buildingLensMetricFormat";
 import { getBuildingLensSortPresentation } from "domain/buildingLensSortPresentation";
 import {
   GROUP_DIMENSIONS,
@@ -68,7 +70,16 @@ const LENS_GROUP_KEY = "groupBy";
 export const LensControlPane = () => {
   const { translate } = useLocalization();
   const page = useValue(BuildingCatalog$);
+  // Master replaced paging with a growing window, so "how many" has two halves
+  // now: how many are loaded and how many match. The badge shows both while
+  // they differ and collapses to one figure once the window covers everything,
+  // because "401 / 401" asks the reader to compare two numbers to learn they
+  // are the same. The sentence is the tooltip, where it has room.
+  const separators = getNumberSeparators(translate);
   const totalCount = page?.totalCount ?? 0;
+  const renderedCount = page?.items?.length ?? 0;
+  const windowBadge = getCatalogWindowBadge(renderedCount, totalCount, separators);
+  const windowSummary = getCatalogWindowSummary(renderedCount, totalCount, separators);
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
   const section = useValue(BuildingLensSection$);
@@ -100,7 +111,6 @@ export const LensControlPane = () => {
     for (const command of [
       setSortColumnCommand(next.column),
       setSortDescendingCommand(next.descending),
-      setCatalogOffsetCommand(0),
     ]) {
       trigger(mod.id, command.method, ...command.args);
     }
@@ -117,8 +127,8 @@ export const LensControlPane = () => {
         <ChipRow />
       </div>
       <div className={styles.countRow}>
-        <div className={styles.countLine}>
-          <span className={styles.count}>{totalCount.toLocaleString()}</span>
+        <div className={styles.countLine} title={windowSummary} aria-label={windowSummary}>
+          <span className={styles.count}>{windowBadge}</span>
           <span className={styles.countUnit}>
             {label("Tooltip.LABEL[FindItBuildingMenu.Buildings]", "buildings")}
           </span>

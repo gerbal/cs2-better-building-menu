@@ -93,13 +93,44 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 }
 
 .columnHeader,
-.row,
-.paging {
+.row {
   display: flex;
   flex-direction: row;
   align-items: center;
 }
 
+// The end of the feed, inside the scroll. Full width so it is unmissable when
+// the rows run out, and generous vertically because it is the one control a
+// player reaches by scrolling rather than by aiming.
+//
+// Its own rule, deliberately. It replaced .paging in the shared list above, and
+// a button's centring, padding and control background went to .columnHeader and
+// every .row with it — the whole catalog rendered as a column of centred
+// buttons.
+.loadMore {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin: 6rem 0 10rem;
+  padding: 8rem 0;
+  color: var(--menuText1Normal);
+  font-size: var(--fontSizeM);
+  background-color: var(--menuControlNormal);
+  border-radius: 2rem;
+
+  &:hover {
+    background-color: var(--menuControlHovered);
+  }
+}
+
+// Master's .toolbar rule is deliberately NOT taken back here. That band —
+// icon, title, count, search context and sort — is gone from this branch: it
+// rendered only when the panel was expanded, so every control it held was
+// missing at the strip height the lens rests at. All of it lives in
+// LensControlPane beside the panel now (caf59a8), and 190a4a2 removed the 208
+// lines of stylesheet it left behind. Re-adding the rule would restore the
+// styling for markup nothing renders.
 
 
 .category,
@@ -976,12 +1007,6 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   text-align: center;
   color: var(--menuText2Normal);
   font-size: 12rem;
-}
-
-.paging {
-  justify-content: center;
-  gap: 8rem;
-  padding: 8rem 0 2rem;
 }
 
 .pageLabel {
