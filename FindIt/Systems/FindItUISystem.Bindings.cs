@@ -226,15 +226,8 @@ namespace FindItBuildingMenu.Systems
 
 			_buildingLensSection = selection.Section;
 			_buildingLensSubCategory = selection.SubCategory;
-			// A role chosen under the previous menu (e.g. Prison, under
-			// Police) would otherwise survive into a section it has no
-			// members in and silently empty the result. See
-			// BuildingLensRoleScope for why role has no static taxonomy to
-			// re-validate against instead.
-			_buildingLensRole = VanillaBuildMenuTaxonomy.Any;
 			_BuildingLensSectionBinding.Value = _buildingLensSection;
 			_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
-			_BuildingLensRoleBinding.Value = _buildingLensRole;
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0 };
 
 			scrollIndex = 0;
@@ -366,7 +359,6 @@ namespace FindItBuildingMenu.Systems
 
 			_buildingLensSection = selection.Section;
 			_buildingLensSubCategory = selection.SubCategory;
-			_buildingLensRole = VanillaBuildMenuTaxonomy.Any;
 			// The menu scope has to go too, or "search everything" searches the
 			// one menu the player already knows has nothing. Widening the
 			// section alone left MatchesVanillaMenuTree still filtering every
@@ -377,7 +369,6 @@ namespace FindItBuildingMenu.Systems
 			RefreshBuildingLensMenuCategories();
 			_BuildingLensSectionBinding.Value = _buildingLensSection;
 			_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
-			_BuildingLensRoleBinding.Value = _buildingLensRole;
 			FindItUtil.CurrentCategory = PrefabCategory.Any;
 			FindItUtil.CurrentSubCategory = PrefabSubCategory.Any;
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0 };
@@ -430,11 +421,6 @@ namespace FindItBuildingMenu.Systems
 			VanillaBuildMenuSelection selection = VanillaBuildMenuSelection.Normalize(section, VanillaBuildMenuTaxonomy.Any);
 			_buildingLensSection = selection.Section;
 			_buildingLensSubCategory = selection.SubCategory;
-			// Otherwise a role picked under the previous section (e.g. Prison,
-			// under Police & Administration) survives into a section with no
-			// members for it and lands on an empty result set with no visible
-			// cause.
-			_buildingLensRole = VanillaBuildMenuTaxonomy.Any;
 			_buildingCatalogQuery = _buildingCatalogQuery with
 			{
 				Offset = 0,
@@ -449,31 +435,11 @@ namespace FindItBuildingMenu.Systems
 			VanillaBuildMenuSelection selection = VanillaBuildMenuSelection.Normalize(_buildingLensSection, subCategory);
 			_buildingLensSection = selection.Section;
 			_buildingLensSubCategory = selection.SubCategory;
-			// Same reasoning as SetBuildingLensSection above: the role list is
-			// scoped to section+subCategory, so a stale role selection from the
-			// previous subCategory can silently empty the result here too.
-			_buildingLensRole = VanillaBuildMenuTaxonomy.Any;
 			_buildingCatalogQuery = _buildingCatalogQuery with
 			{
 				Offset = 0,
 				MinCapacity = null,
 			};
-			RefreshBuildingLensNavigation();
-			RefreshBuildingCatalog();
-		}
-
-		/// <summary>
-		/// Sets the role tab strip's current selection. The single-select
-		/// counterpart of <see cref="SetBuildingLensSection"/> and
-		/// <see cref="SetBuildingLensSubCategory"/> above, one level further
-		/// in: those two reset this back to <see cref="VanillaBuildMenuTaxonomy.Any"/>
-		/// whenever they run, but nothing resets them when this one does —
-		/// picking a role narrows within the existing section/subCategory
-		/// rather than navigating away from it.
-		/// </summary>
-		private void SetBuildingLensRole(string role)
-		{
-			_buildingLensRole = string.IsNullOrWhiteSpace(role) ? VanillaBuildMenuTaxonomy.Any : role.Trim();
 			RefreshBuildingLensNavigation();
 			RefreshBuildingCatalog();
 		}

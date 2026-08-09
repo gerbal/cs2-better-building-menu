@@ -55,11 +55,7 @@ namespace FindItBuildingMenu.Domain
 		// SPIKE (cm-e98i): the game's own menu placement, used instead of our
 		// reconstructed section when the lens was opened from a vanilla menu.
 		string UiMenu = "",
-		string UiCategory = "",
-		// Single id rather than a set: BuildingRole.ResolvePrimary already picks
-		// one role per entry. Empty and the "Any" sentinel both mean unscoped,
-		// matching BuildMenuSubCategory's convention above.
-		string Role = "")
+		string UiCategory = "")
 	{
 		public int EffectiveOffset => Offset < 0 ? 0 : Offset;
 

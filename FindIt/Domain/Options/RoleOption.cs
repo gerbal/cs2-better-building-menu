@@ -42,16 +42,11 @@ namespace FindItBuildingMenu.Domain.Options
 		// role its own icon. Prison, EmergencyShelter, PowerPlant,
 		// WaterPumpingStation, WastewaterTreatmentPlant and SewageOutlet have
 		// no icon of their own at any name tried, so Prison shares Police and
-		// EmergencyShelter shares FireSafety. Those two pairs are the reason
-		// the tab strip labels its role tabs as well as icons them — within
-		// one menu the icons alone would not tell them apart.
+		// EmergencyShelter shares FireSafety.
 
 		/// <summary>
 		/// The icon for a role, falling back to the generic service-building
-		/// icon for a role this map has no entry for. Exposed so the Building
-		/// Lens role tab strip (<see cref="BuildingLensRoleScope"/>) draws the
-		/// same icon this facet already does, rather than keeping a second map
-		/// that could drift out of sync with this one.
+		/// icon for a role this map has no entry for.
 		/// </summary>
 		internal static string IconFor(string role) =>
 			Icons.TryGetValue(role, out var icon)
