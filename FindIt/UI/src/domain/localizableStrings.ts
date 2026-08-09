@@ -85,6 +85,10 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   { key: key("MenuRoadsAndNetworks"), english: "Roads & Networks", source: "vanillaServiceLabels", plumbed: true },
   { key: key("AllTypes"), english: "All types", source: "ChipRow", plumbed: true },
   { key: key("Remove"), english: "Remove", source: "ChipRow", plumbed: true },
+  // The end of the feed. Replaces the five-button pager and its
+  // "Rows 1-100 of 3677 - Page 1 of 37", which was small, low-contrast, and
+  // reported a fact ("page 19") nobody can act on.
+  { key: key("LoadMore"), english: "Load more", source: "BuildingCatalog", plumbed: true },
 
   // --- Zone facts. Plumbed: the component formats and translates these. ----
   // Data the game measures and never shows: how tall a zone grows, whether it

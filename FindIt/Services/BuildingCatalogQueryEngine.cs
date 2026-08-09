@@ -41,8 +41,21 @@ namespace FindItBuildingMenu.Services
 				.Skip(offset)
 				.Take(limit)
 				.ToArray();
+			// Measured from what was actually taken, not from the limit: the last
+			// window is short, and the offset here is the clamped one rather
+			// than the one that was asked for.
+			// Both halves, because the window has a ceiling as well as an end.
+			// Reporting only "matches remain" left the Load more control lit at
+			// MaxLimit, where growing the window is a guaranteed no-op — a button
+			// that stays lit and does nothing is worse than no button, which is the
+			// argument BuildingCatalogPage makes about this very flag. The count
+			// beside it still says "Showing 2,000 of 3,677", so the remaining
+			// matches are named rather than hidden; reaching them is what search is
+			// for.
+			var hasMore = offset + items.Length < totalCount
+				&& limit < BuildingCatalogQuery.MaxLimit;
 
-			return new BuildingCatalogPage(items, totalCount, offset, limit);
+			return new BuildingCatalogPage(items, totalCount, offset, limit, HasMore: hasMore);
 		}
 
 		/// <summary>

@@ -79,7 +79,7 @@ namespace FindItBuildingMenu.Systems
 			// arrive through this rebuild rather than through a handler that
 			// resets paging, so a narrowing change used to strand the player on
 			// an offset past the new result set.
-			_buildingCatalogQuery = _buildingCatalogQuery.ResetPagingIfPredicatesChanged(previousQuery);
+			_buildingCatalogQuery = _buildingCatalogQuery.ResetWindowIfPredicatesChanged(previousQuery);
 
 			BuildingCatalogPage page = _buildingCatalogAdapter.Query(_buildingCatalogQuery);
 

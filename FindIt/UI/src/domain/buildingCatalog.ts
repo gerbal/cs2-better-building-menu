@@ -97,4 +97,13 @@ export interface BuildingCatalogPage {
   totalCount: number;
   offset: number;
   limit: number;
+  /**
+   * Whether the backend has more matches than this window holds.
+   *
+   * C#'s answer, not a client comparison of rendered against total: only the
+   * backend knows both the match count and the window ceiling, so a client
+   * computing `rendered < total` would keep offering rows the backend has
+   * already refused to serve.
+   */
+  hasMore?: boolean;
 }
