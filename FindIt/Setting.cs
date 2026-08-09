@@ -47,6 +47,19 @@ namespace FindItBuildingMenu
 		public float BuildingLensPanelWidth { get; set; } = 1232f;
 
 		/// <summary>
+		/// The catalog's height, in the same rem-like units as the width, set
+		/// by dragging the panel's top edge.
+		/// </summary>
+		/// <remarks>
+		/// Hidden like the width: it is a direct-manipulation value, and a
+		/// slider for it in the options screen would be a second way to say the
+		/// same thing. See <see cref="Domain.BuildingLensHeight"/> for the
+		/// range and for what this replaced.
+		/// </remarks>
+		[SettingsUIHidden]
+		public float BuildingLensPanelHeight { get; set; } = Domain.BuildingLensHeight.Default;
+
+		/// <summary>
 		/// Whether <see cref="BuildingLensPanelWidth"/> has been widened to
 		/// include the control plane.
 		/// </summary>

@@ -124,53 +124,44 @@ export function resizedBuildingLensWidth(
   return clampBuildingLensWidth(startWidth + delta * direction);
 }
 
-/** Sections that name no scope, and so have nothing keeping the catalog short. */
-const UNSCOPED_SECTIONS = new Set(["AllBuildings", "Favorites"]);
+/**
+ * The catalog's height range, twin of BuildingLensHeight in C# — a test asserts
+ * they agree.
+ *
+ * Min is two tile rows plus padding; Max is the viewport (a fixed 1080rem) less
+ * the chrome below the panel. Between them the height is the player's, set by
+ * dragging the panel's top edge.
+ */
+export const BUILDING_LENS_MIN_HEIGHT = 200;
+export const BUILDING_LENS_MAX_HEIGHT = 960;
+export const BUILDING_LENS_DEFAULT_HEIGHT = 420;
 
-export interface BuildingLensHeightState {
-  /** The player's own choice, owned by the backend as IsExpanded. */
-  isExpanded: boolean;
-  /** BuildingLensSection — which bank of the lens is showing. */
-  section: string | undefined;
-  /** The live search text, if any. */
-  searchText: string | undefined;
+/**
+ * Clamp a dragged height.
+ *
+ * Non-finite resolves to the default rather than passing through: the value
+ * goes straight into an inline style, and `height: NaNrem` leaves the catalog
+ * unsized rather than merely wrong.
+ */
+export function clampBuildingLensHeight(height: number): number {
+  if (!Number.isFinite(height)) return BUILDING_LENS_DEFAULT_HEIGHT;
+  return Math.max(BUILDING_LENS_MIN_HEIGHT, Math.min(BUILDING_LENS_MAX_HEIGHT, height));
 }
 
 /**
- * True when the lens is showing a set that no category narrows — a search, or
- * one of the unscoped sections.
+ * The height a drag of `delta` pixels from `startHeight` should produce.
  *
- * The lens rests as a strip to match vanilla's footprint, which is right while
- * a category bounds the list. An unbounded set has no such bound, so the strip
- * would hide nearly all of it; this raises the floor in that case.
+ * The panel is bottom-anchored and the handle is on its top edge, so dragging
+ * up (negative delta) makes it taller — the sign flip is the whole reason this
+ * is a named function rather than an addition at the call site.
  */
-export function isBuildingLensUnscoped(
-  { section, searchText }: Pick<BuildingLensHeightState, "section" | "searchText">,
-): boolean {
-  return (searchText ?? "").trim().length > 0 || UNSCOPED_SECTIONS.has(section ?? "");
+export function draggedBuildingLensHeight(startHeight: number, startY: number, currentY: number): number {
+  const delta = Number.isFinite(startY) && Number.isFinite(currentY) ? startY - currentY : 0;
+  return clampBuildingLensHeight(startHeight + delta / REM_IN_PX);
 }
 
 /**
- * Whether the catalog is drawn tall — the player's choice and the automatic
- * floor together.
- *
- * The panel and the control plane both need this answer and they sit in
- * different React subtrees, so deriving it twice is how the pane would come to
- * report "strip" over a panel that is plainly tall.
+ * Pixels per rem in the game's UI layer, at every resolution — see
+ * getBuildingLensCatalogMaxHeight for why this is not resolution-dependent.
  */
-export function isBuildingLensExpanded(state: BuildingLensHeightState): boolean {
-  return state.isExpanded || isBuildingLensUnscoped(state);
-}
-
-/**
- * Whether the player's expand control can change anything right now.
- *
- * While the set is unscoped the floor holds the catalog tall whatever the
- * stored choice is, so the control moves and nothing happens — in either
- * direction. Callers disable it and say why instead.
- */
-export function canToggleBuildingLensHeight(
-  state: Pick<BuildingLensHeightState, "section" | "searchText">,
-): boolean {
-  return !isBuildingLensUnscoped(state);
-}
+export const REM_IN_PX = 0.6667;

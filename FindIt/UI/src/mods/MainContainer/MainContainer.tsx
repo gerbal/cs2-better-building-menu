@@ -15,8 +15,8 @@ import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import {
   BUILDING_LENS_PANEL_CHROME_WIDTH,
-  isBuildingLensUnscoped,
-  resizedBuildingLensWidth,
+  clampBuildingLensHeight,
+  draggedBuildingLensHeight,
 } from "domain/buildingLensLayout";
 import { findItSurfacePort } from "domain/findItSurfacePort";
 
@@ -25,6 +25,7 @@ import { findItSurfacePort } from "domain/findItSurfacePort";
 // read from turning a normal reload into a Gameface exception.
 const PanelWidth$ = bindValue<number>(mod.id, "PanelWidth", 0);
 const IsExpanded$ = bindValue<boolean>(mod.id, "IsExpanded", false);
+const BuildingLensPanelHeight$ = bindValue<number>(mod.id, "BuildingLensPanelHeight", 420);
 const AlignmentStyle$ = bindValue<string>(mod.id, "AlignmentStyle", "Center");
 const ShowFindItPanel$ = bindValue<boolean>(mod.id, "ShowFindItPanel", false);
 const ShowZoningHierarchy$ = bindValue<boolean>(mod.id, "ShowZoningHierarchy", false);
@@ -52,7 +53,7 @@ export const FindItMainContainerComponent = () => {
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [containerLeft, setContainerLeft] = useState(0);
   const [isResizing, setIsResizing] = useState(false);
-  const resizeState = useRef({ active: false, startX: 0, startWidth: 0 });
+  const resizeState = useRef({ active: false, startY: 0, startHeight: 0 });
 
   // These get the value of the bindings. Without C# side game ui will crash. Or they will when we have bindings.
   const ShowFindItPanel = useValue(ShowFindItPanel$);
@@ -65,25 +66,19 @@ export const FindItMainContainerComponent = () => {
   const AlignmentStyle = useValue(AlignmentStyle$);
   const BuildingLensSection = useValue(BuildingLensSection$);
 
-  // Height follows the task. Search and the unscoped "All buildings"/
-  // "Favorites" browses are cross-scope and cannot be read two rows at a
-  // time; a menu-scoped browse can. This only applies to the Building Lens
-  // — the legacy panel has no scope concept and BuildingLensSection defaults
-  // to "AllBuildings" on both sides regardless of whether the lens is even
-  // on, so gating on BuildingLensEnabled keeps this from firing there.
-  // A manual expand always wins — this raises the floor, it does not seize the
-  // control.
+  // One height, set by dragging the panel's top edge and then kept.
   //
-  // The rule itself lives in buildingLensLayout because the control plane needs
-  // the same answer to draw the expand control, and it is a sibling of this
-  // component rather than a descendant. Two copies is how the pane would come
-  // to report "strip" over a panel that is plainly tall.
-  const searchText = useValue(CurrentSearch$) ?? "";
-  const unscoped = BuildingLensEnabled && isBuildingLensUnscoped({ section: BuildingLensSection, searchText });
-  const effectiveExpanded = IsExpanded || unscoped;
-  // Strip height is a Building Lens concept only; the legacy panel keeps
-  // whatever height behaviour it always had.
-  const restingAsStrip = BuildingLensEnabled && !effectiveExpanded;
+  // It replaces a binary and the two mechanisms that fought it: a 200rem strip
+  // toggling to a near-full-screen "expanded", an automatic floor that raised
+  // it whenever the results were unscoped, and the content sizing it in
+  // between. The same menu measured 163px, 425px and 529px inside one session
+  // depending on what was in it — no use for something you aim a mouse at, and
+  // the reason this is now a single number the player owns.
+  //
+  // It also leaked: the catalog forced grid mode whenever the panel was not
+  // expanded, so at the resting height the view-mode control lit up and did
+  // nothing.
+  const catalogHeight = clampBuildingLensHeight(useValue(BuildingLensPanelHeight$));
 
   const optionsOverflow = () => AlignmentStyle !== "Center" || window.innerWidth < containerLeft + ((PanelWidth + 300) * window.innerHeight) / 1080;
 
@@ -150,7 +145,7 @@ export const FindItMainContainerComponent = () => {
 
     event.preventDefault?.();
     event.stopPropagation?.();
-    resizeState.current = { active: true, startX: event.clientX, startWidth: PanelWidth };
+    resizeState.current = { active: true, startY: event.clientY, startHeight: catalogHeight };
     setIsResizing(true);
   }
 
@@ -158,8 +153,14 @@ export const FindItMainContainerComponent = () => {
     const state = resizeState.current;
     if (!state.active) return;
 
-    const nextWidth = resizedBuildingLensWidth(state.startWidth, state.startX, event.clientX, AlignmentStyle);
-    trigger(mod.id, "SetBuildingLensPanelWidth", nextWidth - BUILDING_LENS_PANEL_CHROME_WIDTH);
+    // The width is no longer draggable: with vanilla's column trio left-aligned
+    // the band has one correct width, and dragging it narrower only gives back
+    // the space that change reclaimed.
+    trigger(
+      mod.id,
+      "SetBuildingLensPanelHeight",
+      draggedBuildingLensHeight(state.startHeight, state.startY, event.clientY)
+    );
   }
 
   function endResize(): void {
@@ -167,7 +168,9 @@ export const FindItMainContainerComponent = () => {
 
     resizeState.current.active = false;
     setIsResizing(false);
-    trigger(mod.id, "CommitBuildingLensPanelWidth");
+    // Only the release writes the settings file; the drag itself runs through
+    // the live binding.
+    trigger(mod.id, "CommitBuildingLensPanelHeight");
   }
 
   return (
@@ -221,13 +224,22 @@ export const FindItMainContainerComponent = () => {
                   toggleEnlarge={toggleEnlarge}
                 ></TopBarComponent>
               </div>
+              {/* The drag handle sits above the catalog, on the panel's top
+                  edge: the panel is bottom-anchored, so that is the edge that
+                  moves when the height changes. */}
+              {BuildingLensEnabled && (
+                <div
+                  className={classNames(styles.resizeHandle, isResizing && styles.resizeHandleActive)}
+                  onMouseDown={beginResize}
+                  title={translate("Tooltip.LABEL[FindItBuildingMenu.ResizeHeight]", "Drag to resize") ?? "Drag to resize"}
+                />
+              )}
               <div
-                className={classNames(
-                  styles.content,
-                  restingAsStrip && styles.contentStrip,
-                  BuildingLensEnabled && effectiveExpanded && styles.contentExpanded,
-                  AssetMenuTheme.assetPanel
-                )}
+                className={classNames(styles.content, AssetMenuTheme.assetPanel)}
+                // The height is stated rather than left to the content, which
+                // is the whole point: a menu that resizes itself around however
+                // many results came back is one you cannot learn the shape of.
+                style={BuildingLensEnabled ? { height: `${catalogHeight}rem` } : undefined}
               >
                 {BuildingLensEnabled
                   ? ShowZoningHierarchy
@@ -238,7 +250,6 @@ export const FindItMainContainerComponent = () => {
                     : <BuildingCatalogComponent />
                   : <PrefabSelectionComponent expanded={IsExpanded}></PrefabSelectionComponent>}
               </div>
-              {BuildingLensEnabled && <div className={styles.resizeHandle} onMouseDown={beginResize} title="Resize building lens" />}
             </div>
             {BuildingLensEnabled && <LensControlPane />}
             {(optionsOpen || sortingOpen) && !optionsOverflow() && (

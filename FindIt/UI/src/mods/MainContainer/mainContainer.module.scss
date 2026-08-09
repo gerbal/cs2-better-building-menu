@@ -160,33 +160,35 @@
   animation: entryTranslate 0.2s ease-in-out;
 }
 
+// Horizontal now, and inside the layout rather than floating beside it. The
+// panel is bottom-anchored, so its top edge is the one that moves when the
+// height changes, and that is the edge the player is already reaching for.
+//
+// The old handle was an invisible vertical strip on the right for dragging the
+// width, which is no longer adjustable: with vanilla’s column trio left-aligned
+// the band has exactly one correct width. This one is drawn, because it is now
+// the only way to change the height and an affordance nobody can see is one
+// nobody uses.
 .resizeHandle {
-  position: absolute;
-  top: 0;
-  right: -4rem;
-  bottom: 0;
-  width: 8rem;
+  flex: 0 0 auto;
+  align-self: center;
+  width: 60rem;
+  height: 8rem;
+  margin-bottom: 3rem;
+  border-radius: 4rem;
   z-index: 20;
   pointer-events: auto;
-  cursor: ew-resize;
-  background-color: transparent;
+  cursor: ns-resize;
+  background-color: rgba(255, 255, 255, 0.25);
   transition: background-color 0.15s;
 }
 
-.resizeHandle:hover,
-.resizeHandle:active {
+.resizeHandle:hover {
+  background-color: rgba(255, 255, 255, 0.5);
+}
+
+.resizeHandleActive {
   background-color: var(--accentColorNormal);
-  opacity: 0.65;
-}
-
-.alignLeft .resizeHandle {
-  right: -4rem;
-  left: auto;
-}
-
-.alignRight .resizeHandle {
-  right: auto;
-  left: -4rem;
 }
 
 .resizeBlocker {
@@ -197,7 +199,7 @@
   left: 0;
   z-index: 10001;
   pointer-events: auto;
-  cursor: ew-resize;
+  cursor: ns-resize;
 }
 
 .content {
@@ -233,46 +235,12 @@
   // 43% this set out to fix. The floor only has to stop the panel collapsing
   // to a single row as you type; it does not have to reserve a screenful.
   min-height: 200rem;
-  // Unset here: the legacy FindIt panel (Building Lens off) is upstream's
-  // UI and keeps the height it always had. Only the Building Lens rests at
-  // a strip, via .contentStrip below.
+  // The Building Lens states its height inline from the player's setting, so
+  // the floor above and this ceiling only bound the legacy FindIt panel, which
+  // is upstream's UI and keeps the height it always had. Kept as a backstop:
+  // the inline height is already clamped to the viewport, and this stops any
+  // future path putting the panel off screen.
   max-height: 100%;
-}
-
-// Only the Building Lens rests at a strip. The legacy FindIt panel is
-// upstream's UI and keeps the height it always had.
-.contentStrip {
-  // The floor has to go here specifically: 200rem against a 163rem ceiling is
-  // a contradiction, and min-height wins, so the strip would never reach its
-  // measured height.
-  min-height: 0;
-  // Was 163rem — vanilla's measured content region at 1280x720. That number
-  // fit vanilla's own content, not ours: vanilla's card is a bare 72rem
-  // square with no label, so two rows plus vanilla's padding is what 163rem
-  // was sized to. Ours carries a two-line name, so the same two rows cost more
-  // even after the catalog toolbar (BuildingCatalog.tsx's Group by/Sort by
-  // band) and the chip row breadcrumb (TopBar.tsx) were both moved behind
-  // expand. Measured live, fewer than one row was visible at 163rem with that
-  // chrome still inside it.
-  //
-  // WHAT 200rem BUYS, recomputed 2026-08-09 — the arithmetic here had gone
-  // stale twice over. It described a 77rem tile (one name line) and reserved
-  // headroom for a group heading, and neither is true now: the tile is 80rem
-  // for its second line, and a menu with categories no longer groups at all,
-  // so there is usually no heading to reserve for.
-  //
-  //   2 tiles * 80rem + 4rem gap + 16rem .catalog padding (8rem, both edges)
-  //   + 12rem .bodyTiles padding = 192rem
-  //
-  // So 200rem is still the right number, but the slack is 8rem rather than the
-  // ~14rem the old note claimed, and measured in game the second row clears the
-  // bottom of the scroll region by about a pixel. There is nothing here to
-  // reclaim: anything taken off this, or added to .tile, clips row two.
-  max-height: 200rem;
-}
-
-.contentExpanded {
-  max-height: calc(100vh - 120rem);
 }
 
 .topBar {
