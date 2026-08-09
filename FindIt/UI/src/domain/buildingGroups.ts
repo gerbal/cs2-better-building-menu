@@ -358,6 +358,19 @@ export function groupLevelsFor(
 export interface GroupNode<T> {
   /** Heading text for this level. */
   label: string;
+  /**
+   * The game's own id behind this heading, where there is one.
+   *
+   * Only the menuCategory dimension has one: its headings name vanilla
+   * categories, and the game ships localized strings for them under
+   * SubServices.NAME[<id>]. Carrying the id means the renderer can ask for the
+   * game's word — "Road" — instead of drawing our best guess at what
+   * "TransportationRoad" was meant to say, which was English-only.
+   *
+   * The label remains the fallback and the node's identity, so grouping works
+   * unchanged when the key is missing.
+   */
+  labelId?: string;
   /** Levels above this one, so a nested node can report its full path. */
   path: string[];
   /** Total entries beneath this node, including nested children. */
@@ -397,6 +410,17 @@ export function buildGroupedView<T extends GroupableEntry>(
       let node = siblings.find((candidate) => candidate.label === label);
       if (!node) {
         node = { label, path: [...path], count: 0, children: [], entries: [] };
+
+        // Only where the game owns the id. Every other dimension's heading is
+        // derived from a value rather than named by the game, so there is
+        // nothing to look up.
+        if (dimension === "menuCategory" && label !== UNGROUPED_LABEL) {
+          const id = typeof entry.uiCategory === "string" ? entry.uiCategory.trim() : "";
+          if (id !== "") {
+            node.labelId = id;
+          }
+        }
+
         siblings.push(node);
       }
 

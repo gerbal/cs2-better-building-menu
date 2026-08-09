@@ -12,13 +12,11 @@ import { OptionsPanelComponent } from "mods/OptionsPanel/OptionsPanel";
 import { OptionSection } from "domain/ContentViewType";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
-import { ToolSurfaceBar } from "mods/ToolSurfaceBar/ToolSurfaceBar";
 import {
   BUILDING_LENS_PANEL_CHROME_WIDTH,
   resizedBuildingLensWidth,
 } from "domain/buildingLensLayout";
 import { findItSurfacePort } from "domain/findItSurfacePort";
-import { getBuildingLensModeView, type BuildingLensMode } from "domain/buildingLensMode";
 
 // View contexts can be recreated before the first binding update is emitted.
 // Safe fallbacks keep the shell hidden and prevent an early getValueUnsafe
@@ -50,7 +48,6 @@ export const FindItMainContainerComponent = () => {
 
   const [sortingOpen, setSortingOpen] = useState(false);
   const [optionsOpen, setOptionsOpen] = useState(false);
-  const [buildingLensMode, setBuildingLensMode] = useState<BuildingLensMode>("catalog");
   const [containerLeft, setContainerLeft] = useState(0);
   const [isResizing, setIsResizing] = useState(false);
   const resizeState = useRef({ active: false, startX: 0, startWidth: 0 });
@@ -65,7 +62,6 @@ export const FindItMainContainerComponent = () => {
   const OptionsList = useValue(OptionsList$);
   const AlignmentStyle = useValue(AlignmentStyle$);
   const BuildingLensSection = useValue(BuildingLensSection$);
-  const buildingLensModeView = getBuildingLensModeView(buildingLensMode);
 
   // Height follows the task. Search and the unscoped "All buildings"/
   // "Favorites" browses are cross-scope and cannot be read two rows at a
@@ -81,12 +77,6 @@ export const FindItMainContainerComponent = () => {
   // Strip height is a Building Lens concept only; the legacy panel keeps
   // whatever height behaviour it always had.
   const restingAsStrip = BuildingLensEnabled && !effectiveExpanded;
-
-  useEffect(() => {
-    if (!BuildingLensEnabled && buildingLensMode !== "catalog") {
-      setBuildingLensMode("catalog");
-    }
-  }, [BuildingLensEnabled, buildingLensMode]);
 
   const optionsOverflow = () => AlignmentStyle !== "Center" || window.innerWidth < containerLeft + ((PanelWidth + 300) * window.innerHeight) / 1080;
 
@@ -180,8 +170,6 @@ export const FindItMainContainerComponent = () => {
                   toggleSortingOpen={toggleSortingOpen}
                   toggleOptionsOpen={toggleOptionsOpen}
                   toggleEnlarge={toggleEnlarge}
-                  buildingLensMode={buildingLensMode}
-                  onBuildingLensModeChange={setBuildingLensMode}
                 ></TopBarComponent>
               </div>
               <div
@@ -198,9 +186,7 @@ export const FindItMainContainerComponent = () => {
                     // menu gets the zoning hierarchy rather than a table of
                     // building rows filtered to nothing.
                     ? <ZoningHierarchyComponent />
-                    : buildingLensModeView.showCatalogContent
-                      ? <BuildingCatalogComponent expanded={effectiveExpanded} />
-                      : <div className={styles.toolsContent}><ToolSurfaceBar /></div>
+                    : <BuildingCatalogComponent expanded={effectiveExpanded} />
                   : <PrefabSelectionComponent expanded={IsExpanded}></PrefabSelectionComponent>}
               </div>
               {BuildingLensEnabled && <div className={styles.resizeHandle} onMouseDown={beginResize} title="Resize building lens" />}

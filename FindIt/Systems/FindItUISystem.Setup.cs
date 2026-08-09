@@ -124,9 +124,10 @@ namespace FindItBuildingMenu.Systems
 		/// scope switches off (BuildingCatalogQueryEngine.cs:95).
 		/// </remarks>
 		private ValueBindingHelper<string> _BuildingLensMenuBinding = null!;
+		/// <summary>Every vanilla menu, so one can be chosen as a filter.</summary>
+		private ValueBindingHelper<VanillaMenuCategory[]> _BuildingLensMenusBinding = null!;
 		// Milestone index -> name, published once. Locked assets carry the index.
 		private ValueBindingHelper<string[]> _BuildingLensMilestonesBinding = null!;
-		private ValueBindingHelper<ToolSurfaceDescriptor[]> _ToolSurfaceDescriptorsBinding = null!;
 
 		public bool IsExpanded => _IsExpanded;
 		public bool BuildingLensEnabled => _BuildingLensEnabled;
@@ -273,13 +274,13 @@ namespace FindItBuildingMenu.Systems
 			_BuildingLensSubCategoryListBinding = CreateBinding("BuildingLensSubCategoryList", Array.Empty<BuildingLensSubCategoryUIEntry>());
 			_BuildingLensMenuCategoriesBinding = CreateBinding("BuildingLensMenuCategories", Array.Empty<VanillaMenuCategory>());
 			_BuildingLensMenuBinding = CreateBinding("BuildingLensMenu", string.Empty);
+			_BuildingLensMenusBinding = CreateBinding("BuildingLensMenus", Array.Empty<VanillaMenuCategory>());
 			_BuildingLensMilestonesBinding = CreateBinding("BuildingLensMilestones", Array.Empty<string>());
 			_BuildingLensMenuCategoryBinding = CreateBinding(
 				"BuildingLensMenuCategory",
 				"SetBuildingLensMenuCategory",
 				string.Empty,
 				SetBuildingLensMenuCategory);
-			_ToolSurfaceDescriptorsBinding = CreateBinding("ToolSurfaceDescriptors", ToolSurfaceCatalog.GetDescriptors().ToArray());
 			_PrefabCountBinding = CreateBinding("PrefabCount", string.Empty);
 			_ViewStyle = CreateBinding("ViewStyle", Mod.Settings.DefaultViewStyle);
 			_AlignmentStyle = CreateBinding("AlignmentStyle", Mod.Settings.DefaultAlignmentStyle);
@@ -298,6 +299,9 @@ namespace FindItBuildingMenu.Systems
 			// hands the entity index here; resolving the prefab name and the
 			// preset belongs on this side.
 			CreateTrigger<int>("VanillaMenuSelected", VanillaMenuSelected);
+			// Its other half: the same binding going to Entity.Null, which is how
+			// a toolbar menu reports being closed.
+			CreateTrigger("VanillaMenuDeselected", VanillaMenuDeselected);
 			CreateTrigger<int>("ToggleFavorited", FindItUtil.ToggleFavorited);
 			CreateTrigger("ToggleLock", ToggleLock);
 			CreateTrigger("OnSearchFocused", () => _FocusSearchBar.Value = false);
@@ -319,6 +323,7 @@ namespace FindItBuildingMenu.Systems
 				// type chip), so clearing the menu there would silently drop
 				// Garbage Management back to the whole catalog.
 				CreateTrigger("ClearBuildingLensMenuScope", ClearBuildingLensMenuScope);
+				CreateTrigger<string>("SetBuildingLensMenu", SetBuildingLensMenu);
 			CreateTrigger<float>("SetBuildingLensPanelWidth", SetBuildingLensPanelWidth);
 			CreateTrigger("CommitBuildingLensPanelWidth", CommitBuildingLensPanelWidth);
 			CreateTrigger("ClearThumbnails", () => _AllThumbnails.Value = new string[0]);

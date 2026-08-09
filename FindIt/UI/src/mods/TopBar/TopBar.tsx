@@ -23,7 +23,6 @@ import unlock from "images/findit_unlock.svg";
 import sort from "images/findit_sort.svg";
 import { FOCUS_DISABLED } from "cs2/input";
 import { searchChangedCommand, setCurrentCategoryCommand, setCurrentSubCategoryCommand } from "domain/buildingCatalogContracts";
-import type { BuildingLensMode } from "domain/buildingLensMode";
 import { ChipRow } from "mods/ChipRow/ChipRow";
 import { MenuCategoryStrip } from "mods/MenuCategoryStrip/MenuCategoryStrip";
 
@@ -36,8 +35,6 @@ export interface TopBarProps {
   toggleOptionsOpen: () => void;
   toggleSortingOpen: () => void;
   toggleEnlarge: () => void;
-  buildingLensMode: BuildingLensMode;
-  onBuildingLensModeChange: (mode: BuildingLensMode) => void;
 }
 
 const AccessibleLabel = ({ label }: { label: string }) => <span className={styles.accessibleLabel}>{label}</span>;
@@ -150,55 +147,6 @@ export const TopBarComponent = (props: TopBarProps) => {
           </>
         ))}
       </div>
-    );
-  }
-
-  function RenderLensModeList(): JSX.Element {
-    // Folded into the top bar rather than owning a band. Catalog|Tools is
-    // 128rem of controls; giving it a full-width 25rem row of its own was
-    // 4% of the panel spent on two buttons.
-    //
-    // Built from the game's own TabBar/Tab rather than two hand-padded
-    // lightButtons. This is exactly the control the game uses for a small
-    // set of mutually exclusive views, so it already carries the right
-    // padding, the selected treatment, and the legacy-interface variant that
-    // our hand-styled version had to reproduce by eye and got subtly wrong.
-    // TabNav adds gamepad and keyboard "Switch Tab", which the buttons never
-    // had.
-    const { TabBar, Tab, TabNav } = VanillaComponentResolver.instance;
-    const modes: BuildingLensMode[] = ["catalog", "tools"];
-    const modeLabels: Record<BuildingLensMode, { long: string; short: string }> = {
-      catalog: {
-        long: localizedLabel("Tooltip.LABEL[FindItBuildingMenu.CatalogMode]", "Building catalog"),
-        short: localizedLabel("Tooltip.LABEL[FindItBuildingMenu.CatalogModeShort]", "Catalog"),
-      },
-      tools: {
-        long: localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ToolsMode]", "Construction tools"),
-        short: localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ToolsModeShort]", "Tools"),
-      },
-    };
-
-    return (
-      <TabNav
-        tabs={modes}
-        selectedTab={props.buildingLensMode}
-        onSelect={(id) => props.onBuildingLensModeChange(id as BuildingLensMode)}
-      >
-        <TabBar className={styles.lensModeTabBar}>
-          {modes.map((mode) => (
-            <Tab
-              key={mode}
-              id={mode}
-              selectedId={props.buildingLensMode}
-              className={styles.lensModeTab}
-              onSelect={(id) => props.onBuildingLensModeChange(id as BuildingLensMode)}
-            >
-              {modeLabels[mode].short}
-              <AccessibleLabel label={modeLabels[mode].long} />
-            </Tab>
-          ))}
-        </TabBar>
-      </TabNav>
     );
   }
 
@@ -348,7 +296,10 @@ export const TopBarComponent = (props: TopBarProps) => {
   // way back to catalog: ToolSurfaceBar has no back control of its own.
   // Closing the panel without this row's button still works — the game
   // toolbar's FindIt icon toggles it closed the same way it opened it.
-  const showTopBarRow = !BuildingLensEnabled || props.buildingLensMode === "tools";
+  // The legacy FindIt panel keeps its top bar; the Building Lens folded
+  // search onto the strip row and dropped this one. There is no longer a
+  // second lens mode to except — Tools went with master's e90c1a9.
+  const showTopBarRow = !BuildingLensEnabled;
 
   return (
     <>
@@ -390,8 +341,6 @@ export const TopBarComponent = (props: TopBarProps) => {
             </div>
 
             <div className={classNames(styles.topBarSection, styles.topBarControlsSection)}>
-              {BuildingLensEnabled && RenderLensModeList()}
-
               <Tooltip tooltip={translate("Tooltip.LABEL[FindItBuildingMenu.ClosePanel]", "Close Panel")}>
                 <Button
                   className={VanillaComponentResolver.instance.assetGridTheme.item + " " + styles.closeIcon}
@@ -425,7 +374,7 @@ export const TopBarComponent = (props: TopBarProps) => {
           </>
         )}
 
-        {BuildingLensEnabled && props.buildingLensMode === "catalog" && (
+        {BuildingLensEnabled && (
           <>
             {/* Commit 834f72d dropped the whole top bar row in this mode to
                 buy back its 30px, which took search off screen along with it

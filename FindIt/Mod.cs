@@ -60,6 +60,21 @@ namespace FindItBuildingMenu
 			FindItUtil.LoadCustomPrefabData();
 
 			updateSystem.UpdateAfter<PrefabIndexingSystem>(SystemUpdatePhase.PrefabUpdate);
+			// Twice, because PrefabUpdate is not a frame phase. Nothing in the
+			// player loop drives it: PrefabSystem calls Update(PrefabUpdate)
+			// itself, only when prefabs have changed. That is right for the
+			// incremental index, and useless for watching unlocks — a milestone
+			// or a tech-tree node flips Locked and raises an Unlock event without
+			// touching a prefab, so the phase never fires and the index kept the
+			// lock state it was born with until the save was reloaded.
+			//
+			// UIUpdate is the phase that ticks. UIUpdateSystem sits in MainLoop
+			// after UnlockSystem and drives it every frame, which is exactly how
+			// vanilla's ToolbarUISystem sees the same events. CS2's UpdateSystem
+			// keeps a flat list of (phase, system) rather than Unity's system
+			// groups, so a system may appear in two phases; both entries call the
+			// same guarded OnUpdate.
+			updateSystem.UpdateAt<PrefabIndexingSystem>(SystemUpdatePhase.UIUpdate);
 			updateSystem.UpdateAt<FindItUISystem>(SystemUpdatePhase.UIUpdate);
 			updateSystem.UpdateAt<OptionsUISystem>(SystemUpdatePhase.UIUpdate);
 			updateSystem.UpdateAt<PickerToolSystem>(SystemUpdatePhase.ToolUpdate);
