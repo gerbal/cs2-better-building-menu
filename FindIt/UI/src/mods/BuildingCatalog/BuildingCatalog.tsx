@@ -26,7 +26,7 @@ import {
   setSortDescendingCommand,
   toggleCompareEntryCommand,
 } from "domain/buildingCatalogContracts";
-import { shouldLoadMore } from "domain/catalogWindow";
+import { anchorScrollTop, shouldLoadMore } from "domain/catalogWindow";
 import type { SortColumn } from "domain/buildingCatalogContracts";
 import {
   formatBuildingMetric,
@@ -52,7 +52,15 @@ import { getSearchScopeNotice } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { canPlace, isEntryLocked } from "domain/buildingLockState";
 import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
-import { getLensChoice, getLensDisclosure, setLensChoice, setLensDisclosure } from "domain/buildingLensViewState";
+import {
+  getLensAnchor,
+  getLensAnchorKey,
+  getLensChoice,
+  getLensDisclosure,
+  setLensAnchor,
+  setLensChoice,
+  setLensDisclosure,
+} from "domain/buildingLensViewState";
 import { GroupedResults, type CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import { ViewModeBar } from "mods/GroupedResults/ViewModeBar";
 import {
@@ -297,6 +305,12 @@ export const BuildingCatalogComponent = () => {
     // locked tile instead of stepping past it.
     if (!canPlace(entry)) return;
 
+    // Remember where we were before the panel goes. Placing unmounts the whole
+    // lens, so this is the last moment the current scroll position exists — and
+    // the building just chosen is the right thing to come back to, because it
+    // is what the player was looking at.
+    setLensAnchor(anchorKey, entry.id);
+
     // Keep the existing FindIt placement path: the backend resolves this id
     // through its single prefab index and activates the normal prefab tool.
     findItSurfacePort.activatePrefab({ prefabId: entry.id });
@@ -359,6 +373,53 @@ export const BuildingCatalogComponent = () => {
       trigger(mod.id, command.method, ...command.args);
     }
   }
+
+  // Scoped to the surface and the layout, because which element owns the scroll
+  // and how tall its children are both depend on them — an offset remembered in
+  // the table means nothing in the grid. Not the flat "viewMode" namespace the
+  // choice store uses, which BuildingCatalog and ZoningHierarchy already share
+  // by accident.
+  const anchorKey = getLensAnchorKey({ surface: "catalog", viewMode, groupBy });
+
+  useEffect(() => {
+    const anchored = getLensAnchor(anchorKey);
+
+    if (anchored === null || items.length === 0) {
+      return;
+    }
+
+    // Cleared on sight: this is a one-shot restore, and leaving it set would
+    // yank the list back every time the window grew.
+    setLensAnchor(anchorKey, null);
+
+    const row = document.querySelector(`[data-catalog-entry="${anchored}"]`);
+
+    if (!(row instanceof HTMLElement)) {
+      // The anchor fell out of the match set — a predicate changed while the
+      // panel was down. Top of the list is the honest answer.
+      return;
+    }
+
+    let scroller: HTMLElement | null = row.parentElement;
+
+    while (scroller && scroller.scrollHeight <= scroller.clientHeight) {
+      scroller = scroller.parentElement;
+    }
+
+    if (!scroller) {
+      return;
+    }
+
+    scroller.scrollTop = anchorScrollTop(
+      scroller.scrollTop,
+      row.getBoundingClientRect().top,
+      scroller.getBoundingClientRect().top,
+      scroller.clientHeight,
+    );
+    // items.length rather than items: the effect has to wait for the rows to be
+    // in the document before it can find one, and a new array identity every
+    // publish would re-run it on data that has not moved.
+  }, [anchorKey, items.length]);
 
   /**
    * Asks the backend for the next chunk.
@@ -690,6 +751,11 @@ export const BuildingCatalogComponent = () => {
               <div
                 key={entry.id}
                 className={styles.row}
+                // How the scroll anchor finds this row again after the panel is
+                // rebuilt. An id rather than a position, because the window can
+                // come back a different length and these rows are not a uniform
+                // height — an expanded one is height: auto.
+                data-catalog-entry={entry.id}
                 data-expanded={isExpanded ? "true" : undefined}
                 data-locked={isEntryLocked(entry) ? "true" : undefined}
               >
