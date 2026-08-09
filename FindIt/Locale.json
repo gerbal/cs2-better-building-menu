@@ -269,8 +269,6 @@
   "Tooltip.LABEL[FindItBuildingMenu.Zoning_ZoneOffice]": "Office",
   "Tooltip.LABEL[FindItBuildingMenu.Zoning_ZoneExtractors]": "Specialized industry",
   "Tooltip.LABEL[FindItBuildingMenu.ZoneNoDensity]": "No density tier",
-  "Tooltip.LABEL[FindItBuildingMenu.AllZoneFamilies]": "All families",
-  "Tooltip.LABEL[FindItBuildingMenu.ZoneFamilies]": "Families",
   "Tooltip.LABEL[FindItBuildingMenu.AllTypes]": "All types",
   "Tooltip.LABEL[FindItBuildingMenu.Remove]": "Remove",
   "Tooltip.LABEL[FindItBuildingMenu.NoZonesIndexed]": "No zones indexed",

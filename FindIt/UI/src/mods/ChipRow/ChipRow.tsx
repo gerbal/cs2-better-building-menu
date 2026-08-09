@@ -46,32 +46,14 @@ const BuildingLensMenuCategory$ = bindValue<string>(mod.id, "BuildingLensMenuCat
 const BuildingLensMenuCategories$ = bindValue<VanillaMenuCategory[]>(mod.id, "BuildingLensMenuCategories", []);
 const BuildingLensMenus$ = bindValue<VanillaMenuCategory[]>(mod.id, "BuildingLensMenus", []);
 const ShowZoningHierarchy$ = bindValue<boolean>(mod.id, "ShowZoningHierarchy", false);
-const BuildingLensZoneFamilies$ = bindValue<string[]>(mod.id, "BuildingLensZoneFamilies", []);
-const ZoneCatalog$ = bindValue<{ family?: string }[]>(mod.id, "ZoneCatalog", []);
 
-/** Family order as the vanilla Zones menu presents its category tabs. */
-const ZONE_FAMILIES = [
-  "ZoneResidential",
-  "ZoneCommercial",
-  "ZoneIndustrial",
-  "ZoneOffice",
-  "ZoneExtractors",
-] as const;
-
-const ZONE_FAMILY_ICONS: Record<string, string> = {
-  ZoneResidential: "Media/Game/Icons/ZoneResidential.svg",
-  ZoneCommercial: "Media/Game/Icons/ZoneCommercial.svg",
-  ZoneIndustrial: "Media/Game/Icons/ZoneIndustrial.svg",
-  ZoneOffice: "Media/Game/Icons/ZoneOffice.svg",
-  ZoneExtractors: "Media/Game/Icons/ZoneExtractors.svg",
-};
 const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState | null>(
   mod.id,
   "BuildingCatalogMetricRanges",
   null
 );
 
-type PickerId = "section" | "subCategory" | "zoneFamily" | "menuCategory" | "menu" | null;
+type PickerId = "section" | "subCategory" | "menuCategory" | "menu" | null;
 
 export const ChipRow = () => {
   const { translate } = useLocalization();
@@ -84,8 +66,6 @@ export const ChipRow = () => {
   const facets = useValue(BuildingLensFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
   const showZoning = useValue(ShowZoningHierarchy$);
-  const zoneFamilies = useValue(BuildingLensZoneFamilies$) ?? [];
-  const zoneCatalog = useValue(ZoneCatalog$) ?? [];
   const menu = useValue(BuildingLensMenu$) ?? "";
   const menuCategory = useValue(BuildingLensMenuCategory$) ?? "";
   const menuCategories = useValue(BuildingLensMenuCategories$) ?? [];
@@ -108,23 +88,11 @@ export const ChipRow = () => {
   const tabLabel = (list: readonly VanillaBuildMenuTab[], id: string) =>
     list.find((tab) => tab.id === id)?.toolTip ?? id;
 
-  const familyLabel = (id: string) =>
-    translate(`Tooltip.LABEL[FindItBuildingMenu.Zoning_${id}]`, id) ?? id;
-
   // The game's own word for a menu or a category. Two key families, not one —
   // see vanillaServiceLabels.ts for what the running game actually answers.
   const lookup = (key: string) => translate(key, null);
   const menuLabel = (id: string) => resolveVanillaLabel(vanillaMenuNameKeys(id), lookup, id);
   const categoryLabel = (id: string) => resolveVanillaLabel(vanillaCategoryNameKeys(id), lookup, id);
-
-  // Only the families this city actually has zones for. Offering Extractors to
-  // someone without the DLC would be a filter that empties the view and cannot
-  // be told apart from one that found nothing.
-  const availableFamilies = ZONE_FAMILIES.filter((id) =>
-    zoneCatalog.some((zone) => zone?.family === id)
-  );
-
-
 
   // readonly, because TriggerCommand declares its args that way and the facet
   // and chip commands do not.
@@ -166,12 +134,6 @@ export const ChipRow = () => {
     </div>
   );
 
-  const familyTabs: VanillaBuildMenuTab[] = availableFamilies.map((id) => ({
-    id,
-    icon: ZONE_FAMILY_ICONS[id] ?? "",
-    toolTip: familyLabel(id),
-  }));
-
   const menuTabs: VanillaBuildMenuTab[] = orderedCategories(menus).map((entry) => ({
     id: entry.id,
     icon: entry.icon,
@@ -188,9 +150,7 @@ export const ChipRow = () => {
     ? sectionList
     : picker === "subCategory"
       ? subCategoryList
-      : picker === "zoneFamily"
-        ? familyTabs
-        : picker === "menuCategory"
+      : picker === "menuCategory"
           ? categoryTabs
           : picker === "menu"
             ? menuTabs
@@ -200,17 +160,9 @@ export const ChipRow = () => {
     picker === "section" ? id === section
       : picker === "subCategory" ? id === subCategory
         : picker === "menuCategory" ? id === menuCategory
-        : picker === "menu" ? id === menu
-          : zoneFamilies.includes(id);
+          : id === menu;
 
   const choose = (id: string) => {
-    if (picker === "zoneFamily") {
-      // Multi-select, so the picker stays open: families compose, and closing
-      // after each one would make selecting two a four-click job.
-      fire({ method: "ToggleBuildingLensZoneFamily", args: [id] });
-      return;
-    }
-
     if (picker === "menuCategory") {
       fire({ method: "SetBuildingLensMenuCategory", args: [id] });
       setPicker(null);
@@ -232,8 +184,6 @@ export const ChipRow = () => {
   // choice reached two ways.
   const allCategoriesLabel = label("Tooltip.LABEL[FindItBuildingMenu.AllCategories]", "All");
   const allMenusLabel = label("Tooltip.LABEL[FindItBuildingMenu.AllMenus]", "All menus");
-  const allFamiliesLabel = label("Tooltip.LABEL[FindItBuildingMenu.AllZoneFamilies]", "All families");
-  const familiesLabel = label("Tooltip.LABEL[FindItBuildingMenu.ZoneFamilies]", "Families");
 
   return (
     <div className={styles.chipRow}>
@@ -285,19 +235,17 @@ export const ChipRow = () => {
             subCategory === SUBCATEGORY_ANY ? null : () => fire(lensSubCategoryCommand(SUBCATEGORY_ANY))
           )}
 
-        {/* Replaces the four-icon family tab strip inside the zoning view.
-            One picker, multi-select, and the choices come back as chips. */}
-        {showZoning && availableFamilies.length > 1
-          && renderBreadcrumb(
-            "zoneFamily",
-            // Never names the selection: the chips beside it already do, and
-            // saying "Residential" here as well would read as two controls.
-            zoneFamilies.length === 0 ? allFamiliesLabel : familiesLabel,
-            picker === "zoneFamily",
-            null
-          )}
+        {/* The zoning view has no chip of its own. Its families ARE the Zones
+            menu's categories, so the category chip above names them and the
+            icon strip picks them — one control, in the same place it sits for
+            every other menu.
 
-
+            There used to be a second, multi-select picker here. It was not
+            merely redundant: selecting two families through it produced a state
+            the category chip and the strip could not express, and both reported
+            it as "All" while the results were filtered to two. The active-filter
+            chips in the options bank still list what is selected and still
+            remove it, which is the record every other facet gets. */}
       </div>
 
       {openList && (

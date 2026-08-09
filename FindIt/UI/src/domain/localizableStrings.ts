@@ -78,8 +78,6 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   // --- Chip row. Already behind translate(). -------------------------------
   { key: key("AllMenus"), english: "All menus", source: "ChipRow", plumbed: true },
   { key: key("AllTypes"), english: "All types", source: "ChipRow", plumbed: true },
-  { key: key("AllZoneFamilies"), english: "All families", source: "ChipRow", plumbed: true },
-  { key: key("ZoneFamilies"), english: "Families", source: "ChipRow", plumbed: true },
   { key: key("Remove"), english: "Remove", source: "ChipRow", plumbed: true },
 
   // --- Zone facts. Plumbed: the component formats and translates these. ----
