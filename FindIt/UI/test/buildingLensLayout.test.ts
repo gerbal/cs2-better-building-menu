@@ -12,6 +12,9 @@ import {
   getBuildingLensMetricTextScale,
   getBuildingLensCatalogMaxHeight,
   resizedBuildingLensWidth,
+  isBuildingLensUnscoped,
+  isBuildingLensExpanded,
+  canToggleBuildingLensHeight,
 } from "../src/domain/buildingLensLayout.ts";
 
 describe("Building Lens panel geometry", () => {
@@ -83,5 +86,44 @@ describe("Building Lens panel geometry", () => {
     assert.equal(getBuildingLensCatalogMaxHeight(720), 765);
     assert.equal(getBuildingLensCatalogMaxHeight(1080), 870);
     assert.equal(getBuildingLensCatalogMaxHeight(Number.NaN), 765);
+  });
+});
+
+describe("Building Lens catalog height", () => {
+  const scoped = { section: "Transportation", searchText: "" };
+
+  it("rests as a strip while a category bounds the list", () => {
+    assert.equal(isBuildingLensUnscoped(scoped), false);
+    assert.equal(isBuildingLensExpanded({ ...scoped, isExpanded: false }), false);
+  });
+
+  it("raises the floor for sets no category narrows", () => {
+    for (const section of ["AllBuildings", "Favorites"]) {
+      assert.equal(isBuildingLensUnscoped({ section, searchText: "" }), true);
+      assert.equal(isBuildingLensExpanded({ section, searchText: "", isExpanded: false }), true);
+    }
+  });
+
+  it("raises the floor while a search is running, whatever the section", () => {
+    assert.equal(isBuildingLensUnscoped({ ...scoped, searchText: "clinic" }), true);
+    // Whitespace is not a query — it would hold the panel open on a stray space.
+    assert.equal(isBuildingLensUnscoped({ ...scoped, searchText: "   " }), false);
+  });
+
+  it("treats a missing section or search text as scoped rather than throwing", () => {
+    assert.equal(isBuildingLensUnscoped({ section: undefined, searchText: undefined }), false);
+  });
+
+  it("lets the player's choice raise a scoped catalog", () => {
+    assert.equal(isBuildingLensExpanded({ ...scoped, isExpanded: true }), true);
+  });
+
+  it("reports the control as inert exactly when the floor already holds it tall", () => {
+    // The regression this guards: the pane would otherwise draw an enabled
+    // toggle that moves and changes nothing, because the automatic floor wins
+    // in BOTH directions — you cannot manually shrink an unscoped catalog.
+    assert.equal(canToggleBuildingLensHeight(scoped), true);
+    assert.equal(canToggleBuildingLensHeight({ section: "AllBuildings", searchText: "" }), false);
+    assert.equal(canToggleBuildingLensHeight({ ...scoped, searchText: "clinic" }), false);
   });
 });

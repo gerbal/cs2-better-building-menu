@@ -228,11 +228,43 @@ describe("Building Lens chrome budget", () => {
     assert.match(lensControlPaneSource, /ViewModeBar/);
   });
 
+  it("carries the expand control too, the one the deleted top bar left homeless", () => {
+    // Search, close and the count all had somewhere else to go when the top
+    // bar was deleted; expand did not. SetIsExpanded has exactly one caller,
+    // so with that button gone the lens rested at the strip and no gesture
+    // could grow it — while the automatic floor's own comment still promised
+    // "a manual expand always wins".
+    assert.match(lensControlPaneSource, /SetIsExpanded/);
+    assert.match(lensControlPaneSource, /canToggleBuildingLensHeight/);
+  });
+
+  it("puts the height control where the zoning view can reach it as well", () => {
+    // Group, sort and view sit inside `!showZoning` because the hierarchy has
+    // no rows to order. Height is not about rows, and a zoning tree is exactly
+    // the thing you want more than two rows of.
+    // Bounded by the fragment the conditional wraps, not by the height row —
+    // the prose above that row names SetIsExpanded, and a slice ending there
+    // would fail on the explanation rather than on the code.
+    const start = lensControlPaneSource.indexOf("!showZoning");
+    const end = lensControlPaneSource.indexOf("</>", start);
+    assert.ok(start >= 0 && end > start, "expected a !showZoning fragment to bound");
+    assert.doesNotMatch(lensControlPaneSource.slice(start, end), /heightToggle/);
+  });
+
   it("still names the search the count is counting", () => {
     // "Buildings from the FindIt index" was a static caption costing a row on
     // every frame; the search variant is the informative case, and it moved
     // with the count rather than being dropped with the toolbar around it.
     assert.match(lensControlPaneSource, /searchContext/);
+  });
+
+  it("lets the pane's text buttons size to their text", () => {
+    // The icon variant pins a square width. Measured live: the height toggle
+    // rendered 16px wide around 33px of text and drew "Shrink Panel" as "S…l".
+    // .pickerSummary already carries the same override for the same reason.
+    for (const rule of [/\.pickerSummary\s*\{[^}]*width:\s*auto\s*!important/, /\.heightToggle\s*\{[^}]*width:\s*auto\s*!important/]) {
+      assert.match(lensControlPaneStyles, rule);
+    }
   });
 
   it("opens the pane's menus upward, away from the bottom bar", () => {

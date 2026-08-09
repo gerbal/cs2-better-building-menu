@@ -15,6 +15,7 @@ import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import {
   BUILDING_LENS_PANEL_CHROME_WIDTH,
+  isBuildingLensUnscoped,
   resizedBuildingLensWidth,
 } from "domain/buildingLensLayout";
 import { findItSurfacePort } from "domain/findItSurfacePort";
@@ -72,8 +73,13 @@ export const FindItMainContainerComponent = () => {
   // on, so gating on BuildingLensEnabled keeps this from firing there.
   // A manual expand always wins — this raises the floor, it does not seize the
   // control.
+  //
+  // The rule itself lives in buildingLensLayout because the control plane needs
+  // the same answer to draw the expand control, and it is a sibling of this
+  // component rather than a descendant. Two copies is how the pane would come
+  // to report "strip" over a panel that is plainly tall.
   const searchText = useValue(CurrentSearch$) ?? "";
-  const unscoped = BuildingLensEnabled && (searchText.trim().length > 0 || BuildingLensSection === "AllBuildings" || BuildingLensSection === "Favorites");
+  const unscoped = BuildingLensEnabled && isBuildingLensUnscoped({ section: BuildingLensSection, searchText });
   const effectiveExpanded = IsExpanded || unscoped;
   // Strip height is a Building Lens concept only; the legacy panel keeps
   // whatever height behaviour it always had.

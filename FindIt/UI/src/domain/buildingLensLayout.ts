@@ -100,3 +100,54 @@ export function resizedBuildingLensWidth(
   const delta = Number.isFinite(startX) && Number.isFinite(currentX) ? currentX - startX : 0;
   return clampBuildingLensWidth(startWidth + delta * direction);
 }
+
+/** Sections that name no scope, and so have nothing keeping the catalog short. */
+const UNSCOPED_SECTIONS = new Set(["AllBuildings", "Favorites"]);
+
+export interface BuildingLensHeightState {
+  /** The player's own choice, owned by the backend as IsExpanded. */
+  isExpanded: boolean;
+  /** BuildingLensSection — which bank of the lens is showing. */
+  section: string | undefined;
+  /** The live search text, if any. */
+  searchText: string | undefined;
+}
+
+/**
+ * True when the lens is showing a set that no category narrows — a search, or
+ * one of the unscoped sections.
+ *
+ * The lens rests as a strip to match vanilla's footprint, which is right while
+ * a category bounds the list. An unbounded set has no such bound, so the strip
+ * would hide nearly all of it; this raises the floor in that case.
+ */
+export function isBuildingLensUnscoped(
+  { section, searchText }: Pick<BuildingLensHeightState, "section" | "searchText">,
+): boolean {
+  return (searchText ?? "").trim().length > 0 || UNSCOPED_SECTIONS.has(section ?? "");
+}
+
+/**
+ * Whether the catalog is drawn tall — the player's choice and the automatic
+ * floor together.
+ *
+ * The panel and the control plane both need this answer and they sit in
+ * different React subtrees, so deriving it twice is how the pane would come to
+ * report "strip" over a panel that is plainly tall.
+ */
+export function isBuildingLensExpanded(state: BuildingLensHeightState): boolean {
+  return state.isExpanded || isBuildingLensUnscoped(state);
+}
+
+/**
+ * Whether the player's expand control can change anything right now.
+ *
+ * While the set is unscoped the floor holds the catalog tall whatever the
+ * stored choice is, so the control moves and nothing happens — in either
+ * direction. Callers disable it and say why instead.
+ */
+export function canToggleBuildingLensHeight(
+  state: Pick<BuildingLensHeightState, "section" | "searchText">,
+): boolean {
+  return !isBuildingLensUnscoped(state);
+}
