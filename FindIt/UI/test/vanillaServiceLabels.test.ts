@@ -78,3 +78,39 @@ describe("resolving a label", () => {
     assert.equal(resolveVanillaLabel(["a"], () => undefined, "fallback"), "fallback");
   });
 });
+
+describe("the menu the lens renamed", () => {
+  it("offers our name for Roads ahead of the game's", async () => {
+    const { EXTENDED_NETWORK_MENU_KEY, vanillaMenuNameKeys } =
+      await import("../src/domain/vanillaServiceLabels.ts");
+
+    // Roads gathers every network now, so the game's own "Roads" is short by
+    // about 230 assets.
+    assert.equal(vanillaMenuNameKeys("Roads")[0], EXTENDED_NETWORK_MENU_KEY);
+    assert.equal(vanillaMenuNameKeys("roads")[0], EXTENDED_NETWORK_MENU_KEY);
+  });
+
+  it("leaves every other menu with the game's name alone", async () => {
+    const { vanillaMenuNameKeys } = await import("../src/domain/vanillaServiceLabels.ts");
+
+    assert.deepEqual(vanillaMenuNameKeys("Transportation"), [
+      "Services.NAME[Transportation]",
+      "SubServices.NAME[Transportation]",
+    ]);
+  });
+
+  it("still falls back to the game's name where ours is untranslated", async () => {
+    const { resolveVanillaLabel, vanillaMenuNameKeys } =
+      await import("../src/domain/vanillaServiceLabels.ts");
+
+    // First, not instead: a language we have not covered gets "Roads" rather
+    // than the raw prefab id an unconditional override would leave behind.
+    const label = resolveVanillaLabel(
+      vanillaMenuNameKeys("Roads"),
+      (k) => (k === "Services.NAME[Roads]" ? "Straßen" : null),
+      "Roads",
+    );
+
+    assert.equal(label, "Straßen");
+  });
+});
