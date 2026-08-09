@@ -90,8 +90,27 @@ namespace FindItBuildingMenu.Domain
 		/// just where the window begins, so a menu larger than the ceiling still
 		/// grows the same way everything else does. The largest vanilla menu is
 		/// Roads &amp; Networks at 401, so in practice one window covers every menu.
+		///
+		/// WITHDRAWN 2026-08-09, back to <see cref="DefaultLimit"/>. The reason it
+		/// existed was that a player who reached the hundredth row had no way
+		/// onward except a control at the end of a list they had no reason to
+		/// think was incomplete — and that was true, because the scroll never
+		/// grew the window: cs2/ui's Scrollable takes an onScroll prop and never
+		/// forwards it, so the passive half of the trigger had never once fired.
+		/// A frame loop over scrollTop replaced it, and scrolling to the end now
+		/// grows the list unaided, which is what this constant was standing in
+		/// for.
+		///
+		/// It was also expensive, measured on the live table with Roads &amp;
+		/// Networks open: 401 rows is 8,465 DOM nodes, 95% of the whole game UI's
+		/// node count, and it cut the UI thread's throughput by more than half —
+		/// 134 timer ticks a second against 283 with a handful of rows. Reported
+		/// from play as the whole interface lagging. At 100 rows it is 226.
+		///
+		/// The real ceiling here is virtualisation: render the rows in view rather
+		/// than all of them. Until that exists, the window is the throttle.
 		/// </remarks>
-		public const int MenuLimit = MaxLimit;
+		public const int MenuLimit = DefaultLimit;
 
 		/// <summary>
 		/// The window size a fresh set of predicates starts at.

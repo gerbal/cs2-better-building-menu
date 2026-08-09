@@ -1,6 +1,20 @@
 @use "../../base.scss" as _base;
 
 // ---------------------------------------------------------------------------
+// No var(--name, fallback) in this file. The two-argument form is not supported
+// by this engine, and it does not fail quietly: Cohtml logs
+// "Unable to resolve custom variable: fontSizeXS,12rem" once per element, per
+// style pass. Read off a live Player.log with the table open — 62,397 of them
+// in one session, 392 of the last 400 UI log lines, one per rendered row.
+//
+// That is a per-frame string format and a log write for every element carrying
+// one, which is a real cost on a surface that renders hundreds of rows. Plain
+// var(--name) resolves normally; the fallbacks were never doing anything except
+// generating warnings, because the variables they guard are always defined by
+// the game's own theme.
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
 // Table column geometry.
 //
 // The header row and the data rows are two separate flex containers describing
@@ -174,7 +188,7 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 .columnHeader,
 .pageLabel {
   color: var(--menuText2Normal);
-  font-size: var(--fontSizeS, 14rem);
+  font-size: var(--fontSizeS);
 }
 
 .count {
@@ -221,7 +235,7 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   color: var(--accentColorNormal);
   background-color: rgba(255, 255, 255, 0.08);
   border-radius: 3rem;
-  font-size: var(--fontSizeS, 14rem);
+  font-size: var(--fontSizeS);
 }
 
 .sortSummaryLabel {
@@ -287,7 +301,7 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 // Which way the order runs (▲/▼ as ascending/descending).
 .sortDirection {
   margin-left: 3rem;
-  font-size: var(--fontSizeXS, 12rem);
+  font-size: var(--fontSizeXS);
 }
 
 // "This opens a menu". Same glyph as .sortDirection and previously the same
@@ -296,7 +310,7 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 // either the markup or the screen can tell them apart.
 .disclosureCaret {
   margin-left: 3rem;
-  font-size: var(--fontSizeXS, 12rem);
+  font-size: var(--fontSizeXS);
   color: var(--menuText2Normal);
 }
 
@@ -360,7 +374,7 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   border-radius: 3rem;
   background-color: rgba(255, 255, 255, 0.1);
   text-align: center;
-  font-size: var(--fontSizeXS, 12rem);
+  font-size: var(--fontSizeXS);
 }
 
 .facetClear {
@@ -412,14 +426,14 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   align-items: center;
   justify-content: space-between;
   color: var(--menuText2Normal);
-  font-size: var(--fontSizeS, 14rem);
+  font-size: var(--fontSizeS);
   font-weight: bold;
   text-transform: uppercase;
 }
 
 .facetGroupScrollMark {
   color: var(--accentColorNormal);
-  font-size: var(--fontSizeS, 14rem);
+  font-size: var(--fontSizeS);
   line-height: 12rem;
 }
 
@@ -459,7 +473,7 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   min-width: 0;
   padding: 3rem 7rem;
   gap: 4rem;
-  font-size: var(--fontSizeS, 14rem);
+  font-size: var(--fontSizeS);
   justify-content: flex-start;
 }
 
@@ -468,7 +482,7 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   width: 12rem;
   color: var(--menuText2Normal);
   text-align: center;
-  font-size: var(--fontSizeS, 14rem);
+  font-size: var(--fontSizeS);
   line-height: 14rem;
 }
 
@@ -496,7 +510,7 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   padding: 3rem 0 3rem 7rem;
   color: var(--menuText2Normal);
   border-left: 1rem solid rgba(255, 255, 255, 0.08);
-  font-size: var(--fontSizeXS, 12rem);
+  font-size: var(--fontSizeXS);
   text-transform: uppercase;
   white-space: nowrap;
   overflow: hidden;
@@ -505,13 +519,13 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 
 .facetScrollGlyph {
   color: var(--accentColorNormal);
-  font-size: var(--fontSizeS, 14rem);
+  font-size: var(--fontSizeS);
   line-height: 14rem;
 }
 
 .facetEmpty {
   color: var(--menuText2Normal);
-  font-size: var(--fontSizeXS, 12rem);
+  font-size: var(--fontSizeXS);
 }
 
 .metricRangePanel {
@@ -557,7 +571,7 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   border-radius: 3rem;
   background-color: rgba(255, 255, 255, 0.1);
   text-align: center;
-  font-size: var(--fontSizeXS, 12rem);
+  font-size: var(--fontSizeXS);
 }
 
 .metricRangeClear {
@@ -604,7 +618,7 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   min-width: 0;
   overflow: hidden;
   color: var(--menuText2Normal);
-  font-size: var(--fontSizeS, 14rem);
+  font-size: var(--fontSizeS);
   white-space: nowrap;
   text-overflow: ellipsis;
 }
@@ -628,7 +642,7 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   background-color: rgba(0, 0, 0, 0.24);
   border: 1rem solid rgba(255, 255, 255, 0.14);
   border-radius: 3rem;
-  font-size: var(--fontSizeS, 14rem);
+  font-size: var(--fontSizeS);
   line-height: 18rem;
   box-sizing: border-box;
 }
@@ -636,7 +650,7 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 .metricRangeSeparator {
   flex: 0 0 auto;
   color: var(--menuText2Normal);
-  font-size: var(--fontSizeS, 14rem);
+  font-size: var(--fontSizeS);
 }
 
 .capacityFilter {
@@ -651,7 +665,7 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 
 .capacityFilterLabel {
   color: var(--menuText2Normal);
-  font-size: var(--fontSizeS, 14rem);
+  font-size: var(--fontSizeS);
   margin-right: 2rem;
 }
 
@@ -967,7 +981,7 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   color: var(--accentColorNormal);
   background-color: rgba(255, 255, 255, 0.08);
   border-radius: 3rem;
-  font-size: var(--fontSizeXS, 12rem);
+  font-size: var(--fontSizeXS);
   line-height: 14rem;
   opacity: 0;
   white-space: nowrap;
@@ -1139,13 +1153,13 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 
 .compareTitle {
   color: var(--accentColorNormal);
-  font-size: var(--fontSizeS, 14rem);
+  font-size: var(--fontSizeS);
   text-transform: uppercase;
 }
 
 .compareCount {
   color: var(--menuText2Normal);
-  font-size: var(--fontSizeXS, 12rem);
+  font-size: var(--fontSizeXS);
 }
 
 .clearCompare,
@@ -1155,7 +1169,7 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   min-height: 22rem;
   padding: 2rem 5rem;
   color: var(--menuText2Normal);
-  font-size: var(--fontSizeS, 14rem);
+  font-size: var(--fontSizeS);
   width: auto !important;
   flex: 0 1 auto;
   white-space: nowrap;
@@ -1199,14 +1213,14 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 
 .compareName {
   color: var(--menuTitleNormal);
-  font-size: var(--fontSizeS, 14rem);
+  font-size: var(--fontSizeS);
   line-height: 14rem;
 }
 
 .compareMetrics {
   margin-top: 1rem;
   color: var(--menuText2Normal);
-  font-size: var(--fontSizeXS, 12rem);
+  font-size: var(--fontSizeXS);
   line-height: 12rem;
 }
 
@@ -1225,7 +1239,7 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   white-space: nowrap;
   text-overflow: ellipsis;
   text-align: center;
-  font-size: var(--fontSizeS, 14rem);
+  font-size: var(--fontSizeS);
 }
 
 .pageButton {
