@@ -123,23 +123,41 @@
 
 // The figure the grid is currently ordered by.
 //
-// Top-left, because the lock glyph already owns bottom-right and the name owns
-// the bottom edge. A pill rather than bare text: it sits over a thumbnail whose
-// colours we do not control, and light text on a pale roof was unreadable.
+// Its own row under the name, not a pill over the thumbnail. The thumbnail is
+// the entire reason this view exists — recognising it is the fast path back to
+// the map — and covering a corner of every one to explain the sort spends the
+// thing the grid is for. The tile grows instead; see .tileSorted.
+// One name for the row's height, because three things depend on it: the row
+// itself, the tile that has to grow by it, and the lock glyph that has to clear
+// it.
+$sorted-metric-row: 14rem;
+
 .sortedMetric {
-  position: absolute;
-  top: 2rem;
-  left: 2rem;
-  max-width: calc(100% - 4rem);
-  padding: 0 3rem;
-  border-radius: 2rem;
-  background-color: rgba(0, 0, 0, 0.65);
-  color: var(--menuText1Normal);
-  font-size: var(--fontSizeXS);
-  line-height: 15rem;
+  flex: 0 0 auto;
+  width: 100%;
+  text-align: center;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeS);
+  line-height: $sorted-metric-row;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+// The tile's 112rem is exactly 68 thumb + 2 gap + 34 name + 8 padding, with
+// nothing spare, so a metric row has to be paid for. Applied to every tile
+// while a metric sort is active — including the ones with no value for it — so
+// the grid stays a grid rather than going ragged where a figure is missing.
+.tileSorted {
+  height: 112rem + $sorted-metric-row;
+
+  // The lock glyph is pinned to the bottom-right of the TILE, so a new bottom
+  // row puts it straight on top of the figure — measured at 1280x720 it covered
+  // the last characters and forced "225,000/mo" to ellipsis. Lift it clear by
+  // exactly the row it now has to clear.
+  .lockGlyph {
+    bottom: 2rem + $sorted-metric-row;
+  }
 }
 
 // Vanilla's own placement and colour: bottom-right of the tile, 16rem, #ffaa00.

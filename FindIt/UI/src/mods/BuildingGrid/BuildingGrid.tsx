@@ -138,7 +138,7 @@ export const BuildingGrid = ({ entries, searchText, onPlace, standalone = true }
     return (
       <BuildingHoverCard key={key} entry={entry} context={hoverCard}>
         <Button
-          className={styles.tile}
+          className={classNames(styles.tile, sortedMetric !== null && styles.tileSorted)}
           style={{ width: `${tileSize}rem` }}
           variant="icon"
           onSelect={() => place(entry)}
