@@ -450,3 +450,79 @@ export function groupDimensionLabel(id: GroupDimensionId): string {
 export function isGroupDimension(value: unknown): value is GroupDimensionId {
   return GROUP_DIMENSIONS.some((dimension) => dimension.id === value);
 }
+
+/** One line of a grouped table: a heading band, or a data row. */
+export type GroupedRow<T> =
+  | { kind: "heading"; key: string; label: string; labelId?: string; depth: number; count: number }
+  | { kind: "row"; key: string; entry: T };
+
+/**
+ * Flatten a group tree into the sequence a table renders.
+ *
+ * The table is the one view that could not use GroupedResults: it draws its own
+ * rows against a shared column geometry, and wrapping each group in its own
+ * scrolling section would break the column alignment the whole surface depends
+ * on. So it went ungrouped — and the Group by control stayed on screen and kept
+ * working on the C# side, which reorders by group key before it sorts. The
+ * result was a table that silently rearranged itself with nothing to say why:
+ * picking "Asset type" moved every bridge to the top and drew no heading.
+ *
+ * Interleaving headings into one flat list keeps a single flex column geometry
+ * for the data rows and gives the reordering a visible reason.
+ *
+ * Order is preserved exactly as buildGroupedView produced it, which is the
+ * order the backend already sorted; nothing here re-sorts.
+ */
+export function flattenGroupedRows<T extends GroupableEntry>(
+  entries: readonly T[] | null | undefined,
+  dimension: GroupDimensionId,
+  keyOf: (entry: T) => string,
+): GroupedRow<T>[] {
+  const source = entries ?? [];
+  const nodes = buildGroupedView(source, dimension);
+
+  // "None", or a dimension that grouped nothing: the table is the flat list it
+  // has always been.
+  if (nodes.length === 0) {
+    return source.map((entry) => ({ kind: "row", key: keyOf(entry), entry }));
+  }
+
+  const out: GroupedRow<T>[] = [];
+
+  const walk = (level: readonly GroupNode<T>[], depth: number): void => {
+    // Decided PER LEVEL, which is what GroupedResults does and what a first
+    // version of this got wrong. Grouping the Roads menu by asset type puts
+    // every entry under one root — they are all Networks — and judging the
+    // whole tree by that root suppressed the headings underneath it too, so
+    // the table reordered itself into Roads, Bridges and Tracks and named
+    // none of them. A lone heading at one level says nothing; the level below
+    // it can still be worth labelling.
+    const withHeadings = shouldShowHeading(level);
+
+    for (const node of level) {
+      if (withHeadings) {
+        out.push({
+          kind: "heading",
+          key: `h:${node.path.join("/")}`,
+          label: node.label,
+          labelId: node.labelId,
+          depth,
+          count: node.count,
+        });
+      }
+
+      if (node.children.length > 0) {
+        walk(node.children, depth + 1);
+        continue;
+      }
+
+      for (const entry of node.entries) {
+        out.push({ kind: "row", key: keyOf(entry), entry });
+      }
+    }
+  };
+
+  walk(nodes, 0);
+
+  return out;
+}

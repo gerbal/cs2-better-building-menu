@@ -1439,3 +1439,50 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
     opacity: 0.4;
   }
 }
+
+// A group heading inside the table.
+//
+// A full-width band rather than a row of cells: it names the group, so it has
+// nothing to say in any of the metric columns and lining it up with them would
+// only invite the reader to look for values that are not there.
+//
+// The table could not use GroupedResults — it draws its rows against one shared
+// column geometry, and a scrolling section per group would break exactly the
+// alignment that makes the columns readable. So it rendered ungrouped while the
+// Group by control stayed on screen and kept reordering the rows on the C# side:
+// picking "Asset type" moved every bridge to the top and drew no heading to say
+// why.
+.tableGroupHeading {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 6rem;
+  padding: 3rem 8rem;
+  background-color: rgba(255, 255, 255, 0.06);
+  border-radius: 2rem;
+}
+
+.tableGroupHeading[data-group-depth="1"] {
+  margin-left: 12rem;
+  width: auto;
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.tableGroupLabel {
+  color: var(--menuText1Normal);
+  font-size: var(--fontSizeS);
+  text-transform: uppercase;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.tableGroupCount {
+  flex: 0 0 auto;
+  margin-left: 8rem;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeXS);
+}

@@ -76,10 +76,12 @@ import {
   DEFAULT_GROUP_DIMENSION,
   GROUP_DIMENSIONS,
   defaultGroupDimensionFor,
+  flattenGroupedRows,
   groupDimensionLabel,
   isGroupDimension,
   type GroupDimensionId,
 } from "domain/buildingGroups";
+import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 // The rail, the metric popover and the filter summary all live in the chip row
 // now, so the catalog no longer owns any filter chrome — only results.
 import {
@@ -871,7 +873,29 @@ export const BuildingCatalogComponent = () => {
                 : emptyStateMessage}
             </div>
           )}
-          {items.map((entry) => {
+          {flattenGroupedRows(items, groupBy, (entry) => String(entry.id)).map((line) => {
+            if (line.kind === "heading") {
+              return (
+                <div
+                  key={line.key}
+                  className={styles.tableGroupHeading}
+                  data-group-depth={line.depth}
+                >
+                  <span className={styles.tableGroupLabel}>
+                    {line.labelId === undefined
+                      ? line.label
+                      : resolveVanillaLabel(
+                        vanillaCategoryNameKeys(line.labelId),
+                        (key) => translate(key, null),
+                        line.label
+                      )}
+                  </span>
+                  <span className={styles.tableGroupCount}>{line.count}</span>
+                </div>
+              );
+            }
+
+            const entry = line.entry;
             const isCompared = compareEntries.some((candidate) => candidate.id === entry.id);
             const rawCategoryIdentity = entry.subCategory
               ? `${entry.category} · ${entry.subCategory}`
