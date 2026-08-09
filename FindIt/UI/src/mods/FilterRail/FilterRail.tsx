@@ -1,5 +1,6 @@
 import { Dropdown, DropdownItem, DropdownToggle, Scrollable, Tooltip } from "cs2/ui";
 import { getModule } from "cs2/modding";
+import { Theme } from "cs2/bindings";
 import { useLocalization } from "cs2/l10n";
 import { useState } from "react";
 import classNames from "classnames";
@@ -13,6 +14,42 @@ import {
 import styles from "./filterRail.module.scss";
 
 const TextInput = getModule("game-ui/common/input/text/text-input.tsx", "TextInput");
+
+/**
+ * The game's in-game dropdown theme, rather than the default one.
+ *
+ * cs2/ui's Dropdown ships two looks and picks the light one unless told
+ * otherwise: read off the shipped bundle, the default `dropdown-menu_rL4` is
+ * `background:#fff` with a black border, which is the settings-screen control.
+ * Opened over the map from the dark options bank it drew a solid white panel
+ * with black text — the same mistake the toggles made before they were pinned
+ * to the Theme row's chrome, one level deeper.
+ *
+ * `game-dropdown.module.scss` is the in-game one: `dropdown-menu_xq2` is
+ * #0f1013 with a #3c404c border and a 3rem radius. Taking the game's own theme
+ * rather than restyling the default keeps the hover, focus and open states we
+ * would otherwise have to reimplement — .menu below has always claimed colour
+ * and border came from here; until now nothing passed it.
+ */
+const GameDropdownTheme: Theme | any = getModule(
+  "game-ui/game/themes/game-dropdown.module.scss",
+  "classes"
+);
+
+/**
+ * The menu half of that theme, and only that half.
+ *
+ * Passed whole, it also replaces the toggle — and its toggle is a labeled
+ * control with an open/close chevron, not an icon button. On screen the rail's
+ * eight dimension icons vanished and became a row of carets. The theme is a
+ * Partial, so the keys left out here keep their defaults, which is what the
+ * toggle wants: its chrome is already pinned to the Theme row's in
+ * filterRail.module.scss.
+ */
+const GameDropdownMenuTheme = {
+  dropdownMenu: GameDropdownTheme?.dropdownMenu,
+  dropdownItem: GameDropdownTheme?.dropdownItem,
+};
 
 interface FilterRailProps {
   facets: RailFacetState | null | undefined;
@@ -59,6 +96,7 @@ export const FilterRail = ({
           return (
             <Dropdown
               key={dimension.id}
+              theme={GameDropdownMenuTheme}
               // Opening a dropdown resets the search: `query` is one piece of
               // state shared by every dimension's menu, so a stale value would
               // otherwise leak from one dimension into the next, or between
