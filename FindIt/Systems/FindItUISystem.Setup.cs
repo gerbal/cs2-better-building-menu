@@ -121,7 +121,6 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<string> _BuildingLensMenuBinding = null!;
 		// Milestone index -> name, published once. Locked assets carry the index.
 		private ValueBindingHelper<string[]> _BuildingLensMilestonesBinding = null!;
-		private ValueBindingHelper<ToolSurfaceDescriptor[]> _ToolSurfaceDescriptorsBinding = null!;
 
 		public bool IsExpanded => _IsExpanded;
 		public bool BuildingLensEnabled => _BuildingLensEnabled;
@@ -259,7 +258,6 @@ namespace FindItBuildingMenu.Systems
 				"SetBuildingLensMenuCategory",
 				string.Empty,
 				SetBuildingLensMenuCategory);
-			_ToolSurfaceDescriptorsBinding = CreateBinding("ToolSurfaceDescriptors", ToolSurfaceCatalog.GetDescriptors().ToArray());
 			_PrefabCountBinding = CreateBinding("PrefabCount", string.Empty);
 			_ViewStyle = CreateBinding("ViewStyle", Mod.Settings.DefaultViewStyle);
 			_AlignmentStyle = CreateBinding("AlignmentStyle", Mod.Settings.DefaultAlignmentStyle);

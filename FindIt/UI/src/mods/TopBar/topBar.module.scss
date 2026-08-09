@@ -213,30 +213,6 @@
   padding: 5rem 10rem 0rem 10rem;
 }
 
-// Catalog | Tools now uses the game's own TabBar/Tab, so the selected
-// treatment, the hover states and the legacy-interface variant all come from
-// vanilla. What is left here is only placement: sitting inline in the top bar
-// rather than owning a full-width band, and shrinking to the chrome's scale.
-//
-// Everything that used to be here — a lightButton mixin, hand-tuned padding, a
-// reimplemented gradient, and a :global(.legacy-interface) override copying
-// vanilla by eye — is deleted rather than layered over. Overriding a component
-// that already looks right is how the padding got awkward in the first place.
-.lensModeTabBar {
-  margin-right: 6rem;
-  align-items: center;
-}
-
-.lensModeTab {
-  height: 24rem;
-  padding: 2rem 10rem;
-  font-size: var(--fontSizeS);
-
-  // The labels are short and must not wrap mid-word into a second line: this
-  // bar sits beside the close button and any extra height pushes into it.
-  white-space: nowrap;
-}
-
 .categorySection {
   display: flex;
   flex-direction: row;

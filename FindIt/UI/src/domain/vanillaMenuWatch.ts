@@ -1,4 +1,4 @@
-import type { ToolbarEntity } from "./toolSurfaceContracts";
+import type { ToolbarEntity } from "./toolbarEntity";
 
 /**
  * The entity index behind a toolbar selection, or null when nothing is selected.
