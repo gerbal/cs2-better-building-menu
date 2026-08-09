@@ -63,20 +63,36 @@ namespace FindItBuildingMenu.Systems
 				return;
 			}
 
-			// A closed lens stands in for no menu, so the menu scope goes with
-			// it. It was set on every vanilla menu click and never cleared, so
-			// it outlived the panel: reopening the lens from FindIt's own
-			// toolbar button still filtered the whole catalog down to whichever
-			// menu had been clicked last, with nothing on screen saying so.
-			_buildingLensUiMenu = string.Empty;
-			_buildingLensUiCategory = string.Empty;
-			RefreshBuildingLensMenuCategories();
+			ReleaseMenuScope();
 
 			if (ownedMenu)
 			{
 				_LensOwnsCurrentMenu.Value = false;
 				_toolbarUISystem.ClearAssetSelection();
 			}
+		}
+
+		/// <summary>
+		/// Forgets the vanilla menu the lens was standing in for.
+		/// </summary>
+		/// <remarks>
+		/// The scope was set on every vanilla menu click and, before this
+		/// existed, cleared in only one of the two places the lens closes:
+		/// reopening from FindIt's own toolbar button still filtered the whole
+		/// catalog down to whichever menu had been clicked last, with nothing on
+		/// screen saying so.
+		///
+		/// Shared rather than duplicated because the two close paths had already
+		/// drifted apart once — CloseLens cleared the scope and
+		/// VanillaMenuDeselected did not, so which stale filter you got depended
+		/// on whether you closed the lens with its own button or with the
+		/// toolbar icon.
+		/// </remarks>
+		private void ReleaseMenuScope()
+		{
+			_buildingLensUiMenu = string.Empty;
+			_buildingLensUiCategory = string.Empty;
+			RefreshBuildingLensMenuCategories();
 		}
 
 		private void SetCurrentCategory(int category)
@@ -260,6 +276,12 @@ namespace FindItBuildingMenu.Systems
 			_appliedMenuIndex = 0;
 			_appliedMenuFrame = null;
 			_LensOwnsCurrentMenu.Value = false;
+
+			// The same release CloseLens does. The toolbar deselect is a close
+			// like any other, and a lens that forgets its menu only when closed
+			// one of the two ways is a lens whose next filter depends on which
+			// button you used.
+			ReleaseMenuScope();
 
 			if (_ShowFindItPanel)
 			{
@@ -445,9 +467,7 @@ namespace FindItBuildingMenu.Systems
 			// section alone left MatchesVanillaMenuTree still filtering every
 			// candidate down to that menu, so the control that exists to escape
 			// an empty result could not escape it.
-			_buildingLensUiMenu = string.Empty;
-			_buildingLensUiCategory = string.Empty;
-			RefreshBuildingLensMenuCategories();
+			ReleaseMenuScope();
 			_BuildingLensSectionBinding.Value = _buildingLensSection;
 			_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
 			FindItUtil.CurrentCategory = PrefabCategory.Any;
