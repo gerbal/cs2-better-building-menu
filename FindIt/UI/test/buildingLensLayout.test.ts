@@ -120,3 +120,78 @@ describe("Building Lens catalog height", () => {
     assert.equal(draggedBuildingLensHeight(400, Number.NaN, 300), 400);
   });
 });
+
+describe("Table column widths", () => {
+  it("gives every column its comfortable width on the widest panel", async () => {
+    const { getBuildingLensColumnWidths, BUILDING_LENS_COLUMN_MAX, BUILDING_LENS_MAX_WIDTH } = await import(
+      "../src/domain/buildingLensLayout.ts"
+    );
+
+    assert.deepEqual(getBuildingLensColumnWidths(BUILDING_LENS_MAX_WIDTH), BUILDING_LENS_COLUMN_MAX);
+  });
+
+  it("squeezes them to their floor on the narrowest panel", async () => {
+    const { getBuildingLensColumnWidths, BUILDING_LENS_COLUMN_MIN, BUILDING_LENS_MIN_WIDTH } = await import(
+      "../src/domain/buildingLensLayout.ts"
+    );
+
+    // The whole point: those units go to the name. Measured live at the minimum
+    // panel width, the identity cell was 39px and the name inside it was ZERO
+    // while Capacity held its full width to render "—".
+    assert.deepEqual(getBuildingLensColumnWidths(BUILDING_LENS_MIN_WIDTH), BUILDING_LENS_COLUMN_MIN);
+  });
+
+  it("hands the name a real share of a narrow panel", async () => {
+    const { getBuildingLensColumnWidths, BUILDING_LENS_COLUMN_MAX, BUILDING_LENS_MIN_WIDTH } = await import(
+      "../src/domain/buildingLensLayout.ts"
+    );
+
+    const sum = (w: Record<string, number>) => Object.values(w).reduce((a, b) => a + b, 0);
+    const reclaimed = sum(BUILDING_LENS_COLUMN_MAX) - sum(getBuildingLensColumnWidths(BUILDING_LENS_MIN_WIDTH));
+
+    // Enough to matter: a name column of 111px was rendering "EU Commercial
+    // Gas S…" for three different buildings.
+    assert.equal(reclaimed >= 100, true);
+  });
+
+  it("moves monotonically between the two ends", async () => {
+    const { getBuildingLensColumnWidths, BUILDING_LENS_MIN_WIDTH, BUILDING_LENS_MAX_WIDTH } = await import(
+      "../src/domain/buildingLensLayout.ts"
+    );
+
+    let previous = getBuildingLensColumnWidths(BUILDING_LENS_MIN_WIDTH).capacity;
+
+    for (let w = BUILDING_LENS_MIN_WIDTH; w <= BUILDING_LENS_MAX_WIDTH; w += 25) {
+      const capacity = getBuildingLensColumnWidths(w).capacity;
+      assert.equal(capacity >= previous, true);
+      previous = capacity;
+    }
+  });
+
+  it("clamps a panel width outside the supported range", async () => {
+    const { getBuildingLensColumnWidths, BUILDING_LENS_COLUMN_MAX, BUILDING_LENS_COLUMN_MIN } = await import(
+      "../src/domain/buildingLensLayout.ts"
+    );
+
+    assert.deepEqual(getBuildingLensColumnWidths(50), BUILDING_LENS_COLUMN_MIN);
+    assert.deepEqual(getBuildingLensColumnWidths(99999), BUILDING_LENS_COLUMN_MAX);
+  });
+
+  it("returns whole units so the header cannot land off the rows", async () => {
+    const { getBuildingLensColumnWidths } = await import("../src/domain/buildingLensLayout.ts");
+
+    // The table has already been fixed once for a header that drifted from its
+    // rows; a fractional width would reintroduce it a pixel at a time.
+    for (const width of Object.values(getBuildingLensColumnWidths(900))) {
+      assert.equal(Number.isInteger(width), true);
+    }
+  });
+
+  it("says something rather than nothing for a nonsense width", async () => {
+    const { getBuildingLensColumnWidths, BUILDING_LENS_COLUMN_MIN } = await import(
+      "../src/domain/buildingLensLayout.ts"
+    );
+
+    assert.deepEqual(getBuildingLensColumnWidths(Number.NaN), BUILDING_LENS_COLUMN_MIN);
+  });
+});

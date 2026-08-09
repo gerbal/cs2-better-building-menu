@@ -48,6 +48,18 @@ export function shouldLoadMore({ scrollTop, clientHeight, scrollHeight, threshol
     return false;
   }
 
+  // Evidence of an actual scroll, because a list nobody has touched has no
+  // bottom to have reached. Cohtml fills a scroll container over several frames
+  // — the same list read scrollHeight 1,440 and then 3,606 a frame or two later
+  // — so a window still being laid out reports a short content height that sits
+  // inside this band. Measured live 2026-08-09: without this rule the unscoped
+  // lens grew itself from 100 rows to 200 on mount. "Still being laid out" and
+  // "already at the end" are the same three numbers; only the scroll position
+  // tells them apart.
+  if (scrollTop <= 0) {
+    return false;
+  }
+
   const band = Number.isFinite(threshold) ? (threshold as number) : CATALOG_WINDOW_SCROLL_THRESHOLD;
 
   return scrollHeight - clientHeight - scrollTop <= band;
@@ -111,4 +123,90 @@ export function anchorScrollTop(
   // Never negative: a row near the top of a short list would otherwise ask for
   // a scroll above the start, which some engines clamp and some do not.
   return Math.max(0, currentScrollTop + delta);
+}
+
+/**
+ * How many frames the restore is allowed to keep trying for.
+ *
+ * The first attempt always fails, so this is a budget rather than a safety net.
+ * See {@link isAnchorMeasurable} for why. Thirty frames is half a second at
+ * 60Hz — long enough for the window to arrive from C# and lay out, short enough
+ * that a genuinely unreachable anchor gives up before the player has scrolled
+ * somewhere themselves.
+ */
+export const CATALOG_ANCHOR_MAX_FRAMES = 30;
+
+/**
+ * How much a container must overflow before it counts as the one that scrolls.
+ *
+ * Not zero, because sub-pixel layout rounding manufactures overflow that no
+ * player can use. Measured live 2026-08-09: the grid's inner tiles container
+ * reported scrollHeight 382 against clientHeight 381 — one pixel — and a walk
+ * looking for `scrollHeight > clientHeight` stopped there instead of continuing
+ * to the real scroll container above it. Its scrollTop is pinned at 0, so the
+ * load-more check read "top of the list" no matter where the player actually
+ * was, and the window never grew.
+ *
+ * Eight pixels is well under a row and well over rounding.
+ */
+export const CATALOG_SCROLL_MIN_OVERFLOW = 8;
+
+/** Whether this element is deep enough past its viewport to be the scroller. */
+export function isScrollContainer(scrollHeight: number, clientHeight: number): boolean {
+  if (!Number.isFinite(scrollHeight) || !Number.isFinite(clientHeight)) {
+    return false;
+  }
+
+  return scrollHeight - clientHeight >= CATALOG_SCROLL_MIN_OVERFLOW;
+}
+
+export interface AnchorGeometry {
+  containerTop: number;
+  containerHeight: number;
+  rowTop: number;
+  rowHeight: number;
+}
+
+/**
+ * Whether these rects are real measurements or Cohtml's pre-layout zeroes.
+ *
+ * Measured live, 2026-08-09: on the frame the catalog remounts, Cohtml reports
+ * `getBoundingClientRect()` as all zeroes for both the scroll container and the
+ * rows inside it — the panel's real top is 163 and the anchored row's is 2174,
+ * and both read 0 until a later frame. A browser flushes layout synchronously
+ * when you ask for a rect; this engine does not.
+ *
+ * That is what made the first restore silently do nothing: it measured in a
+ * `useEffect`, got zeroes, and `anchorScrollTop(0, 0, 0, h)` is `max(0, -h/3)`,
+ * which is 0 — the top of the list, indistinguishable from never having tried.
+ *
+ * A zero height is the tell. A container laid out at the very top of the
+ * viewport legitimately has `top === 0`, so top alone cannot be the test.
+ */
+export function isAnchorMeasurable({ containerHeight, rowHeight }: AnchorGeometry): boolean {
+  return (
+    Number.isFinite(containerHeight) &&
+    Number.isFinite(rowHeight) &&
+    containerHeight > 0 &&
+    rowHeight > 0
+  );
+}
+
+/**
+ * Whether the anchored row ended up on screen.
+ *
+ * The apply step is a guess: it is computed from one frame's geometry and
+ * applied to a list that may still be growing, so it needs checking rather than
+ * trusting. Any overlap with the viewport counts as landed — asking for the
+ * exact third-of-the-way position back would restart the loop over a few pixels
+ * of drift while rows continue to arrive.
+ */
+export function isAnchorOnScreen(geometry: AnchorGeometry): boolean {
+  if (!isAnchorMeasurable(geometry)) {
+    return false;
+  }
+
+  const { containerTop, containerHeight, rowTop, rowHeight } = geometry;
+
+  return rowTop + rowHeight > containerTop && rowTop < containerTop + containerHeight;
 }

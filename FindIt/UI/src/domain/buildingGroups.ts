@@ -97,29 +97,29 @@ export function defaultGroupDimensionFor(
   section: string | null | undefined,
   menuHasCategories: boolean = false,
 ): GroupDimensionId {
-  // Inside a vanilla menu the strip owns the categories, so the grid does not
-  // repeat them. This used to return "menuCategory" — which drew, under a strip
-  // reading All / Bus / Train / Tram / Subway / Ship / Airplane, headings
-  // reading ROAD / TRAIN / TRAM / SUBWAY / SHIP / AIR. The same division twice,
-  // once as navigation and once as furniture.
+  // Inside a vanilla menu, the game's own categories win — this is master's
+  // behaviour (4ce4ba5), restored.
   //
-  // Measured on Transportation at 720p: 53 tiles, 9 per row. Flowed as one set
-  // that is 6 rows; split into those six groups it is 9 rows plus 6 headings,
-  // because a group ends its row wherever it runs out — Ship holds a nine-wide
-  // row for 2 tiles, Air for 3. A third more scrolling, in a panel that shows
-  // two rows at a time, to say what the strip already says.
+  // This branch changed it to "none" on the argument that the strip already
+  // shows that division, and backed it with a measurement: Transportation at
+  // 720p, 53 tiles, 9 per row — 6 rows flat against 9 rows plus 6 headings
+  // grouped, "a third more scrolling, in a panel that shows two rows at a
+  // time".
   //
-  // Vanilla never groups its asset grid, so flat is also the footprint this
-  // panel is being matched to. Grouping is not lost: the picker still offers
-  // every dimension, including this one, and a player who wants headings is one
-  // click away. It is the default that changed, not the capability.
+  // That last clause is what expired. The panel no longer shows two rows at a
+  // time: it is 984px wide at 10 tiles per row, and its height is a value the
+  // player drags anywhere from 200rem to 960rem. The cost the argument was
+  // paying for — scrolling, in a panel too short to absorb headings — is a
+  // cost of a layout this branch has since replaced.
   //
-  // (For the record, before "menuCategory" this returned "role", which produced
-  // no grouping at all on Transportation: role is buildingType, networks have
-  // none, and half that menu is stops and tracks — so everything fell into one
-  // unnamed bucket and the headings were suppressed as redundant anyway.)
+  // What is left is the case for grouping: the categories are the split the
+  // player already has in mind because the strip shows it, and repeating it in
+  // the grid lets them see the whole menu at once instead of tabbing through
+  // it. Master went on to build on that — 479ffeb gave the grouping a real
+  // order, 0aa0203 taught the table to draw the groups it was already sorting
+  // into — so "none" here also left those two doing nothing on this branch.
   if (menuHasCategories) {
-    return "none";
+    return "menuCategory";
   }
 
   return typeof section === "string" && section.trim().toLowerCase() === "servicebuildings"
@@ -462,4 +462,80 @@ export function groupDimensionLabel(id: GroupDimensionId): string {
 
 export function isGroupDimension(value: unknown): value is GroupDimensionId {
   return GROUP_DIMENSIONS.some((dimension) => dimension.id === value);
+}
+
+/** One line of a grouped table: a heading band, or a data row. */
+export type GroupedRow<T> =
+  | { kind: "heading"; key: string; label: string; labelId?: string; depth: number; count: number }
+  | { kind: "row"; key: string; entry: T };
+
+/**
+ * Flatten a group tree into the sequence a table renders.
+ *
+ * The table is the one view that could not use GroupedResults: it draws its own
+ * rows against a shared column geometry, and wrapping each group in its own
+ * scrolling section would break the column alignment the whole surface depends
+ * on. So it went ungrouped — and the Group by control stayed on screen and kept
+ * working on the C# side, which reorders by group key before it sorts. The
+ * result was a table that silently rearranged itself with nothing to say why:
+ * picking "Asset type" moved every bridge to the top and drew no heading.
+ *
+ * Interleaving headings into one flat list keeps a single flex column geometry
+ * for the data rows and gives the reordering a visible reason.
+ *
+ * Order is preserved exactly as buildGroupedView produced it, which is the
+ * order the backend already sorted; nothing here re-sorts.
+ */
+export function flattenGroupedRows<T extends GroupableEntry>(
+  entries: readonly T[] | null | undefined,
+  dimension: GroupDimensionId,
+  keyOf: (entry: T) => string,
+): GroupedRow<T>[] {
+  const source = entries ?? [];
+  const nodes = buildGroupedView(source, dimension);
+
+  // "None", or a dimension that grouped nothing: the table is the flat list it
+  // has always been.
+  if (nodes.length === 0) {
+    return source.map((entry) => ({ kind: "row", key: keyOf(entry), entry }));
+  }
+
+  const out: GroupedRow<T>[] = [];
+
+  const walk = (level: readonly GroupNode<T>[], depth: number): void => {
+    // Decided PER LEVEL, which is what GroupedResults does and what a first
+    // version of this got wrong. Grouping the Roads menu by asset type puts
+    // every entry under one root — they are all Networks — and judging the
+    // whole tree by that root suppressed the headings underneath it too, so
+    // the table reordered itself into Roads, Bridges and Tracks and named
+    // none of them. A lone heading at one level says nothing; the level below
+    // it can still be worth labelling.
+    const withHeadings = shouldShowHeading(level);
+
+    for (const node of level) {
+      if (withHeadings) {
+        out.push({
+          kind: "heading",
+          key: `h:${node.path.join("/")}`,
+          label: node.label,
+          labelId: node.labelId,
+          depth,
+          count: node.count,
+        });
+      }
+
+      if (node.children.length > 0) {
+        walk(node.children, depth + 1);
+        continue;
+      }
+
+      for (const entry of node.entries) {
+        out.push({ kind: "row", key: keyOf(entry), entry });
+      }
+    }
+  };
+
+  walk(nodes, 0);
+
+  return out;
 }

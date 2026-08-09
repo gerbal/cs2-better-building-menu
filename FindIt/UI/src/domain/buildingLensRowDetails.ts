@@ -36,6 +36,126 @@ export function getBuildingDescriptionKeys(prefabName: string | null | undefined
 }
 
 /**
+ * The game's own sentence about an asset, or null when it has none.
+ *
+ * The prose vanilla shows when you select a building — "A place of basic
+ * education for children. Provides the first level of education." — which the
+ * lens dropped the moment a player browsed through us instead of the vanilla
+ * grid. It costs no backend projection: the key is built from `prefabName`,
+ * which every entry already carries, and the answer comes out of the dictionary
+ * the game has already loaded.
+ *
+ * The absence test is the interesting part. `translate` — and `engine.translate`
+ * under it — echoes the key back when it is missing rather than returning null,
+ * measured live on 2026-08-09: `Assets.DESCRIPTION[NotARealPrefabName]` returns
+ * itself. So an unlocalized asset would render `Assets.DESCRIPTION[Foo]` as
+ * prose unless the echo is caught, which is what the prefix check is for.
+ *
+ * Lives here rather than at either call site because there are two of them —
+ * the hover card and the expanded table row — and they must agree about what
+ * counts as "no description". Two inline copies of this filter is how they
+ * would come to disagree.
+ */
+export function resolveAssetDescription(
+  prefabName: string | null | undefined,
+  translate: (key: string, fallback: string) => string | null,
+): string | null {
+  for (const key of getBuildingDescriptionKeys(prefabName)) {
+    const text = translate(key, "")?.trim();
+
+    if (text && !text.startsWith("Assets.")) {
+      // The game's own text carries a CRLF between its sentences — the school
+      // reads "…the first level of education. \r\nCan be upgraded with…" — and
+      // this engine cannot honour it: `white-space: pre-line` computes to
+      // `normal` here, measured on the live card, so the break renders as a
+      // space whatever we ask for. Collapsed deliberately rather than left to
+      // arrive as one, so the string this function returns is the string that
+      // gets drawn.
+      return text.replace(/\s+/g, " ").trim();
+    }
+  }
+
+  return null;
+}
+
+/**
+ * How much description a three-line hover card holds.
+ *
+ * Measured rather than derived: at 720p the vanilla tooltip container is 184px
+ * wide and the card's font renders about 53 characters to the line, so three
+ * lines is a little over 160. The budget sits just under that.
+ *
+ * A character count survives a resolution change because CS2 scales its whole
+ * UI with the viewport — the container and the glyphs grow together, so the
+ * characters per line stay put. If that ever stops being true the CSS
+ * max-height still clips, and the only cost is an ellipsis arriving a few
+ * characters early.
+ */
+export const ASSET_DESCRIPTION_CLAMP_CHARS = 150;
+
+/**
+ * Cut a description to the card's three lines, and say that it was cut.
+ *
+ * The CSS clamp alone leaves a sentence stopping mid-word with nothing to
+ * explain it — the Medical University's card ended at "Can be upgraded with a"
+ * and read as a rendering fault rather than as a summary. Neither of the ways
+ * a browser would signal this exists in Cohtml: `-webkit-line-clamp` has no
+ * precedent here and a `linear-gradient` mask computes to `none` (both checked
+ * on the live card), so the ellipsis has to be in the text itself.
+ *
+ * Cuts on a word boundary. A budget that lands mid-word and appends an ellipsis
+ * produces "upgraded wi…", which looks more like corruption than truncation.
+ */
+export function clampAssetDescription(
+  text: string | null | undefined,
+  maxChars: number = ASSET_DESCRIPTION_CLAMP_CHARS,
+): string | null {
+  const full = text?.trim();
+
+  if (!full) {
+    return null;
+  }
+
+  const budget = Number.isFinite(maxChars) ? Math.max(1, Math.floor(maxChars)) : ASSET_DESCRIPTION_CLAMP_CHARS;
+
+  if (full.length <= budget) {
+    return full;
+  }
+
+  const cut = full.slice(0, budget);
+  const lastSpace = cut.lastIndexOf(" ");
+  // A single word longer than the whole budget has no boundary to cut on, and
+  // half of it is still better than none of it.
+  const word = lastSpace > 0 ? cut.slice(0, lastSpace) : cut;
+
+  // Prefer a whole sentence. Cutting the Medical University at the word gave
+  // "…healthcare service buildings. Can…", where the dangling "Can" reads as a
+  // rendering fault rather than as a summary — and the sentence had ended four
+  // characters earlier. Only worth taking in the back half of the budget:
+  // further back than that, honouring the sentence throws away a line of text
+  // to save a word.
+  const sentence = lastSentenceEnd(word);
+  const head = sentence >= budget / 2 ? word.slice(0, sentence) : word;
+
+  return `${head.replace(/[\s,.;:]+$/, "")}…`;
+}
+
+/** Index of the last sentence terminator, or -1. */
+function lastSentenceEnd(text: string): number {
+  for (let i = text.length - 1; i >= 0; i--) {
+    const char = text[i];
+
+    // Followed by a space or nothing, so a decimal point or an abbreviation
+    // mid-word is not mistaken for the end of a thought.
+    if ((char === "." || char === "!" || char === "?") && (i === text.length - 1 || text[i + 1] === " ")) {
+      return i;
+    }
+  }
+
+  return -1;
+}
+
+/**
  * Every value of `Game.Prefabs.BuildingFlags`, in the game's own words.
  *
  * Nothing is hidden: the lot and wiring internals are exactly what a modder

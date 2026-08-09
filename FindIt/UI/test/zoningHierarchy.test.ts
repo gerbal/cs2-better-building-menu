@@ -219,3 +219,59 @@ describe("Zone lot sizes", () => {
     assert.deepEqual(facts.map((fact) => fact.kind), ["lots", "height"]);
   });
 });
+
+describe("A locked zone", () => {
+  const zone = (over: Record<string, unknown> = {}) => ({
+    id: 1,
+    version: 1,
+    prefabName: "ZoneEUResidentialHigh",
+    name: "High Density Residential",
+    family: "ZoneResidential",
+    density: "High",
+    thumbnail: "",
+    ...over,
+  });
+
+  it("carries its lock through to the shared catalog entry", async () => {
+    const { zoneAsCatalogEntry } = await import("../src/domain/zoningHierarchy.ts");
+    const { isEntryLocked, canPlace } = await import("../src/domain/buildingLockState.ts");
+
+    // High density residential is locked at the start of a city. Before the
+    // indexer read this, the surface drew it exactly like an unlocked zone and
+    // the only way to find out was to try to paint with it.
+    const entry = zoneAsCatalogEntry(zone({ isLocked: true, unlockMilestone: 4 }) as never);
+
+    assert.equal(isEntryLocked(entry as never), true);
+    assert.equal(canPlace(entry as never), false);
+    assert.equal((entry as { unlockMilestone: number }).unlockMilestone, 4);
+  });
+
+  it("is placeable when the game says it is unlocked", async () => {
+    const { zoneAsCatalogEntry } = await import("../src/domain/zoningHierarchy.ts");
+    const { isEntryLocked, canPlace } = await import("../src/domain/buildingLockState.ts");
+
+    const entry = zoneAsCatalogEntry(zone({ isLocked: false }) as never);
+
+    assert.equal(isEntryLocked(entry as never), false);
+    assert.equal(canPlace(entry as never), true);
+  });
+
+  it("stays placeable when the field is missing entirely", async () => {
+    const { zoneAsCatalogEntry } = await import("../src/domain/zoningHierarchy.ts");
+    const { canPlace } = await import("../src/domain/buildingLockState.ts");
+
+    // Absent is not locked. A guard that defaulted to refusing would make every
+    // zone unbuildable the moment the backend skipped a field.
+    assert.equal(canPlace(zoneAsCatalogEntry(zone()) as never), true);
+  });
+
+  it("hands the hover card the conditions rather than a bare flag", async () => {
+    const { zoneAsCatalogEntry } = await import("../src/domain/zoningHierarchy.ts");
+
+    const entry = zoneAsCatalogEntry(
+      zone({ isLocked: true, unlockRequirements: ["Milestone 4", "1 500 population"] }) as never
+    ) as { unlockRequirements: string[] };
+
+    assert.deepEqual(entry.unlockRequirements, ["Milestone 4", "1 500 population"]);
+  });
+});

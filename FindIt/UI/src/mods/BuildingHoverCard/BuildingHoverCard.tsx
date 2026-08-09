@@ -16,6 +16,7 @@ import {
 import { getCapacityForecast, getCostForecast } from "domain/buildingForecast";
 import { SERVICE_FORECAST_BINDINGS, getServiceForecastKey } from "domain/serviceForecast";
 import { buildTileTooltipLines, isMetricPresent } from "domain/buildingTileTooltip";
+import { clampAssetDescription, resolveAssetDescription } from "domain/buildingLensRowDetails";
 import { isEntryLocked, listLockConditions } from "domain/buildingLockState";
 import { FootprintGlyph } from "mods/ZoningHierarchy/FootprintGlyph";
 import type { ZoneFootprint } from "domain/zoningHierarchy";
@@ -42,6 +43,15 @@ export interface HoverCardContext {
   milestoneNames: string[];
   seriesByKey: Map<string, { capacity: number; demand: number; unit: string }>;
   separators: NumberSeparators;
+  /**
+   * The game's own sentence about an asset, resolved per entry.
+   *
+   * A function on the context rather than a `useLocalization` call in the card,
+   * for the same reason every other value here is passed down: the card wraps
+   * every tile, so a hook inside it is one hook per row — four hundred of them
+   * on a full grid — to render the one card the player is actually pointing at.
+   */
+  describe: (prefabName: string | null | undefined) => string | null;
   labels: {
     cost: string;
     upkeep: string;
@@ -77,6 +87,10 @@ export const useHoverCardContext = (): HoverCardContext => {
     money,
     milestoneNames,
     seriesByKey,
+    // Clamped here, not in the resolver: the expanded table row shows the same
+    // description in a place that has room for all of it, and shortening it
+    // there to suit a hover card would be the card dictating to the table.
+    describe: (prefabName) => clampAssetDescription(resolveAssetDescription(prefabName, translate)),
     separators: getNumberSeparators(translate),
     labels: {
       cost: translate("Tooltip.LABEL[FindItBuildingMenu.Cost]", "Cost") ?? "Cost",
@@ -119,8 +133,12 @@ export const BuildingHoverCard = ({
   context: HoverCardContext;
   children: JSX.Element;
 }) => {
-  const { money, milestoneNames, seriesByKey, separators, labels } = context;
+  const { money, milestoneNames, seriesByKey, separators, labels, describe } = context;
   const label = entry.name || entry.prefabName;
+  // What the thing IS, before every line that is a number about it. This is
+  // what vanilla shows on selection and the lens used to drop the moment a
+  // player browsed through us instead of the vanilla grid.
+  const description = describe(entry.prefabName);
 
   const cost = formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance);
   const upkeep = formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance);
@@ -218,6 +236,7 @@ export const BuildingHoverCard = ({
       tooltip={
         <div className={styles.card}>
           <div className={styles.cardName}>{label}</div>
+          {description && <div className={styles.cardDescription}>{description}</div>}
           {lines.map((line) => (
             <div
               key={line.key}

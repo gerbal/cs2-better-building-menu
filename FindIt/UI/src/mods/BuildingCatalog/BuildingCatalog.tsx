@@ -8,6 +8,7 @@ import { BuildingCatalogEntry, BuildingCatalogPage, formatBuildingCatalogLabels 
 import {
   BUILDING_LENS_PANEL_CHROME_WIDTH,
   getBuildingLensCatalogMaxHeight,
+  getBuildingLensColumnWidths,
   getBuildingLensDensity,
   getBuildingLensRowGeometry,
   getBuildingLensMetricLabel,
@@ -23,7 +24,15 @@ import {
   setSortDescendingCommand,
   toggleCompareEntryCommand,
 } from "domain/buildingCatalogContracts";
-import { anchorScrollTop, shouldLoadMore } from "domain/catalogWindow";
+import {
+  CATALOG_ANCHOR_MAX_FRAMES,
+  anchorScrollTop,
+  isAnchorMeasurable,
+  isAnchorOnScreen,
+  isScrollContainer,
+  shouldLoadMore,
+} from "domain/catalogWindow";
+import type { AnchorGeometry } from "domain/catalogWindow";
 import type { SortColumn } from "domain/buildingCatalogContracts";
 import {
   formatBuildingMetric,
@@ -33,10 +42,10 @@ import {
   getNumberSeparators,
 } from "domain/buildingLensMetricFormat";
 import {
-  getBuildingDescriptionKeys,
   getBuildingExtensionLabels,
   getBuildingFlagGroups,
   getBuildingProvenanceChips,
+  resolveAssetDescription,
 } from "domain/buildingLensRowDetails";
 import {
   getBuildingLensEmptyStateMessage,
@@ -64,10 +73,12 @@ import { GroupedResults, type CatalogViewMode } from "mods/GroupedResults/Groupe
 import {
   DEFAULT_GROUP_DIMENSION,
   defaultGroupDimensionFor,
+  flattenGroupedRows,
   groupDimensionLabel,
   isGroupDimension,
   type GroupDimensionId,
 } from "domain/buildingGroups";
+import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 // The rail, the metric popover and the filter summary all live in the chip row
 // now, so the catalog no longer owns any filter chrome — only results.
 import {
@@ -123,6 +134,29 @@ const metricColumns: Array<{
   { key: "parking", localizationKey: "Tooltip.LABEL[FindItBuildingMenu.Parking]", fallback: "Parking", className: "metricParking" },
 ];
 
+/**
+ * The element that actually scrolls, found by walking up from a row.
+ *
+ * By walking rather than by ref, because cs2/ui's `Scrollable` silently drops
+ * props it does not recognise — the `data-scrollable` marker that used to sit
+ * on one of them never reached the DOM at all — and which element owns the
+ * scroll differs by view mode anyway.
+ *
+ * The overflow threshold is the point: a plain `scrollHeight > clientHeight`
+ * walk stops at the first container that sub-pixel rounding pushed one pixel
+ * over, which is not the one the player is moving. See
+ * CATALOG_SCROLL_MIN_OVERFLOW.
+ */
+function findScrollContainer(from: HTMLElement): HTMLElement | null {
+  let node: HTMLElement | null = from.parentElement;
+
+  while (node && !isScrollContainer(node.scrollHeight, node.clientHeight)) {
+    node = node.parentElement;
+  }
+
+  return node;
+}
+
 const densityClassNames: Record<BuildingLensDensityTier, string> = {
   compact: styles.densityCompact,
   default: styles.densityDefault,
@@ -137,9 +171,6 @@ export const BuildingCatalogComponent = () => {
   // The same card every other view mode shows. The table had none, so it was
   // the one mode that could not answer a question its columns had no room for.
   const hoverCard = useHoverCardContext();
-  // The table's scroll container, read by the passive load-more check.
-  // cs2/ui's Scrollable forwards its ref to the scrolling div.
-  const rowsRef = useRef<HTMLDivElement | null>(null);
   const page = useValue(BuildingCatalog$);
   const panelWidth = useValue(PanelWidth$);
   const currentSearch = useValue(CurrentSearch$);
@@ -216,6 +247,14 @@ export const BuildingCatalogComponent = () => {
   // already refused to serve.
   const hasMore = page?.hasMore ?? false;
   const density = getBuildingLensDensity(panelWidth + BUILDING_LENS_PANEL_CHROME_WIDTH);
+  // One set of numbers for the header and every row. The columns line up only
+  // because both read the same widths; computing them twice is how a table with
+  // no CSS grid drifts out of alignment.
+  const columnWidths = getBuildingLensColumnWidths(panelWidth + BUILDING_LENS_PANEL_CHROME_WIDTH);
+  const columnStyle = (metric: BuildingLensMetric) => ({
+    width: `${columnWidths[metric]}rem`,
+    flexBasis: `${columnWidths[metric]}rem`,
+  });
   const rowGeometry = getBuildingLensRowGeometry(density);
   const catalogMaxHeight = getBuildingLensCatalogMaxHeight(typeof window === "undefined" ? 720 : window.innerHeight);
   const placeLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Place]", "Place") ?? "Place";
@@ -350,6 +389,20 @@ export const BuildingCatalogComponent = () => {
   // by accident.
   const anchorKey = getLensAnchorKey({ surface: "catalog", viewMode, groupBy });
 
+  /**
+   * Put the player back where they were, over as many frames as it takes.
+   *
+   * This is a retry loop rather than a single measurement because Cohtml lays
+   * out asynchronously: on the frame the panel remounts, every rect it reports
+   * is zero (see `isAnchorMeasurable`), and the window itself is still arriving
+   * from C# — the scroll height was measured growing from 1,440 to 3,606 across
+   * the same handful of frames. Both settle within a few frames, but neither
+   * settles by the time a `useEffect` runs.
+   *
+   * Each frame does one of three things: wait, because the geometry is not real
+   * yet; apply the scroll and check it next frame; or stop, because the row is
+   * on screen, the budget ran out, or the anchor is not in this match set.
+   */
   useEffect(() => {
     const anchored = getLensAnchor(anchorKey);
 
@@ -357,34 +410,101 @@ export const BuildingCatalogComponent = () => {
       return;
     }
 
-    // Cleared on sight: this is a one-shot restore, and leaving it set would
-    // yank the list back every time the window grew.
-    setLensAnchor(anchorKey, null);
+    let frame = 0;
+    let handle = 0;
+    let cancelled = false;
 
-    const row = document.querySelector(`[data-catalog-entry="${anchored}"]`);
+    // Cleared only when the loop finishes, not on sight. Clearing up front lost
+    // the anchor to the first frame's zero-height rects and left the restore
+    // looking like it had run.
+    const finish = () => {
+      setLensAnchor(anchorKey, null);
+    };
 
-    if (!(row instanceof HTMLElement)) {
-      // The anchor fell out of the match set — a predicate changed while the
-      // panel was down. Top of the list is the honest answer.
-      return;
-    }
+    const measure = (): { row: HTMLElement; scroller: HTMLElement; geometry: AnchorGeometry } | null => {
+      // The LAST match, not the first. The grid's "frequently placed" shelf
+      // renders the same entries above the body with the same attribute, and
+      // the shelf is pinned in view — anchoring to that copy would report the
+      // row on screen without scrolling anything, which is a silent no-op
+      // dressed as a success.
+      const rows = document.querySelectorAll(`[data-catalog-entry="${anchored}"]`);
+      const row = rows.length === 0 ? null : rows[rows.length - 1];
 
-    let scroller: HTMLElement | null = row.parentElement;
+      if (!(row instanceof HTMLElement)) {
+        return null;
+      }
 
-    while (scroller && scroller.scrollHeight <= scroller.clientHeight) {
-      scroller = scroller.parentElement;
-    }
+      const scroller = findScrollContainer(row);
 
-    if (!scroller) {
-      return;
-    }
+      if (!scroller) {
+        return null;
+      }
 
-    scroller.scrollTop = anchorScrollTop(
-      scroller.scrollTop,
-      row.getBoundingClientRect().top,
-      scroller.getBoundingClientRect().top,
-      scroller.clientHeight,
-    );
+      const rowRect = row.getBoundingClientRect();
+      const scrollerRect = scroller.getBoundingClientRect();
+
+      return {
+        row,
+        scroller,
+        geometry: {
+          containerTop: scrollerRect.top,
+          containerHeight: scroller.clientHeight,
+          rowTop: rowRect.top,
+          rowHeight: rowRect.height,
+        },
+      };
+    };
+
+    const step = () => {
+      if (cancelled) {
+        return;
+      }
+
+      if (frame++ >= CATALOG_ANCHOR_MAX_FRAMES) {
+        // The row never became reachable — a predicate changed while the panel
+        // was down, or it sits beyond a window that stopped growing. Top of the
+        // list is the honest answer, and it is where we already are.
+        finish();
+        return;
+      }
+
+      const measured = measure();
+
+      if (measured === null) {
+        // Not rendered yet, or not in this match set at all. Both look the same
+        // from here and both are worth another frame, up to the budget.
+        handle = requestAnimationFrame(step);
+        return;
+      }
+
+      if (!isAnchorMeasurable(measured.geometry)) {
+        handle = requestAnimationFrame(step);
+        return;
+      }
+
+      if (isAnchorOnScreen(measured.geometry)) {
+        finish();
+        return;
+      }
+
+      measured.scroller.scrollTop = anchorScrollTop(
+        measured.scroller.scrollTop,
+        measured.geometry.rowTop,
+        measured.geometry.containerTop,
+        measured.geometry.containerHeight,
+      );
+
+      // Verify next frame rather than trusting the arithmetic: it was computed
+      // against a list that is still being filled, so the row it aimed at moves.
+      handle = requestAnimationFrame(step);
+    };
+
+    handle = requestAnimationFrame(step);
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(handle);
+    };
     // items.length rather than items: the effect has to wait for the rows to be
     // in the document before it can find one, and a new array identity every
     // publish would re-run it on data that has not moved.
@@ -408,29 +528,62 @@ export const BuildingCatalogComponent = () => {
   }
 
   /**
-   * The passive half of the trigger.
+   * The passive half of the trigger: watch where the scroll actually is.
    *
-   * cs2/ui's Scrollable declares an onScroll prop, and NOTHING in this repo has
-   * ever used it, so whether the engine fires it is unproven — synthetic wheel
-   * and thumb-drag events cannot be constructed in Cohtml (WheelEvent and
-   * PointerEvent are both undefined), so it could not be measured from the
-   * outside either. That is why the visible Load more control below is the
-   * mechanism and this is the upgrade: if it fires, the list grows before the
-   * player reaches the button; if it never fires, nothing is lost.
+   * This polls instead of listening because, measured live on 2026-08-09, there
+   * is nothing to listen to. cs2/ui's `Scrollable` accepts an `onScroll` prop
+   * and never forwards it: walking the fiber from the scrolling div to the
+   * Scrollable shows the prop arriving and no DOM node below it carrying an
+   * onScroll — and a sweep of every element in the running UI found not one
+   * scroll or wheel handler anywhere. Cohtml also emits no native `scroll`
+   * event when `scrollTop` changes, so adding our own listener would be just as
+   * dead. The engine scrolls its own overflow containers and tells no one.
+   *
+   * What it does do is keep `scrollTop` readable and accurate, so a frame loop
+   * sees the player arrive at the bottom just as well as an event would. It
+   * only runs while there is more to fetch, and it stops the moment it asks:
+   * the request changes `items.length`, which restarts the effect against the
+   * larger window.
    */
-  function onCatalogScroll(container: HTMLElement | null): void {
-    if (!container || !hasMore) {
+  useEffect(() => {
+    if (!hasMore || items.length === 0) {
       return;
     }
 
-    if (shouldLoadMore({
-      scrollTop: container.scrollTop,
-      clientHeight: container.clientHeight,
-      scrollHeight: container.scrollHeight,
-    })) {
-      loadMore();
-    }
-  }
+    let handle = 0;
+    let cancelled = false;
+
+    const step = () => {
+      if (cancelled) {
+        return;
+      }
+
+      // Last again, and for the same reason: the shelf sits outside the body's
+      // scroll, so walking up from the first entry can find the panel instead
+      // of the list.
+      const rows = document.querySelectorAll("[data-catalog-entry]");
+      const row = rows.length === 0 ? null : rows[rows.length - 1];
+      const scroller = row instanceof HTMLElement ? findScrollContainer(row) : null;
+
+      if (scroller && shouldLoadMore({
+        scrollTop: scroller.scrollTop,
+        clientHeight: scroller.clientHeight,
+        scrollHeight: scroller.scrollHeight,
+      })) {
+        loadMore();
+        return;
+      }
+
+      handle = requestAnimationFrame(step);
+    };
+
+    handle = requestAnimationFrame(step);
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(handle);
+    };
+  }, [hasMore, items.length, viewMode, groupBy]);
 
   /*
    * The end of the feed, rendered as the last child INSIDE whichever element
@@ -438,13 +591,9 @@ export const BuildingCatalogComponent = () => {
    * than placed here. Below the scroll is where the pager used to live, and the
    * reason nobody read it.
    *
-   * It is the MECHANISM, not a fallback. cs2/ui's Scrollable declares an
-   * onScroll prop that nothing in this repo has ever used, and it could not be
-   * measured from outside the game: Cohtml has no IntersectionObserver, and
-   * neither WheelEvent nor PointerEvent can be constructed, so no synthetic
-   * scroll exists to test it with. If onScroll does fire, the passive check
-   * grows the list before the player ever reaches this button. If it never
-   * fires, this still works.
+   * Kept even though the frame loop above now grows the list unaided: a player
+   * who reaches the bottom faster than the round trip through C# still wants
+   * something to press, and it is the only visible statement that more exists.
    */
   const catalogFooter = hasMore ? (
     <Button className={styles.loadMore} variant="flat" onSelect={loadMore}>
@@ -453,8 +602,6 @@ export const BuildingCatalogComponent = () => {
   ) : null;
 
   return (
-    // maxHeight is a cap, not a height: a page of three results should not
-    // hold a full-height panel open. The floor lives on the container.
     <div
       className={classNames(styles.catalog, densityClassNames[density])}
       data-density={density}
@@ -562,6 +709,7 @@ export const BuildingCatalogComponent = () => {
               <Button
                 key={column.key}
                 className={classNames(styles.metricHeader, styles[column.className], indicator !== "" && styles.metricHeaderSorted)}
+                style={columnStyle(column.key)}
                 variant="icon"
                 onSelect={() => setSort(sortTarget)}
                 title={headerTitle}
@@ -575,13 +723,13 @@ export const BuildingCatalogComponent = () => {
           })}
         </div>
 
+        {/* No data-* marker on this one: cs2/ui's Scrollable drops props it
+            does not know, so the attribute that used to be here never reached
+            the DOM. The scroll container is found by walking up from a row. */}
         <Scrollable
           className={styles.rows}
           vertical
           trackVisibility="scrollable"
-          data-scrollable="true"
-          ref={rowsRef}
-          onScroll={() => onCatalogScroll(rowsRef.current)}
         >
           {items.length === 0 && (
             status === "indexing"
@@ -590,7 +738,29 @@ export const BuildingCatalogComponent = () => {
                 </div>
               : scopeNoticeBlock ?? <div className={styles.empty}>{emptyStateMessage}</div>
           )}
-          {items.map((entry) => {
+          {flattenGroupedRows(items, groupBy, (entry) => String(entry.id)).map((line) => {
+            if (line.kind === "heading") {
+              return (
+                <div
+                  key={line.key}
+                  className={styles.tableGroupHeading}
+                  data-group-depth={line.depth}
+                >
+                  <span className={styles.tableGroupLabel}>
+                    {line.labelId === undefined
+                      ? line.label
+                      : resolveVanillaLabel(
+                        vanillaCategoryNameKeys(line.labelId),
+                        (key) => translate(key, null),
+                        line.label
+                      )}
+                  </span>
+                  <span className={styles.tableGroupCount}>{line.count}</span>
+                </div>
+              );
+            }
+
+            const entry = line.entry;
             const isCompared = compareEntries.some((candidate) => candidate.id === entry.id);
             const rawCategoryIdentity = entry.subCategory
               ? `${entry.category} · ${entry.subCategory}`
@@ -603,13 +773,7 @@ export const BuildingCatalogComponent = () => {
             const flagGroups = isExpanded ? getBuildingFlagGroups(entry.placementFlags) : [];
             const extensionLabels = isExpanded ? getBuildingExtensionLabels(entry.extensions) : [];
             const provenanceChips = isExpanded ? getBuildingProvenanceChips(entry, resolveFacetLabel) : [];
-            // translate() echoes the id back when a key is absent, so an
-            // unlocalized prefab must not render its own locale key as prose.
-            const description = isExpanded
-              ? getBuildingDescriptionKeys(entry.prefabName)
-                  .map((key) => translate(key, ""))
-                  .find((text) => !!text && text.trim().length > 0 && !text.startsWith("Assets."))
-              : undefined;
+            const description = isExpanded ? resolveAssetDescription(entry.prefabName, translate) : null;
             const compareLabel = isCompared ? "Remove from comparison" : "Add to comparison";
             const comparePlaceLabel = `${placeLabel}: ${entryLabel}`;
             const compareRemoveLabel = `Remove ${entryLabel} from comparison`;
@@ -664,26 +828,27 @@ export const BuildingCatalogComponent = () => {
                       </div>
                     </div>
                   </div>
-                  <div className={classNames(styles.metric, styles.metricCost)} title={`Cost ${formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance)}`}>
+                  <div className={classNames(styles.metric, styles.metricCost)} style={columnStyle("cost")} title={`Cost ${formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance)}`}>
                     {formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance)}
                   </div>
-                  <div className={classNames(styles.metric, styles.metricUpkeep)} title={`Upkeep ${formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance)}`}>
+                  <div className={classNames(styles.metric, styles.metricUpkeep)} style={columnStyle("upkeep")} title={`Upkeep ${formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance)}`}>
                     {formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance)}
                   </div>
-                  <div className={classNames(styles.metric, styles.metricWorkers)} title={`Workers ${formatBuildingMetric(entry.workers, "workers", separators)}`}>
+                  <div className={classNames(styles.metric, styles.metricWorkers)} style={columnStyle("workers")} title={`Workers ${formatBuildingMetric(entry.workers, "workers", separators)}`}>
                     {formatBuildingMetric(entry.workers, "workers", separators)}
                   </div>
-                  <div className={classNames(styles.metric, styles.metricCapacity)} title={`Capacity ${formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators)}`}>
+                  <div className={classNames(styles.metric, styles.metricCapacity)} style={columnStyle("capacity")} title={`Capacity ${formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators)}`}>
                     {formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators)}
                   </div>
-                  <div className={classNames(styles.metric, styles.metricLot)} title="Lot dimensions">
+                  <div className={classNames(styles.metric, styles.metricLot)} style={columnStyle("lot")} title="Lot dimensions">
                     {formatLotDimensions(entry.lotWidth, entry.lotDepth)}
                   </div>
-                  <div className={classNames(styles.metric, styles.metricLevel)} title="Building level">
+                  <div className={classNames(styles.metric, styles.metricLevel)} style={columnStyle("level")} title="Building level">
                     {entry.buildingLevel}
                   </div>
                   <div
                     className={classNames(styles.parking, styles.metricParking, entry.hasParking && styles.parkingActive)}
+                    style={columnStyle("parking")}
                     title={entry.hasParking ? `${entry.parkingSlots} parking bays (approximate)` : "No parking"}
                   >
                     {/* The count, not a "P". A glyph answered "does it park
@@ -802,7 +967,6 @@ export const BuildingCatalogComponent = () => {
                 searchText={currentSearch ?? ""}
                 onPlace={activate}
                 footer={catalogFooter}
-                onScrolled={onCatalogScroll}
               />
             )}
         </>
