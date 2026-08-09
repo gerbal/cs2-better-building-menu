@@ -29,6 +29,8 @@ import { ChipRow } from "mods/ChipRow/ChipRow";
 import { ViewModeBar } from "mods/GroupedResults/ViewModeBar";
 import type { CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import { useLensChoice } from "mods/useLensChoice";
+import lock from "images/findit_lock.svg";
+import unlock from "images/findit_unlock.svg";
 import { useState } from "react";
 import styles from "./lensControlPane.module.scss";
 
@@ -40,6 +42,7 @@ const BuildingLensMenuCategories$ = bindValue<unknown[]>(mod.id, "BuildingLensMe
 const ShowZoningHierarchy$ = bindValue<boolean>(mod.id, "ShowZoningHierarchy", false);
 const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch");
 const IsExpanded$ = bindValue<boolean>(mod.id, "IsExpanded", false);
+const IsWindowLocked$ = bindValue<boolean>(mod.id, "IsWindowLocked", false);
 
 /**
  * What the pane takes out of the panel's width: its own 379rem plus the 6rem
@@ -92,6 +95,7 @@ export const LensControlPane = () => {
   const showZoning = useValue(ShowZoningHierarchy$);
   const currentSearch = useValue(CurrentSearch$);
   const isExpanded = useValue(IsExpanded$);
+  const isWindowLocked = useValue(IsWindowLocked$);
 
   // Height, from the same rule the panel draws itself with.
   const heightState = { isExpanded, section, searchText: currentSearch };
@@ -324,6 +328,44 @@ export const LensControlPane = () => {
             </span>
           </Button>
         </div>
+      </div>
+
+      {/* Panel-level controls, below a rule because they are a different kind
+          of thing from the rows above: those decide how the qualifying set is
+          presented, these act on the panel itself.
+
+          Both were in the top bar caf59a8 deleted, and both were left with
+          nowhere else to go. ToggleLock has no other caller in the UI, and
+          neither has SetBuildingLensEnabled — which made the lens a one-way
+          door, since the only control that could turn it off was inside the
+          bank that stops rendering the moment it is turned on. There is no
+          keybinding and no setting for either. */}
+      <div className={styles.panelControls}>
+        <Button
+          className={classNames(styles.panelButton, isWindowLocked && styles.panelButtonOn)}
+          variant="icon"
+          onSelect={() => trigger(mod.id, "ToggleLock")}
+          aria-pressed={isWindowLocked}
+          title={label("Tooltip.LABEL[FindItBuildingMenu.LockWindow]", "Lock Window Open")}
+          aria-label={label("Tooltip.LABEL[FindItBuildingMenu.LockWindow]", "Lock Window Open")}
+        >
+          {/* The same two masks the deleted top bar drew, not a glyph: the
+              game's font stack has no padlock, and a missing character is the
+              one mark that would say nothing at all. */}
+          <img className={styles.panelIcon} style={{ maskImage: `url(${isWindowLocked ? lock : unlock})` }} aria-hidden="true" />
+        </Button>
+
+        <Button
+          className={styles.panelButton}
+          variant="icon"
+          onSelect={() => trigger(mod.id, "SetBuildingLensEnabled", false)}
+          title={label("Tooltip.LABEL[FindItBuildingMenu.DisableBuildingLens]", "Disable building lens")}
+          aria-label={label("Tooltip.LABEL[FindItBuildingMenu.DisableBuildingLens]", "Disable building lens")}
+        >
+          <span className={styles.panelButtonLabel}>
+            {label("Tooltip.LABEL[FindItBuildingMenu.DisableBuildingLens]", "Disable building lens")}
+          </span>
+        </Button>
       </div>
     </div>
   );
