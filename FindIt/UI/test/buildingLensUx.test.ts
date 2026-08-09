@@ -301,12 +301,13 @@ describe("Building Lens chrome budget", () => {
     const grip = mainContainerStylesFor().match(/\.resizeGrip\s*\{[^}]*\}/)?.[0] ?? "";
 
     assert.match(strip, /cursor:\s*ns-resize/);
-    // Absolute, so it overlays the panel's top edge instead of taking a row.
-    // In the flow it sat between the tab strip and the catalog and read as a
-    // divider between the controls and the results.
-    assert.match(strip, /position:\s*absolute/);
-    assert.match(strip, /top:\s*0/);
-    // Still taller than the mark it draws, so the edge is grabbable.
+    // NOT absolute. As an overlay on the panel edge it was invisible and
+    // unclickable — measured with elementFromPoint at the grip's own centre,
+    // the hit went to a subcategory tab, because the tab strip paints over it
+    // whatever z-index it carries. In the flow above the strip it cannot be
+    // occluded by it.
+    assert.doesNotMatch(strip, /position:\s*absolute/);
+    // Taller than the mark it draws, so the edge is grabbable without aiming.
     assert.match(strip, /height:\s*14rem/);
     // A short bar on the edge. Anything wider is a border between two regions.
     // 8rem, because 1rem is 0.6667px: a 5px grip is 8rem, and 5rem draws 3px.
