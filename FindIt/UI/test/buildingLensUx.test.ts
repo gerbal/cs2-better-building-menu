@@ -279,6 +279,20 @@ describe("Building Lens chrome budget", () => {
     assert.match(lensControlPaneSource, /searchContext/);
   });
 
+  it("obeys the chosen view mode at every panel height", () => {
+    // Reported as "switching view mode does not work", and it did not: the
+    // catalog overrode the choice to "grid" whenever the panel was not
+    // expanded, which is the resting default. Pressing List, Cards or Table
+    // lit the button in the control plane, left the grid on screen, and gave
+    // no reason — measured live, all four modes selected correctly in the pane
+    // while the catalog kept rendering tiles.
+    //
+    // The override was there to spare a player a table clipped to a sliver.
+    // That is the player's call to make, not ours to make silently.
+    assert.doesNotMatch(buildingCatalogSource, /expanded \? viewMode/);
+    assert.doesNotMatch(buildingCatalogSource, /effectiveViewMode/);
+  });
+
   it("left-aligns both layouts together, or not at all", () => {
     // The build menu's left edge is vanilla's tool-main-column, centred by
     // tool-layout along with a side column each side (253 + 475 + 253 in

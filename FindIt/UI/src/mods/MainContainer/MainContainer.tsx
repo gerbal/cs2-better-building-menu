@@ -235,7 +235,7 @@ export const FindItMainContainerComponent = () => {
                     // menu gets the zoning hierarchy rather than a table of
                     // building rows filtered to nothing.
                     ? <ZoningHierarchyComponent />
-                    : <BuildingCatalogComponent expanded={effectiveExpanded} />
+                    : <BuildingCatalogComponent />
                   : <PrefabSelectionComponent expanded={IsExpanded}></PrefabSelectionComponent>}
               </div>
               {BuildingLensEnabled && <div className={styles.resizeHandle} onMouseDown={beginResize} title="Resize building lens" />}

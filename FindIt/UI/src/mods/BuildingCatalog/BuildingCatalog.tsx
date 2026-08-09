@@ -129,14 +129,7 @@ const densityClassNames: Record<BuildingLensDensityTier, string> = {
   expanded: styles.densityExpanded,
 };
 
-interface BuildingCatalogComponentProps {
-  // A table is not a strip-shaped thing: the view-mode toggle and whatever
-  // mode it last chose only apply once the panel has bought the room for
-  // them via MainContainer's effectiveExpanded.
-  expanded: boolean;
-}
-
-export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentProps) => {
+export const BuildingCatalogComponent = () => {
   const { translate } = useLocalization();
   // The player's own thousands/decimal marks, so our columns agree with the
   // numbers the game is drawing elsewhere on the same screen.
@@ -168,12 +161,17 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
     LENS_VIEW_MODE_KEY,
     defaultToTable ? "table" : "grid"
   );
+  // The choice is obeyed at every height. It used to be overridden to "grid"
+  // whenever the panel rested at strip height, to save a player who had left
+  // the control on Table from a mode clipped to a sliver. The cost was worse
+  // than the thing it prevented: at the resting height — which is the default —
+  // pressing List, Cards or Table lit the button, changed nothing, and said
+  // nothing about why. A control that reports a state it is not in is the same
+  // defect as a control that is missing.
+  //
+  // The height is the player's to set, so the sliver is theirs to fix.
   const viewMode = viewModeChoice as ViewMode;
-  // Force grid when resting at strip height, so a player who left the
-  // control on List or Table does not get a mode clipped down to a sliver
-  // instead of the grid that height was designed to hold.
-  const effectiveViewMode = expanded ? viewMode : "grid";
-  const tableMode = effectiveViewMode === "table";
+  const tableMode = viewMode === "table";
   // Empty means "nobody has chosen", which is different from having chosen
   // None — the first follows the section, the second stays flat.
   const [chosenGroupBy] = useLensChoice(LENS_GROUP_KEY, "");
@@ -794,7 +792,7 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
               <GroupedResults
                 entries={items}
                 groupBy={groupBy}
-                viewMode={effectiveViewMode}
+                viewMode={viewMode}
                 searchText={currentSearch ?? ""}
                 onPlace={activate}
                 footer={catalogFooter}
