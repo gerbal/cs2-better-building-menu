@@ -57,6 +57,42 @@ public sealed class BuildingCatalogQueryEngineTests
         },
     };
 
+		[Fact]
+		public void AMenuScopedQueryOpensWideEnoughToHoldTheWholeMenu()
+		{
+			// Reported from play: opening Roads & Networks showed 100 of its 401
+			// assets, and the rest were reachable only by finding a control at the
+			// end of a list nothing said was incomplete. A menu is one set.
+			var scoped = new BuildingCatalogQuery { UiMenu = "Roads" };
+			var unscoped = new BuildingCatalogQuery();
+
+			Assert.Equal(BuildingCatalogQuery.MenuLimit, scoped.StartingLimit);
+			Assert.Equal(BuildingCatalogQuery.DefaultLimit, unscoped.StartingLimit);
+		}
+
+		[Fact]
+		public void EnteringAMenuWidensTheWindowRatherThanKeepingTheCatalogsChunk()
+		{
+			var browsing = new BuildingCatalogQuery { Limit = BuildingCatalogQuery.DefaultLimit };
+			var entered = (browsing with { UiMenu = "Roads" })
+				.ResetWindowIfPredicatesChanged(browsing);
+
+			Assert.Equal(BuildingCatalogQuery.MenuLimit, entered.Limit);
+			Assert.Equal(0, entered.Offset);
+		}
+
+		[Fact]
+		public void LeavingAMenuGoesBackToTheCatalogsChunk()
+		{
+			// The other direction matters too: carrying a menu-sized window out to
+			// the unscoped catalog would render two thousand rows on the way out.
+			var scoped = new BuildingCatalogQuery { UiMenu = "Roads", Limit = BuildingCatalogQuery.MenuLimit };
+			var left = (scoped with { UiMenu = string.Empty })
+				.ResetWindowIfPredicatesChanged(scoped);
+
+			Assert.Equal(BuildingCatalogQuery.DefaultLimit, left.Limit);
+		}
+
     [Fact]
     public void Query_SearchAndCategoryFilters_AreCaseInsensitive()
     {
@@ -719,6 +755,7 @@ public sealed class BuildingCatalogQueryEngineTests
 		BuildingCatalogEntry entry = Assert.Single(page.Items);
 		Assert.Equal(7, entry.Id);
 		Assert.Equal(1, page.TotalCount);
+
 	}
 
     [Fact]

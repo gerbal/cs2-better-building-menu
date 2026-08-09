@@ -81,6 +81,15 @@ namespace FindItBuildingMenu.Systems
 			// an offset past the new result set.
 			_buildingCatalogQuery = _buildingCatalogQuery.ResetWindowIfPredicatesChanged(previousQuery);
 
+			// Entering a menu is the one predicate change the handlers cannot size
+			// for themselves: they set the scope and the window in the same `with`,
+			// before the query knows it is scoped. Raising the floor here, after the
+			// scope is settled, is the single point every path goes through.
+			if (_buildingCatalogQuery.Limit < _buildingCatalogQuery.StartingLimit)
+			{
+				_buildingCatalogQuery = _buildingCatalogQuery with { Limit = _buildingCatalogQuery.StartingLimit };
+			}
+
 			BuildingCatalogPage page = _buildingCatalogAdapter.Query(_buildingCatalogQuery);
 
 			// A search that matches nothing in the current section reads as

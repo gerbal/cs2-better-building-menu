@@ -120,6 +120,32 @@ function groupCount(value: number, separators: NumberSeparators): string {
  * Say how much of the match set is on screen, for a window that grows rather
  * than a page that turns.
  */
+/**
+ * The same fact as {@link getCatalogWindowSummary}, short enough for a badge.
+ *
+ * The header's count is a fixed-size pill — `flex: 0 0 auto` with `nowrap` —
+ * sitting between the title and the search context. Putting the sentence in it
+ * shoved the search context and the Group by control sideways and the toolbar
+ * read as three captions fighting for one line. The sentence is still the
+ * tooltip, where it has room.
+ *
+ * Collapses to a single figure once the window covers everything, because
+ * "401 / 401" asks the player to compare two numbers to learn they are the
+ * same.
+ */
+export function getCatalogWindowBadge(
+  renderedCount: number,
+  totalCount: number,
+  separators: NumberSeparators,
+): string {
+  const safeTotal = Math.max(0, Math.floor(Number.isFinite(totalCount) ? totalCount : 0));
+  const safeRendered = Math.max(0, Math.floor(Number.isFinite(renderedCount) ? renderedCount : 0));
+  const shown = Math.min(safeRendered, safeTotal);
+  const total = groupCount(safeTotal, separators);
+
+  return shown === safeTotal ? total : `${groupCount(shown, separators)} / ${total}`;
+}
+
 export function getCatalogWindowSummary(
   renderedCount: number,
   totalCount: number,

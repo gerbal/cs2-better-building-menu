@@ -206,3 +206,24 @@ describe("how much of the match set is on screen", () => {
     assert.equal(summarize(100.7, 3677.2), "Showing 100 of 3\u00a0677");
   });
 });
+
+describe("the count badge in the header", () => {
+  it("stays short enough for a fixed-width pill", async () => {
+    const { getCatalogWindowBadge } = await import("../src/domain/buildingCatalogContracts.ts");
+    const separators = { group: ",", decimal: "." };
+
+    // The pill is flex: 0 0 auto with nowrap, between the title and the search
+    // context. A sentence in it shoved both sideways.
+    assert.equal(getCatalogWindowBadge(100, 401, separators), "100 / 401");
+    assert.equal(getCatalogWindowBadge(1200, 4206, separators), "1,200 / 4,206");
+  });
+
+  it("drops to one figure once the window covers everything", async () => {
+    const { getCatalogWindowBadge } = await import("../src/domain/buildingCatalogContracts.ts");
+    const separators = { group: ",", decimal: "." };
+
+    // "401 / 401" asks the reader to compare two numbers to learn they match.
+    assert.equal(getCatalogWindowBadge(401, 401, separators), "401");
+    assert.equal(getCatalogWindowBadge(0, 0, separators), "0");
+  });
+});

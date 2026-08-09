@@ -17,6 +17,7 @@ import {
 import type { BuildingLensDensityTier, BuildingLensMetric } from "domain/buildingLensLayout";
 import {
   MAX_COMPARE_ENTRIES,
+  getCatalogWindowBadge,
   getCatalogWindowSummary,
   clearCompareEntriesCommand,
   loadMoreCatalogCommand,
@@ -210,6 +211,7 @@ export const BuildingCatalogComponent = () => {
   // already refused to serve.
   const hasMore = page?.hasMore ?? false;
   const windowSummary = getCatalogWindowSummary(items.length, totalCount, separators);
+  const windowBadge = getCatalogWindowBadge(items.length, totalCount, separators);
   const density = getBuildingLensDensity(panelWidth + BUILDING_LENS_PANEL_CHROME_WIDTH);
   const rowGeometry = getBuildingLensRowGeometry(density);
   const catalogMaxHeight = getBuildingLensCatalogMaxHeight(typeof window === "undefined" ? 720 : window.innerHeight);
@@ -444,7 +446,7 @@ export const BuildingCatalogComponent = () => {
             that never scrolls. The old count lived in the pager below the
             scroll, so reading it meant travelling to the end of the list — and
             it only existed in table view at all. */}
-        <div className={styles.count} title={windowSummary}>{windowSummary}</div>
+        <div className={styles.count} title={windowSummary} aria-label={windowSummary}>{windowBadge}</div>
         {currentSearch?.trim() && (
           <div className={styles.searchContext} title={currentSearch}>
             {translate("Tooltip.LABEL[FindItBuildingMenu.BuildingLensSearchResults]", "Results for {0}")?.replace("{0}", currentSearch)}
