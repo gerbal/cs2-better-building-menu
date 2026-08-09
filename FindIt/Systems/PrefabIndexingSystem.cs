@@ -1856,10 +1856,75 @@ namespace FindItBuildingMenu.Systems
 		/// system is available.
 		/// </remarks>
 		/// <summary>The tab strip for a menu, empty when the menu has none.</summary>
-		public static IReadOnlyList<VanillaMenuCategory> GetMenuCategories(string? menuName) =>
-			menuName is not null && _assetCategories.TryGetValue(menuName, out var tabs)
-				? tabs
-				: Array.Empty<VanillaMenuCategory>();
+		/// <remarks>
+		/// Roads gets more tabs than the game gives it. The lens gathers every
+		/// network there (see <see cref="NetworkMenuExtension"/>), so the strip has
+		/// to offer the extras too — otherwise the menu holds three hundred assets
+		/// and the only way past the roads is to scroll.
+		/// </remarks>
+		public static IReadOnlyList<VanillaMenuCategory> GetMenuCategories(string? menuName)
+		{
+			var tabs = menuName is not null && _assetCategories.TryGetValue(menuName, out var found)
+				? found
+				: (IReadOnlyList<VanillaMenuCategory>)Array.Empty<VanillaMenuCategory>();
+
+			if (!NetworkMenuExtension.IsExtended(menuName) || tabs.Count == 0)
+			{
+				return tabs;
+			}
+
+			return tabs.Concat(GetExtraNetworkCategories()).ToArray();
+		}
+
+		/// <summary>
+		/// A tab for each kind of network the Roads menu does not already hold.
+		/// </summary>
+		/// <remarks>
+		/// Built from what is actually indexed rather than from the enum, so a
+		/// subcategory with nothing in it draws no tab — the same rule vanilla
+		/// applies in GetSortedCategories, and the one that stopped Transportation
+		/// showing an empty ferry tab with a placeholder icon.
+		///
+		/// Ids match what NetworkMenuExtension.Reframe writes onto the entries, so
+		/// picking a tab selects the group beneath it. Icons come from the
+		/// subcategory's own CategoryIcon, which is the same art the unscoped
+		/// filter rail draws for it.
+		/// </remarks>
+		private static IEnumerable<VanillaMenuCategory> GetExtraNetworkCategories()
+		{
+			if (!FindItUtil.CategorizedPrefabs.TryGetValue(PrefabCategory.Networks, out var networks))
+			{
+				yield break;
+			}
+
+			foreach (var pair in networks.OrderBy(pair => (int)pair.Key))
+			{
+				if (pair.Key == PrefabSubCategory.Any || pair.Value.Count == 0)
+				{
+					continue;
+				}
+
+				// Only the ones that arrive through the extension. A subcategory
+				// whose members are all in the Roads menu already has vanilla tabs
+				// covering them, and a second tab over the same assets would split
+				// the roads in two.
+				if (!pair.Value.Any(prefab => !string.Equals(
+						prefab.UiMenuName,
+						NetworkMenuExtension.RoadsMenu,
+						StringComparison.OrdinalIgnoreCase)))
+				{
+					continue;
+				}
+
+				var name = pair.Key.ToString();
+
+				yield return new VanillaMenuCategory(
+					Id: NetworkMenuExtension.GroupId(name),
+					Name: NetworkMenuExtension.GroupId(name),
+					Icon: IconPath.Normalize(CategoryIconAttribute.GetAttribute(pair.Key).Icon) ?? string.Empty,
+					Priority: NetworkMenuExtension.GroupPriority(name));
+			}
+		}
 
 		/// <summary>
 		/// Every vanilla menu that has something in it, in the game's order.
