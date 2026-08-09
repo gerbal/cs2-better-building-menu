@@ -52,6 +52,24 @@ describe("when the growing window asks for more", () => {
     );
   });
 
+  it("says no until the player has actually scrolled", () => {
+    // Cohtml fills a scroll container over several frames — the same list was
+    // measured at scrollHeight 1,440 and then 3,606 a frame or two later — so a
+    // window still being laid out reports a short content height that sits
+    // inside the band while nobody has touched anything. Measured live
+    // 2026-08-09: without this rule the unscoped lens grew itself from 100 rows
+    // to 200 on mount, at scrollTop 0.
+    assert.equal(
+      shouldLoadMore({ scrollTop: 0, clientHeight: 468, scrollHeight: 700, threshold: 280 }),
+      false,
+    );
+    // The same three numbers with any evidence of a scroll is the real case.
+    assert.equal(
+      shouldLoadMore({ scrollTop: 1, clientHeight: 468, scrollHeight: 700, threshold: 280 }),
+      true,
+    );
+  });
+
   it("says no rather than guessing when a measurement is not a number", () => {
     assert.equal(
       shouldLoadMore({ scrollTop: Number.NaN, clientHeight: 600, scrollHeight: 2500 }),
@@ -153,5 +171,129 @@ describe("returning to a remembered row", () => {
 
     assert.equal(anchorScrollTop(42, Number.NaN, 100, 300), 42);
     assert.equal(anchorScrollTop(42, 700, 100, Number.POSITIVE_INFINITY), 42);
+  });
+});
+
+describe("telling a real measurement from Cohtml's pre-layout zeroes", () => {
+  it("rejects the all-zero rects the engine reports on the remount frame", async () => {
+    const { isAnchorMeasurable } = await import("../src/domain/catalogWindow.ts");
+
+    // Measured live 2026-08-09: the frame the catalog remounts, the container
+    // and every row inside it report top 0 and height 0, and the panel's real
+    // top is 163. Believing that frame scrolls the list to 0 and calls it a
+    // restore.
+    assert.equal(
+      isAnchorMeasurable({ containerTop: 0, containerHeight: 0, rowTop: 0, rowHeight: 0 }),
+      false,
+    );
+  });
+
+  it("accepts a container legitimately laid out at the top of the viewport", async () => {
+    const { isAnchorMeasurable } = await import("../src/domain/catalogWindow.ts");
+
+    // top === 0 is not the tell; a zero height is.
+    assert.equal(
+      isAnchorMeasurable({ containerTop: 0, containerHeight: 468, rowTop: 0, rowHeight: 75 }),
+      true,
+    );
+  });
+
+  it("rejects a row that has not been laid out inside a container that has", async () => {
+    const { isAnchorMeasurable } = await import("../src/domain/catalogWindow.ts");
+
+    assert.equal(
+      isAnchorMeasurable({ containerTop: 163, containerHeight: 468, rowTop: 0, rowHeight: 0 }),
+      false,
+    );
+  });
+});
+
+describe("checking the anchor actually landed", () => {
+  it("counts any overlap with the viewport as landed", async () => {
+    const { isAnchorOnScreen } = await import("../src/domain/catalogWindow.ts");
+
+    // Fully inside.
+    assert.equal(
+      isAnchorOnScreen({ containerTop: 163, containerHeight: 468, rowTop: 300, rowHeight: 75 }),
+      true,
+    );
+    // Straddling the top edge, and the bottom edge. Asking for the exact
+    // third-of-the-way position back would restart the loop over a few pixels
+    // of drift while rows are still arriving.
+    assert.equal(
+      isAnchorOnScreen({ containerTop: 163, containerHeight: 468, rowTop: 120, rowHeight: 75 }),
+      true,
+    );
+    assert.equal(
+      isAnchorOnScreen({ containerTop: 163, containerHeight: 468, rowTop: 600, rowHeight: 75 }),
+      true,
+    );
+  });
+
+  it("does not count a row above or below the viewport", async () => {
+    const { isAnchorOnScreen } = await import("../src/domain/catalogWindow.ts");
+
+    assert.equal(
+      isAnchorOnScreen({ containerTop: 163, containerHeight: 468, rowTop: 40, rowHeight: 75 }),
+      false,
+    );
+    // The case that started this: the row is present, 2,174 down a panel whose
+    // viewport ends at 631, and the list is sitting at scrollTop 0.
+    assert.equal(
+      isAnchorOnScreen({ containerTop: 163, containerHeight: 468, rowTop: 2174, rowHeight: 75 }),
+      false,
+    );
+  });
+
+  it("never reports landed on geometry it cannot trust", async () => {
+    const { isAnchorOnScreen } = await import("../src/domain/catalogWindow.ts");
+
+    // Zero height overlaps nothing, but the arithmetic alone would say the row
+    // at 0 is inside a viewport at 0 — which is exactly the pre-layout frame.
+    assert.equal(
+      isAnchorOnScreen({ containerTop: 0, containerHeight: 0, rowTop: 0, rowHeight: 0 }),
+      false,
+    );
+  });
+
+  it("gives the restore a bounded budget of frames", async () => {
+    const { CATALOG_ANCHOR_MAX_FRAMES } = await import("../src/domain/catalogWindow.ts");
+
+    // Half a second at 60Hz: long enough for the window to arrive from C# and
+    // lay out, short enough that an unreachable anchor gives up before the
+    // player has scrolled somewhere themselves.
+    assert.equal(CATALOG_ANCHOR_MAX_FRAMES, 30);
+  });
+});
+
+describe("finding the element that actually scrolls", () => {
+  it("ignores a container that sub-pixel rounding pushed one pixel over", async () => {
+    const { isScrollContainer } = await import("../src/domain/catalogWindow.ts");
+
+    // Measured live 2026-08-09: the grid's inner tiles container reported
+    // scrollHeight 382 against clientHeight 381. A walk that believed it read
+    // scrollTop 0 forever, and the window never grew however far the player
+    // scrolled the real container above it.
+    assert.equal(isScrollContainer(382, 381), false);
+  });
+
+  it("accepts a container with a real list inside it", async () => {
+    const { isScrollContainer } = await import("../src/domain/catalogWindow.ts");
+
+    assert.equal(isScrollContainer(796, 468), true);
+  });
+
+  it("takes the threshold as the boundary, not as a suggestion", async () => {
+    const { isScrollContainer, CATALOG_SCROLL_MIN_OVERFLOW } = await import("../src/domain/catalogWindow.ts");
+
+    assert.equal(isScrollContainer(468 + CATALOG_SCROLL_MIN_OVERFLOW, 468), true);
+    assert.equal(isScrollContainer(468 + CATALOG_SCROLL_MIN_OVERFLOW - 1, 468), false);
+  });
+
+  it("says no rather than guessing on a measurement that is not a number", async () => {
+    const { isScrollContainer } = await import("../src/domain/catalogWindow.ts");
+
+    assert.equal(isScrollContainer(Number.NaN, 468), false);
+    assert.equal(isScrollContainer(796, Number.NaN), false);
   });
 });

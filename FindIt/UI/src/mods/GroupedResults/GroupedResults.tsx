@@ -1,5 +1,5 @@
 import { Scrollable } from "cs2/ui";
-import { useRef, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import classNames from "classnames";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
@@ -33,8 +33,6 @@ interface GroupedResultsProps {
    * the reason nobody read it.
    */
   footer?: ReactNode;
-  /** Called with the scrolling element whenever it scrolls. */
-  onScrolled?: (container: HTMLElement | null) => void;
 }
 
 /**
@@ -57,10 +55,8 @@ export const GroupedResults = ({
   searchText,
   onPlace,
   footer,
-  onScrolled,
 }: GroupedResultsProps) => {
   const { translate } = useLocalization();
-  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   /**
    * The game's word for a heading, where the game has one.
@@ -126,7 +122,6 @@ export const GroupedResults = ({
         searchText={searchText}
         onPlace={onPlace}
         footer={footer}
-        onScrolled={onScrolled}
       />
     );
   }
@@ -136,8 +131,6 @@ export const GroupedResults = ({
       className={styles.groupScroll}
       vertical
       trackVisibility="scrollable"
-      ref={scrollRef}
-      onScroll={() => onScrolled?.(scrollRef.current)}
     >
       {groups.length === 0 ? renderLeaf(entries) : renderNodes(groups, 0)}
       {footer}
