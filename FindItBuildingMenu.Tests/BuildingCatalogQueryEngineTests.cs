@@ -561,6 +561,43 @@ public sealed class BuildingCatalogQueryEngineTests
     }
 
     [Fact]
+    public void Query_DoesNotPageAMenu()
+    {
+        // A vanilla menu is one set, not a sequence of pages. Roads is 157
+        // assets and was arriving as "Rows 1-100 of 157, page 1 of 2" — a
+        // boundary the game does not have, with the far half behind a control
+        // at the bottom of a scroll.
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+            SampleEntries,
+            new BuildingCatalogQuery(UiMenu: "Roads", Limit: 100));
+
+        Assert.Equal(BuildingCatalogQuery.MaxLimit, page.Limit);
+    }
+
+    [Fact]
+    public void Query_DoesNotPageASingleCategoryEither()
+    {
+        // Scoping further is still scoping to the menu tree.
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+            SampleEntries,
+            new BuildingCatalogQuery(UiCategory: "RoadsSmallRoads", Limit: 100));
+
+        Assert.Equal(BuildingCatalogQuery.MaxLimit, page.Limit);
+    }
+
+    [Fact]
+    public void Query_StillPagesTheWholeCatalog()
+    {
+        // Unscoped, the set is 3,667 buildings and no page size makes that one
+        // thing — so the 100 stands.
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+            SampleEntries,
+            new BuildingCatalogQuery(Limit: 100));
+
+        Assert.Equal(100, page.Limit);
+    }
+
+    [Fact]
     public void Query_EmptyAndMissingFields_ReturnEmptyWithoutThrowing()
     {
         BuildingCatalogEntry empty = Entry(6, "", "", "", "", 0, 0, 0, false, "");

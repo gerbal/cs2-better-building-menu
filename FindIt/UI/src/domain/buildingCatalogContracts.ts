@@ -118,6 +118,22 @@ export function getCatalogPageSummary(offset: number, totalCount: number, limit:
   return `Rows ${firstRow.toLocaleString()}–${lastRow.toLocaleString()} of ${safeTotal.toLocaleString()} · Page ${page} of ${pageCount}`;
 }
 
+/**
+ * Whether the result is split across pages at all.
+ *
+ * A single page needs no pager. Five buttons and a "Page 1 of 1" caption below
+ * a list that already holds everything is a control that can only tell you it
+ * has nothing to do — and it sits at the bottom of a scroll, so the player
+ * scrolls to it to find that out. Menu-scoped queries are all one page now
+ * (see BuildingCatalogQuery.EffectiveLimit), so this is the common case.
+ */
+export function isCatalogPaged(totalCount: number, limit: number): boolean {
+  const pageSize = normalizeCatalogPageSize(limit);
+  const safeTotal = Math.max(0, Math.floor(Number.isFinite(totalCount) ? totalCount : 0));
+
+  return safeTotal > pageSize;
+}
+
 /** True when the bounded page has more records than are currently rendered. */
 export function hasCatalogScroll(totalCount: number, renderedCount: number): boolean {
   const safeTotal = Math.max(0, Math.floor(Number.isFinite(totalCount) ? totalCount : 0));

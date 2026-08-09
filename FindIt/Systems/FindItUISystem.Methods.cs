@@ -233,7 +233,6 @@ namespace FindItBuildingMenu.Systems
 			// CreateBinding's initial value can be emitted before the Gameface module
 			// subscribes during a view recreation; the refresh path is the same
 			// lifecycle used by the working section/subcategory bindings above.
-			_ToolSurfaceDescriptorsBinding.Value = ToolSurfaceCatalog.GetDescriptors().ToArray();
 		}
 
 

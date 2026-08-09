@@ -17,6 +17,7 @@ import {
 import type { BuildingLensDensityTier, BuildingLensMetric } from "domain/buildingLensLayout";
 import {
   MAX_COMPARE_ENTRIES,
+  isCatalogPaged,
   getCatalogPageSummary,
   hasCatalogScroll,
   clearCompareEntriesCommand,
@@ -214,6 +215,9 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
   const hasPreviousPage = offset > 0;
   const hasNextPage = offset + items.length < totalCount;
   const pageSummary = getCatalogPageSummary(offset, totalCount, limit);
+  // A pager over a single page can only report that it has nothing to do, and
+  // it sits below a scroll, so the player travels to it to learn that.
+  const paged = isCatalogPaged(totalCount, limit);
   const rowsScrollable = hasCatalogScroll(totalCount, items.length);
   const density = getBuildingLensDensity(panelWidth + BUILDING_LENS_PANEL_CHROME_WIDTH);
   const rowGeometry = getBuildingLensRowGeometry(density);
@@ -833,7 +837,7 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
           })}
         </Scrollable>
 
-        <div className={styles.paging}>
+        {paged && <div className={styles.paging}>
           {/* First/last jumps: a 4,000-building catalog is 43 pages, and stepping
               one page at a time made the far end of any sort effectively
               unreachable. */}
@@ -878,7 +882,7 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
           >
             <span>»</span>
           </Button>
-        </div>
+        </div>}
         </>
       ) : (
         <>

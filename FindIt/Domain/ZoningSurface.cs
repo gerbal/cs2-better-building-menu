@@ -12,8 +12,8 @@ namespace FindItBuildingMenu.Domain;
 
 /// <summary>
 /// Stable identifiers for the zoning families the vanilla Zones menu is built
-/// from. Like <see cref="ToolSurfaceIds"/> these cross the C# / Gameface
-/// boundary and must not change when runtime toolbar entities do.
+/// from. These cross the C# / Gameface boundary and must not change when
+/// runtime toolbar entities do.
 /// </summary>
 public static class ZoningFamilies
 {
@@ -67,9 +67,8 @@ public sealed record ZoningFamilyDescriptor(
 /// there.
 /// </summary>
 /// <remarks>
-/// Zoning is a seventh construction surface alongside
-/// <see cref="ToolSurfaceIds"/>, but unlike the other six the lens owns the
-/// browsing hierarchy rather than handing straight off. Assignment itself still
+/// Zoning is the one surface where the lens owns the browsing hierarchy rather
+/// than handing straight off to a vanilla menu. Assignment itself still
 /// belongs to the native Zone tool — this contract never places anything, in
 /// keeping with the tool-first design's rule that native tools remain the
 /// placement authority.

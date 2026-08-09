@@ -98,6 +98,31 @@ describe("Group dimensions", () => {
     ]);
   });
 
+  it("carries the game's category id so the heading can be localized", () => {
+    // The label is our camel-case split of "TransportationRoad"; the game ships
+    // "Road" under SubServices.NAME[TransportationRoad]. The renderer needs the
+    // raw id to ask for it, and the label stays as the fallback.
+    const nodes = buildGroupedView(
+      [entry({ uiMenu: "Transportation", uiCategory: "TransportationRoad" })],
+      "menuCategory"
+    );
+
+    assert.equal(nodes[0].labelId, "TransportationRoad");
+    assert.equal(nodes[0].label, "Road");
+  });
+
+  it("carries no id for headings the game does not name", () => {
+    // Only menuCategory names something the game owns. Cost bands, footprints
+    // and roles are ours, so there is nothing to look up — and "Other" is ours
+    // even within menuCategory.
+    assert.equal(buildGroupedView([entry()], "cost")[0].labelId, undefined);
+    assert.equal(buildGroupedView([entry()], "role")[0].labelId, undefined);
+    assert.equal(
+      buildGroupedView([entry({ uiCategory: null })], "menuCategory")[0].labelId,
+      undefined
+    );
+  });
+
   it("prefers the DLC name over the broad provenance for Source", () => {
     assert.deepEqual(groupLevelsFor(entry({ dlcId: "Bridges & Ports" }), "source"), ["Bridges & Ports"]);
     assert.deepEqual(groupLevelsFor(entry({ dlcId: null }), "source"), ["Base game"]);

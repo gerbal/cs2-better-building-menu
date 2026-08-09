@@ -171,7 +171,7 @@ namespace FindItBuildingMenu.Tests
 		[Fact]
 		public void DescribesEachFamilyForTheUiWithoutEntityIds()
 		{
-			// Same contract shape as ToolSurfaceCatalog: flat, serializable,
+			// A flat, serializable contract:
 			// and free of runtime entity ids.
 			var residential = ZoningSurfaceCatalog.Describe(ZoningFamilies.Residential);
 
