@@ -1,0 +1,72 @@
+// The control plane: a column to the right of the build menu, mirroring
+// vanilla's tool-options column on the left.
+//
+// WIDTH IS IN REM AND THE TARGET WAS MEASURED IN PIXELS. Vanilla's
+// tool-side-column is 253px at 1280x720, and 1rem is 0.6667px here, so the
+// match is 379rem. Writing 253rem would draw it at two thirds the width and
+// look almost right, which is how the same slip survived review twice already
+// (BuildingLensTileSize, and lensToolOptions' .item min-height).
+$pane-width: 379rem;
+
+// Bottom-aligned and growing upward, like the column it mirrors: the build
+// menu's bottom edge is the line the eye tracks along the bottom bar.
+.pane {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  align-self: flex-end;
+  box-sizing: border-box;
+  width: $pane-width;
+  margin-left: 6rem;
+  padding: 6rem 8rem;
+  border-radius: var(--panelRadius);
+  background-color: var(--panelColorNormal);
+  backdrop-filter: var(--panelBlur);
+  background-image: linear-gradient(var(--panelGradientStart), var(--panelGradientEnd));
+  color: rgba(255, 255, 255, 1);
+  pointer-events: auto;
+}
+
+// One row per control, the same shape as the options-bank rows opposite:
+// a label that sizes to its text, then the control.
+.row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  min-height: 39rem;
+  padding: 4rem 0;
+}
+
+.rowLabel {
+  flex: 0 0 auto;
+  padding-right: 8rem;
+  // Solid white, matching vanilla's row labels. --menuText1Normal resolves to
+  // 80% here and reads as the disabled sibling of the rows it sits beside;
+  // measured on the live Theme row, vanilla's is rgba(255,255,255,1).
+  color: rgba(255, 255, 255, 1);
+  font-size: var(--fontSizeM);
+  white-space: nowrap;
+}
+
+.rowValue {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: flex-end;
+}
+
+// The result count leads the pane: it is the one figure that answers "did that
+// do anything" after every control below it.
+.count {
+  color: var(--menuTitleNormal);
+  font-size: var(--fontSizeL);
+  white-space: nowrap;
+}
+
+.countUnit {
+  padding-left: 4rem;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeS);
+}
