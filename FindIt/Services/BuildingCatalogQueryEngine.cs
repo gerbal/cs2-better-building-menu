@@ -29,7 +29,12 @@ namespace FindItBuildingMenu.Services
 			}
 
 			var limit = query.EffectiveLimit;
-			var matching = entries.Where(entry => Matches(entry, query));
+			// Reframed before ordering, because the Roads menu's extra networks are
+			// placed behind its own categories by a rewritten priority, and ordering
+			// a page that has already been cut would only relabel them in place.
+			var matching = entries
+				.Where(entry => Matches(entry, query))
+				.Select(entry => NetworkMenuExtension.Reframe(entry, query.UiMenu));
 			var totalCount = matching.Count();
 			var offset = ClampOffset(query.EffectiveOffset, totalCount, limit);
 			var items = Order(matching, query)
@@ -188,7 +193,14 @@ namespace FindItBuildingMenu.Services
 				return true;
 			}
 
-			if (!string.IsNullOrEmpty(menu)
+			// The Roads menu is the one place the lens shows more than the game
+			// does: every network belongs there, not only the ones vanilla files
+			// under Roads. See NetworkMenuExtension for why, and for the fact that
+			// nothing is taken out of the menus that already hold them.
+			var extraNetwork = NetworkMenuExtension.IsExtraNetwork(entry.Category, entry.UiMenu, menu);
+
+			if (!extraNetwork
+				&& !string.IsNullOrEmpty(menu)
 				&& !string.Equals(entry.UiMenu, menu, StringComparison.OrdinalIgnoreCase))
 			{
 				return false;
@@ -204,8 +216,15 @@ namespace FindItBuildingMenu.Services
 				return false;
 			}
 
+			// Against the category this entry answers to IN THIS MENU. An extra
+			// network's own UiCategory names where the game keeps it — a seaway's is
+			// TransportationShip — and comparing a Roads tab against that would make
+			// every extra tab select nothing.
 			return string.IsNullOrEmpty(category)
-				|| string.Equals(entry.UiCategory, category, StringComparison.OrdinalIgnoreCase);
+				|| string.Equals(
+					NetworkMenuExtension.EffectiveCategory(entry, menu),
+					category,
+					StringComparison.OrdinalIgnoreCase);
 		}
 
 		private static bool MatchesBuildMenu(BuildingCatalogEntry entry, BuildingCatalogQuery query)
