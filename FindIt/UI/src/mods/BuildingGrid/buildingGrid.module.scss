@@ -24,11 +24,23 @@
   text-transform: uppercase;
 }
 
+// Sizes to its content, capped by the catalog's own max-height — NOT flex: 1 1 0.
+//
+// A zero basis only resolves against a parent with a definite height, and
+// .catalog's height is a cap rather than a height. With the basis resolving
+// against nothing this scroll area contributed zero, and the panel sat at its
+// floor — measured 41px, holding all 53 tiles, none of them visible.
+//
+// This is the same failure groupedResults.module.scss's .groupScroll records
+// and fixes the same way. It only surfaced here when the default grouping went
+// to none: until then every menu with categories took the grouped path, so the
+// ungrouped grid was never the thing holding the panel open.
 .body {
   display: flex;
   flex-direction: column;
-  flex: 1 1 0;
+  flex: 0 1 auto;
   min-height: 0;
+  max-height: 100%;
 }
 
 .bodyTiles {

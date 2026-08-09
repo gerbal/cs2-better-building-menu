@@ -97,16 +97,29 @@ export function defaultGroupDimensionFor(
   section: string | null | undefined,
   menuHasCategories: boolean = false,
 ): GroupDimensionId {
-  // Inside a vanilla menu, the game's own categories win. They are the split
-  // the tab strip already shows, so grouping by anything else asks the player
-  // to hold two organisations of the same 53 assets at once.
+  // Inside a vanilla menu the strip owns the categories, so the grid does not
+  // repeat them. This used to return "menuCategory" — which drew, under a strip
+  // reading All / Bus / Train / Tram / Subway / Ship / Airplane, headings
+  // reading ROAD / TRAIN / TRAM / SUBWAY / SHIP / AIR. The same division twice,
+  // once as navigation and once as furniture.
   //
-  // Role was the default here and produced NO grouping at all on Transportation:
-  // role is buildingType, networks do not have one, and half that menu is stops
-  // and tracks — so everything fell into a single unnamed bucket and the
-  // headings were suppressed as redundant. One flat wall of 53 tiles.
+  // Measured on Transportation at 720p: 53 tiles, 9 per row. Flowed as one set
+  // that is 6 rows; split into those six groups it is 9 rows plus 6 headings,
+  // because a group ends its row wherever it runs out — Ship holds a nine-wide
+  // row for 2 tiles, Air for 3. A third more scrolling, in a panel that shows
+  // two rows at a time, to say what the strip already says.
+  //
+  // Vanilla never groups its asset grid, so flat is also the footprint this
+  // panel is being matched to. Grouping is not lost: the picker still offers
+  // every dimension, including this one, and a player who wants headings is one
+  // click away. It is the default that changed, not the capability.
+  //
+  // (For the record, before "menuCategory" this returned "role", which produced
+  // no grouping at all on Transportation: role is buildingType, networks have
+  // none, and half that menu is stops and tracks — so everything fell into one
+  // unnamed bucket and the headings were suppressed as redundant anyway.)
   if (menuHasCategories) {
-    return "menuCategory";
+    return "none";
   }
 
   return typeof section === "string" && section.trim().toLowerCase() === "servicebuildings"

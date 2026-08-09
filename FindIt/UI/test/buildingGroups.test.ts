@@ -270,9 +270,28 @@ describe("Per-section defaults", () => {
     assert.equal(defaultGroupDimensionFor(""), "category");
   });
 
+  it("leaves the grid flat when the menu has a category strip", () => {
+    // The strip owns the categories. Grouping by them too drew ROAD / TRAIN /
+    // TRAM / SUBWAY / SHIP / AIR under a strip already reading All / Bus /
+    // Train / Tram / Subway / Ship / Airplane — the same division twice, at a
+    // third more scrolling.
+    assert.equal(defaultGroupDimensionFor("Networks", true), "none");
+    assert.equal(defaultGroupDimensionFor("ServiceBuildings", true), "none");
+    assert.equal(defaultGroupDimensionFor(null, true), "none");
+  });
+
+  it("still groups where there is no strip to do the dividing", () => {
+    assert.equal(defaultGroupDimensionFor("ServiceBuildings", false), "role");
+    assert.equal(defaultGroupDimensionFor("AllBuildings", false), "category");
+  });
+
   it("only ever returns a dimension the picker offers", () => {
     for (const section of ["ServiceBuildings", "AllBuildings", "nonsense", ""]) {
-      assert.ok(GROUP_DIMENSIONS.some((d) => d.id === defaultGroupDimensionFor(section)));
+      for (const hasCategories of [false, true]) {
+        assert.ok(
+          GROUP_DIMENSIONS.some((d) => d.id === defaultGroupDimensionFor(section, hasCategories))
+        );
+      }
     }
   });
 });
