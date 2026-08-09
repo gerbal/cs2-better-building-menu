@@ -15,8 +15,9 @@ namespace FindItBuildingMenu.Domain.Options
 	/// </summary>
 	/// <remarks>
 	/// "Short" is read from the live facet state rather than assumed: a
-	/// dimension that grows past <see cref="BankThreshold"/> options (matching
-	/// UI/src/domain/filterRail.ts's RAIL_BANK_THRESHOLD) declines here instead
+	/// dimension that grows past <see cref="BuildingLensFacetBank.BankThreshold"/>
+	/// options (matching UI/src/domain/filterRail.ts's RAIL_BANK_THRESHOLD,
+	/// which a test now asserts) declines here instead
 	/// of spilling a wall of icons the vanilla asset menu would never show this
 	/// way. The rail stays that dimension's home in that case, so a facet can
 	/// move between the two as its option count changes with the player's
@@ -28,9 +29,6 @@ namespace FindItBuildingMenu.Domain.Options
 	/// </remarks>
 	internal abstract class BuildingLensFacetOptionBase : IOptionSection
 	{
-		// Matches filterRail.ts's RAIL_BANK_THRESHOLD.
-		private const int BankThreshold = 8;
-
 		private readonly OptionsUISystem _optionsUISystem;
 		private readonly string _facetId;
 		private BuildingCatalogFacetOption[] _options = Array.Empty<BuildingCatalogFacetOption>();
@@ -79,7 +77,7 @@ namespace FindItBuildingMenu.Domain.Options
 
 			_options = group?.Options ?? Array.Empty<BuildingCatalogFacetOption>();
 
-			return _options.Length > 0 && _options.Length <= BankThreshold;
+			return BuildingLensFacetBank.BelongsInBank(_options.Length);
 		}
 
 		public void OnOptionClicked(int optionId, int value)
