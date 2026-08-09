@@ -431,18 +431,14 @@ export const TopBarComponent = (props: TopBarProps) => {
                 buy back its 30px, which took search off screen along with it
                 — a conditional render, not a deletion, so CurrentSearch,
                 setSearchText, handleInputChange, IsSearchLoading and
-                searchRef below are all still live. The earlier attempt to
-                reunite search with the strip (46106a5) was reverted
-                (7458a02) because the strip shared its row with the *whole*
-                top bar row back then — search, lock/filter/lens-toggle/
-                sort/random, the result count, and the CATALOG/TOOLS tabs —
-                leaving 13 tabs 27px of a 718px row. With that row gone
-                entirely in catalog mode, the strip owns the full 718px
-                again: 13 tabs at 26px cost 338px, leaving 367px free next to
-                them, plenty for a compact field. TabStrip returns null on
-                the zoneFamily axis and below two tabs, so the field lives
-                here as a sibling rather than inside TabStrip — it keeps
-                rendering in both of those cases. */}
+                searchRef below are all still live. An earlier attempt to
+                reunite search with the strip (46106a5) was reverted (7458a02)
+                because back then the strip shared its row with that whole top
+                bar — search, lock/filter/lens-toggle/sort/random, the result
+                count and the CATALOG/TOOLS tabs — leaving the tabs 27px of a
+                718px row. With the row gone, the strip and a compact field
+                fit together with room to spare: measured on Transportation,
+                seven tabs take 403..957 and the field 957..1121. */}
             <div className={styles.catalogStripRow}>
               {/* Wrapped rather than styled directly: MenuCategoryStrip owns
                   its own class and sizes itself flex: 0 0 auto, which on this
@@ -493,14 +489,11 @@ export const TopBarComponent = (props: TopBarProps) => {
               </div>
             </div>
 
-            {/* TabStrip and the chip row's sub-category breadcrumb are two
-                controls for the same single-select value — the same
-                BuildingLensSubCategoryList, driven by the same
-                lensSubCategoryCommand — stacked directly on top of each
-                other, ~34rem of duplicated identity. At strip height the tab
-                strip alone carries it; the section is implied by the toolbar
-                menu the player just clicked. Same pattern as ViewModeBar:
-                hidden at rest, back on expand. */}
+            {/* The chips name the scope the whole result sits in; the strip
+                above narrows within it. Both at strip height would be ~34rem
+                spent saying where you are, and the toolbar menu the player
+                just clicked already implies most of it. Same pattern as
+                ViewModeBar: hidden at rest, back on expand. */}
             {props.expanded && <ChipRow />}
           </>
         )}

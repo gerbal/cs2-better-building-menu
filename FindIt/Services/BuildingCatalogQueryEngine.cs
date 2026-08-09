@@ -41,32 +41,6 @@ namespace FindItBuildingMenu.Services
 		}
 
 		/// <summary>
-		/// The predicate half of <see cref="Query"/>, without paging or
-		/// ordering. Callers that need the whole matching set rather than one
-		/// page of it — deriving which roles are present in a section
-		/// +subCategory scope, for instance — would otherwise have to either
-		/// duplicate <see cref="Matches"/> or ask <see cref="Query"/> for up to
-		/// <see cref="BuildingCatalogQuery.EffectiveLimit"/> rows and hope the
-		/// scope never holds more than that.
-		/// </summary>
-		public static IEnumerable<BuildingCatalogEntry> Filter(
-			IEnumerable<BuildingCatalogEntry> entries,
-			BuildingCatalogQuery query)
-		{
-			if (entries is null)
-			{
-				throw new ArgumentNullException(nameof(entries));
-			}
-
-			if (query is null)
-			{
-				throw new ArgumentNullException(nameof(query));
-			}
-
-			return entries.Where(entry => Matches(entry, query));
-		}
-
-		/// <summary>
 		/// Holds the requested offset inside the result set. Only the query can
 		/// know the total, so this cannot live on <see cref="BuildingCatalogQuery"/>
 		/// beside the other bound normalizers.
@@ -119,11 +93,6 @@ namespace FindItBuildingMenu.Services
 			// (FindItUISystem.Methods.cs), and clearing it would make that check
 			// lie.
 			if (!IsScopedToMenuTree(query) && !MatchesBuildMenu(entry, query))
-			{
-				return false;
-			}
-
-			if (!MatchesRole(entry, query))
 			{
 				return false;
 			}
@@ -266,20 +235,6 @@ namespace FindItBuildingMenu.Services
 			return string.IsNullOrEmpty(subCategory)
 				|| string.Equals(subCategory, VanillaBuildMenuTaxonomy.Any, StringComparison.OrdinalIgnoreCase)
 				|| string.Equals(entry.VanillaSubCategory, subCategory, StringComparison.OrdinalIgnoreCase);
-		}
-
-		/// <summary>
-		/// The role tab strip's scope. A single value, matched exactly, unlike
-		/// the multi-select <c>BuildingTypes</c> facet above: the tabs express
-		/// which role is current, not which roles are allowed.
-		/// </summary>
-		private static bool MatchesRole(BuildingCatalogEntry entry, BuildingCatalogQuery query)
-		{
-			string role = query.Role?.Trim() ?? string.Empty;
-
-			return string.IsNullOrEmpty(role)
-				|| string.Equals(role, VanillaBuildMenuTaxonomy.Any, StringComparison.OrdinalIgnoreCase)
-				|| string.Equals(entry.BuildingType, role, StringComparison.OrdinalIgnoreCase);
 		}
 
 		private static bool InRange(double? value, double? minimum, double? maximum)

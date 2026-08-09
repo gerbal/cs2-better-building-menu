@@ -26,11 +26,6 @@ namespace FindItBuildingMenu.Systems
 		private BuildingCatalogMetricRangeState _buildingMetricRanges = BuildingCatalogMetricRangeState.Empty;
 		private string _buildingLensSection = VanillaBuildMenuTaxonomy.AllBuildings;
 		private string _buildingLensSubCategory = VanillaBuildMenuTaxonomy.Any;
-		// The role tab strip, one level below subCategory. Reset to Any
-		// whenever the section or subCategory changes; see
-		// FindItUISystem.Bindings' SetBuildingLensSection/SubCategory and
-		// VanillaMenuSelected/SearchEverything.
-		private string _buildingLensRole = VanillaBuildMenuTaxonomy.Any;
 		// SPIKE (cm-e98i): the vanilla menu the lens was opened from, by name.
 		// Empty means "not opened from a vanilla menu", which leaves the query
 		// unconstrained by the tree.
@@ -112,10 +107,8 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<bool> _BuildingCatalogSortDescending = null!;
 		private ValueBindingHelper<string> _BuildingLensSectionBinding = null!;
 		private ValueBindingHelper<string> _BuildingLensSubCategoryBinding = null!;
-		private ValueBindingHelper<string> _BuildingLensRoleBinding = null!;
 		private ValueBindingHelper<BuildingLensSectionUIEntry[]> _BuildingLensSectionListBinding = null!;
 		private ValueBindingHelper<BuildingLensSubCategoryUIEntry[]> _BuildingLensSubCategoryListBinding = null!;
-		private ValueBindingHelper<BuildingLensRoleUIEntry[]> _BuildingLensRoleListBinding = null!;
 		// Vanilla's second tier: the tab strip for whichever menu is scoped, and
 		// which of its tabs is active. Empty list means "no strip", which is also
 		// how vanilla renders a menu with fewer than two categories.
@@ -276,14 +269,8 @@ namespace FindItBuildingMenu.Systems
 				SetBuildingCatalogSortDescending);
 			_BuildingLensSectionBinding = CreateBinding("BuildingLensSection", "SetBuildingLensSection", _buildingLensSection, SetBuildingLensSection);
 			_BuildingLensSubCategoryBinding = CreateBinding("BuildingLensSubCategory", "SetBuildingLensSubCategory", _buildingLensSubCategory, SetBuildingLensSubCategory);
-			// Role, one level below subCategory. Follows the same read/write
-			// shape as the section and subCategory bindings above: the setter
-			// is the trigger a UI tab strip invokes, and the list binding is
-			// the roles that strip has to offer for the current scope.
-			_BuildingLensRoleBinding = CreateBinding("BuildingLensRole", "SetBuildingLensRole", _buildingLensRole, SetBuildingLensRole);
 			_BuildingLensSectionListBinding = CreateBinding("BuildingLensSectionList", Array.Empty<BuildingLensSectionUIEntry>());
 			_BuildingLensSubCategoryListBinding = CreateBinding("BuildingLensSubCategoryList", Array.Empty<BuildingLensSubCategoryUIEntry>());
-			_BuildingLensRoleListBinding = CreateBinding("BuildingLensRoleList", Array.Empty<BuildingLensRoleUIEntry>());
 			_BuildingLensMenuCategoriesBinding = CreateBinding("BuildingLensMenuCategories", Array.Empty<VanillaMenuCategory>());
 			_BuildingLensMenuBinding = CreateBinding("BuildingLensMenu", string.Empty);
 			_BuildingLensMilestonesBinding = CreateBinding("BuildingLensMilestones", Array.Empty<string>());
