@@ -892,6 +892,9 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 }
 
 .nameLine {
+  // The positioning context for .placeHint, which overlays the end of this line
+  // rather than taking a share of it.
+  position: relative;
   display: flex;
   flex: 0 0 auto;
   min-width: 0;
@@ -903,11 +906,20 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   max-height: 18rem;
 }
 
+// Block, NOT flex, and that is the whole fix for the truncation.
+//
+// This rule already asked for `text-overflow: ellipsis` and never got one:
+// text-overflow applies to a block container's inline content, and a flex
+// container's text is an anonymous flex item, so the name simply clipped. Three
+// different buildings came out as "EU Commercial Gas Station 01 - L1 3" with
+// nothing to say they had been cut — in the surface that exists to be read
+// rather than recognised.
+//
+// The cell holds one string, so it never needed to be a flex container; the row
+// above it (.nameLine) is the one doing the laying out. Vertical centring comes
+// from line-height matching the height, which is what the fixed height was for.
 .name {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  align-items: center;
+  display: block;
   flex: 1 1 auto;
   min-width: 0;
   height: 18rem;
@@ -922,9 +934,22 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   line-height: 18rem;
 }
 
+// Absolutely positioned, so an invisible hint costs the title nothing.
+//
+// It is `opacity: 0` until the row is hovered, but `flex: 0 0 auto` with a
+// min-width made it reserve its box the whole time: measured on a real row, the
+// name line was 111px and this took 55 of them — half the title's space, all of
+// it for something the player cannot see. "EU Commercial Gas Station 01 - L1
+// 4x4" needs 179px and was given 57.
+//
+// Overlaying the end of the line instead means the title keeps its full width
+// always, and the hint only covers a tail at the moment you are pointing at the
+// row — which is also the moment the hover card is showing you the whole name.
 .placeHint {
-  flex: 0 0 auto;
-  min-width: 32rem;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
   padding: 1rem 4rem;
   color: var(--accentColorNormal);
   background-color: rgba(255, 255, 255, 0.08);
