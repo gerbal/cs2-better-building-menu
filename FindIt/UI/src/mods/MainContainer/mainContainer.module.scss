@@ -171,23 +171,41 @@
 // nobody uses.
 .resizeHandle {
   flex: 0 0 auto;
-  align-self: center;
-  width: 60rem;
-  height: 8rem;
-  margin-bottom: 3rem;
-  border-radius: 4rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  // The grab target, not the mark. Measured at 40x5px the drawn bar was a
+  // 5px-tall thing to hit with a mouse, and it is the only way to change the
+  // height now that the Expand toggle is gone. The strip spans the panel so
+  // the edge itself is grabbable, and stands 18rem tall so it can be hit
+  // without aiming.
+  width: 100%;
+  height: 24rem;
   z-index: 20;
   pointer-events: auto;
   cursor: ns-resize;
-  background-color: rgba(255, 255, 255, 0.25);
+}
+
+// What the player actually sees: a grip centred on the edge it moves.
+.resizeGrip {
+  width: 90rem;
+  // 9rem draws 6px. The first attempt at splitting target from mark set this
+  // to 6rem, which is 4px — thinner than the 5px bar it replaced, so the
+  // affordance got harder to see while the target got easier to hit.
+  height: 9rem;
+  border-radius: 5rem;
+  background-color: rgba(255, 255, 255, 0.45);
   transition: background-color 0.15s;
 }
 
-.resizeHandle:hover {
-  background-color: rgba(255, 255, 255, 0.5);
+// Hover is on the strip, not the grip, so the mark answers the whole target.
+.resizeHandle:hover .resizeGrip {
+  background-color: rgba(255, 255, 255, 0.75);
 }
 
-.resizeHandleActive {
+.resizeGripActive,
+.resizeHandle:hover .resizeGripActive {
   background-color: var(--accentColorNormal);
 }
 

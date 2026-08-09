@@ -229,10 +229,15 @@ export const FindItMainContainerComponent = () => {
                   moves when the height changes. */}
               {BuildingLensEnabled && (
                 <div
-                  className={classNames(styles.resizeHandle, isResizing && styles.resizeHandleActive)}
+                  className={styles.resizeHandle}
                   onMouseDown={beginResize}
                   title={translate("Tooltip.LABEL[FindItBuildingMenu.ResizeHeight]", "Drag to resize") ?? "Drag to resize"}
-                />
+                >
+                  {/* The grip is drawn by the child so the parent can be a
+                      target worth aiming at. A 5rem bar is a 5rem bar to hit,
+                      and this is the only way to change the height. */}
+                  <div className={classNames(styles.resizeGrip, isResizing && styles.resizeGripActive)} />
+                </div>
               )}
               <div
                 className={classNames(styles.content, AssetMenuTheme.assetPanel)}
