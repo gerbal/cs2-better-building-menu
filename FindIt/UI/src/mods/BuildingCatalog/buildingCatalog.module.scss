@@ -1252,14 +1252,37 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 // Expanded row details: the analytical metrics the adapter always projected
 // (electricity, water, garbage, the three pollution figures) but which the
 // table never rendered.
+// A COLUMN of stacked blocks, which is what it always was. It used to say
+// `flex-direction: row` with `flex-wrap: wrap` and give every child width:100%,
+// so each child became its own flex line — and this engine mis-measures that
+// arrangement badly.
+//
+// Measured on a live expanded row, in pixels: the box rendered 105 tall while
+// its content reported a scrollHeight of 160, and `.row` is overflow: hidden,
+// so the last two blocks — the whole Lot row and the DLC/Theme/Source row —
+// were clipped off the bottom and never seen. The inflation came from the
+// children being stretched to their flex line's cross size: they measured 22
+// to 26 tall each in the wrapped row, against a true content height of 12 to
+// 16 in a column.
+//
+// As a column the same six blocks land at 3, 17, 35, 53, 71 and 89 and all fit
+// inside the box. That also evens out the vertical rhythm, which is the other
+// half of what "weird internal padding" was describing.
 .rowDetails {
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: stretch;
   width: 100%;
   padding: 4rem 8rem 6rem 8rem;
   box-sizing: border-box;
   background-color: rgba(255, 255, 255, 0.04);
+
+  // In a column the main axis is vertical, so a child left to shrink gives up
+  // its own height to fit the box — which would hide the same rows by a
+  // different route.
+  > * {
+    flex-shrink: 0;
+  }
 }
 
 // The game's own description for the prefab, above the numbers.
@@ -1281,18 +1304,40 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 
 // Placement / access / connections / lot flags and provenance. Chips rather
 // than a sentence, so a building with twelve flags stays scannable.
+// No gap here, and that is the fix rather than an omission.
+//
+// `gap` between flex-row children measures 0 on this engine — the hover card's
+// stylesheet already says so and uses margins for the same reason. This group
+// declared `gap: 3rem` and got nothing, so every chip butted against its
+// neighbour and the only whitespace left was each chip's own 5rem of internal
+// padding. Reported from play as weird internal padding, which is exactly what
+// it looks like: the space inside a chip reads as the space between chips, and
+// a run of four flags reads as one long band.
+//
+// The neighbouring .rowDetail and .rowProvenance rows use margins and space
+// correctly — measured 7px between provenance chips against 0 between flags,
+// which is what made the difference visible.
 .rowFlagGroup {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
   width: 100%;
-  gap: 3rem;
   margin-top: 3rem;
 }
 
 .rowFlag {
   padding: 1rem 5rem;
+  // The separation its parent's `gap` could not provide. Bottom as well as
+  // right, because the group wraps and a second line would otherwise sit on
+  // the first.
+  //
+  // Wider than the 5rem of padding inside the chip, deliberately. A first pass
+  // used 3rem and the chips still read as one band: when the space between two
+  // boxes is smaller than the space inside them, the eye groups them together
+  // and the padding is what looks wrong. That is the reported symptom.
+  margin-right: 8rem;
+  margin-bottom: 3rem;
   border-radius: 3rem;
   background-color: rgba(255, 255, 255, 0.08);
   color: var(--menuText2Normal);
