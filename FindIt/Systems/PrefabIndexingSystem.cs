@@ -1848,6 +1848,8 @@ namespace FindItBuildingMenu.Systems
 					UnlockRequirements: zoneRequirements));
 			}
 
+			IndexExtractorAreas(catalog);
+
 			_zoneCatalog = catalog;
 			Mod.Log.Info($"Indexed Zones Count: {_zoneCatalog.Count}");
 		}
@@ -1855,6 +1857,78 @@ namespace FindItBuildingMenu.Systems
 		/// <summary>
 		/// Every assignable zone, grouped by family in the zoning hierarchy.
 		/// </summary>
+
+		/// <summary>
+		/// The specialised industries, which are areas rather than zones.
+		/// </summary>
+		/// <remarks>
+		/// Grain, livestock and cotton are not zones and never could be:
+		/// <c>Game.Zones.AreaType</c> has only None, Residential, Commercial and
+		/// Industrial, so there is no specialised zone type for them to be. They
+		/// are LotPrefabs carrying <c>ExtractorArea</c>
+		/// (<c>[ComponentMenu("Areas/", typeof(LotPrefab))]</c>), holding a
+		/// <c>MapFeature</c>, and the Area tool places them.
+		///
+		/// The zone query requires ZoneData, so it can never return one — a fact
+		/// ZoningSurface has documented all along while leaving the Extractors
+		/// family unreachable. Reported from play as "the specialized industrial
+		/// zones just zone industrial": the four industrial ZONES the surface did
+		/// show are real, and painting them really does lay industrial cells, but
+		/// the areas the player was looking for were absent from the whole index.
+		/// Searching the entire catalog for grain, livestock, cotton or textile
+		/// returned nothing at all.
+		///
+		/// They join the zone catalog rather than getting their own binding
+		/// because the player reaches both the same way — by opening Zones and
+		/// looking for the industry they want. The Extractors family already
+		/// exists, with an icon and a tooltip, and only ever lacked members.
+		/// </remarks>
+		private void IndexExtractorAreas(List<ZoneCatalogEntry> catalog)
+		{
+			var areasQuery = GetEntityQuery(
+				ComponentType.ReadOnly<ExtractorAreaData>(),
+				ComponentType.ReadOnly<PrefabData>());
+			var areas = areasQuery.ToEntityArray(Allocator.Temp);
+			var areaData = areasQuery.ToComponentDataArray<ExtractorAreaData>(Allocator.Temp);
+
+			for (var i = 0; i < areas.Length; i++)
+			{
+				var area = areas[i];
+
+				if (!_prefabSystem.TryGetPrefab<PrefabBase>(area, out var prefab) || prefab?.name is null)
+				{
+					continue;
+				}
+
+				var locked = EntityManager.HasEnabledComponent<Locked>(area);
+				var (milestone, requirements) = locked
+					? GetUnlockRequirements(area)
+					: (0, Array.Empty<string>());
+
+				catalog.Add(new ZoneCatalogEntry(
+					Id: area.Index,
+					Version: area.Version,
+					PrefabName: prefab.name,
+					Name: GetAssetName(prefab),
+					Family: ZoningFamilies.Extractors,
+					// An area has no density tier. Saying "Any" is honest here:
+					// the surface labels that "No density tier" rather than
+					// inventing one.
+					Density: ZoneTypeFilter.Any,
+					Thumbnail: IconPath.Normalize(ImageSystem.GetThumbnail(prefab)),
+					IsLocked: locked,
+					UnlockMilestone: milestone,
+					UnlockRequirements: requirements,
+					// What it works: FertileLand, Forest, Oil, Ore. This is the
+					// only thing separating grain from cotton in the data, so it
+					// is what the surface groups and labels them by.
+					MapFeature: areaData[i].m_MapFeature.ToString()));
+			}
+
+			Mod.Log.Info($"Indexed Extractor Areas: {areas.Length}");
+			areas.Dispose();
+			areaData.Dispose();
+		}
 
 		/// <summary>
 		/// What the game's own toolbar filter row knows about a prefab.
