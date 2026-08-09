@@ -251,6 +251,29 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
   const searchEverywhereLabel =
     translate("Tooltip.LABEL[FindItBuildingMenu.SearchEverything]", "Search everything")
     ?? "Search everything";
+  /**
+   * "Nothing here, {n} elsewhere" and the button that goes there.
+   *
+   * Built once and rendered by every view mode. It used to live only in the
+   * grid branch, so a search that missed in Table mode said "No buildings
+   * match" and stopped — no count of what existed elsewhere, and no way to
+   * reach it. The widen control is the whole answer to a scoped miss; which
+   * view mode you happen to be in has nothing to do with it.
+   */
+  const scopeNoticeBlock = scopeNotice ? (
+    <div className={styles.scopeNotice}>
+      <span className={styles.scopeNoticeText}>{scopeNoticeText}</span>
+      <Button
+        className={styles.scopeNoticeAction}
+        variant="icon"
+        onSelect={() => trigger(mod.id, "SearchEverything")}
+        aria-label={searchEverywhereLabel}
+        title={searchEverywhereLabel}
+      >
+        {searchEverywhereLabel}
+      </Button>
+    </div>
+  ) : null;
   const groupByLabel = translate(
     `Tooltip.LABEL[FindItBuildingMenu.GroupBy_${groupBy}]`,
     groupDimensionLabel(groupBy)
@@ -621,11 +644,11 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
           data-scrollable={rowsScrollable}
         >
           {items.length === 0 && (
-            <div className={styles.empty}>
-              {status === "indexing"
-                ? translate("Tooltip.LABEL[FindItBuildingMenu.IndexingBuildings]", "Indexing buildings…")
-                : emptyStateMessage}
-            </div>
+            status === "indexing"
+              ? <div className={styles.empty}>
+                  {translate("Tooltip.LABEL[FindItBuildingMenu.IndexingBuildings]", "Indexing buildings…")}
+                </div>
+              : scopeNoticeBlock ?? <div className={styles.empty}>{emptyStateMessage}</div>
           )}
           {items.map((entry) => {
             const isCompared = compareEntries.some((candidate) => candidate.id === entry.id);
@@ -859,26 +882,19 @@ export const BuildingCatalogComponent = ({ expanded }: BuildingCatalogComponentP
         </>
       ) : (
         <>
-          {scopeNotice && (
-            <div className={styles.scopeNotice}>
-              <span className={styles.scopeNoticeText}>{scopeNoticeText}</span>
-              <Button
-                className={styles.scopeNoticeAction}
-                variant="icon"
-                onSelect={() => trigger(mod.id, "SearchEverything")}
-                aria-label={searchEverywhereLabel}
-                title={searchEverywhereLabel}
-              >
-                {searchEverywhereLabel}
-              </Button>
-            </div>
-          )}
+          {scopeNoticeBlock}
           {/* The table names what emptied it; the grid used to show a blank
               box. Filters compose now, so an empty intersection is easy to
               reach by accident — "Health & Deathcare" plus role "Police
               Station" is nothing, and silence there reads as a broken panel. */}
           {items.length === 0
-            ? <div className={styles.empty}>{emptyStateMessage}</div>
+            ? (scopeNotice
+                // The notice above already says the set is empty AND what to do
+                // about it. A second line reading "No buildings match search
+                // "police"" under "No matches here — 5 elsewhere" says it twice
+                // and the second one contradicts the first.
+                ? null
+                : <div className={styles.empty}>{emptyStateMessage}</div>)
             : (
               <GroupedResults
                 entries={items}
