@@ -50,6 +50,15 @@ namespace FindItBuildingMenu.Systems
 		private static Dictionary<int, string> _assetMenuNames = new();
 		// Vanilla's second tier, keyed by menu name. See VanillaMenuCategory.
 		private static Dictionary<string, List<VanillaMenuCategory>> _assetCategories = new();
+		/// <summary>
+		/// The vanilla build menus, in the game's own order.
+		/// </summary>
+		/// <remarks>
+		/// Published so the lens can offer them as a filter. A bottom-bar icon
+		/// is a shortcut to a menu, and the menu is a facet like any other — so
+		/// it has to be reachable without going back out to the toolbar.
+		/// </remarks>
+		private static IReadOnlyList<VanillaMenuCategory> _assetMenus = System.Array.Empty<VanillaMenuCategory>();
 		// Milestone index -> the name the rest of the game calls it. ~20 entries,
 		// resolved once per index pass rather than per locked asset.
 		private static Dictionary<int, string> _milestoneNames = new();
@@ -1247,16 +1256,36 @@ namespace FindItBuildingMenu.Systems
 				ComponentType.ReadOnly<PrefabData>());
 			var menus = query.ToEntityArray(Allocator.Temp);
 			var names = new Dictionary<int, string>();
+			var list = new List<VanillaMenuCategory>();
 
 			for (var i = 0; i < menus.Length; i++)
 			{
-				if (_prefabSystem.TryGetPrefab<PrefabBase>(menus[i], out var prefab) && prefab?.name is not null)
+				if (!_prefabSystem.TryGetPrefab<PrefabBase>(menus[i], out var prefab) || prefab?.name is null)
 				{
-					names[menus[i].Index] = prefab.name;
+					continue;
 				}
+
+				names[menus[i].Index] = prefab.name;
+
+				prefab.TryGet<UIObject>(out var uIObject);
+
+				// Same record as a category tab, because a menu is the tier above
+				// one and the picker wants exactly the same four fields. Priority
+				// is UIObject.m_Priority, defaulted to 0 as vanilla does — note
+				// that the bottom bar also sorts by toolbar GROUP first, which is
+				// not modelled here, so this is the game's order within a group
+				// rather than across the whole bar.
+				list.Add(new VanillaMenuCategory(
+					Id: prefab.name,
+					Name: prefab.name,
+					Icon: IconPath.Normalize(uIObject?.m_Icon ?? ImageSystem.GetIcon(prefab)) ?? string.Empty,
+					Priority: uIObject?.m_Priority ?? 0));
 			}
 
+			list.Sort((left, right) => left.Priority.CompareTo(right.Priority));
+
 			_assetMenuNames = names;
+			_assetMenus = list;
 			Mod.Log.Info($"Indexed Asset Menus Count: {_assetMenuNames.Count}");
 		}
 
@@ -1507,6 +1536,17 @@ namespace FindItBuildingMenu.Systems
 			menuName is not null && _assetCategories.TryGetValue(menuName, out var tabs)
 				? tabs
 				: Array.Empty<VanillaMenuCategory>();
+
+		/// <summary>
+		/// Every vanilla menu that has something in it, in the game's order.
+		/// </summary>
+		/// <remarks>
+		/// Filtered to menus with at least one category tab, which is the same
+		/// test vanilla applies before drawing one: a menu whose categories are
+		/// all empty is a button the game itself hides.
+		/// </remarks>
+		public static IReadOnlyList<VanillaMenuCategory> GetAssetMenus() =>
+			_assetMenus.Where(menu => _assetCategories.ContainsKey(menu.Id)).ToArray();
 
 		public static string? GetAssetMenuName(int entityIndex) => _assetMenuNames.TryGetValue(entityIndex, out var name)
 			? name

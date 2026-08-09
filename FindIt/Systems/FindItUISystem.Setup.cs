@@ -119,6 +119,8 @@ namespace FindItBuildingMenu.Systems
 		/// scope switches off (BuildingCatalogQueryEngine.cs:95).
 		/// </remarks>
 		private ValueBindingHelper<string> _BuildingLensMenuBinding = null!;
+		/// <summary>Every vanilla menu, so one can be chosen as a filter.</summary>
+		private ValueBindingHelper<VanillaMenuCategory[]> _BuildingLensMenusBinding = null!;
 		// Milestone index -> name, published once. Locked assets carry the index.
 		private ValueBindingHelper<string[]> _BuildingLensMilestonesBinding = null!;
 
@@ -252,6 +254,7 @@ namespace FindItBuildingMenu.Systems
 			_BuildingLensSubCategoryListBinding = CreateBinding("BuildingLensSubCategoryList", Array.Empty<BuildingLensSubCategoryUIEntry>());
 			_BuildingLensMenuCategoriesBinding = CreateBinding("BuildingLensMenuCategories", Array.Empty<VanillaMenuCategory>());
 			_BuildingLensMenuBinding = CreateBinding("BuildingLensMenu", string.Empty);
+			_BuildingLensMenusBinding = CreateBinding("BuildingLensMenus", Array.Empty<VanillaMenuCategory>());
 			_BuildingLensMilestonesBinding = CreateBinding("BuildingLensMilestones", Array.Empty<string>());
 			_BuildingLensMenuCategoryBinding = CreateBinding(
 				"BuildingLensMenuCategory",
@@ -297,6 +300,7 @@ namespace FindItBuildingMenu.Systems
 				// type chip), so clearing the menu there would silently drop
 				// Garbage Management back to the whole catalog.
 				CreateTrigger("ClearBuildingLensMenuScope", ClearBuildingLensMenuScope);
+				CreateTrigger<string>("SetBuildingLensMenu", SetBuildingLensMenu);
 			CreateTrigger<float>("SetBuildingLensPanelWidth", SetBuildingLensPanelWidth);
 			CreateTrigger("CommitBuildingLensPanelWidth", CommitBuildingLensPanelWidth);
 			CreateTrigger("ClearThumbnails", () => _AllThumbnails.Value = new string[0]);

@@ -6,7 +6,7 @@ import { useState } from "react";
 import mod from "../../../mod.json";
 import { lensSectionCommand, lensSubCategoryCommand, type VanillaBuildMenuTab } from "domain/vanillaBuildMenuContracts";
 import { orderedCategories, type VanillaMenuCategory } from "domain/vanillaMenuCategories";
-import { lensScopeChipsFor } from "domain/lensScopeChips";
+import { isScopedToMenu, lensScopeChipsFor } from "domain/lensScopeChips";
 import {
   resolveVanillaLabel,
   vanillaCategoryNameKeys,
@@ -44,6 +44,7 @@ const BuildingLensFacets$ = bindValue<BuildingLensFacetState | null>(mod.id, "Bu
 const BuildingLensMenu$ = bindValue<string>(mod.id, "BuildingLensMenu", "");
 const BuildingLensMenuCategory$ = bindValue<string>(mod.id, "BuildingLensMenuCategory", "");
 const BuildingLensMenuCategories$ = bindValue<VanillaMenuCategory[]>(mod.id, "BuildingLensMenuCategories", []);
+const BuildingLensMenus$ = bindValue<VanillaMenuCategory[]>(mod.id, "BuildingLensMenus", []);
 const ShowZoningHierarchy$ = bindValue<boolean>(mod.id, "ShowZoningHierarchy", false);
 const BuildingLensZoneFamilies$ = bindValue<string[]>(mod.id, "BuildingLensZoneFamilies", []);
 const ZoneCatalog$ = bindValue<{ family?: string }[]>(mod.id, "ZoneCatalog", []);
@@ -70,7 +71,7 @@ const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState | nu
   null
 );
 
-type PickerId = "section" | "subCategory" | "zoneFamily" | "menuCategory" | null;
+type PickerId = "section" | "subCategory" | "zoneFamily" | "menuCategory" | "menu" | null;
 
 export const ChipRow = () => {
   const { translate } = useLocalization();
@@ -88,6 +89,9 @@ export const ChipRow = () => {
   const menu = useValue(BuildingLensMenu$) ?? "";
   const menuCategory = useValue(BuildingLensMenuCategory$) ?? "";
   const menuCategories = useValue(BuildingLensMenuCategories$) ?? [];
+  const menus = useValue(BuildingLensMenus$) ?? [];
+
+  const scopedToMenu = isScopedToMenu(menu);
 
   // One rule, in its own module so it can be tested: a chip is drawn only when
   // the state it writes is applied to the result. See lensScopeChips.ts.
@@ -162,34 +166,16 @@ export const ChipRow = () => {
     </div>
   );
 
-  /**
-   * A chip that states something and offers only to remove it.
-   *
-   * The menu chip has no list behind it: the way to a different menu is the
-   * toolbar the player already used, and a dropdown of all sixteen would be a
-   * second toolbar drawn worse. So it gets no caret, because a caret that opens
-   * nothing is the same lie the section chip was telling.
-   */
-  const renderStaticChip = (id: string, text: string, onClear: () => void) => (
-    <div className={classNames(styles.chip, styles.breadcrumb, styles.breadcrumbActive)} key={id}>
-      <span className={styles.breadcrumbLabel}>
-        <span className={styles.chipText}>{text}</span>
-      </span>
-      <Button
-        className={styles.chipRemove}
-        variant="icon"
-        onSelect={onClear}
-        aria-label={`${label("Tooltip.LABEL[FindItBuildingMenu.Remove]", "Remove")} ${text}`}
-      >
-        ×
-      </Button>
-    </div>
-  );
-
   const familyTabs: VanillaBuildMenuTab[] = availableFamilies.map((id) => ({
     id,
     icon: ZONE_FAMILY_ICONS[id] ?? "",
     toolTip: familyLabel(id),
+  }));
+
+  const menuTabs: VanillaBuildMenuTab[] = orderedCategories(menus).map((entry) => ({
+    id: entry.id,
+    icon: entry.icon,
+    toolTip: menuLabel(entry.id),
   }));
 
   const categoryTabs: VanillaBuildMenuTab[] = orderedCategories(menuCategories).map((category) => ({
@@ -206,12 +192,15 @@ export const ChipRow = () => {
         ? familyTabs
         : picker === "menuCategory"
           ? categoryTabs
-          : null;
+          : picker === "menu"
+            ? menuTabs
+            : null;
 
   const isChosen = (id: string) =>
     picker === "section" ? id === section
       : picker === "subCategory" ? id === subCategory
         : picker === "menuCategory" ? id === menuCategory
+        : picker === "menu" ? id === menu
           : zoneFamilies.includes(id);
 
   const choose = (id: string) => {
@@ -228,6 +217,12 @@ export const ChipRow = () => {
       return;
     }
 
+    if (picker === "menu") {
+      fire({ method: "SetBuildingLensMenu", args: [id] });
+      setPicker(null);
+      return;
+    }
+
     fire(picker === "section" ? lensSectionCommand(id) : lensSubCategoryCommand(id));
     setPicker(null);
   };
@@ -236,6 +231,7 @@ export const ChipRow = () => {
   // The same word the strip's extra tab carries, because they are the same
   // choice reached two ways.
   const allCategoriesLabel = label("Tooltip.LABEL[FindItBuildingMenu.AllCategories]", "All");
+  const allMenusLabel = label("Tooltip.LABEL[FindItBuildingMenu.AllMenus]", "All menus");
   const allFamiliesLabel = label("Tooltip.LABEL[FindItBuildingMenu.AllZoneFamilies]", "All families");
   const familiesLabel = label("Tooltip.LABEL[FindItBuildingMenu.ZoneFamilies]", "Families");
 
@@ -248,10 +244,11 @@ export const ChipRow = () => {
             invisible: nothing on screen said the catalog had been cut to eight
             buildings, and the only way back out was to close the panel. */}
         {chips.menu
-          && renderStaticChip(
+          && renderBreadcrumb(
             "menu",
-            menuLabel(menu),
-            () => fire({ method: "ClearBuildingLensMenuScope", args: [] })
+            scopedToMenu ? menuLabel(menu) : allMenusLabel,
+            picker === "menu",
+            scopedToMenu ? () => fire({ method: "ClearBuildingLensMenuScope", args: [] }) : null
           )}
 
         {/* The category within it, which the strip also picks. Two ways to the
