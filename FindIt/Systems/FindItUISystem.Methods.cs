@@ -382,9 +382,34 @@ namespace FindItBuildingMenu.Systems
 
 		private void OnToolChanged(ToolBaseSystem tool)
 		{
-			if (tool.toolID is "RoadBuilderTool" or "MoveItTool" or "Terrain Tool" or "Zone Tool")
+			if (tool.toolID is "RoadBuilderTool" or "MoveItTool" or "Terrain Tool")
 			{
-				// Another tool wants the screen. Ours goes.
+				// Another tool brings its own UI and wants the screen. Ours goes.
+				ToggleFindItPanel(false);
+				return;
+			}
+
+			// The Zone tool is NOT one of those, though it sat in that list.
+			//
+			// Picking a zone arms it, so hiding the panel here meant the zoning
+			// surface closed the instant it was used — and because the vanilla
+			// Zones menu is still selected on the toolbar, the game drew its own
+			// grid into the space we had just vacated. Reported from play as
+			// "selecting a zoning type works, but moves us back to the vanilla
+			// zoning menu". It read as intermittent because a SECOND pick does
+			// not change the tool, so the handler never runs and the panel stays.
+			//
+			// Driving this tool is what the zoning surface is for, so it stays,
+			// for the same reason and by the same rule as the default-tool branch
+			// below: while the lens stands in for a vanilla menu, vacating hands
+			// the screen straight back to the menu it replaced.
+			if (tool.toolID is "Zone Tool")
+			{
+				if (_LensOwnsCurrentMenu.Value)
+				{
+					return;
+				}
+
 				ToggleFindItPanel(false);
 				return;
 			}
