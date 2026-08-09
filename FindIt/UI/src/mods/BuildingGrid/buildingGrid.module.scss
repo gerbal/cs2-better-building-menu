@@ -53,16 +53,31 @@
   justify-content: flex-start;
   // Anchors the lock glyph, which sits over the thumbnail.
   position: relative;
-  // Height matches the measured vanilla card: 2 padding + 48 thumb + 2 gap +
-  // 17 label + 2 padding = 71rem. Width is no longer vanilla's 72rem — at that
-  // width the one-line label budgeted 8 characters, and 8 characters could not
-  // tell "Sma…ri…" from a different "Sma…" building. 100rem is the width that
-  // lets tileLabel.ts's char budget clear a legible ~11 characters instead.
+  // 1 padding + 45 thumb + 1 gap + 32 label (two 16rem lines) + 1 padding.
+  //
+  // The second label line has to come out of somewhere, and the scroll region
+  // is the constraint, not the panel: the panel stayed 718x163 throughout, and
+  // what a taller tile costs is rows. Measured at 720p the tiles are laid out
+  // in 112px of visible scroll, so two rows and their 4rem gap need a tile at
+  // or under 80rem (53.4px) — a naive 88rem clipped the second row by 10px and
+  // 85rem still clipped it by 6.
+  //
+  // Paid for out of line spacing (17rem to 16rem), the thumbnail-to-label gap,
+  // the vertical padding, and 3rem of thumbnail. The thumbnail went last and
+  // smallest: it is the cue the grid exists for.
+  //
+  // Width is the BuildingLensTileSize setting, applied inline by BuildingGrid.
+  // It used to be overridden here with `width: 100rem !important` — the only
+  // way a stylesheet beats an inline style — because the tile wanted 100rem
+  // while the setting still said 72. That left the budget in tileLabel.ts
+  // reading the setting and so sizing itself to a 72rem tile that was drawn at
+  // 100rem: every name in the catalog was cut to 8 characters on a line with
+  // room for 13. The setting's default is 100 now and the override is gone, so
+  // the width the player picks is the width both the tile and its label get.
   box-sizing: border-box;
-  width: 100rem !important;
-  height: 71rem;
-  padding: 2rem;
-  gap: 2rem;
+  height: 80rem;
+  padding: 1rem 2rem;
+  gap: 1rem;
   border-radius: 3rem;
   // No border: the background tint below is what reads as the tile's edge.
   // Spending 2rem of the box on a border on top of that tint was a box drawn
@@ -76,11 +91,11 @@
   .thumb {
     // Down from 68rem. This is a knowing regression: 68rem matched vanilla's
     // 45px icon, and the name label is what the height was spent on instead.
-    // If 32px thumbnails do not read at a glance in game, the choice is
+    // If 30px thumbnails do not read at a glance in game, the choice is
     // between one row and no label — not between this and 68rem.
-    flex: 0 0 48rem;
-    width: 48rem;
-    height: 48rem;
+    flex: 0 0 45rem;
+    width: 45rem;
+    height: 45rem;
     object-fit: contain;
   }
 }
@@ -93,17 +108,27 @@
   background-color: rgba(255, 255, 255, 0.16);
 }
 
-// One line, then ellipsis. Names run long ("Additional Clinic Center") and a
-// tile that resizes to its label would break the grid's alignment.
+// Two lines, then ellipsis. The height is reserved whether or not the second
+// line is drawn: a tile that resizes to its label would break the grid's
+// alignment, and a one-word name next to a four-word one is the common case.
 .tileName {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  height: 32rem;
+  overflow: hidden;
+}
+
+.tileNameLine {
   display: block;
   width: 100%;
-  max-height: 17rem;
-  overflow: hidden;
-  // Belt and braces. shortenTileLabel already fits the name to the tile, but if
+  // Belt and braces. wrapTileLabel already fits each line to the tile, but if
   // it is ever out by a character the cut should read as a cut: this used to
   // clip mid-word with no mark, which is how sixty different buildings all came
   // out as "EU Commercia".
+  overflow: hidden;
   text-overflow: ellipsis;
   text-align: center;
   color: var(--menuText1Normal);
@@ -111,7 +136,7 @@
   // fontSizeXS is 12rem, so every name here was a step below anything vanilla
   // uses and read as a different UI.
   font-size: var(--fontSizeM);
-  line-height: 17rem;
+  line-height: 16rem;
   white-space: nowrap;
 }
 
@@ -157,11 +182,15 @@
   text-overflow: ellipsis;
 }
 
-// Vanilla's own placement and colour: bottom-right of the tile, 16rem, #ffaa00.
+// Vanilla's own colour and size: 16rem, #ffaa00, bottom-right — but of the
+// thumbnail, not of the tile. Vanilla's card has no name under it, so its
+// bottom-right is the thumbnail's; ours is the label's, and at 2rem the glyph
+// sat squarely on the second line ("Bus Stop Shel…and🔒"). 34rem lifts it clear:
+// 1rem bottom padding + 32rem label + 1rem gap.
 .lockGlyph {
   position: absolute;
   right: 2rem;
-  bottom: 2rem;
+  bottom: 34rem;
   width: 16rem;
   height: 16rem;
   background-color: #ffaa00;

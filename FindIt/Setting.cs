@@ -138,9 +138,19 @@ namespace FindItBuildingMenu
 		/// vanilla asset grid, and at 88 a name like "Additional Burial Lot"
 		/// had nowhere to go.
 		/// </summary>
+		/// <remarks>
+		/// 100 rather than 72 because 100 is what the grid has actually been
+		/// drawing: buildingGrid.module.scss overrode this value with an
+		/// !important width, which left the tile 100rem wide while the label
+		/// budget in tileLabel.ts still sized itself to 72. The override is
+		/// gone and this is now the single number both follow.
+		/// </remarks>
 		[SettingsUISection(SETTINGS, UIUX)]
-		[SettingsUISlider(min = 64, max = 144, step = 8, scalarMultiplier = 1, unit = Unit.kInteger)]
-		public int BuildingLensTileSize { get; set; } = 72;
+		// Step 4, not 8: 100 is the default and 64 + 8k never lands on it, so a
+		// player who nudged the slider once could not get back to the shipped
+		// width.
+		[SettingsUISlider(min = 64, max = 144, step = 4, scalarMultiplier = 1, unit = Unit.kInteger)]
+		public int BuildingLensTileSize { get; set; } = 100;
 
 		public bool IsVanillaMenuReplacementOff() => !ReplaceVanillaBuildMenu;
 
