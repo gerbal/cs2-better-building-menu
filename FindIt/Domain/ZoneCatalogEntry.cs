@@ -52,7 +52,22 @@ namespace FindItBuildingMenu.Domain
 		/// <summary>Distinct lot shapes, narrowest first. Empty when unknown.</summary>
 		ZoneFootprint[]? Footprints = null,
 		/// <summary>Shapes beyond the display cap, counted rather than dropped.</summary>
-		int FootprintOverflow = 0) : IJsonWritable
+		int FootprintOverflow = 0,
+		/// <summary>
+		/// Still behind a milestone. Read from the enableable Locked component,
+		/// the same source the building index uses.
+		/// </summary>
+		/// <remarks>
+		/// Zones carried no lock state at all until this: high-density
+		/// residential is locked at the start of a city and the lens drew it
+		/// exactly like an unlocked one, so the only way to learn it was
+		/// unavailable was to try to paint with it.
+		/// </remarks>
+		bool IsLocked = false,
+		/// <summary>Milestone index it unlocks at, 0 when not locked.</summary>
+		int UnlockMilestone = 0,
+		/// <summary>Everything standing between the player and this zone.</summary>
+		string[]? UnlockRequirements = null) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -101,6 +116,18 @@ namespace FindItBuildingMenu.Domain
 			writer.ArrayEnd();
 			writer.PropertyName("footprintOverflow");
 			writer.Write(FootprintOverflow);
+			writer.PropertyName("isLocked");
+			writer.Write(IsLocked);
+			writer.PropertyName("unlockMilestone");
+			writer.Write(UnlockMilestone);
+			writer.PropertyName("unlockRequirements");
+			var requirements = UnlockRequirements ?? System.Array.Empty<string>();
+			writer.ArrayBegin((uint)requirements.Length);
+			foreach (string requirement in requirements)
+			{
+				writer.Write(requirement);
+			}
+			writer.ArrayEnd();
 			writer.TypeEnd();
 		}
 	}

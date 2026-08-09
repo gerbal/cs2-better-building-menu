@@ -1798,6 +1798,11 @@ namespace FindItBuildingMenu.Systems
 					continue;
 				}
 
+				var isZoneLocked = EntityManager.HasEnabledComponent<Locked>(zone);
+				var (zoneMilestone, zoneRequirements) = isZoneLocked
+					? GetUnlockRequirements(zone)
+					: (0, Array.Empty<string>());
+
 				catalog.Add(new ZoneCatalogEntry(
 					Id: zone.Index,
 					Version: zone.Version,
@@ -1834,7 +1839,13 @@ namespace FindItBuildingMenu.Systems
 					MinLotDepth: zoneLots?.MinDepth ?? 0,
 					MaxLotDepth: zoneLots?.MaxDepth ?? 0,
 					Footprints: zoneLots?.Footprints,
-					FootprintOverflow: zoneLots?.FootprintOverflow ?? 0));
+					FootprintOverflow: zoneLots?.FootprintOverflow ?? 0,
+					// Same source as the building index: the enableable Locked
+					// component, not its mere presence, which would mark every
+					// unlockable zone locked forever including the earned ones.
+					IsLocked: isZoneLocked,
+					UnlockMilestone: zoneMilestone,
+					UnlockRequirements: zoneRequirements));
 			}
 
 			_zoneCatalog = catalog;

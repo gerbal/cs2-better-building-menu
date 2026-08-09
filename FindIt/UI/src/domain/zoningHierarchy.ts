@@ -35,6 +35,19 @@ export interface ZoneEntry {
   footprints?: ZoneFootprint[];
   /** Shapes beyond the display cap, counted rather than dropped. */
   footprintOverflow?: number;
+  /**
+   * Still behind a milestone.
+   *
+   * Zones carried no lock state at all until the indexer started reading it:
+   * high-density residential is locked at the start of a city, and the surface
+   * drew it exactly like an unlocked zone, so the only way to find out was to
+   * try to paint with it.
+   */
+  isLocked?: boolean;
+  /** Milestone index it unlocks at; 0 when not locked. */
+  unlockMilestone?: number;
+  /** Everything standing between the player and this zone. */
+  unlockRequirements?: string[];
 }
 
 export interface ZoneFootprint {
@@ -222,6 +235,13 @@ export function zoneAsCatalogEntry(zone: ZoneEntry): Record<string, unknown> {
     version: zone.version,
     prefabName: zone.prefabName,
     name: zone.name,
+    // Carried through so the shared tile, list row and hover card give a locked
+    // zone the same treatment they give a locked building — a disabled tile, a
+    // silhouetted thumbnail, a Requires line — instead of each surface needing
+    // its own idea of what locked looks like.
+    isLocked: zone.isLocked === true,
+    unlockMilestone: zone.unlockMilestone ?? 0,
+    unlockRequirements: zone.unlockRequirements ?? [],
     category: zone.family,
     categoryLabel: zone.family,
     subCategory: zone.density,
