@@ -212,13 +212,6 @@
   min-height: 200rem;
 }
 
-.toolsContent {
-  display: flex;
-  min-height: 0;
-  flex-direction: column;
-  overflow: auto;
-}
-
 .topBar {
   background-color: var(--panelColorDark);
   backdrop-filter: var(--panelBlur);

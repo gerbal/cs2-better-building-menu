@@ -1,7 +1,7 @@
 import { bindValue, trigger, useValue } from "cs2/api";
 import { useEffect, useRef } from "react";
 import mod from "../../../mod.json";
-import type { ToolbarEntity } from "domain/toolSurfaceContracts";
+import type { ToolbarEntity } from "domain/toolbarEntity";
 import {
   shouldRouteSelection,
   toolbarEntityIndex,
