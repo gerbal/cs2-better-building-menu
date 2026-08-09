@@ -58,35 +58,45 @@ public sealed class BuildingCatalogQueryEngineTests
     };
 
 		[Fact]
-		public void AMenuScopedQueryOpensWideEnoughToHoldTheWholeMenu()
+		public void AMenuOpensOnOneChunkLikeEverythingElse()
 		{
-			// Reported from play: opening Roads & Networks showed 100 of its 401
-			// assets, and the rest were reachable only by finding a control at the
-			// end of a list nothing said was incomplete. A menu is one set.
+			// It used to open on the whole menu. That was compensation for a
+			// scroll that never grew the window — cs2/ui's Scrollable takes an
+			// onScroll prop and never forwards it, so the passive load-more had
+			// never once fired and the only way past row 100 was a button at the
+			// end of a list nothing said was incomplete.
+			//
+			// A frame loop over scrollTop replaced it, and the cost of the
+			// compensation was measured: Roads & Networks at 401 rows is 8,465 DOM
+			// nodes, 95% of the game UI's total, and it more than halved the UI
+			// thread's throughput. Reported from play as the interface lagging.
 			var scoped = new BuildingCatalogQuery { UiMenu = "Roads" };
 			var unscoped = new BuildingCatalogQuery();
 
-			Assert.Equal(BuildingCatalogQuery.MenuLimit, scoped.StartingLimit);
-			Assert.Equal(BuildingCatalogQuery.DefaultLimit, unscoped.StartingLimit);
+			Assert.Equal(BuildingCatalogQuery.DefaultLimit, scoped.StartingLimit);
+			Assert.Equal(scoped.StartingLimit, unscoped.StartingLimit);
 		}
 
 		[Fact]
-		public void EnteringAMenuWidensTheWindowRatherThanKeepingTheCatalogsChunk()
+		public void EnteringAMenuStartsItsWindowOver()
 		{
-			var browsing = new BuildingCatalogQuery { Limit = BuildingCatalogQuery.DefaultLimit };
+			// The window resets rather than carrying the previous view's growth
+			// in: entering a menu after scrolling the whole catalog should not
+			// open that menu with two thousand rows already rendered.
+			var browsing = new BuildingCatalogQuery { Limit = BuildingCatalogQuery.MaxLimit };
 			var entered = (browsing with { UiMenu = "Roads" })
 				.ResetWindowIfPredicatesChanged(browsing);
 
-			Assert.Equal(BuildingCatalogQuery.MenuLimit, entered.Limit);
+			Assert.Equal(BuildingCatalogQuery.DefaultLimit, entered.Limit);
 			Assert.Equal(0, entered.Offset);
 		}
 
 		[Fact]
 		public void LeavingAMenuGoesBackToTheCatalogsChunk()
 		{
-			// The other direction matters too: carrying a menu-sized window out to
-			// the unscoped catalog would render two thousand rows on the way out.
-			var scoped = new BuildingCatalogQuery { UiMenu = "Roads", Limit = BuildingCatalogQuery.MenuLimit };
+			// The other direction matters too: a window grown by scrolling inside
+			// a menu must not follow the player out to the unscoped catalog.
+			var scoped = new BuildingCatalogQuery { UiMenu = "Roads", Limit = BuildingCatalogQuery.MaxLimit };
 			var left = (scoped with { UiMenu = string.Empty })
 				.ResetWindowIfPredicatesChanged(scoped);
 
