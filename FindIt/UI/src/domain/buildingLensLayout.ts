@@ -4,7 +4,17 @@
  */
 export const BUILDING_LENS_PANEL_CHROME_WIDTH = 35;
 export const BUILDING_LENS_MIN_WIDTH = 700 + BUILDING_LENS_PANEL_CHROME_WIDTH;
-export const BUILDING_LENS_MAX_WIDTH = 1200 + BUILDING_LENS_PANEL_CHROME_WIDTH;
+/**
+ * The drag ceiling, and the twin of BuildingLensWidth.Max in C# — a test
+ * asserts the two agree.
+ *
+ * They did not, quietly: this was 1200 + chrome = 1235 against a C# Max of
+ * 1232, so the last 3rem of any drag was clamped away on commit. Stating the
+ * band total and subtracting the chrome, the way the C# side derives it, makes
+ * the two readable as the same number instead of two guesses that nearly meet.
+ */
+export const BUILDING_LENS_BAND_WIDTH = 1476;
+export const BUILDING_LENS_MAX_WIDTH = BUILDING_LENS_BAND_WIDTH - BUILDING_LENS_PANEL_CHROME_WIDTH;
 export const BUILDING_LENS_TITLE_ICON = "coui://finditbuildingmenu/Icons/Colored/BuildingZoneSignature.svg";
 export const BUILDING_LENS_TITLE_GAP = 6;
 // The FindIt shell is bottom-aligned above the native toolbar. Reserve space

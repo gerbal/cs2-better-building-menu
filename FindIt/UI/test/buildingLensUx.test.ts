@@ -279,6 +279,48 @@ describe("Building Lens chrome budget", () => {
     assert.match(lensControlPaneSource, /searchContext/);
   });
 
+  it("left-aligns both layouts together, or not at all", () => {
+    // The build menu's left edge is vanilla's tool-main-column, centred by
+    // tool-layout along with a side column each side (253 + 475 + 253 in
+    // 1267), which is what put the options box at x=145 and the menu at x=403.
+    // Reclaiming that 253px needs BOTH halves: MainContainer stops vanilla
+    // centring its trio, and our own mirror of that layout stops centring too.
+    //
+    // Either alone is a visible defect. Vanilla's alone moves the options box
+    // to the screen edge and leaves the menu at 403 with a 143px hole beside
+    // it; ours alone slides the menu left underneath the options box.
+    const mainContainerSource = readFileSync(
+      new URL("../src/mods/MainContainer/MainContainer.tsx", import.meta.url),
+      "utf8"
+    );
+    const mainContainerStyles = readFileSync(
+      new URL("../src/mods/MainContainer/mainContainer.module.scss", import.meta.url),
+      "utf8"
+    );
+
+    assert.match(mainContainerSource, /justifyContent\s*=\s*BuildingLensEnabled/);
+    assert.match(mainContainerSource, /styles\.lensLeftAligned/);
+
+    const rule = mainContainerStyles.match(/\.lensLeftAligned\.toolLayout\s*\{[^}]*\}/)?.[0] ?? "";
+    assert.match(rule, /justify-content:\s*flex-start/);
+    // The options column's own width, so the menu lands beside it rather than
+    // on it. Same measurement the control plane matches on the other side.
+    assert.match(rule, /padding-left:\s*379rem/);
+  });
+
+  it("puts vanilla's layout back when the lens is switched off", () => {
+    // The effect reaches across into an element vanilla owns, so the exit path
+    // matters as much as the entry: leaving flex-start behind would re-lay
+    // every other tool's options for the rest of the session.
+    const mainContainerSource = readFileSync(
+      new URL("../src/mods/MainContainer/MainContainer.tsx", import.meta.url),
+      "utf8"
+    );
+
+    assert.match(mainContainerSource, /const previous = layout\.style\.justifyContent/);
+    assert.match(mainContainerSource, /return \(\) => \{\s*layout\.style\.justifyContent = previous;/);
+  });
+
   it("lets the catalog strip grow rather than slicing a wrapped row of tabs", () => {
     // Measured on Roads & Networks at the narrowed panel width: 20 subcategory
     // tabs, which do not fit the 424px left beside the search field, so the
