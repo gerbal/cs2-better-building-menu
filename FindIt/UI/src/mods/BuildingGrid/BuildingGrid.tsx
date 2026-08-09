@@ -147,6 +147,9 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, onScrolled,
           className={classNames(styles.tile, sortedMetric !== null && styles.tileSorted)}
           style={{ width: `${tileSize}rem` }}
           variant="icon"
+          // See the table row: this is how the scroll anchor finds the tile
+          // again after placement rebuilds the panel.
+          data-catalog-entry={entry.id}
           onSelect={() => place(entry)}
           // Locked is announced, not just drawn. The visual treatment is a
           // silhouette, which says nothing to a screen reader and little to

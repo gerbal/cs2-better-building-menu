@@ -130,3 +130,28 @@ describe("growing the window", () => {
     assert.equal(nextWindowLimit(100.5, 100.5, 3677), 200);
   });
 });
+
+describe("returning to a remembered row", () => {
+  it("puts the anchor a third of the way down rather than flush to the top", async () => {
+    const { anchorScrollTop } = await import("../src/domain/catalogWindow.ts");
+
+    // Container top 100, height 300, anchor currently at 700 on screen.
+    // delta = 700 - 100 - 100 = 500.
+    assert.equal(anchorScrollTop(0, 700, 100, 300), 500);
+    assert.equal(anchorScrollTop(200, 700, 100, 300), 700);
+  });
+
+  it("never asks to scroll above the start of the list", async () => {
+    const { anchorScrollTop } = await import("../src/domain/catalogWindow.ts");
+
+    // A row near the top of a short list produces a negative delta.
+    assert.equal(anchorScrollTop(0, 110, 100, 300), 0);
+  });
+
+  it("leaves the scroll alone when the geometry is not measurable yet", async () => {
+    const { anchorScrollTop } = await import("../src/domain/catalogWindow.ts");
+
+    assert.equal(anchorScrollTop(42, Number.NaN, 100, 300), 42);
+    assert.equal(anchorScrollTop(42, 700, 100, Number.POSITIVE_INFINITY), 42);
+  });
+});

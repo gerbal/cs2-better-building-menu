@@ -77,3 +77,38 @@ export function nextWindowLimit(currentLimit: number, step: number, maxLimit: nu
 
   return Math.min(ceiling, current + Math.floor(step));
 }
+
+/**
+ * Where to scroll so a remembered row is back on screen.
+ *
+ * Placing a building unmounts the whole lens, so "reopen" happens after every
+ * single placement — losing your place on every place is the actual cost the
+ * pager design carried. The row is found by id rather than by pixel offset
+ * because between unmount and remount the geometry legitimately changes: the
+ * window can come back a different length, expanded rows are `height: auto`,
+ * density tiers give different row heights, and the grid's shelf appears and
+ * disappears with the search text.
+ *
+ * Positioned a third of the way down rather than flush to the top, so the rows
+ * either side come back too and the player can see where they are rather than
+ * just what they picked.
+ *
+ * Takes numbers, not elements, because the geometry is the only part worth
+ * testing — the DOM walk that produces them belongs to the component.
+ */
+export function anchorScrollTop(
+  currentScrollTop: number,
+  anchorTop: number,
+  containerTop: number,
+  containerHeight: number,
+): number {
+  if (![currentScrollTop, anchorTop, containerTop, containerHeight].every(Number.isFinite)) {
+    return currentScrollTop;
+  }
+
+  const delta = anchorTop - containerTop - containerHeight / 3;
+
+  // Never negative: a row near the top of a short list would otherwise ask for
+  // a scroll above the start, which some engines clamp and some do not.
+  return Math.max(0, currentScrollTop + delta);
+}
