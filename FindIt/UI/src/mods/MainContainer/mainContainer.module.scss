@@ -169,50 +169,71 @@
 // the band has exactly one correct width. This one is drawn, because it is now
 // the only way to change the height and an affordance nobody can see is one
 // nobody uses.
-// The panel's top edge, overlaid rather than in the flow.
+// The panel's top edge, as the first row of the panel rather than an overlay.
 //
-// As a flex child it sat between the tab strip and the catalog and read as a
-// divider between the controls and the results — chrome, not an edge. Absolute
-// keeps it off the layout entirely, so it costs the panel no row and lands on
-// the edge that actually moves when the height changes.
+// Two placements were wrong before this one. In the flow BELOW the tab strip it
+// drew a bar between the controls and the results and read as a divider. As an
+// absolute overlay on the edge it was invisible AND unclickable: measured with
+// elementFromPoint at the grip's own centre, the hit went to a subcategory tab
+// — the tab strip paints over it whatever z-index this carries, so the overlay
+// was never reachable in the first place.
+//
+// In the flow above the strip it cannot be occluded by it, and it is the panel
+// edge in the plainest sense: the first thing in the panel, above everything.
+// It takes the panel's dark chrome colour and the top rounding so it reads as
+// the top of the window rather than a bar sitting on one.
 .resizeHandle {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  // Taller than the mark it draws, so the edge can be grabbed without aiming.
-  height: 14rem;
-  z-index: 25;
-  pointer-events: auto;
-  cursor: ns-resize;
+  flex: 0 0 auto;
   display: flex;
   flex-direction: row;
   justify-content: center;
-  align-items: flex-start;
+  align-items: center;
+  // The whole top of the panel, edge to edge, so the grab is the bar rather
+  // than a mark on it.
+  width: 100%;
+  height: 14rem;
+  pointer-events: auto;
+  cursor: ns-resize;
+  background-color: var(--panelColorDark);
+  backdrop-filter: var(--panelBlur);
+  border-top-left-radius: var(--panelRadius);
+  border-top-right-radius: var(--panelRadius);
 }
 
-// A short bar on the edge, not a rule across the panel: it marks where to grab,
-// and anything wider reads as a border between two regions.
+// 8rem draws 5px; 5rem would draw 3px. 1rem is 0.6667px here — the units slip
+// this file already carries two notes about.
 .resizeGrip {
-  // 8rem draws 5px; 5rem would draw 3px. Asked for "like 5px" and written as
-  // 5rem the first time — the same units slip this file already carries two
-  // notes about, and the fourth on this branch.
   width: 75rem;
   height: 8rem;
-  margin-top: 3rem;
-  border-radius: 3rem;
-  background-color: rgba(255, 255, 255, 0.3);
+  // Half the height: a pill, which is its own shape and reads as a grip. It is
+  // deliberately not --panelRadius — that radius belongs to the panel's
+  // corners, and matching it here would make the grip look like a clipped
+  // fragment of the chrome rather than a handle on it.
+  border-radius: 4rem;
+  background-color: rgba(255, 255, 255, 0.35);
   transition: background-color 0.15s;
 }
 
-// Hover is on the strip, so the mark answers the whole target.
+// Blue on direct hover of the strip, and only then. The grab area is the whole
+// top of the panel, so the mark has to answer the whole of it — but nothing
+// below it: the tab strip is a separate control and lighting this while the
+// cursor is down there would claim a target it does not own.
 .resizeHandle:hover .resizeGrip {
-  background-color: rgba(255, 255, 255, 0.7);
+  background-color: var(--accentColorNormal);
 }
 
 .resizeGripActive,
 .resizeHandle:hover .resizeGripActive {
   background-color: var(--accentColorNormal);
+}
+
+// The strip is the top of the panel now, so it owns the top rounding and the
+// bar below it must be square. Left as it was, the panel drew two curved edges
+// one above the other — the strip curving into a second curve immediately
+// under it.
+.resizeHandle + .topBar {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }
 
 .resizeBlocker {
@@ -273,6 +294,9 @@
   color: var(--accentColorNormal);
   border-top-left-radius: var(--panelRadius);
   border-top-right-radius: var(--panelRadius);
+  // Overridden below when the resize strip sits above it — see the sibling
+  // rule after this block. Only the topmost element may round, or the panel
+  // shows two curved edges stacked.
   // Not hidden. The chip row lives here now, and both its section picker and
   // the filter rail's popovers hang below the bar — clipped to the bar's 64rem
   // they were in the DOM, correctly positioned, and invisible. Only the two top
