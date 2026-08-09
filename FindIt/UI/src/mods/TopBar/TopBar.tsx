@@ -23,7 +23,6 @@ import unlock from "images/findit_unlock.svg";
 import sort from "images/findit_sort.svg";
 import { FOCUS_DISABLED } from "cs2/input";
 import { searchChangedCommand, setCurrentCategoryCommand, setCurrentSubCategoryCommand } from "domain/buildingCatalogContracts";
-import { ChipRow } from "mods/ChipRow/ChipRow";
 import { MenuCategoryStrip } from "mods/MenuCategoryStrip/MenuCategoryStrip";
 
 export interface TopBarProps {
@@ -438,12 +437,11 @@ export const TopBarComponent = (props: TopBarProps) => {
               </div>
             </div>
 
-            {/* The chips name the scope the whole result sits in; the strip
-                above narrows within it. Both at strip height would be ~34rem
-                spent saying where you are, and the toolbar menu the player
-                just clicked already implies most of it. Same pattern as
-                ViewModeBar: hidden at rest, back on expand. */}
-            {props.expanded && <ChipRow />}
+            {/* The scope chips used to sit here, behind `expanded`, which
+                meant the one line saying what you were looking at was missing
+                at exactly the height the lens rests at. They are in the
+                control plane now, which is always visible and costs the panel
+                no row at all. */}
           </>
         )}
       </div>
