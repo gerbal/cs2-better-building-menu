@@ -93,15 +93,16 @@ namespace FindItBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void ResetsPagingWhenTheZoneSelectionChanges()
+		public void ResetsTheWindowWhenTheZoneSelectionChanges()
 		{
 			// Same contract the other predicates already honour: changing what
-			// is being filtered must not strand the player on a page that no
-			// longer exists.
-			var deep = new BuildingCatalogQuery(Offset: 400);
+			// is being filtered must not leave the player holding a window they
+			// grew against a different result set.
+			var deep = new BuildingCatalogQuery(Offset: 400, Limit: 600);
 			var narrowed = deep with { ZoneTypes = new[] { "Low" } };
 
-			Assert.Equal(0, narrowed.ResetPagingIfPredicatesChanged(deep).Offset);
+			Assert.Equal(0, narrowed.ResetWindowIfPredicatesChanged(deep).Offset);
+			Assert.Equal(BuildingCatalogQuery.DefaultLimit, narrowed.ResetWindowIfPredicatesChanged(deep).Limit);
 		}
 	}
 }

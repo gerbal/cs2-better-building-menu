@@ -148,6 +148,7 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
             <Button
               className={classNames(styles.item, cards && styles.itemCard)}
               variant="icon"
+              data-catalog-entry={entry.id}
               onSelect={() => place(entry)}
               aria-label={isEntryLocked(entry) ? `${label} — ${lockedLabel}` : label}
               aria-disabled={isEntryLocked(entry) ? "true" : undefined}

@@ -174,20 +174,36 @@ describe("Building Lens action affordances", () => {
     assert.match(topBarSource, /\{element\.toolTip\}/);
   });
 
-  it("labels the glyph-only catalog paging controls", () => {
-    // The labels are localized now rather than hardcoded English, so assert
-    // that each glyph button carries a label binding instead of matching a
-    // literal string that would break on translation.
+  it("has no page controls left to label", () => {
+    // The pager is gone: five glyph buttons and "Rows 1-100 of 3677 - Page 1 of
+    // 37", below the scroll, in table view only. "Page 19" is not a fact anyone
+    // can act on, and the far end of a 43-page catalog was 42 clicks away.
     for (const label of ["firstPageLabel", "previousPageLabel", "nextPageLabel", "lastPageLabel"]) {
-      assert.match(buildingCatalogSource, new RegExp(`aria-label=\\{${label}\\}`));
-      assert.match(buildingCatalogSource, new RegExp(`title=\\{${label}\\}`));
+      assert.doesNotMatch(buildingCatalogSource, new RegExp(label));
     }
+
+    assert.doesNotMatch(buildingCatalogSource, /setPage\(/);
+    assert.doesNotMatch(buildingCatalogSource, /styles\.paging/);
   });
 
-  it("offers first and last page jumps for a catalog dozens of pages deep", () => {
-    // Prev/next alone put the far end of a 43-page catalog ~42 clicks away.
-    assert.match(buildingCatalogSource, /onSelect=\{\(\) => setPage\(0\)\}/);
-    assert.match(buildingCatalogSource, /onSelect=\{\(\) => setPage\(lastPageOffset\)\}/);
+  it("ends the feed with a load-more inside the scroll, in every view mode", () => {
+    // Inside, because below the scroll is exactly where the pager was and the
+    // reason nobody read it. Every mode, because grid, list and cards had no
+    // paging control at all and could only ever see the first hundred rows.
+    assert.match(buildingCatalogSource, /const catalogFooter = hasMore \?/);
+    assert.match(buildingCatalogSource, /\{catalogFooter\}/);
+    assert.match(buildingCatalogSource, /footer=\{catalogFooter\}/);
+  });
+
+  it("keeps the count where it can be read without scrolling", () => {
+    // It used to live in the pager, below the scroll, so learning how many
+    // results there were meant travelling to the end of them. Master moved it
+    // into the toolbar band; this branch has no band, so it lives in the
+    // control plane — which is a stronger form of the same guarantee, because
+    // the band only rendered while the panel was expanded and the pane is
+    // always on screen.
+    assert.match(lensControlPaneSource, /windowSummary/);
+    assert.match(lensControlPaneSource, /getCatalogWindowBadge/);
   });
 });
 
