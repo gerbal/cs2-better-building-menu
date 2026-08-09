@@ -29,6 +29,10 @@ const buildingCatalogStyles = readFileSync(
   "utf8"
 );
 const topBarSource = readFileSync(new URL("../src/mods/TopBar/TopBar.tsx", import.meta.url), "utf8");
+const topBarStyles = readFileSync(
+  new URL("../src/mods/TopBar/topBar.module.scss", import.meta.url),
+  "utf8"
+);
 
 describe("Building Lens filter controls", () => {
   it("dispatches the Extra Filters option through the FindIt binding", () => {
@@ -273,6 +277,25 @@ describe("Building Lens chrome budget", () => {
     // every frame; the search variant is the informative case, and it moved
     // with the count rather than being dropped with the toolbar around it.
     assert.match(lensControlPaneSource, /searchContext/);
+  });
+
+  it("lets the catalog strip grow rather than slicing a wrapped row of tabs", () => {
+    // Measured on Roads & Networks at the narrowed panel width: 20 subcategory
+    // tabs, which do not fit the 424px left beside the search field, so the
+    // strip wraps. With the row pinned to height: 45rem and overflow: hidden,
+    // the second line was cut through the middle — tops at y=89 and y=110, the
+    // row ending at y=126 while the lower icons ran to y=132.
+    //
+    // The fix must not be to stop the wrap: that draws cleanly and silently
+    // costs the player five categories. So the row sizes to its content, and
+    // the tab container does not clip.
+    const row = topBarStyles.match(/\.catalogStripRow\s*\{[^}]*\}/)?.[0] ?? "";
+    const tabs = topBarStyles.match(/\.catalogStripTabs\s*\{[^}]*\}/)?.[0] ?? "";
+
+    assert.match(row, /min-height:/);
+    assert.doesNotMatch(row, /^\s*height:/m);
+    assert.doesNotMatch(row, /overflow:\s*hidden/);
+    assert.doesNotMatch(tabs, /overflow:\s*hidden/);
   });
 
   it("lets the pane's text buttons size to their text", () => {

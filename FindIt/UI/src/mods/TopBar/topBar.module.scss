@@ -82,15 +82,29 @@
 
 // Search on the tab strip row, Building Lens catalog mode. The row that used
 // to carry search (.topBar above) doesn't render at all in this mode — see
-// showTopBarRow — so the strip is the only row left to put it on. Sized to
-// the strip's own 45rem so the panel does not grow a row: this shares that
-// height rather than adding one.
+// showTopBarRow — so the strip is the only row left to put it on. It shares
+// the strip's row rather than adding one of its own.
+//
+// min-height, not height. The strip WRAPS when its tabs outrun the width left
+// beside the search field, and a fixed height turned that second line into a
+// row of icons sliced through the middle — measured on Roads & Networks at the
+// narrowed panel width: 20 tabs, tops at y=89 and y=110, the row ending at
+// y=126 with the lower line running to y=132.
+//
+// Twenty is not an outlier. Master's network-menu extension put RailTrack,
+// Bridge, PedestrianPath, BusShelter, Pillar, Ship, Electricity, Water and
+// TransportationOverview into this one menu, and the control plane took 385rem
+// out of the panel afterwards, so the "room to spare" the search field was
+// measured against no longer exists.
+//
+// The alternative was to stop the wrap and let the overflow clip sideways,
+// which draws cleanly and silently costs the player five categories. A second
+// line is 20px, and only on the menus that need one.
 .catalogStripRow {
   display: flex;
   flex-direction: row;
   align-items: center;
-  height: 45rem;
-  overflow: hidden;
+  min-height: 45rem;
 }
 
 // Takes all the slack so the search field lands at the right edge, and does it
@@ -100,10 +114,12 @@
 // min-width: 0 because a flex item defaults to min-width: auto and would
 // refuse to shrink below its tabs, pushing the search field off the row on a
 // menu with many categories.
+// No overflow: hidden. It was here to clip tabs that outran the row, but the
+// strip wraps rather than running on, so all it ever clipped was the wrapped
+// line — the row above now grows to hold it instead.
 .catalogStripTabs {
   flex: 1 1 auto;
   min-width: 0;
-  overflow: hidden;
 }
 
 // Do NOT reach for margin-left: auto here. It is the usual way to pin a flex
