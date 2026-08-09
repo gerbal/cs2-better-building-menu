@@ -70,12 +70,18 @@ namespace FindItBuildingMenu.Utilities.PrefabCategoryProcessor
 
 			// Height is the four tools the toolbar offers. The other targets —
 			// Ore, Oil, FertileLand, GroundWater, Material — are editor resource
-			// brushes with no place in a city's build menu.
+			// brushes, and keeping them out means an unscoped search for "level"
+			// cannot turn up one.
 			//
-			// The menu tree would drop them anyway, since they sit under no
-			// UIAssetCategoryPrefab, but saying so here means an unscoped search
-			// for "level" cannot turn up an editor brush either.
-			if (terraforming.m_Target != TerraformingTarget.Height)
+			// Unless the game itself offers it. This used to read "the menu tree
+			// would drop them anyway, since they sit under no
+			// UIAssetCategoryPrefab" — which was a guess, and wrong: the coverage
+			// walk found five Material brushes sitting in Landscaping's own
+			// Terraforming category, where vanilla shows them and the lens did
+			// not. What the player can reach in the build menu outranks what this
+			// filter thinks belongs there.
+			if (terraforming.m_Target != TerraformingTarget.Height
+				&& !Systems.PrefabIndexingSystem.IsPlacedInVanillaMenu(entity.Index))
 			{
 				prefabIndex = null!;
 				return false;

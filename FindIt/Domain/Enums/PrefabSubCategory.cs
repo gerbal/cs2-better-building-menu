@@ -78,6 +78,26 @@ namespace FindItBuildingMenu.Domain.Enums
 		Networks_Stops,
 		[CategoryIcon("coui://finditbuildingmenu/Icons/Colored/Pillar.svg")]
 		Networks_Pillars,
+		// The five below close gaps the vanilla-menu coverage report found: every
+		// one of them is a network the build menu offers and no processor reached.
+		// Appended rather than inserted because these values are ordinal, and the
+		// blocks below only survive that because each opens with an explicit
+		// `= PrefabCategory.X`. AddAllCategories requires them to stay inside
+		// (Networks, Networks + 100).
+		[CategoryIcon("Media/Game/Icons/Ship.svg")]
+		Networks_Waterways,
+		[CategoryIcon("Media/Game/Icons/Electricity.svg")]
+		Networks_PowerLines,
+		[CategoryIcon("Media/Game/Icons/Water.svg")]
+		Networks_Pipes,
+		// Applied to a road rather than drawn: traffic lights, crosswalks, bike
+		// lanes, sound barriers. Vanilla files them under Roads > Services.
+		[CategoryIcon("Media/Game/Icons/Roads.svg")]
+		Networks_Upgrades,
+		// Bus, tram, subway, train, ship and airplane lines. Drawn across the
+		// network rather than being part of it.
+		[CategoryIcon("Media/Game/Icons/TransportationOverview.svg")]
+		Networks_Routes,
 
 		[Obsolete("Use PrefabCategory", true)]
 		Trees = PrefabCategory.Trees,

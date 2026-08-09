@@ -42,6 +42,10 @@ namespace FindItBuildingMenu.Systems
 		private ComponentType? roadBuilderDiscarded;
 		private static Dictionary<Entity, ZoneTypeFilter> _zoneTypeCache;
 		private EntityQuery _unlockEventQuery;
+		// Prefabs the game created or changed this frame — the incremental
+		// pass's own trigger. Held as a field rather than a RequireForUpdate
+		// gate; see OnUpdate for why that gate had to go.
+		private EntityQuery _changedPrefabQuery;
 		// Guards against queueing a second pass while one is already pending:
 		// the locale event fires more than once per change. See
 		// OnActiveDictionaryChanged.
@@ -59,6 +63,10 @@ namespace FindItBuildingMenu.Systems
 		/// it has to be reachable without going back out to the toolbar.
 		/// </remarks>
 		private static IReadOnlyList<VanillaMenuCategory> _assetMenus = System.Array.Empty<VanillaMenuCategory>();
+		// Where the vanilla build menu puts each asset, keyed by prefab entity
+		// index. Built by IndexVanillaMenuPlacements; read by the coverage
+		// report and by IsPlacedInVanillaMenu.
+		private static Dictionary<int, VanillaMenuPlacement> _menuPlacements = new();
 		// Milestone index -> the name the rest of the game calls it. ~20 entries,
 		// resolved once per index pass rather than per locked asset.
 		private static Dictionary<int, string> _milestoneNames = new();
@@ -108,14 +116,20 @@ namespace FindItBuildingMenu.Systems
 				}
 			}
 
-			// Unlock events are the third trigger. UnlockSystem.UnlockPrefab
+			// Unlock events are the second trigger. UnlockSystem.UnlockPrefab
 			// disables the Locked component and raises an Unlock event, but
 			// never marks the prefab Updated — so without this the lock state
 			// captured at index time would stay stale until the next reload,
 			// and a milestone would silently stop being reflected.
+			//
+			// The same query vanilla watches: ToolbarUISystem builds
+			// GetEntityQuery(ComponentType.ReadOnly<Unlock>()) and reads it in
+			// OnUpdate. The event entity carries Event as well as Unlock, and
+			// PrepareCleanUpSystem hands those to CleanUpSystem in the Cleanup
+			// phase — after PrefabUpdate, where this system runs — so the event
+			// is still there to be seen in the frame it was raised.
 			_unlockEventQuery = GetEntityQuery(ComponentType.ReadOnly<Unlock>());
-
-			RequireForUpdate(GetEntityQuery(new EntityQueryDesc
+			_changedPrefabQuery = GetEntityQuery(new EntityQueryDesc
 			{
 				All = new[] { ComponentType.ReadOnly<PrefabData>() },
 				Any = new[]
@@ -123,7 +137,7 @@ namespace FindItBuildingMenu.Systems
 					ComponentType.ReadOnly<Created>(),
 					ComponentType.ReadOnly<Updated>(),
 				}
-			}));
+			});
 
 			Enabled = false;
 		}
@@ -202,13 +216,113 @@ namespace FindItBuildingMenu.Systems
 			});
 		}
 
+		/// <remarks>
+		/// Two things had to change before the unlock branch below could ever run,
+		/// and only the second one was visible from this file.
+		///
+		/// The first was a <c>RequireForUpdate</c> on prefabs carrying Created or
+		/// Updated. An unlock touches no prefab at all, so that gate held the
+		/// system shut in precisely the case the branch existed to catch — the same
+		/// trap described at length on OnActiveDictionaryChanged.
+		///
+		/// The second was the phase. Removing the gate changed nothing, because
+		/// PrefabUpdate is not driven by the player loop: PrefabSystem calls
+		/// Update(PrefabUpdate) when prefabs change, and an unlock is not a prefab
+		/// change. The system is now registered at UIUpdate as well (see Mod.cs),
+		/// which ticks every frame after UnlockSystem has raised its events.
+		///
+		/// Worth stating plainly: the first fix was tested by reading the code and
+		/// looked complete. It took unlocking a node in the live tech tree, and
+		/// finding nothing in the log, to see the phase underneath it.
+		/// </remarks>
 		protected override void OnUpdate()
 		{
-			// An unlock changes lock state without touching the prefab, so the
-			// incremental pass would not see it. Rare enough that a full pass
-			// is the honest response rather than a targeted patch that could
-			// drift from what the index otherwise holds.
-			RunIndex(!_unlockEventQuery.IsEmptyIgnoreFilter);
+			if (!_unlockEventQuery.IsEmptyIgnoreFilter)
+			{
+				ApplyUnlocks();
+			}
+
+			if (_changedPrefabQuery.IsEmptyIgnoreFilter)
+			{
+				return;
+			}
+
+			RunIndex(false);
+		}
+
+		/// <summary>
+		/// Clears the lock state of the prefabs an Unlock event names.
+		/// </summary>
+		/// <remarks>
+		/// Deliberately a patch rather than the full re-index this used to ask
+		/// for. A full pass measures at five seconds on this save, and a
+		/// milestone unlocks a whole tier at once, so "re-index on unlock" spends
+		/// a five-second freeze on the single most celebratory moment in the
+		/// game.
+		///
+		/// The patch is exact rather than approximate because lock state feeds
+		/// exactly three fields, all set together in AddPrefab: IsLocked, and the
+		/// UnlockMilestone/UnlockRequirements pair that is only meaningful while
+		/// IsLocked. Nothing else in the index is derived from it, so there is no
+		/// fourth field for this to drift away from.
+		///
+		/// PrefabIndex is a class and the category lists hold the same instances,
+		/// so one write is seen by every view of it.
+		/// </remarks>
+		private void ApplyUnlocks()
+		{
+			var events = _unlockEventQuery.ToComponentDataArray<Unlock>(Allocator.Temp);
+			var changed = 0;
+
+			for (var i = 0; i < events.Length; i++)
+			{
+				var entity = events[i].m_Prefab;
+				var prefabIndex = FindItUtil.GetPrefabIndex(entity.Index);
+
+				// Not every unlock is ours: the game unlocks prefabs no processor
+				// indexes, and asking for one back returns null rather than throwing.
+				if (prefabIndex is null)
+				{
+					continue;
+				}
+
+				// Read the component rather than assuming the event means unlocked,
+				// so this reports what the game holds even if an unlock is undone.
+				var locked = EntityManager.HasEnabledComponent<Locked>(entity);
+
+				if (prefabIndex.IsLocked == locked)
+				{
+					continue;
+				}
+
+				prefabIndex.IsLocked = locked;
+
+				if (locked)
+				{
+					(prefabIndex.UnlockMilestone, prefabIndex.UnlockRequirements) = GetUnlockRequirements(entity);
+				}
+				else
+				{
+					prefabIndex.UnlockMilestone = 0;
+					prefabIndex.UnlockRequirements = Array.Empty<string>();
+				}
+
+				changed++;
+			}
+
+			events.Dispose();
+
+			if (changed == 0)
+			{
+				return;
+			}
+
+			Mod.Log.Info($"Unlocked {changed} indexed prefab(s)");
+
+			// The catalog is served from a cached search, so the rows keep their
+			// old lock state until it is rebuilt — and an Availability filter set
+			// to Unlocked would still be excluding them.
+			_finditUISystem.TriggerSearch();
 		}
 
 		private void RunIndex(bool full)
@@ -223,6 +337,9 @@ namespace FindItBuildingMenu.Systems
 				AddAllCategories();
 
 				IndexZones();
+				// Before the processors run: the blacklist check below consults it,
+				// and so does the terrain-brush processor.
+				IndexVanillaMenuPlacements();
 				IndexAssetMenus();
 				IndexAssetCategories();
 				IndexMilestones();
@@ -278,7 +395,12 @@ namespace FindItBuildingMenu.Systems
 							continue;
 						}
 
-						if (_blackList.Contains(prefab.name))
+						// The blacklist is a list of names, written for a flat asset
+						// browser where lot definitions and pipe nodes were noise. It
+						// cannot outrank the build menu: Extractor Lot and Landfill Site
+						// Lot are on it and are also the tools the Areas and Garbage
+						// menus hand the player.
+						if (_blackList.Contains(prefab.name) && !IsPlacedInVanillaMenu(entity.Index))
 						{
 							continue;
 						}
@@ -390,53 +512,257 @@ namespace FindItBuildingMenu.Systems
 
 			if (full)
 			{
-				LogVanillaMenuTree();
+				LogVanillaMenuCoverage();
 			}
 		}
 
 			/// <summary>
-			/// SPIKE (cm-e98i). Dumps the build-menu tree as the GAME describes it,
-			/// so it can be diffed against what the vanilla menu actually renders.
-			///
-			/// The question this exists to answer: does reading UIObject.m_Group
-			/// reproduce vanilla's menus exactly? If it does, VanillaBuildMenuTaxonomy
-			/// — which reconstructs the same relationship from our own category
-			/// enums, and which is why Healthcare showed 15 against vanilla's 8 —
-			/// can be deleted rather than patched.
-			///
-			/// Counts are reported both raw and with vanilla's own exclusion applied
-			/// (ToolbarUISystem.FilterOutUpgrades drops service upgrades), because
-			/// that single rule is the whole of the Healthcare discrepancy.
-			///
-			/// Delete this method with the two PrefabIndex fields once decided.
+			/// Records where the vanilla build menu places each asset, walking the
+			/// game's own group tree from the menus downward.
 			/// </summary>
-			private void LogVanillaMenuTree()
+			/// <remarks>
+			/// The direction is the whole point. Everything else in this file reads
+			/// upward: an indexed asset names its category through
+			/// <c>UIObject.m_Group</c>, and its menu through that category's
+			/// <c>m_Menu</c>. That view can only ever describe assets we already hold,
+			/// so an asset no processor queries is absent from it entirely and the menu
+			/// it belongs to looks complete while being short. It is how the terrain
+			/// brushes went missing from Landscaping and the seaway tools from
+			/// Transportation: not filtered out, never indexed, and so invisible to any
+			/// report built from the index.
+			///
+			/// The walk is vanilla's, step for step, so a difference is ours rather
+			/// than an artefact of reading the tree differently.
+			/// <c>ToolbarUISystem.BindAssetCategories</c> takes each menu's
+			/// <see cref="UIGroupElement"/> buffer, <c>GetSortedCategories</c> keeps the
+			/// members carrying <see cref="UIAssetCategoryData"/> that have members of
+			/// their own, and <c>BindAssets</c> takes every element of those buffers.
+			/// The one exclusion applied here is <c>FilterOutUpgrades</c>, which drops
+			/// <see cref="ServiceUpgradeData"/>, because a service upgrade is placed
+			/// from its parent building's row rather than the grid. The theme and
+			/// asset-pack filters are deliberately NOT applied: those are player
+			/// settings that hide assets which should still be indexed.
+			///
+			/// Two things read the result. LogVanillaMenuCoverage reports what is
+			/// missing, and the index itself treats placement as an override — see the
+			/// blacklist check in RunIndex, and IsPlacedInVanillaMenu.
+			/// </remarks>
+			private void IndexVanillaMenuPlacements()
 			{
+				var placements = new Dictionary<int, VanillaMenuPlacement>();
+
+				try
+				{
+					var query = GetEntityQuery(
+						ComponentType.ReadOnly<UIAssetMenuData>(),
+						ComponentType.ReadOnly<PrefabData>());
+					var menus = query.ToEntityArray(Allocator.Temp);
+
+					for (var i = 0; i < menus.Length; i++)
+					{
+						if (!_prefabSystem.TryGetPrefab<PrefabBase>(menus[i], out var menuPrefab)
+							|| menuPrefab?.name is not string menuName
+							|| !EntityManager.TryGetBuffer<UIGroupElement>(menus[i], true, out var categories))
+						{
+							continue;
+						}
+
+						for (var c = 0; c < categories.Length; c++)
+						{
+							var categoryEntity = categories[c].m_Prefab;
+
+							// GetSortedCategories drops both of these, so a tab the player
+							// cannot reach places nothing.
+							if (!EntityManager.HasComponent<UIAssetCategoryData>(categoryEntity)
+								|| !EntityManager.TryGetBuffer<UIGroupElement>(categoryEntity, true, out var assets)
+								|| assets.Length == 0
+								|| !_prefabSystem.TryGetPrefab<PrefabBase>(categoryEntity, out var categoryPrefab))
+							{
+								continue;
+							}
+
+							for (var a = 0; a < assets.Length; a++)
+							{
+								var assetEntity = assets[a].m_Prefab;
+
+								if (EntityManager.HasComponent<ServiceUpgradeData>(assetEntity))
+								{
+									continue;
+								}
+
+								// Keyed by index alone because that is what PrefabIndex.Id
+								// holds and what the diff compares against; the whole entity
+								// rides along so a gap can still be named.
+								placements[assetEntity.Index] = new VanillaMenuPlacement(
+									assetEntity, menuName, categoryPrefab.name);
+							}
+						}
+					}
+
+					menus.Dispose();
+				}
+				catch (Exception ex)
+				{
+					Mod.Log.Error(ex, "[MENU-COVERAGE] walk failed");
+				}
+
+				_menuPlacements = placements;
+				Mod.Log.Info($"Indexed Vanilla Menu Placements: {placements.Count}");
+			}
+
+			/// <summary>
+			/// Whether the vanilla build menu offers this prefab to the player.
+			/// </summary>
+			/// <remarks>
+			/// The index's tie-breaker. Two of its own rules were hiding assets the game
+			/// shows: the blacklist, which named Extractor Lot and Landfill Site Lot,
+			/// and the terrain-brush target filter, which kept the five terrain materials
+			/// out on the theory that they sat under no category. They do sit under one,
+			/// and the coverage walk found them there.
+			///
+			/// Both rules are still right about what they were written for. This is the
+			/// exception they both needed — whatever the game puts in front of the
+			/// player, the lens carries too.
+			/// </remarks>
+			public static bool IsPlacedInVanillaMenu(int entityIndex) =>
+				_menuPlacements.ContainsKey(entityIndex);
+
+			/// <summary>
+			/// Reports every asset the vanilla build menu shows that our index does not.
+			/// </summary>
+			/// <remarks>
+			/// Logged rather than thrown because a gap is a real state of the game — a
+			/// mod can add a menu whose assets we have no processor for — and a short
+			/// menu serves the player better than a dead one.
+			/// </remarks>
+			private void LogVanillaMenuCoverage()
+			{
+				// The first full index of a session runs before the prop generators
+				// have published their substitutions, so every quantity prop would be
+				// reported as lost and then quietly found again on the next pass. A
+				// warning that retracts itself is worse than no warning.
+				if (FindItUtil.AssetMap.Count == 0)
+				{
+					Mod.Log.Info("[MENU-COVERAGE] deferred: the generated-prop substitutions are not published yet");
+					return;
+				}
+
 				try
 				{
 					var indexed = FindItUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any];
-					var placed = indexed.Where(p => p.UiMenuName is not null).ToList();
+					// PrefabIndex.Id is the prefab entity's index (see AddPrefab), so this
+					// is an identity comparison rather than a name match.
+					var byEntity = new Dictionary<int, PrefabIndex>();
 
-					Mod.Log.Info($"[MENU-TREE] indexed={indexed.Count} placedInAMenu={placed.Count} unplaced={indexed.Count - placed.Count}");
-
-					foreach (var menu in placed.GroupBy(p => p.UiMenuName).OrderBy(g => g.Key, StringComparer.Ordinal))
+					foreach (var entry in indexed)
 					{
-						foreach (var category in menu.GroupBy(p => p.UiCategoryName).OrderBy(g => g.Key, StringComparer.Ordinal))
-						{
-							// An upgrade is an extension by our own detection, which is
-							// the same population vanilla removes.
-							var buildable = category.Where(p => p.ExtensionIds is null || p.ExtensionIds.Length == 0).ToList();
-							var names = string.Join(",", buildable.OrderBy(p => p.UIOrder).Select(p => p.PrefabName));
+						byEntity[entry.Id] = entry;
+					}
 
-							Mod.Log.Info(
-								$"[MENU-TREE] menu=\"{menu.Key}\" category=\"{category.Key}\" "
-								+ $"all={category.Count()} buildable={buildable.Count} names={names}");
+					// Zones reach the player through the zoning hierarchy rather than the
+					// prefab index, so they are covered without being in it. Left out, the
+					// report accuses itself of losing all 22 of them.
+					var zoned = new HashSet<int>(_zoneCatalog.Select(zone => zone.Id));
+					var missing = new Dictionary<string, List<string>>();
+					var misplaced = new Dictionary<string, List<string>>();
+					var shown = new Dictionary<string, int>();
+					var substituted = 0;
+
+					foreach (var placement in _menuPlacements.Values)
+					{
+						var where = placement.Menu + '\u0000' + placement.Category;
+
+						shown.TryGetValue(where, out var count);
+						shown[where] = count + 1;
+
+						if (zoned.Contains(placement.Entity.Index))
+						{
+							continue;
 						}
+
+						if (byEntity.TryGetValue(placement.Entity.Index, out var entry))
+						{
+							if (entry.UiCategoryName != placement.Category)
+							{
+								// Indexed, but filed under a different category than the tree
+								// puts it in, so it is absent from this tab for a different
+								// reason.
+								Add(misplaced, where, $"{entry.PrefabName}->{entry.UiCategoryName ?? "none"}");
+							}
+
+							continue;
+						}
+
+						if (!_prefabSystem.TryGetPrefab<PrefabBase>(placement.Entity, out var assetPrefab) || assetPrefab?.name is null)
+						{
+							Add(missing, where, $"entity:{placement.Entity.Index}");
+							continue;
+						}
+
+						// A quantity or vehicle prop is replaced rather than dropped: the
+						// generators split it into one asset per state and record the swap
+						// in AssetMap, so the player gets more than vanilla offers, not
+						// less. Counting those as losses hid the real gaps behind them.
+						if (FindItUtil.AssetMap.ContainsKey(assetPrefab.name))
+						{
+							substituted++;
+							continue;
+						}
+
+						// The prefab's own type is reported because it names what a
+						// processor would have to query to reach it, which is the next
+						// question every gap raises.
+						Add(missing, where, $"{assetPrefab.name}({assetPrefab.GetType().Name})");
+					}
+
+					var totalMissing = 0;
+
+					foreach (var where in shown.Keys.OrderBy(key => key, StringComparer.Ordinal))
+					{
+						missing.TryGetValue(where, out var gaps);
+						misplaced.TryGetValue(where, out var strays);
+
+						totalMissing += gaps?.Count ?? 0;
+
+						if ((gaps?.Count ?? 0) == 0 && (strays?.Count ?? 0) == 0)
+						{
+							continue;
+						}
+
+						var parts = where.Split('\u0000');
+
+						Mod.Log.Warn(
+							$"[MENU-COVERAGE] menu=\"{parts[0]}\" category=\"{parts[1]}\" "
+							+ $"vanilla={shown[where]} missing={gaps?.Count ?? 0} [{string.Join(",", gaps ?? new List<string>())}]"
+							+ ((strays?.Count ?? 0) == 0 ? string.Empty : $" misplaced=[{string.Join(",", strays)}]"));
+					}
+
+					var summary = $"[MENU-COVERAGE] vanilla shows {_menuPlacements.Count} assets across its menus; "
+						+ $"{totalMissing} missing from the index, {substituted} replaced by generated variants";
+
+					if (totalMissing == 0)
+					{
+						Mod.Log.Info(summary);
+					}
+					else
+					{
+						Mod.Log.Warn(summary);
 					}
 				}
 				catch (Exception ex)
 				{
-					Mod.Log.Error(ex, "[MENU-TREE] dump failed");
+					Mod.Log.Error(ex, "[MENU-COVERAGE] report failed");
+				}
+
+				static void Add(Dictionary<string, List<string>> into, string where, string what)
+				{
+					if (!into.TryGetValue(where, out var list))
+					{
+						list = new List<string>();
+						into[where] = list;
+					}
+
+					list.Add(what);
 				}
 			}
 
@@ -512,12 +838,10 @@ namespace FindItBuildingMenu.Systems
 			// locked forever, including the ones already earned.
 			prefabIndex.IsLocked = EntityManager.HasEnabledComponent<Locked>(entity);
 			// Only for what is actually locked. The walk allocates a hash map and
-			// recurses per prefab, and an unlock event triggers a FULL re-index
-			// (see OnUpdate) — so running it across all 17,898 prefabs every time
-			// the player passes a milestone would be the expensive thing here.
-			// Restricted this way the cost is highest at load, when a full index
-			// runs anyway, and falls towards zero exactly as unlocks get more
-			// frequent.
+			// recurses per prefab, so running it across all 17,898 prefabs would be
+			// the expensive thing here. Restricted this way the cost is highest at
+			// load, when a full index runs anyway, and an unlock afterwards pays it
+			// only for the prefabs it actually names (see ApplyUnlocks).
 			prefabIndex.Bonuses = GetBonuses(entity);
 
 			if (prefabIndex.IsLocked)
