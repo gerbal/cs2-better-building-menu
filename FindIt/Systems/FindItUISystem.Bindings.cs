@@ -291,6 +291,56 @@ namespace FindItBuildingMenu.Systems
 		}
 
 		/// <summary>
+		/// Scopes the lens to a vanilla menu chosen from the filters.
+		/// </summary>
+		/// <remarks>
+		/// The same state a bottom-bar icon sets, reached the other way. If a
+		/// toolbar icon is a shortcut to a preconfigured view — which is what
+		/// the menu chip says it is — then the view has to be reachable without
+		/// the shortcut, or the chip names something only the toolbar can
+		/// produce.
+		///
+		/// Deliberately not VanillaMenuSelected. That one is answering the game
+		/// ("the player opened this menu, get out of its way or take it over"),
+		/// so it carries an echo guard and two branches that close the panel.
+		/// This one is answering the player, who is already in the lens and has
+		/// just asked for a menu inside it.
+		/// </remarks>
+		private void SetBuildingLensMenu(string menuName)
+		{
+			if (string.IsNullOrWhiteSpace(menuName))
+			{
+				ClearBuildingLensMenuScope();
+				return;
+			}
+
+			_buildingLensUiMenu = menuName.Trim();
+			// A different menu has different tabs, so the old selection cannot
+			// survive the switch — same reason as VanillaMenuSelected.
+			_buildingLensUiCategory = string.Empty;
+			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0 };
+			scrollIndex = 0;
+
+			// Zones are assignment tools rather than buildings, so that menu gets
+			// the zoning hierarchy. ReplaceVanillaZonesMenu is not consulted:
+			// that setting decides whether we take the vanilla menu over when the
+			// player clicks its toolbar icon, and this is the player asking for
+			// our view from inside our panel.
+			bool zoning = VanillaMenuPresets.Resolve(_buildingLensUiMenu)?.IsZoning == true;
+
+			if (zoning)
+			{
+				_ZoneCatalog.Value = PrefabIndexingSystem.GetZoneCatalog().ToArray();
+			}
+
+			_ShowZoningHierarchy.Value = zoning;
+
+			RefreshBuildingLensMenuCategories();
+			RefreshBuildingLensNavigation();
+			RefreshBuildingCatalog();
+		}
+
+		/// <summary>
 		/// Drops the vanilla-menu scope and shows the whole catalog.
 		/// </summary>
 		/// <remarks>
@@ -331,6 +381,7 @@ namespace FindItBuildingMenu.Systems
 
 			_BuildingLensMenuCategoriesBinding.Value = tabs.ToArray();
 			_BuildingLensMenuBinding.Value = _buildingLensUiMenu;
+			_BuildingLensMenusBinding.Value = PrefabIndexingSystem.GetAssetMenus().ToArray();
 
 			// In the zoning view the strip's selection IS the family selection,
 			// and _buildingLensUiCategory stays empty there — republishing it

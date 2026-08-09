@@ -339,6 +339,7 @@
   "Tooltip.LABEL[FindItBuildingMenu.Provides]": "Provides",
   "Tooltip.LABEL[FindItBuildingMenu.ParkingBays]": "bays",
   "Tooltip.LABEL[FindItBuildingMenu.AllCategories]": "All",
+  "Tooltip.LABEL[FindItBuildingMenu.AllMenus]": "All menus",
   "Requirement.POPULATION": "{0} population",
   "Requirement.HAPPINESS": "{0} happiness",
   "Requirement.PROCESSING": "produce {0} {1}",

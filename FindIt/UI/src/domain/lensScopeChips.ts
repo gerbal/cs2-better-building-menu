@@ -36,7 +36,7 @@ export interface LensScopeState {
 }
 
 export interface LensScopeChips {
-  /** The menu chip — states the scope and offers to drop it. */
+  /** The menu chip — picks a menu, and offers to drop the one that is set. */
   menu: boolean;
   /** The category chip — picks among the scoped menu's categories. */
   menuCategory: boolean;
@@ -55,7 +55,11 @@ export function lensScopeChipsFor(state: LensScopeState | null | undefined): Len
   const zoning = state?.showZoning === true;
 
   return {
-    menu: scoped,
+    // Always. A bottom-bar icon is a shortcut to a menu, and if the menu is a
+    // facet then it has to be pickable from inside the filters too — otherwise
+    // the chip names a state only the toolbar can produce, and the unscoped
+    // view has no way to ask for Zones at all.
+    menu: true,
     // One category is not a choice, the same threshold the strip uses. A menu
     // with a single category would otherwise get a chip that can only be set
     // to the value it already has.
