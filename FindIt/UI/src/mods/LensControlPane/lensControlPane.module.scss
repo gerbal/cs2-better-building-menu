@@ -59,6 +59,27 @@ $pane-width: 379rem;
   justify-content: flex-end;
 }
 
+// The count and, while a search is active, what it is counting.
+.countRow {
+  display: flex;
+  flex-direction: column;
+  padding: 2rem 0 4rem;
+}
+
+.countLine {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+}
+
+.searchContext {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeS);
+}
+
 // The result count leads the pane: it is the one figure that answers "did that
 // do anything" after every control below it.
 .count {

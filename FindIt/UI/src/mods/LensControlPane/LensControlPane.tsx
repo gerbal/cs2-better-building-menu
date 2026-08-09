@@ -31,6 +31,7 @@ const BuildingCatalogSortDescending$ = bindValue<boolean>(mod.id, "BuildingCatal
 const BuildingLensSection$ = bindValue<string>(mod.id, "BuildingLensSection", "AllBuildings");
 const BuildingLensMenuCategories$ = bindValue<unknown[]>(mod.id, "BuildingLensMenuCategories", []);
 const ShowZoningHierarchy$ = bindValue<boolean>(mod.id, "ShowZoningHierarchy", false);
+const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch");
 
 /**
  * What the pane takes out of the panel's width: its own 379rem plus the 6rem
@@ -72,6 +73,7 @@ export const LensControlPane = () => {
   const section = useValue(BuildingLensSection$);
   const menuHasCategories = (useValue(BuildingLensMenuCategories$) ?? []).length > 0;
   const showZoning = useValue(ShowZoningHierarchy$);
+  const currentSearch = useValue(CurrentSearch$);
 
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
   const [sortPickerOpen, setSortPickerOpen] = useState(false);
@@ -105,11 +107,22 @@ export const LensControlPane = () => {
 
   return (
     <div className={styles.pane}>
-      <div className={styles.row}>
-        <span className={styles.count}>{totalCount.toLocaleString()}</span>
-        <span className={styles.countUnit}>
-          {label("Tooltip.LABEL[FindItBuildingMenu.Buildings]", "buildings")}
-        </span>
+      <div className={styles.countRow}>
+        <div className={styles.countLine}>
+          <span className={styles.count}>{totalCount.toLocaleString()}</span>
+          <span className={styles.countUnit}>
+            {label("Tooltip.LABEL[FindItBuildingMenu.Buildings]", "buildings")}
+          </span>
+        </div>
+        {/* Only while a search is active. A static caption here would cost a
+            line on every frame to say something the panel already implies;
+            naming the query the count is counting is the informative case. */}
+        {currentSearch?.trim() && (
+          <div className={styles.searchContext} title={currentSearch}>
+            {translate("Tooltip.LABEL[FindItBuildingMenu.BuildingLensSearchResults]", "Results for {0}")
+              ?.replace("{0}", currentSearch)}
+          </div>
+        )}
       </div>
 
       {/* The zoning view is a different renderer over a different catalog:
