@@ -151,3 +151,185 @@ describe("Provenance", () => {
     ]);
   });
 });
+
+describe("Resolving an asset's description", () => {
+  // The real dictionary's behaviour, measured live 2026-08-09: a key that
+  // exists returns its text; a key that does not returns ITSELF.
+  const dictionary: Record<string, string> = {
+    "Assets.DESCRIPTION[ElementarySchool01]":
+      "A place of basic education for children. Provides the first level of education. \r\nCan be upgraded with an extension wing.",
+    "Assets.UPGRADE_DESCRIPTION[ElementarySchool01 Wing]": "Adds classroom space.",
+    "Assets.DESCRIPTION[Road Two Lane]": "Simple two-lane road that allows traffic in both directions.",
+  };
+  const translate = (key: string, fallback: string): string =>
+    Object.prototype.hasOwnProperty.call(dictionary, key) ? dictionary[key] : key || fallback;
+
+  it("returns the game's own sentence for a building", async () => {
+    const { resolveAssetDescription } = await import("../src/domain/buildingLensRowDetails.ts");
+
+    // The CRLF the game ships comes back as a single space; see the
+    // line-break suite below for why.
+    assert.equal(
+      resolveAssetDescription("ElementarySchool01", translate),
+      "A place of basic education for children. Provides the first level of education. Can be upgraded with an extension wing.",
+    );
+  });
+
+  it("returns one for a network too", async () => {
+    const { resolveAssetDescription } = await import("../src/domain/buildingLensRowDetails.ts");
+
+    // Verified in the running game: networks carry descriptions, so the card
+    // is not a buildings-only feature.
+    assert.equal(
+      resolveAssetDescription("Road Two Lane", translate),
+      "Simple two-lane road that allows traffic in both directions.",
+    );
+  });
+
+  it("falls through to the upgrade key when there is no ordinary description", async () => {
+    const { resolveAssetDescription } = await import("../src/domain/buildingLensRowDetails.ts");
+
+    assert.equal(resolveAssetDescription("ElementarySchool01 Wing", translate), "Adds classroom space.");
+  });
+
+  it("never renders the locale key as if it were prose", async () => {
+    const { resolveAssetDescription } = await import("../src/domain/buildingLensRowDetails.ts");
+
+    // The whole reason this function exists. translate echoes a missing key
+    // back rather than returning null, so without the guard an unlocalized
+    // asset's card would read "Assets.DESCRIPTION[NotAPrefab]".
+    assert.equal(resolveAssetDescription("NotAPrefab", translate), null);
+  });
+
+  it("has nothing to say about an asset with no prefab name", async () => {
+    const { resolveAssetDescription } = await import("../src/domain/buildingLensRowDetails.ts");
+
+    assert.equal(resolveAssetDescription("", translate), null);
+    assert.equal(resolveAssetDescription(null, translate), null);
+    assert.equal(resolveAssetDescription(undefined, translate), null);
+  });
+
+  it("treats whitespace-only text as no description", async () => {
+    const { resolveAssetDescription } = await import("../src/domain/buildingLensRowDetails.ts");
+
+    const blank = (key: string) => (key === "Assets.DESCRIPTION[Blank]" ? "   " : key);
+
+    assert.equal(resolveAssetDescription("Blank", blank), null);
+  });
+
+  it("survives a translate that returns null", async () => {
+    const { resolveAssetDescription } = await import("../src/domain/buildingLensRowDetails.ts");
+
+    assert.equal(resolveAssetDescription("Anything", () => null), null);
+  });
+});
+
+describe("Clamping a description to the hover card", () => {
+  it("leaves a short description alone", async () => {
+    const { clampAssetDescription } = await import("../src/domain/buildingLensRowDetails.ts");
+
+    const short = "A facility for performing geological research and field studies.";
+
+    assert.equal(clampAssetDescription(short), short);
+  });
+
+  it("cuts a long one on a word boundary and says so", async () => {
+    const { clampAssetDescription, ASSET_DESCRIPTION_CLAMP_CHARS } = await import(
+      "../src/domain/buildingLensRowDetails.ts"
+    );
+
+    // The Medical University's real text, 231 characters, which overran three
+    // lines on the live card and stopped mid-sentence with nothing to explain it.
+    const long =
+      "Academic schooling for medical professions. Provides the fourth level of education, and increases the efficiency of healthcare service buildings. Can be upgraded with an extension wing, research facilities, and a library.";
+    const clamped = clampAssetDescription(long) ?? "";
+
+    assert.equal(clamped.endsWith("…"), true);
+    assert.equal(clamped.length <= ASSET_DESCRIPTION_CLAMP_CHARS + 1, true);
+    // The cut lands between words: no half-word before the ellipsis.
+    assert.equal(/\s\S*…$/.test(clamped) || !clamped.includes(" "), true);
+    assert.equal(long.startsWith(clamped.slice(0, -1)), true);
+  });
+
+  it("does not leave punctuation stranded before the ellipsis", async () => {
+    const { clampAssetDescription } = await import("../src/domain/buildingLensRowDetails.ts");
+
+    // "…of education, …" reads as a comma that lost its clause.
+    const clamped = clampAssetDescription("one two three, four five six", 15) ?? "";
+
+    assert.equal(clamped, "one two three…");
+  });
+
+  it("keeps half a word rather than nothing when one word exceeds the budget", async () => {
+    const { clampAssetDescription } = await import("../src/domain/buildingLensRowDetails.ts");
+
+    assert.equal(clampAssetDescription("Supercalifragilistic", 8), "Supercal…");
+  });
+
+  it("has nothing to clamp when there is no description", async () => {
+    const { clampAssetDescription } = await import("../src/domain/buildingLensRowDetails.ts");
+
+    assert.equal(clampAssetDescription(null), null);
+    assert.equal(clampAssetDescription(undefined), null);
+    assert.equal(clampAssetDescription("   "), null);
+  });
+
+  it("falls back to the shared budget on a nonsense one", async () => {
+    const { clampAssetDescription, ASSET_DESCRIPTION_CLAMP_CHARS } = await import(
+      "../src/domain/buildingLensRowDetails.ts"
+    );
+
+    const long = "word ".repeat(80);
+
+    assert.equal((clampAssetDescription(long, Number.NaN) ?? "").length <= ASSET_DESCRIPTION_CLAMP_CHARS + 1, true);
+  });
+});
+
+describe("Rendering the game's own line break", () => {
+  it("collapses the CRLF the engine cannot honour", async () => {
+    const { resolveAssetDescription } = await import("../src/domain/buildingLensRowDetails.ts");
+
+    // white-space: pre-line computes to normal in Cohtml — measured on the live
+    // card — so the break renders as a space however it is asked for. Collapsed
+    // in the resolver so the string returned is the string drawn.
+    const translate = (key: string) =>
+      key === "Assets.DESCRIPTION[School]" ? "First sentence. \r\nSecond sentence." : key;
+
+    assert.equal(resolveAssetDescription("School", translate), "First sentence. Second sentence.");
+  });
+});
+
+describe("Where the clamp prefers to cut", () => {
+  it("ends on a finished sentence rather than a dangling word", async () => {
+    const { clampAssetDescription } = await import("../src/domain/buildingLensRowDetails.ts");
+
+    // The Medical University, live: the word-boundary cut landed four
+    // characters past the end of a sentence and produced "…buildings. Can…".
+    const long =
+      "Academic schooling for medical professions. Provides the fourth level of education, and increases the efficiency of healthcare service buildings. Can be upgraded with an extension wing.";
+
+    assert.equal(
+      clampAssetDescription(long),
+      "Academic schooling for medical professions. Provides the fourth level of education, and increases the efficiency of healthcare service buildings…",
+    );
+  });
+
+  it("keeps the word cut when the last sentence ended too far back", async () => {
+    const { clampAssetDescription } = await import("../src/domain/buildingLensRowDetails.ts");
+
+    // Honouring a sentence that ended in the first half of the budget would
+    // throw away a line of text to save one word.
+    const text = "Short. " + "a".repeat(20) + " " + "b".repeat(20) + " " + "c".repeat(20);
+
+    assert.equal(clampAssetDescription(text, 40), "Short. " + "a".repeat(20) + "…");
+  });
+
+  it("does not mistake a decimal point for the end of a thought", async () => {
+    const { clampAssetDescription } = await import("../src/domain/buildingLensRowDetails.ts");
+
+    const clamped = clampAssetDescription("Increases efficiency by 12.5 percent across the whole city always", 30) ?? "";
+
+    assert.equal(clamped.includes("12.5"), true);
+    assert.equal(clamped.endsWith("…"), true);
+  });
+});
