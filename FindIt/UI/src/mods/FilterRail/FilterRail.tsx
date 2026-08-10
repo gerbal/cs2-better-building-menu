@@ -8,7 +8,6 @@ import {
   RAIL_METRICS_ID,
   buildFilterRail,
   filterRailOptions,
-  railHomeFor,
   type RailFacetState,
 } from "domain/filterRail";
 import styles from "./filterRail.module.scss";
@@ -90,8 +89,11 @@ export const FilterRail = ({
           const label = dimension.id === RAIL_METRICS_ID
             ? translate("Options.LABEL[FindItBuildingMenu.MetricFilters]", "Metric filters") ?? "Metric filters"
             : dimension.label;
-          const home = railHomeFor(dimension.optionCount);
-          const searchable = home === "searchableDropdown";
+          // buildFilterRail already worked this out against
+          // RAIL_SEARCH_THRESHOLD. It used to go through railHomeFor, which
+          // also decided whether the dimension belonged in the options bank
+          // rather than here — a split that is gone, along with the bank.
+          const searchable = dimension.needsSearch;
 
           return (
             <Dropdown
