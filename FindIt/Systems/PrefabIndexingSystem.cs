@@ -516,6 +516,7 @@ namespace FindItBuildingMenu.Systems
 			if (full)
 			{
 				LogVanillaMenuCoverage();
+				LogVanillaMenuAudit();
 			}
 		}
 
@@ -638,6 +639,151 @@ namespace FindItBuildingMenu.Systems
 			/// mod can add a menu whose assets we have no processor for — and a short
 			/// menu serves the player better than a dead one.
 			/// </remarks>
+			/// <summary>
+			/// A per-menu census of the vanilla build menu, in both directions.
+			/// </summary>
+			/// <remarks>
+			/// LogVanillaMenuCoverage answers one question — what does vanilla place
+			/// that we failed to index — and answers it well, but it is blind in two
+			/// ways that let a whole menu go wrong unnoticed.
+			///
+			/// It skips zones outright, because they reach the player through the
+			/// zoning hierarchy rather than the prefab index. That exclusion is why
+			/// the Zones menu could be missing its entire Extractors tab — nine
+			/// assets: Grain Farming, Livestock Farming, Textile Fiber Farming,
+			/// Vegetable Farming, Forestry, Coal/Ore/Stone Mining, Oil Drilling —
+			/// while the report said "0 missing".
+			///
+			/// And it only looks one way. It never asks what WE show that vanilla
+			/// does not place, which is how four unbuildable "Area Hub" zones and
+			/// six theme-less base zones sat in the surface until a player tried to
+			/// build one.
+			///
+			/// So this is a census rather than an alarm: every menu, its categories,
+			/// what vanilla places, what we cover, and what we show that vanilla
+			/// does not. It logs at Info whether or not anything is wrong, because
+			/// the value is in reading it, not in being warned by it.
+			/// </remarks>
+			private void LogVanillaMenuAudit()
+			{
+				try
+				{
+					var indexed = FindItUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any];
+					var indexedByEntity = new Dictionary<int, PrefabIndex>();
+
+					foreach (var entry in indexed)
+					{
+						indexedByEntity[entry.Id] = entry;
+					}
+
+					var zoned = new HashSet<int>(_zoneCatalog.Select(zone => zone.Id));
+
+					// Forward: what the game places, and whether we hold it at all.
+					var placedByMenu = new Dictionary<string, List<VanillaMenuPlacement>>();
+
+					foreach (var placement in _menuPlacements.Values)
+					{
+						var menu = placement.Menu ?? "(none)";
+
+						if (!placedByMenu.TryGetValue(menu, out var list))
+						{
+							placedByMenu[menu] = list = new List<VanillaMenuPlacement>();
+						}
+
+						list.Add(placement);
+					}
+
+					// Reverse: what we would show under a menu name, whether or not the
+					// game places it there. Zones included deliberately — leaving them
+					// out is the blindness this exists to remove.
+					var oursByMenu = new Dictionary<string, int>();
+					var unplacedByMenu = new Dictionary<string, List<string>>();
+
+					static void Note(Dictionary<string, List<string>> into, string key, string what)
+					{
+						if (!into.TryGetValue(key, out var list))
+						{
+							into[key] = list = new List<string>();
+						}
+
+						list.Add(what);
+					}
+
+					var placedEntities = new HashSet<int>(_menuPlacements.Keys);
+
+					foreach (var entry in indexed)
+					{
+						var menu = entry.UiMenuName;
+
+						if (string.IsNullOrWhiteSpace(menu))
+						{
+							continue;
+						}
+
+						oursByMenu.TryGetValue(menu!, out var count);
+						oursByMenu[menu!] = count + 1;
+
+						if (!placedEntities.Contains(entry.Id))
+						{
+							Note(unplacedByMenu, menu!, entry.PrefabName ?? $"entity:{entry.Id}");
+						}
+					}
+
+					Mod.Log.Info(
+						$"[MENU-AUDIT] {placedByMenu.Count} vanilla menus, {_menuPlacements.Count} placements, "
+						+ $"{indexed.Count} indexed assets, {_zoneCatalog.Count} zones");
+
+					foreach (var menu in placedByMenu.Keys.OrderBy(key => key, StringComparer.Ordinal))
+					{
+						var placements = placedByMenu[menu];
+						var categories = new HashSet<string>(placements.Select(p => p.Category ?? string.Empty));
+						// Substitutions count as held. A quantity or vehicle prop is
+						// replaced rather than dropped — the generators split it into
+						// one asset per state and record the swap in AssetMap — so the
+						// player gets more than vanilla offers, not less. Counting
+						// them as gaps reported eight phantom losses in Landscaping,
+						// which is exactly the false alarm that makes an audit
+						// stop being read.
+						var held = placements.Count(p =>
+							indexedByEntity.ContainsKey(p.Entity.Index)
+							|| zoned.Contains(p.Entity.Index)
+							|| (_prefabSystem.TryGetPrefab<PrefabBase>(p.Entity, out var substituted)
+								&& substituted?.name is string name
+								&& FindItUtil.AssetMap.ContainsKey(name)));
+						oursByMenu.TryGetValue(menu, out var ours);
+						unplacedByMenu.TryGetValue(menu, out var extras);
+
+						var line =
+							$"[MENU-AUDIT] menu=\"{menu}\" categories={categories.Count} vanilla={placements.Count} "
+							+ $"held={held} missing={placements.Count - held} ours={ours}";
+
+						if ((extras?.Count ?? 0) > 0)
+						{
+							// Capped: a long tail here is a pattern, not a list to read.
+							line += $" notPlacedByVanilla={extras!.Count} [{string.Join(",", extras.Take(8))}"
+								+ (extras.Count > 8 ? ",…]" : "]");
+						}
+
+						Mod.Log.Info(line);
+					}
+
+					// Menus we file assets under that the game has no such menu for at
+					// all. A name we invented, or one the walk could not see.
+					foreach (var menu in oursByMenu.Keys.OrderBy(key => key, StringComparer.Ordinal))
+					{
+						if (!placedByMenu.ContainsKey(menu))
+						{
+							Mod.Log.Warn(
+								$"[MENU-AUDIT] menu=\"{menu}\" is not a vanilla menu at all, yet {oursByMenu[menu]} of our assets claim it");
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					Mod.Log.Error(ex, "[MENU-AUDIT] failed");
+				}
+			}
+
 			private void LogVanillaMenuCoverage()
 			{
 				// The first full index of a session runs before the prop generators
