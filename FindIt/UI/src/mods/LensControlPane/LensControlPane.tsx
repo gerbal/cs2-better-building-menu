@@ -81,7 +81,17 @@ const LENS_GROUP_KEY = "groupBy";
  * that rendered only when it was expanded, so at the strip height the lens
  * rests at there was no sort, no grouping and no view switch at all.
  */
-export const LensControlPane = () => {
+export interface LensControlPaneProps {
+  /**
+   * The game's own menu close, when the panel is mounted in its asset-menu
+   * slot. Absent for the legacy floating panel, which has its own X in the top
+   * bar and no toolbar selection to clear — so the control below hides rather
+   * than offering a second close that would do nothing.
+   */
+  onCloseMenu?: () => void;
+}
+
+export const LensControlPane = ({ onCloseMenu }: LensControlPaneProps = {}) => {
   const { translate } = useLocalization();
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
@@ -374,6 +384,40 @@ export const LensControlPane = () => {
               one mark that would say nothing at all. */}
           <img className={styles.panelIcon} style={{ maskImage: `url(${isWindowLocked ? lock : unlock})` }} aria-hidden="true" />
         </Button>
+
+        {/* The menu had no close of its own. The legacy X lives in the top bar
+            row that caf59a8 deleted, so the only way out was pressing the
+            toolbar icon a second time — obvious once you know, invisible until
+            then.
+
+            It calls the close the game hands the asset-menu slot, rather than
+            triggering one of ours. Clearing the toolbar selection is what makes
+            the panel go away with nothing drawn behind it — a close that left
+            the menu selected would hand the space straight to the vanilla grid
+            — and the prop is the direct route to that for a component standing
+            in as the asset menu. (`toolbar.clearAssetSelection` reaches the same
+            place from C#, and CloseLens uses it; this just avoids the round
+            trip.) Verified live: after it, the row is gone, the column has no
+            children, no grid appears and the toolbar button is unlit.
+
+            Hidden rather than inert when nothing answers, which is the legacy
+            panel's case — it has its own X, and a second one here that did
+            nothing would be worse than none. */}
+        {onCloseMenu && (
+          <Button
+            className={styles.panelButton}
+            variant="icon"
+            onSelect={() => onCloseMenu()}
+            title={label("Tooltip.LABEL[FindItBuildingMenu.ClosePanel]", "Close Panel")}
+            aria-label={label("Tooltip.LABEL[FindItBuildingMenu.ClosePanel]", "Close Panel")}
+          >
+            <img
+              className={styles.panelIcon}
+              style={{ maskImage: "url(coui://finditbuildingmenu/Icons/Standard/XClose.svg)" }}
+              aria-hidden="true"
+            />
+          </Button>
+        )}
 
         <Button
           className={styles.panelButton}
