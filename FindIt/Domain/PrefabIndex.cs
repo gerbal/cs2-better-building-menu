@@ -97,6 +97,18 @@ namespace FindItBuildingMenu.Domain
 		//
 		// Recorded here to test whether reading it reproduces vanilla exactly.
 		// Remove these two, or commit to them, once that question is answered.
+		/// <summary>
+		/// A sub-building: placed from its parent's row, never from the grid.
+		/// </summary>
+		/// <remarks>
+		/// The game's own marker, ServiceUpgradeData, and the same test
+		/// ToolbarUISystem.FilterOutUpgrades applies before it draws a menu. A
+		/// maintenance hall or a storage warehouse is an upgrade to a specific
+		/// building, so offering it as a standalone row promises a placement that
+		/// does not exist on its own.
+		/// </remarks>
+		public bool IsServiceUpgrade { get; set; }
+
 		public string? UiCategoryName { get; set; }
 		public string? UiMenuName { get; set; }
 
