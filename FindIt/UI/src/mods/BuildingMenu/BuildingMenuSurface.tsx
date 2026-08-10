@@ -9,7 +9,7 @@ import mod from "../../../mod.json";
 import { BuildingCatalogComponent } from "mods/BuildingCatalog/BuildingCatalog";
 import { ZoningHierarchyComponent } from "mods/ZoningHierarchy/ZoningHierarchy";
 import { LensControlPane, LENS_CONTROL_PANE_TOTAL } from "mods/LensControlPane/LensControlPane";
-import { TopBarComponent } from "mods/TopBar/TopBar";
+import { BuildingMenuHeader } from "mods/BuildingMenu/BuildingMenuHeader";
 import { clampBuildingLensHeight, draggedBuildingLensHeight } from "domain/buildingLensLayout";
 
 // Shared with MainContainer until phase 2 step 4 deletes it. One stylesheet for
@@ -160,16 +160,7 @@ export const BuildingMenuSurface = ({ onClose }: BuildingMenuSurfaceProps) => {
             <div className={classNames(styles.resizeGrip, isResizing && styles.resizeGripActive)} />
           </div>
           <div className={styles.topBar}>
-            <TopBarComponent
-              sortingOpen={false}
-              optionsOpen={false}
-              expanded={false}
-              small={PanelWidth <= 685}
-              large={PanelWidth >= 850}
-              toggleSortingOpen={() => undefined}
-              toggleOptionsOpen={() => undefined}
-              toggleEnlarge={() => undefined}
-            />
+            <BuildingMenuHeader small={PanelWidth <= 685} large={PanelWidth >= 850} />
           </div>
           <div
             className={classNames(styles.content, AssetMenuTheme.assetPanel)}
