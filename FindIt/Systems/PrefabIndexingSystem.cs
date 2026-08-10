@@ -948,6 +948,10 @@ namespace FindItBuildingMenu.Systems
 					|| EntityManager.HasComponent<ServiceUpgradeData>(entity)
 					|| prefab.TryGet<ServiceUpgrade>(out _));
 			prefabIndex.ExtensionIds ??= isBuildingExtension ? new[] { prefab.name } : Array.Empty<string>();
+			// Narrower than isBuildingExtension above, deliberately: this is
+			// vanilla's exact test in FilterOutUpgrades, so what we hide from the
+			// list is precisely what the game hides from its grid.
+			prefabIndex.IsServiceUpgrade = EntityManager.HasComponent<ServiceUpgradeData>(entity);
 			prefabIndex.ThemeThumbnail = prefabIndex.ThemeThumbnail is not null
 				? IconPath.Normalize(prefabIndex.ThemeThumbnail)
 				: prefabIndex.Theme is null ? null : IconPath.Normalize(ImageSystem.GetThumbnail(prefabIndex.Theme));
