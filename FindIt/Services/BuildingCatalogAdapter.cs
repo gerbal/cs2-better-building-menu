@@ -208,6 +208,18 @@ namespace FindItBuildingMenu.Services
 			var filters = FindItUtil.Filters.GetFilterList(includeSearch: false).ToArray();
 
 			return allPrefabs
+				// Sub-buildings are not list entries. Vanilla runs the same test
+				// (FilterOutUpgrades, on ServiceUpgradeData) before drawing any
+				// menu, because an upgrade is placed from its parent building's
+				// row and has no standalone placement to offer. The menu audit
+				// found six of them in our list that vanilla keeps out of its
+				// grid: Maintenance Halls, Storage Warehouses, Warehouses and a
+				// Hearse Garage.
+				//
+				// They stay INDEXED — the parent row still names them through
+				// Extensions, search still finds them, and the facets still count
+				// them. This is about what the list offers as a thing to place.
+				.Where(prefab => !prefab.IsServiceUpgrade)
 				.Where(prefab => IsBuilding(prefab)
 					|| (!string.IsNullOrEmpty(menu)
 						&& string.Equals(prefab.UiMenuName, menu, StringComparison.OrdinalIgnoreCase)))

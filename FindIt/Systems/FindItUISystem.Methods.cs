@@ -372,7 +372,27 @@ namespace FindItBuildingMenu.Systems
 
 		private void OnPrefabChanged(PrefabBase prefab)
 		{
-			if (!settingPrefab)
+			// A prefab we did not arm ourselves normally means the player picked
+			// something in vanilla's own UI, and the polite answer is to get out
+			// of its way.
+			//
+			// Not while the lens owns the menu, though. Then the vanilla grid is
+			// not on screen for them to have picked from, so the pick came from
+			// US — and vacating hands the screen straight back to the menu we
+			// replaced. Reported from play: clicking Livestock Farming selects
+			// the right thing to build and then reverts to the vanilla menu.
+			//
+			// The zone and area surfaces reach the game through vanilla's own
+			// toolbar.selectAsset trigger rather than through our C# activation
+			// path, so settingPrefab is never raised for them and every pick
+			// looked like somebody else's. Zones escaped it because selecting one
+			// does not raise EventPrefabChanged; an extractor area does.
+			//
+			// Third instance of one shape today, after OnToolChanged's
+			// default-tool branch and its Zone Tool branch. The rule is the same
+			// in all three: while the lens stands in for a vanilla menu, it does
+			// not vacate.
+			if (!settingPrefab && !_LensOwnsCurrentMenu.Value)
 			{
 				ToggleFindItPanel(false);
 				return;

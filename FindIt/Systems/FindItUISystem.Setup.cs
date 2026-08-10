@@ -41,7 +41,6 @@ namespace FindItBuildingMenu.Systems
 		// see CloseLens.
 		private Game.UI.InGame.ToolbarUISystem _toolbarUISystem;
 
-		private ProxyAction _searchKeyBinding;
 		private ProxyAction _randomKeyBinding;
 		private ProxyAction _arrowLeftBinding;
 		private ProxyAction _arrowUpBinding;
@@ -183,8 +182,6 @@ namespace FindItBuildingMenu.Systems
 			_toolSystem.EventToolChanged += OnToolChanged;
 
 			// Keybinding caching
-			_searchKeyBinding = Mod.Settings.GetAction(nameof(FindItSettings.SearchKeyBinding));
-			_searchKeyBinding.shouldBeEnabled = true;
 
 			_randomKeyBinding = Mod.Settings.GetAction(nameof(FindItSettings.RandomKeyBinding));
 
@@ -198,6 +195,12 @@ namespace FindItBuildingMenu.Systems
 			_CurrentSubCategoryBinding = CreateBinding("CurrentSubCategory", "SetCurrentSubCategory", (int)FindItUtil.CurrentSubCategory, SetCurrentSubCategory);
 
 			// These establish the bindings with UI code.
+			// Nothing raises this any more: its only writer was the Ctrl+F handler,
+			// removed with the hot-key. Kept because TopBar still reads it, and
+			// TopBar is FindIt shell that phase 2 (cm-wf6g.2) retires wholesale —
+			// unpicking it here would be a change to a surface that is on its way
+			// out. It is permanently false, which is the correct behaviour for a
+			// menu with no hot-key to focus its search from.
 			_FocusSearchBar = CreateBinding("FocusSearchBar", false);
 			_ClearSearchBar = CreateBinding("ClearSearchBar", false);
 			_ShowFindItPanel = CreateBinding("ShowFindItPanel", false);
@@ -362,11 +365,6 @@ namespace FindItBuildingMenu.Systems
 				scrollCompleted = false;
 
 				_PrefabListBinding.Value = GetDisplayedPrefabs();
-			}
-
-			if (_searchKeyBinding.WasPerformedThisFrame())
-			{
-				OnSearchKeyPressed();
 			}
 
 			if (_ShowFindItPanel || _IsWindowLocked)

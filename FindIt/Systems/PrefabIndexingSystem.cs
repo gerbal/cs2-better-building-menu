@@ -343,10 +343,13 @@ namespace FindItBuildingMenu.Systems
 
 				AddAllCategories();
 
-				IndexZones();
-				// Before the processors run: the blacklist check below consults it,
-				// and so does the terrain-brush processor.
+				// Before IndexZones, not after: the zone catalog inherits the
+				// game's own Zones menu, so the placements have to exist by the
+				// time it walks them. It also has to precede the processors —
+				// the blacklist check below consults it, and so does the
+				// terrain-brush processor.
 				IndexVanillaMenuPlacements();
+				IndexZones();
 				IndexAssetMenus();
 				IndexAssetCategories();
 				IndexMilestones();
@@ -520,6 +523,7 @@ namespace FindItBuildingMenu.Systems
 			if (full)
 			{
 				LogVanillaMenuCoverage();
+				LogVanillaMenuAudit();
 			}
 		}
 
@@ -642,6 +646,151 @@ namespace FindItBuildingMenu.Systems
 			/// mod can add a menu whose assets we have no processor for — and a short
 			/// menu serves the player better than a dead one.
 			/// </remarks>
+			/// <summary>
+			/// A per-menu census of the vanilla build menu, in both directions.
+			/// </summary>
+			/// <remarks>
+			/// LogVanillaMenuCoverage answers one question — what does vanilla place
+			/// that we failed to index — and answers it well, but it is blind in two
+			/// ways that let a whole menu go wrong unnoticed.
+			///
+			/// It skips zones outright, because they reach the player through the
+			/// zoning hierarchy rather than the prefab index. That exclusion is why
+			/// the Zones menu could be missing its entire Extractors tab — nine
+			/// assets: Grain Farming, Livestock Farming, Textile Fiber Farming,
+			/// Vegetable Farming, Forestry, Coal/Ore/Stone Mining, Oil Drilling —
+			/// while the report said "0 missing".
+			///
+			/// And it only looks one way. It never asks what WE show that vanilla
+			/// does not place, which is how four unbuildable "Area Hub" zones and
+			/// six theme-less base zones sat in the surface until a player tried to
+			/// build one.
+			///
+			/// So this is a census rather than an alarm: every menu, its categories,
+			/// what vanilla places, what we cover, and what we show that vanilla
+			/// does not. It logs at Info whether or not anything is wrong, because
+			/// the value is in reading it, not in being warned by it.
+			/// </remarks>
+			private void LogVanillaMenuAudit()
+			{
+				try
+				{
+					var indexed = FindItUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any];
+					var indexedByEntity = new Dictionary<int, PrefabIndex>();
+
+					foreach (var entry in indexed)
+					{
+						indexedByEntity[entry.Id] = entry;
+					}
+
+					var zoned = new HashSet<int>(_zoneCatalog.Select(zone => zone.Id));
+
+					// Forward: what the game places, and whether we hold it at all.
+					var placedByMenu = new Dictionary<string, List<VanillaMenuPlacement>>();
+
+					foreach (var placement in _menuPlacements.Values)
+					{
+						var menu = placement.Menu ?? "(none)";
+
+						if (!placedByMenu.TryGetValue(menu, out var list))
+						{
+							placedByMenu[menu] = list = new List<VanillaMenuPlacement>();
+						}
+
+						list.Add(placement);
+					}
+
+					// Reverse: what we would show under a menu name, whether or not the
+					// game places it there. Zones included deliberately — leaving them
+					// out is the blindness this exists to remove.
+					var oursByMenu = new Dictionary<string, int>();
+					var unplacedByMenu = new Dictionary<string, List<string>>();
+
+					static void Note(Dictionary<string, List<string>> into, string key, string what)
+					{
+						if (!into.TryGetValue(key, out var list))
+						{
+							into[key] = list = new List<string>();
+						}
+
+						list.Add(what);
+					}
+
+					var placedEntities = new HashSet<int>(_menuPlacements.Keys);
+
+					foreach (var entry in indexed)
+					{
+						var menu = entry.UiMenuName;
+
+						if (string.IsNullOrWhiteSpace(menu))
+						{
+							continue;
+						}
+
+						oursByMenu.TryGetValue(menu!, out var count);
+						oursByMenu[menu!] = count + 1;
+
+						if (!placedEntities.Contains(entry.Id))
+						{
+							Note(unplacedByMenu, menu!, entry.PrefabName ?? $"entity:{entry.Id}");
+						}
+					}
+
+					Mod.Log.Info(
+						$"[MENU-AUDIT] {placedByMenu.Count} vanilla menus, {_menuPlacements.Count} placements, "
+						+ $"{indexed.Count} indexed assets, {_zoneCatalog.Count} zones");
+
+					foreach (var menu in placedByMenu.Keys.OrderBy(key => key, StringComparer.Ordinal))
+					{
+						var placements = placedByMenu[menu];
+						var categories = new HashSet<string>(placements.Select(p => p.Category ?? string.Empty));
+						// Substitutions count as held. A quantity or vehicle prop is
+						// replaced rather than dropped — the generators split it into
+						// one asset per state and record the swap in AssetMap — so the
+						// player gets more than vanilla offers, not less. Counting
+						// them as gaps reported eight phantom losses in Landscaping,
+						// which is exactly the false alarm that makes an audit
+						// stop being read.
+						var held = placements.Count(p =>
+							indexedByEntity.ContainsKey(p.Entity.Index)
+							|| zoned.Contains(p.Entity.Index)
+							|| (_prefabSystem.TryGetPrefab<PrefabBase>(p.Entity, out var substituted)
+								&& substituted?.name is string name
+								&& FindItUtil.AssetMap.ContainsKey(name)));
+						oursByMenu.TryGetValue(menu, out var ours);
+						unplacedByMenu.TryGetValue(menu, out var extras);
+
+						var line =
+							$"[MENU-AUDIT] menu=\"{menu}\" categories={categories.Count} vanilla={placements.Count} "
+							+ $"held={held} missing={placements.Count - held} ours={ours}";
+
+						if ((extras?.Count ?? 0) > 0)
+						{
+							// Capped: a long tail here is a pattern, not a list to read.
+							line += $" notPlacedByVanilla={extras!.Count} [{string.Join(",", extras.Take(8))}"
+								+ (extras.Count > 8 ? ",…]" : "]");
+						}
+
+						Mod.Log.Info(line);
+					}
+
+					// Menus we file assets under that the game has no such menu for at
+					// all. A name we invented, or one the walk could not see.
+					foreach (var menu in oursByMenu.Keys.OrderBy(key => key, StringComparer.Ordinal))
+					{
+						if (!placedByMenu.ContainsKey(menu))
+						{
+							Mod.Log.Warn(
+								$"[MENU-AUDIT] menu=\"{menu}\" is not a vanilla menu at all, yet {oursByMenu[menu]} of our assets claim it");
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					Mod.Log.Error(ex, "[MENU-AUDIT] failed");
+				}
+			}
+
 			private void LogVanillaMenuCoverage()
 			{
 				// The first full index of a session runs before the prop generators
@@ -806,6 +955,10 @@ namespace FindItBuildingMenu.Systems
 					|| EntityManager.HasComponent<ServiceUpgradeData>(entity)
 					|| prefab.TryGet<ServiceUpgrade>(out _));
 			prefabIndex.ExtensionIds ??= isBuildingExtension ? new[] { prefab.name } : Array.Empty<string>();
+			// Narrower than isBuildingExtension above, deliberately: this is
+			// vanilla's exact test in FilterOutUpgrades, so what we hide from the
+			// list is precisely what the game hides from its grid.
+			prefabIndex.IsServiceUpgrade = EntityManager.HasComponent<ServiceUpgradeData>(entity);
 			prefabIndex.ThemeThumbnail = prefabIndex.ThemeThumbnail is not null
 				? IconPath.Normalize(prefabIndex.ThemeThumbnail)
 				: prefabIndex.Theme is null ? null : IconPath.Normalize(ImageSystem.GetThumbnail(prefabIndex.Theme));
@@ -1864,6 +2017,22 @@ namespace FindItBuildingMenu.Systems
 					UnlockRequirements: zoneRequirements));
 			}
 
+			// The menu is the authority. It lists nine specialised industries —
+			// Grain Farming, Livestock Farming, Textile Fiber Farming, Vegetable
+			// Farming, Forestry, Coal/Ore/Stone Mining, Oil Drilling — and those
+			// are what the player can actually pick.
+			//
+			// The component query is only a fallback for the day the walk stops
+			// working. It finds the four underlying extractor LOTS, one per
+			// MapFeature, which vanilla does NOT put in the menu; showing them
+			// alongside the nine would offer four things the Zones menu never
+			// offered, which is the opposite of mirroring it.
+			if (!InheritVanillaZoneMenu(catalog))
+			{
+				Mod.Log.Warn("Zones menu inherited nothing; falling back to the extractor query.");
+				IndexExtractorAreas(catalog);
+			}
+
 			_zoneCatalog = catalog;
 			Mod.Log.Info($"Indexed Zones Count: {_zoneCatalog.Count}");
 		}
@@ -1871,6 +2040,189 @@ namespace FindItBuildingMenu.Systems
 		/// <summary>
 		/// Every assignable zone, grouped by family in the zoning hierarchy.
 		/// </summary>
+
+		/// <summary>
+		/// Take the Zones menu's categories and members from the game itself.
+		/// </summary>
+		/// <remarks>
+		/// The surface used to be assembled from ECS component queries — zones by
+		/// ZoneData, then extractor areas by ExtractorAreaData — and that can
+		/// never reproduce the menu, because membership is not in components.
+		/// Vanilla's Extractors tab lists NINE resource-specific assets
+		/// (Livestock, Grain, Vegetables, Cotton, Wood, Stone, Coal, Ore, Oil,
+		/// read off the live menu by their Media/Game/Resources icons), while a
+		/// query on ExtractorAreaData finds four feature-level lots. And
+		/// "ZonesExtractors" appears nowhere in the game's code: the tag is
+		/// assigned in asset data through ManualUITagsConfiguration, so no
+		/// component predicate can name it.
+		///
+		/// So the categories are inherited instead. The walk that already backs
+		/// the coverage report — UIAssetMenuData -> UIGroupElement categories ->
+		/// their members — is the same one ToolbarUISystem uses to draw the menu,
+		/// so whatever the game puts under Zones appears here too, including
+		/// anything a mod adds later. The existing GroupFamilies map already
+		/// speaks the category names (ZonesResidential ... ZonesExtractors); it
+		/// only ever lacked a caller that walked the tree.
+		///
+		/// Entries the zone pass already produced are left alone: they carry
+		/// density, footprints and allowed resources that this walk cannot know.
+		/// This adds what the menu has and the queries missed.
+		/// </remarks>
+		private bool InheritVanillaZoneMenu(List<ZoneCatalogEntry> catalog)
+		{
+			var known = new HashSet<int>(catalog.Select(entry => entry.Id));
+			var added = 0;
+			var categoriesSeen = new HashSet<string>();
+
+			foreach (var placement in _menuPlacements.Values)
+			{
+				if (!string.Equals(placement.Menu?.Trim(), "Zones", StringComparison.OrdinalIgnoreCase))
+				{
+					continue;
+				}
+
+				categoriesSeen.Add(placement.Category ?? string.Empty);
+
+				if (known.Contains(placement.Entity.Index)
+					|| !_prefabSystem.TryGetPrefab<PrefabBase>(placement.Entity, out var prefab)
+					|| prefab?.name is null)
+				{
+					continue;
+				}
+
+				var family = ZoningSurfaceCatalog.ResolveFamilyFromGroup(placement.Category)
+					?? ZoningFamilies.Extractors;
+				var locked = EntityManager.HasEnabledComponent<Locked>(placement.Entity);
+				var (milestone, requirements) = locked
+					? GetUnlockRequirements(placement.Entity)
+					: (0, Array.Empty<string>());
+				var feature = EntityManager.TryGetComponent<ExtractorAreaData>(placement.Entity, out var extractor)
+					? extractor.m_MapFeature.ToString()
+					: null;
+
+				catalog.Add(new ZoneCatalogEntry(
+					Id: placement.Entity.Index,
+					Version: placement.Entity.Version,
+					PrefabName: prefab.name,
+					Name: GetAssetName(prefab),
+					Family: family,
+					Density: ZoneTypeFilter.Any,
+					Thumbnail: IconPath.Normalize(ImageSystem.GetThumbnail(prefab)),
+					IsLocked: locked,
+					UnlockMilestone: milestone,
+					UnlockRequirements: requirements,
+					MapFeature: feature));
+
+				known.Add(placement.Entity.Index);
+				added++;
+			}
+
+			Mod.Log.Info(
+				$"Inherited Zones menu: {added} assets added, categories seen: {string.Join(", ", categoriesSeen)}");
+
+			// Which of our entries the game does NOT offer in that menu. An entry
+			// vanilla never shows is one the player cannot use, so this is the
+			// list to justify or drop.
+			var placedInZones = new HashSet<int>(
+				_menuPlacements.Values
+					.Where(p => string.Equals(p.Menu?.Trim(), "Zones", StringComparison.OrdinalIgnoreCase))
+					.Select(p => p.Entity.Index));
+			var unplaced = catalog.Where(entry => !placedInZones.Contains(entry.Id)).ToList();
+
+			Mod.Log.Info(
+				$"[ZONE-PARITY] vanilla places {placedInZones.Count} in Zones; dropping {unplaced.Count} it does not offer: "
+				+ string.Join(" | ", unplaced.Select(entry => $"{entry.Name} [{entry.PrefabName}]")));
+
+			// Show what the game shows, and nothing else.
+			//
+			// The ZoneData query is broader than the menu: it returns every zone
+			// prefab that exists, including ones the player can never pick.
+			// Reported from play as "the area hub zones are not actually
+			// buildable", and the walk proves it — Industrial Agriculture,
+			// Industrial Forestry, Industrial Ore and Industrial Oil are zone
+			// prefabs the specialised-industry system uses internally and vanilla
+			// never places in a menu. The six theme-less base zones (Residential
+			// Low/Medium/High/Mixed, Commercial Low/High) are unplaced for the
+			// same reason: the menu offers their EU and NA variants instead.
+			//
+			// Only applied when the walk actually found the menu. If it ever
+			// stops working, an over-broad catalog beats an empty one.
+			catalog.RemoveAll(entry => !placedInZones.Contains(entry.Id));
+
+			return added > 0;
+		}
+
+		/// <summary>
+		/// The specialised industries, which are areas rather than zones.
+		/// </summary>
+		/// <remarks>
+		/// Grain, livestock and cotton are not zones and never could be:
+		/// <c>Game.Zones.AreaType</c> has only None, Residential, Commercial and
+		/// Industrial, so there is no specialised zone type for them to be. They
+		/// are LotPrefabs carrying <c>ExtractorArea</c>
+		/// (<c>[ComponentMenu("Areas/", typeof(LotPrefab))]</c>), holding a
+		/// <c>MapFeature</c>, and the Area tool places them.
+		///
+		/// The zone query requires ZoneData, so it can never return one — a fact
+		/// ZoningSurface has documented all along while leaving the Extractors
+		/// family unreachable. Reported from play as "the specialized industrial
+		/// zones just zone industrial": the four industrial ZONES the surface did
+		/// show are real, and painting them really does lay industrial cells, but
+		/// the areas the player was looking for were absent from the whole index.
+		/// Searching the entire catalog for grain, livestock, cotton or textile
+		/// returned nothing at all.
+		///
+		/// They join the zone catalog rather than getting their own binding
+		/// because the player reaches both the same way — by opening Zones and
+		/// looking for the industry they want. The Extractors family already
+		/// exists, with an icon and a tooltip, and only ever lacked members.
+		/// </remarks>
+		private void IndexExtractorAreas(List<ZoneCatalogEntry> catalog)
+		{
+			var areasQuery = GetEntityQuery(
+				ComponentType.ReadOnly<ExtractorAreaData>(),
+				ComponentType.ReadOnly<PrefabData>());
+			var areas = areasQuery.ToEntityArray(Allocator.Temp);
+			var areaData = areasQuery.ToComponentDataArray<ExtractorAreaData>(Allocator.Temp);
+
+			for (var i = 0; i < areas.Length; i++)
+			{
+				var area = areas[i];
+
+				if (!_prefabSystem.TryGetPrefab<PrefabBase>(area, out var prefab) || prefab?.name is null)
+				{
+					continue;
+				}
+
+				var locked = EntityManager.HasEnabledComponent<Locked>(area);
+				var (milestone, requirements) = locked
+					? GetUnlockRequirements(area)
+					: (0, Array.Empty<string>());
+
+				catalog.Add(new ZoneCatalogEntry(
+					Id: area.Index,
+					Version: area.Version,
+					PrefabName: prefab.name,
+					Name: GetAssetName(prefab),
+					Family: ZoningFamilies.Extractors,
+					// An area has no density tier. Saying "Any" is honest here:
+					// the surface labels that "No density tier" rather than
+					// inventing one.
+					Density: ZoneTypeFilter.Any,
+					Thumbnail: IconPath.Normalize(ImageSystem.GetThumbnail(prefab)),
+					IsLocked: locked,
+					UnlockMilestone: milestone,
+					UnlockRequirements: requirements,
+					// What it works: FertileLand, Forest, Oil, Ore. This is the
+					// only thing separating grain from cotton in the data, so it
+					// is what the surface groups and labels them by.
+					MapFeature: areaData[i].m_MapFeature.ToString()));
+			}
+
+			Mod.Log.Info($"Indexed Extractor Areas: {areas.Length}");
+			areas.Dispose();
+			areaData.Dispose();
+		}
 
 		/// <summary>
 		/// What the game's own toolbar filter row knows about a prefab.
