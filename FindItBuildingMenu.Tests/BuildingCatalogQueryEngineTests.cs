@@ -310,7 +310,9 @@ public sealed class BuildingCatalogQueryEngineTests
             new BuildingCatalogQuery(BuildingTypes: new[] { "hospital" }));
 
         Assert.True(state.HasSelection);
-        Assert.Equal(new[] { "buildingType", "provenance", "availability", "dlc", "theme", "assetPack", "placement" }, state.Groups.Select(group => group.Id).ToArray());
+        // No "availability": all three fixtures are unlocked, so the dimension
+        // holds one value and cannot narrow anything. See IsWorthOffering.
+        Assert.Equal(new[] { "buildingType", "provenance", "dlc", "theme", "assetPack", "placement" }, state.Groups.Select(group => group.Id).ToArray());
         BuildingCatalogFacetGroup role = Assert.Single(state.Groups, group => group.Id == "buildingType");
 		Assert.Equal(new[] { "Hospital", "Library", "School" }, role.Options.Select(option => option.Id).ToArray());
 		Assert.True(role.Options.Single(option => option.Id == "Hospital").Selected);

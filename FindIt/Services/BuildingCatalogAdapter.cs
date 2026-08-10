@@ -64,7 +64,10 @@ namespace FindItBuildingMenu.Services
 				throw new ArgumentNullException(nameof(query));
 			}
 
-			return BuildFacetState(GetIndexedBuildings(query.UiMenu).Select(Project), query);
+			// Scoped to the view, not to the whole index — see InScope.
+			return BuildFacetState(
+				BuildingCatalogQueryEngine.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), query),
+				query);
 		}
 
 		public static BuildingCatalogFacetState BuildFacetState(
@@ -282,7 +285,7 @@ namespace FindItBuildingMenu.Services
 			Func<string, string>? formatLabel = null)
 		{
 			string[] distinctValues = DistinctValues(values);
-			if (distinctValues.Length == 0)
+			if (!IsWorthOffering(distinctValues, selected))
 			{
 				return;
 			}
@@ -291,6 +294,26 @@ namespace FindItBuildingMenu.Services
 				id,
 				label,
 				CreateOptions(distinctValues, selected, formatLabel)));
+		}
+
+		/// <summary>
+		/// Whether a dimension can actually narrow anything in the current view.
+		/// </summary>
+		/// <remarks>
+		/// One distinct value is not a filter. Every entry in view already has
+		/// it, so selecting it changes nothing and the control is a no-op that
+		/// still costs a slot in the rail and a decision from the reader.
+		/// Measured inside Roads and Networks: Source offered "Base game" and
+		/// DLC offered "No DLC required", each the only value present.
+		///
+		/// A selection keeps the group alive whatever its size. Dropping a
+		/// dimension the player has already filtered on would strand that
+		/// filter — applied, shrinking the results, and with nothing on screen
+		/// to say so or undo it.
+		/// </remarks>
+		private static bool IsWorthOffering(string[] distinctValues, IReadOnlyList<string>? selected)
+		{
+			return distinctValues.Length > 1 || (selected is not null && selected.Count > 0);
 		}
 
 		private static void AddArrayGroup(
