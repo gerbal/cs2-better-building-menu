@@ -331,8 +331,6 @@ namespace FindItBuildingMenu.Systems
 				// Garbage Management back to the whole catalog.
 				CreateTrigger("ClearBuildingLensMenuScope", ClearBuildingLensMenuScope);
 				CreateTrigger<string>("SetBuildingLensMenu", SetBuildingLensMenu);
-			CreateTrigger<float>("SetBuildingLensPanelWidth", SetBuildingLensPanelWidth);
-			CreateTrigger("CommitBuildingLensPanelWidth", CommitBuildingLensPanelWidth);
 			CreateTrigger<float>("SetBuildingLensPanelHeight", SetBuildingLensPanelHeight);
 			CreateTrigger("CommitBuildingLensPanelHeight", CommitBuildingLensPanelHeight);
 			CreateTrigger("ClearThumbnails", () => _AllThumbnails.Value = new string[0]);

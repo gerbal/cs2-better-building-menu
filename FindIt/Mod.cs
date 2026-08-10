@@ -57,18 +57,6 @@ namespace FindItBuildingMenu
 
 			AssetDatabase.global.LoadSettings(nameof(FindItBuildingMenu), Settings, new FindItSettings(this));
 
-			// Straight after the load, because everything downstream reads the
-			// width and a value saved before the control plane existed means
-			// something different now. Runs once; the marker is what stops it
-			// growing the panel by the pane's width on every boot.
-			if (!Settings.BuildingLensWidthIncludesPane)
-			{
-				Settings.BuildingLensPanelWidth = BuildingLensWidth.Migrate(
-					Settings.BuildingLensPanelWidth,
-					alreadyIncludesPane: false);
-				Settings.BuildingLensWidthIncludesPane = true;
-				Settings.ApplyAndSave();
-			}
 
 			FindItUtil.LoadCustomPrefabData();
 

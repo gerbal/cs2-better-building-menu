@@ -37,15 +37,6 @@ namespace FindItBuildingMenu
 		[SettingsUIHidden]
 		public string DefaultAlignmentStyle { get; set; } = "Center";
 
-		// Building Lens is a data table rather than a fixed asset grid. Keep its
-		// user-selected width independent from FindIt's grid sizing settings so
-		// switching views never resets the table layout.
-		[SettingsUIHidden]
-		// The full band by default: the assembly spans from vanilla's
-		// tool-options column to the social column with nothing left over.
-		// See GridUtil for how 1232 is derived.
-		public float BuildingLensPanelWidth { get; set; } = 1232f;
-
 		/// <summary>
 		/// The catalog's height, in the same rem-like units as the width, set
 		/// by dragging the panel's top edge.
@@ -58,24 +49,6 @@ namespace FindItBuildingMenu
 		/// </remarks>
 		[SettingsUIHidden]
 		public float BuildingLensPanelHeight { get; set; } = Domain.BuildingLensHeight.Default;
-
-		/// <summary>
-		/// Whether <see cref="BuildingLensPanelWidth"/> has been widened to
-		/// include the control plane.
-		/// </summary>
-		/// <remarks>
-		/// The width used to mean the build menu alone. Once the control plane
-		/// arrived it means the whole assembly, and the pane takes its share out
-		/// of it — so every value saved before that quietly buys a narrower grid
-		/// than it used to, and the new default cannot help because a saved
-		/// value always wins over a default.
-		///
-		/// This marker is what makes the fix run exactly once. Without it the
-		/// migration either never runs (no way to know a value is old) or runs
-		/// on every boot, growing the panel by the pane's width each time.
-		/// </remarks>
-		[SettingsUIHidden]
-		public bool BuildingLensWidthIncludesPane { get; set; }
 
 		[SettingsUIButton]
 		[SettingsUIConfirmation]
