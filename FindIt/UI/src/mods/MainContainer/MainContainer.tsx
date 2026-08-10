@@ -19,6 +19,7 @@ import {
   draggedBuildingLensHeight,
 } from "domain/buildingLensLayout";
 import { findItSurfacePort } from "domain/findItSurfacePort";
+import { shouldMountLegacyPanel } from "domain/buildingMenuMount";
 
 // View contexts can be recreated before the first binding update is emitted.
 // Safe fallbacks keep the shell hidden and prevent an early getValueUnsafe
@@ -31,6 +32,7 @@ const ShowFindItPanel$ = bindValue<boolean>(mod.id, "ShowFindItPanel", false);
 const ShowZoningHierarchy$ = bindValue<boolean>(mod.id, "ShowZoningHierarchy", false);
 const BuildingLensEnabled$ = bindValue<boolean>(mod.id, "BuildingLensEnabled", false);
 const IsWindowLocked$ = bindValue<boolean>(mod.id, "IsWindowLocked", false);
+const LensOwnsCurrentMenu$ = bindValue<boolean>(mod.id, "LensOwnsCurrentMenu", false);
 const OptionsList$ = bindValue<OptionSection[]>(mod.id, "OptionsList", []);
 const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch", "");
 const BuildingLensSection$ = bindValue<string>(mod.id, "BuildingLensSection", "AllBuildings");
@@ -60,6 +62,7 @@ export const FindItMainContainerComponent = () => {
   const ShowZoningHierarchy = useValue(ShowZoningHierarchy$);
   const BuildingLensEnabled = useValue(BuildingLensEnabled$);
   const IsWindowLocked = useValue(IsWindowLocked$);
+  const LensOwnsCurrentMenu = useValue(LensOwnsCurrentMenu$);
   const IsExpanded = useValue(IsExpanded$);
   const PanelWidth = useValue(PanelWidth$) + 15 + 20;
   const OptionsList = useValue(OptionsList$);
@@ -120,7 +123,20 @@ export const FindItMainContainerComponent = () => {
     };
   }, [BuildingLensEnabled, AlignmentStyle]);
 
-  if (isPhotoMode || !(ShowFindItPanel || IsWindowLocked)) return null;
+  // Phase 2 step 1: when the toolbar's open menu is one we stand in for, the
+  // panel is mounted by the game inside its own asset-menu slot instead — see
+  // BuildingMenuSurface. Rendering here too would draw it twice.
+  //
+  // Everything else still arrives here: the legacy FindIt grid, the panel
+  // opened from the Magnifier, and the lens over a menu we do not own. Both
+  // paths stay live until the surfaces that feed them are retired.
+  if (!shouldMountLegacyPanel({
+    lensOwnsCurrentMenu: LensOwnsCurrentMenu,
+    buildingLensEnabled: BuildingLensEnabled,
+    showFindItPanel: ShowFindItPanel,
+    isWindowLocked: IsWindowLocked,
+    isPhotoMode,
+  })) return null;
 
   function onOptionClicked(x: number, y: number, z: number): void {
     findItSurfacePort.findItOption({ sectionId: x, optionId: y, value: z });
