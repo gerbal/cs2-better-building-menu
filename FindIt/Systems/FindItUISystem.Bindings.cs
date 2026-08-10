@@ -793,18 +793,6 @@ namespace FindItBuildingMenu.Systems
 			UpdateCategoriesAndPrefabList();
 		}
 
-		private void OnSearchKeyPressed()
-		{
-			if (_ShowFindItPanel || _IsWindowLocked)
-			{
-				_FocusSearchBar.Value = true;
-			}
-			else
-			{
-				ToggleFindItPanel(true);
-			}
-		}
-
 		private void SetScrollIndex(double index)
 		{
 			if (scrollIndex == index)
