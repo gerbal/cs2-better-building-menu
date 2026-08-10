@@ -45,7 +45,10 @@ export const RemoveVanillaAssetMenuComponent: ModuleRegistryExtend = (Component)
       isWindowLocked: IsWindowLocked,
       isPhotoMode,
     })) {
-      return <BuildingMenuSurface />;
+      // onClose is the game's own close, and the only route to clearing the
+      // toolbar selection. Handed straight down rather than read anywhere else,
+      // because this is the one place it exists.
+      return <BuildingMenuSurface onClose={(otherProps as { onClose?: () => void }).onClose} />;
     }
 
     // Suppressing the vanilla grid after the panel closed was tried and
@@ -55,12 +58,19 @@ export const RemoveVanillaAssetMenuComponent: ModuleRegistryExtend = (Component)
     // and appeared to do nothing, making the zoning icon take two clicks. A
     // closing animation is worth less than a button that works.
     //
-    // The real fix was recorded here as impossible: it "needs the game's menu
+    // The note that used to sit here said the real fix "needs the game's menu
     // selection cleared when the panel closes, and ToolbarUISystem.SelectAssetMenu
-    // early-returns on Entity.Null — there is no binding that does it". There is
-    // no binding. It is a PROP: this extension point receives { focusKey,
-    // onClose, className }, and onClose is the game's own close. The branch
-    // above is what puts us in reach of it; wiring it is the next step.
+    // early-returns on Entity.Null — there is no binding that does it".
+    //
+    // That was wrong about the binding. ToolbarUISystem exposes
+    // `toolbar.clearAssetSelection`, whose C# side applies Entity.Null to the
+    // menu, the category AND the asset; CloseLens has been calling the C#
+    // method for a while. What was actually missing was a close CONTROL — this
+    // mode hides the top bar row the legacy X lives in.
+    //
+    // The branch above is now handed `onClose` from the extension point's own
+    // props, which is the natural close for a component standing in as the
+    // asset menu and needs no round trip through C#.
     if (ShowFindItPanel || IsWindowLocked) {
       return <></>;
     }

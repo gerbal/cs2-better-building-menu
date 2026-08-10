@@ -51,7 +51,18 @@ const AssetMenuTheme: Theme | any = getModule("game-ui/game/components/asset-men
  * unchanged. So the width below is stated on our own row and vanilla's CSS is
  * never touched.
  */
-export const BuildingMenuSurface = () => {
+export interface BuildingMenuSurfaceProps {
+  /**
+   * The game's own close, from the `AssetMenu` extension point's props.
+   *
+   * Optional only because the prop is vanilla's and we do not control its
+   * contract. Absent, the close control below hides rather than drawing a
+   * button that does nothing.
+   */
+  onClose?: () => void;
+}
+
+export const BuildingMenuSurface = ({ onClose }: BuildingMenuSurfaceProps) => {
   const { translate } = useLocalization();
 
   const [isResizing, setIsResizing] = useState(false);
@@ -170,7 +181,13 @@ export const BuildingMenuSurface = () => {
             {ShowZoningHierarchy ? <ZoningHierarchyComponent /> : <BuildingCatalogComponent />}
           </div>
         </div>
-        <LensControlPane />
+        {/* The pane holds the panel-level controls, so it is where a close
+            belongs. It is handed the game's own close rather than one of ours:
+            that is the route that clears the toolbar selection, and clearing it
+            is what makes the panel go away with nothing drawn behind it. Any
+            close we wrote ourselves would leave the menu selected and the
+            vanilla grid would arrive in our place. */}
+        <LensControlPane onCloseMenu={onClose} />
       </div>
     </>
   );
