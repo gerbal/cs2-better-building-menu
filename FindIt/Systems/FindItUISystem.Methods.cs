@@ -374,25 +374,18 @@ namespace FindItBuildingMenu.Systems
 		{
 			// A prefab we did not arm ourselves normally means the player picked
 			// something in vanilla's own UI, and the polite answer is to get out
-			// of its way.
+			// of its way. That is the legacy panel's rule and it stays the legacy
+			// panel's rule.
 			//
-			// Not while the lens owns the menu, though. Then the vanilla grid is
-			// not on screen for them to have picked from, so the pick came from
-			// US — and vacating hands the screen straight back to the menu we
-			// replaced. Reported from play: clicking Livestock Farming selects
-			// the right thing to build and then reverts to the vanilla menu.
-			//
-			// The zone and area surfaces reach the game through vanilla's own
-			// toolbar.selectAsset trigger rather than through our C# activation
-			// path, so settingPrefab is never raised for them and every pick
-			// looked like somebody else's. Zones escaped it because selecting one
-			// does not raise EventPrefabChanged; an extractor area does.
-			//
-			// Third instance of one shape today, after OnToolChanged's
-			// default-tool branch and its Zone Tool branch. The rule is the same
-			// in all three: while the lens stands in for a vanilla menu, it does
-			// not vacate.
-			if (!settingPrefab && !_LensOwnsCurrentMenu.Value)
+			// It no longer needs an exception for the lens. This used to read
+			// `!settingPrefab && !_LensOwnsCurrentMenu.Value`, because hiding the
+			// panel here handed the screen straight back to the vanilla menu we
+			// had replaced — reported from play as "clicking Livestock Farming
+			// selects the right thing to build and then reverts to the vanilla
+			// menu". The lens is now mounted in the game's own asset-menu slot
+			// and does not read this binding at all, so there is no screen to
+			// hand back and nothing to except.
+			if (!settingPrefab)
 			{
 				ToggleFindItPanel(false);
 				return;
@@ -430,18 +423,10 @@ namespace FindItBuildingMenu.Systems
 			// zoning menu". It read as intermittent because a SECOND pick does
 			// not change the tool, so the handler never runs and the panel stays.
 			//
-			// Driving this tool is what the zoning surface is for, so it stays,
-			// for the same reason and by the same rule as the default-tool branch
-			// below: while the lens stands in for a vanilla menu, vacating hands
-			// the screen straight back to the menu it replaced.
+			// Driving this tool is what the zoning surface is for, so the legacy
+			// panel still declines to vacate for it.
 			if (tool.toolID is "Zone Tool")
 			{
-				if (_LensOwnsCurrentMenu.Value)
-				{
-					return;
-				}
-
-				ToggleFindItPanel(false);
 				return;
 			}
 
@@ -450,42 +435,28 @@ namespace FindItBuildingMenu.Systems
 				return;
 			}
 
-			// The tool went back to default. That is Escape, a right-click
-			// cancel, or a finished placement, and this handler cannot tell them
-			// apart — Escape is consumed by the game's native input layer and
-			// never reaches the DOM.
+			// The tool went back to default: Escape, a right-click cancel, or a
+			// finished placement, and this handler cannot tell them apart —
+			// Escape is consumed by the game's native input layer and never
+			// reaches the DOM.
 			//
-			// So it stops trying to. While the lens is standing in for a vanilla
-			// menu, that menu is STILL SELECTED on the toolbar, and the game
-			// draws its own asset grid the instant we vacate the space. Hiding
-			// the panel here is what produced "Escape swapped my menu for the old
-			// one"; it did the same after every placement, which is why the lens
-			// had to learn to restore its scroll position at all.
+			// For the legacy panel a cancel closes it, which is the only close
+			// Escape can reach there.
 			//
-			// Vanilla's own menu does not close when a tool is cancelled either
-			// — it stays open with the grid up, ready for the next pick — so
-			// staying open IS the vanilla behaviour, not a departure from it.
+			// The lens used to need excepting here, because that menu is STILL
+			// SELECTED on the toolbar and the game drew its own asset grid the
+			// instant we vacated — "Escape swapped my menu for the old one",
+			// and the same after every placement, which is why the catalog had
+			// to learn to restore its scroll position at all. Mounted in the
+			// game's own slot it no longer reads this binding, so it holds still
+			// without being told to.
 			//
-			// Escape still closes the menu; it just takes the press the game
-			// already spends on it. The first press cancels the tool and we hold
-			// still. The second is the game's own "close the open menu", which
-			// deselects the toolbar button — and that arrives here as
-			// VanillaMenuDeselected, which closes the lens.
-			//
-			// Deliberately NOT CloseLens, and deliberately not touching the
+			// Still deliberately NOT CloseLens, and still not touching the
 			// selection. A previous attempt released it here and, because this
 			// branch fires on every return to default, the menu was gone long
 			// before the player pressed Escape — so the game's Escape chain found
 			// nothing to close and opened the pause menu instead. Escape pausing
 			// the game mid-build is worse than the defect it fixed.
-			if (_LensOwnsCurrentMenu.Value)
-			{
-				return;
-			}
-
-			// Opened from FindIt's own button, so there is no vanilla menu behind
-			// us and nothing will be drawn into the gap. Here a cancel closing
-			// the panel is the only close Escape can reach.
 			ToggleFindItPanel(false);
 		}
 

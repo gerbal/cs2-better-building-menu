@@ -130,6 +130,30 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<string[]> _BuildingLensMilestonesBinding = null!;
 
 		public bool IsExpanded => _IsExpanded;
+
+		/// <summary>
+		/// Whether the legacy FindIt asset grid is the thing on screen.
+		/// </summary>
+		/// <remarks>
+		/// Not "is a panel open". The arrow keys and the random key are the only
+		/// callers, and both drive that grid specifically — MoveSelectedItemGrid
+		/// walks FindItUtil.GetFilteredPrefabs by GridUtil's column count and
+		/// then calls SetScrollIndex, which scrolls the legacy prefab list. None
+		/// of it reaches the lens, which has its own catalog, its own scroll and
+		/// no keyboard route into either.
+		///
+		/// So the lens has to be excluded rather than included. Gated on panel
+		/// visibility alone, an arrow press while the lens was open moved a
+		/// selection in a grid nobody could see and armed whatever prefab it
+		/// landed on. The top bar already hides the Random button in lens mode
+		/// for exactly that reason ("it would hand back a building the player's
+		/// own filters had excluded"); the key bindings never learned the same
+		/// thing.
+		///
+		/// Mirrors MainContainer, which renders PrefabSelection only when the
+		/// lens is off.
+		/// </remarks>
+		private bool LegacyGridVisible => (_ShowFindItPanel || _IsWindowLocked) && !_BuildingLensEnabled;
 		public bool BuildingLensEnabled => _BuildingLensEnabled;
 
 		/// <summary>
@@ -345,7 +369,7 @@ namespace FindItBuildingMenu.Systems
 			_arrowLeftBinding.shouldBeEnabled =
 			_arrowUpBinding.shouldBeEnabled =
 			_arrowRightBinding.shouldBeEnabled =
-			_arrowDownBinding.shouldBeEnabled = _ShowFindItPanel || _IsWindowLocked;
+			_arrowDownBinding.shouldBeEnabled = LegacyGridVisible;
 
 			if (filterCompleted)
 			{
@@ -367,7 +391,7 @@ namespace FindItBuildingMenu.Systems
 				_PrefabListBinding.Value = GetDisplayedPrefabs();
 			}
 
-			if (_ShowFindItPanel || _IsWindowLocked)
+			if (LegacyGridVisible)
 			{
 				if (_randomKeyBinding.WasPerformedThisFrame())
 				{
