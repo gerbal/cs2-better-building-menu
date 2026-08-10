@@ -28,13 +28,15 @@ const facets = {
 };
 
 describe("Filter rail", () => {
-  it("gives every rail-sized facet group one entry", () => {
-    // "zone" only holds 5 options here, at or under RAIL_BANK_THRESHOLD, so it
-    // now lives in the options bank instead of the rail — see the "excludes a
-    // dimension short enough..." case below.
+  it("gives every facet group one entry, whatever its size", () => {
+    // Short dimensions used to be dropped here and drawn as icon rows in the
+    // game's options bank instead. That bank is no longer where this mod puts
+    // filters, and the C# sections feeding it went with the split — so a
+    // dropped dimension was reachable from nowhere at all. Measured live:
+    // Availability and Provenance existed in the query and appeared in no UI.
     const rail = buildFilterRail(facets, { active: 0 });
 
-    assert.deepEqual(rail.map((d) => d.id), ["buildingType", "dlc", "extension", "metrics"]);
+    assert.deepEqual(rail.map((d) => d.id), ["buildingType", "dlc", "extension", "zone", "metrics"]);
   });
 
   it("always ends with metrics so its position never moves", () => {
@@ -76,14 +78,12 @@ describe("Filter rail", () => {
     assert.deepEqual(buildFilterRail(null, undefined).map((d) => d.id), ["metrics"]);
   });
 
-  it("excludes a dimension short enough to live in the options bank", () => {
-    // The C# side draws any facet at or under RAIL_BANK_THRESHOLD (8) options
-    // as an icon row in the options bank. Drawing it here too would show
-    // Availability, Provenance, or Placement twice in two different idioms —
-    // exactly the split this design ended.
+  it("keeps a short dimension rather than dropping it", () => {
+    // The regression this guards: filtered out of the rail and rendered
+    // nowhere else.
     const rail = buildFilterRail({ groups: [group("availability", "Availability", 3)], hasSelection: false }, { active: 0 });
 
-    assert.deepEqual(rail.map((d) => d.id), ["metrics"]);
+    assert.deepEqual(rail.map((d) => d.id), ["availability", "metrics"]);
   });
 
   it("keeps a dimension too large for the bank in the rail", () => {

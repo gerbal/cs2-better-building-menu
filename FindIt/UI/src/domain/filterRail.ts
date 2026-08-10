@@ -54,13 +54,6 @@ export function buildFilterRail(
     // A group with no options opens an empty popover, which is worse than no
     // icon — Role and Asset packs were both empty catalog-wide until recently.
     .filter((group) => (group.options?.length ?? 0) > 0)
-    // A dimension short enough for railHomeFor to call it "bank" now renders
-    // in the options bank instead (see BuildingLensFacetOptionBase on the C#
-    // side). Keeping it here too would draw Availability, Provenance, and
-    // Placement in both places at once — the split idiom this design set out
-    // to end. RAIL_METRICS_ID never reaches this filter: it is appended below,
-    // after this array is built from `groups`, not derived from it.
-    .filter((group) => railHomeFor(group.options.length) !== "bank")
     .map((group) => ({
       id: group.id,
       label: group.label,
@@ -116,36 +109,4 @@ export function countActiveMetricRanges(state: Record<string, unknown> | null | 
   return Object.entries(state).filter(
     ([key, value]) => key !== "hasSelection" && typeof value === "number" && Number.isFinite(value)
   ).length;
-}
-
-/**
- * Where each facet dimension lives.
- *
- * A flat row of ten icons is a ten-way choice with no hierarchy. Short,
- * enumerable dimensions read better as the game's own icon rows in the options
- * bank — which is where Theme and Pack already live, so this also ends the
- * split where sibling dimensions used two different idioms for one job.
- */
-export type RailHome = "bank" | "dropdown" | "searchableDropdown";
-
-/**
- * At or below this many options a dimension is an icon row, not a menu.
- *
- * Unlike RAIL_SEARCH_THRESHOLD this is not inherited from anything measured —
- * it is a starting value to confirm against a real catalog.
- */
-export const RAIL_BANK_THRESHOLD = 8;
-
-export function railHomeFor(optionCount: number): RailHome {
-  if (!Number.isFinite(optionCount) || optionCount <= RAIL_BANK_THRESHOLD) return "bank";
-  return optionCount > RAIL_SEARCH_THRESHOLD ? "searchableDropdown" : "dropdown";
-}
-
-export function railPlacement(
-  facets: RailFacetState | null | undefined
-): Array<{ id: string; home: RailHome }> {
-  return (facets?.groups ?? []).map((group) => ({
-    id: group.id,
-    home: railHomeFor(group.options?.length ?? 0),
-  }));
 }
