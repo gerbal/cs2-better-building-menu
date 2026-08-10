@@ -1954,6 +1954,35 @@ namespace FindItBuildingMenu.Systems
 			Mod.Log.Info(
 				$"Inherited Zones menu: {added} assets added, categories seen: {string.Join(", ", categoriesSeen)}");
 
+			// Which of our entries the game does NOT offer in that menu. An entry
+			// vanilla never shows is one the player cannot use, so this is the
+			// list to justify or drop.
+			var placedInZones = new HashSet<int>(
+				_menuPlacements.Values
+					.Where(p => string.Equals(p.Menu?.Trim(), "Zones", StringComparison.OrdinalIgnoreCase))
+					.Select(p => p.Entity.Index));
+			var unplaced = catalog.Where(entry => !placedInZones.Contains(entry.Id)).ToList();
+
+			Mod.Log.Info(
+				$"[ZONE-PARITY] vanilla places {placedInZones.Count} in Zones; dropping {unplaced.Count} it does not offer: "
+				+ string.Join(" | ", unplaced.Select(entry => $"{entry.Name} [{entry.PrefabName}]")));
+
+			// Show what the game shows, and nothing else.
+			//
+			// The ZoneData query is broader than the menu: it returns every zone
+			// prefab that exists, including ones the player can never pick.
+			// Reported from play as "the area hub zones are not actually
+			// buildable", and the walk proves it — Industrial Agriculture,
+			// Industrial Forestry, Industrial Ore and Industrial Oil are zone
+			// prefabs the specialised-industry system uses internally and vanilla
+			// never places in a menu. The six theme-less base zones (Residential
+			// Low/Medium/High/Mixed, Commercial Low/High) are unplaced for the
+			// same reason: the menu offers their EU and NA variants instead.
+			//
+			// Only applied when the walk actually found the menu. If it ever
+			// stops working, an over-broad catalog beats an empty one.
+			catalog.RemoveAll(entry => !placedInZones.Contains(entry.Id));
+
 			return added > 0;
 		}
 
