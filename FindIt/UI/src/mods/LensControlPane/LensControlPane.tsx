@@ -22,6 +22,14 @@ import {
   type GroupDimensionId,
 } from "domain/buildingGroups";
 import { ChipRow } from "mods/ChipRow/ChipRow";
+import { FilterRail } from "mods/FilterRail/FilterRail";
+import { BuildingCatalogMetricFilters } from "mods/BuildingCatalog/BuildingCatalogMetricFilters";
+import { buildFilterChips, removableChipCount } from "domain/filterChips";
+import { clearBuildingLensFiltersCommand } from "domain/buildingLensFilterSummary";
+import { toggleBuildingLensFacetCommand } from "domain/buildingCatalogFacets";
+import { countActiveMetricRanges } from "domain/filterRail";
+import type { BuildingLensFacetState } from "domain/buildingCatalogFacets";
+import type { BuildingLensMetricRangeState } from "domain/buildingLensFilterSummary";
 import { ViewModeBar } from "mods/GroupedResults/ViewModeBar";
 import type { CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import { useLensChoice } from "mods/useLensChoice";
@@ -38,6 +46,13 @@ const BuildingLensMenuCategories$ = bindValue<unknown[]>(mod.id, "BuildingLensMe
 const ShowZoningHierarchy$ = bindValue<boolean>(mod.id, "ShowZoningHierarchy", false);
 const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch");
 const IsWindowLocked$ = bindValue<boolean>(mod.id, "IsWindowLocked", false);
+const BuildingLensFacets$ = bindValue<BuildingLensFacetState | null>(mod.id, "BuildingLensFacets", null);
+const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState | null>(
+  mod.id,
+  "BuildingCatalogMetricRanges",
+  null
+);
+const BuildingLensZoneFamilies$ = bindValue<string[]>(mod.id, "BuildingLensZoneFamilies", []);
 
 /**
  * What the pane takes out of the panel's width: its own 379rem plus the 6rem
@@ -90,6 +105,9 @@ export const LensControlPane = () => {
   const showZoning = useValue(ShowZoningHierarchy$);
   const currentSearch = useValue(CurrentSearch$);
   const isWindowLocked = useValue(IsWindowLocked$);
+  const facets = useValue(BuildingLensFacets$);
+  const metricRanges = useValue(BuildingCatalogMetricRanges$);
+  const zoneFamilies = useValue(BuildingLensZoneFamilies$) ?? [];
 
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
   const [sortPickerOpen, setSortPickerOpen] = useState(false);
@@ -106,6 +124,20 @@ export const LensControlPane = () => {
   const groupByLabel =
     translate(`Tooltip.LABEL[FindItBuildingMenu.GroupBy_${groupBy}]`, groupDimensionLabel(groupBy))
     ?? groupDimensionLabel(groupBy);
+
+  const fire = (command: { method: string; args: readonly any[] }) =>
+    trigger(mod.id, command.method, ...command.args);
+
+  const familyLabel = (id: string) =>
+    translate(`Tooltip.LABEL[FindItBuildingMenu.Zoning_${id}]`, id) ?? id;
+
+  const chips = buildFilterChips({
+    zoneFamilies: showZoning ? zoneFamilies.map((id) => ({ id, label: familyLabel(id) })) : null,
+    facets,
+    metricRanges,
+  });
+
+  const clearLabel = label("Tooltip.LABEL[FindItBuildingMenu.ClearFilters]", "Clear filters");
 
   const setSort = (column: SortColumn) => {
     const next = nextSortState({ column: sortColumn, descending }, column);
@@ -147,6 +179,68 @@ export const LensControlPane = () => {
           </div>
         )}
       </div>
+
+      {/* The narrowing controls, moved here from the game's own options bank.
+          They were put in that bank because filters belong where the game
+          already puts filters, and vanilla's Theme sits there as a label and a
+          row of icon buttons — the exact shape a facet dimension wants.
+          Left-aligning vanilla's column trio then moved that bank to the screen
+          edge, a full panel's width away from the results it narrows, so the
+          filters follow the results instead.
+
+          Vanilla's own Theme stays behind in that bank: it is the game's
+          control, not ours to relocate. Filters therefore sit on both sides —
+          the cost of this move, and the reason the split used to run the other
+          way. */}
+      <div className={styles.row}>
+        <span className={styles.rowLabel}>
+          {label("Tooltip.LABEL[FindItBuildingMenu.Filters]", "Filters")}
+        </span>
+        <div className={styles.rowValue}>
+          <FilterRail
+            facets={facets}
+            metricsActive={countActiveMetricRanges(metricRanges as unknown as Record<string, unknown>)}
+            onToggleOption={(groupId, optionId) => fire(toggleBuildingLensFacetCommand(groupId, optionId))}
+            renderMetrics={() => <BuildingCatalogMetricFilters />}
+          />
+        </div>
+      </div>
+
+      {/* The record of what the filters did. It comes with them: separating the
+          two left each half explaining the other from across the screen. */}
+      {chips.length > 0 && (
+        <div className={classNames(styles.row, styles.rowChips)}>
+          <span className={styles.rowLabel}>
+            {label("Tooltip.LABEL[FindItBuildingMenu.ActiveFilters]", "Active")}
+          </span>
+          <div className={styles.rowValue}>
+            {chips.map((chip) => (
+              <div className={styles.chip} key={chip.id}>
+                <span className={styles.chipText}>{chip.label}</span>
+                <Button
+                  className={styles.chipRemove}
+                  variant="icon"
+                  onSelect={() => chip.remove && fire(chip.remove)}
+                  aria-label={`${label("Tooltip.LABEL[FindItBuildingMenu.Remove]", "Remove")} ${chip.label}`}
+                >
+                  ×
+                </Button>
+              </div>
+            ))}
+            {removableChipCount(chips) > 1 && (
+              <Button
+                className={styles.clearAll}
+                variant="icon"
+                onSelect={() => fire(clearBuildingLensFiltersCommand())}
+                aria-label={clearLabel}
+                title={clearLabel}
+              >
+                {clearLabel}
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* The zoning view is a different renderer over a different catalog:
           there are no rows to order, group or switch the shape of. The count

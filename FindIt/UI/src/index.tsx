@@ -11,7 +11,6 @@ import { RightClickMenuComponent } from "mods/RightClickMenu/RightClickMenu";
 import { WrapToolOptionsPanel } from "mods/WrapToolOptionsPanel/WrapToolOptionsPanel";
 import { RemoveVanillaRightToolbar } from "mods/RemoveVanillaAssetMenu/RemoveVanillaRightToolbar";
 import { PickerComponent } from "mods/PickerComponent/PickerComponent";
-import { LensToolOptionsExtend } from "mods/LensToolOptions/LensToolOptions";
 import { ToolOptionsVisibility } from "mods/PickerComponent/ToolOptionsVisibility";
 
 import { VanillaMenuWatcher } from "mods/VanillaMenuWatcher/VanillaMenuWatcher";
@@ -30,9 +29,9 @@ const register: ModRegistrar = (moduleRegistry) => {
 
   // Add picker UI
   moduleRegistry.extend("game-ui/game/components/tool-options/mouse-tool-options/mouse-tool-options.tsx", "MouseToolOptions", PickerComponent);
-  // The lens's filters and their chips render inside the game's own options
-  // bank, which is where Theme and Pack already live.
-  moduleRegistry.extend("game-ui/game/components/tool-options/mouse-tool-options/mouse-tool-options.tsx", "MouseToolOptions", LensToolOptionsExtend);
+  // The lens's filters used to be injected here, into the game's own options
+  // bank beside Theme and Pack. They render in the control plane now — see
+  // LensControlPane for why the move, and what it costs.
   moduleRegistry.extend("game-ui/game/components/tool-options/tool-options-panel.tsx", "useToolOptionsVisible", ToolOptionsVisibility);
 
   // This wraps prefab selection and top bar components.

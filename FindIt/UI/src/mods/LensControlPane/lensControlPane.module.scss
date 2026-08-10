@@ -20,7 +20,9 @@ $pane-width: 379rem;
   box-sizing: border-box;
   width: $pane-width;
   margin-left: 6rem;
-  padding: 6rem 8rem;
+  // 6rem 0, matching the measured tool-options-panel exactly. The horizontal
+  // inset is the row's job over there, not the panel's — see .row.
+  padding: 6rem 0;
   border-radius: var(--panelRadius);
   background-color: var(--panelColorNormal);
   backdrop-filter: var(--panelBlur);
@@ -29,24 +31,34 @@ $pane-width: 379rem;
   pointer-events: auto;
 }
 
-// One row per control, the same shape as the options-bank rows opposite:
-// a label that sizes to its text, then the control.
+// One row per control, and these numbers are vanilla's, read off the live
+// tool-options bank rather than eyeballed against it:
+//
+//   item_*   display flex, align-items center, min-height 0, padding 4rem 12rem
+//   label_*  16rem, BOLD, white, width auto, no right padding
+//   content  flex 1 1 auto, justify-content flex-end
+//
+// Ours had drifted on all three — 39rem min-height, no horizontal padding, a
+// non-bold label carrying its own 8rem gap. The label sizes to its text and the
+// content is pushed right, so the gap between them is whatever is left rather
+// than a number either side has to know.
 .row {
   display: flex;
   flex-direction: row;
   align-items: center;
-  min-height: 39rem;
-  padding: 4rem 0;
+  min-height: 0;
+  padding: 4rem 12rem;
 }
 
 .rowLabel {
   flex: 0 0 auto;
-  padding-right: 8rem;
   // Solid white, matching vanilla's row labels. --menuText1Normal resolves to
   // 80% here and reads as the disabled sibling of the rows it sits beside;
   // measured on the live Theme row, vanilla's is rgba(255,255,255,1).
   color: rgba(255, 255, 255, 1);
-  font-size: var(--fontSizeM);
+  // 16rem draws the 10.6667px the bank uses. Bold, like every label there.
+  font-size: 16rem;
+  font-weight: bold;
   white-space: nowrap;
 }
 
@@ -67,8 +79,10 @@ $pane-width: 379rem;
 // both would be a box drawn twice. The wrap is what the narrow column needs:
 // four breadcrumbs that sat on one 718px line have to stack in 253px.
 .scope {
-  margin: -6rem -8rem 4rem;
-  padding: 4rem 8rem;
+  // 12rem to sit on the same left edge as every row, now that the inset lives
+  // on the rows rather than on the pane.
+  margin: -6rem 0 4rem;
+  padding: 4rem 12rem;
   border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
 
   > * {
@@ -81,7 +95,7 @@ $pane-width: 379rem;
 .countRow {
   display: flex;
   flex-direction: column;
-  padding: 2rem 0 4rem;
+  padding: 2rem 12rem 4rem;
 }
 
 .countLine {
@@ -217,56 +231,6 @@ $pane-width: 379rem;
   background-color: rgba(52, 63, 74, 1);
 }
 
-// The height toggle. Same ground and radius as the pickers above it, but it
-// states its own action rather than summarising a value, so it sizes to its
-// text instead of filling the row.
-.heightToggle {
-  @include _base.transparentButton(false, true);
-
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
-  // `width: auto !important` is load-bearing, exactly as it is on
-  // .pickerSummary above: the icon variant pins a square width, which squeezed
-  // this button to 16px around 33px of text and clipped it to "S…l".
-  width: auto !important;
-  flex: 0 0 auto;
-  height: 29rem;
-  padding: 0 8rem;
-  border-radius: 4rem;
-  background-color: rgba(20, 27, 34, 1);
-  color: var(--menuText1Normal);
-  font-size: var(--fontSizeM);
-}
-
-.heightToggle:hover {
-  background-color: rgba(52, 63, 74, 1);
-}
-
-// Selected, not merely on: the same treatment .pickerOptionSelected uses, so
-// "the panel is currently tall" reads the same way a chosen option does.
-.heightToggleOn {
-  background-color: rgba(30, 131, 170, 1);
-  color: rgba(0, 0, 0, 0.85);
-}
-
-.heightToggleOn:hover {
-  background-color: rgba(40, 151, 194, 1);
-}
-
-// Disabled means the automatic floor is holding the catalog tall and the
-// choice cannot move it. Dimmed rather than hidden: a control that disappears
-// when the rule fires is one the player never learns exists.
-.heightToggle:disabled {
-  background-color: rgba(20, 27, 34, 0.5);
-  color: var(--menuText2Disabled);
-}
-
-.heightLabel {
-  white-space: nowrap;
-}
-
 // Panel-level controls, below a rule. The rows above decide how the qualifying
 // set is presented; these act on the panel itself, and reading as one more
 // presentation row would be a category error.
@@ -276,7 +240,7 @@ $pane-width: 379rem;
   align-items: center;
   justify-content: flex-end;
   margin-top: 4rem;
-  padding-top: 6rem;
+  padding: 6rem 12rem 0;
   border-top: 1rem solid rgba(255, 255, 255, 0.08);
 }
 
@@ -287,7 +251,7 @@ $pane-width: 379rem;
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  // Same reason as .heightToggle and .pickerSummary: the icon variant pins a
+  // Same reason as .pickerSummary above: the icon variant pins a
   // square width and would clip the text one to a few pixels.
   width: auto !important;
   flex: 0 0 auto;
@@ -334,4 +298,68 @@ $pane-width: 379rem;
 
 .panelButtonLabel {
   white-space: nowrap;
+}
+
+// The chips, moved with the filters they record. Unchanged from the options
+// bank they came from: they were sized for a 253px column and the pane is the
+// same width, so nothing about them needed to change.
+//
+// .rowChips lets its row wrap, which the picker rows never do — a chip row is
+// however many chips there are, and at this width that is regularly two lines.
+.rowChips {
+  align-items: flex-start;
+}
+
+.rowChips .rowValue {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.chip {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  height: 22rem;
+  margin: 0 4rem 3rem 0;
+  padding: 0 2rem 0 7rem;
+  border-radius: 11rem;
+  background-color: rgba(0, 0, 0, 0.3);
+  border: 1rem solid rgba(255, 255, 255, 0.12);
+}
+
+.chipText {
+  white-space: nowrap;
+  font-size: var(--fontSizeS);
+  color: var(--menuText1Normal);
+}
+
+.chipRemove {
+  @include _base.transparentButton(false, true);
+  width: 18rem !important;
+  height: 18rem;
+  margin-left: 3rem;
+  padding: 0;
+  border-radius: 9rem;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeS);
+  line-height: 16rem;
+  text-align: center;
+}
+
+.chipRemove:hover {
+  background-color: rgba(255, 255, 255, 0.16);
+  color: var(--menuText1Normal);
+}
+
+.clearAll {
+  @include _base.transparentButton(false, true);
+  width: auto !important;
+  height: 22rem;
+  margin-bottom: 3rem;
+  padding: 0 8rem;
+  border-radius: 11rem;
+  background-color: rgba(0, 0, 0, 0.25);
+  color: var(--accentColorNormal);
+  white-space: nowrap;
+  font-size: var(--fontSizeS);
 }
