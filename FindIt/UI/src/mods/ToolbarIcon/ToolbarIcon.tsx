@@ -6,12 +6,9 @@ import { Button } from "cs2/ui";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 import mod from "../../../mod.json";
 import PickerIconSrc from "images/PickerPicker.svg";
-import FindItIconSrc from "images/Magnifier.svg";
 import classNames from "classnames";
 
-const IsWindowLocked$ = bindValue<boolean>(mod.id, "IsWindowLocked");
 const PickerActive$ = bindValue<boolean>(mod.id, "PickerActive");
-const ShowFindItPanel$ = bindValue<boolean>(mod.id, "ShowFindItPanel"); // Binding to get if your tool is active
 
 // Getting the vanilla theme css for compatibility
 const ToolBarButtonTheme: Theme | any = getModule(
@@ -23,19 +20,30 @@ const ToolBarTheme: Theme | any = getModule("game-ui/game/components/toolbar/too
 const EditorButtonTheme: Theme | any = getModule("game-ui/editor/themes/editor-tool-button.module.scss", "classes");
 
 // Trigger Icon Click on the C# side
-function HandleFindItClick() {
-  trigger(mod.id, "FindItIconToggled");
-}
 function HandlePickerClick() {
   trigger(mod.id, "PickerIconToggled");
 }
 
+/**
+ * Our toolbar buttons: the picker, and nothing else.
+ *
+ * The magnifier that opened a standalone asset browser is gone. The product
+ * decision that removed it, settled 2026-08-09: "There is no one standalone
+ * entry point, just the-menu-you-opened." This is a build menu, so it appears
+ * when you open a build menu, and a floating browser of every asset is the
+ * thing we said we would not try to beat FindIt at.
+ *
+ * It also settles half of a coexistence problem (cm-wf6g.4): a player running
+ * both mods had two visually identical magnifiers side by side in the same
+ * toolbar, and only one of them was FindIt's.
+ *
+ * The picker stays. "What is this building I am looking at, and what does it
+ * cost" is our sentence, not FindIt's.
+ */
 export const ToolbarIconComponent: ModuleRegistryExtend = (Component) => {
   return (props) => {
     const { children, ...otherProps } = props || {};
-    const IsWindowLocked = useValue(IsWindowLocked$); // Get if your tool is active
     const PickerActive = useValue(PickerActive$); // Get if your tool is active
-    const ShowFindItPanel = useValue(ShowFindItPanel$); // Get if your tool is active
 
     return (
       <>
@@ -46,17 +54,6 @@ export const ToolbarIconComponent: ModuleRegistryExtend = (Component) => {
           focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED}
           selected={PickerActive}
           onSelect={HandlePickerClick}
-        ></Button>
-
-        <div className={ToolBarTheme.divider}></div>
-
-        <Button
-          src={FindItIconSrc}
-          className={classNames(ToolBarButtonTheme.button, style.ToolbarIcon, ShowFindItPanel || IsWindowLocked && style.selected)}
-          variant="icon"
-          focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED}
-          selected={ShowFindItPanel || IsWindowLocked}
-          onSelect={HandleFindItClick}
         ></Button>
 
         <div className={ToolBarTheme.divider}></div>
