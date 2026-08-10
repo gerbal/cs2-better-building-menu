@@ -377,11 +377,47 @@ describe("Building Lens chrome budget", () => {
     assert.doesNotMatch(tabs, /overflow:\s*hidden/);
   });
 
+  it("carries the filters and their chips, and injects them nowhere else", () => {
+    // They were rendered into the game's own options bank, beside vanilla's
+    // Theme, on the argument that filters belong where the game puts filters.
+    // Left-aligning vanilla's column trio moved that bank to the screen edge,
+    // a full panel's width from the results it narrows, so they came here.
+    //
+    // Rendering in both places at once is the failure mode this guards: the
+    // extension has to be gone, not merely unused.
+    assert.match(lensControlPaneSource, /<FilterRail/);
+    assert.match(lensControlPaneSource, /buildFilterChips/);
+
+    const registrations = readFileSync(new URL("../src/index.tsx", import.meta.url), "utf8");
+    assert.doesNotMatch(registrations, /LensToolOptionsExtend/);
+  });
+
+  it("matches the vanilla options bank it sits opposite", () => {
+    // Read off the live tool-options bank rather than eyeballed: rows are
+    // padding 4rem 12rem with no min-height, and labels are bold 16rem. Ours
+    // had drifted on all three, which is visible the moment both banks are on
+    // screen together — and they always are.
+    const row = lensControlPaneStyles.match(/\.row\s*\{[^}]*\}/)?.[0] ?? "";
+    const label = lensControlPaneStyles.match(/\.rowLabel\s*\{[^}]*\}/)?.[0] ?? "";
+
+    assert.match(row, /padding:\s*4rem 12rem/);
+    assert.match(label, /font-weight:\s*bold/);
+    assert.match(label, /font-size:\s*16rem/);
+  });
+
   it("lets the pane's text buttons size to their text", () => {
-    // The icon variant pins a square width. Measured live: the height toggle
-    // rendered 16px wide around 33px of text and drew "Shrink Panel" as "S…l".
-    // .pickerSummary already carries the same override for the same reason.
-    for (const rule of [/\.pickerSummary\s*\{[^}]*width:\s*auto\s*!important/, /\.heightToggle\s*\{[^}]*width:\s*auto\s*!important/]) {
+    // The icon variant pins a square width, so any control here carrying text
+    // has to override it. Measured live when one did not: a button 16px wide
+    // around 33px of text, drawing "Shrink Panel" as "S…l".
+    //
+    // .heightToggle was the third of these and is gone with the Expand control
+    // it operated; .clearAll came in with the filter chips and needs the same
+    // override for the same reason.
+    for (const rule of [
+      /\.pickerSummary\s*\{[^}]*width:\s*auto\s*!important/,
+      /\.panelButton\s*\{[^}]*width:\s*auto\s*!important/,
+      /\.clearAll\s*\{[^}]*width:\s*auto\s*!important/,
+    ]) {
       assert.match(lensControlPaneStyles, rule);
     }
   });
