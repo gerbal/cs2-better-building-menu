@@ -336,10 +336,13 @@ namespace FindItBuildingMenu.Systems
 
 				AddAllCategories();
 
-				IndexZones();
-				// Before the processors run: the blacklist check below consults it,
-				// and so does the terrain-brush processor.
+				// Before IndexZones, not after: the zone catalog inherits the
+				// game's own Zones menu, so the placements have to exist by the
+				// time it walks them. It also has to precede the processors —
+				// the blacklist check below consults it, and so does the
+				// terrain-brush processor.
 				IndexVanillaMenuPlacements();
+				IndexZones();
 				IndexAssetMenus();
 				IndexAssetCategories();
 				IndexMilestones();
@@ -1848,7 +1851,21 @@ namespace FindItBuildingMenu.Systems
 					UnlockRequirements: zoneRequirements));
 			}
 
-			IndexExtractorAreas(catalog);
+			// The menu is the authority. It lists nine specialised industries —
+			// Grain Farming, Livestock Farming, Textile Fiber Farming, Vegetable
+			// Farming, Forestry, Coal/Ore/Stone Mining, Oil Drilling — and those
+			// are what the player can actually pick.
+			//
+			// The component query is only a fallback for the day the walk stops
+			// working. It finds the four underlying extractor LOTS, one per
+			// MapFeature, which vanilla does NOT put in the menu; showing them
+			// alongside the nine would offer four things the Zones menu never
+			// offered, which is the opposite of mirroring it.
+			if (!InheritVanillaZoneMenu(catalog))
+			{
+				Mod.Log.Warn("Zones menu inherited nothing; falling back to the extractor query.");
+				IndexExtractorAreas(catalog);
+			}
 
 			_zoneCatalog = catalog;
 			Mod.Log.Info($"Indexed Zones Count: {_zoneCatalog.Count}");
@@ -1857,6 +1874,88 @@ namespace FindItBuildingMenu.Systems
 		/// <summary>
 		/// Every assignable zone, grouped by family in the zoning hierarchy.
 		/// </summary>
+
+		/// <summary>
+		/// Take the Zones menu's categories and members from the game itself.
+		/// </summary>
+		/// <remarks>
+		/// The surface used to be assembled from ECS component queries — zones by
+		/// ZoneData, then extractor areas by ExtractorAreaData — and that can
+		/// never reproduce the menu, because membership is not in components.
+		/// Vanilla's Extractors tab lists NINE resource-specific assets
+		/// (Livestock, Grain, Vegetables, Cotton, Wood, Stone, Coal, Ore, Oil,
+		/// read off the live menu by their Media/Game/Resources icons), while a
+		/// query on ExtractorAreaData finds four feature-level lots. And
+		/// "ZonesExtractors" appears nowhere in the game's code: the tag is
+		/// assigned in asset data through ManualUITagsConfiguration, so no
+		/// component predicate can name it.
+		///
+		/// So the categories are inherited instead. The walk that already backs
+		/// the coverage report — UIAssetMenuData -> UIGroupElement categories ->
+		/// their members — is the same one ToolbarUISystem uses to draw the menu,
+		/// so whatever the game puts under Zones appears here too, including
+		/// anything a mod adds later. The existing GroupFamilies map already
+		/// speaks the category names (ZonesResidential ... ZonesExtractors); it
+		/// only ever lacked a caller that walked the tree.
+		///
+		/// Entries the zone pass already produced are left alone: they carry
+		/// density, footprints and allowed resources that this walk cannot know.
+		/// This adds what the menu has and the queries missed.
+		/// </remarks>
+		private bool InheritVanillaZoneMenu(List<ZoneCatalogEntry> catalog)
+		{
+			var known = new HashSet<int>(catalog.Select(entry => entry.Id));
+			var added = 0;
+			var categoriesSeen = new HashSet<string>();
+
+			foreach (var placement in _menuPlacements.Values)
+			{
+				if (!string.Equals(placement.Menu?.Trim(), "Zones", StringComparison.OrdinalIgnoreCase))
+				{
+					continue;
+				}
+
+				categoriesSeen.Add(placement.Category ?? string.Empty);
+
+				if (known.Contains(placement.Entity.Index)
+					|| !_prefabSystem.TryGetPrefab<PrefabBase>(placement.Entity, out var prefab)
+					|| prefab?.name is null)
+				{
+					continue;
+				}
+
+				var family = ZoningSurfaceCatalog.ResolveFamilyFromGroup(placement.Category)
+					?? ZoningFamilies.Extractors;
+				var locked = EntityManager.HasEnabledComponent<Locked>(placement.Entity);
+				var (milestone, requirements) = locked
+					? GetUnlockRequirements(placement.Entity)
+					: (0, Array.Empty<string>());
+				var feature = EntityManager.TryGetComponent<ExtractorAreaData>(placement.Entity, out var extractor)
+					? extractor.m_MapFeature.ToString()
+					: null;
+
+				catalog.Add(new ZoneCatalogEntry(
+					Id: placement.Entity.Index,
+					Version: placement.Entity.Version,
+					PrefabName: prefab.name,
+					Name: GetAssetName(prefab),
+					Family: family,
+					Density: ZoneTypeFilter.Any,
+					Thumbnail: IconPath.Normalize(ImageSystem.GetThumbnail(prefab)),
+					IsLocked: locked,
+					UnlockMilestone: milestone,
+					UnlockRequirements: requirements,
+					MapFeature: feature));
+
+				known.Add(placement.Entity.Index);
+				added++;
+			}
+
+			Mod.Log.Info(
+				$"Inherited Zones menu: {added} assets added, categories seen: {string.Join(", ", categoriesSeen)}");
+
+			return added > 0;
+		}
 
 		/// <summary>
 		/// The specialised industries, which are areas rather than zones.
