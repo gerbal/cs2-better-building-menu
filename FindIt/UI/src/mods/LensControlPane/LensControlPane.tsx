@@ -3,16 +3,12 @@ import { Button } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import mod from "../../../mod.json";
-import type { BuildingCatalogPage } from "domain/buildingCatalog";
 import type { SortColumn } from "domain/buildingCatalogContracts";
 import {
-  getCatalogWindowBadge,
-  getCatalogWindowSummary,
   nextSortState,
   setSortColumnCommand,
   setSortDescendingCommand,
 } from "domain/buildingCatalogContracts";
-import { getNumberSeparators } from "domain/buildingLensMetricFormat";
 import { getBuildingLensSortPresentation } from "domain/buildingLensSortPresentation";
 import {
   GROUP_DIMENSIONS,
@@ -38,7 +34,6 @@ import unlock from "images/findit_unlock.svg";
 import { useState } from "react";
 import styles from "./lensControlPane.module.scss";
 
-const BuildingCatalog$ = bindValue<BuildingCatalogPage>(mod.id, "BuildingCatalog");
 const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "BuildingCatalogSortColumn");
 const BuildingCatalogSortDescending$ = bindValue<boolean>(mod.id, "BuildingCatalogSortDescending");
 const BuildingLensSection$ = bindValue<string>(mod.id, "BuildingLensSection", "AllBuildings");
@@ -72,32 +67,22 @@ const LENS_GROUP_KEY = "groupBy";
  * The Building Lens control plane.
  *
  * A column to the right of the build menu, mirroring vanilla's tool-options
- * column on the left. The dividing line between the two is what they act on,
- * not who owns them: the left bank holds everything that narrows the set —
- * vanilla's Theme, our filter rail, the active-filter chips — and this pane
- * holds everything that decides how the qualifying set is presented.
+ * column on the left, and holding everything that acts on the catalog: what
+ * narrows it, how it is grouped and ordered, and what shape it is drawn in.
  *
- * That line matters because Theme is a filter. Splitting on ownership instead
- * would have put our rail here and left a control doing the same job on the
- * far side of the screen.
+ * The division used to run the other way. Filters lived in vanilla's own
+ * options bank, on the argument that Theme is a filter and splitting on
+ * ownership would put two controls doing one job on opposite sides. That held
+ * until left-aligning vanilla's column trio moved the bank to the screen edge,
+ * a full panel's width from the results it narrows — so the filters followed
+ * the results, and Theme is the control now stranded on the far side.
  *
  * Why a pane at all: these controls used to live in a band inside the panel
  * that rendered only when it was expanded, so at the strip height the lens
- * rests at there was no count, no sort, no grouping and no view switch at all.
+ * rests at there was no sort, no grouping and no view switch at all.
  */
 export const LensControlPane = () => {
   const { translate } = useLocalization();
-  const page = useValue(BuildingCatalog$);
-  // Master replaced paging with a growing window, so "how many" has two halves
-  // now: how many are loaded and how many match. The badge shows both while
-  // they differ and collapses to one figure once the window covers everything,
-  // because "401 / 401" asks the reader to compare two numbers to learn they
-  // are the same. The sentence is the tooltip, where it has room.
-  const separators = getNumberSeparators(translate);
-  const totalCount = page?.totalCount ?? 0;
-  const renderedCount = page?.items?.length ?? 0;
-  const windowBadge = getCatalogWindowBadge(renderedCount, totalCount, separators);
-  const windowSummary = getCatalogWindowSummary(renderedCount, totalCount, separators);
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
   const section = useValue(BuildingLensSection$);
@@ -162,23 +147,23 @@ export const LensControlPane = () => {
       <div className={styles.scope}>
         <ChipRow />
       </div>
-      <div className={styles.countRow}>
-        <div className={styles.countLine} title={windowSummary} aria-label={windowSummary}>
-          <span className={styles.count}>{windowBadge}</span>
-          <span className={styles.countUnit}>
-            {label("Tooltip.LABEL[FindItBuildingMenu.Buildings]", "buildings")}
-          </span>
+      {/* The result count used to lead the pane — master's window badge, "100 /
+          401 buildings", moved here when the toolbar band it lived in was
+          deleted. It is gone: the grouping headings each carry their own count,
+          the load-more button says when there is more, and a standing figure at
+          the head of the column was a line spent on a number nothing was
+          asking. */}
+
+      {/* The search context stays, and only while a search is active. The
+          search field is in the panel and this is the far side of the screen,
+          so naming the query here is the one caption that is not restating
+          something already in view. */}
+      {currentSearch?.trim() && (
+        <div className={styles.searchContext} title={currentSearch}>
+          {translate("Tooltip.LABEL[FindItBuildingMenu.BuildingLensSearchResults]", "Results for {0}")
+            ?.replace("{0}", currentSearch)}
         </div>
-        {/* Only while a search is active. A static caption here would cost a
-            line on every frame to say something the panel already implies;
-            naming the query the count is counting is the informative case. */}
-        {currentSearch?.trim() && (
-          <div className={styles.searchContext} title={currentSearch}>
-            {translate("Tooltip.LABEL[FindItBuildingMenu.BuildingLensSearchResults]", "Results for {0}")
-              ?.replace("{0}", currentSearch)}
-          </div>
-        )}
-      </div>
+      )}
 
       {/* The narrowing controls, moved here from the game's own options bank.
           They were put in that bank because filters belong where the game
