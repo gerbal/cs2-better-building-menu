@@ -56,26 +56,5 @@ namespace FindItBuildingMenu.Domain
 			return width < Min ? Min : width > Max ? Max : width;
 		}
 
-		/// <summary>
-		/// Widens a width saved before the control plane existed, once.
-		/// </summary>
-		/// <remarks>
-		/// The setting used to mean the build menu; it now means the menu plus
-		/// the pane beside it, and the pane takes its share out of that total.
-		/// Left alone every existing player would silently lose 385rem of grid —
-		/// measured on this branch's dev profile, a saved 1042 drew a 461px
-		/// panel where it had drawn 695px.
-		///
-		/// A saved value always beats a default, so raising the default could
-		/// never have reached anyone who had already dragged the handle. That is
-		/// what makes a migration necessary rather than merely tidy.
-		///
-		/// Clamped after widening rather than before, so a player sitting at the
-		/// old maximum lands on the new one instead of overshooting the band.
-		/// </remarks>
-		public static float Migrate(float saved, bool alreadyIncludesPane)
-		{
-			return alreadyIncludesPane ? Clamp(saved) : Clamp(saved + ControlPane);
-		}
 	}
 }

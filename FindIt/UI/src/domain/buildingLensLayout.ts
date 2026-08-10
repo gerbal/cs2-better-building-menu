@@ -197,27 +197,10 @@ export function getBuildingLensCatalogMaxHeight(viewportHeight: number): number 
 
 export type BuildingLensAlignment = "Left" | "Center" | "Right" | string;
 
-export function clampBuildingLensWidth(width: number): number {
-  if (!Number.isFinite(width)) return BUILDING_LENS_MIN_WIDTH;
-  return Math.max(BUILDING_LENS_MIN_WIDTH, Math.min(BUILDING_LENS_MAX_WIDTH, width));
-}
-
-/**
- * Calculate the outer panel width for a pointer move. Center alignment moves
- * both edges, so the same pointer delta changes the width twice as much.
- * Right-aligned panels grow when the handle moves left; left/unknown
- * alignments grow when it moves right.
- */
-export function resizedBuildingLensWidth(
-  startWidth: number,
-  startX: number,
-  currentX: number,
-  alignment: BuildingLensAlignment,
-): number {
-  const direction = alignment === "Right" ? -1 : alignment === "Center" ? 2 : 1;
-  const delta = Number.isFinite(startX) && Number.isFinite(currentX) ? currentX - startX : 0;
-  return clampBuildingLensWidth(startWidth + delta * direction);
-}
+// clampBuildingLensWidth and resizedBuildingLensWidth lived here and are gone
+// with the horizontal drag: the band has one correct width, so there is
+// nothing to clamp a dragged value to. BUILDING_LENS_MIN_WIDTH and
+// BUILDING_LENS_MAX_WIDTH stay — the table sizes its columns against them.
 
 /**
  * The catalog's height range, twin of BuildingLensHeight in C# — a test asserts

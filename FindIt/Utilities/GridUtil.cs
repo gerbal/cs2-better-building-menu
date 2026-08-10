@@ -23,30 +23,26 @@ namespace FindItBuildingMenu.Utilities
             return BuildingLensWidth.Clamp(width);
         }
 
-        internal static float GetBuildingLensWidth()
-        {
-            return ClampBuildingLensWidth(Mod.Settings.BuildingLensPanelWidth);
-        }
-
         internal static float GetCurrentPanelWidth()
         {
             if (_findItUISystem.BuildingLensEnabled)
             {
-                // Maximise and restore, not a floor.
+                // One width, and it is not a choice.
                 //
-                // This used to return max(savedWidth, BuildingLensExpandedWidth)
-                // against a fixed 1005f while the resize handle clamps to
-                // BuildingLensMaxWidth (1200f). Any panel the player had already
-                // dragged past 1005 made the button permanently inert: it swapped
-                // its own icon, took the selected treatment, and changed the width
-                // by nothing at all — verified live at a saved width of 1042.
+                // The lens fills the band: vanilla's options column on the left,
+                // the social column on the right, nothing spare. It used to be a
+                // saved setting the player dragged, and the drag went when
+                // left-aligning vanilla's column trio made the band a single
+                // correct width — narrower than that is only giving space back.
                 //
-                // Restoring reads the saved width back, which is the width the
-                // player last chose by hand, because CommitBuildingLensPanelWidth
-                // only writes the setting on a drag.
-                return _findItUISystem.IsExpanded
-                    ? BuildingLensMaxWidth
-                    : GetBuildingLensWidth();
+                // Reading a setting nothing could write left the panel wherever
+                // the last drag had happened to leave it: measured at 961px
+                // against a 984px band, 23px short with no way for anyone to
+                // notice or fix it.
+                //
+                // The IsExpanded branch went too. It chose a WIDTH from a flag
+                // that now only means height, and only for the legacy panel.
+                return BuildingLensWidth.Max;
             }
 
             return GetWidth();

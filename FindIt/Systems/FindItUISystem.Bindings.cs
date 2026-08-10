@@ -551,40 +551,6 @@ namespace FindItBuildingMenu.Systems
 			RefreshBuildingCatalog();
 		}
 
-		private void SetBuildingLensPanelWidth(float width)
-		{
-			if (!_BuildingLensEnabled)
-			{
-				return;
-			}
-
-			// Dragging is an explicit width choice, so it ends the expanded
-			// state. Leaving the flag set would light the button while showing a
-			// width the player set by hand, and the next restore would jump back
-			// to a width they had already replaced. Assigning Value does not
-			// re-enter the trigger callback (ExtendedUISystemBase.cs:132-140), so
-			// this cannot clobber the width being set on the next line.
-			_IsExpanded.Value = false;
-			_PanelWidth.Value = GridUtil.ClampBuildingLensWidth(width);
-		}
-
-		private void CommitBuildingLensPanelWidth()
-		{
-			if (!_BuildingLensEnabled)
-			{
-				return;
-			}
-
-			var width = GridUtil.ClampBuildingLensWidth(_PanelWidth);
-			if (Math.Abs(Mod.Settings.BuildingLensPanelWidth - width) < 0.1f)
-			{
-				return;
-			}
-
-			Mod.Settings.BuildingLensPanelWidth = width;
-			Mod.Settings.ApplyAndSave();
-		}
-
 		private void SetBuildingLensPanelHeight(float height)
 		{
 			if (!_BuildingLensEnabled)
