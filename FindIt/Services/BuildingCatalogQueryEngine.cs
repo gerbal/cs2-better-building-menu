@@ -14,6 +14,46 @@ namespace FindItBuildingMenu.Services
 	/// </summary>
 	public static class BuildingCatalogQueryEngine
 	{
+		/// <summary>
+		/// The entries the current view is drawn from, ignoring which facet
+		/// options are selected.
+		/// </summary>
+		/// <remarks>
+		/// This is what the facet lists are counted over. Two things it must
+		/// get right, and the old code got neither.
+		///
+		/// It has to be SCOPED. Facets were built straight from
+		/// GetIndexedBuildings, whose menu argument widens the candidate set
+		/// rather than narrowing it — every building, plus the named menu's
+		/// networks — so inside Roads and Networks the Role dimension offered
+		/// Deathcare Facility and Fire Station. Real options, for a query that
+		/// could only ever return nothing here.
+		///
+		/// It has to ignore the FACET selections, which is what Clear is for.
+		/// Counting them in would let the first pick empty every other
+		/// dimension: choose Locked and the only Theme left is whichever the
+		/// locked assets happen to have, so the control that would widen the
+		/// result again has already disappeared.
+		/// </remarks>
+		public static IEnumerable<BuildingCatalogEntry> InScope(
+			IEnumerable<BuildingCatalogEntry> entries,
+			BuildingCatalogQuery query)
+		{
+			if (entries is null)
+			{
+				throw new ArgumentNullException(nameof(entries));
+			}
+
+			if (query is null)
+			{
+				throw new ArgumentNullException(nameof(query));
+			}
+
+			var unfiltered = BuildingCatalogFacetSelection.Clear(query);
+
+			return entries.Where(entry => Matches(entry, unfiltered));
+		}
+
 		public static BuildingCatalogPage Query(
 			IEnumerable<BuildingCatalogEntry> entries,
 			BuildingCatalogQuery query)
