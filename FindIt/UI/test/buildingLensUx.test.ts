@@ -199,15 +199,27 @@ describe("Building Lens action affordances", () => {
     assert.match(buildingCatalogSource, /footer=\{catalogFooter\}/);
   });
 
-  it("keeps the count where it can be read without scrolling", () => {
-    // It used to live in the pager, below the scroll, so learning how many
-    // results there were meant travelling to the end of them. Master moved it
-    // into the toolbar band; this branch has no band, so it lives in the
-    // control plane — which is a stronger form of the same guarantee, because
-    // the band only rendered while the panel was expanded and the pane is
-    // always on screen.
-    assert.match(lensControlPaneSource, /windowSummary/);
-    assert.match(lensControlPaneSource, /getCatalogWindowBadge/);
+  it("does not carry a standing result count", () => {
+    // Master's window badge, "100 / 401 buildings". It came here when the
+    // toolbar band that held it was deleted, and it is now gone entirely: the
+    // grouping headings each carry their own count, the load-more button says
+    // when there is more to come, and a figure at the head of the column was a
+    // line spent on a number nothing was asking.
+    //
+    // This asserts the removal on purpose. Master still renders the badge in
+    // its own band, so a future merge will bring it back and this is what will
+    // notice. getCatalogWindowBadge itself stays — it is master's, still
+    // tested in buildingCatalogContracts, and only this branch declines to use
+    // it.
+    assert.doesNotMatch(lensControlPaneSource, /getCatalogWindowBadge/);
+    assert.doesNotMatch(lensControlPaneSource, /windowSummary/);
+  });
+
+  it("still says what a search is for, where the search box is not", () => {
+    // The one caption that is not restating something already in view: the
+    // field is in the panel and this is the far side of the screen.
+    assert.match(lensControlPaneSource, /searchContext/);
+    assert.match(lensControlPaneSource, /BuildingLensSearchResults/);
   });
 });
 
@@ -227,9 +239,10 @@ describe("Building Lens chrome budget", () => {
     }
   });
 
-  it("carries the count, grouping, sorting and view mode in the control plane", () => {
-    // Each of these was unreachable at rest before the pane existed.
-    assert.match(lensControlPaneSource, /styles\.count/);
+  it("carries grouping, sorting and view mode in the control plane", () => {
+    // Each of these was unreachable at rest before the pane existed. The count
+    // was in this list and has since been dropped outright — see
+    // "does not carry a standing result count".
     assert.match(lensControlPaneSource, /GroupBy/);
     assert.match(lensControlPaneSource, /SortBy/);
     assert.match(lensControlPaneSource, /ViewModeBar/);
