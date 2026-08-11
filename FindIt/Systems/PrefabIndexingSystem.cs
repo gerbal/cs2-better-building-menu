@@ -64,6 +64,9 @@ namespace FindItBuildingMenu.Systems
 		/// </remarks>
 		private static Dictionary<int, VanillaAssetFacts> _zoneFacts = new();
 		private static Dictionary<int, string> _assetMenuNames = new();
+		// The reverse: menu prefab name -> its entity, so the picker can ask the
+		// game to open the menu that holds the building it just picked.
+		private static Dictionary<string, Entity> _assetMenuEntities = new();
 		// Keyed the same as _assetMenuNames, but by the menu's icon basename
 		// (e.g. "Water" for Media/Game/Icons/Water.svg) rather than its prefab
 		// name ("Water & Sewage"). The UI's authored axis lookup is keyed on
@@ -666,6 +669,26 @@ namespace FindItBuildingMenu.Systems
 			/// a difference between this and the grid is a bug of ours rather
 			/// than an artefact of reading the tree differently.
 			/// </remarks>
+			/// <summary>
+			/// The vanilla menu that holds an asset, as an entity the game's own
+			/// toolbar trigger will accept.
+			/// </summary>
+			/// <remarks>
+			/// Two hops, both off the downward walk: the asset's placement names
+			/// its menu, and the menu index names that menu's entity. Fails for
+			/// anything the game does not place in a menu at all, which is most
+			/// of the 17,952 indexed assets and is why the caller needs a
+			/// fallback.
+			/// </remarks>
+			public static bool TryGetMenuEntityFor(int assetEntityIndex, out Entity menu)
+			{
+				menu = Entity.Null;
+
+				return _menuPlacements.TryGetValue(assetEntityIndex, out var placement)
+					&& placement.Menu is not null
+					&& _assetMenuEntities.TryGetValue(placement.Menu.Trim(), out menu);
+			}
+
 			public static bool IsPlacedInMenu(int entityIndex, string menu) =>
 				_menuPlacements.TryGetValue(entityIndex, out var placement)
 				&& string.Equals(placement.Menu?.Trim(), menu, System.StringComparison.OrdinalIgnoreCase);
@@ -1779,6 +1802,7 @@ namespace FindItBuildingMenu.Systems
 			var menus = query.ToEntityArray(Allocator.Temp);
 			var names = new Dictionary<int, string>();
 			var toolTips = new Dictionary<int, string>();
+			var entities = new Dictionary<string, Entity>(System.StringComparer.OrdinalIgnoreCase);
 			var list = new List<VanillaMenuCategory>();
 
 			for (var i = 0; i < menus.Length; i++)
@@ -1789,6 +1813,11 @@ namespace FindItBuildingMenu.Systems
 				}
 
 				names[menus[i].Index] = prefab.name;
+				// The reverse of names, and it needs the whole Entity rather than
+				// the index: opening a menu means handing one back to the game's
+				// toolbar.selectAssetMenu trigger, and an Entity without its
+				// version is not a valid handle.
+				entities[prefab.name] = menus[i];
 
 				var toolTip = MenuToolTip.FromIconPath(ImageSystem.GetIcon(prefab));
 
@@ -1815,6 +1844,7 @@ namespace FindItBuildingMenu.Systems
 			list.Sort((left, right) => left.Priority.CompareTo(right.Priority));
 
 			_assetMenuNames = names;
+			_assetMenuEntities = entities;
 			_assetMenuToolTips = toolTips;
 			_assetMenus = list;
 			Mod.Log.Info($"Indexed Asset Menus Count: {_assetMenuNames.Count}");

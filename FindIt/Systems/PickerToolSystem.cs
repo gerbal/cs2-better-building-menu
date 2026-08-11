@@ -138,11 +138,28 @@ namespace FindItBuildingMenu.Systems
 
 						if (FindItUtil.Find(prefab, true, out var id))
 						{
-							_findItUISystem.ToggleFindItPanel(true, false);
-							_findItUISystem.RefreshCategoryAndSubCategory();
+							// Since phase 2 the build menu lives in the game's
+							// own asset-menu slot, so it exists only while the
+							// toolbar has a menu open. "Show me this building"
+							// therefore means "open the menu it lives in" — and
+							// the player lands in that menu rather than in an
+							// unscoped grid of everything, which is the better
+							// answer anyway.
+							//
+							// Falls through to the old path when the game places
+							// the asset in no menu: props, vegetation and
+							// vehicles are most of the index, and for those the
+							// legacy panel is still the only surface that can
+							// show them.
+							if (!_findItUISystem.RequestVanillaMenu(id))
+							{
+								_findItUISystem.ToggleFindItPanel(true, false);
+								_findItUISystem.RefreshCategoryAndSubCategory();
+								_findItUISystem.UpdateCategoriesAndPrefabList();
+							}
+
 							_findItUISystem.TryActivatePrefabTool(id);
 							_findItUISystem.ScrollTo(id);
-							_findItUISystem.UpdateCategoriesAndPrefabList();
 						}
 						else
 						{
