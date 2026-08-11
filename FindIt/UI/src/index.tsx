@@ -14,6 +14,7 @@ import { PickerComponent } from "mods/PickerComponent/PickerComponent";
 import { ToolOptionsVisibility } from "mods/PickerComponent/ToolOptionsVisibility";
 
 import { VanillaMenuWatcher } from "mods/VanillaMenuWatcher/VanillaMenuWatcher";
+import { VanillaToolbarWatcher } from "mods/VanillaMenuWatcher/VanillaToolbarWatcher";
 
 const register: ModRegistrar = (moduleRegistry) => {
   // The vanilla component resolver is a singleton that helps extrant and maintain components from game that were not specifically exposed.
@@ -39,6 +40,9 @@ const register: ModRegistrar = (moduleRegistry) => {
   // Renders nothing; watches the vanilla toolbar so its menus can open the
   // lens when the player has opted into replacing the build menu.
   moduleRegistry.append("Game", VanillaMenuWatcher);
+  // Also renders nothing; forwards the game's own theme/pack/Vanilla/Mods row
+  // so the catalog hides what the vanilla grid would have hidden.
+  moduleRegistry.append("Game", VanillaToolbarWatcher);
   moduleRegistry.append("Editor", FindItMainContainerComponent);
   //moduleRegistry.append("Game", AllThumbnailsComponent);
 
