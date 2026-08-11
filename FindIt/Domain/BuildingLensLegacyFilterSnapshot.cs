@@ -30,17 +30,13 @@ namespace FindItBuildingMenu.Domain
 		bool HideVanilla = false,
 		bool UniqueMesh = false,
 		bool OnlyPlaced = false,
-		bool HasDlc = false,
 		bool WithParking = false,
 		bool WithoutParking = false,
 		bool HasZoneType = false,
 		bool HasBuildingCorner = false,
 		int BuildingLevel = 0,
 		int LotDepth = 0,
-		int LotWidth = 0,
-		bool ThemeNone = false,
-		bool HasTheme = false,
-		bool HasAssetPacks = false)
+		int LotWidth = 0)
 	{
 		public static readonly BuildingLensLegacyFilterSnapshot Empty = new();
 
@@ -73,11 +69,6 @@ namespace FindItBuildingMenu.Domain
 			if (OnlyPlaced)
 			{
 				active.Add("Only placed");
-			}
-
-			if (HasDlc)
-			{
-				active.Add("DLC");
 			}
 
 			// GetFilterList applies these as if/else, so only the winning side
@@ -114,20 +105,6 @@ namespace FindItBuildingMenu.Domain
 			if (LotWidth != 0)
 			{
 				active.Add("Lot width");
-			}
-
-			if (ThemeNone)
-			{
-				active.Add("No theme");
-			}
-			else if (HasTheme)
-			{
-				active.Add("Theme");
-			}
-
-			if (HasAssetPacks)
-			{
-				active.Add("Asset packs");
 			}
 
 			return active;

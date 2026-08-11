@@ -164,17 +164,13 @@ namespace FindItBuildingMenu.Systems
 				HideVanilla: filters.HideVanilla,
 				UniqueMesh: filters.UniqueMesh,
 				OnlyPlaced: filters.OnlyPlaced,
-				HasDlc: filters.SelectedDlc != int.MinValue,
 				WithParking: filters.WithParking,
 				WithoutParking: filters.WithoutParking,
 				HasZoneType: filters.SelectedZoneType != ZoneTypeFilter.Any,
 				HasBuildingCorner: filters.SelectedBuildingCorner != BuildingCornerFilter.Any,
 				BuildingLevel: filters.BuildingLevelFilter,
 				LotDepth: filters.LotDepthFilter,
-				LotWidth: filters.LotWidthFilter,
-				ThemeNone: filters.SelectedThemeNone,
-				HasTheme: filters.SelectedTheme != null,
-				HasAssetPacks: filters.SelectedAssetPacks != null && !filters.SelectedAssetPacks.IsDefault());
+				LotWidth: filters.LotWidthFilter);
 		}
 
 		/// <summary>

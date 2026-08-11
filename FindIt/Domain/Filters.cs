@@ -12,14 +12,10 @@ namespace FindItBuildingMenu.Domain
     public class Filters
 	{
 		public string CurrentSearch { get; set; }
-		public int SelectedDlc { get; set; } = int.MinValue;
 		public ZoneTypeFilter SelectedZoneType { get; set; } = ZoneTypeFilter.Any;
 		public int LotWidthFilter { get; set; }
 		public int LotDepthFilter { get; set; }
-		public ThemePrefab SelectedTheme { get; set; }
-		public OptionListHelper<AssetPackPrefab> SelectedAssetPacks { get; set; }
 		public BuildingCornerFilter SelectedBuildingCorner { get; set; }
-		public bool SelectedThemeNone { get; set; }
 		public bool HideAds { get; set; }
 		public bool HideRandoms { get; set; }
 		public bool HideVanilla { get; set; }
@@ -65,11 +61,6 @@ namespace FindItBuildingMenu.Domain
 			if (OnlyPlaced)
 			{
 				yield return DoOnlyPlacedFilter;
-			}
-
-			if (SelectedDlc != int.MinValue)
-			{
-				yield return DoDlcFilter;
 			}
 
 			if (WithParking)
@@ -121,27 +112,6 @@ namespace FindItBuildingMenu.Domain
 				yield return DoRoleFilter;
 			}
 
-			if (SelectedThemeNone)
-			{
-				yield return DoNoThemeFilter;
-			}
-			else if (SelectedTheme != null)
-			{
-				yield return DoThemeFilter;
-			}
-
-			if (SelectedAssetPacks != null && !SelectedAssetPacks.IsDefault())
-			{
-				if (SelectedAssetPacks.SelectedValues.Any(x => x.name == "FindIt_NoPack"))
-				{
-					yield return DoNoAssetPackFilter;
-				}
-				else
-				{
-					yield return DoAssetPackFilter;
-				}
-			}
-
 			if (includeSearch && !string.IsNullOrWhiteSpace(CurrentSearch))
 			{
 				if (GetCustomSearchFunction is null)
@@ -185,11 +155,6 @@ namespace FindItBuildingMenu.Domain
 		private bool DoTagSearch(string tag)
 		{
 			return tag.IndexOf(CurrentSearch, StringComparison.InvariantCultureIgnoreCase) >= 0;
-		}
-
-		private bool DoDlcFilter(PrefabIndex prefab)
-		{
-			return prefab.DlcId.id == SelectedDlc;
 		}
 
 		private bool DoBuildingCornerFilter(PrefabIndex prefab)
@@ -273,24 +238,5 @@ namespace FindItBuildingMenu.Domain
 			return PrefabTrackingSystem.GetMostUsedCount(prefab) > 0;
 		}
 
-		private bool DoNoThemeFilter(PrefabIndex prefab)
-		{
-			return prefab.Theme == null;
-		}
-
-		private bool DoThemeFilter(PrefabIndex prefab)
-		{
-			return prefab.Theme == SelectedTheme;
-		}
-
-		private bool DoNoAssetPackFilter(PrefabIndex prefab)
-		{
-			return prefab.AssetPacks.Length == 0;
-		}
-
-		private bool DoAssetPackFilter(PrefabIndex prefab)
-		{
-			return prefab.AssetPacks.Length > 0 && SelectedAssetPacks.ContainsAny(prefab.AssetPacks);
-		}
 	}
 }

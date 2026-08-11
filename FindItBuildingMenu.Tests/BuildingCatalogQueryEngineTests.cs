@@ -441,35 +441,31 @@ public sealed class BuildingCatalogQueryEngineTests
         {
             OnlyPlaced = true,
             HideVanilla = true,
-            HasDlc = true,
             WithParking = true,
             BuildingLevel = 3,
         };
 
         Assert.True(snapshot.HasSelection);
         Assert.Equal(
-            new[] { "Hide vanilla", "Only placed", "DLC", "With parking", "Building level" },
+            new[] { "Hide vanilla", "Only placed", "With parking", "Building level" },
             snapshot.Describe());
     }
 
     [Fact]
-    public void LegacyFilterSnapshot_TreatsParkingAndThemeAsMutuallyExclusive()
+    public void LegacyFilterSnapshot_TreatsParkingAsMutuallyExclusive()
     {
-        // GetFilterList uses if/else for these pairs, so reporting both would
+        // GetFilterList uses if/else for this pair, so reporting both would
         // describe a filter the query never applied.
+        //
+        // Theme was the other pair here. It went with ThemeOption: the game's
+        // own toolbar row answers that question now, so a second theme filter
+        // of ours could only disagree with it.
         BuildingLensLegacyFilterSnapshot parking = BuildingLensLegacyFilterSnapshot.Empty with
         {
             WithParking = true,
             WithoutParking = true,
         };
         Assert.Equal(new[] { "With parking" }, parking.Describe());
-
-        BuildingLensLegacyFilterSnapshot theme = BuildingLensLegacyFilterSnapshot.Empty with
-        {
-            ThemeNone = true,
-            HasTheme = true,
-        };
-        Assert.Equal(new[] { "No theme" }, theme.Describe());
     }
 
     [Fact]
