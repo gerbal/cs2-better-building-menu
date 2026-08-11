@@ -336,6 +336,15 @@ namespace FindItBuildingMenu.Systems
 			// Its other half: the same binding going to Entity.Null, which is how
 			// a toolbar menu reports being closed.
 			CreateTrigger("VanillaMenuDeselected", VanillaMenuDeselected);
+			// The game's own filter row, forwarded from the UI. The equivalent
+			// fields on ToolbarUISystem are private, so its four bindings are the
+			// reachable route, and the UI is where they can be read.
+			//
+			// Entity indices arrive comma-joined rather than as int[]: this
+			// bridge is happier with flat primitives, and the two lists are
+			// short. Parsing is the price of not risking a marshalling failure
+			// that would show up as an empty menu.
+			CreateTrigger<string, string, bool, bool>("SetVanillaToolbarSelection", SetVanillaToolbarSelection);
 			CreateTrigger<int>("ToggleFavorited", FindItUtil.ToggleFavorited);
 			CreateTrigger("ToggleLock", ToggleLock);
 			CreateTrigger("OnSearchFocused", () => _FocusSearchBar.Value = false);

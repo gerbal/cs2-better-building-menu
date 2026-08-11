@@ -44,6 +44,17 @@ namespace FindItBuildingMenu.Services
 			(BuildingFlags.HasResourceNode, nameof(BuildingFlags.HasResourceNode)),
 		};
 
+		/// <summary>
+		/// The state of the game's own toolbar filter row.
+		/// </summary>
+		/// <remarks>
+		/// Static because everything that reads it here is, and because there is
+		/// exactly one toolbar. Written by FindItUISystem when the UI reports a
+		/// change; <see cref="VanillaToolbarSelection.None"/> until then, which
+		/// filters nothing.
+		/// </remarks>
+		public static VanillaToolbarSelection ToolbarSelection { get; set; } = VanillaToolbarSelection.None;
+
 		public static string[] GetPlacementFlagNames(BuildingFlags? flags)
 		{
 			if (!flags.HasValue)
@@ -220,6 +231,16 @@ namespace FindItBuildingMenu.Services
 				// Extensions, search still finds them, and the facets still count
 				// them. This is about what the list offers as a thing to place.
 				.Where(prefab => !prefab.IsServiceUpgrade)
+				// The game's own toolbar row: the EU/NA theme toggle, the asset
+				// packs, and Vanilla/Mods. It filtered the vanilla grid and did
+				// nothing to ours, which is the report in cm-2xvs.3 — the lens
+				// replaced the menu and did not replace the filter above it.
+				//
+				// Transcribed rather than reimplemented, so a difference is a
+				// bug rather than a design choice. Costs nothing when the
+				// toolbar is untouched: IsVisible early-outs on an empty
+				// selection, which is also what stops the lens opening blank.
+				.Where(prefab => VanillaToolbarFilter.IsVisible(prefab.VanillaFacts, ToolbarSelection))
 				.Where(prefab => IsBuilding(prefab)
 					|| (!string.IsNullOrEmpty(menu)
 						&& string.Equals(prefab.UiMenuName, menu, StringComparison.OrdinalIgnoreCase)))

@@ -1,7 +1,9 @@
 ﻿using FindItBuildingMenu.Domain;
 using FindItBuildingMenu.Domain.Enums;
+using FindItBuildingMenu.Services;
 using FindItBuildingMenu.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -212,7 +214,7 @@ namespace FindItBuildingMenu.Systems
 			{
 				// Zones are assignment tools rather than buildings, so the
 				// zoning hierarchy handles them instead of the building table.
-				_ZoneCatalog.Value = PrefabIndexingSystem.GetZoneCatalog().ToArray();
+				_ZoneCatalog.Value = PrefabIndexingSystem.GetZoneCatalog(BuildingCatalogAdapter.ToolbarSelection).ToArray();
 				_ShowZoningHierarchy.Value = true;
 				// The container renders the hierarchy only inside the lens, so
 				// without this the panel opens on the plain asset grid.
@@ -390,7 +392,7 @@ namespace FindItBuildingMenu.Systems
 
 			if (zoning)
 			{
-				_ZoneCatalog.Value = PrefabIndexingSystem.GetZoneCatalog().ToArray();
+				_ZoneCatalog.Value = PrefabIndexingSystem.GetZoneCatalog(BuildingCatalogAdapter.ToolbarSelection).ToArray();
 			}
 
 			_ShowZoningHierarchy.Value = zoning;
@@ -791,6 +793,70 @@ namespace FindItBuildingMenu.Systems
 
 				SetScrollIndex(Math.Max(0, Math.Floor(index / columns) - (rows / 4)));
 			}
+		}
+
+		/// <summary>
+		/// Takes the game's own toolbar filter row and applies it to the catalog.
+		/// </summary>
+		/// <remarks>
+		/// Closes cm-2xvs.3. The toolbar's EU/NA toggle, its asset packs and its
+		/// Vanilla/Mods buttons filtered the vanilla grid and did nothing to the
+		/// lens, because the lens replaced the menu below them and not the row
+		/// itself.
+		///
+		/// The rule is <see cref="VanillaToolbarFilter"/>, transcribed from
+		/// ToolbarUISystem and tested against it. All this does is deliver the
+		/// selection and ask for a redraw.
+		/// </remarks>
+		private void SetVanillaToolbarSelection(string themes, string packs, bool vanillaSelected, bool modsSelected)
+		{
+			var selection = new VanillaToolbarSelection(
+				ParseEntityIndices(themes),
+				ParseEntityIndices(packs),
+				vanillaSelected,
+				modsSelected);
+
+			BuildingCatalogAdapter.ToolbarSelection = selection;
+
+			// The zone catalog is a separate list built by the indexer, so it
+			// carries its own copy of the same rule rather than sharing this
+			// query. Republishing it here keeps the two surfaces agreeing about
+			// what the toolbar is currently hiding.
+			if (_ShowZoningHierarchy.Value)
+			{
+				_ZoneCatalog.Value = PrefabIndexingSystem.GetZoneCatalog(BuildingCatalogAdapter.ToolbarSelection).ToArray();
+			}
+
+			RefreshBuildingCatalog();
+		}
+
+		/// <summary>
+		/// "11,22" to [11, 22]. Empty and malformed both mean "nothing selected".
+		/// </summary>
+		/// <remarks>
+		/// Silently skipping a value that will not parse is deliberate: the
+		/// alternative is throwing inside a UI trigger, and a filter that cannot
+		/// read one entity index should narrow the menu rather than break it.
+		/// </remarks>
+		private static int[] ParseEntityIndices(string? joined)
+		{
+			if (string.IsNullOrWhiteSpace(joined))
+			{
+				return Array.Empty<int>();
+			}
+
+			var parts = joined!.Split(',');
+			var indices = new List<int>(parts.Length);
+
+			foreach (var part in parts)
+			{
+				if (int.TryParse(part, out var index))
+				{
+					indices.Add(index);
+				}
+			}
+
+			return indices.ToArray();
 		}
 
 		private void ToggleLock()

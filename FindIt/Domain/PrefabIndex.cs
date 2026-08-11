@@ -83,6 +83,21 @@ namespace FindItBuildingMenu.Domain
 		public bool IsUniqueMesh { get; set; }
 		public ThemePrefab Theme { get; set; }
 		public AssetPackPrefab[] AssetPacks { get; set; }
+
+		/// <summary>
+		/// What the game's own toolbar filter row knows about this asset.
+		/// </summary>
+		/// <remarks>
+		/// Deliberately separate from <see cref="Theme"/> and
+		/// <see cref="AssetPacks"/> above, which look like the same facts and are
+		/// not. Those are what the asset IS, read from ThemeObject and the pack
+		/// buffer, and they drive our own facets. These are what vanilla GATES
+		/// visibility on, read from the ObjectRequirementElement buffer — and an
+		/// asset whose ThemeObject says European can still be visible under North
+		/// American if its requirements say so. Matching the wrong one disagrees
+		/// with the game's own menu silently.
+		/// </remarks>
+		public VanillaAssetFacts VanillaFacts { get; set; }
 		public int[] RandomPrefabs { get; set; }
 		public string[]? ExtensionIds { get; set; }
 		public List<string> Tags { get; set; }

@@ -51,6 +51,18 @@ namespace FindItBuildingMenu.Systems
 		// OnActiveDictionaryChanged.
 		private bool _localeChanged;
 		private static List<ZoneCatalogEntry> _zoneCatalog = new();
+
+		/// <summary>
+		/// The vanilla toolbar's facts for each zone, keyed by entity index.
+		/// </summary>
+		/// <remarks>
+		/// Beside the catalog rather than on <see cref="ZoneCatalogEntry"/>,
+		/// because that record is serialised to the UI and this is backend-only
+		/// data the UI has no use for. It is also where the EU/NA answer comes
+		/// from, and zones are the assets that actually differ by theme — most
+		/// buildings carry no theme requirement at all.
+		/// </remarks>
+		private static Dictionary<int, VanillaAssetFacts> _zoneFacts = new();
 		private static Dictionary<int, string> _assetMenuNames = new();
 		// Keyed the same as _assetMenuNames, but by the menu's icon basename
 		// (e.g. "Water" for Media/Game/Icons/Water.svg) rather than its prefab
@@ -959,6 +971,12 @@ namespace FindItBuildingMenu.Systems
 			// vanilla's exact test in FilterOutUpgrades, so what we hide from the
 			// list is precisely what the game hides from its grid.
 			prefabIndex.IsServiceUpgrade = EntityManager.HasComponent<ServiceUpgradeData>(entity);
+			// The theme, pack and mod facts vanilla's own toolbar row filters on.
+			// Captured here, at index time, because they are ECS reads and the
+			// query runs on a worker with no EntityManager. Identity-free by
+			// design: entity indices rather than names, so a theme or pack added
+			// by a mod needs no code change to be filtered correctly.
+			prefabIndex.VanillaFacts = GetVanillaAssetFacts(entity);
 			prefabIndex.ThemeThumbnail = prefabIndex.ThemeThumbnail is not null
 				? IconPath.Normalize(prefabIndex.ThemeThumbnail)
 				: prefabIndex.Theme is null ? null : IconPath.Normalize(ImageSystem.GetThumbnail(prefabIndex.Theme));
@@ -1852,6 +1870,11 @@ namespace FindItBuildingMenu.Systems
 
 		private void IndexZones()
 		{
+			// Rebuilt with the catalog, not merged into it. A reindex can drop
+			// zones, and entity indices are reused within a session, so a stale
+			// entry here would answer for whatever took its place.
+			_zoneFacts = new Dictionary<int, VanillaAssetFacts>();
+
 			var zonesQuery = GetEntityQuery(
 				ComponentType.ReadOnly<ZoneData>(),
 				ComponentType.ReadOnly<ZonePropertiesData>(),
@@ -1971,6 +1994,8 @@ namespace FindItBuildingMenu.Systems
 				var (zoneMilestone, zoneRequirements) = isZoneLocked
 					? GetUnlockRequirements(zone)
 					: (0, Array.Empty<string>());
+
+				_zoneFacts[zone.Index] = GetVanillaAssetFacts(zone);
 
 				catalog.Add(new ZoneCatalogEntry(
 					Id: zone.Index,
@@ -2099,6 +2124,8 @@ namespace FindItBuildingMenu.Systems
 				var feature = EntityManager.TryGetComponent<ExtractorAreaData>(placement.Entity, out var extractor)
 					? extractor.m_MapFeature.ToString()
 					: null;
+
+				_zoneFacts[placement.Entity.Index] = GetVanillaAssetFacts(placement.Entity);
 
 				catalog.Add(new ZoneCatalogEntry(
 					Id: placement.Entity.Index,
@@ -2284,6 +2311,41 @@ namespace FindItBuildingMenu.Systems
 		}
 
 		public static IReadOnlyList<ZoneCatalogEntry> GetZoneCatalog() => _zoneCatalog;
+
+		/// <summary>
+		/// The zone catalog as the game's own toolbar row would show it.
+		/// </summary>
+		/// <remarks>
+		/// Zones are where this actually bites. Most buildings carry no theme
+		/// requirement, so the EU/NA toggle changes almost nothing in a building
+		/// menu — but every growable zone comes in an EU and an NA variant, and
+		/// the Zones menu was the surface the report named (cm-2xvs.3): the
+		/// toggle filtered vanilla's grid and left ours showing both.
+		///
+		/// A zone with no recorded facts stays visible. "We were never told" has
+		/// to read as unfiltered, the same way it reads as unlocked elsewhere,
+		/// or a gap in indexing would silently empty the menu.
+		/// </remarks>
+		public static IReadOnlyList<ZoneCatalogEntry> GetZoneCatalog(VanillaToolbarSelection selection)
+		{
+			if (selection.IsEmpty)
+			{
+				return _zoneCatalog;
+			}
+
+			var visible = new List<ZoneCatalogEntry>(_zoneCatalog.Count);
+
+			foreach (var zone in _zoneCatalog)
+			{
+				if (!_zoneFacts.TryGetValue(zone.Id, out var facts)
+					|| VanillaToolbarFilter.IsVisible(facts, selection))
+				{
+					visible.Add(zone);
+				}
+			}
+
+			return visible;
+		}
 
 		/// <summary>
 		/// The prefab name of a vanilla toolbar asset menu, by entity index.
