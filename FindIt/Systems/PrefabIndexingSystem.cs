@@ -651,6 +651,26 @@ namespace FindItBuildingMenu.Systems
 				_menuPlacements.ContainsKey(entityIndex);
 
 			/// <summary>
+			/// Whether the game places this asset in that named menu.
+			/// </summary>
+			/// <remarks>
+			/// The downward read, and the one the menu itself uses. Its opposite
+			/// number is <c>PrefabIndex.UiMenuName</c>, which comes from the
+			/// asset's own <c>UIObject.m_Group.m_Menu</c> — reading upward from
+			/// an asset we already hold. That view can only ever describe assets
+			/// some processor happened to index, so a menu looks complete while
+			/// being short, and it is the shape behind the terrain-brush, seaway
+			/// and Zones-tab gaps.
+			///
+			/// Walking down from UIAssetMenuData is what ToolbarUISystem does, so
+			/// a difference between this and the grid is a bug of ours rather
+			/// than an artefact of reading the tree differently.
+			/// </remarks>
+			public static bool IsPlacedInMenu(int entityIndex, string menu) =>
+				_menuPlacements.TryGetValue(entityIndex, out var placement)
+				&& string.Equals(placement.Menu?.Trim(), menu, System.StringComparison.OrdinalIgnoreCase);
+
+			/// <summary>
 			/// Reports every asset the vanilla build menu shows that our index does not.
 			/// </summary>
 			/// <remarks>
