@@ -2,6 +2,7 @@ using Colossal.PSI.Common;
 
 using FindItBuildingMenu.Domain;
 using FindItBuildingMenu.Domain.Enums;
+using FindItBuildingMenu.Systems;
 using FindItBuildingMenu.Utilities;
 
 using Game.Prefabs;
@@ -241,9 +242,27 @@ namespace FindItBuildingMenu.Services
 				// toolbar is untouched: IsVisible early-outs on an empty
 				// selection, which is also what stops the lens opening blank.
 				.Where(prefab => VanillaToolbarFilter.IsVisible(prefab.VanillaFacts, ToolbarSelection))
-				.Where(prefab => IsBuilding(prefab)
-					|| (!string.IsNullOrEmpty(menu)
-						&& string.Equals(prefab.UiMenuName, menu, StringComparison.OrdinalIgnoreCase)))
+				// Phase 3: membership comes from the game's own tree.
+				//
+				// This used to read `IsBuilding(prefab) || prefab.UiMenuName ==
+				// menu`, and UiMenuName is the asset's own UIObject.m_Group.m_Menu
+				// — the tree read UPWARD. That view can only describe assets some
+				// processor already indexed, so a menu looks complete while being
+				// short. It is the shape behind every membership bug this project
+				// has had: the terrain brushes, the seaway tools, the Zones
+				// "Extractors" tab, and four unbuildable Area Hubs.
+				//
+				// Walking down from UIAssetMenuData is what ToolbarUISystem does,
+				// so scoped to a menu we now show that menu's members and nothing
+				// else, by construction rather than by agreement.
+				//
+				// Unscoped is still IsBuilding's question to answer: with no menu
+				// open there is no tree to read, and "everything the game places
+				// anywhere" would put 317 props and 25 vegetation in a building
+				// list.
+				.Where(prefab => string.IsNullOrEmpty(menu)
+					? IsBuilding(prefab)
+					: PrefabIndexingSystem.IsPlacedInMenu(prefab.Id, menu))
 				.Where(prefab => filters.All(filter => filter(prefab)));
 		}
 
