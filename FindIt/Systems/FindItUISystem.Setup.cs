@@ -72,6 +72,18 @@ namespace FindItBuildingMenu.Systems
 		// over. Lets the vanilla menu stay hidden after the panel is closed, so
 		// closing means closed rather than revealing the grid underneath.
 		private ValueBindingHelper<bool> _LensOwnsCurrentMenu = null!;
+		/// <summary>
+		/// A menu the picker wants opened, as "index:version:nonce".
+		/// </summary>
+		/// <remarks>
+		/// The game's toolbar.selectAssetMenu is a TRIGGER binding, so only the
+		/// UI can call it — C# has no route, ToolbarUISystem.SelectAssetMenu
+		/// being private. So the request goes out as a value the UI watches and
+		/// forwards. The nonce is what makes picking the same building twice
+		/// register as two requests rather than one unchanged string.
+		/// </remarks>
+		private ValueBindingHelper<string> _PickerMenuRequest = null!;
+		private int _pickerMenuNonce;
 		// Which toolbar menu the lens is scoped to, by icon identifier (e.g.
 		// "Water"). The tab strip needs it to pick its axis; the UI cannot read
 		// it from the game's own toolbar bindings because interception may have
@@ -239,6 +251,9 @@ namespace FindItBuildingMenu.Systems
 			_ReplaceVanillaBuildMenu = CreateBinding("ReplaceVanillaBuildMenu", Mod.Settings.ReplaceVanillaBuildMenu);
 			_ShowZoningHierarchy = CreateBinding("ShowZoningHierarchy", false);
 			_LensOwnsCurrentMenu = CreateBinding("LensOwnsCurrentMenu", false);
+			// "<index>:<version>:<nonce>", or empty. The picker asks the game to
+			// open a menu through this; see RequestVanillaMenu.
+			_PickerMenuRequest = CreateBinding("PickerMenuRequest", string.Empty);
 			// Which toolbar menu the lens is scoped to. The tab strip needs it to
 			// pick its axis; the UI cannot read it from the game's own toolbar
 			// bindings because interception may have already moved the selection
