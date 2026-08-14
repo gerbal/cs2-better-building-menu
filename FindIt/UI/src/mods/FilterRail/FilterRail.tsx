@@ -148,14 +148,33 @@ export const FilterRail = ({
                   ) : (
                     <Scrollable className={styles.menuList} vertical trackVisibility="scrollable">
                       {(searchable ? filterRailOptions(facets, dimension.id, query) : options).map((option) => (
-                        // closeOnSelect={false} is what makes a vanilla dropdown a
-                        // multi-select control; onToggleSelected is its own API for it,
-                        // so nothing here reimplements selection.
+                        // BOTH callbacks, and they must be. The vanilla item
+                        // dispatches a click as `selected ? onToggleSelected :
+                        // onChange` — a ternary, so exactly one fires and there
+                        // is no double-toggle. Our own types/ui.d.ts:371-377
+                        // says it outright: onChange is "called when the user
+                        // selects this item… not invoked if this item is
+                        // already selected", onToggleSelected is "called when
+                        // the user clicks this item WHILE IT WAS ALREADY
+                        // SELECTED".
+                        //
+                        // Supplying only onToggleSelected therefore wired up
+                        // the DESELECT half and nothing else, so every option
+                        // that starts unselected dropped its first click. That
+                        // left eight of the nine dimensions inert — placement,
+                        // role, source, DLC, theme, packs, extensions, density
+                        // — and Availability worked only by accident, because
+                        // it reports BOTH options selected at rest and so
+                        // always landed on the toggle branch.
+                        //
+                        // closeOnSelect={false} is still what makes this a
+                        // multi-select; it is just not sufficient on its own.
                         <DropdownItem<string>
                           key={option.id}
                           value={option.id}
                           selected={option.selected}
                           closeOnSelect={false}
+                          onChange={() => onToggleOption(dimension.id, option.id)}
                           onToggleSelected={() => onToggleOption(dimension.id, option.id)}
                         >
                           {option.label}
