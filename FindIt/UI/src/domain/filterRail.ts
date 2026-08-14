@@ -57,7 +57,18 @@ export function buildFilterRail(
     .map((group) => ({
       id: group.id,
       label: group.label,
-      selected: group.options.filter((option) => option.selected).length,
+      // What is NARROWING, not what is ticked. A group with every option
+      // selected narrows nothing, so counting it lit the icon and drew a badge
+      // reading "2" over a menu that was filtering nothing — which is how
+      // Availability looks at rest now that both states are shown as selected.
+      //
+      // The same rule as buildFilterChips. Repeated rather than imported
+      // because a domain-to-domain VALUE import breaks one of the two build
+      // paths (see vanillaToolbarSelection.ts); if this rule changes, change it
+      // in both.
+      selected: group.options.every((option) => option.selected)
+        ? 0
+        : group.options.filter((option) => option.selected).length,
       optionCount: group.options.length,
       needsSearch: group.options.length > RAIL_SEARCH_THRESHOLD,
     }));
