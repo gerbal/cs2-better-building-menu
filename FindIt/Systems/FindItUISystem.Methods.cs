@@ -130,6 +130,10 @@ namespace FindItBuildingMenu.Systems
 			_BuildingCatalogSortColumn.Value = _buildingCatalogQuery.EffectiveSortColumn;
 			_BuildingCatalogSortDescending.Value = _buildingCatalogQuery.Descending;
 			_BuildingCatalogMetricRanges.Value = _buildingMetricRanges;
+			// Recomputed with the catalog so the bounds follow the menu. They come
+			// from InScope, which drops the metric selections, so narrowing a range
+			// cannot shrink the bounds it was typed against.
+			_BuildingCatalogMetricBounds.Value = _buildingCatalogAdapter.GetMetricBounds(_buildingCatalogQuery);
 			_BuildingLensFacets.Value = _buildingCatalogAdapter.GetFacetState(_buildingCatalogQuery);
 			_BuildingLensLegacyFilters.Value = CaptureLegacyFilters().Describe().ToArray();
 			// At most three ids, so re-projecting alongside the page keeps the
