@@ -102,19 +102,17 @@ describe("Filter chips", () => {
     assert.deepEqual(chips.map((chip) => chip.label), ["Office", "High density"]);
   });
 
-  it("contributes nothing for a facet group with every option selected", () => {
-    // Availability is why this rule exists. It is exhaustive, so its resting
-    // state is BOTH, and the backend reports both as selected so the popover
-    // says "showing locked and unlocked" rather than drawing two empty boxes
-    // that read as no filter. Chipped naively that made the resting state
-    // announce "2 Active — Locked × Unlocked ×", claiming a narrowing that is
-    // not happening.
+  it("contributes nothing for a group the backend says is not narrowing", () => {
+    // Availability at rest: exhaustive, so both options read selected and
+    // nothing is excluded. Chipped, that announced "2 Active — Locked ×
+    // Unlocked ×" over an unfiltered menu.
     const exhaustive = {
       hasSelection: true,
       groups: [
         {
           id: "availability",
           label: "Availability",
+          narrowing: false,
           options: [
             { id: "Locked", label: "Locked", selected: true },
             { id: "Unlocked", label: "Unlocked", selected: true },
@@ -126,6 +124,27 @@ describe("Filter chips", () => {
     assert.deepEqual(buildFilterChips({ facets: exhaustive }), []);
   });
 
+  it("still chips an all-selected group that IS narrowing", () => {
+    // The case the all-selected heuristic got wrong: a selection stranded by a
+    // menu switch. "Require road" carried into Landscaping, where nothing has
+    // BuildingFlags, leaves the stranded value as the group's ONLY option — all
+    // selected, and excluding everything. Suppressing its chip left a filter
+    // with no control attached and no way to clear it.
+    const stranded = {
+      hasSelection: true,
+      groups: [
+        {
+          id: "placement",
+          label: "Placement",
+          narrowing: true,
+          options: [{ id: "RequireRoad", label: "Require road", selected: true }],
+        },
+      ],
+    };
+
+    assert.deepEqual(buildFilterChips({ facets: stranded }).map((chip) => chip.label), ["Require road"]);
+  });
+
   it("still chips a group where only some options are selected", () => {
     const partial = {
       hasSelection: true,
@@ -133,6 +152,7 @@ describe("Filter chips", () => {
         {
           id: "availability",
           label: "Availability",
+          narrowing: true,
           options: [
             { id: "Locked", label: "Locked", selected: true },
             { id: "Unlocked", label: "Unlocked", selected: false },

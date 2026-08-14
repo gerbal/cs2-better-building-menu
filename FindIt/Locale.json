@@ -218,6 +218,7 @@
   "Tooltip.LABEL[FindItBuildingMenu.SortBy]": "Sort by",
   "Tooltip.LABEL[FindItBuildingMenu.CompareBuildings]": "Compare buildings",
   "Tooltip.LABEL[FindItBuildingMenu.Building]": "Building",
+  "Tooltip.LABEL[FindItBuildingMenu.Name]": "Name",
   "Tooltip.LABEL[FindItBuildingMenu.SortByColumn]": "sort by this column",
   "Tooltip.LABEL[FindItBuildingMenu.ReverseSort]": "reverse this sort",
   "Tooltip.LABEL[FindItBuildingMenu.MetricRangeInvalid]": "Not a number â this bound is ignored",

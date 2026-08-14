@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   shortenTileLabel,
   stripRedundantNamePrefix,
+  tableLabelCharBudget,
   tileLabelCharBudget,
   tileLabelLineBudget,
   wrapTileLabel,
@@ -228,5 +229,32 @@ describe("Wrapping a name over the tile's lines", () => {
   it("draws nothing for an empty name", () => {
     assert.deepEqual(wrapTileLabel("", LINE), []);
     assert.deepEqual(wrapTileLabel("   ", LINE), []);
+  });
+});
+
+describe("Table name budget", () => {
+  it("gives the table more characters than one tile line, at a realistic width", () => {
+    // A ~270rem drawable name box is what a 1000rem panel actually leaves once
+    // the metric columns and BUILDING_LENS_TABLE_ROW_FURNITURE are taken.
+    assert.ok(tableLabelCharBudget(270) > tileLabelLineBudget(100));
+  });
+
+  it("matches the measured drawable width", () => {
+    // 270rem of name box at 13 chars per 100rem is ~35 characters. The first
+    // version of this returned 58 because the caller handed it the whole
+    // identity column, so nothing was ever shortened.
+    assert.equal(tableLabelCharBudget(270), 35);
+  });
+
+  it("never returns a budget too small to shorten into", () => {
+    // shortenTileLabel needs room for a head, an ellipsis and a tail; below
+    // about eight characters it degenerates into an ellipsis and a fragment.
+    assert.ok(tableLabelCharBudget(0) >= 8);
+    assert.ok(tableLabelCharBudget(-50) >= 8);
+    assert.ok(tableLabelCharBudget(Number.NaN) >= 8);
+  });
+
+  it("grows with the width", () => {
+    assert.ok(tableLabelCharBudget(420) > tableLabelCharBudget(270));
   });
 });

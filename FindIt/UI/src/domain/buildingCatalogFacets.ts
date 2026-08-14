@@ -13,6 +13,8 @@ export interface BuildingLensFacetGroup {
   id: string;
   label: string;
   options: BuildingLensFacetOption[];
+  /** Whether this group's selection actually excludes anything in view. */
+  narrowing?: boolean;
 }
 
 export interface BuildingLensFacetState {

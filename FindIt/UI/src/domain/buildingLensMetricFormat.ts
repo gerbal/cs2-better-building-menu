@@ -26,9 +26,6 @@ import type { BuildingLensMetric } from "./buildingLensLayout";
 /** Rendered when a metric was not projected for this building. */
 export const METRIC_NO_DATA = "—";
 
-/** Rendered when a building genuinely has none of a countable thing. */
-export const METRIC_NONE = "0";
-
 /**
  * A construction cost of exactly zero — real, and different from unknown.
  *

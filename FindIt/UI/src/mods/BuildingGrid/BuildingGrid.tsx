@@ -21,6 +21,14 @@ const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "BuildingCatalo
 const ShowShelf$ = bindValue<boolean>(mod.id, "BuildingLensShowShelf", true);
 const ShelfSize$ = bindValue<number>(mod.id, "BuildingLensShelfSize", 12);
 const TileSize$ = bindValue<number>(mod.id, "BuildingLensTileSize", 72);
+/**
+ * The prefab the game currently has armed.
+ *
+ * The legacy grid has always drawn this (PrefabSelection.tsx passes
+ * `selected={prefab.id == ActivePrefabId}`); the lens grid never did, so after
+ * picking a building nothing on screen said which one was about to be placed.
+ */
+const ActivePrefabId$ = bindValue<number>(mod.id, "ActivePrefabId", 0);
 
 interface BuildingGridProps {
   entries: BuildingCatalogEntry[];
@@ -65,6 +73,7 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
   const showShelf = useValue(ShowShelf$);
   const shelfSize = useValue(ShelfSize$);
   const tileSize = useValue(TileSize$);
+  const activePrefabId = useValue(ActivePrefabId$);
   // Relevance while a query is active, stable position while browsing. The two
   // orders want opposite things and rankBuildingMatches falls back to the
   // stable one for an empty query and for ties.
@@ -137,16 +146,25 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
   const tile = (entry: BuildingCatalogEntry, key: string) => {
     const label = entry.name || entry.prefabName;
     const locked = isEntryLocked(entry);
+    // Strict equality against a real id: ActivePrefabId is 0 when nothing is
+    // armed, and an entry id of 0 would otherwise light every tile.
+    const armed = activePrefabId !== 0 && entry.id === activePrefabId;
 
     return (
       <BuildingHoverCard key={key} entry={entry} context={hoverCard}>
         <Button
-          className={classNames(styles.tile, sortedMetric !== null && styles.tileSorted)}
+          className={classNames(
+            styles.tile,
+            sortedMetric !== null && styles.tileSorted,
+            armed && styles.tileArmed
+          )}
           style={{ width: `${tileSize}rem` }}
           variant="icon"
           // See the table row: this is how the scroll anchor finds the tile
           // again after placement rebuilds the panel.
           data-catalog-entry={entry.id}
+          // Announced as well as drawn, for the same reason the locked state is.
+          aria-current={armed ? "true" : undefined}
           onSelect={() => place(entry)}
           // Locked is announced, not just drawn. The visual treatment is a
           // silhouette, which says nothing to a screen reader and little to

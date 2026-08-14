@@ -127,6 +127,24 @@ export const BUILDING_LENS_COLUMN_MIN: Record<BuildingLensMetric, number> = {
  */
 export const BUILDING_LENS_IDENTITY_MIN = 180;
 
+/**
+ * Everything in a table row that is not the name, in rem.
+ *
+ * Mirrors buildingCatalog.module.scss, which is the authority — if a trailing
+ * control is resized there, this has to follow:
+ *
+ *   $table-trailing-reserve  98  (4 padding + 64 Place + 26 compare + 4 outer)
+ *   $rows-scrollbar-width    16  (reserved while the rows scroll)
+ *   .rowSelect padding-left   8
+ *   .thumbnail + its margin  80  (68 + 12; a margin because `gap` is inert here)
+ *
+ * Written down because the first attempt at the name budget subtracted only the
+ * metric columns and over-estimated the name box by about 177rem — enough that
+ * the middle-elision never fired and CSS went on cutting the tail, which is the
+ * exact failure it was added to remove.
+ */
+export const BUILDING_LENS_TABLE_ROW_FURNITURE = 98 + 16 + 8 + 80;
+
 export type BuildingLensColumnWidths = Record<BuildingLensMetric, number>;
 
 /**

@@ -17,6 +17,8 @@ export interface RailFacetOption {
 }
 
 export interface RailFacetGroup {
+  /** Whether this group's selection actually excludes anything in view. */
+  narrowing?: boolean;
   id: string;
   label: string;
   options: RailFacetOption[];
@@ -66,9 +68,11 @@ export function buildFilterRail(
       // because a domain-to-domain VALUE import breaks one of the two build
       // paths (see vanillaToolbarSelection.ts); if this rule changes, change it
       // in both.
-      selected: group.options.every((option) => option.selected)
-        ? 0
-        : group.options.filter((option) => option.selected).length,
+      // The backend says whether the selection narrows; the UI cannot tell the
+      // two all-selected cases apart. Availability at rest reports both options
+      // selected and excludes nothing; a selection stranded by a menu switch is
+      // also all-selected and excludes everything.
+      selected: group.narrowing === false ? 0 : group.options.filter((option) => option.selected).length,
       optionCount: group.options.length,
       needsSearch: group.options.length > RAIL_SEARCH_THRESHOLD,
     }));
