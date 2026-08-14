@@ -419,6 +419,32 @@ namespace FindItBuildingMenu.Systems
 		{
 			_buildingLensUiMenu = string.Empty;
 			_buildingLensUiCategory = string.Empty;
+
+			// The section and subcategory go too, because the MENU set them, not
+			// the player. VanillaMenuSelected applies all four together when a
+			// toolbar icon is clicked — Roads arrives as scope "Roads" AND
+			// section "Networks" — so clearing only the first two left a
+			// narrowing nobody chose: the chips read "All menus / Networks /
+			// All types" and the catalog showed a third of itself while
+			// claiming to show everything. That is cm-2xvs.2, whose original
+			// route in (reopening from FindIt's own toolbar button) went with
+			// the magnifier; this one survived it.
+			//
+			// The facets still deliberately survive, and that distinction is the
+			// point: the filter rail holds what the player picked, and one × has
+			// no business undoing that as well. This undoes exactly what
+			// selecting the menu applied.
+			VanillaBuildMenuSelection widened = VanillaBuildMenuSelection.Normalize(
+				VanillaBuildMenuTaxonomy.AllBuildings,
+				VanillaBuildMenuTaxonomy.Any);
+
+			_buildingLensSection = widened.Section;
+			_buildingLensSubCategory = widened.SubCategory;
+			_BuildingLensSectionBinding.Value = _buildingLensSection;
+			_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
+			FindItUtil.CurrentCategory = PrefabCategory.Any;
+			FindItUtil.CurrentSubCategory = PrefabSubCategory.Any;
+
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 			scrollIndex = 0;
 
