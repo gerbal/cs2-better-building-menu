@@ -82,6 +82,107 @@ namespace FindItBuildingMenu.Services
 				query);
 		}
 
+		/// <summary>
+		/// The spread each metric actually has in the current view.
+		/// </summary>
+		/// <remarks>
+		/// So the range fields can open at the real minimum and maximum instead
+		/// of blank. Blank asks the player to guess the scale before they can
+		/// narrow it — nothing said a Police menu runs from 30,000 to 650,000 —
+		/// and a bound typed outside the real range silently empties the list.
+		///
+		/// Computed from InScope, exactly like the facet options, and for the
+		/// same reason turned up a level: InScope clears the facet AND metric
+		/// selections, so the bounds describe the menu rather than the filtered
+		/// result. Seeded from the filtered result they would ratchet inward on
+		/// every narrowing and could never widen again — type 200,000 as a
+		/// maximum and 200,000 becomes the new ceiling.
+		///
+		/// Reuses the range-state shape rather than inventing a bounds type: the
+		/// twelve numbers are the same twelve, and the UI already reads them.
+		/// Its HasSelection is meaningless here and nothing asks.
+		/// </remarks>
+		public BuildingCatalogMetricRangeState GetMetricBounds(BuildingCatalogQuery query)
+		{
+			if (query is null)
+			{
+				throw new ArgumentNullException(nameof(query));
+			}
+
+			return MetricBoundsOf(
+				BuildingCatalogQueryEngine.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), query));
+		}
+
+		/// <summary>
+		/// The same arithmetic over a set of entries, without a World.
+		/// </summary>
+		/// <remarks>
+		/// Split out so the rule can be tested directly, the way BuildFacetState
+		/// is. What belongs to the running game is deciding WHICH entries are in
+		/// view; what belongs here is only the min and max of them.
+		/// </remarks>
+		public static BuildingCatalogMetricRangeState MetricBoundsOf(IEnumerable<BuildingCatalogEntry> entries)
+		{
+			if (entries is null)
+			{
+				throw new ArgumentNullException(nameof(entries));
+			}
+
+			BuildingCatalogEntry[] inScope = entries.ToArray();
+
+			return new BuildingCatalogMetricRangeState(
+				Min(inScope, entry => entry.ConstructionCost), Max(inScope, entry => entry.ConstructionCost),
+				Min(inScope, entry => entry.Upkeep), Max(inScope, entry => entry.Upkeep),
+				Min(inScope, entry => entry.Workers), Max(inScope, entry => entry.Workers),
+				Min(inScope, entry => entry.Capacity), Max(inScope, entry => entry.Capacity),
+				Min(inScope, entry => entry.LotWidth), Max(inScope, entry => entry.LotWidth),
+				Min(inScope, entry => entry.LotDepth), Max(inScope, entry => entry.LotDepth));
+		}
+
+		/// <summary>
+		/// The smallest value present, or null when no entry carries the metric.
+		/// </summary>
+		/// <remarks>
+		/// Null rather than zero. Most assets carry no worker count, and a floor
+		/// of 0 on a menu where nothing employs anyone would state a range that
+		/// does not exist.
+		/// </remarks>
+		private static double? Min(
+			IReadOnlyCollection<BuildingCatalogEntry> entries,
+			Func<BuildingCatalogEntry, double?> metric)
+		{
+			double? lowest = null;
+
+			foreach (BuildingCatalogEntry entry in entries)
+			{
+				double? value = metric(entry);
+				if (value.HasValue && (!lowest.HasValue || value.Value < lowest.Value))
+				{
+					lowest = value;
+				}
+			}
+
+			return lowest;
+		}
+
+		private static double? Max(
+			IReadOnlyCollection<BuildingCatalogEntry> entries,
+			Func<BuildingCatalogEntry, double?> metric)
+		{
+			double? highest = null;
+
+			foreach (BuildingCatalogEntry entry in entries)
+			{
+				double? value = metric(entry);
+				if (value.HasValue && (!highest.HasValue || value.Value > highest.Value))
+				{
+					highest = value;
+				}
+			}
+
+			return highest;
+		}
+
 		public static BuildingCatalogFacetState BuildFacetState(
 			IEnumerable<BuildingCatalogEntry> entries,
 			BuildingCatalogQuery query)

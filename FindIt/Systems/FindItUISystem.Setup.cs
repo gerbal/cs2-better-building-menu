@@ -111,6 +111,15 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<PrefabUIEntry[]> _PrefabListBinding;
 		private ValueBindingHelper<BuildingCatalogPage> _BuildingCatalogBinding = null!;
 		private ValueBindingHelper<BuildingCatalogMetricRangeState> _BuildingCatalogMetricRanges = null!;
+		/// <summary>
+		/// The spread each metric has in the current view, so the range fields can
+		/// open at real numbers instead of blank.
+		/// </summary>
+		/// <remarks>
+		/// Separate from the selection above and deliberately the same shape: one
+		/// says what the player asked for, the other what is there to ask about.
+		/// </remarks>
+		private ValueBindingHelper<BuildingCatalogMetricRangeState> _BuildingCatalogMetricBounds = null!;
 		private ValueBindingHelper<BuildingCatalogFacetState> _BuildingLensFacets = null!;
 		private IReadOnlyList<int> _buildingCompareIds = Array.Empty<int>();
 		private ValueBindingHelper<BuildingCatalogEntry[]> _BuildingCatalogCompare = null!;
@@ -292,6 +301,7 @@ namespace FindItBuildingMenu.Systems
 				100,
 				BuildingCatalogLensState.Indexing));
 			_BuildingCatalogMetricRanges = CreateBinding("BuildingCatalogMetricRanges", BuildingCatalogMetricRangeState.Empty);
+			_BuildingCatalogMetricBounds = CreateBinding("BuildingCatalogMetricBounds", BuildingCatalogMetricRangeState.Empty);
 			_BuildingLensFacets = CreateBinding("BuildingLensFacets", new BuildingCatalogFacetState(Array.Empty<BuildingCatalogFacetGroup>(), false));
 			_BuildingCatalogCompare = CreateBinding("BuildingCatalogCompare", Array.Empty<BuildingCatalogEntry>());
 			_BuildingLensLegacyFilters = CreateBinding("BuildingLensLegacyFilters", Array.Empty<string>());

@@ -55,6 +55,22 @@ const BuildingCatalogMetricRanges$ = bindValue<BuildingCatalogMetricRangeState>(
   emptyMetricRangeState,
 );
 
+/**
+ * The spread each metric has in the current view.
+ *
+ * Same shape as the selection above, and the pairing is the point: one says
+ * what the player asked for, the other what there is to ask about. A field with
+ * no selection shows its bound, so the control states the scale before it asks
+ * you to narrow it — a Police menu runs 30,000 to 650,000 and nothing used to
+ * say so, which made a bound typed outside the range look like a broken filter
+ * rather than an empty result.
+ */
+const BuildingCatalogMetricBounds$ = bindValue<BuildingCatalogMetricRangeState>(
+  mod.id,
+  "BuildingCatalogMetricBounds",
+  emptyMetricRangeState,
+);
+
 const TextInput = getModule("game-ui/common/input/text/text-input.tsx", "TextInput");
 const TextInputTheme: Theme | any = getModule("game-ui/editor/widgets/item/editor-item.module.scss", "classes");
 
@@ -88,13 +104,22 @@ function formatBound(value: number | null, integer: boolean): string {
   return String(Number(value.toFixed(2)));
 }
 
-function draftsFromState(state: BuildingCatalogMetricRangeState): MetricRangeDrafts {
+function draftsFromState(
+  state: BuildingCatalogMetricRangeState,
+  bounds: BuildingCatalogMetricRangeState = emptyMetricRangeState,
+): MetricRangeDrafts {
   const ranges = rangeStateToRanges(state);
+  const limits = rangeStateToRanges(bounds);
   return METRIC_RANGE_DEFINITIONS.reduce((drafts, definition) => {
     const range = ranges[definition.id];
+    const limit = limits[definition.id];
+    // The bound stands in only where the player has chosen nothing, so a field
+    // they HAVE set is never quietly overwritten by a view change. Clearing a
+    // filter therefore reads as "back to the full range" rather than "back to
+    // blank", which is what was asked for.
     drafts[definition.id] = {
-      minText: formatBound(range.min, definition.integer),
-      maxText: formatBound(range.max, definition.integer),
+      minText: formatBound(range.min ?? limit.min, definition.integer),
+      maxText: formatBound(range.max ?? limit.max, definition.integer),
     };
     return drafts;
   }, {} as MetricRangeDrafts);
@@ -118,7 +143,19 @@ export const BuildingCatalogMetricFilters = () => {
       return value;
     });
   };
-  const [drafts, setDrafts] = useState<MetricRangeDrafts>(() => draftsFromState(state));
+  const bounds = useValue(BuildingCatalogMetricBounds$);
+  // A stable key for the twelve numbers. The binding hands back a fresh object
+  // on every emit, so depending on `bounds` itself would re-seed the drafts on
+  // unrelated churn — including while the player is typing.
+  const boundsKey = [
+    bounds.minCost, bounds.maxCost,
+    bounds.minUpkeep, bounds.maxUpkeep,
+    bounds.minWorkers, bounds.maxWorkers,
+    bounds.minCapacity, bounds.maxCapacity,
+    bounds.minLotWidth, bounds.maxLotWidth,
+    bounds.minLotDepth, bounds.maxLotDepth,
+  ].join("|");
+  const [drafts, setDrafts] = useState<MetricRangeDrafts>(() => draftsFromState(state, bounds));
   const metricRangeDebouncer = useMemo(
     () =>
       createMetricRangeDebouncer((id, input) => {
@@ -136,7 +173,7 @@ export const BuildingCatalogMetricFilters = () => {
     // used to rewrite all six drafts — deleting half-typed text elsewhere in
     // the drawer.
     setDrafts((current) => {
-      const next = draftsFromState(state);
+      const next = draftsFromState(state, bounds);
       for (const definition of METRIC_RANGE_DEFINITIONS) {
         if (metricRangeDebouncer.isPending(definition.id)) {
           next[definition.id] = current[definition.id];
@@ -158,6 +195,10 @@ export const BuildingCatalogMetricFilters = () => {
     state.maxLotWidth,
     state.minLotDepth,
     state.maxLotDepth,
+    // Re-seed when the view changes: opening a different menu changes what
+    // there is to ask about, so an empty field has to show the NEW range rather
+    // than the last menu's.
+    boundsKey,
   ]);
 
   const ranges = useMemo(() => rangeStateToRanges(state), [
@@ -188,7 +229,10 @@ export const BuildingCatalogMetricFilters = () => {
 
   function clear(): void {
     metricRangeDebouncer.cancel();
-    setDrafts(draftsFromState(emptyMetricRangeState));
+    // Back to the full range of what is in view, not back to blank. Clearing a
+    // filter should say what is there again, which is the same thing the fields
+    // showed before anything was typed.
+    setDrafts(draftsFromState(emptyMetricRangeState, bounds));
     const command = clearBuildingCatalogMetricRangesCommand();
     trigger(mod.id, command.method, ...command.args);
   }
