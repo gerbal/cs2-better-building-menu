@@ -102,7 +102,17 @@ export const BuildingMenuSurface = ({ onClose }: BuildingMenuSurfaceProps) => {
     layout.style.justifyContent = "flex-start";
 
     return () => {
-      layout.style.justifyContent = previous;
+      // Restoring "" — which is what the game leaves here, since it styles this
+      // from its stylesheet rather than inline — makes Cohtml log
+      // "Trying to set justifyContent property to invalid value!" on every menu
+      // close. A browser reads the empty string as "unset the inline value";
+      // this engine reads it as a value and rejects it.
+      if (previous) {
+        layout.style.justifyContent = previous;
+        return;
+      }
+
+      layout.style.removeProperty("justify-content");
     };
   }, []);
 
