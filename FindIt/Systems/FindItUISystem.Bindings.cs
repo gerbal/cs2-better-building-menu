@@ -166,7 +166,16 @@ namespace FindItBuildingMenu.Systems
 				_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 				scrollIndex = 0;
 
-				ToggleFindItPanel(true);
+				// activatePrefab: false. Opening a menu must not re-arm the prefab
+				// from the LAST menu — that is what desynced the toolbar. Arming a
+				// water pipe makes the game re-assert Water as the selected menu, so
+				// the highlight sat on Water while the lens showed Electricity, and
+				// clicking the lit Water icon closed a menu the player never opened.
+				//
+				// The echo guard was written for the same re-assertion and only
+				// stopped it reaching US; the game's own selection still moved. This
+				// removes the re-assertion instead of ignoring it.
+				ToggleFindItPanel(true, activatePrefab: false);
 				RefreshBuildingLensNavigation();
 				RefreshBuildingCatalog();
 				return;
@@ -220,7 +229,7 @@ namespace FindItBuildingMenu.Systems
 				// without this the panel opens on the plain asset grid.
 				_BuildingLensEnabled.Value = true;
 				_PanelWidth.Value = GridUtil.GetCurrentPanelWidth();
-				ToggleFindItPanel(true);
+				ToggleFindItPanel(true, activatePrefab: false);
 				return;
 			}
 
@@ -250,7 +259,7 @@ namespace FindItBuildingMenu.Systems
 
 			scrollIndex = 0;
 
-			ToggleFindItPanel(true);
+			ToggleFindItPanel(true, activatePrefab: false);
 			RefreshBuildingLensNavigation();
 			RefreshBuildingCatalog();
 		}
