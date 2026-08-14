@@ -103,13 +103,7 @@ namespace FindItBuildingMenu.Services
 			AddValueGroup(groups, "provenance", "Source", source.Select(entry => entry.Provenance), query.Provenance, FormatProvenanceLabel);
 			// Progression, which the vanilla menu shows by greying an asset out
 			// and the lens had no way to ask about at all.
-			AddValueGroup(
-				groups,
-				"availability",
-				"Availability",
-				source.Select(entry => entry.IsLocked ? "Locked" : "Unlocked"),
-				query.Availability,
-				FormatFacetWords);
+			AddAvailabilityGroup(groups, source, query.Availability);
 			AddValueGroup(groups, "dlc", "DLC", source.Select(entry => entry.DlcId), query.DlcIds, FormatDlcLabel);
 			AddValueGroup(groups, "theme", "Theme", source.Select(entry => entry.Theme), query.Themes, FormatFacetWords);
 			AddArrayGroup(groups, "assetPack", "Asset packs", source.Select(entry => entry.AssetPacks), query.AssetPacks, FormatAssetPackLabel);
@@ -326,6 +320,44 @@ namespace FindItBuildingMenu.Services
 				GroundPollution: prefab.GroundPollution,
 				AirPollution: prefab.AirPollution,
 				NoisePollution: prefab.NoisePollution);
+		}
+
+		/// <summary>
+		/// Locked and Unlocked, always both, and both ticked when nothing is
+		/// stored.
+		/// </summary>
+		/// <remarks>
+		/// Two departures from AddValueGroup, and the same reason underneath: this
+		/// dimension is exhaustive, so its resting state is a fact about the view
+		/// rather than an absence of input.
+		///
+		/// It is offered even when only one value is present. IsWorthOffering
+		/// drops a single-valued dimension as a no-op, which is right for Role or
+		/// Source — but in a founding city every asset in a menu is locked, and
+		/// that is exactly when a player wants to see the filter saying so. A
+		/// dimension that disappears when the answer is interesting is worse than
+		/// one that costs a slot.
+		///
+		/// Both options read as selected when the stored selection is empty,
+		/// because empty MEANS both here. Drawn as two unticked boxes it read as
+		/// "no filter applied", which is a different claim from "showing locked
+		/// and unlocked". ToggleExhaustive makes the arithmetic agree.
+		/// </remarks>
+		private static void AddAvailabilityGroup(
+			ICollection<BuildingCatalogFacetGroup> groups,
+			IReadOnlyCollection<BuildingCatalogEntry> source,
+			IReadOnlyList<string>? selected)
+		{
+			bool restingState = selected is null || selected.Count == 0;
+
+			BuildingCatalogFacetOption[] options = BuildingCatalogFacetSelection.Availability.All
+				.Select(value => new BuildingCatalogFacetOption(
+					value,
+					FormatFacetWords(value),
+					restingState || selected!.Any(option => string.Equals(option, value, StringComparison.OrdinalIgnoreCase))))
+				.ToArray();
+
+			groups.Add(new BuildingCatalogFacetGroup("availability", "Availability", options));
 		}
 
 		private static void AddValueGroup(

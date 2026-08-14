@@ -310,9 +310,17 @@ public sealed class BuildingCatalogQueryEngineTests
             new BuildingCatalogQuery(BuildingTypes: new[] { "hospital" }));
 
         Assert.True(state.HasSelection);
-        // No "availability": all three fixtures are unlocked, so the dimension
-        // holds one value and cannot narrow anything. See IsWorthOffering.
-        Assert.Equal(new[] { "buildingType", "provenance", "dlc", "theme", "assetPack", "placement" }, state.Groups.Select(group => group.Id).ToArray());
+        // "availability" IS offered even though all three fixtures are unlocked.
+        // Every other dimension is dropped when it holds one value and cannot
+        // narrow anything (IsWorthOffering), but this one is exhaustive: its
+        // resting state is a fact about the view rather than an absence of
+        // input, and "everything here is unlocked" is worth saying.
+        Assert.Equal(new[] { "buildingType", "provenance", "availability", "dlc", "theme", "assetPack", "placement" }, state.Groups.Select(group => group.Id).ToArray());
+
+        // Both ticked, because nothing stored MEANS both. Drawn unticked it
+        // read as "no filter applied", which is a different claim.
+        BuildingCatalogFacetGroup availability = Assert.Single(state.Groups, group => group.Id == "availability");
+        Assert.All(availability.Options, option => Assert.True(option.Selected));
         BuildingCatalogFacetGroup role = Assert.Single(state.Groups, group => group.Id == "buildingType");
 		Assert.Equal(new[] { "Hospital", "Library", "School" }, role.Options.Select(option => option.Id).ToArray());
 		Assert.True(role.Options.Single(option => option.Id == "Hospital").Selected);

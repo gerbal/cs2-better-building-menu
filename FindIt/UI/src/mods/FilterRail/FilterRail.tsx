@@ -10,6 +10,7 @@ import {
   filterRailOptions,
   type RailFacetState,
 } from "domain/filterRail";
+import lockIcon from "images/findit_lock.svg";
 import styles from "./filterRail.module.scss";
 
 const TextInput = getModule("game-ui/common/input/text/text-input.tsx", "TextInput");
@@ -61,7 +62,15 @@ interface FilterRailProps {
 const DIMENSION_ICONS: Record<string, string> = {
   buildingType: "Media/Game/Icons/Healthcare.svg",
   provenance: "coui://finditbuildingmenu/Icons/Colored/BaseGame.svg",
-  availability: "Media/Game/Icons/LockClosed.svg",
+  // Our own padlock, not the game's. "Media/Game/Icons/LockClosed.svg" does
+  // not exist — UI.log recorded seven "Asset not found" failures per session
+  // for it (cm-p5gj), so this dimension has been drawing NOTHING since it was
+  // added. An invisible icon in a rail of icons is indistinguishable from a
+  // filter that does not work, which is how it was reported.
+  //
+  // The same glyph the tiles already use for a locked asset, so the filter and
+  // the thing it filters on look like each other.
+  availability: lockIcon,
   dlc: "coui://finditbuildingmenu/Icons/Colored/BaseGame.svg",
   theme: "coui://finditbuildingmenu/Icons/Colored/HouseAlternative.svg",
   assetPack: "coui://finditbuildingmenu/Icons/Colored/StarFilled.svg",
