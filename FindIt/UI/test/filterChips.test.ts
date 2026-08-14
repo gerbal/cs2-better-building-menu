@@ -18,9 +18,14 @@ const facets = (...selected: string[]) => ({
     {
       id: "zone",
       label: "Zone",
+      // Three options, not two. The tests below select two of them to mean
+      // "several within one dimension"; with only two present that was also
+      // "every one of them", which buildFilterChips now suppresses because a
+      // group with everything selected narrows nothing.
       options: [
         { id: "office", label: "Office", selected: selected.includes("office") },
         { id: "high", label: "High density", selected: selected.includes("high") },
+        { id: "low", label: "Low density", selected: selected.includes("low") },
       ],
     },
     {
@@ -95,6 +100,48 @@ describe("Filter chips", () => {
     const chips = buildFilterChips({ facets: facets("office", "high") });
 
     assert.deepEqual(chips.map((chip) => chip.label), ["Office", "High density"]);
+  });
+
+  it("contributes nothing for a facet group with every option selected", () => {
+    // Availability is why this rule exists. It is exhaustive, so its resting
+    // state is BOTH, and the backend reports both as selected so the popover
+    // says "showing locked and unlocked" rather than drawing two empty boxes
+    // that read as no filter. Chipped naively that made the resting state
+    // announce "2 Active — Locked × Unlocked ×", claiming a narrowing that is
+    // not happening.
+    const exhaustive = {
+      hasSelection: true,
+      groups: [
+        {
+          id: "availability",
+          label: "Availability",
+          options: [
+            { id: "Locked", label: "Locked", selected: true },
+            { id: "Unlocked", label: "Unlocked", selected: true },
+          ],
+        },
+      ],
+    };
+
+    assert.deepEqual(buildFilterChips({ facets: exhaustive }), []);
+  });
+
+  it("still chips a group where only some options are selected", () => {
+    const partial = {
+      hasSelection: true,
+      groups: [
+        {
+          id: "availability",
+          label: "Availability",
+          options: [
+            { id: "Locked", label: "Locked", selected: true },
+            { id: "Unlocked", label: "Unlocked", selected: false },
+          ],
+        },
+      ],
+    };
+
+    assert.deepEqual(buildFilterChips({ facets: partial }).map((chip) => chip.label), ["Locked"]);
   });
 
   it("contributes nothing for a facet group with no selections", () => {

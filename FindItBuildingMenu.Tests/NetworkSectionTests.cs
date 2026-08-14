@@ -210,16 +210,52 @@ namespace FindItBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void TogglesThroughTheSharedFacetPath()
+		public void TheFirstClickSubtractsBecauseBothStartShowing()
 		{
+			// Availability is exhaustive, so an empty selection means BOTH and
+			// the rail draws both ticked. Clicking Locked therefore means "not
+			// locked", not "add locked" — the arithmetic has to match what the
+			// player sees, or the first click does the opposite of what it looks
+			// like.
 			var query = BuildingCatalogFacetSelection.Toggle(
 				new BuildingCatalogQuery(), "availability", "Locked");
 
-			Assert.Equal(new[] { "Locked" }, query.Availability);
+			Assert.Equal(new[] { "Unlocked" }, query.Availability);
+		}
 
-			var cleared = BuildingCatalogFacetSelection.Toggle(query, "availability", "Locked");
+		[Fact]
+		public void SelectingEverythingAgainCollapsesBackToBoth()
+		{
+			// One representation of "both", not two that behave alike and
+			// compare differently.
+			var onlyUnlocked = new BuildingCatalogQuery(Availability: new[] { "Unlocked" });
 
-			Assert.True(cleared.Availability is null || cleared.Availability.Count == 0);
+			var both = BuildingCatalogFacetSelection.Toggle(onlyUnlocked, "availability", "Locked");
+
+			Assert.Null(both.Availability);
+		}
+
+		[Fact]
+		public void CannotBeDrivenIntoShowingNothing()
+		{
+			// Deselecting the last remaining option would ask for an empty menu,
+			// which no player wants and the engine reads as "show everything"
+			// anyway. It returns to both.
+			var onlyLocked = new BuildingCatalogQuery(Availability: new[] { "Locked" });
+
+			var back = BuildingCatalogFacetSelection.Toggle(onlyLocked, "availability", "Locked");
+
+			Assert.Null(back.Availability);
+		}
+
+		[Fact]
+		public void IgnoresAnOptionOutsideTheKnownPair()
+		{
+			var query = new BuildingCatalogQuery(Availability: new[] { "Locked" });
+
+			var same = BuildingCatalogFacetSelection.Toggle(query, "availability", "Nonsense");
+
+			Assert.Equal(new[] { "Locked" }, same.Availability);
 		}
 	}
 }
