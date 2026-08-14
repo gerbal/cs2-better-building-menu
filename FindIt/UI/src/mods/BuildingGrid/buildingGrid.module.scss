@@ -120,6 +120,32 @@
   background-color: rgba(255, 255, 255, 0.16);
 }
 
+// The armed building — the one a click on the map will place.
+//
+// An accent border rather than another background tint: hover is already a
+// lift to 0.16, and a third brightness step would have to sit between hover
+// and base to be distinguishable, which is a difference nobody can see at
+// 72rem. A border reads as a different KIND of state, which is what it is:
+// hover is where the cursor is, this is what the tool is holding.
+//
+// An inset box-shadow, NOT a border. .tile is border-box at height 80rem with
+// its content budgeted to the rem: 1 padding + 45 thumbnail + 1 gap + 32 label
+// + 1. A 2rem border leaves 74rem where 78 is needed, and .tileName is
+// overflow: hidden — so the armed tile alone would clip the bottom of its
+// second label line and wrap differently from its neighbours, because
+// tileLabelLineBudget still measures the unbordered width. A shadow paints in
+// the same place and costs no layout.
+.tileArmed {
+  box-shadow: inset 0 0 0 2rem var(--accentColorNormal);
+  background-color: rgba(255, 255, 255, 0.16);
+}
+
+// Hover on the armed tile must still read as hover, or the tile the cursor is
+// over becomes indistinguishable from the tile the tool is holding.
+.tileArmed:hover {
+  background-color: rgba(255, 255, 255, 0.26);
+}
+
 // Two lines, then ellipsis. The height is reserved whether or not the second
 // line is drawn: a tile that resizes to its label would break the grid's
 // alignment, and a one-word name next to a four-word one is the common case.

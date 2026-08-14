@@ -3,11 +3,14 @@ import { Button, Scrollable } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import { useEffect, useRef, useState } from "react";
 import classNames from "classnames";
+import { shortenTileLabel, tableLabelCharBudget } from "domain/tileLabel";
 import mod from "../../../mod.json";
 import { BuildingCatalogEntry, BuildingCatalogPage, formatBuildingCatalogLabels } from "domain/buildingCatalog";
 import {
   BUILDING_LENS_PANEL_CHROME_WIDTH,
   getBuildingLensCatalogMaxHeight,
+  BUILDING_LENS_IDENTITY_MIN,
+  BUILDING_LENS_TABLE_ROW_FURNITURE,
   getBuildingLensColumnWidths,
   getBuildingLensDensity,
   getBuildingLensRowGeometry,
@@ -255,6 +258,19 @@ export const BuildingCatalogComponent = () => {
     width: `${columnWidths[metric]}rem`,
     flexBasis: `${columnWidths[metric]}rem`,
   });
+  // The width the NAME actually gets: the panel's content width, less the
+  // metric columns, less everything else the row spends (see
+  // BUILDING_LENS_TABLE_ROW_FURNITURE). panelWidth is already the content
+  // width, so the chrome must not be added back here — doing that, and
+  // subtracting only the columns, over-estimated the box by ~177rem and the
+  // elision below never fired.
+  const nameWidth = Math.max(
+    BUILDING_LENS_IDENTITY_MIN - BUILDING_LENS_TABLE_ROW_FURNITURE,
+    panelWidth
+      - Object.values(columnWidths).reduce((total, width) => total + width, 0)
+      - BUILDING_LENS_TABLE_ROW_FURNITURE
+  );
+  const nameBudget = tableLabelCharBudget(nameWidth);
   const rowGeometry = getBuildingLensRowGeometry(density);
   const catalogMaxHeight = getBuildingLensCatalogMaxHeight(typeof window === "undefined" ? 720 : window.innerHeight);
   const placeLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Place]", "Place") ?? "Place";
@@ -697,7 +713,12 @@ export const BuildingCatalogComponent = () => {
             metric value shifted out from under its heading at the end of a
             load. A few rem of padding cannot desync. */}
         <div className={styles.columnHeader} data-rows-scrollable="true">
-          <span className={styles.identityHeader}>{translate("Tooltip.LABEL[FindItBuildingMenu.Building]", "Building")}</span>
+          {/* "Name", not "Building". The sort control offers a field called Name
+              (buildingLensSortPresentation.ts:22) and sorting by it reorders
+              THIS column, so two names for one field made the chip look like it
+              acted on something else. The column also holds roads, props and
+              zones, none of which are buildings. */}
+          <span className={styles.identityHeader}>{translate("Tooltip.LABEL[FindItBuildingMenu.Name]", "Name")}</span>
           {metricColumns.map((column) => {
             const fullLabel = translate(column.localizationKey, column.fallback) ?? column.fallback;
             const indicator = getBuildingLensColumnSortIndicator(column.key, { column: sortColumn, descending });
@@ -820,7 +841,25 @@ export const BuildingCatalogComponent = () => {
                     </div>
                     <div className={styles.identity}>
                       <div className={styles.nameLine}>
-                        <div className={styles.name}>{entryLabel}</div>
+                        {/* Elide the MIDDLE, not the tail. CSS can only cut at
+                            an edge, and the tail is what distinguishes one name
+                            from its neighbours — "EU Commercial Gas Station 01
+                            - L1 2x2" and "EU Commercial High 01 - L1 2x2" differ
+                            only after the twelfth character, so an end-truncated
+                            table shows two rows that look the same.
+
+                            NOT stripRedundantNamePrefix, which the tiles use.
+                            That drops leading theme words, and it is safe in the
+                            grid because the grid is scoped to one menu. This
+                            table is flat, sortable and multi-theme: dropping the
+                            token turns "EU Commercial High 01" and "NA
+                            Commercial High 01" into the same string, sorted
+                            adjacent — the very collision this is here to remove.
+
+                            title carries the full name either way. */}
+                        <div className={styles.name} title={entryLabel}>
+                          {shortenTileLabel(entryLabel, nameBudget)}
+                        </div>
                         <span className={styles.placeHint} aria-hidden="true">{isExpanded ? collapseLabel : inspectLabel}</span>
                       </div>
                       <div className={styles.category} title={rawCategoryIdentity}>

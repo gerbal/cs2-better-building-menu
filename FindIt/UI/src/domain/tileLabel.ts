@@ -58,6 +58,26 @@ export const tileLabelCharBudget = (tileSize: number): number =>
   tileLabelLineBudget(tileSize) * TILE_LABEL_LINES;
 
 /**
+ * Characters on the table's single-line name, from the width actually drawable.
+ *
+ * Takes the DRAWABLE width, not the column width: the caller knows what the row
+ * spends on thumbnails, buttons and scrollbar gutters, and putting that
+ * arithmetic here once cost the change its whole effect — the budget came out
+ * ~58 characters against a real 35, so nothing was ever shortened and CSS went
+ * on cutting the tail.
+ *
+ * The table shows one line, not two, so it cannot borrow the tile's budget, and
+ * it truncates at the END — which loses exactly the part that distinguishes one
+ * name from its neighbours. Same characters-per-rem as the tiles: same font,
+ * same size.
+ */
+export const tableLabelCharBudget = (drawableWidth: number): number => {
+  const width = Number.isFinite(drawableWidth) && drawableWidth > 0 ? drawableWidth : DEFAULT_TILE_SIZE;
+
+  return Math.max(8, Math.round((width / DEFAULT_TILE_SIZE) * CHARS_PER_LINE_AT_DEFAULT_TILE));
+};
+
+/**
  * Theme prefixes the catalog puts in front of a name. These say which art set a
  * building belongs to, which the tile is not sorted or grouped by and which
  * every neighbouring tile repeats.

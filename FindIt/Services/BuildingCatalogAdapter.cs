@@ -458,7 +458,13 @@ namespace FindItBuildingMenu.Services
 					restingState || selected!.Any(option => string.Equals(option, value, StringComparison.OrdinalIgnoreCase))))
 				.ToArray();
 
-			groups.Add(new BuildingCatalogFacetGroup("availability", "Availability", options));
+			groups.Add(new BuildingCatalogFacetGroup(
+				"availability",
+				"Availability",
+				options,
+				// Exhaustive, so "both" admits everything however it was reached
+				// — whether nothing is stored or the player selected both back.
+				Narrowing: options.Any(option => !option.Selected)));
 		}
 
 		private static void AddValueGroup(
@@ -469,16 +475,22 @@ namespace FindItBuildingMenu.Services
 			IReadOnlyList<string>? selected,
 			Func<string, string>? formatLabel = null)
 		{
-			string[] distinctValues = DistinctValues(values);
+			string[] distinctValues = WithSelected(DistinctValues(values), selected);
 			if (!IsWorthOffering(distinctValues, selected))
 			{
 				return;
 			}
 
+			BuildingCatalogFacetOption[] options = CreateOptions(distinctValues, selected, formatLabel);
+
 			groups.Add(new BuildingCatalogFacetGroup(
 				id,
 				label,
-				CreateOptions(distinctValues, selected, formatLabel)));
+				options,
+				// Excludes something iff at least one option is selected and at
+				// least one is not. All-selected and none-selected both admit
+				// everything; only a partial selection narrows.
+				Narrowing: options.Any(option => option.Selected) && options.Any(option => !option.Selected)));
 		}
 
 		/// <summary>
@@ -522,6 +534,52 @@ namespace FindItBuildingMenu.Services
 					value,
 					formatLabel?.Invoke(value) ?? value,
 					selected is not null && selected.Any(option => string.Equals(option, value, StringComparison.OrdinalIgnoreCase))))
+				.ToArray();
+		}
+
+		/// <summary>
+		/// The values present, plus any the player has already chosen.
+		/// </summary>
+		/// <remarks>
+		/// A selection has to stay visible even when nothing in view carries it,
+		/// or it becomes a filter with no control attached.
+		///
+		/// That is not hypothetical. Choose "Require road" in Electricity and
+		/// switch to Landscaping: nothing there has BuildingFlags, so the
+		/// dimension had no values, the group was published with ZERO options,
+		/// and both the rail (which drops empty groups) and the chip row (which
+		/// iterates options) showed nothing — while the query still filtered on
+		/// it. The menu read "No buildings match" with no filter on screen and no
+		/// way to clear it.
+		///
+		/// Keeping the selected value as an option makes it chippable and
+		/// removable, which is better than dropping the selection silently: the
+		/// player's choice survives, and it survives VISIBLY.
+		///
+		/// Reachable only since the rail started delivering clicks at all — see
+		/// FilterRail's onChange. Before that no facet could be set, so nothing
+		/// could be carried anywhere.
+		/// </remarks>
+		private static string[] WithSelected(string[] present, IReadOnlyList<string>? selected)
+		{
+			if (selected is null || selected.Count == 0)
+			{
+				return present;
+			}
+
+			var missing = selected
+				.Where(value => !string.IsNullOrWhiteSpace(value))
+				.Where(value => !present.Any(candidate => string.Equals(candidate, value, StringComparison.OrdinalIgnoreCase)))
+				.ToArray();
+
+			if (missing.Length == 0)
+			{
+				return present;
+			}
+
+			return present
+				.Concat(missing)
+				.OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
 				.ToArray();
 		}
 

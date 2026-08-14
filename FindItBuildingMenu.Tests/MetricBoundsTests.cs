@@ -42,6 +42,27 @@ namespace FindItBuildingMenu.Tests
 		};
 
 		[Fact]
+		public void AChosenFilterStaysVisibleWhenNothingInViewCarriesIt()
+		{
+			// Choose "Require road" in Electricity, switch to Landscaping: nothing
+			// there has BuildingFlags. The group used to be published with zero
+			// options, so the rail dropped it and the chip row had nothing to
+			// iterate — while the query still filtered on it. A menu reading
+			// "No buildings match" with no filter on screen and no way to clear
+			// it.
+			BuildingCatalogFacetState state = BuildingCatalogAdapter.BuildFacetState(
+				new[] { Entry(1, cost: 100, workers: null, lotWidth: 2) },
+				new BuildingCatalogQuery(PlacementFlags: new[] { "RequireRoad" }));
+
+			BuildingCatalogFacetGroup placement = Assert.Single(
+				state.Groups.Where(group => group.Id == "placement"));
+			BuildingCatalogFacetOption option = Assert.Single(placement.Options);
+
+			Assert.Equal("RequireRoad", option.Id);
+			Assert.True(option.Selected);
+		}
+
+		[Fact]
 		public void ReportsTheLowestAndHighestPresent()
 		{
 			BuildingCatalogMetricRangeState bounds = BuildingCatalogAdapter.MetricBoundsOf(Source);

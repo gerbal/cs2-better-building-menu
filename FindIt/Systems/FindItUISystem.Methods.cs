@@ -385,22 +385,29 @@ namespace FindItBuildingMenu.Systems
 			// menu". The lens is now mounted in the game's own asset-menu slot
 			// and does not read this binding at all, so there is no screen to
 			// hand back and nothing to except.
+			// Mirror what the game has armed BEFORE deciding what the legacy
+			// panel does about it. This binding is a fact about the game, not a
+			// record of who set it, and it used to be written only on our own
+			// path — so placing a building, pressing Escape, or arming something
+			// from a vanilla surface left it pointing at the last prefab the lens
+			// itself had armed.
+			//
+			// That was invisible while the only consumer was the legacy grid's
+			// faint selected state. The lens grid now draws an accent outline on
+			// the armed tile, which turned a stale value into a tile claiming "a
+			// click on the map places this" when nothing was armed at all.
+			if (prefab is null)
+			{
+				_ActivePrefabId.Value = 0;
+			}
+			else if (_prefabSystem.TryGetEntity(prefab, out var entity))
+			{
+				_ActivePrefabId.Value = entity.Index;
+			}
+
 			if (!settingPrefab)
 			{
 				ToggleFindItPanel(false);
-				return;
-			}
-
-			if (prefab == null)
-			{
-				_ActivePrefabId.Value = 0;
-
-				return;
-			}
-
-			if (_prefabSystem.TryGetEntity(prefab, out var entity))
-			{
-				_ActivePrefabId.Value = entity.Index;
 			}
 		}
 

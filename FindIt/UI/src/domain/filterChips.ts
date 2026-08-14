@@ -148,20 +148,13 @@ export function buildFilterChips(input: FilterChipInput | null | undefined): Fil
   for (const group of input?.facets?.groups ?? []) {
     const options = group?.options ?? [];
 
-    // A group with every option selected is not narrowing anything, so it does
-    // not belong in a list of active filters.
-    //
-    // Availability is why. It is exhaustive — every asset is Locked or
-    // Unlocked — so its resting state is BOTH, and the backend now reports both
-    // as selected so the popover can say so rather than showing two empty boxes
-    // that read as "no filter". Chipped naively that turned the resting state
-    // into "Filters — 2 Active — Locked × Unlocked ×", which claims a narrowing
-    // that is not happening.
-    //
-    // Written as a general rule rather than an availability special case
-    // because it is true of any group: selecting every Role narrows nothing
-    // either, and a chip for it would be just as misleading.
-    if (options.length > 0 && options.every((option) => option?.selected)) continue;
+    // The backend states whether the selection narrows. The UI cannot work it
+    // out: "every option selected" is true of Availability at rest, which
+    // excludes nothing, AND of a selection stranded by a menu switch — "Require
+    // road" carried into Landscaping, where the stranded value is the group's
+    // only option — which excludes everything. Guessing suppressed the chip for
+    // both, leaving that second case a filter with no control attached.
+    if (group?.narrowing === false) continue;
 
     for (const option of options) {
       if (!option?.selected) continue;
