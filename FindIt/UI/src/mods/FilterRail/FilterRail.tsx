@@ -11,6 +11,7 @@ import {
   type RailFacetState,
 } from "domain/filterRail";
 import lockIcon from "images/findit_lock.svg";
+import unlockIcon from "images/findit_unlock.svg";
 import styles from "./filterRail.module.scss";
 
 const TextInput = getModule("game-ui/common/input/text/text-input.tsx", "TextInput");
@@ -103,6 +104,25 @@ export const FilterRail = ({
           // also decided whether the dimension belonged in the options bank
           // rather than here — a split that is gone, along with the bank.
           const searchable = dimension.needsSearch;
+          const options = filterRailOptions(facets, dimension.id, "");
+          // What the selector shows has to match what the menu is showing.
+          // Reported from play: "it shows locked when only unlocked are shown"
+          // — the dimension's icon was a closed padlock whatever the state, so
+          // filtering to Unlocked left a lock on screen saying the opposite.
+          //
+          // Narrowed, the icon becomes the state it is showing. At rest it is
+          // the dimension's identity mark and carries no claim, which is why
+          // the closed padlock is fine there and not fine when narrowed.
+          const icon = dimension.id === "availability" && dimension.selected > 0
+            ? (options.some((option) => option.selected && option.id === "Unlocked") ? unlockIcon : lockIcon)
+            : (DIMENSION_ICONS[dimension.id] ?? "");
+          // The tooltip names the dimension when it is doing nothing, and names
+          // what survives when it is. A count alone ("2") says how many boxes
+          // are ticked, which is not the question the player has.
+          const selectedLabels = options.filter((option) => option.selected).map((option) => option.label);
+          const tooltip = dimension.selected > 0 && selectedLabels.length > 0
+            ? `${label}: ${selectedLabels.join(", ")}`
+            : label;
 
           return (
             <Dropdown
@@ -127,7 +147,7 @@ export const FilterRail = ({
                     renderMetrics()
                   ) : (
                     <Scrollable className={styles.menuList} vertical trackVisibility="scrollable">
-                      {filterRailOptions(facets, dimension.id, searchable ? query : "").map((option) => (
+                      {(searchable ? filterRailOptions(facets, dimension.id, query) : options).map((option) => (
                         // closeOnSelect={false} is what makes a vanilla dropdown a
                         // multi-select control; onToggleSelected is its own API for it,
                         // so nothing here reimplements selection.
@@ -146,12 +166,12 @@ export const FilterRail = ({
                 </div>
               }
             >
-              <Tooltip tooltip={label}>
+              <Tooltip tooltip={tooltip}>
                 <DropdownToggle
                   className={classNames(styles.icon, dimension.selected > 0 && styles.iconActive)}
                   aria-label={label}
                 >
-                  <img src={DIMENSION_ICONS[dimension.id] ?? ""} />
+                  <img src={icon} />
                   {dimension.selected > 0 && <span className={styles.badge}>{dimension.selected}</span>}
                 </DropdownToggle>
               </Tooltip>
