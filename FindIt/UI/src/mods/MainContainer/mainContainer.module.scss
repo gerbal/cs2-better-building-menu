@@ -148,6 +148,12 @@
   display: flex;
   flex-direction: row;
   align-items: flex-end;
+
+  // No z-index here. It was tried at 40 to get above the Chirper and measured
+  // to do nothing: this engine settles the order between `main-container` and
+  // `toolbar`, the two siblings, and a value on a descendant of one of them
+  // cannot reorder its ancestor — the same lesson as :309. The fix lives in
+  // BuildingMenuSurface, on the game's own element, scoped to our mount.
 }
 
 .toolContainer {

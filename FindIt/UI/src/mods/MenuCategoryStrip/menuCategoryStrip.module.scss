@@ -11,6 +11,17 @@
   flex: 0 0 auto;
   padding: 4rem 8rem 5rem;
   border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
+
+  // Cancels the tabs' leading gutter, so the spacing below costs nothing on
+  // the common single-row case. Measured on Roads — 19 tabs, all at y=449, one
+  // row — so a plain `margin-bottom` on .tab would have added dead space under
+  // a strip that does not wrap today. It can wrap at a narrower panel or a
+  // larger fontScale, and this covers that without paying for it now.
+  margin-top: -3rem;
+
+  > * {
+    margin-top: 3rem;
+  }
 }
 
 // Chrome, sizing, hover and selected treatment all come from the vanilla
