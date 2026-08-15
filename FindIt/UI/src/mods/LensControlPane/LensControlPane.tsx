@@ -346,20 +346,34 @@ export const LensControlPane = ({ onCloseMenu }: LensControlPaneProps = {}) => {
               </Button>
             </div>
           </div>
-
-          <div className={styles.row}>
-            <span className={styles.rowLabel}>
-              {label("Tooltip.LABEL[FindItBuildingMenu.ViewMode]", "View")}
-            </span>
-            <div className={styles.rowValue}>
-              <ViewModeBar
-                value={viewModeChoice as CatalogViewMode}
-                onChange={(next) => setViewModeChoice(next)}
-              />
-            </div>
-          </div>
         </>
       )}
+
+      {/* View lives HERE for both surfaces. The zoning view used to draw its
+          own copy of this control inside the content area, so one concept had
+          two homes depending on which menu you opened — reported from play as
+          "the UI is inconsistent between the zoning and other views".
+
+          Group by and Sort by stay gated above: they genuinely do not act on
+          the zoning renderer, which has its own family/density hierarchy and no
+          rows to order. Drawing them here would be drawing controls that cannot
+          act, which is the other half of the same report. They come back when
+          zones become catalog rows.
+
+          Table is omitted for zoning because there is no table renderer for it;
+          the omission moves with the control rather than being re-stated. */}
+      <div className={styles.row}>
+        <span className={styles.rowLabel}>
+          {label("Tooltip.LABEL[FindItBuildingMenu.ViewMode]", "View")}
+        </span>
+        <div className={styles.rowValue}>
+          <ViewModeBar
+            value={viewModeChoice as CatalogViewMode}
+            onChange={(next) => setViewModeChoice(next)}
+            omit={showZoning ? ["table"] : undefined}
+          />
+        </div>
+      </div>
 
       {/* Panel-level controls, below a rule because they are a different kind
           of thing from the rows above: those decide how the qualifying set is

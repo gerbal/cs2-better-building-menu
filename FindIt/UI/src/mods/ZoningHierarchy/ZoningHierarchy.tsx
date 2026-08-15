@@ -7,7 +7,6 @@ import { getLensChoice, setLensChoice } from "domain/buildingLensViewState";
 import { useState } from "react";
 import { getZoneFacts, getZoneFootprints, selectZoneCommand, sortZonesForDisplay, zoneAsCatalogEntry, type ZoneEntry } from "domain/zoningHierarchy";
 import { GroupedResults, type CatalogViewMode } from "mods/GroupedResults/GroupedResults";
-import { ViewModeBar } from "mods/GroupedResults/ViewModeBar";
 import styles from "./zoningHierarchy.module.scss";
 
 const ZoneCatalog$ = bindValue<ZoneEntry[]>(mod.id, "ZoneCatalog", []);
@@ -171,7 +170,6 @@ export const ZoningHierarchyComponent = () => {
         <div className={styles.toolbarSpacer} />
         {/* Table is omitted rather than disabled: its columns are building
             metrics — cost, workers, capacity — that a zone does not have. */}
-        <ViewModeBar value={viewMode} onChange={setViewMode} omit={["table"]} />
       </div>
 
       <GroupedResults

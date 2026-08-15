@@ -112,3 +112,41 @@ describe("Building Lens active-filter summary", () => {
     });
   });
 });
+
+describe("Resting facets are not constraints", () => {
+  const availability = (narrowing: boolean, unlockedSelected: boolean) => ({
+    hasSelection: true,
+    groups: [
+      {
+        id: "availability",
+        label: "Availability",
+        narrowing,
+        options: [
+          { id: "Locked", label: "Locked", selected: true },
+          { id: "Unlocked", label: "Unlocked", selected: unlockedSelected },
+        ],
+      },
+    ],
+  });
+
+  it("does not blame the resting Availability state for an empty menu", () => {
+    // The reported symptom: "No buildings match Locked, Unlocked" over a menu
+    // with nothing filtered. Together those two ARE every asset there is, so
+    // naming them as the reason nothing matched told the player to drop a
+    // constraint that was not applied.
+    const message = getBuildingLensEmptyStateMessage({ facets: availability(false, true) });
+
+    assert.equal(message, "No buildings in this category.");
+  });
+
+  it("still names a real availability narrowing", () => {
+    const message = getBuildingLensEmptyStateMessage({ facets: availability(true, false) });
+
+    assert.equal(message, "No buildings match Locked.");
+  });
+
+  it("does not count a resting group as an active filter", () => {
+    assert.equal(getBuildingLensFilterSummary({ facets: availability(false, true) }).count, 0);
+    assert.equal(getBuildingLensFilterSummary({ facets: availability(true, false) }).count, 1);
+  });
+});

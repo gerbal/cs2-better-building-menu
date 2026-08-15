@@ -71,11 +71,22 @@ function rangesFromState(state: BuildingLensMetricRangeState | null | undefined)
 }
 
 function selectedFacetLabels(state: BuildingLensFacetState | null | undefined): string[] {
-  return (state?.groups ?? []).flatMap((group) =>
-    (group?.options ?? [])
-      .filter((option) => option.selected)
-      .map((option) => option.label || option.id),
-  );
+  return (state?.groups ?? [])
+    // Only groups that actually exclude something. The backend says which —
+    // "every option selected" is true both of Availability at rest, which
+    // narrows nothing, and of a selection stranded by a menu switch, which
+    // narrows everything, so the UI cannot tell them apart itself.
+    //
+    // Counting the resting state produced the empty message "No buildings match
+    // Locked, Unlocked" over a menu with no filter applied: it named the two
+    // states as the reason nothing matched, when together they are every asset
+    // there is. It also inflated the active-filter count on the pane.
+    .filter((group) => group?.narrowing !== false)
+    .flatMap((group) =>
+      (group?.options ?? [])
+        .filter((option) => option.selected)
+        .map((option) => option.label || option.id),
+    );
 }
 
 function selectedFacetCount(state: BuildingLensFacetState | null | undefined): number {
