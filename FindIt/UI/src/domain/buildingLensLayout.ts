@@ -145,6 +145,21 @@ export const BUILDING_LENS_IDENTITY_MIN = 180;
  */
 export const BUILDING_LENS_TABLE_ROW_FURNITURE = 98 + 16 + 8 + 80;
 
+/**
+ * What the control pane takes out of the assembly: its own 379rem plus the
+ * 6rem margin beside it.
+ *
+ * Lives here, with the rest of the layout arithmetic, because two unrelated
+ * places need it: the surface sizes the panel by subtracting it, and the table
+ * has to subtract it again to know how much width a NAME gets. The binding they
+ * both start from is the whole assembly — BuildingLensWidth's own remark is
+ * explicit that it means "the build menu and the control plane beside it" —
+ * and forgetting that produced a name budget 2.2x too large, twice.
+ *
+ * 379rem, not 253rem: the target is 253 PIXELS and 1rem is 0.6667px.
+ */
+export const BUILDING_LENS_CONTROL_PANE_TOTAL = 385;
+
 export type BuildingLensColumnWidths = Record<BuildingLensMetric, number>;
 
 /**

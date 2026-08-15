@@ -32,6 +32,7 @@ import { useLensChoice } from "mods/useLensChoice";
 import lock from "images/findit_lock.svg";
 import unlock from "images/findit_unlock.svg";
 import { useState } from "react";
+import { BUILDING_LENS_CONTROL_PANE_TOTAL } from "domain/buildingLensLayout";
 import styles from "./lensControlPane.module.scss";
 
 const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "BuildingCatalogSortColumn");
@@ -58,7 +59,7 @@ const BuildingLensZoneFamilies$ = bindValue<string[]>(mod.id, "BuildingLensZoneF
  * two thirds the width and look nearly right — the same units slip that hid in
  * BuildingLensTileSize and in lensToolOptions' row height.
  */
-export const LENS_CONTROL_PANE_TOTAL = 385;
+export const LENS_CONTROL_PANE_TOTAL = BUILDING_LENS_CONTROL_PANE_TOTAL;
 
 const LENS_VIEW_MODE_KEY = "viewMode";
 const LENS_GROUP_KEY = "groupBy";

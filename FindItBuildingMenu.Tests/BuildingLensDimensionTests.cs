@@ -28,12 +28,18 @@ namespace FindItBuildingMenu.Tests
 		{
 			// If this fails, the panel reserves a different width than the pane
 			// actually occupies, and they overlap or leave a gap.
+			//
+			// Reads buildingLensLayout.ts, not LensControlPane.tsx. The number
+			// moved there because a SECOND place needs it: the table subtracts
+			// the pane to work out how much width a name gets, and reading the
+			// assembly width as though it were the panel produced a budget 2.2x
+			// too large — twice. LensControlPane now re-exports it.
 			var source = File.ReadAllText(Path.Combine(
-				RepoRoot(), "FindIt", "UI", "src", "mods", "LensControlPane", "LensControlPane.tsx"));
+				RepoRoot(), "FindIt", "UI", "src", "domain", "buildingLensLayout.ts"));
 
-			var match = Regex.Match(source, @"LENS_CONTROL_PANE_TOTAL\s*=\s*(\d+)");
+			var match = Regex.Match(source, @"BUILDING_LENS_CONTROL_PANE_TOTAL\s*=\s*(\d+)");
 
-			Assert.True(match.Success, "LENS_CONTROL_PANE_TOTAL not found in LensControlPane.tsx");
+			Assert.True(match.Success, "BUILDING_LENS_CONTROL_PANE_TOTAL not found in buildingLensLayout.ts");
 			Assert.Equal(BuildingLensWidth.ControlPane, float.Parse(match.Groups[1].Value));
 		}
 
