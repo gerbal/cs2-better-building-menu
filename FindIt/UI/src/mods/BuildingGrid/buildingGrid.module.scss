@@ -105,7 +105,16 @@
   > * + * {
     margin-top: 1rem;
   }
-  border-radius: 3rem;
+  // The game's own asset-tile radius, not a chosen one: index.css defines
+  // `--assetMenuItemBorderRadius: 4rem` and this tile stands in for exactly
+  // that element. 3rem is vanilla's form-control radius and was on-idiom for a
+  // control, but a tile in a build menu is not a control — it is the thing the
+  // vanilla tile beside it is, and it should have that corner.
+  //
+  // The token is declared but never consumed in the shipped CSS, so it cannot
+  // be referenced through `var()` with any confidence about cascade; the value
+  // is stated with its source instead.
+  border-radius: 4rem;
   // No border: the background tint below is what reads as the tile's edge.
   // Spending 2rem of the box on a border on top of that tint was a box drawn
   // twice.

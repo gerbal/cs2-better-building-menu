@@ -116,6 +116,69 @@ export const BuildingMenuSurface = ({ onClose }: BuildingMenuSurfaceProps) => {
     };
   }, []);
 
+  /**
+   * Puts the build menu above the Chirper, which was reported covering the
+   * control pane.
+   *
+   * The chirper was never winning on z-index — it has none. It wins on document
+   * order: under `game-main-screen` the children are [main-container, toolbar,
+   * pause-overlay, tutorial-renderer], the chirper hangs off `toolbar` and we
+   * hang off `main-container`, and positioned elements at `z-index: auto` paint
+   * in tree order.
+   *
+   * A z-index on anything of OURS cannot fix that, and this was measured rather
+   * than assumed: `lensRow` at `z-index: 40` changed nothing, verified against a
+   * stand-in toast injected into the chirper's own parent. The comparison that
+   * decides the result happens between `main-container` and `toolbar`, because
+   * those are the siblings — the same lesson already written at
+   * mainContainer.module.scss:309. So the z-index has to go on the game's
+   * element, and 1 is enough; 10001 was tried and is no better.
+   *
+   * Raising main-container also lifts it over `pause-overlay` (the full-screen
+   * vignette while paused) and `tutorial-renderer` (explicitly z-index 0), both
+   * of which are meant to sit over the HUD. They are raised past it in turn, so
+   * the only pair whose order actually changes is the one we came for.
+   *
+   * Imperative and scoped to the mount for the same reason as the block above:
+   * these are vanilla's elements, and a stylesheet rule would restyle the
+   * game's UI for the whole session — including while our panel is closed and
+   * for whatever other mod is looking at the same nodes.
+   *
+   * This is a stopgap. It trades an unreadable toast for a usable control
+   * surface; the real fix is moving the toast lane so the two do not share the
+   * space at all.
+   */
+  useEffect(() => {
+    const RAISE: ReadonlyArray<readonly [string, string]> = [
+      ['[class*="main-container_"]', "1"],
+      ['[class*="pause-overlay_"]', "2"],
+      ['[class*="tutorial-renderer_"]', "2"],
+    ];
+
+    const applied = RAISE.map(([selector, zIndex]) => {
+      const element = document.querySelector<HTMLElement>(selector);
+      if (!element) return null;
+
+      const previous = element.style.zIndex;
+      element.style.zIndex = zIndex;
+      return { element, previous };
+    }).filter((entry): entry is { element: HTMLElement; previous: string } => entry !== null);
+
+    return () => {
+      for (const { element, previous } of applied) {
+        // Same empty-string trap as justify-content above: the game sets these
+        // from its stylesheet, so the inline value has to be removed rather
+        // than assigned back as "".
+        if (previous) {
+          element.style.zIndex = previous;
+          continue;
+        }
+
+        element.style.removeProperty("z-index");
+      }
+    };
+  }, []);
+
   function beginResize(event: any): void {
     event.preventDefault?.();
     event.stopPropagation?.();
