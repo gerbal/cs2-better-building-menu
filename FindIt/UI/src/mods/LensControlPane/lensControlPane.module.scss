@@ -16,7 +16,12 @@ $pane-width: 379rem;
   display: flex;
   flex-direction: column;
   flex: 0 0 auto;
-  align-self: flex-end;
+  // Stretch to the panel's height rather than hugging its own content. Measured
+  // live at 253x159 beside a 727x200 panel, sitting 41px lower — two boxes with
+  // no shared edge, which is why the assembly read as two things rather than
+  // one. The footer takes margin-top: auto so its controls stay on the bottom
+  // line the eye tracks along the toolbar.
+  align-self: stretch;
   box-sizing: border-box;
   width: $pane-width;
   margin-left: 6rem;
@@ -215,7 +220,10 @@ $pane-width: 379rem;
   flex-direction: row;
   align-items: center;
   justify-content: flex-end;
-  margin-top: 4rem;
+  // auto, not 4rem. The pane stretches to the panel's height now, so the rows
+  // above no longer fill it — without this the footer floats mid-pane with a
+  // gap beneath, and its rule reads as a divider rather than a base.
+  margin-top: auto;
   padding: 6rem 12rem 0;
   border-top: 1rem solid rgba(255, 255, 255, 0.08);
 }
