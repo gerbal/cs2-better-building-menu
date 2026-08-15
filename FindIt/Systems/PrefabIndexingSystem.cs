@@ -770,10 +770,25 @@ namespace FindItBuildingMenu.Systems
 						held,
 						FindItUtil.AssetMap.Keys);
 
+					// The verdict is deferred on the first full index of a session,
+					// for the reason its sibling LogVanillaMenuCoverage states: the
+					// prop generators have not published their substitutions yet, so
+					// every quantity prop reads as lost and is quietly found again on
+					// the next pass. Measured on the run that added this — pass one
+					// said NOT CLEAN with Landscaping missing=8 (TrashContainerEmpty
+					// 01-04, Trashbin01-04) and pass two said missing=0.
+					//
+					// The census itself still prints, because its value is in being
+					// read rather than in being a warning. Only the verdict waits,
+					// since a verdict that retracts itself is worse than none.
+					var verdictReady = FindItUtil.AssetMap.Count > 0;
+
 					Mod.Log.Info(
 						$"[MENU-AUDIT] {report.Menus.Count} vanilla menus, {report.PlacementCount} placements, "
 						+ $"{indexed.Count} indexed assets, {_zoneCatalog.Count} zones"
-						+ (report.IsClean ? "" : " — NOT CLEAN"));
+						+ (verdictReady
+							? report.IsClean ? "" : " — NOT CLEAN"
+							: " — verdict deferred: the generated-prop substitutions are not published yet"));
 
 					// The reason goes next to the census, once, rather than living
 					// only in a source comment nobody reading Modding.log can see.
