@@ -725,119 +725,92 @@ namespace FindItBuildingMenu.Systems
 			/// what vanilla places, what we cover, and what we show that vanilla
 			/// does not. It logs at Info whether or not anything is wrong, because
 			/// the value is in reading it, not in being warned by it.
+			///
+			/// The arithmetic itself now lives in <see cref="VanillaMenuAudit"/>,
+			/// where it is a function of plain data and is covered by tests. This
+			/// method gathers the facts out of the entity world and logs what comes
+			/// back. That split is the point: as a log line the census could only be
+			/// read by booting a save and grepping Modding.log, so nothing stopped
+			/// the mapping regressing between boots.
+			///
+			/// Extras are split in the output. Ones a recorded divergence explains
+			/// are reported as <c>expectedExtras</c>; anything else is
+			/// <c>UNEXPLAINED</c>, which is either a new divergence to write down or
+			/// a bug.
 			/// </remarks>
 			private void LogVanillaMenuAudit()
 			{
 				try
 				{
 					var indexed = FindItUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any];
-					var indexedByEntity = new Dictionary<int, PrefabIndex>();
 
-					foreach (var entry in indexed)
+					// Everything we hold at all, menu or not. Zones included
+					// deliberately — leaving them out is the blindness this exists
+					// to remove.
+					var held = new HashSet<int>(indexed.Select(entry => entry.Id));
+
+					foreach (var zone in _zoneCatalog)
 					{
-						indexedByEntity[entry.Id] = entry;
+						held.Add(zone.Id);
 					}
 
-					var zoned = new HashSet<int>(_zoneCatalog.Select(zone => zone.Id));
-
-					// Forward: what the game places, and whether we hold it at all.
-					var placedByMenu = new Dictionary<string, List<VanillaMenuPlacement>>();
-
-					foreach (var placement in _menuPlacements.Values)
-					{
-						var menu = placement.Menu ?? "(none)";
-
-						if (!placedByMenu.TryGetValue(menu, out var list))
-						{
-							placedByMenu[menu] = list = new List<VanillaMenuPlacement>();
-						}
-
-						list.Add(placement);
-					}
-
-					// Reverse: what we would show under a menu name, whether or not the
-					// game places it there. Zones included deliberately — leaving them
-					// out is the blindness this exists to remove.
-					var oursByMenu = new Dictionary<string, int>();
-					var unplacedByMenu = new Dictionary<string, List<string>>();
-
-					static void Note(Dictionary<string, List<string>> into, string key, string what)
-					{
-						if (!into.TryGetValue(key, out var list))
-						{
-							into[key] = list = new List<string>();
-						}
-
-						list.Add(what);
-					}
-
-					var placedEntities = new HashSet<int>(_menuPlacements.Keys);
-
-					foreach (var entry in indexed)
-					{
-						var menu = entry.UiMenuName;
-
-						if (string.IsNullOrWhiteSpace(menu))
-						{
-							continue;
-						}
-
-						oursByMenu.TryGetValue(menu!, out var count);
-						oursByMenu[menu!] = count + 1;
-
-						if (!placedEntities.Contains(entry.Id))
-						{
-							Note(unplacedByMenu, menu!, entry.PrefabName ?? $"entity:{entry.Id}");
-						}
-					}
+					var report = VanillaMenuAudit.Compare(
+						_menuPlacements.Values.Select(placement => new VanillaMenuPlacementFact(
+							placement.Entity.Index,
+							_prefabSystem.TryGetPrefab<PrefabBase>(placement.Entity, out var placed)
+								? placed?.name ?? string.Empty
+								: string.Empty,
+							placement.Menu ?? "(none)",
+							placement.Category ?? string.Empty)),
+						indexed.Select(entry => new IndexedMenuFact(
+							entry.Id,
+							entry.PrefabName ?? $"entity:{entry.Id}",
+							entry.UiMenuName ?? string.Empty,
+							entry.IsServiceUpgrade)),
+						held,
+						FindItUtil.AssetMap.Keys);
 
 					Mod.Log.Info(
-						$"[MENU-AUDIT] {placedByMenu.Count} vanilla menus, {_menuPlacements.Count} placements, "
-						+ $"{indexed.Count} indexed assets, {_zoneCatalog.Count} zones");
+						$"[MENU-AUDIT] {report.Menus.Count} vanilla menus, {report.PlacementCount} placements, "
+						+ $"{indexed.Count} indexed assets, {_zoneCatalog.Count} zones"
+						+ (report.IsClean ? "" : " — NOT CLEAN"));
 
-					foreach (var menu in placedByMenu.Keys.OrderBy(key => key, StringComparer.Ordinal))
+					// The reason goes next to the census, once, rather than living
+					// only in a source comment nobody reading Modding.log can see.
+					if (report.Menus.Any(line => line.ExpectedExtras.Count > 0))
 					{
-						var placements = placedByMenu[menu];
-						var categories = new HashSet<string>(placements.Select(p => p.Category ?? string.Empty));
-						// Substitutions count as held. A quantity or vehicle prop is
-						// replaced rather than dropped — the generators split it into
-						// one asset per state and record the swap in AssetMap — so the
-						// player gets more than vanilla offers, not less. Counting
-						// them as gaps reported eight phantom losses in Landscaping,
-						// which is exactly the false alarm that makes an audit
-						// stop being read.
-						var held = placements.Count(p =>
-							indexedByEntity.ContainsKey(p.Entity.Index)
-							|| zoned.Contains(p.Entity.Index)
-							|| (_prefabSystem.TryGetPrefab<PrefabBase>(p.Entity, out var substituted)
-								&& substituted?.name is string name
-								&& FindItUtil.AssetMap.ContainsKey(name)));
-						oursByMenu.TryGetValue(menu, out var ours);
-						unplacedByMenu.TryGetValue(menu, out var extras);
-
-						var line =
-							$"[MENU-AUDIT] menu=\"{menu}\" categories={categories.Count} vanilla={placements.Count} "
-							+ $"held={held} missing={placements.Count - held} ours={ours}";
-
-						if ((extras?.Count ?? 0) > 0)
-						{
-							// Capped: a long tail here is a pattern, not a list to read.
-							line += $" notPlacedByVanilla={extras!.Count} [{string.Join(",", extras.Take(8))}"
-								+ (extras.Count > 8 ? ",…]" : "]");
-						}
-
-						Mod.Log.Info(line);
+						Mod.Log.Info($"[MENU-AUDIT] expectedExtras: {VanillaMenuAudit.Divergences}");
 					}
 
-					// Menus we file assets under that the game has no such menu for at
-					// all. A name we invented, or one the walk could not see.
-					foreach (var menu in oursByMenu.Keys.OrderBy(key => key, StringComparer.Ordinal))
+					foreach (var line in report.Menus)
 					{
-						if (!placedByMenu.ContainsKey(menu))
+						var text =
+							$"[MENU-AUDIT] menu=\"{line.Menu}\" categories={line.Categories} vanilla={line.VanillaPlaces} "
+							+ $"held={line.Held} missing={line.Missing.Count} ours={line.Ours}";
+
+						// Capped: a long tail here is a pattern, not a list to read.
+						if (line.Missing.Count > 0)
 						{
-							Mod.Log.Warn(
-								$"[MENU-AUDIT] menu=\"{menu}\" is not a vanilla menu at all, yet {oursByMenu[menu]} of our assets claim it");
+							text += $" [{Cap(line.Missing)}]";
 						}
+
+						if (line.ExpectedExtras.Count > 0)
+						{
+							text += $" expectedExtras={line.ExpectedExtras.Count} [{Cap(line.ExpectedExtras)}]";
+						}
+
+						if (line.UnexplainedExtras.Count > 0)
+						{
+							text += $" UNEXPLAINED={line.UnexplainedExtras.Count} [{Cap(line.UnexplainedExtras)}]";
+						}
+
+						Mod.Log.Info(text);
+					}
+
+					foreach (var menu in report.InventedMenus)
+					{
+						Mod.Log.Warn(
+							$"[MENU-AUDIT] menu=\"{menu}\" is not a vanilla menu at all, yet our assets claim it");
 					}
 				}
 				catch (Exception ex)
@@ -845,6 +818,9 @@ namespace FindItBuildingMenu.Systems
 					Mod.Log.Error(ex, "[MENU-AUDIT] failed");
 				}
 			}
+
+			private static string Cap(IReadOnlyList<string> names) =>
+				string.Join(",", names.Take(8)) + (names.Count > 8 ? ",…" : string.Empty);
 
 			private void LogVanillaMenuCoverage()
 			{
