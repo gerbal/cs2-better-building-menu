@@ -159,5 +159,31 @@ namespace FindItBuildingMenu.Domain.Enums
 		Vehicles_Plane,
 		[CategoryIcon("coui://finditbuildingmenu/Icons/Colored/GenericVehicles.svg")]
 		Vehicles_Misc,
+
+		// The zone families, which are the game's own: ZoneData.m_AreaType plus
+		// ZoneFlags.Office is what it switches on, and ZonePrefab derives its
+		// "ZonesOffice"/"Zones{AreaType}" tags from the same two fields.
+		//
+		// Same icons as the Buildings_* rows above, deliberately. A residential
+		// ZONE and a residential BUILDING are the same idea at two scales, and
+		// giving them different glyphs would invent a distinction the game does
+		// not draw.
+		[Obsolete("Use PrefabCategory", true)]
+		Zones = PrefabCategory.Zones,
+		[CategoryIcon("Media/Game/Icons/ZoneResidential.svg")]
+		Zones_Residential,
+		[CategoryIcon("Media/Game/Icons/ZoneCommercial.svg")]
+		Zones_Commercial,
+		[CategoryIcon("Media/Game/Icons/ZoneIndustrial.svg")]
+		Zones_Industrial,
+		[CategoryIcon("Media/Game/Icons/ZoneOffice.svg")]
+		Zones_Office,
+		[CategoryIcon("Media/Game/Icons/ZoneExtractors.svg")]
+		Zones_Extractors,
+		// Zones whose AreaType the data does not distinguish at all. IndexZones
+		// drops these from its own catalog; the index keeps them, because being
+		// unclassifiable is not a reason to be unarmable.
+		[CategoryIcon("coui://finditbuildingmenu/Icons/Standard/StarAll.svg")]
+		Zones_Misc,
 	}
 }
