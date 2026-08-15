@@ -136,10 +136,11 @@ namespace FindItBuildingMenu.Domain
 			writer.Write(CategoryLabel ?? Category);
 			writer.PropertyName("subCategoryLabel");
 			writer.Write(SubCategoryLabel ?? SubCategory);
-			writer.PropertyName("vanillaSection");
-			writer.Write(VanillaSection ?? string.Empty);
-			writer.PropertyName("vanillaSubCategory");
-			writer.Write(VanillaSubCategory ?? string.Empty);
+			// VanillaSection and VanillaSubCategory are NOT written. They are the
+			// query engine's, used to scope a menu server-side, and no component
+			// has ever read them off an entry — so sending them was two strings
+			// per row per render for nothing. The record keeps both; only the
+			// wire loses them.
 			writer.PropertyName("thumbnail");
 			writer.Write(Thumbnail);
 			writer.PropertyName("fallbackThumbnail");
@@ -158,8 +159,8 @@ namespace FindItBuildingMenu.Domain
 			writer.Write((int)ZoneType);
 			writer.PropertyName("hasParking");
 			writer.Write(HasParking);
-			writer.PropertyName("isUniqueMesh");
-			writer.Write(IsUniqueMesh);
+			// Same for IsUniqueMesh: it drives a server-side filter in Filters.cs
+			// and nothing renders it.
 			writer.PropertyName("isVanilla");
 			writer.Write(IsVanilla);
 			writer.PropertyName("isLocked");

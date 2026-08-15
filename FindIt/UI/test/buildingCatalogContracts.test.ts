@@ -42,7 +42,6 @@ function entry(id: number): BuildingCatalogEntry {
     buildingLevel: 1,
     zoneType: 0,
     hasParking: id % 2 === 0,
-    isUniqueMesh: false,
     isVanilla: true,
     isFavorited: false,
     pdxModsId: "",
