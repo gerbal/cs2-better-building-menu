@@ -6,8 +6,6 @@ export interface BuildingCatalogEntry {
   subCategory: string;
   categoryLabel?: string;
   subCategoryLabel?: string;
-  vanillaSection?: string;
-  vanillaSubCategory?: string;
   thumbnail: string;
   /**
    * Drawn when `thumbnail` resolves to nothing. The game's thumbnail camera
@@ -22,7 +20,6 @@ export interface BuildingCatalogEntry {
   buildingLevel: number;
   zoneType: number;
   hasParking: boolean;
-  isUniqueMesh: boolean;
   isVanilla: boolean;
   /**
    * Milestone-gated, per the game's own enableable Locked component.
