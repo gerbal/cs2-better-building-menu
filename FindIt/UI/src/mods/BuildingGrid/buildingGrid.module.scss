@@ -69,7 +69,23 @@
 // whole trade against the table: fewer rows on screen, but each one identified
 // by a glance instead of a line of text.
 .tile {
-  @include _base.transparentButton(false, true);
+  // baseButton, not transparentButton, and the difference is one declaration.
+  // transparentButton adds four things on top of baseButton and this tile keeps
+  // none of them: `background-color: transparent` (overridden two rules below),
+  // `:hover rgba(0,0,0,.3)` (overridden), an `img` colouring skipped because
+  // $coloredImage is true, and a `[disabled]` block that never fires — the
+  // Button gets `aria-disabled`/`data-locked`, never `disabled`, which is
+  // measurable: a locked tile computes `rgba(255,255,255,.1)`, and that mixin
+  // would have forced `transparent !important`.
+  //
+  // The fourth thing does fire: `:active { background-color:
+  // var(--accentColorDark-focused) !important }` — a #00c2ff cyan flash, and
+  // !important, so the pressed state below could not be written without
+  // shouting back. That is a BUTTON idiom borrowed onto an asset tile, and it
+  // is brighter than the armed colour, so pressing an unarmed tile flashed
+  // louder than the tile the tool is actually holding. Dropping the mixin
+  // removes it rather than out-ranking it.
+  @include _base.baseButton(false, true);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -105,16 +121,18 @@
   > * + * {
     margin-top: 1rem;
   }
-  // The game's own asset-tile radius, not a chosen one: index.css defines
-  // `--assetMenuItemBorderRadius: 4rem` and this tile stands in for exactly
-  // that element. 3rem is vanilla's form-control radius and was on-idiom for a
-  // control, but a tile in a build menu is not a control — it is the thing the
-  // vanilla tile beside it is, and it should have that corner.
+  // The game's own asset-tile radius, not a chosen one. 3rem is vanilla's
+  // form-control radius and was on-idiom for a control, but a tile in a build
+  // menu is not a control — it is the thing the vanilla tile beside it is, and
+  // it should have that corner.
   //
-  // The token is declared but never consumed in the shipped CSS, so it cannot
-  // be referenced through `var()` with any confidence about cascade; the value
-  // is stated with its source instead.
-  border-radius: 4rem;
+  // 8rem, read off the element rather than off the token. This was 4rem for one
+  // commit on the strength of `--assetMenuItemBorderRadius: 4rem` in index.css.
+  // That token is declared and consumed ZERO times in the shipped CSS; the rule
+  // that actually draws the asset tile is `.item_a5m { border-radius: 8rem }`,
+  // literal. A declared-and-unused token is not evidence about what the player
+  // sees, and the earlier comment noticed it was unconsumed and used it anyway.
+  border-radius: 8rem;
   // No border: the background tint below is what reads as the tile's edge.
   // Spending 2rem of the box on a border on top of that tint was a box drawn
   // twice.
@@ -136,39 +154,73 @@
   }
 }
 
-// No border to swap a color on anymore, so the hover cue is a background
-// lift instead — brighter than the base 0.22 tint and now also brighter
-// than the old un-hovered fallback (0.1), so the affordance still reads
-// against the tile's own edge tint rather than disappearing into it.
+// The pointer states, on the ground channel. Both values are vanilla's own for
+// this element: `.item_a5m` sets `--hoverColorNormal: var(--hoverColorBright)`
+// and `--activeColorNormal: var(--activeColorBright)`, i.e. the asset tile opts
+// into the BRIGHT pair rather than the base `--hoverColor` (0.1) / `--activeColor`
+// (0.2) that most controls take. Measured at the mount: 0.15 and 0.3.
+//
+// Hover was a hardcoded 0.16 — within a hair of right, but a number nobody could
+// re-derive. Pressed did not exist at all, so the tile gave no feedback between
+// the click and the tool arming.
 .tile:hover {
-  background-color: rgba(255, 255, 255, 0.16);
+  background-color: var(--hoverColorBright);
+}
+
+.tile:active {
+  background-color: var(--activeColorBright);
 }
 
 // The armed building — the one a click on the map will place.
 //
-// An accent border rather than another background tint: hover is already a
-// lift to 0.16, and a third brightness step would have to sit between hover
-// and base to be distinguishable, which is a difference nobody can see at
-// 72rem. A border reads as a different KIND of state, which is what it is:
-// hover is where the cursor is, this is what the tool is holding.
+// A HUE, not a fourth step on the same luminance ramp. This was an inset accent
+// ring plus a 0.16 tint, which put armed, hover (0.16) and locked (0.1) on one
+// brightness axis where the only thing separating armed from hover was a 2rem
+// line at 67x53. Vanilla does not do that: `.item_a5m.selected` fills with
+// `var(--selectedColor)` (#1e83aa) and leaves the ramp to the pointer states.
+// Filling is also what frees the ring for the compare selection later.
 //
-// An inset box-shadow, NOT a border. .tile is border-box at height 80rem with
-// its content budgeted to the rem: 1 padding + 45 thumbnail + 1 gap + 32 label
-// + 1. A 2rem border leaves 74rem where 78 is needed, and .tileName is
-// overflow: hidden — so the armed tile alone would clip the bottom of its
-// second label line and wrap differently from its neighbours, because
-// tileLabelLineBudget still measures the unbordered width. A shadow paints in
-// the same place and costs no layout.
+// The thumbnail picks up vanilla's drop-shadow on the same rule, which is what
+// keeps a dark silhouette legible once the ground goes saturated.
 .tileArmed {
-  box-shadow: inset 0 0 0 2rem var(--accentColorNormal);
-  background-color: rgba(255, 255, 255, 0.16);
+  background-color: var(--selectedColor);
+
+  .thumb {
+    filter: drop-shadow(0 0 1rem rgba(0, 0, 0, 0.5));
+  }
 }
 
-// Hover on the armed tile must still read as hover, or the tile the cursor is
-// over becomes indistinguishable from the tile the tool is holding.
+// Armed must restate itself under :hover and :active or it loses them on
+// specificity: `.tileArmed` is one class and `.tile:hover` is a class plus a
+// pseudo, so the white tint would paint straight over the blue.
+//
+// Vanilla's asset tile holds one flat `--selectedColor` across selected and
+// selected:hover, which is a tile that stops answering the cursor the moment it
+// is armed. The two shades below are still vanilla's — `--selectedColor-hover`
+// and `--selectedColor-active` are declared tokens (#2398c5 / #25a1d1) that its
+// toggle controls use for exactly this — so armed keeps its hue channel and
+// still reads as hovered.
 .tileArmed:hover {
-  background-color: rgba(255, 255, 255, 0.26);
+  background-color: var(--selectedColor-hover);
 }
+
+.tileArmed:active {
+  background-color: var(--selectedColor-active);
+}
+
+// NO focus rule, deliberately, and this is the one state of the five that is
+// missing. Vanilla marks focus with a `focused` CLASS rather than `:focus`
+// (`.item_a5m.focused.selected { background-color: var(--focusedColor) }`), and
+// that class is handed out by the game's focus manager to controls that
+// register a focus key. Every focus key in this mod is `FOCUS_DISABLED` and the
+// tile passes none at all, so the class can never arrive: measured live with 31
+// focused elements on screen and zero inside this panel.
+//
+// A `.focused` rule here would therefore be a selector that cannot match — the
+// same dead CSS this file just finished deleting 32 of. Focus needs the panel
+// wired into the focus system first, and that needs a keypress test, which no
+// synthetic input on this host can perform. It belongs with cm-z9lm (Escape),
+// which is blocked on the same thing.
 
 // Two lines, then ellipsis. The height is reserved whether or not the second
 // line is drawn: a tile that resizes to its label would break the grid's
@@ -207,6 +259,14 @@
 // `filter: grayscale(100%) contrast(80%) brightness(0%)` on the thumbnail — a
 // black silhouette — over a lighter background, and keeps hover responding so
 // the tile reads as disabled rather than dead.
+// The two backgrounds here are vanilla's verbatim — `.item_a5m[disabled]` is
+// .1 and `.item_a5m[disabled]:hover` is .15 — and they are deliberately kept.
+// The design called for deleting both on the reasoning that locked was dimmer
+// than hover on one shared channel. That reasoning was right about the axis and
+// wrong about the fix: locked keeps its own pair, and it is hover and armed
+// that moved off the ramp (above). Deleting these would have left a locked tile
+// with no hover response at all, which says unavailable when the truth is
+// merely locked — vanilla routes the click and so do we.
 .tile[data-locked="true"] {
   background-color: rgba(255, 255, 255, 0.1);
 
@@ -214,12 +274,38 @@
     filter: grayscale(100%) contrast(80%) brightness(0%);
   }
 
+  // The text channel, not opacity. `opacity: 0.55` dimmed the ellipsis along
+  // with the characters and could not be themed; this is the game's own token
+  // for locked text, so it follows the player's theme like every other label.
   .tileName {
-    opacity: 0.55;
+    color: var(--normalTextColorLocked);
   }
 }
 
 .tile[data-locked="true"]:hover {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+// Locked wins over armed, and this is vanilla's answer rather than a choice.
+// `.item_a5m[disabled].selected` and `[disabled].selected:hover` both keep the
+// locked ground and the black silhouette — the asset tile never draws a
+// selection colour under a locked thumbnail. That is also why the figure/ground
+// question the design flagged as untested (a black silhouette on saturated
+// #1e83aa at 67x53) does not need testing: the pairing should not exist.
+//
+// Stated defensively even though `canPlace` should keep a locked entry from
+// arming: if that ever changes, the tile degrades to locked rather than to an
+// unreadable one.
+.tile[data-locked="true"].tileArmed,
+.tile[data-locked="true"].tileArmed:active {
+  background-color: rgba(255, 255, 255, 0.1);
+
+  .thumb {
+    filter: grayscale(100%) contrast(80%) brightness(0%);
+  }
+}
+
+.tile[data-locked="true"].tileArmed:hover {
   background-color: rgba(255, 255, 255, 0.15);
 }
 
@@ -268,18 +354,25 @@ $sorted-metric-row: 14rem;
   }
 }
 
-// Vanilla's own colour and size: 16rem, #ffaa00, bottom-right — but of the
-// thumbnail, not of the tile. Vanilla's card has no name under it, so its
-// bottom-right is the thumbnail's; ours is the label's, and at 2rem the glyph
-// sat squarely on the second line ("Bus Stop Shel…and🔒"). 34rem lifts it clear:
-// 1rem bottom padding + 32rem label + 1rem gap.
+// Vanilla's own size and place: 16rem, bottom-right — but of the thumbnail, not
+// of the tile. Vanilla's card has no name under it, so its bottom-right is the
+// thumbnail's; ours is the label's, and at 2rem the glyph sat squarely on the
+// second line ("Bus Stop Shel…and🔒"). 34rem lifts it clear: 1rem bottom padding
+// + 32rem label + 1rem gap.
+//
+// The colour is the game's `--lockedColor` rather than the hardcoded #ffaa00
+// that was here. At this mount point that token redirects to
+// `var(--highlightYellow)` = #ffcb00, so the glyph shifts a shade and, more to
+// the point, starts following the theme instead of pinning one build's value.
+// The base declaration is #d38f07; which one wins is a cascade question, which
+// is the argument for naming the token rather than copying either number.
 .lockGlyph {
   position: absolute;
   right: 2rem;
   bottom: 34rem;
   width: 16rem;
   height: 16rem;
-  background-color: #ffaa00;
+  background-color: var(--lockedColor);
   mask-size: contain;
   mask-position: center;
   mask-repeat: no-repeat;
