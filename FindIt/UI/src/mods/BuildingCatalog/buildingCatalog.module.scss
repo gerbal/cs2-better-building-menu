@@ -84,7 +84,11 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   .row {
     height: 84rem;
     min-height: 84rem;
-    gap: 2rem;
+    // Was `gap: 2rem` — a no-op in this engine, so this
+    // spacing never drew. Same measurement, stated as margins.
+    > * + * {
+      margin-left: 2rem;
+    }
   }
 
   .rowSelect {
@@ -92,7 +96,11 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
     min-height: 80rem;
     padding-top: 2rem;
     padding-bottom: 2rem;
-    gap: 2rem;
+    // Was `gap: 2rem` — a no-op in this engine, so this
+    // spacing never drew. Same measurement, stated as margins.
+    > * + * {
+      margin-left: 2rem;
+    }
   }
 
   .thumbnail {
@@ -187,7 +195,11 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 .facetPanel {
   display: flex;
   flex-direction: column;
-  gap: 4rem;
+  // Was `gap: 4rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  > * + * {
+    margin-top: 4rem;
+  }
   padding: 4rem 8rem 6rem;
   border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
 }
@@ -196,7 +208,11 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 4rem;
+  // Was `gap: 4rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  > * + * {
+    margin-left: 4rem;
+  }
 }
 
 .facetToggle,
@@ -239,7 +255,14 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  gap: 6rem 8rem;
+  // Was `gap: 6rem 8rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  margin-left: -8rem;
+  margin-top: -6rem;
+  > * {
+    margin-left: 8rem;
+    margin-top: 6rem;
+  }
   // Keep the drawer bounded while allowing dense option groups to scroll
   // inside their own column instead of painting over the catalog rows.
   max-height: 192rem;
@@ -271,7 +294,11 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   flex: 1 1 260rem;
   min-width: 220rem;
   min-height: 0;
-  gap: 2rem;
+  // Was `gap: 2rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  > * + * {
+    margin-top: 2rem;
+  }
 }
 
 .facetGroupLabel {
@@ -296,7 +323,14 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   flex-direction: row;
   flex-wrap: wrap;
   align-content: flex-start;
-  gap: 3rem;
+  // Was `gap: 3rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  margin-left: -3rem;
+  margin-top: -3rem;
+  > * {
+    margin-left: 3rem;
+    margin-top: 3rem;
+  }
   min-height: 0;
   max-height: 144rem;
   overflow-y: auto;
@@ -326,7 +360,11 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   max-width: 100%;
   min-width: 0;
   padding: 3rem 7rem;
-  gap: 4rem;
+  // Was `gap: 4rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  > * + * {
+    margin-left: 4rem;
+  }
   font-size: var(--fontSizeS);
   justify-content: flex-start;
 }
@@ -356,7 +394,11 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 5rem;
+  // Was `gap: 5rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  > * + * {
+    margin-left: 5rem;
+  }
   flex: 1 1 auto;
   min-width: 0;
   min-height: 27rem;
@@ -385,7 +427,11 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 .metricRangePanel {
   display: flex;
   flex-direction: column;
-  gap: 4rem;
+  // Was `gap: 4rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  > * + * {
+    margin-top: 4rem;
+  }
   min-width: 0;
   padding: 4rem 8rem 6rem;
 }
@@ -394,7 +440,11 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 4rem;
+  // Was `gap: 4rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  > * + * {
+    margin-left: 4rem;
+  }
   min-width: 0;
 }
 
@@ -435,7 +485,11 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 .metricRangeGroups {
   display: flex;
   flex-direction: column;
-  gap: 3rem;
+  // Was `gap: 3rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  > * + * {
+    margin-top: 3rem;
+  }
   // Six compact rows need slightly more than the categorical drawer's
   // two-column budget; keep the whole set visible before the catalog starts.
   max-height: 240rem;
@@ -463,7 +517,11 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 5rem;
+  // Was `gap: 5rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  > * + * {
+    margin-left: 5rem;
+  }
   min-height: 28rem;
 }
 
@@ -482,7 +540,11 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   flex: 0 0 154rem;
   flex-direction: row;
   align-items: center;
-  gap: 3rem;
+  // Was `gap: 3rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  > * + * {
+    margin-left: 3rem;
+  }
 }
 
 .metricRangeInput {
@@ -512,7 +574,14 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   flex-direction: row;
   align-items: center;
   flex-wrap: wrap;
-  gap: 3rem;
+  // Was `gap: 3rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  margin-left: -3rem;
+  margin-top: -3rem;
+  > * {
+    margin-left: 3rem;
+    margin-top: 3rem;
+  }
   padding: 4rem 8rem 8rem;
   border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
 }
@@ -526,7 +595,11 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 
 
 .columnHeader {
-  gap: $row-gap;
+  // Was `gap: $row-gap` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  > * + * {
+    margin-left: $row-gap;
+  }
   // Right padding reserves exactly what the row spends after its last metric
   // cell — see the geometry block at the top of this file. The rows' scrollbar
   // is added on top of it when the rows actually scroll.
@@ -607,7 +680,11 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 8rem;
+  // Was `gap: 8rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  > * + * {
+    margin-left: 8rem;
+  }
   margin: 6rem 8rem;
   padding: 6rem 8rem;
   border-radius: 3rem;
@@ -660,7 +737,11 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   // Declared, but measured at 0 between this row's three children on Cohtml
   // 1.64 — so the header's trailing reserve is computed WITHOUT it. Do not
   // trust this value when reasoning about the row's width; measure.
-  gap: $row-gap;
+  // Was `gap: $row-gap` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  > * + * {
+    margin-left: $row-gap;
+  }
   justify-content: flex-start;
   text-align: left;
   color: var(--menuTitleNormal);
@@ -678,7 +759,11 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   height: 88rem;
   min-height: 88rem;
   padding: 2rem $row-padding-right 2rem 8rem;
-  gap: $row-gap;
+  // Was `gap: $row-gap` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  > * + * {
+    margin-left: $row-gap;
+  }
   justify-content: flex-start;
   align-items: center;
   text-align: left;
@@ -777,7 +862,11 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   min-width: 0;
   flex-direction: row;
   align-items: center;
-  gap: 4rem;
+  // Was `gap: 4rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  > * + * {
+    margin-left: 4rem;
+  }
   height: 18rem;
   min-height: 18rem;
   max-height: 18rem;
@@ -1039,12 +1128,20 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 .compareRows {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  // Was `gap: 2rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  > * + * {
+    margin-top: 2rem;
+  }
 }
 
 .compareRow {
   min-height: 28rem;
-  gap: 4rem;
+  // Was `gap: 4rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  > * + * {
+    margin-left: 4rem;
+  }
 }
 
 .compareIdentity {
@@ -1210,7 +1307,11 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   display: flex;
   flex-direction: row;
   align-items: baseline;
-  gap: 3rem;
+  // Was `gap: 3rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  > * + * {
+    margin-left: 3rem;
+  }
   margin-right: 10rem;
   font-size: var(--fontSizeXS);
 }

@@ -7,7 +7,14 @@
   flex-direction: row;
   flex-wrap: wrap;
   align-content: flex-start;
-  gap: 4rem;
+  // Was `gap: 4rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  margin-left: -4rem;
+  margin-top: -4rem;
+  > * {
+    margin-left: 4rem;
+    margin-top: 4rem;
+  }
   padding: 4rem 0;
 }
 
@@ -112,7 +119,11 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 7rem;
+  // Was `gap: 7rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  > * + * {
+    margin-left: 7rem;
+  }
   color: var(--menuText2Normal);
   font-size: var(--fontSizeXS);
 }

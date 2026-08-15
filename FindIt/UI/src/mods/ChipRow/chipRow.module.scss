@@ -18,7 +18,14 @@
   flex-direction: row;
   align-items: center;
   flex-wrap: wrap;
-  gap: 4rem;
+  // Was `gap: 4rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  margin-left: -4rem;
+  margin-top: -4rem;
+  > * {
+    margin-left: 4rem;
+    margin-top: 4rem;
+  }
   padding: 4rem 10rem;
 }
 

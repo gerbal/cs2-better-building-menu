@@ -13,7 +13,11 @@
   display: flex;
   flex-direction: column;
   flex: 0 0 auto;
-  gap: 3rem;
+  // Was `gap: 3rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  > * + * {
+    margin-top: 3rem;
+  }
   padding: 4rem 8rem 6rem;
   border-bottom: 1rem solid rgba(255, 255, 255, 0.1);
 }
@@ -51,7 +55,14 @@
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  gap: 4rem;
+  // Was `gap: 4rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  margin-left: -4rem;
+  margin-top: -4rem;
+  > * {
+    margin-left: 4rem;
+    margin-top: 4rem;
+  }
 }
 
 // Big enough to recognise by silhouette without reading the label. This is the
@@ -89,7 +100,11 @@
   box-sizing: border-box;
   height: 80rem;
   padding: 1rem 2rem;
-  gap: 1rem;
+  // Was `gap: 1rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  > * + * {
+    margin-top: 1rem;
+  }
   border-radius: 3rem;
   // No border: the background tint below is what reads as the tile's edge.
   // Spending 2rem of the box on a border on top of that tint was a box drawn
@@ -264,7 +279,11 @@ $sorted-metric-row: 14rem;
 .card {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  // Was `gap: 2rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  > * + * {
+    margin-top: 2rem;
+  }
   // A ceiling, not a width: the vanilla Tooltip container it renders into is
   // narrower than this anyway — measured 184px at 720p — so raising the cap
   // does nothing on its own. The long lines wrap instead; see .cardValue.
