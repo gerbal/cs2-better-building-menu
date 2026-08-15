@@ -73,8 +73,12 @@ public sealed class BuildingCatalogQueryEngineTests
 			var scoped = new BuildingCatalogQuery { UiMenu = "Roads" };
 			var unscoped = new BuildingCatalogQuery();
 
-			Assert.Equal(BuildingCatalogQuery.DefaultLimit, scoped.StartingLimit);
-			Assert.Equal(scoped.StartingLimit, unscoped.StartingLimit);
+			// Asserted on Limit itself now. This used to read StartingLimit, a
+			// property whose two branches had both been walked back to
+			// DefaultLimit — so it compared the constant to itself and would have
+			// held whatever the scoping did.
+			Assert.Equal(BuildingCatalogQuery.DefaultLimit, scoped.Limit);
+			Assert.Equal(scoped.Limit, unscoped.Limit);
 		}
 
 		[Fact]

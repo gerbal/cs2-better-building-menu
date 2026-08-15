@@ -75,49 +75,6 @@ namespace FindItBuildingMenu.Domain
 		public const int WindowStep = 100;
 
 		/// <summary>
-		/// The window a menu-scoped query opens with.
-		/// </summary>
-		/// <remarks>
-		/// A vanilla menu is one set, not a sequence of pages. That argument was
-		/// made for the old EffectiveLimit special case, it was right, and removing
-		/// it with the pager was the error: opening Roads &amp; Networks then showed
-		/// 100 of its 401 assets, and everything past the hundredth was reachable
-		/// only by finding a control at the end of a list the player had no reason
-		/// to think was incomplete. Reported from play within the hour.
-		///
-		/// It comes back as a STARTING size rather than a forced one. The old code
-		/// pinned EffectiveLimit so a scoped view could never grow at all; this is
-		/// just where the window begins, so a menu larger than the ceiling still
-		/// grows the same way everything else does. The largest vanilla menu is
-		/// Roads &amp; Networks at 401, so in practice one window covers every menu.
-		///
-		/// WITHDRAWN 2026-08-09, back to <see cref="DefaultLimit"/>. The reason it
-		/// existed was that a player who reached the hundredth row had no way
-		/// onward except a control at the end of a list they had no reason to
-		/// think was incomplete — and that was true, because the scroll never
-		/// grew the window: cs2/ui's Scrollable takes an onScroll prop and never
-		/// forwards it, so the passive half of the trigger had never once fired.
-		/// A frame loop over scrollTop replaced it, and scrolling to the end now
-		/// grows the list unaided, which is what this constant was standing in
-		/// for.
-		///
-		/// It was also expensive, measured on the live table with Roads &amp;
-		/// Networks open: 401 rows is 8,465 DOM nodes, 95% of the whole game UI's
-		/// node count, and it cut the UI thread's throughput by more than half —
-		/// 134 timer ticks a second against 283 with a handful of rows. Reported
-		/// from play as the whole interface lagging. At 100 rows it is 226.
-		///
-		/// The real ceiling here is virtualisation: render the rows in view rather
-		/// than all of them. Until that exists, the window is the throttle.
-		/// </remarks>
-		public const int MenuLimit = DefaultLimit;
-
-		/// <summary>
-		/// The window size a fresh set of predicates starts at.
-		/// </summary>
-		public int StartingLimit => IsScopedToMenu ? MenuLimit : DefaultLimit;
-
-		/// <summary>
 		/// How many rows this window holds.
 		/// </summary>
 		/// <remarks>
@@ -177,7 +134,7 @@ namespace FindItBuildingMenu.Domain
 			return (this with { Offset = 0, Limit = DefaultLimit })
 				== (previous with { Offset = 0, Limit = DefaultLimit })
 					? this
-					: this with { Offset = 0, Limit = StartingLimit };
+					: this with { Offset = 0, Limit = DefaultLimit };
 		}
 	}
 }

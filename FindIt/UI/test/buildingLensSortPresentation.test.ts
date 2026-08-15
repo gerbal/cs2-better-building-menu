@@ -84,8 +84,8 @@ describe("Building Lens sort presentation", () => {
         ["Upkeep", "Upkeep"],
         ["Workers", "Workers"],
         ["Capacity", "Capacity"],
-        ["LotWidth", "Width"],
-        ["LotDepth", "Depth"],
+        ["LotWidth", "Lot width"],
+        ["LotDepth", "Lot depth"],
         ["BuildingLevel", "Level"],
         ["HasParking", "Parking"],
       ].map(([key, label]) => ({

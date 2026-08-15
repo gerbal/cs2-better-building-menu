@@ -353,5 +353,11 @@
   "Requirement.OBJECTS_BUILT": "build {0} × {1}",
   "Requirement.DEV_TREE_COST": "{0} tech, {1} pts",
   "Requirement.DEV_TREE": "{0} tech",
-  "Tooltip.LABEL[FindItBuildingMenu.Unlocked]": "Unlocked"
+  "Tooltip.LABEL[FindItBuildingMenu.Unlocked]": "Unlocked",
+  "Tooltip.LABEL[FindItBuildingMenu.ActiveFilters]": "Active",
+  "Tooltip.LABEL[FindItBuildingMenu.ResizeHeight]": "Drag to resize",
+  "Tooltip.LABEL[FindItBuildingMenu.Upgrades]": "Upgrades",
+  "Tooltip.LABEL[FindItBuildingMenu.ViewMode]": "View",
+  "Tooltip.LABEL[FindItBuildingMenu.Zones]": "Zones",
+  "Tooltip.LABEL[FindItBuildingMenu.NoFacetsAvailable]": "No additional building facets are available."
 }

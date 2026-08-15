@@ -98,7 +98,14 @@ export const BuildingCatalogFacetPanel = () => {
               </div>
             </div>
           ))}
-          {groups.length === 0 && <span className={styles.facetEmpty}>No additional building facets are available.</span>}
+          {groups.length === 0 && (
+            <span className={styles.facetEmpty}>
+              {translate(
+                "Tooltip.LABEL[FindItBuildingMenu.NoFacetsAvailable]",
+                "No additional building facets are available."
+              )}
+            </span>
+          )}
         </div>
       )}
     </div>
