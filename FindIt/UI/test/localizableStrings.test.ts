@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { describe, it } from "node:test";
 import {
   LOCALIZABLE_STRINGS,
@@ -94,5 +94,42 @@ describe("Localizable strings register", () => {
     }
 
     assert.deepEqual(duplicates, [], `duplicate key(s) in Locale.json: ${duplicates.join(", ")}`);
+  });
+});
+
+describe("Every key the source asks for is a key we ship", () => {
+  // The register above is a curated list and was never the whole inventory —
+  // the source asks for roughly a hundred keys and registers forty. Locale.json
+  // is the shipping contract, so that is what this checks, and checking it
+  // found six keys that had never been shipped at all: ActiveFilters,
+  // ResizeHeight, Upgrades, ViewMode, Zones and NoFacetsAvailable. Each one
+  // silently fell back to its English literal in every language.
+  const KEY = /Tooltip\.LABEL\[FindItBuildingMenu\.[A-Za-z0-9_]+\]/g;
+
+  const sourceKeys = () => {
+    const found = new Map<string, string[]>();
+    const walk = (dir: URL) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const child = new URL(entry.name + (entry.isDirectory() ? "/" : ""), dir);
+        if (entry.isDirectory()) {
+          walk(child);
+        } else if (/\.tsx?$/.test(entry.name)) {
+          const text = readFileSync(child, "utf8");
+          for (const key of text.match(KEY) ?? []) {
+            found.set(key, [...(found.get(key) ?? []), entry.name]);
+          }
+        }
+      }
+    };
+    walk(new URL("../src/", import.meta.url));
+    return found;
+  };
+
+  it("ships an English string for every key rendered from the UI", () => {
+    const missing = [...sourceKeys()]
+      .filter(([key]) => !(key in locale))
+      .map(([key, files]) => `${key} (${[...new Set(files)].join(", ")})`);
+
+    assert.deepEqual(missing, [], `keys asked for but never shipped:\n  ${missing.join("\n  ")}`);
   });
 });

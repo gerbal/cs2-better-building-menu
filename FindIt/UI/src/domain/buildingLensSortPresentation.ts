@@ -25,8 +25,11 @@ export const BUILDING_LENS_SORT_OPTIONS: readonly BuildingLensSortOption[] = [
   { key: "Upkeep", label: "Upkeep" },
   { key: "Workers", label: "Workers" },
   { key: "Capacity", label: "Capacity" },
-  { key: "LotWidth", label: "Width" },
-  { key: "LotDepth", label: "Depth" },
+  // "Lot", not bare "Width"/"Depth". In a list beside Cost and Workers those
+  // two read as dimensions of the building, and the figure they sort on is the
+  // lot — which is also what the column they came from is headed.
+  { key: "LotWidth", label: "Lot width" },
+  { key: "LotDepth", label: "Lot depth" },
   { key: "BuildingLevel", label: "Level" },
   { key: "HasParking", label: "Parking" },
 ];

@@ -85,9 +85,9 @@ namespace FindItBuildingMenu.Systems
 			// for themselves: they set the scope and the window in the same `with`,
 			// before the query knows it is scoped. Raising the floor here, after the
 			// scope is settled, is the single point every path goes through.
-			if (_buildingCatalogQuery.Limit < _buildingCatalogQuery.StartingLimit)
+			if (_buildingCatalogQuery.Limit < BuildingCatalogQuery.DefaultLimit)
 			{
-				_buildingCatalogQuery = _buildingCatalogQuery with { Limit = _buildingCatalogQuery.StartingLimit };
+				_buildingCatalogQuery = _buildingCatalogQuery with { Limit = BuildingCatalogQuery.DefaultLimit };
 			}
 
 			BuildingCatalogPage page = _buildingCatalogAdapter.Query(_buildingCatalogQuery);
