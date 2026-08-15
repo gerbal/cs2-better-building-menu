@@ -10,6 +10,7 @@ import {
   BUILDING_LENS_PANEL_CHROME_WIDTH,
   getBuildingLensCatalogMaxHeight,
   BUILDING_LENS_IDENTITY_MIN,
+  BUILDING_LENS_CONTROL_PANE_TOTAL,
   BUILDING_LENS_TABLE_ROW_FURNITURE,
   getBuildingLensColumnWidths,
   getBuildingLensDensity,
@@ -258,15 +259,24 @@ export const BuildingCatalogComponent = () => {
     width: `${columnWidths[metric]}rem`,
     flexBasis: `${columnWidths[metric]}rem`,
   });
-  // The width the NAME actually gets: the panel's content width, less the
-  // metric columns, less everything else the row spends (see
-  // BUILDING_LENS_TABLE_ROW_FURNITURE). panelWidth is already the content
-  // width, so the chrome must not be added back here — doing that, and
-  // subtracting only the columns, over-estimated the box by ~177rem and the
-  // elision below never fired.
+  // The width the NAME actually gets.
+  //
+  // panelWidth is NOT the panel: it is the whole ASSEMBLY, control pane
+  // included. BuildingLensWidth's own remark says so — "the build menu and the
+  // control plane beside it… the assembly, pane included" — and
+  // BuildingMenuSurface subtracts the pane from it to size the
+  // panel. Two earlier attempts at this budget both missed that and produced a
+  // number roughly 2.2x too large, so shortenTileLabel returned every name
+  // untouched and CSS went on clipping the tail — the exact defect being fixed.
+  //
+  // Verified by measurement rather than arithmetic: with the pane subtracted
+  // this yields ~276rem against a live identity cell of 295rem (197px). Erring
+  // slightly small is the safe direction — it shortens a little sooner rather
+  // than never.
   const nameWidth = Math.max(
     BUILDING_LENS_IDENTITY_MIN - BUILDING_LENS_TABLE_ROW_FURNITURE,
     panelWidth
+      - BUILDING_LENS_CONTROL_PANE_TOTAL
       - Object.values(columnWidths).reduce((total, width) => total + width, 0)
       - BUILDING_LENS_TABLE_ROW_FURNITURE
   );
