@@ -4,7 +4,11 @@
 .card {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  // Was `gap: 2rem` — a no-op in this engine, so this
+  // spacing never drew. Same measurement, stated as margins.
+  > * + * {
+    margin-top: 2rem;
+  }
   // A ceiling, not a width: the vanilla Tooltip container it renders into is
   // narrower than this anyway — measured 184px at 720p — so raising the cap
   // does nothing on its own. The long lines wrap instead; see .cardValue.
