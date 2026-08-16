@@ -29,8 +29,6 @@ import type { BuildingLensMetricRangeState } from "domain/buildingLensFilterSumm
 import { ViewModeBar } from "mods/GroupedResults/ViewModeBar";
 import type { CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import { useLensChoice } from "mods/useLensChoice";
-import lock from "images/findit_lock.svg";
-import unlock from "images/findit_unlock.svg";
 import { useState } from "react";
 import { BUILDING_LENS_CONTROL_PANE_TOTAL } from "domain/buildingLensLayout";
 import styles from "./lensControlPane.module.scss";
@@ -41,7 +39,6 @@ const BuildingLensSection$ = bindValue<string>(mod.id, "BuildingLensSection", "A
 const BuildingLensMenuCategories$ = bindValue<unknown[]>(mod.id, "BuildingLensMenuCategories", []);
 const ShowZoningHierarchy$ = bindValue<boolean>(mod.id, "ShowZoningHierarchy", false);
 const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch");
-const IsWindowLocked$ = bindValue<boolean>(mod.id, "IsWindowLocked", false);
 const BuildingLensFacets$ = bindValue<BuildingLensFacetState | null>(mod.id, "BuildingLensFacets", null);
 const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState | null>(
   mod.id,
@@ -82,17 +79,7 @@ const LENS_GROUP_KEY = "groupBy";
  * that rendered only when it was expanded, so at the strip height the lens
  * rests at there was no sort, no grouping and no view switch at all.
  */
-export interface LensControlPaneProps {
-  /**
-   * The game's own menu close, when the panel is mounted in its asset-menu
-   * slot. Absent for the legacy floating panel, which has its own X in the top
-   * bar and no toolbar selection to clear — so the control below hides rather
-   * than offering a second close that would do nothing.
-   */
-  onCloseMenu?: () => void;
-}
-
-export const LensControlPane = ({ onCloseMenu }: LensControlPaneProps = {}) => {
+export const LensControlPane = () => {
   const { translate } = useLocalization();
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
@@ -100,7 +87,6 @@ export const LensControlPane = ({ onCloseMenu }: LensControlPaneProps = {}) => {
   const menuHasCategories = (useValue(BuildingLensMenuCategories$) ?? []).length > 0;
   const showZoning = useValue(ShowZoningHierarchy$);
   const currentSearch = useValue(CurrentSearch$);
-  const isWindowLocked = useValue(IsWindowLocked$);
   const facets = useValue(BuildingLensFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
   const zoneFamilies = useValue(BuildingLensZoneFamilies$) ?? [];
@@ -375,77 +361,34 @@ export const LensControlPane = ({ onCloseMenu }: LensControlPaneProps = {}) => {
         </div>
       </div>
 
-      {/* Panel-level controls, below a rule because they are a different kind
-          of thing from the rows above: those decide how the qualifying set is
-          presented, these act on the panel itself.
+      {/* NO panel-level control row. It held three buttons and each was a
+          different kind of wrong for a build menu.
 
-          Both were in the top bar caf59a8 deleted, and both were left with
-          nowhere else to go. ToggleLock has no other caller in the UI, and
-          neither has SetBuildingLensEnabled — which made the lens a one-way
-          door, since the only control that could turn it off was inside the
-          bank that stops rendering the moment it is turned on. There is no
-          keybinding and no setting for either. */}
-      <div className={styles.panelControls}>
-        <Button
-          className={classNames(styles.panelButton, isWindowLocked && styles.panelButtonOn)}
-          variant="icon"
-          onSelect={() => trigger(mod.id, "ToggleLock")}
-          aria-pressed={isWindowLocked}
-          title={label("Tooltip.LABEL[FindItBuildingMenu.LockWindow]", "Lock Window Open")}
-          aria-label={label("Tooltip.LABEL[FindItBuildingMenu.LockWindow]", "Lock Window Open")}
-        >
-          {/* The same two masks the deleted top bar drew, not a glyph: the
-              game's font stack has no padlock, and a missing character is the
-              one mark that would say nothing at all. */}
-          <img className={styles.panelIcon} style={{ maskImage: `url(${isWindowLocked ? lock : unlock})` }} aria-hidden="true" />
-        </Button>
+          LOCK WINDOW OPEN could not act from here. `_IsWindowLocked` is read in
+          exactly two places, `LegacyGridVisible` and the `ToggleFindItPanel`
+          guard, and both are about the LEGACY panel — which
+          `(_ShowFindItPanel || _IsWindowLocked) && !_BuildingLensEnabled` hides
+          for as long as the lens is up. So the button changed a flag whose only
+          effects were invisible from where it was drawn.
 
-        {/* The menu had no close of its own. The legacy X lives in the top bar
-            row that caf59a8 deleted, so the only way out was pressing the
-            toolbar icon a second time — obvious once you know, invisible until
-            then.
+          CLOSE had no counterpart in the thing this menu stands in for. Vanilla
+          draws no X on its asset menu; you press the toolbar icon again. The
+          argument for adding one was that the second press is "obvious once you
+          know, invisible until then" — true, and an argument for teaching the
+          vanilla gesture rather than for growing a control vanilla does not
+          have.
 
-            It calls the close the game hands the asset-menu slot, rather than
-            triggering one of ours. Clearing the toolbar selection is what makes
-            the panel go away with nothing drawn behind it — a close that left
-            the menu selected would hand the space straight to the vanilla grid
-            — and the prop is the direct route to that for a component standing
-            in as the asset menu. (`toolbar.clearAssetSelection` reaches the same
-            place from C#, and CloseLens uses it; this just avoids the round
-            trip.) Verified live: after it, the row is gone, the column has no
-            children, no grid appears and the toolbar button is unlit.
+          DISABLE BUILDING LENS did not survive its own next click. The comment
+          here used to say removing it would make the lens a one-way door; that
+          was already false. The toolbar-menu handler sets
+          `_BuildingLensEnabled.Value = true` on every menu it resolves
+          (Bindings.cs:161), and since cm-e98i every menu resolves, so the flag
+          came back the moment the player opened anything. A switch that undoes
+          itself on the next click is not an escape hatch.
 
-            Hidden rather than inert when nothing answers, which is the legacy
-            panel's case — it has its own X, and a second one here that did
-            nothing would be worse than none. */}
-        {onCloseMenu && (
-          <Button
-            className={styles.panelButton}
-            variant="icon"
-            onSelect={() => onCloseMenu()}
-            title={label("Tooltip.LABEL[FindItBuildingMenu.ClosePanel]", "Close Panel")}
-            aria-label={label("Tooltip.LABEL[FindItBuildingMenu.ClosePanel]", "Close Panel")}
-          >
-            <img
-              className={styles.panelIcon}
-              style={{ maskImage: "url(coui://finditbuildingmenu/Icons/Standard/XClose.svg)" }}
-              aria-hidden="true"
-            />
-          </Button>
-        )}
-
-        <Button
-          className={styles.panelButton}
-          variant="icon"
-          onSelect={() => trigger(mod.id, "SetBuildingLensEnabled", false)}
-          title={label("Tooltip.LABEL[FindItBuildingMenu.DisableBuildingLens]", "Disable building lens")}
-          aria-label={label("Tooltip.LABEL[FindItBuildingMenu.DisableBuildingLens]", "Disable building lens")}
-        >
-          <span className={styles.panelButtonLabel}>
-            {label("Tooltip.LABEL[FindItBuildingMenu.DisableBuildingLens]", "Disable building lens")}
-          </span>
-        </Button>
-      </div>
+          If a persistent off is wanted it belongs in the mod's Options page,
+          which is where a mod-level on/off is looked for and where it can
+          actually persist. */}
     </div>
   );
 };

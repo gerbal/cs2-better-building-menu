@@ -48,7 +48,7 @@ export const RemoveVanillaAssetMenuComponent: ModuleRegistryExtend = (Component)
       // onClose is the game's own close, and the only route to clearing the
       // toolbar selection. Handed straight down rather than read anywhere else,
       // because this is the one place it exists.
-      return <BuildingMenuSurface onClose={(otherProps as { onClose?: () => void }).onClose} />;
+      return <BuildingMenuSurface />;
     }
 
     // Suppressing the vanilla grid after the panel closed was tried and

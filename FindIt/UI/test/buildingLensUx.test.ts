@@ -248,24 +248,38 @@ describe("Building Lens chrome budget", () => {
     assert.match(lensControlPaneSource, /ViewModeBar/);
   });
 
-  it("keeps a way out of the lens, and the window lock, reachable", () => {
-    // Both lived in the top bar caf59a8 deleted, and neither had anywhere else
-    // to go: ToggleLock has no other caller in the UI, and nor has
-    // SetBuildingLensEnabled — which made the lens a one-way door, because the
-    // only control that could turn it off sat inside the bank that stops
-    // rendering the moment it is turned on.
+  it("draws no panel-level controls of its own", () => {
+    // This used to assert the opposite — that the pane kept a window lock, a
+    // close and a way out of the lens — on the reasoning that each had nowhere
+    // else to live. Each turned out to be wrong in its own way, so the whole
+    // row went.
     //
-    // The expand toggle was restored here too and has since been replaced by a
-    // drag on the panel's top edge, which is why it is no longer in this list.
-    assert.match(lensControlPaneSource, /"ToggleLock"/);
-    assert.match(lensControlPaneSource, /"SetBuildingLensEnabled",\s*false/);
+    // ToggleLock could not act from here. `_IsWindowLocked` is read in exactly
+    // two places and both are about the LEGACY panel, which
+    // `(_ShowFindItPanel || _IsWindowLocked) && !_BuildingLensEnabled` hides
+    // for as long as the lens is up.
+    //
+    // SetBuildingLensEnabled(false) did not survive the next click: the
+    // toolbar-menu handler sets the flag back to true for every menu it
+    // resolves (Bindings.cs:161), and since cm-e98i every menu resolves. The
+    // "one-way door" this test was written to prevent could not happen.
+    //
+    // And the close had no counterpart in vanilla's asset menu, which is what
+    // this panel stands in for — there you press the toolbar icon again.
+    assert.doesNotMatch(lensControlPaneSource, /"ToggleLock"/);
+    assert.doesNotMatch(lensControlPaneSource, /"SetBuildingLensEnabled"/);
+    assert.doesNotMatch(lensControlPaneSource, /onCloseMenu/);
     assert.doesNotMatch(lensControlPaneSource, /SetIsExpanded/);
   });
 
   it("draws the lock as a mask, not a glyph", () => {
     // The font stack has no padlock; a missing character is the one mark that
     // says nothing. Same reasoning as the caret using U+25BC over U+25BE.
-    assert.match(lensControlPaneSource, /maskImage.*isWindowLocked \? lock : unlock/);
+    //
+    // Asserted against the top bar now. The lens pane drew this too until its
+    // control row was deleted; the top bar is where the window lock still has
+    // a control, and the lesson is about the glyph, not about which surface.
+    assert.match(topBarSource, /mask=\{!IsWindowLocked \? unlock : lock\}/);
   });
 
   it("puts the height control where the zoning view can reach it as well", () => {
@@ -425,10 +439,12 @@ describe("Building Lens chrome budget", () => {
     //
     // .heightToggle was the third of these and is gone with the Expand control
     // it operated; .clearAll came in with the filter chips and needs the same
-    // override for the same reason.
+    // override for the same reason. .panelButton was the fourth and went with
+    // the panel-level control row — see "draws no panel-level controls of its
+    // own"; the rule it needed went with it rather than being left behind as a
+    // style for nothing.
     for (const rule of [
       /\.pickerSummary\s*\{[^}]*width:\s*auto\s*!important/,
-      /\.panelButton\s*\{[^}]*width:\s*auto\s*!important/,
       /\.clearAll\s*\{[^}]*width:\s*auto\s*!important/,
     ]) {
       assert.match(lensControlPaneStyles, rule);
