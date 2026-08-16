@@ -63,6 +63,16 @@ $pane-width: 379rem;
 
 .rowLabel {
   flex: 0 0 auto;
+  // A floor under the gap to the control, which `justify-content: flex-end` on
+  // .rowValue only provides when the control hugs its content. Group by and
+  // Sort by hold Dropdowns that stretch to the full width, so flex-end has
+  // nothing left to push and the label ended up touching the box: measured
+  // live, Filters had 122px of gap and View 47px, while both dropdown rows had
+  // exactly 0.
+  //
+  // 12rem, which is the row's own horizontal inset — the same separation the
+  // row keeps from the pane's edges, applied between its two halves.
+  margin-right: 12rem;
   // Solid white, matching vanilla's row labels. --menuText1Normal resolves to
   // 80% here and reads as the disabled sibling of the rows it sits beside;
   // measured on the live Theme row, vanilla's is rgba(255,255,255,1).
