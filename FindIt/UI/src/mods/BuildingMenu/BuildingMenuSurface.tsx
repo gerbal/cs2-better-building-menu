@@ -131,38 +131,66 @@ export const BuildingMenuSurface = ({ onClose }: BuildingMenuSurfaceProps) => {
    * stand-in toast injected into the chirper's own parent. The comparison that
    * decides the result happens between `main-container` and `toolbar`, because
    * those are the siblings — the same lesson already written at
-   * mainContainer.module.scss:309. So the z-index has to go on the game's
-   * element, and 1 is enough; 10001 was tried and is no better.
+   * mainContainer.module.scss:309.
    *
-   * Raising main-container also lifts it over `pause-overlay` (the full-screen
-   * vignette while paused) and `tutorial-renderer` (explicitly z-index 0), both
-   * of which are meant to sit over the HUD. They are raised past it in turn, so
-   * the only pair whose order actually changes is the one we came for.
+   * So it has to be one of those two, and it is the TOOLBAR that moves, down,
+   * rather than main-container up.
+   *
+   * Raising main-container to 1 was the first attempt and it broke the game's
+   * own dropdowns. Vanilla portals a popup — the Locked/Unlocked selector among
+   * them — to `game-main-screen` as the LAST child at `z-index: auto`, and
+   * counts on tree order to put it above everything. An explicit 1 on an
+   * earlier sibling beats auto whatever the order, so the popup opened behind
+   * our control pane and only the sliver above the pane's top edge was visible.
+   * It also forced `pause-overlay` and `tutorial-renderer` up to 2 to keep them
+   * over the HUD, which is three of vanilla's elements restyled to fix one
+   * relationship.
+   *
+   * Lowering the toolbar changes exactly the one pair we came for and leaves
+   * every other element at the value the game shipped: main-container stays
+   * auto, so the portalled popup still wins on tree order, and pause-overlay
+   * and tutorial-renderer still sit above main-container because they already
+   * come after it. One element instead of three.
+   *
+   * Verified live at 1280x720, all four things that could break:
+   *   - a stand-in toast in the chirper's own parent is completely hidden by
+   *     the pane, which is what we came for;
+   *   - the Locked/Unlocked popup draws in full over the pane;
+   *   - the bottom toolbar still renders — `game-main-screen` paints no
+   *     background, so a negative z-index does not sink it out of view;
+   *   - the toolbar is still hit-testable. `elementFromPoint` at the Roads
+   *     button's centre returns `item-inner_*` inside `toolbar`. (Read this
+   *     with no dropdown open: while one is, the game parks its own
+   *     `pointer-barrier` over the screen to catch the dismissing click, and
+   *     every hit test returns that instead.)
    *
    * Imperative and scoped to the mount for the same reason as the block above:
-   * these are vanilla's elements, and a stylesheet rule would restyle the
-   * game's UI for the whole session — including while our panel is closed and
-   * for whatever other mod is looking at the same nodes.
+   * this is vanilla's element, and a stylesheet rule would restyle the game's
+   * UI for the whole session — including while our panel is closed and for
+   * whatever other mod is looking at the same node.
    *
-   * This is a stopgap. It trades an unreadable toast for a usable control
+   * Still a stopgap. It trades an unreadable toast for a usable control
    * surface; the real fix is moving the toast lane so the two do not share the
    * space at all.
    */
   useEffect(() => {
-    const RAISE: ReadonlyArray<readonly [string, string]> = [
-      ['[class*="main-container_"]', "1"],
-      ['[class*="pause-overlay_"]', "2"],
-      ['[class*="tutorial-renderer_"]', "2"],
-    ];
+    // Found as a CHILD of game-main-screen rather than by a document-wide
+    // `[class*="toolbar_"]`, which also matches our own panel's toolbars and
+    // would hand back whichever DOM order happened to put first. The pair whose
+    // paint order we are changing is defined by being siblings, so selecting on
+    // that relationship is the honest way to say it.
+    const screen = document.querySelector<HTMLElement>('[class*="game-main-screen"]');
+    const toolbar = screen
+      ? Array.from(screen.children).find((child) =>
+          String(child.className).startsWith("toolbar_")
+        )
+      : undefined;
 
-    const applied = RAISE.map(([selector, zIndex]) => {
-      const element = document.querySelector<HTMLElement>(selector);
-      if (!element) return null;
-
+    const applied = (toolbar instanceof HTMLElement ? [toolbar] : []).map((element) => {
       const previous = element.style.zIndex;
-      element.style.zIndex = zIndex;
+      element.style.zIndex = "-1";
       return { element, previous };
-    }).filter((entry): entry is { element: HTMLElement; previous: string } => entry !== null);
+    });
 
     return () => {
       for (const { element, previous } of applied) {
