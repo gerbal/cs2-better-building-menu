@@ -16,12 +16,18 @@ $pane-width: 379rem;
   display: flex;
   flex-direction: column;
   flex: 0 0 auto;
-  // Stretch to the panel's height rather than hugging its own content. Measured
-  // live at 253x159 beside a 727x200 panel, sitting 41px lower — two boxes with
-  // no shared edge, which is why the assembly read as two things rather than
-  // one. The footer takes margin-top: auto so its controls stay on the bottom
-  // line the eye tracks along the toolbar.
-  align-self: stretch;
+  // NO align-self: stretch. It was tried, to give the pane and the panel a
+  // shared top edge — they had none, the pane sitting 41px lower than a 727x200
+  // panel. It bought that edge by pinning the pane's height to the panel's, and
+  // the panel's height is a setting the player drags: every rem they add to the
+  // build menu added a rem of empty pane, so the taller the menu the emptier
+  // the column beside it looked.
+  //
+  // The shared edge that matters is the bottom one, and the row already gives
+  // it — `.lensRow` is `align-items: flex-end`, so a content-sized pane still
+  // lands on the same line as the panel and the toolbar below. The top edges
+  // differing is what two boxes of different content lengths honestly look
+  // like.
   box-sizing: border-box;
   width: $pane-width;
   margin-left: 6rem;
@@ -220,10 +226,11 @@ $pane-width: 379rem;
   flex-direction: row;
   align-items: center;
   justify-content: flex-end;
-  // auto, not 4rem. The pane stretches to the panel's height now, so the rows
-  // above no longer fill it — without this the footer floats mid-pane with a
-  // gap beneath, and its rule reads as a divider rather than a base.
-  margin-top: auto;
+  // 6rem, not auto. `auto` existed only to push this to the bottom of a pane
+  // stretched to the panel's height; with the stretch gone the pane is exactly
+  // as tall as its rows, so there is no free space for `auto` to absorb and it
+  // resolves to zero — a footer rule sitting hard against the row above it.
+  margin-top: 6rem;
   padding: 6rem 12rem 0;
   border-top: 1rem solid rgba(255, 255, 255, 0.08);
 }
