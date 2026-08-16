@@ -50,19 +50,15 @@ const AssetMenuTheme: Theme | any = getModule("game-ui/game/components/asset-men
  * inside that 475px column drew at full width, unclipped, with the column
  * unchanged. So the width below is stated on our own row and vanilla's CSS is
  * never touched.
+ *
+ * NO PROPS. The `AssetMenu` extension point hands its children an `onClose` —
+ * the route that clears the toolbar selection, and the only close that makes
+ * the panel go away with nothing drawn behind it — and this used to thread it
+ * to the pane's X button. That button is gone, so the prop went with it rather
+ * than being carried to nothing. `RemoveVanillaAssetMenu` still has it in
+ * `otherProps` if a close is ever wanted back.
  */
-export interface BuildingMenuSurfaceProps {
-  /**
-   * The game's own close, from the `AssetMenu` extension point's props.
-   *
-   * Optional only because the prop is vanilla's and we do not control its
-   * contract. Absent, the close control below hides rather than drawing a
-   * button that does nothing.
-   */
-  onClose?: () => void;
-}
-
-export const BuildingMenuSurface = ({ onClose }: BuildingMenuSurfaceProps) => {
+export const BuildingMenuSurface = () => {
   const { translate } = useLocalization();
 
   const [isResizing, setIsResizing] = useState(false);
@@ -273,13 +269,7 @@ export const BuildingMenuSurface = ({ onClose }: BuildingMenuSurfaceProps) => {
             {ShowZoningHierarchy ? <ZoningHierarchyComponent /> : <BuildingCatalogComponent />}
           </div>
         </div>
-        {/* The pane holds the panel-level controls, so it is where a close
-            belongs. It is handed the game's own close rather than one of ours:
-            that is the route that clears the toolbar selection, and clearing it
-            is what makes the panel go away with nothing drawn behind it. Any
-            close we wrote ourselves would leave the menu selected and the
-            vanilla grid would arrive in our place. */}
-        <LensControlPane onCloseMenu={onClose} />
+        <LensControlPane />
       </div>
     </>
   );
