@@ -386,9 +386,13 @@ export const LensControlPane = () => {
           came back the moment the player opened anything. A switch that undoes
           itself on the next click is not an escape hatch.
 
-          If a persistent off is wanted it belongs in the mod's Options page,
-          which is where a mod-level on/off is looked for and where it can
-          actually persist. */}
+          And there should be no off at all. The lens REPLACES vanilla's build
+          menu; it is not an alternative view of it. `_BuildingLensEnabled` is
+          a latch left from when it was opt-in — false at boot, set true at
+          three sites the moment any menu resolves, and now reachable as false
+          only before the player has opened anything. Giving that an Options
+          setting would be building a switch for a state the product does not
+          have. */}
     </div>
   );
 };
