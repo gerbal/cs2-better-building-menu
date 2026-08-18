@@ -52,7 +52,6 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<bool> _FocusSearchBar;
 		private ValueBindingHelper<bool> _ClearSearchBar;
 		private ValueBindingHelper<bool> _ShowFindItPanel;
-		private ValueBindingHelper<bool> _BuildingLensEnabled = null!;
 		private ValueBindingHelper<bool> _ReplaceVanillaBuildMenu = null!;
 		private ValueBindingHelper<int> _BuildingCatalogMatchesElsewhere = null!;
 		private ValueBindingHelper<bool> _LensDefaultToTable = null!;
@@ -174,8 +173,24 @@ namespace FindItBuildingMenu.Systems
 		/// Mirrors MainContainer, which renders PrefabSelection only when the
 		/// lens is off.
 		/// </remarks>
-		private bool LegacyGridVisible => (_ShowFindItPanel || _IsWindowLocked) && !_BuildingLensEnabled;
-		public bool BuildingLensEnabled => _BuildingLensEnabled;
+		/// <summary>
+		/// Always false. The lens replaces vanilla's build menu rather than
+		/// offering an alternative to it, so the legacy grid has no state left
+		/// in which it is the thing on screen.
+		/// </summary>
+		/// <remarks>
+		/// This used to read <c>(_ShowFindItPanel || _IsWindowLocked) &amp;&amp;
+		/// !_BuildingLensEnabled</c>. That last flag was a latch from when the
+		/// lens was opt-in: false at boot, set true the moment any menu
+		/// resolved, and after the pane's control row was deleted there was
+		/// nothing left to set it false again. Retiring it makes the constant
+		/// visible instead of leaving it implied by three sites agreeing.
+		///
+		/// Kept as a named constant rather than inlined so the keybindings below
+		/// still say WHY they are disabled, and so deleting the legacy grid — the
+		/// migration tracked under cm-8hyu — has one obvious place to start.
+		/// </remarks>
+		private const bool LegacyGridVisible = false;
 
 		/// <summary>
 		/// The live building-lens facet group for one dimension (e.g.
@@ -251,7 +266,6 @@ namespace FindItBuildingMenu.Systems
 			_ShowFindItPanel = CreateBinding("ShowFindItPanel", false);
 			_IsSearchLoading = CreateBinding("IsSearchLoading", false);
 			_IsWindowLocked = CreateBinding("IsWindowLocked", false);
-			_BuildingLensEnabled = CreateBinding("BuildingLensEnabled", "SetBuildingLensEnabled", false, SetBuildingLensEnabled);
 			_IsExpanded = CreateBinding("IsExpanded", "SetIsExpanded", false, _ => ExpandedToggled());
 			_ActivePrefabId = CreateBinding("ActivePrefabId", 0);
 			// Lets the UI know whether to render the lens in place of the

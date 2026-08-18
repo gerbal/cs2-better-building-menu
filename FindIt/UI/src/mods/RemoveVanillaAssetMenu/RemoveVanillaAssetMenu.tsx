@@ -10,7 +10,6 @@ const ShowFindItPanel$ = bindValue<boolean>(mod.id, "ShowFindItPanel");
 const IsWindowLocked$ = bindValue<boolean>(mod.id, "IsWindowLocked");
 // True while the toolbar's open menu is one the lens takes over.
 const LensOwnsCurrentMenu$ = bindValue<boolean>(mod.id, "LensOwnsCurrentMenu", false);
-const BuildingLensEnabled$ = bindValue<boolean>(mod.id, "BuildingLensEnabled", false);
 
 export const RemoveVanillaAssetMenuComponent: ModuleRegistryExtend = (Component) => {
   // I believe you should not put anything here.
@@ -21,7 +20,6 @@ export const RemoveVanillaAssetMenuComponent: ModuleRegistryExtend = (Component)
     const IsWindowLocked = useValue(IsWindowLocked$);
     const ShowFindItPanel = useValue(ShowFindItPanel$);
     const LensOwnsCurrentMenu = useValue(LensOwnsCurrentMenu$);
-    const BuildingLensEnabled = useValue(BuildingLensEnabled$);
     const isPhotoMode = useValue(game.activeGamePanel$)?.__Type == game.GamePanelType.PhotoMode;
 
     // Do not put any Hooks (i.e. UseXXXX) after this point.
@@ -40,14 +38,10 @@ export const RemoveVanillaAssetMenuComponent: ModuleRegistryExtend = (Component)
     // working while the surfaces that feed it are retired one at a time.
     if (shouldMountInAssetMenu({
       lensOwnsCurrentMenu: LensOwnsCurrentMenu,
-      buildingLensEnabled: BuildingLensEnabled,
       showFindItPanel: ShowFindItPanel,
       isWindowLocked: IsWindowLocked,
       isPhotoMode,
     })) {
-      // onClose is the game's own close, and the only route to clearing the
-      // toolbar selection. Handed straight down rather than read anywhere else,
-      // because this is the one place it exists.
       return <BuildingMenuSurface />;
     }
 

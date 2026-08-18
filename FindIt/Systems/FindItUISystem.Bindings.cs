@@ -158,8 +158,7 @@ namespace FindItBuildingMenu.Systems
 				_appliedMenuFrame = UnityEngine.Time.frameCount;
 				_LensOwnsCurrentMenu.Value = true;
 				_ShowZoningHierarchy.Value = false;
-				_BuildingLensEnabled.Value = true;
-				_buildingLensSection = VanillaBuildMenuTaxonomy.AllBuildings;
+					_buildingLensSection = VanillaBuildMenuTaxonomy.AllBuildings;
 				_buildingLensSubCategory = VanillaBuildMenuTaxonomy.Any;
 				_BuildingLensSectionBinding.Value = _buildingLensSection;
 				_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
@@ -225,16 +224,12 @@ namespace FindItBuildingMenu.Systems
 				// zoning hierarchy handles them instead of the building table.
 				_ZoneCatalog.Value = PrefabIndexingSystem.GetZoneCatalog(BuildingCatalogAdapter.ToolbarSelection).ToArray();
 				_ShowZoningHierarchy.Value = true;
-				// The container renders the hierarchy only inside the lens, so
-				// without this the panel opens on the plain asset grid.
-				_BuildingLensEnabled.Value = true;
 				_PanelWidth.Value = GridUtil.GetCurrentPanelWidth();
 				ToggleFindItPanel(true, activatePrefab: false);
 				return;
 			}
 
 			_ShowZoningHierarchy.Value = false;
-			_BuildingLensEnabled.Value = true;
 
 			// With the lens enabled RefreshBuildingCatalog deliberately ignores
 			// FindItUtil's category and reads the lens's own section and
@@ -543,14 +538,6 @@ namespace FindItBuildingMenu.Systems
 			// with nothing having changed in between.
 		}
 
-		private void SetBuildingLensEnabled(bool enabled)
-		{
-			_BuildingLensEnabled.Value = enabled;
-			RefreshBuildingLensNavigation();
-			_PanelWidth.Value = GridUtil.GetCurrentPanelWidth();
-			RefreshBuildingCatalog();
-		}
-
 		private void SetBuildingLensSection(string section)
 		{
 			// The zoning hierarchy is armed by the vanilla Zones menu and was
@@ -590,21 +577,11 @@ namespace FindItBuildingMenu.Systems
 
 		private void SetBuildingLensPanelHeight(float height)
 		{
-			if (!_BuildingLensEnabled)
-			{
-				return;
-			}
-
 			_BuildingLensPanelHeight.Value = BuildingLensHeight.Clamp(height);
 		}
 
 		private void CommitBuildingLensPanelHeight()
 		{
-			if (!_BuildingLensEnabled)
-			{
-				return;
-			}
-
 			// Only on release, like the width: a drag publishes on every mouse
 			// move, and writing the settings file at that rate is what the live
 			// binding exists to avoid.
