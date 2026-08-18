@@ -54,10 +54,6 @@ namespace FindItBuildingMenu.Systems
 		// tool's menu can be told apart from a real click. See MenuEchoGuard.
 		private int? _appliedMenuFrame;
 		private int _appliedMenuIndex;
-		private ValueBindingHelper<bool> _ShowZoningHierarchy = null!;
-		private ValueBindingHelper<ZoneCatalogEntry[]> _ZoneCatalog = null!;
-		// Empty means every family. See ZoneFamilySelection.
-		private ValueBindingHelper<string[]> _BuildingLensZoneFamilies = null!;
 		private ValueBindingHelper<string> _BuildingCatalogGroupBy = null!;
 		// Whether the menu the toolbar currently has open is one the lens takes
 		// over. Lets the vanilla menu stay hidden after the panel is closed, so
@@ -80,7 +76,6 @@ namespace FindItBuildingMenu.Systems
 		// it from the game's own toolbar bindings because interception may have
 		// already moved the selection on.
 		private ValueBindingHelper<string> _LensMenuToolTip = null!;
-		private string[] _zoneFamilies = System.Array.Empty<string>();
 		private ValueBindingHelper<bool> _IsExpanded;
 		private ValueBindingHelper<int> _ActivePrefabId;
 		private ValueBindingHelper<int> _CurrentCategoryBinding;
@@ -197,7 +192,6 @@ namespace FindItBuildingMenu.Systems
 			// vanilla asset grid. Read once at setup; the setting is not
 			// expected to change mid-session.
 			_ReplaceVanillaBuildMenu = CreateBinding("ReplaceVanillaBuildMenu", Mod.Settings.ReplaceVanillaBuildMenu);
-			_ShowZoningHierarchy = CreateBinding("ShowZoningHierarchy", false);
 			_LensOwnsCurrentMenu = CreateBinding("LensOwnsCurrentMenu", false);
 			// "<index>:<version>:<nonce>", or empty. The picker asks the game to
 			// open a menu through this; see RequestVanillaMenu.
@@ -215,8 +209,6 @@ namespace FindItBuildingMenu.Systems
 			_LensShelfSize = CreateBinding("BuildingLensShelfSize", Mod.Settings.BuildingLensShelfSize);
 			_LensTileSize = CreateBinding("BuildingLensTileSize", Mod.Settings.BuildingLensTileSize);
 			CreateTrigger("SearchEverything", SearchEverything);
-			_ZoneCatalog = CreateBinding("ZoneCatalog", new ZoneCatalogEntry[0]);
-			_BuildingLensZoneFamilies = CreateBinding("BuildingLensZoneFamilies", System.Array.Empty<string>());
 			_PanelWidth = CreateBinding("PanelWidth", 0f);
 			// Seeded from the setting rather than 0: the panel draws from this
 			// on its first frame, and a zero height would flash a collapsed
@@ -306,7 +298,6 @@ namespace FindItBuildingMenu.Systems
 				CreateTrigger<string, string>("ToggleBuildingLensFacet", ToggleBuildingLensFacet);
 				CreateTrigger("ClearBuildingLensFacets", ClearBuildingLensFacets);
 				CreateTrigger("ClearBuildingLensFilters", ClearBuildingLensFilters);
-				CreateTrigger<string>("ToggleBuildingLensZoneFamily", ToggleBuildingLensZoneFamily);
 				// Its own trigger, not folded into SetBuildingLensSubCategory:
 				// that one is also the reset path ("All types", and removing a
 				// type chip), so clearing the menu there would silently drop

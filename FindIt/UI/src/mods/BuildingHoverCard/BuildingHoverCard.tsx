@@ -18,7 +18,7 @@ import { SERVICE_FORECAST_BINDINGS, getServiceForecastKey } from "domain/service
 import { buildTileTooltipLines, isMetricPresent } from "domain/buildingTileTooltip";
 import { clampAssetDescription, resolveAssetDescription } from "domain/buildingLensRowDetails";
 import { isEntryLocked, listLockConditions } from "domain/buildingLockState";
-import { FootprintGlyph } from "mods/ZoningHierarchy/FootprintGlyph";
+import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
 import type { ZoneFootprint } from "domain/zoningHierarchy";
 import styles from "./buildingHoverCard.module.scss";
 

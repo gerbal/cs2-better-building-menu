@@ -17,7 +17,7 @@ import { recordPlacement } from "domain/buildingShelf";
 import { canPlace, isEntryLocked } from "domain/buildingLockState";
 import { rankBuildingMatches, topSearchResult } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
-import { FootprintGlyph } from "mods/ZoningHierarchy/FootprintGlyph";
+import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
 import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import type { ZoneFootprint } from "domain/zoningHierarchy";
 import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
