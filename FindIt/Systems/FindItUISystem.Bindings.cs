@@ -202,17 +202,6 @@ namespace FindItBuildingMenu.Systems
 			_LensOwnsCurrentMenu.Value = true;
 			_LensMenuToolTip.Value = PrefabIndexingSystem.GetAssetMenuToolTip(menuEntityIndex) ?? string.Empty;
 
-			if (preset.IsZoning)
-			{
-				// Zones are assignment tools rather than buildings, so the
-				// zoning hierarchy handles them instead of the building table.
-				_ZoneCatalog.Value = PrefabIndexingSystem.GetZoneCatalog(BuildingCatalogAdapter.ToolbarSelection).ToArray();
-				_ShowZoningHierarchy.Value = true;
-				_PanelWidth.Value = GridUtil.GetCurrentPanelWidth();
-				ToggleFindItPanel(true, activatePrefab: false);
-				return;
-			}
-
 			_ShowZoningHierarchy.Value = false;
 
 			// With the lens enabled RefreshBuildingCatalog deliberately ignores

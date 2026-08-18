@@ -289,17 +289,16 @@ describe("Building Lens chrome budget", () => {
     assert.match(topBarSource, /mask=\{!IsWindowLocked \? unlock : lock\}/);
   });
 
-  it("puts the height control where the zoning view can reach it as well", () => {
-    // Group, sort and view sit inside `!showZoning` because the hierarchy has
-    // no rows to order. Height is not about rows, and a zoning tree is exactly
-    // the thing you want more than two rows of.
-    // Bounded by the fragment the conditional wraps, not by the height row —
-    // the prose above that row names SetIsExpanded, and a slice ending there
-    // would fail on the explanation rather than on the code.
-    const start = lensControlPaneSource.indexOf("!showZoning");
-    const end = lensControlPaneSource.indexOf("</>", start);
-    assert.ok(start >= 0 && end > start, "expected a !showZoning fragment to bound");
-    assert.doesNotMatch(lensControlPaneSource.slice(start, end), /heightToggle/);
+  it("gives the Zones menu the same controls as every other menu", () => {
+    // This used to assert that the height control sat OUTSIDE a `!showZoning`
+    // fragment, because group, sort and view were hidden for the zoning tree —
+    // "the hierarchy has no rows to order".
+    //
+    // Zones are rows now. They come through the same catalog query as every
+    // other menu, so there is no zoning branch left to except: no showZoning,
+    // and no `omit` dropping Table from the view modes.
+    assert.doesNotMatch(lensControlPaneSource, /showZoning/);
+    assert.doesNotMatch(lensControlPaneSource, /omit=\{/);
   });
 
   it("still names the search the count is counting", () => {

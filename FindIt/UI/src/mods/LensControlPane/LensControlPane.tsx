@@ -37,7 +37,6 @@ const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "BuildingCatalo
 const BuildingCatalogSortDescending$ = bindValue<boolean>(mod.id, "BuildingCatalogSortDescending");
 const BuildingLensSection$ = bindValue<string>(mod.id, "BuildingLensSection", "AllBuildings");
 const BuildingLensMenuCategories$ = bindValue<unknown[]>(mod.id, "BuildingLensMenuCategories", []);
-const ShowZoningHierarchy$ = bindValue<boolean>(mod.id, "ShowZoningHierarchy", false);
 const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch");
 const BuildingLensFacets$ = bindValue<BuildingLensFacetState | null>(mod.id, "BuildingLensFacets", null);
 const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState | null>(
@@ -85,7 +84,6 @@ export const LensControlPane = () => {
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
   const section = useValue(BuildingLensSection$);
   const menuHasCategories = (useValue(BuildingLensMenuCategories$) ?? []).length > 0;
-  const showZoning = useValue(ShowZoningHierarchy$);
   const currentSearch = useValue(CurrentSearch$);
   const facets = useValue(BuildingLensFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
@@ -114,7 +112,7 @@ export const LensControlPane = () => {
     translate(`Tooltip.LABEL[FindItBuildingMenu.Zoning_${id}]`, id) ?? id;
 
   const chips = buildFilterChips({
-    zoneFamilies: showZoning ? zoneFamilies.map((id) => ({ id, label: familyLabel(id) })) : null,
+    zoneFamilies: null,
     facets,
     metricRanges,
   });
@@ -227,7 +225,7 @@ export const LensControlPane = () => {
       {/* The zoning view is a different renderer over a different catalog:
           there are no rows to order, group or switch the shape of. The count
           still means something, so it stays above. */}
-      {!showZoning && (
+      {(
         <>
           <div className={styles.row}>
             <span className={styles.rowLabel}>
@@ -356,7 +354,6 @@ export const LensControlPane = () => {
           <ViewModeBar
             value={viewModeChoice as CatalogViewMode}
             onChange={(next) => setViewModeChoice(next)}
-            omit={showZoning ? ["table"] : undefined}
           />
         </div>
       </div>

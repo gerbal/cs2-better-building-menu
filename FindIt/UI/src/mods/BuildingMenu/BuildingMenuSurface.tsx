@@ -7,7 +7,6 @@ import { useLocalization } from "cs2/l10n";
 
 import mod from "../../../mod.json";
 import { BuildingCatalogComponent } from "mods/BuildingCatalog/BuildingCatalog";
-import { ZoningHierarchyComponent } from "mods/ZoningHierarchy/ZoningHierarchy";
 import { LensControlPane, LENS_CONTROL_PANE_TOTAL } from "mods/LensControlPane/LensControlPane";
 import { BuildingMenuHeader } from "mods/BuildingMenu/BuildingMenuHeader";
 import { clampBuildingLensHeight, draggedBuildingLensHeight } from "domain/buildingLensLayout";
@@ -19,7 +18,6 @@ import styles from "mods/MainContainer/mainContainer.module.scss";
 
 const PanelWidth$ = bindValue<number>(mod.id, "PanelWidth", 0);
 const BuildingLensPanelHeight$ = bindValue<number>(mod.id, "BuildingLensPanelHeight", 420);
-const ShowZoningHierarchy$ = bindValue<boolean>(mod.id, "ShowZoningHierarchy", false);
 
 const GameMainScreneTheme: Theme | any = getModule("game-ui/game/components/game-main-screen.module.scss", "classes");
 const AssetMenuTheme: Theme | any = getModule("game-ui/game/components/asset-menu/asset-menu.module.scss", "classes");
@@ -65,7 +63,6 @@ export const BuildingMenuSurface = () => {
   const resizeState = useRef({ active: false, startY: 0, startHeight: 0 });
 
   const PanelWidth = useValue(PanelWidth$) + 15 + 20;
-  const ShowZoningHierarchy = useValue(ShowZoningHierarchy$);
   const catalogHeight = clampBuildingLensHeight(useValue(BuildingLensPanelHeight$));
 
   /**
@@ -263,10 +260,7 @@ export const BuildingMenuSurface = () => {
             className={classNames(styles.content, AssetMenuTheme.assetPanel)}
             style={{ height: `${catalogHeight}rem` }}
           >
-            {/* Zones are assignment tools, not buildings, so the Zones menu
-                gets the zoning hierarchy rather than a table of building rows
-                filtered to nothing. */}
-            {ShowZoningHierarchy ? <ZoningHierarchyComponent /> : <BuildingCatalogComponent />}
+            <BuildingCatalogComponent />
           </div>
         </div>
         <LensControlPane />
