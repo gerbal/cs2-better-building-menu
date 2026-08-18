@@ -146,31 +146,28 @@ namespace FindItBuildingMenu.Systems
 							// unscoped grid of everything, which is the better
 							// answer anyway.
 							//
-							// Falls through to the old path when the game places
-							// the asset in no menu: props, vegetation and
-							// vehicles are most of the index.
+							// When the game places it in NO menu — props,
+							// vegetation and vehicles, most of the index — there
+							// is nothing to open, and that is the right answer
+							// rather than a gap. This mod extends vanilla's build
+							// menu; an asset vanilla never offers has no menu to
+							// be revealed in, and inventing an unscoped grid of
+							// everything to hold it would be adding a surface
+							// vanilla does not have.
 							//
-							// THAT PATH NO LONGER SHOWS THEM — see cm-h8fe. It
-							// used to open the legacy grid, which 365e761 stopped
-							// rendering; the panel now draws the building catalog,
-							// and unscoped that is buildings only by construction
-							// (BuildingCatalogAdapter.cs:358), so the very asset
-							// the player picked is the one it excludes. The calls
-							// below still run and still do nothing visible, and
-							// ScrollTo scrolls a grid that is not on screen.
+							// It used to open the legacy FindIt grid here. That
+							// grid stopped rendering in 365e761, and what replaced
+							// it cannot hold these assets anyway: unscoped, the
+							// catalog is buildings only by construction
+							// (BuildingCatalogAdapter.cs:358). So the fallback had
+							// been opening a panel that excluded the very thing
+							// the player picked (cm-h8fe).
 							//
-							// Left standing rather than deleted: this is a feature
-							// that is broken, not one that was removed, and the
-							// scaffolding is what a repair would build on.
-							if (!_findItUISystem.RequestVanillaMenu(id))
-							{
-								_findItUISystem.ToggleFindItPanel(true, false);
-								_findItUISystem.RefreshCategoryAndSubCategory();
-								_findItUISystem.UpdateCategoriesAndPrefabList();
-							}
-
+							// The tool is still armed either way, which is what
+							// vanilla's own picker does and the whole of what was
+							// asked for.
+							_findItUISystem.RequestVanillaMenu(id);
 							_findItUISystem.TryActivatePrefabTool(id);
-							_findItUISystem.ScrollTo(id);
 						}
 						else
 						{

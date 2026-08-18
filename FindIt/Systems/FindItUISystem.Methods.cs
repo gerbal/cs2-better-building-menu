@@ -21,14 +21,8 @@ namespace FindItBuildingMenu.Systems
 	{
 		internal void UpdateCategoriesAndPrefabList()
 		{
-			_CategoryBinding.Value = FindItUtil.GetCategories().Select(x => new CategoryUIEntry(x)).ToArray();
-			_SubCategoryBinding.Value = FindItUtil.GetSubCategories().Select(x => new SubCategoryUIEntry(x)).ToArray();
 			RefreshBuildingLensNavigation();
 			RefreshBuildingCatalog();
-
-			var prefabs = GetDisplayedPrefabs();
-
-			_PrefabListBinding.Value = prefabs;
 		}
 
 		private void RefreshBuildingCatalog()
@@ -244,35 +238,6 @@ namespace FindItBuildingMenu.Systems
 		}
 
 
-		private PrefabUIEntry[] GetDisplayedPrefabs()
-		{
-			// in charge of paging prefabs and getting only the displayed prefabs
-			// also updates display binding values like columns, rows, scroll, etc.
-
-			var list = FindItUtil.GetFilteredPrefabs();
-
-			var columns = GridUtil.GetCurrentColumnCount();
-			var displayedRows = GridUtil.GetCurrentRowCount();
-			var rows = Math.Ceiling(list.Count / (float)columns);
-
-			scrollIndex = Math.Max(Math.Min(scrollIndex, rows - displayedRows), 0);
-
-			_ScrollIndex.Value = scrollIndex;
-			_MaxScrollIndex.Value = rows - displayedRows;
-			_ColumnCount.Value = columns;
-			_RowCount.Value = displayedRows;
-
-			var uiEntries = new List<PrefabUIEntry>();
-			var startIndex = (int)(Math.Floor(scrollIndex) * columns);
-			var maxIndex = startIndex + (columns * (2 + displayedRows));
-
-			for (var i = startIndex; i < maxIndex && i < list.Count; i++)
-			{
-				uiEntries.Add(new PrefabUIEntry(list[i]));
-			}
-
-			return uiEntries.ToArray();
-		}
 
 		internal void TryActivatePrefabTool(int id)
 		{
@@ -292,21 +257,6 @@ namespace FindItBuildingMenu.Systems
 			settingPrefab = false;
 		}
 
-		internal void ScrollTo(int id)
-		{
-			// Scrolls to a specific prefab using its index from PrefabIndexingSystem
-
-			var list = FindItUtil.GetFilteredPrefabs();
-			var index = list.FindIndex(x => x.Id == id);
-
-			if (index > -1)
-			{
-				var columns = (float)GridUtil.GetCurrentColumnCount();
-				var rows = GridUtil.GetCurrentRowCount();
-
-				scrollIndex = Math.Max(0, Math.Floor(index / columns) - (rows / 4));
-			}
-		}
 
 		internal void TriggerSearch()
 		{
@@ -362,11 +312,6 @@ namespace FindItBuildingMenu.Systems
 			}
 		}
 
-		internal void RefreshCategoryAndSubCategory()
-		{
-			_CurrentCategoryBinding.Value = (int)FindItUtil.CurrentCategory;
-			_CurrentSubCategoryBinding.Value = (int)FindItUtil.CurrentSubCategory;
-		}
 
 		private void OnPrefabChanged(PrefabBase prefab)
 		{

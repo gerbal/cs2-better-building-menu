@@ -15,11 +15,8 @@ namespace FindItBuildingMenu.Systems
     internal partial class FindItUISystem : ExtendedUISystemBase
 	{
 		private bool filterCompleted;
-		private bool scrollCompleted;
 		private bool settingPrefab;
-		private double scrollIndex;
 		private CancellationTokenSource searchTokenSource = new();
-		private CancellationTokenSource scrollTokenSource = new();
 		private readonly BuildingCatalogAdapter _buildingCatalogAdapter = new();
 		private BuildingCatalogQuery _buildingCatalogQuery = new();
 		private readonly FindItInteractionBoundary _interactionBoundary = new();
@@ -41,11 +38,6 @@ namespace FindItBuildingMenu.Systems
 		// see CloseLens.
 		private Game.UI.InGame.ToolbarUISystem _toolbarUISystem;
 
-		private ProxyAction _randomKeyBinding;
-		private ProxyAction _arrowLeftBinding;
-		private ProxyAction _arrowUpBinding;
-		private ProxyAction _arrowRightBinding;
-		private ProxyAction _arrowDownBinding;
 
 		private ValueBindingHelper<bool> _IsSearchLoading;
 		private ValueBindingHelper<bool> _IsWindowLocked;
@@ -90,10 +82,6 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<string> _LensMenuToolTip = null!;
 		private string[] _zoneFamilies = System.Array.Empty<string>();
 		private ValueBindingHelper<bool> _IsExpanded;
-		private ValueBindingHelper<double> _ScrollIndex;
-		private ValueBindingHelper<double> _MaxScrollIndex;
-		private ValueBindingHelper<double> _ColumnCount;
-		private ValueBindingHelper<double> _RowCount;
 		private ValueBindingHelper<int> _ActivePrefabId;
 		private ValueBindingHelper<int> _CurrentCategoryBinding;
 		private ValueBindingHelper<int> _CurrentSubCategoryBinding;
@@ -103,9 +91,6 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<string> _CurrentSearch;
 		private ValueBindingHelper<string> _ViewStyle;
 		private ValueBindingHelper<string> _AlignmentStyle;
-		private ValueBindingHelper<CategoryUIEntry[]> _CategoryBinding;
-		private ValueBindingHelper<SubCategoryUIEntry[]> _SubCategoryBinding;
-		private ValueBindingHelper<PrefabUIEntry[]> _PrefabListBinding;
 		private ValueBindingHelper<BuildingCatalogPage> _BuildingCatalogBinding = null!;
 		private ValueBindingHelper<BuildingCatalogMetricRangeState> _BuildingCatalogMetricRanges = null!;
 		/// <summary>
@@ -148,47 +133,6 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<string[]> _BuildingLensMilestonesBinding = null!;
 
 		public bool IsExpanded => _IsExpanded;
-
-		/// <summary>
-		/// Whether the legacy FindIt asset grid is the thing on screen.
-		/// </summary>
-		/// <remarks>
-		/// Not "is a panel open". The arrow keys and the random key are the only
-		/// callers, and both drive that grid specifically — MoveSelectedItemGrid
-		/// walks FindItUtil.GetFilteredPrefabs by GridUtil's column count and
-		/// then calls SetScrollIndex, which scrolls the legacy prefab list. None
-		/// of it reaches the lens, which has its own catalog, its own scroll and
-		/// no keyboard route into either.
-		///
-		/// So the lens has to be excluded rather than included. Gated on panel
-		/// visibility alone, an arrow press while the lens was open moved a
-		/// selection in a grid nobody could see and armed whatever prefab it
-		/// landed on. The top bar already hides the Random button in lens mode
-		/// for exactly that reason ("it would hand back a building the player's
-		/// own filters had excluded"); the key bindings never learned the same
-		/// thing.
-		///
-		/// Mirrors MainContainer, which renders PrefabSelection only when the
-		/// lens is off.
-		/// </remarks>
-		/// <summary>
-		/// Always false. The lens replaces vanilla's build menu rather than
-		/// offering an alternative to it, so the legacy grid has no state left
-		/// in which it is the thing on screen.
-		/// </summary>
-		/// <remarks>
-		/// This used to read <c>(_ShowFindItPanel || _IsWindowLocked) &amp;&amp;
-		/// !_BuildingLensEnabled</c>. That last flag was a latch from when the
-		/// lens was opt-in: false at boot, set true the moment any menu
-		/// resolved, and after the pane's control row was deleted there was
-		/// nothing left to set it false again. Retiring it makes the constant
-		/// visible instead of leaving it implied by three sites agreeing.
-		///
-		/// Kept as a named constant rather than inlined so the keybindings below
-		/// still say WHY they are disabled, and so deleting the legacy grid — the
-		/// migration tracked under cm-8hyu — has one obvious place to start.
-		/// </remarks>
-		private const bool LegacyGridVisible = false;
 
 		/// <summary>
 		/// The live building-lens facet group for one dimension (e.g.
@@ -241,12 +185,7 @@ namespace FindItBuildingMenu.Systems
 
 			// Keybinding caching
 
-			_randomKeyBinding = Mod.Settings.GetAction(nameof(FindItSettings.RandomKeyBinding));
 
-			_arrowLeftBinding = Mod.Settings.GetAction(nameof(FindItSettings.LeftArrow));
-			_arrowUpBinding = Mod.Settings.GetAction(nameof(FindItSettings.UpArrow));
-			_arrowRightBinding = Mod.Settings.GetAction(nameof(FindItSettings.RightArrow));
-			_arrowDownBinding = Mod.Settings.GetAction(nameof(FindItSettings.DownArrow));
 
 			// These establish the bindings for the categories
 			_CurrentCategoryBinding = CreateBinding("CurrentCategory", "SetCurrentCategory", (int)FindItUtil.CurrentCategory, SetCurrentCategory);
@@ -298,14 +237,7 @@ namespace FindItBuildingMenu.Systems
 			_BuildingLensPanelHeight = CreateBinding(
 				"BuildingLensPanelHeight",
 				BuildingLensHeight.Clamp(Mod.Settings.BuildingLensPanelHeight));
-			_ScrollIndex = CreateBinding("ScrollIndex", 0D);
-			_MaxScrollIndex = CreateBinding("MaxScrollIndex", 0D);
-			_ColumnCount = CreateBinding("ColumnCount", 0D);
-			_RowCount = CreateBinding("RowCount", 0D);
 			_CurrentSearch = CreateBinding("CurrentSearch", string.Empty);
-			_CategoryBinding = CreateBinding("CategoryList", new CategoryUIEntry[] { new(PrefabCategory.Any) });
-			_SubCategoryBinding = CreateBinding("SubCategoryList", new SubCategoryUIEntry[] { new(PrefabSubCategory.Any) });
-			_PrefabListBinding = CreateBinding("PrefabList", new PrefabUIEntry[0]);
 			_BuildingCatalogBinding = CreateBinding("BuildingCatalog", new BuildingCatalogPage(
 				Array.Empty<BuildingCatalogEntry>(),
 				0,
@@ -359,8 +291,6 @@ namespace FindItBuildingMenu.Systems
 
 			// These establish UI actions triggering methods on the C# side.
 			CreateTrigger<string>("SearchChanged", t => SearchChanged(t));
-			CreateTrigger<int>("OnScroll", OnScroll);
-			CreateTrigger<double>("SetScrollIndex", SetScrollIndex);
 			CreateTrigger<int>("SetCurrentPrefab", TryActivatePrefabTool);
 			// The UI watches the game's own toolbar.selectedAssetMenu binding and
 			// hands the entity index here; resolving the prefab name and the
@@ -381,7 +311,6 @@ namespace FindItBuildingMenu.Systems
 			CreateTrigger("ToggleLock", ToggleLock);
 			CreateTrigger("OnSearchFocused", () => _FocusSearchBar.Value = false);
 			CreateTrigger("OnSearchCleared", () => _ClearSearchBar.Value = false);
-			CreateTrigger("OnRandomButtonClicked", OnRandomButtonClicked);
 			CreateTrigger<int>("OnLocateButtonClicked", OnLocateButtonClicked);
 			CreateTrigger("LoadMoreBuildingCatalog", LoadMoreBuildingCatalog);
 			CreateTrigger<int>("ToggleBuildingCatalogCompare", ToggleBuildingCatalogCompare);
@@ -404,58 +333,17 @@ namespace FindItBuildingMenu.Systems
 
 		protected override void OnUpdate()
 		{
-			_randomKeyBinding.shouldBeEnabled =
-			_arrowLeftBinding.shouldBeEnabled =
-			_arrowUpBinding.shouldBeEnabled =
-			_arrowRightBinding.shouldBeEnabled =
-			_arrowDownBinding.shouldBeEnabled = LegacyGridVisible;
 
 			if (filterCompleted)
 			{
 				filterCompleted = false;
-				scrollIndex = 0;
 
 				_IsSearchLoading.Value = false;
-				_PrefabListBinding.Value = GetDisplayedPrefabs();
 				// Extra Filters complete on the search worker. Refresh the
 				// building lens after that worker publishes its result so the
-				// typed catalog does not silently diverge from the grid.
+				// typed catalog does not silently diverge from what was asked
+				// for.
 				RefreshBuildingCatalog();
-			}
-
-			if (scrollCompleted)
-			{
-				scrollCompleted = false;
-
-				_PrefabListBinding.Value = GetDisplayedPrefabs();
-			}
-
-			if (LegacyGridVisible)
-			{
-				if (_randomKeyBinding.WasPerformedThisFrame())
-				{
-					OnRandomButtonClicked();
-				}
-
-				if (_arrowLeftBinding.WasPerformedThisFrame())
-				{
-					MoveSelectedItemGrid(-1, 0);
-				}
-
-				if (_arrowUpBinding.WasPerformedThisFrame())
-				{
-					MoveSelectedItemGrid(0, -1);
-				}
-
-				if (_arrowRightBinding.WasPerformedThisFrame())
-				{
-					MoveSelectedItemGrid(1, 0);
-				}
-
-				if (_arrowDownBinding.WasPerformedThisFrame())
-				{
-					MoveSelectedItemGrid(0, 1);
-				}
 			}
 
 			base.OnUpdate();

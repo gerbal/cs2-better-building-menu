@@ -48,8 +48,6 @@ const ClearSearchBar$ = bindValue<boolean>(mod.id, "ClearSearchBar");
 const FocusSearchBar$ = bindValue<boolean>(mod.id, "FocusSearchBar");
 const AreFiltersSet$ = bindValue<boolean>(mod.id, "AreFiltersSet");
 const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch");
-const CategoryList$ = bindValue<PrefabCategory[]>(mod.id, "CategoryList");
-const SubCategoryList$ = bindValue<PrefabSubCategory[]>(mod.id, "SubCategoryList");
 const AlignmentStyle$ = bindValue<string>(mod.id, "AlignmentStyle");
 // The lens navigation bindings can be read during a view recreation before
 // the first C# refresh tick. Keep the React tree on a valid, inert shape until
@@ -62,8 +60,6 @@ const BuildingCatalog$ = bindValue<{ totalCount?: number } | null>(mod.id, "Buil
 export const TopBarComponent = (props: TopBarProps) => {
   // These get the value of the bindings. Or they will when we have bindings.
   const IsWindowLocked = useValue(IsWindowLocked$);
-  const CategoryList = useValue(CategoryList$);
-  const SubCategoryList = useValue(SubCategoryList$);
   const IsSearchLoading = useValue(IsSearchLoading$);
   const AreFiltersSet = useValue(AreFiltersSet$);
   const CurrentSearch = useValue(CurrentSearch$);

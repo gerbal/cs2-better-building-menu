@@ -78,26 +78,6 @@ namespace FindItBuildingMenu
 		// mod showed on every boot. N is bound nowhere in the game's InputActions
 		// asset at all, so it stays clear even under the modifier-insensitive
 		// comparison ProxyBinding.PathEquals falls back to.
-		[SettingsUIKeyboardBinding(BindingKeyboard.N, nameof(RandomKeyBinding), ctrl: true)]
-		[SettingsUISection(KEYBINDINGS, ACTIONS)]
-		public ProxyBinding RandomKeyBinding { get; set; }
-
-		[SettingsUIKeyboardBinding(BindingKeyboard.LeftArrow, nameof(LeftArrow))]
-		[SettingsUISection(KEYBINDINGS, NAVIGATION)]
-		public ProxyBinding LeftArrow { get; set; }
-
-		[SettingsUIKeyboardBinding(BindingKeyboard.RightArrow, nameof(RightArrow))]
-		[SettingsUISection(KEYBINDINGS, NAVIGATION)]
-		public ProxyBinding RightArrow { get; set; }
-
-		[SettingsUIKeyboardBinding(BindingKeyboard.UpArrow, nameof(UpArrow))]
-		[SettingsUISection(KEYBINDINGS, NAVIGATION)]
-		public ProxyBinding UpArrow { get; set; }
-
-		[SettingsUIKeyboardBinding(BindingKeyboard.DownArrow, nameof(DownArrow))]
-		[SettingsUISection(KEYBINDINGS, NAVIGATION)]
-		public ProxyBinding DownArrow { get; set; }
-
 		// Off by default: this takes over the game's primary build UI, which is
 		// not something to opt a player into without asking.
 		[SettingsUISection(SETTINGS, BEHAVIOR)]
