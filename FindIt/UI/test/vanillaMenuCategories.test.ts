@@ -6,6 +6,8 @@ import {
   orderedCategories,
   shouldShowCategoryStrip,
   type VanillaMenuCategory,
+  categoryCount,
+  shouldWidenCategoryStrip,
 } from "../src/domain/vanillaMenuCategories.ts";
 
 const category = (id: string, priority = 0): VanillaMenuCategory => ({
@@ -76,5 +78,49 @@ describe("category selection", () => {
 
   it("does not select All once a real category is chosen", () => {
     assert.equal(isCategorySelected(ALL_CATEGORIES_ID, "TransportationRoad"), false);
+  });
+});
+
+describe("Menu category counts", () => {
+  const counts = [
+    { id: "Vegetation", count: 22 },
+    { id: "Terraforming", count: 9 },
+  ];
+
+  it("reports a tab's own share", () => {
+    assert.equal(categoryCount(counts, "Vegetation"), 22);
+    assert.equal(categoryCount(counts, "Terraforming"), 9);
+  });
+
+  it("sums the tabs for All, which has no share of its own", () => {
+    assert.equal(categoryCount(counts, ALL_CATEGORIES_ID), 31);
+  });
+
+  it("says nothing rather than zero when the count has not arrived", () => {
+    // Null and 0 are different claims: 0 means the tab is genuinely empty,
+    // nothing means the backend has not answered yet. Collapsing them flashes
+    // "0" across the whole strip on every menu change.
+    assert.equal(categoryCount([], "Vegetation"), null);
+    assert.equal(categoryCount(null, "Vegetation"), null);
+    assert.equal(categoryCount(undefined, ALL_CATEGORIES_ID), null);
+  });
+
+  it("distinguishes an absent count from a real zero", () => {
+    assert.equal(categoryCount([{ id: "Pathways", count: 0 }], "Pathways"), 0);
+    assert.equal(categoryCount([{ id: "Pathways", count: 0 }], "Vegetation"), null);
+  });
+
+  it("widens the strip only once a row of glyphs stops being scannable", () => {
+    // Six works — Transportation has six modes. Fourteen does not: Landscaping
+    // drew fourteen icon-only squares over 379 assets, and the All view showed
+    // seven of those categories, so half the menu was behind a guess.
+    const tabs = (n: number) =>
+      Array.from({ length: n }, (_, i) => ({ id: `${i}`, name: `${i}`, icon: "", priority: i }));
+
+    assert.equal(shouldWidenCategoryStrip(tabs(6)), false);
+    assert.equal(shouldWidenCategoryStrip(tabs(7)), true);
+    assert.equal(shouldWidenCategoryStrip(tabs(14)), true);
+    assert.equal(shouldWidenCategoryStrip([]), false);
+    assert.equal(shouldWidenCategoryStrip(null), false);
   });
 });

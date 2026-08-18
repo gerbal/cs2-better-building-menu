@@ -61,3 +61,49 @@ export function isCategorySelected(
 ): boolean {
   return (selected ?? ALL_CATEGORIES_ID) === categoryId;
 }
+
+/** One tab's share of the menu, published beside the categories. */
+export interface MenuCategoryCount {
+  id: string;
+  count: number;
+}
+
+/**
+ * How many assets sit behind a tab, or null when the backend has not said.
+ *
+ * Null rather than 0, and the difference is load-bearing: a tab that genuinely
+ * holds nothing should read 0, and one whose count has not arrived yet should
+ * read nothing at all. Collapsing them would flash "0" across a whole strip on
+ * every menu change.
+ */
+export function categoryCount(
+  counts: readonly MenuCategoryCount[] | null | undefined,
+  categoryId: string
+): number | null {
+  if (categoryId === ALL_CATEGORIES_ID) {
+    return (counts ?? []).reduce((total, entry) => total + (entry.count ?? 0), 0) || null;
+  }
+
+  const found = (counts ?? []).find((entry) => entry.id === categoryId);
+
+  return found ? found.count : null;
+}
+
+/**
+ * Above this many tabs the strip stops being a row of glyphs you can scan.
+ *
+ * Measured on Landscaping: 14 categories drawn as 14 icon-only squares, with
+ * the "All" view showing the first 100 of 379 — which covered 7 of those 14.
+ * Half the menu was reachable only by guessing which unlabelled square held it.
+ *
+ * Six is where a row of icons is still a row you read rather than a wall you
+ * search. Transportation has six and works; Landscaping has fourteen and does
+ * not.
+ */
+export const CATEGORY_STRIP_WIDE_THRESHOLD = 6;
+
+export function shouldWidenCategoryStrip(
+  categories: readonly VanillaMenuCategory[] | null | undefined
+): boolean {
+  return (categories ?? []).length > CATEGORY_STRIP_WIDE_THRESHOLD;
+}

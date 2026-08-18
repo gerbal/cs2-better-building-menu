@@ -57,3 +57,34 @@
   font-size: var(--fontSizeS);
   white-space: nowrap;
 }
+
+// Above six categories the tabs carry their name and their count instead of a
+// bare glyph. The square is vanilla's shape for a row you scan; fourteen of
+// them is a wall you search, and the count is what says which one to open.
+//
+// width: auto !important for the same reason every worded control in this mod
+// needs it — the ToolButton's icon variant pins a square, and text in a square
+// is text that gets cut.
+.tabWide {
+  width: auto !important;
+  min-width: 32rem;
+  padding: 0 6rem;
+}
+
+.tabLabel {
+  display: flex;
+  flex-direction: row;
+  align-items: baseline;
+  color: var(--menuText1Normal);
+  font-size: var(--fontSizeS);
+  white-space: nowrap;
+}
+
+// The figure recedes and the name leads: the name is what you are looking for,
+// the count is how much you will get. Margin, not gap — gap measures 0 between
+// flex-row children in this engine.
+.tabCount {
+  margin-left: 5rem;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeXS);
+}

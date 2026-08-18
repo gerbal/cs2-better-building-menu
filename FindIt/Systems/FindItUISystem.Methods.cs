@@ -142,6 +142,11 @@ namespace FindItBuildingMenu.Systems
 			// cannot shrink the bounds it was typed against.
 			_BuildingCatalogMetricBounds.Value = _buildingCatalogAdapter.GetMetricBounds(_buildingCatalogQuery);
 			_BuildingLensFacets.Value = _buildingCatalogAdapter.GetFacetState(_buildingCatalogQuery);
+			// Alongside the facets and for the same reason: the strip is a filter
+			// too, and a tab that cannot say how much is behind it is the same
+			// dead end as a facet option that cannot.
+			_BuildingLensMenuCategoryCounts.Value =
+				_buildingCatalogAdapter.GetMenuCategoryCounts(_buildingCatalogQuery).ToArray();
 			_BuildingLensLegacyFilters.Value = CaptureLegacyFilters().Describe().ToArray();
 			// At most three ids, so re-projecting alongside the page keeps the
 			// tray current once indexing finishes without measurable cost.
