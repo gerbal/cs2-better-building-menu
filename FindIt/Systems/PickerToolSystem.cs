@@ -148,9 +148,20 @@ namespace FindItBuildingMenu.Systems
 							//
 							// Falls through to the old path when the game places
 							// the asset in no menu: props, vegetation and
-							// vehicles are most of the index, and for those the
-							// legacy panel is still the only surface that can
-							// show them.
+							// vehicles are most of the index.
+							//
+							// THAT PATH NO LONGER SHOWS THEM — see cm-h8fe. It
+							// used to open the legacy grid, which 365e761 stopped
+							// rendering; the panel now draws the building catalog,
+							// and unscoped that is buildings only by construction
+							// (BuildingCatalogAdapter.cs:358), so the very asset
+							// the player picked is the one it excludes. The calls
+							// below still run and still do nothing visible, and
+							// ScrollTo scrolls a grid that is not on screen.
+							//
+							// Left standing rather than deleted: this is a feature
+							// that is broken, not one that was removed, and the
+							// scaffolding is what a repair would build on.
 							if (!_findItUISystem.RequestVanillaMenu(id))
 							{
 								_findItUISystem.ToggleFindItPanel(true, false);
