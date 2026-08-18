@@ -2348,7 +2348,6 @@ namespace FindItBuildingMenu.Systems
 			return new VanillaAssetFacts(themeRequirements, packs, hasPackBuffer, isModAsset);
 		}
 
-		public static IReadOnlyList<ZoneCatalogEntry> GetZoneCatalog() => _zoneCatalog;
 
 		/// <summary>
 		/// The zone catalog as the game's own toolbar row would show it.
@@ -2363,27 +2362,6 @@ namespace FindItBuildingMenu.Systems
 		/// A zone with no recorded facts stays visible. "We were never told" has
 		/// to read as unfiltered, the same way it reads as unlocked elsewhere,
 		/// or a gap in indexing would silently empty the menu.
-		/// </remarks>
-		public static IReadOnlyList<ZoneCatalogEntry> GetZoneCatalog(VanillaToolbarSelection selection)
-		{
-			if (selection.IsEmpty)
-			{
-				return _zoneCatalog;
-			}
-
-			var visible = new List<ZoneCatalogEntry>(_zoneCatalog.Count);
-
-			foreach (var zone in _zoneCatalog)
-			{
-				if (!_zoneFacts.TryGetValue(zone.Id, out var facts)
-					|| VanillaToolbarFilter.IsVisible(facts, selection))
-				{
-					visible.Add(zone);
-				}
-			}
-
-			return visible;
-		}
 
 		/// <summary>
 		/// The prefab name of a vanilla toolbar asset menu, by entity index.

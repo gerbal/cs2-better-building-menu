@@ -142,8 +142,7 @@ namespace FindItBuildingMenu.Systems
 				_appliedMenuIndex = menuEntityIndex;
 				_appliedMenuFrame = UnityEngine.Time.frameCount;
 				_LensOwnsCurrentMenu.Value = true;
-				_ShowZoningHierarchy.Value = false;
-					_buildingLensSection = VanillaBuildMenuTaxonomy.AllBuildings;
+						_buildingLensSection = VanillaBuildMenuTaxonomy.AllBuildings;
 				_buildingLensSubCategory = VanillaBuildMenuTaxonomy.Any;
 				_BuildingLensSectionBinding.Value = _buildingLensSection;
 				_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
@@ -202,7 +201,6 @@ namespace FindItBuildingMenu.Systems
 			_LensOwnsCurrentMenu.Value = true;
 			_LensMenuToolTip.Value = PrefabIndexingSystem.GetAssetMenuToolTip(menuEntityIndex) ?? string.Empty;
 
-			_ShowZoningHierarchy.Value = false;
 
 			// With the lens enabled RefreshBuildingCatalog deliberately ignores
 			// FindItUtil's category and reads the lens's own section and
@@ -293,18 +291,6 @@ namespace FindItBuildingMenu.Systems
 			// because a tab strip is single-select; the picker still composes
 			// several, and whichever set that leaves is what both controls read
 			// back.
-			if (_ShowZoningHierarchy.Value)
-			{
-				var family = ZoningSurfaceCatalog.ResolveFamilyFromGroup(category);
-
-				_zoneFamilies = family is null
-					? System.Array.Empty<string>()
-					: new[] { family };
-				_BuildingLensZoneFamilies.Value = _zoneFamilies;
-				PublishSelectedZoneFamilyTab();
-				return;
-			}
-
 			_buildingLensUiCategory = category ?? string.Empty;
 			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
@@ -312,21 +298,6 @@ namespace FindItBuildingMenu.Systems
 			RefreshBuildingCatalog();
 		}
 
-		/// <summary>
-		/// Lights the strip tab for the family selection, when one tab can say it.
-		/// </summary>
-		/// <remarks>
-		/// A tab strip can show one choice, the picker can compose several, and
-		/// they share a state — so two families selected lights no tab rather
-		/// than lying about which. Empty means every family, which is what the
-		/// strip's "All" tab already stands for.
-		/// </remarks>
-		private void PublishSelectedZoneFamilyTab()
-		{
-			_BuildingLensMenuCategoryBinding.Value = _zoneFamilies.Length == 1
-				? ZoningSurfaceCatalog.ResolveGroupFromFamily(_zoneFamilies[0]) ?? string.Empty
-				: string.Empty;
-		}
 
 		/// <summary>
 		/// Scopes the lens to a vanilla menu chosen from the filters.
@@ -367,10 +338,8 @@ namespace FindItBuildingMenu.Systems
 
 			if (zoning)
 			{
-				_ZoneCatalog.Value = PrefabIndexingSystem.GetZoneCatalog(BuildingCatalogAdapter.ToolbarSelection).ToArray();
 			}
 
-			_ShowZoningHierarchy.Value = zoning;
 
 			RefreshBuildingLensMenuCategories();
 			RefreshBuildingLensNavigation();
@@ -426,7 +395,6 @@ namespace FindItBuildingMenu.Systems
 			// so leaving it scoped to zones while the query widens would show
 			// the player zones and tell them "all menus". Send them to the
 			// catalog, which is what "everything" means here.
-			_ShowZoningHierarchy.Value = false;
 
 			RefreshBuildingLensMenuCategories();
 			RefreshBuildingLensNavigation();
@@ -444,15 +412,6 @@ namespace FindItBuildingMenu.Systems
 			_BuildingLensMenuCategoriesBinding.Value = tabs.ToArray();
 			_BuildingLensMenuBinding.Value = _buildingLensUiMenu;
 			_BuildingLensMenusBinding.Value = PrefabIndexingSystem.GetAssetMenus().ToArray();
-
-			// In the zoning view the strip's selection IS the family selection,
-			// and _buildingLensUiCategory stays empty there — republishing it
-			// would blank the lit tab under a filter that is still applied.
-			if (_ShowZoningHierarchy.Value)
-			{
-				PublishSelectedZoneFamilyTab();
-				return;
-			}
 
 			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
 		}
@@ -513,7 +472,6 @@ namespace FindItBuildingMenu.Systems
 			// left the zone tiles on screen under a breadcrumb that read
 			// "Buildings" and a count of 3,667. Only the interception path could
 			// see this before; the section picker made it reachable.
-			_ShowZoningHierarchy.Value = false;
 
 			VanillaBuildMenuSelection selection = VanillaBuildMenuSelection.Normalize(section, VanillaBuildMenuTaxonomy.Any);
 			_buildingLensSection = selection.Section;
@@ -695,8 +653,6 @@ namespace FindItBuildingMenu.Systems
 			// The zoning families are chips in the same row as the catalog's,
 			// so a Clear that left them standing would visibly fail to do what
 			// the button says.
-			_zoneFamilies = System.Array.Empty<string>();
-			_BuildingLensZoneFamilies.Value = _zoneFamilies;
 			RefreshBuildingCatalog();
 		}
 
@@ -708,14 +664,6 @@ namespace FindItBuildingMenu.Systems
 		/// already published in full and grouped by family on the UI side, so
 		/// narrowing is a matter of which groups to draw — no requery needed.
 		/// </remarks>
-		private void ToggleBuildingLensZoneFamily(string family)
-		{
-			_zoneFamilies = ZoneFamilySelection.Toggle(_zoneFamilies, family);
-			_BuildingLensZoneFamilies.Value = _zoneFamilies;
-			// The strip above shows the same selection, so it has to follow the
-			// picker as well as drive it.
-			PublishSelectedZoneFamilyTab();
-		}
 
 		private void SetBuildingCatalogMetricRange(string metricId, string minText, string maxText)
 		{
@@ -794,10 +742,6 @@ namespace FindItBuildingMenu.Systems
 			// carries its own copy of the same rule rather than sharing this
 			// query. Republishing it here keeps the two surfaces agreeing about
 			// what the toolbar is currently hiding.
-			if (_ShowZoningHierarchy.Value)
-			{
-				_ZoneCatalog.Value = PrefabIndexingSystem.GetZoneCatalog(BuildingCatalogAdapter.ToolbarSelection).ToArray();
-			}
 
 			RefreshBuildingCatalog();
 		}
