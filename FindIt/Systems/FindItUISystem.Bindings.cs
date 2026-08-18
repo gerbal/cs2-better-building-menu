@@ -148,8 +148,7 @@ namespace FindItBuildingMenu.Systems
 				_BuildingLensSectionBinding.Value = _buildingLensSection;
 				_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
 				_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
-				scrollIndex = 0;
-
+	
 				// activatePrefab: false. Opening a menu must not re-arm the prefab
 				// from the LAST menu — that is what desynced the toolbar. Arming a
 				// water pipe makes the game re-assert Water as the selected menu, so
@@ -237,7 +236,6 @@ namespace FindItBuildingMenu.Systems
 			_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 
-			scrollIndex = 0;
 
 			ToggleFindItPanel(true, activatePrefab: false);
 			RefreshBuildingLensNavigation();
@@ -370,7 +368,6 @@ namespace FindItBuildingMenu.Systems
 			// survive the switch — same reason as VanillaMenuSelected.
 			_buildingLensUiCategory = string.Empty;
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
-			scrollIndex = 0;
 
 			// Zones are assignment tools rather than buildings, so that menu gets
 			// the zoning hierarchy. ReplaceVanillaZonesMenu is not consulted:
@@ -435,7 +432,6 @@ namespace FindItBuildingMenu.Systems
 			FindItUtil.CurrentSubCategory = PrefabSubCategory.Any;
 
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
-			scrollIndex = 0;
 
 			// The zoning view is a different renderer over a different catalog,
 			// so leaving it scoped to zones while the query widens would show
@@ -495,7 +491,6 @@ namespace FindItBuildingMenu.Systems
 			FindItUtil.CurrentSubCategory = PrefabSubCategory.Any;
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 
-			scrollIndex = 0;
 
 			RefreshBuildingLensNavigation();
 			UpdateCategoriesAndPrefabList();
@@ -506,7 +501,6 @@ namespace FindItBuildingMenu.Systems
 		{
 			FindItUtil.CurrentSubCategory = (PrefabSubCategory)category;
 
-			scrollIndex = 0;
 
 			UpdateCategoriesAndPrefabList();
 
@@ -782,13 +776,6 @@ namespace FindItBuildingMenu.Systems
 			if (activatePrefab && Mod.Settings.SelectPrefabOnOpen)
 			{
 				TryActivatePrefabTool(_ActivePrefabId);
-
-				var prefabs = FindItUtil.GetFilteredPrefabs();
-				var columns = GridUtil.GetCurrentColumnCount();
-				var rows = GridUtil.GetCurrentRowCount();
-				var index = prefabs.IndexOf(FindItUtil.GetPrefabIndex(_ActivePrefabId));
-
-				SetScrollIndex(Math.Max(0, Math.Floor(index / columns) - (rows / 4)));
 			}
 		}
 
@@ -904,48 +891,8 @@ namespace FindItBuildingMenu.Systems
 			UpdateCategoriesAndPrefabList();
 		}
 
-		private void SetScrollIndex(double index)
-		{
-			if (scrollIndex == index)
-			{
-				return;
-			}
 
-			scrollIndex = index;
 
-			if (Mod.Settings.SmoothScroll)
-			{
-				_PrefabListBinding.Value = GetDisplayedPrefabs();
-			}
-			else
-			{
-				Task.Run(DelayedApplyScroll);
-			}
-		}
-
-		private void OnScroll(int direction)
-		{
-			SetScrollIndex(scrollIndex +
-				(Mod.Settings.ScrollSpeed
-				* (direction > 0 ? 1f : -1f)
-				* GridUtil.GetScrollMultiplier()
-				/ GridUtil.GetCurrentRowCount()));
-		}
-
-		private async Task DelayedApplyScroll()
-		{
-			var token = scrollTokenSource.Token;
-
-			await Task.Delay(50);
-
-			if (!token.IsCancellationRequested)
-			{
-				scrollTokenSource.Cancel();
-				scrollTokenSource = new();
-
-				scrollCompleted = true;
-			}
-		}
 
 		private void SearchChanged(string text)
 		{
@@ -971,42 +918,7 @@ namespace FindItBuildingMenu.Systems
 			TriggerSearch();
 		}
 
-		private void MoveSelectedItemGrid(int x, int y)
-		{
-			var prefabs = FindItUtil.GetFilteredPrefabs();
-			var columns = GridUtil.GetCurrentColumnCount();
-			var rows = GridUtil.GetCurrentRowCount();
-			var currentIndex = prefabs.IndexOf(FindItUtil.GetPrefabIndex(_ActivePrefabId));
 
-			if (prefabs.Count == 0)
-			{
-				return;
-			}
-
-			currentIndex += x + (y * (int)Math.Floor(columns));
-			currentIndex = Math.Min(Math.Max(0, currentIndex), prefabs.Count - 1);
-
-			TryActivatePrefabTool(prefabs[currentIndex].Id);
-			SetScrollIndex(Math.Max(0, Math.Floor(currentIndex / columns) - (rows / 4)));
-		}
-
-		private void OnRandomButtonClicked()
-		{
-			var random = new Random(Guid.NewGuid().GetHashCode());
-			var prefabs = FindItUtil.GetFilteredPrefabs();
-			var columns = GridUtil.GetCurrentColumnCount();
-			var rows = GridUtil.GetCurrentRowCount();
-
-			if (prefabs.Count == 0)
-			{
-				return;
-			}
-
-			var index = random.Next(prefabs.Count);
-
-			TryActivatePrefabTool(prefabs[index].Id);
-			SetScrollIndex(Math.Max(0, Math.Floor(index / columns) - (rows / 4)));
-		}
 
 		private void OnLocateButtonClicked(int id)
 		{
