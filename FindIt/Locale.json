@@ -364,6 +364,5 @@
   "Tooltip.LABEL[FindItBuildingMenu.ResizeHeight]": "Drag to resize",
   "Tooltip.LABEL[FindItBuildingMenu.Upgrades]": "Upgrades",
   "Tooltip.LABEL[FindItBuildingMenu.ViewMode]": "View",
-  "Tooltip.LABEL[FindItBuildingMenu.Zones]": "Zones",
-  "Tooltip.LABEL[FindItBuildingMenu.NoFacetsAvailable]": "No additional building facets are available."
+  "Tooltip.LABEL[FindItBuildingMenu.Zones]": "Zones"
 }
