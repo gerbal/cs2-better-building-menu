@@ -4,9 +4,12 @@ import classNames from "classnames";
 import mod from "../../../mod.json";
 import {
   ALL_CATEGORIES_ID,
+  categoryCount,
   isCategorySelected,
   orderedCategories,
   shouldShowCategoryStrip,
+  shouldWidenCategoryStrip,
+  type MenuCategoryCount,
   type VanillaMenuCategory,
 } from "domain/vanillaMenuCategories";
 import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
@@ -19,6 +22,11 @@ const BuildingLensMenuCategories$ = bindValue<VanillaMenuCategory[]>(
   []
 );
 const BuildingLensMenuCategory$ = bindValue<string>(mod.id, "BuildingLensMenuCategory", "");
+const BuildingLensMenuCategoryCounts$ = bindValue<MenuCategoryCount[]>(
+  mod.id,
+  "BuildingLensMenuCategoryCounts",
+  []
+);
 
 /**
  * Vanilla's second tier, rebuilt.
@@ -59,6 +67,17 @@ export const MenuCategoryStrip = () => {
     );
 
   const allLabel = translate("Tooltip.LABEL[FindItBuildingMenu.AllCategories]", "All") ?? "All";
+  const counts = useValue(BuildingLensMenuCategoryCounts$) ?? [];
+  // Above six tabs the row stops being scannable as glyphs — see
+  // CATEGORY_STRIP_WIDE_THRESHOLD. Wide tabs carry the name and the count.
+  const wide = shouldWidenCategoryStrip(categories);
+  // The count rides in the tooltip whatever the width, because a narrow strip
+  // still leaves the player asking how much is behind a glyph.
+  const withCount = (text: string, id: string) => {
+    const n = categoryCount(counts, id);
+
+    return n === null ? text : `${text} (${n})`;
+  };
   const { ToolButton, toolButtonTheme, FOCUS_DISABLED } = VanillaComponentResolver.instance;
 
   return (
@@ -68,7 +87,7 @@ export const MenuCategoryStrip = () => {
           entire, which is the thing it can do that the vanilla menu cannot. */}
       <ToolButton
         selected={isCategorySelected(ALL_CATEGORIES_ID, selected)}
-        tooltip={allLabel}
+        tooltip={withCount(allLabel, ALL_CATEGORIES_ID)}
         onSelect={() => choose(ALL_CATEGORIES_ID)}
         // Required by the component, and there is no icon for "all" — the tab
         // carries a word instead. Same as the filter rail does for a dimension
@@ -81,7 +100,7 @@ export const MenuCategoryStrip = () => {
           styles.allTab,
           isCategorySelected(ALL_CATEGORIES_ID, selected) && styles.tabSelected
         )}
-        aria-label={allLabel}
+        aria-label={withCount(allLabel, ALL_CATEGORIES_ID)}
       >
         <span className={styles.allLabel}>{allLabel}</span>
       </ToolButton>
@@ -90,18 +109,26 @@ export const MenuCategoryStrip = () => {
         <ToolButton
           key={category.id}
           selected={isCategorySelected(category.id, selected)}
-          tooltip={label(category)}
+          tooltip={withCount(label(category), category.id)}
           onSelect={() => choose(category.id)}
           src={category.icon}
           focusKey={FOCUS_DISABLED}
           className={classNames(
             toolButtonTheme.button,
             styles.tab,
+            wide && styles.tabWide,
             isCategorySelected(category.id, selected) && styles.tabSelected
           )}
-          aria-label={label(category)}
+          aria-label={withCount(label(category), category.id)}
         >
-          <span />
+          {wide
+            ? (
+              <span className={styles.tabLabel}>
+                {label(category)}
+                <span className={styles.tabCount}>{categoryCount(counts, category.id) ?? ""}</span>
+              </span>
+            )
+            : <span />}
         </ToolButton>
       ))}
     </div>

@@ -83,6 +83,39 @@ namespace FindItBuildingMenu.Services
 		}
 
 		/// <summary>
+		/// How many assets each of the menu's category tabs holds.
+		/// </summary>
+		/// <remarks>
+		/// The category's OWN axis is excluded, which is the same rule the facet
+		/// groups follow and for the same reason: counted with it in, choosing
+		/// Vegetation would make every other tab read 0, so the control that
+		/// would widen the result again tells you there is nothing to widen to.
+		/// The search and the facets DO count, because a tab claiming 22 when
+		/// the active search leaves 3 behind it is worse than no number.
+		///
+		/// Keyed by the same Id the tabs carry, which is the category prefab's
+		/// name and exactly what BuildingCatalogEntry.UiCategory holds — so the
+		/// UI joins them without a translation step.
+		/// </remarks>
+		public IReadOnlyList<MenuCategoryCount> GetMenuCategoryCounts(BuildingCatalogQuery query)
+		{
+			if (query is null)
+			{
+				throw new ArgumentNullException(nameof(query));
+			}
+
+			var acrossCategories = query with { UiCategory = string.Empty };
+
+			return BuildingCatalogQueryEngine
+				.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), acrossCategories)
+				.GroupBy(entry => entry.UiCategory ?? string.Empty)
+				.Where(group => group.Key.Length > 0)
+				.Select(group => new MenuCategoryCount(group.Key, group.Count()))
+				.OrderBy(count => count.Id, StringComparer.Ordinal)
+				.ToArray();
+		}
+
+		/// <summary>
 		/// The spread each metric actually has in the current view.
 		/// </summary>
 		/// <remarks>

@@ -109,6 +109,9 @@ namespace FindItBuildingMenu.Systems
 		// which of its tabs is active. Empty list means "no strip", which is also
 		// how vanilla renders a menu with fewer than two categories.
 		private ValueBindingHelper<VanillaMenuCategory[]> _BuildingLensMenuCategoriesBinding = null!;
+		// Sidecar to the above. See MenuCategoryCount for why it is not a field
+		// on the category record.
+		private ValueBindingHelper<MenuCategoryCount[]> _BuildingLensMenuCategoryCounts = null!;
 		private ValueBindingHelper<string> _BuildingLensMenuCategoryBinding = null!;
 		/// <summary>
 		/// The vanilla menu the lens is scoped to, or empty for the whole catalog.
@@ -255,6 +258,7 @@ namespace FindItBuildingMenu.Systems
 			_BuildingLensSectionListBinding = CreateBinding("BuildingLensSectionList", Array.Empty<BuildingLensSectionUIEntry>());
 			_BuildingLensSubCategoryListBinding = CreateBinding("BuildingLensSubCategoryList", Array.Empty<BuildingLensSubCategoryUIEntry>());
 			_BuildingLensMenuCategoriesBinding = CreateBinding("BuildingLensMenuCategories", Array.Empty<VanillaMenuCategory>());
+			_BuildingLensMenuCategoryCounts = CreateBinding("BuildingLensMenuCategoryCounts", Array.Empty<MenuCategoryCount>());
 			_BuildingLensMenuBinding = CreateBinding("BuildingLensMenu", string.Empty);
 			_BuildingLensMenusBinding = CreateBinding("BuildingLensMenus", Array.Empty<VanillaMenuCategory>());
 			_BuildingLensMilestonesBinding = CreateBinding("BuildingLensMilestones", Array.Empty<string>());
