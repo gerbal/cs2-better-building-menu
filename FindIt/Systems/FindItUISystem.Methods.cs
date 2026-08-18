@@ -261,7 +261,6 @@ namespace FindItBuildingMenu.Systems
 			_MaxScrollIndex.Value = rows - displayedRows;
 			_ColumnCount.Value = columns;
 			_RowCount.Value = displayedRows;
-			_PrefabCountBinding.Value = string.Format(LocaleHelper.GetTooltip("ItemCount"), list.Count.ToString("N0"));
 
 			var uiEntries = new List<PrefabUIEntry>();
 			var startIndex = (int)(Math.Floor(scrollIndex) * columns);
@@ -464,11 +463,6 @@ namespace FindItBuildingMenu.Systems
 			// nothing to close and opened the pause menu instead. Escape pausing
 			// the game mid-build is worse than the defect it fixed.
 			ToggleFindItPanel(false);
-		}
-
-		public void SetAllThumbnails(IEnumerable<string> thumbnails)
-		{
-			_AllThumbnails.Value = thumbnails.ToArray();
 		}
 	}
 }
