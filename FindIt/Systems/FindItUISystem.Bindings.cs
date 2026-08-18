@@ -493,7 +493,7 @@ namespace FindItBuildingMenu.Systems
 
 
 			RefreshBuildingLensNavigation();
-			UpdateCategoriesAndPrefabList();
+			RefreshLens();
 			RefreshBuildingCatalog();
 		}
 
@@ -502,7 +502,7 @@ namespace FindItBuildingMenu.Systems
 			FindItUtil.CurrentSubCategory = (PrefabSubCategory)category;
 
 
-			UpdateCategoriesAndPrefabList();
+			RefreshLens();
 
 			if (FindItUtil.Filters.GetFilterList().Any()) // Check if there are any active filters
 			{
@@ -511,7 +511,7 @@ namespace FindItBuildingMenu.Systems
 				TriggerSearch();
 			}
 
-			// UpdateCategoriesAndPrefabList already ran RefreshBuildingCatalog
+			// RefreshLens already ran RefreshBuildingCatalog
 			// above, which now refreshes the options bank itself once its facet
 			// bindings are current. A second call here would just repeat that
 			// with nothing having changed in between.
@@ -762,13 +762,12 @@ namespace FindItBuildingMenu.Systems
 			}
 
 			_PanelWidth.Value = GridUtil.GetCurrentPanelWidth();
-			_PanelHeight.Value = GridUtil.GetHeight();
 
 			FindItUtil.SetSorting();
 
-			UpdateCategoriesAndPrefabList();
+			RefreshLens();
 
-			// UpdateCategoriesAndPrefabList already ran RefreshBuildingCatalog
+			// RefreshLens already ran RefreshBuildingCatalog
 			// above, which now refreshes the options bank itself once its facet
 			// bindings are current. A second call here would just repeat that
 			// with nothing having changed in between.
@@ -886,9 +885,8 @@ namespace FindItBuildingMenu.Systems
 		private void ExpandedToggled()
 		{
 			_PanelWidth.Value = GridUtil.GetCurrentPanelWidth();
-			_PanelHeight.Value = GridUtil.GetHeight();
 
-			UpdateCategoriesAndPrefabList();
+			RefreshLens();
 		}
 
 

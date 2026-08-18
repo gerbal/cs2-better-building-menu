@@ -23,7 +23,7 @@ namespace FindItBuildingMenu.Systems
 
 		public abstract void TriggerSearch();
 		public abstract void RefreshOptions();
-		public abstract void UpdateCategoriesAndPrefabList();
+		public abstract void RefreshLens();
 
 		// The three members below bridge the building-lens facet state (query
 		// engine + filter rail) into the options bank, for short facet groups

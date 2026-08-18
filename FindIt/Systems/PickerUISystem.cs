@@ -137,7 +137,7 @@ namespace FindItBuildingMenu.Systems
 
 		}
 
-		public override void UpdateCategoriesAndPrefabList()
+		public override void RefreshLens()
 		{
 		}
 

@@ -85,11 +85,9 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<int> _ActivePrefabId;
 		private ValueBindingHelper<int> _CurrentCategoryBinding;
 		private ValueBindingHelper<int> _CurrentSubCategoryBinding;
-		private ValueBindingHelper<float> _PanelHeight;
 		private ValueBindingHelper<float> _PanelWidth;
 		private ValueBindingHelper<float> _BuildingLensPanelHeight;
 		private ValueBindingHelper<string> _CurrentSearch;
-		private ValueBindingHelper<string> _ViewStyle;
 		private ValueBindingHelper<string> _AlignmentStyle;
 		private ValueBindingHelper<BuildingCatalogPage> _BuildingCatalogBinding = null!;
 		private ValueBindingHelper<BuildingCatalogMetricRangeState> _BuildingCatalogMetricRanges = null!;
@@ -143,16 +141,6 @@ namespace FindItBuildingMenu.Systems
 		/// </summary>
 		public BuildingCatalogFacetGroup? GetBuildingLensFacetGroup(string facetId) =>
 			System.Array.Find(_BuildingLensFacets.Value.Groups, group => group.Id == facetId);
-		public string ViewStyle
-		{
-			get => _ViewStyle;
-			set
-			{
-				Mod.Settings.DefaultViewStyle = _ViewStyle.Value = value;
-				Mod.Settings.ApplyAndSave();
-				UpdateCategoriesAndPrefabList();
-			}
-		}
 		public string AlignmentStyle
 		{
 			get => _AlignmentStyle;
@@ -229,7 +217,6 @@ namespace FindItBuildingMenu.Systems
 			CreateTrigger("SearchEverything", SearchEverything);
 			_ZoneCatalog = CreateBinding("ZoneCatalog", new ZoneCatalogEntry[0]);
 			_BuildingLensZoneFamilies = CreateBinding("BuildingLensZoneFamilies", System.Array.Empty<string>());
-			_PanelHeight = CreateBinding("PanelHeight", 0f);
 			_PanelWidth = CreateBinding("PanelWidth", 0f);
 			// Seeded from the setting rather than 0: the panel draws from this
 			// on its first frame, and a zero height would flash a collapsed
@@ -284,7 +271,6 @@ namespace FindItBuildingMenu.Systems
 				"SetBuildingLensMenuCategory",
 				string.Empty,
 				SetBuildingLensMenuCategory);
-			_ViewStyle = CreateBinding("ViewStyle", Mod.Settings.DefaultViewStyle);
 			_AlignmentStyle = CreateBinding("AlignmentStyle", Mod.Settings.DefaultAlignmentStyle);
 
 			CreateBinding("NoAssetImage", () => Mod.Settings.NoAssetImage);

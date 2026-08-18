@@ -51,7 +51,7 @@ namespace FindItBuildingMenu.Domain.Options
 		{
 			FindItUtil.SetSorting(optionId != 0);
 
-			_optionsUISystem.UpdateCategoriesAndPrefabList();
+			_optionsUISystem.RefreshLens();
 		}
 
 		public void OnReset()

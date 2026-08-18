@@ -19,7 +19,21 @@ namespace FindItBuildingMenu.Systems
 {
     internal partial class FindItUISystem : ExtendedUISystemBase
 	{
-		internal void UpdateCategoriesAndPrefabList()
+		/// <summary>
+		/// Re-publish the lens after something changed what it should show.
+		/// </summary>
+		/// <remarks>
+		/// Was <c>UpdateCategoriesAndPrefabList</c>, which described what it did
+		/// when the legacy grid existed: rebuild the category and subcategory
+		/// binding lists, then page the prefab list. All three of those are gone,
+		/// and the name outlived them by a few commits.
+		///
+		/// The callers that matter are the options panel's sorting sections,
+		/// which still reach the lens: CategorizedPrefabs holds IndexedPrefabList,
+		/// whose enumerator returns the statically-sorted order, so the legacy
+		/// sort still decides ties the catalog's own sort leaves open.
+		/// </remarks>
+		internal void RefreshLens()
 		{
 			RefreshBuildingLensNavigation();
 			RefreshBuildingCatalog();
