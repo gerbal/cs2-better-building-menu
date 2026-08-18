@@ -45,7 +45,6 @@ const BuildingLensMenu$ = bindValue<string>(mod.id, "BuildingLensMenu", "");
 const BuildingLensMenuCategory$ = bindValue<string>(mod.id, "BuildingLensMenuCategory", "");
 const BuildingLensMenuCategories$ = bindValue<VanillaMenuCategory[]>(mod.id, "BuildingLensMenuCategories", []);
 const BuildingLensMenus$ = bindValue<VanillaMenuCategory[]>(mod.id, "BuildingLensMenus", []);
-const ShowZoningHierarchy$ = bindValue<boolean>(mod.id, "ShowZoningHierarchy", false);
 
 const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState | null>(
   mod.id,
@@ -65,7 +64,6 @@ export const ChipRow = () => {
   const subCategoryList = useValue(BuildingLensSubCategoryList$) ?? [];
   const facets = useValue(BuildingLensFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
-  const showZoning = useValue(ShowZoningHierarchy$);
   const menu = useValue(BuildingLensMenu$) ?? "";
   const menuCategory = useValue(BuildingLensMenuCategory$) ?? "";
   const menuCategories = useValue(BuildingLensMenuCategories$) ?? [];
@@ -79,7 +77,7 @@ export const ChipRow = () => {
     menu,
     menuCategory,
     menuCategoryCount: menuCategories.length,
-    showZoning,
+    showZoning: false,
     subCategoryCount: subCategoryList.length,
   });
 

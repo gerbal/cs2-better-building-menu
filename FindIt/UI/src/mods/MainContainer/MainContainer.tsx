@@ -4,7 +4,6 @@ import { getModule } from "cs2/modding";
 import mod from "../../../mod.json";
 import { TopBarComponent } from "mods/TopBar/TopBar";
 import { BuildingCatalogComponent } from "mods/BuildingCatalog/BuildingCatalog";
-import { ZoningHierarchyComponent } from "mods/ZoningHierarchy/ZoningHierarchy";
 import { useState, useRef, useEffect } from "react";
 import styles from "./mainContainer.module.scss";
 import { OptionsPanelComponent } from "mods/OptionsPanel/OptionsPanel";
@@ -28,7 +27,6 @@ const IsExpanded$ = bindValue<boolean>(mod.id, "IsExpanded", false);
 const BuildingLensPanelHeight$ = bindValue<number>(mod.id, "BuildingLensPanelHeight", 420);
 const AlignmentStyle$ = bindValue<string>(mod.id, "AlignmentStyle", "Center");
 const ShowFindItPanel$ = bindValue<boolean>(mod.id, "ShowFindItPanel", false);
-const ShowZoningHierarchy$ = bindValue<boolean>(mod.id, "ShowZoningHierarchy", false);
 const IsWindowLocked$ = bindValue<boolean>(mod.id, "IsWindowLocked", false);
 const LensOwnsCurrentMenu$ = bindValue<boolean>(mod.id, "LensOwnsCurrentMenu", false);
 const OptionsList$ = bindValue<OptionSection[]>(mod.id, "OptionsList", []);
@@ -57,7 +55,6 @@ export const FindItMainContainerComponent = () => {
 
   // These get the value of the bindings. Without C# side game ui will crash. Or they will when we have bindings.
   const ShowFindItPanel = useValue(ShowFindItPanel$);
-  const ShowZoningHierarchy = useValue(ShowZoningHierarchy$);
   const IsWindowLocked = useValue(IsWindowLocked$);
   const LensOwnsCurrentMenu = useValue(LensOwnsCurrentMenu$);
   const IsExpanded = useValue(IsExpanded$);
@@ -254,12 +251,7 @@ export const FindItMainContainerComponent = () => {
                 // many results came back is one you cannot learn the shape of.
                 style={{ height: `${catalogHeight}rem` }}
               >
-                {ShowZoningHierarchy
-                  // Zones are assignment tools, not buildings, so the Zones
-                  // menu gets the zoning hierarchy rather than a table of
-                  // building rows filtered to nothing.
-                  ? <ZoningHierarchyComponent />
-                  : <BuildingCatalogComponent />}
+                <BuildingCatalogComponent />
               </div>
             </div>
             <LensControlPane />
