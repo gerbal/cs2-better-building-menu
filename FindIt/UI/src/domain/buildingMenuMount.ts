@@ -11,8 +11,6 @@
 export interface BuildingMenuMountState {
   /** The toolbar's open menu is one we stand in for. */
   lensOwnsCurrentMenu: boolean;
-  /** The lens is on, rather than the legacy FindIt grid. */
-  buildingLensEnabled: boolean;
   /** The legacy panel's own visibility, from the Magnifier or the picker. */
   showFindItPanel: boolean;
   /** The legacy panel is pinned open. */
@@ -24,19 +22,24 @@ export interface BuildingMenuMountState {
 /**
  * Whether the game's asset-menu slot should draw the menu.
  *
- * Both conditions are load-bearing. `lensOwnsCurrentMenu` alone is not enough:
- * the backend leaves it set when the player turns the lens off, because it
- * describes which menu the toolbar has open rather than what we intend to do
- * about it. Mounting on that alone would keep the catalog on screen under a
- * button that had just said "disable", and take the legacy grid's place while
- * it was the thing the player asked for.
+ * `lensOwnsCurrentMenu` is now the whole condition. It used to be ANDed with
+ * `buildingLensEnabled`, because the player could turn the lens off and the
+ * backend would leave `lensOwnsCurrentMenu` set — it describes which menu the
+ * toolbar has open, not what we intend to do about it — so mounting on it alone
+ * would have kept the catalog on screen under a button that had just said
+ * "disable".
+ *
+ * There is no such button any more, and no such state: the lens REPLACES
+ * vanilla's build menu rather than offering an alternative to it. What is left
+ * is the question that was always the real one — does the toolbar have a menu
+ * open that we stand in for.
  */
 export function shouldMountInAssetMenu(state: BuildingMenuMountState): boolean {
   if (state.isPhotoMode) {
     return false;
   }
 
-  return state.lensOwnsCurrentMenu && state.buildingLensEnabled;
+  return state.lensOwnsCurrentMenu;
 }
 
 /**

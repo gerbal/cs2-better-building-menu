@@ -172,9 +172,12 @@ describe("Building Lens action affordances", () => {
     assert.match(buildingCatalogStyles, /\.rowSelect:focus[^\{]*\.placeHint/);
   });
 
-  it("provides explicit labels for TopBar lens and section icon actions", () => {
+  it("provides explicit labels for TopBar's icon actions", () => {
+    // "Enable building lens" was in this list until the lens stopped being a
+    // mode you switch into. The toggle it labelled sent SetBuildingLensEnabled,
+    // a trigger that no longer exists, so the button went and the label with
+    // it. The rest of the row still has to name itself.
     assert.match(topBarSource, /styles\.accessibleLabel/);
-    assert.match(topBarSource, /Enable building lens/);
     assert.match(topBarSource, /\{element\.toolTip\}/);
   });
 
@@ -362,7 +365,11 @@ describe("Building Lens chrome budget", () => {
       "utf8"
     );
 
-    assert.match(mainContainerSource, /justifyContent\s*=\s*BuildingLensEnabled/);
+    // The condition used to be `BuildingLensEnabled && AlignmentStyle ===
+    // "Center"`. The lens half of it retired with the latch — there is no state
+    // in which the panel is up and the lens is not what it holds — so only the
+    // alignment half is left to test.
+    assert.match(mainContainerSource, /justifyContent\s*=\s*AlignmentStyle === "Center"/);
     assert.match(mainContainerSource, /styles\.lensLeftAligned/);
 
     const rule = mainContainerStyles.match(/\.lensLeftAligned\.toolLayout\s*\{[^}]*\}/)?.[0] ?? "";

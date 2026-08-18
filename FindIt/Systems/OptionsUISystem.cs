@@ -29,7 +29,6 @@ namespace FindItBuildingMenu.Systems
 		// engine + filter rail) into the options bank, for short facet groups
 		// that belong beside Theme and Pack rather than in the rail. See
 		// FindItBuildingMenu.Domain.Options.BuildingLensFacetOptionBase.
-		public abstract bool BuildingLensEnabled { get; }
 		public abstract BuildingCatalogFacetGroup? GetBuildingLensFacetGroup(string facetId);
 		public abstract void ToggleBuildingLensFacetOption(string facetId, string optionId);
 

@@ -144,7 +144,6 @@ namespace FindItBuildingMenu.Systems
 		// The picker's own options bank has nothing to do with the building
 		// lens catalog, but it shares the OptionsUISystem base with
 		// FindItOptionsUISystem, so these still need an implementation.
-		public override bool BuildingLensEnabled => _findItUISystem.BuildingLensEnabled;
 
 		public override BuildingCatalogFacetGroup? GetBuildingLensFacetGroup(string facetId) =>
 			_findItUISystem.GetBuildingLensFacetGroup(facetId);

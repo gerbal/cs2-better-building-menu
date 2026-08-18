@@ -4,7 +4,6 @@ import { bindValue } from "cs2/api";
 import mod from "../../../mod.json";
 
 const ShowFindItPanel$ = bindValue<boolean>(mod.id, "ShowFindItPanel", false);
-const BuildingLensEnabled$ = bindValue<boolean>(mod.id, "BuildingLensEnabled", false);
 
 /**
  * Keeps the game's options bank on screen while the lens is browsing.
@@ -17,5 +16,8 @@ export const ToolOptionsVisibility: ModuleRegistryExtend = (Component: any) => {
   return () =>
     Component()
     || tool.activeTool$.value.id === "FindItBuildingMenu.Picker"
-    || (ShowFindItPanel$.value && BuildingLensEnabled$.value);
+    // Was ANDed with BuildingLensEnabled$, a latch that is gone: the lens
+    // replaces vanilla's menu rather than being one of two things the panel
+    // might be showing, so the panel being up is the whole condition.
+    || ShowFindItPanel$.value;
 };

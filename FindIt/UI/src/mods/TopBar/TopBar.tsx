@@ -64,7 +64,6 @@ const AlignmentStyle$ = bindValue<string>(mod.id, "AlignmentStyle");
 // the first C# refresh tick. Keep the React tree on a valid, inert shape until
 // that update arrives instead of calling getValueUnsafe on an uninitialized
 // binding (which otherwise leaves a Gameface exception in the console).
-const BuildingLensEnabled$ = bindValue<boolean>(mod.id, "BuildingLensEnabled", false);
 const BuildingCatalog$ = bindValue<{ totalCount?: number } | null>(mod.id, "BuildingCatalog", null);
 // Section and subcategory now belong to the chip row, which owns both the
 // breadcrumb and the picker that changes them.
@@ -83,7 +82,18 @@ export const TopBarComponent = (props: TopBarProps) => {
   const ClearSearchBar = useValue(ClearSearchBar$);
   const FocusSearchBar = useValue(FocusSearchBar$);
   const AlignmentStyle = useValue(AlignmentStyle$);
-  const BuildingLensEnabled = useValue(BuildingLensEnabled$);
+  // A constant now, not a binding. The lens replaces vanilla's build menu
+  // rather than being one of two things this bar might be sitting on top of, so
+  // the flag that used to say which was retired; reading the binding here would
+  // have silently defaulted to false and brought the whole legacy row back.
+  //
+  // Left as a named constant rather than folded into the branches below because
+  // those branches are the legacy shell's own layout — RenderButtonSection is
+  // reached from two places on different conditions, and the window lock and
+  // the lens toggle live inside it. Unpicking that is the shell retirement
+  // (cm-8hyu, CS-Modding-b53.7), not this change. Every `!BuildingLensEnabled`
+  // below is dead code with a date on it.
+  const BuildingLensEnabled = true;
   const BuildingCatalogTotal = useValue(BuildingCatalog$)?.totalCount ?? 0;
   const searchRef = useRef(null);
   // translation handling. Translates using locale keys that are defined in C# or fallback string here.
@@ -179,12 +189,6 @@ export const TopBarComponent = (props: TopBarProps) => {
     const lockLabel = localizedLabel("Tooltip.LABEL[FindItBuildingMenu.LockWindow]", "Lock Window Open");
     const sortingLabel = localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ToggleSorting]", "Sorting");
     const filtersLabel = localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ToggleFilters]", "Filters");
-    const buildingLensLabel = localizedLabel(
-      BuildingLensEnabled
-        ? "Tooltip.LABEL[FindItBuildingMenu.DisableBuildingLens]"
-        : "Tooltip.LABEL[FindItBuildingMenu.EnableBuildingLens]",
-      BuildingLensEnabled ? "Disable building lens" : "Enable building lens"
-    );
     const clearFilterLabel = localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClearFilter]", "Clear Filters");
     const randomLabel = localizedLabel("Tooltip.LABEL[FindItBuildingMenu.Random]", "Random");
 
@@ -233,24 +237,10 @@ export const TopBarComponent = (props: TopBarProps) => {
           <AccessibleLabel label={filtersLabel} />
         </BasicButton>
 
-        {/* The lens is a mode switch, not another filter toggle, but it read as
-            one more unlabelled icon in a row of nine. A visible word makes the
-            entry point findable without hovering every icon in turn. */}
-        <BasicButton
-          tooltip={buildingLensLabel}
-          onClick={() => trigger(mod.id, "SetBuildingLensEnabled", !BuildingLensEnabled)}
-          src="coui://finditbuildingmenu/Icons/Colored/BuildingZoneSignature.svg"
-          className={BuildingLensEnabled
-            ? `${styles.buildingLensToggle} ${styles.selected}`
-            : styles.buildingLensToggle}
-        >
-          <span className={styles.buildingLensToggleLabel}>
-            {localizedLabel("Tooltip.LABEL[FindItBuildingMenu.BuildingLens]", "Buildings")}
-          </span>
-          <AccessibleLabel label={buildingLensLabel} />
-        </BasicButton>
-
-        <div className={styles.seperator} />
+        {/* No lens toggle. It sent SetBuildingLensEnabled, a trigger that no
+            longer exists — the lens replaces vanilla's build menu rather than
+            being a mode you switch into, so there is nothing for it to toggle
+            and a click would have gone to a binding that was not there. */}
 
         <BasicButton
           tooltip={clearFilterLabel}

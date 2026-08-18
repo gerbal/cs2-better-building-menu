@@ -33,13 +33,12 @@ namespace FindItBuildingMenu.Systems
 
 		private void RefreshBuildingCatalog()
 		{
-			var category = !_BuildingLensEnabled
-				&& (FindItUtil.CurrentCategory is PrefabCategory.Buildings or PrefabCategory.ServiceBuildings)
-				? FindItUtil.CurrentCategory.ToString()
-				: string.Empty;
-			var subCategory = string.IsNullOrEmpty(category) || FindItUtil.CurrentSubCategory == PrefabSubCategory.Any
-				? string.Empty
-				: FindItUtil.CurrentSubCategory.ToString();
+			// Both empty, always. These carried FindItUtil's own category into
+			// the query, but only while the lens was off — and the lens is never
+			// off now, so the branch that filled them is gone with the latch.
+			// The lens states its own scope through UiMenu/UiCategory below.
+			var category = string.Empty;
+			var subCategory = string.Empty;
 			double? effectiveCapacityMinimum = _buildingMetricRanges.MinCapacity;
 
 			BuildingCatalogQuery previousQuery = _buildingCatalogQuery;
@@ -49,10 +48,10 @@ namespace FindItBuildingMenu.Systems
 				SearchText = _CurrentSearch.Value ?? string.Empty,
 				Category = category,
 				SubCategory = subCategory,
-				BuildMenuSection = _BuildingLensEnabled ? _buildingLensSection : string.Empty,
-				BuildMenuSubCategory = _BuildingLensEnabled ? _buildingLensSubCategory : string.Empty,
-				UiMenu = _BuildingLensEnabled ? _buildingLensUiMenu : string.Empty,
-				UiCategory = _BuildingLensEnabled ? _buildingLensUiCategory : string.Empty,
+				BuildMenuSection = _buildingLensSection,
+				BuildMenuSubCategory = _buildingLensSubCategory,
+				UiMenu = _buildingLensUiMenu,
+				UiCategory = _buildingLensUiCategory,
 				// Keep the successor lens in lockstep with FindIt's common
 				// parking filters. The legacy grid owns the full filter pipeline;
 				// the bounded catalog receives the equivalent typed predicate.

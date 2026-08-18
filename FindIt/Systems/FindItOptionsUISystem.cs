@@ -175,7 +175,6 @@ namespace FindItBuildingMenu.Systems
 			_findItUISystem.UpdateCategoriesAndPrefabList();
 		}
 
-		public override bool BuildingLensEnabled => _findItUISystem.BuildingLensEnabled;
 
 		public override BuildingCatalogFacetGroup? GetBuildingLensFacetGroup(string facetId) =>
 			_findItUISystem.GetBuildingLensFacetGroup(facetId);

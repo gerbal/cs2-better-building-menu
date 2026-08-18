@@ -3,7 +3,6 @@ import { game, Theme } from "cs2/bindings";
 import { getModule } from "cs2/modding";
 import mod from "../../../mod.json";
 import { TopBarComponent } from "mods/TopBar/TopBar";
-import { PrefabSelectionComponent } from "mods/PrefabSelection/PrefabSelection";
 import { BuildingCatalogComponent } from "mods/BuildingCatalog/BuildingCatalog";
 import { ZoningHierarchyComponent } from "mods/ZoningHierarchy/ZoningHierarchy";
 import { useState, useRef, useEffect } from "react";
@@ -30,7 +29,6 @@ const BuildingLensPanelHeight$ = bindValue<number>(mod.id, "BuildingLensPanelHei
 const AlignmentStyle$ = bindValue<string>(mod.id, "AlignmentStyle", "Center");
 const ShowFindItPanel$ = bindValue<boolean>(mod.id, "ShowFindItPanel", false);
 const ShowZoningHierarchy$ = bindValue<boolean>(mod.id, "ShowZoningHierarchy", false);
-const BuildingLensEnabled$ = bindValue<boolean>(mod.id, "BuildingLensEnabled", false);
 const IsWindowLocked$ = bindValue<boolean>(mod.id, "IsWindowLocked", false);
 const LensOwnsCurrentMenu$ = bindValue<boolean>(mod.id, "LensOwnsCurrentMenu", false);
 const OptionsList$ = bindValue<OptionSection[]>(mod.id, "OptionsList", []);
@@ -60,7 +58,6 @@ export const FindItMainContainerComponent = () => {
   // These get the value of the bindings. Without C# side game ui will crash. Or they will when we have bindings.
   const ShowFindItPanel = useValue(ShowFindItPanel$);
   const ShowZoningHierarchy = useValue(ShowZoningHierarchy$);
-  const BuildingLensEnabled = useValue(BuildingLensEnabled$);
   const IsWindowLocked = useValue(IsWindowLocked$);
   const LensOwnsCurrentMenu = useValue(LensOwnsCurrentMenu$);
   const IsExpanded = useValue(IsExpanded$);
@@ -116,12 +113,12 @@ export const FindItMainContainerComponent = () => {
     if (!layout) return;
 
     const previous = layout.style.justifyContent;
-    layout.style.justifyContent = BuildingLensEnabled && AlignmentStyle === "Center" ? "flex-start" : previous;
+    layout.style.justifyContent = AlignmentStyle === "Center" ? "flex-start" : previous;
 
     return () => {
       layout.style.justifyContent = previous;
     };
-  }, [BuildingLensEnabled, AlignmentStyle]);
+  }, [AlignmentStyle]);
 
   // Phase 2 step 1: when the toolbar's open menu is one we stand in for, the
   // panel is mounted by the game inside its own asset-menu slot instead — see
@@ -132,7 +129,6 @@ export const FindItMainContainerComponent = () => {
   // paths stay live until the surfaces that feed them are retired.
   if (!shouldMountLegacyPanel({
     lensOwnsCurrentMenu: LensOwnsCurrentMenu,
-    buildingLensEnabled: BuildingLensEnabled,
     showFindItPanel: ShowFindItPanel,
     isWindowLocked: IsWindowLocked,
     isPhotoMode,
@@ -157,8 +153,6 @@ export const FindItMainContainerComponent = () => {
   }
 
   function beginResize(event: any): void {
-    if (!BuildingLensEnabled) return;
-
     event.preventDefault?.();
     event.stopPropagation?.();
     resizeState.current = { active: true, startY: event.clientY, startHeight: catalogHeight };
@@ -191,14 +185,14 @@ export const FindItMainContainerComponent = () => {
 
   return (
     <div className={classNames(styles.findItMainContainer, styles["align" + AlignmentStyle])}>
-      {BuildingLensEnabled && isResizing && <div className={styles.resizeBlocker} onMouseMove={moveResize} onMouseUp={endResize} onMouseLeave={endResize} />}
-      <div className={classNames(styles.toolLayout, BuildingLensEnabled && styles.lensLeftAligned)}>
+      {isResizing && <div className={styles.resizeBlocker} onMouseMove={moveResize} onMouseUp={endResize} onMouseLeave={endResize} />}
+      <div className={classNames(styles.toolLayout, styles.lensLeftAligned)}>
         <div
           className={AlignmentStyle !== "Center" ? styles.toolMainColumn : GameMainScreneTheme.toolMainColumn}
           style={AlignmentStyle === "Center" ? undefined : { width: PanelWidth + "rem" }}
         >
           <div
-            className={classNames(GameMainScreneTheme.toolPanel, BuildingLensEnabled && styles.lensRow)}
+            className={classNames(GameMainScreneTheme.toolPanel, styles.lensRow)}
             ref={containerRef}
             style={AlignmentStyle !== "Center" ? undefined : { width: PanelWidth + "rem" }}
           >
@@ -211,7 +205,7 @@ export const FindItMainContainerComponent = () => {
                 measured; see the design doc. */}
             <div
               className={styles.toolContainer}
-              style={BuildingLensEnabled ? { width: (PanelWidth - LENS_CONTROL_PANE_TOTAL) + "rem" } : undefined}
+              style={{ width: (PanelWidth - LENS_CONTROL_PANE_TOTAL) + "rem" }}
             >
               {(optionsOpen || sortingOpen) && optionsOverflow() && (
                 <div className={styles.topPanel}>
@@ -234,15 +228,13 @@ export const FindItMainContainerComponent = () => {
                   results — a strip of chrome, not the edge of the window. The
                   panel is bottom-anchored, so the top edge is the one that
                   moves, and grabbing an edge is what this is. */}
-              {BuildingLensEnabled && (
-                <div
-                  className={styles.resizeHandle}
-                  onMouseDown={beginResize}
-                  title={translate("Tooltip.LABEL[FindItBuildingMenu.ResizeHeight]", "Drag to resize") ?? "Drag to resize"}
-                >
-                  <div className={classNames(styles.resizeGrip, isResizing && styles.resizeGripActive)} />
-                </div>
-              )}
+              <div
+                className={styles.resizeHandle}
+                onMouseDown={beginResize}
+                title={translate("Tooltip.LABEL[FindItBuildingMenu.ResizeHeight]", "Drag to resize") ?? "Drag to resize"}
+              >
+                <div className={classNames(styles.resizeGrip, isResizing && styles.resizeGripActive)} />
+              </div>
               <div className={styles.topBar}>
                 <TopBarComponent
                   sortingOpen={sortingOpen}
@@ -260,19 +252,17 @@ export const FindItMainContainerComponent = () => {
                 // The height is stated rather than left to the content, which
                 // is the whole point: a menu that resizes itself around however
                 // many results came back is one you cannot learn the shape of.
-                style={BuildingLensEnabled ? { height: `${catalogHeight}rem` } : undefined}
+                style={{ height: `${catalogHeight}rem` }}
               >
-                {BuildingLensEnabled
-                  ? ShowZoningHierarchy
-                    // Zones are assignment tools, not buildings, so the Zones
-                    // menu gets the zoning hierarchy rather than a table of
-                    // building rows filtered to nothing.
-                    ? <ZoningHierarchyComponent />
-                    : <BuildingCatalogComponent />
-                  : <PrefabSelectionComponent expanded={IsExpanded}></PrefabSelectionComponent>}
+                {ShowZoningHierarchy
+                  // Zones are assignment tools, not buildings, so the Zones
+                  // menu gets the zoning hierarchy rather than a table of
+                  // building rows filtered to nothing.
+                  ? <ZoningHierarchyComponent />
+                  : <BuildingCatalogComponent />}
               </div>
             </div>
-            {BuildingLensEnabled && <LensControlPane />}
+            <LensControlPane />
             {(optionsOpen || sortingOpen) && !optionsOverflow() && (
               <div className={styles.rightPanel} style={{ left: PanelWidth + "rem" }}>
                 <div>
