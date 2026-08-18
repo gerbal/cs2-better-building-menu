@@ -32,9 +32,6 @@ namespace FindItBuildingMenu
 		public ProxyBinding ApplyMimic { get; set; }
 
 		[SettingsUIHidden]
-		public string DefaultViewStyle { get; set; } = "GridWithText";
-
-		[SettingsUIHidden]
 		public string DefaultAlignmentStyle { get; set; } = "Center";
 
 		/// <summary>

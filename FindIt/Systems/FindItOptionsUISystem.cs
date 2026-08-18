@@ -170,9 +170,9 @@ namespace FindItBuildingMenu.Systems
 			_findItUISystem.TriggerSearch();
 		}
 
-		public override void UpdateCategoriesAndPrefabList()
+		public override void RefreshLens()
 		{
-			_findItUISystem.UpdateCategoriesAndPrefabList();
+			_findItUISystem.RefreshLens();
 		}
 
 
