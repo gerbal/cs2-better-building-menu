@@ -173,12 +173,16 @@ describe("Building Lens action affordances", () => {
   });
 
   it("provides explicit labels for TopBar's icon actions", () => {
-    // "Enable building lens" was in this list until the lens stopped being a
-    // mode you switch into. The toggle it labelled sent SetBuildingLensEnabled,
-    // a trigger that no longer exists, so the button went and the label with
-    // it. The rest of the row still has to name itself.
+    // Two assertions have left this list, both because what they guarded is
+    // gone rather than because the rule relaxed. "Enable building lens"
+    // labelled a toggle that sent a trigger which no longer exists;
+    // `{element.toolTip}` labelled the legacy scope and type strips, which were
+    // filters drawn as navigation and went with the shell collapse.
+    //
+    // What remains is the rule itself: an icon-only control names itself for
+    // anything that is not looking at it.
     assert.match(topBarSource, /styles\.accessibleLabel/);
-    assert.match(topBarSource, /\{element\.toolTip\}/);
+    assert.match(topBarSource, /<AccessibleLabel label=/);
   });
 
   it("has no page controls left to label", () => {

@@ -13,16 +13,14 @@ import { VanillaComponentResolver } from "../VanillaComponentResolver/VanillaCom
 import classNames from "classnames";
 import { BasicButton } from "mods/BasicButton/BasicButton";
 import find from "images/findit_find.svg";
-import random from "images/findit_random.svg";
 import shrink from "images/findit_shrink.svg";
 import expand from "images/findit_expand.svg";
 import filter from "images/findit_filter.svg";
 import filterX from "images/findit_filterX.svg";
 import lock from "images/findit_lock.svg";
 import unlock from "images/findit_unlock.svg";
-import sort from "images/findit_sort.svg";
 import { FOCUS_DISABLED } from "cs2/input";
-import { searchChangedCommand, setCurrentCategoryCommand, setCurrentSubCategoryCommand } from "domain/buildingCatalogContracts";
+import { searchChangedCommand } from "domain/buildingCatalogContracts";
 import { MenuCategoryStrip } from "mods/MenuCategoryStrip/MenuCategoryStrip";
 
 export interface TopBarProps {
@@ -42,10 +40,6 @@ const TextInput = getModule("game-ui/common/input/text/text-input.tsx", "TextInp
 
 const TextInputTheme: Theme | any = getModule("game-ui/editor/widgets/item/editor-item.module.scss", "classes");
 
-const AssetCategoryTabTheme: Theme | any = getModule(
-  "game-ui/game/components/asset-menu/asset-category-tab-bar/asset-category-tab-bar.module.scss",
-  "classes"
-);
 
 // These establishes the binding with C# side.
 const IsWindowLocked$ = bindValue<boolean>(mod.id, "IsWindowLocked");
@@ -53,10 +47,7 @@ const IsSearchLoading$ = bindValue<boolean>(mod.id, "IsSearchLoading");
 const ClearSearchBar$ = bindValue<boolean>(mod.id, "ClearSearchBar");
 const FocusSearchBar$ = bindValue<boolean>(mod.id, "FocusSearchBar");
 const AreFiltersSet$ = bindValue<boolean>(mod.id, "AreFiltersSet");
-const CurrentCategory$ = bindValue<number>(mod.id, "CurrentCategory");
-const PrefabCount$ = bindValue<string>(mod.id, "PrefabCount");
 const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch");
-const CurrentSubCategory$ = bindValue<number>(mod.id, "CurrentSubCategory");
 const CategoryList$ = bindValue<PrefabCategory[]>(mod.id, "CategoryList");
 const SubCategoryList$ = bindValue<PrefabSubCategory[]>(mod.id, "SubCategoryList");
 const AlignmentStyle$ = bindValue<string>(mod.id, "AlignmentStyle");
@@ -71,9 +62,6 @@ const BuildingCatalog$ = bindValue<{ totalCount?: number } | null>(mod.id, "Buil
 export const TopBarComponent = (props: TopBarProps) => {
   // These get the value of the bindings. Or they will when we have bindings.
   const IsWindowLocked = useValue(IsWindowLocked$);
-  const CurrentCategory = useValue(CurrentCategory$);
-  const PrefabCount = useValue(PrefabCount$);
-  const CurrentSubCategory = useValue(CurrentSubCategory$);
   const CategoryList = useValue(CategoryList$);
   const SubCategoryList = useValue(SubCategoryList$);
   const IsSearchLoading = useValue(IsSearchLoading$);
@@ -82,18 +70,6 @@ export const TopBarComponent = (props: TopBarProps) => {
   const ClearSearchBar = useValue(ClearSearchBar$);
   const FocusSearchBar = useValue(FocusSearchBar$);
   const AlignmentStyle = useValue(AlignmentStyle$);
-  // A constant now, not a binding. The lens replaces vanilla's build menu
-  // rather than being one of two things this bar might be sitting on top of, so
-  // the flag that used to say which was retired; reading the binding here would
-  // have silently defaulted to false and brought the whole legacy row back.
-  //
-  // Left as a named constant rather than folded into the branches below because
-  // those branches are the legacy shell's own layout — RenderButtonSection is
-  // reached from two places on different conditions, and the window lock and
-  // the lens toggle live inside it. Unpicking that is the shell retirement
-  // (cm-8hyu, CS-Modding-b53.7), not this change. Every `!BuildingLensEnabled`
-  // below is dead code with a date on it.
-  const BuildingLensEnabled = true;
   const BuildingCatalogTotal = useValue(BuildingCatalog$)?.totalCount ?? 0;
   const searchRef = useRef(null);
   // translation handling. Translates using locale keys that are defined in C# or fallback string here.
@@ -109,16 +85,6 @@ export const TopBarComponent = (props: TopBarProps) => {
 
   const setSearchText = (value: string) => {
     const command = searchChangedCommand(value);
-    trigger(mod.id, command.method, ...command.args);
-  };
-
-  const setCurrentCategory = (id: number) => {
-    const command = setCurrentCategoryCommand(id);
-    trigger(mod.id, command.method, ...command.args);
-  };
-
-  const setCurrentSubCategory = (id: number) => {
-    const command = setCurrentSubCategoryCommand(id);
     trigger(mod.id, command.method, ...command.args);
   };
 
@@ -138,59 +104,14 @@ export const TopBarComponent = (props: TopBarProps) => {
     setSearchText("");
   }
 
-  function RenderLegacyCategoryList(): JSX.Element {
-    return (
-      <div className={styles.categorySection}>
-        {CategoryList.map((element) => (
-          <>
-            {element.id == 0 && <span style={{ flex: 1 }} />}
-            <BasicButton
-              tooltip={element.toolTip}
-              src={element.icon}
-              onClick={element.id == CurrentCategory ? undefined : () => setCurrentCategory(element.id)}
-              className={classNames(VanillaComponentResolver.instance.toolButtonTheme.button, element.id == CurrentCategory && styles.selected)}
-            >
-              <AccessibleLabel label={element.toolTip} />
-              <span />
-            </BasicButton>
-          </>
-        ))}
-      </div>
-    );
-  }
-
-  function RenderSubCategoryList(): JSX.Element {
-    return (
-      <>
-        {SubCategoryList.map((element) => (
-          <BasicButton
-            key={element.id}
-            tooltip={element.toolTip}
-            onClick={element.id == CurrentSubCategory ? undefined : () => setCurrentSubCategory(element.id)}
-            className={classNames(
-              VanillaComponentResolver.instance.assetGridTheme.item,
-              styles.tabButton,
-              element.id == CurrentSubCategory && styles.selected
-            )}
-          >
-            <AccessibleLabel label={element.toolTip} />
-            <img src={element.icon} className={VanillaComponentResolver.instance.assetGridTheme.thumbnail + " " + styles.gridThumbnail}></img>
-          </BasicButton>
-        ))}
-      </>
-    );
-  }
-
   function RenderButtonSection(): JSX.Element {
     const enlargeLabel = localizedLabel(
       props.expanded ? "Tooltip.LABEL[FindItBuildingMenu.Shrink]" : "Tooltip.LABEL[FindItBuildingMenu.Expand]",
       props.expanded ? "Shrink" : "Expand"
     );
     const lockLabel = localizedLabel("Tooltip.LABEL[FindItBuildingMenu.LockWindow]", "Lock Window Open");
-    const sortingLabel = localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ToggleSorting]", "Sorting");
     const filtersLabel = localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ToggleFilters]", "Filters");
     const clearFilterLabel = localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClearFilter]", "Clear Filters");
-    const randomLabel = localizedLabel("Tooltip.LABEL[FindItBuildingMenu.Random]", "Random");
 
     return (
       <div className={styles.buttonsSection}>
@@ -213,20 +134,6 @@ export const TopBarComponent = (props: TopBarProps) => {
         >
           <AccessibleLabel label={lockLabel} />
         </BasicButton>
-
-        {/* The legacy sort applies to the grid, not to the lens table, which
-            sorts through its own column headers. Leaving it visible in lens
-            mode offered a control that silently did nothing. */}
-        {!BuildingLensEnabled && (
-          <BasicButton
-            tooltip={sortingLabel}
-            onClick={props.toggleSortingOpen}
-            mask={sort}
-            className={props.sortingOpen && styles.selected}
-          >
-            <AccessibleLabel label={sortingLabel} />
-          </BasicButton>
-        )}
 
         <BasicButton
           tooltip={filtersLabel}
@@ -251,27 +158,12 @@ export const TopBarComponent = (props: TopBarProps) => {
           <AccessibleLabel label={clearFilterLabel} />
         </BasicButton>
 
-        {/* Random picks from the legacy grid result and ignores every lens
-            facet and metric range, so in lens mode it would hand back a
-            building the player's own filters had excluded. */}
-        {!BuildingLensEnabled && (
-          <BasicButton
-            tooltip={randomLabel}
-            onClick={() => trigger(mod.id, "OnRandomButtonClicked")}
-            mask={random}
-          >
-            <AccessibleLabel label={randomLabel} />
-          </BasicButton>
-        )}
-
         {AlignmentStyle === "Center" && <div className={styles.seperator} />}
 
-        {/* One count, not two. The legacy PrefabCount describes the grid
-            result; in lens mode the visible table is the bounded catalog, and
-            showing the grid's number beside it invited the player to trust a
-            total that did not describe anything on screen. */}
+        {/* One count. The legacy PrefabCount described the grid result, and
+            the grid is not a thing this bar can be sitting on any more. */}
         <div className={styles.itemCount}>
-          <span>{BuildingLensEnabled ? String(BuildingCatalogTotal) : PrefabCount}</span>
+          <span>{String(BuildingCatalogTotal)}</span>
         </div>
       </div>
     );
@@ -285,18 +177,51 @@ export const TopBarComponent = (props: TopBarProps) => {
   // way back to catalog: ToolSurfaceBar has no back control of its own.
   // Closing the panel without this row's button still works — the game
   // toolbar's FindIt icon toggles it closed the same way it opened it.
-  // The legacy FindIt panel keeps its top bar; the Building Lens folded
-  // search onto the strip row and dropped this one. There is no longer a
-  // second lens mode to except — Tools went with master's e90c1a9.
-  const showTopBarRow = !BuildingLensEnabled;
+  // No top bar row at all. It was gated on the lens being off, and the lens is
+  // what this panel holds now — the search it carried lives on the strip row
+  // below, which is why CurrentSearch, setSearchText, handleInputChange,
+  // IsSearchLoading and searchRef are all still live.
 
   return (
     <>
       <div className={classNames(props.large && styles.large, props.small && styles.small)}>
-        {showTopBarRow && (
-          <div className={styles.topBar}>
-            <div className={classNames(styles.topBarSection, styles.topBarSearchSection, AlignmentStyle !== "Center" && styles.expandedSearchArea)}>
-              {IsSearchLoading && <img style={{ maskImage: "url(coui://finditbuildingmenu/Icons/Standard/HalfCircleProgress.svg)" }} className={styles.loadingIcon}></img>}
+
+        {AlignmentStyle !== "Center" && <div className={styles.lowerButtonSection}>{RenderButtonSection()}</div>}
+
+        {/* No scope or type strips. They were upstream's, and they were
+            filters drawn as navigation — 27rem each, unable to express more
+            than one value at a time. */}
+
+          {/* Commit 834f72d dropped the whole top bar row in this mode to
+              buy back its 30px, which took search off screen along with it
+              — a conditional render, not a deletion, so CurrentSearch,
+              setSearchText, handleInputChange, IsSearchLoading and
+              searchRef below are all still live. An earlier attempt to
+              reunite search with the strip (46106a5) was reverted (7458a02)
+              because back then the strip shared its row with that whole top
+              bar — search, lock/filter/lens-toggle/sort/random, the result
+              count and the CATALOG/TOOLS tabs — leaving the tabs 27px of a
+              718px row. With the row gone, the strip and a compact field
+              fit together with room to spare: measured on Transportation,
+              seven tabs take 403..957 and the field 957..1121. */}
+          <div className={styles.catalogStripRow}>
+            {/* Wrapped rather than styled directly: MenuCategoryStrip owns
+                its own class and sizes itself flex: 0 0 auto, which on this
+                shared row parked it against the search field with 354px of
+                empty row to its left. The wrapper is also what holds the
+                search at the right edge when the strip renders nothing at
+                all — a menu with fewer than two categories, which is
+                Water & Sewage and Zones. */}
+            <div className={styles.catalogStripTabs}>
+              <MenuCategoryStrip />
+            </div>
+            <div className={styles.catalogStripSearch}>
+              {IsSearchLoading && (
+                <img
+                  style={{ maskImage: "url(coui://finditbuildingmenu/Icons/Standard/HalfCircleProgress.svg)" }}
+                  className={styles.loadingIcon}
+                ></img>
+              )}
               {!IsSearchLoading && <img style={{ maskImage: `url(${find})` }} className={styles.searchIcon}></img>}
               <div className={styles.searchArea}>
                 <TextInput
@@ -305,135 +230,35 @@ export const TopBarComponent = (props: TopBarProps) => {
                   value={CurrentSearch}
                   disabled={false}
                   type="text"
-                  className={classNames(TextInputTheme.input, styles.textBox)}
+                  className={classNames(TextInputTheme.input, styles.stripTextBox)}
                   focusKey={FOCUS_DISABLED}
                   onChange={handleInputChange}
                   placeholder={translate("Editor.SEARCH_PLACEHOLDER", "Search...")}
                 ></TextInput>
 
                 {CurrentSearch.trim() !== "" && (
-                  <Button
-                    className={classNames(VanillaComponentResolver.instance.assetGridTheme.item, styles.clearIcon)}
-                    variant="icon"
-                    aria-label={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClearSearch]", "Clear search")}
-                    title={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClearSearch]", "Clear search")}
-                    onSelect={() => {
-                      setSearchText("");
-                    }}
-                  >
-                    <img src="coui://finditbuildingmenu/Icons/Standard/ArrowLeftClear.svg" alt="" aria-hidden="true"></img>
-                  </Button>
+                  <Tooltip tooltip={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClearSearch]", "Clear search")}>
+                    <Button
+                      className={classNames(VanillaComponentResolver.instance.assetGridTheme.item, styles.clearIcon)}
+                      variant="icon"
+                      aria-label={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClearSearch]", "Clear search")}
+                      onSelect={() => {
+                        setSearchText("");
+                      }}
+                    >
+                      <img src="coui://finditbuildingmenu/Icons/Standard/ArrowLeftClear.svg" alt="" aria-hidden="true"></img>
+                    </Button>
+                  </Tooltip>
                 )}
               </div>
-
-              {AlignmentStyle === "Center" && RenderButtonSection()}
-            </div>
-
-            <div className={classNames(styles.topBarSection, styles.topBarControlsSection)}>
-              <Tooltip tooltip={translate("Tooltip.LABEL[FindItBuildingMenu.ClosePanel]", "Close Panel")}>
-                <Button
-                  className={VanillaComponentResolver.instance.assetGridTheme.item + " " + styles.closeIcon}
-                  variant="icon"
-                  aria-label={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClosePanel]", "Close Panel")}
-                  title={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClosePanel]", "Close Panel")}
-                  onSelect={() => trigger(mod.id, "FindItCloseToggled")}
-                >
-                  <img src="coui://finditbuildingmenu/Icons/Standard/XClose.svg" alt="" aria-hidden="true"></img>
-                </Button>
-              </Tooltip>
             </div>
           </div>
-        )}
 
-        {AlignmentStyle !== "Center" && <div className={styles.lowerButtonSection}>{RenderButtonSection()}</div>}
-
-        {/* Legacy Find It keeps its own strips — it is upstream's UI, not ours
-            to redesign. In lens mode the scope and type strips are gone: they
-            were filters drawn as navigation, costing 27rem each and unable to
-            express more than one value at a time. */}
-        {!BuildingLensEnabled && (
-          <>
-            <div className={styles.rowCategoryBar}>{RenderLegacyCategoryList()}</div>
-
-            <div className={classNames(AssetCategoryTabTheme.assetCategoryTabBar, styles.subCategoryContainer)}>
-              <div className={AssetCategoryTabTheme.items}>
-                {RenderSubCategoryList()}
-              </div>
-            </div>
-          </>
-        )}
-
-        {BuildingLensEnabled && (
-          <>
-            {/* Commit 834f72d dropped the whole top bar row in this mode to
-                buy back its 30px, which took search off screen along with it
-                — a conditional render, not a deletion, so CurrentSearch,
-                setSearchText, handleInputChange, IsSearchLoading and
-                searchRef below are all still live. An earlier attempt to
-                reunite search with the strip (46106a5) was reverted (7458a02)
-                because back then the strip shared its row with that whole top
-                bar — search, lock/filter/lens-toggle/sort/random, the result
-                count and the CATALOG/TOOLS tabs — leaving the tabs 27px of a
-                718px row. With the row gone, the strip and a compact field
-                fit together with room to spare: measured on Transportation,
-                seven tabs take 403..957 and the field 957..1121. */}
-            <div className={styles.catalogStripRow}>
-              {/* Wrapped rather than styled directly: MenuCategoryStrip owns
-                  its own class and sizes itself flex: 0 0 auto, which on this
-                  shared row parked it against the search field with 354px of
-                  empty row to its left. The wrapper is also what holds the
-                  search at the right edge when the strip renders nothing at
-                  all — a menu with fewer than two categories, which is
-                  Water & Sewage and Zones. */}
-              <div className={styles.catalogStripTabs}>
-                <MenuCategoryStrip />
-              </div>
-              <div className={styles.catalogStripSearch}>
-                {IsSearchLoading && (
-                  <img
-                    style={{ maskImage: "url(coui://finditbuildingmenu/Icons/Standard/HalfCircleProgress.svg)" }}
-                    className={styles.loadingIcon}
-                  ></img>
-                )}
-                {!IsSearchLoading && <img style={{ maskImage: `url(${find})` }} className={styles.searchIcon}></img>}
-                <div className={styles.searchArea}>
-                  <TextInput
-                    ref={searchRef}
-                    multiline={1}
-                    value={CurrentSearch}
-                    disabled={false}
-                    type="text"
-                    className={classNames(TextInputTheme.input, styles.stripTextBox)}
-                    focusKey={FOCUS_DISABLED}
-                    onChange={handleInputChange}
-                    placeholder={translate("Editor.SEARCH_PLACEHOLDER", "Search...")}
-                  ></TextInput>
-
-                  {CurrentSearch.trim() !== "" && (
-                    <Tooltip tooltip={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClearSearch]", "Clear search")}>
-                      <Button
-                        className={classNames(VanillaComponentResolver.instance.assetGridTheme.item, styles.clearIcon)}
-                        variant="icon"
-                        aria-label={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.ClearSearch]", "Clear search")}
-                        onSelect={() => {
-                          setSearchText("");
-                        }}
-                      >
-                        <img src="coui://finditbuildingmenu/Icons/Standard/ArrowLeftClear.svg" alt="" aria-hidden="true"></img>
-                      </Button>
-                    </Tooltip>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* The scope chips used to sit here, behind `expanded`, which
-                meant the one line saying what you were looking at was missing
-                at exactly the height the lens rests at. They are in the
-                control plane now, which is always visible and costs the panel
-                no row at all. */}
-          </>
-        )}
+          {/* The scope chips used to sit here, behind `expanded`, which
+              meant the one line saying what you were looking at was missing
+              at exactly the height the lens rests at. They are in the
+              control plane now, which is always visible and costs the panel
+              no row at all. */}
       </div>
     </>
   );
