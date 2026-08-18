@@ -103,8 +103,6 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<string> _CurrentSearch;
 		private ValueBindingHelper<string> _ViewStyle;
 		private ValueBindingHelper<string> _AlignmentStyle;
-		private ValueBindingHelper<string> _PrefabCountBinding;
-		private ValueBindingHelper<string[]> _AllThumbnails;
 		private ValueBindingHelper<CategoryUIEntry[]> _CategoryBinding;
 		private ValueBindingHelper<SubCategoryUIEntry[]> _SubCategoryBinding;
 		private ValueBindingHelper<PrefabUIEntry[]> _PrefabListBinding;
@@ -354,10 +352,8 @@ namespace FindItBuildingMenu.Systems
 				"SetBuildingLensMenuCategory",
 				string.Empty,
 				SetBuildingLensMenuCategory);
-			_PrefabCountBinding = CreateBinding("PrefabCount", string.Empty);
 			_ViewStyle = CreateBinding("ViewStyle", Mod.Settings.DefaultViewStyle);
 			_AlignmentStyle = CreateBinding("AlignmentStyle", Mod.Settings.DefaultAlignmentStyle);
-			_AllThumbnails = CreateBinding("AllThumbnails", new string[0]);
 
 			CreateBinding("NoAssetImage", () => Mod.Settings.NoAssetImage);
 
@@ -365,8 +361,6 @@ namespace FindItBuildingMenu.Systems
 			CreateTrigger<string>("SearchChanged", t => SearchChanged(t));
 			CreateTrigger<int>("OnScroll", OnScroll);
 			CreateTrigger<double>("SetScrollIndex", SetScrollIndex);
-			CreateTrigger("FindItCloseToggled", CloseLens);
-			CreateTrigger("FindItIconToggled", FindItIconClicked);
 			CreateTrigger<int>("SetCurrentPrefab", TryActivatePrefabTool);
 			// The UI watches the game's own toolbar.selectedAssetMenu binding and
 			// hands the entity index here; resolving the prefab name and the
@@ -384,13 +378,11 @@ namespace FindItBuildingMenu.Systems
 			// short. Parsing is the price of not risking a marshalling failure
 			// that would show up as an empty menu.
 			CreateTrigger<string, string, bool, bool>("SetVanillaToolbarSelection", SetVanillaToolbarSelection);
-			CreateTrigger<int>("ToggleFavorited", FindItUtil.ToggleFavorited);
 			CreateTrigger("ToggleLock", ToggleLock);
 			CreateTrigger("OnSearchFocused", () => _FocusSearchBar.Value = false);
 			CreateTrigger("OnSearchCleared", () => _ClearSearchBar.Value = false);
 			CreateTrigger("OnRandomButtonClicked", OnRandomButtonClicked);
 			CreateTrigger<int>("OnLocateButtonClicked", OnLocateButtonClicked);
-			CreateTrigger<int>("OnPdxModsButtonClicked", OnPdxModsButtonClicked);
 			CreateTrigger("LoadMoreBuildingCatalog", LoadMoreBuildingCatalog);
 			CreateTrigger<int>("ToggleBuildingCatalogCompare", ToggleBuildingCatalogCompare);
 			CreateTrigger("ClearBuildingCatalogCompare", ClearBuildingCatalogCompare);
@@ -408,7 +400,6 @@ namespace FindItBuildingMenu.Systems
 				CreateTrigger<string>("SetBuildingLensMenu", SetBuildingLensMenu);
 			CreateTrigger<float>("SetBuildingLensPanelHeight", SetBuildingLensPanelHeight);
 			CreateTrigger("CommitBuildingLensPanelHeight", CommitBuildingLensPanelHeight);
-			CreateTrigger("ClearThumbnails", () => _AllThumbnails.Value = new string[0]);
 		}
 
 		protected override void OnUpdate()

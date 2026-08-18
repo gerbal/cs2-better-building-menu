@@ -1,13 +1,11 @@
 import { ModRegistrar } from "cs2/modding";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
-import { PrefabSelectionComponent } from "mods/PrefabSelection/PrefabSelection";
 import { TopBarComponent } from "mods/TopBar/TopBar";
 
 import mod from "../mod.json";
 import { ToolbarIconComponent } from "mods/ToolbarIcon/ToolbarIcon";
 import { RemoveVanillaAssetMenuComponent } from "mods/RemoveVanillaAssetMenu/RemoveVanillaAssetMenu";
 import { FindItMainContainerComponent } from "mods/MainContainer/MainContainer";
-import { RightClickMenuComponent } from "mods/RightClickMenu/RightClickMenu";
 import { WrapToolOptionsPanel } from "mods/WrapToolOptionsPanel/WrapToolOptionsPanel";
 import { RemoveVanillaRightToolbar } from "mods/RemoveVanillaAssetMenu/RemoveVanillaRightToolbar";
 import { PickerComponent } from "mods/PickerComponent/PickerComponent";
@@ -48,9 +46,7 @@ const register: ModRegistrar = (moduleRegistry) => {
   // toolbar.selectAssetMenu is a trigger only the UI can call.
   moduleRegistry.append("Game", PickerMenuOpener);
   moduleRegistry.append("Editor", FindItMainContainerComponent);
-  //moduleRegistry.append("Game", AllThumbnailsComponent);
 
-  //moduleRegistry.append("Game", RightClickMenuComponent);
 };
 
 export default register;

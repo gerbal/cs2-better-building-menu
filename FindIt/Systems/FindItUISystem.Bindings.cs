@@ -14,21 +14,6 @@ namespace FindItBuildingMenu.Systems
 {
     internal partial class FindItUISystem : ExtendedUISystemBase
 	{
-		private void FindItIconClicked()
-		{
-			if (_ShowFindItPanel)
-			{
-				CloseLens();
-
-				// Clear the selected prefab
-				_toolSystem.ActivatePrefabTool(null);
-			}
-			else
-			{
-				ToggleFindItPanel(true);
-			}
-		}
-
 		/// <summary>
 		/// Closes the lens and, when it was standing in for a vanilla menu,
 		/// releases that menu's selection on the toolbar.
@@ -1027,16 +1012,6 @@ namespace FindItBuildingMenu.Systems
 		{
 			var entities = PrefabTrackingSystem.GetPlacedEntities(id);
 			_interactionBoundary.TryLocate(id, entities.Count, index => JumpTo(entities[index]));
-		}
-
-		private void OnPdxModsButtonClicked(int id)
-		{
-			try
-			//{ Process.Start($"skyve://mods/{FindItUtil.GetPrefabIndex(id).PdxModsId}"); }
-			{
-				Process.Start($"https://mods.paradoxplaza.com/mods/{FindItUtil.GetPrefabIndex(id).PdxModsId}/Windows");
-			}
-			catch { }
 		}
 
 		private void JumpTo(Entity entity)

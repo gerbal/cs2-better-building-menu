@@ -184,9 +184,6 @@ namespace FindItBuildingMenu.Systems
 			{
 				RunIndex(true);
 
-				//World.GetExistingSystemManaged<FindItUISystem>()
-				//	.SetAllThumbnails(FindItUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any].Select(x => x.Thumbnail));
-
 				Enabled = true;
 			}
 		}
