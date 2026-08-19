@@ -1,6 +1,8 @@
+import { bindValue, useValue } from "cs2/api";
 import { Scrollable } from "cs2/ui";
 import { type ReactNode } from "react";
 import classNames from "classnames";
+import mod from "../../../mod.json";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
   buildGroupedView,
@@ -15,6 +17,10 @@ import { BuildingList } from "mods/BuildingList/BuildingList";
 import styles from "./groupedResults.module.scss";
 
 /** Grid recognises, List scans, Cards weighs, Table compares. */
+// The progression dimension names its headings out of this dense table; every
+// other dimension ignores it.
+const BuildingLensMilestones$ = bindValue<string[]>(mod.id, "BuildingLensMilestones", []);
+
 export type CatalogViewMode = "grid" | "list" | "cards" | "table";
 
 interface GroupedResultsProps {
@@ -110,7 +116,10 @@ export const GroupedResults = ({
     ));
   };
 
-  const groups = buildGroupedView(entries, groupBy);
+  // The progression dimension names its headings out of this table; every
+  // other dimension ignores it.
+  const milestoneNames = useValue(BuildingLensMilestones$) ?? [];
+  const groups = buildGroupedView(entries, groupBy, milestoneNames);
 
   // The ungrouped grid keeps its own scroll and its shelf; anything else gets
   // one scroll around the whole result, because a scrollbar per heading makes

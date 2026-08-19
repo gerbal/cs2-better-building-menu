@@ -116,6 +116,38 @@ namespace FindItBuildingMenu.Services
 		}
 
 		/// <summary>
+		/// How many assets each of the menu's progression tabs holds.
+		/// </summary>
+		/// <remarks>
+		/// Same axis rule as the categories: the milestone's own filter is
+		/// dropped so the tiers keep counting each other, everything else —
+		/// including the SELECTED CATEGORY — stays on. That is what makes the
+		/// tiers a subset of the category rather than a second, independent
+		/// menu: pick Vegetation and the tier tabs count Vegetation only.
+		///
+		/// Ordered by index, because the index is the progression. The
+		/// categories sort by id for stability alone; here the order is the
+		/// meaning, and a tier strip running out of order would misstate it.
+		/// </remarks>
+		public IReadOnlyList<MenuMilestoneCount> GetMenuMilestoneCounts(BuildingCatalogQuery query)
+		{
+			if (query is null)
+			{
+				throw new ArgumentNullException(nameof(query));
+			}
+
+			var acrossMilestones = query with { UnlockMilestone = BuildingCatalogQuery.AnyMilestone };
+
+			return BuildingCatalogQueryEngine
+				.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), acrossMilestones)
+				.GroupBy(entry => entry.UnlockMilestone)
+				.Where(group => group.Key >= 0)
+				.Select(group => new MenuMilestoneCount(group.Key, group.Count()))
+				.OrderBy(count => count.Milestone)
+				.ToArray();
+		}
+
+		/// <summary>
 		/// The spread each metric actually has in the current view.
 		/// </summary>
 		/// <remarks>

@@ -60,6 +60,7 @@ namespace FindItBuildingMenu.Systems
 				BuildMenuSubCategory = _buildingLensSubCategory,
 				UiMenu = _buildingLensUiMenu,
 				UiCategory = _buildingLensUiCategory,
+				UnlockMilestone = _buildingLensUnlockMilestone,
 				// Keep the successor lens in lockstep with FindIt's common
 				// parking filters. The legacy grid owns the full filter pipeline;
 				// the bounded catalog receives the equivalent typed predicate.
@@ -147,6 +148,8 @@ namespace FindItBuildingMenu.Systems
 			// dead end as a facet option that cannot.
 			_BuildingLensMenuCategoryCounts.Value =
 				_buildingCatalogAdapter.GetMenuCategoryCounts(_buildingCatalogQuery).ToArray();
+			_BuildingLensMenuMilestoneCounts.Value =
+				_buildingCatalogAdapter.GetMenuMilestoneCounts(_buildingCatalogQuery).ToArray();
 			_BuildingLensLegacyFilters.Value = CaptureLegacyFilters().Describe().ToArray();
 			// At most three ids, so re-projecting alongside the page keeps the
 			// tray current once indexing finishes without measurable cost.
@@ -223,19 +226,11 @@ namespace FindItBuildingMenu.Systems
 
 		private void RefreshBuildingLensNavigation()
 		{
-			// Dense by index: entry N is milestone N's name. A locked asset ships
-			// a bare index and the UI reads it out of here, so the ~20 names are
-			// resolved once per index pass instead of once per locked asset on
-			// every unlock-triggered re-index.
-			var milestoneCount = 0;
-			for (var i = 0; i < 64 && !string.IsNullOrEmpty(PrefabIndexingSystem.GetMilestoneName(i)); i++)
-			{
-				milestoneCount = i + 1;
-			}
-
-			_BuildingLensMilestonesBinding.Value = Enumerable.Range(0, milestoneCount)
-				.Select(PrefabIndexingSystem.GetMilestoneName)
-				.ToArray();
+			// Dense by index: entry N is milestone N's name. Every asset ships a
+			// bare milestone index and the UI reads the name out of here, so the
+			// ~20 names are resolved once per index pass instead of once per
+			// asset on every unlock-triggered re-index.
+			_BuildingLensMilestonesBinding.Value = PrefabIndexingSystem.GetMilestoneNames();
 
 			VanillaBuildMenuSelection selection = VanillaBuildMenuSelection.Normalize(
 				_buildingLensSection,

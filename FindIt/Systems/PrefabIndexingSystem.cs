@@ -316,15 +316,24 @@ namespace FindItBuildingMenu.Systems
 
 				prefabIndex.IsLocked = locked;
 
-				if (locked)
-				{
-					(prefabIndex.UnlockMilestone, prefabIndex.UnlockRequirements) = GetUnlockRequirements(entity);
-				}
-				else
-				{
-					prefabIndex.UnlockMilestone = 0;
-					prefabIndex.UnlockRequirements = Array.Empty<string>();
-				}
+				// The MILESTONE is a permanent property of the asset — the point
+				// in the progression the game gates it behind — and it is kept
+				// whatever the current lock state. It used to be assigned 0 here,
+				// which meant the progression tier evaporated at the exact moment
+				// the player earned it, and an asset unlocked mid-session dropped
+				// out of its own tier tab.
+				//
+				// Re-reading it is safe, and this was measured rather than
+				// assumed: unlocking only disables the Locked component
+				// (UnlockSystem.UnlockPrefab) and never touches the
+				// UnlockRequirement buffer the walk reads, so the same walk
+				// returns the same milestone before and after.
+				//
+				// The REQUIREMENTS are not permanent. They answer "what is this
+				// waiting on", which is a question an unlocked asset does not
+				// have.
+				(prefabIndex.UnlockMilestone, var requirements) = GetUnlockRequirements(entity);
+				prefabIndex.UnlockRequirements = locked ? requirements : Array.Empty<string>();
 
 				changed++;
 			}
@@ -1053,15 +1062,10 @@ namespace FindItBuildingMenu.Systems
 			// only for the prefabs it actually names (see ApplyUnlocks).
 			prefabIndex.Bonuses = GetBonuses(entity);
 
-			if (prefabIndex.IsLocked)
-			{
-				(prefabIndex.UnlockMilestone, prefabIndex.UnlockRequirements) = GetUnlockRequirements(entity);
-			}
-			else
-			{
-				prefabIndex.UnlockMilestone = 0;
-				prefabIndex.UnlockRequirements = Array.Empty<string>();
-			}
+			// Milestone kept whatever the lock state; requirements only while
+			// locked. See the matching note in ApplyUnlocks.
+			(prefabIndex.UnlockMilestone, var unlockRequirements) = GetUnlockRequirements(entity);
+			prefabIndex.UnlockRequirements = prefabIndex.IsLocked ? unlockRequirements : Array.Empty<string>();
 			prefabIndex.IsRandom = prefabIndex.SubCategory is not PrefabSubCategory.Networks_Pillars && EntityManager.HasComponent<PlaceholderObjectData>(entity);
 			prefabIndex.IsResourceIntensive = CheckIfResourceIntensive(prefab);
 
@@ -1398,7 +1402,7 @@ namespace FindItBuildingMenu.Systems
 				if (EntityManager.TryGetComponent<MilestoneData>(milestones[i], out var data)
 					&& _prefabSystem.TryGetPrefab<PrefabBase>(milestones[i], out var prefab))
 				{
-					names[data.m_Index] = GetAssetName(prefab);
+					names[data.m_Index] = GetMilestoneTitle(data.m_Index) ?? GetAssetName(prefab);
 				}
 			}
 
@@ -1406,9 +1410,65 @@ namespace FindItBuildingMenu.Systems
 			Mod.Log.Info($"Indexed Milestones: {names.Count}");
 		}
 
+		/// <summary>
+		/// The milestone's name in the game's own words, or null.
+		/// </summary>
+		/// <remarks>
+		/// The key is parameterised by index — the game's UI builds it as
+		/// <c>`${base}:${index}`</c> (the <c>yc</c> key class in its own
+		/// index.js) — so it cannot go through <c>translate(id, fallback)</c>,
+		/// which takes no arguments. Asked of the dictionary directly instead.
+		///
+		/// GetAssetName does not cover this. Its PrefabUISystem title lookup
+		/// misses for a milestone prefab and falls through to the prefab name,
+		/// which is literally "Milestone7" — so the progression strip and the
+		/// progression headings both read "Milestone 7" in every language while
+		/// the game's own HUD said "Founding" two inches away.
+		/// </remarks>
+		private static string? GetMilestoneTitle(int index) =>
+			GameManager.instance.localizationManager.activeDictionary
+				.TryGetValue($"Progression.MILESTONE_NAME:{index}", out var name)
+					? name
+					: null;
+
 		/// <summary>The name the game gives a milestone index.</summary>
 		public static string GetMilestoneName(int index) =>
 			_milestoneNames.TryGetValue(index, out var name) ? name : string.Empty;
+
+		/// <summary>Every milestone name, dense by index.</summary>
+		/// <remarks>
+		/// Sized from the highest index actually present rather than probed one
+		/// index at a time until a blank. Probing published an EMPTY table
+		/// whenever index 0 had no name — which is the normal shape, since the
+		/// game's first milestone is not necessarily index 0 — and an empty
+		/// table is what made the progression headings read "Milestone 3"
+		/// instead of naming the milestone. Gaps stay empty strings so the
+		/// index of every later name is still its own.
+		/// </remarks>
+		public static string[] GetMilestoneNames()
+		{
+			if (_milestoneNames.Count == 0)
+			{
+				return Array.Empty<string>();
+			}
+
+			var highest = 0;
+			foreach (var index in _milestoneNames.Keys)
+			{
+				if (index > highest)
+				{
+					highest = index;
+				}
+			}
+
+			var names = new string[highest + 1];
+			for (var i = 0; i <= highest; i++)
+			{
+				names[i] = GetMilestoneName(i);
+			}
+
+			return names;
+		}
 
 		/// <summary>
 		/// What the game still wants before this asset can be built.

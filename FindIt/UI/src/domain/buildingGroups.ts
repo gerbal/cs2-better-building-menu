@@ -27,6 +27,7 @@ export type GroupDimensionId =
   | "menuCategory"
   | "role"
   | "schoolTier"
+  | "progression"
   | "theme"
   | "source"
   | "density"
@@ -67,6 +68,14 @@ export const GROUP_DIMENSIONS: readonly GroupDimension[] = [
   // — but Role is equally narrow the moment you pick it outside a service
   // menu, and the picker is opened deliberately.
   { id: "schoolTier", label: "School tier", depth: 1 },
+  // The game's own progression, which is the one tier every asset has. School
+  // tier answers "which school"; this answers "when does the game let me build
+  // it", and it is the axis the player is actually moving along.
+  //
+  // Works because the milestone is now kept whatever the lock state. It used to
+  // be zeroed on unlock, which took an asset out of its own tier at the moment
+  // the player earned it — the one time they are looking at that tier.
+  { id: "progression", label: "Progression", depth: 1 },
   { id: "theme", label: "Theme", depth: 1 },
   { id: "source", label: "Source", depth: 1 },
   { id: "density", label: "Density", depth: 1 },
@@ -271,6 +280,8 @@ export interface GroupableEntry {
   subCategoryLabel?: string | null;
   buildingType?: string | null;
   educationLevel?: number | null;
+  /** Milestone index the game gates the asset behind; 0 for available at start. */
+  unlockMilestone?: number | null;
   theme?: string | null;
   provenance?: string | null;
   dlcId?: string | null;
@@ -338,6 +349,37 @@ export function footprintBandLabel(
   return `Larger than ${FOOTPRINT_BANDS[FOOTPRINT_BANDS.length - 1]}×${FOOTPRINT_BANDS[FOOTPRINT_BANDS.length - 1]}`;
 }
 
+/** What the progression dimension calls an asset the game never gated. */
+export const PROGRESSION_UNGATED_LABEL = "From the start";
+
+/**
+ * Names a milestone index out of the dense table the backend publishes.
+ *
+ * Falls back to the bare index rather than to "Other": an asset with no name
+ * for its milestone still sits at a definite point in the progression, and
+ * lumping it with the unknowns would hide that.
+ */
+export function milestoneLabel(
+  index: number | null | undefined,
+  names: readonly string[] | null | undefined
+): string {
+  if (typeof index !== "number" || !Number.isFinite(index) || index < 0) {
+    return UNGROUPED_LABEL;
+  }
+
+  const named = (names ?? [])[index];
+
+  if (named) {
+    return named;
+  }
+
+  // The game's milestones start at 1, and the published table is dense from 0,
+  // so slot 0 is empty in every save. An asset at 0 is not at a milestone the
+  // player has to reach — it is one the game never gated — and "Milestone 0"
+  // named a thing that does not exist.
+  return index === 0 ? PROGRESSION_UNGATED_LABEL : `Milestone ${index}`;
+}
+
 /**
  * The heading levels an entry falls under, outermost first.
  *
@@ -347,7 +389,8 @@ export function footprintBandLabel(
  */
 export function groupLevelsFor(
   entry: GroupableEntry | null | undefined,
-  dimension: GroupDimensionId
+  dimension: GroupDimensionId,
+  milestoneNames: readonly string[] = []
 ): string[] {
   if (!entry || dimension === "none") return [];
 
@@ -363,6 +406,12 @@ export function groupLevelsFor(
       return [text(entry.subCategoryLabel) ?? text(entry.subCategory) ?? UNGROUPED_LABEL];
     case "role":
       return [text(entry.buildingType) ?? UNGROUPED_LABEL];
+    case "progression":
+      // Named by the caller, which holds the milestone name table — the entry
+      // carries a bare index because the ~20 names are published once rather
+      // than repeated on every row. Index 0 is not "no milestone", it is the
+      // first one: what the game gives you at the start.
+      return [milestoneLabel(entry.unlockMilestone, milestoneNames)];
     case "schoolTier":
       // Not word-split through text(): these are the game's own labels, and
       // "Elementary School" is already a phrase. Anything with no tier — every
@@ -406,6 +455,17 @@ export interface GroupNode<T> {
    * unchanged when the key is missing.
    */
   labelId?: string;
+  /**
+   * Where this heading sits in an ordered dimension.
+   *
+   * Only progression sets it. Every other dimension's headings are nominal —
+   * "Hospital" is not before or after "Clinic" — so they keep the order the
+   * entries arrived in. Milestones are ordinal by definition, and reading the
+   * order off the entries would hand the progression whatever order the SORT
+   * happened to produce: sorted by name, a Roads menu would run Grand Village,
+   * Small Village, Tiny Village.
+   */
+  order?: number;
   /** Levels above this one, so a nested node can report its full path. */
   path: string[];
   /** Total entries beneath this node, including nested children. */
@@ -424,7 +484,8 @@ export interface GroupNode<T> {
  */
 export function buildGroupedView<T extends GroupableEntry>(
   entries: readonly T[] | null | undefined,
-  dimension: GroupDimensionId
+  dimension: GroupDimensionId,
+  milestoneNames: readonly string[] = []
 ): GroupNode<T>[] {
   const source = entries ?? [];
   if (dimension === "none" || source.length === 0) return [];
@@ -432,7 +493,7 @@ export function buildGroupedView<T extends GroupableEntry>(
   const roots: GroupNode<T>[] = [];
 
   for (const entry of source) {
-    const levels = groupLevelsFor(entry, dimension);
+    const levels = groupLevelsFor(entry, dimension, milestoneNames);
     if (levels.length === 0) continue;
 
     let siblings = roots;
@@ -456,6 +517,10 @@ export function buildGroupedView<T extends GroupableEntry>(
           }
         }
 
+        if (dimension === "progression" && typeof entry.unlockMilestone === "number") {
+          node.order = entry.unlockMilestone;
+        }
+
         siblings.push(node);
       }
 
@@ -476,6 +541,11 @@ export function buildGroupedView<T extends GroupableEntry>(
   // doing it here too means the UI is right even when the two disagree.
   const named = roots.filter((node) => node.label !== UNGROUPED_LABEL);
   const other = roots.filter((node) => node.label === UNGROUPED_LABEL);
+
+  // Ordinal dimensions state their own order; see GroupNode.order.
+  if (dimension === "progression") {
+    named.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  }
 
   return [...named, ...other];
 }

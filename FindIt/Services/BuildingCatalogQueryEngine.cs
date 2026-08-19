@@ -132,6 +132,16 @@ namespace FindItBuildingMenu.Services
 				return false;
 			}
 
+			// The progression tab. Equality on the index, not a "this tier and
+			// below" range: the tab names the point the game gated the asset
+			// behind, so a cumulative reading would put every early asset under
+			// every later tier and make the last tab the whole menu again.
+			if (query.UnlockMilestone != BuildingCatalogQuery.AnyMilestone
+				&& entry.UnlockMilestone != query.UnlockMilestone)
+			{
+				return false;
+			}
+
 			// The menu tree REPLACES the section overlay rather than layering on
 			// it. Both describe where an asset lives in the build menu, but only
 			// one of them is the game's own answer: UIObject.m_Group is what

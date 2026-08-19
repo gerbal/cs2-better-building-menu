@@ -11,6 +11,14 @@ import {
   type MenuCategoryCount,
   type VanillaMenuCategory,
 } from "domain/vanillaMenuCategories";
+import {
+  ANY_MILESTONE,
+  isMilestoneSelected,
+  milestoneTabs,
+  shouldShowMilestoneTabs,
+  type MenuMilestoneCount,
+} from "domain/menuProgression";
+import { milestoneLabel } from "domain/buildingGroups";
 import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 import styles from "./menuCategoryStrip.module.scss";
@@ -26,6 +34,17 @@ const BuildingLensMenuCategoryCounts$ = bindValue<MenuCategoryCount[]>(
   "BuildingLensMenuCategoryCounts",
   []
 );
+const BuildingLensMenuMilestoneCounts$ = bindValue<MenuMilestoneCount[]>(
+  mod.id,
+  "BuildingLensMenuMilestoneCounts",
+  []
+);
+const BuildingLensMenuMilestone$ = bindValue<number>(
+  mod.id,
+  "BuildingLensMenuMilestone",
+  ANY_MILESTONE
+);
+const BuildingLensMilestones$ = bindValue<string[]>(mod.id, "BuildingLensMilestones", []);
 
 /**
  * Vanilla's second tier, rebuilt.
@@ -50,14 +69,30 @@ export const MenuCategoryStrip = () => {
   // clicking it took the early return, ran two hooks where the previous render
   // had run three, and took the whole view down.
   const counts = useValue(BuildingLensMenuCategoryCounts$) ?? [];
+  const milestoneCounts = useValue(BuildingLensMenuMilestoneCounts$) ?? [];
+  const selectedMilestone = useValue(BuildingLensMenuMilestone$) ?? ANY_MILESTONE;
+  const milestoneNames = useValue(BuildingLensMilestones$) ?? [];
 
+  const tiers = milestoneTabs(milestoneCounts, (milestone) =>
+    milestoneLabel(milestone, milestoneNames)
+  );
   // Vanilla hides its own row below two categories, and a strip offering one
   // choice is not a choice. Water & Sewage and Zones each have exactly one.
-  if (!shouldShowCategoryStrip(categories)) {
+  //
+  // The tiers can carry the strip on their own, which is the point of adding
+  // them: Electricity is a single category, so the strip drew nothing at all
+  // and the menu arrived with no way to cut its 60 assets. Progression is an
+  // axis every menu has.
+  const showCategories = shouldShowCategoryStrip(categories);
+  const showTiers = shouldShowMilestoneTabs(tiers);
+
+  if (!showCategories && !showTiers) {
     return null;
   }
 
   const choose = (id: string) => trigger(mod.id, "SetBuildingLensMenuCategory", id);
+  const chooseTier = (milestone: number) =>
+    trigger(mod.id, "SetBuildingLensMenuMilestone", milestone);
 
   // The category prefab's own name is the id, and the game ships a localized
   // string under exactly that id — SubServices.NAME[TransportationRoad] is
@@ -72,6 +107,10 @@ export const MenuCategoryStrip = () => {
     );
 
   const allLabel = translate("Tooltip.LABEL[FindItBuildingMenu.AllCategories]", "All") ?? "All";
+  const anyTierLabel =
+    translate("Tooltip.LABEL[FindItBuildingMenu.AllProgressionTiers]", "All tiers") ?? "All tiers";
+  const totalTierCount = tiers.reduce((total, tier) => total + tier.count, 0);
+  const tierTooltip = (text: string, n: number) => `${text} (${n})`;
   // The count rides in the tooltip whatever the width, because a narrow strip
   // still leaves the player asking how much is behind a glyph.
   const withCount = (text: string, id: string) => {
@@ -83,6 +122,8 @@ export const MenuCategoryStrip = () => {
 
   return (
     <div className={styles.strip}>
+      {showCategories && (
+        <>
       {/* One more tab than vanilla has. Vanilla always opens on a category and
           offers no way back out to the whole menu; the lens can show the menu
           entire, which is the thing it can do that the vanilla menu cannot. */}
@@ -140,6 +181,65 @@ export const MenuCategoryStrip = () => {
           <span className={styles.tabCount}>{categoryCount(counts, category.id) ?? ""}</span>
         </ToolButton>
       ))}
+        </>
+      )}
+
+      {/* The progression segment, in the same row and after a rule, because the
+          two are not alternatives: a tier narrows whatever category is showing.
+          The backend counts them that way too — pick Vegetation and the tiers
+          count Vegetation only.
+
+          Worded like the All tab rather than glyphed like the categories,
+          because the game ships no icon for a milestone — and unlike the
+          category tabs, whose names were reported as disruptive, a tier has
+          nothing else to show. The bare index was tried first and is not a
+          label: "0" and "1" name nothing a player recognises, while the game's
+          own HUD says "Founding" two inches away. Milestone names are short
+          and a menu spans a handful of tiers, so the row still reads. */}
+      {showTiers && (
+        <>
+          {showCategories && <div className={styles.segmentRule} />}
+          <ToolButton
+            selected={isMilestoneSelected(ANY_MILESTONE, selectedMilestone)}
+            tooltip={tierTooltip(anyTierLabel, totalTierCount)}
+            onSelect={() => chooseTier(ANY_MILESTONE)}
+            src=""
+            focusKey={FOCUS_DISABLED}
+            className={classNames(
+              toolButtonTheme.button,
+              styles.tab,
+              styles.allTab,
+              isMilestoneSelected(ANY_MILESTONE, selectedMilestone) && styles.tabSelected
+            )}
+            aria-label={tierTooltip(anyTierLabel, totalTierCount)}
+          >
+            <span className={styles.allLabel}>{anyTierLabel}</span>
+          </ToolButton>
+
+          {tiers.map((tier) => (
+            <ToolButton
+              key={tier.milestone}
+              selected={isMilestoneSelected(tier.milestone, selectedMilestone)}
+              tooltip={tierTooltip(tier.label, tier.count)}
+              onSelect={() => chooseTier(tier.milestone)}
+              src=""
+              focusKey={FOCUS_DISABLED}
+              className={classNames(
+                toolButtonTheme.button,
+                styles.tab,
+                styles.tierTab,
+                isMilestoneSelected(tier.milestone, selectedMilestone) && styles.tabSelected
+              )}
+              aria-label={tierTooltip(tier.label, tier.count)}
+            >
+              <span className={styles.tierLabel}>
+                {tier.label}
+                <span className={styles.tierCount}>{tier.count}</span>
+              </span>
+            </ToolButton>
+          ))}
+        </>
+      )}
     </div>
   );
 };

@@ -108,7 +108,10 @@ describe("Menu category counts", () => {
 
   it("distinguishes an absent count from a real zero", () => {
     assert.equal(categoryCount([{ id: "Pathways", count: 0 }], "Pathways"), 0);
-    assert.equal(categoryCount([{ id: "Pathways", count: 0 }], "Vegetation"), null);
+    // Absent from a table that HAS arrived is zero, not unknown: the backend
+    // only emits a group for a category with something in it, and picking a
+    // progression tier empties most of them at once.
+    assert.equal(categoryCount([{ id: "Pathways", count: 0 }], "Vegetation"), 0);
   });
 
   it("widens the strip only once a row of glyphs stops being scannable", () => {

@@ -79,6 +79,7 @@ namespace FindItBuildingMenu.Systems
 		{
 			_buildingLensUiMenu = string.Empty;
 			_buildingLensUiCategory = string.Empty;
+			ResetBuildingLensMilestone();
 			RefreshBuildingLensMenuCategories();
 		}
 
@@ -131,6 +132,7 @@ namespace FindItBuildingMenu.Systems
 			// A different menu has different tabs, so the old selection cannot
 			// survive the switch.
 			_buildingLensUiCategory = string.Empty;
+			ResetBuildingLensMilestone();
 			RefreshBuildingLensMenuCategories();
 
 			// SPIKE (cm-e98i): Roads, Landscaping and Areas resolve to no preset
@@ -293,11 +295,54 @@ namespace FindItBuildingMenu.Systems
 			// back.
 			_buildingLensUiCategory = category ?? string.Empty;
 			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
+			// A new category resets the tier. The tabs are a subset of the
+			// category, so a tier held across a category change is a narrowing
+			// the player made against a set that is no longer on screen — and
+			// on the categories that hold no assets from it, an empty menu with
+			// no visible cause.
+			ResetBuildingLensMilestone();
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 
 			RefreshBuildingCatalog();
 		}
 
+
+		/// <summary>
+		/// Narrows the menu to one tier of the game's progression.
+		/// </summary>
+		/// <remarks>
+		/// A single index, or <see cref="BuildingCatalogQuery.AnyMilestone"/> for
+		/// the whole menu — the tab strip is single-select, the same as the
+		/// category strip beside it.
+		///
+		/// The tier is a property of the ASSET, not of the save: it is the point
+		/// the game gates the asset behind, and it stays that after the player
+		/// has passed it. This is why the strip is worth drawing in a developed
+		/// city, where every tab is unlocked and the tiers are the only thing
+		/// still telling one era of the menu from another.
+		/// </remarks>
+		private void SetBuildingLensMenuMilestone(int milestone)
+		{
+			_buildingLensUnlockMilestone = milestone < 0
+				? BuildingCatalogQuery.AnyMilestone
+				: milestone;
+			_BuildingLensMenuMilestoneBinding.Value = _buildingLensUnlockMilestone;
+			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
+
+			RefreshBuildingCatalog();
+		}
+
+		/// <summary>Drops the tier narrowing, without refreshing on its own.</summary>
+		/// <remarks>
+		/// Every caller is already on its way to <c>RefreshBuildingCatalog</c>
+		/// for a scope change of its own, so refreshing here would run the query
+		/// twice for one gesture.
+		/// </remarks>
+		private void ResetBuildingLensMilestone()
+		{
+			_buildingLensUnlockMilestone = BuildingCatalogQuery.AnyMilestone;
+			_BuildingLensMenuMilestoneBinding.Value = _buildingLensUnlockMilestone;
+		}
 
 		/// <summary>
 		/// Scopes the lens to a vanilla menu chosen from the filters.
@@ -327,6 +372,7 @@ namespace FindItBuildingMenu.Systems
 			// A different menu has different tabs, so the old selection cannot
 			// survive the switch — same reason as VanillaMenuSelected.
 			_buildingLensUiCategory = string.Empty;
+			ResetBuildingLensMilestone();
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 
 			// Zones are assignment tools rather than buildings, so that menu gets
@@ -363,6 +409,7 @@ namespace FindItBuildingMenu.Systems
 		{
 			_buildingLensUiMenu = string.Empty;
 			_buildingLensUiCategory = string.Empty;
+			ResetBuildingLensMilestone();
 
 			// The section and subcategory go too, because the MENU set them, not
 			// the player. VanillaMenuSelected applies all four together when a
@@ -414,6 +461,7 @@ namespace FindItBuildingMenu.Systems
 			_BuildingLensMenusBinding.Value = PrefabIndexingSystem.GetAssetMenus().ToArray();
 
 			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
+			_BuildingLensMenuMilestoneBinding.Value = _buildingLensUnlockMilestone;
 		}
 
 		/// <summary>
