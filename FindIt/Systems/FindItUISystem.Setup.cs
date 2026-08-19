@@ -33,6 +33,9 @@ namespace FindItBuildingMenu.Systems
 		// so carrying one into a new menu would open it already narrowed to a
 		// tier the player never picked.
 		private int _buildingLensUnlockMilestone = BuildingCatalogQuery.AnyMilestone;
+		// The development-tree tab, or empty. Cleared with the category for the
+		// same reason: a branch belongs to one service's tree.
+		private string _buildingLensDevTreeBranch = string.Empty;
 
 		private ToolSystem _toolSystem;
 		private PrefabSystem _prefabSystem;
@@ -121,6 +124,11 @@ namespace FindItBuildingMenu.Systems
 		// _BuildingLensMilestonesBinding; see MenuMilestoneCount.
 		private ValueBindingHelper<MenuMilestoneCount[]> _BuildingLensMenuMilestoneCounts = null!;
 		private ValueBindingHelper<int> _BuildingLensMenuMilestoneBinding = null!;
+		// The strip's fallback axis for menus vanilla gives no categories.
+		// MenuCategoryCount rather than a type of its own: a branch tab is an
+		// id and a count, which is exactly what that record already is.
+		private ValueBindingHelper<MenuCategoryCount[]> _BuildingLensMenuBranchCounts = null!;
+		private ValueBindingHelper<string> _BuildingLensMenuBranchBinding = null!;
 		private ValueBindingHelper<string> _BuildingLensMenuCategoryBinding = null!;
 		/// <summary>
 		/// The vanilla menu the lens is scoped to, or empty for the whole catalog.
@@ -274,6 +282,12 @@ namespace FindItBuildingMenu.Systems
 				"SetBuildingLensMenuMilestone",
 				BuildingCatalogQuery.AnyMilestone,
 				SetBuildingLensMenuMilestone);
+			_BuildingLensMenuBranchCounts = CreateBinding("BuildingLensMenuBranchCounts", Array.Empty<MenuCategoryCount>());
+			_BuildingLensMenuBranchBinding = CreateBinding(
+				"BuildingLensMenuBranch",
+				"SetBuildingLensMenuBranch",
+				string.Empty,
+				SetBuildingLensMenuBranch);
 			_BuildingLensMenuBinding = CreateBinding("BuildingLensMenu", string.Empty);
 			_BuildingLensMenusBinding = CreateBinding("BuildingLensMenus", Array.Empty<VanillaMenuCategory>());
 			_BuildingLensMilestonesBinding = CreateBinding("BuildingLensMilestones", Array.Empty<string>());

@@ -61,6 +61,7 @@ namespace FindItBuildingMenu.Systems
 				UiMenu = _buildingLensUiMenu,
 				UiCategory = _buildingLensUiCategory,
 				UnlockMilestone = _buildingLensUnlockMilestone,
+				DevTreeBranch = _buildingLensDevTreeBranch,
 				// Keep the successor lens in lockstep with FindIt's common
 				// parking filters. The legacy grid owns the full filter pipeline;
 				// the bounded catalog receives the equivalent typed predicate.
@@ -150,6 +151,8 @@ namespace FindItBuildingMenu.Systems
 				_buildingCatalogAdapter.GetMenuCategoryCounts(_buildingCatalogQuery).ToArray();
 			_BuildingLensMenuMilestoneCounts.Value =
 				_buildingCatalogAdapter.GetMenuMilestoneCounts(_buildingCatalogQuery).ToArray();
+			_BuildingLensMenuBranchCounts.Value =
+				_buildingCatalogAdapter.GetMenuBranchCounts(_buildingCatalogQuery).ToArray();
 			_BuildingLensLegacyFilters.Value = CaptureLegacyFilters().Describe().ToArray();
 			// At most three ids, so re-projecting alongside the page keeps the
 			// tray current once indexing finishes without measurable cost.

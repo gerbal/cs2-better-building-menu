@@ -129,6 +129,42 @@ namespace FindItBuildingMenu.Services
 		/// categories sort by id for stability alone; here the order is the
 		/// meaning, and a tier strip running out of order would misstate it.
 		/// </remarks>
+		/// <summary>
+		/// How many assets each of the menu's development-tree tabs holds.
+		/// </summary>
+		/// <remarks>
+		/// The strip's fallback axis, and the reason it exists: vanilla splits
+		/// Roads into nineteen categories and Electricity into one, so on the
+		/// service menus the category strip had nothing to draw. Those same
+		/// menus are the ones the development tree organises.
+		///
+		/// Same axis rule as the other two counters — the branch's own filter
+		/// is dropped so the tabs keep counting each other.
+		///
+		/// Ordered by count, then name. Branches have no ordinal the way
+		/// milestones do, and the tree's own layout order is a screen position
+		/// rather than a ranking, so the biggest bucket leading is the most
+		/// useful stable order.
+		/// </remarks>
+		public IReadOnlyList<MenuCategoryCount> GetMenuBranchCounts(BuildingCatalogQuery query)
+		{
+			if (query is null)
+			{
+				throw new ArgumentNullException(nameof(query));
+			}
+
+			var acrossBranches = query with { DevTreeBranch = string.Empty };
+
+			return BuildingCatalogQueryEngine
+				.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), acrossBranches)
+				.GroupBy(entry => entry.DevTreeBranch ?? string.Empty)
+				.Where(group => group.Key.Length > 0)
+				.Select(group => new MenuCategoryCount(group.Key, group.Count()))
+				.OrderByDescending(count => count.Count)
+				.ThenBy(count => count.Id, StringComparer.Ordinal)
+				.ToArray();
+		}
+
 		public IReadOnlyList<MenuMilestoneCount> GetMenuMilestoneCounts(BuildingCatalogQuery query)
 		{
 			if (query is null)
@@ -463,6 +499,7 @@ namespace FindItBuildingMenu.Services
 				IsVanilla: prefab.IsVanilla,
 				IsLocked: prefab.IsLocked,
 				UnlockMilestone: prefab.UnlockMilestone,
+				DevTreeBranch: prefab.DevTreeBranch,
 				UnlockRequirements: prefab.UnlockRequirements,
 				Bonuses: prefab.Bonuses,
 				CostIsPerDistance: prefab.CostIsPerDistance,

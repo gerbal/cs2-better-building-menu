@@ -95,6 +95,17 @@ namespace FindItBuildingMenu.Domain
 		/// milestones do.
 		/// </remarks>
 		int UnlockMilestone = 0,
+		/// <summary>
+		/// The branch of its service's development tree the asset hangs off.
+		/// </summary>
+		/// <remarks>
+		/// The milestone's counterpart. Milestones gate on city growth and
+		/// development-tree nodes gate on points spent per service, and a
+		/// service menu is almost entirely the second — so this is the axis that
+		/// splits the menus vanilla gives no categories to. See
+		/// PrefabIndex.DevTreeBranch for why the branch and not the node.
+		/// </remarks>
+		string? DevTreeBranch = null,
 		string[]? UnlockRequirements = null,
 		/// <summary>
 		/// What the building gives the city. Signature buildings are free, so
@@ -176,6 +187,8 @@ namespace FindItBuildingMenu.Domain
 			writer.Write(IsLocked);
 			writer.PropertyName("unlockMilestone");
 			writer.Write(UnlockMilestone);
+			writer.PropertyName("devTreeBranch");
+			writer.Write(DevTreeBranch ?? string.Empty);
 			WriteStringArray(writer, "unlockRequirements", UnlockRequirements);
 			WriteStringArray(writer, "bonuses", Bonuses);
 			writer.PropertyName("costIsPerDistance");

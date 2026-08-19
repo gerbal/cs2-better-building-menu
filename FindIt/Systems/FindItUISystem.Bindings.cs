@@ -80,6 +80,7 @@ namespace FindItBuildingMenu.Systems
 			_buildingLensUiMenu = string.Empty;
 			_buildingLensUiCategory = string.Empty;
 			ResetBuildingLensMilestone();
+			ResetBuildingLensBranch();
 			RefreshBuildingLensMenuCategories();
 		}
 
@@ -133,6 +134,7 @@ namespace FindItBuildingMenu.Systems
 			// survive the switch.
 			_buildingLensUiCategory = string.Empty;
 			ResetBuildingLensMilestone();
+			ResetBuildingLensBranch();
 			RefreshBuildingLensMenuCategories();
 
 			// SPIKE (cm-e98i): Roads, Landscaping and Areas resolve to no preset
@@ -301,6 +303,7 @@ namespace FindItBuildingMenu.Systems
 			// on the categories that hold no assets from it, an empty menu with
 			// no visible cause.
 			ResetBuildingLensMilestone();
+			ResetBuildingLensBranch();
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 
 			RefreshBuildingCatalog();
@@ -345,6 +348,30 @@ namespace FindItBuildingMenu.Systems
 		}
 
 		/// <summary>
+		/// Narrows the menu to one branch of its service's development tree.
+		/// </summary>
+		/// <remarks>
+		/// The strip's fallback axis. Single-select, like the category and
+		/// progression tabs beside it — the strip asks one question per segment.
+		/// </remarks>
+		private void SetBuildingLensMenuBranch(string branch)
+		{
+			_buildingLensDevTreeBranch = branch ?? string.Empty;
+			_BuildingLensMenuBranchBinding.Value = _buildingLensDevTreeBranch;
+			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
+
+			RefreshBuildingCatalog();
+		}
+
+		/// <summary>Drops the branch narrowing, without refreshing on its own.</summary>
+		/// <remarks>Same contract as ResetBuildingLensMilestone above.</remarks>
+		private void ResetBuildingLensBranch()
+		{
+			_buildingLensDevTreeBranch = string.Empty;
+			_BuildingLensMenuBranchBinding.Value = _buildingLensDevTreeBranch;
+		}
+
+		/// <summary>
 		/// Scopes the lens to a vanilla menu chosen from the filters.
 		/// </summary>
 		/// <remarks>
@@ -373,6 +400,7 @@ namespace FindItBuildingMenu.Systems
 			// survive the switch — same reason as VanillaMenuSelected.
 			_buildingLensUiCategory = string.Empty;
 			ResetBuildingLensMilestone();
+			ResetBuildingLensBranch();
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 
 			// Zones are assignment tools rather than buildings, so that menu gets
@@ -410,6 +438,7 @@ namespace FindItBuildingMenu.Systems
 			_buildingLensUiMenu = string.Empty;
 			_buildingLensUiCategory = string.Empty;
 			ResetBuildingLensMilestone();
+			ResetBuildingLensBranch();
 
 			// The section and subcategory go too, because the MENU set them, not
 			// the player. VanillaMenuSelected applies all four together when a
@@ -462,6 +491,7 @@ namespace FindItBuildingMenu.Systems
 
 			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
 			_BuildingLensMenuMilestoneBinding.Value = _buildingLensUnlockMilestone;
+			_BuildingLensMenuBranchBinding.Value = _buildingLensDevTreeBranch;
 		}
 
 		/// <summary>

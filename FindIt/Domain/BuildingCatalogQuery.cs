@@ -65,7 +65,11 @@ namespace FindItBuildingMenu.Domain
 		// Spelled -1 rather than AnyMilestone because a record's primary
 		// constructor cannot see its own type's constants. Query_DefaultsToAny
 		// Milestone pins the two together so they cannot drift apart silently.
-		int UnlockMilestone = -1)
+		int UnlockMilestone = -1,
+		// The development-tree branch the menu strip is narrowed to, or empty.
+		// A name rather than an index: branches are per-service and have no
+		// ordinal, unlike milestones.
+		string DevTreeBranch = "")
 	{
 		/// <summary>The <see cref="UnlockMilestone"/> value that narrows nothing.</summary>
 		public const int AnyMilestone = -1;

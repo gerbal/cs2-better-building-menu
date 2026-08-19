@@ -142,6 +142,14 @@ namespace FindItBuildingMenu.Services
 				return false;
 			}
 
+			// The development-tree tab. Same shape as the milestone one above:
+			// equality on the branch the asset hangs off.
+			if (!string.IsNullOrWhiteSpace(query.DevTreeBranch)
+				&& !string.Equals(entry.DevTreeBranch, query.DevTreeBranch, StringComparison.OrdinalIgnoreCase))
+			{
+				return false;
+			}
+
 			// The menu tree REPLACES the section overlay rather than layering on
 			// it. Both describe where an asset lives in the build menu, but only
 			// one of them is the game's own answer: UIObject.m_Group is what
