@@ -92,6 +92,10 @@ namespace FindItBuildingMenu.Systems
 		// Milestone index -> the name the rest of the game calls it. ~20 entries,
 		// resolved once per index pass rather than per locked asset.
 		private static Dictionary<int, string> _milestoneNames = new();
+		// Node entity -> branch label, and service name -> its root's label.
+		// Rebuilt with the rest of the index; see IndexDevTreeBranches.
+		private Dictionary<Entity, string> _devTreeBranches = new();
+		private Dictionary<string, string> _devTreeRoots = new();
 		private readonly List<IPrefabCategoryProcessor> _prefabCategoryProcessors = new();
 
 		protected override void OnCreate()
@@ -374,6 +378,7 @@ namespace FindItBuildingMenu.Systems
 				IndexAssetMenus();
 				IndexAssetCategories();
 				IndexMilestones();
+				IndexDevTreeBranches();
 			}
 
 			foreach (var processor in _prefabCategoryProcessors)
@@ -1066,6 +1071,12 @@ namespace FindItBuildingMenu.Systems
 			// locked. See the matching note in ApplyUnlocks.
 			(prefabIndex.UnlockMilestone, var unlockRequirements) = GetUnlockRequirements(entity);
 			prefabIndex.UnlockRequirements = prefabIndex.IsLocked ? unlockRequirements : Array.Empty<string>();
+
+			// The other half of the progression, and the half that actually
+			// splits a service menu. Resolved after UiMenuName above, because an
+			// asset the tree never gated falls into its service's root bucket
+			// and the menu is what names the service.
+			prefabIndex.DevTreeBranch = GetDevTreeBranch(entity, prefabIndex.UiMenuName);
 			prefabIndex.IsRandom = prefabIndex.SubCategory is not PrefabSubCategory.Networks_Pillars && EntityManager.HasComponent<PlaceholderObjectData>(entity);
 			prefabIndex.IsResourceIntensive = CheckIfResourceIntensive(prefab);
 
@@ -1430,6 +1441,158 @@ namespace FindItBuildingMenu.Systems
 				.TryGetValue($"Progression.MILESTONE_NAME:{index}", out var name)
 					? name
 					: null;
+
+		/// <summary>
+		/// Maps every development-tree node to the branch it belongs to.
+		/// </summary>
+		/// <remarks>
+		/// A service's tree is a free <c>Basic&lt;Service&gt;</c> root with a
+		/// handful of chains hanging off it. The BRANCH is the node directly
+		/// below the root — walk any node's requirements up until the next step
+		/// would be the root, and that is the branch it belongs to.
+		///
+		/// Why the branch and not the node: measured on the live tree, a node
+		/// unlocks one or two buildings, so the seven Electricity nodes would
+		/// draw seven tabs of one asset each. The two branches under its root —
+		/// Gas (gas, coal, nuclear) and Advanced (geothermal, hydro, solar) —
+		/// are the split a player actually thinks in, and the game authored it.
+		///
+		/// A node can have several parents (Satellite Uplink requires both
+		/// Server Farm and Telecom Tower). The first is taken, which keeps the
+		/// walk total; a merge point belongs to whichever branch reached it
+		/// first, and nothing in the UI depends on that choice being canonical.
+		/// </remarks>
+		private void IndexDevTreeBranches()
+		{
+			var query = GetEntityQuery(
+				ComponentType.ReadOnly<DevTreeNodeData>(),
+				ComponentType.ReadOnly<PrefabData>());
+			var nodes = query.ToEntityArray(Allocator.Temp);
+			var parents = new Dictionary<Entity, Entity>();
+			var roots = new Dictionary<string, string>();
+			var branches = new Dictionary<Entity, string>();
+
+			for (var i = 0; i < nodes.Length; i++)
+			{
+				parents[nodes[i]] = EntityManager.TryGetBuffer<DevTreeNodeRequirement>(nodes[i], true, out var reqs)
+					&& reqs.Length > 0
+						? reqs[0].m_Node
+						: Entity.Null;
+			}
+
+			for (var i = 0; i < nodes.Length; i++)
+			{
+				var node = nodes[i];
+
+				if (!_prefabSystem.TryGetPrefab<PrefabBase>(node, out var prefab))
+				{
+					continue;
+				}
+
+				// A root — the service's free starting node. It names the bucket
+				// every asset the tree never gated falls into, which is why it
+				// is worth recording rather than skipping.
+				if (parents.TryGetValue(node, out var parent) && parent == Entity.Null)
+				{
+					if (EntityManager.TryGetComponent<DevTreeNodeData>(node, out var rootData)
+						&& _prefabSystem.TryGetPrefab<PrefabBase>(rootData.m_Service, out var rootService))
+					{
+						roots[rootService.name] = RootBranchLabel;
+					}
+
+					branches[node] = RootBranchLabel;
+					continue;
+				}
+
+				var current = node;
+				var guard = 0;
+
+				while (parents.TryGetValue(current, out var next)
+					&& next != Entity.Null
+					&& parents.TryGetValue(next, out var above)
+					&& above != Entity.Null
+					&& guard++ < 32)
+				{
+					current = next;
+				}
+
+				branches[node] = _prefabSystem.TryGetPrefab<PrefabBase>(current, out var branchPrefab)
+					? DevTreeBranchName(branchPrefab)
+					: string.Empty;
+			}
+
+			_devTreeBranches = branches;
+			_devTreeRoots = roots;
+			Mod.Log.Info($"Indexed Dev Tree: {nodes.Length} nodes, {roots.Count} services");
+		}
+
+		/// <summary>
+		/// What the service's free root node is called on a tab.
+		/// </summary>
+		/// <remarks>
+		/// Not the node's own name. The game ships no localized title for these
+		/// — the lookup misses and falls through to the prefab name, which
+		/// renders as "Basic Water&amp;Sewage", missing the spaces the service's
+		/// real name has.
+		///
+		/// Naming it after the service would be redundant anyway: the strip is
+		/// already scoped to one menu, so the tab sits under the service's own
+		/// icon. "Basic" is what the bucket means — everything the tree never
+		/// gated — and it fits a tab.
+		/// </remarks>
+		private const string RootBranchLabel = "Basic";
+
+		/// <summary>
+		/// The node's name, without the "Node" the prefab titles all carry.
+		/// </summary>
+		/// <remarks>
+		/// The game's own localized title is "Gas Power Plant Node". The word is
+		/// an authoring artefact — the player never sees it in the dev tree,
+		/// which draws the node under its icon — so it is dropped rather than
+		/// repeated across every tab of the strip.
+		/// </remarks>
+		private string DevTreeBranchName(PrefabBase prefab)
+		{
+			var name = GetAssetName(prefab);
+
+			return name.EndsWith(" Node", StringComparison.Ordinal)
+				? name.Substring(0, name.Length - " Node".Length)
+				: name;
+		}
+
+		/// <summary>The branch an asset's unlock node belongs to, or empty.</summary>
+		private string GetDevTreeBranch(Entity entity, string? menu)
+		{
+			if (EntityManager.HasComponent<UnlockRequirement>(entity))
+			{
+				var required = new NativeParallelHashMap<Entity, UnlockFlags>(10, Allocator.TempJob);
+
+				try
+				{
+					ProgressionUtils.CollectSubRequirements(EntityManager, entity, required);
+
+					foreach (var item in required)
+					{
+						if (_devTreeBranches.TryGetValue(item.Key, out var branch) && branch.Length > 0)
+						{
+							return branch;
+						}
+					}
+				}
+				finally
+				{
+					required.Dispose();
+				}
+			}
+
+			// No node gated it, so it belongs to the service's free root — the
+			// same bucket the game puts the starting kit in. Named after the
+			// root node rather than "Other", because it is a real place in the
+			// tree and the player can see it there.
+			return menu is not null && _devTreeRoots.TryGetValue(menu, out var root)
+				? root
+				: string.Empty;
+		}
 
 		/// <summary>The name the game gives a milestone index.</summary>
 		public static string GetMilestoneName(int index) =>

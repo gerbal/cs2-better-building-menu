@@ -54,6 +54,24 @@ namespace FindItBuildingMenu.Domain
 		public int UnlockMilestone { get; set; }
 
 		/// <summary>
+		/// The branch of its service's development tree this asset hangs off.
+		/// </summary>
+		/// <remarks>
+		/// CS2 gates assets two ways, and the milestone is only one of them.
+		/// Service buildings are almost all bought with DEVELOPMENT POINTS from
+		/// a per-service tree, which is why grouping those menus by milestone
+		/// put every asset in one bucket.
+		///
+		/// The BRANCH rather than the node: a node usually unlocks one building,
+		/// so nodes group nothing, while the branches are the service's own
+		/// semantic split — fossil against renewable in Electricity, police
+		/// against administration, health against deathcare, postal against
+		/// telecom. Those are the useful subgroupings for exactly the menus
+		/// vanilla gives no categories to.
+		/// </remarks>
+		public string DevTreeBranch { get; set; } = string.Empty;
+
+		/// <summary>
 		/// Everything else the asset is waiting on, already localized.
 		/// </summary>
 		/// <remarks>

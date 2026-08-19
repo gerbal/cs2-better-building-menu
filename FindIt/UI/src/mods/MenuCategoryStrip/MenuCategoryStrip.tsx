@@ -45,6 +45,12 @@ const BuildingLensMenuMilestone$ = bindValue<number>(
   ANY_MILESTONE
 );
 const BuildingLensMilestones$ = bindValue<string[]>(mod.id, "BuildingLensMilestones", []);
+const BuildingLensMenuBranchCounts$ = bindValue<MenuCategoryCount[]>(
+  mod.id,
+  "BuildingLensMenuBranchCounts",
+  []
+);
+const BuildingLensMenuBranch$ = bindValue<string>(mod.id, "BuildingLensMenuBranch", "");
 
 /**
  * Vanilla's second tier, rebuilt.
@@ -72,6 +78,8 @@ export const MenuCategoryStrip = () => {
   const milestoneCounts = useValue(BuildingLensMenuMilestoneCounts$) ?? [];
   const selectedMilestone = useValue(BuildingLensMenuMilestone$) ?? ANY_MILESTONE;
   const milestoneNames = useValue(BuildingLensMilestones$) ?? [];
+  const branchCounts = useValue(BuildingLensMenuBranchCounts$) ?? [];
+  const selectedBranch = useValue(BuildingLensMenuBranch$) ?? "";
 
   const tiers = milestoneTabs(milestoneCounts, (milestone) =>
     milestoneLabel(milestone, milestoneNames)
@@ -85,12 +93,20 @@ export const MenuCategoryStrip = () => {
   // axis every menu has.
   const showCategories = shouldShowCategoryStrip(categories);
   const showTiers = shouldShowMilestoneTabs(tiers);
+  // The fallback, and the reason the strip exists on a service menu at all.
+  // Vanilla splits Roads into nineteen categories and Electricity into one, so
+  // the category strip drew nothing exactly where a 60-asset menu needed
+  // cutting most. The development tree is the axis those menus DO have —
+  // fossil against renewable, police against administration — so it stands in
+  // when there are no categories, and stays out of the way when there are.
+  const showBranches = !showCategories && branchCounts.length > 1;
 
-  if (!showCategories && !showTiers) {
+  if (!showCategories && !showBranches && !showTiers) {
     return null;
   }
 
   const choose = (id: string) => trigger(mod.id, "SetBuildingLensMenuCategory", id);
+  const chooseBranch = (id: string) => trigger(mod.id, "SetBuildingLensMenuBranch", id);
   const chooseTier = (milestone: number) =>
     trigger(mod.id, "SetBuildingLensMenuMilestone", milestone);
 
@@ -111,6 +127,9 @@ export const MenuCategoryStrip = () => {
     translate("Tooltip.LABEL[FindItBuildingMenu.AllProgressionTiers]", "All tiers") ?? "All tiers";
   const totalTierCount = tiers.reduce((total, tier) => total + tier.count, 0);
   const tierTooltip = (text: string, n: number) => `${text} (${n})`;
+  const branchTotal = branchCounts.reduce((total, branch) => total + branch.count, 0);
+  const withBranchCount = (text: string, id: string) =>
+    `${text} (${id === "" ? branchTotal : categoryCount(branchCounts, id) ?? 0})`;
   // The count rides in the tooltip whatever the width, because a narrow strip
   // still leaves the player asking how much is behind a glyph.
   const withCount = (text: string, id: string) => {
@@ -184,6 +203,57 @@ export const MenuCategoryStrip = () => {
         </>
       )}
 
+      {showBranches && (
+        <>
+          <ToolButton
+            selected={selectedBranch === ""}
+            tooltip={withBranchCount(allLabel, "")}
+            onSelect={() => chooseBranch("")}
+            src=""
+            focusKey={FOCUS_DISABLED}
+            className={classNames(
+              toolButtonTheme.button,
+              styles.tab,
+              styles.allTab,
+              selectedBranch === "" && styles.tabSelected
+            )}
+            aria-label={withBranchCount(allLabel, "")}
+          >
+            <span className={styles.allLabel}>
+              {allLabel}
+              <span className={styles.tabCount}>{branchTotal}</span>
+            </span>
+          </ToolButton>
+
+          {/* Worded, like the tier tabs and for the same reason: the game ships
+              no icon for a development-tree branch. There are two or three per
+              service and the names are short ("Hospital", "Police
+              Headquarters"), so the row still reads as one line. */}
+          {branchCounts.map((branch) => (
+            <ToolButton
+              key={branch.id}
+              selected={selectedBranch === branch.id}
+              tooltip={withBranchCount(branch.id, branch.id)}
+              onSelect={() => chooseBranch(branch.id)}
+              src=""
+              focusKey={FOCUS_DISABLED}
+              className={classNames(
+                toolButtonTheme.button,
+                styles.tab,
+                styles.tierTab,
+                selectedBranch === branch.id && styles.tabSelected
+              )}
+              aria-label={withBranchCount(branch.id, branch.id)}
+            >
+              <span className={styles.tierLabel}>
+                {branch.id}
+                <span className={styles.tierCount}>{branch.count}</span>
+              </span>
+            </ToolButton>
+          ))}
+        </>
+      )}
+
       {/* The progression segment, in the same row and after a rule, because the
           two are not alternatives: a tier narrows whatever category is showing.
           The backend counts them that way too — pick Vegetation and the tiers
@@ -198,7 +268,7 @@ export const MenuCategoryStrip = () => {
           and a menu spans a handful of tiers, so the row still reads. */}
       {showTiers && (
         <>
-          {showCategories && <div className={styles.segmentRule} />}
+          {(showCategories || showBranches) && <div className={styles.segmentRule} />}
           <ToolButton
             selected={isMilestoneSelected(ANY_MILESTONE, selectedMilestone)}
             tooltip={tierTooltip(anyTierLabel, totalTierCount)}
