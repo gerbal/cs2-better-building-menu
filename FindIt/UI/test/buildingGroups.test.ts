@@ -14,6 +14,8 @@ import {
   humanizeGroupLabel,
   isGroupDimension,
   shouldShowHeading,
+  groupDimensionsFor,
+  isEducationMenu,
 } from "../src/domain/buildingGroups.ts";
 
 const entry = (over: Record<string, unknown> = {}) => ({
@@ -464,5 +466,34 @@ describe("Flattening groups for the table", () => {
 
     assert.deepEqual(flattenGroupedRows([], "category", key), []);
     assert.deepEqual(flattenGroupedRows(null, "category", key), []);
+  });
+});
+
+describe("Which grouping choices a menu offers", () => {
+  it("offers School tier only where schools are", () => {
+    // Elsewhere it is a dimension that puts the whole result in one "Ungrouped"
+    // heading — a control that cannot act, in a picker of controls that can.
+    const ids = (menu: string) => groupDimensionsFor(menu).map((d) => d.id);
+
+    assert.ok(ids("Education & Research").includes("schoolTier"));
+    assert.ok(!ids("Electricity").includes("schoolTier"));
+    assert.ok(!ids("Roads").includes("schoolTier"));
+    assert.ok(!ids("").includes("schoolTier"));
+  });
+
+  it("leaves every other dimension alone", () => {
+    // Role outside a service menu and Density outside zoned buildings are
+    // narrow too, but they degrade to a sensible split rather than one bucket.
+    assert.equal(groupDimensionsFor("Electricity").length, GROUP_DIMENSIONS.length - 1);
+    assert.equal(groupDimensionsFor("Education & Research").length, GROUP_DIMENSIONS.length);
+  });
+
+  it("matches the menu's own name, not display text", () => {
+    // UIAssetMenuPrefab.name — the same string the census prints and assets
+    // carry as UiMenu. Loose so a rename or variant still resolves.
+    assert.equal(isEducationMenu("Education & Research"), true);
+    assert.equal(isEducationMenu("education"), true);
+    assert.equal(isEducationMenu("Roads"), false);
+    assert.equal(isEducationMenu(null), false);
   });
 });
