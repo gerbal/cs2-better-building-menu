@@ -8,7 +8,6 @@ import {
   isCategorySelected,
   orderedCategories,
   shouldShowCategoryStrip,
-  shouldWidenCategoryStrip,
   type MenuCategoryCount,
   type VanillaMenuCategory,
 } from "domain/vanillaMenuCategories";
@@ -45,6 +44,12 @@ export const MenuCategoryStrip = () => {
   const { translate } = useLocalization();
   const categories = useValue(BuildingLensMenuCategories$);
   const selected = useValue(BuildingLensMenuCategory$);
+  // ALL hooks belong above the early return below. This one was added under it
+  // and crashed the UI with React #300 — "rendered fewer hooks than expected" —
+  // on every menu the strip hides itself for. Electricity has one category, so
+  // clicking it took the early return, ran two hooks where the previous render
+  // had run three, and took the whole view down.
+  const counts = useValue(BuildingLensMenuCategoryCounts$) ?? [];
 
   // Vanilla hides its own row below two categories, and a strip offering one
   // choice is not a choice. Water & Sewage and Zones each have exactly one.
@@ -67,10 +72,6 @@ export const MenuCategoryStrip = () => {
     );
 
   const allLabel = translate("Tooltip.LABEL[FindItBuildingMenu.AllCategories]", "All") ?? "All";
-  const counts = useValue(BuildingLensMenuCategoryCounts$) ?? [];
-  // Above six tabs the row stops being scannable as glyphs — see
-  // CATEGORY_STRIP_WIDE_THRESHOLD. Wide tabs carry the name and the count.
-  const wide = shouldWidenCategoryStrip(categories);
   // The count rides in the tooltip whatever the width, because a narrow strip
   // still leaves the player asking how much is behind a glyph.
   const withCount = (text: string, id: string) => {
@@ -108,7 +109,7 @@ export const MenuCategoryStrip = () => {
             player has moved anything. */}
         <span className={styles.allLabel}>
           {allLabel}
-          {wide && categoryCount(counts, ALL_CATEGORIES_ID) !== null && (
+          {categoryCount(counts, ALL_CATEGORIES_ID) !== null && (
             <span className={styles.tabCount}>{categoryCount(counts, ALL_CATEGORIES_ID)}</span>
           )}
         </span>
@@ -125,19 +126,18 @@ export const MenuCategoryStrip = () => {
           className={classNames(
             toolButtonTheme.button,
             styles.tab,
-            wide && styles.tabWide,
             isCategorySelected(category.id, selected) && styles.tabSelected
           )}
           aria-label={withCount(label(category), category.id)}
         >
-          {wide
-            ? (
-              <span className={styles.tabLabel}>
-                {label(category)}
-                <span className={styles.tabCount}>{categoryCount(counts, category.id) ?? ""}</span>
-              </span>
-            )
-            : <span />}
+          {/* The count, not the name. Names on every tab were reported as
+              disruptive, and they were: fourteen worded tabs wrapped a
+              one-line strip to three rows and pushed the results down. The
+              name lives in the tooltip, where vanilla puts it too.
+              The number stays on the tab because it is what the strip could
+              not say before — which of fourteen glyphs is worth opening —
+              and two or three digits keeps the row one line. */}
+          <span className={styles.tabCount}>{categoryCount(counts, category.id) ?? ""}</span>
         </ToolButton>
       ))}
     </div>
