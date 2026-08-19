@@ -11,7 +11,7 @@ import {
 } from "domain/buildingCatalogContracts";
 import { getBuildingLensSortPresentation } from "domain/buildingLensSortPresentation";
 import {
-  GROUP_DIMENSIONS,
+  groupDimensionsFor,
   defaultGroupDimensionFor,
   groupDimensionLabel,
   isGroupDimension,
@@ -36,6 +36,7 @@ import styles from "./lensControlPane.module.scss";
 const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "BuildingCatalogSortColumn");
 const BuildingCatalogSortDescending$ = bindValue<boolean>(mod.id, "BuildingCatalogSortDescending");
 const BuildingLensSection$ = bindValue<string>(mod.id, "BuildingLensSection", "AllBuildings");
+const BuildingLensMenu$ = bindValue<string>(mod.id, "BuildingLensMenu", "");
 const BuildingLensMenuCategories$ = bindValue<unknown[]>(mod.id, "BuildingLensMenuCategories", []);
 const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch");
 const BuildingLensFacets$ = bindValue<BuildingLensFacetState | null>(mod.id, "BuildingLensFacets", null);
@@ -83,6 +84,7 @@ export const LensControlPane = () => {
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
   const section = useValue(BuildingLensSection$);
+  const menu = useValue(BuildingLensMenu$) ?? "";
   const menuHasCategories = (useValue(BuildingLensMenuCategories$) ?? []).length > 0;
   const currentSearch = useValue(CurrentSearch$);
   const facets = useValue(BuildingLensFacets$);
@@ -248,7 +250,7 @@ export const LensControlPane = () => {
                 </Button>
                 {groupPickerOpen && (
                   <div className={styles.pickerOptions}>
-                    {GROUP_DIMENSIONS.map((dimension) => {
+                    {groupDimensionsFor(menu).map((dimension) => {
                       const optionLabel = translate(
                         `Tooltip.LABEL[FindItBuildingMenu.GroupBy_${dimension.id}]`,
                         dimension.label

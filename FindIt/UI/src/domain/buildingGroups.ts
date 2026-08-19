@@ -93,6 +93,41 @@ export const DEFAULT_GROUP_DIMENSION: GroupDimensionId = "category";
  * them and every one would land under "Other" — a default that files 3,667
  * buildings in one bucket is worse than no grouping at all.
  */
+/**
+ * The menu whose assets carry a school tier.
+ *
+ * Matched loosely on the menu's own prefab name rather than pinned to the exact
+ * string, so a rename or a variant still resolves. The name is NOT localised —
+ * it is UIAssetMenuPrefab.name, the same value the census prints and assets
+ * carry as UiMenu — so this is not matching on display text.
+ */
+export function isEducationMenu(menu: string | null | undefined): boolean {
+  return /education/i.test(menu ?? "");
+}
+
+/**
+ * The grouping choices worth offering for a menu.
+ *
+ * School tier answers "which school", which is a question only the education
+ * menu can ask. Offered everywhere else it is a dimension that puts the whole
+ * result in one "Ungrouped" heading — a control that cannot act, drawn in a
+ * picker of controls that can.
+ *
+ * Only schoolTier is filtered. The rest are narrow in places too — Role outside
+ * a service menu, Density outside zoned buildings — but they degrade to a
+ * sensible split rather than to a single bucket, and the picker is opened
+ * deliberately.
+ */
+export function groupDimensionsFor(
+  menu: string | null | undefined
+): readonly GroupDimension[] {
+  if (isEducationMenu(menu)) {
+    return GROUP_DIMENSIONS;
+  }
+
+  return GROUP_DIMENSIONS.filter((dimension) => dimension.id !== "schoolTier");
+}
+
 export function defaultGroupDimensionFor(
   section: string | null | undefined,
   menuHasCategories: boolean = false,
