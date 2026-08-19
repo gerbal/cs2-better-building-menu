@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { readFileSync } from "node:fs";
 import {
   ALL_CATEGORIES_ID,
   isCategorySelected,
@@ -122,5 +123,32 @@ describe("Menu category counts", () => {
     assert.equal(shouldWidenCategoryStrip(tabs(14)), true);
     assert.equal(shouldWidenCategoryStrip([]), false);
     assert.equal(shouldWidenCategoryStrip(null), false);
+  });
+});
+
+describe("MenuCategoryStrip's hook order", () => {
+  // Regression guard. A useValue was added BELOW the component's early return,
+  // so on any menu the strip hides itself for — Electricity has one category —
+  // the render ran fewer hooks than the previous one and React threw #300,
+  // taking the whole UI down. Clicking Electricity crashed the view.
+  //
+  // Asserted on source shape because the failure is positional and invisible to
+  // a unit test of the component's output: it only appears when a render that
+  // returns early follows one that did not.
+  const source = readFileSync(
+    new URL("../src/mods/MenuCategoryStrip/MenuCategoryStrip.tsx", import.meta.url),
+    "utf8"
+  );
+
+  it("calls every hook before the early return", () => {
+    const body = source.slice(source.indexOf("export const MenuCategoryStrip"));
+    const earlyReturn = body.indexOf("return null;");
+
+    assert.ok(earlyReturn > 0, "expected the strip to keep its early return");
+    assert.doesNotMatch(
+      body.slice(earlyReturn),
+      /\buseValue\(|\buseState\(|\buseEffect\(|\buseMemo\(|\buseLocalization\(/,
+      "a hook below the early return renders conditionally and crashes React"
+    );
   });
 });
