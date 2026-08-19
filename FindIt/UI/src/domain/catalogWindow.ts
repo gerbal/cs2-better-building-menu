@@ -210,3 +210,26 @@ export function isAnchorOnScreen(geometry: AnchorGeometry): boolean {
 
   return rowTop + rowHeight > containerTop && rowTop < containerTop + containerHeight;
 }
+
+/**
+ * What the window is holding back, for the footer to say out loud.
+ *
+ * The catalog serves 100 rows at a time (BuildingCatalogQuery.DefaultLimit) and
+ * the footer said "Load more" — a button that names no number, under a grid
+ * that names no number. On Landscaping that is 100 of 368 with nothing on
+ * screen admitting it, which is the scale failure this menu exists to fix
+ * appearing in the menu itself.
+ *
+ * `remaining` is null rather than 0 when there is nothing held back, so the
+ * caller draws no footer at all rather than "Load 0 more".
+ */
+export interface CatalogWindowState {
+  shown: number;
+  total: number;
+}
+
+export function catalogWindowRemaining({ shown, total }: CatalogWindowState): number | null {
+  const remaining = total - shown;
+
+  return remaining > 0 ? remaining : null;
+}
