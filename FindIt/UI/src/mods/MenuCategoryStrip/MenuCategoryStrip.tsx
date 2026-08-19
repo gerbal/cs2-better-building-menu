@@ -102,7 +102,16 @@ export const MenuCategoryStrip = () => {
         )}
         aria-label={withCount(allLabel, ALL_CATEGORIES_ID)}
       >
-        <span className={styles.allLabel}>{allLabel}</span>
+        {/* The menu's whole size, and the only always-visible statement of it.
+            The footer says "Showing 100 of 368" but sits below the scroll, so
+            on arrival the truncation is invisible; this is on screen before the
+            player has moved anything. */}
+        <span className={styles.allLabel}>
+          {allLabel}
+          {wide && categoryCount(counts, ALL_CATEGORIES_ID) !== null && (
+            <span className={styles.tabCount}>{categoryCount(counts, ALL_CATEGORIES_ID)}</span>
+          )}
+        </span>
       </ToolButton>
 
       {orderedCategories(categories).map((category) => (

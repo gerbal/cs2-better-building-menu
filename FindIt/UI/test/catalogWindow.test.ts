@@ -4,6 +4,7 @@ import {
   CATALOG_WINDOW_SCROLL_THRESHOLD,
   nextWindowLimit,
   shouldLoadMore,
+  catalogWindowRemaining,
 } from "../src/domain/catalogWindow.ts";
 import { BUILDING_LENS_MIN_CATALOG_HEIGHT } from "../src/domain/buildingLensLayout.ts";
 
@@ -295,5 +296,26 @@ describe("finding the element that actually scrolls", () => {
 
     assert.equal(isScrollContainer(Number.NaN, 468), false);
     assert.equal(isScrollContainer(796, Number.NaN), false);
+  });
+});
+
+describe("What the window is holding back", () => {
+  it("reports the rows the window has not served", () => {
+    // Landscaping, measured: 368 match, 100 are served.
+    assert.equal(catalogWindowRemaining({ shown: 100, total: 368 }), 268);
+  });
+
+  it("says nothing rather than zero once everything is on screen", () => {
+    // Null so the caller draws no footer at all. "Load 0 more" is a control
+    // that cannot act, and the footer's whole job is to say the list is
+    // truncated — which it is not.
+    assert.equal(catalogWindowRemaining({ shown: 368, total: 368 }), null);
+    assert.equal(catalogWindowRemaining({ shown: 0, total: 0 }), null);
+  });
+
+  it("does not go negative when the backend has served more than it counted", () => {
+    // The page and the total are published separately, so a refresh can land
+    // between them. A negative "Load -3 more" is worse than no offer.
+    assert.equal(catalogWindowRemaining({ shown: 12, total: 9 }), null);
   });
 });

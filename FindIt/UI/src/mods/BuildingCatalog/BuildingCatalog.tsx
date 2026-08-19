@@ -34,6 +34,7 @@ import {
   isAnchorMeasurable,
   isAnchorOnScreen,
   isScrollContainer,
+  catalogWindowRemaining,
   shouldLoadMore,
 } from "domain/catalogWindow";
 import type { AnchorGeometry } from "domain/catalogWindow";
@@ -621,10 +622,27 @@ export const BuildingCatalogComponent = () => {
    * who reaches the bottom faster than the round trip through C# still wants
    * something to press, and it is the only visible statement that more exists.
    */
+  // The number, not just the offer. "Load more" under a grid that also names
+  // no number left the window invisible: on Landscaping that is 100 rows of
+  // 368 with nothing on screen admitting it. Saying both ends — what is shown,
+  // and what pressing this gets you — is the difference between a truncated
+  // list and a list you know is truncated.
+  const remaining = catalogWindowRemaining({ shown: items.length, total: totalCount });
   const catalogFooter = hasMore ? (
-    <Button className={styles.loadMore} variant="flat" onSelect={loadMore}>
-      {translate("Tooltip.LABEL[FindItBuildingMenu.LoadMore]", "Load more") ?? "Load more"}
-    </Button>
+    <div className={styles.loadMoreRow}>
+      <span className={styles.windowState}>
+        {(translate("Tooltip.LABEL[FindItBuildingMenu.ShowingOfTotal]", "Showing {0} of {1}")
+          ?? "Showing {0} of {1}")
+          .replace("{0}", `${items.length}`)
+          .replace("{1}", `${totalCount}`)}
+      </span>
+      <Button className={styles.loadMore} variant="flat" onSelect={loadMore}>
+        {remaining === null
+          ? translate("Tooltip.LABEL[FindItBuildingMenu.LoadMore]", "Load more") ?? "Load more"
+          : (translate("Tooltip.LABEL[FindItBuildingMenu.LoadMoreCount]", "Load {0} more")
+            ?? "Load {0} more").replace("{0}", `${Math.min(remaining, limit)}`)}
+      </Button>
+    </div>
   ) : null;
 
   return (

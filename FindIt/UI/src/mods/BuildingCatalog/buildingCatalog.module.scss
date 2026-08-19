@@ -1444,3 +1444,21 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   color: var(--menuText2Normal);
   font-size: var(--fontSizeXS);
 }
+
+// The footer states the window at both ends: what is on screen on the left,
+// what pressing the button adds on the right. One row, because they are one
+// fact — "you are seeing part of this" — said twice for the two questions a
+// player actually has.
+.loadMoreRow {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4rem 12rem;
+}
+
+.windowState {
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeS);
+  white-space: nowrap;
+}
