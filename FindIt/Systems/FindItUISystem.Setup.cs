@@ -28,6 +28,11 @@ namespace FindItBuildingMenu.Systems
 		// unconstrained by the tree.
 		private string _buildingLensUiMenu = string.Empty;
 		private string _buildingLensUiCategory = string.Empty;
+		// The progression tab, or AnyMilestone. Cleared alongside the category
+		// wherever the scope changes: a tier index means nothing across menus,
+		// so carrying one into a new menu would open it already narrowed to a
+		// tier the player never picked.
+		private int _buildingLensUnlockMilestone = BuildingCatalogQuery.AnyMilestone;
 
 		private ToolSystem _toolSystem;
 		private PrefabSystem _prefabSystem;
@@ -112,6 +117,10 @@ namespace FindItBuildingMenu.Systems
 		// Sidecar to the above. See MenuCategoryCount for why it is not a field
 		// on the category record.
 		private ValueBindingHelper<MenuCategoryCount[]> _BuildingLensMenuCategoryCounts = null!;
+		// The progression strip's sidecar. Names come from
+		// _BuildingLensMilestonesBinding; see MenuMilestoneCount.
+		private ValueBindingHelper<MenuMilestoneCount[]> _BuildingLensMenuMilestoneCounts = null!;
+		private ValueBindingHelper<int> _BuildingLensMenuMilestoneBinding = null!;
 		private ValueBindingHelper<string> _BuildingLensMenuCategoryBinding = null!;
 		/// <summary>
 		/// The vanilla menu the lens is scoped to, or empty for the whole catalog.
@@ -259,6 +268,12 @@ namespace FindItBuildingMenu.Systems
 			_BuildingLensSubCategoryListBinding = CreateBinding("BuildingLensSubCategoryList", Array.Empty<BuildingLensSubCategoryUIEntry>());
 			_BuildingLensMenuCategoriesBinding = CreateBinding("BuildingLensMenuCategories", Array.Empty<VanillaMenuCategory>());
 			_BuildingLensMenuCategoryCounts = CreateBinding("BuildingLensMenuCategoryCounts", Array.Empty<MenuCategoryCount>());
+			_BuildingLensMenuMilestoneCounts = CreateBinding("BuildingLensMenuMilestoneCounts", Array.Empty<MenuMilestoneCount>());
+			_BuildingLensMenuMilestoneBinding = CreateBinding(
+				"BuildingLensMenuMilestone",
+				"SetBuildingLensMenuMilestone",
+				BuildingCatalogQuery.AnyMilestone,
+				SetBuildingLensMenuMilestone);
 			_BuildingLensMenuBinding = CreateBinding("BuildingLensMenu", string.Empty);
 			_BuildingLensMenusBinding = CreateBinding("BuildingLensMenus", Array.Empty<VanillaMenuCategory>());
 			_BuildingLensMilestonesBinding = CreateBinding("BuildingLensMilestones", Array.Empty<string>());

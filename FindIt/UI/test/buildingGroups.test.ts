@@ -16,6 +16,8 @@ import {
   shouldShowHeading,
   groupDimensionsFor,
   isEducationMenu,
+  milestoneLabel,
+  PROGRESSION_UNGATED_LABEL,
 } from "../src/domain/buildingGroups.ts";
 
 const entry = (over: Record<string, unknown> = {}) => ({
@@ -495,5 +497,85 @@ describe("Which grouping choices a menu offers", () => {
     assert.equal(isEducationMenu("education"), true);
     assert.equal(isEducationMenu("Roads"), false);
     assert.equal(isEducationMenu(null), false);
+  });
+
+  it("names a milestone out of the published table, and falls back to its index", () => {
+    const names = ["Tiny Village", "Small Village", "Grand Village"];
+
+    assert.equal(milestoneLabel(0, names), "Tiny Village");
+    assert.equal(milestoneLabel(2, names), "Grand Village");
+    // Past the end, and a gap inside it: still a definite point in the
+    // progression, so it keeps its index rather than joining the unknowns.
+    assert.equal(milestoneLabel(7, names), "Milestone 7");
+    assert.equal(milestoneLabel(1, ["Tiny Village", "", "Grand Village"]), "Milestone 1");
+    assert.equal(milestoneLabel(3, []), "Milestone 3");
+    assert.equal(milestoneLabel(3, null), "Milestone 3");
+    // Slot 0 is empty in every save: the game's milestones start at 1. An
+    // asset there was never gated, so it is not waiting on "Milestone 0".
+    assert.equal(milestoneLabel(0, ["", "Small Village"]), PROGRESSION_UNGATED_LABEL);
+    assert.equal(milestoneLabel(0, []), PROGRESSION_UNGATED_LABEL);
+  });
+
+  it("treats a missing or nonsense milestone as ungrouped", () => {
+    assert.equal(milestoneLabel(null, ["Tiny Village"]), UNGROUPED_LABEL);
+    assert.equal(milestoneLabel(undefined, ["Tiny Village"]), UNGROUPED_LABEL);
+    assert.equal(milestoneLabel(-1, ["Tiny Village"]), UNGROUPED_LABEL);
+    assert.equal(milestoneLabel(Number.NaN, ["Tiny Village"]), UNGROUPED_LABEL);
+  });
+
+  it("groups by progression, naming the headings from the milestone table", () => {
+    const names = ["Tiny Village", "Small Village", "Grand Village"];
+
+    assert.deepEqual(
+      groupLevelsFor(entry({ unlockMilestone: 1 }), "progression", names),
+      ["Small Village"]
+    );
+
+    // The whole point of the dimension: an UNLOCKED asset still reports the
+    // milestone it was gated behind. When the backend zeroed it on unlock, an
+    // asset left its tier at the moment the player earned it.
+    const nodes = buildGroupedView(
+      [
+        entry({ name: "a", unlockMilestone: 0, isLocked: false }),
+        entry({ name: "b", unlockMilestone: 2, isLocked: false }),
+        entry({ name: "c", unlockMilestone: 2, isLocked: true }),
+      ],
+      "progression",
+      names
+    );
+
+    assert.deepEqual(nodes.map((node) => node.label), ["Tiny Village", "Grand Village"]);
+    assert.deepEqual(nodes.map((node) => node.entries.length), [1, 2]);
+  });
+
+  it("orders progression headings by milestone, not by arrival", () => {
+    const names = ["Tiny Village", "Small Village", "Grand Village"];
+
+    // Fed in the order a name sort would produce.
+    const nodes = buildGroupedView(
+      [
+        entry({ name: "g", unlockMilestone: 2 }),
+        entry({ name: "s", unlockMilestone: 1 }),
+        entry({ name: "t", unlockMilestone: 0 }),
+        entry({ name: "u", unlockMilestone: null }),
+      ],
+      "progression",
+      names
+    );
+
+    assert.deepEqual(nodes.map((node) => node.label), [
+      "Tiny Village",
+      "Small Village",
+      "Grand Village",
+      UNGROUPED_LABEL,
+    ]);
+  });
+
+  it("offers progression on every menu, unlike school tier", () => {
+    const ids = (menu: string) => groupDimensionsFor(menu).map((dimension) => dimension.id);
+
+    assert.ok(ids("Roads").includes("progression"));
+    assert.ok(ids("Electricity").includes("progression"));
+    assert.ok(ids("Education & Research").includes("progression"));
   });
 });

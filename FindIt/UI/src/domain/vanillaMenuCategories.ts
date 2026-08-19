@@ -75,18 +75,32 @@ export interface MenuCategoryCount {
  * holds nothing should read 0, and one whose count has not arrived yet should
  * read nothing at all. Collapsing them would flash "0" across a whole strip on
  * every menu change.
+ *
+ * A tab MISSING from a table that has arrived reads 0, not null. The backend
+ * counts by grouping the entries in scope, so a category with nothing in scope
+ * produces no group at all — and once the progression strip could empty most
+ * categories at once (pick a tier, and every category without an asset in it
+ * goes to zero), "absent" stopped meaning "not yet known" and started meaning
+ * "none". An empty table is still null: that is the case where nothing has
+ * arrived.
  */
 export function categoryCount(
   counts: readonly MenuCategoryCount[] | null | undefined,
   categoryId: string
 ): number | null {
-  if (categoryId === ALL_CATEGORIES_ID) {
-    return (counts ?? []).reduce((total, entry) => total + (entry.count ?? 0), 0) || null;
+  const table = counts ?? [];
+
+  if (table.length === 0) {
+    return null;
   }
 
-  const found = (counts ?? []).find((entry) => entry.id === categoryId);
+  if (categoryId === ALL_CATEGORIES_ID) {
+    return table.reduce((total, entry) => total + (entry.count ?? 0), 0);
+  }
 
-  return found ? found.count : null;
+  const found = table.find((entry) => entry.id === categoryId);
+
+  return found ? found.count : 0;
 }
 
 /**

@@ -72,3 +72,43 @@
   line-height: 10rem;
   pointer-events: none;
 }
+
+// A tier tab has no icon to draw — the game ships no glyph for a milestone —
+// so it carries the milestone's name, and opts out of the ToolButton's square
+// the same way the worded All tab does.
+.tierTab {
+  width: auto !important;
+  min-width: 32rem;
+  padding: 0 6rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.tierLabel {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  color: var(--menuText1Normal);
+  font-size: var(--fontSizeS);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+// Beside the name rather than tucked in the corner: the tier tab is wide
+// enough to carry both on one line, and a corner badge over a word reads as
+// part of the word.
+.tierCount {
+  margin-left: 5rem;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeXS);
+}
+
+// Says the two segments answer different questions, without costing a second
+// row. Same hairline weight as the strip's own bottom border.
+.segmentRule {
+  flex: 0 0 auto;
+  width: 1rem;
+  height: 20rem;
+  margin-right: 3rem;
+  background-color: rgba(255, 255, 255, 0.18);
+}

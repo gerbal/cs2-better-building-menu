@@ -76,9 +76,18 @@ namespace FindItBuildingMenu.Domain
 		string? UiMenu = null,
 		string? UiCategory = null,
 		/// <summary>
-		/// What the asset is waiting on. Meaningful only while IsLocked.
+		/// Where in the progression the asset is gated, and what it is waiting
+		/// on. Only the requirements are limited to IsLocked.
 		/// </summary>
 		/// <remarks>
+		/// The MILESTONE is a property of the asset — the point the game gates
+		/// it behind — not of how far the player has got, so it is kept whatever
+		/// the current lock state. It used to be zeroed on unlock, which dropped
+		/// an asset out of its own tier at the moment it was earned.
+		///
+		/// Index 0 means UNGATED rather than "the first milestone": the game's
+		/// milestones start at 1, so nothing is ever gated behind 0.
+		///
 		/// Milestone as an index rather than a name: the ~20 names are published
 		/// once in their own table, so a locked asset costs an int instead of a
 		/// string re-resolved on every unlock-triggered re-index. Requirements

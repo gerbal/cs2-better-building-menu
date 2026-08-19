@@ -55,8 +55,21 @@ namespace FindItBuildingMenu.Domain
 		// SPIKE (cm-e98i): the game's own menu placement, used instead of our
 		// reconstructed section when the lens was opened from a vanilla menu.
 		string UiMenu = "",
-		string UiCategory = "")
+		string UiCategory = "",
+		// The progression tier the menu strip is narrowed to, or AnyMilestone.
+		// An int rather than a string because a milestone IS its index: the
+		// name is a lookup, and two milestones can share neither index nor
+		// position. -1 rather than a nullable so the record still has a
+		// plain default and the UI can send one number for "no narrowing".
+		//
+		// Spelled -1 rather than AnyMilestone because a record's primary
+		// constructor cannot see its own type's constants. Query_DefaultsToAny
+		// Milestone pins the two together so they cannot drift apart silently.
+		int UnlockMilestone = -1)
 	{
+		/// <summary>The <see cref="UnlockMilestone"/> value that narrows nothing.</summary>
+		public const int AnyMilestone = -1;
+
 		public int EffectiveOffset => Offset < 0 ? 0 : Offset;
 
 		/// <summary>
