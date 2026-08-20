@@ -114,6 +114,37 @@ export function categoryCount(
  * search. Transportation has six and works; Landscaping has fourteen and does
  * not.
  */
+/**
+ * The tabs worth drawing: the ones with something behind them.
+ *
+ * The category list and the asset list come from two different questions.
+ * Tabs are whatever GetMenuCategories says the menu has; membership is
+ * IsPlacedInMenu, the game's own tree. Roads disagrees by ten: the tab list
+ * still carries the extra-network groups NetworkMenuExtension was written to
+ * gather there, while the phase 3 membership rule files a seaway under
+ * Transportation, so those tabs draw a count of 0 and answer a click with
+ * "No buildings in this category".
+ *
+ * Filtering on the count is right whichever way that disagreement is settled:
+ * a tab with nothing behind it is a dead end, and if the extras are ever
+ * restored to the menu their tabs come back on their own.
+ *
+ * Before the counts land the full list is kept, so the strip does not flash
+ * down to one tab and back on every menu change.
+ */
+export function visibleCategories(
+  categories: readonly VanillaMenuCategory[] | null | undefined,
+  counts: readonly MenuCategoryCount[] | null | undefined
+): VanillaMenuCategory[] {
+  const ordered = orderedCategories(categories);
+
+  if ((counts ?? []).length === 0) {
+    return ordered;
+  }
+
+  return ordered.filter((category) => (categoryCount(counts, category.id) ?? 0) > 0);
+}
+
 export const CATEGORY_STRIP_WIDE_THRESHOLD = 6;
 
 export function shouldWidenCategoryStrip(

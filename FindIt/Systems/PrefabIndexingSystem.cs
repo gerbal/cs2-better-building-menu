@@ -94,8 +94,15 @@ namespace FindItBuildingMenu.Systems
 		private static Dictionary<int, string> _milestoneNames = new();
 		// Node entity -> branch label, and service name -> its root's label.
 		// Rebuilt with the rest of the index; see IndexDevTreeBranches.
-		private Dictionary<Entity, string> _devTreeBranches = new();
-		private Dictionary<string, string> _devTreeRoots = new();
+		// Label AND icon together, keyed by node and by service. The icon was
+		// briefly keyed by label instead, which collides: every service's root
+		// is called "Basic", so all eleven shared one entry and Electricity's
+		// Basic tab drew the water glyph.
+		private Dictionary<Entity, (string Label, string Icon)> _devTreeBranches = new();
+		private Dictionary<string, (string Label, string Icon)> _devTreeRoots = new();
+		// Milestone index -> its progression-screen image. Safe to key by index
+		// because a milestone index IS unique, unlike a branch label.
+		private static Dictionary<int, string> _milestoneIcons = new();
 		private readonly List<IPrefabCategoryProcessor> _prefabCategoryProcessors = new();
 
 		protected override void OnCreate()
@@ -704,6 +711,16 @@ namespace FindItBuildingMenu.Systems
 				_menuPlacements.TryGetValue(entityIndex, out var placement)
 				&& string.Equals(placement.Menu?.Trim(), menu, System.StringComparison.OrdinalIgnoreCase);
 
+			/// <summary>Whether the game places this asset in any menu at all.</summary>
+			/// <remarks>
+			/// The guard on the Roads menu's network gathering. "Every network"
+			/// has to mean every network VANILLA PLACES — the index also holds
+			/// networks the game never offers, and admitting those would put
+			/// unplaceable rows in the one menu that gathers most widely.
+			/// </remarks>
+			public static bool IsPlacedInAnyMenu(int entityIndex) =>
+				_menuPlacements.ContainsKey(entityIndex);
+
 			/// <summary>
 			/// Reports every asset the vanilla build menu shows that our index does not.
 			/// </summary>
@@ -1076,7 +1093,8 @@ namespace FindItBuildingMenu.Systems
 			// splits a service menu. Resolved after UiMenuName above, because an
 			// asset the tree never gated falls into its service's root bucket
 			// and the menu is what names the service.
-			prefabIndex.DevTreeBranch = GetDevTreeBranch(entity, prefabIndex.UiMenuName);
+			(prefabIndex.DevTreeBranch, prefabIndex.DevTreeBranchIcon) =
+				GetDevTreeBranch(entity, prefabIndex.UiMenuName);
 			prefabIndex.IsRandom = prefabIndex.SubCategory is not PrefabSubCategory.Networks_Pillars && EntityManager.HasComponent<PlaceholderObjectData>(entity);
 			prefabIndex.IsResourceIntensive = CheckIfResourceIntensive(prefab);
 
@@ -1407,6 +1425,7 @@ namespace FindItBuildingMenu.Systems
 				ComponentType.ReadOnly<PrefabData>());
 			var milestones = query.ToEntityArray(Allocator.Temp);
 			var names = new Dictionary<int, string>();
+			var images = new Dictionary<int, string>();
 
 			for (var i = 0; i < milestones.Length; i++)
 			{
@@ -1414,10 +1433,16 @@ namespace FindItBuildingMenu.Systems
 					&& _prefabSystem.TryGetPrefab<PrefabBase>(milestones[i], out var prefab))
 				{
 					names[data.m_Index] = GetMilestoneTitle(data.m_Index) ?? GetAssetName(prefab);
+					// The progression screen's own image, so a tier tab carries
+					// the badge the player earned that milestone under.
+					images[data.m_Index] = prefab is MilestonePrefab milestone
+						? IconPath.Normalize(milestone.m_Image) ?? string.Empty
+						: string.Empty;
 				}
 			}
 
 			_milestoneNames = names;
+			_milestoneIcons = images;
 			Mod.Log.Info($"Indexed Milestones: {names.Count}");
 		}
 
@@ -1469,8 +1494,8 @@ namespace FindItBuildingMenu.Systems
 				ComponentType.ReadOnly<PrefabData>());
 			var nodes = query.ToEntityArray(Allocator.Temp);
 			var parents = new Dictionary<Entity, Entity>();
-			var roots = new Dictionary<string, string>();
-			var branches = new Dictionary<Entity, string>();
+			var roots = new Dictionary<string, (string Label, string Icon)>();
+			var branches = new Dictionary<Entity, (string Label, string Icon)>();
 
 			for (var i = 0; i < nodes.Length; i++)
 			{
@@ -1497,10 +1522,10 @@ namespace FindItBuildingMenu.Systems
 					if (EntityManager.TryGetComponent<DevTreeNodeData>(node, out var rootData)
 						&& _prefabSystem.TryGetPrefab<PrefabBase>(rootData.m_Service, out var rootService))
 					{
-						roots[rootService.name] = RootBranchLabel;
+						roots[rootService.name] = (RootBranchLabel, DevTreeIcon(prefab));
 					}
 
-					branches[node] = RootBranchLabel;
+					branches[node] = (RootBranchLabel, DevTreeIcon(prefab));
 					continue;
 				}
 
@@ -1516,14 +1541,69 @@ namespace FindItBuildingMenu.Systems
 					current = next;
 				}
 
-				branches[node] = _prefabSystem.TryGetPrefab<PrefabBase>(current, out var branchPrefab)
-					? DevTreeBranchName(branchPrefab)
-					: string.Empty;
+				if (_prefabSystem.TryGetPrefab<PrefabBase>(current, out var branchPrefab))
+				{
+					branches[node] = (DevTreeBranchName(branchPrefab), DevTreeIcon(branchPrefab));
+				}
 			}
 
 			_devTreeBranches = branches;
 			_devTreeRoots = roots;
 			Mod.Log.Info($"Indexed Dev Tree: {nodes.Length} nodes, {roots.Count} services");
+		}
+
+		/// <summary>
+		/// The node's icon, resolved the way the game's own dev tree resolves it.
+		/// </summary>
+		/// <remarks>
+		/// Transcribed from DevTreeUISystem.GetDevTreeIcon: an explicit
+		/// m_IconPath wins, otherwise the thumbnail of the prefab the node
+		/// points at. Empty rather than a placeholder when there is neither —
+		/// the strip decides for itself what an iconless tab looks like, and a
+		/// placeholder glyph reads as a broken icon rather than none.
+		/// </remarks>
+		private string DevTreeIcon(PrefabBase prefab)
+		{
+			if (prefab is not DevTreeNodePrefab node)
+			{
+				return string.Empty;
+			}
+
+			if (!string.IsNullOrEmpty(node.m_IconPath))
+			{
+				return IconPath.Normalize(node.m_IconPath) ?? string.Empty;
+			}
+
+			return node.m_IconPrefab is not null
+				? IconPath.Normalize(ImageSystem.GetThumbnail(node.m_IconPrefab)) ?? string.Empty
+				: string.Empty;
+		}
+
+		/// <summary>Every milestone image, dense by index.</summary>
+		/// <remarks>Same shape and the same reason as GetMilestoneNames.</remarks>
+		public static string[] GetMilestoneIcons()
+		{
+			if (_milestoneIcons.Count == 0)
+			{
+				return Array.Empty<string>();
+			}
+
+			var highest = 0;
+			foreach (var index in _milestoneIcons.Keys)
+			{
+				if (index > highest)
+				{
+					highest = index;
+				}
+			}
+
+			var icons = new string[highest + 1];
+			for (var i = 0; i <= highest; i++)
+			{
+				icons[i] = _milestoneIcons.TryGetValue(i, out var icon) ? icon : string.Empty;
+			}
+
+			return icons;
 		}
 
 		/// <summary>
@@ -1561,7 +1641,7 @@ namespace FindItBuildingMenu.Systems
 		}
 
 		/// <summary>The branch an asset's unlock node belongs to, or empty.</summary>
-		private string GetDevTreeBranch(Entity entity, string? menu)
+		private (string Label, string Icon) GetDevTreeBranch(Entity entity, string? menu)
 		{
 			if (EntityManager.HasComponent<UnlockRequirement>(entity))
 			{
@@ -1573,7 +1653,7 @@ namespace FindItBuildingMenu.Systems
 
 					foreach (var item in required)
 					{
-						if (_devTreeBranches.TryGetValue(item.Key, out var branch) && branch.Length > 0)
+						if (_devTreeBranches.TryGetValue(item.Key, out var branch) && branch.Label.Length > 0)
 						{
 							return branch;
 						}
@@ -1591,7 +1671,7 @@ namespace FindItBuildingMenu.Systems
 			// tree and the player can see it there.
 			return menu is not null && _devTreeRoots.TryGetValue(menu, out var root)
 				? root
-				: string.Empty;
+				: (string.Empty, string.Empty);
 		}
 
 		/// <summary>The name the game gives a milestone index.</summary>

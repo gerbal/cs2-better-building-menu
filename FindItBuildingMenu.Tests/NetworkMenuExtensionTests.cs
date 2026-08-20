@@ -145,5 +145,35 @@ namespace FindItBuildingMenu.Tests
 
 			Assert.Equal(new[] { "Alley" }, page.Items.Select(item => item.Name).ToArray());
 		}
+
+		[Fact]
+		public void ATabAndItsCountAgreeOnWhichCategoryAnExtraNetworkIsIn()
+		{
+			// The bug this pins: the strip's counts grouped on the entry's own
+			// UiCategory while the tab SELECTED on EffectiveCategory. For an
+			// extra network those differ — a seaway's own category is
+			// TransportationShip and its Roads tab is "Ship" — so ten Roads tabs
+			// reported nothing and showed assets when clicked.
+			var seaway = Network("Medium Seaway", "Networks_Ship", "Transportation", "TransportationShip");
+
+			var tab = NetworkMenuExtension.EffectiveCategory(seaway, NetworkMenuExtension.RoadsMenu);
+
+			Assert.Equal(NetworkMenuExtension.GroupId("Networks_Ship"), tab);
+			Assert.NotEqual(seaway.UiCategory, tab);
+
+			// And in its own menu it keeps the game's answer, so this cannot
+			// move a seaway out of the Transportation tab it really belongs to.
+			Assert.Equal(seaway.UiCategory, NetworkMenuExtension.EffectiveCategory(seaway, "Transportation"));
+		}
+
+		[Fact]
+		public void ARoadKeepsItsOwnCategoryInTheRoadsMenu()
+		{
+			// The other half: counting on the effective category must not
+			// relabel the assets that reach Roads through the game's own tree.
+			var road = Road("Gravel Road", "TransportationRoad", 1);
+
+			Assert.Equal("TransportationRoad", NetworkMenuExtension.EffectiveCategory(road, NetworkMenuExtension.RoadsMenu));
+		}
 	}
 }

@@ -70,6 +70,7 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   { key: key("GroupBy_role"), english: "Role", source: "buildingGroups", plumbed: true },
   { key: key("GroupBy_schoolTier"), english: "School tier", source: "buildingGroups", plumbed: true },
   { key: key("GroupBy_progression"), english: "Progression", source: "buildingGroups", plumbed: true },
+  { key: key("GroupBy_development"), english: "Development", source: "buildingGroups", plumbed: true },
   { key: key("ProgressionUngated"), english: "From the start", source: "buildingGroups", plumbed: false },
   { key: key("GroupBy_theme"), english: "Theme", source: "buildingGroups", plumbed: true },
   { key: key("GroupBy_source"), english: "Source", source: "buildingGroups", plumbed: true },

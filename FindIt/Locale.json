@@ -331,6 +331,7 @@
   "Tooltip.LABEL[FindItBuildingMenu.GroupBy_role]": "Role",
   "Tooltip.LABEL[FindItBuildingMenu.GroupBy_schoolTier]": "School tier",
   "Tooltip.LABEL[FindItBuildingMenu.GroupBy_progression]": "Progression",
+  "Tooltip.LABEL[FindItBuildingMenu.GroupBy_development]": "Development",
   "Tooltip.LABEL[FindItBuildingMenu.GroupBy_theme]": "Theme",
   "Tooltip.LABEL[FindItBuildingMenu.GroupBy_source]": "Source",
   "Tooltip.LABEL[FindItBuildingMenu.GroupBy_density]": "Density",

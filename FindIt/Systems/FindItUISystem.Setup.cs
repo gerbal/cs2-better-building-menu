@@ -127,7 +127,7 @@ namespace FindItBuildingMenu.Systems
 		// The strip's fallback axis for menus vanilla gives no categories.
 		// MenuCategoryCount rather than a type of its own: a branch tab is an
 		// id and a count, which is exactly what that record already is.
-		private ValueBindingHelper<MenuCategoryCount[]> _BuildingLensMenuBranchCounts = null!;
+		private ValueBindingHelper<MenuBranchCount[]> _BuildingLensMenuBranchCounts = null!;
 		private ValueBindingHelper<string> _BuildingLensMenuBranchBinding = null!;
 		private ValueBindingHelper<string> _BuildingLensMenuCategoryBinding = null!;
 		/// <summary>
@@ -144,6 +144,8 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<VanillaMenuCategory[]> _BuildingLensMenusBinding = null!;
 		// Milestone index -> name, published once. Locked assets carry the index.
 		private ValueBindingHelper<string[]> _BuildingLensMilestonesBinding = null!;
+		// Dense by index, beside the names. See PrefabIndexingSystem.GetMilestoneIcons.
+		private ValueBindingHelper<string[]> _BuildingLensMilestoneIconsBinding = null!;
 
 		public bool IsExpanded => _IsExpanded;
 
@@ -282,7 +284,7 @@ namespace FindItBuildingMenu.Systems
 				"SetBuildingLensMenuMilestone",
 				BuildingCatalogQuery.AnyMilestone,
 				SetBuildingLensMenuMilestone);
-			_BuildingLensMenuBranchCounts = CreateBinding("BuildingLensMenuBranchCounts", Array.Empty<MenuCategoryCount>());
+			_BuildingLensMenuBranchCounts = CreateBinding("BuildingLensMenuBranchCounts", Array.Empty<MenuBranchCount>());
 			_BuildingLensMenuBranchBinding = CreateBinding(
 				"BuildingLensMenuBranch",
 				"SetBuildingLensMenuBranch",
@@ -291,6 +293,7 @@ namespace FindItBuildingMenu.Systems
 			_BuildingLensMenuBinding = CreateBinding("BuildingLensMenu", string.Empty);
 			_BuildingLensMenusBinding = CreateBinding("BuildingLensMenus", Array.Empty<VanillaMenuCategory>());
 			_BuildingLensMilestonesBinding = CreateBinding("BuildingLensMilestones", Array.Empty<string>());
+			_BuildingLensMilestoneIconsBinding = CreateBinding("BuildingLensMilestoneIcons", Array.Empty<string>());
 			_BuildingLensMenuCategoryBinding = CreateBinding(
 				"BuildingLensMenuCategory",
 				"SetBuildingLensMenuCategory",
