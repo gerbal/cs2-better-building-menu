@@ -246,6 +246,33 @@ namespace FindItBuildingMenu.Services
 				.ToArray();
 		}
 
+		/// <summary>
+		/// The glyph for a school level: the attainment that school grants.
+		/// </summary>
+		/// <remarks>
+		/// A representative school's thumbnail was tried first and does not
+		/// work. Vanilla's own tab glyphs are flat two-colour symbols drawn for
+		/// this size; a building render at 24rem is a dark smudge, and four of
+		/// them are four dark smudges. The tabs were icons in name only.
+		///
+		/// These are flat, and they are exactly the right meaning. The citizen
+		/// attainment ladder is 0..4 — Uneducated, Poorly Educated, Educated,
+		/// Well Educated, Highly Educated — and a school's level IS the
+		/// attainment it grants: GraduationSystem reads
+		/// SchoolData.m_EducationLevel and passes it straight to
+		/// Citizen.SetEducationLevel. So level N's tab is the badge a graduate
+		/// of that school wears, which is a better answer than a picture of one
+		/// of the buildings.
+		/// </remarks>
+		private static string SchoolTierIcon(int level) => level switch
+		{
+			1 => "Media/Game/Icons/PoorlyEducated.svg",
+			2 => "Media/Game/Icons/Educated.svg",
+			3 => "Media/Game/Icons/WellEducated.svg",
+			4 => "Media/Game/Icons/HighlyEducated.svg",
+			_ => "Media/Game/Icons/Education.svg",
+		};
+
 		/// <summary>The progression screen's badge for a milestone, if any.</summary>
 		private static string MilestoneIcon(int milestone)
 		{
@@ -327,7 +354,7 @@ namespace FindItBuildingMenu.Services
 				.Select(group => new MenuBranchCount(
 					group.Key.ToString(System.Globalization.CultureInfo.InvariantCulture),
 					group.Count(),
-					TabIcon(group, authored: false)))
+					SchoolTierIcon(group.Key)))
 				.OrderBy(count => count.Id, StringComparer.Ordinal)
 				.ToArray();
 		}
