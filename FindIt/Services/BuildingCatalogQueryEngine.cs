@@ -142,10 +142,14 @@ namespace FindItBuildingMenu.Services
 				return false;
 			}
 
-			// The development-tree tab. Same shape as the milestone one above:
-			// equality on the branch the asset hangs off.
-			if (!string.IsNullOrWhiteSpace(query.DevTreeBranch)
-				&& !string.Equals(entry.DevTreeBranch, query.DevTreeBranch, StringComparison.OrdinalIgnoreCase))
+			// The fallback strip's tab, matched against whichever property its
+			// axis names. Nothing to do when no tab is picked, which is also
+			// the case for every menu whose strip is vanilla's categories.
+			if (!string.IsNullOrWhiteSpace(query.StripTab)
+				&& !string.Equals(
+					StripValue(entry, query.StripAxis),
+					query.StripTab,
+					StringComparison.OrdinalIgnoreCase))
 			{
 				return false;
 			}
@@ -255,6 +259,34 @@ namespace FindItBuildingMenu.Services
 		/// looking at a menu?" would be two places to disagree.
 		/// </remarks>
 		private static bool IsScopedToMenuTree(BuildingCatalogQuery query) => query.IsScopedToMenu;
+
+		/// <summary>
+		/// The value an entry answers with on the fallback strip's axis.
+		/// </summary>
+		/// <remarks>
+		/// One place, so the predicate and the counts cannot read the axis
+		/// differently — the same mistake the category counts made against
+		/// EffectiveCategory.
+		/// </remarks>
+		public static string StripValue(BuildingCatalogEntry entry, string? axis) => axis?.Trim() switch
+		{
+			StripAxes.Development => entry.DevTreeBranch ?? string.Empty,
+			StripAxes.AssetType => AssetTypeOf(entry),
+			_ => string.Empty,
+		};
+
+		/// <summary>
+		/// Whether this is a thing you place or a line you draw.
+		/// </summary>
+		/// <remarks>
+		/// The one cut every menu has, and a real question rather than a
+		/// derived one: a water menu holds pumping stations and pipes, and
+		/// reaching for one is not the same job as reaching for the other.
+		/// </remarks>
+		public static string AssetTypeOf(BuildingCatalogEntry entry) =>
+			string.Equals(entry.Category, "Networks", StringComparison.OrdinalIgnoreCase)
+				? StripAxes.NetworkValue
+				: StripAxes.BuildingValue;
 
 		private static bool MatchesVanillaMenuTree(BuildingCatalogEntry entry, BuildingCatalogQuery query)
 		{

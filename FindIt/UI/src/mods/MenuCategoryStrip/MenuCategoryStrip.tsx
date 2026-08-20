@@ -21,6 +21,7 @@ import {
   type MenuMilestoneCount,
 } from "domain/menuProgression";
 import { isEducationMenu, milestoneLabel } from "domain/buildingGroups";
+import { STRIP_AXIS_LABELS } from "domain/menuProgression";
 import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 import styles from "./menuCategoryStrip.module.scss";
@@ -55,12 +56,9 @@ const BuildingLensMenuSchoolTierCounts$ = bindValue<MenuBranchCount[]>(
 );
 const BuildingLensMenuSchoolTier$ = bindValue<number>(mod.id, "BuildingLensMenuSchoolTier", -1);
 const BuildingLensMenu$ = bindValue<string>(mod.id, "BuildingLensMenu", "");
-const BuildingLensMenuBranchCounts$ = bindValue<MenuBranchCount[]>(
-  mod.id,
-  "BuildingLensMenuBranchCounts",
-  []
-);
-const BuildingLensMenuBranch$ = bindValue<string>(mod.id, "BuildingLensMenuBranch", "");
+const BuildingLensStripTabs$ = bindValue<MenuBranchCount[]>(mod.id, "BuildingLensStripTabs", []);
+const BuildingLensStripTab$ = bindValue<string>(mod.id, "BuildingLensStripTab", "");
+const BuildingLensStripAxis$ = bindValue<string>(mod.id, "BuildingLensStripAxis", "");
 
 /**
  * Vanilla's second tier, rebuilt.
@@ -92,8 +90,9 @@ export const MenuCategoryStrip = () => {
   const schoolTierCounts = useValue(BuildingLensMenuSchoolTierCounts$) ?? [];
   const selectedSchoolTier = useValue(BuildingLensMenuSchoolTier$) ?? -1;
   const menu = useValue(BuildingLensMenu$) ?? "";
-  const branchCounts = useValue(BuildingLensMenuBranchCounts$) ?? [];
-  const selectedBranch = useValue(BuildingLensMenuBranch$) ?? "";
+  const stripTabs = useValue(BuildingLensStripTabs$) ?? [];
+  const selectedStripTab = useValue(BuildingLensStripTab$) ?? "";
+  const stripAxis = useValue(BuildingLensStripAxis$) ?? "";
 
   const tiers = milestoneTabs(milestoneCounts, (milestone) =>
     milestoneLabel(milestone, milestoneNames)
@@ -118,14 +117,14 @@ export const MenuCategoryStrip = () => {
   // cutting most. The development tree is the axis those menus DO have —
   // fossil against renewable, police against administration — so it stands in
   // when there are no categories, and stays out of the way when there are.
-  const showBranches = !showCategories && branchCounts.length > 1;
+  const showBranches = !showCategories && stripTabs.length > 1;
 
   if (!showCategories && !showBranches && !showTiers && !showSchoolTiers) {
     return null;
   }
 
   const choose = (id: string) => trigger(mod.id, "SetBuildingLensMenuCategory", id);
-  const chooseBranch = (id: string) => trigger(mod.id, "SetBuildingLensMenuBranch", id);
+  const chooseBranch = (id: string) => trigger(mod.id, "SetBuildingLensStripTab", id);
   const chooseTier = (milestone: number) =>
     trigger(mod.id, "SetBuildingLensMenuMilestone", milestone);
   const chooseSchoolTier = (level: number) =>
@@ -148,9 +147,39 @@ export const MenuCategoryStrip = () => {
     translate("Tooltip.LABEL[FindItBuildingMenu.AllProgressionTiers]", "All tiers") ?? "All tiers";
   const totalTierCount = tiers.reduce((total, tier) => total + tier.count, 0);
   const tierTooltip = (text: string, n: number) => `${text} (${n})`;
-  const branchTotal = branchCounts.reduce((total, branch) => total + branch.count, 0);
+  // The row carries up to two segments and the second one's axis changes per
+  // menu — progression on most, school level on Education. Without a word
+  // saying which, the same screen position means a different question from one
+  // menu to the next, and the row cannot be learned. One small label per
+  // segment, not per tab: names on every tab were what made this row
+  // unreadable the first time.
+  // `||`, not `??`. A key the active dictionary has not got comes back as an
+  // EMPTY STRING rather than null, so `??` keeps it and the label renders as
+  // nothing — which is exactly what happened: the strings were in Locale.json
+  // but the C# side only reads that at mod init, so a UI-only reload had the
+  // component asking for keys the running game had never loaded.
+  const segmentLabel = (axis: string) =>
+    translate(`Tooltip.LABEL[FindItBuildingMenu.StripAxis_${axis}]`, null)?.trim() ||
+    STRIP_AXIS_LABELS[axis] ||
+    "";
+  //
+  // Vanilla's categories are the one axis that needs no introduction — they
+  // are the menu's own, and every menu that has them shows them — so that
+  // segment is only labelled when a second segment makes the row ambiguous.
+  // Every other axis is labelled ALWAYS, including when it is alone: the
+  // fallback axis is CHOSEN per menu, so an unlabelled row of tabs means the
+  // development tree on Electricity and buildings-against-pipes on Water with
+  // nothing on screen to say which.
+  const segments = [showCategories, showBranches, showTiers, showSchoolTiers].filter(Boolean).length;
+  const Label = ({ axis }: { axis: string }) => {
+    const label = segmentLabel(axis);
+    if (!label || (axis === "category" && segments < 2)) return null;
+
+    return <span className={styles.segmentLabel}>{label}</span>;
+  };
+  const branchTotal = stripTabs.reduce((total, branch) => total + branch.count, 0);
   const withBranchCount = (text: string, id: string) =>
-    `${text} (${id === "" ? branchTotal : categoryCount(branchCounts, id) ?? 0})`;
+    `${text} (${id === "" ? branchTotal : categoryCount(stripTabs, id) ?? 0})`;
   // The count rides in the tooltip whatever the width, because a narrow strip
   // still leaves the player asking how much is behind a glyph.
   const withCount = (text: string, id: string) => {
@@ -164,6 +193,7 @@ export const MenuCategoryStrip = () => {
     <div className={styles.strip}>
       {showCategories && (
         <>
+          <Label axis="category" />
       {/* One more tab than vanilla has. Vanilla always opens on a category and
           offers no way back out to the whole menu; the lens can show the menu
           entire, which is the thing it can do that the vanilla menu cannot. */}
@@ -226,8 +256,12 @@ export const MenuCategoryStrip = () => {
 
       {showBranches && (
         <>
+          {/* Always labelled, even alone: this segment's axis is CHOSEN per
+              menu, so without a word the same row of tabs is the development
+              tree on Electricity and buildings-against-pipes on Water. */}
+          <Label axis={stripAxis} />
           <ToolButton
-            selected={selectedBranch === ""}
+            selected={selectedStripTab === ""}
             tooltip={withBranchCount(allLabel, "")}
             onSelect={() => chooseBranch("")}
             src=""
@@ -236,7 +270,7 @@ export const MenuCategoryStrip = () => {
               toolButtonTheme.button,
               styles.tab,
               styles.allTab,
-              selectedBranch === "" && styles.tabSelected
+              selectedStripTab === "" && styles.tabSelected
             )}
             aria-label={withBranchCount(allLabel, "")}
           >
@@ -250,10 +284,10 @@ export const MenuCategoryStrip = () => {
               no icon for a development-tree branch. There are two or three per
               service and the names are short ("Hospital", "Police
               Headquarters"), so the row still reads as one line. */}
-          {branchCounts.map((branch) => (
+          {stripTabs.map((branch) => (
             <ToolButton
               key={branch.id}
-              selected={selectedBranch === branch.id}
+              selected={selectedStripTab === branch.id}
               tooltip={withBranchCount(branch.id, branch.id)}
               onSelect={() => chooseBranch(branch.id)}
               src={branch.icon || ""}
@@ -262,7 +296,7 @@ export const MenuCategoryStrip = () => {
                 toolButtonTheme.button,
                 styles.tab,
                 branch.icon ? undefined : styles.tierTab,
-                selectedBranch === branch.id && styles.tabSelected
+                selectedStripTab === branch.id && styles.tabSelected
               )}
               aria-label={withBranchCount(branch.id, branch.id)}
             >
@@ -279,6 +313,7 @@ export const MenuCategoryStrip = () => {
       {showSchoolTiers && (
         <>
           {(showCategories || showBranches) && <div className={styles.segmentRule} />}
+          <Label axis="schoolTier" />
           <ToolButton
             selected={selectedSchoolTier < 0}
             tooltip={`${anyTierLabel} (${schoolTiers.reduce((total: number, t) => total + t.count, 0)})`}
@@ -338,6 +373,7 @@ export const MenuCategoryStrip = () => {
       {showTiers && (
         <>
           {(showCategories || showBranches) && <div className={styles.segmentRule} />}
+          <Label axis="progression" />
           <ToolButton
             selected={isMilestoneSelected(ANY_MILESTONE, selectedMilestone)}
             tooltip={tierTooltip(anyTierLabel, totalTierCount)}

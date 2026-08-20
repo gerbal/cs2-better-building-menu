@@ -126,3 +126,19 @@ export function schoolTierLabel(level: number): string {
       return `Level ${level}`;
   }
 }
+
+/**
+ * What the row calls each of its segments.
+ *
+ * Keyed by the axis id the backend publishes, so the strip never has to guess
+ * which question its tabs are answering. Fallbacks: the component asks
+ * translate() for a key of the same name first, and these are the English it
+ * lands on when a locale has nothing.
+ */
+export const STRIP_AXIS_LABELS: Record<string, string> = {
+  category: "Category",
+  development: "Development",
+  assetType: "Type",
+  progression: "Progression",
+  schoolTier: "Level",
+};

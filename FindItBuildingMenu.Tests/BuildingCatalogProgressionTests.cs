@@ -96,5 +96,67 @@ namespace FindItBuildingMenu.Tests
 			Assert.False(page.Items[0].IsLocked);
 			Assert.Equal("Four-Lane Road", page.Items[0].Name);
 		}
+
+		[Fact]
+		public void StripValueReadsWhicheverAxisIsNamed()
+		{
+			// One reader for the predicate and the counts. They read the axis
+			// separately once before — the category counts against UiCategory
+			// while the tab selected on EffectiveCategory — and ten Roads tabs
+			// reported 0 while showing assets when clicked.
+			var pipe = Entry(1, "Water Pipe", 0) with { Category = "Networks", DevTreeBranch = "Basic" };
+			var plant = Entry(2, "Water Treatment Plant", 2) with { Category = "ServiceBuildings", DevTreeBranch = "Water Treatment Plant" };
+
+			Assert.Equal("Basic", BuildingCatalogQueryEngine.StripValue(pipe, StripAxes.Development));
+			Assert.Equal("Water Treatment Plant", BuildingCatalogQueryEngine.StripValue(plant, StripAxes.Development));
+			Assert.Equal(StripAxes.NetworkValue, BuildingCatalogQueryEngine.StripValue(pipe, StripAxes.AssetType));
+			Assert.Equal(StripAxes.BuildingValue, BuildingCatalogQueryEngine.StripValue(plant, StripAxes.AssetType));
+
+			// An axis nobody named narrows nothing, which is what leaves the
+			// menus that use vanilla's own categories alone.
+			Assert.Equal(string.Empty, BuildingCatalogQueryEngine.StripValue(plant, ""));
+			Assert.Equal(string.Empty, BuildingCatalogQueryEngine.StripValue(plant, null));
+		}
+
+		[Fact]
+		public void AnAssetIsANetworkOrAThingYouPlace()
+		{
+			var pipe = Entry(1, "Water Pipe", 0) with { Category = "Networks" };
+			var tower = Entry(2, "Water Tower", 0) with { Category = "ServiceBuildings" };
+
+			Assert.Equal(StripAxes.NetworkValue, BuildingCatalogQueryEngine.AssetTypeOf(pipe));
+			Assert.Equal(StripAxes.BuildingValue, BuildingCatalogQueryEngine.AssetTypeOf(tower));
+		}
+
+		[Fact]
+		public void TheStripTabNarrowsOnTheAxisItWasCountedOn()
+		{
+			// The two fields travel together for exactly this reason: the same
+			// tab string means a branch on one menu and an asset type on
+			// another, so matching it without the axis would be a coincidence.
+			var source = new List<BuildingCatalogEntry>
+			{
+				Entry(1, "Water Pipe", 0) with { Category = "Networks", DevTreeBranch = "Basic" },
+				Entry(2, "Water Tower", 0) with { Category = "ServiceBuildings", DevTreeBranch = "Basic" },
+				Entry(3, "Water Treatment Plant", 2) with { Category = "ServiceBuildings", DevTreeBranch = "Water Treatment Plant" },
+			};
+
+			var byBranch = BuildingCatalogQueryEngine.Query(
+				source,
+				new BuildingCatalogQuery(StripAxis: StripAxes.Development, StripTab: "Basic"));
+			Assert.Equal(2, byBranch.TotalCount);
+
+			var byType = BuildingCatalogQueryEngine.Query(
+				source,
+				new BuildingCatalogQuery(StripAxis: StripAxes.AssetType, StripTab: StripAxes.NetworkValue));
+			Assert.Equal(1, byType.TotalCount);
+			Assert.Equal("Water Pipe", byType.Items[0].Name);
+
+			// Same tab string, wrong axis: nothing, rather than a lucky match.
+			var mismatched = BuildingCatalogQueryEngine.Query(
+				source,
+				new BuildingCatalogQuery(StripAxis: StripAxes.AssetType, StripTab: "Basic"));
+			Assert.Equal(0, mismatched.TotalCount);
+		}
 	}
 }

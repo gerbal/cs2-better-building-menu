@@ -80,7 +80,7 @@ namespace FindItBuildingMenu.Systems
 			_buildingLensUiMenu = string.Empty;
 			_buildingLensUiCategory = string.Empty;
 			ResetBuildingLensMilestone();
-			ResetBuildingLensBranch();
+			ResetBuildingLensStripTab();
 			ResetBuildingLensSchoolTier();
 			RefreshBuildingLensMenuCategories();
 		}
@@ -135,7 +135,7 @@ namespace FindItBuildingMenu.Systems
 			// survive the switch.
 			_buildingLensUiCategory = string.Empty;
 			ResetBuildingLensMilestone();
-			ResetBuildingLensBranch();
+			ResetBuildingLensStripTab();
 			ResetBuildingLensSchoolTier();
 			RefreshBuildingLensMenuCategories();
 
@@ -305,7 +305,7 @@ namespace FindItBuildingMenu.Systems
 			// on the categories that hold no assets from it, an empty menu with
 			// no visible cause.
 			ResetBuildingLensMilestone();
-			ResetBuildingLensBranch();
+			ResetBuildingLensStripTab();
 			ResetBuildingLensSchoolTier();
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 
@@ -357,21 +357,21 @@ namespace FindItBuildingMenu.Systems
 		/// The strip's fallback axis. Single-select, like the category and
 		/// progression tabs beside it — the strip asks one question per segment.
 		/// </remarks>
-		private void SetBuildingLensMenuBranch(string branch)
+		private void SetBuildingLensStripTab(string tab)
 		{
-			_buildingLensDevTreeBranch = branch ?? string.Empty;
-			_BuildingLensMenuBranchBinding.Value = _buildingLensDevTreeBranch;
+			_buildingLensStripTab = tab ?? string.Empty;
+			_BuildingLensStripTabBinding.Value = _buildingLensStripTab;
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 
 			RefreshBuildingCatalog();
 		}
 
-		/// <summary>Drops the branch narrowing, without refreshing on its own.</summary>
+		/// <summary>Drops the strip narrowing, without refreshing on its own.</summary>
 		/// <remarks>Same contract as ResetBuildingLensMilestone above.</remarks>
-		private void ResetBuildingLensBranch()
+		private void ResetBuildingLensStripTab()
 		{
-			_buildingLensDevTreeBranch = string.Empty;
-			_BuildingLensMenuBranchBinding.Value = _buildingLensDevTreeBranch;
+			_buildingLensStripTab = string.Empty;
+			_BuildingLensStripTabBinding.Value = _buildingLensStripTab;
 		}
 
 		/// <summary>Narrows the education menu to one school tier.</summary>
@@ -420,7 +420,7 @@ namespace FindItBuildingMenu.Systems
 			// survive the switch — same reason as VanillaMenuSelected.
 			_buildingLensUiCategory = string.Empty;
 			ResetBuildingLensMilestone();
-			ResetBuildingLensBranch();
+			ResetBuildingLensStripTab();
 			ResetBuildingLensSchoolTier();
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 
@@ -459,7 +459,7 @@ namespace FindItBuildingMenu.Systems
 			_buildingLensUiMenu = string.Empty;
 			_buildingLensUiCategory = string.Empty;
 			ResetBuildingLensMilestone();
-			ResetBuildingLensBranch();
+			ResetBuildingLensStripTab();
 			ResetBuildingLensSchoolTier();
 
 			// The section and subcategory go too, because the MENU set them, not
@@ -513,7 +513,7 @@ namespace FindItBuildingMenu.Systems
 
 			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
 			_BuildingLensMenuMilestoneBinding.Value = _buildingLensUnlockMilestone;
-			_BuildingLensMenuBranchBinding.Value = _buildingLensDevTreeBranch;
+			_BuildingLensStripTabBinding.Value = _buildingLensStripTab;
 		}
 
 		/// <summary>
