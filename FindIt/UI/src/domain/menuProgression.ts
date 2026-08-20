@@ -72,3 +72,57 @@ export function isMilestoneSelected(
 ): boolean {
   return (selected ?? ANY_MILESTONE) === milestone;
 }
+
+/** One school-level tab, ready to draw. */
+export interface SchoolTierTab {
+  level: number;
+  label: string;
+  count: number;
+}
+
+/**
+ * The education menu's tier tabs, in career order.
+ *
+ * The backend keys these by the raw SchoolData.m_EducationLevel so the four
+ * labels stay in one place — SCHOOL_TIERS in buildingGroups — rather than
+ * being duplicated across the binding. Ordered by level, which is the career
+ * order the alphabet gets wrong: College sorts before High School and before
+ * University, and only one of those is right.
+ */
+export function schoolTierTabs(
+  counts: readonly MenuBranchCount[] | null | undefined
+): SchoolTierTab[] {
+  return (counts ?? [])
+    .map((entry) => ({ level: Number(entry.id), count: entry.count ?? 0 }))
+    .filter((entry) => Number.isFinite(entry.level) && entry.level >= 1)
+    .sort((a, b) => a.level - b.level)
+    .map((entry) => ({
+      level: entry.level,
+      label: schoolTierLabel(entry.level),
+      count: entry.count,
+    }));
+}
+
+/**
+ * The game's own word for a school level.
+ *
+ * Kept here rather than imported from buildingGroups: the domain modules do
+ * not import each other by value, because the test runner strips types instead
+ * of resolving the bundler's paths. The four rows are the game's SchoolLevel
+ * enum and do not move; buildingGroups.SCHOOL_TIERS is the other copy, and
+ * menuProgression.test.ts pins them to the same words.
+ */
+export function schoolTierLabel(level: number): string {
+  switch (level) {
+    case 1:
+      return "Elementary School";
+    case 2:
+      return "High School";
+    case 3:
+      return "College";
+    case 4:
+      return "University";
+    default:
+      return `Level ${level}`;
+  }
+}

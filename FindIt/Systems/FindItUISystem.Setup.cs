@@ -36,6 +36,9 @@ namespace FindItBuildingMenu.Systems
 		// The development-tree tab, or empty. Cleared with the category for the
 		// same reason: a branch belongs to one service's tree.
 		private string _buildingLensDevTreeBranch = string.Empty;
+		// The education menu's tier tab, or -1. Cleared with the rest of the
+		// scope; a level means nothing outside the menu that teaches.
+		private int _buildingLensSchoolTier = -1;
 
 		private ToolSystem _toolSystem;
 		private PrefabSystem _prefabSystem;
@@ -129,6 +132,10 @@ namespace FindItBuildingMenu.Systems
 		// id and a count, which is exactly what that record already is.
 		private ValueBindingHelper<MenuBranchCount[]> _BuildingLensMenuBranchCounts = null!;
 		private ValueBindingHelper<string> _BuildingLensMenuBranchBinding = null!;
+		// The tier segment's other axis. Education navigates by level, not by
+		// the milestone the school unlocked at.
+		private ValueBindingHelper<MenuBranchCount[]> _BuildingLensMenuSchoolTierCounts = null!;
+		private ValueBindingHelper<int> _BuildingLensMenuSchoolTierBinding = null!;
 		private ValueBindingHelper<string> _BuildingLensMenuCategoryBinding = null!;
 		/// <summary>
 		/// The vanilla menu the lens is scoped to, or empty for the whole catalog.
@@ -290,6 +297,12 @@ namespace FindItBuildingMenu.Systems
 				"SetBuildingLensMenuBranch",
 				string.Empty,
 				SetBuildingLensMenuBranch);
+			_BuildingLensMenuSchoolTierCounts = CreateBinding("BuildingLensMenuSchoolTierCounts", Array.Empty<MenuBranchCount>());
+			_BuildingLensMenuSchoolTierBinding = CreateBinding(
+				"BuildingLensMenuSchoolTier",
+				"SetBuildingLensMenuSchoolTier",
+				-1,
+				SetBuildingLensMenuSchoolTier);
 			_BuildingLensMenuBinding = CreateBinding("BuildingLensMenu", string.Empty);
 			_BuildingLensMenusBinding = CreateBinding("BuildingLensMenus", Array.Empty<VanillaMenuCategory>());
 			_BuildingLensMilestonesBinding = CreateBinding("BuildingLensMilestones", Array.Empty<string>());

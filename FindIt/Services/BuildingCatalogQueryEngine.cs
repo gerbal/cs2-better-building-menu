@@ -150,6 +150,15 @@ namespace FindItBuildingMenu.Services
 				return false;
 			}
 
+			// The education menu's tier tab. Equality, matching the game:
+			// CitizenPathfindSetup tests m_EducationLevel == value rather than a
+			// range, because a university grants its own tier and not the ones
+			// below it.
+			if (query.SchoolTier >= 0 && entry.EducationLevel != query.SchoolTier)
+			{
+				return false;
+			}
+
 			// The menu tree REPLACES the section overlay rather than layering on
 			// it. Both describe where an asset lives in the build menu, but only
 			// one of them is the game's own answer: UIObject.m_Group is what

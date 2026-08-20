@@ -5,8 +5,10 @@ import {
   isMilestoneSelected,
   milestoneTabs,
   shouldShowMilestoneTabs,
+  schoolTierTabs,
+  schoolTierLabel,
 } from "../src/domain/menuProgression.ts";
-import { milestoneLabel } from "../src/domain/buildingGroups.ts";
+import { milestoneLabel, SCHOOL_TIERS } from "../src/domain/buildingGroups.ts";
 
 const NAMES = ["Tiny Village", "Small Village", "Grand Village", "Large Village"];
 
@@ -96,5 +98,51 @@ describe("menu progression strip", () => {
     // 0 is a real tier, and the sentinel is -1 precisely so the two are not
     // the same value read two ways.
     assert.equal(isMilestoneSelected(ANY_MILESTONE, 0), false);
+  });
+});
+
+describe("education tier tabs", () => {
+  it("orders the levels by career, which the alphabet gets wrong", () => {
+    // College sorts before High School and before University; only one of
+    // those is the order a player thinks in.
+    const tabs = schoolTierTabs([
+      { id: "3", count: 5, icon: "" },
+      { id: "1", count: 12, icon: "" },
+      { id: "4", count: 2, icon: "" },
+      { id: "2", count: 8, icon: "" },
+    ]);
+
+    assert.deepEqual(tabs.map((t) => t.label), [
+      "Elementary School",
+      "High School",
+      "College",
+      "University",
+    ]);
+    assert.deepEqual(tabs.map((t) => t.count), [12, 8, 5, 2]);
+  });
+
+  it("drops the levels that are not tiers", () => {
+    // 0 is a capacity upgrade with no tier of its own and 5 is the outside
+    // connection. The backend already filters them; this is the second wall.
+    const tabs = schoolTierTabs([
+      { id: "0", count: 3, icon: "" },
+      { id: "2", count: 8, icon: "" },
+    ]);
+
+    assert.deepEqual(tabs.map((t) => t.level), [2]);
+  });
+
+  it("survives a missing binding", () => {
+    assert.deepEqual(schoolTierTabs(null), []);
+    assert.deepEqual(schoolTierTabs(undefined), []);
+  });
+
+  it("uses the same words as the grouping dimension", () => {
+    // Two copies of the game's SchoolLevel wording, one per domain module,
+    // because the modules deliberately do not import each other by value.
+    // This is what stops them drifting.
+    for (const tier of SCHOOL_TIERS) {
+      assert.equal(schoolTierLabel(tier.level), tier.label);
+    }
   });
 });

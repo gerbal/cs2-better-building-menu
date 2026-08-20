@@ -69,7 +69,12 @@ namespace FindItBuildingMenu.Domain
 		// The development-tree branch the menu strip is narrowed to, or empty.
 		// A name rather than an index: branches are per-service and have no
 		// ordinal, unlike milestones.
-		string DevTreeBranch = "")
+		string DevTreeBranch = "",
+		// The school tier the education menu's strip is narrowed to, or
+		// AnyMilestone's sibling -1. SchoolData.m_EducationLevel is 1-based, so
+		// 0 is a real value (a capacity upgrade with no tier) and cannot be the
+		// sentinel.
+		int SchoolTier = -1)
 	{
 		/// <summary>The <see cref="UnlockMilestone"/> value that narrows nothing.</summary>
 		public const int AnyMilestone = -1;
