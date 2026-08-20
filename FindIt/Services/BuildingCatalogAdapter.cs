@@ -170,6 +170,18 @@ namespace FindItBuildingMenu.Services
 				throw new ArgumentNullException(nameof(query));
 			}
 
+			// Nothing to choose when vanilla already split the menu: its
+			// categories are the strip, and the fallback is not drawn. Reported
+			// as empty rather than "the axis we would have picked", because the
+			// UI reads this to decide what the menu is organised BY — and on
+			// Education, which has categories, a would-be answer put the Group
+			// by picker on Development while the strip showed Education and
+			// Research.
+			if (GetMenuCategoryCounts(query).Count > 1)
+			{
+				return string.Empty;
+			}
+
 			var best = string.Empty;
 			var bestLargest = int.MaxValue;
 
@@ -228,12 +240,61 @@ namespace FindItBuildingMenu.Services
 				.Select(group => new MenuBranchCount(
 					group.Key,
 					group.Count(),
-					axis == StripAxes.Development
-						? group.Select(entry => entry.DevTreeBranchIcon).FirstOrDefault(icon => !string.IsNullOrEmpty(icon)) ?? string.Empty
-						: string.Empty))
+					TabIcon(group, axis == StripAxes.Development)))
 				.OrderByDescending(count => count.Count)
 				.ThenBy(count => count.Id, StringComparer.Ordinal)
 				.ToArray();
+		}
+
+		/// <summary>The progression screen's badge for a milestone, if any.</summary>
+		private static string MilestoneIcon(int milestone)
+		{
+			var icons = PrefabIndexingSystem.GetMilestoneIcons();
+
+			return milestone >= 0 && milestone < icons.Length ? icons[milestone] ?? string.Empty : string.Empty;
+		}
+
+		/// <summary>
+		/// The glyph a tab draws.
+		/// </summary>
+		/// <remarks>
+		/// An AUTHORED icon first, where the axis has one: the development tree
+		/// ships an icon per node and that is the art the player already
+		/// associates with the unlock.
+		///
+		/// Otherwise a REPRESENTATIVE asset's thumbnail. "Buildings",
+		/// "Networks" and the four school levels are ours or the simulation's
+		/// words, and the game ships no glyph for any of them — but a tab
+		/// showing a bare count is a tab with nothing on it, and words on this
+		/// row were reported as disruptive the first time. A water pipe is a
+		/// serviceable picture of "Networks"; an elementary school is a
+		/// serviceable picture of Elementary.
+		///
+		/// Deterministic: the menu's own priority, then name, so the glyph does
+		/// not change when the player re-sorts. Falls back to the fallback
+		/// thumbnail, which is what the grid draws for the same asset.
+		/// </remarks>
+		private static string TabIcon(IEnumerable<BuildingCatalogEntry> group, bool authored)
+		{
+			var entries = group.ToArray();
+
+			if (authored)
+			{
+				var icon = entries
+					.Select(entry => entry.DevTreeBranchIcon)
+					.FirstOrDefault(value => !string.IsNullOrEmpty(value));
+
+				if (!string.IsNullOrEmpty(icon))
+				{
+					return icon!;
+				}
+			}
+
+			return entries
+				.OrderBy(entry => entry.UiCategoryPriority)
+				.ThenBy(entry => entry.Name, StringComparer.Ordinal)
+				.Select(entry => !string.IsNullOrEmpty(entry.Thumbnail) ? entry.Thumbnail : entry.FallbackThumbnail)
+				.FirstOrDefault(value => !string.IsNullOrEmpty(value)) ?? string.Empty;
 		}
 
 		/// <summary>
@@ -266,12 +327,12 @@ namespace FindItBuildingMenu.Services
 				.Select(group => new MenuBranchCount(
 					group.Key.ToString(System.Globalization.CultureInfo.InvariantCulture),
 					group.Count(),
-					string.Empty))
+					TabIcon(group, authored: false)))
 				.OrderBy(count => count.Id, StringComparer.Ordinal)
 				.ToArray();
 		}
 
-		public IReadOnlyList<MenuMilestoneCount> GetMenuMilestoneCounts(BuildingCatalogQuery query)
+		public IReadOnlyList<MenuBranchCount> GetMenuMilestoneCounts(BuildingCatalogQuery query)
 		{
 			if (query is null)
 			{
@@ -284,8 +345,17 @@ namespace FindItBuildingMenu.Services
 				.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), acrossMilestones)
 				.GroupBy(entry => entry.UnlockMilestone)
 				.Where(group => group.Key >= 0)
-				.Select(group => new MenuMilestoneCount(group.Key, group.Count()))
-				.OrderBy(count => count.Milestone)
+				.Select(group => new MenuBranchCount(
+					group.Key.ToString(System.Globalization.CultureInfo.InvariantCulture),
+					group.Count(),
+					// The milestone's own badge where the game has one. It has
+					// none for index 0, which is the ungated bucket rather than
+					// a milestone, so that tab falls back to a representative
+					// asset like every other iconless tab here.
+					MilestoneIcon(group.Key) is { Length: > 0 } badge
+						? badge
+						: TabIcon(group, authored: false)))
+				.OrderBy(count => int.Parse(count.Id, System.Globalization.CultureInfo.InvariantCulture))
 				.ToArray();
 		}
 

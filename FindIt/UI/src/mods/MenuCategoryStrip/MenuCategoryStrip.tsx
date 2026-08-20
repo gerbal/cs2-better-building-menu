@@ -18,10 +18,8 @@ import {
   milestoneTabs,
   schoolTierTabs,
   shouldShowMilestoneTabs,
-  type MenuMilestoneCount,
 } from "domain/menuProgression";
 import { isEducationMenu, milestoneLabel } from "domain/buildingGroups";
-import { STRIP_AXIS_LABELS } from "domain/menuProgression";
 import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 import styles from "./menuCategoryStrip.module.scss";
@@ -37,7 +35,7 @@ const BuildingLensMenuCategoryCounts$ = bindValue<MenuCategoryCount[]>(
   "BuildingLensMenuCategoryCounts",
   []
 );
-const BuildingLensMenuMilestoneCounts$ = bindValue<MenuMilestoneCount[]>(
+const BuildingLensMenuMilestoneCounts$ = bindValue<MenuBranchCount[]>(
   mod.id,
   "BuildingLensMenuMilestoneCounts",
   []
@@ -48,7 +46,6 @@ const BuildingLensMenuMilestone$ = bindValue<number>(
   ANY_MILESTONE
 );
 const BuildingLensMilestones$ = bindValue<string[]>(mod.id, "BuildingLensMilestones", []);
-const BuildingLensMilestoneIcons$ = bindValue<string[]>(mod.id, "BuildingLensMilestoneIcons", []);
 const BuildingLensMenuSchoolTierCounts$ = bindValue<MenuBranchCount[]>(
   mod.id,
   "BuildingLensMenuSchoolTierCounts",
@@ -86,7 +83,6 @@ export const MenuCategoryStrip = () => {
   const milestoneCounts = useValue(BuildingLensMenuMilestoneCounts$) ?? [];
   const selectedMilestone = useValue(BuildingLensMenuMilestone$) ?? ANY_MILESTONE;
   const milestoneNames = useValue(BuildingLensMilestones$) ?? [];
-  const milestoneIcons = useValue(BuildingLensMilestoneIcons$) ?? [];
   const schoolTierCounts = useValue(BuildingLensMenuSchoolTierCounts$) ?? [];
   const selectedSchoolTier = useValue(BuildingLensMenuSchoolTier$) ?? -1;
   const menu = useValue(BuildingLensMenu$) ?? "";
@@ -153,33 +149,6 @@ export const MenuCategoryStrip = () => {
   // menu to the next, and the row cannot be learned. One small label per
   // segment, not per tab: names on every tab were what made this row
   // unreadable the first time.
-  // `||`, not `??`. A key the active dictionary has not got comes back as an
-  // EMPTY STRING rather than null, so `??` keeps it and the label renders as
-  // nothing — which is exactly what happened: the strings were in Locale.json
-  // but the C# side only reads that at mod init, so a UI-only reload had the
-  // component asking for keys the running game had never loaded.
-  const segmentLabel = (axis: string) =>
-    translate(`Tooltip.LABEL[FindItBuildingMenu.StripAxis_${axis}]`, null)?.trim() ||
-    STRIP_AXIS_LABELS[axis] ||
-    "";
-  //
-  // Vanilla's categories are the one axis that needs no introduction — they
-  // are the menu's own, and every menu that has them shows them — so that
-  // segment is only labelled when a second segment makes the row ambiguous.
-  // Every other axis is labelled ALWAYS, including when it is alone: the
-  // fallback axis is CHOSEN per menu, so an unlabelled row of tabs means the
-  // development tree on Electricity and buildings-against-pipes on Water with
-  // nothing on screen to say which.
-  const segments = [showCategories, showBranches, showTiers, showSchoolTiers].filter(Boolean).length;
-  const Label = ({ axis }: { axis: string }) => {
-    const label = segmentLabel(axis);
-    if (!label || (axis === "category" && segments < 2)) return null;
-
-    return <span className={styles.segmentLabel}>{label}</span>;
-  };
-  const branchTotal = stripTabs.reduce((total, branch) => total + branch.count, 0);
-  const withBranchCount = (text: string, id: string) =>
-    `${text} (${id === "" ? branchTotal : categoryCount(stripTabs, id) ?? 0})`;
   // The count rides in the tooltip whatever the width, because a narrow strip
   // still leaves the player asking how much is behind a glyph.
   const withCount = (text: string, id: string) => {
@@ -187,13 +156,16 @@ export const MenuCategoryStrip = () => {
 
     return n === null ? text : `${text} (${n})`;
   };
+  const branchTotal = stripTabs.reduce((total, branch) => total + branch.count, 0);
+  const withBranchCount = (text: string, id: string) =>
+    `${text} (${id === "" ? branchTotal : categoryCount(stripTabs, id) ?? 0})`;
+
   const { ToolButton, toolButtonTheme, FOCUS_DISABLED } = VanillaComponentResolver.instance;
 
   return (
     <div className={styles.strip}>
       {showCategories && (
         <>
-          <Label axis="category" />
       {/* One more tab than vanilla has. Vanilla always opens on a category and
           offers no way back out to the whole menu; the lens can show the menu
           entire, which is the thing it can do that the vanilla menu cannot. */}
@@ -256,10 +228,6 @@ export const MenuCategoryStrip = () => {
 
       {showBranches && (
         <>
-          {/* Always labelled, even alone: this segment's axis is CHOSEN per
-              menu, so without a word the same row of tabs is the development
-              tree on Electricity and buildings-against-pipes on Water. */}
-          <Label axis={stripAxis} />
           <ToolButton
             selected={selectedStripTab === ""}
             tooltip={withBranchCount(allLabel, "")}
@@ -280,10 +248,9 @@ export const MenuCategoryStrip = () => {
             </span>
           </ToolButton>
 
-          {/* Worded, like the tier tabs and for the same reason: the game ships
-              no icon for a development-tree branch. There are two or three per
-              service and the names are short ("Hospital", "Police
-              Headquarters"), so the row still reads as one line. */}
+          {/* Iconed where the axis has icons, worded where it does not — see
+              the tab body below. Either way there are only two or three per
+              menu, so the row stays one line. */}
           {stripTabs.map((branch) => (
             <ToolButton
               key={branch.id}
@@ -295,15 +262,17 @@ export const MenuCategoryStrip = () => {
               className={classNames(
                 toolButtonTheme.button,
                 styles.tab,
-                branch.icon ? undefined : styles.tierTab,
+
                 selectedStripTab === branch.id && styles.tabSelected
               )}
               aria-label={withBranchCount(branch.id, branch.id)}
             >
-              {/* Glyph and count, name in the tooltip — the treatment the
-                  category tabs already use, and the reason the icons were
-                  worth resolving: worded tabs on this row were reported as
-                  disruptive, and the dev tree ships an icon per node. */}
+              {/* Glyph and count when there IS a glyph, which is the
+                  treatment the category tabs use and why the dev tree's icons
+                  were worth resolving. The asset-type axis has none — the game
+                  ships no icon for "Buildings" or "Networks" — and an iconless
+                  tab showing only a number is a tab with nothing on it, so
+                  that axis falls back to its word. */}
               <span className={styles.tabCount}>{branch.count}</span>
             </ToolButton>
           ))}
@@ -313,7 +282,6 @@ export const MenuCategoryStrip = () => {
       {showSchoolTiers && (
         <>
           {(showCategories || showBranches) && <div className={styles.segmentRule} />}
-          <Label axis="schoolTier" />
           <ToolButton
             selected={selectedSchoolTier < 0}
             tooltip={`${anyTierLabel} (${schoolTiers.reduce((total: number, t) => total + t.count, 0)})`}
@@ -339,20 +307,16 @@ export const MenuCategoryStrip = () => {
               selected={selectedSchoolTier === tier.level}
               tooltip={`${tier.label} (${tier.count})`}
               onSelect={() => chooseSchoolTier(tier.level)}
-              src=""
+              src={tier.icon || ""}
               focusKey={FOCUS_DISABLED}
               className={classNames(
                 toolButtonTheme.button,
                 styles.tab,
-                styles.tierTab,
                 selectedSchoolTier === tier.level && styles.tabSelected
               )}
               aria-label={`${tier.label} (${tier.count})`}
             >
-              <span className={styles.tierLabel}>
-                {tier.label}
-                <span className={styles.tierCount}>{tier.count}</span>
-              </span>
+              <span className={styles.tabCount}>{tier.count}</span>
             </ToolButton>
           ))}
         </>
@@ -373,7 +337,6 @@ export const MenuCategoryStrip = () => {
       {showTiers && (
         <>
           {(showCategories || showBranches) && <div className={styles.segmentRule} />}
-          <Label axis="progression" />
           <ToolButton
             selected={isMilestoneSelected(ANY_MILESTONE, selectedMilestone)}
             tooltip={tierTooltip(anyTierLabel, totalTierCount)}
@@ -397,24 +360,17 @@ export const MenuCategoryStrip = () => {
               selected={isMilestoneSelected(tier.milestone, selectedMilestone)}
               tooltip={tierTooltip(tier.label, tier.count)}
               onSelect={() => chooseTier(tier.milestone)}
-              src={milestoneIcons[tier.milestone] || ""}
+              src={tier.icon || ""}
               focusKey={FOCUS_DISABLED}
               className={classNames(
                 toolButtonTheme.button,
                 styles.tab,
-                milestoneIcons[tier.milestone] ? undefined : styles.tierTab,
+
                 isMilestoneSelected(tier.milestone, selectedMilestone) && styles.tabSelected
               )}
               aria-label={tierTooltip(tier.label, tier.count)}
             >
-              {milestoneIcons[tier.milestone] ? (
-                <span className={styles.tabCount}>{tier.count}</span>
-              ) : (
-                <span className={styles.tierLabel}>
-                  {tier.label}
-                  <span className={styles.tierCount}>{tier.count}</span>
-                </span>
-              )}
+              <span className={styles.tabCount}>{tier.count}</span>
             </ToolButton>
           ))}
         </>

@@ -37,6 +37,7 @@ const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "BuildingCatalo
 const BuildingCatalogSortDescending$ = bindValue<boolean>(mod.id, "BuildingCatalogSortDescending");
 const BuildingLensSection$ = bindValue<string>(mod.id, "BuildingLensSection", "AllBuildings");
 const BuildingLensMenu$ = bindValue<string>(mod.id, "BuildingLensMenu", "");
+const BuildingLensStripAxis$ = bindValue<string>(mod.id, "BuildingLensStripAxis", "");
 const BuildingLensMenuCategories$ = bindValue<unknown[]>(mod.id, "BuildingLensMenuCategories", []);
 const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch");
 const BuildingLensFacets$ = bindValue<BuildingLensFacetState | null>(mod.id, "BuildingLensFacets", null);
@@ -86,6 +87,7 @@ export const LensControlPane = () => {
   const section = useValue(BuildingLensSection$);
   const menu = useValue(BuildingLensMenu$) ?? "";
   const menuHasCategories = (useValue(BuildingLensMenuCategories$) ?? []).length > 0;
+  const stripAxis = useValue(BuildingLensStripAxis$) ?? "";
   const currentSearch = useValue(CurrentSearch$);
   const facets = useValue(BuildingLensFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
@@ -98,7 +100,7 @@ export const LensControlPane = () => {
   const [chosenGroupBy, setChosenGroupBy] = useLensChoice(LENS_GROUP_KEY, "");
   const groupBy: GroupDimensionId = isGroupDimension(chosenGroupBy)
     ? chosenGroupBy
-    : defaultGroupDimensionFor(section, menuHasCategories);
+    : defaultGroupDimensionFor(section, menuHasCategories, stripAxis);
 
   const sortPresentation = getBuildingLensSortPresentation({ column: sortColumn, descending });
   const label = (key: string, fallback: string) => translate(key, fallback) ?? fallback;

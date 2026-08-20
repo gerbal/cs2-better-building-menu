@@ -21,15 +21,15 @@ describe("menu progression strip", () => {
   it("names each tier out of the published milestone table", () => {
     const tabs = milestoneTabs(
       [
-        { milestone: 0, count: 12 },
-        { milestone: 2, count: 4 },
+        { id: "0", count: 12, icon: "" },
+        { id: "2", count: 4, icon: "" },
       ],
       label
     );
 
     assert.deepEqual(tabs, [
-      { milestone: 0, label: "Tiny Village", count: 12 },
-      { milestone: 2, label: "Grand Village", count: 4 },
+      { milestone: 0, label: "Tiny Village", count: 12, icon: "" },
+      { milestone: 2, label: "Grand Village", count: 4, icon: "" },
     ]);
   });
 
@@ -38,9 +38,9 @@ describe("menu progression strip", () => {
     // is only for stability. A strip running 3, 0, 1 would misstate it.
     const tabs = milestoneTabs(
       [
-        { milestone: 3, count: 1 },
-        { milestone: 0, count: 9 },
-        { milestone: 1, count: 5 },
+        { id: "3", count: 1, icon: "" },
+        { id: "0", count: 9, icon: "" },
+        { id: "1", count: 5, icon: "" },
       ],
       label
     );
@@ -52,16 +52,16 @@ describe("menu progression strip", () => {
     // The names and the counts are two bindings and land on separate frames.
     // Dropping the tab until the name arrives would make the strip flicker its
     // width on every menu change.
-    const tabs = milestoneTabs([{ milestone: 5, count: 3 }], (m) => milestoneLabel(m, []));
+    const tabs = milestoneTabs([{ id: "5", count: 3, icon: "" }], (m) => milestoneLabel(m, []));
 
-    assert.deepEqual(tabs, [{ milestone: 5, label: "Milestone 5", count: 3 }]);
+    assert.deepEqual(tabs, [{ milestone: 5, label: "Milestone 5", count: 3, icon: "" }]);
   });
 
   it("drops entries the backend could not place in the progression", () => {
     const tabs = milestoneTabs(
       [
-        { milestone: -1, count: 2 },
-        { milestone: 1, count: 3 },
+        { id: "-1", count: 2, icon: "" },
+        { id: "1", count: 3, icon: "" },
       ],
       label
     );
@@ -78,10 +78,10 @@ describe("menu progression strip", () => {
     // Same rule the category strip follows, and it bites harder here: every
     // menu has a progression axis, and the small ones sit entirely in one tier.
     assert.equal(shouldShowMilestoneTabs([]), false);
-    assert.equal(shouldShowMilestoneTabs(milestoneTabs([{ milestone: 0, count: 8 }], label)), false);
+    assert.equal(shouldShowMilestoneTabs(milestoneTabs([{ id: "0", count: 8, icon: "" }], label)), false);
     assert.equal(
       shouldShowMilestoneTabs(
-        milestoneTabs([{ milestone: 0, count: 8 }, { milestone: 1, count: 2 }], label)
+        milestoneTabs([{ id: "0", count: 8, icon: "" }, { id: "1", count: 2, icon: "" }], label)
       ),
       true
     );
