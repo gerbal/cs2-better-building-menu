@@ -66,10 +66,13 @@ namespace FindItBuildingMenu.Domain
 		// constructor cannot see its own type's constants. Query_DefaultsToAny
 		// Milestone pins the two together so they cannot drift apart silently.
 		int UnlockMilestone = -1,
-		// The development-tree branch the menu strip is narrowed to, or empty.
-		// A name rather than an index: branches are per-service and have no
-		// ordinal, unlike milestones.
-		string DevTreeBranch = "",
+		// The fallback strip's axis and the tab picked on it. Two fields
+		// because the axis decides WHICH property the tab is matched against:
+		// the strip picks whichever axis cuts the menu best, so the same tab
+		// string means a development branch on one menu and an asset type on
+		// another. See BuildingCatalogAdapter.GetStripAxis.
+		string StripAxis = "",
+		string StripTab = "",
 		// The school tier the education menu's strip is narrowed to, or
 		// AnyMilestone's sibling -1. SchoolData.m_EducationLevel is 1-based, so
 		// 0 is a real value (a capacity upgrade with no tier) and cannot be the

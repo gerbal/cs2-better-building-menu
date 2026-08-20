@@ -61,7 +61,8 @@ namespace FindItBuildingMenu.Systems
 				UiMenu = _buildingLensUiMenu,
 				UiCategory = _buildingLensUiCategory,
 				UnlockMilestone = _buildingLensUnlockMilestone,
-				DevTreeBranch = _buildingLensDevTreeBranch,
+				StripAxis = _buildingLensStripAxis,
+				StripTab = _buildingLensStripTab,
 				SchoolTier = _buildingLensSchoolTier,
 				// Keep the successor lens in lockstep with FindIt's common
 				// parking filters. The legacy grid owns the full filter pipeline;
@@ -152,8 +153,13 @@ namespace FindItBuildingMenu.Systems
 				_buildingCatalogAdapter.GetMenuCategoryCounts(_buildingCatalogQuery).ToArray();
 			_BuildingLensMenuMilestoneCounts.Value =
 				_buildingCatalogAdapter.GetMenuMilestoneCounts(_buildingCatalogQuery).ToArray();
-			_BuildingLensMenuBranchCounts.Value =
-				_buildingCatalogAdapter.GetMenuBranchCounts(_buildingCatalogQuery).ToArray();
+			// The axis is resolved BEFORE the tabs and stored, because the query
+			// carries it: the predicate has to match tabs against the same axis
+			// the tabs were counted on.
+			_buildingLensStripAxis = _buildingCatalogAdapter.GetStripAxis(_buildingCatalogQuery);
+			_BuildingLensStripAxisBinding.Value = _buildingLensStripAxis;
+			_BuildingLensStripTabs.Value =
+				_buildingCatalogAdapter.GetStripTabs(_buildingCatalogQuery).ToArray();
 			_BuildingLensMenuSchoolTierCounts.Value =
 				_buildingCatalogAdapter.GetMenuSchoolTierCounts(_buildingCatalogQuery).ToArray();
 			_BuildingLensLegacyFilters.Value = CaptureLegacyFilters().Describe().ToArray();

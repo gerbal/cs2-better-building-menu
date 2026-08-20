@@ -139,39 +139,98 @@ namespace FindItBuildingMenu.Services
 		/// meaning, and a tier strip running out of order would misstate it.
 		/// </remarks>
 		/// <summary>
-		/// How many assets each of the menu's development-tree tabs holds.
+		/// Which axis the fallback strip should use for this menu, and its tabs.
 		/// </summary>
 		/// <remarks>
-		/// The strip's fallback axis, and the reason it exists: vanilla splits
-		/// Roads into nineteen categories and Electricity into one, so on the
-		/// service menus the category strip had nothing to draw. Those same
-		/// menus are the ones the development tree organises.
+		/// Vanilla's categories are the reference and are handled elsewhere;
+		/// this is only for the menus vanilla never split, where there is no
+		/// authored answer and we have to pick one.
 		///
-		/// Same axis rule as the other two counters — the branch's own filter
-		/// is dropped so the tabs keep counting each other.
+		/// CHOSEN BY FIT, not by a fixed order. The strip exists to cut a large
+		/// set down, so the axis that cuts most evenly is the one worth drawing
+		/// — measured as the smallest largest-bucket. A fixed chain gets this
+		/// wrong in both directions on real data: the development tree splits
+		/// Electricity 8/4/3 and Garbage 2/2/1, but Water only 9/2, where
+		/// buildings-against-pipes is 8/3.
 		///
-		/// Ordered by count, then name. Branches have no ordinal the way
-		/// milestones do, and the tree's own layout order is a screen position
-		/// rather than a ranking, so the biggest bucket leading is the most
-		/// useful stable order.
+		/// Balance is the TIEBREAK, not the criterion. Both candidates are
+		/// meaningful cuts the game itself authored; a merely even split of
+		/// something meaningless would be worse than a lopsided honest one,
+		/// which is why the candidate list is short and hand-picked rather than
+		/// every field that happens to vary.
+		///
+		/// An axis that yields fewer than two groups is not a choice and is
+		/// dropped, which is also what leaves a single-tree menu with no strip
+		/// rather than one tab.
 		/// </remarks>
-		public IReadOnlyList<MenuBranchCount> GetMenuBranchCounts(BuildingCatalogQuery query)
+		public string GetStripAxis(BuildingCatalogQuery query)
 		{
 			if (query is null)
 			{
 				throw new ArgumentNullException(nameof(query));
 			}
 
-			var acrossBranches = query with { DevTreeBranch = string.Empty };
+			var best = string.Empty;
+			var bestLargest = int.MaxValue;
+
+			foreach (var axis in new[] { StripAxes.Development, StripAxes.AssetType })
+			{
+				var tabs = StripTabsFor(query, axis);
+
+				if (tabs.Count < 2)
+				{
+					continue;
+				}
+
+				var largest = tabs.Max(tab => tab.Count);
+
+				if (largest < bestLargest)
+				{
+					best = axis;
+					bestLargest = largest;
+				}
+			}
+
+			return best;
+		}
+
+		/// <summary>The fallback strip's tabs, on whichever axis it chose.</summary>
+		public IReadOnlyList<MenuBranchCount> GetStripTabs(BuildingCatalogQuery query)
+		{
+			if (query is null)
+			{
+				throw new ArgumentNullException(nameof(query));
+			}
+
+			var axis = GetStripAxis(query);
+
+			return axis.Length == 0
+				? Array.Empty<MenuBranchCount>()
+				: StripTabsFor(query, axis);
+		}
+
+		/// <summary>
+		/// The tabs one axis would draw, counted with its own filter dropped.
+		/// </summary>
+		/// <remarks>
+		/// Same axis rule as every other counter here: the tab's own narrowing
+		/// comes off so the tabs keep counting each other, and everything else
+		/// — the search, the facets, the selected category — stays on.
+		/// </remarks>
+		private IReadOnlyList<MenuBranchCount> StripTabsFor(BuildingCatalogQuery query, string axis)
+		{
+			var acrossTabs = query with { StripTab = string.Empty };
 
 			return BuildingCatalogQueryEngine
-				.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), acrossBranches)
-				.GroupBy(entry => entry.DevTreeBranch ?? string.Empty)
+				.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), acrossTabs)
+				.GroupBy(entry => BuildingCatalogQueryEngine.StripValue(entry, axis))
 				.Where(group => group.Key.Length > 0)
 				.Select(group => new MenuBranchCount(
 					group.Key,
 					group.Count(),
-					group.Select(entry => entry.DevTreeBranchIcon).FirstOrDefault(icon => !string.IsNullOrEmpty(icon)) ?? string.Empty))
+					axis == StripAxes.Development
+						? group.Select(entry => entry.DevTreeBranchIcon).FirstOrDefault(icon => !string.IsNullOrEmpty(icon)) ?? string.Empty
+						: string.Empty))
 				.OrderByDescending(count => count.Count)
 				.ThenBy(count => count.Id, StringComparer.Ordinal)
 				.ToArray();

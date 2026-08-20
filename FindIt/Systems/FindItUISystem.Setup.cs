@@ -33,9 +33,11 @@ namespace FindItBuildingMenu.Systems
 		// so carrying one into a new menu would open it already narrowed to a
 		// tier the player never picked.
 		private int _buildingLensUnlockMilestone = BuildingCatalogQuery.AnyMilestone;
-		// The development-tree tab, or empty. Cleared with the category for the
-		// same reason: a branch belongs to one service's tree.
-		private string _buildingLensDevTreeBranch = string.Empty;
+		// The fallback strip's tab, or empty, and the axis it was picked on.
+		// Both cleared with the category: an axis is chosen per menu, so a tab
+		// carried across menus can name something the new one has no axis for.
+		private string _buildingLensStripTab = string.Empty;
+		private string _buildingLensStripAxis = string.Empty;
 		// The education menu's tier tab, or -1. Cleared with the rest of the
 		// scope; a level means nothing outside the menu that teaches.
 		private int _buildingLensSchoolTier = -1;
@@ -127,11 +129,13 @@ namespace FindItBuildingMenu.Systems
 		// _BuildingLensMilestonesBinding; see MenuMilestoneCount.
 		private ValueBindingHelper<MenuMilestoneCount[]> _BuildingLensMenuMilestoneCounts = null!;
 		private ValueBindingHelper<int> _BuildingLensMenuMilestoneBinding = null!;
-		// The strip's fallback axis for menus vanilla gives no categories.
-		// MenuCategoryCount rather than a type of its own: a branch tab is an
-		// id and a count, which is exactly what that record already is.
-		private ValueBindingHelper<MenuBranchCount[]> _BuildingLensMenuBranchCounts = null!;
-		private ValueBindingHelper<string> _BuildingLensMenuBranchBinding = null!;
+		// The strip's fallback axis for menus vanilla gives no categories: the
+		// tabs, which tab is picked, and WHICH AXIS they are — published so the
+		// row can say so, because the axis varies per menu and a tab row whose
+		// meaning changes silently is not learnable.
+		private ValueBindingHelper<MenuBranchCount[]> _BuildingLensStripTabs = null!;
+		private ValueBindingHelper<string> _BuildingLensStripTabBinding = null!;
+		private ValueBindingHelper<string> _BuildingLensStripAxisBinding = null!;
 		// The tier segment's other axis. Education navigates by level, not by
 		// the milestone the school unlocked at.
 		private ValueBindingHelper<MenuBranchCount[]> _BuildingLensMenuSchoolTierCounts = null!;
@@ -291,12 +295,13 @@ namespace FindItBuildingMenu.Systems
 				"SetBuildingLensMenuMilestone",
 				BuildingCatalogQuery.AnyMilestone,
 				SetBuildingLensMenuMilestone);
-			_BuildingLensMenuBranchCounts = CreateBinding("BuildingLensMenuBranchCounts", Array.Empty<MenuBranchCount>());
-			_BuildingLensMenuBranchBinding = CreateBinding(
-				"BuildingLensMenuBranch",
-				"SetBuildingLensMenuBranch",
+			_BuildingLensStripTabs = CreateBinding("BuildingLensStripTabs", Array.Empty<MenuBranchCount>());
+			_BuildingLensStripAxisBinding = CreateBinding("BuildingLensStripAxis", string.Empty);
+			_BuildingLensStripTabBinding = CreateBinding(
+				"BuildingLensStripTab",
+				"SetBuildingLensStripTab",
 				string.Empty,
-				SetBuildingLensMenuBranch);
+				SetBuildingLensStripTab);
 			_BuildingLensMenuSchoolTierCounts = CreateBinding("BuildingLensMenuSchoolTierCounts", Array.Empty<MenuBranchCount>());
 			_BuildingLensMenuSchoolTierBinding = CreateBinding(
 				"BuildingLensMenuSchoolTier",
