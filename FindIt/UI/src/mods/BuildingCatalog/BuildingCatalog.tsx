@@ -115,6 +115,7 @@ const LensDefaultToTable$ = bindValue<boolean>(mod.id, "BuildingLensDefaultToTab
 const BuildingLensSection$ = bindValue<string>(mod.id, "BuildingLensSection", "AllBuildings");
 // Non-empty means the lens is standing in for a vanilla menu that has a tab
 // strip, which decides the default grouping.
+const BuildingLensStripAxis$ = bindValue<string>(mod.id, "BuildingLensStripAxis", "");
 const BuildingLensMenuCategories$ = bindValue<unknown[]>(mod.id, "BuildingLensMenuCategories", []);
 
 const LENS_VIEW_MODE_KEY = "viewMode";
@@ -182,6 +183,7 @@ export const BuildingCatalogComponent = () => {
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
   const section = useValue(BuildingLensSection$);
   const menuHasCategories = (useValue(BuildingLensMenuCategories$) ?? []).length > 0;
+  const stripAxis = useValue(BuildingLensStripAxis$) ?? "";
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
   // Grid by default: recognising a thumbnail is the fast path back to the map,
   // and the table is for the rarer moment when you are genuinely comparing.
@@ -213,7 +215,7 @@ export const BuildingCatalogComponent = () => {
   const [chosenGroupBy] = useLensChoice(LENS_GROUP_KEY, "");
   const groupBy: GroupDimensionId = isGroupDimension(chosenGroupBy)
     ? chosenGroupBy
-    : defaultGroupDimensionFor(section, menuHasCategories);
+    : defaultGroupDimensionFor(section, menuHasCategories, stripAxis);
   // The dimension is also the query's primary sort key, so the backend has to
   // reorder — grouping the page here alone would split a group across a page
   // boundary and the heading would stop describing the rows under it. This

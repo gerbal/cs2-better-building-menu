@@ -147,7 +147,25 @@ export function groupDimensionsFor(
 export function defaultGroupDimensionFor(
   section: string | null | undefined,
   menuHasCategories: boolean = false,
+  stripAxis: string = "",
 ): GroupDimensionId {
+  // The strip and the headings answer the same question, so they should not
+  // open on different answers. The strip picks its axis per menu — vanilla's
+  // categories where they exist, otherwise whichever of the development tree
+  // or buildings-against-networks cuts that menu best — and the grouping now
+  // follows it, so arriving in a menu shows one division rather than two.
+  //
+  // "category" is this module's Buildings/Networks/Service Buildings, which is
+  // the same cut the strip calls assetType; the names differ because the
+  // strip's axis ids are the backend's and this module's are the picker's.
+  if (stripAxis === "development") {
+    return "development";
+  }
+
+  if (stripAxis === "assetType") {
+    return "category";
+  }
+
   // Inside a vanilla menu, the game's own categories win — this is master's
   // behaviour (4ce4ba5), restored.
   //

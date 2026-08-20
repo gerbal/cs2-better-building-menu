@@ -25,6 +25,7 @@ export interface MilestoneTab {
   milestone: number;
   label: string;
   count: number;
+  icon: string;
 }
 
 /**
@@ -36,7 +37,7 @@ export interface MilestoneTab {
  * of order, which is cheap at ~20 entries.
  */
 export function milestoneTabs(
-  counts: readonly MenuMilestoneCount[] | null | undefined,
+  counts: readonly MenuBranchCount[] | null | undefined,
   // Passed in rather than imported. The naming rule lives in buildingGroups,
   // beside the progression GROUP dimension that uses the same one, and the
   // domain modules here are deliberately import-free of each other: the test
@@ -45,13 +46,18 @@ export function milestoneTabs(
   label: (milestone: number) => string
 ): MilestoneTab[] {
   return (counts ?? [])
-    .filter((entry) => typeof entry?.milestone === "number" && entry.milestone >= 0)
-    .slice()
+    .map((entry) => ({
+      milestone: Number(entry.id),
+      count: entry.count ?? 0,
+      icon: entry.icon ?? "",
+    }))
+    .filter((entry) => Number.isFinite(entry.milestone) && entry.milestone >= 0)
     .sort((a, b) => a.milestone - b.milestone)
     .map((entry) => ({
       milestone: entry.milestone,
       label: label(entry.milestone),
-      count: entry.count ?? 0,
+      count: entry.count,
+      icon: entry.icon,
     }));
 }
 
@@ -78,6 +84,7 @@ export interface SchoolTierTab {
   level: number;
   label: string;
   count: number;
+  icon: string;
 }
 
 /**
@@ -93,13 +100,14 @@ export function schoolTierTabs(
   counts: readonly MenuBranchCount[] | null | undefined
 ): SchoolTierTab[] {
   return (counts ?? [])
-    .map((entry) => ({ level: Number(entry.id), count: entry.count ?? 0 }))
+    .map((entry) => ({ level: Number(entry.id), count: entry.count ?? 0, icon: entry.icon ?? "" }))
     .filter((entry) => Number.isFinite(entry.level) && entry.level >= 1)
     .sort((a, b) => a.level - b.level)
     .map((entry) => ({
       level: entry.level,
       label: schoolTierLabel(entry.level),
       count: entry.count,
+      icon: entry.icon,
     }));
 }
 
@@ -126,19 +134,3 @@ export function schoolTierLabel(level: number): string {
       return `Level ${level}`;
   }
 }
-
-/**
- * What the row calls each of its segments.
- *
- * Keyed by the axis id the backend publishes, so the strip never has to guess
- * which question its tabs are answering. Fallbacks: the component asks
- * translate() for a key of the same name first, and these are the English it
- * lands on when a locale has nothing.
- */
-export const STRIP_AXIS_LABELS: Record<string, string> = {
-  category: "Category",
-  development: "Development",
-  assetType: "Type",
-  progression: "Progression",
-  schoolTier: "Level",
-};

@@ -112,16 +112,3 @@
   margin-right: 3rem;
   background-color: rgba(255, 255, 255, 0.18);
 }
-
-// Names the question a segment's tabs answer. Small and muted: it is a
-// signpost, not a control, and the row has to stay one line.
-.segmentLabel {
-  flex: 0 0 auto;
-  margin-right: 5rem;
-  color: var(--menuText2Normal);
-  font-size: var(--fontSizeXS);
-  text-transform: uppercase;
-  letter-spacing: 0.5rem;
-  white-space: nowrap;
-  pointer-events: none;
-}
