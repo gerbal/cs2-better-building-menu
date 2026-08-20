@@ -106,6 +106,7 @@ namespace FindItBuildingMenu.Domain
 		/// PrefabIndex.DevTreeBranch for why the branch and not the node.
 		/// </remarks>
 		string? DevTreeBranch = null,
+		string? DevTreeBranchIcon = null,
 		string[]? UnlockRequirements = null,
 		/// <summary>
 		/// What the building gives the city. Signature buildings are free, so

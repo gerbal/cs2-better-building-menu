@@ -93,9 +93,18 @@ namespace FindItBuildingMenu.Services
 		/// The search and the facets DO count, because a tab claiming 22 when
 		/// the active search leaves 3 behind it is worse than no number.
 		///
-		/// Keyed by the same Id the tabs carry, which is the category prefab's
-		/// name and exactly what BuildingCatalogEntry.UiCategory holds — so the
-		/// UI joins them without a translation step.
+		/// Keyed by the same Id the tabs carry, and counted against the category
+		/// the entry answers to IN THIS MENU rather than its own UiCategory.
+		/// Those differ for the extra networks the Roads menu adopts — a
+		/// seaway's own category is TransportationShip, and the tab it sits
+		/// under is a Roads one — which is the same distinction
+		/// MatchesVanillaMenuTree makes when it decides what a tab SELECTS.
+		///
+		/// Counting on the raw value made the two disagree: ten Roads tabs
+		/// reported 0 while selecting one of them showed assets, so a tab that
+		/// worked read as an empty one. It went unnoticed while a missing count
+		/// rendered blank; it became visible the moment absent-but-known
+		/// started rendering as 0.
 		/// </remarks>
 		public IReadOnlyList<MenuCategoryCount> GetMenuCategoryCounts(BuildingCatalogQuery query)
 		{
@@ -108,7 +117,7 @@ namespace FindItBuildingMenu.Services
 
 			return BuildingCatalogQueryEngine
 				.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), acrossCategories)
-				.GroupBy(entry => entry.UiCategory ?? string.Empty)
+				.GroupBy(entry => NetworkMenuExtension.EffectiveCategory(entry, query.UiMenu) ?? string.Empty)
 				.Where(group => group.Key.Length > 0)
 				.Select(group => new MenuCategoryCount(group.Key, group.Count()))
 				.OrderBy(count => count.Id, StringComparer.Ordinal)
@@ -146,7 +155,7 @@ namespace FindItBuildingMenu.Services
 		/// rather than a ranking, so the biggest bucket leading is the most
 		/// useful stable order.
 		/// </remarks>
-		public IReadOnlyList<MenuCategoryCount> GetMenuBranchCounts(BuildingCatalogQuery query)
+		public IReadOnlyList<MenuBranchCount> GetMenuBranchCounts(BuildingCatalogQuery query)
 		{
 			if (query is null)
 			{
@@ -159,7 +168,10 @@ namespace FindItBuildingMenu.Services
 				.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), acrossBranches)
 				.GroupBy(entry => entry.DevTreeBranch ?? string.Empty)
 				.Where(group => group.Key.Length > 0)
-				.Select(group => new MenuCategoryCount(group.Key, group.Count()))
+				.Select(group => new MenuBranchCount(
+					group.Key,
+					group.Count(),
+					group.Select(entry => entry.DevTreeBranchIcon).FirstOrDefault(icon => !string.IsNullOrEmpty(icon)) ?? string.Empty))
 				.OrderByDescending(count => count.Count)
 				.ThenBy(count => count.Id, StringComparer.Ordinal)
 				.ToArray();
@@ -458,9 +470,37 @@ namespace FindItBuildingMenu.Services
 				// list.
 				.Where(prefab => string.IsNullOrEmpty(menu)
 					? IsBuilding(prefab)
-					: PrefabIndexingSystem.IsPlacedInMenu(prefab.Id, menu))
+					: PrefabIndexingSystem.IsPlacedInMenu(prefab.Id, menu)
+						|| IsGatheredNetwork(prefab, menu))
 				.Where(prefab => filters.All(filter => filter(prefab)));
 		}
+
+		/// <summary>
+		/// Whether the Roads menu adopts this network from another menu.
+		/// </summary>
+		/// <remarks>
+		/// The membership half of NetworkMenuExtension, which the phase 3 switch
+		/// to IsPlacedInMenu silently turned off: the tabs for the adopted
+		/// groups kept being drawn while no asset could reach them, so Roads
+		/// showed ten tabs that counted 0 and answered a click with "No
+		/// buildings in this category".
+		///
+		/// Trams, pedestrian paths, bike trails, seaways, rail, power lines and
+		/// pipes are all NETWORKS, and a player drawing one is doing the same
+		/// job whichever service owns it. Vanilla scatters them across the
+		/// service menus; gathering them where the roads are is the extension.
+		///
+		/// Guarded on IsPlacedInAnyMenu so this admits what vanilla places
+		/// somewhere, not every network prefab in the index. Nothing is taken
+		/// OUT of the menus that already hold them — Transportation keeps its
+		/// tram tracks — so this only ever adds a second way to reach one.
+		/// </remarks>
+		private static bool IsGatheredNetwork(PrefabIndex prefab, string menu) =>
+			NetworkMenuExtension.IsExtraNetwork(
+				prefab.Category.ToString(),
+				prefab.UiMenuName,
+				menu)
+			&& PrefabIndexingSystem.IsPlacedInAnyMenu(prefab.Id);
 
 		private static BuildingCatalogEntry Project(PrefabIndex prefab)
 		{
@@ -500,6 +540,7 @@ namespace FindItBuildingMenu.Services
 				IsLocked: prefab.IsLocked,
 				UnlockMilestone: prefab.UnlockMilestone,
 				DevTreeBranch: prefab.DevTreeBranch,
+				DevTreeBranchIcon: prefab.DevTreeBranchIcon,
 				UnlockRequirements: prefab.UnlockRequirements,
 				Bonuses: prefab.Bonuses,
 				CostIsPerDistance: prefab.CostIsPerDistance,

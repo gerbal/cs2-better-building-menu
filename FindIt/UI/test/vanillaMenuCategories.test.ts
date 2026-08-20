@@ -8,6 +8,7 @@ import {
   shouldShowCategoryStrip,
   type VanillaMenuCategory,
   categoryCount,
+  visibleCategories,
   shouldWidenCategoryStrip,
 } from "../src/domain/vanillaMenuCategories.ts";
 
@@ -153,5 +154,46 @@ describe("MenuCategoryStrip's hook order", () => {
       /\buseValue\(|\buseState\(|\buseEffect\(|\buseMemo\(|\buseLocalization\(/,
       "a hook below the early return renders conditionally and crashes React"
     );
+  });
+});
+
+describe("Which category tabs are worth drawing", () => {
+  const tab = (id: string) => ({ id, name: id, icon: "", priority: 0 });
+
+  it("drops the tabs with nothing behind them", () => {
+    // Roads carries ten of these: tab list and membership come from two
+    // different questions, and they disagree by exactly the extra networks.
+    const categories = [tab("SmallRoads"), tab("Ship"), tab("PowerLines")];
+    const counts = [{ id: "SmallRoads", count: 24 }];
+
+    assert.deepEqual(
+      visibleCategories(categories, counts).map((c) => c.id),
+      ["SmallRoads"]
+    );
+  });
+
+  it("keeps every tab until the counts arrive", () => {
+    // Otherwise the strip collapses to nothing and springs back on every menu
+    // change, which reads as a flicker rather than a filter.
+    const categories = [tab("SmallRoads"), tab("Ship")];
+
+    assert.deepEqual(visibleCategories(categories, []).map((c) => c.id), ["SmallRoads", "Ship"]);
+    assert.deepEqual(visibleCategories(categories, null).map((c) => c.id), ["SmallRoads", "Ship"]);
+  });
+
+  it("keeps a tab the backend counted as zero only when it said nothing", () => {
+    // An explicit 0 is an answer; absence from a populated table is too. Both
+    // mean the tab is a dead end.
+    const categories = [tab("A"), tab("B")];
+
+    assert.deepEqual(
+      visibleCategories(categories, [{ id: "A", count: 3 }, { id: "B", count: 0 }]).map((c) => c.id),
+      ["A"]
+    );
+  });
+
+  it("survives a missing category list", () => {
+    assert.deepEqual(visibleCategories(null, [{ id: "A", count: 1 }]), []);
+    assert.deepEqual(visibleCategories(undefined, null), []);
   });
 });

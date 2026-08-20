@@ -2,6 +2,12 @@
 export const ANY_MILESTONE = -1;
 
 /** One tier's share of the menu, published beside the milestone names. */
+export interface MenuBranchCount {
+  id: string;
+  count: number;
+  icon: string;
+}
+
 export interface MenuMilestoneCount {
   milestone: number;
   count: number;

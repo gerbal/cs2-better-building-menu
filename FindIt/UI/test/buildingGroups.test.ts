@@ -578,4 +578,42 @@ describe("Which grouping choices a menu offers", () => {
     assert.ok(ids("Electricity").includes("progression"));
     assert.ok(ids("Education & Research").includes("progression"));
   });
+
+  it("groups by the development tree branch the backend resolved", () => {
+    // No name table and no fallback logic: unlike progression, the branch
+    // arrives as the label, because resolving it needs the game's tree.
+    assert.deepEqual(
+      groupLevelsFor(entry({ devTreeBranch: "Advanced Electricity" }), "development"),
+      ["Advanced Electricity"]
+    );
+
+    const nodes = buildGroupedView(
+      [
+        entry({ name: "a", devTreeBranch: "Basic" }),
+        entry({ name: "b", devTreeBranch: "Gas Power Plant" }),
+        entry({ name: "c", devTreeBranch: "Basic" }),
+      ],
+      "development"
+    );
+
+    assert.deepEqual(nodes.map((node) => node.label), ["Basic", "Gas Power Plant"]);
+    assert.deepEqual(nodes.map((node) => node.entries.length), [2, 1]);
+  });
+
+  it("falls back to ungrouped only when the branch never arrived", () => {
+    // "Basic" is the real bucket for an asset the tree never gated, so an
+    // empty branch means the backend had nothing to say — a modded service
+    // with no tree, or an entry from before the field existed.
+    assert.deepEqual(groupLevelsFor(entry({ devTreeBranch: "" }), "development"), [UNGROUPED_LABEL]);
+    assert.deepEqual(groupLevelsFor(entry({ devTreeBranch: null }), "development"), [UNGROUPED_LABEL]);
+    assert.deepEqual(groupLevelsFor(entry({}), "development"), [UNGROUPED_LABEL]);
+  });
+
+  it("offers Development everywhere, like Progression", () => {
+    const ids = (menu: string) => groupDimensionsFor(menu).map((dimension) => dimension.id);
+
+    assert.ok(ids("Electricity").includes("development"));
+    assert.ok(ids("Roads").includes("development"));
+    assert.ok(ids("Education & Research").includes("development"));
+  });
 });

@@ -6,13 +6,14 @@ import {
   ALL_CATEGORIES_ID,
   categoryCount,
   isCategorySelected,
-  orderedCategories,
+  visibleCategories,
   shouldShowCategoryStrip,
   type MenuCategoryCount,
   type VanillaMenuCategory,
 } from "domain/vanillaMenuCategories";
 import {
   ANY_MILESTONE,
+  type MenuBranchCount,
   isMilestoneSelected,
   milestoneTabs,
   shouldShowMilestoneTabs,
@@ -45,7 +46,8 @@ const BuildingLensMenuMilestone$ = bindValue<number>(
   ANY_MILESTONE
 );
 const BuildingLensMilestones$ = bindValue<string[]>(mod.id, "BuildingLensMilestones", []);
-const BuildingLensMenuBranchCounts$ = bindValue<MenuCategoryCount[]>(
+const BuildingLensMilestoneIcons$ = bindValue<string[]>(mod.id, "BuildingLensMilestoneIcons", []);
+const BuildingLensMenuBranchCounts$ = bindValue<MenuBranchCount[]>(
   mod.id,
   "BuildingLensMenuBranchCounts",
   []
@@ -78,6 +80,7 @@ export const MenuCategoryStrip = () => {
   const milestoneCounts = useValue(BuildingLensMenuMilestoneCounts$) ?? [];
   const selectedMilestone = useValue(BuildingLensMenuMilestone$) ?? ANY_MILESTONE;
   const milestoneNames = useValue(BuildingLensMilestones$) ?? [];
+  const milestoneIcons = useValue(BuildingLensMilestoneIcons$) ?? [];
   const branchCounts = useValue(BuildingLensMenuBranchCounts$) ?? [];
   const selectedBranch = useValue(BuildingLensMenuBranch$) ?? "";
 
@@ -175,7 +178,7 @@ export const MenuCategoryStrip = () => {
         </span>
       </ToolButton>
 
-      {orderedCategories(categories).map((category) => (
+      {visibleCategories(categories, counts).map((category) => (
         <ToolButton
           key={category.id}
           selected={isCategorySelected(category.id, selected)}
@@ -235,20 +238,21 @@ export const MenuCategoryStrip = () => {
               selected={selectedBranch === branch.id}
               tooltip={withBranchCount(branch.id, branch.id)}
               onSelect={() => chooseBranch(branch.id)}
-              src=""
+              src={branch.icon || ""}
               focusKey={FOCUS_DISABLED}
               className={classNames(
                 toolButtonTheme.button,
                 styles.tab,
-                styles.tierTab,
+                branch.icon ? undefined : styles.tierTab,
                 selectedBranch === branch.id && styles.tabSelected
               )}
               aria-label={withBranchCount(branch.id, branch.id)}
             >
-              <span className={styles.tierLabel}>
-                {branch.id}
-                <span className={styles.tierCount}>{branch.count}</span>
-              </span>
+              {/* Glyph and count, name in the tooltip — the treatment the
+                  category tabs already use, and the reason the icons were
+                  worth resolving: worded tabs on this row were reported as
+                  disruptive, and the dev tree ships an icon per node. */}
+              <span className={styles.tabCount}>{branch.count}</span>
             </ToolButton>
           ))}
         </>
@@ -292,20 +296,24 @@ export const MenuCategoryStrip = () => {
               selected={isMilestoneSelected(tier.milestone, selectedMilestone)}
               tooltip={tierTooltip(tier.label, tier.count)}
               onSelect={() => chooseTier(tier.milestone)}
-              src=""
+              src={milestoneIcons[tier.milestone] || ""}
               focusKey={FOCUS_DISABLED}
               className={classNames(
                 toolButtonTheme.button,
                 styles.tab,
-                styles.tierTab,
+                milestoneIcons[tier.milestone] ? undefined : styles.tierTab,
                 isMilestoneSelected(tier.milestone, selectedMilestone) && styles.tabSelected
               )}
               aria-label={tierTooltip(tier.label, tier.count)}
             >
-              <span className={styles.tierLabel}>
-                {tier.label}
-                <span className={styles.tierCount}>{tier.count}</span>
-              </span>
+              {milestoneIcons[tier.milestone] ? (
+                <span className={styles.tabCount}>{tier.count}</span>
+              ) : (
+                <span className={styles.tierLabel}>
+                  {tier.label}
+                  <span className={styles.tierCount}>{tier.count}</span>
+                </span>
+              )}
             </ToolButton>
           ))}
         </>

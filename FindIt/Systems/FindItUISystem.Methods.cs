@@ -234,6 +234,7 @@ namespace FindItBuildingMenu.Systems
 			// ~20 names are resolved once per index pass instead of once per
 			// asset on every unlock-triggered re-index.
 			_BuildingLensMilestonesBinding.Value = PrefabIndexingSystem.GetMilestoneNames();
+			_BuildingLensMilestoneIconsBinding.Value = PrefabIndexingSystem.GetMilestoneIcons();
 
 			VanillaBuildMenuSelection selection = VanillaBuildMenuSelection.Normalize(
 				_buildingLensSection,

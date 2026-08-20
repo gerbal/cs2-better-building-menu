@@ -28,6 +28,7 @@ export type GroupDimensionId =
   | "role"
   | "schoolTier"
   | "progression"
+  | "development"
   | "theme"
   | "source"
   | "density"
@@ -76,6 +77,12 @@ export const GROUP_DIMENSIONS: readonly GroupDimension[] = [
   // be zeroed on unlock, which took an asset out of its own tier at the moment
   // the player earned it — the one time they are looking at that tier.
   { id: "progression", label: "Progression", depth: 1 },
+  // The other unlock modality. Progression is the city-growth ladder;
+  // Development is the per-service tree bought with development points, and on
+  // the big menus it is the one that actually chunks the set — Roads splits
+  // into Roundabouts 38, Parking 33, Highways 17, where its milestone split is
+  // two buckets.
+  { id: "development", label: "Development", depth: 1 },
   { id: "theme", label: "Theme", depth: 1 },
   { id: "source", label: "Source", depth: 1 },
   { id: "density", label: "Density", depth: 1 },
@@ -282,6 +289,7 @@ export interface GroupableEntry {
   educationLevel?: number | null;
   /** Milestone index the game gates the asset behind; 0 for available at start. */
   unlockMilestone?: number | null;
+  devTreeBranch?: string | null;
   theme?: string | null;
   provenance?: string | null;
   dlcId?: string | null;
@@ -409,9 +417,15 @@ export function groupLevelsFor(
     case "progression":
       // Named by the caller, which holds the milestone name table — the entry
       // carries a bare index because the ~20 names are published once rather
-      // than repeated on every row. Index 0 is not "no milestone", it is the
-      // first one: what the game gives you at the start.
+      // than repeated on every row. Index 0 means UNGATED — the game's own
+      // milestones start at 1 — which is why milestoneLabel names it rather
+      // than printing "Milestone 0".
       return [milestoneLabel(entry.unlockMilestone, milestoneNames)];
+    case "development":
+      // Already the branch, resolved at index time against the game's own
+      // tree, and already "Basic" for anything the tree never gated — so
+      // there is no ungrouped case left to invent here.
+      return [text(entry.devTreeBranch) ?? UNGROUPED_LABEL];
     case "schoolTier":
       // Not word-split through text(): these are the game's own labels, and
       // "Elementary School" is already a phrase. Anything with no tier — every

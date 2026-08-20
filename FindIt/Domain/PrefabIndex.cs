@@ -71,6 +71,13 @@ namespace FindItBuildingMenu.Domain
 		/// </remarks>
 		public string DevTreeBranch { get; set; } = string.Empty;
 
+		/// <summary>The icon the development tree draws for that branch.</summary>
+		/// <remarks>
+		/// Carried per asset rather than looked up by branch name, because the
+		/// name is not unique: every service's root branch is called "Basic".
+		/// </remarks>
+		public string DevTreeBranchIcon { get; set; } = string.Empty;
+
 		/// <summary>
 		/// Everything else the asset is waiting on, already localized.
 		/// </summary>
