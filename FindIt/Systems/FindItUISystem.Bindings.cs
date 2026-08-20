@@ -81,6 +81,7 @@ namespace FindItBuildingMenu.Systems
 			_buildingLensUiCategory = string.Empty;
 			ResetBuildingLensMilestone();
 			ResetBuildingLensBranch();
+			ResetBuildingLensSchoolTier();
 			RefreshBuildingLensMenuCategories();
 		}
 
@@ -135,6 +136,7 @@ namespace FindItBuildingMenu.Systems
 			_buildingLensUiCategory = string.Empty;
 			ResetBuildingLensMilestone();
 			ResetBuildingLensBranch();
+			ResetBuildingLensSchoolTier();
 			RefreshBuildingLensMenuCategories();
 
 			// SPIKE (cm-e98i): Roads, Landscaping and Areas resolve to no preset
@@ -304,6 +306,7 @@ namespace FindItBuildingMenu.Systems
 			// no visible cause.
 			ResetBuildingLensMilestone();
 			ResetBuildingLensBranch();
+			ResetBuildingLensSchoolTier();
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 
 			RefreshBuildingCatalog();
@@ -371,6 +374,23 @@ namespace FindItBuildingMenu.Systems
 			_BuildingLensMenuBranchBinding.Value = _buildingLensDevTreeBranch;
 		}
 
+		/// <summary>Narrows the education menu to one school tier.</summary>
+		private void SetBuildingLensMenuSchoolTier(int tier)
+		{
+			_buildingLensSchoolTier = tier < 0 ? -1 : tier;
+			_BuildingLensMenuSchoolTierBinding.Value = _buildingLensSchoolTier;
+			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
+
+			RefreshBuildingCatalog();
+		}
+
+		/// <summary>Drops the tier narrowing, without refreshing on its own.</summary>
+		private void ResetBuildingLensSchoolTier()
+		{
+			_buildingLensSchoolTier = -1;
+			_BuildingLensMenuSchoolTierBinding.Value = _buildingLensSchoolTier;
+		}
+
 		/// <summary>
 		/// Scopes the lens to a vanilla menu chosen from the filters.
 		/// </summary>
@@ -401,6 +421,7 @@ namespace FindItBuildingMenu.Systems
 			_buildingLensUiCategory = string.Empty;
 			ResetBuildingLensMilestone();
 			ResetBuildingLensBranch();
+			ResetBuildingLensSchoolTier();
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 
 			// Zones are assignment tools rather than buildings, so that menu gets
@@ -439,6 +460,7 @@ namespace FindItBuildingMenu.Systems
 			_buildingLensUiCategory = string.Empty;
 			ResetBuildingLensMilestone();
 			ResetBuildingLensBranch();
+			ResetBuildingLensSchoolTier();
 
 			// The section and subcategory go too, because the MENU set them, not
 			// the player. VanillaMenuSelected applies all four together when a

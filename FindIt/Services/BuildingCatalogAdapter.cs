@@ -177,6 +177,41 @@ namespace FindItBuildingMenu.Services
 				.ToArray();
 		}
 
+		/// <summary>
+		/// How many assets each of the education menu's tier tabs holds.
+		/// </summary>
+		/// <remarks>
+		/// The tier axis for the one menu where the progression is not what the
+		/// player is navigating by. With several region packs installed there
+		/// are dozens of schools per level, and "which level" is the question —
+		/// the milestone they unlocked at is not.
+		///
+		/// Keyed by the raw level rather than a name, so the four labels stay in
+		/// the UI's SCHOOL_TIERS table instead of being duplicated across the
+		/// binding. Levels 0 and 5 are dropped: 0 is a capacity upgrade with no
+		/// tier and 5 is the outside connection, and neither is a tab.
+		/// </remarks>
+		public IReadOnlyList<MenuBranchCount> GetMenuSchoolTierCounts(BuildingCatalogQuery query)
+		{
+			if (query is null)
+			{
+				throw new ArgumentNullException(nameof(query));
+			}
+
+			var acrossTiers = query with { SchoolTier = -1 };
+
+			return BuildingCatalogQueryEngine
+				.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), acrossTiers)
+				.Where(entry => entry.EducationLevel is >= 1 and <= 4)
+				.GroupBy(entry => entry.EducationLevel!.Value)
+				.Select(group => new MenuBranchCount(
+					group.Key.ToString(System.Globalization.CultureInfo.InvariantCulture),
+					group.Count(),
+					string.Empty))
+				.OrderBy(count => count.Id, StringComparer.Ordinal)
+				.ToArray();
+		}
+
 		public IReadOnlyList<MenuMilestoneCount> GetMenuMilestoneCounts(BuildingCatalogQuery query)
 		{
 			if (query is null)

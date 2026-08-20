@@ -16,10 +16,11 @@ import {
   type MenuBranchCount,
   isMilestoneSelected,
   milestoneTabs,
+  schoolTierTabs,
   shouldShowMilestoneTabs,
   type MenuMilestoneCount,
 } from "domain/menuProgression";
-import { milestoneLabel } from "domain/buildingGroups";
+import { isEducationMenu, milestoneLabel } from "domain/buildingGroups";
 import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 import styles from "./menuCategoryStrip.module.scss";
@@ -47,6 +48,13 @@ const BuildingLensMenuMilestone$ = bindValue<number>(
 );
 const BuildingLensMilestones$ = bindValue<string[]>(mod.id, "BuildingLensMilestones", []);
 const BuildingLensMilestoneIcons$ = bindValue<string[]>(mod.id, "BuildingLensMilestoneIcons", []);
+const BuildingLensMenuSchoolTierCounts$ = bindValue<MenuBranchCount[]>(
+  mod.id,
+  "BuildingLensMenuSchoolTierCounts",
+  []
+);
+const BuildingLensMenuSchoolTier$ = bindValue<number>(mod.id, "BuildingLensMenuSchoolTier", -1);
+const BuildingLensMenu$ = bindValue<string>(mod.id, "BuildingLensMenu", "");
 const BuildingLensMenuBranchCounts$ = bindValue<MenuBranchCount[]>(
   mod.id,
   "BuildingLensMenuBranchCounts",
@@ -81,6 +89,9 @@ export const MenuCategoryStrip = () => {
   const selectedMilestone = useValue(BuildingLensMenuMilestone$) ?? ANY_MILESTONE;
   const milestoneNames = useValue(BuildingLensMilestones$) ?? [];
   const milestoneIcons = useValue(BuildingLensMilestoneIcons$) ?? [];
+  const schoolTierCounts = useValue(BuildingLensMenuSchoolTierCounts$) ?? [];
+  const selectedSchoolTier = useValue(BuildingLensMenuSchoolTier$) ?? -1;
+  const menu = useValue(BuildingLensMenu$) ?? "";
   const branchCounts = useValue(BuildingLensMenuBranchCounts$) ?? [];
   const selectedBranch = useValue(BuildingLensMenuBranch$) ?? "";
 
@@ -95,7 +106,12 @@ export const MenuCategoryStrip = () => {
   // and the menu arrived with no way to cut its 60 assets. Progression is an
   // axis every menu has.
   const showCategories = shouldShowCategoryStrip(categories);
-  const showTiers = shouldShowMilestoneTabs(tiers);
+  // Education navigates by LEVEL, not by the milestone a school unlocked at.
+  // With several region packs there are dozens of schools per level, which is
+  // the scale the strip exists to cut; the milestone they share is not.
+  const schoolTiers = schoolTierTabs(schoolTierCounts);
+  const showSchoolTiers = isEducationMenu(menu) && schoolTiers.length > 1;
+  const showTiers = !showSchoolTiers && shouldShowMilestoneTabs(tiers);
   // The fallback, and the reason the strip exists on a service menu at all.
   // Vanilla splits Roads into nineteen categories and Electricity into one, so
   // the category strip drew nothing exactly where a 60-asset menu needed
@@ -104,7 +120,7 @@ export const MenuCategoryStrip = () => {
   // when there are no categories, and stays out of the way when there are.
   const showBranches = !showCategories && branchCounts.length > 1;
 
-  if (!showCategories && !showBranches && !showTiers) {
+  if (!showCategories && !showBranches && !showTiers && !showSchoolTiers) {
     return null;
   }
 
@@ -112,6 +128,8 @@ export const MenuCategoryStrip = () => {
   const chooseBranch = (id: string) => trigger(mod.id, "SetBuildingLensMenuBranch", id);
   const chooseTier = (milestone: number) =>
     trigger(mod.id, "SetBuildingLensMenuMilestone", milestone);
+  const chooseSchoolTier = (level: number) =>
+    trigger(mod.id, "SetBuildingLensMenuSchoolTier", level);
 
   // The category prefab's own name is the id, and the game ships a localized
   // string under exactly that id — SubServices.NAME[TransportationRoad] is
@@ -253,6 +271,53 @@ export const MenuCategoryStrip = () => {
                   worth resolving: worded tabs on this row were reported as
                   disruptive, and the dev tree ships an icon per node. */}
               <span className={styles.tabCount}>{branch.count}</span>
+            </ToolButton>
+          ))}
+        </>
+      )}
+
+      {showSchoolTiers && (
+        <>
+          {(showCategories || showBranches) && <div className={styles.segmentRule} />}
+          <ToolButton
+            selected={selectedSchoolTier < 0}
+            tooltip={`${anyTierLabel} (${schoolTiers.reduce((total: number, t) => total + t.count, 0)})`}
+            onSelect={() => chooseSchoolTier(-1)}
+            src=""
+            focusKey={FOCUS_DISABLED}
+            className={classNames(
+              toolButtonTheme.button,
+              styles.tab,
+              styles.allTab,
+              selectedSchoolTier < 0 && styles.tabSelected
+            )}
+            aria-label={anyTierLabel}
+          >
+            <span className={styles.allLabel}>{anyTierLabel}</span>
+          </ToolButton>
+
+          {/* Worded: the game ships no icon per school level, and four short
+              career words read better than four numbers would. */}
+          {schoolTiers.map((tier) => (
+            <ToolButton
+              key={tier.level}
+              selected={selectedSchoolTier === tier.level}
+              tooltip={`${tier.label} (${tier.count})`}
+              onSelect={() => chooseSchoolTier(tier.level)}
+              src=""
+              focusKey={FOCUS_DISABLED}
+              className={classNames(
+                toolButtonTheme.button,
+                styles.tab,
+                styles.tierTab,
+                selectedSchoolTier === tier.level && styles.tabSelected
+              )}
+              aria-label={`${tier.label} (${tier.count})`}
+            >
+              <span className={styles.tierLabel}>
+                {tier.label}
+                <span className={styles.tierCount}>{tier.count}</span>
+              </span>
             </ToolButton>
           ))}
         </>
