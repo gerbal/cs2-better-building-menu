@@ -113,7 +113,13 @@ namespace FindItBuildingMenu.Services
 				throw new ArgumentNullException(nameof(query));
 			}
 
-			var acrossCategories = query with { UiCategory = string.Empty };
+			// The school levels are drawn in the Education category's own place,
+			// so for counting purposes they are the SAME axis as the categories
+			// and both come off. Dropping only UiCategory made picking a level
+			// count Research against that level — zero — and visibleCategories
+			// then removed the Research tab entirely, so choosing a school tier
+			// made the other half of the menu unreachable.
+			var acrossCategories = query with { UiCategory = string.Empty, SchoolTier = -1 };
 
 			return BuildingCatalogQueryEngine
 				.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), acrossCategories)
@@ -248,7 +254,7 @@ namespace FindItBuildingMenu.Services
 
 		/// <summary>
 		/// <summary>
-		/// The glyph a school-level tab is built on: the attainment it grants.
+		/// The glyph every school-level tab is built on.
 		/// </summary>
 		/// <remarks>
 		/// The citizen attainment ladder — Uneducated, Poorly Educated,
@@ -259,24 +265,19 @@ namespace FindItBuildingMenu.Services
 		/// than assumed. So level N draws the badge a graduate of that school
 		/// wears.
 		///
-		/// Four distinct glyphs rather than one mortarboard four times, so a
-		/// tab is recognisable before its rank is read; the roman numeral over
-		/// the top is what makes the rank exact, since the bars differ by one
-		/// step and four of them in a row are easy to miscount.
+		/// One mortarboard for all four, with the rank drawn over it as a roman
+		/// numeral. The four attainment glyphs were tried as the base and read
+		/// as four different subjects rather than four rungs of one — which
+		/// matters more now that the levels sit in the SAME row as the Research
+		/// category, where the row's job is to say what kind of thing each tab
+		/// is before it says how much of it there is.
 		///
 		/// A representative school's THUMBNAIL was the first attempt and does
 		/// not work at all: vanilla's tab glyphs are flat two-colour symbols
 		/// drawn for 24rem, and a building render at that size is a dark
 		/// smudge, four of which look alike.
 		/// </remarks>
-		private static string SchoolTierIcon(int level) => level switch
-		{
-			1 => "Media/Game/Icons/PoorlyEducated.svg",
-			2 => "Media/Game/Icons/Educated.svg",
-			3 => "Media/Game/Icons/WellEducated.svg",
-			4 => "Media/Game/Icons/HighlyEducated.svg",
-			_ => "Media/Game/Icons/Education.svg",
-		};
+		private const string SchoolTierIcon = "Media/Game/Icons/Education.svg";
 
 		/// <summary>The progression screen's badge for a milestone, if any.</summary>
 		private static string MilestoneIcon(int milestone)
@@ -350,7 +351,9 @@ namespace FindItBuildingMenu.Services
 				throw new ArgumentNullException(nameof(query));
 			}
 
-			var acrossTiers = query with { SchoolTier = -1 };
+			// The other half of the same rule: a category picked in that row
+			// must not collapse the level counts beside it.
+			var acrossTiers = query with { SchoolTier = -1, UiCategory = string.Empty };
 
 			return BuildingCatalogQueryEngine
 				.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), acrossTiers)
@@ -359,7 +362,7 @@ namespace FindItBuildingMenu.Services
 				.Select(group => new MenuBranchCount(
 					group.Key.ToString(System.Globalization.CultureInfo.InvariantCulture),
 					group.Count(),
-					SchoolTierIcon(group.Key)))
+					SchoolTierIcon))
 				.OrderBy(count => count.Id, StringComparer.Ordinal)
 				.ToArray();
 		}

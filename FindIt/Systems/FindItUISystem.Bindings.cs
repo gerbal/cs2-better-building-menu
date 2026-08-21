@@ -377,6 +377,13 @@ namespace FindItBuildingMenu.Systems
 		/// <summary>Narrows the education menu to one school tier.</summary>
 		private void SetBuildingLensMenuSchoolTier(int tier)
 		{
+			// A level and a category are ALTERNATIVES: the strip draws the four
+			// levels in the Education category's own place, so picking one is
+			// picking that category, more narrowly. Holding a previously picked
+			// category as well would intersect Research with a school level and
+			// empty the menu.
+			_buildingLensUiCategory = string.Empty;
+			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
 			_buildingLensSchoolTier = tier < 0 ? -1 : tier;
 			_BuildingLensMenuSchoolTierBinding.Value = _buildingLensSchoolTier;
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };

@@ -20,7 +20,7 @@ import {
   romanNumeral,
   shouldShowMilestoneTabs,
 } from "domain/menuProgression";
-import { isEducationMenu, milestoneLabel } from "domain/buildingGroups";
+import { isEducationMenu, isSchoolCategory, milestoneLabel } from "domain/buildingGroups";
 import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 import styles from "./menuCategoryStrip.module.scss";
@@ -170,8 +170,12 @@ export const MenuCategoryStrip = () => {
       {/* One more tab than vanilla has. Vanilla always opens on a category and
           offers no way back out to the whole menu; the lens can show the menu
           entire, which is the thing it can do that the vanilla menu cannot. */}
+      {/* All means all: no category AND no level. Picking a level clears the
+          category — they are alternatives in this row — so testing the
+          category alone lit All up beside the level the player had just
+          chosen. */}
       <ToolButton
-        selected={isCategorySelected(ALL_CATEGORIES_ID, selected)}
+        selected={isCategorySelected(ALL_CATEGORIES_ID, selected) && selectedSchoolTier < 0}
         tooltip={withCount(allLabel, ALL_CATEGORIES_ID)}
         onSelect={() => choose(ALL_CATEGORIES_ID)}
         // Required by the component, and there is no icon for "all" — the tab
@@ -183,7 +187,9 @@ export const MenuCategoryStrip = () => {
           toolButtonTheme.button,
           styles.tab,
           styles.allTab,
-          isCategorySelected(ALL_CATEGORIES_ID, selected) && styles.tabSelected
+          isCategorySelected(ALL_CATEGORIES_ID, selected) &&
+            selectedSchoolTier < 0 &&
+            styles.tabSelected
         )}
         aria-label={withCount(allLabel, ALL_CATEGORIES_ID)}
       >
@@ -199,10 +205,39 @@ export const MenuCategoryStrip = () => {
         </span>
       </ToolButton>
 
-      {visibleCategories(categories, counts).map((category) => (
+      {/* The school levels stand in for the Education category, in ITS place
+          and in the same row, so the menu reads as one list of choices:
+          four ranks of school, then Research. They partition that category
+          exactly — ten schools, 3/3/1/3 — so nothing is lost by drawing them
+          instead of it, and a separate tier segment would have asked the
+          player to combine two rows to reach what one row can say. */}
+      {visibleCategories(categories, counts).flatMap((category) =>
+        showSchoolTiers && isSchoolCategory(category.id)
+          ? schoolTiers.map((tier) => (
+              <ToolButton
+                key={`tier-${tier.level}`}
+                selected={selectedSchoolTier === tier.level}
+                tooltip={`${tier.label} (${tier.count})`}
+                onSelect={() => chooseSchoolTier(tier.level)}
+                src={tier.icon || category.icon}
+                focusKey={FOCUS_DISABLED}
+                className={classNames(
+                  toolButtonTheme.button,
+                  styles.tab,
+                  selectedSchoolTier === tier.level && styles.tabSelected
+                )}
+                aria-label={`${tier.label} (${tier.count})`}
+              >
+                <span className={styles.tierBadge}>
+                  <span className={styles.tierNumeral}>{romanNumeral(tier.level)}</span>
+                  <span className={styles.tabCount}>{tier.count}</span>
+                </span>
+              </ToolButton>
+            ))
+          : [
         <ToolButton
           key={category.id}
-          selected={isCategorySelected(category.id, selected)}
+          selected={isCategorySelected(category.id, selected) && selectedSchoolTier < 0}
           tooltip={withCount(label(category), category.id)}
           onSelect={() => choose(category.id)}
           src={category.icon}
@@ -210,7 +245,9 @@ export const MenuCategoryStrip = () => {
           className={classNames(
             toolButtonTheme.button,
             styles.tab,
-            isCategorySelected(category.id, selected) && styles.tabSelected
+            isCategorySelected(category.id, selected) &&
+              selectedSchoolTier < 0 &&
+              styles.tabSelected
           )}
           aria-label={withCount(label(category), category.id)}
         >
@@ -222,8 +259,9 @@ export const MenuCategoryStrip = () => {
               not say before — which of fourteen glyphs is worth opening —
               and two or three digits keeps the row one line. */}
           <span className={styles.tabCount}>{categoryCount(counts, category.id) ?? ""}</span>
-        </ToolButton>
-      ))}
+        </ToolButton>,
+            ]
+      )}
         </>
       )}
 
@@ -275,60 +313,6 @@ export const MenuCategoryStrip = () => {
                   tab showing only a number is a tab with nothing on it, so
                   that axis falls back to its word. */}
               <span className={styles.tabCount}>{branch.count}</span>
-            </ToolButton>
-          ))}
-        </>
-      )}
-
-      {showSchoolTiers && (
-        <>
-          {(showCategories || showBranches) && <div className={styles.segmentRule} />}
-          <ToolButton
-            selected={selectedSchoolTier < 0}
-            tooltip={`${anyTierLabel} (${schoolTiers.reduce((total: number, t) => total + t.count, 0)})`}
-            onSelect={() => chooseSchoolTier(-1)}
-            src=""
-            focusKey={FOCUS_DISABLED}
-            className={classNames(
-              toolButtonTheme.button,
-              styles.tab,
-              styles.allTab,
-              selectedSchoolTier < 0 && styles.tabSelected
-            )}
-            aria-label={anyTierLabel}
-          >
-            <span className={styles.allLabel}>{anyTierLabel}</span>
-          </ToolButton>
-
-          {/* Two glyphs, not one. The attainment bars alone are legible and
-              ordinal but they do not say EDUCATION — four green ladders in a
-              row could be any ranked thing. The mortarboard says which menu
-              this is and the bars say how far up it, which is what the tab
-              means: the level, within education. */}
-          {schoolTiers.map((tier) => (
-            <ToolButton
-              key={tier.level}
-              selected={selectedSchoolTier === tier.level}
-              tooltip={`${tier.label} (${tier.count})`}
-              onSelect={() => chooseSchoolTier(tier.level)}
-              src={tier.icon || ""}
-              focusKey={FOCUS_DISABLED}
-              className={classNames(
-                toolButtonTheme.button,
-                styles.tab,
-                selectedSchoolTier === tier.level && styles.tabSelected
-              )}
-              aria-label={`${tier.label} (${tier.count})`}
-            >
-              {/* One element, because the slot is typed as a single child —
-                  neither an array nor the null a conditional would yield. The
-                  wrapper fills the tab rather than using `display: contents`,
-                  which Cohtml does not implement, so the numeral and the count
-                  anchor to the tab's own corners. */}
-              <span className={styles.tierBadge}>
-                <span className={styles.tierNumeral}>{romanNumeral(tier.level)}</span>
-                <span className={styles.tabCount}>{tier.count}</span>
-              </span>
             </ToolButton>
           ))}
         </>
