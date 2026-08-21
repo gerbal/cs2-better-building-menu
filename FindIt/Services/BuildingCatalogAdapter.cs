@@ -626,6 +626,21 @@ namespace FindItBuildingMenu.Services
 			AddAvailabilityGroup(groups, source, query.Availability);
 			AddValueGroup(groups, "dlc", "DLC", source.Select(entry => entry.DlcId), query.DlcIds, FormatDlcLabel);
 			AddValueGroup(groups, "theme", "Theme", source.Select(entry => entry.Theme), query.Themes, FormatFacetWords);
+			// Progression, as a FILTER rather than a row of tabs. It was a second
+			// segment in the top bar, where it was disruptive on the menus with
+			// many categories — Roads carried nineteen tabs and then four more —
+			// and where it could only ever be single-select. Here it composes
+			// with the rest of the rail and takes several tiers at once.
+			//
+			// AddValueGroup drops a dimension with one distinct value, so this
+			// disappears by itself on the menus that sit in a single milestone
+			// — which is most of them.
+			AddValueGroup(
+				groups,
+				"milestone",
+				"Progression",
+				source.Select(BuildingCatalogQueryEngine.MilestoneNameOf),
+				query.Milestones);
 			AddArrayGroup(groups, "assetPack", "Asset packs", source.Select(entry => entry.AssetPacks), query.AssetPacks, FormatAssetPackLabel);
 			AddArrayGroup(groups, "placement", "Placement", source.Select(entry => entry.PlacementFlags), query.PlacementFlags, FormatFlagLabel);
 			AddArrayGroup(groups, "extension", "Extensions", source.Select(entry => entry.Extensions), query.Extensions, FormatFacetWords);
@@ -808,6 +823,21 @@ namespace FindItBuildingMenu.Services
 				menu)
 			&& PrefabIndexingSystem.IsPlacedInAnyMenu(prefab.Id);
 
+		/// <summary>The milestone's word, or the ungated bucket's.</summary>
+		private static string MilestoneNameFor(int milestone)
+		{
+			if (milestone <= 0)
+			{
+				return BuildingCatalogQueryEngine.UngatedMilestone;
+			}
+
+			var names = PrefabIndexingSystem.GetMilestoneNames();
+
+			return milestone < names.Length && !string.IsNullOrEmpty(names[milestone])
+				? names[milestone]
+				: $"Milestone {milestone}";
+		}
+
 		private static BuildingCatalogEntry Project(PrefabIndex prefab)
 		{
 			VanillaBuildMenuTag? vanillaTag = VanillaBuildMenuTaxonomy.Resolve(prefab.Category, prefab.SubCategory, prefab.ZoneType);
@@ -845,6 +875,7 @@ namespace FindItBuildingMenu.Services
 				IsVanilla: prefab.IsVanilla,
 				IsLocked: prefab.IsLocked,
 				UnlockMilestone: prefab.UnlockMilestone,
+				MilestoneName: MilestoneNameFor(prefab.UnlockMilestone),
 				DevTreeBranch: prefab.DevTreeBranch,
 				DevTreeBranchIcon: prefab.DevTreeBranchIcon,
 				DevTreeBranchDepth: prefab.DevTreeBranchDepth,
