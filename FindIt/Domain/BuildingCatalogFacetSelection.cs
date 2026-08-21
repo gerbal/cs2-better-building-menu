@@ -34,11 +34,6 @@ namespace FindItBuildingMenu.Domain
 				"placement" => query with { PlacementFlags = ToggleValue(query.PlacementFlags, normalizedOption), Offset = 0 },
 				"extension" or "extensions" => query with { Extensions = ToggleValue(query.Extensions, normalizedOption), Offset = 0 },
 				"zone" or "zonetype" => query with { ZoneTypes = ToggleValue(query.ZoneTypes, normalizedOption), Offset = 0 },
-				"milestone" or "progression" => query with { Milestones = ToggleValue(query.Milestones, normalizedOption), Offset = 0 },
-				// The same state the top bar's tabs write. The row picks one and
-				// the rail can pick several; both land here, so the two controls
-				// cannot report different things about the same menu.
-				"striptab" or "development" or "assettype" => query with { StripTabs = ToggleValue(query.StripTabs, normalizedOption), Offset = 0 },
 				_ => query,
 			};
 		}
@@ -61,8 +56,11 @@ namespace FindItBuildingMenu.Domain
 				PlacementFlags = null,
 				ZoneTypes = null,
 				Extensions = null,
-				Milestones = null,
-				StripTabs = null,
+				// StripTabs is deliberately absent. It is the top bar's
+				// selection, which is navigation like UiCategory beside it —
+				// and Clear leaves that alone too. It was cleared here only
+				// while the rail also offered the axis as a filter; the menu
+				// reset is what drops a strip tab now.
 				Offset = 0,
 			};
 		}

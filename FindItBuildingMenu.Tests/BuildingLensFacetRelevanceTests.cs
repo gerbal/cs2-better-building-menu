@@ -44,6 +44,55 @@ namespace FindItBuildingMenu.Tests
 			};
 
 		[Fact]
+		public void NeitherUnlockModalityIsOfferedAsAFilter()
+		{
+			// Both were, and both were wrong for the rail.
+			//
+			// Development restated the top bar: on Roads its dropdown was 23
+			// items long — Small Roads, Medium Roads, Highways, Intersections —
+			// which is the strip's own tab row, in the menu where the strip is
+			// the navigation. It also collided with Role in the same words:
+			// under Healthcare both offered "Hospital", one meaning what the
+			// building IS and the other which node UNLOCKED it.
+			//
+			// Progression asked a question nobody asks of a build menu. "Only
+			// Grand Village buildings" is not an action; "can I build this now"
+			// is, and Availability answers it.
+			//
+			// Both are still GROUP BY dimensions, which is where an unlock
+			// ordering belongs: it arranges the set instead of hiding it.
+			var entries = new[]
+			{
+				Entry(1, "Hospital", "BaseGame") with
+				{
+					UnlockMilestone = 0,
+					DevTreeBranch = "Healthcare",
+				},
+				Entry(2, "Deathcare Facility", "BaseGame") with
+				{
+					UnlockMilestone = 4,
+					DevTreeBranch = "Crematorium",
+				},
+			};
+
+			var ids = BuildingCatalogAdapter
+				.BuildFacetState(entries, new BuildingCatalogQuery())
+				.Groups
+				.Select(group => group.Id)
+				.ToArray();
+
+			// stripTab genuinely splits this fixture — two distinct branches, so
+			// the old rail WOULD have offered it and this assertion bites.
+			// milestone cannot be produced at all now that the name it keyed on
+			// is gone from the entry, so that assertion guards the id rather
+			// than the split. Named here because a test that passes for a
+			// different reason than its name says is worse than no test.
+			Assert.DoesNotContain("milestone", ids);
+			Assert.DoesNotContain("stripTab", ids);
+			Assert.Contains("buildingType", ids);
+		}
+
+		[Fact]
 		public void ADimensionWithOneValueIsNotOffered()
 		{
 			// Every entry already has it, so selecting it changes nothing. It
