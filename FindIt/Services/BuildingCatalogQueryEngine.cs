@@ -206,7 +206,10 @@ namespace FindItBuildingMenu.Services
 			if (!MatchesAny(entry.IsLocked ? "Locked" : "Unlocked", query.Availability)
 				|| !MatchesAny(entry.BuildingType, query.BuildingTypes)
 				|| !MatchesAny(entry.Provenance, query.Provenance)
-				|| !MatchesAny(entry.DlcId, query.DlcIds)
+				// DlcIds is deliberately absent. It is the Content facet's third
+				// mechanism and is applied in the adapter's ContentVisible, so
+				// that it UNIONS with the pack and base-game halves rather than
+				// intersecting them.
 				|| !MatchesAny(entry.Theme, query.Themes)
 				// Placement used to require every chosen flag while every other
 				// facet took any. The rail draws them identically, so the same

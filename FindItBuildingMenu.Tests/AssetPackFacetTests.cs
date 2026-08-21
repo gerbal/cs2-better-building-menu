@@ -36,6 +36,9 @@ namespace FindItBuildingMenu.Tests
 			IsFavorited: false,
 			PdxModsId: "");
 
+		// A pack asset, deliberately with no DlcId: these fixtures are about the
+		// pack half of Content, and giving them the base-game id would add the
+		// Vanilla option and change what the group holds.
 		private static BuildingCatalogEntry Entry(int id, params int[] packs) =>
 			Base with { Id = id, PrefabName = $"Entry{id}", AssetPackIndices = packs };
 
@@ -43,7 +46,7 @@ namespace FindItBuildingMenu.Tests
 			BuildingCatalogAdapter
 				.BuildFacetState(entries, new BuildingCatalogQuery())
 				.Groups
-				.FirstOrDefault(group => group.Id == "assetPack");
+				.FirstOrDefault(group => group.Id == "content");
 
 		[Fact]
 		public void OptionsAreKeyedByEntitySoTheyCanBeWrittenBack()
@@ -58,7 +61,7 @@ namespace FindItBuildingMenu.Tests
 			Assert.NotNull(group);
 			// "index:version". Vanilla's setter takes entities, and an index
 			// alone cannot be turned back into one.
-			Assert.Equal(new[] { "4211:1", "4212:3" }, group!.Options.Select(option => option.Id).ToArray());
+			Assert.Equal(new[] { "pack:4211:1", "pack:4212:3" }, group!.Options.Select(option => option.Id).ToArray());
 			Assert.Equal(
 				new[] { "Bridges And Ports Asset Pack", "Dragon Gate Pack" },
 				group.Options.Select(option => option.Label).ToArray());
@@ -81,8 +84,8 @@ namespace FindItBuildingMenu.Tests
 			var group = PackGroup(Entry(1, 4211), Entry(2, 4212));
 
 			Assert.NotNull(group);
-			Assert.False(Assert.Single(group!.Options, option => option.Id == "4211:1").Selected);
-			Assert.True(Assert.Single(group.Options, option => option.Id == "4212:3").Selected);
+			Assert.False(Assert.Single(group!.Options, option => option.Id == "pack:4211:1").Selected);
+			Assert.True(Assert.Single(group.Options, option => option.Id == "pack:4212:3").Selected);
 
 			BuildingCatalogAdapter.ToolbarSelection = VanillaToolbarSelection.None;
 		}
@@ -113,14 +116,42 @@ namespace FindItBuildingMenu.Tests
 			var group = BuildingCatalogAdapter
 				.BuildFacetState(visible, new BuildingCatalogQuery(), everything)
 				.Groups
-				.FirstOrDefault(facet => facet.Id == "assetPack");
+				.FirstOrDefault(facet => facet.Id == "content");
 
 			Assert.NotNull(group);
-			Assert.Equal(new[] { "4211:1", "4212:3" }, group!.Options.Select(option => option.Id).ToArray());
-			Assert.True(Assert.Single(group.Options, option => option.Id == "4211:1").Selected);
-			Assert.False(Assert.Single(group.Options, option => option.Id == "4212:3").Selected);
+			Assert.Equal(new[] { "pack:4211:1", "pack:4212:3" }, group!.Options.Select(option => option.Id).ToArray());
+			Assert.True(Assert.Single(group.Options, option => option.Id == "pack:4211:1").Selected);
+			Assert.False(Assert.Single(group.Options, option => option.Id == "pack:4212:3").Selected);
 
 			BuildingCatalogAdapter.ToolbarSelection = VanillaToolbarSelection.None;
+		}
+
+		[Fact]
+		public void ADlcOptionIsOfferedOnlyWhenNoPackSpeaksForIt()
+		{
+			// This test IS the de-duplication. DLC and Asset packs used to be two
+			// groups and one contained the other, because every first-party
+			// creator pack sets both facts. A DLC earns its own option only when
+			// nothing in view carries it as a pack.
+			AssetPackRegistry.Clear();
+			AssetPackRegistry.Record(4211, 1, "Bridges And Ports Asset Pack");
+			BuildingCatalogAdapter.ToolbarSelection = VanillaToolbarSelection.None;
+
+			// Bridges & Ports: a pack AND a DLC. San Francisco: a DLC alone.
+			var bridges = Entry(1, 4211) with { DlcId = "77" };
+			var sanFrancisco = Base with { Id = 2, PrefabName = "SF", DlcId = "1" };
+
+			var group = BuildingCatalogAdapter
+				.BuildFacetState(new[] { bridges, sanFrancisco }, new BuildingCatalogQuery())
+				.Groups
+				.FirstOrDefault(facet => facet.Id == "content");
+
+			Assert.NotNull(group);
+			var ids = group!.Options.Select(option => option.Id).ToArray();
+			Assert.Contains("pack:4211:1", ids);
+			Assert.Contains("dlc:1", ids);
+			// Not "dlc:77" — its pack already speaks for it.
+			Assert.DoesNotContain("dlc:77", ids);
 		}
 
 		[Fact]

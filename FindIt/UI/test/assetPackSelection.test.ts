@@ -2,9 +2,10 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
-  ASSET_PACK_FACET_ID,
+  CONTENT_FACET_ID,
+  contentOptionKind,
   assetPackIndex,
-  isAssetPackFacetCommand,
+  isContentFacetCommand,
   parseAssetPackId,
   toggleAssetPack,
 } from "../src/domain/assetPackSelection.ts";
@@ -31,7 +32,7 @@ describe("asset pack selection", () => {
   });
 
   it("adds a pack the game has not got selected", () => {
-    assert.deepEqual(toggleAssetPack([], "4211:1"), [{ index: 4211, version: 1 }]);
+    assert.deepEqual(toggleAssetPack([], "pack:4211:1"), [{ index: 4211, version: 1 }]);
   });
 
   it("removes one it has, whatever shape it arrived in", () => {
@@ -53,9 +54,22 @@ describe("asset pack selection", () => {
     assert.deepEqual(toggleAssetPack([77], "nonsense"), [77]);
   });
 
-  it("recognises a pack chip's remove command", () => {
-    assert.equal(isAssetPackFacetCommand({ args: [ASSET_PACK_FACET_ID, "4211:1"] }), true);
-    assert.equal(isAssetPackFacetCommand({ args: ["theme", "European"] }), false);
-    assert.equal(isAssetPackFacetCommand(null), false);
+  it("recognises a Content chip's remove command", () => {
+    assert.equal(isContentFacetCommand({ args: [CONTENT_FACET_ID, "pack:4211:1"] }), true);
+    assert.equal(isContentFacetCommand({ args: ["theme", "European"] }), false);
+    assert.equal(isContentFacetCommand(null), false);
+  });
+
+  it("routes each option to whichever state owns it", () => {
+    // One axis, three owners: the game's pack selection, the game's Vanilla
+    // toggle, and our DlcIds. The prefix is the whole routing table.
+    assert.equal(contentOptionKind("pack:4211:1"), "pack");
+    assert.equal(contentOptionKind("vanilla"), "vanilla");
+    assert.equal(contentOptionKind("dlc:-2009"), "dlc");
+  });
+
+  it("parses a pack id whether or not it carries the Content prefix", () => {
+    assert.deepEqual(parseAssetPackId("pack:4211:1"), { index: 4211, version: 1 });
+    assert.deepEqual(parseAssetPackId("4211:1"), { index: 4211, version: 1 });
   });
 });
