@@ -24,6 +24,14 @@ import { BuildingCatalogMetricFilters } from "mods/BuildingCatalog/BuildingCatal
 import { buildFilterChips, removableChipCount } from "domain/filterChips";
 import { clearBuildingLensFiltersCommand } from "domain/buildingLensFilterSummary";
 import { toggleBuildingLensFacetCommand } from "domain/buildingCatalogFacets";
+import {
+  ASSET_PACK_FACET_ID,
+  ASSET_PACK_TRIGGER_GROUP,
+  ASSET_PACK_TRIGGER_NAME,
+  isAssetPackFacetCommand,
+  toggleAssetPack,
+} from "domain/assetPackSelection";
+import type { ToolbarEntity } from "domain/toolbarEntity";
 import { countActiveMetricRanges } from "domain/filterRail";
 import type { BuildingLensFacetState } from "domain/buildingCatalogFacets";
 import type { BuildingLensMetricRangeState } from "domain/buildingLensFilterSummary";
@@ -53,6 +61,10 @@ const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState | nu
   null
 );
 const BuildingLensZoneFamilies$ = bindValue<string[]>(mod.id, "BuildingLensZoneFamilies", []);
+// The GAME's pack selection, not one of ours: read so the rail can show what is
+// ticked, written so a rail toggle lands in the same place the vanilla Pack row
+// puts it. See domain/assetPackSelection.
+const SelectedAssetPacks$ = bindValue<ToolbarEntity[]>("toolbar", "selectedAssetPacks", []);
 
 /**
  * What the pane takes out of the panel's width: its own 379rem plus the 6rem
@@ -99,6 +111,7 @@ export const LensControlPane = () => {
   const facets = useValue(BuildingLensFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
   const zoneFamilies = useValue(BuildingLensZoneFamilies$) ?? [];
+  const selectedAssetPacks = useValue(SelectedAssetPacks$) ?? [];
 
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
   const [sortPickerOpen, setSortPickerOpen] = useState(false);
@@ -118,6 +131,34 @@ export const LensControlPane = () => {
 
   const fire = (command: { method: string; args: readonly any[] }) =>
     trigger(mod.id, command.method, ...command.args);
+
+  // Packs are the GAME's selection, so the rail writes vanilla's trigger rather
+  // than one of ours — one axis, one state. Everything else goes the usual way.
+  // See domain/assetPackSelection.
+  const toggleFacetOption = (groupId: string, optionId: string) => {
+    if (groupId === ASSET_PACK_FACET_ID) {
+      trigger(
+        ASSET_PACK_TRIGGER_GROUP,
+        ASSET_PACK_TRIGGER_NAME,
+        toggleAssetPack(selectedAssetPacks, optionId)
+      );
+      return;
+    }
+
+    fire(toggleBuildingLensFacetCommand(groupId, optionId));
+  };
+
+  // A chip is the same toggle wearing a different hat, so it takes the same
+  // route. Routing it through `fire` would send a pack removal to a field that
+  // no longer exists, and the chip would sit there un-removable.
+  const removeChip = (command: { method: string; args: readonly any[] }) => {
+    if (isAssetPackFacetCommand(command)) {
+      toggleFacetOption(ASSET_PACK_FACET_ID, String(command.args[1]));
+      return;
+    }
+
+    fire(command);
+  };
 
   const familyLabel = (id: string) =>
     translate(`Tooltip.LABEL[FindItBuildingMenu.Zoning_${id}]`, id) ?? id;
@@ -191,7 +232,7 @@ export const LensControlPane = () => {
           <FilterRail
             facets={facets}
             metricsActive={countActiveMetricRanges(metricRanges as unknown as Record<string, unknown>)}
-            onToggleOption={(groupId, optionId) => fire(toggleBuildingLensFacetCommand(groupId, optionId))}
+            onToggleOption={toggleFacetOption}
             renderMetrics={() => <BuildingCatalogMetricFilters />}
           />
         </div>
@@ -211,7 +252,7 @@ export const LensControlPane = () => {
                 <Button
                   className={styles.chipRemove}
                   variant="icon"
-                  onSelect={() => chip.remove && fire(chip.remove)}
+                  onSelect={() => chip.remove && removeChip(chip.remove)}
                   aria-label={`${label("Tooltip.LABEL[FindItBuildingMenu.Remove]", "Remove")} ${chip.label}`}
                 >
                   ×

@@ -319,7 +319,11 @@ public sealed class BuildingCatalogQueryEngineTests
         // narrow anything (IsWorthOffering), but this one is exhaustive: its
         // resting state is a fact about the view rather than an absence of
         // input, and "everything here is unlocked" is worth saying.
-        Assert.Equal(new[] { "buildingType", "provenance", "availability", "dlc", "theme", "assetPack", "placement" }, state.Groups.Select(group => group.Id).ToArray());
+        // No "assetPack": that group is keyed on the pack ENTITY now, not on
+        // the names these fixtures carry, because it reads and writes the
+        // game's own selection. With nothing recorded in AssetPackRegistry
+        // there is no pack to offer — see AssetPackFacetTests, which seeds it.
+        Assert.Equal(new[] { "buildingType", "provenance", "availability", "dlc", "theme", "placement" }, state.Groups.Select(group => group.Id).ToArray());
 
         // Neither ticked at rest, which is how every other facet reads: nothing
         // picked means nothing excluded. Both were ticked while the first click
@@ -349,9 +353,11 @@ public sealed class BuildingCatalogQueryEngineTests
             provenance.Options.Single(option => option.Id == "Vanilla").Label,
             dlc.Options.Single(option => option.Id == "-2009").Label);
 
-        BuildingCatalogFacetGroup assetPacks = Assert.Single(state.Groups, group => group.Id == "assetPack");
-        Assert.Equal("Pack A", assetPacks.Options.Single(option => option.Id == "PackA").Label);
-        Assert.Equal("No asset pack", assetPacks.Options.Single(option => option.Id == "FindIt_NoPack").Label);
+        // The pack group used to be asserted here on its NAMES, including a
+        // synthetic "FindIt_NoPack" for assets belonging to none. Both are gone
+        // with the name-keyed field: the group is keyed on the pack entity now
+        // (AssetPackFacetTests), and "belongs to no pack" is what vanilla's own
+        // base-game chip already says, beside its Pack row.
     }
 
     [Fact]

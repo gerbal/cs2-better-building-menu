@@ -70,6 +70,10 @@ namespace FindItBuildingMenu.Services
 				.ToArray();
 		}
 
+		/// <summary>The same toolbar selection with its packs dropped.</summary>
+		private static VanillaToolbarSelection WithoutPacks(VanillaToolbarSelection selection) =>
+			new(selection.SelectedThemes, null, selection.VanillaSelected, selection.ModsSelected);
+
 		public BuildingCatalogFacetState GetFacetState(BuildingCatalogQuery query)
 		{
 			if (query is null)
@@ -80,7 +84,12 @@ namespace FindItBuildingMenu.Services
 			// Scoped to the view, not to the whole index — see InScope.
 			return BuildFacetState(
 				BuildingCatalogQueryEngine.InScope(ProjectForMenu(query.UiMenu), query),
-				query);
+				query,
+				// Packs alone are counted before the pack filter runs, because
+				// that filter is upstream of InScope and InScope cannot undo it.
+				BuildingCatalogQueryEngine.InScope(
+					GetIndexedBuildings(query.UiMenu, ignorePackSelection: true).Select(Project),
+					query));
 		}
 
 		/// <summary>
@@ -608,9 +617,16 @@ namespace FindItBuildingMenu.Services
 			return highest;
 		}
 
+		/// <param name="packScope">
+		/// The entries the PACK group is counted over, when that differs from
+		/// the rest. Defaults to <paramref name="entries"/>; the adapter passes
+		/// a pack-unfiltered set so the group can offer a pack other than the
+		/// one already chosen. See GetIndexedBuildings(ignorePackSelection).
+		/// </param>
 		public static BuildingCatalogFacetState BuildFacetState(
 			IEnumerable<BuildingCatalogEntry> entries,
-			BuildingCatalogQuery query)
+			BuildingCatalogQuery query,
+			IEnumerable<BuildingCatalogEntry>? packScope = null)
 		{
 			if (entries is null)
 			{
@@ -657,7 +673,7 @@ namespace FindItBuildingMenu.Services
 			// Development stays reachable as a Group by dimension, and so does
 			// Progression; grouping is where "when does this unlock" belongs,
 			// because it orders the set instead of hiding most of it.
-			AddArrayGroup(groups, "assetPack", "Asset packs", source.Select(entry => entry.AssetPacks), query.AssetPacks, FormatAssetPackLabel);
+			AddAssetPackGroup(groups, packScope is null ? source : packScope.ToArray());
 			AddArrayGroup(groups, "placement", "Placement", source.Select(entry => entry.PlacementFlags), query.PlacementFlags, FormatFlagLabel);
 			AddArrayGroup(groups, "extension", "Extensions", source.Select(entry => entry.Extensions), query.Extensions, FormatFacetWords);
 			// Density is what the vanilla Zones menu is organised around, so it
@@ -676,7 +692,6 @@ namespace FindItBuildingMenu.Services
 				|| HasValues(query.Provenance)
 				|| HasValues(query.DlcIds)
 				|| HasValues(query.Themes)
-				|| HasValues(query.AssetPacks)
 				|| HasValues(query.PlacementFlags)
 				|| HasValues(query.Extensions);
 
@@ -752,7 +767,18 @@ namespace FindItBuildingMenu.Services
 		/// Scoping to a menu therefore admits that menu's members whatever they
 		/// are, and unscoped views are untouched.
 		/// </remarks>
-		private static IEnumerable<PrefabIndex> GetIndexedBuildings(string? uiMenu = null)
+		/// <param name="ignorePackSelection">
+		/// Applies the toolbar's themes and Vanilla/Mods toggles but NOT its
+		/// packs. Only the pack facet wants this, and it wants it for the same
+		/// reason InScope drops a facet's own selection before counting it: a
+		/// dimension computed from the set it has already narrowed can only ever
+		/// offer what is still showing. Measured — pick Bridges &amp; Ports and
+		/// the pack list collapsed to Bridges &amp; Ports, so the rail could
+		/// clear a pack but never switch to another one.
+		/// </param>
+		private static IEnumerable<PrefabIndex> GetIndexedBuildings(
+			string? uiMenu = null,
+			bool ignorePackSelection = false)
 		{
 			if (!FindItUtil.IsReady
 				|| !FindItUtil.CategorizedPrefabs.TryGetValue(PrefabCategory.Any, out var allCategories)
@@ -786,7 +812,9 @@ namespace FindItBuildingMenu.Services
 				// bug rather than a design choice. Costs nothing when the
 				// toolbar is untouched: IsVisible early-outs on an empty
 				// selection, which is also what stops the lens opening blank.
-				.Where(prefab => VanillaToolbarFilter.IsVisible(prefab.VanillaFacts, ToolbarSelection))
+				.Where(prefab => VanillaToolbarFilter.IsVisible(
+					prefab.VanillaFacts,
+					ignorePackSelection ? WithoutPacks(ToolbarSelection) : ToolbarSelection))
 				// Phase 3: membership comes from the game's own tree.
 				//
 				// This used to read `IsBuilding(prefab) || prefab.UiMenuName ==
@@ -978,6 +1006,7 @@ namespace FindItBuildingMenu.Services
 				DlcId: prefab.DlcId == DlcId.Invalid ? null : prefab.DlcId.id.ToString(),
 				Theme: prefab.Theme?.name,
 				AssetPacks: prefab.AssetPacks?.Where(pack => pack is not null).Select(pack => pack.name).Where(name => !string.IsNullOrWhiteSpace(name)).ToArray() ?? Array.Empty<string>(),
+				AssetPackIndices: prefab.VanillaFacts.AssetPacks?.ToArray() ?? Array.Empty<int>(),
 				PlacementFlags: GetPlacementFlagNames(prefab.BuildingFlagsValue),
 				Extensions: prefab.ExtensionIds ?? Array.Empty<string>(),
 				ConstructionCost: prefab.ConstructionCost,
@@ -1086,6 +1115,65 @@ namespace FindItBuildingMenu.Services
 		private static bool IsWorthOffering(string[] distinctValues, IReadOnlyList<string>? selected)
 		{
 			return distinctValues.Length > 1 || (selected is not null && selected.Count > 0);
+		}
+
+		/// <summary>
+		/// Asset packs, as a view onto the GAME's pack selection.
+		/// </summary>
+		/// <remarks>
+		/// One axis, one state. The game already publishes a Pack row of its own
+		/// and already filters this menu by it — VanillaToolbarFilter.IsVisible,
+		/// fed by the selection VanillaToolbarWatcher mirrors across. A second
+		/// pack filter with its own field meant two controls narrowing the same
+		/// set from two different states, which is how a control and its counts
+		/// come to disagree; measured, ours and the game's row did not even
+		/// offer the same packs.
+		///
+		/// So this group no longer holds a selection of its own. Its options are
+		/// keyed by the pack ENTITY, its ticks are read from the game's
+		/// selection, and toggling one writes back through
+		/// toolbar.setSelectedAssetPacks.
+		///
+		/// It stays WIDER than the game's row rather than mirroring it.
+		/// BindPacks builds that row from the selected category, so it shows the
+		/// packs in the category you are in; this shows the packs in the menu.
+		/// In Parks &amp; Recreation that is four against two, and the two the
+		/// game left out hold three assets each — unreachable from its row and
+		/// reachable from here. Narrowing to match would cost exactly the reach
+		/// this lens exists to provide.
+		/// </remarks>
+		private static void AddAssetPackGroup(
+			ICollection<BuildingCatalogFacetGroup> groups,
+			IReadOnlyList<BuildingCatalogEntry> source)
+		{
+			var selectedPacks = ToolbarSelection.SelectedPacks;
+
+			var options = source
+				.SelectMany(entry => entry.AssetPackIndices ?? Array.Empty<int>())
+				.Distinct()
+				.Select(index => new
+				{
+					Index = index,
+					Id = AssetPackRegistry.IdOf(index),
+					Label = AssetPackRegistry.NameOf(index),
+				})
+				// A pack the indexer never recorded cannot be written back to the
+				// game, so offering it would be a tick that does nothing.
+				.Where(pack => pack.Id.Length > 0 && pack.Label.Length > 0)
+				.OrderBy(pack => pack.Label, StringComparer.CurrentCultureIgnoreCase)
+				.Select(pack => new BuildingCatalogFacetOption(
+					pack.Id,
+					pack.Label,
+					selectedPacks.Any(selected => selected == pack.Index)))
+				.ToArray();
+
+			// Same rule as every other dimension: one value splits nothing. A
+			// selection still holds the group open, because a filter with no
+			// control attached cannot be cleared.
+			if (options.Length > 1 || options.Any(option => option.Selected))
+			{
+				groups.Add(new BuildingCatalogFacetGroup("assetPack", "Asset packs", options));
+			}
 		}
 
 		private static void AddArrayGroup(
@@ -1227,16 +1315,6 @@ namespace FindItBuildingMenu.Services
 			if (string.Equals(value, "Custom", StringComparison.OrdinalIgnoreCase))
 			{
 				return "Custom content";
-			}
-
-			return FormatFacetWords(value);
-		}
-
-		private static string FormatAssetPackLabel(string value)
-		{
-			if (string.Equals(value, "FindIt_NoPack", StringComparison.OrdinalIgnoreCase))
-			{
-				return "No asset pack";
 			}
 
 			return FormatFacetWords(value);

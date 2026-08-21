@@ -30,7 +30,11 @@ namespace FindItBuildingMenu.Domain
 				"availability" => query with { Availability = ToggleExhaustive(query.Availability, normalizedOption, Availability.All), Offset = 0 },
 				"dlc" => query with { DlcIds = ToggleValue(query.DlcIds, normalizedOption), Offset = 0 },
 				"theme" => query with { Themes = ToggleValue(query.Themes, normalizedOption), Offset = 0 },
-				"assetpack" => query with { AssetPacks = ToggleValue(query.AssetPacks, normalizedOption), Offset = 0 },
+				// "assetpack" is deliberately absent. Packs are the GAME's
+				// selection now — the rail writes them through
+				// toolbar.setSelectedAssetPacks and they filter through
+				// VanillaToolbarFilter, so there is no field here to toggle.
+				// See AddAssetPackGroup.
 				"placement" => query with { PlacementFlags = ToggleValue(query.PlacementFlags, normalizedOption), Offset = 0 },
 				"extension" or "extensions" => query with { Extensions = ToggleValue(query.Extensions, normalizedOption), Offset = 0 },
 				"zone" or "zonetype" => query with { ZoneTypes = ToggleValue(query.ZoneTypes, normalizedOption), Offset = 0 },
@@ -52,7 +56,6 @@ namespace FindItBuildingMenu.Domain
 				Availability = null,
 				DlcIds = null,
 				Themes = null,
-				AssetPacks = null,
 				PlacementFlags = null,
 				ZoneTypes = null,
 				Extensions = null,

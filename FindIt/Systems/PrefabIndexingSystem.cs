@@ -2716,6 +2716,26 @@ namespace FindItBuildingMenu.Systems
 		/// different fact and is what the building indexer reads for its own
 		/// facet.
 		/// </remarks>
+		/// <summary>Names a pack for <see cref="AssetPackRegistry"/>.</summary>
+		/// <remarks>
+		/// Recorded as the packs are walked, because this is the one place both
+		/// halves of the entity are in hand. The registry is wider than the
+		/// game's own Pack row by design: ToolbarUISystem.BindPacks builds that
+		/// row from the selected CATEGORY, so it offers the packs in the
+		/// category you are looking at — measured in Parks &amp; Recreation it
+		/// offered two while the menu held four, and the two it left out had
+		/// three assets each. Same axis, narrower view.
+		/// </remarks>
+		private void RecordAssetPack(Entity pack)
+		{
+			AssetPackRegistry.Record(
+				pack.Index,
+				pack.Version,
+				_prefabSystem.TryGetPrefab<PrefabBase>(pack, out var packPrefab)
+					? GetAssetName(packPrefab)
+					: string.Empty);
+		}
+
 		private VanillaAssetFacts GetVanillaAssetFacts(Entity entity)
 		{
 			var themeRequirements = new List<int>();
@@ -2748,6 +2768,7 @@ namespace FindItBuildingMenu.Systems
 				{
 					var pack = packElements[i].m_Pack;
 					packs.Add(pack.Index);
+					RecordAssetPack(pack);
 
 					if (isModAsset && EntityManager.HasComponent<ModPrerequisiteData>(pack))
 					{
