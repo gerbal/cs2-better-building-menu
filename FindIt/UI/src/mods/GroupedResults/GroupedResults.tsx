@@ -1,12 +1,13 @@
 import { bindValue, useValue } from "cs2/api";
 import { Scrollable } from "cs2/ui";
-import { type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import classNames from "classnames";
 import mod from "../../../mod.json";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
   buildGroupedView,
   fitGroupLabel,
+  fitLabelToWidth,
   shouldShowHeading,
   type GroupDimensionId,
   type GroupNode,
@@ -41,6 +42,84 @@ interface GroupedResultsProps {
    */
   footer?: ReactNode;
 }
+
+/**
+ * A group heading that trims its label to the width it was actually given.
+ *
+ * The estimate from the tile count paints first, so a long name never flashes
+ * across the panel; a measurement then corrects it. If the measurement never
+ * lands — a zero-width box, an engine that has not settled — the estimate is
+ * what stays, which is exactly the behaviour this replaced.
+ *
+ * The measurement needs two numbers and takes each from an element that cannot
+ * be disturbed by the answer:
+ *
+ * - `available` from the label's own box, which is `flex: 1 1 auto` precisely
+ *   so it fills the leftover space whatever text is in it. With `0 1 auto` the
+ *   box shrank to the trimmed text and the next measurement read that as the
+ *   space available, trimming again on every pass.
+ * - `needed` from a hidden probe holding the FULL string, so the ratio is
+ *   always full-text-against-space rather than a measurement of the last
+ *   answer.
+ */
+const GroupHeading = ({
+  label,
+  estimate,
+  count,
+  nested,
+  viewMode,
+}: {
+  label: string;
+  estimate: string;
+  count: number;
+  nested: boolean;
+  viewMode: CatalogViewMode;
+}): JSX.Element => {
+  const boxRef = useRef<HTMLSpanElement>(null);
+  const probeRef = useRef<HTMLSpanElement>(null);
+  const [fitted, setFitted] = useState(estimate);
+
+  useEffect(() => {
+    setFitted(estimate);
+
+    // A frame later: Cohtml settles layout on the next frame, so measuring
+    // inside the effect reads the previous pass's boxes.
+    const measure = () => {
+      const available = boxRef.current?.clientWidth ?? 0;
+      const needed = probeRef.current?.scrollWidth ?? 0;
+
+      if (available > 0 && needed > 0) {
+        setFitted(fitLabelToWidth(label, available, needed));
+      }
+    };
+
+    const raf =
+      typeof requestAnimationFrame === "function"
+        ? requestAnimationFrame(measure)
+        : (setTimeout(measure, 0) as unknown as number);
+
+    return () => {
+      if (typeof cancelAnimationFrame === "function") {
+        cancelAnimationFrame(raf);
+      } else {
+        clearTimeout(raf);
+      }
+    };
+    // count and viewMode both move the group's width, so both re-measure.
+  }, [label, estimate, count, viewMode]);
+
+  return (
+    <div className={classNames(styles.groupHeading, nested && styles.groupHeadingNested)}>
+      <span ref={boxRef} className={styles.groupLabel} title={label}>
+        {fitted}
+      </span>
+      <span ref={probeRef} className={styles.groupLabelProbe} aria-hidden="true">
+        {label}
+      </span>
+      <span className={styles.groupCount}>{count}</span>
+    </div>
+  );
+};
 
 /**
  * Headings over a result set, rendered in whichever mode is active.
@@ -114,12 +193,13 @@ export const GroupedResults = ({
         {nodes.map((node) => (
       <div className={styles.group} key={node.path.join("/")} data-group-depth={depth}>
         {showHeadings && (
-          <div className={classNames(styles.groupHeading, depth > 0 && styles.groupHeadingNested)}>
-            <span className={styles.groupLabel} title={headingLabel(node)}>
-              {fitGroupLabel(headingLabel(node), node.count)}
-            </span>
-            <span className={styles.groupCount}>{node.count}</span>
-          </div>
+          <GroupHeading
+            label={headingLabel(node)}
+            estimate={fitGroupLabel(headingLabel(node), node.count)}
+            count={node.count}
+            nested={depth > 0}
+            viewMode={viewMode}
+          />
         )}
         {node.children.length > 0 ? renderNodes(node.children, depth + 1) : renderLeaf(node.entries)}
       </div>

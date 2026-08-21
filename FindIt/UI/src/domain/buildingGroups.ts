@@ -773,6 +773,40 @@ export function fitGroupLabel(label: string, tiles: number): string {
   return `${label.slice(0, Math.max(1, budget - 1)).trimEnd()}…`;
 }
 
+/**
+ * A heading cut to the width it has actually been given.
+ *
+ * The estimate above budgets by tile COUNT, which only holds where a tile has
+ * a fixed width — the grid. Cards and list rows size to their content, so
+ * measured in Electricity a one-item group ran 94px to 172px while the budget
+ * said the same nine characters for every one of them, and "Gas Power Plant"
+ * was cut to "Gas Powe…" inside 166px of room.
+ *
+ * Both widths come from the DOM, so nothing here assumes a character width,
+ * a font, or a locale: `availablePx` is the box the label was given and
+ * `neededPx` is what the full string wants. Their ratio converts directly to
+ * a character count.
+ *
+ * Safe to feed back into the label because the heading is positioned OUT OF
+ * FLOW — see groupedResults.module.scss. Shortening the text cannot narrow
+ * the group, so measure → shorten → measure cannot spiral.
+ */
+export function fitLabelToWidth(label: string, availablePx: number, neededPx: number): string {
+  // Not laid out yet, or it already fits. Callers keep their estimate.
+  if (availablePx <= 0 || neededPx <= 0 || neededPx <= availablePx) {
+    return label;
+  }
+
+  // -1 for the ellipsis, which costs a character the ratio has not counted.
+  const budget = Math.max(MIN_GROUP_LABEL, Math.floor(label.length * (availablePx / neededPx)) - 1);
+
+  if (label.length <= budget) {
+    return label;
+  }
+
+  return `${label.slice(0, Math.max(1, budget - 1)).trimEnd()}…`;
+}
+
 /** Uppercase characters that fit over one tile at the heading's size. */
 export const GROUP_LABEL_PER_TILE = 9;
 
