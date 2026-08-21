@@ -136,6 +136,10 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<MenuBranchCount[]> _BuildingLensStripTabs = null!;
 		private ValueBindingHelper<string> _BuildingLensStripTabBinding = null!;
 		private ValueBindingHelper<string> _BuildingLensStripAxisBinding = null!;
+		// Which category the strip draws as its development branches, and those
+		// branches. Empty on the menus that expand nothing.
+		private ValueBindingHelper<string> _BuildingLensExpandedCategory = null!;
+		private ValueBindingHelper<MenuBranchCount[]> _BuildingLensExpandedTabs = null!;
 		// The tier segment's other axis. Education navigates by level, not by
 		// the milestone the school unlocked at.
 		private ValueBindingHelper<MenuBranchCount[]> _BuildingLensMenuSchoolTierCounts = null!;
@@ -297,6 +301,8 @@ namespace FindItBuildingMenu.Systems
 				SetBuildingLensMenuMilestone);
 			_BuildingLensStripTabs = CreateBinding("BuildingLensStripTabs", Array.Empty<MenuBranchCount>());
 			_BuildingLensStripAxisBinding = CreateBinding("BuildingLensStripAxis", string.Empty);
+			_BuildingLensExpandedCategory = CreateBinding("BuildingLensExpandedCategory", string.Empty);
+			_BuildingLensExpandedTabs = CreateBinding("BuildingLensExpandedTabs", Array.Empty<MenuBranchCount>());
 			_BuildingLensStripTabBinding = CreateBinding(
 				"BuildingLensStripTab",
 				"SetBuildingLensStripTab",

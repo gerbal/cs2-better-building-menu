@@ -359,6 +359,12 @@ namespace FindItBuildingMenu.Systems
 		/// </remarks>
 		private void SetBuildingLensStripTab(string tab)
 		{
+			// A branch and a category are ALTERNATIVES wherever the strip draws
+			// branches in a category's place — the same rule the school levels
+			// follow. Holding a category as well would intersect Administration
+			// with a police branch and empty the menu.
+			_buildingLensUiCategory = string.Empty;
+			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
 			_buildingLensStripTab = tab ?? string.Empty;
 			_BuildingLensStripTabBinding.Value = _buildingLensStripTab;
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };

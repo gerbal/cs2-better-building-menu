@@ -98,8 +98,8 @@ namespace FindItBuildingMenu.Systems
 		// briefly keyed by label instead, which collides: every service's root
 		// is called "Basic", so all eleven shared one entry and Electricity's
 		// Basic tab drew the water glyph.
-		private Dictionary<Entity, (string Label, string Icon)> _devTreeBranches = new();
-		private Dictionary<string, (string Label, string Icon)> _devTreeRoots = new();
+		private Dictionary<Entity, (string Label, string Icon, int Depth)> _devTreeBranches = new();
+		private Dictionary<string, (string Label, string Icon, int Depth)> _devTreeRoots = new();
 		// Milestone index -> its progression-screen image. Safe to key by index
 		// because a milestone index IS unique, unlike a branch label.
 		private static Dictionary<int, string> _milestoneIcons = new();
@@ -1093,7 +1093,7 @@ namespace FindItBuildingMenu.Systems
 			// splits a service menu. Resolved after UiMenuName above, because an
 			// asset the tree never gated falls into its service's root bucket
 			// and the menu is what names the service.
-			(prefabIndex.DevTreeBranch, prefabIndex.DevTreeBranchIcon) =
+			(prefabIndex.DevTreeBranch, prefabIndex.DevTreeBranchIcon, prefabIndex.DevTreeBranchDepth) =
 				GetDevTreeBranch(entity, prefabIndex.UiMenuName);
 			prefabIndex.IsRandom = prefabIndex.SubCategory is not PrefabSubCategory.Networks_Pillars && EntityManager.HasComponent<PlaceholderObjectData>(entity);
 			prefabIndex.IsResourceIntensive = CheckIfResourceIntensive(prefab);
@@ -1493,16 +1493,51 @@ namespace FindItBuildingMenu.Systems
 				ComponentType.ReadOnly<DevTreeNodeData>(),
 				ComponentType.ReadOnly<PrefabData>());
 			var nodes = query.ToEntityArray(Allocator.Temp);
-			var parents = new Dictionary<Entity, Entity>();
-			var roots = new Dictionary<string, (string Label, string Icon)>();
-			var branches = new Dictionary<Entity, (string Label, string Icon)>();
+			var branches = new Dictionary<Entity, (string Label, string Icon, int Depth)>();
+			var roots = new Dictionary<string, (string Label, string Icon, int Depth)>();
 
-			for (var i = 0; i < nodes.Length; i++)
+			// Ranked per service by the tree's OWN LAYOUT — column first, then
+			// row. The column alone leaves siblings tied, and an alphabetical
+			// tie-break put Medical University and Technical University above
+			// the plain University they specialise. The game lays its siblings
+			// out in a deliberate order and draws them that way; reading that
+			// order off the layout is the only answer the tree actually gives.
+			var ranked = new Dictionary<Entity, int>();
+
+			foreach (var service in nodes
+				.Where(node => EntityManager.HasComponent<DevTreeNodeData>(node))
+				.GroupBy(node => EntityManager.GetComponentData<DevTreeNodeData>(node).m_Service))
 			{
-				parents[nodes[i]] = EntityManager.TryGetBuffer<DevTreeNodeRequirement>(nodes[i], true, out var reqs)
-					&& reqs.Length > 0
-						? reqs[0].m_Node
-						: Entity.Null;
+				var placed = service
+					.Select(node => (Node: node, Prefab: _prefabSystem.TryGetPrefab<PrefabBase>(node, out var pf) ? pf as DevTreeNodePrefab : null))
+					.Where(pair => pair.Prefab is not null)
+					.ToArray();
+
+				// The row the service's chain runs along, taken from its root.
+				// NOT zero: education's trunk sits at 1, with Technical above at
+				// 0 and Medical below at 2.
+				var trunk = placed
+					.Where(pair => pair.Prefab!.m_HorizontalPosition == 0)
+					.Select(pair => pair.Prefab!.m_VerticalPosition)
+					.DefaultIfEmpty(0f)
+					.First();
+
+				var ordered = placed
+					.OrderBy(pair => pair.Prefab!.m_HorizontalPosition)
+					// Then by distance from that trunk. Siblings in a column are
+					// drawn around the chain they hang off — the plain University
+					// sits between Technical and Medical, on the trunk's own row —
+					// so reading rows top to bottom puts a specialisation first.
+					// Measuring outward from the trunk takes the generic before
+					// the branches, which is the order the player meets them in.
+					.ThenBy(pair => Math.Abs(pair.Prefab!.m_VerticalPosition - trunk))
+					.ThenBy(pair => pair.Prefab!.m_VerticalPosition)
+					.ToArray();
+
+				for (var r = 0; r < ordered.Length; r++)
+				{
+					ranked[ordered[r].Node] = r;
+				}
 			}
 
 			for (var i = 0; i < nodes.Length; i++)
@@ -1514,36 +1549,29 @@ namespace FindItBuildingMenu.Systems
 					continue;
 				}
 
-				// A root — the service's free starting node. It names the bucket
-				// every asset the tree never gated falls into, which is why it
-				// is worth recording rather than skipping.
-				if (parents.TryGetValue(node, out var parent) && parent == Entity.Null)
+				var isRoot = !EntityManager.TryGetBuffer<DevTreeNodeRequirement>(node, true, out var reqs)
+					|| reqs.Length == 0;
+				var depth = ranked.TryGetValue(node, out var rank) ? rank : 0;
+
+				// The node ITSELF, not the chain it hangs off. Collapsing a
+				// chain to the branch below the root reads as the game's
+				// structure and is not: it filed the Central Intelligence
+				// Bureau under "Police Headquarters" because that is what it is
+				// reached THROUGH, and the Nuclear Power Plant under "Gas Power
+				// Plant" for the same reason. Those are separate unlocks the
+				// player buys separately, and a grouping that says otherwise
+				// misreports the tree it claims to show.
+				branches[node] = isRoot
+					? (RootBranchLabel, DevTreeIcon(prefab), 0)
+					: (DevTreeBranchName(prefab), DevTreeIcon(prefab), depth);
+
+				// The root also names the bucket for everything the tree never
+				// gated, so it is recorded against its service.
+				if (isRoot
+					&& EntityManager.TryGetComponent<DevTreeNodeData>(node, out var rootData)
+					&& _prefabSystem.TryGetPrefab<PrefabBase>(rootData.m_Service, out var rootService))
 				{
-					if (EntityManager.TryGetComponent<DevTreeNodeData>(node, out var rootData)
-						&& _prefabSystem.TryGetPrefab<PrefabBase>(rootData.m_Service, out var rootService))
-					{
-						roots[rootService.name] = (RootBranchLabel, DevTreeIcon(prefab));
-					}
-
-					branches[node] = (RootBranchLabel, DevTreeIcon(prefab));
-					continue;
-				}
-
-				var current = node;
-				var guard = 0;
-
-				while (parents.TryGetValue(current, out var next)
-					&& next != Entity.Null
-					&& parents.TryGetValue(next, out var above)
-					&& above != Entity.Null
-					&& guard++ < 32)
-				{
-					current = next;
-				}
-
-				if (_prefabSystem.TryGetPrefab<PrefabBase>(current, out var branchPrefab))
-				{
-					branches[node] = (DevTreeBranchName(branchPrefab), DevTreeIcon(branchPrefab));
+					roots[rootService.name] = (RootBranchLabel, DevTreeIcon(prefab), 0);
 				}
 			}
 
@@ -1641,7 +1669,7 @@ namespace FindItBuildingMenu.Systems
 		}
 
 		/// <summary>The branch an asset's unlock node belongs to, or empty.</summary>
-		private (string Label, string Icon) GetDevTreeBranch(Entity entity, string? menu)
+		private (string Label, string Icon, int Depth) GetDevTreeBranch(Entity entity, string? menu)
 		{
 			if (EntityManager.HasComponent<UnlockRequirement>(entity))
 			{
@@ -1671,7 +1699,7 @@ namespace FindItBuildingMenu.Systems
 			// tree and the player can see it there.
 			return menu is not null && _devTreeRoots.TryGetValue(menu, out var root)
 				? root
-				: (string.Empty, string.Empty);
+				: (string.Empty, string.Empty, 0);
 		}
 
 		/// <summary>The name the game gives a milestone index.</summary>

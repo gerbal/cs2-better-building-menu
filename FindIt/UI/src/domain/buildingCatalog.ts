@@ -36,6 +36,7 @@ export interface BuildingCatalogEntry {
    */
   unlockMilestone: number;
   devTreeBranch?: string | null;
+  devTreeBranchDepth?: number | null;
   /**
    * Everything else it waits on, already localized. Signature buildings are the
    * reason this exists: they hang off requirement prefabs rather than

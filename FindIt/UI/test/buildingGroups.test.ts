@@ -67,10 +67,27 @@ describe("Group dimensions", () => {
     assert.deepEqual(groupLevelsFor(entry({ educationLevel: 4 }), "schoolTier"), ["University"]);
   });
 
+  it("files a non-school under its own category, not under Other", () => {
+    // The education menu opens on this grouping, and its three research
+    // buildings under a heading called "Other" said nothing about them —
+    // "Research" is what the strip's own tab beside the four levels says.
+    assert.deepEqual(
+      groupLevelsFor(entry({ educationLevel: null, uiCategory: "Research" }), "schoolTier"),
+      ["Research"]
+    );
+    // A school still wins its tier, category or no category.
+    assert.deepEqual(
+      groupLevelsFor(entry({ educationLevel: 3, uiCategory: "Education" }), "schoolTier"),
+      ["College"]
+    );
+  });
+
   it("files the non-tiers with everything that has no tier at all", () => {
     // 0 is a school upgrade that adds capacity without a tier and 5 is the
     // outside connection, so neither is a heading — and neither is a building
     // that is not a school.
+    // No category on these fixtures, so the category fallback lands on Other
+    // too — what is being pinned is that 0 and 5 never become a TIER heading.
     for (const level of [0, 5, null, undefined]) {
       assert.deepEqual(
         groupLevelsFor(entry({ educationLevel: level as never }), "schoolTier"),
@@ -615,5 +632,15 @@ describe("Which grouping choices a menu offers", () => {
     assert.ok(ids("Electricity").includes("development"));
     assert.ok(ids("Roads").includes("development"));
     assert.ok(ids("Education & Research").includes("development"));
+  });
+
+  it("opens the education menu on its levels", () => {
+    // The default has to match what the strip offers, or arriving in the menu
+    // shows one EDUCATION heading over ten schools the row had just separated.
+    assert.equal(defaultGroupDimensionFor("ServiceBuildings", true, "", true), "schoolTier");
+    // Every other menu is unaffected by the education flag being absent.
+    assert.equal(defaultGroupDimensionFor("ServiceBuildings", true, ""), "menuCategory");
+    assert.equal(defaultGroupDimensionFor("ServiceBuildings", false, "development"), "development");
+    assert.equal(defaultGroupDimensionFor("ServiceBuildings", false, "assetType"), "category");
   });
 });

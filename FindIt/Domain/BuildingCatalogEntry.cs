@@ -107,6 +107,7 @@ namespace FindItBuildingMenu.Domain
 		/// </remarks>
 		string? DevTreeBranch = null,
 		string? DevTreeBranchIcon = null,
+		int DevTreeBranchDepth = 0,
 		string[]? UnlockRequirements = null,
 		/// <summary>
 		/// What the building gives the city. Signature buildings are free, so
@@ -190,6 +191,12 @@ namespace FindItBuildingMenu.Domain
 			writer.Write(UnlockMilestone);
 			writer.PropertyName("devTreeBranch");
 			writer.Write(DevTreeBranch ?? string.Empty);
+			// The tree column, so the UI can order its headings by unlock the
+			// way the tabs already are. Without it the grouped view formed
+			// groups in encounter order and, sorted by name, drew Coal Power
+			// Plant above the basic buildings it is unlocked long after.
+			writer.PropertyName("devTreeBranchDepth");
+			writer.Write(DevTreeBranchDepth);
 			WriteStringArray(writer, "unlockRequirements", UnlockRequirements);
 			WriteStringArray(writer, "bonuses", Bonuses);
 			writer.PropertyName("costIsPerDistance");

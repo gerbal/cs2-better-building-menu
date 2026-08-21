@@ -78,6 +78,13 @@ namespace FindItBuildingMenu.Domain
 		/// </remarks>
 		public string DevTreeBranchIcon { get; set; } = string.Empty;
 
+		/// <summary>The branch's column in its service's development tree.</summary>
+		/// <remarks>
+		/// The order the game lays the chains out in, and so the order a rank
+		/// over the tabs should follow. The root is 0.
+		/// </remarks>
+		public int DevTreeBranchDepth { get; set; }
+
 		/// <summary>
 		/// Everything else the asset is waiting on, already localized.
 		/// </summary>
