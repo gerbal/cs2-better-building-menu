@@ -25,10 +25,12 @@ import { buildFilterChips, removableChipCount } from "domain/filterChips";
 import { clearBuildingLensFiltersCommand } from "domain/buildingLensFilterSummary";
 import { toggleBuildingLensFacetCommand } from "domain/buildingCatalogFacets";
 import {
-  ASSET_PACK_FACET_ID,
   ASSET_PACK_TRIGGER_GROUP,
   ASSET_PACK_TRIGGER_NAME,
-  isAssetPackFacetCommand,
+  CONTENT_FACET_ID,
+  VANILLA_TRIGGER_NAME,
+  contentOptionKind,
+  isContentFacetCommand,
   toggleAssetPack,
 } from "domain/assetPackSelection";
 import type { ToolbarEntity } from "domain/toolbarEntity";
@@ -65,6 +67,7 @@ const BuildingLensZoneFamilies$ = bindValue<string[]>(mod.id, "BuildingLensZoneF
 // ticked, written so a rail toggle lands in the same place the vanilla Pack row
 // puts it. See domain/assetPackSelection.
 const SelectedAssetPacks$ = bindValue<ToolbarEntity[]>("toolbar", "selectedAssetPacks", []);
+const VanillaSelected$ = bindValue<boolean>("toolbar", "vanillaSelected", false);
 
 /**
  * What the pane takes out of the panel's width: its own 379rem plus the 6rem
@@ -112,6 +115,7 @@ export const LensControlPane = () => {
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
   const zoneFamilies = useValue(BuildingLensZoneFamilies$) ?? [];
   const selectedAssetPacks = useValue(SelectedAssetPacks$) ?? [];
+  const vanillaSelected = useValue(VanillaSelected$) ?? false;
 
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
   const [sortPickerOpen, setSortPickerOpen] = useState(false);
@@ -132,28 +136,39 @@ export const LensControlPane = () => {
   const fire = (command: { method: string; args: readonly any[] }) =>
     trigger(mod.id, command.method, ...command.args);
 
-  // Packs are the GAME's selection, so the rail writes vanilla's trigger rather
-  // than one of ours — one axis, one state. Everything else goes the usual way.
-  // See domain/assetPackSelection.
+  // Content is ONE axis over three pieces of state, so a click has to find its
+  // way back to whichever owns it. Two of them are the game's — a pack goes to
+  // its pack selection and base game to its Vanilla toggle, which is what keeps
+  // the vanilla row and the rail showing the same thing. Only a pack-less DLC
+  // is ours to filter. See domain/assetPackSelection.
   const toggleFacetOption = (groupId: string, optionId: string) => {
-    if (groupId === ASSET_PACK_FACET_ID) {
-      trigger(
-        ASSET_PACK_TRIGGER_GROUP,
-        ASSET_PACK_TRIGGER_NAME,
-        toggleAssetPack(selectedAssetPacks, optionId)
-      );
+    if (groupId !== CONTENT_FACET_ID) {
+      fire(toggleBuildingLensFacetCommand(groupId, optionId));
       return;
     }
 
-    fire(toggleBuildingLensFacetCommand(groupId, optionId));
+    switch (contentOptionKind(optionId)) {
+      case "pack":
+        trigger(
+          ASSET_PACK_TRIGGER_GROUP,
+          ASSET_PACK_TRIGGER_NAME,
+          toggleAssetPack(selectedAssetPacks, optionId)
+        );
+        return;
+      case "vanilla":
+        trigger(ASSET_PACK_TRIGGER_GROUP, VANILLA_TRIGGER_NAME, !vanillaSelected);
+        return;
+      default:
+        fire(toggleBuildingLensFacetCommand(groupId, optionId));
+    }
   };
 
   // A chip is the same toggle wearing a different hat, so it takes the same
-  // route. Routing it through `fire` would send a pack removal to a field that
-  // no longer exists, and the chip would sit there un-removable.
+  // route. Sending a pack removal through `fire` would address a field that no
+  // longer exists, and the chip would sit there un-removable.
   const removeChip = (command: { method: string; args: readonly any[] }) => {
-    if (isAssetPackFacetCommand(command)) {
-      toggleFacetOption(ASSET_PACK_FACET_ID, String(command.args[1]));
+    if (isContentFacetCommand(command)) {
+      toggleFacetOption(CONTENT_FACET_ID, String(command.args[1]));
       return;
     }
 

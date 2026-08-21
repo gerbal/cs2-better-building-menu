@@ -319,11 +319,11 @@ public sealed class BuildingCatalogQueryEngineTests
         // narrow anything (IsWorthOffering), but this one is exhaustive: its
         // resting state is a fact about the view rather than an absence of
         // input, and "everything here is unlocked" is worth saying.
-        // No "assetPack": that group is keyed on the pack ENTITY now, not on
-        // the names these fixtures carry, because it reads and writes the
-        // game's own selection. With nothing recorded in AssetPackRegistry
-        // there is no pack to offer — see AssetPackFacetTests, which seeds it.
-        Assert.Equal(new[] { "buildingType", "provenance", "availability", "dlc", "theme", "placement" }, state.Groups.Select(group => group.Id).ToArray());
+        // "content", not "dlc" and "assetPack": those two were one axis wearing
+        // two hats — measured in game, one strictly contained the other — so
+        // they are merged. The pack half is keyed on the pack ENTITY and reads
+        // the game's own selection; see AssetPackFacetTests, which seeds it.
+        Assert.Equal(new[] { "buildingType", "provenance", "availability", "content", "theme", "placement" }, state.Groups.Select(group => group.Id).ToArray());
 
         // Neither ticked at rest, which is how every other facet reads: nothing
         // picked means nothing excluded. Both were ticked while the first click
@@ -338,20 +338,27 @@ public sealed class BuildingCatalogQueryEngineTests
 		Assert.False(role.Options.Single(option => option.Id == "School").Selected);
 		Assert.False(role.Options.Single(option => option.Id == "Library").Selected);
 
-        BuildingCatalogFacetGroup dlc = Assert.Single(state.Groups, group => group.Id == "dlc");
-        Assert.Equal("No DLC required", dlc.Options.Single(option => option.Id == "-2009").Label);
-        Assert.Equal("Unresolved DLC content (ID 123)", dlc.Options.Single(option => option.Id == "123").Label);
+        // The DLC half of Content. Its options carry a "dlc:" prefix because
+        // the group spans three mechanisms and the prefix is how a click finds
+        // the one that owns it; base game carries none, because the game's own
+        // Vanilla toggle owns that.
+        BuildingCatalogFacetGroup content = Assert.Single(state.Groups, group => group.Id == "content");
+        Assert.Equal("No DLC required", content.Options.Single(option => option.Id == "vanilla").Label);
+        Assert.Equal(
+            "Unresolved DLC content (ID 123)",
+            content.Options.Single(option => option.Id == "dlc:123").Label);
 
         BuildingCatalogFacetGroup provenance = Assert.Single(state.Groups, group => group.Id == "provenance");
         Assert.Equal("Base game", provenance.Options.Single(option => option.Id == "Vanilla").Label);
         Assert.Equal("Custom content", provenance.Options.Single(option => option.Id == "Custom").Label);
 
-        // Source and DLC answer different questions — "who made it" versus
-        // "what does it need" — so they must not offer the same option label in
-        // adjacent groups, which reads as a duplicated control.
+        // Source and Content answer different questions — "who made it" versus
+        // "where did it come from" — so they must not offer the same option
+        // label in adjacent groups, which reads as a duplicated control. The
+        // whole reason Content exists is that two groups DID read that way.
         Assert.NotEqual(
             provenance.Options.Single(option => option.Id == "Vanilla").Label,
-            dlc.Options.Single(option => option.Id == "-2009").Label);
+            content.Options.Single(option => option.Id == "vanilla").Label);
 
         // The pack group used to be asserted here on its NAMES, including a
         // synthetic "FindIt_NoPack" for assets belonging to none. Both are gone

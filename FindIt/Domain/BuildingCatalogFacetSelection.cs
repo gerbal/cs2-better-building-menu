@@ -28,7 +28,12 @@ namespace FindItBuildingMenu.Domain
 				"buildingtype" => query with { BuildingTypes = ToggleValue(query.BuildingTypes, normalizedOption), Offset = 0 },
 				"provenance" => query with { Provenance = ToggleValue(query.Provenance, normalizedOption), Offset = 0 },
 				"availability" => query with { Availability = ToggleExhaustive(query.Availability, normalizedOption, Availability.All), Offset = 0 },
-				"dlc" => query with { DlcIds = ToggleValue(query.DlcIds, normalizedOption), Offset = 0 },
+				// The Content facet's DLC half. Its pack and base-game options
+				// never reach here — the rail sends those to the game's own
+				// triggers, because the game owns that state. See ContentOption.
+				"content" or "dlc" => ContentOption.DlcIdOf(normalizedOption) is { Length: > 0 } dlc
+					? query with { DlcIds = ToggleValue(query.DlcIds, dlc), Offset = 0 }
+					: query,
 				"theme" => query with { Themes = ToggleValue(query.Themes, normalizedOption), Offset = 0 },
 				// "assetpack" is deliberately absent. Packs are the GAME's
 				// selection now — the rail writes them through

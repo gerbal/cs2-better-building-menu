@@ -20,14 +20,26 @@
 
 import type { ToolbarEntity, ToolbarEntityRef } from "./toolbarEntity";
 
-export const ASSET_PACK_FACET_ID = "assetPack";
+export const CONTENT_FACET_ID = "content";
+
+/** Base game — the game's own Vanilla toggle owns it. */
+export const CONTENT_VANILLA = "vanilla";
+/** A creator pack, then "index:version". */
+export const CONTENT_PACK_PREFIX = "pack:";
+/** A DLC shipping no pack, then its numeric id. Ours to filter. */
+export const CONTENT_DLC_PREFIX = "dlc:";
+
+export const VANILLA_TRIGGER_NAME = "setVanillaSelected";
 
 /** The vanilla trigger that owns the pack selection. */
 export const ASSET_PACK_TRIGGER_GROUP = "toolbar";
 export const ASSET_PACK_TRIGGER_NAME = "setSelectedAssetPacks";
 
 export function parseAssetPackId(id: string | null | undefined): ToolbarEntityRef | null {
-  const parts = (id ?? "").split(":");
+  const raw = (id ?? "").startsWith(CONTENT_PACK_PREFIX)
+    ? (id ?? "").slice(CONTENT_PACK_PREFIX.length)
+    : (id ?? "");
+  const parts = raw.split(":");
 
   if (parts.length !== 2) {
     return null;
@@ -83,7 +95,24 @@ export function toggleAssetPack(
     : [...current, pack];
 }
 
-/** Whether a facet command is a pack toggle that has to go to the game. */
-export function isAssetPackFacetCommand(command: { args: readonly unknown[] } | null | undefined): boolean {
-  return command?.args?.[0] === ASSET_PACK_FACET_ID;
+/** Whether a facet command belongs to the Content axis. */
+export function isContentFacetCommand(command: { args: readonly unknown[] } | null | undefined): boolean {
+  return command?.args?.[0] === CONTENT_FACET_ID;
+}
+
+export type ContentOptionKind = "vanilla" | "pack" | "dlc";
+
+/**
+ * Which piece of state owns this option.
+ *
+ * Content is one axis over three of them, and the prefix is how a click finds
+ * its way back to the right owner without the rail knowing anything about
+ * packs or DLC. C# mints the ids — see Domain/ContentOption.cs.
+ */
+export function contentOptionKind(optionId: string): ContentOptionKind {
+  if (optionId === CONTENT_VANILLA) {
+    return "vanilla";
+  }
+
+  return optionId.startsWith(CONTENT_DLC_PREFIX) ? "dlc" : "pack";
 }

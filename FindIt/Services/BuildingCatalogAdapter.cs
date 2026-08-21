@@ -10,6 +10,7 @@ using Game.Prefabs;
 using Game.SceneFlow;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 
@@ -70,6 +71,75 @@ namespace FindItBuildingMenu.Services
 				.ToArray();
 		}
 
+		/// <summary>
+		/// Whether the Content facet would show this asset.
+		/// </summary>
+		/// <remarks>
+		/// Content is one axis over three pieces of state, so its options have
+		/// to combine the way one axis does — as OR. Two of them live in the
+		/// game's toolbar selection, which ORs them itself; the third is our
+		/// DlcIds, which is applied HERE rather than in the query engine so it
+		/// unions with the other two instead of intersecting them.
+		///
+		/// That was a real defect before the merge, not a risk introduced by it:
+		/// packs filtered upstream and DLC filtered in the engine, so ticking
+		/// Bridges &amp; Ports in one group and San Francisco in the other left
+		/// nothing at all — an asset cannot be both.
+		/// </remarks>
+		private static bool ContentVisible(
+			PrefabIndex prefab,
+			VanillaToolbarSelection selection,
+			IReadOnlyList<string>? dlcIds)
+		{
+			// Themes are a DIFFERENT facet and must narrow on their own terms,
+			// so they are split out and ANDed before anything else. Bundling
+			// them in was the bug: VanillaToolbarSelection.IsEmpty counts themes
+			// too, a city always has one selected, so "the toolbar has no
+			// selection" was never true and the DLC half was permanently ORed
+			// against a filter that passed nearly everything. Measured as
+			// dlcIds=[1] toolbarEmpty=False with the result unchanged.
+			if (!VanillaToolbarFilter.IsVisible(prefab.VanillaFacts, ThemesOnly(selection)))
+			{
+				return false;
+			}
+
+			var content = ContentOnly(selection);
+			bool packsChosen = !content.IsEmpty;
+			bool dlcChosen = dlcIds is { Count: > 0 };
+
+			if (!packsChosen && !dlcChosen)
+			{
+				return true;
+			}
+
+			bool matchesDlc = dlcChosen
+				&& prefab.DlcId != DlcId.Invalid
+				&& dlcIds!.Any(id => string.Equals(
+					id,
+					prefab.DlcId.id.ToString(CultureInfo.InvariantCulture),
+					StringComparison.Ordinal));
+
+			if (!dlcChosen)
+			{
+				return VanillaToolbarFilter.IsVisible(prefab.VanillaFacts, content);
+			}
+
+			// Content is ONE axis, so its options combine as OR. Two of them
+			// live in the game's selection, which ORs them itself; the third is
+			// ours, and it joins them here rather than intersecting downstream.
+			return packsChosen
+				? VanillaToolbarFilter.IsVisible(prefab.VanillaFacts, content) || matchesDlc
+				: matchesDlc;
+		}
+
+		/// <summary>Just the theme arm, which narrows on its own.</summary>
+		private static VanillaToolbarSelection ThemesOnly(VanillaToolbarSelection selection) =>
+			new(selection.SelectedThemes, null, false, false);
+
+		/// <summary>Just the arms the Content facet speaks for.</summary>
+		private static VanillaToolbarSelection ContentOnly(VanillaToolbarSelection selection) =>
+			new(null, selection.SelectedPacks, selection.VanillaSelected, selection.ModsSelected);
+
 		/// <summary>The same toolbar selection with its packs dropped.</summary>
 		private static VanillaToolbarSelection WithoutPacks(VanillaToolbarSelection selection) =>
 			new(selection.SelectedThemes, null, selection.VanillaSelected, selection.ModsSelected);
@@ -83,7 +153,7 @@ namespace FindItBuildingMenu.Services
 
 			// Scoped to the view, not to the whole index — see InScope.
 			return BuildFacetState(
-				BuildingCatalogQueryEngine.InScope(ProjectForMenu(query.UiMenu), query),
+				BuildingCatalogQueryEngine.InScope(ProjectForMenu(query.UiMenu, query.DlcIds), query),
 				query,
 				// Packs alone are counted before the pack filter runs, because
 				// that filter is upstream of InScope and InScope cannot undo it.
@@ -132,7 +202,7 @@ namespace FindItBuildingMenu.Services
 			var acrossCategories = query with { UiCategory = string.Empty, SchoolTier = -1, StripTabs = null };
 
 			return BuildingCatalogQueryEngine
-				.InScope(ProjectForMenu(query.UiMenu), acrossCategories)
+				.InScope(ProjectForMenu(query.UiMenu, acrossCategories.DlcIds), acrossCategories)
 				.GroupBy(entry => NetworkMenuExtension.EffectiveCategory(entry, query.UiMenu) ?? string.Empty)
 				.Where(group => group.Key.Length > 0)
 				.Select(group => new MenuCategoryCount(group.Key, group.Count()))
@@ -222,7 +292,7 @@ namespace FindItBuildingMenu.Services
 			};
 
 			return BuildingCatalogQueryEngine
-				.InScope(ProjectForMenu(query.UiMenu), unscoped)
+				.InScope(ProjectForMenu(query.UiMenu, unscoped.DlcIds), unscoped)
 				.Where(entry => !string.IsNullOrEmpty(entry.DevTreeBranch))
 				.GroupBy(entry => NetworkMenuExtension.EffectiveCategory(entry, query.UiMenu) ?? string.Empty)
 				.Where(group => group.Key.Length > 0
@@ -253,7 +323,7 @@ namespace FindItBuildingMenu.Services
 			var withinCategory = query with { UiCategory = category, StripTabs = null };
 
 			return BuildingCatalogQueryEngine
-				.InScope(ProjectForMenu(query.UiMenu), withinCategory)
+				.InScope(ProjectForMenu(query.UiMenu, withinCategory.DlcIds), withinCategory)
 				.Where(entry => !string.IsNullOrEmpty(entry.DevTreeBranch))
 				.GroupBy(entry => entry.DevTreeBranch!)
 				.OrderBy(group => group.Min(entry => entry.DevTreeBranchDepth))
@@ -374,7 +444,7 @@ namespace FindItBuildingMenu.Services
 			var acrossTabs = query with { StripTabs = null };
 
 			return BuildingCatalogQueryEngine
-				.InScope(ProjectForMenu(query.UiMenu), acrossTabs)
+				.InScope(ProjectForMenu(query.UiMenu, acrossTabs.DlcIds), acrossTabs)
 				.GroupBy(entry => BuildingCatalogQueryEngine.StripValue(entry, axis))
 				.Where(group => group.Key.Length > 0)
 				// Development tabs run in UNLOCK order — the root, then each node
@@ -505,7 +575,7 @@ namespace FindItBuildingMenu.Services
 			var acrossTiers = query with { SchoolTier = -1, UiCategory = string.Empty };
 
 			return BuildingCatalogQueryEngine
-				.InScope(ProjectForMenu(query.UiMenu), acrossTiers)
+				.InScope(ProjectForMenu(query.UiMenu, acrossTiers.DlcIds), acrossTiers)
 				.Where(entry => entry.EducationLevel is >= 1 and <= 4)
 				.GroupBy(entry => entry.EducationLevel!.Value)
 				.Select(group => new MenuBranchCount(
@@ -544,7 +614,7 @@ namespace FindItBuildingMenu.Services
 			}
 
 			return MetricBoundsOf(
-				BuildingCatalogQueryEngine.InScope(ProjectForMenu(query.UiMenu), query));
+				BuildingCatalogQueryEngine.InScope(ProjectForMenu(query.UiMenu, query.DlcIds), query));
 		}
 
 		/// <summary>
@@ -646,7 +716,10 @@ namespace FindItBuildingMenu.Services
 			// Progression, which the vanilla menu shows by greying an asset out
 			// and the lens had no way to ask about at all.
 			AddAvailabilityGroup(groups, source, query.Availability);
-			AddValueGroup(groups, "dlc", "DLC", source.Select(entry => entry.DlcId), query.DlcIds, FormatDlcLabel);
+			// Where it came from, next to who made it. It replaces the DLC group
+			// that used to sit here and the Asset packs group that sat lower —
+			// one axis, one place. See AddContentGroup.
+			AddContentGroup(groups, packScope is null ? source : packScope.ToArray(), query);
 			AddValueGroup(groups, "theme", "Theme", source.Select(entry => entry.Theme), query.Themes, FormatFacetWords);
 			// Neither unlock modality is a filter here, and both used to be.
 			//
@@ -673,7 +746,6 @@ namespace FindItBuildingMenu.Services
 			// Development stays reachable as a Group by dimension, and so does
 			// Progression; grouping is where "when does this unlock" belongs,
 			// because it orders the set instead of hiding most of it.
-			AddAssetPackGroup(groups, packScope is null ? source : packScope.ToArray());
 			AddArrayGroup(groups, "placement", "Placement", source.Select(entry => entry.PlacementFlags), query.PlacementFlags, FormatFlagLabel);
 			AddArrayGroup(groups, "extension", "Extensions", source.Select(entry => entry.Extensions), query.Extensions, FormatFacetWords);
 			// Density is what the vanilla Zones menu is organised around, so it
@@ -705,7 +777,7 @@ namespace FindItBuildingMenu.Services
 				throw new ArgumentNullException(nameof(query));
 			}
 
-			return BuildingCatalogQueryEngine.Query(ProjectForMenu(query.UiMenu), query);
+			return BuildingCatalogQueryEngine.Query(ProjectForMenu(query.UiMenu, query.DlcIds), query);
 		}
 
 		public bool TryGet(int id, out BuildingCatalogEntry? entry)
@@ -778,7 +850,8 @@ namespace FindItBuildingMenu.Services
 		/// </param>
 		private static IEnumerable<PrefabIndex> GetIndexedBuildings(
 			string? uiMenu = null,
-			bool ignorePackSelection = false)
+			bool ignorePackSelection = false,
+			IReadOnlyList<string>? unionDlcIds = null)
 		{
 			if (!FindItUtil.IsReady
 				|| !FindItUtil.CategorizedPrefabs.TryGetValue(PrefabCategory.Any, out var allCategories)
@@ -812,9 +885,10 @@ namespace FindItBuildingMenu.Services
 				// bug rather than a design choice. Costs nothing when the
 				// toolbar is untouched: IsVisible early-outs on an empty
 				// selection, which is also what stops the lens opening blank.
-				.Where(prefab => VanillaToolbarFilter.IsVisible(
-					prefab.VanillaFacts,
-					ignorePackSelection ? WithoutPacks(ToolbarSelection) : ToolbarSelection))
+				.Where(prefab => ContentVisible(
+					prefab,
+					ignorePackSelection ? WithoutPacks(ToolbarSelection) : ToolbarSelection,
+					unionDlcIds))
 				// Phase 3: membership comes from the game's own tree.
 				//
 				// This used to read `IsBuilding(prefab) || prefab.UiMenuName ==
@@ -893,9 +967,11 @@ namespace FindItBuildingMenu.Services
 		/// the group headings and the filter all read the same label. Deriving
 		/// it separately anywhere is how a tab and its count come to disagree.
 		/// </remarks>
-		private IEnumerable<BuildingCatalogEntry> ProjectForMenu(string? menu)
+		private IEnumerable<BuildingCatalogEntry> ProjectForMenu(
+			string? menu,
+			IReadOnlyList<string>? contentDlcs = null)
 		{
-			var entries = GetIndexedBuildings(menu).Select(Project).ToArray();
+			var entries = GetIndexedBuildings(menu, unionDlcIds: contentDlcs).Select(Project).ToArray();
 			var root = PrefabIndexingSystem.GetDevTreeRootLabel(menu);
 
 			if (string.IsNullOrEmpty(root))
@@ -1118,37 +1194,60 @@ namespace FindItBuildingMenu.Services
 		}
 
 		/// <summary>
-		/// Asset packs, as a view onto the GAME's pack selection.
+		/// Where an asset came from: base game, a creator pack, or a DLC that
+		/// ships no pack. One axis, because the player only ever had one.
 		/// </summary>
 		/// <remarks>
-		/// One axis, one state. The game already publishes a Pack row of its own
-		/// and already filters this menu by it — VanillaToolbarFilter.IsVisible,
-		/// fed by the selection VanillaToolbarWatcher mirrors across. A second
-		/// pack filter with its own field meant two controls narrowing the same
-		/// set from two different states, which is how a control and its counts
-		/// come to disagree; measured, ours and the game's row did not even
-		/// offer the same packs.
+		/// This was two groups, DLC and Asset packs, and measured in game one
+		/// CONTAINED the other: Signature Buildings offered nine against seven,
+		/// Parks &amp; Recreation six against four, and nothing appeared under
+		/// packs that was not also under DLC. They read as a duplicated control
+		/// because they nearly are — DlcId is "what does this asset require",
+		/// AssetPackElement is "what does it belong to", and every first-party
+		/// creator pack sets both.
 		///
-		/// So this group no longer holds a selection of its own. Its options are
-		/// keyed by the pack ENTITY, its ticks are read from the game's
-		/// selection, and toggling one writes back through
-		/// toolbar.setSelectedAssetPacks.
+		/// They diverge in exactly two places, which is why neither could simply
+		/// be deleted:
 		///
-		/// It stays WIDER than the game's row rather than mirroring it.
-		/// BindPacks builds that row from the selected category, so it shows the
-		/// packs in the category you are in; this shows the packs in the menu.
-		/// In Parks &amp; Recreation that is four against two, and the two the
-		/// game left out hold three assets each — unreachable from its row and
-		/// reachable from here. Narrowing to match would cost exactly the reach
-		/// this lens exists to provide.
+		/// - DLCs shipping no creator pack — San Francisco Set and Landmark
+		///   Buildings, 163 assets between them — reachable only by DlcId.
+		/// - Packs with no DLC, which is every pack a mod provides. None are
+		///   loaded here, but the 127 in the Paradox cache would all be.
+		///
+		/// So it is one group, and each option writes whatever owns it: packs go
+		/// to the game's own pack selection, base game to its Vanilla toggle,
+		/// and a pack-less DLC to our DlcIds, the only mechanism that reaches
+		/// it. The mixed plumbing stays underneath; the rail shows one axis,
+		/// which is the thing that was wrong.
+		///
+		/// A DLC is offered ONLY when no pack among these entries speaks for it.
+		/// That test is what removes the duplication: Bridges &amp; Ports has a
+		/// pack, so it appears once, as a pack.
+		///
+		/// The pack half stays WIDER than the game's own row rather than
+		/// mirroring it. BindPacks builds that row from the selected CATEGORY,
+		/// so it shows the packs in the category you are in; this shows the
+		/// packs in the menu — four against two in Parks &amp; Recreation, and
+		/// the two it leaves out hold three assets each.
 		/// </remarks>
-		private static void AddAssetPackGroup(
+		private static void AddContentGroup(
 			ICollection<BuildingCatalogFacetGroup> groups,
-			IReadOnlyList<BuildingCatalogEntry> source)
+			IReadOnlyList<BuildingCatalogEntry> source,
+			BuildingCatalogQuery query)
 		{
 			var selectedPacks = ToolbarSelection.SelectedPacks;
+			var options = new List<BuildingCatalogFacetOption>();
 
-			var options = source
+			// Base game leads, the way it leads the game's own row.
+			if (source.Any(IsBaseGameContent))
+			{
+				options.Add(new BuildingCatalogFacetOption(
+					ContentOption.Vanilla,
+					FormatDlcLabel(DlcId.BaseGame.id.ToString(CultureInfo.InvariantCulture)),
+					ToolbarSelection.VanillaSelected));
+			}
+
+			options.AddRange(source
 				.SelectMany(entry => entry.AssetPackIndices ?? Array.Empty<int>())
 				.Distinct()
 				.Select(index => new
@@ -1157,24 +1256,50 @@ namespace FindItBuildingMenu.Services
 					Id = AssetPackRegistry.IdOf(index),
 					Label = AssetPackRegistry.NameOf(index),
 				})
-				// A pack the indexer never recorded cannot be written back to the
-				// game, so offering it would be a tick that does nothing.
+				// A pack the indexer never recorded cannot be written back to
+				// the game, so offering it would be a tick that does nothing.
 				.Where(pack => pack.Id.Length > 0 && pack.Label.Length > 0)
 				.OrderBy(pack => pack.Label, StringComparer.CurrentCultureIgnoreCase)
 				.Select(pack => new BuildingCatalogFacetOption(
-					pack.Id,
+					ContentOption.Pack + pack.Id,
 					pack.Label,
-					selectedPacks.Any(selected => selected == pack.Index)))
-				.ToArray();
+					selectedPacks.Any(selected => selected == pack.Index))));
 
-			// Same rule as every other dimension: one value splits nothing. A
-			// selection still holds the group open, because a filter with no
-			// control attached cannot be cleared.
-			if (options.Length > 1 || options.Any(option => option.Selected))
+			// The tail: DLC no pack speaks for.
+			var packedDlcs = new HashSet<string>(
+				source
+					.Where(entry => (entry.AssetPackIndices?.Length ?? 0) > 0)
+					.Select(entry => entry.DlcId ?? string.Empty),
+				StringComparer.Ordinal);
+
+			options.AddRange(source
+				.Where(entry => !IsBaseGameContent(entry)
+					&& (entry.AssetPackIndices?.Length ?? 0) == 0
+					&& !string.IsNullOrEmpty(entry.DlcId))
+				.Select(entry => entry.DlcId!)
+				.Where(dlc => !packedDlcs.Contains(dlc))
+				.Distinct(StringComparer.Ordinal)
+				.OrderBy(FormatDlcLabel, StringComparer.CurrentCultureIgnoreCase)
+				.Select(dlc => new BuildingCatalogFacetOption(
+					ContentOption.Dlc + dlc,
+					FormatDlcLabel(dlc),
+					query.DlcIds is not null
+					&& query.DlcIds.Any(selected => string.Equals(selected, dlc, StringComparison.Ordinal)))));
+
+			// Same rule as every other dimension: one value splits nothing, and
+			// a selection holds the group open so it can still be cleared.
+			if (options.Count > 1 || options.Any(option => option.Selected))
 			{
-				groups.Add(new BuildingCatalogFacetGroup("assetPack", "Asset packs", options));
+				groups.Add(new BuildingCatalogFacetGroup("content", "Content", options.ToArray()));
 			}
 		}
+
+		/// <summary>Shipped by the studio, gated behind no DLC.</summary>
+		private static bool IsBaseGameContent(BuildingCatalogEntry entry) =>
+			string.Equals(
+				entry.DlcId,
+				DlcId.BaseGame.id.ToString(CultureInfo.InvariantCulture),
+				StringComparison.Ordinal);
 
 		private static void AddArrayGroup(
 			ICollection<BuildingCatalogFacetGroup> groups,
