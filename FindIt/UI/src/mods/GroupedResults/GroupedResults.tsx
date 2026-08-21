@@ -67,46 +67,70 @@ const GroupHeading = ({
   estimate,
   count,
   nested,
-  viewMode,
 }: {
   label: string;
   estimate: string;
   count: number;
   nested: boolean;
-  viewMode: CatalogViewMode;
 }): JSX.Element => {
   const boxRef = useRef<HTMLSpanElement>(null);
   const probeRef = useRef<HTMLSpanElement>(null);
   const [fitted, setFitted] = useState(estimate);
 
   useEffect(() => {
-    setFitted(estimate);
+    const box = boxRef.current;
+    const probe = probeRef.current;
 
-    // A frame later: Cohtml settles layout on the next frame, so measuring
-    // inside the effect reads the previous pass's boxes.
-    const measure = () => {
-      const available = boxRef.current?.clientWidth ?? 0;
-      const needed = probeRef.current?.scrollWidth ?? 0;
+    if (!box || !probe) {
+      return;
+    }
 
+    const fit = () => {
+      const available = box.clientWidth;
+      const needed = probe.scrollWidth;
+
+      // A box that has not been laid out reports 0. Keep the estimate rather
+      // than fitting to a width that is not real.
       if (available > 0 && needed > 0) {
         setFitted(fitLabelToWidth(label, available, needed));
       }
     };
 
-    const raf =
-      typeof requestAnimationFrame === "function"
-        ? requestAnimationFrame(measure)
-        : (setTimeout(measure, 0) as unknown as number);
+    // WATCH the box instead of guessing when it settles. Measured in game,
+    // Cohtml relayouts one frame AFTER the view mode changes: switching grid
+    // to cards read 67px on the first frame — the grid's width — and 167px on
+    // the second. A single requestAnimationFrame therefore fitted every
+    // heading to the view the player had just left, which is why the same view
+    // truncated differently depending on where it was reached from.
+    //
+    // Nothing here can feed back into the size being watched: the box is
+    // `flex: 1 1 auto` so its width is the space left over rather than the
+    // text in it, and the probe always holds the full label.
+    if (typeof ResizeObserver === "function") {
+      const observer = new ResizeObserver(fit);
+
+      observer.observe(box);
+      // The probe too, so a changed label or a font swap re-fits even when the
+      // width it has stayed the same.
+      observer.observe(probe);
+      fit();
+
+      return () => observer.disconnect();
+    }
+
+    // No observer: settle for the second frame, which is where the measured
+    // relayout landed. Strictly worse — it cannot see a later resize — so it
+    // is the fallback rather than the design.
+    let inner = 0;
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(fit);
+    });
 
     return () => {
-      if (typeof cancelAnimationFrame === "function") {
-        cancelAnimationFrame(raf);
-      } else {
-        clearTimeout(raf);
-      }
+      cancelAnimationFrame(outer);
+      cancelAnimationFrame(inner);
     };
-    // count and viewMode both move the group's width, so both re-measure.
-  }, [label, estimate, count, viewMode]);
+  }, [label]);
 
   return (
     <div className={classNames(styles.groupHeading, nested && styles.groupHeadingNested)}>
@@ -198,7 +222,6 @@ export const GroupedResults = ({
             estimate={fitGroupLabel(headingLabel(node), node.count)}
             count={node.count}
             nested={depth > 0}
-            viewMode={viewMode}
           />
         )}
         {node.children.length > 0 ? renderNodes(node.children, depth + 1) : renderLeaf(node.entries)}
