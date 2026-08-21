@@ -247,26 +247,36 @@ namespace FindItBuildingMenu.Services
 		}
 
 		/// <summary>
-		/// The glyph every school-level tab is built on.
+		/// <summary>
+		/// The glyph a school-level tab is built on: the attainment it grants.
 		/// </summary>
 		/// <remarks>
-		/// A representative school's thumbnail was tried first and does not
-		/// work. Vanilla's own tab glyphs are flat two-colour symbols drawn for
-		/// this size; a building render at 24rem is a dark smudge, and four of
-		/// them are four dark smudges. The tabs were icons in name only.
+		/// The citizen attainment ladder — Uneducated, Poorly Educated,
+		/// Educated, Well Educated, Highly Educated — is five flat, ordinal
+		/// glyphs, and a school's level IS the attainment it grants:
+		/// GraduationSystem reads SchoolData.m_EducationLevel and passes it
+		/// straight to Citizen.SetEducationLevel, read off the game's IL rather
+		/// than assumed. So level N draws the badge a graduate of that school
+		/// wears.
 		///
-		/// The citizen attainment ladder (PoorlyEducated .. HighlyEducated) is
-		/// flat, ordinal and exactly the right meaning — a school's level IS
-		/// the attainment it grants, since GraduationSystem passes
-		/// SchoolData.m_EducationLevel straight to Citizen.SetEducationLevel.
-		/// But as a second picture beside the mortarboard it competed with it,
-		/// and four green ladders in a row do not say EDUCATION on their own.
+		/// Four distinct glyphs rather than one mortarboard four times, so a
+		/// tab is recognisable before its rank is read; the roman numeral over
+		/// the top is what makes the rank exact, since the bars differ by one
+		/// step and four of them in a row are easy to miscount.
 		///
-		/// So one glyph for all four, with the RANK drawn over it as a roman
-		/// numeral: the mortarboard names the subject, the numeral gives the
-		/// level, and it costs less room than a second picture.
+		/// A representative school's THUMBNAIL was the first attempt and does
+		/// not work at all: vanilla's tab glyphs are flat two-colour symbols
+		/// drawn for 24rem, and a building render at that size is a dark
+		/// smudge, four of which look alike.
 		/// </remarks>
-		private const string SchoolTierIcon = "Media/Game/Icons/Education.svg";
+		private static string SchoolTierIcon(int level) => level switch
+		{
+			1 => "Media/Game/Icons/PoorlyEducated.svg",
+			2 => "Media/Game/Icons/Educated.svg",
+			3 => "Media/Game/Icons/WellEducated.svg",
+			4 => "Media/Game/Icons/HighlyEducated.svg",
+			_ => "Media/Game/Icons/Education.svg",
+		};
 
 		/// <summary>The progression screen's badge for a milestone, if any.</summary>
 		private static string MilestoneIcon(int milestone)
@@ -349,7 +359,7 @@ namespace FindItBuildingMenu.Services
 				.Select(group => new MenuBranchCount(
 					group.Key.ToString(System.Globalization.CultureInfo.InvariantCulture),
 					group.Count(),
-					SchoolTierIcon))
+					SchoolTierIcon(group.Key)))
 				.OrderBy(count => count.Id, StringComparer.Ordinal)
 				.ToArray();
 		}
