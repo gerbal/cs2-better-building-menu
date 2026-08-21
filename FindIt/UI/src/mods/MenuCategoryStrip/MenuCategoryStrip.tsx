@@ -200,7 +200,7 @@ export const MenuCategoryStrip = () => {
         <span className={styles.allLabel}>
           {allLabel}
           {categoryCount(counts, ALL_CATEGORIES_ID) !== null && (
-            <span className={styles.tabCount}>{categoryCount(counts, ALL_CATEGORIES_ID)}</span>
+            <span className={styles.allCount}>{categoryCount(counts, ALL_CATEGORIES_ID)}</span>
           )}
         </span>
       </ToolButton>
@@ -283,7 +283,7 @@ export const MenuCategoryStrip = () => {
           >
             <span className={styles.allLabel}>
               {allLabel}
-              <span className={styles.tabCount}>{branchTotal}</span>
+              <span className={styles.allCount}>{branchTotal}</span>
             </span>
           </ToolButton>
 
