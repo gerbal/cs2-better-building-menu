@@ -117,6 +117,18 @@ export const DEFAULT_GROUP_DIMENSION: GroupDimensionId = "category";
  * it is UIAssetMenuPrefab.name, the same value the census prints and assets
  * carry as UiMenu — so this is not matching on display text.
  */
+/**
+ * The category whose assets the school levels stand in for.
+ *
+ * On the education menu the four levels partition this category exactly — ten
+ * schools, 3/3/1/3 — so the strip draws them INSTEAD of it rather than beside
+ * it, and the menu's other categories are unaffected. Matched on the id, which
+ * is the category prefab's own name.
+ */
+export function isSchoolCategory(id: string | null | undefined): boolean {
+  return /education/i.test(id ?? "");
+}
+
 export function isEducationMenu(menu: string | null | undefined): boolean {
   return /education/i.test(menu ?? "");
 }
