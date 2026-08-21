@@ -108,6 +108,16 @@ namespace FindItBuildingMenu.Domain
 		string? DevTreeBranch = null,
 		string? DevTreeBranchIcon = null,
 		int DevTreeBranchDepth = 0,
+		/// <summary>
+		/// The milestone's own word, resolved at projection.
+		/// </summary>
+		/// <remarks>
+		/// The index travels for grouping, which resolves names on the UI side
+		/// from a table published once. The FILTER rail needs the name in the
+		/// backend — its options are the words the player picks — and the query
+		/// engine cannot reach the game's table, so the adapter puts it here.
+		/// </remarks>
+		string? MilestoneName = null,
 		string[]? UnlockRequirements = null,
 		/// <summary>
 		/// What the building gives the city. Signature buildings are free, so

@@ -34,6 +34,7 @@ namespace FindItBuildingMenu.Domain
 				"placement" => query with { PlacementFlags = ToggleValue(query.PlacementFlags, normalizedOption), Offset = 0 },
 				"extension" or "extensions" => query with { Extensions = ToggleValue(query.Extensions, normalizedOption), Offset = 0 },
 				"zone" or "zonetype" => query with { ZoneTypes = ToggleValue(query.ZoneTypes, normalizedOption), Offset = 0 },
+				"milestone" or "progression" => query with { Milestones = ToggleValue(query.Milestones, normalizedOption), Offset = 0 },
 				_ => query,
 			};
 		}
@@ -56,6 +57,7 @@ namespace FindItBuildingMenu.Domain
 				PlacementFlags = null,
 				ZoneTypes = null,
 				Extensions = null,
+				Milestones = null,
 				Offset = 0,
 			};
 		}

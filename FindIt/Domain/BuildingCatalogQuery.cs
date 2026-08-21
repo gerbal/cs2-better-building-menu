@@ -50,6 +50,11 @@ namespace FindItBuildingMenu.Domain
 		// entry and sorted on, but had no query field, so the levels the
 		// vanilla Zones menu is organised around could not be filtered.
 		IReadOnlyList<string>? ZoneTypes = null,
+		// The progression milestones selected in the filter rail, by NAME. A
+		// name rather than the index the strip used, because a facet's options
+		// are the words the player picked and the rail has no table to resolve
+		// an index against.
+		IReadOnlyList<string>? Milestones = null,
 		string BuildMenuSection = "",
 		string BuildMenuSubCategory = "",
 		// SPIKE (cm-e98i): the game's own menu placement, used instead of our
