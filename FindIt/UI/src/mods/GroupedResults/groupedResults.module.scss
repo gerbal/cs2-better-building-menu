@@ -5,9 +5,35 @@
 // result rather than of a mode, so the grid, the list and the table all render
 // the same tree.
 
+// Sibling groups share a line where they fit. Wrapping row, not a column:
+// a group was a full-width band whatever it held, so a menu grouped into
+// several small sets spent most of its height on headings over half-empty
+// rows.
+//
+// `gap` is a no-op in this engine, so the spacing is the usual negative-gutter
+// trick: pull the row back by the gutter and give every child the same margin.
+.groupRow {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  margin-left: -6rem;
+  margin-top: -4rem;
+
+  > * {
+    margin-left: 6rem;
+    margin-top: 4rem;
+  }
+}
+
+// Sizes to its own tiles, capped at the row. Under the cap a large group still
+// takes the full width and wraps its tiles inside itself, which is what keeps
+// one big group looking exactly as it did before.
 .group {
   display: flex;
   flex-direction: column;
+  flex: 0 1 auto;
+  max-width: 100%;
 }
 
 // Thinned from 43rem to fit two tile rows in the 200rem content strip instead

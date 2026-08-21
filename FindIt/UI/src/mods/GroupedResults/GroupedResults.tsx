@@ -96,14 +96,21 @@ export const GroupedResults = ({
     return <BuildingGrid entries={leaf} searchText={searchText} onPlace={onPlace} standalone={false} />;
   };
 
-  const renderNodes = (nodes: GroupNode<BuildingCatalogEntry>[], depth: number): JSX.Element[] => {
+  const renderNodes = (nodes: GroupNode<BuildingCatalogEntry>[], depth: number): JSX.Element => {
     // A single group covering everything is a label with nothing to
     // distinguish — a lone SERVICE BUILDINGS heading once the player has
     // already navigated there, or a lone RESIDENTIAL once they have filtered
     // the zone families down to one.
     const showHeadings = shouldShowHeading(nodes);
 
-    return nodes.map((node) => (
+    // Siblings FLOW rather than stack. A group was a full-width band whatever
+    // it held, so Police by development spent four headings and four bands on
+    // three, one, one and one asset — most of the panel was heading and empty
+    // row. Laid out as a wrapping row each group takes the width it needs, a
+    // big one still fills the line, and the small ones share.
+    return (
+      <div className={styles.groupRow}>
+        {nodes.map((node) => (
       <div className={styles.group} key={node.path.join("/")} data-group-depth={depth}>
         {showHeadings && (
           <div className={classNames(styles.groupHeading, depth > 0 && styles.groupHeadingNested)}>
@@ -113,7 +120,9 @@ export const GroupedResults = ({
         )}
         {node.children.length > 0 ? renderNodes(node.children, depth + 1) : renderLeaf(node.entries)}
       </div>
-    ));
+        ))}
+      </div>
+    );
   };
 
   // The progression dimension names its headings out of this table; every
