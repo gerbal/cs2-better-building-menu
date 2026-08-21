@@ -305,6 +305,17 @@ namespace FindItBuildingMenu.Services
 		}
 
 		/// <summary>The fallback strip's tabs, on whichever axis it chose.</summary>
+		/// <remarks>
+		/// On the ASSET TYPE axis the buildings half is drawn as its development
+		/// nodes where it has more than one, so Water reads as its pumping and
+		/// treatment unlocks beside a single Networks tab for the pipes —
+		/// rather than one undifferentiated "Buildings 8". The row mixes axes
+		/// deliberately; see BuildingCatalogQueryEngine.StripMatches.
+		///
+		/// Only the buildings half expands. Networks are a handful of tools the
+		/// tree rarely gates, and splitting them would trade one honest tab for
+		/// several near-empty ones.
+		/// </remarks>
 		public IReadOnlyList<MenuBranchCount> GetStripTabs(BuildingCatalogQuery query)
 		{
 			if (query is null)
@@ -314,9 +325,30 @@ namespace FindItBuildingMenu.Services
 
 			var axis = GetStripAxis(query);
 
-			return axis.Length == 0
-				? Array.Empty<MenuBranchCount>()
-				: StripTabsFor(query, axis);
+			if (axis.Length == 0)
+			{
+				return Array.Empty<MenuBranchCount>();
+			}
+
+			var tabs = StripTabsFor(query, axis);
+
+			if (axis != StripAxes.AssetType)
+			{
+				return tabs;
+			}
+
+			var buildingNodes = StripTabsFor(
+				query with { StripTab = StripAxes.BuildingValue },
+				StripAxes.Development);
+
+			if (buildingNodes.Count < 2)
+			{
+				return tabs;
+			}
+
+			return buildingNodes
+				.Concat(tabs.Where(tab => tab.Id != StripAxes.BuildingValue))
+				.ToArray();
 		}
 
 		/// <summary>

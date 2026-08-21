@@ -17,6 +17,7 @@ import {
   groupDimensionsFor,
   isEducationMenu,
   milestoneLabel,
+  fitGroupLabel,
   PROGRESSION_UNGATED_LABEL,
 } from "../src/domain/buildingGroups.ts";
 
@@ -675,5 +676,21 @@ describe("Which grouping choices a menu offers", () => {
 
     assert.ok(ids.includes("development"));
     assert.equal(ids.length, GROUP_DIMENSIONS.length - 1);
+  });
+
+  it("fits a heading to the width its tiles give it", () => {
+    // The engine draws a hard clip rather than an ellipsis, so the "…" is put
+    // there rather than asked for.
+    assert.equal(fitGroupLabel("CENTRAL INTELLIGENCE BUREAU", 1), "CENTRAL…");
+    assert.equal(fitGroupLabel("BASIC", 1), "BASIC");
+    // More tiles, more room.
+    assert.ok(fitGroupLabel("CENTRAL INTELLIGENCE BUREAU", 4).length > 8);
+    assert.equal(fitGroupLabel("POLICE HEADQUARTERS", 9), "POLICE HEADQUARTERS");
+  });
+
+  it("keeps a one-tile heading long enough to name something", () => {
+    // A budget straight from the tile width would leave "C…", which identifies
+    // nothing; the count beside it is what the width is really being spent on.
+    assert.ok(fitGroupLabel("WELFARE OFFICE", 1).length >= 7);
   });
 });

@@ -145,11 +145,7 @@ namespace FindItBuildingMenu.Services
 			// The fallback strip's tab, matched against whichever property its
 			// axis names. Nothing to do when no tab is picked, which is also
 			// the case for every menu whose strip is vanilla's categories.
-			if (!string.IsNullOrWhiteSpace(query.StripTab)
-				&& !string.Equals(
-					StripValue(entry, query.StripAxis),
-					query.StripTab,
-					StringComparison.OrdinalIgnoreCase))
+			if (!string.IsNullOrWhiteSpace(query.StripTab) && !StripMatches(entry, query.StripTab))
 			{
 				return false;
 			}
@@ -275,6 +271,26 @@ namespace FindItBuildingMenu.Services
 			StripAxes.AssetType => AssetTypeOf(entry),
 			_ => string.Empty,
 		};
+
+		/// <summary>
+		/// Whether the entry answers to a strip tab, on whichever axis it names.
+		/// </summary>
+		/// <remarks>
+		/// The row can MIX axes. Water draws its buildings as development nodes
+		/// and its pipes as one Networks tab, the same way education draws four
+		/// school levels beside the Research category — so a tab's axis is a
+		/// property of the tab, not of the row.
+		///
+		/// Matched by value across the candidate axes rather than carried as an
+		/// axis per tab, because the value spaces do not overlap: node names are
+		/// "Basic", "Gas Power Plant"; asset types are "Buildings" and
+		/// "Networks". A mod naming a development node "Networks" would collide,
+		/// which is a trade worth taking over threading an axis through every
+		/// tab, binding and trigger.
+		/// </remarks>
+		public static bool StripMatches(BuildingCatalogEntry entry, string tab) =>
+			string.Equals(entry.DevTreeBranch, tab, StringComparison.OrdinalIgnoreCase)
+			|| string.Equals(AssetTypeOf(entry), tab, StringComparison.OrdinalIgnoreCase);
 
 		/// <summary>
 		/// Whether this is a thing you place or a line you draw.

@@ -91,18 +91,21 @@
 // tiles, so a long label — CENTRAL INTELLIGENCE BUREAU over one tile — pushed
 // the whole group wider than its contents and left the extra as white space
 // beside them. The name is still readable in full on the tiles below it.
+// Gives way before the count does. The text itself is already cut to a budget
+// in fitGroupLabel — this engine draws a hard clip rather than an ellipsis —
+// so this is the second wall, not the first.
 .groupLabel {
-  // The label is the box that truncates, so it needs a floor of zero: as a
-  // flex item it would otherwise keep its full text width and let the GROUP
-  // clip it, which cuts mid-letter with no ellipsis to show for it.
+  flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-// Answers "is it worth opening this one" before you scroll into it.
+// Answers "is it worth opening this one" before you scroll into it. Never
+// shrinks: the label gives way instead, so a narrow group still says how many
+// it holds — a truncated name with no number tells the reader nothing at all.
 .groupCount {
+  flex: 0 0 auto;
   padding-left: 8rem;
   color: var(--menuText2Normal);
   font-size: var(--fontSizeXS);
