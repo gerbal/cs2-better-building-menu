@@ -112,3 +112,51 @@
   margin-right: 3rem;
   background-color: rgba(255, 255, 255, 0.18);
 }
+
+// The rank pip over a tab's subject glyph: the school level's attainment bars
+// over the mortarboard. Selector carries the tab too, because `.tab img` sets
+// the 24rem square with !important and a single class would lose to it on
+// specificity however loudly it shouted.
+// The rank over a tab's subject glyph. Top-left, because the count already
+// owns the bottom-right of the same tab and a rank in the opposite corner
+// cannot be mistaken for it. Bold and shadowed: it sits ON the glyph, so it
+// has to survive whatever is behind it.
+.tierNumeral {
+  position: absolute;
+  // Onto the glyph, not beside it. The icon is a 24rem square centred in a
+  // 32rem tab, so it starts at 4rem; sitting the numeral at the tab's own
+  // corner left it hanging in the padding, reading as a separate mark.
+  left: 5rem;
+  top: 3rem;
+  padding: 0 2rem;
+  // A chip, not a shadow. The numeral sits ON the mortarboard, which is a pale
+  // grey, and near-white text over it washed out however much shadow it was
+  // given. A solid dark backing makes the rank readable over any glyph the
+  // axis might use, which matters because the same treatment has to hold for
+  // whatever a mod's school looks like.
+  background-color: rgba(0, 0, 0, 0.75);
+  border-radius: 2rem;
+  color: var(--menuText1Normal);
+  font-size: var(--fontSizeXS);
+  font-weight: 700;
+  line-height: 12rem;
+  pointer-events: none;
+}
+
+// Holds a tab's pip and count. An absolute fill rather than `display:
+// contents` — Cohtml 1.64 does not implement that value, and the wrapper
+// stayed an inline box that pushed the count out of the tab and the pip into
+// its neighbour. Filling the tab exactly gives the children the same rect
+// they would have had, without a layout box of its own.
+.tierBadge {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  // Above the ToolButton's own <img>, which is its SIBLING — the pair is what
+  // z-index sorts, and without this the numeral drew behind the mortarboard it
+  // is supposed to sit on.
+  z-index: 1;
+  pointer-events: none;
+}

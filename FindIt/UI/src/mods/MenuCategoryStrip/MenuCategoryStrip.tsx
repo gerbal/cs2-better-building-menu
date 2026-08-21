@@ -17,6 +17,7 @@ import {
   isMilestoneSelected,
   milestoneTabs,
   schoolTierTabs,
+  romanNumeral,
   shouldShowMilestoneTabs,
 } from "domain/menuProgression";
 import { isEducationMenu, milestoneLabel } from "domain/buildingGroups";
@@ -299,8 +300,11 @@ export const MenuCategoryStrip = () => {
             <span className={styles.allLabel}>{anyTierLabel}</span>
           </ToolButton>
 
-          {/* Worded: the game ships no icon per school level, and four short
-              career words read better than four numbers would. */}
+          {/* Two glyphs, not one. The attainment bars alone are legible and
+              ordinal but they do not say EDUCATION — four green ladders in a
+              row could be any ranked thing. The mortarboard says which menu
+              this is and the bars say how far up it, which is what the tab
+              means: the level, within education. */}
           {schoolTiers.map((tier) => (
             <ToolButton
               key={tier.level}
@@ -316,7 +320,15 @@ export const MenuCategoryStrip = () => {
               )}
               aria-label={`${tier.label} (${tier.count})`}
             >
-              <span className={styles.tabCount}>{tier.count}</span>
+              {/* One element, because the slot is typed as a single child —
+                  neither an array nor the null a conditional would yield. The
+                  wrapper fills the tab rather than using `display: contents`,
+                  which Cohtml does not implement, so the numeral and the count
+                  anchor to the tab's own corners. */}
+              <span className={styles.tierBadge}>
+                <span className={styles.tierNumeral}>{romanNumeral(tier.level)}</span>
+                <span className={styles.tabCount}>{tier.count}</span>
+              </span>
             </ToolButton>
           ))}
         </>

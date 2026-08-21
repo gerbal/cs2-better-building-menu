@@ -7,6 +7,7 @@ import {
   shouldShowMilestoneTabs,
   schoolTierTabs,
   schoolTierLabel,
+  romanNumeral,
 } from "../src/domain/menuProgression.ts";
 import { milestoneLabel, SCHOOL_TIERS } from "../src/domain/buildingGroups.ts";
 
@@ -143,6 +144,30 @@ describe("education tier tabs", () => {
     // This is what stops them drifting.
     for (const tier of SCHOOL_TIERS) {
       assert.equal(schoolTierLabel(tier.level), tier.label);
+    }
+  });
+});
+
+describe("school level rank", () => {
+  it("numbers the four levels in roman", () => {
+    // Roman, because the arabic numeral would be read as a count — every other
+    // number on that row is one, including the badge in the opposite corner of
+    // the same tab.
+    assert.deepEqual([1, 2, 3, 4].map(romanNumeral), ["I", "II", "III", "IV"]);
+  });
+
+  it("falls back to the plain number outside the game's range", () => {
+    // Four levels is the whole range SchoolLevel has, so this is not a general
+    // converter and does not pretend to be one.
+    assert.equal(romanNumeral(0), "0");
+    assert.equal(romanNumeral(5), "5");
+  });
+
+  it("has a rank for every tier it can draw", () => {
+    // The tabs come from SCHOOL_TIERS; a tier with no numeral would draw a
+    // blank chip over the mortarboard.
+    for (const tier of SCHOOL_TIERS) {
+      assert.match(romanNumeral(tier.level), /^[IV]+$/);
     }
   });
 });
