@@ -962,22 +962,26 @@ namespace FindItBuildingMenu.Services
 			IReadOnlyCollection<BuildingCatalogEntry> source,
 			IReadOnlyList<string>? selected)
 		{
-			bool restingState = selected is null || selected.Count == 0;
-
+			// Resting state shows NEITHER as selected, which is how every other
+			// facet reads: nothing picked means nothing excluded. It used to
+			// mark both, to match a first click that subtracted; the click now
+			// selects, so marking both would say the opposite of what it does.
 			BuildingCatalogFacetOption[] options = BuildingCatalogFacetSelection.Availability.All
 				.Select(value => new BuildingCatalogFacetOption(
 					value,
 					FormatFacetWords(value),
-					restingState || selected!.Any(option => string.Equals(option, value, StringComparison.OrdinalIgnoreCase))))
+					selected is not null
+						&& selected.Any(option => string.Equals(option, value, StringComparison.OrdinalIgnoreCase))))
 				.ToArray();
 
 			groups.Add(new BuildingCatalogFacetGroup(
 				"availability",
 				"Availability",
 				options,
-				// Exhaustive, so "both" admits everything however it was reached
-				// — whether nothing is stored or the player selected both back.
-				Narrowing: options.Any(option => !option.Selected)));
+				// Exhaustive, so a selection narrows only while it is partial.
+				// Both selected and none selected admit everything, and the
+				// toggle collapses both of those to the same stored null.
+				Narrowing: options.Any(option => option.Selected)));
 		}
 
 		private static void AddValueGroup(

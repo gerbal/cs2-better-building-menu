@@ -358,6 +358,7 @@ namespace FindItBuildingMenu.Systems
 				CreateTrigger<string, string>("ToggleBuildingLensFacet", ToggleBuildingLensFacet);
 				CreateTrigger("ClearBuildingLensFacets", ClearBuildingLensFacets);
 				CreateTrigger("ClearBuildingLensFilters", ClearBuildingLensFilters);
+				CreateTrigger("ResetBuildingLensMenu", ResetBuildingLensMenu);
 				// Its own trigger, not folded into SetBuildingLensSubCategory:
 				// that one is also the reset path ("All types", and removing a
 				// type chip), so clearing the menu there would silently drop

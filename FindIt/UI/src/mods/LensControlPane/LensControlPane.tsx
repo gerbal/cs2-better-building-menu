@@ -369,6 +369,31 @@ export const LensControlPane = () => {
         </div>
       </div>
 
+      {/* Back to how the menu opens. A menu accumulates a tab, a level, a
+          search, a sort, a set of facets, a grouping and a view mode, and
+          undoing them meant finding each control and remembering what it had
+          been — a state the player could reach and not leave.
+
+          It clears BOTH halves: the query state is the backend's, the grouping
+          and view mode are lens choices held on this side, and a reset that
+          dropped only one would leave the menu looking reset and behaving
+          otherwise. */}
+      <div className={styles.row}>
+        <span className={styles.rowLabel} />
+        <div className={styles.rowValue}>
+          <button
+            className={styles.resetButton}
+            onClick={() => {
+              setChosenGroupBy("");
+              setViewModeChoice("grid");
+              trigger(mod.id, "ResetBuildingLensMenu");
+            }}
+          >
+            {label("Tooltip.LABEL[FindItBuildingMenu.ResetMenu]", "Reset menu")}
+          </button>
+        </div>
+      </div>
+
       {/* NO panel-level control row. It held three buttons and each was a
           different kind of wrong for a build menu.
 

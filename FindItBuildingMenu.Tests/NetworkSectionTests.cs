@@ -210,17 +210,31 @@ namespace FindItBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void TheFirstClickSubtractsBecauseBothStartShowing()
+		public void TheFirstClickSelectsWhatWasClicked()
 		{
-			// Availability is exhaustive, so an empty selection means BOTH and
-			// the rail draws both ticked. Clicking Locked therefore means "not
-			// locked", not "add locked" — the arithmetic has to match what the
-			// player sees, or the first click does the opposite of what it looks
-			// like.
+			// It used to subtract — clicking Locked meant "not locked" — on the
+			// argument that an empty selection shows both, so both are ticked
+			// and unticking one is the honest reading. That needs the ticks to
+			// be VISIBLE, and the control renders a plain two-row list with no
+			// selection marks: the player clicks "Locked" to see locked assets
+			// and the menu hides them instead.
 			var query = BuildingCatalogFacetSelection.Toggle(
 				new BuildingCatalogQuery(), "availability", "Locked");
 
-			Assert.Equal(new[] { "Unlocked" }, query.Availability);
+			Assert.Equal(new[] { "Locked" }, query.Availability);
+		}
+
+		[Fact]
+		public void ClickingTheSameOptionAgainGoesBackToBoth()
+		{
+			// Click to narrow to one, click again to return — the same gesture
+			// Role and Theme answer to.
+			var onlyLocked = BuildingCatalogFacetSelection.Toggle(
+				new BuildingCatalogQuery(), "availability", "Locked");
+
+			var both = BuildingCatalogFacetSelection.Toggle(onlyLocked, "availability", "Locked");
+
+			Assert.Null(both.Availability);
 		}
 
 		[Fact]
@@ -232,6 +246,9 @@ namespace FindItBuildingMenu.Tests
 
 			var both = BuildingCatalogFacetSelection.Toggle(onlyUnlocked, "availability", "Locked");
 
+			// Selecting the second option covers everything, which is the same
+			// visible result as selecting none — so it collapses to one stored
+			// representation rather than two that compare differently.
 			Assert.Null(both.Availability);
 		}
 
