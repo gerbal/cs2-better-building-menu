@@ -1561,8 +1561,10 @@ namespace FindItBuildingMenu.Systems
 				// Plant" for the same reason. Those are separate unlocks the
 				// player buys separately, and a grouping that says otherwise
 				// misreports the tree it claims to show.
+				var rootLabel = isRoot ? RootBranchLabel(node) : string.Empty;
+
 				branches[node] = isRoot
-					? (RootBranchLabel, DevTreeIcon(prefab), 0)
+					? (rootLabel, DevTreeIcon(prefab), 0)
 					: (DevTreeBranchName(prefab), DevTreeIcon(prefab), depth);
 
 				// The root also names the bucket for everything the tree never
@@ -1571,7 +1573,7 @@ namespace FindItBuildingMenu.Systems
 					&& EntityManager.TryGetComponent<DevTreeNodeData>(node, out var rootData)
 					&& _prefabSystem.TryGetPrefab<PrefabBase>(rootData.m_Service, out var rootService))
 				{
-					roots[rootService.name] = (RootBranchLabel, DevTreeIcon(prefab), 0);
+					roots[rootService.name] = (rootLabel, DevTreeIcon(prefab), 0);
 				}
 			}
 
@@ -1635,20 +1637,35 @@ namespace FindItBuildingMenu.Systems
 		}
 
 		/// <summary>
-		/// What the service's free root node is called on a tab.
+		/// What the service's free root node is called.
 		/// </summary>
 		/// <remarks>
-		/// Not the node's own name. The game ships no localized title for these
-		/// — the lookup misses and falls through to the prefab name, which
-		/// renders as "Basic Water&amp;Sewage", missing the spaces the service's
-		/// real name has.
+		/// The SERVICE's name — Electricity, Water &amp; Sewage, Police &amp;
+		/// Administration — because that is what the top bar already calls this
+		/// bucket: its tab draws the service's own glyph, the one on the
+		/// toolbar icon that opened the menu.
 		///
-		/// Naming it after the service would be redundant anyway: the strip is
-		/// already scoped to one menu, so the tab sits under the service's own
-		/// icon. "Basic" is what the bucket means — everything the tree never
-		/// gated — and it fits a tab.
+		/// It was the literal word "Basic", which named nothing the player
+		/// could see and read as a category the game does not have. The node's
+		/// own name is worse still: it has no localized title, so it falls
+		/// through to the prefab name and renders "Basic Water&amp;Sewage",
+		/// missing the spaces the service's real name has.
 		/// </remarks>
-		private const string RootBranchLabel = "Basic";
+		private string RootBranchLabel(Entity node)
+		{
+			if (EntityManager.TryGetComponent<DevTreeNodeData>(node, out var data)
+				&& _prefabSystem.TryGetPrefab<PrefabBase>(data.m_Service, out var service))
+			{
+				var name = GetAssetName(service);
+
+				if (!string.IsNullOrEmpty(name))
+				{
+					return name;
+				}
+			}
+
+			return "Basic";
+		}
 
 		/// <summary>
 		/// The node's name, without the "Node" the prefab titles all carry.
