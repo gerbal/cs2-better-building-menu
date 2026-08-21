@@ -643,4 +643,37 @@ describe("Which grouping choices a menu offers", () => {
     assert.equal(defaultGroupDimensionFor("ServiceBuildings", false, "development"), "development");
     assert.equal(defaultGroupDimensionFor("ServiceBuildings", false, "assetType"), "category");
   });
+
+  it("hides a grouping that would put the whole menu in one bucket", () => {
+    // Landscaping is the case: nothing there is gated by a development tree,
+    // so Development drew one heading over 379 assets — a control that cannot
+    // act, in a picker of controls that can.
+    const ungated = [
+      entry({ devTreeBranch: "Basic", theme: "European" }),
+      entry({ devTreeBranch: "Basic", theme: "European" }),
+    ];
+    const ids = groupDimensionsFor("Landscaping", ungated).map((d) => d.id);
+
+    assert.ok(!ids.includes("development"));
+    assert.ok(!ids.includes("theme"));
+    // None survives whatever the data: it is how grouping is turned off.
+    assert.ok(ids.includes("none"));
+  });
+
+  it("keeps a grouping that can split the menu", () => {
+    const split = [
+      entry({ devTreeBranch: "Basic" }),
+      entry({ devTreeBranch: "Nuclear Power Plant" }),
+    ];
+
+    assert.ok(groupDimensionsFor("Electricity", split).map((d) => d.id).includes("development"));
+  });
+
+  it("offers everything before any entries have arrived", () => {
+    // Judging an empty page would shorten the picker and leave it short.
+    const ids = groupDimensionsFor("Electricity", []).map((d) => d.id);
+
+    assert.ok(ids.includes("development"));
+    assert.equal(ids.length, GROUP_DIMENSIONS.length - 1);
+  });
 });
