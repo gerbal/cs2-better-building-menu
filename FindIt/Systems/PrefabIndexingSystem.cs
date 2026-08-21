@@ -22,6 +22,7 @@ using Game.UI.InGame;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -823,6 +824,59 @@ namespace FindItBuildingMenu.Systems
 					if (report.Menus.Any(line => line.ExpectedExtras.Count > 0))
 					{
 						Mod.Log.Info($"[MENU-AUDIT] expectedExtras: {VanillaMenuAudit.Divergences}");
+					}
+
+					// What the first-party content packs actually contribute.
+					//
+					// The packs mount under --no-steam — the game lists every one
+					// at boot — but nothing DLC-flagged reaches a menu, and the
+					// lens's DLC facet is dropped everywhere as a result. Two very
+					// different causes look identical from the UI: the prefabs may
+					// be absent, or present and filtered for being unowned. This
+					// says which.
+					//
+					// EnumerateLocalDLCs reads the shipped manifest, so it lists
+					// what the INSTALL has. EnumerateDLCs goes through the platform
+					// backends, so it lists what the STORE says. A stubbed
+					// Steamworks leaves the second empty while the first is full,
+					// and then IsDlcOwned is false for everything but the base game.
+					try
+					{
+						var platform = PlatformManager.instance;
+
+						var byDlc = indexed
+							.GroupBy(entry => entry.DlcId)
+							.Select(group => new
+							{
+								Count = group.Count(),
+								Name = platform.GetDlcName(group.Key)
+									?? group.Key.id.ToString(CultureInfo.InvariantCulture),
+							})
+							.OrderByDescending(line => line.Count)
+							.ToArray();
+
+						Mod.Log.Info(
+							"[DLC-AUDIT] indexed by DLC: "
+							+ string.Join(", ", byDlc.Select(line => $"{line.Name}={line.Count}")));
+
+						var local = platform.EnumerateLocalDLCs().ToArray();
+						var store = platform.EnumerateDLCs().ToArray();
+
+						Mod.Log.Info(
+							$"[DLC-AUDIT] {platform.dlcBackends?.Count ?? 0} backend(s), "
+							+ $"{local.Length} installed, {store.Length} from the store, "
+							+ $"dlcCount={platform.dlcCount}");
+
+						Mod.Log.Info(
+							"[DLC-AUDIT] ownership: "
+							+ string.Join(
+								", ",
+								local.Select(dlc =>
+									$"{dlc.internalName}={(platform.IsDlcOwned(dlc.id) ? "owned" : "NOT-OWNED")}")));
+					}
+					catch (Exception ex)
+					{
+						Mod.Log.Error(ex, "[DLC-AUDIT] failed");
 					}
 
 					foreach (var line in report.Menus)
