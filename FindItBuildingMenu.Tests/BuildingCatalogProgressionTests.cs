@@ -129,11 +129,13 @@ namespace FindItBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void TheStripTabNarrowsOnTheAxisItWasCountedOn()
+		public void TheStripTabNarrowsOnWhicheverAxisNamesIt()
 		{
-			// The two fields travel together for exactly this reason: the same
-			// tab string means a branch on one menu and an asset type on
-			// another, so matching it without the axis would be a coincidence.
+			// A tab's axis is a property of the TAB, not of the row: Water draws
+			// its buildings as development nodes and its pipes as one Networks
+			// tab, so one row carries both. Matched by value across the
+			// candidate axes, which works because the value spaces do not
+			// overlap — node names against "Buildings"/"Networks".
 			var source = new List<BuildingCatalogEntry>
 			{
 				Entry(1, "Water Pipe", 0) with { Category = "Networks", DevTreeBranch = "Basic" },
@@ -152,11 +154,12 @@ namespace FindItBuildingMenu.Tests
 			Assert.Equal(1, byType.TotalCount);
 			Assert.Equal("Water Pipe", byType.Items[0].Name);
 
-			// Same tab string, wrong axis: nothing, rather than a lucky match.
-			var mismatched = BuildingCatalogQueryEngine.Query(
+			// A node name still selects its node even when the row's other tabs
+			// are asset types, which is what lets one row mix the two.
+			var mixed = BuildingCatalogQueryEngine.Query(
 				source,
 				new BuildingCatalogQuery(StripAxis: StripAxes.AssetType, StripTab: "Basic"));
-			Assert.Equal(0, mismatched.TotalCount);
+			Assert.Equal(2, mixed.TotalCount);
 		}
 	}
 }

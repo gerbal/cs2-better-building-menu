@@ -6,6 +6,7 @@ import mod from "../../../mod.json";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
   buildGroupedView,
+  fitGroupLabel,
   shouldShowHeading,
   type GroupDimensionId,
   type GroupNode,
@@ -114,7 +115,9 @@ export const GroupedResults = ({
       <div className={styles.group} key={node.path.join("/")} data-group-depth={depth}>
         {showHeadings && (
           <div className={classNames(styles.groupHeading, depth > 0 && styles.groupHeadingNested)}>
-            <span className={styles.groupLabel}>{headingLabel(node)}</span>
+            <span className={styles.groupLabel} title={headingLabel(node)}>
+              {fitGroupLabel(headingLabel(node), node.count)}
+            </span>
             <span className={styles.groupCount}>{node.count}</span>
           </div>
         )}

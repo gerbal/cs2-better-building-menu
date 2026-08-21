@@ -749,3 +749,35 @@ export function flattenGroupedRows<T extends GroupableEntry>(
 
   return out;
 }
+
+/**
+ * A heading that fits the width its tiles give it.
+ *
+ * Cohtml reports `text-overflow: ellipsis` as computed and then draws a hard
+ * cut, so the "…" has to be put there rather than asked for. The budget comes
+ * from the tile COUNT because that is what sets a group's width — the heading
+ * is out of flow precisely so it cannot — and a tile is about nine uppercase
+ * characters wide at this size.
+ *
+ * Never shorter than a few characters: a group of one still has to be
+ * identifiable, and "C…" identifies nothing. The full name stays in the
+ * tooltip and on the tiles below.
+ */
+export function fitGroupLabel(label: string, tiles: number): string {
+  const budget = Math.max(MIN_GROUP_LABEL, Math.min(tiles, GROUP_LABEL_TILE_CAP) * GROUP_LABEL_PER_TILE);
+
+  if (label.length <= budget) {
+    return label;
+  }
+
+  return `${label.slice(0, Math.max(1, budget - 1)).trimEnd()}…`;
+}
+
+/** Uppercase characters that fit over one tile at the heading's size. */
+export const GROUP_LABEL_PER_TILE = 9;
+
+/** Past this the row has wrapped, so more tiles buy no more width. */
+export const GROUP_LABEL_TILE_CAP = 9;
+
+/** Short enough to fit one tile, long enough to still name something. */
+export const MIN_GROUP_LABEL = 7;
