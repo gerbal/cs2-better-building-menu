@@ -7,6 +7,7 @@ using FindItBuildingMenu.Utilities;
 
 using Game.Prefabs;
 
+using Game.SceneFlow;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -78,7 +79,7 @@ namespace FindItBuildingMenu.Services
 
 			// Scoped to the view, not to the whole index — see InScope.
 			return BuildFacetState(
-				BuildingCatalogQueryEngine.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), query),
+				BuildingCatalogQueryEngine.InScope(ProjectForMenu(query.UiMenu), query),
 				query);
 		}
 
@@ -122,7 +123,7 @@ namespace FindItBuildingMenu.Services
 			var acrossCategories = query with { UiCategory = string.Empty, SchoolTier = -1, StripTabs = null };
 
 			return BuildingCatalogQueryEngine
-				.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), acrossCategories)
+				.InScope(ProjectForMenu(query.UiMenu), acrossCategories)
 				.GroupBy(entry => NetworkMenuExtension.EffectiveCategory(entry, query.UiMenu) ?? string.Empty)
 				.Where(group => group.Key.Length > 0)
 				.Select(group => new MenuCategoryCount(group.Key, group.Count()))
@@ -212,7 +213,7 @@ namespace FindItBuildingMenu.Services
 			};
 
 			return BuildingCatalogQueryEngine
-				.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), unscoped)
+				.InScope(ProjectForMenu(query.UiMenu), unscoped)
 				.Where(entry => !string.IsNullOrEmpty(entry.DevTreeBranch))
 				.GroupBy(entry => NetworkMenuExtension.EffectiveCategory(entry, query.UiMenu) ?? string.Empty)
 				.Where(group => group.Key.Length > 0
@@ -243,7 +244,7 @@ namespace FindItBuildingMenu.Services
 			var withinCategory = query with { UiCategory = category, StripTabs = null };
 
 			return BuildingCatalogQueryEngine
-				.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), withinCategory)
+				.InScope(ProjectForMenu(query.UiMenu), withinCategory)
 				.Where(entry => !string.IsNullOrEmpty(entry.DevTreeBranch))
 				.GroupBy(entry => entry.DevTreeBranch!)
 				.OrderBy(group => group.Min(entry => entry.DevTreeBranchDepth))
@@ -364,7 +365,7 @@ namespace FindItBuildingMenu.Services
 			var acrossTabs = query with { StripTabs = null };
 
 			return BuildingCatalogQueryEngine
-				.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), acrossTabs)
+				.InScope(ProjectForMenu(query.UiMenu), acrossTabs)
 				.GroupBy(entry => BuildingCatalogQueryEngine.StripValue(entry, axis))
 				.Where(group => group.Key.Length > 0)
 				// Development tabs run in UNLOCK order — the root, then each node
@@ -495,7 +496,7 @@ namespace FindItBuildingMenu.Services
 			var acrossTiers = query with { SchoolTier = -1, UiCategory = string.Empty };
 
 			return BuildingCatalogQueryEngine
-				.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), acrossTiers)
+				.InScope(ProjectForMenu(query.UiMenu), acrossTiers)
 				.Where(entry => entry.EducationLevel is >= 1 and <= 4)
 				.GroupBy(entry => entry.EducationLevel!.Value)
 				.Select(group => new MenuBranchCount(
@@ -516,7 +517,7 @@ namespace FindItBuildingMenu.Services
 			var acrossMilestones = query with { UnlockMilestone = BuildingCatalogQuery.AnyMilestone };
 
 			return BuildingCatalogQueryEngine
-				.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), acrossMilestones)
+				.InScope(ProjectForMenu(query.UiMenu), acrossMilestones)
 				.GroupBy(entry => entry.UnlockMilestone)
 				.Where(group => group.Key >= 0)
 				.Select(group => new MenuBranchCount(
@@ -561,7 +562,7 @@ namespace FindItBuildingMenu.Services
 			}
 
 			return MetricBoundsOf(
-				BuildingCatalogQueryEngine.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), query));
+				BuildingCatalogQueryEngine.InScope(ProjectForMenu(query.UiMenu), query));
 		}
 
 		/// <summary>
@@ -722,7 +723,7 @@ namespace FindItBuildingMenu.Services
 				throw new ArgumentNullException(nameof(query));
 			}
 
-			return BuildingCatalogQueryEngine.Query(GetIndexedBuildings(query.UiMenu).Select(Project), query);
+			return BuildingCatalogQueryEngine.Query(ProjectForMenu(query.UiMenu), query);
 		}
 
 		public bool TryGet(int id, out BuildingCatalogEntry? entry)
@@ -884,6 +885,96 @@ namespace FindItBuildingMenu.Services
 			return milestone < names.Length && !string.IsNullOrEmpty(names[milestone])
 				? names[milestone]
 				: $"Milestone {milestone}";
+		}
+
+		/// <summary>
+		/// The menu's assets, with the root bucket named the way the top bar
+		/// names it.
+		/// </summary>
+		/// <remarks>
+		/// The development tree's root is one node per SERVICE, so at index
+		/// time the only name available is the service's — "Police &amp;
+		/// Administration", "Transportation". Those are not what the menu calls
+		/// that bucket. The player sees "Police" and "Road", because the tab is
+		/// the CATEGORY those assets are in.
+		///
+		/// So the root bucket is split PER CATEGORY and each part named for the
+		/// category it is in. Health &amp; Deathcare is the case that settles it:
+		/// its ungated assets sit in both categories, so one bucket named after
+		/// the menu drew a "Healthcare &amp; Deathcare" tab holding only clinics —
+		/// the name said deathcare about a tab with none in it.
+		///
+		/// The cost is menus whose ungated assets span many categories: Roads
+		/// spreads into Small Roads, Medium Roads and every network it adopts
+		/// rather than one "Roads" bucket. Accepted deliberately — a bucket named
+		/// for what is in it beats a tidier count with a wrong label.
+		///
+		/// Done here, over the projected entries, so the tabs, their counts,
+		/// the group headings and the filter all read the same label. Deriving
+		/// it separately anywhere is how a tab and its count come to disagree.
+		/// </remarks>
+		private IEnumerable<BuildingCatalogEntry> ProjectForMenu(string? menu)
+		{
+			var entries = GetIndexedBuildings(menu).Select(Project).ToArray();
+			var root = PrefabIndexingSystem.GetDevTreeRootLabel(menu);
+
+			if (string.IsNullOrEmpty(root))
+			{
+				return entries;
+			}
+
+			return entries.Select(entry =>
+			{
+				if (!string.Equals(entry.DevTreeBranch, root, StringComparison.Ordinal))
+				{
+					return entry;
+				}
+
+				// PER CATEGORY, not one bucket for the whole menu. Health &
+				// Deathcare is the case that settles it: its ungated assets sit
+				// in both categories, so a single bucket had to be called after
+				// the menu — and the tab drawn for it is scoped to Healthcare
+				// and holds only clinics, so the name said deathcare about a
+				// tab with none in it.
+				//
+				// Split this way each bucket is named for the category it is
+				// actually in, and the menu name is left for the assets that
+				// have no category to be named after.
+				var category = NetworkMenuExtension.EffectiveCategory(entry, menu) ?? string.Empty;
+				var label = VanillaServiceLabel(category.Length > 0 ? category : menu ?? string.Empty);
+
+				return label.Length == 0 ? entry : entry with { DevTreeBranch = label };
+			});
+		}
+
+		/// <summary>
+		/// The game's own word for a service or one of its categories.
+		/// </summary>
+		/// <remarks>
+		/// The same chain the category tabs resolve through, and for the same
+		/// reason: the game ships a localized string under exactly these ids —
+		/// SubServices.NAME[TransportationRoad] is "Road", Services.NAME[Roads]
+		/// is "Roads", and both translate. Falls back to the id, which is at
+		/// least a name rather than a blank.
+		/// </remarks>
+		private static string VanillaServiceLabel(string id)
+		{
+			if (string.IsNullOrEmpty(id))
+			{
+				return string.Empty;
+			}
+
+			var dictionary = GameManager.instance.localizationManager.activeDictionary;
+
+			foreach (var key in new[] { $"SubServices.NAME[{id}]", $"Services.NAME[{id}]" })
+			{
+				if (dictionary.TryGetValue(key, out var name) && !string.IsNullOrWhiteSpace(name))
+				{
+					return name;
+				}
+			}
+
+			return id;
 		}
 
 		private static BuildingCatalogEntry Project(PrefabIndex prefab)
