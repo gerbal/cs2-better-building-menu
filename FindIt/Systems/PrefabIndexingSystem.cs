@@ -99,7 +99,7 @@ namespace FindItBuildingMenu.Systems
 		// is called "Basic", so all eleven shared one entry and Electricity's
 		// Basic tab drew the water glyph.
 		private Dictionary<Entity, (string Label, string Icon, int Depth)> _devTreeBranches = new();
-		private Dictionary<string, (string Label, string Icon, int Depth)> _devTreeRoots = new();
+		private static Dictionary<string, (string Label, string Icon, int Depth)> _devTreeRoots = new();
 		// Milestone index -> its progression-screen image. Safe to key by index
 		// because a milestone index IS unique, unlike a branch label.
 		private static Dictionary<int, string> _milestoneIcons = new();
@@ -1684,6 +1684,15 @@ namespace FindItBuildingMenu.Systems
 				? name.Substring(0, name.Length - " Node".Length)
 				: name;
 		}
+
+		/// <summary>The label the tree's root carries for a menu, or empty.</summary>
+		/// <remarks>
+		/// A sentinel more than a name: the adapter replaces it with what the
+		/// MENU calls that bucket, which needs the whole set of ungated assets
+		/// and so cannot be settled here. See ProjectForMenu.
+		/// </remarks>
+		public static string GetDevTreeRootLabel(string? menu) =>
+			menu is not null && _devTreeRoots.TryGetValue(menu, out var root) ? root.Label : string.Empty;
 
 		/// <summary>The branch an asset's unlock node belongs to, or empty.</summary>
 		private (string Label, string Icon, int Depth) GetDevTreeBranch(Entity entity, string? menu)
