@@ -134,3 +134,27 @@ export function schoolTierLabel(level: number): string {
       return `Level ${level}`;
   }
 }
+
+
+/**
+ * The rank a school-level tab draws over its glyph.
+ *
+ * Roman, because the arabic numeral would be read as a COUNT — every other
+ * number on this row is one, including the badge in the opposite corner of the
+ * same tab. Four levels is the whole range the game has, so the table stops at
+ * IV rather than pretending to be a general converter.
+ */
+export function romanNumeral(level: number): string {
+  switch (level) {
+    case 1:
+      return "I";
+    case 2:
+      return "II";
+    case 3:
+      return "III";
+    case 4:
+      return "IV";
+    default:
+      return String(level);
+  }
+}

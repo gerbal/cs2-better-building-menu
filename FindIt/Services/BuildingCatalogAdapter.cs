@@ -247,7 +247,7 @@ namespace FindItBuildingMenu.Services
 		}
 
 		/// <summary>
-		/// The glyph for a school level: the attainment that school grants.
+		/// The glyph every school-level tab is built on.
 		/// </summary>
 		/// <remarks>
 		/// A representative school's thumbnail was tried first and does not
@@ -255,23 +255,18 @@ namespace FindItBuildingMenu.Services
 		/// this size; a building render at 24rem is a dark smudge, and four of
 		/// them are four dark smudges. The tabs were icons in name only.
 		///
-		/// These are flat, and they are exactly the right meaning. The citizen
-		/// attainment ladder is 0..4 — Uneducated, Poorly Educated, Educated,
-		/// Well Educated, Highly Educated — and a school's level IS the
-		/// attainment it grants: GraduationSystem reads
-		/// SchoolData.m_EducationLevel and passes it straight to
-		/// Citizen.SetEducationLevel. So level N's tab is the badge a graduate
-		/// of that school wears, which is a better answer than a picture of one
-		/// of the buildings.
+		/// The citizen attainment ladder (PoorlyEducated .. HighlyEducated) is
+		/// flat, ordinal and exactly the right meaning — a school's level IS
+		/// the attainment it grants, since GraduationSystem passes
+		/// SchoolData.m_EducationLevel straight to Citizen.SetEducationLevel.
+		/// But as a second picture beside the mortarboard it competed with it,
+		/// and four green ladders in a row do not say EDUCATION on their own.
+		///
+		/// So one glyph for all four, with the RANK drawn over it as a roman
+		/// numeral: the mortarboard names the subject, the numeral gives the
+		/// level, and it costs less room than a second picture.
 		/// </remarks>
-		private static string SchoolTierIcon(int level) => level switch
-		{
-			1 => "Media/Game/Icons/PoorlyEducated.svg",
-			2 => "Media/Game/Icons/Educated.svg",
-			3 => "Media/Game/Icons/WellEducated.svg",
-			4 => "Media/Game/Icons/HighlyEducated.svg",
-			_ => "Media/Game/Icons/Education.svg",
-		};
+		private const string SchoolTierIcon = "Media/Game/Icons/Education.svg";
 
 		/// <summary>The progression screen's badge for a milestone, if any.</summary>
 		private static string MilestoneIcon(int milestone)
@@ -354,7 +349,7 @@ namespace FindItBuildingMenu.Services
 				.Select(group => new MenuBranchCount(
 					group.Key.ToString(System.Globalization.CultureInfo.InvariantCulture),
 					group.Count(),
-					SchoolTierIcon(group.Key)))
+					SchoolTierIcon))
 				.OrderBy(count => count.Id, StringComparer.Ordinal)
 				.ToArray();
 		}
