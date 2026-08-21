@@ -208,7 +208,6 @@ namespace FindItBuildingMenu.Services
 				|| !MatchesAny(entry.Provenance, query.Provenance)
 				|| !MatchesAny(entry.DlcId, query.DlcIds)
 				|| !MatchesAny(entry.Theme, query.Themes)
-				|| !MatchesAny(entry.AssetPacks, query.AssetPacks)
 				// Placement used to require every chosen flag while every other
 				// facet took any. The rail draws them identically, so the same
 				// gesture meant two different things depending on which row it

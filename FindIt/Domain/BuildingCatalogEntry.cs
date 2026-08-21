@@ -43,6 +43,14 @@ namespace FindItBuildingMenu.Domain
 		string? DlcId = null,
 		string? Theme = null,
 		string[]? AssetPacks = null,
+		/// <summary>The pack entities this asset belongs to, by index.</summary>
+		/// <remarks>
+		/// Beside the names above rather than replacing them: the names are what
+		/// a card shows, the indices are what vanilla's pack SELECTION is keyed
+		/// on, and the facet has to speak the second to write back to the game's
+		/// own toolbar. Backend only — never serialized.
+		/// </remarks>
+		int[]? AssetPackIndices = null,
 		string[]? PlacementFlags = null,
 		string? VanillaSection = null,
 		string? VanillaSubCategory = null,

@@ -43,7 +43,6 @@ namespace FindItBuildingMenu.Domain
 		IReadOnlyList<string>? Provenance = null,
 		IReadOnlyList<string>? DlcIds = null,
 		IReadOnlyList<string>? Themes = null,
-		IReadOnlyList<string>? AssetPacks = null,
 		IReadOnlyList<string>? PlacementFlags = null,
 		IReadOnlyList<string>? Extensions = null,
 		// Zone density (Low/Row/Medium/High/Signature) was indexed on every
