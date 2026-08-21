@@ -147,13 +147,49 @@ export function isEducationMenu(menu: string | null | undefined): boolean {
  * deliberately.
  */
 export function groupDimensionsFor(
-  menu: string | null | undefined
+  menu: string | null | undefined,
+  entries: readonly GroupableEntry[] | null | undefined = null
 ): readonly GroupDimension[] {
-  if (isEducationMenu(menu)) {
-    return GROUP_DIMENSIONS;
+  const offered = isEducationMenu(menu)
+    ? GROUP_DIMENSIONS
+    : GROUP_DIMENSIONS.filter((dimension) => dimension.id !== "schoolTier");
+
+  // With no entries to judge by — before the first page lands — offer
+  // everything rather than guess a menu into a shorter list it then keeps.
+  const sample = entries ?? [];
+
+  if (sample.length === 0) {
+    return offered;
   }
 
-  return GROUP_DIMENSIONS.filter((dimension) => dimension.id !== "schoolTier");
+  // A dimension that puts the whole menu in ONE bucket is a control that
+  // cannot act: picking Development in Landscaping draws a single heading
+  // over 379 assets, because nothing there is gated by a development tree.
+  // "None" always stays — it is how the player turns grouping off, and it
+  // groups nothing by definition.
+  return offered.filter((dimension) => {
+    if (dimension.id === "none") {
+      return true;
+    }
+
+    const seen = new Set<string>();
+
+    for (const entry of sample) {
+      // The outermost level is the one the picker's label names; a second
+      // level only subdivides what the first already split.
+      const level = groupLevelsFor(entry, dimension.id)[0];
+
+      if (level !== undefined) {
+        seen.add(level);
+      }
+
+      if (seen.size > 1) {
+        return true;
+      }
+    }
+
+    return false;
+  });
 }
 
 export function defaultGroupDimensionFor(

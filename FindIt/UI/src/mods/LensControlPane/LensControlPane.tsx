@@ -42,6 +42,11 @@ const BuildingLensStripAxis$ = bindValue<string>(mod.id, "BuildingLensStripAxis"
 const BuildingLensMenuCategories$ = bindValue<unknown[]>(mod.id, "BuildingLensMenuCategories", []);
 const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch");
 const BuildingLensFacets$ = bindValue<BuildingLensFacetState | null>(mod.id, "BuildingLensFacets", null);
+// Read only to decide which grouping options can act on THIS menu. The window
+// is a page rather than the whole result, which is the right trade: a
+// dimension that splits nothing across the hundred entries on screen is one
+// the player cannot see working either.
+const BuildingCatalogPage$ = bindValue<{ items?: unknown[] } | null>(mod.id, "BuildingCatalog", null);
 const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState | null>(
   mod.id,
   "BuildingCatalogMetricRanges",
@@ -87,6 +92,7 @@ export const LensControlPane = () => {
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
   const section = useValue(BuildingLensSection$);
   const menu = useValue(BuildingLensMenu$) ?? "";
+  const catalogEntries = (useValue(BuildingCatalogPage$)?.items ?? []) as never[];
   const menuHasCategories = (useValue(BuildingLensMenuCategories$) ?? []).length > 0;
   const stripAxis = useValue(BuildingLensStripAxis$) ?? "";
   const currentSearch = useValue(CurrentSearch$);
@@ -253,7 +259,7 @@ export const LensControlPane = () => {
                 </Button>
                 {groupPickerOpen && (
                   <div className={styles.pickerOptions}>
-                    {groupDimensionsFor(menu).map((dimension) => {
+                    {groupDimensionsFor(menu, catalogEntries).map((dimension) => {
                       const optionLabel = translate(
                         `Tooltip.LABEL[FindItBuildingMenu.GroupBy_${dimension.id}]`,
                         dimension.label

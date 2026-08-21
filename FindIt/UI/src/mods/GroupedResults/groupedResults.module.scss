@@ -34,6 +34,12 @@
   flex-direction: column;
   flex: 0 1 auto;
   max-width: 100%;
+  // The group is as wide as its TILES; the heading is absolute so it cannot
+  // widen it, and this reserves the row it sits in.
+  position: relative;
+  padding-top: 17rem;
+  min-width: 0;
+  overflow: hidden;
 }
 
 // Thinned from 43rem to fit two tile rows in the 200rem content strip instead
@@ -48,6 +54,20 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
+  // OUT OF FLOW, so the heading follows the group's width instead of setting
+  // it. A group should be as wide as its tiles; measured, CENTRAL INTELLIGENCE
+  // BUREAU made its group 177px for one 72px tile and left the rest as empty
+  // row. Two cheaper fixes failed first: min-width:0 permits shrinking under
+  // flex pressure and a row with free space applies none, and the
+  // width:0/min-width:100% idiom resolved its circular reference against the
+  // ROW, stretching the group to 706px.
+  //
+  // Absolute takes the text out of the intrinsic width entirely; the group
+  // reserves the height with padding, and clips what will not fit.
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
   padding: 1rem 2rem 0;
   border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
   color: var(--menuText1Normal);
@@ -67,7 +87,17 @@
   letter-spacing: 0;
 }
 
+// Truncates rather than widening its group. The heading is laid out with the
+// tiles, so a long label — CENTRAL INTELLIGENCE BUREAU over one tile — pushed
+// the whole group wider than its contents and left the extra as white space
+// beside them. The name is still readable in full on the tiles below it.
 .groupLabel {
+  // The label is the box that truncates, so it needs a floor of zero: as a
+  // flex item it would otherwise keep its full text width and let the GROUP
+  // clip it, which cuts mid-letter with no ellipsis to show for it.
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
