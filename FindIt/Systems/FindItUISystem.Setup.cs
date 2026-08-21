@@ -33,10 +33,9 @@ namespace FindItBuildingMenu.Systems
 		// so carrying one into a new menu would open it already narrowed to a
 		// tier the player never picked.
 		private int _buildingLensUnlockMilestone = BuildingCatalogQuery.AnyMilestone;
-		// The fallback strip's tab, or empty, and the axis it was picked on.
-		// Both cleared with the category: an axis is chosen per menu, so a tab
-		// carried across menus can name something the new one has no axis for.
-		private string _buildingLensStripTab = string.Empty;
+		// The axis the fallback strip is drawn on. The SELECTION itself lives on
+		// the query as StripTabs, because the filter rail offers the same state
+		// and one field shown twice cannot disagree with itself.
 		private string _buildingLensStripAxis = string.Empty;
 		// The education menu's tier tab, or -1. Cleared with the rest of the
 		// scope; a level means nothing outside the menu that teaches.
@@ -134,7 +133,7 @@ namespace FindItBuildingMenu.Systems
 		// row can say so, because the axis varies per menu and a tab row whose
 		// meaning changes silently is not learnable.
 		private ValueBindingHelper<MenuBranchCount[]> _BuildingLensStripTabs = null!;
-		private ValueBindingHelper<string> _BuildingLensStripTabBinding = null!;
+		private ValueBindingHelper<string[]> _BuildingLensStripTabBinding = null!;
 		private ValueBindingHelper<string> _BuildingLensStripAxisBinding = null!;
 		// Which category the strip draws as its development branches, and those
 		// branches. Empty on the menus that expand nothing.
@@ -303,11 +302,10 @@ namespace FindItBuildingMenu.Systems
 			_BuildingLensStripAxisBinding = CreateBinding("BuildingLensStripAxis", string.Empty);
 			_BuildingLensExpandedCategory = CreateBinding("BuildingLensExpandedCategory", string.Empty);
 			_BuildingLensExpandedTabs = CreateBinding("BuildingLensExpandedTabs", Array.Empty<MenuBranchCount>());
-			_BuildingLensStripTabBinding = CreateBinding(
-				"BuildingLensStripTab",
-				"SetBuildingLensStripTab",
-				string.Empty,
-				SetBuildingLensStripTab);
+			// A plain value binding plus its own trigger, rather than the
+			// two-in-one form: the value is the LIST both controls share, while
+			// the trigger takes the single tab the row clicked.
+			_BuildingLensStripTabBinding = CreateBinding("BuildingLensStripTab", Array.Empty<string>());
 			_BuildingLensMenuSchoolTierCounts = CreateBinding("BuildingLensMenuSchoolTierCounts", Array.Empty<MenuBranchCount>());
 			_BuildingLensMenuSchoolTierBinding = CreateBinding(
 				"BuildingLensMenuSchoolTier",
@@ -359,6 +357,7 @@ namespace FindItBuildingMenu.Systems
 				CreateTrigger("ClearBuildingLensFacets", ClearBuildingLensFacets);
 				CreateTrigger("ClearBuildingLensFilters", ClearBuildingLensFilters);
 				CreateTrigger("ResetBuildingLensMenu", ResetBuildingLensMenu);
+				CreateTrigger<string>("SetBuildingLensStripTab", SetBuildingLensStripTab);
 				// Its own trigger, not folded into SetBuildingLensSubCategory:
 				// that one is also the reset path ("All types", and removing a
 				// type chip), so clearing the menu there would silently drop

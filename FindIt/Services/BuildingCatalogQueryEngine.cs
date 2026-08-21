@@ -145,7 +145,8 @@ namespace FindItBuildingMenu.Services
 			// The fallback strip's tab, matched against whichever property its
 			// axis names. Nothing to do when no tab is picked, which is also
 			// the case for every menu whose strip is vanilla's categories.
-			if (!string.IsNullOrWhiteSpace(query.StripTab) && !StripMatches(entry, query.StripTab))
+			if (query.StripTabs is { Count: > 0 }
+				&& !query.StripTabs.Any(tab => StripMatches(entry, tab)))
 			{
 				return false;
 			}
