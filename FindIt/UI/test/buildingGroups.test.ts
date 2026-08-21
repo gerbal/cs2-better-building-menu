@@ -18,6 +18,7 @@ import {
   isEducationMenu,
   milestoneLabel,
   fitGroupLabel,
+  fitLabelToWidth,
   PROGRESSION_UNGATED_LABEL,
 } from "../src/domain/buildingGroups.ts";
 
@@ -676,6 +677,31 @@ describe("Which grouping choices a menu offers", () => {
 
     assert.ok(ids.includes("development"));
     assert.equal(ids.length, GROUP_DIMENSIONS.length - 1);
+  });
+
+  it("fits a label to the width it was actually given, not to a tile count", () => {
+    // The numbers are the ones measured in Electricity: a one-card group is
+    // 166px and "GAS POWER PLANT" wants about 105px, so it fits whole — while
+    // the tile-count estimate cut it to "GAS POWE…" over that same 166px.
+    assert.equal(fitLabelToWidth("GAS POWER PLANT", 166, 105), "GAS POWER PLANT");
+    assert.equal(fitGroupLabel("GAS POWER PLANT", 1), "GAS POWE…");
+
+    // Genuinely too long: 77px of grid tile for a string wanting 190px.
+    const cut = fitLabelToWidth("CENTRAL INTELLIGENCE BUREAU", 77, 190);
+    assert.ok(cut.endsWith("…"), `expected an ellipsis, got ${cut}`);
+    assert.ok(cut.length < "CENTRAL INTELLIGENCE BUREAU".length);
+  });
+
+  it("keeps the caller's estimate when it has nothing to measure", () => {
+    // An unlaid-out box reports 0. Returning the label whole would overflow
+    // the group; returning it unchanged lets the estimate stand.
+    assert.equal(fitLabelToWidth("SOLAR POWER STATION", 0, 190), "SOLAR POWER STATION");
+    assert.equal(fitLabelToWidth("SOLAR POWER STATION", 166, 0), "SOLAR POWER STATION");
+  });
+
+  it("never trims a fitted label below the readable floor", () => {
+    // A pathologically narrow box still has to name something.
+    assert.ok(fitLabelToWidth("CENTRAL INTELLIGENCE BUREAU", 4, 190).length >= 7);
   });
 
   it("fits a heading to the width its tiles give it", () => {
