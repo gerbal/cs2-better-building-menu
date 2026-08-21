@@ -119,7 +119,7 @@ namespace FindItBuildingMenu.Services
 			// count Research against that level — zero — and visibleCategories
 			// then removed the Research tab entirely, so choosing a school tier
 			// made the other half of the menu unreachable.
-			var acrossCategories = query with { UiCategory = string.Empty, SchoolTier = -1 };
+			var acrossCategories = query with { UiCategory = string.Empty, SchoolTier = -1, StripTab = string.Empty };
 
 			return BuildingCatalogQueryEngine
 				.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), acrossCategories)
@@ -169,6 +169,92 @@ namespace FindItBuildingMenu.Services
 		/// dropped, which is also what leaves a single-tree menu with no strip
 		/// rather than one tab.
 		/// </remarks>
+		/// <summary>
+		/// The category the strip draws as its development branches instead of
+		/// as one tab, or empty.
+		/// </summary>
+		/// <remarks>
+		/// The same move the education menu makes with school levels, on the
+		/// menus that have no level to make it with. Police and Fire each hold
+		/// one category that is the service proper and one that is a sideline —
+		/// Police against Administration, Fire &amp; Rescue against
+		/// DisasterControl — and the service half is where the assets are and
+		/// where a single tab is least useful.
+		///
+		/// Chosen by evidence rather than named: the category whose assets span
+		/// two or more development branches, largest first when several do.
+		/// That is the category with a sub-axis to draw, by construction, and
+		/// it needs no table of menu names to maintain.
+		///
+		/// Empty when the menu has fewer than two categories, because then the
+		/// strip has no category row to expand INTO — that is the fallback
+		/// case, and GetStripAxis handles it.
+		/// </remarks>
+		public string GetExpandedCategoryId(BuildingCatalogQuery query)
+		{
+			if (query is null)
+			{
+				throw new ArgumentNullException(nameof(query));
+			}
+
+			var categories = GetMenuCategoryCounts(query);
+
+			if (categories.Count < 2)
+			{
+				return string.Empty;
+			}
+
+			var unscoped = query with
+			{
+				UiCategory = string.Empty,
+				StripTab = string.Empty,
+				SchoolTier = -1,
+			};
+
+			return BuildingCatalogQueryEngine
+				.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), unscoped)
+				.Where(entry => !string.IsNullOrEmpty(entry.DevTreeBranch))
+				.GroupBy(entry => NetworkMenuExtension.EffectiveCategory(entry, query.UiMenu) ?? string.Empty)
+				.Where(group => group.Key.Length > 0
+					&& group.Select(entry => entry.DevTreeBranch).Distinct(StringComparer.Ordinal).Count() > 1)
+				.OrderByDescending(group => group.Count())
+				.ThenBy(group => group.Key, StringComparer.Ordinal)
+				.Select(group => group.Key)
+				.FirstOrDefault() ?? string.Empty;
+		}
+
+		/// <summary>The branch tabs that stand in for the expanded category.</summary>
+		/// <remarks>
+		/// Ordered by the branch's column in the tree, so the rank drawn over
+		/// them follows the game's own progression: the basic stations before
+		/// the headquarters they lead to, whatever the alphabet says.
+		/// </remarks>
+		public IReadOnlyList<MenuBranchCount> GetExpandedCategoryTabs(BuildingCatalogQuery query)
+		{
+			var category = GetExpandedCategoryId(query);
+
+			if (category.Length == 0)
+			{
+				return Array.Empty<MenuBranchCount>();
+			}
+
+			// Scoped to the expanded category and counted across the tabs' own
+			// axis, which is the rule every counter here follows.
+			var withinCategory = query with { UiCategory = category, StripTab = string.Empty };
+
+			return BuildingCatalogQueryEngine
+				.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), withinCategory)
+				.Where(entry => !string.IsNullOrEmpty(entry.DevTreeBranch))
+				.GroupBy(entry => entry.DevTreeBranch!)
+				.OrderBy(group => group.Min(entry => entry.DevTreeBranchDepth))
+				.ThenBy(group => group.Key, StringComparer.Ordinal)
+				.Select(group => new MenuBranchCount(
+					group.Key,
+					group.Count(),
+					TabIcon(group, authored: true)))
+				.ToArray();
+		}
+
 		public string GetStripAxis(BuildingCatalogQuery query)
 		{
 			if (query is null)
@@ -185,7 +271,13 @@ namespace FindItBuildingMenu.Services
 			// Research.
 			if (GetMenuCategoryCounts(query).Count > 1)
 			{
-				return string.Empty;
+				// A category menu still uses the development axis when one of
+				// its categories is drawn as branches — the tabs and the
+				// predicate have to agree on that, or clicking one matches
+				// nothing.
+				return GetExpandedCategoryId(query).Length > 0
+					? StripAxes.Development
+					: string.Empty;
 			}
 
 			var best = string.Empty;
@@ -243,12 +335,27 @@ namespace FindItBuildingMenu.Services
 				.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), acrossTabs)
 				.GroupBy(entry => BuildingCatalogQueryEngine.StripValue(entry, axis))
 				.Where(group => group.Key.Length > 0)
-				.Select(group => new MenuBranchCount(
-					group.Key,
-					group.Count(),
-					TabIcon(group, axis == StripAxes.Development)))
-				.OrderByDescending(count => count.Count)
-				.ThenBy(count => count.Id, StringComparer.Ordinal)
+				// Development tabs run in UNLOCK order — the root, then each node
+				// by its column in the tree — because that is the order the
+				// player meets them in and the only order the tabs have a claim
+				// to. Sorted by size they ran Nuclear before Solar, which is
+				// backwards in the one sense the axis is about.
+				//
+				// Everything else has no inherent order, so the biggest bucket
+				// leads: it is the most useful stable arrangement when the tabs
+				// are merely different rather than sequential.
+				.Select(group => new
+				{
+					Tab = new MenuBranchCount(
+						group.Key,
+						group.Count(),
+						TabIcon(group, axis == StripAxes.Development)),
+					Depth = group.Min(entry => entry.DevTreeBranchDepth),
+				})
+				.OrderBy(x => axis == StripAxes.Development ? x.Depth : 0)
+				.ThenByDescending(x => axis == StripAxes.Development ? 0 : x.Tab.Count)
+				.ThenBy(x => x.Tab.Id, StringComparer.Ordinal)
+				.Select(x => x.Tab)
 				.ToArray();
 		}
 
@@ -740,6 +847,7 @@ namespace FindItBuildingMenu.Services
 				UnlockMilestone: prefab.UnlockMilestone,
 				DevTreeBranch: prefab.DevTreeBranch,
 				DevTreeBranchIcon: prefab.DevTreeBranchIcon,
+				DevTreeBranchDepth: prefab.DevTreeBranchDepth,
 				UnlockRequirements: prefab.UnlockRequirements,
 				Bonuses: prefab.Bonuses,
 				CostIsPerDistance: prefab.CostIsPerDistance,

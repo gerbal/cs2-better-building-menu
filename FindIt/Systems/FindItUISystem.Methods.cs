@@ -160,6 +160,9 @@ namespace FindItBuildingMenu.Systems
 			_BuildingLensStripAxisBinding.Value = _buildingLensStripAxis;
 			_BuildingLensStripTabs.Value =
 				_buildingCatalogAdapter.GetStripTabs(_buildingCatalogQuery).ToArray();
+			_BuildingLensExpandedCategory.Value = _buildingCatalogAdapter.GetExpandedCategoryId(_buildingCatalogQuery);
+			_BuildingLensExpandedTabs.Value =
+				_buildingCatalogAdapter.GetExpandedCategoryTabs(_buildingCatalogQuery).ToArray();
 			_BuildingLensMenuSchoolTierCounts.Value =
 				_buildingCatalogAdapter.GetMenuSchoolTierCounts(_buildingCatalogQuery).ToArray();
 			_BuildingLensLegacyFilters.Value = CaptureLegacyFilters().Describe().ToArray();

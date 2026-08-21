@@ -57,6 +57,12 @@ const BuildingLensMenu$ = bindValue<string>(mod.id, "BuildingLensMenu", "");
 const BuildingLensStripTabs$ = bindValue<MenuBranchCount[]>(mod.id, "BuildingLensStripTabs", []);
 const BuildingLensStripTab$ = bindValue<string>(mod.id, "BuildingLensStripTab", "");
 const BuildingLensStripAxis$ = bindValue<string>(mod.id, "BuildingLensStripAxis", "");
+const BuildingLensExpandedCategory$ = bindValue<string>(mod.id, "BuildingLensExpandedCategory", "");
+const BuildingLensExpandedTabs$ = bindValue<MenuBranchCount[]>(
+  mod.id,
+  "BuildingLensExpandedTabs",
+  []
+);
 
 /**
  * Vanilla's second tier, rebuilt.
@@ -90,6 +96,8 @@ export const MenuCategoryStrip = () => {
   const stripTabs = useValue(BuildingLensStripTabs$) ?? [];
   const selectedStripTab = useValue(BuildingLensStripTab$) ?? "";
   const stripAxis = useValue(BuildingLensStripAxis$) ?? "";
+  const expandedCategory = useValue(BuildingLensExpandedCategory$) ?? "";
+  const expandedTabs = useValue(BuildingLensExpandedTabs$) ?? [];
 
   const tiers = milestoneTabs(milestoneCounts, (milestone) =>
     milestoneLabel(milestone, milestoneNames)
@@ -175,7 +183,11 @@ export const MenuCategoryStrip = () => {
           category alone lit All up beside the level the player had just
           chosen. */}
       <ToolButton
-        selected={isCategorySelected(ALL_CATEGORIES_ID, selected) && selectedSchoolTier < 0}
+        selected={
+          isCategorySelected(ALL_CATEGORIES_ID, selected) &&
+          selectedSchoolTier < 0 &&
+          selectedStripTab === ""
+        }
         tooltip={withCount(allLabel, ALL_CATEGORIES_ID)}
         onSelect={() => choose(ALL_CATEGORIES_ID)}
         // Required by the component, and there is no icon for "all" — the tab
@@ -189,6 +201,7 @@ export const MenuCategoryStrip = () => {
           styles.allTab,
           isCategorySelected(ALL_CATEGORIES_ID, selected) &&
             selectedSchoolTier < 0 &&
+            selectedStripTab === "" &&
             styles.tabSelected
         )}
         aria-label={withCount(allLabel, ALL_CATEGORIES_ID)}
@@ -234,10 +247,38 @@ export const MenuCategoryStrip = () => {
                 </span>
               </ToolButton>
             ))
+          : expandedTabs.length > 1 && category.id === expandedCategory
+          ? expandedTabs.map((branch) => (
+              <ToolButton
+                key={`branch-${branch.id}`}
+                selected={selectedStripTab === branch.id}
+                tooltip={`${branch.id} (${branch.count})`}
+                onSelect={() => chooseBranch(branch.id)}
+                src={branch.icon || category.icon}
+                focusKey={FOCUS_DISABLED}
+                className={classNames(
+                  toolButtonTheme.button,
+                  styles.tab,
+                  selectedStripTab === branch.id && styles.tabSelected
+                )}
+                aria-label={`${branch.id} (${branch.count})`}
+              >
+                {/* No numeral here, unlike the school levels. Each unlock
+                    ships its own icon, so the tabs are already told apart by
+                    what they are; a rank would be a second ordering the player
+                    did not ask for. The levels need one because all four draw
+                    the same mortarboard. */}
+                <span className={styles.tabCount}>{branch.count}</span>
+              </ToolButton>
+            ))
           : [
         <ToolButton
           key={category.id}
-          selected={isCategorySelected(category.id, selected) && selectedSchoolTier < 0}
+          selected={
+            isCategorySelected(category.id, selected) &&
+            selectedSchoolTier < 0 &&
+            selectedStripTab === ""
+          }
           tooltip={withCount(label(category), category.id)}
           onSelect={() => choose(category.id)}
           src={category.icon}
@@ -247,6 +288,7 @@ export const MenuCategoryStrip = () => {
             styles.tab,
             isCategorySelected(category.id, selected) &&
               selectedSchoolTier < 0 &&
+              selectedStripTab === "" &&
               styles.tabSelected
           )}
           aria-label={withCount(label(category), category.id)}

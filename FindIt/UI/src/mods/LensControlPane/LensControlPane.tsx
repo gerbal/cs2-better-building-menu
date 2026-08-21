@@ -13,6 +13,7 @@ import { getBuildingLensSortPresentation } from "domain/buildingLensSortPresenta
 import {
   groupDimensionsFor,
   defaultGroupDimensionFor,
+  isEducationMenu,
   groupDimensionLabel,
   isGroupDimension,
   type GroupDimensionId,
@@ -100,7 +101,7 @@ export const LensControlPane = () => {
   const [chosenGroupBy, setChosenGroupBy] = useLensChoice(LENS_GROUP_KEY, "");
   const groupBy: GroupDimensionId = isGroupDimension(chosenGroupBy)
     ? chosenGroupBy
-    : defaultGroupDimensionFor(section, menuHasCategories, stripAxis);
+    : defaultGroupDimensionFor(section, menuHasCategories, stripAxis, isEducationMenu(menu));
 
   const sortPresentation = getBuildingLensSortPresentation({ column: sortColumn, descending });
   const label = (key: string, fallback: string) => translate(key, fallback) ?? fallback;

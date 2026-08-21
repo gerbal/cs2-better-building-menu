@@ -160,6 +160,7 @@ export function defaultGroupDimensionFor(
   section: string | null | undefined,
   menuHasCategories: boolean = false,
   stripAxis: string = "",
+  educationMenu: boolean = false,
 ): GroupDimensionId {
   // The strip and the headings answer the same question, so they should not
   // open on different answers. The strip picks its axis per menu — vanilla's
@@ -170,6 +171,15 @@ export function defaultGroupDimensionFor(
   // "category" is this module's Buildings/Networks/Service Buildings, which is
   // the same cut the strip calls assetType; the names differ because the
   // strip's axis ids are the backend's and this module's are the picker's.
+  // BEFORE the axis checks. The education menu reports a development axis —
+  // its schools do span several unlock nodes — but its strip draws school
+  // LEVELS in that category's place, so the axis is not what the row is
+  // showing. Asking about the menu first is what keeps the grouping matched to
+  // the tabs rather than to the axis they were derived from.
+  if (educationMenu) {
+    return "schoolTier";
+  }
+
   if (stripAxis === "development") {
     return "development";
   }
@@ -320,6 +330,7 @@ export interface GroupableEntry {
   /** Milestone index the game gates the asset behind; 0 for available at start. */
   unlockMilestone?: number | null;
   devTreeBranch?: string | null;
+  devTreeBranchDepth?: number | null;
   theme?: string | null;
   provenance?: string | null;
   dlcId?: string | null;
@@ -458,10 +469,17 @@ export function groupLevelsFor(
       return [text(entry.devTreeBranch) ?? UNGROUPED_LABEL];
     case "schoolTier":
       // Not word-split through text(): these are the game's own labels, and
-      // "Elementary School" is already a phrase. Anything with no tier — every
-      // non-school, plus the capacity-only upgrades and outside connections —
-      // is "Other".
-      return [schoolTierFor(entry.educationLevel)?.label ?? UNGROUPED_LABEL];
+      // "Elementary School" is already a phrase.
+      //
+      // Anything with no tier falls back to its own CATEGORY rather than to
+      // "Other". This is the grouping the education menu opens on, and its
+      // three research buildings under a heading called "Other" said nothing
+      // about them — where "Research" is exactly what the strip's own tab
+      // beside the four levels says. The rule generalises: split the schools
+      // out, leave everything else where it was.
+      return [
+        schoolTierFor(entry.educationLevel)?.label ?? menuCategoryLabel(entry),
+      ];
     case "theme":
       return [text(entry.theme) ?? UNGROUPED_LABEL];
     case "source":
@@ -565,6 +583,13 @@ export function buildGroupedView<T extends GroupableEntry>(
           node.order = entry.unlockMilestone;
         }
 
+        // Development is ordinal too — the tree's own columns. Without this the
+        // headings formed in encounter order, so a name sort drew Coal Power
+        // Plant above the basic buildings it is unlocked long after.
+        if (dimension === "development" && typeof entry.devTreeBranchDepth === "number") {
+          node.order = entry.devTreeBranchDepth;
+        }
+
         siblings.push(node);
       }
 
@@ -587,7 +612,7 @@ export function buildGroupedView<T extends GroupableEntry>(
   const other = roots.filter((node) => node.label === UNGROUPED_LABEL);
 
   // Ordinal dimensions state their own order; see GroupNode.order.
-  if (dimension === "progression") {
+  if (dimension === "progression" || dimension === "development") {
     named.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   }
 
