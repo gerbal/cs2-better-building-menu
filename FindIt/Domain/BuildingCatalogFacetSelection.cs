@@ -109,10 +109,20 @@ namespace FindItBuildingMenu.Domain
 				return values;
 			}
 
-			// Nothing stored means every option is showing, so the first click
-			// is a subtraction from the whole set.
+			// The first click SELECTS what was clicked, like every other facet in
+			// the rail. It used to subtract — clicking Locked meant "not locked"
+			// — on the argument that an empty selection shows both, so both are
+			// ticked and unticking one is the honest reading. That argument
+			// needs the ticks to be visible, and the control renders a plain
+			// two-row list with no selection marks at all: the player sees
+			// "Locked" and clicks it to see locked assets, and the menu hides
+			// them instead.
+			//
+			// Consistency is worth more than the arithmetic being clever. Click
+			// to narrow to one, click again to go back to both, the same gesture
+			// Role and Theme answer to.
 			List<string> next = values is null || values.Count == 0
-				? all.Where(value => !string.Equals(value, option, StringComparison.OrdinalIgnoreCase)).ToList()
+				? new List<string> { option }
 				: ToggleValue(values, option)?.ToList() ?? new List<string>();
 
 			// Both ends of the range collapse to null: everything selected and

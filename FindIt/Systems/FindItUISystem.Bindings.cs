@@ -755,6 +755,42 @@ namespace FindItBuildingMenu.Systems
 			RefreshBuildingCatalog();
 		}
 
+		/// <summary>
+		/// Puts a menu back the way it opens.
+		/// </summary>
+		/// <remarks>
+		/// Clear only drops the FACETS. A menu accumulates more than that — a
+		/// tab in the strip, a school level, a search, a sort — and undoing them
+		/// meant finding each control and remembering what it had been. This is
+		/// the one gesture that gets back to a known state.
+		///
+		/// The grouping and the view mode are not here: they are UI-side
+		/// choices, kept per lens rather than in the query, so the pane clears
+		/// its own alongside this call.
+		/// </remarks>
+		private void ResetBuildingLensMenu()
+		{
+			ClearBuildingLensFilters();
+
+			_buildingLensUiCategory = string.Empty;
+			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
+			ResetBuildingLensMilestone();
+			ResetBuildingLensStripTab();
+			ResetBuildingLensSchoolTier();
+
+			_CurrentSearch.Value = string.Empty;
+			_buildingCatalogQuery = _buildingCatalogQuery with
+			{
+				SearchText = string.Empty,
+				SortColumn = string.Empty,
+				Descending = false,
+				Offset = 0,
+				Limit = BuildingCatalogQuery.DefaultLimit,
+			};
+
+			RefreshBuildingCatalog();
+		}
+
 		private void ClearBuildingLensFilters()
 		{
 			BuildingCatalogLensState cleared = new BuildingCatalogLensState(

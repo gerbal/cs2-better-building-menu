@@ -292,3 +292,22 @@ $pane-width: 379rem;
   white-space: nowrap;
   font-size: var(--fontSizeS);
 }
+
+// Back to how the menu opens. Quiet by default — it is a way out rather than
+// a thing to reach for — and it earns its attention on hover, which is when
+// the player is already looking for it.
+.resetButton {
+  @include _base.transparentButton(false, true);
+  width: auto !important;
+  height: 20rem;
+  padding: 0 8rem !important;
+  border-radius: 3rem;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeXS);
+  white-space: nowrap;
+}
+
+.resetButton:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--menuText1Normal);
+}

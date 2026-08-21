@@ -321,10 +321,13 @@ public sealed class BuildingCatalogQueryEngineTests
         // input, and "everything here is unlocked" is worth saying.
         Assert.Equal(new[] { "buildingType", "provenance", "availability", "dlc", "theme", "assetPack", "placement" }, state.Groups.Select(group => group.Id).ToArray());
 
-        // Both ticked, because nothing stored MEANS both. Drawn unticked it
-        // read as "no filter applied", which is a different claim.
+        // Neither ticked at rest, which is how every other facet reads: nothing
+        // picked means nothing excluded. Both were ticked while the first click
+        // SUBTRACTED, so the marks and the arithmetic agreed; the click now
+        // selects, and marking both would say the opposite of what it does.
         BuildingCatalogFacetGroup availability = Assert.Single(state.Groups, group => group.Id == "availability");
-        Assert.All(availability.Options, option => Assert.True(option.Selected));
+        Assert.All(availability.Options, option => Assert.False(option.Selected));
+        Assert.False(availability.Narrowing);
         BuildingCatalogFacetGroup role = Assert.Single(state.Groups, group => group.Id == "buildingType");
 		Assert.Equal(new[] { "Hospital", "Library", "School" }, role.Options.Select(option => option.Id).ToArray());
 		Assert.True(role.Options.Single(option => option.Id == "Hospital").Selected);
