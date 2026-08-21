@@ -62,7 +62,6 @@ namespace FindItBuildingMenu.Systems
 				UiCategory = _buildingLensUiCategory,
 				UnlockMilestone = _buildingLensUnlockMilestone,
 				StripAxis = _buildingLensStripAxis,
-				StripTab = _buildingLensStripTab,
 				SchoolTier = _buildingLensSchoolTier,
 				// Keep the successor lens in lockstep with FindIt's common
 				// parking filters. The legacy grid owns the full filter pipeline;
@@ -158,6 +157,10 @@ namespace FindItBuildingMenu.Systems
 			// the tabs were counted on.
 			_buildingLensStripAxis = _buildingCatalogAdapter.GetStripAxis(_buildingCatalogQuery);
 			_BuildingLensStripAxisBinding.Value = _buildingLensStripAxis;
+			// The rail can change this behind the row's back, so republish it
+			// with the rest of the state rather than only when a tab is clicked.
+			_BuildingLensStripTabBinding.Value =
+				_buildingCatalogQuery.StripTabs?.ToArray() ?? Array.Empty<string>();
 			_BuildingLensStripTabs.Value =
 				_buildingCatalogAdapter.GetStripTabs(_buildingCatalogQuery).ToArray();
 			_BuildingLensExpandedCategory.Value = _buildingCatalogAdapter.GetExpandedCategoryId(_buildingCatalogQuery);

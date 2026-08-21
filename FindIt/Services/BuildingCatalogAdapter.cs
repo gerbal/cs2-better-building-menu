@@ -119,7 +119,7 @@ namespace FindItBuildingMenu.Services
 			// count Research against that level — zero — and visibleCategories
 			// then removed the Research tab entirely, so choosing a school tier
 			// made the other half of the menu unreachable.
-			var acrossCategories = query with { UiCategory = string.Empty, SchoolTier = -1, StripTab = string.Empty };
+			var acrossCategories = query with { UiCategory = string.Empty, SchoolTier = -1, StripTabs = null };
 
 			return BuildingCatalogQueryEngine
 				.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), acrossCategories)
@@ -207,7 +207,7 @@ namespace FindItBuildingMenu.Services
 			var unscoped = query with
 			{
 				UiCategory = string.Empty,
-				StripTab = string.Empty,
+				StripTabs = null,
 				SchoolTier = -1,
 			};
 
@@ -240,7 +240,7 @@ namespace FindItBuildingMenu.Services
 
 			// Scoped to the expanded category and counted across the tabs' own
 			// axis, which is the rule every counter here follows.
-			var withinCategory = query with { UiCategory = category, StripTab = string.Empty };
+			var withinCategory = query with { UiCategory = category, StripTabs = null };
 
 			return BuildingCatalogQueryEngine
 				.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), withinCategory)
@@ -338,7 +338,7 @@ namespace FindItBuildingMenu.Services
 			}
 
 			var buildingNodes = StripTabsFor(
-				query with { StripTab = StripAxes.BuildingValue },
+				query with { StripTabs = new[] { StripAxes.BuildingValue } },
 				StripAxes.Development);
 
 			if (buildingNodes.Count < 2)
@@ -361,7 +361,7 @@ namespace FindItBuildingMenu.Services
 		/// </remarks>
 		private IReadOnlyList<MenuBranchCount> StripTabsFor(BuildingCatalogQuery query, string axis)
 		{
-			var acrossTabs = query with { StripTab = string.Empty };
+			var acrossTabs = query with { StripTabs = null };
 
 			return BuildingCatalogQueryEngine
 				.InScope(GetIndexedBuildings(query.UiMenu).Select(Project), acrossTabs)
@@ -673,6 +673,22 @@ namespace FindItBuildingMenu.Services
 				"Progression",
 				source.Select(BuildingCatalogQueryEngine.MilestoneNameOf),
 				query.Milestones);
+
+			// The top bar's own axis, offered here too. Anything the strip can
+			// narrow by should be reachable from the rail — the row is a
+			// shortcut, not the only door — and both write the same field, so a
+			// selection made in either shows in both.
+			//
+			// The values are whatever that menu's row is drawn on: development
+			// nodes, or Buildings against Networks. AddValueGroup drops it when
+			// there is only one, which is every menu whose strip is vanilla's
+			// categories.
+			AddValueGroup(
+				groups,
+				"stripTab",
+				"Development",
+				source.Select(entry => BuildingCatalogQueryEngine.StripValue(entry, StripAxes.Development)),
+				query.StripTabs);
 			AddArrayGroup(groups, "assetPack", "Asset packs", source.Select(entry => entry.AssetPacks), query.AssetPacks, FormatAssetPackLabel);
 			AddArrayGroup(groups, "placement", "Placement", source.Select(entry => entry.PlacementFlags), query.PlacementFlags, FormatFlagLabel);
 			AddArrayGroup(groups, "extension", "Extensions", source.Select(entry => entry.Extensions), query.Extensions, FormatFacetWords);

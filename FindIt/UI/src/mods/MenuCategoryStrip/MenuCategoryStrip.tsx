@@ -41,7 +41,7 @@ const BuildingLensMenuSchoolTierCounts$ = bindValue<MenuBranchCount[]>(
 const BuildingLensMenuSchoolTier$ = bindValue<number>(mod.id, "BuildingLensMenuSchoolTier", -1);
 const BuildingLensMenu$ = bindValue<string>(mod.id, "BuildingLensMenu", "");
 const BuildingLensStripTabs$ = bindValue<MenuBranchCount[]>(mod.id, "BuildingLensStripTabs", []);
-const BuildingLensStripTab$ = bindValue<string>(mod.id, "BuildingLensStripTab", "");
+const BuildingLensStripTab$ = bindValue<string[]>(mod.id, "BuildingLensStripTab", []);
 const BuildingLensStripAxis$ = bindValue<string>(mod.id, "BuildingLensStripAxis", "");
 const BuildingLensExpandedCategory$ = bindValue<string>(mod.id, "BuildingLensExpandedCategory", "");
 const BuildingLensExpandedTabs$ = bindValue<MenuBranchCount[]>(
@@ -77,7 +77,11 @@ export const MenuCategoryStrip = () => {
   const selectedSchoolTier = useValue(BuildingLensMenuSchoolTier$) ?? -1;
   const menu = useValue(BuildingLensMenu$) ?? "";
   const stripTabs = useValue(BuildingLensStripTabs$) ?? [];
-  const selectedStripTab = useValue(BuildingLensStripTab$) ?? "";
+  // A LIST, because the filter rail writes the same state and can hold
+  // several. The row is still single-select; it just has to show what the rail
+  // did rather than only what it set itself.
+  const selectedStripTabs = useValue(BuildingLensStripTab$) ?? [];
+  const noStripTab = selectedStripTabs.length === 0;
   const stripAxis = useValue(BuildingLensStripAxis$) ?? "";
   const expandedCategory = useValue(BuildingLensExpandedCategory$) ?? "";
   const expandedTabs = useValue(BuildingLensExpandedTabs$) ?? [];
@@ -159,7 +163,7 @@ export const MenuCategoryStrip = () => {
         selected={
           isCategorySelected(ALL_CATEGORIES_ID, selected) &&
           selectedSchoolTier < 0 &&
-          selectedStripTab === ""
+          noStripTab
         }
         tooltip={withCount(allLabel, ALL_CATEGORIES_ID)}
         onSelect={() => choose(ALL_CATEGORIES_ID)}
@@ -174,7 +178,7 @@ export const MenuCategoryStrip = () => {
           styles.allTab,
           isCategorySelected(ALL_CATEGORIES_ID, selected) &&
             selectedSchoolTier < 0 &&
-            selectedStripTab === "" &&
+            noStripTab &&
             styles.tabSelected
         )}
         aria-label={withCount(allLabel, ALL_CATEGORIES_ID)}
@@ -224,7 +228,7 @@ export const MenuCategoryStrip = () => {
           ? expandedTabs.map((branch) => (
               <ToolButton
                 key={`branch-${branch.id}`}
-                selected={selectedStripTab === branch.id}
+                selected={selectedStripTabs.includes(branch.id)}
                 tooltip={`${branch.id} (${branch.count})`}
                 onSelect={() => chooseBranch(branch.id)}
                 src={branch.icon || category.icon}
@@ -232,7 +236,7 @@ export const MenuCategoryStrip = () => {
                 className={classNames(
                   toolButtonTheme.button,
                   styles.tab,
-                  selectedStripTab === branch.id && styles.tabSelected
+                  selectedStripTabs.includes(branch.id) && styles.tabSelected
                 )}
                 aria-label={`${branch.id} (${branch.count})`}
               >
@@ -250,7 +254,7 @@ export const MenuCategoryStrip = () => {
           selected={
             isCategorySelected(category.id, selected) &&
             selectedSchoolTier < 0 &&
-            selectedStripTab === ""
+            noStripTab
           }
           tooltip={withCount(label(category), category.id)}
           onSelect={() => choose(category.id)}
@@ -261,7 +265,7 @@ export const MenuCategoryStrip = () => {
             styles.tab,
             isCategorySelected(category.id, selected) &&
               selectedSchoolTier < 0 &&
-              selectedStripTab === "" &&
+              noStripTab &&
               styles.tabSelected
           )}
           aria-label={withCount(label(category), category.id)}
@@ -283,7 +287,7 @@ export const MenuCategoryStrip = () => {
       {showBranches && (
         <>
           <ToolButton
-            selected={selectedStripTab === ""}
+            selected={noStripTab}
             tooltip={withBranchCount(allLabel, "")}
             onSelect={() => chooseBranch("")}
             src=""
@@ -292,7 +296,7 @@ export const MenuCategoryStrip = () => {
               toolButtonTheme.button,
               styles.tab,
               styles.allTab,
-              selectedStripTab === "" && styles.tabSelected
+              noStripTab && styles.tabSelected
             )}
             aria-label={withBranchCount(allLabel, "")}
           >
@@ -308,7 +312,7 @@ export const MenuCategoryStrip = () => {
           {stripTabs.map((branch) => (
             <ToolButton
               key={branch.id}
-              selected={selectedStripTab === branch.id}
+              selected={selectedStripTabs.includes(branch.id)}
               tooltip={withBranchCount(branch.id, branch.id)}
               onSelect={() => chooseBranch(branch.id)}
               src={branch.icon || ""}
@@ -317,7 +321,7 @@ export const MenuCategoryStrip = () => {
                 toolButtonTheme.button,
                 styles.tab,
 
-                selectedStripTab === branch.id && styles.tabSelected
+                selectedStripTabs.includes(branch.id) && styles.tabSelected
               )}
               aria-label={withBranchCount(branch.id, branch.id)}
             >

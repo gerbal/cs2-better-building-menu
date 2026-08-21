@@ -131,6 +131,9 @@ namespace FindItBuildingMenu.Tests
 		[Fact]
 		public void TheStripTabNarrowsOnWhicheverAxisNamesIt()
 		{
+			// The selection is a LIST because the filter rail offers the same
+			// state and can hold several; the row writes one entry.
+			//
 			// A tab's axis is a property of the TAB, not of the row: Water draws
 			// its buildings as development nodes and its pipes as one Networks
 			// tab, so one row carries both. Matched by value across the
@@ -145,12 +148,12 @@ namespace FindItBuildingMenu.Tests
 
 			var byBranch = BuildingCatalogQueryEngine.Query(
 				source,
-				new BuildingCatalogQuery(StripAxis: StripAxes.Development, StripTab: "Basic"));
+				new BuildingCatalogQuery(StripAxis: StripAxes.Development, StripTabs: new[] { "Basic" }));
 			Assert.Equal(2, byBranch.TotalCount);
 
 			var byType = BuildingCatalogQueryEngine.Query(
 				source,
-				new BuildingCatalogQuery(StripAxis: StripAxes.AssetType, StripTab: StripAxes.NetworkValue));
+				new BuildingCatalogQuery(StripAxis: StripAxes.AssetType, StripTabs: new[] { StripAxes.NetworkValue }));
 			Assert.Equal(1, byType.TotalCount);
 			Assert.Equal("Water Pipe", byType.Items[0].Name);
 
@@ -158,7 +161,7 @@ namespace FindItBuildingMenu.Tests
 			// are asset types, which is what lets one row mix the two.
 			var mixed = BuildingCatalogQueryEngine.Query(
 				source,
-				new BuildingCatalogQuery(StripAxis: StripAxes.AssetType, StripTab: "Basic"));
+				new BuildingCatalogQuery(StripAxis: StripAxes.AssetType, StripTabs: new[] { "Basic" }));
 			Assert.Equal(2, mixed.TotalCount);
 		}
 	}

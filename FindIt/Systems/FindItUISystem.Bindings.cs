@@ -365,8 +365,11 @@ namespace FindItBuildingMenu.Systems
 			// with a police branch and empty the menu.
 			_buildingLensUiCategory = string.Empty;
 			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
-			_buildingLensStripTab = tab ?? string.Empty;
-			_BuildingLensStripTabBinding.Value = _buildingLensStripTab;
+			_buildingCatalogQuery = _buildingCatalogQuery with
+			{
+				StripTabs = string.IsNullOrEmpty(tab) ? null : new[] { tab },
+			};
+			PublishBuildingLensStripTabs();
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 
 			RefreshBuildingCatalog();
@@ -376,9 +379,19 @@ namespace FindItBuildingMenu.Systems
 		/// <remarks>Same contract as ResetBuildingLensMilestone above.</remarks>
 		private void ResetBuildingLensStripTab()
 		{
-			_buildingLensStripTab = string.Empty;
-			_BuildingLensStripTabBinding.Value = _buildingLensStripTab;
+			_buildingCatalogQuery = _buildingCatalogQuery with { StripTabs = null };
+			PublishBuildingLensStripTabs();
 		}
+
+		/// <summary>Mirrors the query's strip selection back to the row.</summary>
+		/// <remarks>
+		/// The row and the rail write the same field, so the row has to read it
+		/// rather than remember what it last set — otherwise a rail selection
+		/// would narrow the results with no tab showing for it.
+		/// </remarks>
+		private void PublishBuildingLensStripTabs() =>
+			_BuildingLensStripTabBinding.Value =
+				_buildingCatalogQuery.StripTabs?.ToArray() ?? Array.Empty<string>();
 
 		/// <summary>Narrows the education menu to one school tier.</summary>
 		private void SetBuildingLensMenuSchoolTier(int tier)
@@ -526,7 +539,7 @@ namespace FindItBuildingMenu.Systems
 
 			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
 			_BuildingLensMenuMilestoneBinding.Value = _buildingLensUnlockMilestone;
-			_BuildingLensStripTabBinding.Value = _buildingLensStripTab;
+			PublishBuildingLensStripTabs();
 		}
 
 		/// <summary>
