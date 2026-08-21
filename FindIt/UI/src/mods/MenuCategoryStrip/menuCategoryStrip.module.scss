@@ -53,9 +53,32 @@
 }
 
 .allLabel {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
   color: var(--menuText1Normal);
   font-size: var(--fontSizeS);
   white-space: nowrap;
+}
+
+// The All tab lays its count out INLINE, unlike every other tab, which corners
+// theirs absolutely. It has to: this tab is `width: auto`, and Cohtml resolves
+// an absolutely positioned child's `right` against the shrink-to-fit width
+// rather than the final one — the count landed 3px from the LEFT edge with
+// exactly the same rule that corners it correctly on a fixed-width tab.
+//
+// Inline is also what it wants to look like. "All 13" reads as a phrase; the
+// corner badge is for tabs whose glyph occupies the middle.
+.allCount {
+  margin-left: 4rem;
+  color: var(--menuText2Normal);
+  font-size: var(--fontSizeXS);
+}
+
+// No glyph, so no box for one. ToolButton renders its <img> whatever `src` is,
+// and an empty 16px square was pushing the word off-centre.
+.allTab img {
+  display: none;
 }
 
 
