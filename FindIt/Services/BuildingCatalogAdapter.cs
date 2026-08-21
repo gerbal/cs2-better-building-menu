@@ -507,33 +507,6 @@ namespace FindItBuildingMenu.Services
 				.ToArray();
 		}
 
-		public IReadOnlyList<MenuBranchCount> GetMenuMilestoneCounts(BuildingCatalogQuery query)
-		{
-			if (query is null)
-			{
-				throw new ArgumentNullException(nameof(query));
-			}
-
-			var acrossMilestones = query with { UnlockMilestone = BuildingCatalogQuery.AnyMilestone };
-
-			return BuildingCatalogQueryEngine
-				.InScope(ProjectForMenu(query.UiMenu), acrossMilestones)
-				.GroupBy(entry => entry.UnlockMilestone)
-				.Where(group => group.Key >= 0)
-				.Select(group => new MenuBranchCount(
-					group.Key.ToString(System.Globalization.CultureInfo.InvariantCulture),
-					group.Count(),
-					// The milestone's own badge where the game has one. It has
-					// none for index 0, which is the ungated bucket rather than
-					// a milestone, so that tab falls back to a representative
-					// asset like every other iconless tab here.
-					MilestoneIcon(group.Key) is { Length: > 0 } badge
-						? badge
-						: TabIcon(group, authored: false)))
-				.OrderBy(count => int.Parse(count.Id, System.Globalization.CultureInfo.InvariantCulture))
-				.ToArray();
-		}
-
 		/// <summary>
 		/// The spread each metric actually has in the current view.
 		/// </summary>
@@ -659,37 +632,31 @@ namespace FindItBuildingMenu.Services
 			AddAvailabilityGroup(groups, source, query.Availability);
 			AddValueGroup(groups, "dlc", "DLC", source.Select(entry => entry.DlcId), query.DlcIds, FormatDlcLabel);
 			AddValueGroup(groups, "theme", "Theme", source.Select(entry => entry.Theme), query.Themes, FormatFacetWords);
-			// Progression, as a FILTER rather than a row of tabs. It was a second
-			// segment in the top bar, where it was disruptive on the menus with
-			// many categories — Roads carried nineteen tabs and then four more —
-			// and where it could only ever be single-select. Here it composes
-			// with the rest of the rail and takes several tiers at once.
+			// Neither unlock modality is a filter here, and both used to be.
 			//
-			// AddValueGroup drops a dimension with one distinct value, so this
-			// disappears by itself on the menus that sit in a single milestone
-			// — which is most of them.
-			AddValueGroup(
-				groups,
-				"milestone",
-				"Progression",
-				source.Select(BuildingCatalogQueryEngine.MilestoneNameOf),
-				query.Milestones);
-
-			// The top bar's own axis, offered here too. Anything the strip can
-			// narrow by should be reachable from the rail — the row is a
-			// shortcut, not the only door — and both write the same field, so a
-			// selection made in either shows in both.
+			// Development was the top bar's own axis offered a second time, on the
+			// principle that anything the strip narrows by should be reachable from
+			// the rail. In the game that read as duplication rather than reach: on
+			// Roads it drew a 23-item dropdown of Small Roads, Medium Roads,
+			// Highways, Intersections — the strip's own tabs, restated, in the menu
+			// where the strip is already the primary navigation. It also collided
+			// with Role, which is a different question in the same words: under
+			// Healthcare both offered "Hospital", one meaning what the building IS
+			// and the other which node UNLOCKED it.
 			//
-			// The values are whatever that menu's row is drawn on: development
-			// nodes, or Buildings against Networks. AddValueGroup drops it when
-			// there is only one, which is every menu whose strip is vanilla's
-			// categories.
-			AddValueGroup(
-				groups,
-				"stripTab",
-				"Development",
-				source.Select(entry => BuildingCatalogQueryEngine.StripValue(entry, StripAxes.Development)),
-				query.StripTabs);
+			// Progression asked a question players do not ask. "Show me only Grand
+			// Village buildings" is not a build-menu action; "can I build this now"
+			// is, and Availability above already answers it. It also vanished on
+			// most menus, since AddValueGroup drops a single-valued dimension.
+			//
+			// Both rendered as an ICONLESS chip in the same slot, so which
+			// dimension a blank chip meant changed per menu — Development on
+			// Healthcare, Progression on Signature Buildings, and both at once on
+			// Roads, side by side and indistinguishable.
+			//
+			// Development stays reachable as a Group by dimension, and so does
+			// Progression; grouping is where "when does this unlock" belongs,
+			// because it orders the set instead of hiding most of it.
 			AddArrayGroup(groups, "assetPack", "Asset packs", source.Select(entry => entry.AssetPacks), query.AssetPacks, FormatAssetPackLabel);
 			AddArrayGroup(groups, "placement", "Placement", source.Select(entry => entry.PlacementFlags), query.PlacementFlags, FormatFlagLabel);
 			AddArrayGroup(groups, "extension", "Extensions", source.Select(entry => entry.Extensions), query.Extensions, FormatFacetWords);
@@ -872,21 +839,6 @@ namespace FindItBuildingMenu.Services
 				menu)
 			&& PrefabIndexingSystem.IsPlacedInAnyMenu(prefab.Id);
 
-		/// <summary>The milestone's word, or the ungated bucket's.</summary>
-		private static string MilestoneNameFor(int milestone)
-		{
-			if (milestone <= 0)
-			{
-				return BuildingCatalogQueryEngine.UngatedMilestone;
-			}
-
-			var names = PrefabIndexingSystem.GetMilestoneNames();
-
-			return milestone < names.Length && !string.IsNullOrEmpty(names[milestone])
-				? names[milestone]
-				: $"Milestone {milestone}";
-		}
-
 		/// <summary>
 		/// The menu's assets, with the root bucket named the way the top bar
 		/// names it.
@@ -1014,7 +966,6 @@ namespace FindItBuildingMenu.Services
 				IsVanilla: prefab.IsVanilla,
 				IsLocked: prefab.IsLocked,
 				UnlockMilestone: prefab.UnlockMilestone,
-				MilestoneName: MilestoneNameFor(prefab.UnlockMilestone),
 				DevTreeBranch: prefab.DevTreeBranch,
 				DevTreeBranchIcon: prefab.DevTreeBranchIcon,
 				DevTreeBranchDepth: prefab.DevTreeBranchDepth,

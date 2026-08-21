@@ -216,8 +216,7 @@ namespace FindItBuildingMenu.Services
 				// is also the question a player actually asks.
 				|| !MatchesAny(entry.PlacementFlags, query.PlacementFlags)
 				|| !MatchesAny(entry.Extensions, query.Extensions)
-				|| !MatchesZoneType(entry.ZoneType, query.ZoneTypes)
-				|| !MatchesAny(MilestoneNameOf(entry), query.Milestones))
+				|| !MatchesZoneType(entry.ZoneType, query.ZoneTypes))
 			{
 				return false;
 			}
@@ -305,21 +304,6 @@ namespace FindItBuildingMenu.Services
 			string.Equals(entry.Category, "Networks", StringComparison.OrdinalIgnoreCase)
 				? StripAxes.NetworkValue
 				: StripAxes.BuildingValue;
-
-		/// <summary>
-		/// The milestone an entry answers to in the filter rail.
-		/// </summary>
-		/// <remarks>
-		/// Read off the entry rather than resolved here: the name comes from
-		/// the game's milestone table, which this engine deliberately cannot
-		/// reach — it is a pure predicate over projected entries and its tests
-		/// depend on staying that way. The adapter fills it in at projection.
-		/// </remarks>
-		public static string MilestoneNameOf(BuildingCatalogEntry entry) =>
-			!string.IsNullOrEmpty(entry.MilestoneName) ? entry.MilestoneName! : UngatedMilestone;
-
-		/// <summary>What the rail calls the assets the progression never gated.</summary>
-		public const string UngatedMilestone = "From the start";
 
 		private static bool MatchesVanillaMenuTree(BuildingCatalogEntry entry, BuildingCatalogQuery query)
 		{

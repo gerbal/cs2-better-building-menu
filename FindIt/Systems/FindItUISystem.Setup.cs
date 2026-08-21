@@ -124,9 +124,6 @@ namespace FindItBuildingMenu.Systems
 		// Sidecar to the above. See MenuCategoryCount for why it is not a field
 		// on the category record.
 		private ValueBindingHelper<MenuCategoryCount[]> _BuildingLensMenuCategoryCounts = null!;
-		// The progression strip's sidecar. Names come from
-		// _BuildingLensMilestonesBinding; see MenuBranchCount.
-		private ValueBindingHelper<MenuBranchCount[]> _BuildingLensMenuMilestoneCounts = null!;
 		private ValueBindingHelper<int> _BuildingLensMenuMilestoneBinding = null!;
 		// The strip's fallback axis for menus vanilla gives no categories: the
 		// tabs, which tab is picked, and WHICH AXIS they are — published so the
@@ -292,7 +289,6 @@ namespace FindItBuildingMenu.Systems
 			_BuildingLensSubCategoryListBinding = CreateBinding("BuildingLensSubCategoryList", Array.Empty<BuildingLensSubCategoryUIEntry>());
 			_BuildingLensMenuCategoriesBinding = CreateBinding("BuildingLensMenuCategories", Array.Empty<VanillaMenuCategory>());
 			_BuildingLensMenuCategoryCounts = CreateBinding("BuildingLensMenuCategoryCounts", Array.Empty<MenuCategoryCount>());
-			_BuildingLensMenuMilestoneCounts = CreateBinding("BuildingLensMenuMilestoneCounts", Array.Empty<MenuBranchCount>());
 			_BuildingLensMenuMilestoneBinding = CreateBinding(
 				"BuildingLensMenuMilestone",
 				"SetBuildingLensMenuMilestone",

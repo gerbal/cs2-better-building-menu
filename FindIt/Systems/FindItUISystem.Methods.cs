@@ -150,8 +150,6 @@ namespace FindItBuildingMenu.Systems
 			// dead end as a facet option that cannot.
 			_BuildingLensMenuCategoryCounts.Value =
 				_buildingCatalogAdapter.GetMenuCategoryCounts(_buildingCatalogQuery).ToArray();
-			_BuildingLensMenuMilestoneCounts.Value =
-				_buildingCatalogAdapter.GetMenuMilestoneCounts(_buildingCatalogQuery).ToArray();
 			// The axis is resolved BEFORE the tabs and stored, because the query
 			// carries it: the predicate has to match tabs against the same axis
 			// the tabs were counted on.
