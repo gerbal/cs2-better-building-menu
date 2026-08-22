@@ -120,3 +120,32 @@ describe("tile tooltip lines", () => {
     assert.deepEqual(lines, []);
   });
 });
+
+describe("statement lines", () => {
+  it("keeps a line whose label is the whole sentence", () => {
+    // Vanilla's already-built row is one phrase, not a label/value pair. The
+    // empty-value guard silently dropped it, so the row was implemented and
+    // rendered nowhere — everything else about the change looked right.
+    const lines = buildTileTooltipLines([
+      candidate({ key: "alreadyBuilt", label: "Already built", value: "", statement: true }),
+    ]);
+
+    assert.equal(lines.length, 1);
+    assert.equal(lines[0].label, "Already built");
+    assert.equal(lines[0].value, "");
+  });
+
+  it("still drops an ordinary line with nothing to say", () => {
+    // The guard exists for a reason: a metric that resolved to nothing should
+    // not draw a label with a blank beside it.
+    assert.equal(buildTileTooltipLines([candidate({ value: "" })]).length, 0);
+    assert.equal(buildTileTooltipLines([candidate({ value: "   " })]).length, 0);
+  });
+
+  it("drops a statement that does not apply", () => {
+    assert.equal(
+      buildTileTooltipLines([candidate({ value: "", statement: true, applicable: false })]).length,
+      0
+    );
+  });
+});
