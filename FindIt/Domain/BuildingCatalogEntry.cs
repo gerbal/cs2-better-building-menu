@@ -66,6 +66,13 @@ namespace FindItBuildingMenu.Domain
 		/// entry positionally, which is a lot of noise for one flag.
 		/// </remarks>
 		bool IsLocked = false,
+		/// <summary>Only one of these may exist in a city.</summary>
+		/// <remarks>
+		/// Beside IsAlreadyBuilt because vanilla badges BOTH states — one icon
+		/// for a unique you have not built, another for one you have — so the
+		/// tile needs to tell them apart from an ordinary asset.
+		/// </remarks>
+		bool IsUnique = false,
 		/// <summary>A unique asset the city already holds one of.</summary>
 		/// <remarks>
 		/// Read per query rather than stored at index time, because it changes
@@ -201,6 +208,8 @@ namespace FindItBuildingMenu.Domain
 			writer.Write(IsVanilla);
 			writer.PropertyName("isLocked");
 			writer.Write(IsLocked);
+			writer.PropertyName("isUnique");
+			writer.Write(IsUnique);
 			writer.PropertyName("isAlreadyBuilt");
 			writer.Write(IsAlreadyBuilt);
 			writer.PropertyName("unlockMilestone");

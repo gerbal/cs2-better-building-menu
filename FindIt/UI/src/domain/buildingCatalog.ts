@@ -29,6 +29,8 @@ export interface BuildingCatalogEntry {
    * to land. No component was ignoring it; the type made it unreachable.
    */
   isLocked: boolean;
+  /** Only one may exist in a city. Vanilla badges these whether built or not. */
+  isUnique: boolean;
   /** A unique the city already holds one of — unbuildable, but not locked. */
   isAlreadyBuilt: boolean;
   /**

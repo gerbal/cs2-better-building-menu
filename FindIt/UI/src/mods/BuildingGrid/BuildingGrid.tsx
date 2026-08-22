@@ -148,10 +148,11 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
   const tile = (entry: BuildingCatalogEntry, key: string) => {
     const label = entry.name || entry.prefabName;
     const locked = isEntryLocked(entry);
-    // Distinct from locked on purpose: the progression allows this one, the
-    // city just already has it. Drawn where the padlock is drawn so the eye
-    // looks in one place, but never at the same time as one.
-    const alreadyBuilt = !locked && isEntryAlreadyBuilt(entry);
+    // Independent of locked, which is how vanilla arranges it: the padlock
+    // answers "can I build it yet" and this answers "is there only one of
+    // these, and have I got it". A locked unique carries both marks.
+    const alreadyBuilt = isEntryAlreadyBuilt(entry);
+    const unique = entry.isUnique === true;
     // Strict equality against a real id: ActivePrefabId is 0 when nothing is
     // armed, and an entry id of 0 would otherwise light every tile.
     const armed = activePrefabId !== 0 && entry.id === activePrefabId;
@@ -208,10 +209,15 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
               aria-hidden="true"
             />
           )}
-          {alreadyBuilt && (
-            <span
-              className={styles.builtGlyph}
-              style={{ maskImage: "url(assetdb://gameui/Media/Glyphs/Checkmark.svg)" }}
+          {/* Vanilla's own icons, and its own two-state rule: every unique is
+              badged, with a different symbol once the city has one. An <img>
+              rather than a masked glyph because these are full-colour icons
+              the game ships for exactly this. */}
+          {unique && (
+            <img
+              className={classNames(styles.uniqueAsset, alreadyBuilt ? styles.alreadyBuilt : styles.uniqueMark)}
+              src={alreadyBuilt ? "Media/Game/Icons/AlreadyBuilt.svg" : "Media/Game/Icons/Unique.svg"}
+              alt=""
               aria-hidden="true"
             />
           )}

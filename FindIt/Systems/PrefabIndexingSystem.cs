@@ -1121,6 +1121,10 @@ namespace FindItBuildingMenu.Systems
 			// design: entity indices rather than names, so a theme or pack added
 			// by a mod needs no code change to be filtered correctly.
 			prefabIndex.VanillaFacts = GetVanillaAssetFacts(entity);
+			// The game's own test, so a difference is a bug rather than a
+			// second opinion: IsUniqueAsset reads PlaceableObjectData's Unique
+			// flag, which is what ToolbarUISystem.BindAssets asks too.
+			prefabIndex.IsUnique = _uniqueAssets is not null && _uniqueAssets.IsUniqueAsset(entity);
 			prefabIndex.ThemeThumbnail = prefabIndex.ThemeThumbnail is not null
 				? IconPath.Normalize(prefabIndex.ThemeThumbnail)
 				: prefabIndex.Theme is null ? null : IconPath.Normalize(ImageSystem.GetThumbnail(prefabIndex.Theme));

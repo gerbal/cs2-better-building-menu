@@ -16,6 +16,14 @@ namespace FindItBuildingMenu.Domain
 		public PrefabCategory Category { get; set; }
 		public PrefabSubCategory SubCategory { get; set; }
 		public DlcId DlcId { get; set; }
+
+		/// <summary>Vanilla's PlacementFlags.Unique — only one may exist.</summary>
+		/// <remarks>
+		/// Static per prefab, so indexed here, unlike whether one has been
+		/// PLACED — see PlacedUniqueRegistry. Vanilla badges every unique asset
+		/// whether or not the city has one yet, so the menu needs both facts.
+		/// </remarks>
+		public bool IsUnique { get; set; }
 		public ZoneTypeFilter ZoneType { get; set; } = ZoneTypeFilter.Any;
 		public BuildingCornerFilter CornerType { get; set; }
 		public int2 LotSize { get; set; }
