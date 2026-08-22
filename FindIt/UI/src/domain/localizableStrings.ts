@@ -57,6 +57,9 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   { key: key("SortDirectionAscending"), english: "ascending", source: "BuildingCatalog", plumbed: true },
   { key: key("SortDirectionDescending"), english: "descending", source: "BuildingCatalog", plumbed: true },
   { key: key("ViewGrid"), english: "Grid", source: "BuildingCatalog", plumbed: true },
+  // Vanilla's zoning and building menus close from an X in the top-right
+  // corner; the panel stands in for that menu, so it offers the same way out.
+  { key: key("CloseMenu"), english: "Close", source: "BuildingMenuHeader", plumbed: true },
   { key: key("ViewList"), english: "List", source: "BuildingCatalog", plumbed: true },
   { key: key("ViewCards"), english: "Cards", source: "BuildingCatalog", plumbed: true },
   { key: key("ViewTable"), english: "Table", source: "BuildingCatalog", plumbed: true },

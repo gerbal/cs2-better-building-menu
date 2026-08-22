@@ -30,6 +30,13 @@ export interface BuildingMenuHeaderProps {
   small?: boolean;
   /** Wide panel. */
   large?: boolean;
+  /**
+   * The game's own menu close, threaded from the AssetMenu extension point.
+   *
+   * Absent means no X is drawn rather than an X that does nothing: a dead
+   * control in the corner vanilla puts a live one in is worse than none.
+   */
+  onClose?: () => void;
 }
 
 /**
@@ -57,7 +64,7 @@ export interface BuildingMenuHeaderProps {
  * Measured layout, from the commit that built this row: on Transportation the
  * seven tabs take 403..957 and the field 957..1121, inside a 718px row.
  */
-export const BuildingMenuHeader = ({ small, large }: BuildingMenuHeaderProps) => {
+export const BuildingMenuHeader = ({ small, large, onClose }: BuildingMenuHeaderProps) => {
   const { translate } = useLocalization();
   const searchRef = useRef(null);
 
@@ -136,6 +143,41 @@ export const BuildingMenuHeader = ({ small, large }: BuildingMenuHeaderProps) =>
             )}
           </div>
         </div>
+        {/* Vanilla's zoning and building menus close from an X in this corner,
+            so ours does too — the panel stands in for that menu, and a player
+            should not have to learn a second way out of it.
+
+            Masked and tinted exactly like .searchIcon two elements to the
+            left, because the game's Close.svg carries no fill of its own and
+            renders black on a dark panel otherwise. That is a vector under a
+            compositing effect, which this engine draws badly at scale (see
+            SilhouetteIcons) — tolerated here because it is ONE static glyph in
+            the chrome, the same bet the search and loading icons already make,
+            rather than one per row of a scrolling grid, which is what actually
+            broke. If it ever flickers, bake the colour into an asset instead.
+
+            No assetGridTheme.item: that is the TILE theme, and wearing it made
+            this a 48x48 control next to a 24rem icon.
+
+            Last in the row, so it lands at the right edge after the search
+            field, and rendered only when the close is real. */}
+        {onClose && (
+          <Tooltip tooltip={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.CloseMenu]", "Close")}>
+            <Button
+              className={styles.menuClose}
+              variant="icon"
+              aria-label={localizedLabel("Tooltip.LABEL[FindItBuildingMenu.CloseMenu]", "Close")}
+              onSelect={onClose}
+            >
+              <img
+                className={styles.menuCloseGlyph}
+                style={{ maskImage: "url(Media/Glyphs/Close.svg)" }}
+                alt=""
+                aria-hidden="true"
+              />
+            </Button>
+          </Tooltip>
+        )}
       </div>
     </div>
   );

@@ -49,14 +49,23 @@ const AssetMenuTheme: Theme | any = getModule("game-ui/game/components/asset-men
  * unchanged. So the width below is stated on our own row and vanilla's CSS is
  * never touched.
  *
- * NO PROPS. The `AssetMenu` extension point hands its children an `onClose` —
+ * ONE PROP. The `AssetMenu` extension point hands its children an `onClose` —
  * the route that clears the toolbar selection, and the only close that makes
- * the panel go away with nothing drawn behind it — and this used to thread it
- * to the pane's X button. That button is gone, so the prop went with it rather
- * than being carried to nothing. `RemoveVanillaAssetMenu` still has it in
- * `otherProps` if a close is ever wanted back.
+ * the panel go away with nothing drawn behind it. It was dropped when the
+ * legacy top bar row retired and is threaded again for the header's X, which
+ * vanilla's own zoning and building menus put in the same corner.
  */
-export const BuildingMenuSurface = () => {
+export interface BuildingMenuSurfaceProps {
+  /**
+   * The game's own menu close, from the AssetMenu extension point.
+   *
+   * Optional because the surface must still render if the game ever mounts it
+   * without one; the X simply does not draw. See BuildingMenuHeader.
+   */
+  onClose?: () => void;
+}
+
+export const BuildingMenuSurface = ({ onClose }: BuildingMenuSurfaceProps) => {
   const { translate } = useLocalization();
 
   const [isResizing, setIsResizing] = useState(false);
@@ -254,7 +263,7 @@ export const BuildingMenuSurface = () => {
             <div className={classNames(styles.resizeGrip, isResizing && styles.resizeGripActive)} />
           </div>
           <div className={styles.topBar}>
-            <BuildingMenuHeader small={PanelWidth <= 685} large={PanelWidth >= 850} />
+            <BuildingMenuHeader small={PanelWidth <= 685} large={PanelWidth >= 850} onClose={onClose} />
           </div>
           <div
             className={classNames(styles.content, AssetMenuTheme.assetPanel)}
