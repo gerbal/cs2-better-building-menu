@@ -1085,6 +1085,7 @@ namespace FindItBuildingMenu.Services
 				AssetPackIndices: prefab.VanillaFacts.AssetPacks?.ToArray() ?? Array.Empty<int>(),
 				// Per query, not per index: the city gains and loses these as
 				// the player builds and bulldozes. See PlacedUniqueRegistry.
+				IsUnique: prefab.IsUnique,
 				IsAlreadyBuilt: PlacedUniqueRegistry.IsAlreadyBuilt(prefab.Id),
 				PlacementFlags: GetPlacementFlagNames(prefab.BuildingFlagsValue),
 				Extensions: prefab.ExtensionIds ?? Array.Empty<string>(),
