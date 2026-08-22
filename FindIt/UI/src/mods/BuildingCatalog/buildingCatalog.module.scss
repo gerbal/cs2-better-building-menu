@@ -842,13 +842,10 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   display: flex;
   align-items: center;
   justify-content: center;
-  // Positioned so the unique badge can hang off the picture rather than off the
-  // row, which is what keeps it the same size relative to the building here as
-  // in the grid and the list. See base.scss.
-  position: relative;
-  flex: 0 0 68rem;
-  width: 68rem;
-  height: 68rem;
+  // Through the shared box, like every other mode, so the badge is measured
+  // against the same number the picture is. Hand-rolling it here is what let
+  // the two drift apart in the first place. 68rem is vanilla's own image size.
+  @include _base.artwork-box(68rem);
   // The separation from the name. A margin because `gap` does nothing in this
   // engine — probed directly: a flex container declaring `gap: 20rem` measured
   // 0px between its children in BOTH row and column direction.
