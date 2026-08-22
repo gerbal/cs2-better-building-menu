@@ -22,6 +22,7 @@
 /** Just enough of an entry to answer the question. */
 export interface LockableEntry {
   isLocked?: boolean;
+  isAlreadyBuilt?: boolean;
 }
 
 /**
@@ -38,9 +39,25 @@ export function isEntryLocked(entry: LockableEntry | null | undefined): boolean 
   return entry?.isLocked === true;
 }
 
-/** The one rule Place has to obey. Vanilla refuses the same selection. */
+/**
+ * A unique the city already holds one of.
+ *
+ * Not locked — the progression allows it and the padlock would say the wrong
+ * thing — but not placeable either, which is the part the menu has to show.
+ */
+export function isEntryAlreadyBuilt(entry: LockableEntry | null | undefined): boolean {
+  return entry?.isAlreadyBuilt === true;
+}
+
+/**
+ * The rules Place has to obey. Vanilla refuses the same selections.
+ *
+ * Already-built joined locked here: the tile looked ordinary and clicking it
+ * armed a placement the game would then refuse, which reads as the menu being
+ * broken rather than as the city already having one.
+ */
 export function canPlace(entry: LockableEntry | null | undefined): boolean {
-  return !isEntryLocked(entry);
+  return !isEntryLocked(entry) && !isEntryAlreadyBuilt(entry);
 }
 
 export interface UnlockableEntry extends LockableEntry {

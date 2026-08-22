@@ -349,7 +349,8 @@ $sorted-metric-row: 14rem;
   // the last characters and forced "225,000/mo" to ellipsis. Lift it clear by
   // exactly the row it now has to clear, on top of the two name lines it
   // already clears.
-  .lockGlyph {
+  .lockGlyph,
+  .builtGlyph {
     bottom: 34rem + $sorted-metric-row;
   }
 }
@@ -377,6 +378,30 @@ $sorted-metric-row: 14rem;
   mask-position: center;
   mask-repeat: no-repeat;
 }
+
+// Already built, which is NOT locked and must not look it. Same corner and
+// size as the padlock so the eye finds it in the same place, and the same
+// borrowed-glyph technique — but a checkmark, and the game's positive colour
+// rather than --lockedColor. The distinction the player needs is "you cannot
+// have this yet" against "you already have it", and one yellow padlock for
+// both said the first about the second.
+.builtGlyph {
+  position: absolute;
+  right: 2rem;
+  bottom: 34rem;
+  width: 16rem;
+  height: 16rem;
+  // NO var() fallback. Cohtml drops the whole declaration when var() carries a
+  // fallback argument, even when the property IS defined: measured, this glyph
+  // computed to rgba(0,0,0,0) with `var(--positiveColor, #4caf50)` while
+  // --positiveColor read #8bdb46 the whole time. The padlock beside it works
+  // because it names its token bare.
+  background-color: var(--positiveColor);
+  mask-size: contain;
+  mask-position: center;
+  mask-repeat: no-repeat;
+}
+
 
 .card {
   display: flex;

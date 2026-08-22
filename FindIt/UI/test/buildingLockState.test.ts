@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { canPlace, isEntryLocked, listLockConditions } from "../src/domain/buildingLockState.ts";
+import { canPlace, isEntryAlreadyBuilt, isEntryLocked, listLockConditions } from "../src/domain/buildingLockState.ts";
 
 describe("lock state", () => {
   it("reports a locked entry as locked", () => {
@@ -96,5 +96,32 @@ describe("lock conditions", () => {
   it("does not index past the milestone table it was given", () => {
     assert.deepEqual(listLockConditions({ isLocked: true, unlockMilestone: 99 }, names, "Locked"), ["Locked"]);
     assert.deepEqual(listLockConditions({ isLocked: true, unlockMilestone: 2 }, null, "Locked"), ["Locked"]);
+  });
+});
+
+describe("already built", () => {
+  it("is not locked, and must not be drawn as if it were", () => {
+    // The progression allows it; the city simply has one. A padlock would say
+    // "you cannot have this yet" about a building the player already owns.
+    const built = { isLocked: false, isAlreadyBuilt: true };
+
+    assert.equal(isEntryLocked(built), false);
+    assert.equal(isEntryAlreadyBuilt(built), true);
+  });
+
+  it("cannot be placed", () => {
+    // Measured in Porterville before this: the tile rendered as an ordinary
+    // buildable one, so clicking it armed a placement the game then refused —
+    // which reads as the menu being broken rather than as "you already have it".
+    assert.equal(canPlace({ isLocked: false, isAlreadyBuilt: true }), false);
+    assert.equal(canPlace({ isLocked: true, isAlreadyBuilt: false }), false);
+    assert.equal(canPlace({ isLocked: false, isAlreadyBuilt: false }), true);
+  });
+
+  it("treats a missing flag as buildable", () => {
+    // Old payloads carry no isAlreadyBuilt. Absent must not mean built, or a
+    // stale binding would empty the menu of everything placeable.
+    assert.equal(isEntryAlreadyBuilt({ isLocked: false }), false);
+    assert.equal(canPlace({ isLocked: false }), true);
   });
 });
