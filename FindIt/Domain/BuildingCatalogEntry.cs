@@ -201,6 +201,8 @@ namespace FindItBuildingMenu.Domain
 			writer.Write(IsVanilla);
 			writer.PropertyName("isLocked");
 			writer.Write(IsLocked);
+			writer.PropertyName("isAlreadyBuilt");
+			writer.Write(IsAlreadyBuilt);
 			writer.PropertyName("unlockMilestone");
 			writer.Write(UnlockMilestone);
 			writer.PropertyName("devTreeBranch");

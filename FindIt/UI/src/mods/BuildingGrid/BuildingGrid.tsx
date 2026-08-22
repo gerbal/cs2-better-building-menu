@@ -6,7 +6,7 @@ import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import { getShelf, recordPlacement } from "domain/buildingShelf";
-import { canPlace, isEntryLocked } from "domain/buildingLockState";
+import { canPlace, isEntryAlreadyBuilt, isEntryLocked } from "domain/buildingLockState";
 import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { rankBuildingMatches, topSearchResult } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
@@ -70,6 +70,8 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
   const separators = getNumberSeparators(translate);
   // Already in Locale.json — an orphaned key with no consumer until now.
   const lockedLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Locked]", "Locked") ?? "Locked";
+  const builtLabel =
+    translate("Tooltip.LABEL[FindItBuildingMenu.AlreadyBuilt]", "Already built") ?? "Already built";
   const showShelf = useValue(ShowShelf$);
   const shelfSize = useValue(ShelfSize$);
   const tileSize = useValue(TileSize$);
@@ -146,6 +148,10 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
   const tile = (entry: BuildingCatalogEntry, key: string) => {
     const label = entry.name || entry.prefabName;
     const locked = isEntryLocked(entry);
+    // Distinct from locked on purpose: the progression allows this one, the
+    // city just already has it. Drawn where the padlock is drawn so the eye
+    // looks in one place, but never at the same time as one.
+    const alreadyBuilt = !locked && isEntryAlreadyBuilt(entry);
     // Strict equality against a real id: ActivePrefabId is 0 when nothing is
     // armed, and an entry id of 0 would otherwise light every tile.
     const armed = activePrefabId !== 0 && entry.id === activePrefabId;
@@ -169,9 +175,16 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
           // Locked is announced, not just drawn. The visual treatment is a
           // silhouette, which says nothing to a screen reader and little to
           // anyone whose thumbnail has not generated yet.
-          aria-label={locked ? `${label} — ${lockedLabel}` : label}
-          aria-disabled={locked ? "true" : undefined}
+          aria-label={
+            locked
+              ? `${label} — ${lockedLabel}`
+              : alreadyBuilt ? `${label} — ${builtLabel}` : label
+          }
+          // Unplaceable either way, and announced as such. It used to read as
+          // an ordinary tile, so clicking armed a placement the game refused.
+          aria-disabled={locked || alreadyBuilt ? "true" : undefined}
           data-locked={locked ? "true" : undefined}
+          data-already-built={alreadyBuilt ? "true" : undefined}
         >
           {entry.thumbnail
             ? <img
@@ -192,6 +205,13 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
             <span
               className={styles.lockGlyph}
               style={{ maskImage: "url(assetdb://gameui/Media/Glyphs/Lock.svg)" }}
+              aria-hidden="true"
+            />
+          )}
+          {alreadyBuilt && (
+            <span
+              className={styles.builtGlyph}
+              style={{ maskImage: "url(assetdb://gameui/Media/Glyphs/Checkmark.svg)" }}
               aria-hidden="true"
             />
           )}

@@ -347,6 +347,7 @@
   "Tooltip.LABEL[FindItBuildingMenu.ZoneLots]": "fits {0}",
   "Options.LABEL[FindItBuildingMenu.AvailabilityFilter]": "Availability",
   "Tooltip.LABEL[FindItBuildingMenu.Locked]": "Locked",
+  "Tooltip.LABEL[FindItBuildingMenu.AlreadyBuilt]": "Already built",
   "Options.LABEL[FindItBuildingMenu.ProvenanceFilter]": "Source",
   "Options.LABEL[FindItBuildingMenu.LensPlacement]": "Placement access",
   "Tooltip.LABEL[FindItBuildingMenu.Availability]": "Availability",
