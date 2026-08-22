@@ -147,17 +147,18 @@
   // two because its tile is the picture; ours has a label under it.
   .artwork {
     @include _base.artwork-box(45rem);
+
+    // Nested for the same reason as the list's — baseButton's img rule.
+    .thumb {
+      @include _base.artwork-picture(45rem);
+    }
+
+    .uniqueAsset {
+      @include _base.unique-mark(45rem);
+    }
   }
 
-  .thumb {
-    // Down from 68rem. This is a knowing regression: 68rem matched vanilla's
-    // 45px icon, and the name label is what the height was spent on instead.
-    // If 30px thumbnails do not read at a glance in game, the choice is
-    // between one row and no label — not between this and 68rem.
-    width: 45rem;
-    height: 45rem;
-    object-fit: contain;
-  }
+
 }
 
 // The pointer states, on the ground channel. Both values are vanilla's own for
@@ -409,10 +410,9 @@ $sorted-metric-row: 14rem;
 // larger than vanilla's badge on its 68rem one, and deliberately so — it is the
 // same legibility compromise the padlock beside it already makes at this tile
 // size, and matching the padlock matters more than matching the ratio.
-.uniqueAsset {
-  // Vanilla's proportions, derived from this mode's picture. See base.scss for
-  // why they are ratios and how they were measured.
-  @include _base.unique-mark(45rem);
+// Sized inside .artwork above; only the state lives out here.
+.uniqueMark {
+  opacity: 0;
 }
 
 

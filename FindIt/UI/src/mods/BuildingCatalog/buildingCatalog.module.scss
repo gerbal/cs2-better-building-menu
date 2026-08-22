@@ -115,9 +115,14 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
     font-size: var(--fontSizeS);
   }
 }
-// Same ratio as every other mode, derived from this picture's 68rem.
-.uniqueAsset {
+// Same ratio as every other mode, derived from this picture's 68rem. Nested,
+// because a bare class loses to baseButton's img rule — see base.scss.
+.thumbnail .uniqueAsset {
   @include _base.unique-mark(68rem);
+}
+
+.uniqueMark {
+  opacity: 0;
 }
 
 .alreadyBuilt {
