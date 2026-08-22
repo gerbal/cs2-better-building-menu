@@ -17,7 +17,7 @@ import { getCapacityForecast, getCostForecast } from "domain/buildingForecast";
 import { SERVICE_FORECAST_BINDINGS, getServiceForecastKey } from "domain/serviceForecast";
 import { buildTileTooltipLines, isMetricPresent } from "domain/buildingTileTooltip";
 import { clampAssetDescription, resolveAssetDescription } from "domain/buildingLensRowDetails";
-import { isEntryLocked, listLockConditions } from "domain/buildingLockState";
+import { isEntryAlreadyBuilt, isEntryLocked, listLockConditions } from "domain/buildingLockState";
 import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
 import type { ZoneFootprint } from "domain/zoningHierarchy";
 import styles from "./buildingHoverCard.module.scss";
@@ -60,6 +60,7 @@ export interface HoverCardContext {
     shareOfFunds: string;
     short: string;
     locked: string;
+    alreadyBuilt: string;
     lockedValue: string;
     bonuses: string;
     parking: string;
@@ -104,6 +105,14 @@ export const useHoverCardContext = (): HoverCardContext => {
       // go and do; naming it after the state it describes made the reader work
       // out the implication for themselves.
       locked: translate("Tooltip.LABEL[FindItBuildingMenu.Requires]", "Requires") ?? "Requires",
+      // The GAME's own string, asked for by its own key, so this reads exactly
+      // as vanilla's already-built row does and in whatever language the player
+      // has set. Ours is the fallback for when that key is not in the
+      // dictionary, not the first choice.
+      alreadyBuilt:
+        translate("Toolbar.ASSET_ALREADY_BUILT", "")
+        || translate("Tooltip.LABEL[FindItBuildingMenu.AlreadyBuilt]", "Already built")
+        || "Already built",
       lockedValue: translate("Tooltip.LABEL[FindItBuildingMenu.Locked]", "Locked") ?? "Locked",
       bonuses: translate("Tooltip.LABEL[FindItBuildingMenu.Provides]", "Provides") ?? "Provides",
       parking: translate("Tooltip.LABEL[FindItBuildingMenu.Parking]", "Parking") ?? "Parking",
@@ -182,6 +191,20 @@ export const BuildingHoverCard = ({
       // milestone, a tech node and a zone target at once.
       value: labels.lockedValue,
       values: listLockConditions(entry, milestoneNames, labels.lockedValue),
+      tone: "warn",
+    },
+    // Beside locked and for the same reason: it changes what the rest of the
+    // card means. Vanilla says this in the asset details panel as a band of its
+    // own; our card is a label/value list, so it says it as a line — the same
+    // fact, in this card's idiom, rather than a band bolted onto a list.
+    {
+      key: "alreadyBuilt",
+      label: labels.alreadyBuilt,
+      applicable: isEntryAlreadyBuilt(entry),
+      // The label IS the statement, which is how vanilla's row reads. Marked as
+      // such or the empty-value guard drops it — see buildTileTooltipLines.
+      value: "",
+      statement: true,
       tone: "warn",
     },
     {

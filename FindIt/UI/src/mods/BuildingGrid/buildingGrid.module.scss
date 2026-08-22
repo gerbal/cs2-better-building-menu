@@ -267,7 +267,13 @@
 // that moved off the ramp (above). Deleting these would have left a locked tile
 // with no hover response at all, which says unavailable when the truth is
 // merely locked — vanilla routes the click and so do we.
-.tile[data-locked="true"] {
+// Both states, because vanilla's tile is `disabled` for `locked || placed` and
+// every rule below hangs off [disabled]. The silhouette and the dimmed ground
+// are what "you cannot place this" looks like; WHICH reason it is gets said by
+// the badge on top, not by the ground. Splitting them would invent a third
+// appearance the game does not have.
+.tile[data-locked="true"],
+.tile[data-already-built="true"] {
   background-color: rgba(255, 255, 255, 0.1);
 
   .thumb {
@@ -282,7 +288,8 @@
   }
 }
 
-.tile[data-locked="true"]:hover {
+.tile[data-locked="true"]:hover,
+.tile[data-already-built="true"]:hover {
   background-color: rgba(255, 255, 255, 0.15);
 }
 
@@ -297,7 +304,9 @@
 // arming: if that ever changes, the tile degrades to locked rather than to an
 // unreadable one.
 .tile[data-locked="true"].tileArmed,
-.tile[data-locked="true"].tileArmed:active {
+.tile[data-locked="true"].tileArmed:active,
+.tile[data-already-built="true"].tileArmed,
+.tile[data-already-built="true"].tileArmed:active {
   background-color: rgba(255, 255, 255, 0.1);
 
   .thumb {

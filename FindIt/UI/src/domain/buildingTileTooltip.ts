@@ -33,6 +33,16 @@ export interface TileTooltipCandidate extends TileTooltipLine {
    * caller signals by leaving the value empty.
    */
   applicable: boolean;
+
+  /**
+   * A line whose label says everything, with no value beside it.
+   *
+   * Vanilla's asset panel has one — its already-built row is a single phrase on
+   * a coloured band, not a label/value pair — and this card could not express
+   * it: the empty-value guard below read the blank as "nothing to say" and
+   * dropped the line, so the row was implemented and rendered nowhere.
+   */
+  statement?: boolean;
 }
 
 /**
@@ -71,7 +81,10 @@ export function buildTileTooltipLines(
   const limit = Number.isFinite(max) && max > 0 ? Math.floor(max) : 0;
 
   return candidates
-    .filter((candidate) => candidate.applicable && candidate.value.trim() !== "")
+    // The guard still earns its place — a metric that resolved to nothing must
+    // not draw a label with a blank beside it — but a statement opts out of it.
+    .filter((candidate) =>
+      candidate.applicable && (candidate.statement === true || candidate.value.trim() !== ""))
     .slice(0, limit)
     .map(({ key, label, value, values, tone }) => {
       const line: TileTooltipLine = { key, label, value };
