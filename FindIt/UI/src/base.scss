@@ -222,3 +222,58 @@ $laneButtonSize: 64rem;
     }
   }
 }
+
+// --------------------------------------------------------------------------
+// Unique-asset marks, at one scale across every view mode.
+//
+// The grid settled these against a 45rem thumbnail: a 16rem mark inset 2rem.
+// The other modes draw the same asset at 20rem (list), 36rem (cards) and 68rem
+// (table), so a fixed 16rem would be a blob on a row icon and a speck on a
+// table thumbnail. Stated as RATIOS of the picture, so the badge reads the same
+// size relative to the building wherever the building is drawn.
+//
+// Kept here rather than repeated per module because four modes drawing one
+// catalogue have already drifted into three different answers once — see the
+// GroupedResults header.
+// --------------------------------------------------------------------------
+
+// Both taken from vanilla and expressed against the picture, measured rather
+// than read off the stylesheet — the rule there pins all four sides and lets
+// the size be auto, and this engine resolves that to a fixed 16px anchored at
+// the top-left with the right and bottom offsets ignored. So the numbers that
+// actually describe vanilla's badge are its SIZE and its TOP-LEFT inset:
+//
+//   size  16px on a 45px picture  = 0.356
+//   inset 12rem on a 68rem image  = 0.176
+//
+// Not centred, which was worth checking: pinned on four sides reads as centred
+// and is not what the engine draws.
+$mark-scale: 0.3556;
+$mark-inset: 0.176;
+
+@function mark-size($picture) {
+  @return $picture * $mark-scale;
+}
+
+@function mark-inset($picture) {
+  @return $picture * $mark-inset;
+}
+
+/// The box a picture and its marks share. Marks position against THIS, never
+/// against the row or tile around it, which may carry a label as well.
+@mixin artwork-box($picture) {
+  position: relative;
+  flex: 0 0 $picture;
+  width: $picture;
+  height: $picture;
+}
+
+/// The already-built / unique badge, over the top-left of the picture.
+@mixin unique-mark($picture) {
+  position: absolute;
+  top: mark-inset($picture);
+  left: mark-inset($picture);
+  width: mark-size($picture);
+  height: mark-size($picture);
+  opacity: 0;
+}
