@@ -231,14 +231,18 @@
 // Both unplaceable states share the ground, the way the grid's tile does and
 // the way vanilla's [disabled] rule does. WHICH state it is gets said in the
 // label and the aria suffix, not by a second colour.
+// Rasters only — a vector under a filter is what this engine cannot draw.
+// See hasVectorThumbnail; the grid carries the same pair of rules.
+.item[data-locked="true"][data-vector-thumb="false"] .icon,
+.item[data-locked="true"][data-vector-thumb="false"] .iconLarge,
+.item[data-already-built="true"][data-vector-thumb="false"] .icon,
+.item[data-already-built="true"][data-vector-thumb="false"] .iconLarge {
+  filter: grayscale(100%) contrast(80%) brightness(0%);
+}
+
 .item[data-locked="true"],
 .item[data-already-built="true"] {
   background-color: rgba(255, 255, 255, 0.08);
-
-  .icon,
-  .iconLarge {
-    filter: grayscale(100%) contrast(80%) brightness(0%);
-  }
 
   .name {
     opacity: 0.55;

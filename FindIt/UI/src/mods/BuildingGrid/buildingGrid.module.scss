@@ -284,16 +284,30 @@
 .tile[data-already-built="true"] {
   background-color: rgba(255, 255, 255, 0.1);
 
-  .thumb {
-    filter: grayscale(100%) contrast(80%) brightness(0%);
-  }
-
   // The text channel, not opacity. `opacity: 0.55` dimmed the ellipsis along
   // with the characters and could not be themed; this is the game's own token
   // for locked text, so it follows the player's theme like every other label.
   .tileName {
     color: var(--normalTextColorLocked);
   }
+}
+
+// The silhouette, RASTERS ONLY. Cohtml re-rasterises a vector every time it
+// composites an effect over it, and does not survive doing so: measured on
+// locked subway tiles, filtered SVG thumbnails flickered and some never drew at
+// all, while filtered PNGs beside them were perfectly stable. `opacity` is no
+// safer — it made the same icons vanish outright.
+//
+// Written as [data-vector-thumb="false"] rather than :not([...="true"]) because
+// Cohtml's selector engine rejects :not().
+//
+// A locked vector keeps the other three signals, which cost nothing: the dimmed
+// ground above, the locked label colour below, and the padlock. Networks are
+// vector-iconed throughout — 46 of Transportation's tiles — so this is a large
+// and permanent part of the catalog, not an edge case.
+.tile[data-locked="true"][data-vector-thumb="false"] .thumb,
+.tile[data-already-built="true"][data-vector-thumb="false"] .thumb {
+  filter: grayscale(100%) contrast(80%) brightness(0%);
 }
 
 .tile[data-locked="true"]:hover,
@@ -316,10 +330,14 @@
 .tile[data-already-built="true"].tileArmed,
 .tile[data-already-built="true"].tileArmed:active {
   background-color: rgba(255, 255, 255, 0.1);
+}
 
-  .thumb {
-    filter: grayscale(100%) contrast(80%) brightness(0%);
-  }
+// Rasters only, for the same reason as the rule above.
+.tile[data-locked="true"][data-vector-thumb="false"].tileArmed .thumb,
+.tile[data-locked="true"][data-vector-thumb="false"].tileArmed:active .thumb,
+.tile[data-already-built="true"][data-vector-thumb="false"].tileArmed .thumb,
+.tile[data-already-built="true"][data-vector-thumb="false"].tileArmed:active .thumb {
+  filter: grayscale(100%) contrast(80%) brightness(0%);
 }
 
 .tile[data-locked="true"].tileArmed:hover {
@@ -379,16 +397,15 @@ $sorted-metric-row: 14rem;
 // the point, starts following the theme instead of pinning one build's value.
 // The base declaration is #d38f07; which one wins is a cascade question, which
 // is the argument for naming the token rather than copying either number.
+// An <img> of a pre-tinted raster, not a masked span. See BuildingGrid.tsx for
+// what the mask cost; the geometry here is unchanged.
 .lockGlyph {
   position: absolute;
   right: 2rem;
   bottom: 2rem;
   width: 16rem;
   height: 16rem;
-  background-color: var(--lockedColor);
-  mask-size: contain;
-  mask-position: center;
-  mask-repeat: no-repeat;
+  object-fit: contain;
 }
 
 // Vanilla's own treatment for a unique asset, transcribed from its

@@ -1406,12 +1406,14 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 // Both unplaceable states share the ground, the way the grid's tile does and
 // the way vanilla's [disabled] rule does. WHICH state it is gets said in the
 // label and the aria suffix, not by a second colour.
+// Rasters only. See hasVectorThumbnail.
+.row[data-locked="true"][data-vector-thumb="false"] .thumbnail img,
+.row[data-already-built="true"][data-vector-thumb="false"] .thumbnail img {
+  filter: grayscale(100%) contrast(80%) brightness(0%);
+}
+
 .row[data-locked="true"],
 .row[data-already-built="true"] {
-  .thumbnail img {
-    filter: grayscale(100%) contrast(80%) brightness(0%);
-  }
-
   .name {
     opacity: 0.6;
   }
