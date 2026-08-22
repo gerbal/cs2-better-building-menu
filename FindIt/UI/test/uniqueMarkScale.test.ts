@@ -25,10 +25,28 @@ const modules: Array<[string, string]> = [
  */
 describe("unique mark scale", () => {
   it("is defined once, as a ratio of the picture", () => {
-    assert.match(base, /\$mark-scale:\s*0?\.\d+;/);
+    assert.match(base, /\$mark-inset:\s*0?\.\d+;/);
     assert.match(base, /@mixin unique-mark\(\$picture\)/);
-    // Derived, not restated: the mixin must multiply the picture it is given.
-    assert.match(base, /@function mark-size\(\$picture\)[\s\S]*?\$picture \* \$mark-scale/);
+    // Derived, not restated: the inset must be a fraction of the picture given.
+    assert.match(base, /@function mark-inset\(\$picture\)[\s\S]*?\$picture \* \$mark-inset/);
+  });
+
+  it("pins all four sides and leaves the size auto", () => {
+    // This is what makes the badge CENTRE on the building rather than corner
+    // itself on it. Measured: pinned-and-auto stretches to the box in this
+    // engine, 19px inside a 30px picture with 5px clear each side. Stating a
+    // width instead resolves to a fixed size anchored top-left, which is the
+    // bug this replaced.
+    const mixin = base.slice(base.indexOf("@mixin unique-mark"));
+    const body = mixin.slice(0, mixin.indexOf("\n}"));
+
+    for (const side of ["top", "bottom", "left", "right"]) {
+      assert.match(body, new RegExp(`${side}: mark-inset\\(\\$picture\\)`), `missing ${side}`);
+    }
+
+    assert.match(body, /width: auto/);
+    assert.match(body, /height: auto/);
+    assert.doesNotMatch(body, /(width|height):\s*mark-size/);
   });
 
   it("derives the badge from the SAME picture the artwork box uses", () => {
