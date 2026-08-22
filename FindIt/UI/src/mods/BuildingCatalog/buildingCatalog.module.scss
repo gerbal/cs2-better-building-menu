@@ -115,6 +115,19 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
     font-size: var(--fontSizeS);
   }
 }
+// Same ratio as every other mode, derived from this picture's 68rem.
+.uniqueAsset {
+  @include _base.unique-mark(68rem);
+}
+
+.alreadyBuilt {
+  opacity: 1;
+}
+
+.row:hover .uniqueMark {
+  opacity: 0.5;
+}
+
 
 .columnHeader,
 .row {
@@ -824,6 +837,10 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   display: flex;
   align-items: center;
   justify-content: center;
+  // Positioned so the unique badge can hang off the picture rather than off the
+  // row, which is what keeps it the same size relative to the building here as
+  // in the grid and the list. See base.scss.
+  position: relative;
   flex: 0 0 68rem;
   width: 68rem;
   height: 68rem;

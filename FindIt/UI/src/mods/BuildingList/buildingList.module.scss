@@ -37,11 +37,31 @@
   border-color: var(--accentColorNormal);
 }
 
+// The picture and its badge share this box; the margin lives here now, because
+// the badge must not be pushed off the picture by the picture's own spacing.
+.artwork {
+  @include _base.artwork-box(20rem);
+  margin-right: 5rem;
+}
+
 .icon {
   width: 20rem;
   height: 20rem;
-  margin-right: 5rem;
   object-fit: contain;
+}
+
+// Same ratio as the grid's, derived from this mode's picture rather than
+// repeated as a number — 20rem here against the grid's 45rem.
+.uniqueAsset {
+  @include _base.unique-mark(20rem);
+}
+
+.alreadyBuilt {
+  opacity: 1;
+}
+
+.item:hover .uniqueMark {
+  opacity: 0.5;
 }
 
 // Keeps the text baseline steady across a row where some entries have no
@@ -90,10 +110,18 @@
   align-items: center;
 }
 
+.artworkLarge {
+  @include _base.artwork-box(36rem);
+  margin-right: 7rem;
+}
+
 .iconLarge {
   width: 36rem;
   height: 36rem;
-  margin-right: 7rem;
+}
+
+.uniqueAssetLarge {
+  @include _base.unique-mark(36rem);
 }
 
 .text {

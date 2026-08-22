@@ -871,11 +871,27 @@ export const BuildingCatalogComponent = () => {
                   data-expanded={isExpanded ? "true" : undefined}
                 >
                   <div className={styles.identityCell}>
+                    {/* The badge sits ON the picture here too, at the same
+                        ratio the grid and the rows use — this thumbnail is
+                        68rem, which happens to be vanilla's own image size. */}
                     <div className={styles.thumbnail}>
                       {entry.thumbnail && (
                         <img
                           src={entry.thumbnail}
                           onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
+                        />
+                      )}
+                      {entry.isUnique === true && (
+                        <img
+                          className={classNames(
+                            styles.uniqueAsset,
+                            isEntryAlreadyBuilt(entry) ? styles.alreadyBuilt : styles.uniqueMark
+                          )}
+                          src={isEntryAlreadyBuilt(entry)
+                            ? "Media/Game/Icons/AlreadyBuilt.svg"
+                            : "Media/Game/Icons/Unique.svg"}
+                          alt=""
+                          aria-hidden="true"
                         />
                       )}
                     </div>

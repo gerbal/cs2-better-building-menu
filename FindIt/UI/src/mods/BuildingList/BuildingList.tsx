@@ -170,14 +170,34 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
               data-locked={isEntryLocked(entry) ? "true" : undefined}
               data-already-built={isEntryAlreadyBuilt(entry) ? "true" : undefined}
             >
+              {/* The picture and its badge share a box, the way the tile's do,
+                  so the mark sits ON the building rather than beside it. Sized
+                  from base.scss's ratio, so the badge reads the same size
+                  against a 20rem row icon as against the grid's 45rem one. */}
               {entry.thumbnail
-                ? <img
-                    className={classNames(styles.icon, cards && styles.iconLarge)}
-                    src={entry.thumbnail}
-                    onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
-                    alt=""
-                    aria-hidden="true"
-                  />
+                ? <span className={classNames(styles.artwork, cards && styles.artworkLarge)}>
+                    <img
+                      className={classNames(styles.icon, cards && styles.iconLarge)}
+                      src={entry.thumbnail}
+                      onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
+                      alt=""
+                      aria-hidden="true"
+                    />
+                    {entry.isUnique === true && (
+                      <img
+                        className={classNames(
+                          styles.uniqueAsset,
+                          cards && styles.uniqueAssetLarge,
+                          isEntryAlreadyBuilt(entry) ? styles.alreadyBuilt : styles.uniqueMark
+                        )}
+                        src={isEntryAlreadyBuilt(entry)
+                          ? "Media/Game/Icons/AlreadyBuilt.svg"
+                          : "Media/Game/Icons/Unique.svg"}
+                        alt=""
+                        aria-hidden="true"
+                      />
+                    )}
+                  </span>
                 : <span className={classNames(styles.iconPlaceholder, cards && styles.iconLarge)} aria-hidden="true" />}
               <span className={styles.text}>
                 <span className={styles.name}>{label}</span>

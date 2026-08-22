@@ -146,10 +146,7 @@
   // against the PICTURE rather than against the tile. Vanilla can conflate the
   // two because its tile is the picture; ours has a label under it.
   .artwork {
-    position: relative;
-    flex: 0 0 45rem;
-    width: 45rem;
-    height: 45rem;
+    @include _base.artwork-box(45rem);
   }
 
   .thumb {
@@ -413,13 +410,11 @@ $sorted-metric-row: 14rem;
 // same legibility compromise the padlock beside it already makes at this tile
 // size, and matching the padlock matters more than matching the ratio.
 .uniqueAsset {
-  position: absolute;
-  top: 2rem;
-  left: 2rem;
-  width: 16rem;
-  height: 16rem;
-  opacity: 0;
+  // Vanilla's proportions, derived from this mode's picture. See base.scss for
+  // why they are ratios and how they were measured.
+  @include _base.unique-mark(45rem);
 }
+
 
 // Built: always visible, at full strength. This is the state the player needs
 // to read without hovering, because it is the one that changes what they can do.
