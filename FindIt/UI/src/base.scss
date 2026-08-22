@@ -248,12 +248,21 @@ $laneButtonSize: 64rem;
 //
 // Not centred, which was worth checking: pinned on four sides reads as centred
 // and is not what the engine draws.
-$mark-scale: 0.3556;
-$mark-inset: 0.176;
-
-@function mark-size($picture) {
-  @return $picture * $mark-scale;
-}
+// Vanilla pins the badge 12rem inside a 72rem ITEM holding a 68rem picture and
+// leaves the size auto. Measured in this engine, auto-with-four-offsets
+// STRETCHES to the box — 19px inside a 30px picture, 5px clear on both sides —
+// so the badge is CENTRED on the building, not cornered on it.
+//
+// One number describes that: the inset, from the picture's edge rather than the
+// item's, 12rem less the 2rem the picture is inset in the item.
+//
+//   inset  10 / 68        = 0.147
+//   badge  68 - 2*10 = 48 = 70.6% of the picture
+//
+// This read 0.356 with a top-left anchor for a while, from measuring a badge
+// whose size was really coming from baseButton's `img { width: 24rem }` — the
+// rule under test never applied. Nesting the include is what stops that.
+$mark-inset: 0.147;
 
 @function mark-inset($picture) {
   @return $picture * $mark-inset;
@@ -284,9 +293,14 @@ $mark-inset: 0.176;
 @mixin unique-mark($picture) {
   position: absolute;
   top: mark-inset($picture);
+  bottom: mark-inset($picture);
   left: mark-inset($picture);
-  width: mark-size($picture);
-  height: mark-size($picture);
+  right: mark-inset($picture);
+  // Auto on both axes with all four sides pinned. Stating a width instead is
+  // what turned this into a corner mark; auto lets the engine stretch it to the
+  // box, which is what centres it.
+  width: auto;
+  height: auto;
 }
 
 /// The picture itself, for the same specificity reason as unique-mark.
