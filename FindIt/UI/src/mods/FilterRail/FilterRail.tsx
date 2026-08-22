@@ -113,8 +113,16 @@ export const FilterRail = ({
           // Narrowed, the icon becomes the state it is showing. At rest it is
           // the dimension's identity mark and carries no claim, which is why
           // the closed padlock is fine there and not fine when narrowed.
-          const icon = dimension.id === "availability" && dimension.selected > 0
-            ? (options.some((option) => option.selected && option.id === "Unlocked") ? unlockIcon : lockIcon)
+          // Only claims a state when it is showing exactly that state. With a
+          // third option — AlreadyBuilt — "selected > 0 and not Unlocked" no
+          // longer means Locked, and the old test would have drawn a padlock
+          // over a list of things the player has already built. Anything other
+          // than a single lock/unlock choice falls back to the dimension's own
+          // identity mark, which carries no claim.
+          const chosen = options.filter((option) => option.selected);
+          const only = chosen.length === 1 ? chosen[0].id : "";
+          const icon = dimension.id === "availability" && (only === "Locked" || only === "Unlocked")
+            ? (only === "Unlocked" ? unlockIcon : lockIcon)
             : (DIMENSION_ICONS[dimension.id] ?? "");
           // The tooltip names the dimension when it is doing nothing, and names
           // what survives when it is. A count alone ("2") says how many boxes

@@ -66,6 +66,12 @@ namespace FindItBuildingMenu.Domain
 		/// entry positionally, which is a lot of noise for one flag.
 		/// </remarks>
 		bool IsLocked = false,
+		/// <summary>A unique asset the city already holds one of.</summary>
+		/// <remarks>
+		/// Read per query rather than stored at index time, because it changes
+		/// as the player builds and bulldozes — see PlacedUniqueRegistry.
+		/// </remarks>
+		bool IsAlreadyBuilt = false,
 		/// <summary>
 		/// Icon to draw when <see cref="Thumbnail"/> resolves to nothing.
 		/// </summary>

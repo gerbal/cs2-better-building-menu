@@ -99,6 +99,7 @@ namespace FindItBuildingMenu.Systems
 		// briefly keyed by label instead, which collides: every service's root
 		// is called "Basic", so all eleven shared one entry and Electricity's
 		// Basic tab drew the water glyph.
+		private UniqueAssetTrackingSystem? _uniqueAssets;
 		private Dictionary<Entity, (string Label, string Icon, int Depth)> _devTreeBranches = new();
 		private static Dictionary<string, (string Label, string Icon, int Depth)> _devTreeRoots = new();
 		// Milestone index -> its progression-screen image. Safe to key by index
@@ -116,6 +117,21 @@ namespace FindItBuildingMenu.Systems
 			_finditUISystem = World.GetOrCreateSystemManaged<FindItUISystem>();
 
 			GameManager.instance.localizationManager.onActiveDictionaryChanged += OnActiveDictionaryChanged;
+
+			// The third availability state, kept live off the game's own
+			// tracker. GetExisting rather than GetOrCreate: this is a GAME
+			// system and creating a second one would leave OnUpdate dead while
+			// looking fine — the trap recorded against ECS systems generally.
+			_uniqueAssets = World.GetExistingSystemManaged<UniqueAssetTrackingSystem>();
+
+			if (_uniqueAssets is not null)
+			{
+				// `+=`, NOT `=`. EventUniqueAssetStatusChanged is a settable
+				// PROPERTY rather than a C# event, so assigning it would drop
+				// whatever the game or another mod had already put there.
+				// Compound assignment reads, combines and writes back.
+				_uniqueAssets.EventUniqueAssetStatusChanged += OnUniqueAssetStatusChanged;
+			}
 
 			using var stream = typeof(Mod).Assembly.GetManifestResourceStream("FindItBuildingMenu.Resources.Blacklist.txt");
 			using var reader = new StreamReader(stream);
@@ -548,6 +564,18 @@ namespace FindItBuildingMenu.Systems
 			FindItUtil.IsReady = true;
 
 			_finditUISystem.TriggerSearch();
+
+			// Seed the placed-unique set from the city that just loaded.
+			//
+			// The event keeps it current afterwards, but it cannot be trusted to
+			// establish it: the tracker raises its loaded-asset events during
+			// ITS OnUpdate, which may already have run, and a previous city's
+			// entries would otherwise survive into this one. Reset both catches
+			// up and clears.
+			if (full)
+			{
+				SeedPlacedUniques();
+			}
 
 			stopWatch.Stop();
 
@@ -2716,6 +2744,47 @@ namespace FindItBuildingMenu.Systems
 		/// different fact and is what the building indexer reads for its own
 		/// facet.
 		/// </remarks>
+		private void SeedPlacedUniques()
+		{
+			if (_uniqueAssets is null)
+			{
+				PlacedUniqueRegistry.Reset(null);
+				return;
+			}
+
+			var placed = _uniqueAssets.placedUniqueAssets;
+
+			if (!placed.IsCreated)
+			{
+				PlacedUniqueRegistry.Reset(null);
+				return;
+			}
+
+			using var entities = placed.ToNativeArray(Allocator.Temp);
+			var ids = new List<int>(entities.Length);
+
+			for (var i = 0; i < entities.Length; i++)
+			{
+				ids.Add(entities[i].Index);
+			}
+
+			PlacedUniqueRegistry.Reset(ids);
+			Mod.Log.Info($"Placed unique assets: {PlacedUniqueRegistry.Count}");
+		}
+
+		/// <summary>Keeps the placed-unique set in step with the city.</summary>
+		/// <remarks>
+		/// Fires on both edges — true when one is built or loaded, false when
+		/// one is bulldozed — so the state goes stale in neither direction.
+		/// The catalog is refreshed rather than re-indexed: nothing about the
+		/// PREFAB changed, only what the city holds.
+		/// </remarks>
+		private void OnUniqueAssetStatusChanged(Entity prefab, bool placed)
+		{
+			PlacedUniqueRegistry.Set(prefab.Index, placed);
+			_finditUISystem?.RefreshBuildingCatalogFromIndexing();
+		}
+
 		/// <summary>Names a pack for <see cref="AssetPackRegistry"/>.</summary>
 		/// <remarks>
 		/// Recorded as the packs are walked, because this is the one place both

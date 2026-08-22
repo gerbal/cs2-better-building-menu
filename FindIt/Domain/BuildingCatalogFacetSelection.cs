@@ -74,14 +74,27 @@ namespace FindItBuildingMenu.Domain
 		}
 
 		/// <summary>
-		/// The two states every asset is in, exactly one of them, always.
+		/// The three states every asset is in, exactly one of them, always.
 		/// </summary>
+		/// <remarks>
+		/// Still a partition, which is what lets the toggle stay exhaustive.
+		/// AlreadyBuilt SUPERSEDES Unlocked rather than sitting beside it: a
+		/// unique you have built is unlocked in the progression sense and
+		/// unbuildable in the only sense the player cares about, and reporting
+		/// it as Unlocked put it in the list of things to build.
+		///
+		/// Ordered the way the player meets them — cannot build yet, can build,
+		/// already did.
+		/// </remarks>
 		public static class Availability
 		{
 			public const string Locked = "Locked";
 			public const string Unlocked = "Unlocked";
 
-			public static readonly string[] All = { Locked, Unlocked };
+			/// <summary>A unique asset the city already holds one of.</summary>
+			public const string AlreadyBuilt = "AlreadyBuilt";
+
+			public static readonly string[] All = { Locked, Unlocked, AlreadyBuilt };
 		}
 
 		/// <summary>

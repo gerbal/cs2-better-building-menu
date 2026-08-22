@@ -203,7 +203,7 @@ namespace FindItBuildingMenu.Services
 				return false;
 			}
 
-			if (!MatchesAny(entry.IsLocked ? "Locked" : "Unlocked", query.Availability)
+			if (!MatchesAny(AvailabilityOf(entry), query.Availability)
 				|| !MatchesAny(entry.BuildingType, query.BuildingTypes)
 				|| !MatchesAny(entry.Provenance, query.Provenance)
 				// DlcIds is deliberately absent. It is the Content facet's third
@@ -306,6 +306,20 @@ namespace FindItBuildingMenu.Services
 			string.Equals(entry.Category, "Networks", StringComparison.OrdinalIgnoreCase)
 				? StripAxes.NetworkValue
 				: StripAxes.BuildingValue;
+
+		/// <summary>Which of the three availability states the entry is in.</summary>
+		/// <remarks>
+		/// Ordered so the partition holds: locked wins over already-built,
+		/// because a locked unique cannot have been built. Already-built wins
+		/// over unlocked, because that is the state that answers "can I place
+		/// this" — see BuildingCatalogFacetSelection.Availability.
+		/// </remarks>
+		public static string AvailabilityOf(BuildingCatalogEntry entry) =>
+			entry.IsLocked
+				? BuildingCatalogFacetSelection.Availability.Locked
+				: entry.IsAlreadyBuilt
+					? BuildingCatalogFacetSelection.Availability.AlreadyBuilt
+					: BuildingCatalogFacetSelection.Availability.Unlocked;
 
 		private static bool MatchesVanillaMenuTree(BuildingCatalogEntry entry, BuildingCatalogQuery query)
 		{

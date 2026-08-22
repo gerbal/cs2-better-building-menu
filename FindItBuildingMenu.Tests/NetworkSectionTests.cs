@@ -191,13 +191,17 @@ namespace FindItBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void OffersBothOptionsAsAFacet()
+		public void OffersEveryAvailabilityStateAsAFacet()
 		{
 			var facets = BuildingCatalogAdapter.BuildFacetState(Source, new BuildingCatalogQuery());
 			var group = facets.Groups.Single(candidate => candidate.Id == "availability");
 
+			// Three since AlreadyBuilt joined them. It is a state of the CITY
+			// rather than of the asset, but it partitions with the other two and
+			// answers the same question — can I place this — so it belongs in
+			// the same dimension. See Availability.
 			Assert.Equal(
-				new[] { "Locked", "Unlocked" },
+				new[] { "AlreadyBuilt", "Locked", "Unlocked" },
 				group.Options.Select(option => option.Id).OrderBy(id => id).ToArray());
 		}
 
@@ -238,18 +242,23 @@ namespace FindItBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void SelectingEverythingAgainCollapsesBackToBoth()
+		public void SelectingEverythingAgainCollapsesBackToAll()
 		{
-			// One representation of "both", not two that behave alike and
+			// One representation of "all of them", not two that behave alike and
 			// compare differently.
 			var onlyUnlocked = new BuildingCatalogQuery(Availability: new[] { "Unlocked" });
 
-			var both = BuildingCatalogFacetSelection.Toggle(onlyUnlocked, "availability", "Locked");
+			var two = BuildingCatalogFacetSelection.Toggle(onlyUnlocked, "availability", "Locked");
 
-			// Selecting the second option covers everything, which is the same
-			// visible result as selecting none — so it collapses to one stored
+			// Two of three narrows nothing away yet, so it is still a selection.
+			Assert.NotNull(two.Availability);
+
+			var all = BuildingCatalogFacetSelection.Toggle(two, "availability", "AlreadyBuilt");
+
+			// Selecting the last one covers everything, which is the same visible
+			// result as selecting none — so it collapses to one stored
 			// representation rather than two that compare differently.
-			Assert.Null(both.Availability);
+			Assert.Null(all.Availability);
 		}
 
 		[Fact]
