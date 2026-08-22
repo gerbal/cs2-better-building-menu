@@ -1166,6 +1166,11 @@ namespace FindItBuildingMenu.Services
 				Thumbnail: IconPath.Normalize(prefab.Thumbnail ?? prefab.FallbackThumbnail ?? string.Empty),
 				FallbackThumbnail: IconPath.Normalize(
 					prefab.FallbackThumbnail ?? prefab.CategoryThumbnail ?? string.Empty),
+				// Generated on first sight and cached on disk, so this costs one
+				// file read per distinct vector icon for the life of the install
+				// — not per projection, and not per entry.
+				SilhouetteThumbnail: Mod.Silhouettes?.UrlFor(
+					IconPath.Normalize(prefab.Thumbnail ?? prefab.FallbackThumbnail ?? string.Empty)),
 				UiMenu: prefab.UiMenuName,
 				UiCategory: prefab.UiCategoryName,
 				UiCategoryPriority: prefab.UiCategoryPriority,

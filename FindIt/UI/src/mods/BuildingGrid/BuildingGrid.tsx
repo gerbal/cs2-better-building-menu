@@ -6,7 +6,7 @@ import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import { getShelf, recordPlacement } from "domain/buildingShelf";
-import { canPlace, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked } from "domain/buildingLockState";
+import { canPlace, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { rankBuildingMatches, topSearchResult } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
@@ -206,7 +206,7 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
             {entry.thumbnail
               ? <img
                   className={styles.thumb}
-                  src={entry.thumbnail}
+                  src={lockedThumbnail(entry, locked || alreadyBuilt)}
                   onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
                   alt=""
                 />

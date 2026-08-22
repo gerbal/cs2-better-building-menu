@@ -160,3 +160,33 @@ export function listLockConditions(
 export function hasVectorThumbnail(thumbnail: string | null | undefined): boolean {
   return /\.svg(\?|#|$)/i.test((thumbnail ?? "").trim());
 }
+
+/**
+ * The artwork a row should draw, given whether it can be placed.
+ *
+ * Vanilla silhouettes an unplaceable asset by FILTERING its thumbnail. That
+ * filter is unusable over a vector in this engine (see hasVectorThumbnail), so
+ * a vector-thumbnailed entry is handed a pre-blackened copy of its own icon by
+ * the backend and swaps to it instead — same silhouette, no compositing effect.
+ *
+ * Raster thumbnails are untouched here: they keep vanilla's filter, which works
+ * over them and is the treatment the game itself ships.
+ *
+ * Falls back to the ordinary thumbnail whenever there is no blackened copy —
+ * the icon was not found on disk, or the entry is placeable. The tile is still
+ * legible as locked from the dimmed ground and the padlock.
+ */
+export function lockedThumbnail(
+  entry: { thumbnail?: string | null; silhouetteThumbnail?: string | null } | null | undefined,
+  unplaceable: boolean
+): string {
+  const thumbnail = entry?.thumbnail ?? "";
+
+  if (!unplaceable) {
+    return thumbnail;
+  }
+
+  const silhouette = (entry?.silhouetteThumbnail ?? "").trim();
+
+  return silhouette !== "" ? silhouette : thumbnail;
+}

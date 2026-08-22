@@ -61,7 +61,7 @@ import { findItSurfacePort } from "domain/findItSurfacePort";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 import { getSearchScopeNotice } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
-import { canPlace, entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked } from "domain/buildingLockState";
+import { canPlace, entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import {
   getLensAnchor,
@@ -878,7 +878,7 @@ export const BuildingCatalogComponent = () => {
                     <div className={styles.thumbnail}>
                       {entry.thumbnail && (
                         <img
-                          src={entry.thumbnail}
+                          src={lockedThumbnail(entry, isEntryLocked(entry) || isEntryAlreadyBuilt(entry))}
                           onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
                         />
                       )}

@@ -37,6 +37,36 @@ namespace FindItBuildingMenu
 		public static bool IsAssetIconLibraryEnabled => isAssetIconLibraryEnabled ??= GameManager.instance.modManager.ListModsEnabled().Any(x => x.StartsWith("AssetIconLibrary, "));
 		public static bool IsRoadBuilderEnabled => isRoadBuilderEnabled ??= GameManager.instance.modManager.ListModsEnabled().Any(x => x.StartsWith("RoadBuilder, "));
 
+		/// <summary>Black copies of the game's vector icons, for locked tiles.</summary>
+		public static SilhouetteIconCache Silhouettes { get; private set; }
+
+		private static string SilhouetteFolder =>
+			Path.Combine(FolderUtil.ContentFolder, "silhouettes");
+
+		/// <summary>
+		/// Every UI content root the game serves icons from.
+		/// </summary>
+		/// <remarks>
+		/// A thumbnail URL is relative to the UI root ("Media/Game/Icons/X.svg"),
+		/// and each of the base game, every DLC and every content pack ships its
+		/// own root under Content/. Searching all of them is what lets a DLC
+		/// icon be blackened as readily as a base-game one.
+		/// </remarks>
+		private static IReadOnlyList<string> ContentRoots()
+		{
+			var content = Path.Combine(UnityEngine.Application.dataPath, "Content");
+
+			if (!Directory.Exists(content))
+			{
+				return System.Array.Empty<string>();
+			}
+
+			return Directory.GetDirectories(content)
+				.Select(directory => Path.Combine(directory, "UI"))
+				.Where(Directory.Exists)
+				.ToArray();
+		}
+
 		public void OnLoad(UpdateSystem updateSystem)
 		{
 			Log.Info(nameof(OnLoad));
@@ -49,6 +79,15 @@ namespace FindItBuildingMenu
 			{
 				UIManager.defaultUISystem.AddHostLocation($"finditbuildingmenu", Path.Combine(Path.GetDirectoryName(asset.path), "images"), false);
 			}
+
+			// A SECOND host, deliberately not the one above. Blackened copies of
+			// the game's vector icons are written at runtime (see
+			// SilhouetteIcons for why they have to exist at all), and writing
+			// into the deployed mod folder makes the mod file watcher reload the
+			// UI — which killed the running game twice during that
+			// investigation. ModsData is ours and unwatched.
+			Silhouettes = new SilhouetteIconCache(ContentRoots(), SilhouetteFolder);
+			UIManager.defaultUISystem.AddHostLocation(SilhouetteIcons.HostName, SilhouetteFolder, false);
 
 			foreach (var item in new LocaleHelper("FindItBuildingMenu.Locale.json").GetAvailableLanguages())
 			{
