@@ -269,11 +269,29 @@ $mark-inset: 0.176;
 }
 
 /// The already-built / unique badge, over the top-left of the picture.
+///
+/// MUST be included nested inside the artwork class, not beside it. baseButton
+/// styles its icon children as `img { width: 24rem; height: 24rem }`, and that
+/// selector resolves to `.item img` — one class and one element, which beats a
+/// bare `.uniqueAsset`. Measured: the badge computed 24rem while the rule said
+/// 7.112rem, so it drew four times too big and hung into the next row. Nesting
+/// makes it `.artwork .uniqueAsset`, two classes, which wins.
+///
+/// Carries no opacity. The visible/hidden state belongs to .alreadyBuilt and
+/// .uniqueMark, and putting a default here meant the size rule for one mode
+/// re-hid a badge the state rule had already shown — which is exactly how the
+/// cards badge went missing while the grid's worked.
 @mixin unique-mark($picture) {
   position: absolute;
   top: mark-inset($picture);
   left: mark-inset($picture);
   width: mark-size($picture);
   height: mark-size($picture);
-  opacity: 0;
+}
+
+/// The picture itself, for the same specificity reason as unique-mark.
+@mixin artwork-picture($picture) {
+  width: $picture;
+  height: $picture;
+  object-fit: contain;
 }
