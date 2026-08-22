@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { canPlace, isEntryAlreadyBuilt, isEntryLocked, listLockConditions } from "../src/domain/buildingLockState.ts";
+import { canPlace, entryStateWord, isEntryAlreadyBuilt, isEntryLocked, listLockConditions } from "../src/domain/buildingLockState.ts";
 
 describe("lock state", () => {
   it("reports a locked entry as locked", () => {
@@ -123,5 +123,29 @@ describe("already built", () => {
     // stale binding would empty the menu of everything placeable.
     assert.equal(isEntryAlreadyBuilt({ isLocked: false }), false);
     assert.equal(canPlace({ isLocked: false }), true);
+  });
+});
+
+describe("one state word for all four view modes", () => {
+  it("names the reason an asset cannot be placed", () => {
+    assert.equal(entryStateWord({ isLocked: true }, "Locked", "Already built"), "Locked");
+    assert.equal(
+      entryStateWord({ isLocked: false, isAlreadyBuilt: true }, "Locked", "Already built"),
+      "Already built"
+    );
+  });
+
+  it("returns null when the asset can be placed", () => {
+    // Null rather than an empty string: the caller appends " — <word>" only
+    // when there is a word, and "" would have produced a dangling dash.
+    assert.equal(entryStateWord({ isLocked: false, isAlreadyBuilt: false }, "L", "B"), null);
+    assert.equal(entryStateWord({}, "L", "B"), null);
+    assert.equal(entryStateWord(null, "L", "B"), null);
+  });
+
+  it("prefers locked when both somehow read true", () => {
+    // Same ordering as AvailabilityOf. A locked unique cannot have been built,
+    // so if both are set the data is wrong and Locked is the safer claim.
+    assert.equal(entryStateWord({ isLocked: true, isAlreadyBuilt: true }, "Locked", "Built"), "Locked");
   });
 });

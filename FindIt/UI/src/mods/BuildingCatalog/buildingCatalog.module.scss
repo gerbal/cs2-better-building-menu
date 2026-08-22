@@ -1384,7 +1384,11 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 // the row carries the same silhouette the grid and list use, and the Place
 // button is genuinely disabled, so the one control that would fail is the one
 // that stops offering.
-.row[data-locked="true"] {
+// Both unplaceable states share the ground, the way the grid's tile does and
+// the way vanilla's [disabled] rule does. WHICH state it is gets said in the
+// label and the aria suffix, not by a second colour.
+.row[data-locked="true"],
+.row[data-already-built="true"] {
   .thumbnail img {
     filter: grayscale(100%) contrast(80%) brightness(0%);
   }

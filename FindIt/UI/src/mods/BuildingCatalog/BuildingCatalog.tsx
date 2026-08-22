@@ -61,7 +61,7 @@ import { findItSurfacePort } from "domain/findItSurfacePort";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 import { getSearchScopeNotice } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
-import { canPlace, isEntryLocked } from "domain/buildingLockState";
+import { canPlace, entryStateWord, isEntryAlreadyBuilt, isEntryLocked } from "domain/buildingLockState";
 import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import {
   getLensAnchor,
@@ -292,6 +292,10 @@ export const BuildingCatalogComponent = () => {
   const placeLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Place]", "Place") ?? "Place";
   const inspectLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Inspect]", "Details") ?? "Details";
   const lockedLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Locked]", "Locked") ?? "Locked";
+  const builtLabel =
+    translate("Toolbar.ASSET_ALREADY_BUILT", "")
+    || translate("Tooltip.LABEL[FindItBuildingMenu.AlreadyBuilt]", "Already built")
+    || "Already built";
   const collapseLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Collapse]", "Hide") ?? "Hide";
   // Row and filter should name the same asset the same way: the entry carries
   // raw ids (DlcId is the numeric platform id) while the facet groups already
@@ -843,6 +847,9 @@ export const BuildingCatalogComponent = () => {
                 data-catalog-entry={entry.id}
                 data-expanded={isExpanded ? "true" : undefined}
                 data-locked={isEntryLocked(entry) ? "true" : undefined}
+                // Same pair as the grid and the list: the ground says
+                // unplaceable, the reason is said in the Place button below.
+                data-already-built={isEntryAlreadyBuilt(entry) ? "true" : undefined}
               >
                 {/* The same card the grid, list and cards show. The table had
                     none at all, so it was the one mode that could not answer a
@@ -940,10 +947,14 @@ export const BuildingCatalogComponent = () => {
                   variant="icon"
                   // activate() already refuses, but a Place button that looks
                   // live and does nothing is worse than one that says it cannot.
-                  disabled={isEntryLocked(entry)}
+                  disabled={!canPlace(entry)}
                   onSelect={() => activate(entry)}
-                  aria-label={isEntryLocked(entry) ? `${rowPlaceLabel} — ${lockedLabel}` : rowPlaceLabel}
-                  title={isEntryLocked(entry) ? lockedLabel : rowPlaceLabel}
+                  aria-label={
+                    entryStateWord(entry, lockedLabel, builtLabel)
+                      ? `${rowPlaceLabel} — ${entryStateWord(entry, lockedLabel, builtLabel)}`
+                      : rowPlaceLabel
+                  }
+                  title={entryStateWord(entry, lockedLabel, builtLabel) ?? rowPlaceLabel}
                 >
                   <span>{placeLabel}</span>
                 </Button>

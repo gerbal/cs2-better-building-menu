@@ -187,40 +187,54 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
           data-locked={locked ? "true" : undefined}
           data-already-built={alreadyBuilt ? "true" : undefined}
         >
-          {entry.thumbnail
-            ? <img
-                className={styles.thumb}
-                src={entry.thumbnail}
-                onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
-                alt=""
+          {/* The artwork and everything drawn ON the artwork, in one box.
+              Vanilla positions both marks against its tile because its tile IS
+              the artwork — a 68rem image in a 72rem item, centred, with the name
+              in a tooltip rather than under it. Ours has a 32rem label below the
+              thumbnail, so "inset from the tile" and "inset from the artwork"
+              stopped being the same thing: the badge drifted down toward the
+              label and sat left of a thumbnail that is centred in a wider tile.
+
+              Anchoring to this box instead makes vanilla's own numbers transfer
+              unchanged, and retires the `bottom: 34rem` on the padlock, which
+              was the label's height written into a coordinate — correct only
+              while the label stays exactly two lines. */}
+          <span className={styles.artwork}>
+            {entry.thumbnail
+              ? <img
+                  className={styles.thumb}
+                  src={entry.thumbnail}
+                  onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
+                  alt=""
+                />
+              : null}
+            {/* Vanilla draws this only when the legacy interface is on, so on a
+                default install its entire locked signal is the black silhouette.
+                We draw it always: at this tile size a silhouette alone is not
+                distinguishable from a thumbnail that has not rendered yet.
+                Inline maskImage rather than a stylesheet url() — webpack's
+                css-loader runs with url: true and would try to resolve a bare
+                path as a module request from src/. */}
+            {locked && (
+              <span
+                className={styles.lockGlyph}
+                style={{ maskImage: "url(assetdb://gameui/Media/Glyphs/Lock.svg)" }}
+                aria-hidden="true"
               />
-            : null}
-          {/* Vanilla draws this only when the legacy interface is on, so on a
-              default install its entire locked signal is the black silhouette.
-              We draw it always: at this tile size a silhouette alone is not
-              distinguishable from a thumbnail that has not rendered yet.
-              Inline maskImage rather than a stylesheet url() — webpack's
-              css-loader runs with url: true and would try to resolve a bare
-              path as a module request from src/. */}
-          {locked && (
-            <span
-              className={styles.lockGlyph}
-              style={{ maskImage: "url(assetdb://gameui/Media/Glyphs/Lock.svg)" }}
-              aria-hidden="true"
-            />
-          )}
-          {/* Vanilla's own icons, and its own two-state rule: every unique is
-              badged, with a different symbol once the city has one. An <img>
-              rather than a masked glyph because these are full-colour icons
-              the game ships for exactly this. */}
-          {unique && (
-            <img
-              className={classNames(styles.uniqueAsset, alreadyBuilt ? styles.alreadyBuilt : styles.uniqueMark)}
-              src={alreadyBuilt ? "Media/Game/Icons/AlreadyBuilt.svg" : "Media/Game/Icons/Unique.svg"}
-              alt=""
-              aria-hidden="true"
-            />
-          )}
+            )}
+            {/* Vanilla's own icons, and its own two-state rule: every unique is
+                badged, with a different symbol once the city has one. An <img>
+                rather than a masked glyph because these are full-colour icons
+                the game ships for exactly this. */}
+            {unique && (
+              <img
+                className={classNames(styles.uniqueAsset, alreadyBuilt ? styles.alreadyBuilt : styles.uniqueMark)}
+                src={alreadyBuilt ? "Media/Game/Icons/AlreadyBuilt.svg" : "Media/Game/Icons/Unique.svg"}
+                alt=""
+                aria-hidden="true"
+              />
+            )}
+          </span>
           {/* Shortened for drawing only. The tooltip above and the aria-label on
               the Button both still carry the whole name.
 

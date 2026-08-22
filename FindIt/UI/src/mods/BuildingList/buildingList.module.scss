@@ -188,7 +188,11 @@
 // still responds so it reads as disabled rather than dead. No lock glyph here —
 // at this icon size it would sit on top of the silhouette rather than beside
 // it, and the row already carries the name at full length.
-.item[data-locked="true"] {
+// Both unplaceable states share the ground, the way the grid's tile does and
+// the way vanilla's [disabled] rule does. WHICH state it is gets said in the
+// label and the aria suffix, not by a second colour.
+.item[data-locked="true"],
+.item[data-already-built="true"] {
   background-color: rgba(255, 255, 255, 0.08);
 
   .icon,
@@ -201,6 +205,7 @@
   }
 }
 
-.item[data-locked="true"]:hover {
+.item[data-locked="true"]:hover,
+.item[data-already-built="true"]:hover {
   background-color: rgba(255, 255, 255, 0.13);
 }
