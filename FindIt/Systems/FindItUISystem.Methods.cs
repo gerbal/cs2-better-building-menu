@@ -49,6 +49,15 @@ namespace FindItBuildingMenu.Systems
 
 		private void RefreshBuildingCatalog()
 		{
+			// One refresh asks the adapter the same question eight times over,
+			// and each answer used to rescan the whole index. Clearing here
+			// scopes the shared projection to exactly this publish: nothing can
+			// go stale across frames, and the eight passes collapse to one per
+			// (menu, content-union) pair. See BuildingCatalogAdapter._projections.
+			_buildingCatalogAdapter.BeginRefresh();
+
+			var refreshTimer = System.Diagnostics.Stopwatch.StartNew();
+
 			// Both empty, always. These carried FindItUtil's own category into
 			// the query, but only while the lens was off — and the lens is never
 			// off now, so the branch that filled them is gone with the latch.
@@ -189,7 +198,22 @@ namespace FindItBuildingMenu.Systems
 			// that already refresh the bank themselves (OptionClicked,
 			// ClearFilters), so this cannot compound into a double refresh.
 			_optionsUISystem.RefreshOptions();
+
+			// cm-2xvs.25. Logged only when it changes by more than a tenth of a
+			// second, so a steady state costs one line rather than one per
+			// frame — and a regression in this number is visible in a normal
+			// session log without anyone having instrumented anything.
+			refreshTimer.Stop();
+			var refreshMs = (int)refreshTimer.ElapsedMilliseconds;
+			if (System.Math.Abs(refreshMs - _lastRefreshMs) > 100)
+			{
+				_lastRefreshMs = refreshMs;
+				Mod.Log.Info(
+					$"[LENS-REFRESH] {refreshMs}ms menu='{_buildingCatalogQuery.UiMenu}' total={page.TotalCount}");
+			}
 		}
+
+		private int _lastRefreshMs = -1;
 
 		/// <summary>
 		/// Snapshots the legacy FindIt filter panel so the lens can name the

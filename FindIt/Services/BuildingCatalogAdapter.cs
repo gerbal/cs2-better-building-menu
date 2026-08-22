@@ -1032,9 +1032,55 @@ namespace FindItBuildingMenu.Services
 		/// the group headings and the filter all read the same label. Deriving
 		/// it separately anywhere is how a tab and its count come to disagree.
 		/// </remarks>
+		/// <summary>The projections built during the current refresh.</summary>
+		/// <remarks>
+		/// One refresh asks this question eight times over — the page, the
+		/// metric bounds, the facets, the category counts, the strip axis and
+		/// its tabs, the expanded category and ITS tabs, the school tiers — and
+		/// every one of them scanned the whole index and rebuilt a full
+		/// BuildingCatalogEntry for every survivor.
+		///
+		/// That is why opening a menu cost the same whether the menu held 110
+		/// assets or 514: the work is proportional to the INDEX, not to the
+		/// menu. With 105 asset packs the index is 24,957 prefabs, and the
+		/// count of passes is what turned into the stall the player feels.
+		///
+		/// Scoped to a refresh rather than kept: Clear() runs at the top of
+		/// RefreshBuildingCatalog, so nothing here can outlive the frame that
+		/// built it, and a filter changed by a handler is seen by the very next
+		/// refresh. That is the same lifetime the callers already assumed —
+		/// they all read within one publish — made explicit.
+		/// </remarks>
+		private readonly Dictionary<string, BuildingCatalogEntry[]> _projections =
+			new Dictionary<string, BuildingCatalogEntry[]>(StringComparer.Ordinal);
+
+		/// <summary>Drops the per-refresh projections. Call before publishing.</summary>
+		public void BeginRefresh() => _projections.Clear();
+
 		private IEnumerable<BuildingCatalogEntry> ProjectForMenu(
 			string? menu,
 			IReadOnlyList<string>? contentDlcs = null)
+		{
+			// The DLC union is part of the key: the Content facet counts itself
+			// with its own selection dropped, so the same menu is legitimately
+			// projected against two different unions in one refresh.
+			var key = (menu ?? string.Empty) + "\u0000"
+				+ (contentDlcs is null ? "*" : string.Join(",", contentDlcs));
+
+			if (_projections.TryGetValue(key, out var cached))
+			{
+				return cached;
+			}
+
+			var built = ProjectForMenuUncached(menu, contentDlcs).ToArray();
+			_projections[key] = built;
+
+			return built;
+		}
+
+		private IEnumerable<BuildingCatalogEntry> ProjectForMenuUncached(
+			string? menu,
+			IReadOnlyList<string>? contentDlcs)
 		{
 			var entries = GetIndexedBuildings(menu, unionDlcIds: contentDlcs).Select(Project).ToArray();
 			var root = PrefabIndexingSystem.GetDevTreeRootLabel(menu);
