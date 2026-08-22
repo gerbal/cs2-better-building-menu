@@ -318,6 +318,34 @@ describe("Per-section defaults", () => {
     assert.equal(defaultGroupDimensionFor(""), "category");
   });
 
+  it("lets the menu's own categories beat a development axis", () => {
+    // cm-2xvs.23, reported on Roads: ten category tabs on screen and the grid
+    // grouped by Development underneath them.
+    //
+    // GetStripAxis answers "development" for a category menu as soon as ONE of
+    // its categories is drawn as branches — it has to, or a branch tab would
+    // select nothing. That is a fact about a sub-level, and the picker was
+    // reading it as a fact about the whole menu.
+    assert.equal(defaultGroupDimensionFor("Networks", true, "development"), "menuCategory");
+    assert.equal(defaultGroupDimensionFor("AllBuildings", true, "development"), "menuCategory");
+  });
+
+  it("still follows the axis when the menu has no categories of its own", () => {
+    // Electricity is the case the fallback exists for: one category, so the
+    // strip draws development branches and the grid should agree with them.
+    assert.equal(defaultGroupDimensionFor("ServiceBuildings", false, "development"), "development");
+    assert.equal(defaultGroupDimensionFor("ServiceBuildings", false, "assetType"), "category");
+  });
+
+  it("keeps school tiers ahead of everything, categories included", () => {
+    // Education has categories AND a development axis AND school levels; the
+    // levels are what its strip actually draws.
+    assert.equal(
+      defaultGroupDimensionFor("ServiceBuildings", true, "development", true),
+      "schoolTier",
+    );
+  });
+
   it("groups a scoped menu by the game's own categories", () => {
     // Master's behaviour (4ce4ba5), restored after this branch had changed it
     // to "none". The argument for flat was measured against a panel showing

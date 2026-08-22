@@ -216,6 +216,24 @@ export function defaultGroupDimensionFor(
     return "schoolTier";
   }
 
+  // The MENU'S OWN CATEGORIES BEAT THE AXIS. Reported by the user on Roads,
+  // which has ten categories and still opened grouped by Development.
+  //
+  // GetStripAxis says "development" for a category menu whenever one of those
+  // categories is drawn as branches — deliberately, because the tabs and the
+  // predicate have to agree on the axis or clicking a tab matches nothing. But
+  // that is a statement about how ONE category is subdivided, not about what
+  // the row is showing, and the picker read it as the latter. Roads still
+  // shows ten category tabs; grouping the grid by service branch beneath them
+  // is a second division the player did not ask for.
+  //
+  // Same shape as the education case above, which is why that one had to be
+  // checked before the axis too: ask what the STRIP IS DRAWING, not what axis
+  // it derived on the way there.
+  if (menuHasCategories) {
+    return "menuCategory";
+  }
+
   if (stripAxis === "development") {
     return "development";
   }
@@ -245,10 +263,6 @@ export function defaultGroupDimensionFor(
   // it. Master went on to build on that — 479ffeb gave the grouping a real
   // order, 0aa0203 taught the table to draw the groups it was already sorting
   // into — so "none" here also left those two doing nothing on this branch.
-  if (menuHasCategories) {
-    return "menuCategory";
-  }
-
   return typeof section === "string" && section.trim().toLowerCase() === "servicebuildings"
     ? "role"
     : DEFAULT_GROUP_DIMENSION;

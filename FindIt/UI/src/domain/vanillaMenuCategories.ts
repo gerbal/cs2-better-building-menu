@@ -104,6 +104,32 @@ export function categoryCount(
 }
 
 /**
+ * What the strip's "All" tab counts, whichever axis the row is drawing.
+ *
+ * The category table is counted ACROSS the whole scope with the category's own
+ * selection dropped, so its sum is the size of the result set — verified in
+ * game against the page total at both scopes (10,528 unscoped, 514 in
+ * Landscaping).
+ *
+ * The branch tabs are not a partition. The development axis only has a tab for
+ * what the tree gates, so unscoped it covered 716 of those 10,528 and an "All"
+ * built by summing it claimed the catalogue was fourteen times smaller than
+ * the list right below it. Any axis with a non-exhaustive tab set has the same
+ * hole; Development is only the one with the biggest.
+ *
+ * The branch sum survives as the fallback for the frame before the counts
+ * arrive, where a stale-but-close number beats a blank.
+ */
+export function allTabTotal(
+  counts: readonly MenuCategoryCount[] | null | undefined,
+  stripTabs: readonly { count: number }[] | null | undefined
+): number {
+  const fromCounts = categoryCount(counts, ALL_CATEGORIES_ID);
+
+  return fromCounts ?? (stripTabs ?? []).reduce((total, tab) => total + (tab.count ?? 0), 0);
+}
+
+/**
  * Above this many tabs the strip stops being a row of glyphs you can scan.
  *
  * Measured on Landscaping: 14 categories drawn as 14 icon-only squares, with

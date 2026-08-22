@@ -4,6 +4,7 @@ import classNames from "classnames";
 import mod from "../../../mod.json";
 import {
   ALL_CATEGORIES_ID,
+  allTabTotal,
   categoryCount,
   isCategorySelected,
   visibleCategories,
@@ -142,9 +143,11 @@ export const MenuCategoryStrip = () => {
 
     return n === null ? text : `${text} (${n})`;
   };
-  const branchTotal = stripTabs.reduce((total, branch) => total + branch.count, 0);
+  // One number for "All" whichever axis the row draws — see allTabTotal for
+  // why the branch tabs cannot supply it.
+  const allTotal = allTabTotal(counts, stripTabs);
   const withBranchCount = (text: string, id: string) =>
-    `${text} (${id === "" ? branchTotal : categoryCount(stripTabs, id) ?? 0})`;
+    `${text} (${id === "" ? allTotal : categoryCount(stripTabs, id) ?? 0})`;
 
   const { ToolButton, toolButtonTheme, FOCUS_DISABLED } = VanillaComponentResolver.instance;
 
@@ -302,7 +305,7 @@ export const MenuCategoryStrip = () => {
           >
             <span className={styles.allLabel}>
               {allLabel}
-              <span className={styles.allCount}>{branchTotal}</span>
+              <span className={styles.allCount}>{allTotal}</span>
             </span>
           </ToolButton>
 

@@ -201,10 +201,22 @@ namespace FindItBuildingMenu.Services
 			// made the other half of the menu unreachable.
 			var acrossCategories = query with { UiCategory = string.Empty, SchoolTier = -1, StripTabs = null };
 
+			// The UNNAMED group stays in. It draws no tab — the strip iterates
+			// the menu's own category list, not this table — but the client
+			// reads "All" as the SUM of this table, so dropping the entries
+			// with no category made All under-report by exactly them.
+			//
+			// Scoped that was invisible, because everything in a menu has a
+			// category there. Unscoped it is most of the catalogue: measured
+			// with 105 asset packs, the strip said All 716 over a list of
+			// 10,528, and the 9,812 missing were assets that answer to no
+			// category once no menu is open.
+			//
+			// Anything counting CATEGORIES off this table therefore has to say
+			// so — see the two callers below, which ask for named rows.
 			return BuildingCatalogQueryEngine
 				.InScope(ProjectForMenu(query.UiMenu, acrossCategories.DlcIds), acrossCategories)
 				.GroupBy(entry => NetworkMenuExtension.EffectiveCategory(entry, query.UiMenu) ?? string.Empty)
-				.Where(group => group.Key.Length > 0)
 				.Select(group => new MenuCategoryCount(group.Key, group.Count()))
 				.OrderBy(count => count.Id, StringComparer.Ordinal)
 				.ToArray();
@@ -277,9 +289,11 @@ namespace FindItBuildingMenu.Services
 				throw new ArgumentNullException(nameof(query));
 			}
 
+			// Named rows only: the table now carries an unnamed row for the
+			// assets in no category, and that one is not a category to expand.
 			var categories = GetMenuCategoryCounts(query);
 
-			if (categories.Count < 2)
+			if (categories.Count(category => category.Id.Length > 0) < 2)
 			{
 				return string.Empty;
 			}
@@ -349,7 +363,7 @@ namespace FindItBuildingMenu.Services
 			// Education, which has categories, a would-be answer put the Group
 			// by picker on Development while the strip showed Education and
 			// Research.
-			if (GetMenuCategoryCounts(query).Count > 1)
+			if (GetMenuCategoryCounts(query).Count(category => category.Id.Length > 0) > 1)
 			{
 				// A category menu still uses the development axis when one of
 				// its categories is drawn as branches — the tabs and the
@@ -808,10 +822,12 @@ namespace FindItBuildingMenu.Services
 		/// The lens browses; placement still hands off to the native net tool,
 		/// which owns elevation, snapping and parallel mode.
 		///
-		/// Trees, props and vehicles stay out of the UNSCOPED catalog — an "all
-		/// buildings" view that includes 317 chairs and barrels is not a
-		/// building list. But this is no longer the last word on membership: see
-		/// GetIndexedBuildings, where a vanilla menu speaks for its own contents.
+		/// This is no longer the last word on membership at EITHER scope. A
+		/// vanilla menu speaks for its own contents when one is open, and the
+		/// union of every menu speaks for the unscoped view — see
+		/// BelongsInCatalog. What survives here is the floor: an asset our
+		/// taxonomy calls a building stays in the catalogue even if vanilla
+		/// places it in no menu at all.
 		/// </remarks>
 		private static bool IsBuilding(PrefabIndex prefab)
 		{
@@ -819,6 +835,34 @@ namespace FindItBuildingMenu.Services
 				or PrefabCategory.ServiceBuildings
 				or PrefabCategory.Networks;
 		}
+
+		/// <summary>Whether an asset belongs in the catalogue at this scope.</summary>
+		/// <remarks>
+		/// Split out from GetIndexedBuildings so the one rule that MUST hold
+		/// between the two scopes can be asserted without a live index: removing
+		/// the menu scope has to widen the result, never narrow it. That failed
+		/// for a year because the two arms asked different questions — the
+		/// scoped arm read the game's menu tree, the unscoped arm read our own
+		/// taxonomy — and nothing compared them.
+		///
+		/// The parameters are booleans rather than a PrefabIndex because both
+		/// placement lookups need the live index, and the invariant does not:
+		/// it is a statement about how the four facts combine.
+		///
+		/// Callers must pass placedInThisMenu and gatheredNetwork as false when
+		/// unscoped; both are meaningless without a menu, and the invariant
+		/// test relies on placedInAnyMenu being the only placement fact that
+		/// survives into the unscoped arm.
+		/// </remarks>
+		public static bool BelongsInCatalog(
+			bool menuScoped,
+			bool isBuilding,
+			bool placedInThisMenu,
+			bool placedInAnyMenu,
+			bool gatheredNetwork) =>
+			menuScoped
+				? placedInThisMenu || gatheredNetwork
+				: isBuilding || placedInAnyMenu;
 
 		/// <summary>
 		/// The candidate set, widened to whatever menu the player has open.
@@ -903,14 +947,35 @@ namespace FindItBuildingMenu.Services
 				// so scoped to a menu we now show that menu's members and nothing
 				// else, by construction rather than by agreement.
 				//
-				// Unscoped is still IsBuilding's question to answer: with no menu
-				// open there is no tree to read, and "everything the game places
-				// anywhere" would put 317 props and 25 vegetation in a building
-				// list.
-				.Where(prefab => string.IsNullOrEmpty(menu)
-					? IsBuilding(prefab)
-					: PrefabIndexingSystem.IsPlacedInMenu(prefab.Id, menu)
-						|| IsGatheredNetwork(prefab, menu))
+				// Unscoped reads the SAME tree, unioned over every menu. It used
+				// to ask IsBuilding instead, on the theory that with no menu
+				// open there is no tree to read — but IsPlacedInAnyMenu is
+				// exactly that tree, and it already guards the Roads gathering
+				// two methods down.
+				//
+				// The asymmetry cost half the catalogue. Measured with 105 asset
+				// packs loaded: Landscaping scoped showed 514 and Roads 403,
+				// while clearing the scope showed 715 — fewer than those two
+				// menus together, because unscoped dropped every prop, surface
+				// and plant the menus themselves carry. Clearing a scope has to
+				// widen the view.
+				//
+				// The old worry — "317 props in a building list" — was written
+				// when unscoped WAS the default view. It is now reached by
+				// removing a scope chip, and the result is drawn under category
+				// headings, so props arrive under Props rather than mixed into
+				// the buildings.
+				//
+				// IsBuilding stays in the union rather than being replaced by
+				// it: dropping it could only ever REMOVE something already
+				// showing, and this change is meant to be monotone.
+				.Where(prefab => BelongsInCatalog(
+					menuScoped: !string.IsNullOrEmpty(menu),
+					isBuilding: IsBuilding(prefab),
+					placedInThisMenu: !string.IsNullOrEmpty(menu)
+						&& PrefabIndexingSystem.IsPlacedInMenu(prefab.Id, menu),
+					placedInAnyMenu: PrefabIndexingSystem.IsPlacedInAnyMenu(prefab.Id),
+					gatheredNetwork: !string.IsNullOrEmpty(menu) && IsGatheredNetwork(prefab, menu)))
 				.Where(prefab => filters.All(filter => filter(prefab)));
 		}
 
