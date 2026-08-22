@@ -371,5 +371,6 @@
   "Tooltip.LABEL[FindItBuildingMenu.Upgrades]": "Upgrades",
   "Tooltip.LABEL[FindItBuildingMenu.ViewMode]": "View",
   "Tooltip.LABEL[FindItBuildingMenu.ResetMenu]": "Reset menu",
-  "Tooltip.LABEL[FindItBuildingMenu.Zones]": "Zones"
+  "Tooltip.LABEL[FindItBuildingMenu.Zones]": "Zones",
+  "Tooltip.LABEL[FindItBuildingMenu.CloseMenu]": "Close"
 }

@@ -68,7 +68,17 @@
   .searchArea {
     flex: 1;
 
-    .textBox {
+    // The menu's close, in the corner vanilla's own zoning and building menus put
+// theirs. Sits last in catalogStripRow, so it lands at the right edge after
+// the search field rather than being positioned over it — .clearIcon above is
+// absolute because it belongs INSIDE the field; this one belongs beside it.
+//
+// The glyph is drawn as a plain <img> with no filter or mask on it. That is
+// not incidental: a vector under a compositing effect is what this engine
+// cannot draw (see SilhouetteIcons), and the padlock's mask cost a long hunt.
+
+
+.textBox {
       flex: 1;
       width: auto;
     }
@@ -441,4 +451,39 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+// NOT .closeButton/.closeIcon: the legacy top bar already owns both names
+// further down this file, and CSS modules hash per name — so the later rule
+// won, wiped the tint with `background: none` and resized the glyph to 32rem.
+// It rendered invisible and oversized, and nothing warned.
+//
+// Transcribed from vanilla's own close, measured live rather than guessed:
+//   button.close-button_*   16x16, transparent
+//   div.tinted-icon_*       16x16, background rgba(255,255,255,1),
+//                           mask-image url(Media/Glyphs/Close.svg)
+// 24rem is 16px here — .searchIcon declares 24rem and measures 16px.
+.menuClose {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 24rem;
+  width: 24rem;
+  padding: 0;
+  margin-left: 8rem;
+  background: none;
+}
+
+// White, like vanilla's, rather than --menuText1Normal like the magnifier
+// beside it: the game draws its close brighter than its field ornaments, and
+// matching the neighbour would have made ours the odd one out among every
+// other panel's X.
+.menuCloseGlyph {
+  height: 24rem;
+  width: 24rem;
+  background-color: rgb(255, 255, 255);
+  mask-size: contain;
+  mask-position: 50% 50%;
+  mask-repeat: no-repeat;
 }

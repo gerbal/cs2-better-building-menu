@@ -42,7 +42,13 @@ export const RemoveVanillaAssetMenuComponent: ModuleRegistryExtend = (Component)
       isWindowLocked: IsWindowLocked,
       isPhotoMode,
     })) {
-      return <BuildingMenuSurface />;
+      // onClose is the game's own menu close — it clears the toolbar
+      // selection, so the panel goes away with no vanilla grid left behind and
+      // the toolbar button unlit. Threaded through rather than reaching for
+      // toolbar.clearAssetSelection: standing in as the asset menu, the
+      // extension point's own prop is the natural route and needs no round
+      // trip through C#.
+      return <BuildingMenuSurface onClose={otherProps.onClose} />;
     }
 
     // Suppressing the vanilla grid after the panel closed was tried and
