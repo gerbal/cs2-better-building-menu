@@ -21,7 +21,7 @@ namespace FindItBuildingMenu.Tests
 			var black = SilhouetteIcons.Blacken(svg);
 
 			Assert.Equal(
-				"<svg><path fill=\"#000000\" d=\"M0 0\"/><path fill=\"#000000\" stroke=\"#000000\" d=\"M1 1\"/></svg>",
+				"<svg><path fill=\"#191919\" d=\"M0 0\"/><path fill=\"#191919\" stroke=\"#191919\" d=\"M1 1\"/></svg>",
 				black);
 		}
 
@@ -34,7 +34,7 @@ namespace FindItBuildingMenu.Tests
 			var svg = "<svg><path fill=\"none\" stroke=\"#abc\" d=\"M0 0\"/></svg>";
 
 			Assert.Equal(
-				"<svg><path fill=\"none\" stroke=\"#000000\" d=\"M0 0\"/></svg>",
+				"<svg><path fill=\"none\" stroke=\"#191919\" d=\"M0 0\"/></svg>",
 				SilhouetteIcons.Blacken(svg));
 		}
 
@@ -44,7 +44,7 @@ namespace FindItBuildingMenu.Tests
 			var svg = "<svg><path style=\"fill:#e9bc29;stroke:gray\" d=\"M0 0\"/></svg>";
 
 			Assert.Equal(
-				"<svg><path style=\"fill:#000000;stroke:#000000\" d=\"M0 0\"/></svg>",
+				"<svg><path style=\"fill:#191919;stroke:#191919\" d=\"M0 0\"/></svg>",
 				SilhouetteIcons.Blacken(svg));
 		}
 

@@ -31,6 +31,46 @@ namespace FindItBuildingMenu.Utilities
 		{
 			_contentRoots = contentRoots ?? throw new ArgumentNullException(nameof(contentRoots));
 			_cacheDirectory = cacheDirectory ?? throw new ArgumentNullException(nameof(cacheDirectory));
+
+			DiscardStaleCache();
+		}
+
+		/// <summary>Throw the cache away when it was written by a different transform.</summary>
+		/// <remarks>
+		/// The files persist across restarts on purpose, so nothing regenerates
+		/// on its own once they exist. That makes retuning the colour invisible
+		/// to anyone who already has a cache — they keep the old tint forever.
+		/// The stamp is what lets the transform change.
+		/// </remarks>
+		private void DiscardStaleCache()
+		{
+			var stampFile = Path.Combine(_cacheDirectory, ".stamp");
+
+			try
+			{
+				if (File.Exists(stampFile)
+					&& string.Equals(File.ReadAllText(stampFile).Trim(), SilhouetteIcons.CacheStamp, StringComparison.Ordinal))
+				{
+					return;
+				}
+
+				if (Directory.Exists(_cacheDirectory))
+				{
+					foreach (var stale in Directory.GetFiles(_cacheDirectory, "*.svg"))
+					{
+						File.Delete(stale);
+					}
+				}
+
+				Directory.CreateDirectory(_cacheDirectory);
+				File.WriteAllText(stampFile, SilhouetteIcons.CacheStamp);
+			}
+			catch (Exception)
+			{
+				// Same reasoning as Generate: a locked-state nicety must not
+				// take a menu down. A cache we failed to clear regenerates
+				// nothing and the old files still draw.
+			}
 		}
 
 		/// <summary>How many icons have been blackened this session.</summary>

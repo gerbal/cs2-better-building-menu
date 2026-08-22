@@ -51,7 +51,30 @@ namespace FindItBuildingMenu.Utilities
 		private static readonly Regex PaintStyle =
 			new Regex(@"(fill|stroke)\s*:\s*(?!none)[^;""']+", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-		/// <summary>Repaint every visible fill and stroke black.</summary>
+		/// <summary>
+		/// The colour vanilla's own silhouette actually lands on.
+		/// </summary>
+		/// <remarks>
+		/// Not black, measured rather than assumed: sampling a filtered raster
+		/// tile on screen gives rgb(25,25,25), because Cohtml's brightness(0%)
+		/// bottoms out short of zero. Painting these #000000 left a vector
+		/// silhouette about 10% deeper than the filtered one beside it — small,
+		/// but visible with the two kinds interleaved in one group.
+		///
+		/// Changing this value must invalidate the cache; see CacheStamp.
+		/// </remarks>
+		public const string SilhouetteColor = "#191919";
+
+		/// <summary>What a cache directory must be stamped with to be reused.</summary>
+		/// <remarks>
+		/// A generated file is only as good as the transform that made it, and
+		/// the transform is a colour that can change. Without this, retuning the
+		/// tint would leave every existing install on the old one forever —
+		/// the files are already there, so nothing would regenerate.
+		/// </remarks>
+		public static string CacheStamp => "tint=" + SilhouetteColor;
+
+		/// <summary>Repaint every visible fill and stroke to the silhouette colour.</summary>
 		public static string Blacken(string svg)
 		{
 			if (string.IsNullOrEmpty(svg))
@@ -59,9 +82,9 @@ namespace FindItBuildingMenu.Utilities
 				return svg;
 			}
 
-			var painted = PaintAttribute.Replace(svg, match => match.Groups[1].Value + "=\"#000000\"");
+			var painted = PaintAttribute.Replace(svg, match => match.Groups[1].Value + "=\"" + SilhouetteColor + "\"");
 
-			return PaintStyle.Replace(painted, match => match.Groups[1].Value + ":#000000");
+			return PaintStyle.Replace(painted, match => match.Groups[1].Value + ":" + SilhouetteColor);
 		}
 
 		/// <summary>Whether this thumbnail is a vector, and so needs the swap.</summary>
