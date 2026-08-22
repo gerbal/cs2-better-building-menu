@@ -15,6 +15,8 @@ export interface BuildingCatalogEntry {
    * rather than a choice made server-side.
    */
   fallbackThumbnail?: string;
+  /** A pre-blackened copy of a VECTOR thumbnail; see lockedThumbnail. */
+  silhouetteThumbnail?: string;
   lotWidth: number;
   lotDepth: number;
   buildingLevel: number;

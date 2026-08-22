@@ -14,7 +14,7 @@ import {
 } from "domain/buildingLensMetricFormat";
 import { getCostForecast } from "domain/buildingForecast";
 import { recordPlacement } from "domain/buildingShelf";
-import { canPlace, entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked } from "domain/buildingLockState";
+import { canPlace, entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { rankBuildingMatches, topSearchResult } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
@@ -179,7 +179,7 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
                 ? <span className={classNames(styles.artwork, cards && styles.artworkLarge)}>
                     <img
                       className={classNames(styles.icon, cards && styles.iconLarge)}
-                      src={entry.thumbnail}
+                      src={lockedThumbnail(entry, isEntryLocked(entry) || isEntryAlreadyBuilt(entry))}
                       onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
                       alt=""
                       aria-hidden="true"

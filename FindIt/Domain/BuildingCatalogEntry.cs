@@ -92,6 +92,19 @@ namespace FindItBuildingMenu.Domain
 		/// </remarks>
 		string? FallbackThumbnail = null,
 		/// <summary>
+		/// A black copy of <see cref="Thumbnail"/>, when it is a vector.
+		/// </summary>
+		/// <remarks>
+		/// Vanilla silhouettes a locked asset by filtering its thumbnail, and
+		/// that filter is unusable over an SVG in this engine — see
+		/// SilhouetteIcons. So a vector-thumbnailed entry carries a pre-blackened
+		/// copy of its own icon and the locked view swaps to it instead of
+		/// filtering. Empty for raster thumbnails, which keep vanilla's filter,
+		/// and empty when the icon could not be found on disk, in which case the
+		/// tile falls back to its normal artwork.
+		/// </remarks>
+		string? SilhouetteThumbnail = null,
+		/// <summary>
 		/// SPIKE (cm-e98i): where the GAME puts this asset in the build menu.
 		/// </summary>
 		string? UiMenu = null,
@@ -188,6 +201,8 @@ namespace FindItBuildingMenu.Domain
 			writer.Write(Thumbnail);
 			writer.PropertyName("fallbackThumbnail");
 			writer.Write(FallbackThumbnail ?? string.Empty);
+			writer.PropertyName("silhouetteThumbnail");
+			writer.Write(SilhouetteThumbnail ?? string.Empty);
 			writer.PropertyName("uiMenu");
 			writer.Write(UiMenu ?? string.Empty);
 			writer.PropertyName("uiCategory");
