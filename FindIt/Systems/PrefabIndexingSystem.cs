@@ -2067,8 +2067,7 @@ namespace FindItBuildingMenu.Systems
 			// ObjectBuiltRequirementPrefab carries a count and nothing else — no
 			// m_Requirement, no reference of any kind — so it can only ever say
 			// "build 1", which is what made Switchon's card read "build 1 +1".
-			// A count with no subject is worse than silence: returning nothing
-			// lets the asset's OTHER requirements have the line instead.
+			// A count with no subject is worse than silence.
 			if (prefab is StrictObjectBuiltRequirementPrefab strict && strict.m_Requirement is not null)
 			{
 				return Format(
@@ -2076,6 +2075,25 @@ namespace FindItBuildingMenu.Systems
 					"build {0} × {1}",
 					strict.m_MinimumCount.ToString("N0"),
 					GetAssetName(strict.m_Requirement));
+			}
+
+			// ...but silence was too much. Reported by the user: a building
+			// gated on a subway depot being placed gave no reason at all.
+			//
+			// The subject is authored text, not a reference. Every requirement
+			// prefab carries m_LabelID, and vanilla binds it for all of them
+			// (PrefabUISystem.BindUnlockRequirementProperties) — which is why
+			// looking for a reference found nothing and concluded there was
+			// nothing to say. Asked here, after the formatters that compose
+			// something better from real numbers and before the count-only
+			// branch that has to stay quiet.
+			var authored = UnlockRequirementLabel.Resolve(
+				(prefab as UnlockRequirementPrefab)?.m_LabelID,
+				key => GameManager.instance.localizationManager.activeDictionary.TryGetValue(key, out var text) ? text : null);
+
+			if (authored.Length > 0)
+			{
+				return authored;
 			}
 
 			if (EntityManager.HasComponent<ObjectBuiltRequirementData>(entity))
