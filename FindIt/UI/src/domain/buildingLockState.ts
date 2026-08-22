@@ -60,6 +60,29 @@ export function canPlace(entry: LockableEntry | null | undefined): boolean {
   return !isEntryLocked(entry) && !isEntryAlreadyBuilt(entry);
 }
 
+/**
+ * The word for why an asset cannot be placed, or null when it can.
+ *
+ * One function for all four view modes. The grid, list, cards and table each
+ * wrote their own version of this test, and the GroupedResults header already
+ * records what that costs: they had drifted into three different answers about
+ * the same asset once before. Locked wins over already-built for the same
+ * reason AvailabilityOf orders them that way — a locked unique cannot have been
+ * built, so if both ever read true the data is wrong and Locked is the safer
+ * thing to say.
+ */
+export function entryStateWord(
+  entry: LockableEntry | null | undefined,
+  lockedWord: string,
+  builtWord: string
+): string | null {
+  if (isEntryLocked(entry)) {
+    return lockedWord;
+  }
+
+  return isEntryAlreadyBuilt(entry) ? builtWord : null;
+}
+
 export interface UnlockableEntry extends LockableEntry {
   unlockMilestone?: number;
   unlockRequirements?: string[];

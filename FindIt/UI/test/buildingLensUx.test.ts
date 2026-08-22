@@ -143,11 +143,16 @@ describe("Building Lens action affordances", () => {
     // tooltips on one control is one too many.
     assert.match(buildingCatalogSource, /aria-label=\{rowInspectLabel\}/);
     // Place still names the building, and now also says when it cannot place
-    // it: a locked row disables the button, so the label has to explain the
-    // refusal rather than leave a dead control with a normal name.
-    assert.match(buildingCatalogSource, /aria-label=\{isEntryLocked\(entry\) \? `\$\{rowPlaceLabel\}/);
-    assert.match(buildingCatalogSource, /title=\{isEntryLocked\(entry\) \? lockedLabel : rowPlaceLabel\}/);
-    assert.match(buildingCatalogSource, /disabled=\{isEntryLocked\(entry\)\}/);
+    // it: an unplaceable row disables the button, so the label has to explain
+    // the refusal rather than leave a dead control with a normal name.
+    //
+    // Asserted through entryStateWord and canPlace rather than isEntryLocked,
+    // because locked is no longer the only refusal — an already-built unique is
+    // the other, and testing the narrower predicate would have passed while the
+    // button sat enabled and unexplained on top of it.
+    assert.match(buildingCatalogSource, /aria-label=\{\s*entryStateWord\(entry, lockedLabel, builtLabel\)/);
+    assert.match(buildingCatalogSource, /title=\{entryStateWord\(entry, lockedLabel, builtLabel\) \?\? rowPlaceLabel\}/);
+    assert.match(buildingCatalogSource, /disabled=\{!canPlace\(entry\)\}/);
     assert.match(buildingCatalogSource, /aria-label=\{compareLabel\}/);
     assert.match(buildingCatalogSource, /aria-label=\{comparePlaceLabel\}/);
     assert.match(buildingCatalogSource, /aria-label=\{compareRemoveLabel\}/);

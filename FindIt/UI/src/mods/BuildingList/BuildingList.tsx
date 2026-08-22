@@ -14,7 +14,7 @@ import {
 } from "domain/buildingLensMetricFormat";
 import { getCostForecast } from "domain/buildingForecast";
 import { recordPlacement } from "domain/buildingShelf";
-import { canPlace, isEntryLocked } from "domain/buildingLockState";
+import { canPlace, entryStateWord, isEntryAlreadyBuilt, isEntryLocked } from "domain/buildingLockState";
 import { rankBuildingMatches, topSearchResult } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
@@ -74,6 +74,12 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
   const hoverCard = useHoverCardContext();
   const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
   const lockedLabel = translate("Tooltip.LABEL[FindItBuildingMenu.Locked]", "Locked") ?? "Locked";
+  // The game's own words first, so the row reads as vanilla's does; see the
+  // hover card, which asks for the same key.
+  const builtLabel =
+    translate("Toolbar.ASSET_ALREADY_BUILT", "")
+    || translate("Tooltip.LABEL[FindItBuildingMenu.AlreadyBuilt]", "Already built")
+    || "Already built";
   const cards = variant === "cards";
   // Search relevance still applies within whatever order the query returned,
   // so typing narrows to the best match the same way it does in the grid.
@@ -150,9 +156,19 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
               variant="icon"
               data-catalog-entry={entry.id}
               onSelect={() => place(entry)}
-              aria-label={isEntryLocked(entry) ? `${label} — ${lockedLabel}` : label}
-              aria-disabled={isEntryLocked(entry) ? "true" : undefined}
+              // Both unplaceable states, not just locked. A row has no
+              // thumbnail to silhouette, so the ground and the suffix carry the
+              // whole message here — which is why saying nothing about
+              // already-built left the row looking freely placeable.
+              aria-label={
+                (() => {
+                  const word = entryStateWord(entry, lockedLabel, builtLabel);
+                  return word ? `${label} — ${word}` : label;
+                })()
+              }
+              aria-disabled={!canPlace(entry) ? "true" : undefined}
               data-locked={isEntryLocked(entry) ? "true" : undefined}
+              data-already-built={isEntryAlreadyBuilt(entry) ? "true" : undefined}
             >
               {entry.thumbnail
                 ? <img
