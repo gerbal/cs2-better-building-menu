@@ -8,11 +8,10 @@ const here = dirname(fileURLToPath(import.meta.url));
 const read = (path: string) => readFileSync(resolve(here, "..", "src", path), "utf8");
 
 const base = read("base.scss");
-const modes: Array<[string, string, string]> = [
-  ["grid", "mods/BuildingGrid/buildingGrid.module.scss", "45rem"],
-  ["list", "mods/BuildingList/buildingList.module.scss", "20rem"],
-  ["cards", "mods/BuildingList/buildingList.module.scss", "36rem"],
-  ["table", "mods/BuildingCatalog/buildingCatalog.module.scss", "68rem"],
+const modules: Array<[string, string]> = [
+  ["grid", "mods/BuildingGrid/buildingGrid.module.scss"],
+  ["list and cards", "mods/BuildingList/buildingList.module.scss"],
+  ["table", "mods/BuildingCatalog/buildingCatalog.module.scss"],
 ];
 
 /**
@@ -32,13 +31,22 @@ describe("unique mark scale", () => {
     assert.match(base, /@function mark-size\(\$picture\)[\s\S]*?\$picture \* \$mark-scale/);
   });
 
-  it("is derived from the picture in every view mode", () => {
-    for (const [mode, path, picture] of modes) {
+  it("derives the badge from the SAME picture the artwork box uses", () => {
+    // The invariant, not the numbers. Sizes change — list went 20rem to 24rem
+    // and cards 36rem to 40rem the moment the pictures were judged too small —
+    // and a test that pins them just has to be edited alongside, which teaches
+    // it nothing. What must hold is that the badge is measured against the
+    // picture it sits on, in every mode.
+    for (const [mode, path] of modules) {
       const source = read(path);
-      assert.match(
-        source,
-        new RegExp(`unique-mark\\(${picture.replace(".", "\\.")}\\)`),
-        `${mode} should call unique-mark(${picture}) rather than sizing the badge itself`
+      const pictures = [...source.matchAll(/artwork-box\((\d+(?:\.\d+)?rem)\)/g)].map((m) => m[1]);
+      const badges = [...source.matchAll(/unique-mark\((\d+(?:\.\d+)?rem)\)/g)].map((m) => m[1]);
+
+      assert.ok(pictures.length > 0, `${mode} should declare an artwork box`);
+      assert.deepEqual(
+        badges,
+        pictures,
+        `${mode}: every unique-mark must use its artwork-box size, in the same order`
       );
     }
   });
@@ -48,7 +56,7 @@ describe("unique mark scale", () => {
     // 16rem, and it is a blob or a speck depending on which picture they copied
     // it onto. The mixin owns width/height for this element; a literal one in a
     // .uniqueAsset rule means the ratio has been bypassed.
-    for (const [mode, path] of modes) {
+    for (const [mode, path] of modules) {
       const source = read(path);
       const rules = source.match(/\.uniqueAsset[A-Za-z]*\s*\{[^}]*\}/g) ?? [];
       assert.ok(rules.length > 0, `${mode} should style a unique mark`);

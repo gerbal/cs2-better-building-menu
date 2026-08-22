@@ -43,17 +43,20 @@
 // `img { width: 24rem }` outranks a bare class — see unique-mark in base.scss.
 // Unnested, the icon drew at 24rem inside a 20rem box and the badge at 24rem
 // instead of 7rem, hanging into the row below.
+// 24rem in a 26rem row, which is vanilla's proportion — its picture fills 94%
+// of its item (68 of 72) and this fills 92% of the row's height. 20rem left the
+// building too small to recognise, which is the one job the icon has here.
 .artwork {
-  @include _base.artwork-box(20rem);
+  @include _base.artwork-box(24rem);
   margin-right: 5rem;
 
   .icon {
-    @include _base.artwork-picture(20rem);
+    @include _base.artwork-picture(24rem);
   }
 
   // Same ratio as every other mode, derived from this mode's picture.
   .uniqueAsset {
-    @include _base.unique-mark(20rem);
+    @include _base.unique-mark(24rem);
   }
 }
 
@@ -112,21 +115,24 @@
 
 .itemCard {
   height: auto;
-  min-height: 44rem;
+  // 48rem, not 44: the picture inside is 40rem plus 4rem of padding each side.
+  min-height: 48rem;
   padding: 4rem 10rem 4rem 4rem !important;
   align-items: center;
 }
 
+// 40rem in a 48rem row: the row grows by 4rem so the picture can, keeping
+// vanilla's 94% rather than the 82% a 36rem picture gave in a 44rem row.
 .artworkLarge {
-  @include _base.artwork-box(36rem);
+  @include _base.artwork-box(40rem);
   margin-right: 7rem;
 
   .iconLarge {
-    @include _base.artwork-picture(36rem);
+    @include _base.artwork-picture(40rem);
   }
 
   .uniqueAssetLarge {
-    @include _base.unique-mark(36rem);
+    @include _base.unique-mark(40rem);
   }
 }
 
