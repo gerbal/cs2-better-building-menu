@@ -130,3 +130,33 @@ export function listLockConditions(
 
   return conditions.length > 0 ? conditions : [lockedWord];
 }
+
+/**
+ * Whether this entry's thumbnail is a VECTOR, which decides how locked is drawn.
+ *
+ * Cohtml rasterises an SVG at draw time, and putting any compositing effect
+ * over one makes it re-rasterise per composite — which it does not survive.
+ * Measured live 2026-08-22 with 105 asset packs, on locked subway tiles:
+ *
+ *   filter: grayscale(100%) contrast(80%) brightness(0%)  → flickers, and some
+ *     silhouettes never appear at all (the surface fails outright)
+ *   mask-image: url(.../Lock.svg)                          → flickers
+ *   opacity: 0.35                                          → the icon VANISHES
+ *
+ * Raster thumbnails under the same filter are perfectly stable, which is what
+ * isolates it: of eight locked tiles under one filter, the four that flickered
+ * were exactly the four whose src ended .svg — the other four were PNGs, one of
+ * them generated on demand and one read out of a .cok archive.
+ *
+ * This is not a corner: networks are drawn with vector icons throughout, so 46
+ * of Transportation's tiles are vector-thumbnailed. Any locked treatment that
+ * filters the thumbnail is broken for a large, permanent slice of the catalog.
+ *
+ * So the silhouette is kept for rasters — it is vanilla's own treatment and it
+ * works there — and vector entries say "locked" with the three signals that
+ * cost nothing: the dimmed tile ground, the locked label colour, and the
+ * padlock. See buildingGrid.module.scss for the rule this drives.
+ */
+export function hasVectorThumbnail(thumbnail: string | null | undefined): boolean {
+  return /\.svg(\?|#|$)/i.test((thumbnail ?? "").trim());
+}

@@ -14,7 +14,7 @@ import {
 } from "domain/buildingLensMetricFormat";
 import { getCostForecast } from "domain/buildingForecast";
 import { recordPlacement } from "domain/buildingShelf";
-import { canPlace, entryStateWord, isEntryAlreadyBuilt, isEntryLocked } from "domain/buildingLockState";
+import { canPlace, entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked } from "domain/buildingLockState";
 import { rankBuildingMatches, topSearchResult } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
@@ -168,6 +168,7 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
               }
               aria-disabled={!canPlace(entry) ? "true" : undefined}
               data-locked={isEntryLocked(entry) ? "true" : undefined}
+              data-vector-thumb={hasVectorThumbnail(entry.thumbnail) ? "true" : "false"}
               data-already-built={isEntryAlreadyBuilt(entry) ? "true" : undefined}
             >
               {/* The picture and its badge share a box, the way the tile's do,

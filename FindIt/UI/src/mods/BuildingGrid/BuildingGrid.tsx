@@ -6,7 +6,7 @@ import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import { getShelf, recordPlacement } from "domain/buildingShelf";
-import { canPlace, isEntryAlreadyBuilt, isEntryLocked } from "domain/buildingLockState";
+import { canPlace, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked } from "domain/buildingLockState";
 import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { rankBuildingMatches, topSearchResult } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
@@ -186,6 +186,9 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
           aria-disabled={locked || alreadyBuilt ? "true" : undefined}
           data-locked={locked ? "true" : undefined}
           data-already-built={alreadyBuilt ? "true" : undefined}
+          /* Always written, both ways: the silhouette rule keys off "false"
+             rather than off :not(), which Cohtml's selector engine rejects. */
+          data-vector-thumb={hasVectorThumbnail(entry.thumbnail) ? "true" : "false"}
         >
           {/* The artwork and everything drawn ON the artwork, in one box.
               Vanilla positions both marks against its tile because its tile IS
@@ -212,13 +215,23 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
                 default install its entire locked signal is the black silhouette.
                 We draw it always: at this tile size a silhouette alone is not
                 distinguishable from a thumbnail that has not rendered yet.
-                Inline maskImage rather than a stylesheet url() — webpack's
-                css-loader runs with url: true and would try to resolve a bare
-                path as a module request from src/. */}
+
+                A RASTER image, not the masked span this used to be. The mask was
+                over Media/Glyphs/Lock.svg, and a vector under a compositing
+                effect is what this engine cannot draw — see hasVectorThumbnail.
+                Measured: with the thumbnail filter off, 35 masked padlocks still
+                flickered on their own. LockRaster.png is that same glyph
+                rasterised and tinted to the #FFCB00 the mask was rendering, so
+                the appearance is unchanged and the surface is gone.
+
+                The cost is the theme token: a baked colour cannot follow
+                --lockedColor the way background-color under a mask did. Worth
+                it, and revisit if the game ever ships a raster glyph set. */}
             {locked && (
-              <span
+              <img
                 className={styles.lockGlyph}
-                style={{ maskImage: "url(assetdb://gameui/Media/Glyphs/Lock.svg)" }}
+                src="coui://finditbuildingmenu/Icons/Standard/LockRaster.png"
+                alt=""
                 aria-hidden="true"
               />
             )}

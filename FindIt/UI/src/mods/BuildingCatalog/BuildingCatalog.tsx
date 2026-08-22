@@ -61,7 +61,7 @@ import { findItSurfacePort } from "domain/findItSurfacePort";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 import { getSearchScopeNotice } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
-import { canPlace, entryStateWord, isEntryAlreadyBuilt, isEntryLocked } from "domain/buildingLockState";
+import { canPlace, entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked } from "domain/buildingLockState";
 import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import {
   getLensAnchor,
@@ -847,6 +847,7 @@ export const BuildingCatalogComponent = () => {
                 data-catalog-entry={entry.id}
                 data-expanded={isExpanded ? "true" : undefined}
                 data-locked={isEntryLocked(entry) ? "true" : undefined}
+                data-vector-thumb={hasVectorThumbnail(entry.thumbnail) ? "true" : "false"}
                 // Same pair as the grid and the list: the ground says
                 // unplaceable, the reason is said in the Place button below.
                 data-already-built={isEntryAlreadyBuilt(entry) ? "true" : undefined}
