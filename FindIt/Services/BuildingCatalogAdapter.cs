@@ -1083,6 +1083,9 @@ namespace FindItBuildingMenu.Services
 				Theme: prefab.Theme?.name,
 				AssetPacks: prefab.AssetPacks?.Where(pack => pack is not null).Select(pack => pack.name).Where(name => !string.IsNullOrWhiteSpace(name)).ToArray() ?? Array.Empty<string>(),
 				AssetPackIndices: prefab.VanillaFacts.AssetPacks?.ToArray() ?? Array.Empty<int>(),
+				// Per query, not per index: the city gains and loses these as
+				// the player builds and bulldozes. See PlacedUniqueRegistry.
+				IsAlreadyBuilt: PlacedUniqueRegistry.IsAlreadyBuilt(prefab.Id),
 				PlacementFlags: GetPlacementFlagNames(prefab.BuildingFlagsValue),
 				Extensions: prefab.ExtensionIds ?? Array.Empty<string>(),
 				ConstructionCost: prefab.ConstructionCost,

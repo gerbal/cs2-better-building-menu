@@ -39,6 +39,14 @@ namespace FindItBuildingMenu.Systems
 			RefreshBuildingCatalog();
 		}
 
+		/// <summary>Republishes the catalog when the CITY changed, not the index.</summary>
+		/// <remarks>
+		/// For the indexing system to call when a unique asset is built or
+		/// bulldozed: the prefabs are untouched, so a re-index would be waste,
+		/// but what the query returns has changed. See PlacedUniqueRegistry.
+		/// </remarks>
+		public void RefreshBuildingCatalogFromIndexing() => RefreshBuildingCatalog();
+
 		private void RefreshBuildingCatalog()
 		{
 			// Both empty, always. These carried FindItUtil's own category into
