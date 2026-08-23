@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using FindItBuildingMenu.Domain;
 using FindItBuildingMenu.Domain.Enums;
@@ -88,6 +91,60 @@ namespace FindItBuildingMenu.Tests
 			Assert.Equal(
 				GameLocaleKeys.For(nameof(PrefabSubCategory.ServiceBuildings_Health)),
 				GameLocaleKeys.For("  ServiceBuildings_Health  "));
+		}
+		[Fact]
+		public void NamesEveryZoneTypeTheOptionsRowCanShow()
+		{
+			// ZoneTypeOption projects its chips from a hand-built dictionary
+			// rather than from the enum, so a member missing an entry does not
+			// fail loudly — the chip simply never draws, and the tier becomes
+			// unreachable through the options UI with no error anywhere.
+			//
+			// Asserting against Enum.GetValues rather than a hand-written list
+			// is the point: a list would have to be remembered, and the thing
+			// being guarded here is exactly what happens when it is not.
+			var keys = LoadLocaleKeys();
+			var missing = Enum.GetValues(typeof(ZoneTypeFilter))
+				.Cast<ZoneTypeFilter>()
+				.Where(density => density != ZoneTypeFilter.Any)
+				.Where(density => !keys.Contains($"Tooltip.LABEL[FindItBuildingMenu.Zone{density}]"))
+				.ToArray();
+
+			Assert.True(
+				missing.Length == 0,
+				$"No tooltip in Locale.json for: {string.Join(", ", missing)}");
+		}
+
+		private static HashSet<string> LoadLocaleKeys()
+		{
+			// Same approach as SubCategoryLabelTests: the mod assembly's own
+			// embedded copy, so this cannot pass by finding a stale file.
+			using var stream = typeof(ZoneTypeFilter).Assembly
+				.GetManifestResourceStream("FindItBuildingMenu.Locale.json");
+
+			Assert.NotNull(stream);
+
+			using var reader = new StreamReader(stream!);
+			var keys = new HashSet<string>(StringComparer.Ordinal);
+
+			foreach (var line in reader.ReadToEnd().Split('\n'))
+			{
+				var start = line.IndexOf('"');
+
+				if (start < 0)
+				{
+					continue;
+				}
+
+				var end = line.IndexOf('"', start + 1);
+
+				if (end > start)
+				{
+					keys.Add(line.Substring(start + 1, end - start - 1));
+				}
+			}
+
+			return keys;
 		}
 	}
 }
