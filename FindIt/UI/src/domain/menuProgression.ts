@@ -6,6 +6,41 @@ export interface MenuBranchCount {
   id: string;
   count: number;
   icon: string;
+  /**
+   * What the tab says, where that differs from what it matches on.
+   *
+   * A development branch is unique across its menu, so its id is both. A
+   * density tier is not — "Low Density" is a tab under Residential, Commercial
+   * and Office — so its id carries the family as well, and only this is shown.
+   */
+  label?: string;
+}
+
+/** One category's sub-tabs, drawn in its place in the strip. */
+export interface MenuCategoryTabs {
+  categoryId: string;
+  tabs: MenuBranchCount[];
+}
+
+/**
+ * The sub-tabs that stand in for one category, or none.
+ *
+ * A lookup rather than an equality test against a single expanded id, which is
+ * what this replaced. The development tree only ever expanded one category —
+ * it picks the largest and stops — and zone families need three at once.
+ */
+export function expandedTabsFor(
+  categories: readonly MenuCategoryTabs[] | null | undefined,
+  categoryId: string
+): MenuBranchCount[] {
+  return categories?.find((entry) => entry.categoryId === categoryId)?.tabs ?? [];
+}
+
+/** What a tab draws. Falls back to its match key, as the C# record does. */
+export function branchTabLabel(tab: MenuBranchCount | null | undefined): string {
+  const label = (tab?.label ?? "").trim();
+
+  return label !== "" ? label : tab?.id ?? "";
 }
 
 export interface MenuMilestoneCount {
