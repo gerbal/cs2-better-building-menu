@@ -178,9 +178,12 @@ namespace FindItBuildingMenu.Systems
 				_buildingCatalogQuery.StripTabs?.ToArray() ?? Array.Empty<string>();
 			_BuildingLensStripTabs.Value =
 				_buildingCatalogAdapter.GetStripTabs(_buildingCatalogQuery).ToArray();
-			_BuildingLensExpandedCategory.Value = _buildingCatalogAdapter.GetExpandedCategoryId(_buildingCatalogQuery);
-			_BuildingLensExpandedTabs.Value =
-				_buildingCatalogAdapter.GetExpandedCategoryTabs(_buildingCatalogQuery).ToArray();
+			// One binding, a list. It replaced a (category, tabs) pair that could
+			// only ever describe ONE expanded category — enough for the
+			// development tree, which picks the largest and stops, and not
+			// enough for zones, where three families divide into tiers at once.
+			_BuildingLensExpandedCategories.Value =
+				_buildingCatalogAdapter.GetExpandedCategories(_buildingCatalogQuery).ToArray();
 			_BuildingLensMenuSchoolTierCounts.Value =
 				_buildingCatalogAdapter.GetMenuSchoolTierCounts(_buildingCatalogQuery).ToArray();
 			_BuildingLensLegacyFilters.Value = CaptureLegacyFilters().Describe().ToArray();
