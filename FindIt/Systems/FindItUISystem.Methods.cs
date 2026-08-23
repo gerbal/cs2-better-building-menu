@@ -47,7 +47,7 @@ namespace FindItBuildingMenu.Systems
 		/// </remarks>
 		public void RefreshBuildingCatalogFromIndexing() => RefreshBuildingCatalog();
 
-		private void RefreshBuildingCatalog()
+		private void RefreshBuildingCatalog([System.Runtime.CompilerServices.CallerMemberName] string caller = "")
 		{
 			// One refresh asks the adapter the same question eight times over,
 			// and each answer used to rescan the whole index. Clearing here
@@ -207,16 +207,19 @@ namespace FindItBuildingMenu.Systems
 			// frame — and a regression in this number is visible in a normal
 			// session log without anyone having instrumented anything.
 			refreshTimer.Stop();
-			var refreshMs = (int)refreshTimer.ElapsedMilliseconds;
-			if (System.Math.Abs(refreshMs - _lastRefreshMs) > 100)
-			{
-				_lastRefreshMs = refreshMs;
-				Mod.Log.Info(
-					$"[LENS-REFRESH] {refreshMs}ms menu='{_buildingCatalogQuery.UiMenu}' total={page.TotalCount}");
-			}
+			// Every refresh, and named by its caller.
+			//
+			// This used to log only when the duration differed from the last by
+			// more than 100ms, which hid exactly the bug it should have caught:
+			// a single menu click fired THREE full refreshes, and the two cheap
+			// ones never reached the log because they were close to each other.
+			// One line per user action is not spam — it is the only way the
+			// redundancy is visible at all.
+			Mod.Log.Info(
+				$"[LENS-REFRESH] {(int)refreshTimer.ElapsedMilliseconds}ms "
+				+ $"menu='{_buildingCatalogQuery.UiMenu}' total={page.TotalCount} from={caller}");
 		}
 
-		private int _lastRefreshMs = -1;
 
 		/// <summary>
 		/// Snapshots the legacy FindIt filter panel so the lens can name the
