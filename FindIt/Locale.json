@@ -20,6 +20,8 @@
   "Tooltip.LABEL[FindItBuildingMenu.ZoneRow]": "\"Row Homes\" Buildings",
   "Tooltip.LABEL[FindItBuildingMenu.ZoneMedium]": "\"Medium\" Buildings",
   "Tooltip.LABEL[FindItBuildingMenu.ZoneSignature]": "\"Signature\" Buildings",
+  "Tooltip.LABEL[FindItBuildingMenu.ZoneMixed]": "\"Mixed\" Buildings",
+  "Tooltip.LABEL[FindItBuildingMenu.ZoneLowRent]": "\"Low Rent\" Buildings",
   "Tooltip.LABEL[FindItBuildingMenu.ZoneHigh]": "\"High\" Buildings",
   "Tooltip.LABEL[FindItBuildingMenu.BaseGame]": "Base Game",
   "Tooltip.LABEL[FindItBuildingMenu.Expand]": "Expand Panel",

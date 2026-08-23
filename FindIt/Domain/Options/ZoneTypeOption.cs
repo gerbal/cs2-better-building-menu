@@ -11,22 +11,43 @@ namespace FindItBuildingMenu.Domain.Options
     internal class ZoneTypeOption : IOptionSection
 	{
 		private readonly OptionsUISystem _optionsUISystem;
+		/// <summary>
+		/// One icon per tier, in reading order.
+		/// </summary>
+		/// <remarks>
+		/// Static and shared, because the category strip draws the same tiers
+		/// and a second copy of this table is exactly how two views of one fact
+		/// drift apart — which has already happened twice in this codebase.
+		///
+		/// The chips below are projected from THIS DICTIONARY, not from the
+		/// enum, so a tier with no entry here is silently invisible: no crash,
+		/// no placeholder, the chip just never draws. GameLocaleKeyTests guards
+		/// the matching tooltip keys for the same reason.
+		/// </remarks>
+		private static readonly Dictionary<ZoneTypeFilter, string> Icons = new()
+		{
+			[ZoneTypeFilter.Any] = "coui://finditbuildingmenu/Icons/Standard/StarAll.svg",
+			[ZoneTypeFilter.Low] = "coui://finditbuildingmenu/Icons/Standard/LowLevel.svg",
+			[ZoneTypeFilter.Row] = "coui://finditbuildingmenu/Icons/Standard/Row.svg",
+			[ZoneTypeFilter.Medium] = "coui://finditbuildingmenu/Icons/Standard/MediumLevel.svg",
+			[ZoneTypeFilter.Mixed] = "coui://finditbuildingmenu/Icons/Standard/MixedLevel.svg",
+			[ZoneTypeFilter.LowRent] = "coui://finditbuildingmenu/Icons/Standard/LowRentLevel.svg",
+			[ZoneTypeFilter.High] = "coui://finditbuildingmenu/Icons/Standard/HighLevel.svg",
+			[ZoneTypeFilter.Signature] = "coui://finditbuildingmenu/signature.svg",
+		};
+
 		private readonly Dictionary<ZoneTypeFilter, string> _styles;
 
 		public int Id { get; } = 15;
 
+		/// <summary>The tier's icon, or empty when it has none.</summary>
+		public static string IconFor(ZoneTypeFilter density) =>
+			Icons.TryGetValue(density, out var icon) ? icon : string.Empty;
+
 		public ZoneTypeOption(OptionsUISystem optionsUISystem)
 		{
 			_optionsUISystem = optionsUISystem;
-			_styles = new()
-			{
-				[ZoneTypeFilter.Any] = "coui://finditbuildingmenu/Icons/Standard/StarAll.svg",
-				[ZoneTypeFilter.Low] = "coui://finditbuildingmenu/Icons/Standard/LowLevel.svg",
-				[ZoneTypeFilter.Row] = "coui://finditbuildingmenu/Icons/Standard/Row.svg",
-				[ZoneTypeFilter.Medium] = "coui://finditbuildingmenu/Icons/Standard/MediumLevel.svg",
-				[ZoneTypeFilter.High] = "coui://finditbuildingmenu/Icons/Standard/HighLevel.svg",
-				[ZoneTypeFilter.Signature] = "coui://finditbuildingmenu/signature.svg",
-			};
+			_styles = Icons;
 		}
 
 		public OptionSectionUIEntry AsUIEntry()
