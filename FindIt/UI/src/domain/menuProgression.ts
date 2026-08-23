@@ -43,6 +43,39 @@ export function branchTabLabel(tab: MenuBranchCount | null | undefined): string 
   return label !== "" ? label : tab?.id ?? "";
 }
 
+/**
+ * What a tab's tooltip says, which is more than the tab itself carries.
+ *
+ * A density tab is drawn IN ITS FAMILY'S PLACE, so the family appears nowhere
+ * else on the strip — the tab is an icon and a count, and the row gives no
+ * other clue whether "Low Density" means residential, commercial or office.
+ * Reported from play: the tooltips "state only the density and are missing the
+ * zoning type".
+ *
+ * Only density tabs. A development branch names itself — "Roundabouts",
+ * "Highways" — and prefixing its category would repeat what the branch already
+ * says. `label` is the discriminator: the backend sets it only where the id is
+ * a composite the player must never see.
+ *
+ * The nested group HEADINGS deliberately stay tier-only. They sit under the
+ * category's own heading, so repeating it there would be noise; a tooltip has
+ * no such context.
+ */
+export function branchTabTooltip(
+  tab: MenuBranchCount | null | undefined,
+  categoryLabel: string | null | undefined
+): string {
+  const tier = (tab?.label ?? "").trim();
+
+  if (tier === "") {
+    return tab?.id ?? "";
+  }
+
+  const family = (categoryLabel ?? "").trim();
+
+  return family === "" ? tier : `${tier} ${family}`;
+}
+
 export interface MenuMilestoneCount {
   milestone: number;
   count: number;

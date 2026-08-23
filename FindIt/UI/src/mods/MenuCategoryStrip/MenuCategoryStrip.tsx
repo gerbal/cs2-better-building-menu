@@ -17,6 +17,7 @@ import {
   type MenuCategoryTabs,
   expandedTabsFor,
   branchTabLabel,
+  branchTabTooltip,
   schoolTierTabs,
   romanNumeral,
 } from "domain/menuProgression";
@@ -233,7 +234,7 @@ export const MenuCategoryStrip = () => {
               <ToolButton
                 key={`branch-${branch.id}`}
                 selected={selectedStripTabs.includes(branch.id)}
-                tooltip={`${branchTabLabel(branch)} (${branch.count})`}
+                tooltip={`${branchTabTooltip(branch, label(category))} (${branch.count})`}
                 onSelect={() => chooseBranch(branch.id)}
                 src={branch.icon || category.icon}
                 focusKey={FOCUS_DISABLED}
@@ -242,7 +243,7 @@ export const MenuCategoryStrip = () => {
                   styles.tab,
                   selectedStripTabs.includes(branch.id) && styles.tabSelected
                 )}
-                aria-label={`${branchTabLabel(branch)} (${branch.count})`}
+                aria-label={`${branchTabTooltip(branch, label(category))} (${branch.count})`}
               >
                 {/* No numeral here, unlike the school levels. Each unlock
                     ships its own icon, so the tabs are already told apart by
