@@ -77,6 +77,8 @@ export interface BuildingCatalogEntry {
   constructionCost: number | null;
   upkeep: number | null;
   workers: number | null;
+  /** Households the building holds; null when it is not residential. */
+  households?: number | null;
   capacity: number | null;
   electricityConsumption: number | null;
   waterConsumption: number | null;

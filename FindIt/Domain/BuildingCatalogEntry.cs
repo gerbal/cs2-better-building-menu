@@ -28,6 +28,8 @@ namespace FindItBuildingMenu.Domain
 		double? ConstructionCost = null,
 		double? Upkeep = null,
 		double? Workers = null,
+		/// <summary>Households the building holds; null when it is not residential.</summary>
+		double? Households = null,
 		double? Capacity = null,
 		double? ElectricityConsumption = null,
 		double? WaterConsumption = null,
@@ -263,6 +265,7 @@ namespace FindItBuildingMenu.Domain
 			WriteNullable(writer, "constructionCost", ConstructionCost);
 			WriteNullable(writer, "upkeep", Upkeep);
 			WriteNullable(writer, "workers", Workers);
+			WriteNullable(writer, "households", Households);
 			WriteNullable(writer, "capacity", Capacity);
 			WriteNullable(writer, "electricityConsumption", ElectricityConsumption);
 			WriteNullable(writer, "waterConsumption", WaterConsumption);

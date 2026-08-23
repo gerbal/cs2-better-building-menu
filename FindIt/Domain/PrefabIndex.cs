@@ -204,6 +204,17 @@ namespace FindItBuildingMenu.Domain
 		public uint? ConstructionCost { get; set; }
 		public int? Upkeep { get; set; }
 		public int? Workers { get; set; }
+
+		/// <summary>How many households the building holds.</summary>
+		/// <remarks>
+		/// BuildingPropertyData.m_ResidentialProperties, which is the game's own
+		/// answer and the one its info panels use. Kept apart from Capacity
+		/// rather than folded in: Capacity is derived from SERVICE components —
+		/// shelter beds, water m³, megawatts — and a residential building has
+		/// none of them, which is why a signature mansion read capacity null and
+		/// the hover card had nothing to say about the thing it is for.
+		/// </remarks>
+		public int? Households { get; set; }
 		public int? Capacity { get; set; }
 		public float? ElectricityConsumption { get; set; }
 		public float? WaterConsumption { get; set; }

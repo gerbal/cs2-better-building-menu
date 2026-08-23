@@ -16,7 +16,7 @@ import {
 import { getCapacityForecast, getCostForecast } from "domain/buildingForecast";
 import { SERVICE_FORECAST_BINDINGS, getServiceForecastKey } from "domain/serviceForecast";
 import { buildTileTooltipLines, isMetricPresent } from "domain/buildingTileTooltip";
-import { clampAssetDescription, resolveAssetDescription } from "domain/buildingLensRowDetails";
+import { clampAssetDescription, getBuildingExtensionLabels, resolveAssetDescription } from "domain/buildingLensRowDetails";
 import { isEntryAlreadyBuilt, isEntryLocked, listLockConditions } from "domain/buildingLockState";
 import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
 import type { ZoneFootprint } from "domain/zoningHierarchy";
@@ -65,6 +65,11 @@ export interface HoverCardContext {
     bonuses: string;
     parking: string;
     parkingBays: string;
+    households: string;
+    householdsUnit: string;
+    workers: string;
+    workersUnit: string;
+    upgrades: string;
   };
 }
 
@@ -116,6 +121,11 @@ export const useHoverCardContext = (): HoverCardContext => {
       lockedValue: translate("Tooltip.LABEL[FindItBuildingMenu.Locked]", "Locked") ?? "Locked",
       bonuses: translate("Tooltip.LABEL[FindItBuildingMenu.Provides]", "Provides") ?? "Provides",
       parking: translate("Tooltip.LABEL[FindItBuildingMenu.Parking]", "Parking") ?? "Parking",
+      households: translate("Tooltip.LABEL[FindItBuildingMenu.Households]", "Households") ?? "Households",
+      householdsUnit: translate("Tooltip.LABEL[FindItBuildingMenu.HouseholdsUnit]", "households") ?? "households",
+      workers: translate("Tooltip.LABEL[FindItBuildingMenu.Workers]", "Workers") ?? "Workers",
+      workersUnit: translate("Tooltip.LABEL[FindItBuildingMenu.WorkersUnit]", "jobs") ?? "jobs",
+      upgrades: translate("Tooltip.LABEL[FindItBuildingMenu.Upgrades]", "Upgrades") ?? "Upgrades",
       // "bays" rather than a bare number: the count is approximate for marked
       // lanes, and naming the unit keeps it from reading as an exact capacity.
       parkingBays: translate("Tooltip.LABEL[FindItBuildingMenu.ParkingBays]", "bays") ?? "bays",
@@ -238,6 +248,37 @@ export const BuildingHoverCard = ({
       label: labels.parking,
       applicable: (entry.parkingSlots ?? 0) > 0,
       value: `${groupDigits(entry.parkingSlots ?? 0, separators)} ${labels.parkingBays}`,
+    },
+    // What the building HOLDS. cm-2xvs.19, from a residential signature
+    // building whose card said nothing about the one thing it is for.
+    //
+    // Households is its own field rather than Capacity: capacity is derived
+    // from SERVICE components — shelter beds, water m³, megawatts — and a
+    // residential building has none, so it indexed null and the line vanished.
+    {
+      key: "households",
+      label: labels.households,
+      applicable: isMetricPresent(entry.households),
+      value: `${groupDigits(entry.households ?? 0, separators)} ${labels.householdsUnit}`,
+    },
+    // Workers has been on the entry all along and reached only the table. A
+    // zero IS meaningful here — "staffed by nobody" distinguishes a monument
+    // from a workplace — so this tests presence, not magnitude, unlike parking.
+    {
+      key: "workers",
+      label: labels.workers,
+      applicable: isMetricPresent(entry.workers),
+      value: `${groupDigits(entry.workers ?? 0, separators)} ${labels.workersUnit}`,
+    },
+    // The upgrades that can be attached later. Named, not counted: "3
+    // upgrades" tells the player to go and look, and the point of a hover card
+    // is that they do not have to.
+    {
+      key: "upgrades",
+      label: labels.upgrades,
+      applicable: (entry.extensions?.length ?? 0) > 0,
+      value: labels.upgrades,
+      values: getBuildingExtensionLabels(entry.extensions),
     },
     // Above upkeep: what the building DOES outranks what it costs to run,
     // and for a signature building — which is always free — the effect is the

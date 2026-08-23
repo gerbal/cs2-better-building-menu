@@ -1208,6 +1208,7 @@ namespace FindItBuildingMenu.Services
 				ConstructionCost: prefab.ConstructionCost,
 				Upkeep: prefab.Upkeep,
 				Workers: prefab.Workers,
+				Households: prefab.Households,
 				Capacity: prefab.Capacity,
 				ElectricityConsumption: prefab.ElectricityConsumption,
 				WaterConsumption: prefab.WaterConsumption,
