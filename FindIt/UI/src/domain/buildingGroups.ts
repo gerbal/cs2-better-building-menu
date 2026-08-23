@@ -139,6 +139,21 @@ export function isEducationMenu(menu: string | null | undefined): boolean {
 }
 
 /**
+ * The menu whose categories divide by what an asset IS, not by its unlock.
+ *
+ * Transit is the one menu where the development branch cannot be the tier:
+ * measured live, its branches are {Road, Train, Tram} against categories
+ * {TransportationRoad, TransportationTrain, TransportationTram} — one to one,
+ * so it divides nothing and every category would draw a single child.
+ *
+ * Its subcategory is the real split, and it is the one the player asked for:
+ * tracks, transit stops, transit lines, and the stations themselves.
+ */
+export function isTransitMenu(menu: string | null | undefined): boolean {
+  return /transportation/i.test(menu ?? "");
+}
+
+/**
  * The grouping choices worth offering for a menu.
  *
  * School tier answers "which school", which is a question only the education
@@ -351,6 +366,35 @@ export const DENSITY_TIERS: readonly { value: number; key: string; label: string
 ];
 
 /**
+ * Transit's tier: tracks, stops, lines, and the stations themselves.
+ *
+ * Stations are relabelled here, and only here. The backend resolves that
+ * subcategory through the GAME's own key — BuildingCatalogLabels prefers
+ * vanilla's word because vanilla ships every language and our Locale.json is
+ * English only — and vanilla's word for it is "Transportation", which inside
+ * the Transportation menu says nothing at all:
+ *
+ *     ## Train
+ *         - Transit Lines
+ *         - Tracks
+ *         - Transportation      <- what?
+ *
+ * The three siblings already come from our own English-only strings, so this
+ * makes the group internally consistent rather than introducing a new
+ * inconsistency. Deliberately not done in Locale.json: an entry there for this
+ * key is silently outranked by the game's, which is a lie sitting in a file.
+ */
+function transitTierLabel(entry: GroupableEntry): string {
+  const sub = typeof entry.subCategory === "string" ? entry.subCategory : "";
+
+  if (/^ServiceBuildings_/.test(sub)) {
+    return "Stations";
+  }
+
+  return text(entry.subCategoryLabel) ?? text(entry.subCategory) ?? UNGROUPED_LABEL;
+}
+
+/**
  * The tier a category divides into, whatever the game tiers that asset by.
  *
  * One level, three sources, because the menus genuinely differ and each is
@@ -378,6 +422,11 @@ export function categoryTierLabel(
 
   if (density && density.key !== "Signature") {
     return density.label;
+  }
+
+  // Before the branch, because transit HAS branches and they divide nothing.
+  if (isTransitMenu(entry.uiMenu)) {
+    return transitTierLabel(entry);
   }
 
   const branch = text(entry.devTreeBranch);
