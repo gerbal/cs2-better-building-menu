@@ -10,6 +10,7 @@ import {
   romanNumeral,
   expandedTabsFor,
   branchTabLabel,
+  branchTabTooltip,
 } from "../src/domain/menuProgression.ts";
 import { milestoneLabel, SCHOOL_TIERS } from "../src/domain/buildingGroups.ts";
 
@@ -214,5 +215,34 @@ describe("branchTabLabel", () => {
   it("survives a missing tab", () => {
     assert.equal(branchTabLabel(null), "");
     assert.equal(branchTabLabel(undefined), "");
+  });
+});
+
+describe("branchTabTooltip", () => {
+  const density = { id: "ZonesResidential\u001fLow Density", count: 15, icon: "", label: "Low Density" };
+  const branch = { id: "Roundabouts", count: 38, icon: "" };
+
+  it("names the zoning type as well as the density", () => {
+    // The tab is drawn in its family's place and carries only an icon and a
+    // count, so the family appears nowhere else on the strip. Reported from
+    // play: the tooltips "state only the density and are missing the zoning
+    // type".
+    assert.equal(branchTabTooltip(density, "Residential Zones"), "Low Density Residential Zones");
+  });
+
+  it("leaves a development branch alone", () => {
+    // "Roundabouts Small Roads" would repeat what the branch already says.
+    assert.equal(branchTabTooltip(branch, "Small Roads"), "Roundabouts");
+  });
+
+  it("falls back to the tier when the category has no label", () => {
+    assert.equal(branchTabTooltip(density, ""), "Low Density");
+    assert.equal(branchTabTooltip(density, null), "Low Density");
+    assert.equal(branchTabTooltip(density, undefined), "Low Density");
+  });
+
+  it("survives a missing tab", () => {
+    assert.equal(branchTabTooltip(null, "Residential Zones"), "");
+    assert.equal(branchTabTooltip(undefined, "Residential Zones"), "");
   });
 });
