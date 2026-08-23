@@ -172,9 +172,25 @@ namespace FindItBuildingMenu.Domain
 				return string.Empty;
 			}
 
-			return string.Equals(groupBy!.Trim(), Category, StringComparison.OrdinalIgnoreCase)
-				? Normalize(entry.SubCategory)
-				: string.Empty;
+			var dimension = groupBy!.Trim();
+
+			if (Is(dimension, Category))
+			{
+				return Normalize(entry.SubCategory);
+			}
+
+			// The density tier beneath the game's own category. Without a key
+			// here the tier would only be a HEADING, and grouping is a primary
+			// sort key precisely so a group cannot straddle a page boundary —
+			// the heading would then describe something other than what follows
+			// it. Untiered entries all share the unranked key and stay together
+			// at the end of their category.
+			if (Is(dimension, MenuCategory))
+			{
+				return DensityRank(entry.ZoneType);
+			}
+
+			return string.Empty;
 		}
 
 		/// <summary>
