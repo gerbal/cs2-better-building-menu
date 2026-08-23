@@ -113,4 +113,13 @@ export interface BuildingCatalogPage {
    * already refused to serve.
    */
   hasMore?: boolean;
+
+  /**
+   * The offered sort fields that could actually move a row of these results.
+   *
+   * cm-ddw3. The picker drops the rest — a control that responds while the
+   * list does not is the signature of a broken one. C#'s answer, because only
+   * the backend sees the whole matched set rather than the page.
+   */
+  reorderableSortColumns?: string[];
 }

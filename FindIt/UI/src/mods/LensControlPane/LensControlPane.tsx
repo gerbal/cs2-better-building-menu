@@ -56,7 +56,11 @@ const BuildingLensFacets$ = bindValue<BuildingLensFacetState | null>(mod.id, "Bu
 // is a page rather than the whole result, which is the right trade: a
 // dimension that splits nothing across the hundred entries on screen is one
 // the player cannot see working either.
-const BuildingCatalogPage$ = bindValue<{ items?: unknown[] } | null>(mod.id, "BuildingCatalog", null);
+const BuildingCatalogPage$ = bindValue<{ items?: unknown[]; reorderableSortColumns?: string[] } | null>(
+  mod.id,
+  "BuildingCatalog",
+  null
+);
 const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState | null>(
   mod.id,
   "BuildingCatalogMetricRanges",
@@ -107,7 +111,11 @@ export const LensControlPane = () => {
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
   const section = useValue(BuildingLensSection$);
   const menu = useValue(BuildingLensMenu$) ?? "";
-  const catalogEntries = (useValue(BuildingCatalogPage$)?.items ?? []) as never[];
+  const catalogPage = useValue(BuildingCatalogPage$);
+  const catalogEntries = (catalogPage?.items ?? []) as never[];
+  // cm-ddw3: the fields that can actually reorder these results. The picker
+  // drops the rest rather than offering a control that cannot act.
+  const reorderableSortColumns = catalogPage?.reorderableSortColumns ?? [];
   const menuHasCategories = (useValue(BuildingLensMenuCategories$) ?? []).length > 0;
   const stripAxis = useValue(BuildingLensStripAxis$) ?? "";
   const currentSearch = useValue(CurrentSearch$);
@@ -126,7 +134,10 @@ export const LensControlPane = () => {
     ? chosenGroupBy
     : defaultGroupDimensionFor(section, menuHasCategories, stripAxis, isEducationMenu(menu));
 
-  const sortPresentation = getBuildingLensSortPresentation({ column: sortColumn, descending });
+  const sortPresentation = getBuildingLensSortPresentation(
+    { column: sortColumn, descending },
+    reorderableSortColumns
+  );
   const label = (key: string, fallback: string) => translate(key, fallback) ?? fallback;
 
   const groupByLabel =
