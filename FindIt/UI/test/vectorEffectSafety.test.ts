@@ -44,6 +44,27 @@ describe("no compositing effect over a vector", () => {
           block.includes('data-vector-thumb="false"'),
           `${name}: a brightness(0%) rule is not gated to rasters:\n${block.trim().slice(0, 240)}`
         );
+
+        // The gate above is necessary and not sufficient, which is how the
+        // table shipped a filter over a vector while passing this test. The
+        // gate asks whether the ENTRY's thumbnail is a raster; it says nothing
+        // about which elements the selector then reaches. `.thumbnail img`
+        // passed the gate and still caught the already-built badge — an SVG,
+        // always — painting it solid black on top of the artwork.
+        //
+        // So the target has to be named. Every selector applying the
+        // silhouette must end in a class, which is the picture's own; an
+        // element at the end of the chain reaches whatever else the box holds.
+        for (const selector of block.split("{")[0].split(",")) {
+          const target = selector.trim().split(/\s+/).pop() ?? "";
+          if (target === "") continue;
+
+          assert.ok(
+            target.startsWith("."),
+            `${name}: a brightness(0%) rule targets elements rather than the picture's own class, `
+              + `so it also silhouettes the badge over it: ${selector.trim()}`
+          );
+        }
       }
     });
   }

@@ -878,6 +878,13 @@ export const BuildingCatalogComponent = () => {
                     <div className={styles.thumbnail}>
                       {entry.thumbnail && (
                         <img
+                          // Named, so the silhouette filter can reach the
+                          // building without also reaching the badge on top of
+                          // it. The grid and the list have always named theirs
+                          // (.thumb, .icon); this was the one mode whose
+                          // picture was anonymous, so its filter had to select
+                          // `.thumbnail img` and blackened both.
+                          className={styles.picture}
                           src={lockedThumbnail(entry, isEntryLocked(entry) || isEntryAlreadyBuilt(entry))}
                           onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
                         />

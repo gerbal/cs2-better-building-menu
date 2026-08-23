@@ -862,7 +862,12 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   // one place where the picture and its box disagreed — a 60rem picture in a
   // 68rem frame — and the badge, measured against the FRAME, overhung the
   // artwork it is supposed to sit on.
-  img {
+  //
+  // `.picture`, not `img`: the badge is an img in this box too, and every rule
+  // written against the element reached both. It never showed up here because
+  // .thumbnail .uniqueAsset outranks .thumbnail img — but the silhouette rule
+  // below had no such counterweight and blackened the badge.
+  .picture {
     @include _base.artwork-picture(60rem);
   }
 }
@@ -1414,8 +1419,19 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 // the way vanilla's [disabled] rule does. WHICH state it is gets said in the
 // label and the aria suffix, not by a second colour.
 // Rasters only. See hasVectorThumbnail.
-.row[data-locked="true"][data-vector-thumb="false"] .thumbnail img,
-.row[data-already-built="true"][data-vector-thumb="false"] .thumbnail img {
+//
+// The PICTURE, not every img in the box. Written as `.thumbnail img` this also
+// caught the already-built badge sitting on top of it, so the one mark whose
+// whole job is to say "you already have one of these" was painted solid black —
+// reported from play, and only in the table, because the grid and the list name
+// their picture and this mode did not.
+//
+// The raster gate did not save it either: that gate asks whether the ENTRY's
+// thumbnail is a vector, and the badge is AlreadyBuilt.svg whatever the entry
+// is. So on every raster row the filter was also being applied over a vector,
+// which is the thing this whole treatment exists to avoid.
+.row[data-locked="true"][data-vector-thumb="false"] .thumbnail .picture,
+.row[data-already-built="true"][data-vector-thumb="false"] .thumbnail .picture {
   filter: grayscale(100%) contrast(80%) brightness(0%);
 }
 
