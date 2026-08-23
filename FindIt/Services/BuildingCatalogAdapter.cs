@@ -386,7 +386,12 @@ namespace FindItBuildingMenu.Services
 								category.Key,
 								BuildingCatalogLabels.DensityTier(tier.Key)),
 							tier.Count(),
-							Domain.Options.ZoneTypeOption.IconFor(tier.Key),
+							// Vanilla's own zoning icon for this family AND tier —
+							// the same mark the zoning map paints. Falls back to
+							// the category's icon in the strip when the game ships
+							// none, which is truthful where a derived-but-missing
+							// path would be a silent hole.
+							ZoneDensityIcons.For(category.Key, tier.Key),
 							BuildingCatalogLabels.DensityTier(tier.Key)))
 						.ToArray()))
 				.ToArray();

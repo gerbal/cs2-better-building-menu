@@ -794,3 +794,43 @@ describe("Density tiers", () => {
     );
   });
 });
+
+describe("menuCategory sub-grouped by density", () => {
+  const zone = (id: number, category: string, zoneType: number) =>
+    ({ id, name: `Zone ${id}`, uiCategory: category, uiMenu: "Zones", zoneType } as never);
+
+  it("names the outer level for the category and the inner one for the tier", () => {
+    const nodes = buildGroupedView(
+      [zone(1, "ZonesResidential", 1), zone(2, "ZonesResidential", 8)],
+      "menuCategory"
+    );
+
+    assert.equal(nodes.length, 1);
+    assert.deepEqual(nodes[0].children.map((n) => n.label), ["Low Density", "High Density"]);
+  });
+
+  it("gives the game's id to the CATEGORY level only", () => {
+    // The renderer resolves labelId back to the game's own category name. Set
+    // on the tier node too, it overrode the tier's label and every one of
+    // Residential's six headings drew "Residential Zones".
+    const nodes = buildGroupedView(
+      [zone(1, "ZonesResidential", 1), zone(2, "ZonesResidential", 8)],
+      "menuCategory"
+    );
+
+    assert.equal(nodes[0].labelId, "ZonesResidential");
+    assert.deepEqual(nodes[0].children.map((n) => n.labelId), [undefined, undefined]);
+  });
+
+  it("puts an untiered menu's entries under one child, which draws no heading", () => {
+    // Service buildings leave zoneType at Any, so the second level is a single
+    // node and shouldShowHeading suppresses it.
+    const nodes = buildGroupedView(
+      [zone(1, "Healthcare", 0), zone(2, "Healthcare", 0)],
+      "menuCategory"
+    );
+
+    assert.equal(nodes[0].children.length, 1);
+    assert.equal(shouldShowHeading(nodes[0].children), false);
+  });
+});

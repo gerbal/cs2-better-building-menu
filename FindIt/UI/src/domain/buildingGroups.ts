@@ -56,7 +56,11 @@ export const GROUP_DIMENSIONS: readonly GroupDimension[] = [
   // because inside a vanilla menu it is the division the player already has in
   // mind, and it is the only dimension that works for a menu holding both
   // networks and buildings.
-  { id: "menuCategory", label: "Category", depth: 1 },
+  // Depth 2: the category, then the density tier within it. Zones are why —
+  // Residential holds 52 entries at pack scale and the tier is what the player
+  // is choosing between. Every other menu leaves zoneType at Any, so its second
+  // level is a single node and shouldShowHeading draws no heading for it.
+  { id: "menuCategory", label: "Category", depth: 2 },
   // Ours, not the game's: Buildings, Networks, Service Buildings. Renamed from
   // "Category" so it does not compete with the game's own word for a different
   // idea.
@@ -538,7 +542,10 @@ export function groupLevelsFor(
         text(entry.subCategoryLabel) ?? text(entry.subCategory) ?? UNGROUPED_LABEL,
       ];
     case "menuCategory":
-      return [menuCategoryLabel(entry)];
+      // Fixed length, like every other dimension — GroupDimension.depth
+      // declares it and a test asserts it, so an untiered entry gets the
+      // ungrouped LABEL rather than a shorter array.
+      return [menuCategoryLabel(entry), densityTierLabel(entry.zoneType)];
     case "subCategory":
       return [text(entry.subCategoryLabel) ?? text(entry.subCategory) ?? UNGROUPED_LABEL];
     case "role":
@@ -660,7 +667,14 @@ export function buildGroupedView<T extends GroupableEntry>(
         // Only where the game owns the id. Every other dimension's heading is
         // derived from a value rather than named by the game, so there is
         // nothing to look up.
-        if (dimension === "menuCategory" && label !== UNGROUPED_LABEL) {
+        // depth === 0 only. menuCategory is depth 2 now — category, then the
+        // density tier beneath it — and the game owns the id of the OUTER
+        // level alone. Without this guard the tier node also took
+        // entry.uiCategory, and the renderer resolved it back to the
+        // category's name: every one of Residential's six tier headings drew
+        // "Residential Zones". Seen on screen; the label itself was correct all
+        // along and was simply overridden downstream.
+        if (depth === 0 && dimension === "menuCategory" && label !== UNGROUPED_LABEL) {
           const id = typeof entry.uiCategory === "string" ? entry.uiCategory.trim() : "";
           if (id !== "") {
             node.labelId = id;

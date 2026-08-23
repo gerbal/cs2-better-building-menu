@@ -156,6 +156,54 @@ namespace FindItBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void UsesTheGamesOwnZoningIconForTheFamilyAndTier()
+		{
+			// Vanilla ships one icon per pair, in the colours the zoning map
+			// paints. "Low" is a tab under three families and the game draws a
+			// different icon for each, so a tier-only lookup would put one glyph
+			// on all three.
+			var entries = new[]
+			{
+				Zone(1, "ZonesResidential", ZoneTypeFilter.LowRent),
+				Zone(2, "ZonesResidential", ZoneTypeFilter.Mixed),
+				Zone(3, "ZonesCommercial", ZoneTypeFilter.Low),
+				Zone(4, "ZonesCommercial", ZoneTypeFilter.High),
+			};
+
+			var tabs = BuildingCatalogAdapter.BuildDensityTabs(entries, "Zones");
+
+			Assert.Equal(
+				new[] { "Media/Game/Icons/ZoneResidentialMixed.svg", "Media/Game/Icons/ZoneResidentialLowRent.svg" },
+				tabs.Single(g => g.CategoryId == "ZonesResidential").Tabs.Select(t => t.Icon).ToArray());
+
+			Assert.Equal(
+				new[] { "Media/Game/Icons/ZoneCommercialLow.svg", "Media/Game/Icons/ZoneCommercialHigh.svg" },
+				tabs.Single(g => g.CategoryId == "ZonesCommercial").Tabs.Select(t => t.Icon).ToArray());
+		}
+
+		[Fact]
+		public void NamesRowHousingTheWayTheGameDoes()
+		{
+			// The game calls it MediumRow — row housing is a medium-density form
+			// in its vocabulary, even though it unlocks a milestone earlier and
+			// so sorts before Medium.
+			Assert.Equal(
+				"Media/Game/Icons/ZoneResidentialMediumRow.svg",
+				ZoneDensityIcons.For("ZonesResidential", ZoneTypeFilter.Row));
+		}
+
+		[Fact]
+		public void GivesNoIconWhereTheGameShipsNone()
+		{
+			// Industrial has no per-tier zoning icon. Empty lets the strip fall
+			// back to the family's own icon; a derived ZoneIndustrialLow would
+			// render as a hole.
+			Assert.Equal(string.Empty, ZoneDensityIcons.For("ZonesIndustrial", ZoneTypeFilter.Low));
+			Assert.Equal(string.Empty, ZoneDensityIcons.For("ZonesResidential", ZoneTypeFilter.Any));
+			Assert.Equal(string.Empty, ZoneDensityIcons.For("", ZoneTypeFilter.Low));
+		}
+
+		[Fact]
 		public void EachTabCarriesItsTiersOwnIcon()
 		{
 			// The strip falls back to the category's icon when a tab has none,

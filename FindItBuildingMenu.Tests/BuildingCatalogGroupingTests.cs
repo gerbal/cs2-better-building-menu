@@ -121,12 +121,14 @@ namespace FindItBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void OnlyCategoryHasASecondLevel()
+		public void OnlyTheTwoCategoryDimensionsHaveASecondLevel()
 		{
+			// MenuCategory left this list when the game's own categories gained
+			// a density tier beneath them. Everything still here is depth 1, and
+			// a stray secondary key would silently split one of their groups.
 			foreach (var dimension in new[]
 			{
 				BuildingCatalogGrouping.SubCategory,
-				BuildingCatalogGrouping.MenuCategory,
 				BuildingCatalogGrouping.Role,
 				BuildingCatalogGrouping.SchoolTier,
 				BuildingCatalogGrouping.Theme,
@@ -417,6 +419,25 @@ namespace FindItBuildingMenu.Tests
 			Assert.NotNull(dir);
 
 			return dir!.FullName;
+		}
+		[Fact]
+		public void OrdersDensityBeneathTheGamesOwnCategory()
+		{
+			// The tier is a second GROUP level under menuCategory, so it needs a
+			// secondary key as well as a heading. Grouping is a primary sort key
+			// exactly so a group cannot straddle a page boundary — without this
+			// the heading would describe something other than what follows it.
+			var low = Entry(1) with { UiCategory = "ZonesResidential", ZoneType = ZoneTypeFilter.Low };
+			var high = Entry(2) with { UiCategory = "ZonesResidential", ZoneType = ZoneTypeFilter.High };
+
+			Assert.Equal(
+				BuildingCatalogGrouping.DensityRank(ZoneTypeFilter.Low),
+				BuildingCatalogGrouping.SecondaryKey(low, "menuCategory"));
+
+			Assert.True(
+				string.CompareOrdinal(
+					BuildingCatalogGrouping.SecondaryKey(low, "menuCategory"),
+					BuildingCatalogGrouping.SecondaryKey(high, "menuCategory")) < 0);
 		}
 	}
 }
