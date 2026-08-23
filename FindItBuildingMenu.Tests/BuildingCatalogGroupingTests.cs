@@ -1,4 +1,7 @@
 using System;
+using System.Globalization;
+using System.IO;
+using System.Text.RegularExpressions;
 using System.Linq;
 using FindItBuildingMenu.Domain;
 using FindItBuildingMenu.Domain.Enums;
@@ -366,6 +369,54 @@ namespace FindItBuildingMenu.Tests
 				string.CompareOrdinal(
 					BuildingCatalogGrouping.DensityRank(ZoneTypeFilter.High),
 					BuildingCatalogGrouping.DensityRank(ZoneTypeFilter.Any)) < 0);
+		}
+		[Fact]
+		public void TierLabelsAndOrderAgreeWithTheUiCopyOfThem()
+		{
+			// READS buildingGroups.ts rather than restating it. A test that
+			// restates both sides passes when both are wrong together, which is
+			// the failure mode the cost bands' comment describes and this
+			// feature came within one commit of repeating: the C# rank was the
+			// raw enum value and the TS side had no rank at all, so the two
+			// could not have been compared even in principle.
+			var source = File.ReadAllText(Path.Combine(
+				RepoRoot(), "FindIt", "UI", "src", "domain", "buildingGroups.ts"));
+
+			var table = Regex.Match(
+				source,
+				@"DENSITY_TIERS[^=]*=\s*\[(?<body>.*?)\];",
+				RegexOptions.Singleline);
+
+			Assert.True(table.Success, "DENSITY_TIERS not found in buildingGroups.ts");
+
+			var ui = Regex.Matches(
+					table.Groups["body"].Value,
+					@"value:\s*(?<value>\d+),\s*key:\s*""[^""]*"",\s*label:\s*""(?<label>[^""]*)""")
+				.Cast<Match>()
+				.Select(match => (
+					Value: int.Parse(match.Groups["value"].Value, CultureInfo.InvariantCulture),
+					Label: match.Groups["label"].Value))
+				.ToArray();
+
+			Assert.Equal(
+				BuildingCatalogGrouping.DensityOrder
+					.Select(tier => ((int)tier, BuildingCatalogLabels.DensityTier(tier)))
+					.ToArray(),
+				ui);
+		}
+
+		private static string RepoRoot()
+		{
+			var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
+
+			while (dir is not null && !Directory.Exists(Path.Combine(dir.FullName, "FindIt")))
+			{
+				dir = dir.Parent;
+			}
+
+			Assert.NotNull(dir);
+
+			return dir!.FullName;
 		}
 	}
 }
