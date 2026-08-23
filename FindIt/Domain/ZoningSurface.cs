@@ -115,17 +115,13 @@ public static class ZoningSurfaceCatalog
 		("Mixed", ZoningFamilies.Residential),
 	};
 
-	/// <summary>
-	/// Density stems. Row is tested before Medium because "MediumRow" is a row
-	/// zone and a plain contains-check on "Medium" would swallow it.
-	/// </summary>
-	private static readonly (string Stem, ZoneTypeFilter Density)[] DensityStems =
-	{
-		("Row", ZoneTypeFilter.Row),
-		("Low", ZoneTypeFilter.Low),
-		("Medium", ZoneTypeFilter.Medium),
-		("High", ZoneTypeFilter.High),
-	};
+	// The density stems and ResolveDensity that used to live here are gone.
+	// ZoneDensityClassifier owns the tier now, and it reads the zone's own data
+	// first — which this could not do, being a name match. Removed rather than
+	// left as a fallback: it disagreed with the new rule on the five low-rent
+	// zones, filing them as low density because "LowRent" contains "Low", and a
+	// second answer to the same question is how the badge and the picture ended
+	// up disagreeing elsewhere in this codebase.
 
 	/// <summary>
 	/// UI category group name to family id. The group names are plural
@@ -294,24 +290,7 @@ public static class ZoningSurfaceCatalog
 	/// Industrial and extractor zones have no tier, and inventing one would
 	/// filter their buildings away.
 	/// </remarks>
-	public static ZoneTypeFilter ResolveDensity(string? prefabName)
-	{
-		if (string.IsNullOrWhiteSpace(prefabName))
-		{
-			return ZoneTypeFilter.Any;
-		}
-
-		foreach (var (stem, density) in DensityStems)
-		{
-			if (prefabName.IndexOf(stem, StringComparison.OrdinalIgnoreCase) >= 0)
-			{
-				return density;
-			}
-		}
-
-		return ZoneTypeFilter.Any;
-	}
-
+	
 	/// <summary>
 	/// The catalog subcategories whose buildings grow in this family's zones —
 	/// the leaf of the hierarchy.

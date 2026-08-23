@@ -66,6 +66,17 @@ namespace FindItBuildingMenu.Utilities.PrefabCategoryProcessor
 			{
 				Category = Domain.Enums.PrefabCategory.Zones,
 				SubCategory = ResolveSubCategory(entity),
+				// The line that makes the tier reach the menu. Without it every
+				// zone entry shipped ZoneType = Any, which is also why Density
+				// never appeared in the group-by picker: a dimension whose
+				// entries all share one value is dropped as useless, and they
+				// did.
+				//
+				// Safe to read here. IndexZones fills the cache inside
+				// RunIndex's full branch, before the processor loop this method
+				// runs in — and ZonedBuildingPrefabCategoryProcessor already
+				// reads the sibling cache from the same point.
+				ZoneType = Systems.PrefabIndexingSystem.GetZoneDensity(entity),
 			};
 
 			return true;
