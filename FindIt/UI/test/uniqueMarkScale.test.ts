@@ -26,9 +26,12 @@ const modules: Array<[string, string]> = [
 describe("unique mark scale", () => {
   it("is defined once, as a ratio of the picture", () => {
     assert.match(base, /\$mark-inset:\s*0?\.\d+;/);
-    assert.match(base, /@mixin unique-mark\(\$picture\)/);
+    assert.match(base, /@mixin unique-mark\(\$picture, \$frame: \$picture\)/);
     // Derived, not restated: the inset must be a fraction of the picture given.
     assert.match(base, /@function mark-inset\(\$picture\)[\s\S]*?\$picture \* \$mark-inset/);
+    // ...and the frame-aware inset must reduce to that when the two agree,
+    // which is what keeps every other mode on the same arithmetic.
+    assert.match(base, /@function mark-frame-inset\(\$picture, \$frame\)[\s\S]*?mark-inset\(\$picture\)/);
   });
 
   it("pins all four sides and leaves the size auto", () => {
@@ -41,7 +44,11 @@ describe("unique mark scale", () => {
     const body = mixin.slice(0, mixin.indexOf("\n}"));
 
     for (const side of ["top", "bottom", "left", "right"]) {
-      assert.match(body, new RegExp(`${side}: mark-inset\\(\\$picture\\)`), `missing ${side}`);
+      assert.match(
+        body,
+        new RegExp(`${side}: mark-frame-inset\\(\\$picture, \\$frame\\)`),
+        `missing ${side}`
+      );
     }
 
     assert.match(body, /width: auto/);
@@ -57,14 +64,22 @@ describe("unique mark scale", () => {
     // picture it sits on, in every mode.
     for (const [mode, path] of modules) {
       const source = read(path);
-      const pictures = [...source.matchAll(/artwork-box\((\d+(?:\.\d+)?rem)\)/g)].map((m) => m[1]);
-      const badges = [...source.matchAll(/unique-mark\((\d+(?:\.\d+)?rem)\)/g)].map((m) => m[1]);
+      // The PICTURE, which is not always the box. Table frames its 60rem
+      // picture in a 68rem tile, and reading the box there sized the badge to
+      // the frame — it overhung the artwork, and this guard passed anyway
+      // because it was checking the wrong number against itself.
+      const pictures = [...source.matchAll(/artwork-picture\((\d+(?:\.\d+)?rem)\)/g)].map((m) => m[1]);
+      // The FIRST argument, which is the picture. A second argument is the
+      // frame it is inset from — table's tinted tile — and must not be read as
+      // the thing the badge is measured against, which was the original bug.
+      const badges = [...source.matchAll(/unique-mark\((\d+(?:\.\d+)?rem)(?:,\s*\d+(?:\.\d+)?rem)?\)/g)]
+        .map((m) => m[1]);
 
-      assert.ok(pictures.length > 0, `${mode} should declare an artwork box`);
+      assert.ok(pictures.length > 0, `${mode} should declare its picture size through artwork-picture`);
       assert.deepEqual(
         badges,
         pictures,
-        `${mode}: every unique-mark must use its artwork-box size, in the same order`
+        `${mode}: every unique-mark must use its artwork-PICTURE size, in the same order`
       );
     }
   });

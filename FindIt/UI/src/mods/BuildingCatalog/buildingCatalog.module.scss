@@ -115,10 +115,15 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
     font-size: var(--fontSizeS);
   }
 }
-// Same ratio as every other mode, derived from this picture's 68rem. Nested,
-// because a bare class loses to baseButton's img rule — see base.scss.
+// Same ratio as every other mode, derived from this picture's 60rem — the
+// PICTURE, not the 68rem frame around it. The frame is deliberate here (a
+// rounded, tinted tile is this mode's own idiom), which makes the table the
+// only place the two numbers differ, and measuring the badge against the
+// larger one made it overhang the artwork.
+//
+// Nested, because a bare class loses to baseButton's img rule — see base.scss.
 .thumbnail .uniqueAsset {
-  @include _base.unique-mark(68rem);
+  @include _base.unique-mark(60rem, 68rem);
 }
 
 .uniqueMark {
@@ -853,10 +858,12 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   border-radius: 4rem;
   background-color: rgba(0, 0, 0, 0.25);
 
+  // Through the shared mixin like every other mode. Hand-rolled, this was the
+  // one place where the picture and its box disagreed — a 60rem picture in a
+  // 68rem frame — and the badge, measured against the FRAME, overhung the
+  // artwork it is supposed to sit on.
   img {
-    width: 60rem;
-    height: 60rem;
-    object-fit: contain;
+    @include _base.artwork-picture(60rem);
   }
 }
 
