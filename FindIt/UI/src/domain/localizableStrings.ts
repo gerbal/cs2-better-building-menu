@@ -59,6 +59,13 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   { key: key("ViewGrid"), english: "Grid", source: "BuildingCatalog", plumbed: true },
   // Vanilla's zoning and building menus close from an X in the top-right
   // corner; the panel stands in for that menu, so it offers the same way out.
+  // The hover card's three missing facts (cm-2xvs.19). Households is its own
+  // line because Capacity is derived from SERVICE components and a residential
+  // building has none — a signature mansion read capacity null and the card
+  // said nothing about the one thing it is for.
+  { key: key("Households"), english: "Households", source: "BuildingHoverCard", plumbed: true },
+  { key: key("HouseholdsUnit"), english: "households", source: "BuildingHoverCard", plumbed: true },
+  { key: key("WorkersUnit"), english: "jobs", source: "BuildingHoverCard", plumbed: true },
   { key: key("CloseMenu"), english: "Close", source: "BuildingMenuHeader", plumbed: true },
   { key: key("ViewList"), english: "List", source: "BuildingCatalog", plumbed: true },
   { key: key("ViewCards"), english: "Cards", source: "BuildingCatalog", plumbed: true },

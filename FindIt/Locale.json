@@ -372,5 +372,8 @@
   "Tooltip.LABEL[FindItBuildingMenu.ViewMode]": "View",
   "Tooltip.LABEL[FindItBuildingMenu.ResetMenu]": "Reset menu",
   "Tooltip.LABEL[FindItBuildingMenu.Zones]": "Zones",
-  "Tooltip.LABEL[FindItBuildingMenu.CloseMenu]": "Close"
+  "Tooltip.LABEL[FindItBuildingMenu.CloseMenu]": "Close",
+  "Tooltip.LABEL[FindItBuildingMenu.Households]": "Households",
+  "Tooltip.LABEL[FindItBuildingMenu.HouseholdsUnit]": "households",
+  "Tooltip.LABEL[FindItBuildingMenu.WorkersUnit]": "jobs"
 }

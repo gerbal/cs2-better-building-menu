@@ -1347,6 +1347,16 @@ namespace FindItBuildingMenu.Systems
 				prefabIndex.Workers = workplaceData.m_MaxWorkers;
 			}
 
+			// Zero is not a household count, it is "not residential" — every
+			// service building carries this component too. Left null so the
+			// card drops the line rather than telling a fire station it houses
+			// nobody.
+			if (EntityManager.TryGetComponent<BuildingPropertyData>(entity, out var propertyData)
+				&& propertyData.m_ResidentialProperties > 0)
+			{
+				prefabIndex.Households = propertyData.m_ResidentialProperties;
+			}
+
 			if (EntityManager.TryGetComponent<PollutionData>(entity, out var pollutionData))
 			{
 				prefabIndex.GroundPollution = pollutionData.m_GroundPollution;
