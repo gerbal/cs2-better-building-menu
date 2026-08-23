@@ -94,7 +94,13 @@ namespace FindItBuildingMenu.Domain
 			/// <summary>A unique asset the city already holds one of.</summary>
 			public const string AlreadyBuilt = "AlreadyBuilt";
 
-			public static readonly string[] All = { Locked, Unlocked, AlreadyBuilt };
+			/// <remarks>
+			/// Ordered the way the player meets them, and the order the control
+			/// draws: what you can build now, what you cannot build yet, what
+			/// you have already built. The stored order is the drawn order —
+			/// there is no second list to keep in step.
+			/// </remarks>
+			public static readonly string[] All = { Unlocked, Locked, AlreadyBuilt };
 		}
 
 		/// <summary>
@@ -108,10 +114,10 @@ namespace FindItBuildingMenu.Domain
 		/// two unticked boxes, which reads as "no filter" rather than as the
 		/// state it is.
 		///
-		/// So empty is presented as all-selected (see BuildFacetState), and this
-		/// makes the arithmetic match the presentation: clicking one option when
-		/// nothing is stored removes it rather than adding it, because what the
-		/// player sees is both ticked and what they meant was "not that one".
+		/// So empty is presented as all-selected, and this makes the arithmetic
+		/// match the presentation: clicking one option when nothing is stored
+		/// removes it rather than adding it, because what the player sees is
+		/// every state lit and what they meant was "not that one".
 		///
 		/// Selecting everything again collapses back to null, so there is one
 		/// representation of "both" rather than two that behave alike and
@@ -133,20 +139,25 @@ namespace FindItBuildingMenu.Domain
 				return values;
 			}
 
-			// The first click SELECTS what was clicked, like every other facet in
-			// the rail. It used to subtract — clicking Locked meant "not locked"
-			// — on the argument that an empty selection shows both, so both are
-			// ticked and unticking one is the honest reading. That argument
-			// needs the ticks to be visible, and the control renders a plain
-			// two-row list with no selection marks at all: the player sees
-			// "Locked" and clicks it to see locked assets, and the menu hides
-			// them instead.
+			// The first click REMOVES what was clicked. This subtracted
+			// originally, was changed to add, and is changed back — so the
+			// reasoning is worth keeping rather than flipping quietly.
 			//
-			// Consistency is worth more than the arithmetic being clever. Click
-			// to narrow to one, click again to go back to both, the same gesture
-			// Role and Theme answer to.
+			// Subtracting is the honest reading of an exhaustive axis: nothing
+			// stored means every state is showing, so every option is lit, and
+			// clicking a lit thing turns it off. It was abandoned because the
+			// rail drew this as a plain list "with no selection marks at all" —
+			// the player saw "Locked", clicked it expecting locked assets, and
+			// the menu hid them.
+			//
+			// That objection was about the CONTROL, not the arithmetic, and the
+			// control moved (cm-2xvs.15). In the game's tool-options panel these
+			// are icon buttons carrying vanilla's selected fill, beside a Theme
+			// row that behaves the same way. The ticks the original argument
+			// needed are now on screen, so the honest reading is available
+			// again.
 			List<string> next = values is null || values.Count == 0
-				? new List<string> { option }
+				? all.Where(value => !string.Equals(value, option, StringComparison.OrdinalIgnoreCase)).ToList()
 				: ToggleValue(values, option)?.ToList() ?? new List<string>();
 
 			// Both ends of the range collapse to null: everything selected and

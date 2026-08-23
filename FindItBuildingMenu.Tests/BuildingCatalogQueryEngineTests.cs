@@ -325,12 +325,18 @@ public sealed class BuildingCatalogQueryEngineTests
         // the game's own selection; see AssetPackFacetTests, which seeds it.
         Assert.Equal(new[] { "buildingType", "provenance", "availability", "content", "theme", "placement" }, state.Groups.Select(group => group.Id).ToArray());
 
-        // Neither ticked at rest, which is how every other facet reads: nothing
-        // picked means nothing excluded. Both were ticked while the first click
-        // SUBTRACTED, so the marks and the arithmetic agreed; the click now
-        // selects, and marking both would say the opposite of what it does.
+        // EVERY option ticked at rest, because at rest every state is showing
+        // — the axis is exhaustive, so an empty stored selection is not
+        // "nothing picked", it is "all of them", and three unlit buttons said
+        // the opposite of what the menu was doing.
+        //
+        // Ticked and NOT narrowing: the resting state is a fact about the view,
+        // not a filter, so it must not light the rail badge or enable Clear.
+        // The marks and the arithmetic agree again — the click subtracts, which
+        // it can now that the control carries vanilla's selected fill
+        // (cm-2xvs.15).
         BuildingCatalogFacetGroup availability = Assert.Single(state.Groups, group => group.Id == "availability");
-        Assert.All(availability.Options, option => Assert.False(option.Selected));
+        Assert.All(availability.Options, option => Assert.True(option.Selected));
         Assert.False(availability.Narrowing);
         BuildingCatalogFacetGroup role = Assert.Single(state.Groups, group => group.Id == "buildingType");
 		Assert.Equal(new[] { "Hospital", "Library", "School" }, role.Options.Select(option => option.Id).ToArray());

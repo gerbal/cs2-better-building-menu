@@ -214,18 +214,65 @@ namespace FindItBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void TheFirstClickSelectsWhatWasClicked()
+		public void TheFirstClickRemovesWhatWasClicked()
 		{
-			// It used to subtract — clicking Locked meant "not locked" — on the
-			// argument that an empty selection shows both, so both are ticked
-			// and unticking one is the honest reading. That needs the ticks to
-			// be VISIBLE, and the control renders a plain two-row list with no
-			// selection marks: the player clicks "Locked" to see locked assets
-			// and the menu hides them instead.
+			// Subtractive again, and the flip-flop is the point of this comment.
+			//
+			// Originally it subtracted. It was changed to add because the rail
+			// drew this facet as a plain list with no selection marks: the
+			// player clicked "Locked" to SEE locked assets and the menu hid
+			// them. That objection was about the control, not the arithmetic.
+			//
+			// cm-2xvs.15 moved the control into the game's tool-options panel,
+			// where the options are icon buttons carrying vanilla's selected
+			// fill. Every state is lit at rest, because at rest every state is
+			// showing, so clicking a lit thing turns it off — which is what the
+			// player is looking at when they click.
 			var query = BuildingCatalogFacetSelection.Toggle(
 				new BuildingCatalogQuery(), "availability", "Locked");
 
-			Assert.Equal(new[] { "Locked" }, query.Availability);
+			Assert.Equal(new[] { "Unlocked", "AlreadyBuilt" }, query.Availability);
+		}
+
+		[Fact]
+		public void RestingStateDrawsEveryOptionAsSelected()
+		{
+			// The presentation half of the same rule: nothing stored means every
+			// state is showing, so every option is lit. Drawing three unlit
+			// buttons said the opposite of what the menu was doing.
+			var groups = BuildingCatalogAdapter.BuildFacetState(
+				new[] { Entry(1, locked: false) },
+				new BuildingCatalogQuery()).Groups;
+
+			var availability = groups.Single(group => group.Id == "availability");
+
+			Assert.All(availability.Options, option => Assert.True(option.Selected));
+			// ...and that resting state is not a filter.
+			Assert.False(availability.Narrowing);
+		}
+
+		[Fact]
+		public void APartialSelectionIsAFilterAndAFullOneIsNot()
+		{
+			var partial = BuildingCatalogAdapter.BuildFacetState(
+				new[] { Entry(1, locked: false) },
+				new BuildingCatalogQuery(Availability: new[] { "Unlocked" })).Groups
+				.Single(group => group.Id == "availability");
+
+			Assert.True(partial.Narrowing);
+			Assert.Equal(
+				new[] { true, false, false },
+				partial.Options.Select(option => option.Selected).ToArray());
+		}
+
+		[Fact]
+		public void TheStatesAreOrderedTheWayThePlayerMeetsThem()
+		{
+			// Buildable now, not yet, already done. The stored order IS the
+			// drawn order, so there is no second list to keep in step.
+			Assert.Equal(
+				new[] { "Unlocked", "Locked", "AlreadyBuilt" },
+				BuildingCatalogFacetSelection.Availability.All);
 		}
 
 		[Fact]
