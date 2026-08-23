@@ -95,7 +95,14 @@ namespace FindItBuildingMenu.Services
 			var hasMore = offset + items.Length < totalCount
 				&& limit < BuildingCatalogQuery.MaxLimit;
 
-			return new BuildingCatalogPage(items, totalCount, offset, limit, HasMore: hasMore);
+			// Over `matching`, not over `items`: the question is whether the sort
+			// can order these RESULTS, and a page that happens to tie says
+			// nothing about the rest of them. Same enumerable the count and the
+			// ordering already walked.
+			var canReorder = SortCanReorder(matching, query);
+
+			return new BuildingCatalogPage(
+				items, totalCount, offset, limit, HasMore: hasMore, SortCanReorder: canReorder);
 		}
 
 		/// <summary>
@@ -541,6 +548,97 @@ namespace FindItBuildingMenu.Services
 			};
 
 			return ordered.ThenBy(x => x.Id);
+		}
+
+		/// <summary>
+		/// The value a column orders by, or null when the entry has none.
+		/// </summary>
+		/// <remarks>
+		/// Deliberately NOT the selector <see cref="Order"/> uses. That one is
+		/// strongly typed per column so each field keeps its own comparer — a
+		/// string ordinal-ignore-case here, a nullable double there — and
+		/// collapsing them to <see cref="object"/> would change the ordering
+		/// itself. This answers a weaker question, "are these two entries tied
+		/// on this column", which equality alone settles.
+		///
+		/// The two switches read the same fields from two places, which is
+		/// exactly how two views of one fact drift apart. SortReorderabilityTests
+		/// reads Order's own case labels out of the source and requires this to
+		/// answer for every one of them.
+		/// </remarks>
+		public static object? SortValueOf(BuildingCatalogEntry entry, string? column) =>
+			(column ?? string.Empty).ToLowerInvariant() switch
+			{
+				"category" => entry.Category,
+				"subcategory" => entry.SubCategory,
+				"lotwidth" => entry.LotWidth,
+				"lotdepth" => entry.LotDepth,
+				"buildinglevel" => entry.BuildingLevel,
+				"hasparking" => entry.ParkingSlots,
+				"zonetype" => entry.ZoneType,
+				"constructioncost" or "cost" => entry.ConstructionCost,
+				"upkeep" => entry.Upkeep,
+				"workers" => entry.Workers,
+				"capacity" => entry.Capacity,
+				"electricity" or "electricityconsumption" => entry.ElectricityConsumption,
+				"water" or "waterconsumption" => entry.WaterConsumption,
+				"garbage" or "garbageaccumulation" => entry.GarbageAccumulation,
+				"watercapacity" => entry.WaterCapacity,
+				"sewagecapacity" or "sewage" => entry.SewageCapacity,
+				"groundpollution" => entry.GroundPollution,
+				"airpollution" => entry.AirPollution,
+				"noisepollution" or "noise" => entry.NoisePollution,
+				_ => entry.Name,
+			};
+
+		/// <summary>Whether a column has its own case in the ordering switch.</summary>
+		/// <remarks>
+		/// Distinct from "SortValueOf returns something": every column returns
+		/// something, because both switches end in a Name fallback. This says
+		/// whether the column was NAMED, which is what the drift guard needs.
+		/// </remarks>
+		public static bool HandlesSortColumn(string? column) =>
+			(column ?? string.Empty).ToLowerInvariant() is
+				"category" or "subcategory" or "lotwidth" or "lotdepth" or "buildinglevel"
+				or "hasparking" or "zonetype" or "constructioncost" or "cost" or "upkeep"
+				or "workers" or "capacity" or "electricity" or "electricityconsumption"
+				or "water" or "waterconsumption" or "garbage" or "garbageaccumulation"
+				or "watercapacity" or "sewagecapacity" or "sewage" or "groundpollution"
+				or "airpollution" or "noisepollution" or "noise" or "name";
+
+		/// <summary>
+		/// Whether the active sort could move any row of this result set.
+		/// </summary>
+		/// <remarks>
+		/// cm-ddw3: the sort control responds while the list does not, which
+		/// reads as a broken control. It is not — the field ties. Signatures
+		/// sorted by Cost is the live case: every building is Free.
+		///
+		/// Asked PER GROUP, because grouping is the primary sort key. A field
+		/// that varies across the menu but is constant inside every group still
+		/// cannot move a single row, and a whole-set distinct count would call
+		/// that sortable.
+		/// </remarks>
+		public static bool SortCanReorder(
+			IEnumerable<BuildingCatalogEntry> entries,
+			BuildingCatalogQuery query)
+		{
+			if (entries is null || query is null)
+			{
+				return false;
+			}
+
+			var column = query.EffectiveSortColumn;
+
+			return entries
+				.GroupBy(entry => (
+					BuildingCatalogGrouping.PrimaryKey(entry, query.GroupBy),
+					BuildingCatalogGrouping.SecondaryKey(entry, query.GroupBy)))
+				.Any(group => group
+					.Select(entry => SortValueOf(entry, column))
+					.Distinct()
+					.Skip(1)
+					.Any());
 		}
 
 		private static IOrderedEnumerable<BuildingCatalogEntry> ThenNullable(

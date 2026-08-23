@@ -112,6 +112,15 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<BuildingCatalogEntry[]> _BuildingCatalogCompare = null!;
 		private ValueBindingHelper<string[]> _BuildingLensLegacyFilters = null!;
 		private ValueBindingHelper<string> _BuildingCatalogSortColumn = null!;
+
+		/// <summary>
+		/// Whether the active sort could move any row of the current results.
+		/// </summary>
+		/// <remarks>
+		/// cm-ddw3. False means the control responds while the list cannot,
+		/// which reads as broken unless something says otherwise.
+		/// </remarks>
+		private ValueBindingHelper<bool> _BuildingLensSortCanReorder = null!;
 		private ValueBindingHelper<bool> _BuildingCatalogSortDescending = null!;
 		private ValueBindingHelper<string> _BuildingLensSectionBinding = null!;
 		private ValueBindingHelper<string> _BuildingLensSubCategoryBinding = null!;
@@ -264,6 +273,7 @@ namespace FindItBuildingMenu.Systems
 			// order lives in the persistent query, so a UI that could only write
 			// it showed a stale indicator over correctly-sorted rows after any
 			// remount (panel close, Catalog/Tools switch, lens toggle).
+			_BuildingLensSortCanReorder = CreateBinding("BuildingLensSortCanReorder", true);
 			_BuildingCatalogSortColumn = CreateBinding(
 				"BuildingCatalogSortColumn",
 				"SetBuildingCatalogSortColumn",
