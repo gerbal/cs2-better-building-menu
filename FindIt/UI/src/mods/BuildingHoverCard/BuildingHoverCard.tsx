@@ -288,9 +288,9 @@ const HoverCardContent = ({
     {
       key: "upgrades",
       label: labels.upgrades,
-      applicable: (entry.extensions?.length ?? 0) > 0,
+      applicable: (entry.supportedUpgrades?.length ?? 0) > 0,
       value: labels.upgrades,
-      values: getBuildingExtensionLabels(entry.extensions),
+      values: getBuildingExtensionLabels(entry.supportedUpgrades),
     },
     // Above upkeep: what the building DOES outranks what it costs to run,
     // and for a signature building — which is always free — the effect is the

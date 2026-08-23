@@ -829,7 +829,7 @@ export const BuildingCatalogComponent = () => {
             const rowInspectLabel = `${inspectLabel}: ${entryLabel}`;
             const detailMetrics = isExpanded ? getBuildingDetailMetrics(entry, separators) : [];
             const flagGroups = isExpanded ? getBuildingFlagGroups(entry.placementFlags) : [];
-            const extensionLabels = isExpanded ? getBuildingExtensionLabels(entry.extensions) : [];
+            const extensionLabels = isExpanded ? getBuildingExtensionLabels(entry.supportedUpgrades) : [];
             const provenanceChips = isExpanded ? getBuildingProvenanceChips(entry, resolveFacetLabel) : [];
             const description = isExpanded ? resolveAssetDescription(entry.prefabName, translate) : null;
             const compareLabel = isCompared ? "Remove from comparison" : "Add to comparison";

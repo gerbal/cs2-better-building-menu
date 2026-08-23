@@ -73,7 +73,17 @@ export interface BuildingCatalogEntry {
   theme: string;
   assetPacks: string[];
   placementFlags: string[];
+  /**
+   * Whether this asset IS an upgrade, tagged with its own name.
+   *
+   * Never a list of what can be attached TO it — see supportedUpgrades. The
+   * backend reads a non-empty value the way vanilla's FilterOutUpgrades does
+   * and drops the entry from every menu, so anything the player can see here
+   * necessarily has this empty.
+   */
   extensions?: string[];
+  /** The upgrades that can be attached to this building later. */
+  supportedUpgrades?: string[];
   constructionCost: number | null;
   upkeep: number | null;
   workers: number | null;

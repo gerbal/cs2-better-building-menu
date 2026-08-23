@@ -140,6 +140,16 @@ namespace FindItBuildingMenu.Domain
 		public VanillaAssetFacts VanillaFacts { get; set; }
 		public int[] RandomPrefabs { get; set; }
 		public string[]? ExtensionIds { get; set; }
+		/// <summary>
+		/// The upgrades this building supports, in the game's own order.
+		/// </summary>
+		/// <remarks>
+		/// The reverse of <see cref="ExtensionIds"/>, which says only that this
+		/// prefab IS an upgrade. Kept apart because the query engine reads a
+		/// non-empty ExtensionIds as "hide from every menu"; see
+		/// BuildingCatalogEntry.SupportedUpgrades.
+		/// </remarks>
+		public string[]? SupportedUpgradeIds { get; set; }
 		public List<string> Tags { get; set; }
 		public int UIOrder { get; set; }
 		// SPIKE (cm-e98i): the game's own answer to "where does this asset live
