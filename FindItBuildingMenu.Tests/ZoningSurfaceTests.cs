@@ -136,27 +136,12 @@ namespace FindItBuildingMenu.Tests
 			Assert.Equal(expected, ZoningSurfaceCatalog.ResolveFamily(prefabName));
 		}
 
-		[Theory]
-		[InlineData("ZoneResidentialLow", ZoneTypeFilter.Low)]
-		[InlineData("ZoneResidentialLowRent", ZoneTypeFilter.Low)]
-		[InlineData("ZoneResidentialMediumRow", ZoneTypeFilter.Row)]
-		[InlineData("ZoneResidentialMedium", ZoneTypeFilter.Medium)]
-		[InlineData("ZoneResidentialHigh", ZoneTypeFilter.High)]
-		public void ReadsDensityFromTheZoneName(string prefabName, ZoneTypeFilter expected)
-		{
-			// Row is checked before Medium: "MediumRow" is a row zone, and a
-			// naive contains-check on "Medium" would swallow it.
-			Assert.Equal(expected, ZoningSurfaceCatalog.ResolveDensity(prefabName));
-		}
-
-		[Fact]
-		public void LeavesDensityUnsetWhenTheNameDoesNotCarryOne()
-		{
-			// Industrial and extractor zones have no density tier, and guessing
-			// one would filter their buildings away.
-			Assert.Equal(ZoneTypeFilter.Any, ZoningSurfaceCatalog.ResolveDensity("ZoneIndustrialManufacturing"));
-			Assert.Equal(ZoneTypeFilter.Any, ZoningSurfaceCatalog.ResolveDensity("ZoneExtractorFarming"));
-		}
+		// The two density tests that lived here are gone with the function they
+		// covered. One of them asserted the BUG: it pinned
+		// "ZoneResidentialLowRent" as Low density, which is what the stem table
+		// produced and what made low-rent zones unreachable as their own tier.
+		// The rules now live in ZoneDensityClassifierTests, against real values
+		// measured from every shipped zone.
 
 		[Fact]
 		public void ReturnsNoFamilyForSomethingThatIsNotAZone()
