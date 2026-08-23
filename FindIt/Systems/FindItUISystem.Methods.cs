@@ -184,6 +184,9 @@ namespace FindItBuildingMenu.Systems
 			// enough for zones, where three families divide into tiers at once.
 			_BuildingLensExpandedCategories.Value =
 				_buildingCatalogAdapter.GetExpandedCategories(_buildingCatalogQuery).ToArray();
+			// Computed by the query itself, over the matched set and in the same
+			// pass — see BuildingCatalogQueryEngine.Query.
+			_BuildingLensSortCanReorder.Value = page.SortCanReorder;
 			_BuildingLensMenuSchoolTierCounts.Value =
 				_buildingCatalogAdapter.GetMenuSchoolTierCounts(_buildingCatalogQuery).ToArray();
 			_BuildingLensLegacyFilters.Value = CaptureLegacyFilters().Describe().ToArray();
