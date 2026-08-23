@@ -1309,6 +1309,7 @@ namespace FindItBuildingMenu.Services
 				IsAlreadyBuilt: PlacedUniqueRegistry.IsAlreadyBuilt(prefab.Id),
 				PlacementFlags: GetPlacementFlagNames(prefab.BuildingFlagsValue),
 				Extensions: prefab.ExtensionIds ?? Array.Empty<string>(),
+				SupportedUpgrades: prefab.SupportedUpgradeIds ?? Array.Empty<string>(),
 				ConstructionCost: prefab.ConstructionCost,
 				Upkeep: prefab.Upkeep,
 				Workers: prefab.Workers,

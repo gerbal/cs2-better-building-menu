@@ -1182,6 +1182,7 @@ namespace FindItBuildingMenu.Systems
 					|| EntityManager.HasComponent<ServiceUpgradeData>(entity)
 					|| prefab.TryGet<ServiceUpgrade>(out _));
 			prefabIndex.ExtensionIds ??= isBuildingExtension ? new[] { prefab.name } : Array.Empty<string>();
+			prefabIndex.SupportedUpgradeIds ??= GetSupportedUpgrades(entity);
 			// Narrower than isBuildingExtension above, deliberately: this is
 			// vanilla's exact test in FilterOutUpgrades, so what we hide from the
 			// list is precisely what the game hides from its grid.
@@ -2940,6 +2941,71 @@ namespace FindItBuildingMenu.Systems
 				_prefabSystem.TryGetPrefab<PrefabBase>(pack, out var packPrefab)
 					? GetAssetName(packPrefab)
 					: string.Empty);
+		}
+
+		/// <summary>
+		/// The upgrades a building supports, in the order vanilla offers them.
+		/// </summary>
+		/// <remarks>
+		/// The reverse of the extension self-tag above, and a different question:
+		/// this is what can be ATTACHED to the building, which is what the hover
+		/// card's upgrades row asks for.
+		///
+		/// UpgradeMenuUISystem is the reference, and it reads TWO buffers off the
+		/// building prefab rather than one — BuildingUpgradeElement for service
+		/// upgrades, BuildingModule for the modules a modular building takes.
+		/// Signature towers are the second kind, which is why reading only the
+		/// ServiceUpgrade side found none of them and every signature reported no
+		/// upgrades at all.
+		///
+		/// Both are filtered on UIObjectData exactly as vanilla filters them (an
+		/// upgrade the game never draws is not one the player can attach) and
+		/// ordered by its m_Priority, so the names appear in the order the upgrade
+		/// menu itself would list them.
+		/// </remarks>
+		private string[] GetSupportedUpgrades(Entity entity)
+		{
+			List<(int Priority, string Name)> found = null;
+
+			if (EntityManager.TryGetBuffer<BuildingUpgradeElement>(entity, true, out var upgrades))
+			{
+				for (var i = 0; i < upgrades.Length; i++)
+				{
+					CollectUpgrade(upgrades[i].m_Upgrade, ref found);
+				}
+			}
+
+			if (EntityManager.TryGetBuffer<BuildingModule>(entity, true, out var modules))
+			{
+				for (var i = 0; i < modules.Length; i++)
+				{
+					CollectUpgrade(modules[i].m_Module, ref found);
+				}
+			}
+
+			if (found is null)
+			{
+				return Array.Empty<string>();
+			}
+
+			// OrderBy, not Sort: it is stable, so two upgrades sharing a priority
+			// keep the order the game's own buffers hold them in.
+			return found.OrderBy(entry => entry.Priority).Select(entry => entry.Name).ToArray();
+		}
+
+		private void CollectUpgrade(Entity upgrade, ref List<(int Priority, string Name)> found)
+		{
+			if (!EntityManager.TryGetComponent<UIObjectData>(upgrade, out var ui))
+			{
+				return;
+			}
+
+			if (!_prefabSystem.TryGetPrefab<PrefabBase>(upgrade, out var prefab) || prefab?.name is null)
+			{
+				return;
+			}
+
+			(found ??= new List<(int Priority, string Name)>()).Add((ui.m_Priority, GetAssetName(prefab)));
 		}
 
 		private VanillaAssetFacts GetVanillaAssetFacts(Entity entity)

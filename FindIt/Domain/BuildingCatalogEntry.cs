@@ -174,7 +174,23 @@ namespace FindItBuildingMenu.Domain
 		/// vanilla's own default (UIObjectInfo.GetObjects), and it sorts such a
 		/// category into the middle rather than pushing it to the end.
 		/// </remarks>
-		int UiCategoryPriority = 0) : IJsonWritable
+		int UiCategoryPriority = 0,
+		/// <summary>
+		/// The upgrades that can be attached to this building later.
+		/// </summary>
+		/// <remarks>
+		/// Not <see cref="Extensions"/>, and the distinction is load-bearing.
+		/// Extensions answers "is this asset ITSELF an upgrade" — the indexer tags
+		/// such a prefab with its own name — and the query engine reads a non-empty
+		/// value as vanilla's FilterOutUpgrades does: drop it from every menu. So
+		/// the two can never share a field. Filling Extensions with the upgrades a
+		/// building supports would delete every upgradeable building from the menus.
+		///
+		/// Read from the building prefab's own reverse index the way
+		/// UpgradeMenuUISystem builds its list — see
+		/// PrefabIndexingSystem.GetSupportedUpgrades.
+		/// </remarks>
+		string[]? SupportedUpgrades = null) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -262,6 +278,7 @@ namespace FindItBuildingMenu.Domain
 			WriteStringArray(writer, "assetPacks", AssetPacks);
 			WriteStringArray(writer, "placementFlags", PlacementFlags);
 			WriteStringArray(writer, "extensions", Extensions);
+			WriteStringArray(writer, "supportedUpgrades", SupportedUpgrades);
 			WriteNullable(writer, "constructionCost", ConstructionCost);
 			WriteNullable(writer, "upkeep", Upkeep);
 			WriteNullable(writer, "workers", Workers);
