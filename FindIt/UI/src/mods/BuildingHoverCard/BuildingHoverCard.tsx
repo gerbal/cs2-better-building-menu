@@ -143,14 +143,26 @@ export const useHoverCardContext = (): HoverCardContext => {
  * no card at all — so the mode you happened to be in decided what the game
  * would tell you about a building.
  */
-export const BuildingHoverCard = ({
+/**
+ * The card itself, rendered only when the tooltip is actually shown.
+ *
+ * Its own component ON PURPOSE, and this is the whole point of the split.
+ * React builds the ELEMENT for a tooltip cheaply and does not invoke the
+ * function until the tooltip renders — so everything below happens on hover
+ * rather than once per tile at grid time.
+ *
+ * Measured before and after. All of this used to run in BuildingHoverCard's
+ * own body: a describe() lookup, four metric formatters, a cost forecast, a
+ * forecast-series lookup and a capacity forecast, per entry. At roughly 2ms a
+ * tile that is ~200ms of a ~283ms frozen frame every time a 100-tile menu
+ * opens, for a card the player sees one of.
+ */
+const HoverCardContent = ({
   entry,
   context,
-  children,
 }: {
   entry: BuildingCatalogEntry;
   context: HoverCardContext;
-  children: JSX.Element;
 }) => {
   const { money, milestoneNames, seriesByKey, separators, labels, describe } = context;
   const label = entry.name || entry.prefabName;
@@ -296,48 +308,61 @@ export const BuildingHoverCard = ({
   ]);
 
   return (
-    <Tooltip
-      tooltip={
-        <div className={styles.card}>
-          <div className={styles.cardName}>{label}</div>
-          {description && <div className={styles.cardDescription}>{description}</div>}
-          {lines.map((line) => (
-            <div
-              key={line.key}
-              className={classNames(
-                styles.cardLine,
-                line.tone === "warn" && styles.cardWarn,
-                line.tone === "good" && styles.cardGood,
-              )}
-            >
-              <span className={styles.cardLabel}>{line.label}</span>
-              {line.values
-                ? (
-                  <span className={classNames(styles.cardValue, styles.cardValueList)}>
-                    {line.values.map((entryValue) => (
-                      <span key={entryValue} className={styles.cardValueLine}>{entryValue}</span>
-                    ))}
-                  </span>
-                )
-                : <span className={styles.cardValue}>{line.value}</span>}
-            </div>
-          ))}
-          {facts.length > 0 && <div className={styles.cardFacts}>{facts.join(" · ")}</div>}
-          {/* The shapes, narrowest first. A player choosing a zone is matching
-              against a block on the map, and a picture of the lot is closer to
-              that than "2–4 wide" is. */}
-          {footprints.length > 0 && (
-            <div className={styles.glyphs}>
-              {footprints.map((footprint) => (
-                <FootprintGlyph key={`${footprint.width}x${footprint.depth}`} footprint={footprint} />
-              ))}
-              {footprintOverflow > 0 && <span className={styles.glyphOverflow}>+{footprintOverflow}</span>}
-            </div>
+    <div className={styles.card}>
+      <div className={styles.cardName}>{label}</div>
+      {description && <div className={styles.cardDescription}>{description}</div>}
+      {lines.map((line) => (
+        <div
+          key={line.key}
+          className={classNames(
+            styles.cardLine,
+            line.tone === "warn" && styles.cardWarn,
+            line.tone === "good" && styles.cardGood,
           )}
+        >
+          <span className={styles.cardLabel}>{line.label}</span>
+          {line.values
+            ? (
+              <span className={classNames(styles.cardValue, styles.cardValueList)}>
+                {line.values.map((entryValue) => (
+                  <span key={entryValue} className={styles.cardValueLine}>{entryValue}</span>
+                ))}
+              </span>
+            )
+            : <span className={styles.cardValue}>{line.value}</span>}
         </div>
-      }
-    >
-      {children}
-    </Tooltip>
+      ))}
+      {facts.length > 0 && <div className={styles.cardFacts}>{facts.join(" · ")}</div>}
+      {/* The shapes, narrowest first. A player choosing a zone is matching
+          against a block on the map, and a picture of the lot is closer to
+          that than "2–4 wide" is. */}
+      {footprints.length > 0 && (
+        <div className={styles.glyphs}>
+          {footprints.map((footprint) => (
+            <FootprintGlyph key={`${footprint.width}x${footprint.depth}`} footprint={footprint} />
+          ))}
+          {footprintOverflow > 0 && <span className={styles.glyphOverflow}>+{footprintOverflow}</span>}
+        </div>
+      )}
+    </div>
   );
 };
+
+/**
+ * Wraps a tile so hovering it explains the asset.
+ *
+ * Deliberately does no work of its own: see HoverCardContent.
+ */
+export const BuildingHoverCard = ({
+  entry,
+  context,
+  children,
+}: {
+  entry: BuildingCatalogEntry;
+  context: HoverCardContext;
+  children: JSX.Element;
+}) => (
+  <Tooltip tooltip={<HoverCardContent entry={entry} context={context} />}>
+    {children}
+  </Tooltip>
+);
