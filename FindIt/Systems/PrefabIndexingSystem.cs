@@ -2106,9 +2106,26 @@ namespace FindItBuildingMenu.Systems
 				return authored;
 			}
 
-			if (EntityManager.HasComponent<ObjectBuiltRequirementData>(entity))
+			if (EntityManager.TryGetComponent<ObjectBuiltRequirementData>(entity, out var objectBuilt))
 			{
-				return string.Empty;
+				// The prefab names what to build even though it references
+				// nothing: "Subway Yard Built Req", "Bus Depot Built Req".
+				// Measured across 21 of these in game — every one has an empty
+				// m_LabelID, so the name is the only subject there is, and it
+				// is the same one vanilla binds beside the count.
+				var subject = ObjectBuiltRequirement.SubjectOf(prefab.name);
+
+				if (subject.Length == 0)
+				{
+					// A name that was only bookkeeping. Silence beats a
+					// subjectless "build 1" — the reading that made Switchon's
+					// card say "build 1 +1".
+					return string.Empty;
+				}
+
+				return objectBuilt.m_MinimumCount > 1
+					? Format("Requirement.OBJECTS_BUILT", "build {0} × {1}", objectBuilt.m_MinimumCount.ToString("N0"), subject)
+					: Format("Requirement.OBJECT_BUILT", "build a {0}", subject);
 			}
 
 			// A dev tree node's own name is near-redundant beside the building it
