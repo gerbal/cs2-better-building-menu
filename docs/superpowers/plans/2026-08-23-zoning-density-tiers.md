@@ -1377,3 +1377,48 @@ git add -A && git commit -m "chore(findit): close cm-2xvs.16"
 **Verified against the codebase while writing:** `StripAxes` (has `Category`, `Development`, `AssetType` — `Density` is new), `BuildingCatalogLabels`, `NetworkMenuExtension.EffectiveCategory`, `TabIcon(IEnumerable<BuildingCatalogEntry>, bool)`, `MenuBranchCount(string Id, int Count, string Icon)`, and `BuildingCatalogEntry`'s `UiMenu`, `UiCategory` and `ZoneType` members all exist as used above.
 
 **Type consistency.** `ZoneDensityFacts` is constructed with named arguments in Task 3 exactly matching the record declared in Task 2. `GetZoneDensity` is defined in Task 3 Step 3 and used in Steps 4 and 5. `MenuCategoryTabs` is `(string CategoryId, MenuBranchCount[] Tabs)` in C# (Task 7) and `{ categoryId, tabs }` in TS (Task 8) — the casing differs because the binding serialiser lowercases, which matches `MenuBranchCount`'s existing `{ id, count, icon }` against C#'s `(Id, Count, Icon)`. `DENSITY_TIERS` labels in Task 4 are the same strings Task 7 Step 4 requires for tab ids and Task 9 Step 2 expects on screen.
+
+---
+
+## As built — where this plan was wrong
+
+Implemented 2026-08-23, all nine tasks. Three places the plan did not survive
+contact, recorded because a plan that contradicts the code is worse than no
+plan.
+
+**Task 7's "replace the producer" was impossible.** The plan had
+`GetExpandedCategories` call `GetStripAxis` — but `GetStripAxis` already calls
+`GetExpandedCategoryId`, so replacing that method would have made the axis
+depend on a method that depends on the axis. Built instead as: density is tried
+first, and the development path calls the same two methods it always did,
+untouched. Lower risk, and the dev-tree behaviour is unchanged by construction
+rather than by test.
+
+**Tier tabs needed a composite match key, which the plan missed entirely.**
+Tab ids are matched by `StripMatches`, and a strip tab click deliberately
+CLEARS the category ("a branch and a category are ALTERNATIVES",
+`SetBuildingLensStripTab`). Development branch names are unique across a menu
+so their id can be both the match key and the label; tier labels are not —
+"Low Density" is a tab under Residential, Commercial and Office. A bare tier
+would have narrowed to all three families at once under a tab whose count
+promised one. Fixed with `StripAxes.DensityTab` (family + tier, unit-separated)
+and a `Label` on `MenuBranchCount` so the composite never reaches the screen.
+Verified in game: Residential Low → 15 results, Commercial Low → 5, each
+matching its own tab's count.
+
+**A partition is now required, not just preferred.** The plan said expand a
+category when it has more than one tier. Built stricter: a category holding ANY
+untiered entry is not expanded either, because those entries would belong under
+no tab and the row would silently drop them — the exact failure this lens
+exists to remove.
+
+Two things the plan got right and that were worth the words: every guard was
+confirmed to FAIL first (the density rank against the old key, the scale guard
+by deletion, the C#/TS mirror by mismatching a label), and Task 6's checkpoint
+caught nothing because Tasks 1-5 were correct — which is what a checkpoint
+passing is supposed to feel like.
+
+Also removed, unplanned: `ZoningSurfaceCatalog.ResolveDensity`, left with no
+callers by Task 3. It was not merely dead — it disagreed with the new rule on
+the five low-rent zones, and its own test asserted that disagreement as
+correct.
