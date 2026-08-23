@@ -14,6 +14,9 @@ import {
 } from "domain/vanillaMenuCategories";
 import {
   type MenuBranchCount,
+  type MenuCategoryTabs,
+  expandedTabsFor,
+  branchTabLabel,
   schoolTierTabs,
   romanNumeral,
 } from "domain/menuProgression";
@@ -44,10 +47,9 @@ const BuildingLensMenu$ = bindValue<string>(mod.id, "BuildingLensMenu", "");
 const BuildingLensStripTabs$ = bindValue<MenuBranchCount[]>(mod.id, "BuildingLensStripTabs", []);
 const BuildingLensStripTab$ = bindValue<string[]>(mod.id, "BuildingLensStripTab", []);
 const BuildingLensStripAxis$ = bindValue<string>(mod.id, "BuildingLensStripAxis", "");
-const BuildingLensExpandedCategory$ = bindValue<string>(mod.id, "BuildingLensExpandedCategory", "");
-const BuildingLensExpandedTabs$ = bindValue<MenuBranchCount[]>(
+const BuildingLensExpandedCategories$ = bindValue<MenuCategoryTabs[]>(
   mod.id,
-  "BuildingLensExpandedTabs",
+  "BuildingLensExpandedCategories",
   []
 );
 
@@ -84,8 +86,7 @@ export const MenuCategoryStrip = () => {
   const selectedStripTabs = useValue(BuildingLensStripTab$) ?? [];
   const noStripTab = selectedStripTabs.length === 0;
   const stripAxis = useValue(BuildingLensStripAxis$) ?? "";
-  const expandedCategory = useValue(BuildingLensExpandedCategory$) ?? "";
-  const expandedTabs = useValue(BuildingLensExpandedTabs$) ?? [];
+  const expandedCategories = useValue(BuildingLensExpandedCategories$) ?? [];
 
   // Vanilla hides its own row below two categories, and a strip offering one
   // choice is not a choice. Water & Sewage and Zones each have exactly one.
@@ -227,12 +228,12 @@ export const MenuCategoryStrip = () => {
                 </span>
               </ToolButton>
             ))
-          : expandedTabs.length > 1 && category.id === expandedCategory
-          ? expandedTabs.map((branch) => (
+          : expandedTabsFor(expandedCategories, category.id).length > 1
+          ? expandedTabsFor(expandedCategories, category.id).map((branch) => (
               <ToolButton
                 key={`branch-${branch.id}`}
                 selected={selectedStripTabs.includes(branch.id)}
-                tooltip={`${branch.id} (${branch.count})`}
+                tooltip={`${branchTabLabel(branch)} (${branch.count})`}
                 onSelect={() => chooseBranch(branch.id)}
                 src={branch.icon || category.icon}
                 focusKey={FOCUS_DISABLED}
@@ -241,7 +242,7 @@ export const MenuCategoryStrip = () => {
                   styles.tab,
                   selectedStripTabs.includes(branch.id) && styles.tabSelected
                 )}
-                aria-label={`${branch.id} (${branch.count})`}
+                aria-label={`${branchTabLabel(branch)} (${branch.count})`}
               >
                 {/* No numeral here, unlike the school levels. Each unlock
                     ships its own icon, so the tabs are already told apart by

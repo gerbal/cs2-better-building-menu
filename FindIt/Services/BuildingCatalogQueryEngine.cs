@@ -292,7 +292,27 @@ namespace FindItBuildingMenu.Services
 		/// </remarks>
 		public static bool StripMatches(BuildingCatalogEntry entry, string tab) =>
 			string.Equals(entry.DevTreeBranch, tab, StringComparison.OrdinalIgnoreCase)
-			|| string.Equals(AssetTypeOf(entry), tab, StringComparison.OrdinalIgnoreCase);
+			|| string.Equals(AssetTypeOf(entry), tab, StringComparison.OrdinalIgnoreCase)
+			|| DensityMatches(entry, tab);
+
+		/// <summary>
+		/// A density tab, which carries its family as well as its tier.
+		/// </summary>
+		/// <remarks>
+		/// BOTH halves are tested, and that is the point: a tab click clears
+		/// the category, so matching the tier alone would show every family's
+		/// low density under a tab whose count promised one family's.
+		/// </remarks>
+		private static bool DensityMatches(BuildingCatalogEntry entry, string tab)
+		{
+			if (!StripAxes.DensityTab.TryParse(tab, out var category, out var tier))
+			{
+				return false;
+			}
+
+			return string.Equals(entry.UiCategory, category, StringComparison.OrdinalIgnoreCase)
+				&& string.Equals(BuildingCatalogLabels.DensityTier(entry.ZoneType), tier, StringComparison.Ordinal);
+		}
 
 		/// <summary>
 		/// Whether this is a thing you place or a line you draw.
