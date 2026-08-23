@@ -1090,8 +1090,21 @@ namespace FindItBuildingMenu.Services
 		/// OUT of the menus that already hold them — Transportation keeps its
 		/// tram tracks — so this only ever adds a second way to reach one.
 		/// </remarks>
+		/// <remarks>
+		/// IsExtended is asked HERE, before the call, and that is the whole point
+		/// of the shape. IsExtraNetwork checks it too — but C# evaluates
+		/// arguments first, so `prefab.Category.ToString()` ran for every one of
+		/// ~24,700 indexed prefabs on EVERY menu-scoped projection, when only the
+		/// Roads menu can ever answer true. An enum ToString is reflection-backed
+		/// on this framework.
+		///
+		/// Measured: a warm projection of Landscaping went 25.1ms to 10.5ms and
+		/// Transportation 21.3ms to 11.4ms. It does NOT touch the ~190ms a menu's
+		/// FIRST projection costs — see cm-2xvs.25, that one is still open.
+		/// </remarks>
 		private static bool IsGatheredNetwork(PrefabIndex prefab, string menu) =>
-			NetworkMenuExtension.IsExtraNetwork(
+			NetworkMenuExtension.IsExtended(menu)
+			&& NetworkMenuExtension.IsExtraNetwork(
 				prefab.Category.ToString(),
 				prefab.UiMenuName,
 				menu)
