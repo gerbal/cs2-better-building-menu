@@ -1246,36 +1246,38 @@ namespace FindItBuildingMenu.Services
 			IReadOnlyCollection<BuildingCatalogEntry> source,
 			IReadOnlyList<string>? selected)
 		{
-			// Resting state shows EVERY option selected, because at rest every
-			// state is showing — which is what vanilla's menu does and what the
-			// player should see reflected. This axis is exhaustive, so an empty
-			// stored selection is not "nothing picked", it is "all of them";
-			// drawing that as three unlit buttons said the opposite.
+			// Resting state shows NOTHING selected, which is what the vanilla
+			// PACK row directly above this control does — measured in the live
+			// panel rather than argued:
 			//
-			// It read the other way while this lived on the rail, whose dropdown
-			// drew no selection marks — see ToggleExhaustive for the full
-			// history. The control now carries vanilla's selected fill, so the
-			// honest presentation is available again, and the click subtracts
-			// to match it.
-			bool restingAtAll = selected is null || selected.Count == 0;
-
+			//     Theme         ON  off              (a theme really is chosen)
+			//     Pack          off off off off …    (and every pack is showing)
+			//     Availability  …                    (ours, beside them)
+			//
+			// Pack is the exact analogue: an exhaustive set where nothing picked
+			// means everything shows, drawn as all dark. Lighting all three said
+			// "everything is showing" in a panel whose own control says that with
+			// silence, and the two disagreed a row apart.
+			//
+			// Pairs with ToggleExhaustive: from here a click NARROWS to what was
+			// clicked, which is also what Pack does. All dark, click one, see
+			// only that one.
 			BuildingCatalogFacetOption[] options = BuildingCatalogFacetSelection.Availability.All
 				.Select(value => new BuildingCatalogFacetOption(
 					value,
 					FormatFacetWords(value),
-					restingAtAll
-						|| selected!.Any(option => string.Equals(option, value, StringComparison.OrdinalIgnoreCase))))
+					selected is not null
+						&& selected.Any(option => string.Equals(option, value, StringComparison.OrdinalIgnoreCase))))
 				.ToArray();
 
 			groups.Add(new BuildingCatalogFacetGroup(
 				"availability",
 				"Availability",
 				options,
-				// Exhaustive, so a selection narrows only while it is PARTIAL.
-				// Every option being lit is the resting state, not a filter, and
-				// counting it as one would light the rail badge, fill the chip
-				// row and enable Clear on a menu nobody has touched.
-				Narrowing: !restingAtAll && options.Any(option => !option.Selected)));
+				// Exhaustive, so a selection narrows only while it is partial.
+				// Nothing selected and everything selected both admit everything,
+				// and the toggle collapses both to the same stored null.
+				Narrowing: options.Any(option => option.Selected)));
 		}
 
 		private static void AddValueGroup(

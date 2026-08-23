@@ -247,19 +247,25 @@ namespace FindItBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void RestingStateDrawsEveryOptionAsSelected()
+		public void RestingStateDrawsNothingSelected_LikeTheVanillaPackRow()
 		{
-			// The presentation half of the same rule: nothing stored means every
-			// state is showing, so every option is lit. Drawing three unlit
-			// buttons said the opposite of what the menu was doing.
+			// Measured in the live tool-options panel, where our control sits
+			// one row below vanilla's own:
+			//
+			//     Theme         ON  off           (a theme really is chosen)
+			//     Pack          off off off off … (and every pack is showing)
+			//
+			// Pack is the exact analogue — an exhaustive set where nothing
+			// picked means everything shows — and vanilla draws that as all
+			// dark. Lighting all three said the same thing a different way, one
+			// row apart from the control it should agree with.
 			var groups = BuildingCatalogAdapter.BuildFacetState(
 				new[] { Entry(1, locked: false) },
 				new BuildingCatalogQuery()).Groups;
 
 			var availability = groups.Single(group => group.Id == "availability");
 
-			Assert.All(availability.Options, option => Assert.True(option.Selected));
-			// ...and that resting state is not a filter.
+			Assert.All(availability.Options, option => Assert.False(option.Selected));
 			Assert.False(availability.Narrowing);
 		}
 
@@ -272,6 +278,7 @@ namespace FindItBuildingMenu.Tests
 				.Single(group => group.Id == "availability");
 
 			Assert.True(partial.Narrowing);
+			// Unlocked, Locked, AlreadyBuilt — the order they are drawn in.
 			Assert.Equal(
 				new[] { true, false, false },
 				partial.Options.Select(option => option.Selected).ToArray());
