@@ -270,6 +270,13 @@ $mark-inset: 0.147;
 
 /// The box a picture and its marks share. Marks position against THIS, never
 /// against the row or tile around it, which may carry a label as well.
+/// The inset that leaves the badge at the picture's ratio, expressed in the
+/// FRAME's coordinates. Reduces to mark-inset when the two are the same, which
+/// is every mode but the table.
+@function mark-frame-inset($picture, $frame) {
+  @return ($frame - ($picture - 2 * mark-inset($picture))) / 2;
+}
+
 @mixin artwork-box($picture) {
   position: relative;
   flex: 0 0 $picture;
@@ -290,12 +297,18 @@ $mark-inset: 0.147;
 /// .uniqueMark, and putting a default here meant the size rule for one mode
 /// re-hid a badge the state rule had already shown — which is exactly how the
 /// cards badge went missing while the grid's worked.
-@mixin unique-mark($picture) {
+/// $frame is the positioned ancestor the badge is inset FROM, which is not
+/// always the picture it should be measured AGAINST. Table frames a 60rem
+/// picture in a 68rem tinted tile; insetting by the picture's own fraction put
+/// the badge at 85% of the artwork and off-centre by 2px, because the inset
+/// landed in the frame's coordinate space. Defaults to the picture, which is
+/// what every other mode has.
+@mixin unique-mark($picture, $frame: $picture) {
   position: absolute;
-  top: mark-inset($picture);
-  bottom: mark-inset($picture);
-  left: mark-inset($picture);
-  right: mark-inset($picture);
+  top: mark-frame-inset($picture, $frame);
+  bottom: mark-frame-inset($picture, $frame);
+  left: mark-frame-inset($picture, $frame);
+  right: mark-frame-inset($picture, $frame);
   // Auto on both axes with all four sides pinned. Stating a width instead is
   // what turned this into a corner mark; auto lets the engine stretch it to the
   // box, which is what centres it.

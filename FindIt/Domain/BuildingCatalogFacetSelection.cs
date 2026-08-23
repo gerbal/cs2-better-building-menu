@@ -139,25 +139,27 @@ namespace FindItBuildingMenu.Domain
 				return values;
 			}
 
-			// The first click REMOVES what was clicked. This subtracted
-			// originally, was changed to add, and is changed back — so the
-			// reasoning is worth keeping rather than flipping quietly.
+			// From the resting state, a click NARROWS TO what was clicked
+			// rather than removing it: every state is showing, and the player
+			// who touches this control almost always wants one of them —
+			// usually "just the ones I can build". One click, not two.
 			//
-			// Subtracting is the honest reading of an exhaustive axis: nothing
-			// stored means every state is showing, so every option is lit, and
-			// clicking a lit thing turns it off. It was abandoned because the
-			// rail drew this as a plain list "with no selection marks at all" —
-			// the player saw "Locked", clicked it expecting locked assets, and
-			// the menu hid them.
+			// This has been flipped twice, so the reasoning is worth keeping.
+			// It subtracted originally; that was abandoned because the rail
+			// drew the facet as a plain list with no selection marks, so
+			// clicking "Locked" looked like a request to SEE locked assets and
+			// the menu hid them. The control has since moved into the game's
+			// tool-options panel with vanilla's selected fill (cm-2xvs.15), and
+			// I briefly took that as licence to subtract again — but the ticks
+			// were only half the problem. The other half is that subtracting
+			// makes the common case cost three clicks instead of one, and it
+			// disagrees with the Theme row sitting directly above it.
 			//
-			// That objection was about the CONTROL, not the arithmetic, and the
-			// control moved (cm-2xvs.15). In the game's tool-options panel these
-			// are icon buttons carrying vanilla's selected fill, beside a Theme
-			// row that behaves the same way. The ticks the original argument
-			// needed are now on screen, so the honest reading is available
-			// again.
+			// So: presentation says "everything is showing", and the gesture is
+			// "show me this one". Clicking again returns to everything, which
+			// is the collapse below.
 			List<string> next = values is null || values.Count == 0
-				? all.Where(value => !string.Equals(value, option, StringComparison.OrdinalIgnoreCase)).ToList()
+				? new List<string> { option }
 				: ToggleValue(values, option)?.ToList() ?? new List<string>();
 
 			// Both ends of the range collapse to null: everything selected and

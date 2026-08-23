@@ -214,24 +214,36 @@ namespace FindItBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void TheFirstClickRemovesWhatWasClicked()
+		public void TheFirstClickNarrowsToWhatWasClicked()
 		{
-			// Subtractive again, and the flip-flop is the point of this comment.
+			// Every state is showing, and the player who reaches for this
+			// control wants one of them — almost always "just what I can build".
+			// One click, not three.
 			//
-			// Originally it subtracted. It was changed to add because the rail
-			// drew this facet as a plain list with no selection marks: the
-			// player clicked "Locked" to SEE locked assets and the menu hid
-			// them. That objection was about the control, not the arithmetic.
-			//
-			// cm-2xvs.15 moved the control into the game's tool-options panel,
-			// where the options are icon buttons carrying vanilla's selected
-			// fill. Every state is lit at rest, because at rest every state is
-			// showing, so clicking a lit thing turns it off — which is what the
-			// player is looking at when they click.
+			// Flipped twice, so the history is the comment. It subtracted
+			// originally; that was abandoned because the rail drew no selection
+			// marks, so clicking Locked looked like a request to SEE locked
+			// assets. Moving the control into the game's panel (cm-2xvs.15) put
+			// real ticks on screen and I briefly took that as licence to
+			// subtract again — but the ticks were only half of it. Subtracting
+			// also costs three clicks for the common case and disagrees with
+			// the Theme row directly above.
 			var query = BuildingCatalogFacetSelection.Toggle(
-				new BuildingCatalogQuery(), "availability", "Locked");
+				new BuildingCatalogQuery(), "availability", "Unlocked");
 
-			Assert.Equal(new[] { "Unlocked", "AlreadyBuilt" }, query.Availability);
+			Assert.Equal(new[] { "Unlocked" }, query.Availability);
+		}
+
+		[Fact]
+		public void ClickingTheSameOptionAgainShowsEverythingOnceMore()
+		{
+			// The way back. Collapsing to null rather than storing all three
+			// keeps one representation of "everything".
+			var once = BuildingCatalogFacetSelection.Toggle(
+				new BuildingCatalogQuery(), "availability", "Unlocked");
+			var twice = BuildingCatalogFacetSelection.Toggle(once, "availability", "Unlocked");
+
+			Assert.Null(twice.Availability);
 		}
 
 		[Fact]
