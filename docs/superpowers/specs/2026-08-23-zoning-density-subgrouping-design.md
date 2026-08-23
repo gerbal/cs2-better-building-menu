@@ -115,30 +115,88 @@ The rank is a **static table**, not computed from these at runtime: pack content
 ships ungated, so Low spans `0,4` and Mixed spans `0,5`, and ranking by observed
 minimum milestone would tie Mixed with Low.
 
-That Low Rent is high-density has a direct consequence for the classifier: the
-`ZonePropertiesData` ratio derivation will actively classify these zones as
-`High`, so the Low Rent test must run **before** it and override it. The
-existing name-stem table gets this wrong in the other direction — its stems are
+That Low Rent is high-density has a direct consequence for the classifier, and
+the probe confirmed it: the ratio derivation calls all five of these zones
+`High` today, so the Low Rent test must run **before** it and override it. The
+existing name-stem table gets it wrong in the other direction — its stems are
 `Row, Low, Medium, High` in that order, so `"LowRent"` matches `Low` and lands
-in the low-density bucket.
+in the low-density bucket. Those five are the only zones in the whole catalog
+where the data-derived and name-derived tiers disagree, apart from
+`Residential Medium`; both cases are covered under Classification.
 
-## Classification order
+## Classification — measured
 
-1. **Low Rent** — candidate signal `ZonePropertiesData.m_IgnoreLandValue`.
-2. **Mixed** — candidate signal: a residential zone with `m_AllowedSold != 0`,
-   i.e. it also hosts commerce.
-3. **Low / Row / Medium / High** — the existing ratio and lot-width derivation.
-4. **Prefab-name stems** — last resort, with `LowRent` and `Mixed` tested
-   before `Low`.
+Probed on 2026-08-23 with an instrumented boot over all 88 zone prefabs,
+logging `m_IgnoreLandValue`, `m_AllowedSold`, `m_ResidentialProperties`,
+`m_SpaceMultiplier`, `m_ScaleResidentials`, the derived density, the name-stem
+density, max lot width and `m_MaxHeight`. Both original guesses were wrong in
+different ways and the probe replaced them.
 
-Steps 1 and 2 are **inferences from field names and are not yet established.**
-One instrumented boot logging `prefabName → m_IgnoreLandValue, m_AllowedSold`
-across all 74 zones settles both, the way the `[REQ-AUDIT]` probe settled the
-unlock requirements. If they hold, all six tiers are data-derived and do not
-depend on naming conventions that packs and mods will not follow. If they do
-not, Mixed and Low Rent fall back to stems and the spec's step 4 carries them.
+```
+1. Mixed     family is Residential AND m_AllowedSold != 0
+2. Low Rent  family is Residential AND m_ScaleResidentials
+                                   AND m_ResidentialProperties / m_SpaceMultiplier >= 3
+3. Low / Row / Medium / High       the existing ratio and lot-width derivation
+4. Prefab-name stems               commercial and office only
+```
 
-**Do not write the classifier before running that probe.**
+**Mixed — confirmed exactly.** Thirteen residential zones carry
+`m_AllowedSold != 0` and all thirteen are the Mixed Housing zones: no false
+positives, no misses. ("UK London Townhouse" matches a naive `townhouse` name
+test but has `m_AllowedSold = 0` and is a plain High zone — the data is right
+where the name is misleading.)
+
+**`m_IgnoreLandValue` is dead.** It is `False` on all 88 zones, so it marks
+nothing. Recorded here so it is not tried again. `ZoneFlags` was checked too and
+has no low-rent bit — it is only `SupportNarrow`, `SupportLeftCorner`,
+`SupportRightCorner`, `Office`.
+
+**Low Rent is a ratio, and the ratios are discrete.** Among residential zones
+with `m_ScaleResidentials` and no commerce:
+
+| ratio | n | tier |
+|---|---|---|
+| 0.5 | 6 | Row |
+| 0.75 | 12 | Medium |
+| 2.0 | 8 | High |
+| 2.5 | 1 | High (UK London Townhouse) |
+| **4.0** | **5** | **Low Rent** |
+
+A threshold of 3 sits in the middle of the 2.5 → 4.0 gap. That is a real
+margin, not a hairline — and it is the mechanic rather than a coincidence: low
+rent means four properties in one unit of space where high density means two.
+
+**The `m_ScaleResidentials` guard is load-bearing.** Without it the rule also
+catches "UK Residential Low Terraced", whose ratio is 3.0 — but the existing
+derivation checks `m_ScaleResidentials` *before* the ratio and correctly calls
+it Low. Ordering the new test the same way removes the false positive.
+
+Cross-check: the data rule and a `low ?rent` prefab-name test select **the same
+five zones**, exactly. Assert both in the tests; a future disagreement is a
+signal that shipped content has changed, not a failure to paper over.
+
+### The result is an exact partition
+
+```
+Residential  n=67   Low 22 · Row 7 · Medium 11 · Mixed 13 · Low Rent 5 · High 9
+Commercial   n=10   Low 7 · High 3
+Office       n=6    Low 2 · High 4
+Industrial   n=5    untiered
+```
+
+Nothing outside Industrial lands untiered — which is what the strip
+substitution needs (see Navigation). The three zones that carry no tier word in
+their name are all placed by the data: "StarQ Single Family Residentials" → Low
+(ratio 1.0), "NA San Francisco" → Low (ratio 2.86, `m_ScaleResidentials` false),
+"UK London Townhouse" → High (ratio 2.5).
+
+One weakness worth knowing: `Residential Medium` has no indexed spawnable
+buildings, so `maxLotWidth` is 0 and the row-housing test's documented fallback
+("a zone with no spawnable buildings at all stays row") files it as Row where
+its name says Medium. It is the only disagreement between data and name across
+all 67 residential zones other than the five Low Rent ones. Left as-is: it is a
+pre-existing behaviour of the shared derivation, not something this change
+introduces.
 
 The derivation moves into one place that both `IndexZones` and
 `ZonePrefabCategoryProcessor` call, so the zone catalog and the prefab index
@@ -241,12 +299,11 @@ The school-tier comment also states the condition this design has to meet:
 > lost by drawing them instead of it, and a separate tier segment would have
 > asked the player to combine two rows to reach what one row can say.
 
-Density partitions Residential the same way, with one thing to confirm: of 63
-residential zones, two carry no tier word in their name — "Single Family
-Residentials" and "NA San Francisco". The `ZonePropertiesData` derivation should
-place both, which would make it an exact partition. **Confirm it does** before
-relying on the substitution; if either survives untiered, the family keeps a
-residual tab and the partition claim in this section is false.
+Density partitions Residential the same way, and the probe confirmed it: all 67
+residential, 10 commercial and 6 office zones land in exactly one tier, with
+nothing untiered outside Industrial. The three zones that worried this section
+in draft — "Single Family Residentials", "NA San Francisco" and "UK London
+Townhouse" — are all placed by the data. See Classification above.
 
 The dev-tree branches take the other half of the precedent: they carry no
 numeral because "each unlock ships its own icon, so the tabs are already told
@@ -323,14 +380,18 @@ grid, list and cards render through `GroupedResults`, the table through
 
 ## Verification
 
-- The probe above, before any classifier code.
 - Backend unit tests for the classifier across all six tiers plus untiered,
-  including a `LowRent` case proving the `Low` stem does not capture it and a
-  case proving the ratio derivation does not override it.
+  built from the probe's real values. The cases that would have shipped a bug:
+  a `LowRent` zone at ratio 4.0 proving it is not left as High; "UK Residential
+  Low Terraced" at ratio 3.0 with `m_ScaleResidentials` false proving the guard
+  is present; "UK London Townhouse" proving a name test for `townhouse` does
+  not pull it into Mixed; and the `m_AllowedSold` case proving Mixed wins over
+  the ratio.
+- The data rule and the `low ?rent` name test select the same five zones.
+- The partition: every residential, commercial and office zone lands in exactly
+  one tier, and only Industrial is untiered. Counts per family from the probe
+  are in Classification above and are the expected values.
 - Rank tables asserted in both suites.
-- The partition claim: every residential zone lands in exactly one tier, with
-  no residual. If "Single Family Residentials" or "NA San Francisco" comes back
-  untiered, the substitution in the strip is not justified as written.
 - In game, with packs loaded: the Zones strip shows Residential's six tiers in
   the decided order, Commercial's two and Office's two, with Industrial and
   Extractors unexpanded; the counts across the tier tabs sum to their family's
