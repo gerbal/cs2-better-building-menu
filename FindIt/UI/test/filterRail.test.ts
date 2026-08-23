@@ -1,10 +1,13 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  BANK_DIMENSION_IDS,
+  RAIL_METRICS_ID,
   RAIL_SEARCH_THRESHOLD,
   buildFilterRail,
   filterRailOptions,
   hasAnyRailSelection,
+  isBankDimension,
 } from "../src/domain/filterRail.ts";
 
 const group = (id: string, label: string, n: number, selected = 0) => ({
@@ -81,9 +84,15 @@ describe("Filter rail", () => {
   it("keeps a short dimension rather than dropping it", () => {
     // The regression this guards: filtered out of the rail and rendered
     // nowhere else.
-    const rail = buildFilterRail({ groups: [group("availability", "Availability", 3)], hasSelection: false }, { active: 0 });
+    //
+    // The example used to be Availability, which cm-2xvs.15 gave a real second
+    // home in the game's tool-options bank. Moved to Theme rather than deleted,
+    // because the rule this states — SHORTNESS is not a reason to drop a
+    // dimension — is what 3fff26e was written to hold, and it still holds.
+    // Availability's own partition is asserted under "One home per dimension".
+    const rail = buildFilterRail({ groups: [group("theme", "Theme", 3)], hasSelection: false }, { active: 0 });
 
-    assert.deepEqual(rail.map((d) => d.id), ["availability", "metrics"]);
+    assert.deepEqual(rail.map((d) => d.id), ["theme", "metrics"]);
   });
 
   it("keeps a dimension too large for the bank in the rail", () => {
@@ -177,5 +186,63 @@ describe("Active metric range count", () => {
 
     assert.equal(countActiveMetricRanges(null), 0);
     assert.equal(countActiveMetricRanges(undefined), 0);
+  });
+});
+
+/**
+ * cm-2xvs.15 moved Availability off the rail and into the game's tool-options
+ * bank. Every dimension must have EXACTLY ONE home.
+ *
+ * This is not hypothetical tidiness. 593e756 moved the mod's filters out of
+ * that bank while the rail still excluded them, and Availability, Source, DLC,
+ * Theme and Density ended up in the query, toggleable by the backend, and drawn
+ * in no UI at all — found only when someone noticed master had filters this
+ * branch did not. 3fff26e undid the split. Splitting again is safe only while
+ * something asserts the partition.
+ */
+describe("One home per dimension", () => {
+  const everyGroup = [
+    group("availability", "Availability", 3),
+    group("buildingType", "Role", 10),
+    group("source", "Source", 2),
+    group("dlc", "DLC", 13),
+    group("theme", "Theme", 3),
+    group("zone", "Density", 5),
+  ];
+
+  it("keeps the bank's dimensions off the rail", () => {
+    const ids = buildFilterRail({ groups: everyGroup, hasSelection: false }, null).map((d) => d.id);
+
+    for (const banked of BANK_DIMENSION_IDS) {
+      assert.ok(!ids.includes(banked), `${banked} is drawn in the bank AND on the rail`);
+    }
+  });
+
+  it("leaves every other dimension on the rail", () => {
+    const ids = buildFilterRail({ groups: everyGroup, hasSelection: false }, null).map((d) => d.id);
+
+    for (const g of everyGroup) {
+      if (isBankDimension(g.id)) continue;
+
+      assert.ok(ids.includes(g.id), `${g.id} is drawn nowhere — the exact 593e756 failure`);
+    }
+  });
+
+  it("accounts for every group in one home or the other", () => {
+    // The partition, stated directly: rail ∪ bank covers the groups, and the
+    // two do not overlap. Metrics is not a facet group, so it is excluded.
+    const rail = buildFilterRail({ groups: everyGroup, hasSelection: false }, null)
+      .map((d) => d.id)
+      .filter((id) => id !== RAIL_METRICS_ID);
+    const bank = everyGroup.map((g) => g.id).filter(isBankDimension);
+
+    assert.deepEqual([...rail, ...bank].sort(), everyGroup.map((g) => g.id).sort());
+    assert.deepEqual(rail.filter(isBankDimension), []);
+  });
+
+  it("names availability as the banked one", () => {
+    // If this changes, the tool-options component and this guard must move
+    // together — they read the same list precisely so they cannot drift.
+    assert.deepEqual([...BANK_DIMENSION_IDS], ["availability"]);
   });
 });

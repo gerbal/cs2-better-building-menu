@@ -1,5 +1,9 @@
 import { ModuleRegistryExtend } from "cs2/modding";
 import { tool } from "cs2/bindings";
+import { bindValue, useValue } from "cs2/api";
+import mod from "../../../mod.json";
+
+const LensOwnsCurrentMenu$ = bindValue<boolean>(mod.id, "LensOwnsCurrentMenu", false);
 /**
  * Keeps the game's options bank on screen for the Picker.
  *
@@ -18,7 +22,18 @@ import { tool } from "cs2/bindings";
  * so a panel left behind empty was ours.
  */
 export const ToolOptionsVisibility: ModuleRegistryExtend = (Component: any) => {
-  return () =>
-    Component()
-    || tool.activeTool$.value.id === "FindItBuildingMenu.Picker";
+  return () => {
+    const lensOwnsCurrentMenu = useValue(LensOwnsCurrentMenu$);
+
+    return Component()
+      || tool.activeTool$.value.id === "FindItBuildingMenu.Picker"
+      // The lens is back, and this time with something to put in the bank.
+      // The clause removed above was keeping an EMPTY panel on screen because
+      // the filters had moved to the control plane; availability moved back
+      // (cm-2xvs.15), so the bank has content again and the reason returns
+      // with it. Without this the control would be drawn into a panel the
+      // game never mounts while browsing — which is exactly how five
+      // dimensions ended up reachable from nowhere the last time.
+      || lensOwnsCurrentMenu;
+  };
 };

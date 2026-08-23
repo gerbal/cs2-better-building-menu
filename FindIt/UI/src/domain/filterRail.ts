@@ -46,6 +46,28 @@ export const RAIL_SEARCH_THRESHOLD = 20;
 /** Stable id for the metric-ranges entry, which is not a facet group. */
 export const RAIL_METRICS_ID = "metrics";
 
+/**
+ * Dimensions that live in the game's tool-options bank instead of on the rail.
+ *
+ * ONE list, read by both homes, because the last time this axis was split the
+ * two sides disagreed and the dimension ended up in neither. 593e756 moved the
+ * mod's filters out of that bank while the rail still excluded them, and
+ * Availability, Source, DLC, Theme and Density were left in the query,
+ * toggleable by the backend, and drawn in no UI at all; 3fff26e put them all
+ * back on the rail and deleted the split.
+ *
+ * Splitting again is a deliberate product call (cm-2xvs.15): availability is
+ * chrome the game's own left-hand panel should carry. The guarantee that makes
+ * it safe is that the bank renders exactly this set and the rail renders
+ * exactly its complement — asserted in filterRail.test.ts, not just intended.
+ */
+export const BANK_DIMENSION_IDS: readonly string[] = ["availability"];
+
+/** Whether this dimension is drawn in the bank rather than on the rail. */
+export function isBankDimension(id: string): boolean {
+  return BANK_DIMENSION_IDS.includes(id);
+}
+
 export function buildFilterRail(
   facets: RailFacetState | null | undefined,
   metrics: { active: number } | null | undefined
@@ -56,6 +78,8 @@ export function buildFilterRail(
     // A group with no options opens an empty popover, which is worse than no
     // icon — Role and Asset packs were both empty catalog-wide until recently.
     .filter((group) => (group.options?.length ?? 0) > 0)
+    // ...and the bank's dimensions are not the rail's. See BANK_DIMENSION_IDS.
+    .filter((group) => !isBankDimension(group.id))
     .map((group) => ({
       id: group.id,
       label: group.label,
