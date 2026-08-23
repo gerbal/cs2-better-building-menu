@@ -430,14 +430,62 @@ namespace FindItBuildingMenu.Tests
 			var low = Entry(1) with { UiCategory = "ZonesResidential", ZoneType = ZoneTypeFilter.Low };
 			var high = Entry(2) with { UiCategory = "ZonesResidential", ZoneType = ZoneTypeFilter.High };
 
-			Assert.Equal(
-				BuildingCatalogGrouping.DensityRank(ZoneTypeFilter.Low),
-				BuildingCatalogGrouping.SecondaryKey(low, "menuCategory"));
-
 			Assert.True(
 				string.CompareOrdinal(
 					BuildingCatalogGrouping.SecondaryKey(low, "menuCategory"),
 					BuildingCatalogGrouping.SecondaryKey(high, "menuCategory")) < 0);
+		}
+
+		[Fact]
+		public void OrdersServiceBranchesBeneathTheirCategory()
+		{
+			// Measured: the development branch partitions its category exactly
+			// on every service menu — Healthcare's four branches sum to its 24,
+			// Police's four to its 22. Depth leads the key so the branches read
+			// in the order the game's own tree lays them out.
+			var basic = Entry(1) with { UiCategory = "Healthcare", DevTreeBranch = "Healthcare", DevTreeBranchDepth = 0 };
+			var later = Entry(2) with { UiCategory = "Healthcare", DevTreeBranch = "Hospital", DevTreeBranchDepth = 2 };
+
+			Assert.True(
+				string.CompareOrdinal(
+					BuildingCatalogGrouping.SecondaryKey(basic, "menuCategory"),
+					BuildingCatalogGrouping.SecondaryKey(later, "menuCategory")) < 0);
+		}
+
+		[Fact]
+		public void FallsBackToTheMilestoneForSignatures()
+		{
+			// Signature buildings carry no development branch at all and every
+			// one of them is ZoneType.Signature, so the milestone is the only
+			// thing that varies. Signature must NOT be taken as a density here
+			// or all 100 collapse into one child.
+			var early = Entry(1) with { UiCategory = "SignaturesCommercial", ZoneType = ZoneTypeFilter.Signature, UnlockMilestone = 1 };
+			var late = Entry(2) with { UiCategory = "SignaturesCommercial", ZoneType = ZoneTypeFilter.Signature, UnlockMilestone = 9 };
+
+			Assert.NotEqual(
+				BuildingCatalogGrouping.SecondaryKey(early, "menuCategory"),
+				BuildingCatalogGrouping.SecondaryKey(late, "menuCategory"));
+
+			Assert.True(
+				string.CompareOrdinal(
+					BuildingCatalogGrouping.SecondaryKey(early, "menuCategory"),
+					BuildingCatalogGrouping.SecondaryKey(late, "menuCategory")) < 0);
+		}
+
+		[Fact]
+		public void KeepsTheThreeTierSourcesApart()
+		{
+			// Each menu is homogeneous so they never mix in practice, but a
+			// collision would silently merge two unrelated groups.
+			var density = Entry(1) with { UiCategory = "C", ZoneType = ZoneTypeFilter.Low };
+			var branch = Entry(2) with { UiCategory = "C", DevTreeBranch = "Hospital" };
+			var milestone = Entry(3) with { UiCategory = "C", UnlockMilestone = 4 };
+
+			var keys = new[] { density, branch, milestone }
+				.Select(entry => BuildingCatalogGrouping.SecondaryKey(entry, "menuCategory"))
+				.ToArray();
+
+			Assert.Equal(keys.Length, keys.Distinct().Count());
 		}
 	}
 }

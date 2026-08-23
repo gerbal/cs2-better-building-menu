@@ -56,10 +56,11 @@ export const GROUP_DIMENSIONS: readonly GroupDimension[] = [
   // because inside a vanilla menu it is the division the player already has in
   // mind, and it is the only dimension that works for a menu holding both
   // networks and buildings.
-  // Depth 2: the category, then the density tier within it. Zones are why —
-  // Residential holds 52 entries at pack scale and the tier is what the player
-  // is choosing between. Every other menu leaves zoneType at Any, so its second
-  // level is a single node and shouldShowHeading draws no heading for it.
+  // Depth 2: the category, then the tier within it — see categoryTierLabel for
+  // what "tier" means per menu (density for zones, the development branch for
+  // service menus, the milestone for signatures). A menu whose entries share
+  // one tier gets a single child level, which shouldShowHeading draws no
+  // heading for, so this costs nothing where it says nothing.
   { id: "menuCategory", label: "Category", depth: 2 },
   // Ours, not the game's: Buildings, Networks, Service Buildings. Renamed from
   // "Category" so it does not compete with the game's own word for a different
@@ -349,6 +350,45 @@ export const DENSITY_TIERS: readonly { value: number; key: string; label: string
   { value: 16, key: "Signature", label: "Signature" },
 ];
 
+/**
+ * The tier a category divides into, whatever the game tiers that asset by.
+ *
+ * One level, three sources, because the menus genuinely differ and each is
+ * homogeneous — a category never mixes them:
+ *
+ *   zones            density        Low Density, Row Housing, Mixed Housing…
+ *   service menus    dev-tree branch  Hospital, Crematorium, Recycling Center…
+ *   signatures       milestone      the only thing that varies across them
+ *
+ * Measured before it was written. The dev-tree branch partitions its category
+ * EXACTLY on every service menu checked: Healthcare's four branches sum to its
+ * 24, Deathcare's two to its 7; Police 13+7+1+1 = 22, Administration 1+6+5 = 12.
+ *
+ * Signature buildings carry no branch at all and every one of them is
+ * zoneType 16, so Signature is deliberately NOT treated as a density here — it
+ * is a marker rather than a tier, and taking it would collapse all 100 into one
+ * child and never reach the milestone that actually varies.
+ */
+export function categoryTierLabel(
+  entry: GroupableEntry,
+  milestoneNames: readonly string[] = []
+): string {
+  const zoneType = typeof entry.zoneType === "number" ? entry.zoneType : Number(entry.zoneType);
+  const density = DENSITY_TIERS.find((tier) => tier.value === zoneType);
+
+  if (density && density.key !== "Signature") {
+    return density.label;
+  }
+
+  const branch = text(entry.devTreeBranch);
+
+  if (branch) {
+    return branch;
+  }
+
+  return milestoneLabel(entry.unlockMilestone, milestoneNames);
+}
+
 /** The heading for one tier, or the ungrouped label when there is none. */
 export function densityTierLabel(value: number | string | null | undefined): string {
   const numeric = typeof value === "string" ? Number(value) : value;
@@ -545,7 +585,7 @@ export function groupLevelsFor(
       // Fixed length, like every other dimension — GroupDimension.depth
       // declares it and a test asserts it, so an untiered entry gets the
       // ungrouped LABEL rather than a shorter array.
-      return [menuCategoryLabel(entry), densityTierLabel(entry.zoneType)];
+      return [menuCategoryLabel(entry), categoryTierLabel(entry, milestoneNames)];
     case "subCategory":
       return [text(entry.subCategoryLabel) ?? text(entry.subCategory) ?? UNGROUPED_LABEL];
     case "role":

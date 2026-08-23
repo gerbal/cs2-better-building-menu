@@ -4,6 +4,7 @@ import {
   COST_BANDS,
   DENSITY_TIERS,
   densityTierLabel,
+  categoryTierLabel,
   DEFAULT_GROUP_DIMENSION,
   FOOTPRINT_BANDS,
   GROUP_DIMENSIONS,
@@ -832,5 +833,53 @@ describe("menuCategory sub-grouped by density", () => {
 
     assert.equal(nodes[0].children.length, 1);
     assert.equal(shouldShowHeading(nodes[0].children), false);
+  });
+});
+
+describe("categoryTierLabel", () => {
+  it("uses the density tier for a zone", () => {
+    assert.equal(categoryTierLabel({ zoneType: 64 } as never), "Low Rent Housing");
+    assert.equal(categoryTierLabel({ zoneType: 2 } as never), "Row Housing");
+  });
+
+  it("uses the development branch for a service building", () => {
+    // Measured: the branch partitions its category exactly on every service
+    // menu checked — Healthcare's four sum to its 24, Police's four to its 22.
+    assert.equal(
+      categoryTierLabel({ zoneType: 0, devTreeBranch: "Crematorium" } as never),
+      "Crematorium"
+    );
+  });
+
+  it("does not treat Signature as a density", () => {
+    // Every signature building is zoneType 16 and none carries a branch, so
+    // taking Signature here would collapse all 100 into one child and never
+    // reach the milestone, which is the only thing that varies across them.
+    assert.equal(
+      categoryTierLabel({ zoneType: 16, unlockMilestone: 9 } as never, ["", "A", "B", "", "", "", "", "", "", "Metropolis"]),
+      "Metropolis"
+    );
+  });
+
+  it("prefers density over a branch when an entry somehow has both", () => {
+    assert.equal(
+      categoryTierLabel({ zoneType: 1, devTreeBranch: "Hospital" } as never),
+      "Low Density"
+    );
+  });
+
+  it("groups a service menu's category by its branches", () => {
+    const rows = [
+      { id: 1, name: "A", uiCategory: "Healthcare", zoneType: 0, devTreeBranch: "Hospital" },
+      { id: 2, name: "B", uiCategory: "Healthcare", zoneType: 0, devTreeBranch: "Healthcare" },
+      { id: 3, name: "C", uiCategory: "Deathcare", zoneType: 0, devTreeBranch: "Crematorium" },
+    ] as never[];
+
+    const nodes = buildGroupedView(rows, "menuCategory");
+
+    assert.deepEqual(
+      nodes.map((n) => [n.label, n.children.map((c) => c.label)]),
+      [["Healthcare", ["Hospital", "Healthcare"]], ["Deathcare", ["Crematorium"]]]
+    );
   });
 });

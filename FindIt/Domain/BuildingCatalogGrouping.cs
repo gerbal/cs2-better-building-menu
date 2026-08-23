@@ -179,15 +179,34 @@ namespace FindItBuildingMenu.Domain
 				return Normalize(entry.SubCategory);
 			}
 
-			// The density tier beneath the game's own category. Without a key
-			// here the tier would only be a HEADING, and grouping is a primary
-			// sort key precisely so a group cannot straddle a page boundary —
-			// the heading would then describe something other than what follows
-			// it. Untiered entries all share the unranked key and stay together
-			// at the end of their category.
+			// The tier beneath the game's own category. Without a key here the
+			// tier would only be a HEADING, and grouping is a primary sort key
+			// precisely so a group cannot straddle a page boundary — the
+			// heading would then describe something other than what follows it.
+			//
+			// Three sources, mirroring categoryTierLabel in buildingGroups.ts.
+			// Each menu is homogeneous, so a category never mixes them; the
+			// prefixes only keep the three from colliding if one ever did.
 			if (Is(dimension, MenuCategory))
 			{
-				return DensityRank(entry.ZoneType);
+				// Signature is a marker, not a density: every signature building
+				// carries it, so taking it here would collapse all of them into
+				// one child and never reach the milestone that does vary.
+				if (entry.ZoneType != ZoneTypeFilter.Any && entry.ZoneType != ZoneTypeFilter.Signature)
+				{
+					return "d" + DensityRank(entry.ZoneType);
+				}
+
+				// Depth first, so the branches read in the order the game's own
+				// development tree lays them out rather than alphabetically.
+				if (!string.IsNullOrWhiteSpace(entry.DevTreeBranch))
+				{
+					return "b"
+						+ entry.DevTreeBranchDepth.ToString("D3", CultureInfo.InvariantCulture)
+						+ Normalize(entry.DevTreeBranch);
+				}
+
+				return "m" + entry.UnlockMilestone.ToString("D3", CultureInfo.InvariantCulture);
 			}
 
 			return string.Empty;
