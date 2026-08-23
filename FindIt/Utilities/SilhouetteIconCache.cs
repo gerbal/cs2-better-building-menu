@@ -27,6 +27,22 @@ namespace FindItBuildingMenu.Utilities
 		private readonly Dictionary<string, string?> _resolved =
 			new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
+		/// <summary>
+		/// The cache directory's contents, listed once instead of stat'd per icon.
+		/// </summary>
+		/// <remarks>
+		/// Generate used to ask File.Exists for every icon it was handed. That is
+		/// one filesystem call per vector-thumbnailed asset, through Wine, on the
+		/// first visit to every menu — and _resolved only stops the SECOND visit
+		/// paying it. Measured: the first refresh for a menu cost ~250ms against
+		/// ~65ms for every later one, on both of the two largest menus, and the
+		/// premium is per menu rather than global, so it is not JIT warm-up.
+		///
+		/// One directory listing answers all of them. Null until first use, so a
+		/// mod that never shows a locked vector asset never pays for it.
+		/// </remarks>
+		private HashSet<string>? _cachedFiles;
+
 		public SilhouetteIconCache(IReadOnlyList<string> contentRoots, string cacheDirectory)
 		{
 			_contentRoots = contentRoots ?? throw new ArgumentNullException(nameof(contentRoots));
@@ -101,11 +117,15 @@ namespace FindItBuildingMenu.Utilities
 
 		private string? Generate(string relative)
 		{
-			var target = Path.Combine(_cacheDirectory, SilhouetteIcons.CacheFileName(relative));
+			var fileName = SilhouetteIcons.CacheFileName(relative);
+			var target = Path.Combine(_cacheDirectory, fileName);
 
 			// Survives a restart: the file is as good as the install it came
 			// from, and regenerating 500 icons on every boot would be waste.
-			if (File.Exists(target))
+			//
+			// Answered from one directory listing rather than a File.Exists per
+			// icon — see _cachedFiles for what that cost.
+			if (CachedFiles().Contains(fileName))
 			{
 				return SilhouetteIcons.UrlFor(relative);
 			}
@@ -121,6 +141,7 @@ namespace FindItBuildingMenu.Utilities
 			{
 				Directory.CreateDirectory(_cacheDirectory);
 				File.WriteAllText(target, SilhouetteIcons.Blacken(File.ReadAllText(source)));
+				CachedFiles().Add(fileName);
 				Generated++;
 			}
 			catch (Exception)
@@ -132,6 +153,35 @@ namespace FindItBuildingMenu.Utilities
 			}
 
 			return SilhouetteIcons.UrlFor(relative);
+		}
+
+		/// <summary>The cache directory's file names, listed at most once.</summary>
+		private HashSet<string> CachedFiles()
+		{
+			if (_cachedFiles is not null)
+			{
+				return _cachedFiles;
+			}
+
+			_cachedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+			try
+			{
+				if (Directory.Exists(_cacheDirectory))
+				{
+					foreach (var path in Directory.GetFiles(_cacheDirectory, "*.svg"))
+					{
+						_cachedFiles.Add(Path.GetFileName(path));
+					}
+				}
+			}
+			catch (Exception)
+			{
+				// An unreadable cache directory means every icon regenerates,
+				// which is slow rather than broken. Same posture as Generate.
+			}
+
+			return _cachedFiles;
 		}
 
 		private string? FindSource(string relative)

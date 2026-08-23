@@ -398,6 +398,55 @@ namespace FindItBuildingMenu.Systems
 			_finditUISystem.TriggerSearch();
 		}
 
+		/// <summary>
+		/// Resolves every asset's silhouette now, while the game is still loading.
+		/// </summary>
+		/// <remarks>
+		/// The cache memoises per asset and survives across refreshes, so the
+		/// cost is paid exactly once per asset per session — but WHERE it was
+		/// paid was the first time a menu happened to project that asset, which
+		/// is the moment the player opens it.
+		///
+		/// Measured: the first refresh for a menu cost ~250-295ms against ~65ms
+		/// for every later one, on both of the two largest menus. The premium is
+		/// per MENU rather than global, which is what ruled out JIT warm-up —
+		/// Landscaping paid it in full after Roads had already paid its own.
+		///
+		/// Doing it here moves that onto the loading screen, beside the game's
+		/// own asset work, where a pause is what the player already expects.
+		/// Full passes only: an incremental reindex touches a handful of prefabs
+		/// and would rather not walk seventeen thousand.
+		/// </remarks>
+		private void PrimeSilhouettes()
+		{
+			if (Mod.Silhouettes is null)
+			{
+				return;
+			}
+
+			var timer = Stopwatch.StartNew();
+			var seen = 0;
+
+			foreach (var prefab in FindItUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any])
+			{
+				var thumbnail = prefab.Thumbnail ?? prefab.FallbackThumbnail;
+
+				if (string.IsNullOrEmpty(thumbnail))
+				{
+					continue;
+				}
+
+				// Cheap and self-limiting: the cache returns immediately for a
+				// raster, and remembers a miss as readily as a hit.
+				Mod.Silhouettes.UrlFor(IconPath.Normalize(thumbnail));
+				seen++;
+			}
+
+			Mod.Log.Info(
+				$"Primed silhouettes for {seen} prefab(s) in {timer.Elapsed.TotalSeconds:0.000}s "
+				+ $"({Mod.Silhouettes.Generated} generated)");
+		}
+
 		private void RunIndex(bool full)
 		{
 			var stopWatch = Stopwatch.StartNew();
@@ -598,6 +647,11 @@ namespace FindItBuildingMenu.Systems
 
 			Mod.Log.Info($"{(full ? "Full" : "Partial")} Prefab Indexing completed in {stopWatch.Elapsed.TotalSeconds:0.000}s");
 			Mod.Log.Info($"Indexed Prefabs Count: {FindItUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any].Count}");
+
+			if (full)
+			{
+				PrimeSilhouettes();
+			}
 
 			if (full)
 			{
