@@ -83,6 +83,21 @@ namespace FindItBuildingMenu.Domain
 		int SchoolTier = -1)
 	{
 		/// <summary>The <see cref="UnlockMilestone"/> value that narrows nothing.</summary>
+		/// <summary>
+		/// The sort fields the picker offers. Mirrored in
+		/// buildingLensSortPresentation.ts's BUILDING_LENS_SORT_OPTIONS.
+		/// </summary>
+		/// <remarks>
+		/// Here rather than in the UI because the backend has to answer which of
+		/// them can actually reorder the current set, and asking about a field
+		/// the picker never shows would be wasted work.
+		/// </remarks>
+		public static readonly string[] OfferedSortColumns =
+		{
+			"Name", "Category", "ConstructionCost", "Upkeep", "Workers",
+			"Capacity", "LotWidth", "LotDepth", "BuildingLevel", "HasParking",
+		};
+
 		public const int AnyMilestone = -1;
 
 		public int EffectiveOffset => Offset < 0 ? 0 : Offset;

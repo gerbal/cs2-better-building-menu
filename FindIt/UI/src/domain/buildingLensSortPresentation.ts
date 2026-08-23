@@ -72,7 +72,44 @@ export function getBuildingLensColumnSortIndicator(
   return state.descending ? "▼" : "▲";
 }
 
-export function getBuildingLensSortPresentation(state: SortState): BuildingLensSortPresentation {
+/**
+ * The sort fields worth offering for the current results.
+ *
+ * cm-ddw3: a field that ties across the set responds — the summary flips to
+ * "Cost ▲" then "Cost ▼" — while the list does not move, which is the
+ * signature of a broken control. Signatures sorted by Cost is the live case:
+ * every building is "Free". The same argument groupDimensionsFor already makes
+ * for grouping, where "a dimension that puts the whole menu in ONE bucket is a
+ * control that cannot act".
+ *
+ * The backend answers which ones can reorder, because only it sees the whole
+ * matched set rather than the page.
+ *
+ * Two things are never dropped. The CURRENT selection stays even when it has
+ * gone dead, because a picker whose summary shows a value its own list does not
+ * contain is a worse bug than the one being fixed. And an empty answer is
+ * ignored outright: before the first page lands the backend has said nothing
+ * yet, and hiding every option would leave the control empty on open.
+ */
+export function usableSortOptions(
+  reorderable: readonly string[] | null | undefined,
+  selected: SortColumn
+): readonly BuildingLensSortOption[] {
+  const usable = reorderable ?? [];
+
+  if (usable.length === 0) {
+    return BUILDING_LENS_SORT_OPTIONS;
+  }
+
+  return BUILDING_LENS_SORT_OPTIONS.filter(
+    (option) => option.key === selected || usable.includes(option.key)
+  );
+}
+
+export function getBuildingLensSortPresentation(
+  state: SortState,
+  reorderable: readonly string[] | null | undefined = null
+): BuildingLensSortPresentation {
   const selectedOption = BUILDING_LENS_SORT_OPTIONS.find((option) => option.key === state.column)
     ?? BUILDING_LENS_SORT_OPTIONS[0];
   const direction = state.descending ? "descending" : "ascending";
@@ -83,7 +120,7 @@ export function getBuildingLensSortPresentation(state: SortState): BuildingLensS
       direction,
       indicator: state.descending ? "▼" : "▲",
     },
-    expanded: BUILDING_LENS_SORT_OPTIONS.map((option) => ({
+    expanded: usableSortOptions(reorderable, selectedOption.key).map((option) => ({
       ...option,
       selected: option.key === selectedOption.key,
     })),

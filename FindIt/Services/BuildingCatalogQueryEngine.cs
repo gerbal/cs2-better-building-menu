@@ -100,9 +100,17 @@ namespace FindItBuildingMenu.Services
 			// nothing about the rest of them. Same enumerable the count and the
 			// ordering already walked.
 			var canReorder = SortCanReorder(matching, query);
+			var usableColumns = ReorderableSortColumns(
+				matching, query, BuildingCatalogQuery.OfferedSortColumns);
 
 			return new BuildingCatalogPage(
-				items, totalCount, offset, limit, HasMore: hasMore, SortCanReorder: canReorder);
+				items,
+				totalCount,
+				offset,
+				limit,
+				HasMore: hasMore,
+				SortCanReorder: canReorder,
+				ReorderableSortColumns: usableColumns);
 		}
 
 		/// <summary>
@@ -639,6 +647,82 @@ namespace FindItBuildingMenu.Services
 					.Distinct()
 					.Skip(1)
 					.Any());
+		}
+
+		/// <summary>
+		/// Which of the offered sort columns could actually move a row.
+		/// </summary>
+		/// <remarks>
+		/// cm-ddw3, and the reason the picker can drop the rest: a control that
+		/// responds while the list does not is the signature of a broken one.
+		/// The same argument groupDimensionsFor already makes for grouping —
+		/// "a dimension that puts the whole menu in ONE bucket is a control that
+		/// cannot act".
+		///
+		/// ONE pass over the entries for all columns, not one pass each. The
+		/// refresh this runs inside was just cut from three per menu click to
+		/// one, and twenty full scans of a 10,528-entry set would hand that back.
+		/// Per column it keeps the first value seen in each group and stops
+		/// caring once a second, different one turns up.
+		/// </remarks>
+		public static IReadOnlyList<string> ReorderableSortColumns(
+			IEnumerable<BuildingCatalogEntry> entries,
+			BuildingCatalogQuery query,
+			IReadOnlyList<string> candidates)
+		{
+			if (entries is null || query is null || candidates is null || candidates.Count == 0)
+			{
+				return Array.Empty<string>();
+			}
+
+			// group key -> column -> first value seen there.
+			var seen = new Dictionary<string, object?[]>(StringComparer.Ordinal);
+			var reorderable = new bool[candidates.Count];
+
+			foreach (var entry in entries)
+			{
+				var group = BuildingCatalogGrouping.PrimaryKey(entry, query.GroupBy)
+					+ ""
+					+ BuildingCatalogGrouping.SecondaryKey(entry, query.GroupBy);
+
+				if (!seen.TryGetValue(group, out var first))
+				{
+					first = new object?[candidates.Count];
+
+					for (var i = 0; i < candidates.Count; i++)
+					{
+						first[i] = SortValueOf(entry, candidates[i]);
+					}
+
+					seen[group] = first;
+					continue;
+				}
+
+				for (var i = 0; i < candidates.Count; i++)
+				{
+					if (reorderable[i])
+					{
+						continue;
+					}
+
+					if (!Equals(first[i], SortValueOf(entry, candidates[i])))
+					{
+						reorderable[i] = true;
+					}
+				}
+			}
+
+			var usable = new List<string>();
+
+			for (var i = 0; i < candidates.Count; i++)
+			{
+				if (reorderable[i])
+				{
+					usable.Add(candidates[i]);
+				}
+			}
+
+			return usable;
 		}
 
 		private static IOrderedEnumerable<BuildingCatalogEntry> ThenNullable(

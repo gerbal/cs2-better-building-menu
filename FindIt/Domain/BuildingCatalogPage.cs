@@ -30,7 +30,15 @@ namespace FindItBuildingMenu.Domain
 		/// The sort control still responds either way, so without this the
 		/// player gets a control that answers attached to a list that does not.
 		/// </remarks>
-		bool SortCanReorder = true) : IJsonWritable
+		bool SortCanReorder = true,
+		/// <summary>
+		/// The offered sort fields that could actually move a row here.
+		/// </summary>
+		/// <remarks>
+		/// cm-ddw3. The picker drops the rest rather than annotating them, the
+		/// same way groupDimensionsFor already drops a grouping that cannot act.
+		/// </remarks>
+		IReadOnlyList<string>? ReorderableSortColumns = null) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -51,6 +59,15 @@ namespace FindItBuildingMenu.Domain
 			// the signature of a broken one.
 			writer.PropertyName("sortCanReorder");
 			writer.Write(SortCanReorder);
+
+			writer.PropertyName("reorderableSortColumns");
+			var columns = ReorderableSortColumns ?? System.Array.Empty<string>();
+			writer.ArrayBegin((uint)columns.Count);
+			foreach (var column in columns)
+			{
+				writer.Write(column);
+			}
+			writer.ArrayEnd();
 
 			writer.PropertyName("totalCount");
 			writer.Write(TotalCount);
