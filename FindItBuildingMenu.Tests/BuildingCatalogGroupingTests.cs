@@ -487,5 +487,47 @@ namespace FindItBuildingMenu.Tests
 
 			Assert.Equal(keys.Length, keys.Distinct().Count());
 		}
+		[Fact]
+		public void UsesTheSubcategoryAsTransitsTier()
+		{
+			// Transit is the one menu whose development branch divides nothing:
+			// {Road, Train, Tram} against {TransportationRoad,
+			// TransportationTrain, TransportationTram} is one to one, so every
+			// category would draw a single child. Tracks, stops, lines and
+			// stations are the real split.
+			var track = Entry(1) with
+			{
+				UiMenu = "Transportation",
+				UiCategory = "TransportationTrain",
+				SubCategory = "Networks_Tracks",
+				DevTreeBranch = "Train",
+			};
+			var station = track with { Id = 2, SubCategory = "ServiceBuildings_Transportation" };
+
+			Assert.NotEqual(
+				BuildingCatalogGrouping.SecondaryKey(track, "menuCategory"),
+				BuildingCatalogGrouping.SecondaryKey(station, "menuCategory"));
+		}
+
+		[Fact]
+		public void StillUsesTheBranchOutsideTransit()
+		{
+			// The transit rule must not leak: a service menu's subcategory is
+			// constant across its whole menu, so taking it there would collapse
+			// the branch sub-grouping to a single child everywhere.
+			var hospital = Entry(1) with
+			{
+				UiMenu = "Health & Deathcare",
+				UiCategory = "Healthcare",
+				SubCategory = "ServiceBuildings_Health",
+				DevTreeBranch = "Hospital",
+				DevTreeBranchDepth = 2,
+			};
+			var basic = hospital with { Id = 2, DevTreeBranch = "Healthcare", DevTreeBranchDepth = 0 };
+
+			Assert.NotEqual(
+				BuildingCatalogGrouping.SecondaryKey(hospital, "menuCategory"),
+				BuildingCatalogGrouping.SecondaryKey(basic, "menuCategory"));
+		}
 	}
 }

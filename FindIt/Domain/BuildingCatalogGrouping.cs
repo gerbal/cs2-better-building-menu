@@ -160,6 +160,12 @@ namespace FindItBuildingMenu.Domain
 		private static bool Is(string value, string dimension) =>
 			string.Equals(value, dimension, StringComparison.OrdinalIgnoreCase);
 
+		/// <summary>The menu whose tier is what an asset IS, not when it unlocks.</summary>
+		/// <remarks>Mirrored as isTransitMenu in buildingGroups.ts.</remarks>
+		private static bool IsTransitMenu(string? menu) =>
+			!string.IsNullOrEmpty(menu)
+			&& menu!.IndexOf("Transportation", StringComparison.OrdinalIgnoreCase) >= 0;
+
 		/// <summary>
 		/// Second group level. Only Category has one — the subcategory beneath
 		/// it, which is what keeps Category useful once the player has already
@@ -195,6 +201,16 @@ namespace FindItBuildingMenu.Domain
 				if (entry.ZoneType != ZoneTypeFilter.Any && entry.ZoneType != ZoneTypeFilter.Signature)
 				{
 					return "d" + DensityRank(entry.ZoneType);
+				}
+
+				// Transit before the branch, because it HAS branches and they
+				// divide nothing: measured live, {Road, Train, Tram} against
+				// categories {TransportationRoad, TransportationTrain,
+				// TransportationTram} is one to one. Its subcategory is the real
+				// split — tracks, stops, lines, and the stations themselves.
+				if (IsTransitMenu(entry.UiMenu))
+				{
+					return "s" + Normalize(entry.SubCategory);
 				}
 
 				// Depth first, so the branches read in the order the game's own

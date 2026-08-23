@@ -883,3 +883,56 @@ describe("categoryTierLabel", () => {
     );
   });
 });
+
+describe("transit tiers", () => {
+  const transit = (id: number, sub: string, label: string) =>
+    ({ id, name: `T${id}`, uiMenu: "Transportation", uiCategory: "TransportationTrain",
+       subCategory: sub, subCategoryLabel: label, devTreeBranch: "Train", zoneType: 0 } as never);
+
+  it("splits transit by what an asset is, not by its branch", () => {
+    // Its branches are {Road, Train, Tram} against categories
+    // {TransportationRoad, TransportationTrain, TransportationTram} — one to
+    // one, so the branch divides nothing and every category drew one child.
+    const nodes = buildGroupedView(
+      [
+        transit(1, "Networks_Tracks", "Tracks"),
+        transit(2, "ServiceBuildings_Transportation", "Stations"),
+        transit(3, "Networks_Routes", "Transit Lines"),
+      ],
+      "menuCategory"
+    );
+
+    assert.deepEqual(
+      nodes[0].children.map((n) => n.label),
+      ["Tracks", "Stations", "Transit Lines"]
+    );
+  });
+
+  it("relabels the stations, whose vanilla name says nothing here", () => {
+    // The backend resolves that subcategory through the GAME's key, and
+    // vanilla calls it "Transportation" — useless as a heading inside the
+    // Transportation menu, beside Tracks and Transit Lines.
+    const nodes = buildGroupedView(
+      [transit(1, "ServiceBuildings_Transportation", "Transportation")],
+      "menuCategory"
+    );
+
+    assert.equal(nodes[0].children[0].label, "Stations");
+  });
+
+  it("does not leak the transit rule into a service menu", () => {
+    // A service menu's subcategory is constant across the whole menu, so
+    // taking it there would collapse the branch sub-grouping everywhere.
+    const nodes = buildGroupedView(
+      [
+        { id: 1, name: "A", uiMenu: "Health & Deathcare", uiCategory: "Healthcare",
+          subCategory: "ServiceBuildings_Health", devTreeBranch: "Hospital", zoneType: 0 },
+        { id: 2, name: "B", uiMenu: "Health & Deathcare", uiCategory: "Healthcare",
+          subCategory: "ServiceBuildings_Health", devTreeBranch: "Healthcare", zoneType: 0 },
+      ] as never[],
+      "menuCategory"
+    );
+
+    assert.deepEqual(nodes[0].children.map((n) => n.label), ["Hospital", "Healthcare"]);
+  });
+});
