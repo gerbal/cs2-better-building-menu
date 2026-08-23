@@ -349,6 +349,92 @@ namespace FindItBuildingMenu.Services
 				.ToArray();
 		}
 
+		/// <summary>
+		/// Every category whose density tiers should be drawn in its place.
+		/// </summary>
+		/// <remarks>
+		/// Static and over entries, like BuildFacetState, so the rule can be
+		/// tested without standing up an adapter.
+		///
+		/// The condition is the school levels': sub-tabs stand in for a category
+		/// only when they PARTITION it, so a category with fewer than two tiers
+		/// is left alone. That is what keeps Industrial — one untiered zone —
+		/// and the extractor areas as plain tabs, with no separate suppression
+		/// rule needed anywhere.
+		///
+		/// Untiered entries inside a tiered category would have nowhere to go,
+		/// so a category holding any is not expanded either: a tab row that
+		/// silently hides part of its own category is worse than no tabs.
+		/// </remarks>
+		public static IReadOnlyList<MenuCategoryTabs> BuildDensityTabs(
+			IEnumerable<BuildingCatalogEntry> entries,
+			string uiMenu)
+		{
+			return (entries ?? Array.Empty<BuildingCatalogEntry>())
+				.GroupBy(entry => NetworkMenuExtension.EffectiveCategory(entry, uiMenu) ?? string.Empty)
+				.Where(category => category.Key.Length > 0
+					&& category.All(entry => entry.ZoneType != ZoneTypeFilter.Any)
+					&& category.Select(entry => entry.ZoneType).Distinct().Count() > 1)
+				.OrderBy(category => category.Key, StringComparer.Ordinal)
+				.Select(category => new MenuCategoryTabs(
+					category.Key,
+					category
+						.GroupBy(entry => entry.ZoneType)
+						.OrderBy(tier => Array.IndexOf(BuildingCatalogGrouping.DensityOrder, tier.Key))
+						.Select(tier => new MenuBranchCount(
+							StripAxes.DensityTab.Format(
+								category.Key,
+								BuildingCatalogLabels.DensityTier(tier.Key)),
+							tier.Count(),
+							Domain.Options.ZoneTypeOption.IconFor(tier.Key),
+							BuildingCatalogLabels.DensityTier(tier.Key)))
+						.ToArray()))
+				.ToArray();
+		}
+
+		/// <summary>
+		/// The strip's sub-tabs, whichever axis supplies them.
+		/// </summary>
+		/// <remarks>
+		/// Density first because it is the more specific answer and the two
+		/// cannot both apply: zones carry no development branch and service
+		/// buildings carry no zone tier.
+		///
+		/// The development path is left exactly as it was, calling the same two
+		/// methods it always did. GetStripAxis consults GetExpandedCategoryId,
+		/// so replacing that method would have made the axis depend on a method
+		/// that depends on the axis.
+		/// </remarks>
+		public IReadOnlyList<MenuCategoryTabs> GetExpandedCategories(BuildingCatalogQuery query)
+		{
+			if (query is null)
+			{
+				throw new ArgumentNullException(nameof(query));
+			}
+
+			var unscoped = query with
+			{
+				UiCategory = string.Empty,
+				StripTabs = null,
+				SchoolTier = -1,
+			};
+
+			var density = BuildDensityTabs(
+				BuildingCatalogQueryEngine.InScope(ProjectForMenu(query.UiMenu, unscoped.DlcIds), unscoped),
+				query.UiMenu);
+
+			if (density.Count > 0)
+			{
+				return density;
+			}
+
+			var branchCategory = GetExpandedCategoryId(query);
+
+			return branchCategory.Length == 0
+				? Array.Empty<MenuCategoryTabs>()
+				: new[] { new MenuCategoryTabs(branchCategory, GetExpandedCategoryTabs(query).ToArray()) };
+		}
+
 		public string GetStripAxis(BuildingCatalogQuery query)
 		{
 			if (query is null)

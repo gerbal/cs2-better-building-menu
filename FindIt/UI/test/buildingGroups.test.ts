@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   COST_BANDS,
+  DENSITY_TIERS,
+  densityTierLabel,
   DEFAULT_GROUP_DIMENSION,
   FOOTPRINT_BANDS,
   GROUP_DIMENSIONS,
@@ -746,5 +748,49 @@ describe("Which grouping choices a menu offers", () => {
     // A budget straight from the tile width would leave "C…", which identifies
     // nothing; the count beside it is what the width is really being spent on.
     assert.ok(fitGroupLabel("WELFARE OFFICE", 1).length >= 7);
+  });
+});
+
+describe("Density tiers", () => {
+  it("names each tier rather than printing its enum value", () => {
+    // These headings read "0", "1", "2", "4", "8" before this existed. It was
+    // never seen because the dimension is dropped from the picker whenever its
+    // entries share one value — and until zones carried a tier, they always
+    // did.
+    assert.equal(densityTierLabel(1), "Low Density");
+    assert.equal(densityTierLabel(2), "Row Housing");
+    assert.equal(densityTierLabel(4), "Medium Density");
+    assert.equal(densityTierLabel(32), "Mixed Housing");
+    assert.equal(densityTierLabel(64), "Low Rent Housing");
+    assert.equal(densityTierLabel(8), "High Density");
+  });
+
+  it("orders them the way the player meets them", () => {
+    // Mirrors BuildingCatalogGrouping.DensityOrder. The enum values are
+    // 1, 2, 4, 32, 64, 8 — deliberately not ascending, because Mixed and Low
+    // Rent read between Medium and High but were numbered last.
+    assert.deepEqual(
+      DENSITY_TIERS.map((tier) => tier.value),
+      [1, 2, 4, 32, 64, 8, 16]
+    );
+  });
+
+  it("falls back to the ungrouped label for an untiered zone", () => {
+    assert.equal(densityTierLabel(0), UNGROUPED_LABEL);
+    assert.equal(densityTierLabel(null), UNGROUPED_LABEL);
+    assert.equal(densityTierLabel(undefined), UNGROUPED_LABEL);
+    assert.equal(densityTierLabel(999), UNGROUPED_LABEL);
+  });
+
+  it("groups zones by tier name", () => {
+    const rows = [
+      { id: 1, name: "EU Residential Low", zoneType: 1 },
+      { id: 2, name: "EU Residential Mixed", zoneType: 32 },
+    ] as never[];
+
+    assert.deepEqual(
+      buildGroupedView(rows, "density").map((node) => node.label),
+      ["Low Density", "Mixed Housing"]
+    );
   });
 });

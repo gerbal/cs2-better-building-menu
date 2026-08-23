@@ -316,6 +316,44 @@ export const COST_BANDS: readonly number[] = [5_000, 25_000, 100_000];
 export const FOOTPRINT_BANDS: readonly number[] = [2, 4, 6];
 
 /**
+ * Density tiers, in the order the player meets them.
+ *
+ * Mirrors `BuildingCatalogGrouping.DensityOrder` and
+ * `BuildingCatalogLabels.DensityTier`, asserted from the C# side against this
+ * table — there is no shared source across the boundary, the same arrangement
+ * the cost and footprint bands have.
+ *
+ * The values are ZoneTypeFilter's, and they are NOT in reading order: Mixed is
+ * 32 and LowRent 64, both of which read between Medium and High. Row precedes
+ * Medium because row housing unlocks a milestone earlier, measured against a
+ * live catalog. LowRent sits just before High because it IS high density,
+ * whatever its name suggests — those zones pack four residential properties
+ * into the space high density gives two.
+ *
+ * The labels are the game's own words, taken off the zone names it ships:
+ * "Low Density Housing", "Medium Density Row Housing", "Mixed Housing",
+ * "Low Rent Housing". "Housing" is trimmed because the same tiers apply to
+ * commercial and office zones.
+ */
+export const DENSITY_TIERS: readonly { value: number; key: string; label: string }[] = [
+  { value: 1, key: "Low", label: "Low Density" },
+  { value: 2, key: "Row", label: "Row Housing" },
+  { value: 4, key: "Medium", label: "Medium Density" },
+  { value: 32, key: "Mixed", label: "Mixed Housing" },
+  { value: 64, key: "LowRent", label: "Low Rent Housing" },
+  { value: 8, key: "High", label: "High Density" },
+  { value: 16, key: "Signature", label: "Signature" },
+];
+
+/** The heading for one tier, or the ungrouped label when there is none. */
+export function densityTierLabel(value: number | string | null | undefined): string {
+  const numeric = typeof value === "string" ? Number(value) : value;
+  const tier = DENSITY_TIERS.find((candidate) => candidate.value === numeric);
+
+  return tier?.label ?? UNGROUPED_LABEL;
+}
+
+/**
  * The four school tiers, from the game's own `SchoolLevel` enum.
  *
  * `SchoolLevel { Elementary = 1, HighSchool, College, University, Outside }`
@@ -537,11 +575,11 @@ export function groupLevelsFor(
       // more specific when there is one, so it wins.
       return [text(entry.dlcId) ?? text(entry.provenance) ?? UNGROUPED_LABEL];
     case "density":
-      return [
-        typeof entry.zoneType === "number"
-          ? String(entry.zoneType)
-          : text(entry.zoneType) ?? UNGROUPED_LABEL,
-      ];
+      // Was String(entry.zoneType), which drew headings reading "0", "1", "4".
+      // Never seen on screen, because the dimension is dropped from the picker
+      // whenever its entries share one value — and until zones carried a tier,
+      // they always did, so this branch had no way to be exercised.
+      return [densityTierLabel(entry.zoneType)];
     case "footprint":
       return [footprintBandLabel(entry.lotWidth, entry.lotDepth)];
     case "cost":

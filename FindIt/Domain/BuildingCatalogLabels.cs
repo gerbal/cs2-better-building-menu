@@ -12,6 +12,29 @@ namespace FindItBuildingMenu.Domain
 	/// </summary>
 	public static class BuildingCatalogLabels
 	{
+		/// <summary>The heading for one density tier. Mirrored in buildingGroups.ts.</summary>
+		/// <remarks>
+		/// The game's own words, taken off the zone names it ships — "Low
+		/// Density Housing", "Medium Density Row Housing", "Mixed Housing",
+		/// "Low Rent Housing" — with "Housing" trimmed, because the same tiers
+		/// apply to commercial and office zones.
+		///
+		/// Written twice, once here and once in DENSITY_TIERS, with no shared
+		/// source across the boundary. BuildingCatalogGroupingTests reads the
+		/// TypeScript rather than restating it, so the two cannot drift.
+		/// </remarks>
+		public static string DensityTier(ZoneTypeFilter density) => density switch
+		{
+			ZoneTypeFilter.Low => "Low Density",
+			ZoneTypeFilter.Row => "Row Housing",
+			ZoneTypeFilter.Medium => "Medium Density",
+			ZoneTypeFilter.Mixed => "Mixed Housing",
+			ZoneTypeFilter.LowRent => "Low Rent Housing",
+			ZoneTypeFilter.High => "High Density",
+			ZoneTypeFilter.Signature => "Signature",
+			_ => string.Empty,
+		};
+
 		public static string ForCategory(PrefabCategory category, string? rawValue = null)
 		{
 			string enumIdentity = category.ToString();

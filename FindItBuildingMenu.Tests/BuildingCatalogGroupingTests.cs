@@ -1,5 +1,10 @@
+using System;
+using System.Globalization;
+using System.IO;
+using System.Text.RegularExpressions;
 using System.Linq;
 using FindItBuildingMenu.Domain;
+using FindItBuildingMenu.Domain.Enums;
 using FindItBuildingMenu.Services;
 using Xunit;
 
@@ -331,6 +336,87 @@ namespace FindItBuildingMenu.Tests
 			// Unknown but non-"none" still yields an empty key rather than
 			// throwing, so a UI that sends something stale degrades to flat.
 			Assert.Equal(string.Empty, BuildingCatalogGrouping.PrimaryKey(Entry(1), "assetPack"));
+		}
+		[Fact]
+		public void RanksDensityByTheDecidedOrderRatherThanTheEnumValue()
+		{
+			// Low, Row, Medium, Mixed, LowRent, High — the order the player
+			// meets them in. The enum values are 1, 2, 4, 32, 64, 8, so the raw
+			// number puts Mixed and LowRent past High and past Signature.
+			//
+			// The old key WAS that raw number, and it sorted correctly only by
+			// accident of the flag values. The accident stops working the
+			// moment the vocabulary grows, which is now.
+			var ranked = new[]
+			{
+				ZoneTypeFilter.Low,
+				ZoneTypeFilter.Row,
+				ZoneTypeFilter.Medium,
+				ZoneTypeFilter.Mixed,
+				ZoneTypeFilter.LowRent,
+				ZoneTypeFilter.High,
+			}.Select(BuildingCatalogGrouping.DensityRank).ToArray();
+
+			Assert.Equal(ranked.OrderBy(rank => rank, StringComparer.Ordinal).ToArray(), ranked);
+		}
+
+		[Fact]
+		public void SortsUntieredZonesAfterEveryRankedTier()
+		{
+			// Industrial and the extractor areas carry no tier. They belong at
+			// the end, like every other group defined by absence.
+			Assert.True(
+				string.CompareOrdinal(
+					BuildingCatalogGrouping.DensityRank(ZoneTypeFilter.High),
+					BuildingCatalogGrouping.DensityRank(ZoneTypeFilter.Any)) < 0);
+		}
+		[Fact]
+		public void TierLabelsAndOrderAgreeWithTheUiCopyOfThem()
+		{
+			// READS buildingGroups.ts rather than restating it. A test that
+			// restates both sides passes when both are wrong together, which is
+			// the failure mode the cost bands' comment describes and this
+			// feature came within one commit of repeating: the C# rank was the
+			// raw enum value and the TS side had no rank at all, so the two
+			// could not have been compared even in principle.
+			var source = File.ReadAllText(Path.Combine(
+				RepoRoot(), "FindIt", "UI", "src", "domain", "buildingGroups.ts"));
+
+			var table = Regex.Match(
+				source,
+				@"DENSITY_TIERS[^=]*=\s*\[(?<body>.*?)\];",
+				RegexOptions.Singleline);
+
+			Assert.True(table.Success, "DENSITY_TIERS not found in buildingGroups.ts");
+
+			var ui = Regex.Matches(
+					table.Groups["body"].Value,
+					@"value:\s*(?<value>\d+),\s*key:\s*""[^""]*"",\s*label:\s*""(?<label>[^""]*)""")
+				.Cast<Match>()
+				.Select(match => (
+					Value: int.Parse(match.Groups["value"].Value, CultureInfo.InvariantCulture),
+					Label: match.Groups["label"].Value))
+				.ToArray();
+
+			Assert.Equal(
+				BuildingCatalogGrouping.DensityOrder
+					.Select(tier => ((int)tier, BuildingCatalogLabels.DensityTier(tier)))
+					.ToArray(),
+				ui);
+		}
+
+		private static string RepoRoot()
+		{
+			var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
+
+			while (dir is not null && !Directory.Exists(Path.Combine(dir.FullName, "FindIt")))
+			{
+				dir = dir.Parent;
+			}
+
+			Assert.NotNull(dir);
+
+			return dir!.FullName;
 		}
 	}
 }

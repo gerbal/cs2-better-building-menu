@@ -163,9 +163,25 @@ namespace FindItBuildingMenu.Systems
 				// The echo guard was written for the same re-assertion and only
 				// stopped it reaching US; the game's own selection still moved. This
 				// removes the re-assertion instead of ignoring it.
+				// Exactly one refresh, whichever way we got here.
+				//
+				// ToggleFindItPanel(true) ends in RefreshLens — but it FIRST
+				// early-returns when the panel is already visible, which is
+				// precisely the menu-to-menu switch. So the refresh cannot live
+				// only inside the toggle (a switch would get none) and cannot
+				// live only outside it (a cold open would get two).
+				//
+				// Measured both ways: three refreshes fired per open before
+				// this, and dropping the outside pair silently left the strip
+				// showing the PREVIOUS menu's counts on every switch.
+				var wasOpen = _ShowFindItPanel.Value;
 				ToggleFindItPanel(true, activatePrefab: false);
-				RefreshBuildingLensNavigation();
-				RefreshBuildingCatalog();
+
+				if (wasOpen)
+				{
+					RefreshLens();
+				}
+
 				return;
 			}
 
@@ -230,9 +246,15 @@ namespace FindItBuildingMenu.Systems
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 
 
+			// One refresh either way — see the branch above for why it cannot
+			// live wholly inside or wholly outside the toggle.
+			var panelWasOpen = _ShowFindItPanel.Value;
 			ToggleFindItPanel(true, activatePrefab: false);
-			RefreshBuildingLensNavigation();
-			RefreshBuildingCatalog();
+
+			if (panelWasOpen)
+			{
+				RefreshLens();
+			}
 		}
 
 		/// <summary>
@@ -566,9 +588,12 @@ namespace FindItBuildingMenu.Systems
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 
 
-			RefreshBuildingLensNavigation();
+			// One call, not three. RefreshLens IS
+			// RefreshBuildingLensNavigation followed by RefreshBuildingCatalog,
+			// so the three lines this replaces ran each of them TWICE — and on
+			// the one path where that costs most, since searching everything is
+			// by definition the unscoped 10,528-entry query.
 			RefreshLens();
-			RefreshBuildingCatalog();
 		}
 
 		private void SetCurrentSubCategory(int category)
@@ -686,6 +711,14 @@ namespace FindItBuildingMenu.Systems
 		/// reorders the whole result: the rows the player grew the window to
 		/// reach are not the rows that would come back.
 		/// </remarks>
+		/// <remarks>
+		/// Returns early when nothing changed, like ToggleBuildingLensFacet
+		/// below. Not a micro-optimisation: the UI derives this value from the
+		/// menu, so it re-sends it on EVERY menu open — measured at a full
+		/// query and a republish of a dozen bindings per open, for a value that
+		/// was already what it is. Three refreshes fired per menu open and this
+		/// was one of them.
+		/// </remarks>
 		private void SetBuildingCatalogGroupBy(string groupBy)
 		{
 			if (string.IsNullOrWhiteSpace(groupBy))
@@ -693,9 +726,16 @@ namespace FindItBuildingMenu.Systems
 				return;
 			}
 
+			var next = groupBy.Trim();
+
+			if (string.Equals(_buildingCatalogQuery.GroupBy, next, StringComparison.Ordinal))
+			{
+				return;
+			}
+
 			_buildingCatalogQuery = _buildingCatalogQuery with
 			{
-				GroupBy = groupBy.Trim(),
+				GroupBy = next,
 				Offset = 0,
 				Limit = BuildingCatalogQuery.DefaultLimit,
 			};
@@ -703,8 +743,14 @@ namespace FindItBuildingMenu.Systems
 			RefreshBuildingCatalog();
 		}
 
+		/// <remarks>Same idempotence guard as the group-by above.</remarks>
 		private void SetBuildingCatalogSortDescending(bool descending)
 		{
+			if (_buildingCatalogQuery.Descending == descending)
+			{
+				return;
+			}
+
 			_buildingCatalogQuery = _buildingCatalogQuery with
 			{
 				Descending = descending,

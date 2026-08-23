@@ -8,6 +8,8 @@ import {
   schoolTierTabs,
   schoolTierLabel,
   romanNumeral,
+  expandedTabsFor,
+  branchTabLabel,
 } from "../src/domain/menuProgression.ts";
 import { milestoneLabel, SCHOOL_TIERS } from "../src/domain/buildingGroups.ts";
 
@@ -169,5 +171,48 @@ describe("school level rank", () => {
     for (const tier of SCHOOL_TIERS) {
       assert.match(romanNumeral(tier.level), /^[IV]+$/);
     }
+  });
+});
+
+describe("expandedTabsFor", () => {
+  const categories = [
+    { categoryId: "ZonesResidential", tabs: [{ id: "ZonesResidential\u001fLow Density", count: 22, icon: "a.svg", label: "Low Density" }] },
+    { categoryId: "ZonesCommercial", tabs: [{ id: "ZonesCommercial\u001fLow Density", count: 7, icon: "a.svg", label: "Low Density" }] },
+  ];
+
+  it("finds a category's own tabs", () => {
+    assert.equal(expandedTabsFor(categories, "ZonesCommercial")[0].count, 7);
+  });
+
+  it("returns nothing for a category that is not expanded", () => {
+    // Industrial has one untiered zone, so the backend sends no tabs for it
+    // and the category draws itself.
+    assert.deepEqual(expandedTabsFor(categories, "ZonesIndustrial"), []);
+  });
+
+  it("survives a missing binding", () => {
+    assert.deepEqual(expandedTabsFor(null, "ZonesResidential"), []);
+    assert.deepEqual(expandedTabsFor(undefined, "ZonesResidential"), []);
+  });
+});
+
+describe("branchTabLabel", () => {
+  it("shows the label, not the composite id it matches on", () => {
+    // The id carries the family so a tier tab cannot narrow to all three
+    // families at once. The player must never see that machinery.
+    assert.equal(
+      branchTabLabel({ id: "ZonesResidential\u001fLow Density", count: 22, icon: "", label: "Low Density" }),
+      "Low Density"
+    );
+  });
+
+  it("falls back to the id for a development branch, which has no label", () => {
+    assert.equal(branchTabLabel({ id: "Roundabouts", count: 38, icon: "" }), "Roundabouts");
+    assert.equal(branchTabLabel({ id: "Roundabouts", count: 38, icon: "", label: "  " }), "Roundabouts");
+  });
+
+  it("survives a missing tab", () => {
+    assert.equal(branchTabLabel(null), "");
+    assert.equal(branchTabLabel(undefined), "");
   });
 });

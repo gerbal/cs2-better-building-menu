@@ -42,6 +42,23 @@ namespace FindItBuildingMenu.Systems
 		private HashSet<string> _blackList;
 		private ComponentType? roadBuilderDiscarded;
 		private static Dictionary<Entity, ZoneTypeFilter> _zoneTypeCache;
+
+		/// <summary>
+		/// Density per ZONE prefab, which is not the question
+		/// <see cref="_zoneTypeCache"/> answers.
+		/// </summary>
+		/// <remarks>
+		/// That one classifies a zone so its BUILDINGS can be filtered by the
+		/// zone they grow in, and it deliberately knows only Low/Row/Medium/
+		/// High. This one is the zone's own tier and adds Mixed and LowRent,
+		/// which no building should ever receive.
+		///
+		/// Kept apart rather than widened: ZonedBuildingPrefabCategoryProcessor
+		/// reads the other one, so a wider vocabulary there would silently
+		/// reclassify thousands of buildings as a side effect of a change to
+		/// the zoning menu.
+		/// </remarks>
+		private static Dictionary<Entity, ZoneTypeFilter> _zoneDensityCache;
 		private EntityQuery _unlockEventQuery;
 		// Prefabs the game created or changed this frame — the incremental
 		// pass's own trigger. Held as a field rather than a RequireForUpdate
@@ -2444,12 +2461,32 @@ namespace FindItBuildingMenu.Systems
 			}
 
 			var dictionary = new Dictionary<Entity, ZoneTypeFilter>();
+			var densities = new Dictionary<Entity, ZoneTypeFilter>();
 
 			for (var i = 0; i < zones.Length; i++)
 			{
 				var zone = zones[i];
 				var info = propertiesData[i];
+				var maxLotWidth = lotSizes.TryGetValue(zone, out var sizes) ? sizes.MaxWidth : 0;
 
+				// The ZONE'S OWN tier, which is what the zoning menu navigates
+				// by: six tiers, from the same fields plus the two the
+				// four-tier derivation below cannot express. Computed for every
+				// zone including the ones the building-side answer skips.
+				densities[zone] = ZoneDensityClassifier.Classify(new ZoneDensityFacts(
+					IsResidential: info.m_ResidentialProperties > 0f,
+					ResidentialProperties: info.m_ResidentialProperties,
+					SpaceMultiplier: info.m_SpaceMultiplier,
+					ScaleResidentials: info.m_ScaleResidentials,
+					SellsGoods: info.m_AllowedSold != default,
+					MaxLotWidth: maxLotWidth,
+					PrefabName: _prefabSystem.TryGetPrefab<PrefabBase>(zone, out var densityPrefab)
+						? densityPrefab?.name ?? string.Empty
+						: string.Empty));
+
+				// The BUILDING-side answer, unchanged. See _zoneTypeCache: this
+				// one exists so a building can be filtered by the zone it grows
+				// in, and widening it would reclassify thousands of them.
 				if (info.m_ResidentialProperties <= 0f)
 				{
 					dictionary[zone] = ZoneTypeFilter.Any;
@@ -2467,9 +2504,7 @@ namespace FindItBuildingMenu.Systems
 					// Identical to the old scan: "no spawnable building wider
 					// than 2" is exactly "the widest is at most 2". A zone with
 					// no spawnable buildings at all stays row, as before.
-					var isRowHousing = !lotSizes.TryGetValue(zone, out var sizes) || sizes.MaxWidth <= 2;
-
-					dictionary[zone] = isRowHousing ? ZoneTypeFilter.Row : ZoneTypeFilter.Medium;
+					dictionary[zone] = maxLotWidth <= 2 ? ZoneTypeFilter.Row : ZoneTypeFilter.Medium;
 				}
 				else
 				{
@@ -2478,6 +2513,7 @@ namespace FindItBuildingMenu.Systems
 			}
 
 			_zoneTypeCache = dictionary;
+			_zoneDensityCache = densities;
 
 			// The same pass that classifies buildings by zone also yields the
 			// zones themselves, which the zoning hierarchy browses. Family comes
@@ -2529,15 +2565,13 @@ namespace FindItBuildingMenu.Systems
 					PrefabName: prefab.name,
 					Name: GetAssetName(prefab),
 					Family: family,
-					// The ZonePropertiesData derivation is residential-specific —
-					// it works off m_ResidentialProperties, which is zero for
-					// commercial and office zones, so they all come back as Any.
-					// Their names do carry the tier ("EU Low Density Business"),
-					// so fall back to reading it rather than showing every
-					// non-residential zone as untiered.
-					Density: dictionary.TryGetValue(zone, out var density) && density != ZoneTypeFilter.Any
-						? density
-						: ZoningSurfaceCatalog.ResolveDensity(prefab.name),
+					// One source for the tier, shared with the prefab index. This
+					// used to re-derive it here — the four-tier dictionary, then
+					// a name fallback — which is how the catalog and the index
+					// could have answered differently for the same zone.
+					// ZoneDensityClassifier owns the rules now, including the
+					// name fallback for commercial and office.
+					Density: GetZoneDensity(zone),
 					Thumbnail: IconPath.Normalize(ImageSystem.GetThumbnail(prefab)),
 					// Measured by the game, never shown by it. ZoneSystem seeds
 					// MaxHeight to zero and BuildingInitializeSystem raises it to
@@ -3054,6 +3088,30 @@ namespace FindItBuildingMenu.Systems
 			if (_zoneTypeCache != null && _zoneTypeCache.TryGetValue(zonePrefab, out var type))
 			{
 				return type;
+			}
+
+			return ZoneTypeFilter.Any;
+		}
+
+		/// <summary>The zone's own density tier. Any when it has none.</summary>
+		/// <remarks>
+		/// Fails soft like <see cref="GetZoneType"/>, and for the same reason —
+		/// but note what that costs here: a cold read is indistinguishable from
+		/// an untiered zone, which is exactly how every zone shipped Any before
+		/// this existed.
+		///
+		/// The order is safe and was traced rather than assumed. IndexZones
+		/// runs inside RunIndex's full branch and assigns this cache before the
+		/// prefab category processors start, and
+		/// ZonedBuildingPrefabCategoryProcessor already reads the sibling cache
+		/// from that same point — which is the standing evidence that it is
+		/// warm there.
+		/// </remarks>
+		public static ZoneTypeFilter GetZoneDensity(Entity zonePrefab)
+		{
+			if (_zoneDensityCache != null && _zoneDensityCache.TryGetValue(zonePrefab, out var density))
+			{
+				return density;
 			}
 
 			return ZoneTypeFilter.Any;
