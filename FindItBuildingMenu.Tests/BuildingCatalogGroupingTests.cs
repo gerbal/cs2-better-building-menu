@@ -1,5 +1,7 @@
+using System;
 using System.Linq;
 using FindItBuildingMenu.Domain;
+using FindItBuildingMenu.Domain.Enums;
 using FindItBuildingMenu.Services;
 using Xunit;
 
@@ -331,6 +333,39 @@ namespace FindItBuildingMenu.Tests
 			// Unknown but non-"none" still yields an empty key rather than
 			// throwing, so a UI that sends something stale degrades to flat.
 			Assert.Equal(string.Empty, BuildingCatalogGrouping.PrimaryKey(Entry(1), "assetPack"));
+		}
+		[Fact]
+		public void RanksDensityByTheDecidedOrderRatherThanTheEnumValue()
+		{
+			// Low, Row, Medium, Mixed, LowRent, High — the order the player
+			// meets them in. The enum values are 1, 2, 4, 32, 64, 8, so the raw
+			// number puts Mixed and LowRent past High and past Signature.
+			//
+			// The old key WAS that raw number, and it sorted correctly only by
+			// accident of the flag values. The accident stops working the
+			// moment the vocabulary grows, which is now.
+			var ranked = new[]
+			{
+				ZoneTypeFilter.Low,
+				ZoneTypeFilter.Row,
+				ZoneTypeFilter.Medium,
+				ZoneTypeFilter.Mixed,
+				ZoneTypeFilter.LowRent,
+				ZoneTypeFilter.High,
+			}.Select(BuildingCatalogGrouping.DensityRank).ToArray();
+
+			Assert.Equal(ranked.OrderBy(rank => rank, StringComparer.Ordinal).ToArray(), ranked);
+		}
+
+		[Fact]
+		public void SortsUntieredZonesAfterEveryRankedTier()
+		{
+			// Industrial and the extractor areas carry no tier. They belong at
+			// the end, like every other group defined by absence.
+			Assert.True(
+				string.CompareOrdinal(
+					BuildingCatalogGrouping.DensityRank(ZoneTypeFilter.High),
+					BuildingCatalogGrouping.DensityRank(ZoneTypeFilter.Any)) < 0);
 		}
 	}
 }
