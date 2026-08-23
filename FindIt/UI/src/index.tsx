@@ -10,6 +10,7 @@ import { WrapToolOptionsPanel } from "mods/WrapToolOptionsPanel/WrapToolOptionsP
 import { RemoveVanillaRightToolbar } from "mods/RemoveVanillaAssetMenu/RemoveVanillaRightToolbar";
 import { PickerComponent } from "mods/PickerComponent/PickerComponent";
 import { ToolOptionsVisibility } from "mods/PickerComponent/ToolOptionsVisibility";
+import { LensToolOptions } from "mods/LensToolOptions/LensToolOptions";
 
 import { VanillaMenuWatcher } from "mods/VanillaMenuWatcher/VanillaMenuWatcher";
 import { VanillaToolbarWatcher } from "mods/VanillaMenuWatcher/VanillaToolbarWatcher";
@@ -29,6 +30,9 @@ const register: ModRegistrar = (moduleRegistry) => {
 
   // Add picker UI
   moduleRegistry.extend("game-ui/game/components/tool-options/mouse-tool-options/mouse-tool-options.tsx", "MouseToolOptions", PickerComponent);
+  // Availability lives in the game's own bank now (cm-2xvs.15). Registered
+  // after the Picker so both can push into the same panel.
+  moduleRegistry.extend("game-ui/game/components/tool-options/mouse-tool-options/mouse-tool-options.tsx", "MouseToolOptions", LensToolOptions);
   // The lens's filters used to be injected here, into the game's own options
   // bank beside Theme and Pack. They render in the control plane now — see
   // LensControlPane for why the move, and what it costs.
