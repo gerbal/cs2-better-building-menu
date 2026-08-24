@@ -853,18 +853,24 @@ namespace FindItBuildingMenu.Services
 			// because it orders the set instead of hiding most of it.
 			AddArrayGroup(groups, "placement", "Placement", source.Select(entry => entry.PlacementFlags), query.PlacementFlags, FormatFlagLabel);
 			AddArrayGroup(groups, "extension", "Extensions", source.Select(entry => entry.Extensions), query.Extensions, FormatFacetWords);
-			// Density is what the vanilla Zones menu is organised around, so it
-			// belongs beside the other dimensions rather than only in the sort.
-			AddValueGroup(
-				groups,
-				"zone",
-				"Density",
-				source.Select(entry => entry.ZoneType == ZoneTypeFilter.Any ? null : entry.ZoneType.ToString()),
-				query.ZoneTypes,
-				FormatFacetWords);
+			// Density is NOT a facet, for the reason Development and Progression
+			// are not: it is the strip's own axis offered a second time. Since
+			// cm-2xvs.16 every type+density tier IS a category with its own tab
+			// and icon in the top bar — Residential Low, Row, Medium, Mixed, Low
+			// Rent, High, and low/high for Commercial and Office — so the rail
+			// was drawing a six-option dropdown of exactly the tabs sitting above
+			// it. Measured live in the Zones menu: "High, Low, Low Rent, Medium,
+			// Mixed, Row", the same six.
+			//
+			// Density stays reachable as a Group by dimension and as a sort,
+			// which is where an axis belongs once the strip navigates it: both
+			// order the set instead of hiding most of it.
+			//
+			// It only ever appeared in zoning menus anyway. Everything else is
+			// ZoneTypeFilter.Any, which maps to null, and signatures are all
+			// Signature — one value, which AddValueGroup drops.
 
 			bool hasSelection = HasValues(query.Availability)
-				|| HasValues(query.ZoneTypes)
 				|| HasValues(query.BuildingTypes)
 				|| HasValues(query.Provenance)
 				|| HasValues(query.DlcIds)
@@ -1432,48 +1438,42 @@ namespace FindItBuildingMenu.Services
 		}
 
 		/// <summary>
-		/// Where an asset came from: base game, a creator pack, or a DLC that
-		/// ships no pack. One axis, because the player only ever had one.
+		/// The content a menu's assets require that the game's own row cannot reach.
 		/// </summary>
 		/// <remarks>
-		/// This was two groups, DLC and Asset packs, and measured in game one
-		/// CONTAINED the other: Signature Buildings offered nine against seven,
-		/// Parks &amp; Recreation six against four, and nothing appeared under
-		/// packs that was not also under DLC. They read as a duplicated control
-		/// because they nearly are — DlcId is "what does this asset require",
-		/// AssetPackElement is "what does it belong to", and every first-party
-		/// creator pack sets both.
+		/// This offered packs too, and no longer does. Vanilla's tool-options panel
+		/// is on screen WHILE THE LENS IS OPEN and already holds Theme and Pack —
+		/// measured live at 720p in the Zones menu, its Pack row carried 12 controls
+		/// against the 10 options this group was drawing. So the pack half was not a
+		/// wider reach, it was a second control for state the game owns, sitting a
+		/// few hundred pixels from the first. Direction from the user: "Pack control
+		/// is exposed in the vanilla tooling, we don't need a pack filter in the
+		/// filter rail."
 		///
-		/// They diverge in exactly two places, which is why neither could simply
-		/// be deleted:
+		/// An earlier comment here claimed the opposite — that our pack list beat
+		/// the game's four to two in Parks &amp; Recreation. That was measured against
+		/// BindPacks, which builds its row from the selected CATEGORY; the panel row
+		/// above is not so scoped, and it wins.
 		///
-		/// - DLCs shipping no creator pack — San Francisco Set and Landmark
-		///   Buildings, 163 assets between them — reachable only by DlcId.
-		/// - Packs with no DLC, which is every pack a mod provides. None are
-		///   loaded here, but the 127 in the Paradox cache would all be.
+		/// What is left is the part vanilla genuinely cannot express: a DLC that
+		/// ships NO creator pack. San Francisco Set and Landmark Buildings are 163
+		/// assets between them, and nothing in the game's Pack row speaks for either,
+		/// because neither has a pack to speak with. DlcIds is the only mechanism
+		/// that reaches them.
 		///
-		/// So it is one group, and each option writes whatever owns it: packs go
-		/// to the game's own pack selection, base game to its Vanilla toggle,
-		/// and a pack-less DLC to our DlcIds, the only mechanism that reaches
-		/// it. The mixed plumbing stays underneath; the rail shows one axis,
-		/// which is the thing that was wrong.
+		/// So the packedDlcs test below now does the whole job of avoiding
+		/// duplication: a DLC with a pack is skipped here because the game's own row
+		/// already carries that pack. Bridges &amp; Ports has one, so it appears there
+		/// and not here.
 		///
-		/// A DLC is offered ONLY when no pack among these entries speaks for it.
-		/// That test is what removes the duplication: Bridges &amp; Ports has a
-		/// pack, so it appears once, as a pack.
-		///
-		/// The pack half stays WIDER than the game's own row rather than
-		/// mirroring it. BindPacks builds that row from the selected CATEGORY,
-		/// so it shows the packs in the category you are in; this shows the
-		/// packs in the menu — four against two in Parks &amp; Recreation, and
-		/// the two it leaves out hold three assets each.
+		/// Base game leads, as it does in the game's row, because "show me only what
+		/// needs no DLC" is the same question the rest of this group answers.
 		/// </remarks>
 		private static void AddContentGroup(
 			ICollection<BuildingCatalogFacetGroup> groups,
 			IReadOnlyList<BuildingCatalogEntry> source,
 			BuildingCatalogQuery query)
 		{
-			var selectedPacks = ToolbarSelection.SelectedPacks;
 			var options = new List<BuildingCatalogFacetOption>();
 
 			// Base game leads, the way it leads the game's own row.
@@ -1484,24 +1484,6 @@ namespace FindItBuildingMenu.Services
 					FormatDlcLabel(DlcId.BaseGame.id.ToString(CultureInfo.InvariantCulture)),
 					ToolbarSelection.VanillaSelected));
 			}
-
-			options.AddRange(source
-				.SelectMany(entry => entry.AssetPackIndices ?? Array.Empty<int>())
-				.Distinct()
-				.Select(index => new
-				{
-					Index = index,
-					Id = AssetPackRegistry.IdOf(index),
-					Label = AssetPackRegistry.NameOf(index),
-				})
-				// A pack the indexer never recorded cannot be written back to
-				// the game, so offering it would be a tick that does nothing.
-				.Where(pack => pack.Id.Length > 0 && pack.Label.Length > 0)
-				.OrderBy(pack => pack.Label, StringComparer.CurrentCultureIgnoreCase)
-				.Select(pack => new BuildingCatalogFacetOption(
-					ContentOption.Pack + pack.Id,
-					pack.Label,
-					selectedPacks.Any(selected => selected == pack.Index))));
 
 			// The tail: DLC no pack speaks for.
 			var packedDlcs = new HashSet<string>(

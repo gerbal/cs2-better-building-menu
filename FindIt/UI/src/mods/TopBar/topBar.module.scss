@@ -472,6 +472,13 @@
   width: 24rem;
   padding: 0;
   margin-left: 8rem;
+  // Aligns the X with the content column below it rather than the panel edge.
+  // The catalog's own padding is 8rem, so the grid, the list and the table all
+  // stop 8rem short of the panel border while this row — which sits outside
+  // that padding — ran full bleed. Measured live at 720p: the scroller ended at
+  // x=986 and the close button at x=991, hanging 5px past everything under it
+  // and jammed into the corner.
+  margin-right: 8rem;
   background: none;
 }
 
