@@ -34,7 +34,24 @@ $pane-width: 379rem;
   // 6rem 0, matching the measured tool-options-panel exactly. The horizontal
   // inset is the row's job over there, not the panel's — see .row.
   padding: 6rem 0;
-  border-radius: var(--panelRadius);
+  // 12rem literal, NOT var(--panelRadius), which is what this was and why the
+  // pane had square corners while every panel around it was rounded.
+  //
+  // The variable is not missing. Read live off this very element,
+  // --panelRadius resolves to 12rem — and the declaration using it still
+  // computed 0px. Colour on the same element is fine: --panelColorNormal
+  // resolved and painted rgba(42,55,83,0.4375). So Cohtml substitutes var()
+  // for a colour here and drops it for a length on border-radius.
+  //
+  // A cousin of the fallback bug already known here, where var(--x, default)
+  // is dropped even with --x defined. This is the no-fallback form.
+  //
+  // Measured against the neighbours it has to match: vanilla's
+  // tool-options-panel computes 12rem on all four corners, and the build
+  // menu's asset-panel 12rem on the two it rounds. This is the only
+  // var()-driven border-radius in the stylesheet, and it was the only one
+  // wrong.
+  border-radius: 12rem;
   background-color: var(--panelColorNormal);
   backdrop-filter: var(--panelBlur);
   background-image: linear-gradient(var(--panelGradientStart), var(--panelGradientEnd));
