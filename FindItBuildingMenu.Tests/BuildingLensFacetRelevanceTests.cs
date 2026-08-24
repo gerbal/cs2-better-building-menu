@@ -93,6 +93,44 @@ namespace FindItBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void DensityIsNotOfferedAsAFilterEither()
+		{
+			// Same argument as Development above, and it became true the same
+			// way. Since cm-2xvs.16 every type+density tier IS a category with
+			// its own tab and icon in the top bar, so the rail's six-option
+			// Density dropdown — High, Low, Low Rent, Medium, Mixed, Row,
+			// measured live in the Zones menu — restated the tabs sitting
+			// directly above it. Direction from the user: "We also don't need a
+			// density filter in the filter rail for zoning."
+			//
+			// Density remains a Group by dimension and a sort column, which is
+			// where an axis belongs once the strip navigates it.
+			//
+			// Two distinct densities in the fixture on purpose: with one, the
+			// single-value rule would drop the group anyway and this test would
+			// pass without the change.
+			var entries = new[]
+			{
+				Entry(1, "Low Residential", "BaseGame") with
+				{
+					ZoneType = Domain.Enums.ZoneTypeFilter.Low,
+				},
+				Entry(2, "High Residential", "BaseGame") with
+				{
+					ZoneType = Domain.Enums.ZoneTypeFilter.High,
+				},
+			};
+
+			var ids = BuildingCatalogAdapter
+				.BuildFacetState(entries, new BuildingCatalogQuery())
+				.Groups
+				.Select(group => group.Id)
+				.ToArray();
+
+			Assert.DoesNotContain("zone", ids);
+		}
+
+		[Fact]
 		public void ADimensionWithOneValueIsNotOffered()
 		{
 			// Every entry already has it, so selecting it changes nothing. It
