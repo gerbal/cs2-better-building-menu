@@ -314,22 +314,69 @@ namespace FindItBuildingMenu.Utilities
 				return;
 			}
 
-			var prefabList = CategorizedPrefabs[CurrentCategory][CurrentSubCategory].ToList();
-			var index = 0;
+			var matches = ApplyFilters(
+				CategorizedPrefabs[CurrentCategory][CurrentSubCategory].ToList(),
+				filterList,
+				token);
 
-			while (index < prefabList.Count)
+			if (token.IsCancellationRequested)
 			{
+				return;
+			}
+
+			_cachedSearch = matches;
+		}
+
+		/// <summary>
+		/// The prefabs that pass every filter, in the order they arrived.
+		/// </summary>
+		/// <remarks>
+		/// KEEPS the matches rather than removing the misses. This walked the
+		/// list calling List.RemoveAt on every non-match, which shifts each
+		/// later element, so the shape was O(n^2) in the number of things that
+		/// did NOT match.
+		///
+		/// Do NOT read that as the cause of slow search — it is not, and it was
+		/// measured. At this catalog's size the in-place form costs 13ms over
+		/// 25,000 items and 57ms over 50,000; the search that prompted this took
+		/// 2.7 SECONDS. An in-game probe split ProcessSearch into its parts and
+		/// settled it: building the list is 2ms, and evaluating the predicates
+		/// is 2,724ms when 3 of 19,390 match against 201ms when 17,792 do. The
+		/// cost is SearchCheck's fuzzy fallbacks — SpellCheck and
+		/// AbbreviationCheck run only when the substring test misses, so a
+		/// precise search pays them on nearly every asset. See cm-yfd5.
+		///
+		/// So this change is for clarity and shape, not speed. The signature is
+		/// the guard that keeps it: an IReadOnlyList in and a new list out
+		/// cannot express the in-place form.
+		/// </remarks>
+		/// <remarks>
+		/// Generic because the rule has nothing to do with prefabs, and because
+		/// PrefabIndex can only be built from a Unity PrefabBase — so a test
+		/// that had to construct one could not run outside the engine.
+		/// </remarks>
+		public static List<T> ApplyFilters<T>(
+			IReadOnlyList<T> prefabs,
+			IReadOnlyList<Func<T, bool>> filters,
+			CancellationToken token)
+		{
+			var matches = new List<T>(prefabs.Count);
+
+			for (var index = 0; index < prefabs.Count; index++)
+			{
+				// Checked per item, as before: a search the player has already
+				// replaced should stop as soon as it can, not run to the end.
 				if (token.IsCancellationRequested)
 				{
-					return;
+					return matches;
 				}
 
-				var prefab = prefabList[index];
+				var prefab = prefabs[index];
 				var allFiltersPass = true;
 
-				for (var i = 0; i < filterList.Count; i++)
+				for (var i = 0; i < filters.Count; i++)
 				{
-					if (!filterList[i](prefab))
+					if (!filters[i](prefab))
 					{
 						allFiltersPass = false;
 
@@ -339,20 +386,11 @@ namespace FindItBuildingMenu.Utilities
 
 				if (allFiltersPass)
 				{
-					index++;
-				}
-				else
-				{
-					prefabList.RemoveAt(index);
+					matches.Add(prefab);
 				}
 			}
 
-			if (token.IsCancellationRequested)
-			{
-				return;
-			}
-
-			_cachedSearch = prefabList;
+			return matches;
 		}
 
 		public static void RemoveItem(Entity entity)
