@@ -83,7 +83,13 @@ namespace FindItBuildingMenu.Utilities
                 return false;
             }
 
-            if (termToBeSearched.IndexOf(searchTerm, caseCheck ? StringComparison.CurrentCulture : StringComparison.InvariantCultureIgnoreCase) >= 0)
+            // Ordinal, not InvariantCulture. Measured: 17x faster over the same
+            // volume, and it agrees with the culture-aware comparison on every
+            // realistic asset name — including the accented ones this catalog
+            // really has, because NEITHER folds accents. The only divergence
+            // found was the typographic ligature U+FB01, which no CS2 asset
+            // name contains. See cm-yfd5.
+            if (termToBeSearched.IndexOf(searchTerm, caseCheck ? StringComparison.CurrentCulture : StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 return true;
             }
@@ -191,6 +197,28 @@ namespace FindItBuildingMenu.Utilities
             return SB.ToString();
         }
 
+        /// <summary>
+        /// The words of a name, by hand rather than by regex.
+        /// </summary>
+        /// <remarks>
+        /// This ran Regex.Matches against a pattern REBUILT BY STRING
+        /// INTERPOLATION on every call, so each one allocated a pattern, took
+        /// the static regex cache lock to look it up, and then allocated a
+        /// MatchCollection and a Match per word. AbbreviationCheck reaches it
+        /// twice per asset and SearchCheck reaches AbbreviationCheck for every
+        /// asset the substring test rejects, so a precise search over this
+        /// catalog ran tens of thousands of them per keystroke. See cm-yfd5.
+        ///
+        /// The pattern it replaces is \b(?![0-9])?(\w+)(?:'\w+)?\b, and the two
+        /// parts that are easy to get wrong are pinned in
+        /// WordSplittingCharacterizationTests:
+        ///
+        ///   • only group 1 is returned, so "Mayor's" is ONE word, "Mayor" —
+        ///     the apostrophe tail is consumed and dropped, not split off.
+        ///   • the lookahead rejects a token whose FIRST character is a digit,
+        ///     and only that. "A1" survives with includeNumbers false; "66"
+        ///     does not.
+        /// </remarks>
         public static IEnumerable<string> GetWords(this string text, bool includeNumbers = false)
         {
             if (string.IsNullOrWhiteSpace(text))
@@ -198,11 +226,47 @@ namespace FindItBuildingMenu.Utilities
                 yield break;
             }
 
-            foreach (Match match in Regex.Matches(text, $@"\b{(includeNumbers ? "" : "(?![0-9])")}(\w+)(?:'\w+)?\b"))
+            var index = 0;
+
+            while (index < text.Length)
             {
-                yield return match.Groups[1].Value;
+                if (!IsWordChar(text[index]))
+                {
+                    index++;
+
+                    continue;
+                }
+
+                var start = index;
+
+                while (index < text.Length && IsWordChar(text[index]))
+                {
+                    index++;
+                }
+
+                var word = text.Substring(start, index - start);
+
+                // The (?:'\w+)? tail: consumed so it cannot become a word of its
+                // own, and never part of what is returned.
+                if (index < text.Length && text[index] == '\'' && index + 1 < text.Length && IsWordChar(text[index + 1]))
+                {
+                    index++;
+
+                    while (index < text.Length && IsWordChar(text[index]))
+                    {
+                        index++;
+                    }
+                }
+
+                if (includeNumbers || !char.IsDigit(word[0]))
+                {
+                    yield return word;
+                }
             }
         }
+
+        /// <summary>What \w matches: a letter, a digit, or an underscore.</summary>
+        private static bool IsWordChar(char c) => char.IsLetterOrDigit(c) || c == '_';
 
         public static string Where(this string text, Func<char, bool> Test)
         {
@@ -219,9 +283,57 @@ namespace FindItBuildingMenu.Utilities
             return builder.ToString();
         }
 
+        /// <summary>
+        /// Collapses runs of spaces and trims, allocating only when it must.
+        /// </summary>
+        /// <remarks>
+        /// This was Regex.Replace(text, " {2,}", " ").Trim(). SpellCheck calls
+        /// it on BOTH its arguments, and SearchCheck reaches SpellCheck for
+        /// every asset the substring test rejects — so a precise search over
+        /// this catalog ran tens of thousands of regex operations per
+        /// keystroke. See cm-yfd5.
+        ///
+        /// Same answer, by hand, and the original string straight back when
+        /// there is nothing to collapse — which is the overwhelmingly common
+        /// case for an asset name.
+        /// </remarks>
         public static string RemoveDoubleSpaces(this string text)
         {
-            return Regex.Replace(text, @" {2,}", " ")?.Trim() ?? string.Empty;
+            if (text is null)
+            {
+                return string.Empty;
+            }
+
+            var needsWork = false;
+
+            for (var i = 0; i + 1 < text.Length; i++)
+            {
+                if (text[i] == ' ' && text[i + 1] == ' ')
+                {
+                    needsWork = true;
+
+                    break;
+                }
+            }
+
+            if (!needsWork)
+            {
+                return text.Trim();
+            }
+
+            var builder = new StringBuilder(text.Length);
+
+            for (var i = 0; i < text.Length; i++)
+            {
+                if (text[i] == ' ' && builder.Length > 0 && builder[builder.Length - 1] == ' ')
+                {
+                    continue;
+                }
+
+                builder.Append(text[i]);
+            }
+
+            return builder.ToString().Trim();
         }
 
         public static string FormatWords(this string str, bool forceUpper = false)

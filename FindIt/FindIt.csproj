@@ -25,6 +25,14 @@
 	</Target>
 
 	<ItemGroup>
+		<!-- The unit tests exercise internal helpers (SearchUtil's matching rules,
+		     for one) without widening the mod's public surface to do it. -->
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+			<_Parameter1>FindItBuildingMenu.Tests</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
+
+	<ItemGroup>
 		<EmbeddedResource Include="Locale.json" />
 		<EmbeddedResource Include="Locale\*.json" />
 		<None Remove="Locale.json" />
