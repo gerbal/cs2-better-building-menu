@@ -71,50 +71,117 @@ namespace FindItBuildingMenu.Utilities
             return false;
         }
 
-        public static bool SearchCheck(this string searchTerm, string termToBeSearched, bool caseCheck = false)
+        /// <summary>
+        /// A search term with its term-side work done once instead of per asset.
+        /// </summary>
+        /// <remarks>
+        /// cm-yfd5. SearchCheck is called twice for every asset in the catalog,
+        /// and three of the things it does depend only on the TERM — the
+        /// lowercased and 's-stripped form AbbreviationCheck compares against,
+        /// that form's abbreviation, and its space-stripped form. Those were
+        /// being rebuilt 38,780 times for one keystroke, identically every time.
+        ///
+        /// Matches() is the same decision as SearchCheck in the same order; the
+        /// extension below now delegates to it, so the two cannot drift and the
+        /// characterization tests cover both.
+        /// </remarks>
+        internal sealed class PreparedSearchTerm
         {
-            if (string.IsNullOrWhiteSpace(searchTerm) && string.IsNullOrWhiteSpace(termToBeSearched))
+            private readonly string _term;
+            private readonly bool _caseCheck;
+            private readonly string _abbreviationSource;
+            private readonly string _abbreviation;
+            private readonly string _withoutSpaces;
+            private readonly string[] _words;
+            private readonly int _spellThreshold;
+
+            internal PreparedSearchTerm(string term, bool caseCheck = false)
             {
-                return true;
+                _term = term ?? string.Empty;
+                _caseCheck = caseCheck;
+                _abbreviationSource = _term.ToLower().Replace("'s ", " ");
+                _abbreviation = _abbreviationSource.GetAbbreviation();
+                _withoutSpaces = _abbreviationSource.Where(x => x != ' ');
+                _words = _term.IndexOf(' ') >= 0
+                    ? _term.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                    : null;
+                _spellThreshold = (int)Math.Ceiling((_term.Length - 3) / 5M);
             }
 
-            if (string.IsNullOrWhiteSpace(searchTerm) || string.IsNullOrWhiteSpace(termToBeSearched))
+            internal bool Matches(string termToBeSearched)
             {
-                return false;
-            }
-
-            // Ordinal, not InvariantCulture. Measured: 17x faster over the same
-            // volume, and it agrees with the culture-aware comparison on every
-            // realistic asset name — including the accented ones this catalog
-            // really has, because NEITHER folds accents. The only divergence
-            // found was the typographic ligature U+FB01, which no CS2 asset
-            // name contains. See cm-yfd5.
-            if (termToBeSearched.IndexOf(searchTerm, caseCheck ? StringComparison.CurrentCulture : StringComparison.OrdinalIgnoreCase) >= 0)
-            {
-                return true;
-            }
-
-            if (searchTerm.SpellCheck(termToBeSearched.Substring(0, Math.Min(termToBeSearched.Length, searchTerm.Length + 1)), caseCheck) <= (int)Math.Ceiling((searchTerm.Length - 3) / 5M))
-            {
-                return true;
-            }
-
-            if (searchTerm.AbbreviationCheck(termToBeSearched))
-            {
-                return true;
-            }
-
-            if (searchTerm.Contains(' '))
-            {
-                var terms = searchTerm.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-
-                if (terms.All(x => termToBeSearched.IndexOf(x, caseCheck ? StringComparison.CurrentCulture : StringComparison.InvariantCultureIgnoreCase) >= 0))
+                if (string.IsNullOrWhiteSpace(_term) && string.IsNullOrWhiteSpace(termToBeSearched))
                 {
                     return true;
                 }
+
+                if (string.IsNullOrWhiteSpace(_term) || string.IsNullOrWhiteSpace(termToBeSearched))
+                {
+                    return false;
+                }
+
+                var comparison = _caseCheck ? StringComparison.CurrentCulture : StringComparison.OrdinalIgnoreCase;
+
+                if (termToBeSearched.IndexOf(_term, comparison) >= 0)
+                {
+                    return true;
+                }
+
+                if (_term.SpellCheck(
+                        termToBeSearched.Substring(0, Math.Min(termToBeSearched.Length, _term.Length + 1)),
+                        _caseCheck)
+                    <= _spellThreshold)
+                {
+                    return true;
+                }
+
+                if (MatchesAbbreviation(termToBeSearched))
+                {
+                    return true;
+                }
+
+                if (_words is not null)
+                {
+                    var comparisonForWords = _caseCheck ? StringComparison.CurrentCulture : StringComparison.OrdinalIgnoreCase;
+
+                    for (var i = 0; i < _words.Length; i++)
+                    {
+                        if (termToBeSearched.IndexOf(_words[i], comparisonForWords) < 0)
+                        {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                }
+
+                return false;
             }
 
-            return false;
+            /// <summary>AbbreviationCheck with the term half already computed.</summary>
+            private bool MatchesAbbreviation(string target)
+            {
+                var targetSource = target.ToLower().Replace("'s ", " ");
+                var targetAbbreviation = targetSource.GetAbbreviation();
+
+                return (targetAbbreviation.StartsWith(_withoutSpaces) && targetAbbreviation.Length > 2)
+                    || (_abbreviation.StartsWith(targetSource.Where(x => x != ' ')) && _abbreviation.Length > 2);
+            }
+        }
+
+        /// <summary>
+        /// Whether a search term matches a name.
+        /// </summary>
+        /// <remarks>
+        /// Delegates to PreparedSearchTerm so there is exactly one copy of the
+        /// decision. Callers that test MANY names against ONE term should build
+        /// a PreparedSearchTerm themselves and reuse it — this overload does the
+        /// term-side work every call, which is what made search cost seconds
+        /// (cm-yfd5).
+        /// </remarks>
+        public static bool SearchCheck(this string searchTerm, string termToBeSearched, bool caseCheck = false)
+        {
+            return new PreparedSearchTerm(searchTerm, caseCheck).Matches(termToBeSearched);
         }
 
         public static int SpellCheck(this string s1, string s2, bool caseCheck = true)

@@ -114,10 +114,29 @@ namespace FindItBuildingMenu.Domain
 
 			if (includeSearch && !string.IsNullOrWhiteSpace(CurrentSearch))
 			{
-				if (GetCustomSearchFunction is null)
-					yield return Mod.Settings.StrictSearch ? DoStrictSearchFilter : DoSearchFilter;
-				else
+				if (GetCustomSearchFunction is not null)
+				{
 					yield return GetCustomSearchFunction(CurrentSearch);
+				}
+				else if (Mod.Settings.StrictSearch)
+				{
+					yield return DoStrictSearchFilter;
+				}
+				else
+				{
+					// Prepared ONCE here rather than rebuilt inside every
+					// SearchCheck call. This predicate runs against every asset
+					// in the catalog and used to re-derive the term's lowercase
+					// form, its abbreviation and its space-stripped form for each
+					// one — the same three strings, tens of thousands of times
+					// per keystroke. See cm-yfd5.
+					var prepared = new SearchUtil.PreparedSearchTerm(CurrentSearch);
+					var pdxModsId = CurrentSearch;
+
+					yield return prefab => prepared.Matches(prefab.Name)
+						|| prepared.Matches(prefab.PrefabName)
+						|| prefab.PdxModsId == pdxModsId;
+				}
 			}
 		}
 
@@ -134,14 +153,6 @@ namespace FindItBuildingMenu.Domain
 		private bool DoRoleFilter(PrefabIndex prefab)
 		{
 			return FindItFilterPredicates.MatchesAnyRole(prefab.BuildingTypeName, SelectedRoles);
-		}
-
-		private bool DoSearchFilter(PrefabIndex prefab)
-		{
-			return CurrentSearch.SearchCheck(prefab.Name)
-				|| CurrentSearch.SearchCheck(prefab.PrefabName)
-				|| (prefab.PdxModsId == CurrentSearch);
-			//|| prefab.Tags.Any(DoTagSearch);
 		}
 
 		private bool DoStrictSearchFilter(PrefabIndex prefab)
