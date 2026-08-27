@@ -31,6 +31,7 @@ import {
 import {
   CATALOG_ANCHOR_MAX_FRAMES,
   anchorScrollTop,
+  revealScrollTop,
   isAnchorMeasurable,
   isAnchorOnScreen,
   isScrollContainer,
@@ -119,6 +120,14 @@ const BuildingLensSection$ = bindValue<string>(mod.id, "BuildingLensSection", "A
 const BuildingLensStripAxis$ = bindValue<string>(mod.id, "BuildingLensStripAxis", "");
 const BuildingLensMenu$ = bindValue<string>(mod.id, "BuildingLensMenu", "");
 const BuildingLensMenuCategories$ = bindValue<unknown[]>(mod.id, "BuildingLensMenuCategories", []);
+
+/**
+ * Breathing room under a revealed detail, in CSS pixels.
+ *
+ * Small on purpose: this is the difference between the last line touching the
+ * panel edge and sitting just clear of it, not an attempt to centre anything.
+ */
+const EXPANDED_ROW_REVEAL_MARGIN = 6;
 
 const LENS_VIEW_MODE_KEY = "viewMode";
 const LENS_GROUP_KEY = "groupBy";
@@ -228,6 +237,78 @@ export const BuildingCatalogComponent = () => {
     trigger(mod.id, "SetBuildingCatalogGroupBy", groupBy);
   }, [groupBy]);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  /**
+   * Bring a freshly expanded row's detail into view.
+   *
+   * Expanding grows the row downward and the list did not follow. Measured
+   * live: a detail's bottom sat at 642 against a viewport whose content ends at
+   * 630, with scrollTop still 0 — twelve pixels under the fold and no cue they
+   * were there. Reported from play as "some of it was cut off below the
+   * scroll", and cm-qnfs made the detail taller, so it will happen more often.
+   *
+   * A ResizeObserver rather than a rAF, because the box being measured is the
+   * one that just changed size: Cohtml lays out a frame late, so a single rAF
+   * reads the PRE-expansion height and concludes nothing overflows. The
+   * observer fires when the new height actually exists, and disconnects on the
+   * first reveal so a later resize — the player dragging the panel — does not
+   * yank the list.
+   */
+  useEffect(() => {
+    if (expandedId === null) {
+      return;
+    }
+
+    const rows = document.querySelectorAll(`[data-catalog-entry="${expandedId}"]`);
+    const row = rows.length === 0 ? null : rows[rows.length - 1];
+
+    if (!(row instanceof HTMLElement)) {
+      return;
+    }
+
+    const detail = row.querySelector(`.${styles.rowDetails}`) ?? row;
+    const scroller = findScrollContainer(row);
+
+    if (!scroller || !(detail instanceof HTMLElement)) {
+      return;
+    }
+
+    let done = false;
+    const observer = new ResizeObserver(() => {
+      if (done) {
+        return;
+      }
+
+      const rowRect = row.getBoundingClientRect();
+      const detailRect = detail.getBoundingClientRect();
+      const scrollerRect = scroller.getBoundingClientRect();
+
+      // Nothing has laid out yet; wait for the next notification rather than
+      // computing a reveal from zeroes.
+      if (detailRect.height === 0) {
+        return;
+      }
+
+      const next = revealScrollTop({
+        currentScrollTop: scroller.scrollTop,
+        rowTop: rowRect.top,
+        detailBottom: detailRect.top + detailRect.height,
+        containerTop: scrollerRect.top,
+        containerHeight: scroller.clientHeight,
+        margin: EXPANDED_ROW_REVEAL_MARGIN,
+      });
+
+      done = true;
+
+      if (next !== scroller.scrollTop) {
+        scroller.scrollTop = next;
+      }
+    });
+
+    observer.observe(detail);
+
+    return () => observer.disconnect();
+  }, [expandedId]);
   const compareEntries = useValue(BuildingCatalogCompare$) ?? [];
   const facets = useValue(BuildingLensFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
