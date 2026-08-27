@@ -91,6 +91,7 @@ import {
   BUILDING_LENS_COLUMN_SORT,
   getBuildingLensColumnSortIndicator,
 } from "domain/buildingLensSortPresentation";
+import { BuildingResultDetails } from "./BuildingResultDetails";
 import styles from "./buildingCatalog.module.scss";
 
 type BuildingCatalogPageStatus = "indexing" | "ready" | "empty";
@@ -1007,57 +1008,7 @@ export const BuildingCatalogComponent = () => {
                   <span aria-hidden="true">{isExpanded ? "\u2303" : "\u2304"}</span>
                 </Button>
                 {isExpanded && (
-                  <div className={styles.rowDetails}>
-                    {/* The game's own copy for this prefab. Free: the entry
-                        already carries prefabName and the game keys descriptions
-                        by it, so this needs no backend projection. */}
-                    {description && <div className={styles.rowDescription}>{description}</div>}
-
-                    <div className={styles.rowDetailMetrics}>
-                      {detailMetrics.length === 0 ? (
-                        <span className={styles.rowDetailEmpty}>{noDetailsLabel}</span>
-                      ) : (
-                        detailMetrics.map((detail) => (
-                          <span className={styles.rowDetail} key={detail.key}>
-                            <span className={styles.rowDetailLabel}>{detail.label}</span>
-                            <span className={styles.rowDetailValue}>{detail.value}</span>
-                          </span>
-                        ))
-                      )}
-                    </div>
-
-                    {/* Placement, lot access, network connections and lot
-                        internals: previously reachable only by filtering on them,
-                        never visible on the building itself. */}
-                    {flagGroups.map((group) => (
-                      <div className={styles.rowFlagGroup} key={group.id} data-flag-group={group.id}>
-                        <span className={styles.rowDetailLabel}>{group.label}</span>
-                        {group.values.map((value) => (
-                          <span className={styles.rowFlag} key={value}>{value}</span>
-                        ))}
-                      </div>
-                    ))}
-
-                    {extensionLabels.length > 0 && (
-                      <div className={styles.rowFlagGroup} data-flag-group="extensions">
-                        <span className={styles.rowDetailLabel}>{upgradesLabel}</span>
-                        {extensionLabels.map((extension) => (
-                          <span className={styles.rowFlag} key={extension}>{extension}</span>
-                        ))}
-                      </div>
-                    )}
-
-                    {provenanceChips.length > 0 && (
-                      <div className={styles.rowFlagGroup} data-flag-group="provenance">
-                        {provenanceChips.map((chip) => (
-                          <span className={styles.rowProvenance} key={chip.label}>
-                            <span className={styles.rowDetailLabel}>{chip.label}</span>
-                            <span className={styles.rowDetailValue}>{chip.value}</span>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <BuildingResultDetails entry={entry} resolveFacetLabel={resolveFacetLabel} />
                 )}
               </div>
             );
