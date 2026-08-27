@@ -4,6 +4,7 @@ import mod from "../../../mod.json";
 import type { ToolbarEntity } from "domain/toolbarEntity";
 import {
   nextWatchState,
+  shouldClearOnEscape,
   toolbarEntityIndex,
   vanillaMenuDeselectedCommand,
   vanillaMenuSelectedCommand,
@@ -13,6 +14,10 @@ import {
 
 const SelectedAssetMenu$ = bindValue<ToolbarEntity | null>("toolbar", "selectedAssetMenu", null);
 const ReplaceVanillaBuildMenu$ = bindValue<boolean>(mod.id, "ReplaceVanillaBuildMenu", false);
+const LensOwnsCurrentMenu$ = bindValue<boolean>(mod.id, "LensOwnsCurrentMenu", false);
+
+/** Escape, by code. Cohtml leaves `key` empty for it; `keyCode` is right. */
+const ESCAPE_KEY_CODE = 27;
 
 /**
  * Routes vanilla toolbar menus into the lens.
@@ -34,6 +39,40 @@ export const VanillaMenuWatcher = () => {
   // Bumped on every observation so a deferred close can tell whether the
   // toolbar moved on after it was scheduled.
   const generation = useRef(0);
+
+  const lensOpen = useValue(LensOwnsCurrentMenu$);
+
+  /**
+   * Escape takes the lens down.
+   *
+   * Clears the GAME's selection rather than hiding our panel, so the close
+   * branch below does the actual work — one route out, the same one the
+   * toolbar button uses. Capture phase, so a control inside the panel cannot
+   * swallow it first.
+   *
+   * See shouldClearOnEscape for why this asks nothing about the active tool.
+   */
+  useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.keyCode !== ESCAPE_KEY_CODE) {
+        return;
+      }
+
+      if (!shouldClearOnEscape({ lensOpen })) {
+        return;
+      }
+
+      trigger("toolbar", "clearAssetSelection");
+    };
+
+    document.addEventListener("keydown", onKeyDown, true);
+
+    return () => document.removeEventListener("keydown", onKeyDown, true);
+  }, [enabled, lensOpen]);
 
   useEffect(() => {
     if (!enabled) {
