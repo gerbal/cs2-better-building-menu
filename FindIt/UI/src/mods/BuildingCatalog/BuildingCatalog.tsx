@@ -20,13 +20,10 @@ import {
 } from "domain/buildingLensLayout";
 import type { BuildingLensDensityTier, BuildingLensMetric } from "domain/buildingLensLayout";
 import {
-  MAX_COMPARE_ENTRIES,
-  clearCompareEntriesCommand,
   loadMoreCatalogCommand,
   nextSortState,
   setSortColumnCommand,
   setSortDescendingCommand,
-  toggleCompareEntryCommand,
 } from "domain/buildingCatalogContracts";
 import {
   CATALOG_ANCHOR_MAX_FRAMES,
@@ -109,7 +106,6 @@ const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "BuildingCatalo
 const BuildingCatalogSortDescending$ = bindValue<boolean>(mod.id, "BuildingCatalogSortDescending");
 // Backend-owned too: placing a building unmounts this panel, which used to
 // throw away the shortlist the player built in order to make that choice.
-const BuildingCatalogCompare$ = bindValue<BuildingCatalogEntry[]>(mod.id, "BuildingCatalogCompare");
 const BuildingLensFacets$ = bindValue<BuildingLensFacetState>(mod.id, "BuildingLensFacets");
 const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState>(mod.id, "BuildingCatalogMetricRanges");
 const BuildingLensLegacyFilters$ = bindValue<string[]>(mod.id, "BuildingLensLegacyFilters");
@@ -136,7 +132,6 @@ const LENS_GROUP_KEY = "groupBy";
 
 /** Grid recognises, List scans, Table compares. */
 type ViewMode = CatalogViewMode;
-
 
 const metricColumns: Array<{
   key: BuildingLensMetric;
@@ -311,7 +306,6 @@ export const BuildingCatalogComponent = () => {
 
     return () => observer.disconnect();
   }, [expandedId]);
-  const compareEntries = useValue(BuildingCatalogCompare$) ?? [];
   const facets = useValue(BuildingLensFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
   const legacyFilters = useValue(BuildingLensLegacyFilters$);
@@ -435,7 +429,6 @@ export const BuildingCatalogComponent = () => {
     "Tooltip.LABEL[FindItBuildingMenu.NoDetailMetrics]",
     "No further data for this building",
   ) ?? "No further data for this building";
-  const clearCompareLabel = translate("Tooltip.LABEL[FindItBuildingMenu.ClearCompare]", "Clear comparison") ?? "Clear comparison";
 
   /**
    * Draws one leaf's entries in whichever mode is active.
@@ -465,22 +458,6 @@ export const BuildingCatalogComponent = () => {
     // Keep the existing FindIt placement path: the backend resolves this id
     // through its single prefab index and activates the normal prefab tool.
     findItSurfacePort.activatePrefab({ prefabId: entry.id });
-  }
-
-  function toggleCompare(entry: BuildingCatalogEntry): void {
-    const command = toggleCompareEntryCommand(entry.id);
-    trigger(mod.id, command.method, ...command.args);
-  }
-
-  function removeCompare(id: number): void {
-    // Removal is the same backend toggle: the id is known to be selected.
-    const command = toggleCompareEntryCommand(id);
-    trigger(mod.id, command.method, ...command.args);
-  }
-
-  function clearCompare(): void {
-    const command = clearCompareEntriesCommand();
-    trigger(mod.id, command.method, ...command.args);
   }
 
   // "Sort by <field>" opens the sort options, and that is the only thing that
@@ -765,62 +742,6 @@ export const BuildingCatalogComponent = () => {
           three and let each one go, so keeping both was one band restating
           another less usefully. */}
 
-      {compareEntries.length > 0 && (
-        <div className={styles.compare}>
-          <div className={styles.compareHeading}>
-            <span className={styles.compareTitle}>
-              {translate("Tooltip.LABEL[FindItBuildingMenu.CompareBuildings]", "Compare buildings")}
-              <span className={styles.compareCount}> {compareEntries.length} / {MAX_COMPARE_ENTRIES}</span>
-            </span>
-            <Button
-              className={styles.clearCompare}
-              variant="icon"
-              onSelect={clearCompare}
-              aria-label={clearCompareLabel}
-              title={clearCompareLabel}
-            >
-              {clearCompareLabel}
-            </Button>
-          </div>
-          <div className={styles.compareRows}>
-            {compareEntries.map((entry) => {
-              const entryLabel = entry.name || entry.prefabName;
-              const comparePlaceLabel = `${placeLabel}: ${entryLabel}`;
-              const compareRemoveLabel = `Remove ${entryLabel} from comparison`;
-
-              return (
-                <div className={styles.compareRow} key={entry.id}>
-                  <div className={styles.compareIdentity}>
-                    <span className={styles.compareName}>{entryLabel}</span>
-                    <span className={styles.compareMetrics}>
-                      Cost {formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance)} · Upkeep {formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance)} · Workers {formatBuildingMetric(entry.workers, "workers", separators)} · Capacity {formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators)}
-                    </span>
-                  </div>
-                  <Button
-                    className={styles.comparePlace}
-                    variant="icon"
-                    onSelect={() => activate(entry)}
-                    aria-label={comparePlaceLabel}
-                    title={comparePlaceLabel}
-                  >
-                    {placeLabel}
-                  </Button>
-                  <Button
-                    className={styles.compareRemove}
-                    variant="icon"
-                    onSelect={() => removeCompare(entry.id)}
-                    aria-label={compareRemoveLabel}
-                    title={compareRemoveLabel}
-                  >
-                    <span aria-hidden="true">×</span>
-                  </Button>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {tableMode ? (
         <>
         {/* The rows scroll and this header does not, so the scrollbar narrows
@@ -902,7 +823,6 @@ export const BuildingCatalogComponent = () => {
             }
 
             const entry = line.entry;
-            const isCompared = compareEntries.some((candidate) => candidate.id === entry.id);
             const rawCategoryIdentity = entry.subCategory
               ? `${entry.category} · ${entry.subCategory}`
               : entry.category;
@@ -915,7 +835,6 @@ export const BuildingCatalogComponent = () => {
             const extensionLabels = isExpanded ? getBuildingExtensionLabels(entry.supportedUpgrades) : [];
             const provenanceChips = isExpanded ? getBuildingProvenanceChips(entry, resolveFacetLabel) : [];
             const description = isExpanded ? resolveAssetDescription(entry.prefabName, translate) : null;
-            const compareLabel = isCompared ? "Remove from comparison" : "Add to comparison";
             const comparePlaceLabel = `${placeLabel}: ${entryLabel}`;
             const compareRemoveLabel = `Remove ${entryLabel} from comparison`;
 
@@ -1071,16 +990,6 @@ export const BuildingCatalogComponent = () => {
                   title={entryStateWord(entry, lockedLabel, builtLabel) ?? rowPlaceLabel}
                 >
                   <span>{placeLabel}</span>
-                </Button>
-                <Button
-                  className={classNames(styles.compareButton, isCompared && styles.compareButtonSelected)}
-                  variant="icon"
-                  disabled={!isCompared && compareEntries.length >= MAX_COMPARE_ENTRIES}
-                  onSelect={() => toggleCompare(entry)}
-                  aria-label={compareLabel}
-                  title={compareLabel}
-                >
-                  <span aria-hidden="true">{isCompared ? "✓" : "+"}</span>
                 </Button>
                 {isExpanded && (
                   <div className={styles.rowDetails}>

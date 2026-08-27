@@ -223,7 +223,6 @@ namespace FindItBuildingMenu.Systems
 			_LensOwnsCurrentMenu.Value = true;
 			_LensMenuToolTip.Value = PrefabIndexingSystem.GetAssetMenuToolTip(menuEntityIndex) ?? string.Empty;
 
-
 			// With the lens enabled RefreshBuildingCatalog deliberately ignores
 			// FindItUtil's category and reads the lens's own section and
 			// subcategory instead, so the preset has to be applied there.
@@ -244,7 +243,6 @@ namespace FindItBuildingMenu.Systems
 			_BuildingLensSectionBinding.Value = _buildingLensSection;
 			_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
-
 
 			// One refresh either way — see the branch above for why it cannot
 			// live wholly inside or wholly outside the toggle.
@@ -333,7 +331,6 @@ namespace FindItBuildingMenu.Systems
 
 			RefreshBuildingCatalog();
 		}
-
 
 		/// <summary>
 		/// Narrows the menu to one tier of the game's progression.
@@ -483,7 +480,6 @@ namespace FindItBuildingMenu.Systems
 			{
 			}
 
-
 			RefreshBuildingLensMenuCategories();
 			RefreshBuildingLensNavigation();
 			RefreshBuildingCatalog();
@@ -587,7 +583,6 @@ namespace FindItBuildingMenu.Systems
 			FindItUtil.CurrentSubCategory = PrefabSubCategory.Any;
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 
-
 			// One call, not three. RefreshLens IS
 			// RefreshBuildingLensNavigation followed by RefreshBuildingCatalog,
 			// so the three lines this replaces ran each of them TWICE — and on
@@ -599,7 +594,6 @@ namespace FindItBuildingMenu.Systems
 		private void SetCurrentSubCategory(int category)
 		{
 			FindItUtil.CurrentSubCategory = (PrefabSubCategory)category;
-
 
 			RefreshLens();
 
@@ -670,20 +664,6 @@ namespace FindItBuildingMenu.Systems
 
 			Mod.Settings.BuildingLensPanelHeight = height;
 			Mod.Settings.ApplyAndSave();
-		}
-
-		private void ToggleBuildingCatalogCompare(int id)
-		{
-			_buildingCompareIds = BuildingCatalogCompareSelection.Toggle(_buildingCompareIds, id);
-
-			PublishBuildingCompare();
-		}
-
-		private void ClearBuildingCatalogCompare()
-		{
-			_buildingCompareIds = BuildingCatalogCompareSelection.Clear();
-
-			PublishBuildingCompare();
 		}
 
 		private void SetBuildingCatalogSortColumn(string column)
@@ -1030,9 +1010,6 @@ namespace FindItBuildingMenu.Systems
 			RefreshLens();
 		}
 
-
-
-
 		private void SearchChanged(string text)
 		{
 			text = text.Replace("\r", "").Replace("\n", "");
@@ -1056,8 +1033,6 @@ namespace FindItBuildingMenu.Systems
 			// 250ms debounce the legacy grid has always used.
 			TriggerSearch();
 		}
-
-
 
 		private void OnLocateButtonClicked(int id)
 		{
