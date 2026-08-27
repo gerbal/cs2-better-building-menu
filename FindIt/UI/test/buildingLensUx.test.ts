@@ -132,7 +132,7 @@ describe("Building Lens filter controls", () => {
 });
 
 describe("Building Lens action affordances", () => {
-  it("keeps Place and compare actions explicitly labeled in catalog rows", () => {
+  it("keeps the Place action explicitly labeled in catalog rows", () => {
     assert.match(buildingCatalogSource, /className=\{styles\.placeHint\}/);
     // The row itself now opens details; Place is its own button, so the row's
     // label describes inspection and the Place label sits on the Place control.
@@ -153,9 +153,6 @@ describe("Building Lens action affordances", () => {
     assert.match(buildingCatalogSource, /aria-label=\{\s*entryStateWord\(entry, lockedLabel, builtLabel\)/);
     assert.match(buildingCatalogSource, /title=\{entryStateWord\(entry, lockedLabel, builtLabel\) \?\? rowPlaceLabel\}/);
     assert.match(buildingCatalogSource, /disabled=\{!canPlace\(entry\)\}/);
-    assert.match(buildingCatalogSource, /aria-label=\{compareLabel\}/);
-    assert.match(buildingCatalogSource, /aria-label=\{comparePlaceLabel\}/);
-    assert.match(buildingCatalogSource, /aria-label=\{compareRemoveLabel\}/);
   });
 
   it("separates inspecting a building from committing to placing it", () => {

@@ -498,42 +498,6 @@ public sealed class BuildingCatalogQueryEngineTests
     }
 
     [Fact]
-    public void CompareSelection_TogglesAndHoldsTheLimit()
-    {
-        IReadOnlyList<int> one = BuildingCatalogCompareSelection.Toggle(Array.Empty<int>(), 1);
-        IReadOnlyList<int> two = BuildingCatalogCompareSelection.Toggle(one, 2);
-        IReadOnlyList<int> three = BuildingCatalogCompareSelection.Toggle(two, 3);
-
-        Assert.Equal(new[] { 1, 2, 3 }, three);
-
-        // At the limit an unselected id is refused rather than silently
-        // evicting one the player already chose.
-        Assert.Equal(new[] { 1, 2, 3 }, BuildingCatalogCompareSelection.Toggle(three, 4));
-
-        // Toggling a selected id always removes it, even at the limit.
-        Assert.Equal(new[] { 1, 3 }, BuildingCatalogCompareSelection.Toggle(three, 2));
-    }
-
-    [Fact]
-    public void CompareSelection_PreservesSelectionOrderAndIgnoresDuplicates()
-    {
-        IReadOnlyList<int> selection = BuildingCatalogCompareSelection.Toggle(
-            BuildingCatalogCompareSelection.Toggle(Array.Empty<int>(), 7),
-            4);
-
-        Assert.Equal(new[] { 7, 4 }, selection);
-        Assert.Equal(new[] { 7 }, BuildingCatalogCompareSelection.Toggle(selection, 4));
-    }
-
-    [Fact]
-    public void CompareSelection_MatchesTheClientLimitContract()
-    {
-        // The tray renders "n / MAX" from the TypeScript MAX_COMPARE_ENTRIES.
-        // If these ever diverge the counter lies about the real limit.
-        Assert.Equal(3, BuildingCatalogCompareSelection.MaxEntries);
-    }
-
-    [Fact]
     public void ResetWindowIfPredicatesChanged_KeepsTheWindowWhenOnlyItsSizeMoved()
     {
         // Load-more is a Limit change and nothing else. If Limit counted as a

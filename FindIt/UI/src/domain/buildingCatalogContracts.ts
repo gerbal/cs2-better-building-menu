@@ -10,13 +10,12 @@ import type { MetricRangeId } from "./buildingCatalogRanges";
 import type { NumberSeparators } from "./buildingLensMetricFormat";
 
 /**
- * Keep the UI's bounded comparison and windowing rules in a pure module.
+ * Keep the UI's windowing rules in a pure module.
  *
  * The Gameface components call the trigger commands from this module, while
  * the same contract can be exercised by Node's browserless test runner. This
  * prevents a payload drift between the React UI and the C# bindings.
  */
-export const MAX_COMPARE_ENTRIES = 3;
 export const MAX_CATALOG_PAGE_SIZE = 500;
 
 export type SortColumn =
@@ -57,9 +56,6 @@ export const setBuildingCatalogMetricRangeCommand = (id: MetricRangeId, minText:
   createTriggerCommand("SetBuildingCatalogMetricRange", id, minText, maxText);
 export const clearBuildingCatalogMetricRangesCommand = (): TriggerCommand =>
   createTriggerCommand("ClearBuildingCatalogMetricRanges");
-export const toggleCompareEntryCommand = (id: number): TriggerCommand =>
-  createTriggerCommand("ToggleBuildingCatalogCompare", id);
-export const clearCompareEntriesCommand = (): TriggerCommand => createTriggerCommand("ClearBuildingCatalogCompare");
 export const searchChangedCommand = (value: string): TriggerCommand => createTriggerCommand("SearchChanged", value);
 export const setCurrentCategoryCommand = (id: number): TriggerCommand => createTriggerCommand("SetCurrentCategory", id);
 export const setCurrentSubCategoryCommand = (id: number): TriggerCommand => createTriggerCommand("SetCurrentSubCategory", id);

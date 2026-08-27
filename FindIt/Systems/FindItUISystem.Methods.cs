@@ -192,7 +192,6 @@ namespace FindItBuildingMenu.Systems
 			_BuildingLensLegacyFilters.Value = CaptureLegacyFilters().Describe().ToArray();
 			// At most three ids, so re-projecting alongside the page keeps the
 			// tray current once indexing finishes without measurable cost.
-			PublishBuildingCompare();
 
 			// The options bank's short-facet rows (Availability, Provenance,
 			// Placement) decide their own visibility and Selected flags from
@@ -222,7 +221,6 @@ namespace FindItBuildingMenu.Systems
 				$"[LENS-REFRESH] {(int)refreshTimer.ElapsedMilliseconds}ms "
 				+ $"menu='{_buildingCatalogQuery.UiMenu}' total={page.TotalCount} from={caller}");
 		}
-
 
 		/// <summary>
 		/// Snapshots the legacy FindIt filter panel so the lens can name the
@@ -254,27 +252,6 @@ namespace FindItBuildingMenu.Systems
 		/// that no longer resolve, so a stale shortlist cannot outlive the
 		/// buildings it names.
 		/// </summary>
-		private void PublishBuildingCompare()
-		{
-			var entries = new List<BuildingCatalogEntry>(_buildingCompareIds.Count);
-			var resolvedIds = new List<int>(_buildingCompareIds.Count);
-
-			foreach (int id in _buildingCompareIds)
-			{
-				if (_buildingCatalogAdapter.TryGet(id, out BuildingCatalogEntry? entry) && entry is not null)
-				{
-					entries.Add(entry);
-					resolvedIds.Add(id);
-				}
-			}
-
-			if (resolvedIds.Count != _buildingCompareIds.Count)
-			{
-				_buildingCompareIds = resolvedIds;
-			}
-
-			_BuildingCatalogCompare.Value = entries.ToArray();
-		}
 
 		private static int? ToNullableInt(double? value)
 		{
@@ -309,8 +286,6 @@ namespace FindItBuildingMenu.Systems
 			// lifecycle used by the working section/subcategory bindings above.
 		}
 
-
-
 		internal void TryActivatePrefabTool(int id)
 		{
 			var prefabBase = FindItUtil.GetPrefabBase(id);
@@ -328,7 +303,6 @@ namespace FindItBuildingMenu.Systems
 			_ActivePrefabId.Value = id;
 			settingPrefab = false;
 		}
-
 
 		internal void TriggerSearch()
 		{
@@ -383,7 +357,6 @@ namespace FindItBuildingMenu.Systems
 				Mod.Log.Error(ex, "Search Failed");
 			}
 		}
-
 
 		private void OnPrefabChanged(PrefabBase prefab)
 		{

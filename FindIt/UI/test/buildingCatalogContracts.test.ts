@@ -1,10 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
-  MAX_COMPARE_ENTRIES,
   getCatalogWindowSummary,
   clearBuildingCatalogMetricRangesCommand,
-  clearCompareEntriesCommand,
   locatePrefabCommand,
   nextSortState,
   pickerOptionCommand,
@@ -16,7 +14,6 @@ import {
   setCurrentSubCategoryCommand,
   setSortColumnCommand,
   setSortDescendingCommand,
-  toggleCompareEntryCommand,
 } from "../src/domain/buildingCatalogContracts.ts";
 import {
   METRIC_RANGE_DEFINITIONS,
@@ -88,13 +85,6 @@ describe("FindItBuildingMenu UI binding contracts", () => {
     });
     assert.deepEqual(setSortColumnCommand("Workers"), { method: "SetBuildingCatalogSortColumn", args: ["Workers"] });
     assert.deepEqual(setSortDescendingCommand(true), { method: "SetBuildingCatalogSortDescending", args: [true] });
-  });
-
-  it("addresses the backend-owned compare tray by id", () => {
-    // The tray is backend state so it survives the panel unmounting on place;
-    // the client sends intent rather than a projected entry.
-    assert.deepEqual(toggleCompareEntryCommand(42), { method: "ToggleBuildingCatalogCompare", args: [42] });
-    assert.deepEqual(clearCompareEntriesCommand(), { method: "ClearBuildingCatalogCompare", args: [] });
   });
 
   it("normalizes analytical metric ranges and swaps reversed bounds", () => {

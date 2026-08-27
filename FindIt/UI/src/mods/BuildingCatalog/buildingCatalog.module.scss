@@ -76,11 +76,6 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
     padding-right: 6rem;
   }
 
-  .compare {
-    margin-left: 6rem;
-    margin-right: 6rem;
-  }
-
   .row {
     height: 84rem;
     min-height: 84rem;
@@ -138,7 +133,6 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   opacity: 0.5;
 }
 
-
 .columnHeader,
 .row {
   display: flex;
@@ -179,14 +173,12 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 // lines of stylesheet it left behind. Re-adding the rule would restore the
 // styling for markup nothing renders.
 
-
 .category,
 .columnHeader,
 .pageLabel {
   color: var(--menuText2Normal);
   font-size: var(--fontSizeS);
 }
-
 
 // Vanilla's icon variant sizes a Button as a 24rem square. Every control listed
 // here carries a word rather than a glyph, so each has to opt out of that width:
@@ -197,13 +189,9 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 // three different spellings (width: auto !important, a hand-picked min-width, and
 // min-width: 0, which permits the collapse rather than resisting it), and a fourth
 // copy already sits dead in groupedResults.module.scss against a class no
-// component renders. Glyph buttons — .pageButton, .compareRemove — are genuinely
+// component renders. Glyph buttons such as .pageButton are genuinely
 // square and stay out of this.
 .scopeNoticeAction,
-.comparePlace,
-.clearCompare {
-  width: auto !important;
-}
 
 .pageButton {
   @include _base.transparentButton(false, true);
@@ -213,7 +201,6 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   color: var(--menuText2Normal);
   background-color: rgba(0, 0, 0, 0.2);
 }
-
 
 .facetPanel {
   display: flex;
@@ -615,8 +602,6 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   margin-right: 2rem;
 }
 
-
-
 .columnHeader {
   // Was `gap: $row-gap` — a no-op in this engine, so this
   // spacing never drew. Same measurement, stated as margins.
@@ -796,20 +781,6 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 
 .rowSelect:hover {
   background-color: rgba(255, 255, 255, 0.08);
-}
-
-.compareButton {
-  @include _base.transparentButton(false, true);
-  flex: 0 0 $row-compare-width;
-  width: $row-compare-width;
-  min-height: 30rem;
-  padding: 2rem;
-  color: var(--menuText2Normal);
-  font-size: 18rem;
-}
-
-.compareButtonSelected {
-  color: var(--accentColorNormal);
 }
 
 .identityCell {
@@ -1101,107 +1072,6 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
   color: var(--accentColorNormal);
 }
 
-.compare {
-  margin: 3rem 8rem 6rem;
-  padding: 5rem 6rem 6rem;
-  border: 1rem solid rgba(255, 255, 255, 0.12);
-  border-radius: 3rem;
-  background-color: rgba(0, 0, 0, 0.16);
-}
-
-.compareHeading,
-.compareRow {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-}
-
-.compareHeading {
-  justify-content: space-between;
-  padding-bottom: 4rem;
-}
-
-.compareTitle {
-  color: var(--accentColorNormal);
-  font-size: var(--fontSizeS);
-  text-transform: uppercase;
-}
-
-.compareCount {
-  color: var(--menuText2Normal);
-  font-size: var(--fontSizeXS);
-}
-
-.clearCompare,
-.comparePlace,
-.compareRemove {
-  @include _base.transparentButton(false, true);
-  min-height: 22rem;
-  padding: 2rem 5rem;
-  color: var(--menuText2Normal);
-  font-size: var(--fontSizeS);
-  width: auto !important;
-  flex: 0 1 auto;
-  white-space: nowrap;
-}
-
-.comparePlace {
-  color: var(--accentColorNormal);
-  min-width: 52rem;
-}
-
-.compareRemove {
-  min-width: 22rem;
-  padding: 2rem;
-  font-size: 15rem;
-}
-
-.compareRows {
-  display: flex;
-  flex-direction: column;
-  // Was `gap: 2rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
-  > * + * {
-    margin-top: 2rem;
-  }
-}
-
-.compareRow {
-  min-height: 28rem;
-  // Was `gap: 4rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
-  > * + * {
-    margin-left: 4rem;
-  }
-}
-
-.compareIdentity {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 0;
-}
-
-.compareName,
-.compareMetrics {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-.compareName {
-  color: var(--menuTitleNormal);
-  font-size: var(--fontSizeS);
-  line-height: 14rem;
-}
-
-.compareMetrics {
-  margin-top: 1rem;
-  color: var(--menuText2Normal);
-  font-size: var(--fontSizeXS);
-  line-height: 12rem;
-}
-
 .empty {
   padding: 28rem 12rem;
   text-align: center;
@@ -1407,9 +1277,6 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
     min-width: 0;
   }
 }
-
-
-
 
 // Milestone-locked. The table states it in words rather than only in treatment:
 // the row carries the same silhouette the grid and list use, and the Place

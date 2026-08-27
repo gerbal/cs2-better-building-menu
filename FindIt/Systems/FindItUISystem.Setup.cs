@@ -108,8 +108,6 @@ namespace FindItBuildingMenu.Systems
 		/// </remarks>
 		private ValueBindingHelper<BuildingCatalogMetricRangeState> _BuildingCatalogMetricBounds = null!;
 		private ValueBindingHelper<BuildingCatalogFacetState> _BuildingLensFacets = null!;
-		private IReadOnlyList<int> _buildingCompareIds = Array.Empty<int>();
-		private ValueBindingHelper<BuildingCatalogEntry[]> _BuildingCatalogCompare = null!;
 		private ValueBindingHelper<string[]> _BuildingLensLegacyFilters = null!;
 		private ValueBindingHelper<string> _BuildingCatalogSortColumn = null!;
 
@@ -267,7 +265,6 @@ namespace FindItBuildingMenu.Systems
 			_BuildingCatalogMetricRanges = CreateBinding("BuildingCatalogMetricRanges", BuildingCatalogMetricRangeState.Empty);
 			_BuildingCatalogMetricBounds = CreateBinding("BuildingCatalogMetricBounds", BuildingCatalogMetricRangeState.Empty);
 			_BuildingLensFacets = CreateBinding("BuildingLensFacets", new BuildingCatalogFacetState(Array.Empty<BuildingCatalogFacetGroup>(), false));
-			_BuildingCatalogCompare = CreateBinding("BuildingCatalogCompare", Array.Empty<BuildingCatalogEntry>());
 			_BuildingLensLegacyFilters = CreateBinding("BuildingLensLegacyFilters", Array.Empty<string>());
 			// Sort is a read/write binding rather than a write-only trigger: the
 			// order lives in the persistent query, so a UI that could only write
@@ -353,8 +350,6 @@ namespace FindItBuildingMenu.Systems
 			CreateTrigger("OnSearchCleared", () => _ClearSearchBar.Value = false);
 			CreateTrigger<int>("OnLocateButtonClicked", OnLocateButtonClicked);
 			CreateTrigger("LoadMoreBuildingCatalog", LoadMoreBuildingCatalog);
-			CreateTrigger<int>("ToggleBuildingCatalogCompare", ToggleBuildingCatalogCompare);
-			CreateTrigger("ClearBuildingCatalogCompare", ClearBuildingCatalogCompare);
 				CreateTrigger<string, string, string>("SetBuildingCatalogMetricRange", SetBuildingCatalogMetricRange);
 				CreateTrigger("ClearBuildingCatalogMetricRanges", ClearBuildingCatalogMetricRanges);
 				CreateTrigger<string, string>("ToggleBuildingLensFacet", ToggleBuildingLensFacet);
