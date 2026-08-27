@@ -257,7 +257,43 @@ export interface BuildingDetailMetric {
  * Metrics that were not projected for a building are omitted rather than shown
  * as a dash, so an expanded row carries only figures that mean something.
  */
+/**
+ * Everything the indexer projected about one asset, ready to draw.
+ *
+ * cm-qnfs. This offered eight hand-written candidates — the utilities and the
+ * three pollutions — so anything that was neither a power plant nor a polluter
+ * expanded to an EMPTY detail area while the row above it showed cost, workers
+ * and a lot size. The detail view is where an asset is compared properly; it
+ * cannot know less than the row it expands from.
+ *
+ * Two rules survive from the old list and are what stop this becoming noise:
+ *
+ *   • ABSENT STAYS ABSENT. The indexer leaves a missing component null rather
+ *     than serialising a misleading zero, and a null draws nothing here. A
+ *     REAL zero is a fact and stays — a free asset is priced, an unpolluting
+ *     one is measured.
+ *   • A zero that means "not applicable" is not a real zero. A service
+ *     building has no LEVEL, and no parking is not a bay count; both drop out
+ *     rather than printing a 0 beside dashes that mean "unknown" (cm-ch0z).
+ *
+ * Formatting is delegated, never re-derived: formatBuildingMetric knows a
+ * network prices by the kilometre, formatCapacity knows what a capacity counts
+ * for the kind of thing it is, and hasFootprint knows a road has no lot.
+ */
 export function getBuildingDetailMetrics(entry: {
+  constructionCost?: number | null;
+  upkeep?: number | null;
+  costIsPerDistance?: boolean;
+  capacity?: number | null;
+  category?: string;
+  subCategory?: string;
+  buildingType?: string;
+  workers?: number | null;
+  households?: number | null;
+  parkingSlots?: number | null;
+  lotWidth?: number | null;
+  lotDepth?: number | null;
+  buildingLevel?: number | null;
   electricityConsumption?: number | null;
   waterConsumption?: number | null;
   garbageAccumulation?: number | null;
@@ -267,7 +303,52 @@ export function getBuildingDetailMetrics(entry: {
   airPollution?: number | null;
   noisePollution?: number | null;
 }, separators: NumberSeparators = FALLBACK_SEPARATORS): BuildingDetailMetric[] {
-  const candidates: Array<{ key: string; label: string; value: number | null | undefined; unit?: string }> = [
+  const details: BuildingDetailMetric[] = [];
+
+  /** A metric this entry carries a number for. */
+  const add = (key: string, label: string, value: number | null | undefined, text: string) => {
+    if (value === null || value === undefined || !Number.isFinite(value)) return;
+    details.push({ key, label, value: text });
+  };
+
+  // Money first, because it changes what everything under it means.
+  add("cost", "Cost", entry.constructionCost,
+    formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance ?? false));
+  add("upkeep", "Upkeep", entry.upkeep,
+    formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance ?? false));
+
+  // Then what it buys.
+  add("capacity", "Capacity", entry.capacity,
+    formatCapacity(entry.capacity, entry.category ?? "", entry.subCategory ?? "", entry.buildingType, separators));
+  add("workers", "Workers", entry.workers, `${groupDigits(entry.workers as number, separators)} jobs`);
+  add("households", "Households", entry.households,
+    `${groupDigits(entry.households as number, separators)} households`);
+
+  // No bays is not a bay count.
+  if (typeof entry.parkingSlots === "number" && Number.isFinite(entry.parkingSlots) && entry.parkingSlots > 0) {
+    details.push({
+      key: "parking",
+      label: "Parking",
+      value: `${groupDigits(entry.parkingSlots, separators)} bays`,
+    });
+  }
+
+  // Then what it occupies. A road measures 0 x 0, which is not a footprint.
+  if (hasFootprint(entry.lotWidth, entry.lotDepth)) {
+    details.push({
+      key: "lot",
+      label: "Lot",
+      value: formatLotDimensions(entry.lotWidth, entry.lotDepth),
+    });
+  }
+
+  // A level of 0 means the asset has no level, not that it is level zero.
+  if (typeof entry.buildingLevel === "number" && Number.isFinite(entry.buildingLevel) && entry.buildingLevel > 0) {
+    details.push({ key: "level", label: "Level", value: String(entry.buildingLevel) });
+  }
+
+  // Then what it draws and what it emits — the original eight, unchanged.
+  const measured: Array<{ key: string; label: string; value: number | null | undefined; unit?: string }> = [
     { key: "electricity", label: "Electricity", value: entry.electricityConsumption, unit: "MW" },
     { key: "water", label: "Water", value: entry.waterConsumption, unit: "m³" },
     { key: "garbage", label: "Garbage", value: entry.garbageAccumulation, unit: "t" },
@@ -278,15 +359,14 @@ export function getBuildingDetailMetrics(entry: {
     { key: "noisePollution", label: "Noise pollution", value: entry.noisePollution },
   ];
 
-  return candidates
-    .filter((candidate) => candidate.value !== null && candidate.value !== undefined && Number.isFinite(candidate.value))
-    .map((candidate) => ({
-      key: candidate.key,
-      label: candidate.label,
-      value: candidate.unit
+  for (const candidate of measured) {
+    add(candidate.key, candidate.label, candidate.value,
+      candidate.unit
         ? `${groupDigits(candidate.value as number, separators)} ${candidate.unit}`
-        : groupDigits(candidate.value as number, separators),
-    }));
+        : groupDigits(candidate.value as number, separators));
+  }
+
+  return details;
 }
 
 /**

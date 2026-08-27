@@ -125,6 +125,85 @@ describe("Building Lens detail metrics", () => {
     assert.equal(details[3].value, "0");
   });
 
+  it("shows the whole projected entry, not just the utility subset", async () => {
+    // cm-qnfs. The detail panel offered eight candidates — utilities and
+    // pollution — so a building with neither expanded to an empty box while the
+    // row above it showed cost, workers and a lot size. The detail view is
+    // where an asset is compared properly; it cannot know less than the row.
+    const { getBuildingDetailMetrics } = await import("../src/domain/buildingLensMetricFormat.ts");
+
+    const keys = getBuildingDetailMetrics({
+      constructionCost: 45000,
+      upkeep: 1500,
+      capacity: 1000,
+      workers: 12,
+      households: 180,
+      parkingSlots: 12,
+      lotWidth: 3,
+      lotDepth: 4,
+      buildingLevel: 2,
+      electricityConsumption: 30,
+      groundPollution: 5,
+    }).map((detail) => detail.key);
+
+    // Money first, then what it buys, then what it occupies, then what it
+    // draws and emits — the order the hover card already reads in.
+    assert.deepEqual(keys, [
+      "cost",
+      "upkeep",
+      "capacity",
+      "workers",
+      "households",
+      "parking",
+      "lot",
+      "level",
+      "electricity",
+      "groundPollution",
+    ]);
+  });
+
+  it("keeps a real zero and drops a not-applicable one", async () => {
+    // A pollution of zero is a measurement. A building LEVEL of zero is not a
+    // level — service buildings have none, and printing "0" beside dashes that
+    // mean "unknown" is the defect cm-ch0z describes. Parking is the same: no
+    // bays is not a bay count worth a row.
+    const { getBuildingDetailMetrics } = await import("../src/domain/buildingLensMetricFormat.ts");
+
+    const details = getBuildingDetailMetrics({
+      airPollution: 0,
+      buildingLevel: 0,
+      parkingSlots: 0,
+      constructionCost: 0,
+    });
+
+    const keys = details.map((detail) => detail.key);
+    assert.ok(keys.includes("airPollution"), "a measured zero stays");
+    assert.ok(keys.includes("cost"), "free is a real price");
+    assert.ok(!keys.includes("level"), "level 0 means no level");
+    assert.ok(!keys.includes("parking"), "0 bays is not a bay count");
+  });
+
+  it("names a network's cost as the rate it is", async () => {
+    // A road prices by length. 12,500 for a road and 12,500 for a hospital are
+    // not the same kind of number, and the existing formatter already says so —
+    // the detail view has to use it rather than printing the bare figure.
+    const { getBuildingDetailMetrics } = await import("../src/domain/buildingLensMetricFormat.ts");
+
+    const [cost] = getBuildingDetailMetrics({ constructionCost: 12500, costIsPerDistance: true });
+
+    assert.ok(/km/.test(cost.value), `expected a per-kilometre rate, got ${cost.value}`);
+  });
+
+  it("draws no lot for something without a footprint", async () => {
+    // Networks and zones measure 0 x 0. "0 × 0" is a confident measurement of
+    // something that does not exist.
+    const { getBuildingDetailMetrics } = await import("../src/domain/buildingLensMetricFormat.ts");
+
+    const keys = getBuildingDetailMetrics({ lotWidth: 0, lotDepth: 0, workers: 4 }).map((d) => d.key);
+
+    assert.deepEqual(keys, ["workers"]);
+  });
+
   it("omits metrics that were never projected rather than showing empty rows", async () => {
     const { getBuildingDetailMetrics } = await import("../src/domain/buildingLensMetricFormat.ts");
 
