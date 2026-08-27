@@ -319,3 +319,110 @@ describe("What the window is holding back", () => {
     assert.equal(catalogWindowRemaining({ shown: 12, total: 9 }), null);
   });
 });
+
+describe("revealing a row that grew past the fold", () => {
+  it("does nothing when the whole thing already fits", async () => {
+    const { revealScrollTop } = await import("../src/domain/catalogWindow.ts");
+
+    assert.equal(
+      revealScrollTop({
+        currentScrollTop: 120,
+        rowTop: 400,
+        detailBottom: 600,
+        containerTop: 353,
+        containerHeight: 277,
+      }),
+      120,
+    );
+  });
+
+  it("scrolls by the overflow and no further", async () => {
+    // Measured live: expanding a row put its detail's bottom at 642 against a
+    // viewport whose content ends at containerTop + clientHeight = 630, and
+    // nothing moved. Twelve pixels of a metrics line sat under the fold with no
+    // cue that they were there. (The scroller's bounding rect reads 631 — the
+    // extra pixel is its border, which content does not get to use.)
+    //
+    // By the overflow only, because this fires on every expand — anchoring the
+    // row a third of the way down the container, the way a restore does, would
+    // throw the list around every time a player opened a detail.
+    const { revealScrollTop } = await import("../src/domain/catalogWindow.ts");
+
+    assert.equal(
+      revealScrollTop({
+        currentScrollTop: 0,
+        rowTop: 519,
+        detailBottom: 642,
+        containerTop: 353,
+        containerHeight: 277,
+      }),
+      12,
+    );
+  });
+
+  it("keeps a margin below so the last line is not flush with the edge", async () => {
+    const { revealScrollTop } = await import("../src/domain/catalogWindow.ts");
+
+    assert.equal(
+      revealScrollTop({
+        currentScrollTop: 0,
+        rowTop: 519,
+        detailBottom: 642,
+        containerTop: 353,
+        containerHeight: 277,
+        margin: 6,
+      }),
+      18,
+    );
+  });
+
+  it("never scrolls the row's own top out of view", async () => {
+    // A detail taller than the viewport cannot be shown whole. Showing its
+    // BOTTOM would push the row's name off the top, leaving the player looking
+    // at numbers with nothing to say what they belong to.
+    const { revealScrollTop } = await import("../src/domain/catalogWindow.ts");
+
+    assert.equal(
+      revealScrollTop({
+        currentScrollTop: 0,
+        rowTop: 400,
+        detailBottom: 1200,
+        containerTop: 353,
+        containerHeight: 277,
+      }),
+      47,
+    );
+  });
+
+  it("never scrolls upward", async () => {
+    const { revealScrollTop } = await import("../src/domain/catalogWindow.ts");
+
+    assert.equal(
+      revealScrollTop({
+        currentScrollTop: 90,
+        rowTop: 360,
+        detailBottom: 400,
+        containerTop: 353,
+        containerHeight: 277,
+      }),
+      90,
+    );
+  });
+
+  it("returns the current position rather than NaN on a pre-layout measurement", async () => {
+    // Cohtml reports zeroes for a frame after a relayout; a NaN assigned to
+    // scrollTop would send the list to the top.
+    const { revealScrollTop } = await import("../src/domain/catalogWindow.ts");
+
+    assert.equal(
+      revealScrollTop({
+        currentScrollTop: 42,
+        rowTop: Number.NaN,
+        detailBottom: 600,
+        containerTop: 353,
+        containerHeight: 277,
+      }),
+      42,
+    );
+  });
+});

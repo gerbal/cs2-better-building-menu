@@ -233,3 +233,70 @@ export function catalogWindowRemaining({ shown, total }: CatalogWindowState): nu
 
   return remaining > 0 ? remaining : null;
 }
+
+/** The measurements a reveal needs, all in viewport coordinates. */
+export interface RevealGeometry {
+  currentScrollTop: number;
+  /** Top of the row that expanded — what must stay visible. */
+  rowTop: number;
+  /** Bottom of the expanded detail — what should become visible. */
+  detailBottom: number;
+  containerTop: number;
+  containerHeight: number;
+  /** Breathing room below the last line. */
+  margin?: number;
+}
+
+/**
+ * Scroll just enough to bring an expanded row's detail into view.
+ *
+ * Expanding a row grows it downward, and the list did not follow: measured
+ * live, a detail's bottom sat at 642 against a viewport ending at 631, with
+ * scrollTop still 0. Eleven pixels of a metrics line were under the fold with
+ * nothing to say they existed — and cm-qnfs made the detail taller, so it will
+ * happen more often than it did.
+ *
+ * BY THE OVERFLOW ONLY, deliberately. {@link anchorScrollTop} exists next door
+ * and puts its row a third of the way down the container, which is right for
+ * restoring a remembered position and wrong here: this fires every time a
+ * player opens a detail, and a list that jumps on every expand is worse than
+ * one that clips.
+ *
+ * Two guards on how far it will go:
+ *
+ *  - never past the row's own top. A detail taller than the viewport cannot be
+ *    shown whole, and showing its BOTTOM would push the name off the top,
+ *    leaving numbers with nothing to say what they belong to.
+ *  - never upward. Revealing something below has no business pulling the list
+ *    back toward the start.
+ *
+ * A non-finite measurement returns the current position untouched: Cohtml
+ * reports zeroes for a frame after a relayout, and a NaN assigned to scrollTop
+ * sends the list to the top.
+ */
+export function revealScrollTop({
+  currentScrollTop,
+  rowTop,
+  detailBottom,
+  containerTop,
+  containerHeight,
+  margin = 0,
+}: RevealGeometry): number {
+  const measurements = [currentScrollTop, rowTop, detailBottom, containerTop, containerHeight, margin];
+
+  if (!measurements.every(Number.isFinite)) {
+    return currentScrollTop;
+  }
+
+  const overflow = detailBottom + margin - (containerTop + containerHeight);
+
+  if (overflow <= 0) {
+    return currentScrollTop;
+  }
+
+  // Whichever is less: what the overflow asks for, or what keeps the row's top
+  // at the container's top edge.
+  const headroom = Math.max(0, rowTop - containerTop);
+
+  return currentScrollTop + Math.min(overflow, headroom);
+}
