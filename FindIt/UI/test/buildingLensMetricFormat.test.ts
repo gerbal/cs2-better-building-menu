@@ -103,6 +103,56 @@ describe("Building Lens metric formatting", () => {
   });
 });
 
+describe("Building level", () => {
+  it("shows a zone building's real level", async () => {
+    const { formatBuildingLevel } = await import("../src/domain/buildingLensMetricFormat.ts");
+
+    assert.equal(formatBuildingLevel(1), "1");
+    assert.equal(formatBuildingLevel(5), "5");
+  });
+
+  it("marks a building with no level as not applicable, not as zero", async () => {
+    // cm-ch0z. Service buildings have no level and the column printed a bare
+    // "0" for every one of them, sitting beside a "—" in Workers that means
+    // "not known". Two different absences rendering as two different lies.
+    const { formatBuildingLevel, METRIC_NOT_APPLICABLE } = await import(
+      "../src/domain/buildingLensMetricFormat.ts"
+    );
+
+    assert.equal(formatBuildingLevel(0), METRIC_NOT_APPLICABLE);
+  });
+
+  it("keeps not-applicable distinguishable from not-known", async () => {
+    // The bead's third criterion, and the reason this is not just "render a
+    // dash": the table already uses one mark for each, and Parking has been
+    // making the distinction since cm-zxou.
+    const { METRIC_NOT_APPLICABLE, METRIC_NO_DATA } = await import(
+      "../src/domain/buildingLensMetricFormat.ts"
+    );
+
+    // Both asserted non-empty first: comparing an undefined export against a
+    // real one passes without either existing, which is a test that reports
+    // success for a reason it does not name.
+    assert.equal(typeof METRIC_NOT_APPLICABLE, "string");
+    assert.ok(METRIC_NOT_APPLICABLE.length > 0);
+    assert.equal(typeof METRIC_NO_DATA, "string");
+    assert.ok(METRIC_NO_DATA.length > 0);
+    assert.notEqual(METRIC_NOT_APPLICABLE, METRIC_NO_DATA);
+  });
+
+  it("falls back to not-known when the level never arrived", async () => {
+    // Defensive: the wire always sends a number, but a null here means the
+    // projection failed, which is a gap rather than a fact about the building.
+    const { formatBuildingLevel, METRIC_NO_DATA } = await import(
+      "../src/domain/buildingLensMetricFormat.ts"
+    );
+
+    assert.equal(formatBuildingLevel(null), METRIC_NO_DATA);
+    assert.equal(formatBuildingLevel(undefined), METRIC_NO_DATA);
+    assert.equal(formatBuildingLevel(Number.NaN), METRIC_NO_DATA);
+  });
+});
+
 describe("Building Lens detail metrics", () => {
   it("surfaces the projected metrics the table never rendered", async () => {
     const { getBuildingDetailMetrics } = await import("../src/domain/buildingLensMetricFormat.ts");

@@ -41,7 +41,9 @@ import {
 import type { AnchorGeometry } from "domain/catalogWindow";
 import type { SortColumn } from "domain/buildingCatalogContracts";
 import {
+  formatBuildingLevel,
   formatBuildingMetric,
+  METRIC_NOT_APPLICABLE,
   formatCapacity,
   formatLotDimensions,
   getBuildingDetailMetrics,
@@ -1027,8 +1029,15 @@ export const BuildingCatalogComponent = () => {
                   <div className={classNames(styles.metric, styles.metricLot)} style={columnStyle("lot")} title="Lot dimensions">
                     {formatLotDimensions(entry.lotWidth, entry.lotDepth)}
                   </div>
-                  <div className={classNames(styles.metric, styles.metricLevel)} style={columnStyle("level")} title="Building level">
-                    {entry.buildingLevel}
+                  <div
+                    className={classNames(styles.metric, styles.metricLevel)}
+                    style={columnStyle("level")}
+                    title={entry.buildingLevel >= 1 ? "Building level" : "No building level"}
+                  >
+                    {/* Not the raw number. A service building has no level, and
+                        printing its 0 beside a Workers dash meaning "not known"
+                        said it might have one we failed to read. See cm-ch0z. */}
+                    {formatBuildingLevel(entry.buildingLevel)}
                   </div>
                   <div
                     className={classNames(styles.parking, styles.metricParking, entry.hasParking && styles.parkingActive)}
@@ -1040,7 +1049,7 @@ export const BuildingCatalogComponent = () => {
                         parks the answer is yes either way. Still not the no-data
                         dash for zero: a building with no parking is a fact
                         rather than a gap. */}
-                    {entry.hasParking ? entry.parkingSlots : "·"}
+                    {entry.hasParking ? entry.parkingSlots : METRIC_NOT_APPLICABLE}
                   </div>
                 </Button>
                 </BuildingHoverCard>

@@ -27,6 +27,38 @@ import type { BuildingLensMetric } from "./buildingLensLayout";
 export const METRIC_NO_DATA = "—";
 
 /**
+ * Rendered when a metric does not apply to this KIND of thing.
+ *
+ * Deliberately not the dash. A dash means "we do not know", and the table shows
+ * both states in the same row: a service building's Workers is unknown while
+ * its Level does not exist, and printing them alike says the building might
+ * have a level we failed to read. The Parking column has drawn this distinction
+ * since cm-zxou; this is that mark, named and shared rather than a second
+ * literal.
+ */
+export const METRIC_NOT_APPLICABLE = "·";
+
+/**
+ * A building's level, or a mark saying it has none.
+ *
+ * cm-ch0z. The column rendered entry.buildingLevel raw, so every service
+ * building showed a bare "0" — beside a "—" in Workers meaning "not known".
+ * Zone buildings run 1 to 5; a level of 0 is the game saying "this kind of
+ * thing does not have levels", which is a fact about the asset and not a
+ * measurement of it.
+ *
+ * A null is different again and gets the dash: the wire always sends a number,
+ * so its absence means the projection failed, which IS a gap.
+ */
+export function formatBuildingLevel(level: number | null | undefined): string {
+  if (typeof level !== "number" || !Number.isFinite(level)) {
+    return METRIC_NO_DATA;
+  }
+
+  return level >= 1 ? String(level) : METRIC_NOT_APPLICABLE;
+}
+
+/**
  * A construction cost of exactly zero — real, and different from unknown.
  *
  * English here rather than a locale key because this module is pure and cannot
