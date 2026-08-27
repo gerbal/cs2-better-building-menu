@@ -33,12 +33,11 @@
 $row-gap: 3rem;
 // Inside .rowSelect, after its last metric cell.
 $row-padding-right: 4rem;
-// On .row itself, after the compare button.
+// On .row itself, after the details button.
 $row-outer-padding-right: 4rem;
-// Wide enough for the word and its glyph. It had no width at all, so vanilla's
-// icon variant squared it to 24rem and the label printed over itself.
-$row-place-width: 64rem;
-$row-compare-width: 26rem;
+// The chevron that expands a row. A glyph, so it keeps the width the compare
+// button had; vanilla's icon variant squares anything without one.
+$row-details-width: 26rem;
 $rows-scrollbar-width: 16rem;
 
 // Everything to the right of .rowSelect's last metric cell. Measured against a
@@ -46,7 +45,7 @@ $rows-scrollbar-width: 16rem;
 // between them, so a first attempt at this that added $row-gap twice overshot
 // by 2rem and left a uniform 1.3px lean. If a gap is ever introduced there, it
 // belongs in this sum.
-$table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-width + $row-outer-padding-right;
+$table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-padding-right;
 
 .catalog {
   display: flex;
@@ -1241,22 +1240,37 @@ $table-trailing-reserve: $row-padding-right + $row-place-width + $row-compare-wi
 }
 
 // Placing is an explicit button now rather than the whole row.
-.rowPlaceButton {
-  // Fixed, and the same constant the header reserves. It was flex: 0 0 auto
-  // with no width, so vanilla's icon variant sized it as a 24rem square and
-  // "Place +" printed across its own edges.
-  flex: 0 0 $row-place-width;
-  width: $row-place-width;
+.rowDetailsButton {
+  // Fixed, and the same constant the header reserves. The row itself is the
+  // Place control now, so this is the only trailing furniture left.
+  flex: 0 0 $row-details-width;
+  width: $row-details-width;
+  // Full row height, stated rather than inherited. align-self: stretch does
+  // NOT work here — vanilla's icon Button variant gives itself a height, and
+  // the row's own mixin centres its children, so the chevron measured 16px
+  // against a 59px row. The old cluster had three controls at 59 / 16 / 20,
+  // which reads as misalignment even though their centres agreed.
+  align-self: stretch;
+  height: 100%;
+  min-height: 0;
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 6rem;
+  padding: 0;
   font-size: var(--fontSizeS);
-  color: var(--menuText1Normal);
-  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--menuText2Normal);
+  background-color: transparent;
 }
 
-.rowPlaceButton:hover {
-  background-color: rgba(255, 255, 255, 0.16);
+.rowDetailsButton:hover {
+  color: var(--menuText1Normal);
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+// Turned when the row is open, so the control says which way it will go
+// rather than only what it is.
+.rowDetailsButtonOpen {
+  color: var(--menuText1Normal);
 }
 
 // An expanded row grows to fit its details instead of clipping them against
