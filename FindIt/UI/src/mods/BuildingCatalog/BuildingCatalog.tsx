@@ -869,8 +869,23 @@ export const BuildingCatalogComponent = () => {
                 <Button
                   className={styles.rowSelect}
                   variant="icon"
-                  onSelect={() => toggleExpanded(entry.id)}
-                  aria-label={rowInspectLabel}
+                  // The row places. Every other view mode already behaved this
+                  // way — a click in Grid, List and Cards arms the tool — and
+                  // only the table disagreed, so a player who learned the verb
+                  // anywhere else got something different here (cm-auzd).
+                  //
+                  // NOT disabled when the entry cannot be placed, deliberately.
+                  // activate() already refuses, and disabling the row would
+                  // take its hover card with it — which is exactly where a
+                  // locked building explains what it is waiting for. The
+                  // refusal is named in aria-label and title instead.
+                  onSelect={() => activate(entry)}
+                  aria-label={
+                    entryStateWord(entry, lockedLabel, builtLabel)
+                      ? `${rowPlaceLabel} — ${entryStateWord(entry, lockedLabel, builtLabel)}`
+                      : rowPlaceLabel
+                  }
+                  data-refused={canPlace(entry) ? undefined : "true"}
                   data-expanded={isExpanded ? "true" : undefined}
                 >
                   <div className={styles.identityCell}>
@@ -926,7 +941,12 @@ export const BuildingCatalogComponent = () => {
                         <div className={styles.name} title={entryLabel}>
                           {shortenTileLabel(entryLabel, nameBudget)}
                         </div>
-                        <span className={styles.placeHint} aria-hidden="true">{isExpanded ? collapseLabel : inspectLabel}</span>
+                        {/* The row's own verb, which is now Place — or the
+                            reason it will not, so a locked row says so where
+                            the eye already is rather than only in a tooltip. */}
+                        <span className={styles.placeHint} aria-hidden="true">
+                          {entryStateWord(entry, lockedLabel, builtLabel) ?? placeLabel}
+                        </span>
                       </div>
                       <div className={styles.category} title={rawCategoryIdentity}>
                         {formatBuildingCatalogLabels(entry)}
@@ -972,24 +992,19 @@ export const BuildingCatalogComponent = () => {
                   </div>
                 </Button>
                 </BuildingHoverCard>
-                {/* Placing is now an explicit act. The whole row used to be a
-                    Place button, so there was no way to look at a building
-                    without committing to it — and placement closes the panel. */}
+                {/* Expanding is its own control now. It used to be the whole
+                    row, which meant the row and every other view mode taught
+                    two different verbs for the same gesture. A chevron says
+                    "there is more inside this" without claiming the row. */}
                 <Button
-                  className={styles.rowPlaceButton}
+                  className={classNames(styles.rowDetailsButton, isExpanded && styles.rowDetailsButtonOpen)}
                   variant="icon"
-                  // activate() already refuses, but a Place button that looks
-                  // live and does nothing is worse than one that says it cannot.
-                  disabled={!canPlace(entry)}
-                  onSelect={() => activate(entry)}
-                  aria-label={
-                    entryStateWord(entry, lockedLabel, builtLabel)
-                      ? `${rowPlaceLabel} — ${entryStateWord(entry, lockedLabel, builtLabel)}`
-                      : rowPlaceLabel
-                  }
-                  title={entryStateWord(entry, lockedLabel, builtLabel) ?? rowPlaceLabel}
+                  onSelect={() => toggleExpanded(entry.id)}
+                  aria-label={rowInspectLabel}
+                  title={rowInspectLabel}
+                  data-expanded={isExpanded ? "true" : undefined}
                 >
-                  <span>{placeLabel}</span>
+                  <span aria-hidden="true">{isExpanded ? "\u2303" : "\u2304"}</span>
                 </Button>
                 {isExpanded && (
                   <div className={styles.rowDetails}>

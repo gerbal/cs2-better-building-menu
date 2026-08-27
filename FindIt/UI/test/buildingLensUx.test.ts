@@ -132,35 +132,49 @@ describe("Building Lens filter controls", () => {
 });
 
 describe("Building Lens action affordances", () => {
-  it("keeps the Place action explicitly labeled in catalog rows", () => {
-    assert.match(buildingCatalogSource, /className=\{styles\.placeHint\}/);
-    // The row itself now opens details; Place is its own button, so the row's
-    // label describes inspection and the Place label sits on the Place control.
-    // rowInspectLabel rather than inspectLabel: it names the building too
-    // ("Details: Small Medical Clinic"), which a row of otherwise identical
-    // "Details" controls needs. It also replaced the title= that used to carry
-    // that text, because the row now shows the shared hover card and two
-    // tooltips on one control is one too many.
-    assert.match(buildingCatalogSource, /aria-label=\{rowInspectLabel\}/);
-    // Place still names the building, and now also says when it cannot place
-    // it: an unplaceable row disables the button, so the label has to explain
-    // the refusal rather than leave a dead control with a normal name.
-    //
-    // Asserted through entryStateWord and canPlace rather than isEntryLocked,
-    // because locked is no longer the only refusal — an already-built unique is
-    // the other, and testing the narrower predicate would have passed while the
-    // button sat enabled and unexplained on top of it.
+  it("makes the row itself the Place control", () => {
+    // cm-auzd. Grid, List and Cards all arm the tool when a result is clicked;
+    // only the table opened details instead, so the same gesture on the same
+    // object did two different things depending on the view. The row is the
+    // Place control now and the other three are unchanged.
+    assert.match(buildingCatalogSource, /className=\{styles\.rowSelect\}[\s\S]{0,900}?onSelect=\{\(\) => activate\(entry\)\}/);
+
+    // The refusal is named rather than left to a dead control: locked is not
+    // the only one — an already-built unique is the other, which is why this
+    // goes through entryStateWord rather than isEntryLocked.
     assert.match(buildingCatalogSource, /aria-label=\{\s*entryStateWord\(entry, lockedLabel, builtLabel\)/);
-    assert.match(buildingCatalogSource, /title=\{entryStateWord\(entry, lockedLabel, builtLabel\) \?\? rowPlaceLabel\}/);
-    assert.match(buildingCatalogSource, /disabled=\{!canPlace\(entry\)\}/);
   });
 
-  it("separates inspecting a building from committing to placing it", () => {
-    // The whole row used to be a Place button, and placement closes the panel,
-    // so there was no way to look without committing.
-    assert.match(buildingCatalogSource, /onSelect=\{\(\) => toggleExpanded\(entry\.id\)\}/);
-    assert.match(buildingCatalogSource, /className=\{styles\.rowPlaceButton\}/);
-    assert.match(buildingCatalogSource, /onSelect=\{\(\) => activate\(entry\)\}/);
+  it("does not disable an unplaceable row, because that would take its hover card too", () => {
+    // The old Place BUTTON was disabled when the entry could not be placed,
+    // which was right for a small control. The row is not a small control: it
+    // carries the hover card, and the hover card is where a locked building
+    // says what it is waiting for. Disabling it would hide the explanation
+    // exactly when it is needed, so activate() refuses and the label says so.
+    assert.doesNotMatch(
+      buildingCatalogSource,
+      /className=\{styles\.rowSelect\}[\s\S]{0,900}?disabled=/,
+      "the row must stay enabled so its hover card survives",
+    );
+    assert.match(buildingCatalogSource, /data-refused=\{canPlace\(entry\) \? undefined : "true"\}/);
+  });
+
+  it("gives expanding a row its own control", () => {
+    // A dedicated button rather than the whole row, so the row is free to mean
+    // one thing. The chevron also says which way it will go.
+    assert.match(buildingCatalogSource, /className=\{classNames\(styles\.rowDetailsButton/);
+    assert.match(buildingCatalogSource, /styles\.rowDetailsButton[\s\S]{0,400}?onSelect=\{\(\) => toggleExpanded\(entry\.id\)\}/);
+    assert.match(buildingCatalogStyles, /\.rowDetailsButton\b/);
+  });
+
+  it("keeps the trailing reserve and the name budget agreeing", () => {
+    // buildingCatalog.module.scss is the authority for what a row reserves to
+    // the right of its name, and buildingLensLayout mirrors it so the name can
+    // be elided to fit. They drifted once already; a control removed from one
+    // and not the other silently mis-sizes every name in the table.
+    assert.match(buildingCatalogStyles, /\$table-trailing-reserve: \$row-padding-right \+ \$row-details-width \+ \$row-outer-padding-right;/);
+    assert.match(buildingCatalogStyles, /\$row-details-width: 26rem;/);
+    assert.doesNotMatch(buildingCatalogStyles, /\$row-place-width/, "Place is the row now; its reserve is gone");
   });
 
   it("renders the projected analytical metrics when a row is expanded", () => {
