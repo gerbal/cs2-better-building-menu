@@ -89,6 +89,7 @@ namespace FindItBuildingMenu.Utilities
         {
             private readonly string _term;
             private readonly bool _caseCheck;
+            private readonly string _spellNormalized;
             private readonly string _abbreviationSource;
             private readonly string _abbreviation;
             private readonly string _withoutSpaces;
@@ -99,6 +100,7 @@ namespace FindItBuildingMenu.Utilities
             {
                 _term = term ?? string.Empty;
                 _caseCheck = caseCheck;
+                _spellNormalized = NormalizeForSpelling(_term, caseCheck);
                 _abbreviationSource = _term.ToLower().Replace("'s ", " ");
                 _abbreviation = _abbreviationSource.GetAbbreviation();
                 _withoutSpaces = _abbreviationSource.Where(x => x != ' ');
@@ -127,9 +129,13 @@ namespace FindItBuildingMenu.Utilities
                     return true;
                 }
 
-                if (_term.SpellCheck(
+                // The term side is already normalised, and the threshold doubles
+                // as the matrix's ceiling — the answer above it is never read.
+                if (SpellCheckCore(
+                        _spellNormalized,
                         termToBeSearched.Substring(0, Math.Min(termToBeSearched.Length, _term.Length + 1)),
-                        _caseCheck)
+                        _caseCheck,
+                        _spellThreshold)
                     <= _spellThreshold)
                 {
                     return true;
@@ -184,21 +190,60 @@ namespace FindItBuildingMenu.Utilities
             return new PreparedSearchTerm(searchTerm, caseCheck).Matches(termToBeSearched);
         }
 
+        /// <summary>
+        /// Levenshtein distance between two names.
+        /// </summary>
+        /// <remarks>
+        /// Callers testing ONE term against MANY names should normalise the term
+        /// once and use <see cref="SpellCheckCore"/>; this overload normalises
+        /// both sides every call. See cm-yfd5.
+        /// </remarks>
         public static int SpellCheck(this string s1, string s2, bool caseCheck = true)
         {
-            s1 = s1.RemoveDoubleSpaces();
-            s2 = s2.RemoveDoubleSpaces();
+            return SpellCheckCore(NormalizeForSpelling(s1, caseCheck), s2, caseCheck, int.MaxValue);
+        }
 
-            if (!caseCheck)
-            {
-                s1 = s1.ToLower();
-                s2 = s2.ToLower();
-            }
+        /// <summary>What SpellCheck does to each side before comparing.</summary>
+        internal static string NormalizeForSpelling(string text, bool caseCheck)
+        {
+            var collapsed = (text ?? string.Empty).RemoveDoubleSpaces();
 
-            // Levenshtein Algorithm
-            var n = s1.Length;
-            var m = s2.Length;
-            var d = new int[n + 1, m + 1];
+            return caseCheck ? collapsed : collapsed.ToLower();
+        }
+
+        // Two rows, reused. The search runs on one worker task at a time, so a
+        // per-thread buffer removes the last per-candidate allocation without
+        // any sharing question.
+        [ThreadStatic]
+        private static int[] _spellPrevious;
+
+        [ThreadStatic]
+        private static int[] _spellCurrent;
+
+        /// <summary>
+        /// Levenshtein with the first side already normalised, and an optional
+        /// ceiling above which the exact distance stops mattering.
+        /// </summary>
+        /// <remarks>
+        /// Three changes from the textbook form this replaces, all of which
+        /// leave the answer alone within the ceiling:
+        ///
+        /// • two rolling rows rather than an (n+1)x(m+1) matrix, since row i
+        ///   only ever reads row i-1;
+        /// • those rows are reused across calls instead of allocated per call;
+        /// • when every value in a row already exceeds maxDistance the final
+        ///   distance must too, because distance never decreases as the matrix
+        ///   is filled — so it returns early with a value the caller will read
+        ///   as "too far". Callers wanting the true distance pass int.MaxValue
+        ///   and get the exact number.
+        /// </remarks>
+        internal static int SpellCheckCore(string normalized1, string s2, bool caseCheck, int maxDistance)
+        {
+            var a = normalized1 ?? string.Empty;
+            var b = NormalizeForSpelling(s2, caseCheck);
+
+            var n = a.Length;
+            var m = b.Length;
 
             if (n == 0)
             {
@@ -210,24 +255,52 @@ namespace FindItBuildingMenu.Utilities
                 return n;
             }
 
-            for (var i = 0; i <= n; d[i, 0] = i++)
-            { }
+            if (_spellPrevious is null || _spellPrevious.Length < m + 1)
+            {
+                _spellPrevious = new int[m + 1];
+                _spellCurrent = new int[m + 1];
+            }
 
-            for (var j = 0; j <= m; d[0, j] = j++)
-            { }
+            var previous = _spellPrevious;
+            var current = _spellCurrent;
+
+            for (var j = 0; j <= m; j++)
+            {
+                previous[j] = j;
+            }
 
             for (var i = 1; i <= n; i++)
             {
+                current[0] = i;
+                var rowMinimum = current[0];
+
                 for (var j = 1; j <= m; j++)
                 {
-                    var cost = s2[j - 1] == s1[i - 1] ? 0 : 1;
+                    var cost = b[j - 1] == a[i - 1] ? 0 : 1;
 
-                    d[i, j] = Math.Min(Math.Min(d[i - 1, j] + 1, d[i, j - 1] + 1),
-                         d[i - 1, j - 1] + cost);
+                    var value = Math.Min(
+                        Math.Min(previous[j] + 1, current[j - 1] + 1),
+                        previous[j - 1] + cost);
+
+                    current[j] = value;
+
+                    if (value < rowMinimum)
+                    {
+                        rowMinimum = value;
+                    }
                 }
+
+                if (rowMinimum > maxDistance)
+                {
+                    return rowMinimum;
+                }
+
+                var swap = previous;
+                previous = current;
+                current = swap;
             }
 
-            return d[n, m];
+            return previous[m];
         }
 
         public static bool AbbreviationCheck(this string string1, string string2)
