@@ -97,3 +97,47 @@ export function nextWatchState(state: WatchState, index: number | null, action: 
   // rather than reading as a repeat.
   return { seen: true, last: action === "close" ? null : index };
 }
+
+/** What the Escape rule needs to know. */
+export interface EscapeContext {
+  /** Whether the lens is on screen. */
+  lensOpen: boolean;
+}
+
+/**
+ * Whether an Escape should clear the toolbar selection, taking the lens with it.
+ *
+ * cm-z9lm. Escape could never close the lens: the second press went to the
+ * pause menu and the panel stayed, so the only way out was the toolbar icon.
+ *
+ * It clears the GAME's selection rather than hiding our panel, which is the
+ * path the toolbar button already uses — VanillaMenuWatcher's own close branch
+ * picks up the resulting null, so there is one way for the lens to close
+ * rather than two. ClearAssetSelection nulls menu, category and asset
+ * together, which is why no vanilla grid appears in the gap; that was the
+ * original defect.
+ *
+ * ONE CONDITION, and the absence of a second one is the point.
+ *
+ * Vanilla keeps its menu open when a tool is cancelled, and matching that
+ * would mean holding on the press that disarms and closing on the next. That
+ * needs to tell the two presses apart, and a DOM listener cannot: both
+ * available signals — how long since the tool was disarmed, and what the tool
+ * last reported as — depend on whether the game's disarm notification has
+ * arrived, and it RACES the keypress. Measured on a build that tried it: six
+ * trials gave two holds, three closes and a no-op. An earlier version timing
+ * the gap gave six closes out of six. Neither is a rule; both are a coin.
+ *
+ * So this closes on every Escape while the lens is open, which is
+ * deterministic, and accepts the divergence: cancelling a tool with Escape
+ * also puts the menu away. Chosen deliberately over shipping something
+ * unpredictable.
+ *
+ * It also removes the pause-menu complaint the bead was worried about. The
+ * game opens the pause menu when Escape finds nothing to close; with the lens
+ * gone after the first press, the second press is a player asking for the
+ * pause menu and getting it.
+ */
+export function shouldClearOnEscape({ lensOpen }: EscapeContext): boolean {
+  return lensOpen;
+}
