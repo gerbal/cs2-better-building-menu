@@ -245,10 +245,18 @@ const HoverCardContent = ({
       key: "capacity",
       label: labels.capacity,
       applicable: isMetricPresent(entry.capacity),
-      tone: capacityForecast ? (capacityForecast.covers ? "good" : "warn") : undefined,
+      // cm-7r5r. A shortfall is only claimed when the city's own capacity was
+      // the baseline. Without one, the verdict is "does THIS BUILDING alone
+      // meet the whole city's demand", which is nearly always no and says
+      // nothing useful — a 25-patient clinic read as 355 short whether the
+      // city had ample beds or none. Silence there rather than a number the
+      // data cannot support, and no warning tone to dress it up.
+      tone: capacityForecast?.basis === "city"
+        ? (capacityForecast.covers ? "good" : "warn")
+        : undefined,
       // Only the shortfall is stated. See buildingTileTooltip for why the
       // covered case says nothing.
-      value: capacityForecast && !capacityForecast.covers
+      value: capacityForecast?.basis === "city" && !capacityForecast.covers
         ? `${capacity} · ${labels.short.replace("{0}", groupDigits(capacityForecast.shortfall, separators))}`
         : capacity,
     },

@@ -24,6 +24,17 @@ export interface CostForecast {
 }
 
 export interface CapacityForecast {
+  /**
+   * What the verdict compared against demand.
+   *
+   * cm-7r5r. Without this the verdict answered one of two different questions
+   * depending on data availability, and said which nowhere: "does the city
+   * meet demand once this is built" when a baseline was known, and "does THIS
+   * BUILDING meet the whole city's demand" when it was not. A 25-patient
+   * clinic in a city with ample beds and one in a city with none rendered
+   * identically. The caller now knows which it is holding.
+   */
+  basis: "city" | "building";
   /** Null when the city's current capacity is unknown; report `added` instead. */
   projected: number | null;
   added: number;
@@ -81,6 +92,7 @@ export function getCapacityForecast(input: {
   const measured = projected ?? input.added;
 
   return {
+    basis: hasBaseline ? "city" : "building",
     projected,
     added: input.added,
     demand: input.demand,
