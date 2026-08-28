@@ -13,7 +13,6 @@ import {
   hasFootprint,
   type NumberSeparators,
 } from "domain/buildingLensMetricFormat";
-import { getCostForecast } from "domain/buildingForecast";
 import { buildTileTooltipLines, isMetricPresent } from "domain/buildingTileTooltip";
 import { clampAssetDescription, getBuildingExtensionLabels, resolveAssetDescription } from "domain/buildingLensRowDetails";
 import { isEntryAlreadyBuilt, isEntryLocked, listLockConditions } from "domain/buildingLockState";
@@ -21,14 +20,11 @@ import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
 import type { ZoneFootprint } from "domain/zoningHierarchy";
 import styles from "./buildingHoverCard.module.scss";
 
-const Money$ = bindValue<number>("toolbarBottom", "money", 0);
-
 // Milestone index -> name, dense by index. A locked asset carries only the
 // index, so this is read once here rather than resolved per asset in C#.
 const BuildingLensMilestones$ = bindValue<string[]>(mod.id, "BuildingLensMilestones", []);
 
 export interface HoverCardContext {
-  money: number;
   milestoneNames: string[];
   separators: NumberSeparators;
   /**
@@ -45,7 +41,6 @@ export interface HoverCardContext {
     upkeep: string;
     capacity: string;
     lot: string;
-    shareOfFunds: string;
     locked: string;
     alreadyBuilt: string;
     lockedValue: string;
@@ -70,11 +65,9 @@ export interface HoverCardContext {
  */
 export const useHoverCardContext = (): HoverCardContext => {
   const { translate } = useLocalization();
-  const money = useValue(Money$);
   const milestoneNames = useValue(BuildingLensMilestones$) ?? [];
 
   return {
-    money,
     milestoneNames,
     // Clamped here, not in the resolver: the expanded table row shows the same
     // description in a place that has room for all of it, and shortening it
@@ -86,8 +79,6 @@ export const useHoverCardContext = (): HoverCardContext => {
       upkeep: translate("Tooltip.LABEL[FindItBuildingMenu.Upkeep]", "Upkeep") ?? "Upkeep",
       capacity: translate("Tooltip.LABEL[FindItBuildingMenu.Capacity]", "Capacity") ?? "Capacity",
       lot: translate("Tooltip.LABEL[FindItBuildingMenu.Lot]", "Lot") ?? "Lot",
-      shareOfFunds:
-        translate("Tooltip.LABEL[FindItBuildingMenu.ShareOfFunds]", "{0}% of funds") ?? "{0}% of funds",
       // "Requires", not "Availability". The line lists what the player has to
       // go and do; naming it after the state it describes made the reader work
       // out the implication for themselves.
@@ -146,7 +137,7 @@ const HoverCardContent = ({
   entry: BuildingCatalogEntry;
   context: HoverCardContext;
 }) => {
-  const { money, milestoneNames, separators, labels, describe } = context;
+  const { milestoneNames, separators, labels, describe } = context;
   const label = entry.name || entry.prefabName;
   // What the thing IS, before every line that is a number about it. This is
   // what vanilla shows on selection and the lens used to drop the moment a
@@ -157,13 +148,6 @@ const HoverCardContent = ({
   const upkeep = formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance);
   const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators);
   const lot = formatLotDimensions(entry.lotWidth, entry.lotDepth);
-
-  // No affordability forecast for a rate. A road's figure is per kilometre, so
-  // "67% of funds" would be answering a question the player did not ask — they
-  // might lay 300m of it. The cost still shows; only the comparison is dropped.
-  const costForecast = entry.costIsPerDistance
-    ? null
-    : getCostForecast(entry.constructionCost, money);
 
   // Zones carry their own facts — how tall they grow, what they trade in —
   // which the game measures and never shows. They are a property of the entry,
@@ -205,13 +189,11 @@ const HoverCardContent = ({
       key: "cost",
       label: labels.cost,
       applicable: isMetricPresent(entry.constructionCost),
-      tone: costForecast && !costForecast.affordable ? "warn" : undefined,
-      // The treasury balance is on screen at all times, so the card does not
-      // repeat it. What it cannot read off the HUD is what share of the balance
-      // this one purchase would take.
-      value: costForecast && costForecast.share !== null && Number.isFinite(costForecast.share)
-        ? `${cost} · ${labels.shareOfFunds.replace("{0}", `${costForecast.share}`)}`
-        : cost,
+      // The price, and nothing about the treasury. The balance is on the HUD at
+      // all times; a share of it is a fact about the CITY on a card about a
+      // BUILDING, which is the same objection that took the capacity forecast
+      // out (cm-7r5r).
+      value: cost,
     },
     {
       key: "capacity",

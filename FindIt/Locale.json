@@ -216,7 +216,6 @@
   "Tooltip.LABEL[FindItBuildingMenu.Upkeep]": "Upkeep",
   "Tooltip.LABEL[FindItBuildingMenu.Workers]": "Workers",
   "Tooltip.LABEL[FindItBuildingMenu.Capacity]": "Capacity",
-  "Tooltip.LABEL[FindItBuildingMenu.ShareOfFunds]": "{0}% of funds",
   "Tooltip.LABEL[FindItBuildingMenu.ShortBy]": "{0} short",
   "Tooltip.LABEL[FindItBuildingMenu.Place]": "Place",
   "Tooltip.LABEL[FindItBuildingMenu.ClearCompare]": "Clear comparison",
