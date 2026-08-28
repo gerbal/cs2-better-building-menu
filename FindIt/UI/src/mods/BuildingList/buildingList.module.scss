@@ -182,10 +182,6 @@
 
 // Same signal the grid's hover card gives, so the answer to "can I afford it"
 // looks the same wherever it is asked.
-.factUnaffordable {
-  color: var(--negativeColor, #e06c6c);
-}
-
 // --- Footprint glyphs ------------------------------------------------------
 // Nested flex rows, not CSS grid: Cohtml supports no grid layout.
 

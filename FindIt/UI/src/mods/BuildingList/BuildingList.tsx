@@ -9,10 +9,8 @@ import {
   formatCapacity,
   formatLotDimensions,
   getNumberSeparators,
-  groupDigits,
   hasFootprint,
 } from "domain/buildingLensMetricFormat";
-import { getCostForecast } from "domain/buildingForecast";
 import { recordPlacement } from "domain/buildingShelf";
 import { canPlace, entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { rankBuildingMatches, topSearchResult } from "domain/buildingSearchRank";
@@ -25,9 +23,6 @@ import type { SortColumn } from "domain/buildingCatalogContracts";
 import mod from "../../../mod.json";
 import styles from "./buildingList.module.scss";
 
-// Same source the grid's hover card uses, so "can I afford it" is answered the
-// same way wherever it is asked.
-const Money$ = bindValue<number>("toolbarBottom", "money", 0);
 const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "BuildingCatalogSortColumn", "Name");
 
 /**
@@ -66,7 +61,6 @@ interface BuildingListProps {
 export const BuildingList = ({ entries, searchText, onPlace, variant = "compact" }: BuildingListProps) => {
   const { translate } = useLocalization();
   const separators = getNumberSeparators(translate);
-  const money = useValue(Money$);
   // The same card the grid and the table show. This view used to carry its own
   // thinner one — a name and a single "cost · lot" line — so which facts the
   // game would tell you about a building depended on which view mode you
@@ -147,7 +141,6 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
         // hospital's is informative, without a rule per category here.
         const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators);
         const hasCapacity = capacity !== "" && capacity !== "—";
-        const forecast = getCostForecast(entry.constructionCost, money);
 
         return (
           <BuildingHoverCard key={entry.id} entry={entry} context={hoverCard}>
@@ -228,14 +221,7 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
                         <span className={styles.factDot} aria-hidden="true">·</span>
                       </>
                     )}
-                    <span
-                      className={classNames(
-                        styles.fact,
-                        forecast && !forecast.affordable && styles.factUnaffordable
-                      )}
-                    >
-                      {forecast && forecast.treasury !== null ? groupDigits(forecast.cost, separators) : cost}
-                    </span>
+                    <span className={styles.fact}>{cost}</span>
                     {hasCapacity && (
                       <>
                         <span className={styles.factDot} aria-hidden="true">·</span>
