@@ -13,8 +13,7 @@ import {
   hasFootprint,
   type NumberSeparators,
 } from "domain/buildingLensMetricFormat";
-import { getCapacityForecast, getCostForecast } from "domain/buildingForecast";
-import { SERVICE_FORECAST_BINDINGS, getServiceForecastKey } from "domain/serviceForecast";
+import { getCostForecast } from "domain/buildingForecast";
 import { buildTileTooltipLines, isMetricPresent } from "domain/buildingTileTooltip";
 import { clampAssetDescription, getBuildingExtensionLabels, resolveAssetDescription } from "domain/buildingLensRowDetails";
 import { isEntryAlreadyBuilt, isEntryLocked, listLockConditions } from "domain/buildingLockState";
@@ -22,26 +21,15 @@ import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
 import type { ZoneFootprint } from "domain/zoningHierarchy";
 import styles from "./buildingHoverCard.module.scss";
 
-// The game's own live city state, so the card compares against the player's
-// city rather than against nothing. One pair per demand series;
-// SERVICE_FORECAST_BINDINGS names which pair a given building belongs to.
 const Money$ = bindValue<number>("toolbarBottom", "money", 0);
 
 // Milestone index -> name, dense by index. A locked asset carries only the
 // index, so this is read once here rather than resolved per asset in C#.
 const BuildingLensMilestones$ = bindValue<string[]>(mod.id, "BuildingLensMilestones", []);
 
-const SERIES = Object.entries(SERVICE_FORECAST_BINDINGS).map(([key, b]) => ({
-  key,
-  unit: b.unit,
-  capacity$: bindValue<number>(b.group, b.capacity, 0),
-  demand$: bindValue<number>(b.group, b.demand, 0),
-}));
-
 export interface HoverCardContext {
   money: number;
   milestoneNames: string[];
-  seriesByKey: Map<string, { capacity: number; demand: number; unit: string }>;
   separators: NumberSeparators;
   /**
    * The game's own sentence about an asset, resolved per entry.
@@ -58,7 +46,6 @@ export interface HoverCardContext {
     capacity: string;
     lot: string;
     shareOfFunds: string;
-    short: string;
     locked: string;
     alreadyBuilt: string;
     lockedValue: string;
@@ -85,14 +72,10 @@ export const useHoverCardContext = (): HoverCardContext => {
   const { translate } = useLocalization();
   const money = useValue(Money$);
   const milestoneNames = useValue(BuildingLensMilestones$) ?? [];
-  const seriesByKey = new Map(
-    SERIES.map((s) => [s.key, { capacity: useValue(s.capacity$), demand: useValue(s.demand$), unit: s.unit }])
-  );
 
   return {
     money,
     milestoneNames,
-    seriesByKey,
     // Clamped here, not in the resolver: the expanded table row shows the same
     // description in a place that has room for all of it, and shortening it
     // there to suit a hover card would be the card dictating to the table.
@@ -105,7 +88,6 @@ export const useHoverCardContext = (): HoverCardContext => {
       lot: translate("Tooltip.LABEL[FindItBuildingMenu.Lot]", "Lot") ?? "Lot",
       shareOfFunds:
         translate("Tooltip.LABEL[FindItBuildingMenu.ShareOfFunds]", "{0}% of funds") ?? "{0}% of funds",
-      short: translate("Tooltip.LABEL[FindItBuildingMenu.ShortBy]", "{0} short") ?? "{0} short",
       // "Requires", not "Availability". The line lists what the player has to
       // go and do; naming it after the state it describes made the reader work
       // out the implication for themselves.
@@ -164,7 +146,7 @@ const HoverCardContent = ({
   entry: BuildingCatalogEntry;
   context: HoverCardContext;
 }) => {
-  const { money, milestoneNames, seriesByKey, separators, labels, describe } = context;
+  const { money, milestoneNames, separators, labels, describe } = context;
   const label = entry.name || entry.prefabName;
   // What the thing IS, before every line that is a number about it. This is
   // what vanilla shows on selection and the lens used to drop the moment a
@@ -182,16 +164,6 @@ const HoverCardContent = ({
   const costForecast = entry.costIsPerDistance
     ? null
     : getCostForecast(entry.constructionCost, money);
-  const forecastKey = getServiceForecastKey(entry);
-  const live = forecastKey ? seriesByKey.get(forecastKey.key) : null;
-  const capacityForecast = live
-    ? getCapacityForecast({
-        added: entry.capacity,
-        current: live.capacity,
-        demand: live.demand,
-        unit: live.unit,
-      })
-    : null;
 
   // Zones carry their own facts — how tall they grow, what they trade in —
   // which the game measures and never shows. They are a property of the entry,
@@ -245,20 +217,10 @@ const HoverCardContent = ({
       key: "capacity",
       label: labels.capacity,
       applicable: isMetricPresent(entry.capacity),
-      // cm-7r5r. A shortfall is only claimed when the city's own capacity was
-      // the baseline. Without one, the verdict is "does THIS BUILDING alone
-      // meet the whole city's demand", which is nearly always no and says
-      // nothing useful — a 25-patient clinic read as 355 short whether the
-      // city had ample beds or none. Silence there rather than a number the
-      // data cannot support, and no warning tone to dress it up.
-      tone: capacityForecast?.basis === "city"
-        ? (capacityForecast.covers ? "good" : "warn")
-        : undefined,
-      // Only the shortfall is stated. See buildingTileTooltip for why the
-      // covered case says nothing.
-      value: capacityForecast?.basis === "city" && !capacityForecast.covers
-        ? `${capacity} · ${labels.short.replace("{0}", groupDigits(capacityForecast.shortfall, separators))}`
-        : capacity,
+      // The building's own figure, and nothing about the city. A forecast here
+      // answered a question about the CITY on a card about a BUILDING, and it
+      // moved with the simulation while the building did not (cm-7r5r).
+      value: capacity,
     },
     // Beside capacity, because it is one: how many cars the thing holds. Only
     // when there are bays — a zero here is a fact, but it is a fact about
