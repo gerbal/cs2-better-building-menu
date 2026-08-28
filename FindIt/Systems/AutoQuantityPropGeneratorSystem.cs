@@ -130,6 +130,11 @@ namespace FindItBuildingMenu.Systems
 
 				if (original.TryGet<UIObject>(out var uIObject))
 				{
+					// m_Group stays null on purpose, and has a second
+					// consequence worth knowing: a prefab vanilla places in no
+					// menu cannot enter the Building Lens catalogue, because
+					// BelongsInCatalog admits only buildings and placed assets.
+					// These props are FindIt's, not the lens's — cm-wdap.
 					newPrefab.AddComponentFrom(uIObject).m_Group = null;
 				}
 

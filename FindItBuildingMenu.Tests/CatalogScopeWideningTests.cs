@@ -154,5 +154,37 @@ namespace FindItBuildingMenu.Tests
 				placedInAnyMenu: false,
 				gatheredNetwork: false));
 		}
+
+		[Fact]
+		public void TheGeneratedPropsStayOutOfTheLensAtBothScopes()
+		{
+			// cm-wdap, decided by the user 2026-08-27: the 314 props our own
+			// generators emit are FindIt's, not the lens's. FindIt answers
+			// "where is any asset"; the lens answers "what should I build here,
+			// and what does it cost me". A quantity variant of a shopping
+			// trolley has no answer to the second question.
+			//
+			// This is the shape they arrive in. A generated prop is a
+			// StaticObjectPrefab, so IsBuilding is false, and both generators
+			// set UIObject.m_Group = null, so vanilla places them in no menu —
+			// which is what keeps them out, at both scopes, with no special
+			// case anywhere.
+			//
+			// So this test is a DECISION, not a floor. Read it before adding a
+			// Has<FindItGenerated> arm to BelongsInCatalog: that change is a
+			// reversal, not a fix, and it also arms the exact population
+			// cm-2xvs.13 warns about — group-less prefabs, which null the
+			// toolbar's menu and category and unmount the panel under the
+			// player.
+			foreach (var menuScoped in new[] { false, true })
+			{
+				Assert.False(BuildingCatalogAdapter.BelongsInCatalog(
+					menuScoped: menuScoped,
+					isBuilding: false,
+					placedInThisMenu: false,
+					placedInAnyMenu: false,
+					gatheredNetwork: false));
+			}
+		}
 	}
 }

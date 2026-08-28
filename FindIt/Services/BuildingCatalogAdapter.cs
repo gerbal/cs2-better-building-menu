@@ -950,6 +950,16 @@ namespace FindItBuildingMenu.Services
 		/// unscoped; both are meaningless without a menu, and the invariant
 		/// test relies on placedInAnyMenu being the only placement fact that
 		/// survives into the unscoped arm.
+		///
+		/// There is deliberately no arm for our OWN generated props. The
+		/// quantity and vehicle generators emit 314 prefabs with
+		/// UIObject.m_Group = null, so vanilla places them in no menu and they
+		/// are not buildings — they fail both arms at both scopes, and stay
+		/// out. That is the decision (cm-wdap, user, 2026-08-27), not an
+		/// oversight: they are FindIt's, which answers "where is any asset",
+		/// and the lens answers "what should I build here, and what does it
+		/// cost me". Adding Has&lt;FindItGenerated&gt; here would reverse it,
+		/// and would admit the group-less population cm-2xvs.13 warns about.
 		/// </remarks>
 		public static bool BelongsInCatalog(
 			bool menuScoped,
