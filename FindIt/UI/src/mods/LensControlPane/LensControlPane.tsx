@@ -465,7 +465,7 @@ export const LensControlPane = () => {
           different kind of wrong for a build menu.
 
           LOCK WINDOW OPEN could not act from here. `_IsWindowLocked` is read in
-          exactly two places, `LegacyGridVisible` and the `ToggleFindItPanel`
+          exactly two places, `LegacyGridVisible` and the `SetLensMenuOpen`
           guard, and both are about the LEGACY panel — which
           `(_ShowFindItPanel || _IsWindowLocked) && !_BuildingLensEnabled` hides
           for as long as the lens is up. So the button changed a flag whose only

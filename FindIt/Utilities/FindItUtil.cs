@@ -124,11 +124,11 @@ namespace FindItBuildingMenu.Utilities
 			//
 			// ResetOrder throws away IndexedPrefabList's cached sort, which is
 			// rebuilt lazily by the next thing to enumerate the list. That next
-			// thing is RefreshLens, three lines further down ToggleFindItPanel,
+			// thing is RefreshLens, three lines further down SetLensMenuOpen,
 			// and the list holds ~24,700 prefabs: measured at 180-185ms, every
 			// time, sitting inside the frame that opens the panel.
 			//
-			// ToggleFindItPanel calls this with NO arguments, so both values
+			// SetLensMenuOpen calls this with NO arguments, so both values
 			// coalesce to what they already were. The whole reset was for a
 			// change that never happened. It only looked like a per-menu cost
 			// because a menu-to-menu switch leaves the panel open and the

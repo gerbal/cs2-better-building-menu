@@ -31,9 +31,6 @@ namespace FindItBuildingMenu
 		[SettingsUIMouseBinding(nameof(FindItBuildingMenu) + "Apply"), SettingsUIHidden]
 		public ProxyBinding ApplyMimic { get; set; }
 
-		[SettingsUIHidden]
-		public string DefaultAlignmentStyle { get; set; } = "Center";
-
 		/// <summary>
 		/// The catalog's height, in the same rem-like units as the width, set
 		/// by dragging the panel's top edge.

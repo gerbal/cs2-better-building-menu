@@ -4,7 +4,6 @@ import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaC
 import mod from "../mod.json";
 import { ToolbarIconComponent } from "mods/ToolbarIcon/ToolbarIcon";
 import { RemoveVanillaAssetMenuComponent } from "mods/RemoveVanillaAssetMenu/RemoveVanillaAssetMenu";
-import { WrapToolOptionsPanel } from "mods/WrapToolOptionsPanel/WrapToolOptionsPanel";
 import { PickerComponent } from "mods/PickerComponent/PickerComponent";
 import { ToolOptionsVisibility } from "mods/PickerComponent/ToolOptionsVisibility";
 import { LensToolOptions } from "mods/LensToolOptions/LensToolOptions";
@@ -19,7 +18,6 @@ const register: ModRegistrar = (moduleRegistry) => {
 
   // This repalaces the asset grid.
   moduleRegistry.extend("game-ui/game/components/asset-menu/asset-menu.tsx", "AssetMenu", RemoveVanillaAssetMenuComponent);
-  moduleRegistry.extend("game-ui/game/components/tool-options/tool-options-panel.tsx", "ToolOptionsPanel", WrapToolOptionsPanel);
 
   // This adds the fint it and picker icons to the toolbar
   moduleRegistry.extend("game-ui/game/components/toolbar/top/toggles.tsx", "PhotoModeToggle", ToolbarIconComponent);

@@ -117,7 +117,7 @@ namespace FindItBuildingMenu.Systems
 			}
 			else
 			{
-				_findItUISystem.ToggleFindItPanel(false);
+				_findItUISystem.SetLensMenuOpen(false);
 
 				_toolSystem.activeTool = _pickerToolSystem;
 			}
@@ -127,7 +127,7 @@ namespace FindItBuildingMenu.Systems
 		{
 			RefreshOptions();
 
-			_findItUISystem.ToggleFindItPanel(false);
+			_findItUISystem.SetLensMenuOpen(false);
 
 			_toolSystem.activeTool = _pickerToolSystem;
 		}

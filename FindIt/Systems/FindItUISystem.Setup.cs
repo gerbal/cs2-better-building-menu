@@ -53,7 +53,23 @@ namespace FindItBuildingMenu.Systems
 
 		private ValueBindingHelper<bool> _IsSearchLoading;
 		private ValueBindingHelper<bool> _ClearSearchBar;
-		private ValueBindingHelper<bool> _ShowFindItPanel;
+		/// <summary>
+		/// Whether the lens menu is open.
+		/// </summary>
+		/// <remarks>
+		/// Was a published binding called ShowFindItPanel, from when it meant
+		/// "draw FindIt's floating panel". There is no such panel: the menu is
+		/// mounted by the game in its own asset-menu slot, so nothing in the UI
+		/// needs to be told whether it exists. Its last reader was
+		/// WrapToolOptionsPanel, deleted with the alignment setting it depended
+		/// on.
+		///
+		/// What the flag actually does, and still does, is hold OUR open state:
+		/// it makes SetLensMenuOpen idempotent, it distinguishes a cold open
+		/// from a menu-to-menu switch so the switch gets its extra refresh, and
+		/// it tells the close paths whether there is anything to close.
+		/// </remarks>
+		private bool _lensMenuOpen;
 		private ValueBindingHelper<bool> _ReplaceVanillaBuildMenu = null!;
 		private ValueBindingHelper<int> _BuildingCatalogMatchesElsewhere = null!;
 		private ValueBindingHelper<bool> _LensDefaultToTable = null!;
@@ -92,7 +108,6 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<float> _PanelWidth;
 		private ValueBindingHelper<float> _BuildingLensPanelHeight;
 		private ValueBindingHelper<string> _CurrentSearch;
-		private ValueBindingHelper<string> _AlignmentStyle;
 		private ValueBindingHelper<BuildingCatalogPage> _BuildingCatalogBinding = null!;
 		private ValueBindingHelper<BuildingCatalogMetricRangeState> _BuildingCatalogMetricRanges = null!;
 		/// <summary>
@@ -170,18 +185,6 @@ namespace FindItBuildingMenu.Systems
 		/// </summary>
 		public BuildingCatalogFacetGroup? GetBuildingLensFacetGroup(string facetId) =>
 			System.Array.Find(_BuildingLensFacets.Value.Groups, group => group.Id == facetId);
-		public string AlignmentStyle
-		{
-			get => _AlignmentStyle;
-			set
-			{
-				Mod.Settings.DefaultAlignmentStyle = _AlignmentStyle.Value = value;
-				Mod.Settings.ApplyAndSave();
-
-				ExpandedToggled();
-			}
-		}
-
 		protected override void OnCreate()
 		{
 			base.OnCreate();
@@ -214,7 +217,6 @@ namespace FindItBuildingMenu.Systems
 			// out. It is permanently false, which is the correct behaviour for a
 			// menu with no hot-key to focus its search from.
 			_ClearSearchBar = CreateBinding("ClearSearchBar", false);
-			_ShowFindItPanel = CreateBinding("ShowFindItPanel", false);
 			_IsSearchLoading = CreateBinding("IsSearchLoading", false);
 			_ActivePrefabId = CreateBinding("ActivePrefabId", 0);
 			// Lets the UI know whether to render the lens in place of the
@@ -312,7 +314,6 @@ namespace FindItBuildingMenu.Systems
 				"SetBuildingLensMenuCategory",
 				string.Empty,
 				SetBuildingLensMenuCategory);
-			_AlignmentStyle = CreateBinding("AlignmentStyle", Mod.Settings.DefaultAlignmentStyle);
 
 			CreateBinding("NoAssetImage", () => Mod.Settings.NoAssetImage);
 
