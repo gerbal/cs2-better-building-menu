@@ -14,8 +14,6 @@ import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaC
 
 const BuildingLensFacets$ = bindValue<BuildingLensFacetState | null>(mod.id, "BuildingLensFacets", null);
 const LensOwnsCurrentMenu$ = bindValue<boolean>(mod.id, "LensOwnsCurrentMenu", false);
-const ShowFindItPanel$ = bindValue<boolean>(mod.id, "ShowFindItPanel", false);
-const IsWindowLocked$ = bindValue<boolean>(mod.id, "IsWindowLocked", false);
 
 /**
  * Availability, drawn in the game's own left-hand tool-options panel.
@@ -106,8 +104,6 @@ export const LensToolOptions: ModuleRegistryExtend = (Component: any) => {
   return () => {
     const facets = useValue(BuildingLensFacets$);
     const lensOwnsCurrentMenu = useValue(LensOwnsCurrentMenu$);
-    const showFindItPanel = useValue(ShowFindItPanel$);
-    const isWindowLocked = useValue(IsWindowLocked$);
     const isPhotoMode = useValue(game.activeGamePanel$)?.__Type == game.GamePanelType.PhotoMode;
 
     // Do not put any Hooks after this point.
@@ -116,7 +112,7 @@ export const LensToolOptions: ModuleRegistryExtend = (Component: any) => {
     // The same predicate the panel itself mounts on, so the bank cannot offer
     // a control for a menu that is not there — nor withhold one from a menu
     // that is.
-    if (!shouldMountInAssetMenu({ lensOwnsCurrentMenu, showFindItPanel, isWindowLocked, isPhotoMode })) {
+    if (!shouldMountInAssetMenu({ lensOwnsCurrentMenu, isPhotoMode })) {
       return result;
     }
 

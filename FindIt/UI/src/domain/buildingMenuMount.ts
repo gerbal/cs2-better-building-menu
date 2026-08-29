@@ -1,20 +1,19 @@
 /**
- * Which surface draws the build menu.
+ * Whether the build menu draws.
  *
- * Phase 2 gives the menu two possible homes, and exactly one of them must draw
- * at a time. The game's `AssetMenu` slot is the new one; MainContainer's
- * floating panel is the old one. Both read the same bindings, so the rule lives
- * here rather than in each — two components deciding this separately is how you
- * get the menu drawn twice, or not at all.
+ * This used to arbitrate between two homes — the game's `AssetMenu` slot and
+ * MainContainer's floating panel — because exactly one of them had to draw at
+ * a time and two components deciding that separately is how you get the menu
+ * drawn twice, or not at all. Step 4 deleted the floating panel, so there is
+ * one home and nothing to arbitrate.
+ *
+ * The module stays because the QUESTION stays, and it is still worth answering
+ * in one tested place rather than inline in an extension point.
  */
 
 export interface BuildingMenuMountState {
   /** The toolbar's open menu is one we stand in for. */
   lensOwnsCurrentMenu: boolean;
-  /** The legacy panel's own visibility, from the Magnifier or the picker. */
-  showFindItPanel: boolean;
-  /** The legacy panel is pinned open. */
-  isWindowLocked: boolean;
   /** Photo mode hides every panel. */
   isPhotoMode: boolean;
 }
@@ -40,20 +39,4 @@ export function shouldMountInAssetMenu(state: BuildingMenuMountState): boolean {
   }
 
   return state.lensOwnsCurrentMenu;
-}
-
-/**
- * Whether the legacy floating panel should draw.
- *
- * The complement of the above, plus the panel's own visibility. Written as its
- * own function rather than a `!shouldMountInAssetMenu(...)` at the call site,
- * because they are not complements: when the slot declines AND the panel is
- * hidden, nothing draws at all, which is the ordinary state of the UI.
- */
-export function shouldMountLegacyPanel(state: BuildingMenuMountState): boolean {
-  if (state.isPhotoMode || shouldMountInAssetMenu(state)) {
-    return false;
-  }
-
-  return state.showFindItPanel || state.isWindowLocked;
 }

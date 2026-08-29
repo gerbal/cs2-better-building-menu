@@ -5,9 +5,6 @@ import { ModuleRegistryExtend } from "cs2/modding";
 import { BuildingMenuSurface } from "mods/BuildingMenu/BuildingMenuSurface";
 import { shouldMountInAssetMenu } from "domain/buildingMenuMount";
 
-// These establishes the binding with C# side.
-const ShowFindItPanel$ = bindValue<boolean>(mod.id, "ShowFindItPanel");
-const IsWindowLocked$ = bindValue<boolean>(mod.id, "IsWindowLocked");
 // True while the toolbar's open menu is one the lens takes over.
 const LensOwnsCurrentMenu$ = bindValue<boolean>(mod.id, "LensOwnsCurrentMenu", false);
 
@@ -16,9 +13,6 @@ export const RemoveVanillaAssetMenuComponent: ModuleRegistryExtend = (Component)
   return (props) => {
     const { children, ...otherProps } = props || {};
 
-    // These get the value of the bindings. Without C# side game ui will crash. Or they will when we have bindings.
-    const IsWindowLocked = useValue(IsWindowLocked$);
-    const ShowFindItPanel = useValue(ShowFindItPanel$);
     const LensOwnsCurrentMenu = useValue(LensOwnsCurrentMenu$);
     const isPhotoMode = useValue(game.activeGamePanel$)?.__Type == game.GamePanelType.PhotoMode;
 
@@ -30,18 +24,11 @@ export const RemoveVanillaAssetMenuComponent: ModuleRegistryExtend = (Component)
     // which is what makes the vacate-and-vanilla-redraws-behind-us problem
     // unstateable — there is no gap for it to draw into.
     //
-    // The condition is shared with MainContainer rather than restated, so the
-    // two can never both draw or both decline. See buildingMenuMount.
-    //
-    // This branch is deliberately first and deliberately narrow. Every other
-    // path below still behaves exactly as it did, so the legacy panel keeps
-    // working while the surfaces that feed it are retired one at a time.
-    if (shouldMountInAssetMenu({
-      lensOwnsCurrentMenu: LensOwnsCurrentMenu,
-      showFindItPanel: ShowFindItPanel,
-      isWindowLocked: IsWindowLocked,
-      isPhotoMode,
-    })) {
+    // The condition lives in buildingMenuMount rather than inline, where it
+    // is tested. It used to be shared with MainContainer so the two could
+    // never both draw or both decline; step 4 deleted that component, and the
+    // slot is now the only home the menu has.
+    if (shouldMountInAssetMenu({ lensOwnsCurrentMenu: LensOwnsCurrentMenu, isPhotoMode })) {
       // onClose is the game's own menu close — it clears the toolbar
       // selection, so the panel goes away with no vanilla grid left behind and
       // the toolbar button unlit. Threaded through rather than reaching for
@@ -71,7 +58,15 @@ export const RemoveVanillaAssetMenuComponent: ModuleRegistryExtend = (Component)
     // The branch above is now handed `onClose` from the extension point's own
     // props, which is the natural close for a component standing in as the
     // asset menu and needs no round trip through C#.
-    if (ShowFindItPanel || IsWindowLocked) {
+    // Photo mode is the one case where we own the menu and still decline to
+    // draw it, so it is the one case where vanilla's grid could appear in the
+    // space ours just left. Suppress it: the player asked for a clean frame,
+    // not for a different menu.
+    //
+    // This used to read (ShowFindItPanel || IsWindowLocked) — hide vanilla's
+    // menu because OUR floating panel is covering it. That panel is gone, and
+    // with it the only reason to consult either binding here.
+    if (isPhotoMode && LensOwnsCurrentMenu) {
       return <></>;
     }
 

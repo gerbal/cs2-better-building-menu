@@ -1,13 +1,10 @@
 import { ModRegistrar } from "cs2/modding";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
-import { TopBarComponent } from "mods/TopBar/TopBar";
 
 import mod from "../mod.json";
 import { ToolbarIconComponent } from "mods/ToolbarIcon/ToolbarIcon";
 import { RemoveVanillaAssetMenuComponent } from "mods/RemoveVanillaAssetMenu/RemoveVanillaAssetMenu";
-import { FindItMainContainerComponent } from "mods/MainContainer/MainContainer";
 import { WrapToolOptionsPanel } from "mods/WrapToolOptionsPanel/WrapToolOptionsPanel";
-import { RemoveVanillaRightToolbar } from "mods/RemoveVanillaAssetMenu/RemoveVanillaRightToolbar";
 import { PickerComponent } from "mods/PickerComponent/PickerComponent";
 import { ToolOptionsVisibility } from "mods/PickerComponent/ToolOptionsVisibility";
 import { LensToolOptions } from "mods/LensToolOptions/LensToolOptions";
@@ -22,7 +19,6 @@ const register: ModRegistrar = (moduleRegistry) => {
 
   // This repalaces the asset grid.
   moduleRegistry.extend("game-ui/game/components/asset-menu/asset-menu.tsx", "AssetMenu", RemoveVanillaAssetMenuComponent);
-  moduleRegistry.extend("game-ui/game/components/right-menu/right-menu.tsx", "RightMenu", RemoveVanillaRightToolbar);
   moduleRegistry.extend("game-ui/game/components/tool-options/tool-options-panel.tsx", "ToolOptionsPanel", WrapToolOptionsPanel);
 
   // This adds the fint it and picker icons to the toolbar
@@ -38,8 +34,6 @@ const register: ModRegistrar = (moduleRegistry) => {
   // LensControlPane for why the move, and what it costs.
   moduleRegistry.extend("game-ui/game/components/tool-options/tool-options-panel.tsx", "useToolOptionsVisible", ToolOptionsVisibility);
 
-  // This wraps prefab selection and top bar components.
-  moduleRegistry.append("Game", FindItMainContainerComponent);
   // Renders nothing; watches the vanilla toolbar so its menus can open the
   // lens when the player has opted into replacing the build menu.
   moduleRegistry.append("Game", VanillaMenuWatcher);
@@ -49,7 +43,6 @@ const register: ModRegistrar = (moduleRegistry) => {
   // Also renders nothing; opens the vanilla menu the picker asked for, since
   // toolbar.selectAssetMenu is a trigger only the UI can call.
   moduleRegistry.append("Game", PickerMenuOpener);
-  moduleRegistry.append("Editor", FindItMainContainerComponent);
 
 };
 

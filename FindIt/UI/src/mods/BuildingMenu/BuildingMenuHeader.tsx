@@ -16,7 +16,7 @@ import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaC
 // Shared with TopBar until step 4 finishes and that file goes. One stylesheet
 // for one row: these rules describe the same header whichever component is
 // still rendering it, and a copy would drift the moment either was touched.
-import styles from "mods/TopBar/topBar.module.scss";
+import styles from "mods/BuildingMenu/buildingMenuHeader.module.scss";
 
 const TextInput = getModule("game-ui/common/input/text/text-input.tsx", "TextInput");
 const TextInputTheme: Theme | any = getModule("game-ui/editor/widgets/item/editor-item.module.scss", "classes");

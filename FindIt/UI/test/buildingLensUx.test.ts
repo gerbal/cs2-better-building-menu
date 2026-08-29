@@ -28,9 +28,8 @@ const buildingCatalogStyles = readFileSync(
   new URL("../src/mods/BuildingCatalog/buildingCatalog.module.scss", import.meta.url),
   "utf8"
 );
-const topBarSource = readFileSync(new URL("../src/mods/TopBar/TopBar.tsx", import.meta.url), "utf8");
-const topBarStyles = readFileSync(
-  new URL("../src/mods/TopBar/topBar.module.scss", import.meta.url),
+const buildingMenuHeaderSource = readFileSync(
+  new URL("../src/mods/BuildingMenu/BuildingMenuHeader.tsx", import.meta.url),
   "utf8"
 );
 
@@ -188,17 +187,30 @@ describe("Building Lens action affordances", () => {
     assert.match(buildingCatalogStyles, /\.rowSelect:focus[^\{]*\.placeHint/);
   });
 
-  it("provides explicit labels for TopBar's icon actions", () => {
-    // Two assertions have left this list, both because what they guarded is
-    // gone rather than because the rule relaxed. "Enable building lens"
-    // labelled a toggle that sent a trigger which no longer exists;
-    // `{element.toolTip}` labelled the legacy scope and type strips, which were
-    // filters drawn as navigation and went with the shell collapse.
+  it("provides explicit labels for the header's icon actions", () => {
+    // The RULE is what this guards, and it has outlived three implementations.
+    // It was asserted against TopBar until step 4 deleted that component; the
+    // header the lens owns carries the same controls and labels them BETTER —
+    // aria-label on the Button plus a Tooltip, rather than TopBar's
+    // visually-hidden span — so the assertion follows the rule to where the
+    // controls now live rather than retiring with the file.
     //
-    // What remains is the rule itself: an icon-only control names itself for
-    // anything that is not looking at it.
-    assert.match(topBarSource, /styles\.accessibleLabel/);
-    assert.match(topBarSource, /<AccessibleLabel label=/);
+    // Two assertions left this list earlier, both because what they guarded was
+    // gone rather than because the rule relaxed: "Enable building lens"
+    // labelled a toggle whose trigger no longer exists, and `{element.toolTip}`
+    // labelled the legacy scope and type strips.
+    //
+    // Every icon-only control names itself for anything that is not looking at
+    // it, and its decorative image says it is decorative.
+    for (const control of ["ClearSearch", "CloseMenu"]) {
+      assert.match(
+        buildingMenuHeaderSource,
+        new RegExp(`aria-label=\\{localizedLabel\\("Tooltip.LABEL\\[FindItBuildingMenu.${control}\\]`),
+        `${control} has no aria-label`
+      );
+    }
+
+    assert.match(buildingMenuHeaderSource, /alt=""\s+aria-hidden="true"/);
   });
 
   it("has no page controls left to label", () => {
@@ -246,8 +258,10 @@ describe("Building Lens action affordances", () => {
   });
 });
 
-const mainContainerStylesFor = () =>
-  readFileSync(new URL("../src/mods/MainContainer/mainContainer.module.scss", import.meta.url), "utf8");
+const surfaceStylesFor = () =>
+  readFileSync(new URL("../src/mods/BuildingMenu/buildingMenuSurface.module.scss", import.meta.url), "utf8");
+const surfaceSourceFor = () =>
+  readFileSync(new URL("../src/mods/BuildingMenu/BuildingMenuSurface.tsx", import.meta.url), "utf8");
 
 describe("Building Lens chrome budget", () => {
   it("keeps no control chrome in the panel at all", () => {
@@ -295,15 +309,11 @@ describe("Building Lens chrome budget", () => {
     assert.doesNotMatch(lensControlPaneSource, /SetIsExpanded/);
   });
 
-  it("draws the lock as a mask, not a glyph", () => {
-    // The font stack has no padlock; a missing character is the one mark that
-    // says nothing. Same reasoning as the caret using U+25BC over U+25BE.
-    //
-    // Asserted against the top bar now. The lens pane drew this too until its
-    // control row was deleted; the top bar is where the window lock still has
-    // a control, and the lesson is about the glyph, not about which surface.
-    assert.match(topBarSource, /mask=\{!IsWindowLocked \? unlock : lock\}/);
-  });
+  // The window lock's "draw it as a mask, not a glyph" test was deleted here,
+  // not moved. There is no lock control left to draw: it lived in TopBar, which
+  // step 4 deleted, and pinning a menu open is meaningless for a surface the
+  // game mounts and unmounts on its own menu lifecycle. The glyph lesson
+  // survives in the caret's U+25BC comment, which is still live.
 
   it("gives the Zones menu the same controls as every other menu", () => {
     // This used to assert that the height control sat OUTSIDE a `!showZoning`
@@ -346,8 +356,8 @@ describe("Building Lens chrome budget", () => {
     // The strip is the target and the grip is the mark, which is why they are
     // two elements — a bar sized to be easy to hit would be a bar too heavy to
     // sit on the panel edge.
-    const strip = mainContainerStylesFor().match(/\.resizeHandle\s*\{[^}]*\}/)?.[0] ?? "";
-    const grip = mainContainerStylesFor().match(/\.resizeGrip\s*\{[^}]*\}/)?.[0] ?? "";
+    const strip = surfaceStylesFor().match(/\.resizeHandle\s*\{[^}]*\}/)?.[0] ?? "";
+    const grip = surfaceStylesFor().match(/\.resizeGrip\s*\{[^}]*\}/)?.[0] ?? "";
 
     assert.match(strip, /cursor:\s*ns-resize/);
     // NOT absolute. As an overlay on the panel edge it was invisible and
@@ -369,46 +379,29 @@ describe("Building Lens chrome budget", () => {
     // The build menu's left edge is vanilla's tool-main-column, centred by
     // tool-layout along with a side column each side (253 + 475 + 253 in
     // 1267), which is what put the options box at x=145 and the menu at x=403.
-    // Reclaiming that 253px needs BOTH halves: MainContainer stops vanilla
-    // centring its trio, and our own mirror of that layout stops centring too.
+    // Reclaiming that 253px means reaching into an element vanilla owns and
+    // stopping it centring its trio.
     //
-    // Either alone is a visible defect. Vanilla's alone moves the options box
-    // to the screen edge and leaves the menu at 403 with a 143px hole beside
-    // it; ours alone slides the menu left underneath the options box.
-    const mainContainerSource = readFileSync(
-      new URL("../src/mods/MainContainer/MainContainer.tsx", import.meta.url),
-      "utf8"
-    );
-    const mainContainerStyles = readFileSync(
-      new URL("../src/mods/MainContainer/mainContainer.module.scss", import.meta.url),
-      "utf8"
-    );
-
-    // The condition used to be `BuildingLensEnabled && AlignmentStyle ===
-    // "Center"`. The lens half of it retired with the latch — there is no state
-    // in which the panel is up and the lens is not what it holds — so only the
-    // alignment half is left to test.
-    assert.match(mainContainerSource, /justifyContent\s*=\s*AlignmentStyle === "Center"/);
-    assert.match(mainContainerSource, /styles\.lensLeftAligned/);
-
-    const rule = mainContainerStyles.match(/\.lensLeftAligned\.toolLayout\s*\{[^}]*\}/)?.[0] ?? "";
-    assert.match(rule, /justify-content:\s*flex-start/);
-    // The options column's own width, so the menu lands beside it rather than
-    // on it. Same measurement the control plane matches on the other side.
-    assert.match(rule, /padding-left:\s*379rem/);
+    // MainContainer did this too, from an AlignmentStyle binding, and step 4
+    // deleted it. The surface had already been doing it for itself, so the
+    // behaviour did not move — the DUPLICATE went. What changed is that the
+    // condition went with the binding: a floating panel could be anywhere, so
+    // it needed a setting; a menu is where the menu is, so flex-start is
+    // unconditional.
+    assert.match(surfaceSourceFor(), /layout\.style\.justifyContent = "flex-start"/);
+    assert.doesNotMatch(surfaceSourceFor(), /AlignmentStyle/);
   });
 
   it("puts vanilla's layout back when the lens is switched off", () => {
     // The effect reaches across into an element vanilla owns, so the exit path
     // matters as much as the entry: leaving flex-start behind would re-lay
     // every other tool's options for the rest of the session.
-    const mainContainerSource = readFileSync(
-      new URL("../src/mods/MainContainer/MainContainer.tsx", import.meta.url),
-      "utf8"
-    );
-
-    assert.match(mainContainerSource, /const previous = layout\.style\.justifyContent/);
-    assert.match(mainContainerSource, /return \(\) => \{\s*layout\.style\.justifyContent = previous;/);
+    assert.match(surfaceSourceFor(), /const previous = layout\.style\.justifyContent/);
+    // Both arms matter. Restoring "" makes Cohtml log "invalid value" and keep
+    // OUR flex-start, so the empty case must remove the property instead; skip
+    // the non-empty case and a genuine inline value never comes back.
+    assert.match(surfaceSourceFor(), /layout\.style\.justifyContent = previous;/);
+    assert.match(surfaceSourceFor(), /layout\.style\.removeProperty\("justify-content"\)/);
   });
 
   it("lets the catalog strip grow rather than slicing a wrapped row of tabs", () => {
@@ -421,8 +414,12 @@ describe("Building Lens chrome budget", () => {
     // The fix must not be to stop the wrap: that draws cleanly and silently
     // costs the player five categories. So the row sizes to its content, and
     // the tab container does not clip.
-    const row = topBarStyles.match(/\.catalogStripRow\s*\{[^}]*\}/)?.[0] ?? "";
-    const tabs = topBarStyles.match(/\.catalogStripTabs\s*\{[^}]*\}/)?.[0] ?? "";
+    const headerStyles = readFileSync(
+      new URL("../src/mods/BuildingMenu/buildingMenuHeader.module.scss", import.meta.url),
+      "utf8"
+    );
+    const row = headerStyles.match(/\.catalogStripRow\s*\{[^}]*\}/)?.[0] ?? "";
+    const tabs = headerStyles.match(/\.catalogStripTabs\s*\{[^}]*\}/)?.[0] ?? "";
 
     assert.match(row, /min-height:/);
     assert.doesNotMatch(row, /^\s*height:/m);
