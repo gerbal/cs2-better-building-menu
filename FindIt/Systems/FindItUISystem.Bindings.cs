@@ -892,7 +892,7 @@ namespace FindItBuildingMenu.Systems
 
 		internal void ToggleFindItPanel(bool visible, bool activatePrefab = true)
 		{
-			if (_ShowFindItPanel == visible || (_IsWindowLocked && _ShowFindItPanel))
+			if (_ShowFindItPanel == visible)
 			{
 				return;
 			}
@@ -1014,11 +1014,6 @@ namespace FindItBuildingMenu.Systems
 			_pickerMenuNonce++;
 			_PickerMenuRequest.Value = $"{menu.Index}:{menu.Version}:{_pickerMenuNonce}";
 			return true;
-		}
-
-		private void ToggleLock()
-		{
-			_IsWindowLocked.Value = !_IsWindowLocked;
 		}
 
 		private void ExpandedToggled()

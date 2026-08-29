@@ -52,8 +52,6 @@ namespace FindItBuildingMenu.Systems
 
 
 		private ValueBindingHelper<bool> _IsSearchLoading;
-		private ValueBindingHelper<bool> _IsWindowLocked;
-		private ValueBindingHelper<bool> _FocusSearchBar;
 		private ValueBindingHelper<bool> _ClearSearchBar;
 		private ValueBindingHelper<bool> _ShowFindItPanel;
 		private ValueBindingHelper<bool> _ReplaceVanillaBuildMenu = null!;
@@ -88,7 +86,6 @@ namespace FindItBuildingMenu.Systems
 		// it from the game's own toolbar bindings because interception may have
 		// already moved the selection on.
 		private ValueBindingHelper<string> _LensMenuToolTip = null!;
-		private ValueBindingHelper<bool> _IsExpanded;
 		private ValueBindingHelper<int> _ActivePrefabId;
 		private ValueBindingHelper<int> _CurrentCategoryBinding;
 		private ValueBindingHelper<int> _CurrentSubCategoryBinding;
@@ -164,8 +161,6 @@ namespace FindItBuildingMenu.Systems
 		// Dense by index, beside the names. See PrefabIndexingSystem.GetMilestoneIcons.
 		private ValueBindingHelper<string[]> _BuildingLensMilestoneIconsBinding = null!;
 
-		public bool IsExpanded => _IsExpanded;
-
 		/// <summary>
 		/// The live building-lens facet group for one dimension (e.g.
 		/// "availability", "provenance", "placement"), or null when the
@@ -180,8 +175,6 @@ namespace FindItBuildingMenu.Systems
 			get => _AlignmentStyle;
 			set
 			{
-				_IsExpanded.Value = false;
-
 				Mod.Settings.DefaultAlignmentStyle = _AlignmentStyle.Value = value;
 				Mod.Settings.ApplyAndSave();
 
@@ -220,12 +213,9 @@ namespace FindItBuildingMenu.Systems
 			// unpicking it here would be a change to a surface that is on its way
 			// out. It is permanently false, which is the correct behaviour for a
 			// menu with no hot-key to focus its search from.
-			_FocusSearchBar = CreateBinding("FocusSearchBar", false);
 			_ClearSearchBar = CreateBinding("ClearSearchBar", false);
 			_ShowFindItPanel = CreateBinding("ShowFindItPanel", false);
 			_IsSearchLoading = CreateBinding("IsSearchLoading", false);
-			_IsWindowLocked = CreateBinding("IsWindowLocked", false);
-			_IsExpanded = CreateBinding("IsExpanded", "SetIsExpanded", false, _ => ExpandedToggled());
 			_ActivePrefabId = CreateBinding("ActivePrefabId", 0);
 			// Lets the UI know whether to render the lens in place of the
 			// vanilla asset grid. Read once at setup; the setting is not
@@ -345,8 +335,6 @@ namespace FindItBuildingMenu.Systems
 			// short. Parsing is the price of not risking a marshalling failure
 			// that would show up as an empty menu.
 			CreateTrigger<string, string, bool, bool>("SetVanillaToolbarSelection", SetVanillaToolbarSelection);
-			CreateTrigger("ToggleLock", ToggleLock);
-			CreateTrigger("OnSearchFocused", () => _FocusSearchBar.Value = false);
 			CreateTrigger("OnSearchCleared", () => _ClearSearchBar.Value = false);
 			CreateTrigger<int>("OnLocateButtonClicked", OnLocateButtonClicked);
 			CreateTrigger("LoadMoreBuildingCatalog", LoadMoreBuildingCatalog);
