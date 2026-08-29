@@ -42,10 +42,10 @@ namespace FindItBuildingMenu.Systems
 		{
 			bool ownedMenu = _LensOwnsCurrentMenu.Value;
 
-			ToggleFindItPanel(false);
+			SetLensMenuOpen(false);
 
 			// The window lock refuses the close, so the menu is still on screen.
-			if (_ShowFindItPanel)
+			if (_lensMenuOpen)
 			{
 				return;
 			}
@@ -116,8 +116,8 @@ namespace FindItBuildingMenu.Systems
 		/// LensOwnsCurrentMenu went false, which is exactly the combination
 		/// shouldMountLegacyPanel draws on.
 		///
-		/// Worse, that panel could then be made permanent. ToggleFindItPanel
-		/// early-returns on (_IsWindowLocked and _ShowFindItPanel), so one click
+		/// Worse, that panel could then be made permanent. SetLensMenuOpen
+		/// early-returns on (_IsWindowLocked and _lensMenuOpen), so one click
 		/// of its lock button refused every close path there is.
 		///
 		/// A shape written out four times will diverge; this is the divergence.
@@ -128,9 +128,9 @@ namespace FindItBuildingMenu.Systems
 			_LensOwnsCurrentMenu.Value = false;
 			_LensMenuToolTip.Value = string.Empty;
 
-			if (_ShowFindItPanel)
+			if (_lensMenuOpen)
 			{
-				ToggleFindItPanel(false);
+				SetLensMenuOpen(false);
 			}
 		}
 
@@ -195,7 +195,7 @@ namespace FindItBuildingMenu.Systems
 				// removes the re-assertion instead of ignoring it.
 				// Exactly one refresh, whichever way we got here.
 				//
-				// ToggleFindItPanel(true) ends in RefreshLens — but it FIRST
+				// SetLensMenuOpen(true) ends in RefreshLens — but it FIRST
 				// early-returns when the panel is already visible, which is
 				// precisely the menu-to-menu switch. So the refresh cannot live
 				// only inside the toggle (a switch would get none) and cannot
@@ -204,8 +204,8 @@ namespace FindItBuildingMenu.Systems
 				// Measured both ways: three refreshes fired per open before
 				// this, and dropping the outside pair silently left the strip
 				// showing the PREVIOUS menu's counts on every switch.
-				var wasOpen = _ShowFindItPanel.Value;
-				ToggleFindItPanel(true, activatePrefab: false);
+				var wasOpen = _lensMenuOpen;
+				SetLensMenuOpen(true, activatePrefab: false);
 
 				if (wasOpen)
 				{
@@ -264,8 +264,8 @@ namespace FindItBuildingMenu.Systems
 
 			// One refresh either way — see the branch above for why it cannot
 			// live wholly inside or wholly outside the toggle.
-			var panelWasOpen = _ShowFindItPanel.Value;
-			ToggleFindItPanel(true, activatePrefab: false);
+			var panelWasOpen = _lensMenuOpen;
+			SetLensMenuOpen(true, activatePrefab: false);
 
 			if (panelWasOpen)
 			{
@@ -307,9 +307,9 @@ namespace FindItBuildingMenu.Systems
 			// button you used.
 			ReleaseMenuScope();
 
-			if (_ShowFindItPanel)
+			if (_lensMenuOpen)
 			{
-				ToggleFindItPanel(false);
+				SetLensMenuOpen(false);
 			}
 		}
 
@@ -890,14 +890,14 @@ namespace FindItBuildingMenu.Systems
 			RefreshBuildingCatalog();
 		}
 
-		internal void ToggleFindItPanel(bool visible, bool activatePrefab = true)
+		internal void SetLensMenuOpen(bool visible, bool activatePrefab = true)
 		{
-			if (_ShowFindItPanel == visible)
+			if (_lensMenuOpen == visible)
 			{
 				return;
 			}
 
-			_ShowFindItPanel.Value = visible;
+			_lensMenuOpen = visible;
 
 			if (!visible)
 			{
@@ -1014,13 +1014,6 @@ namespace FindItBuildingMenu.Systems
 			_pickerMenuNonce++;
 			_PickerMenuRequest.Value = $"{menu.Index}:{menu.Version}:{_pickerMenuNonce}";
 			return true;
-		}
-
-		private void ExpandedToggled()
-		{
-			_PanelWidth.Value = GridUtil.GetCurrentPanelWidth();
-
-			RefreshLens();
 		}
 
 		private void SearchChanged(string text)

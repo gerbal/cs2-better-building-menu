@@ -32,7 +32,7 @@ const AssetMenuTheme: Theme | any = getModule("game-ui/game/components/asset-men
  * `AssetMenu` extension point, so the game mounts and unmounts it on its own
  * menu lifecycle.
  *
- * That is the whole point of the phase. `ToggleFindItPanel(false)` — FindIt's
+ * That is the whole point of the phase. `SetLensMenuOpen(false)` — FindIt's
  * "another surface wants the screen, so get out of the way" reflex — appears
  * eleven times in the backend and is correct for a floating asset finder. For a
  * menu it is wrong: the toolbar button is still lit, so the game draws its own

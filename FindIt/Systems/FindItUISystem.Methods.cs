@@ -395,7 +395,7 @@ namespace FindItBuildingMenu.Systems
 
 			if (!settingPrefab)
 			{
-				ToggleFindItPanel(false);
+				SetLensMenuOpen(false);
 			}
 		}
 
@@ -404,7 +404,7 @@ namespace FindItBuildingMenu.Systems
 			if (tool.toolID is "RoadBuilderTool" or "MoveItTool" or "Terrain Tool")
 			{
 				// Another tool brings its own UI and wants the screen. Ours goes.
-				ToggleFindItPanel(false);
+				SetLensMenuOpen(false);
 				return;
 			}
 
@@ -452,7 +452,7 @@ namespace FindItBuildingMenu.Systems
 			// before the player pressed Escape — so the game's Escape chain found
 			// nothing to close and opened the pause menu instead. Escape pausing
 			// the game mid-build is worse than the defect it fixed.
-			ToggleFindItPanel(false);
+			SetLensMenuOpen(false);
 		}
 	}
 }
