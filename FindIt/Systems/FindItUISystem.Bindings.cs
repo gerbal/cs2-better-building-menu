@@ -103,12 +103,42 @@ namespace FindItBuildingMenu.Systems
 		/// Landscaping, or it is a modded menu we have no preset for — so the
 		/// vanilla menu keeps working untouched in all those cases.
 		/// </remarks>
+		/// <summary>
+		/// Hand this menu back to vanilla: we do not own it, and nothing of
+		/// ours is left covering it.
+		/// </summary>
+		/// <remarks>
+		/// Three callers used to write these three lines out, and a fourth —
+		/// the ReplaceVanillaBuildMenu-is-off branch — wrote only the first two
+		/// and returned. That single missing line was the ONLY way the retired
+		/// floating panel could still reach the screen: turn the setting off
+		/// mid-session and select a menu, and ShowFindItPanel stayed true while
+		/// LensOwnsCurrentMenu went false, which is exactly the combination
+		/// shouldMountLegacyPanel draws on.
+		///
+		/// Worse, that panel could then be made permanent. ToggleFindItPanel
+		/// early-returns on (_IsWindowLocked and _ShowFindItPanel), so one click
+		/// of its lock button refused every close path there is.
+		///
+		/// A shape written out four times will diverge; this is the divergence.
+		/// One method so the next caller cannot repeat it.
+		/// </remarks>
+		private void YieldMenuToVanilla()
+		{
+			_LensOwnsCurrentMenu.Value = false;
+			_LensMenuToolTip.Value = string.Empty;
+
+			if (_ShowFindItPanel)
+			{
+				ToggleFindItPanel(false);
+			}
+		}
+
 		private void VanillaMenuSelected(int menuEntityIndex)
 		{
 			if (!Mod.Settings.ReplaceVanillaBuildMenu)
 			{
-				_LensOwnsCurrentMenu.Value = false;
-				_LensMenuToolTip.Value = string.Empty;
+				YieldMenuToVanilla();
 				return;
 			}
 
@@ -191,13 +221,7 @@ namespace FindItBuildingMenu.Systems
 				// for that menu, so get out of its way: the lens panel sits over
 				// exactly where the vanilla asset grid appears, and leaving it up
 				// would hide the menu they just clicked.
-				_LensOwnsCurrentMenu.Value = false;
-				_LensMenuToolTip.Value = string.Empty;
-
-				if (_ShowFindItPanel)
-				{
-					ToggleFindItPanel(false);
-				}
+				YieldMenuToVanilla();
 
 				return;
 			}
@@ -209,13 +233,7 @@ namespace FindItBuildingMenu.Systems
 			{
 				// The player kept the familiar zone grid; leave it alone and get
 				// out of its way, exactly as for an unmapped menu.
-				_LensOwnsCurrentMenu.Value = false;
-				_LensMenuToolTip.Value = string.Empty;
-
-				if (_ShowFindItPanel)
-				{
-					ToggleFindItPanel(false);
-				}
+				YieldMenuToVanilla();
 
 				return;
 			}
