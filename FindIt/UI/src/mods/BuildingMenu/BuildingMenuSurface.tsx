@@ -11,10 +11,10 @@ import { LensControlPane, LENS_CONTROL_PANE_TOTAL } from "mods/LensControlPane/L
 import { BuildingMenuHeader } from "mods/BuildingMenu/BuildingMenuHeader";
 import { clampBuildingLensHeight, draggedBuildingLensHeight } from "domain/buildingLensLayout";
 
-// Shared with MainContainer until phase 2 step 4 deletes it. One stylesheet for
-// one panel: the rules below describe the same window whichever component is
-// currently mounting it, and a copy would drift the moment either was touched.
-import styles from "mods/MainContainer/mainContainer.module.scss";
+// Was shared with MainContainer, which mounted the same panel from the other
+// side; step 4 deleted that component, so the stylesheet moved here to sit
+// beside its only remaining consumer.
+import styles from "mods/BuildingMenu/buildingMenuSurface.module.scss";
 
 const PanelWidth$ = bindValue<number>(mod.id, "PanelWidth", 0);
 const BuildingLensPanelHeight$ = bindValue<number>(mod.id, "BuildingLensPanelHeight", 420);

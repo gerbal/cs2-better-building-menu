@@ -722,7 +722,7 @@ export const BuildingCatalogComponent = () => {
       data-row-height={rowGeometry.rowHeight}
       data-selector-height={rowGeometry.selectorHeight}
       data-metric-text-scale={getBuildingLensMetricTextScale(density)}
-      // No max-height. The panel states its own height now (MainContainer sets
+      // No max-height. The panel states its own height now (the surface sets
       // it from the player's setting), and .catalog is flex: 1 1 auto inside
       // it, so filling the panel is the correct behaviour and a second ceiling
       // here can only be lower than the first. It was: this capped at 765rem
