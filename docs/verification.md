@@ -698,3 +698,81 @@ three UI names with no C# handler; all are gone:
 `KnownUnreadByUi` in the manifest test allows one name,
 `BuildingCatalogGroupBy`, which C# publishes and the UI writes but does not
 read; cm-jjlv.8 decides which side owns it.
+
+## 2026-09-01 — one scoping taxonomy (phase 2)
+
+Phase 2 of the architecture remediation (spec
+`docs/superpowers/specs/2026-09-01-findit-remediation-phase-2-one-scoping-taxonomy-design.md`,
+plan `docs/superpowers/plans/2026-09-01-findit-remediation-phase-2-one-scoping-taxonomy.md`,
+beads cm-jjlv.6.1–.4), branch `findit/phase-2-one-taxonomy`. Suites on the
+branch tip: C# 364/364 (all four `BindingManifestTests` green), TS 617/617,
+`tsc --noEmit` clean. Built with `just build findit-building-menu`, deployed
+with `just deploy-isolated findit-building-menu`, game restarted.
+
+Live run: `--no-steam --headless`, prefix 949230, save **Porterville 3**
+(DLC absent under `--no-steam`, same as the phase-1 run). Driven through the
+cs2-qa bridge pinned to CDP 9444 — the shared instance file was repointed by
+another session mid-run, which is why the pinned driver exists.
+
+**1. Menus.** Each toolbar menu opened through `toolbar.selectAssetMenu`,
+then `ClearBuildingLensMenuScope` for All menus:
+
+```
+[LENS-REFRESH] 40ms menu='Roads' total=228 from=RefreshLens
+[LENS-REFRESH] 42ms menu='Roads' total=228 from=SetBuildingCatalogGroupBy
+[LENS-REFRESH] 25ms menu='Landscaping' total=368 from=RefreshLens
+[LENS-REFRESH] 17ms menu='Health & Deathcare' total=8 from=RefreshLens
+[LENS-REFRESH] 15ms menu='Zones' total=22 from=RefreshLens
+[LENS-REFRESH] 17ms menu='Electricity' total=15 from=RefreshLens
+[LENS-REFRESH] 154ms menu='' total=3995 from=ClearBuildingLensMenuScope
+```
+
+Landscaping 368 and unscoped 3,995 equal phase 1's numbers on this save.
+Health & Deathcare is 8 — vanilla's own count, the figure the SPIKE in
+`PrefabIndex.cs` was written to reach ("our Healthcare view showed 15 where
+vanilla shows 8"). The first open still refreshes twice (the UI's groupBy
+push-back, cm-jjlv.8); every later menu is one refresh.
+
+**2. Auto-widen.** Inside Landscaping, search `zzzz`:
+
+```
+AutoWidenSearch=false: [LENS-REFRESH] 71ms menu='Landscaping' total=0 from=OnUpdate
+                       BuildingCatalogMatchesElsewhere=0, BuildingLensMenu='Landscaping'
+AutoWidenSearch=true:  [LENS-REFRESH] 162ms menu='' total=0 from=RefreshLens
+                       BuildingLensMenu='' (scope released)
+```
+
+Before this phase the widening read the section, which only the preset
+menus set, so Landscaping never widened; now it is one rule for every
+scoped menu.
+
+**3. Strip tabs.** The predicate did not change; this confirms the removed
+`StripAxis` query field was not feeding it. Electricity (axis
+`development`, tabs `Electricity`=8, …): `SetBuildingLensStripTab
+"Electricity"` → `[LENS-REFRESH] 33ms menu='Electricity' total=8`. Zones
+(density axis, `ZonesResidential⟂Low Density`=2, `⟂Mixed Housing`=2):
+`total=2` and `total=2`.
+
+**4. Zones yield.** `ReplaceVanillaZonesMenu=false` + select Zones →
+`LensOwnsCurrentMenu=false`, `BuildingLensMenu=''`. Back to true + select
+Zones → `true`, `'Zones'`.
+
+Zero exceptions in the mod log, zero UI.log errors after the load.
+
+**What left.** `VanillaBuildMenuTaxonomy`, `VanillaBuildMenuSelection`,
+`VanillaMenuPresets` (replaced by `VanillaMenus.IsZones`), the two section
+`UIEntry` structs; the query's `Category`, `SubCategory`,
+`BuildMenuSection`, `BuildMenuSubCategory`, `UnlockMilestone` and
+`StripAxis`; the engine's `MatchesBuildMenu`; the entry's `VanillaSection`
+/`VanillaSubCategory`; the bindings `BuildingLensSection`,
+`SetBuildingLensSection`, `BuildingLensSubCategory`,
+`SetBuildingLensSubCategory`, `BuildingLensSectionList`,
+`BuildingLensSubCategoryList`; the Section and Type chips and
+`vanillaBuildMenuContracts.ts`; the section-driven "Role" grouping default.
+The query is scoped by `UiMenu`/`UiCategory` and nothing else.
+
+**What stayed, against the review.** `VanillaMenuAudit` and both
+`[MENU-AUDIT]`/`[MENU-COVERAGE]` passes: they compare the game's own
+placements against the index's tree fields (coverage), not the two
+taxonomies against each other, and are the guard that caught the
+roads-cost bug. The review text is corrected in place.
