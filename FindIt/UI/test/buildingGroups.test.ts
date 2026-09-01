@@ -300,25 +300,14 @@ describe("Heading labels", () => {
   });
 });
 
-describe("Per-section defaults", () => {
-  it("opens service buildings on Role", () => {
-    // What the player came looking for. The category level above it would be
-    // one heading reading "Service Buildings" to someone who just clicked
-    // Healthcare.
-    assert.equal(defaultGroupDimensionFor("ServiceBuildings"), "role");
-    assert.equal(defaultGroupDimensionFor("servicebuildings"), "role");
-    assert.equal(defaultGroupDimensionFor("  ServiceBuildings  "), "role");
-  });
-
-  it("does not apply Role anywhere else", () => {
-    // Residential, commercial and industrial prefabs carry no service
-    // component, so every one of them would land under "Other".
-    assert.equal(defaultGroupDimensionFor("AllBuildings"), "category");
-    assert.equal(defaultGroupDimensionFor("SignatureBuildings"), "category");
-    assert.equal(defaultGroupDimensionFor("Favorites"), "category");
-    assert.equal(defaultGroupDimensionFor(null), "category");
-    assert.equal(defaultGroupDimensionFor(undefined), "category");
-    assert.equal(defaultGroupDimensionFor(""), "category");
+describe("Default grouping", () => {
+  it("opens on category when nothing narrower applies", () => {
+    // The Service Buildings section used to open on Role. The section is gone
+    // (cm-jjlv.6), and every scoped service menu has either categories or a
+    // strip axis, so the case this served no longer arises.
+    assert.equal(defaultGroupDimensionFor(), "category");
+    assert.equal(defaultGroupDimensionFor(false), "category");
+    assert.equal(defaultGroupDimensionFor(false, ""), "category");
   });
 
   it("lets the menu's own categories beat a development axis", () => {
@@ -329,24 +318,20 @@ describe("Per-section defaults", () => {
     // its categories is drawn as branches — it has to, or a branch tab would
     // select nothing. That is a fact about a sub-level, and the picker was
     // reading it as a fact about the whole menu.
-    assert.equal(defaultGroupDimensionFor("Networks", true, "development"), "menuCategory");
-    assert.equal(defaultGroupDimensionFor("AllBuildings", true, "development"), "menuCategory");
+    assert.equal(defaultGroupDimensionFor(true, "development"), "menuCategory");
   });
 
   it("still follows the axis when the menu has no categories of its own", () => {
     // Electricity is the case the fallback exists for: one category, so the
     // strip draws development branches and the grid should agree with them.
-    assert.equal(defaultGroupDimensionFor("ServiceBuildings", false, "development"), "development");
-    assert.equal(defaultGroupDimensionFor("ServiceBuildings", false, "assetType"), "category");
+    assert.equal(defaultGroupDimensionFor(false, "development"), "development");
+    assert.equal(defaultGroupDimensionFor(false, "assetType"), "category");
   });
 
   it("keeps school tiers ahead of everything, categories included", () => {
     // Education has categories AND a development axis AND school levels; the
     // levels are what its strip actually draws.
-    assert.equal(
-      defaultGroupDimensionFor("ServiceBuildings", true, "development", true),
-      "schoolTier",
-    );
+    assert.equal(defaultGroupDimensionFor(true, "development", true), "schoolTier");
   });
 
   it("groups a scoped menu by the game's own categories", () => {
@@ -356,24 +341,13 @@ describe("Per-section defaults", () => {
     // drags, so the scrolling that argument was avoiding is not the cost it
     // was. The categories are the split the strip already puts in the player's
     // head, and grouping by them shows the whole menu at once.
-    assert.equal(defaultGroupDimensionFor("Networks", true), "menuCategory");
-    // The strip decides, whatever the section is: a menu with categories is
-    // scoped to that menu, so the section behind it says nothing extra.
-    assert.equal(defaultGroupDimensionFor("ServiceBuildings", true), "menuCategory");
-    assert.equal(defaultGroupDimensionFor(null, true), "menuCategory");
-  });
-
-  it("still groups where there is no strip to do the dividing", () => {
-    assert.equal(defaultGroupDimensionFor("ServiceBuildings", false), "role");
-    assert.equal(defaultGroupDimensionFor("AllBuildings", false), "category");
+    assert.equal(defaultGroupDimensionFor(true), "menuCategory");
   });
 
   it("only ever returns a dimension the picker offers", () => {
-    for (const section of ["ServiceBuildings", "AllBuildings", "nonsense", ""]) {
-      for (const hasCategories of [false, true]) {
-        assert.ok(
-          GROUP_DIMENSIONS.some((d) => d.id === defaultGroupDimensionFor(section, hasCategories))
-        );
+    for (const hasCategories of [false, true]) {
+      for (const axis of ["", "development", "assetType", "nonsense"]) {
+        assert.ok(GROUP_DIMENSIONS.some((d) => d.id === defaultGroupDimensionFor(hasCategories, axis)));
       }
     }
   });
@@ -670,11 +644,11 @@ describe("Which grouping choices a menu offers", () => {
   it("opens the education menu on its levels", () => {
     // The default has to match what the strip offers, or arriving in the menu
     // shows one EDUCATION heading over ten schools the row had just separated.
-    assert.equal(defaultGroupDimensionFor("ServiceBuildings", true, "", true), "schoolTier");
+    assert.equal(defaultGroupDimensionFor(true, "", true), "schoolTier");
     // Every other menu is unaffected by the education flag being absent.
-    assert.equal(defaultGroupDimensionFor("ServiceBuildings", true, ""), "menuCategory");
-    assert.equal(defaultGroupDimensionFor("ServiceBuildings", false, "development"), "development");
-    assert.equal(defaultGroupDimensionFor("ServiceBuildings", false, "assetType"), "category");
+    assert.equal(defaultGroupDimensionFor(true, ""), "menuCategory");
+    assert.equal(defaultGroupDimensionFor(false, "development"), "development");
+    assert.equal(defaultGroupDimensionFor(false, "assetType"), "category");
   });
 
   it("hides a grouping that would put the whole menu in one bucket", () => {

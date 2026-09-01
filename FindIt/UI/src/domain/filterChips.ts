@@ -1,9 +1,9 @@
 /**
  * One visual form for every way the result set has been narrowed.
  *
- * Scope and zone family used to be tab strips. They are not navigation — they
- * narrow the set exactly as Role or Cost do — and rendering them as strips cost
- * a permanent 27px band per dimension and made them mutually exclusive by
+ * The facets used to be tab strips. They are not navigation — they narrow the
+ * set exactly as Role or Cost do — and rendering them as strips cost a
+ * permanent 27px band per dimension and made them mutually exclusive by
  * construction, so "Office AND high density" could not be asked for at all.
  * Measured: five stacked bands, 142px of chrome on a 625px panel.
  *
@@ -32,25 +32,16 @@ export interface FilterChip {
   id: string;
   dimension: string;
   label: string;
-  /**
-   * False only for the section chip: there is always an active section, so
-   * there is nothing to remove. It stays clickable, which is what makes it a
-   * breadcrumb rather than a filter.
-   */
+  /** Whether the chip has a removal gesture at all. */
   removable: boolean;
   /** What clears this chip. Null when it is not removable. */
   remove: ChipCommand | null;
 }
 
 export interface FilterChipInput {
-  section?: { id: string; label: string } | null;
-  subCategory?: { id: string; label: string } | null;
   facets?: BuildingLensFacetState | null;
   metricRanges?: BuildingLensMetricRangeState | null;
 }
-
-/** Ids the subcategory uses for "no subcategory chosen". */
-const SUBCATEGORY_ANY = "Any";
 
 const METRIC_LABELS: Record<MetricRangeId, string> = {
   cost: "Cost",
@@ -93,39 +84,11 @@ function readBound(state: BuildingLensMetricRangeState, key: keyof BuildingLensM
 /**
  * Every chip currently narrowing the result, in reading order.
  *
- * Navigation first, then facets, then metric ranges: the leftmost chips are the
- * ones the navigation put there and the rightmost are the ones the player added
- * deliberately, so the row reads as a history of how they got here.
+ * Facets first, then metric ranges: the row reads as a history of how the
+ * player narrowed the set, in the order the rail offers the controls.
  */
 export function buildFilterChips(input: FilterChipInput | null | undefined): FilterChip[] {
   const chips: FilterChip[] = [];
-
-  const section = input?.section;
-  if (section && typeof section.id === "string" && section.id !== "") {
-    chips.push({
-      id: `section:${section.id}`,
-      dimension: "section",
-      label: section.label || section.id,
-      removable: false,
-      remove: null,
-    });
-  }
-
-  const subCategory = input?.subCategory;
-  if (
-    subCategory
-    && typeof subCategory.id === "string"
-    && subCategory.id !== ""
-    && subCategory.id !== SUBCATEGORY_ANY
-  ) {
-    chips.push({
-      id: `subCategory:${subCategory.id}`,
-      dimension: "subCategory",
-      label: subCategory.label || subCategory.id,
-      removable: true,
-      remove: { method: "SetBuildingLensSubCategory", args: [SUBCATEGORY_ANY] },
-    });
-  }
 
   for (const group of input?.facets?.groups ?? []) {
     const options = group?.options ?? [];

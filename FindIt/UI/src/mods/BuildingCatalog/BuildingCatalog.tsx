@@ -112,8 +112,6 @@ const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState>(mod
 const BuildingLensLegacyFilters$ = bindValue<string[]>(mod.id, "BuildingLensLegacyFilters");
 const BuildingCatalogMatchesElsewhere$ = bindValue<number>(mod.id, "BuildingCatalogMatchesElsewhere", 0);
 const LensDefaultToTable$ = bindValue<boolean>(mod.id, "BuildingLensDefaultToTable", false);
-// The section decides the grouping until the player picks one themselves.
-const BuildingLensSection$ = bindValue<string>(mod.id, "BuildingLensSection", "AllBuildings");
 // Non-empty means the lens is standing in for a vanilla menu that has a tab
 // strip, which decides the default grouping.
 const BuildingLensStripAxis$ = bindValue<string>(mod.id, "BuildingLensStripAxis", "");
@@ -190,7 +188,6 @@ export const BuildingCatalogComponent = () => {
   const panelWidth = useValue(PanelWidth$);
   const currentSearch = useValue(CurrentSearch$);
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
-  const section = useValue(BuildingLensSection$);
   const menuHasCategories = (useValue(BuildingLensMenuCategories$) ?? []).length > 0;
   const stripAxis = useValue(BuildingLensStripAxis$) ?? "";
   const menu = useValue(BuildingLensMenu$) ?? "";
@@ -225,11 +222,11 @@ export const BuildingCatalogComponent = () => {
   const [chosenGroupBy] = useLensChoice(LENS_GROUP_KEY, "");
   const groupBy: GroupDimensionId = isGroupDimension(chosenGroupBy)
     ? chosenGroupBy
-    : defaultGroupDimensionFor(section, menuHasCategories, stripAxis, isEducationMenu(menu));
+    : defaultGroupDimensionFor(menuHasCategories, stripAxis, isEducationMenu(menu));
   // The dimension is also the query's primary sort key, so the backend has to
   // reorder — grouping the page here alone would split a group across a page
   // boundary and the heading would stop describing the rows under it. This
-  // fires for a section change too, not just an explicit pick, because the
+  // fires for a menu change too, not just an explicit pick, because the
   // effective dimension moves either way.
   useEffect(() => {
     trigger(mod.id, "SetBuildingCatalogGroupBy", groupBy);

@@ -46,7 +46,6 @@ import styles from "./lensControlPane.module.scss";
 
 const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "BuildingCatalogSortColumn");
 const BuildingCatalogSortDescending$ = bindValue<boolean>(mod.id, "BuildingCatalogSortDescending");
-const BuildingLensSection$ = bindValue<string>(mod.id, "BuildingLensSection", "AllBuildings");
 const BuildingLensMenu$ = bindValue<string>(mod.id, "BuildingLensMenu", "");
 const BuildingLensStripAxis$ = bindValue<string>(mod.id, "BuildingLensStripAxis", "");
 const BuildingLensMenuCategories$ = bindValue<unknown[]>(mod.id, "BuildingLensMenuCategories", []);
@@ -108,7 +107,6 @@ export const LensControlPane = () => {
   const { translate } = useLocalization();
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
-  const section = useValue(BuildingLensSection$);
   const menu = useValue(BuildingLensMenu$) ?? "";
   const catalogPage = useValue(BuildingCatalogPage$);
   const catalogEntries = (catalogPage?.items ?? []) as never[];
@@ -130,7 +128,7 @@ export const LensControlPane = () => {
   const [chosenGroupBy, setChosenGroupBy] = useLensChoice(LENS_GROUP_KEY, "");
   const groupBy: GroupDimensionId = isGroupDimension(chosenGroupBy)
     ? chosenGroupBy
-    : defaultGroupDimensionFor(section, menuHasCategories, stripAxis, isEducationMenu(menu));
+    : defaultGroupDimensionFor(menuHasCategories, stripAxis, isEducationMenu(menu));
 
   const sortPresentation = getBuildingLensSortPresentation(
     { column: sortColumn, descending },
@@ -206,7 +204,7 @@ export const LensControlPane = () => {
 
   return (
     <div className={styles.pane}>
-      {/* Identity first: which menu, which section, which category — "what am
+      {/* Identity first: which menu, which category — "what am
           I looking at", above the count of what that scope holds and the
           controls that reorder it. It was gated on `expanded` in the top bar,
           so the answer was missing at the height the lens rests at; here it
