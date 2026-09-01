@@ -776,3 +776,132 @@ The query is scoped by `UiMenu`/`UiCategory` and nothing else.
 placements against the index's tree fields (coverage), not the two
 taxonomies against each other, and are the guard that caught the
 roads-cost bug. The review text is corrected in place.
+
+## 2026-09-01 — filter bank and residue deleted (phase 5)
+
+Phase 5 of the architecture remediation (spec
+`docs/superpowers/specs/2026-09-01-findit-remediation-phase-5-delete-filter-bank-and-residue-design.md`,
+plan `docs/superpowers/plans/2026-09-01-findit-remediation-phase-5-delete-filter-bank-and-residue.md`,
+beads cm-jjlv.9.1–.5), branch `findit/phase-5-delete-residue`. Run before
+phase 3 on purpose: the snapshot cache phase 3 builds would otherwise have
+keyed on fifteen filter-bank fields and six sort modes this phase deletes.
+Suites on the branch tip: C# 349/349, TS 614/614, `tsc --noEmit` clean.
+
+**Where it ran.** The shared 949230 prefix was held by another session all
+afternoon, so this ran on the cloned prefix **949230-c** (CDP 9557, its own
+lock) with `--no-steam --headless`, driven through a bridge client pinned
+to that port. That prefix sees content 949230 does not under `--no-steam`
+— the audit lists `CN_`, `JP_`, `EE_` region-pack assets — so **none of the
+totals below compare with the phase-1/2 numbers**; the like-for-like
+baseline is master's build run on the same prefix, recorded at the end.
+
+**What the first live run found, and would not have found in tests.**
+`Mod.OnLoad` registered `updateSystem.UpdateAt<OptionsUISystem>(...)` on the
+abstract base. It had only ever worked because `FindItUISystem.OnCreate`
+created `FindItOptionsUISystem` first and the base-type lookup found it;
+with that class gone the line constructed the abstract type
+(`MissingMethodException`, in Modding.log only), `OnDispose` nulled
+`Mod.Settings`, and the mod's own log showed 29 `NullReferenceException`s in
+`RunIndex` with `Indexed Prefabs Count: 0`. Found by mapping the IL offset
+with `ilspycmd --il-sequence-points` to `Mod.Settings.get_HideRandomAssets`.
+Fixed by registering only concrete systems. The same pass also null-guarded
+the `HideRandomAssets` query patch (`None` is null on processors that
+exclude nothing). New gate for every deploy that removes a system:
+`grep -c "Error initializing mod" Modding.log` must be 0.
+
+**Census.** `[PROCESSOR-CENSUS]` on Porterville 3, with every processor
+present (`indexed` = prefabs it produced; `lens` = of those, buildings or
+networks or placed in any vanilla menu):
+
+| Processor | indexed | lens | |
+|---|---:|---:|---|
+| ZonedBuilding | 9057 | 9057 | |
+| ServiceBuilding | 516 | 516 | |
+| Prop | 13828 | 387 | stays (Landscaping's props) — the 13,441 it indexes for nobody is phase 3's number |
+| Decals | 199 | 13 | stays (Landscaping/PropsDecals) |
+| Pillar | 127 | 127 | |
+| MiscBuilding | 32 | 32 | |
+| Roundabout | 100 | 100 | |
+| Bridges | 96 | 96 | |
+| Zone | 89 | 78 | |
+| Tracks | 68 | 68 | |
+| Roads | 56 | 56 | |
+| Intersections | 51 | 51 | |
+| Shrub | 45 | 36 | |
+| SportProp | 38 | 1 | stays (one placed asset) |
+| Surface | 28 | 15 | stays (Areas) |
+| Tree | 19 | 19 | |
+| Paths | 19 | 19 | |
+| UtilityNetworks | 16 | 16 | |
+| Fence | 15 | 15 | |
+| Terraforming | 9 | 9 | |
+| TransportLine | 9 | 9 | |
+| Waterways | 3 | 3 | |
+| MiscProps | 106 | 0 | **deleted** |
+| RoadProps | 71 | 0 | **deleted** |
+| Storefront | 62 | 0 | **deleted** |
+| Spawners | 22 | 0 | **deleted** |
+| Human | 8 | 0 | **deleted** |
+| RoadUtilityProps | 2 | 0 | **deleted** |
+| Vehicle | 0 | 0 | **deleted** (indexed nothing once the generators were gone) |
+
+The review's "30 processors classify things the lens never lists" was
+wrong for 22 of them. Seven went; the index dropped from 24,550 to 24,424
+prefabs. `PropPrefabCategoryProcessor` stopped excluding
+`QuantityObjectData`, because the generator that used to stand in for those
+props is gone and vanilla places the originals.
+
+**Audit, after.** `[MENU-COVERAGE] vanilla shows 1467 assets across its
+menus; 3 missing from the index` — down from 11 with the generators gone
+and before the quantity-prop fix (the 8 `Trashbin01-04` /
+`TrashContainerEmpty01-04` are held as themselves now). The three left are
+pre-existing gaps, present with every processor still in place:
+`Dome Rural Hotel 01`, `Dome Road House 01` (Signatures) and
+`IndustrialModernPlaza01DeliveryVan01` (Landscaping/PropsIndustrial) —
+filed as cm-vxuv. Zero exceptions in the mod log across the whole session.
+
+**Menus, phase-5 build on 949230-c** (`[LENS-REFRESH]`, first open of
+each; Roads refreshes twice, the groupBy push-back of cm-jjlv.8):
+
+```
+60ms  menu='Roads'              total=403
+85ms  menu='Landscaping'        total=522
+23ms  menu='Health & Deathcare' total=31
+23ms  menu='Zones'              total=74
+23ms  menu='Electricity'        total=17
+506ms menu=''                   total=10536   (All menus)
+```
+
+**Settings the options screen offers now:** `ApplyMimic` (hidden; its
+attribute registers the picker's Apply action), `AutoWidenSearch`,
+`BuildingLensDefaultToTable`, `BuildingLensPanelHeight` (hidden),
+`BuildingLensShelfSize`, `BuildingLensShowShelf`, `BuildingLensTileSize`,
+`HideRandomAssets`, `OpenPanelOnPicker`, `PickerKeyBinding`,
+`ReplaceVanillaBuildMenu`, `ReplaceVanillaZonesMenu`, `SelectPrefabOnOpen`,
+`ShowCoverageOverlay`. Every one has a reader.
+
+**What left.** `Filters` and the ten option sections,
+`FindItOptionsUISystem`, `BuildingLensLegacyFilterSnapshot` and the
+`BuildingLensLegacyFilters` binding, the query's `HasParking`, the search
+mirror, `FindItUtil.CurrentCategory/CurrentSubCategory/SetSorting` and the
+enumerators, the six sort modes (`IndexedPrefabList` is Name order),
+`RegisterAPIs`, `StrictSearch`; favourites end to end; the two prop
+generators, `AssetMap`, `GetIconsMap`, `CustomAreaBorderRenderSystem`,
+`ClearGooee`; ten dead settings and their locale strings in 15 locales;
+`UI.zip` (a 38 MB zipped `node_modules`, now ignored); upstream's
+`Changelog.json` and `PublishConfiguration.xml`, replaced with this mod's
+own; seven processors. `VanillaMenuAudit` lost its substitution clause and
+its "deferred until AssetMap" gate.
+
+**Baseline: master's build (`f3efa90`, phase-2 FindIt) on the same prefix,
+same save, same session.** `[LENS-REFRESH]`: Roads 403, Landscaping **514**,
+Health & Deathcare 31, Zones 74, Electricity 17, All menus **10,528**.
+Phase 5 differs by exactly +8 in Landscaping and +8 unscoped — the
+`Trashbin01-04` / `TrashContainerEmpty01-04` quantity props, which master
+held only as generated substitutes (`[MENU-COVERAGE] … 3 missing from the
+index, 8 replaced by generated variants`) and phase 5 holds as themselves
+(`3 missing`). Every other menu is identical, the same three assets are
+missing on both, and both runs had zero exceptions. Master also ran the
+full index three times per load (24,756 → 24,957 prefabs as the generators
+published), where phase 5 runs it once; and master's options screen still
+listed `ColumnSize`, `ExpandedColumnSize`, … — the ten dead settings.
