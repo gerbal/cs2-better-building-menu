@@ -20,14 +20,14 @@ Around them:
 
 - `VanillaMenuPresets` maps toolbar menu names to `(PrefabCategory, PrefabSubCategory, IsZoning)`. Since the tree path opens the lens on ANY named menu, the enum half of every preset is overwritten by `UiMenu` scoping. Its one live job is `IsZoning`, which gates the `ReplaceVanillaZonesMenu` setting. `SetBuildingLensMenu` still has an empty `if (zoning) { }` block from the deleted zoning renderer.
 - `UnlockMilestone` on the query, `_buildingLensUnlockMilestone`, `ResetBuildingLensMilestone()` and its six call sites are constant `-1` since phase 1 deleted `SetBuildingLensMenuMilestone`.
-- `StripMatches` ORs the development-branch, asset-type and density matches regardless of `StripAxis`, so the axis the adapter publishes is not the axis the predicate honours.
+- `query.StripAxis` has no reader. The adapter computes the axis from the query (`GetStripAxis`), the system copies it into the query and publishes it as `BuildingLensStripAxis`, and the predicate never looks at it — `StripMatches` matches a tab by value across all three axes, which is deliberate: one row mixes development nodes with an asset-type tab (Water), and the value spaces do not overlap. The review's "display-only while pretending to be a predicate" is right about the field and wrong about the fix: the field should not be on the query at all.
 - **`VanillaMenuAudit` is not what finding 2 said.** Both audit passes in `PrefabIndexingSystem` (`[MENU-AUDIT]`, `[MENU-COVERAGE]`) compare the game's own placements against the index's `UiMenuName`/`UiCategoryName` — they audit how completely the index covers the tree, not drift between the two taxonomies. That is the guard that caught the roads-cost bug. It stays; the review's sentence is corrected below.
 
 ## Decision
 
 Commit to `UiMenu`/`UiCategory`. Delete the other two generations, the
 taxonomy that fed one of them, the presets, and the milestone plumbing.
-Make the strip predicate honour its axis. Add no replacement navigation:
+Take `StripAxis` off the query, where nothing reads it. Add no replacement navigation:
 the user's call on 2026-09-01 was that the UI as implemented is good
 enough and inherited FindIt concepts are to be shed, not re-expressed.
 
@@ -44,9 +44,10 @@ Roads menu already is via `NetworkMenuExtension`.
 ### 1. Query
 
 `BuildingCatalogQuery` loses `Category`, `SubCategory`, `BuildMenuSection`,
-`BuildMenuSubCategory`, `UnlockMilestone`, and the `AnyMilestone` constant.
-`UiMenu`, `UiCategory`, `StripAxis`, `StripTabs`, `SchoolTier` and every
-facet/range field stay. `IsScopedToMenu` stays as written.
+`BuildMenuSubCategory`, `UnlockMilestone`, the `AnyMilestone` constant, and
+`StripAxis` (no reader; the axis stays a system field and a binding).
+`UiMenu`, `UiCategory`, `StripTabs`, `SchoolTier` and every facet/range
+field stay. `IsScopedToMenu` stays as written.
 `ResetWindowIfPredicatesChanged` is unchanged: it compares whole records.
 
 ### 2. Engine
@@ -58,16 +59,10 @@ facet/range field stay. `IsScopedToMenu` stays as written.
   predicate are deleted. `MatchesVanillaMenuTree` is the only scope
   predicate, called unconditionally (it already returns true when both
   fields are empty).
-- `StripMatches(entry, tab)` becomes `StripMatches(entry, tab, axis)`:
-  - `StripAxes.Development` → `entry.DevTreeBranch == tab`
-  - `StripAxes.AssetType` → `AssetTypeOf(entry) == tab`
-  - `StripAxes.Density` → `DensityMatches(entry, tab)`
-  - `StripAxes.Category`, empty, unknown → false (the category axis is
-    `UiCategory`, which has its own field)
-  The predicate at `:162` passes `query.StripAxis`. A test asserts that a
-  density-formatted tab does not match under the development axis and a
-  branch name does not match under the density axis; that test must fail
-  on the old `||` before the change lands (necessary-not-sufficient rule).
+- `StripMatches(entry, tab)` is unchanged. Its remarks already say why a
+  tab's axis is a property of the tab: one row mixes development nodes with
+  an asset-type tab. The `StripValue` reader is what the counts use and it
+  stays too.
 - `AssetTypeOf` still reads `entry.Category == "Networks"`; the entry's
   Category string is out of scope (see below).
 
@@ -123,7 +118,8 @@ tree fields.
   widening and the `FindItUtil.CurrentCategory = Any` writes (always Any
   already; the readers are the filter bank, phase 5's).
 - `RefreshBuildingCatalog` builds the query with `UiMenu`/`UiCategory`/
-  `StripAxis`/`SchoolTier` and the facets; `MatchesElsewhere` widens
+  `SchoolTier` and the facets (the `StripAxis =` line goes; the field and
+  the `BuildingLensStripAxis` binding it feeds stay); `MatchesElsewhere` widens
   with `UiMenu = ""` only; the `AutoWidenSearch` condition becomes
   `_buildingCatalogQuery.IsScopedToMenu`. That last one is a behaviour
   change on purpose: today it fires only for preset menus (whose section
@@ -158,7 +154,8 @@ cases in `BuildingCatalogQueryEngineTests.cs`, the milestone-narrowing
 cases in `BuildingCatalogProgressionTests.cs`, the two taxonomy keys in
 `GameLocaleKeyTests.cs`, and the TS `filterChips`, `lensScopeChips`,
 `vanillaBuildMenuContracts`, `buildingGroups`/`buildingLensUx` cases that
-name the deleted things. Added: the strip-axis test in §2.
+name the deleted things, and the `StripAxis:` arguments in
+`BuildingCatalogProgressionTests`.
 
 ### 7. Live verification
 
@@ -171,8 +168,10 @@ Porterville 3 (`--no-steam --headless`, so DLC absent: 3,995 unscoped,
 2. Inside Landscaping search `zzzz`: with `AutoWidenSearch` off the lens
    shows 0 and `BuildingCatalogMatchesElsewhere` is 0; with it on, the
    scope is released and the search runs unscoped.
-3. On a development-axis menu and on Zones (density axis), click one strip
-   tab: the page total equals the tab's count.
+3. On a development-axis menu (Electricity) and on Zones (density axis),
+   click one strip tab: the page total equals the tab's count — the
+   predicate did not change, this confirms the removed field was not
+   feeding it.
 4. Zones with `ReplaceVanillaZonesMenu` off yields the menu to vanilla.
 
 Record in `docs/verification.md` under a dated heading.
