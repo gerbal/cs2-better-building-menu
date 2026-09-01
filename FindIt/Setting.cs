@@ -44,11 +44,6 @@ namespace FindItBuildingMenu
 		[SettingsUIHidden]
 		public float BuildingLensPanelHeight { get; set; } = Domain.BuildingLensHeight.Default;
 
-		[SettingsUIButton]
-		[SettingsUIConfirmation]
-		[SettingsUISection(SETTINGS, OTHER)]
-		public bool ResetFavorites { set => FindItUtil.ResetFavorites(); }
-
 		// There is no search hot-key, deliberately, and there should not be one.
 		//
 		// Ctrl+F collided twice over: with vanilla's "Toggle Follow Selected

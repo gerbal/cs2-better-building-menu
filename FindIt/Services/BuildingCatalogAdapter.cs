@@ -1306,7 +1306,6 @@ namespace FindItBuildingMenu.Services
 				Bonuses: prefab.Bonuses,
 				CostIsPerDistance: prefab.CostIsPerDistance,
 				ParkingSlots: prefab.ParkingSlots,
-				IsFavorited: prefab.IsFavorited,
 				PdxModsId: prefab.PdxModsId ?? string.Empty,
 				DlcId: prefab.DlcId == DlcId.Invalid ? null : prefab.DlcId.id.ToString(),
 				Theme: prefab.Theme?.name,

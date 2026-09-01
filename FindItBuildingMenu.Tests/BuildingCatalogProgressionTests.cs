@@ -27,7 +27,6 @@ namespace FindItBuildingMenu.Tests
 				HasParking: false,
 				IsUniqueMesh: false,
 				IsVanilla: true,
-				IsFavorited: false,
 				PdxModsId: "",
 				IsLocked: locked,
 				UnlockMilestone: milestone);

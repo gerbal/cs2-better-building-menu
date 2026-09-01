@@ -63,7 +63,6 @@ export interface BuildingCatalogEntry {
   costIsPerDistance: boolean;
   /** Approximate parking bays; 0 for none. See hasParking for the plain fact. */
   parkingSlots: number;
-  isFavorited: boolean;
   pdxModsId: string;
   buildingType: string;
   /** SchoolData tier: 1 elementary, 2 high school, 3 college, 4 university. */

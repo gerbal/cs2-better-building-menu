@@ -7,9 +7,6 @@ namespace FindItBuildingMenu.Domain.Enums
 		[CategoryIcon("coui://finditbuildingmenu/Icons/Standard/StarAll.svg")]
 		Any = PrefabCategory.Any,
 
-		[CategoryIcon("coui://finditbuildingmenu/Icons/Colored/StarFilledSmallIso.svg")]
-		Favorite = PrefabCategory.Favorite,
-
 		[Obsolete("Use PrefabCategory", true)]
 		Buildings = PrefabCategory.Buildings,
 		[CategoryIcon("Media/Game/Icons/ZoneResidential.svg")]

@@ -4,8 +4,6 @@
 	{
 		[CategoryIcon("coui://finditbuildingmenu/Icons/Standard/StarAll.svg")]
 		Any = -1,
-		[CategoryIcon("coui://finditbuildingmenu/Icons/Colored/StarFilledSmallIso.svg")]
-		Favorite = 0,
 		[CategoryIcon("coui://finditbuildingmenu/Icons/Colored/BuildingZoneSignature.svg")]
 		Buildings = 100,
 		[CategoryIcon("coui://finditbuildingmenu/Icons/Colored/ServiceBuilding.svg")]

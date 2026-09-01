@@ -37,7 +37,6 @@ namespace FindItBuildingMenu.Tests
 			HasParking: false,
 			IsUniqueMesh: false,
 			IsVanilla: true,
-			IsFavorited: false,
 			PdxModsId: "");
 
 		private static BuildingCatalogEntry Entry(

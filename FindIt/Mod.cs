@@ -97,7 +97,6 @@ namespace FindItBuildingMenu
 			AssetDatabase.global.LoadSettings(nameof(FindItBuildingMenu), Settings, new FindItSettings(this));
 
 
-			FindItUtil.LoadCustomPrefabData();
 
 			updateSystem.UpdateAfter<PrefabIndexingSystem>(SystemUpdatePhase.PrefabUpdate);
 			// Twice, because PrefabUpdate is not a frame phase. Nothing in the

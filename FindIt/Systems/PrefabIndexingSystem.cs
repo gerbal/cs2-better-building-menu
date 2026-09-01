@@ -1156,7 +1156,6 @@ namespace FindItBuildingMenu.Systems
 			prefabIndex.PrefabName = prefab.name;
 			prefabIndex.Name = GetAssetName(prefab);
 			prefabIndex.Thumbnail = IconPath.Normalize(prefabIndex.Thumbnail ?? ImageSystem.GetThumbnail(prefab));
-			prefabIndex.IsFavorited = FindItUtil.IsFavorited(prefab.name);
 			prefabIndex.FallbackThumbnail ??= CategoryIconAttribute.GetAttribute(prefabIndex.SubCategory).Icon;
 			prefabIndex.CategoryThumbnail ??= CategoryIconAttribute.GetAttribute(prefabIndex.SubCategory).Icon;
 			prefabIndex.Theme ??= prefab.GetComponent<ThemeObject>()?.m_Theme;
@@ -1342,19 +1341,6 @@ namespace FindItBuildingMenu.Systems
 
 			FindItUtil.CategorizedPrefabs[prefabIndex.Category][prefabIndex.SubCategory][prefabIndex.Id] = prefabIndex;
 
-			if (prefabIndex.IsFavorited)
-			{
-				FindItUtil.CategorizedPrefabs[PrefabCategory.Favorite][PrefabSubCategory.Any][prefabIndex.Id] = prefabIndex;
-
-				if (!FindItUtil.CategorizedPrefabs[PrefabCategory.Favorite].ContainsKey(prefabIndex.SubCategory))
-				{
-					FindItUtil.CategorizedPrefabs[PrefabCategory.Favorite][prefabIndex.SubCategory] = new();
-				}
-
-				FindItUtil.CategorizedPrefabs[PrefabCategory.Favorite][prefabIndex.SubCategory][prefabIndex.Id] = prefabIndex;
-			}
-
-			//FindItUtil.UpdateFavoritesPack(prefabIndex);
 		}
 
 		/// <summary>

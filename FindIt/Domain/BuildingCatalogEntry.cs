@@ -23,7 +23,6 @@ namespace FindItBuildingMenu.Domain
 		bool HasParking,
 		bool IsUniqueMesh,
 		bool IsVanilla,
-		bool IsFavorited,
 		string PdxModsId,
 		double? ConstructionCost = null,
 		double? Upkeep = null,
@@ -253,8 +252,6 @@ namespace FindItBuildingMenu.Domain
 			writer.Write(CostIsPerDistance);
 			writer.PropertyName("parkingSlots");
 			writer.Write(ParkingSlots);
-			writer.PropertyName("isFavorited");
-			writer.Write(IsFavorited);
 			writer.PropertyName("pdxModsId");
 			writer.Write(PdxModsId);
 			writer.PropertyName("educationLevel");
