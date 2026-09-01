@@ -444,6 +444,7 @@ namespace FindItBuildingMenu.Systems
 		{
 			var stopWatch = Stopwatch.StartNew();
 			var existingMeshes = new List<string>();
+			var census = new Dictionary<string, List<int>>(StringComparer.Ordinal);
 
 			if (full)
 			{
@@ -479,7 +480,14 @@ namespace FindItBuildingMenu.Systems
 					{
 						for (var i = 0; i < queries.Length; i++)
 						{
-							queries[i].None = queries[i].None.Concat(new[] { ComponentType.ReadOnly<PlaceholderObjectData>() }).ToArray();
+							// None is null on a processor that never excludes anything, and
+							// Concat on null throws — which took every processor down at
+							// once on a prefix where HideRandomAssets was on, and indexed
+							// nothing. The 949230 prefix never had the setting on, so it
+							// was never seen there.
+							queries[i].None = (queries[i].None ?? Array.Empty<ComponentType>())
+								.Concat(new[] { ComponentType.ReadOnly<PlaceholderObjectData>() })
+								.ToArray();
 						}
 					}
 
@@ -593,6 +601,16 @@ namespace FindItBuildingMenu.Systems
 								}
 
 								AddPrefab(prefab, entity, prefabIndex);
+
+								if (full)
+								{
+									if (!census.TryGetValue(processor.GetType().Name, out var ids))
+									{
+										census[processor.GetType().Name] = ids = new List<int>();
+									}
+
+									ids.Add(prefabIndex.Id);
+								}
 							}
 							else
 							{
@@ -640,6 +658,26 @@ namespace FindItBuildingMenu.Systems
 
 			Mod.Log.Info($"{(full ? "Full" : "Partial")} Prefab Indexing completed in {stopWatch.Elapsed.TotalSeconds:0.000}s");
 			Mod.Log.Info($"Indexed Prefabs Count: {FindItUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any].Count}");
+
+			if (full)
+			{
+				// Which processors feed anything the lens can show. A processor
+				// whose every prefab is neither a building/network nor placed in
+				// a vanilla menu is indexing for nobody — the review's "30
+				// processors classify things the lens never lists" was a guess,
+				// and Landscaping's trees say it was wrong; this is the count.
+				var all = FindItUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any];
+
+				foreach (var pair in census.OrderBy(pair => pair.Key, StringComparer.Ordinal))
+				{
+					var lens = pair.Value.Count(id =>
+						all.TryGetValue(id, out var indexed)
+						&& (indexed.Category is PrefabCategory.Buildings or PrefabCategory.ServiceBuildings or PrefabCategory.Networks
+							|| IsPlacedInAnyMenu(id)));
+
+					Mod.Log.Info($"[PROCESSOR-CENSUS] {pair.Key} indexed={pair.Value.Count} lens={lens}");
+				}
+			}
 
 			if (full)
 			{
