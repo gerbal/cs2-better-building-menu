@@ -38,7 +38,6 @@ function entry(id: number): BuildingCatalogEntry {
     zoneType: 0,
     hasParking: id % 2 === 0,
     isVanilla: true,
-    isFavorited: false,
     pdxModsId: "",
     constructionCost: 100,
     upkeep: 10,

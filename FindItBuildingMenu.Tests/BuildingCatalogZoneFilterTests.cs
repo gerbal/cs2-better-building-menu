@@ -23,7 +23,6 @@ namespace FindItBuildingMenu.Tests
 				HasParking: false,
 				IsUniqueMesh: false,
 				IsVanilla: true,
-				IsFavorited: false,
 				PdxModsId: "");
 
 		private static readonly List<BuildingCatalogEntry> Source = new()

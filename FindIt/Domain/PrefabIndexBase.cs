@@ -13,7 +13,6 @@ namespace FindItBuildingMenu.Domain
 		public string FallbackThumbnail { get; set; }
 		public string DlcThumbnail { get; set; }
 		public string CategoryThumbnail { get; set; }
-		public bool IsFavorited { get; set; }
 		public bool IsRandom { get; set; }
 		public string[] RandomPrefabThumbnails { get; set; }
 		public string ThemeThumbnail { get; set; }

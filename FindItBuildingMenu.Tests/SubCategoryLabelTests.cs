@@ -63,7 +63,7 @@ namespace FindItBuildingMenu.Tests
 		/// </summary>
 		/// <remarks>
 		/// The underscore is the discriminator because the enum holds three kinds
-		/// of value: Any and Favorite, which are pseudo-categories; the obsolete
+		/// of value: Any, which is a pseudo-category; the obsolete
 		/// aliases that exist only to reserve each block's base number; and the
 		/// subcategories themselves, all of the form Parent_Child.
 		/// </remarks>

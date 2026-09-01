@@ -33,7 +33,6 @@ namespace FindItBuildingMenu.Tests
 			HasParking: false,
 			IsUniqueMesh: false,
 			IsVanilla: true,
-			IsFavorited: false,
 			PdxModsId: "");
 
 		private static BuildingCatalogEntry Zone(int id, string category, ZoneTypeFilter density) =>

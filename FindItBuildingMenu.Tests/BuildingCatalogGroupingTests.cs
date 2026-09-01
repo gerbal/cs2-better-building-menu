@@ -38,7 +38,6 @@ namespace FindItBuildingMenu.Tests
 				HasParking: false,
 				IsUniqueMesh: false,
 				IsVanilla: true,
-				IsFavorited: false,
 				PdxModsId: "",
 				BuildingType: buildingType,
 				Provenance: provenance,
