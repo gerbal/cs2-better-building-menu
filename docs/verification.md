@@ -905,3 +905,90 @@ missing on both, and both runs had zero exceptions. Master also ran the
 full index three times per load (24,756 → 24,957 prefabs as the generators
 published), where phase 5 runs it once; and master's options screen still
 listed `ColumnSize`, `ExpandedColumnSize`, … — the ten dead settings.
+
+## 2026-09-01 — one snapshot per refresh (phase 3)
+
+Phase 3 of the architecture remediation (spec
+`docs/superpowers/specs/2026-09-01-findit-remediation-phase-3-one-snapshot-per-refresh-design.md`,
+plan `docs/superpowers/plans/2026-09-01-findit-remediation-phase-3-one-snapshot-per-refresh.md`,
+beads cm-jjlv.7.1–.4), branch `findit/phase-3-one-snapshot`. Suites on the
+tip: C# 358/358 (four `CatalogViewTests`, four `SnapshotCacheTests`, one
+`QueryEnumerationTests`), TS 614/614.
+
+**Method.** `[LENS-REFRESH]` now carries a permanent stage breakdown —
+`proj=<ms>(hit|miss) page= bounds= facets= counts= axis= tabs= expanded=
+tiers=` — and both runs below are that line, same prefix (`949230-c`), same
+save (Porterville 3), same session, same sequence: open Roads, Landscaping,
+Health & Deathcare, Zones, Electricity, then All menus; then inside
+Landscaping type `tre`, `tree`, clear, close, and reopen it. The "before"
+build already had the engine's single enumeration (Task 1), so the
+difference is the cache and the view alone.
+
+**Before** (`7299d64`: breakdown + single enumeration, no cache across
+refreshes, per-method derivations):
+
+```
+ 62ms proj=25ms(miss) page=26  bounds=0 facets=29  counts=0 axis=0  tabs=1  expanded=3 tiers=0 menu='Roads'              total=403
+ 58ms proj=24ms(miss) page=26  bounds=0 facets=26  counts=0 axis=1  tabs=1  expanded=1 tiers=0 menu='Roads'              (groupBy push-back)
+ 54ms proj=13ms(miss) page=15  bounds=0 facets=25  counts=1 axis=1  tabs=1  expanded=5 tiers=3 menu='Landscaping'        total=522
+ 22ms proj=10ms(miss) page=10  bounds=0 facets=11  counts=0 axis=0  tabs=0  expanded=0 tiers=0 menu='Health & Deathcare' total=31
+ 31ms proj=11ms(miss) page=12  bounds=0 facets=12  counts=0 axis=0  tabs=5  expanded=0 tiers=0 menu='Zones'              total=74
+ 25ms proj=11ms(miss) page=12  bounds=0 facets=11  counts=0 axis=1  tabs=0  expanded=0 tiers=0 menu='Electricity'        total=17
+342ms proj=97ms(miss) page=115 bounds=5 facets=185 counts=4 axis=10 tabs=13 expanded=3 tiers=2 menu=''                   total=10536 (All menus)
+ 32ms proj=13ms(miss) page=14  bounds=0 facets=15  … menu='Landscaping' total=522   (reopen)
+ 31ms proj=13ms(miss) page=14  bounds=0 facets=13  … menu='Landscaping' total=13    (typed "tre")
+ 33ms proj=14ms(miss) page=14  bounds=0 facets=15  … menu='Landscaping' total=13    (typed "tree")
+ 78ms proj=26ms(miss) page=28  bounds=4 facets=42  … menu='Landscaping' total=522   (cleared)
+ 32ms proj=13ms(miss) page=15  bounds=0 facets=14  … menu='Landscaping' total=522   (reopened again)
+```
+
+What it says: every refresh re-projected (`miss` on all twelve lines — a
+keystroke cost a full projection), and on the whole catalog `facets` was
+the largest stage at 185 ms because `GetFacetState` re-scanned and
+re-projected the entire index a second time for its pack scope. The page
+itself, already single-pass, was 115 ms over 10,536 entries.
+
+**After** (`64fbda8`: `SnapshotCache` keyed on scope and invalidated by
+`IndexGeneration`; `CatalogView` with one scoped pass and memoised
+derivations):
+
+```
+ 30ms proj=25ms(miss) page=26 bounds=0 facets=0  counts=0 axis=0 tabs=0  expanded=1 tiers=0  menu='Roads'              total=403
+ 30ms proj=0ms(hit)   page=28 bounds=0 facets=0  counts=0 axis=0 tabs=0  expanded=0 tiers=0  menu='Roads'              (groupBy push-back)
+ 16ms proj=13ms(miss) page=15 bounds=0 facets=0  counts=0 axis=0 tabs=0  expanded=0 tiers=0  menu='Landscaping'        total=522
+ 11ms proj=10ms(miss) page=10 bounds=0 facets=0  counts=0 axis=0 tabs=0  expanded=0 tiers=0  menu='Health & Deathcare' total=31
+ 13ms proj=11ms(miss) page=12 bounds=0 facets=0  counts=0 axis=0 tabs=0  expanded=0 tiers=0  menu='Zones'              total=74
+ 12ms proj=10ms(miss) page=11 bounds=0 facets=0  counts=0 axis=1 tabs=0  expanded=0 tiers=0  menu='Electricity'        total=17
+105ms proj=0ms(hit)   page=20 bounds=5 facets=26 counts=1 axis=0 tabs=24 expanded=4 tiers=22 menu=''                   total=10536 (All menus)
+  3ms proj=0ms(hit)   page=1  … menu='Landscaping' total=522   (reopen)
+  1ms proj=0ms(hit)   page=1  … menu='Landscaping' total=13    (typed "tre")
+  0ms proj=0ms(hit)   page=0  … menu='Landscaping' total=13    (typed "tree")
+  3ms proj=0ms(hit)   page=2  … menu='Landscaping' total=522   (cleared)
+  2ms proj=0ms(hit)   page=1  … menu='Landscaping' total=522   (reopened again)
+```
+
+Every total is identical to the before run and to phase 5's. Zero
+exceptions, `Error initializing mod` 0, audit unchanged (the same three
+pre-existing gaps, cm-vxuv).
+
+What changed: the first open of a menu still projects it (that is the
+`proj` miss, 10–25 ms, the same figure as before) and then costs nothing
+else — every derived stage reads the one scoped pass. Everything after the
+first open is a cache hit: a reopen is **3 ms** (was 32), a search
+keystroke inside a menu is **0–1 ms** (was 31–33), clearing the search is
+3 ms (was 78). All menus is **105 ms** (was 342): the projection was
+already cached from the load-time refresh, the page fell from 115 to 20
+ms, and `facets` from 185 to 26 because the pack scope no longer rescans
+and reprojects the index. The residual on All menus is `tabs=24` and
+`tiers=22` — the strip's two axis passes and the tier pass over the
+10,536-entry menu set; small, and the next thing to look at if the
+whole-catalog refresh ever matters.
+
+What invalidates the cache: `PrefabIndexingSystem.IndexGeneration`,
+bumped at the end of every `RunIndex` (full or partial), by `ApplyUnlocks`
+when an unlock changed anything, and by a unique being built or
+bulldozed. A different menu, DLC union, pack/theme/vanilla/mods
+selection is a different key, not an invalidation.
+
+This is the number behind cm-2xvs.25 ("reopening a menu costs a ~2.6 s
+stall"): 2.6 s → 25 ms (phase 1) → 3 ms.
