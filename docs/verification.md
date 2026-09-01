@@ -614,3 +614,87 @@ is covered by the backend/UI tests and remains called out in the artifact.
 Durable evidence is archived in
 `tools/e2e/artifacts/e2e-20260802-findit-ux-followthrough/` (manifest,
 observations, and settled screenshot).
+
+## 2026-09-01 — search debounce and binding manifest
+
+Phase 1 of the architecture remediation (`docs/superpowers/plans/2026-09-01-findit-remediation-phase-1-search-and-binding-contract.md`,
+beads cm-jjlv.1–.5). Built with `just build findit-building-menu` (0 errors)
+and deployed with `just deploy-isolated findit-building-menu`; the game was
+restarted because the DLL changed. Suites on the branch tip: C# 412/412,
+TS 626/626, `tsc --noEmit` clean.
+
+Live run: `--no-steam --headless`, prefix 949230, save **Porterville 3**.
+`--no-steam` hides the DLC, so the lens indexed 3,995 buildings rather than
+the 4,206 the 2026-08-02 run saw; the search and reopen costs below are the
+per-refresh cost and do not depend on which buildings are present.
+
+**Search.** `SearchChanged` was fired through the mod's own trigger with
+`hospital`, `clinic`, and `""`, then with the Landscaping menu open, `tree`
+and `""`. Every search settled in exactly ONE refresh, from the debounce's
+`OnUpdate` path, and the whole cost is the refresh itself:
+
+```
+[LENS-REFRESH] 155ms menu='' total=1 from=OnUpdate                 hospital
+[LENS-REFRESH] 165ms menu='' total=2 from=OnUpdate                 clinic
+[LENS-REFRESH] 166ms menu='' total=3995 from=OnUpdate              (cleared)
+[LENS-REFRESH] 23ms menu='Landscaping' total=12 from=OnUpdate      tree
+[LENS-REFRESH] 28ms menu='Landscaping' total=368 from=OnUpdate     (cleared)
+```
+
+cm-yfd5 measured 2.7 s per search on this save with the upstream fuzzy
+worker (`FindItUtil.ProcessSearch`) on the path. That worker, its
+`_cachedSearch` output that nothing read, the `filterCompleted` flag and
+the `Task.Run` are gone; `SearchChanged` now schedules a 250 ms
+`SearchDebounce` deadline polled from `OnUpdate`, and the lens's own
+`Contains` predicate is the only search. No `Search Failed` lines; the mod
+log carries zero exceptions for the session and UI.log no errors after load.
+
+**Reopen.** Landscaping was opened (`toolbar.selectAssetMenu` 16930),
+closed (`toolbar.clearAssetSelection`), and opened again:
+
+```
+[LENS-REFRESH] 24ms menu='Landscaping' total=368 from=RefreshLens
+[LENS-REFRESH] 25ms menu='Landscaping' total=368 from=SetBuildingCatalogGroupBy
+[LENS-REFRESH] 25ms menu='Landscaping' total=368 from=RefreshLens
+```
+
+The first open still refreshes twice: the UI re-derives `groupBy` and pushes
+it back (review finding 6, cm-jjlv.8). The second open is one refresh. The
+~25 ms per refresh on a 368-entry menu and ~160 ms on the whole 3,995-entry
+set is the fan-out cm-jjlv.7 exists to reduce; it is the residual behind
+cm-2xvs.25.
+
+**Bindings deleted.** `FindItBuildingMenu.Tests/BindingManifestTests.cs`
+now extracts every `CreateBinding`/`CreateTrigger` name from
+`FindIt/Systems/*.cs` and every `bindValue`/`trigger`/`createTriggerCommand`/
+`method:` name from `UI/src`, and fails when either side names something the
+other does not. Its first run listed eleven C# names with no reader and
+three UI names with no C# handler; all are gone:
+
+- `BuildingLensMenuToolTip` — written on every menu change from a tooltip
+  table in `PrefabIndexingSystem`; no `bindValue` read it. The table and
+  `Domain/MenuToolTip.cs` went with it.
+- `BuildingLensSortCanReorder` — cm-ddw3's C# half, computed over the whole
+  match set every refresh and never displayed. `BuildingCatalogPage.SortCanReorder`
+  and the engine's `SortCanReorder`/`HandlesSortColumn` went with it;
+  `reorderableSortColumns` stays because `LensControlPane` reads it.
+- `BuildingLensMilestoneIcons`, `BuildingLensMenuMilestone` /
+  `SetBuildingLensMenuMilestone` — the milestone tab was replaced by the
+  dev-tree branch tab; the bindings outlived it.
+- `CurrentCategory` / `CurrentSubCategory` (+ `SetCurrentCategory` /
+  `SetCurrentSubCategory`) — upstream FindIt's category enums; the lens
+  scopes by `UiMenu`/`UiCategory` and the UI never read these.
+- `NoAssetImage` — an upstream settings mirror no component consulted.
+- `OptionsList`, `AreFiltersSet`, `ClearFilters`, and then `OptionClicked` —
+  the upstream filter bank's UI contract; no component mounts the bank.
+  The sections still exist and are still applied (review finding 3,
+  cm-jjlv.9 removes them).
+- UI side: `BuildingLensZoneFamilies` (read, always its default),
+  `ToggleBuildingLensZoneFamily` and `SetBuildingLensRole` (emitted into
+  nothing), plus the dead `lensRoleCommand`, `setCurrentCategoryCommand`,
+  `setCurrentSubCategoryCommand`, `optionClickedCommand` exports and the
+  `findItOption` surface action that only produced `OptionClicked`.
+
+`KnownUnreadByUi` in the manifest test allows one name,
+`BuildingCatalogGroupBy`, which C# publishes and the UI writes but does not
+read; cm-jjlv.8 decides which side owns it.
