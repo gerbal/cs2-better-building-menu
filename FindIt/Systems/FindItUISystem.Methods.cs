@@ -55,6 +55,11 @@ namespace FindItBuildingMenu.Systems
 			_buildingCatalogAdapter.BeginRefresh();
 
 			var refreshTimer = System.Diagnostics.Stopwatch.StartNew();
+			// Per-stage cost, for the breakdown on the log line. A refresh used
+			// to be one number, which said that it was slow and nothing about
+			// where; cm-jjlv.7 exists to move the where.
+			var stage = System.Diagnostics.Stopwatch.StartNew();
+			int Lap() { var ms = (int)stage.ElapsedMilliseconds; stage.Restart(); return ms; }
 
 			// Both empty, always. These carried FindItUtil's own category into
 			// the query, but only while the lens was off — and the lens is never
@@ -99,6 +104,7 @@ namespace FindItBuildingMenu.Systems
 				_buildingCatalogQuery = _buildingCatalogQuery with { Limit = BuildingCatalogQuery.DefaultLimit };
 			}
 
+			stage.Restart();
 			BuildingCatalogPage page = _buildingCatalogAdapter.Query(_buildingCatalogQuery);
 
 			// A search that matches nothing in the current section reads as
@@ -129,6 +135,7 @@ namespace FindItBuildingMenu.Systems
 						Offset = 0,
 					}).TotalCount
 					: 0;
+			var pageMs = Lap();
 			_BuildingCatalogBinding.Value = page with
 			{
 				Status = BuildingCatalogLensState.GetPageStatus(FindItUtil.IsReady, page.TotalCount),
@@ -142,31 +149,38 @@ namespace FindItBuildingMenu.Systems
 			// from InScope, which drops the metric selections, so narrowing a range
 			// cannot shrink the bounds it was typed against.
 			_BuildingCatalogMetricBounds.Value = _buildingCatalogAdapter.GetMetricBounds(_buildingCatalogQuery);
+			var boundsMs = Lap();
 			_BuildingLensFacets.Value = _buildingCatalogAdapter.GetFacetState(_buildingCatalogQuery);
+			var facetsMs = Lap();
 			// Alongside the facets and for the same reason: the strip is a filter
 			// too, and a tab that cannot say how much is behind it is the same
 			// dead end as a facet option that cannot.
 			_BuildingLensMenuCategoryCounts.Value =
 				_buildingCatalogAdapter.GetMenuCategoryCounts(_buildingCatalogQuery).ToArray();
+			var countsMs = Lap();
 			// The axis is resolved BEFORE the tabs and stored, because the query
 			// carries it: the predicate has to match tabs against the same axis
 			// the tabs were counted on.
 			_buildingLensStripAxis = _buildingCatalogAdapter.GetStripAxis(_buildingCatalogQuery);
 			_BuildingLensStripAxisBinding.Value = _buildingLensStripAxis;
+			var axisMs = Lap();
 			// The rail can change this behind the row's back, so republish it
 			// with the rest of the state rather than only when a tab is clicked.
 			_BuildingLensStripTabBinding.Value =
 				_buildingCatalogQuery.StripTabs?.ToArray() ?? Array.Empty<string>();
 			_BuildingLensStripTabs.Value =
 				_buildingCatalogAdapter.GetStripTabs(_buildingCatalogQuery).ToArray();
+			var tabsMs = Lap();
 			// One binding, a list. It replaced a (category, tabs) pair that could
 			// only ever describe ONE expanded category — enough for the
 			// development tree, which picks the largest and stops, and not
 			// enough for zones, where three families divide into tiers at once.
 			_BuildingLensExpandedCategories.Value =
 				_buildingCatalogAdapter.GetExpandedCategories(_buildingCatalogQuery).ToArray();
+			var expandedMs = Lap();
 			_BuildingLensMenuSchoolTierCounts.Value =
 				_buildingCatalogAdapter.GetMenuSchoolTierCounts(_buildingCatalogQuery).ToArray();
+			var tiersMs = Lap();
 			// cm-2xvs.25. Logged only when it changes by more than a tenth of a
 			// second, so a steady state costs one line rather than one per
 			// frame — and a regression in this number is visible in a normal
@@ -182,6 +196,8 @@ namespace FindItBuildingMenu.Systems
 			// redundancy is visible at all.
 			Mod.Log.Info(
 				$"[LENS-REFRESH] {(int)refreshTimer.ElapsedMilliseconds}ms "
+				+ $"proj={_buildingCatalogAdapter.LastProjectionMs}ms({(_buildingCatalogAdapter.LastProjectionWasHit ? "hit" : "miss")}) "
+				+ $"page={pageMs} bounds={boundsMs} facets={facetsMs} counts={countsMs} axis={axisMs} tabs={tabsMs} expanded={expandedMs} tiers={tiersMs} "
 				+ $"menu='{_buildingCatalogQuery.UiMenu}' total={page.TotalCount} from={caller}");
 		}
 

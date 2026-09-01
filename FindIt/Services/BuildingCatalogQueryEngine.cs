@@ -72,10 +72,15 @@ namespace FindItBuildingMenu.Services
 			// Reframed before ordering, because the Roads menu's extra networks are
 			// placed behind its own categories by a rewritten priority, and ordering
 			// a page that has already been cut would only relabel them in place.
+			// ONE pass. Count, Order and ReorderableSortColumns all read this,
+			// and as a lazy Where each of them re-ran Matches over the whole
+			// input — three passes per page, measured on the [LENS-REFRESH]
+			// breakdown before this array existed.
 			var matching = entries
 				.Where(entry => Matches(entry, query))
-				.Select(entry => NetworkMenuExtension.Reframe(entry, query.UiMenu));
-			var totalCount = matching.Count();
+				.Select(entry => NetworkMenuExtension.Reframe(entry, query.UiMenu))
+				.ToArray();
+			var totalCount = matching.Length;
 			var offset = ClampOffset(query.EffectiveOffset, totalCount, limit);
 			var items = Order(matching, query)
 				.Skip(offset)

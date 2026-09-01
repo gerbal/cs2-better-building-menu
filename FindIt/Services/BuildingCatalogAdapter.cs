@@ -1172,7 +1172,17 @@ namespace FindItBuildingMenu.Services
 			new Dictionary<string, BuildingCatalogEntry[]>(StringComparer.Ordinal);
 
 		/// <summary>Drops the per-refresh projections. Call before publishing.</summary>
-		public void BeginRefresh() => _projections.Clear();
+		/// <summary>How long the last <see cref="ProjectForMenu"/> took, and whether it was served from cache.</summary>
+		/// <remarks>Read by FindItUISystem for the [LENS-REFRESH] breakdown. Reset by <see cref="BeginRefresh"/>.</remarks>
+		public int LastProjectionMs { get; private set; }
+		public bool LastProjectionWasHit { get; private set; } = true;
+
+		public void BeginRefresh()
+		{
+			_projections.Clear();
+			LastProjectionMs = 0;
+			LastProjectionWasHit = true;
+		}
 
 		private IEnumerable<BuildingCatalogEntry> ProjectForMenu(
 			string? menu,
@@ -1189,8 +1199,11 @@ namespace FindItBuildingMenu.Services
 				return cached;
 			}
 
+			var timer = System.Diagnostics.Stopwatch.StartNew();
 			var built = ProjectForMenuUncached(menu, contentDlcs).ToArray();
 			_projections[key] = built;
+			LastProjectionMs += (int)timer.ElapsedMilliseconds;
+			LastProjectionWasHit = false;
 
 			return built;
 		}
