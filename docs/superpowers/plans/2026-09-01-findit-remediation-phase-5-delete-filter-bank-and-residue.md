@@ -247,7 +247,7 @@ After the `Mod.Log.Info($"Indexed Prefabs Count: …");` line add:
 grep -E "PROCESSOR-CENSUS|MENU-AUDIT\]|MENU-COVERAGE\]|LENS-REFRESH|Exception" "$HOME/.local/share/Steam/steamapps/compatdata/949230/pfx/drive_c/users/steamuser/AppData/LocalLow/Colossal Order/Cities Skylines II/Logs/FindItBuildingMenu.log" | tail -60
 ```
 
-Record every census line. The audit must already read Missing = 0 on Landscaping with the substitution clause gone (Task 3); if it does not, stop and read the missing names before Task 5 — the quantity-prop originals may need `PropPrefabCategoryProcessor` to accept them.
+FIRST: `grep -c "Error initializing mod" .../Logs/Modding.log` must print 0 — a system deleted in Tasks 1–3 that something still registers throws here, `OnDispose` nulls `Mod.Settings`, and the only symptom in the mod's own log is a wall of `NullReferenceException`s in `RunIndex` with `Indexed Prefabs Count: 0` (this happened: `UpdateAt<OptionsUISystem>` on the abstract base). Then record every census line. The audit must already read Missing = 0 on Landscaping with the substitution clause gone (Task 3); if it does not, stop and read the missing names before Task 5 — the quantity-prop originals may need `PropPrefabCategoryProcessor` to accept them.
 
 - [ ] **Step 4: Commit**
 

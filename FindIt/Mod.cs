@@ -114,7 +114,6 @@ namespace FindItBuildingMenu
 			// same guarded OnUpdate.
 			updateSystem.UpdateAt<PrefabIndexingSystem>(SystemUpdatePhase.UIUpdate);
 			updateSystem.UpdateAt<FindItUISystem>(SystemUpdatePhase.UIUpdate);
-			updateSystem.UpdateAt<OptionsUISystem>(SystemUpdatePhase.UIUpdate);
 			updateSystem.UpdateAt<PickerToolSystem>(SystemUpdatePhase.ToolUpdate);
 			updateSystem.UpdateAt<PickerUISystem>(SystemUpdatePhase.UIUpdate);
 			updateSystem.UpdateAt<PrefabTrackingSystem>(SystemUpdatePhase.PrefabUpdate);
