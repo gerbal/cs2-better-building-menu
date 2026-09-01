@@ -131,7 +131,6 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   { key: key("NoBuildingsInCategory"), english: "No buildings in this category.", source: "buildingLensFilterSummary", plumbed: false },
   { key: key("NoBuildingsMatch"), english: "No buildings match {0}.", source: "buildingLensFilterSummary", plumbed: false },
   { key: key("SearchConstraint"), english: 'search "{0}"', source: "buildingLensFilterSummary", plumbed: false },
-  { key: key("LegacyFilterConstraint"), english: "Find It: {0}", source: "buildingLensFilterSummary", plumbed: false },
 
   // --- Metric names used in chips and summaries. Pure module. --------------
   // The table's column headers are already translated; these are the same words

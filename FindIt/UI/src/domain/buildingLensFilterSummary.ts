@@ -20,25 +20,18 @@ export interface BuildingLensMetricRangeState {
 export interface BuildingLensFilterSummaryInput {
   facets?: BuildingLensFacetState | null;
   metricRanges?: BuildingLensMetricRangeState | null;
-  /**
-   * Labels for the legacy FindIt filters that are currently narrowing the lens
-   * index. The adapter applies these before the lens query runs, so omitting
-   * them let the panel report "No active lens filters" while a legacy toggle
-   * hid most of the catalog.
-   */
-  legacyFilters?: readonly string[] | null;
 }
 
 export interface BuildingLensFilterSummary {
-  /** Every constraint narrowing the result, lens-owned or legacy. */
+  /** Every constraint narrowing the result. */
   count: number;
   text: string;
   details: string[];
   hasSelection: boolean;
   /**
-   * The subset this panel's Clear button can actually reset. Legacy Find It
-   * filters live on another surface, so offering to clear them here would be a
-   * button that visibly fails to do what it says.
+   * The subset this panel's Clear button can reset. Equal to count since the
+   * upstream filter bank went (cm-jjlv.9); kept as a field because the panel
+   * reads it.
    */
   lensCount: number;
 }
@@ -122,20 +115,16 @@ export function getBuildingLensFilterSummary(
   const facets = facetLabels.length;
   const ranges = rangesFromState(input?.metricRanges);
   const activeRanges = metricRangeIds.filter((id) => ranges[id].min !== null || ranges[id].max !== null).length;
-  const legacyFilters = (input?.legacyFilters ?? []).filter((label) => typeof label === "string" && label.length > 0);
-  const count = facets + activeRanges + legacyFilters.length;
+  const count = facets + activeRanges;
   const details = [
     // Named, not counted. "No buildings match 1 facet" told the player nothing
     // they could act on; with filters composing freely an empty intersection is
     // easy to reach, so the message has to say which constraint to drop.
     ...facetLabels,
     ...metricDetails(ranges),
-    // Named individually: "3 filters" would not tell the player which legacy
-    // toggle to reach for, and the legacy panel is a different surface.
-    ...legacyFilters.map((label) => `Find It: ${label}`),
   ];
 
-  const lensCount = facets + activeRanges;
+  const lensCount = count;
 
   return {
     count,
@@ -151,8 +140,8 @@ export function getBuildingLensFilterSummary(
  *
  * The previous copy blamed "the current search and category" unconditionally,
  * which pointed the player at the two controls least likely to be responsible:
- * a legacy Find It toggle, a facet, or an unsatisfiable capacity floor could
- * each empty the table while the search box sat empty.
+ * a facet or an unsatisfiable capacity floor could each empty the table while
+ * the search box sat empty.
  */
 export function getBuildingLensEmptyStateMessage(
   input: (BuildingLensFilterSummaryInput & { searchText?: string | null }) | null | undefined,

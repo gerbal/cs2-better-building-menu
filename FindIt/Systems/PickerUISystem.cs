@@ -131,24 +131,5 @@ namespace FindItBuildingMenu.Systems
 
 			_toolSystem.activeTool = _pickerToolSystem;
 		}
-
-		public override void TriggerSearch()
-		{
-
-		}
-
-		public override void RefreshLens()
-		{
-		}
-
-		// The picker's own options bank has nothing to do with the building
-		// lens catalog, but it shares the OptionsUISystem base with
-		// FindItOptionsUISystem, so these still need an implementation.
-
-		public override BuildingCatalogFacetGroup? GetBuildingLensFacetGroup(string facetId) =>
-			_findItUISystem.GetBuildingLensFacetGroup(facetId);
-
-		public override void ToggleBuildingLensFacetOption(string facetId, string optionId) =>
-			_findItUISystem.ToggleBuildingLensFacetOption(facetId, optionId);
 	}
 }

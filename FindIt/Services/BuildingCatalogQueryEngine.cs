@@ -197,7 +197,6 @@ namespace FindItBuildingMenu.Services
 				&& (!query.MaxLotDepth.HasValue || entry.LotDepth <= query.MaxLotDepth.Value)
 				&& (!query.MinBuildingLevel.HasValue || entry.BuildingLevel >= query.MinBuildingLevel.Value)
 				&& (!query.MaxBuildingLevel.HasValue || entry.BuildingLevel <= query.MaxBuildingLevel.Value)
-				&& (!query.HasParking.HasValue || entry.HasParking == query.HasParking.Value)
 				&& InRange(entry.ConstructionCost, query.MinConstructionCost, query.MaxConstructionCost)
 				&& InRange(entry.Upkeep, query.MinUpkeep, query.MaxUpkeep)
 				&& InRange(entry.Workers, query.MinWorkers, query.MaxWorkers)

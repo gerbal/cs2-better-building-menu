@@ -1,6 +1,4 @@
-﻿using FindItBuildingMenu.Domain.Enums;
-using FindItBuildingMenu.Systems;
-
+﻿
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -13,8 +11,6 @@ namespace FindItBuildingMenu.Domain
 		private readonly Dictionary<int, PrefabIndex> _dictionary;
 		private List<PrefabIndex> _orderedList;
 
-		public static PrefabSorting Sorting { get; set; }
-		public static bool SortingDescending { get; set; }
 
 		public IndexedPrefabList()
 		{
@@ -23,7 +19,13 @@ namespace FindItBuildingMenu.Domain
 
 		public int Count => _dictionary.Count;
 
-		public List<PrefabIndex> OrderedList => _orderedList ??= Sort(_dictionary.Values).ToList();
+		// Name order, which was the default of the six upstream sort modes; the
+		// sorting option sections that switched between them are gone
+		// (cm-jjlv.9), and the lens orders its own page.
+		public List<PrefabIndex> OrderedList => _orderedList ??= _dictionary.Values
+			.OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+			.ThenBy(x => x.PrefabName, StringComparer.Ordinal)
+			.ToList();
 
 		public PrefabIndex this[int index]
 		{
@@ -65,64 +67,6 @@ namespace FindItBuildingMenu.Domain
 		internal void ResetOrder()
 		{
 			_orderedList = null;
-		}
-
-		private IEnumerable<PrefabIndex> Sort(IEnumerable<PrefabIndex> values)
-		{
-			if (SortingDescending)
-			{
-				return Sorting switch
-				{
-					PrefabSorting.MostUsed => values.OrderBy(PrefabTrackingSystem.GetMostUsedCount).ThenByDescending(PrefabName),
-					PrefabSorting.LastUsed => values.OrderBy(PrefabTrackingSystem.GetLastUsedIndex).ThenByDescending(PrefabName),
-					PrefabSorting.UIOrder => values.OrderByDescending(PrefabGroupIndex).ThenByDescending(PrefabUIOrder).ThenByDescending(PrefabName),
-					PrefabSorting.UpdatedDate => values.OrderBy(UpdatedDate).ThenByDescending(PrefabName),
-					PrefabSorting.InstalledDate => values.OrderBy(InstalledDate).ThenByDescending(PrefabName),
-					_ => values.OrderByDescending(PrefabName),
-				};
-			}
-			else
-			{
-				return Sorting switch
-				{
-					PrefabSorting.MostUsed => values.OrderByDescending(PrefabTrackingSystem.GetMostUsedCount).ThenBy(PrefabName),
-					PrefabSorting.LastUsed => values.OrderByDescending(PrefabTrackingSystem.GetLastUsedIndex).ThenBy(PrefabName),
-					PrefabSorting.UIOrder => values.OrderBy(PrefabGroupIndex).ThenBy(PrefabUIOrder).ThenBy(PrefabName),
-					PrefabSorting.UpdatedDate => values.OrderByDescending(UpdatedDate).ThenBy(PrefabName),
-					PrefabSorting.InstalledDate => values.OrderByDescending(InstalledDate).ThenBy(PrefabName),
-					_ => values.OrderBy(PrefabName),
-				};
-			}
-		}
-
-		private static int PrefabGroupIndex(PrefabIndex prefabIndex)
-		{
-			return (int)prefabIndex.SubCategory;
-		}
-
-		private static int PrefabUIOrder(PrefabIndex prefabIndex)
-		{
-			return prefabIndex.UIOrder;
-		}
-
-		private static DateTime InstalledDate(PrefabIndex prefabIndex)
-		{
-			return prefabIndex.InstalledDate ?? DateTime.MinValue;
-		}
-
-		private static DateTime UpdatedDate(PrefabIndex prefabIndex)
-		{
-			return prefabIndex.UpdatedDate ?? DateTime.MinValue;
-		}
-
-		private static string PrefabName(PrefabIndex prefabIndex)
-		{
-			return prefabIndex.Name;
-		}
-
-		public static implicit operator List<PrefabIndex>(IndexedPrefabList prefabs)
-		{
-			return prefabs.OrderedList;
 		}
 	}
 }

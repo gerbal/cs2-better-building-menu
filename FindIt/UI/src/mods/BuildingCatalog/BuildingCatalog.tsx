@@ -109,7 +109,6 @@ const BuildingCatalogSortDescending$ = bindValue<boolean>(mod.id, "BuildingCatal
 // throw away the shortlist the player built in order to make that choice.
 const BuildingLensFacets$ = bindValue<BuildingLensFacetState>(mod.id, "BuildingLensFacets");
 const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState>(mod.id, "BuildingCatalogMetricRanges");
-const BuildingLensLegacyFilters$ = bindValue<string[]>(mod.id, "BuildingLensLegacyFilters");
 const BuildingCatalogMatchesElsewhere$ = bindValue<number>(mod.id, "BuildingCatalogMatchesElsewhere", 0);
 const LensDefaultToTable$ = bindValue<boolean>(mod.id, "BuildingLensDefaultToTable", false);
 // Non-empty means the lens is standing in for a vanilla menu that has a tab
@@ -306,7 +305,6 @@ export const BuildingCatalogComponent = () => {
   }, [expandedId]);
   const facets = useValue(BuildingLensFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
-  const legacyFilters = useValue(BuildingLensLegacyFilters$);
   const matchesElsewhere = useValue(BuildingCatalogMatchesElsewhere$);
 
   // Name the constraints that actually emptied the table; the old copy always
@@ -315,7 +313,6 @@ export const BuildingCatalogComponent = () => {
     searchText: currentSearch,
     facets,
     metricRanges,
-    legacyFilters,
   });
 
   const items = page?.items ?? [];

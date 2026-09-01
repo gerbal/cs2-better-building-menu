@@ -543,7 +543,7 @@ namespace FindItBuildingMenu.Systems
 								continue;
 							}
 
-							if (!full && EntityManager.HasComponent<Created>(entity) && FindItUtil.Find(_prefabSystem.GetPrefab<PrefabBase>(entity), false, out var oldId))
+							if (!full && EntityManager.HasComponent<Created>(entity) && FindItUtil.Find(_prefabSystem.GetPrefab<PrefabBase>(entity), out var oldId))
 							{
 								FindItUtil.RemoveItem(oldId);
 							}
@@ -1289,8 +1289,7 @@ namespace FindItBuildingMenu.Systems
 			// independent of DLC ownership, so they are read for every prefab.
 			// This used to be hardcoded to an empty array *inside* the DLC
 			// branch, which left the Asset pack facet permanently empty and
-			// broke FindIt's own pack filter (Filters.MatchesAssetPack) for
-			// every asset in the game.
+			// broke the pack facet for every asset in the game.
 			if (prefab.TryGet<AssetPackItem>(out var assetPackItem) && assetPackItem.m_Packs is not null)
 			{
 				prefabIndex.AssetPacks = assetPackItem.m_Packs.Where(pack => pack is not null).ToArray();
