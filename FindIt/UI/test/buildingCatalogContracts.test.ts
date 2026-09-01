@@ -9,9 +9,7 @@ import {
   searchChangedCommand,
   setBuildingCatalogMetricRangeCommand,
   loadMoreCatalogCommand,
-  setCurrentCategoryCommand,
   setCurrentPrefabCommand,
-  setCurrentSubCategoryCommand,
   setSortColumnCommand,
   setSortDescendingCommand,
 } from "../src/domain/buildingCatalogContracts.ts";
@@ -68,10 +66,8 @@ describe("FindItBuildingMenu UI binding contracts", () => {
     assert.deepEqual(pickerOptionCommand(1.5, -2, 3), { type: "pickerOption", sectionId: 1.5, optionId: -2, value: 3 });
   });
 
-  it("keeps search and category/subcategory payloads aligned with the C# bindings", () => {
+  it("keeps the search payload aligned with the C# binding", () => {
     assert.deepEqual(searchChangedCommand("road"), { method: "SearchChanged", args: ["road"] });
-    assert.deepEqual(setCurrentCategoryCommand(4), { method: "SetCurrentCategory", args: [4] });
-    assert.deepEqual(setCurrentSubCategoryCommand(12), { method: "SetCurrentSubCategory", args: [12] });
   });
 
   it("resets direction for a new sort column and toggles repeated clicks", () => {

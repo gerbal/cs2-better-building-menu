@@ -66,7 +66,6 @@ const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState | nu
   "BuildingCatalogMetricRanges",
   null
 );
-const BuildingLensZoneFamilies$ = bindValue<string[]>(mod.id, "BuildingLensZoneFamilies", []);
 // The GAME's pack selection, not one of ours: read so the rail can show what is
 // ticked, written so a rail toggle lands in the same place the vanilla Pack row
 // puts it. See domain/assetPackSelection.
@@ -121,7 +120,6 @@ export const LensControlPane = () => {
   const currentSearch = useValue(CurrentSearch$);
   const facets = useValue(BuildingLensFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
-  const zoneFamilies = useValue(BuildingLensZoneFamilies$) ?? [];
   const selectedAssetPacks = useValue(SelectedAssetPacks$) ?? [];
   const vanillaSelected = useValue(VanillaSelected$) ?? false;
 
@@ -186,11 +184,7 @@ export const LensControlPane = () => {
     fire(command);
   };
 
-  const familyLabel = (id: string) =>
-    translate(`Tooltip.LABEL[FindItBuildingMenu.Zoning_${id}]`, id) ?? id;
-
   const chips = buildFilterChips({
-    zoneFamilies: null,
     facets,
     metricRanges,
   });
