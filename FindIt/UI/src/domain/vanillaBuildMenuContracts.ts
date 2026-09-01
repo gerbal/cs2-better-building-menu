@@ -16,10 +16,5 @@ export const lensSubCategoryCommand = (id: string): TriggerCommand => ({
   args: [id],
 });
 
-export const lensRoleCommand = (id: string): TriggerCommand => ({
-  method: "SetBuildingLensRole",
-  args: [id],
-});
-
 export const selectedNavigationId = (buildingLensEnabled: boolean, legacyId: number, lensId: string): number | string =>
   buildingLensEnabled ? lensId : legacyId;

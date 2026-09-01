@@ -57,8 +57,6 @@ export const setBuildingCatalogMetricRangeCommand = (id: MetricRangeId, minText:
 export const clearBuildingCatalogMetricRangesCommand = (): TriggerCommand =>
   createTriggerCommand("ClearBuildingCatalogMetricRanges");
 export const searchChangedCommand = (value: string): TriggerCommand => createTriggerCommand("SearchChanged", value);
-export const setCurrentCategoryCommand = (id: number): TriggerCommand => createTriggerCommand("SetCurrentCategory", id);
-export const setCurrentSubCategoryCommand = (id: number): TriggerCommand => createTriggerCommand("SetCurrentSubCategory", id);
 export const locatePrefabCommand = (id: number): LocatePrefabAction => ({ type: "locatePrefab", prefabId: id });
 export const pickerOptionCommand = (sectionId: number, optionId: number, value: number): PickerOptionAction => ({
   type: "pickerOption",
@@ -66,8 +64,6 @@ export const pickerOptionCommand = (sectionId: number, optionId: number, value: 
   optionId,
   value,
 });
-export const optionClickedCommand = (sectionId: number, optionId: number, value: number): TriggerCommand =>
-  createTriggerCommand("OptionClicked", sectionId, optionId, value);
 
 export function nextSortState(current: SortState, column: SortColumn): SortState {
   return {
