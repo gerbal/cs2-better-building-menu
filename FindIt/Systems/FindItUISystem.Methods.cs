@@ -11,7 +11,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 
 using Unity.Entities;
 
@@ -304,58 +303,29 @@ namespace FindItBuildingMenu.Systems
 			settingPrefab = false;
 		}
 
+		/// <summary>Asks for a refresh 250ms after the last call, on the main thread.</summary>
+		/// <remarks>
+		/// Kept under this name because OptionsUISystem declares it abstract
+		/// and the options and picker systems override it. It used to start a
+		/// worker that ran the legacy fuzzy search across the whole index and
+		/// then raised a flag for OnUpdate; the lens never read that result
+		/// (its own predicate is BuildingCatalogQueryEngine's Contains), so the
+		/// worker cost 2.7s per precise search for nothing. cm-yfd5.
+		/// </remarks>
 		internal void TriggerSearch()
 		{
 			_IsSearchLoading.Value = true;
-
-			Task.Run(DelayedSearch);
+			_searchDebounce.Schedule(SearchClock.Elapsed);
 		}
 
 		internal void ClearSearch()
 		{
 			_ClearSearchBar.Value = true;
 			FindItUtil.Filters.CurrentSearch = string.Empty;
-			filterCompleted = false;
+			_searchDebounce.Cancel();
 			_IsSearchLoading.Value = false;
 			_CurrentSearch.Value = string.Empty;
 			RefreshBuildingCatalog();
-			searchTokenSource?.Cancel();
-		}
-
-		private async Task DelayedSearch()
-		{
-			// Asyncronously proesses the search method with a 250ms delay
-			// the Cancellation Token is used to stop any ongoing searches if a new one is requested
-			// and is used to disregard outdated results
-
-			searchTokenSource.Cancel();
-			searchTokenSource = new();
-
-			var token = searchTokenSource.Token;
-
-			await Task.Delay(250);
-
-			if (token.IsCancellationRequested)
-			{
-				return;
-			}
-
-			try
-			{
-				FindItUtil.ProcessSearch(token);
-
-				if (!token.IsCancellationRequested)
-				{
-					// toggle the filterCompleted to signal to the OnUpdate method
-					// that search has concluded and results are ready
-
-					filterCompleted = true;
-				}
-			}
-			catch (Exception ex)
-			{
-				Mod.Log.Error(ex, "Search Failed");
-			}
 		}
 
 		private void OnPrefabChanged(PrefabBase prefab)
