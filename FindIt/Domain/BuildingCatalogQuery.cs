@@ -8,8 +8,6 @@ namespace FindItBuildingMenu.Domain
 	/// </summary>
 	public sealed record BuildingCatalogQuery(
 		string SearchText = "",
-		string Category = "",
-		string SubCategory = "",
 		string SortColumn = "Name",
 		// Grouping is a primary sort key rather than a separate axis: with
 		// paging the two cannot be independent, or a group splits across a page
@@ -49,40 +47,25 @@ namespace FindItBuildingMenu.Domain
 		// entry and sorted on, but had no query field, so the levels the
 		// vanilla Zones menu is organised around could not be filtered.
 		IReadOnlyList<string>? ZoneTypes = null,
-		string BuildMenuSection = "",
-		string BuildMenuSubCategory = "",
-		// SPIKE (cm-e98i): the game's own menu placement, used instead of our
-		// reconstructed section when the lens was opened from a vanilla menu.
+		// The game's own menu placement — UIObject.m_Group — which is the only
+		// scope there is.
 		string UiMenu = "",
 		string UiCategory = "",
-		// The progression tier the menu strip is narrowed to, or AnyMilestone.
-		// An int rather than a string because a milestone IS its index: the
-		// name is a lookup, and two milestones can share neither index nor
-		// position. -1 rather than a nullable so the record still has a
-		// plain default and the UI can send one number for "no narrowing".
-		//
-		// Spelled -1 rather than AnyMilestone because a record's primary
-		// constructor cannot see its own type's constants. Query_DefaultsToAny
-		// Milestone pins the two together so they cannot drift apart silently.
-		int UnlockMilestone = -1,
-		// The fallback strip's axis and the tab picked on it. Two fields
-		// because the axis decides WHICH property the tab is matched against:
-		// the strip picks whichever axis cuts the menu best, so the same tab
-		// string means a development branch on one menu and an asset type on
-		// another. See BuildingCatalogAdapter.GetStripAxis.
-		string StripAxis = "",
+		// The fallback strip's selection. The AXIS is not here: nothing in the
+		// predicate reads it — a tab is matched by value on whichever axis
+		// names it (see BuildingCatalogQueryEngine.StripMatches) — so it lives
+		// on the system as a published fact, not on the query as a filter.
 		// The strip's tabs, as a LIST. The row itself is single-select and
 		// writes one entry, but the same state is offered in the filter rail
 		// where every other control is multi-select — and one field shown twice
 		// cannot disagree with itself, which two fields would.
 		IReadOnlyList<string>? StripTabs = null,
 		// The school tier the education menu's strip is narrowed to, or
-		// AnyMilestone's sibling -1. SchoolData.m_EducationLevel is 1-based, so
+		// -1. SchoolData.m_EducationLevel is 1-based, so
 		// 0 is a real value (a capacity upgrade with no tier) and cannot be the
 		// sentinel.
 		int SchoolTier = -1)
 	{
-		/// <summary>The <see cref="UnlockMilestone"/> value that narrows nothing.</summary>
 		/// <summary>
 		/// The sort fields the picker offers. Mirrored in
 		/// buildingLensSortPresentation.ts's BUILDING_LENS_SORT_OPTIONS.
@@ -97,8 +80,6 @@ namespace FindItBuildingMenu.Domain
 			"Name", "Category", "ConstructionCost", "Upkeep", "Workers",
 			"Capacity", "LotWidth", "LotDepth", "BuildingLevel", "HasParking",
 		};
-
-		public const int AnyMilestone = -1;
 
 		public int EffectiveOffset => Offset < 0 ? 0 : Offset;
 

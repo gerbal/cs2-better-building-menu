@@ -58,7 +58,7 @@ namespace FindItBuildingMenu.Tests
 		{
 			// Networks has none — the game splits it across Roads, Bridges and
 			// Tracks — and the vocabulary the lens invented is genuinely ours.
-			Assert.Null(GameLocaleKeys.For(VanillaBuildMenuTaxonomy.Networks));
+			Assert.Null(GameLocaleKeys.For("Networks"));
 			Assert.Null(GameLocaleKeys.For("GroupBy_cost"));
 			Assert.Null(GameLocaleKeys.For("Cards"));
 			Assert.Null(GameLocaleKeys.For(null));

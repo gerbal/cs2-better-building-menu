@@ -54,8 +54,6 @@ namespace FindItBuildingMenu.Domain
 		/// </remarks>
 		int[]? AssetPackIndices = null,
 		string[]? PlacementFlags = null,
-		string? VanillaSection = null,
-		string? VanillaSubCategory = null,
 		string[]? Extensions = null,
 		string? CategoryLabel = null,
 		string? SubCategoryLabel = null,
@@ -210,11 +208,6 @@ namespace FindItBuildingMenu.Domain
 			writer.Write(CategoryLabel ?? Category);
 			writer.PropertyName("subCategoryLabel");
 			writer.Write(SubCategoryLabel ?? SubCategory);
-			// VanillaSection and VanillaSubCategory are NOT written. They are the
-			// query engine's, used to scope a menu server-side, and no component
-			// has ever read them off an entry — so sending them was two strings
-			// per row per render for nothing. The record keeps both; only the
-			// wire loses them.
 			writer.PropertyName("thumbnail");
 			writer.Write(Thumbnail);
 			writer.PropertyName("fallbackThumbnail");

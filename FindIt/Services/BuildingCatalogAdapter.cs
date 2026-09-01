@@ -1266,8 +1266,6 @@ namespace FindItBuildingMenu.Services
 
 		private static BuildingCatalogEntry Project(PrefabIndex prefab)
 		{
-			VanillaBuildMenuTag? vanillaTag = VanillaBuildMenuTaxonomy.Resolve(prefab.Category, prefab.SubCategory, prefab.ZoneType);
-
 			return new BuildingCatalogEntry(
 				Id: prefab.Id,
 				PrefabName: prefab.PrefabName ?? string.Empty,
@@ -1276,8 +1274,6 @@ namespace FindItBuildingMenu.Services
 				SubCategory: prefab.SubCategory.ToString(),
 				CategoryLabel: BuildingCatalogLabels.ForCategory(prefab.Category, prefab.Category.ToString()),
 				SubCategoryLabel: BuildingCatalogLabels.ForSubCategory(prefab.SubCategory, prefab.SubCategory.ToString()),
-				VanillaSection: vanillaTag?.Section,
-				VanillaSubCategory: vanillaTag?.SubCategory,
 				// Both, not one coalesced into the other: the thumbnail camera
 				// returns a URL for every prefab but only renders the ones
 				// vanilla shows in a menu, so a spawnable zone building has a

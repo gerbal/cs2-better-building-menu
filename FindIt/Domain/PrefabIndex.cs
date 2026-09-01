@@ -152,16 +152,14 @@ namespace FindItBuildingMenu.Domain
 		public string[]? SupportedUpgradeIds { get; set; }
 		public List<string> Tags { get; set; }
 		public int UIOrder { get; set; }
-		// SPIKE (cm-e98i): the game's own answer to "where does this asset live
-		// in the build menu". Vanilla's menu is not a predicate over a flat list
-		// — each category IS its own UIGroupElement buffer and membership is
-		// exactly UIObjectData.m_Group == that category. We currently rebuild
-		// that relationship from (Category, SubCategory, ZoneType) in
-		// VanillaBuildMenuTaxonomy, which is a second source of truth and the
-		// reason our Healthcare view showed 15 where vanilla shows 8.
-		//
-		// Recorded here to test whether reading it reproduces vanilla exactly.
-		// Remove these two, or commit to them, once that question is answered.
+		// The game's own answer to "where does this asset live in the build
+		// menu". Vanilla's menu is not a predicate over a flat list — each
+		// category IS its own UIGroupElement buffer and membership is exactly
+		// UIObjectData.m_Group == that category. These two fields are the only
+		// scoping the lens has (cm-jjlv.6); the section taxonomy that used to
+		// rebuild the same relationship from (Category, SubCategory, ZoneType)
+		// is gone, along with the Healthcare view that showed 15 where vanilla
+		// shows 8.
 		/// <summary>
 		/// A sub-building: placed from its parent's row, never from the grid.
 		/// </summary>
