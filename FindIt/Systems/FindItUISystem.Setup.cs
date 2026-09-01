@@ -99,14 +99,7 @@ namespace FindItBuildingMenu.Systems
 		/// </remarks>
 		private ValueBindingHelper<string> _PickerMenuRequest = null!;
 		private int _pickerMenuNonce;
-		// Which toolbar menu the lens is scoped to, by icon identifier (e.g.
-		// "Water"). The tab strip needs it to pick its axis; the UI cannot read
-		// it from the game's own toolbar bindings because interception may have
-		// already moved the selection on.
-		private ValueBindingHelper<string> _LensMenuToolTip = null!;
 		private ValueBindingHelper<int> _ActivePrefabId;
-		private ValueBindingHelper<int> _CurrentCategoryBinding;
-		private ValueBindingHelper<int> _CurrentSubCategoryBinding;
 		private ValueBindingHelper<float> _PanelWidth;
 		private ValueBindingHelper<float> _BuildingLensPanelHeight;
 		private ValueBindingHelper<string> _CurrentSearch;
@@ -125,14 +118,6 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<string[]> _BuildingLensLegacyFilters = null!;
 		private ValueBindingHelper<string> _BuildingCatalogSortColumn = null!;
 
-		/// <summary>
-		/// Whether the active sort could move any row of the current results.
-		/// </summary>
-		/// <remarks>
-		/// cm-ddw3. False means the control responds while the list cannot,
-		/// which reads as broken unless something says otherwise.
-		/// </remarks>
-		private ValueBindingHelper<bool> _BuildingLensSortCanReorder = null!;
 		private ValueBindingHelper<bool> _BuildingCatalogSortDescending = null!;
 		private ValueBindingHelper<string> _BuildingLensSectionBinding = null!;
 		private ValueBindingHelper<string> _BuildingLensSubCategoryBinding = null!;
@@ -145,7 +130,6 @@ namespace FindItBuildingMenu.Systems
 		// Sidecar to the above. See MenuCategoryCount for why it is not a field
 		// on the category record.
 		private ValueBindingHelper<MenuCategoryCount[]> _BuildingLensMenuCategoryCounts = null!;
-		private ValueBindingHelper<int> _BuildingLensMenuMilestoneBinding = null!;
 		// The strip's fallback axis for menus vanilla gives no categories: the
 		// tabs, which tab is picked, and WHICH AXIS they are — published so the
 		// row can say so, because the axis varies per menu and a tab row whose
@@ -175,8 +159,6 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<VanillaMenuCategory[]> _BuildingLensMenusBinding = null!;
 		// Milestone index -> name, published once. Locked assets carry the index.
 		private ValueBindingHelper<string[]> _BuildingLensMilestonesBinding = null!;
-		// Dense by index, beside the names. See PrefabIndexingSystem.GetMilestoneIcons.
-		private ValueBindingHelper<string[]> _BuildingLensMilestoneIconsBinding = null!;
 
 		/// <summary>
 		/// The live building-lens facet group for one dimension (e.g.
@@ -207,10 +189,6 @@ namespace FindItBuildingMenu.Systems
 
 
 
-			// These establish the bindings for the categories
-			_CurrentCategoryBinding = CreateBinding("CurrentCategory", "SetCurrentCategory", (int)FindItUtil.CurrentCategory, SetCurrentCategory);
-			_CurrentSubCategoryBinding = CreateBinding("CurrentSubCategory", "SetCurrentSubCategory", (int)FindItUtil.CurrentSubCategory, SetCurrentSubCategory);
-
 			// These establish the bindings with UI code.
 			// Nothing raises this any more: its only writer was the Ctrl+F handler,
 			// removed with the hot-key. Kept because TopBar still reads it, and
@@ -229,11 +207,6 @@ namespace FindItBuildingMenu.Systems
 			// "<index>:<version>:<nonce>", or empty. The picker asks the game to
 			// open a menu through this; see RequestVanillaMenu.
 			_PickerMenuRequest = CreateBinding("PickerMenuRequest", string.Empty);
-			// Which toolbar menu the lens is scoped to. The tab strip needs it to
-			// pick its axis; the UI cannot read it from the game's own toolbar
-			// bindings because interception may have already moved the selection
-			// on.
-			_LensMenuToolTip = CreateBinding("BuildingLensMenuToolTip", string.Empty);
 			_BuildingCatalogMatchesElsewhere = CreateBinding("BuildingCatalogMatchesElsewhere", 0);
 			// Layout preferences the UI needs. Read once at setup; these are not
 			// expected to change mid-session.
@@ -264,7 +237,6 @@ namespace FindItBuildingMenu.Systems
 			// order lives in the persistent query, so a UI that could only write
 			// it showed a stale indicator over correctly-sorted rows after any
 			// remount (panel close, Catalog/Tools switch, lens toggle).
-			_BuildingLensSortCanReorder = CreateBinding("BuildingLensSortCanReorder", true);
 			_BuildingCatalogSortColumn = CreateBinding(
 				"BuildingCatalogSortColumn",
 				"SetBuildingCatalogSortColumn",
@@ -289,11 +261,6 @@ namespace FindItBuildingMenu.Systems
 			_BuildingLensSubCategoryListBinding = CreateBinding("BuildingLensSubCategoryList", Array.Empty<BuildingLensSubCategoryUIEntry>());
 			_BuildingLensMenuCategoriesBinding = CreateBinding("BuildingLensMenuCategories", Array.Empty<VanillaMenuCategory>());
 			_BuildingLensMenuCategoryCounts = CreateBinding("BuildingLensMenuCategoryCounts", Array.Empty<MenuCategoryCount>());
-			_BuildingLensMenuMilestoneBinding = CreateBinding(
-				"BuildingLensMenuMilestone",
-				"SetBuildingLensMenuMilestone",
-				BuildingCatalogQuery.AnyMilestone,
-				SetBuildingLensMenuMilestone);
 			_BuildingLensStripTabs = CreateBinding("BuildingLensStripTabs", Array.Empty<MenuBranchCount>());
 			_BuildingLensStripAxisBinding = CreateBinding("BuildingLensStripAxis", string.Empty);
 			_BuildingLensExpandedCategories = CreateBinding("BuildingLensExpandedCategories", Array.Empty<MenuCategoryTabs>());
@@ -310,14 +277,11 @@ namespace FindItBuildingMenu.Systems
 			_BuildingLensMenuBinding = CreateBinding("BuildingLensMenu", string.Empty);
 			_BuildingLensMenusBinding = CreateBinding("BuildingLensMenus", Array.Empty<VanillaMenuCategory>());
 			_BuildingLensMilestonesBinding = CreateBinding("BuildingLensMilestones", Array.Empty<string>());
-			_BuildingLensMilestoneIconsBinding = CreateBinding("BuildingLensMilestoneIcons", Array.Empty<string>());
 			_BuildingLensMenuCategoryBinding = CreateBinding(
 				"BuildingLensMenuCategory",
 				"SetBuildingLensMenuCategory",
 				string.Empty,
 				SetBuildingLensMenuCategory);
-
-			CreateBinding("NoAssetImage", () => Mod.Settings.NoAssetImage);
 
 			// These establish UI actions triggering methods on the C# side.
 			CreateTrigger<string>("SearchChanged", t => SearchChanged(t));

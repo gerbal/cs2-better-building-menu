@@ -85,15 +85,6 @@ namespace FindItBuildingMenu.Systems
 			RefreshBuildingLensMenuCategories();
 		}
 
-		private void SetCurrentCategory(int category)
-		{
-			FindItUtil.CurrentCategory = (PrefabCategory)category;
-
-			_CurrentSubCategoryBinding.Value = (int)PrefabSubCategory.Any;
-
-			SetCurrentSubCategory((int)PrefabSubCategory.Any);
-		}
-
 		/// <summary>
 		/// A vanilla toolbar menu was opened: show the lens filtered to it.
 		/// </summary>
@@ -126,7 +117,6 @@ namespace FindItBuildingMenu.Systems
 		private void YieldMenuToVanilla()
 		{
 			_LensOwnsCurrentMenu.Value = false;
-			_LensMenuToolTip.Value = string.Empty;
 
 			if (_lensMenuOpen)
 			{
@@ -239,7 +229,6 @@ namespace FindItBuildingMenu.Systems
 			}
 
 			_LensOwnsCurrentMenu.Value = true;
-			_LensMenuToolTip.Value = PrefabIndexingSystem.GetAssetMenuToolTip(menuEntityIndex) ?? string.Empty;
 
 			// With the lens enabled RefreshBuildingCatalog deliberately ignores
 			// FindItUtil's category and reads the lens's own section and
@@ -350,31 +339,6 @@ namespace FindItBuildingMenu.Systems
 			RefreshBuildingCatalog();
 		}
 
-		/// <summary>
-		/// Narrows the menu to one tier of the game's progression.
-		/// </summary>
-		/// <remarks>
-		/// A single index, or <see cref="BuildingCatalogQuery.AnyMilestone"/> for
-		/// the whole menu — the tab strip is single-select, the same as the
-		/// category strip beside it.
-		///
-		/// The tier is a property of the ASSET, not of the save: it is the point
-		/// the game gates the asset behind, and it stays that after the player
-		/// has passed it. This is why the strip is worth drawing in a developed
-		/// city, where every tab is unlocked and the tiers are the only thing
-		/// still telling one era of the menu from another.
-		/// </remarks>
-		private void SetBuildingLensMenuMilestone(int milestone)
-		{
-			_buildingLensUnlockMilestone = milestone < 0
-				? BuildingCatalogQuery.AnyMilestone
-				: milestone;
-			_BuildingLensMenuMilestoneBinding.Value = _buildingLensUnlockMilestone;
-			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
-
-			RefreshBuildingCatalog();
-		}
-
 		/// <summary>Drops the tier narrowing, without refreshing on its own.</summary>
 		/// <remarks>
 		/// Every caller is already on its way to <c>RefreshBuildingCatalog</c>
@@ -384,7 +348,6 @@ namespace FindItBuildingMenu.Systems
 		private void ResetBuildingLensMilestone()
 		{
 			_buildingLensUnlockMilestone = BuildingCatalogQuery.AnyMilestone;
-			_BuildingLensMenuMilestoneBinding.Value = _buildingLensUnlockMilestone;
 		}
 
 		/// <summary>
@@ -574,7 +537,6 @@ namespace FindItBuildingMenu.Systems
 			_BuildingLensMenusBinding.Value = PrefabIndexingSystem.GetAssetMenus().ToArray();
 
 			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
-			_BuildingLensMenuMilestoneBinding.Value = _buildingLensUnlockMilestone;
 			PublishBuildingLensStripTabs();
 		}
 
@@ -606,13 +568,6 @@ namespace FindItBuildingMenu.Systems
 			// so the three lines this replaces ran each of them TWICE — and on
 			// the one path where that costs most, since searching everything is
 			// by definition the unscoped 10,528-entry query.
-			RefreshLens();
-		}
-
-		private void SetCurrentSubCategory(int category)
-		{
-			FindItUtil.CurrentSubCategory = (PrefabSubCategory)category;
-
 			RefreshLens();
 		}
 
