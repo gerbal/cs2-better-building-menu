@@ -888,28 +888,12 @@ namespace FindItBuildingMenu.Systems
 							entry.PrefabName ?? $"entity:{entry.Id}",
 							entry.UiMenuName ?? string.Empty,
 							entry.IsServiceUpgrade)),
-						held,
-						FindItUtil.AssetMap.Keys);
-
-					// The verdict is deferred on the first full index of a session,
-					// for the reason its sibling LogVanillaMenuCoverage states: the
-					// prop generators have not published their substitutions yet, so
-					// every quantity prop reads as lost and is quietly found again on
-					// the next pass. Measured on the run that added this — pass one
-					// said NOT CLEAN with Landscaping missing=8 (TrashContainerEmpty
-					// 01-04, Trashbin01-04) and pass two said missing=0.
-					//
-					// The census itself still prints, because its value is in being
-					// read rather than in being a warning. Only the verdict waits,
-					// since a verdict that retracts itself is worse than none.
-					var verdictReady = FindItUtil.AssetMap.Count > 0;
+						held);
 
 					Mod.Log.Info(
 						$"[MENU-AUDIT] {report.Menus.Count} vanilla menus, {report.PlacementCount} placements, "
 						+ $"{indexed.Count} indexed assets, {_zoneCatalog.Count} zones"
-						+ (verdictReady
-							? report.IsClean ? "" : " — NOT CLEAN"
-							: " — verdict deferred: the generated-prop substitutions are not published yet"));
+						+ (report.IsClean ? "" : " — NOT CLEAN"));
 
 					// The reason goes next to the census, once, rather than living
 					// only in a source comment nobody reading Modding.log can see.
@@ -1013,16 +997,6 @@ namespace FindItBuildingMenu.Systems
 
 			private void LogVanillaMenuCoverage()
 			{
-				// The first full index of a session runs before the prop generators
-				// have published their substitutions, so every quantity prop would be
-				// reported as lost and then quietly found again on the next pass. A
-				// warning that retracts itself is worse than no warning.
-				if (FindItUtil.AssetMap.Count == 0)
-				{
-					Mod.Log.Info("[MENU-COVERAGE] deferred: the generated-prop substitutions are not published yet");
-					return;
-				}
-
 				try
 				{
 					var indexed = FindItUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any];
@@ -1042,7 +1016,6 @@ namespace FindItBuildingMenu.Systems
 					var missing = new Dictionary<string, List<string>>();
 					var misplaced = new Dictionary<string, List<string>>();
 					var shown = new Dictionary<string, int>();
-					var substituted = 0;
 
 					foreach (var placement in _menuPlacements.Values)
 					{
@@ -1075,16 +1048,6 @@ namespace FindItBuildingMenu.Systems
 							continue;
 						}
 
-						// A quantity or vehicle prop is replaced rather than dropped: the
-						// generators split it into one asset per state and record the swap
-						// in AssetMap, so the player gets more than vanilla offers, not
-						// less. Counting those as losses hid the real gaps behind them.
-						if (FindItUtil.AssetMap.ContainsKey(assetPrefab.name))
-						{
-							substituted++;
-							continue;
-						}
-
 						// The prefab's own type is reported because it names what a
 						// processor would have to query to reach it, which is the next
 						// question every gap raises.
@@ -1114,7 +1077,7 @@ namespace FindItBuildingMenu.Systems
 					}
 
 					var summary = $"[MENU-COVERAGE] vanilla shows {_menuPlacements.Count} assets across its menus; "
-						+ $"{totalMissing} missing from the index, {substituted} replaced by generated variants";
+						+ $"{totalMissing} missing from the index";
 
 					if (totalMissing == 0)
 					{
@@ -1332,10 +1295,7 @@ namespace FindItBuildingMenu.Systems
 
 			PopulateAnalyticalData(entity, prefabIndex);
 
-			if (!Mod.Settings.HideBrandsFromAny || prefabIndex.SubCategory is not PrefabSubCategory.Props_Branding)
-			{
-				FindItUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any][prefabIndex.Id] = prefabIndex;
-			}
+			FindItUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any][prefabIndex.Id] = prefabIndex;
 
 			FindItUtil.CategorizedPrefabs[prefabIndex.Category][PrefabSubCategory.Any][prefabIndex.Id] = prefabIndex;
 

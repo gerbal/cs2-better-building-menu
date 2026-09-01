@@ -39,7 +39,7 @@ measures. **Follows:** phase 2 (`…-phase-2-one-scoping-taxonomy-design.md`).
   is published" gate purely to accommodate the generators.
 - **`ClearGooee`** deletes another mod's folders from the user's Mods
   directory on every load.
-- **Settings nothing reads:** `ApplyMimic`, `SmoothScroll`, `ScrollSpeed`,
+- **Settings nothing reads:** `SmoothScroll`, `ScrollSpeed`,
   `RowSize`, `ColumnSize`, `ExpandedRowSize`, `ExpandedColumnSize`,
   `RightRowSize`, `RightColumnSize`, `NoAssetImage`, `HideBrandsFromAny`
   (only gated upstream's "Any" bucket), `StrictSearch`.
@@ -148,7 +148,7 @@ replace are now expected to be indexed by `PropPrefabCategoryProcessor`
 (its query already includes `QuantityObjectData`), so Landscaping's audit
 must read Missing = 0 without the clause.
 
-`FindItSettings` loses the twelve dead settings and `IsShelfHidden` stays;
+`FindItSettings` loses the eleven dead settings (`ApplyMimic` stays: its `SettingsUIMouseBinding` attribute is what registers the `Apply` action `PickerToolSystem` fetches by name — a grep for `Settings.ApplyMimic` was the wrong test) and `IsShelfHidden` stays;
 `Locale.json` loses their labels/descriptions.
 
 `git rm FindIt/UI.zip`, add `FindIt/UI.zip` to `.gitignore`.

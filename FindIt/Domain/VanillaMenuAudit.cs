@@ -136,28 +136,17 @@ namespace FindItBuildingMenu.Domain
 		public static VanillaMenuAuditReport Compare(
 			IEnumerable<VanillaMenuPlacementFact> vanillaPlacements,
 			IEnumerable<IndexedMenuFact> ourMenuEntries,
-			IEnumerable<int> heldEntityIndices,
-			IEnumerable<string> substitutedPrefabNames)
+			IEnumerable<int> heldEntityIndices)
 		{
 			if (vanillaPlacements is null) throw new ArgumentNullException(nameof(vanillaPlacements));
 			if (ourMenuEntries is null) throw new ArgumentNullException(nameof(ourMenuEntries));
 			if (heldEntityIndices is null) throw new ArgumentNullException(nameof(heldEntityIndices));
-			if (substitutedPrefabNames is null) throw new ArgumentNullException(nameof(substitutedPrefabNames));
 
 			var placements = vanillaPlacements.ToList();
 			var ours = ourMenuEntries.Where(entry => !string.IsNullOrWhiteSpace(entry.Menu)).ToList();
 			var held = new HashSet<int>(heldEntityIndices);
-			var substituted = new HashSet<string>(substitutedPrefabNames, StringComparer.Ordinal);
 
-			// Substitutions count as held. A quantity or vehicle prop is replaced
-			// rather than dropped — the generators split it into one asset per
-			// state and record the swap in AssetMap — so the player gets more than
-			// vanilla offers, not less. Counting them as gaps reported eight
-			// phantom losses in Landscaping, which is exactly the false alarm that
-			// makes an audit stop being read.
-			bool IsHeld(VanillaMenuPlacementFact placement) =>
-				held.Contains(placement.EntityIndex)
-				|| (placement.PrefabName is string name && substituted.Contains(name));
+			bool IsHeld(VanillaMenuPlacementFact placement) => held.Contains(placement.EntityIndex);
 
 			var placedEntities = new HashSet<int>(placements.Select(placement => placement.EntityIndex));
 			var vanillaMenus = new HashSet<string>(placements.Select(placement => placement.Menu ?? "(none)"), StringComparer.Ordinal);

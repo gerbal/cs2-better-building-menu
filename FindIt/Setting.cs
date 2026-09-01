@@ -9,8 +9,8 @@ namespace FindItBuildingMenu
 {
     [FileLocation(nameof(FindItBuildingMenu))]
 	[SettingsUITabOrder(SETTINGS, KEYBINDINGS)]
-	[SettingsUIGroupOrder(BEHAVIOR, UIUX,DISPLAY, OTHER, ACTIONS, NAVIGATION)]
-	[SettingsUIShowGroupName(BEHAVIOR, UIUX,DISPLAY, OTHER, ACTIONS, NAVIGATION)]
+	[SettingsUIGroupOrder(BEHAVIOR, UIUX, OTHER, ACTIONS, NAVIGATION)]
+	[SettingsUIShowGroupName(BEHAVIOR, UIUX, OTHER, ACTIONS, NAVIGATION)]
 	[SettingsUIMouseAction(nameof(FindItBuildingMenu) + "Apply", "CustomUsage")]
 	public class FindItSettings : ModSetting
 	{
@@ -20,7 +20,6 @@ namespace FindItBuildingMenu
 		public const string NAVIGATION = "Navigation";
 		public const string BEHAVIOR = "Behavior";
 		public const string UIUX = "UIUX";
-		public const string DISPLAY = "Display";
 		public const string OTHER = "Other";
 
 		public FindItSettings(IMod mod) : base(mod)
@@ -137,43 +136,6 @@ namespace FindItBuildingMenu
 
 		[SettingsUISection(SETTINGS, BEHAVIOR)]
 		public bool HideRandomAssets { get; set; }
-
-		[SettingsUISection(SETTINGS, BEHAVIOR)]
-		public bool HideBrandsFromAny { get; set; }
-
-		[SettingsUISection(SETTINGS, UIUX)]
-		public bool NoAssetImage { get; set; }
-
-		[SettingsUISection(SETTINGS, UIUX)]
-		public bool SmoothScroll { get; set; }
-
-		[SettingsUISlider(min = 0.2f, max = 2f, step = 0.1f, unit = Unit.kFloatSingleFraction)]
-		[SettingsUISection(SETTINGS, UIUX)]
-		public float ScrollSpeed { get; set; } = 0.6f;
-
-		[SettingsUISlider(min = 0, max = 200, unit = Unit.kPercentage)]
-		[SettingsUISection(SETTINGS, DISPLAY)]
-		public float RowSize { get; set; } = 40f;
-
-		[SettingsUISlider(min = 0, max = 200, unit = Unit.kPercentage)]
-		[SettingsUISection(SETTINGS, DISPLAY)]
-		public float ColumnSize { get; set; } = 40f;
-
-		[SettingsUISlider(min = 0, max = 200, unit = Unit.kPercentage)]
-		[SettingsUISection(SETTINGS, DISPLAY)]
-		public float ExpandedRowSize { get; set; } = 80f;
-
-		[SettingsUISlider(min = 0, max = 200, unit = Unit.kPercentage)]
-		[SettingsUISection(SETTINGS, DISPLAY)]
-		public float ExpandedColumnSize { get; set; } = 80f;
-
-		[SettingsUISlider(min = 0, max = 200, unit = Unit.kPercentage)]
-		[SettingsUISection(SETTINGS, DISPLAY)]
-		public float RightRowSize { get; set; } = 80f;
-
-		[SettingsUISlider(min = 0, max = 200, unit = Unit.kPercentage)]
-		[SettingsUISection(SETTINGS, DISPLAY)]
-		public float RightColumnSize { get; set; } = 30f;
 
 		public override void SetDefaults()
 		{
