@@ -61,8 +61,6 @@ namespace FindItBuildingMenu.Systems
 			// the query, but only while the lens was off — and the lens is never
 			// off now, so the branch that filled them is gone with the latch.
 			// The lens states its own scope through UiMenu/UiCategory below.
-			var category = string.Empty;
-			var subCategory = string.Empty;
 			double? effectiveCapacityMinimum = _buildingMetricRanges.MinCapacity;
 
 			BuildingCatalogQuery previousQuery = _buildingCatalogQuery;
@@ -70,14 +68,8 @@ namespace FindItBuildingMenu.Systems
 			_buildingCatalogQuery = _buildingCatalogQuery with
 			{
 				SearchText = _CurrentSearch.Value ?? string.Empty,
-				Category = category,
-				SubCategory = subCategory,
-				BuildMenuSection = _buildingLensSection,
-				BuildMenuSubCategory = _buildingLensSubCategory,
 				UiMenu = _buildingLensUiMenu,
 				UiCategory = _buildingLensUiCategory,
-				UnlockMilestone = _buildingLensUnlockMilestone,
-				StripAxis = _buildingLensStripAxis,
 				SchoolTier = _buildingLensSchoolTier,
 				// Keep the successor lens in lockstep with FindIt's common
 				// parking filters. The legacy grid owns the full filter pipeline;
@@ -126,10 +118,13 @@ namespace FindItBuildingMenu.Systems
 			// than asking. Cannot recurse: SearchEverything calls back into
 			// this method, and by then the section is AllBuildings so the
 			// branch fails its own guard.
+			// Fires for every scoped menu now. It used to read the section, which
+			// only the preset menus set — so Electricity widened an empty search
+			// and Roads, routed through the tree, did not. Same gesture, one rule.
 			if (Mod.Settings.AutoWidenSearch
 				&& page.TotalCount == 0
 				&& !string.IsNullOrWhiteSpace(_buildingCatalogQuery.SearchText)
-				&& _buildingLensSection != VanillaBuildMenuTaxonomy.AllBuildings)
+				&& _buildingCatalogQuery.IsScopedToMenu)
 			{
 				SearchEverything();
 				return;
@@ -139,10 +134,6 @@ namespace FindItBuildingMenu.Systems
 				page.TotalCount == 0 && !string.IsNullOrWhiteSpace(_buildingCatalogQuery.SearchText)
 					? _buildingCatalogAdapter.Query(_buildingCatalogQuery with
 					{
-						Category = string.Empty,
-						SubCategory = string.Empty,
-						BuildMenuSection = VanillaBuildMenuTaxonomy.AllBuildings,
-						BuildMenuSubCategory = VanillaBuildMenuTaxonomy.Any,
 						UiMenu = string.Empty,
 						Offset = 0,
 					}).TotalCount
@@ -259,23 +250,6 @@ namespace FindItBuildingMenu.Systems
 			// asset on every unlock-triggered re-index.
 			_BuildingLensMilestonesBinding.Value = PrefabIndexingSystem.GetMilestoneNames();
 
-			VanillaBuildMenuSelection selection = VanillaBuildMenuSelection.Normalize(
-				_buildingLensSection,
-				_buildingLensSubCategory);
-			_buildingLensSection = selection.Section;
-			_buildingLensSubCategory = selection.SubCategory;
-			_BuildingLensSectionBinding.Value = _buildingLensSection;
-			_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
-			_BuildingLensSectionListBinding.Value = VanillaBuildMenuTaxonomy.GetSectionDescriptors()
-				.Select(descriptor => new BuildingLensSectionUIEntry(descriptor))
-				.ToArray();
-			_BuildingLensSubCategoryListBinding.Value = VanillaBuildMenuTaxonomy.GetSubcategoryDescriptors(_buildingLensSection)
-				.Select(descriptor => new BuildingLensSubCategoryUIEntry(descriptor))
-				.ToArray();
-			// Publish the static tool catalog alongside the lens navigation values.
-			// CreateBinding's initial value can be emitted before the Gameface module
-			// subscribes during a view recreation; the refresh path is the same
-			// lifecycle used by the working section/subcategory bindings above.
 		}
 
 		internal void TryActivatePrefabTool(int id)

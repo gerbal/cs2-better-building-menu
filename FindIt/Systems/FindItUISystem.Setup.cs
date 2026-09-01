@@ -23,18 +23,11 @@ namespace FindItBuildingMenu.Systems
 		private BuildingCatalogQuery _buildingCatalogQuery = new();
 		private readonly FindItInteractionBoundary _interactionBoundary = new();
 		private BuildingCatalogMetricRangeState _buildingMetricRanges = BuildingCatalogMetricRangeState.Empty;
-		private string _buildingLensSection = VanillaBuildMenuTaxonomy.AllBuildings;
-		private string _buildingLensSubCategory = VanillaBuildMenuTaxonomy.Any;
 		// SPIKE (cm-e98i): the vanilla menu the lens was opened from, by name.
 		// Empty means "not opened from a vanilla menu", which leaves the query
 		// unconstrained by the tree.
 		private string _buildingLensUiMenu = string.Empty;
 		private string _buildingLensUiCategory = string.Empty;
-		// The progression tab, or AnyMilestone. Cleared alongside the category
-		// wherever the scope changes: a tier index means nothing across menus,
-		// so carrying one into a new menu would open it already narrowed to a
-		// tier the player never picked.
-		private int _buildingLensUnlockMilestone = BuildingCatalogQuery.AnyMilestone;
 		// The axis the fallback strip is drawn on. The SELECTION itself lives on
 		// the query as StripTabs, because the filter rail offers the same state
 		// and one field shown twice cannot disagree with itself.
@@ -119,10 +112,6 @@ namespace FindItBuildingMenu.Systems
 		private ValueBindingHelper<string> _BuildingCatalogSortColumn = null!;
 
 		private ValueBindingHelper<bool> _BuildingCatalogSortDescending = null!;
-		private ValueBindingHelper<string> _BuildingLensSectionBinding = null!;
-		private ValueBindingHelper<string> _BuildingLensSubCategoryBinding = null!;
-		private ValueBindingHelper<BuildingLensSectionUIEntry[]> _BuildingLensSectionListBinding = null!;
-		private ValueBindingHelper<BuildingLensSubCategoryUIEntry[]> _BuildingLensSubCategoryListBinding = null!;
 		// Vanilla's second tier: the tab strip for whichever menu is scoped, and
 		// which of its tabs is active. Empty list means "no strip", which is also
 		// how vanilla renders a menu with fewer than two categories.
@@ -255,10 +244,6 @@ namespace FindItBuildingMenu.Systems
 				"SetBuildingCatalogSortDescending",
 				_buildingCatalogQuery.Descending,
 				SetBuildingCatalogSortDescending);
-			_BuildingLensSectionBinding = CreateBinding("BuildingLensSection", "SetBuildingLensSection", _buildingLensSection, SetBuildingLensSection);
-			_BuildingLensSubCategoryBinding = CreateBinding("BuildingLensSubCategory", "SetBuildingLensSubCategory", _buildingLensSubCategory, SetBuildingLensSubCategory);
-			_BuildingLensSectionListBinding = CreateBinding("BuildingLensSectionList", Array.Empty<BuildingLensSectionUIEntry>());
-			_BuildingLensSubCategoryListBinding = CreateBinding("BuildingLensSubCategoryList", Array.Empty<BuildingLensSubCategoryUIEntry>());
 			_BuildingLensMenuCategoriesBinding = CreateBinding("BuildingLensMenuCategories", Array.Empty<VanillaMenuCategory>());
 			_BuildingLensMenuCategoryCounts = CreateBinding("BuildingLensMenuCategoryCounts", Array.Empty<MenuCategoryCount>());
 			_BuildingLensStripTabs = CreateBinding("BuildingLensStripTabs", Array.Empty<MenuBranchCount>());
