@@ -183,9 +183,6 @@ namespace FindItBuildingMenu.Systems
 			// enough for zones, where three families divide into tiers at once.
 			_BuildingLensExpandedCategories.Value =
 				_buildingCatalogAdapter.GetExpandedCategories(_buildingCatalogQuery).ToArray();
-			// Computed by the query itself, over the matched set and in the same
-			// pass — see BuildingCatalogQueryEngine.Query.
-			_BuildingLensSortCanReorder.Value = page.SortCanReorder;
 			_BuildingLensMenuSchoolTierCounts.Value =
 				_buildingCatalogAdapter.GetMenuSchoolTierCounts(_buildingCatalogQuery).ToArray();
 			_BuildingLensLegacyFilters.Value = CaptureLegacyFilters().Describe().ToArray();
@@ -199,8 +196,8 @@ namespace FindItBuildingMenu.Systems
 			// not a section switch with the panel already open — so this has to
 			// be the one place that always runs after a facet binding changes.
 			// FindItOptionsUISystem guards its own re-entrancy for the callers
-			// that already refresh the bank themselves (OptionClicked,
-			// ClearFilters), so this cannot compound into a double refresh.
+			// that already refresh the bank themselves (OptionClicked), so this
+			// cannot compound into a double refresh.
 			_optionsUISystem.RefreshOptions();
 
 			// cm-2xvs.25. Logged only when it changes by more than a tenth of a
@@ -264,7 +261,6 @@ namespace FindItBuildingMenu.Systems
 			// ~20 names are resolved once per index pass instead of once per
 			// asset on every unlock-triggered re-index.
 			_BuildingLensMilestonesBinding.Value = PrefabIndexingSystem.GetMilestoneNames();
-			_BuildingLensMilestoneIconsBinding.Value = PrefabIndexingSystem.GetMilestoneIcons();
 
 			VanillaBuildMenuSelection selection = VanillaBuildMenuSelection.Normalize(
 				_buildingLensSection,

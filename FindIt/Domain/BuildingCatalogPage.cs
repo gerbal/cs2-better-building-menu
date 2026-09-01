@@ -23,15 +23,6 @@ namespace FindItBuildingMenu.Domain
 		/// </remarks>
 		bool HasMore = false,
 		/// <summary>
-		/// Whether the active sort could move any row of this result set.
-		/// </summary>
-		/// <remarks>
-		/// cm-ddw3. False when every value ties, or ties within every group.
-		/// The sort control still responds either way, so without this the
-		/// player gets a control that answers attached to a list that does not.
-		/// </remarks>
-		bool SortCanReorder = true,
-		/// <summary>
 		/// The offered sort fields that could actually move a row here.
 		/// </summary>
 		/// <remarks>
@@ -51,14 +42,6 @@ namespace FindItBuildingMenu.Domain
 				item.Write(writer);
 			}
 			writer.ArrayEnd();
-
-			// cm-ddw3. False when the active sort cannot move a single row of
-			// this result set — every value ties, or ties within every group.
-			// The sort control still responds, so without this the player gets
-			// a control that answers attached to a list that does not, which is
-			// the signature of a broken one.
-			writer.PropertyName("sortCanReorder");
-			writer.Write(SortCanReorder);
 
 			writer.PropertyName("reorderableSortColumns");
 			var columns = ReorderableSortColumns ?? System.Array.Empty<string>();
