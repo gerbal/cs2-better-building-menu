@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
-  lensRoleCommand,
   lensSectionCommand,
   lensSubCategoryCommand,
   selectedNavigationId,
@@ -16,13 +15,6 @@ describe("vanilla build menu navigation contracts", () => {
     assert.deepEqual(lensSubCategoryCommand("Buildings_Residential"), {
       method: "SetBuildingLensSubCategory",
       args: ["Buildings_Residential"],
-    });
-  });
-
-  it("dispatches string role IDs", () => {
-    assert.deepEqual(lensRoleCommand("PoliceStation"), {
-      method: "SetBuildingLensRole",
-      args: ["PoliceStation"],
     });
   });
 

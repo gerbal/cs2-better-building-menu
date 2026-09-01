@@ -195,9 +195,6 @@ namespace FindItBuildingMenu.Systems
 			// them when that state changes underneath them — not a rail toggle,
 			// not a section switch with the panel already open — so this has to
 			// be the one place that always runs after a facet binding changes.
-			// FindItOptionsUISystem guards its own re-entrancy for the callers
-			// that already refresh the bank themselves (OptionClicked), so this
-			// cannot compound into a double refresh.
 			_optionsUISystem.RefreshOptions();
 
 			// cm-2xvs.25. Logged only when it changes by more than a tenth of a

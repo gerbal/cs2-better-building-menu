@@ -21,24 +21,6 @@ namespace FindItBuildingMenu.Systems
 		private PrefabSystem _prefabSystem;
 		private FindItUISystem _findItUISystem;
 
-		/// <summary>
-		/// True while a section is applying its own click or reset inside
-		/// <see cref="OptionClicked"/>.
-		/// </summary>
-		/// <remarks>
-		/// The three building-lens facet sections write straight through to
-		/// <see cref="FindItUISystem.ToggleBuildingLensFacetOption"/>, which now
-		/// refreshes this bank itself once the catalog's facet bindings settle
-		/// (see FindItUISystem.Methods.cs's RefreshBuildingCatalog). Without this
-		/// guard that inner refresh would run, and then the explicit call these
-		/// two methods make afterward would run again on the same click — same
-		/// result both times, but computed twice. The guard collapses that to
-		/// the single call made once the section has finished reacting, which
-		/// is also the only one guaranteed to run after every section's state —
-		/// facet-backed or not — has settled.
-		/// </remarks>
-		private bool _applyingOptionChange;
-
 		protected override void OnCreate()
 		{
 			base.OnCreate();
@@ -46,17 +28,10 @@ namespace FindItBuildingMenu.Systems
 			_prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
 			_prefabUISystem = World.GetOrCreateSystemManaged<PrefabUISystem>();
 			_findItUISystem = World.GetOrCreateSystemManaged<FindItUISystem>();
-
-			CreateTrigger<int, int, int>("OptionClicked", OptionClicked);
 		}
 
 		public override void RefreshOptions()
 		{
-			if (_applyingOptionChange)
-			{
-				return;
-			}
-
 			if (!FindItUtil.IsReady)
 			{
 				return;
@@ -106,26 +81,6 @@ namespace FindItBuildingMenu.Systems
 			{
 				TriggerSearch();
 			}
-		}
-
-		private void OptionClicked(int sectionId, int optionId, int value)
-		{
-			if (!_sections.TryGetValue(sectionId, out var section))
-			{
-				return;
-			}
-
-			_applyingOptionChange = true;
-			try
-			{
-				section.OnOptionClicked(optionId, value);
-			}
-			finally
-			{
-				_applyingOptionChange = false;
-			}
-
-			RefreshOptions();
 		}
 
 		public override void TriggerSearch()
