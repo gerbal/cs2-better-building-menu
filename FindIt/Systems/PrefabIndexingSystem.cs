@@ -117,6 +117,13 @@ namespace FindItBuildingMenu.Systems
 		private static Dictionary<int, string> _milestoneIcons = new();
 		private readonly List<IPrefabCategoryProcessor> _prefabCategoryProcessors = new();
 
+		/// <summary>
+		/// Bumped whenever an indexed fact changes: a re-index, an unlock, a
+		/// unique built or bulldozed. The catalog's snapshot cache is keyed on
+		/// it, so a stale projection cannot outlive the change that staled it.
+		/// </summary>
+		public static int IndexGeneration { get; private set; } = 1;
+
 		protected override void OnCreate()
 		{
 			base.OnCreate();
@@ -388,6 +395,7 @@ namespace FindItBuildingMenu.Systems
 			// The catalog is served from a cached search, so the rows keep their
 			// old lock state until it is rebuilt — and an Availability filter set
 			// to Unlocked would still be excluding them.
+			IndexGeneration++;
 			_finditUISystem.TriggerSearch();
 		}
 
@@ -639,6 +647,7 @@ namespace FindItBuildingMenu.Systems
 			}
 
 			FindItUtil.IsReady = true;
+			IndexGeneration++;
 
 			_finditUISystem.TriggerSearch();
 
@@ -2887,6 +2896,7 @@ namespace FindItBuildingMenu.Systems
 		private void OnUniqueAssetStatusChanged(Entity prefab, bool placed)
 		{
 			PlacedUniqueRegistry.Set(prefab.Index, placed);
+			IndexGeneration++;
 			_finditUISystem?.RefreshBuildingCatalogFromIndexing();
 		}
 
