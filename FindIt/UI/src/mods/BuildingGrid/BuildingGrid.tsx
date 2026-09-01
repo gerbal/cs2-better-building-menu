@@ -8,7 +8,7 @@ import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import { getShelf, recordPlacement } from "domain/buildingShelf";
 import { canPlace, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
-import { rankBuildingMatches, topSearchResult } from "domain/buildingSearchRank";
+import { topSearchResult } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { stripRedundantNamePrefix, tileLabelLineBudget, wrapTileLabel } from "domain/tileLabel";
 import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
@@ -51,9 +51,10 @@ interface BuildingGridProps {
 /**
  * Thumbnails first: the fast path back to the map.
  *
- * The table asks you to read; this asks you to recognise. Order is fixed (see
- * stableGridOrder) so a building keeps its position between visits and becomes
- * a pointer gesture rather than a lookup. The numbers we project are not gone —
+ * The table asks you to read; this asks you to recognise. The order is the
+ * backend's — the same one the table shows, relevance first while a search is
+ * active — so a building keeps its position between visits and becomes a
+ * pointer gesture rather than a lookup. The numbers we project are not gone —
  * they moved to the hover card, which costs nothing until you actually want
  * them.
  */
@@ -76,10 +77,11 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
   const shelfSize = useValue(ShelfSize$);
   const tileSize = useValue(TileSize$);
   const activePrefabId = useValue(ActivePrefabId$);
-  // Relevance while a query is active, stable position while browsing. The two
-  // orders want opposite things and rankBuildingMatches falls back to the
-  // stable one for an empty query and for ties.
-  const ordered = rankBuildingMatches(entries, searchText ?? "");
+  // The page arrives in the order every view shows: grouped, then by
+  // relevance while a search is active, then by the chosen sort. The grid
+  // used to re-rank (and silently drop) entries here; see
+  // BuildingCatalogRelevance.cs.
+  const ordered = entries;
   const shelfIds = getShelf();
   const byId = new Map(entries.map((entry) => [entry.id, entry]));
   // Only what is in this category; the shelf is global but must not advertise

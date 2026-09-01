@@ -847,6 +847,43 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.Equal(new[] { 62, 61, 63 }, page.Items.Select(entry => entry.Id).ToArray());
     }
 
+    [Fact]
+    public void Query_RelevanceOrdersWithinAGroupAndTheSortColumnBreaksTies()
+    {
+        // Exact, then prefix, then the two word-start hits — the shorter name
+        // first, cost never getting a say between them.
+        var entries = new[]
+        {
+            SampleEntries[0] with { Id = 1, Name = "Clinic Annex", ConstructionCost = 1 },
+            SampleEntries[0] with { Id = 2, Name = "Clinic", ConstructionCost = 9 },
+            SampleEntries[0] with { Id = 3, Name = "Medical Clinic", ConstructionCost = 5 },
+            SampleEntries[0] with { Id = 4, Name = "Old Clinic", ConstructionCost = 3 },
+        };
+
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+            entries,
+            new BuildingCatalogQuery(SearchText: "clinic", SortColumn: "ConstructionCost"));
+
+        Assert.Equal(new[] { 2, 1, 4, 3 }, page.Items.Select(e => e.Id).ToArray());
+    }
+
+    [Fact]
+    public void Query_RelevanceStaysInsideTheGroup()
+    {
+        // Grouping is the primary key; relevance only reorders within it.
+        var entries = new[]
+        {
+            SampleEntries[0] with { Id = 1, Name = "Clinic", Category = "ServiceBuildings" },
+            SampleEntries[0] with { Id = 2, Name = "Old Clinic", Category = "Buildings" },
+        };
+
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+            entries,
+            new BuildingCatalogQuery(SearchText: "clinic", GroupBy: "category"));
+
+        Assert.Equal(new[] { 2, 1 }, page.Items.Select(e => e.Id).ToArray());
+    }
+
     private static BuildingCatalogEntry Entry(
         int id,
         string prefabName,

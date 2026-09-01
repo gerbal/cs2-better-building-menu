@@ -434,6 +434,19 @@ namespace FindItBuildingMenu.Services
 			// and its heading describes something other than what follows it.
 			IOrderedEnumerable<BuildingCatalogEntry> seed = SeedByGroup(entries, query);
 
+			// Relevance decides within a group while a search is active; the
+			// chosen sort breaks ties. Every view reads this order now — the
+			// grid used to re-rank the page itself and disagree with the table.
+			// Shortest name next: against a real catalog "clinic" ties Medical
+			// Clinic with Additional Clinic Center, and the plain one is nearly
+			// always what was meant — extra words mean a variant.
+			if (!string.IsNullOrWhiteSpace(query.SearchText))
+			{
+				seed = seed
+					.ThenByDescending(entry => BuildingCatalogRelevance.Score(entry, query.SearchText))
+					.ThenBy(entry => (entry.Name ?? string.Empty).Length);
+			}
+
 			IOrderedEnumerable<BuildingCatalogEntry> ordered = query.EffectiveSortColumn.ToLowerInvariant() switch
 			{
 				"category" => query.Descending
