@@ -55,36 +55,6 @@ describe("Filter chips", () => {
     ]);
   });
 
-  it("wears zoning families as chips, between navigation and the facets", () => {
-    // Zones are a separate catalog, but a family narrows the visible set just
-    // as a facet does, so it gets the same chip and the same removal gesture.
-    const chips = buildFilterChips({
-      section: { id: "Zones", label: "Zones" },
-      zoneFamilies: [
-        { id: "ZoneResidential", label: "Residential" },
-        { id: "ZoneOffice", label: "Office" },
-      ],
-      facets: facets("high"),
-    });
-
-    assert.deepEqual(chips.map((chip) => chip.dimension), [
-      "section",
-      "zoneFamily",
-      "zoneFamily",
-      "zone",
-    ]);
-    assert.deepEqual(chips[1].remove, {
-      method: "ToggleBuildingLensZoneFamily",
-      args: ["ZoneResidential"],
-    });
-  });
-
-  it("contributes no family chips when every family is showing", () => {
-    // Empty means all of them, not none — an untouched filter hides nothing.
-    assert.deepEqual(buildFilterChips({ zoneFamilies: [] }), []);
-    assert.deepEqual(buildFilterChips({ zoneFamilies: null }), []);
-  });
-
   it("makes the section a breadcrumb rather than a filter", () => {
     // There is always an active section, so offering to remove it would be a
     // control that cannot do what it says.

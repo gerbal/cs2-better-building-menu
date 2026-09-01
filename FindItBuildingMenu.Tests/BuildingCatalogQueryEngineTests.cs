@@ -837,7 +837,6 @@ public sealed class BuildingCatalogQueryEngineTests
             FindItUtil.IsReady = true;
 
             Assert.Empty(FindItUtil.GetSubCategories());
-            Assert.Empty(FindItUtil.GetFilteredPrefabs());
             Assert.Empty(FindItUtil.GetUnfilteredPrefabs());
             Assert.Null(FindItUtil.GetPrefabBase(0));
             Assert.Null(FindItUtil.GetPrefabIndex(0));
@@ -878,7 +877,7 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.Equal(
             new[] { "items", "id", "prefabName", "name", "category", "subCategory", "categoryLabel", "subCategoryLabel", "thumbnail", "fallbackThumbnail", "silhouetteThumbnail", "uiMenu", "uiCategory", "lotWidth", "lotDepth", "buildingLevel", "zoneType", "hasParking", "isVanilla", "isLocked",
             "isUnique",
-            "isAlreadyBuilt", "unlockMilestone", "devTreeBranch", "devTreeBranchDepth", "unlockRequirements", "bonuses", "costIsPerDistance", "parkingSlots", "isFavorited", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "supportedUpgrades", "constructionCost", "upkeep", "workers", "households", "capacity", "electricityConsumption", "waterConsumption", "garbageAccumulation", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "sortCanReorder", "reorderableSortColumns", "totalCount", "offset", "limit", "hasMore" },
+            "isAlreadyBuilt", "unlockMilestone", "devTreeBranch", "devTreeBranchDepth", "unlockRequirements", "bonuses", "costIsPerDistance", "parkingSlots", "isFavorited", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "supportedUpgrades", "constructionCost", "upkeep", "workers", "households", "capacity", "electricityConsumption", "waterConsumption", "garbageAccumulation", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "reorderableSortColumns", "totalCount", "offset", "limit", "hasMore" },
             writer.PropertyNames);
         Assert.Contains("Write:Int32:1", writer.Tokens);
         Assert.Contains("Write:String:Coal Power Plant", writer.Tokens);

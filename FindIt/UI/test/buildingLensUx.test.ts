@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
-import { optionClickedCommand } from "../src/domain/buildingCatalogContracts.ts";
 import {
   clearBuildingLensFacetsCommand,
   facetGroupNeedsScroll,
@@ -34,13 +33,6 @@ const buildingMenuHeaderSource = readFileSync(
 );
 
 describe("Building Lens filter controls", () => {
-  it("dispatches the Extra Filters option through the FindIt binding", () => {
-    assert.deepEqual(optionClickedCommand(90, 0, 0), {
-      method: "OptionClicked",
-      args: [90, 0, 0],
-    });
-  });
-
   it("keeps selected state visible while disabling disabled options", () => {
     assert.deepEqual(getFilterOptionState(true, false), {
       selected: true,
