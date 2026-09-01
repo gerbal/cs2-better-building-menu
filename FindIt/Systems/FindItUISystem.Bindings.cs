@@ -614,18 +614,6 @@ namespace FindItBuildingMenu.Systems
 			FindItUtil.CurrentSubCategory = (PrefabSubCategory)category;
 
 			RefreshLens();
-
-			if (FindItUtil.Filters.GetFilterList().Any()) // Check if there are any active filters
-			{
-				// Trigger the delayed search instead of refreshing the list immediately
-
-				TriggerSearch();
-			}
-
-			// RefreshLens already ran RefreshBuildingCatalog
-			// above, which now refreshes the options bank itself once its facet
-			// bindings are current. A second call here would just repeat that
-			// with nothing having changed in between.
 		}
 
 		private void SetBuildingLensSection(string section)
@@ -1030,13 +1018,10 @@ namespace FindItBuildingMenu.Systems
 			_CurrentSearch.Value = text;
 			_CurrentSearch.ForceUpdate();
 
-			// Deliberately no inline RefreshBuildingCatalog() here. Every refresh
-			// projects the whole building index twice — once for the page and
-			// once to rebuild the facets — and doing that per keystroke made the
-			// lens the only search path in the mod without a debounce. The
-			// search worker below already re-runs the refresh once it settles,
-			// via the filterCompleted branch in OnUpdate, which is the same
-			// 250ms debounce the legacy grid has always used.
+			// Deliberately no inline RefreshBuildingCatalog() here: every refresh
+			// projects the whole building index, and doing that per keystroke made
+			// the lens the only search path in the mod without a debounce.
+			// TriggerSearch schedules one refresh 250ms after the last keystroke.
 			TriggerSearch();
 		}
 

@@ -8,15 +8,17 @@ using Game.Prefabs;
 using Game.Rendering;
 using Game.Tools;
 
-using System.Threading;
+using System;
 
 namespace FindItBuildingMenu.Systems
 {
     internal partial class FindItUISystem : ExtendedUISystemBase
 	{
-		private bool filterCompleted;
 		private bool settingPrefab;
-		private CancellationTokenSource searchTokenSource = new();
+		// Search is debounced on the main thread: SearchChanged schedules,
+		// OnUpdate fires. See SearchDebounce for why there is no worker.
+		private static readonly System.Diagnostics.Stopwatch SearchClock = System.Diagnostics.Stopwatch.StartNew();
+		private readonly SearchDebounce _searchDebounce = new(TimeSpan.FromMilliseconds(250));
 		private readonly BuildingCatalogAdapter _buildingCatalogAdapter = new();
 		private BuildingCatalogQuery _buildingCatalogQuery = new();
 		private readonly FindItInteractionBoundary _interactionBoundary = new();
@@ -358,16 +360,9 @@ namespace FindItBuildingMenu.Systems
 
 		protected override void OnUpdate()
 		{
-
-			if (filterCompleted)
+			if (_searchDebounce.TryFire(SearchClock.Elapsed))
 			{
-				filterCompleted = false;
-
 				_IsSearchLoading.Value = false;
-				// Extra Filters complete on the search worker. Refresh the
-				// building lens after that worker publishes its result so the
-				// typed catalog does not silently diverge from what was asked
-				// for.
 				RefreshBuildingCatalog();
 			}
 

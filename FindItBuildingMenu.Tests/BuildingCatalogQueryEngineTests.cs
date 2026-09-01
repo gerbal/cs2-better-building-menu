@@ -837,7 +837,6 @@ public sealed class BuildingCatalogQueryEngineTests
             FindItUtil.IsReady = true;
 
             Assert.Empty(FindItUtil.GetSubCategories());
-            Assert.Empty(FindItUtil.GetFilteredPrefabs());
             Assert.Empty(FindItUtil.GetUnfilteredPrefabs());
             Assert.Null(FindItUtil.GetPrefabBase(0));
             Assert.Null(FindItUtil.GetPrefabIndex(0));
