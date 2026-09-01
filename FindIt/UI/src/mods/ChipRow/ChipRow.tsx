@@ -4,7 +4,6 @@ import { Button, Scrollable, Tooltip } from "cs2/ui";
 import classNames from "classnames";
 import { useState } from "react";
 import mod from "../../../mod.json";
-import { lensSectionCommand, lensSubCategoryCommand, type VanillaBuildMenuTab } from "domain/vanillaBuildMenuContracts";
 import { orderedCategories, type VanillaMenuCategory } from "domain/vanillaMenuCategories";
 import { isScopedToMenu, lensScopeChipsFor } from "domain/lensScopeChips";
 import {
@@ -16,6 +15,13 @@ import type { BuildingLensFacetState } from "domain/buildingCatalogFacets";
 import type { BuildingLensMetricRangeState } from "domain/buildingLensFilterSummary";
 import styles from "./chipRow.module.scss";
 
+/** One row of a picker: an id to fire, an icon to draw, a name to read. */
+interface VanillaBuildMenuTab {
+  id: string;
+  icon: string;
+  toolTip: string;
+}
+
 /**
  * The single band that says how the result set has been narrowed.
  *
@@ -24,8 +30,8 @@ import styles from "./chipRow.module.scss";
  * as tab strips, which meant a permanent band per dimension and no way to ask
  * for two values at once.
  *
- * What remains here is identity: which section, which type, which zone
- * families — "what am I looking at", which belongs beside the results.
+ * What remains here is identity: which menu, which category within it —
+ * "what am I looking at", which belongs beside the results.
  *
  * The narrowing controls and the chips that record them moved into the game's
  * own options bank, because that is where the game already puts filters. Theme
@@ -34,12 +40,6 @@ import styles from "./chipRow.module.scss";
  * do.
  */
 
-const SUBCATEGORY_ANY = "Any";
-
-const BuildingLensSection$ = bindValue<string>(mod.id, "BuildingLensSection", "AllBuildings");
-const BuildingLensSubCategory$ = bindValue<string>(mod.id, "BuildingLensSubCategory", "Any");
-const BuildingLensSectionList$ = bindValue<VanillaBuildMenuTab[]>(mod.id, "BuildingLensSectionList", []);
-const BuildingLensSubCategoryList$ = bindValue<VanillaBuildMenuTab[]>(mod.id, "BuildingLensSubCategoryList", []);
 const BuildingLensFacets$ = bindValue<BuildingLensFacetState | null>(mod.id, "BuildingLensFacets", null);
 const BuildingLensMenu$ = bindValue<string>(mod.id, "BuildingLensMenu", "");
 const BuildingLensMenuCategory$ = bindValue<string>(mod.id, "BuildingLensMenuCategory", "");
@@ -52,16 +52,12 @@ const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState | nu
   null
 );
 
-type PickerId = "section" | "subCategory" | "menuCategory" | "menu" | null;
+type PickerId = "menuCategory" | "menu" | null;
 
 export const ChipRow = () => {
   const { translate } = useLocalization();
   const [picker, setPicker] = useState<PickerId>(null);
 
-  const section = useValue(BuildingLensSection$);
-  const subCategory = useValue(BuildingLensSubCategory$);
-  const sectionList = useValue(BuildingLensSectionList$) ?? [];
-  const subCategoryList = useValue(BuildingLensSubCategoryList$) ?? [];
   const facets = useValue(BuildingLensFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
   const menu = useValue(BuildingLensMenu$) ?? "";
@@ -77,14 +73,9 @@ export const ChipRow = () => {
     menu,
     menuCategory,
     menuCategoryCount: menuCategories.length,
-    showZoning: false,
-    subCategoryCount: subCategoryList.length,
   });
 
   const label = (key: string, fallback: string) => translate(key, fallback) ?? fallback;
-
-  const tabLabel = (list: readonly VanillaBuildMenuTab[], id: string) =>
-    list.find((tab) => tab.id === id)?.toolTip ?? id;
 
   // The game's own word for a menu or a category. Two key families, not one —
   // see vanillaServiceLabels.ts for what the running game actually answers.
@@ -144,40 +135,23 @@ export const ChipRow = () => {
     toolTip: categoryLabel(category.id),
   }));
 
-  const openList = picker === "section"
-    ? sectionList
-    : picker === "subCategory"
-      ? subCategoryList
-      : picker === "menuCategory"
-          ? categoryTabs
-          : picker === "menu"
-            ? menuTabs
-            : null;
+  const openList = picker === "menuCategory"
+    ? categoryTabs
+    : picker === "menu"
+      ? menuTabs
+      : null;
 
-  const isChosen = (id: string) =>
-    picker === "section" ? id === section
-      : picker === "subCategory" ? id === subCategory
-        : picker === "menuCategory" ? id === menuCategory
-          : id === menu;
+  const isChosen = (id: string) => (picker === "menuCategory" ? id === menuCategory : id === menu);
 
   const choose = (id: string) => {
-    if (picker === "menuCategory") {
-      fire({ method: "SetBuildingLensMenuCategory", args: [id] });
-      setPicker(null);
-      return;
-    }
-
-    if (picker === "menu") {
-      fire({ method: "SetBuildingLensMenu", args: [id] });
-      setPicker(null);
-      return;
-    }
-
-    fire(picker === "section" ? lensSectionCommand(id) : lensSubCategoryCommand(id));
+    fire(
+      picker === "menuCategory"
+        ? { method: "SetBuildingLensMenuCategory", args: [id] }
+        : { method: "SetBuildingLensMenu", args: [id] }
+    );
     setPicker(null);
   };
 
-  const allTypesLabel = label("Tooltip.LABEL[FindItBuildingMenu.AllTypes]", "All types");
   // The same word the strip's extra tab carries, because they are the same
   // choice reached two ways.
   const allCategoriesLabel = label("Tooltip.LABEL[FindItBuildingMenu.AllCategories]", "All");
@@ -211,39 +185,6 @@ export const ChipRow = () => {
             menuCategory === "" ? null : () => fire({ method: "SetBuildingLensMenuCategory", args: [""] })
           )}
 
-        {/* The section and type breadcrumbs describe the building catalog. In
-            the zoning view that catalog is not on screen, so showing "Networks"
-            over a list of zones names something the player cannot see.
-
-            They are also gone while a menu is scoped, because that is exactly
-            when the query stops applying them (BuildingCatalogQueryEngine.cs:95
-            skips MatchesBuildMenu for a menu-tree query). They stayed on screen
-            through all of it — clickable, restyling themselves on selection,
-            and changing nothing. */}
-        {chips.section
-          && renderBreadcrumb("section", tabLabel(sectionList, section), picker === "section", null)}
-
-        {/* Always offered when the section has types, even at "Any": without
-            it the only way back to a type would be the vanilla toolbar. */}
-        {chips.subCategory
-          && renderBreadcrumb(
-            "subCategory",
-            subCategory === SUBCATEGORY_ANY ? allTypesLabel : tabLabel(subCategoryList, subCategory),
-            picker === "subCategory",
-            subCategory === SUBCATEGORY_ANY ? null : () => fire(lensSubCategoryCommand(SUBCATEGORY_ANY))
-          )}
-
-        {/* The zoning view has no chip of its own. Its families ARE the Zones
-            menu's categories, so the category chip above names them and the
-            icon strip picks them — one control, in the same place it sits for
-            every other menu.
-
-            There used to be a second, multi-select picker here. It was not
-            merely redundant: selecting two families through it produced a state
-            the category chip and the strip could not express, and both reported
-            it as "All" while the results were filtered to two. The active-filter
-            chips in the options bank still list what is selected and still
-            remove it, which is the record every other facet gets. */}
       </div>
 
       {openList && (

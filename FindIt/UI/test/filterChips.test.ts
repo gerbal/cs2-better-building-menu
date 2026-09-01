@@ -37,31 +37,18 @@ const facets = (...selected: string[]) => ({
 });
 
 describe("Filter chips", () => {
-  it("puts navigation first, then facets, then metric ranges", () => {
-    // The row reads as a history of how the player got here: what the
-    // navigation set, then what they added.
+  it("puts facets first, then metric ranges", () => {
+    // The row reads as a history of how the player got here, in the order
+    // the rail offers the controls.
     const chips = buildFilterChips({
-      section: { id: "Zones", label: "Zones" },
-      subCategory: { id: "Residential", label: "Residential" },
       facets: facets("office"),
       metricRanges: { ...emptyRanges, maxCost: 50000, hasSelection: true },
     });
 
     assert.deepEqual(chips.map((chip) => chip.dimension), [
-      "section",
-      "subCategory",
       "zone",
       "metric:cost",
     ]);
-  });
-
-  it("makes the section a breadcrumb rather than a filter", () => {
-    // There is always an active section, so offering to remove it would be a
-    // control that cannot do what it says.
-    const [chip] = buildFilterChips({ section: { id: "Zones", label: "Zones" } });
-
-    assert.equal(chip.removable, false);
-    assert.equal(chip.remove, null);
   });
 
   it("composes several selections within one dimension", () => {
@@ -145,22 +132,15 @@ describe("Filter chips", () => {
     assert.deepEqual(buildFilterChips({ metricRanges: { ...emptyRanges, hasSelection: true } }), []);
   });
 
-  it("omits the subcategory chip when no subcategory is chosen", () => {
-    assert.deepEqual(buildFilterChips({ subCategory: { id: "Any", label: "Any" } }), []);
-    assert.deepEqual(buildFilterChips({ subCategory: { id: "", label: "" } }), []);
-  });
-
   it("names a removal command that round-trips the selection", () => {
     const chips = buildFilterChips({
-      subCategory: { id: "Residential", label: "Residential" },
       facets: facets("office"),
       metricRanges: { ...emptyRanges, minCapacity: 400, hasSelection: true },
     });
 
-    assert.deepEqual(chips[0].remove, { method: "SetBuildingLensSubCategory", args: ["Any"] });
     // Toggling is symmetric, so removal needs no separate C# path.
-    assert.deepEqual(chips[1].remove, { method: "ToggleBuildingLensFacet", args: ["zone", "office"] });
-    assert.deepEqual(chips[2].remove, { method: "SetBuildingCatalogMetricRange", args: ["capacity", "", ""] });
+    assert.deepEqual(chips[0].remove, { method: "ToggleBuildingLensFacet", args: ["zone", "office"] });
+    assert.deepEqual(chips[1].remove, { method: "SetBuildingCatalogMetricRange", args: ["capacity", "", ""] });
   });
 
   it("reads both bounds, one bound, or neither", () => {
@@ -176,19 +156,11 @@ describe("Filter chips", () => {
   it("gives every chip an id unique across dimensions", () => {
     // A collision would make React reuse the wrong node when a chip is removed.
     const chips = buildFilterChips({
-      section: { id: "Zones", label: "Zones" },
-      subCategory: { id: "Zones", label: "Zones" },
       facets: facets("office", "high", "eu"),
       metricRanges: { ...emptyRanges, maxCost: 1, maxUpkeep: 2, hasSelection: true },
     });
 
     assert.equal(new Set(chips.map((chip) => chip.id)).size, chips.length);
-  });
-
-  it("falls back to the id when a label is missing", () => {
-    const chips = buildFilterChips({ section: { id: "Zones", label: "" } });
-
-    assert.equal(chips[0].label, "Zones");
   });
 
   it("survives absent, null and malformed state", () => {
@@ -206,11 +178,10 @@ describe("Filter chips", () => {
 
   it("counts only what the Clear button can actually reset", () => {
     const chips = buildFilterChips({
-      section: { id: "Zones", label: "Zones" },
       facets: facets("office", "high"),
     });
 
-    assert.equal(chips.length, 3);
+    assert.equal(chips.length, 2);
     assert.equal(removableChipCount(chips), 2);
   });
 });

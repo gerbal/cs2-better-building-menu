@@ -213,7 +213,6 @@ export function groupDimensionsFor(
 }
 
 export function defaultGroupDimensionFor(
-  section: string | null | undefined,
   menuHasCategories: boolean = false,
   stripAxis: string = "",
   educationMenu: boolean = false,
@@ -283,9 +282,10 @@ export function defaultGroupDimensionFor(
   // it. Master went on to build on that — 479ffeb gave the grouping a real
   // order, 0aa0203 taught the table to draw the groups it was already sorting
   // into — so "none" here also left those two doing nothing on this branch.
-  return typeof section === "string" && section.trim().toLowerCase() === "servicebuildings"
-    ? "role"
-    : DEFAULT_GROUP_DIMENSION;
+  //
+  // No section to read any more (cm-jjlv.6): the "Role" default it used to
+  // pick for the Service Buildings section went with the section.
+  return DEFAULT_GROUP_DIMENSION;
 }
 
 /**
