@@ -157,8 +157,12 @@ namespace FindItBuildingMenu.Services
 				query,
 				// Packs alone are counted before the pack filter runs, because
 				// that filter is upstream of InScope and InScope cannot undo it.
+				// Only a second snapshot when a pack IS selected; otherwise the
+				// pack scope is the ordinary one and costs nothing.
 				BuildingCatalogQueryEngine.InScope(
-					GetIndexedBuildings(query.UiMenu, ignorePackSelection: true).Select(Project),
+					ToolbarSelection.SelectedPacks.Count > 0
+						? ProjectForMenu(query.UiMenu, query.DlcIds, ignorePacks: true)
+						: ProjectForMenu(query.UiMenu, query.DlcIds),
 					query));
 		}
 
@@ -1168,8 +1172,7 @@ namespace FindItBuildingMenu.Services
 		/// refresh. That is the same lifetime the callers already assumed —
 		/// they all read within one publish — made explicit.
 		/// </remarks>
-		private readonly Dictionary<string, BuildingCatalogEntry[]> _projections =
-			new Dictionary<string, BuildingCatalogEntry[]>(StringComparer.Ordinal);
+		private readonly SnapshotCache _snapshots = new();
 
 		/// <summary>Drops the per-refresh projections. Call before publishing.</summary>
 		/// <summary>How long the last <see cref="ProjectForMenu"/> took, and whether it was served from cache.</summary>
@@ -1179,29 +1182,25 @@ namespace FindItBuildingMenu.Services
 
 		public void BeginRefresh()
 		{
-			_projections.Clear();
 			LastProjectionMs = 0;
 			LastProjectionWasHit = true;
 		}
 
-		private IEnumerable<BuildingCatalogEntry> ProjectForMenu(
+		private BuildingCatalogEntry[] ProjectForMenu(
 			string? menu,
-			IReadOnlyList<string>? contentDlcs = null)
+			IReadOnlyList<string>? contentDlcs = null,
+			bool ignorePacks = false)
 		{
-			// The DLC union is part of the key: the Content facet counts itself
-			// with its own selection dropped, so the same menu is legitimately
-			// projected against two different unions in one refresh.
-			var key = (menu ?? string.Empty) + "\u0000"
-				+ (contentDlcs is null ? "*" : string.Join(",", contentDlcs));
+			var key = SnapshotKey.For(menu, contentDlcs, ignorePacks, ToolbarSelection);
 
-			if (_projections.TryGetValue(key, out var cached))
+			if (_snapshots.TryGet(key, PrefabIndexingSystem.IndexGeneration, out var cached))
 			{
 				return cached;
 			}
 
 			var timer = System.Diagnostics.Stopwatch.StartNew();
-			var built = ProjectForMenuUncached(menu, contentDlcs).ToArray();
-			_projections[key] = built;
+			var built = ProjectForMenuUncached(menu, contentDlcs, ignorePacks).ToArray();
+			_snapshots.Put(key, PrefabIndexingSystem.IndexGeneration, built);
 			LastProjectionMs += (int)timer.ElapsedMilliseconds;
 			LastProjectionWasHit = false;
 
@@ -1210,9 +1209,10 @@ namespace FindItBuildingMenu.Services
 
 		private IEnumerable<BuildingCatalogEntry> ProjectForMenuUncached(
 			string? menu,
-			IReadOnlyList<string>? contentDlcs)
+			IReadOnlyList<string>? contentDlcs,
+			bool ignorePacks)
 		{
-			var entries = GetIndexedBuildings(menu, unionDlcIds: contentDlcs).Select(Project).ToArray();
+			var entries = GetIndexedBuildings(menu, ignorePackSelection: ignorePacks, unionDlcIds: contentDlcs).Select(Project).ToArray();
 			var root = PrefabIndexingSystem.GetDevTreeRootLabel(menu);
 
 			if (string.IsNullOrEmpty(root))
