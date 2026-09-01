@@ -57,6 +57,17 @@ public sealed class BuildingCatalogQueryEngineTests
         },
     };
 
+    /// <summary>
+    /// The same five, filed under the menus vanilla would put them in. The
+    /// tests that used to narrow by upstream's Category narrow by UiMenu now.
+    /// </summary>
+    private static readonly IReadOnlyList<BuildingCatalogEntry> MenuedEntries = SampleEntries
+        .Select(entry => entry with
+        {
+            UiMenu = entry.Category == "Buildings" ? "Zones" : "Health & Deathcare",
+        })
+        .ToArray();
+
 		[Fact]
 		public void AMenuOpensOnOneChunkLikeEverythingElse()
 		{
@@ -108,11 +119,11 @@ public sealed class BuildingCatalogQueryEngineTests
 		}
 
     [Fact]
-    public void Query_SearchAndCategoryFilters_AreCaseInsensitive()
+    public void Query_SearchAndMenuScope_AreCaseInsensitive()
     {
         BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
-            SampleEntries,
-            new BuildingCatalogQuery(SearchText: "POWER", Category: "buildings"));
+            MenuedEntries,
+            new BuildingCatalogQuery(SearchText: "POWER", UiMenu: "zones"));
 
         BuildingCatalogEntry entry = Assert.Single(page.Items);
         Assert.Equal(1, entry.Id);
@@ -134,12 +145,11 @@ public sealed class BuildingCatalogQueryEngineTests
     }
 
     [Fact]
-    public void Query_RangeSubcategoryAndParkingFilters_UseInclusiveBounds()
+    public void Query_RangeAndParkingFilters_UseInclusiveBounds()
     {
         BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
             SampleEntries,
             new BuildingCatalogQuery(
-                SubCategory: "ServiceBuildings_Health",
                 MinLotWidth: 3,
                 MaxLotWidth: 3,
                 MinLotDepth: 2,
@@ -151,51 +161,6 @@ public sealed class BuildingCatalogQueryEngineTests
         BuildingCatalogEntry entry = Assert.Single(page.Items);
         Assert.Equal(4, entry.Id);
         Assert.Equal(1, page.TotalCount);
-    }
-
-    [Fact]
-    public void Query_BuildMenuSectionsAndSubcategoriesFilterProjectedEntries()
-    {
-        BuildingCatalogEntry[] entries =
-        {
-            SampleEntries[0] with { VanillaSection = VanillaBuildMenuTaxonomy.Zones, VanillaSubCategory = "Buildings_Industrial" },
-            SampleEntries[1] with { VanillaSection = VanillaBuildMenuTaxonomy.Zones, VanillaSubCategory = "Buildings_Specialized" },
-            SampleEntries[2] with { VanillaSection = VanillaBuildMenuTaxonomy.ServiceBuildings, VanillaSubCategory = "ServiceBuildings_Water" },
-            SampleEntries[3] with { VanillaSection = VanillaBuildMenuTaxonomy.ServiceBuildings, VanillaSubCategory = "ServiceBuildings_Health", IsFavorited = true },
-            SampleEntries[4] with { VanillaSection = VanillaBuildMenuTaxonomy.SignatureBuildings, VanillaSubCategory = "Buildings_Office" },
-        };
-
-        BuildingCatalogPage zones = BuildingCatalogQueryEngine.Query(
-            entries,
-            new BuildingCatalogQuery(BuildMenuSection: VanillaBuildMenuTaxonomy.Zones));
-        BuildingCatalogPage serviceHealth = BuildingCatalogQueryEngine.Query(
-            entries,
-            new BuildingCatalogQuery(
-                BuildMenuSection: VanillaBuildMenuTaxonomy.ServiceBuildings,
-                BuildMenuSubCategory: "ServiceBuildings_Health"));
-        BuildingCatalogPage favorites = BuildingCatalogQueryEngine.Query(
-            entries,
-            new BuildingCatalogQuery(BuildMenuSection: VanillaBuildMenuTaxonomy.Favorites));
-
-        Assert.Equal(new[] { 1, 2 }, zones.Items.Select(entry => entry.Id).ToArray());
-        Assert.Equal(2, zones.TotalCount);
-        Assert.Equal(new[] { 4 }, serviceHealth.Items.Select(entry => entry.Id).ToArray());
-        Assert.Equal(new[] { 4 }, favorites.Items.Select(entry => entry.Id).ToArray());
-    }
-
-    [Fact]
-    public void Query_UnknownBuildMenuSectionDoesNotFallBackToAllBuildings()
-    {
-        BuildingCatalogPage invalid = BuildingCatalogQueryEngine.Query(
-            SampleEntries,
-            new BuildingCatalogQuery(BuildMenuSection: "Networks"));
-        BuildingCatalogPage all = BuildingCatalogQueryEngine.Query(
-            SampleEntries,
-            new BuildingCatalogQuery(BuildMenuSection: VanillaBuildMenuTaxonomy.AllBuildings));
-
-        Assert.Empty(invalid.Items);
-        Assert.Equal(0, invalid.TotalCount);
-        Assert.Equal(SampleEntries.Count, all.TotalCount);
     }
 
     [Fact]
@@ -443,8 +408,8 @@ public sealed class BuildingCatalogQueryEngineTests
     public void Query_PagesAfterFilteringAndReportsUnpagedTotal()
     {
         BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
-            SampleEntries,
-            new BuildingCatalogQuery(Category: "Buildings", Offset: 1, Limit: 2));
+            MenuedEntries,
+            new BuildingCatalogQuery(UiMenu: "Zones", Offset: 1, Limit: 2));
 
         Assert.Equal(3, page.TotalCount);
         Assert.Equal(1, page.Offset);
@@ -533,7 +498,7 @@ public sealed class BuildingCatalogQueryEngineTests
 
         Assert.Equal(0, (previous with { HasParking = true }).ResetWindowIfPredicatesChanged(previous).Offset);
         Assert.Equal(0, (previous with { MinCapacity = 500 }).ResetWindowIfPredicatesChanged(previous).Offset);
-        Assert.Equal(0, (previous with { BuildMenuSection = "Education" }).ResetWindowIfPredicatesChanged(previous).Offset);
+        Assert.Equal(0, (previous with { UiMenu = "Education & Research" }).ResetWindowIfPredicatesChanged(previous).Offset);
     }
 
     [Fact]
@@ -554,8 +519,8 @@ public sealed class BuildingCatalogQueryEngineTests
         // renders as "no buildings match" above a footer describing rows that
         // are not on screen.
         BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
-            SampleEntries,
-            new BuildingCatalogQuery(Category: "Buildings", Offset: 200, Limit: 100));
+            MenuedEntries,
+            new BuildingCatalogQuery(UiMenu: "Zones", Offset: 200, Limit: 100));
 
         Assert.Equal(3, page.TotalCount);
         Assert.Equal(0, page.Offset);
@@ -568,10 +533,10 @@ public sealed class BuildingCatalogQueryEngineTests
         // Clamping must land on the last page that actually holds rows, so the
         // player keeps their position instead of being thrown back to page 1.
         BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
-            SampleEntries,
-            new BuildingCatalogQuery(Category: "Buildings", Offset: 40, Limit: 2));
+            MenuedEntries,
+            new BuildingCatalogQuery(UiMenu: "Zones", Offset: 40, Limit: 2));
 
-        // Category "Buildings" orders to [1, 5, 2]; the last page holds id 2.
+        // Zones holds [1, 5, 2] in name order; the last page holds id 2.
         Assert.Equal(3, page.TotalCount);
         Assert.Equal(2, page.Offset);
         Assert.Equal(new[] { 2 }, page.Items.Select(item => item.Id).ToArray());
@@ -731,7 +696,7 @@ public sealed class BuildingCatalogQueryEngineTests
 	}
 
 	[Fact]
-	public void Query_EducationCapacityFloorIsCategoryScopedAndInclusive()
+	public void Query_EducationCapacityFloorIsMenuScopedAndInclusive()
 	{
 		BuildingCatalogEntry smallSchool = Entry(
 			7,
@@ -743,14 +708,13 @@ public sealed class BuildingCatalogQueryEngineTests
 			4,
 			2,
 			false,
-			"") with { Capacity = 100 };
+			"") with { Capacity = 100, UiMenu = "Education & Research" };
 		BuildingCatalogEntry missingCapacity = smallSchool with { Id = 8, PrefabName = "ResearchCenter", Name = "Research Center", Capacity = null };
 
 		BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
 			SampleEntries.Concat(new[] { smallSchool, missingCapacity }),
 			new BuildingCatalogQuery(
-				Category: "servicebuildings",
-				SubCategory: "servicebuildings_educationresearch",
+				UiMenu: "education & research",
 				MinCapacity: 100));
 
 		BuildingCatalogEntry entry = Assert.Single(page.Items);
@@ -930,39 +894,6 @@ public sealed class BuildingCatalogQueryEngineTests
             new BuildingCatalogQuery(Extensions: new[] { "hospitalwing02" }));
 
         Assert.Equal(41, Assert.Single(unscoped.Items).Id);
-    }
-
-    [Fact]
-    public void Query_MenuScopeReplacesTheSectionOverlayRatherThanLayeringOnIt()
-    {
-        // A menu member that indexes into a different section than the preset
-        // pins. Roads is pinned to Networks, but its parking lots index as
-        // ServiceBuildings — 35 of 157 members used to vanish for exactly this.
-        BuildingCatalogEntry parkingLot = SampleEntries[3] with
-        {
-            Id = 51,
-            PrefabName = "ParkingLot01",
-            Name = "Parking Lot",
-            UiMenu = "Roads",
-            UiCategory = "RoadsParking",
-            VanillaSection = "ServiceBuildings",
-        };
-
-        // Scoped to the menu: the game says it is in Roads, so it is in Roads,
-        // whatever our own section reconstruction thinks.
-        BuildingCatalogPage scoped = BuildingCatalogQueryEngine.Query(
-            new[] { parkingLot },
-            new BuildingCatalogQuery(UiMenu: "Roads", BuildMenuSection: "Networks"));
-
-        Assert.Equal(51, Assert.Single(scoped.Items).Id);
-
-        // Unscoped, the section overlay still applies — it is the only scope
-        // there is when no menu is named.
-        BuildingCatalogPage unscoped = BuildingCatalogQueryEngine.Query(
-            new[] { parkingLot },
-            new BuildingCatalogQuery(BuildMenuSection: "Networks"));
-
-        Assert.Empty(unscoped.Items);
     }
 
     [Fact]

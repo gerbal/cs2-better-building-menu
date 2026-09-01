@@ -86,6 +86,17 @@ namespace FindItBuildingMenu.Domain
 	/// assets, 31 zones, <c>missing=0</c> on every menu, and six extras — all
 	/// six service upgrades, all explained by <see cref="Divergences"/>.
 	/// </remarks>
+	/// <summary>
+	/// Compares the game's own menu placements against what the index holds,
+	/// by the tree fields the index reads off the same UIObject.m_Group.
+	/// </summary>
+	/// <remarks>
+	/// A coverage audit, not a taxonomy one: it says which assets vanilla
+	/// offers under a menu that the indexer failed to hold, and which we
+	/// file under a menu the game has no such menu for. It is the check
+	/// that caught the roads-cost bug. It outlived the section taxonomy it
+	/// was once mistaken for auditing.
+	/// </remarks>
 	public static class VanillaMenuAudit
 	{
 		/// <summary>

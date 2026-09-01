@@ -7,8 +7,8 @@ using Xunit;
 namespace FindItBuildingMenu.Tests
 {
 	/// <summary>
-	/// The progression tab strip: narrowing a menu to one tier of the game's
-	/// own unlock progression.
+	/// The fallback tab strip and the entry's milestone facts. The progression
+	/// TAB is gone (cm-jjlv.3); what stays is the strip's value matching.
 	/// </summary>
 	public sealed class BuildingCatalogProgressionTests
 	{
@@ -41,60 +41,11 @@ namespace FindItBuildingMenu.Tests
 		};
 
 		[Fact]
-		public void QueryDefaultsToAnyMilestone()
-		{
-			// The record's primary constructor cannot spell AnyMilestone in its
-			// own default (CS0103), so the two are written separately. If they
-			// ever drift, every unnarrowed query silently starts filtering.
-			Assert.Equal(BuildingCatalogQuery.AnyMilestone, new BuildingCatalogQuery().UnlockMilestone);
-		}
-
-		[Fact]
-		public void ReturnsEverythingWhenNoTierIsSelected()
+		public void ReturnsEverythingTheFixtureHolds()
 		{
 			var page = BuildingCatalogQueryEngine.Query(Source, new BuildingCatalogQuery());
 
 			Assert.Equal(4, page.TotalCount);
-		}
-
-		[Fact]
-		public void NarrowsToASingleTier()
-		{
-			var page = BuildingCatalogQueryEngine.Query(
-				Source,
-				new BuildingCatalogQuery(UnlockMilestone: 0));
-
-			Assert.Equal(2, page.TotalCount);
-		}
-
-		[Fact]
-		public void TierIsExactRatherThanCumulative()
-		{
-			// A tab names the point the game gated an asset behind. Read as
-			// "this tier and below" the last tab would be the whole menu again,
-			// and every tab would contain the one before it.
-			var page = BuildingCatalogQueryEngine.Query(
-				Source,
-				new BuildingCatalogQuery(UnlockMilestone: 7));
-
-			Assert.Equal(1, page.TotalCount);
-			Assert.Equal("Highway", page.Items[0].Name);
-		}
-
-		[Fact]
-		public void UnlockedAssetsKeepTheirTier()
-		{
-			// The milestone is a property of the ASSET, not of the save. This
-			// is the whole reason the strip is worth drawing in a developed
-			// city — where, when the backend zeroed the milestone on unlock,
-			// every tab but the first went empty.
-			var page = BuildingCatalogQueryEngine.Query(
-				Source,
-				new BuildingCatalogQuery(UnlockMilestone: 3));
-
-			Assert.Equal(1, page.TotalCount);
-			Assert.False(page.Items[0].IsLocked);
-			Assert.Equal("Four-Lane Road", page.Items[0].Name);
 		}
 
 		[Fact]
@@ -148,20 +99,21 @@ namespace FindItBuildingMenu.Tests
 
 			var byBranch = BuildingCatalogQueryEngine.Query(
 				source,
-				new BuildingCatalogQuery(StripAxis: StripAxes.Development, StripTabs: new[] { "Basic" }));
+				new BuildingCatalogQuery(StripTabs: new[] { "Basic" }));
 			Assert.Equal(2, byBranch.TotalCount);
 
 			var byType = BuildingCatalogQueryEngine.Query(
 				source,
-				new BuildingCatalogQuery(StripAxis: StripAxes.AssetType, StripTabs: new[] { StripAxes.NetworkValue }));
+				new BuildingCatalogQuery(StripTabs: new[] { StripAxes.NetworkValue }));
 			Assert.Equal(1, byType.TotalCount);
 			Assert.Equal("Water Pipe", byType.Items[0].Name);
 
 			// A node name still selects its node even when the row's other tabs
 			// are asset types, which is what lets one row mix the two.
+			// There is no axis on the query at all; the tab's value is what names it.
 			var mixed = BuildingCatalogQueryEngine.Query(
 				source,
-				new BuildingCatalogQuery(StripAxis: StripAxes.AssetType, StripTabs: new[] { "Basic" }));
+				new BuildingCatalogQuery(StripTabs: new[] { "Basic" }));
 			Assert.Equal(2, mixed.TotalCount);
 		}
 	}

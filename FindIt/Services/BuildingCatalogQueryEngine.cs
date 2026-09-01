@@ -145,16 +145,6 @@ namespace FindItBuildingMenu.Services
 				return false;
 			}
 
-			// The progression tab. Equality on the index, not a "this tier and
-			// below" range: the tab names the point the game gated the asset
-			// behind, so a cumulative reading would put every early asset under
-			// every later tier and make the last tab the whole menu again.
-			if (query.UnlockMilestone != BuildingCatalogQuery.AnyMilestone
-				&& entry.UnlockMilestone != query.UnlockMilestone)
-			{
-				return false;
-			}
-
 			// The fallback strip's tab, matched against whichever property its
 			// axis names. Nothing to do when no tab is picked, which is also
 			// the case for every menu whose strip is vanilla's categories.
@@ -173,45 +163,10 @@ namespace FindItBuildingMenu.Services
 				return false;
 			}
 
-			// The menu tree REPLACES the section overlay rather than layering on
-			// it. Both describe where an asset lives in the build menu, but only
-			// one of them is the game's own answer: UIObject.m_Group is what
-			// vanilla itself reads, while VanillaSection is a shape we
-			// reconstruct from (Category, SubCategory, ZoneType).
-			//
-			// Applying both meant a menu member could be dropped for indexing
-			// into a section the preset did not name. Roads is pinned to
-			// Networks, so its 34 parking lots and 1 service building — which
-			// index as ServiceBuildings — vanished: 122 of 157 shown. The same
-			// arithmetic cost Transportation 23 of its 53, because bus stops,
-			// taxi stops, tram stops and tracks are networks inside a menu
-			// pinned to ServiceBuildings.
-			//
-			// The section stays SET while scoped, and is merely not applied. It
-			// is still what the auto-widen brake reads to answer "am I scoped?"
-			// (FindItUISystem.Methods.cs), and clearing it would make that check
-			// lie.
-			if (!IsScopedToMenuTree(query) && !MatchesBuildMenu(entry, query))
-			{
-				return false;
-			}
-
 			if (!string.IsNullOrWhiteSpace(query.SearchText)
 				&& !Contains(entry.Name, query.SearchText)
 				&& !Contains(entry.PrefabName, query.SearchText)
 				&& !Contains(entry.PdxModsId, query.SearchText))
-			{
-				return false;
-			}
-
-			if (!string.IsNullOrWhiteSpace(query.Category)
-				&& !string.Equals(entry.Category, query.Category, StringComparison.OrdinalIgnoreCase))
-			{
-				return false;
-			}
-
-			if (!string.IsNullOrWhiteSpace(query.SubCategory)
-				&& !string.Equals(entry.SubCategory, query.SubCategory, StringComparison.OrdinalIgnoreCase))
 			{
 				return false;
 			}
@@ -250,27 +205,6 @@ namespace FindItBuildingMenu.Services
 				&& InRange(entry.ElectricityConsumption, query.MinElectricityConsumption, query.MaxElectricityConsumption)
 				&& InRange(entry.WaterConsumption, query.MinWaterConsumption, query.MaxWaterConsumption);
 		}
-
-		/// <summary>
-		/// SPIKE (cm-e98i). Filters by the placement the GAME gives an asset —
-		/// UIObject.m_Group and its menu — rather than by the section we
-		/// reconstruct in VanillaBuildMenuTaxonomy.
-		///
-		/// Vanilla's menu is set membership, not a predicate: an asset is in a
-		/// category iff UIObjectData.m_Group is that category. Asking the same
-		/// question is what makes our Healthcare view agree with the game's.
-		/// An asset that is in no menu at all fails a menu constraint, which is
-		/// also vanilla's behaviour — it only ever lists group members.
-		/// </summary>
-		/// <summary>
-		/// Whether this query is asking about a place in the vanilla build menu.
-		/// </summary>
-		/// <remarks>
-		/// The query owns this now, because the page size depends on the same
-		/// answer: a menu-scoped query does not page. Two copies of "am I
-		/// looking at a menu?" would be two places to disagree.
-		/// </remarks>
-		private static bool IsScopedToMenuTree(BuildingCatalogQuery query) => query.IsScopedToMenu;
 
 		/// <summary>
 		/// The value an entry answers with on the fallback strip's axis.
@@ -354,6 +288,23 @@ namespace FindItBuildingMenu.Services
 					? BuildingCatalogFacetSelection.Availability.AlreadyBuilt
 					: BuildingCatalogFacetSelection.Availability.Unlocked;
 
+		/// <summary>
+		/// The only scope there is: the game's own menu placement.
+		/// </summary>
+		/// <remarks>
+		/// Vanilla's menu is set membership, not a predicate: an asset is in a
+		/// category iff UIObjectData.m_Group is that category. Asking the same
+		/// question is what makes our Healthcare view agree with the game's.
+		/// An asset that is in no menu at all fails a menu constraint, which is
+		/// also vanilla's behaviour — it only ever lists group members.
+		///
+		/// There used to be a second predicate here, over a section taxonomy
+		/// rebuilt from upstream FindIt's category enums, applied whenever no
+		/// menu was named. Layering it on the tree had cost Roads 35 of its 157
+		/// members and Transportation 23 of 53 (members that indexed into a
+		/// section the preset did not name), so the tree already replaced it
+		/// when scoped; now the tree is all there is, scoped or not.
+		/// </remarks>
 		private static bool MatchesVanillaMenuTree(BuildingCatalogEntry entry, BuildingCatalogQuery query)
 		{
 			string menu = query.UiMenu?.Trim() ?? string.Empty;
@@ -403,36 +354,6 @@ namespace FindItBuildingMenu.Services
 					NetworkMenuExtension.EffectiveCategory(entry, menu),
 					category,
 					StringComparison.OrdinalIgnoreCase);
-		}
-
-		private static bool MatchesBuildMenu(BuildingCatalogEntry entry, BuildingCatalogQuery query)
-		{
-			string section = query.BuildMenuSection?.Trim() ?? string.Empty;
-			if (!string.IsNullOrEmpty(section)
-				&& !string.Equals(section, VanillaBuildMenuTaxonomy.AllBuildings, StringComparison.OrdinalIgnoreCase))
-			{
-				if (string.Equals(section, VanillaBuildMenuTaxonomy.Favorites, StringComparison.OrdinalIgnoreCase))
-				{
-					if (!entry.IsFavorited)
-					{
-						return false;
-					}
-				}
-				else if (!VanillaBuildMenuTaxonomy.GetSectionDescriptors()
-					.Any(descriptor => string.Equals(descriptor.Id, section, StringComparison.OrdinalIgnoreCase)))
-				{
-					return false;
-				}
-				else if (!string.Equals(entry.VanillaSection, section, StringComparison.OrdinalIgnoreCase))
-				{
-					return false;
-				}
-			}
-
-			string subCategory = query.BuildMenuSubCategory?.Trim() ?? string.Empty;
-			return string.IsNullOrEmpty(subCategory)
-				|| string.Equals(subCategory, VanillaBuildMenuTaxonomy.Any, StringComparison.OrdinalIgnoreCase)
-				|| string.Equals(entry.VanillaSubCategory, subCategory, StringComparison.OrdinalIgnoreCase);
 		}
 
 		private static bool InRange(double? value, double? minimum, double? maximum)
