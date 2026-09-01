@@ -144,27 +144,7 @@ namespace FindItBuildingMenu.Services
 		private static VanillaToolbarSelection WithoutPacks(VanillaToolbarSelection selection) =>
 			new(selection.SelectedThemes, null, selection.VanillaSelected, selection.ModsSelected);
 
-		public BuildingCatalogFacetState GetFacetState(BuildingCatalogQuery query)
-		{
-			if (query is null)
-			{
-				throw new ArgumentNullException(nameof(query));
-			}
-
-			// Scoped to the view, not to the whole index — see InScope.
-			return BuildFacetState(
-				BuildingCatalogQueryEngine.InScope(ProjectForMenu(query.UiMenu, query.DlcIds), query),
-				query,
-				// Packs alone are counted before the pack filter runs, because
-				// that filter is upstream of InScope and InScope cannot undo it.
-				// Only a second snapshot when a pack IS selected; otherwise the
-				// pack scope is the ordinary one and costs nothing.
-				BuildingCatalogQueryEngine.InScope(
-					ToolbarSelection.SelectedPacks.Count > 0
-						? ProjectForMenu(query.UiMenu, query.DlcIds, ignorePacks: true)
-						: ProjectForMenu(query.UiMenu, query.DlcIds),
-					query));
-		}
+		public BuildingCatalogFacetState GetFacetState(BuildingCatalogQuery query) => Build(query).FacetState;
 
 		/// <summary>
 		/// How many assets each of the menu's category tabs holds.
@@ -190,41 +170,7 @@ namespace FindItBuildingMenu.Services
 		/// rendered blank; it became visible the moment absent-but-known
 		/// started rendering as 0.
 		/// </remarks>
-		public IReadOnlyList<MenuCategoryCount> GetMenuCategoryCounts(BuildingCatalogQuery query)
-		{
-			if (query is null)
-			{
-				throw new ArgumentNullException(nameof(query));
-			}
-
-			// The school levels are drawn in the Education category's own place,
-			// so for counting purposes they are the SAME axis as the categories
-			// and both come off. Dropping only UiCategory made picking a level
-			// count Research against that level — zero — and visibleCategories
-			// then removed the Research tab entirely, so choosing a school tier
-			// made the other half of the menu unreachable.
-			var acrossCategories = query with { UiCategory = string.Empty, SchoolTier = -1, StripTabs = null };
-
-			// The UNNAMED group stays in. It draws no tab — the strip iterates
-			// the menu's own category list, not this table — but the client
-			// reads "All" as the SUM of this table, so dropping the entries
-			// with no category made All under-report by exactly them.
-			//
-			// Scoped that was invisible, because everything in a menu has a
-			// category there. Unscoped it is most of the catalogue: measured
-			// with 105 asset packs, the strip said All 716 over a list of
-			// 10,528, and the 9,812 missing were assets that answer to no
-			// category once no menu is open.
-			//
-			// Anything counting CATEGORIES off this table therefore has to say
-			// so — see the two callers below, which ask for named rows.
-			return BuildingCatalogQueryEngine
-				.InScope(ProjectForMenu(query.UiMenu, acrossCategories.DlcIds), acrossCategories)
-				.GroupBy(entry => NetworkMenuExtension.EffectiveCategory(entry, query.UiMenu) ?? string.Empty)
-				.Select(group => new MenuCategoryCount(group.Key, group.Count()))
-				.OrderBy(count => count.Id, StringComparer.Ordinal)
-				.ToArray();
-		}
+		public IReadOnlyList<MenuCategoryCount> GetMenuCategoryCounts(BuildingCatalogQuery query) => Build(query).MenuCategoryCounts;
 
 		/// <summary>
 		/// How many assets each of the menu's progression tabs holds.
@@ -286,40 +232,7 @@ namespace FindItBuildingMenu.Services
 		/// strip has no category row to expand INTO — that is the fallback
 		/// case, and GetStripAxis handles it.
 		/// </remarks>
-		public string GetExpandedCategoryId(BuildingCatalogQuery query)
-		{
-			if (query is null)
-			{
-				throw new ArgumentNullException(nameof(query));
-			}
-
-			// Named rows only: the table now carries an unnamed row for the
-			// assets in no category, and that one is not a category to expand.
-			var categories = GetMenuCategoryCounts(query);
-
-			if (categories.Count(category => category.Id.Length > 0) < 2)
-			{
-				return string.Empty;
-			}
-
-			var unscoped = query with
-			{
-				UiCategory = string.Empty,
-				StripTabs = null,
-				SchoolTier = -1,
-			};
-
-			return BuildingCatalogQueryEngine
-				.InScope(ProjectForMenu(query.UiMenu, unscoped.DlcIds), unscoped)
-				.Where(entry => !string.IsNullOrEmpty(entry.DevTreeBranch))
-				.GroupBy(entry => NetworkMenuExtension.EffectiveCategory(entry, query.UiMenu) ?? string.Empty)
-				.Where(group => group.Key.Length > 0
-					&& group.Select(entry => entry.DevTreeBranch).Distinct(StringComparer.Ordinal).Count() > 1)
-				.OrderByDescending(group => group.Count())
-				.ThenBy(group => group.Key, StringComparer.Ordinal)
-				.Select(group => group.Key)
-				.FirstOrDefault() ?? string.Empty;
-		}
+		public string GetExpandedCategoryId(BuildingCatalogQuery query) => Build(query).ExpandedCategoryId;
 
 		/// <summary>The branch tabs that stand in for the expanded category.</summary>
 		/// <remarks>
@@ -327,31 +240,7 @@ namespace FindItBuildingMenu.Services
 		/// them follows the game's own progression: the basic stations before
 		/// the headquarters they lead to, whatever the alphabet says.
 		/// </remarks>
-		public IReadOnlyList<MenuBranchCount> GetExpandedCategoryTabs(BuildingCatalogQuery query)
-		{
-			var category = GetExpandedCategoryId(query);
-
-			if (category.Length == 0)
-			{
-				return Array.Empty<MenuBranchCount>();
-			}
-
-			// Scoped to the expanded category and counted across the tabs' own
-			// axis, which is the rule every counter here follows.
-			var withinCategory = query with { UiCategory = category, StripTabs = null };
-
-			return BuildingCatalogQueryEngine
-				.InScope(ProjectForMenu(query.UiMenu, withinCategory.DlcIds), withinCategory)
-				.Where(entry => !string.IsNullOrEmpty(entry.DevTreeBranch))
-				.GroupBy(entry => entry.DevTreeBranch!)
-				.OrderBy(group => group.Min(entry => entry.DevTreeBranchDepth))
-				.ThenBy(group => group.Key, StringComparer.Ordinal)
-				.Select(group => new MenuBranchCount(
-					group.Key,
-					group.Count(),
-					TabIcon(group, authored: true)))
-				.ToArray();
-		}
+		public IReadOnlyList<MenuBranchCount> GetExpandedCategoryTabs(BuildingCatalogQuery query) => Build(query).ExpandedCategoryTabs;
 
 		/// <summary>
 		/// Every category whose density tiers should be drawn in its place.
@@ -414,84 +303,9 @@ namespace FindItBuildingMenu.Services
 		/// so replacing that method would have made the axis depend on a method
 		/// that depends on the axis.
 		/// </remarks>
-		public IReadOnlyList<MenuCategoryTabs> GetExpandedCategories(BuildingCatalogQuery query)
-		{
-			if (query is null)
-			{
-				throw new ArgumentNullException(nameof(query));
-			}
+		public IReadOnlyList<MenuCategoryTabs> GetExpandedCategories(BuildingCatalogQuery query) => Build(query).ExpandedCategories;
 
-			var unscoped = query with
-			{
-				UiCategory = string.Empty,
-				StripTabs = null,
-				SchoolTier = -1,
-			};
-
-			var density = BuildDensityTabs(
-				BuildingCatalogQueryEngine.InScope(ProjectForMenu(query.UiMenu, unscoped.DlcIds), unscoped),
-				query.UiMenu);
-
-			if (density.Count > 0)
-			{
-				return density;
-			}
-
-			var branchCategory = GetExpandedCategoryId(query);
-
-			return branchCategory.Length == 0
-				? Array.Empty<MenuCategoryTabs>()
-				: new[] { new MenuCategoryTabs(branchCategory, GetExpandedCategoryTabs(query).ToArray()) };
-		}
-
-		public string GetStripAxis(BuildingCatalogQuery query)
-		{
-			if (query is null)
-			{
-				throw new ArgumentNullException(nameof(query));
-			}
-
-			// Nothing to choose when vanilla already split the menu: its
-			// categories are the strip, and the fallback is not drawn. Reported
-			// as empty rather than "the axis we would have picked", because the
-			// UI reads this to decide what the menu is organised BY — and on
-			// Education, which has categories, a would-be answer put the Group
-			// by picker on Development while the strip showed Education and
-			// Research.
-			if (GetMenuCategoryCounts(query).Count(category => category.Id.Length > 0) > 1)
-			{
-				// A category menu still uses the development axis when one of
-				// its categories is drawn as branches — the tabs and the
-				// predicate have to agree on that, or clicking one matches
-				// nothing.
-				return GetExpandedCategoryId(query).Length > 0
-					? StripAxes.Development
-					: string.Empty;
-			}
-
-			var best = string.Empty;
-			var bestLargest = int.MaxValue;
-
-			foreach (var axis in new[] { StripAxes.Development, StripAxes.AssetType })
-			{
-				var tabs = StripTabsFor(query, axis);
-
-				if (tabs.Count < 2)
-				{
-					continue;
-				}
-
-				var largest = tabs.Max(tab => tab.Count);
-
-				if (largest < bestLargest)
-				{
-					best = axis;
-					bestLargest = largest;
-				}
-			}
-
-			return best;
-		}
+		public string GetStripAxis(BuildingCatalogQuery query) => Build(query).StripAxis;
 
 		/// <summary>The fallback strip's tabs, on whichever axis it chose.</summary>
 		/// <remarks>
@@ -505,40 +319,7 @@ namespace FindItBuildingMenu.Services
 		/// tree rarely gates, and splitting them would trade one honest tab for
 		/// several near-empty ones.
 		/// </remarks>
-		public IReadOnlyList<MenuBranchCount> GetStripTabs(BuildingCatalogQuery query)
-		{
-			if (query is null)
-			{
-				throw new ArgumentNullException(nameof(query));
-			}
-
-			var axis = GetStripAxis(query);
-
-			if (axis.Length == 0)
-			{
-				return Array.Empty<MenuBranchCount>();
-			}
-
-			var tabs = StripTabsFor(query, axis);
-
-			if (axis != StripAxes.AssetType)
-			{
-				return tabs;
-			}
-
-			var buildingNodes = StripTabsFor(
-				query with { StripTabs = new[] { StripAxes.BuildingValue } },
-				StripAxes.Development);
-
-			if (buildingNodes.Count < 2)
-			{
-				return tabs;
-			}
-
-			return buildingNodes
-				.Concat(tabs.Where(tab => tab.Id != StripAxes.BuildingValue))
-				.ToArray();
-		}
+		public IReadOnlyList<MenuBranchCount> GetStripTabs(BuildingCatalogQuery query) => Build(query).StripTabs;
 
 		/// <summary>
 		/// The tabs one axis would draw, counted with its own filter dropped.
@@ -548,37 +329,6 @@ namespace FindItBuildingMenu.Services
 		/// comes off so the tabs keep counting each other, and everything else
 		/// — the search, the facets, the selected category — stays on.
 		/// </remarks>
-		private IReadOnlyList<MenuBranchCount> StripTabsFor(BuildingCatalogQuery query, string axis)
-		{
-			var acrossTabs = query with { StripTabs = null };
-
-			return BuildingCatalogQueryEngine
-				.InScope(ProjectForMenu(query.UiMenu, acrossTabs.DlcIds), acrossTabs)
-				.GroupBy(entry => BuildingCatalogQueryEngine.StripValue(entry, axis))
-				.Where(group => group.Key.Length > 0)
-				// Development tabs run in UNLOCK order — the root, then each node
-				// by its column in the tree — because that is the order the
-				// player meets them in and the only order the tabs have a claim
-				// to. Sorted by size they ran Nuclear before Solar, which is
-				// backwards in the one sense the axis is about.
-				//
-				// Everything else has no inherent order, so the biggest bucket
-				// leads: it is the most useful stable arrangement when the tabs
-				// are merely different rather than sequential.
-				.Select(group => new
-				{
-					Tab = new MenuBranchCount(
-						group.Key,
-						group.Count(),
-						TabIcon(group, axis == StripAxes.Development)),
-					Depth = group.Min(entry => entry.DevTreeBranchDepth),
-				})
-				.OrderBy(x => axis == StripAxes.Development ? x.Depth : 0)
-				.ThenByDescending(x => axis == StripAxes.Development ? 0 : x.Tab.Count)
-				.ThenBy(x => x.Tab.Id, StringComparer.Ordinal)
-				.Select(x => x.Tab)
-				.ToArray();
-		}
 
 		/// <summary>
 		/// <summary>
@@ -605,10 +355,10 @@ namespace FindItBuildingMenu.Services
 		/// drawn for 24rem, and a building render at that size is a dark
 		/// smudge, four of which look alike.
 		/// </remarks>
-		private const string SchoolTierIcon = "Media/Game/Icons/Education.svg";
+		internal const string SchoolTierIcon = "Media/Game/Icons/Education.svg";
 
 		/// <summary>The progression screen's badge for a milestone, if any.</summary>
-		private static string MilestoneIcon(int milestone)
+		internal static string MilestoneIcon(int milestone)
 		{
 			var icons = PrefabIndexingSystem.GetMilestoneIcons();
 
@@ -635,7 +385,7 @@ namespace FindItBuildingMenu.Services
 		/// not change when the player re-sorts. Falls back to the fallback
 		/// thumbnail, which is what the grid draws for the same asset.
 		/// </remarks>
-		private static string TabIcon(IEnumerable<BuildingCatalogEntry> group, bool authored)
+		internal static string TabIcon(IEnumerable<BuildingCatalogEntry> group, bool authored)
 		{
 			var entries = group.ToArray();
 
@@ -672,28 +422,7 @@ namespace FindItBuildingMenu.Services
 		/// binding. Levels 0 and 5 are dropped: 0 is a capacity upgrade with no
 		/// tier and 5 is the outside connection, and neither is a tab.
 		/// </remarks>
-		public IReadOnlyList<MenuBranchCount> GetMenuSchoolTierCounts(BuildingCatalogQuery query)
-		{
-			if (query is null)
-			{
-				throw new ArgumentNullException(nameof(query));
-			}
-
-			// The other half of the same rule: a category picked in that row
-			// must not collapse the level counts beside it.
-			var acrossTiers = query with { SchoolTier = -1, UiCategory = string.Empty };
-
-			return BuildingCatalogQueryEngine
-				.InScope(ProjectForMenu(query.UiMenu, acrossTiers.DlcIds), acrossTiers)
-				.Where(entry => entry.EducationLevel is >= 1 and <= 4)
-				.GroupBy(entry => entry.EducationLevel!.Value)
-				.Select(group => new MenuBranchCount(
-					group.Key.ToString(System.Globalization.CultureInfo.InvariantCulture),
-					group.Count(),
-					SchoolTierIcon))
-				.OrderBy(count => count.Id, StringComparer.Ordinal)
-				.ToArray();
-		}
+		public IReadOnlyList<MenuBranchCount> GetMenuSchoolTierCounts(BuildingCatalogQuery query) => Build(query).SchoolTierCounts;
 
 		/// <summary>
 		/// The spread each metric actually has in the current view.
@@ -715,16 +444,7 @@ namespace FindItBuildingMenu.Services
 		/// twelve numbers are the same twelve, and the UI already reads them.
 		/// Its HasSelection is meaningless here and nothing asks.
 		/// </remarks>
-		public BuildingCatalogMetricRangeState GetMetricBounds(BuildingCatalogQuery query)
-		{
-			if (query is null)
-			{
-				throw new ArgumentNullException(nameof(query));
-			}
-
-			return MetricBoundsOf(
-				BuildingCatalogQueryEngine.InScope(ProjectForMenu(query.UiMenu, query.DlcIds), query));
-		}
+		public BuildingCatalogMetricRangeState GetMetricBounds(BuildingCatalogQuery query) => Build(query).MetricBounds;
 
 		/// <summary>
 		/// The same arithmetic over a set of entries, without a World.
@@ -885,14 +605,32 @@ namespace FindItBuildingMenu.Services
 			return new BuildingCatalogFacetState(groups.ToArray(), hasSelection);
 		}
 
-		public BuildingCatalogPage Query(BuildingCatalogQuery query)
+		public BuildingCatalogPage Query(BuildingCatalogQuery query) => Build(query).Page;
+
+		/// <summary>One view per refresh: every per-query answer above comes from it.</summary>
+		/// <remarks>
+		/// The public methods stayed as one-line delegations so their callers and
+		/// tests read unchanged; FindItUISystem calls this once and reads the
+		/// view's properties, which is where the fifteen passes went.
+		/// </remarks>
+		public CatalogView Build(BuildingCatalogQuery query)
 		{
 			if (query is null)
 			{
 				throw new ArgumentNullException(nameof(query));
 			}
 
-			return BuildingCatalogQueryEngine.Query(ProjectForMenu(query.UiMenu, query.DlcIds), query);
+			var snapshot = ProjectForMenu(query.UiMenu, query.DlcIds);
+
+			// Packs alone are counted before the pack filter runs, because that
+			// filter is upstream of InScope and InScope cannot undo it. Only a
+			// second snapshot when a pack IS selected.
+			return new CatalogView(
+				snapshot,
+				query,
+				ToolbarSelection.SelectedPacks.Count > 0
+					? () => ProjectForMenu(query.UiMenu, query.DlcIds, ignorePacks: true)
+					: null);
 		}
 
 		public bool TryGet(int id, out BuildingCatalogEntry? entry)
