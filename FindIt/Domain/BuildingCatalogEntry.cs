@@ -228,8 +228,7 @@ namespace FindItBuildingMenu.Domain
 			writer.Write((int)ZoneType);
 			writer.PropertyName("hasParking");
 			writer.Write(HasParking);
-			// Same for IsUniqueMesh: it drives a server-side filter in Filters.cs
-			// and nothing renders it.
+			// Same for IsUniqueMesh: nothing renders it.
 			writer.PropertyName("isVanilla");
 			writer.Write(IsVanilla);
 			writer.PropertyName("isLocked");

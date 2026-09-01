@@ -95,7 +95,7 @@ namespace FindItBuildingMenu.Systems
 				return;
 			}
 
-			if (FindItUtil.Find(prefab, false, out var id))
+			if (FindItUtil.Find(prefab, out var id))
 			{
 				_lastUsedPrefabs.Remove(id);
 				_lastUsedPrefabs.Add(id);

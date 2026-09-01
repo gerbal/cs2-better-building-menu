@@ -38,7 +38,6 @@ namespace FindItBuildingMenu.Systems
 
 		private ToolSystem _toolSystem;
 		private PrefabSystem _prefabSystem;
-		private FindItOptionsUISystem _optionsUISystem;
 		private DefaultToolSystem _defaultToolSystem;
 		private CameraUpdateSystem _cameraUpdateSystem;
 		// Only for releasing the toolbar's menu selection when the lens closes;
@@ -108,7 +107,6 @@ namespace FindItBuildingMenu.Systems
 		/// </remarks>
 		private ValueBindingHelper<BuildingCatalogMetricRangeState> _BuildingCatalogMetricBounds = null!;
 		private ValueBindingHelper<BuildingCatalogFacetState> _BuildingLensFacets = null!;
-		private ValueBindingHelper<string[]> _BuildingLensLegacyFilters = null!;
 		private ValueBindingHelper<string> _BuildingCatalogSortColumn = null!;
 
 		private ValueBindingHelper<bool> _BuildingCatalogSortDescending = null!;
@@ -165,7 +163,6 @@ namespace FindItBuildingMenu.Systems
 			// Instantiating systems 
 			_toolSystem = World.GetOrCreateSystemManaged<ToolSystem>();
 			_prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
-			_optionsUISystem = World.GetOrCreateSystemManaged<FindItOptionsUISystem>();
 			_defaultToolSystem = World.GetOrCreateSystemManaged<DefaultToolSystem>();
 			_cameraUpdateSystem = World.GetOrCreateSystemManaged<CameraUpdateSystem>();
 			_toolbarUISystem = World.GetOrCreateSystemManaged<Game.UI.InGame.ToolbarUISystem>();
@@ -221,7 +218,6 @@ namespace FindItBuildingMenu.Systems
 			_BuildingCatalogMetricRanges = CreateBinding("BuildingCatalogMetricRanges", BuildingCatalogMetricRangeState.Empty);
 			_BuildingCatalogMetricBounds = CreateBinding("BuildingCatalogMetricBounds", BuildingCatalogMetricRangeState.Empty);
 			_BuildingLensFacets = CreateBinding("BuildingLensFacets", new BuildingCatalogFacetState(Array.Empty<BuildingCatalogFacetGroup>(), false));
-			_BuildingLensLegacyFilters = CreateBinding("BuildingLensLegacyFilters", Array.Empty<string>());
 			// Sort is a read/write binding rather than a write-only trigger: the
 			// order lives in the persistent query, so a UI that could only write
 			// it showed a stale indicator over correctly-sorted rows after any

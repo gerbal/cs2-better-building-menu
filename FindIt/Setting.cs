@@ -147,9 +147,6 @@ namespace FindItBuildingMenu
 		public bool HideBrandsFromAny { get; set; }
 
 		[SettingsUISection(SETTINGS, UIUX)]
-		public bool StrictSearch { get; set; }
-
-		[SettingsUISection(SETTINGS, UIUX)]
 		public bool NoAssetImage { get; set; }
 
 		[SettingsUISection(SETTINGS, UIUX)]

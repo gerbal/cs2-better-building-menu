@@ -699,8 +699,6 @@ namespace FindItBuildingMenu.Systems
 
 			_PanelWidth.Value = GridUtil.GetCurrentPanelWidth();
 
-			FindItUtil.SetSorting();
-
 			RefreshLens();
 
 			// RefreshLens already ran RefreshBuildingCatalog
@@ -813,12 +811,10 @@ namespace FindItBuildingMenu.Systems
 		{
 			text = text.Replace("\r", "").Replace("\n", "");
 
-			if (_CurrentSearch == text && FindItUtil.Filters.CurrentSearch == text)
+			if (_CurrentSearch == text)
 			{
 				return;
 			}
-
-			FindItUtil.Filters.CurrentSearch = text.Trim();
 
 			_CurrentSearch.Value = text;
 			_CurrentSearch.ForceUpdate();

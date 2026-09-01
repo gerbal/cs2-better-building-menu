@@ -24,7 +24,6 @@ namespace FindItBuildingMenu.Domain
 		int? MaxLotDepth = null,
 		int? MinBuildingLevel = null,
 		int? MaxBuildingLevel = null,
-		bool? HasParking = null,
 		double? MinConstructionCost = null,
 		double? MaxConstructionCost = null,
 		double? MinUpkeep = null,

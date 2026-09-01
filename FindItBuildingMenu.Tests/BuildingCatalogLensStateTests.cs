@@ -13,7 +13,6 @@ public sealed class BuildingCatalogLensStateTests
             SearchText: "school",
             SortColumn: "Capacity",
             Offset: 200,
-            HasParking: true,
             MinCapacity: 100,
             MaxCapacity: 1000,
             BuildingTypes: new[] { "School" },
@@ -38,7 +37,6 @@ public sealed class BuildingCatalogLensStateTests
         Assert.Null(cleared.Query.Themes);
         Assert.Null(cleared.Query.MinCapacity);
         Assert.Null(cleared.Query.MaxCapacity);
-        Assert.True(cleared.Query.HasParking);
         Assert.Equal("school", cleared.Query.SearchText);
         Assert.Equal(0, cleared.Query.Offset);
         Assert.False(cleared.MetricRanges.HasSelection);

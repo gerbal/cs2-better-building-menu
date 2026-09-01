@@ -1,5 +1,4 @@
 ﻿using FindItBuildingMenu.Domain;
-using FindItBuildingMenu.Domain.Enums;
 using FindItBuildingMenu.Domain.UIBinding;
 using FindItBuildingMenu.Utilities;
 using Game.Prefabs;
@@ -71,14 +70,6 @@ namespace FindItBuildingMenu.Systems
 				UiMenu = _buildingLensUiMenu,
 				UiCategory = _buildingLensUiCategory,
 				SchoolTier = _buildingLensSchoolTier,
-				// Keep the successor lens in lockstep with FindIt's common
-				// parking filters. The legacy grid owns the full filter pipeline;
-				// the bounded catalog receives the equivalent typed predicate.
-				HasParking = FindItUtil.Filters.WithParking
-					? true
-					: FindItUtil.Filters.WithoutParking
-						? false
-						: null,
 				MinConstructionCost = _buildingMetricRanges.MinCost,
 				MaxConstructionCost = _buildingMetricRanges.MaxCost,
 				MinUpkeep = _buildingMetricRanges.MinUpkeep,
@@ -176,18 +167,6 @@ namespace FindItBuildingMenu.Systems
 				_buildingCatalogAdapter.GetExpandedCategories(_buildingCatalogQuery).ToArray();
 			_BuildingLensMenuSchoolTierCounts.Value =
 				_buildingCatalogAdapter.GetMenuSchoolTierCounts(_buildingCatalogQuery).ToArray();
-			_BuildingLensLegacyFilters.Value = CaptureLegacyFilters().Describe().ToArray();
-			// At most three ids, so re-projecting alongside the page keeps the
-			// tray current once indexing finishes without measurable cost.
-
-			// The options bank's short-facet rows (Availability, Provenance,
-			// Placement) decide their own visibility and Selected flags from
-			// _BuildingLensFacets, just written above. Nothing else refreshes
-			// them when that state changes underneath them — not a rail toggle,
-			// not a section switch with the panel already open — so this has to
-			// be the one place that always runs after a facet binding changes.
-			_optionsUISystem.RefreshOptions();
-
 			// cm-2xvs.25. Logged only when it changes by more than a tenth of a
 			// second, so a steady state costs one line rather than one per
 			// frame — and a regression in this number is visible in a normal
@@ -204,31 +183,6 @@ namespace FindItBuildingMenu.Systems
 			Mod.Log.Info(
 				$"[LENS-REFRESH] {(int)refreshTimer.ElapsedMilliseconds}ms "
 				+ $"menu='{_buildingCatalogQuery.UiMenu}' total={page.TotalCount} from={caller}");
-		}
-
-		/// <summary>
-		/// Snapshots the legacy FindIt filter panel so the lens can name the
-		/// filters that are narrowing its result set. The adapter applies these
-		/// to the lens index, so leaving them out of the summary made the panel
-		/// claim nothing was filtering while most of the catalog was hidden.
-		/// </summary>
-		private static BuildingLensLegacyFilterSnapshot CaptureLegacyFilters()
-		{
-			Filters filters = FindItUtil.Filters;
-
-			return new BuildingLensLegacyFilterSnapshot(
-				HideAds: filters.HideAds,
-				HideRandoms: filters.HideRandoms,
-				HideVanilla: filters.HideVanilla,
-				UniqueMesh: filters.UniqueMesh,
-				OnlyPlaced: filters.OnlyPlaced,
-				WithParking: filters.WithParking,
-				WithoutParking: filters.WithoutParking,
-				HasZoneType: filters.SelectedZoneType != ZoneTypeFilter.Any,
-				HasBuildingCorner: filters.SelectedBuildingCorner != BuildingCornerFilter.Any,
-				BuildingLevel: filters.BuildingLevelFilter,
-				LotDepth: filters.LotDepthFilter,
-				LotWidth: filters.LotWidthFilter);
 		}
 
 		/// <summary>
@@ -288,7 +242,6 @@ namespace FindItBuildingMenu.Systems
 		internal void ClearSearch()
 		{
 			_ClearSearchBar.Value = true;
-			FindItUtil.Filters.CurrentSearch = string.Empty;
 			_searchDebounce.Cancel();
 			_IsSearchLoading.Value = false;
 			_CurrentSearch.Value = string.Empty;

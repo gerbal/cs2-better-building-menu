@@ -136,7 +136,7 @@ namespace FindItBuildingMenu.Systems
 					{
 						_findItUISystem.ClearSearch();
 
-						if (FindItUtil.Find(prefab, true, out var id))
+						if (FindItUtil.Find(prefab, out var id))
 						{
 							// Since phase 2 the build menu lives in the game's
 							// own asset-menu slot, so it exists only while the

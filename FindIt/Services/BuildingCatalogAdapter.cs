@@ -1012,8 +1012,6 @@ namespace FindItBuildingMenu.Services
 			}
 
 			string menu = uiMenu?.Trim() ?? string.Empty;
-			var filters = FindItUtil.Filters.GetFilterList(includeSearch: false).ToArray();
-
 			return allPrefabs
 				// Sub-buildings are not list entries. Vanilla runs the same test
 				// (FilterOutUpgrades, on ServiceUpgradeData) before drawing any
@@ -1082,8 +1080,7 @@ namespace FindItBuildingMenu.Services
 					placedInThisMenu: !string.IsNullOrEmpty(menu)
 						&& PrefabIndexingSystem.IsPlacedInMenu(prefab.Id, menu),
 					placedInAnyMenu: PrefabIndexingSystem.IsPlacedInAnyMenu(prefab.Id),
-					gatheredNetwork: !string.IsNullOrEmpty(menu) && IsGatheredNetwork(prefab, menu)))
-				.Where(prefab => filters.All(filter => filter(prefab)));
+					gatheredNetwork: !string.IsNullOrEmpty(menu) && IsGatheredNetwork(prefab, menu)));
 		}
 
 		/// <summary>

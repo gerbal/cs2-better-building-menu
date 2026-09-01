@@ -145,7 +145,7 @@ public sealed class BuildingCatalogQueryEngineTests
     }
 
     [Fact]
-    public void Query_RangeAndParkingFilters_UseInclusiveBounds()
+    public void Query_RangeFilters_UseInclusiveBounds()
     {
         BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
             SampleEntries,
@@ -155,8 +155,7 @@ public sealed class BuildingCatalogQueryEngineTests
                 MinLotDepth: 2,
                 MaxLotDepth: 2,
                 MinBuildingLevel: 2,
-                MaxBuildingLevel: 2,
-                HasParking: false));
+                MaxBuildingLevel: 2));
 
         BuildingCatalogEntry entry = Assert.Single(page.Items);
         Assert.Equal(4, entry.Id);
@@ -418,51 +417,6 @@ public sealed class BuildingCatalogQueryEngineTests
     }
 
     [Fact]
-    public void LegacyFilterSnapshot_ReportsNothingActiveWhenTheLegacyPanelIsUntouched()
-    {
-        Assert.Empty(BuildingLensLegacyFilterSnapshot.Empty.Describe());
-        Assert.False(BuildingLensLegacyFilterSnapshot.Empty.HasSelection);
-    }
-
-    [Fact]
-    public void LegacyFilterSnapshot_NamesEveryFilterThatShapesTheLensResult()
-    {
-        // These are applied to the lens index by BuildingCatalogAdapter via
-        // Filters.GetFilterList, but the lens summary used to count only its
-        // own facets and ranges — so the panel could claim "No active lens
-        // filters" while silently hiding most of the catalog.
-        BuildingLensLegacyFilterSnapshot snapshot = BuildingLensLegacyFilterSnapshot.Empty with
-        {
-            OnlyPlaced = true,
-            HideVanilla = true,
-            WithParking = true,
-            BuildingLevel = 3,
-        };
-
-        Assert.True(snapshot.HasSelection);
-        Assert.Equal(
-            new[] { "Hide vanilla", "Only placed", "With parking", "Building level" },
-            snapshot.Describe());
-    }
-
-    [Fact]
-    public void LegacyFilterSnapshot_TreatsParkingAsMutuallyExclusive()
-    {
-        // GetFilterList uses if/else for this pair, so reporting both would
-        // describe a filter the query never applied.
-        //
-        // Theme was the other pair here. It went with ThemeOption: the game's
-        // own toolbar row answers that question now, so a second theme filter
-        // of ours could only disagree with it.
-        BuildingLensLegacyFilterSnapshot parking = BuildingLensLegacyFilterSnapshot.Empty with
-        {
-            WithParking = true,
-            WithoutParking = true,
-        };
-        Assert.Equal(new[] { "With parking" }, parking.Describe());
-    }
-
-    [Fact]
     public void ResetWindowIfPredicatesChanged_KeepsTheWindowWhenOnlyItsSizeMoved()
     {
         // Load-more is a Limit change and nothing else. If Limit counted as a
@@ -490,13 +444,13 @@ public sealed class BuildingCatalogQueryEngineTests
     }
 
     [Fact]
-    public void ResetWindowIfPredicatesChanged_ResetsForLegacyFilterAndRangeChanges()
+    public void ResetWindowIfPredicatesChanged_ResetsForRangeChanges()
     {
-        // The legacy FindIt parking filters and the metric drawer feed the same
-        // query, so they invalidate the window just as a search does.
+        // The metric drawer feeds the same query, so it invalidates the window
+        // just as a search does.
         BuildingCatalogQuery previous = new(Offset: 200, Limit: 600);
 
-        Assert.Equal(0, (previous with { HasParking = true }).ResetWindowIfPredicatesChanged(previous).Offset);
+        Assert.Equal(0, (previous with { MinLotWidth = 2 }).ResetWindowIfPredicatesChanged(previous).Offset);
         Assert.Equal(0, (previous with { MinCapacity = 500 }).ResetWindowIfPredicatesChanged(previous).Offset);
         Assert.Equal(0, (previous with { UiMenu = "Education & Research" }).ResetWindowIfPredicatesChanged(previous).Offset);
     }
@@ -773,35 +727,17 @@ public sealed class BuildingCatalogQueryEngineTests
     }
 
     [Fact]
-    public void Filters_CatalogFilterList_ExcludesSearchForTheTypedLensQuery()
-    {
-        Filters filters = new()
-        {
-            CurrentSearch = "academy",
-            SelectedBuildingCorner = BuildingCornerFilter.Any,
-        };
-
-        Assert.Empty(filters.GetFilterList(includeSearch: false));
-    }
-
-    [Fact]
-    public void FindItUtil_WhenIndexCategoriesAreMissing_ReturnsEmptyCollections()
+    public void FindItUtil_WhenIndexCategoriesAreMissing_ReturnsNulls()
     {
         bool previousReady = FindItUtil.IsReady;
-        PrefabCategory previousCategory = FindItUtil.CurrentCategory;
-        PrefabSubCategory previousSubCategory = FindItUtil.CurrentSubCategory;
         KeyValuePair<PrefabCategory, Dictionary<PrefabSubCategory, IndexedPrefabList>>[] previousCategories =
             FindItUtil.CategorizedPrefabs.ToArray();
 
         try
         {
             FindItUtil.CategorizedPrefabs.Clear();
-            FindItUtil.CurrentCategory = PrefabCategory.Any;
-            FindItUtil.CurrentSubCategory = PrefabSubCategory.Any;
             FindItUtil.IsReady = true;
 
-            Assert.Empty(FindItUtil.GetSubCategories());
-            Assert.Empty(FindItUtil.GetUnfilteredPrefabs());
             Assert.Null(FindItUtil.GetPrefabBase(0));
             Assert.Null(FindItUtil.GetPrefabIndex(0));
         }
@@ -814,8 +750,6 @@ public sealed class BuildingCatalogQueryEngineTests
             }
 
             FindItUtil.IsReady = previousReady;
-            FindItUtil.CurrentCategory = previousCategory;
-            FindItUtil.CurrentSubCategory = previousSubCategory;
         }
     }
 
