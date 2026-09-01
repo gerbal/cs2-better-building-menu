@@ -1,5 +1,4 @@
 ﻿using FindItBuildingMenu.Domain;
-using FindItBuildingMenu.Domain.Enums;
 using FindItBuildingMenu.Services;
 using FindItBuildingMenu.Utilities;
 using System;
@@ -79,7 +78,6 @@ namespace FindItBuildingMenu.Systems
 		{
 			_buildingLensUiMenu = string.Empty;
 			_buildingLensUiCategory = string.Empty;
-			ResetBuildingLensMilestone();
 			ResetBuildingLensStripTab();
 			ResetBuildingLensSchoolTier();
 			RefreshBuildingLensMenuCategories();
@@ -140,123 +138,74 @@ namespace FindItBuildingMenu.Systems
 				return;
 			}
 
+			// The menu's own name is the whole constraint the query needs:
+			// assets carry the menu the game placed them in (PrefabIndex.UiMenuName,
+			// read off UIObject.m_Group), so a name reproduces vanilla's set
+			// exactly. GetAssetMenuName resolves the UIAssetMenuPrefab's name,
+			// which is that same string, so it needs no translation. There used
+			// to be a preset table in front of this that mapped the service
+			// menus onto upstream FindIt's category enums; the tree covers every
+			// menu — Roads alone is 9 categories, 157 assets — so the table only
+			// ever narrowed what the tree already answered.
 			var menuName = PrefabIndexingSystem.GetAssetMenuName(menuEntityIndex);
-			var preset = VanillaMenuPresets.Resolve(menuName);
 
-			// SPIKE (cm-e98i). The menu's own name is the whole constraint the
-			// query needs: assets carry the menu the game placed them in, so a
-			// name is enough to reproduce vanilla's set exactly. Set before the
-			// preset check, because a menu with no preset is precisely the case
-			// the tree rescues.
-			// GetAssetMenuName resolves the UIAssetMenuPrefab's name, which is the
-			// same string assets carry as UiMenu, so it needs no translation.
-			_buildingLensUiMenu = menuName ?? string.Empty;
-			// A different menu has different tabs, so the old selection cannot
-			// survive the switch.
-			_buildingLensUiCategory = string.Empty;
-			ResetBuildingLensMilestone();
-			ResetBuildingLensStripTab();
-			ResetBuildingLensSchoolTier();
-			RefreshBuildingLensMenuCategories();
-
-			// SPIKE (cm-e98i): Roads, Landscaping and Areas resolve to no preset
-			// and used to close the panel — the lens simply could not show them.
-			// The tree covers them (Roads alone is 9 categories, 157 assets), so
-			// when it knows the menu, open the lens on it instead of retreating.
-			if (preset is null && !string.IsNullOrEmpty(_buildingLensUiMenu))
+			if (string.IsNullOrEmpty(menuName))
 			{
-				_appliedMenuIndex = menuEntityIndex;
-				_appliedMenuFrame = UnityEngine.Time.frameCount;
-				_LensOwnsCurrentMenu.Value = true;
-						_buildingLensSection = VanillaBuildMenuTaxonomy.AllBuildings;
-				_buildingLensSubCategory = VanillaBuildMenuTaxonomy.Any;
-				_BuildingLensSectionBinding.Value = _buildingLensSection;
-				_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
-				_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
-	
-				// activatePrefab: false. Opening a menu must not re-arm the prefab
-				// from the LAST menu — that is what desynced the toolbar. Arming a
-				// water pipe makes the game re-assert Water as the selected menu, so
-				// the highlight sat on Water while the lens showed Electricity, and
-				// clicking the lit Water icon closed a menu the player never opened.
-				//
-				// The echo guard was written for the same re-assertion and only
-				// stopped it reaching US; the game's own selection still moved. This
-				// removes the re-assertion instead of ignoring it.
-				// Exactly one refresh, whichever way we got here.
-				//
-				// SetLensMenuOpen(true) ends in RefreshLens — but it FIRST
-				// early-returns when the panel is already visible, which is
-				// precisely the menu-to-menu switch. So the refresh cannot live
-				// only inside the toggle (a switch would get none) and cannot
-				// live only outside it (a cold open would get two).
-				//
-				// Measured both ways: three refreshes fired per open before
-				// this, and dropping the outside pair silently left the strip
-				// showing the PREVIOUS menu's counts on every switch.
-				var wasOpen = _lensMenuOpen;
-				SetLensMenuOpen(true, activatePrefab: false);
-
-				if (wasOpen)
-				{
-					RefreshLens();
-				}
-
-				return;
-			}
-
-			if (preset is null)
-			{
-				// Roads, Landscaping, Areas, or a modded menu. The player asked
+				// A menu the index never saw — a modded toolbar entry that was
+				// added after indexing, or one with no prefab. The player asked
 				// for that menu, so get out of its way: the lens panel sits over
 				// exactly where the vanilla asset grid appears, and leaving it up
 				// would hide the menu they just clicked.
 				YieldMenuToVanilla();
-
 				return;
 			}
+
+			if (VanillaMenus.IsZones(menuName) && !Mod.Settings.ReplaceVanillaZonesMenu)
+			{
+				// The player kept the familiar zone grid; leave it alone and get
+				// out of its way, exactly as for an unknown menu.
+				YieldMenuToVanilla();
+				return;
+			}
+
+			_buildingLensUiMenu = menuName;
+			// A different menu has different tabs, so the old selection cannot
+			// survive the switch.
+			_buildingLensUiCategory = string.Empty;
+			ResetBuildingLensStripTab();
+			ResetBuildingLensSchoolTier();
+			RefreshBuildingLensMenuCategories();
 
 			_appliedMenuIndex = menuEntityIndex;
 			_appliedMenuFrame = UnityEngine.Time.frameCount;
-
-			if (preset.IsZoning && !Mod.Settings.ReplaceVanillaZonesMenu)
-			{
-				// The player kept the familiar zone grid; leave it alone and get
-				// out of its way, exactly as for an unmapped menu.
-				YieldMenuToVanilla();
-
-				return;
-			}
-
 			_LensOwnsCurrentMenu.Value = true;
-
-			// With the lens enabled RefreshBuildingCatalog deliberately ignores
-			// FindItUtil's category and reads the lens's own section and
-			// subcategory instead, so the preset has to be applied there.
-			var section = preset.Category switch
-			{
-				PrefabCategory.ServiceBuildings => VanillaBuildMenuTaxonomy.ServiceBuildings,
-				PrefabCategory.Networks => VanillaBuildMenuTaxonomy.Networks,
-				_ => VanillaBuildMenuTaxonomy.AllBuildings,
-			};
-			var selection = VanillaBuildMenuSelection.Normalize(
-				section,
-				preset.SubCategory == PrefabSubCategory.Any
-					? VanillaBuildMenuTaxonomy.Any
-					: preset.SubCategory.ToString());
-
-			_buildingLensSection = selection.Section;
-			_buildingLensSubCategory = selection.SubCategory;
-			_BuildingLensSectionBinding.Value = _buildingLensSection;
-			_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 
-			// One refresh either way — see the branch above for why it cannot
-			// live wholly inside or wholly outside the toggle.
-			var panelWasOpen = _lensMenuOpen;
+			// activatePrefab: false. Opening a menu must not re-arm the prefab
+			// from the LAST menu — that is what desynced the toolbar. Arming a
+			// water pipe makes the game re-assert Water as the selected menu, so
+			// the highlight sat on Water while the lens showed Electricity, and
+			// clicking the lit Water icon closed a menu the player never opened.
+			//
+			// The echo guard was written for the same re-assertion and only
+			// stopped it reaching US; the game's own selection still moved. This
+			// removes the re-assertion instead of ignoring it.
+			//
+			// Exactly one refresh, whichever way we got here.
+			//
+			// SetLensMenuOpen(true) ends in RefreshLens — but it FIRST
+			// early-returns when the panel is already visible, which is
+			// precisely the menu-to-menu switch. So the refresh cannot live
+			// only inside the toggle (a switch would get none) and cannot
+			// live only outside it (a cold open would get two).
+			//
+			// Measured both ways: three refreshes fired per open before
+			// this, and dropping the outside pair silently left the strip
+			// showing the PREVIOUS menu's counts on every switch.
+			var wasOpen = _lensMenuOpen;
 			SetLensMenuOpen(true, activatePrefab: false);
 
-			if (panelWasOpen)
+			if (wasOpen)
 			{
 				RefreshLens();
 			}
@@ -331,23 +280,11 @@ namespace FindItBuildingMenu.Systems
 			// the player made against a set that is no longer on screen — and
 			// on the categories that hold no assets from it, an empty menu with
 			// no visible cause.
-			ResetBuildingLensMilestone();
 			ResetBuildingLensStripTab();
 			ResetBuildingLensSchoolTier();
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 
 			RefreshBuildingCatalog();
-		}
-
-		/// <summary>Drops the tier narrowing, without refreshing on its own.</summary>
-		/// <remarks>
-		/// Every caller is already on its way to <c>RefreshBuildingCatalog</c>
-		/// for a scope change of its own, so refreshing here would run the query
-		/// twice for one gesture.
-		/// </remarks>
-		private void ResetBuildingLensMilestone()
-		{
-			_buildingLensUnlockMilestone = BuildingCatalogQuery.AnyMilestone;
 		}
 
 		/// <summary>
@@ -376,7 +313,11 @@ namespace FindItBuildingMenu.Systems
 		}
 
 		/// <summary>Drops the strip narrowing, without refreshing on its own.</summary>
-		/// <remarks>Same contract as ResetBuildingLensMilestone above.</remarks>
+		/// <remarks>
+		/// Every caller is already on its way to <c>RefreshBuildingCatalog</c>
+		/// for a scope change of its own, so refreshing here would run the query
+		/// twice for one gesture.
+		/// </remarks>
 		private void ResetBuildingLensStripTab()
 		{
 			_buildingCatalogQuery = _buildingCatalogQuery with { StripTabs = null };
@@ -445,21 +386,9 @@ namespace FindItBuildingMenu.Systems
 			// A different menu has different tabs, so the old selection cannot
 			// survive the switch — same reason as VanillaMenuSelected.
 			_buildingLensUiCategory = string.Empty;
-			ResetBuildingLensMilestone();
 			ResetBuildingLensStripTab();
 			ResetBuildingLensSchoolTier();
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
-
-			// Zones are assignment tools rather than buildings, so that menu gets
-			// the zoning hierarchy. ReplaceVanillaZonesMenu is not consulted:
-			// that setting decides whether we take the vanilla menu over when the
-			// player clicks its toolbar icon, and this is the player asking for
-			// our view from inside our panel.
-			bool zoning = VanillaMenuPresets.Resolve(_buildingLensUiMenu)?.IsZoning == true;
-
-			if (zoning)
-			{
-			}
 
 			RefreshBuildingLensMenuCategories();
 			RefreshBuildingLensNavigation();
@@ -483,41 +412,11 @@ namespace FindItBuildingMenu.Systems
 		{
 			_buildingLensUiMenu = string.Empty;
 			_buildingLensUiCategory = string.Empty;
-			ResetBuildingLensMilestone();
 			ResetBuildingLensStripTab();
 			ResetBuildingLensSchoolTier();
 
-			// The section and subcategory go too, because the MENU set them, not
-			// the player. VanillaMenuSelected applies all four together when a
-			// toolbar icon is clicked — Roads arrives as scope "Roads" AND
-			// section "Networks" — so clearing only the first two left a
-			// narrowing nobody chose: the chips read "All menus / Networks /
-			// All types" and the catalog showed a third of itself while
-			// claiming to show everything. That is cm-2xvs.2, whose original
-			// route in (reopening from FindIt's own toolbar button) went with
-			// the magnifier; this one survived it.
-			//
-			// The facets still deliberately survive, and that distinction is the
-			// point: the filter rail holds what the player picked, and one × has
-			// no business undoing that as well. This undoes exactly what
-			// selecting the menu applied.
-			VanillaBuildMenuSelection widened = VanillaBuildMenuSelection.Normalize(
-				VanillaBuildMenuTaxonomy.AllBuildings,
-				VanillaBuildMenuTaxonomy.Any);
-
-			_buildingLensSection = widened.Section;
-			_buildingLensSubCategory = widened.SubCategory;
-			_BuildingLensSectionBinding.Value = _buildingLensSection;
-			_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
-			FindItUtil.CurrentCategory = PrefabCategory.Any;
-			FindItUtil.CurrentSubCategory = PrefabSubCategory.Any;
 
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
-
-			// The zoning view is a different renderer over a different catalog,
-			// so leaving it scoped to zones while the query widens would show
-			// the player zones and tell them "all menus". Send them to the
-			// catalog, which is what "everything" means here.
 
 			RefreshBuildingLensMenuCategories();
 			RefreshBuildingLensNavigation();
@@ -545,22 +444,10 @@ namespace FindItBuildingMenu.Systems
 		/// </summary>
 		private void SearchEverything()
 		{
-			VanillaBuildMenuSelection selection = VanillaBuildMenuSelection.Normalize(
-				VanillaBuildMenuTaxonomy.AllBuildings,
-				VanillaBuildMenuTaxonomy.Any);
-
-			_buildingLensSection = selection.Section;
-			_buildingLensSubCategory = selection.SubCategory;
-			// The menu scope has to go too, or "search everything" searches the
-			// one menu the player already knows has nothing. Widening the
-			// section alone left MatchesVanillaMenuTree still filtering every
-			// candidate down to that menu, so the control that exists to escape
-			// an empty result could not escape it.
+			// The menu scope has to go, or "search everything" searches the one
+			// menu the player already knows has nothing — the control that
+			// exists to escape an empty result could not escape it.
 			ReleaseMenuScope();
-			_BuildingLensSectionBinding.Value = _buildingLensSection;
-			_BuildingLensSubCategoryBinding.Value = _buildingLensSubCategory;
-			FindItUtil.CurrentCategory = PrefabCategory.Any;
-			FindItUtil.CurrentSubCategory = PrefabSubCategory.Any;
 			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 
 			// One call, not three. RefreshLens IS
@@ -569,42 +456,6 @@ namespace FindItBuildingMenu.Systems
 			// the one path where that costs most, since searching everything is
 			// by definition the unscoped 10,528-entry query.
 			RefreshLens();
-		}
-
-		private void SetBuildingLensSection(string section)
-		{
-			// The zoning hierarchy is armed by the vanilla Zones menu and was
-			// never disarmed by anything else, so choosing a building section
-			// left the zone tiles on screen under a breadcrumb that read
-			// "Buildings" and a count of 3,667. Only the interception path could
-			// see this before; the section picker made it reachable.
-
-			VanillaBuildMenuSelection selection = VanillaBuildMenuSelection.Normalize(section, VanillaBuildMenuTaxonomy.Any);
-			_buildingLensSection = selection.Section;
-			_buildingLensSubCategory = selection.SubCategory;
-			_buildingCatalogQuery = _buildingCatalogQuery with
-			{
-				Offset = 0,
-				Limit = BuildingCatalogQuery.DefaultLimit,
-				MinCapacity = null,
-			};
-			RefreshBuildingLensNavigation();
-			RefreshBuildingCatalog();
-		}
-
-		private void SetBuildingLensSubCategory(string subCategory)
-		{
-			VanillaBuildMenuSelection selection = VanillaBuildMenuSelection.Normalize(_buildingLensSection, subCategory);
-			_buildingLensSection = selection.Section;
-			_buildingLensSubCategory = selection.SubCategory;
-			_buildingCatalogQuery = _buildingCatalogQuery with
-			{
-				Offset = 0,
-				Limit = BuildingCatalogQuery.DefaultLimit,
-				MinCapacity = null,
-			};
-			RefreshBuildingLensNavigation();
-			RefreshBuildingCatalog();
 		}
 
 		private void SetBuildingLensPanelHeight(float height)
@@ -774,7 +625,6 @@ namespace FindItBuildingMenu.Systems
 
 			_buildingLensUiCategory = string.Empty;
 			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
-			ResetBuildingLensMilestone();
 			ResetBuildingLensStripTab();
 			ResetBuildingLensSchoolTier();
 

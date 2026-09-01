@@ -33,7 +33,7 @@ namespace FindItBuildingMenu.Domain
 	public static class NetworkMenuExtension
 	{
 		/// <summary>The menu that carries every network.</summary>
-		public const string RoadsMenu = "Roads";
+		public const string RoadsMenu = VanillaMenus.Roads;
 
 		/// <summary>The value <c>BuildingCatalogEntry.Category</c> holds for a network.</summary>
 		private const string NetworksCategory = nameof(PrefabCategory.Networks);
