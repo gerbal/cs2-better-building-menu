@@ -16,7 +16,6 @@ namespace FindItBuildingMenu.Utilities
 	{
 
 		public static Dictionary<PrefabCategory, Dictionary<PrefabSubCategory, IndexedPrefabList>> CategorizedPrefabs { get; } = new();
-		public static Dictionary<string, string> AssetMap { get; } = new();
 		public static bool IsReady { get; set; }
 
 		public static PrefabBase GetPrefabBase(int id)
@@ -45,12 +44,7 @@ namespace FindItBuildingMenu.Utilities
 
 		public static bool Find(PrefabBase prefab, out int id)
 		{
-			var name = prefab is MovingObjectPrefab ? $"Prop_{prefab.name}" : prefab.name;
-
-			if (AssetMap.TryGetValue(name, out var newName))
-			{
-				name = newName;
-			}
+			var name = prefab.name;
 
 			var prefabIndex = CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any].FirstOrDefault(x => name == x.PrefabName);
 

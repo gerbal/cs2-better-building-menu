@@ -27,13 +27,11 @@ namespace FindItBuildingMenu.Tests
 		private static VanillaMenuAuditReport Compare(
 			VanillaMenuPlacementFact[] vanilla,
 			IndexedMenuFact[] ours,
-			int[]? held = null,
-			string[]? substituted = null) =>
+			int[]? held = null) =>
 			VanillaMenuAudit.Compare(
 				vanilla,
 				ours,
-				held ?? ours.Select(entry => entry.EntityIndex).ToArray(),
-				substituted ?? System.Array.Empty<string>());
+				held ?? ours.Select(entry => entry.EntityIndex).ToArray());
 
 		[Fact]
 		public void AMenuWeCoverCompletelyIsClean()
@@ -85,24 +83,6 @@ namespace FindItBuildingMenu.Tests
 			Assert.Equal(1, zones.Held);
 			Assert.Empty(zones.Missing);
 			Assert.Equal(0, zones.Ours);
-		}
-
-		[Fact]
-		public void ASubstitutedAssetCountsAsHeldUnderItsOwnName()
-		{
-			// A quantity or vehicle prop is replaced rather than dropped: the
-			// generators split it into one asset per state and record the swap in
-			// AssetMap, so the player gets MORE than vanilla offers. Counting the
-			// original as a gap reported eight phantom losses in Landscaping, and
-			// a report that cries wolf is one nobody reads.
-			var report = Compare(
-				new[] { Places(1, "Tree01", "Landscaping") },
-				ours: System.Array.Empty<IndexedMenuFact>(),
-				held: System.Array.Empty<int>(),
-				substituted: new[] { "Tree01" });
-
-			Assert.True(report.IsClean);
-			Assert.Empty(Assert.Single(report.Menus).Missing);
 		}
 
 		[Fact]

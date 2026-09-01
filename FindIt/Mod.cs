@@ -1,7 +1,6 @@
 ﻿using Colossal.Core;
 using Colossal.IO.AssetDatabase;
 using Colossal.Logging;
-using Colossal.PSI.Environment;
 using Colossal.Reflection;
 using Colossal.UI;
 
@@ -119,41 +118,9 @@ namespace FindItBuildingMenu
 			updateSystem.UpdateAt<PickerToolSystem>(SystemUpdatePhase.ToolUpdate);
 			updateSystem.UpdateAt<PickerUISystem>(SystemUpdatePhase.UIUpdate);
 			updateSystem.UpdateAt<PrefabTrackingSystem>(SystemUpdatePhase.PrefabUpdate);
-			updateSystem.UpdateAt<CustomAreaBorderRenderSystem>(SystemUpdatePhase.Rendering);
 			updateSystem.UpdateAt<ServiceCoverageOverlaySystem>(SystemUpdatePhase.Rendering);
 			updateSystem.UpdateAt<PickerTooltipSystem>(SystemUpdatePhase.UITooltip);
-			updateSystem.UpdateAt<AutoVehiclePropGeneratorSystem>(SystemUpdatePhase.MainLoop);
-			updateSystem.UpdateAt<AutoQuantityPropGeneratorSystem>(SystemUpdatePhase.MainLoop);
 
-			MainThreadDispatcher.RegisterUpdater(ClearGooee);
-		}
-
-		public static Dictionary<string, string> GetIconsMap()
-		{
-			return AutoVehiclePropGeneratorSystem.AssetReferenceMap;
-		}
-
-		private void ClearGooee()
-		{
-			try
-			{
-				if (!GameManager.instance.modManager.ListModsEnabled().Any(x => x.StartsWith("Gooee,")))
-				{
-					var folder1 = new DirectoryInfo(Path.Combine(EnvPath.kUserDataPath, "ModsData", "Gooee"));
-					var folder2 = new DirectoryInfo(Path.Combine(EnvPath.kUserDataPath, "Mods", "Gooee"));
-
-					if (folder1.Exists)
-					{
-						folder1.Delete(true);
-					}
-
-					if (folder2.Exists)
-					{
-						folder2.Delete(true);
-					}
-				}
-			}
-			catch { }
 		}
 
 		public void OnDispose()
