@@ -12,10 +12,7 @@ import {
 import { getBuildingLensSortPresentation } from "domain/buildingLensSortPresentation";
 import {
   groupDimensionsFor,
-  defaultGroupDimensionFor,
-  isEducationMenu,
   groupDimensionLabel,
-  isGroupDimension,
   type GroupDimensionId,
 } from "domain/buildingGroups";
 import { ChipRow } from "mods/ChipRow/ChipRow";
@@ -47,8 +44,7 @@ import styles from "./lensControlPane.module.scss";
 const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "BuildingCatalogSortColumn");
 const BuildingCatalogSortDescending$ = bindValue<boolean>(mod.id, "BuildingCatalogSortDescending");
 const BuildingLensMenu$ = bindValue<string>(mod.id, "BuildingLensMenu", "");
-const BuildingLensStripAxis$ = bindValue<string>(mod.id, "BuildingLensStripAxis", "");
-const BuildingLensMenuCategories$ = bindValue<unknown[]>(mod.id, "BuildingLensMenuCategories", []);
+const BuildingCatalogGroupBy$ = bindValue<string>(mod.id, "BuildingCatalogGroupBy", "category");
 const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch");
 const BuildingLensFacets$ = bindValue<BuildingLensFacetState | null>(mod.id, "BuildingLensFacets", null);
 // Read only to decide which grouping options can act on THIS menu. The window
@@ -83,7 +79,6 @@ const VanillaSelected$ = bindValue<boolean>("toolbar", "vanillaSelected", false)
 export const LENS_CONTROL_PANE_TOTAL = BUILDING_LENS_CONTROL_PANE_TOTAL;
 
 const LENS_VIEW_MODE_KEY = "viewMode";
-const LENS_GROUP_KEY = "groupBy";
 
 /**
  * The Building Lens control plane.
@@ -113,8 +108,6 @@ export const LensControlPane = () => {
   // cm-ddw3: the fields that can actually reorder these results. The picker
   // drops the rest rather than offering a control that cannot act.
   const reorderableSortColumns = catalogPage?.reorderableSortColumns ?? [];
-  const menuHasCategories = (useValue(BuildingLensMenuCategories$) ?? []).length > 0;
-  const stripAxis = useValue(BuildingLensStripAxis$) ?? "";
   const currentSearch = useValue(CurrentSearch$);
   const facets = useValue(BuildingLensFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
@@ -125,10 +118,8 @@ export const LensControlPane = () => {
   const [sortPickerOpen, setSortPickerOpen] = useState(false);
 
   const [viewModeChoice, setViewModeChoice] = useLensChoice(LENS_VIEW_MODE_KEY, "grid");
-  const [chosenGroupBy, setChosenGroupBy] = useLensChoice(LENS_GROUP_KEY, "");
-  const groupBy: GroupDimensionId = isGroupDimension(chosenGroupBy)
-    ? chosenGroupBy
-    : defaultGroupDimensionFor(menuHasCategories, stripAxis, isEducationMenu(menu));
+  // Resolved on the C# side: the player's choice, or the menu's default.
+  const groupBy = (useValue(BuildingCatalogGroupBy$) || "category") as GroupDimensionId;
 
   const sortPresentation = getBuildingLensSortPresentation(
     { column: sortColumn, descending },
@@ -333,7 +324,7 @@ export const LensControlPane = () => {
                           )}
                           variant="icon"
                           onSelect={() => {
-                            setChosenGroupBy(dimension.id);
+                            trigger(mod.id, "SetBuildingCatalogGroupBy", dimension.id);
                             setGroupPickerOpen(false);
                           }}
                           aria-label={optionLabel}
@@ -443,7 +434,7 @@ export const LensControlPane = () => {
           <button
             className={styles.resetButton}
             onClick={() => {
-              setChosenGroupBy("");
+              // The grouping is the query's now; ResetBuildingLensMenu clears it.
               setViewModeChoice("grid");
               trigger(mod.id, "ResetBuildingLensMenu");
             }}

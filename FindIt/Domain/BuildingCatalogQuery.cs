@@ -11,8 +11,10 @@ namespace FindItBuildingMenu.Domain
 		string SortColumn = "Name",
 		// Grouping is a primary sort key rather than a separate axis: with
 		// paging the two cannot be independent, or a group splits across a page
-		// boundary and its heading lies about what it contains.
-		string GroupBy = "none",
+		// boundary and its heading lies about what it contains. This is the
+		// player's CHOICE; empty means the menu's default
+		// (BuildingCatalogGrouping.Effective), which CatalogView resolves.
+		string GroupBy = "",
 		// "Locked" / "Unlocked". Empty means both.
 		IReadOnlyList<string>? Availability = null,
 		bool Descending = false,

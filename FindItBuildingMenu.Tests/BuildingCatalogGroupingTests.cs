@@ -528,5 +528,56 @@ namespace FindItBuildingMenu.Tests
 				BuildingCatalogGrouping.SecondaryKey(hospital, "menuCategory"),
 				BuildingCatalogGrouping.SecondaryKey(basic, "menuCategory"));
 		}
+
+		[Fact]
+		public void DefaultOpensOnCategoryWhenNothingNarrowerApplies()
+		{
+			Assert.Equal("category", BuildingCatalogGrouping.DefaultDimension(false, "", false));
+			Assert.Equal("category", BuildingCatalogGrouping.DefaultDimension(false, null, false));
+		}
+
+		[Fact]
+		public void TheMenusOwnCategoriesBeatADevelopmentAxis()
+		{
+			// cm-2xvs.23, reported on Roads: ten category tabs on screen and the
+			// grid grouped by Development underneath them.
+			Assert.Equal("menuCategory", BuildingCatalogGrouping.DefaultDimension(true, "development", false));
+		}
+
+		[Fact]
+		public void TheAxisDecidesWhenTheMenuHasNoCategoriesOfItsOwn()
+		{
+			Assert.Equal("development", BuildingCatalogGrouping.DefaultDimension(false, "development", false));
+			Assert.Equal("category", BuildingCatalogGrouping.DefaultDimension(false, "assetType", false));
+		}
+
+		[Fact]
+		public void SchoolTiersComeBeforeEverythingCategoriesIncluded()
+		{
+			Assert.Equal("schoolTier", BuildingCatalogGrouping.DefaultDimension(true, "development", true));
+		}
+
+		[Fact]
+		public void AChoiceWinsAndAutoFallsThroughToTheDefault()
+		{
+			Assert.Equal("cost", BuildingCatalogGrouping.Effective("cost", true, "development", false));
+			Assert.Equal("none", BuildingCatalogGrouping.Effective("none", true, "development", false));
+			Assert.Equal("menuCategory", BuildingCatalogGrouping.Effective("", true, "development", false));
+			Assert.Equal("menuCategory", BuildingCatalogGrouping.Effective(null, true, "development", false));
+			// An id the picker does not offer is not a choice.
+			Assert.Equal("menuCategory", BuildingCatalogGrouping.Effective("nonsense", true, "development", false));
+		}
+
+		[Fact]
+		public void ProgressionAndDevelopmentHaveKeysSoTheirGroupsAreContiguous()
+		{
+			// They had none: the UI grouped the page by label and sorted the
+			// headings itself, so a group could straddle a window boundary.
+			var early = Entry(1) with { UnlockMilestone = 2, DevTreeBranch = "Basic", DevTreeBranchDepth = 0 };
+			var late = Entry(2) with { UnlockMilestone = 10, DevTreeBranch = "Nuclear", DevTreeBranchDepth = 3 };
+
+			Assert.True(string.CompareOrdinal(BuildingCatalogGrouping.PrimaryKey(early, "progression"), BuildingCatalogGrouping.PrimaryKey(late, "progression")) < 0);
+			Assert.True(string.CompareOrdinal(BuildingCatalogGrouping.PrimaryKey(early, "development"), BuildingCatalogGrouping.PrimaryKey(late, "development")) < 0);
+		}
 	}
 }
