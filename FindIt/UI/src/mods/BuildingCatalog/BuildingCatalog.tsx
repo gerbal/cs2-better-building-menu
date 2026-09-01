@@ -76,12 +76,8 @@ import {
 import { useLensChoice } from "mods/useLensChoice";
 import { GroupedResults, type CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import {
-  DEFAULT_GROUP_DIMENSION,
-  defaultGroupDimensionFor,
-  isEducationMenu,
   flattenGroupedRows,
   groupDimensionLabel,
-  isGroupDimension,
   type GroupDimensionId,
 } from "domain/buildingGroups";
 import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
@@ -111,11 +107,11 @@ const BuildingLensFacets$ = bindValue<BuildingLensFacetState>(mod.id, "BuildingL
 const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState>(mod.id, "BuildingCatalogMetricRanges");
 const BuildingCatalogMatchesElsewhere$ = bindValue<number>(mod.id, "BuildingCatalogMatchesElsewhere", 0);
 const LensDefaultToTable$ = bindValue<boolean>(mod.id, "BuildingLensDefaultToTable", false);
-// Non-empty means the lens is standing in for a vanilla menu that has a tab
-// strip, which decides the default grouping.
-const BuildingLensStripAxis$ = bindValue<string>(mod.id, "BuildingLensStripAxis", "");
-const BuildingLensMenu$ = bindValue<string>(mod.id, "BuildingLensMenu", "");
-const BuildingLensMenuCategories$ = bindValue<unknown[]>(mod.id, "BuildingLensMenuCategories", []);
+// The grouping the page is ordered by — the player's choice or the menu's
+// default, resolved on the C# side (BuildingCatalogGrouping.Effective). This
+// component used to derive it from three bindings and push it back, which
+// refreshed every menu twice on first open.
+const BuildingCatalogGroupBy$ = bindValue<string>(mod.id, "BuildingCatalogGroupBy", "category");
 
 /**
  * Breathing room under a revealed detail, in CSS pixels.
@@ -126,7 +122,6 @@ const BuildingLensMenuCategories$ = bindValue<unknown[]>(mod.id, "BuildingLensMe
 const EXPANDED_ROW_REVEAL_MARGIN = 6;
 
 const LENS_VIEW_MODE_KEY = "viewMode";
-const LENS_GROUP_KEY = "groupBy";
 
 /** Grid recognises, List scans, Table compares. */
 type ViewMode = CatalogViewMode;
@@ -187,9 +182,6 @@ export const BuildingCatalogComponent = () => {
   const panelWidth = useValue(PanelWidth$);
   const currentSearch = useValue(CurrentSearch$);
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
-  const menuHasCategories = (useValue(BuildingLensMenuCategories$) ?? []).length > 0;
-  const stripAxis = useValue(BuildingLensStripAxis$) ?? "";
-  const menu = useValue(BuildingLensMenu$) ?? "";
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
   // Grid by default: recognising a thumbnail is the fast path back to the map,
   // and the table is for the rarer moment when you are genuinely comparing.
@@ -216,20 +208,7 @@ export const BuildingCatalogComponent = () => {
   // The height is the player's to set, so the sliver is theirs to fix.
   const viewMode = viewModeChoice as ViewMode;
   const tableMode = viewMode === "table";
-  // Empty means "nobody has chosen", which is different from having chosen
-  // None — the first follows the section, the second stays flat.
-  const [chosenGroupBy] = useLensChoice(LENS_GROUP_KEY, "");
-  const groupBy: GroupDimensionId = isGroupDimension(chosenGroupBy)
-    ? chosenGroupBy
-    : defaultGroupDimensionFor(menuHasCategories, stripAxis, isEducationMenu(menu));
-  // The dimension is also the query's primary sort key, so the backend has to
-  // reorder — grouping the page here alone would split a group across a page
-  // boundary and the heading would stop describing the rows under it. This
-  // fires for a menu change too, not just an explicit pick, because the
-  // effective dimension moves either way.
-  useEffect(() => {
-    trigger(mod.id, "SetBuildingCatalogGroupBy", groupBy);
-  }, [groupBy]);
+  const groupBy = (useValue(BuildingCatalogGroupBy$) || "category") as GroupDimensionId;
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   /**

@@ -51,6 +51,14 @@ namespace FindItBuildingMenu.Domain
 		public const string Density = "density";
 		public const string Footprint = "footprint";
 		public const string Cost = "cost";
+		public const string Progression = "progression";
+		public const string Development = "development";
+
+		/// <summary>Every dimension the picker offers, by id, in the picker's order.</summary>
+		public static readonly string[] Dimensions =
+		{
+			MenuCategory, Category, SubCategory, Role, SchoolTier, Progression, Development, Theme, Source, Density, Footprint, Cost, None,
+		};
 
 		/// <summary>Cost band edges. Mirrored in buildingGroups.ts.</summary>
 		public static readonly double[] CostBands = { 5_000d, 25_000d, 100_000d };
@@ -111,6 +119,39 @@ namespace FindItBuildingMenu.Domain
 			!string.IsNullOrWhiteSpace(groupBy)
 			&& !string.Equals(groupBy.Trim(), None, StringComparison.OrdinalIgnoreCase);
 
+		public static bool IsDimension(string? value) =>
+			!string.IsNullOrWhiteSpace(value)
+			&& Array.Exists(Dimensions, dimension => Is(value!.Trim(), dimension));
+
+		/// <summary>
+		/// What a menu opens grouped by when the player has not chosen.
+		/// </summary>
+		/// <remarks>
+		/// Moved from buildingGroups.ts's defaultGroupDimensionFor, where it
+		/// was re-derived by two components and pushed back to this side in an
+		/// effect — the second refresh on every first open of a menu. The
+		/// strip and the headings answer the same question, so they should not
+		/// open on different answers: the education menu draws school LEVELS in
+		/// its category's place, so it is asked first; a menu with categories
+		/// of its own groups by them whatever axis the strip derived
+		/// (cm-2xvs.23); otherwise the strip's axis decides.
+		/// </remarks>
+		public static string DefaultDimension(bool menuHasCategories, string? stripAxis, bool educationMenu)
+		{
+			if (educationMenu) return SchoolTier;
+			if (menuHasCategories) return MenuCategory;
+
+			var axis = stripAxis?.Trim() ?? string.Empty;
+			if (Is(axis, StripAxes.Development)) return Development;
+			if (Is(axis, StripAxes.AssetType)) return Category;
+
+			return Category;
+		}
+
+		/// <summary>The choice when there is one, otherwise the default. Empty means auto.</summary>
+		public static string Effective(string? choice, bool menuHasCategories, string? stripAxis, bool educationMenu) =>
+			IsDimension(choice) ? choice!.Trim() : DefaultDimension(menuHasCategories, stripAxis, educationMenu);
+
 		/// <summary>
 		/// Outermost group key. Empty when the dimension is unknown or "none",
 		/// which leaves the ordering to the chosen sort alone.
@@ -153,6 +194,13 @@ namespace FindItBuildingMenu.Domain
 			if (Is(dimension, Density)) return DensityRank(entry.ZoneType);
 			if (Is(dimension, Footprint)) return FootprintRank(entry.LotWidth, entry.LotDepth);
 			if (Is(dimension, Cost)) return CostRank(entry.ConstructionCost);
+			// These two used to have no key at all: the UI built their trees by
+			// label and sorted the headings itself, so the page was never
+			// group-contiguous and a group could straddle a window boundary.
+			if (Is(dimension, Progression)) return entry.UnlockMilestone.ToString("D3", CultureInfo.InvariantCulture);
+			if (Is(dimension, Development)) return string.IsNullOrWhiteSpace(entry.DevTreeBranch)
+				? UnnamedKey
+				: entry.DevTreeBranchDepth.ToString("D3", CultureInfo.InvariantCulture) + Normalize(entry.DevTreeBranch);
 
 			return string.Empty;
 		}

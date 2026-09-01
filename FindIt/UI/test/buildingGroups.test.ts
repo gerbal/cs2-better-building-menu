@@ -10,7 +10,6 @@ import {
   GROUP_DIMENSIONS,
   UNGROUPED_LABEL,
   buildGroupedView,
-  defaultGroupDimensionFor,
   costBandLabel,
   footprintBandLabel,
   groupLevelsFor,
@@ -300,59 +299,6 @@ describe("Heading labels", () => {
   });
 });
 
-describe("Default grouping", () => {
-  it("opens on category when nothing narrower applies", () => {
-    // The Service Buildings section used to open on Role. The section is gone
-    // (cm-jjlv.6), and every scoped service menu has either categories or a
-    // strip axis, so the case this served no longer arises.
-    assert.equal(defaultGroupDimensionFor(), "category");
-    assert.equal(defaultGroupDimensionFor(false), "category");
-    assert.equal(defaultGroupDimensionFor(false, ""), "category");
-  });
-
-  it("lets the menu's own categories beat a development axis", () => {
-    // cm-2xvs.23, reported on Roads: ten category tabs on screen and the grid
-    // grouped by Development underneath them.
-    //
-    // GetStripAxis answers "development" for a category menu as soon as ONE of
-    // its categories is drawn as branches — it has to, or a branch tab would
-    // select nothing. That is a fact about a sub-level, and the picker was
-    // reading it as a fact about the whole menu.
-    assert.equal(defaultGroupDimensionFor(true, "development"), "menuCategory");
-  });
-
-  it("still follows the axis when the menu has no categories of its own", () => {
-    // Electricity is the case the fallback exists for: one category, so the
-    // strip draws development branches and the grid should agree with them.
-    assert.equal(defaultGroupDimensionFor(false, "development"), "development");
-    assert.equal(defaultGroupDimensionFor(false, "assetType"), "category");
-  });
-
-  it("keeps school tiers ahead of everything, categories included", () => {
-    // Education has categories AND a development axis AND school levels; the
-    // levels are what its strip actually draws.
-    assert.equal(defaultGroupDimensionFor(true, "development", true), "schoolTier");
-  });
-
-  it("groups a scoped menu by the game's own categories", () => {
-    // Master's behaviour (4ce4ba5), restored after this branch had changed it
-    // to "none". The argument for flat was measured against a panel showing
-    // two tile rows; the panel is now 10 tiles wide with a height the player
-    // drags, so the scrolling that argument was avoiding is not the cost it
-    // was. The categories are the split the strip already puts in the player's
-    // head, and grouping by them shows the whole menu at once.
-    assert.equal(defaultGroupDimensionFor(true), "menuCategory");
-  });
-
-  it("only ever returns a dimension the picker offers", () => {
-    for (const hasCategories of [false, true]) {
-      for (const axis of ["", "development", "assetType", "nonsense"]) {
-        assert.ok(GROUP_DIMENSIONS.some((d) => d.id === defaultGroupDimensionFor(hasCategories, axis)));
-      }
-    }
-  });
-});
-
 describe("The Other group", () => {
   it("comes last however it arrived", () => {
     // It is the only group defined by absence, so leading with it opens the
@@ -639,16 +585,6 @@ describe("Which grouping choices a menu offers", () => {
     assert.ok(ids("Electricity").includes("development"));
     assert.ok(ids("Roads").includes("development"));
     assert.ok(ids("Education & Research").includes("development"));
-  });
-
-  it("opens the education menu on its levels", () => {
-    // The default has to match what the strip offers, or arriving in the menu
-    // shows one EDUCATION heading over ten schools the row had just separated.
-    assert.equal(defaultGroupDimensionFor(true, "", true), "schoolTier");
-    // Every other menu is unaffected by the education flag being absent.
-    assert.equal(defaultGroupDimensionFor(true, ""), "menuCategory");
-    assert.equal(defaultGroupDimensionFor(false, "development"), "development");
-    assert.equal(defaultGroupDimensionFor(false, "assetType"), "category");
   });
 
   it("hides a grouping that would put the whole menu in one bucket", () => {
