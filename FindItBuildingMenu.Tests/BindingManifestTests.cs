@@ -29,13 +29,9 @@ namespace FindItBuildingMenu.Tests
 		/// bead that either wires it or deletes it; an entry without one is a
 		/// failure of this test's purpose, not a convenience.
 		/// </summary>
-		private static readonly string[] KnownUnreadByUi =
-		{
-			// groupBy is C#-owned and TS re-derives it instead of reading it
-			// (review finding 6). The phase-4 view store (cm-jjlv.8) reads it; until then
-			// the binding stays so that phase has something to read.
-			"BuildingCatalogGroupBy",
-		};
+		private static readonly string[] KnownUnreadByUi = System.Array.Empty<string>();
+		// Empty since cm-jjlv.8: the UI reads BuildingCatalogGroupBy. Keep it
+		// empty; an entry here is a regression of that phase, not a convenience.
 
 		[Fact]
 		public void EveryNameTheUiUsesIsRegisteredByCSharp()

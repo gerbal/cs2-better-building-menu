@@ -513,12 +513,9 @@ namespace FindItBuildingMenu.Systems
 		/// </remarks>
 		private void SetBuildingCatalogGroupBy(string groupBy)
 		{
-			if (string.IsNullOrWhiteSpace(groupBy))
-			{
-				return;
-			}
-
-			var next = groupBy.Trim();
+			// Empty is a real value: "auto", the menu's default. It used to be
+			// ignored, which is why the UI had to compute the default itself.
+			var next = (groupBy ?? string.Empty).Trim();
 
 			if (string.Equals(_buildingCatalogQuery.GroupBy, next, StringComparison.Ordinal))
 			{
@@ -634,6 +631,7 @@ namespace FindItBuildingMenu.Systems
 				SearchText = string.Empty,
 				SortColumn = string.Empty,
 				Descending = false,
+				GroupBy = string.Empty,
 				Offset = 0,
 				Limit = BuildingCatalogQuery.DefaultLimit,
 			};

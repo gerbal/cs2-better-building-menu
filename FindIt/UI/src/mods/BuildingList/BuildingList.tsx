@@ -13,7 +13,7 @@ import {
 } from "domain/buildingLensMetricFormat";
 import { recordPlacement } from "domain/buildingShelf";
 import { canPlace, entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
-import { rankBuildingMatches, topSearchResult } from "domain/buildingSearchRank";
+import { topSearchResult } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
 import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
@@ -75,9 +75,9 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
     || translate("Tooltip.LABEL[FindItBuildingMenu.AlreadyBuilt]", "Already built")
     || "Already built";
   const cards = variant === "cards";
-  // Search relevance still applies within whatever order the query returned,
-  // so typing narrows to the best match the same way it does in the grid.
-  const ordered = rankBuildingMatches(entries, searchText ?? "");
+  // The page arrives in the order every view shows — relevance first while a
+  // search is active — so the list, the grid and the table agree.
+  const ordered = entries;
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {

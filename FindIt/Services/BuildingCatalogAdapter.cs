@@ -613,7 +613,7 @@ namespace FindItBuildingMenu.Services
 		/// tests read unchanged; FindItUISystem calls this once and reads the
 		/// view's properties, which is where the fifteen passes went.
 		/// </remarks>
-		public CatalogView Build(BuildingCatalogQuery query)
+		public CatalogView Build(BuildingCatalogQuery query, Func<CatalogView, string>? groupByResolver = null)
 		{
 			if (query is null)
 			{
@@ -630,7 +630,10 @@ namespace FindItBuildingMenu.Services
 				query,
 				ToolbarSelection.SelectedPacks.Count > 0
 					? () => ProjectForMenu(query.UiMenu, query.DlcIds, ignorePacks: true)
-					: null);
+					: null,
+				groupByResolver,
+				PrefabIndexingSystem.GetMilestoneNames(),
+				VanillaMenus.IsEducation(query.UiMenu));
 		}
 
 		public bool TryGet(int id, out BuildingCatalogEntry? entry)

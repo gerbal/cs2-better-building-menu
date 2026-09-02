@@ -22,5 +22,9 @@ namespace FindItBuildingMenu.Domain
 
 		public static bool IsZones(string? menu) =>
 			string.Equals(menu?.Trim(), Zones, StringComparison.OrdinalIgnoreCase);
+
+		/// <summary>The education menu, by the same test the UI's isEducationMenu applied (/education/i).</summary>
+		public static bool IsEducation(string? menu) =>
+			(menu ?? string.Empty).IndexOf("Education", StringComparison.OrdinalIgnoreCase) >= 0;
 	}
 }
