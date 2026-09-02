@@ -1,11 +1,11 @@
 import { bindValue, trigger, useValue } from "cs2/api";
 import { Button, Scrollable } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import classNames from "classnames";
 import { shortenTileLabel, tableLabelCharBudget } from "domain/tileLabel";
 import mod from "../../../mod.json";
-import { BuildingCatalogEntry, BuildingCatalogPage, formatBuildingCatalogLabels } from "domain/buildingCatalog";
+import { BuildingCatalogEntry, formatBuildingCatalogLabels } from "domain/buildingCatalog";
 import {
   BUILDING_LENS_PANEL_CHROME_WIDTH,
   getBuildingLensCatalogMaxHeight,
@@ -20,22 +20,11 @@ import {
 } from "domain/buildingLensLayout";
 import type { BuildingLensDensityTier, BuildingLensMetric } from "domain/buildingLensLayout";
 import {
-  loadMoreCatalogCommand,
   nextSortState,
   setSortColumnCommand,
   setSortDescendingCommand,
 } from "domain/buildingCatalogContracts";
-import {
-  CATALOG_ANCHOR_MAX_FRAMES,
-  anchorScrollTop,
-  revealScrollTop,
-  isAnchorMeasurable,
-  isAnchorOnScreen,
-  isScrollContainer,
-  catalogWindowRemaining,
-  shouldLoadMore,
-} from "domain/catalogWindow";
-import type { AnchorGeometry } from "domain/catalogWindow";
+import { catalogWindowRemaining } from "domain/catalogWindow";
 import type { SortColumn } from "domain/buildingCatalogContracts";
 import {
   formatBuildingLevel,
@@ -63,7 +52,7 @@ import { getSearchScopeNotice } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { canPlace, entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
-import { getLensAnchor, getLensAnchorKey, getLensView, setLensAnchor, setLensView } from "domain/lensViewStore";
+import { getLensAnchorKey, getLensView, setLensAnchor, setLensView } from "domain/lensViewStore";
 // The view mode is shared with the control plane, which is a sibling of this
 // panel rather than a descendant, so it goes through the subscribing hook.
 import { useLensView } from "mods/useLensView";
@@ -81,12 +70,10 @@ import {
   getBuildingLensColumnSortIndicator,
 } from "domain/buildingLensSortPresentation";
 import { BuildingResultDetails } from "./BuildingResultDetails";
+import { useCatalogWindow } from "./useCatalogWindow";
+import { useRevealExpandedRow, useScrollAnchor } from "./useScrollAnchor";
 import styles from "./buildingCatalog.module.scss";
 
-type BuildingCatalogPageStatus = "indexing" | "ready" | "empty";
-type BuildingCatalogBindingPage = BuildingCatalogPage & { status?: BuildingCatalogPageStatus };
-
-const BuildingCatalog$ = bindValue<BuildingCatalogBindingPage>(mod.id, "BuildingCatalog");
 const PanelWidth$ = bindValue<number>(mod.id, "PanelWidth");
 const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch");
 // The order lives in the backend query, which outlives this component. Reading
@@ -106,14 +93,6 @@ const LensDefaultToTable$ = bindValue<boolean>(mod.id, "BuildingLensDefaultToTab
 // refreshed every menu twice on first open.
 const BuildingCatalogGroupBy$ = bindValue<string>(mod.id, "BuildingCatalogGroupBy", "category");
 
-/**
- * Breathing room under a revealed detail, in CSS pixels.
- *
- * Small on purpose: this is the difference between the last line touching the
- * panel edge and sitting just clear of it, not an attempt to centre anything.
- */
-const EXPANDED_ROW_REVEAL_MARGIN = 6;
-
 /** Grid recognises, List scans, Table compares. */
 type ViewMode = CatalogViewMode;
 
@@ -132,29 +111,6 @@ const metricColumns: Array<{
   { key: "parking", localizationKey: "Tooltip.LABEL[FindItBuildingMenu.Parking]", fallback: "Parking", className: "metricParking" },
 ];
 
-/**
- * The element that actually scrolls, found by walking up from a row.
- *
- * By walking rather than by ref, because cs2/ui's `Scrollable` silently drops
- * props it does not recognise — the `data-scrollable` marker that used to sit
- * on one of them never reached the DOM at all — and which element owns the
- * scroll differs by view mode anyway.
- *
- * The overflow threshold is the point: a plain `scrollHeight > clientHeight`
- * walk stops at the first container that sub-pixel rounding pushed one pixel
- * over, which is not the one the player is moving. See
- * CATALOG_SCROLL_MIN_OVERFLOW.
- */
-function findScrollContainer(from: HTMLElement): HTMLElement | null {
-  let node: HTMLElement | null = from.parentElement;
-
-  while (node && !isScrollContainer(node.scrollHeight, node.clientHeight)) {
-    node = node.parentElement;
-  }
-
-  return node;
-}
-
 const densityClassNames: Record<BuildingLensDensityTier, string> = {
   compact: styles.densityCompact,
   default: styles.densityDefault,
@@ -169,7 +125,6 @@ export const BuildingCatalogComponent = () => {
   // The same card every other view mode shows. The table had none, so it was
   // the one mode that could not answer a question its columns had no room for.
   const hoverCard = useHoverCardContext();
-  const page = useValue(BuildingCatalog$);
   const panelWidth = useValue(PanelWidth$);
   const currentSearch = useValue(CurrentSearch$);
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
@@ -201,77 +156,11 @@ export const BuildingCatalogComponent = () => {
   // that placing a building causes, the way the anchor does.
   const expandedId = useLensView((view) => view.expandedId);
 
-  /**
-   * Bring a freshly expanded row's detail into view.
-   *
-   * Expanding grows the row downward and the list did not follow. Measured
-   * live: a detail's bottom sat at 642 against a viewport whose content ends at
-   * 630, with scrollTop still 0 — twelve pixels under the fold and no cue they
-   * were there. Reported from play as "some of it was cut off below the
-   * scroll", and cm-qnfs made the detail taller, so it will happen more often.
-   *
-   * A ResizeObserver rather than a rAF, because the box being measured is the
-   * one that just changed size: Cohtml lays out a frame late, so a single rAF
-   * reads the PRE-expansion height and concludes nothing overflows. The
-   * observer fires when the new height actually exists, and disconnects on the
-   * first reveal so a later resize — the player dragging the panel — does not
-   * yank the list.
-   */
-  useEffect(() => {
-    if (expandedId === null) {
-      return;
-    }
-
-    const rows = document.querySelectorAll(`[data-catalog-entry="${expandedId}"]`);
-    const row = rows.length === 0 ? null : rows[rows.length - 1];
-
-    if (!(row instanceof HTMLElement)) {
-      return;
-    }
-
-    const detail = row.querySelector(`.${styles.rowDetails}`) ?? row;
-    const scroller = findScrollContainer(row);
-
-    if (!scroller || !(detail instanceof HTMLElement)) {
-      return;
-    }
-
-    let done = false;
-    const observer = new ResizeObserver(() => {
-      if (done) {
-        return;
-      }
-
-      const rowRect = row.getBoundingClientRect();
-      const detailRect = detail.getBoundingClientRect();
-      const scrollerRect = scroller.getBoundingClientRect();
-
-      // Nothing has laid out yet; wait for the next notification rather than
-      // computing a reveal from zeroes.
-      if (detailRect.height === 0) {
-        return;
-      }
-
-      const next = revealScrollTop({
-        currentScrollTop: scroller.scrollTop,
-        rowTop: rowRect.top,
-        detailBottom: detailRect.top + detailRect.height,
-        containerTop: scrollerRect.top,
-        containerHeight: scroller.clientHeight,
-        margin: EXPANDED_ROW_REVEAL_MARGIN,
-      });
-
-      done = true;
-
-      if (next !== scroller.scrollTop) {
-        scroller.scrollTop = next;
-      }
-    });
-
-    observer.observe(detail);
-
-    return () => observer.disconnect();
-  }, [expandedId]);
+  // The root every DOM measurement below is scoped to. The hooks find the
+  // rows and the scroller beneath it and never look above it.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const { items, totalCount, limit, status, hasMore, loadMore } = useCatalogWindow(rootRef, { viewMode, groupBy });
+  useRevealExpandedRow(rootRef, expandedId, styles.rowDetails);
   const facets = useValue(BuildingLensFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
   const matchesElsewhere = useValue(BuildingCatalogMatchesElsewhere$);
@@ -284,19 +173,6 @@ export const BuildingCatalogComponent = () => {
     metricRanges,
   });
 
-  const items = page?.items ?? [];
-  const totalCount = page?.totalCount ?? 0;
-  const offset = page?.offset ?? 0;
-  const limit = page?.limit ?? 100;
-  const status: BuildingCatalogPageStatus = page?.status
-    ?? (page ? (totalCount === 0 ? "empty" : "ready") : "indexing");
-  // The window is the backend's: it grows by Limit and always comes back as a
-  // prefix of the same ordering, so there is nothing to accumulate here and
-  // nothing to page. hasMore is C#'s answer, because it is the only side that
-  // knows both the match count and the ceiling — a client computing
-  // `rendered < total` would keep offering to load rows the backend has
-  // already refused to serve.
-  const hasMore = page?.hasMore ?? false;
   const density = getBuildingLensDensity(panelWidth + BUILDING_LENS_PANEL_CHROME_WIDTH);
   // One set of numbers for the header and every row. The columns line up only
   // because both read the same widths; computing them twice is how a table with
@@ -449,201 +325,8 @@ export const BuildingCatalogComponent = () => {
   // by accident.
   const anchorKey = getLensAnchorKey({ surface: "catalog", viewMode, groupBy });
 
-  /**
-   * Put the player back where they were, over as many frames as it takes.
-   *
-   * This is a retry loop rather than a single measurement because Cohtml lays
-   * out asynchronously: on the frame the panel remounts, every rect it reports
-   * is zero (see `isAnchorMeasurable`), and the window itself is still arriving
-   * from C# — the scroll height was measured growing from 1,440 to 3,606 across
-   * the same handful of frames. Both settle within a few frames, but neither
-   * settles by the time a `useEffect` runs.
-   *
-   * Each frame does one of three things: wait, because the geometry is not real
-   * yet; apply the scroll and check it next frame; or stop, because the row is
-   * on screen, the budget ran out, or the anchor is not in this match set.
-   */
-  useEffect(() => {
-    const anchored = getLensAnchor(anchorKey);
+  useScrollAnchor(rootRef, anchorKey, items.length);
 
-    if (anchored === null || items.length === 0) {
-      return;
-    }
-
-    let frame = 0;
-    let handle = 0;
-    let cancelled = false;
-
-    // Cleared only when the loop finishes, not on sight. Clearing up front lost
-    // the anchor to the first frame's zero-height rects and left the restore
-    // looking like it had run.
-    const finish = () => {
-      setLensAnchor(anchorKey, null);
-    };
-
-    const measure = (): { row: HTMLElement; scroller: HTMLElement; geometry: AnchorGeometry } | null => {
-      // The LAST match, not the first. The grid's "frequently placed" shelf
-      // renders the same entries above the body with the same attribute, and
-      // the shelf is pinned in view — anchoring to that copy would report the
-      // row on screen without scrolling anything, which is a silent no-op
-      // dressed as a success.
-      const rows = document.querySelectorAll(`[data-catalog-entry="${anchored}"]`);
-      const row = rows.length === 0 ? null : rows[rows.length - 1];
-
-      if (!(row instanceof HTMLElement)) {
-        return null;
-      }
-
-      const scroller = findScrollContainer(row);
-
-      if (!scroller) {
-        return null;
-      }
-
-      const rowRect = row.getBoundingClientRect();
-      const scrollerRect = scroller.getBoundingClientRect();
-
-      return {
-        row,
-        scroller,
-        geometry: {
-          containerTop: scrollerRect.top,
-          containerHeight: scroller.clientHeight,
-          rowTop: rowRect.top,
-          rowHeight: rowRect.height,
-        },
-      };
-    };
-
-    const step = () => {
-      if (cancelled) {
-        return;
-      }
-
-      if (frame++ >= CATALOG_ANCHOR_MAX_FRAMES) {
-        // The row never became reachable — a predicate changed while the panel
-        // was down, or it sits beyond a window that stopped growing. Top of the
-        // list is the honest answer, and it is where we already are.
-        finish();
-        return;
-      }
-
-      const measured = measure();
-
-      if (measured === null) {
-        // Not rendered yet, or not in this match set at all. Both look the same
-        // from here and both are worth another frame, up to the budget.
-        handle = requestAnimationFrame(step);
-        return;
-      }
-
-      if (!isAnchorMeasurable(measured.geometry)) {
-        handle = requestAnimationFrame(step);
-        return;
-      }
-
-      if (isAnchorOnScreen(measured.geometry)) {
-        finish();
-        return;
-      }
-
-      measured.scroller.scrollTop = anchorScrollTop(
-        measured.scroller.scrollTop,
-        measured.geometry.rowTop,
-        measured.geometry.containerTop,
-        measured.geometry.containerHeight,
-      );
-
-      // Verify next frame rather than trusting the arithmetic: it was computed
-      // against a list that is still being filled, so the row it aimed at moves.
-      handle = requestAnimationFrame(step);
-    };
-
-    handle = requestAnimationFrame(step);
-
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(handle);
-    };
-    // items.length rather than items: the effect has to wait for the rows to be
-    // in the document before it can find one, and a new array identity every
-    // publish would re-run it on data that has not moved.
-  }, [anchorKey, items.length]);
-
-  /**
-   * Asks the backend for the next chunk.
-   *
-   * Guarded against re-entry by `hasMore` alone rather than by a local "loading"
-   * flag: the backend republishes the whole window, so a second request that
-   * overtakes the first is idempotent, while a stale local flag could latch on
-   * and stop the list growing for the rest of the session.
-   */
-  function loadMore(): void {
-    if (!hasMore) {
-      return;
-    }
-
-    const command = loadMoreCatalogCommand();
-    trigger(mod.id, command.method, ...command.args);
-  }
-
-  /**
-   * The passive half of the trigger: watch where the scroll actually is.
-   *
-   * This polls instead of listening because, measured live on 2026-08-09, there
-   * is nothing to listen to. cs2/ui's `Scrollable` accepts an `onScroll` prop
-   * and never forwards it: walking the fiber from the scrolling div to the
-   * Scrollable shows the prop arriving and no DOM node below it carrying an
-   * onScroll — and a sweep of every element in the running UI found not one
-   * scroll or wheel handler anywhere. Cohtml also emits no native `scroll`
-   * event when `scrollTop` changes, so adding our own listener would be just as
-   * dead. The engine scrolls its own overflow containers and tells no one.
-   *
-   * What it does do is keep `scrollTop` readable and accurate, so a frame loop
-   * sees the player arrive at the bottom just as well as an event would. It
-   * only runs while there is more to fetch, and it stops the moment it asks:
-   * the request changes `items.length`, which restarts the effect against the
-   * larger window.
-   */
-  useEffect(() => {
-    if (!hasMore || items.length === 0) {
-      return;
-    }
-
-    let handle = 0;
-    let cancelled = false;
-
-    const step = () => {
-      if (cancelled) {
-        return;
-      }
-
-      // Last again, and for the same reason: the shelf sits outside the body's
-      // scroll, so walking up from the first entry can find the panel instead
-      // of the list.
-      const rows = document.querySelectorAll("[data-catalog-entry]");
-      const row = rows.length === 0 ? null : rows[rows.length - 1];
-      const scroller = row instanceof HTMLElement ? findScrollContainer(row) : null;
-
-      if (scroller && shouldLoadMore({
-        scrollTop: scroller.scrollTop,
-        clientHeight: scroller.clientHeight,
-        scrollHeight: scroller.scrollHeight,
-      })) {
-        loadMore();
-        return;
-      }
-
-      handle = requestAnimationFrame(step);
-    };
-
-    handle = requestAnimationFrame(step);
-
-    return () => {
-      cancelled = true;
-      cancelAnimationFrame(handle);
-    };
-  }, [hasMore, items.length, viewMode, groupBy]);
 
   /*
    * The end of the feed, rendered as the last child INSIDE whichever element
@@ -680,6 +363,7 @@ export const BuildingCatalogComponent = () => {
 
   return (
     <div
+      ref={rootRef}
       className={classNames(styles.catalog, densityClassNames[density])}
       data-density={density}
       data-row-height={rowGeometry.rowHeight}
