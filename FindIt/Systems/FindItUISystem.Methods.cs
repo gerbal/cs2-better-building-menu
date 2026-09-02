@@ -106,7 +106,12 @@ namespace FindItBuildingMenu.Systems
 
 			stage.Restart();
 			// One view, built once; every publish below reads it. See CatalogView.
-			var view = _buildingCatalogAdapter.Build(_buildingCatalogQuery);
+			var menu = _buildingCatalogQuery.UiMenu;
+			var menuHasCategories = PrefabIndexingSystem.GetMenuCategories(string.IsNullOrEmpty(menu) ? null : menu).Count > 0;
+			var view = _buildingCatalogAdapter.Build(
+				_buildingCatalogQuery,
+				built => BuildingCatalogGrouping.Effective(
+					_buildingCatalogQuery.GroupBy, menuHasCategories, built.StripAxis, VanillaMenus.IsEducation(menu)));
 			BuildingCatalogPage page = view.Page;
 
 			// A search that matches nothing in the current section reads as
@@ -146,6 +151,8 @@ namespace FindItBuildingMenu.Systems
 			// never disagree with the rows beneath it.
 			_BuildingCatalogSortColumn.Value = _buildingCatalogQuery.EffectiveSortColumn;
 			_BuildingCatalogSortDescending.Value = _buildingCatalogQuery.Descending;
+			_BuildingCatalogGroupBy.Value = view.EffectiveGroupBy;
+			_BuildingLensGroupDimensions.Value = view.GroupDimensions;
 			_BuildingCatalogMetricRanges.Value = _buildingMetricRanges;
 			// Recomputed with the catalog so the bounds follow the menu. They come
 			// from InScope, which drops the metric selections, so narrowing a range

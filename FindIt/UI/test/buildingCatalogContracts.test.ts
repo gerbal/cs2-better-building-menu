@@ -51,6 +51,8 @@ function entry(id: number): BuildingCatalogEntry {
     groundPollution: null,
     airPollution: null,
     noisePollution: null,
+    groupPath: [],
+    groupLabelId: "",
   };
 }
 

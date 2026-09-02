@@ -24,11 +24,8 @@ import {
   createMetricRangeDebouncer,
   type MetricRangeDebouncerScheduler,
 } from "domain/metricRangeDebouncer";
-import {
-  LENS_DISCLOSURE_KEYS,
-  getLensDisclosure,
-  setLensDisclosure,
-} from "domain/buildingLensViewState";
+import { LENS_DISCLOSURE_KEYS, getLensDisclosure, setLensDisclosure } from "domain/lensViewStore";
+import { useLensView } from "mods/useLensView";
 import styles from "./buildingCatalog.module.scss";
 
 import type { BuildingLensMetricRangeState as BuildingCatalogMetricRangeState } from "domain/buildingLensFilterSummary";
@@ -135,13 +132,10 @@ export const BuildingCatalogMetricFilters = () => {
   const state = useValue(BuildingCatalogMetricRanges$) ?? emptyMetricRangeState;
   // See BuildingCatalogFacetPanel: drawer state outlives the remount so the
   // metric ranges the player set stay visible.
-  const [open, setOpenState] = useState(() => getLensDisclosure(LENS_DISCLOSURE_KEYS.metricRanges));
+  const open = useLensView((view) => view.disclosures[LENS_DISCLOSURE_KEYS.metricRanges] ?? false);
   const setOpen = (next: boolean | ((current: boolean) => boolean)): void => {
-    setOpenState((current) => {
-      const value = typeof next === "function" ? next(current) : next;
-      setLensDisclosure(LENS_DISCLOSURE_KEYS.metricRanges, value);
-      return value;
-    });
+    const current = getLensDisclosure(LENS_DISCLOSURE_KEYS.metricRanges);
+    setLensDisclosure(LENS_DISCLOSURE_KEYS.metricRanges, typeof next === "function" ? next(current) : next);
   };
   const bounds = useValue(BuildingCatalogMetricBounds$);
   // A stable key for the twelve numbers. The binding hands back a fresh object
