@@ -31,7 +31,7 @@ namespace FindItBuildingMenu.Services
 		private string? _effectiveGroupBy;
 		private string[]? _dimensions;
 
-		private BuildingCatalogEntry[]? _menuSet, _viewSet, _tabSet, _tierSet;
+		private BuildingCatalogEntry[]? _menuSet, _viewSet, _tabSet, _tierSet, _wholeMenu;
 		private BuildingCatalogPage? _page;
 		private BuildingCatalogMetricRangeState? _bounds;
 		private BuildingCatalogFacetState? _facets;
@@ -161,7 +161,7 @@ namespace FindItBuildingMenu.Services
 				.Select(group => new MenuBranchCount(
 					group.Key,
 					group.Count(),
-					BuildingCatalogAdapter.TabIcon(group, authored: true)))
+					BranchIcon(category, group.Key) ?? BuildingCatalogAdapter.TabIcon(group, authored: true)))
 				.ToArray();
 		}
 
@@ -250,7 +250,7 @@ namespace FindItBuildingMenu.Services
 				.ToArray();
 		}
 
-		private static IReadOnlyList<MenuBranchCount> StripTabsFor(IEnumerable<BuildingCatalogEntry> set, string axis) =>
+		private IReadOnlyList<MenuBranchCount> StripTabsFor(IEnumerable<BuildingCatalogEntry> set, string axis) =>
 			set
 				.GroupBy(entry => BuildingCatalogQueryEngine.StripValue(entry, axis))
 				.Where(group => group.Key.Length > 0)
@@ -259,7 +259,7 @@ namespace FindItBuildingMenu.Services
 					Tab = new MenuBranchCount(
 						group.Key,
 						group.Count(),
-						BuildingCatalogAdapter.TabIcon(group, axis == StripAxes.Development)),
+						StripIcon(axis, group.Key) ?? BuildingCatalogAdapter.TabIcon(group, axis == StripAxes.Development)),
 					Depth = group.Min(entry => entry.DevTreeBranchDepth),
 				})
 				.OrderBy(x => axis == StripAxes.Development ? x.Depth : 0)
@@ -267,6 +267,54 @@ namespace FindItBuildingMenu.Services
 				.ThenBy(x => x.Tab.Id, StringComparer.Ordinal)
 				.Select(x => x.Tab)
 				.ToArray();
+
+		/// <summary>
+		/// The menu as it is whatever the player has narrowed: no category, tab or
+		/// tier, no search, no facets, and — where the toolbar's pack selection
+		/// narrowed the projection itself — the pack-ignored projection. What a
+		/// tab's icon is chosen from, so it names the same thing in every state.
+		/// </summary>
+		private BuildingCatalogEntry[] WholeMenu => _wholeMenu ??= BuildingCatalogQueryEngine
+			.InScope(
+				// The menu set is the one walk over the snapshot; only a pack
+				// selection makes a second projection worth reading.
+				_packScope?.Invoke() ?? MenuSet,
+				_query with { UiCategory = string.Empty, StripTabs = null, SchoolTier = -1, SearchText = string.Empty })
+			.ToArray();
+
+		/// <summary>
+		/// A development branch's tab icon, chosen from the whole category rather
+		/// than from what a filter left of it.
+		/// </summary>
+		/// <remarks>
+		/// cm-2xvs.17: the icon used to come from the filtered group, so a facet
+		/// that removed the representative asset relabelled the tab under the
+		/// player — Transportation's first tab went from Road to Bus when a
+		/// content pack was chosen. The whole category (menu set: no tier, no
+		/// facets, no search) is the same set in every state.
+		/// </remarks>
+		private string? BranchIcon(string category, string branch)
+		{
+			var whole = BuildingCatalogQueryEngine
+				.InScope(WholeMenu, _query with { UiCategory = category, StripTabs = null, SchoolTier = -1, SearchText = string.Empty })
+				.Where(entry => string.Equals(entry.DevTreeBranch, branch, StringComparison.Ordinal))
+				.ToArray();
+
+			return whole.Length == 0 ? null : BuildingCatalogAdapter.TabIcon(whole, authored: true);
+		}
+
+		/// <summary>
+		/// A strip tab's icon from the whole menu, so it does not change when a
+		/// filter changes which assets are left in the tab (cm-2xvs.17).
+		/// </summary>
+		private string? StripIcon(string axis, string key)
+		{
+			var whole = WholeMenu
+				.Where(entry => string.Equals(BuildingCatalogQueryEngine.StripValue(entry, axis), key, StringComparison.Ordinal))
+				.ToArray();
+
+			return whole.Length == 0 ? null : BuildingCatalogAdapter.TabIcon(whole, axis == StripAxes.Development);
+		}
 
 		public IReadOnlyList<MenuBranchCount> SchoolTierCounts => _tiers ??= TierSet
 			.Where(entry => entry.EducationLevel is >= 1 and <= 4)

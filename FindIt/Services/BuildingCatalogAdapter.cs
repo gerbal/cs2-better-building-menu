@@ -391,9 +391,14 @@ namespace FindItBuildingMenu.Services
 
 			if (authored)
 			{
+				// The branch's authored icon — unless the indexer filled it with
+				// the asset's own render because the tree node had none. That is
+				// a photograph in a row of glyphs (cm-2xvs.17, measured live:
+				// ParkingHall02's branch icon WAS its thumbnail), so it is
+				// treated as no icon and the glyph fallback below decides.
 				var icon = entries
 					.Select(entry => entry.DevTreeBranchIcon)
-					.FirstOrDefault(value => !string.IsNullOrEmpty(value));
+					.FirstOrDefault(value => !string.IsNullOrEmpty(value) && !IsPhotograph(value!));
 
 				if (!string.IsNullOrEmpty(icon))
 				{
@@ -401,12 +406,37 @@ namespace FindItBuildingMenu.Services
 				}
 			}
 
-			return entries
+			var ordered = entries
 				.OrderBy(entry => entry.UiCategoryPriority)
 				.ThenBy(entry => entry.Name, StringComparer.Ordinal)
+				.ToArray();
+
+			// An authored row is a row of flat glyphs. A branch the game gave no
+			// icon used to fall to the representative asset's THUMBNAIL — a
+			// photographic building render beside the glyphs, read as a broken
+			// icon (cm-2xvs.17: Roads' two single-asset parking categories). The
+			// category glyph the fallback thumbnail carries belongs in that row;
+			// the photograph does not.
+			if (authored)
+			{
+				var glyph = ordered
+					.Select(entry => entry.FallbackThumbnail)
+					.FirstOrDefault(value => !string.IsNullOrEmpty(value));
+
+				if (!string.IsNullOrEmpty(glyph))
+				{
+					return glyph!;
+				}
+			}
+
+			return ordered
 				.Select(entry => !string.IsNullOrEmpty(entry.Thumbnail) ? entry.Thumbnail : entry.FallbackThumbnail)
 				.FirstOrDefault(value => !string.IsNullOrEmpty(value)) ?? string.Empty;
 		}
+
+		/// <summary>A rendered asset picture, as opposed to an authored glyph.</summary>
+		internal static bool IsPhotograph(string icon) =>
+			icon.StartsWith("thumbnail://", StringComparison.OrdinalIgnoreCase);
 
 		/// <summary>
 		/// How many assets each of the education menu's tier tabs holds.
