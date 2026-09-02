@@ -18,8 +18,19 @@ const read = (relative: string): string => readFileSync(new URL(relative, import
 const buildingCatalogStyles = read("../src/mods/BuildingCatalog/buildingCatalog.module.scss");
 const lensControlPaneStyles = read("../src/mods/LensControlPane/lensControlPane.module.scss");
 const surfaceStylesFor = () => read("../src/mods/BuildingMenu/buildingMenuSurface.module.scss");
+const groupedResultsStyles = read("../src/mods/GroupedResults/groupedResults.module.scss");
 
 describe("Building Lens stylesheet contracts", () => {
+  it("gives a group three tiles of label room and a parent group the whole row", () => {
+    // Search results are one- to three-tile groups. Sized to their tiles
+    // alone, a one-tile group cut its name to "ROAD SER…", and a two-level
+    // group flowed beside a one-level one so their headings shared a line.
+    assert.match(groupedResultsStyles, /\.group \{[^}]*min-width: 300rem;/);
+    assert.match(groupedResultsStyles, /\.groupBand \{[^}]*flex: 0 0 100%;/);
+    // No heading, no row reserved for one.
+    assert.match(groupedResultsStyles, /\.groupUnlabeled \{[^}]*padding-top: 0;/);
+  });
+
   it("keeps the trailing reserve and the name budget agreeing", () => {
     // buildingCatalog.module.scss is the authority for what a row reserves to
     // the right of its name, and buildingLensLayout mirrors it so the name can

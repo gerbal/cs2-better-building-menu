@@ -312,7 +312,6 @@ describe("Fitting a heading", () => {
     // 166px and "GAS POWER PLANT" wants about 105px, so it fits whole — while
     // the tile-count estimate cut it to "GAS POWE…" over that same 166px.
     assert.equal(fitLabelToWidth("GAS POWER PLANT", 166, 105), "GAS POWER PLANT");
-    assert.equal(fitGroupLabel("GAS POWER PLANT", 1), "GAS POWE…");
 
     // Genuinely too long: 77px of grid tile for a string wanting 190px.
     const cut = fitLabelToWidth("CENTRAL INTELLIGENCE BUREAU", 77, 190);
@@ -332,14 +331,25 @@ describe("Fitting a heading", () => {
     assert.ok(fitLabelToWidth("CENTRAL INTELLIGENCE BUREAU", 4, 190).length >= 7);
   });
 
-  it("fits a heading to the width its tiles give it", () => {
+  it("budgets a heading at three tiles of room however few tiles it has", () => {
+    // A search in Roads is a run of one- to three-tile groups, and a budget
+    // straight from the tile count cut every one of their names: "ROAD SER…"
+    // over one tile. The group reserves three tiles of width for its label
+    // (groupedResults.module.scss), so the estimate budgets the same.
+    assert.equal(fitGroupLabel("ROAD SERVICES", 1), "ROAD SERVICES");
+    assert.equal(fitGroupLabel("GAS POWER PLANT", 1), "GAS POWER PLANT");
+    assert.equal(fitGroupLabel("CENTRAL INTELLIGENCE BUREAU", 1), "CENTRAL INTELLIGENCE BUREAU");
+    assert.equal(fitGroupLabel("BASIC", 1), "BASIC");
+    assert.equal(fitGroupLabel("POLICE HEADQUARTERS", 9), "POLICE HEADQUARTERS");
+  });
+
+  it("still clips a heading that outruns three tiles", () => {
     // The engine draws a hard clip rather than an ellipsis, so the "…" is put
     // there rather than asked for.
-    assert.equal(fitGroupLabel("CENTRAL INTELLIGENCE BUREAU", 1), "CENTRAL…");
-    assert.equal(fitGroupLabel("BASIC", 1), "BASIC");
+    const cut = fitGroupLabel("CENTRAL INTELLIGENCE BUREAU HEADQUARTERS", 1);
+    assert.ok(cut.endsWith("…"), `expected an ellipsis, got ${cut}`);
     // More tiles, more room.
-    assert.ok(fitGroupLabel("CENTRAL INTELLIGENCE BUREAU", 4).length > 8);
-    assert.equal(fitGroupLabel("POLICE HEADQUARTERS", 9), "POLICE HEADQUARTERS");
+    assert.equal(fitGroupLabel("CENTRAL INTELLIGENCE BUREAU HEADQUARTERS", 9), "CENTRAL INTELLIGENCE BUREAU HEADQUARTERS");
   });
 
   it("keeps a one-tile heading long enough to name something", () => {
