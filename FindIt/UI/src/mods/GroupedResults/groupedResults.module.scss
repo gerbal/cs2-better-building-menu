@@ -38,8 +38,25 @@
   // widen it, and this reserves the row it sits in.
   position: relative;
   padding-top: 17rem;
-  min-width: 0;
+  // Three default tiles of label room, whatever the group holds. A search
+  // is a run of one- to three-tile groups, and sized to their tiles alone
+  // every one of their names was cut — "ROAD SER…" over one tile. The
+  // estimate in fitGroupLabel budgets the same three tiles.
+  min-width: 300rem;
   overflow: hidden;
+}
+
+// A group with sub-groups. The whole row, so its heading sits alone on its
+// line and its children's headings on the next; flowed beside a leaf group
+// the two levels shared two rows of 11px with the neighbour's heading.
+.groupBand {
+  flex: 0 0 100%;
+}
+
+// A nested group named like its parent draws no heading, so it reserves no
+// row for one; its tiles sit directly under the parent's heading.
+.groupUnlabeled {
+  padding-top: 0;
 }
 
 // Thinned from 43rem to fit two tile rows in the 200rem content strip instead

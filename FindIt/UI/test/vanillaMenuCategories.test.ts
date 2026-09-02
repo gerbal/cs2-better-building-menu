@@ -33,7 +33,16 @@ describe("category strip visibility", () => {
   });
 
   it("shows the strip from two categories up", () => {
-    assert.equal(shouldShowCategoryStrip([category("Road"), category("Train")]), true);
+    assert.equal(shouldShowCategoryStrip([category("Road"), category("Train")], "Roads"), true);
+  });
+
+  it("hides the strip while the lens is unscoped", () => {
+    // All menus publishes every category of every menu — about seventy — and
+    // the strip wrapped to four rows of icon-only tabs. The categories are
+    // still the group headings there; the strip has nothing to add.
+    assert.equal(shouldShowCategoryStrip([category("Road"), category("Train")], ""), false);
+    assert.equal(shouldShowCategoryStrip([category("Road"), category("Train")], "   "), false);
+    assert.equal(shouldShowCategoryStrip([category("Road"), category("Train")], undefined), false);
   });
 });
 
