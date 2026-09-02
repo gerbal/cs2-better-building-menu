@@ -1084,3 +1084,73 @@ all under `["Vegetation","From the start"]`. On All menus, searching the
 `pdxModsId` `98960` (taken from the first modded item on the page) returns
 670 and `items[0].pdxModsId` is `98960` — the search the grid used to drop
 to nothing because its own scorer never read that field.
+
+## 2026-09-02 — split the catalog; honest vanilla seams (phase 6)
+
+Phase 6 of the architecture remediation (spec
+`docs/superpowers/specs/2026-09-01-findit-remediation-phase-6-split-catalog-and-honest-seams-design.md`,
+plan `docs/superpowers/plans/2026-09-01-findit-remediation-phase-6-split-catalog-and-honest-seams.md`,
+beads cm-jjlv.10.1–.5), branch `findit/phase-6-split-catalog`. Suites on
+the tip: C# 389/389, TS 568/568 (`catalogDom.test.ts` 6, `vanillaLayout.test.ts` 5).
+
+**What moved.** `BuildingCatalog.tsx` 1,011 → 382 lines: `useCatalogWindow`
+(the page binding, the window's shape, the bottom-of-list frame loop),
+`useScrollAnchor` + `useRevealExpandedRow` (the two DOM-measuring effects),
+`TableView` (column header, scroll, interleaved group headings) and
+`TableRow` (one row), over `catalogDom.ts` (`lastCatalogRow`,
+`findScrollContainer` bounded by the catalog's root). The three
+`document.querySelectorAll` sweeps and the unbounded `parentElement` walk
+are gone: `grep document\. src/mods/BuildingCatalog` is empty. The two
+patches on vanilla's layout left `BuildingMenuSurface.tsx` (279 → 149
+lines) for `vanillaLayout.ts`: one hook, one tested `setInlineStyle`
+primitive, and every selector a class the game's own stylesheet module
+exports — the toolbar is the `game-main-screen` child carrying
+`toolbar.module.scss`'s `toolbar`, not the child whose hashed class name
+starts with `toolbar_`.
+
+**Why the seams stay.** Finding 8 asked for "a container the mod owns"
+instead. Measured against the slot: centred, vanilla's main column starts at
+x=403 with its tool-options column at 145→398, and the panel plus control
+pane need 980 px — a container of ours can neither shift left over the
+options column nor fit to the right. And the chirper/toolbar paint order is
+decided between vanilla's own siblings, which nothing inside either can
+change. So both patches remain, imperative and scoped to the mount; what
+changed is that they are honest and tested.
+
+**Method.** `949230-c`, Porterville 3, `--no-steam --headless`, the pinned
+driver with a new `eval` command (CDP `Runtime.evaluate`). Clicks on our
+own controls go through the React fiber's `onClick` — Cohtml elements
+have no `.click()`.
+
+**Readings.** Opening Roads: one `[LENS-REFRESH]` (`from=RefreshLens`,
+total 403); All menus 10,536; `Error initializing mod` 0; exceptions 0;
+no "invalid value" line in any log under the prefix.
+
+| Check | Closed | Roads open | Closed again |
+|---|---|---|---|
+| `toolLayout` inline / computed `justify-content` | — / center | flex-start / flex-start | — / center |
+| toolbar (`toolbar_QYu`) inline / computed `z-index` | — / auto | -1 / -1 | — / auto |
+| lens row `getBoundingClientRect().left` | | 264.0 (width 984) | |
+| `[data-catalog-entry]` in document vs under the catalog root | | 100 / 100 | |
+
+Table view (fourth view-mode button), Roads:
+
+- **Reveal.** Expanding the last row straddling the fold (row top 626.7,
+  fold 630.3): `scrollTop` 0 → 162.3, detail bottom 624.3 ≤ fold 630.3.
+- **Window.** `scrollTop = scrollHeight` on the rows' scroller: items
+  100 → 200 within 4 s, `hasMore` still true (403 total).
+- **Anchor.** Scrolled to 900, placed the third visible row (`Gravel
+  Road`, id 15937), closed the menu, reopened: the panel comes back in
+  Table view (the store survives) and that row sits at 564→625 inside the
+  viewport 353→630 — on screen, where the unanchored list would show rows
+  0–4.
+- The scroller the walk finds is the `Scrollable`'s content element
+  (`content_*`, scrollHeight 6,466 vs clientHeight 277) beneath the root;
+  the walk never reaches the panel's own `content`/`asset-panel` above it.
+
+**Not driven.** The Chirper toast and the Locked/Unlocked popup (the four
+things the z-index comment verified on 2026-08-09) were not re-driven; the
+element the new selector finds is the same `toolbar_QYu` node with the same
+inline value, so the paint-order argument is unchanged. Whether cs2/ui's
+`Scrollable` forwards its declared ref to the scrolling element was not
+tested; the bounded walk answers the question without it.
