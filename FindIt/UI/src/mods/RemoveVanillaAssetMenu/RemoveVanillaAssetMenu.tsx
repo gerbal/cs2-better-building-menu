@@ -1,12 +1,16 @@
 import { bindValue, useValue } from "cs2/api";
 import { game } from "cs2/bindings";
 import mod from "../../../mod.json";
+import { UPSTREAM_FINDIT_GROUP, UPSTREAM_SHOW_PANEL } from "domain/upstreamFindIt";
 import { ModuleRegistryExtend } from "cs2/modding";
 import { BuildingMenuSurface } from "mods/BuildingMenu/BuildingMenuSurface";
 import { shouldMountInAssetMenu } from "domain/buildingMenuMount";
 
 // True while the toolbar's open menu is one the lens takes over.
 const LensOwnsCurrentMenu$ = bindValue<boolean>(mod.id, "LensOwnsCurrentMenu", false);
+// Upstream Find It's panel, when that mod is installed; the fallback covers
+// its absence. See buildingMenuMount for why we yield to it.
+const FindItPanelShown$ = bindValue<boolean>(UPSTREAM_FINDIT_GROUP, UPSTREAM_SHOW_PANEL, false);
 
 export const RemoveVanillaAssetMenuComponent: ModuleRegistryExtend = (Component) => {
   // I believe you should not put anything here.
@@ -14,6 +18,7 @@ export const RemoveVanillaAssetMenuComponent: ModuleRegistryExtend = (Component)
     const { children, ...otherProps } = props || {};
 
     const LensOwnsCurrentMenu = useValue(LensOwnsCurrentMenu$);
+    const findItPanelShown = useValue(FindItPanelShown$) === true;
     const isPhotoMode = useValue(game.activeGamePanel$)?.__Type == game.GamePanelType.PhotoMode;
 
     // Do not put any Hooks (i.e. UseXXXX) after this point.
@@ -28,7 +33,7 @@ export const RemoveVanillaAssetMenuComponent: ModuleRegistryExtend = (Component)
     // is tested. It used to be shared with MainContainer so the two could
     // never both draw or both decline; step 4 deleted that component, and the
     // slot is now the only home the menu has.
-    if (shouldMountInAssetMenu({ lensOwnsCurrentMenu: LensOwnsCurrentMenu, isPhotoMode })) {
+    if (shouldMountInAssetMenu({ lensOwnsCurrentMenu: LensOwnsCurrentMenu, isPhotoMode, findItPanelShown })) {
       // onClose is the game's own menu close — it clears the toolbar
       // selection, so the panel goes away with no vanilla grid left behind and
       // the toolbar button unlit. Threaded through rather than reaching for

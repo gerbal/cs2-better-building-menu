@@ -42,3 +42,13 @@ describe("closing the lens with Escape", () => {
     assert.ok(!/tool/i.test(source), `the rule must not consult the tool: ${source}`);
   });
 });
+
+describe("Escape while Find It's panel is up", () => {
+  it("leaves the toolbar selection alone, so Escape closes their panel and not our menu", async () => {
+    const { shouldClearOnEscape } = await import("../src/domain/vanillaMenuWatch.ts");
+
+    assert.equal(shouldClearOnEscape({ lensOpen: true, findItPanelShown: true }), false);
+    assert.equal(shouldClearOnEscape({ lensOpen: true, findItPanelShown: false }), true);
+  });
+});
+

@@ -80,6 +80,8 @@ namespace FindItBuildingMenu.Systems
 		// over. Lets the vanilla menu stay hidden after the panel is closed, so
 		// closing means closed rather than revealing the grid underneath.
 		private ValueBindingHelper<bool> _LensOwnsCurrentMenu = null!;
+		private ValueBindingHelper<bool> _FindItPresent = null!;
+		private bool _findItPresenceChecked;
 		/// <summary>
 		/// A menu the picker wants opened, as "index:version:nonce".
 		/// </summary>
@@ -157,6 +159,20 @@ namespace FindItBuildingMenu.Systems
 		/// </summary>
 		public BuildingCatalogFacetGroup? GetBuildingLensFacetGroup(string facetId) =>
 			System.Array.Find(_BuildingLensFacets.Value.Groups, group => group.Id == facetId);
+		/// <summary>Upstream Find It's assembly is loaded in this game.</summary>
+		internal static bool IsFindItLoaded()
+		{
+			foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+			{
+				if (string.Equals(assembly.GetName().Name, "FindIt", StringComparison.Ordinal))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
 		protected override void OnCreate()
 		{
 			base.OnCreate();
@@ -191,6 +207,11 @@ namespace FindItBuildingMenu.Systems
 			// expected to change mid-session.
 			_ReplaceVanillaBuildMenu = CreateBinding("ReplaceVanillaBuildMenu", Mod.Settings.ReplaceVanillaBuildMenu);
 			_LensOwnsCurrentMenu = CreateBinding("LensOwnsCurrentMenu", false);
+			// Whether upstream Find It is loaded beside us (cm-wf6g.4). Its UI
+			// ships the same picker; the toolbar shows one. Decided on the first
+			// update, not here: mods load in sequence and this system is created
+			// during OUR load, two seconds before Find It's assembly appears.
+			_FindItPresent = CreateBinding("FindItPresent", false);
 			// "<index>:<version>:<nonce>", or empty. The picker asks the game to
 			// open a menu through this; see RequestVanillaMenu.
 			_PickerMenuRequest = CreateBinding("PickerMenuRequest", string.Empty);
@@ -307,6 +328,12 @@ namespace FindItBuildingMenu.Systems
 
 		protected override void OnUpdate()
 		{
+			if (!_findItPresenceChecked)
+			{
+				_findItPresenceChecked = true;
+				_FindItPresent.Value = IsFindItLoaded();
+			}
+
 			if (_searchDebounce.TryFire(SearchClock.Elapsed))
 			{
 				_IsSearchLoading.Value = false;

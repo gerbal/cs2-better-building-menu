@@ -9,6 +9,9 @@ import PickerIconSrc from "images/PickerPicker.svg";
 import classNames from "classnames";
 
 const PickerActive$ = bindValue<boolean>(mod.id, "PickerActive");
+// Upstream Find It installed beside us: it ships this same picker, so the
+// toolbar shows one (theirs) rather than two identical glyphs (cm-wf6g.4).
+const FindItPresent$ = bindValue<boolean>(mod.id, "FindItPresent", false);
 
 // Getting the vanilla theme css for compatibility
 const ToolBarButtonTheme: Theme | any = getModule(
@@ -44,6 +47,11 @@ export const ToolbarIconComponent: ModuleRegistryExtend = (Component) => {
   return (props) => {
     const { children, ...otherProps } = props || {};
     const PickerActive = useValue(PickerActive$); // Get if your tool is active
+    const findItPresent = useValue(FindItPresent$);
+
+    if (findItPresent) {
+      return <Component {...otherProps}></Component>;
+    }
 
     return (
       <>
