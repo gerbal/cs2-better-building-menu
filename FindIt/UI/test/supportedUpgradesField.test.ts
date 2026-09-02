@@ -32,27 +32,11 @@ const read = (p: string) => readFileSync(new URL(p, import.meta.url), "utf8");
 const code = (src: string) =>
   src.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\{\/\*[\s\S]*?\*\/\}/g, "");
 
-const SITES = [
-  ["hover card", "../src/mods/BuildingHoverCard/BuildingHoverCard.tsx"],
-  ["table row detail", "../src/mods/BuildingCatalog/BuildingResultDetails.tsx"],
-] as const;
+// The two sites that read the field — the expanded table row and the hover
+// card — are tested by what they render: tableRow.test.tsx and
+// buildingHoverCard.test.tsx list an upgrade from supportedUpgrades.
 
 describe("the upgrades row reads what a building supports", () => {
-  for (const [name, path] of SITES) {
-    it(`${name}: names supportedUpgrades, never extensions`, () => {
-      const src = code(read(path));
-
-      assert.ok(
-        src.includes("entry.supportedUpgrades"),
-        `${name} must read entry.supportedUpgrades for the upgrades it lists`,
-      );
-      assert.ok(
-        !src.includes("entry.extensions"),
-        `${name} reads entry.extensions, which is empty for every asset a menu can show`,
-      );
-    });
-  }
-
   it("the entry type keeps both fields, so neither can absorb the other", () => {
     const src = read("../src/domain/buildingCatalog.ts");
 
