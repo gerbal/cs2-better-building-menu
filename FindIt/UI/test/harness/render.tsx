@@ -1,6 +1,10 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import type { ReactElement } from "react";
 import type { BuildingCatalogEntry } from "domain/buildingCatalog";
+import { installVanillaRegistry } from "./vanillaRegistry";
+
+// Every render test imports this module, so the resolver is seeded once.
+installVanillaRegistry();
 
 /** What a component draws, as markup. Effects do not run; hooks do. */
 export const renderHtml = (element: ReactElement): string => renderToStaticMarkup(element);
