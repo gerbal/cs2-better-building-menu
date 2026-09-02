@@ -28,9 +28,21 @@ export const ALL_CATEGORIES_ID = "";
  * and is still worth showing.
  */
 export function shouldShowCategoryStrip(
-  categories: readonly VanillaMenuCategory[] | null | undefined
+  categories: readonly VanillaMenuCategory[] | null | undefined,
+  menu: string | null | undefined
 ): boolean {
-  return (categories?.length ?? 0) >= 2;
+  return isLensScoped(menu) && (categories?.length ?? 0) >= 2;
+}
+
+/**
+ * Whether the lens stands in for one of the game's menus.
+ *
+ * Unscoped — Search everything — the strip would publish every category of
+ * every menu, about seventy, and wrapped to four rows of icon-only tabs.
+ * The categories are the group headings there; the strip has nothing to add.
+ */
+export function isLensScoped(menu: string | null | undefined): boolean {
+  return (menu ?? "").trim() !== "";
 }
 
 /**
