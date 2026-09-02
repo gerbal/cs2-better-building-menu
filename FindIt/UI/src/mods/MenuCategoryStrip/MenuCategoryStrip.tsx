@@ -9,6 +9,7 @@ import {
   isCategorySelected,
   visibleCategories,
   shouldShowCategoryStrip,
+  isLensScoped,
   type MenuCategoryCount,
   type VanillaMenuCategory,
 } from "domain/vanillaMenuCategories";
@@ -96,19 +97,22 @@ export const MenuCategoryStrip = () => {
   // them: Electricity is a single category, so the strip drew nothing at all
   // and the menu arrived with no way to cut its 60 assets. Progression is an
   // axis every menu has.
-  const showCategories = shouldShowCategoryStrip(categories);
+  const showCategories = shouldShowCategoryStrip(categories, menu);
+  // Every segment obeys the scope, not only the categories: All menus has
+  // branches too, and the fallback below would have drawn them.
+  const scoped = isLensScoped(menu);
   // Education navigates by LEVEL, not by the milestone a school unlocked at.
   // With several region packs there are dozens of schools per level, which is
   // the scale the strip exists to cut; the milestone they share is not.
   const schoolTiers = schoolTierTabs(schoolTierCounts);
-  const showSchoolTiers = isEducationMenu(menu) && schoolTiers.length > 1;
+  const showSchoolTiers = scoped && isEducationMenu(menu) && schoolTiers.length > 1;
   // The fallback, and the reason the strip exists on a service menu at all.
   // Vanilla splits Roads into nineteen categories and Electricity into one, so
   // the category strip drew nothing exactly where a 60-asset menu needed
   // cutting most. The development tree is the axis those menus DO have —
   // fossil against renewable, police against administration — so it stands in
   // when there are no categories, and stays out of the way when there are.
-  const showBranches = !showCategories && stripTabs.length > 1;
+  const showBranches = scoped && !showCategories && stripTabs.length > 1;
 
   if (!showCategories && !showBranches && !showSchoolTiers) {
     return null;

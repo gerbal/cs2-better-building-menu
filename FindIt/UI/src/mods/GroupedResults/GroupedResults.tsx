@@ -192,7 +192,11 @@ export const GroupedResults = ({
     return <BuildingGrid entries={leaf} searchText={searchText} onPlace={onPlace} standalone={false} />;
   };
 
-  const renderNodes = (nodes: GroupNode<BuildingCatalogEntry>[], depth: number): JSX.Element => {
+  const renderNodes = (
+    nodes: GroupNode<BuildingCatalogEntry>[],
+    depth: number,
+    parentLabel: string | null = null
+  ): JSX.Element => {
     // A single group covering everything is a label with nothing to
     // distinguish — a lone SERVICE BUILDINGS heading once the player has
     // already navigated there, or a lone RESIDENTIAL once they have filtered
@@ -206,9 +210,33 @@ export const GroupedResults = ({
     // big one still fills the line, and the small ones share.
     return (
       <div className={styles.groupRow}>
-        {nodes.map((node) => (
-      <div className={styles.group} key={node.path.join("/")} data-group-depth={depth}>
-        {showHeadings && (
+        {nodes.map((node) => {
+          // A group with two or more sub-groups takes the whole row, so its
+          // heading sits alone on its line and its children's headings on the
+          // next. Flowed beside a leaf group, as a search result did, the two
+          // levels of heading and the neighbour's shared two rows of 11px.
+          // One sub-group is one hidden heading — the group reads as a leaf
+          // and flows like one; banding those too gave a one-tile ROAD
+          // SERVICES a whole 84px row to itself.
+          const band = node.children.length > 1;
+          // No heading, no row reserved for one. Two cases: the only child,
+          // whose heading shouldShowHeading already hid while the 17rem it
+          // reserved stayed as 12px of nothing under every category; and a
+          // nested name that repeats its parent's — the dev tree names a
+          // category's base branch after the category, so MEDIUM ROADS
+          // carried a "Medium Roads" sub-heading with a second count under
+          // the first. The tiles sit under the parent's heading and the
+          // labelled siblings keep theirs.
+          const unlabeled =
+            !showHeadings || (depth > 0 && parentLabel !== null && node.label === parentLabel);
+
+          return (
+      <div
+        className={classNames(styles.group, band && styles.groupBand, unlabeled && styles.groupUnlabeled)}
+        key={node.path.join("/")}
+        data-group-depth={depth}
+      >
+        {!unlabeled && (
           <GroupHeading
             label={headingLabel(node)}
             estimate={fitGroupLabel(headingLabel(node), node.count)}
@@ -216,9 +244,10 @@ export const GroupedResults = ({
             nested={depth > 0}
           />
         )}
-        {node.children.length > 0 ? renderNodes(node.children, depth + 1) : renderLeaf(node.entries)}
+        {node.children.length > 0 ? renderNodes(node.children, depth + 1, node.label) : renderLeaf(node.entries)}
       </div>
-        ))}
+          );
+        })}
       </div>
     );
   };

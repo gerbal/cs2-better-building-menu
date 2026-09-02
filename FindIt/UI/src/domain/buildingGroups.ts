@@ -430,7 +430,8 @@ export function flattenGroupedRows<T extends GroupedEntry>(
  * tooltip and on the tiles below.
  */
 export function fitGroupLabel(label: string, tiles: number): string {
-  const budget = Math.max(MIN_GROUP_LABEL, Math.min(tiles, GROUP_LABEL_TILE_CAP) * GROUP_LABEL_PER_TILE);
+  const room = Math.min(Math.max(tiles, GROUP_LABEL_MIN_TILES), GROUP_LABEL_TILE_CAP);
+  const budget = Math.max(MIN_GROUP_LABEL, room * GROUP_LABEL_PER_TILE);
 
   if (label.length <= budget) {
     return label;
@@ -475,6 +476,16 @@ export function fitLabelToWidth(label: string, availablePx: number, neededPx: nu
 
 /** Uppercase characters that fit over one tile at the heading's size. */
 export const GROUP_LABEL_PER_TILE = 9;
+
+/**
+ * The tiles of width a group reserves for its label whatever it holds.
+ *
+ * A search is a run of one- to three-tile groups, and a budget straight from
+ * the tile count cut every one of their names — "ROAD SER…" over one tile.
+ * groupedResults.module.scss gives .group the matching min-width, so the
+ * estimate and the box agree.
+ */
+export const GROUP_LABEL_MIN_TILES = 3;
 
 /** Past this the row has wrapped, so more tiles buy no more width. */
 export const GROUP_LABEL_TILE_CAP = 9;
