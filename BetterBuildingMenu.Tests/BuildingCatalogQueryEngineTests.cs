@@ -270,7 +270,7 @@ public sealed class BuildingCatalogQueryEngineTests
         {
             Id = 8,
             BuildingType = "Library",
-            AssetPacks = new[] { "FindIt_NoPack" },
+            AssetPacks = new[] { "NoPack" },
         };
 
         BuildingCatalogFacetState state = BuildingCatalogAdapter.BuildFacetState(
@@ -706,7 +706,7 @@ public sealed class BuildingCatalogQueryEngineTests
     }
 
     [Fact]
-    public void Adapter_WhenFindItIndexIsUnready_ReturnsAnEmptyBoundedPage()
+    public void Adapter_WhenPrefabIndexIsUnready_ReturnsAnEmptyBoundedPage()
     {
         bool previousReady = BuildingMenuUtil.IsReady;
         try

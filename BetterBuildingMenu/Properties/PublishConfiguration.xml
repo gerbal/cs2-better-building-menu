@@ -5,7 +5,7 @@
   <DisplayName Value="Better Building Menu" />
   <ShortDescription Value="A building lens inside the vanilla build menus: table, grid and list views with facets, metric ranges and a coverage overlay." />
   <LongDescription>
-# Find It Building Menu
+# Better Building Menu
 
 A building lens for Cities: Skylines II. Open any vanilla build menu and the lens takes its place, showing the same buildings the game would — the game's own menu tree decides what belongs — as a table, a grid or a list you can sort, group and search.
 
@@ -29,7 +29,7 @@ Derived from Find It 1.5.8 by T. D. W. This is not a replacement for Find It: it
   <ChangeLog>
 # v0.1.0
 ## Changes
-* Find It Building Menu: a building lens inside the vanilla build menus, derived from Find It 1.5.8.
+* Better Building Menu: a building lens inside the vanilla build menus, derived from Find It 1.5.8.
 * Architecture remediation phases 1, 2 and 5: search debounce, one scoping taxonomy, the upstream filter bank and detailer features removed.
   </ChangeLog>
 </Publish>

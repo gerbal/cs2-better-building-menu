@@ -6,8 +6,8 @@ using BetterBuildingMenu.Domain.Enums;
 namespace BetterBuildingMenu.Domain
 {
 	/// <summary>
-	/// The stable, UI-facing projection of a building already present in FindIt's
-	/// prefab index. It intentionally contains no ECS handles or mutable prefab
+	/// The stable, UI-facing projection of a building already present in the
+	/// mod's prefab index. It intentionally contains no ECS handles or mutable prefab
 	/// objects so catalog work can remain separate from indexing and placement.
 	/// </summary>
 	public sealed record BuildingCatalogEntry(

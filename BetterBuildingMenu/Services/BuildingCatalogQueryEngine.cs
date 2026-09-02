@@ -10,7 +10,7 @@ namespace BetterBuildingMenu.Services
 	/// <summary>
 	/// Applies the successor's bounded building-catalog query to already
 	/// projected entries. Keeping this operation independent from ECS and the
-	/// FindIt index makes the UI contract deterministic and unit-testable.
+	/// prefab index makes the UI contract deterministic and unit-testable.
 	/// </summary>
 	public static class BuildingCatalogQueryEngine
 	{

@@ -1,25 +1,25 @@
 # Building Lens layout concept
 
-The Building Lens is the information surface for the FindIt successor. FindIt
+The Building Lens is the information surface for Better Building Menu, which
 remains the discovery and placement shell; the lens makes the decision about
 which building to place faster and more legible than the vanilla card grid.
 
 ## User goals and path
 
-1. Open FindIt from the toolbar or `Ctrl+F`.
+1. Open the building menu from the toolbar.
 2. Search, choose a category/subcategory, or use the existing sort and filter
    controls to narrow the indexed catalog.
 3. Scan aligned rows without opening each building: identity stays at the
    left, while cost, upkeep, workers, capacity, lot, level, and parking are
    comparable columns.
-4. Select a row for the normal FindIt placement flow, or add up to three rows
+4. Select a row for the normal placement flow, or add up to three rows
    to the compare tray and place directly from the selected entry.
 5. Keep the panel open while placing, picking, locating, or returning to the
    catalog. The world and native HUD remain visible around the bounded panel.
 
 ## Panel modes
 
-All widths are outer panel units, including the existing 35-unit FindIt panel
+All widths are outer panel units, including the existing 35-unit panel
 chrome. The C# setting stores the inner content width, so the user preference
 survives reopening and alignment changes.
 
@@ -29,7 +29,7 @@ survives reopening and alignment changes.
 | Default | 800 (initial persisted value) | Normal comparison | All common metrics are visible in the flex table; the bounded body scrolls while the header and actions stay visible. |
 | Expanded | 1,235 (maximum) | Deliberate comparison | Full metric labels/values and the compare inspector have room; this is reached with the existing expand command or the resize handle. |
 
-The existing FindIt grid keeps its vanilla sizing rules when the lens is off.
+The vanilla asset grid keeps its own sizing rules when the lens is off.
 The lens uses a flex-based row/header contract because Coherent Gameface does
 not provide reliable CSS grid/table behavior.
 

@@ -1,57 +1,62 @@
 # Better Building Menu
 
-Better Building Menu is a building browser for Cities: Skylines II that grew out
-of a fork of Find It. The original Find It implementation is intentionally preserved as
-the starting point while the successor identity, build isolation, and expanded
-building-comparison workflow are developed. See [docs/FORK.md](docs/FORK.md) for
+Better Building Menu is a building browser for Cities: Skylines II. Open any
+vanilla build menu and it takes that menu's place, listing the same buildings the
+game would — the game's own menu tree decides what belongs — as a table, a grid
+or a list you can sort, group and search.
+
+It grew out of a fork of [Find It](https://github.com/JadHajjar/FindIt-CSII) and
+has diverged substantially since. See [docs/FORK.md](docs/FORK.md) for
 provenance, [PLANNING.md](PLANNING.md) for implementation phases, and
-[docs/roadmap.md](docs/roadmap.md) for the successor capability plan.
-
-It also replaces [`cs2-building-menu-overhaul`](../cs2-building-menu-overhaul/README.md)
-as this repository's building-browser mod. The two ship the same feature area and
-must not be installed side by side, so the successor stays out of `ALL_MODS` and is
-installed with `just deploy-isolated better-building-menu`.
-
-The mod was renamed from FindItBuildingMenu on 2026-09-02. The game keys a mod's
-settings file by its id, so on the first run after the rename the mod's settings are
-back at their defaults: turn **Replace vanilla build menu** on again in Options.
-
-**Coexists with upstream Find It.** Both may be installed: Find It's own
-panel takes the asset-menu slot while it is open and this menu returns when it
-closes; with Find It present its picker is the one on the toolbar and ours
-stands down; the two ship no file at the same shared path. Verified live with
-Find It 1.5.8 (`docs/verification.md`, 2026-09-02).
-
-**Do not publish this checkout yet.** Its runtime identity is now unique, but a
-new PDX Mods publisher ID and the upstream license confirmation are still
-required before distribution.
-
-# Find It for Cities: Skylines II
-Quickly browse and search through all of the assets inside of the game.
-Use **Ctrl+F** to quickly open the Find It panel, or click on the magnifier icon in your toolbar.
-Use **Ctrl+P** to enable the Picker tool, or click on the picker icon in your toolbar.
-
-Huge thanks to **YenYang** for their help on the UI.
-
-Special thanks to **Algernon** for their contribution and allowing me to take on this project
-
-Thank you to **Chameleon** for providing the Icons.
-
-And thank you to **Baka-gourd** (NullPinter) for their help with focus.
+[docs/roadmap.md](docs/roadmap.md) for the capability plan.
 
 ## Features
-* Quick and intelligent search methods.
-* Extensive and comprehensive asset categories.
-* Panel stays open while placing assets, no jumping between different tabs.
-* Tool options like Tree Controller and Line Tool are fully supported and can be used while the panel is open.
-* Favorite your most used assets.
-* Integrated Picker
-* Extensive sorting and filtering options.
-* Building lens with cost, upkeep, worker, and capacity metrics.
-* Building lens facets for role, source, DLC, theme, asset pack, and placement/access flags.
-* Bounded three-building compare tray with direct Place actions.
 
-## Notes
-Find It should automatically support any mods that add or alter the vanilla assets.
+* Replaces the vanilla build menu (and, optionally, the zones menu) in place —
+  no floating window to manage.
+* Table, grid and list views, each sortable and groupable.
+* Facets for availability, source, theme, asset pack, placement and role.
+* Metric range filters over cost, upkeep, workers, capacity and lot size.
+* A search that finds nothing inside one menu can widen itself to every menu.
+* Hover a building for its numbers; place one and a service coverage overlay
+  shows what it reaches.
+* A bounded shelf of what you actually place, at positions that hold still.
+* Integrated picker — **Ctrl+P**, or the picker icon in the toolbar — opens the
+  menu on a building already in the city.
 
-If you're having any issues, please report them on my discord as it's easier to help you that way.
+Buildings and networks only. Props, trees and detailing are left to the mods
+made for them.
+
+There is deliberately no search hot-key: this is a build menu, so it opens from
+the toolbar menu you already clicked. `Ctrl+F` collided with vanilla's "Toggle
+Follow Selected Citizen" and with Find It's own shortcut, so it was removed
+rather than moved.
+
+## Coexists with upstream Find It
+
+Both may be installed. Find It's own panel takes the asset-menu slot while it is
+open and this menu returns when it closes; with Find It present its picker is the
+one on the toolbar and ours stands down; the two ship no file at the same shared
+path. Verified live against Find It 1.5.8 (`docs/verification.md`, 2026-09-02).
+
+## Renamed on 2026-09-02
+
+The mod was renamed from `FindItBuildingMenu`. The game keys a mod's settings
+file by its id, so on the first run after the rename the settings are back at
+their defaults: turn **Replace vanilla build menu** on again in Options.
+
+## Not published yet
+
+Its runtime identity is unique, but a new PDX Mods publisher ID and confirmation
+of the upstream license are still required before distribution.
+
+## Credits
+
+Derived from **Find It 1.5.8** by **T. D. W.** This mod would not exist without
+it. Credits carried over from that project:
+
+* **YenYang** — help on the UI.
+* **Algernon** — contributions, and for allowing the original project to be
+  taken on.
+* **Chameleon** — icons.
+* **Baka-gourd** (NullPinter) — help with focus handling.

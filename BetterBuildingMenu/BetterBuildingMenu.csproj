@@ -13,7 +13,7 @@
 		<AssemblyVersion>$(Version)</AssemblyVersion>
 		<Company>T. D. W.</Company>
 		<Copyright>@2024 MIT license</Copyright>
-		<Product>Find It Building Menu</Product>
+		<Product>Better Building Menu</Product>
 		<PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
 	</PropertyGroup>
 

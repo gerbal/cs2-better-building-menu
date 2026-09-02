@@ -7,7 +7,7 @@
       {
         "Name": "Changes",
         "Changes": [
-          "Find It Building Menu: a building lens inside the vanilla build menus, derived from Find It 1.5.8.",
+          "Better Building Menu: a building lens inside the vanilla build menus, derived from Find It 1.5.8.",
           "Architecture remediation phases 1, 2 and 5: search debounce, one scoping taxonomy, the upstream filter bank and detailer features removed."
         ]
       }

@@ -966,7 +966,7 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
 }
 
 // Keep the compact tier dense, but do not reduce normal/expanded metrics to
-// the tiny FindIt utility label size. The identity block remains the primary
+// the tiny utility label size. The identity block remains the primary
 // anchor while these values stay single-line and column-aligned.
 .catalog[data-metric-text-scale="readable"] {
   .metric,

@@ -18,31 +18,6 @@
   }
 }
 
-.findItMainContainer {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: calc(2 * var(--toolbarHeight) );
-  pointer-events: none;
-
-  animation: entry 0.3s ease-in-out;
-
-  &.alignRight {
-    position: absolute;
-    right: 20rem;
-  }
-
-  &.alignLeft {
-    position: absolute;
-    left: 20rem;
-  }
-}
-
-:global(.legacy-interface) .findItMainContainer {
-  bottom: 122rem;
-}
-
 .alignCenter {
   .toolLayout {
     position: absolute;

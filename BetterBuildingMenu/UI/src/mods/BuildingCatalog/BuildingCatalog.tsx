@@ -238,7 +238,7 @@ export const BuildingCatalogComponent = () => {
     // is what the player was looking at.
     setLensAnchor(anchorKey, entry.id);
 
-    // Keep the existing FindIt placement path: the backend resolves this id
+    // Keep the existing placement path: the backend resolves this id
     // through its single prefab index and activates the normal prefab tool.
     menuSurfacePort.activatePrefab({ prefabId: entry.id });
   }

@@ -1,8 +1,9 @@
-# FindIt Building Menu Successor — Roadmap
+# Better Building Menu — Roadmap
 
-The successor keeps FindIt's proven asset-discovery foundation and adds a
-decision-oriented building workflow. It is not intended to discard the picker,
-placement, or broad asset coverage that make Find It useful.
+Better Building Menu keeps the proven asset-discovery foundation it inherited
+from Find It and adds a decision-oriented building workflow. It is not intended
+to discard the picker, placement, or broad asset coverage that make Find It
+useful.
 
 ## Retain from Find It
 
@@ -21,12 +22,11 @@ placement, or broad asset coverage that make Find It useful.
 2. **Building lens** — make buildings a first-class view with service/category
    taxonomy and a clear switch back to the complete asset catalog. The first
    slice now exposes a bounded `BuildingCatalog` page binding backed by a
-   projection of `FindItUtil.CategorizedPrefabs`; it does not introduce a
+   projection of `BuildingMenuUtil.CategorizedPrefabs`; it does not introduce a
    second ECS scan or send an unbounded list to Gameface. A first Gameface
    lens is now wired behind the top-bar building button with flexbox rows,
    metric columns, sort controls, bounded paging, and a scroll-constrained
-   result region; selecting a row uses FindIt's existing prefab placement
-   trigger.
+   result region; selecting a row uses the existing prefab placement trigger.
 3. **Analytical catalog** — expose data-driven columns for cost, upkeep,
    workers, capacity, utilities, pollution, and other available prefab data.
    Construction cost, upkeep, workers, capacity, electricity, water, garbage,
@@ -52,43 +52,24 @@ placement, or broad asset coverage that make Find It useful.
    the panel context. This first bounded tray is implemented and live-smoked.
 6. **Verification** — build, unit-test pure catalog/filter logic, and validate
    search/filter/sort/paging/placement on a developed save before considering a
-   successor release. The 2026-07-26 parity run covers close/reopen,
-   category/filter, picker continuity, and OnlyPlaced locate; its evidence is
-   archived in `docs/verification.md`.
+   release. The 2026-07-26 parity run covers close/reopen, category/filter,
+   picker continuity, and OnlyPlaced locate; its evidence is archived in
+   `docs/verification.md`.
 
-## Staged migration from the old BMO
+## Release gates
 
-The old `cs2-building-menu-overhaul/` remains the rollback reference. The
-cutover sequence is deliberately staged:
-
-The parity comparison is explicit rather than an identity-only fork:
-
-| Capability | Old BMO | FindItBuildingMenu successor |
-| --- | --- | --- |
-| Catalog source | Dedicated `CS2BuildingRecordSource` ECS query | Existing FindIt incremental index, projected through a bounded catalog page |
-| Search/category/paging | C# catalog and React table | FindIt categories/search plus the bounded building lens query |
-| Filters and metrics | Analytical columns and range filters | Nullable analytical metrics, common/category filters, numeric sort, and range filters |
-| Picker/place/locate | Normal placement trigger from a table row | FindIt's picker and placement path, compare `Place`, and locator actions |
-| Runtime identity | `CS2BuildingMenuOverhaul` | `FindItBuildingMenu` with no upstream `77240` publisher ID |
-| Rollback | Original source tree | Isolated package; never run both modules together |
-
-1. Keep only `BootDiagnostics` and `FindItBuildingMenu` in the isolated Mods
+1. Keep only `BootDiagnostics` and `BetterBuildingMenu` in the isolated Mods
    roots while validating a release candidate.
 2. Confirm the upstream license notice and assign a new PDX publisher identity;
    do not reuse Find It's `77240` publisher ID.
-3. Back up the old BMO package and remove its folder from both Mods roots. Do
-   not rename it to `.disabled`, because the game still scans UI bundles in
-   disabled folders.
-4. Deploy the successor package to both Mods roots, launch a developed save,
-   and repeat `docs/verification.md` after any identity or release-build
-   change.
-5. If rollback is required, stop the game, remove `FindItBuildingMenu`, and
-   restore the old BMO package; never run both overlapping menu modules
-   together.
+3. Deploy the package to both Mods roots, launch a developed save, and repeat
+   `docs/verification.md` after any identity or release-build change. Never
+   rename a superseded package to `.disabled`; the game still scans UI bundles
+   in disabled folders.
 
 ## Design boundary
 
-The fork should reuse FindIt's game integration where it is stable and isolate
-new analytical behavior behind small services and typed UI bindings. Avoid a
-second indexing implementation or an unconditional rewrite of FindIt's tested
-placement flow.
+The fork should reuse the inherited game integration where it is stable and
+isolate new analytical behavior behind small services and typed UI bindings.
+Avoid a second indexing implementation or an unconditional rewrite of its
+tested placement flow.
