@@ -522,6 +522,32 @@ namespace FindItBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void TheEffectiveGroupingIsOneTheMenuOffers()
+		{
+			// Electricity: one category, so the default is menuCategory — which the
+			// picker dropped for putting the whole menu in one bucket. The strip's
+			// axis is the next answer, and it is offered.
+			var electricity = new[] { "category", "subCategory", "role", "development", "source", "footprint", "cost", "none" };
+			Assert.Equal("development", BuildingCatalogGrouping.Effective("", true, "development", false, electricity));
+
+			// A choice carried over from another menu that cannot act here falls
+			// back the same way, to the menu's own default when that is offered.
+			var roads = new[] { "menuCategory", "category", "subCategory", "progression", "development", "none" };
+			Assert.Equal("menuCategory", BuildingCatalogGrouping.Effective("schoolTier", true, "development", false, roads));
+
+			// Neither the default nor the axis offered: the picker's first grouping.
+			var flat = new[] { "source", "cost", "none" };
+			Assert.Equal("source", BuildingCatalogGrouping.Effective("", true, "development", false, flat));
+
+			// Nothing grouped offered at all: none. And "none" itself is always honoured.
+			Assert.Equal("none", BuildingCatalogGrouping.Effective("", true, "development", false, new[] { "none" }));
+			Assert.Equal("none", BuildingCatalogGrouping.Effective("none", true, "development", false, roads));
+
+			// Not judged yet (no entries): the plain rule stands.
+			Assert.Equal("menuCategory", BuildingCatalogGrouping.Effective("", true, "development", false, System.Array.Empty<string>()));
+		}
+
+		[Fact]
 		public void AChoiceWinsAndAutoFallsThroughToTheDefault()
 		{
 			Assert.Equal("cost", BuildingCatalogGrouping.Effective("cost", true, "development", false));
