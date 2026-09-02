@@ -992,3 +992,95 @@ selection is a different key, not an invalidation.
 
 This is the number behind cm-2xvs.25 ("reopening a menu costs a ~2.6 s
 stall"): 2.6 s → 25 ms (phase 1) → 3 ms.
+
+## 2026-09-01 — one owner per presentation state (phase 4)
+
+Phase 4 of the architecture remediation (spec
+`docs/superpowers/specs/2026-09-01-findit-remediation-phase-4-one-owner-per-presentation-state-design.md`,
+plan `docs/superpowers/plans/2026-09-01-findit-remediation-phase-4-one-owner-per-presentation-state.md`,
+beads cm-jjlv.8.1–.5), branch `findit/phase-4-one-owner`. Suites on the
+tip: C# 389/389, TS 557/557, `BindingManifestTests` with an empty
+allowlist.
+
+**What moved to C#.** The effective grouping
+(`BuildingCatalogGrouping.DefaultDimension`/`Effective`; the query's
+`GroupBy` is the player's choice and `""` is auto), the search relevance
+(`BuildingCatalogRelevance.Score`, applied inside each group whenever a
+search is active, the sort column breaking ties), the group headings
+(`BuildingCatalogGrouping.Labels`, stamped on every page item as
+`groupPath`/`groupLabelId`) and the dimensions a menu offers
+(`OfferedDimensions` → `BuildingLensGroupDimensions`). The UI lost
+`defaultGroupDimensionFor`, the groupBy push-back effect,
+`rankBuildingMatches`/`matchScore`/`stableGridOrder`, `buildGroupedView`,
+`groupLevelsFor` and ten label helpers (`buildingGroups.ts` 897 → 483
+lines), and the three view-state modules became one store
+(`lensViewStore.ts`, `useSyncExternalStore`). The density tier table is one
+table now (`BuildingCatalogLabels.DensityTier`).
+
+**Method.** Same prefix (`949230-c`), save (Porterville 3), launch
+(`--no-steam --headless`) and driver as phase 3. Open Roads, Landscaping,
+Health & Deathcare, Zones, Electricity, Education & Research, then All
+menus, reading `[LENS-REFRESH]`, `BuildingCatalogGroupBy`,
+`BuildingLensGroupDimensions` and the page after each; inside Landscaping
+search `tre`; on All menus search a `pdxModsId` taken off the page.
+
+**One refresh per open.** Every menu logged exactly one line, all
+`from=RefreshLens`; zero `SetBuildingCatalogGroupBy` lines in the run. The
+second `Roads` line of every earlier run — the UI pushing the derived
+groupBy back — is gone:
+
+```
+34ms proj=25ms(miss) page=31 … expanded=1 menu='Roads'                total=403
+20ms proj=14ms(miss) page=19 …            menu='Landscaping'          total=522
+12ms proj=10ms(miss) page=11 …            menu='Health & Deathcare'   total=31
+13ms proj=10ms(miss) page=12 …            menu='Zones'                total=74
+16ms proj=13ms(miss) page=16 …            menu='Electricity'          total=17
+11ms proj=10ms(miss) page=11 …            menu='Education & Research' total=43
+64ms proj=0ms(hit)   page=21 bounds=6 facets=27 tabs=4 expanded=1 tiers=3 menu='' total=10536 (All menus, from=ClearBuildingLensMenuScope)
+```
+
+Totals identical to phase 3. Zero exceptions, `Error initializing mod` 0.
+
+**The effective grouping and the offered dimensions**, as C# publishes
+them:
+
+| Menu | `BuildingCatalogGroupBy` | `BuildingLensGroupDimensions` |
+|---|---|---|
+| Roads | menuCategory | menuCategory, category, subCategory, progression, development, theme, source, footprint, cost, none |
+| Landscaping | menuCategory | menuCategory, category, subCategory, theme, source, footprint, cost, none |
+| Health & Deathcare | menuCategory | menuCategory, role, development, source, footprint, cost, none |
+| Zones | menuCategory | menuCategory, category, subCategory, progression, theme, source, density, footprint, cost, none |
+| Electricity | menuCategory | category, subCategory, role, development, source, footprint, cost, none |
+| Education & Research | schoolTier | menuCategory, role, schoolTier, development, source, footprint, cost, none |
+| All menus | development | all twelve |
+
+`schoolTier` is offered on Education alone; `development` is dropped from
+Landscaping (nothing there is tree-gated) and kept on Electricity;
+`density` appears only on Zones. The first page item's headings read as
+expected: Roads `["Small Roads","Small Roads"]` with `groupLabelId`
+`RoadsSmallRoads`, Zones `["Residential","Low Density"]` with
+`ZonesResidential`, Education `["Elementary School"]` with no id, Health
+`["Healthcare","Hospital"]`.
+
+Two readings differ from the spec's expectations, and the spec was wrong,
+not the build: it guessed `development` for Electricity and `category` for
+All menus, but `DefaultDimension` takes the same `GetMenuCategories(menu)`
+input the deleted `BuildingLensMenuCategories` binding fed the UI's
+`defaultGroupDimensionFor`, so these are the defaults the lens already
+opened on. Electricity is worth a look later: its menu has one category,
+so the default is `menuCategory` while `menuCategory` is not in its offered
+list (one bucket — the heading is suppressed, so nothing is drawn wrong).
+Filed as a follow-up on cm-jjlv.
+
+**One order per query.** Inside Landscaping, `tre` → 13, in the order C#
+now sends and every view renders:
+
+```
+Apple Tree, Royal Palm Tree, Coconut Palm Tree, Florida Palm Tree, Sylvester Palm Tree   (word-start hit, shortest name first)
+Oak, Birch, Pine, Alder, Poplar …                                                      (prefab-name hit: OakTree01, BirchTree01 …)
+```
+
+all under `["Vegetation","From the start"]`. On All menus, searching the
+`pdxModsId` `98960` (taken from the first modded item on the page) returns
+670 and `items[0].pdxModsId` is `98960` — the search the grid used to drop
+to nothing because its own scorer never read that field.
