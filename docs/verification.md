@@ -6,7 +6,7 @@ license confirmation and assignment of a new PDX publisher identity.
 
 > **Re-run:** `node tools/e2e/findit-lens-smoke.mjs --http <cdp http url> --agent <your agent id> --prefix <steam prefix>`
 > against a game with a city loaded (repo root; `just e2e` runs its unit tests).
-> **Last run:** 2026-09-02 on `bc10568` — `tools/e2e/artifacts/findit-smoke/20260902-051246-bc10568.md`
+> **Last run:** 2026-09-02 on `08c7818` — `tools/e2e/artifacts/findit-smoke/20260902-054528-08c7818.md`
 > (artifacts are not tracked; the run's report is pasted in the newest section below).
 > The sections below are dated records; the newest describes the current build.
 > Staleness is the distance between that sha and `HEAD`.
@@ -1230,4 +1230,85 @@ what remains of the review is cm-jjlv.12 (the one-category default) and
 the C# side of finding 9 (`PrefabIndexingSystem`, the adapter's instance
 paths and the `FindItUISystem` handlers are still untested), which the
 review's plan did not schedule.
+
+## 2026-09-02 — one lens state (phase 8), and the one-category default (cm-jjlv.12)
+
+Phase 8 (spec
+`docs/superpowers/specs/2026-09-02-findit-remediation-phase-8-one-lens-state-design.md`,
+plan `docs/superpowers/plans/2026-09-02-findit-remediation-phase-8-one-lens-state.md`,
+beads cm-jjlv.13.1–.4), branch `findit/phase-8-one-lens-state`, stacked on
+`findit/cm-jjlv-12-default-grouping`. Suites on the tip: C# 405/405 (was
+390: fifteen `BuildingCatalogLensTransitionTests`, one grouping test), TS
+unit 548, TS render 35, `just e2e` green.
+
+**What moved.** `FindItUISystem`'s five state fields (the query, the metric
+ranges, the menu, the category, the school tier) are one
+`BuildingCatalogLensState`, which now carries `Menu`, `Category`,
+`SchoolTier` and `SearchText` and has one transition per trigger:
+`SelectMenu`, `ClearMenuScope`, `SelectCategory`, `SelectStripTab`,
+`SelectSchoolTier`, `SetSortColumn`, `SetDescending`, `SetGroupBy`,
+`LoadMore`, `ToggleFacet`, `ClearFacets`, `ClearFilters`, `ResetMenu`,
+`SetMetricRange`, `ClearMetricRanges`, `Search`, and `Compose` (the fold
+`RefreshBuildingCatalog` used to do inline). Every handler is
+`Apply(_lens.<Transition>(…))` — assign, `PublishScope()`, refresh, skipped
+when the transition returned the same instance. `Bindings.cs` 843 → 598
+lines. No binding added, removed or renamed. The scoping rules — a menu
+forgets the category, the tab and the tier; a tab and a category exclude
+each other; Reset keeps the menu and drops everything narrowed; grouping
+and sort changes shrink the window; Load more grows it to the ceiling —
+are pinned by test without a game.
+
+**cm-jjlv.12.** `BuildingCatalogGrouping.Effective` now takes the offered
+dimensions and holds its answer to them: the menu's default, then the
+strip's axis, then the picker's first grouping, then none. Live:
+Electricity opens on `development` (it read `menuCategory`, which its
+picker did not list); every other menu is unchanged.
+
+**The smoke's scope section** (new this phase) is the live proof of the
+refactor: Roads narrowed by its first strip tab and by its first
+category, with the category clearing the tab, Reset restoring the menu's
+403, and Education & Research narrowed to tier 1. The run, verbatim:
+
+# FindIt lens smoke — 2026-09-02 — 08c7818
+
+Result: **PASS**  ·  agent `claude-swift-ocelot-gZs`  ·  cdp `http://127.0.0.1:9557`  ·  prefix `949230-c`
+
+| Menu | Refreshes on open | groupBy | Offered dimensions | Total | First groupPath |
+|---|---|---|---|---|---|
+| Roads | 1 | menuCategory | menuCategory, category, subCategory, progression, development, theme, source, footprint, cost, none | 403 | ["Small Roads","Small Roads"] |
+| Landscaping | 1 | menuCategory | menuCategory, category, subCategory, theme, source, footprint, cost, none | 522 | ["Terraforming","From the start"] |
+| Health & Deathcare | 1 | menuCategory | menuCategory, role, development, source, footprint, cost, none | 31 | ["Healthcare","Healthcare"] |
+| Zones | 1 | menuCategory | menuCategory, category, subCategory, progression, theme, source, density, footprint, cost, none | 74 | ["Residential","Low Density"] |
+| Electricity | 1 | development | category, subCategory, role, development, source, footprint, cost, none | 17 | ["Electricity"] |
+| Education & Research | 1 | schoolTier | menuCategory, role, schoolTier, development, source, footprint, cost, none | 43 | ["Elementary School"] |
+| All menus | 1 | development | menuCategory, category, subCategory, role, progression, development, theme, source, density, footprint, cost, none | 10536 | |
+
+Search `tre` in Landscaping: 13 matches, first `Apple Tree`.
+
+Exceptions in the mod log: 0 before, 0 after.
+
+## Scope
+
+| Step | Read back | Total |
+|---|---|---|
+| Roads, open | | 403 |
+| strip tab `Communications` | tab ["Communications"] | 1 |
+| category `RoadsSmallRoads` | category `RoadsSmallRoads`, tab [] | 24 |
+| Reset | category ``, tabs [] | 403 |
+| Education & Research, tier 1 | tier 1 | 14 (menu 43) |
+
+```
+[LENS-REFRESH] 35ms proj=25ms(miss) page=32 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=1 tiers=0 menu='Roads' total=403 from=RefreshLens
+[LENS-REFRESH] 19ms proj=13ms(miss) page=18 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Landscaping' total=522 from=RefreshLens
+[LENS-REFRESH] 13ms proj=11ms(miss) page=12 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Health & Deathcare' total=31 from=RefreshLens
+[LENS-REFRESH] 14ms proj=11ms(miss) page=13 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Zones' total=74 from=RefreshLens
+[LENS-REFRESH] 11ms proj=9ms(miss) page=11 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Electricity' total=17 from=RefreshLens
+[LENS-REFRESH] 12ms proj=11ms(miss) page=12 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Education & Research' total=43 from=RefreshLens
+[LENS-REFRESH] 67ms proj=0ms(hit) page=21 bounds=7 facets=28 counts=0 axis=0 tabs=4 expanded=1 tiers=3 menu='' total=10536 from=Apply
+```
+
+Every reading outside the scope section equals the phase-7 record.
+`PrefabIndexingSystem` stays untested by design: its extraction reads
+prefab components through Unity's ECS; the per-menu totals above and the
+`[MENU-AUDIT]`/`[MENU-COVERAGE]` log lines are its check.
 

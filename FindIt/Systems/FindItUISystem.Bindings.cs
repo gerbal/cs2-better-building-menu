@@ -76,11 +76,8 @@ namespace FindItBuildingMenu.Systems
 		/// </remarks>
 		private void ReleaseMenuScope()
 		{
-			_buildingLensUiMenu = string.Empty;
-			_buildingLensUiCategory = string.Empty;
-			ResetBuildingLensStripTab();
-			ResetBuildingLensSchoolTier();
-			RefreshBuildingLensMenuCategories();
+			_lens = _lens.ClearMenuScope();
+			PublishScope();
 		}
 
 		/// <summary>
@@ -168,18 +165,14 @@ namespace FindItBuildingMenu.Systems
 				return;
 			}
 
-			_buildingLensUiMenu = menuName;
+			_lens = _lens.SelectMenu(menuName);
+			PublishScope();
 			// A different menu has different tabs, so the old selection cannot
 			// survive the switch.
-			_buildingLensUiCategory = string.Empty;
-			ResetBuildingLensStripTab();
-			ResetBuildingLensSchoolTier();
-			RefreshBuildingLensMenuCategories();
 
 			_appliedMenuIndex = menuEntityIndex;
 			_appliedMenuFrame = UnityEngine.Time.frameCount;
 			_LensOwnsCurrentMenu.Value = true;
-			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 
 			// activatePrefab: false. Opening a menu must not re-arm the prefab
 			// from the LAST menu — that is what desynced the toolbar. Arming a
@@ -260,32 +253,7 @@ namespace FindItBuildingMenu.Systems
 		/// first category — but the lens can show a whole menu at once and that
 		/// is worth keeping, so the strip carries one more option than vanilla's.
 		/// </remarks>
-		private void SetBuildingLensMenuCategory(string category)
-		{
-			// The zoning view is not the building catalog: it renders the zone
-			// catalog narrowed by family, and reads none of the query the
-			// category scope feeds. So the strip's five Zones tabs — which are
-			// the five families, under the game's own plural names — were a row
-			// of buttons that took the selected treatment and changed nothing on
-			// screen, while the "All families" picker beside them worked.
-			//
-			// Both now write the one selection. The strip picks a single family
-			// because a tab strip is single-select; the picker still composes
-			// several, and whichever set that leaves is what both controls read
-			// back.
-			_buildingLensUiCategory = category ?? string.Empty;
-			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
-			// A new category resets the tier. The tabs are a subset of the
-			// category, so a tier held across a category change is a narrowing
-			// the player made against a set that is no longer on screen — and
-			// on the categories that hold no assets from it, an empty menu with
-			// no visible cause.
-			ResetBuildingLensStripTab();
-			ResetBuildingLensSchoolTier();
-			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
-
-			RefreshBuildingCatalog();
-		}
+		private void SetBuildingLensMenuCategory(string category) => Apply(_lens.SelectCategory(category));
 
 		/// <summary>
 		/// Narrows the menu to one branch of its service's development tree.
@@ -294,69 +262,11 @@ namespace FindItBuildingMenu.Systems
 		/// The strip's fallback axis. Single-select, like the category and
 		/// progression tabs beside it — the strip asks one question per segment.
 		/// </remarks>
-		private void SetBuildingLensStripTab(string tab)
-		{
-			// A branch and a category are ALTERNATIVES wherever the strip draws
-			// branches in a category's place — the same rule the school levels
-			// follow. Holding a category as well would intersect Administration
-			// with a police branch and empty the menu.
-			_buildingLensUiCategory = string.Empty;
-			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
-			_buildingCatalogQuery = _buildingCatalogQuery with
-			{
-				StripTabs = string.IsNullOrEmpty(tab) ? null : new[] { tab },
-			};
-			PublishBuildingLensStripTabs();
-			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
+		private void SetBuildingLensStripTab(string tab) => Apply(_lens.SelectStripTab(tab));
 
-			RefreshBuildingCatalog();
-		}
-
-		/// <summary>Drops the strip narrowing, without refreshing on its own.</summary>
-		/// <remarks>
-		/// Every caller is already on its way to <c>RefreshBuildingCatalog</c>
-		/// for a scope change of its own, so refreshing here would run the query
-		/// twice for one gesture.
-		/// </remarks>
-		private void ResetBuildingLensStripTab()
-		{
-			_buildingCatalogQuery = _buildingCatalogQuery with { StripTabs = null };
-			PublishBuildingLensStripTabs();
-		}
-
-		/// <summary>Mirrors the query's strip selection back to the row.</summary>
-		/// <remarks>
-		/// The row and the rail write the same field, so the row has to read it
-		/// rather than remember what it last set — otherwise a rail selection
-		/// would narrow the results with no tab showing for it.
-		/// </remarks>
-		private void PublishBuildingLensStripTabs() =>
-			_BuildingLensStripTabBinding.Value =
-				_buildingCatalogQuery.StripTabs?.ToArray() ?? Array.Empty<string>();
 
 		/// <summary>Narrows the education menu to one school tier.</summary>
-		private void SetBuildingLensMenuSchoolTier(int tier)
-		{
-			// A level and a category are ALTERNATIVES: the strip draws the four
-			// levels in the Education category's own place, so picking one is
-			// picking that category, more narrowly. Holding a previously picked
-			// category as well would intersect Research with a school level and
-			// empty the menu.
-			_buildingLensUiCategory = string.Empty;
-			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
-			_buildingLensSchoolTier = tier < 0 ? -1 : tier;
-			_BuildingLensMenuSchoolTierBinding.Value = _buildingLensSchoolTier;
-			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
-
-			RefreshBuildingCatalog();
-		}
-
-		/// <summary>Drops the tier narrowing, without refreshing on its own.</summary>
-		private void ResetBuildingLensSchoolTier()
-		{
-			_buildingLensSchoolTier = -1;
-			_BuildingLensMenuSchoolTierBinding.Value = _buildingLensSchoolTier;
-		}
+		private void SetBuildingLensMenuSchoolTier(int tier) => Apply(_lens.SelectSchoolTier(tier));
 
 		/// <summary>
 		/// Scopes the lens to a vanilla menu chosen from the filters.
@@ -374,26 +284,7 @@ namespace FindItBuildingMenu.Systems
 		/// This one is answering the player, who is already in the lens and has
 		/// just asked for a menu inside it.
 		/// </remarks>
-		private void SetBuildingLensMenu(string menuName)
-		{
-			if (string.IsNullOrWhiteSpace(menuName))
-			{
-				ClearBuildingLensMenuScope();
-				return;
-			}
-
-			_buildingLensUiMenu = menuName.Trim();
-			// A different menu has different tabs, so the old selection cannot
-			// survive the switch — same reason as VanillaMenuSelected.
-			_buildingLensUiCategory = string.Empty;
-			ResetBuildingLensStripTab();
-			ResetBuildingLensSchoolTier();
-			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
-
-			RefreshBuildingLensMenuCategories();
-			RefreshBuildingLensNavigation();
-			RefreshBuildingCatalog();
-		}
+		private void SetBuildingLensMenu(string menuName) => Apply(_lens.SelectMenu(menuName), navigation: true);
 
 		/// <summary>
 		/// Drops the vanilla-menu scope and shows the whole catalog.
@@ -408,35 +299,45 @@ namespace FindItBuildingMenu.Systems
 		/// narrowing the player chose within it, and dropping both would make
 		/// one × do two jobs.
 		/// </remarks>
-		private void ClearBuildingLensMenuScope()
-		{
-			_buildingLensUiMenu = string.Empty;
-			_buildingLensUiCategory = string.Empty;
-			ResetBuildingLensStripTab();
-			ResetBuildingLensSchoolTier();
-
-
-			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
-
-			RefreshBuildingLensMenuCategories();
-			RefreshBuildingLensNavigation();
-			RefreshBuildingCatalog();
-		}
+		private void ClearBuildingLensMenuScope() => Apply(_lens.ClearMenuScope(), navigation: true);
 
 		/// <summary>
 		/// Republishes the tab strip for whatever menu is currently scoped.
 		/// </summary>
-		private void RefreshBuildingLensMenuCategories()
+		/// <summary>The scope bindings, from the one state that owns them.</summary>
+		private void PublishScope()
 		{
-			var tabs = PrefabIndexingSystem.GetMenuCategories(
-				string.IsNullOrEmpty(_buildingLensUiMenu) ? null : _buildingLensUiMenu);
-
-			_BuildingLensMenuCategoriesBinding.Value = tabs.ToArray();
-			_BuildingLensMenuBinding.Value = _buildingLensUiMenu;
+			_BuildingLensMenuCategoriesBinding.Value = PrefabIndexingSystem.GetMenuCategories(
+				string.IsNullOrEmpty(_lens.Menu) ? null : _lens.Menu).ToArray();
+			_BuildingLensMenuBinding.Value = _lens.Menu;
 			_BuildingLensMenusBinding.Value = PrefabIndexingSystem.GetAssetMenus().ToArray();
+			_BuildingLensMenuCategoryBinding.Value = _lens.Category;
+			_BuildingLensMenuSchoolTierBinding.Value = _lens.SchoolTier;
+			_BuildingLensStripTabBinding.Value = _lens.Query.StripTabs?.ToArray() ?? Array.Empty<string>();
+			_CurrentSearch.Value = _lens.SearchText;
+		}
 
-			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
-			PublishBuildingLensStripTabs();
+		/// <summary>
+		/// One trigger's effect: the transition, the bindings that mirror it, the
+		/// refresh. A transition that changed nothing (reference-equal) costs
+		/// nothing.
+		/// </summary>
+		private void Apply(BuildingCatalogLensState next, bool navigation = false)
+		{
+			if (ReferenceEquals(next, _lens))
+			{
+				return;
+			}
+
+			_lens = next;
+			PublishScope();
+
+			if (navigation)
+			{
+				RefreshBuildingLensNavigation();
+			}
+
+			RefreshBuildingCatalog();
 		}
 
 		/// <summary>
@@ -444,17 +345,9 @@ namespace FindItBuildingMenu.Systems
 		/// </summary>
 		private void SearchEverything()
 		{
-			// The menu scope has to go, or "search everything" searches the one
-			// menu the player already knows has nothing — the control that
-			// exists to escape an empty result could not escape it.
-			ReleaseMenuScope();
-			_buildingCatalogQuery = _buildingCatalogQuery with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
+			_lens = _lens.ClearMenuScope();
+			PublishScope();
 
-			// One call, not three. RefreshLens IS
-			// RefreshBuildingLensNavigation followed by RefreshBuildingCatalog,
-			// so the three lines this replaces ran each of them TWICE — and on
-			// the one path where that costs most, since searching everything is
-			// by definition the unscoped 10,528-entry query.
 			RefreshLens();
 		}
 
@@ -478,22 +371,7 @@ namespace FindItBuildingMenu.Systems
 			Mod.Settings.ApplyAndSave();
 		}
 
-		private void SetBuildingCatalogSortColumn(string column)
-		{
-			if (string.IsNullOrWhiteSpace(column))
-			{
-				return;
-			}
-
-			_buildingCatalogQuery = _buildingCatalogQuery with
-			{
-				SortColumn = column,
-				Offset = 0,
-				Limit = BuildingCatalogQuery.DefaultLimit,
-			};
-
-			RefreshBuildingCatalog();
-		}
+		private void SetBuildingCatalogSortColumn(string column) => Apply(_lens.SetSortColumn(column));
 
 		/// <summary>
 		/// Chooses the heading dimension, which is also the query's primary key.
@@ -511,44 +389,10 @@ namespace FindItBuildingMenu.Systems
 		/// was already what it is. Three refreshes fired per menu open and this
 		/// was one of them.
 		/// </remarks>
-		private void SetBuildingCatalogGroupBy(string groupBy)
-		{
-			// Empty is a real value: "auto", the menu's default. It used to be
-			// ignored, which is why the UI had to compute the default itself.
-			var next = (groupBy ?? string.Empty).Trim();
-
-			if (string.Equals(_buildingCatalogQuery.GroupBy, next, StringComparison.Ordinal))
-			{
-				return;
-			}
-
-			_buildingCatalogQuery = _buildingCatalogQuery with
-			{
-				GroupBy = next,
-				Offset = 0,
-				Limit = BuildingCatalogQuery.DefaultLimit,
-			};
-
-			RefreshBuildingCatalog();
-		}
+		private void SetBuildingCatalogGroupBy(string groupBy) => Apply(_lens.SetGroupBy(groupBy));
 
 		/// <remarks>Same idempotence guard as the group-by above.</remarks>
-		private void SetBuildingCatalogSortDescending(bool descending)
-		{
-			if (_buildingCatalogQuery.Descending == descending)
-			{
-				return;
-			}
-
-			_buildingCatalogQuery = _buildingCatalogQuery with
-			{
-				Descending = descending,
-				Offset = 0,
-				Limit = BuildingCatalogQuery.DefaultLimit,
-			};
-
-			RefreshBuildingCatalog();
-		}
+		private void SetBuildingCatalogSortDescending(bool descending) => Apply(_lens.SetDescending(descending));
 
 		/// <summary>
 		/// Grows the window by one step, keeping the offset at zero.
@@ -561,34 +405,9 @@ namespace FindItBuildingMenu.Systems
 		/// longer prefix of it, so the rows already on screen keep their
 		/// identity and there is no seam to stitch.
 		/// </remarks>
-		private void LoadMoreBuildingCatalog()
-		{
-			if (_buildingCatalogQuery.Limit >= BuildingCatalogQuery.MaxLimit)
-			{
-				return;
-			}
+		private void LoadMoreBuildingCatalog() => Apply(_lens.LoadMore());
 
-			_buildingCatalogQuery = _buildingCatalogQuery with
-			{
-				Limit = Math.Min(
-					_buildingCatalogQuery.Limit + BuildingCatalogQuery.WindowStep,
-					BuildingCatalogQuery.MaxLimit),
-			};
-
-			RefreshBuildingCatalog();
-		}
-
-		private void ToggleBuildingLensFacet(string facetId, string optionId)
-		{
-			BuildingCatalogQuery next = BuildingCatalogFacetSelection.Toggle(_buildingCatalogQuery, facetId, optionId);
-			if (ReferenceEquals(next, _buildingCatalogQuery))
-			{
-				return;
-			}
-
-			_buildingCatalogQuery = next;
-			RefreshBuildingCatalog();
-		}
+		private void ToggleBuildingLensFacet(string facetId, string optionId) => Apply(_lens.ToggleFacet(facetId, optionId));
 
 		/// <summary>
 		/// Same toggle the filter rail uses, exposed for the options bank's
@@ -597,11 +416,7 @@ namespace FindItBuildingMenu.Systems
 		public void ToggleBuildingLensFacetOption(string facetId, string optionId) =>
 			ToggleBuildingLensFacet(facetId, optionId);
 
-		private void ClearBuildingLensFacets()
-		{
-			_buildingCatalogQuery = BuildingCatalogFacetSelection.Clear(_buildingCatalogQuery);
-			RefreshBuildingCatalog();
-		}
+		private void ClearBuildingLensFacets() => Apply(_lens.ClearFacets());
 
 		/// <summary>
 		/// Puts a menu back the way it opens.
@@ -616,70 +431,14 @@ namespace FindItBuildingMenu.Systems
 		/// choices, kept per lens rather than in the query, so the pane clears
 		/// its own alongside this call.
 		/// </remarks>
-		private void ResetBuildingLensMenu()
-		{
-			ClearBuildingLensFilters();
+		private void ResetBuildingLensMenu() => Apply(_lens.ResetMenu());
 
-			_buildingLensUiCategory = string.Empty;
-			_BuildingLensMenuCategoryBinding.Value = _buildingLensUiCategory;
-			ResetBuildingLensStripTab();
-			ResetBuildingLensSchoolTier();
+		private void ClearBuildingLensFilters() => Apply(_lens.ClearFilters());
 
-			_CurrentSearch.Value = string.Empty;
-			_buildingCatalogQuery = _buildingCatalogQuery with
-			{
-				SearchText = string.Empty,
-				SortColumn = string.Empty,
-				Descending = false,
-				GroupBy = string.Empty,
-				Offset = 0,
-				Limit = BuildingCatalogQuery.DefaultLimit,
-			};
+		private void SetBuildingCatalogMetricRange(string metricId, string minText, string maxText) =>
+			Apply(_lens.SetMetricRange(metricId, minText, maxText));
 
-			RefreshBuildingCatalog();
-		}
-
-		private void ClearBuildingLensFilters()
-		{
-			BuildingCatalogLensState cleared = new BuildingCatalogLensState(
-				_buildingCatalogQuery,
-				_buildingMetricRanges).ClearFilters();
-
-			_buildingCatalogQuery = cleared.Query;
-			_buildingMetricRanges = cleared.MetricRanges;
-			// The zoning families are chips in the same row as the catalog's,
-			// so a Clear that left them standing would visibly fail to do what
-			// the button says.
-			RefreshBuildingCatalog();
-		}
-
-		/// <summary>
-		/// Adds or removes one zoning family from the zone list's filter.
-		/// </summary>
-		/// <remarks>
-		/// This replaces the exclusive family tab strip. The zone catalog is
-		/// already published in full and grouped by family on the UI side, so
-		/// narrowing is a matter of which groups to draw — no requery needed.
-		/// </remarks>
-
-		private void SetBuildingCatalogMetricRange(string metricId, string minText, string maxText)
-		{
-			if (!BuildingCatalogMetricRange.TryParse(metricId, minText, maxText, out BuildingCatalogMetricRange range))
-			{
-				return;
-			}
-
-			_buildingMetricRanges = _buildingMetricRanges.With(range);
-			_buildingCatalogQuery = BuildingCatalogMetricRange.Apply(_buildingCatalogQuery, metricId, minText, maxText);
-			RefreshBuildingCatalog();
-		}
-
-		private void ClearBuildingCatalogMetricRanges()
-		{
-			_buildingMetricRanges = BuildingCatalogMetricRangeState.Empty;
-			_buildingCatalogQuery = BuildingCatalogMetricRange.Clear(_buildingCatalogQuery);
-			RefreshBuildingCatalog();
-		}
+		private void ClearBuildingCatalogMetricRanges() => Apply(_lens.ClearMetricRanges());
 
 		internal void SetLensMenuOpen(bool visible, bool activatePrefab = true)
 		{
@@ -807,20 +566,16 @@ namespace FindItBuildingMenu.Systems
 
 		private void SearchChanged(string text)
 		{
-			text = text.Replace("\r", "").Replace("\n", "");
+			var next = _lens.Search(text);
 
-			if (_CurrentSearch == text)
+			if (ReferenceEquals(next, _lens))
 			{
 				return;
 			}
 
-			_CurrentSearch.Value = text;
+			_lens = next;
+			_CurrentSearch.Value = _lens.SearchText;
 			_CurrentSearch.ForceUpdate();
-
-			// Deliberately no inline RefreshBuildingCatalog() here: every refresh
-			// projects the whole building index, and doing that per keystroke made
-			// the lens the only search path in the mod without a debounce.
-			// TriggerSearch schedules one refresh 250ms after the last keystroke.
 			TriggerSearch();
 		}
 
