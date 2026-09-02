@@ -1,0 +1,28 @@
+<Project>
+
+  <!--
+    Shared MSBuild defaults for the mod and its tests (copied from the CS-Modding workspace root when the mod moved to its own repository).
+  -->
+
+  <!-- CS2 game path: env var with fallback to the default Steam install. -->
+  <PropertyGroup>
+    <CS2GamePath Condition="'$(CS2GamePath)' == ''">$([System.Environment]::GetEnvironmentVariable('CS2_GAME_PATH'))</CS2GamePath>
+    <CS2GamePath Condition="'$(CS2GamePath)' == ''">$([System.Environment]::GetEnvironmentVariable('HOME'))/.local/share/Steam/steamapps/common/Cities Skylines II</CS2GamePath>
+    <CS2ManagedPath>$(CS2GamePath)/Cities2_Data/Managed</CS2ManagedPath>
+  </PropertyGroup>
+
+  <!-- Default framework/language settings. Projects may override by
+       re-declaring (props import first; a later project assignment wins),
+       e.g. the *Tests projects set <TargetFramework>net10.0</TargetFramework>. -->
+  <PropertyGroup>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>11.0</LangVersion>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <!-- Keep UI node_modules trees out of the C# item graph. -->
+  <PropertyGroup>
+    <DefaultItemExcludes>$(DefaultItemExcludes);**\node_modules\**</DefaultItemExcludes>
+  </PropertyGroup>
+
+</Project>
