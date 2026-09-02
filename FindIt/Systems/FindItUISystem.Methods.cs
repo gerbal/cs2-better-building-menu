@@ -65,53 +65,18 @@ namespace FindItBuildingMenu.Systems
 			// the query, but only while the lens was off — and the lens is never
 			// off now, so the branch that filled them is gone with the latch.
 			// The lens states its own scope through UiMenu/UiCategory below.
-			double? effectiveCapacityMinimum = _buildingMetricRanges.MinCapacity;
-
-			BuildingCatalogQuery previousQuery = _buildingCatalogQuery;
-
-			_buildingCatalogQuery = _buildingCatalogQuery with
-			{
-				SearchText = _CurrentSearch.Value ?? string.Empty,
-				UiMenu = _buildingLensUiMenu,
-				UiCategory = _buildingLensUiCategory,
-				SchoolTier = _buildingLensSchoolTier,
-				MinConstructionCost = _buildingMetricRanges.MinCost,
-				MaxConstructionCost = _buildingMetricRanges.MaxCost,
-				MinUpkeep = _buildingMetricRanges.MinUpkeep,
-				MaxUpkeep = _buildingMetricRanges.MaxUpkeep,
-				MinWorkers = _buildingMetricRanges.MinWorkers,
-				MaxWorkers = _buildingMetricRanges.MaxWorkers,
-				MinCapacity = effectiveCapacityMinimum,
-				MaxCapacity = _buildingMetricRanges.MaxCapacity,
-				MinLotWidth = ToNullableInt(_buildingMetricRanges.MinLotWidth),
-				MaxLotWidth = ToNullableInt(_buildingMetricRanges.MaxLotWidth),
-				MinLotDepth = ToNullableInt(_buildingMetricRanges.MinLotDepth),
-				MaxLotDepth = ToNullableInt(_buildingMetricRanges.MaxLotDepth),
-			};
-
-			// Search text, the legacy parking filters, and the lens section all
-			// arrive through this rebuild rather than through a handler that
-			// resets paging, so a narrowing change used to strand the player on
-			// an offset past the new result set.
-			_buildingCatalogQuery = _buildingCatalogQuery.ResetWindowIfPredicatesChanged(previousQuery);
-
-			// Entering a menu is the one predicate change the handlers cannot size
-			// for themselves: they set the scope and the window in the same `with`,
-			// before the query knows it is scoped. Raising the floor here, after the
-			// scope is settled, is the single point every path goes through.
-			if (_buildingCatalogQuery.Limit < BuildingCatalogQuery.DefaultLimit)
-			{
-				_buildingCatalogQuery = _buildingCatalogQuery with { Limit = BuildingCatalogQuery.DefaultLimit };
-			}
+			// The scope, the search and every metric bound fold into the query here,
+			// and the window resets if a predicate moved. See BuildingCatalogLensState.Compose.
+			_lens = _lens.Compose();
 
 			stage.Restart();
 			// One view, built once; every publish below reads it. See CatalogView.
-			var menu = _buildingCatalogQuery.UiMenu;
+			var menu = _lens.Query.UiMenu;
 			var menuHasCategories = PrefabIndexingSystem.GetMenuCategories(string.IsNullOrEmpty(menu) ? null : menu).Count > 0;
 			var view = _buildingCatalogAdapter.Build(
-				_buildingCatalogQuery,
+				_lens.Query,
 				built => BuildingCatalogGrouping.Effective(
-					_buildingCatalogQuery.GroupBy, menuHasCategories, built.StripAxis, VanillaMenus.IsEducation(menu), built.GroupDimensions));
+					_lens.Query.GroupBy, menuHasCategories, built.StripAxis, VanillaMenus.IsEducation(menu), built.GroupDimensions));
 			BuildingCatalogPage page = view.Page;
 
 			// A search that matches nothing in the current section reads as
@@ -127,16 +92,16 @@ namespace FindItBuildingMenu.Systems
 			// and Roads, routed through the tree, did not. Same gesture, one rule.
 			if (Mod.Settings.AutoWidenSearch
 				&& page.TotalCount == 0
-				&& !string.IsNullOrWhiteSpace(_buildingCatalogQuery.SearchText)
-				&& _buildingCatalogQuery.IsScopedToMenu)
+				&& !string.IsNullOrWhiteSpace(_lens.Query.SearchText)
+				&& _lens.Query.IsScopedToMenu)
 			{
 				SearchEverything();
 				return;
 			}
 
 			_BuildingCatalogMatchesElsewhere.Value =
-				page.TotalCount == 0 && !string.IsNullOrWhiteSpace(_buildingCatalogQuery.SearchText)
-					? _buildingCatalogAdapter.Build(_buildingCatalogQuery with
+				page.TotalCount == 0 && !string.IsNullOrWhiteSpace(_lens.Query.SearchText)
+					? _buildingCatalogAdapter.Build(_lens.Query with
 					{
 						UiMenu = string.Empty,
 						Offset = 0,
@@ -149,11 +114,11 @@ namespace FindItBuildingMenu.Systems
 			};
 			// Publish the order the query actually ran with, so the header can
 			// never disagree with the rows beneath it.
-			_BuildingCatalogSortColumn.Value = _buildingCatalogQuery.EffectiveSortColumn;
-			_BuildingCatalogSortDescending.Value = _buildingCatalogQuery.Descending;
+			_BuildingCatalogSortColumn.Value = _lens.Query.EffectiveSortColumn;
+			_BuildingCatalogSortDescending.Value = _lens.Query.Descending;
 			_BuildingCatalogGroupBy.Value = view.EffectiveGroupBy;
 			_BuildingLensGroupDimensions.Value = view.GroupDimensions;
-			_BuildingCatalogMetricRanges.Value = _buildingMetricRanges;
+			_BuildingCatalogMetricRanges.Value = _lens.MetricRanges;
 			// Recomputed with the catalog so the bounds follow the menu. They come
 			// from InScope, which drops the metric selections, so narrowing a range
 			// cannot shrink the bounds it was typed against.
@@ -175,7 +140,7 @@ namespace FindItBuildingMenu.Systems
 			// The rail can change this behind the row's back, so republish it
 			// with the rest of the state rather than only when a tab is clicked.
 			_BuildingLensStripTabBinding.Value =
-				_buildingCatalogQuery.StripTabs?.ToArray() ?? Array.Empty<string>();
+				_lens.Query.StripTabs?.ToArray() ?? Array.Empty<string>();
 			_BuildingLensStripTabs.Value = view.StripTabs.ToArray();
 			var tabsMs = Lap();
 			// One binding, a list. It replaced a (category, tabs) pair that could
@@ -203,7 +168,7 @@ namespace FindItBuildingMenu.Systems
 				$"[LENS-REFRESH] {(int)refreshTimer.ElapsedMilliseconds}ms "
 				+ $"proj={_buildingCatalogAdapter.LastProjectionMs}ms({(_buildingCatalogAdapter.LastProjectionWasHit ? "hit" : "miss")}) "
 				+ $"page={pageMs} bounds={boundsMs} facets={facetsMs} counts={countsMs} axis={axisMs} tabs={tabsMs} expanded={expandedMs} tiers={tiersMs} "
-				+ $"menu='{_buildingCatalogQuery.UiMenu}' total={page.TotalCount} from={caller}");
+				+ $"menu='{_lens.Query.UiMenu}' total={page.TotalCount} from={caller}");
 		}
 
 		/// <summary>
@@ -211,11 +176,6 @@ namespace FindItBuildingMenu.Systems
 		/// that no longer resolve, so a stale shortlist cannot outlive the
 		/// buildings it names.
 		/// </summary>
-
-		private static int? ToNullableInt(double? value)
-		{
-			return value.HasValue ? (int)value.Value : null;
-		}
 
 		private void RefreshBuildingLensNavigation()
 		{
@@ -265,6 +225,7 @@ namespace FindItBuildingMenu.Systems
 			_ClearSearchBar.Value = true;
 			_searchDebounce.Cancel();
 			_IsSearchLoading.Value = false;
+			_lens = _lens.Search(string.Empty);
 			_CurrentSearch.Value = string.Empty;
 			RefreshBuildingCatalog();
 		}
