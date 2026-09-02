@@ -16,7 +16,7 @@ namespace BetterBuildingMenu.Utilities
         internal const float BuildingLensMaxWidth = BuildingLensWidth.Max;
         internal const float LensControlPaneWidth = BuildingLensWidth.ControlPane;
 
-        private static readonly BuildingMenuUISystem _findItUISystem = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<BuildingMenuUISystem>();
+        private static readonly BuildingMenuUISystem _buildingMenuUISystem = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<BuildingMenuUISystem>();
 
 
         internal static float GetCurrentPanelWidth()

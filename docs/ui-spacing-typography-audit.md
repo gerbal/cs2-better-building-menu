@@ -4,7 +4,7 @@ Date: 2026-07-27
 Bead: `CS-Modding-b53.9`  
 Viewport checked: 1280 × 720 (the current launch-script resolution)
 
-This started as a baseline audit of the internal `FindItBuildingMenu`
+This started as a baseline audit of the internal `BetterBuildingMenu`
 successor. The corrective CSS described below is now applied. The original
 post-change assertion was delayed by a black-screen/fatal boot loop, but a
 settled live assertion was completed on 2026-08-01 after a clean Steam →
@@ -16,11 +16,11 @@ was made during a logo/loading screen.
 
 Successor files checked:
 
-- `FindIt/UI/src/base.scss`
+- `BetterBuildingMenu/UI/src/base.scss`
 - `FindIt/UI/src/mods/TopBar/topBar.module.scss`
 - `FindIt/UI/src/mods/MainContainer/mainContainer.module.scss`
-- `FindIt/UI/src/mods/BuildingCatalog/buildingCatalog.module.scss`
-- `FindIt/UI/src/mods/OptionsPanel/OptionsPanel.module.scss`
+- `BetterBuildingMenu/UI/src/mods/BuildingCatalog/buildingCatalog.module.scss`
+- `BetterBuildingMenu/UI/src/mods/OptionsPanel/OptionsPanel.module.scss`
 - `FindIt/UI/src/mods/PrefabItem/prefabItem.module.scss`
 
 The inherited FindIt UI establishes these useful visible baselines:
@@ -91,7 +91,7 @@ Settled live screenshots are archived at:
 - `tools/e2e/artifacts/e2e-20260727-findit-ui-audit/expanded-building-lens-1280x720.png`
 
 The original FindIt visual reference used for the comparison is
-`cs2-findit-building-menu/FindIt/Properties/Screenshot_01.jpg`.
+`cs2-better-building-menu/BetterBuildingMenu/Properties/Screenshot_01.jpg`.
 
 The live run opened the successor Building Lens, indexed 4,206 records,
 exercised the expanded/collapsed layouts, filled the three-entry compare tray,
@@ -100,7 +100,7 @@ Gameface error buffer was quiet during the observations.
 
 ## Correction pass applied
 
-`FindIt/UI/src/mods/BuildingCatalog/buildingCatalog.module.scss` now:
+`BetterBuildingMenu/UI/src/mods/BuildingCatalog/buildingCatalog.module.scss` now:
 
 - sizes text-bearing sort, capacity, clear, and compare-place buttons to their
   labels instead of inheriting the shared icon-only `24rem` width;
@@ -152,7 +152,7 @@ viewport before testing larger UI scales:
 
 Before any corrective CSS change, the existing contracts and build were green:
 
-- UI contract tests: 6/6 (`cd FindIt/UI && npm test`)
+- UI contract tests: 6/6 (`cd BetterBuildingMenu/UI && npm test`)
 - backend tests: 17/17 (`./build.sh test`)
 - UI webpack build: passed (`./build.sh ui`)
 

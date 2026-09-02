@@ -28,12 +28,12 @@ const AssetMenuTheme: Theme | any = getModule("game-ui/game/components/asset-men
  * This is the phase 2 shell (see the design doc). The difference from
  * MainContainer is not what it draws — the tree below is the same panel — but
  * who decides it exists. MainContainer is appended to `Game` and shows itself
- * from a `ShowFindItPanel` binding we maintain; this renders from inside the
- * `AssetMenu` extension point, so the game mounts and unmounts it on its own
- * menu lifecycle.
+ * from a `ShowFindItPanel` binding we used to maintain; this renders from
+ * inside the `AssetMenu` extension point, so the game mounts and unmounts it
+ * on its own menu lifecycle.
  *
- * That is the whole point of the phase. `SetLensMenuOpen(false)` — FindIt's
- * "another surface wants the screen, so get out of the way" reflex — appears
+ * That is the whole point of the phase. `SetLensMenuOpen(false)` — the
+ * inherited "another surface wants the screen, so get out of the way" reflex — appears
  * eleven times in the backend and is correct for a floating asset finder. For a
  * menu it is wrong: the toolbar button is still lit, so the game draws its own
  * grid into the space the instant we vacate it. Three guards now carve

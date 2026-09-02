@@ -55,7 +55,7 @@ describe("Building Lens panel geometry", () => {
     });
   });
 
-  it("uses the FindIt building signature as the title icon", () => {
+  it("uses the building signature as the title icon", () => {
     assert.equal(BUILDING_LENS_TITLE_ICON, "coui://betterbuildingmenu/Icons/Colored/BuildingZoneSignature.svg");
     assert.equal(BUILDING_LENS_TITLE_GAP, 6);
   });

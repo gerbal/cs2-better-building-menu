@@ -17,8 +17,7 @@ using System.Text;
 namespace BetterBuildingMenu.Services
 {
 	/// <summary>
-	/// Projects FindIt's indexed prefab records into the successor's building
-	/// lens. This is deliberately not an ECS query: PrefabIndexingSystem remains
+	/// Projects the indexed prefab records into the building lens. This is deliberately not an ECS query: PrefabIndexingSystem remains
 	/// the single source of truth for discovery, categorisation, thumbnails, and
 	/// placement identity.
 	/// </summary>

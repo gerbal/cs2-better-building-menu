@@ -8,7 +8,7 @@ import {
   toMenuSurfaceTrigger,
 } from "../src/domain/menuSurfaceContracts.ts";
 
-describe("FindIt surface commands", () => {
+describe("Menu surface commands", () => {
   it("maps semantic activation and locate actions to their legacy bindings", () => {
     assert.deepEqual(toMenuSurfaceTrigger(activatePrefabAction(17)), { method: "SetCurrentPrefab", args: [17] });
     assert.deepEqual(toMenuSurfaceTrigger(locatePrefabAction(17)), { method: "OnLocateButtonClicked", args: [17] });

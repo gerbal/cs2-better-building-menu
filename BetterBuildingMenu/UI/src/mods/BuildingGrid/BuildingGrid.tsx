@@ -92,7 +92,7 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
 
   // Enter arms the best match, so a search can be completed without leaving
   // the keyboard. Bound on the document because the search field belongs to
-  // FindIt's own header, not to this component.
+  // the menu's own header, not to this component.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Enter") return;

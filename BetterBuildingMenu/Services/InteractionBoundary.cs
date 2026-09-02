@@ -3,7 +3,7 @@ using System;
 namespace BetterBuildingMenu.Services
 {
 	/// <summary>
-	/// Holds the small interaction policies shared by FindIt's game-facing UI
+	/// Holds the small interaction policies shared by the mod's game-facing UI
 	/// adapters. It operates only on prefab ids and sequence indices; resolving
 	/// prefabs, finding entities, and performing game side effects remain with
 	/// their owning systems.

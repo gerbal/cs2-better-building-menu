@@ -6,7 +6,7 @@ estimated.
 
 ## Root cause
 
-The lens was built to fit **inside FindIt's existing 718px asset-grid panel**
+The lens was built to fit **inside the inherited 718px asset-grid panel**
 rather than asking for the room a data table needs. All four user complaints
 descend from that one decision.
 
@@ -178,7 +178,7 @@ Driven against a running city. PASS means observed working, not merely built.
 {index: 17098}   Education      <- nobody clicked this
 ```
 
-Opening the lens makes FindIt re-assert its *current* category as the vanilla
+Opening the lens makes the backend re-assert its *current* category as the vanilla
 asset menu. The watcher cannot tell that echo from a real click, so it routes
 it and overwrites the selection the player actually made. Zones opens the
 zoning hierarchy and is reverted to the previous scope within the same frame.
@@ -221,7 +221,7 @@ pointerdown/mousedown/pointerup/mouseup/click sequence manually is what works,
 and is how several paths above were swept in one call rather than one round
 trip each.
 
-Two selector traps cost a cycle each. FindIt's search is a `<textarea>`, not an
+Two selector traps cost a cycle each. The search field is a `<textarea>`, not an
 `<input>` — targeting `input[type=text]` hits the city-name field in the
 bottom bar instead. And `[class*="metricRangeInput"]` matches the container
 `<div>` before the `<textarea>` it wraps, so setting `.value` on the first

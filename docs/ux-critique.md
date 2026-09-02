@@ -2,7 +2,7 @@
 
 Date: 2026-08-03
 Auditor: `ux-audit-1`
-Scope: `cs2-findit-building-menu/` Building Lens — interaction model, information
+Scope: `cs2-better-building-menu/` Building Lens — interaction model, information
 architecture, task flow, and decision usefulness. Pixel-level styling is covered by
 `ui-spacing-typography-audit.md` and is not re-reported.
 
@@ -63,18 +63,18 @@ Works, with two breaks:
 
 - **A1. Searching from any page past the first strands the player on a phantom
   zero-state. [STATIC — Critical]**
-  `SearchChanged` (`FindIt/Systems/FindItUISystem.Bindings.cs:331-347`) refreshes
+  `SearchChanged` (`BetterBuildingMenu/Systems/BuildingMenuUISystem.Bindings.cs:331-347`) refreshes
   the catalog without resetting `Offset`; every other mutation resets it
-  (`Bindings.cs:122-156`, `FindIt/Domain/BuildingCatalogFacetSelection.cs:28-34`,
+  (`Bindings.cs:122-156`, `BetterBuildingMenu/Domain/BuildingCatalogFacetSelection.cs:28-34`,
   `BuildingCatalogMetricRange.cs:57-62`). The backend clamps only negative offsets
-  (`FindIt/Domain/BuildingCatalogQuery.cs:46`), so a search issued while on page 3
+  (`BetterBuildingMenu/Domain/BuildingCatalogQuery.cs:46`), so a search issued while on page 3
   (offset 200) that matches 30 items returns an empty `items` slice with
   `totalCount = 30` and status `ready`
-  (`FindIt/Systems/FindItUISystem.Methods.cs:90`). The UI then renders **"No
+  (`BetterBuildingMenu/Systems/BuildingMenuUISystem.Methods.cs:90`). The UI then renders **"No
   buildings match the current search and category."**
-  (`FindIt/UI/src/mods/BuildingCatalog/BuildingCatalog.tsx:321-326`) while the
+  (`BetterBuildingMenu/UI/src/mods/BuildingCatalog/BuildingCatalog.tsx:321-326`) while the
   pager — which normalizes the offset *for display only*
-  (`FindIt/UI/src/domain/buildingCatalogContracts.ts:128-138`) — claims
+  (`BetterBuildingMenu/UI/src/domain/buildingCatalogContracts.ts:128-138`) — claims
   "Rows 1–30 of 30 · Page 1 of 1". The panel tells the player their search has no
   results when it has 30, and simultaneously shows a pager describing rows that are
   not on screen. Recovery requires guessing that "Previous page" (enabled, because
@@ -103,7 +103,7 @@ tray → `Place`.
   visible (`FindIt/UI/src/mods/MainContainer/MainContainer.tsx:78` — `return
   null`). The panel is auto-closed by the game whenever the prefab or tool changes
   outside FindIt's own activation path
-  (`FindIt/Systems/FindItUISystem.Methods.cs:260-287`): placing the chosen
+  (`BetterBuildingMenu/Systems/BuildingMenuUISystem.Methods.cs:260-287`): placing the chosen
   building and then leaving the placement tool (Esc/right-click → default tool)
   fires `OnToolChanged` → `ToggleFindItPanel(false)` → unmount → the shortlist is
   gone. The one flow the tray was built for — compare three, place one, come back
@@ -148,7 +148,7 @@ intent.
 
 - **C2. Compound constraints have no summary you can act on. [STATIC — Major]**
   The unified summary counts facets but does not name them ("2 facets" —
-  `FindIt/UI/src/domain/buildingLensFilterSummary.ts:100-104`), and none of the
+  `BetterBuildingMenu/UI/src/domain/buildingLensFilterSummary.ts:100-104`), and none of the
   entries are removable chips: the only actions are per-drawer `Clear` and the
   global `Clear lens filters`. Removing *one* wrong constraint means reopening the
   right drawer and finding it again. **Fix:** removable chips per active
@@ -208,7 +208,7 @@ records.
 
 - **IA2. Legacy filters shape the lens invisibly. [STATIC — Critical]** The lens
   table applies the legacy grid's non-search predicates to its source
-  (`FindIt/Services/BuildingCatalogAdapter.cs:146`), and parking maps into the
+  (`BetterBuildingMenu/Services/BuildingCatalogAdapter.cs:146`), and parking maps into the
   typed query (`Methods.cs:64-72`). None of this appears in the lens filter
   summary (`buildingLensFilterSummary.ts:92-113` reads only facets, metric
   ranges, capacity floor). Concretely: a player who once toggled "Without parking"
@@ -241,7 +241,7 @@ records.
   change meaning: the Sorting button still opens the *legacy* sort dropdown,
   which has **no effect** on the lens table (lens sorting is
   `SetBuildingCatalogSortColumn`; the legacy dropdown drives
-  `FindItUtil.SetSorting` for the grid). Random selection likewise operates on
+  `BuildingMenuUtil.SetSorting` for the grid). Random selection likewise operates on
   legacy state. A mode switch that leaves dead controls active is worse than
   either mode alone. **Fix:** hide or rewire legacy-only controls while the lens
   is enabled.

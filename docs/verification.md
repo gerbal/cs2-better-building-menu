@@ -1,7 +1,7 @@
-# FindIt Building Menu Successor — Verification
+# Better Building Menu — Verification
 
 This fork is an internal successor, not a publishable release. Its runtime
-identity is `FindItBuildingMenu`; distribution remains gated on upstream
+identity is `BetterBuildingMenu`; distribution remains gated on upstream
 license confirmation and assignment of a new PDX publisher identity.
 
 > **Re-run:** `node tools/e2e/building-menu-smoke.mjs --http <cdp http url> --agent <your agent id> --prefix <steam prefix>`
@@ -13,7 +13,7 @@ license confirmation and assignment of a new PDX publisher identity.
 
 ## Local build commands
 
-Run these from `cs2-findit-building-menu/`:
+Run these from `cs2-better-building-menu/`:
 
 ```bash
 ./build.sh backend
@@ -21,12 +21,12 @@ Run these from `cs2-findit-building-menu/`:
 ./build.sh test
 ./build.sh package
 
-# browserless successor UI contracts
-(cd FindIt/UI && npm test)
+# browserless UI contracts
+(cd BetterBuildingMenu/UI && npm test)
 ```
 
 `./build.sh all` runs the backend and UI builds. Packaging writes only to
-`artifacts/FindItBuildingMenu/`; it does not touch either game Mods directory.
+`artifacts/BetterBuildingMenu/`; it does not touch either game Mods directory.
 The optional deploy action requires an explicit `CSII_SUCCESSOR_MODS_DIR` and
 refuses to overwrite an existing target:
 
@@ -36,7 +36,7 @@ CSII_SUCCESSOR_MODS_DIR=/path/to/empty/isolated/Mods ./build.sh deploy
 
 Do not point this at a directory containing the original `FindIt` payload.
 
-For a game smoke test, use `just deploy-isolated findit-building-menu`. The
+For a game smoke test, use `just deploy-isolated better-building-menu`. The
 recipe isolates both game `Mods` roots and also checks the Proton cache/local
 root listed by `mod_directory.json`. It relocates only known workspace mod
 folders (including `BootDiagnostics`, the upstream `FindIt`, and their
@@ -46,8 +46,8 @@ folders are left untouched, and the backup is reversible; no known non-kept
 `.mjs` bundle remains under the cache scanner root after the deploy.
 
 `./build.sh test` runs the net10 xUnit project at
-`FindItBuildingMenu.Tests/` with `SkipBuildUI=true`; it does not launch the
-game. `FindIt/UI/npm test` runs the browserless Node contract suite with the
+`BetterBuildingMenu.Tests/` with `SkipBuildUI=true`; it does not launch the
+game. `BetterBuildingMenu/UI/npm test` runs the browserless Node contract suite with the
 Gameface engine bridge represented as typed trigger payloads; it covers
 placement, locate, picker, search/category bindings, sort direction, bounded
 compare state, and page-offset normalization. The current pure catalog suite

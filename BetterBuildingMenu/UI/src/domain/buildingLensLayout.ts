@@ -1,6 +1,6 @@
 /**
  * Geometry shared by the Building Lens resize affordance and its contract
- * tests. Values are in the same rem-like units as the FindIt panel binding.
+ * tests. Values are in the same rem-like units as the panel binding.
  */
 export const BUILDING_LENS_PANEL_CHROME_WIDTH = 35;
 export const BUILDING_LENS_MIN_WIDTH = 700 + BUILDING_LENS_PANEL_CHROME_WIDTH;
@@ -17,8 +17,8 @@ export const BUILDING_LENS_BAND_WIDTH = 1476;
 export const BUILDING_LENS_MAX_WIDTH = BUILDING_LENS_BAND_WIDTH - BUILDING_LENS_PANEL_CHROME_WIDTH;
 export const BUILDING_LENS_TITLE_ICON = "coui://betterbuildingmenu/Icons/Colored/BuildingZoneSignature.svg";
 export const BUILDING_LENS_TITLE_GAP = 6;
-// The FindIt shell is bottom-aligned above the native toolbar. Reserve space
-// for that toolbar, the FindIt chrome, and a small top/bottom safety margin so
+// The lens shell is bottom-aligned above the native toolbar. Reserve space
+// for that toolbar, the shell chrome, and a small top/bottom safety margin so
 // the catalog cannot push the shell's title/search bar outside a short view.
 export const BUILDING_LENS_VIEWPORT_RESERVE = 210;
 export const BUILDING_LENS_MIN_CATALOG_HEIGHT = 320;

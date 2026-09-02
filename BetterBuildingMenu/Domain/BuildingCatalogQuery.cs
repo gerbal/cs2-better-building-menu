@@ -136,8 +136,8 @@ namespace BetterBuildingMenu.Domain
 		/// <remarks>
 		/// The individual facet, range, and sort handlers each reset the window
 		/// themselves, but the query is also rebuilt wholesale from ambient
-		/// state on every refresh — search text, the legacy FindIt parking
-		/// filters, the lens section, and the metric drawer all arrive that way
+		/// state on every refresh — search text, the parking filters, the lens
+		/// section, and the metric drawer all arrive that way
 		/// and previously left it untouched. A player who narrowed a result set
 		/// after growing the window kept a window sized for the old one. A fresh
 		/// predicate is a fresh set, so it starts at <see cref="DefaultLimit"/>.
