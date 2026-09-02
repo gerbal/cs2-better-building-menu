@@ -580,7 +580,14 @@ namespace FindItBuildingMenu.Systems
 									// Keep reading legacy FindIt category overrides so existing
 									// assets retain their intended classification. Newly generated
 									// overrides use the successor prefix below.
-									if (overrides?.m_ExcludeCategories?.Any(IsFindItCategoryOverride) ?? false)
+									// An asset author's "keep this out of Find It" is honoured for
+									// assets the game does not itself place. For one vanilla shows
+									// in a menu — IndustrialModernPlaza01DeliveryVan01 carries
+									// exclude=FindIt+FindIt/500/505 from upstream's generated-vehicle
+									// scheme and sits in Landscaping › PropsIndustrial (cm-vxuv) —
+									// the menu is the fact, as it is for the name blacklist above.
+									if ((overrides?.m_ExcludeCategories?.Any(IsFindItCategoryOverride) ?? false)
+										&& !IsPlacedInVanillaMenu(entity.Index))
 									{
 										continue;
 									}
@@ -858,6 +865,20 @@ namespace FindItBuildingMenu.Systems
 			/// networks the game never offers, and admitting those would put
 			/// unplaceable rows in the one menu that gathers most widely.
 			/// </remarks>
+			/// <summary>The vanilla menu category an asset is placed in, when the game places it at all.</summary>
+			public static bool TryGetVanillaCategory(int entityIndex, out string category)
+			{
+				category = string.Empty;
+
+				if (!_menuPlacements.TryGetValue(entityIndex, out var placement) || string.IsNullOrWhiteSpace(placement.Category))
+				{
+					return false;
+				}
+
+				category = placement.Category.Trim();
+				return true;
+			}
+
 			public static bool IsPlacedInAnyMenu(int entityIndex) =>
 				_menuPlacements.ContainsKey(entityIndex);
 
@@ -1098,7 +1119,7 @@ namespace FindItBuildingMenu.Systems
 						// The prefab's own type is reported because it names what a
 						// processor would have to query to reach it, which is the next
 						// question every gap raises.
-						Add(missing, where, $"{assetPrefab.name}({assetPrefab.GetType().Name})");
+						Add(missing, where, DescribeMissing(assetPrefab, placement.Entity));
 					}
 
 					var totalMissing = 0;
@@ -1138,6 +1159,33 @@ namespace FindItBuildingMenu.Systems
 				catch (Exception ex)
 				{
 					Mod.Log.Error(ex, "[MENU-COVERAGE] report failed");
+				}
+
+				/// <summary>
+				/// Why an asset vanilla places is not in the index: the editor
+				/// categories the processors read and the components their queries
+				/// key on. cm-vxuv: three such assets took a live session to explain;
+				/// the audit line now carries the explanation.
+				/// </summary>
+				string DescribeMissing(PrefabBase assetPrefab, Entity assetEntity)
+				{
+					var parts = new List<string> { assetPrefab.GetType().Name };
+					if (assetPrefab.TryGet<EditorAssetCategoryOverride>(out var overrides))
+					{
+						parts.Add("include=" + string.Join("+", overrides.m_IncludeCategories ?? System.Array.Empty<string>()));
+						parts.Add("exclude=" + string.Join("+", overrides.m_ExcludeCategories ?? System.Array.Empty<string>()));
+					}
+					var flags = new List<string>();
+					if (EntityManager.HasComponent<BuildingData>(assetEntity)) flags.Add("Building");
+					if (EntityManager.HasComponent<BuildingPropertyData>(assetEntity)) flags.Add("Property");
+					if (EntityManager.HasComponent<SpawnableBuildingData>(assetEntity)) flags.Add("Spawnable");
+					if (EntityManager.HasComponent<SignatureBuildingData>(assetEntity)) flags.Add("Signature");
+					if (EntityManager.HasComponent<ServiceObjectData>(assetEntity)) flags.Add("Service");
+					if (EntityManager.HasComponent<StaticObjectData>(assetEntity)) flags.Add("StaticObject");
+					if (EntityManager.HasComponent<PlantData>(assetEntity)) flags.Add("Plant");
+					if (EntityManager.IsDecal(assetEntity)) flags.Add("Decal");
+					if (flags.Count > 0) parts.Add("has=" + string.Join("+", flags));
+					return $"{assetPrefab.name}({string.Join(" ", parts)})";
 				}
 
 				static void Add(Dictionary<string, List<string>> into, string where, string what)
