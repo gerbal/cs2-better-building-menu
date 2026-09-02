@@ -252,8 +252,12 @@ describe("Building Lens action affordances", () => {
 
 const surfaceStylesFor = () =>
   readFileSync(new URL("../src/mods/BuildingMenu/buildingMenuSurface.module.scss", import.meta.url), "utf8");
-const surfaceSourceFor = () =>
-  readFileSync(new URL("../src/mods/BuildingMenu/BuildingMenuSurface.tsx", import.meta.url), "utf8");
+// The two patches on vanilla's layout moved out of the surface into one
+// hook (vanillaLayout.ts) over one tested primitive (vanillaLayoutPure.ts).
+const vanillaLayoutSourceFor = () =>
+  readFileSync(new URL("../src/mods/BuildingMenu/vanillaLayout.ts", import.meta.url), "utf8");
+const vanillaLayoutPureSourceFor = () =>
+  readFileSync(new URL("../src/mods/BuildingMenu/vanillaLayoutPure.ts", import.meta.url), "utf8");
 
 describe("Building Lens chrome budget", () => {
   it("keeps no control chrome in the panel at all", () => {
@@ -380,20 +384,21 @@ describe("Building Lens chrome budget", () => {
     // condition went with the binding: a floating panel could be anywhere, so
     // it needed a setting; a menu is where the menu is, so flex-start is
     // unconditional.
-    assert.match(surfaceSourceFor(), /layout\.style\.justifyContent = "flex-start"/);
-    assert.doesNotMatch(surfaceSourceFor(), /AlignmentStyle/);
+    assert.match(vanillaLayoutSourceFor(), /setInlineStyle\(layout, "justifyContent", "flex-start"\)/);
+    assert.doesNotMatch(vanillaLayoutSourceFor(), /AlignmentStyle/);
   });
 
   it("puts vanilla's layout back when the lens is switched off", () => {
     // The effect reaches across into an element vanilla owns, so the exit path
     // matters as much as the entry: leaving flex-start behind would re-lay
     // every other tool's options for the rest of the session.
-    assert.match(surfaceSourceFor(), /const previous = layout\.style\.justifyContent/);
+    assert.match(vanillaLayoutPureSourceFor(), /const previous = element\.style\[property\]/);
     // Both arms matter. Restoring "" makes Cohtml log "invalid value" and keep
     // OUR flex-start, so the empty case must remove the property instead; skip
     // the non-empty case and a genuine inline value never comes back.
-    assert.match(surfaceSourceFor(), /layout\.style\.justifyContent = previous;/);
-    assert.match(surfaceSourceFor(), /layout\.style\.removeProperty\("justify-content"\)/);
+    assert.match(vanillaLayoutPureSourceFor(), /element\.style\[property\] = previous;/);
+    assert.match(vanillaLayoutPureSourceFor(), /element\.style\.removeProperty\(CSS_NAME\[property\]\)/);
+    // And the restore is pinned by behaviour too, in vanillaLayout.test.ts.
   });
 
   it("lets the catalog strip grow rather than slicing a wrapped row of tabs", () => {
