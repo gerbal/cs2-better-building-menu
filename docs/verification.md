@@ -4,6 +4,13 @@ This fork is an internal successor, not a publishable release. Its runtime
 identity is `FindItBuildingMenu`; distribution remains gated on upstream
 license confirmation and assignment of a new PDX publisher identity.
 
+> **Re-run:** `node tools/e2e/findit-lens-smoke.mjs --http <cdp http url> --agent <your agent id> --prefix <steam prefix>`
+> against a game with a city loaded (repo root; `just e2e` runs its unit tests).
+> **Last run:** 2026-09-02 on `bc10568` — `tools/e2e/artifacts/findit-smoke/20260902-051246-bc10568.md`
+> (artifacts are not tracked; the run's report is pasted in the newest section below).
+> The sections below are dated records; the newest describes the current build.
+> Staleness is the distance between that sha and `HEAD`.
+
 ## Local build commands
 
 Run these from `cs2-findit-building-menu/`:
@@ -1154,3 +1161,73 @@ element the new selector finds is the same `toolbar_QYu` node with the same
 inline value, so the paint-order argument is unchanged. Whether cs2/ui's
 `Scrollable` forwards its declared ref to the scrolling element was not
 tested; the bounded walk answers the question without it.
+
+## 2026-09-02 — render harness and scripted smoke (phase 7)
+
+Phase 7 of the architecture remediation (spec
+`docs/superpowers/specs/2026-09-02-findit-remediation-phase-7-render-harness-and-scripted-smoke-design.md`,
+plan `docs/superpowers/plans/2026-09-02-findit-remediation-phase-7-render-harness-and-scripted-smoke.md`,
+beads cm-jjlv.11.1–.6), branch `findit/phase-7-render-harness`.
+
+**Suites on the tip.** C# 389/389; TS unit 548/548 (was 568: the 25
+source-regex `it` blocks in `buildingLensUx.test.ts` are gone, 7 of them
+moved to `stylesheetContracts.test.ts`, and `supportedUpgradesField`'s two
+`.tsx` greps went); TS render 35/35 (`FindIt/UI/test/render/`, run by
+`npm run test:render` through the loader in `test/harness/`); `just e2e`
+green with `findit-lens-smoke.test.js`.
+
+**What renders now.** `TableRow`, `BuildingHoverCard`, `BuildingMenuHeader`,
+`BuildingCatalogComponent` (all four view modes) and `LensControlPane`
+render under node through `@swc/core` with `cs2/*` stubbed and the vanilla
+component resolver seeded; the assertions are on markup — `aria-label`s,
+`data-*` attributes, what sits inside the scroll container — not on source
+text. One defect found on day one: the header's search and loading icons
+carried no `alt=""`/`aria-hidden` while its other icons did (fixed in
+9b1091e).
+
+**The smoke.** `tools/e2e/findit-lens-smoke.mjs` replaces the per-phase
+session scripts. It refuses a game whose `meta.hello` identity does not
+name `--agent` (verified: `--agent nobody` exits 2 and the mod log gains no
+`[LENS-REFRESH]` line), refuses without a loaded city, and writes its
+report under `tools/e2e/artifacts/findit-smoke/`. Two things it caught
+while being written: the bridge does not itself refuse the envelope's
+`expectAgent`, so the identity check has to be the caller's; and a log
+that ends in a newline counted one line too many, which read as zero
+refreshes per open until the count ignored the empty tail.
+
+**This build's run** (Porterville 3 on `949230-c`, the artifact verbatim):
+
+# FindIt lens smoke — 2026-09-02 — bc10568
+
+Result: **PASS**  ·  agent `claude-swift-ocelot-gZs`  ·  cdp `http://127.0.0.1:9557`  ·  prefix `949230-c`
+
+| Menu | Refreshes on open | groupBy | Offered dimensions | Total | First groupPath |
+|---|---|---|---|---|---|
+| Roads | 1 | menuCategory | menuCategory, category, subCategory, progression, development, theme, source, footprint, cost, none | 403 | ["Small Roads","Small Roads"] |
+| Landscaping | 1 | menuCategory | menuCategory, category, subCategory, theme, source, footprint, cost, none | 522 | ["Terraforming","From the start"] |
+| Health & Deathcare | 1 | menuCategory | menuCategory, role, development, source, footprint, cost, none | 31 | ["Healthcare","Healthcare"] |
+| Zones | 1 | menuCategory | menuCategory, category, subCategory, progression, theme, source, density, footprint, cost, none | 74 | ["Residential","Low Density"] |
+| Electricity | 1 | menuCategory | category, subCategory, role, development, source, footprint, cost, none | 17 | ["Electricity","Electricity"] |
+| Education & Research | 1 | schoolTier | menuCategory, role, schoolTier, development, source, footprint, cost, none | 43 | ["Elementary School"] |
+| All menus | 1 | development | menuCategory, category, subCategory, role, progression, development, theme, source, density, footprint, cost, none | 10536 | |
+
+Search `tre` in Landscaping: 13 matches, first `Apple Tree`.
+
+Exceptions in the mod log: 0 before, 0 after.
+
+```
+[LENS-REFRESH] 7ms proj=0ms(hit) page=5 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Roads' total=403 from=RefreshLens
+[LENS-REFRESH] 6ms proj=0ms(hit) page=4 bounds=1 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Landscaping' total=522 from=RefreshLens
+[LENS-REFRESH] 2ms proj=0ms(hit) page=1 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Health & Deathcare' total=31 from=RefreshLens
+[LENS-REFRESH] 2ms proj=0ms(hit) page=1 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Zones' total=74 from=RefreshLens
+[LENS-REFRESH] 1ms proj=0ms(hit) page=1 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Electricity' total=17 from=RefreshLens
+[LENS-REFRESH] 1ms proj=0ms(hit) page=0 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Education & Research' total=43 from=RefreshLens
+[LENS-REFRESH] 69ms proj=0ms(hit) page=21 bounds=7 facets=28 counts=0 axis=0 tabs=4 expanded=1 tiers=4 menu='' total=10536 from=ClearBuildingLensMenuScope
+```
+
+Every reading equals the phase-4 record. Phases 1–7 of cm-jjlv are merged;
+what remains of the review is cm-jjlv.12 (the one-category default) and
+the C# side of finding 9 (`PrefabIndexingSystem`, the adapter's instance
+paths and the `FindItUISystem` handlers are still untested), which the
+review's plan did not schedule.
+
