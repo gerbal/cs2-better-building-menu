@@ -6,13 +6,13 @@ set -euo pipefail
 # folder named after upstream Find It.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MOD_NAME="FindItBuildingMenu"
-PROJECT_DIR="$SCRIPT_DIR/FindIt"
+MOD_NAME="BetterBuildingMenu"
+PROJECT_DIR="$SCRIPT_DIR/BetterBuildingMenu"
 UI_DIR="$PROJECT_DIR/UI"
 DLL="$PROJECT_DIR/bin/Debug/net48/$MOD_NAME.dll"
 UI_BUILD="$UI_DIR/build"
 PACKAGE_DIR="$SCRIPT_DIR/artifacts/$MOD_NAME"
-TEST_PROJECT="$SCRIPT_DIR/FindItBuildingMenu.Tests/FindItBuildingMenu.Tests.csproj"
+TEST_PROJECT="$SCRIPT_DIR/BetterBuildingMenu.Tests/BetterBuildingMenu.Tests.csproj"
 
 DOTNET_BIN="${DOTNET:-dotnet}"
 
@@ -51,7 +51,7 @@ run_tests() {
     require_command "$DOTNET_BIN"
     echo "=== Testing $MOD_NAME catalog contracts ==="
     (
-        cd "$SCRIPT_DIR/FindItBuildingMenu.Tests"
+        cd "$SCRIPT_DIR/BetterBuildingMenu.Tests"
         "$DOTNET_BIN" test "$TEST_PROJECT" -p:SkipBuildUI=true
     )
 }
@@ -71,7 +71,7 @@ package_artifacts() {
     if [ -d "$UI_BUILD/images" ] || [ -d "$PROJECT_DIR/Resources/Images" ]; then
         mkdir -p "$PACKAGE_DIR/images"
         # Webpack assets and the fork's runtime-hosted icons share the same
-        # finditbuildingmenu host location. Merge both sets so filter,
+        # betterbuildingmenu host location. Merge both sets so filter,
         # category, picker, and parking controls never resolve to placeholders.
         [ -d "$UI_BUILD/images" ] && cp -a "$UI_BUILD/images/." "$PACKAGE_DIR/images/"
         [ -d "$PROJECT_DIR/Resources/Images" ] && cp -a "$PROJECT_DIR/Resources/Images/." "$PACKAGE_DIR/images/"

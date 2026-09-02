@@ -1,9 +1,7 @@
-![Find It](https://imgur.com/V2ktQrz.png)
+# Better Building Menu
 
-# FindIt Building Menu Successor
-
-This directory is an internal successor project derived from Find It for Cities:
-Skylines II. The original Find It implementation is intentionally preserved as
+Better Building Menu is a building browser for Cities: Skylines II that grew out
+of a fork of Find It. The original Find It implementation is intentionally preserved as
 the starting point while the successor identity, build isolation, and expanded
 building-comparison workflow are developed. See [docs/FORK.md](docs/FORK.md) for
 provenance, [PLANNING.md](PLANNING.md) for implementation phases, and
@@ -12,7 +10,11 @@ provenance, [PLANNING.md](PLANNING.md) for implementation phases, and
 It also replaces [`cs2-building-menu-overhaul`](../cs2-building-menu-overhaul/README.md)
 as this repository's building-browser mod. The two ship the same feature area and
 must not be installed side by side, so the successor stays out of `ALL_MODS` and is
-installed with `just deploy-isolated findit-building-menu`.
+installed with `just deploy-isolated better-building-menu`.
+
+The mod was renamed from FindItBuildingMenu on 2026-09-02. The game keys a mod's
+settings file by its id, so on the first run after the rename the mod's settings are
+back at their defaults: turn **Replace vanilla build menu** on again in Options.
 
 **Coexists with upstream Find It.** Both may be installed: Find It's own
 panel takes the asset-menu slot while it is open and this menu returns when it

@@ -1,9 +1,9 @@
 {
-  "id": "FindItBuildingMenu",
+  "id": "BetterBuildingMenu",
   "version": "0.1.0",
   "authors": ["gerbal", "T. D. W."],
-  "name": "Find It Building Menu",
-  "description": "An internal successor to Find It for browsing and comparing Cities: Skylines II buildings.",
-  "documentationUrl": "https://github.com/gerbal/cs2-modding/tree/main/cs2-findit-building-menu",
+  "name": "Better Building Menu",
+  "description": "A better building menu for Cities: Skylines II: browse, search and compare every building and network from the game's own toolbar.",
+  "documentationUrl": "https://github.com/gerbal/cs2-better-building-menu",
   "sourceUrl": "https://github.com/JadHajjar/FindIt-CSII"
 }
