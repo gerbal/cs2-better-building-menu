@@ -1,7 +1,7 @@
 import { bindValue, trigger, useValue } from "cs2/api";
 import { Button, Scrollable } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import classNames from "classnames";
 import { shortenTileLabel, tableLabelCharBudget } from "domain/tileLabel";
 import mod from "../../../mod.json";
@@ -63,17 +63,10 @@ import { getSearchScopeNotice } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { canPlace, entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
-import {
-  getLensAnchor,
-  getLensAnchorKey,
-  getLensDisclosure,
-  setLensAnchor,
-  setLensDisclosure,
-} from "domain/buildingLensViewState";
-// The view mode and group dimension are shared with the control plane, which is
-// a sibling of this panel rather than a descendant, so they go through the
-// subscribing hook rather than getLensChoice/setLensChoice directly.
-import { useLensChoice } from "mods/useLensChoice";
+import { getLensAnchor, getLensAnchorKey, getLensView, setLensAnchor, setLensView } from "domain/lensViewStore";
+// The view mode is shared with the control plane, which is a sibling of this
+// panel rather than a descendant, so it goes through the subscribing hook.
+import { useLensView } from "mods/useLensView";
 import { GroupedResults, type CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import {
   flattenGroupedRows,
@@ -120,8 +113,6 @@ const BuildingCatalogGroupBy$ = bindValue<string>(mod.id, "BuildingCatalogGroupB
  * panel edge and sitting just clear of it, not an attempt to centre anything.
  */
 const EXPANDED_ROW_REVEAL_MARGIN = 6;
-
-const LENS_VIEW_MODE_KEY = "viewMode";
 
 /** Grid recognises, List scans, Table compares. */
 type ViewMode = CatalogViewMode;
@@ -193,10 +184,7 @@ export const BuildingCatalogComponent = () => {
   // remount that placing a building causes.
   // Shared with the control plane, which is a sibling of this panel rather
   // than a descendant, so a plain useState here would let the two disagree.
-  const [viewModeChoice] = useLensChoice(
-    LENS_VIEW_MODE_KEY,
-    defaultToTable ? "table" : "grid"
-  );
+  const viewModeChoice = useLensView((view) => view.viewMode) || (defaultToTable ? "table" : "grid");
   // The choice is obeyed at every height. It used to be overridden to "grid"
   // whenever the panel rested at strip height, to save a player who had left
   // the control on Table from a mode clipped to a sliver. The cost was worse
@@ -209,7 +197,9 @@ export const BuildingCatalogComponent = () => {
   const viewMode = viewModeChoice as ViewMode;
   const tableMode = viewMode === "table";
   const groupBy = (useValue(BuildingCatalogGroupBy$) || "category") as GroupDimensionId;
-  const [expandedId, setExpandedId] = useState<number | null>(null);
+  // In the store rather than useState so the open row survives the remount
+  // that placing a building causes, the way the anchor does.
+  const expandedId = useLensView((view) => view.expandedId);
 
   /**
    * Bring a freshly expanded row's detail into view.
@@ -412,7 +402,7 @@ export const BuildingCatalogComponent = () => {
    * tiles — which is why it can eventually drop its bespoke component.
    */
   function toggleExpanded(id: number): void {
-    setExpandedId((current) => (current === id ? null : id));
+    setLensView({ expandedId: getLensView().expandedId === id ? null : id });
   }
 
   function activate(entry: BuildingCatalogEntry): void {

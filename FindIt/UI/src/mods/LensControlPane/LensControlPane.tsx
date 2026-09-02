@@ -36,7 +36,8 @@ import type { BuildingLensFacetState } from "domain/buildingCatalogFacets";
 import type { BuildingLensMetricRangeState } from "domain/buildingLensFilterSummary";
 import { ViewModeBar } from "mods/GroupedResults/ViewModeBar";
 import type { CatalogViewMode } from "mods/GroupedResults/GroupedResults";
-import { useLensChoice } from "mods/useLensChoice";
+import { setLensView } from "domain/lensViewStore";
+import { useLensView } from "mods/useLensView";
 import { useState } from "react";
 import { BUILDING_LENS_CONTROL_PANE_TOTAL } from "domain/buildingLensLayout";
 import styles from "./lensControlPane.module.scss";
@@ -81,8 +82,6 @@ const VanillaSelected$ = bindValue<boolean>("toolbar", "vanillaSelected", false)
  */
 export const LENS_CONTROL_PANE_TOTAL = BUILDING_LENS_CONTROL_PANE_TOTAL;
 
-const LENS_VIEW_MODE_KEY = "viewMode";
-
 /**
  * The Building Lens control plane.
  *
@@ -120,7 +119,8 @@ export const LensControlPane = () => {
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
   const [sortPickerOpen, setSortPickerOpen] = useState(false);
 
-  const [viewModeChoice, setViewModeChoice] = useLensChoice(LENS_VIEW_MODE_KEY, "grid");
+  const viewModeChoice = useLensView((view) => view.viewMode) || "grid";
+  const setViewModeChoice = (next: string): void => setLensView({ viewMode: next });
   // Resolved on the C# side: the player's choice, or the menu's default.
   const groupBy = (useValue(BuildingCatalogGroupBy$) || "category") as GroupDimensionId;
 
