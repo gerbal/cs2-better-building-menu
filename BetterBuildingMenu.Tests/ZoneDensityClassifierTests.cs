@@ -10,7 +10,7 @@ namespace BetterBuildingMenu.Tests
 	/// </summary>
 	/// <remarks>
 	/// Every fixture below is a REAL zone, with its real field values, taken
-	/// from docs/superpowers/specs/2026-08-23-zone-density-probe-data.txt — an
+	/// from ../docs/archive/cs2-better-building-menu/superpowers/specs/2026-08-23-zone-density-probe-data.txt — an
 	/// instrumented boot over all 88 shipped zone prefabs. Invented numbers
 	/// would have agreed with whatever the classifier happened to do; these
 	/// are the cases that actually distinguish a working rule from a plausible

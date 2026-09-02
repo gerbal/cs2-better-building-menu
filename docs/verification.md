@@ -624,7 +624,7 @@ observations, and settled screenshot).
 
 ## 2026-09-01 — search debounce and binding manifest
 
-Phase 1 of the architecture remediation (`docs/superpowers/plans/2026-09-01-findit-remediation-phase-1-search-and-binding-contract.md`,
+Phase 1 of the architecture remediation (`../docs/archive/cs2-better-building-menu/superpowers/plans/2026-09-01-findit-remediation-phase-1-search-and-binding-contract.md`,
 beads cm-jjlv.1–.5). Built with `just build findit-building-menu` (0 errors)
 and deployed with `just deploy-isolated findit-building-menu`; the game was
 restarted because the DLL changed. Suites on the branch tip: C# 412/412,
@@ -709,8 +709,8 @@ read; cm-jjlv.8 decides which side owns it.
 ## 2026-09-01 — one scoping taxonomy (phase 2)
 
 Phase 2 of the architecture remediation (spec
-`docs/superpowers/specs/2026-09-01-findit-remediation-phase-2-one-scoping-taxonomy-design.md`,
-plan `docs/superpowers/plans/2026-09-01-findit-remediation-phase-2-one-scoping-taxonomy.md`,
+`../docs/archive/cs2-better-building-menu/superpowers/specs/2026-09-01-findit-remediation-phase-2-one-scoping-taxonomy-design.md`,
+plan `../docs/archive/cs2-better-building-menu/superpowers/plans/2026-09-01-findit-remediation-phase-2-one-scoping-taxonomy.md`,
 beads cm-jjlv.6.1–.4), branch `findit/phase-2-one-taxonomy`. Suites on the
 branch tip: C# 364/364 (all four `BindingManifestTests` green), TS 617/617,
 `tsc --noEmit` clean. Built with `just build findit-building-menu`, deployed
@@ -787,8 +787,8 @@ roads-cost bug. The review text is corrected in place.
 ## 2026-09-01 — filter bank and residue deleted (phase 5)
 
 Phase 5 of the architecture remediation (spec
-`docs/superpowers/specs/2026-09-01-findit-remediation-phase-5-delete-filter-bank-and-residue-design.md`,
-plan `docs/superpowers/plans/2026-09-01-findit-remediation-phase-5-delete-filter-bank-and-residue.md`,
+`../docs/archive/cs2-better-building-menu/superpowers/specs/2026-09-01-findit-remediation-phase-5-delete-filter-bank-and-residue-design.md`,
+plan `../docs/archive/cs2-better-building-menu/superpowers/plans/2026-09-01-findit-remediation-phase-5-delete-filter-bank-and-residue.md`,
 beads cm-jjlv.9.1–.5), branch `findit/phase-5-delete-residue`. Run before
 phase 3 on purpose: the snapshot cache phase 3 builds would otherwise have
 keyed on fifteen filter-bank fields and six sort modes this phase deletes.
@@ -916,8 +916,8 @@ listed `ColumnSize`, `ExpandedColumnSize`, … — the ten dead settings.
 ## 2026-09-01 — one snapshot per refresh (phase 3)
 
 Phase 3 of the architecture remediation (spec
-`docs/superpowers/specs/2026-09-01-findit-remediation-phase-3-one-snapshot-per-refresh-design.md`,
-plan `docs/superpowers/plans/2026-09-01-findit-remediation-phase-3-one-snapshot-per-refresh.md`,
+`../docs/archive/cs2-better-building-menu/superpowers/specs/2026-09-01-findit-remediation-phase-3-one-snapshot-per-refresh-design.md`,
+plan `../docs/archive/cs2-better-building-menu/superpowers/plans/2026-09-01-findit-remediation-phase-3-one-snapshot-per-refresh.md`,
 beads cm-jjlv.7.1–.4), branch `findit/phase-3-one-snapshot`. Suites on the
 tip: C# 358/358 (four `CatalogViewTests`, four `SnapshotCacheTests`, one
 `QueryEnumerationTests`), TS 614/614.
@@ -1003,8 +1003,8 @@ stall"): 2.6 s → 25 ms (phase 1) → 3 ms.
 ## 2026-09-01 — one owner per presentation state (phase 4)
 
 Phase 4 of the architecture remediation (spec
-`docs/superpowers/specs/2026-09-01-findit-remediation-phase-4-one-owner-per-presentation-state-design.md`,
-plan `docs/superpowers/plans/2026-09-01-findit-remediation-phase-4-one-owner-per-presentation-state.md`,
+`../docs/archive/cs2-better-building-menu/superpowers/specs/2026-09-01-findit-remediation-phase-4-one-owner-per-presentation-state-design.md`,
+plan `../docs/archive/cs2-better-building-menu/superpowers/plans/2026-09-01-findit-remediation-phase-4-one-owner-per-presentation-state.md`,
 beads cm-jjlv.8.1–.5), branch `findit/phase-4-one-owner`. Suites on the
 tip: C# 389/389, TS 557/557, `BindingManifestTests` with an empty
 allowlist.
@@ -1095,8 +1095,8 @@ to nothing because its own scorer never read that field.
 ## 2026-09-02 — split the catalog; honest vanilla seams (phase 6)
 
 Phase 6 of the architecture remediation (spec
-`docs/superpowers/specs/2026-09-01-findit-remediation-phase-6-split-catalog-and-honest-seams-design.md`,
-plan `docs/superpowers/plans/2026-09-01-findit-remediation-phase-6-split-catalog-and-honest-seams.md`,
+`../docs/archive/cs2-better-building-menu/superpowers/specs/2026-09-01-findit-remediation-phase-6-split-catalog-and-honest-seams-design.md`,
+plan `../docs/archive/cs2-better-building-menu/superpowers/plans/2026-09-01-findit-remediation-phase-6-split-catalog-and-honest-seams.md`,
 beads cm-jjlv.10.1–.5), branch `findit/phase-6-split-catalog`. Suites on
 the tip: C# 389/389, TS 568/568 (`catalogDom.test.ts` 6, `vanillaLayout.test.ts` 5).
 
@@ -1165,8 +1165,8 @@ tested; the bounded walk answers the question without it.
 ## 2026-09-02 — render harness and scripted smoke (phase 7)
 
 Phase 7 of the architecture remediation (spec
-`docs/superpowers/specs/2026-09-02-findit-remediation-phase-7-render-harness-and-scripted-smoke-design.md`,
-plan `docs/superpowers/plans/2026-09-02-findit-remediation-phase-7-render-harness-and-scripted-smoke.md`,
+`../docs/archive/cs2-better-building-menu/superpowers/specs/2026-09-02-findit-remediation-phase-7-render-harness-and-scripted-smoke-design.md`,
+plan `../docs/archive/cs2-better-building-menu/superpowers/plans/2026-09-02-findit-remediation-phase-7-render-harness-and-scripted-smoke.md`,
 beads cm-jjlv.11.1–.6), branch `findit/phase-7-render-harness`.
 
 **Suites on the tip.** C# 389/389; TS unit 548/548 (was 568: the 25
@@ -1234,8 +1234,8 @@ review's plan did not schedule.
 ## 2026-09-02 — one lens state (phase 8), and the one-category default (cm-jjlv.12)
 
 Phase 8 (spec
-`docs/superpowers/specs/2026-09-02-findit-remediation-phase-8-one-lens-state-design.md`,
-plan `docs/superpowers/plans/2026-09-02-findit-remediation-phase-8-one-lens-state.md`,
+`../docs/archive/cs2-better-building-menu/superpowers/specs/2026-09-02-findit-remediation-phase-8-one-lens-state-design.md`,
+plan `../docs/archive/cs2-better-building-menu/superpowers/plans/2026-09-02-findit-remediation-phase-8-one-lens-state.md`,
 beads cm-jjlv.13.1–.4), branch `findit/phase-8-one-lens-state`, stacked on
 `findit/cm-jjlv-12-default-grouping`. Suites on the tip: C# 405/405 (was
 390: fifteen `BuildingCatalogLensTransitionTests`, one grouping test), TS
@@ -1504,8 +1504,8 @@ Exceptions in the mod log: 0 before, 0 after.
 
 ## 2026-09-02 — the evaluation's fixes: search headers, no strip under All menus, no repeated sub-heading (cm-mkn6)
 
-Spec: `superpowers/specs/2026-09-02-ux-evaluation-fixes-design.md`, from
-findings 1, 2 and 5 of `ux-evaluation-2026-09-02-with-findit.md`. Branch
+Spec: `../docs/archive/cs2-better-building-menu/superpowers/specs/2026-09-02-ux-evaluation-fixes-design.md`, from
+findings 1, 2 and 5 of `../docs/archive/cs2-better-building-menu/ux-evaluation-2026-09-02-with-findit.md`. Branch
 `findit/ux-eval-fixes`. UI-only: no binding, no C#.
 
 Live on `949230-c`, Porterville 3, with upstream Find It 1.5.8 installed
@@ -1513,7 +1513,7 @@ beside ours (the evaluation's configuration). The first build was deployed
 with `deploy-isolated`; the refined band rule was rebuilt with
 `npm run build`, copied into the prefix's Mods folder and the page reloaded
 over CDP (`Page.reload`), then read back. Frames:
-`ux-evaluation-2026-09-02/after-{02,03,11}-*.jpg`.
+`../docs/archive/cs2-better-building-menu/ux-evaluation-2026-09-02/after-{02,03,11}-*.jpg`.
 
 Groups read off the DOM as (depth, band, unlabeled, label, count, rect):
 

@@ -25,7 +25,7 @@ namespace BetterBuildingMenu.Domain
 	/// </summary>
 	/// <remarks>
 	/// Probed against all 88 shipped zones on 2026-08-23; the raw output is in
-	/// docs/superpowers/specs/2026-08-23-zone-density-probe-data.txt and the
+	/// ../docs/archive/cs2-better-building-menu/superpowers/specs/2026-08-23-zone-density-probe-data.txt and the
 	/// reasoning beside it. Two things that look like signals and are not:
 	/// ZonePropertiesData.m_IgnoreLandValue is false on every zone in the game,
 	/// and ZoneFlags has no low-rent bit — it is SupportNarrow, two corners and
