@@ -45,6 +45,9 @@ const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "BuildingCatalo
 const BuildingCatalogSortDescending$ = bindValue<boolean>(mod.id, "BuildingCatalogSortDescending");
 const BuildingLensMenu$ = bindValue<string>(mod.id, "BuildingLensMenu", "");
 const BuildingCatalogGroupBy$ = bindValue<string>(mod.id, "BuildingCatalogGroupBy", "category");
+// The dimension ids that can act on the current menu. C# judges it over the
+// whole menu set; an empty list means it has not said yet.
+const BuildingLensGroupDimensions$ = bindValue<string[]>(mod.id, "BuildingLensGroupDimensions", []);
 const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch");
 const BuildingLensFacets$ = bindValue<BuildingLensFacetState | null>(mod.id, "BuildingLensFacets", null);
 // Read only to decide which grouping options can act on THIS menu. The window
@@ -104,7 +107,7 @@ export const LensControlPane = () => {
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
   const menu = useValue(BuildingLensMenu$) ?? "";
   const catalogPage = useValue(BuildingCatalogPage$);
-  const catalogEntries = (catalogPage?.items ?? []) as never[];
+  const offeredDimensions = useValue(BuildingLensGroupDimensions$) ?? [];
   // cm-ddw3: the fields that can actually reorder these results. The picker
   // drops the rest rather than offering a control that cannot act.
   const reorderableSortColumns = catalogPage?.reorderableSortColumns ?? [];
@@ -309,7 +312,7 @@ export const LensControlPane = () => {
                 </Button>
                 {groupPickerOpen && (
                   <div className={styles.pickerOptions}>
-                    {groupDimensionsFor(menu, catalogEntries).map((dimension) => {
+                    {groupDimensionsFor(offeredDimensions).map((dimension) => {
                       const optionLabel = translate(
                         `Tooltip.LABEL[FindItBuildingMenu.GroupBy_${dimension.id}]`,
                         dimension.label

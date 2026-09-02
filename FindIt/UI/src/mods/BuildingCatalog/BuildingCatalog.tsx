@@ -774,7 +774,7 @@ export const BuildingCatalogComponent = () => {
                 </div>
               : scopeNoticeBlock ?? <div className={styles.empty}>{emptyStateMessage}</div>
           )}
-          {flattenGroupedRows(items, groupBy, (entry) => String(entry.id)).map((line) => {
+          {flattenGroupedRows(items, (entry) => String(entry.id)).map((line) => {
             if (line.kind === "heading") {
               return (
                 <div
@@ -1007,7 +1007,6 @@ export const BuildingCatalogComponent = () => {
             : (
               <GroupedResults
                 entries={items}
-                groupBy={groupBy}
                 viewMode={viewMode}
                 searchText={currentSearch ?? ""}
                 onPlace={activate}

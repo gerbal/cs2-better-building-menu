@@ -10,15 +10,16 @@
  * separate axis**. With paging the two cannot be independent — grouping only
  * the visible page splits a group across a page boundary, and then the heading
  * lies about what it contains. So the query orders by the group key first and
- * the chosen sort orders rows within each group. C# owns that ordering; this
- * module owns the headings, and the two agree because they derive the same keys
- * from the same fields.
+ * the chosen sort orders rows within each group.
  *
- * Band edges are duplicated in `BuildingCatalogGrouping.cs` and asserted in both
- * test suites. There is no shared source across the boundary, so drift is caught
- * by tests rather than prevented by construction.
+ * C# owns all of that: the ordering, the effective dimension, the heading each
+ * entry falls under (`BuildingCatalogGrouping.Labels`, sent as `groupPath` and
+ * `groupLabelId` on every page item) and which dimensions can act on a menu
+ * (`BuildingLensGroupDimensions`). This module owns the picker's vocabulary and
+ * builds the tree the views draw out of the paths it is sent. Nothing here
+ * derives a heading from an entry's fields any more, so the two sides cannot
+ * disagree about what a group is called.
  */
-
 
 export type GroupDimensionId =
   | "none"
@@ -56,8 +57,8 @@ export const GROUP_DIMENSIONS: readonly GroupDimension[] = [
   // because inside a vanilla menu it is the division the player already has in
   // mind, and it is the only dimension that works for a menu holding both
   // networks and buildings.
-  // Depth 2: the category, then the tier within it — see categoryTierLabel for
-  // what "tier" means per menu (density for zones, the development branch for
+  // Depth 2: the category, then the tier within it — see C#'s CategoryTierLabel
+  // for what "tier" means per menu (density for zones, the development branch for
   // service menus, the milestone for signatures). A menu whose entries share
   // one tier gets a single child level, which shouldShowHeading draws no
   // heading for, so this costs nothing where it says nothing.
@@ -102,27 +103,6 @@ export const GROUP_DIMENSIONS: readonly GroupDimension[] = [
 export const DEFAULT_GROUP_DIMENSION: GroupDimensionId = "category";
 
 /**
- * The grouping a section opens on, before the player chooses anything.
- *
- * Service buildings group by Role — Hospital, School, Fire Station — because
- * that is what the player came looking for, and the category level above it is
- * a single heading saying "Service Buildings" to someone who just clicked
- * Healthcare.
- *
- * Role deliberately does not generalize. Residential, commercial and industrial
- * prefabs carry no service component, so BuildingRole resolves null for all of
- * them and every one would land under "Other" — a default that files 3,667
- * buildings in one bucket is worse than no grouping at all.
- */
-/**
- * The menu whose assets carry a school tier.
- *
- * Matched loosely on the menu's own prefab name rather than pinned to the exact
- * string, so a rename or a variant still resolves. The name is NOT localised —
- * it is UIAssetMenuPrefab.name, the same value the census prints and assets
- * carry as UiMenu — so this is not matching on display text.
- */
-/**
  * The category whose assets the school levels stand in for.
  *
  * On the education menu the four levels partition this category exactly — ten
@@ -134,241 +114,39 @@ export function isSchoolCategory(id: string | null | undefined): boolean {
   return /education/i.test(id ?? "");
 }
 
+/**
+ * The menu whose assets carry a school tier.
+ *
+ * Matched loosely on the menu's own prefab name rather than pinned to the exact
+ * string, so a rename or a variant still resolves. The name is NOT localised —
+ * it is UIAssetMenuPrefab.name, the same value the census prints and assets
+ * carry as UiMenu — so this is not matching on display text. C# makes the same
+ * test in VanillaMenus.IsEducation.
+ */
 export function isEducationMenu(menu: string | null | undefined): boolean {
   return /education/i.test(menu ?? "");
 }
 
 /**
- * The menu whose categories divide by what an asset IS, not by its unlock.
+ * The grouping choices worth offering, in picker order.
  *
- * Transit is the one menu where the development branch cannot be the tier:
- * measured live, its branches are {Road, Train, Tram} against categories
- * {TransportationRoad, TransportationTrain, TransportationTram} — one to one,
- * so it divides nothing and every category would draw a single child.
- *
- * Its subcategory is the real split, and it is the one the player asked for:
- * tracks, transit stops, transit lines, and the stations themselves.
- */
-export function isTransitMenu(menu: string | null | undefined): boolean {
-  return /transportation/i.test(menu ?? "");
-}
-
-/**
- * The grouping choices worth offering for a menu.
- *
- * School tier answers "which school", which is a question only the education
- * menu can ask. Offered everywhere else it is a dimension that puts the whole
- * result in one "Ungrouped" heading — a control that cannot act, drawn in a
- * picker of controls that can.
- *
- * Only schoolTier is filtered. The rest are narrow in places too — Role outside
- * a service menu, Density outside zoned buildings — but they degrade to a
- * sensible split rather than to a single bucket, and the picker is opened
- * deliberately.
+ * C# decides which dimensions can act on the current menu — a dimension that
+ * puts the whole menu in ONE bucket is a control that cannot act, School tier
+ * is only a question the education menu can ask — and publishes the ids as
+ * `BuildingLensGroupDimensions`. This keeps the picker's order and labels and
+ * shows the ones offered. Before the binding has said anything (an empty
+ * list) everything is offered, so a picker opened early is not left short.
  */
 export function groupDimensionsFor(
-  menu: string | null | undefined,
-  entries: readonly GroupableEntry[] | null | undefined = null
+  offeredIds: readonly string[] | null | undefined
 ): readonly GroupDimension[] {
-  const offered = isEducationMenu(menu)
-    ? GROUP_DIMENSIONS
-    : GROUP_DIMENSIONS.filter((dimension) => dimension.id !== "schoolTier");
+  const offered = offeredIds ?? [];
 
-  // With no entries to judge by — before the first page lands — offer
-  // everything rather than guess a menu into a shorter list it then keeps.
-  const sample = entries ?? [];
-
-  if (sample.length === 0) {
-    return offered;
+  if (offered.length === 0) {
+    return GROUP_DIMENSIONS;
   }
 
-  // A dimension that puts the whole menu in ONE bucket is a control that
-  // cannot act: picking Development in Landscaping draws a single heading
-  // over 379 assets, because nothing there is gated by a development tree.
-  // "None" always stays — it is how the player turns grouping off, and it
-  // groups nothing by definition.
-  return offered.filter((dimension) => {
-    if (dimension.id === "none") {
-      return true;
-    }
-
-    const seen = new Set<string>();
-
-    for (const entry of sample) {
-      // The outermost level is the one the picker's label names; a second
-      // level only subdivides what the first already split.
-      const level = groupLevelsFor(entry, dimension.id)[0];
-
-      if (level !== undefined) {
-        seen.add(level);
-      }
-
-      if (seen.size > 1) {
-        return true;
-      }
-    }
-
-    return false;
-  });
-}
-
-
-/**
- * A group heading for the game's own category.
- *
- * The id is a prefab name — "TransportationRoad", "PropsNature", "BikePaths" —
- * so it needs both splitting into words and, where the convention holds,
- * relieving of the menu name it repeats. "TransportationRoad" inside
- * Transportation is "Road"; "PropsNature" inside Landscaping keeps both words,
- * because that menu does not prefix its categories.
- */
-export function menuCategoryLabel(entry: GroupableEntry): string {
-  const raw = typeof entry.uiCategory === "string" ? entry.uiCategory.trim() : "";
-
-  if (raw === "") {
-    return UNGROUPED_LABEL;
-  }
-
-  const menu = (typeof entry.uiMenu === "string" ? entry.uiMenu : "").replace(/[^A-Za-z]/g, "");
-  const withoutMenu = menu !== "" && raw.toLowerCase().startsWith(menu.toLowerCase())
-    ? raw.slice(menu.length)
-    : raw;
-
-  return splitWords(withoutMenu === "" ? raw : withoutMenu);
-}
-
-/** "BikePaths" -> "Bike Paths". The ids are camel case, not sentences. */
-function splitWords(value: string): string {
-  return value
-    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
-    .trim();
-}
-
-/** Heading for entries with no value for the grouped field. */
-export const UNGROUPED_LABEL = "Other";
-
-/**
- * Cost band edges, in currency. Mirrored in BuildingCatalogGrouping.cs.
- *
- * A heading per distinct cost would be one heading per building; these are the
- * breaks that separate "a park bench", "an ordinary service building" and "the
- * thing you save up for".
- */
-export const COST_BANDS: readonly number[] = [5_000, 25_000, 100_000];
-
-/** Footprint bands by the larger lot dimension. Mirrored in C#. */
-export const FOOTPRINT_BANDS: readonly number[] = [2, 4, 6];
-
-/**
- * Density tiers, in the order the player meets them.
- *
- * Mirrors `BuildingCatalogGrouping.DensityOrder` and
- * `BuildingCatalogLabels.DensityTier`, asserted from the C# side against this
- * table — there is no shared source across the boundary, the same arrangement
- * the cost and footprint bands have.
- *
- * The values are ZoneTypeFilter's, and they are NOT in reading order: Mixed is
- * 32 and LowRent 64, both of which read between Medium and High. Row precedes
- * Medium because row housing unlocks a milestone earlier, measured against a
- * live catalog. LowRent sits just before High because it IS high density,
- * whatever its name suggests — those zones pack four residential properties
- * into the space high density gives two.
- *
- * The labels are the game's own words, taken off the zone names it ships:
- * "Low Density Housing", "Medium Density Row Housing", "Mixed Housing",
- * "Low Rent Housing". "Housing" is trimmed because the same tiers apply to
- * commercial and office zones.
- */
-export const DENSITY_TIERS: readonly { value: number; key: string; label: string }[] = [
-  { value: 1, key: "Low", label: "Low Density" },
-  { value: 2, key: "Row", label: "Row Housing" },
-  { value: 4, key: "Medium", label: "Medium Density" },
-  { value: 32, key: "Mixed", label: "Mixed Housing" },
-  { value: 64, key: "LowRent", label: "Low Rent Housing" },
-  { value: 8, key: "High", label: "High Density" },
-  { value: 16, key: "Signature", label: "Signature" },
-];
-
-/**
- * Transit's tier: tracks, stops, lines, and the stations themselves.
- *
- * Stations are relabelled here, and only here. The backend resolves that
- * subcategory through the GAME's own key — BuildingCatalogLabels prefers
- * vanilla's word because vanilla ships every language and our Locale.json is
- * English only — and vanilla's word for it is "Transportation", which inside
- * the Transportation menu says nothing at all:
- *
- *     ## Train
- *         - Transit Lines
- *         - Tracks
- *         - Transportation      <- what?
- *
- * The three siblings already come from our own English-only strings, so this
- * makes the group internally consistent rather than introducing a new
- * inconsistency. Deliberately not done in Locale.json: an entry there for this
- * key is silently outranked by the game's, which is a lie sitting in a file.
- */
-function transitTierLabel(entry: GroupableEntry): string {
-  const sub = typeof entry.subCategory === "string" ? entry.subCategory : "";
-
-  if (/^ServiceBuildings_/.test(sub)) {
-    return "Stations";
-  }
-
-  return text(entry.subCategoryLabel) ?? text(entry.subCategory) ?? UNGROUPED_LABEL;
-}
-
-/**
- * The tier a category divides into, whatever the game tiers that asset by.
- *
- * One level, three sources, because the menus genuinely differ and each is
- * homogeneous — a category never mixes them:
- *
- *   zones            density        Low Density, Row Housing, Mixed Housing…
- *   service menus    dev-tree branch  Hospital, Crematorium, Recycling Center…
- *   signatures       milestone      the only thing that varies across them
- *
- * Measured before it was written. The dev-tree branch partitions its category
- * EXACTLY on every service menu checked: Healthcare's four branches sum to its
- * 24, Deathcare's two to its 7; Police 13+7+1+1 = 22, Administration 1+6+5 = 12.
- *
- * Signature buildings carry no branch at all and every one of them is
- * zoneType 16, so Signature is deliberately NOT treated as a density here — it
- * is a marker rather than a tier, and taking it would collapse all 100 into one
- * child and never reach the milestone that actually varies.
- */
-export function categoryTierLabel(
-  entry: GroupableEntry,
-  milestoneNames: readonly string[] = []
-): string {
-  const zoneType = typeof entry.zoneType === "number" ? entry.zoneType : Number(entry.zoneType);
-  const density = DENSITY_TIERS.find((tier) => tier.value === zoneType);
-
-  if (density && density.key !== "Signature") {
-    return density.label;
-  }
-
-  // Before the branch, because transit HAS branches and they divide nothing.
-  if (isTransitMenu(entry.uiMenu)) {
-    return transitTierLabel(entry);
-  }
-
-  const branch = text(entry.devTreeBranch);
-
-  if (branch) {
-    return branch;
-  }
-
-  return milestoneLabel(entry.unlockMilestone, milestoneNames);
-}
-
-/** The heading for one tier, or the ungrouped label when there is none. */
-export function densityTierLabel(value: number | string | null | undefined): string {
-  const numeric = typeof value === "string" ? Number(value) : value;
-  const tier = DENSITY_TIERS.find((candidate) => candidate.value === numeric);
-
-  return tier?.label ?? UNGROUPED_LABEL;
+  return GROUP_DIMENSIONS.filter((dimension) => offered.includes(dimension.id));
 }
 
 /**
@@ -415,94 +193,8 @@ export const SCHOOL_TIERS: readonly SchoolTier[] = [
   { level: 4, id: "university", label: "University" },
 ];
 
-export function schoolTierFor(level: number | null | undefined): SchoolTier | null {
-  if (typeof level !== "number" || !Number.isFinite(level)) {
-    return null;
-  }
-
-  return SCHOOL_TIERS.find((tier) => tier.level === level) ?? null;
-}
-
-export interface GroupableEntry {
-  /** The game's own menu placement, indexed from UIObject.m_Group. */
-  uiMenu?: string | null;
-  uiCategory?: string | null;
-  category?: string | null;
-  categoryLabel?: string | null;
-  subCategory?: string | null;
-  subCategoryLabel?: string | null;
-  buildingType?: string | null;
-  educationLevel?: number | null;
-  /** Milestone index the game gates the asset behind; 0 for available at start. */
-  unlockMilestone?: number | null;
-  devTreeBranch?: string | null;
-  devTreeBranchDepth?: number | null;
-  theme?: string | null;
-  provenance?: string | null;
-  dlcId?: string | null;
-  zoneType?: number | string | null;
-  lotWidth?: number | null;
-  lotDepth?: number | null;
-  constructionCost?: number | null;
-}
-
-/**
- * Splits a PascalCase or snake_case id into words.
- *
- * Group headings come from raw prefab fields, so "DeathcareFacility" arrived as
- * one word and the heading's uppercase styling rendered it "DEATHCAREFACILITY".
- * The facet list already word-splits its own labels; headings should read the
- * same way.
- */
-export function humanizeGroupLabel(value: string): string {
-  return value
-    .replace(/[_-]+/g, " ")
-    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function text(value: unknown): string | null {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  return trimmed === "" ? null : humanizeGroupLabel(trimmed);
-}
-
-function formatCurrency(value: number): string {
-  return value >= 1000 ? `₡${Math.round(value / 1000)}k` : `₡${value}`;
-}
-
-export function costBandLabel(cost: number | null | undefined): string {
-  if (typeof cost !== "number" || !Number.isFinite(cost)) return UNGROUPED_LABEL;
-
-  for (let index = 0; index < COST_BANDS.length; index += 1) {
-    if (cost < COST_BANDS[index]) {
-      return index === 0
-        ? `${formatCurrency(0)}–${formatCurrency(COST_BANDS[0])}`
-        : `${formatCurrency(COST_BANDS[index - 1])}–${formatCurrency(COST_BANDS[index])}`;
-    }
-  }
-
-  return `${formatCurrency(COST_BANDS[COST_BANDS.length - 1])}+`;
-}
-
-export function footprintBandLabel(
-  width: number | null | undefined,
-  depth: number | null | undefined
-): string {
-  const longest = Math.max(
-    typeof width === "number" && Number.isFinite(width) ? width : 0,
-    typeof depth === "number" && Number.isFinite(depth) ? depth : 0
-  );
-
-  if (longest <= 0) return UNGROUPED_LABEL;
-
-  for (const edge of FOOTPRINT_BANDS) {
-    if (longest <= edge) return `${edge}×${edge} and under`;
-  }
-
-  return `Larger than ${FOOTPRINT_BANDS[FOOTPRINT_BANDS.length - 1]}×${FOOTPRINT_BANDS[FOOTPRINT_BANDS.length - 1]}`;
-}
+/** What C# files an entry under when the dimension has no value for it. */
+export const UNGROUPED_LABEL = "Other";
 
 /** What the progression dimension calls an asset the game never gated. */
 export const PROGRESSION_UNGATED_LABEL = "From the start";
@@ -535,79 +227,15 @@ export function milestoneLabel(
   return index === 0 ? PROGRESSION_UNGATED_LABEL : `Milestone ${index}`;
 }
 
-/**
- * The heading levels an entry falls under, outermost first.
- *
- * Category yields two. That is what keeps it useful after navigation: once the
- * player has navigated to Service Buildings a lone SERVICE BUILDINGS heading is
- * noise, but the subcategory level underneath still chunks the set.
- */
-export function groupLevelsFor(
-  entry: GroupableEntry | null | undefined,
-  dimension: GroupDimensionId,
-  milestoneNames: readonly string[] = []
-): string[] {
-  if (!entry || dimension === "none") return [];
-
-  switch (dimension) {
-    case "category":
-      return [
-        text(entry.categoryLabel) ?? text(entry.category) ?? UNGROUPED_LABEL,
-        text(entry.subCategoryLabel) ?? text(entry.subCategory) ?? UNGROUPED_LABEL,
-      ];
-    case "menuCategory":
-      // Fixed length, like every other dimension — GroupDimension.depth
-      // declares it and a test asserts it, so an untiered entry gets the
-      // ungrouped LABEL rather than a shorter array.
-      return [menuCategoryLabel(entry), categoryTierLabel(entry, milestoneNames)];
-    case "subCategory":
-      return [text(entry.subCategoryLabel) ?? text(entry.subCategory) ?? UNGROUPED_LABEL];
-    case "role":
-      return [text(entry.buildingType) ?? UNGROUPED_LABEL];
-    case "progression":
-      // Named by the caller, which holds the milestone name table — the entry
-      // carries a bare index because the ~20 names are published once rather
-      // than repeated on every row. Index 0 means UNGATED — the game's own
-      // milestones start at 1 — which is why milestoneLabel names it rather
-      // than printing "Milestone 0".
-      return [milestoneLabel(entry.unlockMilestone, milestoneNames)];
-    case "development":
-      // Already the branch, resolved at index time against the game's own
-      // tree, and already "Basic" for anything the tree never gated — so
-      // there is no ungrouped case left to invent here.
-      return [text(entry.devTreeBranch) ?? UNGROUPED_LABEL];
-    case "schoolTier":
-      // Not word-split through text(): these are the game's own labels, and
-      // "Elementary School" is already a phrase.
-      //
-      // Anything with no tier falls back to its own CATEGORY rather than to
-      // "Other". This is the grouping the education menu opens on, and its
-      // three research buildings under a heading called "Other" said nothing
-      // about them — where "Research" is exactly what the strip's own tab
-      // beside the four levels says. The rule generalises: split the schools
-      // out, leave everything else where it was.
-      return [
-        schoolTierFor(entry.educationLevel)?.label ?? menuCategoryLabel(entry),
-      ];
-    case "theme":
-      return [text(entry.theme) ?? UNGROUPED_LABEL];
-    case "source":
-      // Provenance is the broad answer ("Base game", "Mod"); the DLC name is
-      // more specific when there is one, so it wins.
-      return [text(entry.dlcId) ?? text(entry.provenance) ?? UNGROUPED_LABEL];
-    case "density":
-      // Was String(entry.zoneType), which drew headings reading "0", "1", "4".
-      // Never seen on screen, because the dimension is dropped from the picker
-      // whenever its entries share one value — and until zones carried a tier,
-      // they always did, so this branch had no way to be exercised.
-      return [densityTierLabel(entry.zoneType)];
-    case "footprint":
-      return [footprintBandLabel(entry.lotWidth, entry.lotDepth)];
-    case "cost":
-      return [costBandLabel(entry.constructionCost)];
-    default:
-      return [];
-  }
+/** The two fields C# stamps on every page item when the page is grouped. */
+export interface GroupedEntry {
+  /** Heading levels, outermost first. Empty or absent when nothing is grouped. */
+  groupPath?: readonly string[] | null;
+  /**
+   * The game's own id behind the OUTER heading, where there is one — a
+   * vanilla category name the renderer can localise. Empty otherwise.
+   */
+  groupLabelId?: string | null;
 }
 
 export interface GroupNode<T> {
@@ -626,17 +254,6 @@ export interface GroupNode<T> {
    * unchanged when the key is missing.
    */
   labelId?: string;
-  /**
-   * Where this heading sits in an ordered dimension.
-   *
-   * Only progression sets it. Every other dimension's headings are nominal —
-   * "Hospital" is not before or after "Clinic" — so they keep the order the
-   * entries arrived in. Milestones are ordinal by definition, and reading the
-   * order off the entries would hand the progression whatever order the SORT
-   * happened to produce: sorted by name, a Roads menu would run Grand Village,
-   * Small Village, Tiny Village.
-   */
-  order?: number;
   /** Levels above this one, so a nested node can report its full path. */
   path: string[];
   /** Total entries beneath this node, including nested children. */
@@ -646,25 +263,25 @@ export interface GroupNode<T> {
 }
 
 /**
- * Groups entries into a tree, preserving their incoming order throughout.
+ * The group tree out of the paths C# stamped on the page.
  *
- * Order is preserved rather than sorted because the caller has already been
- * ordered by (group key, chosen sort) on the C# side. Re-sorting here would
- * silently disagree with the paging, which is the exact failure this design
- * exists to avoid.
+ * Consecutive entries sharing a heading form one node, nested by depth. Only
+ * consecutive: the page arrives ordered by (group key, chosen sort), so a
+ * group's entries are contiguous by construction, and merging distant runs
+ * would draw a tree that disagrees with the order underneath it. "Other"
+ * last, ordinal dimensions in their own order — all of that is C#'s key, and
+ * this reads it off the page rather than re-deriving it.
+ *
+ * Entries with no path are left out: an ungrouped page ("None", or a page C#
+ * did not stamp) yields no tree, and the views draw the flat list.
  */
-export function buildGroupedView<T extends GroupableEntry>(
-  entries: readonly T[] | null | undefined,
-  dimension: GroupDimensionId,
-  milestoneNames: readonly string[] = []
+export function groupTreeFromPaths<T extends GroupedEntry>(
+  entries: readonly T[] | null | undefined
 ): GroupNode<T>[] {
-  const source = entries ?? [];
-  if (dimension === "none" || source.length === 0) return [];
-
   const roots: GroupNode<T>[] = [];
 
-  for (const entry of source) {
-    const levels = groupLevelsFor(entry, dimension, milestoneNames);
+  for (const entry of entries ?? []) {
+    const levels = entry.groupPath ?? [];
     if (levels.length === 0) continue;
 
     let siblings = roots;
@@ -674,36 +291,19 @@ export function buildGroupedView<T extends GroupableEntry>(
       const label = levels[depth];
       path.push(label);
 
-      let node = siblings.find((candidate) => candidate.label === label);
-      if (!node) {
+      let node = siblings.length > 0 ? siblings[siblings.length - 1] : undefined;
+      if (!node || node.label !== label) {
         node = { label, path: [...path], count: 0, children: [], entries: [] };
 
-        // Only where the game owns the id. Every other dimension's heading is
-        // derived from a value rather than named by the game, so there is
-        // nothing to look up.
-        // depth === 0 only. menuCategory is depth 2 now — category, then the
-        // density tier beneath it — and the game owns the id of the OUTER
-        // level alone. Without this guard the tier node also took
-        // entry.uiCategory, and the renderer resolved it back to the
-        // category's name: every one of Residential's six tier headings drew
-        // "Residential Zones". Seen on screen; the label itself was correct all
-        // along and was simply overridden downstream.
-        if (depth === 0 && dimension === "menuCategory" && label !== UNGROUPED_LABEL) {
-          const id = typeof entry.uiCategory === "string" ? entry.uiCategory.trim() : "";
+        // The outer level alone: C# carries the game's id for the category a
+        // menuCategory heading names, and nothing beneath it. Taking it on a
+        // tier node made every one of Residential's six tier headings draw
+        // "Residential Zones" once the renderer resolved it.
+        if (depth === 0) {
+          const id = typeof entry.groupLabelId === "string" ? entry.groupLabelId.trim() : "";
           if (id !== "") {
             node.labelId = id;
           }
-        }
-
-        if (dimension === "progression" && typeof entry.unlockMilestone === "number") {
-          node.order = entry.unlockMilestone;
-        }
-
-        // Development is ordinal too — the tree's own columns. Without this the
-        // headings formed in encounter order, so a name sort drew Coal Power
-        // Plant above the basic buildings it is unlocked long after.
-        if (dimension === "development" && typeof entry.devTreeBranchDepth === "number") {
-          node.order = entry.devTreeBranchDepth;
         }
 
         siblings.push(node);
@@ -719,20 +319,7 @@ export function buildGroupedView<T extends GroupableEntry>(
     }
   }
 
-  // "Other" last, whatever order it arrived in. It is the only group that is
-  // defined by absence, so leading with it opens the view on the buildings that
-  // matched the grouping least — Police & Administration by role opened on the
-  // six that have no role at all. C# sorts its key last for the same reason;
-  // doing it here too means the UI is right even when the two disagree.
-  const named = roots.filter((node) => node.label !== UNGROUPED_LABEL);
-  const other = roots.filter((node) => node.label === UNGROUPED_LABEL);
-
-  // Ordinal dimensions state their own order; see GroupNode.order.
-  if (dimension === "progression" || dimension === "development") {
-    named.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-  }
-
-  return [...named, ...other];
+  return roots;
 }
 
 /**
@@ -773,16 +360,15 @@ export type GroupedRow<T> =
  * Interleaving headings into one flat list keeps a single flex column geometry
  * for the data rows and gives the reordering a visible reason.
  *
- * Order is preserved exactly as buildGroupedView produced it, which is the
+ * Order is preserved exactly as groupTreeFromPaths produced it, which is the
  * order the backend already sorted; nothing here re-sorts.
  */
-export function flattenGroupedRows<T extends GroupableEntry>(
+export function flattenGroupedRows<T extends GroupedEntry>(
   entries: readonly T[] | null | undefined,
-  dimension: GroupDimensionId,
   keyOf: (entry: T) => string,
 ): GroupedRow<T>[] {
   const source = entries ?? [];
-  const nodes = buildGroupedView(source, dimension);
+  const nodes = groupTreeFromPaths(source);
 
   // "None", or a dimension that grouped nothing: the table is the flat list it
   // has always been.

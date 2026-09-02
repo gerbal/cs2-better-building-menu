@@ -631,7 +631,9 @@ namespace FindItBuildingMenu.Services
 				ToolbarSelection.SelectedPacks.Count > 0
 					? () => ProjectForMenu(query.UiMenu, query.DlcIds, ignorePacks: true)
 					: null,
-				groupByResolver);
+				groupByResolver,
+				PrefabIndexingSystem.GetMilestoneNames(),
+				VanillaMenus.IsEducation(query.UiMenu));
 		}
 
 		public bool TryGet(int id, out BuildingCatalogEntry? entry)
