@@ -5,13 +5,64 @@ import {
   getLensAnchor,
   getLensAnchorKey,
   getLensDisclosure,
-  resetLensViewState,
+  getLensView,
+  resetLensView,
   setLensAnchor,
   setLensDisclosure,
-} from "../src/domain/buildingLensViewState.ts";
+  setLensView,
+  subscribeLensView,
+} from "../src/domain/lensViewStore.ts";
 
-describe("Building Lens view state", () => {
-  beforeEach(() => resetLensViewState());
+describe("Building Lens view store", () => {
+  beforeEach(() => resetLensView());
+
+  it("starts with nothing chosen", () => {
+    assert.deepEqual(getLensView(), { viewMode: "", expandedId: null, disclosures: {}, anchors: {} });
+  });
+
+  it("tells a subscriber when a field moves, and not when it does not", () => {
+    // The control pane and the catalog are siblings, not ancestor and
+    // descendant; the subscription is what keeps the view mode one value
+    // rather than two copies.
+    let fired = 0;
+    const unsubscribe = subscribeLensView(() => { fired += 1; });
+
+    setLensView({ viewMode: "table" });
+    assert.equal(fired, 1);
+    assert.equal(getLensView().viewMode, "table");
+
+    setLensView({ viewMode: "table" });
+    assert.equal(fired, 1);
+
+    setLensView({ expandedId: 4206 });
+    assert.equal(fired, 2);
+    assert.equal(getLensView().expandedId, 4206);
+
+    unsubscribe();
+    setLensView({ viewMode: "grid" });
+    assert.equal(fired, 2);
+  });
+
+  it("keeps the fields it was not asked to change", () => {
+    setLensView({ viewMode: "list" });
+    setLensView({ expandedId: 7 });
+
+    assert.equal(getLensView().viewMode, "list");
+    assert.equal(getLensView().expandedId, 7);
+  });
+
+  it("hands out the same snapshot until something changes", () => {
+    // useSyncExternalStore compares snapshots by identity; a fresh object per
+    // read would re-render for ever.
+    const before = getLensView();
+    setLensView({ viewMode: "" });
+
+    assert.equal(getLensView(), before);
+  });
+});
+
+describe("Building Lens disclosures", () => {
+  beforeEach(() => resetLensView());
 
   it("falls back until a disclosure has been set", () => {
     assert.equal(getLensDisclosure(LENS_DISCLOSURE_KEYS.facets), false);
@@ -39,12 +90,22 @@ describe("Building Lens view state", () => {
 
     assert.equal(getLensDisclosure(LENS_DISCLOSURE_KEYS.facets, true), false);
   });
+
+  it("notifies once per change, through the one store", () => {
+    let fired = 0;
+    subscribeLensView(() => { fired += 1; });
+
+    setLensDisclosure(LENS_DISCLOSURE_KEYS.facets, true);
+    setLensDisclosure(LENS_DISCLOSURE_KEYS.facets, true);
+
+    assert.equal(fired, 1);
+  });
 });
 
 describe("Building Lens scroll anchor", () => {
   const tableByCategory = getLensAnchorKey({ surface: "catalog", viewMode: "table", groupBy: "category" });
 
-  beforeEach(() => resetLensViewState());
+  beforeEach(() => resetLensView());
 
   it("has no anchor until a row has been seen", () => {
     assert.equal(getLensAnchor(tableByCategory), null);
@@ -61,9 +122,6 @@ describe("Building Lens scroll anchor", () => {
   });
 
   it("does not let two surfaces collide on the same view mode", () => {
-    // The choice store already has "viewMode" written by both the catalog and
-    // ZoningHierarchy; anchors are keyed by surface so the same mistake cannot
-    // scroll one list to a row that only exists in the other.
     const catalogList = getLensAnchorKey({ surface: "catalog", viewMode: "list" });
     const zoningList = getLensAnchorKey({ surface: "zoning", viewMode: "list" });
 
@@ -113,7 +171,7 @@ describe("Building Lens scroll anchor", () => {
 
   it("is cleared with the rest of the view state", () => {
     setLensAnchor(tableByCategory, 4206);
-    resetLensViewState();
+    resetLensView();
 
     assert.equal(getLensAnchor(tableByCategory), null);
   });
