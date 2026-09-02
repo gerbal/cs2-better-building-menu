@@ -31,6 +31,55 @@ namespace FindItBuildingMenu.Tests
 			Entry(6, "High School", "ServiceBuildings", "Education & Research", "Education") with { EducationLevel = 2 },
 		};
 
+		[Fact]
+		public void AStripTabKeepsItsIconWhenANarrowingRemovesTheAssetItCameFrom()
+		{
+			// cm-2xvs.17: Transportation's first tab went from Road to Bus when a
+			// content pack was chosen, because the icon came from whichever asset
+			// was left. The whole menu is the same set in every state.
+			// A service menu with one category, so the strip's axis is the
+			// development tree (Transportation itself is the one menu whose tier
+			// is the subcategory, so it is not the fixture here).
+			var alpha = Entry(1, "Alpha Clinic", "ServiceBuildings", "Health & Deathcare", "Healthcare") with { DevTreeBranch = "Hospital", DevTreeBranchDepth = 0, Thumbnail = "alpha.png", UiCategoryPriority = 0 };
+			var beta = Entry(2, "Beta Ward", "ServiceBuildings", "Health & Deathcare", "Healthcare") with { DevTreeBranch = "Hospital", DevTreeBranchDepth = 0, Thumbnail = "beta.png", UiCategoryPriority = 1 };
+			var ferry = Entry(3, "Crematorium", "ServiceBuildings", "Health & Deathcare", "Healthcare") with { DevTreeBranch = "Deathcare", DevTreeBranchDepth = 1, Thumbnail = "crem.png" };
+			var whole = new[] { alpha, beta, ferry };
+
+			var open = new CatalogView(whole, new BuildingCatalogQuery(UiMenu: "Health & Deathcare"));
+			var roadOpen = open.StripTabs.Single(tab => tab.Id == "Hospital");
+			Assert.Equal(2, roadOpen.Count);
+			Assert.Equal("alpha.png", roadOpen.Icon);
+
+			// The toolbar's pack selection narrows the projection itself; the view
+			// is then handed the pack-ignored projection for exactly this.
+			var packed = new CatalogView(new[] { beta, ferry }, new BuildingCatalogQuery(UiMenu: "Health & Deathcare"), packScope: () => whole);
+			var roadPacked = packed.StripTabs.Single(tab => tab.Id == "Hospital");
+			Assert.Equal(1, roadPacked.Count);
+			Assert.Equal("alpha.png", roadPacked.Icon);
+		}
+
+		[Fact]
+		public void AnAuthoredTabWithNoBranchIconDrawsTheCategoryGlyphNotAPhotograph()
+		{
+			// cm-2xvs.17, second symptom: single-asset parking categories drew a
+			// building render in a row of flat glyphs.
+			var lone = new[]
+			{
+				new BuildingCatalogEntry(
+					Id: 9, PrefabName: "ParkingHall02", Name: "Parking Hall", Category: "ServiceBuildings", SubCategory: "ServiceBuildings_Transportation",
+					Thumbnail: "ParkingHall02?width=128", LotWidth: 4, LotDepth: 4, BuildingLevel: 1, ZoneType: ZoneTypeFilter.Any,
+					HasParking: true, IsUniqueMesh: false, IsVanilla: true, PdxModsId: "")
+					with { FallbackThumbnail = "Media/Game/Icons/Parking.svg", DevTreeBranch = "Parking", DevTreeBranchIcon = null },
+			};
+
+			Assert.Equal("Media/Game/Icons/Parking.svg", BuildingCatalogAdapter.TabIcon(lone, authored: true));
+			// The asset-type row keeps the representative picture: a water pipe is
+			// a serviceable picture of "Networks".
+			Assert.Equal("ParkingHall02?width=128", BuildingCatalogAdapter.TabIcon(lone, authored: false));
+			// And an authored branch icon still wins over both.
+			Assert.Equal("branch.svg", BuildingCatalogAdapter.TabIcon(new[] { lone[0] with { DevTreeBranchIcon = "branch.svg" } }, authored: true));
+		}
+
 		/// <summary>Counts enumerations; the count is the fact under test.</summary>
 		private sealed class CountingList : IReadOnlyList<BuildingCatalogEntry>
 		{
