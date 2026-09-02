@@ -20,21 +20,20 @@ namespace FindItBuildingMenu.Systems
 		private static readonly System.Diagnostics.Stopwatch SearchClock = System.Diagnostics.Stopwatch.StartNew();
 		private readonly SearchDebounce _searchDebounce = new(TimeSpan.FromMilliseconds(250));
 		private readonly BuildingCatalogAdapter _buildingCatalogAdapter = new();
-		private BuildingCatalogQuery _buildingCatalogQuery = new();
 		private readonly FindItInteractionBoundary _interactionBoundary = new();
-		private BuildingCatalogMetricRangeState _buildingMetricRanges = BuildingCatalogMetricRangeState.Empty;
+		// Everything the player has told the lens, as one record with one tested
+		// transition per trigger. The handlers in Bindings.cs apply a transition,
+		// PublishScope() mirrors it to the bindings, RefreshBuildingCatalog runs it.
+		private BuildingCatalogLensState _lens = BuildingCatalogLensState.Initial;
 		// SPIKE (cm-e98i): the vanilla menu the lens was opened from, by name.
 		// Empty means "not opened from a vanilla menu", which leaves the query
 		// unconstrained by the tree.
-		private string _buildingLensUiMenu = string.Empty;
-		private string _buildingLensUiCategory = string.Empty;
 		// The axis the fallback strip is drawn on. The SELECTION itself lives on
 		// the query as StripTabs, because the filter rail offers the same state
 		// and one field shown twice cannot disagree with itself.
 		private string _buildingLensStripAxis = string.Empty;
 		// The education menu's tier tab, or -1. Cleared with the rest of the
 		// scope; a level means nothing outside the menu that teaches.
-		private int _buildingLensSchoolTier = -1;
 
 		private ToolSystem _toolSystem;
 		private PrefabSystem _prefabSystem;
@@ -227,7 +226,7 @@ namespace FindItBuildingMenu.Systems
 			_BuildingCatalogSortColumn = CreateBinding(
 				"BuildingCatalogSortColumn",
 				"SetBuildingCatalogSortColumn",
-				_buildingCatalogQuery.EffectiveSortColumn,
+				_lens.Query.EffectiveSortColumn,
 				SetBuildingCatalogSortColumn);
 			// Group-by rides with sort for the same reason: it is part of the
 			// persistent query, so a write-only trigger would leave the picker
@@ -236,12 +235,12 @@ namespace FindItBuildingMenu.Systems
 			_BuildingCatalogGroupBy = CreateBinding(
 				"BuildingCatalogGroupBy",
 				"SetBuildingCatalogGroupBy",
-				_buildingCatalogQuery.GroupBy,
+				_lens.Query.GroupBy,
 				SetBuildingCatalogGroupBy);
 			_BuildingCatalogSortDescending = CreateBinding(
 				"BuildingCatalogSortDescending",
 				"SetBuildingCatalogSortDescending",
-				_buildingCatalogQuery.Descending,
+				_lens.Query.Descending,
 				SetBuildingCatalogSortDescending);
 			_BuildingLensMenuCategoriesBinding = CreateBinding("BuildingLensMenuCategories", Array.Empty<VanillaMenuCategory>());
 			_BuildingLensMenuCategoryCounts = CreateBinding("BuildingLensMenuCategoryCounts", Array.Empty<MenuCategoryCount>());
