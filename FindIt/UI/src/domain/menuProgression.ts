@@ -159,7 +159,8 @@ export interface SchoolTierTab {
  * The education menu's tier tabs, in career order.
  *
  * The backend keys these by the raw SchoolData.m_EducationLevel so the four
- * labels stay in one place — SCHOOL_TIERS in buildingGroups — rather than
+ * labels stay in one place — SCHOOL_TIERS in buildingGroups, mirrored by
+ * C#'s SchoolTierLabel for the headings — rather than
  * being duplicated across the binding. Ordered by level, which is the career
  * order the alphabet gets wrong: College sorts before High School and before
  * University, and only one of those is right.
@@ -185,7 +186,8 @@ export function schoolTierTabs(
  * Kept here rather than imported from buildingGroups: the domain modules do
  * not import each other by value, because the test runner strips types instead
  * of resolving the bundler's paths. The four rows are the game's SchoolLevel
- * enum and do not move; buildingGroups.SCHOOL_TIERS is the other copy, and
+ * enum and do not move; buildingGroups.SCHOOL_TIERS is the other copy (C#'s
+ * BuildingCatalogGrouping.SchoolTierLabel names the headings from it), and
  * menuProgression.test.ts pins them to the same words.
  */
 export function schoolTierLabel(level: number): string {

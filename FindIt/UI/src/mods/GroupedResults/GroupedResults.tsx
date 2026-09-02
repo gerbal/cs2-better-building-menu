@@ -1,15 +1,12 @@
-import { bindValue, useValue } from "cs2/api";
 import { Scrollable } from "cs2/ui";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import classNames from "classnames";
-import mod from "../../../mod.json";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
-  buildGroupedView,
+  groupTreeFromPaths,
   fitGroupLabel,
   fitLabelToWidth,
   shouldShowHeading,
-  type GroupDimensionId,
   type GroupNode,
 } from "domain/buildingGroups";
 import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
@@ -19,15 +16,11 @@ import { BuildingList } from "mods/BuildingList/BuildingList";
 import styles from "./groupedResults.module.scss";
 
 /** Grid recognises, List scans, Cards weighs, Table compares. */
-// The progression dimension names its headings out of this dense table; every
-// other dimension ignores it.
-const BuildingLensMilestones$ = bindValue<string[]>(mod.id, "BuildingLensMilestones", []);
 
 export type CatalogViewMode = "grid" | "list" | "cards" | "table";
 
 interface GroupedResultsProps {
   entries: BuildingCatalogEntry[];
-  groupBy: GroupDimensionId;
   viewMode: CatalogViewMode;
   searchText: string;
   onPlace: (entry: BuildingCatalogEntry) => void;
@@ -160,7 +153,6 @@ const GroupHeading = ({
  */
 export const GroupedResults = ({
   entries,
-  groupBy,
   viewMode,
   searchText,
   onPlace,
@@ -231,10 +223,9 @@ export const GroupedResults = ({
     );
   };
 
-  // The progression dimension names its headings out of this table; every
-  // other dimension ignores it.
-  const milestoneNames = useValue(BuildingLensMilestones$) ?? [];
-  const groups = buildGroupedView(entries, groupBy, milestoneNames);
+  // C# stamped every item with its headings for the effective dimension;
+  // the tree is read off the page, never derived from the entries.
+  const groups = groupTreeFromPaths(entries);
 
   // The ungrouped grid keeps its own scroll and its shelf; anything else gets
   // one scroll around the whole result, because a scrollbar per heading makes

@@ -26,7 +26,10 @@ namespace FindItBuildingMenu.Services
 		private readonly BuildingCatalogQuery _query;
 		private readonly Func<IReadOnlyList<BuildingCatalogEntry>>? _packScope;
 		private readonly Func<CatalogView, string>? _groupByResolver;
+		private readonly IReadOnlyList<string>? _milestoneNames;
+		private readonly bool _educationMenu;
 		private string? _effectiveGroupBy;
+		private string[]? _dimensions;
 
 		private BuildingCatalogEntry[]? _menuSet, _viewSet, _tabSet, _tierSet;
 		private BuildingCatalogPage? _page;
@@ -41,13 +44,20 @@ namespace FindItBuildingMenu.Services
 			IReadOnlyList<BuildingCatalogEntry> snapshot,
 			BuildingCatalogQuery query,
 			Func<IReadOnlyList<BuildingCatalogEntry>>? packScope = null,
-			Func<CatalogView, string>? groupByResolver = null)
+			Func<CatalogView, string>? groupByResolver = null,
+			IReadOnlyList<string>? milestoneNames = null,
+			bool educationMenu = false)
 		{
 			_snapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
 			_query = query ?? throw new ArgumentNullException(nameof(query));
 			_packScope = packScope;
 			_groupByResolver = groupByResolver;
+			_milestoneNames = milestoneNames;
+			_educationMenu = educationMenu;
 		}
+
+		/// <summary>The dimension ids the picker should offer for this menu set.</summary>
+		public string[] GroupDimensions => _dimensions ??= BuildingCatalogGrouping.OfferedDimensions(MenuSet, _educationMenu);
 
 		/// <summary>The grouping the page is ordered by: the player's choice, or the menu's default.</summary>
 		/// <remarks>
@@ -71,7 +81,27 @@ namespace FindItBuildingMenu.Services
 		/// <summary>Menu and strip tab, no category or tier — what the school tiers count.</summary>
 		public BuildingCatalogEntry[] TierSet => _tierSet ??= BuildingCatalogQueryEngine.InScope(MenuSet, _query with { SchoolTier = -1, UiCategory = string.Empty }).ToArray();
 
-		public BuildingCatalogPage Page => _page ??= BuildingCatalogQueryEngine.Query(MenuSet, _query with { GroupBy = EffectiveGroupBy });
+		public BuildingCatalogPage Page => _page ??= WithGroupLabels(BuildingCatalogQueryEngine.Query(MenuSet, _query with { GroupBy = EffectiveGroupBy }));
+
+		/// <summary>Stamps the page's items with their headings. The page only — a hundred entries, not the set.</summary>
+		private BuildingCatalogPage WithGroupLabels(BuildingCatalogPage page)
+		{
+			var dimension = EffectiveGroupBy;
+
+			if (!BuildingCatalogGrouping.IsGrouped(dimension))
+			{
+				return page;
+			}
+
+			return page with
+			{
+				Items = page.Items.Select(entry =>
+				{
+					var labels = BuildingCatalogGrouping.Labels(entry, dimension, _milestoneNames);
+					return entry with { GroupPath = labels.Path, GroupLabelId = labels.LabelId };
+				}).ToArray(),
+			};
+		}
 
 		public BuildingCatalogMetricRangeState MetricBounds => _bounds ??= BuildingCatalogAdapter.MetricBoundsOf(ViewSet);
 

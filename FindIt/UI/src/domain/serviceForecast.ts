@@ -80,7 +80,8 @@ const has = (name: string, ...needles: string[]) =>
  * agrees with the simulation by construction rather than by resemblance. 0 and
  * 5 exist but are not tiers the infoview counts.
  *
- * The same four rows also head the School tier grouping, as SCHOOL_TIERS in
+ * The same four rows also head the School tier grouping — C#'s SchoolTierLabel
+ * writes the headings — as SCHOOL_TIERS in
  * buildingGroups.ts. They are duplicated rather than shared because this
  * toolchain cannot express a value import between two src modules — TypeScript
  * 4.9 rejects the `.ts` specifier the test runner's ESM resolver requires, and

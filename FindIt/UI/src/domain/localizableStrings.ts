@@ -115,15 +115,11 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   { key: key("ZoneStores"), english: "stores {0}", source: "ZoningHierarchy", plumbed: true },
 
   // --- Group headings. Returned as text from a pure module. ----------------
+  // The headings themselves — bands, tiers, "Other" — are C#'s strings now
+  // (BuildingCatalogGrouping.Labels, sent as groupPath) and are localised on
+  // that side when they are. This is the one the strip's milestone labeller
+  // still returns.
   { key: key("GroupOther"), english: "Other", source: "buildingGroups.UNGROUPED_LABEL", plumbed: false },
-
-  // --- Band headings. Composed from numbers in a pure module. --------------
-  // These need the domain to return a key plus its bounds, and the component to
-  // format them — the currency symbol and the word order both move by locale.
-  { key: key("CostBandUnder"), english: "{0}–{1}", source: "buildingGroups.costBandLabel", plumbed: false },
-  { key: key("CostBandOver"), english: "{0}+", source: "buildingGroups.costBandLabel", plumbed: false },
-  { key: key("FootprintBandUnder"), english: "{0}×{0} and under", source: "buildingGroups.footprintBandLabel", plumbed: false },
-  { key: key("FootprintBandOver"), english: "Larger than {0}×{0}", source: "buildingGroups.footprintBandLabel", plumbed: false },
 
   // --- Filter summary and empty states. Pure module. -----------------------
   { key: key("NoActiveFilters"), english: "No active filters", source: "buildingLensFilterSummary", plumbed: false },

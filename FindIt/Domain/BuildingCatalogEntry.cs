@@ -1,3 +1,4 @@
+using System;
 using Colossal.UI.Binding;
 
 using FindItBuildingMenu.Domain.Enums;
@@ -187,7 +188,14 @@ namespace FindItBuildingMenu.Domain
 		/// UpgradeMenuUISystem builds its list — see
 		/// PrefabIndexingSystem.GetSupportedUpgrades.
 		/// </remarks>
-		string[]? SupportedUpgrades = null) : IJsonWritable
+		string[]? SupportedUpgrades = null,
+		// The headings this entry files under for the page's grouping, set on
+		// the page by CatalogView from BuildingCatalogGrouping.Labels — the UI
+		// builds its group tree from consecutive runs of these and decides
+		// nothing about what a heading says. LabelId is the game's category id
+		// for a menu-category heading, so the UI can localise that one.
+		string[]? GroupPath = null,
+		string? GroupLabelId = null) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -281,6 +289,16 @@ namespace FindItBuildingMenu.Domain
 			WriteNullable(writer, "groundPollution", GroundPollution);
 			WriteNullable(writer, "airPollution", AirPollution);
 			WriteNullable(writer, "noisePollution", NoisePollution);
+			writer.PropertyName("groupPath");
+			var path = GroupPath ?? Array.Empty<string>();
+			writer.ArrayBegin((uint)path.Length);
+			foreach (var label in path)
+			{
+				writer.Write(label);
+			}
+			writer.ArrayEnd();
+			writer.PropertyName("groupLabelId");
+			writer.Write(GroupLabelId ?? string.Empty);
 
 			writer.TypeEnd();
 		}

@@ -1,7 +1,9 @@
 using FindItBuildingMenu.Domain.Enums;
 
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 
 namespace FindItBuildingMenu.Domain
 {
@@ -378,6 +380,252 @@ namespace FindItBuildingMenu.Domain
 			}
 
 			return FootprintBands.Length.ToString(CultureInfo.InvariantCulture);
+		}
+
+		public const string Other = "Other";
+		public const string ProgressionUngated = "From the start";
+
+		public readonly record struct GroupLabels(string[] Path, string? LabelId);
+
+		/// <summary>
+		/// The headings an entry files under, for the dimension the page is grouped by.
+		/// </summary>
+		/// <remarks>
+		/// Moved from buildingGroups.ts (groupLevelsFor and its helpers) so the
+		/// band edges, tier names and category words have one home; the keys
+		/// above and these labels agree because they read the same constants.
+		/// LabelId carries the game's own category id for a menu-category
+		/// heading so the UI can localise it; every other label is final text.
+		/// </remarks>
+		public static GroupLabels Labels(BuildingCatalogEntry entry, string? groupBy, IReadOnlyList<string>? milestoneNames = null)
+		{
+			if (entry is null || !IsGrouped(groupBy))
+			{
+				return new GroupLabels(Array.Empty<string>(), null);
+			}
+
+			var dimension = groupBy!.Trim();
+
+			if (Is(dimension, Category))
+			{
+				return new GroupLabels(new[]
+				{
+					Text(entry.CategoryLabel) ?? Text(entry.Category) ?? Other,
+					Text(entry.SubCategoryLabel) ?? Text(entry.SubCategory) ?? Other,
+				}, null);
+			}
+
+			if (Is(dimension, MenuCategory))
+			{
+				var id = (entry.UiCategory ?? string.Empty).Trim();
+
+				return new GroupLabels(
+					new[] { MenuCategoryLabel(entry), CategoryTierLabel(entry, milestoneNames) },
+					id.Length == 0 ? null : id);
+			}
+
+			if (Is(dimension, SubCategory)) return new GroupLabels(new[] { Text(entry.SubCategoryLabel) ?? Text(entry.SubCategory) ?? Other }, null);
+			if (Is(dimension, Role)) return new GroupLabels(new[] { Text(entry.BuildingType) ?? Other }, null);
+			if (Is(dimension, Progression)) return new GroupLabels(new[] { MilestoneLabel(entry.UnlockMilestone, milestoneNames) }, null);
+			if (Is(dimension, Development)) return new GroupLabels(new[] { Text(entry.DevTreeBranch) ?? Other }, null);
+			if (Is(dimension, SchoolTier)) return new GroupLabels(new[] { SchoolTierLabel(entry.EducationLevel) ?? MenuCategoryLabel(entry) }, null);
+			if (Is(dimension, Theme)) return new GroupLabels(new[] { Text(entry.Theme) ?? Other }, null);
+			if (Is(dimension, Source)) return new GroupLabels(new[] { Text(entry.DlcId) ?? Text(entry.Provenance) ?? Other }, null);
+			if (Is(dimension, Density)) return new GroupLabels(new[] { DensityTierLabel(entry.ZoneType) }, null);
+			if (Is(dimension, Footprint)) return new GroupLabels(new[] { FootprintBandLabel(entry.LotWidth, entry.LotDepth) }, null);
+			if (Is(dimension, Cost)) return new GroupLabels(new[] { CostBandLabel(entry.ConstructionCost) }, null);
+
+			return new GroupLabels(Array.Empty<string>(), null);
+		}
+
+		/// <summary>The dimensions that can act on a set: two entries file under different keys.</summary>
+		/// <remarks>
+		/// Moved from buildingGroups.ts's groupDimensionsFor. A dimension that
+		/// would put the whole menu in one bucket is a control that cannot act,
+		/// in a picker of controls that can; schoolTier only where schools are;
+		/// none always, because it is how grouping is turned off; everything
+		/// before any entries have arrived, because judging an empty page would
+		/// shorten the picker and leave it short.
+		/// </remarks>
+		public static string[] OfferedDimensions(IEnumerable<BuildingCatalogEntry> entries, bool educationMenu)
+		{
+			var sample = entries as IReadOnlyList<BuildingCatalogEntry> ?? entries.ToList();
+
+			return Dimensions
+				.Where(dimension => educationMenu || !Is(dimension, SchoolTier))
+				.Where(dimension => Is(dimension, None)
+					|| sample.Count == 0
+					|| sample.Select(entry => PrimaryKey(entry, dimension)).Distinct(StringComparer.OrdinalIgnoreCase).Skip(1).Any())
+				.ToArray();
+		}
+
+		// ---- label helpers, ported line for line from buildingGroups.ts ----
+
+		private static string? Text(string? value)
+		{
+			if (string.IsNullOrWhiteSpace(value))
+			{
+				return null;
+			}
+
+			return Humanize(value!.Trim());
+		}
+
+		/// <summary>Word-splits an id so a heading does not read as one shout.</summary>
+		public static string Humanize(string value)
+		{
+			var spaced = System.Text.RegularExpressions.Regex.Replace(value, "[_-]+", " ");
+			spaced = System.Text.RegularExpressions.Regex.Replace(spaced, "([a-z0-9])([A-Z])", "$1 $2");
+			spaced = System.Text.RegularExpressions.Regex.Replace(spaced, "\\s+", " ");
+			return spaced.Trim();
+		}
+
+		private static string SplitWords(string value)
+		{
+			var split = System.Text.RegularExpressions.Regex.Replace(value, "([a-z0-9])([A-Z])", "$1 $2");
+			split = System.Text.RegularExpressions.Regex.Replace(split, "([A-Z]+)([A-Z][a-z])", "$1 $2");
+			return split.Trim();
+		}
+
+		/// <summary>
+		/// A group heading for the game's own category. The id is a prefab name —
+		/// "TransportationRoad", "PropsNature", "BikePaths" — so it is split into
+		/// words and, where the convention holds, relieved of the menu name it
+		/// repeats: "TransportationRoad" inside Transportation is "Road".
+		/// </summary>
+		public static string MenuCategoryLabel(BuildingCatalogEntry entry)
+		{
+			var raw = (entry.UiCategory ?? string.Empty).Trim();
+
+			if (raw.Length == 0)
+			{
+				return Other;
+			}
+
+			var menu = System.Text.RegularExpressions.Regex.Replace(entry.UiMenu ?? string.Empty, "[^A-Za-z]", string.Empty);
+			var withoutMenu = menu.Length > 0 && raw.StartsWith(menu, StringComparison.OrdinalIgnoreCase)
+				? raw.Substring(menu.Length)
+				: raw;
+
+			return SplitWords(withoutMenu.Length == 0 ? raw : withoutMenu);
+		}
+
+		private static string TransitTierLabel(BuildingCatalogEntry entry)
+		{
+			var sub = entry.SubCategory ?? string.Empty;
+
+			if (sub.StartsWith("ServiceBuildings_", StringComparison.Ordinal))
+			{
+				return "Stations";
+			}
+
+			return Text(entry.SubCategoryLabel) ?? Text(entry.SubCategory) ?? Other;
+		}
+
+		/// <summary>The second level under a menu category: density tier, transit type, branch, or milestone.</summary>
+		public static string CategoryTierLabel(BuildingCatalogEntry entry, IReadOnlyList<string>? milestoneNames = null)
+		{
+			if (entry.ZoneType != ZoneTypeFilter.Any && entry.ZoneType != ZoneTypeFilter.Signature)
+			{
+				var density = DensityTierLabel(entry.ZoneType);
+
+				if (density != Other)
+				{
+					return density;
+				}
+			}
+
+			if (IsTransitMenu(entry.UiMenu))
+			{
+				return TransitTierLabel(entry);
+			}
+
+			var branch = Text(entry.DevTreeBranch);
+
+			if (branch is not null)
+			{
+				return branch;
+			}
+
+			return MilestoneLabel(entry.UnlockMilestone, milestoneNames);
+		}
+
+		/// <summary>The density tier's heading; "Other" for a zone with no tier.</summary>
+		public static string DensityTierLabel(ZoneTypeFilter density)
+		{
+			var label = BuildingCatalogLabels.DensityTier(density);
+
+			return label.Length == 0 ? Other : label;
+		}
+
+		public static string? SchoolTierLabel(int? level) => level switch
+		{
+			1 => "Elementary School",
+			2 => "High School",
+			3 => "College",
+			4 => "University",
+			_ => null,
+		};
+
+		private static string FormatCurrency(double value) =>
+			value >= 1000
+				? "₡" + Math.Round(value / 1000).ToString(CultureInfo.InvariantCulture) + "k"
+				: "₡" + value.ToString(CultureInfo.InvariantCulture);
+
+		public static string CostBandLabel(double? cost)
+		{
+			if (!cost.HasValue || double.IsNaN(cost.Value) || double.IsInfinity(cost.Value))
+			{
+				return Other;
+			}
+
+			for (var index = 0; index < CostBands.Length; index++)
+			{
+				if (cost.Value < CostBands[index])
+				{
+					return index == 0
+						? FormatCurrency(0) + "–" + FormatCurrency(CostBands[0])
+						: FormatCurrency(CostBands[index - 1]) + "–" + FormatCurrency(CostBands[index]);
+				}
+			}
+
+			return FormatCurrency(CostBands[CostBands.Length - 1]) + "+";
+		}
+
+		public static string FootprintBandLabel(int width, int depth)
+		{
+			var longest = Math.Max(Math.Max(width, 0), Math.Max(depth, 0));
+
+			if (longest <= 0)
+			{
+				return Other;
+			}
+
+			foreach (var edge in FootprintBands)
+			{
+				if (longest <= edge)
+				{
+					return edge + "×" + edge + " and under";
+				}
+			}
+
+			var last = FootprintBands[FootprintBands.Length - 1];
+			return "Larger than " + last + "×" + last;
+		}
+
+		public static string MilestoneLabel(int? index, IReadOnlyList<string>? names)
+		{
+			if (!index.HasValue || index.Value < 0)
+			{
+				return Other;
+			}
+
+			if (names is not null && index.Value < names.Count && !string.IsNullOrEmpty(names[index.Value]))
+			{
+				return names[index.Value];
+			}
+
+			return index.Value == 0 ? ProgressionUngated : "Milestone " + index.Value.ToString(CultureInfo.InvariantCulture);
 		}
 
 		private static string Normalize(string? value) =>

@@ -152,6 +152,7 @@ namespace FindItBuildingMenu.Systems
 			_BuildingCatalogSortColumn.Value = _buildingCatalogQuery.EffectiveSortColumn;
 			_BuildingCatalogSortDescending.Value = _buildingCatalogQuery.Descending;
 			_BuildingCatalogGroupBy.Value = view.EffectiveGroupBy;
+			_BuildingLensGroupDimensions.Value = view.GroupDimensions;
 			_BuildingCatalogMetricRanges.Value = _buildingMetricRanges;
 			// Recomputed with the catalog so the bounds follow the menu. They come
 			// from InScope, which drops the metric selections, so narrowing a range

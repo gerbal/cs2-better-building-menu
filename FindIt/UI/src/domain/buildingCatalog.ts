@@ -97,6 +97,14 @@ export interface BuildingCatalogEntry {
   groundPollution: number | null;
   airPollution: number | null;
   noisePollution: number | null;
+  /**
+   * The headings this entry falls under for the page's effective grouping,
+   * outermost first. C# stamps it on every page item when the page is
+   * grouped; empty when it is not. See groupTreeFromPaths.
+   */
+  groupPath?: string[];
+  /** The game's own id behind the outer heading, where there is one; "" otherwise. */
+  groupLabelId?: string;
 }
 
 export function formatBuildingCatalogLabels(

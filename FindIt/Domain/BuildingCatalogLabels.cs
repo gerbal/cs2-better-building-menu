@@ -12,16 +12,17 @@ namespace FindItBuildingMenu.Domain
 	/// </summary>
 	public static class BuildingCatalogLabels
 	{
-		/// <summary>The heading for one density tier. Mirrored in buildingGroups.ts.</summary>
+		/// <summary>The heading for one density tier; empty for a zone with no tier.</summary>
 		/// <remarks>
 		/// The game's own words, taken off the zone names it ships — "Low
 		/// Density Housing", "Medium Density Row Housing", "Mixed Housing",
 		/// "Low Rent Housing" — with "Housing" trimmed, because the same tiers
 		/// apply to commercial and office zones.
 		///
-		/// Written twice, once here and once in DENSITY_TIERS, with no shared
-		/// source across the boundary. BuildingCatalogGroupingTests reads the
-		/// TypeScript rather than restating it, so the two cannot drift.
+		/// The only copy. The UI used to hold DENSITY_TIERS beside it, with a
+		/// test reading the TypeScript to keep them agreeing; since the page
+		/// carries its headings (BuildingCatalogGrouping.Labels) there is
+		/// nothing on that side to agree with.
 		/// </remarks>
 		public static string DensityTier(ZoneTypeFilter density) => density switch
 		{

@@ -75,6 +75,8 @@ namespace FindItBuildingMenu.Systems
 		private int? _appliedMenuFrame;
 		private int _appliedMenuIndex;
 		private ValueBindingHelper<string> _BuildingCatalogGroupBy = null!;
+		// The grouping dimensions that can act on the current menu set; the picker lists these.
+		private ValueBindingHelper<string[]> _BuildingLensGroupDimensions = null!;
 		// Whether the menu the toolbar currently has open is one the lens takes
 		// over. Lets the vanilla menu stay hidden after the panel is closed, so
 		// closing means closed rather than revealing the grid underneath.
@@ -230,6 +232,7 @@ namespace FindItBuildingMenu.Systems
 			// Group-by rides with sort for the same reason: it is part of the
 			// persistent query, so a write-only trigger would leave the picker
 			// showing "Nothing" over grouped rows after any remount.
+			_BuildingLensGroupDimensions = CreateBinding("BuildingLensGroupDimensions", Array.Empty<string>());
 			_BuildingCatalogGroupBy = CreateBinding(
 				"BuildingCatalogGroupBy",
 				"SetBuildingCatalogGroupBy",
