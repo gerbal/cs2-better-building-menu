@@ -401,9 +401,30 @@ namespace FindItBuildingMenu.Services
 				}
 			}
 
-			return entries
+			var ordered = entries
 				.OrderBy(entry => entry.UiCategoryPriority)
 				.ThenBy(entry => entry.Name, StringComparer.Ordinal)
+				.ToArray();
+
+			// An authored row is a row of flat glyphs. A branch the game gave no
+			// icon used to fall to the representative asset's THUMBNAIL — a
+			// photographic building render beside the glyphs, read as a broken
+			// icon (cm-2xvs.17: Roads' two single-asset parking categories). The
+			// category glyph the fallback thumbnail carries belongs in that row;
+			// the photograph does not.
+			if (authored)
+			{
+				var glyph = ordered
+					.Select(entry => entry.FallbackThumbnail)
+					.FirstOrDefault(value => !string.IsNullOrEmpty(value));
+
+				if (!string.IsNullOrEmpty(glyph))
+				{
+					return glyph!;
+				}
+			}
+
+			return ordered
 				.Select(entry => !string.IsNullOrEmpty(entry.Thumbnail) ? entry.Thumbnail : entry.FallbackThumbnail)
 				.FirstOrDefault(value => !string.IsNullOrEmpty(value)) ?? string.Empty;
 		}
