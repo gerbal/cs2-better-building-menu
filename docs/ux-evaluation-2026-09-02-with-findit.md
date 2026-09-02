@@ -160,3 +160,19 @@ table earns its place for buildings; for networks it is mostly empty cells.
   what the vanilla slot gives it; not measured.
 - Other resolutions: the UI canvas is a fixed 1280×720 on this host.
 - Upstream's own layout beyond what it does to ours.
+
+## Addendum, later the same day: findings 1, 2 and 5 fixed
+
+Branch `findit/ux-eval-fixes` (spec
+`superpowers/specs/2026-09-02-ux-evaluation-fixes-design.md`), verified live
+in the same two-mod configuration; the DOM readings are in
+`verification.md` under the same date. After-frames sit beside the originals:
+
+| Finding | Before | After |
+|---|---|---|
+| 1 search headers collide | `03-roads-search-tre.jpg` | `after-03-roads-search-tre.jpg` — a two-level group takes its own row, a one-tile group keeps three tiles of label room ("ROAD SERVICES" whole) |
+| 2 strip wraps under All menus | `11-ours-everything.jpg` | `after-11-ours-everything.jpg` — no strip while the lens is unscoped |
+| 5 repeated header | `02-roads-lens.jpg` | `after-02-roads-lens.jpg` — a nested group named like its parent draws no heading and reserves no row |
+
+Finding 3 stays as recorded: cm-2xvs.12 measured it and the fix is a toast
+lane, not a pane move. Findings 4, 6, 7 and 8 wait.

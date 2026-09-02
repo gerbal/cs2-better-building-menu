@@ -211,17 +211,24 @@ export const GroupedResults = ({
     return (
       <div className={styles.groupRow}>
         {nodes.map((node) => {
-          // A group with sub-groups takes the whole row, so its heading sits
-          // alone on its line and its children's headings on the next. Flowed
-          // beside a leaf group, as a search result did, the two levels of
-          // heading and the neighbour's shared two rows of 11px.
-          const band = node.children.length > 0;
-          // The dev tree names a category's base branch after the category,
-          // so MEDIUM ROADS carried a "Medium Roads" sub-heading with a second
-          // count under the first. A nested name that repeats its parent's
-          // says nothing; the tiles sit under the parent's heading and the
+          // A group with two or more sub-groups takes the whole row, so its
+          // heading sits alone on its line and its children's headings on the
+          // next. Flowed beside a leaf group, as a search result did, the two
+          // levels of heading and the neighbour's shared two rows of 11px.
+          // One sub-group is one hidden heading — the group reads as a leaf
+          // and flows like one; banding those too gave a one-tile ROAD
+          // SERVICES a whole 84px row to itself.
+          const band = node.children.length > 1;
+          // No heading, no row reserved for one. Two cases: the only child,
+          // whose heading shouldShowHeading already hid while the 17rem it
+          // reserved stayed as 12px of nothing under every category; and a
+          // nested name that repeats its parent's — the dev tree names a
+          // category's base branch after the category, so MEDIUM ROADS
+          // carried a "Medium Roads" sub-heading with a second count under
+          // the first. The tiles sit under the parent's heading and the
           // labelled siblings keep theirs.
-          const unlabeled = depth > 0 && parentLabel !== null && node.label === parentLabel;
+          const unlabeled =
+            !showHeadings || (depth > 0 && parentLabel !== null && node.label === parentLabel);
 
           return (
       <div
@@ -229,7 +236,7 @@ export const GroupedResults = ({
         key={node.path.join("/")}
         data-group-depth={depth}
       >
-        {showHeadings && !unlabeled && (
+        {!unlabeled && (
           <GroupHeading
             label={headingLabel(node)}
             estimate={fitGroupLabel(headingLabel(node), node.count)}
@@ -237,7 +244,7 @@ export const GroupedResults = ({
             nested={depth > 0}
           />
         )}
-        {band ? renderNodes(node.children, depth + 1, node.label) : renderLeaf(node.entries)}
+        {node.children.length > 0 ? renderNodes(node.children, depth + 1, node.label) : renderLeaf(node.entries)}
       </div>
           );
         })}
