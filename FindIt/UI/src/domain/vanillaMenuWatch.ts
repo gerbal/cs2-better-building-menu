@@ -102,6 +102,8 @@ export function nextWatchState(state: WatchState, index: number | null, action: 
 export interface EscapeContext {
   /** Whether the lens is on screen. */
   lensOpen: boolean;
+  /** Upstream Find It's panel is up; Escape is theirs then (cm-wf6g.4). */
+  findItPanelShown?: boolean;
 }
 
 /**
@@ -138,6 +140,8 @@ export interface EscapeContext {
  * gone after the first press, the second press is a player asking for the
  * pause menu and getting it.
  */
-export function shouldClearOnEscape({ lensOpen }: EscapeContext): boolean {
-  return lensOpen;
+export function shouldClearOnEscape({ lensOpen, findItPanelShown = false }: EscapeContext): boolean {
+  // Escape belongs to Find It's panel while it is up; clearing the menu
+  // selection underneath it would close our menu behind their back.
+  return lensOpen && !findItPanelShown;
 }

@@ -71,7 +71,9 @@ module.exports = {
         test: /\.(png|jpe?g|gif|svg)$/i,
         type: "asset/resource",
         generator: {
-          filename: "images/[name][ext][query]",
+          // Under our own folder: every UI mod shares the coui://ui-mods host, and
+          // upstream Find It ships files of the same names (findit_lock.svg differs).
+          filename: "images/FindItBuildingMenu/[name][ext][query]",
         },
       },
     ],

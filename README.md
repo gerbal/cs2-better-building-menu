@@ -14,6 +14,12 @@ as this repository's building-browser mod. The two ship the same feature area an
 must not be installed side by side, so the successor stays out of `ALL_MODS` and is
 installed with `just deploy-isolated findit-building-menu`.
 
+**Coexists with upstream Find It.** Both may be installed: Find It's own
+panel takes the asset-menu slot while it is open and this menu returns when it
+closes; with Find It present its picker is the one on the toolbar and ours
+stands down; the two ship no file at the same shared path. Verified live with
+Find It 1.5.8 (`docs/verification.md`, 2026-09-02).
+
 **Do not publish this checkout yet.** Its runtime identity is now unique, but a
 new PDX Mods publisher ID and the upstream license confirmation are still
 required before distribution.
