@@ -76,8 +76,11 @@ namespace FindItBuildingMenu.Tests
 			// The asset-type row keeps the representative picture: a water pipe is
 			// a serviceable picture of "Networks".
 			Assert.Equal("ParkingHall02?width=128", BuildingCatalogAdapter.TabIcon(lone, authored: false));
-			// And an authored branch icon still wins over both.
+			// And an authored branch icon still wins over both — unless the indexer
+			// filled it with the asset's own render, which is what the live game
+			// had for both parking categories.
 			Assert.Equal("branch.svg", BuildingCatalogAdapter.TabIcon(new[] { lone[0] with { DevTreeBranchIcon = "branch.svg" } }, authored: true));
+			Assert.Equal("Media/Game/Icons/Parking.svg", BuildingCatalogAdapter.TabIcon(new[] { lone[0] with { DevTreeBranchIcon = "thumbnail://ThumbnailCamera/BuildingPrefab/ParkingHall02?width=128" } }, authored: true));
 		}
 
 		/// <summary>Counts enumerations; the count is the fact under test.</summary>
