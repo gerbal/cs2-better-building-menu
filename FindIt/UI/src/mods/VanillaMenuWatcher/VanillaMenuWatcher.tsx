@@ -1,6 +1,7 @@
 import { bindValue, trigger, useValue } from "cs2/api";
 import { useEffect, useRef } from "react";
 import mod from "../../../mod.json";
+import { UPSTREAM_FINDIT_GROUP, UPSTREAM_SHOW_PANEL } from "domain/upstreamFindIt";
 import type { ToolbarEntity } from "domain/toolbarEntity";
 import {
   nextWatchState,
@@ -15,6 +16,7 @@ import {
 const SelectedAssetMenu$ = bindValue<ToolbarEntity | null>("toolbar", "selectedAssetMenu", null);
 const ReplaceVanillaBuildMenu$ = bindValue<boolean>(mod.id, "ReplaceVanillaBuildMenu", false);
 const LensOwnsCurrentMenu$ = bindValue<boolean>(mod.id, "LensOwnsCurrentMenu", false);
+const FindItPanelShown$ = bindValue<boolean>(UPSTREAM_FINDIT_GROUP, UPSTREAM_SHOW_PANEL, false);
 
 /** Escape, by code. Cohtml leaves `key` empty for it; `keyCode` is right. */
 const ESCAPE_KEY_CODE = 27;
@@ -41,6 +43,7 @@ export const VanillaMenuWatcher = () => {
   const generation = useRef(0);
 
   const lensOpen = useValue(LensOwnsCurrentMenu$);
+  const findItPanelShown = useValue(FindItPanelShown$) === true;
 
   /**
    * Escape takes the lens down.
@@ -62,7 +65,7 @@ export const VanillaMenuWatcher = () => {
         return;
       }
 
-      if (!shouldClearOnEscape({ lensOpen })) {
+      if (!shouldClearOnEscape({ lensOpen, findItPanelShown })) {
         return;
       }
 
@@ -72,7 +75,7 @@ export const VanillaMenuWatcher = () => {
     document.addEventListener("keydown", onKeyDown, true);
 
     return () => document.removeEventListener("keydown", onKeyDown, true);
-  }, [enabled, lensOpen]);
+  }, [enabled, lensOpen, findItPanelShown]);
 
   useEffect(() => {
     if (!enabled) {

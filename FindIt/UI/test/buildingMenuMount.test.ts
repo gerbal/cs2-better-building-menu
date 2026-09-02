@@ -57,3 +57,18 @@ describe("Whether the build menu draws", () => {
     assert.equal(shouldMountInAssetMenu(s), false);
   });
 });
+
+describe("Yielding to upstream Find It", () => {
+  const state = (over: Partial<import("../src/domain/buildingMenuMount.ts").BuildingMenuMountState> = {}) =>
+    ({ lensOwnsCurrentMenu: true, isPhotoMode: false, ...over });
+
+  it("draws nothing while Find It's own panel is up, whatever the registration order", () => {
+    assert.equal(shouldMountInAssetMenu(state({ findItPanelShown: true })), false);
+  });
+
+  it("draws again the moment that panel closes", () => {
+    assert.equal(shouldMountInAssetMenu(state({ findItPanelShown: false })), true);
+    assert.equal(shouldMountInAssetMenu(state({})), true);
+  });
+});
+

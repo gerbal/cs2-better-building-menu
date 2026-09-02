@@ -16,6 +16,14 @@ export interface BuildingMenuMountState {
   lensOwnsCurrentMenu: boolean;
   /** Photo mode hides every panel. */
   isPhotoMode: boolean;
+  /**
+   * Upstream Find It's own panel is showing (its `ShowFindItPanel`; false
+   * when it is not installed). Its asset-menu extension blanks the slot
+   * while that panel is up, and if it wraps ours it wins anyway; this makes
+   * the rule ours too, so the outcome does not depend on which mod the game
+   * registered last (cm-wf6g.4).
+   */
+  findItPanelShown?: boolean;
 }
 
 /**
@@ -34,7 +42,7 @@ export interface BuildingMenuMountState {
  * open that we stand in for.
  */
 export function shouldMountInAssetMenu(state: BuildingMenuMountState): boolean {
-  if (state.isPhotoMode) {
+  if (state.isPhotoMode || state.findItPanelShown) {
     return false;
   }
 

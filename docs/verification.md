@@ -6,7 +6,7 @@ license confirmation and assignment of a new PDX publisher identity.
 
 > **Re-run:** `node tools/e2e/findit-lens-smoke.mjs --http <cdp http url> --agent <your agent id> --prefix <steam prefix>`
 > against a game with a city loaded (repo root; `just e2e` runs its unit tests).
-> **Last run:** 2026-09-02 on `d71fb08` — `tools/e2e/artifacts/findit-smoke/20260902-144800-d71fb08.md`
+> **Last run:** 2026-09-02 on `2e51a78`+coexistence — `tools/e2e/artifacts/findit-smoke/20260902-160943-2e51a78.md` (with upstream Find It 1.5.8 installed)
 > (artifacts are not tracked; the run's report is pasted in the newest section below).
 > The sections below are dated records; the newest describes the current build.
 > Staleness is the distance between that sha and `HEAD`.
@@ -1402,5 +1402,102 @@ Exceptions in the mod log: 0 before, 0 after.
 [LENS-REFRESH] 12ms proj=10ms(miss) page=12 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Electricity' total=17 from=RefreshLens
 [LENS-REFRESH] 12ms proj=10ms(miss) page=11 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Education & Research' total=43 from=RefreshLens
 [LENS-REFRESH] 99ms proj=0ms(hit) page=24 bounds=7 facets=32 counts=0 axis=0 tabs=28 expanded=1 tiers=4 menu='' total=10539 from=Apply
+```
+
+## 2026-09-02 — coexisting with upstream Find It (cm-wf6g.4)
+
+The user's requirement: two complementary mods, not a fight. Measured on
+`949230-c` with upstream Find It **1.5.8** (pdx cache `77240_58`, the
+current release; the 1.1.1 build cached beside it does not initialise on
+game 1.6.0 at all) copied into the prefix's Mods folder beside ours.
+
+**What was already true.** With a working upstream, the two composed at the
+`AssetMenu` seam by accident of registration order: upstream's extension
+blanks the slot while its panel is up and passes through otherwise; ours
+mounts when the lens owns the menu. Opening Roads mounted our lens (403);
+opening Find It's panel over it unmounted ours and kept our C# scope; closing
+it brought ours back. Both logs clean.
+
+**What was not.** Two identical picker glyphs on the toolbar (theirs and
+ours — ours is inherited from theirs). Both mods emit images to the shared
+`coui://ui-mods/images/` host under the same names, and two of ours differ
+from theirs (`findit_lock.svg`, `findit_unlock.svg`), so one mod could load
+the other's glyph. And the composition depended on which mod the game
+registered last.
+
+**Changes** (commit on `findit/open-beads`):
+
+- `FindItPresent` binding — decided on the first update, because this
+  system is created during our own load, two seconds before Find It's
+  assembly is loaded (the one-time check at creation read false).
+- `shouldMountInAssetMenu` takes `findItPanelShown` (their
+  `ShowFindItPanel`, false when absent): we yield the slot while their panel
+  is up whatever the registration order. `shouldClearOnEscape` likewise
+  leaves the toolbar selection alone while their panel is up, so Escape
+  closes their panel and not our menu underneath it.
+- The toolbar picker stands down when Find It is present (`ToolbarIcon`);
+  theirs covers it.
+- Webpack emits our images under `images/FindItBuildingMenu/`; nine
+  inherited image files nothing referenced are gone from `src/images`.
+- The upstream binding group is assembled at runtime in
+  `domain/upstreamFindIt.ts`: `build.sh`'s package guard refuses any
+  artifact containing the quoted upstream id, and that guard protects the
+  publisher identity, so it stays strict.
+
+**Readings, both installed, after the changes:** `FindItPresent` true;
+toolbar shows one picker (`coui://ui-mods/images/PickerPicker.svg`, theirs)
+and their magnifier, ours absent; Roads open → lens 403; their panel opened
+→ our surface unmounted, `LensOwnsCurrentMenu` still true; their panel
+closed → our surface back; their panel with no menu → nothing of ours;
+Roads opened under their panel → ours stays down until they close. Smoke
+PASS with the single-mod totals (Roads 403, Landscaping 523, All 10,539,
+`tre` 13); `Error initializing mod` 0; exceptions 0 in both mod logs;
+Player.log's 48 failed UI requests are all upstream's `coui://uil/…` icon
+library, none ours. Our index holds 24,834 assets with Find It's generated
+prefabs present (24,427 alone); the lens totals do not change because the
+generated prefabs sit in no vanilla menu.
+
+**Not covered.** Find It's picker tool with our menu (its picker opens its
+own panel with the asset selected, by design); the two `MouseToolOptions`
+extensions with a tool armed; a third mod extending the same seam.
+
+The run's report:
+
+# FindIt lens smoke — 2026-09-02 — 2e51a78
+
+Result: **PASS**  ·  agent `claude-swift-ocelot-gZs`  ·  cdp `http://127.0.0.1:9557`  ·  prefix `949230-c`
+
+| Menu | Refreshes on open | groupBy | Offered dimensions | Total | First groupPath |
+|---|---|---|---|---|---|
+| Roads | 1 | menuCategory | menuCategory, category, subCategory, progression, development, theme, source, footprint, cost, none | 403 | ["Small Roads","Small Roads"] |
+| Landscaping | 1 | menuCategory | menuCategory, category, subCategory, theme, source, footprint, cost, none | 523 | ["Terraforming","From the start"] |
+| Health & Deathcare | 1 | menuCategory | menuCategory, role, development, source, footprint, cost, none | 31 | ["Healthcare","Healthcare"] |
+| Zones | 1 | menuCategory | menuCategory, category, subCategory, progression, theme, source, density, footprint, cost, none | 74 | ["Residential","Low Density"] |
+| Electricity | 1 | development | category, subCategory, role, development, source, footprint, cost, none | 17 | ["Electricity"] |
+| Education & Research | 1 | schoolTier | menuCategory, role, schoolTier, development, source, footprint, cost, none | 43 | ["Elementary School"] |
+| All menus | 1 | development | menuCategory, category, subCategory, role, progression, development, theme, source, density, footprint, cost, none | 10539 | |
+
+Search `tre` in Landscaping: 13 matches, first `Apple Tree`.
+
+Exceptions in the mod log: 0 before, 0 after.
+
+## Scope
+
+| Step | Read back | Total |
+|---|---|---|
+| Roads, open | | 403 |
+| strip tab `Communications` | tab ["Communications"] | 1 |
+| category `RoadsSmallRoads` | category `RoadsSmallRoads`, tab [] | 24 |
+| Reset | category ``, tabs [] | 403 |
+| Education & Research, tier 1 | tier 1 | 14 (menu 43) |
+
+```
+[LENS-REFRESH] 8ms proj=0ms(hit) page=5 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Roads' total=403 from=RefreshLens
+[LENS-REFRESH] 23ms proj=16ms(miss) page=22 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Landscaping' total=523 from=RefreshLens
+[LENS-REFRESH] 13ms proj=11ms(miss) page=13 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Health & Deathcare' total=31 from=RefreshLens
+[LENS-REFRESH] 13ms proj=11ms(miss) page=13 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Zones' total=74 from=RefreshLens
+[LENS-REFRESH] 12ms proj=10ms(miss) page=12 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Electricity' total=17 from=RefreshLens
+[LENS-REFRESH] 13ms proj=11ms(miss) page=12 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Education & Research' total=43 from=RefreshLens
+[LENS-REFRESH] 86ms proj=0ms(hit) page=23 bounds=6 facets=27 counts=0 axis=0 tabs=24 expanded=1 tiers=3 menu='' total=10539 from=Apply
 ```
 
