@@ -155,6 +155,45 @@ namespace FindItBuildingMenu.Domain
 			IsDimension(choice) ? choice!.Trim() : DefaultDimension(menuHasCategories, stripAxis, educationMenu);
 
 		/// <summary>
+		/// <see cref="Effective(string?, bool, string?, bool)"/>, held to the
+		/// dimensions the menu actually offers.
+		/// </summary>
+		/// <remarks>
+		/// Seen live (cm-jjlv.12): the game's Electricity menu has one category,
+		/// so the default was menuCategory while <see cref="OfferedDimensions"/>
+		/// had dropped it for putting the whole menu in one bucket — the lens
+		/// opened on a grouping its own picker did not list. A choice can be
+		/// unoffered too: School tier chosen on Education, then Roads opened,
+		/// grouped every road under "Other". Either way the answer is the first
+		/// of the same candidates that can act here: the menu's default, then
+		/// the strip's axis without the categories, then the picker's first
+		/// offered grouping, then none. <paramref name="offered"/> empty means
+		/// "not judged yet" and the plain rule stands.
+		/// </remarks>
+		public static string Effective(
+			string? choice,
+			bool menuHasCategories,
+			string? stripAxis,
+			bool educationMenu,
+			IReadOnlyCollection<string> offered)
+		{
+			var plain = Effective(choice, menuHasCategories, stripAxis, educationMenu);
+
+			if (offered.Count == 0 || !IsGrouped(plain) || offered.Contains(plain))
+			{
+				return plain;
+			}
+
+			var candidates = new[]
+			{
+				DefaultDimension(menuHasCategories, stripAxis, educationMenu),
+				DefaultDimension(false, stripAxis, educationMenu),
+			}.Concat(Dimensions.Where(IsGrouped));
+
+			return candidates.FirstOrDefault(offered.Contains) ?? None;
+		}
+
+		/// <summary>
 		/// Outermost group key. Empty when the dimension is unknown or "none",
 		/// which leaves the ordering to the chosen sort alone.
 		/// </summary>

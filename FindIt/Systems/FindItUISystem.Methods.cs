@@ -111,7 +111,7 @@ namespace FindItBuildingMenu.Systems
 			var view = _buildingCatalogAdapter.Build(
 				_buildingCatalogQuery,
 				built => BuildingCatalogGrouping.Effective(
-					_buildingCatalogQuery.GroupBy, menuHasCategories, built.StripAxis, VanillaMenus.IsEducation(menu)));
+					_buildingCatalogQuery.GroupBy, menuHasCategories, built.StripAxis, VanillaMenus.IsEducation(menu), built.GroupDimensions));
 			BuildingCatalogPage page = view.Page;
 
 			// A search that matches nothing in the current section reads as
