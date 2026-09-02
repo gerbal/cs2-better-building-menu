@@ -6,10 +6,9 @@ namespace BetterBuildingMenu.Domain
 	/// drags.
 	/// </summary>
 	/// <remarks>
-	/// Pure arithmetic, deliberately. It lives here rather than in GridUtil
-	/// because GridUtil resolves a live <c>World</c> system in a static
-	/// initialiser, so touching any member of it from a test host throws before
-	/// the test body runs. GridUtil forwards to this.
+	/// Pure arithmetic, deliberately. It lives here rather than in GridUtil so
+	/// the numbers can be read from a test host without a live <c>World</c>.
+	/// GridUtil forwards to this.
 	/// </remarks>
 	public static class BuildingLensWidth
 	{

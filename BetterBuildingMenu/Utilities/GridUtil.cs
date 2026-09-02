@@ -1,23 +1,13 @@
 ﻿using BetterBuildingMenu.Domain;
-using BetterBuildingMenu.Systems;
-using System;
-
-using Unity.Entities;
 
 namespace BetterBuildingMenu.Utilities
 {
     internal static class GridUtil
     {
         // Forwarded from Domain/BuildingLensWidth, which owns the arithmetic.
-        // It lives there because this class resolves a live World system in a
-        // static initialiser, so a test touching any member of it throws before
-        // the test body runs.
         internal const float BuildingLensMinWidth = BuildingLensWidth.Min;
         internal const float BuildingLensMaxWidth = BuildingLensWidth.Max;
         internal const float LensControlPaneWidth = BuildingLensWidth.ControlPane;
-
-        private static readonly BuildingMenuUISystem _buildingMenuUISystem = World.DefaultGameObjectInjectionWorld.GetExistingSystemManaged<BuildingMenuUISystem>();
-
 
         internal static float GetCurrentPanelWidth()
         {
@@ -42,11 +32,5 @@ namespace BetterBuildingMenu.Utilities
             // offering an alternative to it.
             return BuildingLensWidth.Max;
         }
-
-
-
-
-
-
     }
 }
