@@ -11,10 +11,12 @@ import {
 } from "../src/domain/buildingCatalogFacets.ts";
 import { getFilterOptionState } from "../src/domain/filterContracts.ts";
 
-const buildingCatalogSource = readFileSync(
-  new URL("../src/mods/BuildingCatalog/BuildingCatalog.tsx", import.meta.url),
-  "utf8"
-);
+// The catalog is a container over TableView, TableRow and the row details
+// since phase 6; these assertions read the four as one text. cm-jjlv.11
+// replaces them with a render harness.
+const buildingCatalogSource = ["BuildingCatalog", "TableView", "TableRow", "BuildingResultDetails"]
+  .map((name) => readFileSync(new URL(`../src/mods/BuildingCatalog/${name}.tsx`, import.meta.url), "utf8"))
+  .join("\n");
 const lensControlPaneSource = readFileSync(
   new URL("../src/mods/LensControlPane/LensControlPane.tsx", import.meta.url),
   "utf8"
@@ -128,12 +130,13 @@ describe("Building Lens action affordances", () => {
     // only the table opened details instead, so the same gesture on the same
     // object did two different things depending on the view. The row is the
     // Place control now and the other three are unchanged.
-    assert.match(buildingCatalogSource, /className=\{styles\.rowSelect\}[\s\S]{0,900}?onSelect=\{\(\) => activate\(entry\)\}/);
+    assert.match(buildingCatalogSource, /className=\{styles\.rowSelect\}[\s\S]{0,900}?onSelect=\{\(\) => onPlace\(entry\)\}/);
 
     // The refusal is named rather than left to a dead control: locked is not
     // the only one — an already-built unique is the other, which is why this
     // goes through entryStateWord rather than isEntryLocked.
-    assert.match(buildingCatalogSource, /aria-label=\{\s*entryStateWord\(entry, lockedLabel, builtLabel\)/);
+    assert.match(buildingCatalogSource, /const stateWord = entryStateWord\(entry, labels\.locked, labels\.built\)/);
+    assert.match(buildingCatalogSource, /aria-label=\{stateWord \? `\$\{rowPlaceLabel\} — \$\{stateWord\}` : rowPlaceLabel\}/);
   });
 
   it("does not disable an unplaceable row, because that would take its hover card too", () => {
@@ -154,7 +157,7 @@ describe("Building Lens action affordances", () => {
     // A dedicated button rather than the whole row, so the row is free to mean
     // one thing. The chevron also says which way it will go.
     assert.match(buildingCatalogSource, /className=\{classNames\(styles\.rowDetailsButton/);
-    assert.match(buildingCatalogSource, /styles\.rowDetailsButton[\s\S]{0,400}?onSelect=\{\(\) => toggleExpanded\(entry\.id\)\}/);
+    assert.match(buildingCatalogSource, /styles\.rowDetailsButton[\s\S]{0,400}?onSelect=\{\(\) => onToggleExpanded\(entry\.id\)\}/);
     assert.match(buildingCatalogStyles, /\.rowDetailsButton\b/);
   });
 
@@ -222,7 +225,7 @@ describe("Building Lens action affordances", () => {
     // reason nobody read it. Every mode, because grid, list and cards had no
     // paging control at all and could only ever see the first hundred rows.
     assert.match(buildingCatalogSource, /const catalogFooter = hasMore \?/);
-    assert.match(buildingCatalogSource, /\{catalogFooter\}/);
+    assert.match(buildingCatalogSource, /\{footer\}/);
     assert.match(buildingCatalogSource, /footer=\{catalogFooter\}/);
   });
 
