@@ -113,9 +113,9 @@ export const BuildingMenuHeader = ({ small, large, onClose }: BuildingMenuHeader
             <img
               style={{ maskImage: "url(coui://finditbuildingmenu/Icons/Standard/HalfCircleProgress.svg)" }}
               className={styles.loadingIcon}
-            />
+            alt="" aria-hidden="true" />
           )}
-          {!IsSearchLoading && <img style={{ maskImage: `url(${find})` }} className={styles.searchIcon} />}
+          {!IsSearchLoading && <img style={{ maskImage: `url(${find})` }} className={styles.searchIcon} alt="" aria-hidden="true" />}
           <div className={styles.searchArea}>
             <TextInput
               ref={searchRef}
