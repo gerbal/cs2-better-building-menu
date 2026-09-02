@@ -4,8 +4,8 @@ type Any = Record<string, unknown>;
 const dataAndAria = (props: Any): Any =>
   Object.fromEntries(Object.entries(props).filter(([k]) => k.startsWith("data-") || k.startsWith("aria-")));
 
-export const Button = ({ children, className, title, style, onSelect, disabled, ...rest }: Any & { children?: ReactNode; style?: CSSProperties }) => (
-  <button className={className as string} title={title as string} style={style} disabled={disabled as boolean} data-has-select={onSelect ? "true" : undefined} {...dataAndAria(rest)}>
+export const Button = ({ children, className, title, style, onSelect, disabled, src, ...rest }: Any & { children?: ReactNode; style?: CSSProperties }) => (
+  <button className={className as string} title={title as string} style={style} disabled={disabled as boolean} data-has-select={onSelect ? "true" : undefined} data-src={src as string | undefined} {...dataAndAria(rest)}>
     {children}
   </button>
 );
