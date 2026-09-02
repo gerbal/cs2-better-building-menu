@@ -1,11 +1,11 @@
-# FindIt Building Menu Successor — Implementation Plan
+# Better Building Menu (formerly the FindIt successor) — Implementation Plan
 
 The successor is being developed as a separate project so the existing
 `cs2-building-menu-overhaul/` implementation remains available for comparison
 and rollback.
 
 1. Preserve the FindIt indexing, categories, search, picker, placement, and
-   settings foundation under the `FindItBuildingMenu` runtime identity.
+   settings foundation under the `BetterBuildingMenu` runtime identity.
 2. Project the indexed building records through a bounded query/page contract;
    do not add a second ECS prefab scan.
 3. Add common and category-specific analytical attributes with pure catalog

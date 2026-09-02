@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BetterBuildingMenu\BetterBuildingMenu.csproj" />
+  </ItemGroup>
+
+  <!-- The referenced net48 mod has game-assembly references marked Private=false.
+       Copy the host assemblies for the pure test runner; no game process is
+       started by this project. -->
+  <ItemGroup>
+    <Reference Include="Colossal.Core" HintPath="$(CS2ManagedPath)/Colossal.Core.dll" Private="True" />
+    <Reference Include="Colossal.Collections" HintPath="$(CS2ManagedPath)/Colossal.Collections.dll" Private="True" />
+    <Reference Include="Colossal.Logging" HintPath="$(CS2ManagedPath)/Colossal.Logging.dll" Private="True" />
+    <Reference Include="Colossal.IO.AssetDatabase" HintPath="$(CS2ManagedPath)/Colossal.IO.AssetDatabase.dll" Private="True" />
+    <Reference Include="Colossal.UI" HintPath="$(CS2ManagedPath)/Colossal.UI.dll" Private="True" />
+    <Reference Include="Colossal.UI.Binding" HintPath="$(CS2ManagedPath)/Colossal.UI.Binding.dll" Private="True" />
+    <Reference Include="Colossal.Localization" HintPath="$(CS2ManagedPath)/Colossal.Localization.dll" Private="True" />
+    <Reference Include="Colossal.Mathematics" HintPath="$(CS2ManagedPath)/Colossal.Mathematics.dll" Private="True" />
+    <Reference Include="Colossal.PSI.Common" HintPath="$(CS2ManagedPath)/Colossal.PSI.Common.dll" Private="True" />
+    <Reference Include="Colossal.PSI.PdxSdk" HintPath="$(CS2ManagedPath)/Colossal.PSI.PdxSdk.dll" Private="True" />
+    <Reference Include="Game" HintPath="$(CS2ManagedPath)/Game.dll" Private="True" />
+    <Reference Include="PDX.SDK" HintPath="$(CS2ManagedPath)/PDX.SDK.dll" Private="True" />
+    <Reference Include="Unity.Burst" HintPath="$(CS2ManagedPath)/Unity.Burst.dll" Private="True" />
+    <Reference Include="Unity.Collections" HintPath="$(CS2ManagedPath)/Unity.Collections.dll" Private="True" />
+    <Reference Include="Unity.Entities" HintPath="$(CS2ManagedPath)/Unity.Entities.dll" Private="True" />
+    <Reference Include="Unity.InputSystem" HintPath="$(CS2ManagedPath)/Unity.InputSystem.dll" Private="True" />
+    <Reference Include="Unity.Mathematics" HintPath="$(CS2ManagedPath)/Unity.Mathematics.dll" Private="True" />
+    <Reference Include="UnityEngine.CoreModule" HintPath="$(CS2ManagedPath)/UnityEngine.CoreModule.dll" Private="True" />
+  </ItemGroup>
+
+</Project>

@@ -4,9 +4,9 @@ This fork is an internal successor, not a publishable release. Its runtime
 identity is `FindItBuildingMenu`; distribution remains gated on upstream
 license confirmation and assignment of a new PDX publisher identity.
 
-> **Re-run:** `node tools/e2e/findit-lens-smoke.mjs --http <cdp http url> --agent <your agent id> --prefix <steam prefix>`
+> **Re-run:** `node tools/e2e/building-menu-smoke.mjs --http <cdp http url> --agent <your agent id> --prefix <steam prefix>`
 > against a game with a city loaded (repo root; `just e2e` runs its unit tests).
-> **Last run:** 2026-09-02 on `2e51a78`+coexistence — `tools/e2e/artifacts/findit-smoke/20260902-160943-2e51a78.md` (with upstream Find It 1.5.8 installed)
+> **Last run:** 2026-09-02 on `db8271f`+rename — `tools/e2e/artifacts/findit-smoke/20260902-202039-db8271f.md` (the mod renamed to BetterBuildingMenu)
 > (artifacts are not tracked; the run's report is pasted in the newest section below).
 > The sections below are dated records; the newest describes the current build.
 > Staleness is the distance between that sha and `HEAD`.
@@ -1185,7 +1185,7 @@ text. One defect found on day one: the header's search and loading icons
 carried no `alt=""`/`aria-hidden` while its other icons did (fixed in
 9b1091e).
 
-**The smoke.** `tools/e2e/findit-lens-smoke.mjs` replaces the per-phase
+**The smoke.** `tools/e2e/building-menu-smoke.mjs` replaces the per-phase
 session scripts. It refuses a game whose `meta.hello` identity does not
 name `--agent` (verified: `--agent nobody` exits 2 and the mod log gains no
 `[LENS-REFRESH]` line), refuses without a loaded city, and writes its
@@ -1539,3 +1539,88 @@ Groups read off the DOM as (depth, band, unlabeled, label, count, rect):
 Gates: C# 410/410, `npm test` 554 unit + 42 render, `tsc --noEmit` clean.
 `FindItPresent` true throughout; 0 exceptions in the mod log before and
 after. Findings 3, 4, 6, 7, 8 of the evaluation are untouched.
+
+## 2026-09-02 — the rename: FindItBuildingMenu → BetterBuildingMenu
+
+The whole identity moved: directory `cs2-better-building-menu`, backend
+`BetterBuildingMenu/`, tests `BetterBuildingMenu.Tests/`, assembly and mod
+id `BetterBuildingMenu` (so the binding group, the `coui://betterbuildingmenu`
+host, the `images/BetterBuildingMenu/` folder, the log
+`Logs/BetterBuildingMenu.log`, the settings file `BetterBuildingMenu.coc`
+and every locale key), the silhouette cache host
+`coui://betterbuildingmenusilhouettes`, and the types that carried the old
+name (`BuildingMenuUISystem`, `BetterBuildingMenuSettings`,
+`BuildingMenuUtil`, `InteractionBoundary`, `BuildingMenuGenerated`,
+`MenuSurface*`). Names that refer to upstream Find It stay as they are
+(`FindItPresent`, `IsFindItLoaded`, `ShowFindItPanel`, the `"FindIt"`
+category override, `upstreamFindIt.ts`). The smoke is
+`tools/e2e/building-menu-smoke.mjs`; the `just` recipes answer to
+`better-building-menu` and still to the old aliases, and treat
+`FindItBuildingMenu` as a stale payload to remove on deploy. The
+BindingManifest and BuildingLensDimension tests locate the tree by the new
+folder.
+
+Live on `949230-c`, Porterville 3, two launches:
+
+1. First launch booted clean (`Loaded BetterBuildingMenu`, 0 init errors,
+   0 exceptions) and the smoke FAILED: every menu read 10,539 with 0
+   refreshes on open. The settings file is keyed by the mod id, so the
+   renamed mod came up on a fresh profile with `ReplaceVanillaBuildMenu`
+   off (its deliberate default) and `VanillaMenuSelected` yielded to
+   vanilla. Setting it through the bridge changed the C# property but not
+   the `ReplaceVanillaBuildMenu` binding, which is created once at setup —
+   a restart is needed for the setting to reach the UI. Migrated the old
+   `.coc` under the new name (the first line is the settings id and ends
+   in CRLF).
+2. Second launch, then a third after the silhouette host rename: smoke
+   PASS both times — Roads 403, Landscaping 523, Health 31, Zones 74,
+   Electricity 17, Education 43, All 10,539; search `tre` 13; scope
+   section green; 0 exceptions. DOM image hosts with Roads open:
+   `coui://betterbuildingmenu` 19, `coui://betterbuildingmenusilhouettes`
+   13 (each drawn at 30px), `coui://ui-mods` 1, no `findit` host left.
+   The deployed DLL's strings carry only the new hosts.
+
+Gates: C# 410/410, `npm test` 554 unit + 42 render, `tsc --noEmit` clean,
+`just e2e` green. Existing players will see the mod's settings reset once
+(it is a new mod to the game), and must turn "Replace vanilla build menu"
+on again.
+
+# FindIt lens smoke — 2026-09-02 — db8271f
+
+Result: **PASS**  ·  agent `claude-swift-ocelot-gZs`  ·  cdp `http://127.0.0.1:9557`  ·  prefix `949230-c`
+
+| Menu | Refreshes on open | groupBy | Offered dimensions | Total | First groupPath |
+|---|---|---|---|---|---|
+| Roads | 1 | menuCategory | menuCategory, category, subCategory, progression, development, theme, source, footprint, cost, none | 403 | ["Small Roads","Small Roads"] |
+| Landscaping | 1 | menuCategory | menuCategory, category, subCategory, theme, source, footprint, cost, none | 523 | ["Terraforming","From the start"] |
+| Health & Deathcare | 1 | menuCategory | menuCategory, role, development, source, footprint, cost, none | 31 | ["Healthcare","Healthcare"] |
+| Zones | 1 | menuCategory | menuCategory, category, subCategory, progression, theme, source, density, footprint, cost, none | 74 | ["Residential","Low Density"] |
+| Electricity | 1 | development | category, subCategory, role, development, source, footprint, cost, none | 17 | ["Electricity"] |
+| Education & Research | 1 | schoolTier | menuCategory, role, schoolTier, development, source, footprint, cost, none | 43 | ["Elementary School"] |
+| All menus | 1 | development | menuCategory, category, subCategory, role, progression, development, theme, source, density, footprint, cost, none | 10539 | |
+
+Search `tre` in Landscaping: 13 matches, first `Apple Tree`.
+
+Exceptions in the mod log: 0 before, 0 after.
+
+## Scope
+
+| Step | Read back | Total |
+|---|---|---|
+| Roads, open | | 403 |
+| strip tab `Communications` | tab ["Communications"] | 1 |
+| category `RoadsSmallRoads` | category `RoadsSmallRoads`, tab [] | 24 |
+| Reset | category ``, tabs [] | 403 |
+| Education & Research, tier 1 | tier 1 | 14 (menu 43) |
+
+```
+[LENS-REFRESH] 10ms proj=0ms(hit) page=7 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=1 tiers=0 menu='Roads' total=403 from=RefreshLens
+[LENS-REFRESH] 26ms proj=19ms(miss) page=25 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Landscaping' total=523 from=RefreshLens
+[LENS-REFRESH] 15ms proj=12ms(miss) page=14 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Health & Deathcare' total=31 from=RefreshLens
+[LENS-REFRESH] 19ms proj=15ms(miss) page=18 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Zones' total=74 from=RefreshLens
+[LENS-REFRESH] 20ms proj=16ms(miss) page=19 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Electricity' total=17 from=RefreshLens
+[LENS-REFRESH] 16ms proj=14ms(miss) page=15 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Education & Research' total=43 from=RefreshLens
+[LENS-REFRESH] 170ms proj=0ms(hit) page=26 bounds=17 facets=86 counts=0 axis=0 tabs=33 expanded=1 tiers=5 menu='' total=10539 from=Apply
+```
+
+artifact: /var/home/gerbal/Games/CS-Modding-wt/findit-remediation/tools/e2e/artifacts/findit-smoke/20260902-202039-db8271f.md

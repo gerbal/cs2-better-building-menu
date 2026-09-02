@@ -1,0 +1,30 @@
+﻿namespace BetterBuildingMenu.Domain.Enums
+{
+	public enum PrefabCategory
+	{
+		[CategoryIcon("coui://betterbuildingmenu/Icons/Standard/StarAll.svg")]
+		Any = -1,
+		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/BuildingZoneSignature.svg")]
+		Buildings = 100,
+		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/ServiceBuilding.svg")]
+		ServiceBuildings = 200,
+		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/Road.svg")]
+		Networks = 300,
+		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/Nature.svg")]
+		Trees = 400,
+		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/BenchAndLampProps.svg")]
+		Props = 500,
+		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/GenericVehicleIsometric.svg")]
+		Vehicles = 600,
+		// Zones are a category because the index has no other place to put them,
+		// and being in the index is what makes them armable: ActivatePrefabTool
+		// walks every tool asking TrySetPrefab, ZoneToolSystem accepts any
+		// ZonePrefab, and BuildingMenuUtil.GetPrefabBase only reads CategorizedPrefabs.
+		// Before this a zone id through SetCurrentPrefab was a silent no-op.
+		//
+		// This is not the zone-vs-building distinction the catalog draws — that
+		// is EntryKind, per the design. This is only the index's own filing.
+		[CategoryIcon("Media/Game/Icons/Zones.svg")]
+		Zones = 700
+	}
+}

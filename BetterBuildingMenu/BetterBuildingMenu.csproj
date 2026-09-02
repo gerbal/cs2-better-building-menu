@@ -1,0 +1,69 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<AssemblyName>BetterBuildingMenu</AssemblyName>
+		<RootNamespace>BetterBuildingMenu</RootNamespace>
+		<LangVersion>11.0</LangVersion>
+		<TargetFramework>net48</TargetFramework>
+		<Nullable>enable</Nullable>
+		<Configurations>Debug;Release</Configurations>
+		<Version>0.1.0</Version>
+		<FileVersion>$(Version)</FileVersion>
+		<AssemblyVersion>$(Version)</AssemblyVersion>
+		<Company>T. D. W.</Company>
+		<Copyright>@2024 MIT license</Copyright>
+		<Product>Find It Building Menu</Product>
+		<PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
+	</PropertyGroup>
+
+	<!-- The successor uses the workspace's shared Directory.Build.props and never
+	     imports the upstream user-scoped CSII_TOOLPATH build targets. -->
+	<Target Name="BuildUI" AfterTargets="AfterBuild" Condition="'$(SkipBuildUI)' != 'true' And Exists('$(ProjectDir)UI')">
+		<Exec Condition="!Exists('$(ProjectDir)UI/node_modules')" Command="npm ci --ignore-scripts" WorkingDirectory="$(ProjectDir)UI" />
+		<Exec Command="npm run build" WorkingDirectory="$(ProjectDir)UI" EnvironmentVariables="CSII_UI_OUTPUT_DIR=$(ProjectDir)UI/build" />
+	</Target>
+
+	<ItemGroup>
+		<!-- The unit tests exercise internal helpers (SearchUtil's matching rules,
+		     for one) without widening the mod's public surface to do it. -->
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+			<_Parameter1>BetterBuildingMenu.Tests</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="Locale.json" />
+		<EmbeddedResource Include="Locale\*.json" />
+		<None Remove="Locale.json" />
+		<None Remove="Locale\*.json" />
+		<EmbeddedResource Include="Resources\Blacklist.txt" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Reference Include="Game" HintPath="$(CS2ManagedPath)/Game.dll" Private="false" />
+		<Reference Include="Colossal.Core" HintPath="$(CS2ManagedPath)/Colossal.Core.dll" Private="false" />
+		<Reference Include="Colossal.Collections" HintPath="$(CS2ManagedPath)/Colossal.Collections.dll" Private="false" />
+		<Reference Include="Colossal.Logging" HintPath="$(CS2ManagedPath)/Colossal.Logging.dll" Private="false" />
+		<Reference Include="Colossal.IO.AssetDatabase" HintPath="$(CS2ManagedPath)/Colossal.IO.AssetDatabase.dll" Private="false" />
+		<Reference Include="Colossal.UI" HintPath="$(CS2ManagedPath)/Colossal.UI.dll" Private="false" />
+		<Reference Include="Colossal.UI.Binding" HintPath="$(CS2ManagedPath)/Colossal.UI.Binding.dll" Private="false" />
+		<Reference Include="Colossal.Localization" HintPath="$(CS2ManagedPath)/Colossal.Localization.dll" Private="false" />
+		<Reference Include="Colossal.Mathematics" HintPath="$(CS2ManagedPath)/Colossal.Mathematics.dll" Private="false" />
+		<Reference Include="Colossal.PSI.Common" HintPath="$(CS2ManagedPath)/Colossal.PSI.Common.dll" Private="false" />
+		<Reference Include="Colossal.PSI.PdxSdk" HintPath="$(CS2ManagedPath)/Colossal.PSI.PdxSdk.dll" Private="false" />
+		<Reference Include="PDX.SDK" HintPath="$(CS2ManagedPath)/PDX.SDK.dll" Private="false" />
+		<Reference Include="Unity.InputSystem" HintPath="$(CS2ManagedPath)/Unity.InputSystem.dll" Private="false" />
+		<Reference Include="UnityEngine.CoreModule" HintPath="$(CS2ManagedPath)/UnityEngine.CoreModule.dll" Private="false" />
+		<Reference Include="Unity.Burst" HintPath="$(CS2ManagedPath)/Unity.Burst.dll" Private="false" />
+		<Reference Include="Unity.Collections" HintPath="$(CS2ManagedPath)/Unity.Collections.dll" Private="false" />
+		<Reference Include="Unity.Entities" HintPath="$(CS2ManagedPath)/Unity.Entities.dll" Private="false" />
+		<Reference Include="Unity.Mathematics" HintPath="$(CS2ManagedPath)/Unity.Mathematics.dll" Private="false" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Resources\AssetIcons\" />
+	  <Folder Include="Resources\Images\" />
+	</ItemGroup>
+
+</Project>
