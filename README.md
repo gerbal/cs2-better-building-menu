@@ -42,8 +42,8 @@ path. Verified live against Find It 1.5.8 (`docs/verification.md`, 2026-09-02).
 ## Renamed on 2026-09-02
 
 The mod was renamed from `FindItBuildingMenu`. The game keys a mod's settings
-file by its id, so on the first run after the rename the settings are back at
-their defaults: turn **Replace vanilla build menu** on again in Options.
+file by its id, so the first run after the rename starts from defaults again —
+any options you had customised are back at their initial values.
 
 ## Not published yet
 

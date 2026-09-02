@@ -66,10 +66,12 @@ namespace BetterBuildingMenu
 		// mod showed on every boot. N is bound nowhere in the game's InputActions
 		// asset at all, so it stays clear even under the modifier-insensitive
 		// comparison ProxyBinding.PathEquals falls back to.
-		// Off by default: this takes over the game's primary build UI, which is
-		// not something to opt a player into without asking.
+		// On by default: replacing the build menu is what this mod is for, so an
+		// install that did nothing until the player found this switch would just
+		// look broken. Turning it off restores the vanilla menu wholesale, and
+		// disables the zones-menu option below with it.
 		[SettingsUISection(SETTINGS, BEHAVIOR)]
-		public bool ReplaceVanillaBuildMenu { get; set; }
+		public bool ReplaceVanillaBuildMenu { get; set; } = true;
 
 		// The Zones menu opens a zoning hierarchy rather than a filtered
 		// building table, so it is separable from the rest: a player may want
