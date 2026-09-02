@@ -6,7 +6,7 @@ license confirmation and assignment of a new PDX publisher identity.
 
 > **Re-run:** `node tools/e2e/findit-lens-smoke.mjs --http <cdp http url> --agent <your agent id> --prefix <steam prefix>`
 > against a game with a city loaded (repo root; `just e2e` runs its unit tests).
-> **Last run:** 2026-09-02 on `08c7818` — `tools/e2e/artifacts/findit-smoke/20260902-054528-08c7818.md`
+> **Last run:** 2026-09-02 on `d71fb08` — `tools/e2e/artifacts/findit-smoke/20260902-144800-d71fb08.md`
 > (artifacts are not tracked; the run's report is pasted in the newest section below).
 > The sections below are dated records; the newest describes the current build.
 > Staleness is the distance between that sha and `HEAD`.
@@ -1311,4 +1311,96 @@ Every reading outside the scope section equals the phase-7 record.
 `PrefabIndexingSystem` stays untested by design: its extraction reads
 prefab components through Unity's ECS; the per-menu totals above and the
 `[MENU-AUDIT]`/`[MENU-COVERAGE]` log lines are its check.
+
+## 2026-09-02 — the open beads: tab icons, the three unindexed assets, the overlap measurements, coexistence
+
+Branch `findit/open-beads` (commits c25ebd1, d71fb08). Suites on the tip:
+C# 410/410, TS unit 548, TS render 35.
+
+**cm-2xvs.17, tab icons.** Two causes, both found live. The strip's icon
+came from whichever assets a narrowing left in the tab (Transportation's
+first tab went Road → Bus under a content pack); `CatalogView` now picks
+strip and branch icons from the whole menu — the pack-ignored projection
+when the toolbar narrowed it. And Roads' two single-asset parking
+categories drew a photographic render in a row of glyphs: a probe showed
+the indexer had filled `DevTreeBranchIcon` with the asset's own
+`thumbnail://` render when the tree node had none, so `TabIcon`'s
+"authored icon" was the photograph; a `thumbnail://` branch icon now counts
+as none and the category glyph (`Parking.svg`) is drawn. Live after the
+fix: 29 tabs read in Roads, 0 photographs (were 4).
+
+**cm-vxuv, the three assets vanilla places that the index missed.** Live
+component dumps: Dome Rural Hotel 01 and Dome Road House 01 are
+`BuildingPrefab`s with `BuildingData` + `BuildingPropertyData`
+(AllowedSold = Lodging) and no `SpawnableBuildingData`,
+`SignatureBuildingData` or `ServiceObjectData`, so neither the zoned nor
+the service processor claimed them and the misc-building processor
+rejected the property data; it now accepts a property building the game
+itself places, with subcategory and the Signature zone type read off the
+vanilla category (`VanillaCategoryMapping`, tested).
+IndustrialModernPlaza01DeliveryVan01 carries an editor override
+`include=Props/Decorations/Industrial exclude=FindIt+FindIt/500/505` —
+upstream's generated-vehicle scheme — and the indexing loop honoured the
+Find It exclude; a vanilla placement now beats it, as it already beat the
+name blacklist. `[MENU-COVERAGE]` prints a missing asset's editor
+categories and key components, which is how the van's cause was read off
+one log line. After: `[MENU-AUDIT] vanilla shows 1467 assets across its
+menus; 0 missing from the index` — Landscaping 526 held, Signatures 138.
+
+**cm-2xvs.12, overlap.** Measured at 1280×720 with Roads open: the filter
+rail sits in the control pane (1176..1240 × 519..540) and its dropdown
+opens above it (1171..1280 × 479..520), covering 0 % of the catalog
+(264..991 × 327..636); the Chirper popup anchors at the right icon strip
+(1248, 514) and stacks under the pane by the toolbar z-index patch.
+Closed on the measurements.
+
+**cm-wf6g.4, coexistence with upstream Find It.** Upstream 1.1.1 (pdx
+cache 77240_27) copied beside ours as a local mod: its C# does not
+initialise on this game build (`MissingMethodException:
+AssetDatabase.LoadSettings(string,object,object)`), its UI still registers
+and extends the same `AssetMenu` seam, and with both present the slot
+mounts nothing — our lens stays unscoped (10,587; `tre` → 106) with zero
+exceptions of our own. Recorded on the bead as a decision for the user:
+yield the seam when the `FindIt` module is present, or declare the two
+incompatible as BMO already is.
+
+**This build's smoke** (single-mod, Porterville 3 on `949230-c`):
+
+# FindIt lens smoke — 2026-09-02 — d71fb08
+
+Result: **PASS**  ·  agent `claude-swift-ocelot-gZs`  ·  cdp `http://127.0.0.1:9557`  ·  prefix `949230-c`
+
+| Menu | Refreshes on open | groupBy | Offered dimensions | Total | First groupPath |
+|---|---|---|---|---|---|
+| Roads | 1 | menuCategory | menuCategory, category, subCategory, progression, development, theme, source, footprint, cost, none | 403 | ["Small Roads","Small Roads"] |
+| Landscaping | 1 | menuCategory | menuCategory, category, subCategory, theme, source, footprint, cost, none | 523 | ["Terraforming","From the start"] |
+| Health & Deathcare | 1 | menuCategory | menuCategory, role, development, source, footprint, cost, none | 31 | ["Healthcare","Healthcare"] |
+| Zones | 1 | menuCategory | menuCategory, category, subCategory, progression, theme, source, density, footprint, cost, none | 74 | ["Residential","Low Density"] |
+| Electricity | 1 | development | category, subCategory, role, development, source, footprint, cost, none | 17 | ["Electricity"] |
+| Education & Research | 1 | schoolTier | menuCategory, role, schoolTier, development, source, footprint, cost, none | 43 | ["Elementary School"] |
+| All menus | 1 | development | menuCategory, category, subCategory, role, progression, development, theme, source, density, footprint, cost, none | 10539 | |
+
+Search `tre` in Landscaping: 13 matches, first `Apple Tree`.
+
+Exceptions in the mod log: 0 before, 0 after.
+
+## Scope
+
+| Step | Read back | Total |
+|---|---|---|
+| Roads, open | | 403 |
+| strip tab `Communications` | tab ["Communications"] | 1 |
+| category `RoadsSmallRoads` | category `RoadsSmallRoads`, tab [] | 24 |
+| Reset | category ``, tabs [] | 403 |
+| Education & Research, tier 1 | tier 1 | 14 (menu 43) |
+
+```
+[LENS-REFRESH] 9ms proj=0ms(hit) page=6 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Roads' total=403 from=RefreshLens
+[LENS-REFRESH] 19ms proj=13ms(miss) page=18 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Landscaping' total=523 from=RefreshLens
+[LENS-REFRESH] 16ms proj=13ms(miss) page=15 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Health & Deathcare' total=31 from=RefreshLens
+[LENS-REFRESH] 13ms proj=11ms(miss) page=13 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Zones' total=74 from=RefreshLens
+[LENS-REFRESH] 12ms proj=10ms(miss) page=12 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Electricity' total=17 from=RefreshLens
+[LENS-REFRESH] 12ms proj=10ms(miss) page=11 bounds=0 facets=0 counts=0 axis=0 tabs=0 expanded=0 tiers=0 menu='Education & Research' total=43 from=RefreshLens
+[LENS-REFRESH] 99ms proj=0ms(hit) page=24 bounds=7 facets=32 counts=0 axis=0 tabs=28 expanded=1 tiers=4 menu='' total=10539 from=Apply
+```
 
