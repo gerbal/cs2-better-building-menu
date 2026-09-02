@@ -34,7 +34,7 @@ const code = (src: string) =>
 
 const SITES = [
   ["hover card", "../src/mods/BuildingHoverCard/BuildingHoverCard.tsx"],
-  ["table row detail", "../src/mods/BuildingCatalog/BuildingCatalog.tsx"],
+  ["table row detail", "../src/mods/BuildingCatalog/BuildingResultDetails.tsx"],
 ] as const;
 
 describe("the upgrades row reads what a building supports", () => {
