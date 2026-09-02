@@ -1501,3 +1501,41 @@ Exceptions in the mod log: 0 before, 0 after.
 [LENS-REFRESH] 86ms proj=0ms(hit) page=23 bounds=6 facets=27 counts=0 axis=0 tabs=24 expanded=1 tiers=3 menu='' total=10539 from=Apply
 ```
 
+
+## 2026-09-02 — the evaluation's fixes: search headers, no strip under All menus, no repeated sub-heading (cm-mkn6)
+
+Spec: `superpowers/specs/2026-09-02-ux-evaluation-fixes-design.md`, from
+findings 1, 2 and 5 of `ux-evaluation-2026-09-02-with-findit.md`. Branch
+`findit/ux-eval-fixes`. UI-only: no binding, no C#.
+
+Live on `949230-c`, Porterville 3, with upstream Find It 1.5.8 installed
+beside ours (the evaluation's configuration). The first build was deployed
+with `deploy-isolated`; the refined band rule was rebuilt with
+`npm run build`, copied into the prefix's Mods folder and the page reloaded
+over CDP (`Page.reload`), then read back. Frames:
+`ux-evaluation-2026-09-02/after-{02,03,11}-*.jpg`.
+
+Groups read off the DOM as (depth, band, unlabeled, label, count, rect):
+
+- **Roads, search `tre`** (was: two-level CUL-DE-SACS flowing beside SMALL
+  ROADS, headings sharing two 11px rows, "ROAD SER…"):
+  `0 - - Small Roads 2 (269,332,200,73)`, `0 band - Cul-De-Sacs 3
+  (269,407,710,84)` → `1 - unlabeled (269,419,200,61)`, `1 - - Roundabouts 2
+  (473,419,200,73)`; `0 - - Roundabouts 9 (269,494,632,73)`; `0 - - Road
+  Services 1 (269,569,200,73)` — the label whole; `0 - - Pedestrian Bridges 12
+  (269,645,706,129)`; `0 - - Paths 1 (269,776,200,73)`. No two top-level
+  headings share a y; the one-tile groups carry their names at 200px.
+- **Roads** (was: "MEDIUM ROADS / Medium Roads, 15 / 12"): `0 band Medium
+  Roads 15 (269,519,710,204)` → `1 unlabeled (269,531,710,117)`, `1 Grand
+  Bridge 3 (269,651,216,73)`. "Medium Roads" once. Every other category is a
+  lone-child group with no heading row reserved (Small Roads' child at y
+  343 = heading + 11px, where it used to sit 12px lower).
+- **All menus** (was: a 4-row strip of ~70 tabs, panel top at 219): no
+  `.strip_` element in the panel; panel at (264,327,727,309) with the
+  search row directly over COMMUNICATIONS; groups by development, one level.
+- **Roads' strip** still wraps to two rows (21 tabs at 537px), as the spec
+  leaves it.
+
+Gates: C# 410/410, `npm test` 554 unit + 42 render, `tsc --noEmit` clean.
+`FindItPresent` true throughout; 0 exceptions in the mod log before and
+after. Findings 3, 4, 6, 7, 8 of the evaluation are untouched.

@@ -37,11 +37,15 @@ describe("grouped results", () => {
     ]);
     const found = groups(html);
 
-    const parents = found.filter((g) => g.heading === "Small Roads" || g.heading === "Cul-De-Sacs");
-    assert.equal(parents.length, 2, "two top-level groups");
-    for (const parent of parents) {
-      assert.match(parent.classes, /\bgroupBand\b/, `${parent.heading} spans the row`);
-    }
+    const parent = found.find((g) => g.heading === "Cul-De-Sacs");
+    assert.ok(parent, "the two-child group");
+    assert.match(parent!.classes, /\bgroupBand\b/, "a group with two sub-groups spans the row");
+    // One child means one hidden heading — the group reads as a leaf and
+    // flows like one. Measured live, banding these too gave a one-tile
+    // ROAD SERVICES a whole 84px row to itself in a search.
+    const lone = found.find((g) => g.heading === "Small Roads");
+    assert.ok(lone);
+    assert.doesNotMatch(lone!.classes, /\bgroupBand\b/, "a group with one sub-group flows");
     const leaves = found.filter((g) => g.heading === "Cul De Sacs" || g.heading === "Roundabouts");
     assert.equal(leaves.length, 2);
     for (const leaf of leaves) {
@@ -70,5 +74,20 @@ describe("grouped results", () => {
     assert.ok(found.some((g) => g.heading === "Bridges"), "a differently named sibling keeps its heading");
     assert.ok(found.some((g) => g.heading === "Highways"));
     assert.equal(found.filter((g) => g.heading === "Medium Roads").length, 1, "the name appears once");
+  });
+
+  it("reserves no heading row for a lone child whose heading is not drawn", () => {
+    // shouldShowHeading already hid the heading of an only child; the 17rem
+    // it reserved for one stayed, as 12px of nothing under every category.
+    const html = render([
+      ["Road Services", "Milestone 3"],
+      ["Paths", "From the start"],
+    ]);
+    const children = groups(html).filter((g) => g.heading === null);
+
+    assert.equal(children.length, 2);
+    for (const child of children) {
+      assert.match(child.classes, /\bgroupUnlabeled\b/);
+    }
   });
 });
