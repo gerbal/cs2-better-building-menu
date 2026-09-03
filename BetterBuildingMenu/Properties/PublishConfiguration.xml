@@ -1,7 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  STUB — populate before the first publish.
+
+  Every value below that is empty is a deliberate blank, not an oversight:
+
+  * ModId / publisher identity: a new PDX Mods ID must be assigned. The
+    upstream Find It ID (77240) is intentionally absent so this successor can
+    never update that listing. See docs/FORK.md.
+  * Thumbnail / Screenshot: the fork inherited Find It's eight store images
+    byte-for-byte and they were removed on 2026-09-02. They showed upstream's
+    floating panel, not this mod's in-place menu, and redistributing them is
+    not covered by any license we hold. New capture is required.
+  * ChangeLog: mirror Changelog.json for the version being published.
+
+  Publishing is blocked until docs/FORK.md's license question is settled.
+-->
 <Publish>
-  <!-- A new PDX Mods ID must be assigned before publishing. The upstream ID
-       is intentionally omitted so this successor cannot update Find It. -->
   <DisplayName Value="Better Building Menu" />
   <ShortDescription Value="A building lens inside the vanilla build menus: table, grid and list views with facets, metric ranges and a coverage overlay." />
   <LongDescription>
@@ -15,21 +29,16 @@ Hover a building for its numbers; place one and a coverage overlay shows what it
 
 Derived from Find It 1.5.8 by T. D. W. This is not a replacement for Find It: it lists buildings and networks only, and leaves props, trees and detailing to the mods made for them.
 </LongDescription>
-  <Thumbnail Value="Properties/Thumbnail.png" />
-  <Screenshot Value="Properties/Screenshot_01.jpg" />
-  <Screenshot Value="Properties/Screenshot_02.jpg" />
-  <Screenshot Value="Properties/Screenshot_03.jpg" />
-  <Screenshot Value="Properties/Screenshot_04.jpg" />
-  <Screenshot Value="Properties/Screenshot_05.jpg" />
-  <Screenshot Value="Properties/Screenshot_06.jpg" />
-  <Screenshot Value="Properties/Screenshot_07.jpg" />
+
+  <!-- TODO: capture this mod's own store art, then fill these in. -->
+  <Thumbnail Value="" />
+  <Screenshot Value="" />
+
   <Tag Value="Code Mod" />
   <ModVersion Value="0.1.0" />
   <GameVersion Value="1.5.*" />
+
+  <!-- TODO: mirror the published version's entry from Changelog.json. -->
   <ChangeLog>
-# v0.1.0
-## Changes
-* Better Building Menu: a building lens inside the vanilla build menus, derived from Find It 1.5.8.
-* Architecture remediation phases 1, 2 and 5: search debounce, one scoping taxonomy, the upstream filter bank and detailer features removed.
   </ChangeLog>
 </Publish>

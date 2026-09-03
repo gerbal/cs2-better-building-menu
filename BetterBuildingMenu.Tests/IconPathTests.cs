@@ -14,7 +14,7 @@ public sealed class IconPathTests
 
     [Theory]
     [InlineData("Media/Game/Icons/Roads.svg")]
-    [InlineData("coui://betterbuildingmenu/YesParking.svg")]
+    [InlineData("coui://betterbuildingmenu/ZoneResidentialMixed.svg")]
     [InlineData("")]
     public void Normalize_PreservesNonUnifiedPaths(string source)
     {

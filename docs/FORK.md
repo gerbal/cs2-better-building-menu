@@ -29,6 +29,50 @@ distributing the successor, obtain confirmation from the upstream maintainer
 or a canonical MIT license file, then add the required notice here and in the
 published package.
 
+## Inherited assets removed
+
+Audited on 2026-09-02, comparing every tracked file against the upstream
+revision byte for byte. 44 files were still identical to Find It's. Of those,
+the ones that carried upstream's *authored* content rather than shared
+scaffolding were removed:
+
+- `Properties/Screenshot_01..07.jpg` and `Properties/Thumbnail.png` — 3.5 MB of
+  Find It's own store art, byte-identical, and wired into
+  `PublishConfiguration.xml`. They showed upstream's floating panel rather than
+  this mod's in-place menu, so they were wrong on the merits as well as
+  unlicensed to redistribute. `PublishConfiguration.xml` is now a stub with
+  those fields blank, and `AutoPublishConfiguration.json`'s `ThumbnailUrl` —
+  upstream's imgur link, also carried over verbatim — was blanked with it. New
+  capture is required before the first publish.
+- 35 unreferenced images under `Resources/Images` — Find It's panel chrome
+  (view toggles, sort arrows, align, close, corner filters, its level glyphs)
+  plus nine top-level icons left by the removed filter bank. `build.sh` copies
+  `Resources/Images` into the package wholesale, so all of it was shipping.
+  That includes `Colored/StarOutline.svg` and `Colored/StarFilledSmallIso.svg`,
+  which belonged to upstream's favourites feature — the unfavourited half of
+  `PrefabItem.tsx`'s star, and the Favorite category's own icon. This fork has
+  no favourites feature, and `PrefabCategory.Any` uses `Standard/StarAll.svg`.
+  Their sibling `Colored/StarFilled.svg` is live and stays: `FilterRail.tsx`
+  uses it for the asset-pack rail.
+
+  Anything else under `Colored/` that source never names should be traced to a
+  call site before removal rather than assumed dead: that is the family a
+  third-party prefab thumbnail can reach dynamically through
+  `IconPath.Normalize`'s `coui://uil/` rewrite, with no reference in this tree.
+
+Also removed, as dead rather than as a licensing matter: Find It's fuzzy-search
+engine in `Utilities/SearchUtil.cs` (`SearchCheck`, `PreparedSearchTerm`, the
+Levenshtein `SpellCheck`, `AbbreviationCheck` and their word splitters) had no
+production caller — catalog search is `BuildingCatalogQueryEngine`'s substring
+test plus `BuildingCatalogRelevance.Score`, ranked UI-side. The file kept the
+three members still in use; its three characterization test files went with the
+engine. `UI/src/domain/category.tsx` and `subCategory.tsx`, two four-line
+interfaces with no importer, went too.
+
+The remaining files identical to upstream are shared scaffolding — the CS2 UI
+mod template's `types/*.d.ts`, `package-lock.json`, `tools/css-presence.js` and
+`Resources/Blacklist.txt` — which are kept.
+
 ## Runtime identity safety
 
 The successor now uses unique local runtime identities:
