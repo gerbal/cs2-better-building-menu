@@ -34,7 +34,7 @@ import type { ToolbarEntity } from "domain/toolbarEntity";
 import { countActiveMetricRanges } from "domain/filterRail";
 import type { BuildingLensFacetState } from "domain/buildingCatalogFacets";
 import type { BuildingLensMetricRangeState } from "domain/buildingLensFilterSummary";
-import { ViewModeBar } from "mods/GroupedResults/ViewModeBar";
+import { DEFAULT_VIEW_MODE, ViewModeBar } from "mods/GroupedResults/ViewModeBar";
 import type { CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import { setLensView } from "domain/lensViewStore";
 import { useLensView } from "mods/useLensView";
@@ -119,7 +119,7 @@ export const LensControlPane = () => {
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
   const [sortPickerOpen, setSortPickerOpen] = useState(false);
 
-  const viewModeChoice = useLensView((view) => view.viewMode) || "grid";
+  const viewModeChoice = useLensView((view) => view.viewMode) || DEFAULT_VIEW_MODE;
   const setViewModeChoice = (next: string): void => setLensView({ viewMode: next });
   // Resolved on the C# side: the player's choice, or the menu's default.
   const groupBy = (useValue(BuildingCatalogGroupBy$) || "category") as GroupDimensionId;
@@ -438,7 +438,9 @@ export const LensControlPane = () => {
             className={styles.resetButton}
             onClick={() => {
               // The grouping is the query's now; ResetBuildingLensMenu clears it.
-              setViewModeChoice("grid");
+              // Back to the mode the lens opens in, not to a named one: this
+              // said "grid" and went on saying it after the default moved.
+              setViewModeChoice(DEFAULT_VIEW_MODE);
               trigger(mod.id, "ResetBuildingLensMenu");
             }}
           >

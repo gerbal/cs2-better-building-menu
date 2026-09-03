@@ -912,7 +912,8 @@ namespace BetterBuildingMenu.Services
 			&& NetworkMenuExtension.IsExtraNetwork(
 				prefab.Category.ToString(),
 				prefab.UiMenuName,
-				menu)
+				menu,
+				prefab.SubCategory.ToString())
 			&& PrefabIndexingSystem.IsPlacedInAnyMenu(prefab.Id);
 
 		/// <summary>
@@ -1087,7 +1088,16 @@ namespace BetterBuildingMenu.Services
 					IconPath.Normalize(prefab.Thumbnail ?? prefab.FallbackThumbnail ?? string.Empty)),
 				UiMenu: prefab.UiMenuName,
 				UiCategory: prefab.UiCategoryName,
+				ServiceRange: prefab.ServiceRange,
+				ServiceFacts: prefab.ServiceFacts.Count > 0 ? prefab.ServiceFacts.ToArray() : null,
+				SpeedLimit: prefab.SpeedLimit,
+				NetworkWidth: prefab.NetworkWidth,
+				LeisureType: prefab.LeisureType ?? string.Empty,
+				LeisureEfficiency: prefab.LeisureEfficiency,
 				UiCategoryPriority: prefab.UiCategoryPriority,
+				// int.MaxValue means the prefab had no UIObject at all; vanilla
+				// reads that as 0. See BuildingCatalogEntry.UIOrder.
+				UIOrder: prefab.UIOrder == int.MaxValue ? 0 : prefab.UIOrder,
 				LotWidth: prefab.LotSize.x,
 				LotDepth: prefab.LotSize.y,
 				BuildingLevel: prefab.BuildingLevel,

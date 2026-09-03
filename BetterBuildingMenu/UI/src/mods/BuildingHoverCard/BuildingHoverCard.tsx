@@ -12,8 +12,13 @@ import {
   groupDigits,
   hasFootprint,
   type NumberSeparators,
+  formatServiceRange,
+  formatSpeedLimit,
+  formatNetworkWidth,
 } from "domain/buildingLensMetricFormat";
 import { buildTileTooltipLines, isMetricPresent } from "domain/buildingTileTooltip";
+import { leisureLabel } from "domain/buildingLensRowDetails";
+import { renderServiceFacts } from "domain/serviceFacts";
 import { clampAssetDescription, getBuildingExtensionLabels, resolveAssetDescription } from "domain/buildingLensRowDetails";
 import { isEntryAlreadyBuilt, isEntryLocked, listLockConditions } from "domain/buildingLockState";
 import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
@@ -36,10 +41,18 @@ export interface HoverCardContext {
    * on a full grid — to render the one card the player is actually pointing at.
    */
   describe: (prefabName: string | null | undefined) => string | null;
+  /** The game's word for a LeisureType, resolved where translate lives. */
+  leisureName: (leisureType: string | null | undefined) => string;
+  /** Bound translate, for the service-fact table's own keys. */
+  translateFact: (key: string, fallback: string | null) => string | null;
   labels: {
     cost: string;
     upkeep: string;
     capacity: string;
+    leisure: string;
+    range: string;
+    speed: string;
+    width: string;
     lot: string;
     locked: string;
     alreadyBuilt: string;
@@ -73,11 +86,19 @@ export const useHoverCardContext = (): HoverCardContext => {
     // description in a place that has room for all of it, and shortening it
     // there to suit a hover card would be the card dictating to the table.
     describe: (prefabName) => clampAssetDescription(resolveAssetDescription(prefabName, translate)),
+    // Resolved up here for the same reason describe is: translate belongs to
+    // the component that holds the localization hook, not to the card.
+    leisureName: (leisureType: string | null | undefined) => leisureLabel(leisureType, translate),
+    translateFact: translate,
     separators: getNumberSeparators(translate),
     labels: {
       cost: translate("Tooltip.LABEL[BetterBuildingMenu.Cost]", "Cost") ?? "Cost",
       upkeep: translate("Tooltip.LABEL[BetterBuildingMenu.Upkeep]", "Upkeep") ?? "Upkeep",
       capacity: translate("Tooltip.LABEL[BetterBuildingMenu.Capacity]", "Capacity") ?? "Capacity",
+      leisure: translate("Tooltip.LABEL[BetterBuildingMenu.Leisure]", "Recreation") ?? "Recreation",
+      range: translate("Tooltip.LABEL[BetterBuildingMenu.Range]", "Range") ?? "Range",
+      speed: translate("Tooltip.LABEL[BetterBuildingMenu.SpeedLimit]", "Speed limit") ?? "Speed limit",
+      width: translate("Tooltip.LABEL[BetterBuildingMenu.NetworkWidth]", "Width") ?? "Width",
       lot: translate("Tooltip.LABEL[BetterBuildingMenu.Lot]", "Lot") ?? "Lot",
       // "Requires", not "Availability". The line lists what the player has to
       // go and do; naming it after the state it describes made the reader work
@@ -137,7 +158,7 @@ const HoverCardContent = ({
   entry: BuildingCatalogEntry;
   context: HoverCardContext;
 }) => {
-  const { milestoneNames, separators, labels, describe } = context;
+  const { milestoneNames, separators, labels, describe, leisureName, translateFact } = context;
   const label = entry.name || entry.prefabName;
   // What the thing IS, before every line that is a number about it. This is
   // what vanilla shows on selection and the lens used to drop the moment a
@@ -146,6 +167,15 @@ const HoverCardContent = ({
 
   const cost = formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance);
   const upkeep = formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance);
+  const leisure = leisureName(entry.leisureType);
+  const range = formatServiceRange(entry.serviceRange, separators);
+  const speed = formatSpeedLimit(entry.speedLimit, separators);
+  const width = formatNetworkWidth(entry.networkWidth);
+  // Whatever this service carries beyond its headline capacity. Spread rather
+  // than listed: which figures exist depends on the building, so the card
+  // cannot name them in advance.
+  const serviceFacts = renderServiceFacts(entry.serviceFacts, translateFact, (value) =>
+    formatBuildingMetric(value, "capacity", separators));
   const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators);
   const lot = formatLotDimensions(entry.lotWidth, entry.lotDepth);
 
@@ -204,6 +234,49 @@ const HoverCardContent = ({
       // moved with the simulation while the building did not (cm-7r5r).
       value: capacity,
     },
+    // What a park actually gives the city. "Parks & Recreation" holds a city
+    // park, an indoor arena and a beach, and the catalog could not tell them
+    // apart — the card showed a lot size, a cost and nothing about what the
+    // thing is FOR. The game's own word for it, via Properties.LEISURE_TYPE.
+    {
+      key: "leisure",
+      label: labels.leisure,
+      applicable: leisure !== "",
+      value: leisure,
+    },
+    // How far it reaches. For a telecom tower this is most of the point — a
+    // network capacity says how much and nothing about where — and the same
+    // component covers schools, hospitals and parks, so the line is not a
+    // communications special case.
+    {
+      key: "range",
+      label: labels.range,
+      applicable: range !== "",
+      value: range,
+    },
+    // The two figures a player picks one road over another by, and a network
+    // card had neither: it showed a cost per kilometre and stopped. Both are
+    // null on anything that is not a network, so this costs a building nothing.
+    {
+      key: "speedLimit",
+      label: labels.speed,
+      applicable: speed !== "",
+      value: speed,
+    },
+    {
+      key: "networkWidth",
+      label: labels.width,
+      applicable: width !== "",
+      value: width,
+    },
+    // After the universal figures, because these are the specialist ones: a
+    // player reads cost and capacity on every card and helicopters on four.
+    ...serviceFacts.map((fact) => ({
+      key: fact.key,
+      label: fact.label,
+      applicable: true,
+      value: fact.value,
+    })),
     // Beside capacity, because it is one: how many cars the thing holds. Only
     // when there are bays — a zero here is a fact, but it is a fact about
     // something the player was not asking after on a building with no parking.

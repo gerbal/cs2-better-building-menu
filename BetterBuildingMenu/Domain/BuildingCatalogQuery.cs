@@ -8,7 +8,7 @@ namespace BetterBuildingMenu.Domain
 	/// </summary>
 	public sealed record BuildingCatalogQuery(
 		string SearchText = "",
-		string SortColumn = "Name",
+		string SortColumn = "Default",
 		// Grouping is a primary sort key rather than a separate axis: with
 		// paging the two cannot be independent, or a group splits across a page
 		// boundary and its heading lies about what it contains. This is the
@@ -78,6 +78,10 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		public static readonly string[] OfferedSortColumns =
 		{
+			// First, and the default. It is the game's own order — see
+			// BuildingCatalogEntry.UIOrder — which no other column reproduces,
+			// so it is named for what it is rather than for a field.
+			"Default",
 			"Name", "Category", "ConstructionCost", "Upkeep", "Workers",
 			"Capacity", "LotWidth", "LotDepth", "BuildingLevel", "HasParking",
 		};
@@ -126,7 +130,7 @@ namespace BetterBuildingMenu.Domain
 		public bool IsScopedToMenu =>
 			!string.IsNullOrWhiteSpace(UiMenu) || !string.IsNullOrWhiteSpace(UiCategory);
 
-		public string EffectiveSortColumn => string.IsNullOrWhiteSpace(SortColumn) ? "Name" : SortColumn;
+		public string EffectiveSortColumn => string.IsNullOrWhiteSpace(SortColumn) ? "Default" : SortColumn;
 
 		/// <summary>
 		/// Returns this query with the window shrunk back to the base chunk when

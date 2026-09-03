@@ -75,7 +75,9 @@ describe("tile tooltip lines", () => {
   });
 
   it("caps the card — the grid's whole advantage is being shorter than the table", () => {
-    const keys = ["a", "b", "c", "d", "e", "f", "g", "h"];
+    // Two past the cap, whatever the cap is, so raising it does not quietly
+    // turn this into a test that no longer tests anything.
+    const keys = Array.from({ length: TILE_TOOLTIP_MAX_LINES + 2 }, (_, i) => `k${i}`);
     const lines = buildTileTooltipLines(keys.map((key) => candidate({ key })));
 
     assert.equal(lines.length, TILE_TOOLTIP_MAX_LINES);

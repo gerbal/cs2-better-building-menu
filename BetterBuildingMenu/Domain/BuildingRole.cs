@@ -45,6 +45,13 @@ namespace BetterBuildingMenu.Domain
 			"PowerPlant",
 			"GarbageFacility",
 			"DeathcareFacility",
+			// Communications. Both name the building's whole purpose, so they
+			// sit with the other primaries rather than below them; they are last
+			// only because nothing else in the catalog carries these components
+			// alongside another service, so their rank never actually decides
+			// anything.
+			"PostFacility",
+			"TelecomFacility",
 		};
 
 		/// <summary>

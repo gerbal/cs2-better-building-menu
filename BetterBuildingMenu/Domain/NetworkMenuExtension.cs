@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 
 using BetterBuildingMenu.Domain.Enums;
@@ -57,13 +58,46 @@ namespace BetterBuildingMenu.Domain
 			string.Equals(menu?.Trim(), RoadsMenu, StringComparison.OrdinalIgnoreCase);
 
 		/// <summary>
+		/// Network subcategories the extension does not gather.
+		/// </summary>
+		/// <remarks>
+		/// The extension exists so a player building a network can find every
+		/// network in one menu. These five are not that: stops and routes are
+		/// transit OPERATION — where a line calls and what path it takes — rather
+		/// than track you lay, and power lines, pipes and waterways answer to the
+		/// utility that owns them, where the rest of that service's tools are.
+		/// Gathered into Roads they made the menu longer without making any road
+		/// easier to reach.
+		///
+		/// Excluded from the GATHERING, not from the catalog. Each of these still
+		/// appears in the menu the game files it under — Transportation,
+		/// Electricity, Water — exactly as before; the extension simply stops
+		/// offering a second way in. And a network the game itself files under
+		/// Roads is never touched by this: IsExtraNetwork already requires the
+		/// entry's own menu to be something else.
+		/// </remarks>
+		private static readonly HashSet<string> NotGathered = new(StringComparer.OrdinalIgnoreCase)
+		{
+			nameof(PrefabSubCategory.Networks_Stops),
+			nameof(PrefabSubCategory.Networks_Routes),
+			nameof(PrefabSubCategory.Networks_Waterways),
+			nameof(PrefabSubCategory.Networks_PowerLines),
+			nameof(PrefabSubCategory.Networks_Pipes),
+		};
+
+		/// <summary>Whether the extension gathers this subcategory at all.</summary>
+		public static bool IsGathered(string? subCategory) =>
+			!NotGathered.Contains(subCategory?.Trim() ?? string.Empty);
+
+		/// <summary>
 		/// Whether this entry reaches the menu through the extension rather than
 		/// through the game's own tree.
 		/// </summary>
-		public static bool IsExtraNetwork(string? entryCategory, string? entryMenu, string? menu) =>
+		public static bool IsExtraNetwork(string? entryCategory, string? entryMenu, string? menu, string? entrySubCategory = null) =>
 			IsExtended(menu)
 			&& string.Equals(entryCategory?.Trim(), NetworksCategory, StringComparison.OrdinalIgnoreCase)
-			&& !string.Equals(entryMenu?.Trim(), RoadsMenu, StringComparison.OrdinalIgnoreCase);
+			&& !string.Equals(entryMenu?.Trim(), RoadsMenu, StringComparison.OrdinalIgnoreCase)
+			&& IsGathered(entrySubCategory);
 
 		/// <summary>
 		/// The heading an extra network sits under: its subcategory, without the
@@ -112,7 +146,7 @@ namespace BetterBuildingMenu.Domain
 		/// list it does not select.
 		/// </remarks>
 		public static string? EffectiveCategory(BuildingCatalogEntry entry, string? menu) =>
-			IsExtraNetwork(entry.Category, entry.UiMenu, menu)
+			IsExtraNetwork(entry.Category, entry.UiMenu, menu, entry.SubCategory)
 				? GroupId(entry.SubCategory)
 				: entry.UiCategory;
 
@@ -127,7 +161,7 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		public static BuildingCatalogEntry Reframe(BuildingCatalogEntry entry, string? menu)
 		{
-			if (!IsExtraNetwork(entry.Category, entry.UiMenu, menu))
+			if (!IsExtraNetwork(entry.Category, entry.UiMenu, menu, entry.SubCategory))
 			{
 				return entry;
 			}

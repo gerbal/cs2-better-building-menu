@@ -5,6 +5,7 @@ import {
   getBuildingExtensionLabels,
   getBuildingFlagGroups,
   getBuildingProvenanceChips,
+  leisureLabel,
 } from "../src/domain/buildingLensRowDetails.ts";
 
 describe("Building description lookup", () => {
@@ -331,5 +332,33 @@ describe("Where the clamp prefers to cut", () => {
 
     assert.equal(clamped.includes("12.5"), true);
     assert.equal(clamped.endsWith("…"), true);
+  });
+});
+
+describe("leisureLabel", () => {
+  it("asks the game for its own word", () => {
+    // Vanilla ships Properties.LEISURE_TYPE[CityPark] and [CityIndoors], so a
+    // park reads the same here as everywhere else in the UI, in every language.
+    // Inventing our own "Outdoor recreation" would be a second vocabulary for a
+    // property that already has one.
+    const translate = (key: string) =>
+      key === "Properties.LEISURE_TYPE[CityPark]" ? "Outdoor recreation" : null;
+
+    assert.equal(leisureLabel("CityPark", translate), "Outdoor recreation");
+  });
+
+  it("spells the enum out when the game has no string for it", () => {
+    // Wrong-ish English, right about which value it is — better than a blank
+    // where a card promised a fact.
+    assert.equal(leisureLabel("CityIndoors", () => null), "City Indoors");
+    assert.equal(leisureLabel("Sightseeing", () => null), "Sightseeing");
+  });
+
+  it("says nothing for a building that provides no leisure", () => {
+    // Most of the catalog. The card and the hover line both drop out on "".
+    assert.equal(leisureLabel("", () => "unused"), "");
+    assert.equal(leisureLabel(null, () => "unused"), "");
+    assert.equal(leisureLabel(undefined, () => "unused"), "");
+    assert.equal(leisureLabel("   ", () => "unused"), "");
   });
 });

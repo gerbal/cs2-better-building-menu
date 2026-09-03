@@ -59,8 +59,15 @@ export interface TileTooltipCandidate extends TileTooltipLine {
  * ceiling on a card that has already dropped every field that does not apply,
  * so a typical asset still shows three or four; only one carrying everything
  * reaches six.
+ *
+ * Raised from seven when the service facts arrived. A fire station now carries
+ * cost, upkeep, engines, lot, range, helicopters and disaster response — seven
+ * on its own, before it is locked or already built — and at the old ceiling the
+ * last line was dropped silently, which is the failure the cap exists to make
+ * visible rather than to cause. Ten is still a ceiling and not a target:
+ * applicability remains what keeps a card short.
  */
-export const TILE_TOOLTIP_MAX_LINES = 7;
+export const TILE_TOOLTIP_MAX_LINES = 10;
 
 /**
  * Whether a metric has a value worth printing.

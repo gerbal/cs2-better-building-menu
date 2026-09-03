@@ -68,5 +68,21 @@ namespace BetterBuildingMenu.Tests
 		{
 			Assert.Equal("School", BuildingRole.ResolvePrimary(new[] { "SomeNewService", "School" }));
 		}
+		[Fact]
+		public void CommunicationsBuildingsHaveARole()
+		{
+			// Neither component was read at all, so a post office and a telecom
+			// tower arrived with no role and no capacity: the card showed a lot
+			// size and a price, and the hover card had nothing to add. A role
+			// that the indexer can produce but Priority does not list is dropped
+			// by ResolvePrimary and never offered by the facet, so registering
+			// them here is the half that makes the indexing visible.
+			Assert.Contains("PostFacility", BuildingRole.Known);
+			Assert.Contains("TelecomFacility", BuildingRole.Known);
+
+			Assert.Equal("PostFacility", BuildingRole.ResolvePrimary(new[] { "PostFacility" }));
+			Assert.Equal("TelecomFacility", BuildingRole.ResolvePrimary(new[] { "TelecomFacility" }));
+		}
+
 	}
 }

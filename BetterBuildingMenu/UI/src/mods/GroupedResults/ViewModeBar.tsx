@@ -11,6 +11,19 @@ export interface ViewModeOption {
 }
 
 /**
+ * Where the lens opens, and what "Reset menu" goes back to.
+ *
+ * ONE constant, because this was three literals and moving the default moved
+ * one of them: the catalog rendered cards while the view bar highlighted grid
+ * and Reset put you back to grid.
+ *
+ * Cards keep the thumbnail the grid was defaulted for, at a larger size, add
+ * footprint and cost, and never truncate a name — which is the whole problem
+ * the tile's character budget exists to manage.
+ */
+export const DEFAULT_VIEW_MODE: CatalogViewMode = "cards";
+
+/**
  * The order the control draws them in.
  *
  * Cards first, because that is where the lens opens. The row then runs from

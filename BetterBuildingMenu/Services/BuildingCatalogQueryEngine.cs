@@ -330,7 +330,7 @@ namespace BetterBuildingMenu.Services
 			// does: every network belongs there, not only the ones vanilla files
 			// under Roads. See NetworkMenuExtension for why, and for the fact that
 			// nothing is taken out of the menus that already hold them.
-			var extraNetwork = NetworkMenuExtension.IsExtraNetwork(entry.Category, entry.UiMenu, menu);
+			var extraNetwork = NetworkMenuExtension.IsExtraNetwork(entry.Category, entry.UiMenu, menu, entry.SubCategory);
 
 			if (!extraNetwork
 				&& !string.IsNullOrEmpty(menu)
@@ -449,6 +449,14 @@ namespace BetterBuildingMenu.Services
 
 			IOrderedEnumerable<BuildingCatalogEntry> ordered = query.EffectiveSortColumn.ToLowerInvariant() switch
 			{
+				// The game's own order, and the only sort here that is not a
+				// field the player can see. Name second, so two assets vanilla
+				// gave the same priority do not swap under the cursor — vanilla
+				// itself leaves that to an unstable sort, which is fine for a
+				// menu drawn once and not for a list that re-renders.
+				"default" => query.Descending
+					? seed.ThenByDescending(x => x.UIOrder).ThenByDescending(x => x.Name, StringComparer.OrdinalIgnoreCase)
+					: seed.ThenBy(x => x.UIOrder).ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase),
 				"category" => query.Descending
 					? seed.ThenByDescending(x => x.Category, StringComparer.OrdinalIgnoreCase)
 					: seed.ThenBy(x => x.Category, StringComparer.OrdinalIgnoreCase),
