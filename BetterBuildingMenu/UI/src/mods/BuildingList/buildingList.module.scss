@@ -204,10 +204,28 @@
 }
 
 // Deliberately tiny. These are read as shapes at a glance, not counted.
+//
+// Sized so the step from one cell to the next is a WHOLE pixel. The engine
+// resolves 1rem to 2/3 px at 1280x720 (CS2 authors against a 1920 design
+// width), so only multiples of 1.5rem land on the pixel grid. These were
+// 4rem cells on a 5rem pitch, which is 2.67px on 3.33px: consecutive cells
+// started at x .33, .67, .00, each rasterising with different edge coverage,
+// so one nominal square drew three visibly different ways. Reported as the
+// zone tooltip's size indicator being "sized irregularly" — nothing in the
+// markup was uneven, the pitch just could not land on whole pixels.
+//
+// 3rem + 1.5rem = 2px on a 3px pitch: same glyph size as before, every cell
+// now identical. The pitch is the part that matters — a fractional cell still
+// draws consistently as long as all cells share one phase; it is the
+// VARIATION that shows, not the softness.
+//
+// Whole at 1080p too (3px on a 4.5px pitch is half-pixel there, but a uniform
+// half-pixel, and everything is crisper at that scale). If this ever needs to
+// be exact at both, multiples of 3rem are whole at each.
 .glyphCell {
-  width: 4rem;
-  height: 4rem;
-  margin: 0 1rem 1rem 0;
+  width: 3rem;
+  height: 3rem;
+  margin: 0 1.5rem 1.5rem 0;
   background-color: var(--accentColorNormal);
   opacity: 0.75;
 }
