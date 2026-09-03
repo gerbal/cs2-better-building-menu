@@ -112,4 +112,35 @@ describe("grouped results", () => {
       assert.match(child.classes, /\bgroupUnlabeled\b/);
     }
   });
+
+  it("keeps the reserve for a lone child when a sibling group's children are headed", () => {
+    // Zones, measured live: INDUSTRIAL ZONES has one sub-group, so its
+    // heading is hidden and the row it reserved goes with it — while
+    // COMMERCIAL and OFFICE beside it have two sub-groups each, keep their
+    // children's headings, and reserve 11px for them. The three parents flow
+    // on one line, so Industrial's tile sat 11px above its neighbours' (529.7
+    // against 540.7) and the row lost the shared baseline the grid is for.
+    //
+    // GroupBox already equalises this WITHIN a row. It cannot reach across
+    // one: these are three separate child rows under three sibling parents,
+    // and the lone child's row measures no heading at all, so its reserve is
+    // null and the stylesheet's 0 stands. The parent, which can see all three
+    // subtrees, is the only place that knows the row disagrees.
+    const html = render([
+      ["Commercial Zones", "Low Density"],
+      ["Commercial Zones", "High Density"],
+      ["Industrial Zones", "Industrial"],
+      ["Office Zones", "Low Density"],
+      ["Office Zones", "High Density"],
+    ]);
+    const found = groups(html);
+
+    const lone = found.filter((g) => g.heading === null);
+    assert.equal(lone.length, 1, "only Industrial's child hides its heading");
+    assert.doesNotMatch(
+      lone[0]!.classes,
+      /\bgroupUnlabeled\b/,
+      "the hidden heading still reserves its row, so the tiles keep the row's baseline"
+    );
+  });
 });

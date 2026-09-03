@@ -316,7 +316,10 @@ export const GroupedResults = ({
   const renderNodes = (
     nodes: GroupNode<BuildingCatalogEntry>[],
     depth: number,
-    parentLabel: string | null = null
+    parentLabel: string | null = null,
+    // Set by the PARENT row when this row draws no heading at all while a
+    // sibling row does. See someChildRowIsHeaded below.
+    reserveHiddenHeading = false
   ): JSX.Element => {
     // A single group covering everything is a label with nothing to
     // distinguish — a lone SERVICE BUILDINGS heading once the player has
@@ -344,6 +347,33 @@ export const GroupedResults = ({
     // Nothing was lost by reverting. The empty row this was all reported for
     // came from .group's min-width and .groupBand's full-line flex, both fixed
     // above; the collapse never contributed to it.
+
+    // Sibling groups FLOW onto one line, so their tiles have to share a
+    // baseline — that is the whole argument for the reserve. GroupBox already
+    // equalises this within a row by giving every group the row's tallest
+    // heading. It cannot reach ACROSS rows, and that is where Zones broke:
+    // INDUSTRIAL ZONES has one sub-group, so shouldShowHeading hides that
+    // child's heading and the row it reserved goes with it, while COMMERCIAL
+    // and OFFICE beside it have two sub-groups each and reserve 11px for
+    // theirs. Three sibling parents on one line, three separate child rows,
+    // and Industrial's tile sat 11px above its neighbours' (measured live:
+    // 529.7 against 540.7).
+    //
+    // Only this level can see the disagreement — each child row measures its
+    // own headings and finds none. So where some siblings' children are
+    // headed, the ones whose children are not keep the reserve anyway.
+    //
+    // Narrow on purpose: a child row that draws even ONE heading measures a
+    // reserve and GroupBox hands it to every group in that row, unlabeled
+    // ones included, so .groupUnlabeled is already inert there. The class
+    // only decides anything when the whole row draws no heading. Forcing the
+    // reserve any wider than that would put 11px back under the same-named
+    // sub-branch this file deliberately flattened — MEDIUM ROADS carrying a
+    // "Medium Roads" heading's worth of nothing.
+    const someChildRowIsHeaded = nodes.some(
+      (node) => node.children.length > 0 && shouldShowHeading(node.children)
+    );
+
     const boxes = nodes.map((node) => {
       // A group with two or more sub-groups takes the whole row, so its
       // heading sits alone on its line and its children's headings on the
@@ -363,10 +393,14 @@ export const GroupedResults = ({
       // labelled siblings keep theirs.
       const unlabeled =
         !showHeadings || (depth > 0 && parentLabel !== null && node.label === parentLabel);
+      // Drawing no heading is not the same as reserving no row for one: when
+      // the parent row says a neighbour reserves, this one has to match or
+      // the two sets of tiles stop lining up.
+      const dropsReserve = unlabeled && !reserveHiddenHeading;
 
       return {
         key: node.path.join("/"),
-        className: classNames(styles.group, band && styles.groupBand, unlabeled && styles.groupUnlabeled),
+        className: classNames(styles.group, band && styles.groupBand, dropsReserve && styles.groupUnlabeled),
         depth,
         heading: unlabeled
           ? null
@@ -377,7 +411,12 @@ export const GroupedResults = ({
             nested: depth > 0,
           },
         body: node.children.length > 0
-          ? renderNodes(node.children, depth + 1, node.label)
+          ? renderNodes(
+            node.children,
+            depth + 1,
+            node.label,
+            someChildRowIsHeaded && !shouldShowHeading(node.children)
+          )
           : renderLeaf(node.entries),
       };
     });
