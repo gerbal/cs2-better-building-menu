@@ -136,27 +136,6 @@ namespace BetterBuildingMenu.Domain.Enums
 		[CategoryIcon("Media/Game/Icons/Lighting.svg")]
 		Props_Road,
 
-		[Obsolete("Use PrefabCategory", true)]
-		Vehicles = PrefabCategory.Vehicles,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/GenericVehicle.svg")]
-		Vehicles_Residential,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/Motorbike.svg")]
-		Vehicles_Bikes,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/DeliveryVan.svg")]
-		Vehicles_Industrial,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/ServiceVehicles.svg")]
-		Vehicles_Services,
-		[CategoryIcon("Media/Game/Icons/Bus.svg")]
-		Vehicles_Bus,
-		[CategoryIcon("Media/Game/Icons/Train.svg")]
-		Vehicles_Train,
-		[CategoryIcon("Media/Game/Icons/Ship.svg")]
-		Vehicles_Ship,
-		[CategoryIcon("Media/Game/Icons/Airplane.svg")]
-		Vehicles_Plane,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/GenericVehicles.svg")]
-		Vehicles_Misc,
-
 		// The zone families, which are the game's own: ZoneData.m_AreaType plus
 		// ZoneFlags.Office is what it switches on, and ZonePrefab derives its
 		// "ZonesOffice"/"Zones{AreaType}" tags from the same two fields.

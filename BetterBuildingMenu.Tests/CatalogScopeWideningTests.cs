@@ -170,12 +170,14 @@ namespace BetterBuildingMenu.Tests
 			// which is what keeps them out, at both scopes, with no special
 			// case anywhere.
 			//
-			// So this test is a DECISION, not a floor. Read it before adding a
-			// Has<BuildingMenuGenerated> arm to BelongsInCatalog: that change is a
-			// reversal, not a fix, and it also arms the exact population
-			// cm-2xvs.13 warns about — group-less prefabs, which null the
-			// toolbar's menu and category and unmount the panel under the
-			// player.
+			// So this test is a DECISION, not a floor. The generators and the
+			// marker component they stamped are gone, so nothing produces this
+			// shape today; the case is kept because the shape is what the rule
+			// is about. Read it before adding an arm to BelongsInCatalog that
+			// would admit group-less prefabs: that change is a reversal, not a
+			// fix, and it arms the exact population cm-2xvs.13 warns about —
+			// group-less prefabs, which null the toolbar's menu and category
+			// and unmount the panel under the player.
 			foreach (var menuScoped in new[] { false, true })
 			{
 				Assert.False(BuildingCatalogAdapter.BelongsInCatalog(

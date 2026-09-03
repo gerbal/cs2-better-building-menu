@@ -1275,7 +1275,7 @@ namespace BetterBuildingMenu.Systems
 				&& category.TryGet<UIObject>(out var categoryUi)
 					? categoryUi.m_Priority
 					: 0;
-			prefabIndex.IsVanilla = prefab.isBuiltin || prefab.Has<BuildingMenuGenerated>();
+			prefabIndex.IsVanilla = prefab.isBuiltin;
 			// Not gated to Buildings and ServiceBuildings any more: a parking
 			// lot reached through the Roads menu is a network, and reporting no
 			// parking for the one asset class whose whole purpose is parking was
