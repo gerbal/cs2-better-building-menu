@@ -64,13 +64,16 @@ describe("recreation on the hover card", () => {
       leisureEfficiency: 60,
     } as Partial<BuildingCatalogEntry>));
 
-    // Amount FIRST, then the kind, as one phrase — the shape the game's own
-    // building-details panel uses ("2 Outdoor Recreation"). It read "City Park
-    // 60" behind a "Recreation" label, which put the number where a reader
-    // does not look for it and spent the label repeating the word already in
-    // the value.
-    assert.match(card, /60 City Park/);
-    assert.doesNotMatch(card, /City Park 60/);
+    // The KIND is the label and the amount is the figure, like every other
+    // line on the card. It used to read "Recreation: Outdoor Recreation 1",
+    // whose label repeated the word already in the value.
+    //
+    // Not "1 Outdoor" under a "Recreation" label, which was the other
+    // candidate: that needs the word "Recreation" stripped off a LOCALIZED
+    // string, and three of the seven leisure types do not contain it in
+    // English at all ("1 Meals"), while German has "Erholung im Innenraum" and
+    // Italian "Servizi ricreativi al chiuso" — nothing to strip in either.
+    assert.match(card, /City Park<\/span><span[^>]*>60/);
   });
 
   it("shows the kind alone when the building carries no amount", () => {

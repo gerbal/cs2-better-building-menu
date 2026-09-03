@@ -165,22 +165,25 @@ const HoverCardContent = ({
 
   const cost = formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance);
   const upkeep = formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance);
-  const leisureKind = leisureName(entry.leisureType);
-  // Amount THEN kind, as one phrase: "2 Outdoor Recreation". That is the shape
-  // the game's own building-details panel uses for the same figure, and it
-  // reads as a quantity of a thing rather than as a thing with a number after
-  // it. The kind alone would not separate a bench from a botanical garden;
-  // the amount is what a player compares.
+  // The kind LABELS the figure, as on every other line: "Outdoor Recreation 1"
+  // reads the same way as "Attractiveness 1" beside it. The kind alone would
+  // not separate a bench from a botanical garden, and the amount is what a
+  // player compares — but the amount alone names nothing, so it needs the kind
+  // in front of it either way.
   //
-  // No label in front of it. The kind's own word is "Outdoor Recreation", so a
-  // "Recreation" label spent a column repeating it — the phrase says what it
-  // is by itself, exactly as it does in the details panel.
+  // It read "Recreation: Outdoor Recreation 1" before, whose label repeated
+  // the word already in the value. The game's own word for the kind comes from
+  // Properties.LEISURE_TYPE, so it can simply BE the label.
+  //
+  // Rejected: "Recreation: 1 Outdoor", which needs "Recreation" stripped off a
+  // LOCALIZED string. Three of the seven kinds do not contain the word in
+  // English at all — Meals, Entertainment, Travel — and no other language puts
+  // it where a suffix strip would find it ("Erholung im Innenraum").
+  const leisureKind = leisureName(entry.leisureType);
   const leisureAmount = entry.leisureEfficiency;
-  const leisure = leisureKind === ""
+  const leisure = leisureKind === "" || !isMetricPresent(leisureAmount)
     ? ""
-    : isMetricPresent(leisureAmount)
-      ? `${formatBuildingMetric(leisureAmount, "capacity", separators)} ${leisureKind}`
-      : leisureKind;
+    : formatBuildingMetric(leisureAmount, "capacity", separators);
   const range = formatServiceRange(entry.serviceRange, separators);
   const speed = formatSpeedLimit(entry.speedLimit, separators);
   const width = formatNetworkWidth(entry.networkWidth);
@@ -260,8 +263,11 @@ const HoverCardContent = ({
     // thing is FOR. The game's own word for it, via Properties.LEISURE_TYPE.
     {
       key: "leisure",
-      label: "",
-      applicable: leisure !== "",
+      label: leisureKind,
+      // A kind with no amount still says what the building is for, so it shows
+      // as a statement rather than being dropped for having no figure.
+      applicable: leisureKind !== "",
+      statement: leisure === "",
       value: leisure,
     },
     // How far it reaches. For a telecom tower this is most of the point — a
