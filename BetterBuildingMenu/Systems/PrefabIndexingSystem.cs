@@ -1466,6 +1466,7 @@ namespace BetterBuildingMenu.Systems
 			if (EntityManager.TryGetComponent<PlaceableObjectData>(entity, out var placeableData))
 			{
 				prefabIndex.ConstructionCost = placeableData.m_ConstructionCost;
+				Fact(prefabIndex, "xpReward", placeableData.m_XPReward);
 			}
 			else if (EntityManager.TryGetComponent<PlaceableNetData>(entity, out var netData))
 			{
@@ -1510,6 +1511,55 @@ namespace BetterBuildingMenu.Systems
 				{
 					prefabIndex.NetworkWidth = geometryData.m_DefaultWidth;
 				}
+
+				if (EntityManager.TryGetComponent<NetGeometryData>(entity, out var elevatedGeometry)
+					&& elevatedGeometry.m_ElevatedWidth > 0f
+					&& Math.Abs(elevatedGeometry.m_ElevatedWidth - elevatedGeometry.m_DefaultWidth) > 0.01f)
+				{
+					// Only when it DIFFERS from the ground width. Stating both when
+					// they are the same number is a line that says nothing.
+					Fact(prefabIndex, "elevatedWidth", elevatedGeometry.m_ElevatedWidth);
+				}
+
+				if (netData.m_UndergroundPrefab != Entity.Null)
+				{
+					TextFact(prefabIndex, "roadFeature", "underground");
+				}
+
+				if (EntityManager.TryGetComponent<TrackData>(entity, out var trackKind)
+					&& trackKind.m_TrackType != Game.Net.TrackTypes.None)
+				{
+					TextFact(prefabIndex, "trackType", trackKind.m_TrackType.ToString());
+				}
+
+				// Road class, traffic lights and zoning live on the AUTHORING prefab
+				// rather than on a component, so they need the PrefabBase back. These
+				// are the three a player chooses a road by and the card had none of
+				// them, while carrying the speed limit read a few lines above.
+				if (_prefabSystem.TryGetPrefab<PrefabBase>(entity, out var netPrefab))
+				{
+					if (netPrefab is RoadPrefab roadPrefab)
+					{
+						TextFact(prefabIndex, "roadClass", roadPrefab.m_RoadType.ToString());
+						if (roadPrefab.m_TrafficLights)
+						{
+							TextFact(prefabIndex, "roadFeature", "trafficLights");
+						}
+						if (roadPrefab.m_HighwayRules)
+						{
+							TextFact(prefabIndex, "roadFeature", "highwayRules");
+						}
+						if (roadPrefab.m_ZoneBlock is not null)
+						{
+							TextFact(prefabIndex, "roadFeature", "zonesAlongside");
+						}
+					}
+
+					if (netPrefab.TryGet<PlaceableNetPiece>(out var netPiece) && netPiece.m_ElevationCost > 0)
+					{
+						Fact(prefabIndex, "elevationCost", netPiece.m_ElevationCost * NetCellsPerKilometre);
+					}
+				}
 			}
 
 			if (EntityManager.TryGetComponent<ConsumptionData>(entity, out var consumptionData))
@@ -1524,6 +1574,15 @@ namespace BetterBuildingMenu.Systems
 			if (EntityManager.TryGetComponent<WorkplaceData>(entity, out var workplaceData))
 			{
 				prefabIndex.Workers = workplaceData.m_MaxWorkers;
+				// The rest of the staffing picture. MaxWorkers says how many; these
+				// say how few it can run on and when they are there.
+				Fact(prefabIndex, "minCrew", workplaceData.m_MinimumWorkersLimit);
+				// 0-1 probabilities, not percentages: FindJobSystem rolls
+				// `chance < m_EveningShiftProbability`. Shown as a percent, so
+				// scaled here — without this every building read "0 %".
+				Fact(prefabIndex, "eveningShift", workplaceData.m_EveningShiftProbability * 100d);
+				Fact(prefabIndex, "nightShift", workplaceData.m_NightShiftProbability * 100d);
+				Fact(prefabIndex, "workConditions", workplaceData.m_WorkConditions);
 				// Who the building employs, which the catalog could not say at
 				// all: a workplace count treats a hi-tech campus and a warehouse
 				// as the same fact. The game has no player-facing word for
@@ -1559,6 +1618,8 @@ namespace BetterBuildingMenu.Systems
 			{
 				roles.Add("School");
 				capacities.Add(schoolData.m_StudentCapacity);
+				Fact(prefabIndex, "studentWellbeing", schoolData.m_StudentWellbeing);
+				Fact(prefabIndex, "studentHealth", schoolData.m_StudentHealth);
 				// The tier the school grants. Without it the UI had to guess the
 				// tier from the building's name, which cannot see a modded
 				// "Akademie" and silently dropped it from the forecast.
@@ -1605,6 +1666,7 @@ namespace BetterBuildingMenu.Systems
 				Fact(prefabIndex, "zoneElectricity", zoneConsumption.m_ElectricityConsumption);
 				Fact(prefabIndex, "zoneWater", zoneConsumption.m_WaterConsumption);
 				Fact(prefabIndex, "zoneGarbage", zoneConsumption.m_GarbageAccumulation);
+				Fact(prefabIndex, "zoneTelecom", zoneConsumption.m_TelecomNeed);
 			}
 
 			if (EntityManager.TryGetComponent<ZonePollutionData>(entity, out var zonePollution))
@@ -1619,6 +1681,12 @@ namespace BetterBuildingMenu.Systems
 				// Residential only; the other families report none rather than a
 				// zero that would read as "no homes here".
 				Fact(prefabIndex, "zoneHouseholds", zoneProperties.m_ResidentialProperties);
+				Fact(prefabIndex, "zoneSpace", zoneProperties.m_SpaceMultiplier);
+				Fact(prefabIndex, "zoneFireHazard", zoneProperties.m_FireHazardMultiplier);
+				if (zoneProperties.m_IgnoreLandValue)
+				{
+					TextFact(prefabIndex, "zoneFeature", "ignoresLandValue");
+				}
 			}
 
 			// The zone figures that are words rather than numbers. These had no
@@ -1701,6 +1769,10 @@ namespace BetterBuildingMenu.Systems
 				{
 					prefabIndex.ServiceRange = telecomFacilityData.m_Range;
 				}
+				if (telecomFacilityData.m_PenetrateTerrain)
+				{
+					TextFact(prefabIndex, "facilityFeature", "signalThroughTerrain");
+				}
 			}
 
 			if (EntityManager.TryGetComponent<GarbageFacilityData>(entity, out var garbageFacilityData))
@@ -1709,6 +1781,10 @@ namespace BetterBuildingMenu.Systems
 				capacities.Add(garbageFacilityData.m_GarbageCapacity);
 				Fact(prefabIndex, "processingRate", garbageFacilityData.m_ProcessingSpeed);
 				Fact(prefabIndex, "collectionTrucks", garbageFacilityData.m_TransportCapacity);
+				if (garbageFacilityData.m_IndustrialWasteOnly)
+				{
+					TextFact(prefabIndex, "facilityFeature", "industrialWasteOnly");
+				}
 			}
 
 			if (EntityManager.TryGetComponent<FireStationData>(entity, out var fireStationData))
@@ -1730,18 +1806,26 @@ namespace BetterBuildingMenu.Systems
 			{
 				roles.Add("Prison");
 				capacities.Add(prisonData.m_PrisonerCapacity);
+				Fact(prefabIndex, "prisonerWellbeing", prisonData.m_PrisonerWellbeing);
+				Fact(prefabIndex, "prisonerHealth", prisonData.m_PrisonerHealth);
 			}
 
 			if (EntityManager.TryGetComponent<DeathcareFacilityData>(entity, out var deathcareFacilityData))
 			{
 				roles.Add("DeathcareFacility");
 				capacities.Add(deathcareFacilityData.m_StorageCapacity);
+				Fact(prefabIndex, "processingRate", deathcareFacilityData.m_ProcessingRate);
+				if (deathcareFacilityData.m_LongTermStorage)
+				{
+					TextFact(prefabIndex, "facilityFeature", "longTermStorage");
+				}
 			}
 
 			if (EntityManager.TryGetComponent<EmergencyShelterData>(entity, out var emergencyShelterData))
 			{
 				roles.Add("EmergencyShelter");
 				capacities.Add(emergencyShelterData.m_ShelterCapacity);
+				Fact(prefabIndex, "shelterVehicles", emergencyShelterData.m_VehicleCapacity);
 			}
 
 			if (EntityManager.TryGetComponent<WaterPumpingStationData>(entity, out var waterPumpingStationData))
@@ -1749,6 +1833,8 @@ namespace BetterBuildingMenu.Systems
 				roles.Add("WaterPumpingStation");
 				prefabIndex.WaterCapacity = waterPumpingStationData.m_Capacity;
 				capacities.Add(waterPumpingStationData.m_Capacity);
+				Fact(prefabIndex, "purification", waterPumpingStationData.m_Purification);
+				TextFact(prefabIndex, "waterSource", waterPumpingStationData.m_Types.ToString());
 			}
 
 			if (EntityManager.TryGetComponent<SewageOutletData>(entity, out var sewageOutletData))
@@ -1756,6 +1842,7 @@ namespace BetterBuildingMenu.Systems
 				roles.Add("SewageOutlet");
 				prefabIndex.SewageCapacity = sewageOutletData.m_Capacity;
 				capacities.Add(sewageOutletData.m_Capacity);
+				Fact(prefabIndex, "purification", sewageOutletData.m_Purification);
 			}
 
 			// Power plants report output as production rather than capacity, so
@@ -1779,6 +1866,44 @@ namespace BetterBuildingMenu.Systems
 			{
 				roles.Add("PowerPlant");
 				capacities.Add(windData.m_Production);
+			}
+
+			// Components the index did not read at all before. Each is the figure
+			// its building is FOR, and each was simply absent from the card.
+			if (EntityManager.TryGetComponent<BatteryData>(entity, out var batteryData))
+			{
+				roles.Add("Battery");
+				capacities.Add(batteryData.m_Capacity);
+				Fact(prefabIndex, "batteryOutput", batteryData.m_PowerOutput);
+			}
+
+			if (EntityManager.TryGetComponent<ParkData>(entity, out var parkData))
+			{
+				Fact(prefabIndex, "maintenancePool", parkData.m_MaintenancePool);
+			}
+
+			if (EntityManager.TryGetComponent<TransportDepotData>(entity, out var transportDepotData))
+			{
+				TextFact(prefabIndex, "transportType", transportDepotData.m_TransportType.ToString());
+			}
+
+			if (EntityManager.TryGetComponent<TransportStationData>(entity, out var transportStationData))
+			{
+				Fact(prefabIndex, "comfort", transportStationData.m_ComfortFactor);
+			}
+
+			if (EntityManager.TryGetComponent<ElectricityConnectionData>(entity, out var electricityConnection)
+				&& electricityConnection.m_Capacity > 0
+				&& !EntityManager.HasComponent<RoadData>(entity))
+			{
+				Fact(prefabIndex, "electricityCapacity", electricityConnection.m_Capacity);
+				TextFact(prefabIndex, "voltage", electricityConnection.m_Voltage.ToString());
+			}
+
+			if (EntityManager.TryGetComponent<WaterPipeConnectionData>(entity, out var pipeConnection)
+				&& pipeConnection.m_StormCapacity > 0)
+			{
+				Fact(prefabIndex, "stormCapacity", pipeConnection.m_StormCapacity);
 			}
 
 			if (EntityManager.TryGetComponent<WastewaterTreatmentPlantData>(entity, out var wastewaterData))
