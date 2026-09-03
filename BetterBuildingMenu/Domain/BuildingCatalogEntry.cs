@@ -34,6 +34,7 @@ namespace BetterBuildingMenu.Domain
 		double? ElectricityConsumption = null,
 		double? WaterConsumption = null,
 		double? GarbageAccumulation = null,
+		double? TelecomNeed = null,
 		double? WaterCapacity = null,
 		double? SewageCapacity = null,
 		double? GroundPollution = null,
@@ -356,6 +357,7 @@ namespace BetterBuildingMenu.Domain
 			WriteNullable(writer, "electricityConsumption", ElectricityConsumption);
 			WriteNullable(writer, "waterConsumption", WaterConsumption);
 			WriteNullable(writer, "garbageAccumulation", GarbageAccumulation);
+			WriteNullable(writer, "telecomNeed", TelecomNeed);
 			WriteNullable(writer, "waterCapacity", WaterCapacity);
 			WriteNullable(writer, "sewageCapacity", SewageCapacity);
 			WriteNullable(writer, "groundPollution", GroundPollution);

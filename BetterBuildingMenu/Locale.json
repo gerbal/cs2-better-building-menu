@@ -234,5 +234,10 @@
   "Tooltip.LABEL[BetterBuildingMenu.NoisePollution]": "Noise pollution",
   "Tooltip.LABEL[BetterBuildingMenu.ZoneLotShapes]": "Lot shapes",
   "Tooltip.LABEL[BetterBuildingMenu.ZoneShapeNarrow]": "Narrow",
-  "Tooltip.LABEL[BetterBuildingMenu.ZoneShapeCorners]": "Corners"
+  "Tooltip.LABEL[BetterBuildingMenu.ZoneShapeCorners]": "Corners",
+  "Tooltip.LABEL[BetterBuildingMenu.JobComplexity]": "Jobs",
+  "Tooltip.LABEL[BetterBuildingMenu.JobsManual]": "Manual",
+  "Tooltip.LABEL[BetterBuildingMenu.JobsSimple]": "Simple",
+  "Tooltip.LABEL[BetterBuildingMenu.JobsComplex]": "Complex",
+  "Tooltip.LABEL[BetterBuildingMenu.JobsHitech]": "Hi-tech"
 }

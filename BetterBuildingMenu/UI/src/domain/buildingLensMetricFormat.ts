@@ -499,6 +499,7 @@ export function getBuildingDetailMetrics(entry: {
   electricityConsumption?: number | null;
   waterConsumption?: number | null;
   garbageAccumulation?: number | null;
+  telecomNeed?: number | null;
   waterCapacity?: number | null;
   sewageCapacity?: number | null;
   groundPollution?: number | null;
@@ -549,11 +550,14 @@ export function getBuildingDetailMetrics(entry: {
     details.push({ key: "level", label: "Level", value: String(entry.buildingLevel) });
   }
 
-  // Then what it draws and what it emits — the original eight, unchanged.
+  // Then what it draws and what it emits.
   const measured: Array<{ key: string; label: string; value: number | null | undefined; unit?: string }> = [
     { key: "electricity", label: "Electricity", value: entry.electricityConsumption, unit: "MW" },
     { key: "water", label: "Water", value: entry.waterConsumption, unit: "m³" },
     { key: "garbage", label: "Garbage", value: entry.garbageAccumulation, unit: "t" },
+    // The fifth field on ConsumptionData. The indexer has read the other four
+    // since it was written and left this one on the floor.
+    { key: "telecom", label: "Telecom", value: entry.telecomNeed },
     { key: "waterCapacity", label: "Water capacity", value: entry.waterCapacity, unit: "m³" },
     { key: "sewageCapacity", label: "Sewage capacity", value: entry.sewageCapacity, unit: "m³" },
     { key: "groundPollution", label: "Ground pollution", value: entry.groundPollution },

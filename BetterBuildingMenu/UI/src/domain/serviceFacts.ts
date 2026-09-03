@@ -216,6 +216,19 @@ const TEXT_PRESENTATION: Readonly<Record<string, ServiceTextPresentation>> = {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneStored]",
     fallback: "Stores",
   },
+  jobComplexity: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.JobComplexity]",
+    fallback: "Jobs",
+    values: {
+      // OUR words. The game ships none for WorkplaceComplexity — its
+      // CITIZEN_JOB_LEVEL vocabulary is Basic/Manager/Senior/Specialist and
+      // describes a citizen's rank, not a workplace's kind.
+      Manual: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.JobsManual]", fallback: "Manual" },
+      Simple: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.JobsSimple]", fallback: "Simple" },
+      Complex: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.JobsComplex]", fallback: "Complex" },
+      Hitech: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.JobsHitech]", fallback: "Hi-tech" },
+    },
+  },
   zoneLotShapes: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneLotShapes]",
     fallback: "Lot shapes",

@@ -1518,11 +1518,20 @@ namespace BetterBuildingMenu.Systems
 				prefabIndex.ElectricityConsumption = consumptionData.m_ElectricityConsumption;
 				prefabIndex.WaterConsumption = consumptionData.m_WaterConsumption;
 				prefabIndex.GarbageAccumulation = consumptionData.m_GarbageAccumulation;
+				prefabIndex.TelecomNeed = consumptionData.m_TelecomNeed;
 			}
 
 			if (EntityManager.TryGetComponent<WorkplaceData>(entity, out var workplaceData))
 			{
 				prefabIndex.Workers = workplaceData.m_MaxWorkers;
+				// Who the building employs, which the catalog could not say at
+				// all: a workplace count treats a hi-tech campus and a warehouse
+				// as the same fact. The game has no player-facing word for
+				// WorkplaceComplexity — its CITIZEN_JOB_LEVEL vocabulary is
+				// Basic/Manager/Senior/Specialist and does not map onto
+				// Manual/Simple/Complex/Hitech — so unlike the leisure types
+				// these are OUR words, shipped in Locale.json.
+				TextFact(prefabIndex, "jobComplexity", workplaceData.m_Complexity.ToString());
 			}
 
 			// Zero is not a household count, it is "not residential" — every

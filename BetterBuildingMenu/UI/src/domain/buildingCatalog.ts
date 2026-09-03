@@ -115,6 +115,7 @@ export interface BuildingCatalogEntry {
   electricityConsumption: number | null;
   waterConsumption: number | null;
   garbageAccumulation: number | null;
+  telecomNeed?: number | null;
   waterCapacity: number | null;
   sewageCapacity: number | null;
   groundPollution: number | null;

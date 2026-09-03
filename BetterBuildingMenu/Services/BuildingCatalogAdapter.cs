@@ -1140,6 +1140,7 @@ namespace BetterBuildingMenu.Services
 				ElectricityConsumption: prefab.ElectricityConsumption,
 				WaterConsumption: prefab.WaterConsumption,
 				GarbageAccumulation: prefab.GarbageAccumulation,
+				TelecomNeed: prefab.TelecomNeed,
 				WaterCapacity: prefab.WaterCapacity,
 				SewageCapacity: prefab.SewageCapacity,
 				GroundPollution: prefab.GroundPollution,
