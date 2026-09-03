@@ -172,15 +172,16 @@ export function groupDimensionsFor(
  * heading on screen — the key above is where to read from when headings do get
  * plumbed.
  *
- * `id` is duplicated as EDUCATION_LEVEL_TIERS in serviceForecast.ts, which
- * keys the capacity forecast's series off the same four rows. See the note
- * there for why they are not one table, and serviceForecast.test.ts for the
- * test that keeps them honest.
+ * `id` was once duplicated as EDUCATION_LEVEL_TIERS in serviceForecast.ts,
+ * which keyed the capacity forecast's series off the same four rows. That
+ * forecast was retired in e1fe039 (cm-7r5r) — a card about a BUILDING should
+ * not answer a question about the CITY — so this is the only table now, and
+ * the drift test that kept the two honest went with it.
  */
 export interface SchoolTier {
   /** `SchoolData.m_EducationLevel`. */
   level: number;
-  /** Stable id, shared with the capacity forecast's series. */
+  /** Stable id for the tier. */
   id: string;
   /** Heading text, in the game's own wording. */
   label: string;
