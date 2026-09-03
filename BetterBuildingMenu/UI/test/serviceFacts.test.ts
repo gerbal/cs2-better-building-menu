@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   SERVICE_FACT_LOCALIZATION_KEYS,
   renderServiceFacts,
+  renderServiceTextFacts,
 } from "../src/domain/serviceFacts.ts";
 
 const noTranslation = () => null;
@@ -63,5 +64,56 @@ describe("renderServiceFacts", () => {
     for (const key of SERVICE_FACT_LOCALIZATION_KEYS) {
       assert.match(key, /^Tooltip\.LABEL\[BetterBuildingMenu\.[A-Za-z]+\]$/);
     }
+  });
+});
+
+describe("renderServiceTextFacts", () => {
+  it("labels a worded figure the game already named", () => {
+    // A traded resource arrives named by the game, so it passes through.
+    const rendered = renderServiceTextFacts(
+      [{ key: "zoneSold", value: "Food" }, { key: "zoneStored", value: "Grain" }],
+      () => null,
+    );
+
+    assert.deepEqual(rendered.map((f) => `${f.label} ${f.value}`), ["Sells Food", "Stores Grain"]);
+  });
+
+  it("gives our own tokens our own words", () => {
+    // "narrow" and "corners" are our tokens, not the game's vocabulary.
+    const [fact] = renderServiceTextFacts([{ key: "zoneLotShapes", value: "narrow" }], () => null);
+
+    assert.equal(fact.value, "Narrow");
+  });
+
+  it("joins repeats of one key into a single line", () => {
+    // The indexer emits one fact per lot shape; two lines both reading
+    // "Lot shapes" would be one fact printed twice.
+    const [fact] = renderServiceTextFacts(
+      [{ key: "zoneLotShapes", value: "narrow" }, { key: "zoneLotShapes", value: "corners" }],
+      () => null,
+    );
+
+    assert.equal(fact.label, "Lot shapes");
+    assert.equal(fact.value, "Narrow, Corners");
+  });
+
+  it("prefers the game's translation for label and value alike", () => {
+    const [fact] = renderServiceTextFacts(
+      [{ key: "zoneLotShapes", value: "corners" }],
+      (key) =>
+        key === "Tooltip.LABEL[BetterBuildingMenu.ZoneLotShapes]" ? "Grundstücke"
+          : key === "Tooltip.LABEL[BetterBuildingMenu.ZoneShapeCorners]" ? "Ecken"
+            : null,
+    );
+
+    assert.equal(fact.label, "Grundstücke");
+    assert.equal(fact.value, "Ecken");
+  });
+
+  it("drops a key or a blank this build cannot draw", () => {
+    assert.deepEqual(renderServiceTextFacts([{ key: "somethingNew", value: "x" }], () => null), []);
+    assert.deepEqual(renderServiceTextFacts([{ key: "zoneSold", value: "  " }], () => null), []);
+    assert.deepEqual(renderServiceTextFacts([], () => null), []);
+    assert.deepEqual(renderServiceTextFacts(null, () => null), []);
   });
 });

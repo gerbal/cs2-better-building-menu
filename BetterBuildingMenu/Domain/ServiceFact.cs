@@ -31,4 +31,31 @@ namespace BetterBuildingMenu.Domain
 			writer.TypeEnd();
 		}
 	}
+
+	/// <summary>
+	/// The same idea for a figure that is a word rather than a number.
+	/// </summary>
+	/// <remarks>
+	/// A zone's traded resources and its narrow and corner support are facts of
+	/// exactly this shape — one family of asset, absent from every other — but
+	/// none of them is a quantity. They had no delivery path at all: the UI's
+	/// getZoneFacts covered them, was tested, and had no caller, because
+	/// nothing ever produced the entry shape it read.
+	///
+	/// A separate record rather than a nullable text on ServiceFact, so a
+	/// numeric fact cannot be written with no number and the UI never has to
+	/// ask which kind it is holding.
+	/// </remarks>
+	public readonly record struct ServiceTextFact(string Key, string Value) : IJsonWritable
+	{
+		public void Write(IJsonWriter writer)
+		{
+			writer.TypeBegin(GetType().FullName);
+			writer.PropertyName("key");
+			writer.Write(Key ?? string.Empty);
+			writer.PropertyName("value");
+			writer.Write(Value ?? string.Empty);
+			writer.TypeEnd();
+		}
+	}
 }

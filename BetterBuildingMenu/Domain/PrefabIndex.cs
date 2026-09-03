@@ -230,6 +230,9 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		public List<ServiceFact> ServiceFacts { get; } = new();
 
+		/// <summary>The same, for figures that are words. See ServiceTextFact.</summary>
+		public List<ServiceTextFact> ServiceTextFacts { get; } = new();
+
 		public float? SpeedLimit { get; set; }
 
 		/// <summary>How wide the network draws, in metres.</summary>

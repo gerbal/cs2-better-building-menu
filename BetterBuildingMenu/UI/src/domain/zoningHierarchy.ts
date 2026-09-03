@@ -106,23 +106,6 @@ export function getZoneFootprints(zone: ZoneEntry | null | undefined): ZoneFootp
  * Returned as data rather than as a sentence: the component formats and
  * translates, and these strings are registered in localizableStrings.
  */
-export interface ZoneFact {
-  kind:
-    | "lots"
-    | "height"
-    | "narrow"
-    | "corners"
-    | "sold"
-    | "manufactured"
-    | "stored"
-    | "households"
-    | "upkeep"
-    | "electricity"
-    | "water"
-    | "garbage"
-    | "pollution";
-  value: string | number;
-}
 
 /**
  * The footprints a zone actually grows, as "2×2" or "2–4 wide".
@@ -151,69 +134,21 @@ export function formatZoneLots(zone: ZoneEntry | null | undefined): string | nul
     : `${width} wide`;
 }
 
-/** A figure the zone actually carries; absent and zero are both "nothing to say". */
-function isPositive(value: number | null | undefined): boolean {
-  return typeof value === "number" && Number.isFinite(value) && value > 0;
-}
-
-export function getZoneFacts(zone: ZoneEntry | null | undefined): ZoneFact[] {
-  if (!zone) return [];
-
-  const facts: ZoneFact[] = [];
-
-  // What will grow here, before how tall it gets: a zone that only fills 2x2
-  // is ruled in or out before its height matters.
-  const lots = formatZoneLots(zone);
-  if (lots !== null) {
-    facts.push({ kind: "lots", value: lots });
-  }
-
-  if (typeof zone.maxHeight === "number" && zone.maxHeight > 0) {
-    facts.push({ kind: "height", value: zone.maxHeight });
-  }
-
-  // Only worth stating when true. "Does not support corners" is noise on the
-  // majority of zones that do not.
-  if (zone.supportsNarrow) facts.push({ kind: "narrow", value: "" });
-  if (zone.supportsCorners) facts.push({ kind: "corners", value: "" });
-
-  for (const [kind, value] of [
-    ["sold", zone.allowedSold],
-    ["manufactured", zone.allowedManufactured],
-    ["stored", zone.allowedStored],
-  ] as const) {
-    if (typeof value === "string" && value.trim() !== "") {
-      facts.push({ kind, value: value.trim() });
-    }
-  }
-
-  // What the zone costs to run and puts in the air, per cell. The game
-  // measures both on the zone's own components and shows neither, which left
-  // a zone card saying what would grow and how tall and nothing about the
-  // consequences of painting it.
-  if (isPositive(zone.households)) facts.push({ kind: "households", value: zone.households! });
-  if (isPositive(zone.upkeep)) facts.push({ kind: "upkeep", value: zone.upkeep! });
-  if (isPositive(zone.electricityConsumption)) {
-    facts.push({ kind: "electricity", value: zone.electricityConsumption! });
-  }
-  if (isPositive(zone.waterConsumption)) facts.push({ kind: "water", value: zone.waterConsumption! });
-  if (isPositive(zone.garbageAccumulation)) {
-    facts.push({ kind: "garbage", value: zone.garbageAccumulation! });
-  }
-
-  // The three pollutions as one line. Separately they are three lines of small
-  // numbers on a card that has to stay readable; together they are the shape
-  // of the zone's footprint on its neighbours.
-  const pollution = [zone.groundPollution, zone.airPollution, zone.noisePollution];
-  if (pollution.some(isPositive)) {
-    facts.push({
-      kind: "pollution",
-      value: pollution.map((part) => (isPositive(part) ? Math.round(part!) : 0)).join(" / "),
-    });
-  }
-
-  return facts;
-}
+/*
+ * getZoneFacts lived here and had no caller for its whole life.
+ *
+ * It decided which zone figures were worth stating and returned them as
+ * {kind, value} pairs — against a ZoneEntry shape nothing ever produced. The
+ * card read an `entry.facts` string array that no code wrote, ZoneCatalogEntry
+ * held some of the data and was never published, and PrefabIndex carried no
+ * zone field at all, so a zone tooltip drew its name and description and
+ * stopped. Two attempted fixes missed the real cause, which was the category
+ * guard at the top of PopulateAnalyticalData.
+ *
+ * Every figure it covered now travels as a service fact, numeric or worded,
+ * and is drawn by the same tooltip lines every other asset uses. Removed
+ * rather than left as a second thing that looks like the delivery path.
+ */
 
 
 

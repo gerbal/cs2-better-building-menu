@@ -1599,11 +1599,34 @@ namespace BetterBuildingMenu.Systems
 				Fact(prefabIndex, "zoneHouseholds", zoneProperties.m_ResidentialProperties);
 			}
 
+			// The zone figures that are words rather than numbers. These had no
+			// delivery path at all — getZoneFacts covered them and had no caller
+			// because nothing produced the shape it read.
+			if (EntityManager.TryGetComponent<ZonePropertiesData>(entity, out var zoneResources))
+			{
+				TextFact(prefabIndex, "zoneSold", ResourceName(zoneResources.m_AllowedSold));
+				TextFact(prefabIndex, "zoneManufactured", ResourceName(zoneResources.m_AllowedManufactured));
+				TextFact(prefabIndex, "zoneStored", ResourceName(zoneResources.m_AllowedStored));
+			}
+
 			if (EntityManager.TryGetComponent<ZoneData>(entity, out var zoneHeights))
 			{
 				// What the zone actually grows to, measured by the game from the
 				// tallest mesh it can spawn and never shown by it.
 				Fact(prefabIndex, "zoneMaxHeight", zoneHeights.m_MaxHeight);
+
+				// Stated only when true: "does not support corners" is noise on
+				// the majority of zones that do not.
+				if ((zoneHeights.m_ZoneFlags & ZoneFlags.SupportNarrow) != 0)
+				{
+					TextFact(prefabIndex, "zoneLotShapes", "narrow");
+				}
+
+				if ((zoneHeights.m_ZoneFlags
+					& (ZoneFlags.SupportLeftCorner | ZoneFlags.SupportRightCorner)) != 0)
+				{
+					TextFact(prefabIndex, "zoneLotShapes", "corners");
+				}
 			}
 
 			// Tourism, and one of the few figures that matters across services
@@ -2511,6 +2534,15 @@ namespace BetterBuildingMenu.Systems
 			if (value > 0d)
 			{
 				prefabIndex.ServiceFacts.Add(new Domain.ServiceFact(key, value));
+			}
+		}
+
+		/// <summary>Records one worded figure, dropping the blanks.</summary>
+		private static void TextFact(PrefabIndex prefabIndex, string key, string? value)
+		{
+			if (!string.IsNullOrWhiteSpace(value))
+			{
+				prefabIndex.ServiceTextFacts.Add(new Domain.ServiceTextFact(key, value!.Trim()));
 			}
 		}
 

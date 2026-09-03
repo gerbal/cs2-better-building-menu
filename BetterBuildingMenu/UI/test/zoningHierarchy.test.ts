@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   formatZoneLots,
-  getZoneFacts,
   selectZoneCommand,
   sortZonesForDisplay,
   zoneAsCatalogEntry,
@@ -118,55 +117,6 @@ describe("Display order", () => {
   });
 });
 
-describe("Zone facts", () => {
-  const zone = (over: Record<string, unknown> = {}): ZoneEntry => ({
-    id: 1, version: 1, prefabName: "Z", name: "Z", family: "ZoneResidential",
-    density: "Low", thumbnail: "", ...over,
-  } as ZoneEntry);
-
-  it("leads with height, which is the question a tier only gestures at", () => {
-    const facts = getZoneFacts(zone({ maxHeight: 24, supportsNarrow: true }));
-
-    assert.equal(facts[0].kind, "height");
-    assert.equal(facts[0].value, 24);
-  });
-
-  it("omits a height the game never measured", () => {
-    // ZoneSystem seeds MaxHeight to zero; it stays there for a zone with no
-    // spawnable buildings, and "0m" would be a measurement rather than a gap.
-    assert.deepEqual(getZoneFacts(zone({ maxHeight: 0 })), []);
-    assert.deepEqual(getZoneFacts(zone({})), []);
-  });
-
-  it("states a support flag only when it is true", () => {
-    // "Does not support corners" is noise on the majority that do not.
-    assert.deepEqual(
-      getZoneFacts(zone({ supportsNarrow: true, supportsCorners: false })).map((f) => f.kind),
-      ["narrow"]
-    );
-    assert.deepEqual(getZoneFacts(zone({ supportsNarrow: false, supportsCorners: false })), []);
-  });
-
-  it("names the resources a commercial or industrial zone trades in", () => {
-    const facts = getZoneFacts(zone({ allowedSold: "Food", allowedStored: "Grain" }));
-
-    assert.deepEqual(facts, [
-      { kind: "sold", value: "Food" },
-      { kind: "stored", value: "Grain" },
-    ]);
-  });
-
-  it("treats an empty resource as absent rather than as a resource", () => {
-    // Resource is a flags enum whose zero value stringifies as "NoResource",
-    // which a player would read as a kind of resource.
-    assert.deepEqual(getZoneFacts(zone({ allowedSold: "", allowedManufactured: "   " })), []);
-  });
-
-  it("survives an absent zone", () => {
-    assert.deepEqual(getZoneFacts(null), []);
-    assert.deepEqual(getZoneFacts(undefined), []);
-  });
-});
 
 describe("Zone lot sizes", () => {
   const lots = (over: Record<string, unknown>) => ({
@@ -211,12 +161,6 @@ describe("Zone lot sizes", () => {
     assert.equal(formatZoneLots(lots({ minLotWidth: 0, maxLotWidth: 0 })), null);
     assert.equal(formatZoneLots(lots({})), null);
     assert.equal(formatZoneLots(null), null);
-  });
-
-  it("leads the facts, since size rules a zone in or out before height does", () => {
-    const facts = getZoneFacts(lots({ minLotWidth: 2, maxLotWidth: 2, minLotDepth: 2, maxLotDepth: 2, maxHeight: 12 }));
-
-    assert.deepEqual(facts.map((fact) => fact.kind), ["lots", "height"]);
   });
 });
 

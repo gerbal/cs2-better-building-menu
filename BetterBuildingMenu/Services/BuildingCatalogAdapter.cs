@@ -1090,6 +1090,7 @@ namespace BetterBuildingMenu.Services
 				UiCategory: prefab.UiCategoryName,
 				ServiceRange: prefab.ServiceRange,
 				ServiceFacts: prefab.ServiceFacts.Count > 0 ? prefab.ServiceFacts.ToArray() : null,
+				ServiceTextFacts: prefab.ServiceTextFacts.Count > 0 ? prefab.ServiceTextFacts.ToArray() : null,
 				SpeedLimit: prefab.SpeedLimit,
 				NetworkWidth: prefab.NetworkWidth,
 				LeisureType: prefab.LeisureType ?? string.Empty,
