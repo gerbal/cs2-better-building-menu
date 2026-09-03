@@ -120,6 +120,52 @@ export const stripRedundantNamePrefix = (
 };
 
 /**
+ * What the ellipsis costs, counted in characters of the budget.
+ *
+ * Three, and both characters past the first are earned. Measured in the
+ * running game at the tile's own font and size:
+ *
+ *   • "…" draws 9.4px where the average lowercase letter draws 5.0, so the
+ *     mark alone is worth 1.9 characters. It was charged one.
+ *   • What is left after eliding is not average text. It keeps the capitals
+ *     and drops the spaces, and spaces are the narrowest thing in a name — the
+ *     elided results measure 5.03px per character against the 4.88 that
+ *     CHARS_PER_LINE_AT_DEFAULT_TILE is derived from.
+ *
+ * Undercharged, "Firefighting Helicopter Depot" came out as "Helico…Depot":
+ * 12 characters inside a 13-character budget, and 64.7px inside a 64px box. The
+ * stylesheet elided the overflow a second time and drew "Helico…De…", two marks
+ * on one line, which reads as corruption rather than as a shortened name.
+ * Charged three it gives "Helic…Depot" at 59.1px, which fits with room over.
+ */
+const ELLIPSIS_CHARS = 3;
+
+/**
+ * The tail of a name, preferring a whole word.
+ *
+ * A tail cut mid-word reads as noise: "Control Center" shortened to
+ * "Contro…enter" says less than "Contr…Center" does, and costs the same. So a
+ * word boundary within reach of the cut wins over the exact character count —
+ * the tail is where the game puts what distinguishes a building from its
+ * neighbours, and half a word distinguishes nothing.
+ */
+const tailOf = (name: string, tailLength: number): string => {
+  const cut = name.length - tailLength;
+  const boundary = name.lastIndexOf(" ", cut);
+
+  if (boundary >= 0) {
+    const word = name.slice(boundary + 1);
+
+    // One character of slack, so a boundary just past the cut still wins.
+    if (word.length > 0 && word.length <= tailLength + 1) {
+      return word;
+    }
+  }
+
+  return name.slice(cut).trimStart();
+};
+
+/**
  * Keep the end of the name, and as much of the start as still fits.
  *
  * The ellipsis is a real character rather than CSS's, because CSS can only
@@ -130,16 +176,20 @@ export const shortenTileLabel = (label: string, budget: number): string => {
   const name = (label ?? "").trim();
   if (budget <= 1 || name.length <= budget) return name;
 
+  // What the text may occupy once the ellipsis has been paid for.
+  const usable = Math.max(1, budget - ELLIPSIS_CHARS);
+
   // Enough tail to carry the distinguishing suffix (levels, lot sizes, indices),
   // enough head to still recognise the family.
-  const tailLength = Math.max(1, Math.min(name.length - 1, Math.ceil((budget - 1) * 0.45)));
-  const headLength = budget - 1 - tailLength;
+  const tailLength = Math.max(1, Math.min(name.length - 1, Math.ceil(usable * 0.45)));
+  const tail = tailOf(name, tailLength);
+  const headLength = usable - tail.length;
 
-  // trimStart on both tails: a slice that lands mid-gap spends a character of a
+  // trimStart on the tail: a slice that lands mid-gap spends a character of a
   // budget this tight on a space that reads as nothing.
-  if (headLength <= 0) return `…${name.slice(name.length - (budget - 1)).trimStart()}`;
+  if (headLength <= 0) return `…${tail}`;
 
-  return `${name.slice(0, headLength).trimEnd()}…${name.slice(name.length - tailLength).trimStart()}`;
+  return `${name.slice(0, headLength).trimEnd()}…${tail}`;
 };
 
 /**

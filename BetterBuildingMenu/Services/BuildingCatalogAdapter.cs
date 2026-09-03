@@ -384,7 +384,16 @@ namespace BetterBuildingMenu.Services
 		/// not change when the player re-sorts. Falls back to the fallback
 		/// thumbnail, which is what the grid draws for the same asset.
 		/// </remarks>
-		internal static string TabIcon(IEnumerable<BuildingCatalogEntry> group, bool authored)
+		/// <param name="allowCategoryGlyph">
+		/// False when the caller has already seen this tab's glyph on a sibling.
+		/// The category glyph belongs to the CATEGORY, so every tab that shares
+		/// one draws the same picture — four identical Healthcare marks across
+		/// Healthcare's strip, reported from play. Turning it off here drops the
+		/// tab to the representative asset below, which at least differs per
+		/// tab. Only the caller can tell: whether a glyph repeats is a fact
+		/// about the row, not about one group.
+		/// </param>
+		internal static string TabIcon(IEnumerable<BuildingCatalogEntry> group, bool authored, bool allowCategoryGlyph = true)
 		{
 			var entries = group.ToArray();
 
@@ -416,7 +425,14 @@ namespace BetterBuildingMenu.Services
 			// icon (cm-2xvs.17: Roads' two single-asset parking categories). The
 			// category glyph the fallback thumbnail carries belongs in that row;
 			// the photograph does not.
-			if (authored)
+			//
+			// Conditional since cm-0g1m. The glyph is the CATEGORY's, so tabs
+			// that share a category all draw one picture — Healthcare's strip
+			// rendered Healthcare.svg four times, a row that cannot be read.
+			// CatalogView.Disambiguate calls back with allowCategoryGlyph false
+			// for exactly the tabs whose glyph repeats, which drops those to the
+			// photograph below. Tidy loses to legible where the two conflict.
+			if (authored && allowCategoryGlyph)
 			{
 				var glyph = ordered
 					.Select(entry => entry.FallbackThumbnail)

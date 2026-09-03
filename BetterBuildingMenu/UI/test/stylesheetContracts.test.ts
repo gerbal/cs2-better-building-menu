@@ -21,14 +21,55 @@ const surfaceStylesFor = () => read("../src/mods/BuildingMenu/buildingMenuSurfac
 const groupedResultsStyles = read("../src/mods/GroupedResults/groupedResults.module.scss");
 
 describe("Building Lens stylesheet contracts", () => {
-  it("gives a group three tiles of label room and a parent group the whole row", () => {
-    // Search results are one- to three-tile groups. Sized to their tiles
-    // alone, a one-tile group cut its name to "ROAD SER…", and a two-level
-    // group flowed beside a one-level one so their headings shared a line.
-    assert.match(groupedResultsStyles, /\.group \{[^}]*min-width: 300rem;/);
-    assert.match(groupedResultsStyles, /\.groupBand \{[^}]*flex: 0 0 100%;/);
+  it("sizes a group to its tiles and lets the heading wrap inside it", () => {
+    // SUPERSEDES "three tiles of label room". That reservation existed so a
+    // one-tile group's name was not cut to "ROAD SER…", and it bought readable
+    // headings with empty row: measured in Fire & Rescue, six nested groups
+    // were each 200px around a single 67px tile, two thirds of every group
+    // nothing at all. The heading now wraps to the width the tiles occupy
+    // rather than the tiles being spread to the width the heading wanted.
+    assert.doesNotMatch(groupedResultsStyles, /\.group \{[^}]*min-width:/);
+    assert.match(groupedResultsStyles, /\.groupLabel \{[^}]*white-space: normal;/);
+    // A band sizes to its content rather than claiming the whole line: one
+    // that is wider than the row still fills it, via max-width and its own
+    // children wrapping, while a narrow one lets a sibling share the line.
+    assert.match(groupedResultsStyles, /\.groupBand \{[^}]*flex: 0 1 auto;/);
     // No heading, no row reserved for one.
     assert.match(groupedResultsStyles, /\.groupUnlabeled \{[^}]*padding-top: 0;/);
+  });
+
+  it("keeps the heading out of flow so it cannot widen the group", () => {
+    // The whole reason the reserve is measured in JS rather than being the
+    // heading's own height: an in-flow heading sets the group's intrinsic
+    // width, which is what made CENTRAL INTELLIGENCE BUREAU a 177px group
+    // around one 72px tile. GroupRow reserves the row's tallest heading.
+    assert.match(groupedResultsStyles, /\.groupHeading \{[^}]*position: absolute;/);
+    // Against a wrapping label the count sits on the first line, not the
+    // middle of the stack.
+    assert.match(groupedResultsStyles, /\.groupHeading \{[^}]*align-items: flex-start;/);
+  });
+
+  it("stops the expanded row's chevron resolving its height against the whole row", () => {
+    // .rowDetailsButton sets `height: 100%` so it fills the collapsed row,
+    // which has a definite 92rem to resolve against. The expanded row is
+    // `height: auto`, so that percentage resolved against the WRAPPED row
+    // instead of line one: measured live on Alley, the button rendered 109
+    // tall beside a 59-tall .rowSelect, putting the row's content at 160 while
+    // the row settled at 109. `.row` is overflow: hidden, so the details block
+    // was laid out complete and then clipped away whole — the row grew taller
+    // and showed nothing.
+    //
+    // The expanded block must neutralise it. `align-self: stretch` already
+    // fills the line in both states without a percentage.
+    const expanded = buildingCatalogStyles.slice(
+      buildingCatalogStyles.indexOf('.row[data-expanded="true"] {')
+    );
+    const block = expanded.slice(0, expanded.indexOf("\n}"));
+
+    assert.match(block, /\.rowDetailsButton \{[^}]*height: auto;/);
+    // And the collapsed rule it is overriding must still be the percentage,
+    // so this contract keeps pointing at something real.
+    assert.match(buildingCatalogStyles, /\.rowDetailsButton \{[^}]*height: 100%;/);
   });
 
   it("keeps the trailing reserve and the name budget agreeing", () => {

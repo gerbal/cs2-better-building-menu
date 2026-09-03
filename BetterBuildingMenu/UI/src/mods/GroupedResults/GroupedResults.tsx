@@ -60,12 +60,19 @@ const GroupHeading = ({
   estimate,
   count,
   nested,
+  onHeight,
 }: {
   label: string;
   estimate: string;
   count: number;
   nested: boolean;
+  /**
+   * The height this heading ended up needing, so the group can reserve it.
+   * The heading is out of flow, so nothing else can discover this.
+   */
+  onHeight?: (px: number) => void;
 }): JSX.Element => {
+  const headingRef = useRef<HTMLDivElement>(null);
   const boxRef = useRef<HTMLSpanElement>(null);
   const probeRef = useRef<HTMLSpanElement>(null);
   const [fitted, setFitted] = useState(estimate);
@@ -78,7 +85,17 @@ const GroupHeading = ({
       return;
     }
 
+    const report = () => {
+      const heading = headingRef.current;
+
+      if (heading && onHeight) {
+        onHeight(heading.offsetHeight);
+      }
+    };
+
     const fit = () => {
+      report();
+
       const available = box.clientWidth;
       const needed = probe.scrollWidth;
 
@@ -126,7 +143,7 @@ const GroupHeading = ({
   }, [label]);
 
   return (
-    <div className={classNames(styles.groupHeading, nested && styles.groupHeadingNested)}>
+    <div ref={headingRef} className={classNames(styles.groupHeading, nested && styles.groupHeadingNested)}>
       <span ref={boxRef} className={styles.groupLabel} title={label}>
         {fitted}
       </span>
@@ -134,6 +151,110 @@ const GroupHeading = ({
         {label}
       </span>
       <span className={styles.groupCount}>{count}</span>
+    </div>
+  );
+};
+
+/**
+ * One group: its heading, and the row's reserved room above it.
+ *
+ * `.groupHeading` is positioned absolutely — deliberately, so a long name
+ * cannot widen the group past its tiles — which also means it cannot push the
+ * group's height. The stylesheet used to reserve a flat 17rem, one line, and
+ * the group bought the room for a one-line name by being three tiles wide.
+ *
+ * Now the group is as wide as its tiles and the heading wraps inside it, so
+ * the reserve has to follow the heading. The reserve is the ROW's, not this
+ * group's: see GroupRow.
+ */
+const GroupBox = ({
+  className,
+  depth,
+  heading,
+  reserve,
+  onHeight,
+  children,
+}: {
+  className: string;
+  depth: number;
+  heading: { label: string; estimate: string; count: number; nested: boolean } | null;
+  reserve: number | null;
+  onHeight: (px: number) => void;
+  children: ReactNode;
+}): JSX.Element => (
+  <div
+    className={className}
+    data-group-depth={depth}
+    // EVERY group in the row, headed or not. Applying it only to headed ones
+    // left .groupUnlabeled's padding-top:0 standing, so an unlabeled group's
+    // tiles sat a heading's height higher than its labelled neighbour's and
+    // the row lost its shared baseline — visible in Fire & Rescue as the
+    // Heliport tile hanging below the four beside it. When no group in the row
+    // has a heading, nothing measures, reserve stays null, and the stylesheet's
+    // 0 is right again.
+    style={reserve !== null ? { paddingTop: `${reserve}px` } : undefined}
+  >
+    {heading && (
+      <GroupHeading
+        label={heading.label}
+        estimate={heading.estimate}
+        count={heading.count}
+        nested={heading.nested}
+        onHeight={onHeight}
+      />
+    )}
+    {children}
+  </div>
+);
+
+/**
+ * A row of sibling groups, all reserving the same height for their headings.
+ *
+ * The reserve is the TALLEST heading in the row, given to every group in it.
+ * Per-group reserves would be tighter and wrong: a two-line name beside a
+ * one-line name would start its tiles 12px lower than its neighbour's, and a
+ * row of tiles that do not share a baseline reads as a broken grid rather than
+ * as a set. The grid's whole argument is that a position can be learned.
+ *
+ * Measured heights arrive one group at a time, so this holds them by key and
+ * takes the maximum. Growing the padding cannot change a heading's wrapping —
+ * padding-top does not affect width — so this settles rather than oscillates.
+ */
+const GroupRow = ({
+  className,
+  groups,
+}: {
+  className: string;
+  groups: {
+    key: string;
+    className: string;
+    depth: number;
+    heading: { label: string; estimate: string; count: number; nested: boolean } | null;
+    body: ReactNode;
+  }[];
+}): JSX.Element => {
+  const [heights, setHeights] = useState<Record<string, number>>({});
+
+  const measured = Object.values(heights);
+  const reserve = measured.length > 0 ? Math.max(...measured) : null;
+
+  const record = (key: string) => (px: number) =>
+    setHeights((current) => (current[key] === px ? current : { ...current, [key]: px }));
+
+  return (
+    <div className={className}>
+      {groups.map((group) => (
+        <GroupBox
+          key={group.key}
+          className={group.className}
+          depth={group.depth}
+          heading={group.heading}
+          reserve={reserve}
+          onHeight={record(group.key)}
+        >
+          {group.body}
+        </GroupBox>
+      ))}
     </div>
   );
 };
@@ -208,48 +329,60 @@ export const GroupedResults = ({
     // three, one, one and one asset — most of the panel was heading and empty
     // row. Laid out as a wrapping row each group takes the width it needs, a
     // big one still fills the line, and the small ones share.
-    return (
-      <div className={styles.groupRow}>
-        {nodes.map((node) => {
-          // A group with two or more sub-groups takes the whole row, so its
-          // heading sits alone on its line and its children's headings on the
-          // next. Flowed beside a leaf group, as a search result did, the two
-          // levels of heading and the neighbour's shared two rows of 11px.
-          // One sub-group is one hidden heading — the group reads as a leaf
-          // and flows like one; banding those too gave a one-tile ROAD
-          // SERVICES a whole 84px row to itself.
-          const band = node.children.length > 1;
-          // No heading, no row reserved for one. Two cases: the only child,
-          // whose heading shouldShowHeading already hid while the 17rem it
-          // reserved stayed as 12px of nothing under every category; and a
-          // nested name that repeats its parent's — the dev tree names a
-          // category's base branch after the category, so MEDIUM ROADS
-          // carried a "Medium Roads" sub-heading with a second count under
-          // the first. The tiles sit under the parent's heading and the
-          // labelled siblings keep theirs.
-          const unlabeled =
-            !showHeadings || (depth > 0 && parentLabel !== null && node.label === parentLabel);
+    // NO collapsing of one-asset groups. Tried and reverted: it merged three
+    // separate Healthcare branches — Hospital, Disease Control Center, Health
+    // Research Institute — into one unlabeled block, and took Deathcare's
+    // Crematorium heading with it.
+    //
+    // The rule was "collapse a one-asset group whose heading restates its
+    // tile", which compared the heading against the entry's REAL name. What
+    // the tile can draw is a different thing: those two render as "Disease
+    // Contro…Center" and "Health Resear…titute", so the heading was the only
+    // legible full name on screen and removing it as redundant removed the
+    // readable copy.
+    //
+    // Nothing was lost by reverting. The empty row this was all reported for
+    // came from .group's min-width and .groupBand's full-line flex, both fixed
+    // above; the collapse never contributed to it.
+    const boxes = nodes.map((node) => {
+      // A group with two or more sub-groups takes the whole row, so its
+      // heading sits alone on its line and its children's headings on the
+      // next. Flowed beside a leaf group, as a search result did, the two
+      // levels of heading and the neighbour's shared two rows of 11px.
+      // One sub-group is one hidden heading — the group reads as a leaf
+      // and flows like one; banding those too gave a one-tile ROAD
+      // SERVICES a whole 84px row to itself.
+      const band = node.children.length > 1;
+      // No heading, no row reserved for one. Two cases: the only child,
+      // whose heading shouldShowHeading already hid while the 17rem it
+      // reserved stayed as 12px of nothing under every category; and a
+      // nested name that repeats its parent's — the dev tree names a
+      // category's base branch after the category, so MEDIUM ROADS
+      // carried a "Medium Roads" sub-heading with a second count under
+      // the first. The tiles sit under the parent's heading and the
+      // labelled siblings keep theirs.
+      const unlabeled =
+        !showHeadings || (depth > 0 && parentLabel !== null && node.label === parentLabel);
 
-          return (
-      <div
-        className={classNames(styles.group, band && styles.groupBand, unlabeled && styles.groupUnlabeled)}
-        key={node.path.join("/")}
-        data-group-depth={depth}
-      >
-        {!unlabeled && (
-          <GroupHeading
-            label={headingLabel(node)}
-            estimate={fitGroupLabel(headingLabel(node), node.count)}
-            count={node.count}
-            nested={depth > 0}
-          />
-        )}
-        {node.children.length > 0 ? renderNodes(node.children, depth + 1, node.label) : renderLeaf(node.entries)}
-      </div>
-          );
-        })}
-      </div>
-    );
+      return {
+        key: node.path.join("/"),
+        className: classNames(styles.group, band && styles.groupBand, unlabeled && styles.groupUnlabeled),
+        depth,
+        heading: unlabeled
+          ? null
+          : {
+            label: headingLabel(node),
+            estimate: fitGroupLabel(headingLabel(node), node.count),
+            count: node.count,
+            nested: depth > 0,
+          },
+        body: node.children.length > 0
+          ? renderNodes(node.children, depth + 1, node.label)
+          : renderLeaf(node.entries),
+      };
+    });
+
+    return <GroupRow className={styles.groupRow} groups={boxes} />;
   };
 
   // C# stamped every item with its headings for the effective dimension;

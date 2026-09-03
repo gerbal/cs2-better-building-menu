@@ -250,7 +250,19 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
               }),
               tileLabelLineBudget(tileSize)
             ).map((line, index) => (
-              <span key={index} className={styles.tileNameLine}>
+              <span
+                key={index}
+                className={classNames(
+                  styles.tileNameLine,
+                  // A line wrapTileLabel already cut carries its own ellipsis,
+                  // so CSS must not add a second one. "Firefighting Helicopter
+                  // Depot" was elided to "Helico…Depot", which still wants 65px
+                  // in a 64px box, and the stylesheet's ellipsis then made it
+                  // "Helico…De…" — two marks on one line, which reads as
+                  // corruption rather than as a shortened name.
+                  line.includes("…") && styles.tileNameLineElided
+                )}
+              >
                 {line}
               </span>
             ))}

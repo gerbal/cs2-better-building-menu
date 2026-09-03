@@ -854,6 +854,22 @@ namespace BetterBuildingMenu.Systems
 					&& _assetMenuEntities.TryGetValue(placement.Menu.Trim(), out menu);
 			}
 
+			/// <summary>
+			/// A menu's own entity, by the name the lens scopes itself with.
+			/// </summary>
+			/// <remarks>
+			/// Same table <see cref="TryGetMenuEntityFor"/> reaches through, but
+			/// keyed straight off the menu name — the lens knows which menu it
+			/// took over without holding any asset from it.
+			/// </remarks>
+			public static bool TryGetAssetMenuEntity(string menu, out Entity entity)
+			{
+				entity = Entity.Null;
+
+				return !string.IsNullOrWhiteSpace(menu)
+					&& _assetMenuEntities.TryGetValue(menu.Trim(), out entity);
+			}
+
 			public static bool IsPlacedInMenu(int entityIndex, string menu) =>
 				_menuPlacements.TryGetValue(entityIndex, out var placement)
 				&& string.Equals(placement.Menu?.Trim(), menu, System.StringComparison.OrdinalIgnoreCase);

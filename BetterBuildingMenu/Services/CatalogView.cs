@@ -152,7 +152,7 @@ namespace BetterBuildingMenu.Services
 
 			// The menu set narrowed to that category, tier kept, tabs cleared —
 			// what `query with { UiCategory = category, StripTabs = null }` read.
-			return BuildingCatalogQueryEngine
+			var tabs = BuildingCatalogQueryEngine
 				.InScope(MenuSet, _query with { UiCategory = category, StripTabs = null })
 				.Where(entry => !string.IsNullOrEmpty(entry.DevTreeBranch))
 				.GroupBy(entry => entry.DevTreeBranch!)
@@ -163,6 +163,10 @@ namespace BetterBuildingMenu.Services
 					group.Count(),
 					BranchIcon(category, group.Key) ?? BuildingCatalogAdapter.TabIcon(group, authored: true)))
 				.ToArray();
+
+			// Same row, same failure: these tabs share one category by
+			// construction, so the category glyph repeats across all of them.
+			return Disambiguate(tabs, tab => BranchIcon(category, tab.Id, allowCategoryGlyph: false));
 		}
 
 		public IReadOnlyList<MenuCategoryTabs> ExpandedCategories => _expanded ??= ComputeExpandedCategories();
@@ -250,8 +254,9 @@ namespace BetterBuildingMenu.Services
 				.ToArray();
 		}
 
-		private IReadOnlyList<MenuBranchCount> StripTabsFor(IEnumerable<BuildingCatalogEntry> set, string axis) =>
-			set
+		private IReadOnlyList<MenuBranchCount> StripTabsFor(IEnumerable<BuildingCatalogEntry> set, string axis)
+		{
+			var tabs = set
 				.GroupBy(entry => BuildingCatalogQueryEngine.StripValue(entry, axis))
 				.Where(group => group.Key.Length > 0)
 				.Select(group => new
@@ -267,6 +272,62 @@ namespace BetterBuildingMenu.Services
 				.ThenBy(x => x.Tab.Id, StringComparer.Ordinal)
 				.Select(x => x.Tab)
 				.ToArray();
+
+			return Disambiguate(tabs, tab => StripIcon(axis, tab.Id, allowCategoryGlyph: false));
+		}
+
+		/// <summary>
+		/// Gives a tab its own picture when the one it chose is already on a
+		/// sibling.
+		/// </summary>
+		/// <remarks>
+		/// The category glyph fallback (cm-2xvs.17) fixed a real thing — a
+		/// branch with no authored icon fell to a photographic asset render
+		/// sitting in a row of flat glyphs — but it answers with the CATEGORY's
+		/// mark, and a menu whose tabs all sit in one category then draws one
+		/// picture N times. Healthcare's strip rendered Healthcare.svg four
+		/// times over, which is a row of tabs that cannot be told apart.
+		///
+		/// Repeated is worse than off-idiom: a photograph among glyphs still
+		/// says WHICH tab this is. So the glyph is kept wherever it
+		/// distinguishes and dropped only where it does not.
+		///
+		/// An authored icon is never displaced. The recompute only switches off
+		/// the category-glyph step, so a tab whose mark came from the dev tree
+		/// resolves to that same mark and is left alone — two branches that
+		/// genuinely ship one icon keep it.
+		/// </remarks>
+		private static MenuBranchCount[] Disambiguate(
+			MenuBranchCount[] tabs,
+			Func<MenuBranchCount, string?> distinctIcon)
+		{
+			var shared = new HashSet<string>(
+				tabs
+					.Where(tab => tab.Icon.Length > 0)
+					.GroupBy(tab => tab.Icon, StringComparer.Ordinal)
+					.Where(group => group.Skip(1).Any())
+					.Select(group => group.Key),
+				StringComparer.Ordinal);
+
+			if (shared.Count == 0)
+			{
+				return tabs;
+			}
+
+			return tabs
+				.Select(tab =>
+				{
+					if (!shared.Contains(tab.Icon))
+					{
+						return tab;
+					}
+
+					var replacement = distinctIcon(tab);
+
+					return string.IsNullOrEmpty(replacement) ? tab : tab with { Icon = replacement! };
+				})
+				.ToArray();
+		}
 
 		/// <summary>
 		/// The menu as it is whatever the player has narrowed: no category, tab or
@@ -293,27 +354,29 @@ namespace BetterBuildingMenu.Services
 		/// content pack was chosen. The whole category (menu set: no tier, no
 		/// facets, no search) is the same set in every state.
 		/// </remarks>
-		private string? BranchIcon(string category, string branch)
+		private string? BranchIcon(string category, string branch, bool allowCategoryGlyph = true)
 		{
 			var whole = BuildingCatalogQueryEngine
 				.InScope(WholeMenu, _query with { UiCategory = category, StripTabs = null, SchoolTier = -1, SearchText = string.Empty })
 				.Where(entry => string.Equals(entry.DevTreeBranch, branch, StringComparison.Ordinal))
 				.ToArray();
 
-			return whole.Length == 0 ? null : BuildingCatalogAdapter.TabIcon(whole, authored: true);
+			return whole.Length == 0 ? null : BuildingCatalogAdapter.TabIcon(whole, authored: true, allowCategoryGlyph);
 		}
 
 		/// <summary>
 		/// A strip tab's icon from the whole menu, so it does not change when a
 		/// filter changes which assets are left in the tab (cm-2xvs.17).
 		/// </summary>
-		private string? StripIcon(string axis, string key)
+		private string? StripIcon(string axis, string key, bool allowCategoryGlyph = true)
 		{
 			var whole = WholeMenu
 				.Where(entry => string.Equals(BuildingCatalogQueryEngine.StripValue(entry, axis), key, StringComparison.Ordinal))
 				.ToArray();
 
-			return whole.Length == 0 ? null : BuildingCatalogAdapter.TabIcon(whole, axis == StripAxes.Development);
+			return whole.Length == 0
+				? null
+				: BuildingCatalogAdapter.TabIcon(whole, axis == StripAxes.Development, allowCategoryGlyph);
 		}
 
 		public IReadOnlyList<MenuBranchCount> SchoolTierCounts => _tiers ??= TierSet

@@ -10,10 +10,19 @@ export interface ViewModeOption {
   fallback: string;
 }
 
+/**
+ * The order the control draws them in.
+ *
+ * Cards first, because that is where the lens opens. The row then runs from
+ * the most picture to the most data — cards, list, grid, table — so moving
+ * along it trades thumbnail for numbers in one direction rather than jumping
+ * about, and the default sits at the end you start from rather than in the
+ * middle of the row.
+ */
 export const VIEW_MODES: readonly ViewModeOption[] = [
-  { id: "grid", localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ViewGrid]", fallback: "Grid" },
-  { id: "list", localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ViewList]", fallback: "List" },
   { id: "cards", localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ViewCards]", fallback: "Cards" },
+  { id: "list", localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ViewList]", fallback: "List" },
+  { id: "grid", localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ViewGrid]", fallback: "Grid" },
   { id: "table", localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ViewTable]", fallback: "Table" },
 ];
 
@@ -25,7 +34,7 @@ interface ViewModeBarProps {
 }
 
 /**
- * The Grid/List/Cards/Table control, shared by every surface that has one.
+ * The Cards/List/Grid/Table control, shared by every surface that has one.
  *
  * Zoning had no view control at all: it inherited whatever the catalog was
  * last set to and gave the player no way to change it from where they were
