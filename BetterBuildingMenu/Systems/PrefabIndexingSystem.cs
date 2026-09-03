@@ -1540,7 +1540,6 @@ namespace BetterBuildingMenu.Systems
 				{
 					if (netPrefab is RoadPrefab roadPrefab)
 					{
-						TextFact(prefabIndex, "roadClass", roadPrefab.m_RoadType.ToString());
 						if (roadPrefab.m_TrafficLights)
 						{
 							TextFact(prefabIndex, "roadFeature", "trafficLights");
@@ -2687,6 +2686,8 @@ namespace BetterBuildingMenu.Systems
 		/// absent-versus-zero contract the rest of the index keeps: a missing
 		/// component is null, and this is the same idea one level down.
 		/// </remarks>
+
+
 		private static void Fact(PrefabIndex prefabIndex, string key, double value)
 		{
 			if (value > 0d)

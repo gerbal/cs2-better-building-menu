@@ -352,10 +352,6 @@ const TEXT_PRESENTATION: Readonly<Record<string, ServiceTextPresentation>> = {
       corners: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneShapeCorners]", fallback: "Corners" },
     },
   },
-  roadClass: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.RoadClass]",
-    fallback: "Class",
-  },
   trackType: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.TrackType]",
     fallback: "Track",
