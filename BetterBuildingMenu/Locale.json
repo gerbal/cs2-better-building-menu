@@ -221,7 +221,6 @@
   "Tooltip.LABEL[BetterBuildingMenu.WorkersUnit]": "jobs",
   "Requirement.OBJECT_BUILT": "build a {0}",
   "Tooltip.LABEL[BetterBuildingMenu.ZoneHeight]": "Height",
-  "Tooltip.LABEL[BetterBuildingMenu.ZoneNarrow]": "Narrow lots",
   "Tooltip.LABEL[BetterBuildingMenu.ZoneSold]": "Sells",
   "Tooltip.LABEL[BetterBuildingMenu.ZoneManufactured]": "Makes",
   "Tooltip.LABEL[BetterBuildingMenu.ZoneStored]": "Stores",
@@ -232,5 +231,8 @@
   "Tooltip.LABEL[BetterBuildingMenu.Pollution]": "Pollution",
   "Tooltip.LABEL[BetterBuildingMenu.GroundPollution]": "Ground pollution",
   "Tooltip.LABEL[BetterBuildingMenu.AirPollution]": "Air pollution",
-  "Tooltip.LABEL[BetterBuildingMenu.NoisePollution]": "Noise pollution"
+  "Tooltip.LABEL[BetterBuildingMenu.NoisePollution]": "Noise pollution",
+  "Tooltip.LABEL[BetterBuildingMenu.ZoneLotShapes]": "Lot shapes",
+  "Tooltip.LABEL[BetterBuildingMenu.ZoneShapeNarrow]": "Narrow",
+  "Tooltip.LABEL[BetterBuildingMenu.ZoneShapeCorners]": "Corners"
 }

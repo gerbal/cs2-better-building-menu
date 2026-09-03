@@ -18,7 +18,7 @@ import {
 } from "domain/buildingLensMetricFormat";
 import { buildTileTooltipLines, isMetricPresent } from "domain/buildingTileTooltip";
 import { leisureLabel } from "domain/buildingLensRowDetails";
-import { renderServiceFacts } from "domain/serviceFacts";
+import { renderServiceFacts, renderServiceTextFacts } from "domain/serviceFacts";
 import { clampAssetDescription, getBuildingExtensionLabels, resolveAssetDescription } from "domain/buildingLensRowDetails";
 import { isEntryAlreadyBuilt, isEntryLocked, listLockConditions } from "domain/buildingLockState";
 import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
@@ -287,6 +287,12 @@ const HoverCardContent = ({
     },
     // After the universal figures, because these are the specialist ones: a
     // player reads cost and capacity on every card and helicopters on four.
+    ...renderServiceTextFacts(entry.serviceTextFacts, translateFact).map((fact) => ({
+      key: fact.key,
+      label: fact.label,
+      applicable: true,
+      value: fact.value,
+    })),
     ...serviceFacts.map((fact) => ({
       key: fact.key,
       label: fact.label,

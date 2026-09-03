@@ -25,6 +25,12 @@ export interface ServiceFact {
   value: number;
 }
 
+/** The same, for a figure that is a word. See ServiceTextFact in C#. */
+export interface ServiceTextFact {
+  key: string;
+  value: string;
+}
+
 interface ServiceFactPresentation {
   /** Our own key, so a translation can be shipped for it. */
   localizationKey: string;
@@ -182,4 +188,102 @@ export function renderServiceFacts(
   }
 
   return rendered;
+}
+
+
+interface ServiceTextPresentation {
+  localizationKey: string;
+  fallback: string;
+  /**
+   * Words for the VALUE, where it is one of ours rather than the game's.
+   *
+   * A traded resource arrives already named by the game; a lot shape arrives as
+   * "narrow" or "corners", which are our tokens and need our words.
+   */
+  values?: Readonly<Record<string, { localizationKey: string; fallback: string }>>;
+}
+
+const TEXT_PRESENTATION: Readonly<Record<string, ServiceTextPresentation>> = {
+  zoneSold: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneSold]",
+    fallback: "Sells",
+  },
+  zoneManufactured: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneManufactured]",
+    fallback: "Makes",
+  },
+  zoneStored: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneStored]",
+    fallback: "Stores",
+  },
+  zoneLotShapes: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneLotShapes]",
+    fallback: "Lot shapes",
+    values: {
+      // Our own keys, not the ZoneNarrowLots / ZoneCorners the registry
+      // already owns: those are sentence fragments — "narrow lots",
+      // "corners" — written for the old joined-with-dots zone line, and
+      // reusing them here would either read wrong in a label/value pair or
+      // force a casing change on a string other code still renders.
+      narrow: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneShapeNarrow]", fallback: "Narrow" },
+      corners: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneShapeCorners]", fallback: "Corners" },
+    },
+  },
+};
+
+/** Every localization key a worded fact can ask for, for the audit. */
+export const SERVICE_TEXT_FACT_LOCALIZATION_KEYS: readonly string[] = [
+  ...Object.values(TEXT_PRESENTATION).map((entry) => entry.localizationKey),
+  ...Object.values(TEXT_PRESENTATION)
+    .flatMap((entry) => Object.values(entry.values ?? {}))
+    .map((entry) => entry.localizationKey),
+];
+
+/**
+ * The worded facts, one line per key.
+ *
+ * Grouped by key, because a zone reports its lot shapes as one fact per shape —
+ * a zone that supports both would otherwise draw "Lot shapes Narrow" directly
+ * above "Lot shapes Corners", which is one fact printed twice.
+ *
+ * A key with no wording is dropped, for the same reason the numeric ones are:
+ * the halves can ship mismatched, and a raw token on a card is worse than a
+ * missing line.
+ */
+export function renderServiceTextFacts(
+  facts: readonly ServiceTextFact[] | null | undefined,
+  translate: (key: string, fallback: string | null) => string | null,
+): RenderedServiceFact[] {
+  if (!facts || facts.length === 0) {
+    return [];
+  }
+
+  const order: string[] = [];
+  const grouped = new Map<string, string[]>();
+
+  for (const fact of facts) {
+    const presentation = TEXT_PRESENTATION[fact?.key ?? ""];
+
+    if (!presentation) continue;
+    if (typeof fact.value !== "string" || fact.value.trim() === "") continue;
+
+    const token = fact.value.trim();
+    const worded = presentation.values?.[token];
+    const value = worded
+      ? translate(worded.localizationKey, null) ?? worded.fallback
+      : token;
+
+    if (!grouped.has(fact.key)) {
+      grouped.set(fact.key, []);
+      order.push(fact.key);
+    }
+
+    grouped.get(fact.key)!.push(value);
+  }
+
+  return order.map((key) => ({
+    key,
+    label: translate(TEXT_PRESENTATION[key].localizationKey, null) ?? TEXT_PRESENTATION[key].fallback,
+    value: grouped.get(key)!.join(", "),
+  }));
 }

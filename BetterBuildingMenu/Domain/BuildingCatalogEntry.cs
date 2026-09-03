@@ -205,6 +205,7 @@ namespace BetterBuildingMenu.Domain
 		/// Service figures beyond the headline capacity — see ServiceFact.
 		/// </summary>
 		IReadOnlyList<ServiceFact>? ServiceFacts = null,
+		IReadOnlyList<ServiceTextFact>? ServiceTextFacts = null,
 		/// <summary>A network's speed limit in km/h; null for anything else.</summary>
 		double? SpeedLimit = null,
 		/// <summary>How wide a network draws, in metres; null for anything else.</summary>
@@ -326,6 +327,13 @@ namespace BetterBuildingMenu.Domain
 			for (var i = 0; i < (ServiceFacts?.Count ?? 0); i++)
 			{
 				ServiceFacts![i].Write(writer);
+			}
+			writer.ArrayEnd();
+			writer.PropertyName("serviceTextFacts");
+			writer.ArrayBegin(ServiceTextFacts?.Count ?? 0);
+			for (var i = 0; i < (ServiceTextFacts?.Count ?? 0); i++)
+			{
+				ServiceTextFacts![i].Write(writer);
 			}
 			writer.ArrayEnd();
 			WriteNullable(writer, "speedLimit", SpeedLimit);

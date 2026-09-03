@@ -105,6 +105,30 @@ export interface MoneyTemplates {
   perKilometrePerMonth: string;
 }
 
+/**
+ * The game's own length templates, "{SIGN}{VALUE} m".
+ *
+ * Same argument as the money ones: vanilla owns the spacing (several locales
+ * use a narrow no-break space before the unit) and the word. It binds telecom
+ * range as a "length" property, so a range IS a length in the game's terms —
+ * but it never displays CoverageData.m_Range anywhere, so there is no vanilla
+ * wording to copy for a service radius, only a vanilla format.
+ *
+ * KNOWN LIMIT: vanilla converts lengths for imperial players through its own
+ * UnitSystem, which is not reachable from a mod's UI layer. These templates
+ * are the metric pair, so an imperial player sees metres here where the rest
+ * of their game says feet. Stated rather than silently wrong.
+ */
+export interface LengthTemplates {
+  metre: string;
+  kilometre: string;
+}
+
+export const FALLBACK_LENGTH: LengthTemplates = {
+  metre: "{VALUE} m",
+  kilometre: "{VALUE} km",
+};
+
 export const FALLBACK_MONEY: MoneyTemplates = {
   plain: "¢{VALUE}",
   perMonth: "¢{VALUE}/mo",
@@ -117,12 +141,14 @@ export interface NumberSeparators {
   decimal: string;
   /** Absent when the caller had no access to the game's dictionary. */
   money?: MoneyTemplates;
+  length?: LengthTemplates;
 }
 
 export const FALLBACK_SEPARATORS: NumberSeparators = {
   group: FALLBACK_GROUP_SEPARATOR,
   decimal: FALLBACK_DECIMAL_SEPARATOR,
   money: FALLBACK_MONEY,
+  length: FALLBACK_LENGTH,
 };
 
 /** Fills the game's template. {SIGN} is for negatives, which costs never are. */
@@ -167,6 +193,10 @@ export function getNumberSeparators(translate?: Translate): NumberSeparators {
         "Common.VALUE_MONEY_PER_KILOMETER_PER_MONTH",
         FALLBACK_MONEY.perKilometrePerMonth,
       ),
+    },
+    length: {
+      metre: resolveMoney(translate, "Common.VALUE_METER", FALLBACK_LENGTH.metre),
+      kilometre: resolveMoney(translate, "Common.VALUE_KILOMETER", FALLBACK_LENGTH.kilometre),
     },
   };
 }
@@ -338,7 +368,22 @@ export function formatServiceRange(
     return "";
   }
 
-  return `${formatBuildingMetric(Math.round(value), "capacity", separators)} m`;
+  const length = separators.length ?? FALLBACK_LENGTH;
+
+  // Kilometres past a thousand metres. A fire station's coverage reads 10,000
+  // in the raw data, and "10,000 m" is a number the reader has to divide before
+  // it means anything, where "10 km" is the distance itself. The game makes the
+  // same switch for road lengths and ships both templates.
+  if (value >= 1000) {
+    const km = Math.round(value / 100) / 10;
+
+    return applyMoneyTemplate(
+      length.kilometre,
+      Number.isInteger(km) ? String(km) : km.toFixed(1),
+    );
+  }
+
+  return applyMoneyTemplate(length.metre, formatBuildingMetric(Math.round(value), "capacity", separators));
 }
 
 /**

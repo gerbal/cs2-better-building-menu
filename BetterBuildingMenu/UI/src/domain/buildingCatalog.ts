@@ -93,6 +93,8 @@ export interface BuildingCatalogEntry {
   serviceRange?: number | null;
   /** Service figures beyond the headline capacity — see serviceFacts.ts. */
   serviceFacts?: { key: string; value: number }[] | null;
+  /** Figures that are words rather than numbers — see serviceFacts.ts. */
+  serviceTextFacts?: { key: string; value: string }[] | null;
   /** A network's speed limit in km/h; absent for anything else. */
   speedLimit?: number | null;
   /** How wide a network draws, in metres; absent for anything else. */
