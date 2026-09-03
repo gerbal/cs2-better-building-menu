@@ -101,9 +101,9 @@ export function useCatalogWindow(
         return;
       }
 
-      // The last row, for the same reason the anchor takes it: the shelf
-      // sits outside the body's scroll, so walking up from the first entry
-      // can find the panel instead of the list.
+      // The last row, for the same reason the anchor takes it — see
+      // lastCatalogRow, which explains why last is the reading that holds
+      // even once nothing duplicates the attribute above the body.
       const root = rootRef.current;
       const row = root ? lastCatalogRow(root) : null;
       const scroller = root && row ? findScrollContainer(row, root, isScrollContainer) : null;

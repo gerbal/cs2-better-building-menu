@@ -157,14 +157,6 @@ namespace BetterBuildingMenu.Systems
 				return;
 			}
 
-			if (VanillaMenus.IsZones(menuName) && !Mod.Settings.ReplaceVanillaZonesMenu)
-			{
-				// The player kept the familiar zone grid; leave it alone and get
-				// out of its way, exactly as for an unknown menu.
-				YieldMenuToVanilla();
-				return;
-			}
-
 			_lens = _lens.SelectMenu(menuName);
 			PublishScope();
 			// A different menu has different tabs, so the old selection cannot

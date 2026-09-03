@@ -5,7 +5,6 @@ import { useEffect } from "react";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
-import { getShelf, recordPlacement } from "domain/buildingShelf";
 import { canPlace, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { topSearchResult } from "domain/buildingSearchRank";
@@ -18,8 +17,6 @@ import mod from "../../../mod.json";
 import styles from "./buildingGrid.module.scss";
 
 const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "BuildingCatalogSortColumn", "Name");
-const ShowShelf$ = bindValue<boolean>(mod.id, "BuildingLensShowShelf", true);
-const ShelfSize$ = bindValue<number>(mod.id, "BuildingLensShelfSize", 12);
 const TileSize$ = bindValue<number>(mod.id, "BuildingLensTileSize", 72);
 /**
  * The prefab the game currently has armed.
@@ -41,9 +38,6 @@ interface BuildingGridProps {
    * A scroll container per group would give every heading its own scrollbar and
    * make the set impossible to read as one thing; the caller wraps the whole
    * grouped result in a single scroll instead.
-   *
-   * The shelf goes with it: "frequently placed" repeated above every group is
-   * the same shortlist printed N times.
    */
   standalone?: boolean;
 }
@@ -73,8 +67,6 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
   const lockedLabel = translate("Tooltip.LABEL[BetterBuildingMenu.Locked]", "Locked") ?? "Locked";
   const builtLabel =
     translate("Tooltip.LABEL[BetterBuildingMenu.AlreadyBuilt]", "Already built") ?? "Already built";
-  const showShelf = useValue(ShowShelf$);
-  const shelfSize = useValue(ShelfSize$);
   const tileSize = useValue(TileSize$);
   const activePrefabId = useValue(ActivePrefabId$);
   // The page arrives in the order every view shows: grouped, then by
@@ -82,13 +74,6 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
   // used to re-rank (and silently drop) entries here; see
   // BuildingCatalogRelevance.cs.
   const ordered = entries;
-  const shelfIds = getShelf();
-  const byId = new Map(entries.map((entry) => [entry.id, entry]));
-  // Only what is in this category; the shelf is global but must not advertise
-  // buildings the current filter has excluded.
-  const shelf = (showShelf ? shelfIds.slice(0, shelfSize) : [])
-    .map((id) => byId.get(id))
-    .filter(Boolean) as BuildingCatalogEntry[];
 
   // Enter arms the best match, so a search can be completed without leaving
   // the keyboard. Bound on the document because the search field belongs to
@@ -100,7 +85,6 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
       const top = topSearchResult(ordered, searchText ?? "");
       if (!top) return;
 
-      recordPlacement(top.id);
       onPlace(top);
     };
 
@@ -112,11 +96,9 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
   const place = (entry: BuildingCatalogEntry) => {
     // Vanilla refuses the same selection rather than hiding the tile
     // (ToolbarUISystem.cs:924), and its own grid routes a locked click to a
-    // disabled sound instead of a placement. Recording it in the shelf would
-    // also promote something the player cannot build.
+    // disabled sound instead of a placement.
     if (!canPlace(entry)) return;
 
-    recordPlacement(entry.id);
     onPlace(entry);
   };
 
@@ -291,15 +273,6 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
 
   return (
     <div className={styles.grid}>
-      {shelf.length > 0 && !searchText?.trim() && (
-        <div className={styles.shelf}>
-          <div className={styles.shelfLabel}>
-            {translate("Tooltip.LABEL[BetterBuildingMenu.Shelf]", "Frequently placed") ?? "Frequently placed"}
-          </div>
-          <div className={styles.tiles}>{shelf.map((entry) => tile(entry, `shelf-${entry.id}`))}</div>
-        </div>
-      )}
-
       <Scrollable
         className={styles.body}
         vertical

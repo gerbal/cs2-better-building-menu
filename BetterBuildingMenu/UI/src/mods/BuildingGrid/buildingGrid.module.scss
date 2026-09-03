@@ -7,27 +7,6 @@
   min-height: 0;
 }
 
-// The shelf sits above the grid and never scrolls: a position that moves is a
-// position you cannot learn.
-.shelf {
-  display: flex;
-  flex-direction: column;
-  flex: 0 0 auto;
-  // Was `gap: 3rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
-  > * + * {
-    margin-top: 3rem;
-  }
-  padding: 4rem 8rem 6rem;
-  border-bottom: 1rem solid rgba(255, 255, 255, 0.1);
-}
-
-.shelfLabel {
-  color: var(--menuText2Normal);
-  font-size: var(--fontSizeS);
-  text-transform: uppercase;
-}
-
 // Sizes to its content, capped by the catalog's own max-height — NOT flex: 1 1 0.
 //
 // A zero basis only resolves against a parent with a definite height, and

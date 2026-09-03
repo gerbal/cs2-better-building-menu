@@ -45,11 +45,12 @@ export function findScrollContainer<T extends ScrollBox>(
 /**
  * The row to measure: the LAST `[data-catalog-entry]` under the root.
  *
- * Last, not first. The grid's "frequently placed" shelf renders the same
- * entries above the body with the same attribute, and the shelf is pinned in
- * view — anchoring to that copy reports the row on screen without scrolling
- * anything, a silent no-op dressed as a success. Walking up from the shelf's
- * copy also finds the panel rather than the list.
+ * Last, not first. This dates from the "frequently placed" shelf, which
+ * rendered the same entries above the body under the same attribute: a pinned
+ * copy that reported the row on screen without scrolling anything, a silent
+ * no-op dressed as a success. The shelf is gone and nothing duplicates the
+ * attribute today, so first and last now agree — but last stays, because it is
+ * the reading that survives any future second copy above the body.
  *
  * Under the root, never the document: these rows are this component's own,
  * and a document-wide sweep is a reach across every other component on the

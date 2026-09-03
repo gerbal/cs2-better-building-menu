@@ -12,15 +12,15 @@ provenance, [PLANNING.md](PLANNING.md) for implementation phases, and
 
 ## Features
 
-* Replaces the vanilla build menu (and, optionally, the zones menu) in place —
-  no floating window to manage.
+* Replaces the vanilla build menu in place — no floating window to manage.
+  The Zones button opens a browsable zoning hierarchy; assignment still uses
+  the game's own Zone tool.
 * Table, grid and list views, each sortable and groupable.
 * Facets for availability, source, theme, asset pack, placement and role.
 * Metric range filters over cost, upkeep, workers, capacity and lot size.
 * A search that finds nothing inside one menu can widen itself to every menu.
 * Hover a building for its numbers; place one and a service coverage overlay
   shows what it reaches.
-* A bounded shelf of what you actually place, at positions that hold still.
 * Integrated picker — **Ctrl+P**, or the picker icon in the toolbar — opens the
   menu on a building already in the city.
 
