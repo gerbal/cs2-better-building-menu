@@ -295,6 +295,16 @@ namespace BetterBuildingMenu.Domain
 		public int? Households { get; set; }
 		public int? Capacity { get; set; }
 		public float? ElectricityConsumption { get; set; }
+
+		/// <summary>
+		/// What the building asks of the telecom network.
+		/// </summary>
+		/// <remarks>
+		/// The fifth field on ConsumptionData, which the indexer has read for
+		/// upkeep, electricity, water and garbage since it was written while
+		/// leaving this one on the floor.
+		/// </remarks>
+		public float? TelecomNeed { get; set; }
 		public float? WaterConsumption { get; set; }
 		public float? GarbageAccumulation { get; set; }
 		public int? WaterCapacity { get; set; }
