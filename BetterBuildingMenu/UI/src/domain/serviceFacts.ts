@@ -77,6 +77,54 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     fallback: "Attractiveness",
     unit: "",
   },
+
+  // Zones. Per cell rather than per building, which is what a zone is: a rate
+  // the player paints rather than a thing they place.
+  zoneHouseholds: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneHouseholds]",
+    fallback: "Homes",
+    unit: "",
+  },
+  zoneMaxHeight: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneHeight]",
+    fallback: "Height",
+    unit: "m",
+  },
+  zoneUpkeep: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Upkeep]",
+    fallback: "Upkeep",
+    unit: "",
+  },
+  zoneElectricity: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Electricity]",
+    fallback: "Electricity",
+    unit: "",
+  },
+  zoneWater: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Water]",
+    fallback: "Water",
+    unit: "",
+  },
+  zoneGarbage: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Garbage]",
+    fallback: "Garbage",
+    unit: "",
+  },
+  zoneGroundPollution: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.GroundPollution]",
+    fallback: "Ground pollution",
+    unit: "",
+  },
+  zoneAirPollution: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.AirPollution]",
+    fallback: "Air pollution",
+    unit: "",
+  },
+  zoneNoisePollution: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.NoisePollution]",
+    fallback: "Noise pollution",
+    unit: "",
+  },
 };
 
 /** The keys this build knows how to draw, for the localization audit. */

@@ -1431,9 +1431,21 @@ namespace BetterBuildingMenu.Systems
 			// assets under Roads showed a blank Cost. The rest of this method
 			// reads building-only components, so they simply do not match for a
 			// network and leave their fields absent.
+			//
+			// Zones were excluded for the same reason and cost the same thing: a
+			// zone tooltip drew its name and its description and nothing else,
+			// because this method returned before reading anything at all. Every
+			// zone figure the game measures — consumption, pollution, homes per
+			// cell — was unreachable no matter what was added below, and two
+			// attempts to fix that failed here rather than where they looked.
+			//
+			// The guard is a filter on work, not on correctness: a component
+			// that does not apply to a category simply does not match. Adding a
+			// category to it can cost time; it cannot produce a wrong figure.
 			if (prefabIndex.Category is not PrefabCategory.Buildings
 				and not PrefabCategory.ServiceBuildings
-				and not PrefabCategory.Networks)
+				and not PrefabCategory.Networks
+				and not PrefabCategory.Zones)
 			{
 				return;
 			}
@@ -1555,6 +1567,45 @@ namespace BetterBuildingMenu.Systems
 			// How far it reaches. The shared component every covered service
 			// carries — schools, hospitals, parks — so this is one read rather
 			// than a field per service.
+			// A zone's own figures, which had never reached the UI by any route.
+			// ZoneCatalogEntry carries some of them and is never published — it
+			// feeds the coverage audit and nothing else — and neither PrefabIndex
+			// nor BuildingCatalogEntry had a zone field at all, which is why
+			// getZoneFacts sat tested and callerless and a zone tooltip drew its
+			// name and description and stopped.
+			//
+			// Carried as service facts rather than as new columns: they are
+			// per-cell rates on ONE family of asset, which is the same shape the
+			// per-service figures have.
+			if (EntityManager.TryGetComponent<ZoneServiceConsumptionData>(entity, out var zoneConsumption))
+			{
+				Fact(prefabIndex, "zoneUpkeep", zoneConsumption.m_Upkeep);
+				Fact(prefabIndex, "zoneElectricity", zoneConsumption.m_ElectricityConsumption);
+				Fact(prefabIndex, "zoneWater", zoneConsumption.m_WaterConsumption);
+				Fact(prefabIndex, "zoneGarbage", zoneConsumption.m_GarbageAccumulation);
+			}
+
+			if (EntityManager.TryGetComponent<ZonePollutionData>(entity, out var zonePollution))
+			{
+				Fact(prefabIndex, "zoneGroundPollution", zonePollution.m_GroundPollution);
+				Fact(prefabIndex, "zoneAirPollution", zonePollution.m_AirPollution);
+				Fact(prefabIndex, "zoneNoisePollution", zonePollution.m_NoisePollution);
+			}
+
+			if (EntityManager.TryGetComponent<ZonePropertiesData>(entity, out var zoneProperties))
+			{
+				// Residential only; the other families report none rather than a
+				// zero that would read as "no homes here".
+				Fact(prefabIndex, "zoneHouseholds", zoneProperties.m_ResidentialProperties);
+			}
+
+			if (EntityManager.TryGetComponent<ZoneData>(entity, out var zoneHeights))
+			{
+				// What the zone actually grows to, measured by the game from the
+				// tallest mesh it can spawn and never shown by it.
+				Fact(prefabIndex, "zoneMaxHeight", zoneHeights.m_MaxHeight);
+			}
+
 			// Tourism, and one of the few figures that matters across services
 			// rather than inside one — a park, a landmark and a signature
 			// building all trade on it.
@@ -1826,8 +1877,14 @@ namespace BetterBuildingMenu.Systems
 		/// </remarks>
 		private static readonly Dictionary<string, string> FoldedDevTreeNodes = new(StringComparer.Ordinal)
 		{
-			["ServiceBuildingInternationalAirport"] = "ServiceBuildingAirport",
-			["ServiceBuildingChirpXSpaceCenter"] = "ServiceBuildingAirport",
+			// The DEV TREE NODE prefab names, read off a live tree. These were
+			// first written as "ServiceBuildingInternationalAirport" and
+			// "ServiceBuildingChirpXSpaceCenter", which are the ASSET names the
+			// locale carries — so the fold matched nothing and did so silently
+			// for a whole session. The mismatch is why the count below is
+			// logged and why an unmatched key now warns.
+			["InternationalAirportNode"] = "AirportNode",
+			["SpaceCenterNode"] = "AirportNode",
 		};
 
 		private void IndexDevTreeBranches()
@@ -1939,6 +1996,15 @@ namespace BetterBuildingMenu.Systems
 				{
 					branches[from] = target;
 					folded++;
+				}
+				else
+				{
+					// A fold that matches nothing is a typo, not a no-op, and it
+					// cost a session to notice the first time: the build was
+					// clean, the tests passed, and the tab simply never moved.
+					Mod.Log.Warn(
+						$"[DEVTREE] fold '{fold.Key}' -> '{fold.Value}' matched no node; "
+						+ "the key is a dev tree NODE prefab name, not an asset name");
 				}
 			}
 

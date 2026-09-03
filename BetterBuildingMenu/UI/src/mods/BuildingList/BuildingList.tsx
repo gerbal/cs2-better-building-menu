@@ -1,7 +1,6 @@
 import { bindValue, useValue } from "cs2/api";
 import { Button } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
-import { leisureLabel } from "domain/buildingLensRowDetails";
 import { useEffect } from "react";
 import classNames from "classnames";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
@@ -137,7 +136,6 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
         // Category-aware, and it returns nothing for a category where capacity
         // means nothing — so a park bench's card stays as narrow as a
         // hospital's is informative, without a rule per category here.
-        const leisure = leisureLabel(entry.leisureType, translate);
         const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators);
         const hasCapacity = capacity !== "" && capacity !== "—";
 
@@ -221,17 +219,12 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
                       </>
                     )}
                     <span className={styles.fact}>{cost}</span>
-                    {/* What a park gives the city. "Parks & Recreation" holds a
-                        city park, an indoor arena and a beach; without this the
-                        card said a size and a price and nothing about what the
-                        thing is for. Before capacity, because it says WHICH
-                        kind of thing this is and capacity says how much. */}
-                    {leisure !== "" && (
-                      <>
-                        <span className={styles.factDot} aria-hidden="true">·</span>
-                        <span className={styles.fact}>{leisure}</span>
-                      </>
-                    )}
+                    {/* Size, cost, one key number — and nothing else. The
+                        recreation kind was here and made the row long: "Outdoor
+                        recreation" is a phrase where the rest of the line is
+                        three figures, and a fact row that has to be READ rather
+                        than scanned stops being a fact row. It says the same
+                        thing on the hover card, where there is room for it. */}
                     {hasCapacity && (
                       <>
                         <span className={styles.factDot} aria-hidden="true">·</span>

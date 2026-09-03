@@ -39,12 +39,42 @@
   color: rgb(130, 205, 130);
 }
 
+// The label/value pairs, two across where they fit.
+//
+// Wrapping rather than a fixed column count, so the flow decides: a pair takes
+// the width its text needs, two short ones share a row, and one long one takes
+// the row to itself without a rule having to predict which is which.
+//
+// Vertical spacing is margins, not `gap` — a no-op in this engine — with the
+// container pulling the first row's margin back off, which is the same idiom
+// buildingList.module.scss uses for its tiles.
+.cardLines {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  margin-top: -2rem;
+}
 .cardLine {
   display: flex;
   flex-direction: row;
   align-items: baseline;
   color: var(--menuText2Normal);
   font-size: var(--fontSizeS);
+  // Grows into the leftover, but never narrower than a shade under half, so
+  // two per row is the most that can ever fit and a third cannot squeeze in.
+  flex: 1 1 auto;
+  min-width: 45%;
+  box-sizing: border-box;
+  margin-top: 2rem;
+  padding-right: 6rem;
+}
+// A whole row: a stack of values beside a single figure reads as one line with
+// a ragged neighbour.
+.cardLineWide {
+  flex: 1 1 100%;
+  min-width: 100%;
+  padding-right: 0;
 }
 
 // The word recedes and the number leads: the figure is what is being compared,

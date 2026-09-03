@@ -167,7 +167,16 @@ const HoverCardContent = ({
 
   const cost = formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance);
   const upkeep = formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance);
-  const leisure = leisureName(entry.leisureType);
+  const leisureKind = leisureName(entry.leisureType);
+  // Kind AND amount on one line. The kind alone says a park is outdoor
+  // recreation and nothing about whether it is a bench or a botanical garden,
+  // which is the figure a player is actually comparing.
+  const leisureAmount = entry.leisureEfficiency;
+  const leisure = leisureKind === ""
+    ? ""
+    : isMetricPresent(leisureAmount)
+      ? `${leisureKind} ${formatBuildingMetric(leisureAmount, "capacity", separators)}`
+      : leisureKind;
   const range = formatServiceRange(entry.serviceRange, separators);
   const speed = formatSpeedLimit(entry.speedLimit, separators);
   const width = formatNetworkWidth(entry.networkWidth);
@@ -179,10 +188,17 @@ const HoverCardContent = ({
   const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators);
   const lot = formatLotDimensions(entry.lotWidth, entry.lotDepth);
 
-  // Zones carry their own facts — how tall they grow, what they trade in —
-  // which the game measures and never shows. They are a property of the entry,
-  // not of the view, so they belong on the card in every mode.
-  const facts = (entry as unknown as { facts?: string[] }).facts ?? [];
+  // NO separate zone-facts block. There was one, reading an `entry.facts`
+  // string array that nothing has ever written: ZoneCatalogEntry holds some of
+  // those figures and is never published — it feeds the coverage audit alone —
+  // and neither PrefabIndex nor BuildingCatalogEntry carried a zone field, so
+  // the array was always empty and a zone tooltip drew its name and
+  // description and stopped.
+  //
+  // A zone's figures now arrive as service facts, indexed off
+  // ZoneServiceConsumptionData, ZonePollutionData, ZonePropertiesData and
+  // ZoneData, and are drawn by the same lines every other specialist figure
+  // uses. See serviceFacts.ts.
   const footprints = (entry as unknown as { footprints?: ZoneFootprint[] }).footprints ?? [];
   const footprintOverflow = (entry as unknown as { footprintOverflow?: number }).footprintOverflow ?? 0;
 
@@ -336,11 +352,21 @@ const HoverCardContent = ({
     <div className={styles.card}>
       <div className={styles.cardName}>{label}</div>
       {description && <div className={styles.cardDescription}>{description}</div>}
+      {/* Two across where they fit. Measured on a zone card: six label/value
+          pairs, each on its own 215px row and each using about fifty of it —
+          the card was three times taller than its content needed. The pairing
+          is done by the flow rather than by a column count, so a long line
+          (a list of unlock conditions, a recreation kind) still takes a whole
+          row and only the short figures double up. */}
+      <div className={styles.cardLines}>
       {lines.map((line) => (
         <div
           key={line.key}
           className={classNames(
             styles.cardLine,
+            // A list of values is a stack; pairing it with a neighbour would
+            // put a one-line figure beside a three-line block.
+            line.values && line.values.length > 0 && styles.cardLineWide,
             line.tone === "warn" && styles.cardWarn,
             line.tone === "good" && styles.cardGood,
           )}
@@ -357,7 +383,7 @@ const HoverCardContent = ({
             : <span className={styles.cardValue}>{line.value}</span>}
         </div>
       ))}
-      {facts.length > 0 && <div className={styles.cardFacts}>{facts.join(" · ")}</div>}
+      </div>
       {/* The shapes, narrowest first. A player choosing a zone is matching
           against a block on the map, and a picture of the lot is closer to
           that than "2–4 wide" is. */}

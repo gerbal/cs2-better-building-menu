@@ -49,3 +49,37 @@ describe("the hover card", () => {
     assert.match(renderHtml(<Card subject={entry(1)} />), /<span>anchor<\/span>/);
   });
 });
+
+describe("recreation on the hover card", () => {
+  beforeEach(() => resetBindings());
+
+  it("says how much recreation, not only which kind", () => {
+    // "Outdoor recreation" alone does not separate a bench from a botanical
+    // garden, and the amount is the figure a player compares. The kind's word
+    // comes from the game (Properties.LEISURE_TYPE), so the test harness has
+    // no translation for it and the enum is spelled out instead.
+    const card = cardOf(entry(1, {
+      name: "City Park",
+      leisureType: "CityPark",
+      leisureEfficiency: 60,
+    } as Partial<BuildingCatalogEntry>));
+
+    assert.match(card, /City Park 60/);
+  });
+
+  it("shows the kind alone when the building carries no amount", () => {
+    const card = cardOf(entry(2, {
+      name: "Plaza",
+      leisureType: "CityPark",
+    } as Partial<BuildingCatalogEntry>));
+
+    assert.match(card, /City Park/);
+    assert.doesNotMatch(card, /NaN|undefined/);
+  });
+
+  it("says nothing at all for a building that provides no recreation", () => {
+    const card = cardOf(entry(3, { name: "Fire Station" }));
+
+    assert.doesNotMatch(card, /Recreation/);
+  });
+});

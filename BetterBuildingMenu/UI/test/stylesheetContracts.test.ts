@@ -19,6 +19,7 @@ const buildingCatalogStyles = read("../src/mods/BuildingCatalog/buildingCatalog.
 const lensControlPaneStyles = read("../src/mods/LensControlPane/lensControlPane.module.scss");
 const surfaceStylesFor = () => read("../src/mods/BuildingMenu/buildingMenuSurface.module.scss");
 const groupedResultsStyles = read("../src/mods/GroupedResults/groupedResults.module.scss");
+const hoverCardStyles = read("../src/mods/BuildingHoverCard/buildingHoverCard.module.scss");
 
 describe("Building Lens stylesheet contracts", () => {
   it("sizes a group to its tiles and lets the heading wrap inside it", () => {
@@ -70,6 +71,20 @@ describe("Building Lens stylesheet contracts", () => {
     // And the collapsed rule it is overriding must still be the percentage,
     // so this contract keeps pointing at something real.
     assert.match(buildingCatalogStyles, /\.rowDetailsButton \{[^}]*height: 100%;/);
+  });
+
+  it("pairs the hover card's figures two across, and lets a list take the row", () => {
+    // Measured on a zone card: six label/value pairs, each on its own 215px row
+    // using about fifty of it. The pairing is left to the flow — min-width just
+    // under half means two fit and a third cannot — so a long line still takes
+    // a whole row without a rule predicting which lines are long.
+    assert.match(hoverCardStyles, /\.cardLines \{[^}]*flex-wrap: wrap;/);
+    assert.match(hoverCardStyles, /\.cardLine \{[^}]*min-width: 45%;/);
+    assert.match(hoverCardStyles, /\.cardLineWide \{[^}]*min-width: 100%;/);
+    // gap is a no-op in this engine, so row spacing is margins with the
+    // container pulling the first row's back off.
+    assert.doesNotMatch(hoverCardStyles, /\.cardLines \{[^}]*[^-]gap:/);
+    assert.match(hoverCardStyles, /\.cardLines \{[^}]*margin-top: -2rem;/);
   });
 
   it("keeps the trailing reserve and the name budget agreeing", () => {

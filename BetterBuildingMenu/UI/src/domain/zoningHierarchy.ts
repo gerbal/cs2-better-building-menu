@@ -26,6 +26,15 @@ export interface ZoneEntry {
   allowedSold?: string;
   allowedManufactured?: string;
   allowedStored?: string;
+  /** Per cell, from the zone's own consumption and pollution components. */
+  households?: number | null;
+  upkeep?: number | null;
+  electricityConsumption?: number | null;
+  waterConsumption?: number | null;
+  garbageAccumulation?: number | null;
+  groundPollution?: number | null;
+  airPollution?: number | null;
+  noisePollution?: number | null;
   /** Lot sizes the zone's spawnable buildings occupy. 0 when none are known. */
   minLotWidth?: number;
   maxLotWidth?: number;
@@ -98,7 +107,20 @@ export function getZoneFootprints(zone: ZoneEntry | null | undefined): ZoneFootp
  * translates, and these strings are registered in localizableStrings.
  */
 export interface ZoneFact {
-  kind: "lots" | "height" | "narrow" | "corners" | "sold" | "manufactured" | "stored";
+  kind:
+    | "lots"
+    | "height"
+    | "narrow"
+    | "corners"
+    | "sold"
+    | "manufactured"
+    | "stored"
+    | "households"
+    | "upkeep"
+    | "electricity"
+    | "water"
+    | "garbage"
+    | "pollution";
   value: string | number;
 }
 
@@ -127,6 +149,11 @@ export function formatZoneLots(zone: ZoneEntry | null | undefined): string | nul
   return minDepth > 0 && minDepth === maxDepth
     ? `${width}\u00a0×\u00a0${minDepth}`
     : `${width} wide`;
+}
+
+/** A figure the zone actually carries; absent and zero are both "nothing to say". */
+function isPositive(value: number | null | undefined): boolean {
+  return typeof value === "number" && Number.isFinite(value) && value > 0;
 }
 
 export function getZoneFacts(zone: ZoneEntry | null | undefined): ZoneFact[] {
@@ -158,6 +185,31 @@ export function getZoneFacts(zone: ZoneEntry | null | undefined): ZoneFact[] {
     if (typeof value === "string" && value.trim() !== "") {
       facts.push({ kind, value: value.trim() });
     }
+  }
+
+  // What the zone costs to run and puts in the air, per cell. The game
+  // measures both on the zone's own components and shows neither, which left
+  // a zone card saying what would grow and how tall and nothing about the
+  // consequences of painting it.
+  if (isPositive(zone.households)) facts.push({ kind: "households", value: zone.households! });
+  if (isPositive(zone.upkeep)) facts.push({ kind: "upkeep", value: zone.upkeep! });
+  if (isPositive(zone.electricityConsumption)) {
+    facts.push({ kind: "electricity", value: zone.electricityConsumption! });
+  }
+  if (isPositive(zone.waterConsumption)) facts.push({ kind: "water", value: zone.waterConsumption! });
+  if (isPositive(zone.garbageAccumulation)) {
+    facts.push({ kind: "garbage", value: zone.garbageAccumulation! });
+  }
+
+  // The three pollutions as one line. Separately they are three lines of small
+  // numbers on a card that has to stay readable; together they are the shape
+  // of the zone's footprint on its neighbours.
+  const pollution = [zone.groundPollution, zone.airPollution, zone.noisePollution];
+  if (pollution.some(isPositive)) {
+    facts.push({
+      kind: "pollution",
+      value: pollution.map((part) => (isPositive(part) ? Math.round(part!) : 0)).join(" / "),
+    });
   }
 
   return facts;
@@ -278,3 +330,4 @@ export function selectZoneCommand(zone: { id: number; version: number }) {
     args: [{ index: zone.id, version: zone.version }, true],
   } as const;
 }
+
