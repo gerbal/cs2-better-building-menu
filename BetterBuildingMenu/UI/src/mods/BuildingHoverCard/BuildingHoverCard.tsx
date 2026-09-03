@@ -49,7 +49,6 @@ export interface HoverCardContext {
     cost: string;
     upkeep: string;
     capacity: string;
-    leisure: string;
     range: string;
     speed: string;
     width: string;
@@ -95,7 +94,6 @@ export const useHoverCardContext = (): HoverCardContext => {
       cost: translate("Tooltip.LABEL[BetterBuildingMenu.Cost]", "Cost") ?? "Cost",
       upkeep: translate("Tooltip.LABEL[BetterBuildingMenu.Upkeep]", "Upkeep") ?? "Upkeep",
       capacity: translate("Tooltip.LABEL[BetterBuildingMenu.Capacity]", "Capacity") ?? "Capacity",
-      leisure: translate("Tooltip.LABEL[BetterBuildingMenu.Leisure]", "Recreation") ?? "Recreation",
       range: translate("Tooltip.LABEL[BetterBuildingMenu.Range]", "Range") ?? "Range",
       speed: translate("Tooltip.LABEL[BetterBuildingMenu.SpeedLimit]", "Speed limit") ?? "Speed limit",
       width: translate("Tooltip.LABEL[BetterBuildingMenu.NetworkWidth]", "Width") ?? "Width",
@@ -168,14 +166,20 @@ const HoverCardContent = ({
   const cost = formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance);
   const upkeep = formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance);
   const leisureKind = leisureName(entry.leisureType);
-  // Kind AND amount on one line. The kind alone says a park is outdoor
-  // recreation and nothing about whether it is a bench or a botanical garden,
-  // which is the figure a player is actually comparing.
+  // Amount THEN kind, as one phrase: "2 Outdoor Recreation". That is the shape
+  // the game's own building-details panel uses for the same figure, and it
+  // reads as a quantity of a thing rather than as a thing with a number after
+  // it. The kind alone would not separate a bench from a botanical garden;
+  // the amount is what a player compares.
+  //
+  // No label in front of it. The kind's own word is "Outdoor Recreation", so a
+  // "Recreation" label spent a column repeating it — the phrase says what it
+  // is by itself, exactly as it does in the details panel.
   const leisureAmount = entry.leisureEfficiency;
   const leisure = leisureKind === ""
     ? ""
     : isMetricPresent(leisureAmount)
-      ? `${leisureKind} ${formatBuildingMetric(leisureAmount, "capacity", separators)}`
+      ? `${formatBuildingMetric(leisureAmount, "capacity", separators)} ${leisureKind}`
       : leisureKind;
   const range = formatServiceRange(entry.serviceRange, separators);
   const speed = formatSpeedLimit(entry.speedLimit, separators);
@@ -256,7 +260,7 @@ const HoverCardContent = ({
     // thing is FOR. The game's own word for it, via Properties.LEISURE_TYPE.
     {
       key: "leisure",
-      label: labels.leisure,
+      label: "",
       applicable: leisure !== "",
       value: leisure,
     },
