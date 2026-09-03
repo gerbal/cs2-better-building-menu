@@ -6,6 +6,9 @@ import {
   getNumberSeparators,
   formatBuildingMetric,
   formatCapacity,
+  applyMoneyTemplate,
+  FALLBACK_MONEY,
+  formatServiceRange,
   getCapacityUnitLabel,
   groupDigits,
   hasFootprint,
@@ -37,7 +40,11 @@ describe("Building Lens metric formatting", () => {
     const separators = getNumberSeparators((id) =>
       id === "Common.THOUSANDS_SEPARATOR" ? "," : id === "Common.DECIMAL_SEPARATOR" ? "." : null
     );
-    assert.deepEqual(separators, { group: ",", decimal: "." });
+    assert.equal(separators.group, ",");
+    assert.equal(separators.decimal, ".");
+    // The money templates come from the same dictionary; an absent key falls
+    // back rather than rendering the id.
+    assert.equal(separators.money?.plain, FALLBACK_MONEY.plain);
   });
 
   it("falls back rather than printing a locale id when the key is missing", () => {
@@ -82,9 +89,11 @@ describe("Building Lens metric formatting", () => {
     assert.equal(formatBuildingMetric(0, "workers"), "0");
   });
 
-  it("says what upkeep is per", () => {
-    assert.equal(formatBuildingMetric(5000, "upkeep"), "5\u00a0000/mo");
-    assert.equal(formatBuildingMetric(5000, "cost"), "5\u00a0000");
+  it("says what upkeep is per, and that both are money", () => {
+    // Money is drawn through the game's own VALUE_MONEY templates, so it
+    // carries vanilla's symbol and vanilla's "per month" — see MoneyTemplates.
+    assert.equal(formatBuildingMetric(5000, "upkeep"), "¢5\u00a0000/mo");
+    assert.equal(formatBuildingMetric(5000, "cost"), "¢5\u00a0000");
   });
 
   it("names what capacity counts so the column is comparable", () => {
@@ -341,19 +350,79 @@ describe("per-distance metrics", () => {
     // Built from groupDigits rather than a literal: the fallback group
     // separator is U+00A0, indistinguishable from a space on screen and in a
     // diff.
-    assert.equal(formatBuildingMetric(12500, "cost", undefined, true), `${groupDigits(12500)}/km`);
+    // The game has its own per-kilometre money form, so the rate is stated the
+    // way vanilla states it rather than by bolting "/km" onto a number.
+    assert.equal(
+      formatBuildingMetric(12500, "cost", undefined, true),
+      applyMoneyTemplate(FALLBACK_MONEY.perKilometre, groupDigits(12500)),
+    );
   });
 
   it("keeps upkeep's monthly sense alongside the distance", () => {
-    assert.equal(formatBuildingMetric(340, "upkeep", undefined, true), `${groupDigits(340)}/mo/km`);
+    assert.equal(
+      formatBuildingMetric(340, "upkeep", undefined, true),
+      applyMoneyTemplate(FALLBACK_MONEY.perKilometrePerMonth, groupDigits(340)),
+    );
   });
 
   it("does not call a zero rate Free, which is a claim about a total", () => {
-    assert.equal(formatBuildingMetric(0, "cost", undefined, true), "0/km");
+    assert.equal(
+      formatBuildingMetric(0, "cost", undefined, true),
+      applyMoneyTemplate(FALLBACK_MONEY.perKilometre, "0"),
+    );
     assert.equal(formatBuildingMetric(0, "cost", undefined, false), METRIC_FREE);
   });
 
   it("still reports absence as absence", () => {
     assert.equal(formatBuildingMetric(null, "cost", undefined, true), METRIC_NO_DATA);
+  });
+});
+
+describe("formatServiceRange", () => {
+  it("reads as metres, rounded", () => {
+    // The simulation measures in metres and the game's own coverage readouts
+    // say so; nobody reads a tower's reach to the centimetre.
+    assert.equal(formatServiceRange(480), "480 m");
+    assert.equal(formatServiceRange(479.6), "480 m");
+  });
+
+  it("says nothing where there is no range to say", () => {
+    // Most of the catalog: a building that serves the whole city, or nothing.
+    // Empty rather than a dash, so the tooltip line drops out entirely.
+    for (const value of [null, undefined, 0, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+      assert.equal(formatServiceRange(value as number), "");
+    }
+  });
+});
+
+describe("money templates", () => {
+  it("uses the game's own template, symbol placement and all", () => {
+    // Vanilla ships "{SIGN}¢{VALUE}", and some locales put the symbol
+    // elsewhere or use a different one. Substituting into the game's string
+    // means a cost reads in the lens exactly as it reads in vanilla's panels.
+    const separators = getNumberSeparators((id) =>
+      id === "Common.VALUE_MONEY" ? "{SIGN}{VALUE} kr" : null);
+
+    assert.equal(formatBuildingMetric(1200, "cost", separators), "1 200 kr");
+  });
+
+  it("ignores a template that lost its placeholder", () => {
+    // A template with no {VALUE} would render the symbol and drop the number,
+    // which is worse than our own fallback.
+    const separators = getNumberSeparators((id) =>
+      id === "Common.VALUE_MONEY" ? "¢" : null);
+
+    assert.equal(formatBuildingMetric(50, "cost", separators), applyMoneyTemplate(FALLBACK_MONEY.plain, "50"));
+  });
+
+  it("drops {SIGN}, which is for negatives a cost never has", () => {
+    assert.equal(applyMoneyTemplate("{SIGN}¢{VALUE}", "40"), "¢40");
+  });
+
+  it("leaves non-money metrics alone", () => {
+    // Workers and capacity are counts; a currency symbol on them would be a
+    // lie about what the number measures.
+    assert.equal(formatBuildingMetric(500, "workers"), groupDigits(500));
+    assert.equal(formatBuildingMetric(500, "capacity"), groupDigits(500));
   });
 });

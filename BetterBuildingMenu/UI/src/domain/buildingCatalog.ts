@@ -89,6 +89,17 @@ export interface BuildingCatalogEntry {
   /** Households the building holds; null when it is not residential. */
   households?: number | null;
   capacity: number | null;
+  /** How far the building's service reaches, in metres. */
+  serviceRange?: number | null;
+  /** Service figures beyond the headline capacity — see serviceFacts.ts. */
+  serviceFacts?: { key: string; value: number }[] | null;
+  /** A network's speed limit in km/h; absent for anything else. */
+  speedLimit?: number | null;
+  /** How wide a network draws, in metres; absent for anything else. */
+  networkWidth?: number | null;
+  /** The game's own LeisureType name, or "" — see leisureLabel. */
+  leisureType?: string;
+  leisureEfficiency?: number | null;
   electricityConsumption: number | null;
   waterConsumption: number | null;
   garbageAccumulation: number | null;

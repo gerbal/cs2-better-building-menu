@@ -19,6 +19,7 @@ import type { NumberSeparators } from "./buildingLensMetricFormat";
 export const MAX_CATALOG_PAGE_SIZE = 500;
 
 export type SortColumn =
+  | "Default"
   | "Name"
   | "Category"
   | "ConstructionCost"

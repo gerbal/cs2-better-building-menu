@@ -189,6 +189,59 @@ namespace BetterBuildingMenu.Domain
 		/// one belongs in the middle of the strip, not at the end of it.
 		/// </remarks>
 		public int UiCategoryPriority { get; set; }
+		/// <summary>
+		/// The kind of leisure this building provides, as the game names it.
+		/// </summary>
+		/// <remarks>
+		/// LeisureProviderData.m_LeisureType, held as the enum's own name so the
+		/// UI can ask the GAME for the word: vanilla ships
+		/// Properties.LEISURE_TYPE[CityPark] and [CityIndoors], which is what a
+		/// player already reads elsewhere for the same thing. Translating it
+		/// ourselves would put a second vocabulary on the same property.
+		///
+		/// Null where the prefab provides no leisure at all, which is most of
+		/// the catalog.
+		/// </remarks>
+		/// <summary>
+		/// How far the building's service reaches, in metres.
+		/// </summary>
+		/// <remarks>
+		/// CoverageData.m_Range, which schools, hospitals, parks and the rest of
+		/// the covered services carry, or TelecomFacilityData.m_Range for a
+		/// tower — the telecom component keeps its own rather than using the
+		/// shared one. Null where the building serves the whole city or nothing
+		/// at all, which is most of the catalog.
+		/// </remarks>
+		/// <summary>
+		/// A network's speed limit, in the game's own km/h.
+		/// </summary>
+		/// <remarks>
+		/// Five components carry it rather than one — RoadData, TrackData,
+		/// PathwayData, WaterwayData, TaxiwayData — because CS2 keeps it per
+		/// network TYPE and NetCompositionSystem copies whichever applies onto
+		/// the composition. So this is five small reads, not a shared field.
+		/// </remarks>
+		/// <summary>
+		/// Service figures beyond the headline capacity, keyed for the UI.
+		/// </summary>
+		/// <remarks>
+		/// See <see cref="ServiceFact"/> for why these are a list rather than a
+		/// field each. Empty for most of the catalog.
+		/// </remarks>
+		public List<ServiceFact> ServiceFacts { get; } = new();
+
+		public float? SpeedLimit { get; set; }
+
+		/// <summary>How wide the network draws, in metres.</summary>
+		public float? NetworkWidth { get; set; }
+
+		public float? ServiceRange { get; set; }
+
+		public string? LeisureType { get; set; }
+
+		/// <summary>How much of it, from the same component.</summary>
+		public int? LeisureEfficiency { get; set; }
+
 		public bool HasParking { get; set; }
 
 		/// <summary>

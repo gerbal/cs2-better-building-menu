@@ -174,6 +174,45 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		int UiCategoryPriority = 0,
 		/// <summary>
+		/// Vanilla's own order for this asset: UIObject.m_Priority ascending.
+		/// </summary>
+		/// <remarks>
+		/// The whole of the game's sort. UIObjectInfo.CompareTo compares this
+		/// integer and nothing else, and ToolbarUISystem.BindAssets filters the
+		/// category's buffer and calls Sort() on it — there is no name
+		/// tie-break, so equal priorities land wherever the unstable sort puts
+		/// them. It is authored per prefab rather than derived, which is why no
+		/// column already here reproduces it and why the sort that uses it is
+		/// called "Default" rather than being named after a field.
+		///
+		/// Zero for an asset with no UIObject, which is what vanilla reads
+		/// (UIObjectInfo.GetObjects) — NOT PrefabIndex.UIOrder's int.MaxValue
+		/// sentinel, which would sort those last where the game puts them in the
+		/// middle. Same reasoning as UiCategoryPriority's default above.
+		/// </remarks>
+		/// <summary>
+		/// The leisure this building provides, named as the game names it.
+		/// </summary>
+		/// <remarks>
+		/// The enum's own name — "CityPark", "CityIndoors" — so the UI can
+		/// resolve vanilla's Properties.LEISURE_TYPE key rather than inventing a
+		/// second word for a property the player already reads elsewhere.
+		/// Empty for the great majority of the catalog, which provides none.
+		/// </remarks>
+		/// <summary>How far the building's service reaches, in metres.</summary>
+		double? ServiceRange = null,
+		/// <summary>
+		/// Service figures beyond the headline capacity — see ServiceFact.
+		/// </summary>
+		IReadOnlyList<ServiceFact>? ServiceFacts = null,
+		/// <summary>A network's speed limit in km/h; null for anything else.</summary>
+		double? SpeedLimit = null,
+		/// <summary>How wide a network draws, in metres; null for anything else.</summary>
+		double? NetworkWidth = null,
+		string LeisureType = "",
+		double? LeisureEfficiency = null,
+		int UIOrder = 0,
+		/// <summary>
 		/// The upgrades that can be attached to this building later.
 		/// </summary>
 		/// <remarks>
@@ -281,6 +320,19 @@ namespace BetterBuildingMenu.Domain
 			WriteNullable(writer, "workers", Workers);
 			WriteNullable(writer, "households", Households);
 			WriteNullable(writer, "capacity", Capacity);
+			WriteNullable(writer, "serviceRange", ServiceRange);
+			writer.PropertyName("serviceFacts");
+			writer.ArrayBegin(ServiceFacts?.Count ?? 0);
+			for (var i = 0; i < (ServiceFacts?.Count ?? 0); i++)
+			{
+				ServiceFacts![i].Write(writer);
+			}
+			writer.ArrayEnd();
+			WriteNullable(writer, "speedLimit", SpeedLimit);
+			WriteNullable(writer, "networkWidth", NetworkWidth);
+			writer.PropertyName("leisureType");
+			writer.Write(LeisureType ?? string.Empty);
+			WriteNullable(writer, "leisureEfficiency", LeisureEfficiency);
 			WriteNullable(writer, "electricityConsumption", ElectricityConsumption);
 			WriteNullable(writer, "waterConsumption", WaterConsumption);
 			WriteNullable(writer, "garbageAccumulation", GarbageAccumulation);

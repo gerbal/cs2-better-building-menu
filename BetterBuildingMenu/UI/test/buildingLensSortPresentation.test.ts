@@ -64,7 +64,7 @@ describe("Building Lens sort presentation", () => {
     assert.equal(getBuildingLensColumnSortIndicator("capacity", { column: "Name", descending: false }), "");
   });
 
-  it("exposes all ten existing sort choices with the current choice selected", async () => {
+  it("exposes every sort choice, Default first, with the current choice selected", async () => {
     const loaded = await loadSortPresentationModule();
     if (!("module" in loaded)) {
       assert.fail(`sort presentation helper is unavailable: ${String(loaded.error)}`);
@@ -78,6 +78,8 @@ describe("Building Lens sort presentation", () => {
     assert.deepEqual(
       presentation.expanded,
       [
+        // Default leads: it is the game's own order and where the lens opens.
+        ["Default", "Default"],
         ["Name", "Name"],
         ["Category", "Category"],
         ["ConstructionCost", "Cost"],

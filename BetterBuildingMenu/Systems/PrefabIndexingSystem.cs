@@ -1453,6 +1453,38 @@ namespace BetterBuildingMenu.Systems
 				prefabIndex.ConstructionCost = (uint)Math.Round(netData.m_DefaultConstructionCost * NetCellsPerKilometre);
 				prefabIndex.Upkeep = (int)Math.Round(netData.m_DefaultUpkeepCost * NetCellsPerKilometre);
 				prefabIndex.CostIsPerDistance = true;
+
+				// The two figures a player actually compares roads by, and the
+				// two a network card had neither of. Speed is per network TYPE
+				// rather than on a shared component, so each is asked in turn
+				// and the first that answers wins — a prefab is only ever one
+				// of these.
+				if (EntityManager.TryGetComponent<RoadData>(entity, out var roadData))
+				{
+					prefabIndex.SpeedLimit = roadData.m_SpeedLimit;
+				}
+				else if (EntityManager.TryGetComponent<TrackData>(entity, out var trackData))
+				{
+					prefabIndex.SpeedLimit = trackData.m_SpeedLimit;
+				}
+				else if (EntityManager.TryGetComponent<PathwayData>(entity, out var pathwayData))
+				{
+					prefabIndex.SpeedLimit = pathwayData.m_SpeedLimit;
+				}
+				else if (EntityManager.TryGetComponent<WaterwayData>(entity, out var waterwayData))
+				{
+					prefabIndex.SpeedLimit = waterwayData.m_SpeedLimit;
+				}
+				else if (EntityManager.TryGetComponent<TaxiwayData>(entity, out var taxiwayData))
+				{
+					prefabIndex.SpeedLimit = taxiwayData.m_SpeedLimit;
+				}
+
+				if (EntityManager.TryGetComponent<NetGeometryData>(entity, out var geometryData)
+					&& geometryData.m_DefaultWidth > 0f)
+				{
+					prefabIndex.NetworkWidth = geometryData.m_DefaultWidth;
+				}
 			}
 
 			if (EntityManager.TryGetComponent<ConsumptionData>(entity, out var consumptionData))
@@ -1497,30 +1529,94 @@ namespace BetterBuildingMenu.Systems
 				// tier from the building's name, which cannot see a modded
 				// "Akademie" and silently dropped it from the forecast.
 				prefabIndex.EducationLevel = schoolData.m_EducationLevel;
+				Fact(prefabIndex, "graduation", schoolData.m_GraduationModifier);
+			}
+
+			// What a park actually gives the city, which the catalog could not say
+			// at all: a park and a bowling alley are both "ParksAndRecreation"
+			// and are not the same thing to a citizen. The efficiency gate is
+			// vanilla's own — LeisureProvider.GetArchetypeComponents only adds
+			// the runtime component when m_Efficiency > 0, so a prefab carrying
+			// the data with a zero provides no leisure and must not claim to.
+			if (EntityManager.TryGetComponent<LeisureProviderData>(entity, out var leisureData)
+				&& leisureData.m_Efficiency > 0)
+			{
+				prefabIndex.LeisureType = leisureData.m_LeisureType.ToString();
+				prefabIndex.LeisureEfficiency = leisureData.m_Efficiency;
 			}
 
 			if (EntityManager.TryGetComponent<HospitalData>(entity, out var hospitalData))
 			{
 				roles.Add("Hospital");
 				capacities.Add(hospitalData.m_PatientCapacity);
+				Fact(prefabIndex, "helicopters", hospitalData.m_MedicalHelicopterCapacity);
+			}
+
+			// How far it reaches. The shared component every covered service
+			// carries — schools, hospitals, parks — so this is one read rather
+			// than a field per service.
+			// Tourism, and one of the few figures that matters across services
+			// rather than inside one — a park, a landmark and a signature
+			// building all trade on it.
+			if (EntityManager.TryGetComponent<AttractionData>(entity, out var attractionData))
+			{
+				Fact(prefabIndex, "attractiveness", attractionData.m_Attractiveness);
+			}
+
+			if (EntityManager.TryGetComponent<CoverageData>(entity, out var coverageData)
+				&& coverageData.m_Range > 0f)
+			{
+				prefabIndex.ServiceRange = coverageData.m_Range;
+			}
+
+			// Communications had no service component read at all, so a post
+			// office and a telecom tower arrived with no role and no capacity —
+			// the card showed a lot size and a price and the hover card had
+			// nothing to add. Both of these are the figure the building is FOR.
+			if (EntityManager.TryGetComponent<PostFacilityData>(entity, out var postFacilityData))
+			{
+				roles.Add("PostFacility");
+				// Mail held, not vans or sorting rate: the vans are how it works
+				// and the rate is per unit time, while this is the size of the
+				// thing — the same question capacity answers everywhere else.
+				capacities.Add(postFacilityData.m_MailCapacity);
+				Fact(prefabIndex, "sortingRate", postFacilityData.m_SortingRate);
+				Fact(prefabIndex, "postVans", postFacilityData.m_PostVanCapacity);
+			}
+
+			if (EntityManager.TryGetComponent<TelecomFacilityData>(entity, out var telecomFacilityData))
+			{
+				roles.Add("TelecomFacility");
+				capacities.Add((int)telecomFacilityData.m_NetworkCapacity);
+				// Telecom keeps its own range rather than using CoverageData's,
+				// so it is read here and not above.
+				if (telecomFacilityData.m_Range > 0f)
+				{
+					prefabIndex.ServiceRange = telecomFacilityData.m_Range;
+				}
 			}
 
 			if (EntityManager.TryGetComponent<GarbageFacilityData>(entity, out var garbageFacilityData))
 			{
 				roles.Add("GarbageFacility");
 				capacities.Add(garbageFacilityData.m_GarbageCapacity);
+				Fact(prefabIndex, "processingRate", garbageFacilityData.m_ProcessingSpeed);
+				Fact(prefabIndex, "collectionTrucks", garbageFacilityData.m_TransportCapacity);
 			}
 
 			if (EntityManager.TryGetComponent<FireStationData>(entity, out var fireStationData))
 			{
 				roles.Add("FireStation");
 				capacities.Add(fireStationData.m_FireEngineCapacity);
+				Fact(prefabIndex, "helicopters", fireStationData.m_FireHelicopterCapacity);
+				Fact(prefabIndex, "disasterResponse", fireStationData.m_DisasterResponseCapacity);
 			}
 
 			if (EntityManager.TryGetComponent<PoliceStationData>(entity, out var policeStationData))
 			{
 				roles.Add("PoliceStation");
 				capacities.Add(policeStationData.m_PatrolCarCapacity);
+				Fact(prefabIndex, "helicopters", policeStationData.m_PoliceHelicopterCapacity);
 			}
 
 			if (EntityManager.TryGetComponent<PrisonData>(entity, out var prisonData))
@@ -1704,6 +1800,36 @@ namespace BetterBuildingMenu.Systems
 		/// walk total; a merge point belongs to whichever branch reached it
 		/// first, and nothing in the UI depends on that choice being canonical.
 		/// </remarks>
+		/// <summary>
+		/// Dev-tree nodes drawn under another node's tab.
+		/// </summary>
+		/// <remarks>
+		/// A narrow exception to the rule below, not a repeal of it. Branches are
+		/// the node ITSELF and not the chain it hangs off, because collapsing
+		/// chains filed the Central Intelligence Bureau under "Police
+		/// Headquarters" and the Nuclear Power Plant under "Gas Power Plant" —
+		/// separate unlocks a player buys separately. That still holds, and
+		/// nothing here changes it.
+		///
+		/// These two are the case it does not serve. Transportation's Air
+		/// category carries exactly three assets, and the tree gives each of the
+		/// big two its own node, so the strip drew "Airport" with three, then two
+		/// more tabs of ONE — and neither of those had a node icon, so both fell
+		/// back to the menu's own glyph and rendered as a pair of identical
+		/// marks. An international airport and a space centre are things you
+		/// build at an airport; the tab that says Airport is where a player looks
+		/// for them.
+		///
+		/// Keyed on the prefab name rather than the label: the label is the
+		/// localized title, so a name-based key would fold in English and not in
+		/// German.
+		/// </remarks>
+		private static readonly Dictionary<string, string> FoldedDevTreeNodes = new(StringComparer.Ordinal)
+		{
+			["ServiceBuildingInternationalAirport"] = "ServiceBuildingAirport",
+			["ServiceBuildingChirpXSpaceCenter"] = "ServiceBuildingAirport",
+		};
+
 		private void IndexDevTreeBranches()
 		{
 			var query = GetEntityQuery(
@@ -1712,6 +1838,9 @@ namespace BetterBuildingMenu.Systems
 			var nodes = query.ToEntityArray(Allocator.Temp);
 			var branches = new Dictionary<Entity, (string Label, string Icon, int Depth)>();
 			var roots = new Dictionary<string, (string Label, string Icon, int Depth)>();
+			// Prefab name to node, so FoldedDevTreeNodes can be resolved once the
+			// whole tree is known — a fold's target may be indexed after it.
+			var nodesByName = new Dictionary<string, Entity>(StringComparer.Ordinal);
 
 			// Ranked per service by the tree's OWN LAYOUT — column first, then
 			// row. The column alone leaves siblings tied, and an alphabetical
@@ -1784,6 +1913,8 @@ namespace BetterBuildingMenu.Systems
 					? (rootLabel, DevTreeIcon(prefab), 0)
 					: (DevTreeBranchName(prefab), DevTreeIcon(prefab), depth);
 
+				nodesByName[prefab.name] = node;
+
 				// The root also names the bucket for everything the tree never
 				// gated, so it is recorded against its service.
 				if (isRoot
@@ -1794,9 +1925,26 @@ namespace BetterBuildingMenu.Systems
 				}
 			}
 
+			// Applied after the walk: an asset gated by a folded node now reports
+			// the target's branch, so it lands in that tab with the target's
+			// label, icon and rank rather than opening one of its own.
+			var folded = 0;
+
+			foreach (var fold in FoldedDevTreeNodes)
+			{
+				if (nodesByName.TryGetValue(fold.Key, out var from)
+					&& nodesByName.TryGetValue(fold.Value, out var into)
+					&& branches.TryGetValue(into, out var target)
+					&& target.Label.Length > 0)
+				{
+					branches[from] = target;
+					folded++;
+				}
+			}
+
 			_devTreeBranches = branches;
 			_devTreeRoots = roots;
-			Mod.Log.Info($"Indexed Dev Tree: {nodes.Length} nodes, {roots.Count} services");
+			Mod.Log.Info($"Indexed Dev Tree: {nodes.Length} nodes, {roots.Count} services, {folded} folded");
 		}
 
 		/// <summary>
@@ -2280,6 +2428,24 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			return template.Trim();
+		}
+
+		/// <summary>
+		/// Records one service figure, dropping the zeros.
+		/// </summary>
+		/// <remarks>
+		/// A zero here means "this building has none of that" — no helicopter
+		/// pad, no sorting — and a line reading "Helicopters 0" is noise on a
+		/// card that has already dropped every field that does not apply. The
+		/// absent-versus-zero contract the rest of the index keeps: a missing
+		/// component is null, and this is the same idea one level down.
+		/// </remarks>
+		private static void Fact(PrefabIndex prefabIndex, string key, double value)
+		{
+			if (value > 0d)
+			{
+				prefabIndex.ServiceFacts.Add(new Domain.ServiceFact(key, value));
+			}
 		}
 
 		private string GetAssetName(PrefabBase prefab)

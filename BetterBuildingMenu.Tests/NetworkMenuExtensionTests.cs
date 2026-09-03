@@ -67,15 +67,58 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void FiveSubcategoriesAreNotGatheredIntoRoads()
+		{
+			// Stops and routes are transit operation rather than track you lay;
+			// power lines, pipes and waterways answer to the utility that owns
+			// them. Gathered in, they made Roads longer without making a road
+			// easier to find.
+			foreach (var subCategory in new[]
+			{
+				"Networks_Stops",
+				"Networks_Routes",
+				"Networks_Waterways",
+				"Networks_PowerLines",
+				"Networks_Pipes",
+			})
+			{
+				Assert.False(
+					NetworkMenuExtension.IsGathered(subCategory),
+					$"{subCategory} should not be gathered into Roads");
+				Assert.False(
+					NetworkMenuExtension.IsExtraNetwork("Networks", "Transportation", "Roads", subCategory),
+					$"{subCategory} should not reach Roads through the extension");
+			}
+
+			// The gathering still does its job for everything else.
+			foreach (var subCategory in new[] { "Networks_Tracks", "Networks_Paths", "Networks_Lanes" })
+			{
+				Assert.True(
+					NetworkMenuExtension.IsExtraNetwork("Networks", "Transportation", "Roads", subCategory),
+					$"{subCategory} should still be gathered");
+			}
+		}
+
+		[Fact]
+		public void AnExcludedNetworkFiledUnderRoadsIsUntouched()
+		{
+			// The exclusion is on the GATHERING. A network the game itself puts
+			// in Roads is not reached by it at all — IsExtraNetwork already
+			// requires the entry's own menu to be something other than Roads —
+			// so this cannot hide anything vanilla places there.
+			Assert.False(NetworkMenuExtension.IsExtraNetwork("Networks", "Roads", "Roads", "Networks_Stops"));
+		}
+
+		[Fact]
 		public void AnExtraIsHeadedByItsKindRatherThanByWhereTheGameKeepsIt()
 		{
-			var seaway = Network("Wide Seaway", "Networks_Waterways", "Transportation", "TransportationShip", 40);
-			var reframed = NetworkMenuExtension.Reframe(seaway, "Roads");
+			var track = Network("Tram Track", "Networks_Tracks", "Transportation", "TransportationTram", 40);
+			var reframed = NetworkMenuExtension.Reframe(track, "Roads");
 
-			// TransportationShip is right about the game and useless as a heading
+			// TransportationTram is right about the game and useless as a heading
 			// in a menu about networks — and its priority belongs to a different
 			// menu's ordering, so it would land in the middle of the roads.
-			Assert.Equal("Waterways", reframed.UiCategory);
+			Assert.Equal("Tracks", reframed.UiCategory);
 			Assert.Equal("Roads", reframed.UiMenu);
 			Assert.True(reframed.UiCategoryPriority >= NetworkMenuExtension.ExtraGroupPriorityBase);
 		}
@@ -83,10 +126,10 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void ReframingLeavesEveryOtherMenuAlone()
 		{
-			var seaway = Network("Wide Seaway", "Networks_Waterways", "Transportation", "TransportationShip", 40);
+			var track = Network("Tram Track", "Networks_Tracks", "Transportation", "TransportationTram", 40);
 
-			Assert.Same(seaway, NetworkMenuExtension.Reframe(seaway, "Transportation"));
-			Assert.Same(seaway, NetworkMenuExtension.Reframe(seaway, null));
+			Assert.Same(track, NetworkMenuExtension.Reframe(track, "Transportation"));
+			Assert.Same(track, NetworkMenuExtension.Reframe(track, null));
 		}
 
 		[Fact]
@@ -94,7 +137,7 @@ namespace BetterBuildingMenu.Tests
 		{
 			var entries = new[]
 			{
-				Network("Wide Seaway", "Networks_Waterways", "Transportation", "TransportationShip", 40),
+				Network("Tram Track", "Networks_Tracks", "Transportation", "TransportationTram", 40),
 				Road("Alley", "RoadsSmall", 10),
 				Network("Pedestrian Path", "Networks_Paths", "Landscaping", "PropsNature", 20),
 				Road("Highway", "RoadsHighway", 30),
@@ -104,8 +147,11 @@ namespace BetterBuildingMenu.Tests
 				entries,
 				new BuildingCatalogQuery { UiMenu = "Roads", GroupBy = BuildingCatalogGrouping.MenuCategory });
 
+			// Roads first, then the extras in the order PrefabSubCategory declares
+			// them — Networks_Tracks before Networks_Paths — rather than
+			// alphabetically or by the priority their own menu gave them.
 			Assert.Equal(
-				new[] { "Alley", "Highway", "Pedestrian Path", "Wide Seaway" },
+				new[] { "Alley", "Highway", "Tram Track", "Pedestrian Path" },
 				page.Items.Select(item => item.Name).ToArray());
 		}
 
@@ -114,7 +160,7 @@ namespace BetterBuildingMenu.Tests
 		{
 			var entries = new[]
 			{
-				Network("Wide Seaway", "Networks_Waterways", "Transportation", "TransportationShip", 40),
+				Network("Tram Track", "Networks_Tracks", "Transportation", "TransportationTram", 40),
 				Road("Alley", "RoadsSmall", 10),
 			};
 
@@ -124,9 +170,9 @@ namespace BetterBuildingMenu.Tests
 			// exists to prevent.
 			var page = BuildingCatalogQueryEngine.Query(
 				entries,
-				new BuildingCatalogQuery { UiMenu = "Roads", UiCategory = "Waterways" });
+				new BuildingCatalogQuery { UiMenu = "Roads", UiCategory = "Tracks" });
 
-			Assert.Equal(new[] { "Wide Seaway" }, page.Items.Select(item => item.Name).ToArray());
+			Assert.Equal(new[] { "Tram Track" }, page.Items.Select(item => item.Name).ToArray());
 		}
 
 		[Fact]
@@ -134,7 +180,7 @@ namespace BetterBuildingMenu.Tests
 		{
 			var entries = new[]
 			{
-				Network("Wide Seaway", "Networks_Waterways", "Transportation", "TransportationShip", 40),
+				Network("Tram Track", "Networks_Tracks", "Transportation", "TransportationTram", 40),
 				Road("Alley", "RoadsSmall", 10),
 			};
 

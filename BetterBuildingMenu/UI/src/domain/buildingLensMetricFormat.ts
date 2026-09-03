@@ -87,15 +87,60 @@ const DECIMAL_SEPARATOR_KEY = "Common.DECIMAL_SEPARATOR";
 /** The `translate` from `useLocalization`, kept structural so this stays pure. */
 export type Translate = (id: string, fallback?: string | null) => string | null;
 
+/**
+ * The game's own money templates, e.g. "{SIGN}¢{VALUE}".
+ *
+ * Taken from vanilla rather than written here, because the symbol is only half
+ * of what they carry: the per-month and per-kilometre forms also localize their
+ * own suffix — "/mês", "／月", "per km/mese" — and the placement of the symbol
+ * itself is a locale decision we have no business making. Substituting into
+ * the game's string means a cost reads in the lens exactly as it reads in the
+ * game's own panels, in every language, including the ones we ship no
+ * translation for.
+ */
+export interface MoneyTemplates {
+  plain: string;
+  perMonth: string;
+  perKilometre: string;
+  perKilometrePerMonth: string;
+}
+
+export const FALLBACK_MONEY: MoneyTemplates = {
+  plain: "¢{VALUE}",
+  perMonth: "¢{VALUE}/mo",
+  perKilometre: "¢{VALUE}/km",
+  perKilometrePerMonth: "¢{VALUE}/km/mo",
+};
+
 export interface NumberSeparators {
   group: string;
   decimal: string;
+  /** Absent when the caller had no access to the game's dictionary. */
+  money?: MoneyTemplates;
 }
 
 export const FALLBACK_SEPARATORS: NumberSeparators = {
   group: FALLBACK_GROUP_SEPARATOR,
   decimal: FALLBACK_DECIMAL_SEPARATOR,
+  money: FALLBACK_MONEY,
 };
+
+/** Fills the game's template. {SIGN} is for negatives, which costs never are. */
+export function applyMoneyTemplate(template: string, digits: string): string {
+  return template.replace("{SIGN}", "").replace("{VALUE}", digits);
+}
+
+function resolveMoney(translate: Translate | undefined, key: string, fallback: string): string {
+  if (!translate) return fallback;
+
+  const value = translate(key, fallback);
+  // translate() echoes the id back for a missing key, and an id is not a
+  // template — the same guard the separators need, for the same reason.
+  if (typeof value !== "string" || value === "" || value === key) return fallback;
+  // A template that lost its placeholder would render the symbol and drop the
+  // number, which is worse than our own fallback.
+  return value.includes("{VALUE}") ? value : fallback;
+}
 
 function resolveSeparator(translate: Translate | undefined, key: string, fallback: string): string {
   if (!translate) return fallback;
@@ -113,6 +158,16 @@ export function getNumberSeparators(translate?: Translate): NumberSeparators {
   return {
     group: resolveSeparator(translate, THOUSANDS_SEPARATOR_KEY, FALLBACK_GROUP_SEPARATOR),
     decimal: resolveSeparator(translate, DECIMAL_SEPARATOR_KEY, FALLBACK_DECIMAL_SEPARATOR),
+    money: {
+      plain: resolveMoney(translate, "Common.VALUE_MONEY", FALLBACK_MONEY.plain),
+      perMonth: resolveMoney(translate, "Common.VALUE_MONEY_PER_MONTH", FALLBACK_MONEY.perMonth),
+      perKilometre: resolveMoney(translate, "Common.VALUE_MONEY_PER_KILOMETER", FALLBACK_MONEY.perKilometre),
+      perKilometrePerMonth: resolveMoney(
+        translate,
+        "Common.VALUE_MONEY_PER_KILOMETER_PER_MONTH",
+        FALLBACK_MONEY.perKilometrePerMonth,
+      ),
+    },
   };
 }
 
@@ -152,28 +207,39 @@ export function formatBuildingMetric(
   }
 
   const digits = groupDigits(value, separators);
+  const money = separators.money ?? FALLBACK_MONEY;
+  const isMoney = metric === "cost" || metric === "upkeep";
 
   if (perDistance) {
     // Free is a statement about a total, so it has no meaning for a rate — a
     // road that costs nothing per kilometre costs nothing at all, and "0/km"
     // says that without implying the asset is a gift.
-    const suffix = metric === "upkeep" ? `/mo${PER_DISTANCE_SUFFIX}` : PER_DISTANCE_SUFFIX;
+    if (isMoney) {
+      // The game has its own per-kilometre money forms, suffix and all, so the
+      // rate is stated the way vanilla states it rather than by bolting our
+      // "/km" onto a number.
+      return applyMoneyTemplate(
+        metric === "upkeep" ? money.perKilometrePerMonth : money.perKilometre,
+        digits,
+      );
+    }
 
-    return `${digits}${suffix}`;
+    return `${digits}${PER_DISTANCE_SUFFIX}`;
   }
 
   switch (metric) {
     case "upkeep":
       // The game bills upkeep monthly; without this the column is a bare
-      // number the player cannot compare against anything.
-      return `${digits}/mo`;
+      // number the player cannot compare against anything. Its own template
+      // carries both the symbol and the localized "per month".
+      return applyMoneyTemplate(money.perMonth, digits);
     case "cost":
       // A zero here is real, not missing: the indexer leaves the cost null when
       // no PlaceableObjectData is present, and vanilla likewise renders an
       // authored zero as a zero. But a lone "0" beside the "—" that Workers and
       // Capacity show for absence reads as a third kind of nothing. Naming it
       // says which kind it is, and leaves the dash meaning only "not known".
-      return value === 0 ? METRIC_FREE : digits;
+      return value === 0 ? METRIC_FREE : applyMoneyTemplate(money.plain, digits);
     default:
       return digits;
   }
@@ -207,6 +273,11 @@ const ROLE_UNITS: Record<string, string> = {
   PoliceStation: "vehicles",
   Prison: "prisoners",
   EmergencyShelter: "people",
+  // Communications. Mail is a weight in this simulation, like garbage; network
+  // capacity is a count of connections and has no unit the game names, so it
+  // gets none rather than an invented one.
+  PostFacility: "t",
+  TelecomFacility: "",
 };
 
 export function getCapacityUnitLabel(
@@ -250,6 +321,60 @@ export function getCapacityUnitLabel(
   }
 
   return "";
+}
+
+/**
+ * A service radius, e.g. "480 m".
+ *
+ * Metres because that is what the simulation measures in and what the game's
+ * own coverage readouts say; rounded because a tower's reach is not a figure
+ * anyone reads to the centimetre.
+ */
+export function formatServiceRange(
+  value: number | null | undefined,
+  separators: NumberSeparators = FALLBACK_SEPARATORS,
+): string {
+  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
+    return "";
+  }
+
+  return `${formatBuildingMetric(Math.round(value), "capacity", separators)} m`;
+}
+
+/**
+ * A network's speed limit, e.g. "100 km/h".
+ *
+ * The game keeps this per network type — RoadData, TrackData, PathwayData,
+ * WaterwayData, TaxiwayData — and states it in km/h, which is what its own
+ * road tooltips say, so it is passed through rather than converted.
+ */
+export function formatSpeedLimit(
+  value: number | null | undefined,
+  separators: NumberSeparators = FALLBACK_SEPARATORS,
+): string {
+  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
+    return "";
+  }
+
+  return `${formatBuildingMetric(Math.round(value), "capacity", separators)} km/h`;
+}
+
+/**
+ * How wide a network draws, e.g. "24 m".
+ *
+ * One decimal, because road widths are authored at half metres and rounding a
+ * 17.5m road to 18 would make two different roads read as the same width.
+ */
+export function formatNetworkWidth(
+  value: number | null | undefined,
+): string {
+  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
+    return "";
+  }
+
+  const rounded = Math.round(value * 10) / 10;
+
+  return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)} m`;
 }
 
 /** Capacity with its unit, e.g. "1 200 students". */

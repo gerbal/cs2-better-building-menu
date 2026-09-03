@@ -276,3 +276,31 @@ export function getBuildingProvenanceChips(
 
   return chips.filter((chip) => chip.value.length > 0);
 }
+
+/**
+ * What a building gives the city, in the game's own words.
+ *
+ * The backend sends LeisureProviderData's enum name — "CityPark",
+ * "CityIndoors" — and vanilla already ships the player-facing word for each as
+ * Properties.LEISURE_TYPE[<name>]. Asking the game means a park reads the same
+ * here as it does everywhere else in the UI, in every language, and that we do
+ * not invent a second vocabulary for a property that already has one.
+ *
+ * The fallback splits the enum name rather than guessing a nicer word:
+ * "CityIndoors" becomes "City Indoors", which is wrong-ish English and right
+ * about which value it is — better than silently showing nothing.
+ */
+export function leisureLabel(
+  leisureType: string | null | undefined,
+  translate: (key: string, fallback: string | null) => string | null,
+): string {
+  const name = (leisureType ?? "").trim();
+
+  if (name === "") {
+    return "";
+  }
+
+  const spelled = name.replace(/([a-z0-9])([A-Z])/g, "$1 $2");
+
+  return translate(`Properties.LEISURE_TYPE[${name}]`, null) ?? spelled;
+}

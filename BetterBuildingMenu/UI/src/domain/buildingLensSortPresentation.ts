@@ -19,6 +19,16 @@ export interface BuildingLensSortPresentation {
 }
 
 export const BUILDING_LENS_SORT_OPTIONS: readonly BuildingLensSortOption[] = [
+  // First, and the one the lens opens on. It is the game's own order —
+  // UIObject.m_Priority ascending, which is the whole of vanilla's sort — and
+  // no other option here reproduces it, because it is authored per asset
+  // rather than derived from anything the player can see. Hence "Default"
+  // rather than a field name: naming it after a column would promise a rule
+  // it does not follow.
+  //
+  // Being first also makes it the presentational fallback below, where an
+  // unrecognised column falls back to BUILDING_LENS_SORT_OPTIONS[0].
+  { key: "Default", label: "Default" },
   { key: "Name", label: "Name" },
   { key: "Category", label: "Category" },
   { key: "ConstructionCost", label: "Cost" },
