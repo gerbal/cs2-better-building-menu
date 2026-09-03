@@ -98,7 +98,12 @@ describe("grid tile label shortening", () => {
 
   it("still keeps the tail at a budget too small to be useful", () => {
     const shortened = shortenTileLabel("EU Commercial Gas Station 01 - L1 2x2", 3);
-    assert.equal(shortened.length, 3);
+    // At or under the budget, not exactly it: the ellipsis is charged
+    // ELLIPSIS_CHARS because it draws nearly twice an average letter, so at a
+    // budget of three there is room for the mark and one character of tail.
+    // Spending the whole budget on characters is what made an elided line
+    // overrun its box in the first place.
+    assert.ok(shortened.length <= 3, `expected to fit the budget, got ${shortened}`);
     assert.ok(shortened.endsWith("2"), `expected the tail to survive, got ${shortened}`);
     assert.ok(shortened.includes("…"), `expected truncation to be marked, got ${shortened}`);
   });
@@ -223,7 +228,37 @@ describe("Wrapping a name over the tile's lines", () => {
 
     // "Shelter…Stands" is 14 against a 13-character line, so there is no pair
     // of whole words that fits and the character cut is the honest answer.
-    assert.equal(lines[1], "Shelte…Stands");
+    //
+    // The head is shorter than it once was because the ellipsis now costs what
+    // it measures — 9.4px against a 5.0px average letter — rather than one
+    // character. "Shelte…Stands" drew 13 characters into a box that holds
+    // about 11 of them once the mark is paid for.
+    assert.equal(lines[1], "Shel…Stands");
+  });
+
+  it("leaves an elided line room for the mark it carries", () => {
+    // Measured in the running game at the tile's font: the label box is 64px,
+    // "…" draws 9.4px and an average lowercase letter 5.0. An elided line of
+    // the full 13-character budget therefore does not fit — "Helico…Depot" was
+    // 64.7px — and the stylesheet marked the overflow a SECOND time, drawing
+    // "Helico…De…". Every elided line must come in under the budget.
+    for (const name of [
+      "Firefighting Helicopter Depot",
+      "Disease Control Center",
+      "Health Research Institute",
+      "Small Emergency Shelter",
+      "Early Disaster Warning System",
+      "Wastewater Treatment Plant",
+    ]) {
+      for (const line of wrapTileLabel(name, LINE)) {
+        if (!line.includes("…")) continue;
+
+        assert.ok(
+          line.length < LINE,
+          `${name}: elided line "${line}" spends the whole budget and will overflow`
+        );
+      }
+    }
   });
 
   it("draws nothing for an empty name", () => {

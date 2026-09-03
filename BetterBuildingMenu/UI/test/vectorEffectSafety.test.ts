@@ -31,18 +31,23 @@ const rules = (src: string) =>
 
 describe("no compositing effect over a vector", () => {
   for (const [name, path] of SHEETS) {
-    it(`${name}: every silhouette filter is gated to rasters`, () => {
+    it(`${name}: every compositing effect is gated to rasters`, () => {
       const src = rules(read(path));
       // Each selector block that applies the silhouette must also require
       // data-vector-thumb="false" somewhere in its selector list.
       const blocks = src.split("}");
 
       for (const block of blocks) {
-        if (!block.includes("brightness(0%)")) continue;
+        // Every compositing effect, not only the silhouette. Policing just
+        // brightness(0%) is how `.tileArmed .thumb`'s drop-shadow shipped
+        // ungated and corrupted Coal Mining's vector thumbnail the moment the
+        // tile was armed: the rule this file states is "no compositing effect
+        // over a vector", and the check enforced one instance of it.
+        if (!/brightness\(0%\)|drop-shadow\(/.test(block)) continue;
 
         assert.ok(
           block.includes('data-vector-thumb="false"'),
-          `${name}: a brightness(0%) rule is not gated to rasters:\n${block.trim().slice(0, 240)}`
+          `${name}: a compositing effect is not gated to rasters:\n${block.trim().slice(0, 240)}`
         );
 
         // The gate above is necessary and not sufficient, which is how the
@@ -61,7 +66,7 @@ describe("no compositing effect over a vector", () => {
 
           assert.ok(
             target.startsWith("."),
-            `${name}: a brightness(0%) rule targets elements rather than the picture's own class, `
+            `${name}: a compositing effect targets elements rather than the picture's own class, `
               + `so it also silhouettes the badge over it: ${selector.trim()}`
           );
         }

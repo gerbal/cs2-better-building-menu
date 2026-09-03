@@ -37,20 +37,33 @@
   // The group is as wide as its TILES; the heading is absolute so it cannot
   // widen it, and this reserves the row it sits in.
   position: relative;
+  // One line's worth, replaced inline by the measured heading height once the
+  // heading has laid out. See GroupBox: the heading is out of flow, so the
+  // group has to reserve its height rather than be pushed by it.
   padding-top: 17rem;
-  // Three default tiles of label room, whatever the group holds. A search
-  // is a run of one- to three-tile groups, and sized to their tiles alone
-  // every one of their names was cut — "ROAD SER…" over one tile. The
-  // estimate in fitGroupLabel budgets the same three tiles.
-  min-width: 300rem;
+  // NO min-width. This used to reserve three default tiles of label room
+  // whatever the group held, so that a one-tile group's name was not cut to
+  // "ROAD SER…". It bought readable headings with empty row: measured in Fire
+  // & Rescue, six nested groups were each 200px around a single 67px tile —
+  // two thirds of every group was nothing. The heading now wraps to the width
+  // the tiles actually occupy instead of the tiles being spread to the width
+  // the heading wanted.
   overflow: hidden;
 }
 
 // A group with sub-groups. The whole row, so its heading sits alone on its
 // line and its children's headings on the next; flowed beside a leaf group
 // the two levels shared two rows of 11px with the neighbour's heading.
+// A band used to be `flex: 0 0 100%` — a whole line, whatever it held. That
+// put FIRE & RESCUE's five tiles on one line and DISASTER CONTROL's three on
+// the next, with 354px and 501px of empty row beside them, when all eight fit
+// in 536px of a 725px row.
+//
+// Sizing to content instead is self-regulating: a category wider than the row
+// still takes the whole line, because max-width caps it at 100% and its own
+// children wrap inside it. A small one lets its neighbour share the line.
 .groupBand {
-  flex: 0 0 100%;
+  flex: 0 1 auto;
 }
 
 // A nested group named like its parent draws no heading, so it reserves no
@@ -85,6 +98,9 @@
   left: 0;
   right: 0;
   top: 0;
+  // Was `align-items: center` against a single line. With a wrapping label the
+  // count has to sit against the FIRST line, not the middle of a stack.
+  align-items: flex-start;
   padding: 1rem 2rem 0;
   border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
   color: var(--menuText1Normal);
@@ -117,8 +133,12 @@
   // measurement read that back as the room available and trimmed again.
   flex: 1 1 auto;
   min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
+  // WRAPS rather than eliding. The group is now only as wide as its tiles, so
+  // a name that does not fit gets more lines instead of fewer characters —
+  // which is the trade the old min-width was avoiding by making the group
+  // wider than its contents.
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 
 // Holds the FULL label so its width can be measured while the visible span

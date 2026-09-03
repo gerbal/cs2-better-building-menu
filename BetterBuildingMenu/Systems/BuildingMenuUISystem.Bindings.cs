@@ -1,4 +1,5 @@
-﻿using BetterBuildingMenu.Domain;
+﻿using Colossal.Entities;
+using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Services;
 using BetterBuildingMenu.Utilities;
 using System;
@@ -13,6 +14,113 @@ namespace BetterBuildingMenu.Systems
 {
     internal partial class BuildingMenuUISystem : ExtendedUISystemBase
 	{
+		/// <summary>
+		/// Drops the "newly unlocked" marks under a menu the lens has taken over.
+		/// </summary>
+		/// <remarks>
+		/// The green pip on a toolbar button is <see cref="UIHighlight"/>, which
+		/// ToolbarUISystem writes as each item's "highlight" property.
+		/// UpdateHighlights removes it when the player's ASSET CATEGORY selection
+		/// moves off a category: it clears that category's assets, then the
+		/// category, then the menu once nothing under it is still marked.
+		///
+		/// That path runs off m_SelectedAssetCategoryBinding, and the lens
+		/// replaces the vanilla grid rather than selecting categories in it — so
+		/// the game never saw the player look, and the pip on Roads and Zones
+		/// stayed lit forever.
+		///
+		/// The lens shows a menu's whole contents at once rather than one
+		/// category at a time, so viewing it means all of them have been seen.
+		/// Vanilla's theme and asset-pack conditions are deliberately not
+		/// reproduced: those decide which assets a CATEGORY still owes a mark
+		/// to, and there is no partially-viewed category here.
+		/// </remarks>
+		private void ClearVanillaMenuHighlights(string menuName)
+		{
+			try
+			{
+				if (!PrefabIndexingSystem.TryGetAssetMenuEntity(menuName, out var menuEntity)
+					|| !EntityManager.TryGetBuffer<Game.Prefabs.UIGroupElement>(menuEntity, true, out var categories))
+				{
+					return;
+				}
+
+				var cleared = 0;
+
+				for (var c = 0; c < categories.Length; c++)
+				{
+					var category = categories[c].m_Prefab;
+
+					if (EntityManager.TryGetBuffer<Game.Prefabs.UIGroupElement>(category, true, out var assets))
+					{
+						for (var a = 0; a < assets.Length; a++)
+						{
+							cleared += Unmark(assets[a].m_Prefab);
+						}
+					}
+
+					cleared += Unmark(category);
+				}
+
+				cleared += Unmark(menuEntity);
+
+				if (cleared > 0)
+				{
+					RefreshVanillaToolbarBindings();
+					Mod.Log.Info($"[UNLOCK-PIP] cleared {cleared} highlight(s) under '{menuName}'");
+				}
+			}
+			catch (Exception ex)
+			{
+				// A pip that outstays its welcome is not worth failing a menu
+				// open over.
+				Mod.Log.Warn(ex, $"[UNLOCK-PIP] could not clear highlights under '{menuName}'");
+			}
+		}
+
+		/// <summary>Removes one highlight, reporting whether there was one.</summary>
+		private int Unmark(Entity entity)
+		{
+			if (entity == Entity.Null || !EntityManager.HasComponent<Game.Prefabs.UIHighlight>(entity))
+			{
+				return 0;
+			}
+
+			EntityManager.RemoveComponent<Game.Prefabs.UIHighlight>(entity);
+
+			return 1;
+		}
+
+		/// <summary>
+		/// Makes the toolbar redraw after we have removed a highlight.
+		/// </summary>
+		/// <remarks>
+		/// Removing the component is not enough on its own. ToolbarUISystem only
+		/// re-binds when a prefab was newly unlocked this frame or a unique
+		/// asset changed state, so a highlight we drop would sit on screen until
+		/// the next unlock. Vanilla's own UpdateHighlights answers this by
+		/// calling these two bindings directly; they are private, so we reach
+		/// them the way PdxModsUtil reaches m_SDKContext.
+		///
+		/// Cached, and failure is swallowed by the caller: this is cosmetic, and
+		/// a field rename in a game patch must not take the menu down with it.
+		/// </remarks>
+		private void RefreshVanillaToolbarBindings()
+		{
+			_toolbarGroupsBinding ??= typeof(Game.UI.InGame.ToolbarUISystem)
+				.GetField("m_ToolbarGroupsBinding", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+				?.GetValue(_toolbarUISystem);
+			_assetCategoriesBinding ??= typeof(Game.UI.InGame.ToolbarUISystem)
+				.GetField("m_AssetMenuCategoriesBinding", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+				?.GetValue(_toolbarUISystem);
+
+			(_toolbarGroupsBinding as Colossal.UI.Binding.RawValueBinding)?.Update();
+			(_assetCategoriesBinding as Colossal.UI.Binding.RawMapBinding<Entity>)?.UpdateAll();
+		}
+
+		private object _toolbarGroupsBinding;
+		private object _assetCategoriesBinding;
+
 		/// <summary>
 		/// Closes the lens and, when it was standing in for a vanilla menu,
 		/// releases that menu's selection on the toolbar.
@@ -158,6 +266,9 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			_lens = _lens.SelectMenu(menuName);
+			// The player is now looking at everything this menu holds, which is
+			// what vanilla treats as having seen it.
+			ClearVanillaMenuHighlights(menuName);
 			PublishScope();
 			// A different menu has different tabs, so the old selection cannot
 			// survive the switch.

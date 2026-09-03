@@ -4,10 +4,11 @@ import { renderHtml, entry } from "../harness/render";
 import { resetBindings } from "../harness/stubs/cs2-api";
 import { GroupedResults } from "../../src/mods/GroupedResults/GroupedResults";
 
-const render = (paths: string[][]) =>
+const render = (paths: string[][], names: (string | undefined)[] = []) =>
   renderHtml(
     <GroupedResults
-      entries={paths.map((groupPath, i) => entry(i + 1, { groupPath }))}
+      entries={paths.map((groupPath, i) =>
+        entry(i + 1, names[i] === undefined ? { groupPath } : { groupPath, name: names[i]! }))}
       viewMode="grid"
       searchText=""
       onPlace={() => undefined}
@@ -39,7 +40,7 @@ describe("grouped results", () => {
 
     const parent = found.find((g) => g.heading === "Cul-De-Sacs");
     assert.ok(parent, "the two-child group");
-    assert.match(parent!.classes, /\bgroupBand\b/, "a group with two sub-groups spans the row");
+    assert.match(parent!.classes, /\bgroupBand\b/, "a group with two sub-groups is banded");
     // One child means one hidden heading — the group reads as a leaf and
     // flows like one. Measured live, banding these too gave a one-tile
     // ROAD SERVICES a whole 84px row to itself in a search.
@@ -74,6 +75,27 @@ describe("grouped results", () => {
     assert.ok(found.some((g) => g.heading === "Bridges"), "a differently named sibling keeps its heading");
     assert.ok(found.some((g) => g.heading === "Highways"));
     assert.equal(found.filter((g) => g.heading === "Medium Roads").length, 1, "the name appears once");
+  });
+
+  it("keeps every branch's heading, even a one-asset branch that restates its tile", () => {
+    // A collapse rule once removed these as redundant. It merged Healthcare's
+    // Hospital, Disease Control Center and Health Research Institute into one
+    // unlabeled block: the tiles draw as "Disease Contro…Center" and "Health
+    // Resear…titute", so the heading was the only legible full name and
+    // dropping it as a duplicate dropped the readable copy.
+    const html = render(
+      [
+        ["Healthcare", "Hospital"],
+        ["Healthcare", "Disease Control Center"],
+        ["Healthcare", "Health Research Institute"],
+      ],
+      ["Hospital", "Disease Control Center", "Health Research Institute"]
+    );
+    const found = groups(html);
+
+    for (const name of ["Hospital", "Disease Control Center", "Health Research Institute"]) {
+      assert.ok(found.some((g) => g.heading === name), `${name} keeps its heading`);
+    }
   });
 
   it("reserves no heading row for a lone child whose heading is not drawn", () => {

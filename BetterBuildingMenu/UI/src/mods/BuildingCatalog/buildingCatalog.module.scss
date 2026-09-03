@@ -1290,6 +1290,27 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
     flex: 1 1 0;
     min-width: 0;
   }
+
+  // The details chevron must size to its LINE, not to the row.
+  //
+  // .rowDetailsButton carries `height: 100%` so it fills the row when
+  // collapsed, where the row has a definite 92rem to resolve against. Once
+  // expanded the row is `height: auto` and that percentage resolves against
+  // the whole wrapped row instead of line one — so the button grew to the
+  // full height and line one grew with it. Measured live on Alley: the button
+  // rendered 109 tall beside a 59-tall .rowSelect, which put the row's content
+  // at 109 + 51 = 160 while the row itself settled at 109. `.row` is
+  // overflow: hidden, so the details were laid out complete and correct and
+  // then clipped away entirely — the row just got taller and showed nothing,
+  // which is exactly how it was reported.
+  //
+  // `align-self: stretch` on the button already fills the line in both states
+  // and does it without a percentage, so dropping the height here changes
+  // nothing about the collapsed row. Same measurement after: button 59,
+  // content 110, details clipped by 0.
+  .rowDetailsButton {
+    height: auto;
+  }
 }
 
 // Milestone-locked. The table states it in words rather than only in treatment:

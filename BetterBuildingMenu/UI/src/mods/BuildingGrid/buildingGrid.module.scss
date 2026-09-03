@@ -169,12 +169,21 @@
 //
 // The thumbnail picks up vanilla's drop-shadow on the same rule, which is what
 // keeps a dark silhouette legible once the ground goes saturated.
+//
+// Rasters only, for the reason vectorEffectSafety.test.ts states: Cohtml
+// rasterises an SVG at draw time, so a compositing effect over one
+// re-rasterises it per composite and intermittently fails. This rule was
+// ungated and reached vector thumbnails too — reported from play on Coal
+// Mining, whose thumbnail is Media/Game/Resources/Coal.svg, which corrupted
+// as soon as the tile was armed. The locked and already-built filters below
+// were already gated this way; this one was missed because the safety test
+// only policed the brightness(0%) silhouette, not every effect.
 .tileArmed {
   background-color: var(--selectedColor);
+}
 
-  .thumb {
-    filter: drop-shadow(0 0 1rem rgba(0, 0, 0, 0.5));
-  }
+.tileArmed[data-vector-thumb="false"] .thumb {
+  filter: drop-shadow(0 0 1rem rgba(0, 0, 0, 0.5));
 }
 
 // Armed must restate itself under :hover and :active or it loses them on
@@ -222,6 +231,19 @@
   overflow: hidden;
 }
 
+// A line that wrapTileLabel already elided. Its ellipsis is a real character
+// in the string, put where the information is — the head says what kind of
+// thing it is, the tail says which one — so the engine must not mark the same
+// line a second time at its right edge.
+//
+// The budget in tileLabel.ts is characters and the box is pixels, so a result
+// inside the budget can still be a pixel or two over: "Helico…Depot" is twelve
+// characters against a thirteen-character budget and wants 65px of 64. Clipping
+// that last glyph costs a sliver of one letter. Eliding it cost the whole point
+// of the mark, turning "Helico…Depot" into "Helico…De…".
+.tileNameLineElided {
+  text-overflow: clip;
+}
 .tileNameLine {
   display: block;
   width: 100%;

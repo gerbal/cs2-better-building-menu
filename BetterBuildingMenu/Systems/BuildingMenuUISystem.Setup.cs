@@ -211,9 +211,12 @@ namespace BetterBuildingMenu.Systems
 			// open a menu through this; see RequestVanillaMenu.
 			_PickerMenuRequest = CreateBinding("PickerMenuRequest", string.Empty);
 			_BuildingCatalogMatchesElsewhere = CreateBinding("BuildingCatalogMatchesElsewhere", 0);
-			// Layout preferences the UI needs. Read once at setup; these are not
-			// expected to change mid-session.
+			// Seeded here and re-pushed by OnSettingsApplied. It was previously
+			// "read once at setup", which is why the options screen's Tile size
+			// slider did nothing until the next load: the setting was saved and
+			// the binding still held the value captured at OnCreate.
 			_LensTileSize = CreateBinding("BuildingLensTileSize", Mod.Settings.BuildingLensTileSize);
+			Mod.Settings.onSettingsApplied += OnSettingsApplied;
 			CreateTrigger("SearchEverything", SearchEverything);
 			_PanelWidth = CreateBinding("PanelWidth", 0f);
 			// Seeded from the setting rather than 0: the panel draws from this
@@ -316,6 +319,35 @@ namespace BetterBuildingMenu.Systems
 				CreateTrigger<string>("SetBuildingLensMenu", SetBuildingLensMenu);
 			CreateTrigger<float>("SetBuildingLensPanelHeight", SetBuildingLensPanelHeight);
 			CreateTrigger("CommitBuildingLensPanelHeight", CommitBuildingLensPanelHeight);
+		}
+
+		protected override void OnDestroy()
+		{
+			if (Mod.Settings != null)
+			{
+				Mod.Settings.onSettingsApplied -= OnSettingsApplied;
+			}
+
+			base.OnDestroy();
+		}
+
+		/// <summary>
+		/// Re-publishes the settings the UI reads, when the options screen
+		/// applies a change.
+		/// </summary>
+		/// <remarks>
+		/// The parameter is the base game's <see cref="Game.Settings.Setting"/>
+		/// — the delegate's own type — not this mod's settings class.
+		///
+		/// Without this the Tile size slider looked broken: ApplyAndSave wrote
+		/// the new width to disk and the grid went on drawing the value the
+		/// binding captured at OnCreate, so the change only appeared after a
+		/// reload. The panel height does not need re-publishing here; it travels
+		/// the other way, from the drag handle into the setting.
+		/// </remarks>
+		private void OnSettingsApplied(Game.Settings.Setting setting)
+		{
+			_LensTileSize.Value = Mod.Settings.BuildingLensTileSize;
 		}
 
 		protected override void OnUpdate()

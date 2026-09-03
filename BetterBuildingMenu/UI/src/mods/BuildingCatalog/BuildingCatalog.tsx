@@ -90,10 +90,22 @@ export const BuildingCatalogComponent = () => {
   // remount that placing a building causes.
   // Shared with the control plane, which is a sibling of this panel rather
   // than a descendant, so a plain useState here would let the two disagree.
-  // Always the grid until the player picks otherwise. The "open in
-  // comparison table" setting is gone with the comparison table itself;
-  // Table remains a choice in the view bar, just not a starting one.
-  const viewModeChoice = useLensView((view) => view.viewMode) || "grid";
+  // Cards until the player picks otherwise.
+  //
+  // The grid was the default because recognising a thumbnail is the fast path
+  // back to the map. Cards keep that — the picture is LARGER than a tile's —
+  // and add the two questions asked before every placement, footprint and
+  // cost, which the grid could only answer on hover.
+  //
+  // They also make the tile label's whole problem go away. A tile is a 64px
+  // box holding a character-budgeted name, which is why "Firefighting
+  // Helicopter Depot" has to become "Helic…Depot" at all; buildingList's
+  // .name is never truncated, and says so — "if a name needs an ellipsis
+  // here, the tile should get wider, not the name shorter".
+  //
+  // Grid remains a choice in the view bar, and a player who picks one gets it
+  // remembered; this only decides where the lens opens.
+  const viewModeChoice = useLensView((view) => view.viewMode) || "cards";
   // The choice is obeyed at every height. It used to be overridden to "grid"
   // whenever the panel rested at strip height, to save a player who had left
   // the control on Table from a mode clipped to a sliver. The cost was worse
