@@ -131,6 +131,116 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     fallback: "Noise pollution",
     unit: "",
   },
+  minCrew: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.MinCrew]",
+    fallback: "Min crew",
+    unit: "",
+  },
+  eveningShift: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.EveningShift]",
+    fallback: "Evening shift",
+    unit: "%",
+  },
+  nightShift: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.NightShift]",
+    fallback: "Night shift",
+    unit: "%",
+  },
+  workConditions: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.WorkConditions]",
+    fallback: "Conditions",
+    unit: "",
+  },
+  xpReward: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.XpReward]",
+    fallback: "XP",
+    unit: "",
+  },
+  studentWellbeing: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.StudentWellbeing]",
+    fallback: "Student wellbeing",
+    unit: "",
+  },
+  studentHealth: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.StudentHealth]",
+    fallback: "Student health",
+    unit: "",
+  },
+  prisonerWellbeing: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PrisonerWellbeing]",
+    fallback: "Inmate wellbeing",
+    unit: "",
+  },
+  prisonerHealth: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PrisonerHealth]",
+    fallback: "Inmate health",
+    unit: "",
+  },
+  purification: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Purification]",
+    fallback: "Purification",
+    unit: "%",
+  },
+  batteryOutput: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.BatteryOutput]",
+    fallback: "Output",
+    unit: "MW",
+  },
+  maintenancePool: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.MaintenancePool]",
+    fallback: "Maintenance",
+    unit: "",
+  },
+  shelterVehicles: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ShelterVehicles]",
+    fallback: "Shelter vans",
+    unit: "",
+  },
+  comfort: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Comfort]",
+    fallback: "Comfort",
+    unit: "",
+    multiplier: true,
+  },
+  electricityCapacity: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ElectricityCapacity]",
+    fallback: "Grid capacity",
+    // No unit: the raw figure is an internal throughput number, not megawatts,
+    // and labelling it MW made a road claim 400,000 MW.
+    unit: "",
+  },
+  stormCapacity: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.StormCapacity]",
+    fallback: "Stormwater",
+    unit: "m³",
+  },
+  elevatedWidth: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ElevatedWidth]",
+    fallback: "Elevated width",
+    unit: "m",
+  },
+  elevationCost: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ElevationCost]",
+    fallback: "Elevation",
+    unit: "¢/km",
+  },
+  zoneTelecom: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneTelecom]",
+    fallback: "Telecom",
+    unit: "",
+  },
+  zoneSpace: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneSpace]",
+    fallback: "Space",
+    unit: "",
+    multiplier: true,
+  },
+  zoneFireHazard: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneFireHazard]",
+    fallback: "Fire hazard",
+    unit: "",
+    multiplier: true,
+  },
 };
 
 /** The keys this build knows how to draw, for the localization audit. */
@@ -240,6 +350,52 @@ const TEXT_PRESENTATION: Readonly<Record<string, ServiceTextPresentation>> = {
       // force a casing change on a string other code still renders.
       narrow: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneShapeNarrow]", fallback: "Narrow" },
       corners: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneShapeCorners]", fallback: "Corners" },
+    },
+  },
+  roadClass: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.RoadClass]",
+    fallback: "Class",
+  },
+  trackType: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.TrackType]",
+    fallback: "Track",
+  },
+  transportType: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.TransportType]",
+    fallback: "Transport",
+  },
+  voltage: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Voltage]",
+    fallback: "Voltage",
+  },
+  waterSource: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.WaterSource]",
+    fallback: "Draws from",
+  },
+  roadFeature: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.RoadFeature]",
+    fallback: "Carries",
+    values: {
+      trafficLights: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.RoadFeatureTrafficLights]", fallback: "traffic lights" },
+      highwayRules: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.RoadFeatureHighwayRules]", fallback: "highway rules" },
+      zonesAlongside: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.RoadFeatureZonesAlongside]", fallback: "zoning" },
+      underground: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.RoadFeatureUnderground]", fallback: "an underground form" },
+    },
+  },
+  facilityFeature: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.FacilityFeature]",
+    fallback: "Also",
+    values: {
+      longTermStorage: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.FacilityFeatureLongTermStorage]", fallback: "stores long term" },
+      industrialWasteOnly: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.FacilityFeatureIndustrialWaste]", fallback: "industrial waste only" },
+      signalThroughTerrain: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.FacilityFeatureThroughTerrain]", fallback: "reaches through terrain" },
+    },
+  },
+  zoneFeature: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneFeature]",
+    fallback: "Also",
+    values: {
+      ignoresLandValue: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneFeatureIgnoresLandValue]", fallback: "ignores land value" },
     },
   },
 };
