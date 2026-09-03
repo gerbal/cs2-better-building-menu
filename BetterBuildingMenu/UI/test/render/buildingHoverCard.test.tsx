@@ -64,7 +64,13 @@ describe("recreation on the hover card", () => {
       leisureEfficiency: 60,
     } as Partial<BuildingCatalogEntry>));
 
-    assert.match(card, /City Park 60/);
+    // Amount FIRST, then the kind, as one phrase — the shape the game's own
+    // building-details panel uses ("2 Outdoor Recreation"). It read "City Park
+    // 60" behind a "Recreation" label, which put the number where a reader
+    // does not look for it and spent the label repeating the word already in
+    // the value.
+    assert.match(card, /60 City Park/);
+    assert.doesNotMatch(card, /City Park 60/);
   });
 
   it("shows the kind alone when the building carries no amount", () => {
