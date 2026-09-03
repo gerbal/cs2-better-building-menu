@@ -62,7 +62,6 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Resources\AssetIcons\" />
 	  <Folder Include="Resources\Images\" />
 	</ItemGroup>
 

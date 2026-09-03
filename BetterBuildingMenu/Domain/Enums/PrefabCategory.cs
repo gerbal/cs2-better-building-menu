@@ -14,8 +14,6 @@
 		Trees = 400,
 		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/BenchAndLampProps.svg")]
 		Props = 500,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/GenericVehicleIsometric.svg")]
-		Vehicles = 600,
 		// Zones are a category because the index has no other place to put them,
 		// and being in the index is what makes them armable: ActivatePrefabTool
 		// walks every tool asking TrySetPrefab, ZoneToolSystem accepts any

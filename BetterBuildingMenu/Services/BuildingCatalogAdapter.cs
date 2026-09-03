@@ -726,14 +726,16 @@ namespace BetterBuildingMenu.Services
 		/// survives into the unscoped arm.
 		///
 		/// There is deliberately no arm for our OWN generated props. The
-		/// quantity and vehicle generators emit 314 prefabs with
-		/// UIObject.m_Group = null, so vanilla places them in no menu and they
-		/// are not buildings — they fail both arms at both scopes, and stay
-		/// out. That is the decision (cm-wdap, user, 2026-08-27), not an
+		/// inherited quantity and vehicle generators emitted 314 prefabs with
+		/// UIObject.m_Group = null, so vanilla placed them in no menu and they
+		/// were not buildings — they failed both arms at both scopes, and
+		/// stayed out. That is the decision (cm-wdap, user, 2026-08-27), not an
 		/// oversight: they are FindIt's, which answers "where is any asset",
 		/// and the lens answers "what should I build here, and what does it
-		/// cost me". Adding Has&lt;BuildingMenuGenerated&gt; here would reverse it,
-		/// and would admit the group-less population cm-2xvs.13 warns about.
+		/// cost me". The generators and their marker component are gone now, so
+		/// nothing reaches this arm to begin with; re-adding either would
+		/// reverse the decision, and would admit the group-less population
+		/// cm-2xvs.13 warns about.
 		/// </remarks>
 		public static bool BelongsInCatalog(
 			bool menuScoped,
