@@ -1206,7 +1206,10 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
 .rowProvenance {
   display: flex;
   flex-direction: row;
-  align-items: baseline;
+  // flex-start, not baseline: Cohtml drops `align-items: baseline`
+  // outright (UI.log: "Unable to parse declaration") and falls back to
+  // this, so naming it is the same layout said honestly.
+  align-items: flex-start;
   // Was `gap: 3rem` — a no-op in this engine, so this
   // spacing never drew. Same measurement, stated as margins.
   > * + * {
@@ -1219,7 +1222,10 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
 .rowDetail {
   display: flex;
   flex-direction: row;
-  align-items: baseline;
+  // flex-start, not baseline: Cohtml drops `align-items: baseline`
+  // outright (UI.log: "Unable to parse declaration") and falls back to
+  // this, so naming it is the same layout said honestly.
+  align-items: flex-start;
   margin-right: 16rem;
   margin-bottom: 2rem;
   font-size: var(--fontSizeS);

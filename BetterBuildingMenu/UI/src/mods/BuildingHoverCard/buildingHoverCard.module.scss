@@ -52,13 +52,19 @@
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  align-items: baseline;
+  // flex-start, not baseline: Cohtml drops `align-items: baseline`
+  // outright (UI.log: "Unable to parse declaration") and falls back to
+  // this, so naming it is the same layout said honestly.
+  align-items: flex-start;
   margin-top: -2rem;
 }
 .cardLine {
   display: flex;
   flex-direction: row;
-  align-items: baseline;
+  // flex-start, not baseline: Cohtml drops `align-items: baseline`
+  // outright (UI.log: "Unable to parse declaration") and falls back to
+  // this, so naming it is the same layout said honestly.
+  align-items: flex-start;
   color: var(--menuText2Normal);
   font-size: var(--fontSizeS);
   // Grows into the leftover, but never narrower than a shade under half, so
