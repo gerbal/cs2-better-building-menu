@@ -93,6 +93,16 @@ export interface BuildingCatalogEntry {
   serviceRange?: number | null;
   /** Service figures beyond the headline capacity — see serviceFacts.ts. */
   serviceFacts?: { key: string; value: number }[] | null;
+  /**
+   * Lot shapes a zone grows, drawn as little grids by FootprintGlyph.
+   *
+   * DECLARED, not cast-read. Both surfaces used to reach these off the entry
+   * with `(entry as unknown as { footprints?: … })`, which compiles whether or
+   * not anything produces the field — and nothing did, so the glyphs never
+   * drew. Declaring it is what makes the next such gap a type error.
+   */
+  footprints?: { width: number; depth: number }[] | null;
+  footprintOverflow?: number | null;
   /** Figures that are words rather than numbers — see serviceFacts.ts. */
   serviceTextFacts?: { key: string; value: string }[] | null;
   /** A network's speed limit in km/h; absent for anything else. */

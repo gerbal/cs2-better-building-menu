@@ -233,6 +233,20 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>The same, for figures that are words. See ServiceTextFact.</summary>
 		public List<ServiceTextFact> ServiceTextFacts { get; } = new();
 
+		/// <summary>
+		/// The lot shapes a zone grows, for the card's footprint glyphs.
+		/// </summary>
+		/// <remarks>
+		/// Both surfaces have drawn these since they were written and neither
+		/// ever had anything to draw: they cast-read `entry.footprints`, and no
+		/// producer wrote it. The shapes existed on ZoneCatalogEntry, which is
+		/// never published.
+		/// </remarks>
+		public ZoneFootprint[] Footprints { get; set; }
+
+		/// <summary>Shapes beyond the ones drawn, as a "+N".</summary>
+		public int FootprintOverflow { get; set; }
+
 		public float? SpeedLimit { get; set; }
 
 		/// <summary>How wide the network draws, in metres.</summary>

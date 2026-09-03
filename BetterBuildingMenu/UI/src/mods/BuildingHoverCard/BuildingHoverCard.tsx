@@ -199,8 +199,8 @@ const HoverCardContent = ({
   // ZoneServiceConsumptionData, ZonePollutionData, ZonePropertiesData and
   // ZoneData, and are drawn by the same lines every other specialist figure
   // uses. See serviceFacts.ts.
-  const footprints = (entry as unknown as { footprints?: ZoneFootprint[] }).footprints ?? [];
-  const footprintOverflow = (entry as unknown as { footprintOverflow?: number }).footprintOverflow ?? 0;
+  const footprints = entry.footprints ?? [];
+  const footprintOverflow = entry.footprintOverflow ?? 0;
 
   const lines = buildTileTooltipLines([
     // First, because it changes what every line under it means: a cost you

@@ -130,9 +130,8 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
         // measurement of something that does not exist, so the fact is dropped
         // rather than stated.
         const lotKnown = hasFootprint(entry.lotWidth, entry.lotDepth);
-        const facts = (entry as unknown as { facts?: string[] }).facts ?? [];
-        const footprints = (entry as unknown as { footprints?: ZoneFootprint[] }).footprints ?? [];
-        const footprintOverflow = (entry as unknown as { footprintOverflow?: number }).footprintOverflow ?? 0;
+        const footprints = entry.footprints ?? [];
+        const footprintOverflow = entry.footprintOverflow ?? 0;
         // Category-aware, and it returns nothing for a category where capacity
         // means nothing — so a park bench's card stays as narrow as a
         // hospital's is informative, without a rule per category here.
@@ -192,19 +191,13 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
                 : <span className={classNames(styles.iconPlaceholder, cards && styles.iconLarge)} aria-hidden="true" />}
               <span className={styles.text}>
                 <span className={styles.name}>{label}</span>
-                {cards && facts.length > 0 && (
-                  <span className={styles.facts}>
-                    {/* A zone carries its own facts: the game measures how tall
-                        it grows and what it trades in, and shows neither. */}
-                    {facts.map((fact, index) => (
-                      <span key={fact}>
-                        {index > 0 && <span className={styles.factDot} aria-hidden="true">·</span>}
-                        <span className={styles.fact}>{fact}</span>
-                      </span>
-                    ))}
-                  </span>
-                )}
-                {cards && facts.length === 0 && (
+                {/* A zone's own figures used to have a branch here, reading an
+                    `entry.facts` string array nothing ever wrote — so it never
+                    ran and the card fell through to this one anyway. They now
+                    arrive as service facts and are drawn on the hover card,
+                    where there is room for a phrase; this row stays size, cost
+                    and one key number. */}
+                {cards && (
                   <span className={styles.facts}>
                     {/* Footprint first, and always: it is a constraint rather
                         than a comparison — whether the thing fits the gap you

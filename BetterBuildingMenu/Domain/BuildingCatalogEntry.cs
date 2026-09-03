@@ -206,6 +206,9 @@ namespace BetterBuildingMenu.Domain
 		/// </summary>
 		IReadOnlyList<ServiceFact>? ServiceFacts = null,
 		IReadOnlyList<ServiceTextFact>? ServiceTextFacts = null,
+		/// <summary>Lot shapes a zone grows — see PrefabIndex.Footprints.</summary>
+		IReadOnlyList<ZoneFootprint>? Footprints = null,
+		int FootprintOverflow = 0,
 		/// <summary>A network's speed limit in km/h; null for anything else.</summary>
 		double? SpeedLimit = null,
 		/// <summary>How wide a network draws, in metres; null for anything else.</summary>
@@ -329,6 +332,15 @@ namespace BetterBuildingMenu.Domain
 				ServiceFacts![i].Write(writer);
 			}
 			writer.ArrayEnd();
+			writer.PropertyName("footprints");
+			writer.ArrayBegin(Footprints?.Count ?? 0);
+			for (var i = 0; i < (Footprints?.Count ?? 0); i++)
+			{
+				Footprints![i].Write(writer);
+			}
+			writer.ArrayEnd();
+			writer.PropertyName("footprintOverflow");
+			writer.Write(FootprintOverflow);
 			writer.PropertyName("serviceTextFacts");
 			writer.ArrayBegin(ServiceTextFacts?.Count ?? 0);
 			for (var i = 0; i < (ServiceTextFacts?.Count ?? 0); i++)

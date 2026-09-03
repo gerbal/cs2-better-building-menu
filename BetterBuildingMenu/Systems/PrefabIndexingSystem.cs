@@ -59,6 +59,19 @@ namespace BetterBuildingMenu.Systems
 		/// the zoning menu.
 		/// </remarks>
 		private static Dictionary<Entity, ZoneTypeFilter> _zoneDensityCache;
+
+		/// <summary>
+		/// The lot shapes each zone actually grows, by zone prefab.
+		/// </summary>
+		/// <remarks>
+		/// Cached for the same reason the densities are: IndexZones computes it
+		/// inside RunIndex's full branch, before the processor loop that builds
+		/// each zone's PrefabIndex, and the entry needs it there. It used to
+		/// reach only ZoneCatalogEntry, which is never published — so the
+		/// footprint glyphs the hover card and the list both draw had nothing to
+		/// draw and never appeared.
+		/// </remarks>
+		private static Dictionary<Entity, ZoneLotSizes> _zoneLotSizeCache;
 		private EntityQuery _unlockEventQuery;
 		// Prefabs the game created or changed this frame — the incremental
 		// pass's own trigger. Held as a field rather than a RequireForUpdate
@@ -1609,6 +1622,17 @@ namespace BetterBuildingMenu.Systems
 				TextFact(prefabIndex, "zoneStored", ResourceName(zoneResources.m_AllowedStored));
 			}
 
+			// The shapes the zone grows, for the glyphs the card already knows how
+			// to draw. Computed once by IndexZones and cached, because it needs
+			// every spawnable building's lot and this pass sees one prefab.
+			if (prefabIndex.Category == Domain.Enums.PrefabCategory.Zones
+				&& GetZoneLotSizes(entity) is ZoneLotSizes lots
+				&& lots.Footprints is { Length: > 0 })
+			{
+				prefabIndex.Footprints = lots.Footprints;
+				prefabIndex.FootprintOverflow = lots.FootprintOverflow;
+			}
+
 			if (EntityManager.TryGetComponent<ZoneData>(entity, out var zoneHeights))
 			{
 				// What the zone actually grows to, measured by the game from the
@@ -2873,6 +2897,7 @@ namespace BetterBuildingMenu.Systems
 
 			_zoneTypeCache = dictionary;
 			_zoneDensityCache = densities;
+			_zoneLotSizeCache = lotSizes;
 
 			// The same pass that classifies buildings by zone also yields the
 			// zones themselves, which the zoning hierarchy browses. Family comes
@@ -3515,6 +3540,12 @@ namespace BetterBuildingMenu.Systems
 		/// from that same point — which is the standing evidence that it is
 		/// warm there.
 		/// </remarks>
+		/// <summary>The lot shapes a zone grows, or none.</summary>
+		public static ZoneLotSizes GetZoneLotSizes(Entity zonePrefab) =>
+			_zoneLotSizeCache != null && _zoneLotSizeCache.TryGetValue(zonePrefab, out var sizes)
+				? sizes
+				: null;
+
 		public static ZoneTypeFilter GetZoneDensity(Entity zonePrefab)
 		{
 			if (_zoneDensityCache != null && _zoneDensityCache.TryGetValue(zonePrefab, out var density))
