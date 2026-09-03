@@ -68,17 +68,10 @@ namespace BetterBuildingMenu
 		// comparison ProxyBinding.PathEquals falls back to.
 		// On by default: replacing the build menu is what this mod is for, so an
 		// install that did nothing until the player found this switch would just
-		// look broken. Turning it off restores the vanilla menu wholesale, and
-		// disables the zones-menu option below with it.
+		// look broken. Turning it off restores the vanilla menu wholesale,
+		// including the Zones button's own hierarchy.
 		[SettingsUISection(SETTINGS, BEHAVIOR)]
 		public bool ReplaceVanillaBuildMenu { get; set; } = true;
-
-		// The Zones menu opens a zoning hierarchy rather than a filtered
-		// building table, so it is separable from the rest: a player may want
-		// the service menus replaced but the familiar zone grid kept.
-		[SettingsUISection(SETTINGS, BEHAVIOR)]
-		[SettingsUIDisableByCondition(typeof(BetterBuildingMenuSettings), nameof(IsVanillaMenuReplacementOff))]
-		public bool ReplaceVanillaZonesMenu { get; set; } = true;
 
 		// A search that finds nothing in the current section offers to widen by
 		// default rather than widening on its own, so the section scope is not
@@ -92,19 +85,6 @@ namespace BetterBuildingMenu
 		// at, rather than as a number in a panel.
 		[SettingsUISection(SETTINGS, UIUX)]
 		public bool ShowCoverageOverlay { get; set; } = true;
-
-		[SettingsUISection(SETTINGS, UIUX)]
-		public bool BuildingLensDefaultToTable { get; set; }
-
-		[SettingsUISection(SETTINGS, UIUX)]
-		public bool BuildingLensShowShelf { get; set; } = true;
-
-		// Bounded because a shelf whose shape cannot be learned is just another
-		// list; twelve is about the limit of positions worth memorising.
-		[SettingsUISection(SETTINGS, UIUX)]
-		[SettingsUISlider(min = 4, max = 16, step = 2, scalarMultiplier = 1, unit = Unit.kInteger)]
-		[SettingsUIDisableByCondition(typeof(BetterBuildingMenuSettings), nameof(IsShelfHidden))]
-		public int BuildingLensShelfSize { get; set; } = 12;
 
 		/// <summary>
 		/// Grid tile width. 88 was sized around a 12rem label; the tiles now
@@ -125,10 +105,6 @@ namespace BetterBuildingMenu
 		// width.
 		[SettingsUISlider(min = 64, max = 144, step = 4, scalarMultiplier = 1, unit = Unit.kInteger)]
 		public int BuildingLensTileSize { get; set; } = 100;
-
-		public bool IsVanillaMenuReplacementOff() => !ReplaceVanillaBuildMenu;
-
-		public bool IsShelfHidden() => !BuildingLensShowShelf;
 
 		[SettingsUISection(SETTINGS, BEHAVIOR)]
 		public bool OpenPanelOnPicker { get; set; } = true;

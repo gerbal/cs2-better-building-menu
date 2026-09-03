@@ -11,7 +11,6 @@ import {
   getNumberSeparators,
   hasFootprint,
 } from "domain/buildingLensMetricFormat";
-import { recordPlacement } from "domain/buildingShelf";
 import { canPlace, entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { topSearchResult } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
@@ -86,7 +85,6 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
       const top = topSearchResult(ordered, searchText ?? "");
       if (!top) return;
 
-      recordPlacement(top.id);
       onPlace(top);
     };
 
@@ -99,7 +97,6 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
     // See BuildingGrid: locked assets are shown and refused, not hidden.
     if (!canPlace(entry)) return;
 
-    recordPlacement(entry.id);
     onPlace(entry);
   };
 

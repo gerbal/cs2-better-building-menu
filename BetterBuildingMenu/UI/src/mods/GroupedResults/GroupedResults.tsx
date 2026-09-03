@@ -256,9 +256,9 @@ export const GroupedResults = ({
   // the tree is read off the page, never derived from the entries.
   const groups = groupTreeFromPaths(entries);
 
-  // The ungrouped grid keeps its own scroll and its shelf; anything else gets
-  // one scroll around the whole result, because a scrollbar per heading makes
-  // the set impossible to read as one thing.
+  // The ungrouped grid keeps its own scroll; anything else gets one scroll
+  // around the whole result, because a scrollbar per heading makes the set
+  // impossible to read as one thing.
   if (groups.length === 0 && viewMode === "grid") {
     return (
       <BuildingGrid

@@ -60,7 +60,6 @@ const BuildingCatalogSortDescending$ = bindValue<boolean>(mod.id, "BuildingCatal
 const BuildingLensFacets$ = bindValue<BuildingLensFacetState>(mod.id, "BuildingLensFacets");
 const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState>(mod.id, "BuildingCatalogMetricRanges");
 const BuildingCatalogMatchesElsewhere$ = bindValue<number>(mod.id, "BuildingCatalogMatchesElsewhere", 0);
-const LensDefaultToTable$ = bindValue<boolean>(mod.id, "BuildingLensDefaultToTable", false);
 // The grouping the page is ordered by — the player's choice or the menu's
 // default, resolved on the C# side (BuildingCatalogGrouping.Effective). This
 // component used to derive it from three bindings and push it back, which
@@ -86,13 +85,15 @@ export const BuildingCatalogComponent = () => {
   // and the table is for the rarer moment when you are genuinely comparing.
   // Survives remount for the same reason the drawers do — placing a building
   // unmounts this panel.
-  const defaultToTable = useValue(LensDefaultToTable$);
   // Three modes now, so a boolean no longer says it. The setting still supplies
   // the starting point; the in-session choice overrides it and survives the
   // remount that placing a building causes.
   // Shared with the control plane, which is a sibling of this panel rather
   // than a descendant, so a plain useState here would let the two disagree.
-  const viewModeChoice = useLensView((view) => view.viewMode) || (defaultToTable ? "table" : "grid");
+  // Always the grid until the player picks otherwise. The "open in
+  // comparison table" setting is gone with the comparison table itself;
+  // Table remains a choice in the view bar, just not a starting one.
+  const viewModeChoice = useLensView((view) => view.viewMode) || "grid";
   // The choice is obeyed at every height. It used to be overridden to "grid"
   // whenever the panel rested at strip height, to save a player who had left
   // the control on Table from a mode clipped to a sliver. The cost was worse

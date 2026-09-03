@@ -98,8 +98,7 @@ export function nextWindowLimit(currentLimit: number, step: number, maxLimit: nu
  * pager design carried. The row is found by id rather than by pixel offset
  * because between unmount and remount the geometry legitimately changes: the
  * window can come back a different length, expanded rows are `height: auto`,
- * density tiers give different row heights, and the grid's shelf appears and
- * disappears with the search text.
+ * and density tiers give different row heights.
  *
  * Positioned a third of the way down rather than flush to the top, so the rows
  * either side come back too and the player can see where they are rather than
