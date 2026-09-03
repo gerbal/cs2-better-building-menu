@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
 /**
@@ -189,5 +189,74 @@ describe("Building Lens stylesheet contracts", () => {
     // The pane is bottom-aligned against the bottom bar, so a menu growing
     // downward opens off the screen.
     assert.match(lensControlPaneStyles, /\.pickerOptions\s*\{[^}]*bottom:/);
+  });
+});
+
+/**
+ * Declarations Cohtml parses and drops, or never implemented.
+ *
+ * Each is a rule the stylesheet states and the engine silently ignores, which
+ * is the worst shape a styling bug can take: the source says the layout is
+ * handled, the screen disagrees, and the only evidence is a WARN in UI.log
+ * that nobody is reading. All four below were found that way, one at a time,
+ * after the layout they were supposed to produce turned out to be coming from
+ * somewhere else — or from luck.
+ *
+ * `text-overflow: ellipsis` is deliberately NOT here. It is a no-op on a FLEX
+ * ITEM and works normally elsewhere, and which of the 16 uses in this tree are
+ * flex items cannot be decided by reading one declaration. That one is handled
+ * by eliding in JS where it matters; see tileLabel.ts.
+ */
+const UNSUPPORTED: { pattern: RegExp; declaration: string; why: string }[] = [
+  {
+    pattern: /align-(?:items|self):\s*baseline/g,
+    declaration: "align-items / align-self: baseline",
+    why:
+      "Cohtml logs `Unable to parse declaration: align-items - baseline` and drops it, "
+      + "leaving the flex default. Use flex-start, which is what it degrades to anyway.",
+  },
+  {
+    pattern: /display:\s*(?:inline-)?grid\b/g,
+    declaration: "display: grid",
+    why: "Cohtml 1.64 has no CSS grid. Lay it out with flex.",
+  },
+  {
+    pattern: /(?:^|[\s;{])(?:row-|column-)?gap:/gm,
+    declaration: "gap",
+    why: "A no-op in Cohtml. Space children with margins.",
+  },
+];
+
+const scssFiles = (): string[] =>
+  readdirSync(new URL("../src/", import.meta.url), { recursive: true, encoding: "utf8" })
+    .filter((name) => name.endsWith(".scss"))
+    .map((name) => `../src/${name}`);
+
+describe("Cohtml stylesheet support", () => {
+  it("states no declaration the engine silently drops", () => {
+    // A declaration the engine ignores is worse than one that is simply wrong:
+    // the stylesheet reads as if the case were handled, so the next person to
+    // look does not think to check. Catching it here turns a log warning into
+    // a build failure.
+    const found: string[] = [];
+
+    for (const relative of scssFiles()) {
+      const source = read(relative);
+      const lines = source.split("\n");
+
+      for (const { pattern, declaration, why } of UNSUPPORTED) {
+        lines.forEach((line, i) => {
+          // Comments describe these rules on purpose — this file and several
+          // stylesheets explain why each is avoided. Only real declarations count.
+          const code = line.replace(/\/\/.*$/, "");
+          pattern.lastIndex = 0;
+          if (pattern.test(code)) {
+            found.push(`${relative.replace("../", "")}:${i + 1}  ${declaration} — ${why}`);
+          }
+        });
+      }
+    }
+
+    assert.deepEqual(found, [], `Cohtml drops these declarations:\n  ${found.join("\n  ")}\n`);
   });
 });
