@@ -260,3 +260,45 @@ describe("Cohtml stylesheet support", () => {
     assert.deepEqual(found, [], `Cohtml drops these declarations:\n  ${found.join("\n  ")}\n`);
   });
 });
+
+/**
+ * The engine resolves 1rem to 2/3 px at the 1280x720 both instances here run
+ * (measured: a 4rem cell lays out 2.667px wide), because CS2 authors its UI
+ * against a 1920 design width. So a rem value lands on a whole pixel only when
+ * it is a multiple of 1.5.
+ */
+const REM_PX = 2 / 3;
+const remOf = (source: string, rule: string, property: string): number => {
+  const body = new RegExp(`\\.${rule} \\{([^}]*)\\}`).exec(source);
+  assert.ok(body, `${rule} not found`);
+  const found = new RegExp(`(?:^|[\\s;])${property}:\\s*([0-9.]+)rem`, "m").exec(body![1]);
+  assert.ok(found, `${rule} has no ${property}`);
+  return Number(found![1]);
+};
+
+describe("footprint glyph pixel grid", () => {
+  it("steps one cell to the next by a whole pixel", () => {
+    // Reported as "the grid zoning size indicator is sized irregularly", and
+    // measured live in the zone tooltip: cells 2.67px wide on a 3.33px pitch,
+    // so consecutive cells started at x .33, .67, .00 — a different sub-pixel
+    // phase each. Same nominal square, three different rasterisations, which
+    // is what reads as cells of different sizes. Nothing about the markup was
+    // uneven; the pitch simply could not land on the pixel grid.
+    //
+    // The pitch is what matters. A cell whose own width is fractional still
+    // draws identically to its neighbours as long as every cell shares one
+    // phase — it is the VARIATION that is visible, not the softness.
+    const styles = read("../src/mods/BuildingList/buildingList.module.scss");
+    const cell = remOf(styles, "glyphCell", "width");
+    const gap = Number(/\.glyphCell \{[^}]*margin:\s*0\s+([0-9.]+)rem/.exec(styles)![1]);
+    const pitch = cell + gap;
+
+    assert.equal((pitch * REM_PX) % 1, 0,
+      `glyph pitch ${pitch}rem = ${pitch * REM_PX}px must be a whole pixel`);
+    assert.equal((cell * REM_PX) % 1, 0,
+      `glyph cell ${cell}rem = ${cell * REM_PX}px must be a whole pixel`);
+    // Square cells: a lot glyph is read as a shape, and a non-square cell
+    // would make a 4x2 look like a 4x4.
+    assert.equal(remOf(styles, "glyphCell", "height"), cell);
+  });
+});
