@@ -386,6 +386,23 @@ describe("formatServiceRange", () => {
     assert.equal(formatServiceRange(479.6), "480 m");
   });
 
+  it("stays in metres past a thousand, so two ranges compare", () => {
+    // It used to switch to kilometres at 1000, which put "500 m" and "2 km"
+    // on adjacent tiles of Parks & Recreation — the same field, two units,
+    // and no way to tell which reaches further without converting first.
+    //
+    // Metres, because that is what every other length on the card already
+    // says: Width 16 m, Elevated width 14 m. One unit for one dimension.
+    // Digit grouping is the locale's, so this checks the UNIT, not the comma.
+    for (const [value, digits] of [[2000, "2000"], [2300, "2300"], [10000, "10000"]] as const) {
+      const shown = formatServiceRange(value);
+
+      assert.doesNotMatch(shown, /km/, `${value} must not switch to kilometres`);
+      assert.match(shown, /\bm$/, `${value} must read in metres`);
+      assert.equal(shown.replace(/[^0-9]/g, ""), digits);
+    }
+  });
+
   it("says nothing where there is no range to say", () => {
     // Most of the catalog: a building that serves the whole city, or nothing.
     // Empty rather than a dash, so the tooltip line drops out entirely.

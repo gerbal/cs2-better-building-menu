@@ -370,19 +370,22 @@ export function formatServiceRange(
 
   const length = separators.length ?? FALLBACK_LENGTH;
 
-  // Kilometres past a thousand metres. A fire station's coverage reads 10,000
-  // in the raw data, and "10,000 m" is a number the reader has to divide before
-  // it means anything, where "10 km" is the distance itself. The game makes the
-  // same switch for road lengths and ships both templates.
-  if (value >= 1000) {
-    const km = Math.round(value / 100) / 10;
-
-    return applyMoneyTemplate(
-      length.kilometre,
-      Number.isInteger(km) ? String(km) : km.toFixed(1),
-    );
-  }
-
+  // METRES, always — including past a thousand, where this used to switch to
+  // kilometres.
+  //
+  // The switch was for readability on its own: "10 km" is easier to picture
+  // than "10,000 m". But it made the unit depend on the VALUE, so Parks &
+  // Recreation showed "Tiny Park 500 m" beside "Small Playground 2 km" —
+  // measured live on adjacent tiles — and a reader comparing the two had to
+  // convert before they could tell which reached further. The menu exists to
+  // be compared down; a column that changes units defeats it.
+  //
+  // Metres rather than kilometres for the one unit, because every other length
+  // on the card is already metres: Width 16 m, Elevated width 14 m. One
+  // dimension, one unit, whatever the magnitude.
+  //
+  // length.kilometre stays loaded and unused here on purpose — it is the
+  // game's own template and the cost formatter still needs it for /km rates.
   return applyMoneyTemplate(length.metre, formatBuildingMetric(Math.round(value), "capacity", separators));
 }
 
