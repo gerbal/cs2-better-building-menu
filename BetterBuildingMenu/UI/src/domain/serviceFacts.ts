@@ -452,3 +452,69 @@ export function renderServiceTextFacts(
     value: grouped.get(key)!.join(", "),
   }));
 }
+
+/**
+ * The order every service figure appears in, whatever order it was indexed in.
+ *
+ * Facts arrive in the order the C# emitted them, which depends on which
+ * component blocks a given prefab happened to hit — so a fire station and a
+ * hospital, both carrying helicopters and a shift share, showed them in
+ * different positions. A card whose fields move is a card the reader has to
+ * re-read every time instead of learning where to look, and comparing two
+ * buildings means comparing two different layouts.
+ *
+ * Grouped by what the reader is asking, in that order:
+ *   1. what the building DOES — the output it exists to produce
+ *   2. how WELL it does it — the quality and effect figures
+ *   3. who RUNS it — staffing
+ *   4. what it costs to place and what the network/zone adds
+ *
+ * Worded and numeric figures share one order: which list a value happens to
+ * live in is a fact about its type, not about where a reader expects it.
+ *
+ * A key missing from this list is not dropped — it sorts to the end, in the
+ * order it arrived, so a newly indexed figure appears and can then be placed
+ * here deliberately.
+ */
+export const FACT_ORDER: readonly string[] = [
+  // 1. What it does.
+  "processingRate", "sortingRate", "collectionTrucks", "postVans",
+  "helicopters", "disasterResponse", "shelterVehicles",
+  "batteryOutput", "electricityCapacity", "stormCapacity",
+  "purification", "waterSource", "maintenancePool", "comfort",
+  "transportType", "trackType",
+  // 2. How well.
+  "graduation", "studentWellbeing", "studentHealth",
+  "prisonerWellbeing", "prisonerHealth", "attractiveness",
+  // 3. Who runs it.
+  "jobComplexity", "minCrew", "workConditions", "eveningShift", "nightShift",
+  // 4. Placement, network and zone.
+  "elevatedWidth", "elevationCost", "voltage", "roadFeature",
+  "zoneMaxHeight", "zoneHouseholds", "zoneSpace",
+  "zoneUpkeep", "zoneElectricity", "zoneWater", "zoneGarbage", "zoneTelecom",
+  "zoneGroundPollution", "zoneAirPollution", "zoneNoisePollution",
+  "zoneFireHazard", "zoneLotShapes",
+  "zoneSold", "zoneManufactured", "zoneStored",
+  "facilityFeature", "zoneFeature",
+  "xpReward",
+];
+
+const FACT_RANK = new Map(FACT_ORDER.map((key, index) => [key, index]));
+
+/**
+ * Sort rendered figures into FACT_ORDER, keeping unplaced keys last.
+ *
+ * Stable: two keys the order does not name keep the order they arrived in, so
+ * the result is still deterministic for a prefab the list has not caught up
+ * with.
+ */
+export function orderFacts<T extends { key: string }>(facts: readonly T[]): T[] {
+  return facts
+    .map((fact, index) => ({ fact, index }))
+    .sort((left, right) => {
+      const leftRank = FACT_RANK.get(left.fact.key) ?? Number.MAX_SAFE_INTEGER;
+      const rightRank = FACT_RANK.get(right.fact.key) ?? Number.MAX_SAFE_INTEGER;
+      return leftRank === rightRank ? left.index - right.index : leftRank - rightRank;
+    })
+    .map((entry) => entry.fact);
+}

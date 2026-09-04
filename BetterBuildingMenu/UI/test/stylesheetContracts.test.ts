@@ -302,3 +302,25 @@ describe("footprint glyph pixel grid", () => {
     assert.equal(remOf(styles, "glyphCell", "height"), cell);
   });
 });
+
+describe("hover card figures line up", () => {
+  it("ends every value on the column's edge instead of after its label", () => {
+    // Measured live on Tiny City Park: the values STARTED at 458, 466, 498 and
+    // 471 down the left column, because each began wherever its own label
+    // ended. Eight rows, eight starting positions, nothing to run an eye down
+    // — which is what made a card of figures hard to read quickly even though
+    // every row was correctly formed.
+    //
+    // The spans already ended on a common edge (557 and 682); only the text
+    // inside them was adrift. Pushing it to that edge gives two columns.
+    //
+    // justify-content, NOT text-align: .cardValue computes to display: flex
+    // here, and text-align does not reach the children of a flex container.
+    // Tried text-align: right first and measured no movement at all.
+    assert.match(hoverCardStyles, /\.cardValue \{[^}]*justify-content: flex-end;/);
+    assert.match(hoverCardStyles, /\.cardValue \{[^}]*flex: 1 1 auto;/);
+    // The stacked list opts out: a column of conditions reads down the left,
+    // not the right.
+    assert.match(hoverCardStyles, /\.cardValueList \{[^}]*justify-content: flex-start;/);
+  });
+});

@@ -18,7 +18,7 @@ import {
 } from "domain/buildingLensMetricFormat";
 import { buildTileTooltipLines, isMetricPresent } from "domain/buildingTileTooltip";
 import { leisureLabel } from "domain/buildingLensRowDetails";
-import { renderServiceFacts, renderServiceTextFacts } from "domain/serviceFacts";
+import { orderFacts, renderServiceFacts, renderServiceTextFacts } from "domain/serviceFacts";
 import { clampAssetDescription, getBuildingExtensionLabels, resolveAssetDescription } from "domain/buildingLensRowDetails";
 import { isEntryAlreadyBuilt, isEntryLocked, listLockConditions } from "domain/buildingLockState";
 import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
@@ -297,18 +297,6 @@ const HoverCardContent = ({
     },
     // After the universal figures, because these are the specialist ones: a
     // player reads cost and capacity on every card and helicopters on four.
-    ...renderServiceTextFacts(entry.serviceTextFacts, translateFact).map((fact) => ({
-      key: fact.key,
-      label: fact.label,
-      applicable: true,
-      value: fact.value,
-    })),
-    ...serviceFacts.map((fact) => ({
-      key: fact.key,
-      label: fact.label,
-      applicable: true,
-      value: fact.value,
-    })),
     // Beside capacity, because it is one: how many cars the thing holds. Only
     // when there are bays — a zero here is a fact, but it is a fact about
     // something the player was not asking after on a building with no parking.
@@ -342,6 +330,25 @@ const HoverCardContent = ({
     // The upgrades that can be attached later. Named, not counted: "3
     // upgrades" tells the player to go and look, and the point of a hover card
     // is that they do not have to.
+    // The variable tail. Everything ABOVE this point is a field a reader can
+    // expect in the same place on every card — cost, capacity, range, lot,
+    // workers — so the eye learns those positions once. What a building
+    // carries beyond them differs by type and can only be listed, but it is
+    // listed in one declared order (FACT_ORDER) so a figure two buildings
+    // share appears in the same relative place on both.
+    //
+    // Worded and numeric figures are merged BEFORE ordering: they render from
+    // two lists, and showing all the words then all the numbers would let the
+    // value's type decide the layout.
+    ...orderFacts([
+      ...renderServiceTextFacts(entry.serviceTextFacts, translateFact),
+      ...serviceFacts,
+    ]).map((fact) => ({
+      key: fact.key,
+      label: fact.label,
+      applicable: true,
+      value: fact.value,
+    })),
     {
       key: "upgrades",
       label: labels.upgrades,

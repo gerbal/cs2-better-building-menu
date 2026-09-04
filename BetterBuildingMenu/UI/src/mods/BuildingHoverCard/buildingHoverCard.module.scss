@@ -103,6 +103,16 @@
 .cardValue {
   flex: 1 1 auto;
   min-width: 0;
+  // The figure sits on the column's edge, so the numbers form a column of
+  // their own. Measured live before this: values began at 458, 466, 498 and
+  // 471 down one side of a single card, each starting wherever its own label
+  // happened to end, which left nothing for the eye to run down. The spans
+  // already ended on a common edge; only the text inside was adrift.
+  //
+  // justify-content, NOT text-align: this element computes to display: flex,
+  // so text-align never reaches its contents. Tried it and measured no
+  // movement at all before spotting why.
+  justify-content: flex-end;
   color: var(--menuText1Normal);
   white-space: normal;
 }
@@ -167,6 +177,10 @@
 .cardValueList {
   display: flex;
   flex-direction: column;
+  // A stack of conditions reads down its LEFT edge; only single figures go to
+  // the right one. Undoes .cardValue's justify-content for this case, which is
+  // the main axis here because the direction is column.
+  justify-content: flex-start;
   align-items: flex-start;
 }
 
