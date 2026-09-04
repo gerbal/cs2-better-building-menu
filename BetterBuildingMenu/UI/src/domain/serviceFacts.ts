@@ -39,6 +39,8 @@ interface ServiceFactPresentation {
   unit: string;
   /** A multiplier reads as "×1.2", not as a quantity. */
   multiplier?: boolean;
+  /** Convert through formatLength instead of appending `unit`. */
+  measure?: "length";
 }
 
 const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
@@ -218,6 +220,9 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ElevatedWidth]",
     fallback: "Elevated width",
     unit: "m",
+    // A LENGTH, so it follows the player's unit system rather than carrying a
+    // hard "m" — it read "14 m" beside a "52 ft" width until this said so.
+    measure: "length",
   },
   elevationCost: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ElevationCost]",
@@ -268,6 +273,9 @@ export function renderServiceFacts(
   facts: readonly ServiceFact[] | null | undefined,
   translate: (key: string, fallback: string | null) => string | null,
   formatNumber: FormatNumber = (value) => String(value),
+  // Injected like formatNumber, and for the same reason: this module is
+  // imported by pure siblings and must not reach into the metric formatter.
+  formatLength?: (value: number) => string,
 ): RenderedServiceFact[] {
   if (!facts || facts.length === 0) {
     return [];
@@ -284,6 +292,11 @@ export function renderServiceFacts(
     const label = translate(presentation.localizationKey, null) ?? presentation.fallback;
 
     let value: string;
+
+    if (presentation.measure === "length" && formatLength) {
+      rendered.push({ key: fact.key, label, value: formatLength(fact.value) });
+      continue;
+    }
 
     if (presentation.multiplier) {
       // One decimal: a graduation modifier of 1.15 is a different building

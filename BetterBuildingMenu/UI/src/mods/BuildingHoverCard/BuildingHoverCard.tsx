@@ -23,6 +23,7 @@ import { clampAssetDescription, getBuildingExtensionLabels, resolveAssetDescript
 import { isEntryAlreadyBuilt, isEntryLocked, listLockConditions } from "domain/buildingLockState";
 import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
 import type { ZoneFootprint } from "domain/zoningHierarchy";
+import { useUnitSystem } from "domain/unitSettings";
 import styles from "./buildingHoverCard.module.scss";
 
 // Milestone index -> name, dense by index. A locked asset carries only the
@@ -77,6 +78,9 @@ export interface HoverCardContext {
  */
 export const useHoverCardContext = (): HoverCardContext => {
   const { translate } = useLocalization();
+  // One subscription per grid, like the milestones above it — the whole reason
+  // this context exists rather than each card reading its own.
+  const unitSystem = useUnitSystem();
   const milestoneNames = useValue(BuildingLensMilestones$) ?? [];
 
   return {
@@ -89,7 +93,7 @@ export const useHoverCardContext = (): HoverCardContext => {
     // the component that holds the localization hook, not to the card.
     leisureName: (leisureType: string | null | undefined) => leisureLabel(leisureType, translate),
     translateFact: translate,
-    separators: getNumberSeparators(translate),
+    separators: getNumberSeparators(translate, unitSystem),
     labels: {
       cost: translate("Tooltip.LABEL[BetterBuildingMenu.Cost]", "Cost") ?? "Cost",
       upkeep: translate("Tooltip.LABEL[BetterBuildingMenu.Upkeep]", "Upkeep") ?? "Upkeep",
@@ -186,12 +190,16 @@ const HoverCardContent = ({
     : formatBuildingMetric(leisureAmount, "capacity", separators);
   const range = formatServiceRange(entry.serviceRange, separators);
   const speed = formatSpeedLimit(entry.speedLimit, separators);
-  const width = formatNetworkWidth(entry.networkWidth);
+  const width = formatNetworkWidth(entry.networkWidth, separators);
   // Whatever this service carries beyond its headline capacity. Spread rather
   // than listed: which figures exist depends on the building, so the card
   // cannot name them in advance.
-  const serviceFacts = renderServiceFacts(entry.serviceFacts, translateFact, (value) =>
-    formatBuildingMetric(value, "capacity", separators));
+  const serviceFacts = renderServiceFacts(
+    entry.serviceFacts,
+    translateFact,
+    (value) => formatBuildingMetric(value, "capacity", separators),
+    (value) => formatNetworkWidth(value, separators),
+  );
   const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators);
   const lot = formatLotDimensions(entry.lotWidth, entry.lotDepth);
 

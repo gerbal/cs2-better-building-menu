@@ -103,6 +103,8 @@ export interface MoneyTemplates {
   perMonth: string;
   perKilometre: string;
   perKilometrePerMonth: string;
+  perMile: string;
+  perMilePerMonth: string;
 }
 
 /**
@@ -114,26 +116,69 @@ export interface MoneyTemplates {
  * but it never displays CoverageData.m_Range anywhere, so there is no vanilla
  * wording to copy for a service radius, only a vanilla format.
  *
- * KNOWN LIMIT: vanilla converts lengths for imperial players through its own
- * UnitSystem, which is not reachable from a mod's UI layer. These templates
- * are the metric pair, so an imperial player sees metres here where the rest
- * of their game says feet. Stated rather than silently wrong.
+ * Both unit systems, because the player's choice IS reachable: vanilla writes
+ * it to the UI as a GetterValueBinding on ("options", "unitSettings"), and the
+ * game ships the imperial templates alongside the metric ones. An earlier note
+ * here claimed the opposite and shipped metres to every player; it was wrong.
  */
 export interface LengthTemplates {
   metre: string;
   kilometre: string;
+  yard: string;
+  mile: string;
+  foot: string;
 }
 
 export const FALLBACK_LENGTH: LengthTemplates = {
   metre: "{VALUE} m",
   kilometre: "{VALUE} km",
+  yard: "{VALUE} yd",
+  mile: "{VALUE} mi",
+  foot: "{VALUE} ft",
 };
+
+/**
+ * Which units the player reads the rest of the game in.
+ *
+ * The names and the numbers are vanilla's: InterfaceSettings.UnitSystem is
+ * { Metric, Freedom }, and the value arrives on the ("options", "unitSettings")
+ * binding as an integer.
+ */
+export const UnitSystem = {
+  Metric: 0,
+  Freedom: 1,
+} as const;
+
+// A const object rather than an enum: the unit suites run under Node's
+// strip-only type stripping, which rejects `enum` outright.
+export type UnitSystem = (typeof UnitSystem)[keyof typeof UnitSystem];
+
+/**
+ * Vanilla's own conversions, lifted from its UI bundle rather than looked up.
+ *
+ * Yards divide by 0.9144 and miles by 1.609344 — both appear as literals in
+ * the game's own code, so our numbers agree with the ones beside them instead
+ * of differing in the last digit.
+ */
+const METRES_PER_YARD = 0.9144;
+const KILOMETRES_PER_MILE = 1.609344;
+export const FEET_PER_METRE = 3.28084;
+
+/**
+ * The threshold vanilla switches a Length at: a kilometre in metric, a MILE in
+ * Freedom units. Switching at 1000 m under imperial would read "1,094 yd" for
+ * something the game itself calls 0.6 miles.
+ */
+const METRIC_LONG = 1000;
+const FREEDOM_LONG = 1609;
 
 export const FALLBACK_MONEY: MoneyTemplates = {
   plain: "¢{VALUE}",
   perMonth: "¢{VALUE}/mo",
   perKilometre: "¢{VALUE}/km",
   perKilometrePerMonth: "¢{VALUE}/km/mo",
+  perMile: "¢{VALUE}/mi",
+  perMilePerMonth: "¢{VALUE}/mi/mo",
 };
 
 export interface NumberSeparators {
@@ -142,6 +187,8 @@ export interface NumberSeparators {
   /** Absent when the caller had no access to the game's dictionary. */
   money?: MoneyTemplates;
   length?: LengthTemplates;
+  /** Absent until the options binding has answered; Metric until it does. */
+  unitSystem?: UnitSystem;
 }
 
 export const FALLBACK_SEPARATORS: NumberSeparators = {
@@ -180,7 +227,10 @@ function resolveSeparator(translate: Translate | undefined, key: string, fallbac
 }
 
 /** The player's own separators, read from the game's dictionary. */
-export function getNumberSeparators(translate?: Translate): NumberSeparators {
+export function getNumberSeparators(
+  translate?: Translate,
+  unitSystem: UnitSystem = UnitSystem.Metric,
+): NumberSeparators {
   return {
     group: resolveSeparator(translate, THOUSANDS_SEPARATOR_KEY, FALLBACK_GROUP_SEPARATOR),
     decimal: resolveSeparator(translate, DECIMAL_SEPARATOR_KEY, FALLBACK_DECIMAL_SEPARATOR),
@@ -193,11 +243,21 @@ export function getNumberSeparators(translate?: Translate): NumberSeparators {
         "Common.VALUE_MONEY_PER_KILOMETER_PER_MONTH",
         FALLBACK_MONEY.perKilometrePerMonth,
       ),
+      perMile: resolveMoney(translate, "Common.VALUE_MONEY_PER_MILE", FALLBACK_MONEY.perMile),
+      perMilePerMonth: resolveMoney(
+        translate,
+        "Common.VALUE_MONEY_PER_MILE_PER_MONTH",
+        FALLBACK_MONEY.perMilePerMonth,
+      ),
     },
     length: {
       metre: resolveMoney(translate, "Common.VALUE_METER", FALLBACK_LENGTH.metre),
       kilometre: resolveMoney(translate, "Common.VALUE_KILOMETER", FALLBACK_LENGTH.kilometre),
+      yard: resolveMoney(translate, "Common.VALUE_YARD", FALLBACK_LENGTH.yard),
+      mile: resolveMoney(translate, "Common.VALUE_MILE", FALLBACK_LENGTH.mile),
+      foot: resolveMoney(translate, "Common.VALUE_FOOT", FALLBACK_LENGTH.foot),
     },
+    unitSystem,
   };
 }
 
@@ -225,6 +285,7 @@ export function groupDigits(value: number, separators: NumberSeparators = FALLBA
  * reader has to remember.
  */
 export const PER_DISTANCE_SUFFIX = "/km";
+export const PER_MILE_SUFFIX = "/mi";
 
 export function formatBuildingMetric(
   value: number | null | undefined,
@@ -236,9 +297,19 @@ export function formatBuildingMetric(
     return METRIC_NO_DATA;
   }
 
-  const digits = groupDigits(value, separators);
   const money = separators.money ?? FALLBACK_MONEY;
   const isMoney = metric === "cost" || metric === "upkeep";
+  const imperial = separators.unitSystem === UnitSystem.Freedom;
+  // A per-kilometre rate becomes a per-MILE rate, which means the number moves
+  // too: ¢4,000/km is ¢6,437/mi, not ¢4,000/mi. Converting the unit and
+  // leaving the figure would understate a road's cost by more than a third.
+  // The game ships both money forms, so only the arithmetic is ours.
+  // Rounded, not just scaled: 4000 per km is 6437.376 per mile, and money is
+  // whole everywhere else on the card.
+  const scaled = perDistance && imperial
+    ? (isMoney ? Math.round(value * KILOMETRES_PER_MILE) : value * KILOMETRES_PER_MILE)
+    : value;
+  const digits = groupDigits(scaled, separators);
 
   if (perDistance) {
     // Free is a statement about a total, so it has no meaning for a rate — a
@@ -248,13 +319,14 @@ export function formatBuildingMetric(
       // The game has its own per-kilometre money forms, suffix and all, so the
       // rate is stated the way vanilla states it rather than by bolting our
       // "/km" onto a number.
-      return applyMoneyTemplate(
-        metric === "upkeep" ? money.perKilometrePerMonth : money.perKilometre,
-        digits,
-      );
+      const perDistanceTemplate = imperial
+        ? (metric === "upkeep" ? money.perMilePerMonth : money.perMile)
+        : (metric === "upkeep" ? money.perKilometrePerMonth : money.perKilometre);
+
+      return applyMoneyTemplate(perDistanceTemplate, digits);
     }
 
-    return `${digits}${PER_DISTANCE_SUFFIX}`;
+    return `${digits}${imperial ? PER_MILE_SUFFIX : PER_DISTANCE_SUFFIX}`;
   }
 
   switch (metric) {
@@ -370,22 +442,42 @@ export function formatServiceRange(
 
   const length = separators.length ?? FALLBACK_LENGTH;
 
-  // METRES, always — including past a thousand, where this used to switch to
-  // kilometres.
+  // Vanilla's own Length rule, both halves of it: metres below a kilometre and
+  // kilometres above with one decimal; yards below a MILE and miles above.
   //
-  // The switch was for readability on its own: "10 km" is easier to picture
-  // than "10,000 m". But it made the unit depend on the VALUE, so Parks &
-  // Recreation showed "Tiny Park 500 m" beside "Small Playground 2 km" —
-  // measured live on adjacent tiles — and a reader comparing the two had to
-  // convert before they could tell which reached further. The menu exists to
-  // be compared down; a column that changes units defeats it.
+  // Read out of the game's UI bundle rather than invented, down to the 1609
+  // threshold and the /0.9144 and /1.609344 divisors, so a range here agrees
+  // with the same distance stated anywhere else in the game.
   //
-  // Metres rather than kilometres for the one unit, because every other length
-  // on the card is already metres: Width 16 m, Elevated width 14 m. One
-  // dimension, one unit, whatever the magnitude.
-  //
-  // length.kilometre stays loaded and unused here on purpose — it is the
-  // game's own template and the cost formatter still needs it for /km rates.
+  // Yards, not feet: feet are what vanilla uses for Height and NetElevation,
+  // and a service radius is a Length.
+  const imperial = separators.unitSystem === UnitSystem.Freedom;
+
+  if (imperial) {
+    if (value < FREEDOM_LONG) {
+      return applyMoneyTemplate(
+        length.yard,
+        formatBuildingMetric(Math.round(value / METRES_PER_YARD), "capacity", separators),
+      );
+    }
+
+    const miles = Math.round(value / 1000 / KILOMETRES_PER_MILE * 10) / 10;
+
+    return applyMoneyTemplate(
+      length.mile,
+      Number.isInteger(miles) ? String(miles) : miles.toFixed(1),
+    );
+  }
+
+  if (value >= METRIC_LONG) {
+    const km = Math.round(value / 100) / 10;
+
+    return applyMoneyTemplate(
+      length.kilometre,
+      Number.isInteger(km) ? String(km) : km.toFixed(1),
+    );
+  }
+
   return applyMoneyTemplate(length.metre, formatBuildingMetric(Math.round(value), "capacity", separators));
 }
 
@@ -404,6 +496,15 @@ export function formatSpeedLimit(
     return "";
   }
 
+  // The game ships no speed template in either system — no VALUE_KMH and no
+  // VALUE_MPH — so both suffixes are ours, the way "km/h" already was. The
+  // conversion is the standard one and matches the mile divisor used above.
+  if (separators.unitSystem === UnitSystem.Freedom) {
+    const mph = Math.round(value / KILOMETRES_PER_MILE);
+
+    return `${formatBuildingMetric(mph, "capacity", separators)} mph`;
+  }
+
   return `${formatBuildingMetric(Math.round(value), "capacity", separators)} km/h`;
 }
 
@@ -415,14 +516,31 @@ export function formatSpeedLimit(
  */
 export function formatNetworkWidth(
   value: number | null | undefined,
+  separators: NumberSeparators = FALLBACK_SEPARATORS,
 ): string {
   if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
     return "";
   }
 
+  const length = separators.length ?? FALLBACK_LENGTH;
+
+  // FEET under Freedom units, not yards. Vanilla splits its units by the kind
+  // of measure rather than by size — Length is yards and miles, Height and
+  // NetElevation are feet — and a road's width is a net dimension like its
+  // elevation. "17 yd" for a two-lane road is a worse sentence than "52 ft".
+  //
+  // A judgement call, said plainly: the game states no road width anywhere, so
+  // there is no vanilla string to copy, only its convention for the two kinds.
+  if (separators.unitSystem === UnitSystem.Freedom) {
+    return applyMoneyTemplate(length.foot, String(Math.round(value * FEET_PER_METRE)));
+  }
+
   const rounded = Math.round(value * 10) / 10;
 
-  return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)} m`;
+  return applyMoneyTemplate(
+    length.metre,
+    Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1),
+  );
 }
 
 /** Capacity with its unit, e.g. "1 200 students". */
