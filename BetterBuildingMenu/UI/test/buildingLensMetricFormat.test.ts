@@ -9,7 +9,9 @@ import {
   applyMoneyTemplate,
   FALLBACK_MONEY,
   FALLBACK_SEPARATORS,
+  formatHeight,
   formatNetworkWidth,
+  formatVolume,
   formatSpeedLimit,
   formatServiceRange,
   UnitSystem,
@@ -468,16 +470,15 @@ describe("formatServiceRange under the player's unit system", () => {
 describe("width and speed follow the same setting", () => {
   const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
 
-  it("states a network width in feet, not yards", () => {
-    // Vanilla splits its own units by KIND, not by size: Length is yards and
-    // miles, while Height and NetElevation are feet. A road's width is a net
-    // dimension like its elevation, and "17 yd" for a two-lane road is a worse
-    // sentence than "52 ft".
+  it("states a network width by the game's Length rule", () => {
+    // A width is a horizontal distance, so it takes the units vanilla gives a
+    // Length: metres, and YARDS under Freedom. It briefly rendered feet here
+    // on the argument that a net dimension is more like an elevation — that
+    // was our taste overriding the game's own rule, and the game wins.
     //
-    // A judgement call, and worth saying so: the game states no road width
-    // anywhere, so there is no vanilla string to copy here — only its
-    // convention for the two kinds of measure.
-    assert.match(formatNetworkWidth(16, imperial), /52 ft$/);
+    // Whole units, no decimal, because that is what vanilla's Length does
+    // below its threshold.
+    assert.match(formatNetworkWidth(16, imperial), /17 yd$/);
     assert.match(formatNetworkWidth(16), /16 m$/);
   });
 
@@ -507,5 +508,23 @@ describe("per-distance money under Freedom units", () => {
     const metric = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Metric };
 
     assert.match(formatBuildingMetric(4000, "cost", metric, true), /4.000.*km/);
+  });
+});
+
+describe("height and volume take the game's other two rules", () => {
+  const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+
+  it("states a height in feet, which is what vanilla's Height does", () => {
+    // Height and NetElevation are the two places vanilla uses FEET rather than
+    // yards. A zone's maximum building height is one of them.
+    assert.match(formatHeight(30, imperial), /98 ft$/);
+    assert.match(formatHeight(30), /30 m$/);
+  });
+
+  it("states a volume in gallons, at the game's own factor", () => {
+    // 264.172 is the literal in vanilla's bundle, so a tank here reads the
+    // same as the same tank anywhere else.
+    assert.match(formatVolume(10, imperial), /2.642 gal$/);
+    assert.match(formatVolume(10), /10 m³$/);
   });
 });

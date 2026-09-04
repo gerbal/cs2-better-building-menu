@@ -14,7 +14,9 @@ import {
   type NumberSeparators,
   formatServiceRange,
   formatSpeedLimit,
+  formatHeight,
   formatNetworkWidth,
+  formatVolume,
 } from "domain/buildingLensMetricFormat";
 import { buildTileTooltipLines, isMetricPresent } from "domain/buildingTileTooltip";
 import { leisureLabel } from "domain/buildingLensRowDetails";
@@ -198,7 +200,12 @@ const HoverCardContent = ({
     entry.serviceFacts,
     translateFact,
     (value) => formatBuildingMetric(value, "capacity", separators),
-    (value) => formatNetworkWidth(value, separators),
+    {
+      length: (value) => formatNetworkWidth(value, separators),
+      height: (value) => formatHeight(value, separators),
+      volume: (value) => formatVolume(value, separators),
+      moneyPerDistance: (value) => formatBuildingMetric(value, "cost", separators, true),
+    },
   );
   const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators);
   const lot = formatLotDimensions(entry.lotWidth, entry.lotDepth);

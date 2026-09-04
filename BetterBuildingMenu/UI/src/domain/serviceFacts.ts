@@ -39,8 +39,14 @@ interface ServiceFactPresentation {
   unit: string;
   /** A multiplier reads as "×1.2", not as a quantity. */
   multiplier?: boolean;
-  /** Convert through formatLength instead of appending `unit`. */
-  measure?: "length";
+  /**
+   * Follows the player's unit system instead of carrying a fixed `unit`.
+   *
+   * Each name is one of vanilla's own rules — Length is metres/yards, Height
+   * is metres/feet, Volume is cubic metres/gallons, and a per-distance cost
+   * converts its figure as well as its suffix.
+   */
+  measure?: "length" | "height" | "volume" | "moneyPerDistance";
 }
 
 const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
@@ -97,6 +103,7 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneHeight]",
     fallback: "Height",
     unit: "m",
+    measure: "height",
   },
   zoneUpkeep: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Upkeep]",
@@ -215,6 +222,7 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.StormCapacity]",
     fallback: "Stormwater",
     unit: "m³",
+    measure: "volume",
   },
   elevatedWidth: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ElevatedWidth]",
@@ -228,6 +236,10 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ElevationCost]",
     fallback: "Elevation",
     unit: "¢/km",
+    // Money, so it goes through the game's own per-distance template rather
+    // than bolting "¢/km" onto a number — it rendered "5,000 ¢/km" where every
+    // other cost on the card reads "¢5,000 /km", symbol first.
+    measure: "moneyPerDistance",
   },
   zoneTelecom: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneTelecom]",
@@ -275,7 +287,7 @@ export function renderServiceFacts(
   formatNumber: FormatNumber = (value) => String(value),
   // Injected like formatNumber, and for the same reason: this module is
   // imported by pure siblings and must not reach into the metric formatter.
-  formatLength?: (value: number) => string,
+  measured: Partial<Record<NonNullable<ServiceFactPresentation["measure"]>, (value: number) => string>> = {},
 ): RenderedServiceFact[] {
   if (!facts || facts.length === 0) {
     return [];
@@ -293,8 +305,10 @@ export function renderServiceFacts(
 
     let value: string;
 
-    if (presentation.measure === "length" && formatLength) {
-      rendered.push({ key: fact.key, label, value: formatLength(fact.value) });
+    const measured_ = presentation.measure ? measured[presentation.measure] : undefined;
+
+    if (measured_) {
+      rendered.push({ key: fact.key, label, value: measured_(fact.value) });
       continue;
     }
 
