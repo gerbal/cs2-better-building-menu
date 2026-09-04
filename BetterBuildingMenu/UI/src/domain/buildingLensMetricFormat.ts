@@ -122,6 +122,8 @@ export interface MoneyTemplates {
  * here claimed the opposite and shipped metres to every player; it was wrong.
  */
 export interface LengthTemplates {
+  cubicMetre: string;
+  gallon: string;
   metre: string;
   kilometre: string;
   yard: string;
@@ -130,6 +132,8 @@ export interface LengthTemplates {
 }
 
 export const FALLBACK_LENGTH: LengthTemplates = {
+  cubicMetre: "{VALUE} m³",
+  gallon: "{VALUE} gal",
   metre: "{VALUE} m",
   kilometre: "{VALUE} km",
   yard: "{VALUE} yd",
@@ -163,6 +167,8 @@ export type UnitSystem = (typeof UnitSystem)[keyof typeof UnitSystem];
 const METRES_PER_YARD = 0.9144;
 const KILOMETRES_PER_MILE = 1.609344;
 export const FEET_PER_METRE = 3.28084;
+/** US gallons in a cubic metre — vanilla's own literal. */
+const GALLONS_PER_CUBIC_METRE = 264.172;
 
 /**
  * The threshold vanilla switches a Length at: a kilometre in metric, a MILE in
@@ -256,6 +262,8 @@ export function getNumberSeparators(
       yard: resolveMoney(translate, "Common.VALUE_YARD", FALLBACK_LENGTH.yard),
       mile: resolveMoney(translate, "Common.VALUE_MILE", FALLBACK_LENGTH.mile),
       foot: resolveMoney(translate, "Common.VALUE_FOOT", FALLBACK_LENGTH.foot),
+      cubicMetre: resolveMoney(translate, "Common.VALUE_CUBIC_METER", FALLBACK_LENGTH.cubicMetre),
+      gallon: resolveMoney(translate, "Common.VALUE_GALLON", FALLBACK_LENGTH.gallon),
     },
     unitSystem,
   };
@@ -518,30 +526,17 @@ export function formatNetworkWidth(
   value: number | null | undefined,
   separators: NumberSeparators = FALLBACK_SEPARATORS,
 ): string {
-  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
-    return "";
-  }
-
-  const length = separators.length ?? FALLBACK_LENGTH;
-
-  // FEET under Freedom units, not yards. Vanilla splits its units by the kind
-  // of measure rather than by size — Length is yards and miles, Height and
-  // NetElevation are feet — and a road's width is a net dimension like its
-  // elevation. "17 yd" for a two-lane road is a worse sentence than "52 ft".
+  // A width is a horizontal distance, so it is a Length and takes exactly the
+  // units vanilla gives one: metres, and yards under Freedom.
   //
-  // A judgement call, said plainly: the game states no road width anywhere, so
-  // there is no vanilla string to copy, only its convention for the two kinds.
-  if (separators.unitSystem === UnitSystem.Freedom) {
-    return applyMoneyTemplate(length.foot, String(Math.round(value * FEET_PER_METRE)));
-  }
-
-  const rounded = Math.round(value * 10) / 10;
-
-  return applyMoneyTemplate(
-    length.metre,
-    Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1),
-  );
+  // This rendered FEET for a while, on the argument that a net dimension is
+  // more like an elevation than like a distance. That was our taste overriding
+  // the game's own rule for the sake of a nicer-sounding number, and it made
+  // one line on the card disagree with the line above it. Same rule as range,
+  // same function, no second opinion to keep in sync.
+  return formatServiceRange(value, separators);
 }
+
 
 /** Capacity with its unit, e.g. "1 200 students". */
 export function formatCapacity(
@@ -734,4 +729,47 @@ export function formatLotDimensions(
   }
 
   return `${width} × ${depth}`;
+}
+
+/**
+ * A height, by vanilla's Height rule: metres, and FEET under Freedom.
+ *
+ * Feet rather than yards because that is the split the game makes — Length is
+ * yards and miles, Height and NetElevation are feet.
+ */
+export function formatHeight(
+  value: number | null | undefined,
+  separators: NumberSeparators = FALLBACK_SEPARATORS,
+): string {
+  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
+    return "";
+  }
+
+  const length = separators.length ?? FALLBACK_LENGTH;
+
+  return separators.unitSystem === UnitSystem.Freedom
+    ? applyMoneyTemplate(length.foot, groupDigits(Math.round(value * FEET_PER_METRE), separators))
+    : applyMoneyTemplate(length.metre, groupDigits(Math.round(value), separators));
+}
+
+/**
+ * A volume, by vanilla's Volume rule: cubic metres, and US gallons under
+ * Freedom at the game's own 264.172.
+ */
+export function formatVolume(
+  value: number | null | undefined,
+  separators: NumberSeparators = FALLBACK_SEPARATORS,
+): string {
+  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
+    return "";
+  }
+
+  const length = separators.length ?? FALLBACK_LENGTH;
+
+  return separators.unitSystem === UnitSystem.Freedom
+    ? applyMoneyTemplate(
+      length.gallon,
+      groupDigits(Math.round(value * GALLONS_PER_CUBIC_METRE), separators),
+    )
+    : applyMoneyTemplate(length.cubicMetre, groupDigits(Math.round(value), separators));
 }
