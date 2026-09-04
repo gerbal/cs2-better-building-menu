@@ -13,6 +13,7 @@ import {
 } from "domain/buildingLensSortPresentation";
 import { flattenGroupedRows } from "domain/buildingGroups";
 import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
+import { useUnitSystem } from "domain/unitSettings";
 import { TableRow, type TableRowLabels } from "./TableRow";
 import styles from "./buildingCatalog.module.scss";
 
@@ -78,7 +79,7 @@ export const TableView = ({
   const { translate } = useLocalization();
   // The player's own thousands/decimal marks, so our columns agree with the
   // numbers the game is drawing elsewhere on the same screen.
-  const separators = getNumberSeparators(translate);
+  const separators = getNumberSeparators(translate, useUnitSystem());
   const labels: TableRowLabels = {
     place: translate("Tooltip.LABEL[BetterBuildingMenu.Place]", "Place") ?? "Place",
     inspect: translate("Tooltip.LABEL[BetterBuildingMenu.Inspect]", "Details") ?? "Details",

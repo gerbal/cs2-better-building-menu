@@ -13,6 +13,7 @@ import { stripRedundantNamePrefix, tileLabelLineBudget, wrapTileLabel } from "do
 import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
 import { formatBuildingMetric, getNumberSeparators } from "domain/buildingLensMetricFormat";
 import type { SortColumn } from "domain/buildingCatalogContracts";
+import { useUnitSystem } from "domain/unitSettings";
 import mod from "../../../mod.json";
 import styles from "./buildingGrid.module.scss";
 
@@ -62,7 +63,7 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
   // by Capacity moved these tiles and nothing on screen said so; see
   // sortedMetric.ts. Null for Name and Category, which the tile already shows.
   const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
-  const separators = getNumberSeparators(translate);
+  const separators = getNumberSeparators(translate, useUnitSystem());
   // Already in Locale.json — an orphaned key with no consumer until now.
   const lockedLabel = translate("Tooltip.LABEL[BetterBuildingMenu.Locked]", "Locked") ?? "Locked";
   const builtLabel =

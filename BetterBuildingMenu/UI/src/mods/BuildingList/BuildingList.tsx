@@ -19,6 +19,7 @@ import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/B
 import type { ZoneFootprint } from "domain/zoningHierarchy";
 import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
 import type { SortColumn } from "domain/buildingCatalogContracts";
+import { useUnitSystem } from "domain/unitSettings";
 import mod from "../../../mod.json";
 import styles from "./buildingList.module.scss";
 
@@ -59,7 +60,7 @@ interface BuildingListProps {
  */
 export const BuildingList = ({ entries, searchText, onPlace, variant = "compact" }: BuildingListProps) => {
   const { translate } = useLocalization();
-  const separators = getNumberSeparators(translate);
+  const separators = getNumberSeparators(translate, useUnitSystem());
   // The same card the grid and the table show. This view used to carry its own
   // thinner one — a name and a single "cost · lot" line — so which facts the
   // game would tell you about a building depended on which view mode you

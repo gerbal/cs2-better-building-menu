@@ -1,6 +1,7 @@
 import { useLocalization } from "cs2/l10n";
 
 import type { BuildingCatalogEntry } from "domain/buildingCatalog";
+import { useUnitSystem } from "domain/unitSettings";
 import {
   getBuildingDetailMetrics,
   getNumberSeparators,
@@ -34,7 +35,7 @@ interface BuildingResultDetailsProps {
  */
 export const BuildingResultDetails = ({ entry, resolveFacetLabel }: BuildingResultDetailsProps) => {
   const { translate } = useLocalization();
-  const separators = getNumberSeparators(translate);
+  const separators = getNumberSeparators(translate, useUnitSystem());
 
   const detailMetrics = getBuildingDetailMetrics(entry, separators);
   const flagGroups = getBuildingFlagGroups(entry.placementFlags);

@@ -8,7 +8,11 @@ import {
   formatCapacity,
   applyMoneyTemplate,
   FALLBACK_MONEY,
+  FALLBACK_SEPARATORS,
+  formatNetworkWidth,
+  formatSpeedLimit,
   formatServiceRange,
+  UnitSystem,
   getCapacityUnitLabel,
   groupDigits,
   hasFootprint,
@@ -386,23 +390,6 @@ describe("formatServiceRange", () => {
     assert.equal(formatServiceRange(479.6), "480 m");
   });
 
-  it("stays in metres past a thousand, so two ranges compare", () => {
-    // It used to switch to kilometres at 1000, which put "500 m" and "2 km"
-    // on adjacent tiles of Parks & Recreation — the same field, two units,
-    // and no way to tell which reaches further without converting first.
-    //
-    // Metres, because that is what every other length on the card already
-    // says: Width 16 m, Elevated width 14 m. One unit for one dimension.
-    // Digit grouping is the locale's, so this checks the UNIT, not the comma.
-    for (const [value, digits] of [[2000, "2000"], [2300, "2300"], [10000, "10000"]] as const) {
-      const shown = formatServiceRange(value);
-
-      assert.doesNotMatch(shown, /km/, `${value} must not switch to kilometres`);
-      assert.match(shown, /\bm$/, `${value} must read in metres`);
-      assert.equal(shown.replace(/[^0-9]/g, ""), digits);
-    }
-  });
-
   it("says nothing where there is no range to say", () => {
     // Most of the catalog: a building that serves the whole city, or nothing.
     // Empty rather than a dash, so the tooltip line drops out entirely.
@@ -441,5 +428,84 @@ describe("money templates", () => {
     // lie about what the number measures.
     assert.equal(formatBuildingMetric(500, "workers"), groupDigits(500));
     assert.equal(formatBuildingMetric(500, "capacity"), groupDigits(500));
+  });
+});
+
+describe("formatServiceRange under the player's unit system", () => {
+  // The rules are vanilla's own, read out of its UI bundle rather than
+  // invented: Length is metres below 1000 and kilometres above with one
+  // decimal; under Freedom it is YARDS below 1609 and miles above. Yards, not
+  // feet — feet are what vanilla uses for Height and NetElevation.
+  const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+  const metric = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Metric };
+
+  it("keeps the game's own metric thresholds", () => {
+    assert.match(formatServiceRange(480, metric), /480 m$/);
+    assert.match(formatServiceRange(2000, metric), /2 km$/);
+    assert.match(formatServiceRange(2300, metric), /2\.3 km$/);
+  });
+
+  it("reads in yards and miles for a Freedom-units player", () => {
+    // 500 m is 546.8 yd; 2000 m is 1.2 mi. The switch is at 1609 m, which is
+    // one mile, so nothing ever reads "1,760 yd".
+    assert.match(formatServiceRange(500, imperial), /547 yd$/);
+    assert.match(formatServiceRange(2000, imperial), /1\.2 mi$/);
+    assert.doesNotMatch(formatServiceRange(2000, imperial), /\bm\b|km/);
+  });
+
+  it("switches at a mile, not at a kilometre", () => {
+    assert.match(formatServiceRange(1608, imperial), /yd$/);
+    assert.match(formatServiceRange(1610, imperial), /mi$/);
+  });
+
+  it("defaults to metric when nobody said otherwise", () => {
+    // An older caller that passes no unit system, and the first frame before
+    // the binding has answered.
+    assert.match(formatServiceRange(2000), /2 km$/);
+  });
+});
+
+describe("width and speed follow the same setting", () => {
+  const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+
+  it("states a network width in feet, not yards", () => {
+    // Vanilla splits its own units by KIND, not by size: Length is yards and
+    // miles, while Height and NetElevation are feet. A road's width is a net
+    // dimension like its elevation, and "17 yd" for a two-lane road is a worse
+    // sentence than "52 ft".
+    //
+    // A judgement call, and worth saying so: the game states no road width
+    // anywhere, so there is no vanilla string to copy here — only its
+    // convention for the two kinds of measure.
+    assert.match(formatNetworkWidth(16, imperial), /52 ft$/);
+    assert.match(formatNetworkWidth(16), /16 m$/);
+  });
+
+  it("states a speed limit in mph", () => {
+    assert.match(formatSpeedLimit(56, imperial), /35 mph$/);
+    assert.match(formatSpeedLimit(56), /56 km\/h$/);
+  });
+});
+
+describe("per-distance money under Freedom units", () => {
+  const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+
+  it("converts the rate as well as the unit, and keeps money whole", () => {
+    // ¢4,000/km is ¢6,437/mi — changing the unit without the figure would
+    // understate a road by more than a third. And the conversion lands on
+    // 6437.376, which must not reach the card as "¢6,437.4": money is whole
+    // everywhere else on it.
+    const cost = formatBuildingMetric(4000, "cost", imperial, true);
+
+    assert.doesNotMatch(cost, /\./, `money kept a fraction: ${cost}`);
+    assert.match(cost, /6.437/);
+    assert.match(cost, /mi/);
+    assert.doesNotMatch(cost, /km/);
+  });
+
+  it("leaves the metric rate exactly as it was", () => {
+    const metric = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Metric };
+
+    assert.match(formatBuildingMetric(4000, "cost", metric, true), /4.000.*km/);
   });
 });
