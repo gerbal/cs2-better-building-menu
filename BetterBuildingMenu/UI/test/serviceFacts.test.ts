@@ -4,6 +4,7 @@ import {
   SERVICE_FACT_LOCALIZATION_KEYS,
   renderServiceFacts,
   renderServiceTextFacts,
+  orderFacts,
 } from "../src/domain/serviceFacts.ts";
 
 const noTranslation = () => null;
@@ -115,5 +116,51 @@ describe("renderServiceTextFacts", () => {
     assert.deepEqual(renderServiceTextFacts([{ key: "zoneSold", value: "  " }], () => null), []);
     assert.deepEqual(renderServiceTextFacts([], () => null), []);
     assert.deepEqual(renderServiceTextFacts(null, () => null), []);
+  });
+});
+
+describe("orderFacts", () => {
+  it("puts figures in one declared order whatever order they arrived in", () => {
+    // The facts arrive in the order the INDEXER happened to emit them, which
+    // depends on which C# blocks a prefab hit. A fire station and a hospital
+    // both carry helicopters and a shift share, and without this they would
+    // show them in different positions — so the reader cannot learn where to
+    // look, which is the whole point of a fixed card.
+    const asIndexed = [
+      { key: "nightShift" }, { key: "helicopters" }, { key: "xpReward" }, { key: "graduation" },
+    ];
+    const other = [
+      { key: "xpReward" }, { key: "graduation" }, { key: "helicopters" }, { key: "nightShift" },
+    ];
+
+    const first = orderFacts(asIndexed).map((fact) => fact.key);
+    const second = orderFacts(other).map((fact) => fact.key);
+
+    assert.deepEqual(first, second, "the same keys must land in the same order");
+    // What the building DOES leads; how it is staffed and what it earns follow.
+    assert.ok(first.indexOf("helicopters") < first.indexOf("graduation"));
+    assert.ok(first.indexOf("graduation") < first.indexOf("nightShift"));
+    assert.ok(first.indexOf("nightShift") < first.indexOf("xpReward"));
+  });
+
+  it("keeps a key it has never heard of, last and in the order given", () => {
+    // A new fact must not vanish because nobody added it to the order — it
+    // shows up at the end until someone places it deliberately.
+    const ordered = orderFacts([
+      { key: "somethingNew" }, { key: "helicopters" }, { key: "anotherNew" },
+    ]).map((fact) => fact.key);
+
+    assert.deepEqual(ordered, ["helicopters", "somethingNew", "anotherNew"]);
+  });
+
+  it("interleaves worded figures with numeric ones", () => {
+    // They render as two separate lists and used to be shown as two blocks,
+    // all the words then all the numbers. Ordering is a property of the FIELD,
+    // not of how its value happens to be typed.
+    const ordered = orderFacts([
+      { key: "xpReward" }, { key: "jobComplexity" }, { key: "helicopters" },
+    ]).map((fact) => fact.key);
+
+    assert.deepEqual(ordered, ["helicopters", "jobComplexity", "xpReward"]);
   });
 });
