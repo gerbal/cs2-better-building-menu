@@ -362,3 +362,16 @@ describe("the hover card's second tier is quieter", () => {
     assert.match(hoverCardStyles, /\.cardDivider \{[^}]*border-top: 1rem solid/);
   });
 });
+
+describe("a lone last row keeps its column", () => {
+  // Rows were flex: 1 1 auto with a 45% floor, so an odd count left the last
+  // row alone on its line and it grew across both columns — "Coal 20 t/mo."
+  // with its value at the card's far edge instead of under the left column's
+  // figures. Half the row, no growing; only a stack of values (cardLineWide)
+  // may take the whole line.
+  it("does not grow a row past half the card", () => {
+    assert.match(hoverCardStyles, /\.cardLine \{[^}]*flex: 0 0 50%;/);
+    assert.doesNotMatch(hoverCardStyles, /\.cardLine \{[^}]*flex: 1 1 auto;/);
+    assert.match(hoverCardStyles, /\.cardLineWide \{[^}]*flex: 1 1 100%;/);
+  });
+});
