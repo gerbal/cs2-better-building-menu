@@ -178,3 +178,21 @@ describe("the line cap never cuts the game's own lines", () => {
     assert.ok(extraLines >= 8, `our tier is not starved, got ${extraLines}`);
   });
 });
+
+describe("a card with nothing of vanilla's", () => {
+  // A zone tile: vanilla's tooltip has no figure for it, so every line is
+  // ours. Dimming the whole card and ruling off an empty block above it made
+  // the zone cards read as an afterthought. When the game's tier is empty,
+  // ours is the card: normal weight, no divider.
+  it("draws our lines as the primary block and no divider", () => {
+    resetBindings();
+    const card = cardOf(entry(1, {
+      constructionCost: null as never, upkeep: null as never, capacity: null as never, workers: 50,
+      serviceFacts: [{ key: "zoneHouseholds", value: 12 }],
+    }));
+
+    assert.doesNotMatch(card, /data-tier="extra"/);
+    assert.doesNotMatch(card, /cardDivider/);
+    assert.match(card, /Workers/);
+  });
+});

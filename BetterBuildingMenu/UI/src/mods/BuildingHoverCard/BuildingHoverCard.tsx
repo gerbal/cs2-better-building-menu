@@ -457,17 +457,31 @@ const HoverCardContent = ({
           is done by the flow rather than by a column count, so a long line
           (a list of unlock conditions, a recreation kind) still takes a whole
           row and only the short figures double up. */}
-      <div className={styles.cardLines}>
-        {vanillaTier.map(renderLine)}
-      </div>
-      {extraTier.length > 0 && (
-        <>
-          <div className={styles.cardDivider} aria-hidden="true" />
-          <div className={classNames(styles.cardLines, styles.cardLinesExtra)} data-tier="extra">
+      {/* When the game's tier is empty — a zone tile, whose vanilla tooltip
+          has no figure — ours IS the card: normal weight, no divider. Dimming
+          everything under an empty block made those cards read as an
+          afterthought. */}
+      {vanillaTier.length === 0
+        ? (
+          <div className={styles.cardLines}>
             {extraTier.map(renderLine)}
           </div>
-        </>
-      )}
+        )
+        : (
+          <>
+            <div className={styles.cardLines}>
+              {vanillaTier.map(renderLine)}
+            </div>
+            {extraTier.length > 0 && (
+              <>
+                <div className={styles.cardDivider} aria-hidden="true" />
+                <div className={classNames(styles.cardLines, styles.cardLinesExtra)} data-tier="extra">
+                  {extraTier.map(renderLine)}
+                </div>
+              </>
+            )}
+          </>
+        )}
       {/* The shapes, narrowest first. A player choosing a zone is matching
           against a block on the map, and a picture of the lot is closer to
           that than "2–4 wide" is. */}
