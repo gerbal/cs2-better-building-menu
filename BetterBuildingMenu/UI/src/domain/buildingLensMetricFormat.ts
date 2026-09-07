@@ -131,6 +131,31 @@ export interface LengthTemplates {
   foot: string;
 }
 
+/**
+ * The game's weight templates. Vanilla's Weight formatter takes kilograms and
+ * picks the unit by size — see formatWeight for the thresholds.
+ */
+export interface WeightTemplates {
+  kilogram: string;
+  ton: string;
+  kiloton: string;
+  pound: string;
+  shortTon: string;
+  shortKiloton: string;
+}
+
+// The English strings in the shipped Locale.cok, minus {SIGN}. The short
+// kiloton one is not in the file's English block; its fallback is a guess and
+// is only used if the game's own template is missing.
+export const FALLBACK_WEIGHT: WeightTemplates = {
+  kilogram: "{VALUE} kg",
+  ton: "{VALUE} t",
+  kiloton: "{VALUE} kt",
+  pound: "{VALUE} lb",
+  shortTon: "{VALUE} tn",
+  shortKiloton: "{VALUE} ktn",
+};
+
 export const FALLBACK_LENGTH: LengthTemplates = {
   cubicMetre: "{VALUE} m³",
   gallon: "{VALUE} gal",
@@ -193,6 +218,7 @@ export interface NumberSeparators {
   /** Absent when the caller had no access to the game's dictionary. */
   money?: MoneyTemplates;
   length?: LengthTemplates;
+  weight?: WeightTemplates;
   /** Absent until the options binding has answered; Metric until it does. */
   unitSystem?: UnitSystem;
 }
@@ -202,6 +228,7 @@ export const FALLBACK_SEPARATORS: NumberSeparators = {
   decimal: FALLBACK_DECIMAL_SEPARATOR,
   money: FALLBACK_MONEY,
   length: FALLBACK_LENGTH,
+  weight: FALLBACK_WEIGHT,
 };
 
 /** Fills the game's template. {SIGN} is for negatives, which costs never are. */
@@ -264,6 +291,14 @@ export function getNumberSeparators(
       foot: resolveMoney(translate, "Common.VALUE_FOOT", FALLBACK_LENGTH.foot),
       cubicMetre: resolveMoney(translate, "Common.VALUE_CUBIC_METER", FALLBACK_LENGTH.cubicMetre),
       gallon: resolveMoney(translate, "Common.VALUE_GALLON", FALLBACK_LENGTH.gallon),
+    },
+    weight: {
+      kilogram: resolveMoney(translate, "Common.VALUE_KILOGRAM", FALLBACK_WEIGHT.kilogram),
+      ton: resolveMoney(translate, "Common.VALUE_TON", FALLBACK_WEIGHT.ton),
+      kiloton: resolveMoney(translate, "Common.VALUE_KILOTON", FALLBACK_WEIGHT.kiloton),
+      pound: resolveMoney(translate, "Common.VALUE_POUND", FALLBACK_WEIGHT.pound),
+      shortTon: resolveMoney(translate, "Common.VALUE_SHORT_TON", FALLBACK_WEIGHT.shortTon),
+      shortKiloton: resolveMoney(translate, "Common.VALUE_SHORT_KILOTON", FALLBACK_WEIGHT.shortKiloton),
     },
     unitSystem,
   };
@@ -389,6 +424,9 @@ const ROLE_UNITS: Record<string, string> = {
   PostFacility: "t",
   TelecomFacility: "",
 };
+
+/** Roles whose capacity is a weight in kilograms — see formatCapacity. */
+const WEIGHT_ROLES: ReadonlySet<string> = new Set(["GarbageFacility", "PostFacility"]);
 
 export function getCapacityUnitLabel(
   category: string | null | undefined,
@@ -549,6 +587,14 @@ export function formatCapacity(
   const formatted = formatBuildingMetric(value, "capacity", separators);
   if (formatted === METRIC_NO_DATA) {
     return formatted;
+  }
+
+  // Garbage and mail capacities are kilograms bound by vanilla with the
+  // weight unit, like cargo. Printing the raw figure under "t" read a landfill
+  // as "500,000 t"; the game shows the same field as "500 t".
+  if (typeof role === "string" && WEIGHT_ROLES.has(role) && typeof value === "number") {
+    const weighed = formatWeight(value, separators);
+    return weighed === "" ? formatted : weighed;
   }
 
   const unit = getCapacityUnitLabel(category, subCategory, role);
@@ -772,4 +818,61 @@ export function formatVolume(
       groupDigits(Math.round(value * GALLONS_PER_CUBIC_METRE), separators),
     )
     : applyMoneyTemplate(length.cubicMetre, groupDigits(Math.round(value), separators));
+}
+
+// Vanilla's own constants, read off the shipped bundle: lb = kg / 0.45359237,
+// short ton = kg / 907.18474, and 9,071,847.4 kg is where it moves to short
+// kilotons (10,000 short tons).
+const KILOGRAMS_PER_POUND = 0.45359237;
+const KILOGRAMS_PER_SHORT_TON = 907.18474;
+const WEIGHT_SMALL_KG = 100;
+const METRIC_KILOTON_KG = 1_000_000;
+const FREEDOM_SHORT_KILOTON_KG = 9_071_847.4;
+
+/** At most `decimals` places, trailing zeros dropped, digits grouped. */
+function roundedDigits(value: number, decimals: number, separators: NumberSeparators): string {
+  const fixed = value.toFixed(decimals);
+  const trimmed = fixed.includes(".") ? fixed.replace(/0+$/, "").replace(/\.$/, "") : fixed;
+  const [whole, fraction] = trimmed.split(".");
+  const grouped = groupDigits(Number(whole), separators);
+
+  return fraction ? `${grouped}${separators.decimal}${fraction}` : grouped;
+}
+
+/**
+ * A weight in kilograms, in the unit the game itself would show.
+ *
+ * Vanilla's Weight formatter: metric shows kilograms under 100 kg (one
+ * decimal), tonnes under a million (two), kilotonnes above; imperial shows
+ * pounds under 100 kg (one decimal), short tons under 9,071,847.4 kg (two),
+ * short kilotons above. Cargo capacity, garbage capacity and mail capacity are
+ * all bound with this unit, so all three come through here.
+ */
+export function formatWeight(
+  value: number | null | undefined,
+  separators: NumberSeparators = FALLBACK_SEPARATORS,
+): string {
+  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
+    return "";
+  }
+
+  const weight = separators.weight ?? FALLBACK_WEIGHT;
+
+  if (separators.unitSystem === UnitSystem.Freedom) {
+    if (value < WEIGHT_SMALL_KG) {
+      return applyMoneyTemplate(weight.pound, roundedDigits(value / KILOGRAMS_PER_POUND, 1, separators));
+    }
+    if (value < FREEDOM_SHORT_KILOTON_KG) {
+      return applyMoneyTemplate(weight.shortTon, roundedDigits(value / KILOGRAMS_PER_SHORT_TON, 2, separators));
+    }
+    return applyMoneyTemplate(weight.shortKiloton, roundedDigits(value / KILOGRAMS_PER_SHORT_TON / 1000, 2, separators));
+  }
+
+  if (value < WEIGHT_SMALL_KG) {
+    return applyMoneyTemplate(weight.kilogram, roundedDigits(value, 1, separators));
+  }
+  if (value < METRIC_KILOTON_KG) {
+    return applyMoneyTemplate(weight.ton, roundedDigits(value / 1000, 2, separators));
+  }
+  return applyMoneyTemplate(weight.kiloton, roundedDigits(value / METRIC_KILOTON_KG, 2, separators));
 }

@@ -17,6 +17,7 @@ import {
   formatHeight,
   formatNetworkWidth,
   formatVolume,
+  formatWeight,
 } from "domain/buildingLensMetricFormat";
 import { buildTileTooltipLines, isMetricPresent } from "domain/buildingTileTooltip";
 import { leisureLabel } from "domain/buildingLensRowDetails";
@@ -204,6 +205,7 @@ const HoverCardContent = ({
       length: (value) => formatNetworkWidth(value, separators),
       height: (value) => formatHeight(value, separators),
       volume: (value) => formatVolume(value, separators),
+      weight: (value) => formatWeight(value, separators),
       moneyPerDistance: (value) => formatBuildingMetric(value, "cost", separators, true),
     },
   );

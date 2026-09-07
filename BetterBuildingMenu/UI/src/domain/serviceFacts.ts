@@ -46,7 +46,7 @@ interface ServiceFactPresentation {
    * is metres/feet, Volume is cubic metres/gallons, and a per-distance cost
    * converts its figure as well as its suffix.
    */
-  measure?: "length" | "height" | "volume" | "moneyPerDistance";
+  measure?: "length" | "height" | "volume" | "moneyPerDistance" | "weight";
 }
 
 const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
@@ -223,6 +223,18 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     fallback: "Stormwater",
     unit: "m³",
     measure: "volume",
+  },
+  cargoCapacity: {
+    // The same words as vanilla's Properties.CARGO_CAPACITY, under our own
+    // key because every entry in this table ships its own string (see the
+    // locale test). PrefabUISystem binds StorageLimitData.m_Limit with the
+    // weight unit, on cargo stations and on the warehouse upgrades that add to
+    // them (StorageLimitData.Combine is additive). Kilograms; follows the
+    // unit system.
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.CargoCapacity]",
+    fallback: "Cargo capacity",
+    unit: "t",
+    measure: "weight",
   },
   elevatedWidth: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ElevatedWidth]",
@@ -507,7 +519,7 @@ export const FACT_ORDER: readonly string[] = [
   // 1. What it does.
   "processingRate", "sortingRate", "collectionTrucks", "postVans",
   "helicopters", "disasterResponse", "shelterVehicles",
-  "batteryOutput", "electricityCapacity", "stormCapacity",
+  "batteryOutput", "electricityCapacity", "stormCapacity", "cargoCapacity",
   "purification", "waterSource", "maintenancePool", "comfort",
   "transportType", "trackType",
   // 2. How well.

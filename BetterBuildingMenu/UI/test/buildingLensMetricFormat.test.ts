@@ -12,6 +12,7 @@ import {
   formatHeight,
   formatNetworkWidth,
   formatVolume,
+  formatWeight,
   formatSpeedLimit,
   formatServiceRange,
   UnitSystem,
@@ -526,5 +527,38 @@ describe("height and volume take the game's other two rules", () => {
     // same as the same tank anywhere else.
     assert.match(formatVolume(10, imperial), /2.642 gal$/);
     assert.match(formatVolume(10), /10 m³$/);
+  });
+});
+
+describe("weight follows the game's own rule", () => {
+  // Vanilla's Weight formatter, read off the shipped bundle: the raw figure is
+  // kilograms; metric shows kg below 100, tonnes below a million (two
+  // decimals), kilotonnes above; imperial shows lb below 100 kg, short tons
+  // (kg / 907.18474, template "tn") below 9,071,847.4 kg, short kilotons
+  // above. Pounds are kg / 0.45359237. Same thresholds, same constants, so a
+  // figure here reads as the same figure in the game's own panels.
+  const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+
+  it("metric: kilograms, tonnes, kilotonnes at vanilla's thresholds", () => {
+    assert.equal(formatWeight(50), "50 kg");
+    assert.equal(formatWeight(500000), "500 t");
+    assert.equal(formatWeight(12345), "12.35 t");
+    assert.equal(formatWeight(1250000), "1.25 kt");
+    assert.equal(formatWeight(0), "");
+  });
+
+  it("imperial: pounds and short tons with vanilla's constants", () => {
+    assert.equal(formatWeight(50, imperial), "110.2 lb");
+    assert.equal(formatWeight(500000, imperial), "551.16 tn");
+    assert.match(formatWeight(10000000, imperial), /^11\.02 /);
+  });
+
+  it("a weight capacity is kilograms too, so garbage and mail read in tonnes", () => {
+    // GarbageFacilityData.m_GarbageCapacity and the post facility's are bound
+    // by vanilla with the same "weight" unit as cargo. We printed the raw
+    // kilograms under a "t" label — a landfill read "500,000 t".
+    assert.equal(formatCapacity(500000, "ServiceBuildings", "ServiceBuildings_Garbage", "GarbageFacility"), "500 t");
+    assert.equal(formatCapacity(500000, "ServiceBuildings", "ServiceBuildings_Communications", "PostFacility"), "500 t");
+    assert.equal(formatCapacity(500000, "ServiceBuildings", "ServiceBuildings_Garbage", "GarbageFacility", imperial), "551.16 tn");
   });
 });
