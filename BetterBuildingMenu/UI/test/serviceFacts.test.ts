@@ -119,6 +119,29 @@ describe("renderServiceTextFacts", () => {
   });
 });
 
+describe("cargo capacity", () => {
+  // StorageLimitData.m_Limit, which vanilla binds as Properties.CARGO_CAPACITY
+  // with the weight unit — a cargo harbour's warehouses add to it, and the
+  // picker had nothing to say about them.
+  it("is a weight, labelled with the game's own words, placed with the capacities", () => {
+    const translate = (key: string, fallback: string | null) =>
+      key === "Tooltip.LABEL[BetterBuildingMenu.CargoCapacity]" ? "Cargo Capacity" : fallback;
+    const [line] = renderServiceFacts(
+      [{ key: "cargoCapacity", value: 500000 }],
+      translate,
+      (value) => String(value),
+      { weight: (value) => `W(${value})` },
+    );
+
+    assert.equal(line.label, "Cargo Capacity");
+    assert.equal(line.value, "W(500000)");
+
+    const ordered = orderFacts([{ key: "purification" }, { key: "cargoCapacity" }, { key: "stormCapacity" }])
+      .map((fact) => fact.key);
+    assert.deepEqual(ordered, ["stormCapacity", "cargoCapacity", "purification"]);
+  });
+});
+
 describe("orderFacts", () => {
   it("puts figures in one declared order whatever order they arrived in", () => {
     // The facts arrive in the order the INDEXER happened to emit them, which

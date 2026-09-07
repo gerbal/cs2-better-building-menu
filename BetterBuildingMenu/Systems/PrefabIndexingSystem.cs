@@ -14,6 +14,7 @@ using BetterBuildingMenu.Utilities;
 using Game;
 using Game.City;
 using Game.Common;
+using Game.Companies;
 using Game.Prefabs;
 using Game.SceneFlow;
 using Game.UI;
@@ -2000,6 +2001,16 @@ namespace BetterBuildingMenu.Systems
 			if (EntityManager.TryGetComponent<TransportStationData>(entity, out var transportStationData))
 			{
 				Fact(prefabIndex, "comfort", transportStationData.m_ComfortFactor);
+			}
+
+			// What vanilla's tooltip calls Cargo capacity: StorageLimitData on a
+			// cargo station, and on the warehouse upgrade that adds to it — the
+			// figure the picker had nothing to say about. Kilograms; the UI
+			// follows the game's weight rule (kg / t / kt, lb / tn).
+			if (EntityManager.TryGetComponent<StorageLimitData>(entity, out var storageLimit)
+				&& storageLimit.m_Limit > 0)
+			{
+				Fact(prefabIndex, "cargoCapacity", storageLimit.m_Limit);
 			}
 
 			if (EntityManager.TryGetComponent<ElectricityConnectionData>(entity, out var electricityConnection)

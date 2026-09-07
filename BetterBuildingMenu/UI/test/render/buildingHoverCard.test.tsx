@@ -92,3 +92,16 @@ describe("recreation on the hover card", () => {
     assert.doesNotMatch(card, /Recreation/);
   });
 });
+
+describe("cargo capacity on the card", () => {
+  it("shows a warehouse's storage in tonnes, under the game's own label", () => {
+    // A cargo harbour's Warehouses upgrade carries StorageLimitData; vanilla's
+    // tooltip shows it as Cargo capacity in the weight unit. Ours showed
+    // nothing for it.
+    resetBindings();
+    const card = cardOf(entry(1, { serviceFacts: [{ key: "cargoCapacity", value: 500000 }] }));
+
+    assert.match(card, /Cargo capacity/);
+    assert.match(card, /500 t/);
+  });
+});

@@ -255,6 +255,7 @@
   "Tooltip.LABEL[BetterBuildingMenu.Comfort]": "Comfort",
   "Tooltip.LABEL[BetterBuildingMenu.ElectricityCapacity]": "Grid capacity",
   "Tooltip.LABEL[BetterBuildingMenu.StormCapacity]": "Stormwater",
+  "Tooltip.LABEL[BetterBuildingMenu.CargoCapacity]": "Cargo capacity",
   "Tooltip.LABEL[BetterBuildingMenu.ElevatedWidth]": "Elevated width",
   "Tooltip.LABEL[BetterBuildingMenu.ElevationCost]": "Elevation",
   "Tooltip.LABEL[BetterBuildingMenu.ZoneTelecom]": "Telecom",
