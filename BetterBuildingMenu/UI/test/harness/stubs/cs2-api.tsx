@@ -15,6 +15,24 @@ export function trigger(group: string, name: string, ...args: unknown[]): void {
 }
 export function call(): Promise<unknown> { return Promise.resolve(undefined); }
 
+// Map bindings: keyed by the entity's index:version, the way the game's own
+// entityKey does it. The test seeds one key at a time with setMapBinding.
+export interface StubMapBinding<K, V> { key: string; _k?: K; _v?: V }
+export function bindMap<K, V>(group: string, name: string): StubMapBinding<K, V> {
+  return { key: `${group}.${name}` };
+}
+const entityKey = (key: unknown): string =>
+  key && typeof key === "object" && "index" in (key as object)
+    ? `${(key as { index: number }).index}:${(key as { version: number }).version}`
+    : String(key);
+export function useMapValue<K, V>(binding: StubMapBinding<K, V>, key: K | undefined): V | undefined {
+  if (key === undefined) return undefined;
+  return values.get(`${binding.key}[${entityKey(key)}]`) as V | undefined;
+}
+export function setMapBinding(group: string, name: string, key: unknown, value: unknown): void {
+  values.set(`${group}.${name}[${entityKey(key)}]`, value);
+}
+
 /** Test seam: set what a binding reads. */
 export function setBinding(group: string, name: string, value: unknown): void { values.set(`${group}.${name}`, value); }
 export function resetBindings(): void { values.clear(); triggers.length = 0; }

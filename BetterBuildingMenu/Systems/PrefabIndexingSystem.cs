@@ -1261,7 +1261,10 @@ namespace BetterBuildingMenu.Systems
 					|| EntityManager.HasComponent<ServiceUpgradeData>(entity)
 					|| prefab.TryGet<ServiceUpgrade>(out _));
 			prefabIndex.ExtensionIds ??= isBuildingExtension ? new[] { prefab.name } : Array.Empty<string>();
-			prefabIndex.SupportedUpgradeIds ??= GetSupportedUpgrades(entity);
+			if (prefabIndex.SupportedUpgradeIds is null)
+			{
+				(prefabIndex.SupportedUpgradeIds, prefabIndex.SupportedUpgradePrefabNames) = GetSupportedUpgrades(entity);
+			}
 			// Narrower than isBuildingExtension above, deliberately: this is
 			// vanilla's exact test in FilterOutUpgrades, so what we hide from the
 			// list is precisely what the game hides from its grid.
@@ -1467,6 +1470,18 @@ namespace BetterBuildingMenu.Systems
 			{
 				prefabIndex.ConstructionCost = placeableData.m_ConstructionCost;
 				Fact(prefabIndex, "xpReward", placeableData.m_XPReward);
+			}
+			else if (!EntityManager.HasComponent<PlaceableNetData>(entity)
+				&& EntityManager.TryGetComponent<ServiceUpgradeData>(entity, out var upgradeData))
+			{
+				// An annex — a BuildingExtensionPrefab carrying ServiceUpgrade —
+				// has no PlaceableObjectData at all: ServiceUpgrade adds that
+				// component only to a BuildingPrefab (Prefabs/ServiceUpgrade.cs:46).
+				// Its price lives here, which is also where GenerateObjectsSystem
+				// falls back to (Tools/GenerateObjectsSystem.cs:1005). Without
+				// this a school's Extension Wing read "—" beside vanilla's ¢22,500.
+				prefabIndex.ConstructionCost = upgradeData.m_UpgradeCost;
+				Fact(prefabIndex, "xpReward", upgradeData.m_XPReward);
 			}
 			else if (EntityManager.TryGetComponent<PlaceableNetData>(entity, out var netData))
 			{
@@ -2736,7 +2751,13 @@ namespace BetterBuildingMenu.Systems
 
 		private static void AddNumberToDuplicatePrefabNames()
 		{
-			foreach (var grp in BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any].GroupBy(x => x.Name))
+			// Upgrades are left out of the numbering. Every school type has an
+			// "Extension Wing" and every crematorium a "Hearse Garage"; they
+			// are never listed beside each other, only on their own parent's
+			// picker, where "Extension Wing 2" is a label with no referent.
+			foreach (var grp in BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any]
+				.Where(x => !x.IsServiceUpgrade)
+				.GroupBy(x => x.Name))
 			{
 				var count = grp.Count();
 
@@ -3428,9 +3449,9 @@ namespace BetterBuildingMenu.Systems
 		/// ordered by its m_Priority, so the names appear in the order the upgrade
 		/// menu itself would list them.
 		/// </remarks>
-		private string[] GetSupportedUpgrades(Entity entity)
+		private (string[] DisplayNames, string[] PrefabNames) GetSupportedUpgrades(Entity entity)
 		{
-			List<(int Priority, string Name)> found = null;
+			List<(int Priority, string Name, string PrefabName)> found = null;
 
 			if (EntityManager.TryGetBuffer<BuildingUpgradeElement>(entity, true, out var upgrades))
 			{
@@ -3450,15 +3471,19 @@ namespace BetterBuildingMenu.Systems
 
 			if (found is null)
 			{
-				return Array.Empty<string>();
+				return (Array.Empty<string>(), Array.Empty<string>());
 			}
 
 			// OrderBy, not Sort: it is stable, so two upgrades sharing a priority
 			// keep the order the game's own buffers hold them in.
-			return found.OrderBy(entry => entry.Priority).Select(entry => entry.Name).ToArray();
+			var ordered = found.OrderBy(entry => entry.Priority).ToArray();
+
+			return (
+				ordered.Select(entry => entry.Name).ToArray(),
+				ordered.Select(entry => entry.PrefabName).ToArray());
 		}
 
-		private void CollectUpgrade(Entity upgrade, ref List<(int Priority, string Name)> found)
+		private void CollectUpgrade(Entity upgrade, ref List<(int Priority, string Name, string PrefabName)> found)
 		{
 			if (!EntityManager.TryGetComponent<UIObjectData>(upgrade, out var ui))
 			{
@@ -3470,7 +3495,7 @@ namespace BetterBuildingMenu.Systems
 				return;
 			}
 
-			(found ??= new List<(int Priority, string Name)>()).Add((ui.m_Priority, GetAssetName(prefab)));
+			(found ??= new List<(int Priority, string Name, string PrefabName)>()).Add((ui.m_Priority, GetAssetName(prefab), prefab.name));
 		}
 
 		private VanillaAssetFacts GetVanillaAssetFacts(Entity entity)
