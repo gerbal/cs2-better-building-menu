@@ -20,6 +20,7 @@ const lensControlPaneStyles = read("../src/mods/LensControlPane/lensControlPane.
 const surfaceStylesFor = () => read("../src/mods/BuildingMenu/buildingMenuSurface.module.scss");
 const groupedResultsStyles = read("../src/mods/GroupedResults/groupedResults.module.scss");
 const hoverCardStyles = read("../src/mods/BuildingHoverCard/buildingHoverCard.module.scss");
+const extensionMenuStyles = read("../src/mods/ExtensionMenu/extensionMenu.module.scss");
 
 describe("Building Lens stylesheet contracts", () => {
   it("sizes a group to its tiles and lets the heading wrap inside it", () => {
@@ -322,5 +323,32 @@ describe("hover card figures line up", () => {
     // The stacked list opts out: a column of conditions reads down the left,
     // not the right.
     assert.match(hoverCardStyles, /\.cardValueList \{[^}]*justify-content: flex-start;/);
+  });
+});
+
+describe("the extension picker wears the same panel frame as the build menu", () => {
+  // Reported live: the picker's rows sat on bare black in the slot where
+  // vanilla draws a framed Panel and our build menu draws its bars. The
+  // frame is two surfaces — the header in the dark panel colour with the top
+  // corners rounded, the body in the normal panel colour with the gradient
+  // and the bottom corners rounded — exactly what buildingMenuSurface's
+  // .topBar and .content declare, so the two panels read as one product.
+  it("gives the header the top bar's surface", () => {
+    assert.match(extensionMenuStyles, /\.header \{[^}]*background-color: var\(--panelColorDark\);/);
+    assert.match(extensionMenuStyles, /\.header \{[^}]*backdrop-filter: var\(--panelBlur\);/);
+    assert.match(extensionMenuStyles, /\.header \{[^}]*border-top-left-radius: var\(--panelRadius\);/);
+    assert.match(extensionMenuStyles, /\.header \{[^}]*border-top-right-radius: var\(--panelRadius\);/);
+  });
+
+  it("gives the body the content surface", () => {
+    assert.match(extensionMenuStyles, /\.content \{[^}]*background-color: var\(--panelColorNormal\);/);
+    assert.match(extensionMenuStyles, /\.content \{[^}]*backdrop-filter: var\(--panelBlur\);/);
+    assert.match(extensionMenuStyles, /\.content \{[^}]*background-image: linear-gradient\(/);
+    assert.match(extensionMenuStyles, /\.content \{[^}]*border-bottom-left-radius: var\(--panelRadius\);/);
+    assert.match(extensionMenuStyles, /\.content \{[^}]*border-bottom-right-radius: var\(--panelRadius\);/);
+  });
+
+  it("takes the pointer, as vanilla's Panel does", () => {
+    assert.match(extensionMenuStyles, /\.panel \{[^}]*pointer-events: auto;/);
   });
 });

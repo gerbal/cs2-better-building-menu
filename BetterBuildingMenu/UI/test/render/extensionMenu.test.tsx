@@ -104,6 +104,12 @@ describe("the extension picker", () => {
     assert.match(html, /500 students/);
   });
 
+  it("wears vanilla's asset-panel class on its body, as the build menu does", () => {
+    // BuildingMenuSurface puts AssetMenuTheme.assetPanel on its content; the
+    // same class here keeps the two panels sized by the same vanilla rule.
+    assert.match(render(), /class="[^"]*content[^"]*vanilla-assetPanel/);
+  });
+
   it("hands the close to the game's own onClose", () => {
     let closed = 0;
     const html = renderHtml(<Ours focusKey="upgrades" className="toolPanel" onClose={() => { closed++; }} />);
