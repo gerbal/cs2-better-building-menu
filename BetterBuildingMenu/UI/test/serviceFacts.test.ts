@@ -292,3 +292,21 @@ describe("which figures are vanilla's own", () => {
     }
   });
 });
+
+describe("resource upkeep", () => {
+  // The ServiceUpkeepData buffer names what a building burns — a coal plant's
+  // coal — which vanilla folds into its money figure at market price. Ours
+  // names it: a dynamic key per resource, labelled with the game's own
+  // Resources.TITLE, and a weight per month like every other resource amount.
+  it("labels a resource with the game's name and shows it as a weight per month", () => {
+    const translate = (key: string, fallback: string | null) => key === "Resources.TITLE[Coal]" ? "Coal" : fallback;
+    const [line] = renderServiceFacts([{ key: "upkeep:Coal", value: 4000 }], translate, String, { weightPerMonth: (v: number) => `WPM(${v})` });
+
+    assert.deepEqual(line, { key: "upkeep:Coal", label: "Coal", value: "WPM(4000)" });
+  });
+
+  it("belongs to the game's tier", () => {
+    assert.equal(isVanillaFact("upkeep:Coal"), true);
+    assert.equal(isVanillaFact("upkeep:Oil"), true);
+  });
+});

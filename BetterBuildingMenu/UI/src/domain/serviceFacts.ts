@@ -354,7 +354,7 @@ export function renderServiceFacts(
   const rendered: RenderedServiceFact[] = [];
 
   for (const fact of facts) {
-    const presentation = PRESENTATION[fact?.key ?? ""];
+    const presentation = PRESENTATION[fact?.key ?? ""] ?? resourceUpkeepPresentation(fact?.key ?? "");
 
     if (!presentation) continue;
     if (typeof fact.value !== "number" || !Number.isFinite(fact.value)) continue;
@@ -584,7 +584,21 @@ export const VANILLA_FACT_KEYS: ReadonlySet<string> = new Set([
   "waterSource", "transportType",
 ]);
 
-export const isVanillaFact = (key: string): boolean => VANILLA_FACT_KEYS.has(key);
+/**
+ * A resource the building burns, from the ServiceUpkeepData buffer: one key
+ * per resource, "upkeep:Coal", labelled with the game's own Resources.TITLE.
+ * Part of vanilla's upkeep, so part of its tier.
+ */
+export const RESOURCE_UPKEEP_PREFIX = "upkeep:";
+
+const resourceUpkeepPresentation = (key: string): ServiceFactPresentation | undefined => {
+  if (!key.startsWith(RESOURCE_UPKEEP_PREFIX)) return undefined;
+  const resource = key.slice(RESOURCE_UPKEEP_PREFIX.length);
+  if (!/^[A-Za-z]+$/.test(resource)) return undefined;
+  return { localizationKey: `Resources.TITLE[${resource}]`, fallback: resource, unit: "t/mo.", measure: "weightPerMonth" };
+};
+
+export const isVanillaFact = (key: string): boolean => VANILLA_FACT_KEYS.has(key) || key.startsWith(RESOURCE_UPKEEP_PREFIX);
 
 export const FACT_ORDER: readonly string[] = [
   // 1. What it does.
