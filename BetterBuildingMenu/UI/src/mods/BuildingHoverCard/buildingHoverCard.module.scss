@@ -67,10 +67,12 @@
   align-items: flex-start;
   color: var(--menuText2Normal);
   font-size: var(--fontSizeS);
-  // Grows into the leftover, but never narrower than a shade under half, so
-  // two per row is the most that can ever fit and a third cannot squeeze in.
-  flex: 1 1 auto;
-  min-width: 45%;
+  // Exactly half, and no growing: two per row, and a lone last row keeps its
+  // column. It used to be `flex: 1 1 auto` with a 45% floor, which let an odd
+  // count's last row stretch across both columns and park its value at the
+  // card's far edge instead of under the figures above it.
+  flex: 0 0 50%;
+  max-width: 50%;
   box-sizing: border-box;
   margin-top: 2rem;
   padding-right: 6rem;
