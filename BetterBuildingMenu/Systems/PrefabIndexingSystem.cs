@@ -1558,8 +1558,16 @@ namespace BetterBuildingMenu.Systems
 			if (prefabIndex.Category is not PrefabCategory.Buildings
 				and not PrefabCategory.ServiceBuildings
 				and not PrefabCategory.Networks
-				and not PrefabCategory.Zones)
+				and not PrefabCategory.Zones
+				and not PrefabCategory.Trees
+				and not PrefabCategory.Props)
 			{
+				// Trees and props carry PlaceableObjectData too, and the game's
+				// tooltip prices them from it (PrefabUISystem.ConstructionCostBinder).
+				// Without them here every tree in Landscaping read "—". A tree's
+				// figure is its sapling price: the game shows a range only when the
+				// player has enabled several ages on the tool, which is tool state
+				// the index cannot see.
 				return;
 			}
 
