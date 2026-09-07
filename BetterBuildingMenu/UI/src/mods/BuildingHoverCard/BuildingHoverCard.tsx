@@ -24,7 +24,7 @@ import {
 } from "domain/buildingLensMetricFormat";
 import { buildTileTooltipLines, isMetricPresent } from "domain/buildingTileTooltip";
 import { leisureLabel } from "domain/buildingLensRowDetails";
-import { orderFacts, renderServiceFacts, renderServiceTextFacts } from "domain/serviceFacts";
+import { isVanillaFact, orderFacts, renderServiceFacts, renderServiceTextFacts } from "domain/serviceFacts";
 import { clampAssetDescription, getBuildingExtensionLabels, resolveAssetDescription } from "domain/buildingLensRowDetails";
 import { isEntryAlreadyBuilt, isEntryLocked, listLockConditions } from "domain/buildingLockState";
 import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
@@ -34,6 +34,11 @@ import styles from "./buildingHoverCard.module.scss";
 
 // Milestone index -> name, dense by index. A locked asset carries only the
 // index, so this is read once here rather than resolved per asset in C#.
+// The fixed lines the game's own tooltip also carries: its states, cost and
+// upkeep, the headline capacity, and its effects. Range, lot, parking,
+// households, workers and the upgrade list are ours.
+const VANILLA_LINE_KEYS: ReadonlySet<string> = new Set(["locked", "alreadyBuilt", "cost", "upkeep", "capacity", "leisure", "bonuses"]);
+
 const BuildingLensMilestones$ = bindValue<string[]>(mod.id, "BuildingLensMilestones", []);
 
 export interface HoverCardContext {
@@ -397,6 +402,39 @@ const HoverCardContent = ({
     { key: "lot", label: labels.lot, applicable: hasFootprint(entry.lotWidth, entry.lotDepth), value: lot },
   ]);
 
+  // Two tiers. Vanilla's own figures — what the game's tooltip binds, plus
+  // its states and effects — first and in the normal weight; ours after a
+  // hairline, dimmer and a step smaller. The classification is data (see
+  // VANILLA_FACT_KEYS and the fixed keys here), so the ledger's "shown by
+  // vanilla" column and this card cannot disagree.
+  const vanillaTier = lines.filter((line) => VANILLA_LINE_KEYS.has(line.key) || isVanillaFact(line.key));
+  const extraTier = lines.filter((line) => !(VANILLA_LINE_KEYS.has(line.key) || isVanillaFact(line.key)));
+
+  const renderLine = (line: (typeof lines)[number]) => (
+    <div
+      key={line.key}
+      className={classNames(
+        styles.cardLine,
+        // A list of values is a stack; pairing it with a neighbour would
+        // put a one-line figure beside a three-line block.
+        line.values && line.values.length > 0 && styles.cardLineWide,
+        line.tone === "warn" && styles.cardWarn,
+        line.tone === "good" && styles.cardGood,
+      )}
+    >
+      <span className={styles.cardLabel}>{line.label}</span>
+      {line.values
+        ? (
+          <span className={classNames(styles.cardValue, styles.cardValueList)}>
+            {line.values.map((entryValue) => (
+              <span key={entryValue} className={styles.cardValueLine}>{entryValue}</span>
+            ))}
+          </span>
+        )
+        : <span className={styles.cardValue}>{line.value}</span>}
+    </div>
+  );
+
   return (
     <div className={styles.card}>
       <div className={styles.cardName}>{label}</div>
@@ -408,31 +446,16 @@ const HoverCardContent = ({
           (a list of unlock conditions, a recreation kind) still takes a whole
           row and only the short figures double up. */}
       <div className={styles.cardLines}>
-      {lines.map((line) => (
-        <div
-          key={line.key}
-          className={classNames(
-            styles.cardLine,
-            // A list of values is a stack; pairing it with a neighbour would
-            // put a one-line figure beside a three-line block.
-            line.values && line.values.length > 0 && styles.cardLineWide,
-            line.tone === "warn" && styles.cardWarn,
-            line.tone === "good" && styles.cardGood,
-          )}
-        >
-          <span className={styles.cardLabel}>{line.label}</span>
-          {line.values
-            ? (
-              <span className={classNames(styles.cardValue, styles.cardValueList)}>
-                {line.values.map((entryValue) => (
-                  <span key={entryValue} className={styles.cardValueLine}>{entryValue}</span>
-                ))}
-              </span>
-            )
-            : <span className={styles.cardValue}>{line.value}</span>}
-        </div>
-      ))}
+        {vanillaTier.map(renderLine)}
       </div>
+      {extraTier.length > 0 && (
+        <>
+          <div className={styles.cardDivider} aria-hidden="true" />
+          <div className={classNames(styles.cardLines, styles.cardLinesExtra)} data-tier="extra">
+            {extraTier.map(renderLine)}
+          </div>
+        </>
+      )}
       {/* The shapes, narrowest first. A player choosing a zone is matching
           against a block on the map, and a picture of the lot is closer to
           that than "2–4 wide" is. */}
