@@ -137,3 +137,18 @@ describe("two tiers on the card", () => {
     assert.doesNotMatch(card, /data-tier="extra"/);
   });
 });
+
+describe("resource upkeep on the card", () => {
+  it("names the fuel right after Upkeep, in the game's tier", () => {
+    resetBindings();
+    const card = cardOf(entry(1, { upkeep: 5000, workers: 37, serviceFacts: [{ key: "upkeep:Coal", value: 4000 }] }));
+
+    const upkeep = card.indexOf("Upkeep");
+    const coal = card.indexOf("Coal");
+    const divider = card.indexOf('data-tier="extra"');
+
+    assert.ok(upkeep >= 0 && coal >= 0 && divider >= 0, "all three present");
+    assert.ok(upkeep < coal && coal < divider, "Upkeep, then Coal, then the divider");
+    assert.match(card.slice(coal, coal + 200), /4 t\/mo\./);
+  });
+});

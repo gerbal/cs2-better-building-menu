@@ -1682,6 +1682,31 @@ namespace BetterBuildingMenu.Systems
 				prefabIndex.TelecomNeed = consumptionData.m_TelecomNeed;
 			}
 
+			// The upkeep buffer is the game's own answer, and for a city service
+			// building it is the ONLY place the money lives: a school's
+			// ConsumptionData upkeep is zero, so the card showed no upkeep at
+			// all where vanilla's tooltip shows one. Money entries are the
+			// upkeep; every other resource is a fact of its own, in kilograms
+			// a month, which the UI shows as the game's weight per month.
+			if (EntityManager.TryGetBuffer<ServiceUpkeepData>(entity, true, out var upkeepBuffer) && upkeepBuffer.Length > 0)
+			{
+				var stacks = new List<(string Resource, int Amount)>(upkeepBuffer.Length);
+				for (var i = 0; i < upkeepBuffer.Length; i++)
+				{
+					stacks.Add((upkeepBuffer[i].m_Upkeep.m_Resource.ToString(), upkeepBuffer[i].m_Upkeep.m_Amount));
+				}
+
+				var summary = ServiceUpkeepSummary.Summarise(prefabIndex.Upkeep ?? 0, stacks);
+				if (summary.Money > 0)
+				{
+					prefabIndex.Upkeep = summary.Money;
+				}
+				foreach (var (resource, amount) in summary.Resources)
+				{
+					Fact(prefabIndex, ServiceUpkeepSummary.ResourceFactPrefix + resource, amount);
+				}
+			}
+
 			if (EntityManager.TryGetComponent<WorkplaceData>(entity, out var workplaceData))
 			{
 				prefabIndex.Workers = workplaceData.m_MaxWorkers;

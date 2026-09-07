@@ -24,7 +24,7 @@ import {
 } from "domain/buildingLensMetricFormat";
 import { buildTileTooltipLines, isMetricPresent } from "domain/buildingTileTooltip";
 import { leisureLabel } from "domain/buildingLensRowDetails";
-import { isVanillaFact, orderFacts, renderServiceFacts, renderServiceTextFacts } from "domain/serviceFacts";
+import { RESOURCE_UPKEEP_PREFIX, isVanillaFact, orderFacts, renderServiceFacts, renderServiceTextFacts } from "domain/serviceFacts";
 import { clampAssetDescription, getBuildingExtensionLabels, resolveAssetDescription } from "domain/buildingLensRowDetails";
 import { isEntryAlreadyBuilt, isEntryLocked, listLockConditions } from "domain/buildingLockState";
 import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
@@ -205,7 +205,7 @@ const HoverCardContent = ({
   // Whatever this service carries beyond its headline capacity. Spread rather
   // than listed: which figures exist depends on the building, so the card
   // cannot name them in advance.
-  const serviceFacts = renderServiceFacts(
+  const allServiceFacts = renderServiceFacts(
     entry.serviceFacts,
     translateFact,
     (value) => formatBuildingMetric(value, "capacity", separators),
@@ -220,6 +220,11 @@ const HoverCardContent = ({
       moneyPerDistance: (value) => formatBuildingMetric(value, "cost", separators, true),
     },
   );
+  // What the building burns sits with what it costs, not among the service
+  // figures: it is part of vanilla's upkeep, priced into one number there and
+  // named here.
+  const resourceUpkeep = allServiceFacts.filter((fact) => fact.key.startsWith(RESOURCE_UPKEEP_PREFIX));
+  const serviceFacts = allServiceFacts.filter((fact) => !fact.key.startsWith(RESOURCE_UPKEEP_PREFIX));
   const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators);
   const lot = formatLotDimensions(entry.lotWidth, entry.lotDepth);
 
@@ -399,6 +404,7 @@ const HoverCardContent = ({
       tone: "good",
     },
     { key: "upkeep", label: labels.upkeep, applicable: isMetricPresent(entry.upkeep), value: upkeep },
+    ...resourceUpkeep.map((fact) => ({ key: fact.key, label: fact.label, applicable: true, value: fact.value })),
     { key: "lot", label: labels.lot, applicable: hasFootprint(entry.lotWidth, entry.lotDepth), value: lot },
   ]);
 
