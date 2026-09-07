@@ -5,10 +5,15 @@
 // docs/vanilla-upgrades.md. So the root takes whatever class the slot hands
 // it and only the inside is ours.
 
+// The frame is the build menu's, rule for rule: buildingMenuSurface's .topBar
+// for the header and its .content for the body. Vanilla draws this slot as a
+// Panel; without these the rows sat on bare black, which is how it shipped
+// first and how it was reported.
 .panel {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  pointer-events: auto;
 }
 
 .header {
@@ -16,6 +21,10 @@
   flex-direction: row;
   align-items: center;
   padding: 6rem 10rem 4rem 12rem;
+  background-color: var(--panelColorDark);
+  backdrop-filter: var(--panelBlur);
+  border-top-left-radius: var(--panelRadius);
+  border-top-right-radius: var(--panelRadius);
 }
 
 .heading {
@@ -58,5 +67,11 @@
 }
 
 .content {
-  padding: 0 6rem 6rem 6rem;
+  padding: 6rem;
+  background-color: var(--panelColorNormal);
+  backdrop-filter: var(--panelBlur);
+  background-image: linear-gradient( var(--panelGradientStart) , var(--panelGradientEnd) );
+  border-bottom-left-radius: var(--panelRadius);
+  border-bottom-right-radius: var(--panelRadius);
+  color: rgba(255, 255, 255, 1);
 }

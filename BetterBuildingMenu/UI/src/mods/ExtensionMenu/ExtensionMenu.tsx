@@ -1,7 +1,7 @@
 import { bindValue, useMapValue, useValue } from "cs2/api";
 import { selectedInfo, upgrade } from "cs2/bindings";
 import { useLocalization } from "cs2/l10n";
-import { ModuleRegistryExtend } from "cs2/modding";
+import { ModuleRegistryExtend, getModule } from "cs2/modding";
 import { Button, Tooltip } from "cs2/ui";
 import classNames from "classnames";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
@@ -9,6 +9,10 @@ import { decideExtensionMenu, type ExtensionRow, type VanillaUpgradeRow } from "
 import { BuildingList } from "mods/BuildingList/BuildingList";
 import mod from "../../../mod.json";
 import styles from "./extensionMenu.module.scss";
+
+// The same vanilla class the build menu's body wears (BuildingMenuSurface),
+// so both panels are sized by the one rule vanilla applies to the asset panel.
+const AssetMenuTheme: Record<string, string> | undefined = getModule("game-ui/game/components/asset-menu/asset-menu.module.scss", "classes");
 
 /** The mod's replace-vanilla-menus setting: one switch for both pickers. */
 const ReplaceVanillaBuildMenu$ = bindValue<boolean>(mod.id, "ReplaceVanillaBuildMenu", false);
@@ -102,7 +106,7 @@ const ExtensionMenuPanel = ({ className, buildingName, rows, selectedUpgrade, on
           </Tooltip>
         )}
       </div>
-      <div className={styles.content}>
+      <div className={classNames(styles.content, AssetMenuTheme?.assetPanel)}>
         <BuildingList
           entries={rows.map((row) => row.entry)}
           searchText=""
