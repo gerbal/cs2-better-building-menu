@@ -1,4 +1,4 @@
-using Colossal.PSI.Common;
+﻿using Colossal.PSI.Common;
 
 using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Domain.Enums;
@@ -1062,6 +1062,50 @@ namespace BetterBuildingMenu.Services
 
 			return id;
 		}
+
+		/// <summary>
+		/// The catalog entry for a prefab name, or null when the index has no
+		/// such prefab — including while the index is still cold.
+		/// </summary>
+		/// <remarks>
+		/// For the extension picker, whose rows vanilla names by prefab. This
+		/// does NOT apply the menu's own filters — the upgrade exclusion at
+		/// GetIndexedBuildings, the toolbar's theme/pack row — because vanilla
+		/// has already decided what is listed; the question here is only how to
+		/// draw a row that is. The name map is rebuilt per index generation and
+		/// is empty until the first full index completes.
+		/// </remarks>
+		public BuildingCatalogEntry? EntryForPrefabName(string prefabName)
+		{
+			if (string.IsNullOrEmpty(prefabName) || !BuildingMenuUtil.IsReady)
+			{
+				return null;
+			}
+
+			if (_byNameGeneration != PrefabIndexingSystem.IndexGeneration)
+			{
+				_byName.Clear();
+
+				if (BuildingMenuUtil.CategorizedPrefabs.TryGetValue(PrefabCategory.Any, out var categories)
+					&& categories.TryGetValue(PrefabSubCategory.Any, out var prefabs))
+				{
+					foreach (var prefab in prefabs)
+					{
+						if (!string.IsNullOrEmpty(prefab.PrefabName))
+						{
+							_byName[prefab.PrefabName!] = prefab;
+						}
+					}
+				}
+
+				_byNameGeneration = PrefabIndexingSystem.IndexGeneration;
+			}
+
+			return _byName.TryGetValue(prefabName, out var found) ? Project(found) : null;
+		}
+
+		private readonly Dictionary<string, PrefabIndex> _byName = new(StringComparer.Ordinal);
+		private int _byNameGeneration = -1;
 
 		private static BuildingCatalogEntry Project(PrefabIndex prefab)
 		{

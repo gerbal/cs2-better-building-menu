@@ -96,6 +96,16 @@ namespace BetterBuildingMenu.Systems
 		private ValueBindingHelper<float> _BuildingLensPanelHeight;
 		private ValueBindingHelper<string> _CurrentSearch;
 		private ValueBindingHelper<BuildingCatalogPage> _BuildingCatalogBinding = null!;
+		/// <summary>
+		/// The catalog entries behind the selected building's upgrades, for the
+		/// replaced extension picker. Presentation only: vanilla's own
+		/// upgradeMenu.upgrades decides what is listed. See BuildingExtensionMenu.
+		/// </summary>
+		private ValueBindingHelper<BuildingExtensionMenu> _BuildingExtensionMenu = null!;
+		private Game.UI.InGame.SelectedInfoUISystem _selectedInfoUISystem = null!;
+		/// <summary>The upgradable the extension menu was last built for, and the index it was built from.</summary>
+		private Unity.Entities.Entity _extensionMenuFor;
+		private int _extensionMenuGeneration;
 		private ValueBindingHelper<BuildingCatalogMetricRangeState> _BuildingCatalogMetricRanges = null!;
 		/// <summary>
 		/// The spread each metric has in the current view, so the range fields can
@@ -180,6 +190,7 @@ namespace BetterBuildingMenu.Systems
 			_defaultToolSystem = World.GetOrCreateSystemManaged<DefaultToolSystem>();
 			_cameraUpdateSystem = World.GetOrCreateSystemManaged<CameraUpdateSystem>();
 			_toolbarUISystem = World.GetOrCreateSystemManaged<Game.UI.InGame.ToolbarUISystem>();
+			_selectedInfoUISystem = World.GetOrCreateSystemManaged<Game.UI.InGame.SelectedInfoUISystem>();
 
 			// ToolSystem toolSystem = World.DefaultGameObjectInjectionWorld?.GetOrCreateSystemManaged<ToolSystem>(); // I don't know why vanilla game did this.
 			_toolSystem.EventPrefabChanged += OnPrefabChanged;
@@ -211,6 +222,7 @@ namespace BetterBuildingMenu.Systems
 			// open a menu through this; see RequestVanillaMenu.
 			_PickerMenuRequest = CreateBinding("PickerMenuRequest", string.Empty);
 			_BuildingCatalogMatchesElsewhere = CreateBinding("BuildingCatalogMatchesElsewhere", 0);
+			_BuildingExtensionMenu = CreateBinding("BuildingExtensionMenu", BuildingExtensionMenu.Empty);
 			// Seeded here and re-pushed by OnSettingsApplied. It was previously
 			// "read once at setup", which is why the options screen's Tile size
 			// slider did nothing until the next load: the setting was saved and
@@ -363,6 +375,8 @@ namespace BetterBuildingMenu.Systems
 				_IsSearchLoading.Value = false;
 				RefreshBuildingCatalog();
 			}
+
+			RefreshExtensionMenu();
 
 			base.OnUpdate();
 		}

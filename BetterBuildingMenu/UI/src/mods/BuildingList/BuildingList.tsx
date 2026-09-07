@@ -37,6 +37,12 @@ interface BuildingListProps {
   searchText: string;
   onPlace: (entry: BuildingCatalogEntry) => void;
   variant?: BuildingListVariant;
+  /**
+   * The entry whose tool is active, if the caller knows it. The extension
+   * picker does — vanilla publishes selectedUpgrade — and its rows read back
+   * the way vanilla's tiles do. The build menu passes nothing.
+   */
+  selectedId?: number;
 }
 
 /**
@@ -58,7 +64,7 @@ interface BuildingListProps {
  * anything. Those are constraints rather than comparisons — does it fit, can I
  * afford it — which is what keeps this from drifting back into the table.
  */
-export const BuildingList = ({ entries, searchText, onPlace, variant = "compact" }: BuildingListProps) => {
+export const BuildingList = ({ entries, searchText, onPlace, variant = "compact", selectedId }: BuildingListProps) => {
   const { translate } = useLocalization();
   const separators = getNumberSeparators(translate, useUnitSystem());
   // The same card the grid and the table show. This view used to carry its own
@@ -137,14 +143,18 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
         // means nothing — so a park bench's card stays as narrow as a
         // hospital's is informative, without a rule per category here.
         const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators);
-        const hasCapacity = capacity !== "" && capacity !== "—";
+        // Zero is not a capacity fact. An extension that adds no students is
+        // common (a school's clinic, its playground); "0 students" beside the
+        // wing's 500 reads as a figure and carries nothing.
+        const hasCapacity = capacity !== "" && capacity !== "—" && (entry.capacity ?? 0) !== 0;
 
         return (
           <BuildingHoverCard key={entry.id} entry={entry} context={hoverCard}>
             <Button
-              className={classNames(styles.item, cards && styles.itemCard)}
+              className={classNames(styles.item, cards && styles.itemCard, selectedId === entry.id && styles.itemSelected)}
               variant="icon"
               data-catalog-entry={entry.id}
+              data-selected={selectedId === entry.id ? "true" : undefined}
               onSelect={() => place(entry)}
               // Both unplaceable states, not just locked. A row has no
               // thumbnail to silhouette, so the ground and the suffix carry the

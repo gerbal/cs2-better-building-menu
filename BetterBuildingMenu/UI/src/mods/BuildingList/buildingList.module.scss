@@ -37,6 +37,15 @@
   border-color: var(--accentColorNormal);
 }
 
+// The row whose tool is active. Vanilla's tile does this with its own
+// selected state; here it is the hover look held, so the row the player just
+// clicked stays lit while they place it.
+.itemSelected,
+.itemSelected:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: var(--accentColorNormal);
+}
+
 // The picture and its badge share this box; the margin lives here now, because
 // the badge must not be pushed off the picture by the picture's own spacing.
 // Both the picture and its badge are nested, because baseButton's

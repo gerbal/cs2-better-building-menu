@@ -150,6 +150,17 @@ namespace BetterBuildingMenu.Domain
 		/// BuildingCatalogEntry.SupportedUpgrades.
 		/// </remarks>
 		public string[]? SupportedUpgradeIds { get; set; }
+		/// <summary>
+		/// The same upgrades, in the same order, by <c>prefab.name</c>.
+		/// </summary>
+		/// <remarks>
+		/// SupportedUpgradeIds holds display names because the hover card reads
+		/// it. The extension picker joins against vanilla's own rows, which carry
+		/// prefab names ("ElementarySchool01 Childrens Clinic", not "Children's
+		/// Clinic"), so it needs this list — found out live, when every lookup
+		/// missed and the panel fell through to vanilla.
+		/// </remarks>
+		public string[]? SupportedUpgradePrefabNames { get; set; }
 		public List<string> Tags { get; set; }
 		public int UIOrder { get; set; }
 		// The game's own answer to "where does this asset live in the build

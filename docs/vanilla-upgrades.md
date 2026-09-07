@@ -58,9 +58,15 @@ This is why a mod can attach an upgrade to a vanilla building without editing it
 upgrades that are not placeable objects (nets, routes). A game mode can scale it
 (`Prefabs/Modes/ServiceUpgradeGlobalMode.cs:28`).
 
-**Consequence for this mod:** `PrefabIndexingSystem.cs:1468` already reads
-`PlaceableObjectData.m_ConstructionCost`, so an extension's cost is correct with
-no special handling.
+**Consequence for this mod — corrected 2026-09-07 after a live check:** the
+overwrite above only happens for upgrades that HAVE `PlaceableObjectData`, and
+`ServiceUpgrade.GetPrefabComponents` adds that component only when the prefab
+is a `BuildingPrefab` (`Prefabs/ServiceUpgrade.cs:46-50`). A
+`BuildingExtensionPrefab` annex has no `PlaceableObjectData`; its cost lives only
+in `ServiceUpgradeData.m_UpgradeCost`, which is the `GenerateObjectsSystem`
+fallback path. So the indexer's `PlaceableObjectData` read is right for
+sub-buildings and empty for annexes — a school's Extension Wing showed "—"
+where vanilla shows ¢22,500 — and needs the `ServiceUpgradeData` fallback.
 
 ## Installing does two separate things
 

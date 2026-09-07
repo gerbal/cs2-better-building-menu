@@ -1,6 +1,7 @@
 ﻿using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Domain.UIBinding;
 using BetterBuildingMenu.Utilities;
+using Colossal.Entities;
 using Game.Prefabs;
 using Game.SceneFlow;
 using Game.Tools;
@@ -185,6 +186,51 @@ namespace BetterBuildingMenu.Systems
 			// asset on every unlock-triggered re-index.
 			_BuildingLensMilestonesBinding.Value = PrefabIndexingSystem.GetMilestoneNames();
 
+		}
+
+		/// <summary>
+		/// Re-publishes the extension picker's entries when the selection changes.
+		/// </summary>
+		/// <remarks>
+		/// Polled here rather than subscribed to SelectedInfoUISystem's event
+		/// because the index can also change under a fixed selection — the save
+		/// has just loaded, the picker is open, and the index finishes (cm-36os)
+		/// — so the generation is part of the key. The check is two integer
+		/// compares per frame; the work runs only when one of them moves.
+		///
+		/// The upgradable is resolved exactly as vanilla's UpgradeMenuUISystem
+		/// does: a selected extension answers for its parent.
+		/// </remarks>
+		private void RefreshExtensionMenu()
+		{
+			var selected = _selectedInfoUISystem.selectedEntity;
+			var upgradable = EntityManager.TryGetComponent<Game.Objects.Attached>(selected, out var attached)
+				? attached.m_Parent
+				: selected;
+
+			if (upgradable == _extensionMenuFor && PrefabIndexingSystem.IndexGeneration == _extensionMenuGeneration)
+			{
+				return;
+			}
+
+			_extensionMenuFor = upgradable;
+			_extensionMenuGeneration = PrefabIndexingSystem.IndexGeneration;
+
+			if (upgradable == Entity.Null
+				|| !EntityManager.TryGetComponent<PrefabRef>(upgradable, out var prefabRef)
+				|| BuildingMenuUtil.GetPrefabIndex(prefabRef.m_Prefab.Index) is not { } building)
+			{
+				_BuildingExtensionMenu.Value = BuildingExtensionMenu.Empty;
+				return;
+			}
+
+			_BuildingExtensionMenu.Value = BuildingExtensionMenu.Build(
+				building.Name ?? building.PrefabName ?? string.Empty,
+				// Prefab names, not the display names the hover card shows:
+				// the UI joins these to vanilla's rows, which are keyed by
+				// prefab.name.
+				building.SupportedUpgradePrefabNames,
+				_buildingCatalogAdapter.EntryForPrefabName);
 		}
 
 		internal void TryActivatePrefabTool(int id)

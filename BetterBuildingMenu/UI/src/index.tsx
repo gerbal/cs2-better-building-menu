@@ -4,6 +4,7 @@ import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaC
 import mod from "../mod.json";
 import { ToolbarIconComponent } from "mods/ToolbarIcon/ToolbarIcon";
 import { RemoveVanillaAssetMenuComponent } from "mods/RemoveVanillaAssetMenu/RemoveVanillaAssetMenu";
+import { ExtensionMenuComponent } from "mods/ExtensionMenu/ExtensionMenu";
 import { PickerComponent } from "mods/PickerComponent/PickerComponent";
 import { ToolOptionsVisibility } from "mods/PickerComponent/ToolOptionsVisibility";
 import { LensToolOptions } from "mods/LensToolOptions/LensToolOptions";
@@ -18,6 +19,12 @@ const register: ModRegistrar = (moduleRegistry) => {
 
   // This repalaces the asset grid.
   moduleRegistry.extend("game-ui/game/components/asset-menu/asset-menu.tsx", "AssetMenu", RemoveVanillaAssetMenuComponent);
+
+  // The extension picker — the panel a building with upgrades opens — which
+  // the game renders into the same column with the same toolPanel class as
+  // the asset menu above. Same shape of replacement, same fall-through to
+  // vanilla when we decline; see ExtensionMenu for the rule.
+  moduleRegistry.extend("game-ui/game/components/upgrades-menu/upgrades-menu.tsx", "UpgradesMenu", ExtensionMenuComponent);
 
   // This adds the fint it and picker icons to the toolbar
   moduleRegistry.extend("game-ui/game/components/toolbar/top/toggles.tsx", "PhotoModeToggle", ToolbarIconComponent);

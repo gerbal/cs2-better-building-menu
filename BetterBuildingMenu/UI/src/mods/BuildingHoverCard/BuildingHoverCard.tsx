@@ -266,7 +266,10 @@ const HoverCardContent = ({
     {
       key: "capacity",
       label: labels.capacity,
-      applicable: isMetricPresent(entry.capacity),
+      // Zero is not a fact. A school's clinic or playground carries a
+      // SchoolData with no students; "Capacity 0 students" states as a figure
+      // what is really the absence of one.
+      applicable: isMetricPresent(entry.capacity) && entry.capacity !== 0,
       // The building's own figure, and nothing about the city. A forecast here
       // answered a question about the CITY on a card about a BUILDING, and it
       // moved with the simulation while the building did not (cm-7r5r).

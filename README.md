@@ -21,6 +21,10 @@ provenance, [PLANNING.md](PLANNING.md) for implementation phases, and
 * A search that finds nothing inside one menu can widen itself to every menu.
 * Hover a building for its numbers; place one and a service coverage overlay
   shows what it reaches.
+* Select a building that takes upgrades and its extension picker is the same
+  list — named rows with cost and footprint, the hover card behind each —
+  instead of vanilla's unlabelled tiles. Placing still goes through the game's
+  own upgrade tool.
 * Integrated picker — **Ctrl+P**, or the picker icon in the toolbar — opens the
   menu on a building already in the city.
 

@@ -1,0 +1,62 @@
+// The extension picker: vanilla's UpgradesMenu, redrawn as our list.
+//
+// The game renders this into the same toolMainColumn slot as the asset menu,
+// with the same toolPanel class on the root — see the design notes in
+// docs/vanilla-upgrades.md. So the root takes whatever class the slot hands
+// it and only the inside is ours.
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 6rem 10rem 4rem 12rem;
+}
+
+.heading {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.title {
+  font-size: var(--fontSizeL);
+  font-weight: 500;
+  color: var(--textColor);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+// The game's own word for this panel, small, under the building's name.
+.kind {
+  font-size: var(--fontSizeXS);
+  text-transform: uppercase;
+  letter-spacing: 0.5rem;
+  color: var(--textColorDim);
+}
+
+.close {
+  flex: 0 0 auto;
+  width: 28rem;
+  height: 28rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeGlyph {
+  width: 16rem;
+  height: 16rem;
+  mask-size: 100% 100%;
+  background-color: var(--textColor);
+}
+
+.content {
+  padding: 0 6rem 6rem 6rem;
+}
