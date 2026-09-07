@@ -81,6 +81,9 @@ namespace BetterBuildingMenu.Systems
 		// the locale event fires more than once per change. See
 		// OnActiveDictionaryChanged.
 		private bool _localeChanged;
+		// Set by the OnGameLoaded pass, cleared at preload, read at loading-
+		// complete to decide whether a second full pass is owed. See there.
+		private bool _indexedAtGameLoaded;
 		private static List<ZoneCatalogEntry> _zoneCatalog = new();
 
 		/// <summary>
@@ -227,6 +230,76 @@ namespace BetterBuildingMenu.Systems
 			base.OnGamePreload(purpose, mode);
 
 			Enabled = false;
+			_indexedAtGameLoaded = false;
+		}
+
+		/// <summary>
+		/// The full pass, as soon as the save is deserialised — which is minutes
+		/// before the game's loader says it has finished (cm-36os).
+		/// </summary>
+		/// <remarks>
+		/// GameManager's load sequence is: deserialise the save (this event fires
+		/// at the end of it, from LoadGameSystem), THEN SetGameActive — the
+		/// toolbar goes live here — THEN await the loading screen, THEN raise
+		/// onGameLoadingComplete. The loading screen waits on three progress
+		/// groups, and LoadTextures is the virtual-texturing material pass,
+		/// whose speed is a per-frame budget. On a slow or headless frame rate
+		/// that is seven minutes during which the city is playable, vanilla's
+		/// menu stands, and this system — which used to index only at
+		/// loading-complete — had produced nothing. Measured four times at
+		/// 6m54–7m16s, once at 7s.
+		///
+		/// The prefab set is complete before the save is even read, and the
+		/// save's lock state is restored by the Deserialize phase this event
+		/// follows, so there is nothing left for the earlier pass to miss. The
+		/// loading-complete pass still runs and both log their locked count;
+		/// until a run has shown the two agree, the second stays.
+		///
+		/// Purpose rather than mode: the MainMenu's Cleanup load raises this
+		/// too, and there is nothing to index for.
+		/// </remarks>
+		protected override void OnGameLoaded(Context serializationContext)
+		{
+			base.OnGameLoaded(serializationContext);
+
+			if (serializationContext.purpose is not (Purpose.NewGame or Purpose.LoadGame or Purpose.NewMap or Purpose.LoadMap))
+			{
+				return;
+			}
+
+			Mod.Log.Info($"Full pass at OnGameLoaded (purpose={serializationContext.purpose})");
+			RunIndex(true);
+			Enabled = true;
+			_indexedAtGameLoaded = true;
+		}
+
+		/// <summary>
+		/// How many indexed prefabs hold a lock state that differs from what the
+		/// game holds now.
+		/// </summary>
+		/// <remarks>
+		/// The only thing the OnGameLoaded pass could plausibly have read too
+		/// early is lock state, and this is the exact test for it: the same
+		/// read ApplyUnlocks uses, over every indexed prefab. Seventeen thousand
+		/// dictionary lookups and component checks, a few milliseconds — against
+		/// the five-second pass it stands in for, which would otherwise land at
+		/// the moment the loading screen lifts.
+		/// </remarks>
+		private int LockStateDrift()
+		{
+			var drift = 0;
+
+			foreach (var prefabIndex in BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any])
+			{
+				if (prefabIndex.Prefab is not null
+					&& _prefabSystem.TryGetEntity(prefabIndex.Prefab, out var entity)
+					&& EntityManager.HasEnabledComponent<Locked>(entity) != prefabIndex.IsLocked)
+				{
+					drift++;
+				}
+			}
+
+			return drift;
 		}
 
 		protected override void OnGameLoadingComplete(Purpose purpose, GameMode mode)
@@ -240,6 +313,24 @@ namespace BetterBuildingMenu.Systems
 
 			if (mode is GameMode.Game or GameMode.Editor)
 			{
+				if (_indexedAtGameLoaded)
+				{
+					var drift = LockStateDrift();
+
+					if (drift == 0)
+					{
+						Mod.Log.Info("Skipped full pass at OnGameLoadingComplete: indexed at OnGameLoaded and lock state agrees");
+						Enabled = true;
+						return;
+					}
+
+					Mod.Log.Info($"Full pass at OnGameLoadingComplete: {drift} prefab(s) changed lock state since OnGameLoaded");
+				}
+				else
+				{
+					Mod.Log.Info($"Full pass at OnGameLoadingComplete (purpose={purpose}, mode={mode})");
+				}
+
 				RunIndex(true);
 
 				Enabled = true;
@@ -686,7 +777,12 @@ namespace BetterBuildingMenu.Systems
 			stopWatch.Stop();
 
 			Mod.Log.Info($"{(full ? "Full" : "Partial")} Prefab Indexing completed in {stopWatch.Elapsed.TotalSeconds:0.000}s");
-			Mod.Log.Info($"Indexed Prefabs Count: {BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any].Count}");
+			// The locked count is here so two full passes on one load can be
+			// compared: the one at OnGameLoaded and the one at loading-complete
+			// must agree on it, or the earlier pass is reading lock state the
+			// save has not restored yet.
+			Mod.Log.Info($"Indexed Prefabs Count: {BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any].Count}"
+				+ $" locked={BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any].Count(p => p.IsLocked)}");
 
 			if (full)
 			{
