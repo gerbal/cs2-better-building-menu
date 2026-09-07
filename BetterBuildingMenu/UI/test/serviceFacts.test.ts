@@ -142,6 +142,52 @@ describe("cargo capacity", () => {
   });
 });
 
+describe("what vanilla's tooltip shows on upgrades", () => {
+  // Audited against PrefabUISystem's property binders on 2026-09-07. These are
+  // the figures the game's own tooltip carries that ours did not, and most of
+  // them are what an upgrade IS: an ambulance depot, a hearse garage, jail
+  // cells, a filter, a modifier that cuts the parent's upkeep.
+  const noTranslation = () => null;
+  const render = (key: string, value: number) => renderServiceFacts([{ key, value }], noTranslation)[0];
+
+  it("counts the vehicles vanilla counts", () => {
+    assert.deepEqual(render("ambulances", 4), { key: "ambulances", label: "Ambulances", value: "4" });
+    assert.deepEqual(render("hearses", 3), { key: "hearses", label: "Hearses", value: "3" });
+    assert.deepEqual(render("prisonVans", 2), { key: "prisonVans", label: "Prison vans", value: "2" });
+    assert.deepEqual(render("postTrucks", 5), { key: "postTrucks", label: "Post trucks", value: "5" });
+    assert.deepEqual(render("depotVehicles", 30), { key: "depotVehicles", label: "Vehicles", value: "30" });
+    assert.deepEqual(render("maintenanceVehicles", 8), { key: "maintenanceVehicles", label: "Maintenance vehicles", value: "8" });
+    assert.deepEqual(render("jailCapacity", 20), { key: "jailCapacity", label: "Jail capacity", value: "20" });
+  });
+
+  it("shows a pollution modifier as the percentage vanilla shows", () => {
+    // PollutionModifierData holds multipliers; vanilla binds round(x * 100)
+    // under the pollution level's own name. The indexer sends the percentage.
+    assert.deepEqual(render("groundPollutionModifier", 50), { key: "groundPollutionModifier", label: "Ground pollution", value: "50 %" });
+    assert.equal(render("airPollutionModifier", 75).label, "Air pollution");
+    assert.equal(render("noisePollutionModifier", 100).label, "Noise pollution");
+  });
+
+  it("shows an upkeep modifier signed, as vanilla does", () => {
+    // UpkeepModifierBinder is the one signed property in the table: the
+    // largest multiplier minus one, in percent. A saving reads as a minus.
+    assert.deepEqual(render("upkeepChange", -20), { key: "upkeepChange", label: "Upkeep", value: "-20 %" });
+    assert.equal(render("upkeepChange", 15).value, "+15 %");
+  });
+
+  it("places vehicles with vehicles and modifiers with how-well", () => {
+    const ordered = orderFacts([
+      { key: "nightShift" }, { key: "upkeepChange" }, { key: "hearses" }, { key: "jailCapacity" }, { key: "groundPollutionModifier" }, { key: "collectionTrucks" },
+    ]).map((fact) => fact.key);
+
+    assert.ok(ordered.indexOf("jailCapacity") < ordered.indexOf("hearses"), "a capacity before a vehicle count");
+    assert.ok(Math.abs(ordered.indexOf("hearses") - ordered.indexOf("collectionTrucks")) === 1, "vehicle counts sit together");
+    assert.ok(ordered.indexOf("hearses") < ordered.indexOf("groundPollutionModifier"), "what it does before how well");
+    assert.ok(ordered.indexOf("groundPollutionModifier") < ordered.indexOf("upkeepChange"));
+    assert.ok(ordered.indexOf("upkeepChange") < ordered.indexOf("nightShift"), "modifiers before staffing");
+  });
+});
+
 describe("orderFacts", () => {
   it("puts figures in one declared order whatever order they arrived in", () => {
     // The facts arrive in the order the INDEXER happened to emit them, which

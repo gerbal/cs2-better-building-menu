@@ -39,6 +39,8 @@ interface ServiceFactPresentation {
   unit: string;
   /** A multiplier reads as "×1.2", not as a quantity. */
   multiplier?: boolean;
+  /** A change, so a positive figure carries its "+" — vanilla's signed binder. */
+  signed?: boolean;
   /**
    * Follows the player's unit system instead of carrying a fixed `unit`.
    *
@@ -236,6 +238,28 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     unit: "t",
     measure: "weight",
   },
+  // Audited against PrefabUISystem's property binders (2026-09-07): the
+  // figures vanilla's tooltip carries that ours did not. Most are what an
+  // upgrade IS — an ambulance depot, a hearse garage, jail cells, a filter,
+  // a modifier on the parent's upkeep — which is why the picker surfaced them.
+  ambulances: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Ambulances]", fallback: "Ambulances", unit: "" },
+  hearses: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Hearses]", fallback: "Hearses", unit: "" },
+  prisonVans: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PrisonVans]", fallback: "Prison vans", unit: "" },
+  postTrucks: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PostTrucks]", fallback: "Post trucks", unit: "" },
+  // TransportDepotData.m_VehicleCapacity — the game says "Vehicles" too.
+  depotVehicles: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.DepotVehicles]", fallback: "Vehicles", unit: "" },
+  maintenanceVehicles: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.MaintenanceVehicles]", fallback: "Maintenance vehicles", unit: "" },
+  jailCapacity: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.JailCapacity]", fallback: "Jail capacity", unit: "" },
+  // PollutionModifierData multipliers, already ×100 by the indexer: vanilla
+  // shows them as a percentage under the pollution level's own name, and it
+  // authors the component only on service upgrades.
+  groundPollutionModifier: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.GroundPollutionModifier]", fallback: "Ground pollution", unit: "%" },
+  airPollutionModifier: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.AirPollutionModifier]", fallback: "Air pollution", unit: "%" },
+  noisePollutionModifier: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.NoisePollutionModifier]", fallback: "Noise pollution", unit: "%" },
+  // UpkeepModifierData: the largest multiplier minus one, in percent, signed —
+  // the one signed property in vanilla's table, and authored only on
+  // BuildingExtensionPrefab.
+  upkeepChange: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.UpkeepChange]", fallback: "Upkeep", unit: "%", signed: true },
   elevatedWidth: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ElevatedWidth]",
     fallback: "Elevated width",
@@ -329,7 +353,10 @@ export function renderServiceFacts(
       // from one of 1.5, and rounding to whole numbers makes both read "×1".
       value = `×${(Math.round(fact.value * 100) / 100).toFixed(2).replace(/0$/, "")}`;
     } else {
-      const number = formatNumber(Math.round(fact.value));
+      const rounded = Math.round(fact.value);
+      const number = presentation.signed
+        ? `${rounded < 0 ? "-" : "+"}${formatNumber(Math.abs(rounded))}`
+        : formatNumber(rounded);
       value = presentation.unit === "" ? number : `${number} ${presentation.unit}`;
     }
 
@@ -517,7 +544,9 @@ export function renderServiceTextFacts(
  */
 export const FACT_ORDER: readonly string[] = [
   // 1. What it does.
-  "processingRate", "sortingRate", "collectionTrucks", "postVans",
+  "processingRate", "sortingRate", "jailCapacity",
+  "collectionTrucks", "postVans", "postTrucks", "ambulances", "hearses", "prisonVans",
+  "depotVehicles", "maintenanceVehicles",
   "helicopters", "disasterResponse", "shelterVehicles",
   "batteryOutput", "electricityCapacity", "stormCapacity", "cargoCapacity",
   "purification", "waterSource", "maintenancePool", "comfort",
@@ -525,6 +554,7 @@ export const FACT_ORDER: readonly string[] = [
   // 2. How well.
   "graduation", "studentWellbeing", "studentHealth",
   "prisonerWellbeing", "prisonerHealth", "attractiveness",
+  "groundPollutionModifier", "airPollutionModifier", "noisePollutionModifier", "upkeepChange",
   // 3. Who runs it.
   "jobComplexity", "minCrew", "workConditions", "eveningShift", "nightShift",
   // 4. Placement, network and zone.
