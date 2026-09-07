@@ -39,6 +39,15 @@ import styles from "./buildingHoverCard.module.scss";
 // households, workers and the upgrade list are ours.
 const VANILLA_LINE_KEYS: ReadonlySet<string> = new Set(["locked", "alreadyBuilt", "cost", "upkeep", "capacity", "leisure", "bonuses"]);
 
+// What the top tier holds beyond vanilla's figures, by kind of tile. "The
+// game shows it" stands in for "it matters" on a service building and on
+// nothing else: a road is picked by its speed and width, a zone by what it is
+// made of, and both sat dimmed under a Cost line (or under nothing at all).
+const PROMOTED_BY_CATEGORY: Readonly<Record<string, ReadonlySet<string>>> = {
+  Networks: new Set(["speedLimit", "networkWidth"]),
+  Zones: new Set(["zoneMaxHeight", "zoneHouseholds", "zoneSpace"]),
+};
+
 const BuildingLensMilestones$ = bindValue<string[]>(mod.id, "BuildingLensMilestones", []);
 
 export interface HoverCardContext {
@@ -284,6 +293,11 @@ const HoverCardContent = ({
       // out (cm-7r5r).
       value: cost,
     },
+    // Straight after the price, as the game's tooltip has it: Upkeep is the
+    // first property it binds (PrefabUISystem.BuildDefaultPropertyBinders).
+    // A player with vanilla habits reads the two money lines together.
+    { key: "upkeep", label: labels.upkeep, applicable: isMetricPresent(entry.upkeep), value: upkeep },
+    ...resourceUpkeep.map((fact) => ({ key: fact.key, label: fact.label, applicable: true, value: fact.value })),
     {
       key: "capacity",
       label: labels.capacity,
@@ -395,9 +409,9 @@ const HoverCardContent = ({
       value: labels.upgrades,
       values: getBuildingExtensionLabels(entry.supportedUpgrades),
     },
-    // Above upkeep: what the building DOES outranks what it costs to run,
-    // and for a signature building — which is always free — the effect is the
-    // only thing distinguishing one from the next.
+    // Last of the figures: the effects are lists rather than numbers, and
+    // for a signature building — which is always free — they are the only
+    // thing distinguishing one from the next, so they close the card.
     {
       key: "bonuses",
       label: labels.bonuses,
@@ -406,8 +420,6 @@ const HoverCardContent = ({
       values: entry.bonuses ?? [],
       tone: "good",
     },
-    { key: "upkeep", label: labels.upkeep, applicable: isMetricPresent(entry.upkeep), value: upkeep },
-    ...resourceUpkeep.map((fact) => ({ key: fact.key, label: fact.label, applicable: true, value: fact.value })),
     { key: "lot", label: labels.lot, applicable: hasFootprint(entry.lotWidth, entry.lotDepth), value: lot },
   ], Number.MAX_SAFE_INTEGER);
 
@@ -416,15 +428,17 @@ const HoverCardContent = ({
   // hairline, dimmer and a step smaller. The classification is data (see
   // VANILLA_FACT_KEYS and the fixed keys here), so the ledger's "shown by
   // vanilla" column and this card cannot disagree.
-  const vanillaTier = lines.filter((line) => VANILLA_LINE_KEYS.has(line.key) || isVanillaFact(line.key));
+  const promoted = PROMOTED_BY_CATEGORY[entry.category];
+  const isPrimary = (line: (typeof lines)[number]): boolean =>
+    VANILLA_LINE_KEYS.has(line.key) || isVanillaFact(line.key) || (promoted?.has(line.key) ?? false);
+  const vanillaTier = lines.filter(isPrimary);
   // Vanilla's tier in full; ours takes the old whole-card budget on its own.
-  const extraTier = lines
-    .filter((line) => !(VANILLA_LINE_KEYS.has(line.key) || isVanillaFact(line.key)))
-    .slice(0, TILE_TOOLTIP_MAX_LINES);
+  const extraTier = lines.filter((line) => !isPrimary(line)).slice(0, TILE_TOOLTIP_MAX_LINES);
 
   const renderLine = (line: (typeof lines)[number]) => (
     <div
       key={line.key}
+      data-line={line.key}
       className={classNames(
         styles.cardLine,
         // A list of values is a stack; pairing it with a neighbour would
@@ -460,13 +474,14 @@ const HoverCardContent = ({
       {/* When the game's tier is empty — a zone tile, whose vanilla tooltip
           has no figure — ours IS the card: normal weight, no divider. Dimming
           everything under an empty block made those cards read as an
-          afterthought. */}
+          afterthought. With nothing in either tier (a terrain tool) there is
+          no block at all: a frame around nothing promises detail it lacks. */}
       {vanillaTier.length === 0
-        ? (
+        ? (extraTier.length === 0 ? null : (
           <div className={styles.cardLines}>
             {extraTier.map(renderLine)}
           </div>
-        )
+        ))
         : (
           <>
             <div className={styles.cardLines}>

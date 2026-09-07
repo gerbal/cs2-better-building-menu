@@ -196,3 +196,83 @@ describe("a card with nothing of vanilla's", () => {
     assert.match(card, /Workers/);
   });
 });
+
+// Where a line sits, by its key rather than its words: the labels are the
+// locale's business, the order is the card's.
+const positionOf = (card: string, key: string): number => card.indexOf(`data-line="${key}"`);
+const splitTiers = (card: string): { top: string; extra: string } => {
+  const at = card.indexOf('data-tier="extra"');
+  return at < 0 ? { top: card, extra: "" } : { top: card.slice(0, at), extra: card.slice(at) };
+};
+const hasLine = (html: string, key: string): boolean => html.includes(`data-line="${key}"`);
+
+describe("the order of a card", () => {
+  // The game's tooltip binds Upkeep as its first property, straight after the
+  // cost group and the effects (PrefabUISystem.BuildDefaultPropertyBinders);
+  // a player with vanilla habits looks for the two money lines together.
+  it("keeps Cost and Upkeep together, ahead of Capacity", () => {
+    resetBindings();
+    const card = cardOf(entry(1, { constructionCost: 1000, upkeep: 10, capacity: 20 }));
+
+    assert.ok(positionOf(card, "cost") < positionOf(card, "upkeep"), "Cost before Upkeep");
+    assert.ok(positionOf(card, "upkeep") < positionOf(card, "capacity"), "Upkeep before Capacity");
+  });
+});
+
+describe("one card per kind of tile", () => {
+  beforeEach(resetBindings);
+
+  // The figures a player picks a road by are its speed and width; on a
+  // network they belong in the top tier beside its price, not dimmed below.
+  it("a network leads with its price, upkeep, speed and width", () => {
+    const { top, extra } = splitTiers(cardOf(entry(2, {
+      category: "Networks", constructionCost: 12500, costIsPerDistance: true, upkeep: 100,
+      capacity: null, workers: null, lotWidth: 0, lotDepth: 0, speedLimit: 50, networkWidth: 16,
+    })));
+
+    for (const key of ["cost", "upkeep", "speedLimit", "networkWidth"]) {
+      assert.ok(hasLine(top, key), `${key} in the top tier`);
+      assert.ok(!hasLine(extra, key), `${key} not repeated below`);
+    }
+  });
+
+  // A zone has no vanilla figure at all; what it is made of — height, homes,
+  // space — is its headline, and its consumption is the detail.
+  it("a zone leads with height, homes and space, with consumption below", () => {
+    const { top, extra } = splitTiers(cardOf(entry(3, {
+      category: "Zones", constructionCost: null, upkeep: null, capacity: null, workers: null,
+      lotWidth: 0, lotDepth: 0,
+      serviceFacts: [
+        { key: "zoneElectricity", value: 5 }, { key: "zoneMaxHeight", value: 20 },
+        { key: "zoneHouseholds", value: 12 }, { key: "zoneSpace", value: 3 },
+      ],
+    })));
+
+    for (const key of ["zoneMaxHeight", "zoneHouseholds", "zoneSpace"]) {
+      assert.ok(hasLine(top, key), `${key} in the top tier`);
+    }
+    assert.ok(hasLine(extra, "zoneElectricity"), "consumption below the rule");
+  });
+
+  // A terrain tool has nothing to say in figures. An empty block under the
+  // description is a frame around nothing.
+  it("a tool draws no figures block at all", () => {
+    const card = cardOf(entry(4, {
+      category: "Landscaping", constructionCost: null, upkeep: null, capacity: null, workers: null,
+      lotWidth: 0, lotDepth: 0,
+    }));
+
+    assert.doesNotMatch(card, /cardLines/);
+  });
+
+  // A tree has a price and nothing else; that one line is the card.
+  it("a tree shows its price at full weight and nothing dim", () => {
+    const card = cardOf(entry(5, {
+      category: "Trees", constructionCost: 50, upkeep: null, capacity: null, workers: null,
+      lotWidth: 0, lotDepth: 0,
+    }));
+
+    assert.ok(hasLine(card, "cost"), "the price is on the card");
+    assert.doesNotMatch(card, /data-tier="extra"|cardDivider/);
+  });
+});
