@@ -16,9 +16,12 @@ describe("renderServiceFacts", () => {
       noTranslation,
     );
 
+    // processingRate is the deathcare rate — bodies per month, an integer in
+    // vanilla's table. Without a per-month formatter injected it falls back to
+    // the plain unit; with one (see below) it takes the game's template.
     assert.deepEqual(rendered.map((f) => `${f.label} ${f.value}`), [
       "Helicopters 2",
-      "Processing 1200 t/mo",
+      "Processing 1200 /mo.",
     ]);
   });
 
@@ -139,6 +142,41 @@ describe("cargo capacity", () => {
     const ordered = orderFacts([{ key: "purification" }, { key: "cargoCapacity" }, { key: "stormCapacity" }])
       .map((fact) => fact.key);
     assert.deepEqual(ordered, ["stormCapacity", "cargoCapacity", "purification"]);
+  });
+});
+
+describe("weights and rates through the game's own formatters", () => {
+  const noTranslation = () => null;
+  const measured = {
+    weightPerMonth: (value: number) => `WPM(${value})`,
+    perMonth: (value: number) => `PM(${value})`,
+  };
+
+  it("garbage processing is a weight per month, its own key, not the deathcare rate's", () => {
+    // Both facilities used to share processingRate and its "t/mo" unit, so a
+    // crematorium's bodies read as tonnes and a landfill's kilograms as
+    // tonnes — 100,000 t/mo where the game says 100 t/mo.
+    const [garbage] = renderServiceFacts([{ key: "garbageProcessing", value: 100000 }], noTranslation, String, measured);
+    const [bodies] = renderServiceFacts([{ key: "processingRate", value: 100 }], noTranslation, String, measured);
+    const [mail] = renderServiceFacts([{ key: "sortingRate", value: 240 }], noTranslation, String, measured);
+
+    assert.deepEqual(garbage, { key: "garbageProcessing", label: "Processing", value: "WPM(100000)" });
+    assert.deepEqual(bodies, { key: "processingRate", label: "Processing", value: "PM(100)" });
+    assert.deepEqual(mail, { key: "sortingRate", label: "Sorting", value: "PM(240)" });
+  });
+
+  it("battery output and grid capacity are power", () => {
+    // BATTERY_POWER_OUTPUT and TRANSFORMER_CAPACITY are bound with the power
+    // unit; ours carried "MW" on the raw figure and no unit at all.
+    const [out] = renderServiceFacts([{ key: "batteryOutput", value: 20000 }], noTranslation, String, { power: (v: number) => `P(${v})` });
+    const [cap] = renderServiceFacts([{ key: "electricityCapacity", value: 400000 }], noTranslation, String, { power: (v: number) => `P(${v})` });
+    assert.equal(out.value, "P(20000)");
+    assert.equal(cap.value, "P(400000)");
+  });
+
+  it("orders garbage processing where processing sits", () => {
+    const ordered = orderFacts([{ key: "collectionTrucks" }, { key: "garbageProcessing" }]).map((f) => f.key);
+    assert.deepEqual(ordered, ["garbageProcessing", "collectionTrucks"]);
   });
 });
 

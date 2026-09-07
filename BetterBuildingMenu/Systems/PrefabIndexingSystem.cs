@@ -1892,7 +1892,8 @@ namespace BetterBuildingMenu.Systems
 			{
 				roles.Add("GarbageFacility");
 				capacities.Add(garbageFacilityData.m_GarbageCapacity);
-				Fact(prefabIndex, "processingRate", garbageFacilityData.m_ProcessingSpeed);
+				// Its own key: kilograms a month, not the deathcare rate's bodies.
+				Fact(prefabIndex, "garbageProcessing", garbageFacilityData.m_ProcessingSpeed);
 				// m_VehicleCapacity, not m_TransportCapacity: the first is the
 				// garbage trucks (GARBAGE_TRUCK_COUNT in vanilla's tooltip), the
 				// second the delivery trucks that haul processed waste out
