@@ -1624,3 +1624,24 @@ Exceptions in the mod log: 0 before, 0 after.
 ```
 
 artifact: /var/home/gerbal/Games/CS-Modding-wt/findit-remediation/tools/e2e/artifacts/findit-smoke/20260902-202039-db8271f.md
+
+## 2026-09-07 — index at OnGameLoaded (cm-36os)
+
+Prefix `949230-b`, `--no-steam`, same build for both runs. The game's loader runs
+`SetGameActive()` and then awaits three progress groups — `LoadTextures` is the
+virtual-texturing material pass, a per-frame budget — before raising
+`onGameLoadingComplete`, where the full index used to run. On this harness that
+wait is ~7 minutes with the city playable and vanilla's menu standing.
+
+| | Load save (13:09) | New Game, Easy, Sweeping Plains (13:36) |
+|---|---|---|
+| Continue / Start clicked | 13:09:08 (VT 9 %) | 13:36:10 |
+| Full pass at OnGameLoaded | 13:09:12 → :17, 17692, locked=0 | 13:36:15 → :20, 17692, **locked=1089** |
+| Partial pass (Created/Updated) | — | 13:36:22, **locked=546** — the starting unlocks, applied by the game after deserialise |
+| Our menu drawn | 13:10:09 (extension picker, 3 rows) | 13:36:41 (Zones: 22 tiles, 14 locked) |
+| Game's `Loading completed` | 13:16:35 (7m27s) | 13:42:26 (6m16s) |
+| At loading-complete | full pass (pre-drift-check build): 17692, locked=0 | **skipped**, lock-state drift 0 |
+
+Read off `Logs/BetterBuildingMenu.log` and `Logs/SceneFlow.log`; the New Game
+was driven through the main menu over CDP (New Game → Select Mode → Sweeping
+Plains → Select Map → Start Game).
