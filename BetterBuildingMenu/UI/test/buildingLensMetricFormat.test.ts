@@ -13,6 +13,11 @@ import {
   formatNetworkWidth,
   formatVolume,
   formatWeight,
+  formatWeightPerMonth,
+  getBuildingDetailMetrics,
+  formatPerMonth,
+  formatPower,
+  formatEnergy,
   formatSpeedLimit,
   formatServiceRange,
   UnitSystem,
@@ -186,7 +191,9 @@ describe("Building Lens detail metrics", () => {
       "groundPollution",
       "airPollution",
     ]);
-    assert.equal(details[0].value, "1\u00a0200 MW");
+    // 1200 in the game's hundreds-of-watts figure is 120 kW — vanilla's Power
+    // rule, not the raw number wearing "MW".
+    assert.equal(details[0].value, "120 kW");
     // A real zero is a fact worth showing; only absent metrics are dropped.
     assert.equal(details[3].value, "0");
   });
@@ -560,5 +567,60 @@ describe("weight follows the game's own rule", () => {
     assert.equal(formatCapacity(500000, "ServiceBuildings", "ServiceBuildings_Garbage", "GarbageFacility"), "500 t");
     assert.equal(formatCapacity(500000, "ServiceBuildings", "ServiceBuildings_Communications", "PostFacility"), "500 t");
     assert.equal(formatCapacity(500000, "ServiceBuildings", "ServiceBuildings_Garbage", "GarbageFacility", imperial), "551.16 tn");
+  });
+});
+
+describe("rates follow the game's own per-month rules", () => {
+  // Vanilla's WeightPerMonth: kilograms per month, shown as kg/mo. below 100
+  // (one decimal) and t/mo. above (two); imperial lb/mo. and tn/mo. with the
+  // same constants as Weight. Its plain per-month template is "{VALUE} /mo.".
+  // Garbage processing and garbage accumulation are the first; deathcare
+  // processing and mail sorting are integers per month, the second.
+  const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+
+  it("weight per month", () => {
+    assert.equal(formatWeightPerMonth(50), "50 kg/mo.");
+    assert.equal(formatWeightPerMonth(100000), "100 t/mo.");
+    assert.equal(formatWeightPerMonth(50, imperial), "110.2 lb/mo.");
+    assert.equal(formatWeightPerMonth(100000, imperial), "110.23 tn/mo.");
+    assert.equal(formatWeightPerMonth(0), "");
+  });
+
+  it("a plain count per month", () => {
+    assert.match(formatPerMonth(1200), /^1.200 \/mo\.$/);
+    assert.equal(formatPerMonth(0), "");
+  });
+});
+
+describe("the details table shows the game's units", () => {
+  // ConsumptionData.m_GarbageAccumulation is kilograms per month and vanilla
+  // shows it as WeightPerMonth; we printed the raw figure under "t".
+  it("garbage produced is a weight per month", () => {
+    const details = getBuildingDetailMetrics({ garbageAccumulation: 100000 } as never);
+    const garbage = details.find((d) => d.key === "garbage");
+    assert.equal(garbage && garbage.value, "100 t/mo.");
+  });
+});
+
+describe("electricity follows the game's own units", () => {
+  // Vanilla's Power: the raw figure is in hundreds of watts — below 10,000 it
+  // shows raw/10 as kW (one decimal), above as raw/10,000 MW (two). Energy is
+  // raw/10,000 MWh (one decimal). We labelled the raw figure "MW", so a
+  // 400 MW plant read "4,000,000 MW".
+  it("power", () => {
+    assert.equal(formatPower(5000), "500 kW");
+    assert.equal(formatPower(20000), "2 MW");
+    assert.equal(formatPower(4000000), "400 MW");
+    assert.equal(formatPower(0), "");
+  });
+
+  it("energy", () => {
+    assert.equal(formatEnergy(150000), "15 MWh");
+    assert.equal(formatEnergy(0), "");
+  });
+
+  it("a power plant's capacity and a battery's storage take those rules", () => {
+    assert.equal(formatCapacity(4000000, "ServiceBuildings", "ServiceBuildings_Electricity", "PowerPlant"), "400 MW");
+    assert.equal(formatCapacity(150000, "ServiceBuildings", "ServiceBuildings_Electricity", "Battery"), "15 MWh");
   });
 });

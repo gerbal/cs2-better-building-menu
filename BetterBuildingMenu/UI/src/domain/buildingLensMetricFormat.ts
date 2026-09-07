@@ -142,7 +142,27 @@ export interface WeightTemplates {
   pound: string;
   shortTon: string;
   shortKiloton: string;
+  kilogramPerMonth: string;
+  tonPerMonth: string;
+  poundPerMonth: string;
+  shortTonPerMonth: string;
 }
+
+/** The game's power and energy templates; the raw figures are in hundreds of watts. */
+export interface PowerTemplates {
+  kilowatt: string;
+  megawatt: string;
+  megawattHours: string;
+}
+
+export const FALLBACK_POWER: PowerTemplates = {
+  kilowatt: "{VALUE} kW",
+  megawatt: "{VALUE} MW",
+  megawattHours: "{VALUE} MWh",
+};
+
+/** Vanilla's Common.VALUE_PER_MONTH, minus {SIGN}. */
+export const FALLBACK_PER_MONTH = "{VALUE} /mo.";
 
 // The English strings in the shipped Locale.cok, minus {SIGN}. The short
 // kiloton one is not in the file's English block; its fallback is a guess and
@@ -154,6 +174,10 @@ export const FALLBACK_WEIGHT: WeightTemplates = {
   pound: "{VALUE} lb",
   shortTon: "{VALUE} tn",
   shortKiloton: "{VALUE} ktn",
+  kilogramPerMonth: "{VALUE} kg/mo.",
+  tonPerMonth: "{VALUE} t/mo.",
+  poundPerMonth: "{VALUE} lb/mo.",
+  shortTonPerMonth: "{VALUE} tn/mo.",
 };
 
 export const FALLBACK_LENGTH: LengthTemplates = {
@@ -219,6 +243,8 @@ export interface NumberSeparators {
   money?: MoneyTemplates;
   length?: LengthTemplates;
   weight?: WeightTemplates;
+  power?: PowerTemplates;
+  perMonth?: string;
   /** Absent until the options binding has answered; Metric until it does. */
   unitSystem?: UnitSystem;
 }
@@ -229,6 +255,8 @@ export const FALLBACK_SEPARATORS: NumberSeparators = {
   money: FALLBACK_MONEY,
   length: FALLBACK_LENGTH,
   weight: FALLBACK_WEIGHT,
+  power: FALLBACK_POWER,
+  perMonth: FALLBACK_PER_MONTH,
 };
 
 /** Fills the game's template. {SIGN} is for negatives, which costs never are. */
@@ -299,7 +327,17 @@ export function getNumberSeparators(
       pound: resolveMoney(translate, "Common.VALUE_POUND", FALLBACK_WEIGHT.pound),
       shortTon: resolveMoney(translate, "Common.VALUE_SHORT_TON", FALLBACK_WEIGHT.shortTon),
       shortKiloton: resolveMoney(translate, "Common.VALUE_SHORT_KILOTON", FALLBACK_WEIGHT.shortKiloton),
+      kilogramPerMonth: resolveMoney(translate, "Common.VALUE_KG_PER_MONTH", FALLBACK_WEIGHT.kilogramPerMonth),
+      tonPerMonth: resolveMoney(translate, "Common.VALUE_TON_PER_MONTH", FALLBACK_WEIGHT.tonPerMonth),
+      poundPerMonth: resolveMoney(translate, "Common.VALUE_POUND_PER_MONTH", FALLBACK_WEIGHT.poundPerMonth),
+      shortTonPerMonth: resolveMoney(translate, "Common.VALUE_SHORT_TON_PER_MONTH", FALLBACK_WEIGHT.shortTonPerMonth),
     },
+    power: {
+      kilowatt: resolveMoney(translate, "Common.VALUE_KILOWATT", FALLBACK_POWER.kilowatt),
+      megawatt: resolveMoney(translate, "Common.VALUE_MEGAWATT", FALLBACK_POWER.megawatt),
+      megawattHours: resolveMoney(translate, "Common.VALUE_MEGAWATT_HOURS", FALLBACK_POWER.megawattHours),
+    },
+    perMonth: resolveMoney(translate, "Common.VALUE_PER_MONTH", FALLBACK_PER_MONTH),
     unitSystem,
   };
 }
@@ -597,6 +635,18 @@ export function formatCapacity(
     return weighed === "" ? formatted : weighed;
   }
 
+  // A plant's output is power and a battery's storage is energy, both in the
+  // game's hundreds-of-watts figure; "MW" on the raw number made a 400 MW
+  // plant read "4,000,000 MW".
+  if (role === "PowerPlant" && typeof value === "number") {
+    const powered = formatPower(value, separators);
+    return powered === "" ? formatted : powered;
+  }
+  if (role === "Battery" && typeof value === "number") {
+    const stored = formatEnergy(value, separators);
+    return stored === "" ? formatted : stored;
+  }
+
   const unit = getCapacityUnitLabel(category, subCategory, role);
 
   return unit === "" ? formatted : `${formatted} ${unit}`;
@@ -713,10 +763,12 @@ export function getBuildingDetailMetrics(entry: {
   }
 
   // Then what it draws and what it emits.
-  const measured: Array<{ key: string; label: string; value: number | null | undefined; unit?: string }> = [
-    { key: "electricity", label: "Electricity", value: entry.electricityConsumption, unit: "MW" },
+  const measured: Array<{ key: string; label: string; value: number | null | undefined; unit?: string; text?: (value: number) => string }> = [
+    // The three consumption figures in the game's own units: power in
+    // hundreds of watts, water in m³ a month, garbage in kilograms a month.
+    { key: "electricity", label: "Electricity", value: entry.electricityConsumption, text: (v) => formatPower(v, separators) },
     { key: "water", label: "Water", value: entry.waterConsumption, unit: "m³" },
-    { key: "garbage", label: "Garbage", value: entry.garbageAccumulation, unit: "t" },
+    { key: "garbage", label: "Garbage", value: entry.garbageAccumulation, text: (v) => formatWeightPerMonth(v, separators) },
     // The fifth field on ConsumptionData. The indexer has read the other four
     // since it was written and left this one on the floor.
     { key: "telecom", label: "Telecom", value: entry.telecomNeed },
@@ -729,9 +781,11 @@ export function getBuildingDetailMetrics(entry: {
 
   for (const candidate of measured) {
     add(candidate.key, candidate.label, candidate.value,
-      candidate.unit
-        ? `${groupDigits(candidate.value as number, separators)} ${candidate.unit}`
-        : groupDigits(candidate.value as number, separators));
+      candidate.text && typeof candidate.value === "number"
+        ? candidate.text(candidate.value)
+        : candidate.unit
+          ? `${groupDigits(candidate.value as number, separators)} ${candidate.unit}`
+          : groupDigits(candidate.value as number, separators));
   }
 
   return details;
@@ -875,4 +929,75 @@ export function formatWeight(
     return applyMoneyTemplate(weight.ton, roundedDigits(value / 1000, 2, separators));
   }
   return applyMoneyTemplate(weight.kiloton, roundedDigits(value / METRIC_KILOTON_KG, 2, separators));
+}
+
+/**
+ * Kilograms per month, as the game shows them: kg/mo. below 100 (one decimal),
+ * t/mo. above (two); imperial lb/mo. and tn/mo. with the Weight constants.
+ * There is no kiloton tier in vanilla's per-month rule.
+ */
+export function formatWeightPerMonth(
+  value: number | null | undefined,
+  separators: NumberSeparators = FALLBACK_SEPARATORS,
+): string {
+  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
+    return "";
+  }
+
+  const weight = separators.weight ?? FALLBACK_WEIGHT;
+
+  if (separators.unitSystem === UnitSystem.Freedom) {
+    return value < WEIGHT_SMALL_KG
+      ? applyMoneyTemplate(weight.poundPerMonth, roundedDigits(value / KILOGRAMS_PER_POUND, 1, separators))
+      : applyMoneyTemplate(weight.shortTonPerMonth, roundedDigits(value / KILOGRAMS_PER_SHORT_TON, 2, separators));
+  }
+
+  return value < WEIGHT_SMALL_KG
+    ? applyMoneyTemplate(weight.kilogramPerMonth, roundedDigits(value, 1, separators))
+    : applyMoneyTemplate(weight.tonPerMonth, roundedDigits(value / 1000, 2, separators));
+}
+
+/** A plain count per month, through vanilla's own template ("{VALUE} /mo."). */
+export function formatPerMonth(
+  value: number | null | undefined,
+  separators: NumberSeparators = FALLBACK_SEPARATORS,
+): string {
+  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
+    return "";
+  }
+
+  return applyMoneyTemplate(separators.perMonth ?? FALLBACK_PER_MONTH, groupDigits(Math.round(value), separators));
+}
+
+// Vanilla's Power rule: the raw figure is in hundreds of watts. Below 10,000
+// it shows raw / 10 as kilowatts (one decimal); above, raw / 10,000 as
+// megawatts (two). Energy is raw / 10,000 megawatt-hours (one decimal).
+const POWER_KILOWATT_LIMIT = 10_000;
+
+export function formatPower(
+  value: number | null | undefined,
+  separators: NumberSeparators = FALLBACK_SEPARATORS,
+): string {
+  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
+    return "";
+  }
+
+  const power = separators.power ?? FALLBACK_POWER;
+
+  return value < POWER_KILOWATT_LIMIT
+    ? applyMoneyTemplate(power.kilowatt, roundedDigits(value / 10, 1, separators))
+    : applyMoneyTemplate(power.megawatt, roundedDigits(value / 10_000, 2, separators));
+}
+
+export function formatEnergy(
+  value: number | null | undefined,
+  separators: NumberSeparators = FALLBACK_SEPARATORS,
+): string {
+  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
+    return "";
+  }
+
+  const power = separators.power ?? FALLBACK_POWER;
+
+  return applyMoneyTemplate(power.megawattHours, roundedDigits(value / 10_000, 1, separators));
 }

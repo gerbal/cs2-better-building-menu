@@ -48,7 +48,7 @@ interface ServiceFactPresentation {
    * is metres/feet, Volume is cubic metres/gallons, and a per-distance cost
    * converts its figure as well as its suffix.
    */
-  measure?: "length" | "height" | "volume" | "moneyPerDistance" | "weight";
+  measure?: "length" | "height" | "volume" | "moneyPerDistance" | "weight" | "weightPerMonth" | "perMonth" | "power";
 }
 
 const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
@@ -63,9 +63,22 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     unit: "",
   },
   processingRate: {
+    // DeathcareFacilityData.m_ProcessingRate — bodies a month, an integer per
+    // month in vanilla's table. Garbage has its own key below; the two used to
+    // share this one and its "t/mo", so a crematorium's bodies read as tonnes.
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ProcessingRate]",
     fallback: "Processing",
-    unit: "t/mo",
+    unit: "/mo.",
+    measure: "perMonth",
+  },
+  garbageProcessing: {
+    // GarbageFacilityData.m_ProcessingSpeed — kilograms a month, shown as the
+    // game's WeightPerMonth. Printed raw under "t/mo" it read 100,000 t/mo
+    // where the game says 100 t/mo.
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.GarbageProcessing]",
+    fallback: "Processing",
+    unit: "t/mo.",
+    measure: "weightPerMonth",
   },
   collectionTrucks: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.CollectionTrucks]",
@@ -73,9 +86,12 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     unit: "",
   },
   sortingRate: {
+    // PostFacilityData.m_SortingRate — mail items a month, an integer per month
+    // in vanilla's table; it carried "t/mo" here.
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.SortingRate]",
     fallback: "Sorting",
-    unit: "t/mo",
+    unit: "/mo.",
+    measure: "perMonth",
   },
   postVans: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PostVans]",
@@ -193,9 +209,12 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     unit: "%",
   },
   batteryOutput: {
+    // BatteryData.m_PowerOutput, bound with the power unit: hundreds of watts,
+    // so it goes through the game's kW/MW rule rather than wearing "MW" raw.
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.BatteryOutput]",
     fallback: "Output",
     unit: "MW",
+    measure: "power",
   },
   maintenancePool: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.MaintenancePool]",
@@ -214,11 +233,14 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     multiplier: true,
   },
   electricityCapacity: {
+    // ElectricityConnectionData.m_Capacity. Vanilla binds TRANSFORMER_CAPACITY
+    // and POWER_LINE_CAPACITY with the power unit — hundreds of watts — which
+    // is why the raw figure looked like an internal throughput number and a
+    // road's 400,000 was really 40 MW.
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ElectricityCapacity]",
     fallback: "Grid capacity",
-    // No unit: the raw figure is an internal throughput number, not megawatts,
-    // and labelling it MW made a road claim 400,000 MW.
-    unit: "",
+    unit: "MW",
+    measure: "power",
   },
   stormCapacity: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.StormCapacity]",
@@ -544,7 +566,7 @@ export function renderServiceTextFacts(
  */
 export const FACT_ORDER: readonly string[] = [
   // 1. What it does.
-  "processingRate", "sortingRate", "jailCapacity",
+  "processingRate", "garbageProcessing", "sortingRate", "jailCapacity",
   "collectionTrucks", "postVans", "postTrucks", "ambulances", "hearses", "prisonVans",
   "depotVehicles", "maintenanceVehicles",
   "helicopters", "disasterResponse", "shelterVehicles",
