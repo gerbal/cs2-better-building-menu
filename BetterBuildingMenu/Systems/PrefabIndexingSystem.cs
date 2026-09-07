@@ -1755,6 +1755,7 @@ namespace BetterBuildingMenu.Systems
 			{
 				roles.Add("Hospital");
 				capacities.Add(hospitalData.m_PatientCapacity);
+				Fact(prefabIndex, "ambulances", hospitalData.m_AmbulanceCapacity);
 				Fact(prefabIndex, "helicopters", hospitalData.m_MedicalHelicopterCapacity);
 			}
 
@@ -1866,6 +1867,7 @@ namespace BetterBuildingMenu.Systems
 				// and the rate is per unit time, while this is the size of the
 				// thing — the same question capacity answers everywhere else.
 				capacities.Add(postFacilityData.m_MailCapacity);
+				Fact(prefabIndex, "postTrucks", postFacilityData.m_PostTruckCapacity);
 				Fact(prefabIndex, "sortingRate", postFacilityData.m_SortingRate);
 				Fact(prefabIndex, "postVans", postFacilityData.m_PostVanCapacity);
 			}
@@ -1891,7 +1893,11 @@ namespace BetterBuildingMenu.Systems
 				roles.Add("GarbageFacility");
 				capacities.Add(garbageFacilityData.m_GarbageCapacity);
 				Fact(prefabIndex, "processingRate", garbageFacilityData.m_ProcessingSpeed);
-				Fact(prefabIndex, "collectionTrucks", garbageFacilityData.m_TransportCapacity);
+				// m_VehicleCapacity, not m_TransportCapacity: the first is the
+				// garbage trucks (GARBAGE_TRUCK_COUNT in vanilla's tooltip), the
+				// second the delivery trucks that haul processed waste out
+				// (GarbageFacilityAISystem). This read the wrong one.
+				Fact(prefabIndex, "collectionTrucks", garbageFacilityData.m_VehicleCapacity);
 				if (garbageFacilityData.m_IndustrialWasteOnly)
 				{
 					TextFact(prefabIndex, "facilityFeature", "industrialWasteOnly");
@@ -1910,6 +1916,7 @@ namespace BetterBuildingMenu.Systems
 			{
 				roles.Add("PoliceStation");
 				capacities.Add(policeStationData.m_PatrolCarCapacity);
+				Fact(prefabIndex, "jailCapacity", policeStationData.m_JailCapacity);
 				Fact(prefabIndex, "helicopters", policeStationData.m_PoliceHelicopterCapacity);
 			}
 
@@ -1917,6 +1924,7 @@ namespace BetterBuildingMenu.Systems
 			{
 				roles.Add("Prison");
 				capacities.Add(prisonData.m_PrisonerCapacity);
+				Fact(prefabIndex, "prisonVans", prisonData.m_PrisonVanCapacity);
 				Fact(prefabIndex, "prisonerWellbeing", prisonData.m_PrisonerWellbeing);
 				Fact(prefabIndex, "prisonerHealth", prisonData.m_PrisonerHealth);
 			}
@@ -1925,6 +1933,7 @@ namespace BetterBuildingMenu.Systems
 			{
 				roles.Add("DeathcareFacility");
 				capacities.Add(deathcareFacilityData.m_StorageCapacity);
+				Fact(prefabIndex, "hearses", deathcareFacilityData.m_HearseCapacity);
 				Fact(prefabIndex, "processingRate", deathcareFacilityData.m_ProcessingRate);
 				if (deathcareFacilityData.m_LongTermStorage)
 				{
@@ -1996,6 +2005,49 @@ namespace BetterBuildingMenu.Systems
 			if (EntityManager.TryGetComponent<TransportDepotData>(entity, out var transportDepotData))
 			{
 				TextFact(prefabIndex, "transportType", transportDepotData.m_TransportType.ToString());
+				Fact(prefabIndex, "depotVehicles", transportDepotData.m_VehicleCapacity);
+			}
+
+			if (EntityManager.TryGetComponent<MaintenanceDepotData>(entity, out var maintenanceDepotData))
+			{
+				Fact(prefabIndex, "maintenanceVehicles", maintenanceDepotData.m_VehicleCapacity);
+			}
+
+			// The two properties vanilla authors only on service upgrades, and
+			// the two the picker had never shown. PollutionModifier is
+			// [ComponentRequirement(ServiceUpgrade)]; UpkeepModifier's menu
+			// admits only BuildingExtensionPrefab. Both are read exactly as
+			// PrefabUISystem binds them: multipliers as whole percentages, and
+			// the upkeep change as the largest multiplier minus one, signed.
+			if (EntityManager.TryGetComponent<PollutionModifierData>(entity, out var pollutionModifier))
+			{
+				// A multiplier of one changes nothing and "100 %" would say so at
+				// length; only the factors that move a level are facts.
+				PollutionModifierFact(prefabIndex, "groundPollutionModifier", pollutionModifier.m_GroundPollutionMultiplier);
+				PollutionModifierFact(prefabIndex, "airPollutionModifier", pollutionModifier.m_AirPollutionMultiplier);
+				PollutionModifierFact(prefabIndex, "noisePollutionModifier", pollutionModifier.m_NoisePollutionMultiplier);
+			}
+
+			if (EntityManager.TryGetBuffer<UpkeepModifierData>(entity, true, out var upkeepModifiers) && upkeepModifiers.Length > 0)
+			{
+				var largest = 1f;
+				var changes = false;
+
+				for (var i = 0; i < upkeepModifiers.Length; i++)
+				{
+					if (upkeepModifiers[i].m_Multiplier != 1f)
+					{
+						changes = true;
+						largest = Math.Max(largest, upkeepModifiers[i].m_Multiplier);
+					}
+				}
+
+				if (changes)
+				{
+					// Not through Fact: that helper drops anything at or below zero,
+					// and a saving — the usual case for this modifier — is negative.
+					prefabIndex.ServiceFacts.Add(new Domain.ServiceFact("upkeepChange", Math.Round(100d * (largest - 1d))));
+				}
 			}
 
 			if (EntityManager.TryGetComponent<TransportStationData>(entity, out var transportStationData))
@@ -2815,6 +2867,15 @@ namespace BetterBuildingMenu.Systems
 			if (value > 0d)
 			{
 				prefabIndex.ServiceFacts.Add(new Domain.ServiceFact(key, value));
+			}
+		}
+
+		/// <summary>A pollution multiplier as the whole percentage vanilla shows, unless it is one.</summary>
+		private static void PollutionModifierFact(PrefabIndex prefabIndex, string key, float multiplier)
+		{
+			if (Math.Abs(multiplier - 1f) > 0.0005f)
+			{
+				Fact(prefabIndex, key, Math.Round(multiplier * 100d));
 			}
 		}
 
