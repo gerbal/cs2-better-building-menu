@@ -22,7 +22,7 @@ import {
   formatPerMonth,
   formatPower,
 } from "domain/buildingLensMetricFormat";
-import { buildTileTooltipLines, isMetricPresent } from "domain/buildingTileTooltip";
+import { buildTileTooltipLines, isMetricPresent, TILE_TOOLTIP_MAX_LINES } from "domain/buildingTileTooltip";
 import { leisureLabel } from "domain/buildingLensRowDetails";
 import { RESOURCE_UPKEEP_PREFIX, isVanillaFact, orderFacts, renderServiceFacts, renderServiceTextFacts } from "domain/serviceFacts";
 import { clampAssetDescription, getBuildingExtensionLabels, resolveAssetDescription } from "domain/buildingLensRowDetails";
@@ -242,6 +242,9 @@ const HoverCardContent = ({
   const footprints = entry.footprints ?? [];
   const footprintOverflow = entry.footprintOverflow ?? 0;
 
+  // Uncapped here: the cap is applied per tier below, so it can never cut
+  // one of the game's own lines — Upkeep and Lot sit at the end of this
+  // list, and a school with eight of our figures lost its Upkeep to it.
   const lines = buildTileTooltipLines([
     // First, because it changes what every line under it means: a cost you
     // cannot pay yet is a different fact from a cost you can. Value is the bare
@@ -406,7 +409,7 @@ const HoverCardContent = ({
     { key: "upkeep", label: labels.upkeep, applicable: isMetricPresent(entry.upkeep), value: upkeep },
     ...resourceUpkeep.map((fact) => ({ key: fact.key, label: fact.label, applicable: true, value: fact.value })),
     { key: "lot", label: labels.lot, applicable: hasFootprint(entry.lotWidth, entry.lotDepth), value: lot },
-  ]);
+  ], Number.MAX_SAFE_INTEGER);
 
   // Two tiers. Vanilla's own figures — what the game's tooltip binds, plus
   // its states and effects — first and in the normal weight; ours after a
@@ -414,7 +417,10 @@ const HoverCardContent = ({
   // VANILLA_FACT_KEYS and the fixed keys here), so the ledger's "shown by
   // vanilla" column and this card cannot disagree.
   const vanillaTier = lines.filter((line) => VANILLA_LINE_KEYS.has(line.key) || isVanillaFact(line.key));
-  const extraTier = lines.filter((line) => !(VANILLA_LINE_KEYS.has(line.key) || isVanillaFact(line.key)));
+  // Vanilla's tier in full; ours takes the old whole-card budget on its own.
+  const extraTier = lines
+    .filter((line) => !(VANILLA_LINE_KEYS.has(line.key) || isVanillaFact(line.key)))
+    .slice(0, TILE_TOOLTIP_MAX_LINES);
 
   const renderLine = (line: (typeof lines)[number]) => (
     <div

@@ -152,3 +152,29 @@ describe("resource upkeep on the card", () => {
     assert.match(card.slice(coal, coal + 200), /4 t\/mo\./);
   });
 });
+
+describe("the line cap never cuts the game's own lines", () => {
+  // TILE_TOOLTIP_MAX_LINES was applied to the whole card, and Upkeep and Lot
+  // sit at the end of the list — so a school with eight of our figures lost
+  // its Upkeep, a line vanilla's own tooltip shows. Vanilla's tier is drawn in
+  // full; the cap applies to ours alone.
+  it("keeps Upkeep when our tier is long", () => {
+    resetBindings();
+    const card = cardOf(entry(1, {
+      constructionCost: 100000, capacity: 1000, upkeep: 12500, workers: 50, households: null as never,
+      serviceRange: 3500, parkingSlots: 54, supportedUpgrades: ["A", "B", "C"],
+      serviceFacts: [
+        { key: "xpReward", value: 300 }, { key: "minCrew", value: 15 }, { key: "eveningShift", value: 12.5 },
+        { key: "nightShift", value: 10 }, { key: "workConditions", value: 3 }, { key: "graduation", value: 1.1 },
+        { key: "studentWellbeing", value: 5 }, { key: "studentHealth", value: 5 },
+      ],
+    }));
+
+    const vanilla = card.slice(0, card.indexOf('data-tier="extra"'));
+    assert.match(vanilla, /Upkeep/);
+    assert.match(vanilla, /Capacity/);
+    const extraLines = (card.slice(card.indexOf('data-tier="extra"')).match(/class="cardLine/g) || []).length;
+    assert.ok(extraLines <= 10, `our tier is capped, got ${extraLines}`);
+    assert.ok(extraLines >= 8, `our tier is not starved, got ${extraLines}`);
+  });
+});
