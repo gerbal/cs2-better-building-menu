@@ -1645,3 +1645,9 @@ wait is ~7 minutes with the city playable and vanilla's menu standing.
 Read off `Logs/BetterBuildingMenu.log` and `Logs/SceneFlow.log`; the New Game
 was driven through the main menu over CDP (New Game → Select Mode → Sweeping
 Plains → Select Map → Start Game).
+
+Addendum, same day, main prefix through Steam on the real GPU (user-driven load
+of a save with locked content): `Full pass at OnGameLoaded` 14:37:35 → :41,
+17693 prefabs, locked=241; the game's `Loading completed` at 14:37:54 — **19 s**
+later, not seven minutes; drift check 0, second pass skipped. The long wait was
+the headless GL harness; the lock-state agreement holds on a save with locks.
