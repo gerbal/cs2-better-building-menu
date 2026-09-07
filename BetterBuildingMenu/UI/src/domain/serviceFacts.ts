@@ -564,6 +564,28 @@ export function renderServiceTextFacts(
  * order it arrived, so a newly indexed figure appears and can then be placed
  * here deliberately.
  */
+/**
+ * The facts the game's own tooltip shows — exactly PrefabUISystem's property
+ * binders, audited 2026-09-07. The card draws these first and bright, and
+ * everything else below a divider, dimmer: a player already knows how to read
+ * the game's figures, and ours should not blend into them.
+ */
+export const VANILLA_FACT_KEYS: ReadonlySet<string> = new Set([
+  // rates and capacities
+  "processingRate", "garbageProcessing", "sortingRate", "purification", "cargoCapacity", "jailCapacity", "stormCapacity",
+  // vehicle counts
+  "collectionTrucks", "postVans", "postTrucks", "ambulances", "hearses", "prisonVans",
+  "depotVehicles", "maintenanceVehicles", "helicopters", "shelterVehicles",
+  // electricity
+  "batteryOutput", "electricityCapacity", "voltage",
+  // quality and modifiers
+  "comfort", "attractiveness", "groundPollutionModifier", "airPollutionModifier", "noisePollutionModifier", "upkeepChange",
+  // worded
+  "waterSource", "transportType",
+]);
+
+export const isVanillaFact = (key: string): boolean => VANILLA_FACT_KEYS.has(key);
+
 export const FACT_ORDER: readonly string[] = [
   // 1. What it does.
   "processingRate", "garbageProcessing", "sortingRate", "jailCapacity",

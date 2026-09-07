@@ -352,3 +352,13 @@ describe("the extension picker wears the same panel frame as the build menu", ()
     assert.match(extensionMenuStyles, /\.panel \{[^}]*pointer-events: auto;/);
   });
 });
+
+describe("the hover card's second tier is quieter", () => {
+  // Ours sit below a hairline in the dim text colour, one step smaller. The
+  // divider and the dimming are the whole message; there is no heading.
+  it("dims and shrinks the extra block, and rules it off", () => {
+    assert.match(hoverCardStyles, /\.cardLinesExtra \{[^}]*color: var\(--textColorDim\);/);
+    assert.match(hoverCardStyles, /\.cardLinesExtra \{[^}]*font-size: var\(--fontSizeXS\);/);
+    assert.match(hoverCardStyles, /\.cardDivider \{[^}]*border-top: 1rem solid/);
+  });
+});

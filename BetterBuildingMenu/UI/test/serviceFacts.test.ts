@@ -5,6 +5,7 @@ import {
   renderServiceFacts,
   renderServiceTextFacts,
   orderFacts,
+  isVanillaFact,
 } from "../src/domain/serviceFacts.ts";
 
 const noTranslation = () => null;
@@ -269,5 +270,25 @@ describe("orderFacts", () => {
     ]).map((fact) => fact.key);
 
     assert.deepEqual(ordered, ["helicopters", "jobComplexity", "xpReward"]);
+  });
+});
+
+describe("which figures are vanilla's own", () => {
+  // The line between the two tiers on the card is exactly PrefabUISystem's
+  // binder table: a fact is "vanilla" if the game's own tooltip shows it.
+  it("marks the figures the game's tooltip binds", () => {
+    for (const key of ["garbageProcessing", "sortingRate", "collectionTrucks", "ambulances", "hearses", "jailCapacity",
+      "cargoCapacity", "batteryOutput", "electricityCapacity", "purification", "comfort", "attractiveness",
+      "shelterVehicles", "helicopters", "groundPollutionModifier", "upkeepChange", "voltage", "waterSource", "transportType"]) {
+      assert.equal(isVanillaFact(key), true, key);
+    }
+  });
+
+  it("leaves ours as ours", () => {
+    for (const key of ["xpReward", "jobComplexity", "eveningShift", "nightShift", "workConditions", "minCrew",
+      "graduation", "studentWellbeing", "studentHealth", "prisonerWellbeing", "disasterResponse", "maintenancePool",
+      "elevatedWidth", "elevationCost", "roadFeature", "trackType", "zoneHouseholds", "zoneSpace", "facilityFeature"]) {
+      assert.equal(isVanillaFact(key), false, key);
+    }
   });
 });

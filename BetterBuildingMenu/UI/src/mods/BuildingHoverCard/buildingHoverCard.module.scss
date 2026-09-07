@@ -188,3 +188,23 @@
   display: block;
   width: 100%;
 }
+
+// The second tier: our own figures, below vanilla's. A hairline rules them
+// off and the dim text colour, one step smaller, keeps them from blending
+// into the game's own facts above. No heading — the divider and the dimming
+// are the whole message, as on vanilla's own panels.
+.cardDivider {
+  border-top: 1rem solid rgba(255, 255, 255, 0.12);
+  margin-top: 4rem;
+}
+
+.cardLinesExtra {
+  color: var(--textColorDim);
+  font-size: var(--fontSizeXS);
+  margin-top: 0;
+
+  .cardLine {
+    color: inherit;
+    font-size: inherit;
+  }
+}

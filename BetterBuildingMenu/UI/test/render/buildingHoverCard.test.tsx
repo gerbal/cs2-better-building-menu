@@ -105,3 +105,35 @@ describe("cargo capacity on the card", () => {
     assert.match(card, /500 t/);
   });
 });
+
+describe("two tiers on the card", () => {
+  // Vanilla's figures first and bright; ours after a divider, dimmer. The two
+  // used to blend into one list, and the game's own facts are the ones a
+  // player already knows how to read.
+  it("puts the game's figures before ours, and marks our block", () => {
+    resetBindings();
+    const card = cardOf(entry(1, {
+      constructionCost: 100000,
+      capacity: 200000,
+      workers: 37,
+      serviceFacts: [{ key: "xpReward", value: 300 }, { key: "cargoCapacity", value: 20000 }],
+    }));
+
+    const cost = card.indexOf("Cost");
+    const cargo = card.indexOf("Cargo capacity");
+    const divider = card.indexOf('data-tier="extra"');
+    const workers = card.indexOf("Workers");
+    const xp = card.indexOf("XP");
+
+    assert.ok(cost >= 0 && cargo >= 0 && divider >= 0 && workers >= 0 && xp >= 0, "every line drawn");
+    assert.ok(cost < divider && cargo < divider, "vanilla's lines come before the divider");
+    assert.ok(divider < workers && divider < xp, "ours come after it");
+  });
+
+  it("draws no divider when nothing of ours applies", () => {
+    resetBindings();
+    const card = cardOf(entry(1, { constructionCost: 100000, capacity: 200000, workers: null as never, upkeep: 500, lotWidth: 0, lotDepth: 0, serviceFacts: [] }));
+
+    assert.doesNotMatch(card, /data-tier="extra"/);
+  });
+});
