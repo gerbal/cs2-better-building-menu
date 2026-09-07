@@ -76,11 +76,13 @@ describe("Building Lens stylesheet contracts", () => {
 
   it("pairs the hover card's figures two across, and lets a list take the row", () => {
     // Measured on a zone card: six label/value pairs, each on its own 215px row
-    // using about fifty of it. The pairing is left to the flow — min-width just
-    // under half means two fit and a third cannot — so a long line still takes
-    // a whole row without a rule predicting which lines are long.
+    // using about fifty of it. The pairing is left to the flow: each row is
+    // exactly half and does not grow — it was a 45% floor with growing, and an
+    // odd count's last row stretched across both columns (see the contract
+    // below) — so two fit, a third cannot, and only a stack of values takes a
+    // whole row.
     assert.match(hoverCardStyles, /\.cardLines \{[^}]*flex-wrap: wrap;/);
-    assert.match(hoverCardStyles, /\.cardLine \{[^}]*min-width: 45%;/);
+    assert.match(hoverCardStyles, /\.cardLine \{[^}]*flex: 0 0 50%;/);
     assert.match(hoverCardStyles, /\.cardLineWide \{[^}]*min-width: 100%;/);
     // gap is a no-op in this engine, so row spacing is margins with the
     // container pulling the first row's back off.
