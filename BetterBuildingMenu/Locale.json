@@ -271,7 +271,7 @@
   "Tooltip.LABEL[BetterBuildingMenu.ElevatedWidth]": "Elevated width",
   "Tooltip.LABEL[BetterBuildingMenu.ElevationCost]": "Elevation",
   "Tooltip.LABEL[BetterBuildingMenu.ZoneTelecom]": "Telecom",
-  "Tooltip.LABEL[BetterBuildingMenu.ZoneSpace]": "Space",
+  "Tooltip.LABEL[BetterBuildingMenu.ZoneSpace]": "Floor space",
   "Tooltip.LABEL[BetterBuildingMenu.ZoneFireHazard]": "Fire hazard",
   "Tooltip.LABEL[BetterBuildingMenu.TrackType]": "Track",
   "Tooltip.LABEL[BetterBuildingMenu.TransportType]": "Transport",

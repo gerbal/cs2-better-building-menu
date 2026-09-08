@@ -1809,27 +1809,32 @@ namespace BetterBuildingMenu.Systems
 			// per-service figures have.
 			if (EntityManager.TryGetComponent<ZoneServiceConsumptionData>(entity, out var zoneConsumption))
 			{
+				// Only the upkeep: PropertyRenterSystem.GetUpkeep reads it as
+				// level^exp × upkeep × lotSize (money per cell per month at level
+				// 1). The electricity, water, garbage and telecom coefficients on
+				// the same component have no reader anywhere in the game, and
+				// ZonePollutionData none outside its own prefab — the card used to
+				// lead a zone with "Electricity 3, Garbage 30", figures the
+				// simulation never uses.
 				Fact(prefabIndex, "zoneUpkeep", zoneConsumption.m_Upkeep);
-				Fact(prefabIndex, "zoneElectricity", zoneConsumption.m_ElectricityConsumption);
-				Fact(prefabIndex, "zoneWater", zoneConsumption.m_WaterConsumption);
-				Fact(prefabIndex, "zoneGarbage", zoneConsumption.m_GarbageAccumulation);
-				Fact(prefabIndex, "zoneTelecom", zoneConsumption.m_TelecomNeed);
-			}
-
-			if (EntityManager.TryGetComponent<ZonePollutionData>(entity, out var zonePollution))
-			{
-				Fact(prefabIndex, "zoneGroundPollution", zonePollution.m_GroundPollution);
-				Fact(prefabIndex, "zoneAirPollution", zonePollution.m_AirPollution);
-				Fact(prefabIndex, "zoneNoisePollution", zonePollution.m_NoisePollution);
 			}
 
 			if (EntityManager.TryGetComponent<ZonePropertiesData>(entity, out var zoneProperties))
 			{
 				// Residential only; the other families report none rather than a
 				// zero that would read as "no homes here".
-				Fact(prefabIndex, "zoneHouseholds", zoneProperties.m_ResidentialProperties);
+				// ZoneProperties' own tooltip: with ScaleResidentials the figure
+				// is apartments per cell — (1 + 0.25(level−1)) × lotSize × this —
+				// and without it the building's fixed count. Two keys, because
+				// "1" per cell and "1" per building are different facts.
+				Fact(prefabIndex, zoneProperties.m_ScaleResidentials ? "zoneHouseholdsPerCell" : "zoneHouseholds",
+					zoneProperties.m_ResidentialProperties);
 				Fact(prefabIndex, "zoneSpace", zoneProperties.m_SpaceMultiplier);
-				Fact(prefabIndex, "zoneFireHazard", zoneProperties.m_FireHazardMultiplier);
+				// ×1 is the absence of a modifier, as with the pollution modifiers.
+				if (zoneProperties.m_FireHazardMultiplier != 1f)
+				{
+					Fact(prefabIndex, "zoneFireHazard", zoneProperties.m_FireHazardMultiplier);
+				}
 				if (zoneProperties.m_IgnoreLandValue)
 				{
 					TextFact(prefabIndex, "zoneFeature", "ignoresLandValue");
