@@ -634,3 +634,28 @@ describe("electricity follows the game's own units", () => {
     assert.equal(formatCapacity(150000, "ServiceBuildings", "ServiceBuildings_Electricity", "Battery"), "15 MWh");
   });
 });
+
+describe("water volumes follow the game's own unit system", () => {
+  const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+
+  // Vanilla binds WATER_CAPACITY and SEWAGE_CAPACITY with the volumePerMonth
+  // unit (PrefabUISystem.cs:1603, :1605): cubic metres a month, and US
+  // gallons a month under Freedom at the game's 264.172. Ours labelled the
+  // raw figure "m³" whatever the setting — a water tower read "15,000 m³"
+  // beside a road priced per mile.
+  for (const role of ["WaterPumpingStation", "SewageOutlet", "WastewaterTreatmentPlant"]) {
+    it(`${role}: cubic metres a month, gallons a month under Freedom`, () => {
+      const metric = formatCapacity(100000, "ServiceBuildings", "ServiceBuildings_Water", role);
+      const freedom = formatCapacity(100000, "ServiceBuildings", "ServiceBuildings_Water", role, imperial);
+
+      assert.match(metric, /m³\/mo\.$/);
+      assert.equal(metric.replace(/[^0-9]/g, ""), "100000");
+      assert.match(freedom, /gal\/mo\.$/);
+      assert.equal(freedom.replace(/[^0-9]/g, ""), "26417200");
+    });
+  }
+
+  it("a water building with no role still converts", () => {
+    assert.match(formatCapacity(15000, "ServiceBuildings", "ServiceBuildings_Water", null, imperial), /gal\/mo\.$/);
+  });
+});

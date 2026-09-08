@@ -2014,7 +2014,11 @@ namespace BetterBuildingMenu.Systems
 				prefabIndex.WaterCapacity = waterPumpingStationData.m_Capacity;
 				capacities.Add(waterPumpingStationData.m_Capacity);
 				Fact(prefabIndex, "purification", waterPumpingStationData.m_Purification);
-				TextFact(prefabIndex, "waterSource", waterPumpingStationData.m_Types.ToString());
+				// Vanilla's wording and vanilla's silence: a tower allows no type
+				// and says nothing, where the raw enum read "Draws from None".
+				TextFact(prefabIndex, "waterSource", Domain.WaterSource.Describe(
+					(waterPumpingStationData.m_Types & AllowedWaterTypes.Groundwater) != 0,
+					(waterPumpingStationData.m_Types & AllowedWaterTypes.SurfaceWater) != 0));
 			}
 
 			if (EntityManager.TryGetComponent<SewageOutletData>(entity, out var sewageOutletData))

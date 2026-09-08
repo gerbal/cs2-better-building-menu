@@ -388,3 +388,21 @@ describe("the game's own mail and extractor properties", () => {
     assert.deepEqual(words, ["Ore", "Oil", "Forest", "Fertile land"]);
   });
 });
+
+describe("where a water building draws from", () => {
+  // The game's own RequiredResourceBinder: ground water when the flag is set,
+  // surface water otherwise, and nothing at all when the component's types are
+  // None — a water tower is a pumping station that draws from nowhere, and it
+  // read "Draws from None".
+  it("says nothing for a building that draws from nowhere", () => {
+    assert.deepEqual(renderServiceTextFacts([{ key: "waterSource", value: "None" }], () => null), []);
+  });
+
+  it("uses the game's words for ground and surface water", () => {
+    const words = ["GroundWater", "SurfaceWater"].map((token) =>
+      renderServiceTextFacts([{ key: "waterSource", value: token }],
+        (key) => ({ "Properties.MAP_RESOURCE[GroundWater]": "Ground Water", "Properties.MAP_RESOURCE[SurfaceWater]": "Surface Water" })[key] ?? null)[0].value);
+
+    assert.deepEqual(words, ["Ground Water", "Surface Water"]);
+  });
+});
