@@ -1605,25 +1605,27 @@ namespace BetterBuildingMenu.Systems
 				// rather than on a shared component, so each is asked in turn
 				// and the first that answers wins — a prefab is only ever one
 				// of these.
+				// Each holds metres per second, whatever the prefab was authored
+				// in; the catalog states km/h — see Domain/SpeedLimit.cs.
 				if (EntityManager.TryGetComponent<RoadData>(entity, out var roadData))
 				{
-					prefabIndex.SpeedLimit = roadData.m_SpeedLimit;
+					prefabIndex.SpeedLimit = SpeedLimit.KilometresPerHour(roadData.m_SpeedLimit);
 				}
 				else if (EntityManager.TryGetComponent<TrackData>(entity, out var trackData))
 				{
-					prefabIndex.SpeedLimit = trackData.m_SpeedLimit;
+					prefabIndex.SpeedLimit = SpeedLimit.KilometresPerHour(trackData.m_SpeedLimit);
 				}
 				else if (EntityManager.TryGetComponent<PathwayData>(entity, out var pathwayData))
 				{
-					prefabIndex.SpeedLimit = pathwayData.m_SpeedLimit;
+					prefabIndex.SpeedLimit = SpeedLimit.KilometresPerHour(pathwayData.m_SpeedLimit);
 				}
 				else if (EntityManager.TryGetComponent<WaterwayData>(entity, out var waterwayData))
 				{
-					prefabIndex.SpeedLimit = waterwayData.m_SpeedLimit;
+					prefabIndex.SpeedLimit = SpeedLimit.KilometresPerHour(waterwayData.m_SpeedLimit);
 				}
 				else if (EntityManager.TryGetComponent<TaxiwayData>(entity, out var taxiwayData))
 				{
-					prefabIndex.SpeedLimit = taxiwayData.m_SpeedLimit;
+					prefabIndex.SpeedLimit = SpeedLimit.KilometresPerHour(taxiwayData.m_SpeedLimit);
 				}
 
 				if (EntityManager.TryGetComponent<NetGeometryData>(entity, out var geometryData)
