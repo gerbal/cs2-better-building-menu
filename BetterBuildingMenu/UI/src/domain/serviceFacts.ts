@@ -48,7 +48,7 @@ interface ServiceFactPresentation {
    * is metres/feet, Volume is cubic metres/gallons, and a per-distance cost
    * converts its figure as well as its suffix.
    */
-  measure?: "length" | "height" | "volume" | "moneyPerDistance" | "weight" | "weightPerMonth" | "perMonth" | "power";
+  measure?: "length" | "height" | "volume" | "moneyPerDistance" | "moneyPerCellPerMonth" | "weight" | "weightPerMonth" | "perMonth" | "power";
 }
 
 const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
@@ -112,10 +112,18 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
 
   // Zones. Per cell rather than per building, which is what a zone is: a rate
   // the player paints rather than a thing they place.
+  // ZoneProperties: without ScaleResidentials the figure is the building's
+  // fixed count (low density); with it, apartments per cell, multiplied by
+  // lot size and level. The same "1" means different things, so two keys.
   zoneHouseholds: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneHouseholds]",
     fallback: "Homes",
     unit: "",
+  },
+  zoneHouseholdsPerCell: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneHouseholds]",
+    fallback: "Homes",
+    unit: "/cell",
   },
   zoneMaxHeight: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneHeight]",
@@ -123,40 +131,17 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     unit: "m",
     measure: "height",
   },
+  // The one consumption coefficient the game reads: PropertyRenterSystem.
+  // GetUpkeep is level^exp × this × lotSize, so at level 1 it is money per
+  // cell per month. The electricity, water, garbage and telecom coefficients
+  // beside it on ZoneServiceConsumptionData have no reader anywhere in the
+  // game, and neither does ZonePollutionData; a figure the simulation never
+  // uses is not a fact about the zone, so those keys have no presentation.
   zoneUpkeep: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Upkeep]",
     fallback: "Upkeep",
     unit: "",
-  },
-  zoneElectricity: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Electricity]",
-    fallback: "Electricity",
-    unit: "",
-  },
-  zoneWater: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Water]",
-    fallback: "Water",
-    unit: "",
-  },
-  zoneGarbage: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Garbage]",
-    fallback: "Garbage",
-    unit: "",
-  },
-  zoneGroundPollution: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.GroundPollution]",
-    fallback: "Ground pollution",
-    unit: "",
-  },
-  zoneAirPollution: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.AirPollution]",
-    fallback: "Air pollution",
-    unit: "",
-  },
-  zoneNoisePollution: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.NoisePollution]",
-    fallback: "Noise pollution",
-    unit: "",
+    measure: "moneyPerCellPerMonth",
   },
   minCrew: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.MinCrew]",
@@ -299,14 +284,11 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     // other cost on the card reads "¢5,000 /km", symbol first.
     measure: "moneyPerDistance",
   },
-  zoneTelecom: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneTelecom]",
-    fallback: "Telecom",
-    unit: "",
-  },
   zoneSpace: {
+    // The authoring tooltip: "an abstraction of amount of floors in a
+    // building"; a high value means bigger apartments.
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneSpace]",
-    fallback: "Space",
+    fallback: "Floor space",
     unit: "",
     multiplier: true,
   },
@@ -617,10 +599,8 @@ export const FACT_ORDER: readonly string[] = [
   "jobComplexity", "minCrew", "workConditions", "eveningShift", "nightShift",
   // 4. Placement, network and zone.
   "elevatedWidth", "elevationCost", "voltage", "roadFeature",
-  "zoneMaxHeight", "zoneHouseholds", "zoneSpace",
-  "zoneUpkeep", "zoneElectricity", "zoneWater", "zoneGarbage", "zoneTelecom",
-  "zoneGroundPollution", "zoneAirPollution", "zoneNoisePollution",
-  "zoneFireHazard", "zoneLotShapes",
+  "zoneMaxHeight", "zoneHouseholds", "zoneHouseholdsPerCell", "zoneSpace",
+  "zoneUpkeep", "zoneFireHazard", "zoneLotShapes",
   "zoneSold", "zoneManufactured", "zoneStored",
   "facilityFeature", "zoneFeature",
   "xpReward",

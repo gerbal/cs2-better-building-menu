@@ -45,7 +45,7 @@ const VANILLA_LINE_KEYS: ReadonlySet<string> = new Set(["locked", "alreadyBuilt"
 // made of, and both sat dimmed under a Cost line (or under nothing at all).
 const PROMOTED_BY_CATEGORY: Readonly<Record<string, ReadonlySet<string>>> = {
   Networks: new Set(["speedLimit", "networkWidth"]),
-  Zones: new Set(["zoneMaxHeight", "zoneHouseholds", "zoneSpace"]),
+  Zones: new Set(["zoneMaxHeight", "zoneHouseholds", "zoneHouseholdsPerCell", "zoneSpace"]),
 };
 
 const BuildingLensMilestones$ = bindValue<string[]>(mod.id, "BuildingLensMilestones", []);
@@ -227,6 +227,7 @@ const HoverCardContent = ({
       perMonth: (value) => formatPerMonth(value, separators),
       power: (value) => formatPower(value, separators),
       moneyPerDistance: (value) => formatBuildingMetric(value, "cost", separators, true),
+      moneyPerCellPerMonth: (value) => `${formatBuildingMetric(value, "cost", separators)} /cell/mo.`,
     },
   );
   // What the building burns sits with what it costs, not among the service

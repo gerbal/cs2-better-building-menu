@@ -238,20 +238,21 @@ describe("one card per kind of tile", () => {
 
   // A zone has no vanilla figure at all; what it is made of — height, homes,
   // space — is its headline, and its consumption is the detail.
-  it("a zone leads with height, homes and space, with consumption below", () => {
+  it("a zone leads with height, homes and space, with upkeep below", () => {
     const { top, extra } = splitTiers(cardOf(entry(3, {
       category: "Zones", constructionCost: null, upkeep: null, capacity: null, workers: null,
       lotWidth: 0, lotDepth: 0,
       serviceFacts: [
-        { key: "zoneElectricity", value: 5 }, { key: "zoneMaxHeight", value: 20 },
-        { key: "zoneHouseholds", value: 12 }, { key: "zoneSpace", value: 3 },
+        { key: "zoneUpkeep", value: 6 }, { key: "zoneMaxHeight", value: 20 },
+        { key: "zoneHouseholdsPerCell", value: 3 }, { key: "zoneSpace", value: 3 },
       ],
     })));
 
-    for (const key of ["zoneMaxHeight", "zoneHouseholds", "zoneSpace"]) {
+    for (const key of ["zoneMaxHeight", "zoneHouseholdsPerCell", "zoneSpace"]) {
       assert.ok(hasLine(top, key), `${key} in the top tier`);
     }
-    assert.ok(hasLine(extra, "zoneElectricity"), "consumption below the rule");
+    assert.ok(hasLine(extra, "zoneUpkeep"), "upkeep below the rule");
+    assert.match(extra, /\/cell\/mo\./, "upkeep is money per cell per month");
   });
 
   // A terrain tool has nothing to say in figures. An empty block under the

@@ -310,3 +310,48 @@ describe("resource upkeep", () => {
     assert.equal(isVanillaFact("upkeep:Oil"), true);
   });
 });
+
+describe("a zone's figures", () => {
+  // The game reads exactly one of a zone's consumption coefficients — Upkeep,
+  // in PropertyRenterSystem.GetUpkeep as level^exp × upkeep × lotSize — and
+  // none of its pollution coefficients (ZonePollutionData has no reader
+  // outside its own prefab). A figure the simulation never uses is not a
+  // fact about the zone, so those keys draw nothing.
+  it("draws nothing for the coefficients the simulation never reads", () => {
+    const dead = ["zoneElectricity", "zoneWater", "zoneGarbage", "zoneTelecom",
+      "zoneGroundPollution", "zoneAirPollution", "zoneNoisePollution"];
+
+    assert.deepEqual(renderServiceFacts(dead.map((key) => ({ key, value: 3 })), () => null), []);
+  });
+
+  // Upkeep is money per cell per month at level 1, so it is measured, not
+  // a bare number.
+  it("states upkeep as money per cell per month", () => {
+    const [fact] = renderServiceFacts([{ key: "zoneUpkeep", value: 6 }], () => null, undefined, {
+      moneyPerCellPerMonth: (value) => `¢${value} /cell/mo.`,
+    });
+
+    assert.equal(fact.value, "¢6 /cell/mo.");
+  });
+
+  // ZoneProperties: with ScaleResidentials the figure is apartments per
+  // cell, multiplied by lot size and level; without it, the building's
+  // fixed count. Two keys, because the same "1" means different things.
+  it("says whether homes are per cell or per building", () => {
+    const [perCell, fixed] = renderServiceFacts(
+      [{ key: "zoneHouseholdsPerCell", value: 3 }, { key: "zoneHouseholds", value: 1 }], () => null);
+
+    assert.equal(perCell.value, "3 /cell");
+    assert.equal(fixed.value, "1");
+  });
+
+  // "Space" named nothing; the authoring tooltip calls the multiplier an
+  // abstraction of the amount of floors, and says a high value means bigger
+  // apartments.
+  it("names the space multiplier as floor space", () => {
+    const [fact] = renderServiceFacts([{ key: "zoneSpace", value: 0.35 }], () => null);
+
+    assert.equal(fact.label, "Floor space");
+    assert.equal(fact.value, "×0.35");
+  });
+});
