@@ -456,15 +456,20 @@ const ROLE_UNITS: Record<string, string> = {
   PoliceStation: "vehicles",
   Prison: "prisoners",
   EmergencyShelter: "people",
-  // Communications. Mail is a weight in this simulation, like garbage; network
+  // Communications. Vanilla binds a post facility's mail capacity with the
+  // "integer" unit, the same as its van count (PrefabUISystem.cs:1630) — a
+  // count of mail, not a weight; an earlier pass had it read "500 t". Network
   // capacity is a count of connections and has no unit the game names, so it
-  // gets none rather than an invented one.
-  PostFacility: "t",
+  // is left as a bare number as well.
+  PostFacility: "",
   TelecomFacility: "",
 };
 
 /** Roles whose capacity is a weight in kilograms — see formatCapacity. */
-const WEIGHT_ROLES: ReadonlySet<string> = new Set(["GarbageFacility", "PostFacility"]);
+// Garbage only. Vanilla binds a post facility's mail capacity with the
+// "integer" unit, the same as its van count (PrefabUISystem.cs:1630); an
+// earlier pass grouped it here and a post office read "500 t" of mail.
+const WEIGHT_ROLES: ReadonlySet<string> = new Set(["GarbageFacility"]);
 
 export function getCapacityUnitLabel(
   category: string | null | undefined,

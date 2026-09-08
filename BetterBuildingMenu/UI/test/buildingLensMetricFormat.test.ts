@@ -560,13 +560,23 @@ describe("weight follows the game's own rule", () => {
     assert.match(formatWeight(10000000, imperial), /^11\.02 /);
   });
 
-  it("a weight capacity is kilograms too, so garbage and mail read in tonnes", () => {
-    // GarbageFacilityData.m_GarbageCapacity and the post facility's are bound
-    // by vanilla with the same "weight" unit as cargo. We printed the raw
-    // kilograms under a "t" label — a landfill read "500,000 t".
+  it("a weight capacity is kilograms too, so garbage reads in tonnes", () => {
+    // GarbageFacilityData.m_GarbageCapacity is bound by vanilla with the same
+    // "weight" unit as cargo. We printed the raw kilograms under a "t" label
+    // — a landfill read "500,000 t".
     assert.equal(formatCapacity(500000, "ServiceBuildings", "ServiceBuildings_Garbage", "GarbageFacility"), "500 t");
-    assert.equal(formatCapacity(500000, "ServiceBuildings", "ServiceBuildings_Communications", "PostFacility"), "500 t");
     assert.equal(formatCapacity(500000, "ServiceBuildings", "ServiceBuildings_Garbage", "GarbageFacility", imperial), "551.16 tn");
+  });
+
+  it("a post facility's mail capacity is a count, not a weight", () => {
+    // Vanilla binds PostFacilityData.m_MailCapacity as
+    // Properties.MAIL_STORAGE_CAPACITY with the "integer" unit
+    // (PrefabUISystem.cs:1630) — the same unit as its van count. An earlier
+    // pass had grouped it with garbage as a weight, and a post office read
+    // "500 t" of mail.
+    assert.doesNotMatch(formatCapacity(500000, "ServiceBuildings", "ServiceBuildings_Communications", "PostFacility"), /\bt$|tn$/);
+    // The thousands separator is the locale's business; the digits are ours.
+    assert.equal(formatCapacity(500000, "ServiceBuildings", "ServiceBuildings_Communications", "PostFacility").replace(/[^0-9]/g, ""), "500000");
   });
 });
 

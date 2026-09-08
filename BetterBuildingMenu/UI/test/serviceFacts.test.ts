@@ -355,3 +355,36 @@ describe("a zone's figures", () => {
     assert.equal(fact.value, "×0.35");
   });
 });
+
+describe("the game's own mail and extractor properties", () => {
+  // Vanilla binds MailBoxData.m_MailCapacity as Properties.MAIL_BOX_CAPACITY,
+  // an integer (PrefabUISystem.BuildDefaultPropertyBinders). A mailbox card
+  // read "Cost" and nothing else.
+  it("states a mailbox's capacity as a count, in the game's tier", () => {
+    const [fact] = renderServiceFacts([{ key: "mailboxCapacity", value: 50 }], () => null);
+
+    assert.equal(fact.label, "Mailbox capacity");
+    assert.equal(fact.value, "50");
+    assert.ok(isVanillaFact("mailboxCapacity"));
+  });
+
+  // RequiredResourceBinder: an extractor building names the map feature its
+  // manufactured resource needs — Properties.MAP_RESOURCE[<feature>].
+  it("names the natural resource an extractor requires, in the game's words", () => {
+    const [fact] = renderServiceTextFacts(
+      [{ key: "requiredResource", value: "FertileLand" }],
+      (key) => (key === "Properties.MAP_RESOURCE[FertileLand]" ? "Fertile Land" : null),
+    );
+
+    assert.equal(fact.label, "Requires");
+    assert.equal(fact.value, "Fertile Land");
+    assert.ok(isVanillaFact("requiredResource"));
+  });
+
+  it("falls back to plain words for each map feature", () => {
+    const words = ["Ore", "Oil", "Forest", "FertileLand"].map((feature) =>
+      renderServiceTextFacts([{ key: "requiredResource", value: feature }], () => null)[0].value);
+
+    assert.deepEqual(words, ["Ore", "Oil", "Forest", "Fertile land"]);
+  });
+});

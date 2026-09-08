@@ -37,6 +37,7 @@ namespace BetterBuildingMenu.Systems
 	public partial class PrefabIndexingSystem : GameSystemBase
 	{
 		private PrefabSystem _prefabSystem;
+		private ResourceSystem _resourceSystem;
 		private ImageSystem _imageSystem;
 		private PrefabUISystem _prefabUISystem;
 		private BuildingMenuUISystem _menuUISystem;
@@ -146,6 +147,7 @@ namespace BetterBuildingMenu.Systems
 			base.OnCreate();
 
 			_prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
+			_resourceSystem = World.GetOrCreateSystemManaged<ResourceSystem>();
 			_imageSystem = World.GetOrCreateSystemManaged<ImageSystem>();
 			_prefabUISystem = World.GetOrCreateSystemManaged<PrefabUISystem>();
 			_menuUISystem = World.GetOrCreateSystemManaged<BuildingMenuUISystem>();
@@ -1900,6 +1902,23 @@ namespace BetterBuildingMenu.Systems
 			// office and a telecom tower arrived with no role and no capacity —
 			// the card showed a lot size and a price and the hover card had
 			// nothing to add. Both of these are the figure the building is FOR.
+			// Properties.MAIL_BOX_CAPACITY, an integer (PrefabUISystem.cs:1631). A
+			// mailbox card read "Cost" and nothing else.
+			if (EntityManager.TryGetComponent<MailBoxData>(entity, out var mailBox))
+			{
+				Fact(prefabIndex, "mailboxCapacity", mailBox.m_MailCapacity);
+			}
+
+			// RequiredResourceBinder's rule, transcribed: an extractor building
+			// whose product needs a natural resource names the map feature of
+			// its extractor area. The water half of that binder is already the
+			// waterSource fact.
+			var requiredFeature = GetExtractorFeature(entity);
+			if (requiredFeature is not null)
+			{
+				TextFact(prefabIndex, "requiredResource", requiredFeature);
+			}
+
 			if (EntityManager.TryGetComponent<PostFacilityData>(entity, out var postFacilityData))
 			{
 				roles.Add("PostFacility");
@@ -2721,6 +2740,47 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			return bonuses.Where(b => !string.IsNullOrEmpty(b)).Distinct().ToArray();
+		}
+
+		/// <summary>
+		/// The map feature an extractor building requires, or null when it is
+		/// not one. PrefabUISystem.RequiredResourceBinder.GetExtractorType,
+		/// transcribed: an upgrade defers to its building; the building must be
+		/// a placeholder of type ExtractorBuilding whose manufactured resource
+		/// requires a natural resource; the feature is read off the first
+		/// extractor sub-area that requires one.
+		/// </summary>
+		private string GetExtractorFeature(Entity entity)
+		{
+			var building = entity;
+			if (EntityManager.TryGetBuffer<ServiceUpgradeBuilding>(entity, true, out var upgradeOf) && upgradeOf.Length >= 1)
+			{
+				building = upgradeOf[0].m_Building;
+			}
+
+			if (!EntityManager.TryGetComponent<PlaceholderBuildingData>(building, out var placeholder)
+				|| placeholder.m_Type != BuildingType.ExtractorBuilding
+				|| !EntityManager.TryGetComponent<BuildingPropertyData>(building, out var property)
+				|| !EntityManager.TryGetBuffer<Game.Prefabs.SubArea>(entity, true, out var subAreas))
+			{
+				return null;
+			}
+
+			var resourcePrefab = _resourceSystem.GetPrefabs()[property.m_AllowedManufactured];
+			if (!EntityManager.TryGetComponent<ResourceData>(resourcePrefab, out var resource) || !resource.m_RequireNaturalResource)
+			{
+				return null;
+			}
+
+			for (var i = 0; i < subAreas.Length; i++)
+			{
+				if (EntityManager.TryGetComponent<ExtractorAreaData>(subAreas[i].m_Prefab, out var extractor) && extractor.m_RequireNaturalResource)
+				{
+					return extractor.m_MapFeature.ToString();
+				}
+			}
+
+			return null;
 		}
 
 		/// <summary>One effect, signed, with the unit its mode implies.</summary>
