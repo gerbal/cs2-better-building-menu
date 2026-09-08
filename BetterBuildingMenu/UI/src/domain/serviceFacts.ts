@@ -112,6 +112,12 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
 
   // Zones. Per cell rather than per building, which is what a zone is: a rate
   // the player paints rather than a thing they place.
+  // Properties.MAIL_BOX_CAPACITY: MailBoxData.m_MailCapacity, an integer.
+  mailboxCapacity: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.MailboxCapacity]",
+    fallback: "Mailbox capacity",
+    unit: "",
+  },
   // ZoneProperties: without ScaleResidentials the figure is the building's
   // fixed count (low density); with it, apartments per cell, multiplied by
   // lot size and level. The same "1" means different things, so two keys.
@@ -384,6 +390,18 @@ interface ServiceTextPresentation {
 }
 
 const TEXT_PRESENTATION: Readonly<Record<string, ServiceTextPresentation>> = {
+  // RequiredResourceBinder: the map feature an extractor's product needs,
+  // worded with the game's own Properties.MAP_RESOURCE[<feature>] strings.
+  requiredResource: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.RequiredResource]",
+    fallback: "Requires",
+    values: {
+      Ore: { localizationKey: "Properties.MAP_RESOURCE[Ore]", fallback: "Ore" },
+      Oil: { localizationKey: "Properties.MAP_RESOURCE[Oil]", fallback: "Oil" },
+      Forest: { localizationKey: "Properties.MAP_RESOURCE[Forest]", fallback: "Forest" },
+      FertileLand: { localizationKey: "Properties.MAP_RESOURCE[FertileLand]", fallback: "Fertile land" },
+    },
+  },
   zoneSold: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneSold]",
     fallback: "Sells",
@@ -562,8 +580,10 @@ export const VANILLA_FACT_KEYS: ReadonlySet<string> = new Set([
   "batteryOutput", "electricityCapacity", "voltage",
   // quality and modifiers
   "comfort", "attractiveness", "groundPollutionModifier", "airPollutionModifier", "noisePollutionModifier", "upkeepChange",
+  // mail
+  "mailboxCapacity",
   // worded
-  "waterSource", "transportType",
+  "waterSource", "transportType", "requiredResource",
 ]);
 
 /**
@@ -583,12 +603,12 @@ const resourceUpkeepPresentation = (key: string): ServiceFactPresentation | unde
 export const isVanillaFact = (key: string): boolean => VANILLA_FACT_KEYS.has(key) || key.startsWith(RESOURCE_UPKEEP_PREFIX);
 
 export const FACT_ORDER: readonly string[] = [
-  // 1. What it does.
-  "processingRate", "garbageProcessing", "sortingRate", "jailCapacity",
+  // 1. What it does. The required resource first, as vanilla binds it.
+  "requiredResource", "processingRate", "garbageProcessing", "sortingRate", "jailCapacity",
   "collectionTrucks", "postVans", "postTrucks", "ambulances", "hearses", "prisonVans",
   "depotVehicles", "maintenanceVehicles",
   "helicopters", "disasterResponse", "shelterVehicles",
-  "batteryOutput", "electricityCapacity", "stormCapacity", "cargoCapacity",
+  "batteryOutput", "electricityCapacity", "stormCapacity", "cargoCapacity", "mailboxCapacity",
   "purification", "waterSource", "maintenancePool", "comfort",
   "transportType", "trackType",
   // 2. How well.
