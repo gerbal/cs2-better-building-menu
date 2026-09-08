@@ -124,6 +124,8 @@ export interface MoneyTemplates {
 export interface LengthTemplates {
   cubicMetre: string;
   gallon: string;
+  cubicMetrePerMonth: string;
+  gallonPerMonth: string;
   metre: string;
   kilometre: string;
   yard: string;
@@ -183,6 +185,8 @@ export const FALLBACK_WEIGHT: WeightTemplates = {
 export const FALLBACK_LENGTH: LengthTemplates = {
   cubicMetre: "{VALUE} m³",
   gallon: "{VALUE} gal",
+  cubicMetrePerMonth: "{VALUE} m³/mo.",
+  gallonPerMonth: "{VALUE} gal/mo.",
   metre: "{VALUE} m",
   kilometre: "{VALUE} km",
   yard: "{VALUE} yd",
@@ -319,6 +323,8 @@ export function getNumberSeparators(
       foot: resolveMoney(translate, "Common.VALUE_FOOT", FALLBACK_LENGTH.foot),
       cubicMetre: resolveMoney(translate, "Common.VALUE_CUBIC_METER", FALLBACK_LENGTH.cubicMetre),
       gallon: resolveMoney(translate, "Common.VALUE_GALLON", FALLBACK_LENGTH.gallon),
+      cubicMetrePerMonth: resolveMoney(translate, "Common.VALUE_CUBIC_METER_PER_MONTH", FALLBACK_LENGTH.cubicMetrePerMonth),
+      gallonPerMonth: resolveMoney(translate, "Common.VALUE_GALLON_PER_MONTH", FALLBACK_LENGTH.gallonPerMonth),
     },
     weight: {
       kilogram: resolveMoney(translate, "Common.VALUE_KILOGRAM", FALLBACK_WEIGHT.kilogram),
@@ -653,7 +659,14 @@ export function formatCapacity(
   }
 
   const unit = getCapacityUnitLabel(category, subCategory, role);
-
+  // Water and sewage capacities are volumes a month, and the unit follows
+  // the player's setting: a tower read "15,000 m³" beside a road priced per
+  // mile. The label table still says m³ for the column header; the figure
+  // itself goes through the game's rule.
+  if (unit === "m³" && typeof value === "number") {
+    const volume = formatVolumePerMonth(value, separators);
+    return volume === "" ? formatted : volume;
+  }
   return unit === "" ? formatted : `${formatted} ${unit}`;
 }
 
@@ -772,13 +785,13 @@ export function getBuildingDetailMetrics(entry: {
     // The three consumption figures in the game's own units: power in
     // hundreds of watts, water in m³ a month, garbage in kilograms a month.
     { key: "electricity", label: "Electricity", value: entry.electricityConsumption, text: (v) => formatPower(v, separators) },
-    { key: "water", label: "Water", value: entry.waterConsumption, unit: "m³" },
+    { key: "water", label: "Water", value: entry.waterConsumption, text: (v) => formatVolumePerMonth(v, separators) },
     { key: "garbage", label: "Garbage", value: entry.garbageAccumulation, text: (v) => formatWeightPerMonth(v, separators) },
     // The fifth field on ConsumptionData. The indexer has read the other four
     // since it was written and left this one on the floor.
     { key: "telecom", label: "Telecom", value: entry.telecomNeed },
-    { key: "waterCapacity", label: "Water capacity", value: entry.waterCapacity, unit: "m³" },
-    { key: "sewageCapacity", label: "Sewage capacity", value: entry.sewageCapacity, unit: "m³" },
+    { key: "waterCapacity", label: "Water capacity", value: entry.waterCapacity, text: (v) => formatVolumePerMonth(v, separators) },
+    { key: "sewageCapacity", label: "Sewage capacity", value: entry.sewageCapacity, text: (v) => formatVolumePerMonth(v, separators) },
     { key: "groundPollution", label: "Ground pollution", value: entry.groundPollution },
     { key: "airPollution", label: "Air pollution", value: entry.airPollution },
     { key: "noisePollution", label: "Noise pollution", value: entry.noisePollution },
@@ -877,6 +890,29 @@ export function formatVolume(
       groupDigits(Math.round(value * GALLONS_PER_CUBIC_METRE), separators),
     )
     : applyMoneyTemplate(length.cubicMetre, groupDigits(Math.round(value), separators));
+}
+
+/**
+ * A volume a month, by vanilla's VolumePerMonth rule — the unit WATER_CAPACITY
+ * and SEWAGE_CAPACITY are bound with (PrefabUISystem.cs:1603, :1605): cubic
+ * metres a month, and US gallons a month under Freedom at the same 264.172.
+ */
+export function formatVolumePerMonth(
+  value: number | null | undefined,
+  separators: NumberSeparators = FALLBACK_SEPARATORS,
+): string {
+  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
+    return "";
+  }
+
+  const length = separators.length ?? FALLBACK_LENGTH;
+
+  return separators.unitSystem === UnitSystem.Freedom
+    ? applyMoneyTemplate(
+      length.gallonPerMonth,
+      groupDigits(Math.round(value * GALLONS_PER_CUBIC_METRE), separators),
+    )
+    : applyMoneyTemplate(length.cubicMetrePerMonth, groupDigits(Math.round(value), separators));
 }
 
 // Vanilla's own constants, read off the shipped bundle: lb = kg / 0.45359237,

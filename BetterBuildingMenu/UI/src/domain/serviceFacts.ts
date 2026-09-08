@@ -387,6 +387,8 @@ interface ServiceTextPresentation {
    * "narrow" or "corners", which are our tokens and need our words.
    */
   values?: Readonly<Record<string, { localizationKey: string; fallback: string }>>;
+  /** Tokens that mean "nothing to say" and draw no line — an enum's None. */
+  omit?: readonly string[];
 }
 
 const TEXT_PRESENTATION: Readonly<Record<string, ServiceTextPresentation>> = {
@@ -452,9 +454,16 @@ const TEXT_PRESENTATION: Readonly<Record<string, ServiceTextPresentation>> = {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Voltage]",
     fallback: "Voltage",
   },
+  // RequiredResourceBinder's wording — Properties.MAP_RESOURCE[GroundWater] /
+  // [SurfaceWater] — and its silence: a water tower allows no type at all.
   waterSource: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.WaterSource]",
     fallback: "Draws from",
+    values: {
+      GroundWater: { localizationKey: "Properties.MAP_RESOURCE[GroundWater]", fallback: "Ground water" },
+      SurfaceWater: { localizationKey: "Properties.MAP_RESOURCE[SurfaceWater]", fallback: "Surface water" },
+    },
+    omit: ["None"],
   },
   roadFeature: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.RoadFeature]",
@@ -521,6 +530,7 @@ export function renderServiceTextFacts(
     if (typeof fact.value !== "string" || fact.value.trim() === "") continue;
 
     const token = fact.value.trim();
+    if (presentation.omit?.includes(token)) continue;
     const worded = presentation.values?.[token];
     const value = worded
       ? translate(worded.localizationKey, null) ?? worded.fallback
