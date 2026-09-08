@@ -304,7 +304,7 @@ namespace BetterBuildingMenu.Domain
 		/// the hover card had nothing to say about the thing it is for.
 		/// </remarks>
 		public int? Households { get; set; }
-		public int? Capacity { get; set; }
+		public double? Capacity { get; set; }
 		public float? ElectricityConsumption { get; set; }
 
 		/// <summary>

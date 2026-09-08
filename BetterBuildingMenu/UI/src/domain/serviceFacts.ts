@@ -217,11 +217,13 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     fallback: "Shelter vans",
     unit: "",
   },
+  // Properties.COMFORT: the game shows round(100 × m_ComfortFactor) as a
+  // whole number (PrefabUISystem.cs:1643–1645); the index scales it the same
+  // way. A "×1.2" here was the factor the game never shows.
   comfort: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Comfort]",
     fallback: "Comfort",
     unit: "",
-    multiplier: true,
   },
   electricityCapacity: {
     // ElectricityConnectionData.m_Capacity. Vanilla binds TRANSFORMER_CAPACITY

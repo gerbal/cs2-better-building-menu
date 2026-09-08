@@ -659,3 +659,16 @@ describe("water volumes follow the game's own unit system", () => {
     assert.match(formatCapacity(15000, "ServiceBuildings", "ServiceBuildings_Water", null, imperial), /gal\/mo\.$/);
   });
 });
+
+describe("a telecom facility's capacity is a data rate", () => {
+  // Vanilla binds TelecomFacilityData.m_NetworkCapacity as NETWORK_CAPACITY
+  // with the dataRate unit: the figure as gigabits a second, one decimal,
+  // through Common.VALUE_GIGABIT_PER_SECOND (PrefabUISystem.cs:1637). Ours was
+  // a bare "25 000", and the index had truncated the float on the way in.
+  it("states gigabits a second in both unit systems", () => {
+    const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+
+    assert.match(formatCapacity(2.5, "ServiceBuildings", "ServiceBuildings_Communications", "TelecomFacility"), /^2[.,]5 Gbit\/s$/);
+    assert.match(formatCapacity(2.5, "ServiceBuildings", "ServiceBuildings_Communications", "TelecomFacility", imperial), /^2[.,]5 Gbit\/s$/);
+  });
+});

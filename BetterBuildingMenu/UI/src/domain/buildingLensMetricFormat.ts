@@ -155,12 +155,15 @@ export interface PowerTemplates {
   kilowatt: string;
   megawatt: string;
   megawattHours: string;
+  /** Common.VALUE_GIGABIT_PER_SECOND — vanilla's dataRate unit. */
+  gigabitPerSecond: string;
 }
 
 export const FALLBACK_POWER: PowerTemplates = {
   kilowatt: "{VALUE} kW",
   megawatt: "{VALUE} MW",
   megawattHours: "{VALUE} MWh",
+  gigabitPerSecond: "{VALUE} Gbit/s",
 };
 
 /** Vanilla's Common.VALUE_PER_MONTH, minus {SIGN}. */
@@ -342,6 +345,7 @@ export function getNumberSeparators(
       kilowatt: resolveMoney(translate, "Common.VALUE_KILOWATT", FALLBACK_POWER.kilowatt),
       megawatt: resolveMoney(translate, "Common.VALUE_MEGAWATT", FALLBACK_POWER.megawatt),
       megawattHours: resolveMoney(translate, "Common.VALUE_MEGAWATT_HOURS", FALLBACK_POWER.megawattHours),
+      gigabitPerSecond: resolveMoney(translate, "Common.VALUE_GIGABIT_PER_SECOND", FALLBACK_POWER.gigabitPerSecond),
     },
     perMonth: resolveMoney(translate, "Common.VALUE_PER_MONTH", FALLBACK_PER_MONTH),
     unitSystem,
@@ -652,6 +656,12 @@ export function formatCapacity(
   if (role === "PowerPlant" && typeof value === "number") {
     const powered = formatPower(value, separators);
     return powered === "" ? formatted : powered;
+  }
+  // A telecom facility's capacity is a data rate: gigabits a second, as the
+  // game binds it. "25 000" with no unit said nothing about what it measured.
+  if (role === "TelecomFacility" && typeof value === "number") {
+    const rate = formatDataRate(value, separators);
+    return rate === "" ? formatted : rate;
   }
   if (role === "Battery" && typeof value === "number") {
     const stored = formatEnergy(value, separators);
@@ -1041,4 +1051,22 @@ export function formatEnergy(
   const power = separators.power ?? FALLBACK_POWER;
 
   return applyMoneyTemplate(power.megawattHours, roundedDigits(value / 10_000, 1, separators));
+}
+
+/**
+ * A data rate, by vanilla's DataRate rule: the figure as gigabits a second,
+ * one decimal, the same in both unit systems — TelecomFacilityData's
+ * NETWORK_CAPACITY (PrefabUISystem.cs:1637).
+ */
+export function formatDataRate(
+  value: number | null | undefined,
+  separators: NumberSeparators = FALLBACK_SEPARATORS,
+): string {
+  if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) {
+    return "";
+  }
+
+  const power = separators.power ?? FALLBACK_POWER;
+
+  return applyMoneyTemplate(power.gigabitPerSecond, roundedDigits(value, 1, separators));
 }
