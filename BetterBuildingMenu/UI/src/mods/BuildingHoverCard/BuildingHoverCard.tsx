@@ -372,13 +372,17 @@ const HoverCardContent = ({
       applicable: isMetricPresent(entry.households),
       value: `${groupDigits(entry.households ?? 0, separators)} ${labels.householdsUnit}`,
     },
-    // Workers has been on the entry all along and reached only the table. A
-    // zero IS meaningful here — "staffed by nobody" distinguishes a monument
-    // from a workplace — so this tests presence, not magnitude, unlike parking.
+    // Workers has been on the entry all along and reached only the table.
+    // An earlier pass drew a zero here as "staffed by nobody"; on a bus
+    // station it read "Workers 0 jobs", and the card's rule everywhere else
+    // is that zero is the absence of a figure, not one.
     {
       key: "workers",
       label: labels.workers,
-      applicable: isMetricPresent(entry.workers),
+      // Zero is not a fact here either: a bus station carries WorkplaceData
+      // with no workers, and "Workers 0 jobs" states as a figure what is
+      // really the absence of one.
+      applicable: isMetricPresent(entry.workers) && entry.workers !== 0,
       value: `${groupDigits(entry.workers ?? 0, separators)} ${labels.workersUnit}`,
     },
     // The upgrades that can be attached later. Named, not counted: "3
