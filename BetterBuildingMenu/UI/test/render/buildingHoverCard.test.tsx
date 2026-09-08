@@ -277,3 +277,15 @@ describe("one card per kind of tile", () => {
     assert.doesNotMatch(card, /data-tier="extra"|cardDivider/);
   });
 });
+
+describe("a workplace with no jobs", () => {
+  // A bus station carries WorkplaceData with m_MaxWorkers 0; "Workers 0 jobs"
+  // states as a figure what is really the absence of one — the same rule
+  // capacity and students already follow.
+  it("does not draw a Workers line", () => {
+    resetBindings();
+    const card = cardOf(entry(1, { workers: 0 }));
+
+    assert.doesNotMatch(card, /data-line="workers"/);
+  });
+});
