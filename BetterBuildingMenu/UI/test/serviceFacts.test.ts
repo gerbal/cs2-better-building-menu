@@ -406,3 +406,14 @@ describe("where a water building draws from", () => {
     assert.deepEqual(words, ["Ground Water", "Surface Water"]);
   });
 });
+
+describe("comfort, as the game states it", () => {
+  // Vanilla binds a stop's or station's comfort as an integer, round(100 ×
+  // m_ComfortFactor) (PrefabUISystem.cs:1643–1645). Ours drew the factor as a
+  // multiplier, "×1.2", for a figure the game shows as "120".
+  it("is a whole number, not a multiplier", () => {
+    const [fact] = renderServiceFacts([{ key: "comfort", value: 120 }], () => null);
+
+    assert.equal(fact.value, "120");
+  });
+});

@@ -1758,7 +1758,9 @@ namespace BetterBuildingMenu.Systems
 				prefabIndex.NoisePollution = pollutionData.m_NoisePollution;
 			}
 
-			var capacities = new List<int>();
+			// Doubles: a telecom facility's capacity is gigabits a second with a
+			// decimal, and the int the list used to hold truncated it.
+			var capacities = new List<double>();
 			// Doubles as the Role facet source: these are exactly the service
 			// components that make a building a school, a hospital, and so on.
 			var roles = new List<string>();
@@ -1934,7 +1936,7 @@ namespace BetterBuildingMenu.Systems
 			if (EntityManager.TryGetComponent<TelecomFacilityData>(entity, out var telecomFacilityData))
 			{
 				roles.Add("TelecomFacility");
-				capacities.Add((int)telecomFacilityData.m_NetworkCapacity);
+				capacities.Add(telecomFacilityData.m_NetworkCapacity);
 				// Telecom keeps its own range rather than using CoverageData's,
 				// so it is read here and not above.
 				if (telecomFacilityData.m_Range > 0f)
@@ -2013,7 +2015,7 @@ namespace BetterBuildingMenu.Systems
 				roles.Add("WaterPumpingStation");
 				prefabIndex.WaterCapacity = waterPumpingStationData.m_Capacity;
 				capacities.Add(waterPumpingStationData.m_Capacity);
-				Fact(prefabIndex, "purification", waterPumpingStationData.m_Purification);
+				Fact(prefabIndex, "purification", Percent.FromFraction(waterPumpingStationData.m_Purification));
 				// Vanilla's wording and vanilla's silence: a tower allows no type
 				// and says nothing, where the raw enum read "Draws from None".
 				TextFact(prefabIndex, "waterSource", Domain.WaterSource.Describe(
@@ -2026,7 +2028,7 @@ namespace BetterBuildingMenu.Systems
 				roles.Add("SewageOutlet");
 				prefabIndex.SewageCapacity = sewageOutletData.m_Capacity;
 				capacities.Add(sewageOutletData.m_Capacity);
-				Fact(prefabIndex, "purification", sewageOutletData.m_Purification);
+				Fact(prefabIndex, "purification", Percent.FromFraction(sewageOutletData.m_Purification));
 			}
 
 			// Power plants report output as production rather than capacity, so
@@ -2116,7 +2118,7 @@ namespace BetterBuildingMenu.Systems
 
 			if (EntityManager.TryGetComponent<TransportStationData>(entity, out var transportStationData))
 			{
-				Fact(prefabIndex, "comfort", transportStationData.m_ComfortFactor);
+				Fact(prefabIndex, "comfort", Percent.FromFraction(transportStationData.m_ComfortFactor));
 			}
 
 			// What vanilla's tooltip calls Cargo capacity: StorageLimitData on a
