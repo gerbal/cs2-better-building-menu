@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import classNames from "classnames";
 import { shortenTileLabel, tableLabelCharBudget } from "domain/tileLabel";
 import { useTextScale } from "domain/textScaleSetting";
-import { capColumnExtras, columnExtraRem } from "domain/measuredFit";
+import { mergeColumnExtras } from "domain/measuredFit";
 import mod from "../../../mod.json";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
@@ -156,16 +156,13 @@ export const BuildingCatalogComponent = () => {
         const over = cell.scrollWidth - cell.clientWidth;
         if (over > (overflow[metric] ?? 0)) overflow[metric] = over;
       });
-      const wanted = { ...columnExtras };
-      let grew = false;
-      for (const metric of Object.keys(overflow) as BuildingLensMetric[]) {
-        const extra = (columnExtras[metric] ?? 0) + columnExtraRem(overflow[metric] ?? 0, remPx);
-        if (extra > (columnExtras[metric] ?? 0)) { wanted[metric] = extra; grew = true; }
-      }
-      if (!grew) return;
       const columnsRem = Object.values(columnWidths).reduce((total, width) => total + width, 0);
       const room = panelWidth - BUILDING_LENS_CONTROL_PANE_TOTAL - BUILDING_LENS_IDENTITY_MIN - BUILDING_LENS_TABLE_ROW_FURNITURE;
-      setColumnExtras(capColumnExtras(wanted as Record<BuildingLensMetric, number>, columnsRem, room));
+      // Null when nothing would change — setting an equal-but-new object here
+      // re-rendered, re-measured and set again without end, and froze the
+      // game. See domain/measuredFit.ts.
+      const merged = mergeColumnExtras(columnExtras, overflow, remPx, columnsRem, room);
+      if (merged) setColumnExtras(merged);
     };
     if (typeof ResizeObserver === "function") {
       const observer = new ResizeObserver(measure);
@@ -181,7 +178,9 @@ export const BuildingCatalogComponent = () => {
       cancelAnimationFrame(outer);
       cancelAnimationFrame(inner);
     };
-  });
+    // columnWidths is derived from panelWidth and textScale, which are here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panelWidth, textScale, columnExtras]);
   const columnStyle = (metric: BuildingLensMetric) => ({
     width: `${columnWidths[metric] + (columnExtras[metric] ?? 0)}rem`,
     flexBasis: `${columnWidths[metric] + (columnExtras[metric] ?? 0)}rem`,

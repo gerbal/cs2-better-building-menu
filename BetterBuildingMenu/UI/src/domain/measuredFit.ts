@@ -60,3 +60,35 @@ export function capColumnExtras<K extends string>(
   }
   return capped;
 }
+
+/**
+ * The extras after one measurement, or null when nothing would change.
+ *
+ * Null matters: the measuring effect sets state from this, and setting an
+ * equal-but-new object re-renders, re-measures and sets again without end —
+ * the first version of it blocked the UI thread and froze the game. Only a
+ * column that overflowed grows, by columnExtraRem on top of what it had, and
+ * the whole is capped at the room beside the name; if the cap gives back
+ * exactly what was there, that is no change.
+ */
+export function mergeColumnExtras<K extends string>(
+  current: Readonly<Partial<Record<K, number>>>,
+  overflowPx: Readonly<Partial<Record<K, number>>>,
+  remPx: number,
+  columnsRem: number,
+  roomRem: number,
+): Record<K, number> | null {
+  const wanted = { ...current } as Record<K, number>;
+  let grew = false;
+  for (const key of Object.keys(overflowPx) as K[]) {
+    const extra = (current[key] ?? 0) + columnExtraRem(overflowPx[key] ?? 0, remPx);
+    if (extra > (current[key] ?? 0)) {
+      wanted[key] = extra;
+      grew = true;
+    }
+  }
+  if (!grew) return null;
+  const capped = capColumnExtras(wanted, columnsRem, roomRem);
+  const changed = (Object.keys(capped) as K[]).some((key) => capped[key] !== (current[key] ?? 0));
+  return changed ? capped : null;
+}
