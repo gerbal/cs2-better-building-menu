@@ -171,3 +171,15 @@ describe("Table column widths", () => {
     assert.deepEqual(getBuildingLensColumnWidths(Number.NaN), BUILDING_LENS_COLUMN_MIN);
   });
 });
+
+describe("the Upkeep column at the narrowest panel", () => {
+  it("holds a per-kilometre figure without clipping", async () => {
+    // A road's upkeep is "¢2,437 /km/mo." — the widest figure the column ever
+    // draws. Measured live at 1280x720 with the panel at its minimum: the text
+    // wants 59–60px of a 57px cell (80rem), and clipped its last character on
+    // every road in the table. 84rem is 60px.
+    const { BUILDING_LENS_COLUMN_MIN } = await import("../src/domain/buildingLensLayout.ts");
+
+    assert.ok(BUILDING_LENS_COLUMN_MIN.upkeep >= 84, `upkeep min is ${BUILDING_LENS_COLUMN_MIN.upkeep}rem`);
+  });
+});

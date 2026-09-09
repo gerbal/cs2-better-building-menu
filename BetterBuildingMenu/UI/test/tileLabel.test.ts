@@ -120,27 +120,30 @@ describe("grid tile label shortening", () => {
   });
 
   it("keeps a usable budget for nonsense tile sizes", () => {
-    // Falls back to DEFAULT_TILE_SIZE (100rem), which budgets 13 per line.
-    assert.equal(tileLabelLineBudget(Number.NaN), 13);
-    assert.equal(tileLabelLineBudget(0), 13);
+    // Falls back to DEFAULT_TILE_SIZE (100rem), which budgets 12 per line.
+    assert.equal(tileLabelLineBudget(Number.NaN), 12);
+    assert.equal(tileLabelLineBudget(0), 12);
     assert.ok(tileLabelLineBudget(1) >= 4);
   });
 });
 
 describe("Tile label budget at the tile's actual width", () => {
-  it("budgets the thirteen characters measured on the running game", () => {
-    // 100rem tile draws a 64px label box at 10.67px Overpass, where the game's
-    // own names measure ~4.9px per character. The 11 this used to claim was a
-    // chars-per-rem estimate carried forward from an older estimate.
-    assert.equal(tileLabelLineBudget(100), 13);
+  it("budgets the twelve characters measured on the running game", () => {
+    // Thirteen was measured at fontSizeXS (10.67px Overpass, ~4.9px a
+    // character in a 64px box). The name line has since moved up to
+    // fontSizeM, and at 1280x720 the game's own names now measure ~5.3px a
+    // character: "Two-Lane Road", thirteen characters, wants 69px of 64 and
+    // was drawn "Two-Lane Ro…" by the belt-and-braces CSS ellipsis on every
+    // small road. 64 / 5.3 is twelve.
+    assert.equal(tileLabelLineBudget(100), 12);
   });
 
   it("budgets two lines, because one could not hold the names", () => {
-    assert.equal(tileLabelCharBudget(100), 26);
+    assert.equal(tileLabelCharBudget(100), 24);
   });
 
   it("scales with a larger tile", () => {
-    assert.equal(tileLabelLineBudget(144), 19);
+    assert.equal(tileLabelLineBudget(144), 17);
   });
 
   it("never budgets below four characters", () => {
@@ -159,8 +162,11 @@ describe("Wrapping a name over the tile's lines", () => {
   });
 
   it("uses one line when the name fits on one", () => {
-    assert.deepEqual(wrapTileLabel("Bus Stop Sign", LINE), ["Bus Stop Sign"]);
+    // "Bus Stop Sign" is thirteen characters, and at fontSizeM thirteen no
+    // longer fits a 100rem tile — it wraps, honestly, to "Bus Stop" / "Sign".
+    assert.deepEqual(wrapTileLabel("Bus Stop Sign", LINE), ["Bus Stop", "Sign"]);
     assert.deepEqual(wrapTileLabel("Taxi Stand", LINE), ["Taxi Stand"]);
+    assert.deepEqual(wrapTileLabel("Small Park", LINE), ["Small Park"]);
   });
 
   it("keeps two names apart that one line merged", () => {
@@ -226,14 +232,14 @@ describe("Wrapping a name over the tile's lines", () => {
   it("cuts a word only when no whole-word fit is left", () => {
     const lines = wrapTileLabel("Bus Stop Shelter with Bicycle Stands", LINE);
 
-    // "Shelter…Stands" is 14 against a 13-character line, so there is no pair
+    // "Shelter…Stands" is 14 against a 12-character line, so there is no pair
     // of whole words that fits and the character cut is the honest answer.
     //
     // The head is shorter than it once was because the ellipsis now costs what
     // it measures — 9.4px against a 5.0px average letter — rather than one
     // character. "Shelte…Stands" drew 13 characters into a box that holds
     // about 11 of them once the mark is paid for.
-    assert.equal(lines[1], "Shel…Stands");
+    assert.equal(lines[1], "She…Stands");
   });
 
   it("leaves an elided line room for the mark it carries", () => {
