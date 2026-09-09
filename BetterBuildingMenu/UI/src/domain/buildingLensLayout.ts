@@ -168,57 +168,101 @@ export const BUILDING_LENS_TABLE_ROW_FURNITURE = 34 + 16 + 8 + 80;
  */
 export const BUILDING_LENS_CONTROL_PANE_TOTAL = 385;
 
-export type BuildingLensColumnWidths = Record<BuildingLensMetric, number>;
+/**
+ * What the table's panel spends around its rows: the row viewport's
+ * scrollbar, the rows' own padding and the panel's inner margins. Measured
+ * live at 1280x720 with PanelWidth 1441 — the whole assembly, control pane
+ * included: the panel is 1441 − 385 = 1056rem and a row is 1026rem, so 30.
+ *
+ * An earlier reading had the row at 820rem and the chrome at 236, and the
+ * columns were held to a 422rem "room" while the same row drew every column
+ * at its comfortable width with 327rem left for the name. Measured again on
+ * 2026-09-09 with the maximum widths applied by hand; see docs/verification.md.
+ */
+export const BUILDING_LENS_TABLE_CHROME = 30;
 
 /**
- * Spend the panel's width on the name when it is scarce and on the numbers when
- * it is not.
+ * The name column's basis, the room a row keeps for it before the metric
+ * columns take theirs. At the default assembly the columns leave the name
+ * 327rem; the basis is what it must keep as the panel narrows.
+ */
+export const BUILDING_LENS_TABLE_NAME_BASIS = 260;
+
+/**
+ * The room the metric columns really have, in rem, for an assembly width as
+ * the catalog passes it (panel plus chrome): the assembly less the control
+ * pane, the panel's chrome around the rows, the row's furniture and the
+ * name's basis. 628rem at the default assembly. Never negative: below about
+ * 850rem the arithmetic runs out, and the columns then sit at their minima.
+ */
+export function tableColumnRoom(outerWidth: number): number {
+  const room = outerWidth
+    - BUILDING_LENS_PANEL_CHROME_WIDTH
+    - BUILDING_LENS_CONTROL_PANE_TOTAL
+    - BUILDING_LENS_TABLE_CHROME
+    - BUILDING_LENS_TABLE_ROW_FURNITURE
+    - BUILDING_LENS_TABLE_NAME_BASIS;
+  return Math.max(room, 0);
+}
+
+export type BuildingLensColumnWidths = Record<BuildingLensMetric, number>;
+
+const sumWidths = (widths: BuildingLensColumnWidths): number =>
+  Object.values(widths).reduce((total, width) => total + width, 0);
+
+/**
+ * The seven metric column widths for an assembly width as the catalog passes
+ * it (panel plus chrome), in rem.
  *
- * The metric columns are fixed-width by necessity — Gameface has no CSS grid and
- * no table column sizing, so the table is a stack of independent flex rows and
- * only identical fixed widths keep them in line. The identity column is the
- * flexible remainder, and that arrangement had one failure mode: because the
- * metric cells are `flex: 0 0 auto`, they never yield, so every unit the panel
- * lacks comes out of the name alone.
+ * The columns move between their minimum and comfortable widths by the ROOM
+ * beside the name, not by the panel's position in its range: a set that
+ * sums to the room is what keeps the name at its basis, since every metric
+ * cell is flex: 0 0 auto and the name is the only item that yields. Where
+ * the room holds the comfortable set, every column gets it; where it does
+ * not hold the minimum set, the columns sit at their minima and the name
+ * gives way, as it always did there.
  *
- * So the columns interpolate: at the widest panel they get their comfortable
- * width, at the narrowest they get their floor, and the difference goes to the
- * name. This deliberately inverts the note on cm-kvf2 that narrowing should
- * "crowd the name rather than truncate a number" — measurement changed the
- * answer. A clipped "225 000/mo" is a number you can still get from the hover
- * card; a title of zero width is a row you cannot identify at all.
+ * The cells are fontSizeS; their figures do not scale with the panel but do
+ * with the game's text scale (see domain/textScale.ts), so the room is read
+ * in unscaled units and the result scaled back up.
  */
 export function getBuildingLensColumnWidths(outerWidth: number, textScale = 1): BuildingLensColumnWidths {
   const width = Number.isFinite(outerWidth) ? outerWidth : BUILDING_LENS_MIN_WIDTH;
-  const span = BUILDING_LENS_MAX_WIDTH - BUILDING_LENS_MIN_WIDTH;
+  const textRatio = fontSizeRatio("s", textScale);
+  const room = tableColumnRoom(width);
+
+  // How far along from the minimum set to the comfortable set the room
+  // reaches, read in unscaled units since the figures grow with the text.
+  const minTotal = sumWidths(BUILDING_LENS_COLUMN_MIN);
+  const span = sumWidths(BUILDING_LENS_COLUMN_MAX) - minTotal;
   // A degenerate range would divide by zero; every column simply gets its
-  // comfortable width, which is what a single supported panel size deserves.
-  const ratio = span <= 0
+  // comfortable width, which is what a single supported set deserves.
+  const share = span <= 0
     ? 1
-    : Math.max(0, Math.min(1, (width - BUILDING_LENS_MIN_WIDTH) / span));
+    : Math.max(0, Math.min(1, (room / textRatio - minTotal) / span));
 
-  // The cells are fontSizeS; their figures do not scale with the panel but do
-  // with the game's text scale — see domain/textScale.ts. Only as far as the
-  // panel allows, though: at 125 % on a 720p panel the full ratio pushed the
-  // name cell down to 13px. Past the room left beside a name of its minimum
-  // width the columns stop growing and their figures clip inside the cell,
-  // which is what happened before and is the lesser harm. outerWidth is the
-  // assembly plus chrome, the same figure the catalog passes.
-  const wanted = fontSizeRatio("s", textScale);
-  const unscaledTotal = (Object.keys(BUILDING_LENS_COLUMN_MAX) as BuildingLensMetric[])
-    .reduce((total, metric) => total + BUILDING_LENS_COLUMN_MIN[metric] + (BUILDING_LENS_COLUMN_MAX[metric] - BUILDING_LENS_COLUMN_MIN[metric]) * ratio, 0);
-  const room = width - BUILDING_LENS_PANEL_CHROME_WIDTH - BUILDING_LENS_CONTROL_PANE_TOTAL - BUILDING_LENS_IDENTITY_MIN - BUILDING_LENS_TABLE_ROW_FURNITURE;
-  const textRatio = unscaledTotal > 0 ? Math.max(1, Math.min(wanted, room / unscaledTotal)) : wanted;
-
-  const widths = {} as BuildingLensColumnWidths;
-
+  const base = {} as BuildingLensColumnWidths;
   for (const metric of Object.keys(BUILDING_LENS_COLUMN_MAX) as BuildingLensMetric[]) {
     const min = BUILDING_LENS_COLUMN_MIN[metric];
     const max = BUILDING_LENS_COLUMN_MAX[metric];
+    base[metric] = min + (max - min) * share;
+  }
+
+  // The figures grow with the text scale as far as the room allows and no
+  // further: a set already at its minima cannot also grow by half. What does
+  // not fit at a large scale clips inside its cell, which is the lesser harm
+  // — the alternative squeezed the name to 13px at 125 %.
+  const baseTotal = sumWidths(base);
+  const grow = room > 0 && baseTotal > 0
+    ? Math.min(textRatio, Math.max(1, room / baseTotal))
+    : 1;
+
+  const widths = {} as BuildingLensColumnWidths;
+  for (const metric of Object.keys(base) as BuildingLensMetric[]) {
     // Whole units: a fractional width is a column that lands on a different
     // pixel in the header than in the rows, which is the alignment bug this
     // table has already been fixed for once.
-    widths[metric] = Math.round((min + (max - min) * ratio) * textRatio);
+    widths[metric] = Math.round(base[metric] * grow);
   }
 
   return widths;

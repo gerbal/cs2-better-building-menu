@@ -98,22 +98,25 @@ describe("Building Lens catalog height", () => {
 });
 
 describe("Table column widths", () => {
-  it("gives every column its comfortable width on the widest panel", async () => {
-    const { getBuildingLensColumnWidths, BUILDING_LENS_COLUMN_MAX, BUILDING_LENS_MAX_WIDTH } = await import(
+  // Measured live at 1280x720 with PanelWidth 1441 (the whole assembly,
+  // control pane included) on 2026-09-09, with every column set to its
+  // comfortable width by hand: the row is 1026rem, the seven cells drew at
+  // exactly their 586rem, nothing overflowed, and the name still had 327rem.
+  // An earlier reading of the same row as 820rem was wrong, and the 422rem
+  // "room" derived from it held the columns to 72 % of what fits.
+  it("gives every column its comfortable width at the default assembly", async () => {
+    const { getBuildingLensColumnWidths, BUILDING_LENS_COLUMN_MAX, BUILDING_LENS_MAX_WIDTH, BUILDING_LENS_PANEL_CHROME_WIDTH } = await import(
       "../src/domain/buildingLensLayout.ts"
     );
 
-    assert.deepEqual(getBuildingLensColumnWidths(BUILDING_LENS_MAX_WIDTH), BUILDING_LENS_COLUMN_MAX);
+    assert.deepEqual(getBuildingLensColumnWidths(BUILDING_LENS_MAX_WIDTH + BUILDING_LENS_PANEL_CHROME_WIDTH), BUILDING_LENS_COLUMN_MAX);
   });
 
-  it("squeezes them to their floor on the narrowest panel", async () => {
+  it("never goes below the minimum table, however narrow the panel", async () => {
     const { getBuildingLensColumnWidths, BUILDING_LENS_COLUMN_MIN, BUILDING_LENS_MIN_WIDTH } = await import(
       "../src/domain/buildingLensLayout.ts"
     );
 
-    // The whole point: those units go to the name. Measured live at the minimum
-    // panel width, the identity cell was 39px and the name inside it was ZERO
-    // while Capacity held its full width to render "—".
     assert.deepEqual(getBuildingLensColumnWidths(BUILDING_LENS_MIN_WIDTH), BUILDING_LENS_COLUMN_MIN);
   });
 
@@ -130,17 +133,19 @@ describe("Table column widths", () => {
     assert.equal(reclaimed >= 100, true);
   });
 
-  it("moves monotonically between the two ends", async () => {
+  it("moves monotonically between the two ends, in every column", async () => {
     const { getBuildingLensColumnWidths, BUILDING_LENS_MIN_WIDTH, BUILDING_LENS_MAX_WIDTH } = await import(
       "../src/domain/buildingLensLayout.ts"
     );
 
-    let previous = getBuildingLensColumnWidths(BUILDING_LENS_MIN_WIDTH).capacity;
+    let previous = getBuildingLensColumnWidths(BUILDING_LENS_MIN_WIDTH);
 
     for (let w = BUILDING_LENS_MIN_WIDTH; w <= BUILDING_LENS_MAX_WIDTH; w += 25) {
-      const capacity = getBuildingLensColumnWidths(w).capacity;
-      assert.equal(capacity >= previous, true);
-      previous = capacity;
+      const widths = getBuildingLensColumnWidths(w);
+      for (const key of Object.keys(widths) as (keyof typeof widths)[]) {
+        assert.ok(widths[key] >= previous[key], `${key} fell from ${previous[key]} to ${widths[key]} at ${w}`);
+      }
+      previous = widths;
     }
   });
 
@@ -158,7 +163,7 @@ describe("Table column widths", () => {
 
     // The table has already been fixed once for a header that drifted from its
     // rows; a fractional width would reintroduce it a pixel at a time.
-    for (const width of Object.values(getBuildingLensColumnWidths(900))) {
+    for (const width of Object.values(getBuildingLensColumnWidths(1400))) {
       assert.equal(Number.isInteger(width), true);
     }
   });
@@ -184,5 +189,54 @@ describe("the Upkeep column at the narrowest panel", () => {
     // maximum of 108rem on that panel — still clipped.
     assert.ok(BUILDING_LENS_COLUMN_MIN.upkeep >= 112, `upkeep min is ${BUILDING_LENS_COLUMN_MIN.upkeep}rem`);
     assert.ok(BUILDING_LENS_COLUMN_MAX.upkeep >= 112, `upkeep max is ${BUILDING_LENS_COLUMN_MAX.upkeep}rem`);
+  });
+});
+
+describe("the metric columns fit the room beside the name", () => {
+  // The room is what the row really has: assembly − control pane − the
+  // panel's chrome around the rows − the row's own furniture − the name's
+  // basis. Measured at PanelWidth 1441: the panel is 1441 − 385 = 1056rem and
+  // the row 1026rem, so the chrome is 30; less 138 furniture and the 260 the
+  // name keeps, 628rem — which is why the 586rem maximum fits there.
+  it("is the measured row less the furniture and the name's basis at the default assembly", async () => {
+    const { tableColumnRoom, BUILDING_LENS_MAX_WIDTH, BUILDING_LENS_PANEL_CHROME_WIDTH } = await import("../src/domain/buildingLensLayout.ts");
+
+    assert.equal(tableColumnRoom(BUILDING_LENS_MAX_WIDTH + BUILDING_LENS_PANEL_CHROME_WIDTH), 1026 - 138 - 260);
+  });
+
+  it("holds the set to the room where the preference would overrun it", async () => {
+    // A 1350rem assembly has 502rem beside a 260rem name; the columns take
+    // exactly that, not the 586 they would prefer, so the name keeps its basis
+    // instead of being the one flex item that yields.
+    const { getBuildingLensColumnWidths, tableColumnRoom } = await import("../src/domain/buildingLensLayout.ts");
+    const total = Object.values(getBuildingLensColumnWidths(1350)).reduce((a, b) => a + b, 0);
+
+    assert.equal(tableColumnRoom(1350), 502);
+    assert.ok(Math.abs(total - 502) <= 3, `columns sum to ${total}rem of 502`);
+  });
+
+  it("keeps every column's share of the room in proportion to its preference", async () => {
+    const { getBuildingLensColumnWidths, BUILDING_LENS_COLUMN_MAX } = await import("../src/domain/buildingLensLayout.ts");
+    const widths = getBuildingLensColumnWidths(1350);
+
+    assert.ok(widths.upkeep > widths.cost && widths.capacity > widths.cost, "upkeep and capacity stay the widest");
+    assert.ok(widths.upkeep / widths.level > BUILDING_LENS_COLUMN_MAX.upkeep / BUILDING_LENS_COLUMN_MAX.level * 0.9);
+  });
+
+  it("shrinks the room as the text scale grows the figures", async () => {
+    // At 125 % the cells' figures are wider by the same ratio as the font,
+    // so the set that fits is the room over that ratio: still at most the
+    // room, and still whole units.
+    const { getBuildingLensColumnWidths, tableColumnRoom, BUILDING_LENS_MAX_WIDTH, BUILDING_LENS_PANEL_CHROME_WIDTH } = await import("../src/domain/buildingLensLayout.ts");
+    const outer = BUILDING_LENS_MAX_WIDTH + BUILDING_LENS_PANEL_CHROME_WIDTH;
+    const total = Object.values(getBuildingLensColumnWidths(outer, 1.25)).reduce((a, b) => a + b, 0);
+
+    assert.ok(total <= tableColumnRoom(outer) + 3, `columns sum to ${total}rem of ${tableColumnRoom(outer)}`);
+    assert.ok(total > tableColumnRoom(outer) - 8, `columns leave ${tableColumnRoom(outer) - total}rem unused`);
+  });
+
+  it("does not cap where there is room to spare", async () => {
+    const { getBuildingLensColumnWidths, BUILDING_LENS_COLUMN_MAX } = await import("../src/domain/buildingLensLayout.ts");
+    assert.deepEqual(getBuildingLensColumnWidths(3000), BUILDING_LENS_COLUMN_MAX);
   });
 });

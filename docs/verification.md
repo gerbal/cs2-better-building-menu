@@ -1890,3 +1890,43 @@ Options there — its back arrow is the button with class `back-button…`
 beside the OPTIONS heading, and the Options page stays mounted (offscreen)
 after closing, so "is Options open" must be a visibility test.
 
+
+### The table's column model (2026-09-09, cm-jqne)
+
+The withdrawn measured-fit work left one open question: why the seven
+metric cells drew narrower than their inline widths at the default
+assembly. The answer was a wrong measurement, not flex. The row had been
+read as 820rem and the "room" for the columns derived from it as 422rem;
+on the same live row (headless `949230-b`, 1280x720, PanelWidth 1441) with
+every column set to its comfortable width by hand, the seven cells drew at
+exactly their 586rem, the name still had 327rem, and nothing overflowed.
+Re-measured: the panel is 1441 − 385 = 1056rem and the row 1026rem, so the
+chrome around the rows is 30rem, not 236, and the room beside a 260rem name
+is 628rem.
+
+The columns now move between their minima and their comfortable widths by
+that room rather than by the panel's position in its range
+(`getBuildingLensColumnWidths`, `tableColumnRoom`): a set that sums to the
+room is what keeps the name at its basis, since every metric cell is
+`flex: 0 0 auto` and the name is the only item that yields. Below the room
+that holds the minimum set (about a 1326rem assembly) the columns sit at
+their minima and the name gives way, as it always did there; the text
+scale grows the figures only as far as the room allows. Unit-tested against
+these numbers, 642 UI tests green.
+
+Live on the new build, same setup, Roads in Table view:
+
+| reading | before | after |
+|---|---|---|
+| inline widths vs drawn (7 columns) | equal, 422rem | equal, 586rem |
+| worst cell overflow, 700 cells | 9px (Upkeep) | 1px |
+| names overflowing, 100 rows | 0 | 0 |
+| name element | 491rem | 327rem |
+
+Frame `33-table-720-room-fit.png`: "¢4,000 /km" and "¢487 /km/mo." whole,
+the Level and Parking headers no longer run together.
+
+One pre-existing defect the probe surfaced: the header row is 1075rem wide
+with 50rem of right padding where a row is 1026rem with 4rem, so the
+identity header is 431rem against a 407rem identity cell and every metric
+header sits 21rem (14px at 720p) right of its column. Queued, not fixed here.
