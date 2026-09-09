@@ -9,7 +9,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 MOD_NAME="BetterBuildingMenu"
 PROJECT_DIR="$SCRIPT_DIR/BetterBuildingMenu"
 UI_DIR="$PROJECT_DIR/UI"
-DLL="$PROJECT_DIR/bin/Debug/net48/$MOD_NAME.dll"
+BUILD_CONFIG="${CS2_BUILD_CONFIG:-Debug}"
+DLL="$PROJECT_DIR/bin/$BUILD_CONFIG/net48/$MOD_NAME.dll"
 UI_BUILD="$UI_DIR/build"
 PACKAGE_DIR="$SCRIPT_DIR/artifacts/$MOD_NAME"
 TEST_PROJECT="$SCRIPT_DIR/BetterBuildingMenu.Tests/BetterBuildingMenu.Tests.csproj"
@@ -28,7 +29,7 @@ build_backend() {
     echo "=== Building $MOD_NAME backend ==="
     (
         cd "$PROJECT_DIR"
-        "$DOTNET_BIN" build -c Debug -p:SkipBuildUI=true
+        "$DOTNET_BIN" build -c "$BUILD_CONFIG" -p:SkipBuildUI=true
     )
 }
 
