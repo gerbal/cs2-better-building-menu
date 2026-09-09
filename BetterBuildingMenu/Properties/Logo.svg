@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- Better Building Menu logo. Text is set in Noto Sans Bold (Overpass, the game's UI face, if present). -->
+  <rect width="1024" height="1024" fill="#121a22"/>
+  <rect x="88" y="88" width="848" height="848" rx="112" ry="112" fill="#1f2d3a" stroke="#3b4c5c" stroke-width="6"/>
+  <g font-family="Overpass, 'Noto Sans', sans-serif" font-weight="700" font-size="164" fill="#ffffff" text-anchor="start">
+    <text x="176" y="430">Better</text>
+    <text x="176" y="612">Building</text>
+    <text x="176" y="794" fill="#6ec1ff">Menu</text>
+  </g>
+</svg>
