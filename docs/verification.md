@@ -1930,3 +1930,26 @@ One pre-existing defect the probe surfaced: the header row is 1075rem wide
 with 50rem of right padding where a row is 1026rem with 4rem, so the
 identity header is 431rem against a 407rem identity cell and every metric
 header sits 21rem (14px at 720p) right of its column. Queued, not fixed here.
+
+### Tooling promoted from the scratchpad (2026-09-09, cm-th6g)
+
+The scripts the passes above ran from a session scratchpad now live in the
+repos, run against the live game before committing:
+
+- `scripts/cs2-cdp-shot.mjs <port> <out.png>` (workspace) — the UI layer as
+  a PNG over the DevTools protocol.
+- `scripts/cs2-cdp-eval.mjs <port> <file.js>` (workspace) — evaluate a probe
+  file in the page and print its result.
+- `BetterBuildingMenu/UI/scripts/shot-views.mjs <port> <prefix>` — drive
+  Cards, Grid and Table, the hover card on the bottom-right tile and the
+  Group-by picker with the menu open, writing `<prefix>-<view>.png` each.
+- `BetterBuildingMenu/UI/scripts/layout-probe.js` — the geometry probe:
+  boxes leaving the viewport, clipped text, overlapping tiles, horizontal
+  scroll, with overflow read as content past max(clientWidth, offsetWidth).
+- `BetterBuildingMenu/UI/scripts/table-widths-probe.js` — each table
+  column's inline width against its drawn header and cell, with overflows;
+  the reading behind the column model above and cm-7kr8.
+
+A probe is a synchronous IIFE returning a string: Cohtml's
+`Runtime.evaluate` does not await a promise, so an async probe comes back
+as `{}`.
