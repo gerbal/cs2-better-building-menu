@@ -100,3 +100,17 @@ export function mergeColumnExtras<K extends string>(
   const changed = (Object.keys(capped) as K[]).some((key) => capped[key] !== (current[key] ?? 0));
   return changed ? capped : null;
 }
+
+/**
+ * The pixels of content drawn past an element's box.
+ *
+ * Cohtml's scrollWidth equals offsetWidth when nothing overflows and
+ * clientWidth excludes the border, so scrollWidth − clientWidth is never zero
+ * on a bordered cell: every table cell at 1440p reported its 2px border as
+ * overflow and the measuring effect kept "fixing" it. A browser keeps
+ * scrollWidth at clientWidth when nothing overflows. Both agree that content
+ * past the larger of the two widths is overflow.
+ */
+export function contentOverflowPx(clientWidth: number, offsetWidth: number, scrollWidth: number): number {
+  return Math.max(0, scrollWidth - Math.max(clientWidth, offsetWidth));
+}

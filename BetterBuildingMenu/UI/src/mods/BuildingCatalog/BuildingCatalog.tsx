@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import classNames from "classnames";
 import { shortenTileLabel, tableLabelCharBudget } from "domain/tileLabel";
 import { useTextScale } from "domain/textScaleSetting";
-import { mergeColumnExtras } from "domain/measuredFit";
+import { contentOverflowPx, mergeColumnExtras } from "domain/measuredFit";
 import mod from "../../../mod.json";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
@@ -153,7 +153,7 @@ export const BuildingCatalogComponent = () => {
       const overflow: Partial<Record<BuildingLensMetric, number>> = {};
       root.querySelectorAll<HTMLElement>("[data-metric]").forEach((cell) => {
         const metric = cell.dataset.metric as BuildingLensMetric;
-        const over = cell.scrollWidth - cell.clientWidth;
+        const over = contentOverflowPx(cell.clientWidth, cell.offsetWidth, cell.scrollWidth);
         if (over > (overflow[metric] ?? 0)) overflow[metric] = over;
       });
       const columnsRem = Object.values(columnWidths).reduce((total, width) => total + width, 0);

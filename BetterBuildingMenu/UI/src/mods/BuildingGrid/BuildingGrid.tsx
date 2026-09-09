@@ -10,7 +10,7 @@ import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/B
 import { topSearchResult } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { stripRedundantNamePrefix, tileLabelLineBudget, wrapTileLabel } from "domain/tileLabel";
-import { reduceBudgetToFit } from "domain/measuredFit";
+import { contentOverflowPx, reduceBudgetToFit } from "domain/measuredFit";
 import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
 import { formatBuildingMetric, getNumberSeparators } from "domain/buildingLensMetricFormat";
 import type { SortColumn } from "domain/buildingCatalogContracts";
@@ -83,7 +83,8 @@ const TileName = ({ label, budget }: { label: string; budget: number }) => {
     const measure = () => {
       let next = effective;
       for (const line of Array.from(box.children) as HTMLElement[]) {
-        next = Math.min(next, reduceBudgetToFit(effective, line.clientWidth, line.scrollWidth));
+        const box = Math.max(line.clientWidth, line.offsetWidth);
+        next = Math.min(next, reduceBudgetToFit(effective, box, box + contentOverflowPx(line.clientWidth, line.offsetWidth, line.scrollWidth)));
       }
       if (next < effective) setFit(next);
     };
