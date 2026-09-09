@@ -1,11 +1,10 @@
 import { bindValue, trigger, useValue } from "cs2/api";
 import { Button } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import classNames from "classnames";
 import { shortenTileLabel, tableLabelCharBudget } from "domain/tileLabel";
 import { useTextScale } from "domain/textScaleSetting";
-import { contentOverflowPx, mergeColumnExtras } from "domain/measuredFit";
 import mod from "../../../mod.json";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
@@ -136,75 +135,16 @@ export const BuildingCatalogComponent = () => {
   // Figures do not scale with the panel but do with the game's text scale.
   const textScale = useTextScale();
   const columnWidths = getBuildingLensColumnWidths(panelWidth + BUILDING_LENS_PANEL_CHROME_WIDTH, textScale);
-  // The widths are estimates; the cells are the fact. Whatever a column's
-  // cells drew past its estimate is added back in rem, capped at the room
-  // beside a name of its minimum width — see domain/measuredFit.ts. A new
-  // panel width or text scale starts from the estimate again.
-  const [columnExtras, setColumnExtras] = useState<Partial<Record<BuildingLensMetric, number>>>({});
-  useEffect(() => {
-    setColumnExtras({});
-  }, [panelWidth, textScale]);
-  useEffect(() => {
-    const root = rootRef.current;
-    if (!root) return;
-    const measure = () => {
-      // Vanilla's own unit: a rem is a 1920th of the viewport width.
-      const remPx = window.innerWidth / 1920;
-      const overflow: Partial<Record<BuildingLensMetric, number>> = {};
-      root.querySelectorAll<HTMLElement>("[data-metric]").forEach((cell) => {
-        const metric = cell.dataset.metric as BuildingLensMetric;
-        const over = contentOverflowPx(cell.clientWidth, cell.offsetWidth, cell.scrollWidth);
-        if (over > (overflow[metric] ?? 0)) overflow[metric] = over;
-      });
-      const columnsRem = Object.values(columnWidths).reduce((total, width) => total + width, 0);
-      const room = panelWidth - BUILDING_LENS_CONTROL_PANE_TOTAL - BUILDING_LENS_IDENTITY_MIN - BUILDING_LENS_TABLE_ROW_FURNITURE;
-      // Null when nothing would change — setting an equal-but-new object here
-      // re-rendered, re-measured and set again without end, and froze the
-      // game. See domain/measuredFit.ts.
-      const merged = mergeColumnExtras(columnExtras, overflow, remPx, columnsRem, room);
-      if (merged) setColumnExtras(merged);
-    };
-    // Measured live at 1440p: the effect ran with the rows freshly committed
-    // and read no overflow, and the 2px that appeared a frame later — once
-    // the text had laid out — went unseen, because the root's size had not
-    // changed. So: the root and the first cell are watched, and the second
-    // frame after commit is measured as well, which is where the relayout
-    // landed (see GroupedResults).
-    // Measured live at 1440p again after the second frame was added: the 2px
-    // arrived later still, and nothing observed changed size when it did. So
-    // the commit is followed by a bounded run of timed re-measures — the last
-    // at 2.5s — on top of the observers; each is a cheap query and a compare.
-    let inner = 0;
-    const outer = requestAnimationFrame(() => {
-      inner = requestAnimationFrame(measure);
-    });
-    const timers = [50, 250, 1000, 2500].map((ms) => setTimeout(measure, ms));
-    const cancelTimers = () => {
-      cancelAnimationFrame(outer);
-      cancelAnimationFrame(inner);
-      timers.forEach(clearTimeout);
-    };
-    if (typeof ResizeObserver === "function") {
-      const observer = new ResizeObserver(measure);
-      observer.observe(root);
-      const cell = root.querySelector<HTMLElement>("[data-metric]");
-      if (cell) observer.observe(cell);
-      measure();
-      return () => {
-        observer.disconnect();
-        cancelTimers();
-      };
-    }
-    return cancelTimers;
-    // columnWidths is derived from panelWidth and textScale, which are here.
-    // tableMode and items too: the cells only exist in the table view, and a
-    // view switch or a further page does not resize the root, so the observer
-    // alone never saw them — measured live, the 116rem estimate stood.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [panelWidth, textScale, columnExtras, tableMode, items]);
+  // The widths are estimates and stay estimates. A measured correction was
+  // tried (2532304 → 6b84e4b) and withdrawn: the row is a flex layout whose
+  // column bases already exceed the room beside the name at a 1441rem
+  // assembly, so cells shrink back to what the row allows and an inline width
+  // is not what gets drawn — a column widened to cure a 2px overflow ran to
+  // 268rem while the name fell to 233px. Fitting the columns to the row is a
+  // column-model change, not a measurement; see docs/verification.md.
   const columnStyle = (metric: BuildingLensMetric) => ({
-    width: `${columnWidths[metric] + (columnExtras[metric] ?? 0)}rem`,
-    flexBasis: `${columnWidths[metric] + (columnExtras[metric] ?? 0)}rem`,
+    width: `${columnWidths[metric]}rem`,
+    flexBasis: `${columnWidths[metric]}rem`,
   });
   // The width the NAME actually gets.
   //

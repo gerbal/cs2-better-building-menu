@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { reduceBudgetToFit, columnExtraRem, capColumnExtras, mergeColumnExtras, contentOverflowPx } from "../src/domain/measuredFit.ts";
+import { reduceBudgetToFit, contentOverflowPx } from "../src/domain/measuredFit.ts";
 
 // Character budgets and rem widths are estimates; the drawn text is the
 // fact. Above 1.33px per rem (1440p, ultrawide) text renders 2–3 % wider
@@ -36,59 +36,6 @@ describe("a tile line budget corrected from what was drawn", () => {
   });
 });
 
-describe("a metric column widened to what its cells drew", () => {
-  it("adds nothing when nothing overflowed, or less than a rem did", () => {
-    assert.equal(columnExtraRem(0, 1.333), 0);
-    assert.equal(columnExtraRem(-3, 1.333), 0);
-    // Every cell at 1440p reported a constant 1px of "overflow" from
-    // fractional rem widths rounding to whole pixels. Counted, it grew the
-    // first column by two rem a cycle until it had eaten the whole room.
-    assert.equal(columnExtraRem(1, 1.333), 0);
-  });
-
-  it("adds the overflow in whole rem plus one of slack", () => {
-    // "¢2,437 /km/mo." 117px in a 115px cell at 1.333px per rem → 2px is
-    // 1.5rem, so two, plus one.
-    assert.equal(columnExtraRem(2, 1.333), 3);
-    // 4 / 1.333 is 3.0008, which ceils to four; plus one.
-    assert.equal(columnExtraRem(4, 1.333), 5);
-    assert.equal(columnExtraRem(8, 1.0), 9);
-  });
-
-  it("caps the extras at the room beside a name of its minimum width", () => {
-    // 100rem of room, columns already 90rem wide: only 10rem of extra fits,
-    // shared out in order until it runs out.
-    const capped = capColumnExtras({ cost: 6, upkeep: 6, workers: 2 }, 90, 100);
-    assert.deepEqual(capped, { cost: 6, upkeep: 4, workers: 0 });
-  });
-
-  it("leaves extras alone where there is room", () => {
-    assert.deepEqual(capColumnExtras({ cost: 3, upkeep: 3 }, 90, 200), { cost: 3, upkeep: 3 });
-  });
-});
-
-describe("merging a measurement into the current extras", () => {
-  // The first version of the catalog's measuring effect set state with a
-  // new-but-equal object whenever the cap trimmed a wanted extra, and React
-  // re-rendered, re-measured and set again forever: the UI thread blocked
-  // and the game froze. The merge answers null when nothing would change.
-  it("answers null when no cell overflowed, or only by rounding noise", () => {
-    assert.equal(mergeColumnExtras({ cost: 2 }, {}, 1, 100, 300), null);
-    assert.equal(mergeColumnExtras({}, { cost: 1, upkeep: 1 }, 1.333, 100, 300), null);
-  });
-
-  it("answers null when the cap leaves every extra as it was", () => {
-    // 10rem of room, all already granted to cost; upkeep wants more and
-    // cannot have it.
-    assert.equal(mergeColumnExtras({ cost: 10 }, { upkeep: 4 }, 1, 90, 100), null);
-  });
-
-  it("answers the grown extras otherwise", () => {
-    assert.deepEqual(mergeColumnExtras({}, { upkeep: 2 }, 1.333, 90, 300), { upkeep: 3 });
-    assert.deepEqual(mergeColumnExtras({ upkeep: 3 }, { upkeep: 2 }, 1.333, 90, 300), { upkeep: 6 });
-  });
-});
-
 describe("what counts as overflow", () => {
   // Cohtml's scrollWidth equals offsetWidth when nothing overflows, and
   // clientWidth excludes the border, so scrollWidth − clientWidth is never
@@ -98,6 +45,8 @@ describe("what counts as overflow", () => {
   // keeps scrollWidth at clientWidth when nothing overflows. Both engines
   // agree that content past max(clientWidth, offsetWidth) is overflow.
   it("is content past the larger of client and offset width", () => {
+    // (The table cells this was first written for no longer measure — see
+    // BuildingCatalog.tsx — but a bordered tile is the same case.)
     // Cohtml, bordered, fits: scroll == offset > client.
     assert.equal(contentOverflowPx(153, 155, 155), 0);
     // Cohtml, bordered, overflowing by three.
