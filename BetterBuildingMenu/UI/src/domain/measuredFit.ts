@@ -19,8 +19,16 @@ const MIN_LINE_BUDGET = 4;
  * A smaller character budget for a line that drew wider than its box.
  * Unchanged when it fits or when the box has not been laid out (0).
  */
+/**
+ * Overflow of a pixel is rounding noise — a fractional rem width lands on a
+ * whole pixel either side — and is not acted on. Counted, it grew the
+ * table's first column by two rem a cycle until it had eaten the whole
+ * room (measured live at 1440p, 2026-09-09).
+ */
+const ROUNDING_NOISE_PX = 1;
+
 export function reduceBudgetToFit(budget: number, availablePx: number, neededPx: number): number {
-  if (availablePx <= 0 || neededPx <= 0 || neededPx <= availablePx) {
+  if (availablePx <= 0 || neededPx <= 0 || neededPx - availablePx <= ROUNDING_NOISE_PX) {
     return budget;
   }
   // In proportion to the overflow, and by at least one: an overflow of a
@@ -35,7 +43,7 @@ export function reduceBudgetToFit(budget: number, availablePx: number, neededPx:
  * rendering variance does not clip again.
  */
 export function columnExtraRem(overflowPx: number, remPx: number): number {
-  if (overflowPx <= 0 || remPx <= 0) {
+  if (overflowPx <= ROUNDING_NOISE_PX || remPx <= 0) {
     return 0;
   }
   return Math.ceil(overflowPx / remPx) + 1;
