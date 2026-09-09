@@ -55,8 +55,13 @@ const TILE_LABEL_LINES = 2;
 export const tileLabelLineBudget = (tileSize: number, textScale = 1): number => {
   const size = Number.isFinite(tileSize) && tileSize > 0 ? tileSize : DEFAULT_TILE_SIZE;
   // The name line is fontSizeM; at a larger text scale fewer characters fit
-  // the same box — see domain/textScale.ts.
-  return Math.max(4, Math.round((size / DEFAULT_TILE_SIZE) * CHARS_PER_LINE_AT_DEFAULT_TILE / fontSizeRatio("m", textScale)));
+  // the same box — see domain/textScale.ts. The unscaled budget is rounded,
+  // as it was measured; a scaled one is floored, because the base already
+  // fills the line and there is no margin to round up into ("One-Way Road"
+  // on one 99px line in a 93px box at 125 %).
+  const ratio = fontSizeRatio("m", textScale);
+  const unscaled = (size / DEFAULT_TILE_SIZE) * CHARS_PER_LINE_AT_DEFAULT_TILE;
+  return Math.max(4, ratio === 1 ? Math.round(unscaled) : Math.floor(unscaled / ratio));
 };
 
 /**

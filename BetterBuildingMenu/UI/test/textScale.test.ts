@@ -23,10 +23,15 @@ describe("the game's text scale", () => {
     assert.ok(Math.abs(fontSizeRatio("xs", 1.25) - 18.45 / 12) < 1e-9);
   });
 
-  it("shrinks the tile's character budget with the M size", () => {
+  it("shrinks the tile's character budget with the M size, and floors it", () => {
     // Twelve at 100 %; the M size is ×1.448 at 125 %, so eight.
     assert.equal(tileLabelLineBudget(100, 1.25), 8);
     assert.equal(tileLabelLineBudget(100), 12);
+    // A 144rem tile budgets seventeen at 100 % and that already fills its
+    // line; 17.28 / 1.448 is 11.93, and rounding it up kept "One-Way Road" on
+    // one 99px line in a 93px box at 125 %. A scaled budget has no margin to
+    // round into, so it floors.
+    assert.equal(tileLabelLineBudget(144, 1.25), 11);
   });
 
   it("shrinks the table's name budget with the S size", () => {
