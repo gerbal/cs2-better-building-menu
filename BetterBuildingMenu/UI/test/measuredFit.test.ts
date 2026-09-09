@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { reduceBudgetToFit, columnExtraRem, capColumnExtras, mergeColumnExtras } from "../src/domain/measuredFit.ts";
+import { reduceBudgetToFit, columnExtraRem, capColumnExtras, mergeColumnExtras, contentOverflowPx } from "../src/domain/measuredFit.ts";
 
 // Character budgets and rem widths are estimates; the drawn text is the
 // fact. Above 1.33px per rem (1440p, ultrawide) text renders 2–3 % wider
@@ -86,5 +86,27 @@ describe("merging a measurement into the current extras", () => {
   it("answers the grown extras otherwise", () => {
     assert.deepEqual(mergeColumnExtras({}, { upkeep: 2 }, 1.333, 90, 300), { upkeep: 3 });
     assert.deepEqual(mergeColumnExtras({ upkeep: 3 }, { upkeep: 2 }, 1.333, 90, 300), { upkeep: 6 });
+  });
+});
+
+describe("what counts as overflow", () => {
+  // Cohtml's scrollWidth equals offsetWidth when nothing overflows, and
+  // clientWidth excludes the border, so scrollWidth − clientWidth is never
+  // zero on a bordered cell: every table cell at 1440p reported its 2px
+  // border as overflow, the measuring effect kept "fixing" it, and the
+  // probe that found the "clips" was reading the same thing. A browser
+  // keeps scrollWidth at clientWidth when nothing overflows. Both engines
+  // agree that content past max(clientWidth, offsetWidth) is overflow.
+  it("is content past the larger of client and offset width", () => {
+    // Cohtml, bordered, fits: scroll == offset > client.
+    assert.equal(contentOverflowPx(153, 155, 155), 0);
+    // Cohtml, bordered, overflowing by three.
+    assert.equal(contentOverflowPx(153, 155, 158), 3);
+    // A browser, fits: scroll == client < offset.
+    assert.equal(contentOverflowPx(153, 155, 153), 0);
+    // A browser, overflowing: scroll > offset.
+    assert.equal(contentOverflowPx(153, 155, 160), 5);
+    // Unbordered span, either engine.
+    assert.equal(contentOverflowPx(187, 187, 195), 8);
   });
 });
