@@ -179,8 +179,11 @@ export const BuildingCatalogComponent = () => {
       cancelAnimationFrame(inner);
     };
     // columnWidths is derived from panelWidth and textScale, which are here.
+    // tableMode and items too: the cells only exist in the table view, and a
+    // view switch or a further page does not resize the root, so the observer
+    // alone never saw them — measured live, the 116rem estimate stood.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [panelWidth, textScale, columnExtras]);
+  }, [panelWidth, textScale, columnExtras, tableMode, items]);
   const columnStyle = (metric: BuildingLensMetric) => ({
     width: `${columnWidths[metric] + (columnExtras[metric] ?? 0)}rem`,
     flexBasis: `${columnWidths[metric] + (columnExtras[metric] ?? 0)}rem`,
