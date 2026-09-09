@@ -1953,3 +1953,31 @@ repos, run against the live game before committing:
 A probe is a synchronous IIFE returning a string: Cohtml's
 `Runtime.evaluate` does not await a promise, so an async probe comes back
 as `{}`.
+
+### The table header's offset (2026-09-09, cm-7kr8)
+
+Two causes, both in `buildingCatalog.module.scss`. `.columnHeader > * + *`
+gives each header the rows' 3rem gap, and `.metricHeader`'s button-chrome
+reset (`margin: 0`, same specificity, later in the file) took it straight
+back: the row's cells stepped 103rem apart and the headers 100rem, so each
+header sat 3rem further left per column — 21rem at Cost down to 3rem at
+Parking. And `$table-trailing-reserve` counted no gap before the chevron,
+where 33rem trail a 1026rem select inside a 1059rem rows box (chevron 26,
+outer padding 4, gap 3), leaving the header's identity 3rem wider than the
+cell's. The reset now keeps the gap, the reserve counts it once (37rem),
+and `BUILDING_LENS_TABLE_ROW_FURNITURE` mirrors it (141rem; the name
+budget it feeds said 332 where the name measured 327, now 329).
+
+Live at 1280x720, PanelWidth 1441, Roads in Table view, from
+`UI/scripts/table-widths-probe.js`:
+
+| column | header left → cell left, before | after |
+|---|---|---|
+| Cost | 843 → 822 (21rem) | 822 → 822 |
+| Upkeep | 943 → 925 (18rem) | 925 → 925 |
+| Workers | 1059 → 1044 (15rem) | 1044 → 1044 |
+| identity header / cell | 431 / 407 | 407 / 407 |
+
+All seven columns at shift 0, widths unchanged at 586rem, worst overflow
+1px across 700 cells, no name clipped. Frame
+`34-table-720-header-aligned.png`.

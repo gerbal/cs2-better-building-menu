@@ -95,9 +95,26 @@ describe("Building Lens stylesheet contracts", () => {
     // the right of its name, and buildingLensLayout mirrors it so the name can
     // be elided to fit. They drifted once already; a control removed from one
     // and not the other silently mis-sizes every name in the table.
-    assert.match(buildingCatalogStyles, /\$table-trailing-reserve: \$row-padding-right \+ \$row-details-width \+ \$row-outer-padding-right;/);
+    // Measured 2026-09-09 (949230-b, 1280x720, PanelWidth 1441): the rows box
+    // is 1059rem and a row's select 1026rem, so 33rem trail it — the chevron,
+    // the outer padding AND the gap before the chevron. Without the gap the
+    // header's identity was 3rem wider than the cell's.
+    assert.match(buildingCatalogStyles, /\$table-trailing-reserve: \$row-padding-right \+ \$row-details-width \+ \$row-outer-padding-right \+ \$row-gap;/);
     assert.match(buildingCatalogStyles, /\$row-details-width: 26rem;/);
     assert.doesNotMatch(buildingCatalogStyles, /\$row-place-width/, "Place is the row now; its reserve is gone");
+  });
+
+  it("spaces the header's columns as the rows space their cells", () => {
+    // .columnHeader > * + * gives each header the rows' 3rem gap, and
+    // .metricHeader's button-chrome reset (`margin: 0`, same specificity,
+    // later) took it straight back: measured live, the row's cells stepped
+    // 103rem apart and the headers 100rem, so every header sat 3rem further
+    // left per column — 21rem at Cost, 3rem at Parking (cm-7kr8). The reset
+    // keeps the gap.
+    const block = buildingCatalogStyles.match(/\.metricHeader \{([\s\S]*?)\n\}/);
+    assert.ok(block, ".metricHeader block");
+    assert.doesNotMatch(block![1], /\n\s*margin: 0;/, "margin: 0 discards the column gap");
+    assert.match(block![1], /margin: 0 0 0 \$row-gap;/);
   });
 
   it("makes the row Place hint visible for hover and keyboard focus", () => {

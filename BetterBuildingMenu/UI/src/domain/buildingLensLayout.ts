@@ -141,7 +141,7 @@ export const BUILDING_LENS_IDENTITY_MIN = 180;
  * Mirrors buildingCatalog.module.scss, which is the authority — if a trailing
  * control is resized there, this has to follow:
  *
- *   $table-trailing-reserve  34  (4 padding + 26 details chevron + 4 outer)
+ *   $table-trailing-reserve  37  (4 padding + 26 details chevron + 4 outer + 3 gap)
  *   $rows-scrollbar-width    16  (reserved while the rows scroll)
  *   .rowSelect padding-left   8
  *   .thumbnail + its margin  80  (68 + 12; a margin because `gap` is inert here)
@@ -151,7 +151,7 @@ export const BUILDING_LENS_IDENTITY_MIN = 180;
  * the middle-elision never fired and CSS went on cutting the tail, which is the
  * exact failure it was added to remove.
  */
-export const BUILDING_LENS_TABLE_ROW_FURNITURE = 34 + 16 + 8 + 80;
+export const BUILDING_LENS_TABLE_ROW_FURNITURE = 37 + 16 + 8 + 80;
 
 /**
  * What the control pane takes out of the assembly: its own 379rem plus the
