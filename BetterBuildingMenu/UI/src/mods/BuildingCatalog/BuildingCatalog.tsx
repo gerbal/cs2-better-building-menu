@@ -164,20 +164,32 @@ export const BuildingCatalogComponent = () => {
       const merged = mergeColumnExtras(columnExtras, overflow, remPx, columnsRem, room);
       if (merged) setColumnExtras(merged);
     };
-    if (typeof ResizeObserver === "function") {
-      const observer = new ResizeObserver(measure);
-      observer.observe(root);
-      measure();
-      return () => observer.disconnect();
-    }
+    // Measured live at 1440p: the effect ran with the rows freshly committed
+    // and read no overflow, and the 2px that appeared a frame later — once
+    // the text had laid out — went unseen, because the root's size had not
+    // changed. So: the root and the first cell are watched, and the second
+    // frame after commit is measured as well, which is where the relayout
+    // landed (see GroupedResults).
     let inner = 0;
     const outer = requestAnimationFrame(() => {
       inner = requestAnimationFrame(measure);
     });
-    return () => {
+    const cancelFrames = () => {
       cancelAnimationFrame(outer);
       cancelAnimationFrame(inner);
     };
+    if (typeof ResizeObserver === "function") {
+      const observer = new ResizeObserver(measure);
+      observer.observe(root);
+      const cell = root.querySelector<HTMLElement>("[data-metric]");
+      if (cell) observer.observe(cell);
+      measure();
+      return () => {
+        observer.disconnect();
+        cancelFrames();
+      };
+    }
+    return cancelFrames;
     // columnWidths is derived from panelWidth and textScale, which are here.
     // tableMode and items too: the cells only exist in the table view, and a
     // view switch or a further page does not resize the root, so the observer
