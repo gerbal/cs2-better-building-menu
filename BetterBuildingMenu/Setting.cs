@@ -11,7 +11,6 @@ namespace BetterBuildingMenu
 	[SettingsUITabOrder(SETTINGS, KEYBINDINGS)]
 	[SettingsUIGroupOrder(BEHAVIOR, UIUX, OTHER, ACTIONS, NAVIGATION)]
 	[SettingsUIShowGroupName(BEHAVIOR, UIUX, OTHER, ACTIONS, NAVIGATION)]
-	[SettingsUIMouseAction(nameof(BetterBuildingMenu) + "Apply", "CustomUsage")]
 	public class BetterBuildingMenuSettings : ModSetting
 	{
 		public const string SETTINGS = "Settings";
@@ -26,9 +25,6 @@ namespace BetterBuildingMenu
 		{
 
 		}
-
-		[SettingsUIMouseBinding(nameof(BetterBuildingMenu) + "Apply"), SettingsUIHidden]
-		public ProxyBinding ApplyMimic { get; set; }
 
 		/// <summary>
 		/// The catalog's height, in the same rem-like units as the width, set
@@ -101,9 +97,6 @@ namespace BetterBuildingMenu
 		// width.
 		[SettingsUISlider(min = 64, max = 144, step = 4, scalarMultiplier = 1, unit = Unit.kInteger)]
 		public int BuildingLensTileSize { get; set; } = 100;
-
-		[SettingsUISection(SETTINGS, BEHAVIOR)]
-		public bool OpenPanelOnPicker { get; set; } = true;
 
 		[SettingsUISection(SETTINGS, BEHAVIOR)]
 		public bool SelectPrefabOnOpen { get; set; } = true;

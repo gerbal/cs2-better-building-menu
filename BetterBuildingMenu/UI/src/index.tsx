@@ -2,16 +2,13 @@ import { ModRegistrar } from "cs2/modding";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 
 import mod from "../mod.json";
-import { ToolbarIconComponent } from "mods/ToolbarIcon/ToolbarIcon";
 import { RemoveVanillaAssetMenuComponent } from "mods/RemoveVanillaAssetMenu/RemoveVanillaAssetMenu";
 import { ExtensionMenuComponent } from "mods/ExtensionMenu/ExtensionMenu";
-import { PickerComponent } from "mods/PickerComponent/PickerComponent";
-import { ToolOptionsVisibility } from "mods/PickerComponent/ToolOptionsVisibility";
+import { ToolOptionsVisibility } from "mods/ToolOptionsVisibility/ToolOptionsVisibility";
 import { LensToolOptions } from "mods/LensToolOptions/LensToolOptions";
 
 import { VanillaMenuWatcher } from "mods/VanillaMenuWatcher/VanillaMenuWatcher";
 import { VanillaToolbarWatcher } from "mods/VanillaMenuWatcher/VanillaToolbarWatcher";
-import { PickerMenuOpener } from "mods/VanillaMenuWatcher/PickerMenuOpener";
 
 const register: ModRegistrar = (moduleRegistry) => {
   // The vanilla component resolver is a singleton that helps extrant and maintain components from game that were not specifically exposed.
@@ -26,13 +23,10 @@ const register: ModRegistrar = (moduleRegistry) => {
   // vanilla when we decline; see ExtensionMenu for the rule.
   moduleRegistry.extend("game-ui/game/components/upgrades-menu/upgrades-menu.tsx", "UpgradesMenu", ExtensionMenuComponent);
 
-  // This adds the fint it and picker icons to the toolbar
-  moduleRegistry.extend("game-ui/game/components/toolbar/top/toggles.tsx", "PhotoModeToggle", ToolbarIconComponent);
+  // No toolbar glyph and no picker tool of our own: Find It ships that
+  // picker, and the separation left it there. This is a build menu.
 
-  // Add picker UI
-  moduleRegistry.extend("game-ui/game/components/tool-options/mouse-tool-options/mouse-tool-options.tsx", "MouseToolOptions", PickerComponent);
-  // Availability lives in the game's own bank now (cm-2xvs.15). Registered
-  // after the Picker so both can push into the same panel.
+  // Availability lives in the game's own bank now (cm-2xvs.15).
   moduleRegistry.extend("game-ui/game/components/tool-options/mouse-tool-options/mouse-tool-options.tsx", "MouseToolOptions", LensToolOptions);
   // The lens's filters used to be injected here, into the game's own options
   // bank beside Theme and Pack. They render in the control plane now — see
@@ -45,9 +39,6 @@ const register: ModRegistrar = (moduleRegistry) => {
   // Also renders nothing; forwards the game's own theme/pack/Vanilla/Mods row
   // so the catalog hides what the vanilla grid would have hidden.
   moduleRegistry.append("Game", VanillaToolbarWatcher);
-  // Also renders nothing; opens the vanilla menu the picker asked for, since
-  // toolbar.selectAssetMenu is a trigger only the UI can call.
-  moduleRegistry.append("Game", PickerMenuOpener);
 
 };
 

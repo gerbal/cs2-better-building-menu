@@ -76,8 +76,6 @@
   "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.UIUX]": "UI / UX",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.HideRandomAssets]": "Скрыть \"Случайные\" Объекты",
   "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.HideRandomAssets]": "Игнорирует объекты помеченные как \"Случайные\", а также другие заполнители. Требуется перезапустить сохранение, чтобы применить изменения.",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.OpenPanelOnPicker]": "Открыть Панель \"Найди Это\" после выбора объекта",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.OpenPanelOnPicker]": "Выберите между открытием панели \"Найди Это\" после выбора объекта с помощью мода Picker, или ванильной панели, если таковая имеется.",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Выбрать первый объект при открытии \"Найди Это\"",
   "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Автоматически выбирает первый объект в списке при открытии панели \"Найди Это\", влияет на поведение, например закрытие других инструментов и использование клавиши Escape для закрытия поиска."
 }

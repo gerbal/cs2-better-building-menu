@@ -632,40 +632,6 @@ namespace BetterBuildingMenu.Systems
 			return indices.ToArray();
 		}
 
-		/// <summary>
-		/// Asks the game to open the vanilla menu that holds an asset.
-		/// </summary>
-		/// <remarks>
-		/// For the picker. Since phase 2 the build menu exists only while the
-		/// game has an asset menu open, so "show me this building" cannot mean
-		/// "raise a panel" any more — it has to mean "open the menu it lives
-		/// in", and then the ordinary path takes over: the game selects the
-		/// menu, VanillaMenuWatcher sees it, and the lens opens scoped to it
-		/// with the picked prefab already armed.
-		///
-		/// That is a better answer than the old one regardless. The picker used
-		/// to drop the player into an unscoped grid of everything; now they land
-		/// in the menu the building belongs to.
-		///
-		/// Returns false when the game places the asset in no menu at all, which
-		/// is most of the 17,952 indexed assets — props, vegetation, vehicles.
-		/// The caller falls back to arming the tool without a menu.
-		/// </remarks>
-		internal bool RequestVanillaMenu(int assetEntityIndex)
-		{
-			if (!Mod.Settings.ReplaceVanillaBuildMenu
-				|| !PrefabIndexingSystem.TryGetMenuEntityFor(assetEntityIndex, out var menu))
-			{
-				return false;
-			}
-
-			// The nonce, not the entity, is what makes this a fresh request:
-			// picking the same building twice publishes the same index and
-			// version, and an unchanged binding value emits nothing.
-			_pickerMenuNonce++;
-			_PickerMenuRequest.Value = $"{menu.Index}:{menu.Version}:{_pickerMenuNonce}";
-			return true;
-		}
 
 		private void SearchChanged(string text)
 		{
