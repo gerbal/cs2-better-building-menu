@@ -1651,3 +1651,99 @@ of a save with locked content): `Full pass at OnGameLoaded` 14:37:35 → :41,
 17693 prefabs, locked=241; the game's `Loading completed` at 14:37:54 — **19 s**
 later, not seven minutes; drift check 0, second pass skipped. The long wait was
 the headless GL harness; the lock-state agreement holds on a save with locks.
+
+## 2026-09-07/08 — hover card contents, units in both systems, 720p pass
+
+Live on the main prefix (949230), 1280x720, autosaves of Porterville. Evidence
+is DOM reads over CDP — every card line carries `data-line="<key>"` and every
+tier `data-tier` since 18b1117 — because `Page.captureScreenshot` timed out for
+the whole of 2026-09-08 on both the MCP client and the standalone script
+(`scratchpad/shots/cdp-shot.mjs`); it had worked on 2026-09-07. Cause unknown.
+
+### One card per menu (2026-09-07)
+
+The card's order is one fixed list (`BuildingHoverCard.tsx`): locked, already
+built, cost, upkeep and named resources, capacity, leisure, range, speed, width,
+parking, households, workers, service facts in `FACT_ORDER`, upgrades, bonuses,
+lot — then split into the game's tier (`VANILLA_LINE_KEYS`, `isVanillaFact`,
+and per kind `PROMOTED_BY_CATEGORY`) and ours, each keeping that order.
+
+| Menu / tile | Top tier | Dimmed tier |
+|---|---|---|
+| Roads / Two-Lane Road | Cost ¢4,000 /km · Upkeep ¢487 /km/mo. · Speed limit 80 km/h · Width 16 m | Elevated width 14 m · Carries zoning |
+| Zones / EU Low Density Housing | Height 8 m · Homes 1 · Floor space ×0.35 | Upkeep ¢6 /cell/mo. |
+| Zones / EU Medium Density Housing | Height 53 m · Homes 2 /cell · Floor space ×2.0 | Upkeep ¢187 /cell/mo. |
+| Zones / Forestry | Cost Free · Requires Forest | Lot 4 × 4 |
+| Electricity / Small Coal Power Plant | Cost · Upkeep · Coal 20 t/mo. · Capacity 20 MW · Cargo capacity 20 t | Parking · Workers · Jobs · shifts · XP · Lot |
+| Health / Small Medical Clinic | Cost · Upkeep · Pharmaceuticals · Capacity 25 patients · Ambulances 3 · Cargo capacity 1 t | Range 2.5 km · Parking · Workers · … |
+| Water / Water Pumping Station | Cost · Upkeep · Capacity 100,000 m³/mo. · Draws from Surface Water | Workers · … · Upgrades Extra Pump |
+| Water / Water Treatment Plant | Cost · Upkeep · Capacity 400,000 m³/mo. · Purification 50 % | … |
+| Communications / Mailbox | Cost ¢100 · Mailbox capacity 1,000 | Range 1 km · XP 10 |
+| Communications / Radio Mast | Cost · Upkeep · Capacity 3,000 Gbit/s | Range · Parking · Workers · … |
+| Transportation / Small Bus Station | Cost · Upkeep · Comfort 40 | Jobs · shifts · XP · Upgrades · Lot |
+| Landscaping / Oak | Cost ¢10 | — |
+| Landscaping / Level Terrain Tool | — (no figures block) | — |
+
+What the sampling changed, all landed and re-read live: a zone card had drawn
+an empty top block and dimmed everything (924f39d); Upkeep now follows Cost as
+the game binds it (18b1117); trees and props are priced (18b1117); speed limits
+were m/s labelled km/h — components are written by `NetInitializeSystem` as
+`prefab.m_SpeedLimit / 3.6` (925a046); a zone's utility and pollution
+coefficients have no reader anywhere in the game and are gone, Upkeep is per
+cell per month, Homes splits on `m_ScaleResidentials` (f232c25); mailbox
+capacity, extractor required resource, mail as a count not a weight (bbf75e6).
+
+### Units, both systems (2026-09-08)
+
+The unit system was flipped through the game's own widget —
+`trigger("options", "setValue", ["InterfaceSettings.unitSystem"], [1, 0])` with
+the Options screen open — and restored the same way. Every unit-bearing line
+was rendered through the real formatters in both systems and set against the
+binder's unit kind in `PrefabUISystem.BuildDefaultPropertyBinders` and the
+shipped bundle's per-kind rule table (`[Ic.<Kind>]` in `Content/Game/UI/index.js`,
+which also trims trailing zeros).
+
+| Line | Vanilla kind | Metric | US customary |
+|---|---|---|---|
+| Road cost / upkeep | moneyPerDistance(/Month) | ¢4,000/km · ¢487/km/mo. | ¢6,437/mi · ¢784/mi/mo. |
+| Cargo, garbage, fuel | weight, weightPerMonth | 20 t · 0.13 t · 100 t/mo. | 22.05 tn · 0.14 tn · 110.23 tn/mo. |
+| Water/sewage capacity, water use | volumePerMonth | 100,000 m³/mo. | 26,417,200 gal/mo. |
+| Power, grid, battery | power, energy | 400 kW · 20 MW · 400 MWh | same |
+| Range | length | 400 m · 2.5 km | 437 yd · 1.6 mi |
+| Width | (ours) | 16 m | 17 yd |
+| Zone height | height | 8 m | 26 ft |
+| Speed | (ours) | 80 km/h | 50 mph |
+| Purification, comfort | percentage, integer | 50 % · 40 | same |
+| Telecom capacity | dataRate | 3,000 Gbit/s | same |
+
+Fixed from this: water volumes were a literal "m³" through the unit table
+(67db0c7); purification was the raw fraction, comfort a "×1.2" multiplier,
+telecom capacity a bare truncated int (5707a67). Deliberately not matched:
+vanilla's imperial money-per-distance divides by 1.6 (¢4,000/km → ¢2,500/mi),
+the wrong direction; ours multiplies.
+
+Guards added: `test/factCoverage.test.ts` reads the indexer's source and checks
+every emitted key has a presentation; the render suite has a fixture per kind
+of tile (network, zone, tool, tree, service) and one under Freedom (14e3eef).
+
+### 720p pass (2026-09-08, cm-2xvs acceptance)
+
+Roads, 100 tiles, and Health, 8 tiles, in Cards, List, Grid and Table, measured
+off the DOM: no overlapping tiles, no horizontal scroll, Table rows inside a
+198px scroller (scrollHeight 540), the hover card flipping inside the viewport
+on the bottom row (453,445 199×142), the Group-by picker (`pickerOptions`)
+opening upward at 932,515 with all eight options inside the viewport. The two
+collapses the epic recorded are not present. Two clips were, both fixed in
+7c893c1: Grid tile names overran a 51px line by 2–9px (budget thirteen was
+measured at fontSizeXS; the line is fontSizeM now; twelve fits) and the Table's
+Upkeep column clipped "¢2,437 /km/mo." by 2–3px at the narrowest panel (80rem →
+84rem). The search box placeholder "Search…" is 2px over its 104px textarea.
+
+### Decisions recorded
+
+- "Requires" stays first on a locked tile; vanilla puts requirements last.
+- The dimmed tier's cap of ten stands: the order already drops Lot first.
+- A tree's figure is its sapling price; vanilla shows a range only when several
+  ages are enabled on the object tool, which is tool state the index cannot see.
+- Local-modifier radius is the one vanilla tooltip effect still not drawn.
+
