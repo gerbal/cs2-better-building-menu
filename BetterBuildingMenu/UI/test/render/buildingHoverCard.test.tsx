@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { renderHtml, entry } from "../harness/render";
-import { resetBindings } from "../harness/stubs/cs2-api";
+import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
 import type { BuildingCatalogEntry } from "../../src/domain/buildingCatalog";
 import { BuildingHoverCard, useHoverCardContext } from "../../src/mods/BuildingHoverCard/BuildingHoverCard";
 
@@ -287,5 +287,25 @@ describe("a workplace with no jobs", () => {
     const card = cardOf(entry(1, { workers: 0 }));
 
     assert.doesNotMatch(card, /data-line="workers"/);
+  });
+});
+
+describe("the card under US customary units", () => {
+  // The game's unit setting reaches the card through ("options",
+  // "unitSettings"); every measured line must follow it. The water volumes
+  // did not, and no fixture ran the card in the other system to notice.
+  it("converts every measured line", () => {
+    resetBindings();
+    setBinding("options", "unitSettings", { timeFormat: 0, temperatureUnit: 0, unitSystem: 1 });
+    const card = cardOf(entry(1, {
+      constructionCost: 4000, costIsPerDistance: true, upkeep: 487, capacity: 25000, buildingType: "WaterPumpingStation",
+      serviceRange: 2500, speedLimit: 80, networkWidth: 16,
+      serviceFacts: [{ key: "cargoCapacity", value: 20000 }, { key: "zoneMaxHeight", value: 8 }, { key: "garbageProcessing", value: 100000 }],
+    }));
+
+    for (const expected of [/\/mi/, /mph/, /yd/, /gal\/mo\./, /tn\b/, /tn\/mo\./, /\bft\b/, /\bmi\b/]) {
+      assert.match(card, expected);
+    }
+    assert.doesNotMatch(card, /km|\bm³|\bkg\b|\d t\b/);
   });
 });
