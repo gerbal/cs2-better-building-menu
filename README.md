@@ -46,10 +46,15 @@ The mod was renamed from `FindItBuildingMenu`. The game keys a mod's settings
 file by its id, so the first run after the rename starts from defaults again —
 any options you had customised are back at their initial values.
 
-## Not published yet
+## On Paradox Mods
 
-Its runtime identity is unique, but a new PDX Mods publisher ID and confirmation
-of the upstream license are still required before distribution.
+Published as [mod 158589](https://mods.paradoxplaza.com/mods/158589/Windows)
+on 2026-09-09, version 0.1.0, unlisted while the listing is checked. Its
+runtime identity and store id are its own; the Find It listing (77240) is
+untouched. Upstream Find It ships no license file; its project file declares
+"@2024 MIT license", and this mod is distributed on that statement (see
+[docs/FORK.md](docs/FORK.md)). How the upload is made from Linux is in
+[docs/publishing.md](docs/publishing.md).
 
 ## Credits
 

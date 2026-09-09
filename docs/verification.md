@@ -2085,3 +2085,10 @@ run from the toolchain folder it created a `C:/users/...` tree under
 `Cities2_Data/Content/Game`, which made `DlcHelper.GetDlcAttributes` throw
 and the game quit at boot ("Data is corrupted in Game database"). Details
 in `docs/publishing.md`.
+
+**Published.** `Publish` run from a scratch directory at 16:55 with the
+configuration's image paths made absolute; the content folder listing
+(dll, mjs, css, modinfo, images) was echoed by `-v`; result
+"Mod published with Id=158589", access level Unlisted, version 0.1.0,
+recommended game version 1.6.*. The listing resolves as "Better Building
+Menu - Paradox Mods" at https://mods.paradoxplaza.com/mods/158589/Windows.
