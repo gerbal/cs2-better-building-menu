@@ -1752,3 +1752,40 @@ Upkeep column clipped "¢2,437 /km/mo." by 2–3px at the narrowest panel (80rem
   ages are enabled on the object tool, which is tool state the index cannot see.
 - Local-modifier radius is the one vanilla tooltip effect still not drawn.
 
+## 2026-09-09 — resolutions and text scale
+
+Runs on the isolated prefix `949230-b` under gamescope headless (`--no-steam
+--headless WxH --resolution WxH`, display mode `Window` restored after), save
+"AZ shared testbed 20260830"; the main prefix's `Settings.coc` was returned to
+its 1024x768 window. Evidence is the same DOM probe as the 09-08 pass.
+
+- **1280x720, true** (`innerWidth` 1280, Player.log "Window resolution:
+  1280x720"): Cards, List, Grid clean — no overlaps, no horizontal scroll, no
+  clipped text; the grid budget of twelve (7c893c1/0e4394b) confirmed at this
+  size. Hover card on the bottom-right tile 706,568 249x91 inside the viewport.
+  Table: Upkeep column clean; four name cells clipped by 2–4px ("One-Lane
+  One-Way Perpend…" 220>218, "Medium Roundabout with a…" 222>218) — the
+  table's thirteen-per-100rem name budget is a character too generous for
+  wide names; open.
+- **1920x1080: not reachable under this harness.** With the screen at
+  1920x1080x60 and `Settings.coc` at 1920x1080 in every display mode, the game
+  applied "1280x720x60Hz Window" from its fallback each time (SceneFlow.log
+  "Applying resolution"). The layout is viewport-relative — `1rem = vw/19.2`,
+  the same as vanilla — so a 1080p window draws the 720p layout at 1.5x; that
+  is inferred from the unit system, not measured. Aspect ratios other than
+  16:9 remain untested.
+- **Text scale 125 %** (Interface › Text scale, set through the game's own
+  widget: `trigger("options","setValue",["InterfaceSettings.textScale"],125)`
+  with Options open — the slider is in percent, and 1.25 drives the body font
+  negative): Cards and List size to content and stayed clean; **Grid** tile
+  names overran their line by 10–40px ("One-Lane One-Way" 131>93); **Table**
+  Cost and Upkeep cells clipped 15–20px ("¢487 /km/mo." 97>77) and three
+  headers ("Workers" 52>41). Root: every character budget and column width
+  assumed 100 %. The game applies the setting as `--fontScale = s` and
+  `--fontScaleChange = s − 1`, with each `--fontSize*` a calc() of the two
+  (XS = 12s + (s−1)·1.15·12, S = 14s + (s−1)·1.1·14, M = 14s + 2 +
+  (s−1)·1.05·14): at 125 % M is x1.45 and S x1.53. Fixed in 1ffda09 —
+  `domain/textScale.ts` states the calc, the tile and table budgets divide by
+  their size's ratio, the metric columns multiply by it, read from vanilla's
+  `("options","textScale")` binding.
+
