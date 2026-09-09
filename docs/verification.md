@@ -1784,13 +1784,54 @@ its 1024x768 window. Evidence is the same DOM probe as the 09-08 pass.
   - **2560x1080 (21:9)**: no overlaps, no horizontal scroll; hover card
     1082,854 374x136 inside the viewport; Grid eight tiles 2–4px over, Table
     Upkeep cells 2–4px over ("¢2,437 /km/mo." 117 in 115).
-  The residual at 1440p and ultrawide is one class: at 1.33px per rem and
+  The residual at 1440p and ultrawide was one class: at 1.33px per rem and
   above, text renders 2–3 % wider relative to rem than at 1080p, so a budget
-  that exactly fills its line at 720p/1080p spills a few pixels. A fixed
-  character margin cannot fit both ends (twelve at 100rem must stay twelve).
-  The right fix is the one the group headings already use — measure the
-  drawn line and shorten to it (`fitLabelToWidth`) — applied to tile names
-  and the metric columns; open.
+  that exactly fills its line at 720p/1080p spills a few pixels, and no fixed
+  character margin fits both ends (twelve at 100rem must stay twelve).
+
+### Measured fit (2026-09-09, 2532304 → 6b84e4b)
+
+The group headings' answer — measure the drawn text and shorten to it — now
+applies to tile names (`TileName`: an overflowing line feeds back a smaller
+character budget) and to the table's metric columns (whatever a column's
+cells drew past its estimate is added back in rem, capped at the room beside
+a name of its minimum width). `domain/measuredFit.ts` holds the arithmetic.
+Getting it right took four live cycles, each a lesson worth keeping:
+
+- 2532304 froze the game: the measuring effect had no dependency array and
+  set an equal-but-new object on every render. The merge now answers null
+  when nothing changes (14c0e29).
+- 9b4ebaa measured only on mount, in the Cards view, where no cell exists;
+  the table view and its rows are dependencies now.
+- a204225 grew the *cost* column to 252rem: every cell reports a constant
+  1–2px of "overflow" that is its **border** — Cohtml's `scrollWidth` equals
+  `offsetWidth` when nothing overflows and `clientWidth` excludes the border.
+  The table's "2px clips" at 1440p and 21:9 reported above were this, not
+  clips; only the grid's were real. Overflow is content past
+  max(clientWidth, offsetWidth) (cee1631), and the probe reads the same.
+- 68bf34d: the one real table overflow (2px) arrived after the second frame
+  with no observed size change; the effect now also re-measures at 50ms,
+  250ms, 1s and 2.5s after commit (6b84e4b).
+
+Re-measured with the honest metric: **2560x1440** Grid 0 clips (was five);
+**2560x1080** Grid 0 (was eight), Cards 0.
+
+The table half was then **withdrawn** (the commit after 6b84e4b): with the
+timed re-measures in place the one real 2px overflow ("¢2,025 /km/mo.") did
+widen its column — to 268rem, while the name cell fell to 233px. The row is
+a flex layout whose column bases already exceed the room beside the name at
+a 1441rem assembly (seven columns 586rem beside a 327rem name in an ~820rem
+row), so cells shrink back to what the row allows and an inline width is not
+what gets drawn; the same overflow was measured every time. Fitting the
+columns to the row is a column-model change, not a measurement, and is
+open. The table's honest state at 1440p: one cell in a hundred 2px over.
+
+Two harness notes from the same runs: the game writes a 2560x1080 mode to
+`Settings.coc` as `"resolution": { "height": 1080 }` with no width, which
+`set-cs2-resolution.py` rejects ("no display resolution block") — repair the
+block by hand before the next `--resolution` launch; and `cs2-stop` now takes
+down the headless gamescope cage it finds above the game (workspace
+c22559a), which had left seven idling.
 - **Text scale 125 %** (Interface › Text scale, set through the game's own
   widget: `trigger("options","setValue",["InterfaceSettings.textScale"],125)`
   with Options open — the slider is in percent, and 1.25 drives the body font
