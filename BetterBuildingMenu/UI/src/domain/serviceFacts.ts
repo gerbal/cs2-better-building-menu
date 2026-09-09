@@ -496,6 +496,9 @@ const TEXT_PRESENTATION: Readonly<Record<string, ServiceTextPresentation>> = {
 };
 
 /** Every localization key a worded fact can ask for, for the audit. */
+/** The worded keys this build knows how to draw, for the coverage audit. */
+export const SERVICE_TEXT_FACT_KEYS: readonly string[] = Object.keys(TEXT_PRESENTATION);
+
 export const SERVICE_TEXT_FACT_LOCALIZATION_KEYS: readonly string[] = [
   ...Object.values(TEXT_PRESENTATION).map((entry) => entry.localizationKey),
   ...Object.values(TEXT_PRESENTATION)
