@@ -1,3 +1,3 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <!-- Better Building Menu logo: full-bleed wordmark in Lato Bold (Noto Sans, the game's UI face, as fallback), 10% safe area. Paradox Mods shows it at 217x217. -->
-  <rect width="1024" height="1024" rx="38" ry="38" fill="#1f2d3a"/><g font-family="Lato, 'Noto Sans', sans-serif" font-weight="700" font-size="232" fill="#ffffff"><text x="84" y="338">Better</text><text x="84" y="595">Building</text><text x="84" y="852" fill="#6ec1ff">Menu</text></g></svg>
+  <!-- Better Building Menu logo: full-bleed wordmark in Lato Bold (Noto Sans, the game's UI face, as fallback), 10% safe area, square corners: the site rounds its own cards. Rendered to 1080x1080 for the store. -->
+  <rect width="1024" height="1024" fill="#1f2d3a"/><g font-family="Lato, 'Noto Sans', sans-serif" font-weight="700" font-size="232" fill="#ffffff"><text x="84" y="338">Better</text><text x="84" y="595">Building</text><text x="84" y="852" fill="#6ec1ff">Menu</text></g></svg>
