@@ -79,8 +79,5 @@
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.OpenPanelOnPicker]": "Ouvrir le panneau de Better Building Menu après avoir sélectionné un objet",
   "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.OpenPanelOnPicker]": "Choisissez entre ouvrir le panneau de Better Building Menu après avoir sélectionné un objet avec le sélecteur (Picker) ou le panneau vanilla si disponible.",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Sélectionne le premier asset lors de l'ouverture de Better Building Menu",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Sélectionne automatiquement le premier asset de la liste lors de l'ouverture du panneau de Better Building Menu. Cela affecte certaines choses comme la fermeture d'autres outils et l'utilisation de la touche échappe pour fermer Better Building Menu.",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod/PickerKeyBinding/binding]": "Picker",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.PickerKeyBinding]": "Picker",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.PickerKeyBinding]": "Attribuer une touche pour l'outil Picker."
+  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Sélectionne automatiquement le premier asset de la liste lors de l'ouverture du panneau de Better Building Menu. Cela affecte certaines choses comme la fermeture d'autres outils et l'utilisation de la touche échappe pour fermer Better Building Menu."
 }

@@ -56,10 +56,6 @@ namespace BetterBuildingMenu
 		// global hot-key belongs to the mod that answers "where is any asset",
 		// and that mod is FindIt. See cm-wf6g.4 on coexistence.
 
-		[SettingsUIKeyboardBinding(BindingKeyboard.P, nameof(PickerKeyBinding), ctrl: true)]
-		[SettingsUISection(KEYBINDINGS, ACTIONS)]
-		public ProxyBinding PickerKeyBinding { get; set; }
-
 		// Ctrl+N, not Ctrl+R: vanilla binds Ctrl+R to "Relocate Selected Object"
 		// (Shortcuts map, same default usages as ours), which is a real collision
 		// and the source of the "Key binding conflict detected" notification the

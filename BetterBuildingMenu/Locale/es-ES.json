@@ -79,8 +79,5 @@
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.OpenPanelOnPicker]": "Abrir panel de Better Building Menu después de seleccionar un objeto",
   "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.OpenPanelOnPicker]": "Escoge entre abrir en panel de Better Building Menu después de seleccionar un objeto, o el panel normal del juego si está disponible.",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Seleccionar el primer objeto al abrir Better Building Menu",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Selecciona de forma automática el primer asset de la lista al abrir el panel de Better Building Menu, esto afecta comportamientos como cerrar alguna otra herramienta y utilizar la tecla \"Esc\" al cerrar Better Building Menu.",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod/PickerKeyBinding/binding]": "Selector",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.PickerKeyBinding]": "Selector",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.PickerKeyBinding]": "Determina la tecla de acceso rápido para activar el selector."
+  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Selecciona de forma automática el primer asset de la lista al abrir el panel de Better Building Menu, esto afecta comportamientos como cerrar alguna otra herramienta y utilizar la tecla \"Esc\" al cerrar Better Building Menu."
 }

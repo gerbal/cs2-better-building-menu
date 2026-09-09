@@ -79,8 +79,5 @@
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.OpenPanelOnPicker]": "Apri il pannello Trova dopo aver selezionato un oggetto",
   "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.OpenPanelOnPicker]": "Scegli tra l'apertura del pannello Trova dopo aver selezionato un oggetto con il Selettore o il pannello normale, se disponibile.",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Seleziona il primo asset quando apri Trova",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Seleziona automaticamente il primo asset nella lista quando apri il pannello Trova, questo influisce su comportamenti come la chiusura di altri strumenti e l'utilizzo del tasto \"Esc\" per chiudere il pannello Trova.",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod/PickerKeyBinding/binding]": "Selettore",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.PickerKeyBinding]": "Selettore",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.PickerKeyBinding]": "Determina il tasto di scelta rapida per attivare lo strumento di selezionamento."
+  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Seleziona automaticamente il primo asset nella lista quando apri il pannello Trova, questo influisce su comportamenti come la chiusura di altri strumenti e l'utilizzo del tasto \"Esc\" per chiudere il pannello Trova."
 }
