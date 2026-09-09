@@ -103,7 +103,10 @@ export const BUILDING_LENS_COLUMN_MAX: Record<BuildingLensMetric, number> = {
  */
 export const BUILDING_LENS_COLUMN_MIN: Record<BuildingLensMetric, number> = {
   cost: 76,
-  upkeep: 80,
+  // 84, not 80: a road's "¢2,437 /km/mo." is the widest figure the column
+  // draws, and at 1280x720 it wanted 59–60px of an 80rem (57px) cell — the
+  // last character clipped on every road in the table.
+  upkeep: 84,
   workers: 48,
   capacity: 88,
   lot: 68,

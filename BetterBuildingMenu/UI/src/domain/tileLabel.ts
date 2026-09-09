@@ -17,16 +17,20 @@
  *
  * Measured, not estimated. Every earlier value here was a chars-per-rem guess
  * carried forward from the previous guess. Against the running game at 720p, a
- * 100rem tile draws a 64px label box at 10.67px Overpass, and the game's own
- * names measure ~4.9px per character there ("Wastewater Treatment Plant" 127px
- * / 26, "Elementary School" 84px / 17, "Bus Stop Shelter" 75px / 16). 64 / 4.9
- * is thirteen characters — not the eleven this constant claimed.
+ * 100rem tile draws a 64px label box. Thirteen was measured there at
+ * fontSizeXS (10.67px Overpass, ~4.9px a character: "Wastewater Treatment
+ * Plant" 127px / 26, "Elementary School" 84px / 17). The name line has since
+ * moved up to fontSizeM, and at 1280x720 the game's own names now measure
+ * ~5.3px a character: "Two-Lane Road", thirteen characters, wanted 69px of 64
+ * and the belt-and-braces CSS ellipsis drew "Two-Lane Ro…" on every small
+ * road, while an already-elided "Wooden…Bridge" ran 9px over. 64 / 5.3 is
+ * twelve.
  *
- * Thirteen is a typical-text figure, so an all-caps or all-M name overruns it.
- * That is what .tileName's text-overflow: ellipsis is for; the cost of being
- * conservative instead is a shorter name on every tile in the catalog.
+ * Twelve is a typical-text figure, so an all-caps or all-M name still overruns
+ * it. That is what .tileName's text-overflow: ellipsis is for; the cost of
+ * being conservative instead is a shorter name on every tile in the catalog.
  */
-const CHARS_PER_LINE_AT_DEFAULT_TILE = 13;
+const CHARS_PER_LINE_AT_DEFAULT_TILE = 12;
 const DEFAULT_TILE_SIZE = 100;
 
 /**
@@ -71,10 +75,17 @@ export const tileLabelCharBudget = (tileSize: number): number =>
  * name from its neighbours. Same characters-per-rem as the tiles: same font,
  * same size.
  */
+/**
+ * The table's own figure, kept at the thirteen measured for it: the table
+ * name cell did not move to fontSizeM with the grid tiles, so the tile's
+ * twelve would shorten table names a character sooner than the pixels ask.
+ */
+const CHARS_PER_100REM_TABLE = 13;
+
 export const tableLabelCharBudget = (drawableWidth: number): number => {
   const width = Number.isFinite(drawableWidth) && drawableWidth > 0 ? drawableWidth : DEFAULT_TILE_SIZE;
 
-  return Math.max(8, Math.round((width / DEFAULT_TILE_SIZE) * CHARS_PER_LINE_AT_DEFAULT_TILE));
+  return Math.max(8, Math.round((width / DEFAULT_TILE_SIZE) * CHARS_PER_100REM_TABLE));
 };
 
 /**
