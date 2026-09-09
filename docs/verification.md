@@ -2029,3 +2029,30 @@ one cut, tests first (C# `PickerRemovalTests`, UI `pickerRemoval.test.ts`):
 The Group-by picker in the control pane and the extension-menu "picker"
 (vanilla's upgrade picker, which the extension menu replaces) are different
 things and untouched. Suites: UI 641 + 69, C# 399.
+
+### Grid names collapsing to "…e…d" (2026-09-09)
+
+Reported on the main prefix at the default tile size: several Roads tiles
+read "…e…d". Measured before touching anything: 77 of 100 Roads tiles
+carried an ellipsis and twelve had collapsed to two characters a line;
+closing and reopening the menu reproduced the same twelve at once, so it
+was the first paint, not stale state. Then the mechanism, in the page: a
+line whose text had just been swapped from a long name to a short one still
+reported the long text's `scrollWidth` (171px in a 64px box) in the same
+tick and read 64px a frame later; a brand-new line read 0. The tile name's
+fit loop measured synchronously after every re-render, so each pass saw the
+previous text's overflow again and shrank the budget once more, down to the
+four-character floor.
+
+Fix: every read waits two frames, the ResizeObserver callback included
+(`TileName` in BuildingGrid.tsx), and the per-line arithmetic moved to
+`lineBudgetFromDrawn` in domain/measuredFit.ts where it is unit-tested;
+`tileNameMeasureContract.test.ts` pins the no-same-tick rule as a source
+contract, the way the stylesheet contracts do.
+
+After, same setup (frame `37-grid-100-fixed.png`): 100 tiles, none
+collapsed, no line overflowing; 77 still elide, which is the honest budget
+of a 64px line at this font — "Three-Lane / Asym…Road", "One-Lane /
+One-…Road". That residual is the tile size, not the loop, and is a design
+question: a third line, a wider default, or a hyphen-aware cut would each
+change it.

@@ -51,3 +51,28 @@ export function reduceBudgetToFit(budget: number, availablePx: number, neededPx:
 export function contentOverflowPx(clientWidth: number, offsetWidth: number, scrollWidth: number): number {
   return Math.max(0, scrollWidth - Math.max(clientWidth, offsetWidth));
 }
+
+/** The three widths a drawn line reports; see contentOverflowPx. */
+export type DrawnLine = { clientWidth: number; offsetWidth: number; scrollWidth: number };
+
+/**
+ * The budget a set of drawn lines allows: the tightest correction any line
+ * asks for, or the budget itself when every line fits. A line with no box
+ * has not been laid out and says nothing.
+ *
+ * Read only what Cohtml has laid out. An element whose text just changed
+ * reports the PREVIOUS text's scrollWidth in the same tick (measured
+ * 2026-09-09: 171px for a name already replaced by one that draws at 64px),
+ * so a caller that reads in the tick of the render sees the old overflow
+ * again and again, and this function will keep saying "shrink" until the
+ * floor. Read a frame after the render, not in it.
+ */
+export function lineBudgetFromDrawn(budget: number, lines: readonly DrawnLine[]): number {
+  let next = budget;
+  for (const line of lines) {
+    const box = Math.max(line.clientWidth, line.offsetWidth);
+    const needed = box + contentOverflowPx(line.clientWidth, line.offsetWidth, line.scrollWidth);
+    next = Math.min(next, reduceBudgetToFit(budget, box, needed));
+  }
+  return next;
+}
