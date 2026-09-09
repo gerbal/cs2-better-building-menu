@@ -73,3 +73,17 @@ describe("a table row", () => {
     assert.match(row(), /data-catalog-entry="7"/);
   });
 });
+
+describe("a network's lot in the table", () => {
+  // Seen in the first screenshot after capture came back: a road's Lot read
+  // "0 × 0" in the Table, a measurement of something that does not exist. The
+  // hover card and the tile already omit it through hasFootprint.
+  it("is no data, not 0 × 0", () => {
+    const html = renderHtml(row({ entry: entry(1, { lotWidth: 0, lotDepth: 0 }) }));
+
+    assert.doesNotMatch(html, /0 × 0/);
+    // The row's cells come back HTML-escaped inside the hover-card wrapper's
+    // attribute, so the quotes and brackets may be entities.
+    assert.match(html, /data-metric=(?:"|&quot;)lot(?:"|&quot;)[^>]*?(?:&gt;|>)—/);
+  });
+});

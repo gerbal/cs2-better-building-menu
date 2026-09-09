@@ -10,6 +10,7 @@ import {
   formatCapacity,
   formatLotDimensions,
   getNumberSeparators,
+  hasFootprint, METRIC_NO_DATA,
 } from "domain/buildingLensMetricFormat";
 import { shortenTileLabel } from "domain/tileLabel";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
@@ -188,7 +189,10 @@ export const TableRow = ({
             {formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators)}
           </div>
           <div className={classNames(styles.metric, styles.metricLot)} style={columnStyle("lot")} data-metric="lot" title="Lot dimensions">
-            {formatLotDimensions(entry.lotWidth, entry.lotDepth)}
+            {/* A road's lot is 0x0 and a zone has none: a measurement of
+                something that does not exist, so no data rather than "0 × 0"
+                — the rule the tile and the hover card already follow. */}
+            {hasFootprint(entry.lotWidth, entry.lotDepth) ? formatLotDimensions(entry.lotWidth, entry.lotDepth) : METRIC_NO_DATA}
           </div>
           <div
             className={classNames(styles.metric, styles.metricLevel)}
