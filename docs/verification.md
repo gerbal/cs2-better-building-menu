@@ -2056,3 +2056,32 @@ of a 64px line at this font — "Three-Lane / Asym…Road", "One-Lane /
 One-…Road". That residual is the tile size, not the loop, and is a design
 question: a third line, a wider default, or a hyphen-aware cut would each
 change it.
+
+## 2026-09-09 — release preparation for Paradox Mods
+
+**Setup.** Main prefix 949230 (Steam + Paradox stack), Porterville save,
+window set to 1920x1080 through the Graphics widget for the captures and
+restored to 1280x720 afterwards. The deployed build was the Release
+configuration package from `artifacts/BetterBuildingMenu` (md5 848dde11…),
+copied to both Mods roots before launch.
+
+**Release build live.** Indexed at OnGameLoaded (full pass) and skipped the
+OnGameLoadingComplete pass as designed; Roads (204 entries) and Education &
+Research (13) opened; Grid, Table and Cards rendered; the hover card drew
+the City High School figures (cost, upkeep, capacity, parking, workers,
+jobs, evening shift, XP, upgrades, lot).
+
+**Store art.** `Properties/Screenshot_01..04.jpg` (1920x1080, JPEG q90) and
+`Properties/Thumbnail.png` (1024x1024 crop of the Roads grid). Captured
+with `spectacle -b -n -e -a` on the activated game window: the devtools
+`Page.captureScreenshot` returns only the UI layer over black, which is
+fine for probes and wrong for store images.
+
+**Uploader.** `ModPublisher` from the game's `.ModdingToolchain` runs under
+the host dotnet 10 with `DOTNET_ROLL_FORWARD=Major`; auto-login from the
+game's stored session succeeded (probe: `Update` against mod id
+999999999 → "invalid or does not exist"). Run it from a scratch directory:
+run from the toolchain folder it created a `C:/users/...` tree under
+`Cities2_Data/Content/Game`, which made `DlcHelper.GetDlcAttributes` throw
+and the game quit at boot ("Data is corrupted in Game database"). Details
+in `docs/publishing.md`.
