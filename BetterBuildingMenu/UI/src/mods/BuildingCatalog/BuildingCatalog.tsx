@@ -170,13 +170,19 @@ export const BuildingCatalogComponent = () => {
     // changed. So: the root and the first cell are watched, and the second
     // frame after commit is measured as well, which is where the relayout
     // landed (see GroupedResults).
+    // Measured live at 1440p again after the second frame was added: the 2px
+    // arrived later still, and nothing observed changed size when it did. So
+    // the commit is followed by a bounded run of timed re-measures — the last
+    // at 2.5s — on top of the observers; each is a cheap query and a compare.
     let inner = 0;
     const outer = requestAnimationFrame(() => {
       inner = requestAnimationFrame(measure);
     });
-    const cancelFrames = () => {
+    const timers = [50, 250, 1000, 2500].map((ms) => setTimeout(measure, ms));
+    const cancelTimers = () => {
       cancelAnimationFrame(outer);
       cancelAnimationFrame(inner);
+      timers.forEach(clearTimeout);
     };
     if (typeof ResizeObserver === "function") {
       const observer = new ResizeObserver(measure);
@@ -186,10 +192,10 @@ export const BuildingCatalogComponent = () => {
       measure();
       return () => {
         observer.disconnect();
-        cancelFrames();
+        cancelTimers();
       };
     }
-    return cancelFrames;
+    return cancelTimers;
     // columnWidths is derived from panelWidth and textScale, which are here.
     // tableMode and items too: the cells only exist in the table view, and a
     // view switch or a further page does not resize the root, so the observer
