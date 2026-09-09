@@ -36,7 +36,7 @@ describe("the game's text scale", () => {
 
   it("shrinks the table's name budget with the S size", () => {
     assert.ok(tableLabelCharBudget(276, 1.25) < tableLabelCharBudget(276));
-    assert.equal(tableLabelCharBudget(276, 1.25), Math.max(8, Math.round(276 / 100 * 13 / fontSizeRatio("s", 1.25))));
+    assert.equal(tableLabelCharBudget(276, 1.25), Math.max(8, Math.round(276 / 100 * 12 / fontSizeRatio("s", 1.25))));
   });
 
   it("widens the table's metric columns with the S size", () => {

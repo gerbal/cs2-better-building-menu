@@ -288,10 +288,12 @@ describe("Table name budget", () => {
   });
 
   it("matches the measured drawable width", () => {
-    // 270rem of name box at 13 chars per 100rem is ~35 characters. The first
+    // 270rem of name box at 12 chars per 100rem is 32 characters. The first
     // version of this returned 58 because the caller handed it the whole
-    // identity column, so nothing was ever shortened.
-    assert.equal(tableLabelCharBudget(270), 35);
+    // identity column, so nothing was ever shortened; the thirteen it then
+    // budgeted still ran the widest names 1 % over their cell at both
+    // 1280x720 and 1920x1080 ("Medium Roundabout with a…" 333px in 327).
+    assert.equal(tableLabelCharBudget(270), 32);
   });
 
   it("never returns a budget too small to shorten into", () => {
