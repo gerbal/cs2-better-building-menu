@@ -119,6 +119,7 @@ export const TableView = ({
               key={column.key}
               className={classNames(styles.metricHeader, styles[column.className], indicator !== "" && styles.metricHeaderSorted)}
               style={columnStyle(column.key)}
+              data-metric={column.key}
               variant="icon"
               onSelect={() => onSort(sortTarget)}
               title={headerTitle}

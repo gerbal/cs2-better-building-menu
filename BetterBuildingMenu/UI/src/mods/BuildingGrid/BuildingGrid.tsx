@@ -1,7 +1,7 @@
 import { bindValue, useValue } from "cs2/api";
 import { Button, Scrollable } from "cs2/ui";
 import { type ReactNode } from "react";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
@@ -10,6 +10,7 @@ import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/B
 import { topSearchResult } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { stripRedundantNamePrefix, tileLabelLineBudget, wrapTileLabel } from "domain/tileLabel";
+import { reduceBudgetToFit } from "domain/measuredFit";
 import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
 import { formatBuildingMetric, getNumberSeparators } from "domain/buildingLensMetricFormat";
 import type { SortColumn } from "domain/buildingCatalogContracts";
@@ -54,6 +55,76 @@ interface BuildingGridProps {
  * they moved to the hover card, which costs nothing until you actually want
  * them.
  */
+/**
+ * The name on a tile, shortened for drawing only — the tooltip and the
+ * Button's aria-label still carry the whole of it.
+ *
+ * One element per line rather than one element that wraps: the wrapping is
+ * decided in tileLabel.ts, where it is testable and where the last line can
+ * be elided by the rule that keeps a distinguishing suffix. The character
+ * budget is an estimate, and it is corrected from what was drawn: above
+ * 1.33px per rem text renders 2–3 % wider relative to rem than at 1080p, and
+ * a budget that exactly filled its line at 720p spilled a few pixels at
+ * 1440p and on ultrawide. The correction only ever tightens — see
+ * domain/measuredFit.ts — so measure → shorten → measure cannot spiral.
+ */
+const TileName = ({ label, budget }: { label: string; budget: number }) => {
+  const boxRef = useRef<HTMLSpanElement>(null);
+  const [fit, setFit] = useState<number | null>(null);
+  // A new name or a new estimate starts from the estimate again.
+  useEffect(() => {
+    setFit(null);
+  }, [label, budget]);
+  const effective = fit === null ? budget : Math.min(budget, fit);
+
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!box) return;
+    const measure = () => {
+      let next = effective;
+      for (const line of Array.from(box.children) as HTMLElement[]) {
+        next = Math.min(next, reduceBudgetToFit(effective, line.clientWidth, line.scrollWidth));
+      }
+      if (next < effective) setFit(next);
+    };
+    // Watch the box rather than guess when it settles — Cohtml relayouts a
+    // frame after a view change (see GroupedResults). Fallback: the second
+    // frame, which is where the measured relayout landed.
+    if (typeof ResizeObserver === "function") {
+      const observer = new ResizeObserver(measure);
+      observer.observe(box);
+      measure();
+      return () => observer.disconnect();
+    }
+    let inner = 0;
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(measure);
+    });
+    return () => {
+      cancelAnimationFrame(outer);
+      cancelAnimationFrame(inner);
+    };
+  }, [label, effective]);
+
+  return (
+    <span ref={boxRef} className={styles.tileName}>
+      {wrapTileLabel(label, effective).map((line, index) => (
+        <span
+          key={index}
+          className={classNames(
+            styles.tileNameLine,
+            // A line wrapTileLabel already cut carries its own ellipsis, so
+            // CSS must not add a second one — "Helico…De…" reads as corruption.
+            line.includes("…") && styles.tileNameLineElided
+          )}
+        >
+          {line}
+        </span>
+      ))}
+    </span>
+  );
+};
+
 export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone = true }: BuildingGridProps) => {
   const { translate } = useLocalization();
   // One card for every view mode. Read once here rather than per tile: it is a
@@ -245,32 +316,14 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
               distinguishing suffix. Leaving it to the engine would put the
               break wherever 64px happened to fall and clip the overflow
               unmarked. */}
-          <span className={styles.tileName}>
-            {wrapTileLabel(
-              stripRedundantNamePrefix(label, {
-                category: entry.categoryLabel ?? entry.category,
-                subCategory: entry.subCategoryLabel ?? entry.subCategory,
-                theme: entry.theme,
-              }),
-              tileLabelLineBudget(tileSize, textScale)
-            ).map((line, index) => (
-              <span
-                key={index}
-                className={classNames(
-                  styles.tileNameLine,
-                  // A line wrapTileLabel already cut carries its own ellipsis,
-                  // so CSS must not add a second one. "Firefighting Helicopter
-                  // Depot" was elided to "Helico…Depot", which still wants 65px
-                  // in a 64px box, and the stylesheet's ellipsis then made it
-                  // "Helico…De…" — two marks on one line, which reads as
-                  // corruption rather than as a shortened name.
-                  line.includes("…") && styles.tileNameLineElided
-                )}
-              >
-                {line}
-              </span>
-            ))}
-          </span>
+          <TileName
+            label={stripRedundantNamePrefix(label, {
+              category: entry.categoryLabel ?? entry.category,
+              subCategory: entry.subCategoryLabel ?? entry.subCategory,
+              theme: entry.theme,
+            })}
+            budget={tileLabelLineBudget(tileSize, textScale)}
+          />
           {sortedBadge(entry)}
         </Button>
       </BuildingHoverCard>

@@ -175,24 +175,24 @@ export const TableRow = ({
               </div>
             </div>
           </div>
-          <div className={classNames(styles.metric, styles.metricCost)} style={columnStyle("cost")} title={`Cost ${formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance)}`}>
+          <div className={classNames(styles.metric, styles.metricCost)} style={columnStyle("cost")} data-metric="cost" title={`Cost ${formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance)}`}>
             {formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance)}
           </div>
-          <div className={classNames(styles.metric, styles.metricUpkeep)} style={columnStyle("upkeep")} title={`Upkeep ${formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance)}`}>
+          <div className={classNames(styles.metric, styles.metricUpkeep)} style={columnStyle("upkeep")} data-metric="upkeep" title={`Upkeep ${formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance)}`}>
             {formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance)}
           </div>
-          <div className={classNames(styles.metric, styles.metricWorkers)} style={columnStyle("workers")} title={`Workers ${formatBuildingMetric(entry.workers, "workers", separators)}`}>
+          <div className={classNames(styles.metric, styles.metricWorkers)} style={columnStyle("workers")} data-metric="workers" title={`Workers ${formatBuildingMetric(entry.workers, "workers", separators)}`}>
             {formatBuildingMetric(entry.workers, "workers", separators)}
           </div>
-          <div className={classNames(styles.metric, styles.metricCapacity)} style={columnStyle("capacity")} title={`Capacity ${formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators)}`}>
+          <div className={classNames(styles.metric, styles.metricCapacity)} style={columnStyle("capacity")} data-metric="capacity" title={`Capacity ${formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators)}`}>
             {formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators)}
           </div>
-          <div className={classNames(styles.metric, styles.metricLot)} style={columnStyle("lot")} title="Lot dimensions">
+          <div className={classNames(styles.metric, styles.metricLot)} style={columnStyle("lot")} data-metric="lot" title="Lot dimensions">
             {formatLotDimensions(entry.lotWidth, entry.lotDepth)}
           </div>
           <div
             className={classNames(styles.metric, styles.metricLevel)}
-            style={columnStyle("level")}
+            style={columnStyle("level")} data-metric="level"
             title={entry.buildingLevel >= 1 ? "Building level" : "No building level"}
           >
             {/* Not the raw number. A service building has no level, and
@@ -202,7 +202,7 @@ export const TableRow = ({
           </div>
           <div
             className={classNames(styles.parking, styles.metricParking, entry.hasParking && styles.parkingActive)}
-            style={columnStyle("parking")}
+            style={columnStyle("parking")} data-metric="parking"
             title={entry.hasParking ? `${entry.parkingSlots} parking bays (approximate)` : "No parking"}
           >
             {/* The count, not a "P". A glyph answered "does it park cars",

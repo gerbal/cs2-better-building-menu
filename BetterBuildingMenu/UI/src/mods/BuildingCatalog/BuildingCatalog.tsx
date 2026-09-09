@@ -1,10 +1,11 @@
 import { bindValue, trigger, useValue } from "cs2/api";
 import { Button } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import classNames from "classnames";
 import { shortenTileLabel, tableLabelCharBudget } from "domain/tileLabel";
 import { useTextScale } from "domain/textScaleSetting";
+import { capColumnExtras, columnExtraRem } from "domain/measuredFit";
 import mod from "../../../mod.json";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
@@ -135,9 +136,55 @@ export const BuildingCatalogComponent = () => {
   // Figures do not scale with the panel but do with the game's text scale.
   const textScale = useTextScale();
   const columnWidths = getBuildingLensColumnWidths(panelWidth + BUILDING_LENS_PANEL_CHROME_WIDTH, textScale);
+  // The widths are estimates; the cells are the fact. Whatever a column's
+  // cells drew past its estimate is added back in rem, capped at the room
+  // beside a name of its minimum width — see domain/measuredFit.ts. A new
+  // panel width or text scale starts from the estimate again.
+  const [columnExtras, setColumnExtras] = useState<Partial<Record<BuildingLensMetric, number>>>({});
+  useEffect(() => {
+    setColumnExtras({});
+  }, [panelWidth, textScale]);
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const measure = () => {
+      // Vanilla's own unit: a rem is a 1920th of the viewport width.
+      const remPx = window.innerWidth / 1920;
+      const overflow: Partial<Record<BuildingLensMetric, number>> = {};
+      root.querySelectorAll<HTMLElement>("[data-metric]").forEach((cell) => {
+        const metric = cell.dataset.metric as BuildingLensMetric;
+        const over = cell.scrollWidth - cell.clientWidth;
+        if (over > (overflow[metric] ?? 0)) overflow[metric] = over;
+      });
+      const wanted = { ...columnExtras };
+      let grew = false;
+      for (const metric of Object.keys(overflow) as BuildingLensMetric[]) {
+        const extra = (columnExtras[metric] ?? 0) + columnExtraRem(overflow[metric] ?? 0, remPx);
+        if (extra > (columnExtras[metric] ?? 0)) { wanted[metric] = extra; grew = true; }
+      }
+      if (!grew) return;
+      const columnsRem = Object.values(columnWidths).reduce((total, width) => total + width, 0);
+      const room = panelWidth - BUILDING_LENS_CONTROL_PANE_TOTAL - BUILDING_LENS_IDENTITY_MIN - BUILDING_LENS_TABLE_ROW_FURNITURE;
+      setColumnExtras(capColumnExtras(wanted as Record<BuildingLensMetric, number>, columnsRem, room));
+    };
+    if (typeof ResizeObserver === "function") {
+      const observer = new ResizeObserver(measure);
+      observer.observe(root);
+      measure();
+      return () => observer.disconnect();
+    }
+    let inner = 0;
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(measure);
+    });
+    return () => {
+      cancelAnimationFrame(outer);
+      cancelAnimationFrame(inner);
+    };
+  });
   const columnStyle = (metric: BuildingLensMetric) => ({
-    width: `${columnWidths[metric]}rem`,
-    flexBasis: `${columnWidths[metric]}rem`,
+    width: `${columnWidths[metric] + (columnExtras[metric] ?? 0)}rem`,
+    flexBasis: `${columnWidths[metric] + (columnExtras[metric] ?? 0)}rem`,
   });
   // The width the NAME actually gets.
   //
