@@ -23,11 +23,13 @@ file; the raw `LICENSE` URL returns 404. A copyright-property comment is not
 treated as permission to redistribute; this remains an open distribution
 blocker rather than silently inventing a license notice.
 
-This checkout is therefore an internal, non-published development fork. It is
-deployed locally only for isolated verification. Before publishing or
-distributing the successor, obtain confirmation from the upstream maintainer
-or a canonical MIT license file, then add the required notice here and in the
-published package.
+Decision, 2026-09-09: the maintainer chose to publish on the csproj
+statement. Re-checked that day: the public repository still has no LICENSE,
+COPYING or NOTICE file and no license text in its README; the only license
+claim is `<Copyright>@2024 MIT license</Copyright>` in `FindIt/FindIt.csproj`.
+The published listing and this repository credit Find It 1.5.8 by T. D. W.
+and state that basis. If the upstream author adds a license file or objects,
+this record and the listing are updated to match.
 
 ## Inherited assets removed
 
@@ -81,7 +83,7 @@ The successor now uses unique local runtime identities:
 - UI mod ID: `BetterBuildingMenu`
 - Assembly/root namespace: `BetterBuildingMenu`
 - UI asset host: `betterbuildingmenu`
-- PDX publisher ID: intentionally unassigned (the upstream `77240` was removed)
+- Paradox Mods id: `158589`, assigned by the first publish on 2026-09-09 (the upstream `77240` was removed on the fork and never reused)
 
 Prefab category metadata is data compatibility rather than a runtime module
 identity: the index accepts both legacy `FindIt/...` overrides from existing

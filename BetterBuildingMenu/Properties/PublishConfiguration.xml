@@ -4,7 +4,7 @@
   ModPublisher), which runs natively under dotnet on Linux and signs in with the
   game's stored Paradox session. See docs/publishing.md for the exact steps.
 
-  * ModId: empty until the first "Publish" run prints the id the store assigned.
+  * ModId 158589 was assigned by the first "Publish" run on 2026-09-09.
     The upstream Find It id (77240) must never appear here. See docs/FORK.md.
   * Thumbnail / Screenshot: this mod's own captures, taken in-game at 1080p on
     2026-09-09. Find It's store art was removed on 2026-09-02.
@@ -14,7 +14,7 @@
     before it is made Public with an "Update" run.
 -->
 <Publish>
-  <ModId Value="" />
+  <ModId Value="158589" />
   <DisplayName Value="Better Building Menu" />
   <ShortDescription Value="A building browser inside the vanilla build menus: table, grid and card views with facets, metric ranges and a coverage overlay." />
   <LongDescription>

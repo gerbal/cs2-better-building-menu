@@ -60,8 +60,8 @@ useful.
 
 1. Keep only `BootDiagnostics` and `BetterBuildingMenu` in the isolated Mods
    roots while validating a release candidate.
-2. Confirm the upstream license notice and assign a new PDX publisher identity;
-   do not reuse Find It's `77240` publisher ID.
+2. Done 2026-09-09: published as Paradox Mods id `158589` on the upstream
+   csproj's MIT statement (docs/FORK.md); Find It's `77240` was never reused.
 3. Deploy the package to both Mods roots, launch a developed save, and repeat
    `docs/verification.md` after any identity or release-build change. Never
    rename a superseded package to `.disabled`; the game still scans UI bundles
