@@ -59,3 +59,28 @@ describe("what counts as overflow", () => {
     assert.equal(contentOverflowPx(187, 187, 195), 8);
   });
 });
+
+describe("the budget a set of drawn lines allows", () => {
+  it("is the tightest correction any line asks for", async () => {
+    const { lineBudgetFromDrawn } = await import("../src/domain/measuredFit.ts");
+    // Two lines in a 64px box: the first fits, the second overflows by a third.
+    const lines = [
+      { clientWidth: 64, offsetWidth: 64, scrollWidth: 64 },
+      { clientWidth: 64, offsetWidth: 64, scrollWidth: 96 },
+    ];
+    assert.equal(lineBudgetFromDrawn(12, lines), 8);
+  });
+
+  it("leaves the budget alone when every line fits", async () => {
+    const { lineBudgetFromDrawn } = await import("../src/domain/measuredFit.ts");
+    assert.equal(lineBudgetFromDrawn(12, [{ clientWidth: 64, offsetWidth: 64, scrollWidth: 64 }]), 12);
+  });
+
+  it("ignores lines that have not been laid out yet", async () => {
+    // Cohtml reports 0 for an element it has not laid out, and the previous
+    // text's width for one whose text just changed; a zero box is the first
+    // case and must not count as overflow.
+    const { lineBudgetFromDrawn } = await import("../src/domain/measuredFit.ts");
+    assert.equal(lineBudgetFromDrawn(12, [{ clientWidth: 0, offsetWidth: 0, scrollWidth: 0 }]), 12);
+  });
+});

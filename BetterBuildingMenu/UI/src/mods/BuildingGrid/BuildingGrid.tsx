@@ -10,7 +10,7 @@ import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/B
 import { topSearchResult } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { stripRedundantNamePrefix, tileLabelLineBudget, wrapTileLabel } from "domain/tileLabel";
-import { contentOverflowPx, reduceBudgetToFit } from "domain/measuredFit";
+import { lineBudgetFromDrawn } from "domain/measuredFit";
 import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
 import { formatBuildingMetric, getNumberSeparators } from "domain/buildingLensMetricFormat";
 import type { SortColumn } from "domain/buildingCatalogContracts";
@@ -81,27 +81,33 @@ const TileName = ({ label, budget }: { label: string; budget: number }) => {
     const box = boxRef.current;
     if (!box) return;
     const measure = () => {
-      let next = effective;
-      for (const line of Array.from(box.children) as HTMLElement[]) {
-        const box = Math.max(line.clientWidth, line.offsetWidth);
-        next = Math.min(next, reduceBudgetToFit(effective, box, box + contentOverflowPx(line.clientWidth, line.offsetWidth, line.scrollWidth)));
-      }
+      const next = lineBudgetFromDrawn(effective, Array.from(box.children) as HTMLElement[]);
       if (next < effective) setFit(next);
     };
-    // Watch the box rather than guess when it settles — Cohtml relayouts a
-    // frame after a view change (see GroupedResults). Fallback: the second
-    // frame, which is where the measured relayout landed.
-    if (typeof ResizeObserver === "function") {
-      const observer = new ResizeObserver(measure);
-      observer.observe(box);
-      measure();
-      return () => observer.disconnect();
-    }
+    // Never in the tick of the render. Cohtml reports the PREVIOUS text's
+    // scrollWidth for a line whose text just changed (measured: 171px for a
+    // name already replaced by one that draws at 64px) and 0 for a line it
+    // has not laid out, and both only settle a frame later. A read in this
+    // tick saw the old overflow again after every shortening and ratcheted
+    // the budget to the floor — "…e…d" on twelve Roads tiles. So every read,
+    // the observer's included, waits two frames: the second is where the
+    // measured relayout landed (see GroupedResults).
+    let outer = 0;
     let inner = 0;
-    const outer = requestAnimationFrame(() => {
-      inner = requestAnimationFrame(measure);
-    });
+    const scheduleMeasure = () => {
+      cancelAnimationFrame(outer);
+      cancelAnimationFrame(inner);
+      outer = requestAnimationFrame(() => {
+        inner = requestAnimationFrame(measure);
+      });
+    };
+    // Watch the box rather than guess when it settles — Cohtml relayouts a
+    // frame after a view change; the box's own resize is the signal.
+    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(scheduleMeasure) : null;
+    observer?.observe(box);
+    scheduleMeasure();
     return () => {
+      observer?.disconnect();
       cancelAnimationFrame(outer);
       cancelAnimationFrame(inner);
     };
