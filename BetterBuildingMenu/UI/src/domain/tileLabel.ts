@@ -223,9 +223,13 @@ const fitLastLine = (rest: string, perLine: number): string => {
   const tail = words[words.length - 1];
 
   // Largest head that still fits, so as much of the name survives as can.
+  // The mark costs what shortenTileLabel charges for it, not one character:
+  // "One-Way…Road" is twelve by count and drew 59px in a 51px line, and the
+  // clip that follows an elided line then cut it to "One-Way…Roa".
+  const markCost = ELLIPSIS_CHARS - 1;
   for (let head = words.length - 2; head >= 1; head -= 1) {
     const candidate = `${words.slice(0, head).join(" ")}…${tail}`;
-    if (candidate.length <= perLine) return candidate;
+    if (candidate.length + markCost <= perLine) return candidate;
   }
 
   return shortenTileLabel(rest, perLine);

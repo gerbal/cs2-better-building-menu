@@ -221,11 +221,18 @@ describe("Wrapping a name over the tile's lines", () => {
   });
 
   it("drops a whole word before it cuts one", () => {
-    // "One-Way Public Transport Lane" is the case: the last line cut to
-    // "Public…t Lane", and "t Lane" is a fragment where "…Lane" is a gap.
+    // "One-Way Public Transport Lane" was the case: the last line cut to
+    // "Public…t Lane", and "t Lane" is a fragment where "…Lane" is a gap. Now
+    // that the mark is charged what it draws, "Public…Lane" no longer fits a
+    // twelve-character line and that name takes the character cut honestly
+    // ("Publi…Lane"); the whole-word rule is shown on a name where it fits.
+    assert.deepEqual(wrapTileLabel("Underground Bus Stop Lane", LINE), [
+      "Underground",
+      "Bus…Lane",
+    ]);
     assert.deepEqual(wrapTileLabel("One-Way Public Transport Lane", LINE), [
       "One-Way",
-      "Public…Lane",
+      "Publi…Lane",
     ]);
   });
 
@@ -297,5 +304,30 @@ describe("Table name budget", () => {
 
   it("grows with the width", () => {
     assert.ok(tableLabelCharBudget(420) > tableLabelCharBudget(270));
+  });
+});
+
+describe("The ellipsis costs the same on every path", () => {
+  // shortenTileLabel charges the mark three characters (it draws 9.4px where a
+  // letter draws 5.0, and what survives an elision is capitals without
+  // spaces). fitLastLine charged it one, so "One-Way…Road" — twelve characters
+  // by count — passed a twelve-character line and drew 59px in a 51px box:
+  // the CSS clip that follows an elided line cut it to "One-Way…Roa".
+  it("keeps an elided last line inside the budget once the mark is paid for", () => {
+    const LINE = tileLabelLineBudget(100);
+    const names = [
+      "One-Lane One-Way Perpendicular Parking Road",
+      "Two-Lane One-Way Road",
+      "Three-Lane Asymmetric Road",
+      "Two-Lane Wooden Covered Bridge",
+      "Firefighting Helicopter Depot",
+    ];
+
+    for (const name of names) {
+      for (const line of wrapTileLabel(name, LINE)) {
+        const cost = line.length + (line.includes("…") ? 2 : 0);
+        assert.ok(cost <= LINE, `"${line}" costs ${cost} of ${LINE} (${name})`);
+      }
+    }
   });
 });

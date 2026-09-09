@@ -85,7 +85,12 @@ export function getBuildingLensMetricTextScale(tier: BuildingLensDensityTier): "
  */
 export const BUILDING_LENS_COLUMN_MAX: Record<BuildingLensMetric, number> = {
   cost: 100,
-  upkeep: 108,
+  // The widest figure this column draws is a road's "¢2,437 /km/mo." — the
+  // game's own per-kilometre-per-month template — and it does not scale with
+  // the panel. At 1280x720 one rem draws 0.54px; the text wants 59–60px, which
+  // is 112rem, and 108 clipped its last character on every road. The minimum
+  // below holds the same figure for the same reason.
+  upkeep: 116,
   workers: 62,
   capacity: 122,
   lot: 88,
@@ -103,10 +108,8 @@ export const BUILDING_LENS_COLUMN_MAX: Record<BuildingLensMetric, number> = {
  */
 export const BUILDING_LENS_COLUMN_MIN: Record<BuildingLensMetric, number> = {
   cost: 76,
-  // 84, not 80: a road's "¢2,437 /km/mo." is the widest figure the column
-  // draws, and at 1280x720 it wanted 59–60px of an 80rem (57px) cell — the
-  // last character clipped on every road in the table.
-  upkeep: 84,
+  // Holds "¢2,437 /km/mo." at any panel width — see the maximum above.
+  upkeep: 116,
   workers: 48,
   capacity: 88,
   lot: 68,

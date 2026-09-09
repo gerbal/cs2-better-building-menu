@@ -175,11 +175,14 @@ describe("Table column widths", () => {
 describe("the Upkeep column at the narrowest panel", () => {
   it("holds a per-kilometre figure without clipping", async () => {
     // A road's upkeep is "¢2,437 /km/mo." — the widest figure the column ever
-    // draws. Measured live at 1280x720 with the panel at its minimum: the text
-    // wants 59–60px of a 57px cell (80rem), and clipped its last character on
-    // every road in the table. 84rem is 60px.
-    const { BUILDING_LENS_COLUMN_MIN } = await import("../src/domain/buildingLensLayout.ts");
+    // draws — and it clipped its last character on every road in the table.
+    const { BUILDING_LENS_COLUMN_MIN, BUILDING_LENS_COLUMN_MAX } = await import("../src/domain/buildingLensLayout.ts");
 
-    assert.ok(BUILDING_LENS_COLUMN_MIN.upkeep >= 84, `upkeep min is ${BUILDING_LENS_COLUMN_MIN.upkeep}rem`);
+    // The figure does not scale with the panel, so both bounds must hold it:
+    // at 1280x720 a rem draws 0.54px and the text wants 59–60px — 112rem.
+    // The first attempt raised only the minimum, and the cell — already at its
+    // maximum of 108rem on that panel — still clipped.
+    assert.ok(BUILDING_LENS_COLUMN_MIN.upkeep >= 112, `upkeep min is ${BUILDING_LENS_COLUMN_MIN.upkeep}rem`);
+    assert.ok(BUILDING_LENS_COLUMN_MAX.upkeep >= 112, `upkeep max is ${BUILDING_LENS_COLUMN_MAX.upkeep}rem`);
   });
 });
