@@ -2072,7 +2072,7 @@ the City High School figures (cost, upkeep, capacity, parking, workers,
 jobs, evening shift, XP, upgrades, lot).
 
 **Store art.** `Properties/Screenshot_01..04.jpg` (1920x1080, JPEG q90) and
-`Properties/Thumbnail.png` (rendered from `Properties/Logo.svg`; the first upload used a crop of the Roads grid). Captured
+`Properties/Thumbnail.png` (1080x1080, rendered from `Properties/Logo.svg`; the first upload used a crop of the Roads grid). Captured
 with `spectacle -b -n -e -a` on the activated game window: the devtools
 `Page.captureScreenshot` returns only the UI layer over black, which is
 fine for probes and wrong for store images.
