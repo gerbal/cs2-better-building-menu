@@ -1654,7 +1654,12 @@ the headless GL harness; the lock-state agreement holds on a save with locks.
 
 ## 2026-09-07/08 — hover card contents, units in both systems, 720p pass
 
-Live on the main prefix (949230), 1280x720, autosaves of Porterville. Evidence
+Live on the main prefix (949230), autosaves of Porterville. The window was
+**1024x768** (Settings.coc, `displayMode: Window`), not the 1280x720 the commit
+messages of 7c893c1 and 0e4394b say — the DOM's `innerWidth` of 1024 was
+literal and the MCP screenshots were rescaled. The figures below are as
+measured; only the label was wrong, and 1024 wide is the harsher width case.
+Evidence
 is DOM reads over CDP — every card line carries `data-line="<key>"` and every
 tier `data-tier` since 18b1117 — because `Page.captureScreenshot` timed out for
 the whole of 2026-09-08 on both the MCP client and the standalone script
@@ -1726,10 +1731,10 @@ Guards added: `test/factCoverage.test.ts` reads the indexer's source and checks
 every emitted key has a presentation; the render suite has a fixture per kind
 of tile (network, zone, tool, tree, service) and one under Freedom (14e3eef).
 
-### 720p pass (2026-09-08, cm-2xvs acceptance)
+### Layout pass at 1024x768 (2026-09-08, cm-2xvs acceptance)
 
 Roads, 100 tiles, and Health, 8 tiles, in Cards, List, Grid and Table, measured
-off the DOM: no overlapping tiles, no horizontal scroll, Table rows inside a
+off the DOM at 1024x768 (see above): no overlapping tiles, no horizontal scroll, Table rows inside a
 198px scroller (scrollHeight 540), the hover card flipping inside the viewport
 on the bottom row (453,445 199×142), the Group-by picker (`pickerOptions`)
 opening upward at 932,515 with all eight options inside the viewport. The two
