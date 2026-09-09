@@ -1870,3 +1870,23 @@ its two tiers and divider; the Group-by picker opening upward inside the
 viewport. One defect the DOM probes could not see: a road's **Lot** reads
 "0 × 0" in the Table, where the hover card (via `hasFootprint`) omits it.
 
+### Visual pass across sizes (2026-09-09, 8808213)
+
+Headless `949230-b`, one run, the size switched in-game through the Graphics
+widget; `scratchpad/shots/shot-views.mjs` drives Cards, Grid and Table, the
+hover card on the bottom-right tile, and the Group-by picker, and captures
+each. Frames at **1920x1080**, **2560x1440** and **2560x1080** (and 1280x720
+from the run above): tile names whole and wrapped at word boundaries in the
+grid; the table's header aligned with its rows with "—" for a road's lot;
+the two-tier hover card with its divider; the picker opening upward inside
+the viewport. At 21:9 the panel keeps its stored width where the game's own
+asset menu sits and leaves the extra width empty — vanilla's behaviour. The
+only visual note is cosmetic: a hover card left open persists over the
+picker when the pointer is not moved off the tile.
+
+A harness lesson from the same run: the HUD's info button sits at (10,10)
+and is `button` index 0 in-game, so "press the first button" does not close
+Options there — its back arrow is the button with class `back-button…`
+beside the OPTIONS heading, and the Options page stays mounted (offscreen)
+after closing, so "is Options open" must be a visibility test.
+
