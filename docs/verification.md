@@ -1788,4 +1788,13 @@ its 1024x768 window. Evidence is the same DOM probe as the 09-08 pass.
   `domain/textScale.ts` states the calc, the tile and table budgets divide by
   their size's ratio, the metric columns multiply by it, read from vanilla's
   `("options","textScale")` binding.
+- **Text scale, after the fix, live on the same instance** (497ea87 floors a
+  scaled tile budget; 910fa1a caps the column ratio at the room beside a name
+  of its minimum width). At 125 %: Grid 0 clips, Cards 0, Table's name cell
+  117px with its Cost and Upkeep figures 2–10px over their cells — down from
+  15–20px, and the name no longer collapses (it had gone to 13px when the
+  columns scaled by the full ratio). At 150 %: Grid one 2px clip ("Wide
+  Quay"), Cards 0, Table name kept and figures 25–35px over — a 720p panel
+  cannot hold seven metric columns at that size, and the figures clip inside
+  their cells rather than the row breaking. The setting was returned to 100 %.
 
