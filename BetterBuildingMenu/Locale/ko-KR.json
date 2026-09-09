@@ -79,8 +79,5 @@
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.OpenPanelOnPicker]": "개체 선택 후 Better Building Menu 패널 열기",
   "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.OpenPanelOnPicker]": "선택툴(Picker)로 개체를 선택 하면 패널을 열거나 가능할 경우 바닐라 패널을 엽니다.",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Better Building Menu를 열 때 첫번째 에셋을 선택함",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Better Building Menu 패널을 열때 첫번째 에셋을 자동으로 선택합니다. 이는 다른 도구를 닫거나 ESC키로 Better Building Menu를 닫을때 영향을 줍니다.",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod/PickerKeyBinding/binding]": "선택기",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.PickerKeyBinding]": "선택기",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.PickerKeyBinding]": "선택 도구를 활성화하기 위한 단축키를 설정 합니다."
+  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Better Building Menu 패널을 열때 첫번째 에셋을 자동으로 선택합니다. 이는 다른 도구를 닫거나 ESC키로 Better Building Menu를 닫을때 영향을 줍니다."
 }

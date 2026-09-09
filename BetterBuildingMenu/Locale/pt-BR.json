@@ -79,8 +79,5 @@
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.OpenPanelOnPicker]": "Open the building menu after picking an object",
   "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.OpenPanelOnPicker]": "Choose between opening the building menu after selecting an object with Picker, or the vanilla panel if available.",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Select the first asset when opening the building menu",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Automatically selects the first asset in the list when opening the building menu, this affects behaviors like closing other tools and using the Escape key to close it.",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod/PickerKeyBinding/binding]": "Picker",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.PickerKeyBinding]": "Picker",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.PickerKeyBinding]": "Determines the hot-key to activate the Picker tool."
+  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Automatically selects the first asset in the list when opening the building menu, this affects behaviors like closing other tools and using the Escape key to close it."
 }

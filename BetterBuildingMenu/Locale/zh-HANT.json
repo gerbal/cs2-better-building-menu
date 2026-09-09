@@ -79,8 +79,5 @@
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.OpenPanelOnPicker]": "選取物件後開啟 Better Building Menu 面板",
   "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.OpenPanelOnPicker]": "選擇在使用挑選工具選擇物件後打開 \"Better Building Menu\" 面板，或者如果有的話，打開原生面板。",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "開啟「Better Building Menu」時，選擇第一項資產",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "打開 \"Better Building Menu\" 面板時自動選擇列表中的第一個資產，這會影響像是關閉其他工具以及使用 Escape 鍵關閉 「 Better Building Menu 」 的行為。",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod/PickerKeyBinding/binding]": "拾取器",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.PickerKeyBinding]": "拾取器",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.PickerKeyBinding]": "設定快捷鍵以啟用拾取器工具。"
+  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "打開 \"Better Building Menu\" 面板時自動選擇列表中的第一個資產，這會影響像是關閉其他工具以及使用 Escape 鍵關閉 「 Better Building Menu 」 的行為。"
 }

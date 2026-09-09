@@ -2,7 +2,6 @@
 using BetterBuildingMenu.Domain.Interfaces;
 using BetterBuildingMenu.Domain.UIBinding;
 using BetterBuildingMenu.Utilities;
-using Game.Input;
 using Game.Tools;
 using Game.UI.Tooltip;
 
@@ -21,7 +20,6 @@ namespace BetterBuildingMenu.Systems
 		private DefaultToolSystem _defaultToolSystem;
 		private BuildingMenuUISystem _menuUISystem;
 		private ValueBindingHelper<OptionSectionUIEntry[]> _pickerOptionsList;
-		private ProxyAction _pickerKeyBinding;
 
 		protected override void OnCreate()
 		{
@@ -32,9 +30,6 @@ namespace BetterBuildingMenu.Systems
 			_defaultToolSystem = World.GetOrCreateSystemManaged<DefaultToolSystem>();
 			_menuUISystem = World.GetOrCreateSystemManaged<BuildingMenuUISystem>();
 
-			_pickerKeyBinding = Mod.Settings.GetAction(nameof(BetterBuildingMenuSettings.PickerKeyBinding));
-			_pickerKeyBinding.shouldBeEnabled = true;
-			
 			_pickerOptionsList = CreateBinding("PickerOptionsList", new OptionSectionUIEntry[0]);
 			CreateBinding("PickerActive", () => _toolSystem.activeTool == _pickerToolSystem);
 
@@ -97,16 +92,6 @@ namespace BetterBuildingMenu.Systems
 			RefreshOptions();
 		}
 
-		protected override void OnUpdate()
-		{
-			if (_pickerKeyBinding.WasPerformedThisFrame())
-			{
-				OnPickerKeyPressed();
-			}
-
-			base.OnUpdate();
-		}
-
 		private void PickerClicked()
 		{
 			RefreshOptions();
@@ -123,13 +108,5 @@ namespace BetterBuildingMenu.Systems
 			}
 		}
 
-		private void OnPickerKeyPressed()
-		{
-			RefreshOptions();
-
-			_menuUISystem.SetLensMenuOpen(false);
-
-			_toolSystem.activeTool = _pickerToolSystem;
-		}
 	}
 }

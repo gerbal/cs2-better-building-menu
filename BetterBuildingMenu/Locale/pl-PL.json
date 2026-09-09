@@ -79,8 +79,5 @@
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.OpenPanelOnPicker]": "Otwórz panel Better Building Menu po wybraniu obiektu",
   "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.OpenPanelOnPicker]": "Wybierz pomiędzy otwarciem panelu Better Building Menu po wybraniu obiektu za pomocą selektora, a standardowym panelem, jeśli jest dostępny.",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Wybierz pierwszy obiekt podczas otwierania Better Building Menu",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Automatycznie wybiera pierwszy obiekt na liście podczas otwierania panelu Better Building Menu. To wpływa na zachowania takie jak zamykanie innych narzędzi i używanie klawisza Escape do zamykania Better Building Menu.",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod/PickerKeyBinding/binding]": "Próbnik",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.PickerKeyBinding]": "Próbnik",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.PickerKeyBinding]": "Określa jaki klawisz aktywuje narzędzie próbnika."
+  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Automatycznie wybiera pierwszy obiekt na liście podczas otwierania panelu Better Building Menu. To wpływa na zachowania takie jak zamykanie innych narzędzi i używanie klawisza Escape do zamykania Better Building Menu."
 }

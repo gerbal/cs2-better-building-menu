@@ -79,8 +79,5 @@
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.OpenPanelOnPicker]": "Öffnet das Suchfeld, nachdem Sie ein Objekt ausgewählt haben",
   "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.OpenPanelOnPicker]": "Wählen Sie nach der Auswahl eines Objekts mit der Pipette zwischen dem Öffnen des Better Building Menu-Panels oder des Vanilla-Panels, falls verfügbar.",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Wähle das erste Asset aus, wenn du Better Building Menu öffnest",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Wählt automatisch das erste Asset in der Liste aus, wenn das Better Building Menu-Panel geöffnet wird. Dies beeinflusst Verhaltensweisen wie das Schließen anderer Werkzeuge und das Verwenden der Escape-Taste zum Schließen von Better Building Menu.",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod/PickerKeyBinding/binding]": "Pipette",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.PickerKeyBinding]": "Pipette",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.PickerKeyBinding]": "Legt die Taste fest, um die Pipette zu aktivieren."
+  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Wählt automatisch das erste Asset in der Liste aus, wenn das Better Building Menu-Panel geöffnet wird. Dies beeinflusst Verhaltensweisen wie das Schließen anderer Werkzeuge und das Verwenden der Escape-Taste zum Schließen von Better Building Menu."
 }

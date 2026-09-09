@@ -79,8 +79,5 @@
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.OpenPanelOnPicker]": "Abrir o painel do Better Building Menu após selecionar um objeto",
   "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.OpenPanelOnPicker]": "Escolhe entre abrir o painel do Better Building Menu após selecionar um objeto com o Picker, ou o painel padrão (vanilla) se disponível.",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Selecionar o primeiro asset ao abrir o Better Building Menu",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Seleciona automaticamente o primeiro recurso da lista ao abrir o painel do Better Building Menu. Isso afeta comportamentos como fechar outras ferramentas e usar a tecla Esc para fechar o Better Building Menu.",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod/PickerKeyBinding/binding]": "Seletor",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.PickerKeyBinding]": "Seletor",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.PickerKeyBinding]": "Determina a tecla de atalho para ativar a ferramenta Seletor."
+  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Seleciona automaticamente o primeiro recurso da lista ao abrir o painel do Better Building Menu. Isso afeta comportamentos como fechar outras ferramentas e usar a tecla Esc para fechar o Better Building Menu."
 }
