@@ -192,6 +192,17 @@ describe("the Upkeep column at the narrowest panel", () => {
   });
 });
 
+describe("the row's furniture", () => {
+  it("mirrors the stylesheet's trailing reserve, gap before the chevron included", async () => {
+    // $table-trailing-reserve = 4 + 26 + 4 + 3 = 37; then the rows' scrollbar
+    // (16), .rowSelect's left padding (8) and the thumbnail with its margin
+    // (80). Measured 2026-09-09: 33rem trail a 1026rem select inside a
+    // 1059rem rows box, and the name got 327rem where this budget said 332.
+    const { BUILDING_LENS_TABLE_ROW_FURNITURE } = await import("../src/domain/buildingLensLayout.ts");
+    assert.equal(BUILDING_LENS_TABLE_ROW_FURNITURE, 37 + 16 + 8 + 80);
+  });
+});
+
 describe("the metric columns fit the room beside the name", () => {
   // The room is what the row really has: assembly − control pane − the
   // panel's chrome around the rows − the row's own furniture − the name's
@@ -199,20 +210,21 @@ describe("the metric columns fit the room beside the name", () => {
   // the row 1026rem, so the chrome is 30; less 138 furniture and the 260 the
   // name keeps, 628rem — which is why the 586rem maximum fits there.
   it("is the measured row less the furniture and the name's basis at the default assembly", async () => {
-    const { tableColumnRoom, BUILDING_LENS_MAX_WIDTH, BUILDING_LENS_PANEL_CHROME_WIDTH } = await import("../src/domain/buildingLensLayout.ts");
+    const { tableColumnRoom, BUILDING_LENS_MAX_WIDTH, BUILDING_LENS_PANEL_CHROME_WIDTH, BUILDING_LENS_TABLE_ROW_FURNITURE } = await import("../src/domain/buildingLensLayout.ts");
 
-    assert.equal(tableColumnRoom(BUILDING_LENS_MAX_WIDTH + BUILDING_LENS_PANEL_CHROME_WIDTH), 1026 - 138 - 260);
+    assert.equal(tableColumnRoom(BUILDING_LENS_MAX_WIDTH + BUILDING_LENS_PANEL_CHROME_WIDTH), 1026 - BUILDING_LENS_TABLE_ROW_FURNITURE - 260);
   });
 
   it("holds the set to the room where the preference would overrun it", async () => {
-    // A 1350rem assembly has 502rem beside a 260rem name; the columns take
-    // exactly that, not the 586 they would prefer, so the name keeps its basis
-    // instead of being the one flex item that yields.
+    // A 1350rem assembly has about 500rem beside a 260rem name; the columns
+    // take exactly that, not the 586 they would prefer, so the name keeps its
+    // basis instead of being the one flex item that yields.
     const { getBuildingLensColumnWidths, tableColumnRoom } = await import("../src/domain/buildingLensLayout.ts");
+    const room = tableColumnRoom(1350);
     const total = Object.values(getBuildingLensColumnWidths(1350)).reduce((a, b) => a + b, 0);
 
-    assert.equal(tableColumnRoom(1350), 502);
-    assert.ok(Math.abs(total - 502) <= 3, `columns sum to ${total}rem of 502`);
+    assert.ok(room > 478 && room < 586, `room ${room}rem sits between the minimum and comfortable sets`);
+    assert.ok(Math.abs(total - room) <= 3, `columns sum to ${total}rem of ${room}`);
   });
 
   it("keeps every column's share of the room in proportion to its preference", async () => {

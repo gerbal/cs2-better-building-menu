@@ -41,11 +41,13 @@ $row-details-width: 26rem;
 $rows-scrollbar-width: 16rem;
 
 // Everything to the right of .rowSelect's last metric cell. Measured against a
-// live row rather than assumed: .row lays its three children out with NO gap
-// between them, so a first attempt at this that added $row-gap twice overshot
-// by 2rem and left a uniform 1.3px lean. If a gap is ever introduced there, it
-// belongs in this sum.
-$table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-padding-right;
+// live row rather than assumed, twice: an early reading found no gap between
+// .row's children and a sum with $row-gap counted twice overshot by 2rem; on
+// 2026-09-09 (1280x720, PanelWidth 1441) the rows box was 1059rem and the
+// select 1026rem, so 33rem trail it — chevron, outer padding and ONE gap —
+// and a reserve without the gap left the header's identity 3rem wider than
+// the cell's. Counted once.
+$table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-padding-right + $row-gap;
 
 .catalog {
   display: flex;
@@ -647,7 +649,10 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   justify-content: center;
   background-color: transparent;
   padding: 0;
-  margin: 0;
+  // Not `margin: 0`: that reset, same specificity as .columnHeader's
+  // `> * + *` gap and later in the file, took the gap back, and every header
+  // sat 3rem further left per column than its cells (cm-7kr8).
+  margin: 0 0 0 $row-gap;
 }
 
 .metricHeader:hover {
