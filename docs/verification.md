@@ -1981,3 +1981,24 @@ Live at 1280x720, PanelWidth 1441, Roads in Table view, from
 All seven columns at shift 0, widths unchanged at 586rem, worst overflow
 1px across 700 cells, no name clipped. Frame
 `34-table-720-header-aligned.png`.
+
+### The table across sizes on the column model (2026-09-09, 875c12c)
+
+Headless `949230-b` on a 2560x1440 screen, the size switched in-game, Roads
+in Table view, `UI/scripts/table-widths-probe.js` and `layout-probe.js`
+after `shot-views.mjs` (frames `35-1080p-*`, `35-1440p-*`,
+`35-ultrawide-*`):
+
+| size | columns (inline = drawn) | header shift | identity | worst cell overflow | clipped text |
+|---|---|---|---|---|---|
+| 1920x1080 | 586rem | 0 at all seven | 407 / 407 | 0px / 700 | none |
+| 2560x1440 | 586rem | 0 | 407 / 407 | 2px | one Upkeep cell, "¢2,025 /km/mo." 157 in 155 |
+| 2560x1080 | 586rem | 0 | 407 / 407 | 3px | four Upkeep cells, 118–119 in 116 |
+
+No name clipped at any size (100 rows each), no overlaps, no horizontal
+scroll. The Upkeep residual at 1440p and 21:9 is the class recorded in the
+resolutions pass above — at 1.33px per rem text draws 2–3 % wider relative
+to rem — and is smaller than before (three headers and cells at 1440p, now
+one cell). The probe's rem is now the game's: 1/1920 of the width or
+1/1080 of the height, whichever is smaller, since at 21:9 the game scales
+by height and a width-based unit read 586rem as 439.

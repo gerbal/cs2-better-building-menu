@@ -6,7 +6,7 @@
 // Header cells carry a metricHeader class; row cells do not. The header row
 // is wider than a row by its trailing reserve (cm-7kr8).
 (() => {
-  const remPx = window.innerWidth / 1920;
+  const remPx = Math.min(window.innerWidth / 1920, window.innerHeight / 1080);
   const rem = (v) => Math.round(v / remPx * 10) / 10;
   const overflow = (e) => e.scrollWidth - Math.max(e.clientWidth, e.offsetWidth);
   const all = [...document.querySelectorAll('[data-metric]')];
