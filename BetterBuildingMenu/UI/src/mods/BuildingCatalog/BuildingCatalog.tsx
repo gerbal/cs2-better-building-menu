@@ -4,6 +4,7 @@ import { useLocalization } from "cs2/l10n";
 import { useRef } from "react";
 import classNames from "classnames";
 import { shortenTileLabel, tableLabelCharBudget } from "domain/tileLabel";
+import { useTextScale } from "domain/textScaleSetting";
 import mod from "../../../mod.json";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
@@ -131,7 +132,9 @@ export const BuildingCatalogComponent = () => {
   // One set of numbers for the header and every row. The columns line up only
   // because both read the same widths; computing them twice is how a table with
   // no CSS grid drifts out of alignment.
-  const columnWidths = getBuildingLensColumnWidths(panelWidth + BUILDING_LENS_PANEL_CHROME_WIDTH);
+  // Figures do not scale with the panel but do with the game's text scale.
+  const textScale = useTextScale();
+  const columnWidths = getBuildingLensColumnWidths(panelWidth + BUILDING_LENS_PANEL_CHROME_WIDTH, textScale);
   const columnStyle = (metric: BuildingLensMetric) => ({
     width: `${columnWidths[metric]}rem`,
     flexBasis: `${columnWidths[metric]}rem`,
@@ -157,7 +160,7 @@ export const BuildingCatalogComponent = () => {
       - Object.values(columnWidths).reduce((total, width) => total + width, 0)
       - BUILDING_LENS_TABLE_ROW_FURNITURE
   );
-  const nameBudget = tableLabelCharBudget(nameWidth);
+  const nameBudget = tableLabelCharBudget(nameWidth, textScale);
   const rowGeometry = getBuildingLensRowGeometry(density);
   const catalogMaxHeight = getBuildingLensCatalogMaxHeight(typeof window === "undefined" ? 720 : window.innerHeight);
   // Row and filter should name the same asset the same way: the entry carries

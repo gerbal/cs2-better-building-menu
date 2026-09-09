@@ -1,3 +1,5 @@
+import { fontSizeRatio } from "./textScale";
+
 /**
  * Shortening for grid tile names.
  *
@@ -50,16 +52,18 @@ const TILE_LABEL_LINES = 2;
 /**
  * Characters on a single line of a tile of this width.
  */
-export const tileLabelLineBudget = (tileSize: number): number => {
+export const tileLabelLineBudget = (tileSize: number, textScale = 1): number => {
   const size = Number.isFinite(tileSize) && tileSize > 0 ? tileSize : DEFAULT_TILE_SIZE;
-  return Math.max(4, Math.round((size / DEFAULT_TILE_SIZE) * CHARS_PER_LINE_AT_DEFAULT_TILE));
+  // The name line is fontSizeM; at a larger text scale fewer characters fit
+  // the same box — see domain/textScale.ts.
+  return Math.max(4, Math.round((size / DEFAULT_TILE_SIZE) * CHARS_PER_LINE_AT_DEFAULT_TILE / fontSizeRatio("m", textScale)));
 };
 
 /**
  * Characters on the whole label — every line of it.
  */
-export const tileLabelCharBudget = (tileSize: number): number =>
-  tileLabelLineBudget(tileSize) * TILE_LABEL_LINES;
+export const tileLabelCharBudget = (tileSize: number, textScale = 1): number =>
+  tileLabelLineBudget(tileSize, textScale) * TILE_LABEL_LINES;
 
 /**
  * Characters on the table's single-line name, from the width actually drawable.
@@ -82,10 +86,11 @@ export const tileLabelCharBudget = (tileSize: number): number =>
  */
 const CHARS_PER_100REM_TABLE = 13;
 
-export const tableLabelCharBudget = (drawableWidth: number): number => {
+export const tableLabelCharBudget = (drawableWidth: number, textScale = 1): number => {
   const width = Number.isFinite(drawableWidth) && drawableWidth > 0 ? drawableWidth : DEFAULT_TILE_SIZE;
 
-  return Math.max(8, Math.round((width / DEFAULT_TILE_SIZE) * CHARS_PER_100REM_TABLE));
+  // The table's name cell is fontSizeS.
+  return Math.max(8, Math.round((width / DEFAULT_TILE_SIZE) * CHARS_PER_100REM_TABLE / fontSizeRatio("s", textScale)));
 };
 
 /**

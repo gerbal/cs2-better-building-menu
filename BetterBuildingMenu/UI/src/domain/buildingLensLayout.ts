@@ -1,3 +1,5 @@
+import { fontSizeRatio } from "./textScale";
+
 /**
  * Geometry shared by the Building Lens resize affordance and its contract
  * tests. Values are in the same rem-like units as the panel binding.
@@ -186,7 +188,10 @@ export type BuildingLensColumnWidths = Record<BuildingLensMetric, number>;
  * answer. A clipped "225 000/mo" is a number you can still get from the hover
  * card; a title of zero width is a row you cannot identify at all.
  */
-export function getBuildingLensColumnWidths(outerWidth: number): BuildingLensColumnWidths {
+export function getBuildingLensColumnWidths(outerWidth: number, textScale = 1): BuildingLensColumnWidths {
+  // The cells are fontSizeS; their figures do not scale with the panel but do
+  // with the game's text scale — see domain/textScale.ts.
+  const textRatio = fontSizeRatio("s", textScale);
   const width = Number.isFinite(outerWidth) ? outerWidth : BUILDING_LENS_MIN_WIDTH;
   const span = BUILDING_LENS_MAX_WIDTH - BUILDING_LENS_MIN_WIDTH;
   // A degenerate range would divide by zero; every column simply gets its
@@ -203,7 +208,7 @@ export function getBuildingLensColumnWidths(outerWidth: number): BuildingLensCol
     // Whole units: a fractional width is a column that lands on a different
     // pixel in the header than in the rows, which is the alignment bug this
     // table has already been fixed for once.
-    widths[metric] = Math.round(min + (max - min) * ratio);
+    widths[metric] = Math.round((min + (max - min) * ratio) * textRatio);
   }
 
   return widths;

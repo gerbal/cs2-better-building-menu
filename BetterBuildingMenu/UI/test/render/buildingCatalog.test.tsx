@@ -94,3 +94,23 @@ describe("the catalog container", () => {
     assert.match(html, /data-catalog-entry="2"/);
   });
 });
+
+describe("the table under a larger text scale", () => {
+  // The game's Interface › Text scale reaches the page as ("options",
+  // "textScale"). Measured live at 125 %: the Cost and Upkeep cells clipped
+  // their figures by 15–20px because the column widths assumed 100 %. The
+  // columns follow the S size's own growth — see domain/textScale.ts.
+  it("widens the metric columns by the S size's ratio", () => {
+    resetBindings();
+    setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1)], {}));
+    setBinding("BetterBuildingMenu", "PanelWidth", 700);
+    const widthOf = (html: string) => Number(/metricUpkeep[^>]*style="[^"]*width:\s*([0-9.]+)rem/.exec(html)?.[1]);
+
+    const base = widthOf(render());
+    setBinding("options", "textScale", 1.25);
+    const scaled = widthOf(render());
+
+    assert.ok(base > 0, `base upkeep width ${base}`);
+    assert.equal(scaled, Math.round(base * (21.35 / 14)));
+  });
+});

@@ -14,6 +14,7 @@ import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
 import { formatBuildingMetric, getNumberSeparators } from "domain/buildingLensMetricFormat";
 import type { SortColumn } from "domain/buildingCatalogContracts";
 import { useUnitSystem } from "domain/unitSettings";
+import { useTextScale } from "domain/textScaleSetting";
 import mod from "../../../mod.json";
 import styles from "./buildingGrid.module.scss";
 
@@ -69,6 +70,8 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
   const builtLabel =
     translate("Tooltip.LABEL[BetterBuildingMenu.AlreadyBuilt]", "Already built") ?? "Already built";
   const tileSize = useValue(TileSize$);
+  // The name line is fontSizeM; its character budget follows the text scale.
+  const textScale = useTextScale();
   const activePrefabId = useValue(ActivePrefabId$);
   // The page arrives in the order every view shows: grouped, then by
   // relevance while a search is active, then by the chosen sort. The grid
@@ -249,7 +252,7 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
                 subCategory: entry.subCategoryLabel ?? entry.subCategory,
                 theme: entry.theme,
               }),
-              tileLabelLineBudget(tileSize)
+              tileLabelLineBudget(tileSize, textScale)
             ).map((line, index) => (
               <span
                 key={index}
