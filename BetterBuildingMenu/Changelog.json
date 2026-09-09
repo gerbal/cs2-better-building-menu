@@ -1,14 +1,19 @@
 [
   {
-    "Stable": false,
+    "Stable": true,
     "Version": "0.1.0",
-    "Date": "2026-09-01",
+    "Date": "2026-09-09",
     "ChangeGroups": [
       {
         "Name": "Changes",
         "Changes": [
-          "Better Building Menu: a building lens inside the vanilla build menus, derived from Find It 1.5.8.",
-          "Architecture remediation phases 1, 2 and 5: search debounce, one scoping taxonomy, the upstream filter bank and detailer features removed."
+          "First release on Paradox Mods.",
+          "A building browser inside every vanilla build menu: table, grid and card views with sorting, grouping and search.",
+          "Facets (availability, source, theme, asset pack, placement, role) and metric range filters (cost, upkeep, workers, capacity, lot size).",
+          "Hover cards with the figures the simulation reads, in either unit system.",
+          "Coverage overlay while placing a service building.",
+          "Named rows with cost and footprint in the extension picker.",
+          "Derived from Find It 1.5.8; the object picker and detailing features are not carried over."
         ]
       }
     ]

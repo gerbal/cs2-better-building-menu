@@ -1,44 +1,72 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  STUB — populate before the first publish.
+  Read by the game's ModPublisher (Cities2_Data/Content/Game/.ModdingToolchain/
+  ModPublisher), which runs natively under dotnet on Linux and signs in with the
+  game's stored Paradox session. See docs/publishing.md for the exact steps.
 
-  Every value below that is empty is a deliberate blank, not an oversight:
-
-  * ModId / publisher identity: a new PDX Mods ID must be assigned. The
-    upstream Find It ID (77240) is intentionally absent so this successor can
-    never update that listing. See docs/FORK.md.
-  * Thumbnail / Screenshot: the fork inherited Find It's eight store images
-    byte-for-byte and they were removed on 2026-09-02. They showed upstream's
-    floating panel, not this mod's in-place menu, and redistributing them is
-    not covered by any license we hold. New capture is required.
-  * ChangeLog: mirror Changelog.json for the version being published.
-
-  Publishing is blocked until docs/FORK.md's license question is settled.
+  * ModId: empty until the first "Publish" run prints the id the store assigned.
+    The upstream Find It id (77240) must never appear here. See docs/FORK.md.
+  * Thumbnail / Screenshot: this mod's own captures, taken in-game at 1080p on
+    2026-09-09. Find It's store art was removed on 2026-09-02.
+  * ChangeLog: ignored by "Publish"; mirror Changelog.json's entry for the version
+    being published before every "NewVersion" run.
+  * AccessLevel: Unlisted for the first upload so the listing can be checked
+    before it is made Public with an "Update" run.
 -->
 <Publish>
+  <ModId Value="" />
   <DisplayName Value="Better Building Menu" />
-  <ShortDescription Value="A building lens inside the vanilla build menus: table, grid and list views with facets, metric ranges and a coverage overlay." />
+  <ShortDescription Value="A building browser inside the vanilla build menus: table, grid and card views with facets, metric ranges and a coverage overlay." />
   <LongDescription>
 # Better Building Menu
 
-A building lens for Cities: Skylines II. Open any vanilla build menu and the lens takes its place, showing the same buildings the game would — the game's own menu tree decides what belongs — as a table, a grid or a list you can sort, group and search.
+A building browser for Cities: Skylines II. Open any vanilla build menu and it takes that menu's place, listing the same buildings the game would — the game's own menu tree decides what belongs — as a table, a grid or cards you can sort, group and search.
 
-Narrow the set with facets (availability, source, theme, pack, placement, role) and with metric ranges (cost, upkeep, workers, capacity, lot size). A search that finds nothing inside a menu can widen itself to every menu.
+**Browse**
 
-Hover a building for its numbers; place one and a coverage overlay shows what it reaches. The picker (Ctrl+P) opens the lens on a building already in the city.
+* Table, grid and card views, each sortable and groupable.
+* Facets for availability, source, theme, asset pack, placement and role.
+* Metric range filters over cost, upkeep, workers, capacity and lot size.
+* A search that finds nothing inside one menu can widen itself to every menu.
 
-Derived from Find It 1.5.8 by T. D. W. This is not a replacement for Find It: it lists buildings and networks only, and leaves props, trees and detailing to the mods made for them.
+**Compare**
+
+* Hover a building for its numbers: cost, upkeep, workers, capacity, footprint, and the service figures the simulation reads, in the unit system you play in.
+* Place a service building and a coverage overlay shows what it reaches.
+* Select a building that takes upgrades and its extension picker is the same list — named rows with cost and footprint instead of unlabelled tiles.
+
+**Scope**
+
+Buildings and networks only. Props, trees and detailing are left to the mods made for them. There is no search hot-key: this is a build menu, so it opens from the toolbar button you already clicked.
+
+**Works alongside Find It**
+
+Both may be installed. Find It's panel takes the menu slot while it is open and this menu returns when it closes; the object picker is Find It's alone. This mod ships no picker.
+
+**Credits**
+
+Derived from Find It 1.5.8 by T. D. W., with credits carried over to YenYang, Algernon, Chameleon and Baka-gourd (NullPinter). Source and issues on GitHub.
 </LongDescription>
 
-  <!-- TODO: capture this mod's own store art, then fill these in. -->
-  <Thumbnail Value="" />
-  <Screenshot Value="" />
+  <Thumbnail Value="Properties/Thumbnail.png" />
+  <Screenshot Value="Properties/Screenshot_01.jpg" />
+  <Screenshot Value="Properties/Screenshot_02.jpg" />
+  <Screenshot Value="Properties/Screenshot_03.jpg" />
+  <Screenshot Value="Properties/Screenshot_04.jpg" />
 
   <Tag Value="Code Mod" />
   <ModVersion Value="0.1.0" />
-  <GameVersion Value="1.5.*" />
+  <GameVersion Value="1.6.*" />
+  <AccessLevel Value="Unlisted" />
+  <ExternalLink Type="github" Url="https://github.com/gerbal/cs2-better-building-menu" />
 
-  <!-- TODO: mirror the published version's entry from Changelog.json. -->
   <ChangeLog>
+First release.
+
+* A building browser inside every vanilla build menu: table, grid and card views with sorting, grouping and search.
+* Facets and metric range filters.
+* Hover cards with the figures the simulation reads, in either unit system.
+* Coverage overlay while placing a service building.
+* Named rows in the extension picker.
   </ChangeLog>
 </Publish>
