@@ -1767,13 +1767,30 @@ its 1024x768 window. Evidence is the same DOM probe as the 09-08 pass.
   One-Way Perpend…" 220>218, "Medium Roundabout with a…" 222>218) — the
   table's thirteen-per-100rem name budget is a character too generous for
   wide names; open.
-- **1920x1080: not reachable under this harness.** With the screen at
-  1920x1080x60 and `Settings.coc` at 1920x1080 in every display mode, the game
-  applied "1280x720x60Hz Window" from its fallback each time (SceneFlow.log
-  "Applying resolution"). The layout is viewport-relative — `1rem = vw/19.2`,
-  the same as vanilla — so a 1080p window draws the 720p layout at 1.5x; that
-  is inferred from the unit system, not measured. Aspect ratios other than
-  16:9 remain untested.
+- **Larger sizes, set in-game.** Editing `Settings.coc` never took under the
+  headless display (the game applied "1280x720x60Hz Window" from its fallback
+  each boot), but the Graphics page's resolution widget did:
+  `trigger("options","setValue",["GraphicsSettings.resolution"], <item>)` with
+  an item from the widget's own list, then `confirmDisplay`. The list is the
+  mode set the game accepts, and on a 2560x1440 headless screen it offered
+  2560x1440, 2560x1080 and 2048x1152 among others. Measured, `innerWidth`
+  confirming each:
+  - **1920x1080**: Cards, List, Grid clean; hover card 1015,853 374x136 inside
+    the viewport; Table five name cells 1 % over (the same rows as at 720p —
+    fixed in 57b4165, the name budget is twelve per 100rem now).
+  - **2560x1440**: Cards, List clean; Grid five tiles 3–8px over on
+    seventeen-character lines ("Medium Roundabout" 195px in 187); Table 2px
+    over on three headers and cells.
+  - **2560x1080 (21:9)**: no overlaps, no horizontal scroll; hover card
+    1082,854 374x136 inside the viewport; Grid eight tiles 2–4px over, Table
+    Upkeep cells 2–4px over ("¢2,437 /km/mo." 117 in 115).
+  The residual at 1440p and ultrawide is one class: at 1.33px per rem and
+  above, text renders 2–3 % wider relative to rem than at 1080p, so a budget
+  that exactly fills its line at 720p/1080p spills a few pixels. A fixed
+  character margin cannot fit both ends (twelve at 100rem must stay twelve).
+  The right fix is the one the group headings already use — measure the
+  drawn line and shorten to it (`fitLabelToWidth`) — applied to tile names
+  and the metric columns; open.
 - **Text scale 125 %** (Interface › Text scale, set through the game's own
   widget: `trigger("options","setValue",["InterfaceSettings.textScale"],125)`
   with Options open — the slider is in percent, and 1.25 drives the body font
@@ -1797,4 +1814,3 @@ its 1024x768 window. Evidence is the same DOM probe as the 09-08 pass.
   Quay"), Cards 0, Table name kept and figures 25–35px over — a 720p panel
   cannot hold seven metric columns at that size, and the figures clip inside
   their cells rather than the row breaking. The setting was returned to 100 %.
-
