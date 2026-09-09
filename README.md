@@ -1,3 +1,5 @@
+<img src="BetterBuildingMenu/Properties/Logo.svg" alt="Better Building Menu" width="160" align="left" style="margin-right:16px">
+
 # Better Building Menu
 
 Better Building Menu is a building browser for Cities: Skylines II. Open any
@@ -54,7 +56,9 @@ runtime identity and store id are its own; the Find It listing (77240) is
 untouched. Upstream Find It ships no license file; its project file declares
 "@2024 MIT license", and this mod is distributed on that statement (see
 [docs/FORK.md](docs/FORK.md)). How the upload is made from Linux is in
-[docs/publishing.md](docs/publishing.md).
+[docs/publishing.md](docs/publishing.md). The logo is
+`BetterBuildingMenu/Properties/Logo.svg`; `Thumbnail.png` beside it is the
+1024px render the store shows.
 
 ## Credits
 
