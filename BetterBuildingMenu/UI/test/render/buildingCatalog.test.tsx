@@ -103,7 +103,9 @@ describe("the table under a larger text scale", () => {
   it("widens the metric columns by the S size's ratio", () => {
     resetBindings();
     setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1)], {}));
-    setBinding("BetterBuildingMenu", "PanelWidth", 700);
+    // Wide, so the room beside the name does not cap the ratio — at a 720p
+    // panel it does, and the columns grow only as far as the name allows.
+    setBinding("BetterBuildingMenu", "PanelWidth", 2400);
     const widthOf = (html: string) => Number(/metricUpkeep[^>]*style="[^"]*width:\s*([0-9.]+)rem/.exec(html)?.[1]);
 
     const base = widthOf(render());
