@@ -16,36 +16,40 @@
 <Publish>
   <ModId Value="158589" />
   <DisplayName Value="Better Building Menu" />
-  <ShortDescription Value="A building browser inside the vanilla build menus: table, grid and card views with facets, metric ranges and a coverage overlay." />
+  <ShortDescription Value="Replaces the asset list in the build menus with a bigger panel: grid, list, cards or table, with search, sorting, grouping, filters and stats on hover." />
   <LongDescription>
-# Better Building Menu
+Replaces the row of asset icons at the bottom of the toolbar build menus (Roads, Electricity, Education, Zones and the rest) with a bigger panel. The menu you clicked decides what is in the list; the panel just gives you better ways to find things in it.
 
-A building browser for Cities: Skylines II. Open any vanilla build menu and it takes that menu's place, listing the same buildings the game would — the game's own menu tree decides what belongs — as a table, a grid or cards you can sort, group and search.
+**Views**
 
-**Browse**
+* Grid: the familiar icon tiles, with an adjustable tile size (Options > Better Building Menu).
+* List and Cards: name, footprint, cost and capacity next to each icon.
+* Table: one row per asset with Cost, Upkeep, Workers, Capacity, Lot, Level and Parking columns. Click a header to sort by it.
 
-* Table, grid and card views, each sortable and groupable.
-* Facets for availability, source, theme, asset pack, placement and role.
-* Metric range filters over cost, upkeep, workers, capacity and lot size.
-* A search that finds nothing inside one menu can widen itself to every menu.
+**Finding things**
 
-**Compare**
+* Search box. With "Searching widens automatically" on, a search that finds nothing in the current category searches the whole menu instead.
+* Group by Category, Asset type, Role, Theme, Source (base game / DLC / mod), Density, Footprint, Cost, or for schools by tier.
+* Filters: locked or unlocked, theme and asset pack, placement, role. Metric filters let you narrow by cost, upkeep, workers, capacity or lot size ranges.
+* Hover any asset for its stats: cost and upkeep, capacity, workers and jobs, parking, evening shift, XP, available upgrades, lot size. Values follow your unit setting (metric or freedom units).
 
-* Hover a building for its numbers: cost, upkeep, workers, capacity, footprint, and the service figures the simulation reads, in the unit system you play in.
-* Place a service building and a coverage overlay shows what it reaches.
-* Select a building that takes upgrades and its extension picker is the same list — named rows with cost and footprint instead of unlabelled tiles.
+**Placing and upgrading**
 
-**Scope**
+* With "Show coverage map while placing" on, picking up a service building switches the map to that service's coverage view until you put the tool down.
+* The upgrade menu for a selected building (extension floors, wings and so on) uses the same list, so upgrades have names, cost and footprint instead of bare tiles.
+* Zones open as a browsable list of zone types; painting still uses the normal zone tool.
 
-Buildings and networks only. Props, trees and detailing are left to the mods made for them. There is no search hot-key: this is a build menu, so it opens from the toolbar button you already clicked.
+**Options**
 
-**Works alongside Find It**
+Replace the vanilla build menu (turn off to get the stock icon row back), select the first asset when a menu opens, hide the "Random" placeholder assets, tile size.
 
-Both may be installed. Find It's panel takes the menu slot while it is open and this menu returns when it closes; the object picker is Find It's alone. This mod ships no picker.
+**What it is not**
+
+Buildings and networks only. No props, trees or surfaces, and no object picker. Find It covers those, and both mods can be installed together: while Find It's panel is open it takes the menu slot, and this panel comes back when it closes.
 
 **Credits**
 
-Derived from Find It 1.5.8 by T. D. W., with credits carried over to YenYang, Algernon, Chameleon and Baka-gourd (NullPinter). Source and issues on GitHub.
+Forked from Find It 1.5.8 by T. D. W. and rebuilt around the vanilla menus. Credits carried over from Find It: YenYang (UI), Algernon, Chameleon (icons), Baka-gourd (focus handling). Source and bug reports on GitHub.
 </LongDescription>
 
   <Thumbnail Value="Properties/Thumbnail.png" />
