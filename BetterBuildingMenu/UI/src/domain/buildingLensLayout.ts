@@ -189,9 +189,6 @@ export type BuildingLensColumnWidths = Record<BuildingLensMetric, number>;
  * card; a title of zero width is a row you cannot identify at all.
  */
 export function getBuildingLensColumnWidths(outerWidth: number, textScale = 1): BuildingLensColumnWidths {
-  // The cells are fontSizeS; their figures do not scale with the panel but do
-  // with the game's text scale — see domain/textScale.ts.
-  const textRatio = fontSizeRatio("s", textScale);
   const width = Number.isFinite(outerWidth) ? outerWidth : BUILDING_LENS_MIN_WIDTH;
   const span = BUILDING_LENS_MAX_WIDTH - BUILDING_LENS_MIN_WIDTH;
   // A degenerate range would divide by zero; every column simply gets its
@@ -199,6 +196,19 @@ export function getBuildingLensColumnWidths(outerWidth: number, textScale = 1): 
   const ratio = span <= 0
     ? 1
     : Math.max(0, Math.min(1, (width - BUILDING_LENS_MIN_WIDTH) / span));
+
+  // The cells are fontSizeS; their figures do not scale with the panel but do
+  // with the game's text scale — see domain/textScale.ts. Only as far as the
+  // panel allows, though: at 125 % on a 720p panel the full ratio pushed the
+  // name cell down to 13px. Past the room left beside a name of its minimum
+  // width the columns stop growing and their figures clip inside the cell,
+  // which is what happened before and is the lesser harm. outerWidth is the
+  // assembly plus chrome, the same figure the catalog passes.
+  const wanted = fontSizeRatio("s", textScale);
+  const unscaledTotal = (Object.keys(BUILDING_LENS_COLUMN_MAX) as BuildingLensMetric[])
+    .reduce((total, metric) => total + BUILDING_LENS_COLUMN_MIN[metric] + (BUILDING_LENS_COLUMN_MAX[metric] - BUILDING_LENS_COLUMN_MIN[metric]) * ratio, 0);
+  const room = width - BUILDING_LENS_PANEL_CHROME_WIDTH - BUILDING_LENS_CONTROL_PANE_TOTAL - BUILDING_LENS_IDENTITY_MIN - BUILDING_LENS_TABLE_ROW_FURNITURE;
+  const textRatio = unscaledTotal > 0 ? Math.max(1, Math.min(wanted, room / unscaledTotal)) : wanted;
 
   const widths = {} as BuildingLensColumnWidths;
 
