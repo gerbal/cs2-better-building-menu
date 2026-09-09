@@ -85,11 +85,12 @@ export const tileLabelCharBudget = (tileSize: number, textScale = 1): number =>
  * same size.
  */
 /**
- * The table's own figure, kept at the thirteen measured for it: the table
- * name cell did not move to fontSizeM with the grid tiles, so the tile's
- * twelve would shorten table names a character sooner than the pixels ask.
+ * The table's own figure. Thirteen was measured for it once; at both
+ * 1280x720 and 1920x1080 the widest names still ran 1 % over their cell
+ * ("Medium Roundabout with a…" 333px in 327), so twelve — erring short,
+ * which is the safe direction for a cell that clips.
  */
-const CHARS_PER_100REM_TABLE = 13;
+const CHARS_PER_100REM_TABLE = 12;
 
 export const tableLabelCharBudget = (drawableWidth: number, textScale = 1): number => {
   const width = Number.isFinite(drawableWidth) && drawableWidth > 0 ? drawableWidth : DEFAULT_TILE_SIZE;
