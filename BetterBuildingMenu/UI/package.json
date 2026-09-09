@@ -10,7 +10,7 @@
     "test": "npm run test:unit && npm run test:render",
     "update": "npx create-csii-ui-mod update",
     "clean": "npx create-csii-ui-mod clean",
-    "test:unit": "node --no-warnings --experimental-strip-types --test test/*.test.ts",
+    "test:unit": "node --no-warnings --import ./test/harness/register.mjs --test test/*.test.ts",
     "test:render": "node --no-warnings --import ./test/harness/register.mjs --test test/render/*.test.tsx"
   },
   "exclude": [
