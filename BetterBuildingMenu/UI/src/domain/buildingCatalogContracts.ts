@@ -1,10 +1,9 @@
 import type { BuildingCatalogEntry } from "./buildingCatalog";
-import type { ActivatePrefabAction, LocatePrefabAction, PickerOptionAction } from "./menuSurfaceContracts";
+import type { ActivatePrefabAction, LocatePrefabAction } from "./menuSurfaceContracts";
 export type {
   ActivatePrefabAction,
   MenuSurfaceAction,
   LocatePrefabAction,
-  PickerOptionAction,
 } from "./menuSurfaceContracts";
 import type { MetricRangeId } from "./buildingCatalogRanges";
 import type { NumberSeparators } from "./buildingLensMetricFormat";
@@ -59,12 +58,6 @@ export const clearBuildingCatalogMetricRangesCommand = (): TriggerCommand =>
   createTriggerCommand("ClearBuildingCatalogMetricRanges");
 export const searchChangedCommand = (value: string): TriggerCommand => createTriggerCommand("SearchChanged", value);
 export const locatePrefabCommand = (id: number): LocatePrefabAction => ({ type: "locatePrefab", prefabId: id });
-export const pickerOptionCommand = (sectionId: number, optionId: number, value: number): PickerOptionAction => ({
-  type: "pickerOption",
-  sectionId,
-  optionId,
-  value,
-});
 
 export function nextSortState(current: SortState, column: SortColumn): SortState {
   return {

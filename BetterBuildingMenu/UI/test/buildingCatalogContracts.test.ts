@@ -5,7 +5,6 @@ import {
   clearBuildingCatalogMetricRangesCommand,
   locatePrefabCommand,
   nextSortState,
-  pickerOptionCommand,
   searchChangedCommand,
   setBuildingCatalogMetricRangeCommand,
   loadMoreCatalogCommand,
@@ -64,7 +63,6 @@ describe("BetterBuildingMenu UI binding contracts", () => {
     // all three. The name must match the CreateTrigger in BuildingMenuUISystem.Setup.
     assert.deepEqual(loadMoreCatalogCommand(), { method: "LoadMoreBuildingCatalog", args: [] });
     assert.deepEqual(locatePrefabCommand(17), { type: "locatePrefab", prefabId: 17 });
-    assert.deepEqual(pickerOptionCommand(1.5, -2, 3), { type: "pickerOption", sectionId: 1.5, optionId: -2, value: 3 });
   });
 
   it("keeps the search payload aligned with the C# binding", () => {

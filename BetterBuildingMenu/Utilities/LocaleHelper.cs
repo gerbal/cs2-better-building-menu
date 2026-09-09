@@ -100,10 +100,10 @@ namespace BetterBuildingMenu.Utilities
         /// against the English one, so a key present in Locale.json but absent
         /// from the active locale is simply not in activeDictionary — and
         /// Translate answers a miss with the id itself. Every other call site
-        /// passes English and degrades to it; this one did not, and the picker's
-        /// five filter chips rendered as the literal text
-        /// "Tooltip.LABEL[BetterBuildingMenu.PickerBuildings]" in all thirteen
-        /// translated languages. Making the parameter required is what stops a
+        /// passes English and degrades to it; this one did not, and the (since
+        /// removed) object picker's five filter chips rendered as the literal
+        /// text "Tooltip.LABEL[BetterBuildingMenu.PickerBuildings]" in all
+        /// thirteen translated languages. Making the parameter required is what stops a
         /// later caller from reopening that.
         /// </remarks>
         internal static string GetTooltip(string key, string fallback)

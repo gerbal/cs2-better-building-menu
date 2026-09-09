@@ -76,8 +76,6 @@
   "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.UIUX]": "UI / UX",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.HideRandomAssets]": "Ukryj \"Losowe\" typy obiektów",
   "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.HideRandomAssets]": "Ignoruje zasoby oznaczone jako losowe lub zastępcze. Wymaga ponownego załadowania zapisu, aby wprowadzić zmiany.",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.OpenPanelOnPicker]": "Otwórz panel Better Building Menu po wybraniu obiektu",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.OpenPanelOnPicker]": "Wybierz pomiędzy otwarciem panelu Better Building Menu po wybraniu obiektu za pomocą selektora, a standardowym panelem, jeśli jest dostępny.",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Wybierz pierwszy obiekt podczas otwierania Better Building Menu",
   "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Automatycznie wybiera pierwszy obiekt na liście podczas otwierania panelu Better Building Menu. To wpływa na zachowania takie jak zamykanie innych narzędzi i używanie klawisza Escape do zamykania Better Building Menu."
 }

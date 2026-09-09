@@ -25,8 +25,6 @@ provenance, [PLANNING.md](PLANNING.md) for implementation phases, and
   list — named rows with cost and footprint, the hover card behind each —
   instead of vanilla's unlabelled tiles. Placing still goes through the game's
   own upgrade tool.
-* Integrated picker — **Ctrl+P**, or the picker icon in the toolbar — opens the
-  menu on a building already in the city.
 
 Buildings and networks only. Props, trees and detailing are left to the mods
 made for them.
@@ -39,9 +37,8 @@ rather than moved.
 ## Coexists with upstream Find It
 
 Both may be installed. Find It's own panel takes the asset-menu slot while it is
-open and this menu returns when it closes; with Find It present its picker is the
-one on the toolbar and ours stands down; the two ship no file at the same shared
-path. Verified live against Find It 1.5.8 (`docs/verification.md`, 2026-09-02).
+open and this menu returns when it closes; the object picker is Find It's alone
+(this mod ships none); the two ship no file at the same shared path. Verified live against Find It 1.5.8 (`docs/verification.md`, 2026-09-02).
 
 ## Renamed on 2026-09-02
 

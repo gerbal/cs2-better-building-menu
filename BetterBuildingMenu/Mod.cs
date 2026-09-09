@@ -114,11 +114,8 @@ namespace BetterBuildingMenu
 			// same guarded OnUpdate.
 			updateSystem.UpdateAt<PrefabIndexingSystem>(SystemUpdatePhase.UIUpdate);
 			updateSystem.UpdateAt<BuildingMenuUISystem>(SystemUpdatePhase.UIUpdate);
-			updateSystem.UpdateAt<PickerToolSystem>(SystemUpdatePhase.ToolUpdate);
-			updateSystem.UpdateAt<PickerUISystem>(SystemUpdatePhase.UIUpdate);
 			updateSystem.UpdateAt<PrefabTrackingSystem>(SystemUpdatePhase.PrefabUpdate);
 			updateSystem.UpdateAt<ServiceCoverageOverlaySystem>(SystemUpdatePhase.Rendering);
-			updateSystem.UpdateAt<PickerTooltipSystem>(SystemUpdatePhase.UITooltip);
 
 		}
 

@@ -2002,3 +2002,30 @@ to rem — and is smaller than before (three headers and cells at 1440p, now
 one cell). The probe's rem is now the game's: 1/1920 of the width or
 1/1080 of the height, whichever is smaller, since at 21:9 the game scales
 by height and a width-based unit read 586rem as 439.
+
+### The object picker removed (2026-09-09)
+
+The picker tool went with the Find It separation: Find It ships the same
+tool, and two mods binding the same toolbar glyph, the same
+`BetterBuildingMenu.Picker` tool id, the same options bank and the same
+mouse Apply action was the conflict the separation was for. Removed in
+one cut, tests first (C# `PickerRemovalTests`, UI `pickerRemoval.test.ts`):
+
+- C#: `PickerToolSystem`, `PickerUISystem`, `PickerTooltipSystem`,
+  `PickerFlags`, `ObjectFilterOption` with `IOptionSection` and
+  `OptionSectionUIEntry`; the `Apply` mouse action and its hidden
+  `ApplyMimic` binding; the `OpenPanelOnPicker` setting; the
+  `FindItPresent` and `PickerMenuRequest` bindings with
+  `RequestVanillaMenu` and `IsFindItLoaded`; three `UpdateAt`
+  registrations.
+- UI: the toolbar glyph (`ToolbarIcon`, `PickerPicker.svg`), the picker's
+  options bank (`PickerComponent`, `OptionsPanel`, `ContentViewType`), the
+  vanilla-menu opener (`PickerMenuOpener`, `pickerMenuRequest`), the
+  `pickerOption` action on the menu surface. `ToolOptionsVisibility` stays,
+  for the lens alone, under `mods/ToolOptionsVisibility/`.
+- Locale: the five filter-chip labels and the two `OpenPanelOnPicker` rows,
+  every language (33 rows, after the 42 key-binding rows earlier today).
+
+The Group-by picker in the control pane and the extension-menu "picker"
+(vanilla's upgrade picker, which the extension menu replaces) are different
+things and untouched. Suites: UI 641 + 69, C# 399.
