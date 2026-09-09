@@ -1855,3 +1855,18 @@ c22559a), which had left seven idling.
   Quay"), Cards 0, Table name kept and figures 25–35px over — a 720p panel
   cannot hold seven metric columns at that size, and the figures clip inside
   their cells rather than the row breaking. The setting was returned to 100 %.
+
+### Screenshots again (2026-09-09)
+
+`Page.captureScreenshot` had hung since 09-08 on both clients. Cause: the
+desktop session's display outputs were all disconnected
+(`/sys/class/drm/card1-*/dpms` = Off), so the game on the main prefix never
+presented a frame and the capture never completed — nothing in the mod or
+the tools. Under gamescope headless on `949230-b` both capture paths work
+(`game_screenshot` and `scratchpad/shots/cdp-shot.mjs`, ~200KB PNGs of the
+UI layer at 1280x720). First visual pass on df464f6, true 1280x720, Roads:
+Cards, Grid and Table drawn as the DOM readings said; the hover card with
+its two tiers and divider; the Group-by picker opening upward inside the
+viewport. One defect the DOM probes could not see: a road's **Lot** reads
+"0 × 0" in the Table, where the hover card (via `hasFootprint`) omits it.
+
