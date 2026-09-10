@@ -68,14 +68,6 @@
   "Options.SECTION[BetterBuildingMenu.BetterBuildingMenu.Mod]": "Better Building Menu",
   "Options.INPUT_MAP[BetterBuildingMenu.BetterBuildingMenu.Mod]": "Better Building Menu",
   "Options.TAB[BetterBuildingMenu.BetterBuildingMenu.Mod.Settings]": "常规设置",
-  "Options.TAB[BetterBuildingMenu.BetterBuildingMenu.Mod.KeyBindings]": "快捷键",
   "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.Behavior]": "查找设置",
-  "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.Actions]": "操作",
-  "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.Navigation]": "Navigation",
-  "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.Other]": "其他",
-  "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.UIUX]": "UI / UX",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.HideRandomAssets]": "隐藏“随机”资产类型",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.HideRandomAssets]": "忽略标记为随机或占位符的资产，需要重新加载存档才能应用更改。",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "打开 Better Building Menu 面板时自动选择第一个资产",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "启用此选项后，打开 Better Building Menu 面板时会自动选择列表中的第一个资产。这会影响其他工具或使用 ESC 键关闭 Better Building Menu 的行为。"
+  "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.UIUX]": "UI / UX"
 }

@@ -278,8 +278,9 @@ namespace BetterBuildingMenu.Systems
 			_appliedMenuFrame = UnityEngine.Time.frameCount;
 			_LensOwnsCurrentMenu.Value = true;
 
-			// activatePrefab: false. Opening a menu must not re-arm the prefab
-			// from the LAST menu — that is what desynced the toolbar. Arming a
+			// Opening a menu never arms a prefab. Re-arming the prefab from the
+			// LAST menu is what desynced the toolbar (the old SelectPrefabOnOpen
+			// option, now gone, tried to do exactly that). Arming a
 			// water pipe makes the game re-assert Water as the selected menu, so
 			// the highlight sat on Water while the lens showed Electricity, and
 			// clicking the lit Water icon closed a menu the player never opened.
@@ -300,7 +301,7 @@ namespace BetterBuildingMenu.Systems
 			// this, and dropping the outside pair silently left the strip
 			// showing the PREVIOUS menu's counts on every switch.
 			var wasOpen = _lensMenuOpen;
-			SetLensMenuOpen(true, activatePrefab: false);
+			SetLensMenuOpen(true);
 
 			if (wasOpen)
 			{
@@ -544,7 +545,7 @@ namespace BetterBuildingMenu.Systems
 
 		private void ClearBuildingCatalogMetricRanges() => Apply(_lens.ClearMetricRanges());
 
-		internal void SetLensMenuOpen(bool visible, bool activatePrefab = true)
+		internal void SetLensMenuOpen(bool visible)
 		{
 			if (_lensMenuOpen == visible)
 			{
@@ -566,11 +567,6 @@ namespace BetterBuildingMenu.Systems
 			// above, which now refreshes the options bank itself once its facet
 			// bindings are current. A second call here would just repeat that
 			// with nothing having changed in between.
-
-			if (activatePrefab && Mod.Settings.SelectPrefabOnOpen)
-			{
-				TryActivatePrefabTool(_ActivePrefabId);
-			}
 		}
 
 		/// <summary>

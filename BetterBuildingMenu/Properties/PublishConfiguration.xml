@@ -34,7 +34,7 @@ Works with Find It and does not replace it. Find It is a window over every asset
 
 No Harmony patches, nothing saved to your city. Remove it any time.
 
-**Options** (Options > Better Building Menu): switch back to the stock icon row; tile size; coverage map while placing a service building; widen searches to every menu automatically; select the first asset when a menu opens; hide the "Random" placeholder assets.
+**Options** (Options > Better Building Menu): switch back to the stock icon row; tile size; widen searches to every menu automatically.
 
 Bugs and requests: the GitHub link on this page.
 
@@ -48,15 +48,19 @@ Forked from Find It 1.5.8 by T. D. W. Thanks also to YenYang (UI), Algernon, Cha
   <Screenshot Value="Properties/Screenshot_04.jpg" />
 
   <Tag Value="Code Mod" />
-  <ModVersion Value="0.1.3" />
+  <ModVersion Value="0.1.4" />
   <GameVersion Value="1.6.*" />
   <AccessLevel Value="Unlisted" />
   <ExternalLink Type="github" Url="https://github.com/gerbal/cs2-better-building-menu" />
 
   <ChangeLog>
-0.1.3
+0.1.4
 
-Fixes
-* The "Replace the vanilla build menu" option said Roads and Landscaping were unaffected. They are replaced like every other menu; the option text now says so.
+Changes
+* Removed the "Show coverage map while placing" option. The game switches to a service's coverage view on its own whenever one of its buildings is on the tool; the option changed nothing.
+* Removed the "Select the first asset when opening the building menu" option. It had no effect.
+* Removed the "Hide Random asset types" option. The Random rock, boulder and trash pile in Landscaping are listed like everything else.
+* Removed the empty Key-Bindings tab from the mod's options page.
+* Reworded the "Searching widens automatically" description.
 </ChangeLog>
 </Publish>
