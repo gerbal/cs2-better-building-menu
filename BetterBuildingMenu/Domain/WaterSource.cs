@@ -1,10 +1,9 @@
 namespace BetterBuildingMenu.Domain
 {
 	/// <summary>
-	/// Where a water building draws from, worded the way the game's own tooltip
-	/// does (PrefabUISystem.RequiredResourceBinder): ground water when that flag
-	/// is set, surface water otherwise, and nothing when the component allows no
-	/// type — a water tower is a pumping station that draws from nowhere.
+	/// Where a water building draws from, worded as the game's own tooltip does
+	/// (PrefabUISystem.RequiredResourceBinder): ground water when that flag is set,
+	/// surface water otherwise, and nothing when the component allows no type.
 	/// </summary>
 	public static class WaterSource
 	{

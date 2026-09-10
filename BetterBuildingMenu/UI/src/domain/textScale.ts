@@ -1,20 +1,7 @@
 /**
- * The game's Interface › Text scale setting, as the factor each of its font
- * sizes actually grows by.
- *
- * Vanilla applies the setting as two root variables — `--fontScale` is the
- * scale s (1.0–1.5) and `--fontScaleChange` is s − 1 — and every
- * `--fontSize*` is a calc() of the two, read off the shipped bundle:
- *
- *   XS = 12·s + (s−1)·1.15·12
- *   S  = 14·s + (s−1)·1.1·14
- *   M  = 14·s + 2 + (s−1)·1.05·14
- *
- * so the sizes do not grow linearly with the setting, nor by the same factor
- * as each other: at 125 % XS is ×1.54, S ×1.53, M ×1.45. A character budget
- * or a column width sized for 100 % is wrong by that much at 125 %; measured
- * live, grid tile names overran their line by 10–40px and the Table's Cost
- * and Upkeep cells by 15–20px.
+ * The game's Interface > Text scale setting, as the factor each font size
+ * actually grows by — vanilla's own calc() per size. They grow neither linearly
+ * nor alike, so a budget sized for 100 % is wrong at anything else.
  */
 export type FontSizeKind = "xs" | "s" | "m";
 

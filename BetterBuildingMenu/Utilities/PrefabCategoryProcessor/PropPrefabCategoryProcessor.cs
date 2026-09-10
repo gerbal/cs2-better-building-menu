@@ -39,12 +39,6 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 						ComponentType.ReadOnly<TrafficSignData>(),
 						ComponentType.ReadOnly<LaneDirectionData>(),
 						ComponentType.ReadOnly<TrafficLightData>(),
-						// QuantityObjectData used to be excluded here because the
-						// quantity-prop generator replaced each of these with one
-						// generated prefab per fill state. The generator is gone
-						// (cm-jjlv.9), and vanilla places the originals — Trashbin01-04
-						// and TrashContainerEmpty01-04 in Landscaping — so they index
-						// as themselves now.
 					},
                 },
             };

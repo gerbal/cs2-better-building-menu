@@ -2,12 +2,9 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { reduceBudgetToFit, contentOverflowPx } from "../src/domain/measuredFit.ts";
 
-// Character budgets and rem widths are estimates; the drawn text is the
-// fact. Above 1.33px per rem (1440p, ultrawide) text renders 2–3 % wider
-// relative to rem than at 1080p, and a budget that exactly fills its line at
-// 720p spills a few pixels there. No fixed margin fits both ends — twelve at
-// 100rem must stay twelve — so the estimate is corrected from the DOM, the
-// way the group headings already are.
+// Character budgets and rem widths are estimates; the drawn text is the fact.
+// The px-per-rem ratio changes with resolution, so a budget that exactly fills
+// its line at one spills at another. The estimate is corrected from the DOM.
 describe("a tile line budget corrected from what was drawn", () => {
   it("keeps the budget when the line fits", () => {
     assert.equal(reduceBudgetToFit(17, 187, 180), 17);
@@ -37,16 +34,10 @@ describe("a tile line budget corrected from what was drawn", () => {
 });
 
 describe("what counts as overflow", () => {
-  // Cohtml's scrollWidth equals offsetWidth when nothing overflows, and
-  // clientWidth excludes the border, so scrollWidth − clientWidth is never
-  // zero on a bordered cell: every table cell at 1440p reported its 2px
-  // border as overflow, the measuring effect kept "fixing" it, and the
-  // probe that found the "clips" was reading the same thing. A browser
-  // keeps scrollWidth at clientWidth when nothing overflows. Both engines
-  // agree that content past max(clientWidth, offsetWidth) is overflow.
+// Cohtml's scrollWidth equals offsetWidth when nothing overflows, and
+// clientWidth excludes the border, so scrollWidth − clientWidth is never zero
+// on a bordered cell. Content past max(clientWidth, offsetWidth) is overflow.
   it("is content past the larger of client and offset width", () => {
-    // (The table cells this was first written for no longer measure — see
-    // BuildingCatalog.tsx — but a bordered tile is the same case.)
     // Cohtml, bordered, fits: scroll == offset > client.
     assert.equal(contentOverflowPx(153, 155, 155), 0);
     // Cohtml, bordered, overflowing by three.

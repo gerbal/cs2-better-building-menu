@@ -122,9 +122,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void ThrowsAwayACacheWrittenByADifferentTint()
 		{
-			// Retuning the colour has to reach installs that already generated.
-			// The files persist on purpose, so without the stamp nothing would
-			// ever regenerate and the old tint would be permanent.
+			// The cached files persist on purpose, so without the stamp a retuned
+			// colour never reaches an install that has already generated.
 			SeedCache("<svg>the old colour</svg>", "tint=#000000");
 			WriteIcon(_contentA, "Track.svg", "<svg><path fill=\"#e9bc29\"/></svg>");
 
@@ -161,8 +160,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void MatchesTheColourVanillasOwnFilterLandsOn()
 		{
-			// Measured by sampling a filtered raster tile on screen: Cohtml's
-			// brightness(0%) bottoms out at rgb(25,25,25), not black.
+			// Cohtml's brightness(0%) bottoms out short of black, and the fill has to
+			// match what vanilla's own filter lands on.
 			Assert.Equal("#191919", SilhouetteIcons.SilhouetteColor);
 		}
 	}

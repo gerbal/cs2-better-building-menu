@@ -5,10 +5,9 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// Asserted against the decompiled ToolbarUISystem.FilterByThemes (:1357) and
-	/// FilterByPacks (:1422) rather than against what the filter ought to do. The
-	/// point of this type is to agree with the game exactly; a "nicer" rule here
-	/// is a lens that shows a different set from the menu it replaced.
+	/// Asserted against the decompiled ToolbarUISystem.FilterByThemes and
+	/// FilterByPacks rather than against what the filter ought to do: a "nicer"
+	/// rule is a lens that shows a different set from the menu it replaces.
 	/// </summary>
 	public class VanillaToolbarFilterTests
 	{

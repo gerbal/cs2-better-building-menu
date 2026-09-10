@@ -1,26 +1,7 @@
 /**
- * Showing the figure a result set is currently ordered by.
- *
- * Sorting looked broken everywhere except the table, and the report was fair
- * even though the sort was working. Two things compound:
- *
- * 1. Grouping is the primary sort key by design (see buildingGroups.ts), so
- *    the chosen sort orders rows WITHIN each group rather than across the whole
- *    page. Reordering inside a five-tile Elementary group is a small motion.
- * 2. A grid tile carries a thumbnail and a name. Sort by Capacity and nothing
- *    on screen changes that a player can attribute to the sort — the tiles
- *    genuinely did move, and there was no way to tell.
- *
- * The table escaped both because every metric is a column: the numbers are
- * right there, ascending down the page.
- *
- * So the fix is not to change the ordering, which is correct and load-bearing
- * for paging. It is to put the sorted figure on the tile. "Sort by capacity"
- * then shows capacities, and the order is legible for the same reason it
- * always was in the table.
- *
- * Name and Category are deliberately absent: the tile already shows the name,
- * and a badge repeating it would be noise where there is no gap to fill.
+ * Showing the figure a result set is ordered by, so a re-sort is legible
+ * outside the table: grouping is the primary key, so a sort only moves rows
+ * within small groups, and a tile gives the eye nothing to attribute that to.
  */
 
 import type { SortColumn } from "./buildingCatalogContracts";
@@ -67,13 +48,9 @@ export function sortedMetricFor(column: SortColumn | null | undefined): Building
 }
 
 /**
- * The entry's value for a metric.
- *
- * `lot` has no single number — the table renders width and depth together —
- * so it returns null here and its caller formats the pair. Parking reads the
- * bay count rather than the boolean, matching what the sort actually orders on
- * (Order() sorts HasParking by ParkingSlots, because a flag put every entry in
- * one of two buckets and visibly did nothing).
+ * The entry's value for a metric. `lot` has no single number — the table
+ * renders width and depth together — so it returns null and the caller formats
+ * the pair. Parking reads the bay count, which is what the sort orders on.
  */
 export function sortedMetricValue(
   entry: SortedMetricEntry | null | undefined,

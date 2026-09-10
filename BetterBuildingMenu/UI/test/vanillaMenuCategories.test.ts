@@ -140,14 +140,9 @@ describe("Menu category counts", () => {
 });
 
 describe("MenuCategoryStrip's hook order", () => {
-  // Regression guard. A useValue was added BELOW the component's early return,
-  // so on any menu the strip hides itself for — Electricity has one category —
-  // the render ran fewer hooks than the previous one and React threw #300,
-  // taking the whole UI down. Clicking Electricity crashed the view.
-  //
-  // Asserted on source shape because the failure is positional and invisible to
-  // a unit test of the component's output: it only appears when a render that
-  // returns early follows one that did not.
+  // A useValue added BELOW the component's early return makes a render that
+  // returns early run fewer hooks than the one before it, and React throws
+  // #300. Asserted on source shape, because the failure is positional.
   const source = readFileSync(
     new URL("../src/mods/MenuCategoryStrip/MenuCategoryStrip.tsx", import.meta.url),
     "utf8"

@@ -3,10 +3,9 @@ using System;
 namespace BetterBuildingMenu.Services
 {
 	/// <summary>
-	/// Holds the small interaction policies shared by the mod's game-facing UI
-	/// adapters. It operates only on prefab ids and sequence indices; resolving
-	/// prefabs, finding entities, and performing game side effects remain with
-	/// their owning systems.
+	/// The small interaction policies shared by the mod's game-facing UI adapters. It operates
+	/// only on prefab ids and sequence indices; resolving prefabs, finding entities and game
+	/// side effects stay with their owning systems.
 	/// </summary>
 	public sealed class InteractionBoundary
 	{

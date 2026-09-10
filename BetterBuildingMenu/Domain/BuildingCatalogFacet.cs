@@ -30,19 +30,9 @@ namespace BetterBuildingMenu.Domain
 	/// Whether this group's selection actually excludes anything in view.
 	/// </param>
 	/// <remarks>
-	/// Stated here rather than inferred in the UI, which cannot tell the two
-	/// all-selected cases apart:
-	///
-	/// - Availability at rest reports BOTH options selected, and excludes
-	///   nothing. Chipping it announced "2 Active" over an unfiltered menu.
-	/// - A selection stranded by a menu switch — "Require road" carried into
-	///   Landscaping, where nothing has BuildingFlags — is ALSO all-selected,
-	///   because the stranded value is the group's only option. It excludes
-	///   everything, and suppressing its chip left a filter with no control
-	///   attached and no way to clear it.
-	///
-	/// "Every option is selected" is true of both and means opposite things. The
-	/// backend knows which is which, so it says.
+	/// "Every option is selected" means opposite things for a group at rest, which
+	/// excludes nothing, and for a selection stranded by a menu switch, which
+	/// excludes everything. The UI cannot tell them apart, so the backend says which.
 	/// </remarks>
 	public sealed record BuildingCatalogFacetGroup(
 		string Id,

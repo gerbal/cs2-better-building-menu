@@ -10,21 +10,12 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// The Content facet, which now covers only what the game's own row cannot.
+	/// The Content facet, which covers only what the game's own row cannot.
 	/// </summary>
 	/// <remarks>
-	/// This file replaces AssetPackFacetTests, whose subject no longer exists.
-	/// The rail used to offer packs; it does not, because vanilla's tool-options
-	/// panel is on screen WHILE THE LENS IS OPEN and already holds Theme and
-	/// Pack. Measured live at 720p in the Zones menu, that panel's Pack row
-	/// carried 12 controls against the 10 options this group drew — so ours was
-	/// not the wider reach an older comment claimed, just a second control for
-	/// state the game owns.
-	///
-	/// What survives is the part vanilla cannot express: a DLC shipping no
-	/// creator pack. Its Pack row has nothing to represent such a DLC with, so
-	/// DlcIds is the only way to reach San Francisco Set and Landmark Buildings —
-	/// 163 assets between them.
+	/// Vanilla's tool-options panel is on screen while the lens is open and already
+	/// holds Theme and Pack, so packs are not offered here. What is left is the part
+	/// it cannot express: a DLC shipping no creator pack, reachable only by DlcId.
 	/// </remarks>
 	public class ContentFacetTests
 	{
@@ -56,10 +47,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void NoPackIsEverOffered()
 		{
-			// The rule this file exists for. Two assets carrying two registered
-			// packs and nothing else: under the old code this group held
-			// "pack:4211:1" and "pack:4212:3", which is precisely the control the
-			// game draws a few hundred pixels away.
+			// The rule this file exists for: two assets carrying registered packs and
+			// nothing else describe the control the game already draws.
 			AssetPackRegistry.Clear();
 			AssetPackRegistry.Record(4211, 1, "Bridges And Ports Asset Pack");
 			AssetPackRegistry.Record(4212, 3, "Dragon Gate Pack");
@@ -95,8 +84,7 @@ namespace BetterBuildingMenu.Tests
 		public void ADlcAPackSpeaksForIsLeftToTheGamesOwnRow()
 		{
 			// Bridges & Ports has both a pack and a DLC id. Offering it here would
-			// duplicate the game's Pack row entry for the same content, which is
-			// the duplication this change removed — so it appears there, not here.
+			// duplicate the game's Pack row entry for the same content.
 			AssetPackRegistry.Clear();
 			AssetPackRegistry.Record(4211, 1, "Bridges And Ports Asset Pack");
 			BuildingCatalogAdapter.ToolbarSelection = VanillaToolbarSelection.None;
@@ -121,9 +109,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void BaseGameLeadsWhenSomethingNeedsNoDlc()
 		{
-			// Kept from the merged group: "show me only what needs no DLC" is the
-			// same question the DLC options answer, and it reads first the way it
-			// does in the game's own row.
+			// "Show me only what needs no DLC" is the same question the DLC options
+			// answer, and it reads first the way it does in the game's own row.
 			AssetPackRegistry.Clear();
 			BuildingCatalogAdapter.ToolbarSelection = VanillaToolbarSelection.None;
 

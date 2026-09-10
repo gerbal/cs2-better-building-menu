@@ -53,14 +53,9 @@ const BuildingCatalogMetricRanges$ = bindValue<BuildingCatalogMetricRangeState>(
 );
 
 /**
- * The spread each metric has in the current view.
- *
- * Same shape as the selection above, and the pairing is the point: one says
- * what the player asked for, the other what there is to ask about. A field with
- * no selection shows its bound, so the control states the scale before it asks
- * you to narrow it — a Police menu runs 30,000 to 650,000 and nothing used to
- * say so, which made a bound typed outside the range look like a broken filter
- * rather than an empty result.
+ * The spread each metric has in the current view. Same shape as the selection
+ * above, and the pairing is the point: a field with no selection shows its
+ * bound, so the control states the scale before asking anyone to narrow it.
  */
 const BuildingCatalogMetricBounds$ = bindValue<BuildingCatalogMetricRangeState>(
   mod.id,
@@ -111,9 +106,8 @@ function draftsFromState(
     const range = ranges[definition.id];
     const limit = limits[definition.id];
     // The bound stands in only where the player has chosen nothing, so a field
-    // they HAVE set is never quietly overwritten by a view change. Clearing a
-    // filter therefore reads as "back to the full range" rather than "back to
-    // blank", which is what was asked for.
+    // they HAVE set is never overwritten by a view change, and clearing reads
+    // as "back to the full range" rather than "back to blank".
     drafts[definition.id] = {
       minText: formatBound(range.min ?? limit.min, definition.integer),
       maxText: formatBound(range.max ?? limit.max, definition.integer),
@@ -130,17 +124,17 @@ function readInputValue(value: Event): string {
 export const BuildingCatalogMetricFilters = () => {
   const { translate } = useLocalization();
   const state = useValue(BuildingCatalogMetricRanges$) ?? emptyMetricRangeState;
-  // See BuildingCatalogFacetPanel: drawer state outlives the remount so the
-  // metric ranges the player set stay visible.
+  // In the shared store, so this drawer outlives the remount and the metric
+  // ranges the player set stay visible.
   const open = useLensView((view) => view.disclosures[LENS_DISCLOSURE_KEYS.metricRanges] ?? false);
   const setOpen = (next: boolean | ((current: boolean) => boolean)): void => {
     const current = getLensDisclosure(LENS_DISCLOSURE_KEYS.metricRanges);
     setLensDisclosure(LENS_DISCLOSURE_KEYS.metricRanges, typeof next === "function" ? next(current) : next);
   };
   const bounds = useValue(BuildingCatalogMetricBounds$);
-  // A stable key for the twelve numbers. The binding hands back a fresh object
-  // on every emit, so depending on `bounds` itself would re-seed the drafts on
-  // unrelated churn — including while the player is typing.
+  // A stable key for the twelve numbers: the binding hands back a fresh object
+  // on every emit, so depending on `bounds` itself re-seeds the drafts on
+  // unrelated churn, including while the player is typing.
   const boundsKey = [
     bounds.minCost, bounds.maxCost,
     bounds.minUpkeep, bounds.maxUpkeep,
@@ -163,9 +157,8 @@ export const BuildingCatalogMetricFilters = () => {
 
   useEffect(() => {
     // Echo backend state into the drafts, but never over a field the player is
-    // still typing into. This effect fires whenever any metric settles, and it
-    // used to rewrite all six drafts — deleting half-typed text elsewhere in
-    // the drawer.
+    // still typing into: this effect fires whenever ANY metric settles, and a
+    // blanket rewrite would delete half-typed text elsewhere in the drawer.
     setDrafts((current) => {
       const next = draftsFromState(state, bounds);
       for (const definition of METRIC_RANGE_DEFINITIONS) {
@@ -223,9 +216,8 @@ export const BuildingCatalogMetricFilters = () => {
 
   function clear(): void {
     metricRangeDebouncer.cancel();
-    // Back to the full range of what is in view, not back to blank. Clearing a
-    // filter should say what is there again, which is the same thing the fields
-    // showed before anything was typed.
+    // Back to the full range of what is in view, not back to blank: clearing a
+    // filter should say what is there again.
     setDrafts(draftsFromState(emptyMetricRangeState, bounds));
     const command = clearBuildingCatalogMetricRangesCommand();
     trigger(mod.id, command.method, ...command.args);

@@ -22,11 +22,8 @@ import styles from "./buildingGrid.module.scss";
 const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "BuildingCatalogSortColumn", "Name");
 const TileSize$ = bindValue<number>(mod.id, "BuildingLensTileSize", 72);
 /**
- * The prefab the game currently has armed.
- *
- * The legacy grid has always drawn this (PrefabSelection.tsx passes
- * `selected={prefab.id == ActivePrefabId}`); the lens grid never did, so after
- * picking a building nothing on screen said which one was about to be placed.
+ * The prefab the game currently has armed, drawn so something on screen says
+ * which building is about to be placed.
  */
 const ActivePrefabId$ = bindValue<number>(mod.id, "ActivePrefabId", 0);
 
@@ -37,36 +34,17 @@ interface BuildingGridProps {
   /** The end of the feed, rendered inside this grid's own scroll. */
   footer?: ReactNode;
   /**
-   * False when this grid is one group among several, which is the grouped view.
-   * A scroll container per group would give every heading its own scrollbar and
-   * make the set impossible to read as one thing; the caller wraps the whole
-   * grouped result in a single scroll instead.
+   * False when this grid is one group among several. A scroll container per
+   * group would give every heading its own scrollbar, so the caller wraps the
+   * whole grouped result in one scroll instead.
    */
   standalone?: boolean;
 }
 
 /**
- * Thumbnails first: the fast path back to the map.
- *
- * The table asks you to read; this asks you to recognise. The order is the
- * backend's — the same one the table shows, relevance first while a search is
- * active — so a building keeps its position between visits and becomes a
- * pointer gesture rather than a lookup. The numbers we project are not gone —
- * they moved to the hover card, which costs nothing until you actually want
- * them.
- */
-/**
- * The name on a tile, shortened for drawing only — the tooltip and the
- * Button's aria-label still carry the whole of it.
- *
- * One element per line rather than one element that wraps: the wrapping is
- * decided in tileLabel.ts, where it is testable and where the last line can
- * be elided by the rule that keeps a distinguishing suffix. The character
- * budget is an estimate, and it is corrected from what was drawn: above
- * 1.33px per rem text renders 2–3 % wider relative to rem than at 1080p, and
- * a budget that exactly filled its line at 720p spilled a few pixels at
- * 1440p and on ultrawide. The correction only ever tightens — see
- * domain/measuredFit.ts — so measure → shorten → measure cannot spiral.
+ * The name on a tile, shortened for drawing only — the tooltip and aria-label
+ * carry the whole of it. The character budget is an estimate corrected from
+ * what was drawn, and the correction only tightens, so it cannot spiral.
  */
 const TileName = ({ label, budget }: { label: string; budget: number }) => {
   const boxRef = useRef<HTMLSpanElement>(null);
@@ -84,14 +62,9 @@ const TileName = ({ label, budget }: { label: string; budget: number }) => {
       const next = lineBudgetFromDrawn(effective, Array.from(box.children) as HTMLElement[]);
       if (next < effective) setFit(next);
     };
-    // Never in the tick of the render. Cohtml reports the PREVIOUS text's
-    // scrollWidth for a line whose text just changed (measured: 171px for a
-    // name already replaced by one that draws at 64px) and 0 for a line it
-    // has not laid out, and both only settle a frame later. A read in this
-    // tick saw the old overflow again after every shortening and ratcheted
-    // the budget to the floor — "…e…d" on twelve Roads tiles. So every read,
-    // the observer's included, waits two frames: the second is where the
-    // measured relayout landed (see GroupedResults).
+    // Never in the tick of the render: Cohtml reports the PREVIOUS text's
+    // scrollWidth for a line whose text just changed, and 0 for one it has not
+    // laid out. Every read waits two frames, the observer's included.
     let outer = 0;
     let inner = 0;
     const scheduleMeasure = () => {
@@ -134,16 +107,14 @@ const TileName = ({ label, budget }: { label: string; budget: number }) => {
 
 export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone = true }: BuildingGridProps) => {
   const { translate } = useLocalization();
-  // One card for every view mode. Read once here rather than per tile: it is a
-  // dozen live bindings, and a grid of 125 subscribing per row would open
-  // sixteen hundred of them to draw one hover at a time.
+  // One card for every view mode, read once here rather than per tile: it is a
+  // dozen live bindings, and a tile each would open hundreds of them to draw
+  // one hover at a time.
   const hoverCard = useHoverCardContext();
-  // The figure the result is currently ordered by, drawn on the tile. Sorting
-  // by Capacity moved these tiles and nothing on screen said so; see
-  // sortedMetric.ts. Null for Name and Category, which the tile already shows.
+  // The figure the result is ordered by, drawn on the tile so a re-sort says
+  // why the tiles moved. Null for Name and Category, which the tile shows.
   const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
   const separators = getNumberSeparators(translate, useUnitSystem());
-  // Already in Locale.json — an orphaned key with no consumer until now.
   const lockedLabel = translate("Tooltip.LABEL[BetterBuildingMenu.Locked]", "Locked") ?? "Locked";
   const builtLabel =
     translate("Tooltip.LABEL[BetterBuildingMenu.AlreadyBuilt]", "Already built") ?? "Already built";
@@ -151,10 +122,9 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
   // The name line is fontSizeM; its character budget follows the text scale.
   const textScale = useTextScale();
   const activePrefabId = useValue(ActivePrefabId$);
-  // The page arrives in the order every view shows: grouped, then by
-  // relevance while a search is active, then by the chosen sort. The grid
-  // used to re-rank (and silently drop) entries here; see
-  // BuildingCatalogRelevance.cs.
+  // The page arrives in the order every view shows: grouped, then by relevance
+  // while a search is active, then by the chosen sort. Nothing is re-ranked
+  // here, so the grid cannot disagree with the table.
   const ordered = entries;
 
   // Enter arms the best match, so a search can be completed without leaving
@@ -176,21 +146,17 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
   }, [ordered, searchText, onPlace]);
 
   const place = (entry: BuildingCatalogEntry) => {
-    // Vanilla refuses the same selection rather than hiding the tile
-    // (ToolbarUISystem.cs:924), and its own grid routes a locked click to a
-    // disabled sound instead of a placement.
+    // Vanilla refuses the same selection rather than hiding the tile: its own
+    // grid routes a locked click to a disabled sound, not a placement.
     if (!canPlace(entry)) return;
 
     onPlace(entry);
   };
 
   /**
-   * The sorted figure, or nothing.
-   *
-   * `lot` prints the pair the table's combined cell prints, because sorting by
-   * width and reading only "6" invites the reader to think that is the lot.
-   * A metric this entry never carried draws nothing at all rather than a dash:
-   * the badge exists to explain an order, and "—" explains none.
+   * The sorted figure, or nothing. `lot` prints the pair, because a lone "6"
+   * reads as the whole lot; a metric the entry never carried draws nothing at
+   * all, since the badge exists to explain an order and a dash explains none.
    */
   const sortedBadge = (entry: BuildingCatalogEntry) => {
     if (sortedMetric === null) {
@@ -247,8 +213,8 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
               ? `${label} — ${lockedLabel}`
               : alreadyBuilt ? `${label} — ${builtLabel}` : label
           }
-          // Unplaceable either way, and announced as such. It used to read as
-          // an ordinary tile, so clicking armed a placement the game refused.
+          // Unplaceable either way, and announced as such rather than reading
+          // as an ordinary tile that arms a placement the game refuses.
           aria-disabled={locked || alreadyBuilt ? "true" : undefined}
           data-locked={locked ? "true" : undefined}
           data-already-built={alreadyBuilt ? "true" : undefined}
@@ -256,18 +222,10 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
              rather than off :not(), which Cohtml's selector engine rejects. */
           data-vector-thumb={hasVectorThumbnail(entry.thumbnail) ? "true" : "false"}
         >
-          {/* The artwork and everything drawn ON the artwork, in one box.
-              Vanilla positions both marks against its tile because its tile IS
-              the artwork — a 68rem image in a 72rem item, centred, with the name
-              in a tooltip rather than under it. Ours has a 32rem label below the
-              thumbnail, so "inset from the tile" and "inset from the artwork"
-              stopped being the same thing: the badge drifted down toward the
-              label and sat left of a thumbnail that is centred in a wider tile.
-
-              Anchoring to this box instead makes vanilla's own numbers transfer
-              unchanged, and retires the `bottom: 34rem` on the padlock, which
-              was the label's height written into a coordinate — correct only
-              while the label stays exactly two lines. */}
+          {/* The artwork and everything drawn ON it, in one box. Vanilla's tile
+              IS its artwork; ours carries a label below, so anchoring the marks
+              here rather than to the tile lets vanilla's insets transfer
+              unchanged whatever height the label takes. */}
           <span className={styles.artwork}>
             {entry.thumbnail
               ? <img
@@ -277,22 +235,10 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
                   alt=""
                 />
               : null}
-            {/* Vanilla draws this only when the legacy interface is on, so on a
-                default install its entire locked signal is the black silhouette.
-                We draw it always: at this tile size a silhouette alone is not
-                distinguishable from a thumbnail that has not rendered yet.
-
-                A RASTER image, not the masked span this used to be. The mask was
-                over Media/Glyphs/Lock.svg, and a vector under a compositing
-                effect is what this engine cannot draw — see hasVectorThumbnail.
-                Measured: with the thumbnail filter off, 35 masked padlocks still
-                flickered on their own. LockRaster.png is that same glyph
-                rasterised and tinted to the #FFCB00 the mask was rendering, so
-                the appearance is unchanged and the surface is gone.
-
-                The cost is the theme token: a baked colour cannot follow
-                --lockedColor the way background-color under a mask did. Worth
-                it, and revisit if the game ever ships a raster glyph set. */}
+            {/* Always drawn, unlike vanilla: at this tile size a silhouette
+                alone is not distinguishable from a thumbnail that has not
+                rendered yet. A RASTER, because a masked vector is what this
+                engine cannot draw — see hasVectorThumbnail. */}
             {locked && (
               <img
                 className={styles.lockGlyph}
@@ -314,15 +260,9 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
               />
             )}
           </span>
-          {/* Shortened for drawing only. The tooltip above and the aria-label on
-              the Button both still carry the whole name.
-
-              One element per line rather than one element that wraps: the
-              wrapping is decided in tileLabel.ts, where it is testable and
-              where the last line can be elided by the same rule that keeps a
-              distinguishing suffix. Leaving it to the engine would put the
-              break wherever 64px happened to fall and clip the overflow
-              unmarked. */}
+          {/* One element per line rather than one that wraps: tileLabel.ts
+              decides the break, where it is testable and the last line can be
+              elided by the rule that keeps a distinguishing suffix. */}
           <TileName
             label={stripRedundantNamePrefix(label, {
               category: entry.categoryLabel ?? entry.category,

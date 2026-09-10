@@ -12,11 +12,8 @@
   padding: 4rem 8rem 5rem;
   border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
 
-  // Cancels the tabs' leading gutter, so the spacing below costs nothing on
-  // the common single-row case. Measured on Roads — 19 tabs, all at y=449, one
-  // row — so a plain `margin-bottom` on .tab would have added dead space under
-  // a strip that does not wrap today. It can wrap at a narrower panel or a
-  // larger fontScale, and this covers that without paying for it now.
+  // Cancels the tabs' leading gutter, so the wrap spacing below costs nothing
+  // on the common single-row case.
   margin-top: -3rem;
 
   > * {
@@ -25,8 +22,7 @@
 }
 
 // Chrome, sizing, hover and selected treatment all come from the vanilla
-// ToolButton. What is left is the spacing between tabs, and that has to be a
-// margin: gap between flex-row children measured 0 on Cohtml 1.64.
+// ToolButton. What is left is the spacing between tabs.
 .tab {
   position: relative;
   margin-right: 3rem;
@@ -60,22 +56,17 @@
   white-space: nowrap;
 }
 
-// The All tab lays its count out INLINE, unlike every other tab, which corners
-// theirs absolutely. It has to: this tab is `width: auto`, and Cohtml resolves
-// an absolutely positioned child's `right` against the shrink-to-fit width
-// rather than the final one — the count landed 3px from the LEFT edge with
-// exactly the same rule that corners it correctly on a fixed-width tab.
-//
-// Inline is also what it wants to look like. "All 13" reads as a phrase; the
-// corner badge is for tabs whose glyph occupies the middle.
+// The All tab lays its count out INLINE, unlike every other tab. It has to:
+// this tab is `width: auto`, and Cohtml resolves an absolutely positioned
+// child's `right` against the shrink-to-fit width rather than the final one.
 .allCount {
   margin-left: 4rem;
   color: var(--menuText2Normal);
   font-size: var(--fontSizeXS);
 }
 
-// No glyph, so no box for one. ToolButton renders its <img> whatever `src` is,
-// and an empty 16px square was pushing the word off-centre.
+// No glyph, so no box for one. ToolButton renders its <img> whatever `src`
+// is, and an empty square pushes the word off-centre.
 .allTab img {
   display: none;
 }
@@ -83,8 +74,7 @@
 
 
 // The count sits under the glyph rather than beside a name, because the name
-// is in the tooltip now. Absolutely positioned so it costs the tab no width:
-// the strip has to stay one row, which is what putting names on it broke.
+// is in the tooltip. Absolutely positioned so it costs the tab no width.
 .tabCount {
   position: absolute;
   right: 1rem;
@@ -135,27 +125,19 @@
   background-color: rgba(255, 255, 255, 0.18);
 }
 
-// The rank pip over a tab's subject glyph: the school level's attainment bars
-// over the mortarboard. Selector carries the tab too, because `.tab img` sets
-// the 24rem square with !important and a single class would lose to it on
-// specificity however loudly it shouted.
-// The rank over a tab's subject glyph. Top-left, because the count already
-// owns the bottom-right of the same tab and a rank in the opposite corner
-// cannot be mistaken for it. Bold and shadowed: it sits ON the glyph, so it
-// has to survive whatever is behind it.
+// The rank pip over a tab's subject glyph. Top-left, because the count owns
+// the bottom-right of the same tab. The selector carries .tab too, or
+// `.tab img`'s !important square wins on specificity.
 .tierNumeral {
   position: absolute;
-  // Onto the glyph, not beside it. The icon is a 24rem square centred in a
-  // 32rem tab, so it starts at 4rem; sitting the numeral at the tab's own
-  // corner left it hanging in the padding, reading as a separate mark.
+  // Onto the glyph, not beside it: the icon is a 24rem square centred in a
+  // 32rem tab, so a numeral at the tab's own corner hangs in the padding.
   left: 5rem;
   top: 3rem;
   padding: 0 2rem;
-  // A chip, not a shadow. The numeral sits ON the mortarboard, which is a pale
-  // grey, and near-white text over it washed out however much shadow it was
-  // given. A solid dark backing makes the rank readable over any glyph the
-  // axis might use, which matters because the same treatment has to hold for
-  // whatever a mod's school looks like.
+  // A chip, not a shadow. The numeral sits ON the mortarboard, a pale grey,
+  // and near-white text over it washes out however much shadow it is given.
+  // A solid backing keeps the rank readable over whatever glyph is behind it.
   background-color: rgba(0, 0, 0, 0.75);
   border-radius: 2rem;
   color: var(--menuText1Normal);
@@ -166,10 +148,8 @@
 }
 
 // Holds a tab's pip and count. An absolute fill rather than `display:
-// contents` — Cohtml 1.64 does not implement that value, and the wrapper
-// stayed an inline box that pushed the count out of the tab and the pip into
-// its neighbour. Filling the tab exactly gives the children the same rect
-// they would have had, without a layout box of its own.
+// contents`, which Cohtml 1.64 does not implement: as an inline box it pushes
+// the count out of the tab and the pip into its neighbour.
 .tierBadge {
   position: absolute;
   left: 0;

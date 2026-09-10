@@ -2,8 +2,7 @@
 // selected fill, so a chosen option reads the way a chosen anything else does.
 // The Theme row immediately above uses the same treatment.
 .option {
-  // Nothing. Kept as a hook so the row can be targeted without reaching for
-  // vanilla's hashed class, which changes between game versions.
+  // A hook, so the row can be targeted without vanilla's hashed class.
 }
 
 .optionSelected {

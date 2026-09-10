@@ -10,12 +10,8 @@ namespace BetterBuildingMenu.Tests
 	/// The search debounce: one refresh, a fixed delay after the LAST keystroke.
 	/// </summary>
 	/// <remarks>
-	/// This replaces a Task.Run worker that ran the legacy fuzzy search over
-	/// the whole index and then raised a flag OnUpdate polled. The lens never
-	/// read that search's result (cm-yfd5), so all the worker ever did for the
-	/// lens was delay the refresh by 250ms plus 2.7s of wasted work. A deadline
-	/// polled from OnUpdate is the same debounce with no thread, no token and
-	/// no flag.
+	/// A deadline polled from OnUpdate is the whole mechanism: no thread, no
+	/// cancellation token and no flag.
 	/// </remarks>
 	public sealed class SearchDebounceTests
 	{
@@ -50,7 +46,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void ReschedulingPushesTheDeadlineOut()
 		{
-			// Two keystrokes 100ms apart produce ONE refresh, 250ms after the second.
+			// Keystrokes in quick succession produce ONE refresh, timed from the last.
 			var debounce = new SearchDebounce(Delay);
 
 			debounce.Schedule(TimeSpan.FromSeconds(10));

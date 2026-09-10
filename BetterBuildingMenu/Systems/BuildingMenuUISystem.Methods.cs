@@ -21,15 +21,9 @@ namespace BetterBuildingMenu.Systems
 		/// Re-publish the lens after something changed what it should show.
 		/// </summary>
 		/// <remarks>
-		/// Was <c>UpdateCategoriesAndPrefabList</c>, which described what it did
-		/// when the legacy grid existed: rebuild the category and subcategory
-		/// binding lists, then page the prefab list. All three of those are gone,
-		/// and the name outlived them by a few commits.
-		///
-		/// The callers that matter are the options panel's sorting sections,
-		/// which still reach the lens: CategorizedPrefabs holds IndexedPrefabList,
-		/// whose enumerator returns the statically-sorted order, so the legacy
-		/// sort still decides ties the catalog's own sort leaves open.
+		/// The options panel's sorting sections still reach the lens: CategorizedPrefabs holds
+		/// IndexedPrefabList, whose enumerator returns the statically-sorted order, so that sort
+		/// still decides the ties the catalog's own sort leaves open.
 		/// </remarks>
 		internal void RefreshLens()
 		{
@@ -47,23 +41,16 @@ namespace BetterBuildingMenu.Systems
 
 		private void RefreshBuildingCatalog([System.Runtime.CompilerServices.CallerMemberName] string caller = "")
 		{
-			// Only resets the projection timing counters. The snapshots
-			// themselves live across refreshes and are dropped when
-			// PrefabIndexingSystem.IndexGeneration moves; see
+			// Only resets the projection timing counters. The snapshots themselves live across
+			// refreshes and are dropped when PrefabIndexingSystem.IndexGeneration moves; see
 			// BuildingCatalogAdapter._snapshots.
 			_buildingCatalogAdapter.BeginRefresh();
 
 			var refreshTimer = System.Diagnostics.Stopwatch.StartNew();
-			// Per-stage cost, for the breakdown on the log line. A refresh used
-			// to be one number, which said that it was slow and nothing about
-			// where; cm-jjlv.7 exists to move the where.
+			// Per-stage cost, for the breakdown on the log line below.
 			var stage = System.Diagnostics.Stopwatch.StartNew();
 			int Lap() { var ms = (int)stage.ElapsedMilliseconds; stage.Restart(); return ms; }
 
-			// Both empty, always. These carried BuildingMenuUtil's own category into
-			// the query, but only while the lens was off — and the lens is never
-			// off now, so the branch that filled them is gone with the latch.
-			// The lens states its own scope through UiMenu/UiCategory below.
 			// The scope, the search and every metric bound fold into the query here,
 			// and the window resets if a predicate moved. See BuildingCatalogLensState.Compose.
 			_lens = _lens.Compose();
@@ -78,17 +65,9 @@ namespace BetterBuildingMenu.Systems
 					_lens.Query.GroupBy, menuHasCategories, built.StripAxis, VanillaMenus.IsEducation(menu), built.GroupDimensions));
 			BuildingCatalogPage page = view.Page;
 
-			// A search that matches nothing in the current section reads as
-			// "this building does not exist" when it usually means "not here".
-			// Only computed when the scoped result is actually empty, so the
-			// extra pass costs nothing in the common case.
-			// With auto-widen on, a scoped miss drops the scope itself rather
-			// than asking. Cannot recurse: SearchEverything calls back into
-			// this method, and by then the section is AllBuildings so the
-			// branch fails its own guard.
-			// Fires for every scoped menu now. It used to read the section, which
-			// only the preset menus set — so Electricity widened an empty search
-			// and Roads, routed through the tree, did not. Same gesture, one rule.
+			// A search that matches nothing in the current section reads as "this building does
+			// not exist" when it usually means "not here". With auto-widen on a scoped miss drops
+			// the scope instead of asking; it cannot recurse, because the retry is unscoped.
 			if (Mod.Settings.AutoWidenSearch
 				&& page.TotalCount == 0
 				&& !string.IsNullOrWhiteSpace(_lens.Query.SearchText)
@@ -142,27 +121,15 @@ namespace BetterBuildingMenu.Systems
 				_lens.Query.StripTabs?.ToArray() ?? Array.Empty<string>();
 			_BuildingLensStripTabs.Value = view.StripTabs.ToArray();
 			var tabsMs = Lap();
-			// One binding, a list. It replaced a (category, tabs) pair that could
-			// only ever describe ONE expanded category — enough for the
-			// development tree, which picks the largest and stops, and not
-			// enough for zones, where three families divide into tiers at once.
+			// One binding, a list: zones divide three families into tiers at once, which a
+			// single (category, tabs) pair could not describe.
 			_BuildingLensExpandedCategories.Value = view.ExpandedCategories.ToArray();
 			var expandedMs = Lap();
 			_BuildingLensMenuSchoolTierCounts.Value = view.SchoolTierCounts.ToArray();
 			var tiersMs = Lap();
-			// cm-2xvs.25. Logged only when it changes by more than a tenth of a
-			// second, so a steady state costs one line rather than one per
-			// frame — and a regression in this number is visible in a normal
-			// session log without anyone having instrumented anything.
 			refreshTimer.Stop();
-			// Every refresh, and named by its caller.
-			//
-			// This used to log only when the duration differed from the last by
-			// more than 100ms, which hid exactly the bug it should have caught:
-			// a single menu click fired THREE full refreshes, and the two cheap
-			// ones never reached the log because they were close to each other.
-			// One line per user action is not spam — it is the only way the
-			// redundancy is visible at all.
+			// Every refresh, and named by its caller: one line per user action is the only way
+			// a redundant refresh is visible at all.
 			Mod.Log.Info(
 				$"[LENS-REFRESH] {(int)refreshTimer.ElapsedMilliseconds}ms "
 				+ $"proj={_buildingCatalogAdapter.LastProjectionMs}ms({(_buildingCatalogAdapter.LastProjectionWasHit ? "hit" : "miss")}) "
@@ -173,10 +140,9 @@ namespace BetterBuildingMenu.Systems
 		/// <summary>Publishes the milestone names the UI labels locked assets with.</summary>
 		private void RefreshBuildingLensNavigation()
 		{
-			// Dense by index: entry N is milestone N's name. Every asset ships a
-			// bare milestone index and the UI reads the name out of here, so the
-			// ~20 names are resolved once per index pass instead of once per
-			// asset on every unlock-triggered re-index.
+			// Dense by index: entry N is milestone N's name. Every asset ships a bare milestone
+			// index and the UI reads the name out of here, so the names resolve once per index
+			// pass rather than once per asset.
 			_BuildingLensMilestonesBinding.Value = PrefabIndexingSystem.GetMilestoneNames();
 
 		}
@@ -185,14 +151,9 @@ namespace BetterBuildingMenu.Systems
 		/// Re-publishes the extension picker's entries when the selection changes.
 		/// </summary>
 		/// <remarks>
-		/// Polled here rather than subscribed to SelectedInfoUISystem's event
-		/// because the index can also change under a fixed selection — the save
-		/// has just loaded, the picker is open, and the index finishes (cm-36os)
-		/// — so the generation is part of the key. The check is two integer
-		/// compares per frame; the work runs only when one of them moves.
-		///
-		/// The upgradable is resolved exactly as vanilla's UpgradeMenuUISystem
-		/// does: a selected extension answers for its parent.
+		/// Polled rather than subscribed to SelectedInfoUISystem's event, because the index can
+		/// change under a fixed selection too, so the generation is part of the key. The upgradable
+		/// resolves as vanilla's UpgradeMenuUISystem does: an extension answers for its parent.
 		/// </remarks>
 		private void RefreshExtensionMenu()
 		{
@@ -244,7 +205,7 @@ namespace BetterBuildingMenu.Systems
 			settingPrefab = false;
 		}
 
-		/// <summary>Asks for a refresh 250ms after the last call, on the main thread.</summary>
+		/// <summary>Asks for a refresh once typing settles, on the main thread.</summary>
 		/// <remarks>
 		/// Debounced rather than immediate: the search predicate runs inside the
 		/// catalog refresh, so one refresh per keystroke would re-run the whole
@@ -258,30 +219,9 @@ namespace BetterBuildingMenu.Systems
 
 		private void OnPrefabChanged(PrefabBase prefab)
 		{
-			// A prefab we did not arm ourselves normally means the player picked
-			// something in vanilla's own UI, and the polite answer is to get out
-			// of its way. That is the legacy panel's rule and it stays the legacy
-			// panel's rule.
-			//
-			// It no longer needs an exception for the lens. This used to read
-			// `!settingPrefab && !_LensOwnsCurrentMenu.Value`, because hiding the
-			// panel here handed the screen straight back to the vanilla menu we
-			// had replaced — reported from play as "clicking Livestock Farming
-			// selects the right thing to build and then reverts to the vanilla
-			// menu". The lens is now mounted in the game's own asset-menu slot
-			// and does not read this binding at all, so there is no screen to
-			// hand back and nothing to except.
-			// Mirror what the game has armed BEFORE deciding what the legacy
-			// panel does about it. This binding is a fact about the game, not a
-			// record of who set it, and it used to be written only on our own
-			// path — so placing a building, pressing Escape, or arming something
-			// from a vanilla surface left it pointing at the last prefab the lens
-			// itself had armed.
-			//
-			// That was invisible while the only consumer was the legacy grid's
-			// faint selected state. The lens grid now draws an accent outline on
-			// the armed tile, which turned a stale value into a tile claiming "a
-			// click on the map places this" when nothing was armed at all.
+			// A prefab we did not arm ourselves normally means the player picked something in
+			// vanilla's own UI, and the polite answer is to get out of its way. The binding is
+			// mirrored first: it is a fact about what the GAME has armed, not a record of who set it.
 			if (prefab is null)
 			{
 				_ActivePrefabId.Value = 0;
@@ -306,18 +246,9 @@ namespace BetterBuildingMenu.Systems
 				return;
 			}
 
-			// The Zone tool is NOT one of those, though it sat in that list.
-			//
-			// Picking a zone arms it, so hiding the panel here meant the zoning
-			// surface closed the instant it was used — and because the vanilla
-			// Zones menu is still selected on the toolbar, the game drew its own
-			// grid into the space we had just vacated. Reported from play as
-			// "selecting a zoning type works, but moves us back to the vanilla
-			// zoning menu". It read as intermittent because a SECOND pick does
-			// not change the tool, so the handler never runs and the panel stays.
-			//
-			// Driving this tool is what the zoning surface is for, so the legacy
-			// panel still declines to vacate for it.
+			// The Zone tool is deliberately not one of those. Picking a zone arms it, so vacating
+			// here would close the zoning surface the instant it was used, and the still-selected
+			// vanilla Zones menu would draw its own grid into the space.
 			if (tool.toolID is "Zone Tool")
 			{
 				return;
@@ -328,28 +259,9 @@ namespace BetterBuildingMenu.Systems
 				return;
 			}
 
-			// The tool went back to default: Escape, a right-click cancel, or a
-			// finished placement, and this handler cannot tell them apart.
-			// Escape itself is handled in the DOM by VanillaMenuWatcher, which
-			// clears the toolbar selection.
-			//
-			// For the legacy panel a cancel closes it, which is the only close
-			// Escape can reach there.
-			//
-			// The lens used to need excepting here, because that menu is STILL
-			// SELECTED on the toolbar and the game drew its own asset grid the
-			// instant we vacated — "Escape swapped my menu for the old one",
-			// and the same after every placement, which is why the catalog had
-			// to learn to restore its scroll position at all. Mounted in the
-			// game's own slot it no longer reads this binding, so it holds still
-			// without being told to.
-			//
-			// Still deliberately NOT CloseLens, and still not touching the
-			// selection. A previous attempt released it here and, because this
-			// branch fires on every return to default, the menu was gone long
-			// before the player pressed Escape — so the game's Escape chain found
-			// nothing to close and opened the pause menu instead. Escape pausing
-			// the game mid-build is worse than the defect it fixed.
+			// The tool went back to default: Escape, a right-click cancel, or a finished placement,
+			// and this handler cannot tell them apart. Deliberately NOT CloseLens and deliberately
+			// not touching the selection, or the game's Escape chain opens the pause menu instead.
 			SetLensMenuOpen(false);
 		}
 	}

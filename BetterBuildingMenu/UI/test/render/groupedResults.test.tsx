@@ -42,8 +42,7 @@ describe("grouped results", () => {
     assert.ok(parent, "the two-child group");
     assert.match(parent!.classes, /\bgroupBand\b/, "a group with two sub-groups is banded");
     // One child means one hidden heading — the group reads as a leaf and
-    // flows like one. Measured live, banding these too gave a one-tile
-    // ROAD SERVICES a whole 84px row to itself in a search.
+    // flows like one. Banded, a one-tile group takes a whole row to itself.
     const lone = found.find((g) => g.heading === "Small Roads");
     assert.ok(lone);
     assert.doesNotMatch(lone!.classes, /\bgroupBand\b/, "a group with one sub-group flows");
@@ -78,11 +77,9 @@ describe("grouped results", () => {
   });
 
   it("keeps every branch's heading, even a one-asset branch that restates its tile", () => {
-    // A collapse rule once removed these as redundant. It merged Healthcare's
-    // Hospital, Disease Control Center and Health Research Institute into one
-    // unlabeled block: the tiles draw as "Disease Contro…Center" and "Health
-    // Resear…titute", so the heading was the only legible full name and
-    // dropping it as a duplicate dropped the readable copy.
+    // Collapsing these as redundant merges Healthcare's Hospital, Disease
+    // Control Center and Health Research Institute into one unlabeled block —
+    // and the tiles elide, so the heading is the only legible full name.
     const html = render(
       [
         ["Healthcare", "Hospital"],
@@ -99,8 +96,8 @@ describe("grouped results", () => {
   });
 
   it("reserves no heading row for a lone child whose heading is not drawn", () => {
-    // shouldShowHeading already hid the heading of an only child; the 17rem
-    // it reserved for one stayed, as 12px of nothing under every category.
+    // shouldShowHeading hides the heading of an only child; without this the
+    // 17rem it reserves stays, as empty space under every category.
     const html = render([
       ["Road Services", "Milestone 3"],
       ["Paths", "From the start"],
@@ -114,18 +111,9 @@ describe("grouped results", () => {
   });
 
   it("keeps the reserve for a lone child when a sibling group's children are headed", () => {
-    // Zones, measured live: INDUSTRIAL ZONES has one sub-group, so its
-    // heading is hidden and the row it reserved goes with it — while
-    // COMMERCIAL and OFFICE beside it have two sub-groups each, keep their
-    // children's headings, and reserve 11px for them. The three parents flow
-    // on one line, so Industrial's tile sat 11px above its neighbours' (529.7
-    // against 540.7) and the row lost the shared baseline the grid is for.
-    //
-    // GroupBox already equalises this WITHIN a row. It cannot reach across
-    // one: these are three separate child rows under three sibling parents,
-    // and the lone child's row measures no heading at all, so its reserve is
-    // null and the stylesheet's 0 stands. The parent, which can see all three
-    // subtrees, is the only place that knows the row disagrees.
+    // A parent whose only child has no heading reserves no row for one, while
+    // its siblings with two children do, so parents flowing on one line sit at
+    // different heights. GroupBox equalises within a row, not across one.
     const html = render([
       ["Commercial Zones", "Low Density"],
       ["Commercial Zones", "High Density"],

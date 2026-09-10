@@ -19,15 +19,9 @@ export interface BuildingLensSortPresentation {
 }
 
 export const BUILDING_LENS_SORT_OPTIONS: readonly BuildingLensSortOption[] = [
-  // First, and the one the lens opens on. It is the game's own order —
-  // UIObject.m_Priority ascending, which is the whole of vanilla's sort — and
-  // no other option here reproduces it, because it is authored per asset
-  // rather than derived from anything the player can see. Hence "Default"
-  // rather than a field name: naming it after a column would promise a rule
-  // it does not follow.
-  //
-  // Being first also makes it the presentational fallback below, where an
-  // unrecognised column falls back to BUILDING_LENS_SORT_OPTIONS[0].
+  // First, and the one the lens opens on: the game's own UIObject.m_Priority
+  // order, authored per asset and derivable from nothing the player can see —
+  // hence "Default". Being first also makes it the fallback below.
   { key: "Default", label: "Default" },
   { key: "Name", label: "Name" },
   { key: "Category", label: "Category" },
@@ -35,9 +29,8 @@ export const BUILDING_LENS_SORT_OPTIONS: readonly BuildingLensSortOption[] = [
   { key: "Upkeep", label: "Upkeep" },
   { key: "Workers", label: "Workers" },
   { key: "Capacity", label: "Capacity" },
-  // "Lot", not bare "Width"/"Depth". In a list beside Cost and Workers those
-  // two read as dimensions of the building, and the figure they sort on is the
-  // lot — which is also what the column they came from is headed.
+  // "Lot", not a bare "Width": beside Cost and Workers that reads as a
+  // dimension of the building, and the figure sorted on is the lot's.
   { key: "LotWidth", label: "Lot width" },
   { key: "LotDepth", label: "Lot depth" },
   { key: "BuildingLevel", label: "Level" },
@@ -45,16 +38,9 @@ export const BUILDING_LENS_SORT_OPTIONS: readonly BuildingLensSortOption[] = [
 ];
 
 /**
- * Which sort each metric column drives when its header is clicked.
- *
- * Column headers were previously inert labels, so changing the order meant
- * opening the sort disclosure and, to reverse direction, clicking three times
- * through a mechanism with no visible affordance. Sorting a table by its
- * headers is the convention players already know.
- *
- * `lot` renders width and depth together but sorts by width: it is the primary
- * figure in the combined cell, and `LotDepth` remains reachable from the
- * existing sort list.
+ * Which sort each metric column drives when its header is clicked, sorting a
+ * table by its headers being the convention players know. `lot` renders both
+ * dimensions and sorts by width; `LotDepth` stays in the sort list.
  */
 export const BUILDING_LENS_COLUMN_SORT: Readonly<Record<BuildingLensMetric, SortColumn>> = {
   cost: "ConstructionCost",
@@ -83,23 +69,9 @@ export function getBuildingLensColumnSortIndicator(
 }
 
 /**
- * The sort fields worth offering for the current results.
- *
- * cm-ddw3: a field that ties across the set responds — the summary flips to
- * "Cost ▲" then "Cost ▼" — while the list does not move, which is the
- * signature of a broken control. Signatures sorted by Cost is the live case:
- * every building is "Free". The same argument groupDimensionsFor already makes
- * for grouping, where "a dimension that puts the whole menu in ONE bucket is a
- * control that cannot act".
- *
- * The backend answers which ones can reorder, because only it sees the whole
- * matched set rather than the page.
- *
- * Two things are never dropped. The CURRENT selection stays even when it has
- * gone dead, because a picker whose summary shows a value its own list does not
- * contain is a worse bug than the one being fixed. And an empty answer is
- * ignored outright: before the first page lands the backend has said nothing
- * yet, and hiding every option would leave the control empty on open.
+ * The sort fields worth offering for the current results: one that ties across
+ * the whole set responds while the list does not move, which reads as broken.
+ * Never drops the current selection; an empty answer means "not said yet".
  */
 export function usableSortOptions(
   reorderable: readonly string[] | null | undefined,

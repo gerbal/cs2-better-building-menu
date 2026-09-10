@@ -3,28 +3,20 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 /**
- * cm-2xvs.19: the upgrades a building supports are not the fact that it is one.
+ * The upgrades a building supports are not the fact that it is one.
  *
- * `extensions` is a SELF-TAG. PrefabIndexingSystem writes the prefab's own name
- * into it when the prefab is itself an upgrade, and BuildingCatalogQueryEngine
- * reads a non-empty value the way vanilla's FilterOutUpgrades does — drop this
- * from every menu. So for any asset the player can see in a menu, `extensions`
- * is empty by construction, and a row driven by it can never draw. That is the
- * bug: the hover card's "upgrades that can be attached later" row read
- * `entry.extensions`, so in every menu it was dead — for all 17,952 assets, not
- * only the 100 signatures the bead was filed about. The one place it did draw
- * was unscoped search, which is exempt from the exclusion and therefore shows
- * upgrades themselves: there the row named the asset as its own upgrade.
+ * `extensions` is a SELF-TAG: PrefabIndexingSystem writes the prefab's own
+ * name into it when the prefab is itself an upgrade, and
+ * BuildingCatalogQueryEngine drops any asset with a non-empty value from every
+ * menu — so a row driven by it can never draw.
  *
- * The trap in the obvious fix is why this is pinned as text. Widening
- * `extensions` to mean "what can attach to me" would have deleted every
- * upgradeable building from the build menus, because the exclusion above would
- * then match them. The two meanings need two fields, permanently.
+ * Widening `extensions` to mean "what can attach to me" would delete every
+ * upgradeable building from the build menus, because that exclusion would then
+ * match them. The two meanings need two fields, permanently.
  *
  * A behavioural test cannot reach this: both fields are `string[]`, both read
- * through the same field-agnostic `getBuildingExtensionLabels`, and the row is
- * assembled inside the component. Swapping one identifier back would typecheck,
- * pass every existing test, and silently render nothing again.
+ * through the same field-agnostic `getBuildingExtensionLabels`, and swapping
+ * one identifier back would typecheck and pass every existing test.
  */
 const read = (p: string) => readFileSync(new URL(p, import.meta.url), "utf8");
 

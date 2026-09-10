@@ -1,52 +1,31 @@
 namespace BetterBuildingMenu.Domain
 {
 	/// <summary>
-	/// The Building Lens assembly's width: the build menu and the control plane
-	/// beside it, which is what the layout lays out and what the resize handle
-	/// drags.
+	/// The Building Lens assembly's width: the build menu plus the control plane
+	/// beside it — what the layout lays out and what the resize handle drags.
 	/// </summary>
 	/// <remarks>
-	/// Pure arithmetic, deliberately. It lives here rather than in GridUtil so
-	/// the numbers can be read from a test host without a live <c>World</c>.
-	/// GridUtil forwards to this.
+	/// Pure arithmetic, deliberately: here rather than in GridUtil, which forwards
+	/// to it, so the numbers can be read from a test host without a live <c>World</c>.
 	/// </remarks>
 	public static class BuildingLensWidth
 	{
 		/// <summary>
-		/// The band, measured at 1280x720.
+		/// The widest the assembly may be dragged: the band left free beside the
+		/// left-aligned tool columns, at the layout's reference resolution.
 		/// </summary>
-		/// <remarks>
-		/// It used to start at 399px, where vanilla's tool-side-column ended
-		/// when tool-layout centred its column trio, giving 845px to the social
-		/// column at 1248. With the lens open that trio is left-aligned, so the
-		/// options column now ends at 260 and the band starts at 264 — 984px.
-		/// At 0.6667px per rem that is 1476rem, less the 35rem MainContainer
-		/// adds on top of this value.
-		///
-		/// Widening the ceiling needs no migration. A saved width still means
-		/// the same thing it did — the assembly, pane included — so every
-		/// existing value stays valid and simply has more room to grow into.
-		/// That is the difference between this change and the one
-		/// <see cref="Migrate"/> exists for, which altered what the number meant.
-		/// </remarks>
 		public const float Max = 1441f;
 
 		/// <summary>
-		/// Raised from 700 when the control plane arrived: 700 left the grid
-		/// 315rem once the pane took its share, which is barely three tiles wide
-		/// and not a grid.
+		/// The narrowest the assembly may be dragged: any less and the control plane
+		/// takes so much of it that what is left is no longer a grid.
 		/// </summary>
 		public const float Min = 1000f;
 
-		/// <summary>
-		/// What the control plane takes out of the assembly: its own 379rem plus
-		/// a 6rem gap.
-		/// </summary>
+		/// <summary>What the control plane takes out of the assembly: its width plus the gap.</summary>
 		/// <remarks>
-		/// Duplicated from BUILDING_LENS_CONTROL_PANE_TOTAL in
-		/// domain/buildingLensLayout.ts. There is no shared source across the
-		/// C#/TS boundary, so the two are kept honest by a test rather than by
-		/// construction — the same arrangement the grouping band edges use.
+		/// Duplicated from the UI's BUILDING_LENS_CONTROL_PANE_TOTAL. Nothing is shared
+		/// across the C#/TS boundary, so a test keeps the two honest instead.
 		/// </remarks>
 		public const float ControlPane = 385f;
 

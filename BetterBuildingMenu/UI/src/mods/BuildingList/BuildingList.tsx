@@ -38,39 +38,22 @@ interface BuildingListProps {
   onPlace: (entry: BuildingCatalogEntry) => void;
   variant?: BuildingListVariant;
   /**
-   * The entry whose tool is active, if the caller knows it. The extension
-   * picker does — vanilla publishes selectedUpgrade — and its rows read back
-   * the way vanilla's tiles do. The build menu passes nothing.
+   * The entry whose tool is active, where the caller knows it — the extension
+   * menu does, from vanilla's own selectedUpgrade. The build menu passes none.
    */
   selectedId?: number;
 }
 
 /**
- * Compact wrapped rows of fully-readable names.
- *
- * The third mode, and the one the zoning view was already doing by hand. Grid
- * shows a thumbnail with the name truncated — "Canopy-Covered Parkl…" — which
- * is fine when you recognise the building by sight and useless when you are
- * looking for one by name. Table shows every metric but fits about twelve rows
- * on a screen.
- *
- * This shows a small icon and the whole name, several to a row. It is the mode
- * for "there are two hundred of these and I know roughly what it is called",
- * which is the case that arrives with DLC and mods and that the other two
- * modes both handle badly.
- *
- * Two variants. Compact is icon and name only. Cards adds a larger icon and one
- * short line: footprint, cost, and the category's own capacity where that means
- * anything. Those are constraints rather than comparisons — does it fit, can I
- * afford it — which is what keeps this from drifting back into the table.
+ * Compact wrapped rows of fully-readable names — the mode for knowing roughly
+ * what a building is called among hundreds. Cards adds one line of constraints
+ * (does it fit, can I afford it), never comparisons.
  */
 export const BuildingList = ({ entries, searchText, onPlace, variant = "compact", selectedId }: BuildingListProps) => {
   const { translate } = useLocalization();
   const separators = getNumberSeparators(translate, useUnitSystem());
-  // The same card the grid and the table show. This view used to carry its own
-  // thinner one — a name and a single "cost · lot" line — so which facts the
-  // game would tell you about a building depended on which view mode you
-  // happened to be in.
+  // The same card the grid and the table show, so which facts a building
+  // states does not depend on which view mode the player is in.
   const hoverCard = useHoverCardContext();
   const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
   const lockedLabel = translate("Tooltip.LABEL[BetterBuildingMenu.Locked]", "Locked") ?? "Locked";
@@ -82,7 +65,7 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
     || "Already built";
   const cards = variant === "cards";
   // The page arrives in the order every view shows — relevance first while a
-  // search is active — so the list, the grid and the table agree.
+  // search is active — so list, grid and table agree.
   const ordered = entries;
 
   useEffect(() => {
@@ -133,19 +116,16 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
         const label = entry.name || entry.prefabName;
         const cost = formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance);
         const lot = formatLotDimensions(entry.lotWidth, entry.lotDepth);
-        // A road's lot is 0x0 and a zone has none at all. "0 × 0" is a
-        // measurement of something that does not exist, so the fact is dropped
-        // rather than stated.
+        // A road's lot is 0x0 and a zone has none: "0 × 0" measures something
+        // that does not exist, so the fact is dropped rather than stated.
         const lotKnown = hasFootprint(entry.lotWidth, entry.lotDepth);
         const footprints = entry.footprints ?? [];
         const footprintOverflow = entry.footprintOverflow ?? 0;
-        // Category-aware, and it returns nothing for a category where capacity
-        // means nothing — so a park bench's card stays as narrow as a
-        // hospital's is informative, without a rule per category here.
+        // Category-aware, returning nothing where capacity means nothing, so
+        // this needs no rule per category of its own.
         const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators);
-        // Zero is not a capacity fact. An extension that adds no students is
-        // common (a school's clinic, its playground); "0 students" beside the
-        // wing's 500 reads as a figure and carries nothing.
+        // Zero is not a capacity fact: an upgrade that adds no students is
+        // common, and "0 students" reads as a figure while carrying nothing.
         const hasCapacity = capacity !== "" && capacity !== "—" && (entry.capacity ?? 0) !== 0;
 
         return (
@@ -156,10 +136,9 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
               data-catalog-entry={entry.id}
               data-selected={selectedId === entry.id ? "true" : undefined}
               onSelect={() => place(entry)}
-              // Both unplaceable states, not just locked. A row has no
-              // thumbnail to silhouette, so the ground and the suffix carry the
-              // whole message here — which is why saying nothing about
-              // already-built left the row looking freely placeable.
+              // Both unplaceable states, not just locked: a row has no
+              // thumbnail to silhouette, so the ground and this suffix carry
+              // the whole message.
               aria-label={
                 (() => {
                   const word = entryStateWord(entry, lockedLabel, builtLabel);
@@ -171,10 +150,9 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
               data-vector-thumb={hasVectorThumbnail(entry.thumbnail) ? "true" : "false"}
               data-already-built={isEntryAlreadyBuilt(entry) ? "true" : undefined}
             >
-              {/* The picture and its badge share a box, the way the tile's do,
-                  so the mark sits ON the building rather than beside it. Sized
-                  from base.scss's ratio, so the badge reads the same size
-                  against a 20rem row icon as against the grid's 45rem one. */}
+              {/* The picture and its badge share a box, as the tile's do, so
+                  the mark sits ON the building. Sized from base.scss's ratio,
+                  so it reads the same against a row icon and a grid tile. */}
               {entry.thumbnail
                 ? <span className={classNames(styles.artwork, cards && styles.artworkLarge)}>
                     <img
@@ -202,20 +180,16 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
                 : <span className={classNames(styles.iconPlaceholder, cards && styles.iconLarge)} aria-hidden="true" />}
               <span className={styles.text}>
                 <span className={styles.name}>{label}</span>
-                {/* A zone's own figures used to have a branch here, reading an
-                    `entry.facts` string array nothing ever wrote — so it never
-                    ran and the card fell through to this one anyway. They now
-                    arrive as service facts and are drawn on the hover card,
-                    where there is room for a phrase; this row stays size, cost
-                    and one key number. */}
+                {/* A zone's own figures arrive as service facts and are drawn
+                    on the hover card, where there is room for a phrase. This
+                    row stays size, cost and one key number. */}
                 {cards && (
                   <span className={styles.facts}>
-                    {/* Footprint first, and always: it is a constraint rather
-                        than a comparison — whether the thing fits the gap you
-                        are looking at, which you ask before anything else. */}
-                    {/* Separators are characters, not flex gap. Cohtml did not
-                        apply the gap here, so "3 × 3" and "8 000" ran together
-                        and read as a single number, "3 × 38 000". */}
+                    {/* Footprint first, and always: whether the thing fits the
+                        gap in front of you is asked before anything else. */}
+                    {/* Separators are characters, not flex gap: Cohtml does
+                        not apply the gap here and two figures run together
+                        into one unreadable number. */}
                     {lotKnown && (
                       <>
                         <span className={styles.fact}>{lot}</span>
@@ -223,12 +197,9 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
                       </>
                     )}
                     <span className={styles.fact}>{cost}</span>
-                    {/* Size, cost, one key number — and nothing else. The
-                        recreation kind was here and made the row long: "Outdoor
-                        recreation" is a phrase where the rest of the line is
-                        three figures, and a fact row that has to be READ rather
-                        than scanned stops being a fact row. It says the same
-                        thing on the hover card, where there is room for it. */}
+                    {/* Size, cost, one key number — and nothing else. A phrase
+                        among three figures turns a row that is scanned into one
+                        that has to be read. The hover card has room for it. */}
                     {hasCapacity && (
                       <>
                         <span className={styles.factDot} aria-hidden="true">·</span>
@@ -239,8 +210,7 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
                 )}
               </span>
               {/* Right-aligned, so the sorted figures line up as a column and
-                  the order can be read down the page — which is the one thing
-                  the table had and this view did not. */}
+                  the order can be read down the page. */}
               {sortedBadge(entry)}
             </Button>
           </BuildingHoverCard>

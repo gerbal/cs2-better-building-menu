@@ -19,9 +19,8 @@ namespace BetterBuildingMenu.Domain
 
 		public int Count => _dictionary.Count;
 
-		// Name order, which was the default of the six upstream sort modes; the
-		// sorting option sections that switched between them are gone
-		// (cm-jjlv.9), and the lens orders its own page.
+		// Name order, tie-broken on the prefab name so it is stable; the lens
+		// orders its own page.
 		public List<PrefabIndex> OrderedList => _orderedList ??= _dictionary.Values
 			.OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
 			.ThenBy(x => x.PrefabName, StringComparer.Ordinal)

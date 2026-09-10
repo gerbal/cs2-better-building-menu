@@ -27,31 +27,15 @@ namespace BetterBuildingMenu
 		/// by dragging the panel's top edge.
 		/// </summary>
 		/// <remarks>
-		/// Hidden like the width: it is a direct-manipulation value, and a
-		/// slider for it in the options screen would be a second way to say the
-		/// same thing. See <see cref="Domain.BuildingLensHeight"/> for the
-		/// range and for what this replaced.
+		/// Hidden like the width: it is a direct-manipulation value, and a slider in the options
+		/// screen would be a second way to say the same thing. See
+		/// <see cref="Domain.BuildingLensHeight"/> for the range.
 		/// </remarks>
 		[SettingsUIHidden]
 		public float BuildingLensPanelHeight { get; set; } = Domain.BuildingLensHeight.Default;
 
-		// There is no search hot-key, deliberately, and there should not be one.
-		//
-		// Ctrl+F collided twice over: with vanilla's "Toggle Follow Selected
-		// Citizen", which is what raised the key-binding-conflict notification on
-		// every fresh profile (cm-q9x9), and with FindIt itself, whose signature
-		// shortcut it is. Moving it would have resolved the first collision and
-		// left the second.
-		//
-		// Removing it resolves both and costs nothing, because this is a building
-		// menu: it opens from the toolbar menu the player already clicked. A
-		// global hot-key belongs to the mod that answers "where is any asset",
-		// and that mod is FindIt. See cm-wf6g.4 on coexistence.
-
-		// On by default: replacing the build menu is what this mod is for, so an
-		// install that did nothing until the player found this switch would just
-		// look broken. Turning it off restores the vanilla menu wholesale,
-		// including the Zones button's own hierarchy.
+		// On by default: replacing the build menu is what this mod is for. Turning it off
+		// restores the vanilla menu wholesale, including the Zones button's own hierarchy.
 		[SettingsUISection(SETTINGS, BEHAVIOR)]
 		public bool ReplaceVanillaBuildMenu { get; set; } = true;
 
@@ -62,22 +46,12 @@ namespace BetterBuildingMenu
 		public bool AutoWidenSearch { get; set; }
 
 		/// <summary>
-		/// Grid tile width. 88 was sized around a 12rem label; the tiles now
-		/// carry the game's own 16rem one and a 45px thumbnail to match the
-		/// vanilla asset grid, and at 88 a name like "Additional Burial Lot"
-		/// had nowhere to go.
+		/// Grid tile width, in the units the tile label budget also uses: the single number the
+		/// tile and its label both size themselves from.
 		/// </summary>
-		/// <remarks>
-		/// 100 rather than 72 because 100 is what the grid has actually been
-		/// drawing: buildingGrid.module.scss overrode this value with an
-		/// !important width, which left the tile 100rem wide while the label
-		/// budget in tileLabel.ts still sized itself to 72. The override is
-		/// gone and this is now the single number both follow.
-		/// </remarks>
 		[SettingsUISection(SETTINGS, UIUX)]
-		// Step 4, not 8: 100 is the default and 64 + 8k never lands on it, so a
-		// player who nudged the slider once could not get back to the shipped
-		// width.
+		// Step 4, not 8: 64 + 8k never lands on the default, so a player who nudged the
+		// slider could not get back to the shipped width.
 		[SettingsUISlider(min = 64, max = 144, step = 4, scalarMultiplier = 1, unit = Unit.kInteger)]
 		public int BuildingLensTileSize { get; set; } = 100;
 

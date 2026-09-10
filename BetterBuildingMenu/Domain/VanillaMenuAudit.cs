@@ -8,11 +8,9 @@ namespace BetterBuildingMenu.Domain
 	/// One asset the game itself places in one of its own menus.
 	/// </summary>
 	/// <remarks>
-	/// Deliberately plain data rather than <see cref="VanillaMenuPlacement"/>,
-	/// which carries an ECS <c>Entity</c>. The comparison below is about
-	/// identities and names; taking the handle would drag the whole entity world
-	/// into a check that does not need it, and is the reason this only ever
-	/// existed as a log line.
+	/// Deliberately plain data rather than <see cref="VanillaMenuPlacement"/>, which carries an
+	/// ECS <c>Entity</c>. The comparison is about identities and names, and taking the handle
+	/// would drag the whole entity world into a check that does not need it.
 	/// </remarks>
 	public readonly record struct VanillaMenuPlacementFact(
 		int EntityIndex,
@@ -55,13 +53,9 @@ namespace BetterBuildingMenu.Domain
 		/// Three failures, and each is a different kind of wrong.
 		/// </summary>
 		/// <remarks>
-		/// <see cref="VanillaMenuAuditLine.Missing"/> is the one that matters to
-		/// the player: the game offers something under a menu and we do not.
-		/// <see cref="InventedMenus"/> means we filed assets under a menu name
-		/// the game has no menu for, so nothing can ever open it.
-		/// <see cref="VanillaMenuAuditLine.UnexplainedExtras"/> is an asset we
-		/// offer that vanilla does not place and that no recorded divergence
-		/// explains — either a new divergence to write down, or a bug.
+		/// Missing is the one that matters to the player: the game offers something under a menu and
+		/// we do not. InventedMenus means we filed assets under a menu the game has none for.
+		/// UnexplainedExtras is an asset we offer that vanilla does not place and no rule explains.
 		/// </remarks>
 		public bool IsClean =>
 			InventedMenus.Count == 0
@@ -73,11 +67,8 @@ namespace BetterBuildingMenu.Domain
 	/// by the tree fields the index reads off the same UIObject.m_Group.
 	/// </summary>
 	/// <remarks>
-	/// A coverage audit, not a taxonomy one: it says which assets vanilla
-	/// offers under a menu that the indexer failed to hold, and which we
-	/// file under a menu the game has no such menu for. It is the check
-	/// that caught the roads-cost bug. It outlived the section taxonomy it
-	/// was once mistaken for auditing.
+	/// A coverage audit, not a taxonomy one: which assets vanilla offers under a menu that the
+	/// indexer failed to hold, and which we file under a menu the game has no such menu for.
 	/// </remarks>
 	public static class VanillaMenuAudit
 	{
@@ -85,21 +76,9 @@ namespace BetterBuildingMenu.Domain
 		/// The divergences from vanilla's menus that are deliberate, and why.
 		/// </summary>
 		/// <remarks>
-		/// Written down as a RULE rather than a list of names. The six instances
-		/// today are five in Transportation (SubwayYard01/02 Maintenance Hall,
-		/// CargoTrainTerminal01/02 Storage Warehouse, CargoHarbor01 Warehouses)
-		/// and one in Health &amp; Deathcare (Crematorium01 Hearse Garage), but
-		/// pinning those names would fail on the next asset pack that adds an
-		/// upgrade, and would pass while silently offering it.
-		///
-		/// SERVICE UPGRADES. The game marks them with <c>ServiceUpgradeData</c>
-		/// and runs <c>FilterOutUpgrades</c> over every menu before drawing it,
-		/// because an upgrade is placed from its parent building's row and has no
-		/// standalone placement to offer. We match that in the list — see
-		/// <c>GetIndexedBuildings</c> — but we keep them INDEXED, so the parent
-		/// row can still name them through Extensions and the facets can still
-		/// count them. Indexed-but-not-placed is exactly what makes them show up
-		/// here as ours-without-a-vanilla-placement, and it is intended.
+		/// Written down as a RULE rather than a list of names, which the next asset pack would
+		/// outdate. The game marks service upgrades with <c>ServiceUpgradeData</c> and filters them
+		/// out of every menu; the list matches that while keeping them indexed, so they surface here.
 		/// </remarks>
 		public static bool IsExpectedDivergence(IndexedMenuFact fact) => fact.IsServiceUpgrade;
 

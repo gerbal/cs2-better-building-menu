@@ -12,9 +12,8 @@ namespace BetterBuildingMenu.Tests
 	/// </summary>
 	public class BuildingLensFacetRelevanceTests
 	{
-		// The record is positional with fifty parameters, so the fixture is built
-		// by `with` off one minimal instance rather than by another constructor
-		// call per case.
+		// The record is positional and wide, so the fixture is built by `with` off
+		// one minimal instance rather than a constructor call per case.
 		private static readonly BuildingCatalogEntry Base = new(
 			Id: 0,
 			PrefabName: "Base",
@@ -45,21 +44,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void NeitherUnlockModalityIsOfferedAsAFilter()
 		{
-			// Both were, and both were wrong for the rail.
-			//
-			// Development restated the top bar: on Roads its dropdown was 23
-			// items long — Small Roads, Medium Roads, Highways, Intersections —
-			// which is the strip's own tab row, in the menu where the strip is
-			// the navigation. It also collided with Role in the same words:
-			// under Healthcare both offered "Hospital", one meaning what the
-			// building IS and the other which node UNLOCKED it.
-			//
-			// Progression asked a question nobody asks of a build menu. "Only
-			// Grand Village buildings" is not an action; "can I build this now"
-			// is, and Availability answers it.
-			//
-			// Both are still GROUP BY dimensions, which is where an unlock
-			// ordering belongs: it arranges the set instead of hiding it.
+			// Development restates the strip's own tab row and collides with Role in
+			// the same words; progression asks a question nobody asks of a build menu.
+			// Both stay GROUP BY dimensions, which arrange the set instead of hiding it.
 			var entries = new[]
 			{
 				Entry(1, "Hospital", "BaseGame") with
@@ -80,12 +67,9 @@ namespace BetterBuildingMenu.Tests
 				.Select(group => group.Id)
 				.ToArray();
 
-			// stripTab genuinely splits this fixture — two distinct branches, so
-			// the old rail WOULD have offered it and this assertion bites.
-			// milestone cannot be produced at all now that the name it keyed on
-			// is gone from the entry, so that assertion guards the id rather
-			// than the split. Named here because a test that passes for a
-			// different reason than its name says is worse than no test.
+			// stripTab genuinely splits this fixture, so that assertion bites.
+			// milestone cannot be produced at all, so its assertion guards the id
+			// rather than the split.
 			Assert.DoesNotContain("milestone", ids);
 			Assert.DoesNotContain("stripTab", ids);
 			Assert.Contains("buildingType", ids);
@@ -94,20 +78,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void DensityIsNotOfferedAsAFilterEither()
 		{
-			// Same argument as Development above, and it became true the same
-			// way. Since cm-2xvs.16 every type+density tier IS a category with
-			// its own tab and icon in the top bar, so the rail's six-option
-			// Density dropdown — High, Low, Low Rent, Medium, Mixed, Row,
-			// measured live in the Zones menu — restated the tabs sitting
-			// directly above it. Direction from the user: "We also don't need a
-			// density filter in the filter rail for zoning."
-			//
-			// Density remains a Group by dimension and a sort column, which is
-			// where an axis belongs once the strip navigates it.
-			//
-			// Two distinct densities in the fixture on purpose: with one, the
-			// single-value rule would drop the group anyway and this test would
-			// pass without the change.
+			// Every type+density tier is a category with its own tab in the top bar,
+			// so a Density dropdown in the rail restates the tabs above it. Density
+			// stays a group dimension and a sort column.
 			var entries = new[]
 			{
 				Entry(1, "Low Residential", "BaseGame") with
@@ -134,8 +107,6 @@ namespace BetterBuildingMenu.Tests
 		{
 			// Every entry already has it, so selecting it changes nothing. It
 			// still costs a slot in the rail and a decision from the reader.
-			// Measured inside Roads and Networks before this rule: Source
-			// offered only "Base game", DLC only "No DLC required".
 			var state = BuildingCatalogAdapter.BuildFacetState(
 				new[] { Entry(1, "School", "BaseGame"), Entry(2, "Hospital", "BaseGame") },
 				new BuildingCatalogQuery());

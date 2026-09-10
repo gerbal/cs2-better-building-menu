@@ -7,12 +7,9 @@ namespace BetterBuildingMenu.Services
 	/// Everything that decides what a projected snapshot contains.
 	/// </summary>
 	/// <remarks>
-	/// The toolbar selection is spelled out as strings because
-	/// <see cref="VanillaToolbarSelection"/> is a struct holding lists, and
-	/// struct equality compares those by reference — every refresh would miss.
-	/// The index generation is NOT part of the key: it is the cache's own
-	/// clock, and a new generation empties the cache rather than filing a new
-	/// entry beside a stale one.
+	/// The toolbar selection is spelled out as strings because <see cref="VanillaToolbarSelection"/>
+	/// is a struct holding lists, and struct equality compares those by reference. The index
+	/// generation is NOT part of the key: it is the cache's own clock, and a new one empties it.
 	/// </remarks>
 	public readonly record struct SnapshotKey(
 		string Menu,
@@ -42,11 +39,8 @@ namespace BetterBuildingMenu.Services
 	/// Projected snapshots that survive from one refresh to the next.
 	/// </summary>
 	/// <remarks>
-	/// The projection used to be cleared at the top of every refresh, so it
-	/// deduplicated the eight questions one refresh asks and cached nothing
-	/// across a keystroke. This holds each scope's projection until the index
-	/// itself changes (PrefabIndexingSystem.IndexGeneration), which is the
-	/// only event that can make a projected entry wrong.
+	/// Each scope's projection is held until the index itself changes
+	/// (PrefabIndexingSystem.IndexGeneration), the only event that can make a projected entry wrong.
 	/// </remarks>
 	public sealed class SnapshotCache
 	{

@@ -12,32 +12,15 @@ import { getLensAnchor, setLensAnchor } from "domain/lensViewStore";
 import { findScrollContainer, lastCatalogRow } from "./catalogDom";
 
 /**
- * Breathing room under a revealed detail, in CSS pixels.
- *
- * Small on purpose: this is the difference between the last line touching
- * the panel edge and sitting just clear of it, not an attempt to centre
- * anything.
+ * Breathing room under a revealed detail, in CSS pixels. Small on purpose: it
+ * keeps the last line clear of the panel edge, not centred.
  */
 const EXPANDED_ROW_REVEAL_MARGIN = 6;
 
 /**
- * Put the player back where they were, over as many frames as it takes.
- *
- * This is a retry loop rather than a single measurement because Cohtml lays
- * out asynchronously: on the frame the panel remounts, every rect it reports
- * is zero (see `isAnchorMeasurable`), and the window itself is still
- * arriving from C# — the scroll height was measured growing from 1,440 to
- * 3,606 across the same handful of frames. Both settle within a few frames,
- * but neither settles by the time a `useEffect` runs.
- *
- * Each frame does one of three things: wait, because the geometry is not
- * real yet; apply the scroll and check it next frame; or stop, because the
- * row is on screen, the budget ran out, or the anchor is not in this match
- * set.
- *
- * Every element it measures is under `rootRef`: the anchored row is the last
- * `[data-catalog-entry]` for that id beneath the root, and the scroller is
- * found walking up from it and never past the root.
+ * Put the player back where they were, over as many frames as it takes. A
+ * retry loop, not one measurement: Cohtml lays out asynchronously and the
+ * window is still arriving from C#, so neither has settled by the first effect.
  */
 export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: string, itemCount: number): void {
   useEffect(() => {
@@ -51,9 +34,8 @@ export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: stri
     let handle = 0;
     let cancelled = false;
 
-    // Cleared only when the loop finishes, not on sight. Clearing up front
-    // lost the anchor to the first frame's zero-height rects and left the
-    // restore looking like it had run.
+    // Cleared only when the loop finishes: clearing up front would lose the
+    // anchor to the first frame's zero-height rects.
     const finish = () => {
       setLensAnchor(anchorKey, null);
     };
@@ -92,10 +74,9 @@ export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: stri
       }
 
       if (frame++ >= CATALOG_ANCHOR_MAX_FRAMES) {
-        // The row never became reachable — a predicate changed while the
-        // panel was down, or it sits beyond a window that stopped growing.
-        // Top of the list is the honest answer, and it is where we already
-        // are.
+        // The row never became reachable — a predicate changed while the panel
+        // was down, or it sits beyond a window that stopped growing. Top of
+        // the list is the honest answer, and where we already are.
         finish();
         return;
       }
@@ -126,9 +107,8 @@ export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: stri
         measured.geometry.containerHeight,
       );
 
-      // Verify next frame rather than trusting the arithmetic: it was
-      // computed against a list that is still being filled, so the row it
-      // aimed at moves.
+      // Verify next frame rather than trusting the arithmetic: it is computed
+      // against a list still being filled, so the row it aims at moves.
       handle = requestAnimationFrame(step);
     };
 
@@ -145,23 +125,9 @@ export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: stri
 }
 
 /**
- * Bring a freshly expanded row's detail into view.
- *
- * Expanding grows the row downward and the list did not follow. Measured
- * live: a detail's bottom sat at 642 against a viewport whose content ends
- * at 630, with scrollTop still 0 — twelve pixels under the fold and no cue
- * they were there. Reported from play as "some of it was cut off below the
- * scroll", and cm-qnfs made the detail taller, so it will happen more often.
- *
- * A ResizeObserver rather than a rAF, because the box being measured is the
- * one that just changed size: Cohtml lays out a frame late, so a single rAF
- * reads the PRE-expansion height and concludes nothing overflows. The
- * observer fires when the new height actually exists, and disconnects on
- * the first reveal so a later resize — the player dragging the panel — does
- * not yank the list.
- *
- * `detailClassName` is the row-details class from the catalog's stylesheet,
- * passed in so this hook does not import it.
+ * Bring a freshly expanded row's detail into view, since expanding grows the
+ * row downward and the list does not follow. A ResizeObserver, not a rAF:
+ * Cohtml lays out a frame late, so a rAF reads the pre-expansion height.
  */
 export function useRevealExpandedRow(
   rootRef: RefObject<HTMLElement>,

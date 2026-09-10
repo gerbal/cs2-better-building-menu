@@ -65,9 +65,8 @@ export const TableRow = ({
   onPlace,
   onToggleExpanded,
 }: TableRowProps) => {
-  // The same card every other view mode shows. The table had none, so it was
-  // the one mode that could not answer a question its columns had no room
-  // for.
+  // The same card every other view mode shows, so the table can answer a
+  // question its columns have no room for.
   const hoverCard = useHoverCardContext();
   const rawCategoryIdentity = entry.subCategory
     ? `${entry.category} · ${entry.subCategory}`
@@ -80,10 +79,9 @@ export const TableRow = ({
   return (
     <div
       className={styles.row}
-      // How the scroll anchor finds this row again after the panel is
-      // rebuilt. An id rather than a position, because the window can come
-      // back a different length and these rows are not a uniform height — an
-      // expanded one is height: auto.
+      // How the scroll anchor finds this row again after the panel is rebuilt.
+      // An id rather than a position: the window can come back a different
+      // length, and an expanded row is height: auto.
       data-catalog-entry={entry.id}
       data-expanded={expanded ? "true" : undefined}
       data-locked={isEntryLocked(entry) ? "true" : undefined}
@@ -101,16 +99,9 @@ export const TableRow = ({
         <Button
           className={styles.rowSelect}
           variant="icon"
-          // The row places. Every other view mode already behaved this way —
-          // a click in Grid, List and Cards arms the tool — and only the
-          // table disagreed, so a player who learned the verb anywhere else
-          // got something different here (cm-auzd).
-          //
-          // NOT disabled when the entry cannot be placed, deliberately.
-          // onPlace already refuses, and disabling the row would take its
-          // hover card with it — which is exactly where a locked building
-          // explains what it is waiting for. The refusal is named in
-          // aria-label and title instead.
+          // The row places, as a click in every other view does. NOT disabled
+          // when the entry cannot be: onPlace refuses, and disabling takes the
+          // hover card with it — where a locked building says what it awaits.
           onSelect={() => onPlace(entry)}
           aria-label={stateWord ? `${rowPlaceLabel} — ${stateWord}` : rowPlaceLabel}
           data-refused={canPlace(entry) ? undefined : "true"}
@@ -118,14 +109,12 @@ export const TableRow = ({
         >
           <div className={styles.identityCell}>
             {/* The badge sits ON the picture here too, at the same ratio the
-                grid and the rows use — this thumbnail is 68rem, which
-                happens to be vanilla's own image size. */}
+                grid and the rows use. */}
             <div className={styles.thumbnail}>
               {entry.thumbnail && (
                 <img
                   // Named, so the silhouette filter can reach the building
-                  // without also reaching the badge on top of it. The grid
-                  // and the list have always named theirs (.thumb, .icon).
+                  // without also reaching the badge on top of it.
                   className={styles.picture}
                   src={lockedThumbnail(entry, isEntryLocked(entry) || isEntryAlreadyBuilt(entry))}
                   onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
@@ -147,20 +136,10 @@ export const TableRow = ({
             </div>
             <div className={styles.identity}>
               <div className={styles.nameLine}>
-                {/* Elide the MIDDLE, not the tail. CSS can only cut at an
-                    edge, and the tail is what distinguishes one name from its
-                    neighbours — "EU Commercial Gas Station 01 - L1 2x2" and
-                    "EU Commercial High 01 - L1 2x2" differ only after the
-                    twelfth character.
-
-                    NOT stripRedundantNamePrefix, which the tiles use. That
-                    drops leading theme words, safe in the grid because the
-                    grid is scoped to one menu. This table is flat, sortable
-                    and multi-theme: dropping the token turns "EU Commercial
-                    High 01" and "NA Commercial High 01" into the same string,
-                    sorted adjacent — the very collision this removes.
-
-                    title carries the full name either way. */}
+                {/* Elide the MIDDLE, not the tail, which is what tells one
+                    name from its neighbours; and not the tiles' prefix strip,
+                    because this table is flat and multi-theme, so dropping the
+                    theme token collides two names. title has the full name. */}
                 <div className={styles.name} title={entryLabel}>
                   {shortenTileLabel(entryLabel, nameBudget)}
                 </div>
@@ -199,9 +178,9 @@ export const TableRow = ({
             style={columnStyle("level")} data-metric="level"
             title={entry.buildingLevel >= 1 ? "Building level" : "No building level"}
           >
-            {/* Not the raw number. A service building has no level, and
-                printing its 0 beside a Workers dash meaning "not known" said
-                it might have one we failed to read. See cm-ch0z. */}
+            {/* Not the raw number: a service building has no level, and a 0
+                beside a Workers dash meaning "not known" reads as one we
+                failed to read. */}
             {formatBuildingLevel(entry.buildingLevel)}
           </div>
           <div
@@ -209,18 +188,15 @@ export const TableRow = ({
             style={columnStyle("parking")} data-metric="parking"
             title={entry.hasParking ? `${entry.parkingSlots} parking bays (approximate)` : "No parking"}
           >
-            {/* The count, not a "P". A glyph answered "does it park cars",
-                which is rarely the question — between two car parks the
-                answer is yes either way. Still not the no-data dash for zero:
-                a building with no parking is a fact rather than a gap. */}
+            {/* The count, not a glyph: between two car parks "does it park
+                cars" is yes either way. Not the no-data dash for zero, since
+                no parking is a fact rather than a gap. */}
             {entry.hasParking ? entry.parkingSlots : METRIC_NOT_APPLICABLE}
           </div>
         </Button>
       </BuildingHoverCard>
-      {/* Expanding is its own control. It used to be the whole row, which
-          meant the row and every other view mode taught two different verbs
-          for the same gesture. A chevron says "there is more inside this"
-          without claiming the row. */}
+      {/* Expanding is its own control, so the row keeps one verb — Place —
+          and the chevron says "there is more inside this". */}
       <Button
         className={classNames(styles.rowDetailsButton, expanded && styles.rowDetailsButtonOpen)}
         variant="icon"
@@ -229,10 +205,9 @@ export const TableRow = ({
         title={rowInspectLabel}
         data-expanded={expanded ? "true" : undefined}
       >
-        {/* The game's own stroke arrow, masked so it takes the button's colour.
-            It was U+2304/U+2303, arrowhead characters the game's UI face, Noto
-            Sans, does not carry, so every row ended in a missing-glyph box
-            (seen in the 2026-09-09 store screenshot). */}
+        {/* The game's own stroke arrow, masked so it takes the button's
+            colour. Not the U+2304/U+2303 arrowheads: Noto Sans, the game's UI
+            face, does not carry them and draws a missing-glyph box. */}
         <img
           className={styles.rowDetailsGlyph}
           style={{ maskImage: expanded ? "url(Media/Glyphs/StrokeArrowUp.svg)" : "url(Media/Glyphs/StrokeArrowDown.svg)" }}

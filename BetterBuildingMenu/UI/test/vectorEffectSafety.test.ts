@@ -5,17 +5,14 @@ import { readFileSync } from "node:fs";
 import { hasVectorThumbnail } from "../src/domain/buildingLockState.ts";
 
 /**
- * cm-2xvs.24: no compositing effect may be drawn over a vector.
+ * No compositing effect may be drawn over a vector.
  *
- * Cohtml rasterises an SVG at draw time, so an effect over one re-rasterises it
- * per composite and intermittently fails. Measured live with 105 asset packs on
- * locked subway tiles: filtered SVG thumbnails flickered and some silhouettes
- * never drew at all, while filtered PNGs beside them were stable; `opacity` on
- * the same icons made them vanish outright.
+ * Cohtml rasterises an SVG at draw time, so an effect over one re-rasterises
+ * it per composite and intermittently fails: filtered SVG thumbnails flicker
+ * and some never draw, while `opacity` makes the same icons vanish outright.
  *
- * The failure is invisible in code review and invisible to CDP — a screenshot
- * of the UI layer looks perfectly clean, because the DOM never changes. So the
- * rule is pinned here as text, against the stylesheets themselves.
+ * The failure is invisible in code review and to CDP — the DOM never changes
+ * — so the rule is pinned here as text, against the stylesheets themselves.
  */
 const read = (p: string) => readFileSync(new URL(p, import.meta.url), "utf8");
 
@@ -38,11 +35,9 @@ describe("no compositing effect over a vector", () => {
       const blocks = src.split("}");
 
       for (const block of blocks) {
-        // Every compositing effect, not only the silhouette. Policing just
-        // brightness(0%) is how `.tileArmed .thumb`'s drop-shadow shipped
-        // ungated and corrupted Coal Mining's vector thumbnail the moment the
-        // tile was armed: the rule this file states is "no compositing effect
-        // over a vector", and the check enforced one instance of it.
+        // Every compositing effect, not only the silhouette: a drop-shadow
+        // over a vector corrupts it the same way. The rule is "no compositing
+        // effect over a vector", not one named instance of it.
         if (!/brightness\(0%\)|drop-shadow\(/.test(block)) continue;
 
         assert.ok(
@@ -50,16 +45,9 @@ describe("no compositing effect over a vector", () => {
           `${name}: a compositing effect is not gated to rasters:\n${block.trim().slice(0, 240)}`
         );
 
-        // The gate above is necessary and not sufficient, which is how the
-        // table shipped a filter over a vector while passing this test. The
-        // gate asks whether the ENTRY's thumbnail is a raster; it says nothing
-        // about which elements the selector then reaches. `.thumbnail img`
-        // passed the gate and still caught the already-built badge — an SVG,
-        // always — painting it solid black on top of the artwork.
-        //
-        // So the target has to be named. Every selector applying the
-        // silhouette must end in a class, which is the picture's own; an
-        // element at the end of the chain reaches whatever else the box holds.
+        // The gate above is necessary and not sufficient: it asks whether the
+        // ENTRY's thumbnail is a raster, not which elements the selector then
+        // reaches. So every such selector must end in the picture's own class.
         for (const selector of block.split("{")[0].split(",")) {
           const target = selector.trim().split(/\s+/).pop() ?? "";
           if (target === "") continue;

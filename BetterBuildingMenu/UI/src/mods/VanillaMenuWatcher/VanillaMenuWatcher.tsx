@@ -22,22 +22,15 @@ const FindItPanelShown$ = bindValue<boolean>(UPSTREAM_FINDIT_GROUP, UPSTREAM_SHO
 const ESCAPE_KEY_CODE = 27;
 
 /**
- * Routes vanilla toolbar menus into the lens.
- *
- * Renders nothing. It watches the game's own `toolbar.selectedAssetMenu`
- * binding and hands the entity to the backend, which resolves the prefab name
- * and decides whether it has a preset — the UI has only an entity index, and
- * naming the menu needs the prefab system.
- *
- * The backend declines quietly for any menu the index has no name for (a
- * modded toolbar entry added after indexing), so that one keeps the vanilla
- * grid. Every named vanilla menu, Roads and Landscaping included, is routed.
+ * Routes vanilla toolbar menus into the lens; renders nothing. The entity index
+ * goes to the backend because naming a menu needs the prefab system, and a menu
+ * the index cannot name is declined quietly and keeps its vanilla grid.
  */
 export const VanillaMenuWatcher = () => {
   const enabled = useValue(ReplaceVanillaBuildMenu$);
   const selected = useValue(SelectedAssetMenu$);
   // The binding re-emits on unrelated toolbar churn, and emits current state
-  // on subscribe. shouldRouteSelection filters both.
+  // on subscribe. watchAction filters both.
   const state = useRef<WatchState>({ seen: false, last: null });
   // Bumped on every observation so a deferred close can tell whether the
   // toolbar moved on after it was scheduled.
@@ -47,14 +40,9 @@ export const VanillaMenuWatcher = () => {
   const findItPanelShown = useValue(FindItPanelShown$) === true;
 
   /**
-   * Escape takes the lens down.
-   *
-   * Clears the GAME's selection rather than hiding our panel, so the close
-   * branch below does the actual work — one route out, the same one the
-   * toolbar button uses. Capture phase, so a control inside the panel cannot
-   * swallow it first.
-   *
-   * See shouldClearOnEscape for why this asks nothing about the active tool.
+   * Escape takes the lens down by clearing the GAME's selection, so the close
+   * branch below does the work and there is one route out. Capture phase, so a
+   * control inside the panel cannot swallow it. See shouldClearOnEscape.
    */
   useEffect(() => {
     if (!enabled) {
@@ -101,12 +89,9 @@ export const VanillaMenuWatcher = () => {
       return;
     }
 
-    // Switching menus passes through Entity.Null on the way. Measured on the
-    // live toolbar as 16934 -> 0 -> 16928, all three delivered inside one JS
-    // tick, before any microtask ran. Closing the moment a null arrives would
-    // therefore dismiss the lens every time the player moved between menus.
-    // Deferring to a microtask lets the replacement selection land first, and
-    // the generation check turns this into a no-op when it does.
+    // Switching menus passes through Entity.Null within one JS tick, so
+    // closing the moment a null arrives would dismiss the lens on every move
+    // between menus. The microtask lets the replacement land first.
     Promise.resolve().then(() => {
       if (generation.current !== observed) {
         return;

@@ -37,9 +37,9 @@ describe("the control pane", () => {
   });
 
   it("carries grouping, sorting and view mode", () => {
-    // The band that used to sit in the panel was gated on `expanded`, so
-    // every control it carried was missing exactly when the panel was
-    // smallest and needed them most.
+    // A band inside the panel would be gated on `expanded`, so every control
+    // it carried would be missing exactly when the panel is smallest and the
+    // player needs them most.
     const html = render();
 
     assert.equal(count(html, /class="pickerSummary"/), 2, "a group picker and a sort picker");
@@ -85,8 +85,8 @@ describe("the control pane", () => {
   });
 
   it("draws no panel-level controls of its own", () => {
-    // Lock, close and expand were the floating panel's; the game's own slot
-    // mounts and unmounts this now.
+    // The game's own slot mounts and unmounts this, so the pane draws no
+    // panel-level controls of its own.
     const html = render();
 
     for (const gone of [/aria-label="Lock/, /aria-label="Close/, /aria-label="Expand/, /aria-label="Collapse/]) {

@@ -6,9 +6,9 @@ using BetterBuildingMenu.Domain.Enums;
 namespace BetterBuildingMenu.Domain
 {
 	/// <summary>
-	/// The stable, UI-facing projection of a building already present in the
-	/// mod's prefab index. It intentionally contains no ECS handles or mutable prefab
-	/// objects so catalog work can remain separate from indexing and placement.
+	/// The stable, UI-facing projection of a building in the prefab index. It carries no ECS
+	/// handles and no mutable prefab objects, so catalog work stays separate from indexing
+	/// and placement.
 	/// </summary>
 	public sealed record BuildingCatalogEntry(
 		int Id,
@@ -48,10 +48,9 @@ namespace BetterBuildingMenu.Domain
 		string[]? AssetPacks = null,
 		/// <summary>The pack entities this asset belongs to, by index.</summary>
 		/// <remarks>
-		/// Beside the names above rather than replacing them: the names are what
-		/// a card shows, the indices are what vanilla's pack SELECTION is keyed
-		/// on, and the facet has to speak the second to write back to the game's
-		/// own toolbar. Backend only — never serialized.
+		/// Beside the names above rather than replacing them: the names are what a card shows, and
+		/// the indices are what vanilla's pack SELECTION is keyed on, which the facet must speak to
+		/// write back to the game's own toolbar. Backend only — never serialized.
 		/// </remarks>
 		int[]? AssetPackIndices = null,
 		string[]? PlacementFlags = null,
@@ -61,11 +60,6 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>
 		/// Whether the game still has this behind a milestone.
 		/// </summary>
-		/// <remarks>
-		/// Defaulted, and last, so the construction sites that predate it stay
-		/// untouched — inserting it mid-record broke every test that builds an
-		/// entry positionally, which is a lot of noise for one flag.
-		/// </remarks>
 		bool IsLocked = false,
 		/// <summary>Only one of these may exist in a city.</summary>
 		/// <remarks>
@@ -84,25 +78,18 @@ namespace BetterBuildingMenu.Domain
 		/// Icon to draw when <see cref="Thumbnail"/> resolves to nothing.
 		/// </summary>
 		/// <remarks>
-		/// Kept separate rather than folded into Thumbnail with a null-coalesce.
-		/// The failure this exists for is not a null URL, it is a non-null one
-		/// that renders nothing: the game's thumbnail camera has no render for
-		/// spawnable zone buildings, because vanilla never shows them in a menu.
-		/// Only the renderer can tell that happened, so both have to reach it.
-		/// Last and defaulted, for the same reason as IsLocked above.
+		/// Kept separate rather than folded into Thumbnail with a null-coalesce. The failure this
+		/// exists for is not a null URL but a non-null one that renders nothing, which only the
+		/// renderer can detect, so both have to reach it.
 		/// </remarks>
 		string? FallbackThumbnail = null,
 		/// <summary>
 		/// A black copy of <see cref="Thumbnail"/>, when it is a vector.
 		/// </summary>
 		/// <remarks>
-		/// Vanilla silhouettes a locked asset by filtering its thumbnail, and
-		/// that filter is unusable over an SVG in this engine — see
-		/// SilhouetteIcons. So a vector-thumbnailed entry carries a pre-blackened
-		/// copy of its own icon and the locked view swaps to it instead of
-		/// filtering. Empty for raster thumbnails, which keep vanilla's filter,
-		/// and empty when the icon could not be found on disk, in which case the
-		/// tile falls back to its normal artwork.
+		/// Vanilla silhouettes a locked asset by filtering its thumbnail, and that filter is
+		/// unusable over an SVG in this engine — see SilhouetteIcons. Empty for raster thumbnails,
+		/// which keep vanilla's filter, and empty when the icon is not on disk.
 		/// </remarks>
 		string? SilhouetteThumbnail = null,
 		/// <summary>
@@ -115,29 +102,17 @@ namespace BetterBuildingMenu.Domain
 		/// on. Only the requirements are limited to IsLocked.
 		/// </summary>
 		/// <remarks>
-		/// The MILESTONE is a property of the asset — the point the game gates
-		/// it behind — not of how far the player has got, so it is kept whatever
-		/// the current lock state. It used to be zeroed on unlock, which dropped
-		/// an asset out of its own tier at the moment it was earned.
-		///
-		/// Index 0 means UNGATED rather than "the first milestone": the game's
-		/// milestones start at 1, so nothing is ever gated behind 0.
-		///
-		/// Milestone as an index rather than a name: the ~20 names are published
-		/// once in their own table, so a locked asset costs an int instead of a
-		/// string re-resolved on every unlock-triggered re-index. Requirements
-		/// arrive already localized, because they have no shared ordinal the way
-		/// milestones do.
+		/// The MILESTONE is a property of the asset — the point the game gates it behind — so it
+		/// survives unlocking. Index 0 means UNGATED, since the game's milestones start at 1. An
+		/// index, not a name: the names are published once in their own table.
 		/// </remarks>
 		int UnlockMilestone = 0,
 		/// <summary>
 		/// The branch of its service's development tree the asset hangs off.
 		/// </summary>
 		/// <remarks>
-		/// The milestone's counterpart. Milestones gate on city growth and
-		/// development-tree nodes gate on points spent per service, and a
-		/// service menu is almost entirely the second — so this is the axis that
-		/// splits the menus vanilla gives no categories to. See
+		/// The milestone's counterpart: milestones gate on city growth, development-tree nodes on
+		/// points spent per service, and a service menu is almost entirely the second. See
 		/// PrefabIndex.DevTreeBranch for why the branch and not the node.
 		/// </remarks>
 		string? DevTreeBranch = null,
@@ -155,23 +130,17 @@ namespace BetterBuildingMenu.Domain
 		/// </summary>
 		bool CostIsPerDistance = false,
 		/// <summary>
-		/// Approximate parking bays. Zero means none; a boolean could not say
-		/// how many, and made sorting by parking a no-op.
+		/// Approximate parking bays; zero means none. A count rather than a flag, so that sorting
+		/// by parking can actually order rows.
 		/// </summary>
 		int ParkingSlots = 0,
 		/// <summary>
 		/// The game's sort order for <see cref="UiCategory"/> within its menu.
 		/// </summary>
 		/// <remarks>
-		/// Ordering only, never rendered — so it is deliberately absent from
-		/// <see cref="Write"/>. The UI derives its headings from UiCategory and
-		/// preserves the order C# sent, so the rank has no work to do there and
-		/// serialising it would cost a field on all ~3,667 entries to say
-		/// something the wire already implies.
-		///
-		/// Zero, not int.MaxValue, when the category has no UIObject: that is
-		/// vanilla's own default (UIObjectInfo.GetObjects), and it sorts such a
-		/// category into the middle rather than pushing it to the end.
+		/// Ordering only, never rendered, so it is deliberately absent from <see cref="Write"/>: the
+		/// UI preserves the order C# sent. Zero, not int.MaxValue, when the category has no UIObject,
+		/// which is vanilla's own default and sorts such a category into the middle.
 		/// </remarks>
 		int UiCategoryPriority = 0,
 		/// <summary>How far the building's service reaches, in metres.</summary>
@@ -203,41 +172,23 @@ namespace BetterBuildingMenu.Domain
 		/// Vanilla's own order for this asset: UIObject.m_Priority ascending.
 		/// </summary>
 		/// <remarks>
-		/// The whole of the game's sort. UIObjectInfo.CompareTo compares this
-		/// integer and nothing else, and ToolbarUISystem.BindAssets filters the
-		/// category's buffer and calls Sort() on it — there is no name
-		/// tie-break, so equal priorities land wherever the unstable sort puts
-		/// them. It is authored per prefab rather than derived, which is why no
-		/// column already here reproduces it and why the sort that uses it is
-		/// called "Default" rather than being named after a field.
-		///
-		/// Zero for an asset with no UIObject, which is what vanilla reads
-		/// (UIObjectInfo.GetObjects) — NOT PrefabIndex.UIOrder's int.MaxValue
-		/// sentinel, which would sort those last where the game puts them in the
-		/// middle. Same reasoning as UiCategoryPriority's default above.
+		/// The whole of the game's sort: UIObjectInfo.CompareTo compares this integer and nothing
+		/// else, so equal priorities land wherever the unstable sort puts them. Zero for an asset
+		/// with no UIObject, which is what vanilla reads, rather than PrefabIndex.UIOrder's sentinel.
 		/// </remarks>
 		int UIOrder = 0,
 		/// <summary>
 		/// The upgrades that can be attached to this building later.
 		/// </summary>
 		/// <remarks>
-		/// Not <see cref="Extensions"/>, and the distinction is load-bearing.
-		/// Extensions answers "is this asset ITSELF an upgrade" — the indexer tags
-		/// such a prefab with its own name — and the query engine reads a non-empty
-		/// value as vanilla's FilterOutUpgrades does: drop it from every menu. So
-		/// the two can never share a field. Filling Extensions with the upgrades a
-		/// building supports would delete every upgradeable building from the menus.
-		///
-		/// Read from the building prefab's own reverse index the way
-		/// UpgradeMenuUISystem builds its list — see
-		/// PrefabIndexingSystem.GetSupportedUpgrades.
+		/// Not <see cref="Extensions"/>, and the distinction is load-bearing: Extensions says the
+		/// asset IS an upgrade, and the query engine drops such a prefab from every menu, so the two
+		/// can never share a field. Read from the building prefab's own reverse index.
 		/// </remarks>
 		string[]? SupportedUpgrades = null,
-		// The headings this entry files under for the page's grouping, set on
-		// the page by CatalogView from BuildingCatalogGrouping.Labels — the UI
-		// builds its group tree from consecutive runs of these and decides
-		// nothing about what a heading says. LabelId is the game's category id
-		// for a menu-category heading, so the UI can localise that one.
+		// The headings this entry files under, set on the page by CatalogView from
+		// BuildingCatalogGrouping.Labels: the UI builds its group tree from consecutive runs
+		// of these. LabelId is the game's category id, so the UI can localise that one.
 		string[]? GroupPath = null,
 		string? GroupLabelId = null) : IJsonWritable
 	{
@@ -279,7 +230,6 @@ namespace BetterBuildingMenu.Domain
 			writer.Write((int)ZoneType);
 			writer.PropertyName("hasParking");
 			writer.Write(HasParking);
-			// Same for IsUniqueMesh: nothing renders it.
 			writer.PropertyName("isVanilla");
 			writer.Write(IsVanilla);
 			writer.PropertyName("isLocked");
@@ -292,10 +242,8 @@ namespace BetterBuildingMenu.Domain
 			writer.Write(UnlockMilestone);
 			writer.PropertyName("devTreeBranch");
 			writer.Write(DevTreeBranch ?? string.Empty);
-			// The tree column, so the UI can order its headings by unlock the
-			// way the tabs already are. Without it the grouped view formed
-			// groups in encounter order and, sorted by name, drew Coal Power
-			// Plant above the basic buildings it is unlocked long after.
+			// The tree column, so the UI can order its headings by unlock the way the tabs
+			// already are rather than in encounter order.
 			writer.PropertyName("devTreeBranchDepth");
 			writer.Write(DevTreeBranchDepth);
 			WriteStringArray(writer, "unlockRequirements", UnlockRequirements);

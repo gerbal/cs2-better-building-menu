@@ -4,10 +4,9 @@ import { HTMLAttributes, ReactNode } from "react";
 import { Tooltip } from "cs2/ui";
 import { PrefabRequirement } from "cs2/bindings";
 
-// These are specific to the types of components that this mod uses.
-// In the UI developer tools at http://localhost:9444/ go to Sources -> Index.js. Pretty print if it is formatted in a single line.
-// Search for the tsx or scss files. Look at the function referenced and then find the properties for the component you're interested in.
-// As far as I know the types of properties are just guessed.
+// Prop shapes for the vanilla components this mod borrows. The game ships no
+// types for them, so these are read off the shipped bundle in the UI developer
+// tools at http://localhost:9444/ under Sources -> Index.js.
 type PropsToolButton = {
   focusKey?: UniqueFocusKey | null;
   src: string;
@@ -37,9 +36,8 @@ type PropsSection = {
   children: string | JSX.Element | JSX.Element[];
 };
 
-// The game's own segmented control, from game-ui/common/tabs/tabs.tsx. Prop
-// names read off the shipped bundle: the minifier renames locals but keeps
-// destructured property names, so these are the real ones rather than guesses.
+// The game's own segmented control. The minifier renames locals but keeps
+// destructured property names, so these are the real ones.
 type PropsTabBar = {
   className?: string;
   children?: ReactNode;
@@ -47,7 +45,7 @@ type PropsTabBar = {
 
 type PropsTab = {
   // Tab marks itself selected when id === selectedId; there is no `selected`
-  // prop, and passing one silently does nothing.
+  // prop, and passing one does nothing.
   id: string;
   selectedId?: string;
   uiTag?: string;
@@ -70,7 +68,8 @@ type PropsTabNav = {
   onSelect: (id: string) => void;
 };
 
-// This is an array of the different components and sass themes that are appropriate for your UI. You need to figure out which ones you need from the registry.
+// Every vanilla component and stylesheet theme this mod pulls out of the
+// registry, by module path and export name.
 const registryIndex = {
   Section: ["game-ui/game/components/tool-options/mouse-tool-options/mouse-tool-options.tsx", "Section"],
   ToolButton: ["game-ui/game/components/tool-options/tool-button/tool-button.tsx", "ToolButton"],
@@ -87,9 +86,8 @@ const registryIndex = {
   tabsTheme: ["game-ui/common/tabs/tabs.module.scss", "classes"],
 };
 
+// Written by Klyte for his mods' UI and used here unchanged.
 export class VanillaComponentResolver {
-  // As far as I know you should not need to edit this portion here.
-  // This was written by Klyte for his mod's UI but I didn't have to make any edits to it at all.
   public static get instance(): VanillaComponentResolver {
     return this._instance!!;
   }
@@ -110,8 +108,6 @@ export class VanillaComponentResolver {
     return (this.cachedData[entry] = this.registryData.registry.get(entryData[0])!![entryData[1]]);
   }
 
-  // This section defines your components and themes in a way that you can access via the singleton in your components.
-  // Replace the names, props, and strings as needed for your mod.
   public get Section(): (props: PropsSection) => JSX.Element {
     return this.cachedData["Section"] ?? this.updateCache("Section");
   }

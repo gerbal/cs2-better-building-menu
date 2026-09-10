@@ -1,14 +1,7 @@
 /**
  * Zones: their shape, their display order, and the hand-off that places them.
- *
- * The tree this module used to build is gone. Family → density → zones is
- * group-by-family with a density sub-level, which the shared grouped renderer
- * already does, so what remains here is the ordering those headings should read
- * in and the mapping onto a catalog entry.
- *
  * The lens owns the browsing structure but never the placement — selecting a
- * zone hands off to the game's own `toolbar.selectAsset`, keeping the
- * tool-first design's rule that native tools remain the placement authority.
+ * zone hands off to `toolbar.selectAsset`, still the placement authority.
  */
 
 export interface ZoneEntry {
@@ -44,25 +37,16 @@ export interface ZoneEntry {
   footprints?: ZoneFootprint[];
   /** Shapes beyond the display cap, counted rather than dropped. */
   footprintOverflow?: number;
-  /**
-   * Still behind a milestone.
-   *
-   * Zones carried no lock state at all until the indexer started reading it:
-   * high-density residential is locked at the start of a city, and the surface
-   * drew it exactly like an unlocked zone, so the only way to find out was to
-   * try to paint with it.
-   */
+  /** Still behind a milestone — high-density residential starts locked. */
   isLocked?: boolean;
   /** Milestone index it unlocks at; 0 when not locked. */
   unlockMilestone?: number;
   /** Everything standing between the player and this zone. */
   unlockRequirements?: string[];
   /**
-   * The natural resource an extractor area works; absent for a zone.
-   *
-   * Non-empty marks the entry as an AREA rather than a zone — a LotPrefab
-   * carrying ExtractorArea, placed by the Area tool. It is the only thing
-   * separating grain from cotton in the game's data.
+   * The natural resource an extractor area works; absent for a zone. Non-empty
+   * marks the entry as an AREA — a LotPrefab carrying ExtractorArea — and is
+   * the only thing separating grain from cotton in the game's data.
    */
   mapFeature?: string;
 }
@@ -73,16 +57,9 @@ export interface ZoneFootprint {
 }
 
 /**
- * The shapes a zone grows, ready to draw as little grids.
- *
- * A range says roughly what fits; the shapes say exactly which, and a shape is
- * what the player is matching against the block in front of them. Ordering is
- * narrowest first, which is how you scan for the one that fits a gap.
- *
- * Already sorted and capped on the C# side, because the order is a property of
- * the answer rather than of how it is drawn. This guards the shape anyway:
- * these arrive over a binding, and a malformed one should draw nothing rather
- * than a grid with negative rows.
+ * The shapes a zone grows, ready to draw as little grids. Sorted and capped on
+ * the C# side, because the order is a property of the answer; the guard here is
+ * because these arrive over a binding and must not draw negative rows.
  */
 export function getZoneFootprints(zone: ZoneEntry | null | undefined): ZoneFootprint[] {
   return (zone?.footprints ?? []).filter(
@@ -95,29 +72,9 @@ export function getZoneFootprints(zone: ZoneEntry | null | undefined): ZoneFootp
 }
 
 /**
- * What a zone is worth telling the player, in reading order.
- *
- * These are all measured or authored by the game and shown by none of its own
- * UI. Height is the one that changes a decision — "how tall does this grow" is
- * the question a density tier only gestures at — so it leads. The resource a
- * zone trades in matters for commercial and industrial and is absent for
- * residential, so it simply does not appear there.
- *
- * Returned as data rather than as a sentence: the component formats and
- * translates, and these strings are registered in localizableStrings.
- */
-
-/**
- * The footprints a zone actually grows, as "2×2" or "2–4 wide".
- *
- * A zone whose buildings are all 2×2 fills a two-cell strip and nothing wider,
- * which decides how the block gets drawn — and the density tier does not imply
- * it, since a low-density zone and a row-housing zone can both be narrow for
- * different reasons.
- *
- * Depth is only stated when it is fixed. Block depth is usually the constraint
- * in practice, so a depth range is noise next to the width, which is the number
- * that changes what the player draws.
+ * The footprints a zone actually grows, as "2×2" or "2–4 wide". The density
+ * tier does not imply the width, and width is what decides how a block gets
+ * drawn; depth is stated only when fixed, since the block usually constrains it.
  */
 export function formatZoneLots(zone: ZoneEntry | null | undefined): string | null {
   const minWidth = zone?.minLotWidth ?? 0;
@@ -134,24 +91,6 @@ export function formatZoneLots(zone: ZoneEntry | null | undefined): string | nul
     : `${width} wide`;
 }
 
-/*
- * getZoneFacts lived here and had no caller for its whole life.
- *
- * It decided which zone figures were worth stating and returned them as
- * {kind, value} pairs — against a ZoneEntry shape nothing ever produced. The
- * card read an `entry.facts` string array that no code wrote, ZoneCatalogEntry
- * held some of the data and was never published, and PrefabIndex carried no
- * zone field at all, so a zone tooltip drew its name and description and
- * stopped. Two attempted fixes missed the real cause, which was the category
- * guard at the top of PopulateAnalyticalData.
- *
- * Every figure it covered now travels as a service fact, numeric or worded,
- * and is drawn by the same tooltip lines every other asset uses. Removed
- * rather than left as a second thing that looks like the delivery path.
- */
-
-
-
 /** Family order as the vanilla Zones menu presents its category tabs. */
 export const ZONING_FAMILY_ORDER = [
   "ZoneResidential",
@@ -162,12 +101,9 @@ export const ZONING_FAMILY_ORDER = [
 ] as const;
 
 /**
- * Density order low to high.
- *
- * Alphabetical would read High, Low, Medium, Row, which is meaningless for what
- * is a scale. "Row" sits between Low and Medium as it does in the game, and
- * "Any" — industrial and extractor zones, which have no tier — goes last so the
- * real tiers still read as a progression.
+ * Density order low to high, because alphabetical is meaningless for a scale.
+ * "Row" sits between Low and Medium as it does in the game, and "Any" — the
+ * tierless zones — goes last so the real tiers read as a progression.
  */
 const DENSITY_ORDER = ["Low", "Row", "Medium", "High", "Signature", "Any"];
 
@@ -179,13 +115,8 @@ function densityRank(density: string): number {
 
 /**
  * Orders zones the way their headings should read: family, then density tier,
- * then name.
- *
- * This ordering used to live inside buildZoningHierarchy, which built the tree
- * itself. The shared grouped renderer builds the tree now and deliberately
- * preserves input order — it trusts the query to have ordered things — so the
- * ordering has to happen before it, or the density headings come out in
- * whatever order the zone catalog was published in.
+ * then name. The shared grouped renderer preserves input order — it trusts the
+ * query — so this has to happen before it or the headings come out arbitrary.
  */
 export function sortZonesForDisplay(zones: readonly ZoneEntry[] | null | undefined): ZoneEntry[] {
   return [...(zones ?? [])].sort((left, right) => {
@@ -208,21 +139,9 @@ function familyRank(family: string): number {
 }
 
 /**
- * A zone, shaped as a catalog entry so the shared grouped renderer can draw it.
- *
- * The zoning view used to hand-write family → density → tiles, which is
- * group-by-family with a density sub-level rendered as a list — the same thing
- * the catalog does, with its own markup, its own spacing, no view modes and no
- * sort. Mapping the entry rather than duplicating the renderer is what lets
- * that divergence be deleted.
- *
- * Family becomes the category and density the subcategory, so grouping by
- * "category" reproduces the old two-level hierarchy exactly.
- *
- * The metric fields are deliberately null. A zone has no construction cost, no
- * capacity and no lot — it is painted, not placed — and inventing zeroes would
- * put "0" on every card where the honest answer is that the question does not
- * apply.
+ * A zone, shaped as a catalog entry so the shared grouped renderer draws it:
+ * family becomes the category and density the subcategory. The metric fields
+ * are null because a zone is painted, not placed, and a "0" would be a lie.
  */
 export function zoneAsCatalogEntry(zone: ZoneEntry): Record<string, unknown> {
   return {
@@ -231,9 +150,8 @@ export function zoneAsCatalogEntry(zone: ZoneEntry): Record<string, unknown> {
     prefabName: zone.prefabName,
     name: zone.name,
     // Carried through so the shared tile, list row and hover card give a locked
-    // zone the same treatment they give a locked building — a disabled tile, a
-    // silhouetted thumbnail, a Requires line — instead of each surface needing
-    // its own idea of what locked looks like.
+    // zone the same treatment they give a locked building, instead of each
+    // surface needing its own idea of what locked looks like.
     isLocked: zone.isLocked === true,
     mapFeature: zone.mapFeature ?? "",
     unlockMilestone: zone.unlockMilestone ?? 0,

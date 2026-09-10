@@ -15,9 +15,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void SuppressesADifferentMenuArrivingInTheSameFrame()
 		{
-			// Observed live: clicking Garbage emits Garbage, then the game
-			// re-asserts the armed tool's menu (Education) in the same tick.
-			// Routing that echo reverts the selection the player just made.
+			// The game re-asserts the armed tool's menu in the same tick as the
+			// click; routing that echo reverts the player's own selection.
 			Assert.True(MenuEchoGuard.IsEcho(appliedFrame: 500, appliedIndex: 17101, currentFrame: 500, incomingIndex: 17098));
 		}
 

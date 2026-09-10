@@ -5,16 +5,9 @@ namespace BetterBuildingMenu.Domain
 	/// categories of its own.
 	/// </summary>
 	/// <remarks>
-	/// Strings rather than an enum because they cross the UI binding, where an
-	/// enum would arrive as a number and the React side would need a second
-	/// table to read it back.
-	///
-	/// Role is deliberately not here. BuildingType describes a simulation
-	/// capability rather than the player's category, and the two come apart in
-	/// ways that would mislead: the Water Treatment Plant's role is
-	/// WaterPumpingStation, the Incineration Plant's is PowerPlant in a garbage
-	/// menu, and pipes and lot tools have none at all. It stays a filter facet,
-	/// where the player opts into it knowingly.
+	/// Strings rather than an enum because they cross the UI binding, where an enum
+	/// would arrive as a number. Role is deliberately absent: BuildingType is a
+	/// simulation capability, not the player's category, so it stays a filter facet.
 	/// </remarks>
 	public static class StripAxes
 	{
@@ -37,16 +30,9 @@ namespace BetterBuildingMenu.Domain
 		/// A density tab's match key: its family and its tier together.
 		/// </summary>
 		/// <remarks>
-		/// A development branch is unique across its menu, so its tab id can be
-		/// both what it matches and what it says. A tier cannot — "Low Density"
-		/// is a tab under Residential, Commercial AND Office — and clicking a
-		/// strip tab clears the category by design, so a bare tier would narrow
-		/// to all three families at once while the count on the tab promised
-		/// one.
-		///
-		/// The separator is a unit separator rather than a printable string,
-		/// because zone category ids and tier labels are both free text and any
-		/// visible delimiter is one asset name away from a collision.
+		/// A tier alone cannot be both the match key and the label — "Low Density" is a
+		/// tab under three families, and a tab click clears the category — so the family
+		/// rides along. The separator is unprintable: a visible one could collide.
 		/// </remarks>
 		public static class DensityTab
 		{

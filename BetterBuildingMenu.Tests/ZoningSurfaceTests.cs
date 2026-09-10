@@ -26,10 +26,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void SplitsOfficeOutOfIndustrialByItsZoneFlag()
 		{
-			// Office zones are INDUSTRIAL-area zones carrying ZoneFlags.Office —
-			// logged from a running city as "area=Industrial flags=Office".
-			// Assuming they were commercial-area put every one of them under
-			// Commercial and lost the Office family entirely.
+			// Office zones are INDUSTRIAL-area zones carrying ZoneFlags.Office, not
+			// commercial-area zones.
 			Assert.Equal(
 				ZoningFamilies.Office,
 				ZoningSurfaceCatalog.ResolveFamily(AreaType.Industrial, ZoneFlags.Office));
@@ -52,15 +50,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void PrefersTheGameSOwnCategoryGroupOverInference()
 		{
-			// The vanilla Zones menu's tabs are UIAssetCategoryPrefabs, and a
-			// zone's UIObject.m_Group names the tab it appears under. That is
-			// the game's own answer, and it is the only source that separates
-			// Office from Commercial: ZoneData.m_AreaType has no Office value,
-			// and the ZoneFlags.Office bit did not distinguish them in a real
-			// city.
-			// The UI group names are plural — "ZonesOffice", not "ZoneOffice" —
-			// which is why matching them against the family ids directly never
-			// fired. Logged from a running city.
+			// A zone's UIObject.m_Group names the vanilla Zones tab it appears under:
+			// the game's own answer, and the only source separating Office from
+			// Commercial. The group names are plural — "ZonesOffice", not "ZoneOffice".
 			Assert.Equal(ZoningFamilies.Office, ZoningSurfaceCatalog.ResolveFamilyFromGroup("ZonesOffice"));
 			Assert.Equal(ZoningFamilies.Residential, ZoningSurfaceCatalog.ResolveFamilyFromGroup("ZonesResidential"));
 			Assert.Equal(ZoningFamilies.Commercial, ZoningSurfaceCatalog.ResolveFamilyFromGroup("ZonesCommercial"));
@@ -88,9 +80,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void OffersTheFiveFamiliesTheVanillaZonesMenuIsBuiltFrom()
 		{
-			// Read off the running toolbar rather than assumed: the Zones menu's
-			// category tabs are ZoneResidential, ZoneCommercial, ZoneIndustrial,
-			// ZoneOffice and ZoneExtractors.
+			// The Zones menu's category tabs: ZoneResidential, ZoneCommercial,
+			// ZoneIndustrial, ZoneOffice and ZoneExtractors.
 			Assert.Equal(
 				new[]
 				{
@@ -107,9 +98,8 @@ namespace BetterBuildingMenu.Tests
 		public void CannotNameExtractorsFromANameBecauseNoExtractorIsAZone()
 		{
 			// An extractor area is a LotPrefab carrying ExtractorAreaData with a
-			// MapFeature; it has no ZoneData, and the zone index queries
-			// ZoneData. The stem that used to match this could only ever have
-			// produced a family with nothing behind it.
+			// MapFeature; it has no ZoneData, and the zone index queries ZoneData, so
+			// a name that matched would name a family with nothing behind it.
 			Assert.Null(ZoningSurfaceCatalog.ResolveFamily("ZoneExtractorFarming"));
 		}
 
@@ -136,13 +126,6 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(expected, ZoningSurfaceCatalog.ResolveFamily(prefabName));
 		}
 
-		// The two density tests that lived here are gone with the function they
-		// covered. One of them asserted the BUG: it pinned
-		// "ZoneResidentialLowRent" as Low density, which is what the stem table
-		// produced and what made low-rent zones unreachable as their own tier.
-		// The rules now live in ZoneDensityClassifierTests, against real values
-		// measured from every shipped zone.
-
 		[Fact]
 		public void ReturnsNoFamilyForSomethingThatIsNotAZone()
 		{
@@ -156,8 +139,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void DescribesEachFamilyForTheUiWithoutEntityIds()
 		{
-			// A flat, serializable contract:
-			// and free of runtime entity ids.
+			// A flat, serializable contract, free of runtime entity ids.
 			var residential = ZoningSurfaceCatalog.Describe(ZoningFamilies.Residential);
 
 			Assert.NotNull(residential);

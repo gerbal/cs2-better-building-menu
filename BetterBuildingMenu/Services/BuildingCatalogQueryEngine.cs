@@ -8,9 +8,9 @@ using System.Linq;
 namespace BetterBuildingMenu.Services
 {
 	/// <summary>
-	/// Applies the successor's bounded building-catalog query to already
-	/// projected entries. Keeping this operation independent from ECS and the
-	/// prefab index makes the UI contract deterministic and unit-testable.
+	/// Applies the bounded building-catalog query to already projected entries.
+	/// Independent of ECS and the prefab index, so the UI contract is deterministic
+	/// and unit-testable.
 	/// </summary>
 	public static class BuildingCatalogQueryEngine
 	{
@@ -19,21 +19,9 @@ namespace BetterBuildingMenu.Services
 		/// options are selected.
 		/// </summary>
 		/// <remarks>
-		/// This is what the facet lists are counted over. Two things it must
-		/// get right, and the old code got neither.
-		///
-		/// It has to be SCOPED. Facets were built straight from
-		/// GetIndexedBuildings, whose menu argument widens the candidate set
-		/// rather than narrowing it — every building, plus the named menu's
-		/// networks — so inside Roads and Networks the Role dimension offered
-		/// Deathcare Facility and Fire Station. Real options, for a query that
-		/// could only ever return nothing here.
-		///
-		/// It has to ignore the FACET selections, which is what Clear is for.
-		/// Counting them in would let the first pick empty every other
-		/// dimension: choose Locked and the only Theme left is whichever the
-		/// locked assets happen to have, so the control that would widen the
-		/// result again has already disappeared.
+		/// What the facet lists are counted over, so it must be SCOPED — an unscoped candidate
+		/// set offers options a scoped query can never return — and must ignore the facet
+		/// selections, or the first pick empties every other dimension.
 		/// </remarks>
 		public static IEnumerable<BuildingCatalogEntry> InScope(
 			IEnumerable<BuildingCatalogEntry> entries,
@@ -69,13 +57,9 @@ namespace BetterBuildingMenu.Services
 			}
 
 			var limit = query.EffectiveLimit;
-			// Reframed before ordering, because the Roads menu's extra networks are
-			// placed behind its own categories by a rewritten priority, and ordering
-			// a page that has already been cut would only relabel them in place.
-			// ONE pass. Count, Order and ReorderableSortColumns all read this,
-			// and as a lazy Where each of them re-ran Matches over the whole
-			// input — three passes per page, measured on the [LENS-REFRESH]
-			// breakdown before this array existed.
+			// Reframed before ordering, because the Roads menu's extra networks are placed
+			// behind its own categories by a rewritten priority. Materialised once: Count,
+			// Order and ReorderableSortColumns all read this array.
 			var matching = entries
 				.Where(entry => Matches(entry, query))
 				.Select(entry => NetworkMenuExtension.Reframe(entry, query.UiMenu))
@@ -86,24 +70,14 @@ namespace BetterBuildingMenu.Services
 				.Skip(offset)
 				.Take(limit)
 				.ToArray();
-			// Measured from what was actually taken, not from the limit: the last
-			// window is short, and the offset here is the clamped one rather
-			// than the one that was asked for.
-			// Both halves, because the window has a ceiling as well as an end.
-			// Reporting only "matches remain" left the Load more control lit at
-			// MaxLimit, where growing the window is a guaranteed no-op — a button
-			// that stays lit and does nothing is worse than no button, which is the
-			// argument BuildingCatalogPage makes about this very flag. The count
-			// beside it still says "Showing 2,000 of 3,677", so the remaining
-			// matches are named rather than hidden; reaching them is what search is
-			// for.
+			// Both halves, because the window has a ceiling as well as an end. At MaxLimit
+			// growing it is a guaranteed no-op, and a Load more button that stays lit and does
+			// nothing is worse than none; the count beside it still names what is left.
 			var hasMore = offset + items.Length < totalCount
 				&& limit < BuildingCatalogQuery.MaxLimit;
 
-			// Over `matching`, not over `items`: the question is whether the sort
-			// can order these RESULTS, and a page that happens to tie says
-			// nothing about the rest of them. Same enumerable the count and the
-			// ordering already walked.
+			// Over `matching`, not over `items`: the question is whether the sort can order
+			// these RESULTS, and a page that happens to tie says nothing about the rest.
 			var usableColumns = ReorderableSortColumns(
 				matching, query, BuildingCatalogQuery.OfferedSortColumns);
 
@@ -122,14 +96,9 @@ namespace BetterBuildingMenu.Services
 		/// beside the other bound normalizers.
 		/// </summary>
 		/// <remarks>
-		/// Narrowing a query (typing a search, picking a facet) can leave the
-		/// offset past the new total. Skipping every match would return an empty
-		/// page with a non-zero total, which reads on screen as "no buildings
-		/// match" above a footer describing rows that are not there. Clamping to
-		/// the last populated page keeps the player near their position instead
-		/// of resetting them to page 1. The requested offset itself is not
-		/// snapped to a page boundary: the pager only ever moves in whole pages,
-		/// and callers may legitimately ask for an arbitrary window.
+		/// Narrowing a query can leave the offset past the new total, which draws an empty page
+		/// under a non-zero total. Clamping to the last populated page keeps the player near
+		/// their position; the offset itself is not snapped to a page boundary.
 		/// </remarks>
 		private static int ClampOffset(int offset, int totalCount, int limit)
 		{
@@ -159,10 +128,8 @@ namespace BetterBuildingMenu.Services
 				return false;
 			}
 
-			// The education menu's tier tab. Equality, matching the game:
-			// CitizenPathfindSetup tests m_EducationLevel == value rather than a
-			// range, because a university grants its own tier and not the ones
-			// below it.
+			// The education menu's tier tab. Equality, matching the game: a university
+			// grants its own tier and not the ones below it.
 			if (query.SchoolTier >= 0 && entry.EducationLevel != query.SchoolTier)
 			{
 				return false;
@@ -179,16 +146,12 @@ namespace BetterBuildingMenu.Services
 			if (!MatchesAny(AvailabilityOf(entry), query.Availability)
 				|| !MatchesAny(entry.BuildingType, query.BuildingTypes)
 				|| !MatchesAny(entry.Provenance, query.Provenance)
-				// DlcIds is deliberately absent. It is the Content facet's third
-				// mechanism and is applied in the adapter's ContentVisible, so
-				// that it UNIONS with the pack and base-game halves rather than
-				// intersecting them.
+				// DlcIds is deliberately absent: it is the Content facet's third mechanism,
+				// applied in the adapter's ContentVisible so that it UNIONS with the pack and
+				// base-game halves rather than intersecting them.
 				|| !MatchesAny(entry.Theme, query.Themes)
-				// Placement used to require every chosen flag while every other
-				// facet took any. The rail draws them identically, so the same
-				// gesture meant two different things depending on which row it
-				// landed in, and nothing on screen said so. "Road or water"
-				// is also the question a player actually asks.
+				// Any, not all, the way every other facet reads: the rail draws them
+				// identically, and "road or water" is the question a player asks.
 				|| !MatchesAny(entry.PlacementFlags, query.PlacementFlags)
 				|| !MatchesAny(entry.Extensions, query.Extensions)
 				|| !MatchesZoneType(entry.ZoneType, query.ZoneTypes))
@@ -214,9 +177,7 @@ namespace BetterBuildingMenu.Services
 		/// The value an entry answers with on the fallback strip's axis.
 		/// </summary>
 		/// <remarks>
-		/// One place, so the predicate and the counts cannot read the axis
-		/// differently — the same mistake the category counts made against
-		/// EffectiveCategory.
+		/// One place, so the predicate and the counts cannot read the axis differently.
 		/// </remarks>
 		public static string StripValue(BuildingCatalogEntry entry, string? axis) => axis?.Trim() switch
 		{
@@ -229,17 +190,9 @@ namespace BetterBuildingMenu.Services
 		/// Whether the entry answers to a strip tab, on whichever axis it names.
 		/// </summary>
 		/// <remarks>
-		/// The row can MIX axes. Water draws its buildings as development nodes
-		/// and its pipes as one Networks tab, the same way education draws four
-		/// school levels beside the Research category — so a tab's axis is a
-		/// property of the tab, not of the row.
-		///
-		/// Matched by value across the candidate axes rather than carried as an
-		/// axis per tab, because the value spaces do not overlap: node names are
-		/// "Basic", "Gas Power Plant"; asset types are "Buildings" and
-		/// "Networks". A mod naming a development node "Networks" would collide,
-		/// which is a trade worth taking over threading an axis through every
-		/// tab, binding and trigger.
+		/// The row can MIX axes — Water draws its buildings as development nodes and its pipes
+		/// as one Networks tab — so an axis belongs to a tab, not to the row. Matched by value
+		/// rather than by an axis threaded through every tab, since the value spaces do not overlap.
 		/// </remarks>
 		public static bool StripMatches(BuildingCatalogEntry entry, string tab) =>
 			string.Equals(entry.DevTreeBranch, tab, StringComparison.OrdinalIgnoreCase)
@@ -280,10 +233,9 @@ namespace BetterBuildingMenu.Services
 
 		/// <summary>Which of the three availability states the entry is in.</summary>
 		/// <remarks>
-		/// Ordered so the partition holds: locked wins over already-built,
-		/// because a locked unique cannot have been built. Already-built wins
-		/// over unlocked, because that is the state that answers "can I place
-		/// this" — see BuildingCatalogFacetSelection.Availability.
+		/// Ordered so the partition holds: locked wins over already-built, because a locked
+		/// unique cannot have been built, and already-built wins over unlocked, because that is
+		/// the state answering "can I place this".
 		/// </remarks>
 		public static string AvailabilityOf(BuildingCatalogEntry entry) =>
 			entry.IsLocked
@@ -296,40 +248,26 @@ namespace BetterBuildingMenu.Services
 		/// The only scope there is: the game's own menu placement.
 		/// </summary>
 		/// <remarks>
-		/// Vanilla's menu is set membership, not a predicate: an asset is in a
-		/// category iff UIObjectData.m_Group is that category. Asking the same
-		/// question is what makes our Healthcare view agree with the game's.
-		/// An asset that is in no menu at all fails a menu constraint, which is
-		/// also vanilla's behaviour — it only ever lists group members.
-		///
-		/// There used to be a second predicate here, over a section taxonomy
-		/// rebuilt from upstream FindIt's category enums, applied whenever no
-		/// menu was named. Layering it on the tree had cost Roads 35 of its 157
-		/// members and Transportation 23 of 53 (members that indexed into a
-		/// section the preset did not name), so the tree already replaced it
-		/// when scoped; now the tree is all there is, scoped or not.
+		/// Vanilla's menu is set membership, not a predicate: an asset is in a category iff
+		/// UIObjectData.m_Group is that category, and asking the same question is what makes this
+		/// view agree with the game's. An asset in no menu at all fails a menu constraint.
 		/// </remarks>
 		private static bool MatchesVanillaMenuTree(BuildingCatalogEntry entry, BuildingCatalogQuery query)
 		{
 			string menu = query.UiMenu?.Trim() ?? string.Empty;
 			string category = query.UiCategory?.Trim() ?? string.Empty;
 
-			// Unscoped queries are not looking at a vanilla menu, so none of the
-			// menu's rules apply to them — including the upgrade exclusion below,
-			// which used to sit outside this guard and therefore ran on EVERY
-			// query. That contradicted the comment right next to it and deleted
-			// every upgrade-bearing asset from the whole catalog: the Extensions
-			// facet could select a value and then match nothing, which is what
-			// Query_ExtensionFacetMatchesStableExtensionIdentity caught.
+			// Unscoped queries are not looking at a vanilla menu, so none of the menu's rules
+			// apply to them — including the upgrade exclusion below, which run unscoped would
+			// drop every upgrade-bearing asset from the whole catalog.
 			if (string.IsNullOrEmpty(menu) && string.IsNullOrEmpty(category))
 			{
 				return true;
 			}
 
-			// The Roads menu is the one place the lens shows more than the game
-			// does: every network belongs there, not only the ones vanilla files
-			// under Roads. See NetworkMenuExtension for why, and for the fact that
-			// nothing is taken out of the menus that already hold them.
+			// The Roads menu is the one place the lens shows more than the game does: every
+			// network belongs there, not only the ones vanilla files under Roads. See
+			// NetworkMenuExtension, which takes nothing out of the menus that hold them.
 			var extraNetwork = NetworkMenuExtension.IsExtraNetwork(entry.Category, entry.UiMenu, menu, entry.SubCategory);
 
 			if (!extraNetwork
@@ -340,19 +278,16 @@ namespace BetterBuildingMenu.Services
 			}
 
 			// Vanilla drops service upgrades from every menu unconditionally
-			// (ToolbarUISystem.FilterOutUpgrades). They are things you attach to a
-			// building, not things you build, so a build list that offers them is
-			// offering something you cannot place. Scoped to a menu constraint:
-			// asking for "everything" should still find them.
+			// (ToolbarUISystem.FilterOutUpgrades): they attach to a building rather than being
+			// placed. Scoped to a menu constraint, so asking for everything still finds them.
 			if (entry.Extensions is { Length: > 0 })
 			{
 				return false;
 			}
 
-			// Against the category this entry answers to IN THIS MENU. An extra
-			// network's own UiCategory names where the game keeps it — a seaway's is
-			// TransportationShip — and comparing a Roads tab against that would make
-			// every extra tab select nothing.
+			// Against the category this entry answers to IN THIS MENU. An extra network's own
+			// UiCategory names where the game keeps it, so comparing a Roads tab against that
+			// would make every extra tab select nothing.
 			return string.IsNullOrEmpty(category)
 				|| string.Equals(
 					NetworkMenuExtension.EffectiveCategory(entry, menu),
@@ -380,10 +315,8 @@ namespace BetterBuildingMenu.Services
 		}
 
 		/// <summary>
-		/// Zone density is an enum on the entry rather than a string, so it is
-		/// matched by name. An unrecognised name matches nothing rather than
-		/// everything: a broken preset should look broken, not like a filter
-		/// that happens to be wide open.
+		/// Matches zone density by enum name. An unrecognised name matches nothing rather
+		/// than everything: a broken preset should look broken, not wide open.
 		/// </summary>
 		private static bool MatchesZoneType(ZoneTypeFilter value, IReadOnlyList<string>? selected)
 		{
@@ -433,13 +366,9 @@ namespace BetterBuildingMenu.Services
 			// cuts cleanly. Without this a group splits across a page boundary
 			// and its heading describes something other than what follows it.
 			IOrderedEnumerable<BuildingCatalogEntry> seed = SeedByGroup(entries, query);
-
-			// Relevance decides within a group while a search is active; the
-			// chosen sort breaks ties. Every view reads this order now — the
-			// grid used to re-rank the page itself and disagree with the table.
-			// Shortest name next: against a real catalog "clinic" ties Medical
-			// Clinic with Additional Clinic Center, and the plain one is nearly
-			// always what was meant — extra words mean a variant.
+			// Relevance decides within a group while a search is active; the chosen sort breaks
+			// ties. Shortest name next: "clinic" ties Medical Clinic with Additional Clinic
+			// Center, and the plain one is nearly always what was meant.
 			if (!string.IsNullOrWhiteSpace(query.SearchText))
 			{
 				seed = seed
@@ -449,11 +378,9 @@ namespace BetterBuildingMenu.Services
 
 			IOrderedEnumerable<BuildingCatalogEntry> ordered = query.EffectiveSortColumn.ToLowerInvariant() switch
 			{
-				// The game's own order, and the only sort here that is not a
-				// field the player can see. Name second, so two assets vanilla
-				// gave the same priority do not swap under the cursor — vanilla
-				// itself leaves that to an unstable sort, which is fine for a
-				// menu drawn once and not for a list that re-renders.
+				// The game's own order, and the only sort here that is not a field the
+				// player can see. Name second, so two assets vanilla gave the same
+				// priority do not swap under the cursor.
 				"default" => query.Descending
 					? seed.ThenByDescending(x => x.UIOrder).ThenByDescending(x => x.Name, StringComparer.OrdinalIgnoreCase)
 					: seed.ThenBy(x => x.UIOrder).ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase),
@@ -473,10 +400,8 @@ namespace BetterBuildingMenu.Services
 					? seed.ThenByDescending(x => x.BuildingLevel)
 					: seed.ThenBy(x => x.BuildingLevel),
 				"hasparking" => query.Descending
-					// By count, not by the boolean. Sorting on a flag put every
-					// entry in one of two buckets and left the order inside them
-					// untouched, so on any set that agreed — all of Water &
-					// Sewage, for instance — the sort visibly did nothing.
+					// By count, not by the boolean: sorting on a flag leaves the order
+					// inside each of the two buckets untouched.
 					? seed.ThenByDescending(x => x.ParkingSlots)
 					: seed.ThenBy(x => x.ParkingSlots),
 				"zonetype" => query.Descending
@@ -506,17 +431,10 @@ namespace BetterBuildingMenu.Services
 		/// The value a column orders by, or null when the entry has none.
 		/// </summary>
 		/// <remarks>
-		/// Deliberately NOT the selector <see cref="Order"/> uses. That one is
-		/// strongly typed per column so each field keeps its own comparer — a
-		/// string ordinal-ignore-case here, a nullable double there — and
-		/// collapsing them to <see cref="object"/> would change the ordering
-		/// itself. This answers a weaker question, "are these two entries tied
-		/// on this column", which equality alone settles.
-		///
-		/// The two switches read the same fields from two places, which is
-		/// exactly how two views of one fact drift apart. SortReorderabilityTests
-		/// reads Order's own case labels out of the source and requires this to
-		/// answer for every one of them.
+		/// Deliberately NOT the selector <see cref="Order"/> uses: that one is typed per column
+		/// so each field keeps its own comparer. This answers the weaker question "are these two
+		/// entries tied on this column", which equality alone settles.
+		/// </remarks>
 		/// </remarks>
 		public static object? SortValueOf(BuildingCatalogEntry entry, string? column) =>
 			(column ?? string.Empty).ToLowerInvariant() switch
@@ -547,17 +465,9 @@ namespace BetterBuildingMenu.Services
 		/// Which of the offered sort columns could actually move a row.
 		/// </summary>
 		/// <remarks>
-		/// cm-ddw3, and the reason the picker can drop the rest: a control that
-		/// responds while the list does not is the signature of a broken one.
-		/// The same argument groupDimensionsFor already makes for grouping —
-		/// "a dimension that puts the whole menu in ONE bucket is a control that
-		/// cannot act".
-		///
-		/// ONE pass over the entries for all columns, not one pass each. The
-		/// refresh this runs inside was just cut from three per menu click to
-		/// one, and twenty full scans of a 10,528-entry set would hand that back.
-		/// Per column it keeps the first value seen in each group and stops
-		/// caring once a second, different one turns up.
+		/// A control that responds while the list does not is the signature of a broken one.
+		/// ONE pass for all columns: per column it keeps the first value seen in each group and
+		/// stops caring once a second, different one turns up.
 		/// </remarks>
 		public static IReadOnlyList<string> ReorderableSortColumns(
 			IEnumerable<BuildingCatalogEntry> entries,

@@ -23,8 +23,7 @@ const row = (over: Partial<TableRowProps> = {}) =>
 
 describe("a table row", () => {
   it("makes the row itself the Place control", () => {
-    // A click in Grid, List and Cards arms the tool; the table used to be the
-    // one mode that disagreed (cm-auzd).
+    // A click in Grid, List and Cards arms the tool, and the table matches it.
     const html = row();
 
     assert.match(html, /<button class="rowSelect"[^>]*aria-label="Place: Clinic"/);
@@ -61,7 +60,7 @@ describe("a table row", () => {
 
   it("renders the details, with the upgrades the building supports, when expanded", () => {
     // supportedUpgrades, never extensions: extensions is a self-tag and is
-    // empty for every asset a menu can show (cm-2xvs.19).
+    // empty for every asset a menu can show.
     const html = row({ expanded: true, entry: entry(7, { name: "Clinic", supportedUpgrades: ["Extra Wing"], extensions: ["Clinic"] }) });
 
     assert.match(html, /rowDetailsButtonOpen/);

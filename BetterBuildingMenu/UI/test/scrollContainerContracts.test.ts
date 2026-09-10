@@ -4,16 +4,10 @@ import { fileURLToPath } from "node:url";
 import { describe, it } from "node:test";
 
 /**
- * Scroll containers in the lens sit inside .catalog, which is `height: auto`
- * capped by a `max-height`. That is not a definite height, so a zero flex-basis
- * (`flex: 1 1 0`) resolves against nothing and the container contributes no
- * height: the panel drops to its floor and its rows lay out below the viewport,
+ * Scroll containers in the lens sit inside .catalog, whose height is a cap
+ * rather than a height. A zero flex-basis resolves against nothing there, so
+ * the container contributes no height and its rows lay out below the viewport,
  * present in the DOM and invisible on screen.
- *
- * This has been rediscovered four times — the grid, the zoning tier list,
- * .groupScroll, and .rows (Table view, which rendered 100 rows off-screen at
- * 720p). The rule is cheap to state, so state it here rather than find it in a
- * running game a fifth time.
  */
 const read = (relative: string): string =>
   readFileSync(fileURLToPath(new URL(relative, import.meta.url)), "utf8");

@@ -43,17 +43,9 @@ namespace BetterBuildingMenu.Systems
 		/// Whether the lens menu is open.
 		/// </summary>
 		/// <remarks>
-		/// Was a published binding called ShowFindItPanel, from when it meant
-		/// "draw FindIt's floating panel". There is no such panel: the menu is
-		/// mounted by the game in its own asset-menu slot, so nothing in the UI
-		/// needs to be told whether it exists. Its last reader was
-		/// WrapToolOptionsPanel, deleted with the alignment setting it depended
-		/// on.
-		///
-		/// What the flag actually does, and still does, is hold OUR open state:
-		/// it makes SetLensMenuOpen idempotent, it distinguishes a cold open
-		/// from a menu-to-menu switch so the switch gets its extra refresh, and
-		/// it tells the close paths whether there is anything to close.
+		/// Our own open state rather than a published binding: it makes SetLensMenuOpen
+		/// idempotent, tells a cold open from a menu-to-menu switch so the switch gets its extra
+		/// refresh, and tells the close paths whether there is anything to close.
 		/// </remarks>
 		private bool _lensMenuOpen;
 		private ValueBindingHelper<bool> _ReplaceVanillaBuildMenu = null!;
@@ -70,25 +62,15 @@ namespace BetterBuildingMenu.Systems
 		// over. Lets the vanilla menu stay hidden after the panel is closed, so
 		// closing means closed rather than revealing the grid underneath.
 		private ValueBindingHelper<bool> _LensOwnsCurrentMenu = null!;
-		/// <summary>
-		/// A menu the picker wants opened, as "index:version:nonce".
-		/// </summary>
-		/// <remarks>
-		/// The game's toolbar.selectAssetMenu is a TRIGGER binding, so only the
-		/// UI can call it — C# has no route, ToolbarUISystem.SelectAssetMenu
-		/// being private. So the request goes out as a value the UI watches and
-		/// forwards. The nonce is what makes picking the same building twice
-		/// register as two requests rather than one unchanged string.
-		/// </remarks>
 		private ValueBindingHelper<int> _ActivePrefabId;
 		private ValueBindingHelper<float> _PanelWidth;
 		private ValueBindingHelper<float> _BuildingLensPanelHeight;
 		private ValueBindingHelper<string> _CurrentSearch;
 		private ValueBindingHelper<BuildingCatalogPage> _BuildingCatalogBinding = null!;
 		/// <summary>
-		/// The catalog entries behind the selected building's upgrades, for the
-		/// replaced extension picker. Presentation only: vanilla's own
-		/// upgradeMenu.upgrades decides what is listed. See BuildingExtensionMenu.
+		/// The catalog entries behind the selected building's upgrades, for the replaced extension
+		/// picker. Presentation only: vanilla's own upgradeMenu.upgrades decides what is listed.
+		/// See BuildingExtensionMenu.
 		/// </summary>
 		private ValueBindingHelper<BuildingExtensionMenu> _BuildingExtensionMenu = null!;
 		private Game.UI.InGame.SelectedInfoUISystem _selectedInfoUISystem = null!;
@@ -116,10 +98,9 @@ namespace BetterBuildingMenu.Systems
 		// Sidecar to the above. See MenuCategoryCount for why it is not a field
 		// on the category record.
 		private ValueBindingHelper<MenuCategoryCount[]> _BuildingLensMenuCategoryCounts = null!;
-		// The strip's fallback axis for menus vanilla gives no categories: the
-		// tabs, which tab is picked, and WHICH AXIS they are — published so the
-		// row can say so, because the axis varies per menu and a tab row whose
-		// meaning changes silently is not learnable.
+		// The strip's fallback axis for menus vanilla gives no categories: the tabs, which tab
+		// is picked, and WHICH AXIS they are — published so the row can say so, because the axis
+		// varies per menu and a tab row whose meaning changes silently is not learnable.
 		private ValueBindingHelper<MenuBranchCount[]> _BuildingLensStripTabs = null!;
 		private ValueBindingHelper<string[]> _BuildingLensStripTabBinding = null!;
 		private ValueBindingHelper<string> _BuildingLensStripAxisBinding = null!;
@@ -135,10 +116,8 @@ namespace BetterBuildingMenu.Systems
 		/// The vanilla menu the lens is scoped to, or empty for the whole catalog.
 		/// </summary>
 		/// <remarks>
-		/// Published so the chip row can say so. The scope was set by clicking a
-		/// toolbar icon and then applied invisibly: nothing on screen named it,
-		/// and the Section and Type chips that WERE on screen are the ones the
-		/// scope switches off (see BuildingCatalogQueryEngine.MatchesVanillaMenuTree).
+		/// Published so the chip row can name it: the scope is set by clicking a toolbar icon,
+		/// and would otherwise be applied with nothing on screen saying so.
 		/// </remarks>
 		private ValueBindingHelper<string> _BuildingLensMenuBinding = null!;
 		/// <summary>Every vanilla menu, so one can be chosen as a filter.</summary>
@@ -150,7 +129,6 @@ namespace BetterBuildingMenu.Systems
 		{
 			base.OnCreate();
 
-			// Instantiating systems 
 			_toolSystem = World.GetOrCreateSystemManaged<ToolSystem>();
 			_prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
 			_defaultToolSystem = World.GetOrCreateSystemManaged<DefaultToolSystem>();
@@ -161,7 +139,6 @@ namespace BetterBuildingMenu.Systems
 			_toolSystem.EventPrefabChanged += OnPrefabChanged;
 			_toolSystem.EventToolChanged += OnToolChanged;
 
-			// Keybinding caching
 
 
 
@@ -175,10 +152,8 @@ namespace BetterBuildingMenu.Systems
 			_LensOwnsCurrentMenu = CreateBinding("LensOwnsCurrentMenu", false);
 			_BuildingCatalogMatchesElsewhere = CreateBinding("BuildingCatalogMatchesElsewhere", 0);
 			_BuildingExtensionMenu = CreateBinding("BuildingExtensionMenu", BuildingExtensionMenu.Empty);
-			// Seeded here and re-pushed by OnSettingsApplied. It was previously
-			// "read once at setup", which is why the options screen's Tile size
-			// slider did nothing until the next load: the setting was saved and
-			// the binding still held the value captured at OnCreate.
+			// Seeded here and re-pushed by OnSettingsApplied, so the options screen's Tile
+			// size slider takes effect without a reload.
 			_LensTileSize = CreateBinding("BuildingLensTileSize", Mod.Settings.BuildingLensTileSize);
 			Mod.Settings.onSettingsApplied += OnSettingsApplied;
 			CreateTrigger("SearchEverything", SearchEverything);
@@ -199,10 +174,9 @@ namespace BetterBuildingMenu.Systems
 			_BuildingCatalogMetricRanges = CreateBinding("BuildingCatalogMetricRanges", BuildingCatalogMetricRangeState.Empty);
 			_BuildingCatalogMetricBounds = CreateBinding("BuildingCatalogMetricBounds", BuildingCatalogMetricRangeState.Empty);
 			_BuildingLensFacets = CreateBinding("BuildingLensFacets", new BuildingCatalogFacetState(Array.Empty<BuildingCatalogFacetGroup>(), false));
-			// Sort is a read/write binding rather than a write-only trigger: the
-			// order lives in the persistent query, so a UI that could only write
-			// it showed a stale indicator over correctly-sorted rows after any
-			// remount (panel close, Catalog/Tools switch, lens toggle).
+			// Sort is a read/write binding rather than a write-only trigger: the order lives in
+			// the persistent query, so a UI that could only write it would show a stale indicator
+			// over correctly-sorted rows after any remount.
 			_BuildingCatalogSortColumn = CreateBinding(
 				"BuildingCatalogSortColumn",
 				"SetBuildingCatalogSortColumn",
@@ -256,14 +230,9 @@ namespace BetterBuildingMenu.Systems
 			// Its other half: the same binding going to Entity.Null, which is how
 			// a toolbar menu reports being closed.
 			CreateTrigger("VanillaMenuDeselected", VanillaMenuDeselected);
-			// The game's own filter row, forwarded from the UI. The equivalent
-			// fields on ToolbarUISystem are private, so its four bindings are the
-			// reachable route, and the UI is where they can be read.
-			//
-			// Entity indices arrive comma-joined rather than as int[]: this
-			// bridge is happier with flat primitives, and the two lists are
-			// short. Parsing is the price of not risking a marshalling failure
-			// that would show up as an empty menu.
+			// The game's own filter row, forwarded from the UI: the equivalent fields on
+			// ToolbarUISystem are private, so its bindings are the reachable route. Entity indices
+			// arrive comma-joined, because this bridge is happier with flat primitives.
 			CreateTrigger<string, string, bool, bool>("SetVanillaToolbarSelection", SetVanillaToolbarSelection);
 			CreateTrigger<int>("OnLocateButtonClicked", OnLocateButtonClicked);
 			CreateTrigger("LoadMoreBuildingCatalog", LoadMoreBuildingCatalog);
@@ -274,10 +243,6 @@ namespace BetterBuildingMenu.Systems
 				CreateTrigger("ClearBuildingLensFilters", ClearBuildingLensFilters);
 				CreateTrigger("ResetBuildingLensMenu", ResetBuildingLensMenu);
 				CreateTrigger<string>("SetBuildingLensStripTab", SetBuildingLensStripTab);
-				// Its own trigger, not folded into SetBuildingLensSubCategory:
-				// that one is also the reset path ("All types", and removing a
-				// type chip), so clearing the menu there would silently drop
-				// Garbage Management back to the whole catalog.
 				CreateTrigger("ClearBuildingLensMenuScope", ClearBuildingLensMenuScope);
 				CreateTrigger<string>("SetBuildingLensMenu", SetBuildingLensMenu);
 			CreateTrigger<float>("SetBuildingLensPanelHeight", SetBuildingLensPanelHeight);
@@ -299,14 +264,9 @@ namespace BetterBuildingMenu.Systems
 		/// applies a change.
 		/// </summary>
 		/// <remarks>
-		/// The parameter is the base game's <see cref="Game.Settings.Setting"/>
-		/// — the delegate's own type — not this mod's settings class.
-		///
-		/// Without this the Tile size slider looked broken: ApplyAndSave wrote
-		/// the new width to disk and the grid went on drawing the value the
-		/// binding captured at OnCreate, so the change only appeared after a
-		/// reload. The panel height does not need re-publishing here; it travels
-		/// the other way, from the drag handle into the setting.
+		/// The parameter is the base game's <see cref="Game.Settings.Setting"/> — the delegate's
+		/// own type — not this mod's settings class. The panel height needs no re-publishing; it
+		/// travels the other way, from the drag handle into the setting.
 		/// </remarks>
 		private void OnSettingsApplied(Game.Settings.Setting setting)
 		{

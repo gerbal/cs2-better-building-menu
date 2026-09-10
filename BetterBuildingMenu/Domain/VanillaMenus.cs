@@ -8,11 +8,8 @@ namespace BetterBuildingMenu.Domain
 	/// PrefabIndex.UiMenuName.
 	/// </summary>
 	/// <remarks>
-	/// Two names, not a table. VanillaMenuPresets used to map every service
-	/// menu to an upstream (PrefabCategory, PrefabSubCategory) pair; the
-	/// menu tree made all of that redundant, and what survived was one
-	/// question — "is this Zones?" — asked to honour the ReplaceVanillaZonesMenu
-	/// setting. Roads is here because NetworkMenuExtension already named it.
+	/// Two names, not a table: the menu tree answers everything else. Zones is here
+	/// to honour the ReplaceVanillaZonesMenu setting, Roads for NetworkMenuExtension.
 	/// </remarks>
 	public static class VanillaMenus
 	{
@@ -23,7 +20,7 @@ namespace BetterBuildingMenu.Domain
 		public static bool IsZones(string? menu) =>
 			string.Equals(menu?.Trim(), Zones, StringComparison.OrdinalIgnoreCase);
 
-		/// <summary>The education menu, by the same test the UI's isEducationMenu applied (/education/i).</summary>
+		/// <summary>The education menu, matched the way the UI's isEducationMenu matches it.</summary>
 		public static bool IsEducation(string? menu) =>
 			(menu ?? string.Empty).IndexOf("Education", StringComparison.OrdinalIgnoreCase) >= 0;
 	}

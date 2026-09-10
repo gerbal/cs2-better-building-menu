@@ -14,20 +14,16 @@ namespace BetterBuildingMenu.Domain
 		/// Whether the match set holds rows this window does not reach.
 		/// </summary>
 		/// <remarks>
-		/// This side owns the answer. The client could not derive it without
-		/// repeating the engine's offset clamp, and a Load more control that
-		/// stays lit on a complete list is worse than no control at all.
-		///
-		/// Last and defaulted, so the construction sites that predate it stay
-		/// untouched — the same reason BuildingCatalogEntry gives for IsLocked.
+		/// This side owns the answer: the client cannot derive it without repeating the
+		/// engine's offset clamp, and a lit "Load more" on a complete list is a lie.
 		/// </remarks>
 		bool HasMore = false,
 		/// <summary>
 		/// The offered sort fields that could actually move a row here.
 		/// </summary>
 		/// <remarks>
-		/// cm-ddw3. The picker drops the rest rather than annotating them, the
-		/// same way groupDimensionsFor already drops a grouping that cannot act.
+		/// The picker drops the rest rather than annotating them, the same way
+		/// groupDimensionsFor drops a grouping that cannot act.
 		/// </remarks>
 		IReadOnlyList<string>? ReorderableSortColumns = null) : IJsonWritable
 	{

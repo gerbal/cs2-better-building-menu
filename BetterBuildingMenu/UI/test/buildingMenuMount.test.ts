@@ -13,14 +13,8 @@ const base: BuildingMenuMountState = {
 const state = (over: Partial<BuildingMenuMountState>): BuildingMenuMountState => ({ ...base, ...over });
 
 describe("Whether the build menu draws", () => {
-  // This file used to assert that exactly ONE of two surfaces drew — the
-  // game's asset-menu slot or MainContainer's floating panel — across every
-  // combination of four flags. Step 4 deleted the floating panel, so the
-  // question is no longer which one, and the flags it turned on
-  // (showFindItPanel, isWindowLocked) are no longer part of this decision.
-  //
-  // What is left is worth keeping tested because it is the whole reason the
-  // menu appears at all.
+  // The whole reason the menu appears at all: the surface draws in the game's
+  // asset-menu slot, and these are the conditions under which it does.
 
   it("draws when the lens stands in for the toolbar's open menu", () => {
     assert.equal(shouldMountInAssetMenu(state({ lensOwnsCurrentMenu: true })), true);
@@ -32,11 +26,8 @@ describe("Whether the build menu draws", () => {
   });
 
   it("owning the menu is the whole condition", () => {
-    // This once ANDed with `buildingLensEnabled`, because the player could
-    // turn the lens off while the backend left lensOwnsCurrentMenu set — it
-    // describes which menu the toolbar has open, not what we intend to do
-    // about it. There is no such switch now: the lens REPLACES vanilla's build
-    // menu rather than offering an alternative to it.
+    // lensOwnsCurrentMenu describes which menu the toolbar has open, not what
+    // we intend to do about it. The lens REPLACES vanilla's build menu.
     for (const isPhotoMode of [false, true]) {
       for (const lensOwnsCurrentMenu of [false, true]) {
         assert.equal(

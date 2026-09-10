@@ -6,7 +6,7 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// The three availability states, and that they still partition.
+	/// The three availability states, and that they partition.
 	/// </summary>
 	public class AvailabilityStateTests
 	{
@@ -29,9 +29,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void AlreadyBuiltSupersedesUnlocked()
 		{
-			// A unique you have built is unlocked in the progression sense and
-			// unbuildable in the only sense the player cares about. Reporting it
-			// as Unlocked put it in the list of things to build.
+			// A unique you have built is unlocked in the progression sense but
+			// unbuildable in the only sense the player cares about.
 			Assert.Equal(
 				BuildingCatalogFacetSelection.Availability.AlreadyBuilt,
 				BuildingCatalogQueryEngine.AvailabilityOf(Base with { IsLocked = false, IsAlreadyBuilt = true }));
@@ -40,9 +39,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void LockedWinsOverAlreadyBuilt()
 		{
-			// Ordering matters or the states stop partitioning. A locked unique
-			// cannot have been built, so if both ever read true the data is
-			// wrong and Locked is the safer thing to say.
+			// A locked unique cannot also be built, so when both read true the
+			// data is wrong and Locked is the safer answer.
 			Assert.Equal(
 				BuildingCatalogFacetSelection.Availability.Locked,
 				BuildingCatalogQueryEngine.AvailabilityOf(Base with { IsLocked = true, IsAlreadyBuilt = true }));
@@ -60,9 +58,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void TheRegistryTracksBothEdges()
 		{
-			// Both directions matter: build the Space Center and it leaves the
-			// buildable list; bulldoze it and it comes back. A one-way set would
-			// be wrong the first time a player demolished something.
+			// Both directions matter: building a unique takes it off the
+			// buildable list, bulldozing it puts it back.
 			PlacedUniqueRegistry.Reset(null);
 			Assert.False(PlacedUniqueRegistry.IsAlreadyBuilt(42));
 

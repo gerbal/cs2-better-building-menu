@@ -1,14 +1,9 @@
 import type { ToolbarEntity } from "./toolbarEntity";
 
 /**
- * The entity index behind a toolbar selection, or null when nothing is selected.
- *
- * The toolbar bindings hand back a bare number in some places and an
- * `{index, version}` ref in others, and ToolbarEntity permits a string too.
- *
- * Index 0 is `Entity.Null`. Treating it as a real selection would fire the
- * interception every time the player *closes* a menu, reopening the lens they
- * just dismissed.
+ * The entity index behind a toolbar selection, or null when nothing is
+ * selected. Index 0 is `Entity.Null`: treating it as a real selection would
+ * reopen the lens every time the player closes a menu.
  */
 export function toolbarEntityIndex(entity: ToolbarEntity | null | undefined): number | null {
   if (entity === null || entity === undefined) {
@@ -45,15 +40,9 @@ export interface WatchState {
 }
 
 /**
- * Whether an observed selection is a real user action worth routing.
- *
- * The binding emits its current value on subscribe, so the first thing the
- * watcher sees is existing state rather than a click. Acting on it closed the
- * lens panel the instant it was opened whenever a non-building menu happened to
- * be the stale selection — the decline path fighting the player.
- *
- * Repeats are ignored too, since the binding re-emits on unrelated toolbar
- * churn, and a null (menu closed) is remembered but never routed.
+ * Whether an observed selection is a real user action worth routing. The
+ * binding emits its current value on subscribe and re-emits on unrelated
+ * toolbar churn, so neither the first observation nor a repeat is a click.
  */
 export function shouldRouteSelection(state: WatchState, index: number | null): boolean {
   return watchAction(state, index) === "open";
@@ -63,17 +52,9 @@ export function shouldRouteSelection(state: WatchState, index: number | null): b
 export type WatchAction = "ignore" | "open" | "close";
 
 /**
- * Reads an observed selection as an instruction.
- *
- * The `close` case is why this exists. Clicking a toolbar menu that is already
- * open deselects it — measured, not assumed: the vanilla button fires
- * `toolbar.clearAssetSelection` and `toolbar.selectedAssetMenu` goes to
- * `Entity.Null`. The lens was only ever told about openings, so a second click
- * on the same icon left it sitting there: the button un-lit, the menu it stood
- * for closed, and the panel still covering the screen.
- *
- * `close` is only produced when a menu was actually routed, so the null the
- * binding emits on subscribe cannot dismiss a panel nobody opened.
+ * Reads an observed selection as an instruction. Clicking an open toolbar menu
+ * deselects it, so a null has to mean "close"; `close` is only produced once a
+ * menu was actually routed, so the subscribe-time null dismisses nothing.
  */
 export function watchAction(state: WatchState, index: number | null): WatchAction {
   if (!state.seen) {
@@ -102,43 +83,14 @@ export function nextWatchState(state: WatchState, index: number | null, action: 
 export interface EscapeContext {
   /** Whether the lens is on screen. */
   lensOpen: boolean;
-  /** Upstream Find It's panel is up; Escape is theirs then (cm-wf6g.4). */
+  /** Upstream Find It's panel is up; Escape is theirs then. */
   findItPanelShown?: boolean;
 }
 
 /**
  * Whether an Escape should clear the toolbar selection, taking the lens with it.
- *
- * cm-z9lm. Escape could never close the lens: the second press went to the
- * pause menu and the panel stayed, so the only way out was the toolbar icon.
- *
- * It clears the GAME's selection rather than hiding our panel, which is the
- * path the toolbar button already uses — VanillaMenuWatcher's own close branch
- * picks up the resulting null, so there is one way for the lens to close
- * rather than two. ClearAssetSelection nulls menu, category and asset
- * together, which is why no vanilla grid appears in the gap; that was the
- * original defect.
- *
- * ONE CONDITION, and the absence of a second one is the point.
- *
- * Vanilla keeps its menu open when a tool is cancelled, and matching that
- * would mean holding on the press that disarms and closing on the next. That
- * needs to tell the two presses apart, and a DOM listener cannot: both
- * available signals — how long since the tool was disarmed, and what the tool
- * last reported as — depend on whether the game's disarm notification has
- * arrived, and it RACES the keypress. Measured on a build that tried it: six
- * trials gave two holds, three closes and a no-op. An earlier version timing
- * the gap gave six closes out of six. Neither is a rule; both are a coin.
- *
- * So this closes on every Escape while the lens is open, which is
- * deterministic, and accepts the divergence: cancelling a tool with Escape
- * also puts the menu away. Chosen deliberately over shipping something
- * unpredictable.
- *
- * It also removes the pause-menu complaint the bead was worried about. The
- * game opens the pause menu when Escape finds nothing to close; with the lens
- * gone after the first press, the second press is a player asking for the
- * pause menu and getting it.
+ * One condition, deliberately: see docs/design-notes.md, "Escape closes the
+ * lens unconditionally".
  */
 export function shouldClearOnEscape({ lensOpen, findItPanelShown = false }: EscapeContext): boolean {
   // Escape belongs to Find It's panel while it is up; clearing the menu

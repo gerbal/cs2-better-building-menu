@@ -118,9 +118,8 @@ describe("Grouped tree from the page's paths", () => {
 
   it("carries the game's category id on the outer level only", () => {
     // menuCategory is depth 2 — the category, then the density tier beneath
-    // it — and the game owns the id of the OUTER level alone. When the tier
-    // node took it too, the renderer resolved every one of Residential's six
-    // tier headings to "Residential Zones".
+    // it — and the game owns the id of the OUTER level alone. Given it too,
+    // the renderer resolves every tier heading to the category's own name.
     const groups = groupTreeFromPaths([
       item(1, ["Residential", "Low Density"], { groupLabelId: "ZonesResidential" }),
       item(2, ["Residential", "High Density"], { groupLabelId: "ZonesResidential" }),
@@ -179,11 +178,9 @@ describe("Flattening groups for the table", () => {
   });
 
   it("still labels the level below a lone parent", () => {
-    // The case reported from play: grouping the Roads menu by asset type puts
-    // every entry under one root, because they are all Networks. Judging the
-    // whole tree by that root suppressed the headings underneath it as well,
-    // so the table reordered into Roads, Bridges and Tracks and named none of
-    // them.
+    // Grouping the Roads menu by asset type puts every entry under one root,
+    // because they are all Networks. Judging the whole tree by that root
+    // suppresses the headings underneath it and names none of them.
     const rows = flattenGroupedRows(
       [
         item(1, ["Networks", "Roads"], { name: "Alley" }),
@@ -308,9 +305,9 @@ describe("Milestone names for the strip", () => {
 
 describe("Fitting a heading", () => {
   it("fits a label to the width it was actually given, not to a tile count", () => {
-    // The numbers are the ones measured in Electricity: a one-card group is
-    // 166px and "GAS POWER PLANT" wants about 105px, so it fits whole — while
-    // the tile-count estimate cut it to "GAS POWE…" over that same 166px.
+    // A one-card group is wider than a tile-count estimate assumes, so a
+    // heading that fits the box whole is cut by an estimate that counts tiles
+    // rather than measuring it.
     assert.equal(fitLabelToWidth("GAS POWER PLANT", 166, 105), "GAS POWER PLANT");
 
     // Genuinely too long: 77px of grid tile for a string wanting 190px.
@@ -332,10 +329,9 @@ describe("Fitting a heading", () => {
   });
 
   it("budgets a heading at three tiles of room however few tiles it has", () => {
-    // A search in Roads is a run of one- to three-tile groups, and a budget
-    // straight from the tile count cut every one of their names: "ROAD SER…"
-    // over one tile. The group reserves three tiles of width for its label
-    // (groupedResults.module.scss), so the estimate budgets the same.
+    // A budget straight from the tile count cuts every name in a run of small
+    // groups — "ROAD SER…" over one tile — so the estimate floors at
+    // GROUP_LABEL_MIN_TILES and lets a long heading wrap instead.
     assert.equal(fitGroupLabel("ROAD SERVICES", 1), "ROAD SERVICES");
     assert.equal(fitGroupLabel("GAS POWER PLANT", 1), "GAS POWER PLANT");
     assert.equal(fitGroupLabel("CENTRAL INTELLIGENCE BUREAU", 1), "CENTRAL INTELLIGENCE BUREAU");

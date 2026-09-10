@@ -18,9 +18,8 @@ describe("the catalog container", () => {
 
   for (const mode of ["table", "grid", "list", "cards"]) {
     it(`ends the feed with a load-more inside the scroll in ${mode} mode`, () => {
-      // Below the scroll is where the pager used to live, and the reason
-      // nobody read it. The number too: on Landscaping that is 100 rows of
-      // 368 with nothing on screen admitting it.
+      // Below the scroll is where nobody reads it. The number too: on
+      // Landscaping that is 100 rows of 368 with nothing on screen saying so.
       setLensView({ viewMode: mode });
       page({ hasMore: true, totalCount: 403 });
       const html = render();
@@ -33,8 +32,8 @@ describe("the catalog container", () => {
     });
 
     it(`offers to widen a scoped miss in ${mode} mode`, () => {
-      // A search that misses in Table mode used to say "No buildings match"
-      // and stop — no count of what existed elsewhere, no way to reach it.
+      // A search that misses in Table mode must not simply say "No buildings
+      // match": that leaves no count of what exists elsewhere and no way there.
       setLensView({ viewMode: mode });
       page({ items: [], totalCount: 0 });
       setBinding("BetterBuildingMenu", "CurrentSearch", "police");
@@ -54,8 +53,8 @@ describe("the catalog container", () => {
   });
 
   it("obeys the chosen view mode whatever the panel width", () => {
-    // It used to be overridden to "grid" at the resting height, so pressing
-    // Table lit the button, changed nothing, and said nothing about why.
+    // Overridden to "grid" at the resting height, pressing Table would light
+    // the button, change nothing, and say nothing about why.
     setLensView({ viewMode: "table" });
     page();
 
@@ -97,9 +96,8 @@ describe("the catalog container", () => {
 
 describe("the table under a larger text scale", () => {
   // The game's Interface › Text scale reaches the page as ("options",
-  // "textScale"). Measured live at 125 %: the Cost and Upkeep cells clipped
-  // their figures by 15–20px because the column widths assumed 100 %. The
-  // columns follow the S size's own growth — see domain/textScale.ts.
+  // "textScale"), and a column width that assumes 100 % clips its figures
+  // above it. The columns follow the S size's own growth; see domain/textScale.ts.
   it("widens the metric columns by the S size's ratio", () => {
     resetBindings();
     setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1)], {}));

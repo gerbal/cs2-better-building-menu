@@ -8,10 +8,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void NamesTheRoleFromTheServiceDataThePrefabCarries()
 		{
-			// The Role facet was wired end to end but always empty: it read
-			// BuildingMarkerData.m_BuildingType, an editor marker component that
-			// ordinary building prefabs do not carry. The service data the
-			// indexer already reads for capacity names the role directly.
+			// The role comes from the service data the indexer already reads for
+			// capacity, which names it directly.
 			Assert.Equal("School", BuildingRole.ResolvePrimary(new[] { "School" }));
 			Assert.Equal("Hospital", BuildingRole.ResolvePrimary(new[] { "Hospital" }));
 			Assert.Equal("WaterPumpingStation", BuildingRole.ResolvePrimary(new[] { "WaterPumpingStation" }));
@@ -34,8 +32,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void NamesPowerPlantsFromTheirProductionComponent()
 		{
-			// Power plants report output as production rather than capacity, so
-			// they had no role and no capacity until the component was read.
+			// Power plants report output as production rather than capacity, so the
+			// role comes from the production component.
 			Assert.Equal("PowerPlant", BuildingRole.ResolvePrimary(new[] { "PowerPlant" }));
 		}
 
@@ -71,12 +69,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void CommunicationsBuildingsHaveARole()
 		{
-			// Neither component was read at all, so a post office and a telecom
-			// tower arrived with no role and no capacity: the card showed a lot
-			// size and a price, and the hover card had nothing to add. A role
-			// that the indexer can produce but Priority does not list is dropped
-			// by ResolvePrimary and never offered by the facet, so registering
-			// them here is the half that makes the indexing visible.
+			// A role the indexer can produce but Priority does not list is dropped
+			// by ResolvePrimary and never offered by the facet, so these have to be
+			// registered as known.
 			Assert.Contains("PostFacility", BuildingRole.Known);
 			Assert.Contains("TelecomFacility", BuildingRole.Known);
 

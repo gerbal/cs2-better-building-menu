@@ -4,13 +4,10 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// cm-2xvs.26: the requirement that references nothing still names something.
+	/// The requirement that references nothing still names something: an
+	/// object-built requirement carries an empty m_LabelID, so its prefab name is
+	/// the only subject available.
 	/// </summary>
-	/// <remarks>
-	/// Fixtures are the real prefab names, read out of the running game — all 21
-	/// object-built requirements in Porterville 3 carry an empty m_LabelID, so
-	/// the name is the only subject available.
-	/// </remarks>
 	public sealed class ObjectBuiltRequirementTests
 	{
 		[Theory]
@@ -31,8 +28,8 @@ namespace BetterBuildingMenu.Tests
 		[InlineData("  Rail Yard Built Req  ", "Rail Yard")]
 		public void ToleratesTheSuffixBeingWrittenSeveralWays(string prefabName, string expected)
 		{
-			// One naming convention observed, but it is a convention rather than
-			// a contract, and a pack can add its own prefabs.
+			// The suffix is a convention rather than a contract, and a pack can add
+			// its own prefabs.
 			Assert.Equal(expected, ObjectBuiltRequirement.SubjectOf(prefabName));
 		}
 
@@ -51,8 +48,7 @@ namespace BetterBuildingMenu.Tests
 		[InlineData(null)]
 		public void SaysNothingWhenTheNameWasOnlyBookkeeping(string? prefabName)
 		{
-			// Silence beats a subjectless "build a", which is the reading that
-			// made an earlier card say "build 1 +1".
+			// Silence beats a subjectless "build a" on the card.
 			Assert.Equal("", ObjectBuiltRequirement.SubjectOf(prefabName));
 		}
 	}

@@ -7,11 +7,9 @@ export interface MenuBranchCount {
   count: number;
   icon: string;
   /**
-   * What the tab says, where that differs from what it matches on.
-   *
-   * A development branch is unique across its menu, so its id is both. A
-   * density tier is not — "Low Density" is a tab under Residential, Commercial
-   * and Office — so its id carries the family as well, and only this is shown.
+   * What the tab says, where that differs from what it matches on. A density
+   * tier repeats across families, so its id carries the family too and only
+   * this is shown; a development branch is unique and needs neither.
    */
   label?: string;
 }
@@ -23,11 +21,8 @@ export interface MenuCategoryTabs {
 }
 
 /**
- * The sub-tabs that stand in for one category, or none.
- *
- * A lookup rather than an equality test against a single expanded id, which is
- * what this replaced. The development tree only ever expanded one category —
- * it picks the largest and stops — and zone families need three at once.
+ * The sub-tabs that stand in for one category, or none. A lookup rather than a
+ * single expanded id, because zone families need three expanded at once.
  */
 export function expandedTabsFor(
   categories: readonly MenuCategoryTabs[] | null | undefined,
@@ -44,22 +39,9 @@ export function branchTabLabel(tab: MenuBranchCount | null | undefined): string 
 }
 
 /**
- * What a tab's tooltip says, which is more than the tab itself carries.
- *
- * A density tab is drawn IN ITS FAMILY'S PLACE, so the family appears nowhere
- * else on the strip — the tab is an icon and a count, and the row gives no
- * other clue whether "Low Density" means residential, commercial or office.
- * Reported from play: the tooltips "state only the density and are missing the
- * zoning type".
- *
- * Only density tabs. A development branch names itself — "Roundabouts",
- * "Highways" — and prefixing its category would repeat what the branch already
- * says. `label` is the discriminator: the backend sets it only where the id is
- * a composite the player must never see.
- *
- * The nested group HEADINGS deliberately stay tier-only. They sit under the
- * category's own heading, so repeating it there would be noise; a tooltip has
- * no such context.
+ * What a tab's tooltip says, which is more than the tab carries: a density tab
+ * is drawn IN ITS FAMILY'S PLACE, so nothing else on the row names the family.
+ * `label` marks those; a self-naming development branch has none.
  */
 export function branchTabTooltip(
   tab: MenuBranchCount | null | undefined,
@@ -82,12 +64,9 @@ export interface MenuMilestoneCount {
 }
 
 /**
- * A tier tab, ready to draw.
- *
- * The name is joined on this side rather than shipped by the backend: the
- * milestone names are already published once, densely by index, and a second
- * copy travelling with the counts would be a second thing to keep in the
- * current language.
+ * A tier tab, ready to draw. The name is joined on this side because the
+ * milestone names are already published once by index, and a second copy
+ * travelling with the counts is a second thing to keep in the player's language.
  */
 export interface MilestoneTab {
   milestone: number;
@@ -97,20 +76,15 @@ export interface MilestoneTab {
 }
 
 /**
- * The tier tabs for a menu, in progression order.
- *
- * Ordered by index because the index IS the progression — unlike the category
- * strip, where the order is only for stability. The backend already sorts them;
- * sorting again here means the strip is right even when a binding arrives out
- * of order, which is cheap at ~20 entries.
+ * The tier tabs for a menu, ordered by index because the index IS the
+ * progression — unlike the category strip, where order is only for stability.
+ * Sorted again here so an out-of-order binding cannot mislead the strip.
  */
 export function milestoneTabs(
   counts: readonly MenuBranchCount[] | null | undefined,
-  // Passed in rather than imported. The naming rule lives in buildingGroups,
-  // beside the progression GROUP dimension that uses the same one, and the
-  // domain modules here are deliberately import-free of each other: the test
-  // runner strips types rather than resolving a bundler's paths, so a value
-  // import between two of them resolves in webpack and nowhere else.
+  // Passed in, not imported: the naming rule lives in buildingGroups beside the
+  // progression group dimension, and these domain modules stay import-free of
+  // each other so the type-stripping test runner can load each on its own.
   label: (milestone: number) => string
 ): MilestoneTab[] {
   return (counts ?? [])
@@ -130,11 +104,9 @@ export function milestoneTabs(
 }
 
 /**
- * Whether the tier strip is worth drawing.
- *
- * The same rule the category strip follows: one tab covering everything is a
- * control that offers no choice. It matters more here, because EVERY menu has
- * a progression axis and most of the small ones sit entirely in one tier.
+ * Whether the tier strip is worth drawing — the category strip's rule, that one
+ * tab covering everything offers no choice. It matters more here: every menu
+ * has a progression axis, and the small ones sit entirely in one tier.
  */
 export function shouldShowMilestoneTabs(tabs: readonly MilestoneTab[] | null | undefined): boolean {
   return (tabs ?? []).length > 1;
@@ -156,14 +128,9 @@ export interface SchoolTierTab {
 }
 
 /**
- * The education menu's tier tabs, in career order.
- *
- * The backend keys these by the raw SchoolData.m_EducationLevel so the four
- * labels stay in one place — SCHOOL_TIERS in buildingGroups, mirrored by
- * C#'s SchoolTierLabel for the headings — rather than
- * being duplicated across the binding. Ordered by level, which is the career
- * order the alphabet gets wrong: College sorts before High School and before
- * University, and only one of those is right.
+ * The education menu's tier tabs, in career order. Keyed by the raw
+ * SchoolData.m_EducationLevel so the labels stay in one place, and ordered by
+ * level because the alphabet puts College before High School.
  */
 export function schoolTierTabs(
   counts: readonly MenuBranchCount[] | null | undefined
@@ -181,14 +148,9 @@ export function schoolTierTabs(
 }
 
 /**
- * The game's own word for a school level.
- *
- * Kept here rather than imported from buildingGroups: the domain modules do
- * not import each other by value, because the test runner strips types instead
- * of resolving the bundler's paths. The four rows are the game's SchoolLevel
- * enum and do not move; buildingGroups.SCHOOL_TIERS is the other copy (C#'s
- * BuildingCatalogGrouping.SchoolTierLabel names the headings from it), and
- * menuProgression.test.ts pins them to the same words.
+ * The game's own word for a school level. Kept here rather than imported,
+ * because these domain modules do not import each other by value; the words are
+ * the game's SchoolLevel enum, and a test pins them to buildingGroups' copy.
  */
 export function schoolTierLabel(level: number): string {
   switch (level) {
@@ -207,12 +169,9 @@ export function schoolTierLabel(level: number): string {
 
 
 /**
- * The rank a school-level tab draws over its glyph.
- *
- * Roman, because the arabic numeral would be read as a COUNT — every other
- * number on this row is one, including the badge in the opposite corner of the
- * same tab. Four levels is the whole range the game has, so the table stops at
- * IV rather than pretending to be a general converter.
+ * The rank a school-level tab draws over its glyph. Roman, because an arabic
+ * numeral would read as a COUNT — every other number on this row is one. Stops
+ * at IV, the game's whole range, rather than pretend to be a converter.
  */
 export function romanNumeral(level: number): string {
   switch (level) {

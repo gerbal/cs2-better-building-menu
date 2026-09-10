@@ -85,10 +85,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void LeavesAFamilyAloneWhenAnyOfItIsUntiered()
 		{
-			// A partition or nothing. If one zone in the family has no tier it
-			// belongs under no tab, and the row would silently drop it — which
-			// reads as the menu losing an asset, the exact failure this whole
-			// lens exists to remove.
+			// A partition or nothing. A zone with no tier belongs under no tab, and
+			// the row would silently drop it, which reads as the menu losing an asset.
 			var entries = new[]
 			{
 				Zone(1, "ZonesResidential", ZoneTypeFilter.Low),
@@ -134,10 +132,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void MatchesOnFamilyAndTierTogether_NotOnTheTierAlone()
 		{
-			// "Low Density" is a tab under Residential, Commercial and Office,
-			// and clicking a strip tab clears the category by design. Matching
-			// the tier alone would show all three families under a tab whose
-			// count promised one.
+			// "Low Density" is a tab under several families and clicking a strip tab
+			// clears the category, so matching the tier alone would show every family
+			// under a tab whose count promised one.
 			var residentialLow = Zone(1, "ZonesResidential", ZoneTypeFilter.Low);
 			var commercialLow = Zone(2, "ZonesCommercial", ZoneTypeFilter.Low);
 
@@ -157,10 +154,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void UsesTheGamesOwnZoningIconForTheFamilyAndTier()
 		{
-			// Vanilla ships one icon per pair, in the colours the zoning map
-			// paints. "Low" is a tab under three families and the game draws a
-			// different icon for each, so a tier-only lookup would put one glyph
-			// on all three.
+			// Vanilla ships one icon per family and tier, in the colours the zoning
+			// map paints, so a tier-only lookup would put one glyph on every family.
 			var entries = new[]
 			{
 				Zone(1, "ZonesResidential", ZoneTypeFilter.LowRent),

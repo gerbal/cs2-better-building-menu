@@ -1,3 +1,5 @@
+// Cohtml ignores `gap`; margins do the spacing throughout these stylesheets.
+
 $bottomBarHeight: 48rem;
 $bottomViewHeight: 108rem;
 $bottomBarOffset: 121rem;
@@ -223,56 +225,22 @@ $laneButtonSize: 64rem;
   }
 }
 
-// --------------------------------------------------------------------------
-// Unique-asset marks, at one scale across every view mode.
-//
-// The grid settled these against a 45rem thumbnail: a 16rem mark inset 2rem.
-// The other modes draw the same asset at 20rem (list), 36rem (cards) and 68rem
-// (table), so a fixed 16rem would be a blob on a row icon and a speck on a
-// table thumbnail. Stated as RATIOS of the picture, so the badge reads the same
-// size relative to the building wherever the building is drawn.
-//
-// Kept here rather than repeated per module because four modes drawing one
-// catalogue have already drifted into three different answers once — see the
-// GroupedResults header.
-// --------------------------------------------------------------------------
+// Unique-asset marks, at one scale across every view mode. Four modes draw one
+// catalogue at four picture sizes, so the badge is stated as a RATIO of the
+// picture and kept here rather than repeated per module.
 
-// Both taken from vanilla and expressed against the picture, measured rather
-// than read off the stylesheet — the rule there pins all four sides and lets
-// the size be auto, and this engine resolves that to a fixed 16px anchored at
-// the top-left with the right and bottom offsets ignored. So the numbers that
-// actually describe vanilla's badge are its SIZE and its TOP-LEFT inset:
-//
-//   size  16px on a 45px picture  = 0.356
-//   inset 12rem on a 68rem image  = 0.176
-//
-// Not centred, which was worth checking: pinned on four sides reads as centred
-// and is not what the engine draws.
-// Vanilla pins the badge 12rem inside a 72rem ITEM holding a 68rem picture and
-// leaves the size auto. Measured in this engine, auto-with-four-offsets
-// STRETCHES to the box — 19px inside a 30px picture, 5px clear on both sides —
-// so the badge is CENTRED on the building, not cornered on it.
-//
-// One number describes that: the inset, from the picture's edge rather than the
-// item's, 12rem less the 2rem the picture is inset in the item.
-//
-//   inset  10 / 68        = 0.147
-//   badge  68 - 2*10 = 48 = 70.6% of the picture
-//
-// This read 0.356 with a top-left anchor for a while, from measuring a badge
-// whose size was really coming from baseButton's `img { width: 24rem }` — the
-// rule under test never applied. Nesting the include is what stops that.
+// Vanilla pins the badge inside the item and leaves its size auto; in this
+// engine auto-with-four-offsets stretches to the box, so the badge is CENTRED
+// on the building rather than cornered on it. This inset is what centres it.
 $mark-inset: 0.147;
 
 @function mark-inset($picture) {
   @return $picture * $mark-inset;
 }
 
-/// The box a picture and its marks share. Marks position against THIS, never
-/// against the row or tile around it, which may carry a label as well.
 /// The inset that leaves the badge at the picture's ratio, expressed in the
-/// FRAME's coordinates. Reduces to mark-inset when the two are the same, which
-/// is every mode but the table.
+/// FRAME's coordinates. Reduces to mark-inset when the two are the same,
+/// which is every mode but the table.
 @function mark-frame-inset($picture, $frame) {
   @return ($frame - ($picture - 2 * mark-inset($picture))) / 2;
 }
@@ -284,34 +252,19 @@ $mark-inset: 0.147;
   height: $picture;
 }
 
-/// The already-built / unique badge, over the top-left of the picture.
+/// The already-built / unique badge, over the picture.
 ///
-/// MUST be included nested inside the artwork class, not beside it. baseButton
-/// styles its icon children as `img { width: 24rem; height: 24rem }`, and that
-/// selector resolves to `.item img` — one class and one element, which beats a
-/// bare `.uniqueAsset`. Measured: the badge computed 24rem while the rule said
-/// 7.112rem, so it drew four times too big and hung into the next row. Nesting
-/// makes it `.artwork .uniqueAsset`, two classes, which wins.
-///
-/// Carries no opacity. The visible/hidden state belongs to .alreadyBuilt and
-/// .uniqueMark, and putting a default here meant the size rule for one mode
-/// re-hid a badge the state rule had already shown — which is exactly how the
-/// cards badge went missing while the grid's worked.
-/// $frame is the positioned ancestor the badge is inset FROM, which is not
-/// always the picture it should be measured AGAINST. Table frames a 60rem
-/// picture in a 68rem tinted tile; insetting by the picture's own fraction put
-/// the badge at 85% of the artwork and off-centre by 2px, because the inset
-/// landed in the frame's coordinate space. Defaults to the picture, which is
-/// what every other mode has.
+/// MUST be included nested inside the artwork class, or baseButton's
+/// `.item img` outranks a bare `.uniqueAsset`. Carries no opacity: the
+/// shown/hidden state belongs to .alreadyBuilt and .uniqueMark.
 @mixin unique-mark($picture, $frame: $picture) {
   position: absolute;
   top: mark-frame-inset($picture, $frame);
   bottom: mark-frame-inset($picture, $frame);
   left: mark-frame-inset($picture, $frame);
   right: mark-frame-inset($picture, $frame);
-  // Auto on both axes with all four sides pinned. Stating a width instead is
-  // what turned this into a corner mark; auto lets the engine stretch it to the
-  // box, which is what centres it.
+  // Auto on both axes with all four sides pinned: that is what stretches the
+  // badge to the box and centres it. A stated width corners it top-left.
   width: auto;
   height: auto;
 }

@@ -5,11 +5,9 @@ import { describe, it } from "node:test";
 /**
  * A source contract, in the stylesheetContracts pattern.
  *
- * Seen 2026-09-09 in the store screenshot of the Table view: the expand
- * control at the end of every row drew as a missing-glyph box. It was the
- * characters U+2304 (⌄) and U+2303 (⌃), which the game's UI face, Noto Sans,
- * does not carry. The game ships arrow glyphs as SVG under Media/Glyphs, and
- * those are what its own dropdowns draw, so the control uses them instead.
+ * The characters U+2304 (⌄) and U+2303 (⌃) draw as a missing-glyph box: the
+ * game's UI face, Noto Sans, does not carry them. The game ships arrow glyphs
+ * as SVG under Media/Glyphs, and those are what its own dropdowns draw.
  */
 const row = readFileSync(new URL("../src/mods/BuildingCatalog/TableRow.tsx", import.meta.url), "utf8");
 

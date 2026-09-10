@@ -92,8 +92,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void LeavesTheOrderUntouchedWhenNothingIsGrouped()
 		{
-			// The seed is a constant in this case, and OrderBy is stable, so
-			// the sort must behave exactly as it did before grouping existed.
+			// The seed is a constant in this case and OrderBy is stable, so the
+			// sort behaves exactly as it does with no grouping at all.
 			var source = new[]
 			{
 				Entry(1, subCategory: "Health", name: "Zebra"),
@@ -119,9 +119,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void OnlyTheTwoCategoryDimensionsHaveASecondLevel()
 		{
-			// MenuCategory left this list when the game's own categories gained
-			// a density tier beneath them. Everything still here is depth 1, and
-			// a stray secondary key would silently split one of their groups.
+			// Everything in this list is depth 1, and a stray secondary key would
+			// silently split one of their groups.
 			foreach (var dimension in new[]
 			{
 				BuildingCatalogGrouping.SubCategory,
@@ -140,13 +139,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void EveryDimensionProducesAKeyForAnEntryThatCarriesItsValue()
 		{
-			// PrimaryKey used to lowercase its input and switch on the
-			// constants, so a dimension whose id is not all-lowercase could
-			// never match its own case: "menuCategory" fell through to the
-			// empty key and emitted no ordering at all. SubCategory had a
-			// hand-written literal hiding the same fault. Nothing failed,
-			// because the UI regroups whatever order it is handed — so only a
-			// test that asks each dimension directly can catch the next one.
+			// The UI regroups whatever order it is handed, so a dimension that
+			// emits no key orders nothing and fails silently. Only asking each
+			// dimension directly catches one.
 			var entry = Entry(1) with { UiCategory = "TransportationRoad", UiCategoryPriority = 20 };
 
 			foreach (var dimension in new[]
@@ -205,9 +200,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void MenuCategoryGroupsFollowTheGamesTabOrderRatherThanTheAlphabet()
 		{
-			// Transportation's real strip order. Alphabetically this is Air,
-			// Road, Ship, Subway, Train, Tram — so any test that passes both
-			// ways is not testing anything.
+			// Groups follow the priority the game gives its category strip.
 			var source = new[]
 			{
 				MenuEntry(1, "TransportationTram", 60),
@@ -303,8 +296,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void SortsTheUnnamedGroupAfterEveryNamedOne()
 		{
-			// An empty key sorts first, which opened Police & Administration
-			// grouped by role on the six buildings that have no role.
+			// An empty key sorts first, which opens a menu on the entries that
+			// have no role at all.
 			string unnamed = BuildingCatalogGrouping.PrimaryKey(
 				Entry(1, buildingType: ""), BuildingCatalogGrouping.Role);
 			string named = BuildingCatalogGrouping.PrimaryKey(
@@ -338,13 +331,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void RanksDensityByTheDecidedOrderRatherThanTheEnumValue()
 		{
-			// Low, Row, Medium, Mixed, LowRent, High — the order the player
-			// meets them in. The enum values are 1, 2, 4, 32, 64, 8, so the raw
-			// number puts Mixed and LowRent past High and past Signature.
-			//
-			// The old key WAS that raw number, and it sorted correctly only by
-			// accident of the flag values. The accident stops working the
-			// moment the vocabulary grows, which is now.
+			// Low, Row, Medium, Mixed, LowRent, High — the order the player meets
+			// them in. The raw flag values put Mixed and LowRent past High and
+			// past Signature, so the rank comes from a table instead.
 			var ranked = new[]
 			{
 				ZoneTypeFilter.Low,
@@ -387,9 +376,8 @@ namespace BetterBuildingMenu.Tests
 		public void OrdersDensityBeneathTheGamesOwnCategory()
 		{
 			// The tier is a second GROUP level under menuCategory, so it needs a
-			// secondary key as well as a heading. Grouping is a primary sort key
-			// exactly so a group cannot straddle a page boundary — without this
-			// the heading would describe something other than what follows it.
+			// secondary key as well as a heading, or the group straddles a page
+			// boundary and the heading describes the wrong thing.
 			var low = Entry(1) with { UiCategory = "ZonesResidential", ZoneType = ZoneTypeFilter.Low };
 			var high = Entry(2) with { UiCategory = "ZonesResidential", ZoneType = ZoneTypeFilter.High };
 
@@ -402,10 +390,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void OrdersServiceBranchesBeneathTheirCategory()
 		{
-			// Measured: the development branch partitions its category exactly
-			// on every service menu — Healthcare's four branches sum to its 24,
-			// Police's four to its 22. Depth leads the key so the branches read
-			// in the order the game's own tree lays them out.
+			// The development branch partitions its category on every service
+			// menu. Depth leads the key so the branches read in the order the
+			// game's own tree lays them out.
 			var basic = Entry(1) with { UiCategory = "Healthcare", DevTreeBranch = "Healthcare", DevTreeBranchDepth = 0 };
 			var later = Entry(2) with { UiCategory = "Healthcare", DevTreeBranch = "Hospital", DevTreeBranchDepth = 2 };
 
@@ -418,10 +405,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void FallsBackToTheMilestoneForSignatures()
 		{
-			// Signature buildings carry no development branch at all and every
-			// one of them is ZoneType.Signature, so the milestone is the only
-			// thing that varies. Signature must NOT be taken as a density here
-			// or all 100 collapse into one child.
+			// Signature buildings carry no development branch and all share
+			// ZoneType.Signature, so the milestone is the only thing that
+			// varies; reading Signature as a density collapses them into one.
 			var early = Entry(1) with { UiCategory = "SignaturesCommercial", ZoneType = ZoneTypeFilter.Signature, UnlockMilestone = 1 };
 			var late = Entry(2) with { UiCategory = "SignaturesCommercial", ZoneType = ZoneTypeFilter.Signature, UnlockMilestone = 9 };
 
@@ -454,10 +440,8 @@ namespace BetterBuildingMenu.Tests
 		public void UsesTheSubcategoryAsTransitsTier()
 		{
 			// Transit is the one menu whose development branch divides nothing:
-			// {Road, Train, Tram} against {TransportationRoad,
-			// TransportationTrain, TransportationTram} is one to one, so every
-			// category would draw a single child. Tracks, stops, lines and
-			// stations are the real split.
+			// its branches map one to one onto its categories. Tracks, stops,
+			// lines and stations are the real split.
 			var track = Entry(1) with
 			{
 				UiMenu = "Transportation",
@@ -503,8 +487,6 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void TheMenusOwnCategoriesBeatADevelopmentAxis()
 		{
-			// cm-2xvs.23, reported on Roads: ten category tabs on screen and the
-			// grid grouped by Development underneath them.
 			Assert.Equal("menuCategory", BuildingCatalogGrouping.DefaultDimension(true, "development", false));
 		}
 
@@ -524,9 +506,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void TheEffectiveGroupingIsOneTheMenuOffers()
 		{
-			// Electricity: one category, so the default is menuCategory — which the
-			// picker dropped for putting the whole menu in one bucket. The strip's
-			// axis is the next answer, and it is offered.
+			// One category, so the picker does not offer the default menuCategory:
+			// it would put the whole menu in one bucket. The strip's axis is the
+			// next answer, and it is offered.
 			var electricity = new[] { "category", "subCategory", "role", "development", "source", "footprint", "cost", "none" };
 			Assert.Equal("development", BuildingCatalogGrouping.Effective("", true, "development", false, electricity));
 
@@ -561,8 +543,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void ProgressionAndDevelopmentHaveKeysSoTheirGroupsAreContiguous()
 		{
-			// They had none: the UI grouped the page by label and sorted the
-			// headings itself, so a group could straddle a window boundary.
+			// Without an ordering key the UI groups by label alone and a group
+			// can straddle a window boundary.
 			var early = Entry(1) with { UnlockMilestone = 2, DevTreeBranch = "Basic", DevTreeBranchDepth = 0 };
 			var late = Entry(2) with { UnlockMilestone = 10, DevTreeBranch = "Nuclear", DevTreeBranchDepth = 3 };
 

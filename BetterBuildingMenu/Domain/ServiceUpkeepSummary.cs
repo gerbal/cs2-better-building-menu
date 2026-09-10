@@ -8,13 +8,9 @@ namespace BetterBuildingMenu.Domain
 	/// What a building costs to run, read the way the game reads it.
 	/// </summary>
 	/// <remarks>
-	/// The ServiceUpkeepData buffer is the authority. BuildingInitializeSystem
-	/// copies a ConsumptionData upkeep INTO it as a Money entry — and warns when
-	/// a prefab carries money in both — so summing the buffer's money never
-	/// double-counts, and the consumption figure is only a fallback for a prefab
-	/// that has no buffer at all. Every other resource in the buffer is what the
-	/// building burns; vanilla prices it into one money figure at market rate,
-	/// this names it.
+	/// The ServiceUpkeepData buffer is the authority: BuildingInitializeSystem copies
+	/// a ConsumptionData upkeep into it as a Money entry, so summing the buffer never
+	/// double-counts and the consumption figure is a fallback for a prefab with none.
 	/// </remarks>
 	public static class ServiceUpkeepSummary
 	{

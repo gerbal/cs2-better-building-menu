@@ -18,22 +18,9 @@ namespace BetterBuildingMenu.Systems
 		/// Drops the "newly unlocked" marks under a menu the lens has taken over.
 		/// </summary>
 		/// <remarks>
-		/// The green pip on a toolbar button is <see cref="UIHighlight"/>, which
-		/// ToolbarUISystem writes as each item's "highlight" property.
-		/// UpdateHighlights removes it when the player's ASSET CATEGORY selection
-		/// moves off a category: it clears that category's assets, then the
-		/// category, then the menu once nothing under it is still marked.
-		///
-		/// That path runs off m_SelectedAssetCategoryBinding, and the lens
-		/// replaces the vanilla grid rather than selecting categories in it — so
-		/// the game never saw the player look, and the pip on Roads and Zones
-		/// stayed lit forever.
-		///
-		/// The lens shows a menu's whole contents at once rather than one
-		/// category at a time, so viewing it means all of them have been seen.
-		/// Vanilla's theme and asset-pack conditions are deliberately not
-		/// reproduced: those decide which assets a CATEGORY still owes a mark
-		/// to, and there is no partially-viewed category here.
+		/// ToolbarUISystem drops <see cref="UIHighlight"/> as the player's asset-category
+		/// selection moves off a category; the lens replaces the grid instead of selecting
+		/// categories in it, and showing a menu whole means all of them have been seen.
 		/// </remarks>
 		private void ClearVanillaMenuHighlights(string menuName)
 		{
@@ -95,15 +82,9 @@ namespace BetterBuildingMenu.Systems
 		/// Makes the toolbar redraw after we have removed a highlight.
 		/// </summary>
 		/// <remarks>
-		/// Removing the component is not enough on its own. ToolbarUISystem only
-		/// re-binds when a prefab was newly unlocked this frame or a unique
-		/// asset changed state, so a highlight we drop would sit on screen until
-		/// the next unlock. Vanilla's own UpdateHighlights answers this by
-		/// calling these two bindings directly; they are private, so we reach
-		/// them the way PdxModsUtil reaches m_SDKContext.
-		///
-		/// Cached, and failure is swallowed by the caller: this is cosmetic, and
-		/// a field rename in a game patch must not take the menu down with it.
+		/// ToolbarUISystem re-binds only on a fresh unlock, so a highlight we drop would sit
+		/// on screen; vanilla's UpdateHighlights calls these two private bindings directly.
+		/// Cached, and failure is swallowed by the caller: this is cosmetic.
 		/// </remarks>
 		private void RefreshVanillaToolbarBindings()
 		{
@@ -126,24 +107,9 @@ namespace BetterBuildingMenu.Systems
 		/// releases that menu's selection on the toolbar.
 		/// </summary>
 		/// <remarks>
-		/// Closing the panel used to leave the toolbar button still selected,
-		/// because the game never learned the menu went away. The next press of
-		/// that button was therefore read as "deselect", which does nothing
-		/// visible, and the lens only came back on the second click.
-		///
-		/// A previous attempt fixed the same symptom by suppressing the vanilla
-		/// grid, which traded the extra click for a worse one. Clearing the
-		/// selection tells the game the truth instead.
-		///
-		/// Only the deliberate close paths call this. When the player picks a
-		/// different vanilla menu the lens also closes, but there the selection
-		/// is their new choice and clearing it would undo the click — that path
-		/// arms a tool, so it never reaches OnToolChanged's default-tool branch.
-		///
-		/// Notably NOT called from OnToolChanged. That branch fires on every
-		/// return to the default tool, so clearing the selection there released
-		/// the menu long before the player pressed Escape — and the game's own
-		/// Escape chain, finding nothing left to close, opened the pause menu.
+		/// Clearing the selection tells the game the menu went away, so the next press of that
+		/// button opens it instead of reading as a deselect. Only the deliberate close paths
+		/// call this, never OnToolChanged, which fires on every return to the default tool.
 		/// </remarks>
 		private void CloseLens()
 		{
@@ -170,17 +136,8 @@ namespace BetterBuildingMenu.Systems
 		/// Forgets the vanilla menu the lens was standing in for.
 		/// </summary>
 		/// <remarks>
-		/// The scope was set on every vanilla menu click and, before this
-		/// existed, cleared in only one of the two places the lens closes:
-		/// reopening from FindIt's own toolbar button still filtered the whole
-		/// catalog down to whichever menu had been clicked last, with nothing on
-		/// screen saying so.
-		///
-		/// Shared rather than duplicated because the two close paths had already
-		/// drifted apart once — CloseLens cleared the scope and
-		/// VanillaMenuDeselected did not, so which stale filter you got depended
-		/// on whether you closed the lens with its own button or with the
-		/// toolbar icon.
+		/// Shared by both close paths, so the scope cannot survive one of them and leave the
+		/// next open filtered to whichever menu was clicked last.
 		/// </remarks>
 		private void ReleaseMenuScope()
 		{
@@ -193,20 +150,8 @@ namespace BetterBuildingMenu.Systems
 		/// ours is left covering it.
 		/// </summary>
 		/// <remarks>
-		/// Three callers used to write these three lines out, and a fourth —
-		/// the ReplaceVanillaBuildMenu-is-off branch — wrote only the first two
-		/// and returned. That single missing line was the ONLY way the retired
-		/// floating panel could still reach the screen: turn the setting off
-		/// mid-session and select a menu, and ShowFindItPanel stayed true while
-		/// LensOwnsCurrentMenu went false, which is exactly the combination
-		/// shouldMountLegacyPanel draws on.
-		///
-		/// Worse, that panel could then be made permanent. SetLensMenuOpen
-		/// early-returns on (_IsWindowLocked and _lensMenuOpen), so one click
-		/// of its lock button refused every close path there is.
-		///
-		/// A shape written out four times will diverge; this is the divergence.
-		/// One method so the next caller cannot repeat it.
+		/// One method rather than the same three lines at each call site: a caller that writes
+		/// only part of it leaves the lens covering a menu it no longer owns.
 		/// </remarks>
 		private void YieldMenuToVanilla()
 		{
@@ -222,11 +167,9 @@ namespace BetterBuildingMenu.Systems
 		/// A vanilla toolbar menu was opened: show the lens filtered to it.
 		/// </summary>
 		/// <remarks>
-		/// Declines quietly whenever the lens has nothing better to offer than
-		/// the vanilla grid — the setting is off, or the menu has no name in
-		/// the index (a modded toolbar entry added after indexing) — so the
-		/// vanilla menu keeps working untouched in those cases. Every named
-		/// vanilla menu routes here, Roads and Landscaping included.
+		/// Declines quietly whenever the lens has nothing better to offer than the vanilla grid
+		/// — the setting is off, or the menu has no name in the index — so that menu keeps
+		/// working untouched. Every named vanilla menu routes here, Roads and Landscaping too.
 		/// </remarks>
 		private void VanillaMenuSelected(int menuEntityIndex)
 		{
@@ -236,32 +179,23 @@ namespace BetterBuildingMenu.Systems
 				return;
 			}
 
-			// Opening the lens makes the game re-assert the armed tool's menu,
-			// so one click arrives as two selections. Routing the second
-			// reverted the player's choice within the same tick.
+			// Opening the lens makes the game re-assert the armed tool's menu, so one
+			// click arrives as two selections.
 			if (MenuEchoGuard.IsEcho(_appliedMenuFrame, _appliedMenuIndex, UnityEngine.Time.frameCount, menuEntityIndex))
 			{
 				return;
 			}
 
-			// The menu's own name is the whole constraint the query needs:
-			// assets carry the menu the game placed them in (PrefabIndex.UiMenuName,
-			// read off UIObject.m_Group), so a name reproduces vanilla's set
-			// exactly. GetAssetMenuName resolves the UIAssetMenuPrefab's name,
-			// which is that same string, so it needs no translation. There used
-			// to be a preset table in front of this that mapped the service
-			// menus onto upstream FindIt's category enums; the tree covers every
-			// menu — Roads alone is 9 categories, 157 assets — so the table only
-			// ever narrowed what the tree already answered.
+			// The menu's own name is the whole constraint the query needs: assets carry
+			// the menu the game placed them in, and GetAssetMenuName resolves the
+			// UIAssetMenuPrefab's name, which is that same untranslated string.
 			var menuName = PrefabIndexingSystem.GetAssetMenuName(menuEntityIndex);
 
 			if (string.IsNullOrEmpty(menuName))
 			{
-				// A menu the index never saw — a modded toolbar entry that was
-				// added after indexing, or one with no prefab. The player asked
-				// for that menu, so get out of its way: the lens panel sits over
-				// exactly where the vanilla asset grid appears, and leaving it up
-				// would hide the menu they just clicked.
+				// A menu the index never saw — a modded toolbar entry added after
+				// indexing, or one with no prefab. The player asked for it, so get out of
+				// the way: the panel sits exactly where the vanilla asset grid appears.
 				YieldMenuToVanilla();
 				return;
 			}
@@ -271,35 +205,18 @@ namespace BetterBuildingMenu.Systems
 			// what vanilla treats as having seen it.
 			ClearVanillaMenuHighlights(menuName);
 			PublishScope();
-			// A different menu has different tabs, so the old selection cannot
-			// survive the switch.
 
 			_appliedMenuIndex = menuEntityIndex;
 			_appliedMenuFrame = UnityEngine.Time.frameCount;
 			_LensOwnsCurrentMenu.Value = true;
 
-			// Opening a menu never arms a prefab. Re-arming the prefab from the
-			// LAST menu is what desynced the toolbar (the old SelectPrefabOnOpen
-			// option, now gone, tried to do exactly that). Arming a
-			// water pipe makes the game re-assert Water as the selected menu, so
-			// the highlight sat on Water while the lens showed Electricity, and
-			// clicking the lit Water icon closed a menu the player never opened.
-			//
-			// The echo guard was written for the same re-assertion and only
-			// stopped it reaching US; the game's own selection still moved. This
-			// removes the re-assertion instead of ignoring it.
-			//
-			// Exactly one refresh, whichever way we got here.
-			//
-			// SetLensMenuOpen(true) ends in RefreshLens — but it FIRST
-			// early-returns when the panel is already visible, which is
-			// precisely the menu-to-menu switch. So the refresh cannot live
-			// only inside the toggle (a switch would get none) and cannot
-			// live only outside it (a cold open would get two).
-			//
-			// Measured both ways: three refreshes fired per open before
-			// this, and dropping the outside pair silently left the strip
-			// showing the PREVIOUS menu's counts on every switch.
+			// Opening a menu never arms a prefab. Arming one makes the game re-assert
+			// that prefab's menu as the selection, which leaves the toolbar highlight
+			// on one menu while the lens shows another.
+
+			// Exactly one refresh whichever way we got here: SetLensMenuOpen early-returns
+			// when the panel is already visible, which is precisely the menu-to-menu
+			// switch, so the refresh fits neither only inside the toggle nor only outside.
 			var wasOpen = _lensMenuOpen;
 			SetLensMenuOpen(true);
 
@@ -313,15 +230,9 @@ namespace BetterBuildingMenu.Systems
 		/// Closes the lens when the toolbar drops the menu it was standing in for.
 		/// </summary>
 		/// <remarks>
-		/// A toolbar menu button toggles: clicking the one that is already open
-		/// deselects it. The lens only ever heard about the opening half of that,
-		/// so a second click on the same icon un-lit the button, closed the menu it
-		/// stood for, and left the panel covering the screen with no way to read it
-		/// as anything but stuck.
-		///
-		/// Only acts when the lens owns the current menu. A menu that was
-		/// handed back to vanilla (see VanillaMenuSelected) is the vanilla
-		/// grid's business to close, not ours.
+		/// A toolbar menu button toggles, so a second click on the lit icon deselects the menu
+		/// the lens stands for. Only acts when the lens owns the current menu: one handed back
+		/// to vanilla is the vanilla grid's business to close.
 		/// </remarks>
 		private void VanillaMenuDeselected()
 		{
@@ -337,10 +248,9 @@ namespace BetterBuildingMenu.Systems
 			_appliedMenuFrame = null;
 			_LensOwnsCurrentMenu.Value = false;
 
-			// The same release CloseLens does. The toolbar deselect is a close
-			// like any other, and a lens that forgets its menu only when closed
-			// one of the two ways is a lens whose next filter depends on which
-			// button you used.
+			// The same release CloseLens does. A toolbar deselect is a close like any
+			// other, and a lens that forgets its menu on only one of the two paths
+			// filters by whichever button you happened to use.
 			ReleaseMenuScope();
 
 			if (_lensMenuOpen)
@@ -353,10 +263,8 @@ namespace BetterBuildingMenu.Systems
 		/// Picks one of the scoped menu's category tabs, or all of them.
 		/// </summary>
 		/// <remarks>
-		/// The empty string is "every category in this menu", which is the state
-		/// a menu opens in. Vanilla has no such tab — it always opens on the
-		/// first category — but the lens can show a whole menu at once and that
-		/// is worth keeping, so the strip carries one more option than vanilla's.
+		/// The empty string is "every category in this menu", the state a menu opens in.
+		/// Vanilla has no such tab, but the lens can show a whole menu at once.
 		/// </remarks>
 		private void SetBuildingLensMenuCategory(string category) => Apply(_lens.SelectCategory(category));
 
@@ -377,17 +285,9 @@ namespace BetterBuildingMenu.Systems
 		/// Scopes the lens to a vanilla menu chosen from the filters.
 		/// </summary>
 		/// <remarks>
-		/// The same state a bottom-bar icon sets, reached the other way. If a
-		/// toolbar icon is a shortcut to a preconfigured view — which is what
-		/// the menu chip says it is — then the view has to be reachable without
-		/// the shortcut, or the chip names something only the toolbar can
-		/// produce.
-		///
-		/// Deliberately not VanillaMenuSelected. That one is answering the game
-		/// ("the player opened this menu, get out of its way or take it over"),
-		/// so it carries an echo guard and two branches that close the panel.
-		/// This one is answering the player, who is already in the lens and has
-		/// just asked for a menu inside it.
+		/// The same state a bottom-bar icon sets, reached the other way, so the view the menu
+		/// chip names stays reachable without the shortcut. Deliberately not VanillaMenuSelected:
+		/// that one answers the game, this one answers a player already inside the lens.
 		/// </remarks>
 		private void SetBuildingLensMenu(string menuName) => Apply(_lens.SelectMenu(menuName), navigation: true);
 
@@ -395,14 +295,9 @@ namespace BetterBuildingMenu.Systems
 		/// Drops the vanilla-menu scope and shows the whole catalog.
 		/// </summary>
 		/// <remarks>
-		/// The bottom-bar icons are shortcuts to a preconfigured view, not a box
-		/// the player is locked inside. Removing the menu chip is how you say
-		/// "same filters, everything" — the widening that SearchEverything only
-		/// offered for a search that already found nothing.
-		///
-		/// The facets deliberately survive. This clears the scope, not the
-		/// narrowing the player chose within it, and dropping both would make
-		/// one × do two jobs.
+		/// The bottom-bar icons are shortcuts to a preconfigured view, not a box the player is
+		/// locked inside. The facets deliberately survive: this clears the scope, not the
+		/// narrowing chosen within it, so one × does one job.
 		/// </remarks>
 		private void ClearBuildingLensMenuScope() => Apply(_lens.ClearMenuScope(), navigation: true);
 
@@ -460,9 +355,8 @@ namespace BetterBuildingMenu.Systems
 
 		private void CommitBuildingLensPanelHeight()
 		{
-			// Only on release, like the width: a drag publishes on every mouse
-			// move, and writing the settings file at that rate is what the live
-			// binding exists to avoid.
+			// Only on release, like the width: a drag publishes on every mouse move, and
+			// writing the settings file at that rate is what the live binding avoids.
 			var height = BuildingLensHeight.Clamp(_BuildingLensPanelHeight);
 			if (Math.Abs(Mod.Settings.BuildingLensPanelHeight - height) < 0.1f)
 			{
@@ -479,17 +373,9 @@ namespace BetterBuildingMenu.Systems
 		/// Chooses the heading dimension, which is also the query's primary key.
 		/// </summary>
 		/// <remarks>
-		/// The window shrinks back to the base chunk because the grouping
-		/// reorders the whole result: the rows the player grew the window to
-		/// reach are not the rows that would come back.
-		/// </remarks>
-		/// <remarks>
-		/// Returns early when nothing changed, like ToggleBuildingLensFacet
-		/// below. Not a micro-optimisation: the UI derives this value from the
-		/// menu, so it re-sends it on EVERY menu open — measured at a full
-		/// query and a republish of a dozen bindings per open, for a value that
-		/// was already what it is. Three refreshes fired per menu open and this
-		/// was one of them.
+		/// The window shrinks back to the base chunk because grouping reorders the whole result.
+		/// Returns early when nothing changed: the UI derives this value from the menu, so it
+		/// re-sends it on every menu open.
 		/// </remarks>
 		private void SetBuildingCatalogGroupBy(string groupBy) => Apply(_lens.SetGroupBy(groupBy));
 
@@ -500,12 +386,9 @@ namespace BetterBuildingMenu.Systems
 		/// Grows the window by one step, keeping the offset at zero.
 		/// </summary>
 		/// <remarks>
-		/// The window is owned here rather than accumulated on the client
-		/// because placing a building unmounts the lens panel, which would take
-		/// any client-side list of rows with it. A bigger Limit over the same
-		/// predicates re-runs the order across the whole match set and returns a
-		/// longer prefix of it, so the rows already on screen keep their
-		/// identity and there is no seam to stitch.
+		/// The window is owned here rather than accumulated on the client, because placing a
+		/// building unmounts the panel. A bigger Limit over the same predicates returns a longer
+		/// prefix of the same order, so the rows on screen keep their identity.
 		/// </remarks>
 		private void LoadMoreBuildingCatalog() => Apply(_lens.LoadMore());
 
@@ -517,14 +400,9 @@ namespace BetterBuildingMenu.Systems
 		/// Puts a menu back the way it opens.
 		/// </summary>
 		/// <remarks>
-		/// Clear only drops the FACETS. A menu accumulates more than that — a
-		/// tab in the strip, a school level, a search, a sort — and undoing them
-		/// meant finding each control and remembering what it had been. This is
-		/// the one gesture that gets back to a known state.
-		///
-		/// The grouping and the view mode are not here: they are UI-side
-		/// choices, kept per lens rather than in the query, so the pane clears
-		/// its own alongside this call.
+		/// Clear drops only the facets; a menu also accumulates a strip tab, a school level, a
+		/// search and a sort, and this is the one gesture back to a known state. Grouping and
+		/// view mode are UI-side choices, so the pane clears its own alongside this.
 		/// </remarks>
 		private void ResetBuildingLensMenu() => Apply(_lens.ResetMenu());
 
@@ -553,24 +431,16 @@ namespace BetterBuildingMenu.Systems
 
 			RefreshLens();
 
-			// RefreshLens already ran RefreshBuildingCatalog
-			// above, which now refreshes the options bank itself once its facet
-			// bindings are current. A second call here would just repeat that
-			// with nothing having changed in between.
+			// RefreshLens already ran RefreshBuildingCatalog, which refreshes the options
+			// bank itself once its facet bindings are current.
 		}
 
 		/// <summary>
 		/// Takes the game's own toolbar filter row and applies it to the catalog.
 		/// </summary>
 		/// <remarks>
-		/// Closes cm-2xvs.3. The toolbar's EU/NA toggle, its asset packs and its
-		/// Vanilla/Mods buttons filtered the vanilla grid and did nothing to the
-		/// lens, because the lens replaced the menu below them and not the row
-		/// itself.
-		///
-		/// The rule is <see cref="VanillaToolbarFilter"/>, transcribed from
-		/// ToolbarUISystem and tested against it. All this does is deliver the
-		/// selection and ask for a redraw.
+		/// The rule is <see cref="VanillaToolbarFilter"/>, transcribed from ToolbarUISystem and
+		/// tested against it. All this does is deliver the selection and ask for a redraw.
 		/// </remarks>
 		private void SetVanillaToolbarSelection(string themes, string packs, bool vanillaSelected, bool modsSelected)
 		{

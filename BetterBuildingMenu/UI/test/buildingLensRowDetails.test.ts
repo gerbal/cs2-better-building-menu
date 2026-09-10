@@ -12,8 +12,7 @@ describe("Building description lookup", () => {
   it("asks for the asset description the game itself uses", () => {
     // PrefabUISystem.GetTitleAndDescription keys ordinary assets as
     // Assets.DESCRIPTION[<prefab.name>] and service upgrades as
-    // Assets.UPGRADE_DESCRIPTION[<prefab.name>]. The catalog entry already
-    // carries prefabName, so no backend projection is needed.
+    // Assets.UPGRADE_DESCRIPTION[<prefab.name>]; the entry carries prefabName.
     assert.deepEqual(getBuildingDescriptionKeys("ElementarySchool01"), [
       "Assets.DESCRIPTION[ElementarySchool01]",
       "Assets.UPGRADE_DESCRIPTION[ElementarySchool01]",
@@ -130,8 +129,7 @@ describe("Provenance", () => {
 
   it("shows the DLC's name rather than its raw numeric id", () => {
     // The adapter puts the raw DlcId on the entry while the facet group
-    // carries the display name, so the row read a bare number until it
-    // resolved through the same table the filter uses.
+    // carries the display name, so the row resolves through the filter's table.
     const resolve = (groupId: string, value: string) =>
       groupId === "dlc" && value === "2427741" ? "Landmark Buildings" : null;
 
@@ -142,10 +140,8 @@ describe("Provenance", () => {
 
   it("draws no DLC chip for the game's base-game and invalid sentinels", () => {
     // Colossal.PSI.Common.DlcId: BaseGame is -2009, Invalid is -1. The facet
-    // names the base game through its own "vanilla" option, never through a
-    // "dlc:-2009" one, so the resolver has nothing and the row printed
-    // "DLC -2009" (seen 2026-09-09 on every base-game row). Base game is not
-    // a DLC; the Source chip already says where the asset came from.
+    // names the base game through its own "vanilla" option, so the resolver
+    // has nothing — and base game is no DLC; the Source chip already says so.
     assert.deepEqual(getBuildingProvenanceChips({ dlcId: "-2009", provenance: "Vanilla" }, () => null), [
       { label: "Source", value: "Vanilla" },
     ]);
@@ -166,8 +162,8 @@ describe("Provenance", () => {
 });
 
 describe("Resolving an asset's description", () => {
-  // The real dictionary's behaviour, measured live 2026-08-09: a key that
-  // exists returns its text; a key that does not returns ITSELF.
+  // The real dictionary's behaviour: a key that exists returns its text; a key
+  // that does not returns ITSELF.
   const dictionary: Record<string, string> = {
     "Assets.DESCRIPTION[ElementarySchool01]":
       "A place of basic education for children. Provides the first level of education. \r\nCan be upgraded with an extension wing.",
@@ -251,8 +247,8 @@ describe("Clamping a description to the hover card", () => {
       "../src/domain/buildingLensRowDetails.ts"
     );
 
-    // The Medical University's real text, 231 characters, which overran three
-    // lines on the live card and stopped mid-sentence with nothing to explain it.
+    // The Medical University's real text, 231 characters — longer than the
+    // three lines the card draws.
     const long =
       "Academic schooling for medical professions. Provides the fourth level of education, and increases the efficiency of healthcare service buildings. Can be upgraded with an extension wing, research facilities, and a library.";
     const clamped = clampAssetDescription(long) ?? "";
@@ -302,9 +298,9 @@ describe("Rendering the game's own line break", () => {
   it("collapses the CRLF the engine cannot honour", async () => {
     const { resolveAssetDescription } = await import("../src/domain/buildingLensRowDetails.ts");
 
-    // white-space: pre-line computes to normal in Cohtml — measured on the live
-    // card — so the break renders as a space however it is asked for. Collapsed
-    // in the resolver so the string returned is the string drawn.
+    // white-space: pre-line computes to normal in Cohtml, so the break renders
+    // as a space however it is asked for. Collapsed in the resolver, so the
+    // string returned is the string drawn.
     const translate = (key: string) =>
       key === "Assets.DESCRIPTION[School]" ? "First sentence. \r\nSecond sentence." : key;
 
@@ -316,8 +312,8 @@ describe("Where the clamp prefers to cut", () => {
   it("ends on a finished sentence rather than a dangling word", async () => {
     const { clampAssetDescription } = await import("../src/domain/buildingLensRowDetails.ts");
 
-    // The Medical University, live: the word-boundary cut landed four
-    // characters past the end of a sentence and produced "…buildings. Can…".
+    // The word-boundary cut can land a few characters past the end of a
+    // sentence and produce "…buildings. Can…".
     const long =
       "Academic schooling for medical professions. Provides the fourth level of education, and increases the efficiency of healthcare service buildings. Can be upgraded with an extension wing.";
 
@@ -350,9 +346,8 @@ describe("Where the clamp prefers to cut", () => {
 describe("leisureLabel", () => {
   it("asks the game for its own word", () => {
     // Vanilla ships Properties.LEISURE_TYPE[CityPark] and [CityIndoors], so a
-    // park reads the same here as everywhere else in the UI, in every language.
-    // Inventing our own "Outdoor recreation" would be a second vocabulary for a
-    // property that already has one.
+    // park reads the same here as everywhere else in the UI, in every
+    // language. Our own wording would be a second vocabulary for one property.
     const translate = (key: string) =>
       key === "Properties.LEISURE_TYPE[CityPark]" ? "Outdoor recreation" : null;
 

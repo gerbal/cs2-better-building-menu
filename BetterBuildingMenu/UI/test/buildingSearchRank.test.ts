@@ -2,9 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { topSearchResult } from "../src/domain/buildingSearchRank.ts";
 
-// Scoring and ranking moved to BuildingCatalogRelevance.cs (cm-jjlv.8); the
-// page arrives ordered. What is left here is the one rule the UI keeps: what
-// Enter arms.
+// Scoring and ranking live in BuildingCatalogRelevance.cs and the page arrives
+// ordered. What is left here is the one rule the UI keeps: what Enter arms.
 const e = (id: number, name: string) => ({ id, name });
 
 describe("Enter arms the top result", () => {

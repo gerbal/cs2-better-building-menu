@@ -37,8 +37,8 @@ describe("the category strip", () => {
   });
 
   it("draws nothing while the lens is unscoped", () => {
-    // Under All menus the strip published every category of every menu —
-    // about seventy — and wrapped to four rows of icon-only tabs.
+    // Under All menus the strip would publish every category of every menu
+    // and wrap to four rows of icon-only tabs.
     seed("");
     const html = render();
 

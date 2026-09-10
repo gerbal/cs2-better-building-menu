@@ -17,14 +17,9 @@ export interface StyledElement {
 }
 
 /**
- * Set one inline style on an element we do not render, and return the
- * restore.
- *
- * The game styles these elements from its stylesheet, so their inline value
- * is normally "" — and restoring "" is the trap: a browser reads it as "unset
- * the inline value", Cohtml reads it as a value, rejects it and logs "Trying
- * to set justifyContent property to invalid value!" on every menu close. So a
- * previous value is assigned back and an absent one is removed.
+ * Set one inline style on an element we do not render, and return the restore.
+ * The trap is restoring "": Cohtml reads it as a value and rejects it where a
+ * browser unsets. So a previous value is assigned and an absent one REMOVED.
  */
 export function setInlineStyle(element: StyledElement, property: PatchedProperty, value: string): () => void {
   const previous = element.style[property];
@@ -41,12 +36,9 @@ export function setInlineStyle(element: StyledElement, property: PatchedProperty
 }
 
 /**
- * The selector token of a stylesheet-module class.
- *
- * A module value can carry more than one class — `gameMainScreen` is
- * "game-main-screen_TRK child-opacity-transition_nkS" — and only the first
- * names the element. Null for a missing key, so a caller can make its patch
- * a no-op instead of guessing at a hashed name.
+ * The selector token of a stylesheet-module class. A module value can carry
+ * more than one class and only the first names the element; null for a missing
+ * key, so a caller can no-op rather than guess at a hashed name.
  */
 export function firstClassToken(classes: unknown): string | null {
   if (typeof classes !== "string") {

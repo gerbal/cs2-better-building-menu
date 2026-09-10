@@ -5,17 +5,10 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// cm-e98i's third acceptance criterion: the mapping from a vanilla toolbar
-	/// section to what the lens shows is covered by tests, not only by a runtime
-	/// census.
+	/// The mapping from a vanilla toolbar section to what the lens shows, pinned by
+	/// tests rather than by a runtime census. Fixtures stay small enough to name
+	/// what each one asserts.
 	/// </summary>
-	/// <remarks>
-	/// The census these replace reported the real numbers correctly for a week
-	/// and could still not stop a regression, because reading it meant booting a
-	/// developed save and grepping Modding.log. The fixtures below are shaped
-	/// like the live run they were extracted from (see VanillaMenuAudit's
-	/// remarks) but stay small enough to name what each one is asserting.
-	/// </remarks>
 	public sealed class VanillaMenuAuditTests
 	{
 		private static VanillaMenuPlacementFact Places(int id, string name, string menu, string category = "Cat") =>
@@ -53,10 +46,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void AnAssetVanillaPlacesAndWeDoNotHoldIsNamed()
 		{
-			// The failure the whole audit exists for: the player clicks Roads and
-			// the lens is short something the vanilla menu offers. Named rather
-			// than counted, because "missing=1" says a regression happened and the
-			// name says which walk stopped seeing it.
+			// The failure the audit exists for: the lens is short something the
+			// vanilla menu offers. Named rather than counted, because the name says
+			// which asset and a count only says that one is gone.
 			var report = Compare(
 				new[] { Places(1, "Alley", "Roads"), Places(2, "Gravel Road", "Roads") },
 				new[] { Ours(1, "Alley", "Roads") });
@@ -71,9 +63,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void HoldingAnAssetOutsideTheMenuStillCountsAsHeld()
 		{
-			// Held is "do we have it at all", not "do we file it under this menu".
-			// Zones are the case that forced the distinction: the game places them
-			// under Zones, and we hold them in a separate catalog.
+			// Held is "do we have it at all", not "do we file it under this menu":
+			// the game places zones under Zones, we hold them in a separate catalog.
 			var report = Compare(
 				new[] { Places(1, "Residential Low", "Zones") },
 				ours: System.Array.Empty<IndexedMenuFact>(),
@@ -88,10 +79,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void AServiceUpgradeWeIndexButVanillaDoesNotPlaceIsAnExpectedExtra()
 		{
-			// The one recorded divergence. The game runs FilterOutUpgrades over
-			// every menu because an upgrade is placed from its parent building's
-			// row; we match that in the list but keep them indexed so the parent
-			// can still name them. Live, this is exactly six assets.
+			// The one recorded divergence: the game runs FilterOutUpgrades over every
+			// menu because an upgrade is placed from its parent building's row. We
+			// match that in the list but keep them indexed so the parent names them.
 			var report = Compare(
 				new[] { Places(1, "Crematorium01", "Health & Deathcare") },
 				new[]
@@ -111,10 +101,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void AnExtraNoDivergenceExplainsIsReportedAsUnexplained()
 		{
-			// The counterpart to the test above, and the reason the divergence is
-			// a rule rather than a list of six names: something we offer that
-			// vanilla does not place, with no reason on record, is either a new
-			// divergence to write down or a bug. It must not pass quietly.
+			// Something we offer that vanilla does not place, with no divergence on
+			// record, is either a new divergence to write down or a bug — which is
+			// why the divergence is a rule rather than a list of names.
 			var report = Compare(
 				new[] { Places(1, "Crematorium01", "Health & Deathcare") },
 				new[]
@@ -133,10 +122,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void AMenuNameVanillaHasNoMenuForIsReported()
 		{
-			// Four unbuildable "Area Hub" zones and six theme-less base zones sat
-			// in the surface until a player tried to build one, because nothing
-			// asked the reverse question. A menu name the game does not have is
-			// one nothing can ever open.
+			// The reverse question: a menu name the game does not have is one nothing
+			// can ever open.
 			var report = Compare(
 				new[] { Places(1, "Alley", "Roads") },
 				new[] { Ours(1, "Alley", "Roads"), Ours(2, "Invented", "Our Own Menu") });
@@ -148,9 +135,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void EntriesWithNoMenuNameAreNotCountedAsOurs()
 		{
-			// Most of the index has no menu name at all — live, 17952 indexed
-			// assets against 840 placements. Counting those as ours would make
-			// every menu look like it had thousands of extras.
+			// Most of the index has no menu name at all; counting those as ours would
+			// give every menu a crowd of extras.
 			var report = Compare(
 				new[] { Places(1, "Alley", "Roads") },
 				new[] { Ours(1, "Alley", "Roads"), Ours(2, "Some Prop", string.Empty) });
@@ -163,9 +149,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void CategoriesAreCountedDistinctlyPerMenu()
 		{
-			// The subcategory row is cm-e98i's second half, so the count of
-			// categories per menu is part of the same contract: Transportation
-			// draws six tabs live, and it draws them from this.
+			// The count of categories per menu is part of the same contract: the
+			// strip draws its tabs from it.
 			var report = Compare(
 				new[]
 				{

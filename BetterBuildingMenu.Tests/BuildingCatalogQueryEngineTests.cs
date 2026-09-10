@@ -58,8 +58,8 @@ public sealed class BuildingCatalogQueryEngineTests
     };
 
     /// <summary>
-    /// The same five, filed under the menus vanilla would put them in. The
-    /// tests that used to narrow by upstream's Category narrow by UiMenu now.
+    /// The same five entries, filed under the menus vanilla puts them in, for
+    /// the tests that narrow by UiMenu.
     /// </summary>
     private static readonly IReadOnlyList<BuildingCatalogEntry> MenuedEntries = SampleEntries
         .Select(entry => entry with
@@ -71,23 +71,11 @@ public sealed class BuildingCatalogQueryEngineTests
 		[Fact]
 		public void AMenuOpensOnOneChunkLikeEverythingElse()
 		{
-			// It used to open on the whole menu. That was compensation for a
-			// scroll that never grew the window — cs2/ui's Scrollable takes an
-			// onScroll prop and never forwards it, so the passive load-more had
-			// never once fired and the only way past row 100 was a button at the
-			// end of a list nothing said was incomplete.
-			//
-			// A frame loop over scrollTop replaced it, and the cost of the
-			// compensation was measured: Roads & Networks at 401 rows is 8,465 DOM
-			// nodes, 95% of the game UI's total, and it more than halved the UI
-			// thread's throughput. Reported from play as the interface lagging.
+			// A window that opens on a whole menu costs DOM nodes the UI thread
+			// cannot spare; scrolling grows it instead.
 			var scoped = new BuildingCatalogQuery { UiMenu = "Roads" };
 			var unscoped = new BuildingCatalogQuery();
 
-			// Asserted on Limit itself now. This used to read StartingLimit, a
-			// property whose two branches had both been walked back to
-			// DefaultLimit — so it compared the constant to itself and would have
-			// held whatever the scoping did.
 			Assert.Equal(BuildingCatalogQuery.DefaultLimit, scoped.Limit);
 			Assert.Equal(scoped.Limit, unscoped.Limit);
 		}
@@ -278,22 +266,13 @@ public sealed class BuildingCatalogQueryEngineTests
             new BuildingCatalogQuery(BuildingTypes: new[] { "hospital" }));
 
         Assert.True(state.HasSelection);
-        // "availability" IS offered even though all three fixtures are unlocked.
-        // Every other dimension is dropped when it holds one value and cannot
-        // narrow anything (IsWorthOffering), but this one is exhaustive: its
-        // resting state is a fact about the view rather than an absence of
-        // input, and "everything here is unlocked" is worth saying.
-        // "content", not "dlc" and "assetPack": those two were one axis wearing
-        // two hats — measured in game, one strictly contained the other — so
-        // they are merged. The pack half is keyed on the pack ENTITY and reads
-        // the game's own selection; see AssetPackFacetTests, which seeds it.
+        // "availability" is offered even where every entry is unlocked: the set
+        // is exhaustive, so its resting state is a fact about the view. "content"
+        // merges the DLC and pack axes, which are one axis wearing two hats.
         Assert.Equal(new[] { "buildingType", "provenance", "availability", "content", "theme", "placement" }, state.Groups.Select(group => group.Id).ToArray());
 
-        // NOTHING ticked at rest, matching the vanilla Pack row this control
-        // now sits beside — measured in the live panel: Pack draws every button
-        // dark while every pack is showing, because nothing picked means
-        // nothing excluded. Availability is the same kind of set and says it
-        // the same way.
+        // Nothing ticked at rest, like the vanilla Pack row this control sits
+        // beside: nothing picked means nothing excluded.
         BuildingCatalogFacetGroup availability = Assert.Single(state.Groups, group => group.Id == "availability");
         Assert.All(availability.Options, option => Assert.False(option.Selected));
         Assert.False(availability.Narrowing);
@@ -303,10 +282,9 @@ public sealed class BuildingCatalogQueryEngineTests
 		Assert.False(role.Options.Single(option => option.Id == "School").Selected);
 		Assert.False(role.Options.Single(option => option.Id == "Library").Selected);
 
-        // The DLC half of Content. Its options carry a "dlc:" prefix because
-        // the group spans three mechanisms and the prefix is how a click finds
-        // the one that owns it; base game carries none, because the game's own
-        // Vanilla toggle owns that.
+        // The DLC half of Content. Its options carry a "dlc:" prefix so a click
+        // finds which of the group's three mechanisms owns it; base game carries
+        // none, because the game's own Vanilla toggle owns that.
         BuildingCatalogFacetGroup content = Assert.Single(state.Groups, group => group.Id == "content");
         Assert.Equal("No DLC required", content.Options.Single(option => option.Id == "vanilla").Label);
         Assert.Equal(
@@ -318,18 +296,11 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.Equal("Custom content", provenance.Options.Single(option => option.Id == "Custom").Label);
 
         // Source and Content answer different questions — "who made it" versus
-        // "where did it come from" — so they must not offer the same option
-        // label in adjacent groups, which reads as a duplicated control. The
-        // whole reason Content exists is that two groups DID read that way.
+        // "where did it come from" — so they must not offer the same option label
+        // in adjacent groups, which reads as one control duplicated.
         Assert.NotEqual(
             provenance.Options.Single(option => option.Id == "Vanilla").Label,
             content.Options.Single(option => option.Id == "vanilla").Label);
-
-        // The pack group used to be asserted here on its NAMES, including a
-        // synthetic "FindIt_NoPack" for assets belonging to none. Both are gone
-        // with the name-keyed field: the group is keyed on the pack entity now
-        // (AssetPackFacetTests), and "belongs to no pack" is what vanilla's own
-        // base-game chip already says, beside its Pack row.
     }
 
     [Fact]
@@ -467,11 +438,9 @@ public sealed class BuildingCatalogQueryEngineTests
     [Fact]
     public void Query_ClampsOffsetPastTheEndSoAShrunkResultStillShowsRows()
     {
-        // A player on page 3 who narrows the result set leaves Offset far past
-        // the new TotalCount. Without a clamp the engine skips every match and
-        // returns an empty page while reporting a non-zero total, which the UI
-        // renders as "no buildings match" above a footer describing rows that
-        // are not on screen.
+        // Narrowing the result set can leave Offset past the new TotalCount.
+        // Without a clamp the page comes back empty above a footer describing
+        // rows that are not on screen.
         BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
             MenuedEntries,
             new BuildingCatalogQuery(UiMenu: "Zones", Offset: 200, Limit: 100));
@@ -490,7 +459,6 @@ public sealed class BuildingCatalogQueryEngineTests
             MenuedEntries,
             new BuildingCatalogQuery(UiMenu: "Zones", Offset: 40, Limit: 2));
 
-        // Zones holds [1, 5, 2] in name order; the last page holds id 2.
         Assert.Equal(3, page.TotalCount);
         Assert.Equal(2, page.Offset);
         Assert.Equal(new[] { 2 }, page.Items.Select(item => item.Id).ToArray());
@@ -526,10 +494,8 @@ public sealed class BuildingCatalogQueryEngineTests
     [Fact]
     public void Query_GivesAMenuScopedQueryTheWindowItAskedFor()
     {
-        // Menu scope used to force the limit to the ceiling, so the window size
-        // changed under the player the moment they entered a menu and changed
-        // back when they left. The growing window covers a whole menu without
-        // that: it just keeps asking for more.
+        // Scope does not decide the window size: a scoped query gets the limit it
+        // asked for, and covers its menu by asking for more.
         BuildingCatalogPage menu = BuildingCatalogQueryEngine.Query(
             SampleEntries,
             new BuildingCatalogQuery(UiMenu: "Roads", Limit: 100));
@@ -544,8 +510,7 @@ public sealed class BuildingCatalogQueryEngineTests
     [Fact]
     public void Query_StillPagesTheWholeCatalog()
     {
-        // Unscoped, the set is 3,667 buildings and no page size makes that one
-        // thing — so the 100 stands.
+        // No page size makes the unscoped catalog one thing, so the limit stands.
         BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
             SampleEntries,
             new BuildingCatalogQuery(Limit: 100));
@@ -556,12 +521,9 @@ public sealed class BuildingCatalogQueryEngineTests
     [Fact]
     public void Query_AGrownWindowIsAStrictSupersetPrefixOfTheSmallerOne()
     {
-        // The property the whole growing-window design rests on. The client
-        // never accumulates rows — placing a building unmounts the lens panel,
-        // which would destroy any UI-side accumulator — so it re-renders the
-        // page it is handed. That only works if a larger Limit returns the same
-        // leading rows in the same order, which it does because Order runs over
-        // the whole match set every call and the window is only ever a prefix.
+        // The property the growing window rests on: the client re-renders the page
+        // it is handed rather than accumulating rows, so a larger Limit has to
+        // return the same leading rows in the same order.
         BuildingCatalogEntry[] many = Enumerable
             .Range(1, 30)
             .Select(i => Entry(i, $"Prefab{i:D2}", $"Building {i:D2}", "Buildings", "", 2, 2, 1, false, ""))
@@ -790,14 +752,9 @@ public sealed class BuildingCatalogQueryEngineTests
     [Fact]
     public void Query_MenuScopeDropsUpgradesButUnscopedQueriesKeepThem()
     {
-        // Vanilla drops service upgrades from every build menu
-        // (ToolbarUISystem.FilterOutUpgrades), so a menu-scoped query must not
-        // offer something the player cannot place. An UNSCOPED query is not
-        // looking at a menu and must still find them, or the Extensions facet
-        // offers values that match nothing.
-        //
-        // This exact exclusion once ran outside the menu guard, which deleted
-        // every upgrade-bearing asset from the whole catalog.
+        // Vanilla drops service upgrades from every build menu, so a menu-scoped
+        // query must not offer what the player cannot place. An unscoped query is
+        // not looking at a menu and must still find them for the Extensions facet.
         BuildingCatalogEntry upgrade = SampleEntries[3] with
         {
             Id = 41,
@@ -833,9 +790,8 @@ public sealed class BuildingCatalogQueryEngineTests
     [Fact]
     public void Query_SortsParkingByCountRatherThanByTheFlag()
     {
-        // The flag put everything into two buckets and left the order inside
-        // them alone, so a set that agreed — all of Water & Sewage — appeared
-        // not to sort at all.
+        // The flag alone leaves two buckets in arbitrary order, so a set that
+        // agrees on it appears not to sort at all.
         BuildingCatalogEntry small = SampleEntries[3] with { Id = 61, HasParking = true, ParkingSlots = 12 };
         BuildingCatalogEntry large = SampleEntries[3] with { Id = 62, HasParking = true, ParkingSlots = 240 };
         BuildingCatalogEntry none = SampleEntries[3] with { Id = 63, HasParking = false, ParkingSlots = 0 };

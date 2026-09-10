@@ -9,25 +9,10 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// Every subcategory the lens can show has a label to show it under.
+	/// Every subcategory the lens can show has a label to show it under. Nothing
+	/// else connects the enum to the string table, and a missing entry falls back
+	/// quietly to a raw identifier. Only Locale.json is checked.
 	/// </summary>
-	/// <remarks>
-	/// Written because adding one was not enough. Closing the vanilla-menu
-	/// coverage gaps introduced five subcategories — seaways, power lines, pipes,
-	/// road services and transit lines — and every one of them shipped without a
-	/// locale entry, because nothing connected the enum to the string table but
-	/// the memory of whoever last edited both.
-	///
-	/// The failure is quiet in exactly the way that matters: the heading falls
-	/// back to a raw identifier, so a menu reads "Networks_PowerLines" beside
-	/// "Highways" and looks like a bug in the game rather than a missing
-	/// translation.
-	///
-	/// Only Locale.json is checked. The translated files are deliberately partial
-	/// (102 keys against 246) and fall back to English, so requiring them to keep
-	/// pace would either block a change on translation or invite English strings
-	/// to be pasted in as if they were translated.
-	/// </remarks>
 	public sealed class SubCategoryLabelTests
 	{
 		[Fact]
@@ -48,8 +33,8 @@ namespace BetterBuildingMenu.Tests
 		public void EverySubCategoryHasAnIcon()
 		{
 			// The same omission with a different symptom: a heading with no icon
-			// where its neighbours have one, or the placeholder square that the
-			// empty ferry tab already taught us reads as a broken asset.
+			// beside neighbours that have one, or a placeholder square that reads as
+			// a broken asset.
 			var missing = SubCategories()
 				.Where(name => string.IsNullOrWhiteSpace(
 					CategoryIconAttribute.GetAttribute(Parse(name)).Icon))
@@ -62,10 +47,8 @@ namespace BetterBuildingMenu.Tests
 		/// The real subcategories, which is every value naming a parent.
 		/// </summary>
 		/// <remarks>
-		/// The underscore is the discriminator because the enum holds three kinds
-		/// of value: Any, which is a pseudo-category; the obsolete
-		/// aliases that exist only to reserve each block's base number; and the
-		/// subcategories themselves, all of the form Parent_Child.
+		/// The underscore is the discriminator: the enum also holds Any, a
+		/// pseudo-category, and obsolete aliases reserving each block's base number.
 		/// </remarks>
 		private static IEnumerable<string> SubCategories() =>
 			Enum.GetNames(typeof(PrefabSubCategory)).Where(name => name.Contains('_'));

@@ -6,14 +6,9 @@ interface FootprintGlyphProps {
 }
 
 /**
- * One lot shape, drawn as a tiny grid of cells.
- *
- * "2–4 wide" says roughly what fits; a 2x2 next to a 4x2 says exactly which
- * shapes do, in the form the player is already thinking in — they are matching
- * against a block on the map, not reading a range.
- *
- * Built from nested flex rows rather than CSS grid: Cohtml has no grid support,
- * which the mod learned the hard way when the catalog table was first written.
+ * One lot shape, drawn as a tiny grid of cells, because a player choosing a
+ * zone is matching against a block on the map rather than reading a range.
+ * Nested flex rows rather than CSS grid, which Cohtml does not support.
  */
 export const FootprintGlyph = ({ footprint }: FootprintGlyphProps) => {
   const rows = Array.from({ length: footprint.depth });

@@ -11,25 +11,9 @@ namespace BetterBuildingMenu.Domain
 	/// game files under Roads.
 	/// </summary>
 	/// <remarks>
-	/// Vanilla scatters its networks by what they carry rather than by what they
-	/// are. Roads holds roads, highways, intersections and road services;
-	/// pedestrian paths, tram and train track, seaways, power lines and pipes
-	/// each live in the menu of the service they belong to, so building a
-	/// network means knowing which service owns it before you can find it.
-	///
-	/// This is the one place the lens deliberately shows more than vanilla does.
-	/// Everything else about menu scope is a faithful reproduction of the game's
-	/// own tree — see BuildingCatalogQueryEngine and IndexVanillaMenuPlacements —
-	/// and this rule sits beside that on purpose: it is a stated addition rather
-	/// than a drift, and it is confined to one menu.
-	///
-	/// Roads stays first. The extras are ranked past every vanilla category by a
-	/// base far above any priority the game assigns, so the menu opens on Small
-	/// Roads exactly as it did and the exotic networks follow in a stable order.
-	///
-	/// The extras are NOT removed from the menus that already hold them. A player
-	/// who reaches for tram track under Transportation still finds it there; this
-	/// adds a second way in, it does not move anything.
+	/// Vanilla scatters networks by the service that owns them, so building one means knowing
+	/// which service that is. This is the one place the lens deliberately shows more than the
+	/// game: the extras rank behind every vanilla category, and none is removed from its own menu.
 	/// </remarks>
 	public static class NetworkMenuExtension
 	{
@@ -46,10 +30,8 @@ namespace BetterBuildingMenu.Domain
 		/// Where the extra groups start, above anything the game will assign.
 		/// </summary>
 		/// <remarks>
-		/// Vanilla category priorities are small integers — the Roads menu's nine
-		/// run in the tens — so a million is not a tuned number, it is a number
-		/// nothing can reach. MenuCategoryRank widens to long before padding, so
-		/// the size costs nothing.
+		/// Vanilla category priorities are small integers, so this is not a tuned number but one
+		/// nothing can reach. MenuCategoryRank widens to long before padding, so the size is free.
 		/// </remarks>
 		public const int ExtraGroupPriorityBase = 1_000_000;
 
@@ -61,20 +43,9 @@ namespace BetterBuildingMenu.Domain
 		/// Network subcategories the extension does not gather.
 		/// </summary>
 		/// <remarks>
-		/// The extension exists so a player building a network can find every
-		/// network in one menu. These five are not that: stops and routes are
-		/// transit OPERATION — where a line calls and what path it takes — rather
-		/// than track you lay, and power lines, pipes and waterways answer to the
-		/// utility that owns them, where the rest of that service's tools are.
-		/// Gathered into Roads they made the menu longer without making any road
-		/// easier to reach.
-		///
-		/// Excluded from the GATHERING, not from the catalog. Each of these still
-		/// appears in the menu the game files it under — Transportation,
-		/// Electricity, Water — exactly as before; the extension simply stops
-		/// offering a second way in. And a network the game itself files under
-		/// Roads is never touched by this: IsExtraNetwork already requires the
-		/// entry's own menu to be something else.
+		/// Stops and routes are transit OPERATION rather than track you lay, and power lines, pipes
+		/// and waterways answer to the utility that owns them. Excluded from the GATHERING only:
+		/// each still appears in the menu the game files it under.
 		/// </remarks>
 		private static readonly HashSet<string> NotGathered = new(StringComparer.OrdinalIgnoreCase)
 		{
@@ -104,14 +75,9 @@ namespace BetterBuildingMenu.Domain
 		/// prefix that every one of them repeats.
 		/// </summary>
 		/// <remarks>
-		/// "Networks_Waterways" becomes "Waterways", which the UI's own
-		/// menuCategoryLabel then splits into words — so "Networks_PowerLines"
-		/// reads "Power Lines" without a table mapping one to the other.
-		///
-		/// Deliberately not the entry's real UiCategory. A seaway's is
-		/// "TransportationShip": right about where the game keeps it, and useless
-		/// as a heading in a menu about networks, where it would also carry the
-		/// Transportation menu's ordering into the middle of Roads.
+		/// "Networks_Waterways" becomes "Waterways", which the UI's own menuCategoryLabel splits
+		/// into words. Deliberately not the entry's real UiCategory, which names where the game
+		/// keeps it and would carry that menu's ordering into the middle of Roads.
 		/// </remarks>
 		public static string GroupId(string? subCategory)
 		{

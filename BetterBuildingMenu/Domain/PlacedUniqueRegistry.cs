@@ -6,19 +6,9 @@ namespace BetterBuildingMenu.Domain
 	/// The unique assets the city has already got one of.
 	/// </summary>
 	/// <remarks>
-	/// A third availability state, and the only one that is not a property of
-	/// the asset: Locked and Unlocked are decided by progression, but "already
-	/// built" is decided by what the player has done since. It changes mid
-	/// session, both ways — build the Space Center and it leaves the list you
-	/// can build from; bulldoze it and it comes back.
-	///
-	/// So it cannot be captured at index time and left there. The game already
-	/// tracks it in UniqueAssetTrackingSystem and raises
-	/// EventUniqueAssetStatusChanged on both edges; the indexing system keeps
-	/// this in step with that, and projection reads it per query.
-	///
-	/// Keyed by prefab entity INDEX, matching PrefabIndexBase.Id, so projection
-	/// can ask without holding an Entity.
+	/// A third availability state, and the only one that is not a property of the
+	/// asset: it changes mid-session both ways, so it is kept in step with the game's
+	/// UniqueAssetTrackingSystem. Keyed by prefab index, as PrefabIndexBase.Id is.
 	/// </remarks>
 	public static class PlacedUniqueRegistry
 	{

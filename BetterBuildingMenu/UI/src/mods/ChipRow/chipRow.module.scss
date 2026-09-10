@@ -1,7 +1,6 @@
 @use "../../base.scss" as _base;
 
 // One band, wrapping only once the player has actually narrowed something.
-// It replaces four stacked selector bands that cost 142rem of a 625rem panel.
 .chipRow {
   position: relative;
   // The picker overhangs the content, which is a later sibling and would
@@ -18,8 +17,6 @@
   flex-direction: row;
   align-items: center;
   flex-wrap: wrap;
-  // Was `gap: 4rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   margin-left: -4rem;
   margin-top: -4rem;
   > * {
@@ -105,8 +102,7 @@
   display: flex;
   align-items: center;
 
-  // The rail was a band of its own with padding and a rule under it. Inside the
-  // chip row it is one control among several.
+  // Inside the chip row the rail is one control among several, not a band.
   :global(*) > div {
     border-bottom: none;
   }

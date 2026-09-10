@@ -1,23 +1,7 @@
 /**
- * The one store for the lens's purely visual state.
- *
- * The facet panel, the metric drawer, the view mode and the expanded row all
- * used to live in component state, so every remount — closing the panel,
- * placing a building, toggling the lens — collapsed them back to their
- * defaults. Meanwhile the filters those drawers contain are backend-owned and
- * survived, so the player came back to active filters hidden behind closed
- * drawers, with no visible sign of what was still applied.
- *
- * This is deliberately not a backend binding: it is presentation state with no
- * bearing on the query, and round-tripping it through C# would add bindings
- * and traffic for something that only needs to outlive a React unmount. It is
- * intentionally not persisted across sessions either.
- *
- * One object behind one subscription, because the control pane and the catalog
- * live in different React subtrees — the pane is a sibling of the panel, not a
- * descendant — and two module maps with their own listeners let them disagree.
- * The React hook over this store lives in mods/useLensView.ts; this module
- * stays free of React so the test runner can load it as it is.
+ * The one store for the lens's purely visual state, which has to outlive a
+ * React unmount but has no bearing on the query, so it is neither a backend
+ * binding nor persisted. One object, because two subtrees read it.
  */
 
 export interface LensView {
@@ -43,9 +27,8 @@ export function getLensView(): LensView {
 
 /**
  * Replace the fields given, and tell the subscribers — unless nothing moved.
- *
- * The equality check is per field on the partial, so a component re-writing
- * the value it already holds does not re-render every subscriber.
+ * Checked per field on the partial, so a component re-writing the value it
+ * already holds does not re-render every subscriber.
  */
 export function setLensView(partial: Partial<LensView>): void {
   const keys = Object.keys(partial) as (keyof LensView)[];
@@ -92,22 +75,9 @@ export interface LensAnchorKeyParts {
 }
 
 /**
- * Build the composite key an anchor is stored under.
- *
- * Both BuildingCatalog and ZoningHierarchy have a view mode, and two unrelated
- * lists sharing one slot is something nothing in the type system notices.
- * Anchors cannot afford that: restoring one list to a row that only exists in
- * the other scrolls to nothing, or worse, to a coincidence. So the surface is
- * part of the key, along with the view mode and group dimension, because
- * grouping and mode both rebuild the list and an entry's place in one says
- * nothing about its place in another.
- *
- * Rows are not a uniform height: an expanded row is `height: auto`, the density
- * tiers disagree by eight units, and a grid tile changes height when a metric
- * sort puts a figure on it. The window itself comes back from the backend at
- * whatever length it has grown to, so the same scrollTop lands on a different
- * building. An id survives all of that, and the row that no longer exists after
- * a predicate change simply fails to match.
+ * Build the composite key an anchor is stored under: surface, view mode and
+ * group dimension each rebuild the list, so all three are in it. The value is
+ * an entry ID, which survives a window coming back a different length.
  */
 export function getLensAnchorKey({ surface, viewMode, groupBy = "" }: LensAnchorKeyParts): string {
   return `${surface}|${viewMode}|${groupBy}`;
@@ -120,8 +90,8 @@ export function getLensAnchor(key: string): number | null {
 export function setLensAnchor(key: string, entryId: number | null): void {
   const anchors: Record<string, number> = { ...state.anchors };
 
-  // A stored NaN can never equal an entry id, so the restore would quietly do
-  // nothing and be indistinguishable from an anchor that was never taken.
+  // A stored NaN can never equal an entry id, so it would restore nothing and
+  // be indistinguishable from an anchor that was never taken.
   if (entryId === null || !Number.isFinite(entryId)) {
     if (!(key in anchors)) {
       return;

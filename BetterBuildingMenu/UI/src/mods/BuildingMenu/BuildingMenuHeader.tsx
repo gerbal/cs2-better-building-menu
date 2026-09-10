@@ -28,9 +28,7 @@ export interface BuildingMenuHeaderProps {
   large?: boolean;
   /**
    * The game's own menu close, threaded from the AssetMenu extension point.
-   *
-   * Absent means no X is drawn rather than an X that does nothing: a dead
-   * control in the corner vanilla puts a live one in is worse than none.
+   * Absent means no X is drawn rather than an X that does nothing.
    */
   onClose?: () => void;
 }
@@ -63,11 +61,9 @@ export const BuildingMenuHeader = ({ small, large, onClose }: BuildingMenuHeader
     <div className={classNames(large && styles.large, small && styles.small)}>
       <div className={styles.catalogStripRow}>
         {/* Wrapped rather than styled directly: MenuCategoryStrip owns its own
-            class and sizes itself flex: 0 0 auto, which on this shared row
-            parked it against the search field with 354px of empty row to its
-            left. The wrapper also holds the search at the right edge when the
-            strip renders nothing at all — a menu with fewer than two
-            categories, which is Water & Sewage and Zones. */}
+            class and sizes itself flex: 0 0 auto. The wrapper holds the tabs at
+            the left and the search at the right even when the strip draws
+            nothing, which a menu with fewer than two categories does. */}
         <div className={styles.catalogStripTabs}>
           <MenuCategoryStrip />
         </div>
@@ -106,24 +102,9 @@ export const BuildingMenuHeader = ({ small, large, onClose }: BuildingMenuHeader
             )}
           </div>
         </div>
-        {/* Vanilla's zoning and building menus close from an X in this corner,
-            so ours does too — the panel stands in for that menu, and a player
-            should not have to learn a second way out of it.
-
-            Masked and tinted exactly like .searchIcon two elements to the
-            left, because the game's Close.svg carries no fill of its own and
-            renders black on a dark panel otherwise. That is a vector under a
-            compositing effect, which this engine draws badly at scale (see
-            SilhouetteIcons) — tolerated here because it is ONE static glyph in
-            the chrome, the same bet the search and loading icons already make,
-            rather than one per row of a scrolling grid, which is what actually
-            broke. If it ever flickers, bake the colour into an asset instead.
-
-            No assetGridTheme.item: that is the TILE theme, and wearing it made
-            this a 48x48 control next to a 24rem icon.
-
-            Last in the row, so it lands at the right edge after the search
-            field, and rendered only when the close is real. */}
+        {/* Vanilla closes its menus from an X here, so ours does too. Masked
+            and tinted like .searchIcon because Close.svg carries no fill of its
+            own; no assetGridTheme.item, which is the 48x48 TILE theme. */}
         {onClose && (
           <Tooltip tooltip={localizedLabel("Tooltip.LABEL[BetterBuildingMenu.CloseMenu]", "Close")}>
             <Button

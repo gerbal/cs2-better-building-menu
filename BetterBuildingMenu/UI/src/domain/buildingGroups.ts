@@ -1,24 +1,7 @@
 /**
- * Grouping: headings over the result set, in every view mode.
- *
- * The zoning view groups zones by family then density and renders each leaf as
- * a small labelled tile. In play that read better than either catalog mode, and
- * not because the tiles are prettier: every name is fully readable and the set
- * is chunked. The grid truncates names and the table fits about twelve rows.
- *
- * The load-bearing decision is that **grouping is a primary sort key, not a
- * separate axis**. With paging the two cannot be independent — grouping only
- * the visible page splits a group across a page boundary, and then the heading
- * lies about what it contains. So the query orders by the group key first and
- * the chosen sort orders rows within each group.
- *
- * C# owns all of that: the ordering, the effective dimension, the heading each
- * entry falls under (`BuildingCatalogGrouping.Labels`, sent as `groupPath` and
- * `groupLabelId` on every page item) and which dimensions can act on a menu
- * (`BuildingLensGroupDimensions`). This module owns the picker's vocabulary and
- * builds the tree the views draw out of the paths it is sent. Nothing here
- * derives a heading from an entry's fields any more, so the two sides cannot
- * disagree about what a group is called.
+ * Grouping: headings over the result set, in every view mode. It is a primary
+ * SORT KEY, not a separate axis — under paging an independent grouping splits a
+ * group across a page and the heading lies. C# owns the key and the labels.
  */
 
 export type GroupDimensionId =
@@ -44,50 +27,30 @@ export interface GroupDimension {
 }
 
 /**
- * Offered in the picker, in this order.
- *
- * Array-valued dimensions — asset packs, placement flags, extensions — are
- * deliberately absent. An entry belongs to several of each, so it would appear
- * under several headings and the group counts would no longer sum to the result
- * total. Whether to duplicate the entry or pick a primary is a real question,
- * and answering it badly by default is worse than leaving it out.
+ * Offered in the picker, in this order. Array-valued dimensions — asset packs,
+ * placement flags, extensions — are absent: an entry belongs to several of
+ * each, so the group counts would no longer sum to the result total.
  */
 export const GROUP_DIMENSIONS: readonly GroupDimension[] = [
-  // The game's own categories — the same split the tab strip shows. First,
-  // because inside a vanilla menu it is the division the player already has in
-  // mind, and it is the only dimension that works for a menu holding both
-  // networks and buildings.
-  // Depth 2: the category, then the tier within it — see C#'s CategoryTierLabel
-  // for what "tier" means per menu (density for zones, the development branch for
-  // service menus, the milestone for signatures). A menu whose entries share
-  // one tier gets a single child level, which shouldShowHeading draws no
-  // heading for, so this costs nothing where it says nothing.
+  // The game's own categories, the same split the tab strip shows. First,
+  // because it is the division the player already has in mind. Depth 2: the
+  // category, then the tier within it — see C#'s CategoryTierLabel.
   { id: "menuCategory", label: "Category", depth: 2 },
-  // Ours, not the game's: Buildings, Networks, Service Buildings. Renamed from
-  // "Category" so it does not compete with the game's own word for a different
-  // idea.
+  // Ours, not the game's: Buildings, Networks, Service Buildings. Named "Asset
+  // type" so it does not compete with the game's own word for a different idea.
   { id: "category", label: "Asset type", depth: 2 },
   { id: "subCategory", label: "Type", depth: 1 },
   { id: "role", label: "Role", depth: 1 },
   // Directly under Role, because it is the level below it: Role answers
-  // "school", School tier answers "which one". Narrow on purpose — of 44
-  // education buildings 40 carry a tier, and nothing else in the catalog does
-  // — but Role is equally narrow the moment you pick it outside a service
-  // menu, and the picker is opened deliberately.
+  // "school", School tier answers "which one". Narrow on purpose, but so is
+  // Role outside a service menu, and the picker is opened deliberately.
   { id: "schoolTier", label: "School tier", depth: 1 },
-  // The game's own progression, which is the one tier every asset has. School
-  // tier answers "which school"; this answers "when does the game let me build
-  // it", and it is the axis the player is actually moving along.
-  //
-  // Works because the milestone is now kept whatever the lock state. It used to
-  // be zeroed on unlock, which took an asset out of its own tier at the moment
-  // the player earned it — the one time they are looking at that tier.
+  // The game's own progression, the one tier every asset has: when the game
+  // lets you build it, which is the axis the player is moving along.
   { id: "progression", label: "Progression", depth: 1 },
-  // The other unlock modality. Progression is the city-growth ladder;
-  // Development is the per-service tree bought with development points, and on
-  // the big menus it is the one that actually chunks the set — Roads splits
-  // into Roundabouts 38, Parking 33, Highways 17, where its milestone split is
-  // two buckets.
+  // The other unlock modality: the per-service tree bought with development
+  // points. On the big menus it chunks the set where the milestone split
+  // yields only a bucket or two.
   { id: "development", label: "Development", depth: 1 },
   { id: "theme", label: "Theme", depth: 1 },
   { id: "source", label: "Source", depth: 1 },
@@ -103,39 +66,27 @@ export const GROUP_DIMENSIONS: readonly GroupDimension[] = [
 export const DEFAULT_GROUP_DIMENSION: GroupDimensionId = "category";
 
 /**
- * The category whose assets the school levels stand in for.
- *
- * On the education menu the four levels partition this category exactly — ten
- * schools, 3/3/1/3 — so the strip draws them INSTEAD of it rather than beside
- * it, and the menu's other categories are unaffected. Matched on the id, which
- * is the category prefab's own name.
+ * The category whose assets the school levels stand in for. On the education
+ * menu the four levels partition it exactly, so the strip draws them INSTEAD
+ * of it. Matched on the id, which is the category prefab's own name.
  */
 export function isSchoolCategory(id: string | null | undefined): boolean {
   return /education/i.test(id ?? "");
 }
 
 /**
- * The menu whose assets carry a school tier.
- *
- * Matched loosely on the menu's own prefab name rather than pinned to the exact
- * string, so a rename or a variant still resolves. The name is NOT localised —
- * it is UIAssetMenuPrefab.name, the same value the census prints and assets
- * carry as UiMenu — so this is not matching on display text. C# makes the same
- * test in VanillaMenus.IsEducation.
+ * The menu whose assets carry a school tier. Matched loosely on the menu's own
+ * prefab name — UIAssetMenuPrefab.name, never display text — so a rename or a
+ * variant still resolves. C# makes the same test in VanillaMenus.IsEducation.
  */
 export function isEducationMenu(menu: string | null | undefined): boolean {
   return /education/i.test(menu ?? "");
 }
 
 /**
- * The grouping choices worth offering, in picker order.
- *
- * C# decides which dimensions can act on the current menu — a dimension that
- * puts the whole menu in ONE bucket is a control that cannot act, School tier
- * is only a question the education menu can ask — and publishes the ids as
- * `BuildingLensGroupDimensions`. This keeps the picker's order and labels and
- * shows the ones offered. Before the binding has said anything (an empty
- * list) everything is offered, so a picker opened early is not left short.
+ * The grouping choices worth offering, in picker order. C# decides which can
+ * act on the current menu, since one that puts everything in a single bucket is
+ * a control that cannot act; an empty list means it has not said yet.
  */
 export function groupDimensionsFor(
   offeredIds: readonly string[] | null | undefined
@@ -150,33 +101,9 @@ export function groupDimensionsFor(
 }
 
 /**
- * The four school tiers, from the game's own `SchoolLevel` enum.
- *
- * `SchoolLevel { Elementary = 1, HighSchool, College, University, Outside }`
- * (Game/Prefabs/SchoolLevel.cs), reaching us as `SchoolData.m_EducationLevel`
- * — a plain 1-based tier index. Not a bitmask, and not cumulative: a
- * university grants exactly its own tier, which is why
- * CitizenPathfindSetup requires `m_EducationLevel == value` rather than a
- * range, and why SchoolData.Combine takes max rather than OR.
- *
- * The two values that are not tiers are deliberately missing. 0 is a school
- * upgrade that adds capacity without a tier of its own, and 5 (`Outside`) is
- * the outside connection that teaches nobody here. Both are real values on
- * real indexed prefabs, and both must fall through to "no tier" rather than
- * becoming headings called "0" and "5".
- *
- * `label` is the game's own wording, shipped as
- * `SelectedInfoPanel.EDUCATION_LEVELS[Elementary|HighSchool|College|University]`
- * in Locale.cok. It is English here because every group heading in this module
- * renders raw, so a translated school tier would be the only translated
- * heading on screen — the key above is where to read from when headings do get
- * plumbed.
- *
- * `id` was once duplicated as EDUCATION_LEVEL_TIERS in serviceForecast.ts,
- * which keyed the capacity forecast's series off the same four rows. That
- * forecast was retired in e1fe039 (cm-7r5r) — a card about a BUILDING should
- * not answer a question about the CITY — so this is the only table now, and
- * the drift test that kept the two honest went with it.
+ * The four school tiers, from the game's `SchoolLevel` enum, reaching us as a
+ * 1-based `SchoolData.m_EducationLevel`. The values that are not tiers — a
+ * tierless upgrade, the outside connection — fall through to "no tier".
  */
 export interface SchoolTier {
   /** `SchoolData.m_EducationLevel`. */
@@ -201,11 +128,9 @@ export const UNGROUPED_LABEL = "Other";
 export const PROGRESSION_UNGATED_LABEL = "From the start";
 
 /**
- * Names a milestone index out of the dense table the backend publishes.
- *
- * Falls back to the bare index rather than to "Other": an asset with no name
- * for its milestone still sits at a definite point in the progression, and
- * lumping it with the unknowns would hide that.
+ * Names a milestone index out of the dense table the backend publishes. Falls
+ * back to the bare index rather than "Other", because an unnamed milestone is
+ * still a definite point in the progression.
  */
 export function milestoneLabel(
   index: number | null | undefined,
@@ -221,10 +146,9 @@ export function milestoneLabel(
     return named;
   }
 
-  // The game's milestones start at 1, and the published table is dense from 0,
-  // so slot 0 is empty in every save. An asset at 0 is not at a milestone the
-  // player has to reach — it is one the game never gated — and "Milestone 0"
-  // named a thing that does not exist.
+  // The game's milestones start at 1 and the published table is dense from 0,
+  // so an asset at 0 is one the game never gated rather than one at a
+  // milestone the player has to reach.
   return index === 0 ? PROGRESSION_UNGATED_LABEL : `Milestone ${index}`;
 }
 
@@ -243,16 +167,9 @@ export interface GroupNode<T> {
   /** Heading text for this level. */
   label: string;
   /**
-   * The game's own id behind this heading, where there is one.
-   *
-   * Only the menuCategory dimension has one: its headings name vanilla
-   * categories, and the game ships localized strings for them under
-   * SubServices.NAME[<id>]. Carrying the id means the renderer can ask for the
-   * game's word — "Road" — instead of drawing our best guess at what
-   * "TransportationRoad" was meant to say, which was English-only.
-   *
-   * The label remains the fallback and the node's identity, so grouping works
-   * unchanged when the key is missing.
+   * The game's own id behind this heading, where there is one. Only
+   * menuCategory has one, and carrying it lets the renderer ask for the game's
+   * localized word. The label stays the fallback and the node's identity.
    */
   labelId?: string;
   /** Levels above this one, so a nested node can report its full path. */
@@ -264,17 +181,9 @@ export interface GroupNode<T> {
 }
 
 /**
- * The group tree out of the paths C# stamped on the page.
- *
- * Consecutive entries sharing a heading form one node, nested by depth. Only
- * consecutive: the page arrives ordered by (group key, chosen sort), so a
- * group's entries are contiguous by construction, and merging distant runs
- * would draw a tree that disagrees with the order underneath it. "Other"
- * last, ordinal dimensions in their own order — all of that is C#'s key, and
- * this reads it off the page rather than re-deriving it.
- *
- * Entries with no path are left out: an ungrouped page ("None", or a page C#
- * did not stamp) yields no tree, and the views draw the flat list.
+ * The group tree out of the paths C# stamped on the page. Only CONSECUTIVE
+ * entries merge: the page is ordered by group key first, so merging distant
+ * runs would draw a tree that disagrees with the order underneath it.
  */
 export function groupTreeFromPaths<T extends GroupedEntry>(
   entries: readonly T[] | null | undefined
@@ -297,9 +206,8 @@ export function groupTreeFromPaths<T extends GroupedEntry>(
         node = { label, path: [...path], count: 0, children: [], entries: [] };
 
         // The outer level alone: C# carries the game's id for the category a
-        // menuCategory heading names, and nothing beneath it. Taking it on a
-        // tier node made every one of Residential's six tier headings draw
-        // "Residential Zones" once the renderer resolved it.
+        // menuCategory heading names and nothing beneath it, so a tier node
+        // taking it would draw its parent's name.
         if (depth === 0) {
           const id = typeof entry.groupLabelId === "string" ? entry.groupLabelId.trim() : "";
           if (id !== "") {
@@ -324,11 +232,9 @@ export function groupTreeFromPaths<T extends GroupedEntry>(
 }
 
 /**
- * Whether a heading is worth drawing.
- *
- * A single group covering everything is a label with nothing to distinguish —
- * which is what a lone SERVICE BUILDINGS heading is once the player has already
- * navigated there.
+ * Whether a heading is worth drawing. A single group covering everything is a
+ * label with nothing to distinguish, once the player has already navigated
+ * to exactly that thing.
  */
 export function shouldShowHeading(nodes: readonly GroupNode<unknown>[]): boolean {
   return nodes.length > 1;
@@ -348,21 +254,9 @@ export type GroupedRow<T> =
   | { kind: "row"; key: string; entry: T };
 
 /**
- * Flatten a group tree into the sequence a table renders.
- *
- * The table is the one view that could not use GroupedResults: it draws its own
- * rows against a shared column geometry, and wrapping each group in its own
- * scrolling section would break the column alignment the whole surface depends
- * on. So it went ungrouped — and the Group by control stayed on screen and kept
- * working on the C# side, which reorders by group key before it sorts. The
- * result was a table that silently rearranged itself with nothing to say why:
- * picking "Asset type" moved every bridge to the top and drew no heading.
- *
- * Interleaving headings into one flat list keeps a single flex column geometry
- * for the data rows and gives the reordering a visible reason.
- *
- * Order is preserved exactly as groupTreeFromPaths produced it, which is the
- * order the backend already sorted; nothing here re-sorts.
+ * Flatten a group tree into the sequence a table renders. Interleaved headings
+ * rather than nested sections, because the table's columns line up only under
+ * one flex geometry. Nothing here re-sorts; the backend's order is kept.
  */
 export function flattenGroupedRows<T extends GroupedEntry>(
   entries: readonly T[] | null | undefined,
@@ -371,8 +265,7 @@ export function flattenGroupedRows<T extends GroupedEntry>(
   const source = entries ?? [];
   const nodes = groupTreeFromPaths(source);
 
-  // "None", or a dimension that grouped nothing: the table is the flat list it
-  // has always been.
+  // "None", or a dimension that grouped nothing: the table is a flat list.
   if (nodes.length === 0) {
     return source.map((entry) => ({ kind: "row", key: keyOf(entry), entry }));
   }
@@ -380,13 +273,9 @@ export function flattenGroupedRows<T extends GroupedEntry>(
   const out: GroupedRow<T>[] = [];
 
   const walk = (level: readonly GroupNode<T>[], depth: number): void => {
-    // Decided PER LEVEL, which is what GroupedResults does and what a first
-    // version of this got wrong. Grouping the Roads menu by asset type puts
-    // every entry under one root — they are all Networks — and judging the
-    // whole tree by that root suppressed the headings underneath it too, so
-    // the table reordered itself into Roads, Bridges and Tracks and named
-    // none of them. A lone heading at one level says nothing; the level below
-    // it can still be worth labelling.
+    // Decided PER LEVEL, as GroupedResults does: a lone heading at one level
+    // says nothing, but the level below it can still be worth labelling, and
+    // judging the whole tree by its root would suppress those too.
     const withHeadings = shouldShowHeading(level);
 
     for (const node of level) {
@@ -418,17 +307,9 @@ export function flattenGroupedRows<T extends GroupedEntry>(
 }
 
 /**
- * A heading that fits the width its tiles give it.
- *
- * Cohtml reports `text-overflow: ellipsis` as computed and then draws a hard
- * cut, so the "…" has to be put there rather than asked for. The budget comes
- * from the tile COUNT because that is what sets a group's width — the heading
- * is out of flow precisely so it cannot — and a tile is about nine uppercase
- * characters wide at this size.
- *
- * Never shorter than a few characters: a group of one still has to be
- * identifiable, and "C…" identifies nothing. The full name stays in the
- * tooltip and on the tiles below.
+ * A heading that fits the width its tiles give it. Cohtml reports
+ * `text-overflow: ellipsis` as computed and then draws a hard cut, so the "…"
+ * is put here. The budget comes from the tile COUNT, which sets the width.
  */
 export function fitGroupLabel(label: string, tiles: number): string {
   const room = Math.min(Math.max(tiles, GROUP_LABEL_MIN_TILES), GROUP_LABEL_TILE_CAP);
@@ -442,22 +323,9 @@ export function fitGroupLabel(label: string, tiles: number): string {
 }
 
 /**
- * A heading cut to the width it has actually been given.
- *
- * The estimate above budgets by tile COUNT, which only holds where a tile has
- * a fixed width — the grid. Cards and list rows size to their content, so
- * measured in Electricity a one-item group ran 94px to 172px while the budget
- * said the same nine characters for every one of them, and "Gas Power Plant"
- * was cut to "Gas Powe…" inside 166px of room.
- *
- * Both widths come from the DOM, so nothing here assumes a character width,
- * a font, or a locale: `availablePx` is the box the label was given and
- * `neededPx` is what the full string wants. Their ratio converts directly to
- * a character count.
- *
- * Safe to feed back into the label because the heading is positioned OUT OF
- * FLOW — see groupedResults.module.scss. Shortening the text cannot narrow
- * the group, so measure → shorten → measure cannot spiral.
+ * A heading cut to the width it was actually given, for the modes whose rows
+ * size to their content and where the tile-count estimate does not hold. Both
+ * widths come from the DOM, so this assumes no font, character width or locale.
  */
 export function fitLabelToWidth(label: string, availablePx: number, neededPx: number): string {
   // Not laid out yet, or it already fits. Callers keep their estimate.
@@ -479,12 +347,9 @@ export function fitLabelToWidth(label: string, availablePx: number, neededPx: nu
 export const GROUP_LABEL_PER_TILE = 9;
 
 /**
- * The tiles of width a group reserves for its label whatever it holds.
- *
- * A search is a run of one- to three-tile groups, and a budget straight from
- * the tile count cut every one of their names — "ROAD SER…" over one tile.
- * groupedResults.module.scss gives .group the matching min-width, so the
- * estimate and the box agree.
+ * The tiles of width a group reserves for its label whatever it holds, so the
+ * one- to three-tile groups a search produces can still be named.
+ * groupedResults.module.scss gives .group the matching min-width.
  */
 export const GROUP_LABEL_MIN_TILES = 3;
 

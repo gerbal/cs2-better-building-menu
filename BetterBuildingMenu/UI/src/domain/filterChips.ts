@@ -1,21 +1,7 @@
 /**
- * One visual form for every way the result set has been narrowed.
- *
- * The facets used to be tab strips. They are not navigation — they narrow the
- * set exactly as Role or Cost do — and rendering them as strips cost a
- * permanent 27px band per dimension and made them mutually exclusive by
- * construction, so "Office AND high density" could not be asked for at all.
- * Measured: five stacked bands, 142px of chrome on a 625px panel.
- *
- * As chips they compose, they cost one wrapping row, and a new dimension costs
- * no chrome at all. The other thing chips buy is an account of the vanilla-menu
- * presets: clicking Electricity in the game's toolbar used to apply a filter in
- * silence, so the player saw a narrowed list with no stated cause. The preset
- * now arrives as chips they can read and remove one at a time.
- *
- * Model only. This module deliberately imports no values from its siblings —
- * Node's --experimental-strip-types rejects domain-to-domain value imports — so
- * the removal commands are written out as literals rather than borrowed.
+ * One visual form for every way the result set has been narrowed. Chips
+ * compose, cost one wrapping row, and give a toolbar preset's filters a stated
+ * cause. Model only and import-free, so the commands here are literals.
  */
 
 import type { BuildingLensFacetState } from "./buildingCatalogFacets";
@@ -82,10 +68,8 @@ function readBound(state: BuildingLensMetricRangeState, key: keyof BuildingLensM
 }
 
 /**
- * Every chip currently narrowing the result, in reading order.
- *
- * Facets first, then metric ranges: the row reads as a history of how the
- * player narrowed the set, in the order the rail offers the controls.
+ * Every chip currently narrowing the result, in reading order: facets first,
+ * then metric ranges, matching the order the rail offers the controls.
  */
 export function buildFilterChips(input: FilterChipInput | null | undefined): FilterChip[] {
   const chips: FilterChip[] = [];
@@ -93,12 +77,9 @@ export function buildFilterChips(input: FilterChipInput | null | undefined): Fil
   for (const group of input?.facets?.groups ?? []) {
     const options = group?.options ?? [];
 
-    // The backend states whether the selection narrows. The UI cannot work it
-    // out: "every option selected" is true of Availability at rest, which
-    // excludes nothing, AND of a selection stranded by a menu switch — "Require
-    // road" carried into Landscaping, where the stranded value is the group's
-    // only option — which excludes everything. Guessing suppressed the chip for
-    // both, leaving that second case a filter with no control attached.
+    // The backend states whether the selection narrows, because the UI cannot:
+    // "every option selected" describes both a group at rest, excluding
+    // nothing, and one stranded by a menu switch, excluding everything.
     if (group?.narrowing === false) continue;
 
     for (const option of options) {
@@ -109,8 +90,8 @@ export function buildFilterChips(input: FilterChipInput | null | undefined): Fil
         dimension: group.id,
         label: option.label || option.id,
         removable: true,
-        // The same trigger that selected it. Toggling is symmetric, so removal
-        // needs no separate C# path.
+        // The same trigger that selected it: toggling is symmetric, so removal
+        // needs no C# path of its own.
         remove: { method: "ToggleBuildingLensFacet", args: [group.id, option.id] },
       });
     }
@@ -123,9 +104,8 @@ export function buildFilterChips(input: FilterChipInput | null | undefined): Fil
       const min = readBound(ranges, minKey);
       const max = readBound(ranges, maxKey);
 
-      // Both bounds unset is the default, not a filter. Reading `hasSelection`
-      // per-dimension here is what previously made the rail badge report 2 with
-      // nothing actually narrowed.
+      // Both bounds unset is the default, not a filter. The state's
+      // `hasSelection` flag is about the whole set and says nothing here.
       if (min === null && max === null) continue;
 
       chips.push({

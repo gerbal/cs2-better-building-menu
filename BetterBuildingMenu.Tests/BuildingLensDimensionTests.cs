@@ -11,15 +11,9 @@ namespace BetterBuildingMenu.Tests
 	/// The lens's width and height constants, and the UI copies of them.
 	/// </summary>
 	/// <remarks>
-	/// This was BuildingLensWidthMigrationTests, and most of it tested a
-	/// one-time migration of a saved panel width. Both are gone: the width is
-	/// no longer a saved value, so there is nothing to migrate and nothing to
-	/// migrate it from. See GridUtil.GetCurrentPanelWidth.
-	///
-	/// What survives is the part that guards a boundary rather than a
-	/// behaviour. Each of these numbers is written twice, once in C# and once
-	/// in TypeScript, with no shared source between them — so a test is the
-	/// only thing standing between them and a silent drift.
+	/// Each of these numbers is written twice, once in C# and once in TypeScript,
+	/// with no shared source between them, so a test is the only thing standing
+	/// between them and a silent drift.
 	/// </remarks>
 	public class BuildingLensDimensionTests
 	{
@@ -27,13 +21,8 @@ namespace BetterBuildingMenu.Tests
 		public void PaneWidth_AgreesWithTheUiConstantItIsCopiedFrom()
 		{
 			// If this fails, the panel reserves a different width than the pane
-			// actually occupies, and they overlap or leave a gap.
-			//
-			// Reads buildingLensLayout.ts, not LensControlPane.tsx. The number
-			// moved there because a SECOND place needs it: the table subtracts
-			// the pane to work out how much width a name gets, and reading the
-			// assembly width as though it were the panel produced a budget 2.2x
-			// too large — twice. LensControlPane now re-exports it.
+			// occupies. The number lives in buildingLensLayout.ts because the table
+			// also subtracts the pane to budget name width; LensControlPane re-exports it.
 			var source = File.ReadAllText(Path.Combine(
 				RepoRoot(), "BetterBuildingMenu", "UI", "src", "domain", "buildingLensLayout.ts"));
 
@@ -46,9 +35,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void MaxWidth_AgreesWithTheBandTheUiDerivesItFrom()
 		{
-			// The width is fixed at Max now, and the UI sizes the table's columns
-			// against its own copy of the same band. They read 1235 and 1232 once,
-			// three rem apart, which is exactly the kind of gap nothing notices.
+			// The width is fixed at Max, and the UI sizes the table's columns against
+			// its own copy of the same band, so the two must derive the same number.
 			var source = File.ReadAllText(Path.Combine(
 				RepoRoot(), "BetterBuildingMenu", "UI", "src", "domain", "buildingLensLayout.ts"));
 

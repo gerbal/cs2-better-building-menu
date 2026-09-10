@@ -26,17 +26,9 @@ public static class ZoningFamilies
 	/// family.
 	/// </summary>
 	/// <remarks>
-	/// Extractors are not zones. An extractor area is a LotPrefab carrying
-	/// <c>ExtractorAreaData</c> with a <c>MapFeature</c> — fertile land, forest,
-	/// ore, oil — and it has no <c>ZoneData</c> at all, while
-	/// <c>AreaType</c> has only None, Residential, Commercial and Industrial and
-	/// <c>ZoneFlags</c> only Office alongside three corner-support bits. The
-	/// zone index queries ZoneData, so no extractor can ever appear in it.
-	///
-	/// The name stem that used to guess at this family has been removed for that
-	/// reason: it could only ever have matched a zone named "…Extractor…", and
-	/// the family it produced would have had nothing behind it. The family list
-	/// is filtered to what the city actually has, so the chip never offers it.
+	/// Extractors are not zones: an extractor area is a LotPrefab carrying ExtractorAreaData
+	/// and no ZoneData at all, and the zone index queries ZoneData, so no extractor can appear
+	/// in it. The family list is filtered to what the city has, so the chip never offers it.
 	/// </remarks>
 	public const string Extractors = "ZoneExtractors";
 }
@@ -67,17 +59,9 @@ public sealed record ZoningFamilyDescriptor(
 /// there.
 /// </summary>
 /// <remarks>
-/// Zoning is the one surface where the lens owns the browsing hierarchy rather
-/// than handing straight off to a vanilla menu. Assignment itself still
-/// belongs to the native Zone tool — this contract never places anything, in
-/// keeping with the tool-first design's rule that native tools remain the
-/// placement authority.
-///
-/// Families and zone names were read off the running toolbar rather than
-/// assumed. Note that theme and creator-pack zones ("ZoneEUResidentialLow-
-/// Waterfront", "ZoneCP5ResidentialMedium", "ZoneEUMixedOldTown") carry an
-/// infix or no recognisable stem, so classification looks for the family word
-/// anywhere in the name rather than as a prefix.
+/// Zoning is the one surface where the lens owns the browsing hierarchy rather than handing
+/// straight off to a vanilla menu; assignment still belongs to the native Zone tool. Theme
+/// and pack zones carry the family word as an infix, so classification looks anywhere in the name.
 /// </remarks>
 public static class ZoningSurfaceCatalog
 {
@@ -99,11 +83,7 @@ public static class ZoningSurfaceCatalog
 		new(ZoningFamilies.Extractors, "Media/Game/Icons/ZoneExtractors.svg", "Zoning_Extractors"),
 	};
 
-	/// <summary>
-	/// Family stems. "Extractor" used to lead this list; it was removed because
-	/// no extractor is a zone, so it could only ever have produced an empty
-	/// family.
-	/// </summary>
+	/// <summary>Family stems, matched anywhere in a zone's name.</summary>
 	private static readonly (string Stem, string Family)[] FamilyStems =
 	{
 		("Residential", ZoningFamilies.Residential),
@@ -115,19 +95,9 @@ public static class ZoningSurfaceCatalog
 		("Mixed", ZoningFamilies.Residential),
 	};
 
-	// The density stems and ResolveDensity that used to live here are gone.
-	// ZoneDensityClassifier owns the tier now, and it reads the zone's own data
-	// first — which this could not do, being a name match. Removed rather than
-	// left as a fallback: it disagreed with the new rule on the five low-rent
-	// zones, filing them as low density because "LowRent" contains "Low", and a
-	// second answer to the same question is how the badge and the picture ended
-	// up disagreeing elsewhere in this codebase.
-
 	/// <summary>
-	/// UI category group name to family id. The group names are plural
-	/// ("ZonesOffice"), the family ids singular, so they cannot be compared
-	/// directly — logged from a running city after assuming otherwise and
-	/// getting a classifier that never matched anything.
+	/// UI category group name to family id. The group names are plural ("ZonesOffice") and the
+	/// family ids singular, so the two cannot be compared directly.
 	/// </summary>
 	private static readonly Dictionary<string, string> GroupFamilies = new(StringComparer.OrdinalIgnoreCase)
 	{
@@ -152,17 +122,9 @@ public static class ZoningSurfaceCatalog
 	/// it under.
 	/// </summary>
 	/// <remarks>
-	/// The vanilla Zones menu's tabs are UIAssetCategoryPrefabs and a zone's
-	/// <c>UIObject.m_Group</c> names the tab it appears under, so the family ids
-	/// here are those group names verbatim.
-	///
-	/// This used to be consulted first, on the grounds that it was the only
-	/// source separating Office from Commercial. That was wrong —
-	/// <see cref="ZoneFlags.Office"/> does it, and
-	/// <see cref="ResolveFamily(AreaType, ZoneFlags)"/> has been reading it
-	/// since — and it also meant 13 of the 41 zones in a base-game city, which
-	/// carry no UIObject at all, fell through to a name match. The zone's own
-	/// data goes first now and this is the fallback for AreaType.None.
+	/// The vanilla Zones menu's tabs are UIAssetCategoryPrefabs and a zone's UIObject.m_Group
+	/// names the tab it appears under, so the ids here are those group names verbatim. The
+	/// fallback for AreaType.None; the zone's own data is consulted first.
 	/// </remarks>
 	public static string? ResolveFamilyFromGroup(string? groupName)
 	{
@@ -179,12 +141,9 @@ public static class ZoningSurfaceCatalog
 	/// read backwards.
 	/// </summary>
 	/// <remarks>
-	/// The category strip above the zoning view is built from the Zones menu's
-	/// own tabs, so it speaks in group names while the view filters on family
-	/// ids. Something has to translate, and it is this map rather than the UI:
-	/// the plural/singular mismatch is exactly the assumption that produced a
-	/// classifier matching nothing, and teaching it to a second place would
-	/// invite the same mistake twice.
+	/// The category strip speaks in group names while the view filters on family ids, so
+	/// something has to translate. This map rather than the UI: the plural/singular mismatch
+	/// is the kind of assumption that should be made in exactly one place.
 	/// </remarks>
 	public static string? ResolveGroupFromFamily(string? family)
 	{
@@ -210,19 +169,9 @@ public static class ZoningSurfaceCatalog
 	/// The family a zone belongs to, from its own <c>ZoneData</c>.
 	/// </summary>
 	/// <remarks>
-	/// The authoritative classifier, and the first one consulted.
-	///
-	/// AreaType distinguishes Residential, Commercial and Industrial, and office
-	/// zones are <em>industrial</em>-area zones carrying
-	/// <see cref="ZoneFlags.Office"/> — verified in a running city, having first
-	/// assumed they were commercial-area, which put every one of them under
-	/// Commercial and lost the Office family. <c>ZonePrefab</c> derives its own
-	/// "ZonesOffice"/"Zones{AreaType}" mod tags from the same two fields, so
-	/// this agrees with the game by construction.
-	///
-	/// Returns null only for <see cref="AreaType.None"/>. It cannot produce
-	/// Extractors because no extractor is a zone; see
-	/// <see cref="ZoningFamilies.Extractors"/>.
+	/// The authoritative classifier, and the first consulted. AreaType separates Residential,
+	/// Commercial and Industrial, and office zones are industrial-area zones carrying
+	/// ZoneFlags.Office — the same two fields ZonePrefab derives its own mod tags from.
 	/// </remarks>
 	public static string? ResolveFamily(AreaType areaType, ZoneFlags flags) => areaType switch
 	{
@@ -244,12 +193,9 @@ public static class ZoningSurfaceCatalog
 	/// The family a zone prefab belongs to, inferred from its name.
 	/// </summary>
 	/// <remarks>
-	/// Last resort. Prefer <see cref="ResolveFamily(AreaType, ZoneFlags)"/>,
-	/// which reads the zone's own data, then the UI group. Since the zone index
-	/// requires ZoneData, this only runs for a zone whose AreaType is None and
-	/// which carries no UI group — a case the game's own data does not
-	/// distinguish either. Runs over names from the whole prefab index, so
-	/// declining cleanly matters more than guessing.
+	/// Last resort, after <see cref="ResolveFamily(AreaType, ZoneFlags)"/> and the UI group.
+	/// It runs only for a zone whose AreaType is None and which carries no UI group, over names
+	/// from the whole prefab index, so declining cleanly matters more than guessing.
 	/// </remarks>
 	public static string? ResolveFamily(string? prefabName)
 	{

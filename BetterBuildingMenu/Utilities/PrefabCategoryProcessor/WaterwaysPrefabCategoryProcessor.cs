@@ -12,9 +12,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
     /// <remarks>
     /// A WaterwayPrefab is a NetGeometryPrefab like a road or a track, but it
     /// carries WaterwayData rather than RoadData or TrackData, and every network
-    /// processor here queries one specific data component. Nothing queried this
-    /// one, so all three seaways were invisible — the gap that started the
-    /// vanilla-menu coverage audit.
+    /// processor here queries one specific data component.
     /// </remarks>
     public class WaterwaysPrefabCategoryProcessor : IPrefabCategoryProcessor
     {

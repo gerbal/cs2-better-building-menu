@@ -8,13 +8,13 @@ import {
 
 describe("which key family names a menu or a category", () => {
   it("asks the menu family first for a menu", () => {
-    // Measured live: Services.NAME[GarbageManagement] -> "Garbage Management".
+    // Services.NAME[GarbageManagement] -> "Garbage Management".
     assert.equal(vanillaMenuNameKeys("GarbageManagement")[0], "Services.NAME[GarbageManagement]");
   });
 
   it("asks the category family first for a category", () => {
-    // Measured live: Services.NAME[TransportationRoad] does NOT exist, and
-    // asking under it rendered the raw prefab id in every language.
+    // Services.NAME[TransportationRoad] does not exist, and asking under it
+    // renders the raw prefab id in every language.
     // SubServices.NAME[TransportationRoad] is the one that answers.
     assert.equal(
       vanillaCategoryNameKeys("TransportationRoad")[0],
@@ -84,8 +84,8 @@ describe("the menu the lens renamed", () => {
     const { EXTENDED_NETWORK_MENU_KEY, vanillaMenuNameKeys } =
       await import("../src/domain/vanillaServiceLabels.ts");
 
-    // Roads gathers every network now, so the game's own "Roads" is short by
-    // about 230 assets.
+    // Roads gathers every network, so the game's own "Roads" names fewer
+    // assets than this menu holds.
     assert.equal(vanillaMenuNameKeys("Roads")[0], EXTENDED_NETWORK_MENU_KEY);
     assert.equal(vanillaMenuNameKeys("roads")[0], EXTENDED_NETWORK_MENU_KEY);
   });

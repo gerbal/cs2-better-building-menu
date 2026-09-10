@@ -9,8 +9,8 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// The view answers what the adapter's per-query methods answered, from
-	/// one pass. Equivalence against the static helpers, not a re-specification.
+	/// The view answers, from one pass, what the adapter's per-query methods answer:
+	/// equivalence against the static helpers, not a re-specification.
 	/// </summary>
 	public sealed class CatalogViewTests
 	{
@@ -34,12 +34,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void AStripTabKeepsItsIconWhenANarrowingRemovesTheAssetItCameFrom()
 		{
-			// cm-2xvs.17: Transportation's first tab went from Road to Bus when a
-			// content pack was chosen, because the icon came from whichever asset
-			// was left. The whole menu is the same set in every state.
-			// A service menu with one category, so the strip's axis is the
-			// development tree (Transportation itself is the one menu whose tier
-			// is the subcategory, so it is not the fixture here).
+			// A tab's icon comes from the whole menu, not from whichever asset
+			// survives a narrowing. The fixture is a service menu with one category,
+			// so the strip's axis is the development tree.
 			var alpha = Entry(1, "Alpha Clinic", "ServiceBuildings", "Health & Deathcare", "Healthcare") with { DevTreeBranch = "Hospital", DevTreeBranchDepth = 0, Thumbnail = "alpha.png", UiCategoryPriority = 0 };
 			var beta = Entry(2, "Beta Ward", "ServiceBuildings", "Health & Deathcare", "Healthcare") with { DevTreeBranch = "Hospital", DevTreeBranchDepth = 0, Thumbnail = "beta.png", UiCategoryPriority = 1 };
 			var ferry = Entry(3, "Crematorium", "ServiceBuildings", "Health & Deathcare", "Healthcare") with { DevTreeBranch = "Deathcare", DevTreeBranchDepth = 1, Thumbnail = "crem.png" };
@@ -61,8 +58,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void AnAuthoredTabWithNoBranchIconDrawsTheCategoryGlyphNotAPhotograph()
 		{
-			// cm-2xvs.17, second symptom: single-asset parking categories drew a
-			// building render in a row of flat glyphs.
+			// A single-asset category still belongs in a row of flat glyphs, not a
+			// building render.
 			var lone = new[]
 			{
 				new BuildingCatalogEntry(
@@ -76,9 +73,8 @@ namespace BetterBuildingMenu.Tests
 			// The asset-type row keeps the representative picture: a water pipe is
 			// a serviceable picture of "Networks".
 			Assert.Equal("ParkingHall02?width=128", BuildingCatalogAdapter.TabIcon(lone, authored: false));
-			// And an authored branch icon still wins over both — unless the indexer
-			// filled it with the asset's own render, which is what the live game
-			// had for both parking categories.
+			// And an authored branch icon still wins over both — unless it holds the
+			// asset's own render, which is a photograph rather than an icon.
 			Assert.Equal("branch.svg", BuildingCatalogAdapter.TabIcon(new[] { lone[0] with { DevTreeBranchIcon = "branch.svg" } }, authored: true));
 			Assert.Equal("Media/Game/Icons/Parking.svg", BuildingCatalogAdapter.TabIcon(new[] { lone[0] with { DevTreeBranchIcon = "thumbnail://ThumbnailCamera/BuildingPrefab/ParkingHall02?width=128" } }, authored: true));
 		}
@@ -156,8 +152,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void EveryPropertyWalksTheSnapshotOnce()
 		{
-			// The whole point: fifteen passes per refresh become one over the
-			// snapshot plus cheap passes over the (much smaller) menu set.
+			// The point of the view: one pass over the snapshot per refresh, plus
+			// cheap passes over the much smaller menu set.
 			var counting = new CountingList(Fixture);
 			var view = new CatalogView(counting, new BuildingCatalogQuery(UiMenu: "Electricity"));
 

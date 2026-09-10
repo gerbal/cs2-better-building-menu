@@ -8,11 +8,9 @@ export interface BuildingCatalogEntry {
   subCategoryLabel?: string;
   thumbnail: string;
   /**
-   * Drawn when `thumbnail` resolves to nothing. The game's thumbnail camera
-   * hands back a URL for every prefab but only renders the ones vanilla shows
-   * in a menu, so a spawnable zone building has a `thumbnail` that loads as an
-   * empty box. Only the image's error tells us that, hence a second field
-   * rather than a choice made server-side.
+   * Drawn when `thumbnail` resolves to nothing. The game hands back a URL for
+   * every prefab but only renders the ones vanilla shows in a menu, and only
+   * the image's error says which — hence a second field, not a server choice.
    */
   fallbackThumbnail?: string;
   /** A pre-blackened copy of a VECTOR thumbnail; see lockedThumbnail. */
@@ -23,13 +21,7 @@ export interface BuildingCatalogEntry {
   zoneType: number;
   hasParking: boolean;
   isVanilla: boolean;
-  /**
-   * Milestone-gated, per the game's own enableable Locked component.
-   *
-   * Serialised since BuildingCatalogEntry.cs wrote it, but absent from this
-   * interface until now — so the field crossed the binding and then had nowhere
-   * to land. No component was ignoring it; the type made it unreachable.
-   */
+  /** Milestone-gated, per the game's own enableable Locked component. */
   isLocked: boolean;
   /** Only one may exist in a city. Vanilla badges these whether built or not. */
   isUnique: boolean;
@@ -55,10 +47,9 @@ export interface BuildingCatalogEntry {
    */
   bonuses: string[];
   /**
-   * Cost and upkeep are per kilometre rather than per instance — true for
-   * networks, which price by length. Without this the figures invite a
-   * comparison they do not support: 12,500 for a road is a rate, 12,500 for a
-   * hospital is a total.
+   * Cost and upkeep are per kilometre rather than per instance, as a network's
+   * are. Without it the figures invite a comparison they do not support: a
+   * road's number is a rate and a hospital's is the whole bill.
    */
   costIsPerDistance: boolean;
   /** Approximate parking bays; 0 for none. See hasParking for the plain fact. */
@@ -73,12 +64,9 @@ export interface BuildingCatalogEntry {
   assetPacks: string[];
   placementFlags: string[];
   /**
-   * Whether this asset IS an upgrade, tagged with its own name.
-   *
-   * Never a list of what can be attached TO it — see supportedUpgrades. The
-   * backend reads a non-empty value the way vanilla's FilterOutUpgrades does
-   * and drops the entry from every menu, so anything the player can see here
-   * necessarily has this empty.
+   * Whether this asset IS an upgrade, tagged with its own name — never a list
+   * of what attaches TO it, which is supportedUpgrades. A non-empty value drops
+   * the entry from every menu, as vanilla's own filter does.
    */
   extensions?: string[];
   /** The upgrades that can be attached to this building later. */
@@ -94,12 +82,9 @@ export interface BuildingCatalogEntry {
   /** Service figures beyond the headline capacity — see serviceFacts.ts. */
   serviceFacts?: { key: string; value: number }[] | null;
   /**
-   * Lot shapes a zone grows, drawn as little grids by FootprintGlyph.
-   *
-   * DECLARED, not cast-read. Both surfaces used to reach these off the entry
-   * with `(entry as unknown as { footprints?: … })`, which compiles whether or
-   * not anything produces the field — and nothing did, so the glyphs never
-   * drew. Declaring it is what makes the next such gap a type error.
+   * Lot shapes a zone grows, drawn as little grids by FootprintGlyph. DECLARED
+   * rather than cast-read at each surface, because a cast compiles whether or
+   * not anything produces the field and hides the gap.
    */
   footprints?: { width: number; depth: number }[] | null;
   footprintOverflow?: number | null;
@@ -146,21 +131,16 @@ export interface BuildingCatalogPage {
   offset: number;
   limit: number;
   /**
-   * Whether the backend has more matches than this window holds.
-   *
-   * C#'s answer, not a client comparison of rendered against total: only the
-   * backend knows both the match count and the window ceiling, so a client
-   * computing `rendered < total` would keep offering rows the backend has
-   * already refused to serve.
+   * Whether the backend has more matches than this window holds. C#'s answer,
+   * because only it knows both the match count and the window ceiling; a client
+   * comparison would offer rows the backend has already refused to serve.
    */
   hasMore?: boolean;
 
   /**
-   * The offered sort fields that could actually move a row of these results.
-   *
-   * cm-ddw3. The picker drops the rest — a control that responds while the
-   * list does not is the signature of a broken one. C#'s answer, because only
-   * the backend sees the whole matched set rather than the page.
+   * The offered sort fields that could actually move a row of these results;
+   * the picker drops the rest, a control that responds while the list does not
+   * reading as broken. C#'s answer, since only it sees the whole matched set.
    */
   reorderableSortColumns?: string[];
 }

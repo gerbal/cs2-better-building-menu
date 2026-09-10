@@ -16,11 +16,11 @@ using System.Text;
 
 namespace BetterBuildingMenu.Services
 {
-	/// <summary>
-	/// Projects the indexed prefab records into the building lens. This is deliberately not an ECS query: PrefabIndexingSystem remains
-	/// the single source of truth for discovery, categorisation, thumbnails, and
-	/// placement identity.
-	/// </summary>
+		/// <summary>
+		/// Projects the indexed prefab records into the building lens. Deliberately not an
+		/// ECS query: PrefabIndexingSystem stays the single source of truth for discovery,
+		/// categorisation, thumbnails and placement identity.
+		/// </summary>
 	public sealed class BuildingCatalogAdapter
 	{
 		private static readonly (BuildingFlags Flag, string Name)[] PlacementFlagDescriptors =
@@ -50,9 +50,8 @@ namespace BetterBuildingMenu.Services
 		/// The state of the game's own toolbar filter row.
 		/// </summary>
 		/// <remarks>
-		/// Static because everything that reads it here is, and because there is
-		/// exactly one toolbar. Written by BuildingMenuUISystem when the UI reports a
-		/// change; <see cref="VanillaToolbarSelection.None"/> until then, which
+		/// Static because there is exactly one toolbar. BuildingMenuUISystem writes it
+		/// when the UI reports a change; <see cref="VanillaToolbarSelection.None"/>
 		/// filters nothing.
 		/// </remarks>
 		public static VanillaToolbarSelection ToolbarSelection { get; set; } = VanillaToolbarSelection.None;
@@ -74,29 +73,18 @@ namespace BetterBuildingMenu.Services
 		/// Whether the Content facet would show this asset.
 		/// </summary>
 		/// <remarks>
-		/// Content is one axis over three pieces of state, so its options have
-		/// to combine the way one axis does — as OR. Two of them live in the
-		/// game's toolbar selection, which ORs them itself; the third is our
-		/// DlcIds, which is applied HERE rather than in the query engine so it
-		/// unions with the other two instead of intersecting them.
-		///
-		/// That was a real defect before the merge, not a risk introduced by it:
-		/// packs filtered upstream and DLC filtered in the engine, so ticking
-		/// Bridges &amp; Ports in one group and San Francisco in the other left
-		/// nothing at all — an asset cannot be both.
+		/// Content is one axis over three pieces of state, so its options combine as OR.
+		/// The toolbar selection ORs its two arms itself; DlcIds is applied HERE so it
+		/// unions with them rather than intersecting them in the query engine.
 		/// </remarks>
 		private static bool ContentVisible(
 			PrefabIndex prefab,
 			VanillaToolbarSelection selection,
 			IReadOnlyList<string>? dlcIds)
 		{
-			// Themes are a DIFFERENT facet and must narrow on their own terms,
-			// so they are split out and ANDed before anything else. Bundling
-			// them in was the bug: VanillaToolbarSelection.IsEmpty counts themes
-			// too, a city always has one selected, so "the toolbar has no
-			// selection" was never true and the DLC half was permanently ORed
-			// against a filter that passed nearly everything. Measured as
-			// dlcIds=[1] toolbarEmpty=False with the result unchanged.
+			// Themes are a DIFFERENT facet and must narrow on their own terms, so they
+			// are split out and ANDed before anything else: VanillaToolbarSelection.IsEmpty
+			// counts themes too, and a city always has one selected.
 			if (!VanillaToolbarFilter.IsVisible(prefab.VanillaFacts, ThemesOnly(selection)))
 			{
 				return false;
@@ -147,25 +135,9 @@ namespace BetterBuildingMenu.Services
 		/// How many assets each of the menu's category tabs holds.
 		/// </summary>
 		/// <remarks>
-		/// The category's OWN axis is excluded, which is the same rule the facet
-		/// groups follow and for the same reason: counted with it in, choosing
-		/// Vegetation would make every other tab read 0, so the control that
-		/// would widen the result again tells you there is nothing to widen to.
-		/// The search and the facets DO count, because a tab claiming 22 when
-		/// the active search leaves 3 behind it is worse than no number.
-		///
-		/// Keyed by the same Id the tabs carry, and counted against the category
-		/// the entry answers to IN THIS MENU rather than its own UiCategory.
-		/// Those differ for the extra networks the Roads menu adopts — a
-		/// seaway's own category is TransportationShip, and the tab it sits
-		/// under is a Roads one — which is the same distinction
-		/// MatchesVanillaMenuTree makes when it decides what a tab SELECTS.
-		///
-		/// Counting on the raw value made the two disagree: ten Roads tabs
-		/// reported 0 while selecting one of them showed assets, so a tab that
-		/// worked read as an empty one. It went unnoticed while a missing count
-		/// rendered blank; it became visible the moment absent-but-known
-		/// started rendering as 0.
+		/// The category's own axis is excluded, so choosing one tab does not read every
+		/// other as empty; search and facets do count. Counted against the category the
+		/// entry answers to IN THIS MENU rather than its own UiCategory.
 		/// </remarks>
 		public IReadOnlyList<MenuCategoryCount> GetMenuCategoryCounts(BuildingCatalogQuery query) => Build(query).MenuCategoryCounts;
 
@@ -173,18 +145,9 @@ namespace BetterBuildingMenu.Services
 		/// Every category whose density tiers should be drawn in its place.
 		/// </summary>
 		/// <remarks>
-		/// Static and over entries, like BuildFacetState, so the rule can be
-		/// tested without standing up an adapter.
-		///
-		/// The condition is the school levels': sub-tabs stand in for a category
-		/// only when they PARTITION it, so a category with fewer than two tiers
-		/// is left alone. That is what keeps Industrial — one untiered zone —
-		/// and the extractor areas as plain tabs, with no separate suppression
-		/// rule needed anywhere.
-		///
-		/// Untiered entries inside a tiered category would have nowhere to go,
-		/// so a category holding any is not expanded either: a tab row that
-		/// silently hides part of its own category is worse than no tabs.
+		/// Sub-tabs stand in for a category only when they PARTITION it, so a category
+		/// with fewer than two tiers, or holding any untiered entry, keeps a plain tab
+		/// rather than a tab row that hides part of its own category.
 		/// </remarks>
 		public static IReadOnlyList<MenuCategoryTabs> BuildDensityTabs(
 			IEnumerable<BuildingCatalogEntry> entries,
@@ -206,11 +169,9 @@ namespace BetterBuildingMenu.Services
 								category.Key,
 								BuildingCatalogLabels.DensityTier(tier.Key)),
 							tier.Count(),
-							// Vanilla's own zoning icon for this family AND tier —
-							// the same mark the zoning map paints. Falls back to
-							// the category's icon in the strip when the game ships
-							// none, which is truthful where a derived-but-missing
-							// path would be a silent hole.
+						// Vanilla's own zoning icon for this family AND tier, falling
+						// back to the category's icon in the strip when the game ships
+						// none rather than deriving a mark it never authored.
 							ZoneDensityIcons.For(category.Key, tier.Key),
 							BuildingCatalogLabels.DensityTier(tier.Key)))
 						.ToArray()))
@@ -221,26 +182,9 @@ namespace BetterBuildingMenu.Services
 		/// Which axis the fallback strip should use for this menu, and its tabs.
 		/// </summary>
 		/// <remarks>
-		/// Vanilla's categories are the reference and are handled elsewhere;
-		/// this is only for the menus vanilla never split, where there is no
-		/// authored answer and we have to pick one.
-		///
-		/// CHOSEN BY FIT, not by a fixed order. The strip exists to cut a large
-		/// set down, so the axis that cuts most evenly is the one worth drawing
-		/// — measured as the smallest largest-bucket. A fixed chain gets this
-		/// wrong in both directions on real data: the development tree splits
-		/// Electricity 8/4/3 and Garbage 2/2/1, but Water only 9/2, where
-		/// buildings-against-pipes is 8/3.
-		///
-		/// Balance is the TIEBREAK, not the criterion. Both candidates are
-		/// meaningful cuts the game itself authored; a merely even split of
-		/// something meaningless would be worse than a lopsided honest one,
-		/// which is why the candidate list is short and hand-picked rather than
-		/// every field that happens to vary.
-		///
-		/// An axis that yields fewer than two groups is not a choice and is
-		/// dropped, which is also what leaves a single-tree menu with no strip
-		/// rather than one tab.
+		/// Only for the menus vanilla never split. The axis that cuts most evenly wins —
+		/// smallest largest bucket — among a short hand-picked list of cuts the game
+		/// itself authored; an axis yielding fewer than two groups is not a choice.
 		/// </remarks>
 		public string GetStripAxis(BuildingCatalogQuery query) => Build(query).StripAxis;
 
@@ -248,25 +192,9 @@ namespace BetterBuildingMenu.Services
 		/// The glyph every school-level tab is built on.
 		/// </summary>
 		/// <remarks>
-		/// The citizen attainment ladder — Uneducated, Poorly Educated,
-		/// Educated, Well Educated, Highly Educated — is five flat, ordinal
-		/// glyphs, and a school's level IS the attainment it grants:
-		/// GraduationSystem reads SchoolData.m_EducationLevel and passes it
-		/// straight to Citizen.SetEducationLevel, read off the game's IL rather
-		/// than assumed. So level N draws the badge a graduate of that school
-		/// wears.
-		///
-		/// One mortarboard for all four, with the rank drawn over it as a roman
-		/// numeral. The four attainment glyphs were tried as the base and read
-		/// as four different subjects rather than four rungs of one — which
-		/// matters more now that the levels sit in the SAME row as the Research
-		/// category, where the row's job is to say what kind of thing each tab
-		/// is before it says how much of it there is.
-		///
-		/// A representative school's THUMBNAIL was the first attempt and does
-		/// not work at all: vanilla's tab glyphs are flat two-colour symbols
-		/// drawn for 24rem, and a building render at that size is a dark
-		/// smudge, four of which look alike.
+		/// A school's level is the attainment it grants, so one mortarboard carries every
+		/// level with the rank drawn over it as a roman numeral: the row says what kind of
+		/// thing a tab is before it says how much, and four glyphs read as four subjects.
 		/// </remarks>
 		internal const string SchoolTierIcon = "Media/Game/Icons/Education.svg";
 
@@ -274,30 +202,14 @@ namespace BetterBuildingMenu.Services
 		/// The glyph a tab draws.
 		/// </summary>
 		/// <remarks>
-		/// An AUTHORED icon first, where the axis has one: the development tree
-		/// ships an icon per node and that is the art the player already
-		/// associates with the unlock.
-		///
-		/// Otherwise a REPRESENTATIVE asset's thumbnail. "Buildings",
-		/// "Networks" and the four school levels are ours or the simulation's
-		/// words, and the game ships no glyph for any of them — but a tab
-		/// showing a bare count is a tab with nothing on it, and words on this
-		/// row were reported as disruptive the first time. A water pipe is a
-		/// serviceable picture of "Networks"; an elementary school is a
-		/// serviceable picture of Elementary.
-		///
-		/// Deterministic: the menu's own priority, then name, so the glyph does
-		/// not change when the player re-sorts. Falls back to the fallback
-		/// thumbnail, which is what the grid draws for the same asset.
+		/// An AUTHORED icon first where the axis has one, since that is the art the player
+		/// already associates with the unlock; otherwise a representative asset's thumbnail,
+		/// picked by menu priority then name so the glyph survives a re-sort.
 		/// </remarks>
 		/// <param name="allowCategoryGlyph">
-		/// False when the caller has already seen this tab's glyph on a sibling.
-		/// The category glyph belongs to the CATEGORY, so every tab that shares
-		/// one draws the same picture — four identical Healthcare marks across
-		/// Healthcare's strip, reported from play. Turning it off here drops the
-		/// tab to the representative asset below, which at least differs per
-		/// tab. Only the caller can tell: whether a glyph repeats is a fact
-		/// about the row, not about one group.
+		/// False when a sibling tab already draws this category's glyph, which drops this
+		/// tab to the representative asset instead. Only the caller can tell: whether a
+		/// glyph repeats is a fact about the row, not about one group.
 		/// </param>
 		internal static string TabIcon(IEnumerable<BuildingCatalogEntry> group, bool authored, bool allowCategoryGlyph = true)
 		{
@@ -305,11 +217,9 @@ namespace BetterBuildingMenu.Services
 
 			if (authored)
 			{
-				// The branch's authored icon — unless the indexer filled it with
-				// the asset's own render because the tree node had none. That is
-				// a photograph in a row of glyphs (cm-2xvs.17, measured live:
-				// ParkingHall02's branch icon WAS its thumbnail), so it is
-				// treated as no icon and the glyph fallback below decides.
+				// The branch's authored icon, unless the indexer filled it with the
+				// asset's own render for a node the tree gives none. That is a
+				// photograph in a row of glyphs, so it counts as no icon.
 				var icon = entries
 					.Select(entry => entry.DevTreeBranchIcon)
 					.FirstOrDefault(value => !string.IsNullOrEmpty(value) && !IsPhotograph(value!));
@@ -325,19 +235,9 @@ namespace BetterBuildingMenu.Services
 				.ThenBy(entry => entry.Name, StringComparer.Ordinal)
 				.ToArray();
 
-			// An authored row is a row of flat glyphs. A branch the game gave no
-			// icon used to fall to the representative asset's THUMBNAIL — a
-			// photographic building render beside the glyphs, read as a broken
-			// icon (cm-2xvs.17: Roads' two single-asset parking categories). The
-			// category glyph the fallback thumbnail carries belongs in that row;
-			// the photograph does not.
-			//
-			// Conditional since cm-0g1m. The glyph is the CATEGORY's, so tabs
-			// that share a category all draw one picture — Healthcare's strip
-			// rendered Healthcare.svg four times, a row that cannot be read.
-			// CatalogView.Disambiguate calls back with allowCategoryGlyph false
-			// for exactly the tabs whose glyph repeats, which drops those to the
-			// photograph below. Tidy loses to legible where the two conflict.
+			// The fallback thumbnail keeps a photograph out of a row of flat glyphs,
+			// but the glyph belongs to the CATEGORY, so CatalogView.Disambiguate turns
+			// it off for the tabs whose glyph repeats: legible beats tidy.
 			if (authored && allowCategoryGlyph)
 			{
 				var glyph = ordered
@@ -363,9 +263,8 @@ namespace BetterBuildingMenu.Services
 		/// The same arithmetic over a set of entries, without a World.
 		/// </summary>
 		/// <remarks>
-		/// Split out so the rule can be tested directly, the way BuildFacetState
-		/// is. What belongs to the running game is deciding WHICH entries are in
-		/// view; what belongs here is only the min and max of them.
+		/// Deciding WHICH entries are in view belongs to the running game; only the min
+		/// and max of them belong here, which is what makes the rule directly testable.
 		/// </remarks>
 		public static BuildingCatalogMetricRangeState MetricBoundsOf(IEnumerable<BuildingCatalogEntry> entries)
 		{
@@ -430,10 +329,9 @@ namespace BetterBuildingMenu.Services
 		}
 
 		/// <param name="packScope">
-		/// The entries the PACK group is counted over, when that differs from
-		/// the rest. Defaults to <paramref name="entries"/>; the adapter passes
-		/// a pack-unfiltered set so the group can offer a pack other than the
-		/// one already chosen. See GetIndexedBuildings(ignorePackSelection).
+		/// The entries the PACK group is counted over, when that differs from the rest.
+		/// Defaults to <paramref name="entries"/>; the adapter passes a pack-unfiltered set
+		/// so the group can offer a pack other than the one already chosen.
 		/// </param>
 		public static BuildingCatalogFacetState BuildFacetState(
 			IEnumerable<BuildingCatalogEntry> entries,
@@ -455,57 +353,20 @@ namespace BetterBuildingMenu.Services
 
 			AddValueGroup(groups, "buildingType", "Role", source.Select(entry => entry.BuildingType), query.BuildingTypes, FormatFacetWords);
 			AddValueGroup(groups, "provenance", "Source", source.Select(entry => entry.Provenance), query.Provenance, FormatProvenanceLabel);
-			// Progression, which the vanilla menu shows by greying an asset out
-			// and the lens had no way to ask about at all.
+			// Progression, which the vanilla menu shows only by greying an asset out.
 			AddAvailabilityGroup(groups, source, query.Availability);
-			// Where it came from, next to who made it. It replaces the DLC group
-			// that used to sit here and the Asset packs group that sat lower —
-			// one axis, one place. See AddContentGroup.
+			// Where it came from, next to who made it: one axis, one place.
+			// See AddContentGroup.
 			AddContentGroup(groups, packScope is null ? source : packScope.ToArray(), query);
 			AddValueGroup(groups, "theme", "Theme", source.Select(entry => entry.Theme), query.Themes, FormatFacetWords);
-			// Neither unlock modality is a filter here, and both used to be.
-			//
-			// Development was the top bar's own axis offered a second time, on the
-			// principle that anything the strip narrows by should be reachable from
-			// the rail. In the game that read as duplication rather than reach: on
-			// Roads it drew a 23-item dropdown of Small Roads, Medium Roads,
-			// Highways, Intersections — the strip's own tabs, restated, in the menu
-			// where the strip is already the primary navigation. It also collided
-			// with Role, which is a different question in the same words: under
-			// Healthcare both offered "Hospital", one meaning what the building IS
-			// and the other which node UNLOCKED it.
-			//
-			// Progression asked a question players do not ask. "Show me only Grand
-			// Village buildings" is not a build-menu action; "can I build this now"
-			// is, and Availability above already answers it. It also vanished on
-			// most menus, since AddValueGroup drops a single-valued dimension.
-			//
-			// Both rendered as an ICONLESS chip in the same slot, so which
-			// dimension a blank chip meant changed per menu — Development on
-			// Healthcare, Progression on Signature Buildings, and both at once on
-			// Roads, side by side and indistinguishable.
-			//
-			// Development stays reachable as a Group by dimension, and so does
-			// Progression; grouping is where "when does this unlock" belongs,
-			// because it orders the set instead of hiding most of it.
+			// Neither unlock modality is a facet. Development restates the strip's own
+			// axis and collides with Role, and "can I build this now" is the question
+			// Availability answers; both stay reachable as a Group by dimension.
 			AddArrayGroup(groups, "placement", "Placement", source.Select(entry => entry.PlacementFlags), query.PlacementFlags, FormatFlagLabel);
 			AddArrayGroup(groups, "extension", "Extensions", source.Select(entry => entry.Extensions), query.Extensions, FormatFacetWords);
-			// Density is NOT a facet, for the reason Development and Progression
-			// are not: it is the strip's own axis offered a second time. Since
-			// cm-2xvs.16 every type+density tier IS a category with its own tab
-			// and icon in the top bar — Residential Low, Row, Medium, Mixed, Low
-			// Rent, High, and low/high for Commercial and Office — so the rail
-			// was drawing a six-option dropdown of exactly the tabs sitting above
-			// it. Measured live in the Zones menu: "High, Low, Low Rent, Medium,
-			// Mixed, Row", the same six.
-			//
-			// Density stays reachable as a Group by dimension and as a sort,
-			// which is where an axis belongs once the strip navigates it: both
-			// order the set instead of hiding most of it.
-			//
-			// It only ever appeared in zoning menus anyway. Everything else is
-			// ZoneTypeFilter.Any, which maps to null, and signatures are all
-			// Signature — one value, which AddValueGroup drops.
+			// Density is not a facet either: every type+density tier is a category with
+			// its own tab and icon in the top bar, so the rail would be a dropdown of the
+			// tabs above it. It stays reachable as a Group by dimension and as a sort.
 
 			bool hasSelection = HasValues(query.Availability)
 				|| HasValues(query.BuildingTypes)
@@ -523,9 +384,8 @@ namespace BetterBuildingMenu.Services
 
 		/// <summary>One view per refresh: every per-query answer above comes from it.</summary>
 		/// <remarks>
-		/// The public methods stayed as one-line delegations so their callers and
-		/// tests read unchanged; BuildingMenuUISystem calls this once and reads the
-		/// view's properties, which is where the fifteen passes went.
+		/// The public one-line delegations above all read from it; BuildingMenuUISystem
+		/// calls this once per refresh and reads the view's properties.
 		/// </remarks>
 		public CatalogView Build(BuildingCatalogQuery query, Func<CatalogView, string>? groupByResolver = null)
 		{
@@ -554,20 +414,9 @@ namespace BetterBuildingMenu.Services
 		/// What the lens catalogues.
 		/// </summary>
 		/// <remarks>
-		/// Networks joined buildings here because the vanilla Roads menu is a
-		/// grid of unlabelled icons, and the lens can name and group them. Net
-		/// lanes are the sharpest case — that menu has no entry for them at all
-		/// — though they are conditional on Extra Detailing Tools, so the case
-		/// rests on the other eight subcategories rather than on lanes alone.
-		/// The lens browses; placement still hands off to the native net tool,
-		/// which owns elevation, snapping and parallel mode.
-		///
-		/// This is no longer the last word on membership at EITHER scope. A
-		/// vanilla menu speaks for its own contents when one is open, and the
-		/// union of every menu speaks for the unscoped view — see
-		/// BelongsInCatalog. What survives here is the floor: an asset our
-		/// taxonomy calls a building stays in the catalogue even if vanilla
-		/// places it in no menu at all.
+		/// Networks belong beside buildings because the lens can name and group what the
+		/// vanilla Roads grid leaves unlabelled; placement still hands off to the native
+		/// net tool. This is the floor only — BelongsInCatalog decides per scope.
 		/// </remarks>
 		private static bool IsBuilding(PrefabIndex prefab)
 		{
@@ -578,33 +427,9 @@ namespace BetterBuildingMenu.Services
 
 		/// <summary>Whether an asset belongs in the catalogue at this scope.</summary>
 		/// <remarks>
-		/// Split out from GetIndexedBuildings so the one rule that MUST hold
-		/// between the two scopes can be asserted without a live index: removing
-		/// the menu scope has to widen the result, never narrow it. That failed
-		/// for a year because the two arms asked different questions — the
-		/// scoped arm read the game's menu tree, the unscoped arm read our own
-		/// taxonomy — and nothing compared them.
-		///
-		/// The parameters are booleans rather than a PrefabIndex because both
-		/// placement lookups need the live index, and the invariant does not:
-		/// it is a statement about how the four facts combine.
-		///
-		/// Callers must pass placedInThisMenu and gatheredNetwork as false when
-		/// unscoped; both are meaningless without a menu, and the invariant
-		/// test relies on placedInAnyMenu being the only placement fact that
-		/// survives into the unscoped arm.
-		///
-		/// There is deliberately no arm for our OWN generated props. The
-		/// inherited quantity and vehicle generators emitted 314 prefabs with
-		/// UIObject.m_Group = null, so vanilla placed them in no menu and they
-		/// were not buildings — they failed both arms at both scopes, and
-		/// stayed out. That is the decision (cm-wdap, user, 2026-08-27), not an
-		/// oversight: they are FindIt's, which answers "where is any asset",
-		/// and the lens answers "what should I build here, and what does it
-		/// cost me". The generators and their marker component are gone now, so
-		/// nothing reaches this arm to begin with; re-adding either would
-		/// reverse the decision, and would admit the group-less population
-		/// cm-2xvs.13 warns about.
+		/// Split out from GetIndexedBuildings so the rule that must hold between the two
+		/// scopes — removing the menu scope widens the result, never narrows it — can be
+		/// asserted without a live index. Both placement facts are false when unscoped.
 		/// </remarks>
 		public static bool BelongsInCatalog(
 			bool menuScoped,
@@ -620,29 +445,14 @@ namespace BetterBuildingMenu.Services
 		/// The candidate set, widened to whatever menu the player has open.
 		/// </summary>
 		/// <remarks>
-		/// IsBuilding decides what belongs in an unscoped catalog. It is the
-		/// wrong question once the player has opened a specific vanilla menu:
-		/// there, the menu is the authority on its own contents, and our
-		/// taxonomy has no standing to overrule it.
-		///
-		/// Landscaping is why. It holds 362 assets across 13 categories, of
-		/// which IsBuilding admitted 20 — the bike paths, pathways and quays —
-		/// and dropped 317 props and 25 vegetation. Twenty rows is worse than
-		/// zero: an empty panel reads as "nothing here", while twenty reads as
-		/// "here is the menu" and is wrong. Areas was the same failure at the
-		/// other extreme, both of its members being area prefabs.
-		///
-		/// Scoping to a menu therefore admits that menu's members whatever they
-		/// are, and unscoped views are untouched.
+		/// Once the player has opened a vanilla menu, that menu is the authority on its own
+		/// contents and our taxonomy has no standing to overrule it, so a scoped view admits
+		/// that menu's members whatever they are. Unscoped views are untouched.
 		/// </remarks>
 		/// <param name="ignorePackSelection">
-		/// Applies the toolbar's themes and Vanilla/Mods toggles but NOT its
-		/// packs. Only the pack facet wants this, and it wants it for the same
-		/// reason InScope drops a facet's own selection before counting it: a
-		/// dimension computed from the set it has already narrowed can only ever
-		/// offer what is still showing. Measured — pick Bridges &amp; Ports and
-		/// the pack list collapsed to Bridges &amp; Ports, so the rail could
-		/// clear a pack but never switch to another one.
+		/// Applies the toolbar's themes and Vanilla/Mods toggles but NOT its packs. Only the
+		/// pack facet wants this, for the same reason InScope drops a facet's own selection
+		/// before counting it: a dimension computed from the set it narrowed offers only itself.
 		/// </param>
 		private static IEnumerable<PrefabIndex> GetIndexedBuildings(
 			string? uiMenu = null,
@@ -658,67 +468,20 @@ namespace BetterBuildingMenu.Services
 
 			string menu = uiMenu?.Trim() ?? string.Empty;
 			return allPrefabs
-				// Sub-buildings are not list entries. Vanilla runs the same test
-				// (FilterOutUpgrades, on ServiceUpgradeData) before drawing any
-				// menu, because an upgrade is placed from its parent building's
-				// row and has no standalone placement to offer. The menu audit
-				// found six of them in our list that vanilla keeps out of its
-				// grid: Maintenance Halls, Storage Warehouses, Warehouses and a
-				// Hearse Garage.
-				//
-				// They stay INDEXED — the parent row still names them through
-				// Extensions, search still finds them, and the facets still count
-				// them. This is about what the list offers as a thing to place.
+				// Sub-buildings are not list entries, which is the test vanilla runs
+				// too: an upgrade is placed from its parent building's row. They stay
+				// INDEXED, so Extensions, search and the facets all still see them.
 				.Where(prefab => !prefab.IsServiceUpgrade)
-				// The game's own toolbar row: the EU/NA theme toggle, the asset
-				// packs, and Vanilla/Mods. It filtered the vanilla grid and did
-				// nothing to ours, which is the report in cm-2xvs.3 — the lens
-				// replaced the menu and did not replace the filter above it.
-				//
-				// Transcribed rather than reimplemented, so a difference is a
-				// bug rather than a design choice. Costs nothing when the
-				// toolbar is untouched: IsVisible early-outs on an empty
-				// selection, which is also what stops the lens opening blank.
+				// The game's own toolbar row — the theme toggle, the asset packs and
+				// Vanilla/Mods — transcribed rather than reimplemented, so a difference
+				// is a bug. IsVisible early-outs on an empty selection.
 				.Where(prefab => ContentVisible(
 					prefab,
 					ignorePackSelection ? WithoutPacks(ToolbarSelection) : ToolbarSelection,
 					unionDlcIds))
-				// Phase 3: membership comes from the game's own tree.
-				//
-				// This used to read `IsBuilding(prefab) || prefab.UiMenuName ==
-				// menu`, and UiMenuName is the asset's own UIObject.m_Group.m_Menu
-				// — the tree read UPWARD. That view can only describe assets some
-				// processor already indexed, so a menu looks complete while being
-				// short. It is the shape behind every membership bug this project
-				// has had: the terrain brushes, the seaway tools, the Zones
-				// "Extractors" tab, and four unbuildable Area Hubs.
-				//
-				// Walking down from UIAssetMenuData is what ToolbarUISystem does,
-				// so scoped to a menu we now show that menu's members and nothing
-				// else, by construction rather than by agreement.
-				//
-				// Unscoped reads the SAME tree, unioned over every menu. It used
-				// to ask IsBuilding instead, on the theory that with no menu
-				// open there is no tree to read — but IsPlacedInAnyMenu is
-				// exactly that tree, and it already guards the Roads gathering
-				// two methods down.
-				//
-				// The asymmetry cost half the catalogue. Measured with 105 asset
-				// packs loaded: Landscaping scoped showed 514 and Roads 403,
-				// while clearing the scope showed 715 — fewer than those two
-				// menus together, because unscoped dropped every prop, surface
-				// and plant the menus themselves carry. Clearing a scope has to
-				// widen the view.
-				//
-				// The old worry — "317 props in a building list" — was written
-				// when unscoped WAS the default view. It is now reached by
-				// removing a scope chip, and the result is drawn under category
-				// headings, so props arrive under Props rather than mixed into
-				// the buildings.
-				//
-				// IsBuilding stays in the union rather than being replaced by
-				// it: dropping it could only ever REMOVE something already
-				// showing, and this change is meant to be monotone.
+				// Membership comes from the game's own tree, walked DOWN from
+				// UIAssetMenuData the way ToolbarUISystem does: a scoped view shows that
+				// menu's members, an unscoped one the same tree unioned over every menu.
 				.Where(prefab => BelongsInCatalog(
 					menuScoped: !string.IsNullOrEmpty(menu),
 					isBuilding: IsBuilding(prefab),
@@ -732,33 +495,9 @@ namespace BetterBuildingMenu.Services
 		/// Whether the Roads menu adopts this network from another menu.
 		/// </summary>
 		/// <remarks>
-		/// The membership half of NetworkMenuExtension, which the phase 3 switch
-		/// to IsPlacedInMenu silently turned off: the tabs for the adopted
-		/// groups kept being drawn while no asset could reach them, so Roads
-		/// showed ten tabs that counted 0 and answered a click with "No
-		/// buildings in this category".
-		///
-		/// Trams, pedestrian paths, bike trails, seaways, rail, power lines and
-		/// pipes are all NETWORKS, and a player drawing one is doing the same
-		/// job whichever service owns it. Vanilla scatters them across the
-		/// service menus; gathering them where the roads are is the extension.
-		///
-		/// Guarded on IsPlacedInAnyMenu so this admits what vanilla places
-		/// somewhere, not every network prefab in the index. Nothing is taken
-		/// OUT of the menus that already hold them — Transportation keeps its
-		/// tram tracks — so this only ever adds a second way to reach one.
-		/// </remarks>
-		/// <remarks>
-		/// IsExtended is asked HERE, before the call, and that is the whole point
-		/// of the shape. IsExtraNetwork checks it too — but C# evaluates
-		/// arguments first, so `prefab.Category.ToString()` ran for every one of
-		/// ~24,700 indexed prefabs on EVERY menu-scoped projection, when only the
-		/// Roads menu can ever answer true. An enum ToString is reflection-backed
-		/// on this framework.
-		///
-		/// Measured: a warm projection of Landscaping went 25.1ms to 10.5ms and
-		/// Transportation 21.3ms to 11.4ms. It does NOT touch the ~190ms a menu's
-		/// FIRST projection costs — see cm-2xvs.25, that one is still open.
+		/// Trams, paths, bike trails, seaways, rail, power lines and pipes are all networks,
+		/// so the Roads menu gathers them without taking them out of the menus that hold them.
+		/// IsExtended is asked HERE so the argument enum ToString runs only for that menu.
 		/// </remarks>
 		private static bool IsGatheredNetwork(PrefabIndex prefab, string menu) =>
 			NetworkMenuExtension.IsExtended(menu)
@@ -771,14 +510,8 @@ namespace BetterBuildingMenu.Services
 
 		/// <summary>The projections this adapter reuses across refreshes.</summary>
 		/// <remarks>
-		/// One refresh asks the same projection question several times over, and
-		/// each pass used to scan the whole index — ~24,900 prefabs with 105 asset
-		/// packs installed — and rebuild an entry for every survivor, so opening a
-		/// menu cost the same whether it held 110 assets or 514.
-		///
-		/// Snapshots are keyed by scope and kept until PrefabIndexingSystem's
-		/// IndexGeneration changes, so they DO survive from one refresh to the
-		/// next; see SnapshotCache.
+		/// Keyed by scope and kept until PrefabIndexingSystem's IndexGeneration changes, so
+		/// they DO survive from one refresh to the next; see SnapshotCache.
 		/// </remarks>
 		private readonly SnapshotCache _snapshots = new();
 
@@ -835,16 +568,9 @@ namespace BetterBuildingMenu.Services
 					return entry;
 				}
 
-				// PER CATEGORY, not one bucket for the whole menu. Health &
-				// Deathcare is the case that settles it: its ungated assets sit
-				// in both categories, so a single bucket had to be called after
-				// the menu — and the tab drawn for it is scoped to Healthcare
-				// and holds only clinics, so the name said deathcare about a
-				// tab with none in it.
-				//
-				// Split this way each bucket is named for the category it is
-				// actually in, and the menu name is left for the assets that
-				// have no category to be named after.
+				// PER CATEGORY, not one bucket for the whole menu: the tab drawn for a
+				// bucket is scoped to a single category, so a menu-wide name would say
+				// something the tab's contents do not bear out.
 				var category = NetworkMenuExtension.EffectiveCategory(entry, menu) ?? string.Empty;
 				var label = VanillaServiceLabel(category.Length > 0 ? category : menu ?? string.Empty);
 
@@ -856,10 +582,8 @@ namespace BetterBuildingMenu.Services
 		/// The game's own word for a service or one of its categories.
 		/// </summary>
 		/// <remarks>
-		/// The same chain the category tabs resolve through, and for the same
-		/// reason: the game ships a localized string under exactly these ids —
-		/// SubServices.NAME[TransportationRoad] is "Road", Services.NAME[Roads]
-		/// is "Roads", and both translate. Falls back to the id, which is at
+		/// The same chain the category tabs resolve through, because the game ships a
+		/// localized string under exactly these ids. Falls back to the id, which is at
 		/// least a name rather than a blank.
 		/// </remarks>
 		private static string VanillaServiceLabel(string id)
@@ -887,12 +611,9 @@ namespace BetterBuildingMenu.Services
 		/// such prefab — including while the index is still cold.
 		/// </summary>
 		/// <remarks>
-		/// For the extension picker, whose rows vanilla names by prefab. This
-		/// does NOT apply the menu's own filters — the upgrade exclusion at
-		/// GetIndexedBuildings, the toolbar's theme/pack row — because vanilla
-		/// has already decided what is listed; the question here is only how to
-		/// draw a row that is. The name map is rebuilt per index generation and
-		/// is empty until the first full index completes.
+		/// For the extension picker, whose rows vanilla names by prefab. It deliberately
+		/// applies none of the menu's own filters: vanilla has already decided what is
+		/// listed, and the question here is only how to draw a row that is.
 		/// </remarks>
 		public BuildingCatalogEntry? EntryForPrefabName(string prefabName)
 		{
@@ -936,17 +657,14 @@ namespace BetterBuildingMenu.Services
 				SubCategory: prefab.SubCategory.ToString(),
 				CategoryLabel: BuildingCatalogLabels.ForCategory(prefab.Category, prefab.Category.ToString()),
 				SubCategoryLabel: BuildingCatalogLabels.ForSubCategory(prefab.SubCategory, prefab.SubCategory.ToString()),
-				// Both, not one coalesced into the other: the thumbnail camera
-				// returns a URL for every prefab but only renders the ones
-				// vanilla shows in a menu, so a spawnable zone building has a
-				// non-null Thumbnail that draws nothing. A ?? here cannot see
-				// that; the renderer can, and falls back on the image error.
+				// Both, not one coalesced into the other: the thumbnail camera returns
+				// a URL for every prefab but renders only the ones vanilla shows, so a
+				// ?? here cannot see the blank that the renderer can.
 				Thumbnail: IconPath.Normalize(prefab.Thumbnail ?? prefab.FallbackThumbnail ?? string.Empty),
 				FallbackThumbnail: IconPath.Normalize(
 					prefab.FallbackThumbnail ?? prefab.CategoryThumbnail ?? string.Empty),
-				// Generated on first sight and cached on disk, so this costs one
-				// file read per distinct vector icon for the life of the install
-				// — not per projection, and not per entry.
+				// Generated on first sight and cached on disk: one file read per distinct
+				// vector icon for the life of the install, not one per projection.
 				SilhouetteThumbnail: Mod.Silhouettes?.UrlFor(
 					IconPath.Normalize(prefab.Thumbnail ?? prefab.FallbackThumbnail ?? string.Empty)),
 				UiMenu: prefab.UiMenuName,
@@ -1016,43 +734,19 @@ namespace BetterBuildingMenu.Services
 		/// stored.
 		/// </summary>
 		/// <remarks>
-		/// Two departures from AddValueGroup, and the same reason underneath: this
-		/// dimension is exhaustive, so its resting state is a fact about the view
-		/// rather than an absence of input.
-		///
-		/// It is offered even when only one value is present. IsWorthOffering
-		/// drops a single-valued dimension as a no-op, which is right for Role or
-		/// Source — but in a founding city every asset in a menu is locked, and
-		/// that is exactly when a player wants to see the filter saying so. A
-		/// dimension that disappears when the answer is interesting is worse than
-		/// one that costs a slot.
-		///
-		/// Both options read as selected when the stored selection is empty,
-		/// because empty MEANS both here. Drawn as two unticked boxes it read as
-		/// "no filter applied", which is a different claim from "showing locked
-		/// and unlocked". ToggleExhaustive makes the arithmetic agree.
+		/// The dimension is exhaustive, so it is offered even where only one value is present
+		/// — a founding city where everything is locked is exactly when the filter should say
+		/// so — and an empty stored selection reads as both, which is what it means.
+		/// </remarks>
 		/// </remarks>
 		private static void AddAvailabilityGroup(
 			ICollection<BuildingCatalogFacetGroup> groups,
 			IReadOnlyCollection<BuildingCatalogEntry> source,
 			IReadOnlyList<string>? selected)
 		{
-			// Resting state shows NOTHING selected, which is what the vanilla
-			// PACK row directly above this control does — measured in the live
-			// panel rather than argued:
-			//
-			//     Theme         ON  off              (a theme really is chosen)
-			//     Pack          off off off off …    (and every pack is showing)
-			//     Availability  …                    (ours, beside them)
-			//
-			// Pack is the exact analogue: an exhaustive set where nothing picked
-			// means everything shows, drawn as all dark. Lighting all three said
-			// "everything is showing" in a panel whose own control says that with
-			// silence, and the two disagreed a row apart.
-			//
-			// Pairs with ToggleExhaustive: from here a click NARROWS to what was
-			// clicked, which is also what Pack does. All dark, click one, see
-			// only that one.
+			// Resting state shows NOTHING selected, matching the vanilla pack row
+			// directly above: an exhaustive set where nothing picked means everything
+			// shows. Pairs with ToggleExhaustive, where a click narrows to what was clicked.
 			BuildingCatalogFacetOption[] options = BuildingCatalogFacetSelection.Availability.All
 				.Select(value => new BuildingCatalogFacetOption(
 					value,
@@ -1101,16 +795,9 @@ namespace BetterBuildingMenu.Services
 		/// Whether a dimension can actually narrow anything in the current view.
 		/// </summary>
 		/// <remarks>
-		/// One distinct value is not a filter. Every entry in view already has
-		/// it, so selecting it changes nothing and the control is a no-op that
-		/// still costs a slot in the rail and a decision from the reader.
-		/// Measured inside Roads and Networks: Source offered "Base game" and
-		/// DLC offered "No DLC required", each the only value present.
-		///
-		/// A selection keeps the group alive whatever its size. Dropping a
-		/// dimension the player has already filtered on would strand that
-		/// filter — applied, shrinking the results, and with nothing on screen
-		/// to say so or undo it.
+		/// One distinct value is not a filter: every entry in view already has it, so the
+		/// control is a no-op that still costs a slot. A selection keeps the group alive
+		/// whatever its size, or the filter would be applied with nothing on screen to undo it.
 		/// </remarks>
 		private static bool IsWorthOffering(string[] distinctValues, IReadOnlyList<string>? selected)
 		{
@@ -1121,33 +808,9 @@ namespace BetterBuildingMenu.Services
 		/// The content a menu's assets require that the game's own row cannot reach.
 		/// </summary>
 		/// <remarks>
-		/// This offered packs too, and no longer does. Vanilla's tool-options panel
-		/// is on screen WHILE THE LENS IS OPEN and already holds Theme and Pack —
-		/// measured live at 720p in the Zones menu, its Pack row carried 12 controls
-		/// against the 10 options this group was drawing. So the pack half was not a
-		/// wider reach, it was a second control for state the game owns, sitting a
-		/// few hundred pixels from the first. Direction from the user: "Pack control
-		/// is exposed in the vanilla tooling, we don't need a pack filter in the
-		/// filter rail."
-		///
-		/// An earlier comment here claimed the opposite — that our pack list beat
-		/// the game's four to two in Parks &amp; Recreation. That was measured against
-		/// BindPacks, which builds its row from the selected CATEGORY; the panel row
-		/// above is not so scoped, and it wins.
-		///
-		/// What is left is the part vanilla genuinely cannot express: a DLC that
-		/// ships NO creator pack. San Francisco Set and Landmark Buildings are 163
-		/// assets between them, and nothing in the game's Pack row speaks for either,
-		/// because neither has a pack to speak with. DlcIds is the only mechanism
-		/// that reaches them.
-		///
-		/// So the packedDlcs test below now does the whole job of avoiding
-		/// duplication: a DLC with a pack is skipped here because the game's own row
-		/// already carries that pack. Bridges &amp; Ports has one, so it appears there
-		/// and not here.
-		///
-		/// Base game leads, as it does in the game's row, because "show me only what
-		/// needs no DLC" is the same question the rest of this group answers.
+		/// Packs belong to vanilla's tool-options panel, which is on screen while the lens is
+		/// open. What is left is the part that panel cannot express: a DLC shipping no creator
+		/// pack. The packedDlcs test below skips any DLC the game's own row already carries.
 		/// </remarks>
 		private static void AddContentGroup(
 			ICollection<BuildingCatalogFacetGroup> groups,
@@ -1229,24 +892,9 @@ namespace BetterBuildingMenu.Services
 		/// The values present, plus any the player has already chosen.
 		/// </summary>
 		/// <remarks>
-		/// A selection has to stay visible even when nothing in view carries it,
-		/// or it becomes a filter with no control attached.
-		///
-		/// That is not hypothetical. Choose "Require road" in Electricity and
-		/// switch to Landscaping: nothing there has BuildingFlags, so the
-		/// dimension had no values, the group was published with ZERO options,
-		/// and both the rail (which drops empty groups) and the chip row (which
-		/// iterates options) showed nothing — while the query still filtered on
-		/// it. The menu read "No buildings match" with no filter on screen and no
-		/// way to clear it.
-		///
-		/// Keeping the selected value as an option makes it chippable and
-		/// removable, which is better than dropping the selection silently: the
-		/// player's choice survives, and it survives VISIBLY.
-		///
-		/// Reachable only since the rail started delivering clicks at all — see
-		/// FilterRail's onChange. Before that no facet could be set, so nothing
-		/// could be carried anywhere.
+		/// A selection has to stay visible even when nothing in view carries it, or it becomes
+		/// a filter with no control attached: the group would publish zero options — dropped by
+		/// the rail and the chip row alike — while the query went on filtering on it.
 		/// </remarks>
 		private static string[] WithSelected(string[] present, IReadOnlyList<string>? selected)
 		{
@@ -1296,21 +944,15 @@ namespace BetterBuildingMenu.Services
 
 			if (numericId == DlcId.BaseGame.id)
 			{
-				// Deliberately not "Base game": the Source facet already uses
-				// that label for content shipped by the studio rather than by a
-				// mod. Two identically-named options in adjacent facet groups
-				// read as a duplicate rather than as two different questions.
-				// This one answers "which DLC does this need?" — the answer
-				// being none.
+					// Deliberately not "Base game": the Source facet already uses that
+					// label for content shipped by the studio rather than by a mod, and two
+					// identically-named options in adjacent groups read as a duplicate.
 				return "No DLC required";
 			}
 
-			// DlcId is persisted as a stable numeric value in the catalog query,
-			// but the toolbar's existing DLC option already knows how to resolve
-			// that value to the game's internal name and localized title. Reuse
-			// that metadata when it is available; the explicit ID fallback makes
-			// unavailable metadata understandable instead of exposing a bare
-			// numeric token such as "DLC 123".
+			// The toolbar's own DLC option already resolves a numeric DlcId to the
+			// game's internal name and localized title, so reuse that metadata; the
+			// explicit ID fallback beats exposing a bare numeric token.
 			try
 			{
 				string internalName = PlatformManager.instance.GetDlcName(new DlcId(numericId));

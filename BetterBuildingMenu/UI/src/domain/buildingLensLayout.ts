@@ -7,13 +7,9 @@ import { fontSizeRatio } from "./textScale";
 export const BUILDING_LENS_PANEL_CHROME_WIDTH = 35;
 export const BUILDING_LENS_MIN_WIDTH = 700 + BUILDING_LENS_PANEL_CHROME_WIDTH;
 /**
- * The drag ceiling, and the twin of BuildingLensWidth.Max in C# — a test
- * asserts the two agree.
- *
- * They did not, quietly: this was 1200 + chrome = 1235 against a C# Max of
- * 1232, so the last 3rem of any drag was clamped away on commit. Stating the
- * band total and subtracting the chrome, the way the C# side derives it, makes
- * the two readable as the same number instead of two guesses that nearly meet.
+ * The drag ceiling, and the twin of BuildingLensWidth.Max in C# — a test asserts
+ * the two agree. Stated as the band total less the chrome, the way the C# side
+ * derives it, so the two read as one number rather than two near guesses.
  */
 export const BUILDING_LENS_BAND_WIDTH = 1476;
 export const BUILDING_LENS_MAX_WIDTH = BUILDING_LENS_BAND_WIDTH - BUILDING_LENS_PANEL_CHROME_WIDTH;
@@ -78,19 +74,14 @@ export function getBuildingLensMetricTextScale(tier: BuildingLensDensityTier): "
 }
 
 /**
- * What each metric column costs at a comfortable width.
- *
- * Measured content, not guesses: "5 600 000" in Cost, "225 000/mo" in Upkeep,
- * "15 000 students" in Capacity, plus the 8rem right gutter the numeric columns
- * carry. Sized so nothing clips — an earlier set of 54-58rem columns clipped 234
- * of 600 rendered cells.
+ * What each metric column costs at a comfortable width: the widest content each
+ * one draws plus the right gutter the numeric columns carry, sized so nothing
+ * clips.
  */
 export const BUILDING_LENS_COLUMN_MAX: Record<BuildingLensMetric, number> = {
   cost: 100,
-  // The widest figure this column draws is a road's "¢2,437 /km/mo." — the
-  // game's own per-kilometre-per-month template — and it does not scale with
-  // the panel. At 1280x720 one rem draws 0.54px; the text wants 59–60px, which
-  // is 112rem, and 108 clipped its last character on every road. The minimum
+  // The widest figure here is a road's per-kilometre-per-month cost, in the
+  // game's own template, and it does not scale with the panel. The minimum
   // below holds the same figure for the same reason.
   upkeep: 116,
   workers: 62,
@@ -101,16 +92,13 @@ export const BUILDING_LENS_COLUMN_MAX: Record<BuildingLensMetric, number> = {
 };
 
 /**
- * What each column may be squeezed to before the name gives up any more.
- *
- * These clip the rare widest value and fit the common one, which is the trade
- * this whole function exists to make. Roughly three quarters of the comfortable
- * width, rounded to whole units, and never below what a two-digit figure and
- * its gutter need.
+ * What each column may be squeezed to before the name gives up any more. These
+ * clip the rare widest value and fit the common one, and never fall below what
+ * a two-digit figure and its gutter need.
  */
 export const BUILDING_LENS_COLUMN_MIN: Record<BuildingLensMetric, number> = {
   cost: 76,
-  // Holds "¢2,437 /km/mo." at any panel width — see the maximum above.
+  // Holds the per-kilometre-per-month figure at any panel width — see above.
   upkeep: 116,
   workers: 48,
   capacity: 88,
@@ -120,80 +108,43 @@ export const BUILDING_LENS_COLUMN_MIN: Record<BuildingLensMetric, number> = {
 };
 
 /**
- * What the identity column is expected to keep at the narrowest panel.
- *
- * Not a CSS min-width — that was tried and it backfires. In Cohtml a min-width
- * on a flex item disables its flex-grow: measured on the live row, the identity
- * cell froze at exactly 120px with 112px of free space unclaimed beside it, and
- * setting min-width back to 0 grew it to 225px on the spot. So the floor cannot
- * be declared; it has to be left over.
- *
- * This is therefore a budget, and the column floors below are chosen so that
- * roughly this much survives at BUILDING_LENS_MIN_WIDTH. Measured after: the
- * name renders 77px at the narrowest panel, where it used to be ZERO — squeezed
- * out of existence while Capacity held 122 units to draw "—".
+ * What the identity column is expected to keep at the narrowest panel. A budget,
+ * not a CSS min-width: in Cohtml a min-width on a flex item disables its
+ * flex-grow, so this floor has to be left over by the column minima instead.
  */
 export const BUILDING_LENS_IDENTITY_MIN = 180;
 
 /**
- * Everything in a table row that is not the name, in rem.
- *
- * Mirrors buildingCatalog.module.scss, which is the authority — if a trailing
- * control is resized there, this has to follow:
- *
- *   $table-trailing-reserve  37  (4 padding + 26 details chevron + 4 outer + 3 gap)
- *   $rows-scrollbar-width    16  (reserved while the rows scroll)
- *   .rowSelect padding-left   8
- *   .thumbnail + its margin  80  (68 + 12; a margin because `gap` is inert here)
- *
- * Written down because the first attempt at the name budget subtracted only the
- * metric columns and over-estimated the name box by about 177rem — enough that
- * the middle-elision never fired and CSS went on cutting the tail, which is the
- * exact failure it was added to remove.
+ * Everything in a table row that is not the name, in rem: the trailing reserve,
+ * the rows' scrollbar, the select padding and the thumbnail with its margin.
+ * buildingCatalog.module.scss is the authority, and this has to follow it.
  */
 export const BUILDING_LENS_TABLE_ROW_FURNITURE = 37 + 16 + 8 + 80;
 
 /**
- * What the control pane takes out of the assembly: its own 379rem plus the
- * 6rem margin beside it.
- *
- * Lives here, with the rest of the layout arithmetic, because two unrelated
- * places need it: the surface sizes the panel by subtracting it, and the table
- * has to subtract it again to know how much width a NAME gets. The binding they
- * both start from is the whole assembly — BuildingLensWidth's own remark is
- * explicit that it means "the build menu and the control plane beside it" —
- * and forgetting that produced a name budget 2.2x too large, twice.
- *
- * 379rem, not 253rem: the target is 253 PIXELS and 1rem is 0.6667px.
+ * What the control pane takes out of the assembly: its own width plus the margin
+ * beside it. Here because both the surface and the table subtract it from the
+ * width binding, which measures the whole assembly and not the panel.
  */
 export const BUILDING_LENS_CONTROL_PANE_TOTAL = 385;
 
 /**
- * What the table's panel spends around its rows: the row viewport's
- * scrollbar, the rows' own padding and the panel's inner margins. Measured
- * live at 1280x720 with PanelWidth 1441 — the whole assembly, control pane
- * included: the panel is 1441 − 385 = 1056rem and a row is 1026rem, so 30.
- *
- * An earlier reading had the row at 820rem and the chrome at 236, and the
- * columns were held to a 422rem "room" while the same row drew every column
- * at its comfortable width with 327rem left for the name. Measured again on
- * 2026-09-09 with the maximum widths applied by hand; see docs/verification.md.
+ * What the table's panel spends around its rows: the row viewport's scrollbar,
+ * the rows' own padding and the panel's inner margins — the gap between the
+ * panel's width and a row's.
  */
 export const BUILDING_LENS_TABLE_CHROME = 30;
 
 /**
- * The name column's basis, the room a row keeps for it before the metric
- * columns take theirs. At the default assembly the columns leave the name
- * 327rem; the basis is what it must keep as the panel narrows.
+ * The name column's basis: the room a row keeps for it before the metric
+ * columns take theirs, and what it must keep as the panel narrows.
  */
 export const BUILDING_LENS_TABLE_NAME_BASIS = 260;
 
 /**
- * The room the metric columns really have, in rem, for an assembly width as
- * the catalog passes it (panel plus chrome): the assembly less the control
- * pane, the panel's chrome around the rows, the row's furniture and the
- * name's basis. 625rem at the default assembly. Never negative: below about
- * 850rem the arithmetic runs out, and the columns then sit at their minima.
+ * The room the metric columns really have: the assembly less the control pane,
+ * the panel's chrome, the row's furniture and the name's basis. Never negative
+ * — a narrow panel runs the arithmetic out and the columns sit at their minima.
  */
 export function tableColumnRoom(outerWidth: number): number {
   const room = outerWidth
@@ -211,20 +162,9 @@ const sumWidths = (widths: BuildingLensColumnWidths): number =>
   Object.values(widths).reduce((total, width) => total + width, 0);
 
 /**
- * The seven metric column widths for an assembly width as the catalog passes
- * it (panel plus chrome), in rem.
- *
- * The columns move between their minimum and comfortable widths by the ROOM
- * beside the name, not by the panel's position in its range: a set that
- * sums to the room is what keeps the name at its basis, since every metric
- * cell is flex: 0 0 auto and the name is the only item that yields. Where
- * the room holds the comfortable set, every column gets it; where it does
- * not hold the minimum set, the columns sit at their minima and the name
- * gives way, as it always did there.
- *
- * The cells are fontSizeS; their figures do not scale with the panel but do
- * with the game's text scale (see domain/textScale.ts), so the room is read
- * in unscaled units and the result scaled back up.
+ * The seven metric column widths, moving between minimum and comfortable by the
+ * ROOM beside the name — every metric cell is flex: 0 0 auto and the name is
+ * the only item that yields. The figures scale, so the room is read unscaled.
  */
 export function getBuildingLensColumnWidths(outerWidth: number, textScale = 1): BuildingLensColumnWidths {
   const width = Number.isFinite(outerWidth) ? outerWidth : BUILDING_LENS_MIN_WIDTH;
@@ -249,9 +189,8 @@ export function getBuildingLensColumnWidths(outerWidth: number, textScale = 1): 
   }
 
   // The figures grow with the text scale as far as the room allows and no
-  // further: a set already at its minima cannot also grow by half. What does
-  // not fit at a large scale clips inside its cell, which is the lesser harm
-  // — the alternative squeezed the name to 13px at 125 %.
+  // further: a set already at its minima cannot also grow. What does not fit
+  // clips inside its cell, which beats squeezing the name away.
   const baseTotal = sumWidths(base);
   const grow = room > 0 && baseTotal > 0
     ? Math.min(textRatio, Math.max(1, room / baseTotal))
@@ -259,9 +198,8 @@ export function getBuildingLensColumnWidths(outerWidth: number, textScale = 1): 
 
   const widths = {} as BuildingLensColumnWidths;
   for (const metric of Object.keys(base) as BuildingLensMetric[]) {
-    // Whole units: a fractional width is a column that lands on a different
-    // pixel in the header than in the rows, which is the alignment bug this
-    // table has already been fixed for once.
+    // Whole units: a fractional width lands on a different pixel in the header
+    // than in the rows, and the columns stop lining up.
     widths[metric] = Math.round(base[metric] * grow);
   }
 
@@ -269,23 +207,9 @@ export function getBuildingLensColumnWidths(outerWidth: number, textScale = 1): 
 }
 
 /**
- * Return a deterministic max height for the catalog's bounded row viewport.
- * Gameface's viewport-unit calculation is not reliable across the game's
- * render targets. Its rem-like panel units are normalized to a 1080px design
- * height, so convert the physical viewport budget into those units here.
- *
- * In practice this is a constant, and knowing that saves the next reader an
- * experiment: the cohtml layer renders at a FIXED 1280x720 logical viewport
- * and scales it to the window, so `window.innerHeight` is always 720 and the
- * only value this is ever called with is 720 — giving 765 every time.
- * Measured 2026-08-09 with the game window at 1920x1080 (confirmed in
- * Player.log): window.innerWidth/innerHeight still read 1280x720 and
- * Page.captureScreenshot still returned a 1280x720 image.
- *
- * The parameter stays because the arithmetic is the honest statement of what
- * the number means, and because it is what makes the function testable. But
- * nothing here adapts to a real resolution change, and no layout in this mod
- * needs to — 1rem is 0.6667px at every resolution, not just at 720p.
+ * A deterministic max height for the catalog's bounded row viewport, because
+ * Gameface's viewport units are not reliable across the game's render targets.
+ * A constant in practice; the parameter keeps the arithmetic testable.
  */
 export function getBuildingLensCatalogMaxHeight(viewportHeight: number): number {
   const safeViewportHeight = Number.isFinite(viewportHeight) ? viewportHeight : 720;
@@ -295,29 +219,19 @@ export function getBuildingLensCatalogMaxHeight(viewportHeight: number): number 
 
 export type BuildingLensAlignment = "Left" | "Center" | "Right" | string;
 
-// clampBuildingLensWidth and resizedBuildingLensWidth lived here and are gone
-// with the horizontal drag: the band has one correct width, so there is
-// nothing to clamp a dragged value to. BUILDING_LENS_MIN_WIDTH and
-// BUILDING_LENS_MAX_WIDTH stay — the table sizes its columns against them.
-
 /**
  * The catalog's height range, twin of BuildingLensHeight in C# — a test asserts
- * they agree.
- *
- * Min is two tile rows plus padding; Max is the viewport (a fixed 1080rem) less
- * the chrome below the panel. Between them the height is the player's, set by
- * dragging the panel's top edge.
+ * they agree. Min is two tile rows plus padding, Max the viewport less the
+ * chrome below the panel; between them the height is the player's to drag.
  */
 export const BUILDING_LENS_MIN_HEIGHT = 200;
 export const BUILDING_LENS_MAX_HEIGHT = 960;
 export const BUILDING_LENS_DEFAULT_HEIGHT = 420;
 
 /**
- * Clamp a dragged height.
- *
- * Non-finite resolves to the default rather than passing through: the value
- * goes straight into an inline style, and `height: NaNrem` leaves the catalog
- * unsized rather than merely wrong.
+ * Clamp a dragged height. Non-finite resolves to the default rather than
+ * passing through: the value goes straight into an inline style, and
+ * `height: NaNrem` leaves the catalog unsized rather than merely wrong.
  */
 export function clampBuildingLensHeight(height: number): number {
   if (!Number.isFinite(height)) return BUILDING_LENS_DEFAULT_HEIGHT;
@@ -325,11 +239,9 @@ export function clampBuildingLensHeight(height: number): number {
 }
 
 /**
- * The height a drag of `delta` pixels from `startHeight` should produce.
- *
- * The panel is bottom-anchored and the handle is on its top edge, so dragging
- * up (negative delta) makes it taller — the sign flip is the whole reason this
- * is a named function rather than an addition at the call site.
+ * The height a drag from `startY` to `currentY` should produce. The panel is
+ * bottom-anchored with the handle on its top edge, so dragging up makes it
+ * taller — the sign flip is why this is a function and not an addition.
  */
 export function draggedBuildingLensHeight(startHeight: number, startY: number, currentY: number): number {
   const delta = Number.isFinite(startY) && Number.isFinite(currentY) ? startY - currentY : 0;

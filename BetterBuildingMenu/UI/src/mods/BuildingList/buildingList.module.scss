@@ -7,8 +7,6 @@
   flex-direction: row;
   flex-wrap: wrap;
   align-content: flex-start;
-  // Was `gap: 4rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   margin-left: -4rem;
   margin-top: -4rem;
   > * {
@@ -46,15 +44,9 @@
   border-color: var(--accentColorNormal);
 }
 
-// The picture and its badge share this box; the margin lives here now, because
-// the badge must not be pushed off the picture by the picture's own spacing.
-// Both the picture and its badge are nested, because baseButton's
-// `img { width: 24rem }` outranks a bare class — see unique-mark in base.scss.
-// Unnested, the icon drew at 24rem inside a 20rem box and the badge at 24rem
-// instead of 7rem, hanging into the row below.
-// 24rem in a 26rem row, which is vanilla's proportion — its picture fills 94%
-// of its item (68 of 72) and this fills 92% of the row's height. 20rem left the
-// building too small to recognise, which is the one job the icon has here.
+// The picture and its badge share this box, so the margin lives here rather
+// than on the picture, where it would push the badge off. Both are nested:
+// baseButton's img rule outranks a bare class. 24rem in a 26rem row is vanilla's.
 .artwork {
   @include _base.artwork-box(24rem);
   margin-right: 5rem;
@@ -118,9 +110,8 @@
   color: var(--menuText2Normal);
 }
 
-// --- Cards variant ---------------------------------------------------------
-// A larger icon and one line of facts. Still wrapped rows, so this sits between
-// the compact list and the table rather than becoming another table.
+// A larger icon and one line of facts. Still wrapped rows, so this sits
+// between the compact list and the table rather than becoming another table.
 
 .itemCard {
   height: auto;
@@ -130,8 +121,7 @@
   align-items: center;
 }
 
-// 40rem in a 48rem row: the row grows by 4rem so the picture can, keeping
-// vanilla's 94% rather than the 82% a 36rem picture gave in a 44rem row.
+// 40rem in a 48rem row: the row grows so the picture keeps vanilla's proportion.
 .artworkLarge {
   @include _base.artwork-box(40rem);
   margin-right: 7rem;
@@ -153,9 +143,8 @@
 }
 
 // The figure this list is ordered by, pushed to the right edge so the values
-// stack into a readable column. `margin-left: auto` rather than a spacer or
-// `justify-content: space-between`: the row is flex-start so the name keeps its
-// place beside the icon, and the auto margin claims only what is left over.
+// stack into a readable column. `margin-left: auto` rather than space-between:
+// the row is flex-start, so the name keeps its place beside the icon.
 .sortedMetric {
   margin-left: auto;
   padding-left: 8rem;
@@ -168,8 +157,6 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  // Was `gap: 7rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   > * + * {
     margin-left: 7rem;
   }
@@ -181,17 +168,13 @@
   white-space: nowrap;
 }
 
-// Cohtml did not honour flex gap on this row, so the separator is a real
-// character rather than spacing that silently was not there.
+// A real character rather than spacing, which this engine would not draw.
 .factDot {
   padding: 0 5rem;
   color: var(--menuText2Normal);
   opacity: 0.6;
 }
 
-// Same signal the grid's hover card gives, so the answer to "can I afford it"
-// looks the same wherever it is asked.
-// --- Footprint glyphs ------------------------------------------------------
 // Nested flex rows, not CSS grid: Cohtml supports no grid layout.
 
 .glyphs {
@@ -212,25 +195,9 @@
   flex-direction: row;
 }
 
-// Deliberately tiny. These are read as shapes at a glance, not counted.
-//
-// Sized so the step from one cell to the next is a WHOLE pixel. The engine
-// resolves 1rem to 2/3 px at 1280x720 (CS2 authors against a 1920 design
-// width), so only multiples of 1.5rem land on the pixel grid. These were
-// 4rem cells on a 5rem pitch, which is 2.67px on 3.33px: consecutive cells
-// started at x .33, .67, .00, each rasterising with different edge coverage,
-// so one nominal square drew three visibly different ways. Reported as the
-// zone tooltip's size indicator being "sized irregularly" — nothing in the
-// markup was uneven, the pitch just could not land on whole pixels.
-//
-// 3rem + 1.5rem = 2px on a 3px pitch: same glyph size as before, every cell
-// now identical. The pitch is the part that matters — a fractional cell still
-// draws consistently as long as all cells share one phase; it is the
-// VARIATION that shows, not the softness.
-//
-// Whole at 1080p too (3px on a 4.5px pitch is half-pixel there, but a uniform
-// half-pixel, and everything is crisper at that scale). If this ever needs to
-// be exact at both, multiples of 3rem are whole at each.
+// Deliberately tiny: these are read as shapes at a glance, not counted. Sized
+// so the step from one cell to the next lands on a WHOLE pixel — the engine
+// resolves 1rem to 2/3 px, and an uneven phase reads as cells of unequal size.
 .glyphCell {
   width: 3rem;
   height: 3rem;
@@ -246,16 +213,9 @@
   font-size: var(--fontSizeXS);
 }
 
-// Milestone-locked. Same treatment as the grid tile and vanilla's own item
-// grid: the thumbnail becomes a black silhouette, the row lightens, and hover
-// still responds so it reads as disabled rather than dead. No lock glyph here —
-// at this icon size it would sit on top of the silhouette rather than beside
-// it, and the row already carries the name at full length.
-// Both unplaceable states share the ground, the way the grid's tile does and
-// the way vanilla's [disabled] rule does. WHICH state it is gets said in the
-// label and the aria suffix, not by a second colour.
-// Rasters only — a vector under a filter is what this engine cannot draw.
-// See hasVectorThumbnail; the grid carries the same pair of rules.
+// Milestone-locked, and already-built with it: the same treatment as the grid
+// tile and vanilla's own item grid, with hover still answering so the row
+// reads as disabled rather than dead. Rasters only; see hasVectorThumbnail.
 .item[data-locked="true"][data-vector-thumb="false"] .icon,
 .item[data-locked="true"][data-vector-thumb="false"] .iconLarge,
 .item[data-already-built="true"][data-vector-thumb="false"] .icon,

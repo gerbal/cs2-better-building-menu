@@ -14,15 +14,8 @@ namespace BetterBuildingMenu.Domain
 	{
 		/// <summary>The heading for one density tier; empty for a zone with no tier.</summary>
 		/// <remarks>
-		/// The game's own words, taken off the zone names it ships — "Low
-		/// Density Housing", "Medium Density Row Housing", "Mixed Housing",
-		/// "Low Rent Housing" — with "Housing" trimmed, because the same tiers
-		/// apply to commercial and office zones.
-		///
-		/// The only copy. The UI used to hold DENSITY_TIERS beside it, with a
-		/// test reading the TypeScript to keep them agreeing; since the page
-		/// carries its headings (BuildingCatalogGrouping.Labels) there is
-		/// nothing on that side to agree with.
+		/// The game's own words, taken off the zone names it ships, with "Housing"
+		/// trimmed because the same tiers apply to commercial and office zones.
 		/// </remarks>
 		public static string DensityTier(ZoneTypeFilter density) => density switch
 		{
@@ -59,11 +52,9 @@ namespace BetterBuildingMenu.Domain
 			string fallback = Fallback(rawValue, unknownEnumPrefix);
 			try
 			{
-				// The game first, where it names the same concept. These labels
-				// are the game's own categories, and it ships them in every
-				// language it supports while the mod's Locale.json is English
-				// only. A missing key falls through to exactly what was shown
-				// before, so nothing regresses if the game renames one.
+				// The game first, where it names the same concept: it ships these
+				// category labels in every language, while the mod's Locale.json is
+				// English only. A missing key falls through to the mod's own label.
 				string? gameKey = GameLocaleKeys.For(rawValue);
 				if (gameKey is not null)
 				{

@@ -1,13 +1,8 @@
 @use "../../base.scss" as _base;
 
 // The control plane: a column to the right of the build menu, mirroring
-// vanilla's tool-options column on the left.
-//
-// WIDTH IS IN REM AND THE TARGET WAS MEASURED IN PIXELS. Vanilla's
-// tool-side-column is 253px at 1280x720, and 1rem is 0.6667px here, so the
-// match is 379rem. Writing 253rem would draw it at two thirds the width and
-// look almost right, which is how the same slip survived review once already
-// (BuildingLensTileSize).
+// vanilla's tool-options column. Its width is a REM value matching a column
+// measured in PIXELS — the pixel number written as rem draws two thirds of it.
 $pane-width: 379rem;
 
 // Bottom-aligned and growing upward, like the column it mirrors: the build
@@ -16,41 +11,18 @@ $pane-width: 379rem;
   display: flex;
   flex-direction: column;
   flex: 0 0 auto;
-  // NO align-self: stretch. It was tried, to give the pane and the panel a
-  // shared top edge — they had none, the pane sitting 41px lower than a 727x200
-  // panel. It bought that edge by pinning the pane's height to the panel's, and
-  // the panel's height is a setting the player drags: every rem they add to the
-  // build menu added a rem of empty pane, so the taller the menu the emptier
-  // the column beside it looked.
-  //
-  // The shared edge that matters is the bottom one, and the row already gives
-  // it — `.lensRow` is `align-items: flex-end`, so a content-sized pane still
-  // lands on the same line as the panel and the toolbar below. The top edges
-  // differing is what two boxes of different content lengths honestly look
-  // like.
+  // NO align-self: stretch: it pins the pane's height to the panel's, and that
+  // height is a setting the player drags, so a taller menu buys only an emptier
+  // column. `.lensRow` already shares the bottom edge, the one that matters.
   box-sizing: border-box;
   width: $pane-width;
   margin-left: 6rem;
-  // 6rem 0, matching the measured tool-options-panel exactly. The horizontal
-  // inset is the row's job over there, not the panel's — see .row.
+  // Matches the tool-options panel opposite. The horizontal inset is the row's
+  // job over there, not the panel's — see .row.
   padding: 6rem 0;
-  // 12rem literal, NOT var(--panelRadius), which is what this was and why the
-  // pane had square corners while every panel around it was rounded.
-  //
-  // The variable is not missing. Read live off this very element,
-  // --panelRadius resolves to 12rem — and the declaration using it still
-  // computed 0px. Colour on the same element is fine: --panelColorNormal
-  // resolved and painted rgba(42,55,83,0.4375). So Cohtml substitutes var()
-  // for a colour here and drops it for a length on border-radius.
-  //
-  // A cousin of the fallback bug already known here, where var(--x, default)
-  // is dropped even with --x defined. This is the no-fallback form.
-  //
-  // Measured against the neighbours it has to match: vanilla's
-  // tool-options-panel computes 12rem on all four corners, and the build
-  // menu's asset-panel 12rem on the two it rounds. This is the only
-  // var()-driven border-radius in the stylesheet, and it was the only one
-  // wrong.
+  // 12rem literal, NOT var(--panelRadius): Cohtml substitutes var() for a
+  // colour on this element and drops it for a length on border-radius, so the
+  // variable form draws square corners beside every rounded panel.
   border-radius: 12rem;
   background-color: var(--panelColorNormal);
   backdrop-filter: var(--panelBlur);
@@ -59,17 +31,9 @@ $pane-width: 379rem;
   pointer-events: auto;
 }
 
-// One row per control, and these numbers are vanilla's, read off the live
-// tool-options bank rather than eyeballed against it:
-//
-//   item_*   display flex, align-items center, min-height 0, padding 4rem 12rem
-//   label_*  16rem, BOLD, white, width auto, no right padding
-//   content  flex 1 1 auto, justify-content flex-end
-//
-// Ours had drifted on all three — 39rem min-height, no horizontal padding, a
-// non-bold label carrying its own 8rem gap. The label sizes to its text and the
-// content is pushed right, so the gap between them is whatever is left rather
-// than a number either side has to know.
+// One row per control, and these numbers are vanilla's own tool-options bank:
+// padding 4rem 12rem, a bold 16rem label sized to its text, and the content
+// pushed right — so the gap between them is what is left, not a stated number.
 .row {
   display: flex;
   flex-direction: row;
@@ -81,20 +45,13 @@ $pane-width: 379rem;
 .rowLabel {
   flex: 0 0 auto;
   // A floor under the gap to the control, which `justify-content: flex-end` on
-  // .rowValue only provides when the control hugs its content. Group by and
-  // Sort by hold Dropdowns that stretch to the full width, so flex-end has
-  // nothing left to push and the label ended up touching the box: measured
-  // live, Filters had 122px of gap and View 47px, while both dropdown rows had
-  // exactly 0.
-  //
-  // 12rem, which is the row's own horizontal inset — the same separation the
-  // row keeps from the pane's edges, applied between its two halves.
+  // .rowValue only provides when the control hugs its content; a Dropdown that
+  // stretches leaves none. 12rem, the row's own horizontal inset.
   margin-right: 12rem;
-  // Solid white, matching vanilla's row labels. --menuText1Normal resolves to
-  // 80% here and reads as the disabled sibling of the rows it sits beside;
-  // measured on the live Theme row, vanilla's is rgba(255,255,255,1).
+  // Solid white, matching vanilla's row labels. --menuText1Normal is 80% here
+  // and reads as the disabled sibling of the rows beside it.
   color: rgba(255, 255, 255, 1);
-  // 16rem draws the 10.6667px the bank uses. Bold, like every label there.
+  // Bold, like every label in the bank.
   font-size: 16rem;
   font-weight: bold;
   white-space: nowrap;
@@ -109,16 +66,11 @@ $pane-width: 379rem;
   justify-content: flex-end;
 }
 
-// The scope breadcrumbs at the head of the pane.
-//
-// ChipRow was written for a full-width band under the top bar, where it drew
-// its own dark ground and a rule to separate itself from the row above. Inside
-// the pane it is the first thing in the column, on the pane's own ground, so
-// both would be a box drawn twice. The wrap is what the narrow column needs:
-// four breadcrumbs that sat on one 718px line have to stack in 253px.
+// The scope breadcrumbs at the head of the pane. ChipRow draws its own ground
+// and rule for a full-width band; here it is the first thing in the column, on
+// the pane's own ground, so both would be a box drawn twice.
 .scope {
-  // 12rem to sit on the same left edge as every row, now that the inset lives
-  // on the rows rather than on the pane.
+  // 12rem, to sit on the same left edge as every row.
   margin: -6rem 0 4rem;
   padding: 4rem 12rem;
   border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
@@ -129,8 +81,7 @@ $pane-width: 379rem;
   }
 }
 
-// What the search is, on the far side of the screen from the field that set
-// it. The result count used to lead this column and is gone with its row.
+// What the search is, on the far side of the screen from the field that set it.
 .searchContext {
   overflow: hidden;
   padding: 2rem 12rem 4rem;
@@ -140,9 +91,8 @@ $pane-width: 379rem;
   font-size: var(--fontSizeS);
 }
 
-// The pickers. Same shape as the pair the in-panel band used to carry, but
-// stacked in a column rather than strung along a row, so the summary takes the
-// width left after its label rather than sizing to its own text.
+// The pickers, stacked in a column rather than strung along a row, so the
+// summary takes the width left after its label rather than sizing to its text.
 .picker {
   position: relative;
   display: flex;
@@ -165,8 +115,8 @@ $pane-width: 379rem;
   height: 29rem;
   padding: 0 4rem 0 8rem;
   border-radius: 4rem;
-  // Vanilla's own control fill — the same #141b22 the filter rail's toggles
-  // take from the Theme row opposite, so the two banks read as one idiom.
+  // Vanilla's own control fill, the same the filter rail's toggles take from
+  // the Theme row opposite, so the two banks read as one idiom.
   background-color: rgba(20, 27, 34, 1);
   color: var(--menuText1Normal);
   font-size: var(--fontSizeM);
@@ -201,8 +151,7 @@ $pane-width: 379rem;
   padding: 3rem;
   border-radius: 4rem;
   // The in-game surface, matching what the filter rail's popovers take from
-  // game-dropdown.module.scss — NOT cs2/ui's light settings-screen default,
-  // which drew a solid white panel over the map until 9ad2692.
+  // game-dropdown.module.scss — NOT cs2/ui's light settings-screen default.
   background-color: rgba(15, 16, 19, 1);
   border: 1rem solid rgba(60, 64, 76, 1);
 }
@@ -246,12 +195,8 @@ $pane-width: 379rem;
 }
 
 
-// The chips, moved with the filters they record. Unchanged from the options
-// bank they came from: they were sized for a 253px column and the pane is the
-// same width, so nothing about them needed to change.
-//
-// .rowChips lets its row wrap, which the picker rows never do — a chip row is
-// however many chips there are, and at this width that is regularly two lines.
+// The chips, moved with the filters they record. .rowChips lets its row wrap,
+// which the picker rows never do — at this width a chip row is often two lines.
 .rowChips {
   align-items: flex-start;
 }

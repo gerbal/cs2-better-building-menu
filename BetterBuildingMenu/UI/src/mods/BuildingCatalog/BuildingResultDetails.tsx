@@ -22,16 +22,9 @@ interface BuildingResultDetailsProps {
 }
 
 /**
- * Everything the indexer knows about one result, ready to draw under it.
- *
- * Extracted from the table, which was the only view that could show any of it
- * (cm-0lom). The list and cards now open the same block, so a building tells
- * you the same things wherever you happen to be looking at it — the same
- * argument the hover card already settled for hover.
- *
- * It computes rather than receives: a caller passes an entry and gets a block.
- * The table used to derive all four of these inline and pass nothing, which is
- * why nothing else could reuse it.
+ * Everything the indexer knows about one result, ready to draw under it, so a
+ * building says the same things in every view. It COMPUTES rather than
+ * receives — an entry in, a block out — which is what lets every view open it.
  */
 export const BuildingResultDetails = ({ entry, resolveFacetLabel }: BuildingResultDetailsProps) => {
   const { translate } = useLocalization();
@@ -50,7 +43,7 @@ export const BuildingResultDetails = ({ entry, resolveFacetLabel }: BuildingResu
 
   return (
     <div className={styles.rowDetails}>
-      {/* The game's own copy for this prefab. Free: the entry already carries
+      {/* The game's own copy for this prefab, free: the entry carries
           prefabName and the game keys descriptions by it. */}
       {description && <div className={styles.rowDescription}>{description}</div>}
 

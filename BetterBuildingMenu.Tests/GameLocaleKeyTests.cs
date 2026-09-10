@@ -13,9 +13,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void NamesTheGamesOwnKeyForEveryServiceMenu()
 		{
-			// These paths were read out of the shipped Locale.cok, not guessed —
-			// one Editor.ASSET_CATEGORY_TITLE entry per category — and they are
-			// the same leaf names the toolbar's menu prefabs carry.
+			// These paths come from the shipped Locale.cok, one
+			// Editor.ASSET_CATEGORY_TITLE entry per category, and they are the same
+			// leaf names the toolbar's menu prefabs carry.
 			Assert.Equal(
 				"Editor.ASSET_CATEGORY_TITLE[Buildings/Services/Health & Deathcare]",
 				GameLocaleKeys.For(nameof(PrefabSubCategory.ServiceBuildings_Health)));
@@ -95,14 +95,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void NamesEveryZoneTypeTheOptionsRowCanShow()
 		{
-			// ZoneTypeOption projects its chips from a hand-built dictionary
-			// rather than from the enum, so a member missing an entry does not
-			// fail loudly — the chip simply never draws, and the tier becomes
-			// unreachable through the options UI with no error anywhere.
-			//
-			// Asserting against Enum.GetValues rather than a hand-written list
-			// is the point: a list would have to be remembered, and the thing
-			// being guarded here is exactly what happens when it is not.
+			// ZoneTypeOption projects its chips from a hand-built dictionary rather
+			// than from the enum, so a member with no entry fails silently. Asserting
+			// against Enum.GetValues is the point: a hand-written list is forgotten too.
 			var keys = LoadLocaleKeys();
 			var missing = Enum.GetValues(typeof(ZoneTypeFilter))
 				.Cast<ZoneTypeFilter>()
@@ -117,8 +112,8 @@ namespace BetterBuildingMenu.Tests
 
 		private static HashSet<string> LoadLocaleKeys()
 		{
-			// Same approach as SubCategoryLabelTests: the mod assembly's own
-			// embedded copy, so this cannot pass by finding a stale file.
+			// The mod assembly's own embedded copy, so this cannot pass by finding
+			// a stale file on disk.
 			using var stream = typeof(ZoneTypeFilter).Assembly
 				.GetManifestResourceStream("BetterBuildingMenu.Locale.json");
 

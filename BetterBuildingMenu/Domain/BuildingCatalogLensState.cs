@@ -3,25 +3,13 @@ using System;
 namespace BetterBuildingMenu.Domain
 {
 	/// <summary>
-	/// Everything the player has told the lens: where they are looking (the
-	/// menu, its category, a strip tab or a school tier), what they typed,
-	/// how the result is ordered and grouped, which facets and metric bounds
-	/// narrow it, and how much of it is on screen.
+	/// Everything the player has told the lens: where they are looking, what they
+	/// typed, how the result is ordered, grouped and narrowed, and how much is shown.
 	/// </summary>
 	/// <remarks>
-	/// One immutable record with one transition per trigger, so the rules the
-	/// lens lives by — selecting a menu forgets the category, the tab and the
-	/// tier; a tab and a category exclude each other; Reset keeps the menu and
-	/// drops everything the player narrowed — are stated once and tested
-	/// without a game. BuildingMenuUISystem keeps one of these, applies a transition
-	/// per trigger, publishes the scope bindings from it and refreshes. A
-	/// transition that changes nothing returns <c>this</c>, reference-equal,
-	/// so the system can skip the refresh.
-	///
-	/// <see cref="Query"/> holds the sort, grouping, window, facets and strip
-	/// tabs directly; the scope, the search and the metric bounds live beside
-	/// it and are folded in by <see cref="Compose"/> right before the query
-	/// runs — the same fold <c>RefreshBuildingCatalog</c> used to do inline.
+	/// One immutable record with one transition per trigger, so the lens's rules — a
+	/// menu forgets its category, tab and tier; a tab and a category exclude each
+	/// other — are stated once and testable without a game. A no-op returns <c>this</c>.
 	/// </remarks>
 	public sealed record BuildingCatalogLensState(
 		BuildingCatalogQuery Query,
@@ -211,9 +199,8 @@ namespace BetterBuildingMenu.Domain
 		// --- The query to run -------------------------------------------------
 
 		/// <summary>
-		/// The query with the scope, the search and every metric bound folded
-		/// in — the one the engine runs. The window resets when a predicate
-		/// moved since the last composition and never sits below one chunk.
+		/// The query the engine runs, with the scope, the search and every metric bound
+		/// folded in. The window resets when a predicate moved, never below one chunk.
 		/// </summary>
 		public BuildingCatalogLensState Compose()
 		{
@@ -258,7 +245,7 @@ namespace BetterBuildingMenu.Domain
 		private static BuildingCatalogQuery ResetWindow(BuildingCatalogQuery query) =>
 			query with { Offset = 0, Limit = BuildingCatalogQuery.DefaultLimit };
 
-		// Truncated, not rounded: what the system did before this moved here.
+		// Truncated, not rounded.
 		private static int? ToNullableInt(double? value) =>
 			value.HasValue ? (int)value.Value : null;
 	}

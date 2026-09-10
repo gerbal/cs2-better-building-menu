@@ -70,12 +70,8 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
         public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, out PrefabIndex prefabIndex)
         {
             // A BuildingExtensionPrefab is a StaticObjectPrefab, not a
-            // BuildingPrefab, so this gate used to drop every pure extension —
-            // a school's Extension Wing, a crematorium's Hearse Garage — even
-            // though the third query above exists to deliver exactly those.
-            // Sub-buildings (a BuildingPrefab carrying ServiceUpgrade) got
-            // through; annexes never did, and the extension picker fell through
-            // to vanilla on any building that had one. Found live.
+            // BuildingPrefab, so the gate has to admit both: the third query
+            // above exists to deliver pure extensions like a Hearse Garage.
             if (prefab is not BuildingPrefab && prefab is not BuildingExtensionPrefab)
             {
                 prefabIndex = null;

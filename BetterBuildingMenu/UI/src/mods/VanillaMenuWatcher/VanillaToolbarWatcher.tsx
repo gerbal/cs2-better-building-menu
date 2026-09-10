@@ -13,26 +13,9 @@ const VanillaSelected$ = bindValue<boolean>("toolbar", "vanillaSelected", false)
 const ModsSelected$ = bindValue<boolean>("toolbar", "modsSelected", false);
 
 /**
- * Keeps the catalog in step with the game's own filter row.
- *
- * Renders nothing. The toolbar's theme, asset-pack and Vanilla/Mods buttons
- * filter the vanilla asset grid before it is drawn; the lens replaced that grid
- * and not the row, so those buttons changed vanilla's menu and did nothing to
- * ours. Reported as cm-2xvs.3, against the EU/NA toggle specifically.
- *
- * It forwards rather than filters. The rule is vanilla's own, transcribed in
- * C# as VanillaToolbarFilter and tested against ToolbarUISystem line by line —
- * a second, nicer rule here would be a menu that shows a different set from the
- * one it replaced.
- *
- * Nothing here knows what a theme or a pack is called. Entity indices go
- * across, and the backend matches them against what each asset requires, so a
- * theme or pack added by another mod is filtered correctly with no code change.
- * That was the constraint the user set when this was scoped: "we want to
- * support other filters dynamically added to the vanilla set by other mods".
- *
- * Mounted unconditionally, not inside the menu surface. The row can be changed
- * while no menu is open, and the next menu has to open already filtered.
+ * Keeps the catalog in step with the game's own filter row; renders nothing. It
+ * FORWARDS entity indices rather than filtering — the rule is C#'s — so a theme
+ * another mod adds needs no code change here. Mounted unconditionally.
  */
 export const VanillaToolbarWatcher = () => {
   const themes = useValue(SelectedThemes$);
@@ -41,9 +24,8 @@ export const VanillaToolbarWatcher = () => {
   const modsSelected = useValue(ModsSelected$);
 
   // The bindings re-emit on unrelated toolbar churn and emit current state on
-  // subscribe. Every spurious forward costs a full catalog rebuild, so the
-  // comparison is on the value rather than on the array identities, which
-  // change every tick.
+  // subscribe, and every spurious forward costs a full catalog rebuild — so
+  // this compares the VALUE, not the array identities, which change each tick.
   const lastKey = useRef<string | null>(null);
 
   useEffect(() => {

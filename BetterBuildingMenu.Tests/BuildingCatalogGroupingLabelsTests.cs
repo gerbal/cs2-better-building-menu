@@ -6,9 +6,8 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// The headings the page carries, ported from buildingGroups.test.ts (Bands,
-	/// Heading labels, Density tiers, categoryTierLabel, transit tiers,
-	/// menuCategory sub-grouped by density, The Other group).
+	/// The headings the page carries: cost and footprint bands, density and
+	/// transit tiers, menuCategory sub-grouping, and the Other group.
 	/// </summary>
 	public sealed class BuildingCatalogGroupingLabelsTests
 	{
@@ -147,7 +146,7 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.Equal("Low Rent Housing", BuildingCatalogGrouping.CategoryTierLabel(Entry() with { ZoneType = ZoneTypeFilter.LowRent }));
 			Assert.Equal("Crematorium", BuildingCatalogGrouping.CategoryTierLabel(Entry() with { DevTreeBranch = "Crematorium" }));
-			// Signature is not a density: every signature building is 16 and none carries a branch.
+			// Signature is excluded from the density branch, so it falls through to the milestone.
 			Assert.Equal("Metropolis", BuildingCatalogGrouping.CategoryTierLabel(Entry() with { ZoneType = ZoneTypeFilter.Signature, UnlockMilestone = 9 }, names));
 			Assert.Equal("Low Density", BuildingCatalogGrouping.CategoryTierLabel(Entry() with { ZoneType = ZoneTypeFilter.Low, DevTreeBranch = "Hospital" }));
 		}

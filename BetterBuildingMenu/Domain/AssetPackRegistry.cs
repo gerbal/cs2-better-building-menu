@@ -7,15 +7,9 @@ namespace BetterBuildingMenu.Domain
 	/// Pack entity index -> the whole entity, and its name.
 	/// </summary>
 	/// <remarks>
-	/// The rail has to be able to SELECT a pack, and vanilla's setter takes
-	/// entities. An index alone cannot be turned back into one, so the version
-	/// is kept here as the indexer walks the packs, where both halves are
-	/// already in hand.
-	///
-	/// Its own type rather than a static on the indexing system so the facet
-	/// that reads it can be exercised without a World — the pack group is built
-	/// from this, and a group that can only be tested in a running game is a
-	/// group that goes untested.
+	/// Vanilla's pack setter takes entities, so the version is recorded here as the
+	/// indexer walks the packs and both halves are in hand. Its own type, not a
+	/// static on the indexing system, so the pack facet can be tested without a World.
 	/// </remarks>
 	public static class AssetPackRegistry
 	{
