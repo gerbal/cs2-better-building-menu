@@ -8,7 +8,7 @@
 		<TargetFramework>net48</TargetFramework>
 		<Nullable>enable</Nullable>
 		<Configurations>Debug;Release</Configurations>
-		<Version>0.1.0</Version>
+		<Version>0.1.1</Version>
 		<FileVersion>$(Version)</FileVersion>
 		<AssemblyVersion>$(Version)</AssemblyVersion>
 		<Company>T. D. W.</Company>

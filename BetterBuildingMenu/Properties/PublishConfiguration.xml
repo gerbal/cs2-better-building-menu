@@ -61,18 +61,14 @@ Forked from Find It 1.5.8 by T. D. W. and rebuilt around the vanilla menus. Cred
   <Screenshot Value="Properties/Screenshot_04.jpg" />
 
   <Tag Value="Code Mod" />
-  <ModVersion Value="0.1.0" />
+  <ModVersion Value="0.1.1" />
   <GameVersion Value="1.6.*" />
   <AccessLevel Value="Unlisted" />
   <ExternalLink Type="github" Url="https://github.com/gerbal/cs2-better-building-menu" />
 
   <ChangeLog>
-First release.
+0.1.1
 
-* A building browser inside every vanilla build menu: table, grid and card views with sorting, grouping and search.
-* Facets and metric range filters.
-* Hover cards with the figures the simulation reads, in either unit system.
-* Coverage overlay while placing a service building.
-* Named rows in the extension picker.
+* The expand arrow at the end of each Table row drew as a missing-character box; it is now the game's own arrow glyph.
   </ChangeLog>
 </Publish>
