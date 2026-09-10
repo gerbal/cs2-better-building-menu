@@ -1284,6 +1284,22 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   color: var(--menuText1Normal);
 }
 
+// The chevron itself: a masked copy of the game's StrokeArrowDown/Up glyph,
+// painted in the button's text colour. An <img> under a mask is the same
+// construction the header's close button uses.
+.rowDetailsGlyph {
+  width: 14rem;
+  height: 14rem;
+  background-color: var(--menuText2Normal);
+  mask-size: contain;
+  mask-position: 50% 50%;
+  mask-repeat: no-repeat;
+}
+
+.rowDetailsButtonOpen .rowDetailsGlyph {
+  background-color: var(--menuText1Normal);
+}
+
 // An expanded row grows to fit its details instead of clipping them against
 // the fixed row height the table uses when collapsed.
 //
