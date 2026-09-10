@@ -2315,3 +2315,45 @@ against the downloaded package `158589_6`: 0 JS errors, Electricity 15 and
 Roads 100 of 204 tiles, ownership true, index at OnGameLoaded. Both mods
 removed/left as follows: ours out of the playset, Asset Menu Tweaks still
 in it; the local Mods copies restored and updated to 0.1.5.
+
+## 2026-09-10 — the in-session install, second look (0.1.6)
+
+The 0.1.5 crash was in the in-session path but is not what "no effect" looks
+like, so the path was walked again with the reporter's order: Asset Menu
+Tweaks at boot, ours added from the store at the main menu, the city loaded
+at once. Facts measured on the way:
+
+- The game does not refuse Load while a package is downloading; it holds
+  the load's mod-initialisation step until the download lands (load 15:56:40,
+  package 15:58:18, "Mods initialized" 15:58:30) and registers the UI modules
+  before the city's UI mounts. Download timing therefore cannot change the
+  outcome.
+- With 0.1.5 in that path: OnLoad 15:58:30, no OnGameLoaded pass (the save
+  was deserialised before the mod arrived), catalog empty and every menu
+  yielded to vanilla until the loading-complete pass at 16:02:10, after
+  which both menus were ours. The loading screen covers the UI for that
+  whole window (screenshot `compat/probe/before-complete.png`), so a
+  player cannot click into it; the pass runs in the same event that lifts
+  the screen. Not player-visible, but 0.1.6 indexes on the first update
+  when the indexer is created inside a running city anyway
+  (`_indexOnFirstUpdate`; loading-complete still runs its own pass since
+  `_indexedAtGameLoaded` stays false).
+- After returning to the main menu with a changed playset the game shows
+  "List of Enabled Code Mods Changed — The game restart required" with
+  Continue and Quit Game (`compat/probe/mods-changed-dialog.png`). Continue
+  keeps the in-session path.
+- 0.1.6 loaded at boot: OnGameLoaded pass, loading-complete skipped, 0 JS
+  errors, both menus owned. The first-update branch itself was NOT observed
+  live: the playset auto-updated the entry at boot, and two later attempts
+  to remove and re-add the listing in-session missed the store page.
+
+What "no effect" still could be, with the logs to look for: the mod not in
+the active playset (Modding.log's "Active Playset" block lacks 158589); the
+0.1.4 white screen described loosely (UI.log "JS Error" with
+BetterBuildingMenu.mjs in the stack); a UI module path missing on their
+game build (UI.log "Module … was not found"); or the replace option off.
+
+Cleanup: ours removed from the playset by editing playset_config.json with
+the game closed (backup kept beside it), Asset Menu Tweaks left in; local
+Mods copies restored at 0.1.6. Store: NewVersion 0.1.6, then an Update to
+restore the forum link and the corrected 0.1.6 changelog text.

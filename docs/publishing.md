@@ -82,3 +82,10 @@ directory and delete the `C:` tree it leaves there afterwards.
 "The mod ID provided (…) is invalid or does not exist" — nothing is written.
 That is the probe used on 2026-09-09; it printed
 `Auto logged in with account "…"` first.
+
+
+## After every NewVersion, run Update
+
+A `NewVersion` upload echoes the forum link in its log but the page came back
+without it (seen after 0.1.5 and 0.1.6 on 2026-09-10). A metadata `Update` run
+with the same configuration puts it back. Run one after each NewVersion.

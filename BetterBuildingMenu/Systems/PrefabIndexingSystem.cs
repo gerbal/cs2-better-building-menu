@@ -108,6 +108,12 @@ namespace BetterBuildingMenu.Systems
 		/// the change that staled it.</summary>
 		public static int IndexGeneration { get; private set; } = 1;
 
+		// Set when this system is created inside a running city: the game adds a
+		// newly subscribed mod to a session after the save is deserialised, so
+		// OnGameLoaded has already fired and would leave the menu empty until
+		// loading-complete.
+		private bool _indexOnFirstUpdate;
+
 		protected override void OnCreate()
 		{
 			base.OnCreate();
@@ -181,6 +187,12 @@ namespace BetterBuildingMenu.Systems
 			});
 
 			Enabled = false;
+
+			if (GameManager.instance.gameMode is GameMode.Game or GameMode.Editor && !GameManager.instance.isGameLoading)
+			{
+				_indexOnFirstUpdate = true;
+				Enabled = true;
+			}
 		}
 
 		protected override void OnGamePreload(Purpose purpose, GameMode mode)
@@ -296,6 +308,15 @@ namespace BetterBuildingMenu.Systems
 		/// runs every frame after UnlockSystem has raised its events.</remarks>
 		protected override void OnUpdate()
 		{
+			if (_indexOnFirstUpdate)
+			{
+				_indexOnFirstUpdate = false;
+				Mod.Log.Info("Full pass at first update: the mod joined a running game");
+				// _indexedAtGameLoaded stays false so loading-complete, if it is
+				// still to come, runs its own full pass over the finished save.
+				RunIndex(true);
+			}
+
 			if (!_unlockEventQuery.IsEmptyIgnoreFilter)
 			{
 				ApplyUnlocks();

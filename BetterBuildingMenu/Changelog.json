@@ -1,6 +1,19 @@
 [
   {
     "Stable": true,
+    "Version": "0.1.6",
+    "Date": "2026-09-10",
+    "ChangeGroups": [
+      {
+        "Name": "Fixes",
+        "Changes": [
+          "When the game adds a newly subscribed copy of the mod to a session that is already loading a city, the mod's usual indexing hook has already passed and the index was built only when loading finished. The mod now indexes on its first update when it joins a running city, so the menu is ready as soon as the loading screen lifts."
+        ]
+      }
+    ]
+  },
+  {
+    "Stable": true,
     "Version": "0.1.5",
     "Date": "2026-09-10",
     "ChangeGroups": [
