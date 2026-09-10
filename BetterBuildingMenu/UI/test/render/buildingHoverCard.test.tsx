@@ -31,7 +31,7 @@ describe("the hover card", () => {
 
   it("names the building and lists the upgrades it supports", () => {
     // supportedUpgrades, never extensions: extensions is a self-tag, empty for
-    // every asset a menu can show (cm-2xvs.19).
+    // every asset a menu can show.
     const card = cardOf(entry(1, { name: "Clinic", supportedUpgrades: ["Extra Wing"], extensions: ["Clinic"] }));
 
     assert.match(card, /Clinic/);
@@ -56,8 +56,7 @@ describe("recreation on the hover card", () => {
   it("says how much recreation, not only which kind", () => {
     // "Outdoor recreation" alone does not separate a bench from a botanical
     // garden, and the amount is the figure a player compares. The kind's word
-    // comes from the game (Properties.LEISURE_TYPE), so the test harness has
-    // no translation for it and the enum is spelled out instead.
+    // comes from the game, which the harness has no translation for.
     const card = cardOf(entry(1, {
       name: "City Park",
       leisureType: "CityPark",
@@ -65,14 +64,8 @@ describe("recreation on the hover card", () => {
     } as Partial<BuildingCatalogEntry>));
 
     // The KIND is the label and the amount is the figure, like every other
-    // line on the card. It used to read "Recreation: Outdoor Recreation 1",
-    // whose label repeated the word already in the value.
-    //
-    // Not "1 Outdoor" under a "Recreation" label, which was the other
-    // candidate: that needs the word "Recreation" stripped off a LOCALIZED
-    // string, and three of the seven leisure types do not contain it in
-    // English at all ("1 Meals"), while German has "Erholung im Innenraum" and
-    // Italian "Servizi ricreativi al chiuso" — nothing to strip in either.
+    // line on the card. Not "1 Outdoor" under a "Recreation" label: that needs
+    // a word stripped from a LOCALIZED string, which most languages lack.
     assert.match(card, /City Park<\/span><span[^>]*>60/);
   });
 
@@ -96,8 +89,7 @@ describe("recreation on the hover card", () => {
 describe("cargo capacity on the card", () => {
   it("shows a warehouse's storage in tonnes, under the game's own label", () => {
     // A cargo harbour's Warehouses upgrade carries StorageLimitData; vanilla's
-    // tooltip shows it as Cargo capacity in the weight unit. Ours showed
-    // nothing for it.
+    // tooltip shows it as Cargo capacity in the weight unit.
     resetBindings();
     const card = cardOf(entry(1, { serviceFacts: [{ key: "cargoCapacity", value: 500000 }] }));
 
@@ -107,9 +99,8 @@ describe("cargo capacity on the card", () => {
 });
 
 describe("two tiers on the card", () => {
-  // Vanilla's figures first and bright; ours after a divider, dimmer. The two
-  // used to blend into one list, and the game's own facts are the ones a
-  // player already knows how to read.
+  // Vanilla's figures first and bright; ours after a divider, dimmer. The
+  // game's own facts are the ones a player already knows how to read.
   it("puts the game's figures before ours, and marks our block", () => {
     resetBindings();
     const card = cardOf(entry(1, {
@@ -154,10 +145,9 @@ describe("resource upkeep on the card", () => {
 });
 
 describe("the line cap never cuts the game's own lines", () => {
-  // TILE_TOOLTIP_MAX_LINES was applied to the whole card, and Upkeep and Lot
-  // sit at the end of the list — so a school with eight of our figures lost
-  // its Upkeep, a line vanilla's own tooltip shows. Vanilla's tier is drawn in
-  // full; the cap applies to ours alone.
+  // Vanilla's tier is drawn in full and the cap applies to ours alone: over
+  // the whole card it drops Upkeep and Lot, which sit at the end of the list,
+  // and Upkeep is a line vanilla's own tooltip shows.
   it("keeps Upkeep when our tier is long", () => {
     resetBindings();
     const card = cardOf(entry(1, {
@@ -181,9 +171,8 @@ describe("the line cap never cuts the game's own lines", () => {
 
 describe("a card with nothing of vanilla's", () => {
   // A zone tile: vanilla's tooltip has no figure for it, so every line is
-  // ours. Dimming the whole card and ruling off an empty block above it made
-  // the zone cards read as an afterthought. When the game's tier is empty,
-  // ours is the card: normal weight, no divider.
+  // ours. Dimming the whole card and ruling off an empty block above it makes
+  // the zone cards read as an afterthought — normal weight, no divider.
   it("draws our lines as the primary block and no divider", () => {
     resetBindings();
     const card = cardOf(entry(1, {
@@ -292,8 +281,7 @@ describe("a workplace with no jobs", () => {
 
 describe("the card under US customary units", () => {
   // The game's unit setting reaches the card through ("options",
-  // "unitSettings"); every measured line must follow it. The water volumes
-  // did not, and no fixture ran the card in the other system to notice.
+  // "unitSettings"); every measured line must follow it.
   it("converts every measured line", () => {
     resetBindings();
     setBinding("options", "unitSettings", { timeFormat: 0, temperatureUnit: 0, unitSystem: 1 });

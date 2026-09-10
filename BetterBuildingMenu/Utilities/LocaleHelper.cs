@@ -68,15 +68,11 @@ namespace BetterBuildingMenu.Utilities
             return fallback ?? id;
         }
 
-        /// <summary>
-        /// A label for one of our identifiers, preferring the game's own string.
-        /// </summary>
+        /// <summary>A label for one of our identifiers, preferring the game's own string.</summary>
         /// <remarks>
-        /// Category and subcategory labels name the game's own concepts, and it
-        /// ships those in every language it supports while the mod's
-        /// Locale.json is English only. Asking the game first localizes the
-        /// panel's chrome for free; a missing key falls through to the mod's
-        /// string, so nothing regresses.
+        /// Category and subcategory labels name the game's own concepts, which
+        /// it ships in every language while the mod's Locale.json is English
+        /// only. A missing game key falls through to the mod's string.
         /// </remarks>
         public static string TranslateLabel(string identifier, string fallback)
         {
@@ -95,16 +91,9 @@ namespace BetterBuildingMenu.Utilities
 
         /// <summary>A tooltip string for one of our short identifiers.</summary>
         /// <remarks>
-        /// The fallback is required, not optional. Each locale is registered as
+        /// The fallback is required, not optional: each locale is registered as
         /// its OWN DictionarySource (see GetAvailableLanguages) with no merge
-        /// against the English one, so a key present in Locale.json but absent
-        /// from the active locale is simply not in activeDictionary — and
-        /// Translate answers a miss with the id itself. Every other call site
-        /// passes English and degrades to it; this one did not, and the (since
-        /// removed) object picker's five filter chips rendered as the literal
-        /// text "Tooltip.LABEL[BetterBuildingMenu.PickerBuildings]" in all
-        /// thirteen translated languages. Making the parameter required is what stops a
-        /// later caller from reopening that.
+        /// against English, so Translate answers a missing key with the id itself.
         /// </remarks>
         internal static string GetTooltip(string key, string fallback)
         {

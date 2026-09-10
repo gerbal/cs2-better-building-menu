@@ -42,14 +42,11 @@ namespace BetterBuildingMenu
 		private static string SilhouetteFolder =>
 			Path.Combine(FolderUtil.ContentFolder, "silhouettes");
 
-		/// <summary>
-		/// Every UI content root the game serves icons from.
-		/// </summary>
+		/// <summary>Every UI content root the game serves icons from.</summary>
 		/// <remarks>
-		/// A thumbnail URL is relative to the UI root ("Media/Game/Icons/X.svg"),
-		/// and each of the base game, every DLC and every content pack ships its
-		/// own root under Content/. Searching all of them is what lets a DLC
-		/// icon be blackened as readily as a base-game one.
+		/// A thumbnail URL is relative to the UI root, and the base game, each
+		/// DLC and each content pack ships its own root under Content/, so a DLC
+		/// icon is only found by searching all of them.
 		/// </remarks>
 		private static IReadOnlyList<string> ContentRoots()
 		{
@@ -78,12 +75,9 @@ namespace BetterBuildingMenu
 				UIManager.defaultUISystem.AddHostLocation($"betterbuildingmenu", Path.Combine(Path.GetDirectoryName(asset.path), "images"), false);
 			}
 
-			// A SECOND host, deliberately not the one above. Blackened copies of
-			// the game's vector icons are written at runtime (see
-			// SilhouetteIcons for why they have to exist at all), and writing
-			// into the deployed mod folder makes the mod file watcher reload the
-			// UI — which killed the running game twice during that
-			// investigation. ModsData is ours and unwatched.
+			// A SECOND host, deliberately not the one above: blackened icon
+			// copies are written at runtime, and writing into the deployed mod
+			// folder makes the mod file watcher reload the UI. ModsData is ours.
 			Silhouettes = new SilhouetteIconCache(ContentRoots(), SilhouetteFolder);
 			UIManager.defaultUISystem.AddHostLocation(SilhouetteIcons.HostName, SilhouetteFolder, false);
 
@@ -97,20 +91,9 @@ namespace BetterBuildingMenu
 
 
 			updateSystem.UpdateAfter<PrefabIndexingSystem>(SystemUpdatePhase.PrefabUpdate);
-			// Twice, because PrefabUpdate is not a frame phase. Nothing in the
-			// player loop drives it: PrefabSystem calls Update(PrefabUpdate)
-			// itself, only when prefabs have changed. That is right for the
-			// incremental index, and useless for watching unlocks — a milestone
-			// or a tech-tree node flips Locked and raises an Unlock event without
-			// touching a prefab, so the phase never fires and the index kept the
-			// lock state it was born with until the save was reloaded.
-			//
-			// UIUpdate is the phase that ticks. UIUpdateSystem sits in MainLoop
-			// after UnlockSystem and drives it every frame, which is exactly how
-			// vanilla's ToolbarUISystem sees the same events. CS2's UpdateSystem
-			// keeps a flat list of (phase, system) rather than Unity's system
-			// groups, so a system may appear in two phases; both entries call the
-			// same guarded OnUpdate.
+			// Twice, because PrefabUpdate is not a frame phase: PrefabSystem
+			// drives it only when prefabs change, and an unlock flips Locked
+			// without touching one. UIUpdate ticks every frame.
 			updateSystem.UpdateAt<PrefabIndexingSystem>(SystemUpdatePhase.UIUpdate);
 			updateSystem.UpdateAt<BuildingMenuUISystem>(SystemUpdatePhase.UIUpdate);
 			updateSystem.UpdateAt<PrefabTrackingSystem>(SystemUpdatePhase.PrefabUpdate);

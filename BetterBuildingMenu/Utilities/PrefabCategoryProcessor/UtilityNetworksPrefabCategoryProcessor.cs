@@ -11,13 +11,9 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
     /// traffic.
     /// </summary>
     /// <remarks>
-    /// One processor for two prefab types because they are the same idea told
-    /// twice — PowerLinePrefab and PipelinePrefab are both NetGeometryPrefabs
-    /// whose only distinguishing component is the data component named after
-    /// them — and splitting them would duplicate this file to change one word.
-    ///
-    /// Both were missing entirely: the Electricity menu offered no high- or
-    /// low-voltage line, and Water &amp; Sewage none of its three small pipes.
+    /// One processor for two prefab types: PowerLinePrefab and PipelinePrefab
+    /// are both NetGeometryPrefabs distinguished only by the data component
+    /// named after them, so splitting them would duplicate this to change a word.
     /// </remarks>
     public class UtilityNetworksPrefabCategoryProcessor : IPrefabCategoryProcessor
     {

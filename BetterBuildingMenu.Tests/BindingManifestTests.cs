@@ -12,26 +12,17 @@ namespace BetterBuildingMenu.Tests
 	/// The C#↔TS binding boundary, as a diff of two name sets.
 	/// </summary>
 	/// <remarks>
-	/// Nothing fails at build time when one side renames or abandons a
-	/// binding: C# publishes to a name nobody subscribes to, or TS subscribes
-	/// to a name nobody publishes and reads its default forever. The 2026-09-01
-	/// review found nine of the first kind and three of the second. This reads
-	/// both trees as text and requires the sets to agree, so the next one
-	/// fails here instead of in the game.
-	///
-	/// A regex over source is a blunt instrument, and this is the one place
-	/// it is the right one: the boundary IS strings, on both sides.
+	/// Nothing fails at build time when one side renames or abandons a binding,
+	/// so this reads both trees as text and requires the sets to agree. A regex
+	/// fits because the boundary IS strings, on both sides.
 	/// </remarks>
 	public sealed class BindingManifestTests
 	{
 		/// <summary>
-		/// C# bindings the UI is known not to read yet. Each entry names the
-		/// bead that either wires it or deletes it; an entry without one is a
-		/// failure of this test's purpose, not a convenience.
+		/// C# bindings the UI is known not to read yet. Empty is the goal; an
+		/// entry here is a regression, not a convenience.
 		/// </summary>
 		private static readonly string[] KnownUnreadByUi = System.Array.Empty<string>();
-		// Empty since cm-jjlv.8: the UI reads BuildingCatalogGroupBy. Keep it
-		// empty; an entry here is a regression of that phase, not a convenience.
 
 		[Fact]
 		public void EveryNameTheUiUsesIsRegisteredByCSharp()
@@ -87,10 +78,9 @@ namespace BetterBuildingMenu.Tests
 			Assert.Contains("SearchChanged", TypeScriptNames());
 		}
 
-		// Matches CreateBinding("Name", …), CreateTrigger<int>("Name", …), and the
-		// two-name CreateBinding("Name", "SetName", value, setter). The generic
-		// argument may not contain parentheses, which keeps a lazy match from
-		// spanning from one call to the next.
+		// Matches CreateBinding, CreateTrigger and the two-name CreateBinding
+		// overload. The generic argument may not contain parentheses, which
+		// keeps a lazy match from spanning one call into the next.
 		private static readonly Regex CSharpRegistration = new(
 			@"Create(?:Binding|Trigger)\s*(?:<[^()]*?>)?\s*\(\s*""(?<name>\w+)""(?:\s*,\s*""(?<trigger>\w+)"")?",
 			RegexOptions.Singleline | RegexOptions.Compiled);

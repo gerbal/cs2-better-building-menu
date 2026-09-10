@@ -5,10 +5,8 @@ import { readFileSync } from "node:fs";
 /**
  * Every field the UI reads off a catalog entry must be one the backend writes.
  *
- * Three separate features shipped dead because of the same habit: the card read
- * `entry.facts`, the zone tooltip read a shape `getZoneFacts` expected, and both
- * surfaces read `entry.footprints` — none of which any producer wrote. Each
- * compiled, each yielded undefined forever, and each looked finished.
+ * A field the UI reads and nothing writes compiles, yields undefined forever,
+ * and looks finished. Three separate features have shipped that way.
  *
  * The two halves live in different languages, so no compiler spans them. This
  * does: BuildingCatalogEntry.Write is the wire format, buildingCatalog.ts is
@@ -24,8 +22,7 @@ function writtenNames(): string[] {
   const names: string[] = [];
   // Three spellings, because the writer has three: the bare PropertyName call
   // and the WriteNullable / WriteStringArray helpers that take the name as
-  // their second argument. Missing one of them makes this test cry wolf, which
-  // it did on the first run over the array fields.
+  // their second argument. Missing one makes this test cry wolf.
   const pattern =
     /writer\.PropertyName\("([A-Za-z0-9_]+)"\)|Write[A-Za-z]*\(\s*writer,\s*"([A-Za-z0-9_]+)"/g;
   let match: RegExpExecArray | null;
@@ -55,8 +52,7 @@ function declaredNames(): string[] {
 describe("the catalog entry's two halves agree", () => {
   it("writes something for every field the UI declares", () => {
     // The direction that matters: a field the UI reads and nothing writes is
-    // silently undefined at runtime, which is exactly how facts, footprints and
-    // the zone shape each shipped dead.
+    // silently undefined at runtime.
     const written = new Set(writtenNames());
     const missing = declaredNames().filter((name) => !written.has(name));
 

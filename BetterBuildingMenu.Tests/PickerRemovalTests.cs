@@ -9,11 +9,9 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// The object picker went with the Find It separation: Find It ships the
-	/// same tool, and two mods binding the same toolbar glyph, the same tool id
-	/// and the same mouse Apply action is the conflict the separation was for.
-	/// Nothing of it stays — not the tool, its options bank, its key or mouse
-	/// bindings, its settings row, nor its locale rows.
+	/// No object picker remains — no tool, options bank, key or mouse binding,
+	/// settings row or locale row — because Find It ships that tool and two mods
+	/// binding one glyph, tool id and Apply action conflict.
 	/// </summary>
 	public class PickerRemovalTests
 	{

@@ -7,24 +7,9 @@ namespace BetterBuildingMenu.Domain
 	/// One assignable zone, as the zoning hierarchy presents it.
 	/// </summary>
 	/// <remarks>
-	/// Family and density both come from the zone's own data rather than its
-	/// name: <c>ZoneData.m_AreaType</c> plus <c>ZoneFlags.Office</c> for the
-	/// family, and the <c>ZonePropertiesData</c> derivation IndexZones already
-	/// performs for the density.
-	///
-	/// The remaining fields are what the game knows about a zone and never shows
-	/// anyone. <c>MaxHeight</c> is not authored: ZoneSystem seeds it to zero and
-	/// BuildingInitializeSystem raises it to the tallest mesh of every spawnable
-	/// building assigned to the zone, so it is a measured answer to "how tall
-	/// does this grow" rather than an estimate. The corner and narrow flags are
-	/// derived the same way, from the level-1 buildings the zone can spawn. The
-	/// allowed resources come from ZonePropertiesData and say what a commercial
-	/// or industrial zone will actually trade in.
-	///
-	/// <c>Id</c> and <c>Version</c> are the ECS entity's two halves. They are
-	/// runtime values and must not be persisted; the UI needs both to hand the
-	/// entity back to the game's own toolbar.selectAsset trigger, which is what
-	/// actually activates the Zone tool.
+	/// Family and density come from the zone's own data, not its name; MaxHeight and
+	/// the corner and narrow flags are derived from the buildings it can spawn.
+	/// <c>Id</c> and <c>Version</c> are the entity's halves: runtime, never persisted.
 	/// </remarks>
 	public sealed record ZoneCatalogEntry(
 		int Id,
@@ -54,15 +39,9 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>Shapes beyond the display cap, counted rather than dropped.</summary>
 		int FootprintOverflow = 0,
 		/// <summary>
-		/// Still behind a milestone. Read from the enableable Locked component,
-		/// the same source the building index uses.
+		/// Still behind a milestone. Read from the enableable Locked component, the
+		/// same source the building index uses.
 		/// </summary>
-		/// <remarks>
-		/// Zones carried no lock state at all until this: high-density
-		/// residential is locked at the start of a city and the lens drew it
-		/// exactly like an unlocked one, so the only way to learn it was
-		/// unavailable was to try to paint with it.
-		/// </remarks>
 		bool IsLocked = false,
 		/// <summary>Milestone index it unlocks at, 0 when not locked.</summary>
 		int UnlockMilestone = 0,
@@ -72,11 +51,9 @@ namespace BetterBuildingMenu.Domain
 		/// The natural resource an extractor area works, empty for a zone.
 		/// </summary>
 		/// <remarks>
-		/// Non-empty marks this entry as an AREA rather than a zone: a LotPrefab
-		/// carrying ExtractorArea, painted with the Area tool. Grain, livestock
-		/// and cotton live here, not in any zone — Game.Zones.AreaType has only
-		/// None, Residential, Commercial and Industrial, so there is no
-		/// specialised zone type for them to be.
+		/// Non-empty marks this entry as an AREA rather than a zone: a LotPrefab carrying
+		/// ExtractorArea, painted with the Area tool. Game.Zones.AreaType has no
+		/// specialised type for grain, livestock or cotton, so they can only live here.
 		/// </remarks>
 		string? MapFeature = null) : IJsonWritable
 	{

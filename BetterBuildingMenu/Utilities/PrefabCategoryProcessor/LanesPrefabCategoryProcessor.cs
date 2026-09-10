@@ -26,7 +26,6 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
                     {
                         ComponentType.ReadOnly<NetLaneData>(),
                         ComponentType.ReadOnly<SubMesh>(),
-						//ComponentType.ReadOnly<NetData>(),
 					},
                     None = new[]
                     {

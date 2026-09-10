@@ -1,14 +1,6 @@
 /**
- * Whether the build menu draws.
- *
- * This used to arbitrate between two homes — the game's `AssetMenu` slot and
- * MainContainer's floating panel — because exactly one of them had to draw at
- * a time and two components deciding that separately is how you get the menu
- * drawn twice, or not at all. Step 4 deleted the floating panel, so there is
- * one home and nothing to arbitrate.
- *
- * The module stays because the QUESTION stays, and it is still worth answering
- * in one tested place rather than inline in an extension point.
+ * Whether the build menu draws — one tested answer rather than a condition
+ * inline in an extension point.
  */
 
 export interface BuildingMenuMountState {
@@ -17,29 +9,17 @@ export interface BuildingMenuMountState {
   /** Photo mode hides every panel. */
   isPhotoMode: boolean;
   /**
-   * Upstream Find It's own panel is showing (its `ShowFindItPanel`; false
-   * when it is not installed). Its asset-menu extension blanks the slot
-   * while that panel is up, and if it wraps ours it wins anyway; this makes
-   * the rule ours too, so the outcome does not depend on which mod the game
-   * registered last (cm-wf6g.4).
+   * Upstream Find It's own panel is showing; false when it is not installed.
+   * Its asset-menu extension blanks the slot anyway, so stating the rule here
+   * too keeps the outcome off which mod the game registered last.
    */
   findItPanelShown?: boolean;
 }
 
 /**
- * Whether the game's asset-menu slot should draw the menu.
- *
- * `lensOwnsCurrentMenu` is now the whole condition. It used to be ANDed with
- * `buildingLensEnabled`, because the player could turn the lens off and the
- * backend would leave `lensOwnsCurrentMenu` set — it describes which menu the
- * toolbar has open, not what we intend to do about it — so mounting on it alone
- * would have kept the catalog on screen under a button that had just said
- * "disable".
- *
- * There is no such button any more, and no such state: the lens REPLACES
- * vanilla's build menu rather than offering an alternative to it. What is left
- * is the question that was always the real one — does the toolbar have a menu
- * open that we stand in for.
+ * Whether the game's asset-menu slot should draw the menu: does the toolbar
+ * have a menu open that we stand in for, and is nothing else claiming the
+ * screen. The lens REPLACES the build menu, so there is no enabled state.
  */
 export function shouldMountInAssetMenu(state: BuildingMenuMountState): boolean {
   if (state.isPhotoMode || state.findItPanelShown) {

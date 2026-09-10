@@ -18,15 +18,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void TabsSharingOneCategoryDoNotAllDrawItsGlyph()
 		{
-			// Healthcare's shape, which is where this was reported: several dev-tree
-			// branches, none of them carrying an authored icon, all sitting in one
-			// category — so every tab's fallback thumbnail is the SAME category
-			// glyph. The strip drew Media/Game/Icons/Healthcare.svg four times over
-			// and the tabs could not be told apart.
-			//
-			// Deathcare is here to keep the check honest: it is a second category
-			// whose single tab should keep its own glyph, so a fix that simply
-			// stopped using glyphs would fail this too.
+			// Healthcare's shape: several dev-tree branches in one category, none with
+			// an authored icon, so every tab's fallback is the SAME category glyph.
+			// Deathcare is a second category whose lone tab keeps its own glyph.
 			var fixture = new[]
 			{
 				E(1, "Medical Clinic", "ServiceBuildings", "HealthcareHealthcare", "Basic Healthcare", 0, "thumbnail://MedicalClinic01?width=128", "Media/Game/Icons/Healthcare.svg"),
@@ -49,9 +43,8 @@ namespace BetterBuildingMenu.Tests
 		public void ABranchIconSharedByTwoBranchesIsKept()
 		{
 			// The disambiguation switches off the CATEGORY glyph, not the authored
-			// icon. Two branches the dev tree genuinely gives one mark keep it:
-			// that mark is what the player already associates with the unlock, and
-			// replacing it with two asset renders would be the cm-2xvs.17 bug back.
+			// icon: two branches the dev tree gives one mark keep it, because that
+			// mark is what the player associates with the unlock.
 			var fixture = new[]
 			{
 				E(1, "Tram Depot", "ServiceBuildings", "TransportTram", "Tram", 0, "thumbnail://TramDepot01?width=128", "Media/Game/Icons/Transportation.svg")
@@ -67,22 +60,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void TwoBranchesSharingOneCategoryGlyphGetTheirOwnPictures()
 		{
-			// Roads: several categories, one of them (Parking) with two branches,
-			// so the strip axis is the development tree via the expanded category.
-			//
-			// This test used to assert the opposite — that both parking branches
-			// draw Media/Game/Icons/Parking.svg — which is what cm-2xvs.17 chose
-			// when it stopped a lone iconless branch falling to a photographic
-			// asset render sitting in a row of flat glyphs.
-			//
-			// SUPERSEDED, deliberately. That rule answers with the CATEGORY's mark,
-			// so every tab sharing a category draws one picture: Healthcare's strip
-			// rendered Healthcare.svg four times and the tabs could not be told
-			// apart at all. Between a row that looks tidy and a row you can read,
-			// the row you can read wins — a render still says WHICH tab this is.
-			//
-			// The glyph is kept wherever it distinguishes: Basic and Highways below
-			// share Roads.svg and have no thumbnail to fall to, so they keep it.
+			// Roads: several categories, one (Parking) with two branches, so the strip
+			// axis is the development tree. A glyph two tabs would share gives way to
+			// asset renders that say which tab is which; alone, it distinguishes.
 			var fixture = new[]
 			{
 				E(1, "Alley", "Networks", "RoadsSmallRoads", "Basic", 0, null, "Media/Game/Icons/Roads.svg"),

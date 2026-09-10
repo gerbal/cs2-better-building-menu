@@ -45,12 +45,8 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
             }
 
             // A building with properties but no zone and no service is normally
-            // a placeholder or a brand shell, and stays out. Unless the game's
-            // own menus place it: Bridges & Ports' hotels (Dome Rural Hotel 01,
-            // Dome Road House 01) carry BuildingPropertyData, no
-            // SpawnableBuildingData and no ServiceObjectData, and sit in
-            // Signatures › Commercial — the one place a player would look for
-            // them (cm-vxuv). Vanilla's placement is the evidence.
+            // a placeholder or a brand shell, and stays out — unless the game's
+            // own menus place it, which outranks this filter.
             var placed = Systems.PrefabIndexingSystem.TryGetVanillaCategory(entity.Index, out var vanillaCategory);
 
             if (_entityManager.HasComponent<BuildingPropertyData>(entity) && !placed)

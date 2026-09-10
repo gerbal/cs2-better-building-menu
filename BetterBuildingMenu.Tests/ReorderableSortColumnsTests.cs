@@ -10,14 +10,10 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// Which sort fields the picker should still offer.
+	/// Which sort fields the picker offers. A field that ties across the set makes
+	/// the summary flip while the list stays put, which is a dead control, so it
+	/// is dropped — the argument groupDimensionsFor makes for grouping.
 	/// </summary>
-	/// <remarks>
-	/// cm-ddw3. A field that ties across the set responds — the summary flips to
-	/// "Cost ▲" then "Cost ▼" — while the list does not move, which is the
-	/// signature of a broken control. Dropping it is the same argument
-	/// groupDimensionsFor already makes for grouping.
-	/// </remarks>
 	public sealed class ReorderableSortColumnsTests
 	{
 		private static readonly string[] Candidates =
@@ -59,10 +55,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void DropsAFieldThatTiesAcrossTheWholeSet()
 		{
-			// A field every entry agrees on cannot act. (The Signatures menu was
-			// the suspected live case; measured, its costs run 1,000 to 34,828,
-			// so Cost is correctly still offered there. The shape is what
-			// matters here.)
+			// A field every entry agrees on cannot act.
 			var entries = new[]
 			{
 				Entry(1, "Waveform Tower", cost: 0, upkeep: 10),
@@ -142,8 +135,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void ReadsParkingAsACountRatherThanAFlag()
 		{
-			// cm-zxou: as a boolean this tied across whole menus. As bay counts
-			// it distinguishes, and the picker should keep offering it.
+			// Bay counts distinguish where a boolean ties across a whole menu.
 			var entries = new[] { Entry(1, "A", parking: 0), Entry(2, "B", parking: 12) };
 
 			Assert.Contains(
@@ -163,9 +155,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void MakesOnePassRegardlessOfHowManyColumnsAreAsked()
 		{
-			// Guards the shape rather than the answer: the refresh this runs
-			// inside was just cut from three per menu click to one, and a scan
-			// per column would hand that back on a 10,528-entry set.
+			// Guards the shape rather than the answer: the set is scanned once, not
+			// once per candidate column.
 			var scanned = 0;
 			var entries = Enumerable.Range(1, 500).Select(i =>
 			{
@@ -180,13 +171,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void ReproducesTheWaterMenuShape()
 		{
-			// The real shape of the Water & Sewage menu: one category, three dev
-			// branches, and a 13-entry group with costs 2,000 / 18,000 / 60,000.
-			// Written to settle a live reading that looked like a bug and turned
-			// out to be the probe — cs2/ui renders a dropdown into a portal, so
-			// scoping the search to the control's own row finds only its summary
-			// button. Kept because it pins the menu shape the feature has to
-			// handle.
+			// The Water & Sewage shape — one category, several dev branches, costs
+			// that differ within a group — is a menu the feature has to handle.
 			var entries = new[]
 			{
 				Entry(1, "Combined Pipe", cost: 2000, uiCategory: "Water & Sewage") with { DevTreeBranch = "Water & Sewage" },

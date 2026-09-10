@@ -1,11 +1,7 @@
 /**
  * Upstream Find It's binding group, for the two bindings of theirs we read.
- *
- * Spelled out at runtime rather than as a literal: the package guard in
- * build.sh refuses any artifact containing the quoted upstream id, and that
- * guard is what keeps our publisher identity separate from theirs. Reading a
- * binding they publish is interop, not identity, but the guard cannot tell
- * the two apart and should stay strict (cm-wf6g.4).
+ * Assembled at runtime, not written as a literal: build.sh refuses an artifact
+ * containing the quoted upstream id, and that guard should stay strict.
  */
 export const UPSTREAM_FINDIT_GROUP = ["Find", "It"].join("");
 

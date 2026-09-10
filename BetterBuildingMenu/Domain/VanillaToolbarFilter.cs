@@ -16,13 +16,9 @@ namespace BetterBuildingMenu.Domain
 		/// Requirement entities on this asset that carry <c>ThemeData</c>.
 		/// </summary>
 		/// <remarks>
-		/// From the <c>ObjectRequirementElement</c> buffer, NOT from
-		/// <c>ThemeObject.m_Theme</c>. This is the trap: the mod's building
-		/// indexer reads ThemeObject for its own theme facet, and that is a
-		/// different fact. Vanilla gates visibility on the requirement buffer,
-		/// so a zone whose ThemeObject says European can still be visible under
-		/// North American if its requirements say so — and matching on the wrong
-		/// one silently disagrees with the game's own menu.
+		/// From the <c>ObjectRequirementElement</c> buffer, NOT <c>ThemeObject.m_Theme</c>,
+		/// which is a different fact. Vanilla gates visibility on the requirement buffer,
+		/// so matching on the other one silently disagrees with the game's own menu.
 		/// </remarks>
 		public IReadOnlyList<int> ThemeRequirements { get; }
 
@@ -33,10 +29,9 @@ namespace BetterBuildingMenu.Domain
 		/// Whether the asset has an <c>AssetPackElement</c> buffer at all.
 		/// </summary>
 		/// <remarks>
-		/// Distinct from an empty pack list: "no buffer" is what vanilla treats
-		/// as a base-game asset and gates behind the Vanilla toggle, while an
-		/// empty buffer is a pack asset belonging to no selected pack. Collapsing
-		/// the two hides every base-game asset the moment a pack is picked.
+		/// Distinct from an empty pack list: "no buffer" is what vanilla treats as a
+		/// base-game asset and gates behind the Vanilla toggle. Collapsing the two hides
+		/// every base-game asset the moment a pack is picked.
 		/// </remarks>
 		public bool HasPackBuffer { get; }
 
@@ -62,9 +57,8 @@ namespace BetterBuildingMenu.Domain
 	/// </summary>
 	/// <remarks>
 	/// Published by the game as the UI bindings <c>toolbar.selectedThemes</c>,
-	/// <c>toolbar.selectedAssetPacks</c>, <c>toolbar.vanillaSelected</c> and
-	/// <c>toolbar.modsSelected</c>. The equivalent fields on ToolbarUISystem are
-	/// private, so the bindings are the reachable route.
+	/// <c>selectedAssetPacks</c>, <c>vanillaSelected</c> and <c>modsSelected</c>; the
+	/// equivalent ToolbarUISystem fields are private, so the bindings are the route.
 	/// </remarks>
 	public readonly struct VanillaToolbarSelection
 	{
@@ -96,16 +90,9 @@ namespace BetterBuildingMenu.Domain
 	/// Whether the game's own toolbar row would show an asset.
 	/// </summary>
 	/// <remarks>
-	/// A transcription of <c>ToolbarUISystem.FilterByThemes</c> and
-	/// <c>FilterByPacks</c> (decompiled ToolbarUISystem.cs:1357 and :1422), which
-	/// vanilla runs over every asset in <c>BindAssets</c> before drawing a menu.
-	/// The lens replaced that menu and did not replace these, so the toolbar's
-	/// EU/NA toggle — and the pack and Vanilla/Mods toggles beside it — changed
-	/// the vanilla grid and did nothing to ours.
-	///
-	/// Kept as a pure function on plain lists so it can be tested against the
-	/// decompiled rules directly, without a World, and so the transcription can
-	/// be checked line by line against the original by anyone who doubts it.
+	/// A transcription of <c>ToolbarUISystem.FilterByThemes</c> and <c>FilterByPacks</c>,
+	/// which vanilla runs over every asset in <c>BindAssets</c> before drawing a menu.
+	/// A pure function on plain lists, so it can be checked against those without a World.
 	/// </remarks>
 	public static class VanillaToolbarFilter
 	{
@@ -114,10 +101,9 @@ namespace BetterBuildingMenu.Domain
 		/// requirement and none of the selected themes satisfies it.
 		/// </summary>
 		/// <remarks>
-		/// Note the shape: a requirement list with no ThemeData at all leaves the
-		/// asset visible whatever is selected, because it is not theme-gated.
-		/// Vanilla expresses this with a flag that only turns on when it sees
-		/// ThemeData and turns off again on a match.
+		/// A requirement list with no ThemeData at all leaves the asset visible whatever
+		/// is selected, because it is not theme-gated: vanilla uses a flag that only
+		/// turns on when it sees ThemeData and turns off again on a match.
 		/// </remarks>
 		public static bool PassesThemes(VanillaAssetFacts asset, IReadOnlyList<int> selectedThemes)
 		{

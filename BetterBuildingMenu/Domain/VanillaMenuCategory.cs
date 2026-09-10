@@ -6,13 +6,9 @@ namespace BetterBuildingMenu.Domain
 	/// One tab in a vanilla build menu's category strip.
 	/// </summary>
 	/// <remarks>
-	/// Vanilla's second tier. A menu is a row of these — Transportation is Road,
-	/// Train, Subway, Tram, Air and Ship — and the lens showed all 53 of that
-	/// menu's members as one flat list because nothing published the tabs.
-	///
-	/// Id is the category prefab's name, which is exactly what
-	/// BuildingCatalogEntry.UiCategory carries, so selecting a tab needs no
-	/// translation layer.
+	/// Vanilla's second tier: a menu is a row of these. Id is the category prefab's
+	/// name, which is exactly what BuildingCatalogEntry.UiCategory carries, so
+	/// selecting a tab needs no translation layer.
 	/// </remarks>
 	public sealed record VanillaMenuCategory(
 		string Id,

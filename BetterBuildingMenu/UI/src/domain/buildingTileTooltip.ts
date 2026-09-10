@@ -1,28 +1,19 @@
 /**
- * Which lines a grid tile's hover card actually shows.
- *
- * The card used to print three fixed lines of bare values: a cost with no
- * word beside it, then "{capacity} · {lot}", then "{upkeep} · {lot}" — the lot
- * twice, and every line unlabelled, so the card read as a column of
- * unattributed figures. Worse, the capacity and lot lines rendered
- * unconditionally, so a road with no footprint and no capacity still spent two
- * of its three lines saying "—".
- *
- * A line earns its place by having a value. Nothing else does.
+ * A line in a grid tile's hover card. A line earns its place by having a
+ * value, so a card never spends a row printing "—" for a field the asset
+ * does not have.
  */
 export interface TileTooltipLine {
   key: string;
   label: string;
   value: string;
   /**
-   * Rendered one per line when present, with `value` ignored.
-   *
-   * Unlock conditions are the case: three of them run together on one line read
-   * as one long condition, and the reader has to find the separators before
-   * they can count them.
+   * Rendered one per line when present, with `value` ignored. Unlock
+   * conditions need it: run together on one line they read as a single long
+   * condition.
    */
   values?: string[];
-  /** Drives the affordability / coverage colouring the forecasts already had. */
+  /** Drives the affordability / coverage colouring. */
   tone?: "warn" | "good";
 }
 
@@ -35,47 +26,24 @@ export interface TileTooltipCandidate extends TileTooltipLine {
   applicable: boolean;
 
   /**
-   * A line whose label says everything, with no value beside it.
-   *
-   * Vanilla's asset panel has one — its already-built row is a single phrase on
-   * a coloured band, not a label/value pair — and this card could not express
-   * it: the empty-value guard below read the blank as "nothing to say" and
-   * dropped the line, so the row was implemented and rendered nowhere.
+   * A line whose label says everything, with no value beside it — vanilla's
+   * already-built band is one. It opts the line out of the empty-value guard,
+   * which would otherwise read the blank as "nothing to say".
    */
   statement?: boolean;
 }
 
 /**
- * The cap is deliberate: the grid exists because it is faster to read than the
- * table, and a hover card that grows without limit is the table again with
- * worse manners.
- *
- * Seven, which is now every field there is — requires, cost, capacity,
- * parking, provides, upkeep, lot. At that point the cap has stopped doing the
- * work: applicability is what keeps a card short, and this only guards against
- * future growth going unnoticed. Originally four, which — unlock conditions and city
- * effects joined cost, capacity, upkeep and lot — and at four a locked
- * signature building silently lost its footprint to make room. The cap is a
- * ceiling on a card that has already dropped every field that does not apply,
- * so a typical asset still shows three or four; only one carrying everything
- * reaches six.
- *
- * Raised from seven when the service facts arrived. A fire station now carries
- * cost, upkeep, engines, lot, range, helicopters and disaster response — seven
- * on its own, before it is locked or already built — and at the old ceiling the
- * last line was dropped silently, which is the failure the cap exists to make
- * visible rather than to cause. Ten is still a ceiling and not a target:
- * applicability remains what keeps a card short.
+ * A ceiling, not a target: the grid is worth using because it reads faster
+ * than the table, and an unbounded hover card is the table again. Applicability
+ * is what actually keeps a card short; this only catches unnoticed growth.
  */
 export const TILE_TOOLTIP_MAX_LINES = 10;
 
 /**
- * Whether a metric has a value worth printing.
- *
- * Absent stays absent — the indexer leaves a missing component null rather
- * than serialising a misleading zero, and this is the other half of that
- * contract. A real zero is a value and passes; only null, undefined and
- * non-finite numbers are nothing.
+ * Whether a metric has a value worth printing. The indexer leaves a missing
+ * component null rather than serialising a misleading zero, so a real zero
+ * passes here and only null, undefined and non-finite numbers are nothing.
  */
 export function isMetricPresent(value: number | null | undefined): boolean {
   return typeof value === "number" && Number.isFinite(value);
@@ -88,8 +56,8 @@ export function buildTileTooltipLines(
   const limit = Number.isFinite(max) && max > 0 ? Math.floor(max) : 0;
 
   return candidates
-    // The guard still earns its place — a metric that resolved to nothing must
-    // not draw a label with a blank beside it — but a statement opts out of it.
+    // A metric that resolved to nothing must not draw a label with a blank
+    // beside it; a statement carries its meaning in the label and opts out.
     .filter((candidate) =>
       candidate.applicable && (candidate.statement === true || candidate.value.trim() !== ""))
     .slice(0, limit)

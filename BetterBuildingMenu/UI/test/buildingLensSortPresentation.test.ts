@@ -110,7 +110,7 @@ describe("dropping sorts that cannot reorder", () => {
 
   it("offers only the fields that can move a row", async () => {
     // Signatures by Cost: every building is "Free", so the control responds
-    // and the list does not. Reproduced live before this was written.
+    // and the list does not.
     const m = await load();
 
     assert.deepEqual(

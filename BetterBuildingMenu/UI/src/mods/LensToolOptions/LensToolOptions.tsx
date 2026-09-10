@@ -16,35 +16,15 @@ const BuildingLensFacets$ = bindValue<BuildingLensFacetState | null>(mod.id, "Bu
 const LensOwnsCurrentMenu$ = bindValue<boolean>(mod.id, "LensOwnsCurrentMenu", false);
 
 /**
- * Availability, drawn in the game's own left-hand tool-options panel.
- *
- * cm-2xvs.15. Locked / Unlocked / Already built is chrome the game's panel
- * should carry, in the band that already holds Theme, Pack and the tool's own
- * options — not a tenth icon on our filter rail.
- *
- * WHICH dimensions come here is not decided locally. BANK_DIMENSION_IDS is the
- * one list, and the rail renders its complement, because the last time this
- * axis was split the two sides disagreed and five dimensions were drawn
- * nowhere at all (593e756, undone by 3fff26e). filterRail.test.ts asserts the
- * partition rather than trusting it.
- *
- * The state and the toggle are the rail's, unchanged: the same
- * BuildingLensFacets binding and the same toggle command. Only the furniture
- * differs, which is what keeps a move from becoming a fork.
+ * Availability, drawn in the game's own tool-options panel beside Theme and
+ * Pack. WHICH dimensions come here is BANK_DIMENSION_IDS' answer and the rail
+ * renders its complement; the state and the toggle are the rail's, unchanged.
  */
+
 /**
- * The icon each availability option wears.
- *
- * The mod's own padlock pair, the same two the filter rail already imports for
- * this axis, plus vanilla's AlreadyBuilt symbol — the one the grid badge draws
- * on a unique the city already holds. A filter reads better when its options
- * look like the thing they filter for.
- *
- * Plain <img> sources, no mask and no tint: these SVGs carry fill="#ffffff" of
- * their own, so they need no compositing effect to be visible — which matters,
- * because an effect over a vector is what this engine cannot draw (see
- * SilhouetteIcons). The grid's padlock needs a raster only because it wants a
- * DIFFERENT colour from the file's own.
+ * The icon each availability option wears: the padlock pair the rail imports,
+ * plus vanilla's AlreadyBuilt symbol. Plain <img>, no mask and no tint, because
+ * these SVGs carry their own fill and this engine cannot composite a vector.
  */
 const OPTION_ICONS: Readonly<Record<string, string>> = {
   Locked: lockIcon,
@@ -71,9 +51,8 @@ const BankFacets = ({ facets }: { facets: BuildingLensFacetState | null | undefi
           {group.options.map((option) => (
             <ToolButton
               key={option.id}
-              // Vanilla's own icon button, which is what the Theme row beside
-              // this one uses — so the two read as one panel rather than as a
-              // mod bolted to a game.
+              // Vanilla's own icon button, as the Theme row beside this one
+              // uses, so the two read as one panel.
               src={OPTION_ICONS[option.id] ?? ""}
               selected={option.selected}
               multiSelect
@@ -110,8 +89,7 @@ export const LensToolOptions: ModuleRegistryExtend = (Component: any) => {
     const result: JSX.Element = Component();
 
     // The same predicate the panel itself mounts on, so the bank cannot offer
-    // a control for a menu that is not there — nor withhold one from a menu
-    // that is.
+    // a control for a menu that is not there, nor withhold one that is.
     if (!shouldMountInAssetMenu({ lensOwnsCurrentMenu, isPhotoMode })) {
       return result;
     }

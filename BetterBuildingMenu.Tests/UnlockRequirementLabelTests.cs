@@ -6,7 +6,7 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// cm-2xvs.26: a requirement with no reference still has something to say.
+	/// A requirement with no reference still has something to say.
 	/// </summary>
 	public sealed class UnlockRequirementLabelTests
 	{
@@ -25,8 +25,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void ReturnsTheAuthoredWording()
 		{
-			// The reported case: gated on placing a subway depot, which the
-			// requirement can only express as a label.
+			// A requirement gated on placing a subway depot can only say so through
+			// its label.
 			var translate = Dictionary(("Requirement.SUBWAY_DEPOT", "Build a subway depot"));
 
 			Assert.Equal("Build a subway depot", UnlockRequirementLabel.Resolve("Requirement.SUBWAY_DEPOT", translate));

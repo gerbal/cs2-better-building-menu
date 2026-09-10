@@ -39,8 +39,8 @@ describe("whether our extension picker draws", () => {
   });
 
   it("stays vanilla when any listed row has no catalog entry, and names it", () => {
-    // A cold index (cm-36os), or a mod's upgrade the indexer never saw. Either
-    // way the player must still be able to place it, so vanilla draws.
+    // A cold index, or a mod's upgrade the indexer never saw. Either way the
+    // player must still be able to place it, so vanilla draws.
     const decision = decideExtensionMenu({
       enabled: true,
       listed: [listed("HearseGarage"), listed("Columbarium")],

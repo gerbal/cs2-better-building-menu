@@ -71,8 +71,8 @@ describe("Building Lens disclosures", () => {
 
   it("remembers an open drawer across a remount", () => {
     // The panel unmounts on close, on place, and on the lens toggle. Filters
-    // are backend-owned and survive, so collapsing their drawer hid active
-    // constraints behind a shut door.
+    // are backend-owned and survive, so collapsing their drawer would hide
+    // active constraints behind a shut door.
     setLensDisclosure(LENS_DISCLOSURE_KEYS.metricRanges, true);
 
     assert.equal(getLensDisclosure(LENS_DISCLOSURE_KEYS.metricRanges), true);

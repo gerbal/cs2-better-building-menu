@@ -12,14 +12,9 @@ type BuildingCatalogBindingPage = BuildingCatalogPage & { status?: BuildingCatal
 const BuildingCatalog$ = bindValue<BuildingCatalogBindingPage>(mod.id, "BuildingCatalog");
 
 /**
- * The page as the backend published it, plus the one command that grows it.
- *
- * The window is the backend's: it grows by Limit and always comes back as a
- * prefix of the same ordering, so there is nothing to accumulate here and
- * nothing to page. hasMore is C#'s answer, because it is the only side that
- * knows both the match count and the ceiling — a client computing
- * `rendered < total` would keep offering to load rows the backend has
- * already refused to serve.
+ * The page as the backend published it, plus the one command that grows it. The
+ * window is the backend's and always comes back as a prefix of the same
+ * ordering, so there is nothing to accumulate here and nothing to page.
  */
 export interface CatalogWindow {
   items: BuildingCatalogEntry[];
@@ -32,12 +27,9 @@ export interface CatalogWindow {
 }
 
 /**
- * The catalog's window over the result set, and the frame loop that grows
- * it when the player reaches the bottom.
- *
- * `rootRef` is the catalog's root element. Everything this measures is a
- * descendant of it — the last row, and the container that scrolls it —
- * found under the root rather than in the document, and never above it.
+ * The catalog's window over the result set, and the frame loop that grows it
+ * when the player reaches the bottom. Everything it measures is a descendant
+ * of `rootRef`, found under the root and never above it.
  */
 export function useCatalogWindow(
   rootRef: RefObject<HTMLElement>,
@@ -53,12 +45,9 @@ export function useCatalogWindow(
   const hasMore = page?.hasMore ?? false;
 
   /**
-   * Asks the backend for the next chunk.
-   *
-   * Guarded against re-entry by `hasMore` alone rather than by a local
-   * "loading" flag: the backend republishes the whole window, so a second
-   * request that overtakes the first is idempotent, while a stale local flag
-   * could latch on and stop the list growing for the rest of the session.
+   * Asks the backend for the next chunk. Guarded by `hasMore` alone rather than
+   * a local loading flag: the backend republishes the whole window, so a second
+   * request is idempotent, while a latched flag would stop the list for good.
    */
   function loadMore(): void {
     if (!hasMore) {
@@ -70,23 +59,9 @@ export function useCatalogWindow(
   }
 
   /**
-   * The passive half of the trigger: watch where the scroll actually is.
-   *
-   * This polls instead of listening because, measured live on 2026-08-09,
-   * there is nothing to listen to. cs2/ui's `Scrollable` accepts an
-   * `onScroll` prop and never forwards it: walking the fiber from the
-   * scrolling div to the Scrollable shows the prop arriving and no DOM node
-   * below it carrying an onScroll — and a sweep of every element in the
-   * running UI found not one scroll or wheel handler anywhere. Cohtml also
-   * emits no native `scroll` event when `scrollTop` changes, so adding our
-   * own listener would be just as dead. The engine scrolls its own overflow
-   * containers and tells no one.
-   *
-   * What it does do is keep `scrollTop` readable and accurate, so a frame
-   * loop sees the player arrive at the bottom just as well as an event would.
-   * It only runs while there is more to fetch, and it stops the moment it
-   * asks: the request changes `items.length`, which restarts the effect
-   * against the larger window.
+   * The passive half of the trigger: watch where the scroll actually is. It
+   * POLLS because there is nothing to listen to — cs2/ui's Scrollable never
+   * forwards onScroll and Cohtml emits no scroll event — but scrollTop is true.
    */
   useEffect(() => {
     if (!hasMore || items.length === 0) {
@@ -102,8 +77,7 @@ export function useCatalogWindow(
       }
 
       // The last row, for the same reason the anchor takes it — see
-      // lastCatalogRow, which explains why last is the reading that holds
-      // even once nothing duplicates the attribute above the body.
+      // lastCatalogRow.
       const root = rootRef.current;
       const row = root ? lastCatalogRow(root) : null;
       const scroller = root && row ? findScrollContainer(row, root, isScrollContainer) : null;

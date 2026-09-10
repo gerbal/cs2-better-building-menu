@@ -125,9 +125,8 @@ describe("tile tooltip lines", () => {
 
 describe("statement lines", () => {
   it("keeps a line whose label is the whole sentence", () => {
-    // Vanilla's already-built row is one phrase, not a label/value pair. The
-    // empty-value guard silently dropped it, so the row was implemented and
-    // rendered nowhere — everything else about the change looked right.
+    // Vanilla's already-built row is one phrase, not a label/value pair, so
+    // the empty-value guard would drop it and the row would render nowhere.
     const lines = buildTileTooltipLines([
       candidate({ key: "alreadyBuilt", label: "Already built", value: "", statement: true }),
     ]);

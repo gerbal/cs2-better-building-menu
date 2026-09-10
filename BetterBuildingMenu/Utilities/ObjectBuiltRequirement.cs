@@ -7,25 +7,9 @@ namespace BetterBuildingMenu.Utilities
 	/// "Build a Subway Yard", out of a requirement that names nothing.
 	/// </summary>
 	/// <remarks>
-	/// Reported by the user: buildings gated on placing a subway depot said
-	/// nothing at all, so the tile read locked with no reachable reason.
-	///
-	/// Two earlier attempts missed it. ObjectBuiltRequirementPrefab carries
-	/// m_MinimumCount and no reference, so there is nothing to resolve — that
-	/// much was right, and returning silence rather than a subjectless "build 1"
-	/// was the correct call at the time. Then m_LabelID looked like the answer,
-	/// because vanilla binds it for every requirement kind. Measured in game
-	/// across 21 of these: EVERY ONE has an empty labelId.
-	///
-	/// What they do have is a name, and the names are already human:
-	///
-	///     Subway Yard Built Req    Bus Depot Built Req
-	///     Tram Track Built Req     Crematorium Built Req
-	///
-	/// The subject was in the prefab name the whole time. Vanilla binds that
-	/// name too — see PrefabUISystem.BindOnBuildRequirement, which writes
-	/// prefab.name beside the count — so reading it is following the game
-	/// rather than inventing a convention.
+	/// ObjectBuiltRequirementPrefab carries only a minimum count, so the subject
+	/// has to come from the prefab's own name ("Subway Yard Built Req"). Vanilla
+	/// reads that name too, in PrefabUISystem.BindOnBuildRequirement.
 	/// </remarks>
 	public static class ObjectBuiltRequirement
 	{
@@ -47,8 +31,8 @@ namespace BetterBuildingMenu.Utilities
 
 			var subject = Suffix.Replace(trimmed, string.Empty).Trim();
 
-			// A name that was ONLY bookkeeping leaves nothing behind, and
-			// "Build a" with no object is worse than the silence it replaces.
+			// A name that is ONLY bookkeeping leaves nothing behind: the empty
+			// string, rather than a subjectless "Build a".
 			return subject;
 		}
 	}

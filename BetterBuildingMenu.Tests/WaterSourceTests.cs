@@ -6,9 +6,8 @@ namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
 	/// PrefabUISystem.RequiredResourceBinder's rule for a water building: ground
-	/// water when that flag is set, surface water otherwise, and nothing when the
-	/// component allows no type at all — a water tower is a pumping station that
-	/// draws from nowhere, and read "Draws from None".
+	/// water when that flag is set, surface water otherwise, and nothing at all
+	/// when the component allows no type.
 	/// </summary>
 	public sealed class WaterSourceTests
 	{

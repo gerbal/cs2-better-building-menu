@@ -13,23 +13,9 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 	/// every other asset is.
 	/// </summary>
 	/// <remarks>
-	/// Zones were catalogued into <c>_zoneCatalog</c> and nowhere else, which
-	/// left them reachable for DRAWING and not for PLACING:
-	/// <c>BuildingMenuUtil.GetPrefabBase</c> reads only
-	/// <c>CategorizedPrefabs</c>, so <c>SetCurrentPrefab</c> with a zone id was
-	/// a silent no-op. The zoning surface worked around it by triggering the
-	/// game's own <c>toolbar.selectAsset</c> instead — a second placement path
-	/// that is the root of the inconsistencies in cm-2xvs.7.
-	///
-	/// Nothing else is needed to make arming work. <c>ToolSystem
-	/// .ActivatePrefabTool</c> walks every registered <c>ToolBaseSystem</c> and
-	/// takes the first whose <c>TrySetPrefab</c> accepts, and
-	/// <c>ZoneToolSystem.TrySetPrefab</c> is a bare <c>prefab is ZonePrefab</c>
-	/// test. Read off the game's IL rather than guessed.
-	///
-	/// Menu membership comes free: <c>UiMenuName</c> is taken from the prefab's
-	/// own <c>UIObject.m_Group.m_Menu.name</c>, which for every zone is "Zones",
-	/// so this does not leak zones into any other menu.
+	/// Indexing is all that arming needs: <c>ToolSystem.ActivatePrefabTool</c>
+	/// takes the first <c>ToolBaseSystem</c> whose <c>TrySetPrefab</c> accepts,
+	/// and <c>ZoneToolSystem</c>'s is a bare <c>prefab is ZonePrefab</c> test.
 	/// </remarks>
 	public class ZonePrefabCategoryProcessor : IPrefabCategoryProcessor
 	{
@@ -66,16 +52,9 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 			{
 				Category = Domain.Enums.PrefabCategory.Zones,
 				SubCategory = ResolveSubCategory(entity),
-				// The line that makes the tier reach the menu. Without it every
-				// zone entry shipped ZoneType = Any, which is also why Density
-				// never appeared in the group-by picker: a dimension whose
-				// entries all share one value is dropped as useless, and they
-				// did.
-				//
-				// Safe to read here. IndexZones fills the cache inside
-				// RunIndex's full branch, before the processor loop this method
-				// runs in — and ZonedBuildingPrefabCategoryProcessor already
-				// reads the sibling cache from the same point.
+				// Without this every zone entry carries ZoneType = Any, and a
+				// group-by dimension whose entries all share one value is
+				// dropped. IndexZones fills the cache before this loop runs.
 				ZoneType = Systems.PrefabIndexingSystem.GetZoneDensity(entity),
 			};
 
@@ -87,11 +66,8 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 		/// </summary>
 		/// <remarks>
 		/// <c>ZoneData</c> rather than the prefab name or its UI group, matching
-		/// <c>IndexZones</c> — the name and the group are both fallbacks there,
-		/// and only for a zone whose AreaType is None, which the data does not
-		/// distinguish at all. Those land in Misc rather than being dropped: the
-		/// zone catalog can afford to skip a zone it cannot file, but the index
-		/// cannot, because skipping it here is what makes it unarmable.
+		/// <c>IndexZones</c>. A zone that cannot be filed lands in Misc rather
+		/// than being dropped: skipping it here would make it unarmable.
 		/// </remarks>
 		private Domain.Enums.PrefabSubCategory ResolveSubCategory(Entity entity)
 		{

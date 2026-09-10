@@ -98,12 +98,9 @@ describe("Building Lens catalog height", () => {
 });
 
 describe("Table column widths", () => {
-  // Measured live at 1280x720 with PanelWidth 1441 (the whole assembly,
-  // control pane included) on 2026-09-09, with every column set to its
-  // comfortable width by hand: the row is 1026rem, the seven cells drew at
-  // exactly their 586rem, nothing overflowed, and the name still had 327rem.
-  // An earlier reading of the same row as 820rem was wrong, and the 422rem
-  // "room" derived from it held the columns to 72 % of what fits.
+  // The widths the seven cells want when every column is set to a comfortable
+  // width by hand. Taken from the whole assembly, control pane included,
+  // rather than from the rows box alone, which undercounts the room.
   it("gives every column its comfortable width at the default assembly", async () => {
     const { getBuildingLensColumnWidths, BUILDING_LENS_COLUMN_MAX, BUILDING_LENS_MAX_WIDTH, BUILDING_LENS_PANEL_CHROME_WIDTH } = await import(
       "../src/domain/buildingLensLayout.ts"
@@ -180,13 +177,12 @@ describe("Table column widths", () => {
 describe("the Upkeep column at the narrowest panel", () => {
   it("holds a per-kilometre figure without clipping", async () => {
     // A road's upkeep is "¢2,437 /km/mo." — the widest figure the column ever
-    // draws — and it clipped its last character on every road in the table.
+    // draws — and a narrower cell clips its last character.
     const { BUILDING_LENS_COLUMN_MIN, BUILDING_LENS_COLUMN_MAX } = await import("../src/domain/buildingLensLayout.ts");
 
-    // The figure does not scale with the panel, so both bounds must hold it:
-    // at 1280x720 a rem draws 0.54px and the text wants 59–60px — 112rem.
-    // The first attempt raised only the minimum, and the cell — already at its
-    // maximum of 108rem on that panel — still clipped.
+    // The figure does not scale with the panel, so BOTH bounds must hold it:
+    // raising only the minimum leaves a cell already at its maximum clipping
+    // on a narrow panel.
     assert.ok(BUILDING_LENS_COLUMN_MIN.upkeep >= 112, `upkeep min is ${BUILDING_LENS_COLUMN_MIN.upkeep}rem`);
     assert.ok(BUILDING_LENS_COLUMN_MAX.upkeep >= 112, `upkeep max is ${BUILDING_LENS_COLUMN_MAX.upkeep}rem`);
   });
@@ -196,8 +192,7 @@ describe("the row's furniture", () => {
   it("mirrors the stylesheet's trailing reserve, gap before the chevron included", async () => {
     // $table-trailing-reserve = 4 + 26 + 4 + 3 = 37; then the rows' scrollbar
     // (16), .rowSelect's left padding (8) and the thumbnail with its margin
-    // (80). Measured 2026-09-09: 33rem trail a 1026rem select inside a
-    // 1059rem rows box, and the name got 327rem where this budget said 332.
+    // (80).
     const { BUILDING_LENS_TABLE_ROW_FURNITURE } = await import("../src/domain/buildingLensLayout.ts");
     assert.equal(BUILDING_LENS_TABLE_ROW_FURNITURE, 37 + 16 + 8 + 80);
   });
@@ -206,9 +201,7 @@ describe("the row's furniture", () => {
 describe("the metric columns fit the room beside the name", () => {
   // The room is what the row really has: assembly − control pane − the
   // panel's chrome around the rows − the row's own furniture − the name's
-  // basis. Measured at PanelWidth 1441: the panel is 1441 − 385 = 1056rem and
-  // the row 1026rem, so the chrome is 30; less 141 furniture and the 260 the
-  // name keeps, 625rem — which is why the 586rem maximum fits there.
+  // basis. At a typical panel that leaves enough for the 586rem maximum.
   it("is the measured row less the furniture and the name's basis at the default assembly", async () => {
     const { tableColumnRoom, BUILDING_LENS_MAX_WIDTH, BUILDING_LENS_PANEL_CHROME_WIDTH, BUILDING_LENS_TABLE_ROW_FURNITURE } = await import("../src/domain/buildingLensLayout.ts");
 

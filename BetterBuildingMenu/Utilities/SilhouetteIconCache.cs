@@ -9,21 +9,18 @@ namespace BetterBuildingMenu.Utilities
 	/// Finds a vector icon on disk, blackens it once, and serves it from our host.
 	/// </summary>
 	/// <remarks>
-	/// See <see cref="SilhouetteIcons"/> for why the silhouette has to be baked
-	/// into the artwork rather than applied as a filter.
-	///
-	/// Roots and cache directory are injected so this is testable against temp
-	/// directories; the game wires the real ones in Mod.OnLoad.
+	/// See <see cref="SilhouetteIcons"/> for why the silhouette is baked into
+	/// the artwork rather than applied as a filter. Roots and cache directory
+	/// are injected so this is testable; Mod.OnLoad wires the real ones.
 	/// </remarks>
 	public sealed class SilhouetteIconCache
 	{
 		private readonly IReadOnlyList<string> _contentRoots;
 		private readonly string _cacheDirectory;
 
-		// Both outcomes are cached. A miss is as worth remembering as a hit:
-		// without it, every projection re-walks the content roots for an icon
-		// that was not there the first time, and the projection runs on every
-		// refresh.
+		// Both outcomes are cached: without a remembered miss, every projection
+		// re-walks the content roots for an icon that is not there, and the
+		// projection runs on every refresh.
 		private readonly Dictionary<string, string?> _resolved =
 			new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
 
@@ -31,15 +28,9 @@ namespace BetterBuildingMenu.Utilities
 		/// The cache directory's contents, listed once instead of stat'd per icon.
 		/// </summary>
 		/// <remarks>
-		/// Generate used to ask File.Exists for every icon it was handed. That is
-		/// one filesystem call per vector-thumbnailed asset, through Wine, on the
-		/// first visit to every menu — and _resolved only stops the SECOND visit
-		/// paying it. Measured: the first refresh for a menu cost ~250ms against
-		/// ~65ms for every later one, on both of the two largest menus, and the
-		/// premium is per menu rather than global, so it is not JIT warm-up.
-		///
-		/// One directory listing answers all of them. Null until first use, so a
-		/// mod that never shows a locked vector asset never pays for it.
+		/// One listing answers every icon, instead of a File.Exists each through
+		/// Wine on the first visit to a menu. Null until first use, so a mod that
+		/// never shows a locked vector asset never pays for it.
 		/// </remarks>
 		private HashSet<string>? _cachedFiles;
 
@@ -54,9 +45,7 @@ namespace BetterBuildingMenu.Utilities
 		/// <summary>Throw the cache away when it was written by a different transform.</summary>
 		/// <remarks>
 		/// The files persist across restarts on purpose, so nothing regenerates
-		/// on its own once they exist. That makes retuning the colour invisible
-		/// to anyone who already has a cache — they keep the old tint forever.
-		/// The stamp is what lets the transform change.
+		/// once they exist; the stamp is what lets the transform change.
 		/// </remarks>
 		private void DiscardStaleCache()
 		{
@@ -121,10 +110,8 @@ namespace BetterBuildingMenu.Utilities
 			var target = Path.Combine(_cacheDirectory, fileName);
 
 			// Survives a restart: the file is as good as the install it came
-			// from, and regenerating 500 icons on every boot would be waste.
-			//
-			// Answered from one directory listing rather than a File.Exists per
-			// icon — see _cachedFiles for what that cost.
+			// from, and regenerating every icon on each boot would be waste.
+			// One directory listing answers this; see _cachedFiles.
 			if (CachedFiles().Contains(fileName))
 			{
 				return SilhouetteIcons.UrlFor(relative);

@@ -1,33 +1,15 @@
 /**
- * The game's own filter row, forwarded to the backend.
- *
- * `ToolbarUISystem` publishes four bindings — `selectedThemes`,
- * `selectedAssetPacks`, `vanillaSelected`, `modsSelected` — and filters its own
- * grid on them before drawing. The lens replaced that grid and not the row, so
- * the EU/NA toggle changed vanilla's menu and did nothing to ours (cm-2xvs.3).
- *
- * The rule itself lives in C# as VanillaToolbarFilter, transcribed from
- * ToolbarUISystem and tested against the decompile. This module only carries
- * the selection across, and exists separately from the component so the
- * carrying can be tested without a React tree.
+ * The game's own filter row, forwarded to the backend: `ToolbarUISystem`
+ * filters its own grid on four bindings, and the lens replaced that grid and
+ * not the row. The rule is C#'s; this only carries the selection across.
  */
 
 import type { ToolbarEntity } from "./toolbarEntity";
 
 /**
- * The same decode as `toolbarEntityIndex` in vanillaMenuWatch, kept local.
- *
- * Not by preference. The two build paths disagree about how a domain module may
- * import a sibling at RUNTIME: `npm test` runs
- * `node --experimental-strip-types`, which requires an explicit `.ts`
- * extension, and webpack's ts-loader rejects that extension outright
- * (`moduleResolution: "Node"`, no `allowImportingTsExtensions`). Every other
- * sibling import in this folder is `import type`, which is erased before either
- * tool has an opinion — so this is the first one to hit the wall.
- *
- * Six lines duplicated is the smaller cost than reconfiguring module resolution
- * for the whole UI to land one filter. Worth fixing properly if a second case
- * appears; if this rule ever changes, change it in both places.
+ * The same decode as `toolbarEntityIndex` in vanillaMenuWatch, kept local: the
+ * test runner wants a `.ts` specifier on a runtime sibling import and webpack
+ * rejects one. If this rule changes, change it in both places.
  */
 function entityIndex(entity: ToolbarEntity | null | undefined): number | null {
   if (entity === null || entity === undefined) {
@@ -48,11 +30,9 @@ export interface VanillaToolbarState {
 }
 
 /**
- * Entity indices, comma-joined, in the order the toolbar gave them.
- *
- * Entries that do not resolve to an index are dropped rather than sent as NaN.
- * The binding can carry a bare number, a string or an {index, version} pair
- * depending on which one it is, and toolbarEntityIndex already knows all three.
+ * Entity indices, comma-joined, in the order the toolbar gave them. Entries
+ * that do not resolve are dropped rather than sent as NaN; the binding carries
+ * a bare number, a string or an {index, version} pair depending on which.
  */
 export function joinEntityIndices(entities: readonly ToolbarEntity[] | null | undefined): string {
   if (!entities || entities.length === 0) {
@@ -73,10 +53,9 @@ export function joinEntityIndices(entities: readonly ToolbarEntity[] | null | un
 }
 
 /**
- * A stable string for the whole row, so the forward only fires on real change.
- *
- * The bindings re-emit on unrelated toolbar churn — the menu watcher carries
- * the same note — and every spurious forward costs a full catalog rebuild.
+ * A stable string for the whole row, so the forward only fires on real change:
+ * the bindings re-emit on unrelated toolbar churn, and every spurious forward
+ * costs a full catalog rebuild.
  */
 export function toolbarSelectionKey(state: VanillaToolbarState): string {
   return [

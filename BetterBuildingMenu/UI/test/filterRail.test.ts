@@ -32,11 +32,9 @@ const facets = {
 
 describe("Filter rail", () => {
   it("gives every facet group one entry, whatever its size", () => {
-    // Short dimensions used to be dropped here and drawn as icon rows in the
-    // game's options bank instead. That bank is no longer where this mod puts
-    // filters, and the C# sections feeding it went with the split — so a
-    // dropped dimension was reachable from nowhere at all. Measured live:
-    // Availability and Provenance existed in the query and appeared in no UI.
+    // A short dimension dropped here is reachable from nowhere at all: this
+    // mod no longer puts filters in the game's options bank, and the C#
+    // sections that fed it went with the split.
     const rail = buildFilterRail(facets, { active: 0 });
 
     assert.deepEqual(rail.map((d) => d.id), ["buildingType", "dlc", "extension", "zone", "metrics"]);
@@ -69,8 +67,8 @@ describe("Filter rail", () => {
   });
 
   it("omits a facet group with no options rather than showing a dead icon", () => {
-    // Role and Asset packs were both empty for the whole catalog until
-    // recently; an icon that opens an empty popover is worse than no icon.
+    // Role and Asset packs can be empty for the whole catalog; an icon that
+    // opens an empty popover is worse than no icon.
     const rail = buildFilterRail({ groups: [group("dlc", "DLC", 0)], hasSelection: false }, { active: 0 });
 
     assert.deepEqual(rail.map((d) => d.id), ["metrics"]);
@@ -82,13 +80,9 @@ describe("Filter rail", () => {
   });
 
   it("keeps a short dimension rather than dropping it", () => {
-    // The regression this guards: filtered out of the rail and rendered
-    // nowhere else.
-    //
-    // Theme rather than Availability, which now has a real second home in the
-    // game's tool-options bank. The rule under test is unchanged: SHORTNESS is
-    // not a reason to drop a dimension. Availability's own partition is
-    // asserted under "One home per dimension".
+    // Theme rather than Availability, which has a real second home in the
+    // game's tool-options bank. The rule under test is that SHORTNESS is not
+    // a reason to drop a dimension; the partition is asserted separately.
     const rail = buildFilterRail({ groups: [group("theme", "Theme", 3)], hasSelection: false }, { active: 0 });
 
     assert.deepEqual(rail.map((d) => d.id), ["theme", "metrics"]);
@@ -103,8 +97,7 @@ describe("Filter rail", () => {
   it("never drops the metrics entry, even though its own optionCount reads as bank-sized", () => {
     // RAIL_METRICS_ID carries optionCount: 0, so any rule that routes a short
     // dimension to the bank would catch it. Metric ranges are not a facet
-    // group and the rail is the only place the player can reach them, so the
-    // entry has to survive whatever filtering the other dimensions get.
+    // group, and the rail is the only place the player can reach them.
     const rail = buildFilterRail({ groups: [group("availability", "Availability", 3)], hasSelection: false }, { active: 0 });
 
     assert.ok(rail.some((d) => d.id === "metrics"));
@@ -161,8 +154,8 @@ describe("Active metric range count", () => {
   it("ignores the hasSelection flag that travels with the bounds", async () => {
     const { countActiveMetricRanges } = await import("../src/domain/filterRail.ts");
 
-    // Counting object values naively made `hasSelection: false` register as a
-    // set bound, so the metrics badge read 2 with nothing filtered.
+    // Counting object values naively registers `hasSelection: false` as a set
+    // bound, so the metrics badge counts a filter nobody applied.
     assert.equal(countActiveMetricRanges({ hasSelection: false }), 0);
     assert.equal(countActiveMetricRanges({ hasSelection: true }), 0);
   });
@@ -190,12 +183,8 @@ describe("Active metric range count", () => {
 
 /**
  * Availability lives in the game's tool-options bank; everything else lives on
- * the rail. Every dimension must have EXACTLY ONE home.
- *
- * This is not hypothetical tidiness: once the mod's filters left that bank
- * while the rail still excluded them, and Availability, Source, DLC, Theme and
- * Density ended up in the query, toggleable by the backend, and drawn in no UI
- * at all. Splitting again is safe only while something asserts the partition.
+ * the rail. Every dimension must have EXACTLY ONE home — without this
+ * assertion a split leaves dimensions in the query and drawn in no UI at all.
  */
 describe("One home per dimension", () => {
   const everyGroup = [

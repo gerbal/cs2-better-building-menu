@@ -37,10 +37,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void ReturnsEverythingWhenNoZoneDensityIsSelected()
 		{
-			// Zone density was indexed on every entry and the engine already
-			// sorted by it, but the query had no field for it, so the density
-			// levels the vanilla Zones menu is organised around could not be
-			// filtered at all.
+			// No density selected is not a filter: the whole set comes back.
 			var page = BuildingCatalogQueryEngine.Query(Source, new BuildingCatalogQuery());
 
 			Assert.Equal(5, page.TotalCount);

@@ -46,8 +46,7 @@ describe("which navigation chips get drawn", () => {
   });
 
   it("draws exactly two kinds of chip", () => {
-    // Section and Type used to be here. They were our own taxonomy, applied
-    // only when no menu was scoped, and the taxonomy is gone (cm-jjlv.6).
+    // Only the menu's own scope, not the mod's former Section/Type taxonomy.
     assert.deepEqual(Object.keys(lensScopeChipsFor(state())).sort(), ["menu", "menuCategory"]);
   });
 

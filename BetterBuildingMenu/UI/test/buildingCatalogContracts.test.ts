@@ -129,8 +129,8 @@ describe("BetterBuildingMenu UI binding contracts", () => {
     });
   });
   it("flags typed text that will never become a bound", () => {
-    // The old behaviour dropped this silently while leaving it on screen, so a
-    // typo was indistinguishable from an applied filter.
+    // Dropped silently while left on screen, a typo is indistinguishable from
+    // an applied filter.
     assert.deepEqual(getInvalidMetricBounds("cost", { minText: "abc", maxText: "500" }), { min: true, max: false });
     assert.deepEqual(getInvalidMetricBounds("cost", { minText: "", maxText: "" }), { min: false, max: false });
     assert.deepEqual(getInvalidMetricBounds("cost", { minText: "100", maxText: "20 000" }), { min: false, max: true });
@@ -165,8 +165,8 @@ describe("how much of the match set is on screen", () => {
   });
 
   it("groups digits itself instead of calling toLocaleString", () => {
-    // toLocaleString groups in Node and does nothing in Cohtml, so the page
-    // summary this replaces passed its test while the game rendered "4206".
+    // toLocaleString groups in Node and does nothing in Cohtml, so a summary
+    // built on it passes its test while the game renders an ungrouped number.
     const summary = summarize(1200, 4206);
 
     assert.equal(summary.includes("4206"), false);
@@ -197,7 +197,7 @@ describe("the count badge in the header", () => {
     const separators = { group: ",", decimal: "." };
 
     // The pill is flex: 0 0 auto with nowrap, between the title and the search
-    // context. A sentence in it shoved both sideways.
+    // context. A sentence in it shoves both sideways.
     assert.equal(getCatalogWindowBadge(100, 401, separators), "100 / 401");
     assert.equal(getCatalogWindowBadge(1200, 4206, separators), "1,200 / 4,206");
   });

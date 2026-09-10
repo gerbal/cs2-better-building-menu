@@ -5,16 +5,15 @@ import { allTabTotal } from "../src/domain/vanillaMenuCategories.ts";
 import { lockedThumbnail } from "../src/domain/buildingLockState.ts";
 
 /**
- * cm-2xvs.23: the strip's "All" chip must be the size of the result set.
+ * The strip's "All" chip must be the size of the result set.
  *
- * Measured in the 105-pack scale run: unscoped the page held 10,528 assets,
- * the development axis had tabs for 716 of them, and the chip — built by
- * summing those tabs — said 716.
+ * An axis that covers only part of the scope makes a chip built by summing
+ * its tabs far smaller than the page it labels.
  */
 describe("The All chip's total", () => {
   it("takes the category table, not the tabs beside it", () => {
-    // The real shape of the bug: an axis that covers part of the scope, and a
-    // category table that covers all of it.
+    // An axis that covers part of the scope, and a category table that covers
+    // all of it.
     const counts = [
       { id: "", count: 9812 },
       { id: "TransportationRoad", count: 400 },

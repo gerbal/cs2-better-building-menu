@@ -10,8 +10,8 @@ import { BuildingList } from "mods/BuildingList/BuildingList";
 import mod from "../../../mod.json";
 import styles from "./extensionMenu.module.scss";
 
-// The same vanilla class the build menu's body wears (BuildingMenuSurface),
-// so both panels are sized by the one rule vanilla applies to the asset panel.
+// The same vanilla class the build menu's body wears, so both panels are sized
+// by the one rule vanilla applies to its asset panel.
 const AssetMenuTheme: Record<string, string> | undefined = getModule("game-ui/game/components/asset-menu/asset-menu.module.scss", "classes");
 
 /** The mod's replace-vanilla-menus setting: one switch for both pickers. */
@@ -32,22 +32,17 @@ interface UpgradesMenuProps {
 }
 
 /**
- * Stands in for the game's UpgradesMenu — the picker that appears when a
- * building with upgrades is selected.
- *
- * Vanilla lists what may be attached and decides what is locked or already
- * built on this building; we only change how the rows are drawn. The click is
- * still vanilla's own `selectUpgrade`, so the tool, the `upgrading` flag and
- * the gamepad path are untouched. When we cannot account for every row vanilla
- * lists, vanilla draws the panel — see decideExtensionMenu for the rule.
+ * Stands in for the game's UpgradesMenu. Vanilla lists what may be attached and
+ * decides what is locked or built, the click is still its own `selectUpgrade`,
+ * and it draws the panel unless we can account for every row it lists.
  */
 export const ExtensionMenuComponent: ModuleRegistryExtend = (Component) => {
   return (props) => {
     const { className, onClose } = (props ?? {}) as UpgradesMenuProps;
     const enabled = useValue(ReplaceVanillaBuildMenu$) === true;
     const selected = useValue(selectedInfo.selectedEntity$);
-    // Vanilla's rows for this selection. The map is keyed by the selected
-    // entity, exactly as vanilla's own UpgradeGrid reads it.
+    // Vanilla's rows for this selection, keyed by the selected entity exactly
+    // as vanilla's own UpgradeGrid reads them.
     const listed = (useMapValue(upgrade.upgrades$, selected) ?? []) as VanillaUpgradeRow[];
     const menu = useValue(BuildingExtensionMenu$);
     const selectedUpgrade = useValue(upgrade.selectedUpgrade$);

@@ -1,14 +1,10 @@
-// The extension picker: vanilla's UpgradesMenu, redrawn as our list.
-//
-// The game renders this into the same toolMainColumn slot as the asset menu,
-// with the same toolPanel class on the root — see the design notes in
-// docs/vanilla-upgrades.md. So the root takes whatever class the slot hands
-// it and only the inside is ours.
+// The extension picker: vanilla's UpgradesMenu, redrawn as our list. The game
+// renders it into the same toolMainColumn slot as the asset menu, with the
+// same toolPanel class on the root — see docs/vanilla-upgrades.md.
 
 // The frame is the build menu's, rule for rule: buildingMenuSurface's .topBar
 // for the header and its .content for the body. Vanilla draws this slot as a
-// Panel; without these the rows sat on bare black, which is how it shipped
-// first and how it was reported.
+// Panel, so without these the rows sit on bare black.
 .panel {
   display: flex;
   flex-direction: column;

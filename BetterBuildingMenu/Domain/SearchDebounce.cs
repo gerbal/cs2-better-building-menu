@@ -6,10 +6,9 @@ namespace BetterBuildingMenu.Domain
 	/// A deadline that fires once, a fixed delay after the last time it was set.
 	/// </summary>
 	/// <remarks>
-	/// Polled from the UI system's OnUpdate rather than run on a timer or a
-	/// worker: the refresh it gates must happen on the main thread anyway, so
-	/// the cheapest correct debounce is a timestamp compared once per frame.
-	/// Takes the clock as an argument so the tests need no real time.
+	/// Polled from the UI system's OnUpdate rather than run on a timer: the refresh
+	/// it gates must happen on the main thread anyway. Takes the clock as an
+	/// argument so the tests need no real time.
 	/// </remarks>
 	public sealed class SearchDebounce
 	{

@@ -5,13 +5,8 @@ import { tileLabelLineBudget, tableLabelCharBudget } from "../src/domain/tileLab
 import { getBuildingLensColumnWidths, BUILDING_LENS_COLUMN_MAX, BUILDING_LENS_MAX_WIDTH, BUILDING_LENS_PANEL_CHROME_WIDTH, BUILDING_LENS_CONTROL_PANE_TOTAL, BUILDING_LENS_IDENTITY_MIN, BUILDING_LENS_TABLE_ROW_FURNITURE } from "../src/domain/buildingLensLayout.ts";
 
 // The game's Interface › Text scale setting (100–150 %) reaches the page as
-// --fontScale = textScale and --fontScaleChange = textScale − 1, and every
-// --fontSize* is a calc() of the two (read off the shipped bundle):
-//   XS = 12·s + (s−1)·1.15·12      S = 14·s + (s−1)·1.1·14
-//   M  = 14·s + 2 + (s−1)·1.05·14
-// Measured live at 125 %: grid tile names overran their line by 10–40px and
-// the Table's Cost and Upkeep cells by 15–20px, because every character
-// budget and column width assumed 100 %.
+// --fontScale and --fontScaleChange, and every --fontSize* is a calc() of the
+// two — so a character budget that assumes 100 % overruns its line above it.
 describe("the game's text scale", () => {
   it("is a ratio of one at 100 %", () => {
     for (const kind of ["xs", "s", "m"] as const) assert.equal(fontSizeRatio(kind, 1), 1);
@@ -27,10 +22,8 @@ describe("the game's text scale", () => {
     // Twelve at 100 %; the M size is ×1.448 at 125 %, so eight.
     assert.equal(tileLabelLineBudget(100, 1.25), 8);
     assert.equal(tileLabelLineBudget(100), 12);
-    // A 144rem tile budgets seventeen at 100 % and that already fills its
-    // line; 17.28 / 1.448 is 11.93, and rounding it up kept "One-Way Road" on
-    // one 99px line in a 93px box at 125 %. A scaled budget has no margin to
-    // round into, so it floors.
+    // A 144rem tile budgets seventeen at 100 %, which already fills its line,
+    // so a scaled budget has no margin to round into and floors instead.
     assert.equal(tileLabelLineBudget(144, 1.25), 11);
   });
 
@@ -50,14 +43,11 @@ describe("the game's text scale", () => {
 });
 
 describe("the table's columns at a large text scale and a narrow panel", () => {
-  // Scaling the columns by the full ratio at the narrowest panel pushed the
-  // name cell down to 13px at 125 % — the seven metric columns no longer fit
-  // beside a name of its minimum width. The columns scale as far as the panel
-  // allows and no further; what does not fit clips inside its cell, which is
-  // what happened before and is the lesser harm.
+  // Scaling the columns by the full ratio at the narrowest panel pushes the
+  // name cell below its own minimum. The columns scale as far as the panel
+  // allows and no further; what does not fit clips inside its cell.
   it("never squeezes the name below its minimum", () => {
-    // The assembly measured live at 1280x720 (PanelWidth 1441), plus chrome —
-    // the figure the catalog passes.
+    // The assembly plus its chrome — the figure the catalog passes.
     const outer = 1441 + BUILDING_LENS_PANEL_CHROME_WIDTH;
     for (const scale of [1.25, 1.5]) {
       const widths = getBuildingLensColumnWidths(outer, scale);

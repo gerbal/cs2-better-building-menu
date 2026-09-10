@@ -2,18 +2,8 @@ import type { BuildingCatalogEntry } from "./buildingCatalog";
 
 /**
  * Whether our list stands in for vanilla's extension picker, and with what.
- *
- * Vanilla's `upgradeMenu.upgrades` binding is the authority on what may be
- * attached to the selected building: it reads the prefab's upgrade buffer and
- * computes locked/unique/built for THIS instance. Our catalog only supplies how
- * each row is presented — the figures and the hover card.
- *
- * So the rule is total and one-directional: we draw only when every row vanilla
- * lists has a catalog entry behind it. One we cannot present means the whole
- * panel stays vanilla's. Never a partial list, never a synthesised row — a gap
- * in our index can make an extension plain, but never unplaceable. That covers
- * the cold index after a save loads (cm-36os) and a mod's upgrade the indexer
- * never saw, without a special case for either.
+ * `upgradeMenu.upgrades` is the authority and our catalog only supplies
+ * presentation, so we draw only when EVERY row it lists has an entry behind it.
  */
 
 export interface EntityRef {
@@ -65,9 +55,8 @@ export function decideExtensionMenu({ enabled, listed, entries }: ExtensionMenuI
     return { mode: "vanilla", reason: "unaccounted", missing };
   }
 
-  // Vanilla's order, and vanilla's state. The catalog's isLocked/isUnique/
-  // isAlreadyBuilt are per-prefab and city-wide; vanilla's are for this
-  // building, so they overwrite.
+  // Vanilla's order, and vanilla's state: the catalog's lock and unique flags
+  // are per-prefab and city-wide, while vanilla's are for THIS building.
   const rows = listed.map((row) => ({
     entity: row.entity,
     entry: {

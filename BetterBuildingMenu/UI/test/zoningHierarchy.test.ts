@@ -180,9 +180,8 @@ describe("A locked zone", () => {
     const { zoneAsCatalogEntry } = await import("../src/domain/zoningHierarchy.ts");
     const { isEntryLocked, canPlace } = await import("../src/domain/buildingLockState.ts");
 
-    // High density residential is locked at the start of a city. Before the
-    // indexer read this, the surface drew it exactly like an unlocked zone and
-    // the only way to find out was to try to paint with it.
+    // High density residential is locked at the start of a city, and a zone
+    // that draws like an unlocked one can only be found out by painting.
     const entry = zoneAsCatalogEntry(zone({ isLocked: true, unlockMilestone: 4 }) as never);
 
     assert.equal(isEntryLocked(entry as never), true);

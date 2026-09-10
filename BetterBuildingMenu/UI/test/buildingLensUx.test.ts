@@ -137,8 +137,8 @@ describe("Vanilla menu watcher lifecycle", () => {
     const { shouldRouteSelection } = await import("../src/domain/vanillaMenuWatch.ts");
 
     // The binding emits current state on subscribe. That is not the player
-    // clicking anything, and acting on it closed the lens panel the moment it
-    // was opened over a stale non-building selection.
+    // clicking anything, and acting on it closes the lens panel the moment it
+    // opens over a stale non-building selection.
     assert.equal(shouldRouteSelection({ seen: false, last: null }, 17102), false);
   });
 
@@ -166,8 +166,8 @@ describe("Vanilla menu watcher lifecycle", () => {
     const { watchAction } = await import("../src/domain/vanillaMenuWatch.ts");
 
     // Clicking the open menu's icon deselects it: the vanilla button fires
-    // toolbar.clearAssetSelection and the binding goes to Entity.Null. Before
-    // this, that arrived as "nothing to do" and the panel stayed up.
+    // toolbar.clearAssetSelection and the binding goes to Entity.Null. Read as
+    // "nothing to do", that leaves the panel up.
     assert.equal(watchAction({ seen: true, last: 17102 }, null), "close");
   });
 

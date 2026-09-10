@@ -8,16 +8,8 @@
 }
 
 // Sizes to its content, capped by the catalog's own max-height — NOT flex: 1 1 0.
-//
 // A zero basis only resolves against a parent with a definite height, and
-// .catalog's height is a cap rather than a height. With the basis resolving
-// against nothing this scroll area contributed zero, and the panel sat at its
-// floor — measured 41px, holding all 53 tiles, none of them visible.
-//
-// This is the same failure groupedResults.module.scss's .groupScroll records
-// and fixes the same way. It only surfaced here when the default grouping went
-// to none: until then every menu with categories took the grouped path, so the
-// ungrouped grid was never the thing holding the panel open.
+// .catalog's height is a cap, so this scroll area would contribute nothing.
 .body {
   display: flex;
   flex-direction: column;
@@ -34,8 +26,6 @@
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  // Was `gap: 4rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   margin-left: -4rem;
   margin-top: -4rem;
   > * {
@@ -48,82 +38,33 @@
 // whole trade against the table: fewer rows on screen, but each one identified
 // by a glance instead of a line of text.
 .tile {
-  // baseButton, not transparentButton, and the difference is one declaration.
-  // transparentButton adds four things on top of baseButton and this tile keeps
-  // none of them: `background-color: transparent` (overridden two rules below),
-  // `:hover rgba(0,0,0,.3)` (overridden), an `img` colouring skipped because
-  // $coloredImage is true, and a `[disabled]` block that never fires — the
-  // Button gets `aria-disabled`/`data-locked`, never `disabled`, which is
-  // measurable: a locked tile computes `rgba(255,255,255,.1)`, and that mixin
-  // would have forced `transparent !important`.
-  //
-  // The fourth thing does fire: `:active { background-color:
-  // var(--accentColorDark-focused) !important }` — a #00c2ff cyan flash, and
-  // !important, so the pressed state below could not be written without
-  // shouting back. That is a BUTTON idiom borrowed onto an asset tile, and it
-  // is brighter than the armed colour, so pressing an unarmed tile flashed
-  // louder than the tile the tool is actually holding. Dropping the mixin
-  // removes it rather than out-ranking it.
+  // baseButton, not transparentButton: everything the latter adds on top is
+  // either overridden here or inert, except an `:active` accent flash that is
+  // a button idiom, is !important, and shouts louder than the armed colour.
   @include _base.baseButton(false, true);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  // Anchors the lock glyph, which sits over the thumbnail.
   position: relative;
-  // 1 padding + 45 thumb + 1 gap + 32 label (two 16rem lines) + 1 padding.
-  //
-  // The second label line has to come out of somewhere, and the scroll region
-  // is the constraint, not the panel: the panel stayed 718x163 throughout, and
-  // what a taller tile costs is rows. Measured at 720p the tiles are laid out
-  // in 112px of visible scroll, so two rows and their 4rem gap need a tile at
-  // or under 80rem (53.4px) — a naive 88rem clipped the second row by 10px and
-  // 85rem still clipped it by 6.
-  //
-  // Paid for out of line spacing (17rem to 16rem), the thumbnail-to-label gap,
-  // the vertical padding, and 3rem of thumbnail. The thumbnail went last and
-  // smallest: it is the cue the grid exists for.
-  //
-  // Width is the BuildingLensTileSize setting, applied inline by BuildingGrid.
-  // It used to be overridden here with `width: 100rem !important` — the only
-  // way a stylesheet beats an inline style — because the tile wanted 100rem
-  // while the setting still said 72. That left the budget in tileLabel.ts
-  // reading the setting and so sizing itself to a 72rem tile that was drawn at
-  // 100rem: every name in the catalog was cut to 8 characters on a line with
-  // room for 13. The setting's default is 100 now and the override is gone, so
-  // the width the player picks is the width both the tile and its label get.
+  // 1 padding + 45 thumb + 1 gap + 32 label (two 16rem lines) + 1 padding. Two
+  // rows have to fit the visible scroll region, which is the constraint rather
+  // than the panel. Width is BuildingLensTileSize, applied inline by the view.
   box-sizing: border-box;
   height: 80rem;
   padding: 1rem 2rem;
-  // Was `gap: 1rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   > * + * {
     margin-top: 1rem;
   }
-  // The game's own asset-tile radius, not a chosen one. 3rem is vanilla's
-  // form-control radius and was on-idiom for a control, but a tile in a build
-  // menu is not a control — it is the thing the vanilla tile beside it is, and
-  // it should have that corner.
-  //
-  // 8rem, read off the element rather than off the token. This was 4rem for one
-  // commit on the strength of `--assetMenuItemBorderRadius: 4rem` in index.css.
-  // That token is declared and consumed ZERO times in the shipped CSS; the rule
-  // that actually draws the asset tile is `.item_a5m { border-radius: 8rem }`,
-  // literal. A declared-and-unused token is not evidence about what the player
-  // sees, and the earlier comment noticed it was unconsumed and used it anyway.
+  // The game's own asset-tile radius (`.item_a5m`), not the form-control one:
+  // a tile in a build menu is what vanilla's tile beside it is, not a control.
   border-radius: 8rem;
   // No border: the background tint below is what reads as the tile's edge.
-  // Spending 2rem of the box on a border on top of that tint was a box drawn
-  // twice.
   background-color: rgba(0, 0, 0, 0.22);
 
-  // Two classes, deliberately. The button mixin emits `img { width: 24rem }`,
-  // which is a descendant selector and outranks a bare `.thumb` — so every
-  // thumbnail in this grid rendered 16px wide against the vanilla asset grid's
-  // 45px, for as long as the grid has existed.
-  // The artwork and its overlays share one box, so both marks are positioned
-  // against the PICTURE rather than against the tile. Vanilla can conflate the
-  // two because its tile is the picture; ours has a label under it.
+  // Two classes, deliberately: the button mixin emits `img { width: 24rem }`,
+  // a descendant selector that outranks a bare `.thumb`. The artwork and its
+  // overlays share one box, so both marks position against the PICTURE.
   .artwork {
     @include _base.artwork-box(45rem);
 
@@ -142,14 +83,8 @@
 }
 
 // The pointer states, on the ground channel. Both values are vanilla's own for
-// this element: `.item_a5m` sets `--hoverColorNormal: var(--hoverColorBright)`
-// and `--activeColorNormal: var(--activeColorBright)`, i.e. the asset tile opts
-// into the BRIGHT pair rather than the base `--hoverColor` (0.1) / `--activeColor`
-// (0.2) that most controls take. Measured at the mount: 0.15 and 0.3.
-//
-// Hover was a hardcoded 0.16 — within a hair of right, but a number nobody could
-// re-derive. Pressed did not exist at all, so the tile gave no feedback between
-// the click and the tool arming.
+// this element: `.item_a5m` opts into the BRIGHT pair rather than the base
+// `--hoverColor` / `--activeColor` that most controls take.
 .tile:hover {
   background-color: var(--hoverColorBright);
 }
@@ -158,26 +93,9 @@
   background-color: var(--activeColorBright);
 }
 
-// The armed building — the one a click on the map will place.
-//
-// A HUE, not a fourth step on the same luminance ramp. This was an inset accent
-// ring plus a 0.16 tint, which put armed, hover (0.16) and locked (0.1) on one
-// brightness axis where the only thing separating armed from hover was a 2rem
-// line at 67x53. Vanilla does not do that: `.item_a5m.selected` fills with
-// `var(--selectedColor)` (#1e83aa) and leaves the ramp to the pointer states.
-// Filling is also what frees the ring for the compare selection later.
-//
-// The thumbnail picks up vanilla's drop-shadow on the same rule, which is what
-// keeps a dark silhouette legible once the ground goes saturated.
-//
-// Rasters only, for the reason vectorEffectSafety.test.ts states: Cohtml
-// rasterises an SVG at draw time, so a compositing effect over one
-// re-rasterises it per composite and intermittently fails. This rule was
-// ungated and reached vector thumbnails too — reported from play on Coal
-// Mining, whose thumbnail is Media/Game/Resources/Coal.svg, which corrupted
-// as soon as the tile was armed. The locked and already-built filters below
-// were already gated this way; this one was missed because the safety test
-// only policed the brightness(0%) silhouette, not every effect.
+// The armed building — the one a click on the map will place. A HUE, not a
+// fourth step on the same luminance ramp, which is what vanilla's
+// `.item_a5m.selected` does. Rasters only; see vectorEffectSafety.test.ts.
 .tileArmed {
   background-color: var(--selectedColor);
 }
@@ -187,15 +105,8 @@
 }
 
 // Armed must restate itself under :hover and :active or it loses them on
-// specificity: `.tileArmed` is one class and `.tile:hover` is a class plus a
-// pseudo, so the white tint would paint straight over the blue.
-//
-// Vanilla's asset tile holds one flat `--selectedColor` across selected and
-// selected:hover, which is a tile that stops answering the cursor the moment it
-// is armed. The two shades below are still vanilla's — `--selectedColor-hover`
-// and `--selectedColor-active` are declared tokens (#2398c5 / #25a1d1) that its
-// toggle controls use for exactly this — so armed keeps its hue channel and
-// still reads as hovered.
+// specificity: `.tileArmed` is one class, `.tile:hover` a class plus a pseudo.
+// The two shades below are vanilla's own tokens for exactly this.
 .tileArmed:hover {
   background-color: var(--selectedColor-hover);
 }
@@ -204,17 +115,9 @@
   background-color: var(--selectedColor-active);
 }
 
-// NO focus rule, deliberately, and this is the one state of the five that is
-// missing. Vanilla marks focus with a `focused` CLASS rather than `:focus`
-// (`.item_a5m.focused.selected { background-color: var(--focusedColor) }`), and
-// that class is handed out by the game's focus manager to controls that
-// register a focus key. Every focus key in this mod is `FOCUS_DISABLED` and the
-// tile passes none at all, so the class can never arrive: measured live with 31
-// focused elements on screen and zero inside this panel.
-//
-// A `.focused` rule here would therefore be a selector that cannot match.
-// Focus needs the panel wired into the focus system first, and that needs a
-// keypress test, which no synthetic input on this host can perform.
+// NO focus rule, deliberately. Vanilla marks focus with a `focused` CLASS
+// handed out by the game's focus manager to controls that register a focus
+// key; every focus key in this mod is FOCUS_DISABLED, so it cannot arrive.
 
 // Two lines, then ellipsis. The height is reserved whether or not the second
 // line is drawn: a tile that resizes to its label would break the grid's
@@ -230,80 +133,44 @@
 }
 
 // A line that wrapTileLabel already elided. Its ellipsis is a real character
-// in the string, put where the information is — the head says what kind of
-// thing it is, the tail says which one — so the engine must not mark the same
-// line a second time at its right edge.
-//
-// The budget in tileLabel.ts is characters and the box is pixels, so a result
-// inside the budget can still be a pixel or two over: "Helico…Depot" is twelve
-// characters against a thirteen-character budget and wants 65px of 64. Clipping
-// that last glyph costs a sliver of one letter. Eliding it cost the whole point
-// of the mark, turning "Helico…Depot" into "Helico…De…".
+// in the string, put where the information is, so the engine must not mark
+// the same line a second time at its right edge.
 .tileNameLineElided {
   text-overflow: clip;
 }
 .tileNameLine {
   display: block;
   width: 100%;
-  // Belt and braces. wrapTileLabel already fits each line to the tile, but if
-  // it is ever out by a character the cut should read as a cut: this used to
-  // clip mid-word with no mark, which is how sixty different buildings all came
-  // out as "EU Commercia".
+  // Belt and braces: wrapTileLabel already fits each line to the tile, but if
+  // it is ever out by a character the cut should read as a cut.
   overflow: hidden;
   text-overflow: ellipsis;
   text-align: center;
   color: var(--menuText1Normal);
-  // The game's own smallest label — the tool-options "Pack" row — is 16rem.
-  // fontSizeXS is 12rem, so every name here was a step below anything vanilla
-  // uses and read as a different UI.
+  // The game's own smallest label is 16rem; fontSizeXS would put every name a
+  // step below anything vanilla uses and read as a different UI.
   font-size: var(--fontSizeM);
   line-height: 16rem;
   white-space: nowrap;
 }
 
-// Milestone-locked. The treatment is vanilla's own, read off the shipped
-// bundle rather than invented: item-grid draws a locked tile with
-// `filter: grayscale(100%) contrast(80%) brightness(0%)` on the thumbnail — a
-// black silhouette — over a lighter background, and keeps hover responding so
-// the tile reads as disabled rather than dead.
-// The two backgrounds here are vanilla's verbatim — `.item_a5m[disabled]` is
-// .1 and `.item_a5m[disabled]:hover` is .15 — and they are deliberately kept.
-// The design called for deleting both on the reasoning that locked was dimmer
-// than hover on one shared channel. That reasoning was right about the axis and
-// wrong about the fix: locked keeps its own pair, and it is hover and armed
-// that moved off the ramp (above). Deleting these would have left a locked tile
-// with no hover response at all, which says unavailable when the truth is
-// merely locked — vanilla routes the click and so do we.
-// Both states, because vanilla's tile is `disabled` for `locked || placed` and
-// every rule below hangs off [disabled]. The silhouette and the dimmed ground
-// are what "you cannot place this" looks like; WHICH reason it is gets said by
-// the badge on top, not by the ground. Splitting them would invent a third
-// appearance the game does not have.
+// Milestone-locked, in vanilla's own treatment: a black silhouette over a
+// lighter ground, with hover still answering so the tile reads as disabled
+// rather than dead. WHICH reason it is gets said by the badge, not the ground.
 .tile[data-locked="true"],
 .tile[data-already-built="true"] {
   background-color: rgba(255, 255, 255, 0.1);
 
-  // The text channel, not opacity. `opacity: 0.55` dimmed the ellipsis along
-  // with the characters and could not be themed; this is the game's own token
-  // for locked text, so it follows the player's theme like every other label.
+  // The text channel, not opacity: opacity dims the ellipsis along with the
+  // characters and cannot be themed. This token follows the player's theme.
   .tileName {
     color: var(--normalTextColorLocked);
   }
 }
 
-// The silhouette, RASTERS ONLY. Cohtml re-rasterises a vector every time it
-// composites an effect over it, and does not survive doing so: measured on
-// locked subway tiles, filtered SVG thumbnails flickered and some never drew at
-// all, while filtered PNGs beside them were perfectly stable. `opacity` is no
-// safer — it made the same icons vanish outright.
-//
-// Written as [data-vector-thumb="false"] rather than :not([...="true"]) because
-// Cohtml's selector engine rejects :not().
-//
-// A locked vector keeps the other three signals, which cost nothing: the dimmed
-// ground above, the locked label colour below, and the padlock. Networks are
-// vector-iconed throughout — 46 of Transportation's tiles — so this is a large
-// and permanent part of the catalog, not an edge case.
+// The silhouette, RASTERS ONLY: Cohtml re-rasterises a vector for every
+// composite drawn over it and does not survive doing so. Written as
+// [data-vector-thumb="false"] because Cohtml's selector engine rejects :not().
 .tile[data-locked="true"][data-vector-thumb="false"] .thumb,
 .tile[data-already-built="true"][data-vector-thumb="false"] .thumb {
   filter: grayscale(100%) contrast(80%) brightness(0%);
@@ -314,16 +181,9 @@
   background-color: rgba(255, 255, 255, 0.15);
 }
 
-// Locked wins over armed, and this is vanilla's answer rather than a choice.
-// `.item_a5m[disabled].selected` and `[disabled].selected:hover` both keep the
-// locked ground and the black silhouette — the asset tile never draws a
-// selection colour under a locked thumbnail. That is also why the figure/ground
-// question the design flagged as untested (a black silhouette on saturated
-// #1e83aa at 67x53) does not need testing: the pairing should not exist.
-//
-// Stated defensively even though `canPlace` should keep a locked entry from
-// arming: if that ever changes, the tile degrades to locked rather than to an
-// unreadable one.
+// Locked wins over armed, which is vanilla's answer rather than a choice: the
+// asset tile never draws a selection colour under a locked thumbnail. Stated
+// defensively in case `canPlace` ever lets a locked entry arm.
 .tile[data-locked="true"].tileArmed,
 .tile[data-locked="true"].tileArmed:active,
 .tile[data-already-built="true"].tileArmed,
@@ -343,15 +203,9 @@
   background-color: rgba(255, 255, 255, 0.15);
 }
 
-// The figure the grid is currently ordered by.
-//
-// Its own row under the name, not a pill over the thumbnail. The thumbnail is
-// the entire reason this view exists — recognising it is the fast path back to
-// the map — and covering a corner of every one to explain the sort spends the
-// thing the grid is for. The tile grows instead; see .tileSorted.
-// One name for the row's height, because three things depend on it: the row
-// itself, the tile that has to grow by it, and the lock glyph that has to clear
-// it.
+// The figure the grid is currently ordered by: its own row under the name, not
+// a pill over the thumbnail, because recognising the thumbnail is what this
+// view is for. One name for the row's height; three rules depend on it.
 $sorted-metric-row: 14rem;
 
 .sortedMetric {
@@ -367,37 +221,15 @@ $sorted-metric-row: 14rem;
 }
 
 // The tile has nothing spare, so a metric row has to be paid for. Applied to
-// every tile while a metric sort is active — including the ones with no value
-// for it — so the grid stays a grid rather than going ragged where a figure is
-// missing.
-//
-// Master sized this against its 112rem tile (68 thumb + 2 gap + 34 name + 8
-// padding). This branch's tile is 80rem, so the addition is stated relative to
-// the height rather than restated as a total: the two numbers drifted apart
-// once, and a sum written out is a sum that goes stale.
+// every tile while a metric sort is active, including the ones with no value,
+// so the grid stays a grid. Stated relative to the height rather than as a sum.
 .tileSorted {
   height: 80rem + $sorted-metric-row;
-
-  // The lock glyph used to need lifting here, by the name label's height plus
-  // this row, because it was pinned to the bottom of the TILE and a new bottom
-  // row landed straight on top of the figure. It hangs off the artwork now, so
-  // rows added below it are not its problem and the compensation is gone.
 }
 
-// Vanilla's own size and place: 16rem, bottom-right — but of the thumbnail, not
-// of the tile. Vanilla's card has no name under it, so its bottom-right is the
-// thumbnail's; ours is the label's, and at 2rem the glyph sat squarely on the
-// second line ("Bus Stop Shel…and🔒"). 34rem lifts it clear: 1rem bottom padding
-// + 32rem label + 1rem gap.
-//
-// The colour is the game's `--lockedColor` rather than the hardcoded #ffaa00
-// that was here. At this mount point that token redirects to
-// `var(--highlightYellow)` = #ffcb00, so the glyph shifts a shade and, more to
-// the point, starts following the theme instead of pinning one build's value.
-// The base declaration is #d38f07; which one wins is a cascade question, which
-// is the argument for naming the token rather than copying either number.
-// An <img> of a pre-tinted raster, not a masked span. See BuildingGrid.tsx for
-// what the mask cost; the geometry here is unchanged.
+// Vanilla's own size and place — 16rem, bottom-right — but of the ARTWORK
+// rather than of the tile, which carries a label underneath. An <img> of a
+// pre-tinted raster, not a masked span; see BuildingGrid.tsx.
 .lockGlyph {
   position: absolute;
   right: 2rem;
@@ -407,27 +239,9 @@ $sorted-metric-row: 14rem;
   object-fit: contain;
 }
 
-// Vanilla's own treatment for a unique asset, transcribed from its
-// .unique-asset / .unique / .already-built rules and its two icons.
-//
-// NOT the corner badge that was here first. That was invented, and it said the
-// wrong thing twice over: it marked only the BUILT ones, where vanilla marks
-// every unique; and it drew a small mark where vanilla lays a large symbol
-// across the thumbnail. The padlock stays a separate, independent mark, which
-// is also vanilla's arrangement — a locked unique carries both.
-//
-// Inset on all four sides with width/height auto, so the icon scales with the
-// tile instead of being pinned to a size that only suits one.
-// Vanilla insets this 12rem inside a 68rem image and lets the icon take its
-// intrinsic size — which, for a replaced element with all four offsets, anchors
-// it to the top-left rather than stretching it. Same corner and the same idea
-// here, against a 45rem picture instead of a 68rem one.
-//
-// The SIZE is not vanilla's number. 16rem on a 45rem picture is proportionally
-// larger than vanilla's badge on its 68rem one, and deliberately so — it is the
-// same legibility compromise the padlock beside it already makes at this tile
-// size, and matching the padlock matters more than matching the ratio.
-// Sized inside .artwork above; only the state lives out here.
+// Vanilla's own treatment for a unique asset: a large symbol across the
+// thumbnail, marking every unique rather than only the built ones. Sized
+// inside .artwork above; only the state lives out here.
 .uniqueMark {
   opacity: 0;
 }

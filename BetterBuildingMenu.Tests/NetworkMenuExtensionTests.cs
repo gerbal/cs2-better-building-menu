@@ -42,9 +42,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void OnlyTheRoadsMenuGathersEverything()
 		{
-			// Every other menu stays a faithful reproduction of the game's tree.
-			// If this ever answers true for Transportation, seaways appear twice
-			// in the menu that already holds them.
+			// Only Roads gathers; extending Transportation would list seaways twice.
 			Assert.True(NetworkMenuExtension.IsExtended("Roads"));
 			Assert.True(NetworkMenuExtension.IsExtended("roads"));
 			Assert.False(NetworkMenuExtension.IsExtended("Transportation"));
@@ -55,9 +53,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void AnAssetAlreadyInRoadsIsNotAnExtra()
 		{
-			// It reaches the menu through the game's own tree, so rewriting its
-			// category would move a road out of Small Roads and into a group
-			// named after our taxonomy.
+			// It reaches the menu through the game's own tree; reframing it would move
+			// a road out of Small Roads into a group named after our taxonomy.
 			Assert.False(NetworkMenuExtension.IsExtraNetwork("Networks", "Roads", "Roads"));
 			Assert.True(NetworkMenuExtension.IsExtraNetwork("Networks", "Transportation", "Roads"));
 			// A network the game files in no menu at all still belongs here.
@@ -69,10 +66,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void FiveSubcategoriesAreNotGatheredIntoRoads()
 		{
-			// Stops and routes are transit operation rather than track you lay;
-			// power lines, pipes and waterways answer to the utility that owns
-			// them. Gathered in, they made Roads longer without making a road
-			// easier to find.
+			// Stops and routes are transit operation rather than track you lay; power
+			// lines, pipes and waterways answer to the utility that owns them.
 			foreach (var subCategory in new[]
 			{
 				"Networks_Stops",
@@ -102,10 +97,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void AnExcludedNetworkFiledUnderRoadsIsUntouched()
 		{
-			// The exclusion is on the GATHERING. A network the game itself puts
-			// in Roads is not reached by it at all — IsExtraNetwork already
-			// requires the entry's own menu to be something other than Roads —
-			// so this cannot hide anything vanilla places there.
+			// The exclusion applies to the gathering only: IsExtraNetwork requires the
+			// entry's own menu to differ from Roads, so nothing the game files under
+			// Roads can be hidden by it.
 			Assert.False(NetworkMenuExtension.IsExtraNetwork("Networks", "Roads", "Roads", "Networks_Stops"));
 		}
 
@@ -115,9 +109,8 @@ namespace BetterBuildingMenu.Tests
 			var track = Network("Tram Track", "Networks_Tracks", "Transportation", "TransportationTram", 40);
 			var reframed = NetworkMenuExtension.Reframe(track, "Roads");
 
-			// TransportationTram is right about the game and useless as a heading
-			// in a menu about networks — and its priority belongs to a different
-			// menu's ordering, so it would land in the middle of the roads.
+			// TransportationTram is useless as a heading in a menu about networks, and
+			// its priority belongs to another menu's ordering.
 			Assert.Equal("Tracks", reframed.UiCategory);
 			Assert.Equal("Roads", reframed.UiMenu);
 			Assert.True(reframed.UiCategoryPriority >= NetworkMenuExtension.ExtraGroupPriorityBase);
@@ -164,10 +157,8 @@ namespace BetterBuildingMenu.Tests
 				Road("Alley", "RoadsSmall", 10),
 			};
 
-			// The tab's id is what Reframe writes, not the entry's own
-			// UiCategory. Comparing against the latter would make every extra tab
-			// select nothing, which is the failure the shared EffectiveCategory
-			// exists to prevent.
+			// The tab's id is what Reframe writes, not the entry's own UiCategory;
+			// comparing against the latter makes every extra tab select nothing.
 			var page = BuildingCatalogQueryEngine.Query(
 				entries,
 				new BuildingCatalogQuery { UiMenu = "Roads", UiCategory = "Tracks" });
@@ -194,11 +185,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void ATabAndItsCountAgreeOnWhichCategoryAnExtraNetworkIsIn()
 		{
-			// The bug this pins: the strip's counts grouped on the entry's own
-			// UiCategory while the tab SELECTED on EffectiveCategory. For an
-			// extra network those differ — a seaway's own category is
-			// TransportationShip and its Roads tab is "Ship" — so ten Roads tabs
-			// reported nothing and showed assets when clicked.
+			// The strip's counts and the tab's selection have to agree on the
+			// category, and for an extra network the entry's own differs from it.
 			var seaway = Network("Medium Seaway", "Networks_Ship", "Transportation", "TransportationShip");
 
 			var tab = NetworkMenuExtension.EffectiveCategory(seaway, NetworkMenuExtension.RoadsMenu);
@@ -214,8 +202,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void ARoadKeepsItsOwnCategoryInTheRoadsMenu()
 		{
-			// The other half: counting on the effective category must not
-			// relabel the assets that reach Roads through the game's own tree.
+			// The other half: the effective category must not relabel the assets that
+			// reach Roads through the game's own tree.
 			var road = Road("Gravel Road", "TransportationRoad", 1);
 
 			Assert.Equal("TransportationRoad", NetworkMenuExtension.EffectiveCategory(road, NetworkMenuExtension.RoadsMenu));

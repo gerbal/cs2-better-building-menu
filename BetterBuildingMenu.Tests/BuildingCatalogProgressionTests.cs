@@ -7,8 +7,8 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// The fallback tab strip and the entry's milestone facts. The progression
-	/// TAB is gone (cm-jjlv.3); what stays is the strip's value matching.
+	/// The fallback tab strip and the entry's milestone facts, including how the
+	/// strip matches a tab by its value.
 	/// </summary>
 	public sealed class BuildingCatalogProgressionTests
 	{
@@ -50,10 +50,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void StripValueReadsWhicheverAxisIsNamed()
 		{
-			// One reader for the predicate and the counts. They read the axis
-			// separately once before — the category counts against UiCategory
-			// while the tab selected on EffectiveCategory — and ten Roads tabs
-			// reported 0 while showing assets when clicked.
+			// One reader serves both the predicate and the counts, so a tab cannot
+			// report an empty count and then show assets when clicked.
 			var pipe = Entry(1, "Water Pipe", 0) with { Category = "Networks", DevTreeBranch = "Basic" };
 			var plant = Entry(2, "Water Treatment Plant", 2) with { Category = "ServiceBuildings", DevTreeBranch = "Water Treatment Plant" };
 
@@ -81,14 +79,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void TheStripTabNarrowsOnWhicheverAxisNamesIt()
 		{
-			// The selection is a LIST because the filter rail offers the same
-			// state and can hold several; the row writes one entry.
-			//
-			// A tab's axis is a property of the TAB, not of the row: Water draws
-			// its buildings as development nodes and its pipes as one Networks
-			// tab, so one row carries both. Matched by value across the
-			// candidate axes, which works because the value spaces do not
-			// overlap — node names against "Buildings"/"Networks".
+			// The selection is a LIST because the filter rail offers the same state
+			// and can hold several. A tab's axis belongs to the TAB, not the row, so
+			// tabs match by value across axes whose value spaces do not overlap.
 			var source = new List<BuildingCatalogEntry>
 			{
 				Entry(1, "Water Pipe", 0) with { Category = "Networks", DevTreeBranch = "Basic" },

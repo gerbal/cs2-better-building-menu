@@ -5,10 +5,8 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// The game's tooltip binds a fraction as a whole percentage — purification is
-	/// Mathf.RoundToInt(100f * m_Purification), comfort (int)math.round(100f *
-	/// m_ComfortFactor). The index passed the raw fraction, so a 60 % plant read
-	/// "1 %" once rounded, or nothing when the fraction rounded to zero.
+	/// The game's tooltips bind a fraction as a whole percentage, so the index
+	/// converts before it states one.
 	/// </summary>
 	public sealed class PercentTests
 	{

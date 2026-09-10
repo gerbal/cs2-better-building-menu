@@ -9,16 +9,9 @@ namespace BetterBuildingMenu.Services
 	/// Every answer one refresh needs, from one pass over the snapshot.
 	/// </summary>
 	/// <remarks>
-	/// The adapter used to answer eight questions per refresh and start each
-	/// from the projected snapshot with a full InScope pass — fifteen to
-	/// twenty passes, and GetStripAxis alone reached GetMenuCategoryCounts
-	/// through three chains. Here the snapshot is scoped to the menu ONCE
-	/// (<see cref="MenuSet"/>); everything else is a pass over that much
-	/// smaller array, and every property is computed once and kept.
-	///
-	/// The derivations are the adapter's old bodies, verbatim except for the
-	/// set they read; CatalogViewTests holds each against the static helper
-	/// it replaces.
+	/// The snapshot is scoped to the menu ONCE (<see cref="MenuSet"/>); every other answer is a
+	/// pass over that much smaller array, computed once and kept, so a refresh does not re-derive
+	/// the same scope for each question it asks.
 	/// </remarks>
 	public sealed class CatalogView
 	{
@@ -61,10 +54,8 @@ namespace BetterBuildingMenu.Services
 
 		/// <summary>The grouping the page is ordered by: the player's choice, or the menu's default.</summary>
 		/// <remarks>
-		/// Resolved here rather than by the UI, which used to derive it from
-		/// three bindings and push it back — a second refresh on every first
-		/// open. The resolver may read this view's own strip axis; nothing it
-		/// reads depends on Page, so there is no cycle.
+		/// Resolved here rather than by the UI. The resolver may read this view's own strip axis;
+		/// nothing it reads depends on Page, so there is no cycle.
 		/// </remarks>
 		public string EffectiveGroupBy => _effectiveGroupBy ??= _groupByResolver?.Invoke(this) ?? _query.GroupBy;
 
@@ -150,8 +141,7 @@ namespace BetterBuildingMenu.Services
 				return Array.Empty<MenuBranchCount>();
 			}
 
-			// The menu set narrowed to that category, tier kept, tabs cleared —
-			// what `query with { UiCategory = category, StripTabs = null }` read.
+			// The menu set narrowed to that category, tier kept, tabs cleared.
 			var tabs = BuildingCatalogQueryEngine
 				.InScope(MenuSet, _query with { UiCategory = category, StripTabs = null })
 				.Where(entry => !string.IsNullOrEmpty(entry.DevTreeBranch))
@@ -164,8 +154,8 @@ namespace BetterBuildingMenu.Services
 					BranchIcon(category, group.Key) ?? BuildingCatalogAdapter.TabIcon(group, authored: true)))
 				.ToArray();
 
-			// Same row, same failure: these tabs share one category by
-			// construction, so the category glyph repeats across all of them.
+			// These tabs share one category by construction, so the category glyph would
+			// otherwise repeat across all of them.
 			return Disambiguate(tabs, tab => BranchIcon(category, tab.Id, allowCategoryGlyph: false));
 		}
 
@@ -238,8 +228,7 @@ namespace BetterBuildingMenu.Services
 				return tabs;
 			}
 
-			// The adapter re-queried with StripTabs = [Buildings]; that is the
-			// tab set narrowed to the entries answering to the Buildings tab.
+			// The tab set narrowed to the entries answering to the Buildings tab.
 			var buildingNodes = StripTabsFor(
 				TabSet.Where(entry => BuildingCatalogQueryEngine.StripMatches(entry, StripAxes.BuildingValue)).ToArray(),
 				StripAxes.Development);
@@ -281,21 +270,9 @@ namespace BetterBuildingMenu.Services
 		/// sibling.
 		/// </summary>
 		/// <remarks>
-		/// The category glyph fallback (cm-2xvs.17) fixed a real thing — a
-		/// branch with no authored icon fell to a photographic asset render
-		/// sitting in a row of flat glyphs — but it answers with the CATEGORY's
-		/// mark, and a menu whose tabs all sit in one category then draws one
-		/// picture N times. Healthcare's strip rendered Healthcare.svg four
-		/// times over, which is a row of tabs that cannot be told apart.
-		///
-		/// Repeated is worse than off-idiom: a photograph among glyphs still
-		/// says WHICH tab this is. So the glyph is kept wherever it
-		/// distinguishes and dropped only where it does not.
-		///
-		/// An authored icon is never displaced. The recompute only switches off
-		/// the category-glyph step, so a tab whose mark came from the dev tree
-		/// resolves to that same mark and is left alone — two branches that
-		/// genuinely ship one icon keep it.
+		/// The category-glyph fallback keeps a photograph out of a row of flat glyphs, but a menu
+		/// whose tabs all sit in one category then draws one picture N times. Repeated is worse than
+		/// off-idiom, and an authored icon is never displaced.
 		/// </remarks>
 		private static MenuBranchCount[] Disambiguate(
 			MenuBranchCount[] tabs,
@@ -330,10 +307,9 @@ namespace BetterBuildingMenu.Services
 		}
 
 		/// <summary>
-		/// The menu as it is whatever the player has narrowed: no category, tab or
-		/// tier, no search, no facets, and — where the toolbar's pack selection
-		/// narrowed the projection itself — the pack-ignored projection. What a
-		/// tab's icon is chosen from, so it names the same thing in every state.
+		/// The menu whatever the player has narrowed: no category, tab, tier, search or facets, and
+		/// the pack-ignored projection where the toolbar's packs narrowed it. What a tab's icon is
+		/// chosen from, so it names the same thing in every state.
 		/// </summary>
 		private BuildingCatalogEntry[] WholeMenu => _wholeMenu ??= BuildingCatalogQueryEngine
 			.InScope(
@@ -348,11 +324,8 @@ namespace BetterBuildingMenu.Services
 		/// than from what a filter left of it.
 		/// </summary>
 		/// <remarks>
-		/// cm-2xvs.17: the icon used to come from the filtered group, so a facet
-		/// that removed the representative asset relabelled the tab under the
-		/// player — Transportation's first tab went from Road to Bus when a
-		/// content pack was chosen. The whole category (menu set: no tier, no
-		/// facets, no search) is the same set in every state.
+		/// Taken from the whole category rather than from what a filter left of it, so a facet that
+		/// removes the representative asset cannot relabel the tab under the player.
 		/// </remarks>
 		private string? BranchIcon(string category, string branch, bool allowCategoryGlyph = true)
 		{
@@ -365,8 +338,8 @@ namespace BetterBuildingMenu.Services
 		}
 
 		/// <summary>
-		/// A strip tab's icon from the whole menu, so it does not change when a
-		/// filter changes which assets are left in the tab (cm-2xvs.17).
+		/// A strip tab's icon from the whole menu, so it does not change when a filter changes which
+		/// assets are left in the tab.
 		/// </summary>
 		private string? StripIcon(string axis, string key, bool allowCategoryGlyph = true)
 		{

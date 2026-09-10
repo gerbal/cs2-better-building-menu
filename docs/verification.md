@@ -2190,3 +2190,20 @@ for the removed names, 1 for the new wording), 399 backend tests pass, UI
 source untouched. Deployed to both Mods roots; `NewVersion` → "New mod
 version published". Not re-verified live: the options page with three
 entries.
+
+## 2026-09-10 — comment pass under the new rule
+
+Four comments-only passes (indexer, other C#, UI TypeScript, stylesheets and
+tests) after the dead-code commit. Guard: every changed `.cs/.ts/.tsx/.scss`
+file stripped of comments is byte-identical to HEAD (`246 changed files, 0
+with non-comment differences`). Comment lines 13,708 → 7,528 of 55,403 → 49,069
+source lines; C# 26% → 16%, TypeScript 21% → 14%, SCSS 28% → 13%. Long
+rationale moved to `docs/indexing.md` and `docs/design-notes.md` with one-line
+pointers from the code. Release build clean; 399 backend, 651 UI, 69 render
+tests pass. Not verified live: nothing changed that could show in the game.
+Follow-ups the passes flagged, all code rather than comments: `.tile
+{ position: relative }` in buildingGrid.module.scss anchors nothing now;
+`.rowPlaceButton` has a rule but no element; `localizableStrings.ts` names a
+`ZoningHierarchy` source that no longer exists; `FolderUtil.SettingsFolder` is
+declared and never used; one grouping test's fixture cannot distinguish tab
+order from alphabetical order.

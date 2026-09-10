@@ -1,17 +1,12 @@
 @use "../../base.scss" as _base;
 
-// --- Grouped views ---------------------------------------------------------
 // Headings over the result set, in every mode. Grouping is a property of the
-// result rather than of a mode, so the grid, the list and the table all render
-// the same tree.
+// result rather than of a mode, so the grid, the list and the table all
+// render the same tree.
 
-// Sibling groups share a line where they fit. Wrapping row, not a column:
-// a group was a full-width band whatever it held, so a menu grouped into
-// several small sets spent most of its height on headings over half-empty
-// rows.
-//
-// `gap` is a no-op in this engine, so the spacing is the usual negative-gutter
-// trick: pull the row back by the gutter and give every child the same margin.
+// Sibling groups share a line where they fit. A wrapping row, not a column: a
+// full-width band whatever it holds spends most of a menu's height on headings
+// over half-empty rows. Spacing is the negative-gutter trick, not a gap.
 .groupRow {
   display: flex;
   flex-direction: row;
@@ -41,27 +36,15 @@
   // heading has laid out. See GroupBox: the heading is out of flow, so the
   // group has to reserve its height rather than be pushed by it.
   padding-top: 17rem;
-  // NO min-width. This used to reserve three default tiles of label room
-  // whatever the group held, so that a one-tile group's name was not cut to
-  // "ROAD SER…". It bought readable headings with empty row: measured in Fire
-  // & Rescue, six nested groups were each 200px around a single 67px tile —
-  // two thirds of every group was nothing. The heading now wraps to the width
-  // the tiles actually occupy instead of the tiles being spread to the width
-  // the heading wanted.
+  // NO min-width. Reserving label room whatever the group holds buys readable
+  // headings at the price of empty row — a wide group around a single tile.
+  // The heading wraps to the width the tiles occupy instead.
   overflow: hidden;
 }
 
-// A group with sub-groups. The whole row, so its heading sits alone on its
-// line and its children's headings on the next; flowed beside a leaf group
-// the two levels shared two rows of 11px with the neighbour's heading.
-// A band used to be `flex: 0 0 100%` — a whole line, whatever it held. That
-// put FIRE & RESCUE's five tiles on one line and DISASTER CONTROL's three on
-// the next, with 354px and 501px of empty row beside them, when all eight fit
-// in 536px of a 725px row.
-//
-// Sizing to content instead is self-regulating: a category wider than the row
-// still takes the whole line, because max-width caps it at 100% and its own
-// children wrap inside it. A small one lets its neighbour share the line.
+// A group with sub-groups. Sizing to content is self-regulating: one wider
+// than the row still takes the whole line, because max-width caps it and its
+// children wrap inside it, while a small one lets its neighbour share.
 .groupBand {
   flex: 0 1 auto;
 }
@@ -72,34 +55,23 @@
   padding-top: 0;
 }
 
-// Thinned from 43rem to fit two tile rows in the 200rem content strip instead
-// of one. font-size is a literal 16rem rather than a token: that is vanilla's
-// own smallest label (see buildingGrid.module.scss's tileName comment), and
-// --fontSizeS/--fontSizeXS both undershoot it. line-height is set tighter than
-// the font-size on purpose — the text is uppercase, so there are no descenders
-// for the extra leading to protect, and the tail of the label is what the
-// budget was spent on.
+// font-size is a literal 16rem rather than a token: that is vanilla's own
+// smallest label, and --fontSizeS/--fontSizeXS both undershoot it. line-height
+// is tighter than the font-size because the uppercase text has no descenders.
 .groupHeading {
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
   // OUT OF FLOW, so the heading follows the group's width instead of setting
-  // it. A group should be as wide as its tiles; measured, CENTRAL INTELLIGENCE
-  // BUREAU made its group 177px for one 72px tile and left the rest as empty
-  // row. Two cheaper fixes failed first: min-width:0 permits shrinking under
-  // flex pressure and a row with free space applies none, and the
-  // width:0/min-width:100% idiom resolved its circular reference against the
-  // ROW, stretching the group to 706px.
-  //
-  // Absolute takes the text out of the intrinsic width entirely; the group
-  // reserves the height with padding, and clips what will not fit.
+  // it: a long name would otherwise make its group several times the width of
+  // the one tile in it. The group reserves the height with padding, and clips.
   position: absolute;
   left: 0;
   right: 0;
   top: 0;
-  // Was `align-items: center` against a single line. With a wrapping label the
-  // count has to sit against the FIRST line, not the middle of a stack.
+  // With a wrapping label the count sits against the FIRST line, not the
+  // middle of the stack.
   align-items: flex-start;
   padding: 1rem 2rem 0;
   border-bottom: 1rem solid rgba(255, 255, 255, 0.08);
@@ -120,31 +92,23 @@
   letter-spacing: 0;
 }
 
-// Truncates rather than widening its group. The heading is laid out with the
-// tiles, so a long label — CENTRAL INTELLIGENCE BUREAU over one tile — pushed
-// the whole group wider than its contents and left the extra as white space
-// beside them. The name is still readable in full on the tiles below it.
-// Gives way before the count does. The text itself is already cut to a budget
-// in fitGroupLabel — this engine draws a hard clip rather than an ellipsis —
-// so this is the second wall, not the first.
+// Truncates rather than widening its group; the name is still readable in full
+// on the tiles below. Gives way before the count does — the text is already
+// cut to a budget in fitGroupLabel, so this is the second wall, not the first.
 .groupLabel {
-  // GROWS, so the box is the space available rather than the text in it.
-  // With `0 1 auto` it shrank to whatever had just been trimmed, and the next
-  // measurement read that back as the room available and trimmed again.
+  // GROWS, so the box is the space available rather than the text in it: a
+  // shrink-to-fit box feeds its own trimmed width back into the next measure.
   flex: 1 1 auto;
   min-width: 0;
-  // WRAPS rather than eliding. The group is now only as wide as its tiles, so
-  // a name that does not fit gets more lines instead of fewer characters —
-  // which is the trade the old min-width was avoiding by making the group
-  // wider than its contents.
+  // WRAPS rather than eliding. The group is only as wide as its tiles, so a
+  // name that does not fit gets more lines instead of fewer characters.
   white-space: normal;
   overflow-wrap: break-word;
 }
 
 // Holds the FULL label so its width can be measured while the visible span
-// shows a trimmed one. Out of flow and invisible, so it costs no space and
-// cannot be read; `visibility` rather than `display: none`, which would give
-// it no box to measure.
+// shows a trimmed one. Out of flow and invisible; `visibility` rather than
+// `display: none`, which would give it no box to measure.
 .groupLabelProbe {
   position: absolute;
   top: 0;
@@ -165,17 +129,9 @@
 }
 
 
-// One scroll for the whole grouped result. The grid and the list were each
-// written as the catalog's only flex child, so they claim the free space and
-// collapse to nothing when nested inside a group that has none to give.
-// Sizes to its content, capped by the catalog's own max-height.
-//
-// This was flex: 1 1 0, which worked while .catalog carried an explicit height:
-// a zero basis resolves against a definite parent. Turning that height into a
-// cap — so a page of three results stops holding a full-height panel open —
-// left the basis resolving against nothing, so the scroll area contributed zero
-// and the panel sat at its floor with a hundred items inside it. Same failure
-// the grid and the zoning tier list had when they were first nested in a group.
+// One scroll for the whole grouped result: the grid and the list are each
+// written as the catalog's only flex child, so nested in a group with no free
+// space they collapse. Sizes to content, capped by the catalog's max-height.
 .groupScroll {
   flex: 0 1 auto;
   min-height: 0;
@@ -188,9 +144,7 @@
 }
 
 
-// The view-mode control. These lived in buildingCatalog.module.scss while the
-// catalog owned the markup; they came with the component when zoning needed the
-// same control, and without them the buttons rendered unstyled and stacked.
+// The view-mode control, styled with the component that renders it.
 .viewModes {
   display: flex;
   flex-direction: row;
@@ -220,13 +174,6 @@
   background-color: var(--accentColorNormal);
   color: rgba(0, 0, 0, 0.85);
 }
-
-// The group summary's icon-variant sizing fix used to live here, against
-// .groupPicker .sortSummary. No component renders GroupedResults' groupPicker —
-// the picker is BuildingCatalog's — so CSS modules hashed this into a namespace
-// nothing used and the header kept printing "Category" over "Group by" with an
-// apparent fix in the tree. It now lives with the control it styles, in
-// buildingCatalog.module.scss, alongside the other word-carrying buttons.
 
 // The vanilla ToolButton is sized for an icon; these carry a word.
 .viewMode {

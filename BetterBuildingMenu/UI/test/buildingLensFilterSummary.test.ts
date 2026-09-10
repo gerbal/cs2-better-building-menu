@@ -60,8 +60,8 @@ describe("Building Lens active-filter summary", () => {
 
     assert.equal(summary.count, 3);
     assert.equal(summary.text, "3 active filters");
-    // Named, not counted: "2 facets" left the player nothing to act on, and an
-    // empty intersection is easy to reach now that filters compose.
+    // Named, not counted: "2 facets" leaves the player nothing to act on, and
+    // an empty intersection is easy to reach once filters compose.
     assert.deepEqual(summary.details, ["European", "Modern", "Cost 100–500"]);
     assert.equal(summary.hasSelection, true);
   });
@@ -98,10 +98,9 @@ describe("Resting facets are not constraints", () => {
   });
 
   it("does not blame the resting Availability state for an empty menu", () => {
-    // The reported symptom: "No buildings match Locked, Unlocked" over a menu
-    // with nothing filtered. Together those two ARE every asset there is, so
-    // naming them as the reason nothing matched told the player to drop a
-    // constraint that was not applied.
+    // "No buildings match Locked, Unlocked" over a menu with nothing filtered:
+    // together those two ARE every asset there is, so naming them as the
+    // reason tells the player to drop a constraint that was not applied.
     const message = getBuildingLensEmptyStateMessage({ facets: availability(false, true) });
 
     assert.equal(message, "No buildings in this category.");

@@ -23,21 +23,9 @@ interface VanillaBuildMenuTab {
 }
 
 /**
- * The single band that says how the result set has been narrowed.
- *
- * It replaces four stacked selector bands — mode, scope, category, family —
- * that together cost 142px of a 625px panel. Three of them were filters drawn
- * as tab strips, which meant a permanent band per dimension and no way to ask
- * for two values at once.
- *
- * What remains here is identity: which menu, which category within it —
- * "what am I looking at", which belongs beside the results.
- *
- * The narrowing controls and the chips that record them moved into the game's
- * own options bank, because that is where the game already puts filters. Theme
- * and Pack live there as a label and a row of icon buttons, and keeping a
- * second idiom for the same job taught the player two things where one would
- * do.
+ * The band that says what the player is looking at: which menu, and which
+ * category within it. Identity only — the narrowing controls and the chips
+ * that record them live in the control pane beside the results.
  */
 
 const BuildingLensFacets$ = bindValue<BuildingLensFacetState | null>(mod.id, "BuildingLensFacets", null);
@@ -78,7 +66,7 @@ export const ChipRow = () => {
   const label = (key: string, fallback: string) => translate(key, fallback) ?? fallback;
 
   // The game's own word for a menu or a category. Two key families, not one —
-  // see vanillaServiceLabels.ts for what the running game actually answers.
+  // see vanillaServiceLabels.ts.
   const lookup = (key: string) => translate(key, null);
   const menuLabel = (id: string) => resolveVanillaLabel(vanillaMenuNameKeys(id), lookup, id);
   const categoryLabel = (id: string) => resolveVanillaLabel(vanillaCategoryNameKeys(id), lookup, id);
@@ -160,11 +148,10 @@ export const ChipRow = () => {
   return (
     <div className={styles.chipRow}>
       <div className={styles.chips}>
-        {/* The menu the bottom-bar icon opened, as a chip you can drop.
-            A toolbar icon is a shortcut to a preconfigured view, not a box the
-            player is shut inside, and until now the scope it applied was
-            invisible: nothing on screen said the catalog had been cut to eight
-            buildings, and the only way back out was to close the panel. */}
+        {/* The menu the bottom-bar icon opened, as a chip you can drop: a
+            toolbar icon is a shortcut to a preconfigured view, not a box the
+            player is shut inside, and the scope it applies is otherwise
+            invisible. */}
         {chips.menu
           && renderBreadcrumb(
             "menu",
@@ -173,10 +160,9 @@ export const ChipRow = () => {
             scopedToMenu ? () => fire({ method: "ClearBuildingLensMenuScope", args: [] }) : null
           )}
 
-        {/* The category within it, which the strip also picks. Two ways to the
-            same state on purpose: the strip is the fast one, and the chip is
-            what makes the row a complete account of why these rows and not
-            others. */}
+        {/* The category within it, which the strip also picks. Two ways to one
+            state on purpose: the strip is the fast one, and the chip is what
+            makes this row a complete account of the scope. */}
         {chips.menuCategory
           && renderBreadcrumb(
             "menuCategory",

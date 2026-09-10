@@ -9,11 +9,9 @@ import type { MetricRangeId } from "./buildingCatalogRanges";
 import type { NumberSeparators } from "./buildingLensMetricFormat";
 
 /**
- * Keep the UI's windowing rules in a pure module.
- *
- * The Gameface components call the trigger commands from this module, while
- * the same contract can be exercised by Node's browserless test runner. This
- * prevents a payload drift between the React UI and the C# bindings.
+ * The UI's windowing rules in a pure module, so Node's browserless runner can
+ * exercise the same commands the Gameface components fire and the payloads
+ * cannot drift from the C# bindings.
  */
 export const MAX_CATALOG_PAGE_SIZE = 500;
 
@@ -48,9 +46,8 @@ export const setCurrentPrefabCommand = (id: number): ActivatePrefabAction => ({ 
 export const setSortColumnCommand = (column: SortColumn): TriggerCommand => createTriggerCommand("SetBuildingCatalogSortColumn", column);
 export const setSortDescendingCommand = (descending: boolean): TriggerCommand =>
   createTriggerCommand("SetBuildingCatalogSortDescending", descending);
-// Takes no argument on purpose. The window is the backend's: it knows the
-// current Limit, the step and the ceiling, so a client that named the next size
-// would be a second opinion about all three.
+// Takes no argument on purpose: the window is the backend's, and it knows the
+// current limit, the step and the ceiling.
 export const loadMoreCatalogCommand = (): TriggerCommand => createTriggerCommand("LoadMoreBuildingCatalog");
 export const setBuildingCatalogMetricRangeCommand = (id: MetricRangeId, minText: string, maxText: string): TriggerCommand =>
   createTriggerCommand("SetBuildingCatalogMetricRange", id, minText, maxText);
@@ -83,41 +80,18 @@ export function normalizeCapacityFloor(floor: number): number {
 }
 
 /**
- * Group digits the way `groupDigits` does, for counts.
- *
- * The regex is `buildingLensMetricFormat`'s, and the test asserts this function
- * agrees with it, because the import that would have shared it cannot exist:
- * these modules are imported extensionlessly, which webpack and tsc resolve and
- * `node --test` does not, and the `.ts` specifier node wants is a hard error in
- * TypeScript 4.9. Every runtime import between src modules would break the
- * suite, so today there are none.
- *
- * `toLocaleString` is not the answer either — it groups in Node and does
- * nothing in Cohtml, which is how the page summary this replaces asserted
- * "4,206" in a passing test while the game rendered "4206". The separator comes
- * from the caller because it comes from the game's own loc dictionary; a
- * hardcoded one disagrees with the numbers in the rows above it.
+ * Group digits the way `groupDigits` does, for counts. Duplicated because a
+ * runtime import between these modules resolves in webpack and not in the test
+ * runner; `toLocaleString` is no answer, doing nothing in Cohtml.
  */
 function groupCount(value: number, separators: NumberSeparators): string {
   return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, separators.group);
 }
 
 /**
- * Say how much of the match set is on screen, for a window that grows rather
- * than a page that turns.
- */
-/**
- * The same fact as {@link getCatalogWindowSummary}, short enough for a badge.
- *
- * The header's count is a fixed-size pill — `flex: 0 0 auto` with `nowrap` —
- * sitting between the title and the search context. Putting the sentence in it
- * shoved the search context and the Group by control sideways and the toolbar
- * read as three captions fighting for one line. The sentence is still the
- * tooltip, where it has room.
- *
- * Collapses to a single figure once the window covers everything, because
- * "401 / 401" asks the player to compare two numbers to learn they are the
- * same.
+ * The same fact as {@link getCatalogWindowSummary}, short enough for a badge —
+ * the sentence belongs in the tooltip. Collapses to a single figure once the
+ * window covers everything, rather than print one number twice.
  */
 export function getCatalogWindowBadge(
   renderedCount: number,
@@ -132,6 +106,10 @@ export function getCatalogWindowBadge(
   return shown === safeTotal ? total : `${groupCount(shown, separators)} / ${total}`;
 }
 
+/**
+ * How much of the match set is on screen, for a window that grows rather than
+ * a page that turns.
+ */
 export function getCatalogWindowSummary(
   renderedCount: number,
   totalCount: number,
@@ -140,7 +118,7 @@ export function getCatalogWindowSummary(
   const safeTotal = Math.max(0, Math.floor(Number.isFinite(totalCount) ? totalCount : 0));
   const safeRendered = Math.max(0, Math.floor(Number.isFinite(renderedCount) ? renderedCount : 0));
   // A narrowing predicate shrinks the total while the previous rows are still
-  // mounted, and "Showing 500 of 120" reads as a bug rather than as a stale frame.
+  // mounted, and a shown count above the total reads as a bug.
   const shown = Math.min(safeRendered, safeTotal);
 
   return `Showing ${groupCount(shown, separators)} of ${groupCount(safeTotal, separators)}`;

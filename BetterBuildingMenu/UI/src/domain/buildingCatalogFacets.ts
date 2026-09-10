@@ -22,10 +22,9 @@ export interface BuildingLensFacetState {
   hasSelection: boolean;
 }
 
-// A facet group becomes its own scroll surface once the wrapped options can
-// no longer fit in the compact drawer. Keeping this threshold in the domain
-// makes the affordance deterministic in Gameface and easy to verify without a
-// DOM/layout-dependent test.
+// A facet group becomes its own scroll surface once its options no longer fit
+// the compact drawer. The threshold lives here so the affordance is
+// deterministic in Gameface and testable without a layout.
 export const FACET_SCROLL_OPTION_THRESHOLD = 8;
 
 export function facetGroupNeedsScroll(

@@ -1,16 +1,7 @@
 /**
- * Which navigation chips the current scope justifies drawing.
- *
- * One rule, and it is the whole module: **a chip is drawn only when the state
- * it writes is actually applied to the result.**
- *
- * That rule exists because it was broken. The lens once had its own section
- * and type taxonomy, applied only when no vanilla menu was scoped — and the
- * Section and Type chips stayed on screen through a menu-scoped query:
- * clickable, restyling themselves as if they had taken effect, and discarded
- * by the query. This module hid them. The taxonomy itself has since gone
- * (cm-jjlv.6): the game's menu tree is the only scope, so the two chips left
- * are the menu and the category within it.
+ * Which navigation chips the current scope justifies drawing. One rule, and it
+ * is the whole module: a chip is drawn only when the state it writes is
+ * actually applied to the result.
  */
 
 export interface LensScopeState {

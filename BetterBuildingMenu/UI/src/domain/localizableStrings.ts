@@ -1,29 +1,7 @@
 /**
- * Every user-visible string the lens invented, and the key it will translate
- * through.
- *
- * Two kinds of string reach the player. The ones that name the game's own
- * concepts — categories, subcategories, building names — are already localized:
- * building names come from the active dictionary, and category labels now ask
- * the game first through GameLocaleKeys. Those need no work.
- *
- * The rest are ours. "Group by", "Cards", "Other", the cost bands — the game
- * has no counterpart to borrow, so they need real translation. Today they are
- * English literals, some behind a `translate(key, fallback)` call and some not
- * behind anything at all.
- *
- * This is the register of the second kind. It exists so that:
- *
- *   - a future translation pass has one list rather than a grep,
- *   - the guard test fails when a new invented string appears without a key,
- *   - and the ones that are not yet plumbed are visible as debt rather than
- *     invisible as English.
- *
- * `plumbed: false` means the string is still rendered directly from a domain
- * module, which cannot call `translate` — the pure modules deliberately have no
- * access to the localization manager. Those need the domain to return a key and
- * the component to render it, which is a change to each call site rather than a
- * change here.
+ * The register of user-visible strings the lens invented — the ones with no
+ * game counterpart to borrow. One list for a translation pass and a guard the
+ * tests fail against; `plumbed: false` means a pure module returns it as text.
  */
 
 export interface LocalizableString {
@@ -47,25 +25,22 @@ const key = (name: string) => `${PREFIX}${name}]`;
 export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   // --- View modes and grouping controls. Already behind translate(). --------
   { key: key("GroupBy"), english: "Group by", source: "BuildingCatalog", plumbed: true },
-  // The spoken form of the two pickers. Separate from the "Group by" / "Sort by"
-  // labels because these announce current state to a screen reader rather than
-  // labelling the control, and because they must match each other's register —
-  // one used to say "Sorted by Name, ascending" while its twin said "Category".
+  // The spoken form of the two pickers: these announce current state to a
+  // screen reader rather than labelling the control, and the pair has to match
+  // each other's register.
   { key: key("GroupedBy"), english: "Grouped by {0}", source: "BuildingCatalog", plumbed: true },
   { key: key("SortedBy"), english: "Sorted by {0}, {1}", source: "BuildingCatalog", plumbed: true },
   { key: key("SortByOption"), english: "Sort by {0}", source: "BuildingCatalog", plumbed: true },
   { key: key("SortDirectionAscending"), english: "ascending", source: "BuildingCatalog", plumbed: true },
   { key: key("SortDirectionDescending"), english: "descending", source: "BuildingCatalog", plumbed: true },
   { key: key("ViewGrid"), english: "Grid", source: "BuildingCatalog", plumbed: true },
-  // Vanilla's zoning and building menus close from an X in the top-right
-  // corner; the panel stands in for that menu, so it offers the same way out.
-  // The hover card's three missing facts (cm-2xvs.19). Households is its own
-  // line because Capacity is derived from SERVICE components and a residential
-  // building has none — a signature mansion read capacity null and the card
-  // said nothing about the one thing it is for.
+  // Households is its own line because Capacity is derived from SERVICE
+  // components, which a residential building does not carry.
   { key: key("Households"), english: "Households", source: "BuildingHoverCard", plumbed: true },
   { key: key("HouseholdsUnit"), english: "households", source: "BuildingHoverCard", plumbed: true },
   { key: key("WorkersUnit"), english: "jobs", source: "BuildingHoverCard", plumbed: true },
+  // Vanilla's menus close from an X in the top-right corner; the panel stands
+  // in for one, so it offers the same way out.
   { key: key("CloseMenu"), english: "Close", source: "BuildingMenuHeader", plumbed: true },
   { key: key("ViewList"), english: "List", source: "BuildingCatalog", plumbed: true },
   { key: key("ViewCards"), english: "Cards", source: "BuildingCatalog", plumbed: true },
@@ -73,8 +48,8 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   { key: key("GroupBy_none"), english: "None", source: "buildingGroups", plumbed: true },
   // The game's own categories — the dimension the tab strip shows.
   { key: key("GroupBy_menuCategory"), english: "Category", source: "buildingGroups", plumbed: true },
-  // Ours: Buildings, Networks, Service Buildings. Renamed off "Category" so it
-  // stops competing with the game's word for a different idea.
+  // Ours: Buildings, Networks, Service Buildings. Not "Category", which is the
+  // game's word for a different idea.
   { key: key("GroupBy_category"), english: "Asset type", source: "buildingGroups", plumbed: true },
   { key: key("GroupBy_subCategory"), english: "Type", source: "buildingGroups", plumbed: true },
   { key: key("GroupBy_role"), english: "Role", source: "buildingGroups", plumbed: true },
@@ -90,17 +65,13 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
 
   // --- Chip row. Already behind translate(). -------------------------------
   { key: key("AllMenus"), english: "All menus", source: "ChipRow", plumbed: true },
-  // The one menu the lens renamed, because it is the one whose contents it
-  // changed: Roads gathers every network now, so the game's own "Roads" is
-  // ~230 assets short of describing it. Offered ahead of the game's string
-  // rather than instead of it, so an untranslated language still gets "Roads"
-  // rather than the raw prefab id.
+  // The one menu the lens renames, because it is the one whose contents it
+  // changes: Roads gathers every network, which the game's own word does not
+  // describe. Offered ahead of that string rather than instead of it.
   { key: key("MenuRoadsAndNetworks"), english: "Roads & Networks", source: "vanillaServiceLabels", plumbed: true },
   { key: key("AllTypes"), english: "All types", source: "ChipRow", plumbed: true },
   { key: key("Remove"), english: "Remove", source: "ChipRow", plumbed: true },
-  // The end of the feed. Replaces the five-button pager and its
-  // "Rows 1-100 of 3677 - Page 1 of 37", which was small, low-contrast, and
-  // reported a fact ("page 19") nobody can act on.
+  // The end of the feed.
   { key: key("LoadMore"), english: "Load more", source: "BuildingCatalog", plumbed: true },
 
   // --- Zone facts. Plumbed: the component formats and translates these. ----
@@ -115,10 +86,8 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   { key: key("ZoneStores"), english: "stores {0}", source: "ZoningHierarchy", plumbed: true },
 
   // --- Group headings. Returned as text from a pure module. ----------------
-  // The headings themselves — bands, tiers, "Other" — are C#'s strings now
-  // (BuildingCatalogGrouping.Labels, sent as groupPath) and are localised on
-  // that side when they are. This is the one the strip's milestone labeller
-  // still returns.
+  // The headings themselves are C#'s strings, localised on that side. This is
+  // the one the strip's milestone labeller still returns.
   { key: key("GroupOther"), english: "Other", source: "buildingGroups.UNGROUPED_LABEL", plumbed: false },
 
   // --- Filter summary and empty states. Pure module. -----------------------
@@ -129,9 +98,8 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   { key: key("SearchConstraint"), english: 'search "{0}"', source: "buildingLensFilterSummary", plumbed: false },
 
   // --- Metric names used in chips and summaries. Pure module. --------------
-  // The table's column headers are already translated; these are the same words
-  // reached by a different path, which is exactly the sort of divergence a
-  // register is meant to surface.
+  // The table's column headers are already translated; these are the same
+  // words reached by a different path, which is what a register is for.
   { key: key("MetricCost"), english: "Cost", source: "filterChips, buildingLensFilterSummary", plumbed: false },
   { key: key("MetricUpkeep"), english: "Upkeep", source: "filterChips, buildingLensFilterSummary", plumbed: false },
   { key: key("MetricWorkers"), english: "Workers", source: "filterChips, buildingLensFilterSummary", plumbed: false },

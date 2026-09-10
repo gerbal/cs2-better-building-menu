@@ -3,9 +3,8 @@ using System;
 namespace BetterBuildingMenu.Utilities
 {
 	/// <summary>
-	/// Keeps icon URLs usable when the standalone successor is deployed without
-	/// the optional Unified Icon Library mod. The game returns Uil URLs for some
-	/// prefab thumbnails; those assets are vendored under this mod's host.
+	/// Rewrites Unified Icon Library URLs to this mod's vendored copies, so
+	/// prefab thumbnails resolve without that mod installed.
 	/// </summary>
 	public static class IconPath
 	{

@@ -28,11 +28,7 @@ export interface BuildingLensFilterSummary {
   text: string;
   details: string[];
   hasSelection: boolean;
-  /**
-   * The subset this panel's Clear button can reset. Equal to count since the
-   * upstream filter bank went (cm-jjlv.9); kept as a field because the panel
-   * reads it.
-   */
+  /** The subset this panel's Clear button can reset; equal to count today. */
   lensCount: number;
 }
 
@@ -65,15 +61,9 @@ function rangesFromState(state: BuildingLensMetricRangeState | null | undefined)
 
 function selectedFacetLabels(state: BuildingLensFacetState | null | undefined): string[] {
   return (state?.groups ?? [])
-    // Only groups that actually exclude something. The backend says which —
-    // "every option selected" is true both of Availability at rest, which
-    // narrows nothing, and of a selection stranded by a menu switch, which
-    // narrows everything, so the UI cannot tell them apart itself.
-    //
-    // Counting the resting state produced the empty message "No buildings match
-    // Locked, Unlocked" over a menu with no filter applied: it named the two
-    // states as the reason nothing matched, when together they are every asset
-    // there is. It also inflated the active-filter count on the pane.
+    // Only groups that actually exclude something, and the backend says which:
+    // "every option selected" describes both a group at rest, which narrows
+    // nothing, and one stranded by a menu switch, which narrows everything.
     .filter((group) => group?.narrowing !== false)
     .flatMap((group) =>
       (group?.options ?? [])
@@ -117,9 +107,8 @@ export function getBuildingLensFilterSummary(
   const activeRanges = metricRangeIds.filter((id) => ranges[id].min !== null || ranges[id].max !== null).length;
   const count = facets + activeRanges;
   const details = [
-    // Named, not counted. "No buildings match 1 facet" told the player nothing
-    // they could act on; with filters composing freely an empty intersection is
-    // easy to reach, so the message has to say which constraint to drop.
+    // Named, not counted: with filters composing freely an empty intersection
+    // is easy to reach, so the message has to say which constraint to drop.
     ...facetLabels,
     ...metricDetails(ranges),
   ];
@@ -136,12 +125,8 @@ export function getBuildingLensFilterSummary(
 }
 
 /**
- * Explains an empty result by naming what is actually constraining it.
- *
- * The previous copy blamed "the current search and category" unconditionally,
- * which pointed the player at the two controls least likely to be responsible:
- * a facet or an unsatisfiable capacity floor could each empty the table while
- * the search box sat empty.
+ * Explains an empty result by naming what is actually constraining it — a facet
+ * or an unsatisfiable bound can empty the table with the search box untouched.
  */
 export function getBuildingLensEmptyStateMessage(
   input: (BuildingLensFilterSummaryInput & { searchText?: string | null }) | null | undefined,

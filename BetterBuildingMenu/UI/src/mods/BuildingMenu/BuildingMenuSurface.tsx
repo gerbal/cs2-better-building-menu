@@ -12,9 +12,6 @@ import { BuildingMenuHeader } from "mods/BuildingMenu/BuildingMenuHeader";
 import { clampBuildingLensHeight, draggedBuildingLensHeight } from "domain/buildingLensLayout";
 import { useVanillaLayoutForLens } from "mods/BuildingMenu/vanillaLayout";
 
-// Was shared with MainContainer, which mounted the same panel from the other
-// side; step 4 deleted that component, so the stylesheet moved here to sit
-// beside its only remaining consumer.
 import styles from "mods/BuildingMenu/buildingMenuSurface.module.scss";
 
 const PanelWidth$ = bindValue<number>(mod.id, "PanelWidth", 0);
@@ -23,44 +20,15 @@ const BuildingLensPanelHeight$ = bindValue<number>(mod.id, "BuildingLensPanelHei
 const AssetMenuTheme: Theme | any = getModule("game-ui/game/components/asset-menu/asset-menu.module.scss", "classes");
 
 /**
- * The build menu, mounted in the game's own asset-menu slot.
- *
- * This is the phase 2 shell (see the design doc). The difference from
- * MainContainer is not what it draws — the tree below is the same panel — but
- * who decides it exists. MainContainer is appended to `Game` and shows itself
- * from a `ShowFindItPanel` binding we used to maintain; this renders from
- * inside the `AssetMenu` extension point, so the game mounts and unmounts it
- * on its own menu lifecycle.
- *
- * That is the whole point of the phase. `SetLensMenuOpen(false)` — the
- * inherited "another surface wants the screen, so get out of the way" reflex — appears
- * eleven times in the backend and is correct for a floating asset finder. For a
- * menu it is wrong: the toolbar button is still lit, so the game draws its own
- * grid into the space the instant we vacate it. Three guards now carve
- * exceptions out of that reflex. When the game owns the mount there is no gap
- * to draw into, and the guards have nothing left to guard.
- *
- * GEOMETRY, measured live at 1280x720. The slot is `tool-main-column`:
- * x=264, an explicit `width: 474.666px`, `flex: 0 0 auto`, `overflow: visible`,
- * `flex-direction: column`, `justify-content: flex-end`. The last two already
- * match how this panel behaves — bottom-anchored, growing upward — and the
- * `overflow: visible` is what lets the panel keep its own width: a 727px probe
- * inside that 475px column drew at full width, unclipped, with the column
- * unchanged. So the width below is stated on our own row and vanilla's CSS is
- * never touched.
- *
- * ONE PROP. The `AssetMenu` extension point hands its children an `onClose` —
- * the route that clears the toolbar selection, and the only close that makes
- * the panel go away with nothing drawn behind it. It was dropped when the
- * legacy top bar row retired and is threaded again for the header's X, which
- * vanilla's own zoning and building menus put in the same corner.
+ * The build menu, rendered from inside the game's own `AssetMenu` extension
+ * point, so the GAME decides when it exists and no gap is left for the vanilla
+ * grid. The slot's `overflow: visible` lets the row below state its own width.
  */
 export interface BuildingMenuSurfaceProps {
   /**
-   * The game's own menu close, from the AssetMenu extension point.
-   *
-   * Optional because the surface must still render if the game ever mounts it
-   * without one; the X simply does not draw. See BuildingMenuHeader.
+   * The game's own menu close, from the AssetMenu extension point. Optional, so
+   * the surface still renders if the game mounts it without one; the X then
+   * does not draw. See BuildingMenuHeader.
    */
   onClose?: () => void;
 }
@@ -117,9 +85,8 @@ export const BuildingMenuSurface = ({ onClose }: BuildingMenuSurfaceProps) => {
           onMouseLeave={endResize}
         />
       )}
-      {/* The width is stated here rather than inherited. The slot is 475px and
-          this is 727px; `overflow: visible` on the slot is what makes that
-          legal, and it is measured rather than assumed. */}
+      {/* The width is stated here rather than inherited: this row is wider
+          than the slot, and the slot's `overflow: visible` is what allows it. */}
       <div className={classNames(styles.lensRow)} style={{ width: PanelWidth + "rem" }}>
         <div
           className={styles.toolContainer}

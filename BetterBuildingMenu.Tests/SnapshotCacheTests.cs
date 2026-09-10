@@ -35,10 +35,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void ANewGenerationMissesAndEmptiesTheCache()
 		{
-			// The index changed under every snapshot at once: a re-index, an
-			// unlock, a unique being built. Nothing cached can be trusted, so
-			// nothing is kept — a stale entry for a menu the player visits
-			// later is the bug this exists to prevent.
+			// A new generation means the index moved under every snapshot at once —
+			// a re-index, an unlock, a unique built — so nothing cached is kept.
 			var cache = new SnapshotCache();
 			var roads = SnapshotKey.For("Roads", null, false, VanillaToolbarSelection.None);
 			var zones = SnapshotKey.For("Zones", null, false, VanillaToolbarSelection.None);

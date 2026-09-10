@@ -28,10 +28,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void QueryWalksItsInputOnce()
 		{
-			// Count, order and the reorderable-column scan used to each re-run
-			// Matches over a lazy Where: three full passes per page for one
-			// answer. Materialised once, the count is free and the two scans
-			// read an array.
+			// Count, order and the reorderable-column scan share one materialised
+			// pass rather than re-running Matches over a lazy Where.
 			var source = new Counting(Entry(1, "A", 10), Entry(2, "B", 20), Entry(3, "C", 30));
 
 			var page = BuildingCatalogQueryEngine.Query(source, new BuildingCatalogQuery(SortColumn: "ConstructionCost"));

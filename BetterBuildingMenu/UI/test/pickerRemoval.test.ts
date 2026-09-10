@@ -3,11 +3,12 @@ import { existsSync, readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 
 /**
- * The object picker went with the Find It separation. Find It ships the same
+ * The object picker went with the Find It separation: Find It ships the same
  * tool, so a second toolbar glyph, a second "BetterBuildingMenu.Picker" tool
- * and a second options bank beside it were the conflict the separation was
- * for. These read source: the registrations are what put the picker on
- * screen, and no render test can see a module that was never extended.
+ * and a second options bank beside it were the conflict it was for.
+ *
+ * These read source: the registrations are what put the picker on screen, and
+ * no render test can see a module that was never extended.
  */
 const src = (relative: string): string => readFileSync(new URL(`../src/${relative}`, import.meta.url), "utf8");
 const has = (relative: string): boolean => existsSync(new URL(`../src/${relative}`, import.meta.url));

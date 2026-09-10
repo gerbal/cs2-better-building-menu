@@ -11,22 +11,9 @@ namespace BetterBuildingMenu.Domain
 	/// The ordering half of grouped views.
 	/// </summary>
 	/// <remarks>
-	/// Grouping is a primary sort key, not a separate axis. With paging the two
-	/// cannot be independent: grouping only the visible page splits a group
-	/// across a page boundary, and then the heading lies about what it contains.
-	/// So the query orders by these keys first and the player's chosen sort
-	/// orders rows within each group.
-	///
-	/// This side produces <em>keys</em>, not headings — the UI derives the
-	/// headings from the same fields. The only thing that has to hold is that a
-	/// key is a function of the group, which makes every member of a group
-	/// contiguous. The two sides may order groups differently relative to one
-	/// another without breaking anything.
-	///
-	/// Banded dimensions therefore return a rank rather than the band's label:
-	/// ordering "₡100k+" and "₡25k–₡100k" as text would put the expensive band
-	/// first. Band edges are duplicated in `buildingGroups.ts` and asserted in
-	/// both test suites.
+	/// Grouping is a primary sort key, not a separate axis: with paging, grouping only the
+	/// visible page splits a group across a boundary and the heading then lies about what it
+	/// contains. This side produces keys, so banded dimensions rank rather than label.
 	/// </remarks>
 	public static class BuildingCatalogGrouping
 	{
@@ -36,10 +23,9 @@ namespace BetterBuildingMenu.Domain
 		/// The game's own category — the tab strip's dimension.
 		/// </summary>
 		/// <remarks>
-		/// Distinct from Category, which is OUR taxonomy (Buildings, Networks,
-		/// ServiceBuildings). Grouping a scoped menu by that says almost nothing;
-		/// grouping by the game's own categories reproduces the split the tab
-		/// strip already shows, which is the model the player is holding.
+		/// Distinct from Category, which is OUR taxonomy. Grouping a scoped menu by that says
+		/// almost nothing; the game's own categories reproduce the split the tab strip already
+		/// shows, which is the model the player is holding.
 		/// </remarks>
 		public const string MenuCategory = "menuCategory";
 		public const string SubCategory = "subCategory";
@@ -70,16 +56,10 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>Density tiers in reading order. Mirrored in buildingGroups.ts.</summary>
 		/// <remarks>
-		/// An explicit table, because the enum's own values do not encode this
-		/// order and never did. Low=1, Row=2, Medium=4, High=8 happened to sort
-		/// correctly, which hid the fact that the rank was accidental — and the
-		/// accident stops working the moment the vocabulary grows: Mixed=32 and
-		/// LowRent=64 read between Medium and High but sort past Signature=16.
-		///
-		/// Row before Medium because row housing unlocks at milestone 1 and
-		/// medium at 2 — measured against a live catalog, not assumed. LowRent
-		/// immediately before High because it IS high density, whatever its
-		/// name suggests.
+		/// An explicit table, because the enum's own values do not encode this order: Mixed and
+		/// LowRent read between Medium and High but sort past Signature. Row before Medium
+		/// because row housing unlocks first, and LowRent immediately before High because it IS
+		/// high density, whatever its name suggests.
 		/// </remarks>
 		public static readonly ZoneTypeFilter[] DensityOrder =
 		{
@@ -110,10 +90,8 @@ namespace BetterBuildingMenu.Domain
 		/// Sorts after every real name, so the "Other" heading lands at the end.
 		/// </summary>
 		/// <remarks>
-		/// An empty key sorts first, which put OTHER above every named group —
-		/// grouping Police &amp; Administration by role opened on the six
-		/// buildings that have no role. Same reasoning as
-		/// <see cref="UnrankedKey"/>, applied to the text dimensions.
+		/// An empty key sorts first, which would put "Other" above every named group. Same
+		/// reasoning as <see cref="UnrankedKey"/>, applied to the text dimensions.
 		/// </remarks>
 		private const string UnnamedKey = "\uFFFD";
 
@@ -129,14 +107,9 @@ namespace BetterBuildingMenu.Domain
 		/// What a menu opens grouped by when the player has not chosen.
 		/// </summary>
 		/// <remarks>
-		/// Moved from buildingGroups.ts's defaultGroupDimensionFor, where it
-		/// was re-derived by two components and pushed back to this side in an
-		/// effect — the second refresh on every first open of a menu. The
-		/// strip and the headings answer the same question, so they should not
-		/// open on different answers: the education menu draws school LEVELS in
-		/// its category's place, so it is asked first; a menu with categories
-		/// of its own groups by them whatever axis the strip derived
-		/// (cm-2xvs.23); otherwise the strip's axis decides.
+		/// The strip and the headings answer the same question, so they must not open on different
+		/// answers: the education menu draws school levels in its category's place and is asked
+		/// first, then a menu with categories of its own, then the strip's axis.
 		/// </remarks>
 		public static string DefaultDimension(bool menuHasCategories, string? stripAxis, bool educationMenu)
 		{
@@ -159,16 +132,9 @@ namespace BetterBuildingMenu.Domain
 		/// dimensions the menu actually offers.
 		/// </summary>
 		/// <remarks>
-		/// Seen live (cm-jjlv.12): the game's Electricity menu has one category,
-		/// so the default was menuCategory while <see cref="OfferedDimensions"/>
-		/// had dropped it for putting the whole menu in one bucket — the lens
-		/// opened on a grouping its own picker did not list. A choice can be
-		/// unoffered too: School tier chosen on Education, then Roads opened,
-		/// grouped every road under "Other". Either way the answer is the first
-		/// of the same candidates that can act here: the menu's default, then
-		/// the strip's axis without the categories, then the picker's first
-		/// offered grouping, then none. <paramref name="offered"/> empty means
-		/// "not judged yet" and the plain rule stands.
+		/// A default or a stored choice can name a dimension this menu does not offer, which would
+		/// open the lens on a grouping its own picker does not list. The answer is the first of the
+		/// candidates that can act here; <paramref name="offered"/> empty means "not judged yet".
 		/// </remarks>
 		public static string Effective(
 			string? choice,
@@ -198,20 +164,9 @@ namespace BetterBuildingMenu.Domain
 		/// which leaves the ordering to the chosen sort alone.
 		/// </summary>
 		/// <remarks>
-		/// Matched with <see cref="Is"/> rather than by lowercasing and
-		/// switching on the constants. That is not style: this WAS a
-		/// <c>groupBy.ToLowerInvariant() switch</c> over the constants, so any
-		/// dimension whose id is not already all-lowercase could never match its
-		/// own case and fell through to the empty key. SubCategory papered over
-		/// it with a hand-written <c>"subcategory"</c> literal; MenuCategory,
-		/// added later, did not — so grouping by the game's category emitted no
-		/// ordering key at all and the UI grouped whatever order arrived.
-		///
-		/// It looked right on screen because buildGroupedView appends to a node
-		/// it has already created, so non-contiguous members still land under
-		/// one heading with the right count. What it cost was paging: a group
-		/// split across a page boundary is exactly the failure the
-		/// group-as-sort-key design exists to prevent.
+		/// Matched with <see cref="Is"/> rather than by lowercasing and switching on the constants,
+		/// so a dimension id that is not already all-lowercase still matches its own case. A missing
+		/// key costs paging: a group split across a page boundary is what this design prevents.
 		/// </remarks>
 		public static string PrimaryKey(BuildingCatalogEntry entry, string? groupBy)
 		{
@@ -230,14 +185,9 @@ namespace BetterBuildingMenu.Domain
 			if (Is(dimension, Theme)) return Normalize(entry.Theme);
 			// The DLC name is the more specific answer where there is one.
 			if (Is(dimension, Source)) return Normalize(string.IsNullOrWhiteSpace(entry.DlcId) ? entry.Provenance : entry.DlcId);
-			// Was the raw enum value, zero-padded. See DensityOrder for why that
-			// could not survive two new members.
 			if (Is(dimension, Density)) return DensityRank(entry.ZoneType);
 			if (Is(dimension, Footprint)) return FootprintRank(entry.LotWidth, entry.LotDepth);
 			if (Is(dimension, Cost)) return CostRank(entry.ConstructionCost);
-			// These two used to have no key at all: the UI built their trees by
-			// label and sorted the headings itself, so the page was never
-			// group-contiguous and a group could straddle a window boundary.
 			if (Is(dimension, Progression)) return entry.UnlockMilestone.ToString("D3", CultureInfo.InvariantCulture);
 			if (Is(dimension, Development)) return string.IsNullOrWhiteSpace(entry.DevTreeBranch)
 				? UnnamedKey
@@ -274,14 +224,9 @@ namespace BetterBuildingMenu.Domain
 				return Normalize(entry.SubCategory);
 			}
 
-			// The tier beneath the game's own category. Without a key here the
-			// tier would only be a HEADING, and grouping is a primary sort key
-			// precisely so a group cannot straddle a page boundary — the
-			// heading would then describe something other than what follows it.
-			//
-			// Three sources, mirroring categoryTierLabel in buildingGroups.ts.
-			// Each menu is homogeneous, so a category never mixes them; the
-			// prefixes only keep the three from colliding if one ever did.
+			// The tier beneath the game's own category needs a KEY, not just a heading:
+			// grouping is a primary sort key precisely so a group cannot straddle a page
+			// boundary. Three sources, prefixed so they cannot collide.
 			if (Is(dimension, MenuCategory))
 			{
 				// Signature is a marker, not a density: every signature building
@@ -292,11 +237,9 @@ namespace BetterBuildingMenu.Domain
 					return "d" + DensityRank(entry.ZoneType);
 				}
 
-				// Transit before the branch, because it HAS branches and they
-				// divide nothing: measured live, {Road, Train, Tram} against
-				// categories {TransportationRoad, TransportationTrain,
-				// TransportationTram} is one to one. Its subcategory is the real
-				// split — tracks, stops, lines, and the stations themselves.
+				// Transit before the branch, because its branches divide nothing: they run
+				// one to one with its categories. Its subcategory is the real split —
+				// tracks, stops, lines, and the stations themselves.
 				if (IsTransitMenu(entry.UiMenu))
 				{
 					return "s" + Normalize(entry.SubCategory);
@@ -321,21 +264,9 @@ namespace BetterBuildingMenu.Domain
 		/// Orders category groups the way the game orders the tabs above them.
 		/// </summary>
 		/// <remarks>
-		/// Grouping by the game's category used to key on the raw prefab name,
-		/// which sorted the headings alphabetically while the tab strip beside
-		/// them ran in the game's order. Two organisations of the same assets,
-		/// disagreeing on screen at the same time.
-		///
-		/// Vanilla sorts a menu's categories by UIObject.m_Priority ascending
-		/// with no tiebreak at all — ToolbarUISystem.GetSortedCategories calls
-		/// Sort() on UIObjectInfo, whose comparator is
-		/// <c>priority.CompareTo(other.priority)</c>.
-		///
-		/// The name still has to be part of the key even though vanilla does not
-		/// compare it. A key must be a function of the group: two categories
-		/// sharing a priority would otherwise share a key, their members would
-		/// interleave, and the UI would draw the same heading twice around the
-		/// gap.
+		/// Vanilla sorts a menu's categories by UIObject.m_Priority ascending with no tiebreak at
+		/// all. The name is still part of the key even though vanilla never compares it: a key must
+		/// be a function of the group, or two categories sharing a priority would interleave.
 		/// </remarks>
 		public static string MenuCategoryRank(string? category, int priority)
 		{
@@ -361,18 +292,9 @@ namespace BetterBuildingMenu.Domain
 		/// Orders school tiers as a school career runs, not as the alphabet does.
 		/// </summary>
 		/// <remarks>
-		/// SchoolLevel { Elementary = 1, HighSchool, College, University,
-		/// Outside } — a 1-based tier index, so the value already ranks itself
-		/// and only needs padding to sort as text.
-		///
-		/// Everything outside 1..4 is unranked: 0 is a school upgrade that adds
-		/// capacity without a tier, 5 is the outside connection, and null is
-		/// every building in the catalog that is not a school. All three belong
-		/// in one "Other" group at the end, which is what UnrankedKey does.
-		///
-		/// The labels are never compared here. "College" and "High School"
-		/// alphabetise into the wrong career order, which is the whole reason
-		/// this ranks rather than naming — same as CostRank.
+		/// SchoolLevel is a 1-based tier index, so the value already ranks itself and only needs
+		/// padding to sort as text. Everything outside 1..4 — a tierless school upgrade, the outside
+		/// connection, every non-school — belongs in one "Other" group at the end.
 		/// </remarks>
 		public static string SchoolTierRank(int? level)
 		{
@@ -431,11 +353,9 @@ namespace BetterBuildingMenu.Domain
 		/// The headings an entry files under, for the dimension the page is grouped by.
 		/// </summary>
 		/// <remarks>
-		/// Moved from buildingGroups.ts (groupLevelsFor and its helpers) so the
-		/// band edges, tier names and category words have one home; the keys
-		/// above and these labels agree because they read the same constants.
-		/// LabelId carries the game's own category id for a menu-category
-		/// heading so the UI can localise it; every other label is final text.
+		/// The band edges, tier names and category words have one home here, so these labels and
+		/// the keys above agree by reading the same constants. LabelId carries the game's own
+		/// category id for a menu-category heading; every other label is final text.
 		/// </remarks>
 		public static GroupLabels Labels(BuildingCatalogEntry entry, string? groupBy, IReadOnlyList<string>? milestoneNames = null)
 		{
@@ -480,12 +400,9 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>The dimensions that can act on a set: two entries file under different keys.</summary>
 		/// <remarks>
-		/// Moved from buildingGroups.ts's groupDimensionsFor. A dimension that
-		/// would put the whole menu in one bucket is a control that cannot act,
-		/// in a picker of controls that can; schoolTier only where schools are;
-		/// none always, because it is how grouping is turned off; everything
-		/// before any entries have arrived, because judging an empty page would
-		/// shorten the picker and leave it short.
+		/// A dimension that would put the whole menu in one bucket is a control that cannot act;
+		/// schoolTier only where schools are; none always, because it is how grouping is turned
+		/// off; everything before any entries arrive, since an empty page judges nothing.
 		/// </remarks>
 		public static string[] OfferedDimensions(IEnumerable<BuildingCatalogEntry> entries, bool educationMenu)
 		{
@@ -499,7 +416,7 @@ namespace BetterBuildingMenu.Domain
 				.ToArray();
 		}
 
-		// ---- label helpers, ported line for line from buildingGroups.ts ----
+		// ---- label helpers, mirrored in buildingGroups.ts ----
 
 		private static string? Text(string? value)
 		{
@@ -528,10 +445,9 @@ namespace BetterBuildingMenu.Domain
 		}
 
 		/// <summary>
-		/// A group heading for the game's own category. The id is a prefab name —
-		/// "TransportationRoad", "PropsNature", "BikePaths" — so it is split into
-		/// words and, where the convention holds, relieved of the menu name it
-		/// repeats: "TransportationRoad" inside Transportation is "Road".
+		/// A group heading for the game's own category. The id is a prefab name, so it is split into
+		/// words and, where the convention holds, relieved of the menu name it repeats:
+		/// "TransportationRoad" inside Transportation is "Road".
 		/// </summary>
 		public static string MenuCategoryLabel(BuildingCatalogEntry entry)
 		{

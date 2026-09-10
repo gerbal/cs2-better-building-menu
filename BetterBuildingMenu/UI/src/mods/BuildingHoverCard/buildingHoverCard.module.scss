@@ -4,14 +4,11 @@
 .card {
   display: flex;
   flex-direction: column;
-  // Was `gap: 2rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   > * + * {
     margin-top: 2rem;
   }
   // A ceiling, not a width: the vanilla Tooltip container it renders into is
-  // narrower than this anyway — measured 184px at 720p — so raising the cap
-  // does nothing on its own. The long lines wrap instead; see .cardValue.
+  // narrower than this anyway, so raising the cap does nothing on its own.
   max-width: 400rem;
 }
 
@@ -22,13 +19,7 @@
 
 // The two states worth colouring: cannot afford, and a remaining shortfall.
 // Both have to reach the value as well as the line, or .cardValue's own colour
-// below wins on specificity and the state goes silent.
-//
-// Literal colours, NOT var(--positiveColor) / var(--negativeColor). Those
-// resolved to rgba(0,0,0,1) here — measured on the live card — which is black
-// text on a near-black tooltip, so the coloured states were invisible rather
-// than merely wrong. A declared fallback does not help: the variable exists, it
-// just carries a value this context cannot use.
+// wins on specificity. Literal colours — the theme's resolve to black here.
 .cardWarn,
 .cardWarn .cardValue {
   color: rgb(232, 122, 122);
@@ -39,38 +30,24 @@
   color: rgb(130, 205, 130);
 }
 
-// The label/value pairs, two across where they fit.
-//
-// Wrapping rather than a fixed column count, so the flow decides: a pair takes
-// the width its text needs, two short ones share a row, and one long one takes
-// the row to itself without a rule having to predict which is which.
-//
-// Vertical spacing is margins, not `gap` — a no-op in this engine — with the
-// container pulling the first row's margin back off, which is the same idiom
-// buildingList.module.scss uses for its tiles.
+// The label/value pairs, two across where they fit. Wrapping rather than a
+// fixed column count, so a pair takes the width its text needs and no rule
+// has to predict which pairs are short and which are long.
 .cardLines {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  // flex-start, not baseline: Cohtml drops `align-items: baseline`
-  // outright (UI.log: "Unable to parse declaration") and falls back to
-  // this, so naming it is the same layout said honestly.
   align-items: flex-start;
   margin-top: -2rem;
 }
 .cardLine {
   display: flex;
   flex-direction: row;
-  // flex-start, not baseline: Cohtml drops `align-items: baseline`
-  // outright (UI.log: "Unable to parse declaration") and falls back to
-  // this, so naming it is the same layout said honestly.
   align-items: flex-start;
   color: var(--menuText2Normal);
   font-size: var(--fontSizeS);
   // Exactly half, and no growing: two per row, and a lone last row keeps its
-  // column. It used to be `flex: 1 1 auto` with a 45% floor, which let an odd
-  // count's last row stretch across both columns and park its value at the
-  // card's far edge instead of under the figures above it.
+  // column instead of stretching across both.
   flex: 0 0 50%;
   max-width: 50%;
   box-sizing: border-box;
@@ -86,12 +63,8 @@
 }
 
 // The word recedes and the number leads: the figure is what is being compared,
-// the label is only there so you know which figure it is. Margin, not gap —
-// this engine measured 0 for gap between flex-row children (the trap is
-// written up at buildingCatalog.module.scss:778).
-//
-// The label never wraps — a field name broken across two lines stops reading as
-// a label — so the value is what gives way.
+// the label only says which figure it is. The label never wraps — a field name
+// broken across two lines stops reading as a label — so the value gives way.
 .cardLabel {
   flex: 0 0 auto;
   margin-right: 5rem;
@@ -106,35 +79,16 @@
   flex: 1 1 auto;
   min-width: 0;
   // The figure sits on the column's edge, so the numbers form a column of
-  // their own. Measured live before this: values began at 458, 466, 498 and
-  // 471 down one side of a single card, each starting wherever its own label
-  // happened to end, which left nothing for the eye to run down. The spans
-  // already ended on a common edge; only the text inside was adrift.
-  //
-  // justify-content, NOT text-align: this element computes to display: flex,
-  // so text-align never reaches its contents. Tried it and measured no
-  // movement at all before spotting why.
+  // their own rather than each starting where its label ended.
+  // justify-content, NOT text-align: this element computes to display: flex.
   justify-content: flex-end;
   color: var(--menuText1Normal);
   white-space: normal;
 }
 
-// The game's own sentence about the asset, above every figure. Not a metric
-// line: it has no label, because the name directly above it is the label.
-//
-// Clamped by max-height rather than by line-clamp: -webkit-line-clamp has no
-// precedent anywhere in this UI, and the two things a browser would reach for
-// were both measured absent on the live card — `white-space: pre-line` computes
-// to `normal`, and a `linear-gradient` mask-image computes to `none`. A
-// max-height of three line boxes is arithmetic every engine agrees on.
-//
-// This is the guarantee, not the mechanism: clampAssetDescription already cuts
-// the text on a word boundary and marks it with an ellipsis, because a hard
-// clip says nothing about why a sentence stopped. This keeps the card its
-// stated height if that character budget ever misjudges the width.
-//
-// Three lines, because a hover card is for recognising a thing; the expanded
-// table row is where the full text stays for reading.
+// The game's own sentence about the asset; the name above it is its label.
+// Clamped by max-height, since line-clamp, `white-space: pre-line` and a
+// gradient mask all compute away here. clampAssetDescription does the wording.
 .cardDescription {
   overflow: hidden;
   max-height: calc(var(--fontSizeS) * 1.3 * 3);
@@ -165,17 +119,9 @@
   font-size: var(--fontSizeXS);
 }
 
-// One entry per line.
-//
-// The column has to be declared. .cardValue computes to display: flex here
-// (measured, not assumed), so display: block on the children did NOT stack them
-// — they became flex items in a row and "Industrial Efficiency +2" and "College
-// Graduation +1" printed side by side as one run-on line, which is precisely
-// the defect this markup exists to avoid.
-//
-// align-items rather than a gap for the spacing: gap between flex children
-// measures 0 on this engine, so line separation comes from the line boxes
-// themselves.
+// One entry per line. The column has to be declared: .cardValue computes to
+// display: flex here, so block children become flex items in a row and print
+// side by side. Line separation comes from the line boxes, not a gap.
 .cardValueList {
   display: flex;
   flex-direction: column;
@@ -191,10 +137,9 @@
   width: 100%;
 }
 
-// The second tier: our own figures, below vanilla's. A hairline rules them
-// off and the dim text colour, one step smaller, keeps them from blending
-// into the game's own facts above. No heading — the divider and the dimming
-// are the whole message, as on vanilla's own panels.
+// The second tier: our own figures, below vanilla's. A hairline and the dim
+// text colour, one step smaller, keep them from blending into the game's own
+// facts above. No heading — the divider and the dimming are the whole message.
 .cardDivider {
   border-top: 1rem solid rgba(255, 255, 255, 0.12);
   margin-top: 4rem;

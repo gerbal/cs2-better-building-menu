@@ -101,8 +101,6 @@ describe("grid tile label shortening", () => {
     // At or under the budget, not exactly it: the ellipsis is charged
     // ELLIPSIS_CHARS because it draws nearly twice an average letter, so at a
     // budget of three there is room for the mark and one character of tail.
-    // Spending the whole budget on characters is what made an elided line
-    // overrun its box in the first place.
     assert.ok(shortened.length <= 3, `expected to fit the budget, got ${shortened}`);
     assert.ok(shortened.endsWith("2"), `expected the tail to survive, got ${shortened}`);
     assert.ok(shortened.includes("…"), `expected truncation to be marked, got ${shortened}`);
@@ -129,12 +127,9 @@ describe("grid tile label shortening", () => {
 
 describe("Tile label budget at the tile's actual width", () => {
   it("budgets the twelve characters measured on the running game", () => {
-    // Thirteen was measured at fontSizeXS (10.67px Overpass, ~4.9px a
-    // character in a 64px box). The name line has since moved up to
-    // fontSizeM, and at 1280x720 the game's own names now measure ~5.3px a
-    // character: "Two-Lane Road", thirteen characters, wants 69px of 64 and
-    // was drawn "Two-Lane Ro…" by the belt-and-braces CSS ellipsis on every
-    // small road. 64 / 5.3 is twelve.
+    // Twelve, not thirteen: the name line sits at fontSizeM, where the game's
+    // own names measure wider than a fontSizeXS budget assumed and a
+    // thirteen-character name overruns the box.
     assert.equal(tileLabelLineBudget(100), 12);
   });
 
@@ -155,15 +150,15 @@ describe("Wrapping a name over the tile's lines", () => {
   const LINE = tileLabelLineBudget(100);
 
   it("breaks at a word rather than mid-word", () => {
-    // The case that made this necessary: at one line these read "Bus…lter" and
-    // "Sma…epot", which named the family twice and the building never.
+    // At one line these read "Bus…lter" and "Sma…epot", which name the family
+    // twice and the building never.
     assert.deepEqual(wrapTileLabel("Bus Stop Shelter", LINE), ["Bus Stop", "Shelter"]);
     assert.deepEqual(wrapTileLabel("Small Taxi Depot", LINE), ["Small Taxi", "Depot"]);
   });
 
   it("uses one line when the name fits on one", () => {
-    // "Bus Stop Sign" is thirteen characters, and at fontSizeM thirteen no
-    // longer fits a 100rem tile — it wraps, honestly, to "Bus Stop" / "Sign".
+    // "Bus Stop Sign" is thirteen characters, which does not fit a 100rem
+    // tile at fontSizeM — it wraps, honestly, to "Bus Stop" / "Sign".
     assert.deepEqual(wrapTileLabel("Bus Stop Sign", LINE), ["Bus Stop", "Sign"]);
     assert.deepEqual(wrapTileLabel("Taxi Stand", LINE), ["Taxi Stand"]);
     assert.deepEqual(wrapTileLabel("Small Park", LINE), ["Small Park"]);
@@ -221,11 +216,9 @@ describe("Wrapping a name over the tile's lines", () => {
   });
 
   it("drops a whole word before it cuts one", () => {
-    // "One-Way Public Transport Lane" was the case: the last line cut to
-    // "Public…t Lane", and "t Lane" is a fragment where "…Lane" is a gap. Now
-    // that the mark is charged what it draws, "Public…Lane" no longer fits a
-    // twelve-character line and that name takes the character cut honestly
-    // ("Publi…Lane"); the whole-word rule is shown on a name where it fits.
+    // "Public…t Lane" leaves a fragment where "…Lane" would leave a gap. With
+    // the mark charged what it draws, "Public…Lane" no longer fits a
+    // twelve-character line, so that name takes the character cut honestly.
     assert.deepEqual(wrapTileLabel("Underground Bus Stop Lane", LINE), [
       "Underground",
       "Bus…Lane",
@@ -239,22 +232,16 @@ describe("Wrapping a name over the tile's lines", () => {
   it("cuts a word only when no whole-word fit is left", () => {
     const lines = wrapTileLabel("Bus Stop Shelter with Bicycle Stands", LINE);
 
-    // "Shelter…Stands" is 14 against a 12-character line, so there is no pair
-    // of whole words that fits and the character cut is the honest answer.
-    //
-    // The head is shorter than it once was because the ellipsis now costs what
-    // it measures — 9.4px against a 5.0px average letter — rather than one
-    // character. "Shelte…Stands" drew 13 characters into a box that holds
-    // about 11 of them once the mark is paid for.
+    // "Shelter…Stands" is 14 against a 12-character line, so no pair of whole
+    // words fits and the character cut is the honest answer. The head is short
+    // because the ellipsis costs what it measures rather than one character.
     assert.equal(lines[1], "She…Stands");
   });
 
   it("leaves an elided line room for the mark it carries", () => {
-    // Measured in the running game at the tile's font: the label box is 64px,
-    // "…" draws 9.4px and an average lowercase letter 5.0. An elided line of
-    // the full 13-character budget therefore does not fit — "Helico…Depot" was
-    // 64.7px — and the stylesheet marked the overflow a SECOND time, drawing
-    // "Helico…De…". Every elided line must come in under the budget.
+    // At the tile's font the label box holds fewer characters than the budget
+    // once the mark is paid for, and the stylesheet marks the overflow a
+    // SECOND time. Every elided line must come in under the budget.
     for (const name of [
       "Firefighting Helicopter Depot",
       "Disease Control Center",
@@ -288,11 +275,8 @@ describe("Table name budget", () => {
   });
 
   it("matches the measured drawable width", () => {
-    // 270rem of name box at 12 chars per 100rem is 32 characters. The first
-    // version of this returned 58 because the caller handed it the whole
-    // identity column, so nothing was ever shortened; the thirteen it then
-    // budgeted still ran the widest names 1 % over their cell at both
-    // 1280x720 and 1920x1080 ("Medium Roundabout with a…" 333px in 327).
+    // 270rem of name box at 12 chars per 100rem is 32 characters. Handed the
+    // whole identity column instead, it shortens nothing.
     assert.equal(tableLabelCharBudget(270), 32);
   });
 
@@ -310,11 +294,9 @@ describe("Table name budget", () => {
 });
 
 describe("The ellipsis costs the same on every path", () => {
-  // shortenTileLabel charges the mark three characters (it draws 9.4px where a
-  // letter draws 5.0, and what survives an elision is capitals without
-  // spaces). fitLastLine charged it one, so "One-Way…Road" — twelve characters
-  // by count — passed a twelve-character line and drew 59px in a 51px box:
-  // the CSS clip that follows an elided line cut it to "One-Way…Roa".
+  // shortenTileLabel charges the mark three characters, because it draws
+  // nearly twice a letter and what survives an elision is capitals.
+  // fitLastLine must charge the same, or the line overruns its box.
   it("keeps an elided last line inside the budget once the mark is paid for", () => {
     const LINE = tileLabelLineBudget(100);
     const names = [

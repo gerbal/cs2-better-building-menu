@@ -43,12 +43,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void AChosenFilterStaysVisibleWhenNothingInViewCarriesIt()
 		{
-			// Choose "Require road" in Electricity, switch to Landscaping: nothing
-			// there has BuildingFlags. The group used to be published with zero
-			// options, so the rail dropped it and the chip row had nothing to
-			// iterate — while the query still filtered on it. A menu reading
-			// "No buildings match" with no filter on screen and no way to clear
-			// it.
+			// A filter chosen in one menu survives into a menu where nothing carries
+			// it. The group stays published, or the query narrows on something with
+			// no chip on screen and no way to clear it.
 			BuildingCatalogFacetState state = BuildingCatalogAdapter.BuildFacetState(
 				new[] { Entry(1, cost: 100, workers: null, lotWidth: 2) },
 				new BuildingCatalogQuery(PlacementFlags: new[] { "RequireRoad" }));

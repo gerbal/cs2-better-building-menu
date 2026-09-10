@@ -5,10 +5,9 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// What a building costs to run, read the way the game reads it: the
-	/// ServiceUpkeepData buffer, where BuildingInitializeSystem also copies a
-	/// ConsumptionData upkeep as a Money entry. Money entries sum to the upkeep;
-	/// every other resource is named on its own.
+	/// What a building costs to run, read from the ServiceUpkeepData buffer the way
+	/// the game reads it: Money entries sum to the upkeep, and every other resource
+	/// is named on its own.
 	/// </summary>
 	public sealed class ServiceUpkeepSummaryTests
 	{

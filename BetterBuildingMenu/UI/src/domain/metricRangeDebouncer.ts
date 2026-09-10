@@ -11,12 +11,9 @@ export interface MetricRangeDebouncer {
   schedule(id: MetricRangeId, bound: MetricRangeBound, input: MetricRangeInput): void;
   cancel(): void;
   /**
-   * True while an edit to this metric has been typed but not yet sent.
-   *
-   * The drawer echoes backend state back into its text drafts, which used to
-   * overwrite every field whenever any one of them settled — deleting text the
-   * player was still typing in a different box. Fields with work in flight are
-   * now left alone.
+   * True while an edit to this metric has been typed but not yet sent, so the
+   * drawer's echo of backend state leaves a field the player is still typing
+   * in alone.
    */
   isPending(id: MetricRangeId): boolean;
 }

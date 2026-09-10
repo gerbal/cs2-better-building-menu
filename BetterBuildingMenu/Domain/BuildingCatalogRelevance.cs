@@ -2,20 +2,11 @@ using System;
 
 namespace BetterBuildingMenu.Domain
 {
-	/// <summary>
-	/// How well an entry answers a search — buildingSearchRank.ts's matchScore, moved.
-	/// </summary>
+	/// <summary>How well an entry answers a search.</summary>
 	/// <remarks>
-	/// The UI used to re-rank C#'s sorted page in the grid, the list and the
-	/// cards but not the table — one query, two orders — and dropped any
-	/// entry its own scoring gave 0, so a search by pdx mods id (which the
-	/// backend matches) listed in the table and vanished from the grid. The
-	/// engine orders by this within each group now, for every view.
-	///
-	/// Scores are the original tiers: an exact name, a prefix, a match at a
-	/// word start, a substring anywhere; then a hit on the prefab name, the
-	/// pdx id or the category text, which never outranks a display-name hit;
-	/// then a subsequence (initials), lowest because it matches generously.
+	/// Tiers, highest first: an exact name, a prefix, a word start, a substring;
+	/// then a hit on the prefab name, the pdx id or the category text, which never
+	/// outranks a display-name hit; then a subsequence, lowest because it is generous.
 	/// </remarks>
 	public static class BuildingCatalogRelevance
 	{

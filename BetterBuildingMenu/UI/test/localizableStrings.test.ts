@@ -80,10 +80,8 @@ describe("Localizable strings register", () => {
 
   it("declares each Locale.json key exactly once", () => {
     // JSON parsers keep the last of a repeated key, so a duplicate silently
-    // overrides whatever came before it and every check that reads the parsed
-    // object still passes. This file also carries upstream FindIt's own strings,
-    // so a lens key that happens to collide — Ascending, Descending — quietly
-    // rewrites an upstream tooltip. Only the raw text can see it.
+    // overrides what came before and every check on the parsed object still
+    // passes. This file carries upstream FindIt's strings too, so keys collide.
     const raw = readFileSync(new URL("../../Locale.json", import.meta.url), "utf8");
     const seen = new Set<string>();
     const duplicates: string[] = [];
@@ -98,11 +96,9 @@ describe("Localizable strings register", () => {
 });
 
 describe("Every key the source asks for is a key we ship", () => {
-  // The register above is a curated list and was never the whole inventory —
-  // the source asks for roughly a hundred keys and registers forty. Locale.json
-  // is the shipping contract, so that is what this checks: a key the source
-  // asks for and Locale.json does not carry falls back to its English literal
-  // in every language, silently.
+  // The register above is a curated list, not the whole inventory. Locale.json
+  // is the shipping contract: a key the source asks for and Locale.json does
+  // not carry falls back to its English literal in every language, silently.
   const KEY = /Tooltip\.LABEL\[BetterBuildingMenu\.[A-Za-z0-9_]+\]/g;
 
   const sourceKeys = () => {

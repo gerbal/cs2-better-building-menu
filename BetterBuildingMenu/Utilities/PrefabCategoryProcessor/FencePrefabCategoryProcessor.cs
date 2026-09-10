@@ -11,16 +11,9 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
     /// decorative fences that share their prefab type.
     /// </summary>
     /// <remarks>
-    /// The Roads menu's Services tab is fifteen assets and the lens had none of
-    /// them — traffic lights, crosswalks, bike lanes, sound barriers, grass and
-    /// tree verges, all FencePrefabs, and FenceData was a component no processor
-    /// asked for.
-    ///
-    /// The split is the game's own: NetUpgrade is the component that says this
-    /// net is applied to an existing one rather than drawn on its own, which is
-    /// exactly the difference between a crosswalk and a garden fence. Read off
-    /// the managed prefab because NetUpgrade is a ComponentBase and contributes
-    /// no marker of its own to the entity.
+    /// NetUpgrade is the game's own split: it marks a net applied to an
+    /// existing one rather than drawn on its own — a crosswalk versus a garden
+    /// fence. Read off the managed prefab, which is where a ComponentBase lives.
     /// </remarks>
     public class FencePrefabCategoryProcessor : IPrefabCategoryProcessor
     {

@@ -4,7 +4,7 @@ using Xunit;
 
 namespace BetterBuildingMenu.Tests
 {
-	/// <summary>Ported from buildingSearchRank.test.ts's "Match scoring" cases.</summary>
+	/// <summary>How a search term scores against an entry.</summary>
 	public sealed class BuildingCatalogRelevanceTests
 	{
 		private static BuildingCatalogEntry E(int id, string name, string category = "", string sub = "") =>
@@ -67,8 +67,6 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void MatchesThePdxModsIdWhichTheBackendAlreadySearchesBy()
 		{
-			// The UI's copy did not, which is how an id search listed in the
-			// table and vanished from the grid.
 			Assert.True(BuildingCatalogRelevance.Score(E(1, "Some Building") with { PdxModsId = "12345" }, "12345") > 0);
 		}
 

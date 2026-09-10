@@ -224,9 +224,8 @@ describe("branchTabTooltip", () => {
 
   it("names the zoning type as well as the density", () => {
     // The tab is drawn in its family's place and carries only an icon and a
-    // count, so the family appears nowhere else on the strip. Reported from
-    // play: the tooltips "state only the density and are missing the zoning
-    // type".
+    // count, so the family appears nowhere else on the strip — the tooltip
+    // has to state the zoning type as well as the density.
     assert.equal(branchTabTooltip(density, "Residential Zones"), "Low Density Residential Zones");
   });
 

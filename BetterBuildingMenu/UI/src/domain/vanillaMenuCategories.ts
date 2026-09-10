@@ -1,9 +1,6 @@
 /**
- * Vanilla's second tier: the category tabs inside one build menu.
- *
- * Transportation is Road, Train, Subway, Tram, Air and Ship. The lens scoped
- * correctly to the menu but drew all 53 of its members as one flat list,
- * because nothing published the tabs.
+ * Vanilla's second tier: the category tabs inside one build menu — Road, Train,
+ * Subway and the rest under Transportation.
  */
 export interface VanillaMenuCategory {
   id: string;
@@ -16,16 +13,9 @@ export interface VanillaMenuCategory {
 export const ALL_CATEGORIES_ID = "";
 
 /**
- * Whether the strip is worth drawing at all.
- *
- * Vanilla hides its category row below two categories and renders a single
- * non-interactive tab at exactly one — a strip offering one choice is not a
- * choice. That fires immediately here: Water & Sewage and Zones each have
- * exactly one category.
- *
- * We apply the same rule for the same reason, with one difference: our strip
- * carries an extra "All" tab, so a menu with two real categories offers three
- * and is still worth showing.
+ * Whether the strip is worth drawing at all. Vanilla's rule and vanilla's
+ * reason: a strip offering one choice is not a choice. Ours carries an extra
+ * "All" tab, so two real categories still make three and are worth showing.
  */
 export function shouldShowCategoryStrip(
   categories: readonly VanillaMenuCategory[] | null | undefined,
@@ -35,23 +25,18 @@ export function shouldShowCategoryStrip(
 }
 
 /**
- * Whether the lens stands in for one of the game's menus.
- *
- * Unscoped — Search everything — the strip would publish every category of
- * every menu, about seventy, and wrapped to four rows of icon-only tabs.
- * The categories are the group headings there; the strip has nothing to add.
+ * Whether the lens stands in for one of the game's menus. Unscoped — Search
+ * everything — the strip would carry every category of every menu across four
+ * wrapped rows, and the group headings already say the same thing.
  */
 export function isLensScoped(menu: string | null | undefined): boolean {
   return (menu ?? "").trim() !== "";
 }
 
 /**
- * Tabs in the order the strip should draw them.
- *
- * Sorted by the game's own m_Priority, which the backend already applied — this
- * re-sorts defensively because the binding is a plain array and a future
- * publisher could forget. Ties keep their incoming order: Array.prototype.sort
- * is stable, and equal priorities are common because m_Priority defaults to 0.
+ * Tabs in the order the strip draws them, by the game's own m_Priority. Sorted
+ * again here because the binding is a plain array; ties keep their incoming
+ * order, which matters because m_Priority defaults to 0.
  */
 export function orderedCategories(
   categories: readonly VanillaMenuCategory[] | null | undefined
@@ -60,12 +45,8 @@ export function orderedCategories(
 }
 
 /**
- * Whether a tab is the active one.
- *
- * The empty selection means "all", which is a state vanilla has no tab for —
- * it always opens on the first category. Keeping it lets a player see a whole
- * menu at once, which is the thing the lens can do that the vanilla menu
- * cannot.
+ * Whether a tab is the active one. The empty selection means "all", a state
+ * vanilla has no tab for, and it is what lets a player see a whole menu at once.
  */
 export function isCategorySelected(
   categoryId: string,
@@ -81,20 +62,9 @@ export interface MenuCategoryCount {
 }
 
 /**
- * How many assets sit behind a tab, or null when the backend has not said.
- *
- * Null rather than 0, and the difference is load-bearing: a tab that genuinely
- * holds nothing should read 0, and one whose count has not arrived yet should
- * read nothing at all. Collapsing them would flash "0" across a whole strip on
- * every menu change.
- *
- * A tab MISSING from a table that has arrived reads 0, not null. The backend
- * counts by grouping the entries in scope, so a category with nothing in scope
- * produces no group at all — and once the progression strip could empty most
- * categories at once (pick a tier, and every category without an asset in it
- * goes to zero), "absent" stopped meaning "not yet known" and started meaning
- * "none". An empty table is still null: that is the case where nothing has
- * arrived.
+ * How many assets sit behind a tab, or null when the backend has not said —
+ * collapsing null into 0 would flash zeroes across the strip on every menu
+ * change. A tab missing from a table that HAS arrived reads 0, not null.
  */
 export function categoryCount(
   counts: readonly MenuCategoryCount[] | null | undefined,
@@ -116,21 +86,9 @@ export function categoryCount(
 }
 
 /**
- * What the strip's "All" tab counts, whichever axis the row is drawing.
- *
- * The category table is counted ACROSS the whole scope with the category's own
- * selection dropped, so its sum is the size of the result set — verified in
- * game against the page total at both scopes (10,528 unscoped, 514 in
- * Landscaping).
- *
- * The branch tabs are not a partition. The development axis only has a tab for
- * what the tree gates, so unscoped it covered 716 of those 10,528 and an "All"
- * built by summing it claimed the catalogue was fourteen times smaller than
- * the list right below it. Any axis with a non-exhaustive tab set has the same
- * hole; Development is only the one with the biggest.
- *
- * The branch sum survives as the fallback for the frame before the counts
- * arrive, where a stale-but-close number beats a blank.
+ * What the strip's "All" tab counts. The category table is counted across the
+ * whole scope with its own selection dropped, so its sum IS the result set;
+ * branch tabs are no partition, and their sum is only a first-frame fallback.
  */
 export function allTabTotal(
   counts: readonly MenuCategoryCount[] | null | undefined,
@@ -142,33 +100,9 @@ export function allTabTotal(
 }
 
 /**
- * Above this many tabs the strip stops being a row of glyphs you can scan.
- *
- * Measured on Landscaping: 14 categories drawn as 14 icon-only squares, with
- * the "All" view showing the first 100 of 379 — which covered 7 of those 14.
- * Half the menu was reachable only by guessing which unlabelled square held it.
- *
- * Six is where a row of icons is still a row you read rather than a wall you
- * search. Transportation has six and works; Landscaping has fourteen and does
- * not.
- */
-/**
- * The tabs worth drawing: the ones with something behind them.
- *
- * The category list and the asset list come from two different questions.
- * Tabs are whatever GetMenuCategories says the menu has; membership is
- * IsPlacedInMenu, the game's own tree. Roads disagrees by ten: the tab list
- * still carries the extra-network groups NetworkMenuExtension was written to
- * gather there, while the phase 3 membership rule files a seaway under
- * Transportation, so those tabs draw a count of 0 and answer a click with
- * "No buildings in this category".
- *
- * Filtering on the count is right whichever way that disagreement is settled:
- * a tab with nothing behind it is a dead end, and if the extras are ever
- * restored to the menu their tabs come back on their own.
- *
- * Before the counts land the full list is kept, so the strip does not flash
- * down to one tab and back on every menu change.
+ * The tabs worth drawing: the ones with something behind them, since the tab
+ * list and the membership rule answer different questions and can disagree.
+ * Before the counts land the full list is kept, so the strip cannot flicker.
  */
 export function visibleCategories(
   categories: readonly VanillaMenuCategory[] | null | undefined,
@@ -183,6 +117,10 @@ export function visibleCategories(
   return ordered.filter((category) => (categoryCount(counts, category.id) ?? 0) > 0);
 }
 
+/**
+ * Above this many tabs a row of icons stops being something you read and
+ * becomes a wall you search, so the strip widens instead.
+ */
 export const CATEGORY_STRIP_WIDE_THRESHOLD = 6;
 
 export function shouldWidenCategoryStrip(

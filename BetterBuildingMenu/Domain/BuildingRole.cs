@@ -7,29 +7,21 @@ namespace BetterBuildingMenu.Domain
 	/// Names what a building is for, from the service data the prefab carries.
 	/// </summary>
 	/// <remarks>
-	/// The Role facet used to read <c>BuildingMarkerData.m_BuildingType</c>, an
-	/// editor marker component that ordinary building prefabs do not have, so the
-	/// dimension was wired end to end — query field, toggle, adapter group, UI —
-	/// and silently produced nothing, because the adapter drops a facet group
-	/// with no values.
-	///
-	/// The service components the indexer already reads to derive capacity name
-	/// the role directly and cover every service building in the catalog.
+	/// Read off the service components the indexer already visits to derive
+	/// capacity: they name the role directly and cover every service building.
 	/// </remarks>
 	public static class BuildingRole
 	{
 		/// <summary>
-		/// Every role the indexer can produce, in the same order used to resolve
-		/// a primary. Exposed so the filter UI can offer exactly the set that is
-		/// reachable, rather than inventing options nothing can match.
+		/// Every role the indexer can produce, in the order a primary is resolved.
+		/// Exposed so the filter UI offers exactly the set that is reachable.
 		/// </summary>
 		public static IReadOnlyList<string> Known => Priority;
 
 		/// <summary>
-		/// Priority order used when a prefab carries several service components.
-		/// The entry holds one role, so the choice must not depend on the order
-		/// the components happen to be read in. Roles that describe the
-		/// building's primary purpose outrank storage-like secondary ones.
+		/// Priority when a prefab carries several service components: the entry holds
+		/// one role, so the choice must not depend on the order they are read in.
+		/// Primary purposes outrank storage-like secondary ones.
 		/// </summary>
 		private static readonly string[] Priority =
 		{
@@ -45,11 +37,9 @@ namespace BetterBuildingMenu.Domain
 			"PowerPlant",
 			"GarbageFacility",
 			"DeathcareFacility",
-			// Communications. Both name the building's whole purpose, so they
-			// sit with the other primaries rather than below them; they are last
-			// only because nothing else in the catalog carries these components
-			// alongside another service, so their rank never actually decides
-			// anything.
+			// Communications. Both name the building's whole purpose, so they sit with the
+			// other primaries; they are last only because nothing in the catalog carries
+			// them alongside another service, so their rank never decides anything.
 			"PostFacility",
 			"TelecomFacility",
 		};

@@ -52,14 +52,9 @@ export interface TableViewProps {
 }
 
 /**
- * Table view: a fixed column header over a scrolling list of group headings
- * and rows.
- *
- * The one view that could not use GroupedResults: it draws its own rows
- * against a shared column geometry, and wrapping each group in its own
- * scrolling section would break the column alignment the whole surface
- * depends on. So group headings are interleaved into one flat list
- * (flattenGroupedRows) and the rows keep a single flex column geometry.
+ * Table view: a fixed column header over a scrolling list of group headings and
+ * rows. The one view that cannot use GroupedResults — a scrolling section per
+ * group breaks the shared column geometry — so flattenGroupedRows interleaves.
  */
 export const TableView = ({
   items,
@@ -92,19 +87,14 @@ export const TableView = ({
 
   return (
     <>
-      {/* The rows scroll and this header does not, so the scrollbar narrows
-          them and would leave every value sitting left of its heading. The
-          gutter is reserved unconditionally: it used to be reserved only when
-          total > rendered, a has-more-pages test doing duty as a
-          will-this-overflow test — under a growing window that flips false
-          exactly when the list is longest. A few rem of padding cannot
-          desync. */}
+      {/* The rows scroll and this header does not, so the scrollbar would
+          leave every value sitting left of its heading. The gutter is reserved
+          unconditionally, because a few rem of padding cannot desync while a
+          has-more test standing in for a will-this-overflow test can. */}
       <div className={styles.columnHeader} data-rows-scrollable="true">
-        {/* "Name", not "Building". The sort control offers a field called
-            Name and sorting by it reorders THIS column, so two names for one
-            field made the chip look like it acted on something else. The
-            column also holds roads, props and zones, none of which are
-            buildings. */}
+        {/* "Name", not "Building": the sort control offers a field called
+            Name and sorting by it reorders THIS column, and the column holds
+            roads, props and zones, none of which are buildings. */}
         <span className={styles.identityHeader}>{translate("Tooltip.LABEL[BetterBuildingMenu.Name]", "Name")}</span>
         {metricColumns.map((column) => {
           const fullLabel = translate(column.localizationKey, column.fallback) ?? column.fallback;
@@ -133,10 +123,9 @@ export const TableView = ({
         })}
       </div>
 
-      {/* No data-* marker on this one: cs2/ui's Scrollable drops props it
-          does not know, so the attribute that used to be here never reached
-          the DOM. The scroll container is found by walking up from a row,
-          inside the catalog's root (catalogDom.ts). */}
+      {/* No data-* marker on this one: cs2/ui's Scrollable drops props it does
+          not know, so it would never reach the DOM. The scroll container is
+          found by walking up from a row instead — see catalogDom.ts. */}
       <Scrollable
         className={styles.rows}
         vertical

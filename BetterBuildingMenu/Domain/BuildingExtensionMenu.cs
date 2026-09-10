@@ -11,12 +11,9 @@ namespace BetterBuildingMenu.Domain
 	/// entry behind each upgrade the building supports, in vanilla's order.
 	/// </summary>
 	/// <remarks>
-	/// Presentation only. Vanilla's own <c>upgradeMenu.upgrades</c> binding is
-	/// the authority on WHAT may be attached and whether each row is locked or
-	/// already built on this instance; the UI joins that list to these entries
-	/// by prefab name and draws ours only when every vanilla row is accounted
-	/// for. So a name this cannot resolve is simply absent — never invented —
-	/// and the UI's response to the gap is to leave the panel to vanilla.
+	/// Presentation only: vanilla's <c>upgradeMenu.upgrades</c> binding is the
+	/// authority on what may be attached and what is locked or already built. The UI
+	/// joins it to these entries by prefab name and leaves the panel to vanilla on a gap.
 	/// </remarks>
 	public sealed record BuildingExtensionMenu(
 		string BuildingName,

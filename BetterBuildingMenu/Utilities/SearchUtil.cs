@@ -9,18 +9,10 @@ using Unity.Entities;
 namespace BetterBuildingMenu.Utilities
 {
     /// <summary>
-    /// What is left of the inherited search helpers: two prefab-entity
-    /// predicates the indexer still asks for, and the name formatter.
+    /// Two prefab-entity predicates the indexer asks for, plus the name
+    /// formatter. Catalog search itself lives in BuildingCatalogQueryEngine
+    /// and BuildingCatalogRelevance.
     /// </summary>
-    /// <remarks>
-    /// The fuzzy-search engine that gave this file its name — SearchCheck,
-    /// PreparedSearchTerm, the Levenshtein SpellCheck, AbbreviationCheck and
-    /// their word-splitting helpers — was Find It's, and nothing calls it any
-    /// more. Catalog search is BuildingCatalogQueryEngine's substring test plus
-    /// BuildingCatalogRelevance.Score, with ranking done UI-side in
-    /// buildingSearchRank.ts. The dead engine and its three characterization
-    /// test files were removed rather than left to imply a second search path.
-    /// </remarks>
     internal static class SearchUtil
     {
         public static bool IsDecal(this EntityManager entityManager, Entity entity)

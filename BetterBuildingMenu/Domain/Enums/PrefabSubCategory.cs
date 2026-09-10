@@ -75,12 +75,9 @@ namespace BetterBuildingMenu.Domain.Enums
 		Networks_Stops,
 		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/Pillar.svg")]
 		Networks_Pillars,
-		// The five below close gaps the vanilla-menu coverage report found: every
-		// one of them is a network the build menu offers and no processor reached.
-		// Appended rather than inserted because these values are ordinal, and the
+		// Appended rather than inserted, because these values are ordinal and the
 		// blocks below only survive that because each opens with an explicit
-		// `= PrefabCategory.X`. AddAllCategories requires them to stay inside
-		// (Networks, Networks + 100).
+		// `= PrefabCategory.X`. AddAllCategories needs them inside (Networks, +100).
 		[CategoryIcon("Media/Game/Icons/Ship.svg")]
 		Networks_Waterways,
 		[CategoryIcon("Media/Game/Icons/Electricity.svg")]
@@ -137,13 +134,8 @@ namespace BetterBuildingMenu.Domain.Enums
 		Props_Road,
 
 		// The zone families, which are the game's own: ZoneData.m_AreaType plus
-		// ZoneFlags.Office is what it switches on, and ZonePrefab derives its
-		// "ZonesOffice"/"Zones{AreaType}" tags from the same two fields.
-		//
-		// Same icons as the Buildings_* rows above, deliberately. A residential
-		// ZONE and a residential BUILDING are the same idea at two scales, and
-		// giving them different glyphs would invent a distinction the game does
-		// not draw.
+		// ZoneFlags.Office. Same icons as the Buildings_* rows deliberately — a
+		// residential zone and a residential building are one idea at two scales.
 		[Obsolete("Use PrefabCategory", true)]
 		Zones = PrefabCategory.Zones,
 		[CategoryIcon("Media/Game/Icons/ZoneResidential.svg")]

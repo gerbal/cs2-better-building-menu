@@ -23,54 +23,19 @@ export const RemoveVanillaAssetMenuComponent: ModuleRegistryExtend = (Component)
 
     // Do not put any Hooks (i.e. UseXXXX) after this point.
 
-    // Phase 2: when the menu the toolbar has open is one we stand in for, we
-    // ARE the asset menu rather than something drawn over the hole where it
-    // used to be. The game mounts and unmounts this on its own menu lifecycle,
-    // which is what makes the vacate-and-vanilla-redraws-behind-us problem
-    // unstateable — there is no gap for it to draw into.
-    //
-    // The condition lives in buildingMenuMount rather than inline, where it
-    // is tested. It used to be shared with MainContainer so the two could
-    // never both draw or both decline; step 4 deleted that component, and the
-    // slot is now the only home the menu has.
+    // When the toolbar's open menu is one we stand in for, we ARE the asset
+    // menu rather than something drawn over the hole, so vanilla has no gap to
+    // redraw into. The condition lives in buildingMenuMount, where it is tested.
     if (shouldMountInAssetMenu({ lensOwnsCurrentMenu: LensOwnsCurrentMenu, isPhotoMode, findItPanelShown })) {
-      // onClose is the game's own menu close — it clears the toolbar
-      // selection, so the panel goes away with no vanilla grid left behind and
-      // the toolbar button unlit. Threaded through rather than reaching for
-      // toolbar.clearAssetSelection: standing in as the asset menu, the
-      // extension point's own prop is the natural route and needs no round
-      // trip through C#.
+      // onClose is the game's own menu close: it clears the toolbar selection,
+      // so the panel goes with no vanilla grid behind it and the button unlit.
+      // The extension point's own prop needs no round trip through C#.
       return <BuildingMenuSurface onClose={otherProps.onClose} />;
     }
 
-    // Suppressing the vanilla grid after the panel closed was tried and
-    // reverted. It fixed the cosmetic complaint — closing the lens revealed the
-    // menu sitting underneath — but broke a working control: the game still had
-    // that menu selected, so the next press of its toolbar button deselected it
-    // and appeared to do nothing, making the zoning icon take two clicks. A
-    // closing animation is worth less than a button that works.
-    //
-    // The note that used to sit here said the real fix "needs the game's menu
-    // selection cleared when the panel closes, and ToolbarUISystem.SelectAssetMenu
-    // early-returns on Entity.Null — there is no binding that does it".
-    //
-    // That was wrong about the binding. ToolbarUISystem exposes
-    // `toolbar.clearAssetSelection`, whose C# side applies Entity.Null to the
-    // menu, the category AND the asset; CloseLens has been calling the C#
-    // method for a while. What was actually missing was a close CONTROL — this
-    // mode hides the top bar row the legacy X lives in.
-    //
-    // The branch above is now handed `onClose` from the extension point's own
-    // props, which is the natural close for a component standing in as the
-    // asset menu and needs no round trip through C#.
-    // Photo mode is the one case where we own the menu and still decline to
-    // draw it, so it is the one case where vanilla's grid could appear in the
-    // space ours just left. Suppress it: the player asked for a clean frame,
-    // not for a different menu.
-    //
-    // This used to read (ShowFindItPanel || IsWindowLocked) — hide vanilla's
-    // menu because OUR floating panel is covering it. That panel is gone, and
-    // with it the only reason to consult either binding here.
+    // Photo mode is the one case where we own the menu and decline to draw it,
+    // so the one case where vanilla's grid could appear in the space ours left.
+    // The player asked for a clean frame, not for a different menu.
     if (isPhotoMode && LensOwnsCurrentMenu) {
       return <></>;
     }

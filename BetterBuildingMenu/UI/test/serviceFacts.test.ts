@@ -125,8 +125,7 @@ describe("renderServiceTextFacts", () => {
 
 describe("cargo capacity", () => {
   // StorageLimitData.m_Limit, which vanilla binds as Properties.CARGO_CAPACITY
-  // with the weight unit — a cargo harbour's warehouses add to it, and the
-  // picker had nothing to say about them.
+  // with the weight unit; a cargo harbour's warehouses add to it.
   it("is a weight, labelled with the game's own words, placed with the capacities", () => {
     const translate = (key: string, fallback: string | null) =>
       key === "Tooltip.LABEL[BetterBuildingMenu.CargoCapacity]" ? "Cargo Capacity" : fallback;
@@ -154,9 +153,8 @@ describe("weights and rates through the game's own formatters", () => {
   };
 
   it("garbage processing is a weight per month, its own key, not the deathcare rate's", () => {
-    // Both facilities used to share processingRate and its "t/mo" unit, so a
-    // crematorium's bodies read as tonnes and a landfill's kilograms as
-    // tonnes — 100,000 t/mo where the game says 100 t/mo.
+    // Deathcare counts bodies and a landfill weighs kilograms; one shared
+    // processingRate unit makes a crematorium's figure read as tonnes.
     const [garbage] = renderServiceFacts([{ key: "garbageProcessing", value: 100000 }], noTranslation, String, measured);
     const [bodies] = renderServiceFacts([{ key: "processingRate", value: 100 }], noTranslation, String, measured);
     const [mail] = renderServiceFacts([{ key: "sortingRate", value: 240 }], noTranslation, String, measured);
@@ -168,7 +166,7 @@ describe("weights and rates through the game's own formatters", () => {
 
   it("battery output and grid capacity are power", () => {
     // BATTERY_POWER_OUTPUT and TRANSFORMER_CAPACITY are bound with the power
-    // unit; ours carried "MW" on the raw figure and no unit at all.
+    // unit, so the raw figure must not be labelled directly.
     const [out] = renderServiceFacts([{ key: "batteryOutput", value: 20000 }], noTranslation, String, { power: (v: number) => `P(${v})` });
     const [cap] = renderServiceFacts([{ key: "electricityCapacity", value: 400000 }], noTranslation, String, { power: (v: number) => `P(${v})` });
     assert.equal(out.value, "P(20000)");
@@ -182,10 +180,9 @@ describe("weights and rates through the game's own formatters", () => {
 });
 
 describe("what vanilla's tooltip shows on upgrades", () => {
-  // Audited against PrefabUISystem's property binders on 2026-09-07. These are
-  // the figures the game's own tooltip carries that ours did not, and most of
-  // them are what an upgrade IS: an ambulance depot, a hearse garage, jail
-  // cells, a filter, a modifier that cuts the parent's upkeep.
+  // Audited against PrefabUISystem's property binders: these are the figures
+  // the game's own tooltip carries and ours does not, and most of them are
+  // what an upgrade IS — a hearse garage, jail cells, an upkeep modifier.
   const noTranslation = () => null;
   const render = (key: string, value: number) => renderServiceFacts([{ key, value }], noTranslation)[0];
 
@@ -208,8 +205,8 @@ describe("what vanilla's tooltip shows on upgrades", () => {
   });
 
   it("shows an upkeep modifier signed, as vanilla does", () => {
-    // UpkeepModifierBinder is the one signed property in the table: the
-    // largest multiplier minus one, in percent. A saving reads as a minus.
+    // UpkeepModifierData is the one signed property in the table: the largest
+    // multiplier minus one, in percent. A saving reads as a minus.
     assert.deepEqual(render("upkeepChange", -20), { key: "upkeepChange", label: "Upkeep", value: "-20 %" });
     assert.equal(render("upkeepChange", 15).value, "+15 %");
   });
@@ -230,10 +227,8 @@ describe("what vanilla's tooltip shows on upgrades", () => {
 describe("orderFacts", () => {
   it("puts figures in one declared order whatever order they arrived in", () => {
     // The facts arrive in the order the INDEXER happened to emit them, which
-    // depends on which C# blocks a prefab hit. A fire station and a hospital
-    // both carry helicopters and a shift share, and without this they would
-    // show them in different positions — so the reader cannot learn where to
-    // look, which is the whole point of a fixed card.
+    // depends on which C# blocks a prefab hit. Without a fixed order the
+    // reader cannot learn where to look, which is the point of a fixed card.
     const asIndexed = [
       { key: "nightShift" }, { key: "helicopters" }, { key: "xpReward" }, { key: "graduation" },
     ];
@@ -262,8 +257,7 @@ describe("orderFacts", () => {
   });
 
   it("interleaves worded figures with numeric ones", () => {
-    // They render as two separate lists and used to be shown as two blocks,
-    // all the words then all the numbers. Ordering is a property of the FIELD,
+    // They render as two separate lists. Ordering is a property of the FIELD,
     // not of how its value happens to be typed.
     const ordered = orderFacts([
       { key: "xpReward" }, { key: "jobComplexity" }, { key: "helicopters" },
@@ -296,8 +290,7 @@ describe("which figures are vanilla's own", () => {
 describe("resource upkeep", () => {
   // The ServiceUpkeepData buffer names what a building burns — a coal plant's
   // coal — which vanilla folds into its money figure at market price. Ours
-  // names it: a dynamic key per resource, labelled with the game's own
-  // Resources.TITLE, and a weight per month like every other resource amount.
+  // names it, labelled with the game's own Resources.TITLE.
   it("labels a resource with the game's name and shows it as a weight per month", () => {
     const translate = (key: string, fallback: string | null) => key === "Resources.TITLE[Coal]" ? "Coal" : fallback;
     const [line] = renderServiceFacts([{ key: "upkeep:Coal", value: 4000 }], translate, String, { weightPerMonth: (v: number) => `WPM(${v})` });
@@ -313,10 +306,8 @@ describe("resource upkeep", () => {
 
 describe("a zone's figures", () => {
   // The game reads exactly one of a zone's consumption coefficients — Upkeep,
-  // in PropertyRenterSystem.GetUpkeep as level^exp × upkeep × lotSize — and
-  // none of its pollution coefficients (ZonePollutionData has no reader
-  // outside its own prefab). A figure the simulation never uses is not a
-  // fact about the zone, so those keys draw nothing.
+  // in PropertyRenterSystem.GetUpkeep — and none of its pollution ones. A
+  // figure the simulation never uses is no fact, so those keys draw nothing.
   it("draws nothing for the coefficients the simulation never reads", () => {
     const dead = ["zoneElectricity", "zoneWater", "zoneGarbage", "zoneTelecom",
       "zoneGroundPollution", "zoneAirPollution", "zoneNoisePollution"];
@@ -358,8 +349,7 @@ describe("a zone's figures", () => {
 
 describe("the game's own mail and extractor properties", () => {
   // Vanilla binds MailBoxData.m_MailCapacity as Properties.MAIL_BOX_CAPACITY,
-  // an integer (PrefabUISystem.BuildDefaultPropertyBinders). A mailbox card
-  // read "Cost" and nothing else.
+  // an integer (PrefabUISystem.BuildDefaultPropertyBinders).
   it("states a mailbox's capacity as a count, in the game's tier", () => {
     const [fact] = renderServiceFacts([{ key: "mailboxCapacity", value: 50 }], () => null);
 
@@ -391,9 +381,8 @@ describe("the game's own mail and extractor properties", () => {
 
 describe("where a water building draws from", () => {
   // The game's own RequiredResourceBinder: ground water when the flag is set,
-  // surface water otherwise, and nothing at all when the component's types are
-  // None — a water tower is a pumping station that draws from nowhere, and it
-  // read "Draws from None".
+  // surface water otherwise, and nothing at all when the component's types
+  // are None — a pumping station that draws from nowhere says nothing.
   it("says nothing for a building that draws from nowhere", () => {
     assert.deepEqual(renderServiceTextFacts([{ key: "waterSource", value: "None" }], () => null), []);
   });
@@ -409,8 +398,7 @@ describe("where a water building draws from", () => {
 
 describe("comfort, as the game states it", () => {
   // Vanilla binds a stop's or station's comfort as an integer, round(100 ×
-  // m_ComfortFactor) (PrefabUISystem.cs:1643–1645). Ours drew the factor as a
-  // multiplier, "×1.2", for a figure the game shows as "120".
+  // m_ComfortFactor), rather than as a multiplier.
   it("is a whole number, not a multiplier", () => {
     const [fact] = renderServiceFacts([{ key: "comfort", value: 120 }], () => null);
 

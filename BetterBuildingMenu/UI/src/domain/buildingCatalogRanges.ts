@@ -65,12 +65,9 @@ export function normalizeMetricRange(id: MetricRangeId | string, input: MetricRa
 }
 
 /**
- * Reports text the player typed that will never become a bound.
- *
- * Unparseable input was dropped in silence on both sides of the boundary while
- * the text stayed on screen, so a typo read exactly like an applied filter and
- * the empty result that followed had no visible cause. Blank is not invalid —
- * it means "no bound".
+ * Reports text the player typed that will never become a bound. Dropped in
+ * silence, a typo reads exactly like an applied filter and the empty result
+ * has no visible cause. Blank is not invalid — it means "no bound".
  */
 export function getInvalidMetricBounds(
   id: MetricRangeId | string,

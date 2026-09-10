@@ -10,11 +10,9 @@ namespace BetterBuildingMenu.Tests
 	/// The lens opens in the order the game itself draws.
 	/// </summary>
 	/// <remarks>
-	/// Vanilla's sort is UIObject.m_Priority ascending and nothing else:
-	/// UIObjectInfo.CompareTo compares that integer alone, and
-	/// ToolbarUISystem.BindAssets filters the category's buffer and calls Sort().
-	/// It is authored per asset, so no other column reproduces it — which is why
-	/// the sort is called "Default" rather than named after a field.
+	/// Vanilla's sort is UIObject.m_Priority ascending and nothing else. It is
+	/// authored per asset, so no other column reproduces it, which is why the sort
+	/// is called "Default" rather than named after a field.
 	/// </remarks>
 	public sealed class DefaultSortOrderTests
 	{

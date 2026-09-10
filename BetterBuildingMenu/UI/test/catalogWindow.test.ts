@@ -54,12 +54,9 @@ describe("when the growing window asks for more", () => {
   });
 
   it("says no until the player has actually scrolled", () => {
-    // Cohtml fills a scroll container over several frames — the same list was
-    // measured at scrollHeight 1,440 and then 3,606 a frame or two later — so a
-    // window still being laid out reports a short content height that sits
-    // inside the band while nobody has touched anything. Measured live
-    // 2026-08-09: without this rule the unscoped lens grew itself from 100 rows
-    // to 200 on mount, at scrollTop 0.
+    // Cohtml fills a scroll container over several frames, so a window still
+    // being laid out reports a short content height that sits inside the band
+    // while nobody has touched anything — and the lens grows itself on mount.
     assert.equal(
       shouldLoadMore({ scrollTop: 0, clientHeight: 468, scrollHeight: 700, threshold: 280 }),
       false,
@@ -179,10 +176,9 @@ describe("telling a real measurement from Cohtml's pre-layout zeroes", () => {
   it("rejects the all-zero rects the engine reports on the remount frame", async () => {
     const { isAnchorMeasurable } = await import("../src/domain/catalogWindow.ts");
 
-    // Measured live 2026-08-09: the frame the catalog remounts, the container
-    // and every row inside it report top 0 and height 0, and the panel's real
-    // top is 163. Believing that frame scrolls the list to 0 and calls it a
-    // restore.
+    // On the frame the catalog remounts, the container and every row inside it
+    // report top 0 and height 0. Believing that frame scrolls the list to the
+    // top and calls it a restore.
     assert.equal(
       isAnchorMeasurable({ containerTop: 0, containerHeight: 0, rowTop: 0, rowHeight: 0 }),
       false,
@@ -238,8 +234,8 @@ describe("checking the anchor actually landed", () => {
       isAnchorOnScreen({ containerTop: 163, containerHeight: 468, rowTop: 40, rowHeight: 75 }),
       false,
     );
-    // The case that started this: the row is present, 2,174 down a panel whose
-    // viewport ends at 631, and the list is sitting at scrollTop 0.
+    // The row is present, far down a panel whose viewport ends well above it,
+    // and the list is sitting at scrollTop 0.
     assert.equal(
       isAnchorOnScreen({ containerTop: 163, containerHeight: 468, rowTop: 2174, rowHeight: 75 }),
       false,
@@ -271,10 +267,9 @@ describe("finding the element that actually scrolls", () => {
   it("ignores a container that sub-pixel rounding pushed one pixel over", async () => {
     const { isScrollContainer } = await import("../src/domain/catalogWindow.ts");
 
-    // Measured live 2026-08-09: the grid's inner tiles container reported
-    // scrollHeight 382 against clientHeight 381. A walk that believed it read
-    // scrollTop 0 forever, and the window never grew however far the player
-    // scrolled the real container above it.
+    // The grid's inner tiles container can report a scrollHeight barely over
+    // its clientHeight. A walk that believes it reads scrollTop 0 forever, and
+    // the window never grows however far the real container above it scrolls.
     assert.equal(isScrollContainer(382, 381), false);
   });
 
@@ -301,7 +296,7 @@ describe("finding the element that actually scrolls", () => {
 
 describe("What the window is holding back", () => {
   it("reports the rows the window has not served", () => {
-    // Landscaping, measured: 368 match, 100 are served.
+    // 368 match, 100 are served.
     assert.equal(catalogWindowRemaining({ shown: 100, total: 368 }), 268);
   });
 
@@ -337,15 +332,9 @@ describe("revealing a row that grew past the fold", () => {
   });
 
   it("scrolls by the overflow and no further", async () => {
-    // Measured live: expanding a row put its detail's bottom at 642 against a
-    // viewport whose content ends at containerTop + clientHeight = 630, and
-    // nothing moved. Twelve pixels of a metrics line sat under the fold with no
-    // cue that they were there. (The scroller's bounding rect reads 631 — the
-    // extra pixel is its border, which content does not get to use.)
-    //
-    // By the overflow only, because this fires on every expand — anchoring the
-    // row a third of the way down the container, the way a restore does, would
-    // throw the list around every time a player opened a detail.
+    // Expanding a row can leave its detail's bottom just past the viewport's
+    // content edge with nothing moving. Corrected by the overflow only: this
+    // fires on every expand, and anchoring would throw the list around.
     const { revealScrollTop } = await import("../src/domain/catalogWindow.ts");
 
     assert.equal(

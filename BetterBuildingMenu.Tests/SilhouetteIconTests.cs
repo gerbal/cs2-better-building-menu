@@ -4,13 +4,9 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// cm-2xvs.24: the blackening that replaces vanilla's silhouette filter.
+	/// The blackening that replaces vanilla's silhouette filter. Fixtures come from
+	/// the real icons: named and hex fills, paint in a style attribute, a clipPath.
 	/// </summary>
-	/// <remarks>
-	/// Fixtures are taken from the real icons — CS2's network glyphs carry
-	/// several named and hex fills plus a clipPath, and the subway group that
-	/// exposed the bug used exactly these shapes.
-	/// </remarks>
 	public sealed class SilhouetteIconTests
 	{
 		[Fact]
@@ -81,9 +77,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void FlattensThePathWithoutLosingWhatDistinguishesIt()
 		{
-			// Two icons can share a leaf name under different roots — Placeholder
-			// is real and appears in the subway group — so the whole relative
-			// path has to survive into the cached name.
+			// Two icons can share a leaf name under different roots, so the whole
+			// relative path has to survive into the cached name.
 			Assert.Equal(
 				"Media_Game_Icons_DoubleTrainTrack.svg",
 				SilhouetteIcons.CacheFileName("Media/Game/Icons/DoubleTrainTrack.svg"));

@@ -1,54 +1,25 @@
 import type { BuildingLensMetric } from "./buildingLensLayout";
 
 /**
- * Formatting for the Building Lens metric cells.
- *
- * Two problems this solves.
- *
- * First, grouping. The table formatted numbers with `toLocaleString()`, but the
- * archived Gameface captures show five-figure construction costs rendered with
- * no thousands separator at all — Cohtml's `Intl` is not the browser's. Digits
- * are grouped explicitly here so a cost reads as 80 000 rather than 80000, and
- * so the result does not depend on a runtime capability we cannot rely on.
- *
- * Which separator is a second question, and not one this module should answer
- * on its own: a hardcoded space made our numbers disagree with the game's on
- * the same screen. The game groups with the same regex used below and takes the
- * separator from its loc dictionary, so we ask the same dictionary — see
- * `getNumberSeparators`. No locale tag is exposed to mods, so this is not only
- * the tidier route, it is the only one that can agree with the screen.
- *
- * Second, units. A bare "5000" in an Upkeep column does not say per what, and
- * an empty cell did not distinguish "this building has no parking" from "we
- * have no data". Both are now stated.
+ * Formatting for the Building Lens metric cells. Digits are grouped by hand
+ * because Cohtml's `Intl` is not the browser's; separators and unit templates
+ * come from the game's dictionary so our numbers agree with the screen.
  */
 
 /** Rendered when a metric was not projected for this building. */
 export const METRIC_NO_DATA = "—";
 
 /**
- * Rendered when a metric does not apply to this KIND of thing.
- *
- * Deliberately not the dash. A dash means "we do not know", and the table shows
- * both states in the same row: a service building's Workers is unknown while
- * its Level does not exist, and printing them alike says the building might
- * have a level we failed to read. The Parking column has drawn this distinction
- * since cm-zxou; this is that mark, named and shared rather than a second
- * literal.
+ * Rendered when a metric does not apply to this KIND of thing. Deliberately not
+ * the dash: both states show in one row, and printing them alike says the
+ * building might have a level we failed to read.
  */
 export const METRIC_NOT_APPLICABLE = "·";
 
 /**
- * A building's level, or a mark saying it has none.
- *
- * cm-ch0z. The column rendered entry.buildingLevel raw, so every service
- * building showed a bare "0" — beside a "—" in Workers meaning "not known".
- * Zone buildings run 1 to 5; a level of 0 is the game saying "this kind of
- * thing does not have levels", which is a fact about the asset and not a
- * measurement of it.
- *
- * A null is different again and gets the dash: the wire always sends a number,
- * so its absence means the projection failed, which IS a gap.
+ * A building's level, or a mark saying it has none. Zone buildings run 1 to 5,
+ * so a 0 is the game saying this kind of thing has no levels; a null is the
+ * wire failing to send one at all, which is a real gap and gets the dash.
  */
 export function formatBuildingLevel(level: number | null | undefined): string {
   if (typeof level !== "number" || !Number.isFinite(level)) {
@@ -60,25 +31,14 @@ export function formatBuildingLevel(level: number | null | undefined): string {
 
 /**
  * A construction cost of exactly zero — real, and different from unknown.
- *
- * English here rather than a locale key because this module is pure and cannot
- * call `translate`; it is registered in `localizableStrings` as debt alongside
- * the rest of the strings the domain returns as text.
+ * English rather than a locale key because this module is pure and cannot call
+ * `translate`; `localizableStrings` registers it as debt.
  */
 export const METRIC_FREE = "Free";
 
-// Fallbacks only. The separator a player expects is the one the game is already
-// using two panels away, and the game reads it from its own loc dictionary
-// rather than hardcoding it — index.js groups digits with a regex identical to
-// the one below and substitutes Common.THOUSANDS_SEPARATOR. Asking the same
-// dictionary is what makes our "1,416,788" agree with the game's.
-//
-// The earlier note here was right to reject a hardcoded comma (a decimal
-// separator in much of Europe) and wrong to conclude a hardcoded space. A
-// no-break space is the fallback because Cohtml treats a plain U+0020 between
-// digits as a line-break opportunity and will split a number across two lines —
-// the same trap formatLotDimensions was written to dodge, and the game itself
-// normalizes a plain space to U+00A0 for exactly this reason.
+// Fallbacks only; the real separators come from the game's loc dictionary.
+// A NO-BREAK space, because Cohtml treats a plain U+0020 between digits as a
+// break opportunity and will split a number across two lines.
 const FALLBACK_GROUP_SEPARATOR = " ";
 const FALLBACK_DECIMAL_SEPARATOR = ".";
 const THOUSANDS_SEPARATOR_KEY = "Common.THOUSANDS_SEPARATOR";
@@ -88,15 +48,9 @@ const DECIMAL_SEPARATOR_KEY = "Common.DECIMAL_SEPARATOR";
 export type Translate = (id: string, fallback?: string | null) => string | null;
 
 /**
- * The game's own money templates, e.g. "{SIGN}¢{VALUE}".
- *
- * Taken from vanilla rather than written here, because the symbol is only half
- * of what they carry: the per-month and per-kilometre forms also localize their
- * own suffix — "/mês", "／月", "per km/mese" — and the placement of the symbol
- * itself is a locale decision we have no business making. Substituting into
- * the game's string means a cost reads in the lens exactly as it reads in the
- * game's own panels, in every language, including the ones we ship no
- * translation for.
+ * The game's own money templates, e.g. "{SIGN}¢{VALUE}". Taken from vanilla
+ * because they localize the suffix and the symbol's placement too, so a cost
+ * reads here exactly as it does in the game's panels, in every language.
  */
 export interface MoneyTemplates {
   plain: string;
@@ -108,18 +62,9 @@ export interface MoneyTemplates {
 }
 
 /**
- * The game's own length templates, "{SIGN}{VALUE} m".
- *
- * Same argument as the money ones: vanilla owns the spacing (several locales
- * use a narrow no-break space before the unit) and the word. It binds telecom
- * range as a "length" property, so a range IS a length in the game's terms —
- * but it never displays CoverageData.m_Range anywhere, so there is no vanilla
- * wording to copy for a service radius, only a vanilla format.
- *
- * Both unit systems, because the player's choice IS reachable: vanilla writes
- * it to the UI as a GetterValueBinding on ("options", "unitSettings"), and the
- * game ships the imperial templates alongside the metric ones. An earlier note
- * here claimed the opposite and shipped metres to every player; it was wrong.
+ * The game's own length templates, "{SIGN}{VALUE} m". Vanilla owns the spacing
+ * and the word. Both unit systems are here because the player's choice is
+ * readable off ("options", "unitSettings") and the game ships both sets.
  */
 export interface LengthTemplates {
   cubicMetre: string;
@@ -170,8 +115,8 @@ export const FALLBACK_POWER: PowerTemplates = {
 export const FALLBACK_PER_MONTH = "{VALUE} /mo.";
 
 // The English strings in the shipped Locale.cok, minus {SIGN}. The short
-// kiloton one is not in the file's English block; its fallback is a guess and
-// is only used if the game's own template is missing.
+// kiloton one is absent from that file, so its fallback is a guess used only
+// when the game's own template is missing.
 export const FALLBACK_WEIGHT: WeightTemplates = {
   kilogram: "{VALUE} kg",
   ton: "{VALUE} t",
@@ -198,11 +143,9 @@ export const FALLBACK_LENGTH: LengthTemplates = {
 };
 
 /**
- * Which units the player reads the rest of the game in.
- *
- * The names and the numbers are vanilla's: InterfaceSettings.UnitSystem is
- * { Metric, Freedom }, and the value arrives on the ("options", "unitSettings")
- * binding as an integer.
+ * Which units the player reads the rest of the game in. The names and numbers
+ * are vanilla's InterfaceSettings.UnitSystem, arriving as an integer on the
+ * ("options", "unitSettings") binding.
  */
 export const UnitSystem = {
   Metric: 0,
@@ -214,11 +157,8 @@ export const UnitSystem = {
 export type UnitSystem = (typeof UnitSystem)[keyof typeof UnitSystem];
 
 /**
- * Vanilla's own conversions, lifted from its UI bundle rather than looked up.
- *
- * Yards divide by 0.9144 and miles by 1.609344 — both appear as literals in
- * the game's own code, so our numbers agree with the ones beside them instead
- * of differing in the last digit.
+ * Vanilla's own conversion literals, lifted from its UI bundle rather than
+ * looked up, so our numbers agree with the ones beside them in the last digit.
  */
 const METRES_PER_YARD = 0.9144;
 const KILOMETRES_PER_MILE = 1.609344;
@@ -363,17 +303,9 @@ export function groupDigits(value: number, separators: NumberSeparators = FALLBA
 }
 
 /**
- * Formats one metric cell. `null` means the metric was never projected for this
- * building, which is different from a real zero.
- */
-/**
- * Cost and upkeep for a network are rates, not totals.
- *
- * A road prices by length, so its figure is per kilometre. Printing it beside a
- * building's total unqualified invites a comparison it does not support —
- * 12,500 for a road is a rate, 12,500 for a hospital is the whole bill — so the
- * unit travels with the number rather than living in a column heading the
- * reader has to remember.
+ * Cost and upkeep for a network are rates, not totals, so the unit travels with
+ * the number: a road's figure is per kilometre and a building's is the whole
+ * bill, and a column heading is not somewhere a reader keeps that straight.
  */
 export const PER_DISTANCE_SUFFIX = "/km";
 export const PER_MILE_SUFFIX = "/mi";
@@ -391,12 +323,9 @@ export function formatBuildingMetric(
   const money = separators.money ?? FALLBACK_MONEY;
   const isMoney = metric === "cost" || metric === "upkeep";
   const imperial = separators.unitSystem === UnitSystem.Freedom;
-  // A per-kilometre rate becomes a per-MILE rate, which means the number moves
-  // too: ¢4,000/km is ¢6,437/mi, not ¢4,000/mi. Converting the unit and
-  // leaving the figure would understate a road's cost by more than a third.
-  // The game ships both money forms, so only the arithmetic is ours.
-  // Rounded, not just scaled: 4000 per km is 6437.376 per mile, and money is
-  // whole everywhere else on the card.
+  // A per-kilometre rate becomes a per-MILE rate, so the figure has to move
+  // with the unit or a road's cost is understated by more than a third. Money
+  // is rounded because it is whole everywhere else on the card.
   const scaled = perDistance && imperial
     ? (isMoney ? Math.round(value * KILOMETRES_PER_MILE) : value * KILOMETRES_PER_MILE)
     : value;
@@ -427,11 +356,9 @@ export function formatBuildingMetric(
       // carries both the symbol and the localized "per month".
       return applyMoneyTemplate(money.perMonth, digits);
     case "cost":
-      // A zero here is real, not missing: the indexer leaves the cost null when
-      // no PlaceableObjectData is present, and vanilla likewise renders an
-      // authored zero as a zero. But a lone "0" beside the "—" that Workers and
-      // Capacity show for absence reads as a third kind of nothing. Naming it
-      // says which kind it is, and leaves the dash meaning only "not known".
+      // A zero here is real: the indexer nulls the cost when there is no
+      // PlaceableObjectData. Naming it keeps the dash meaning only "not known",
+      // instead of a lone "0" reading as a third kind of nothing.
       return value === 0 ? METRIC_FREE : applyMoneyTemplate(money.plain, digits);
     default:
       return digits;
@@ -439,19 +366,9 @@ export function formatBuildingMetric(
 }
 
 /**
- * What a building's Capacity column actually counts.
- *
- * One shared "Capacity" column carried students, hospital beds, and megawatts,
- * so the figures were mutually incomparable while looking like one series.
- * The unit is derived from the vanilla taxonomy the row already carries.
- */
-/**
- * Units by the component-derived role.
- *
- * Find It's own method: classify by what the prefab carries, not by what its
- * category is called. Substring-matching the category worked but was wrong at
- * the edges — "police" matched a prison and called its prisoners "vehicles",
- * and deathcare storage was reported as "patients".
+ * What a Capacity figure counts, keyed by the component-derived role: classify
+ * by what the prefab carries, not by what its category is called. Matching the
+ * category name calls a prison's prisoners "vehicles".
  */
 const ROLE_UNITS: Record<string, string> = {
   School: "students",
@@ -467,18 +384,17 @@ const ROLE_UNITS: Record<string, string> = {
   Prison: "prisoners",
   EmergencyShelter: "people",
   // Communications. Vanilla binds a post facility's mail capacity with the
-  // "integer" unit, the same as its van count (PrefabUISystem.cs:1630) — a
-  // count of mail, not a weight; an earlier pass had it read "500 t". Network
-  // capacity is a count of connections and has no unit the game names, so it
-  // is left as a bare number as well.
+  // "integer" unit, the same as its van count — a count, not a weight. Network
+  // capacity is a count of connections the game names no unit for.
   PostFacility: "",
   TelecomFacility: "",
 };
 
-/** Roles whose capacity is a weight in kilograms — see formatCapacity. */
-// Garbage only. Vanilla binds a post facility's mail capacity with the
-// "integer" unit, the same as its van count (PrefabUISystem.cs:1630); an
-// earlier pass grouped it here and a post office read "500 t" of mail.
+/**
+ * Roles whose capacity is a weight in kilograms — see formatCapacity. Garbage
+ * only: vanilla binds a post facility's mail capacity as a plain integer, so
+ * mail does not belong here.
+ */
 const WEIGHT_ROLES: ReadonlySet<string> = new Set(["GarbageFacility"]);
 
 export function getCapacityUnitLabel(
@@ -525,11 +441,8 @@ export function getCapacityUnitLabel(
 }
 
 /**
- * A service radius, e.g. "480 m".
- *
- * Metres because that is what the simulation measures in and what the game's
- * own coverage readouts say; rounded because a tower's reach is not a figure
- * anyone reads to the centimetre.
+ * A service radius, e.g. "480 m". Metres because that is what the simulation
+ * works in; rounded because a tower's reach is not read to the centimetre.
  */
 export function formatServiceRange(
   value: number | null | undefined,
@@ -541,15 +454,9 @@ export function formatServiceRange(
 
   const length = separators.length ?? FALLBACK_LENGTH;
 
-  // Vanilla's own Length rule, both halves of it: metres below a kilometre and
-  // kilometres above with one decimal; yards below a MILE and miles above.
-  //
-  // Read out of the game's UI bundle rather than invented, down to the 1609
-  // threshold and the /0.9144 and /1.609344 divisors, so a range here agrees
-  // with the same distance stated anywhere else in the game.
-  //
-  // Yards, not feet: feet are what vanilla uses for Height and NetElevation,
-  // and a service radius is a Length.
+  // Vanilla's own Length rule, thresholds and divisors included, so a range
+  // agrees with the same distance stated anywhere else in the game. Yards, not
+  // feet: feet are vanilla's Height unit, and a service radius is a Length.
   const imperial = separators.unitSystem === UnitSystem.Freedom;
 
   if (imperial) {
@@ -581,11 +488,8 @@ export function formatServiceRange(
 }
 
 /**
- * A network's speed limit, e.g. "100 km/h".
- *
- * The game keeps this per network type — RoadData, TrackData, PathwayData,
- * WaterwayData, TaxiwayData — and states it in km/h, which is what its own
- * road tooltips say, so it is passed through rather than converted.
+ * A network's speed limit, e.g. "100 km/h". The game keeps this per network
+ * type and states it in km/h, so the metric figure passes through unconverted.
  */
 export function formatSpeedLimit(
   value: number | null | undefined,
@@ -596,8 +500,8 @@ export function formatSpeedLimit(
   }
 
   // The game ships no speed template in either system — no VALUE_KMH and no
-  // VALUE_MPH — so both suffixes are ours, the way "km/h" already was. The
-  // conversion is the standard one and matches the mile divisor used above.
+  // VALUE_MPH — so both suffixes are ours. The conversion reuses the mile
+  // divisor above so the two never disagree.
   if (separators.unitSystem === UnitSystem.Freedom) {
     const mph = Math.round(value / KILOMETRES_PER_MILE);
 
@@ -615,14 +519,9 @@ export function formatNetworkWidth(
   value: number | null | undefined,
   separators: NumberSeparators = FALLBACK_SEPARATORS,
 ): string {
-  // A width is a horizontal distance, so it is a Length and takes exactly the
-  // units vanilla gives one: metres, and yards under Freedom.
-  //
-  // This rendered FEET for a while, on the argument that a net dimension is
-  // more like an elevation than like a distance. That was our taste overriding
-  // the game's own rule for the sake of a nicer-sounding number, and it made
-  // one line on the card disagree with the line above it. Same rule as range,
-  // same function, no second opinion to keep in sync.
+  // A width is a horizontal distance, so it is a Length and takes vanilla's
+  // Length units. Same function as range, so there is no second opinion to
+  // keep in sync and no two lines of one card disagreeing.
   return formatServiceRange(value, separators);
 }
 
@@ -640,23 +539,22 @@ export function formatCapacity(
     return formatted;
   }
 
-  // Garbage and mail capacities are kilograms bound by vanilla with the
-  // weight unit, like cargo. Printing the raw figure under "t" read a landfill
-  // as "500,000 t"; the game shows the same field as "500 t".
+  // A garbage capacity is kilograms, bound by vanilla with the weight unit
+  // like cargo, so it goes through the weight rule rather than being printed
+  // raw under a "t" heading.
   if (typeof role === "string" && WEIGHT_ROLES.has(role) && typeof value === "number") {
     const weighed = formatWeight(value, separators);
     return weighed === "" ? formatted : weighed;
   }
 
-  // A plant's output is power and a battery's storage is energy, both in the
-  // game's hundreds-of-watts figure; "MW" on the raw number made a 400 MW
-  // plant read "4,000,000 MW".
+  // A plant's output is power and a battery's storage is energy, both carried
+  // as the game's hundreds-of-watts figure, which is not megawatts.
   if (role === "PowerPlant" && typeof value === "number") {
     const powered = formatPower(value, separators);
     return powered === "" ? formatted : powered;
   }
   // A telecom facility's capacity is a data rate: gigabits a second, as the
-  // game binds it. "25 000" with no unit said nothing about what it measured.
+  // game binds it, and a bare count says nothing about what it measures.
   if (role === "TelecomFacility" && typeof value === "number") {
     const rate = formatDataRate(value, separators);
     return rate === "" ? formatted : rate;
@@ -667,10 +565,9 @@ export function formatCapacity(
   }
 
   const unit = getCapacityUnitLabel(category, subCategory, role);
-  // Water and sewage capacities are volumes a month, and the unit follows
-  // the player's setting: a tower read "15,000 m³" beside a road priced per
-  // mile. The label table still says m³ for the column header; the figure
-  // itself goes through the game's rule.
+  // Water and sewage capacities are volumes a month, and the unit follows the
+  // player's setting, so the figure goes through the game's rule even though
+  // the column header above still says m³.
   if (unit === "m³" && typeof value === "number") {
     const volume = formatVolumePerMonth(value, separators);
     return volume === "" ? formatted : volume;
@@ -685,40 +582,9 @@ export interface BuildingDetailMetric {
 }
 
 /**
- * The analytical metrics the adapter already projects but the table never
- * showed.
- *
- * `BuildingCatalogAdapter` populates electricity, water, garbage, water and
- * sewage capacity, and the three pollution figures during the existing index
- * pass — these are the numbers that justified building an analytical catalog
- * at all. None of them were rendered anywhere, while Level (0 for every
- * service building) held a column of its own.
- *
- * Metrics that were not projected for a building are omitted rather than shown
- * as a dash, so an expanded row carries only figures that mean something.
- */
-/**
- * Everything the indexer projected about one asset, ready to draw.
- *
- * cm-qnfs. This offered eight hand-written candidates — the utilities and the
- * three pollutions — so anything that was neither a power plant nor a polluter
- * expanded to an EMPTY detail area while the row above it showed cost, workers
- * and a lot size. The detail view is where an asset is compared properly; it
- * cannot know less than the row it expands from.
- *
- * Two rules survive from the old list and are what stop this becoming noise:
- *
- *   • ABSENT STAYS ABSENT. The indexer leaves a missing component null rather
- *     than serialising a misleading zero, and a null draws nothing here. A
- *     REAL zero is a fact and stays — a free asset is priced, an unpolluting
- *     one is measured.
- *   • A zero that means "not applicable" is not a real zero. A service
- *     building has no LEVEL, and no parking is not a bay count; both drop out
- *     rather than printing a 0 beside dashes that mean "unknown" (cm-ch0z).
- *
- * Formatting is delegated, never re-derived: formatBuildingMetric knows a
- * network prices by the kilometre, formatCapacity knows what a capacity counts
- * for the kind of thing it is, and hasFootprint knows a road has no lot.
+ * Everything the indexer projected about one asset, ready to draw. A detail
+ * view cannot know less than the row it expands from, so every field is a
+ * candidate; absent stays absent, and formatting is delegated, never re-derived.
  */
 export function getBuildingDetailMetrics(entry: {
   constructionCost?: number | null;
@@ -795,8 +661,6 @@ export function getBuildingDetailMetrics(entry: {
     { key: "electricity", label: "Electricity", value: entry.electricityConsumption, text: (v) => formatPower(v, separators) },
     { key: "water", label: "Water", value: entry.waterConsumption, text: (v) => formatVolumePerMonth(v, separators) },
     { key: "garbage", label: "Garbage", value: entry.garbageAccumulation, text: (v) => formatWeightPerMonth(v, separators) },
-    // The fifth field on ConsumptionData. The indexer has read the other four
-    // since it was written and left this one on the floor.
     { key: "telecom", label: "Telecom", value: entry.telecomNeed },
     { key: "waterCapacity", label: "Water capacity", value: entry.waterCapacity, text: (v) => formatVolumePerMonth(v, separators) },
     { key: "sewageCapacity", label: "Sewage capacity", value: entry.sewageCapacity, text: (v) => formatVolumePerMonth(v, separators) },
@@ -818,12 +682,9 @@ export function getBuildingDetailMetrics(entry: {
 }
 
 /**
- * Whether this thing occupies a lot at all.
- *
- * Networks joined the catalog and they have no footprint: a road's lot is 0x0,
- * which formats as "0 × 0" — a measurement, stated confidently, of something
- * that does not exist. A zone is the same. Absent and zero are both "no
- * footprint" here, because the question does not apply either way.
+ * Whether this thing occupies a lot at all. A road or a zone has no footprint,
+ * and "0 × 0" is a confident measurement of something that does not exist, so
+ * absent and zero both answer no.
  */
 export function hasFootprint(
   width: number | null | undefined,
@@ -834,13 +695,9 @@ export function hasFootprint(
 }
 
 /**
- * A lot's footprint as a single, unbreakable string.
- *
- * Rendering this as JSX (`{width} × {depth}`) emits three separate text nodes,
- * and Cohtml takes each node boundary as a line-break opportunity even when the
- * cell sets `white-space: nowrap` — a 59px column broke "19 × 16" onto three
- * lines with 38px of text in it. Joining with U+00A0 leaves no break
- * opportunity for the engine to take.
+ * A lot's footprint as a single, unbreakable string. Rendering it as JSX emits
+ * three text nodes, and Cohtml breaks at each node boundary even under
+ * `white-space: nowrap`; the U+00A0 joins leave it nowhere to break.
  */
 export function formatLotDimensions(
   width: number | null | undefined,
@@ -858,10 +715,9 @@ export function formatLotDimensions(
 }
 
 /**
- * A height, by vanilla's Height rule: metres, and FEET under Freedom.
- *
- * Feet rather than yards because that is the split the game makes — Length is
- * yards and miles, Height and NetElevation are feet.
+ * A height, by vanilla's Height rule: metres, and FEET under Freedom. Feet
+ * rather than yards because that is the split the game makes — Length is yards
+ * and miles, Height and NetElevation are feet.
  */
 export function formatHeight(
   value: number | null | undefined,
@@ -901,9 +757,9 @@ export function formatVolume(
 }
 
 /**
- * A volume a month, by vanilla's VolumePerMonth rule — the unit WATER_CAPACITY
- * and SEWAGE_CAPACITY are bound with (PrefabUISystem.cs:1603, :1605): cubic
- * metres a month, and US gallons a month under Freedom at the same 264.172.
+ * A volume a month, by vanilla's VolumePerMonth rule — the unit it binds
+ * WATER_CAPACITY and SEWAGE_CAPACITY with: cubic metres a month, and US gallons
+ * a month under Freedom.
  */
 export function formatVolumePerMonth(
   value: number | null | undefined,
@@ -923,9 +779,8 @@ export function formatVolumePerMonth(
     : applyMoneyTemplate(length.cubicMetrePerMonth, groupDigits(Math.round(value), separators));
 }
 
-// Vanilla's own constants, read off the shipped bundle: lb = kg / 0.45359237,
-// short ton = kg / 907.18474, and 9,071,847.4 kg is where it moves to short
-// kilotons (10,000 short tons).
+// Vanilla's own constants and thresholds, read off the shipped bundle, so a
+// weight here reads as the same weight anywhere else in the game.
 const KILOGRAMS_PER_POUND = 0.45359237;
 const KILOGRAMS_PER_SHORT_TON = 907.18474;
 const WEIGHT_SMALL_KG = 100;
@@ -943,13 +798,9 @@ function roundedDigits(value: number, decimals: number, separators: NumberSepara
 }
 
 /**
- * A weight in kilograms, in the unit the game itself would show.
- *
- * Vanilla's Weight formatter: metric shows kilograms under 100 kg (one
- * decimal), tonnes under a million (two), kilotonnes above; imperial shows
- * pounds under 100 kg (one decimal), short tons under 9,071,847.4 kg (two),
- * short kilotons above. Cargo capacity, garbage capacity and mail capacity are
- * all bound with this unit, so all three come through here.
+ * A weight in kilograms, in the unit the game itself would show: vanilla's
+ * Weight formatter picks kilograms, tonnes or kilotonnes by size, with the
+ * imperial ladder alongside. The thresholds below are its own.
  */
 export function formatWeight(
   value: number | null | undefined,
@@ -1052,9 +903,9 @@ export function formatEnergy(
 }
 
 /**
- * A data rate, by vanilla's DataRate rule: the figure as gigabits a second,
- * one decimal, the same in both unit systems — TelecomFacilityData's
- * NETWORK_CAPACITY (PrefabUISystem.cs:1637).
+ * A data rate, by vanilla's DataRate rule: gigabits a second to one decimal,
+ * the same in both unit systems — the unit it binds TelecomFacilityData's
+ * NETWORK_CAPACITY with.
  */
 export function formatDataRate(
   value: number | null | undefined,

@@ -1,13 +1,7 @@
 /**
- * What the UI still says about a search: whether it matched elsewhere, and
- * what Enter should arm.
- *
- * The scoring that used to live here — matchScore, rankBuildingMatches,
- * stableGridOrder — is BuildingCatalogRelevance.cs now. The grid re-ranked
- * the page the backend had already ordered, and disagreed with the table;
- * worse, it dropped anything its own scoring gave 0, so a search by pdx mods
- * id (which the backend matches) vanished from the grid. The page arrives in
- * relevance order for every view; this module no longer reorders it.
+ * What the UI says about a search: whether it matched elsewhere, and what Enter
+ * should arm. The scoring is BuildingCatalogRelevance.cs's, and the page
+ * arrives in relevance order for every view, so nothing here reorders it.
  */
 
 export interface SearchScopeNotice {
@@ -17,12 +11,8 @@ export interface SearchScopeNotice {
 
 /**
  * Whether to tell the player their search matched outside the current section.
- *
- * A scoped search that finds nothing reports "0", which reads as "this building
- * does not exist" when it almost always means "not in this category". With a
- * catalog of thousands across many sections that is the single most misleading
- * state the search can reach, so it is worth naming — but only when there is
- * somewhere else to look.
+ * A scoped search that finds nothing reads as "this building does not exist"
+ * when it means "not here" — but only worth saying if there is somewhere else.
  */
 export function getSearchScopeNotice(state: {
   searchText: string;
@@ -37,12 +27,9 @@ export function getSearchScopeNotice(state: {
 }
 
 /**
- * The entry Enter should arm, or null when Enter should do nothing.
- *
- * Only ever fires with an active query: the first entry of a searched page is
- * the backend's best match. In browse order the first tile is simply the
- * smallest, cheapest building in the category, and arming that on a stray
- * Enter would be a surprise rather than a shortcut.
+ * The entry Enter should arm, or null when Enter should do nothing. Only with
+ * an active query: the first entry of a searched page is the backend's best
+ * match, while in browse order it is just the first tile.
  */
 export function topSearchResult<T>(ranked: readonly T[], rawQuery: string): T | null {
   if (!rawQuery.trim() || ranked.length === 0) {

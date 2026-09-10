@@ -110,9 +110,9 @@ describe("already built", () => {
   });
 
   it("cannot be placed", () => {
-    // Measured in Porterville before this: the tile rendered as an ordinary
-    // buildable one, so clicking it armed a placement the game then refused —
-    // which reads as the menu being broken rather than as "you already have it".
+    // An already-built unique that renders as an ordinary buildable one arms a
+    // placement the game then refuses, which reads as the menu being broken
+    // rather than as "you already have it".
     assert.equal(canPlace({ isLocked: false, isAlreadyBuilt: true }), false);
     assert.equal(canPlace({ isLocked: true, isAlreadyBuilt: false }), false);
     assert.equal(canPlace({ isLocked: false, isAlreadyBuilt: false }), true);
@@ -137,7 +137,7 @@ describe("one state word for all four view modes", () => {
 
   it("returns null when the asset can be placed", () => {
     // Null rather than an empty string: the caller appends " — <word>" only
-    // when there is a word, and "" would have produced a dangling dash.
+    // when there is a word, and "" leaves a dangling dash.
     assert.equal(entryStateWord({ isLocked: false, isAlreadyBuilt: false }, "L", "B"), null);
     assert.equal(entryStateWord({}, "L", "B"), null);
     assert.equal(entryStateWord(null, "L", "B"), null);

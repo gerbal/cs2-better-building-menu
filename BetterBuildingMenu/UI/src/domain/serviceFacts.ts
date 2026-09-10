@@ -1,22 +1,13 @@
 /**
- * Service figures beyond a building's headline capacity.
- *
- * The backend sends `{ key, value }` and never a label: a hospital's
- * helicopters, a garbage plant's processing rate and a post office's sorting
- * rate are each meaningful to one service and absent from the other twenty, so
- * they travel as a keyed list rather than twenty always-null fields on every
- * entry in the catalog. See BetterBuildingMenu.Domain.ServiceFact.
- *
- * This module owns the wording and the units, which is where wording belongs —
- * the indexer decides what is true, the UI decides how to say it.
+ * Service figures beyond a building's headline capacity. They travel from the
+ * backend as a keyed list rather than as twenty always-null fields per entry;
+ * the indexer decides what is true, this module decides how to say it.
  */
+
 /**
- * The number formatter is INJECTED rather than imported.
- *
- * Every other module in this folder cross-imports types only, which is what
- * lets each be loaded on its own under Node's type stripping — a value import
- * here would be the first, and would make this module require a runtime
- * resolution its siblings do not. The caller already holds the separators.
+ * The number formatter is INJECTED rather than imported: this folder
+ * cross-imports types only, so every module can load on its own under Node's
+ * type stripping. The caller already holds the separators.
  */
 export type FormatNumber = (value: number) => string;
 
@@ -42,11 +33,9 @@ interface ServiceFactPresentation {
   /** A change, so a positive figure carries its "+" — vanilla's signed binder. */
   signed?: boolean;
   /**
-   * Follows the player's unit system instead of carrying a fixed `unit`.
-   *
-   * Each name is one of vanilla's own rules — Length is metres/yards, Height
-   * is metres/feet, Volume is cubic metres/gallons, and a per-distance cost
-   * converts its figure as well as its suffix.
+   * Follows the player's unit system instead of carrying a fixed `unit`. Each
+   * name is one of vanilla's own rules, and a per-distance cost converts its
+   * figure as well as its suffix.
    */
   measure?: "length" | "height" | "volume" | "moneyPerDistance" | "moneyPerCellPerMonth" | "weight" | "weightPerMonth" | "perMonth" | "power";
 }
@@ -64,17 +53,16 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
   },
   processingRate: {
     // DeathcareFacilityData.m_ProcessingRate — bodies a month, an integer per
-    // month in vanilla's table. Garbage has its own key below; the two used to
-    // share this one and its "t/mo", so a crematorium's bodies read as tonnes.
+    // month in vanilla's table. Garbage has its own key below because its
+    // figure is a weight, and a crematorium's bodies are not tonnes.
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ProcessingRate]",
     fallback: "Processing",
     unit: "/mo.",
     measure: "perMonth",
   },
   garbageProcessing: {
-    // GarbageFacilityData.m_ProcessingSpeed — kilograms a month, shown as the
-    // game's WeightPerMonth. Printed raw under "t/mo" it read 100,000 t/mo
-    // where the game says 100 t/mo.
+    // GarbageFacilityData.m_ProcessingSpeed — kilograms a month, so it goes
+    // through the game's WeightPerMonth rule rather than wearing "t/mo" raw.
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.GarbageProcessing]",
     fallback: "Processing",
     unit: "t/mo.",
@@ -86,8 +74,8 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     unit: "",
   },
   sortingRate: {
-    // PostFacilityData.m_SortingRate — mail items a month, an integer per month
-    // in vanilla's table; it carried "t/mo" here.
+    // PostFacilityData.m_SortingRate — mail items a month, an integer per
+    // month in vanilla's table, not a weight.
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.SortingRate]",
     fallback: "Sorting",
     unit: "/mo.",
@@ -137,12 +125,9 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     unit: "m",
     measure: "height",
   },
-  // The one consumption coefficient the game reads: PropertyRenterSystem.
-  // GetUpkeep is level^exp × this × lotSize, so at level 1 it is money per
-  // cell per month. The electricity, water, garbage and telecom coefficients
-  // beside it on ZoneServiceConsumptionData have no reader anywhere in the
-  // game, and neither does ZonePollutionData; a figure the simulation never
-  // uses is not a fact about the zone, so those keys have no presentation.
+  // The one consumption coefficient the game reads: PropertyRenterSystem's
+  // GetUpkeep is level^exp × this × lotSize, so at level 1 it is money per cell
+  // per month. Its unread neighbours are not facts and get no presentation.
   zoneUpkeep: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Upkeep]",
     fallback: "Upkeep",
@@ -217,9 +202,9 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     fallback: "Shelter vans",
     unit: "",
   },
-  // Properties.COMFORT: the game shows round(100 × m_ComfortFactor) as a
-  // whole number (PrefabUISystem.cs:1643–1645); the index scales it the same
-  // way. A "×1.2" here was the factor the game never shows.
+  // Properties.COMFORT: the game shows round(100 × m_ComfortFactor) as a whole
+  // number and the index scales it the same way, so this is a count and not
+  // the raw multiplier.
   comfort: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Comfort]",
     fallback: "Comfort",
@@ -227,9 +212,8 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
   },
   electricityCapacity: {
     // ElectricityConnectionData.m_Capacity. Vanilla binds TRANSFORMER_CAPACITY
-    // and POWER_LINE_CAPACITY with the power unit — hundreds of watts — which
-    // is why the raw figure looked like an internal throughput number and a
-    // road's 400,000 was really 40 MW.
+    // and POWER_LINE_CAPACITY with the power unit — hundreds of watts — so the
+    // raw figure is not megawatts.
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ElectricityCapacity]",
     fallback: "Grid capacity",
     unit: "MW",
@@ -242,21 +226,17 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     measure: "volume",
   },
   cargoCapacity: {
-    // The same words as vanilla's Properties.CARGO_CAPACITY, under our own
-    // key because every entry in this table ships its own string (see the
-    // locale test). PrefabUISystem binds StorageLimitData.m_Limit with the
-    // weight unit, on cargo stations and on the warehouse upgrades that add to
-    // them (StorageLimitData.Combine is additive). Kilograms; follows the
-    // unit system.
+    // Vanilla's Properties.CARGO_CAPACITY wording under our own key, because
+    // every entry in this table ships its own string. StorageLimitData.m_Limit
+    // is kilograms bound with the weight unit, so it follows the unit system.
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.CargoCapacity]",
     fallback: "Cargo capacity",
     unit: "t",
     measure: "weight",
   },
-  // Audited against PrefabUISystem's property binders (2026-09-07): the
-  // figures vanilla's tooltip carries that ours did not. Most are what an
-  // upgrade IS — an ambulance depot, a hearse garage, jail cells, a filter,
-  // a modifier on the parent's upkeep — which is why the picker surfaced them.
+  // The rest of what vanilla's tooltip carries. Most are what an upgrade IS —
+  // an ambulance depot, a hearse garage, jail cells, a modifier on the parent's
+  // upkeep — so they are the whole content of an upgrade's card.
   ambulances: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Ambulances]", fallback: "Ambulances", unit: "" },
   hearses: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Hearses]", fallback: "Hearses", unit: "" },
   prisonVans: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PrisonVans]", fallback: "Prison vans", unit: "" },
@@ -280,7 +260,7 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     fallback: "Elevated width",
     unit: "m",
     // A LENGTH, so it follows the player's unit system rather than carrying a
-    // hard "m" — it read "14 m" beside a "52 ft" width until this said so.
+    // hard "m" beside a width already stated in feet.
     measure: "length",
   },
   elevationCost: {
@@ -288,8 +268,8 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     fallback: "Elevation",
     unit: "¢/km",
     // Money, so it goes through the game's own per-distance template rather
-    // than bolting "¢/km" onto a number — it rendered "5,000 ¢/km" where every
-    // other cost on the card reads "¢5,000 /km", symbol first.
+    // than bolting "¢/km" onto a number and putting the symbol on the wrong
+    // side of every other cost on the card.
     measure: "moneyPerDistance",
   },
   zoneSpace: {
@@ -322,12 +302,9 @@ export interface RenderedServiceFact {
 }
 
 /**
- * The facts this build can draw, in the order the indexer recorded them.
- *
- * A key with no entry here is DROPPED rather than shown raw. The backend can
- * add a figure before the UI has wording for it — the two ship together but a
- * player may run a mismatched pair — and "sortingRate 240" on a card is worse
- * than the line not being there.
+ * The facts this build can draw, in the order the indexer recorded them. A key
+ * with no entry here is DROPPED rather than shown raw: a player can run a
+ * mismatched pair of halves, and a bare token on a card is worse than no line.
  */
 export function renderServiceFacts(
   facts: readonly ServiceFact[] | null | undefined,
@@ -383,10 +360,9 @@ interface ServiceTextPresentation {
   localizationKey: string;
   fallback: string;
   /**
-   * Words for the VALUE, where it is one of ours rather than the game's.
-   *
-   * A traded resource arrives already named by the game; a lot shape arrives as
-   * "narrow" or "corners", which are our tokens and need our words.
+   * Words for the VALUE, where it is one of ours rather than the game's: a
+   * traded resource arrives already named, but "narrow" and "corners" are our
+   * tokens and need our words.
    */
   values?: Readonly<Record<string, { localizationKey: string; fallback: string }>>;
   /** Tokens that mean "nothing to say" and draw no line — an enum's None. */
@@ -435,11 +411,9 @@ const TEXT_PRESENTATION: Readonly<Record<string, ServiceTextPresentation>> = {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneLotShapes]",
     fallback: "Lot shapes",
     values: {
-      // Our own keys, not the ZoneNarrowLots / ZoneCorners the registry
-      // already owns: those are sentence fragments — "narrow lots",
-      // "corners" — written for the old joined-with-dots zone line, and
-      // reusing them here would either read wrong in a label/value pair or
-      // force a casing change on a string other code still renders.
+      // Our own keys, not the ZoneNarrowLots / ZoneCorners the registry owns:
+      // those are sentence fragments, and reusing them here would read wrong
+      // in a label/value pair or force a casing change on other renderers.
       narrow: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneShapeNarrow]", fallback: "Narrow" },
       corners: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneShapeCorners]", fallback: "Corners" },
     },
@@ -495,10 +469,10 @@ const TEXT_PRESENTATION: Readonly<Record<string, ServiceTextPresentation>> = {
   },
 };
 
-/** Every localization key a worded fact can ask for, for the audit. */
 /** The worded keys this build knows how to draw, for the coverage audit. */
 export const SERVICE_TEXT_FACT_KEYS: readonly string[] = Object.keys(TEXT_PRESENTATION);
 
+/** Every localization key a worded fact can ask for, for the audit. */
 export const SERVICE_TEXT_FACT_LOCALIZATION_KEYS: readonly string[] = [
   ...Object.values(TEXT_PRESENTATION).map((entry) => entry.localizationKey),
   ...Object.values(TEXT_PRESENTATION)
@@ -507,15 +481,9 @@ export const SERVICE_TEXT_FACT_LOCALIZATION_KEYS: readonly string[] = [
 ];
 
 /**
- * The worded facts, one line per key.
- *
- * Grouped by key, because a zone reports its lot shapes as one fact per shape —
- * a zone that supports both would otherwise draw "Lot shapes Narrow" directly
- * above "Lot shapes Corners", which is one fact printed twice.
- *
- * A key with no wording is dropped, for the same reason the numeric ones are:
- * the halves can ship mismatched, and a raw token on a card is worse than a
- * missing line.
+ * The worded facts, one line per key. Grouped, because a zone reports its lot
+ * shapes as one fact per shape and two lines with the same label are one fact
+ * printed twice. A key with no wording is dropped, as the numeric ones are.
  */
 export function renderServiceTextFacts(
   facts: readonly ServiceTextFact[] | null | undefined,
@@ -557,33 +525,9 @@ export function renderServiceTextFacts(
 }
 
 /**
- * The order every service figure appears in, whatever order it was indexed in.
- *
- * Facts arrive in the order the C# emitted them, which depends on which
- * component blocks a given prefab happened to hit — so a fire station and a
- * hospital, both carrying helicopters and a shift share, showed them in
- * different positions. A card whose fields move is a card the reader has to
- * re-read every time instead of learning where to look, and comparing two
- * buildings means comparing two different layouts.
- *
- * Grouped by what the reader is asking, in that order:
- *   1. what the building DOES — the output it exists to produce
- *   2. how WELL it does it — the quality and effect figures
- *   3. who RUNS it — staffing
- *   4. what it costs to place and what the network/zone adds
- *
- * Worded and numeric figures share one order: which list a value happens to
- * live in is a fact about its type, not about where a reader expects it.
- *
- * A key missing from this list is not dropped — it sorts to the end, in the
- * order it arrived, so a newly indexed figure appears and can then be placed
- * here deliberately.
- */
-/**
- * The facts the game's own tooltip shows — exactly PrefabUISystem's property
- * binders, audited 2026-09-07. The card draws these first and bright, and
- * everything else below a divider, dimmer: a player already knows how to read
- * the game's figures, and ours should not blend into them.
+ * The facts the game's own tooltip shows — PrefabUISystem's property binders.
+ * The card draws these first and bright and everything else below a divider,
+ * dimmer, so ours do not blend into figures the player already knows.
  */
 export const VANILLA_FACT_KEYS: ReadonlySet<string> = new Set([
   // rates and capacities
@@ -617,6 +561,11 @@ const resourceUpkeepPresentation = (key: string): ServiceFactPresentation | unde
 
 export const isVanillaFact = (key: string): boolean => VANILLA_FACT_KEYS.has(key) || key.startsWith(RESOURCE_UPKEEP_PREFIX);
 
+/**
+ * One order for every card, whatever order the indexer emitted in, so a reader
+ * learns where to look instead of re-reading. Worded and numeric figures share
+ * it; an unlisted key sorts to the end rather than being dropped.
+ */
 export const FACT_ORDER: readonly string[] = [
   // 1. What it does. The required resource first, as vanilla binds it.
   "requiredResource", "processingRate", "garbageProcessing", "sortingRate", "jailCapacity",
@@ -644,11 +593,8 @@ export const FACT_ORDER: readonly string[] = [
 const FACT_RANK = new Map(FACT_ORDER.map((key, index) => [key, index]));
 
 /**
- * Sort rendered figures into FACT_ORDER, keeping unplaced keys last.
- *
- * Stable: two keys the order does not name keep the order they arrived in, so
- * the result is still deterministic for a prefab the list has not caught up
- * with.
+ * Sort rendered figures into FACT_ORDER, keeping unplaced keys last. Stable,
+ * so a prefab carrying keys the order does not name still draws deterministically.
  */
 export function orderFacts<T extends { key: string }>(facts: readonly T[]): T[] {
   return facts

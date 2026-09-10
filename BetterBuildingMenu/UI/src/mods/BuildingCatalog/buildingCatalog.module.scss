@@ -1,35 +1,12 @@
 @use "../../base.scss" as _base;
 
-// ---------------------------------------------------------------------------
-// No var(--name, fallback) in this file. The two-argument form is not supported
-// by this engine, and it does not fail quietly: Cohtml logs
-// "Unable to resolve custom variable: fontSizeXS,12rem" once per element, per
-// style pass. Read off a live Player.log with the table open — 62,397 of them
-// in one session, 392 of the last 400 UI log lines, one per rendered row.
-//
-// That is a per-frame string format and a log write for every element carrying
-// one, which is a real cost on a surface that renders hundreds of rows. Plain
-// var(--name) resolves normally; the fallbacks were never doing anything except
-// generating warnings, because the variables they guard are always defined by
-// the game's own theme.
-// ---------------------------------------------------------------------------
+// No var(--name, fallback) in this file. Cohtml does not support the
+// two-argument form and logs an unresolved-variable warning for every element
+// carrying one, on every style pass. The game's theme always defines these.
 
-// ---------------------------------------------------------------------------
-// Table column geometry.
-//
-// The header row and the data rows are two separate flex containers describing
-// one table, so a column lines up only if both reserve identical space. Two
-// things ate the difference and put every value 26.6px left of its heading:
-//
-//   - the rows scroll and the header does not, so the scrollbar narrows the
-//     rows by its track width and nothing narrowed the header;
-//   - the header's right padding was a hand-guessed 34rem standing in for the
-//     trailing details control, which actually occupies far more.
-//
-// Both are named here and derived once, so the header cannot drift from the
-// rows again when one of those controls is resized. Anything that changes a
-// trailing control's width changes it HERE.
-// ---------------------------------------------------------------------------
+// Table column geometry. The header row and the data rows are two separate
+// flex containers describing one table, so a column lines up only if both
+// reserve identical space. A trailing control's width changes it HERE.
 $row-gap: 3rem;
 // Inside .rowSelect, after its last metric cell.
 $row-padding-right: 4rem;
@@ -40,13 +17,9 @@ $row-outer-padding-right: 4rem;
 $row-details-width: 26rem;
 $rows-scrollbar-width: 16rem;
 
-// Everything to the right of .rowSelect's last metric cell. Measured against a
-// live row rather than assumed, twice: an early reading found no gap between
-// .row's children and a sum with $row-gap counted twice overshot by 2rem; on
-// 2026-09-09 (1280x720, PanelWidth 1441) the rows box was 1059rem and the
-// select 1026rem, so 33rem trail it — chevron, outer padding and ONE gap —
-// and a reserve without the gap left the header's identity 3rem wider than
-// the cell's. Counted once.
+// Everything to the right of .rowSelect's last metric cell: the chevron, the
+// outer padding and ONE gap. The gap is counted once — without it the
+// header's identity column is wider than the cell's.
 $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-padding-right + $row-gap;
 
 .catalog {
@@ -80,8 +53,6 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   .row {
     height: 84rem;
     min-height: 84rem;
-    // Was `gap: 2rem` — a no-op in this engine, so this
-    // spacing never drew. Same measurement, stated as margins.
     > * + * {
       margin-left: 2rem;
     }
@@ -92,16 +63,13 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
     min-height: 80rem;
     padding-top: 2rem;
     padding-bottom: 2rem;
-    // Was `gap: 2rem` — a no-op in this engine, so this
-    // spacing never drew. Same measurement, stated as margins.
     > * + * {
       margin-left: 2rem;
     }
   }
 
   .thumbnail {
-    // Tighter at compact density. On .thumbnail, not as a gap on the cell —
-    // see the note there.
+    // Tighter at compact density; the spacing is the picture's, not the cell's.
     margin-right: 6rem;
   }
 
@@ -111,13 +79,9 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
     font-size: var(--fontSizeS);
   }
 }
-// Same ratio as every other mode, derived from this picture's 60rem — the
-// PICTURE, not the 68rem frame around it. The frame is deliberate here (a
-// rounded, tinted tile is this mode's own idiom), which makes the table the
-// only place the two numbers differ, and measuring the badge against the
-// larger one made it overhang the artwork.
-//
-// Nested, because a bare class loses to baseButton's img rule — see base.scss.
+// The badge is measured against the 60rem PICTURE, not the 68rem tinted frame
+// this mode draws around it — the one place where the two differ. Nested,
+// because a bare class loses to baseButton's img rule; see base.scss.
 .thumbnail .uniqueAsset {
   @include _base.unique-mark(60rem, 68rem);
 }
@@ -141,13 +105,9 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   align-items: center;
 }
 
-// The end of the feed, inside the scroll. Full width so it is unmissable when
-// the rows run out, and generous vertically because it is the one control a
-// player reaches by scrolling rather than by aiming.
-//
-// Its own rule, deliberately: styled through a selector the list rows share,
-// a button's centring, padding and control background reach .columnHeader and
-// every .row too, and the whole catalog renders as a column of centred buttons.
+// The end of the feed, inside the scroll. Full width so it is unmissable, and
+// its own rule because styling it through a selector the rows share gives
+// .columnHeader and every .row the button's centring, padding and background.
 .loadMore {
   display: flex;
   align-items: center;
@@ -165,14 +125,6 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   }
 }
 
-// Master's .toolbar rule is deliberately NOT taken back here. That band —
-// icon, title, count, search context and sort — is gone from this branch: it
-// rendered only when the panel was expanded, so every control it held was
-// missing at the strip height the lens rests at. All of it lives in
-// LensControlPane beside the panel now (caf59a8), and 190a4a2 removed the 208
-// lines of stylesheet it left behind. Re-adding the rule would restore the
-// styling for markup nothing renders.
-
 .category,
 .columnHeader,
 .pageLabel {
@@ -180,15 +132,9 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   font-size: var(--fontSizeS);
 }
 
-// Vanilla's icon variant sizes a Button as a 24rem square. Every control listed
-// here carries a word rather than a glyph, so each has to opt out of that width:
-// left alone, the label is centred on a 16rem box and bleeds symmetrically over
-// its neighbours — this is what printed "Category" across "Group by".
-//
-// Collected into one rule because the same fix had been rediscovered per-site in
-// three different spellings (width: auto !important, a hand-picked min-width, and
-// min-width: 0, which permits the collapse rather than resisting it). Glyph
-// buttons such as .pageButton are genuinely square and stay out of this.
+// Vanilla's icon variant sizes a Button as a 24rem square, so a control
+// carrying a word rather than a glyph centres its label on a 16rem box and
+// bleeds over its neighbours. These state their own width instead.
 .scopeNoticeAction,
 
 .pageButton {
@@ -203,8 +149,6 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
 .facetPanel {
   display: flex;
   flex-direction: column;
-  // Was `gap: 4rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   > * + * {
     margin-top: 4rem;
   }
@@ -216,8 +160,6 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   display: flex;
   flex-direction: row;
   align-items: center;
-  // Was `gap: 4rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   > * + * {
     margin-left: 4rem;
   }
@@ -263,8 +205,6 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  // Was `gap: 6rem 8rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   margin-left: -8rem;
   margin-top: -6rem;
   > * {
@@ -293,17 +233,14 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   }
 }
 
-// DLC and theme options carry names like "Creator Pack: Mediterranean Heritage",
-// which ellipsised down to "Creator Pack: Mediterranean Heri" in a 150rem column
-// and left the packs indistinguishable from one another.
+// DLC and theme options carry names like "Creator Pack: Mediterranean
+// Heritage"; a narrower column ellipsises the packs into each other.
 .facetGroup {
   display: flex;
   flex-direction: column;
   flex: 1 1 260rem;
   min-width: 220rem;
   min-height: 0;
-  // Was `gap: 2rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   > * + * {
     margin-top: 2rem;
   }
@@ -331,8 +268,6 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   flex-direction: row;
   flex-wrap: wrap;
   align-content: flex-start;
-  // Was `gap: 3rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   margin-left: -3rem;
   margin-top: -3rem;
   > * {
@@ -368,8 +303,6 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   max-width: 100%;
   min-width: 0;
   padding: 3rem 7rem;
-  // Was `gap: 4rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   > * + * {
     margin-left: 4rem;
   }
@@ -402,8 +335,6 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   display: flex;
   flex-direction: row;
   align-items: center;
-  // Was `gap: 5rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   > * + * {
     margin-left: 5rem;
   }
@@ -435,8 +366,6 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
 .metricRangePanel {
   display: flex;
   flex-direction: column;
-  // Was `gap: 4rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   > * + * {
     margin-top: 4rem;
   }
@@ -448,8 +377,6 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   display: flex;
   flex-direction: row;
   align-items: center;
-  // Was `gap: 4rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   > * + * {
     margin-left: 4rem;
   }
@@ -493,8 +420,6 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
 .metricRangeGroups {
   display: flex;
   flex-direction: column;
-  // Was `gap: 3rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   > * + * {
     margin-top: 3rem;
   }
@@ -525,8 +450,6 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   display: flex;
   flex-direction: row;
   align-items: center;
-  // Was `gap: 5rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   > * + * {
     margin-left: 5rem;
   }
@@ -548,8 +471,6 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   flex: 0 0 154rem;
   flex-direction: row;
   align-items: center;
-  // Was `gap: 3rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   > * + * {
     margin-left: 3rem;
   }
@@ -582,8 +503,6 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   flex-direction: row;
   align-items: center;
   flex-wrap: wrap;
-  // Was `gap: 3rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   margin-left: -3rem;
   margin-top: -3rem;
   > * {
@@ -601,8 +520,6 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
 }
 
 .columnHeader {
-  // Was `gap: $row-gap` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   > * + * {
     margin-left: $row-gap;
   }
@@ -646,9 +563,9 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   justify-content: center;
   background-color: transparent;
   padding: 0;
-  // Not `margin: 0`: that reset, same specificity as .columnHeader's
-  // `> * + *` gap and later in the file, took the gap back, and every header
-  // sat 3rem further left per column than its cells (cm-7kr8).
+  // Not `margin: 0`: that reset has the same specificity as .columnHeader's
+  // `> * + *` spacing and comes later in the file, so it takes the column
+  // spacing back and every header sits left of its cells.
   margin: 0 0 0 $row-gap;
 }
 
@@ -666,8 +583,7 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   font-size: var(--fontSizeS);
 }
 
-// Invalid metric text used to be dropped in silence while staying on screen,
-// so a typo looked exactly like an applied filter.
+// An invalid range must not read as an applied one.
 .metricRangeInput[data-invalid="true"] {
   border-color: var(--negativeColor, rgba(220, 90, 90, 0.9));
 }
@@ -680,17 +596,11 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   white-space: normal;
 }
 
-// The row list is a cs2/ui <Scrollable>, which brings the game's own scrollbar.
-// This used to be a hand-rolled 8rem ::-webkit-scrollbar plus a decorative
-// 8rem-wide rail in the column header whose thumb was a static ratio and did
-// not scroll anything.
-// Shown only when a search found nothing in this section but did elsewhere.
+// Shown only when a search finds nothing in this section but does elsewhere.
 .scopeNotice {
   display: flex;
   flex-direction: row;
   align-items: center;
-  // Was `gap: 8rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   > * + * {
     margin-left: 8rem;
   }
@@ -719,12 +629,9 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   white-space: nowrap;
 }
 
-// The table's scroll area. This was flex: 1 1 0, and a zero basis only resolves
-// against a parent with a definite height — .catalog is height: auto capped by a
-// max-height, so the basis resolved against nothing and the rows contributed no
-// height at all: the panel sat at 192rem with a hundred rows laid out below the
-// viewport, none of them visible. Same failure, and the same fix, as
-// .groupScroll in groupedResults.module.scss — see the note there.
+// The table's scroll area. A zero flex basis resolves against nothing here —
+// .catalog is height: auto capped by a max-height — so the rows would
+// contribute no height and lay out below the viewport.
 .rows {
   display: flex;
   flex-direction: column;
@@ -743,11 +650,6 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   min-height: 92rem;
   margin: 1rem 0;
   padding: 0 $row-outer-padding-right 0 0;
-  // Declared, but measured at 0 between this row's three children on Cohtml
-  // 1.64 — so the header's trailing reserve is computed WITHOUT it. Do not
-  // trust this value when reasoning about the row's width; measure.
-  // Was `gap: $row-gap` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   > * + * {
     margin-left: $row-gap;
   }
@@ -768,8 +670,6 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   height: 88rem;
   min-height: 88rem;
   padding: 2rem $row-padding-right 2rem 8rem;
-  // Was `gap: $row-gap` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   > * + * {
     margin-left: $row-gap;
   }
@@ -789,30 +689,10 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   flex-direction: row;
   align-items: center;
   flex: 1 1 auto;
-  // Zero, and it has to be: in Cohtml a min-width on a flex item DISABLES its
-  // flex-grow. Measured on the live row — with min-width 180rem the identity
-  // cell sat at exactly 120px while 112px of free space went unclaimed beside
-  // it; setting min-width to 0 on the same element grew it to 225px on the
-  // spot. So a floor written here does not protect the column, it freezes it.
-  //
-  // The floor is arithmetic instead. Every metric cell is flex: 0 0 auto and
-  // never yields, so the name absorbs the whole deficit — measured at the
-  // minimum panel width, the identity cell was 39px and the name inside it was
-  // ZERO while Capacity held its full width to render "—".
-  // getBuildingLensColumnWidths now narrows the metric columns as the panel
-  // narrows, which hands those units back here: the same name measures 77px at
-  // the minimum panel and 180px at a typical one, up from 0 and 111.
+  // Zero, and it has to be: in Cohtml a min-width on a flex item disables its
+  // flex-grow, so a floor written here freezes the column rather than
+  // protecting it. getBuildingLensColumnWidths narrows the metric cells.
   min-width: 0;
-  // The space between the picture and the name lives on .thumbnail as a
-  // margin, NOT here as a gap. This rule used to say `gap: 12rem` and got
-  // nothing: measured on a live row, the thumbnail box ended at x=458.7 and the
-  // name began at x=458.7 — a gap of 0.0px. The only visible daylight was the
-  // 2.7px of slack from the image being centred in its box, so a thumbnail wide
-  // enough to fill the box touched the name outright.
-  //
-  // That is exactly what the comment this replaces described ("a 7rem gap left
-  // the name touching the picture"), so the value had already been raised once,
-  // from 7rem to 12rem, without ever taking effect.
 }
 
 .thumbnail {
@@ -820,25 +700,16 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   align-items: center;
   justify-content: center;
   // Through the shared box, like every other mode, so the badge is measured
-  // against the same number the picture is. Hand-rolling it here is what let
-  // the two drift apart in the first place. 68rem is vanilla's own image size.
+  // against the same number the picture is. 68rem is vanilla's own image size.
   @include _base.artwork-box(68rem);
-  // The separation from the name. A margin because `gap` does nothing in this
-  // engine — probed directly: a flex container declaring `gap: 20rem` measured
-  // 0px between its children in BOTH row and column direction.
+  // The separation from the name.
   margin-right: 12rem;
   border-radius: 4rem;
   background-color: rgba(0, 0, 0, 0.25);
 
-  // Through the shared mixin like every other mode. Hand-rolled, this was the
-  // one place where the picture and its box disagreed — a 60rem picture in a
-  // 68rem frame — and the badge, measured against the FRAME, overhung the
-  // artwork it is supposed to sit on.
-  //
-  // `.picture`, not `img`: the badge is an img in this box too, and every rule
-  // written against the element reached both. It never showed up here because
-  // .thumbnail .uniqueAsset outranks .thumbnail img — but the silhouette rule
-  // below had no such counterweight and blackened the badge.
+  // `.picture`, not `img`: the badge is an img in this box too, so a rule
+  // written against the element reaches both — including the silhouette
+  // below, which would blacken the badge.
   .picture {
     @include _base.artwork-picture(60rem);
   }
@@ -865,8 +736,6 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   min-width: 0;
   flex-direction: row;
   align-items: center;
-  // Was `gap: 4rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   > * + * {
     margin-left: 4rem;
   }
@@ -875,18 +744,9 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   max-height: 18rem;
 }
 
-// Block, NOT flex, and that is the whole fix for the truncation.
-//
-// This rule already asked for `text-overflow: ellipsis` and never got one:
-// text-overflow applies to a block container's inline content, and a flex
-// container's text is an anonymous flex item, so the name simply clipped. Three
-// different buildings came out as "EU Commercial Gas Station 01 - L1 3" with
-// nothing to say they had been cut — in the surface that exists to be read
-// rather than recognised.
-//
-// The cell holds one string, so it never needed to be a flex container; the row
-// above it (.nameLine) is the one doing the laying out. Vertical centring comes
-// from line-height matching the height, which is what the fixed height was for.
+// Block, NOT flex. text-overflow applies to a block container's inline
+// content, and a flex container's text is an anonymous flex item, so the name
+// clips with no ellipsis. Vertical centring is line-height matching height.
 .name {
   display: block;
   flex: 1 1 auto;
@@ -903,17 +763,9 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   line-height: 18rem;
 }
 
-// Absolutely positioned, so an invisible hint costs the title nothing.
-//
-// It is `opacity: 0` until the row is hovered, but `flex: 0 0 auto` with a
-// min-width made it reserve its box the whole time: measured on a real row, the
-// name line was 111px and this took 55 of them — half the title's space, all of
-// it for something the player cannot see. "EU Commercial Gas Station 01 - L1
-// 4x4" needs 179px and was given 57.
-//
-// Overlaying the end of the line instead means the title keeps its full width
-// always, and the hint only covers a tail at the moment you are pointing at the
-// row — which is also the moment the hover card is showing you the whole name.
+// Absolutely positioned, so an invisible hint costs the title nothing. In
+// flow it reserves its box even at opacity 0, taking half the name line for
+// something the player cannot see.
 .placeHint {
   position: absolute;
   right: 0;
@@ -983,8 +835,7 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   }
 }
 
-// "Compact" still means the readable body tier, one step down — not the 8-10rem
-// utility tier the lens used to fall back to, which rendered at 8px.
+// "Compact" is the readable body tier one step down, not the utility tier.
 .catalog[data-metric-text-scale="compact"] {
   .metric,
   .parking,
@@ -994,11 +845,9 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   }
 }
 
-// Numbers compare by magnitude, so they align on their right edge like every
-// other numeric table. Lot ("4 × 6"), level and parking are labels rather than
-// quantities and stay centred. Column widths are not set here: header and rows
-// both take them inline from getBuildingLensColumnWidths, which sizes them
-// around the 8rem gutter below.
+// Numbers compare by magnitude, so they align on their right edge. Lot, level
+// and parking are labels rather than quantities and stay centred. Column
+// widths come inline from getBuildingLensColumnWidths, around the gutter below.
 .metricCost,
 .metricUpkeep,
 .metricWorkers,
@@ -1047,25 +896,9 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   line-height: 18rem;
 }
 
-// Expanded row details: the analytical metrics the adapter always projected
-// (electricity, water, garbage, the three pollution figures) but which the
-// table never rendered.
-// A COLUMN of stacked blocks, which is what it always was. It used to say
-// `flex-direction: row` with `flex-wrap: wrap` and give every child width:100%,
-// so each child became its own flex line — and this engine mis-measures that
-// arrangement badly.
-//
-// Measured on a live expanded row, in pixels: the box rendered 105 tall while
-// its content reported a scrollHeight of 160, and `.row` is overflow: hidden,
-// so the last two blocks — the whole Lot row and the DLC/Theme/Source row —
-// were clipped off the bottom and never seen. The inflation came from the
-// children being stretched to their flex line's cross size: they measured 22
-// to 26 tall each in the wrapped row, against a true content height of 12 to
-// 16 in a column.
-//
-// As a column the same six blocks land at 3, 17, 35, 53, 71 and 89 and all fit
-// inside the box. That also evens out the vertical rhythm, which is the other
-// half of what "weird internal padding" was describing.
+// A COLUMN of stacked blocks. In a wrapping row each child becomes its own
+// flex line and is stretched to that line's cross size, inflating the box
+// past the height `.row` clips at, so the last blocks are never seen.
 .rowDetails {
   display: flex;
   flex-direction: column;
@@ -1102,19 +935,6 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
 
 // Placement / access / connections / lot flags and provenance. Chips rather
 // than a sentence, so a building with twelve flags stays scannable.
-// No gap here, and that is the fix rather than an omission.
-//
-// `gap` between flex-row children measures 0 on this engine — the hover card's
-// stylesheet already says so and uses margins for the same reason. This group
-// declared `gap: 3rem` and got nothing, so every chip butted against its
-// neighbour and the only whitespace left was each chip's own 5rem of internal
-// padding. Reported from play as weird internal padding, which is exactly what
-// it looks like: the space inside a chip reads as the space between chips, and
-// a run of four flags reads as one long band.
-//
-// The neighbouring .rowDetail and .rowProvenance rows use margins and space
-// correctly — measured 7px between provenance chips against 0 between flags,
-// which is what made the difference visible.
 .rowFlagGroup {
   display: flex;
   flex-direction: row;
@@ -1126,14 +946,9 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
 
 .rowFlag {
   padding: 1rem 5rem;
-  // The separation its parent's `gap` could not provide. Bottom as well as
-  // right, because the group wraps and a second line would otherwise sit on
-  // the first.
-  //
-  // Wider than the 5rem of padding inside the chip, deliberately. A first pass
-  // used 3rem and the chips still read as one band: when the space between two
-  // boxes is smaller than the space inside them, the eye groups them together
-  // and the padding is what looks wrong. That is the reported symptom.
+  // The separation between chips, bottom as well as right because the group
+  // wraps. Wider than the chip's own padding: when the space between two
+  // boxes is smaller than the space inside them, they read as one band.
   margin-right: 8rem;
   margin-bottom: 3rem;
   border-radius: 3rem;
@@ -1160,12 +975,7 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   // Same rule as .rowDetail: the pair moves as a unit rather than wrapping.
   flex: 0 0 auto;
   white-space: nowrap;
-  // flex-start, not baseline: Cohtml drops `align-items: baseline`
-  // outright (UI.log: "Unable to parse declaration") and falls back to
-  // this, so naming it is the same layout said honestly.
   align-items: flex-start;
-  // Was `gap: 3rem` — a no-op in this engine, so this
-  // spacing never drew. Same measurement, stated as margins.
   > * + * {
     margin-left: 3rem;
   }
@@ -1176,15 +986,10 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
 .rowDetail {
   display: flex;
   flex-direction: row;
-  // flex-start, not baseline: Cohtml drops `align-items: baseline`
-  // outright (UI.log: "Unable to parse declaration") and falls back to
-  // this, so naming it is the same layout said honestly.
   align-items: flex-start;
-  // A pair is a unit: it never shrinks and its text never wraps, so when the
-  // line is full the whole pair moves down. Left shrinkable, it narrowed to
-  // its longest word, "Ground pollution" wrapped under its value, and the
-  // engine did not grow the line for the second line of text — it overflowed
-  // into the Placement chips below (seen 2026-09-09, City High School).
+  // A pair is a unit: it never shrinks and its text never wraps, so a full
+  // line moves the whole pair down. Left shrinkable it narrows to its longest
+  // word, and the wrapped second line overflows into the chips below.
   flex: 0 0 auto;
   white-space: nowrap;
   margin-right: 16rem;
@@ -1212,11 +1017,9 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   // Place control, so this chevron is the only trailing furniture.
   flex: 0 0 $row-details-width;
   width: $row-details-width;
-  // Full row height, stated rather than inherited. align-self: stretch does
-  // NOT work here — vanilla's icon Button variant gives itself a height, and
-  // the row's own mixin centres its children, so the chevron measured 16px
-  // against a 59px row. The old cluster had three controls at 59 / 16 / 20,
-  // which reads as misalignment even though their centres agreed.
+  // Full row height, stated rather than inherited. align-self: stretch alone
+  // does NOT do it: vanilla's icon Button variant gives itself a height and
+  // the row's mixin centres its children, so the chevron sits short.
   align-self: stretch;
   height: 100%;
   min-height: 0;
@@ -1256,13 +1059,9 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   background-color: var(--menuText1Normal);
 }
 
-// An expanded row grows to fit its details instead of clipping them against
-// the fixed row height the table uses when collapsed.
-//
-// rowSelect is flex:1 1 auto, so under flex-wrap it claimed the whole first
-// line and bumped the details chevron onto a line of its own. Letting rowSelect
-// shrink from a zero basis keeps both controls on line one and leaves
-// rowDetails (width:100%) as the only wrap.
+// An expanded row grows to fit its details instead of clipping them. rowSelect
+// has to shrink from a zero basis: as flex: 1 1 auto it claims the whole first
+// line under flex-wrap and bumps the chevron onto a line of its own.
 .row[data-expanded="true"] {
   flex-wrap: wrap;
   height: auto;
@@ -1273,52 +1072,25 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
     min-width: 0;
   }
 
-  // The details chevron must size to its LINE, not to the row.
-  //
-  // .rowDetailsButton carries `height: 100%` so it fills the row when
-  // collapsed, where the row has a definite 92rem to resolve against. Once
-  // expanded the row is `height: auto` and that percentage resolves against
-  // the whole wrapped row instead of line one — so the button grew to the
-  // full height and line one grew with it. Measured live on Alley: the button
-  // rendered 109 tall beside a 59-tall .rowSelect, which put the row's content
-  // at 109 + 51 = 160 while the row itself settled at 109. `.row` is
-  // overflow: hidden, so the details were laid out complete and correct and
-  // then clipped away entirely — the row just got taller and showed nothing,
-  // which is exactly how it was reported.
-  //
-  // `align-self: stretch` on the button already fills the line in both states
-  // and does it without a percentage, so dropping the height here changes
-  // nothing about the collapsed row. Same measurement after: button 59,
-  // content 110, details clipped by 0.
+  // The chevron sizes to its LINE, not to the row. Its `height: 100%`
+  // resolves against the whole wrapped row once the row is `height: auto`,
+  // and `.row` is overflow: hidden, so the details are clipped away entirely.
   .rowDetailsButton {
     height: auto;
   }
 }
 
-// Milestone-locked. The table states it in words rather than only in treatment:
-// the row carries the same silhouette the grid and list use, and stays
-// clickable — onPlace refuses rather than the row disabling, so the hover card
-// that explains the lock is still reachable.
-// Both unplaceable states share the ground, the way the grid's tile does and
-// the way vanilla's [disabled] rule does. WHICH state it is gets said in the
-// label and the aria suffix, not by a second colour.
-// Rasters only. See hasVectorThumbnail.
-//
-// The PICTURE, not every img in the box. Written as `.thumbnail img` this also
-// caught the already-built badge sitting on top of it, so the one mark whose
-// whole job is to say "you already have one of these" was painted solid black —
-// reported from play, and only in the table, because the grid and the list name
-// their picture and this mode did not.
-//
-// The raster gate did not save it either: that gate asks whether the ENTRY's
-// thumbnail is a vector, and the badge is AlreadyBuilt.svg whatever the entry
-// is. So on every raster row the filter was also being applied over a vector,
-// which is the thing this whole treatment exists to avoid.
+// Rasters only (see hasVectorThumbnail), and the PICTURE rather than every
+// img in the box: `.thumbnail img` also catches the already-built badge — an
+// SVG whatever the entry is — and paints it solid black over the artwork.
 .row[data-locked="true"][data-vector-thumb="false"] .thumbnail .picture,
 .row[data-already-built="true"][data-vector-thumb="false"] .thumbnail .picture {
   filter: grayscale(100%) contrast(80%) brightness(0%);
 }
 
+// Both unplaceable states share the ground. Which one it is gets said in the
+// label and the aria suffix, not in a second colour; the row stays clickable
+// so the hover card that explains the lock is still reachable.
 .row[data-locked="true"],
 .row[data-already-built="true"] {
   .name {
@@ -1330,18 +1102,9 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   }
 }
 
-// A group heading inside the table.
-//
-// A full-width band rather than a row of cells: it names the group, so it has
-// nothing to say in any of the metric columns and lining it up with them would
-// only invite the reader to look for values that are not there.
-//
-// The table could not use GroupedResults — it draws its rows against one shared
-// column geometry, and a scrolling section per group would break exactly the
-// alignment that makes the columns readable. So it rendered ungrouped while the
-// Group by control stayed on screen and kept reordering the rows on the C# side:
-// picking "Asset type" moved every bridge to the top and drew no heading to say
-// why.
+// A group heading inside the table: a full-width band rather than a row of
+// cells, because it names the group and has nothing to say in the metric
+// columns. Lining it up with them only invites a search for absent values.
 .tableGroupHeading {
   display: flex;
   flex-direction: row;
@@ -1378,9 +1141,8 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
 }
 
 // The footer states the window at both ends: what is on screen on the left,
-// what pressing the button adds on the right. One row, because they are one
-// fact — "you are seeing part of this" — said twice for the two questions a
-// player actually has.
+// what the button adds on the right. One row, because they are one fact said
+// twice for the two questions a player has.
 .loadMoreRow {
   display: flex;
   flex-direction: row;

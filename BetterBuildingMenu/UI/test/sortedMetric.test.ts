@@ -53,9 +53,9 @@ describe("reading the sorted value off an entry", () => {
   });
 
   it("reads parking as the bay count, which is what the sort orders on", () => {
-    // Order() sorts HasParking by ParkingSlots: a boolean put every entry into
-    // one of two buckets and left the order inside them untouched, so on any
-    // set that agreed the sort visibly did nothing.
+    // Order() sorts HasParking by ParkingSlots: a boolean puts every entry
+    // into one of two buckets and leaves the order inside them untouched, so
+    // on any set that agrees the sort visibly does nothing.
     assert.equal(sortedMetricValue(entry, "parking"), 80);
   });
 

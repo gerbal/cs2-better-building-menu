@@ -28,11 +28,9 @@ import {
 
 describe("Building Lens metric formatting", () => {
   it("groups thousands without relying on Intl", () => {
-    // Cohtml's toLocaleString did not group in the archived captures, so the
-    // grouping is done explicitly rather than delegated to the runtime.
-    // The separator defaults to a NO-BREAK space: Cohtml treats a plain U+0020
-    // between digits as a line-break opportunity and will split a number in
-    // half across two lines.
+    // Cohtml's toLocaleString does not group, so the grouping is done here
+    // rather than delegated. The separator defaults to a NO-BREAK space:
+    // Cohtml splits a number across lines at a plain U+0020 between digits.
     assert.equal(groupDigits(80000), "80\u00a0000");
     assert.equal(groupDigits(1234567), "1\u00a0234\u00a0567");
     assert.equal(groupDigits(999), "999");
@@ -40,9 +38,8 @@ describe("Building Lens metric formatting", () => {
   });
 
   it("groups with whatever separator the game's dictionary gives", () => {
-    // The defect this fixes: our column read "192 405/mo" beside the game's own
-    // "1,416,788" on the same screen, because the separator was hardcoded here
-    // while the game reads its own Common.THOUSANDS_SEPARATOR.
+    // The separator is the game's own Common.THOUSANDS_SEPARATOR, not one
+    // hardcoded here, or our column disagrees with the game's on one screen.
     assert.equal(groupDigits(1234567, { group: ",", decimal: "." }), "1,234,567");
     assert.equal(groupDigits(1234567, { group: ".", decimal: "," }), "1.234.567");
     assert.equal(groupDigits(12.34, { group: ".", decimal: "," }), "12,3");
@@ -133,9 +130,8 @@ describe("Building level", () => {
   });
 
   it("marks a building with no level as not applicable, not as zero", async () => {
-    // cm-ch0z. Service buildings have no level and the column printed a bare
-    // "0" for every one of them, sitting beside a "—" in Workers that means
-    // "not known". Two different absences rendering as two different lies.
+    // Service buildings have no level, so a bare "0" would sit beside the "—"
+    // in Workers that means "not known": two absences rendering as two lies.
     const { formatBuildingLevel, METRIC_NOT_APPLICABLE } = await import(
       "../src/domain/buildingLensMetricFormat.ts"
     );
@@ -144,9 +140,8 @@ describe("Building level", () => {
   });
 
   it("keeps not-applicable distinguishable from not-known", async () => {
-    // The bead's third criterion, and the reason this is not just "render a
-    // dash": the table already uses one mark for each, and Parking has been
-    // making the distinction since cm-zxou.
+    // Not just "render a dash": the table uses a different mark for each, and
+    // Parking makes the same distinction.
     const { METRIC_NOT_APPLICABLE, METRIC_NO_DATA } = await import(
       "../src/domain/buildingLensMetricFormat.ts"
     );
@@ -199,10 +194,9 @@ describe("Building Lens detail metrics", () => {
   });
 
   it("shows the whole projected entry, not just the utility subset", async () => {
-    // cm-qnfs. The detail panel offered eight candidates — utilities and
-    // pollution — so a building with neither expanded to an empty box while the
-    // row above it showed cost, workers and a lot size. The detail view is
-    // where an asset is compared properly; it cannot know less than the row.
+    // The detail view is where an asset is compared properly, so it cannot
+    // know less than the row above it: offered only utilities and pollution,
+    // a building with neither expands to an empty box.
     const { getBuildingDetailMetrics } = await import("../src/domain/buildingLensMetricFormat.ts");
 
     const keys = getBuildingDetailMetrics({
@@ -237,9 +231,8 @@ describe("Building Lens detail metrics", () => {
 
   it("keeps a real zero and drops a not-applicable one", async () => {
     // A pollution of zero is a measurement. A building LEVEL of zero is not a
-    // level — service buildings have none, and printing "0" beside dashes that
-    // mean "unknown" is the defect cm-ch0z describes. Parking is the same: no
-    // bays is not a bay count worth a row.
+    // level — service buildings have none — and printing "0" beside dashes
+    // that mean "unknown" is a lie. No parking bays is not a bay count.
     const { getBuildingDetailMetrics } = await import("../src/domain/buildingLensMetricFormat.ts");
 
     const details = getBuildingDetailMetrics({
@@ -360,12 +353,8 @@ describe("Capacity units by role", () => {
 describe("per-distance metrics", () => {
   it("marks a network cost as a rate, not a total", () => {
     // 12,500 for a road is per kilometre; the same number on a hospital is the
-    // whole bill. The unit has to travel with the figure.
-    // Built from groupDigits rather than a literal: the fallback group
-    // separator is U+00A0, indistinguishable from a space on screen and in a
-    // diff.
-    // The game has its own per-kilometre money form, so the rate is stated the
-    // way vanilla states it rather than by bolting "/km" onto a number.
+    // whole bill, so the unit travels with the figure. Built from groupDigits,
+    // and stated in the game's own per-kilometre money form.
     assert.equal(
       formatBuildingMetric(12500, "cost", undefined, true),
       applyMoneyTemplate(FALLBACK_MONEY.perKilometre, groupDigits(12500)),
@@ -442,10 +431,9 @@ describe("money templates", () => {
 });
 
 describe("formatServiceRange under the player's unit system", () => {
-  // The rules are vanilla's own, read out of its UI bundle rather than
-  // invented: Length is metres below 1000 and kilometres above with one
-  // decimal; under Freedom it is YARDS below 1609 and miles above. Yards, not
-  // feet — feet are what vanilla uses for Height and NetElevation.
+  // The rules are vanilla's own, read out of its UI bundle: Length is metres
+  // below 1000 and kilometres above with one decimal; under Freedom it is
+  // YARDS below 1609 and miles above — not feet, which Height uses.
   const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
   const metric = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Metric };
 
@@ -480,12 +468,8 @@ describe("width and speed follow the same setting", () => {
 
   it("states a network width by the game's Length rule", () => {
     // A width is a horizontal distance, so it takes the units vanilla gives a
-    // Length: metres, and YARDS under Freedom. It briefly rendered feet here
-    // on the argument that a net dimension is more like an elevation — that
-    // was our taste overriding the game's own rule, and the game wins.
-    //
-    // Whole units, no decimal, because that is what vanilla's Length does
-    // below its threshold.
+    // Length: metres, and YARDS under Freedom. Whole units, no decimal, which
+    // is what vanilla's Length does below its threshold.
     assert.match(formatNetworkWidth(16, imperial), /17 yd$/);
     assert.match(formatNetworkWidth(16), /16 m$/);
   });
@@ -500,10 +484,9 @@ describe("per-distance money under Freedom units", () => {
   const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
 
   it("converts the rate as well as the unit, and keeps money whole", () => {
-    // ¢4,000/km is ¢6,437/mi — changing the unit without the figure would
-    // understate a road by more than a third. And the conversion lands on
-    // 6437.376, which must not reach the card as "¢6,437.4": money is whole
-    // everywhere else on it.
+    // Changing the unit without converting the figure would understate a road
+    // by more than a third, and the conversion must not reach the card with a
+    // decimal: money is whole everywhere else on it.
     const cost = formatBuildingMetric(4000, "cost", imperial, true);
 
     assert.doesNotMatch(cost, /\./, `money kept a fraction: ${cost}`);
@@ -538,12 +521,9 @@ describe("height and volume take the game's other two rules", () => {
 });
 
 describe("weight follows the game's own rule", () => {
-  // Vanilla's Weight formatter, read off the shipped bundle: the raw figure is
-  // kilograms; metric shows kg below 100, tonnes below a million (two
-  // decimals), kilotonnes above; imperial shows lb below 100 kg, short tons
-  // (kg / 907.18474, template "tn") below 9,071,847.4 kg, short kilotons
-  // above. Pounds are kg / 0.45359237. Same thresholds, same constants, so a
-  // figure here reads as the same figure in the game's own panels.
+  // Vanilla's Weight formatter, read off the shipped bundle: metric shows kg
+  // below 100, tonnes below a million (two decimals) and kilotonnes above;
+  // imperial shows lb, short tons and short kilotons on the same thresholds.
   const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
 
   it("metric: kilograms, tonnes, kilotonnes at vanilla's thresholds", () => {
@@ -562,18 +542,15 @@ describe("weight follows the game's own rule", () => {
 
   it("a weight capacity is kilograms too, so garbage reads in tonnes", () => {
     // GarbageFacilityData.m_GarbageCapacity is bound by vanilla with the same
-    // "weight" unit as cargo. We printed the raw kilograms under a "t" label
-    // — a landfill read "500,000 t".
+    // "weight" unit as cargo, not as raw kilograms under a "t" label.
     assert.equal(formatCapacity(500000, "ServiceBuildings", "ServiceBuildings_Garbage", "GarbageFacility"), "500 t");
     assert.equal(formatCapacity(500000, "ServiceBuildings", "ServiceBuildings_Garbage", "GarbageFacility", imperial), "551.16 tn");
   });
 
   it("a post facility's mail capacity is a count, not a weight", () => {
     // Vanilla binds PostFacilityData.m_MailCapacity as
-    // Properties.MAIL_STORAGE_CAPACITY with the "integer" unit
-    // (PrefabUISystem.cs:1630) — the same unit as its van count. An earlier
-    // pass had grouped it with garbage as a weight, and a post office read
-    // "500 t" of mail.
+    // Properties.MAIL_STORAGE_CAPACITY with the "integer" unit — the same
+    // unit as its van count, and not a weight.
     assert.doesNotMatch(formatCapacity(500000, "ServiceBuildings", "ServiceBuildings_Communications", "PostFacility"), /\bt$|tn$/);
     // The thousands separator is the locale's business; the digits are ours.
     assert.equal(formatCapacity(500000, "ServiceBuildings", "ServiceBuildings_Communications", "PostFacility").replace(/[^0-9]/g, ""), "500000");
@@ -581,11 +558,9 @@ describe("weight follows the game's own rule", () => {
 });
 
 describe("rates follow the game's own per-month rules", () => {
-  // Vanilla's WeightPerMonth: kilograms per month, shown as kg/mo. below 100
-  // (one decimal) and t/mo. above (two); imperial lb/mo. and tn/mo. with the
-  // same constants as Weight. Its plain per-month template is "{VALUE} /mo.".
-  // Garbage processing and garbage accumulation are the first; deathcare
-  // processing and mail sorting are integers per month, the second.
+  // Vanilla's WeightPerMonth: kg/mo. below 100 (one decimal) and t/mo. above
+  // (two), imperial on Weight's constants. Garbage processing and garbage
+  // accumulation are these; deathcare and mail sorting are integers per month.
   const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
 
   it("weight per month", () => {
@@ -603,8 +578,8 @@ describe("rates follow the game's own per-month rules", () => {
 });
 
 describe("the details table shows the game's units", () => {
-  // ConsumptionData.m_GarbageAccumulation is kilograms per month and vanilla
-  // shows it as WeightPerMonth; we printed the raw figure under "t".
+  // ConsumptionData.m_GarbageAccumulation is kilograms per month, and vanilla
+  // shows it as WeightPerMonth.
   it("garbage produced is a weight per month", () => {
     const details = getBuildingDetailMetrics({ garbageAccumulation: 100000 } as never);
     const garbage = details.find((d) => d.key === "garbage");
@@ -615,8 +590,7 @@ describe("the details table shows the game's units", () => {
 describe("electricity follows the game's own units", () => {
   // Vanilla's Power: the raw figure is in hundreds of watts — below 10,000 it
   // shows raw/10 as kW (one decimal), above as raw/10,000 MW (two). Energy is
-  // raw/10,000 MWh (one decimal). We labelled the raw figure "MW", so a
-  // 400 MW plant read "4,000,000 MW".
+  // raw/10,000 MWh (one decimal).
   it("power", () => {
     assert.equal(formatPower(5000), "500 kW");
     assert.equal(formatPower(20000), "2 MW");
@@ -639,10 +613,8 @@ describe("water volumes follow the game's own unit system", () => {
   const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
 
   // Vanilla binds WATER_CAPACITY and SEWAGE_CAPACITY with the volumePerMonth
-  // unit (PrefabUISystem.cs:1603, :1605): cubic metres a month, and US
-  // gallons a month under Freedom at the game's 264.172. Ours labelled the
-  // raw figure "m³" whatever the setting — a water tower read "15,000 m³"
-  // beside a road priced per mile.
+  // unit: cubic metres a month, and US gallons a month under Freedom at the
+  // game's own 264.172.
   for (const role of ["WaterPumpingStation", "SewageOutlet", "WastewaterTreatmentPlant"]) {
     it(`${role}: cubic metres a month, gallons a month under Freedom`, () => {
       const metric = formatCapacity(100000, "ServiceBuildings", "ServiceBuildings_Water", role);
@@ -663,8 +635,7 @@ describe("water volumes follow the game's own unit system", () => {
 describe("a telecom facility's capacity is a data rate", () => {
   // Vanilla binds TelecomFacilityData.m_NetworkCapacity as NETWORK_CAPACITY
   // with the dataRate unit: the figure as gigabits a second, one decimal,
-  // through Common.VALUE_GIGABIT_PER_SECOND (PrefabUISystem.cs:1637). Ours was
-  // a bare "25 000", and the index had truncated the float on the way in.
+  // through Common.VALUE_GIGABIT_PER_SECOND.
   it("states gigabits a second in both unit systems", () => {
     const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
 

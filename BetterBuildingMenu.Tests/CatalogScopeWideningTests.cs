@@ -7,20 +7,12 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// cm-2xvs.21: removing the menu scope must widen the catalogue.
+	/// Removing the menu scope widens the catalogue, never narrows it.
 	/// </summary>
 	/// <remarks>
-	/// Measured in the 105-pack scale run before the fix: Landscaping scoped
-	/// showed 514 and Roads &amp; Networks 403, while clearing the scope showed
-	/// 715 — fewer than those two menus together, out of 1,465 placements the
-	/// backend held. The unscoped arm asked our own taxonomy (IsBuilding) while
-	/// the scoped arm asked the game's menu tree, so the two could disagree by
-	/// any amount and nothing noticed.
-	///
 	/// These assert the RELATION rather than either arm's contents, because the
-	/// contents need a live index and the relation does not. The numbers above
-	/// belong in the bead; what belongs here is that no combination of facts
-	/// can make a scoped view hold something the unscoped view drops.
+	/// contents need a live index and the relation does not: no combination of
+	/// facts can make a scoped view hold something the unscoped view drops.
 	/// </remarks>
 	public sealed class CatalogScopeWideningTests
 	{
@@ -29,10 +21,8 @@ namespace BetterBuildingMenu.Tests
 		/// </summary>
 		/// <remarks>
 		/// Two implications hold in the live index and would otherwise generate
-		/// states that cannot occur: an asset placed in THIS menu is placed in
-		/// some menu, and IsGatheredNetwork is itself guarded on
-		/// IsPlacedInAnyMenu (its remarks say why — the index also holds
-		/// networks vanilla never offers).
+		/// states that cannot occur: an asset placed in THIS menu is placed in some
+		/// menu, and IsGatheredNetwork is itself guarded on IsPlacedInAnyMenu.
 		/// </remarks>
 		public static IEnumerable<object[]> ReachableStates()
 		{
@@ -92,9 +82,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void TheOldRuleIsWhatThisTestWouldHaveCaught()
 		{
-			// The regression in one line: a Landscaping prop is placed in that
-			// menu and is not a building, so the scoped view held it and the
-			// unscoped view did not.
+			// A Landscaping prop is placed in its menu and is not a building, so
+			// both scopes have to hold it.
 			var prop = new { IsBuilding = false, PlacedInAnyMenu = true };
 
 			Assert.True(BuildingCatalogAdapter.BelongsInCatalog(
@@ -115,11 +104,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void TheAllCountIsTheSumOfEveryRowIncludingTheUnnamedOne()
 		{
-			// The client reads "All" as the sum of the count table (see
-			// categoryCount in vanillaMenuCategories.ts), so a row the backend
-			// drops is a row All never counts. Unscoped, the dropped row is the
-			// big one: 9,812 of 10,528 assets answered to no category, and the
-			// strip said 716.
+			// The client reads "All" as the sum of the count table, so a row the
+			// backend drops is a row All never counts — the unnamed row included.
 			var table = new[]
 			{
 				new MenuCategoryCount(string.Empty, 9812),
@@ -158,26 +144,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void TheGeneratedPropsStayOutOfTheLensAtBothScopes()
 		{
-			// cm-wdap, decided by the user 2026-08-27: the 314 props our own
-			// generators emit are FindIt's, not the lens's. FindIt answers
-			// "where is any asset"; the lens answers "what should I build here,
-			// and what does it cost me". A quantity variant of a shopping
-			// trolley has no answer to the second question.
-			//
-			// This is the shape they arrive in. A generated prop is a
-			// StaticObjectPrefab, so IsBuilding is false, and both generators
-			// set UIObject.m_Group = null, so vanilla places them in no menu —
-			// which is what keeps them out, at both scopes, with no special
-			// case anywhere.
-			//
-			// So this test is a DECISION, not a floor. The generators and the
-			// marker component they stamped are gone, so nothing produces this
-			// shape today; the case is kept because the shape is what the rule
-			// is about. Read it before adding an arm to BelongsInCatalog that
-			// would admit group-less prefabs: that change is a reversal, not a
-			// fix, and it arms the exact population cm-2xvs.13 warns about —
-			// group-less prefabs, which null the toolbar's menu and category
-			// and unmount the panel under the player.
+			// A prefab that is not a building and sits in no menu stays out at both
+			// scopes, with no special case. Do not add an arm to BelongsInCatalog
+			// that admits group-less prefabs: they unmount the panel under the player.
 			foreach (var menuScoped in new[] { false, true })
 			{
 				Assert.False(BuildingCatalogAdapter.BelongsInCatalog(

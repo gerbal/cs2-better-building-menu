@@ -11,26 +11,16 @@ export interface ViewModeOption {
 }
 
 /**
- * Where the lens opens, and what "Reset menu" goes back to.
- *
- * ONE constant, because this was three literals and moving the default moved
- * one of them: the catalog rendered cards while the view bar highlighted grid
- * and Reset put you back to grid.
- *
- * Cards keep the thumbnail the grid was defaulted for, at a larger size, add
- * footprint and cost, and never truncate a name — which is the whole problem
- * the tile's character budget exists to manage.
+ * Where the lens opens, and what "Reset menu" goes back to. ONE constant, so
+ * moving the default cannot leave the catalog, the view bar and Reset
+ * disagreeing about which mode that is.
  */
 export const DEFAULT_VIEW_MODE: CatalogViewMode = "cards";
 
 /**
- * The order the control draws them in.
- *
- * Cards first, because that is where the lens opens. The row then runs from
- * the most picture to the most data — cards, list, grid, table — so moving
- * along it trades thumbnail for numbers in one direction rather than jumping
- * about, and the default sits at the end you start from rather than in the
- * middle of the row.
+ * The order the control draws them in: most picture to most data, so moving
+ * along the row trades thumbnail for numbers in one direction, with the
+ * default at the end you start from.
  */
 export const VIEW_MODES: readonly ViewModeOption[] = [
   { id: "cards", localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ViewCards]", fallback: "Cards" },
@@ -47,15 +37,9 @@ interface ViewModeBarProps {
 }
 
 /**
- * The Cards/List/Grid/Table control, shared by every surface that has one.
- *
- * Zoning had no view control at all: it inherited whatever the catalog was
- * last set to and gave the player no way to change it from where they were
- * standing. The same set of results deserves the same affordances however you
- * arrived at it, so this is one component rather than markup the catalog owns.
- *
- * Built from the vanilla ToolButton the game's own Pack and Theme filters use,
- * so the selected state is the game's rather than a hand-styled lookalike.
+ * The Cards/List/Grid/Table control, shared by every surface that has one, so
+ * the same results carry the same affordances however they were reached. On
+ * the vanilla ToolButton, so the selected state is the game's.
  */
 export const ViewModeBar = ({ value, onChange, omit = [] }: ViewModeBarProps) => {
   const { translate } = useLocalization();

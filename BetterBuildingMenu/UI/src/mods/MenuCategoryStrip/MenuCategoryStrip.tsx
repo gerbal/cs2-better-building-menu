@@ -56,62 +56,44 @@ const BuildingLensExpandedCategories$ = bindValue<MenuCategoryTabs[]>(
 );
 
 /**
- * Vanilla's second tier, rebuilt.
- *
- * Clicking a vanilla toolbar icon scopes the lens to that menu, which is right
- * but not sufficient: vanilla then splits the menu into categories, and we drew
- * all of them as one list. Transportation is six modes shown as 53
- * undifferentiated rows.
- *
- * Built from the game's own ToolButton rather than a hand-styled lookalike, so
- * the tabs carry vanilla's sizing, hover and selected treatment for free — the
- * same reasoning that put the filter rail on ToolButton. The strip is chrome,
- * and chrome should be the game's.
+ * Vanilla's second tier, rebuilt: the categories, tiers or branches that cut one
+ * menu. Built from the game's own ToolButton rather than a lookalike, so the
+ * tabs carry vanilla's sizing, hover and selected treatment for free.
  */
 export const MenuCategoryStrip = () => {
   const { translate } = useLocalization();
   const categories = useValue(BuildingLensMenuCategories$);
   const selected = useValue(BuildingLensMenuCategory$);
-  // ALL hooks belong above the early return below. This one was added under it
-  // and crashed the UI with React #300 — "rendered fewer hooks than expected" —
-  // on every menu the strip hides itself for. Electricity has one category, so
-  // clicking it took the early return, ran two hooks where the previous render
-  // had run three, and took the whole view down.
+  // ALL hooks belong above the early return below. One under it renders
+  // conditionally, and React #300 takes the whole view down on any menu the
+  // strip hides itself for. A test asserts the ordering on this file's source.
   const counts = useValue(BuildingLensMenuCategoryCounts$) ?? [];
   const schoolTierCounts = useValue(BuildingLensMenuSchoolTierCounts$) ?? [];
   const selectedSchoolTier = useValue(BuildingLensMenuSchoolTier$) ?? -1;
   const menu = useValue(BuildingLensMenu$) ?? "";
   const stripTabs = useValue(BuildingLensStripTabs$) ?? [];
-  // A LIST, because the filter rail writes the same state and can hold
-  // several. The row is still single-select; it just has to show what the rail
-  // did rather than only what it set itself.
+  // A LIST, because the filter rail writes the same state and can hold several.
+  // The row stays single-select but has to show what the rail did.
   const selectedStripTabs = useValue(BuildingLensStripTab$) ?? [];
   const noStripTab = selectedStripTabs.length === 0;
   const stripAxis = useValue(BuildingLensStripAxis$) ?? "";
   const expandedCategories = useValue(BuildingLensExpandedCategories$) ?? [];
 
   // Vanilla hides its own row below two categories, and a strip offering one
-  // choice is not a choice. Water & Sewage and Zones each have exactly one.
-  //
-  // The fallback can carry the strip on its own, which is the point of it:
-  // them: Electricity is a single category, so the strip drew nothing at all
-  // and the menu arrived with no way to cut its 60 assets. Progression is an
-  // axis every menu has.
+  // choice is not a choice. The branch fallback below carries the strip on the
+  // single-category menus, so they are not left with no way to cut themselves.
   const showCategories = shouldShowCategoryStrip(categories, menu);
-  // Every segment obeys the scope, not only the categories: All menus has
-  // branches too, and the fallback below would have drawn them.
+  // Every segment obeys the scope, not only the categories: the all-menus scope
+  // has branches too, and the fallback below would otherwise draw them.
   const scoped = isLensScoped(menu);
-  // Education navigates by LEVEL, not by the milestone a school unlocked at.
-  // With several region packs there are dozens of schools per level, which is
-  // the scale the strip exists to cut; the milestone they share is not.
+  // Education navigates by LEVEL, not by the milestone a school unlocked at:
+  // with several region packs the level is what has dozens behind it, and the
+  // milestone they share cuts nothing.
   const schoolTiers = schoolTierTabs(schoolTierCounts);
   const showSchoolTiers = scoped && isEducationMenu(menu) && schoolTiers.length > 1;
-  // The fallback, and the reason the strip exists on a service menu at all.
-  // Vanilla splits Roads into nineteen categories and Electricity into one, so
-  // the category strip drew nothing exactly where a 60-asset menu needed
-  // cutting most. The development tree is the axis those menus DO have —
-  // fossil against renewable, police against administration — so it stands in
-  // when there are no categories, and stays out of the way when there are.
+  // The fallback, and why the strip exists on a service menu at all: vanilla
+  // gives some menus one category and no way to cut them. The development tree
+  // is the axis those menus do have, so it stands in where categories cannot.
   const showBranches = scoped && !showCategories && stripTabs.length > 1;
 
   if (!showCategories && !showBranches && !showSchoolTiers) {
@@ -124,10 +106,8 @@ export const MenuCategoryStrip = () => {
     trigger(mod.id, "SetBuildingLensMenuSchoolTier", level);
 
   // The category prefab's own name is the id, and the game ships a localized
-  // string under exactly that id — SubServices.NAME[TransportationRoad] is
-  // "Road". This asked for Assets.SUB_SERVICE_NAME then Assets.NAME, neither of
-  // which is a key family CS2 has, so every tab here fell back to the raw
-  // prefab name in every language. See vanillaServiceLabels.ts.
+  // string under exactly that id, so a tab reads as the game words it rather
+  // than as a raw prefab name. See vanillaServiceLabels.ts.
   const label = (category: VanillaMenuCategory) =>
     resolveVanillaLabel(
       vanillaCategoryNameKeys(category.id),
@@ -136,12 +116,6 @@ export const MenuCategoryStrip = () => {
     );
 
   const allLabel = translate("Tooltip.LABEL[BetterBuildingMenu.AllCategories]", "All") ?? "All";
-  // The row carries up to two segments and the second one's axis changes per
-  // menu — progression on most, school level on Education. Without a word
-  // saying which, the same screen position means a different question from one
-  // menu to the next, and the row cannot be learned. One small label per
-  // segment, not per tab: names on every tab were what made this row
-  // unreadable the first time.
   // The count rides in the tooltip whatever the width, because a narrow strip
   // still leaves the player asking how much is behind a glyph.
   const withCount = (text: string, id: string) => {
@@ -161,13 +135,11 @@ export const MenuCategoryStrip = () => {
     <div className={styles.strip}>
       {showCategories && (
         <>
-      {/* One more tab than vanilla has. Vanilla always opens on a category and
-          offers no way back out to the whole menu; the lens can show the menu
-          entire, which is the thing it can do that the vanilla menu cannot. */}
-      {/* All means all: no category AND no level. Picking a level clears the
-          category — they are alternatives in this row — so testing the
-          category alone lit All up beside the level the player had just
-          chosen. */}
+      {/* One more tab than vanilla has: it always opens on a category and
+          offers no way back out to the whole menu. */}
+      {/* All means all — no category AND no level. They are alternatives in
+          this row, so testing the category alone would light All up beside
+          the level the player just chose. */}
       <ToolButton
         selected={
           isCategorySelected(ALL_CATEGORIES_ID, selected) &&
@@ -176,9 +148,8 @@ export const MenuCategoryStrip = () => {
         }
         tooltip={withCount(allLabel, ALL_CATEGORIES_ID)}
         onSelect={() => choose(ALL_CATEGORIES_ID)}
-        // Required by the component, and there is no icon for "all" — the tab
-        // carries a word instead. Same as the filter rail does for a dimension
-        // with no glyph.
+        // Required by the component, and there is no icon for "all", so the
+        // tab carries a word instead.
         src=""
         focusKey={FOCUS_DISABLED}
         className={classNames(
@@ -192,10 +163,9 @@ export const MenuCategoryStrip = () => {
         )}
         aria-label={withCount(allLabel, ALL_CATEGORIES_ID)}
       >
-        {/* The menu's whole size, and the only always-visible statement of it.
-            The footer says "Showing 100 of 368" but sits below the scroll, so
-            on arrival the truncation is invisible; this is on screen before the
-            player has moved anything. */}
+        {/* The menu's whole size, and the only always-visible statement of it:
+            the footer's count sits below the scroll, so on arrival the
+            truncation is otherwise invisible. */}
         <span className={styles.allLabel}>
           {allLabel}
           {categoryCount(counts, ALL_CATEGORIES_ID) !== null && (
@@ -204,12 +174,9 @@ export const MenuCategoryStrip = () => {
         </span>
       </ToolButton>
 
-      {/* The school levels stand in for the Education category, in ITS place
-          and in the same row, so the menu reads as one list of choices:
-          four ranks of school, then Research. They partition that category
-          exactly — ten schools, 3/3/1/3 — so nothing is lost by drawing them
-          instead of it, and a separate tier segment would have asked the
-          player to combine two rows to reach what one row can say. */}
+      {/* The school levels stand in for the Education category, in ITS place,
+          so the menu stays one row of choices. They partition that category
+          exactly, so nothing is lost by drawing them instead of it. */}
       {visibleCategories(categories, counts).flatMap((category) =>
         showSchoolTiers && isSchoolCategory(category.id)
           ? schoolTiers.map((tier) => (
@@ -249,11 +216,9 @@ export const MenuCategoryStrip = () => {
                 )}
                 aria-label={`${branchTabTooltip(branch, label(category))} (${branch.count})`}
               >
-                {/* No numeral here, unlike the school levels. Each unlock
-                    ships its own icon, so the tabs are already told apart by
-                    what they are; a rank would be a second ordering the player
-                    did not ask for. The levels need one because all four draw
-                    the same mortarboard. */}
+                {/* No numeral here, unlike the school levels: each unlock
+                    ships its own icon, so the tabs are already told apart and
+                    a rank would be an ordering nobody asked for. */}
                 <span className={styles.tabCount}>{branch.count}</span>
               </ToolButton>
             ))
@@ -279,13 +244,9 @@ export const MenuCategoryStrip = () => {
           )}
           aria-label={withCount(label(category), category.id)}
         >
-          {/* The count, not the name. Names on every tab were reported as
-              disruptive, and they were: fourteen worded tabs wrapped a
-              one-line strip to three rows and pushed the results down. The
-              name lives in the tooltip, where vanilla puts it too.
-              The number stays on the tab because it is what the strip could
-              not say before — which of fourteen glyphs is worth opening —
-              and two or three digits keeps the row one line. */}
+          {/* The count, not the name: worded tabs wrap the strip to three rows
+              and push the results down, while two or three digits keep it one
+              line. The name lives in the tooltip, where vanilla puts it. */}
           <span className={styles.tabCount}>{categoryCount(counts, category.id) ?? ""}</span>
         </ToolButton>,
             ]
@@ -316,8 +277,7 @@ export const MenuCategoryStrip = () => {
           </ToolButton>
 
           {/* Iconed where the axis has icons, worded where it does not — see
-              the tab body below. Either way there are only two or three per
-              menu, so the row stays one line. */}
+              the tab body below. Either way there are only a few per menu. */}
           {stripTabs.map((branch) => (
             <ToolButton
               key={branch.id}
@@ -334,12 +294,9 @@ export const MenuCategoryStrip = () => {
               )}
               aria-label={withBranchCount(branch.id, branch.id)}
             >
-              {/* Glyph and count when there IS a glyph, which is the
-                  treatment the category tabs use and why the dev tree's icons
-                  were worth resolving. The asset-type axis has none — the game
-                  ships no icon for "Buildings" or "Networks" — and an iconless
-                  tab showing only a number is a tab with nothing on it, so
-                  that axis falls back to its word. */}
+              {/* Glyph and count where there IS a glyph, as the category tabs
+                  do. The asset-type axis has none, and a tab showing only a
+                  number has nothing on it, so that axis falls back to a word. */}
               <span className={styles.tabCount}>{branch.count}</span>
             </ToolButton>
           ))}

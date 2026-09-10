@@ -13,10 +13,9 @@ namespace BetterBuildingMenu.Tests
 	/// the upgrades a selected building supports, in the order vanilla lists them.
 	/// </summary>
 	/// <remarks>
-	/// Vanilla's own binding decides WHAT is listed and whether each row is
-	/// locked or built. This only supplies presentation — the entry behind each
-	/// name — so it must never invent a row, and a name it cannot resolve is
-	/// simply absent. The UI notices the gap and leaves the panel to vanilla.
+	/// Vanilla's own binding decides WHAT is listed and whether each row is locked
+	/// or built; this supplies only the entry behind each name, never a row of its
+	/// own. A name it cannot resolve is absent, and the UI leaves that to vanilla.
 	/// </remarks>
 	public sealed class BuildingExtensionMenuTests
 	{

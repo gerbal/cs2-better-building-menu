@@ -6,14 +6,9 @@ import { describe, it } from "node:test";
  * A source contract, in the stylesheetContracts pattern: the rule exists
  * because the live game drew something wrong that no render test can see.
  *
- * Measured 2026-09-09 (main prefix, 1280x720, Roads in Grid at the default
- * tile size): 77 of 100 tiles carried an ellipsis and twelve had collapsed
- * to "…e…d" — two characters a line. In the page, a line whose text had just
- * been swapped from a long name to a short one still reported the long
- * text's scrollWidth (171px in a 64px box) in the same tick, and only read
- * 64px a frame later; a brand-new line read 0. The tile name's fit loop
- * measured synchronously after every re-render, so each pass saw the
- * previous text's overflow and shrank the budget again, to the floor.
+ * A line whose text has just been swapped still reports the PREVIOUS text's
+ * scrollWidth in the same tick, and a brand-new line reads 0. Measuring
+ * synchronously after every re-render shrinks the budget to its floor.
  */
 const grid = readFileSync(new URL("../src/mods/BuildingGrid/BuildingGrid.tsx", import.meta.url), "utf8");
 const tileName = grid.slice(grid.indexOf("const TileName"), grid.indexOf("export const BuildingGrid"));

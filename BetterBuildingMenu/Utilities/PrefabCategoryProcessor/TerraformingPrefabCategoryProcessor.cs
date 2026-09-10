@@ -11,28 +11,9 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 	/// The terrain brushes: level, shift, soften and slope.
 	/// </summary>
 	/// <remarks>
-	/// These live in the vanilla Landscaping menu under its Terraforming
-	/// category, and nothing here indexed them. Every other processor queries
-	/// for components a placeable object carries — StaticObjectData, BuildingData,
-	/// NetData — and a TerraformingPrefab is a bare PrefabBase carrying only
-	/// TerraformingData and PlaceableInfoviewItem, so no query could match it.
-	///
-	/// The symptom was worse than absence. The category strip is built from the
-	/// game's own UIAssetCategoryData, so Landscaping rendered a Terraforming
-	/// tab that returned "No buildings in this category" — the same "twenty rows
-	/// is worse than zero" failure that GetIndexedBuildings already argues
-	/// against, in the same menu.
-	///
-	/// Filed under Props rather than a category of their own. IsBuilding then
-	/// keeps them out of the unscoped catalog, where four cost-less lot-less
-	/// tool rows have no business, while a player who has opened Landscaping
-	/// still gets the menu's real contents. A new PrefabCategory would have
-	/// meant a top-level rail button, an icon, a label table, a localization
-	/// entry and two taxonomy test suites for four assets.
-	///
-	/// Activation needs nothing: ToolSystem.ActivatePrefabTool already routes a
-	/// TerraformingPrefab to TerrainToolSystem, which is the same call the
-	/// vanilla toolbar makes.
+	/// A TerraformingPrefab is a bare PrefabBase carrying only TerraformingData,
+	/// so the component queries the other processors use cannot match it. Filed
+	/// under Props, which IsBuilding keeps out of the unscoped catalog.
 	/// </remarks>
 	public class TerraformingPrefabCategoryProcessor : IPrefabCategoryProcessor
 	{
@@ -68,18 +49,9 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 				return false;
 			}
 
-			// Height is the four tools the toolbar offers. The other targets —
-			// Ore, Oil, FertileLand, GroundWater, Material — are editor resource
-			// brushes, and keeping them out means an unscoped search for "level"
-			// cannot turn up one.
-			//
-			// Unless the game itself offers it. This used to read "the menu tree
-			// would drop them anyway, since they sit under no
-			// UIAssetCategoryPrefab" — which was a guess, and wrong: the coverage
-			// walk found five Material brushes sitting in Landscaping's own
-			// Terraforming category, where vanilla shows them and the lens did
-			// not. What the player can reach in the build menu outranks what this
-			// filter thinks belongs there.
+			// Height is the four tools the toolbar offers. The other targets are
+			// editor resource brushes, kept out so an unscoped search for "level"
+			// cannot turn one up — unless the vanilla menu itself places it.
 			if (terraforming.m_Target != TerraformingTarget.Height
 				&& !Systems.PrefabIndexingSystem.IsPlacedInVanillaMenu(entity.Index))
 			{

@@ -44,9 +44,7 @@
   align-items: center;
   padding: 5rem 5rem 2.5rem 5rem;
   // A flex item's default min-width: auto refuses to shrink below its content,
-  // so this row could not fit itself: at 720p the two sections wanted 410 + 315
-  // = 725px inside a 713px panel, and the 12px of excess pushed the Close
-  // button 13px past the right edge of the panel it closes.
+  // so without this the row cannot fit itself and pushes Close past the panel.
   min-width: 0;
 }
 
@@ -68,15 +66,6 @@
   .searchArea {
     flex: 1;
 
-    // The menu's close, in the corner vanilla's own zoning and building menus put
-// theirs. Sits last in catalogStripRow, so it lands at the right edge after
-// the search field rather than being positioned over it — .clearIcon above is
-// absolute because it belongs INSIDE the field; this one belongs beside it.
-//
-// The glyph is drawn as a plain <img> with no filter or mask on it. That is
-// not incidental: a vector under a compositing effect is what this engine
-// cannot draw (see SilhouetteIcons), and the padlock's mask cost a long hunt.
-
 
 .textBox {
       flex: 1;
@@ -90,26 +79,9 @@
   margin: 0 8rem;
 }
 
-// Search on the tab strip row, Building Lens catalog mode. The row that used
-// to carry search (.topBar above) doesn't render at all in this mode — see
-// showTopBarRow — so the strip is the only row left to put it on. It shares
-// the strip's row rather than adding one of its own.
-//
-// min-height, not height. The strip WRAPS when its tabs outrun the width left
-// beside the search field, and a fixed height turned that second line into a
-// row of icons sliced through the middle — measured on Roads & Networks at the
-// narrowed panel width: 20 tabs, tops at y=89 and y=110, the row ending at
-// y=126 with the lower line running to y=132.
-//
-// Twenty is not an outlier. Master's network-menu extension put RailTrack,
-// Bridge, PedestrianPath, BusShelter, Pillar, Ship, Electricity, Water and
-// TransportationOverview into this one menu, and the control plane took 385rem
-// out of the panel afterwards, so the "room to spare" the search field was
-// measured against no longer exists.
-//
-// The alternative was to stop the wrap and let the overflow clip sideways,
-// which draws cleanly and silently costs the player five categories. A second
-// line is 20px, and only on the menus that need one.
+// Search on the tab strip row: in catalog mode the row that carries search
+// does not render, so the strip is the only row left for it. min-height, not
+// height — the strip WRAPS when its tabs outrun the width, and height slices it.
 .catalogStripRow {
   display: flex;
   flex-direction: row;
@@ -117,26 +89,17 @@
   min-height: 45rem;
 }
 
-// Takes all the slack so the search field lands at the right edge, and does it
-// whether or not the strip inside has anything to draw. That second case is
-// real: MenuCategoryStrip renders nothing for a menu with fewer than two
-// categories, which is vanilla's own rule and covers Water & Sewage and Zones.
-// min-width: 0 because a flex item defaults to min-width: auto and would
-// refuse to shrink below its tabs, pushing the search field off the row on a
-// menu with many categories.
-// No overflow: hidden. It was here to clip tabs that outran the row, but the
-// strip wraps rather than running on, so all it ever clipped was the wrapped
-// line — the row above now grows to hold it instead.
+// Takes all the slack so the search field lands at the right edge, even when
+// MenuCategoryStrip draws nothing (fewer than two categories). min-width: 0,
+// or the tabs refuse to shrink; and no clipping, or the wrapped line is cut.
 .catalogStripTabs {
   flex: 1 1 auto;
   min-width: 0;
 }
 
-// Do NOT reach for margin-left: auto here. It is the usual way to pin a flex
-// child to the far edge and Gameface accepts it without complaint, but it
-// distributes nothing: measured in game, the field sat against the last tab
-// at x=767 rather than the row's right edge. The strip's flex-grow is what
-// actually moves it.
+// Do NOT reach for margin-left: auto here. Gameface accepts it and distributes
+// nothing, leaving the field against the last tab; the strip's flex-grow is
+// what actually moves it to the row's right edge.
 .catalogStripSearch {
   display: flex;
   flex-direction: row;
@@ -145,11 +108,8 @@
   padding-right: 6rem;
 }
 
-// Narrower than .textBox's 225rem. Measured at 1280x720 with 13 tabs: the
-// strip has 367px free to the right of the last tab, not the whole row's
-// width the legacy top bar's search field could spend. At 1rem = 0.667px,
-// 200rem plus the icon, margins and padding lands around 158px total,
-// leaving ~209px to spare — comfortable rather than exact.
+// Narrower than .textBox: the strip has only the room left to the right of the
+// last tab, not the whole row the legacy top bar's search field could spend.
 .stripTextBox {
   width: 200rem;
   padding: 6rem 8rem 4rem 8rem;
@@ -425,15 +385,8 @@
 }
 
 // The building lens is a mode switch rather than another filter toggle, so it
-// carries a visible word instead of relying on a tooltip like the icon-only
-// controls beside it.
-//
-// Scoped under .buttonsSection deliberately. `.buttonsSection button` sets a
-// square 34rem box for the icon-only controls, and it outranks a bare
-// `.buildingLensToggle` on specificity — so `width: auto` lost, the button
-// stayed 34rem, and the label ran out past its own background and collided
-// with the search field's clear icon. Matching the parent's specificity is
-// what actually lets this button size to its text.
+// carries a visible word. Scoped under .buttonsSection to match the
+// specificity of the square 34rem rule, which otherwise squashes the label.
 .buttonsSection button.buildingLensToggle {
   flex-direction: row;
   align-items: center;
@@ -453,16 +406,9 @@
   text-overflow: ellipsis;
 }
 
-// NOT .closeButton/.closeIcon: the legacy top bar already owns both names
-// further down this file, and CSS modules hash per name — so the later rule
-// won, wiped the tint with `background: none` and resized the glyph to 32rem.
-// It rendered invisible and oversized, and nothing warned.
-//
-// Transcribed from vanilla's own close, measured live rather than guessed:
-//   button.close-button_*   16x16, transparent
-//   div.tinted-icon_*       16x16, background rgba(255,255,255,1),
-//                           mask-image url(Media/Glyphs/Close.svg)
-// 24rem is 16px here — .searchIcon declares 24rem and measures 16px.
+// NOT .closeButton/.closeIcon: the legacy top bar owns both names further down
+// this file and CSS modules hash per name, so the later rule wins, wipes the
+// tint and resizes the glyph. Transcribed from vanilla's own close.
 .menuClose {
   flex: 0 0 auto;
   display: flex;
@@ -472,20 +418,15 @@
   width: 24rem;
   padding: 0;
   margin-left: 8rem;
-  // Aligns the X with the content column below it rather than the panel edge.
-  // The catalog's own padding is 8rem, so the grid, the list and the table all
-  // stop 8rem short of the panel border while this row — which sits outside
-  // that padding — ran full bleed. Measured live at 720p: the scroller ended at
-  // x=986 and the close button at x=991, hanging 5px past everything under it
-  // and jammed into the corner.
+  // Aligns the X with the content column below rather than with the panel
+  // edge: the catalog pads itself by 8rem, and this row sits outside it.
   margin-right: 8rem;
   background: none;
 }
 
 // White, like vanilla's, rather than --menuText1Normal like the magnifier
-// beside it: the game draws its close brighter than its field ornaments, and
-// matching the neighbour would have made ours the odd one out among every
-// other panel's X.
+// beside it: the game draws its close brighter than its field ornaments, so
+// matching the neighbour would make ours the odd X out.
 .menuCloseGlyph {
   height: 24rem;
   width: 24rem;

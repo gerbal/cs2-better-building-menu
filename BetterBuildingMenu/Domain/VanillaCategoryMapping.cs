@@ -8,14 +8,9 @@ namespace BetterBuildingMenu.Domain
 	/// the assets no processor recognises by their components.
 	/// </summary>
 	/// <remarks>
-	/// cm-vxuv: three assets vanilla places sat outside every processor's
-	/// query — two Bridges &amp; Ports hotels (BuildingData with
-	/// BuildingPropertyData but no SpawnableBuildingData, SignatureBuildingData
-	/// or ServiceObjectData) in Signatures › Commercial, and a static delivery
-	/// van in Landscaping › PropsIndustrial whose editor category matches no
-	/// case in PropPrefabCategoryProcessor. The game itself knows where they
-	/// go: the UIObject group walk records each asset's menu category. When a
-	/// processor's own evidence runs out, that category is the honest answer.
+	/// A few assets vanilla places carry none of the components a processor queries.
+	/// The game itself knows where they go — the UIObject group walk records each
+	/// asset's menu category — so that category is the answer when evidence runs out.
 	/// </remarks>
 	public static class VanillaCategoryMapping
 	{

@@ -18,10 +18,9 @@ const facets = (...selected: string[]) => ({
     {
       id: "zone",
       label: "Zone",
-      // Three options, not two. The tests below select two of them to mean
-      // "several within one dimension"; with only two present that was also
-      // "every one of them", which buildFilterChips now suppresses because a
-      // group with everything selected narrows nothing.
+      // Three options, not two. The tests below select two to mean "several
+      // within one dimension"; with only two present that is also "every one
+      // of them", which buildFilterChips suppresses as narrowing nothing.
       options: [
         { id: "office", label: "Office", selected: selected.includes("office") },
         { id: "high", label: "High density", selected: selected.includes("high") },
@@ -52,8 +51,7 @@ describe("Filter chips", () => {
   });
 
   it("composes several selections within one dimension", () => {
-    // The whole point of leaving tab strips behind: Office AND high density
-    // was previously unaskable.
+    // The whole point of leaving tab strips behind: Office AND high density.
     const chips = buildFilterChips({ facets: facets("office", "high") });
 
     assert.deepEqual(chips.map((chip) => chip.label), ["Office", "High density"]);
@@ -61,8 +59,8 @@ describe("Filter chips", () => {
 
   it("contributes nothing for a group the backend says is not narrowing", () => {
     // Availability at rest: exhaustive, so both options read selected and
-    // nothing is excluded. Chipped, that announced "2 Active — Locked ×
-    // Unlocked ×" over an unfiltered menu.
+    // nothing is excluded. Chipped, it would announce a filter over an
+    // unfiltered menu.
     const exhaustive = {
       hasSelection: true,
       groups: [
@@ -82,11 +80,9 @@ describe("Filter chips", () => {
   });
 
   it("still chips an all-selected group that IS narrowing", () => {
-    // The case the all-selected heuristic got wrong: a selection stranded by a
-    // menu switch. "Require road" carried into Landscaping, where nothing has
-    // BuildingFlags, leaves the stranded value as the group's ONLY option — all
-    // selected, and excluding everything. Suppressing its chip left a filter
-    // with no control attached and no way to clear it.
+    // A selection stranded by a menu switch: "Require road" carried into
+    // Landscaping, where nothing has BuildingFlags, is the group's ONLY
+    // option — all selected, and excluding everything. Its chip has to stay.
     const stranded = {
       hasSelection: true,
       groups: [
@@ -127,8 +123,7 @@ describe("Filter chips", () => {
 
   it("contributes nothing for a metric range still at its default", () => {
     // Both bounds unset is the default, not a filter. Trusting the state's own
-    // hasSelection flag here is what made the rail badge read 2 with nothing
-    // narrowed.
+    // hasSelection flag here makes the rail badge count a filter nobody set.
     assert.deepEqual(buildFilterChips({ metricRanges: { ...emptyRanges, hasSelection: true } }), []);
   });
 
