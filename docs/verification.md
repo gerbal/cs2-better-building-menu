@@ -2268,3 +2268,17 @@ rect, column layout and 100 tiles unchanged; Escape closed the panel; 0
 exceptions in either mod's log or UI.log. No conflict in either order.
 Both mods then removed from the playset through the browser and the local
 copy put back, so the next launch loads the workspace build alone.
+
+**No restart needed for a playset mod (same day).** Asset Menu Tweaks was
+added to the active playset from the in-game browser with the game already
+at the main menu, then Porterville was loaded in the same session. Modding.log
+shows a second "Active Playset" block at the city load listing it, `Loaded
+AssetMenuTweaks` six seconds later, and both UI modules registered; the
+probe read our 15 and 100 tiles with its container present. The game
+re-reads the playset at every city load, so a player who subscribes and
+then loads a city gets the mod without restarting; the earlier note above
+saying a restart is required was wrong (I had restarted without testing).
+The browser shows no restart notice either. Asset Menu Tweaks was left in
+this machine's playset at the end of the run (the removal script missed
+the browser's load window); it is harmless to our checks and one click to
+remove.
