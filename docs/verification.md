@@ -2207,3 +2207,23 @@ Follow-ups the passes flagged, all code rather than comments: `.tile
 `ZoningHierarchy` source that no longer exists; `FolderUtil.SettingsFolder` is
 declared and never used; one grouping test's fixture cannot distinguish tab
 order from alphabetical order.
+
+### Visual pass after the comment and dead-code commits (2026-09-10, 8cb5a2b)
+
+Main prefix, Porterville, desktop at 1280x720, one display output on.
+Build 8cb5a2b deployed to both Mods roots. Index 17,693 prefabs, `[MENU-COVERAGE]
+… 841 … 0 missing`, 0 exceptions. Menu totals identical to the 2026-09-09
+options audit: Roads 204, Landscaping 376, Electricity 15, Education 13,
+Health 8, Zones 22, Parks 50; Landscaping search `school` 0 with 6 elsewhere.
+Roads captured in Cards, Grid, Table, hover card and Group-by picker
+(`scratchpad/vis/after-*.png`) against the 720p set from 2026-09-09: the tab
+strip and its counts, card layout, table columns, picker entries and position
+all match. Two differences, both settings or earlier fixes, not regressions:
+Grid tiles draw at the default 100rem (66.7px, read from the tile style) where
+the baseline had the slider at 144; a road's Lot reads "–" where the baseline
+read "0 × 0", which the column-model pass fixed. The driver's hover step picked
+a tile scrolled under the panel's fold (the card drew below the window); the
+driver now hit-tests the tile centre, and a re-hover of the last visible tile
+drew the two-tier card above it as before. Escape: the panel unmounted but
+`LensOwnsCurrentMenu` still read true 800 ms later; not conclusive, code
+untouched by both commits, unit-covered by `escapeClosesLens.test.ts`.
