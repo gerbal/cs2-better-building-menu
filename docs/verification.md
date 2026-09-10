@@ -2092,3 +2092,13 @@ configuration's image paths made absolute; the content folder listing
 "Mod published with Id=158589", access level Unlisted, version 0.1.0,
 recommended game version 1.6.*. The listing resolves as "Better Building
 Menu - Paradox Mods" at https://mods.paradoxplaza.com/mods/158589/Windows.
+
+**Screenshots retaken (20:2x).** Porterville's frames showed missing assets, so
+the four store screenshots were retaken in a new Windy Fjords game (Unlock All,
+Unlimited Money, tutorials off, 11:20 in-game) on the main prefix at 1920x1080:
+Roads grid, Roads table, Education & Research cards with the City High School
+hover card, Education & Research grid. The subscribed Fort Johnson city was
+tried first and crashed natively one to three minutes after every load, with
+the mod removed from both Mods roots as well; it references assets this install
+lacks (CitiesCarCustoms, PetrolPonyGarage, MuscleCar01–05, BusCO01,
+NA_PoliceVehicle02, GrandHotel01). Pushed to the listing with `Update`.
