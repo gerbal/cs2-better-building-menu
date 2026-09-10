@@ -37,7 +37,7 @@ namespace BetterBuildingMenu.Domain
 
 		private static readonly Dictionary<string, string> Keys = new(StringComparer.Ordinal)
 		{
-			// The ten service menus. These paths are the same leaf names the
+			// The eleven service menus. These paths are the same leaf names the
 			// toolbar's own menu prefabs carry (PrefabIndex.UiMenuName).
 			[nameof(PrefabSubCategory.ServiceBuildings_Health)] = Title("Buildings/Services/Health & Deathcare"),
 			[nameof(PrefabSubCategory.ServiceBuildings_Water)] = Title("Buildings/Services/Water & Sewage"),

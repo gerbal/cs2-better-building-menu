@@ -11,10 +11,11 @@ import { VanillaMenuWatcher } from "mods/VanillaMenuWatcher/VanillaMenuWatcher";
 import { VanillaToolbarWatcher } from "mods/VanillaMenuWatcher/VanillaToolbarWatcher";
 
 const register: ModRegistrar = (moduleRegistry) => {
-  // The vanilla component resolver is a singleton that helps extrant and maintain components from game that were not specifically exposed.
+  // The vanilla component resolver is a singleton that extracts and holds on to
+  // game components the modding API does not expose directly.
   VanillaComponentResolver.setRegistry(moduleRegistry);
 
-  // This repalaces the asset grid.
+  // This replaces the asset grid.
   moduleRegistry.extend("game-ui/game/components/asset-menu/asset-menu.tsx", "AssetMenu", RemoveVanillaAssetMenuComponent);
 
   // The extension picker — the panel a building with upgrades opens — which
@@ -26,11 +27,11 @@ const register: ModRegistrar = (moduleRegistry) => {
   // No toolbar glyph and no picker tool of our own: Find It ships that
   // picker, and the separation left it there. This is a build menu.
 
-  // Availability lives in the game's own bank now (cm-2xvs.15).
+  // Availability, drawn into the game's own tool-options bank beside Theme and
+  // Pack; the filter rail draws every other dimension.
   moduleRegistry.extend("game-ui/game/components/tool-options/mouse-tool-options/mouse-tool-options.tsx", "MouseToolOptions", LensToolOptions);
-  // The lens's filters used to be injected here, into the game's own options
-  // bank beside Theme and Pack. They render in the control plane now — see
-  // LensControlPane for why the move, and what it costs.
+  // That bank only mounts for an active tool, and browsing the menu is not a
+  // tool, so this holds it open while the lens owns the menu.
   moduleRegistry.extend("game-ui/game/components/tool-options/tool-options-panel.tsx", "useToolOptionsVisible", ToolOptionsVisibility);
 
   // Renders nothing; watches the vanilla toolbar so its menus can open the

@@ -113,7 +113,7 @@ describe("Building Lens stylesheet contracts", () => {
     // the right of its name, and buildingLensLayout mirrors it so the name can
     // be elided to fit. They drifted once already; a control removed from one
     // and not the other silently mis-sizes every name in the table.
-    // Measured 2026-09-09 (949230-b, 1280x720, PanelWidth 1441): the rows box
+    // Measured at 1280x720, PanelWidth 1441: the rows box
     // is 1059rem and a row's select 1026rem, so 33rem trail it — the chevron,
     // the outer padding AND the gap before the chevron. Without the gap the
     // header's identity was 3rem wider than the cell's.

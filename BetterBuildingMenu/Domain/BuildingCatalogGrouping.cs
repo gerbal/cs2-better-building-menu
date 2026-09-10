@@ -349,10 +349,11 @@ namespace BetterBuildingMenu.Domain
 			// priority after every positive one, and "-100" ahead of "-99".
 			long rank = (long)priority - int.MinValue;
 
-			// A separator below every character a prefab name can hold, so a
-			// name that is another name's prefix cannot outrank it.
+			// U+0000 as the separator: it sorts below every character a prefab
+			// name can hold, so a name that is another name's prefix cannot
+			// outrank it. Written as an escape so the file stays text to grep.
 			return rank.ToString("D10", CultureInfo.InvariantCulture)
-				+ ' '
+				+ '\u0000'
 				+ category.Trim();
 		}
 

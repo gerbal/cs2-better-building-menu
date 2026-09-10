@@ -100,10 +100,9 @@ describe("Localizable strings register", () => {
 describe("Every key the source asks for is a key we ship", () => {
   // The register above is a curated list and was never the whole inventory —
   // the source asks for roughly a hundred keys and registers forty. Locale.json
-  // is the shipping contract, so that is what this checks, and checking it
-  // found six keys that had never been shipped at all: ActiveFilters,
-  // ResizeHeight, Upgrades, ViewMode, Zones and NoFacetsAvailable. Each one
-  // silently fell back to its English literal in every language.
+  // is the shipping contract, so that is what this checks: a key the source
+  // asks for and Locale.json does not carry falls back to its English literal
+  // in every language, silently.
   const KEY = /Tooltip\.LABEL\[BetterBuildingMenu\.[A-Za-z0-9_]+\]/g;
 
   const sourceKeys = () => {

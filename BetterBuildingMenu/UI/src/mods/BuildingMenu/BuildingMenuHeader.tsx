@@ -5,7 +5,7 @@ import { Button, Tooltip } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import { FOCUS_DISABLED } from "cs2/input";
 import classNames from "classnames";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 
 import mod from "../../../mod.json";
 import find from "images/find.svg";
@@ -13,16 +13,12 @@ import { searchChangedCommand } from "domain/buildingCatalogContracts";
 import { MenuCategoryStrip } from "mods/MenuCategoryStrip/MenuCategoryStrip";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 
-// Shared with TopBar until step 4 finishes and that file goes. One stylesheet
-// for one row: these rules describe the same header whichever component is
-// still rendering it, and a copy would drift the moment either was touched.
 import styles from "mods/BuildingMenu/buildingMenuHeader.module.scss";
 
 const TextInput = getModule("game-ui/common/input/text/text-input.tsx", "TextInput");
 const TextInputTheme: Theme | any = getModule("game-ui/editor/widgets/item/editor-item.module.scss", "classes");
 
 const IsSearchLoading$ = bindValue<boolean>(mod.id, "IsSearchLoading", false);
-const ClearSearchBar$ = bindValue<boolean>(mod.id, "ClearSearchBar", false);
 const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch", "");
 
 export interface BuildingMenuHeaderProps {
@@ -40,36 +36,14 @@ export interface BuildingMenuHeaderProps {
 }
 
 /**
- * The build menu's own header: the category strip, and search.
- *
- * Lifted out of FindIt's TopBar, which was two products sharing one file —
- * eleven `BuildingLensEnabled ? … : …` branches deciding, control by control,
- * whether each belonged to the lens or to the legacy asset grid. Everything
- * below is the lens half; the legacy half stays behind in TopBar until the
- * panel that renders it goes.
- *
- * What did NOT come across, and why:
- *
- * - The whole top bar row — search, lock, filters, sort, random, the result
- *   count, the close X. `showTopBarRow` was already `!BuildingLensEnabled`, so
- *   none of it drew in this mode. The controls worth keeping moved to the
- *   control plane; the close came back with the game's own `onClose`.
- * - The legacy category and subcategory strips. They were filters drawn as
- *   navigation, cost 27rem each, and could not express more than one value.
- * - `FocusSearchBar`. Its only writer was the Ctrl+F hot-key, removed in
- *   44eeab0 because it collided with vanilla's "Toggle Follow Selected Citizen"
- *   AND with FindIt's own shortcut. A binding no one writes cannot focus
- *   anything, so carrying its read across would have been carrying a no-op.
- *
- * Measured layout, from the commit that built this row: on Transportation the
- * seven tabs take 403..957 and the field 957..1121, inside a 718px row.
+ * The build menu's own header: the category strip, the search field and the
+ * game's close X, on one row.
  */
 export const BuildingMenuHeader = ({ small, large, onClose }: BuildingMenuHeaderProps) => {
   const { translate } = useLocalization();
   const searchRef = useRef(null);
 
   const IsSearchLoading = useValue(IsSearchLoading$);
-  const ClearSearchBar = useValue(ClearSearchBar$);
   const CurrentSearch = useValue(CurrentSearch$);
 
   const localizedLabel = (key: string, fallback: string): string => translate(key, fallback) ?? fallback;
@@ -84,17 +58,6 @@ export const BuildingMenuHeader = ({ small, large, onClose }: BuildingMenuHeader
       setSearchText(value.target.value);
     }
   };
-
-  // TopBar did this during render, which fired a trigger as a side effect of
-  // drawing and could run twice for one request. The backend still expects the
-  // acknowledgement — OnSearchCleared is what sets the flag back — so the
-  // behaviour is unchanged; only when it happens is.
-  useEffect(() => {
-    if (!ClearSearchBar) return;
-
-    trigger(mod.id, "OnSearchCleared");
-    setSearchText("");
-  }, [ClearSearchBar]);
 
   return (
     <div className={classNames(large && styles.large, small && styles.small)}>

@@ -69,24 +69,6 @@ namespace BetterBuildingMenu.Domain
 	}
 
 	/// <summary>
-	/// Compares what the game places in its menus against what we would show,
-	/// in both directions.
-	/// </summary>
-	/// <remarks>
-	/// This is the contract behind cm-e98i's first half — "opening the lens from
-	/// a vanilla toolbar section yields the same set that section shows". It ran
-	/// for a week as <c>[MENU-AUDIT]</c> log lines, which is a census rather than
-	/// a check: it could only be read by booting a save and grepping
-	/// <c>Modding.log</c>, so nothing stopped the mapping regressing between
-	/// boots. The arithmetic moved here unchanged; the system now gathers the
-	/// facts, calls this, and logs the result.
-	///
-	/// Live figures at the time of extraction (2026-08-15, developed save,
-	/// vanilla + no asset packs): 15 menus, 840 placements, 17952 indexed
-	/// assets, 31 zones, <c>missing=0</c> on every menu, and six extras — all
-	/// six service upgrades, all explained by <see cref="Divergences"/>.
-	/// </remarks>
-	/// <summary>
 	/// Compares the game's own menu placements against what the index holds,
 	/// by the tree fields the index reads off the same UIObject.m_Group.
 	/// </summary>

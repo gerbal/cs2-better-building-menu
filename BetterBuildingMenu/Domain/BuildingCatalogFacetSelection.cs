@@ -82,9 +82,6 @@ namespace BetterBuildingMenu.Domain
 		/// unique you have built is unlocked in the progression sense and
 		/// unbuildable in the only sense the player cares about, and reporting
 		/// it as Unlocked put it in the list of things to build.
-		///
-		/// Ordered the way the player meets them — cannot build yet, can build,
-		/// already did.
 		/// </remarks>
 		public static class Availability
 		{

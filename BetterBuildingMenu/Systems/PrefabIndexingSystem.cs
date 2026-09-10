@@ -86,6 +86,9 @@ namespace BetterBuildingMenu.Systems
 		// Set by the OnGameLoaded pass, cleared at preload, read at loading-
 		// complete to decide whether a second full pass is owed. See there.
 		private bool _indexedAtGameLoaded;
+		/// <summary>
+		/// Every assignable zone, grouped by family in the zoning hierarchy.
+		/// </summary>
 		private static List<ZoneCatalogEntry> _zoneCatalog = new();
 
 		/// <summary>
@@ -121,13 +124,13 @@ namespace BetterBuildingMenu.Systems
 		// Milestone index -> the name the rest of the game calls it. ~20 entries,
 		// resolved once per index pass rather than per locked asset.
 		private static Dictionary<int, string> _milestoneNames = new();
+		private UniqueAssetTrackingSystem? _uniqueAssets;
 		// Node entity -> branch label, and service name -> its root's label.
 		// Rebuilt with the rest of the index; see IndexDevTreeBranches.
 		// Label AND icon together, keyed by node and by service. The icon was
 		// briefly keyed by label instead, which collides: every service's root
 		// is called "Basic", so all eleven shared one entry and Electricity's
 		// Basic tab drew the water glyph.
-		private UniqueAssetTrackingSystem? _uniqueAssets;
 		private Dictionary<Entity, (string Label, string Icon, int Depth)> _devTreeBranches = new();
 		private static Dictionary<string, (string Label, string Icon, int Depth)> _devTreeRoots = new();
 		// Milestone index -> its progression-screen image. Safe to key by index
@@ -363,12 +366,9 @@ namespace BetterBuildingMenu.Systems
 		/// a language change is rare and player-initiated, and a full pass
 		/// cannot drift from what the index otherwise holds.
 		///
-		/// The work cannot be deferred to OnUpdate: this system declares
-		/// RequireForUpdate on prefabs carrying Created or Updated, and a
-		/// language change touches no entity at all, so OnUpdate would never
-		/// run to notice a flag. Setting one looked right and did nothing.
-		/// Dispatching to the main thread instead runs the pass on the next
-		/// frame regardless of what the ECS gate thinks.
+		/// The work cannot be deferred to OnUpdate: a language change touches no
+		/// entity, so nothing on the update path notices a flag set here.
+		/// Dispatching to the main thread runs the pass on the next frame.
 		/// </remarks>
 		private void OnActiveDictionaryChanged()
 		{
@@ -765,10 +765,9 @@ namespace BetterBuildingMenu.Systems
 			stopWatch.Stop();
 
 			Mod.Log.Info($"{(full ? "Full" : "Partial")} Prefab Indexing completed in {stopWatch.Elapsed.TotalSeconds:0.000}s");
-			// The locked count is here so two full passes on one load can be
-			// compared: the one at OnGameLoaded and the one at loading-complete
-			// must agree on it, or the earlier pass is reading lock state the
-			// save has not restored yet.
+			// The locked count is logged so a second full pass on the same load
+			// can be checked against the first. OnGameLoadingComplete skips that
+			// second pass entirely when LockStateDrift reports none.
 			Mod.Log.Info($"Indexed Prefabs Count: {BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any].Count}"
 				+ $" locked={BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any].Count(p => p.IsLocked)}");
 
@@ -776,9 +775,7 @@ namespace BetterBuildingMenu.Systems
 			{
 				// Which processors feed anything the lens can show. A processor
 				// whose every prefab is neither a building/network nor placed in
-				// a vanilla menu is indexing for nobody — the review's "30
-				// processors classify things the lens never lists" was a guess,
-				// and Landscaping's trees say it was wrong; this is the count.
+				// a vanilla menu is indexing for nobody; this is the count.
 				var all = BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any];
 
 				foreach (var pair in census.OrderBy(pair => pair.Key, StringComparer.Ordinal))
@@ -916,22 +913,6 @@ namespace BetterBuildingMenu.Systems
 				_menuPlacements.ContainsKey(entityIndex);
 
 			/// <summary>
-			/// Whether the game places this asset in that named menu.
-			/// </summary>
-			/// <remarks>
-			/// The downward read, and the one the menu itself uses. Its opposite
-			/// number is <c>PrefabIndex.UiMenuName</c>, which comes from the
-			/// asset's own <c>UIObject.m_Group.m_Menu</c> — reading upward from
-			/// an asset we already hold. That view can only ever describe assets
-			/// some processor happened to index, so a menu looks complete while
-			/// being short, and it is the shape behind the terrain-brush, seaway
-			/// and Zones-tab gaps.
-			///
-			/// Walking down from UIAssetMenuData is what ToolbarUISystem does, so
-			/// a difference between this and the grid is a bug of ours rather
-			/// than an artefact of reading the tree differently.
-			/// </remarks>
-			/// <summary>
 			/// The vanilla menu that holds an asset, as an entity the game's own
 			/// toolbar trigger will accept.
 			/// </summary>
@@ -967,17 +948,26 @@ namespace BetterBuildingMenu.Systems
 					&& _assetMenuEntities.TryGetValue(menu.Trim(), out entity);
 			}
 
+			/// <summary>
+			/// Whether the game places this asset in that named menu.
+			/// </summary>
+			/// <remarks>
+			/// The downward read, and the one the menu itself uses. Its opposite
+			/// number is <c>PrefabIndex.UiMenuName</c>, which comes from the
+			/// asset's own <c>UIObject.m_Group.m_Menu</c> — reading upward from
+			/// an asset we already hold. That view can only ever describe assets
+			/// some processor happened to index, so a menu looks complete while
+			/// being short, and it is the shape behind the terrain-brush, seaway
+			/// and Zones-tab gaps.
+			///
+			/// Walking down from UIAssetMenuData is what ToolbarUISystem does, so
+			/// a difference between this and the grid is a bug of ours rather
+			/// than an artefact of reading the tree differently.
+			/// </remarks>
 			public static bool IsPlacedInMenu(int entityIndex, string menu) =>
 				_menuPlacements.TryGetValue(entityIndex, out var placement)
 				&& string.Equals(placement.Menu?.Trim(), menu, System.StringComparison.OrdinalIgnoreCase);
 
-			/// <summary>Whether the game places this asset in any menu at all.</summary>
-			/// <remarks>
-			/// The guard on the Roads menu's network gathering. "Every network"
-			/// has to mean every network VANILLA PLACES — the index also holds
-			/// networks the game never offers, and admitting those would put
-			/// unplaceable rows in the one menu that gathers most widely.
-			/// </remarks>
 			/// <summary>The vanilla menu category an asset is placed in, when the game places it at all.</summary>
 			public static bool TryGetVanillaCategory(int entityIndex, out string category)
 			{
@@ -992,17 +982,16 @@ namespace BetterBuildingMenu.Systems
 				return true;
 			}
 
+			/// <summary>Whether the game places this asset in any menu at all.</summary>
+			/// <remarks>
+			/// The guard on the Roads menu's network gathering. "Every network"
+			/// has to mean every network VANILLA PLACES — the index also holds
+			/// networks the game never offers, and admitting those would put
+			/// unplaceable rows in the one menu that gathers most widely.
+			/// </remarks>
 			public static bool IsPlacedInAnyMenu(int entityIndex) =>
 				_menuPlacements.ContainsKey(entityIndex);
 
-			/// <summary>
-			/// Reports every asset the vanilla build menu shows that our index does not.
-			/// </summary>
-			/// <remarks>
-			/// Logged rather than thrown because a gap is a real state of the game — a
-			/// mod can add a menu whose assets we have no processor for — and a short
-			/// menu serves the player better than a dead one.
-			/// </remarks>
 			/// <summary>
 			/// A per-menu census of the vanilla build menu, in both directions.
 			/// </summary>
@@ -1176,6 +1165,14 @@ namespace BetterBuildingMenu.Systems
 			private static string Cap(IReadOnlyList<string> names) =>
 				string.Join(",", names.Take(8)) + (names.Count > 8 ? ",…" : string.Empty);
 
+			/// <summary>
+			/// Reports every asset the vanilla build menu shows that our index does not.
+			/// </summary>
+			/// <remarks>
+			/// Logged rather than thrown because a gap is a real state of the game — a
+			/// mod can add a menu whose assets we have no processor for — and a short
+			/// menu serves the player better than a dead one.
+			/// </remarks>
 			private void LogVanillaMenuCoverage()
 			{
 				try
@@ -1369,7 +1366,7 @@ namespace BetterBuildingMenu.Systems
 			prefabIndex.PackThumbnails ??= prefabIndex.AssetPacks.Select(pack => IconPath.Normalize(ImageSystem.GetThumbnail(pack))).ToArray();
 			prefabIndex.Tags ??= new();
 			prefabIndex.UIOrder = prefab.TryGet<UIObject>(out var uIObject) ? uIObject.m_Priority : int.MaxValue;
-			// SPIKE (cm-e98i): the menu placement the game itself uses. m_Group is
+			// The menu placement the game itself uses. m_Group is
 			// the asset's UI category; a category that is a UIAssetCategoryPrefab
 			// names its menu. Two managed references, no ECS lookup.
 			prefabIndex.UiCategoryName = uIObject?.m_Group?.name;
@@ -1542,6 +1539,13 @@ namespace BetterBuildingMenu.Systems
 			// The guard is a filter on work, not on correctness: a component
 			// that does not apply to a category simply does not match. Adding a
 			// category to it can cost time; it cannot produce a wrong figure.
+			//
+			// Trees and props carry PlaceableObjectData too, and the game's
+			// tooltip prices them from it (PrefabUISystem.ConstructionCostBinder).
+			// Without them here every tree in Landscaping read "—". A tree's
+			// figure is its sapling price: the game shows a range only when the
+			// player has enabled several ages on the tool, which is tool state
+			// the index cannot see.
 			if (prefabIndex.Category is not PrefabCategory.Buildings
 				and not PrefabCategory.ServiceBuildings
 				and not PrefabCategory.Networks
@@ -1549,12 +1553,6 @@ namespace BetterBuildingMenu.Systems
 				and not PrefabCategory.Trees
 				and not PrefabCategory.Props)
 			{
-				// Trees and props carry PlaceableObjectData too, and the game's
-				// tooltip prices them from it (PrefabUISystem.ConstructionCostBinder).
-				// Without them here every tree in Landscaping read "—". A tree's
-				// figure is its sapling price: the game shows a range only when the
-				// player has enabled several ages on the tool, which is tool state
-				// the index cannot see.
 				return;
 			}
 
@@ -2237,30 +2235,10 @@ namespace BetterBuildingMenu.Systems
 					: null;
 
 		/// <summary>
-		/// Maps every development-tree node to the branch it belongs to.
-		/// </summary>
-		/// <remarks>
-		/// A service's tree is a free <c>Basic&lt;Service&gt;</c> root with a
-		/// handful of chains hanging off it. The BRANCH is the node directly
-		/// below the root — walk any node's requirements up until the next step
-		/// would be the root, and that is the branch it belongs to.
-		///
-		/// Why the branch and not the node: measured on the live tree, a node
-		/// unlocks one or two buildings, so the seven Electricity nodes would
-		/// draw seven tabs of one asset each. The two branches under its root —
-		/// Gas (gas, coal, nuclear) and Advanced (geothermal, hydro, solar) —
-		/// are the split a player actually thinks in, and the game authored it.
-		///
-		/// A node can have several parents (Satellite Uplink requires both
-		/// Server Farm and Telecom Tower). The first is taken, which keeps the
-		/// walk total; a merge point belongs to whichever branch reached it
-		/// first, and nothing in the UI depends on that choice being canonical.
-		/// </remarks>
-		/// <summary>
 		/// Dev-tree nodes drawn under another node's tab.
 		/// </summary>
 		/// <remarks>
-		/// A narrow exception to the rule below, not a repeal of it. Branches are
+		/// A narrow exception to the branch rule IndexDevTreeBranches applies, not a repeal of it. Branches are
 		/// the node ITSELF and not the chain it hangs off, because collapsing
 		/// chains filed the Central Intelligence Bureau under "Police
 		/// Headquarters" and the Nuclear Power Plant under "Gas Power Plant" —
@@ -2292,6 +2270,26 @@ namespace BetterBuildingMenu.Systems
 			["SpaceCenterNode"] = "AirportNode",
 		};
 
+		/// <summary>
+		/// Maps every development-tree node to the branch it belongs to.
+		/// </summary>
+		/// <remarks>
+		/// A service's tree is a free <c>Basic&lt;Service&gt;</c> root with a
+		/// handful of chains hanging off it. The BRANCH is the node directly
+		/// below the root — walk any node's requirements up until the next step
+		/// would be the root, and that is the branch it belongs to.
+		///
+		/// Why the branch and not the node: measured on the live tree, a node
+		/// unlocks one or two buildings, so the seven Electricity nodes would
+		/// draw seven tabs of one asset each. The two branches under its root —
+		/// Gas (gas, coal, nuclear) and Advanced (geothermal, hydro, solar) —
+		/// are the split a player actually thinks in, and the game authored it.
+		///
+		/// A node can have several parents (Satellite Uplink requires both
+		/// Server Farm and Telecom Tower). The first is taken, which keeps the
+		/// walk total; a merge point belongs to whichever branch reached it
+		/// first, and nothing in the UI depends on that choice being canonical.
+		/// </remarks>
 		private void IndexDevTreeBranches()
 		{
 			var query = GetEntityQuery(
@@ -3423,10 +3421,6 @@ namespace BetterBuildingMenu.Systems
 		}
 
 		/// <summary>
-		/// Every assignable zone, grouped by family in the zoning hierarchy.
-		/// </summary>
-
-		/// <summary>
 		/// Take the Zones menu's categories and members from the game itself.
 		/// </summary>
 		/// <remarks>
@@ -3802,30 +3796,6 @@ namespace BetterBuildingMenu.Systems
 			return new VanillaAssetFacts(themeRequirements, packs, hasPackBuffer, isModAsset);
 		}
 
-
-		/// <summary>
-		/// The zone catalog as the game's own toolbar row would show it.
-		/// </summary>
-		/// <remarks>
-		/// Zones are where this actually bites. Most buildings carry no theme
-		/// requirement, so the EU/NA toggle changes almost nothing in a building
-		/// menu — but every growable zone comes in an EU and an NA variant, and
-		/// the Zones menu was the surface the report named (cm-2xvs.3): the
-		/// toggle filtered vanilla's grid and left ours showing both.
-		///
-		/// A zone with no recorded facts stays visible. "We were never told" has
-		/// to read as unfiltered, the same way it reads as unlocked elsewhere,
-		/// or a gap in indexing would silently empty the menu.
-
-		/// <summary>
-		/// The prefab name of a vanilla toolbar asset menu, by entity index.
-		/// </summary>
-		/// <remarks>
-		/// The UI can read the game's toolbar.selectedAssetMenu binding but only
-		/// receives an entity, and entity indices are runtime values that must
-		/// not be persisted. Resolving the name belongs here, where the prefab
-		/// system is available.
-		/// </remarks>
 		/// <summary>The tab strip for a menu, empty when the menu has none.</summary>
 		/// <remarks>
 		/// Roads gets more tabs than the game gives it. The lens gathers every
@@ -3908,6 +3878,15 @@ namespace BetterBuildingMenu.Systems
 		public static IReadOnlyList<VanillaMenuCategory> GetAssetMenus() =>
 			_assetMenus.Where(menu => _assetCategories.ContainsKey(menu.Id)).ToArray();
 
+		/// <summary>
+		/// The prefab name of a vanilla toolbar asset menu, by entity index.
+		/// </summary>
+		/// <remarks>
+		/// The UI can read the game's toolbar.selectedAssetMenu binding but only
+		/// receives an entity, and entity indices are runtime values that must
+		/// not be persisted. Resolving the name belongs here, where the prefab
+		/// system is available.
+		/// </remarks>
 		public static string? GetAssetMenuName(int entityIndex) => _assetMenuNames.TryGetValue(entityIndex, out var name)
 			? name
 			: null;
@@ -3946,6 +3925,12 @@ namespace BetterBuildingMenu.Systems
 			return ZoneTypeFilter.Any;
 		}
 
+		/// <summary>The lot shapes a zone grows, or none.</summary>
+		public static ZoneLotSizes GetZoneLotSizes(Entity zonePrefab) =>
+			_zoneLotSizeCache != null && _zoneLotSizeCache.TryGetValue(zonePrefab, out var sizes)
+				? sizes
+				: null;
+
 		/// <summary>The zone's own density tier. Any when it has none.</summary>
 		/// <remarks>
 		/// Fails soft like <see cref="GetZoneType"/>, and for the same reason —
@@ -3960,12 +3945,6 @@ namespace BetterBuildingMenu.Systems
 		/// from that same point — which is the standing evidence that it is
 		/// warm there.
 		/// </remarks>
-		/// <summary>The lot shapes a zone grows, or none.</summary>
-		public static ZoneLotSizes GetZoneLotSizes(Entity zonePrefab) =>
-			_zoneLotSizeCache != null && _zoneLotSizeCache.TryGetValue(zonePrefab, out var sizes)
-				? sizes
-				: null;
-
 		public static ZoneTypeFilter GetZoneDensity(Entity zonePrefab)
 		{
 			if (_zoneDensityCache != null && _zoneDensityCache.TryGetValue(zonePrefab, out var density))

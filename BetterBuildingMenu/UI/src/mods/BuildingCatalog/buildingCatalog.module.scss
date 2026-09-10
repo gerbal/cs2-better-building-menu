@@ -24,7 +24,7 @@
 //   - the rows scroll and the header does not, so the scrollbar narrows the
 //     rows by its track width and nothing narrowed the header;
 //   - the header's right padding was a hand-guessed 34rem standing in for the
-//     trailing Place and compare controls, which actually occupy far more.
+//     trailing details control, which actually occupies far more.
 //
 // Both are named here and derived once, so the header cannot drift from the
 // rows again when one of those controls is resized. Anything that changes a
@@ -35,8 +35,8 @@ $row-gap: 3rem;
 $row-padding-right: 4rem;
 // On .row itself, after the details button.
 $row-outer-padding-right: 4rem;
-// The chevron that expands a row. A glyph, so it keeps the width the compare
-// button had; vanilla's icon variant squares anything without one.
+// The chevron that expands a row: a glyph, so vanilla's icon variant draws it
+// as a square of this width.
 $row-details-width: 26rem;
 $rows-scrollbar-width: 16rem;
 
@@ -145,10 +145,9 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
 // the rows run out, and generous vertically because it is the one control a
 // player reaches by scrolling rather than by aiming.
 //
-// Its own rule, deliberately. It replaced .paging in the shared list above, and
-// a button's centring, padding and control background went to .columnHeader and
-// every .row with it — the whole catalog rendered as a column of centred
-// buttons.
+// Its own rule, deliberately: styled through a selector the list rows share,
+// a button's centring, padding and control background reach .columnHeader and
+// every .row too, and the whole catalog renders as a column of centred buttons.
 .loadMore {
   display: flex;
   align-items: center;
@@ -188,10 +187,8 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
 //
 // Collected into one rule because the same fix had been rediscovered per-site in
 // three different spellings (width: auto !important, a hand-picked min-width, and
-// min-width: 0, which permits the collapse rather than resisting it), and a fourth
-// copy already sits dead in groupedResults.module.scss against a class no
-// component renders. Glyph buttons such as .pageButton are genuinely
-// square and stay out of this.
+// min-width: 0, which permits the collapse rather than resisting it). Glyph
+// buttons such as .pageButton are genuinely square and stay out of this.
 .scopeNoticeAction,
 
 .pageButton {
@@ -997,62 +994,11 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   }
 }
 
-// Column widths are sized from the widest value each column actually renders
-// in a real city, measured live rather than guessed: a 4206-entry catalog puts
-// "5 600 000" in Cost, "225 000/mo" in Upkeep and "15 000 students" in
-// Capacity. The previous 54-58rem columns clipped 234 of 600 rendered cells.
-// These allow for the readable text tier below; the compact tier reuses them
-// with room to spare.
-// Widths include the 8rem right padding the numeric columns carry, so they are
-// sized from measured content plus that gutter rather than content alone.
-.metricCost {
-  // Width is set inline from getBuildingLensColumnWidths, so the header
-  // and every row read one number. A constant here would be a second
-  // opinion that only shows up as misalignment.
-}
-
-.metricUpkeep {
-  // Width is set inline from getBuildingLensColumnWidths, so the header
-  // and every row read one number. A constant here would be a second
-  // opinion that only shows up as misalignment.
-}
-
-.metricWorkers {
-  // Width is set inline from getBuildingLensColumnWidths, so the header
-  // and every row read one number. A constant here would be a second
-  // opinion that only shows up as misalignment.
-}
-
-.metricCapacity {
-  // Width is set inline from getBuildingLensColumnWidths, so the header
-  // and every row read one number. A constant here would be a second
-  // opinion that only shows up as misalignment.
-}
-
-.metricLevel {
-  // Width is set inline from getBuildingLensColumnWidths, so the header
-  // and every row read one number. A constant here would be a second
-  // opinion that only shows up as misalignment.
-}
-
-// Cohtml breaks "33 × 31" across lines at the multiplication sign even under
-// white-space: nowrap, so this column is sized to never need the break rather
-// than relying on nowrap being honoured.
-.metricLot {
-  // Width is set inline from getBuildingLensColumnWidths, so the header
-  // and every row read one number. A constant here would be a second
-  // opinion that only shows up as misalignment.
-}
-
-.metricParking {
-  // Width is set inline from getBuildingLensColumnWidths, so the header
-  // and every row read one number. A constant here would be a second
-  // opinion that only shows up as misalignment.
-}
-
 // Numbers compare by magnitude, so they align on their right edge like every
 // other numeric table. Lot ("4 × 6"), level and parking are labels rather than
-// quantities and stay centred.
+// quantities and stay centred. Column widths are not set here: header and rows
+// both take them inline from getBuildingLensColumnWidths, which sizes them
+// around the 8rem gutter below.
 .metricCost,
 .metricUpkeep,
 .metricWorkers,
@@ -1261,10 +1207,9 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   font-size: var(--fontSizeS);
 }
 
-// Placing is an explicit button now rather than the whole row.
 .rowDetailsButton {
   // Fixed, and the same constant the header reserves. The row itself is the
-  // Place control now, so this is the only trailing furniture left.
+  // Place control, so this chevron is the only trailing furniture.
   flex: 0 0 $row-details-width;
   width: $row-details-width;
   // Full row height, stated rather than inherited. align-self: stretch does
@@ -1315,10 +1260,9 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
 // the fixed row height the table uses when collapsed.
 //
 // rowSelect is flex:1 1 auto, so under flex-wrap it claimed the whole first
-// line and bumped the Place and compare buttons onto lines of their own. That
-// spent 123rem-equivalent of row on 79 of content and squeezed Place down to
-// 16px wide. Letting rowSelect shrink from a zero basis keeps all three
-// controls on line one and leaves rowDetails (width:100%) as the only wrap.
+// line and bumped the details chevron onto a line of its own. Letting rowSelect
+// shrink from a zero basis keeps both controls on line one and leaves
+// rowDetails (width:100%) as the only wrap.
 .row[data-expanded="true"] {
   flex-wrap: wrap;
   height: auto;
@@ -1352,9 +1296,9 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
 }
 
 // Milestone-locked. The table states it in words rather than only in treatment:
-// the row carries the same silhouette the grid and list use, and the Place
-// button is genuinely disabled, so the one control that would fail is the one
-// that stops offering.
+// the row carries the same silhouette the grid and list use, and stays
+// clickable — onPlace refuses rather than the row disabling, so the hover card
+// that explains the lock is still reachable.
 // Both unplaceable states share the ground, the way the grid's tile does and
 // the way vanilla's [disabled] rule does. WHICH state it is gets said in the
 // label and the aria suffix, not by a second colour.
