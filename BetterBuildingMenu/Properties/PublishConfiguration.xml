@@ -16,9 +16,9 @@
 <Publish>
   <ModId Value="158589" />
   <DisplayName Value="Better Building Menu" />
-  <ShortDescription Value="Click any toolbar build menu and get a panel instead of the icon row: search, grid, list, cards or table, sorting, grouping, filters and stats on hover." />
+  <ShortDescription Value="A better version of the vanilla building menu: sorting, categories, filters and more details on every asset." />
   <LongDescription>
-Click any menu on the toolbar (Roads, Electricity, Education, Landscaping, Zones and the rest) and instead of the row of icons you get a panel: a search box, the menu's category tabs, and its assets as a grid, list, cards or table. Click a table column to sort by it. Group by type, theme, source, density, footprint, cost or progression. Filter by unlocked or locked, DLC, theme, asset pack, placement, role, source, extensions or density, or by a range of cost, upkeep, workers, capacity, lot width or lot depth. Hover an asset for its numbers and what unlocks it. Buildings that take upgrades show them as a named list with cost and footprint.
+A better version of the vanilla building menu, with sorting, categories and more details. Click any menu on the toolbar (Roads, Electricity, Education, Landscaping, Zones and the rest) and instead of the row of icons you get a panel: a search box, the menu's category tabs, and its assets as a grid, list, cards or table. Click a table column to sort by it. Group by type, theme, source, density, footprint, cost or progression. Filter by unlocked or locked, DLC, theme, asset pack, placement, role, source, extensions or density, or by a range of cost, upkeep, workers, capacity, lot width or lot depth. Hover an asset for its numbers and what unlocks it. Buildings that take upgrades show them as a named list with cost and footprint.
 
 The menu you clicked decides what is in the list: trees show up under Landscaping, but props, decals and assets hidden from the menus do not, and there is no object picker. For those, use Find It.
 
