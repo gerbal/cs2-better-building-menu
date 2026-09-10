@@ -18,11 +18,11 @@
   <DisplayName Value="Better Building Menu" />
   <ShortDescription Value="Click any toolbar build menu and get a panel instead of the icon row: search, grid, list, cards or table, sorting, grouping, filters and stats on hover." />
   <LongDescription>
-**Not a replacement for Find It.** Both can be installed together. Find It is its own window over every asset in the game; this mod changes what the toolbar menus show. While Find It's window is open it takes the menu slot, and this panel comes back when it closes.
-
 Click any menu on the toolbar (Roads, Electricity, Education, Landscaping, Zones and the rest) and instead of the row of icons you get a panel: a search box, the menu's category tabs, and its assets as a grid, list, cards or table. Click a table column to sort by it. Group by type, theme, source, density, footprint, cost or progression. Filter by unlocked or locked, DLC, theme, asset pack, placement, role, source, extensions or density, or by a range of cost, upkeep, workers, capacity, lot width or lot depth. Hover an asset for its numbers and what unlocks it. Buildings that take upgrades show them as a named list with cost and footprint.
 
 The menu you clicked decides what is in the list: trees show up under Landscaping, but props, decals and assets hidden from the menus do not, and there is no object picker. For those, use Find It.
+
+Works alongside Find It. It is not a replacement for it: Find It is its own window over every asset in the game; this mod changes what the toolbar menus show. While Find It's window is open it takes the menu slot, and this panel comes back when it closes.
 
 No Harmony patches and nothing written to the save. Remove it whenever you like.
 
