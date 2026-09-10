@@ -16,29 +16,29 @@
 <Publish>
   <ModId Value="158589" />
   <DisplayName Value="Better Building Menu" />
-  <ShortDescription Value="A better version of the vanilla building menu: sorting, categories, filters and more details on every asset." />
+  <ShortDescription Value="A better vanilla building menu: sorting, categories, filters and more details." />
   <LongDescription>
-A better version of the vanilla building menu, with sorting, categories and more details. Click any menu on the toolbar (Roads, Electricity, Education, Landscaping, Zones and the rest) and instead of the row of icons you get a panel.
+A better version of the vanilla building menu, with sorting, categories and more details. Click any toolbar menu (Roads, Electricity, Education, Zones and the rest) and you get a panel instead of the row of icons.
 
-* Grid, list, cards or table view, with the menu's category tabs and a search box.
-* Sort by any table column: cost, upkeep, workers, capacity, lot, level, parking.
+* Grid, list, cards or table. Category tabs and a search box.
+* Sort by cost, upkeep, workers, capacity, lot, level or parking.
 * Group by type, theme, source, density, footprint, cost or progression.
-* Filter by unlocked or locked, DLC, theme, asset pack, placement, role, source, extensions or density.
-* Narrow by a range of cost, upkeep, workers, capacity, lot width or lot depth.
-* Hover an asset for its numbers and what unlocks it.
-* Buildings that take upgrades show them as a named list with cost and footprint.
+* Filter by unlocked, DLC, theme, asset pack, placement, role, source, extensions or density.
+* Set a range for cost, upkeep, workers, capacity, lot width or lot depth.
+* Hover an asset to see its numbers and what unlocks it.
+* Building upgrades get names, cost and footprint too.
 
-The menu you clicked decides what is in the list: trees show up under Landscaping, but props, decals and assets hidden from the menus do not, and there is no object picker. For those, use Find It.
+The list holds what the menu holds. Trees are under Landscaping; props, decals and hidden assets are not, and there is no object picker. Use Find It for those.
 
-Works alongside Find It. It is not a replacement for it: Find It is its own window over every asset in the game; this mod changes what the toolbar menus show. While Find It's window is open it takes the menu slot, and this panel comes back when it closes.
+Works with Find It and does not replace it. Find It is a window over every asset in the game; this mod changes the toolbar menus. When Find It's window is open it takes the menu slot; this panel returns when it closes.
 
-No Harmony patches and nothing written to the save. Remove it whenever you like.
+No Harmony patches, nothing saved to your city. Remove it any time.
 
-**Options** (Options > Better Building Menu): turn the replacement off to get the stock icon row back; tile size; show the coverage map while placing a service building; searching widens to every menu automatically; select the first asset when a menu opens; hide the "Random" placeholder assets.
+**Options** (Options > Better Building Menu): switch back to the stock icon row; tile size; coverage map while placing a service building; widen searches to every menu automatically; select the first asset when a menu opens; hide the "Random" placeholder assets.
 
 Bugs and requests: the GitHub link on this page.
 
-Forked from Find It 1.5.8 by T. D. W. and rebuilt around the vanilla menus. Credits carried over: YenYang (UI), Algernon, Chameleon (icons), Baka-gourd (focus handling).
+Forked from Find It 1.5.8 by T. D. W. Thanks also to YenYang (UI), Algernon, Chameleon (icons) and Baka-gourd (focus handling).
 </LongDescription>
 
   <Thumbnail Value="Properties/Thumbnail.png" />
