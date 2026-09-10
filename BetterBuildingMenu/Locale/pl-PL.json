@@ -68,14 +68,6 @@
   "Options.SECTION[BetterBuildingMenu.BetterBuildingMenu.Mod]": "Better Building Menu",
   "Options.INPUT_MAP[BetterBuildingMenu.BetterBuildingMenu.Mod]": "Better Building Menu",
   "Options.TAB[BetterBuildingMenu.BetterBuildingMenu.Mod.Settings]": "Ustawienia ogólne",
-  "Options.TAB[BetterBuildingMenu.BetterBuildingMenu.Mod.KeyBindings]": "Sterowanie",
   "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.Behavior]": "Zachowanie",
-  "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.Actions]": "Akcje",
-  "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.Navigation]": "Nawigacja",
-  "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.Other]": "Inne",
-  "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.UIUX]": "UI / UX",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.HideRandomAssets]": "Ukryj \"Losowe\" typy obiektów",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.HideRandomAssets]": "Ignoruje zasoby oznaczone jako losowe lub zastępcze. Wymaga ponownego załadowania zapisu, aby wprowadzić zmiany.",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Wybierz pierwszy obiekt podczas otwierania Better Building Menu",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Automatycznie wybiera pierwszy obiekt na liście podczas otwierania panelu Better Building Menu. To wpływa na zachowania takie jak zamykanie innych narzędzi i używanie klawisza Escape do zamykania Better Building Menu."
+  "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.UIUX]": "UI / UX"
 }

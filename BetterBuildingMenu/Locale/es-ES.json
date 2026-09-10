@@ -68,14 +68,6 @@
   "Options.SECTION[BetterBuildingMenu.BetterBuildingMenu.Mod]": "Better Building Menu",
   "Options.INPUT_MAP[BetterBuildingMenu.BetterBuildingMenu.Mod]": "Better Building Menu",
   "Options.TAB[BetterBuildingMenu.BetterBuildingMenu.Mod.Settings]": "Ajustes generales",
-  "Options.TAB[BetterBuildingMenu.BetterBuildingMenu.Mod.KeyBindings]": "Asignación de teclas",
   "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.Behavior]": "Comportamiento",
-  "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.Actions]": "Acciones",
-  "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.Navigation]": "Navegación",
-  "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.Other]": "Otro",
-  "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.UIUX]": "UI / UX",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.HideRandomAssets]": "Ocultar assets \"aleatorios\"",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.HideRandomAssets]": "Ignora assets marcados como aleatorios o temporales. Requiere cargar de nuevo el juego para aplicar los cambios.",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Seleccionar el primer objeto al abrir Better Building Menu",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Selecciona de forma automática el primer asset de la lista al abrir el panel de Better Building Menu, esto afecta comportamientos como cerrar alguna otra herramienta y utilizar la tecla \"Esc\" al cerrar Better Building Menu."
+  "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.UIUX]": "UI / UX"
 }

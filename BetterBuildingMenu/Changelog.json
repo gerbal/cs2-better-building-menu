@@ -1,6 +1,23 @@
 [
   {
     "Stable": true,
+    "Version": "0.1.4",
+    "Date": "2026-09-09",
+    "ChangeGroups": [
+      {
+        "Name": "Changes",
+        "Changes": [
+          "Removed the \"Show coverage map while placing\" option. The game switches to a service's coverage view on its own whenever one of its buildings is on the tool; the option changed nothing.",
+          "Removed the \"Select the first asset when opening the building menu\" option. It had no effect.",
+          "Removed the \"Hide Random asset types\" option. The Random rock, boulder and trash pile in Landscaping are listed like everything else.",
+          "Removed the empty Key-Bindings tab from the mod's options page.",
+          "Reworded the \"Searching widens automatically\" description."
+        ]
+      }
+    ]
+  },
+  {
+    "Stable": true,
     "Version": "0.1.3",
     "Date": "2026-09-09",
     "ChangeGroups": [

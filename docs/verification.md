@@ -2139,3 +2139,54 @@ category enums and measurements). Every named vanilla menu is routed. All five
 texts corrected; Locale.json is an embedded resource so this needed a package
 (0.1.3, NewVersion, "New mod version published"). UI suite 651 + render 69
 pass. Not re-verified live: the corrected option text in the Options screen.
+
+## 2026-09-09 — the six options, each flipped live
+
+Prompted by "I don't trust that the options in the options menu actually do
+what they say they do." Main prefix (949230), Porterville, desktop launch
+(`just launch-cs2 <agent> --prefix 949230 --cdp-port 9444`). Each option was
+set through the game's own widget with Options open —
+`trigger("options","setValue",["BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.<Name>"], value)`
+— and the value confirmed in `BetterBuildingMenu.coc` before the probe. Menus
+were cleared (`toolbar.clearAssetSelection`) and reopened
+(`toolbar.selectAssetMenu`) between steps; a menu that is already selected
+does not re-fire `VanillaMenuSelected`, which invalidated the first pass.
+State read from the mod's bindings and `infoview.activeInfoview$`.
+
+| Option | The description says | Measured |
+|---|---|---|
+| ReplaceVanillaBuildMenu | panel instead of the vanilla grid; off gives the icon row back | Off, then Electricity: `LensOwnsCurrentMenu` false, 0 of our tiles. On again: 15 tiles. Holds for a session that started on. A session that starts off still needs a restart after turning it on: the `ReplaceVanillaBuildMenu` UI binding is created once (Setup.cs:196) and `OnSettingsApplied` re-pushes only the tile size (the 949230-c note above measured that case). |
+| AutoWidenSearch | drop the category and search everything | Landscaping, search `school`. Off: total 0, `BuildingCatalogMatchesElsewhere` 6, "Search everything" button shown. On: total 6, no button. Works. |
+| BuildingLensTileSize | width of each tile in the grid | 64 → tile `style.width` 64rem, 42.7px measured; 100 → 100rem, 66.7px. Works, live. (Cards view is 98px either way; the slider only says "grid".) |
+| ShowCoverageOverlay | switch the map to the service's coverage view while a service building is on the tool; restore after | With the option **off** (coc `false`): Small Police Station → `Police`, City Fire House → `FireRescue`, Small Medical Clinic → `Healthcare`, Tiny Park → `Leisure`, Mailbox → `PostService`, Small Elementary School → `Education`; clear → `null`. Identical with it on. The game does this itself; the option changes nothing a player can see. The alias table in `ServiceCoverageOverlaySystem` has no "Leisure", so parks never resolved through the mod anyway. |
+| SelectPrefabOnOpen | selects the first asset when the menu opens | On (the default), Electricity opened: `ActivePrefabId` 0, active tool "Default Tool". The only `SetLensMenuOpen(true, …)` call (Bindings.cs:303) passes `activatePrefab: false`, so the branch at Bindings.cs:570 is unreachable. Dead option. Vanilla, on its own, re-arms the last asset used in a menu when that menu is reopened (every second visit came up with the Object Tool armed). |
+| HideRandomAssets | ignores Random/Placeholder assets; needs a reload | On (this profile's value): index 17,325, `[MENU-COVERAGE] vanilla shows 841 … 3 missing` = `TrashpileRandom01`, `BoulderRandom01`, `RockRandom01` (Landscaping). Off, then Load Game from the pause menu: index 17,693, 0 missing, Landscaping search `random` lists exactly those three (Landscaping total 376). Works. On this content it removes three menu assets and 368 index entries. |
+
+**Text problems found on the way.** The AutoWidenSearch description says
+"the lens". SelectPrefabOnOpen describes something that never happens.
+ShowCoverageOverlay credits the mod with the game's own behaviour. The
+`Key-Bindings` tab is in `SettingsUITabOrder` with no binding behind it; the
+widget dump returned only the six options, no tab entry. The Ctrl+N comment
+above `ReplaceVanillaBuildMenu` in Setting.cs describes a binding that no
+longer exists.
+
+**Not tested.** The upgrade-panel replacement (`ExtensionMenu.tsx`) with the
+replace option turned off mid-session — it reads the same once-captured
+binding, so by code it keeps replacing until restart. A session that starts
+with the replace option off (measured on 949230-c above, not repeated).
+
+Settings restored to what the profile had: HideRandomAssets on, tile 100,
+the rest default. Game stopped with `game-stop` ("Sent SIGTERM", 0 procs).
+
+**Shipped as 0.1.4 (same day).** Removed `ShowCoverageOverlay` and its
+`ServiceCoverageOverlaySystem`, `SelectPrefabOnOpen` and the unreachable
+`activatePrefab` branch of `SetLensMenuOpen`, and `HideRandomAssets` with the
+`PlaceholderObjectData` query exclusion — Random assets are indexed like
+everything else now. `SettingsUITabOrder` lists only the Settings tab; the
+Actions/Navigation/Other group names and the Key-Bindings tab label left
+Locale.json and the thirteen translations. AutoWidenSearch's description no
+longer says "the lens". Release build + package (dll 430,080 bytes; 0 hits
+for the removed names, 1 for the new wording), 399 backend tests pass, UI
+source untouched. Deployed to both Mods roots; `NewVersion` → "New mod
+version published". Not re-verified live: the options page with three
+entries.

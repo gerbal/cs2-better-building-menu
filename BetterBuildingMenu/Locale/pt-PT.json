@@ -68,14 +68,6 @@
   "Options.SECTION[BetterBuildingMenu.BetterBuildingMenu.Mod]": "Better Building Menu",
   "Options.INPUT_MAP[BetterBuildingMenu.BetterBuildingMenu.Mod]": "Better Building Menu",
   "Options.TAB[BetterBuildingMenu.BetterBuildingMenu.Mod.Settings]": "Definições",
-  "Options.TAB[BetterBuildingMenu.BetterBuildingMenu.Mod.KeyBindings]": "Atalhos do teclado",
   "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.Behavior]": "Comportamento",
-  "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.Actions]": "Ações",
-  "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.Navigation]": "Navegação",
-  "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.Other]": "Outros",
-  "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.UIUX]": "Interface do utilizador / Experiência do utilizador",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.HideRandomAssets]": "Ocultar recursos \"Aleatórios\"",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.HideRandomAssets]": "Ignora os recursos marcados como Aleatórios ou Temporários. É necessário recarregar o jogo guardado para aplicar as alterações.",
-  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Selecionar o primeiro asset ao abrir o Better Building Menu",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.SelectPrefabOnOpen]": "Seleciona automaticamente o primeiro recurso da lista ao abrir o painel do Better Building Menu. Isso afeta comportamentos como fechar outras ferramentas e usar a tecla Esc para fechar o Better Building Menu."
+  "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.UIUX]": "Interface do utilizador / Experiência do utilizador"
 }

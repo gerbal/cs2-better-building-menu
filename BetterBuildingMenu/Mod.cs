@@ -72,7 +72,6 @@ namespace BetterBuildingMenu
 
 			Settings = new BetterBuildingMenuSettings(this);
 			Settings.RegisterInOptionsUI();
-			Settings.RegisterKeyBindings();
 
 			if (GameManager.instance.modManager.TryGetExecutableAsset(this, out var asset))
 			{
@@ -115,7 +114,6 @@ namespace BetterBuildingMenu
 			updateSystem.UpdateAt<PrefabIndexingSystem>(SystemUpdatePhase.UIUpdate);
 			updateSystem.UpdateAt<BuildingMenuUISystem>(SystemUpdatePhase.UIUpdate);
 			updateSystem.UpdateAt<PrefabTrackingSystem>(SystemUpdatePhase.PrefabUpdate);
-			updateSystem.UpdateAt<ServiceCoverageOverlaySystem>(SystemUpdatePhase.Rendering);
 
 		}
 

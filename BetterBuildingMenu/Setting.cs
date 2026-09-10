@@ -8,18 +8,14 @@ using Game.UI;
 namespace BetterBuildingMenu
 {
     [FileLocation(nameof(BetterBuildingMenu))]
-	[SettingsUITabOrder(SETTINGS, KEYBINDINGS)]
-	[SettingsUIGroupOrder(BEHAVIOR, UIUX, OTHER, ACTIONS, NAVIGATION)]
-	[SettingsUIShowGroupName(BEHAVIOR, UIUX, OTHER, ACTIONS, NAVIGATION)]
+	[SettingsUITabOrder(SETTINGS)]
+	[SettingsUIGroupOrder(BEHAVIOR, UIUX)]
+	[SettingsUIShowGroupName(BEHAVIOR, UIUX)]
 	public class BetterBuildingMenuSettings : ModSetting
 	{
 		public const string SETTINGS = "Settings";
-		public const string KEYBINDINGS = "KeyBindings";
-		public const string ACTIONS = "Actions";
-		public const string NAVIGATION = "Navigation";
 		public const string BEHAVIOR = "Behavior";
 		public const string UIUX = "UIUX";
-		public const string OTHER = "Other";
 
 		public BetterBuildingMenuSettings(IMod mod) : base(mod)
 		{
@@ -52,12 +48,6 @@ namespace BetterBuildingMenu
 		// global hot-key belongs to the mod that answers "where is any asset",
 		// and that mod is FindIt. See cm-wf6g.4 on coexistence.
 
-		// Ctrl+N, not Ctrl+R: vanilla binds Ctrl+R to "Relocate Selected Object"
-		// (Shortcuts map, same default usages as ours), which is a real collision
-		// and the source of the "Key binding conflict detected" notification the
-		// mod showed on every boot. N is bound nowhere in the game's InputActions
-		// asset at all, so it stays clear even under the modifier-insensitive
-		// comparison ProxyBinding.PathEquals falls back to.
 		// On by default: replacing the build menu is what this mod is for, so an
 		// install that did nothing until the player found this switch would just
 		// look broken. Turning it off restores the vanilla menu wholesale,
@@ -70,13 +60,6 @@ namespace BetterBuildingMenu
 		// silently discarded. Players who mostly search globally can flip it.
 		[SettingsUISection(SETTINGS, BEHAVIOR)]
 		public bool AutoWidenSearch { get; set; }
-
-		// Grid by default: recognising a thumbnail is the fast path back to the
-		// map, and the table is for the rarer moment of genuine comparison.
-		// Answers "will it reach" in the coordinate system the player is looking
-		// at, rather than as a number in a panel.
-		[SettingsUISection(SETTINGS, UIUX)]
-		public bool ShowCoverageOverlay { get; set; } = true;
 
 		/// <summary>
 		/// Grid tile width. 88 was sized around a 12rem label; the tiles now
@@ -97,12 +80,6 @@ namespace BetterBuildingMenu
 		// width.
 		[SettingsUISlider(min = 64, max = 144, step = 4, scalarMultiplier = 1, unit = Unit.kInteger)]
 		public int BuildingLensTileSize { get; set; } = 100;
-
-		[SettingsUISection(SETTINGS, BEHAVIOR)]
-		public bool SelectPrefabOnOpen { get; set; } = true;
-
-		[SettingsUISection(SETTINGS, BEHAVIOR)]
-		public bool HideRandomAssets { get; set; }
 
 		public override void SetDefaults()
 		{

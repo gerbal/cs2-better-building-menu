@@ -591,21 +591,6 @@ namespace BetterBuildingMenu.Systems
 				{
 					var queries = processor.GetEntityQuery();
 
-					if (Mod.Settings.HideRandomAssets)
-					{
-						for (var i = 0; i < queries.Length; i++)
-						{
-							// None is null on a processor that never excludes anything, and
-							// Concat on null throws — which took every processor down at
-							// once on a prefix where HideRandomAssets was on, and indexed
-							// nothing. The 949230 prefix never had the setting on, so it
-							// was never seen there.
-							queries[i].None = (queries[i].None ?? Array.Empty<ComponentType>())
-								.Concat(new[] { ComponentType.ReadOnly<PlaceholderObjectData>() })
-								.ToArray();
-						}
-					}
-
 					var query = GetEntityQuery(queries);
 
 					if (!full)
