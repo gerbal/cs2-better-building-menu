@@ -10,8 +10,8 @@
     2026-09-09. Find It's store art was removed on 2026-09-02.
   * ChangeLog: ignored by "Publish"; mirror Changelog.json's entry for the version
     being published before every "NewVersion" run.
-  * AccessLevel: Unlisted for the first upload so the listing can be checked
-    before it is made Public with an "Update" run.
+  * AccessLevel: Unlisted from the first upload (0.1.0) until the listing was
+    checked; Public since the 0.1.4 "Update" run on 2026-09-09.
 -->
 <Publish>
   <ModId Value="158589" />
@@ -50,7 +50,7 @@ Forked from Find It 1.5.8 by T. D. W. Thanks also to YenYang (UI), Algernon, Cha
   <Tag Value="Code Mod" />
   <ModVersion Value="0.1.4" />
   <GameVersion Value="1.6.*" />
-  <AccessLevel Value="Unlisted" />
+  <AccessLevel Value="Public" />
   <ExternalLink Type="github" Url="https://github.com/gerbal/cs2-better-building-menu" />
 
   <ChangeLog>
