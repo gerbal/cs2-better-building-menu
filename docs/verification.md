@@ -2256,3 +2256,15 @@ menu. Conclusion: no conflict; the report needs the player's logs.
 
 Escape, re-read with a 2 s wait: ownership true → false, panel gone. Works.
 Asset Menu Tweaks is still in this machine's active playset.
+
+**Both from Paradox Mods (same day).** Local copy moved out of both Mods
+roots; the published 0.1.4 (158589, package `158589_5`) subscribed through
+the in-game browser next to Asset Menu Tweaks. This boot registered the UI
+modules the other way round — Asset Menu Tweaks first, ours second, ours
+outermost — which is the reverse of the local-mod run above, so both orders
+are now measured. Same results: Electricity 15, Roads 100 of 204, ownership
+true, vanilla grid 0; all four of its options on at once left our surface's
+rect, column layout and 100 tiles unchanged; Escape closed the panel; 0
+exceptions in either mod's log or UI.log. No conflict in either order.
+Both mods then removed from the playset through the browser and the local
+copy put back, so the next launch loads the workspace build alone.
