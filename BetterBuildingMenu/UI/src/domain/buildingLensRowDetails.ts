@@ -267,8 +267,16 @@ export function getBuildingProvenanceChips(
     .map((pack) => display("assetPack", pack))
     .filter((pack) => pack.length > 0);
 
+  // Colossal.PSI.Common.DlcId's sentinels: BaseGame is -2009, Invalid -1,
+  // Virtual -1111. None is a DLC, and the facet names the base game through
+  // its own "vanilla" option rather than a "dlc:-2009" one, so resolving them
+  // yields nothing and the row printed the number. The Source chip already
+  // says where a base-game asset came from.
+  const dlcId = (entry.dlcId ?? "").trim();
+  const isDlcSentinel = dlcId === "-2009" || dlcId === "-1" || dlcId === "-1111";
+
   const chips: BuildingProvenanceChip[] = [
-    { label: "DLC", value: display("dlc", entry.dlcId ?? "") },
+    { label: "DLC", value: isDlcSentinel ? "" : display("dlc", dlcId) },
     { label: "Theme", value: display("theme", entry.theme ?? "") },
     { label: "Pack", value: packs.join(", ") },
     { label: "Source", value: display("provenance", entry.provenance ?? "") },

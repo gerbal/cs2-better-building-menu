@@ -2116,3 +2116,13 @@ the chevron fix went up as a new version: `ModVersion` 0.1.1, csproj and
 modinfo bumped, Changelog.json entry mirrored into `<ChangeLog>`, Release
 package rebuilt (assembly stamped 0.1.1) and pushed with `NewVersion`:
 "New mod version published".
+
+**Expanded table rows (20:5x).** In the expanded City High School row the
+labels "Ground pollution" and "Air pollution" wrapped under their values and
+the Placement chips drew over the second line; every base-game row printed
+"DLC -2009". Fixes: a `.rowDetail` / `.rowProvenance` pair is `flex: 0 0 auto`
+with `white-space: nowrap` (stylesheet contract), and DlcId's sentinels
+(-2009 BaseGame, -1 Invalid, -1111 Virtual) produce no DLC chip (unit test).
+Live in a new Windy Fjords game at 1920x1080: the school's block shows every
+pair on one line with the chip rows clear beneath, and both rows end with
+"Source Vanilla" alone. Published as 0.1.2 with `NewVersion`.
