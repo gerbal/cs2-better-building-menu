@@ -36,9 +36,11 @@ No Harmony patches, nothing saved to your city. Remove it any time.
 
 **Options** (Options > Better Building Menu): switch back to the stock icon row; tile size; widen searches to every menu automatically.
 
-Bugs and requests: the GitHub link on this page.
+Bugs and requests: the comments on this page.
 
 Forked from Find It 1.5.8 by T. D. W. Thanks also to YenYang (UI), Algernon, Chameleon (icons) and Baka-gourd (focus handling).
+
+This mod was developed with AI assistance (Anthropic's Claude), under human direction and review.
 </LongDescription>
 
   <Thumbnail Value="Properties/Thumbnail.png" />
@@ -51,7 +53,6 @@ Forked from Find It 1.5.8 by T. D. W. Thanks also to YenYang (UI), Algernon, Cha
   <ModVersion Value="0.1.4" />
   <GameVersion Value="1.6.*" />
   <AccessLevel Value="Public" />
-  <ExternalLink Type="github" Url="https://github.com/gerbal/cs2-better-building-menu" />
 
   <ChangeLog>
 0.1.4
