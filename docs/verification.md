@@ -2126,3 +2126,16 @@ with `white-space: nowrap` (stylesheet contract), and DlcId's sentinels
 Live in a new Windy Fjords game at 1920x1080: the school's block shows every
 pair on one line with the chip rows clear beneath, and both rows end with
 "Source Vanilla" alone. Published as 0.1.2 with `NewVersion`.
+
+## 2026-09-09 — 0.1.3: listing rewrite and the Roads/Landscaping claim
+
+The listing, the "Replace the vanilla build menu" option text, two `<remarks>`
+in `BuildingMenuUISystem.Bindings.cs` and the `VanillaMenuWatcher.tsx` header
+all said Roads and Landscaping keep the vanilla grid. Read against the code:
+`VanillaMenuSelected` (Bindings.cs:230) yields to vanilla only when the setting
+is off or `GetAssetMenuName` returns empty; no menu name is tested anywhere in
+the source (`grep -rn Landscaping` over `.cs/.ts/.tsx`, non-comment hits are
+category enums and measurements). Every named vanilla menu is routed. All five
+texts corrected; Locale.json is an embedded resource so this needed a package
+(0.1.3, NewVersion, "New mod version published"). UI suite 651 + render 69
+pass. Not re-verified live: the corrected option text in the Options screen.

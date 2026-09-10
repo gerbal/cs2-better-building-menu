@@ -193,9 +193,10 @@ namespace BetterBuildingMenu.Systems
 		/// </summary>
 		/// <remarks>
 		/// Declines quietly whenever the lens has nothing better to offer than
-		/// the vanilla grid — the setting is off, the menu is Roads or
-		/// Landscaping, or it is a modded menu we have no preset for — so the
-		/// vanilla menu keeps working untouched in all those cases.
+		/// the vanilla grid — the setting is off, or the menu has no name in
+		/// the index (a modded toolbar entry added after indexing) — so the
+		/// vanilla menu keeps working untouched in those cases. Every named
+		/// vanilla menu routes here, Roads and Landscaping included.
 		/// </remarks>
 		/// <summary>
 		/// Hand this menu back to vanilla: we do not own it, and nothing of
@@ -317,9 +318,9 @@ namespace BetterBuildingMenu.Systems
 		/// stood for, and left the panel covering the screen with no way to read it
 		/// as anything but stuck.
 		///
-		/// Only acts when the lens owns the current menu. Roads and Landscaping
-		/// hand the screen back to vanilla (see VanillaMenuSelected), and their
-		/// deselection is the vanilla grid's business, not ours.
+		/// Only acts when the lens owns the current menu. A menu that was
+		/// handed back to vanilla (see VanillaMenuSelected) is the vanilla
+		/// grid's business to close, not ours.
 		/// </remarks>
 		private void VanillaMenuDeselected()
 		{

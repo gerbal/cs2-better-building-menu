@@ -29,8 +29,9 @@ const ESCAPE_KEY_CODE = 27;
  * and decides whether it has a preset — the UI has only an entity index, and
  * naming the menu needs the prefab system.
  *
- * The backend declines quietly for Roads, Landscaping and any menu it has no
- * preset for, so those keep using the vanilla grid.
+ * The backend declines quietly for any menu the index has no name for (a
+ * modded toolbar entry added after indexing), so that one keeps the vanilla
+ * grid. Every named vanilla menu, Roads and Landscaping included, is routed.
  */
 export const VanillaMenuWatcher = () => {
   const enabled = useValue(ReplaceVanillaBuildMenu$);

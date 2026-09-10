@@ -49,6 +49,12 @@ directory and delete the `C:` tree it leaves there afterwards.
    `GameVersion` (`major.minor.*`, currently `1.6.*`), thumbnail (square PNG),
    screenshots, changelog. `AccessLevel` may be `Public`, `Unlisted` or
    `Private`.
+   Build and package with the same configuration in one environment:
+   `CS2_BUILD_CONFIG=Release ./build.sh all && CS2_BUILD_CONFIG=Release ./build.sh package`.
+   `package` reads the variable too; without it, it copies the Debug dll
+   (this shipped a stale embedded `Locale.json` once, on 2026-09-09, before
+   the 0.1.3 package was redone).
+
 3. Close the game. From a scratch directory:
 
    ```sh

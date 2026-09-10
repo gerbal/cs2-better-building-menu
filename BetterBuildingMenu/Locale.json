@@ -144,7 +144,7 @@
   "Tooltip.LABEL[BetterBuildingMenu.FilterOptions]": "Filter options…",
   "Options.LABEL[BetterBuildingMenu.MetricFilters]": "Metric filters",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.ReplaceVanillaBuildMenu]": "Replace the vanilla build menu",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.ReplaceVanillaBuildMenu]": "Opens the Building Lens, already filtered, when you click a vanilla toolbar menu such as Electricity or Healthcare, instead of the vanilla asset grid. Roads and Landscaping are unaffected, since they contain networks and surfaces rather than buildings.",
+  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.ReplaceVanillaBuildMenu]": "When you click a toolbar menu such as Electricity or Roads, opens the panel already filtered to that menu instead of the vanilla asset grid. Turn off to get the stock icon row back.",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.AutoWidenSearch]": "Searching widens automatically",
   "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.AutoWidenSearch]": "When a search finds nothing in the current category, drop the category and search everything immediately. Off by default, so the lens offers to widen instead of silently discarding the category you were browsing.",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.BuildingLensTileSize]": "Tile size",
