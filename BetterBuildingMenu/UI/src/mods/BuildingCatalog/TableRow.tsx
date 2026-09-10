@@ -229,7 +229,16 @@ export const TableRow = ({
         title={rowInspectLabel}
         data-expanded={expanded ? "true" : undefined}
       >
-        <span aria-hidden="true">{expanded ? "⌃" : "⌄"}</span>
+        {/* The game's own stroke arrow, masked so it takes the button's colour.
+            It was U+2304/U+2303, arrowhead characters the game's UI face, Noto
+            Sans, does not carry, so every row ended in a missing-glyph box
+            (seen in the 2026-09-09 store screenshot). */}
+        <img
+          className={styles.rowDetailsGlyph}
+          style={{ maskImage: expanded ? "url(Media/Glyphs/StrokeArrowUp.svg)" : "url(Media/Glyphs/StrokeArrowDown.svg)" }}
+          alt=""
+          aria-hidden="true"
+        />
       </Button>
       {expanded && (
         <BuildingResultDetails entry={entry} resolveFacetLabel={resolveFacetLabel} />

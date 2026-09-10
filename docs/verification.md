@@ -2102,3 +2102,11 @@ tried first and crashed natively one to three minutes after every load, with
 the mod removed from both Mods roots as well; it references assets this install
 lacks (CitiesCarCustoms, PetrolPonyGarage, MuscleCar01–05, BusCO01,
 NA_PoliceVehicle02, GrandHotel01). Pushed to the listing with `Update`.
+
+**Table chevron (20:38).** The store screenshot showed a missing-glyph box at
+the end of every table row: the expand control was U+2304/U+2303, which Noto
+Sans lacks. It is now the game's own `Media/Glyphs/StrokeArrowDown.svg` /
+`StrokeArrowUp.svg` under a mask (the header's close button's construction).
+Live in a new Windy Fjords game at 1920x1080: 100 rows, every one carrying
+the masked glyph at 24x24px, zero text spans left; the frame shows plain
+down arrows. `Screenshot_03.jpg` retaken and pushed with `Update`.
