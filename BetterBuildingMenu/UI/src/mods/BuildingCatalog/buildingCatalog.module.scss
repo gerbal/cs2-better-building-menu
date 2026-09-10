@@ -1211,6 +1211,9 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
 .rowProvenance {
   display: flex;
   flex-direction: row;
+  // Same rule as .rowDetail: the pair moves as a unit rather than wrapping.
+  flex: 0 0 auto;
+  white-space: nowrap;
   // flex-start, not baseline: Cohtml drops `align-items: baseline`
   // outright (UI.log: "Unable to parse declaration") and falls back to
   // this, so naming it is the same layout said honestly.
@@ -1231,6 +1234,13 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   // outright (UI.log: "Unable to parse declaration") and falls back to
   // this, so naming it is the same layout said honestly.
   align-items: flex-start;
+  // A pair is a unit: it never shrinks and its text never wraps, so when the
+  // line is full the whole pair moves down. Left shrinkable, it narrowed to
+  // its longest word, "Ground pollution" wrapped under its value, and the
+  // engine did not grow the line for the second line of text — it overflowed
+  // into the Placement chips below (seen 2026-09-09, City High School).
+  flex: 0 0 auto;
+  white-space: nowrap;
   margin-right: 16rem;
   margin-bottom: 2rem;
   font-size: var(--fontSizeS);
@@ -1239,6 +1249,7 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
 .rowDetailLabel {
   color: var(--menuText2Normal);
   margin-right: 4rem;
+  white-space: nowrap;
 }
 
 .rowDetailValue {

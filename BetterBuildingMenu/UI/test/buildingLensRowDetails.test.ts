@@ -129,15 +129,27 @@ describe("Provenance", () => {
   });
 
   it("shows the DLC's name rather than its raw numeric id", () => {
-    // The adapter puts the raw DlcId on the entry ("-2009") while the facet
-    // group carries the display name, so the row read "DLC -2009" until it
+    // The adapter puts the raw DlcId on the entry while the facet group
+    // carries the display name, so the row read a bare number until it
     // resolved through the same table the filter uses.
     const resolve = (groupId: string, value: string) =>
-      groupId === "dlc" && value === "-2009" ? "Landmark Buildings" : null;
+      groupId === "dlc" && value === "2427741" ? "Landmark Buildings" : null;
 
-    assert.deepEqual(getBuildingProvenanceChips({ dlcId: "-2009" }, resolve), [
+    assert.deepEqual(getBuildingProvenanceChips({ dlcId: "2427741" }, resolve), [
       { label: "DLC", value: "Landmark Buildings" },
     ]);
+  });
+
+  it("draws no DLC chip for the game's base-game and invalid sentinels", () => {
+    // Colossal.PSI.Common.DlcId: BaseGame is -2009, Invalid is -1. The facet
+    // names the base game through its own "vanilla" option, never through a
+    // "dlc:-2009" one, so the resolver has nothing and the row printed
+    // "DLC -2009" (seen 2026-09-09 on every base-game row). Base game is not
+    // a DLC; the Source chip already says where the asset came from.
+    assert.deepEqual(getBuildingProvenanceChips({ dlcId: "-2009", provenance: "Vanilla" }, () => null), [
+      { label: "Source", value: "Vanilla" },
+    ]);
+    assert.deepEqual(getBuildingProvenanceChips({ dlcId: "-1" }, () => null), []);
   });
 
   it("falls back to the raw value when the facet has no matching option", () => {

@@ -74,6 +74,24 @@ describe("Building Lens stylesheet contracts", () => {
     assert.match(buildingCatalogStyles, /\.rowDetailsButton \{[^}]*height: 100%;/);
   });
 
+  it("keeps a details label-value pair on one line and wraps it as a unit", () => {
+    // Seen 2026-09-09 in the expanded City High School row: "Ground pollution"
+    // and "Air pollution" wrapped their second word under the value, and the
+    // Placement chips beneath drew over the word "pollution". A .rowDetail is
+    // a flex item in a wrapping row; left free to shrink it narrows to its
+    // longest word and the label wraps, and the engine does not grow the line
+    // for the second line of text, so it overflows into the next group. The
+    // pair must be unshrinkable and its text unwrappable, so the whole pair
+    // moves to the next line instead.
+    const detail = buildingCatalogStyles.slice(buildingCatalogStyles.indexOf("\n.rowDetail {"));
+    const block = detail.slice(0, detail.indexOf("\n}"));
+    assert.match(block, /flex: 0 0 auto;/);
+    assert.match(block, /white-space: nowrap;/);
+
+    const label = buildingCatalogStyles.slice(buildingCatalogStyles.indexOf("\n.rowDetailLabel {"));
+    assert.match(label.slice(0, label.indexOf("\n}")), /white-space: nowrap;/);
+  });
+
   it("pairs the hover card's figures two across, and lets a list take the row", () => {
     // Measured on a zone card: six label/value pairs, each on its own 215px row
     // using about fifty of it. The pairing is left to the flow: each row is

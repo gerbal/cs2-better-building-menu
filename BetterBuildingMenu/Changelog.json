@@ -1,6 +1,20 @@
 [
   {
     "Stable": true,
+    "Version": "0.1.2",
+    "Date": "2026-09-09",
+    "ChangeGroups": [
+      {
+        "Name": "Fixes",
+        "Changes": [
+          "Expanded table rows: a figure's label no longer wraps under its value and spills into the placement chips; each label and value moves to the next line as a pair.",
+          "Expanded table rows no longer show \"DLC -2009\" on base-game assets; that number is the game's own base-game marker, and the Source line already says where the asset comes from."
+        ]
+      }
+    ]
+  },
+  {
+    "Stable": true,
     "Version": "0.1.1",
     "Date": "2026-09-09",
     "ChangeGroups": [

@@ -61,14 +61,15 @@ Forked from Find It 1.5.8 by T. D. W. and rebuilt around the vanilla menus. Cred
   <Screenshot Value="Properties/Screenshot_04.jpg" />
 
   <Tag Value="Code Mod" />
-  <ModVersion Value="0.1.1" />
+  <ModVersion Value="0.1.2" />
   <GameVersion Value="1.6.*" />
   <AccessLevel Value="Unlisted" />
   <ExternalLink Type="github" Url="https://github.com/gerbal/cs2-better-building-menu" />
 
   <ChangeLog>
-0.1.1
+0.1.2
 
-* The expand arrow at the end of each Table row drew as a missing-character box; it is now the game's own arrow glyph.
+* Expanded table rows: a figure's label no longer wraps under its value and spills into the placement chips; each label and value moves to the next line as a pair.
+* Expanded table rows no longer show "DLC -2009" on base-game assets; that number is the game's own base-game marker, and the Source line already says where the asset comes from.
   </ChangeLog>
 </Publish>
