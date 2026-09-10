@@ -95,6 +95,11 @@ it is open and this menu returns when it closes, its picker wins the toolbar
 when present, and the two ship no file at the same shared path. Verified live
 against Find It 1.5.8 (`docs/verification.md`, 2026-09-02).
 
+## Rename on 2026-09-02
+
+The mod was renamed from `FindItBuildingMenu`. The game keys a mod's settings
+file by its id, so the first run after the rename started from default options.
+
 ## Deployment caution
 
 Never leave a `.disabled` copy containing a UI bundle in `Mods/`; the asset

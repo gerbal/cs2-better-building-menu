@@ -1,6 +1,19 @@
 [
   {
     "Stable": true,
+    "Version": "0.1.3",
+    "Date": "2026-09-09",
+    "ChangeGroups": [
+      {
+        "Name": "Fixes",
+        "Changes": [
+          "The \"Replace the vanilla build menu\" option said Roads and Landscaping were unaffected. They are replaced like every other menu; the option text now says so."
+        ]
+      }
+    ]
+  },
+  {
+    "Stable": true,
     "Version": "0.1.2",
     "Date": "2026-09-09",
     "ChangeGroups": [

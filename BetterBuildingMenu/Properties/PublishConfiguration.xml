@@ -16,42 +16,21 @@
 <Publish>
   <ModId Value="158589" />
   <DisplayName Value="Better Building Menu" />
-  <ShortDescription Value="Replaces the asset list in the build menus with a bigger panel: grid, list, cards or table, with search, sorting, grouping, filters and stats on hover." />
+  <ShortDescription Value="Click any toolbar build menu and get a panel instead of the icon row: search, grid, list, cards or table, sorting, grouping, filters and stats on hover." />
   <LongDescription>
-**Not a replacement for Find It.** It does something different and is fully compatible with it: both can be installed and used together. Find It browses every asset in the game from its own window; this mod makes the vanilla build menus themselves better at showing what they already contain.
+**Not a replacement for Find It.** Both can be installed together. Find It is its own window over every asset in the game; this mod changes what the toolbar menus show. While Find It's window is open it takes the menu slot, and this panel comes back when it closes.
 
-Replaces the row of asset icons at the bottom of the toolbar build menus (Roads, Electricity, Education, Landscaping, Zones and the rest) with a bigger panel. The menu you clicked decides what is in the list; the panel gives you better ways to find things in it.
+Click any menu on the toolbar (Roads, Electricity, Education, Landscaping, Zones and the rest) and instead of the row of icons you get a panel: a search box, the menu's category tabs, and its assets as a grid, list, cards or table. Click a table column to sort by it. Group by type, theme, source, density, footprint, cost or progression. Filter by unlocked or locked, DLC, theme, asset pack, placement, role, source, extensions or density, or by a range of cost, upkeep, workers, capacity, lot width or lot depth. Hover an asset for its numbers and what unlocks it. Buildings that take upgrades show them as a named list with cost and footprint.
 
-**Views**
+The menu you clicked decides what is in the list: trees show up under Landscaping, but props, decals and assets hidden from the menus do not, and there is no object picker. For those, use Find It.
 
-* Grid: the familiar icon tiles, with an adjustable tile size (Options > Better Building Menu).
-* List and Cards: name, footprint, cost and capacity next to each icon.
-* Table: one row per asset with Cost, Upkeep, Workers, Capacity, Lot, Level and Parking columns. Click a header to sort by it.
+No Harmony patches and nothing written to the save. Remove it whenever you like.
 
-**Finding things**
+**Options** (Options > Better Building Menu): turn the replacement off to get the stock icon row back; tile size; show the coverage map while placing a service building; searching widens to every menu automatically; select the first asset when a menu opens; hide the "Random" placeholder assets.
 
-* Search box. With "Searching widens automatically" on, a search that finds nothing in the open menu searches every menu instead.
-* Group by Category, Asset type, Type, Role, Theme, Source, Density, Footprint, Cost, Progression, or for schools by tier.
-* Filters: unlocked or locked, DLC, theme, asset pack, placement, role, source, extensions, density. Metric filters narrow by a range of cost, upkeep, workers, capacity, lot width or lot depth.
-* Hover any asset for its stats: cost and upkeep, capacity, workers and jobs, parking, evening shift, XP, available upgrades, lot size. Values follow the game's unit setting.
+Bugs and requests: the GitHub link on this page.
 
-**Placing and upgrading**
-
-* With "Show coverage map while placing" on, picking up a service building that has a coverage radius switches the map to that service's info view, and your previous view comes back when you put the tool down.
-* The upgrade menu for a selected building (extension floors, wings and so on) uses the same list, so upgrades have names, cost and footprint instead of bare tiles.
-* Zones open as a browsable list of zone types; painting still uses the normal zone tool.
-
-**Options**
-
-Replace the vanilla build menu (turn off to get the stock icon row back), select the first asset when a menu opens, hide the "Random" placeholder assets, searching widens automatically, show coverage map while placing, tile size.
-
-**Scope**
-
-Only what the vanilla menus contain, so trees show up under Landscaping but props, decals and assets hidden from the menus do not. No object picker. For those, use Find It alongside it: while Find It's window is open it takes the menu slot, and this panel comes back when it closes.
-
-**Credits**
-
-Forked from Find It 1.5.8 by T. D. W. and rebuilt around the vanilla menus. Credits carried over from Find It: YenYang (UI), Algernon, Chameleon (icons), Baka-gourd (focus handling). Source and bug reports on GitHub.
+Forked from Find It 1.5.8 by T. D. W. and rebuilt around the vanilla menus. Credits carried over: YenYang (UI), Algernon, Chameleon (icons), Baka-gourd (focus handling).
 </LongDescription>
 
   <Thumbnail Value="Properties/Thumbnail.png" />
@@ -61,15 +40,15 @@ Forked from Find It 1.5.8 by T. D. W. and rebuilt around the vanilla menus. Cred
   <Screenshot Value="Properties/Screenshot_04.jpg" />
 
   <Tag Value="Code Mod" />
-  <ModVersion Value="0.1.2" />
+  <ModVersion Value="0.1.3" />
   <GameVersion Value="1.6.*" />
   <AccessLevel Value="Unlisted" />
   <ExternalLink Type="github" Url="https://github.com/gerbal/cs2-better-building-menu" />
 
   <ChangeLog>
-0.1.2
+0.1.3
 
-* Expanded table rows: a figure's label no longer wraps under its value and spills into the placement chips; each label and value moves to the next line as a pair.
-* Expanded table rows no longer show "DLC -2009" on base-game assets; that number is the game's own base-game marker, and the Source line already says where the asset comes from.
-  </ChangeLog>
+Fixes
+* The "Replace the vanilla build menu" option said Roads and Landscaping were unaffected. They are replaced like every other menu; the option text now says so.
+</ChangeLog>
 </Publish>

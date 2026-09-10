@@ -2,71 +2,51 @@
 
 # Better Building Menu
 
-Better Building Menu is a building browser for Cities: Skylines II. Open any
-vanilla build menu and it takes that menu's place, listing the same buildings the
-game would — the game's own menu tree decides what belongs — as a table, a grid
-or a list you can sort, group and search.
+A Cities: Skylines II mod. Click any build menu on the toolbar and, instead of
+the row of icons, you get a panel: search, the menu's category tabs, and its
+assets as a grid, list, cards or table, with sorting, grouping, filters and
+stats on hover. The menu you clicked decides what is in the list.
 
-It grew out of a fork of [Find It](https://github.com/JadHajjar/FindIt-CSII) and
-has diverged substantially since. See [docs/FORK.md](docs/FORK.md) for
-provenance, [PLANNING.md](PLANNING.md) for implementation phases, and
-[docs/roadmap.md](docs/roadmap.md) for the capability plan.
+Published on Paradox Mods as [mod 158589](https://mods.paradoxplaza.com/mods/158589/Windows).
+The listing there is the player-facing description; this file is for people
+working on the code.
 
-## Features
+---
 
-* Replaces the vanilla build menu in place — no floating window to manage.
-  The Zones button opens a browsable zoning hierarchy; assignment still uses
-  the game's own Zone tool.
-* Table, grid and list views, each sortable and groupable.
-* Facets for availability, source, theme, asset pack, placement and role.
-* Metric range filters over cost, upkeep, workers, capacity and lot size.
-* A search that finds nothing inside one menu can widen itself to every menu.
-* Hover a building for its numbers; place one and a service coverage overlay
-  shows what it reaches.
-* Select a building that takes upgrades and its extension picker is the same
-  list — named rows with cost and footprint, the hover card behind each —
-  instead of vanilla's unlabelled tiles. Placing still goes through the game's
-  own upgrade tool.
+## Layout
 
-Buildings and networks only. Props, trees and detailing are left to the mods
-made for them.
+* `BetterBuildingMenu/` — the C# mod (systems, prefab index, options) and the
+  UI under `UI/` (React, built into the mod's `.mjs` bundle).
+* `BetterBuildingMenu/Properties/` — store listing (`PublishConfiguration.xml`),
+  logo, cover and screenshots.
+* `docs/` — [FORK.md](docs/FORK.md) (provenance and license),
+  [publishing.md](docs/publishing.md) (uploading from Linux),
+  [roadmap.md](docs/roadmap.md), [verification.md](docs/verification.md)
+  (live checks, dated).
 
-There is deliberately no search hot-key: this is a build menu, so it opens from
-the toolbar menu you already clicked. `Ctrl+F` collided with vanilla's "Toggle
-Follow Selected Citizen" and with Find It's own shortcut, so it was removed
-rather than moved.
+## Build and test
 
-## Coexists with upstream Find It
+```sh
+./build.sh all                          # C# (Debug) and UI
+CS2_BUILD_CONFIG=Release ./build.sh all # release build
+./build.sh package                      # artifacts/BetterBuildingMenu
+cd BetterBuildingMenu/UI && npm test    # UI unit and render suites
+```
 
-Both may be installed. Find It's own panel takes the asset-menu slot while it is
-open and this menu returns when it closes; the object picker is Find It's alone
-(this mod ships none); the two ship no file at the same shared path. Verified live against Find It 1.5.8 (`docs/verification.md`, 2026-09-02).
+Deploy by copying the packaged folder into the game's `Mods/` directory. Never
+leave a `.disabled` copy containing a UI bundle in `Mods/`: the asset scanner
+registers it as a duplicate module.
 
-## Renamed on 2026-09-02
+## Compatibility
 
-The mod was renamed from `FindItBuildingMenu`. The game keys a mod's settings
-file by its id, so the first run after the rename starts from defaults again —
-any options you had customised are back at their initial values.
-
-## On Paradox Mods
-
-Published as [mod 158589](https://mods.paradoxplaza.com/mods/158589/Windows)
-on 2026-09-09, version 0.1.0, unlisted while the listing is checked. Its
-runtime identity and store id are its own; the Find It listing (77240) is
-untouched. Upstream Find It ships no license file; its project file declares
-"@2024 MIT license", and this mod is distributed on that statement (see
-[docs/FORK.md](docs/FORK.md)). How the upload is made from Linux is in
-[docs/publishing.md](docs/publishing.md). The logo is
-`BetterBuildingMenu/Properties/Logo.svg`; `Thumbnail.png` beside it is the
-1024px render the store shows.
+Find It may be installed alongside. Its window takes the asset-menu slot while
+open and this panel returns when it closes; the object picker is Find It's
+alone. No Harmony patches; nothing is written to the save.
 
 ## Credits
 
-Derived from **Find It 1.5.8** by **T. D. W.** This mod would not exist without
-it. Credits carried over from that project:
-
-* **YenYang** — help on the UI.
-* **Algernon** — contributions, and for allowing the original project to be
-  taken on.
-* **Chameleon** — icons.
-* **Baka-gourd** (NullPinter) — help with focus handling.
+Forked from **Find It 1.5.8** by **T. D. W.** and rebuilt around the vanilla
+menus. Credits carried over from that project: **YenYang** (UI),
+**Algernon** (contributions, and for allowing the original project to be taken
+on), **Chameleon** (icons), **Baka-gourd** (focus handling). License basis is
+in [docs/FORK.md](docs/FORK.md).
