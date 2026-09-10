@@ -50,19 +50,15 @@ This mod was developed with AI assistance (Anthropic's Claude), under human dire
   <Screenshot Value="Properties/Screenshot_04.jpg" />
 
   <Tag Value="Code Mod" />
-  <ModVersion Value="0.1.4" />
+  <ModVersion Value="0.1.5" />
   <GameVersion Value="1.6.*" />
   <AccessLevel Value="Public" />
   <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/mod-better-building-menu.1941089/" />
 
   <ChangeLog>
-0.1.4
+0.1.5
 
-Changes
-* Removed the "Show coverage map while placing" option. The game switches to a service's coverage view on its own whenever one of its buildings is on the tool; the option changed nothing.
-* Removed the "Select the first asset when opening the building menu" option. It had no effect.
-* Removed the "Hide Random asset types" option. The Random rock, boulder and trash pile in Landscaping are listed like everything else.
-* Removed the empty Key-Bindings tab from the mod's options page.
-* Reworded the "Searching widens automatically" description.
+Fixes
+* Subscribing to the mod and loading a city in the same session left the game with a blank white screen. The mod's hook around the game's tool options panel added a React hook to a panel that was already on screen, so the panel's next render threw. The wrapper no longer adds a hook; a separate wrapper re-renders the panel when the menu changes hands. Asset Menu Tweaks was not involved; the two mods were tested together in both load orders and work.
 </ChangeLog>
 </Publish>

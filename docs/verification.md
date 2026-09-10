@@ -2282,3 +2282,36 @@ The browser shows no restart notice either. Asset Menu Tweaks was left in
 this machine's playset at the end of the run (the removal script missed
 the browser's load window); it is harmless to our checks and one click to
 remove.
+
+## 2026-09-10 — the "nothing happens" report, reproduced and fixed (0.1.5)
+
+The reporter had Asset Menu Tweaks and then subscribed to this mod. Done
+here the same way: local copy out of both Mods roots, Asset Menu Tweaks in
+the playset at boot, our listing added from the in-game browser at the main
+menu, Porterville loaded without a restart. Result: a blank white page. The
+game injects a new UI module into the live page once the city is up;
+`UI.log` then has `TypeError: Cannot read properties of undefined (reading
+'length')` from React's memo compare, stack through
+`BetterBuildingMenu.mjs` into vanilla's `useToolOptionsVisible`. Our
+`ToolOptionsVisibility` wrapped that hook and called `useValue` before it,
+so the already-mounted tool options panel rendered with one more hook than
+its previous render; React unwound the whole tree. The backend was fine
+(index 17,693 at loading-complete, 0 missing). At boot the same code is
+harmless because the panel first mounts with the wrapper in place.
+
+Fix: the wrapper reads `LensOwnsCurrentMenu$.value` with no hook, and a new
+`ToolOptionsPanelRefresh` extends the `ToolOptionsPanel` component (a type
+swap remounts, so its own `useValue` is safe) to re-render the panel when
+ownership changes. Tests: `test/render/toolOptionsVisibility.test.tsx`
+mounts a panel on the vanilla hook, swaps in the wrapper, re-renders the
+same instance — it failed with React's own "Rendered more hooks than during
+the previous render" before the fix; `toolOptionsPanelRefresh.test.tsx`
+covers the re-render. The harness's `useValue` stub is now a real hook and
+its bindings carry `.value`; react-test-renderer added as a dev dependency.
+72 render + 651 unit + 399 backend tests pass.
+
+Published as 0.1.5 ("New mod version published") and re-run the same way
+against the downloaded package `158589_6`: 0 JS errors, Electricity 15 and
+Roads 100 of 204 tiles, ownership true, index at OnGameLoaded. Both mods
+removed/left as follows: ours out of the playset, Asset Menu Tweaks still
+in it; the local Mods copies restored and updated to 0.1.5.

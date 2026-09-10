@@ -1,6 +1,19 @@
 [
   {
     "Stable": true,
+    "Version": "0.1.5",
+    "Date": "2026-09-10",
+    "ChangeGroups": [
+      {
+        "Name": "Fixes",
+        "Changes": [
+          "Subscribing to the mod and loading a city in the same session left the game with a blank white screen. The mod's hook around the game's tool options panel added a React hook to a panel that was already on screen, so the panel's next render threw. The wrapper no longer adds a hook; a separate wrapper re-renders the panel when the menu changes hands. Asset Menu Tweaks was not involved; the two mods were tested together in both load orders and work."
+        ]
+      }
+    ]
+  },
+  {
+    "Stable": true,
     "Version": "0.1.4",
     "Date": "2026-09-09",
     "ChangeGroups": [
