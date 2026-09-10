@@ -1,14 +1,23 @@
+import { useState } from "react";
 // cs2/api under the harness: bindings are a registry the test writes to.
 const values = new Map<string, unknown>();
 export const triggers: Array<{ group: string; name: string; args: unknown[] }> = [];
 
-export interface StubBinding<T> { key: string; fallback: T | undefined }
+export interface StubBinding<T> { key: string; fallback: T | undefined; readonly value: T }
+
+const read = <T,>(binding: { key: string; fallback: T | undefined }): T =>
+  (values.has(binding.key) ? values.get(binding.key) : binding.fallback) as T;
 
 export function bindValue<T>(group: string, name: string, fallback?: T): StubBinding<T> {
-  return { key: `${group}.${name}`, fallback };
+  const binding = { key: `${group}.${name}`, fallback } as StubBinding<T>;
+  Object.defineProperty(binding, "value", { get: () => read(binding) });
+  return binding;
 }
+// A real hook, like the game's useValue, so a wrapper that calls it changes a
+// component's hook sequence in tests exactly as it would in the game.
 export function useValue<T>(binding: StubBinding<T>): T {
-  return (values.has(binding.key) ? values.get(binding.key) : binding.fallback) as T;
+  useState(0);
+  return read(binding);
 }
 export function trigger(group: string, name: string, ...args: unknown[]): void {
   triggers.push({ group, name, args });

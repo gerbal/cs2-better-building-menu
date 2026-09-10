@@ -5,6 +5,7 @@ import mod from "../mod.json";
 import { RemoveVanillaAssetMenuComponent } from "mods/RemoveVanillaAssetMenu/RemoveVanillaAssetMenu";
 import { ExtensionMenuComponent } from "mods/ExtensionMenu/ExtensionMenu";
 import { ToolOptionsVisibility } from "mods/ToolOptionsVisibility/ToolOptionsVisibility";
+import { ToolOptionsPanelRefresh } from "mods/ToolOptionsVisibility/ToolOptionsPanelRefresh";
 import { LensToolOptions } from "mods/LensToolOptions/LensToolOptions";
 
 import { VanillaMenuWatcher } from "mods/VanillaMenuWatcher/VanillaMenuWatcher";
@@ -29,6 +30,9 @@ const register: ModRegistrar = (moduleRegistry) => {
   // That bank only mounts for an active tool and browsing is not one, so this
   // holds it open while the lens owns the menu.
   moduleRegistry.extend("game-ui/game/components/tool-options/tool-options-panel.tsx", "useToolOptionsVisible", ToolOptionsVisibility);
+  // The hook above reads its binding without subscribing; this re-renders the
+  // panel when that value changes.
+  moduleRegistry.extend("game-ui/game/components/tool-options/tool-options-panel.tsx", "ToolOptionsPanel", ToolOptionsPanelRefresh);
 
   // Renders nothing; watches the vanilla toolbar so its menus open the lens.
   moduleRegistry.append("Game", VanillaMenuWatcher);
