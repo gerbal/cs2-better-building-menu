@@ -2227,3 +2227,32 @@ driver now hit-tests the tile centre, and a re-hover of the last visible tile
 drew the two-tier card above it as before. Escape: the panel unmounted but
 `LensOwnsCurrentMenu` still read true 800 ms later; not conclusive, code
 untouched by both commits, unit-covered by `escapeClosesLens.test.ts`.
+
+## 2026-09-10 — Asset Menu Tweaks (Paradox Mods 148616, v1.0.7) alongside
+
+A player report said "nothing happens" with Asset Menu Tweaks installed.
+Subscribed to it here through the game's own Paradox Mods browser (a second
+Cohtml view, `assetdb://modsui/index.html`; "Add to active playset", then a
+restart), Porterville on the main prefix. Modding.log: both mods loaded, UI
+modules registered Better Building Menu first, Asset Menu Tweaks second, so
+its AssetMenu wrapper sits outside ours; 0 exceptions in either mod's log.
+Both extend the same vanilla export; the game's registry chains extensions
+(`extend` overrides with `n(current)`), it never drops one.
+
+Measured: Electricity 15 tiles, Roads 100 of 204 drawn, ownership true,
+vanilla grid 0 — our panel intact with its gear button drawn at our panel's
+bottom edge. Each of its options flipped through its own triggers
+(`TRIGGER:REDESIGNED_TABS`, `WIDESCREEN`, `DENSITY`=2, `HIDE_BADGES`): our
+surface kept the same rect, flex column and 100 tiles every time; the
+Redesigned Tabs selector needs a `tool-panel_` parent our slot does not have.
+With "Replace the vanilla build menu" off, Roads showed vanilla's grid (18
+items) and its density option took effect there (24 at High); back on, our
+100 tiles returned. A first probe read 0 tiles 1.8 s after the menu switch
+and 15/100 at 3.5 s: the surface mounts later behind its wrapper, a timing
+artefact and not a defect. The reverse registration order is not testable
+here (local mods register before playset mods) but is the safer one by
+construction: ours outermost never renders their wrapper while we own the
+menu. Conclusion: no conflict; the report needs the player's logs.
+
+Escape, re-read with a 2 s wait: ownership true → false, panel gone. Works.
+Asset Menu Tweaks is still in this machine's active playset.
