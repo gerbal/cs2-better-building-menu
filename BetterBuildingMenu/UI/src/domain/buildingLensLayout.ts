@@ -192,7 +192,7 @@ export const BUILDING_LENS_TABLE_NAME_BASIS = 260;
  * The room the metric columns really have, in rem, for an assembly width as
  * the catalog passes it (panel plus chrome): the assembly less the control
  * pane, the panel's chrome around the rows, the row's furniture and the
- * name's basis. 628rem at the default assembly. Never negative: below about
+ * name's basis. 625rem at the default assembly. Never negative: below about
  * 850rem the arithmetic runs out, and the columns then sit at their minima.
  */
 export function tableColumnRoom(outerWidth: number): number {

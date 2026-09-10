@@ -143,8 +143,6 @@ namespace BetterBuildingMenu.Services
 		private static VanillaToolbarSelection WithoutPacks(VanillaToolbarSelection selection) =>
 			new(selection.SelectedThemes, null, selection.VanillaSelected, selection.ModsSelected);
 
-		public BuildingCatalogFacetState GetFacetState(BuildingCatalogQuery query) => Build(query).FacetState;
-
 		/// <summary>
 		/// How many assets each of the menu's category tabs holds.
 		/// </summary>
@@ -170,76 +168,6 @@ namespace BetterBuildingMenu.Services
 		/// started rendering as 0.
 		/// </remarks>
 		public IReadOnlyList<MenuCategoryCount> GetMenuCategoryCounts(BuildingCatalogQuery query) => Build(query).MenuCategoryCounts;
-
-		/// <summary>
-		/// How many assets each of the menu's progression tabs holds.
-		/// </summary>
-		/// <remarks>
-		/// Same axis rule as the categories: the milestone's own filter is
-		/// dropped so the tiers keep counting each other, everything else —
-		/// including the SELECTED CATEGORY — stays on. That is what makes the
-		/// tiers a subset of the category rather than a second, independent
-		/// menu: pick Vegetation and the tier tabs count Vegetation only.
-		///
-		/// Ordered by index, because the index is the progression. The
-		/// categories sort by id for stability alone; here the order is the
-		/// meaning, and a tier strip running out of order would misstate it.
-		/// </remarks>
-		/// <summary>
-		/// Which axis the fallback strip should use for this menu, and its tabs.
-		/// </summary>
-		/// <remarks>
-		/// Vanilla's categories are the reference and are handled elsewhere;
-		/// this is only for the menus vanilla never split, where there is no
-		/// authored answer and we have to pick one.
-		///
-		/// CHOSEN BY FIT, not by a fixed order. The strip exists to cut a large
-		/// set down, so the axis that cuts most evenly is the one worth drawing
-		/// — measured as the smallest largest-bucket. A fixed chain gets this
-		/// wrong in both directions on real data: the development tree splits
-		/// Electricity 8/4/3 and Garbage 2/2/1, but Water only 9/2, where
-		/// buildings-against-pipes is 8/3.
-		///
-		/// Balance is the TIEBREAK, not the criterion. Both candidates are
-		/// meaningful cuts the game itself authored; a merely even split of
-		/// something meaningless would be worse than a lopsided honest one,
-		/// which is why the candidate list is short and hand-picked rather than
-		/// every field that happens to vary.
-		///
-		/// An axis that yields fewer than two groups is not a choice and is
-		/// dropped, which is also what leaves a single-tree menu with no strip
-		/// rather than one tab.
-		/// </remarks>
-		/// <summary>
-		/// The category the strip draws as its development branches instead of
-		/// as one tab, or empty.
-		/// </summary>
-		/// <remarks>
-		/// The same move the education menu makes with school levels, on the
-		/// menus that have no level to make it with. Police and Fire each hold
-		/// one category that is the service proper and one that is a sideline —
-		/// Police against Administration, Fire &amp; Rescue against
-		/// DisasterControl — and the service half is where the assets are and
-		/// where a single tab is least useful.
-		///
-		/// Chosen by evidence rather than named: the category whose assets span
-		/// two or more development branches, largest first when several do.
-		/// That is the category with a sub-axis to draw, by construction, and
-		/// it needs no table of menu names to maintain.
-		///
-		/// Empty when the menu has fewer than two categories, because then the
-		/// strip has no category row to expand INTO — that is the fallback
-		/// case, and GetStripAxis handles it.
-		/// </remarks>
-		public string GetExpandedCategoryId(BuildingCatalogQuery query) => Build(query).ExpandedCategoryId;
-
-		/// <summary>The branch tabs that stand in for the expanded category.</summary>
-		/// <remarks>
-		/// Ordered by the branch's column in the tree, so the rank drawn over
-		/// them follows the game's own progression: the basic stations before
-		/// the headquarters they lead to, whatever the alphabet says.
-		/// </remarks>
-		public IReadOnlyList<MenuBranchCount> GetExpandedCategoryTabs(BuildingCatalogQuery query) => Build(query).ExpandedCategoryTabs;
 
 		/// <summary>
 		/// Every category whose density tiers should be drawn in its place.
@@ -290,46 +218,32 @@ namespace BetterBuildingMenu.Services
 		}
 
 		/// <summary>
-		/// The strip's sub-tabs, whichever axis supplies them.
+		/// Which axis the fallback strip should use for this menu, and its tabs.
 		/// </summary>
 		/// <remarks>
-		/// Density first because it is the more specific answer and the two
-		/// cannot both apply: zones carry no development branch and service
-		/// buildings carry no zone tier.
+		/// Vanilla's categories are the reference and are handled elsewhere;
+		/// this is only for the menus vanilla never split, where there is no
+		/// authored answer and we have to pick one.
 		///
-		/// The development path is left exactly as it was, calling the same two
-		/// methods it always did. GetStripAxis consults GetExpandedCategoryId,
-		/// so replacing that method would have made the axis depend on a method
-		/// that depends on the axis.
+		/// CHOSEN BY FIT, not by a fixed order. The strip exists to cut a large
+		/// set down, so the axis that cuts most evenly is the one worth drawing
+		/// — measured as the smallest largest-bucket. A fixed chain gets this
+		/// wrong in both directions on real data: the development tree splits
+		/// Electricity 8/4/3 and Garbage 2/2/1, but Water only 9/2, where
+		/// buildings-against-pipes is 8/3.
+		///
+		/// Balance is the TIEBREAK, not the criterion. Both candidates are
+		/// meaningful cuts the game itself authored; a merely even split of
+		/// something meaningless would be worse than a lopsided honest one,
+		/// which is why the candidate list is short and hand-picked rather than
+		/// every field that happens to vary.
+		///
+		/// An axis that yields fewer than two groups is not a choice and is
+		/// dropped, which is also what leaves a single-tree menu with no strip
+		/// rather than one tab.
 		/// </remarks>
-		public IReadOnlyList<MenuCategoryTabs> GetExpandedCategories(BuildingCatalogQuery query) => Build(query).ExpandedCategories;
-
 		public string GetStripAxis(BuildingCatalogQuery query) => Build(query).StripAxis;
 
-		/// <summary>The fallback strip's tabs, on whichever axis it chose.</summary>
-		/// <remarks>
-		/// On the ASSET TYPE axis the buildings half is drawn as its development
-		/// nodes where it has more than one, so Water reads as its pumping and
-		/// treatment unlocks beside a single Networks tab for the pipes —
-		/// rather than one undifferentiated "Buildings 8". The row mixes axes
-		/// deliberately; see BuildingCatalogQueryEngine.StripMatches.
-		///
-		/// Only the buildings half expands. Networks are a handful of tools the
-		/// tree rarely gates, and splitting them would trade one honest tab for
-		/// several near-empty ones.
-		/// </remarks>
-		public IReadOnlyList<MenuBranchCount> GetStripTabs(BuildingCatalogQuery query) => Build(query).StripTabs;
-
-		/// <summary>
-		/// The tabs one axis would draw, counted with its own filter dropped.
-		/// </summary>
-		/// <remarks>
-		/// Same axis rule as every other counter here: the tab's own narrowing
-		/// comes off so the tabs keep counting each other, and everything else
-		/// — the search, the facets, the selected category — stays on.
-		/// </remarks>
-
-		/// <summary>
 		/// <summary>
 		/// The glyph every school-level tab is built on.
 		/// </summary>
@@ -355,14 +269,6 @@ namespace BetterBuildingMenu.Services
 		/// smudge, four of which look alike.
 		/// </remarks>
 		internal const string SchoolTierIcon = "Media/Game/Icons/Education.svg";
-
-		/// <summary>The progression screen's badge for a milestone, if any.</summary>
-		internal static string MilestoneIcon(int milestone)
-		{
-			var icons = PrefabIndexingSystem.GetMilestoneIcons();
-
-			return milestone >= 0 && milestone < icons.Length ? icons[milestone] ?? string.Empty : string.Empty;
-		}
 
 		/// <summary>
 		/// The glyph a tab draws.
@@ -452,44 +358,6 @@ namespace BetterBuildingMenu.Services
 		/// <summary>A rendered asset picture, as opposed to an authored glyph.</summary>
 		internal static bool IsPhotograph(string icon) =>
 			icon.StartsWith("thumbnail://", StringComparison.OrdinalIgnoreCase);
-
-		/// <summary>
-		/// How many assets each of the education menu's tier tabs holds.
-		/// </summary>
-		/// <remarks>
-		/// The tier axis for the one menu where the progression is not what the
-		/// player is navigating by. With several region packs installed there
-		/// are dozens of schools per level, and "which level" is the question —
-		/// the milestone they unlocked at is not.
-		///
-		/// Keyed by the raw level rather than a name, so the four labels stay in
-		/// the UI's SCHOOL_TIERS table instead of being duplicated across the
-		/// binding. Levels 0 and 5 are dropped: 0 is a capacity upgrade with no
-		/// tier and 5 is the outside connection, and neither is a tab.
-		/// </remarks>
-		public IReadOnlyList<MenuBranchCount> GetMenuSchoolTierCounts(BuildingCatalogQuery query) => Build(query).SchoolTierCounts;
-
-		/// <summary>
-		/// The spread each metric actually has in the current view.
-		/// </summary>
-		/// <remarks>
-		/// So the range fields can open at the real minimum and maximum instead
-		/// of blank. Blank asks the player to guess the scale before they can
-		/// narrow it — nothing said a Police menu runs from 30,000 to 650,000 —
-		/// and a bound typed outside the real range silently empties the list.
-		///
-		/// Computed from InScope, exactly like the facet options, and for the
-		/// same reason turned up a level: InScope clears the facet AND metric
-		/// selections, so the bounds describe the menu rather than the filtered
-		/// result. Seeded from the filtered result they would ratchet inward on
-		/// every narrowing and could never widen again — type 200,000 as a
-		/// maximum and 200,000 becomes the new ceiling.
-		///
-		/// Reuses the range-state shape rather than inventing a bounds type: the
-		/// twelve numbers are the same twelve, and the UI already reads them.
-		/// Its HasSelection is meaningless here and nothing asks.
-		/// </remarks>
-		public BuildingCatalogMetricRangeState GetMetricBounds(BuildingCatalogQuery query) => Build(query).MetricBounds;
 
 		/// <summary>
 		/// The same arithmetic over a set of entries, without a World.
@@ -650,6 +518,7 @@ namespace BetterBuildingMenu.Services
 			return new BuildingCatalogFacetState(groups.ToArray(), hasSelection);
 		}
 
+		/// <summary>One page of the catalog for this query.</summary>
 		public BuildingCatalogPage Query(BuildingCatalogQuery query) => Build(query).Page;
 
 		/// <summary>One view per refresh: every per-query answer above comes from it.</summary>
@@ -679,22 +548,6 @@ namespace BetterBuildingMenu.Services
 				groupByResolver,
 				PrefabIndexingSystem.GetMilestoneNames(),
 				VanillaMenus.IsEducation(query.UiMenu));
-		}
-
-		public bool TryGet(int id, out BuildingCatalogEntry? entry)
-		{
-			entry = null;
-
-			if (!BuildingMenuUtil.CategorizedPrefabs.TryGetValue(PrefabCategory.Any, out var allCategories)
-				|| !allCategories.TryGetValue(PrefabSubCategory.Any, out var allPrefabs)
-				|| !allPrefabs.TryGetValue(id, out var prefab)
-				|| !IsBuilding(prefab))
-			{
-				return false;
-			}
-
-			entry = Project(prefab);
-			return true;
 		}
 
 		/// <summary>
@@ -916,59 +769,25 @@ namespace BetterBuildingMenu.Services
 				prefab.SubCategory.ToString())
 			&& PrefabIndexingSystem.IsPlacedInAnyMenu(prefab.Id);
 
-		/// <summary>
-		/// The menu's assets, with the root bucket named the way the top bar
-		/// names it.
-		/// </summary>
+		/// <summary>The projections this adapter reuses across refreshes.</summary>
 		/// <remarks>
-		/// The development tree's root is one node per SERVICE, so at index
-		/// time the only name available is the service's — "Police &amp;
-		/// Administration", "Transportation". Those are not what the menu calls
-		/// that bucket. The player sees "Police" and "Road", because the tab is
-		/// the CATEGORY those assets are in.
+		/// One refresh asks the same projection question several times over, and
+		/// each pass used to scan the whole index — ~24,900 prefabs with 105 asset
+		/// packs installed — and rebuild an entry for every survivor, so opening a
+		/// menu cost the same whether it held 110 assets or 514.
 		///
-		/// So the root bucket is split PER CATEGORY and each part named for the
-		/// category it is in. Health &amp; Deathcare is the case that settles it:
-		/// its ungated assets sit in both categories, so one bucket named after
-		/// the menu drew a "Healthcare &amp; Deathcare" tab holding only clinics —
-		/// the name said deathcare about a tab with none in it.
-		///
-		/// The cost is menus whose ungated assets span many categories: Roads
-		/// spreads into Small Roads, Medium Roads and every network it adopts
-		/// rather than one "Roads" bucket. Accepted deliberately — a bucket named
-		/// for what is in it beats a tidier count with a wrong label.
-		///
-		/// Done here, over the projected entries, so the tabs, their counts,
-		/// the group headings and the filter all read the same label. Deriving
-		/// it separately anywhere is how a tab and its count come to disagree.
-		/// </remarks>
-		/// <summary>The projections built during the current refresh.</summary>
-		/// <remarks>
-		/// One refresh asks this question eight times over — the page, the
-		/// metric bounds, the facets, the category counts, the strip axis and
-		/// its tabs, the expanded category and ITS tabs, the school tiers — and
-		/// every one of them scanned the whole index and rebuilt a full
-		/// BuildingCatalogEntry for every survivor.
-		///
-		/// That is why opening a menu cost the same whether the menu held 110
-		/// assets or 514: the work is proportional to the INDEX, not to the
-		/// menu. With 105 asset packs the index is 24,957 prefabs, and the
-		/// count of passes is what turned into the stall the player feels.
-		///
-		/// Scoped to a refresh rather than kept: Clear() runs at the top of
-		/// RefreshBuildingCatalog, so nothing here can outlive the frame that
-		/// built it, and a filter changed by a handler is seen by the very next
-		/// refresh. That is the same lifetime the callers already assumed —
-		/// they all read within one publish — made explicit.
+		/// Snapshots are keyed by scope and kept until PrefabIndexingSystem's
+		/// IndexGeneration changes, so they DO survive from one refresh to the
+		/// next; see SnapshotCache.
 		/// </remarks>
 		private readonly SnapshotCache _snapshots = new();
 
-		/// <summary>Drops the per-refresh projections. Call before publishing.</summary>
 		/// <summary>How long the last <see cref="ProjectForMenu"/> took, and whether it was served from cache.</summary>
 		/// <remarks>Read by BuildingMenuUISystem for the [LENS-REFRESH] breakdown. Reset by <see cref="BeginRefresh"/>.</remarks>
 		public int LastProjectionMs { get; private set; }
 		public bool LastProjectionWasHit { get; private set; } = true;
 
+		/// <summary>Resets the projection timing counters. Call before publishing.</summary>
 		public void BeginRefresh()
 		{
 			LastProjectionMs = 0;

@@ -1,5 +1,4 @@
 ﻿using BetterBuildingMenu.Domain;
-using BetterBuildingMenu.Domain.UIBinding;
 using BetterBuildingMenu.Utilities;
 using Colossal.Entities;
 using Game.Prefabs;
@@ -48,11 +47,10 @@ namespace BetterBuildingMenu.Systems
 
 		private void RefreshBuildingCatalog([System.Runtime.CompilerServices.CallerMemberName] string caller = "")
 		{
-			// One refresh asks the adapter the same question eight times over,
-			// and each answer used to rescan the whole index. Clearing here
-			// scopes the shared projection to exactly this publish: nothing can
-			// go stale across frames, and the eight passes collapse to one per
-			// (menu, content-union) pair. See BuildingCatalogAdapter._projections.
+			// Only resets the projection timing counters. The snapshots
+			// themselves live across refreshes and are dropped when
+			// PrefabIndexingSystem.IndexGeneration moves; see
+			// BuildingCatalogAdapter._snapshots.
 			_buildingCatalogAdapter.BeginRefresh();
 
 			var refreshTimer = System.Diagnostics.Stopwatch.StartNew();
@@ -172,12 +170,7 @@ namespace BetterBuildingMenu.Systems
 				+ $"menu='{_lens.Query.UiMenu}' total={page.TotalCount} from={caller}");
 		}
 
-		/// <summary>
-		/// Re-projects the compared ids from the live prefab index and drops any
-		/// that no longer resolve, so a stale shortlist cannot outlive the
-		/// buildings it names.
-		/// </summary>
-
+		/// <summary>Publishes the milestone names the UI labels locked assets with.</summary>
 		private void RefreshBuildingLensNavigation()
 		{
 			// Dense by index: entry N is milestone N's name. Every asset ships a
@@ -253,27 +246,14 @@ namespace BetterBuildingMenu.Systems
 
 		/// <summary>Asks for a refresh 250ms after the last call, on the main thread.</summary>
 		/// <remarks>
-		/// Kept under this name because OptionsUISystem declares it abstract
-		/// and the options and picker systems override it. It used to start a
-		/// worker that ran the legacy fuzzy search across the whole index and
-		/// then raised a flag for OnUpdate; the lens never read that result
-		/// (its own predicate is BuildingCatalogQueryEngine's Contains), so the
-		/// worker cost 2.7s per precise search for nothing. cm-yfd5.
+		/// Debounced rather than immediate: the search predicate runs inside the
+		/// catalog refresh, so one refresh per keystroke would re-run the whole
+		/// query on every character.
 		/// </remarks>
 		internal void TriggerSearch()
 		{
 			_IsSearchLoading.Value = true;
 			_searchDebounce.Schedule(SearchClock.Elapsed);
-		}
-
-		internal void ClearSearch()
-		{
-			_ClearSearchBar.Value = true;
-			_searchDebounce.Cancel();
-			_IsSearchLoading.Value = false;
-			_lens = _lens.Search(string.Empty);
-			_CurrentSearch.Value = string.Empty;
-			RefreshBuildingCatalog();
 		}
 
 		private void OnPrefabChanged(PrefabBase prefab)
@@ -349,9 +329,9 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			// The tool went back to default: Escape, a right-click cancel, or a
-			// finished placement, and this handler cannot tell them apart —
-			// Escape is consumed by the game's native input layer and never
-			// reaches the DOM.
+			// finished placement, and this handler cannot tell them apart.
+			// Escape itself is handled in the DOM by VanillaMenuWatcher, which
+			// clears the toolbar selection.
 			//
 			// For the legacy panel a cancel closes it, which is the only close
 			// Escape can reach there.

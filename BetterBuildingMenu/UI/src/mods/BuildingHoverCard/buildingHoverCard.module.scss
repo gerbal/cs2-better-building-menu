@@ -1,5 +1,5 @@
-// The hover card, shared by grid, list, cards and table. Moved out of
-// buildingGrid.module.scss when the card stopped belonging to one view mode.
+// The hover card, shared by grid, list, cards and table — its own file because
+// it belongs to no single view mode.
 
 .card {
   display: flex;

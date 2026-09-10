@@ -43,10 +43,10 @@ namespace BetterBuildingMenu.Domain
 		/// a 6rem gap.
 		/// </summary>
 		/// <remarks>
-		/// Duplicated from LENS_CONTROL_PANE_TOTAL in LensControlPane.tsx. There
-		/// is no shared source across the C#/TS boundary, so the two are kept
-		/// honest by a test rather than by construction — the same arrangement
-		/// the grouping band edges already use.
+		/// Duplicated from BUILDING_LENS_CONTROL_PANE_TOTAL in
+		/// domain/buildingLensLayout.ts. There is no shared source across the
+		/// C#/TS boundary, so the two are kept honest by a test rather than by
+		/// construction — the same arrangement the grouping band edges use.
 		/// </remarks>
 		public const float ControlPane = 385f;
 

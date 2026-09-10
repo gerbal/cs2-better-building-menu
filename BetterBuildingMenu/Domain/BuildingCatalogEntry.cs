@@ -106,7 +106,7 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		string? SilhouetteThumbnail = null,
 		/// <summary>
-		/// SPIKE (cm-e98i): where the GAME puts this asset in the build menu.
+		/// Where the GAME puts this asset in the build menu.
 		/// </summary>
 		string? UiMenu = null,
 		string? UiCategory = null,
@@ -174,6 +174,31 @@ namespace BetterBuildingMenu.Domain
 		/// category into the middle rather than pushing it to the end.
 		/// </remarks>
 		int UiCategoryPriority = 0,
+		/// <summary>How far the building's service reaches, in metres.</summary>
+		double? ServiceRange = null,
+		/// <summary>
+		/// Service figures beyond the headline capacity — see ServiceFact.
+		/// </summary>
+		IReadOnlyList<ServiceFact>? ServiceFacts = null,
+		IReadOnlyList<ServiceTextFact>? ServiceTextFacts = null,
+		/// <summary>Lot shapes a zone grows — see PrefabIndex.Footprints.</summary>
+		IReadOnlyList<ZoneFootprint>? Footprints = null,
+		int FootprintOverflow = 0,
+		/// <summary>A network's speed limit in km/h; null for anything else.</summary>
+		double? SpeedLimit = null,
+		/// <summary>How wide a network draws, in metres; null for anything else.</summary>
+		double? NetworkWidth = null,
+		/// <summary>
+		/// The leisure this building provides, named as the game names it.
+		/// </summary>
+		/// <remarks>
+		/// The enum's own name — "CityPark", "CityIndoors" — so the UI can
+		/// resolve vanilla's Properties.LEISURE_TYPE key rather than inventing a
+		/// second word for a property the player already reads elsewhere.
+		/// Empty for the great majority of the catalog, which provides none.
+		/// </remarks>
+		string LeisureType = "",
+		double? LeisureEfficiency = null,
 		/// <summary>
 		/// Vanilla's own order for this asset: UIObject.m_Priority ascending.
 		/// </summary>
@@ -191,31 +216,6 @@ namespace BetterBuildingMenu.Domain
 		/// sentinel, which would sort those last where the game puts them in the
 		/// middle. Same reasoning as UiCategoryPriority's default above.
 		/// </remarks>
-		/// <summary>
-		/// The leisure this building provides, named as the game names it.
-		/// </summary>
-		/// <remarks>
-		/// The enum's own name — "CityPark", "CityIndoors" — so the UI can
-		/// resolve vanilla's Properties.LEISURE_TYPE key rather than inventing a
-		/// second word for a property the player already reads elsewhere.
-		/// Empty for the great majority of the catalog, which provides none.
-		/// </remarks>
-		/// <summary>How far the building's service reaches, in metres.</summary>
-		double? ServiceRange = null,
-		/// <summary>
-		/// Service figures beyond the headline capacity — see ServiceFact.
-		/// </summary>
-		IReadOnlyList<ServiceFact>? ServiceFacts = null,
-		IReadOnlyList<ServiceTextFact>? ServiceTextFacts = null,
-		/// <summary>Lot shapes a zone grows — see PrefabIndex.Footprints.</summary>
-		IReadOnlyList<ZoneFootprint>? Footprints = null,
-		int FootprintOverflow = 0,
-		/// <summary>A network's speed limit in km/h; null for anything else.</summary>
-		double? SpeedLimit = null,
-		/// <summary>How wide a network draws, in metres; null for anything else.</summary>
-		double? NetworkWidth = null,
-		string LeisureType = "",
-		double? LeisureEfficiency = null,
 		int UIOrder = 0,
 		/// <summary>
 		/// The upgrades that can be attached to this building later.

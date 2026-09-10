@@ -207,8 +207,8 @@ describe("the metric columns fit the room beside the name", () => {
   // The room is what the row really has: assembly − control pane − the
   // panel's chrome around the rows − the row's own furniture − the name's
   // basis. Measured at PanelWidth 1441: the panel is 1441 − 385 = 1056rem and
-  // the row 1026rem, so the chrome is 30; less 138 furniture and the 260 the
-  // name keeps, 628rem — which is why the 586rem maximum fits there.
+  // the row 1026rem, so the chrome is 30; less 141 furniture and the 260 the
+  // name keeps, 625rem — which is why the 586rem maximum fits there.
   it("is the measured row less the furniture and the name's basis at the default assembly", async () => {
     const { tableColumnRoom, BUILDING_LENS_MAX_WIDTH, BUILDING_LENS_PANEL_CHROME_WIDTH, BUILDING_LENS_TABLE_ROW_FURNITURE } = await import("../src/domain/buildingLensLayout.ts");
 

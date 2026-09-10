@@ -1,6 +1,5 @@
 ﻿using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Domain.Enums;
-using BetterBuildingMenu.Domain.UIBinding;
 using BetterBuildingMenu.Services;
 using BetterBuildingMenu.Utilities;
 using Game.Input;
@@ -25,15 +24,10 @@ namespace BetterBuildingMenu.Systems
 		// transition per trigger. The handlers in Bindings.cs apply a transition,
 		// PublishScope() mirrors it to the bindings, RefreshBuildingCatalog runs it.
 		private BuildingCatalogLensState _lens = BuildingCatalogLensState.Initial;
-		// SPIKE (cm-e98i): the vanilla menu the lens was opened from, by name.
-		// Empty means "not opened from a vanilla menu", which leaves the query
-		// unconstrained by the tree.
 		// The axis the fallback strip is drawn on. The SELECTION itself lives on
 		// the query as StripTabs, because the filter rail offers the same state
 		// and one field shown twice cannot disagree with itself.
 		private string _buildingLensStripAxis = string.Empty;
-		// The education menu's tier tab, or -1. Cleared with the rest of the
-		// scope; a level means nothing outside the menu that teaches.
 
 		private ToolSystem _toolSystem;
 		private PrefabSystem _prefabSystem;
@@ -45,7 +39,6 @@ namespace BetterBuildingMenu.Systems
 
 
 		private ValueBindingHelper<bool> _IsSearchLoading;
-		private ValueBindingHelper<bool> _ClearSearchBar;
 		/// <summary>
 		/// Whether the lens menu is open.
 		/// </summary>
@@ -145,7 +138,7 @@ namespace BetterBuildingMenu.Systems
 		/// Published so the chip row can say so. The scope was set by clicking a
 		/// toolbar icon and then applied invisibly: nothing on screen named it,
 		/// and the Section and Type chips that WERE on screen are the ones the
-		/// scope switches off (BuildingCatalogQueryEngine.cs:95).
+		/// scope switches off (see BuildingCatalogQueryEngine.MatchesVanillaMenuTree).
 		/// </remarks>
 		private ValueBindingHelper<string> _BuildingLensMenuBinding = null!;
 		/// <summary>Every vanilla menu, so one can be chosen as a filter.</summary>
@@ -153,15 +146,6 @@ namespace BetterBuildingMenu.Systems
 		// Milestone index -> name, published once. Locked assets carry the index.
 		private ValueBindingHelper<string[]> _BuildingLensMilestonesBinding = null!;
 
-		/// <summary>
-		/// The live building-lens facet group for one dimension (e.g.
-		/// "availability", "provenance", "placement"), or null when the
-		/// current catalog offers no options for it. Lets the options bank's
-		/// short-facet sections read the same state the filter rail does,
-		/// rather than keeping a second copy.
-		/// </summary>
-		public BuildingCatalogFacetGroup? GetBuildingLensFacetGroup(string facetId) =>
-			System.Array.Find(_BuildingLensFacets.Value.Groups, group => group.Id == facetId);
 		protected override void OnCreate()
 		{
 			base.OnCreate();
@@ -174,7 +158,6 @@ namespace BetterBuildingMenu.Systems
 			_toolbarUISystem = World.GetOrCreateSystemManaged<Game.UI.InGame.ToolbarUISystem>();
 			_selectedInfoUISystem = World.GetOrCreateSystemManaged<Game.UI.InGame.SelectedInfoUISystem>();
 
-			// ToolSystem toolSystem = World.DefaultGameObjectInjectionWorld?.GetOrCreateSystemManaged<ToolSystem>(); // I don't know why vanilla game did this.
 			_toolSystem.EventPrefabChanged += OnPrefabChanged;
 			_toolSystem.EventToolChanged += OnToolChanged;
 
@@ -183,16 +166,11 @@ namespace BetterBuildingMenu.Systems
 
 
 			// These establish the bindings with UI code.
-			// Nothing raises this any more: its only writer was the Ctrl+F handler,
-			// removed with the hot-key. Kept because BuildingMenuHeader still reads
-			// it. It is permanently false, which is the correct behaviour for a
-			// menu with no hot-key to focus its search from.
-			_ClearSearchBar = CreateBinding("ClearSearchBar", false);
 			_IsSearchLoading = CreateBinding("IsSearchLoading", false);
 			_ActivePrefabId = CreateBinding("ActivePrefabId", 0);
-			// Lets the UI know whether to render the lens in place of the
-			// vanilla asset grid. Read once at setup; the setting is not
-			// expected to change mid-session.
+			// Read once at setup and never re-pushed: OnSettingsApplied only
+			// republishes the tile size, so a change to this setting takes
+			// effect on the next load.
 			_ReplaceVanillaBuildMenu = CreateBinding("ReplaceVanillaBuildMenu", Mod.Settings.ReplaceVanillaBuildMenu);
 			_LensOwnsCurrentMenu = CreateBinding("LensOwnsCurrentMenu", false);
 			_BuildingCatalogMatchesElsewhere = CreateBinding("BuildingCatalogMatchesElsewhere", 0);
@@ -287,7 +265,6 @@ namespace BetterBuildingMenu.Systems
 			// short. Parsing is the price of not risking a marshalling failure
 			// that would show up as an empty menu.
 			CreateTrigger<string, string, bool, bool>("SetVanillaToolbarSelection", SetVanillaToolbarSelection);
-			CreateTrigger("OnSearchCleared", () => _ClearSearchBar.Value = false);
 			CreateTrigger<int>("OnLocateButtonClicked", OnLocateButtonClicked);
 			CreateTrigger("LoadMoreBuildingCatalog", LoadMoreBuildingCatalog);
 				CreateTrigger<string, string, string>("SetBuildingCatalogMetricRange", SetBuildingCatalogMetricRange);

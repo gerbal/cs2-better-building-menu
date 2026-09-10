@@ -11,10 +11,8 @@ namespace BetterBuildingMenu.Utilities
         static FolderUtil()
         {
             ContentFolder = Path.Combine(EnvPath.kUserDataPath, "ModsData", nameof(BetterBuildingMenu));
-            //SettingsFolder = Path.Combine(EnvPath.kUserDataPath, "ModsSettings", nameof(BetterBuildingMenu));
 
             Directory.CreateDirectory(ContentFolder);
-            //Directory.CreateDirectory(SettingsFolder);
         }
     }
 }

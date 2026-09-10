@@ -448,39 +448,6 @@ export const LensControlPane = () => {
           </button>
         </div>
       </div>
-
-      {/* NO panel-level control row. It held three buttons and each was a
-          different kind of wrong for a build menu.
-
-          LOCK WINDOW OPEN could not act from here. `_IsWindowLocked` is read in
-          exactly two places, `LegacyGridVisible` and the `SetLensMenuOpen`
-          guard, and both are about the LEGACY panel — which
-          `(_ShowFindItPanel || _IsWindowLocked) && !_BuildingLensEnabled` hides
-          for as long as the lens is up. So the button changed a flag whose only
-          effects were invisible from where it was drawn.
-
-          CLOSE had no counterpart in the thing this menu stands in for. Vanilla
-          draws no X on its asset menu; you press the toolbar icon again. The
-          argument for adding one was that the second press is "obvious once you
-          know, invisible until then" — true, and an argument for teaching the
-          vanilla gesture rather than for growing a control vanilla does not
-          have.
-
-          DISABLE BUILDING LENS did not survive its own next click. The comment
-          here used to say removing it would make the lens a one-way door; that
-          was already false. The toolbar-menu handler sets
-          `_BuildingLensEnabled.Value = true` on every menu it resolves
-          (Bindings.cs:161), and since cm-e98i every menu resolves, so the flag
-          came back the moment the player opened anything. A switch that undoes
-          itself on the next click is not an escape hatch.
-
-          And there should be no off at all. The lens REPLACES vanilla's build
-          menu; it is not an alternative view of it. `_BuildingLensEnabled` is
-          a latch left from when it was opt-in — false at boot, set true at
-          three sites the moment any menu resolves, and now reachable as false
-          only before the player has opened anything. Giving that an Options
-          setting would be building a switch for a state the product does not
-          have. */}
     </div>
   );
 };

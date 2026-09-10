@@ -6,8 +6,8 @@
 // WIDTH IS IN REM AND THE TARGET WAS MEASURED IN PIXELS. Vanilla's
 // tool-side-column is 253px at 1280x720, and 1rem is 0.6667px here, so the
 // match is 379rem. Writing 253rem would draw it at two thirds the width and
-// look almost right, which is how the same slip survived review twice already
-// (BuildingLensTileSize, and lensToolOptions' .item min-height).
+// look almost right, which is how the same slip survived review once already
+// (BuildingLensTileSize).
 $pane-width: 379rem;
 
 // Bottom-aligned and growing upward, like the column it mirrors: the build

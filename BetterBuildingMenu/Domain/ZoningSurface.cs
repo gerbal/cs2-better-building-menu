@@ -277,21 +277,6 @@ public static class ZoningSurfaceCatalog
 	}
 
 	/// <summary>
-	/// The density tier a zone name carries, or <see cref="ZoneTypeFilter.Any"/>
-	/// when it carries none.
-	/// </summary>
-	/// <remarks>
-	/// Fallback only. PrefabIndexingSystem.IndexZones already derives density
-	/// from real ZonePropertiesData — residential properties over space
-	/// multiplier, with row housing detected from spawnable lot sizes — and
-	/// that result is available through GetZoneType. Prefer it; this name-based
-	/// reading is for zones missing that data.
-	///
-	/// Industrial and extractor zones have no tier, and inventing one would
-	/// filter their buildings away.
-	/// </remarks>
-	
-	/// <summary>
 	/// The catalog subcategories whose buildings grow in this family's zones —
 	/// the leaf of the hierarchy.
 	/// </summary>

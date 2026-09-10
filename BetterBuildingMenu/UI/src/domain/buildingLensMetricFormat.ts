@@ -608,10 +608,8 @@ export function formatSpeedLimit(
 }
 
 /**
- * How wide a network draws, e.g. "24 m".
- *
- * One decimal, because road widths are authored at half metres and rounding a
- * 17.5m road to 18 would make two different roads read as the same width.
+ * How wide a network draws, e.g. "24 m" — whole metres, or yards under
+ * Freedom, because it goes through formatServiceRange like any other length.
  */
 export function formatNetworkWidth(
   value: number | null | undefined,

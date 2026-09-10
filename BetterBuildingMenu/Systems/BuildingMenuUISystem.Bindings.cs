@@ -189,16 +189,6 @@ namespace BetterBuildingMenu.Systems
 		}
 
 		/// <summary>
-		/// A vanilla toolbar menu was opened: show the lens filtered to it.
-		/// </summary>
-		/// <remarks>
-		/// Declines quietly whenever the lens has nothing better to offer than
-		/// the vanilla grid — the setting is off, or the menu has no name in
-		/// the index (a modded toolbar entry added after indexing) — so the
-		/// vanilla menu keeps working untouched in those cases. Every named
-		/// vanilla menu routes here, Roads and Landscaping included.
-		/// </remarks>
-		/// <summary>
 		/// Hand this menu back to vanilla: we do not own it, and nothing of
 		/// ours is left covering it.
 		/// </summary>
@@ -228,6 +218,16 @@ namespace BetterBuildingMenu.Systems
 			}
 		}
 
+		/// <summary>
+		/// A vanilla toolbar menu was opened: show the lens filtered to it.
+		/// </summary>
+		/// <remarks>
+		/// Declines quietly whenever the lens has nothing better to offer than
+		/// the vanilla grid — the setting is off, or the menu has no name in
+		/// the index (a modded toolbar entry added after indexing) — so the
+		/// vanilla menu keeps working untouched in those cases. Every named
+		/// vanilla menu routes here, Roads and Landscaping included.
+		/// </remarks>
 		private void VanillaMenuSelected(int menuEntityIndex)
 		{
 			if (!Mod.Settings.ReplaceVanillaBuildMenu)
@@ -406,9 +406,6 @@ namespace BetterBuildingMenu.Systems
 		/// </remarks>
 		private void ClearBuildingLensMenuScope() => Apply(_lens.ClearMenuScope(), navigation: true);
 
-		/// <summary>
-		/// Republishes the tab strip for whatever menu is currently scoped.
-		/// </summary>
 		/// <summary>The scope bindings, from the one state that owns them.</summary>
 		private void PublishScope()
 		{
@@ -514,13 +511,6 @@ namespace BetterBuildingMenu.Systems
 
 		private void ToggleBuildingLensFacet(string facetId, string optionId) => Apply(_lens.ToggleFacet(facetId, optionId));
 
-		/// <summary>
-		/// Same toggle the filter rail uses, exposed for the options bank's
-		/// short-facet sections (see <see cref="Domain.Options.BuildingLensFacetOptionBase"/>).
-		/// </summary>
-		public void ToggleBuildingLensFacetOption(string facetId, string optionId) =>
-			ToggleBuildingLensFacet(facetId, optionId);
-
 		private void ClearBuildingLensFacets() => Apply(_lens.ClearFacets());
 
 		/// <summary>
@@ -591,11 +581,6 @@ namespace BetterBuildingMenu.Systems
 				modsSelected);
 
 			BuildingCatalogAdapter.ToolbarSelection = selection;
-
-			// The zone catalog is a separate list built by the indexer, so it
-			// carries its own copy of the same rule rather than sharing this
-			// query. Republishing it here keeps the two surfaces agreeing about
-			// what the toolbar is currently hiding.
 
 			RefreshBuildingCatalog();
 		}

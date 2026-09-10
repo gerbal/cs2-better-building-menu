@@ -85,11 +85,10 @@ describe("Filter rail", () => {
     // The regression this guards: filtered out of the rail and rendered
     // nowhere else.
     //
-    // The example used to be Availability, which cm-2xvs.15 gave a real second
-    // home in the game's tool-options bank. Moved to Theme rather than deleted,
-    // because the rule this states — SHORTNESS is not a reason to drop a
-    // dimension — is what 3fff26e was written to hold, and it still holds.
-    // Availability's own partition is asserted under "One home per dimension".
+    // Theme rather than Availability, which now has a real second home in the
+    // game's tool-options bank. The rule under test is unchanged: SHORTNESS is
+    // not a reason to drop a dimension. Availability's own partition is
+    // asserted under "One home per dimension".
     const rail = buildFilterRail({ groups: [group("theme", "Theme", 3)], hasSelection: false }, { active: 0 });
 
     assert.deepEqual(rail.map((d) => d.id), ["theme", "metrics"]);
@@ -102,10 +101,10 @@ describe("Filter rail", () => {
   });
 
   it("never drops the metrics entry, even though its own optionCount reads as bank-sized", () => {
-    // RAIL_METRICS_ID carries optionCount: 0, and railHomeFor(0) returns
-    // "bank" — metric ranges are not a facet group, and the rail is the only
-    // place the player can reach them, so a naive `home !== "bank"` filter
-    // must not catch this entry.
+    // RAIL_METRICS_ID carries optionCount: 0, so any rule that routes a short
+    // dimension to the bank would catch it. Metric ranges are not a facet
+    // group and the rail is the only place the player can reach them, so the
+    // entry has to survive whatever filtering the other dimensions get.
     const rail = buildFilterRail({ groups: [group("availability", "Availability", 3)], hasSelection: false }, { active: 0 });
 
     assert.ok(rail.some((d) => d.id === "metrics"));
@@ -190,15 +189,13 @@ describe("Active metric range count", () => {
 });
 
 /**
- * cm-2xvs.15 moved Availability off the rail and into the game's tool-options
- * bank. Every dimension must have EXACTLY ONE home.
+ * Availability lives in the game's tool-options bank; everything else lives on
+ * the rail. Every dimension must have EXACTLY ONE home.
  *
- * This is not hypothetical tidiness. 593e756 moved the mod's filters out of
- * that bank while the rail still excluded them, and Availability, Source, DLC,
- * Theme and Density ended up in the query, toggleable by the backend, and drawn
- * in no UI at all — found only when someone noticed master had filters this
- * branch did not. 3fff26e undid the split. Splitting again is safe only while
- * something asserts the partition.
+ * This is not hypothetical tidiness: once the mod's filters left that bank
+ * while the rail still excluded them, and Availability, Source, DLC, Theme and
+ * Density ended up in the query, toggleable by the backend, and drawn in no UI
+ * at all. Splitting again is safe only while something asserts the partition.
  */
 describe("One home per dimension", () => {
   const everyGroup = [
@@ -224,7 +221,7 @@ describe("One home per dimension", () => {
     for (const g of everyGroup) {
       if (isBankDimension(g.id)) continue;
 
-      assert.ok(ids.includes(g.id), `${g.id} is drawn nowhere — the exact 593e756 failure`);
+      assert.ok(ids.includes(g.id), `${g.id} is drawn nowhere — neither on the rail nor in the bank`);
     }
   });
 
