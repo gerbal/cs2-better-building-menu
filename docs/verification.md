@@ -2110,3 +2110,9 @@ Sans lacks. It is now the game's own `Media/Glyphs/StrokeArrowDown.svg` /
 Live in a new Windy Fjords game at 1920x1080: 100 rows, every one carrying
 the masked glyph at 24x24px, zero text spans left; the frame shows plain
 down arrows. `Screenshot_03.jpg` retaken and pushed with `Update`.
+
+**0.1.1 published (20:4x).** Metadata updates do not replace the package, so
+the chevron fix went up as a new version: `ModVersion` 0.1.1, csproj and
+modinfo bumped, Changelog.json entry mirrored into `<ChangeLog>`, Release
+package rebuilt (assembly stamped 0.1.1) and pushed with `NewVersion`:
+"New mod version published".
