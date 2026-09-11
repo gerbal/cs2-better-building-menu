@@ -2357,3 +2357,15 @@ Cleanup: ours removed from the playset by editing playset_config.json with
 the game closed (backup kept beside it), Asset Menu Tweaks left in; local
 Mods copies restored at 0.1.6. Store: NewVersion 0.1.6, then an Update to
 restore the forum link and the corrected 0.1.6 changelog text.
+
+## 2026-09-11 — popular-mod compatibility, measured
+
+See `docs/compatibility.md` (survey and the measured table). Method: the
+cached Paradox packages copied into the local Mods folder as local mods
+(two stages, 10 then 15 mods), our 0.1.6 from the store; probes read the
+catalog totals, thumbnail hosts and category tabs for Roads, Landscaping,
+Zones, Water & Sewage, Police & Administration and ExtraAssetsMenu with the
+panel on and off; screenshots under the session scratchpad `compat/probe/`.
+Two conflicts (Water Features' tools missing; Extra Assets Importer's menu
+taken over but empty), two layout mismatches (Asset UI Manager, Zone
+Organizer), the rest clean. Untested: Tree Controller, Line Tool.

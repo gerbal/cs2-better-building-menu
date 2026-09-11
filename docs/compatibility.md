@@ -59,3 +59,33 @@ attributes; menu-tree writers with a grep for `m_Group`, `m_Menu`,
 `UIAssetCategoryPrefab` and `AddPrefab`. The in-game "Most popular" page
 could not be filtered to code mods reliably from the DOM, so the ranking
 uses the cached subscriber totals.
+
+## Measured 2026-09-11 (Porterville, main prefix, our 0.1.6 from the store)
+
+Fifteen mods loaded together from the game's package cache as local mods
+(the playset is server-side and ignores local edits; the store view was too
+flaky to add eleven mods by hand). Zero exceptions in every mod log and
+zero JS errors across both stages. Tree Controller and Line Tool could not
+be tested: the store search never returned Tree Controller's card, and the
+cached Line Tool package is an old build that fails to load on 1.6
+(`TypeLoadException` on a moved game type, not ours).
+
+| Mod | Result |
+|---|---|
+| Water Features | **Conflict.** Its ten WaterSource tools sit under Landscaping's WaterTool tab in vanilla and are missing from our index (`[MENU-COVERAGE] category="WaterTool" vanilla=10 missing=10`): the prefab type is one no processor indexes. Our Landscaping panel has no water tools. |
+| Extra Assets Importer (with ExtraLib) | **Conflict.** Adds a toolbar menu "ExtraAssetsMenu" whose tabs are ExtraLib parent/child categories (`UIAssetChildCategoryPrefab`). We take the menu over and draw "No buildings in this category"; vanilla draws its decals, net lanes and surfaces. 13 of the 23 missing entries are its child categories. |
+| Asset UI Manager | **Mismatch.** It regroups assets into its own categories at runtime (Police & Administration becomes Local Polices, Intelligences, Police HQs, Prisons, Administration). Our tabs keep the stock layout; the audit reports 18 "misplaced" lines. Every asset is still present, so nothing is lost, but its reorganisation does not show in our panel. Same mechanism as Zone Organizer below. |
+| Zone Organizer | **Mismatch, harmless.** Its ten density tabs appear in vanilla's Zones; our Zones surface groups by family and density itself and shows all 22 zones, so its tabs are not represented. |
+| Asset Icon Library | Works: 85 of 100 Landscaping tiles and 7 of 11 Water & Sewage tiles draw from its `coui://ail` host. |
+| Road Builder | Works: its generated roads appear in our Roads panel (8 tiles from its thumbnail host, total 217 vs 204 without it). |
+| Anarchy | Works: its sections sit in the options bank beside ours when a tree is armed from our panel. The "place multiple unique buildings" path was not exercised. |
+| Extra Landscaping Tools, Extra Detailing Tools | Work: their tools and props are indexed (Landscaping missing=0 apart from WaterTool). |
+| Zone Color Changer | As predicted: its opener button lives in vanilla's category tab bar, so it is absent while our panel is open. |
+| Toggle Overlays, Unified Icon Library, I18n Everywhere | No interaction. |
+
+Fixes suggested, in order: (1) yield a menu to vanilla when our catalog for
+it is empty, which covers ExtraLib menus and any future menu we cannot
+fill; (2) index prefabs the menu tree places regardless of type, or at
+least `WaterSourcePrefab`; (3) take each asset's category from the menu
+walk's placement (ECS `UIObjectData`) instead of the managed `UIObject`, so
+runtime regroups by Asset UI Manager and Zone Organizer are honoured.
