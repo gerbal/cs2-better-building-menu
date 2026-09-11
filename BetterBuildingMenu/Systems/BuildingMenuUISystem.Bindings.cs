@@ -191,11 +191,14 @@ namespace BetterBuildingMenu.Systems
 			// UIAssetMenuPrefab's name, which is that same untranslated string.
 			var menuName = PrefabIndexingSystem.GetAssetMenuName(menuEntityIndex);
 
-			if (string.IsNullOrEmpty(menuName))
+			// A menu the index never saw, or one it holds nothing for (a mod's menu
+			// built from nested categories): the panel sits where the vanilla grid
+			// appears, so get out of the way rather than draw an empty one.
+			if (MenuRouting.ShouldYield(
+				replaceEnabled: true,
+				menuName: menuName,
+				menuHasAssets: BuildingCatalogAdapter.MenuHasAssets(menuName ?? string.Empty)))
 			{
-				// A menu the index never saw — a modded toolbar entry added after
-				// indexing, or one with no prefab. The player asked for it, so get out of
-				// the way: the panel sits exactly where the vanilla asset grid appears.
 				YieldMenuToVanilla();
 				return;
 			}
