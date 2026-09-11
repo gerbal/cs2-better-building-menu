@@ -2579,7 +2579,7 @@ namespace BetterBuildingMenu.Systems
 				list.Add(new VanillaMenuCategory(
 					Id: prefab.name,
 					Name: prefab.name,
-					Icon: IconPath.Normalize(uIObject?.m_Icon ?? ImageSystem.GetIcon(prefab)) ?? string.Empty,
+					Icon: IconPath.Normalize(CategoryIcon.Resolve(uIObject?.m_Icon, _imageSystem.GetIconOrGroupIcon(menus[i]))) ?? string.Empty,
 					Priority: uIObject?.m_Priority ?? 0));
 			}
 
@@ -2631,7 +2631,7 @@ namespace BetterBuildingMenu.Systems
 				tabs.Add(new VanillaMenuCategory(
 					Id: prefab.name,
 					Name: prefab.name,
-					Icon: IconPath.Normalize(uIObject?.m_Icon ?? ImageSystem.GetIcon(prefab)) ?? string.Empty,
+					Icon: IconPath.Normalize(CategoryIcon.Resolve(uIObject?.m_Icon, _imageSystem.GetIconOrGroupIcon(categories[i]))) ?? string.Empty,
 					// Vanilla orders its tabs by this and defaults it to 0, so
 					// categories that never set one keep their query order rather
 					// than being pushed to the end.

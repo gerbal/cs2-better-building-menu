@@ -1,6 +1,19 @@
 [
   {
     "Stable": true,
+    "Version": "0.1.8",
+    "Date": "2026-09-11",
+    "ChangeGroups": [
+      {
+        "Name": "Fixes",
+        "Changes": [
+          "A category another mod adds at runtime now draws its own icon in the tab strip instead of a blank placeholder."
+        ]
+      }
+    ]
+  },
+  {
+    "Stable": true,
     "Version": "0.1.7",
     "Date": "2026-09-11",
     "ChangeGroups": [
