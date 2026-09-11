@@ -89,3 +89,7 @@ That is the probe used on 2026-09-09; it printed
 A `NewVersion` upload echoes the forum link in its log but the page came back
 without it (seen after 0.1.5 and 0.1.6 on 2026-09-10). A metadata `Update` run
 with the same configuration puts it back. Run one after each NewVersion.
+
+The `Update` refuses for a minute or two after a publish ("User version already
+exists for this mod"). Wait and retry; it went through on the first retry two
+minutes later on both 0.1.7 and 0.1.8.
