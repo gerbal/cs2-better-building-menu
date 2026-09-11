@@ -2369,3 +2369,13 @@ panel on and off; screenshots under the session scratchpad `compat/probe/`.
 Two conflicts (Water Features' tools missing; Extra Assets Importer's menu
 taken over but empty), two layout mismatches (Asset UI Manager, Zone
 Organizer), the rest clean. Untested: Tree Controller, Line Tool.
+
+## 2026-09-11 — the compatibility fixes verified, and the tab icons
+
+0.1.7 (yield an unfillable menu, index whatever the menu places, follow the
+game's live placement) then 0.1.8 (category icons). Live on Porterville with
+the relevant mods installed locally: audit 0 missing and 0 misplaced, no
+exceptions in any mod log, no JS errors, 416 backend tests. The icon chase
+cost two wrong hypotheses; the evidence that settled it was reading the
+game's own tab bar img src beside ours in the same session, then the game's
+`ImageSystem` surface via ilspycmd. Details in docs/compatibility.md.

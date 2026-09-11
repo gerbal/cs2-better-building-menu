@@ -89,3 +89,33 @@ fill; (2) index prefabs the menu tree places regardless of type, or at
 least `WaterSourcePrefab`; (3) take each asset's category from the menu
 walk's placement (ECS `UIObjectData`) instead of the managed `UIObject`, so
 runtime regroups by Asset UI Manager and Zone Organizer are honoured.
+
+## After the fixes (0.1.7 / 0.1.8, measured 2026-09-11)
+
+Re-run on Porterville with the same mods installed as local packages.
+
+| Was | Now |
+|---|---|
+| Water Features' ten water tools missing (`category="WaterTool" vanilla=10 missing=10`) | The catch-all processor indexes them: `[PROCESSOR-CENSUS] MenuPlacedPrefabCategoryProcessor indexed=10 lens=10`, audit `0 missing`, and a Landscaping search for "water" lists all ten. |
+| Extra Assets Importer's menu taken over and drawn empty | We yield it: with its companion tools installed the menu shows 18 items across 7 vanilla tabs, ours draws nothing. Verified twice, opened first and after our panel had been open. |
+| Asset UI Manager's regroup ignored (18 "misplaced") | The panel groups by its categories (Intelligence Services, Local Police Departments, Police Headquarters, Prisons, Administration); audit `0 misplaced`. |
+| Zone Organizer likewise | Its ten Zones tabs come through; all 22 zones still listed. |
+
+### The tab icons, and a wrong turn
+
+The first build of the placement change drew three of Asset UI Manager's
+five tabs as blank placeholders. Cause, from the live bindings: a category's
+icon has two addresses, an `assetdb://global/<hash>` content hash and an
+`assetdb://user/Mods/<mod>.cok@<file>` archive path. The hash draws nothing
+and the game's own tool button swaps it for `Media/Placeholder.svg`; the
+path draws. The prefab's `UIObject.m_Icon` holds the hash, and the image
+system's entity call `GetIconOrGroupIcon(Entity)` returns the path.
+
+Two attempts missed before that landed: preferring the image system's
+static `GetIcon(PrefabBase)` (same hash, since that is what the game's own
+toolbar writes too) and then rejecting every `assetdb://` URL as undrawable,
+which threw away the good path along with the hash. `CategoryIcon` now
+rejects only the `assetdb://global/` hash form. Measured after: Police 0
+placeholders, Zones, Landscaping and Roads unchanged at 0.
+
+Still untested: Tree Controller and Line Tool (see above).
