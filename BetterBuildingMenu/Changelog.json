@@ -1,6 +1,21 @@
 [
   {
     "Stable": true,
+    "Version": "0.1.7",
+    "Date": "2026-09-11",
+    "ChangeGroups": [
+      {
+        "Name": "Compatibility",
+        "Changes": [
+          "Menus the mod cannot fill are handed back to the vanilla grid instead of drawing an empty panel. Extra Assets Importer's menu, built from ExtraLib's nested categories, now shows its decals, lanes and surfaces as before.",
+          "Anything the vanilla menu places is indexed even when its prefab type is unknown to the mod. Water Features' ten water tools now appear under Landscaping.",
+          "An asset's category follows the game's live placement, so mods that regroup the menus at runtime (Asset UI Manager, Zone Organizer) show their tabs in the panel."
+        ]
+      }
+    ]
+  },
+  {
+    "Stable": true,
     "Version": "0.1.6",
     "Date": "2026-09-10",
     "ChangeGroups": [

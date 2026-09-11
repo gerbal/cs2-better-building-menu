@@ -454,6 +454,9 @@ namespace BetterBuildingMenu.Services
 		/// pack facet wants this, for the same reason InScope drops a facet's own selection
 		/// before counting it: a dimension computed from the set it narrowed offers only itself.
 		/// </param>
+		/// <summary>Whether the index holds anything the given menu places.</summary>
+		public static bool MenuHasAssets(string menu) => GetIndexedBuildings(menu, ignorePackSelection: true).Any();
+
 		private static IEnumerable<PrefabIndex> GetIndexedBuildings(
 			string? uiMenu = null,
 			bool ignorePackSelection = false,

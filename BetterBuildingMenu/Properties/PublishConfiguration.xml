@@ -50,15 +50,17 @@ This mod was developed with AI assistance (Anthropic's Claude), under human dire
   <Screenshot Value="Properties/Screenshot_04.jpg" />
 
   <Tag Value="Code Mod" />
-  <ModVersion Value="0.1.6" />
+  <ModVersion Value="0.1.7" />
   <GameVersion Value="1.6.*" />
   <AccessLevel Value="Public" />
   <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/mod-better-building-menu.1941089/" />
 
   <ChangeLog>
-0.1.6
+0.1.7
 
-Fixes
-* When the game adds a newly subscribed copy of the mod to a session that is already loading a city, the mod's usual indexing hook has already passed and the index was built only when loading finished. The mod now indexes on its first update when it joins a running city, so the menu is ready as soon as the loading screen lifts.
+Compatibility
+* Menus the mod cannot fill are handed back to the vanilla grid instead of drawing an empty panel. Extra Assets Importer's menu, built from ExtraLib's nested categories, now shows its decals, lanes and surfaces as before.
+* Anything the vanilla menu places is indexed even when its prefab type is unknown to the mod. Water Features' ten water tools now appear under Landscaping.
+* An asset's category follows the game's live placement, so mods that regroup the menus at runtime (Asset UI Manager, Zone Organizer) show their tabs in the panel.
 </ChangeLog>
 </Publish>
