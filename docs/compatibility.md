@@ -215,3 +215,37 @@ the questions to answer are whether a tree picked here registers with Tree
 Controller's tool and whether Advanced Line Tool keeps its mode and age
 mask. The quickest route is to subscribe to both from the Paradox Mods
 website or in a normal session, after which the usual run answers it.
+
+## Tree Controller and Advanced Line Tool: installed and passing (2026-09-12)
+
+Both now installed from the store and run beside this mod: Tree Controller
+1.7.4 (75993) and Advanced Line Tool 1.2.3 (75816, package 75816_41), with
+Unified Icon Library 1.0.14, on 0.1.9. No init errors, no exceptions, no JS
+errors.
+
+**Why the installs looked broken.** Each lists Unified Icon Library under
+"Required mods", and the store had it as "Not added". Pressing "Add to
+active playset" then flips the button to INSTALLING and silently does
+nothing: no package, no playset change, nothing in `PdxSdk.log`. Installing
+the dependency first and restarting (the wedged INSTALLING state survives in
+the view) let both through immediately. A control mod with no unmet
+dependency installed normally throughout, which is what separated "these two"
+from "downloads are broken". Beware also of look-alikes: an exact title match
+is needed, since "Tree Controller - SAC Managed [Deprecated]" (157482, 79
+subscribers) outranked yenyang's original in the search.
+
+**The interaction that was in doubt.** Both patch `ToolbarUISystem.Apply`,
+which a click in this panel does not go through. It does not matter here,
+because both hang their controls off the tool options bank rather than that
+patch. Arming a tree from the panel gives a bank holding Tree Controller's
+Sets 1-5, Age, Min Slope, Max Slope and Change, Advanced Line Tool's section,
+and this mod's Availability together
+(`compat/probe/treeline-armed.png`).
+
+Pressing a line mode switches the active tool to Line Tool and its full
+options appear, spacing, rotation, elevation and the variations. Arming a
+different tree from the panel afterwards keeps the tool on Line Tool with its
+options intact (`compat/probe/line-mode-on.png`), so line mode survives
+picking an asset here, which was the specific worry.
+
+That closes the survey: every mod on the list has now been measured.
