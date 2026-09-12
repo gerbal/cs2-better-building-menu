@@ -120,23 +120,26 @@ placeholders, Zones, Landscaping and Roads unchanged at 0.
 
 Still untested: Tree Controller and Line Tool (see above).
 
-### Road Builder, roads created while playing (2026-09-11)
+### Road Builder, roads created while playing (2026-09-12)
 
-What is established. Its existing roads reach our Roads menu: 213 entries
-with it installed against 204 without, 8 tiles drawing from its own
-thumbnail host. The mechanism for runtime additions is there and observably
-alive: the indexer re-runs a partial pass whenever any prefab carries
-`Created` or `Updated`, Road Builder adds its roads through
-`PrefabSystem.AddPrefab`, and a partial pass (0.013s) was logged moments
-after its "Road Generation Data assembled" during this test. Roads it
-discards are removed again, through the `DiscardedRoadBuilderPrefab`
-component the indexer checks.
+**Yes, without a reload.** Driven through Road Builder's own Discover panel,
+which fetches a community road and calls its add-prefab path at runtime, so
+no world interaction is needed: `Discover.SetPage` to fill the list, then
+`Discover.Download` with an item id.
 
-What is NOT established: a road created mid-session end to end. Its create
-flow needs its tool active on a road selected in the world, which could not
-be driven from the debugger; `ActivateRoad` + `CreateNewPrefab` and
-`ManageRoads` as bare triggers did not produce one (catalog 213 before and
-after). Anyone playing can settle it in one step: build a road in Road
-Builder and open Roads. It should appear without reloading, and
-`BetterBuildingMenu.log` should carry a "Partial Prefab Indexing completed"
-line at that moment.
+The road arrived as "Six-Lane Divided Bus Road". Our Roads catalog went 213
+to 214 and the index count 17,703 to 17,704, through partial passes of 43
+and 45 ms. Our menu then listed ten Road Builder items where only nine
+configs exist on disk, the extra being that road, which is still only in
+memory. A search finds it and it draws with its own thumbnail
+(`compat/probe/rb-runtime-road.png`). No exceptions, no JS errors.
+
+The earlier attempt failed because `CreateNewPrefab` takes a world entity
+that the tool supplies from a road the player clicks, so calling it bare did
+nothing. Roads it discards are removed again through the
+`DiscardedRoadBuilderPrefab` component the indexer checks; that half is by
+code reading, not measured.
+
+One thing the listing shows that is not a defect: several Road Builder roads
+share a display name (two "Custom Two-Lane Road"). They are distinct configs
+with distinct ids, and the panel lists them separately, as vanilla does.
