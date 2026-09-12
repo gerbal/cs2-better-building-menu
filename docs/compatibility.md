@@ -178,3 +178,40 @@ The first build shipped a camel-cased selector (`assetCategoryTabBar`) that
 matched nothing, so an empty bar and a stray close button showed inside the
 panel. The game's DOM class is hyphenated. A render test now pins the
 selector.
+
+## Tree Controller and Advanced Line Tool: versions found, install blocked (2026-09-12)
+
+Both are current and target this game version, so the earlier "untested"
+notes were about finding them, not about them being unavailable.
+
+| Mod | Store id | Version | For game | Updated | Subscribers |
+|---|---|---|---|---|---|
+| Tree Controller (yenyang) | 75993 | 1.7.4 | 1.6.* | 23 Aug 2026 | 344.8k |
+| Advanced Line Tool (algernon) | 75816 | 1.2.3 | 1.6.* | 6 Jul 2026 | 525.5k |
+
+Two reasons they were missed before. Line Tool is now published as **Advanced
+Line Tool**, so a search anchored on the old name found nothing; and the
+cached package here is build 18 (0.9.8.4, declaring game 1.1), which is why
+it failed to load on 1.6. The store carries build 41. Tree Controller was
+never cached here, and its GitHub releases stop at 2024 pre-releases because
+it publishes to Paradox Mods; its own project file reads 1.7.4.
+
+Installing them is currently blocked, not refused. Pressing "Add to active
+playset" flips the button to INSTALLING and nothing downloads: no package
+appears under `.cache/Mods/pdx_mods`, the playset is unchanged, and
+`PdxSdk.log` records no error. Tried twice either side of a restart, and on
+the second attempt the detail page itself came up without its fields until
+polled. `Player.log` shows unrelated modding-toolchain downloads timing out
+over HTTP in the same session, which points at the game process's network
+rather than at these two mods; downloads did work here earlier the same day.
+
+Neither can be fetched from GitHub instead: Advanced Line Tool's latest
+release has no build attached, and Tree Controller's only release asset is
+a 2024 native library.
+
+So the compatibility check for these two is still pending. Both patch
+`ToolbarUISystem.Apply`, which a click in this panel does not go through, so
+the questions to answer are whether a tree picked here registers with Tree
+Controller's tool and whether Advanced Line Tool keeps its mode and age
+mask. The quickest route is to subscribe to both from the Paradox Mods
+website or in a normal session, after which the usual run answers it.
