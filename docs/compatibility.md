@@ -119,3 +119,24 @@ rejects only the `assetdb://global/` hash form. Measured after: Police 0
 placeholders, Zones, Landscaping and Roads unchanged at 0.
 
 Still untested: Tree Controller and Line Tool (see above).
+
+### Road Builder, roads created while playing (2026-09-11)
+
+What is established. Its existing roads reach our Roads menu: 213 entries
+with it installed against 204 without, 8 tiles drawing from its own
+thumbnail host. The mechanism for runtime additions is there and observably
+alive: the indexer re-runs a partial pass whenever any prefab carries
+`Created` or `Updated`, Road Builder adds its roads through
+`PrefabSystem.AddPrefab`, and a partial pass (0.013s) was logged moments
+after its "Road Generation Data assembled" during this test. Roads it
+discards are removed again, through the `DiscardedRoadBuilderPrefab`
+component the indexer checks.
+
+What is NOT established: a road created mid-session end to end. Its create
+flow needs its tool active on a road selected in the world, which could not
+be driven from the debugger; `ActivateRoad` + `CreateNewPrefab` and
+`ManageRoads` as bare triggers did not produce one (catalog 213 before and
+after). Anyone playing can settle it in one step: build a road in Road
+Builder and open Roads. It should appear without reloading, and
+`BetterBuildingMenu.log` should carry a "Partial Prefab Indexing completed"
+line at that moment.
