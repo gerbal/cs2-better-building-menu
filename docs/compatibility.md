@@ -143,3 +143,21 @@ code reading, not measured.
 One thing the listing shows that is not a defect: several Road Builder roads
 share a display name (two "Custom Two-Lane Road"). They are distinct configs
 with distinct ids, and the panel lists them separately, as vanilla does.
+
+## All four together on 0.1.8 (2026-09-12)
+
+One run, twelve mods, no init errors, no exceptions, no JS errors. Audit:
+`844 assets across its menus; 13 missing` and `0 misplaced`. The thirteen are
+ExtraLib's nested child categories, which are tabs rather than things a tool
+can arm, so the catch-all leaves them alone by design.
+
+| Menu | What is drawn |
+|---|---|
+| Landscaping | Ours, 346 entries. Strip carries Water Features' `WaterTool` tab beside the vanilla ones, count 8, and the water sources list and search (`compat/probe/after-Landscaping.png`, `after-WaterSearch.png`). Extra Landscaping Tools' resource brushes sit in Terraforming. |
+| Police & Administration | Ours, grouped by Asset UI Manager's categories, its own tab icons, 0 placeholders (`after-Police.png`). |
+| Zones | Ours, 22 zones, Zone Organizer's ten tabs in the strip (`after-Zones.png`). |
+| ExtraAssetsMenu | Vanilla's, 18 items across its own tab bar; we stand aside (`after-ExtraAssetsMenu.png`). |
+
+Still open: Zone Color Changer's opener lives in vanilla's category tab bar,
+so it is not reachable while our panel is open. Tree Controller and Line
+Tool remain untested for the reasons above.
