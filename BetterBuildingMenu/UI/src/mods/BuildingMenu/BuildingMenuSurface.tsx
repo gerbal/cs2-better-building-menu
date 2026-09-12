@@ -9,6 +9,7 @@ import mod from "../../../mod.json";
 import { BuildingCatalogComponent } from "mods/BuildingCatalog/BuildingCatalog";
 import { LensControlPane, LENS_CONTROL_PANE_TOTAL } from "mods/LensControlPane/LensControlPane";
 import { BuildingMenuHeader } from "mods/BuildingMenu/BuildingMenuHeader";
+import { VanillaTabBarHost } from "mods/VanillaTabBarHost/VanillaTabBarHost";
 import { clampBuildingLensHeight, draggedBuildingLensHeight } from "domain/buildingLensLayout";
 import { useVanillaLayoutForLens } from "mods/BuildingMenu/vanillaLayout";
 
@@ -101,6 +102,7 @@ export const BuildingMenuSurface = ({ onClose }: BuildingMenuSurfaceProps) => {
           </div>
           <div className={styles.topBar}>
             <BuildingMenuHeader small={PanelWidth <= 685} large={PanelWidth >= 850} onClose={onClose} />
+            <VanillaTabBarHost onClose={onClose} />
           </div>
           <div
             className={classNames(styles.content, AssetMenuTheme.assetPanel)}

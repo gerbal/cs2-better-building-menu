@@ -1,6 +1,19 @@
 [
   {
     "Stable": true,
+    "Version": "0.1.9",
+    "Date": "2026-09-12",
+    "ChangeGroups": [
+      {
+        "Name": "Compatibility",
+        "Changes": [
+          "Buttons other mods add to the game's asset category tab bar now have a home in the panel. Zone Color Changer's \"Edit Zone Colors\" button appears while a zone is selected, as it does in the vanilla menu."
+        ]
+      }
+    ]
+  },
+  {
+    "Stable": true,
     "Version": "0.1.8",
     "Date": "2026-09-11",
     "ChangeGroups": [

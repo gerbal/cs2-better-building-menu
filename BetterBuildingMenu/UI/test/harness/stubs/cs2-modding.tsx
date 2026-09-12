@@ -5,6 +5,16 @@ const TextInput = ({ value, className }: { value?: string; className?: string; c
 const registry: Record<string, Record<string, unknown>> = {
   "game-ui/common/input/text/text-input.tsx": { TextInput },
 };
+/** Test seam: let a test supply a vanilla component the game would provide. */
+export function setModule(modulePath: string, name: string, value: unknown): void {
+  (registry[modulePath] ??= {})[name] = value;
+}
+/** Test seam: forget anything a test supplied. */
+export function resetModules(): void {
+  for (const path of Object.keys(registry)) {
+    if (path !== "game-ui/common/input/text/text-input.tsx") delete registry[path];
+  }
+}
 export function getModule(modulePath: string, name: string): unknown {
   if (registry[modulePath]?.[name] !== undefined) return registry[modulePath][name];
   if (modulePath.endsWith(".scss") && name === "classes") return new Proxy({}, { get: (_, key) => (typeof key === "string" ? `vanilla-${key}` : "") });
