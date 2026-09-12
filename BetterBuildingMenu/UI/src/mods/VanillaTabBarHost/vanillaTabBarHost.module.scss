@@ -1,0 +1,11 @@
+// Only what another mod adds is meant to be seen here, so the vanilla bar this
+// hosts — an empty tab row and its close button — is hidden. The game's DOM
+// class is hyphenated; a camel-cased selector matches nothing.
+.host {
+  display: flex;
+  align-items: center;
+
+  > [class*="asset-category-tab-bar"] {
+    display: none;
+  }
+}

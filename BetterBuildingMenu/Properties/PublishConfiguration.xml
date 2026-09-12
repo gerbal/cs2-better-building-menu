@@ -50,15 +50,15 @@ This mod was developed with AI assistance (Anthropic's Claude), under human dire
   <Screenshot Value="Properties/Screenshot_04.jpg" />
 
   <Tag Value="Code Mod" />
-  <ModVersion Value="0.1.8" />
+  <ModVersion Value="0.1.9" />
   <GameVersion Value="1.6.*" />
   <AccessLevel Value="Public" />
   <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/mod-better-building-menu.1941089/" />
 
   <ChangeLog>
-0.1.8
+0.1.9
 
-Fixes
-* A category another mod adds at runtime now draws its own icon in the tab strip instead of a blank placeholder.
+Compatibility
+* Buttons other mods add to the game's asset category tab bar now have a home in the panel. Zone Color Changer's "Edit Zone Colors" button appears while a zone is selected, as it does in the vanilla menu.
 </ChangeLog>
 </Publish>

@@ -158,6 +158,23 @@ can arm, so the catch-all leaves them alone by design.
 | Zones | Ours, 22 zones, Zone Organizer's ten tabs in the strip (`after-Zones.png`). |
 | ExtraAssetsMenu | Vanilla's, 18 items across its own tab bar; we stand aside (`after-ExtraAssetsMenu.png`). |
 
-Still open: Zone Color Changer's opener lives in vanilla's category tab bar,
-so it is not reachable while our panel is open. Tree Controller and Line
-Tool remain untested for the reasons above.
+Tree Controller and Line Tool remain untested for the reasons above.
+
+## Zone Color Changer, integrated (0.1.9, 2026-09-12)
+
+Its "Edit Zone Colors" button is appended to the game's `AssetCategoryTabBar`,
+which this panel stands in for, so it had nowhere to draw. `VanillaTabBarHost`
+mounts that component inside the panel's top bar with no categories of its
+own, and the stylesheet hides the vanilla bar it brings along, so only what
+another mod appended is seen. Any mod extending that export benefits, not
+just this one.
+
+Measured: with a zone armed from our panel the zone tool goes active,
+`ZoneToolActive` flips true and the button appears beside the header
+(`compat/probe/zcc-final.png`); its colour panel opens and works. The host's
+two children read `container` visible and `asset-category-tab-bar` hidden.
+
+The first build shipped a camel-cased selector (`assetCategoryTabBar`) that
+matched nothing, so an empty bar and a stray close button showed inside the
+panel. The game's DOM class is hyphenated. A render test now pins the
+selector.
