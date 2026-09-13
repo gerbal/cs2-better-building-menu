@@ -78,7 +78,7 @@ cached Line Tool package is an old build that fails to load on 1.6
 | Zone Organizer | **Mismatch, harmless.** Its ten density tabs appear in vanilla's Zones; our Zones surface groups by family and density itself and shows all 22 zones, so its tabs are not represented. |
 | Asset Icon Library | Works: 85 of 100 Landscaping tiles and 7 of 11 Water & Sewage tiles draw from its `coui://ail` host. |
 | Road Builder | Works: its generated roads appear in our Roads panel (8 tiles from its thumbnail host, total 217 vs 204 without it). |
-| Anarchy | Works: its sections sit in the options bank beside ours when a tree is armed from our panel. The "place multiple unique buildings" path was not exercised. |
+| Anarchy | Works: its sections sit in the options bank beside ours when a tree is armed from our panel. Its "place multiple unique buildings" option reaches this panel too, measured both ways in 0.1.10 — see the section at the end. |
 | Extra Landscaping Tools, Extra Detailing Tools | Work: their tools and props are indexed (Landscaping missing=0 apart from WaterTool). |
 | Zone Color Changer | As predicted: its opener button lives in vanilla's category tab bar, so it is absent while our panel is open. |
 | Toggle Overlays, Unified Icon Library, I18n Everywhere | No interaction. |
@@ -249,3 +249,48 @@ options intact (`compat/probe/line-mode-on.png`), so line mode survives
 picking an asset here, which was the specific worry.
 
 That closes the survey: every mod on the list has now been measured.
+
+## Anarchy's "place multiple unique buildings" (0.1.10, measured 2026-09-13)
+
+Anarchy 1.7.24 as a local package, its option enabled through the options
+widget, on Porterville.
+
+**What it does.** Three Harmony patches carry that option. A postfix on
+`UniqueAssetTrackingSystem.IsPlacedUniqueAsset` answers `false` while the
+option is on. A postfix on that system's `OnCreate` disables the system
+outright, and a prefix on `ToolbarUISystem.OnUpdate` re-enables it every
+frame when the option is off (and keeps it off, plus clears
+`m_UniqueAssetStatusChanged`, when it is on).
+
+**Why our panel refused what Anarchy allows.** Our placed-unique set was
+seeded by reading the tracker's `placedUniqueAssets` collection directly.
+The accessor Anarchy overrides never came into it, so the option could not
+reach us, and because the system is disabled at create, the collection we
+read was empty and `EventUniqueAssetStatusChanged` never fired. The log said
+`Placed unique assets: 0` on every pass.
+
+**Measured, on Porterville with Anarchy 1.7.24 installed as a local package.**
+A unique asset (Early Disaster Warning System) was placed in the city through
+the QA bridge's synthetic input, and Anarchy's option was then flipped through
+its settings object with the city still running — no reload between readings.
+
+| Anarchy's option | The game's `IsPlacedUniqueAsset` | Our panel's `isAlreadyBuilt` | Clicking the tile |
+|---|---|---|---|
+| off | `True` | `true`, tile badged and dimmed | refused; the armed prefab stays what it was |
+| on | `False` | `false`, tile drawn normally | arms the asset |
+
+Screenshots: `compat/probe/anarchy-off-refused.png` and
+`compat/probe/anarchy-on-placeable.png`. The panel followed each flip within a
+publish, with no city reload, which is the case the old code could not reach:
+the entry came in on the tracker's event, and with the option on the tracker is
+disabled and raises no event to take it away again.
+
+**The fix, and why it is generic.** The set is now built by asking the game
+`IsPlacedUniqueAsset(prefabEntity)` for each unique asset in the index, and
+the scan re-runs on every catalog publish rather than only on a city load, so
+a tracker that is switched off and raises no events cannot leave us stale.
+Any mod that overrides the same public accessor changes our answer with it;
+nothing here names Anarchy. `PlacedUniqueScan` holds the rule,
+`PlacedUniqueRegistry.Reset` reports whether the set moved so the snapshot
+cache is only dropped when it did.
+

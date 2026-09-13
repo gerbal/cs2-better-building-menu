@@ -93,6 +93,14 @@ namespace BetterBuildingMenu.Systems
 		// once per index pass rather than per locked asset.
 		private static Dictionary<int, string> _milestoneNames = new();
 		private UniqueAssetTrackingSystem? _uniqueAssets;
+		// This system, for the panel to reach without a system reference of its own.
+		private static PrefabIndexingSystem? _instance;
+		// Every indexed prefab the game flags Unique, rebuilt with the index. The
+		// placed-unique rescan walks these rather than all 17k prefabs, so it can
+		// afford to run on every catalog publish. See PlacedUniqueScan.
+		private List<(int Id, PrefabBase Prefab)> _uniqueCandidates = new();
+		// What the last log line said, so a rescan that found nothing stays quiet.
+		private int _loggedUniqueCandidateCount = -1;
 		// Node entity -> branch label, and service name -> its root's label.
 		// Label AND icon together, keyed by node and by service: every service's
 		// root is called "Basic", so a label-keyed icon would collide.
@@ -117,6 +125,8 @@ namespace BetterBuildingMenu.Systems
 		protected override void OnCreate()
 		{
 			base.OnCreate();
+
+			_instance = this;
 
 			_prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
 			_resourceSystem = World.GetOrCreateSystemManaged<ResourceSystem>();
@@ -283,6 +293,11 @@ namespace BetterBuildingMenu.Systems
 
 		protected override void OnDestroy()
 		{
+			if (ReferenceEquals(_instance, this))
+			{
+				_instance = null;
+			}
+
 			GameManager.instance.localizationManager.onActiveDictionaryChanged -= OnActiveDictionaryChanged;
 
 			base.OnDestroy();
@@ -609,13 +624,11 @@ namespace BetterBuildingMenu.Systems
 
 			_menuUISystem.TriggerSearch();
 
-			// Seed the placed-unique set from the city that just loaded: the
+			// Rescan the placed uniques against the city that just loaded: the
 			// tracker's loaded-asset events may already have run this frame, and a
-			// previous city's entries would otherwise survive into this one.
-			if (full)
-			{
-				SeedPlacedUniques();
-			}
+			// previous city's entries would otherwise survive into this one. Partial
+			// passes too, so a prefab a mod added at runtime joins the candidates.
+			RefreshPlacedUniques(rebuildCandidates: true);
 
 			stopWatch.Stop();
 
@@ -2962,32 +2975,90 @@ namespace BetterBuildingMenu.Systems
 			areaData.Dispose();
 		}
 
-		private void SeedPlacedUniques()
+		/// <summary>
+		/// Asks the game which unique assets the city already holds, for the panel to
+		/// refuse a second one of.
+		/// </summary>
+		/// <remarks>
+		/// Per-prefab through UniqueAssetTrackingSystem.IsPlacedUniqueAsset, never
+		/// through the tracker's placedUniqueAssets collection, so our answer is the
+		/// game's answer however it was reached. Anarchy makes that accessor say false
+		/// while its "place multiple unique buildings" option is on, and disables the
+		/// system that fills the collection, so a collection read both refuses what
+		/// Anarchy allows and never hears about it. Cheap enough to re-run on every
+		/// catalog publish, which is what keeps up with a tracker that is switched off
+		/// and therefore raises no events. See PlacedUniqueScan.
+		/// </remarks>
+		private void RefreshPlacedUniques(bool rebuildCandidates)
 		{
+			if (rebuildCandidates)
+			{
+				CollectUniqueCandidates();
+			}
+
 			if (_uniqueAssets is null)
 			{
 				PlacedUniqueRegistry.Reset(null);
 				return;
 			}
 
-			var placed = _uniqueAssets.placedUniqueAssets;
+			var candidates = new List<PlacedUniqueScan.Candidate>(_uniqueCandidates.Count);
 
-			if (!placed.IsCreated)
+			foreach (var (id, prefab) in _uniqueCandidates)
 			{
-				PlacedUniqueRegistry.Reset(null);
-				return;
+				if (!_prefabSystem.TryGetEntity(prefab, out var entity))
+				{
+					continue;
+				}
+
+				candidates.Add(new PlacedUniqueScan.Candidate(
+					id,
+					isUnique: true,
+					accessorSaysPlaced: _uniqueAssets.IsPlacedUniqueAsset(entity)));
 			}
 
-			using var entities = placed.ToNativeArray(Allocator.Temp);
-			var ids = new List<int>(entities.Length);
+			var moved = PlacedUniqueRegistry.Reset(PlacedUniqueScan.Collect(candidates));
 
-			for (var i = 0; i < entities.Length; i++)
+			if (moved)
 			{
-				ids.Add(entities[i].Index);
+				// Same reason as the event path: the prefabs are untouched but the
+				// projections built from them are stale.
+				IndexGeneration++;
 			}
 
-			PlacedUniqueRegistry.Reset(ids);
-			Mod.Log.Info($"Placed unique assets: {PlacedUniqueRegistry.Count}");
+			// Logged on a change only: the rescan runs on every catalog publish.
+			if (moved || _uniqueCandidates.Count != _loggedUniqueCandidateCount)
+			{
+				_loggedUniqueCandidateCount = _uniqueCandidates.Count;
+				Mod.Log.Info($"Placed unique assets: {PlacedUniqueRegistry.Count} of {_uniqueCandidates.Count} unique assets");
+			}
+		}
+
+		/// <summary>Rescans the placed uniques for whoever is about to draw them.</summary>
+		/// <remarks>
+		/// Static because the panel holds no reference to this system. Does not republish
+		/// the catalog: the caller is already on its way to doing that, and a republish
+		/// from here would recurse.
+		/// </remarks>
+		public static void SyncPlacedUniques() => _instance?.RefreshPlacedUniques(rebuildCandidates: false);
+
+		private void CollectUniqueCandidates()
+		{
+			var candidates = new List<(int Id, PrefabBase Prefab)>();
+
+			if (BuildingMenuUtil.CategorizedPrefabs.TryGetValue(PrefabCategory.Any, out var subCategories)
+				&& subCategories.TryGetValue(PrefabSubCategory.Any, out var prefabs))
+			{
+				foreach (var prefabIndex in prefabs)
+				{
+					if (prefabIndex.IsUnique && prefabIndex.Prefab is not null)
+					{
+						candidates.Add((prefabIndex.Id, prefabIndex.Prefab));
+					}
+				}
+			}
+
+			_uniqueCandidates = candidates;
 		}
 
 		/// <summary>Keeps the placed-unique set in step with the city.</summary>

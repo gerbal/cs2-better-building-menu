@@ -29,20 +29,34 @@ namespace BetterBuildingMenu.Domain
 			}
 		}
 
-		/// <summary>Replaces the whole set — used when a city loads.</summary>
-		public static void Reset(IEnumerable<int> placed)
+		/// <summary>Replaces the whole set — used when a city loads or is rescanned.</summary>
+		/// <returns>
+		/// Whether the set actually moved. The rescan runs on every catalog publish, and
+		/// the catalog's snapshot cache is keyed on PrefabIndexingSystem.IndexGeneration:
+		/// bumping that generation for a rescan that found nothing new would throw a good
+		/// cache away on every keystroke.
+		/// </returns>
+		public static bool Reset(IEnumerable<int> placed)
 		{
+			var next = new HashSet<int>();
+
+			if (placed is not null)
+			{
+				foreach (var id in placed)
+				{
+					next.Add(id);
+				}
+			}
+
+			if (_placed.SetEquals(next))
+			{
+				return false;
+			}
+
 			_placed.Clear();
+			_placed.UnionWith(next);
 
-			if (placed is null)
-			{
-				return;
-			}
-
-			foreach (var id in placed)
-			{
-				_placed.Add(id);
-			}
+			return true;
 		}
 
 		public static int Count => _placed.Count;

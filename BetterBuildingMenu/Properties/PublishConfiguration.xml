@@ -50,15 +50,15 @@ This mod was developed with AI assistance (Anthropic's Claude), under human dire
   <Screenshot Value="Properties/Screenshot_04.jpg" />
 
   <Tag Value="Code Mod" />
-  <ModVersion Value="0.1.9" />
+  <ModVersion Value="0.1.10" />
   <GameVersion Value="1.6.*" />
   <AccessLevel Value="Public" />
   <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/mod-better-building-menu.1941089/" />
 
   <ChangeLog>
-0.1.9
+0.1.10
 
 Compatibility
-* Buttons other mods add to the game's asset category tab bar now have a home in the panel. Zone Color Changer's "Edit Zone Colors" button appears while a zone is selected, as it does in the vanilla menu.
+* Anarchy's "place multiple unique buildings" option now works through this panel. Whether an asset counts as already built is asked of the game for each asset, so a mod that changes that answer changes this panel's answer too.
 </ChangeLog>
 </Publish>
