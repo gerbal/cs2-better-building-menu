@@ -41,6 +41,12 @@ namespace BetterBuildingMenu.Systems
 
 		private void RefreshBuildingCatalog([System.Runtime.CompilerServices.CallerMemberName] string caller = "")
 		{
+			// The already-built answers belong to the city, not the index, and they can
+			// change without an event reaching us: a mod that switches the game's unique
+			// tracker off raises none. Rescanned here, before the snapshots below are
+			// keyed. See PrefabIndexingSystem.SyncPlacedUniques.
+			PrefabIndexingSystem.SyncPlacedUniques();
+
 			// Only resets the projection timing counters. The snapshots themselves live across
 			// refreshes and are dropped when PrefabIndexingSystem.IndexGeneration moves; see
 			// BuildingCatalogAdapter._snapshots.

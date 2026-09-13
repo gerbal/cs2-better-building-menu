@@ -83,5 +83,18 @@ namespace BetterBuildingMenu.Tests
 
 			PlacedUniqueRegistry.Reset(null);
 		}
+
+		[Fact]
+		public void ResetSaysWhetherTheSetMoved()
+		{
+			// The catalog's snapshot cache is keyed on the index generation, so a
+			// rescan that changes nothing must not bump it and throw the cache away.
+			PlacedUniqueRegistry.Reset(new[] { 1, 2 });
+
+			Assert.False(PlacedUniqueRegistry.Reset(new[] { 2, 1 }));
+			Assert.True(PlacedUniqueRegistry.Reset(new[] { 1 }));
+			Assert.True(PlacedUniqueRegistry.Reset(null));
+			Assert.False(PlacedUniqueRegistry.Reset(null));
+		}
 	}
 }

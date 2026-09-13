@@ -1,6 +1,19 @@
 [
   {
     "Stable": true,
+    "Version": "0.1.10",
+    "Date": "2026-09-13",
+    "ChangeGroups": [
+      {
+        "Name": "Compatibility",
+        "Changes": [
+          "Anarchy's \"place multiple unique buildings\" option now works through this panel. Whether an asset counts as already built is asked of the game per asset, so any mod that changes that answer changes ours."
+        ]
+      }
+    ]
+  },
+  {
+    "Stable": true,
     "Version": "0.1.9",
     "Date": "2026-09-12",
     "ChangeGroups": [

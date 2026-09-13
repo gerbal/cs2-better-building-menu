@@ -36,6 +36,17 @@ CSII_SUCCESSOR_MODS_DIR=/path/to/empty/isolated/Mods ./build.sh deploy
 
 Do not point this at a directory containing the original `FindIt` payload.
 
+**Check the binary you are about to measure.** The workspace's
+`just deploy-one` copies `bin/Debug/net48/BetterBuildingMenu.dll`, so running
+it after a Release build overwrites the new DLL with whatever stale Debug
+build is on disk, with no warning and healthy-looking logs. Confirm the change
+is in the deployed file before drawing any conclusion from a run (metadata
+strings are UTF-16, so `-el` is required):
+
+```bash
+strings -el "$CSII_PFX/Mods/BetterBuildingMenu/BetterBuildingMenu.dll" | grep '<a literal from the change>'
+```
+
 For a game smoke test, use `just deploy-isolated better-building-menu`. The
 recipe isolates both game `Mods` roots and also checks the Proton cache/local
 root listed by `mod_directory.json`. It relocates only known workspace mod
