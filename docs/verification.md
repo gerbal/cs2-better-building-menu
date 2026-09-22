@@ -2434,3 +2434,16 @@ The Object Tool armed through the bridge takes no control point from injected
 world frames here, so nothing could be placed to select. The picker's click is
 vanilla's own `selectUpgrade` with vanilla's entity (render test), which is as
 far as the code can say.
+
+## 2026-09-22 — the unlock pip, confirmed (cm-t8ba)
+
+The fix has been in since 0.1.5 (`ClearVanillaMenuHighlights`, the two reflected
+toolbar bindings); what was missing was a save with a fresh unlock. Made one on
+Porterville 6 through the bridge: `sys.invoke Game.Prefabs.UnlockSystem
+UnlockPrefab(entity, true)` on a locked road ("Large Road", 16079:1) raises the
+real `Unlock` event, and `toolbarGroups` reported Roads `highlight: true`
+(`UnlockAllSystem` is no use here: it calls `UIHighlightSystem.SkipUpdate`).
+Opening Roads in the panel logged `[UNLOCK-PIP] cleared 3 highlight(s) under
+'Roads'` — asset, category, menu — and the flag read false, and stayed false
+across a close and reopen. The same on Transportation with a locked bus station.
+Zones held no locked asset in this save; the clearing is per menu and identical.
