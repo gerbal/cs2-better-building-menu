@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, it } from "node:test";
+import { BUILDING_LENS_MIN_HEIGHT } from "../src/domain/buildingLensLayout.ts";
 
 /**
  * Stylesheet contracts: layout rules Cohtml gets wrong or the design pins,
@@ -227,6 +228,31 @@ const scssFiles = (): string[] =>
   readdirSync(new URL("../src/", import.meta.url), { recursive: true, encoding: "utf8" })
     .filter((name) => name.endsWith(".scss"))
     .map((name) => `../src/${name}`);
+
+describe("the catalog's floor is one row of cards", () => {
+  // The player drags the height; the floor is where the drag stops. Three
+  // copies exist — the TS clamp, the C# clamp (asserted equal by
+  // BuildingLensDimensionTests) and the stylesheet's min-height — and this
+  // keeps the third one honest.
+  it("is one card row under two headings: the deepest grouping a menu draws", () => {
+    // Zones groups two levels deep (Residential Zones > Low Density), so its
+    // first row of cards sits under two heading reserves; a floor for one
+    // would clip that row by a heading's height in the menu the floor is
+    // most used in.
+    const catalogPadding = 8 + 8; // .catalog padding, buildingCatalog.module.scss
+    const groupReserve = 17; // .group padding-top, groupedResults.module.scss
+    const listPadding = 4 + 4; // .list padding, buildingList.module.scss
+    const card = 48 + 2; // .itemCard min-height plus its 1rem borders
+
+    assert.equal(BUILDING_LENS_MIN_HEIGHT, catalogPadding + 2 * groupReserve + listPadding + card);
+  });
+
+  it("states the same floor in the stylesheet", () => {
+    const content = surfaceStylesFor().match(/\.content \{[^}]*\}/)?.[0] ?? "";
+
+    assert.match(content, new RegExp(`min-height: ${BUILDING_LENS_MIN_HEIGHT}rem;`));
+  });
+});
 
 describe("a wrapping row of cards keeps each card its own height", () => {
   // Cohtml sizes a wrapping flex container for all its lines, then stretches

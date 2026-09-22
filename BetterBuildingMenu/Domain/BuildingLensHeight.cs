@@ -7,10 +7,11 @@ namespace BetterBuildingMenu.Domain
 	public static class BuildingLensHeight
 	{
 		/// <summary>
-		/// The shortest the catalog can be and still show two tile rows with their padding,
-		/// rather than a sliver of a second row.
+		/// The shortest the catalog can be and still show one row of cards whole under the
+		/// deepest grouping a menu draws: the catalog padding, two heading reserves, the list
+		/// padding and one card.
 		/// </summary>
-		public const float Min = 200f;
+		public const float Min = 108f;
 
 		/// <summary>
 		/// The viewport less the toolbar and the chrome below the panel.
