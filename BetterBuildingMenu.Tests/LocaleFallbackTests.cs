@@ -24,8 +24,8 @@ public sealed class LocaleFallbackTests
     [Fact]
     public void Merge_FillsAMissingOptionsKeyWithEnglish()
     {
-        // The Options screen reads these with no fallback of its own; none of the 13
-        // translations carries them, so a gap there reached the player as a raw id.
+        // The Options screen reads these with no fallback of its own, and no
+        // translation carries them, so a gap there reaches the player as a raw id.
         var merged = LocaleFallback.Merge(English, new Dictionary<string, string>());
 
         Assert.Equal("Replace the build menu", merged[OptionKey]);

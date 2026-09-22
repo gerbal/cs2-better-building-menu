@@ -28,7 +28,7 @@ describe("Load more", () => {
   });
 
   it("names the window it wants, so a double click grows it once", () => {
-    // Each copy of a bare "one more" added a step in C#; the same limit twice
+    // A bare "one more" would add a step per copy in C#; the same limit twice
     // is a no-op there (BuildingCatalogLensState.LoadMoreTo).
     setLensView({ viewMode: "table" });
     setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1), entry(2)], { hasMore: true, totalCount: 403, limit: 300 }));
