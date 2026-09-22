@@ -140,7 +140,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 				return false;
 			}
 
-			if (prefab.isBuiltin && prefab.name.StartsWith("NotreDame"))
+			if (prefab.isBuiltin && prefab.name.StartsWith("NotreDame", StringComparison.Ordinal))
 			{
 				subCategory = PrefabSubCategory.Props_Misc;
 				return true;
