@@ -50,15 +50,17 @@ This mod was developed with AI assistance (Anthropic's Claude), under human dire
   <Screenshot Value="Properties/Screenshot_04.jpg" />
 
   <Tag Value="Code Mod" />
-  <ModVersion Value="0.1.10" />
+  <ModVersion Value="0.1.11" />
   <GameVersion Value="1.6.*" />
   <AccessLevel Value="Public" />
   <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/mod-better-building-menu.1941089/" />
 
   <ChangeLog>
-0.1.10
+0.1.11
 
-Compatibility
-* Anarchy's "place multiple unique buildings" option now works through this panel. Whether an asset counts as already built is asked of the game for each asset, so a mod that changes that answer changes this panel's answer too.
+Fixes
+* Mods that add their own text no longer each cause a full re-index while the game loads. The index is rebuilt once after the last of them, so a large playset loads without the seconds of stutter per mod.
+* The Already Built mark on unique buildings and upgrades is drawn at the size of the picture again. Game version 1.6.2 stopped stretching it, so it covered the whole card.
+* The Upgrades panel has the same drag-to-resize edge as the build menu. Dragging either sets the height for both; a panel with few rows stays short.
 </ChangeLog>
 </Publish>

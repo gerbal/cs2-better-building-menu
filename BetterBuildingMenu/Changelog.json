@@ -1,6 +1,21 @@
 [
   {
     "Stable": true,
+    "Version": "0.1.11",
+    "Date": "2026-09-22",
+    "ChangeGroups": [
+      {
+        "Name": "Fixes",
+        "Changes": [
+          "Mods that add their own text no longer each cause a full re-index while the game loads. The index is rebuilt once after the last of them, so a large playset loads without the seconds of stutter per mod.",
+          "The Already Built mark on unique buildings and upgrades is drawn at the size of the picture again. Game version 1.6.2 stopped stretching it, so it covered the whole card.",
+          "The Upgrades panel has the same drag-to-resize edge as the build menu. Dragging either sets the height for both; a panel with few rows stays short."
+        ]
+      }
+    ]
+  },
+  {
+    "Stable": true,
     "Version": "0.1.10",
     "Date": "2026-09-13",
     "ChangeGroups": [

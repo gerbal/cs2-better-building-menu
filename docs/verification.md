@@ -2390,3 +2390,47 @@ exceptions in any mod log, no JS errors, 416 backend tests. The icon chase
 cost two wrong hypotheses; the evidence that settled it was reading the
 game's own tab bar img src beside ours in the same session, then the game's
 `ImageSystem` surface via ilspycmd. Details in docs/compatibility.md.
+
+## 2026-09-22 — 1.6.2f1, and the forum's three bugs (0.1.11)
+
+The game updated to 1.6.2f1 (build 25127643, Cohtml 1.64 → 2.2.1.3). Full-chain
+boot with the unchanged launcher hook, IL patches re-applied (24/24), the mod
+rebuilt byte-identical against the new assemblies, 422 backend tests. Live on
+Porterville 6 (84 unknown creator-pack prefabs, so the placed-unique census is
+not trusted there): audit 15 vanilla menus, 1124 placements, 0 missing; Roads
+263 with the tab bar host drawn; 0 JS errors, 0 exceptions. Player.log's
+`[MENU-AUDIT] … is not a vanilla menu` lines at boot are the pre-index passes
+the mod itself labels NOT CLEAN; the mod's own log shows the clean audit.
+
+The forum thread, read through the game's own Mods UI event bus
+(`pdx.get_forum_posts`, mod 158589, PDX version key 7, thread 1941089), gave
+three bugs, each measured before the fix and after:
+
+- Full index at boot (Loki, 0.1.9): nine full passes of 2.1–4.3 s in the
+  first minute at the main menu, prefab count unchanged, 820 log lines — one
+  per mod locale file, because `onActiveDictionaryChanged` fires for every
+  source added, not only a language change. `LocaleReindexPolicy` defers those
+  to one pass after a second's quiet and runs at once only for a new locale;
+  every full pass now logs its trigger. After: zero passes at the menu, one
+  `Full pass at OnGameLoaded` (3.4 s) for the load, 174 log lines, audit
+  unchanged.
+- The Already Built mark (owner, 0.1.10 on 1.6.2f1): 64×64 px over a 26.7 px
+  picture in the extension picker AND the Signatures list, cornered at the
+  inset. Cohtml 2.2 sizes an auto absolute `<img>` to its intrinsic pixels
+  whatever its offsets pin; 1.64 stretched it. Inline `100%`/`20px` sized
+  correctly, `auto` did not, and no 64px rule exists anywhere. The mixin now
+  states `mark-size($picture)`. After a view reload: 18.8 px inside the 26.7 px
+  box in both views.
+- No resize on the upgrades picker (Loki): the strip and its drag are now
+  `LensResizeHandle`, mounted on both panels against the one
+  `BuildingLensPanelHeight`; the picker takes it as a max-height and scrolls.
+  Verified with real input through the bridge (`input.frames`, target `ui`,
+  screen space is Y-up at the DOM's scale): the binding went 420 → 510 rem,
+  the catalog 280 → 340 px, the two-row picker stayed two rows. A synthetic
+  `MouseEvent` cannot test this: Cohtml drops the constructor's clientX/Y.
+
+Not verified: placing an upgrade through the picker (Ricke3661's report).
+The Object Tool armed through the bridge takes no control point from injected
+world frames here, so nothing could be placed to select. The picker's click is
+vanilla's own `selectUpgrade` with vanilla's entity (render test), which is as
+far as the code can say.
