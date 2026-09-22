@@ -15,6 +15,7 @@ const surfaceStylesFor = () => read("../src/mods/BuildingMenu/buildingMenuSurfac
 const groupedResultsStyles = read("../src/mods/GroupedResults/groupedResults.module.scss");
 const hoverCardStyles = read("../src/mods/BuildingHoverCard/buildingHoverCard.module.scss");
 const extensionMenuStyles = read("../src/mods/ExtensionMenu/extensionMenu.module.scss");
+const lensResizeHandleStyles = read("../src/mods/LensResizeHandle/lensResizeHandle.module.scss");
 
 describe("Building Lens stylesheet contracts", () => {
   it("sizes a group to its tiles and lets the heading wrap inside it", () => {
@@ -111,8 +112,10 @@ describe("Building Lens stylesheet contracts", () => {
     // The only way to change the height now that the Expand toggle is gone, so
     // it has to be both findable and hittable. The strip is the target and the
     // grip is the mark, which is why they are two elements.
-    const strip = surfaceStylesFor().match(/\.resizeHandle\s*\{[^}]*\}/)?.[0] ?? "";
-    const grip = surfaceStylesFor().match(/\.resizeGrip\s*\{[^}]*\}/)?.[0] ?? "";
+    // Shared by the build menu and the extension picker, so it lives in its
+    // own module rather than in either panel's.
+    const strip = lensResizeHandleStyles.match(/\.resizeHandle\s*\{[^}]*\}/)?.[0] ?? "";
+    const grip = lensResizeHandleStyles.match(/\.resizeGrip\s*\{[^}]*\}/)?.[0] ?? "";
 
     assert.match(strip, /cursor:\s*ns-resize/);
     // NOT absolute. As an overlay on the panel edge it is invisible AND
@@ -283,13 +286,26 @@ describe("hover card figures line up", () => {
 
 describe("the extension picker wears the same panel frame as the build menu", () => {
   // The picker's rows sit in the slot where vanilla draws a framed Panel. The
-  // frame is two surfaces — a dark header with the top corners rounded and a
-  // normal body with the gradient — what buildingMenuSurface already declares.
-  it("gives the header the top bar's surface", () => {
+  // frame is three surfaces, the build menu's own: the resize strip with the
+  // top corners rounded, a dark header square beneath it, and a normal body
+  // with the gradient.
+  it("gives the header the top bar's surface, square under the resize strip", () => {
     assert.match(extensionMenuStyles, /\.header \{[^}]*background-color: var\(--panelColorDark\);/);
     assert.match(extensionMenuStyles, /\.header \{[^}]*backdrop-filter: var\(--panelBlur\);/);
-    assert.match(extensionMenuStyles, /\.header \{[^}]*border-top-left-radius: var\(--panelRadius\);/);
-    assert.match(extensionMenuStyles, /\.header \{[^}]*border-top-right-radius: var\(--panelRadius\);/);
+    // The strip owns the rounding; a rounded header beneath it would stack
+    // two curved edges.
+    assert.match(extensionMenuStyles, /\.header \{[^}]*border-top-left-radius: 0;/);
+    assert.match(extensionMenuStyles, /\.header \{[^}]*border-top-right-radius: 0;/);
+    assert.match(lensResizeHandleStyles, /\.resizeHandle \{[^}]*border-top-left-radius: var\(--panelRadius\);/);
+    assert.match(lensResizeHandleStyles, /\.resizeHandle \{[^}]*border-top-right-radius: var\(--panelRadius\);/);
+  });
+
+  it("scrolls its body inside the dragged height rather than growing past it", () => {
+    // The cap is stated inline from the shared height; these are what make a
+    // flex column honour it. Without min-height: 0 the column will not
+    // shrink the body below its rows, and the cap is decorative.
+    assert.match(extensionMenuStyles, /\.content \{[^}]*min-height: 0;/);
+    assert.match(extensionMenuStyles, /\.content \{[^}]*overflow-y: auto;/);
   });
 
   it("gives the body the content surface", () => {

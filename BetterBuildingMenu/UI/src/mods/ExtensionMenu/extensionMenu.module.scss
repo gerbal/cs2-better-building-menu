@@ -19,8 +19,9 @@
   padding: 6rem 10rem 4rem 12rem;
   background-color: var(--panelColorDark);
   backdrop-filter: var(--panelBlur);
-  border-top-left-radius: var(--panelRadius);
-  border-top-right-radius: var(--panelRadius);
+  // Square: the resize strip above owns the panel's top rounding.
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
 }
 
 .heading {
@@ -64,6 +65,10 @@
 
 .content {
   padding: 6rem;
+  // Capped at the dragged height (stated inline) and scrolling within it;
+  // min-height 0 so the flex column lets it shrink to the cap at all.
+  min-height: 0;
+  overflow-y: auto;
   background-color: var(--panelColorNormal);
   backdrop-filter: var(--panelBlur);
   background-image: linear-gradient( var(--panelGradientStart) , var(--panelGradientEnd) );
