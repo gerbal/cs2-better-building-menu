@@ -37,7 +37,7 @@ namespace BetterBuildingMenu
 
 		/// <summary>Re-reads which of the mods we adapt to are enabled.</summary>
 		/// <remarks>Per full pass, not once per process: the game re-reads the playset at every city
-		/// load, so a mod can join without a restart. See docs/verification.md.</remarks>
+		/// load, so a mod can join without a restart. See docs/indexing.md, "Load timing".</remarks>
 		internal static void RefreshEnabledMods()
 		{
 			var enabled = GameManager.instance.modManager.ListModsEnabled();

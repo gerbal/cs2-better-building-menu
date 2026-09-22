@@ -19,7 +19,7 @@ namespace BetterBuildingMenu.Tests
 		public void IsTheSameUnderATurkishOs()
 		{
 			// Mono's culture is the OS's, not the game's language; a Turkish one
-			// upper-cases "i" to "İ", and "industrial" read "İndustrial".
+			// upper-cases "i" to "İ", so "industrial" would read "İndustrial".
 			var previous = CultureInfo.CurrentCulture;
 
 			try

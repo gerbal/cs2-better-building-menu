@@ -28,7 +28,7 @@ namespace BetterBuildingMenu.Domain
 		/// <remarks>
 		/// An exclusion stands on its own; an asset needs no include to be left out.
 		/// A category pair the index does not file is ignored, because the index keys on it
-		/// and would throw, dropping the asset. The last usable include wins, as it always has.
+		/// and would throw, dropping the asset. The last usable include wins.
 		/// </remarks>
 		public static FindItCategoryOverride Read(IReadOnlyList<string?>? includes, IReadOnlyList<string?>? excludes)
 		{

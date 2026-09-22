@@ -449,10 +449,9 @@ namespace BetterBuildingMenu.Systems
 
 		/// <summary>Re-reads the mods the processors adapt to, before the pass that reads them.</summary>
 		/// <remarks>
-		/// Road Builder's discard mark was once resolved at loading-complete, which comes after the
-		/// OnGameLoaded pass and skips its own when no lock state drifted, so a load indexed the roads
-		/// Road Builder had thrown away. Found among the loaded assemblies, never loaded by name: a
-		/// renamed type is logged once and filters nothing, rather than throwing into the game's load.
+		/// Every full pass, the first included; see docs/indexing.md, "Load timing". The type is
+		/// looked up among the loaded assemblies, so a renamed one is logged once and filters
+		/// nothing rather than throwing into the game's load.
 		/// </remarks>
 		private void RefreshModCompatibility()
 		{
