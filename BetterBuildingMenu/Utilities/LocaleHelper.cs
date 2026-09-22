@@ -91,20 +91,27 @@ namespace BetterBuildingMenu.Utilities
 
         /// <summary>A tooltip string for one of our short identifiers.</summary>
         /// <remarks>
-        /// The fallback is required, not optional: each locale is registered as
-        /// its OWN DictionarySource (see GetAvailableLanguages) with no merge
-        /// against English, so Translate answers a missing key with the id itself.
+        /// The fallback is required, not optional: a key missing from English too
+        /// is answered with the id itself.
         /// </remarks>
         internal static string GetTooltip(string key, string fallback)
         {
             return Translate($"Tooltip.LABEL[{Mod.Id}.{key}]", fallback);
         }
 
+        /// <summary>
+        /// One source per language, each translation over the English table, so a key a
+        /// translation lacks reads as English. See <see cref="LocaleFallback"/>.
+        /// </summary>
         public IEnumerable<DictionarySource> GetAvailableLanguages()
         {
+            var english = _locale[string.Empty];
+
             foreach (var item in _locale)
             {
-                yield return new DictionarySource(item.Key is "" ? "en-US" : item.Key, item.Value);
+                yield return item.Key is ""
+                    ? new DictionarySource("en-US", english)
+                    : new DictionarySource(item.Key, LocaleFallback.Merge(english, item.Value));
             }
         }
 
