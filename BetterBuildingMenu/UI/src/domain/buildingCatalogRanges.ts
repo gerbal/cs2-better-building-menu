@@ -1,3 +1,5 @@
+import type { BuildingLensMetricRangeState } from "./buildingLensFilterSummary";
+
 export type MetricRangeId = "cost" | "upkeep" | "workers" | "capacity" | "lotWidth" | "lotDepth";
 
 export interface MetricRangeInput {
@@ -107,7 +109,23 @@ export function didSwapMetricBounds(id: MetricRangeId | string, input: MetricRan
 }
 
 export function hasMetricRange(range: NormalizedMetricRange | null | undefined): boolean {
-  return range?.min !== null || range?.max !== null;
+  return range != null && (range.min != null || range.max != null);
+}
+
+/** The published bounds as one range per metric; absent state or bounds read as unset. */
+export function metricRangesFromState(
+  state: BuildingLensMetricRangeState | null | undefined,
+): Record<MetricRangeId, NormalizedMetricRange> {
+  const range = (min: number | null | undefined, max: number | null | undefined) => ({ min: min ?? null, max: max ?? null });
+
+  return {
+    cost: range(state?.minCost, state?.maxCost),
+    upkeep: range(state?.minUpkeep, state?.maxUpkeep),
+    workers: range(state?.minWorkers, state?.maxWorkers),
+    capacity: range(state?.minCapacity, state?.maxCapacity),
+    lotWidth: range(state?.minLotWidth, state?.maxLotWidth),
+    lotDepth: range(state?.minLotDepth, state?.maxLotDepth),
+  };
 }
 
 export function countActiveMetricRanges(

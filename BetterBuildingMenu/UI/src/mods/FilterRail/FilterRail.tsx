@@ -10,6 +10,7 @@ import {
   filterRailOptions,
   type RailFacetState,
 } from "domain/filterRail";
+import { textInputValue } from "domain/textInput";
 import lockIcon from "images/lock.svg";
 import unlockIcon from "images/unlock.svg";
 import styles from "./filterRail.module.scss";
@@ -113,7 +114,7 @@ export const FilterRail = ({
                       className={styles.menuSearch}
                       value={query}
                       placeholder={translate("Tooltip.LABEL[BetterBuildingMenu.FilterOptions]", "Filter options…") ?? "Filter options…"}
-                      onChange={setQuery}
+                      onChange={(event: Event) => setQuery(textInputValue(event))}
                     />
                   )}
                   {dimension.id === RAIL_METRICS_ID ? (
