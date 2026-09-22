@@ -46,9 +46,11 @@ export const setCurrentPrefabCommand = (id: number): ActivatePrefabAction => ({ 
 export const setSortColumnCommand = (column: SortColumn): TriggerCommand => createTriggerCommand("SetBuildingCatalogSortColumn", column);
 export const setSortDescendingCommand = (descending: boolean): TriggerCommand =>
   createTriggerCommand("SetBuildingCatalogSortDescending", descending);
-// Takes no argument on purpose: the window is the backend's, and it knows the
-// current limit, the step and the ceiling.
-export const loadMoreCatalogCommand = (): TriggerCommand => createTriggerCommand("LoadMoreBuildingCatalog");
+// Names the limit wanted, so a request sent twice (a double click, the scroll
+// poll firing again before the answer lands) grows the window once. The backend
+// still owns the step and the ceiling and clamps the request to both.
+export const loadMoreCatalogCommand = (requestedLimit: number): TriggerCommand =>
+  createTriggerCommand("LoadMoreBuildingCatalog", requestedLimit);
 export const setBuildingCatalogMetricRangeCommand = (id: MetricRangeId, minText: string, maxText: string): TriggerCommand =>
   createTriggerCommand("SetBuildingCatalogMetricRange", id, minText, maxText);
 export const clearBuildingCatalogMetricRangesCommand = (): TriggerCommand =>

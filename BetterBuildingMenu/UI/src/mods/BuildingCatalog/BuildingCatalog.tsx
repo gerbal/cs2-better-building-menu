@@ -32,7 +32,8 @@ import {
 } from "domain/buildingLensFilterSummary";
 import type { BuildingLensFacetState } from "domain/buildingCatalogFacets";
 import { menuSurfacePort } from "domain/menuSurfacePort";
-import { enterTarget, getSearchScopeNotice } from "domain/buildingSearchRank";
+import { enterDecision, getSearchScopeNotice, isEnterForSearch } from "domain/buildingSearchRank";
+import { isSearchField } from "mods/BuildingMenu/searchField";
 import { canPlace } from "domain/buildingLockState";
 import { getLensAnchorKey, getLensView, setLensAnchor, setLensView } from "domain/lensViewStore";
 // The view mode is shared with the control plane, which is a sibling of this
@@ -99,7 +100,7 @@ export const BuildingCatalogComponent = () => {
   // The root every DOM measurement below is scoped to. The hooks find the
   // rows and the scroller beneath it and never look above it.
   const rootRef = useRef<HTMLDivElement>(null);
-  const { items, totalCount, status, hasMore, bestMatchId, loadMore } = useCatalogWindow(rootRef, { viewMode, groupBy });
+  const { items, totalCount, status, hasMore, bestMatchId, searchText: pageSearch, loadMore } = useCatalogWindow(rootRef, { viewMode, groupBy });
   useRevealExpandedRow(rootRef, expandedId, styles.rowDetails);
   const facets = useValue(BuildingLensFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
@@ -228,16 +229,37 @@ export const BuildingCatalogComponent = () => {
   // Enter arms the backend's best match, so a search can be finished without
   // leaving the keyboard. One listener for every view, on the document because
   // the search field is the header's; the ref keeps it reading this render.
-  const onEnter = useRef<() => void>(() => undefined);
-  onEnter.current = () => {
-    const target = enterTarget(items, bestMatchId, currentSearch ?? "");
-    if (target) activate(target);
+  // An Enter pressed before the page catches up with the box is held for it.
+  const pendingEnter = useRef<string | null>(null);
+  const onEnter = useRef<(event: KeyboardEvent) => void>(() => undefined);
+  onEnter.current = (event) => {
+    if (!isEnterForSearch(event.target, isSearchField(event.target))) return;
+
+    const decision = enterDecision({ items, bestMatchId, searchText: pageSearch }, currentSearch ?? "");
+    pendingEnter.current = decision && "wait" in decision ? decision.wait : null;
+    if (decision && "arm" in decision) activate(decision.arm);
   };
+  useEffect(() => {
+    const waiting = pendingEnter.current;
+    if (waiting === null) return;
+
+    // Typing on after Enter takes it back.
+    if ((currentSearch ?? "").trim() !== waiting) {
+      pendingEnter.current = null;
+      return;
+    }
+
+    const decision = enterDecision({ items, bestMatchId, searchText: pageSearch }, waiting);
+    if (decision && "wait" in decision) return;
+
+    pendingEnter.current = null;
+    if (decision) activate(decision.arm);
+  }, [items, bestMatchId, pageSearch, currentSearch]);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       // Both spellings: Cohtml leaves `key` empty for some keys (see Escape in
       // VanillaMenuWatcher), and `keyCode` is the one it fills.
-      if (event.key === "Enter" || event.keyCode === ENTER_KEY_CODE) onEnter.current();
+      if (event.key === "Enter" || event.keyCode === ENTER_KEY_CODE) onEnter.current(event);
     };
 
     document.addEventListener("keydown", onKey);

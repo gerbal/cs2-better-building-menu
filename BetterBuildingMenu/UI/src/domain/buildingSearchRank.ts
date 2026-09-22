@@ -26,19 +26,45 @@ export function getSearchScopeNotice(state: {
   return { elsewhere: state.elsewhere, canWiden: true };
 }
 
+/** Arm this entry, wait for the page that answers this search, or do nothing. */
+export type EnterDecision<T> = { arm: T } | { wait: string } | null;
+
 /**
- * The entry Enter should arm, or null when Enter should do nothing. Only with
- * an active query, and only the backend's pick: a grouped page is ordered by
- * group before relevance, so its first row need not be the best match.
+ * What Enter does. Only with an active query, and only the backend's pick: a
+ * grouped page is ordered by group before relevance, so its first row need not
+ * be the best match. The box echoes a keystroke at once and the page follows a
+ * debounce later, so until the page answers the search in the box, Enter waits
+ * for it rather than arming the previous search's match.
  */
-export function enterTarget<T extends { id: number }>(
-  items: readonly T[],
-  bestMatchId: number | null | undefined,
+export function enterDecision<T extends { id: number }>(
+  page: { items: readonly T[]; bestMatchId?: number | null; searchText?: string | null },
   rawQuery: string
-): T | null {
-  if (!rawQuery.trim() || bestMatchId == null) {
+): EnterDecision<T> {
+  const query = rawQuery.trim();
+  if (!query) {
     return null;
   }
 
-  return items.find((item) => item.id === bestMatchId) ?? null;
+  if ((page.searchText ?? "").trim() !== query) {
+    return { wait: query };
+  }
+
+  const target = page.bestMatchId == null ? undefined : page.items.find((item) => item.id === page.bestMatchId);
+  return target ? { arm: target } : null;
+}
+
+/**
+ * Whether an Enter is the search's to act on: from the search box, or from no
+ * text field at all. Enter in any other field (a metric bound, a filter's
+ * option search) commits that field, and must not place a building.
+ */
+export function isEnterForSearch(target: unknown, fromSearchField: boolean): boolean {
+  if (fromSearchField) {
+    return true;
+  }
+
+  const element = target as { tagName?: unknown; isContentEditable?: unknown } | null | undefined;
+  const tag = typeof element?.tagName === "string" ? element.tagName.toUpperCase() : "";
+
+  return tag !== "INPUT" && tag !== "TEXTAREA" && tag !== "SELECT" && element?.isContentEditable !== true;
 }

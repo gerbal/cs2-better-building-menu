@@ -144,6 +144,9 @@ export interface BuildingCatalogPage {
    */
   bestMatchId?: number | null;
 
+  /** The search this page answers; it trails the box by the search debounce. */
+  searchText?: string;
+
   /**
    * The offered sort fields that could actually move a row of these results;
    * the picker drops the rest, a control that responds while the list does not

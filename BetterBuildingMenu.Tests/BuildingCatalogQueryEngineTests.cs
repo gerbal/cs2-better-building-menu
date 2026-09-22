@@ -133,16 +133,16 @@ public sealed class BuildingCatalogQueryEngineTests
     }
 
     [Fact]
-    public void Query_SearchIgnoresSurroundingWhitespace()
+    public void Query_SearchIgnoresSurroundingWhitespaceTheBoxSends()
     {
         // The box sends what was typed, and the space before the next word must not
-        // drop every name that ends at this one.
+        // drop every name that ends at this one. Compose trims it on the way in.
         BuildingCatalogPage trailing = BuildingCatalogQueryEngine.Query(
             SampleEntries,
-            new BuildingCatalogQuery(SearchText: "turbine "));
+            BuildingCatalogLensState.Initial.Search("turbine ").Compose().Query);
         BuildingCatalogPage leading = BuildingCatalogQueryEngine.Query(
             SampleEntries,
-            new BuildingCatalogQuery(SearchText: "  wind"));
+            BuildingCatalogLensState.Initial.Search("  wind").Compose().Query);
 
         Assert.Equal(2, Assert.Single(trailing.Items).Id);
         Assert.Equal(2, Assert.Single(leading.Items).Id);
@@ -771,7 +771,7 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.Equal(
             new[] { "items", "id", "prefabName", "name", "category", "subCategory", "categoryLabel", "subCategoryLabel", "thumbnail", "fallbackThumbnail", "silhouetteThumbnail", "uiMenu", "uiCategory", "lotWidth", "lotDepth", "buildingLevel", "zoneType", "hasParking", "isVanilla", "isLocked",
             "isUnique",
-            "isAlreadyBuilt", "unlockMilestone", "devTreeBranch", "devTreeBranchDepth", "unlockRequirements", "bonuses", "costIsPerDistance", "parkingSlots", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "supportedUpgrades", "constructionCost", "upkeep", "workers", "households", "capacity", "serviceRange", "serviceFacts", "footprints", "footprintOverflow", "serviceTextFacts", "speedLimit", "networkWidth", "leisureType", "leisureEfficiency", "electricityConsumption", "waterConsumption", "garbageAccumulation", "telecomNeed", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "groupPath", "groupLabelId", "reorderableSortColumns", "totalCount", "offset", "limit", "hasMore", "bestMatchId" },
+            "isAlreadyBuilt", "unlockMilestone", "devTreeBranch", "devTreeBranchDepth", "unlockRequirements", "bonuses", "costIsPerDistance", "parkingSlots", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "supportedUpgrades", "constructionCost", "upkeep", "workers", "households", "capacity", "serviceRange", "serviceFacts", "footprints", "footprintOverflow", "serviceTextFacts", "speedLimit", "networkWidth", "leisureType", "leisureEfficiency", "electricityConsumption", "waterConsumption", "garbageAccumulation", "telecomNeed", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "groupPath", "groupLabelId", "reorderableSortColumns", "totalCount", "offset", "limit", "hasMore", "bestMatchId", "searchText" },
             writer.PropertyNames);
         Assert.Contains("Write:Int32:1", writer.Tokens);
         Assert.Contains("Write:String:Coal Power Plant", writer.Tokens);
@@ -908,6 +908,40 @@ public sealed class BuildingCatalogQueryEngineTests
             new BuildingCatalogQuery(SearchText: "clinic", GroupBy: "category"));
 
         Assert.Equal(2, page.BestMatchId);
+    }
+
+    [Fact]
+    public void Query_BestMatchSkipsWhatCannotBePlaced()
+    {
+        // Enter on a locked or already-built match does nothing, so it goes to the
+        // best one that can actually be placed.
+        var entries = new[]
+        {
+            SampleEntries[0] with { Id = 1, Name = "Hospital", IsLocked = true },
+            SampleEntries[0] with { Id = 2, Name = "Hospital", IsUnique = true, IsAlreadyBuilt = true },
+            SampleEntries[0] with { Id = 3, Name = "General Hospital" },
+        };
+
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(entries, new BuildingCatalogQuery(SearchText: "hospital"));
+
+        Assert.Equal(3, page.BestMatchId);
+    }
+
+    [Fact]
+    public void Query_HasNoBestMatchWhenNothingCanBePlaced()
+    {
+        var entries = new[] { SampleEntries[0] with { Id = 1, Name = "Hospital", IsLocked = true } };
+
+        Assert.Null(BuildingCatalogQueryEngine.Query(entries, new BuildingCatalogQuery(SearchText: "hospital")).BestMatchId);
+    }
+
+    [Fact]
+    public void Query_NamesTheSearchThePageWasBuiltFor()
+    {
+        // The box echoes at once and the page follows a debounce later; the UI holds
+        // Enter until the two agree, so the page has to say which search it answers.
+        Assert.Equal("clinic", BuildingCatalogQueryEngine.Query(SampleEntries, new BuildingCatalogQuery(SearchText: "clinic")).SearchText);
+        Assert.Equal(string.Empty, BuildingCatalogQueryEngine.Query(SampleEntries, new BuildingCatalogQuery()).SearchText);
     }
 
     [Fact]

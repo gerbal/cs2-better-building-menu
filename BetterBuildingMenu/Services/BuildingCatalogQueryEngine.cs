@@ -88,13 +88,15 @@ namespace BetterBuildingMenu.Services
 				limit,
 				HasMore: hasMore,
 				ReorderableSortColumns: usableColumns,
-				BestMatchId: FindBestMatchId(items, query.SearchText));
+				BestMatchId: FindBestMatchId(items, query.SearchText),
+				SearchText: query.SearchText ?? string.Empty);
 		}
 
 		/// <summary>
-		/// The best-scoring row of this window, by the tie-breaks a group orders by: relevance,
-		/// then the shorter name, then page order. Over the window because Enter arms what
-		/// the player can see.
+		/// The best-scoring row of this window that can be placed, by the tie-breaks a group
+		/// orders by: relevance, then the shorter name, then page order. Over the window
+		/// because Enter arms what the player can see; locked and already-built rows are
+		/// skipped because Enter on them would do nothing.
 		/// </summary>
 		private static int? FindBestMatchId(IReadOnlyList<BuildingCatalogEntry> items, string? searchText)
 		{
@@ -109,6 +111,11 @@ namespace BetterBuildingMenu.Services
 
 			foreach (var entry in items)
 			{
+				if (entry.IsLocked || entry.IsAlreadyBuilt)
+				{
+					continue;
+				}
+
 				var score = BuildingCatalogRelevance.Score(entry, searchText);
 				var length = (entry.Name ?? string.Empty).Length;
 
@@ -168,14 +175,10 @@ namespace BetterBuildingMenu.Services
 				return false;
 			}
 
-			// Trimmed here rather than in the lens state: the box echoes the stored text, so
-			// trimming that would eat the space typed between two words.
-			var search = query.SearchText?.Trim();
-
-			if (!string.IsNullOrEmpty(search)
-				&& !Contains(entry.Name, search!)
-				&& !Contains(entry.PrefabName, search!)
-				&& !Contains(entry.PdxModsId, search!))
+			if (!string.IsNullOrWhiteSpace(query.SearchText)
+				&& !Contains(entry.Name, query.SearchText)
+				&& !Contains(entry.PrefabName, query.SearchText)
+				&& !Contains(entry.PdxModsId, query.SearchText))
 			{
 				return false;
 			}
