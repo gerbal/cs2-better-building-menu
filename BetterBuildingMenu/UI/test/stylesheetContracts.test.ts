@@ -224,6 +224,23 @@ describe("a wrapping row of cards keeps each card its own height", () => {
     assert.match(list, /flex-wrap: wrap;/);
     assert.match(list, /align-items: flex-start;/);
   });
+
+  it("leaves the row a hair of slack so a fit-to-content group fits its own content", () => {
+    // The group is sized to the list's max-content, so its cards fit with no
+    // slack at all, and Cohtml then wraps the last one on a tenth of a pixel
+    // (Mixed Housing: three cards needing 531.4px in a 531.5px list, wrapped;
+    // five needing 532.5 in 532.6, not). Padding cannot help — it grows the
+    // max-content by as much as it takes. A spacer item does: it counts
+    // toward max-content and needs nothing itself, and at zero height a
+    // second line it falls onto draws nothing.
+    const source = read("../src/mods/BuildingList/buildingList.module.scss");
+    const spacer = source.match(/\.list::after \{[^}]*\}/)?.[0] ?? "";
+
+    assert.match(spacer, /content: "";/);
+    assert.match(spacer, /flex: 0 0 \d+rem;/);
+    assert.match(spacer, /height: 0;/);
+    assert.match(spacer, /margin: 0;/);
+  });
 });
 
 describe("Cohtml stylesheet support", () => {

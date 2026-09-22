@@ -10,7 +10,7 @@
           "Mods that add their own text no longer each cause a full re-index while the game loads. The index is rebuilt once after the last of them, so a large playset loads without the seconds of stutter per mod.",
           "The Already Built mark on unique buildings and upgrades is drawn at the size of the picture again. Game version 1.6.2 stopped stretching it, so it covered the whole card.",
           "The Upgrades panel has the same drag-to-resize edge as the build menu. Dragging either sets the height for both; a panel with few rows stays short.",
-          "In Cards view, a category whose cards wrap onto a second row no longer stretches the first row's cards to double height and hides the ones that wrapped; every card the heading counts is drawn."
+          "In Cards view, a category whose cards wrap onto a second row no longer stretches the first row's cards to double height and hides the ones that wrapped; every card the heading counts is drawn, and a row of cards that fits the category's width stays on one line."
         ]
       }
     ]
