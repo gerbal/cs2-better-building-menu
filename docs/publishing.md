@@ -40,28 +40,33 @@ database", and the game quits two seconds after start. That happened on
 2026-09-09; the fix was deleting `ModPublisher/C:`. Run from a scratch
 directory and delete the `C:` tree it leaves there afterwards.
 
-## Steps
+## Every release
 
-1. Build the package: `CS2_BUILD_CONFIG=Release ./build.sh all && CS2_BUILD_CONFIG=Release ./build.sh package`.
-   The package is `artifacts/BetterBuildingMenu/`; `build.sh` refuses any
-   package that still carries a Find It identity.
-2. Fill `BetterBuildingMenu/Properties/PublishConfiguration.xml`: version,
-   `GameVersion` (`major.minor.*`, currently `1.6.*`), thumbnail (square PNG),
-   screenshots, changelog. `AccessLevel` may be `Public`, `Unlisted` or
-   `Private`.
-   Build and package with the same configuration in one environment:
+1. Bump the version in all five places it is stated: `<Version>` in
+   `BetterBuildingMenu/BetterBuildingMenu.csproj`, `modinfo.json`,
+   `BetterBuildingMenu/UI/mod.json`, `ModVersion` in
+   `BetterBuildingMenu/Properties/PublishConfiguration.xml`, and a new first
+   entry in `BetterBuildingMenu/Changelog.json`. Then REPLACE the body of
+   `<ChangeLog>` with that entry's text. The element holds one version's notes,
+   not a running history: the store shows it under the version, so an older
+   section left in it is published as part of the new version's notes (0.1.12
+   went out with 0.1.11's appended on 2026-09-22 and needed an `Update` to
+   trim). `npm test` in `BetterBuildingMenu/UI` fails until all five agree
+   and the `<ChangeLog>` opens with the new number. If the game's minor
+   version has moved, update `GameVersion` too.
+2. Build and package with the same configuration, in one environment:
    `CS2_BUILD_CONFIG=Release ./build.sh all && CS2_BUILD_CONFIG=Release ./build.sh package`.
-   `package` reads the variable too; without it, it copies the Debug dll
-   (this shipped a stale embedded `Locale.json` once, on 2026-09-09, before
-   the 0.1.3 package was redone).
-
-3. Close the game. From a scratch directory:
+   `package` reads the variable too; without it, it copies the Debug DLL
+   (that shipped a stale embedded `Locale.json` once, on 2026-09-09, before
+   the 0.1.3 package was redone). The package is `artifacts/BetterBuildingMenu/`,
+   and `build.sh` refuses any package that still carries a Find It identity.
+3. Close the game. From a scratch directory, run `NewVersion`:
 
    ```sh
    MP="$HOME/.local/share/Steam/steamapps/common/Cities Skylines II/Cities2_Data/Content/Game/.ModdingToolchain/ModPublisher"
    REPO=/path/to/cs2-better-building-menu
    cd "$(mktemp -d)"
-   DOTNET_ROLL_FORWARD=Major dotnet "$MP/ModPublisher.dll" Publish \
+   DOTNET_ROLL_FORWARD=Major dotnet "$MP/ModPublisher.dll" NewVersion \
        "$REPO/BetterBuildingMenu/Properties/PublishConfiguration.xml" \
        -c "$REPO/artifacts/BetterBuildingMenu" -v
    ```
@@ -69,17 +74,23 @@ directory and delete the `C:` tree it leaves there afterwards.
    Relative `Thumbnail`/`Screenshot` paths in the XML resolve against the
    working directory, so either use absolute paths or run from
    `BetterBuildingMenu/`.
+4. Run `Update` with the same arguments. A `NewVersion` upload echoes the
+   forum link in its log, but the page came back without it after 0.1.5 and
+   0.1.6 (2026-09-10); the metadata `Update` puts it back. It refuses for a
+   minute or two after a publish ("User version already exists for this
+   mod"): wait and retry. It went through on the first retry, two minutes
+   later, for both 0.1.7 and 0.1.8.
 
-   `Publish` prints `Mod published with Id=<n>`. Put that number in
-   `<ModId Value="…"/>`; it is required by the other two commands.
-4. Later versions: bump `ModVersion`, and REPLACE the body of `<ChangeLog>`
-   with the new `Changelog.json` entry. The element is that one version's
-   notes, not a running history: the store shows it under the version, so
-   an older section left in it is published as part of the new version's
-   changelog (0.1.12 went out with 0.1.11's notes appended on 2026-09-22 and
-   needed an `Update` to trim). Then run `NewVersion` with the same
-   arguments. Metadata-only
-   changes (description, images, access level) go through `Update`.
+Metadata-only changes (description, images, access level) go through
+`Update` alone.
+
+## The first publish (done 2026-09-09)
+
+`Publish`, with the same arguments as step 3, created the listing. It needs
+`GameVersion` (`major.minor.*`, currently `1.6.*`), a square PNG thumbnail,
+the screenshots and an `AccessLevel` (`Public`, `Unlisted` or `Private`), and
+it prints `Mod published with Id=<n>`. That number went into
+`<ModId Value="…"/>`, which `NewVersion` and `Update` require: 158589.
 
 ## Verifying the login without publishing
 
@@ -87,14 +98,3 @@ directory and delete the `C:` tree it leaves there afterwards.
 "The mod ID provided (…) is invalid or does not exist" — nothing is written.
 That is the probe used on 2026-09-09; it printed
 `Auto logged in with account "…"` first.
-
-
-## After every NewVersion, run Update
-
-A `NewVersion` upload echoes the forum link in its log but the page came back
-without it (seen after 0.1.5 and 0.1.6 on 2026-09-10). A metadata `Update` run
-with the same configuration puts it back. Run one after each NewVersion.
-
-The `Update` refuses for a minute or two after a publish ("User version already
-exists for this mod"). Wait and retry; it went through on the first retry two
-minutes later on both 0.1.7 and 0.1.8.
