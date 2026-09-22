@@ -145,9 +145,8 @@ namespace BetterBuildingMenu.Systems
 			// These establish the bindings with UI code.
 			_IsSearchLoading = CreateBinding("IsSearchLoading", false);
 			_ActivePrefabId = CreateBinding("ActivePrefabId", 0);
-			// Read once at setup and never re-pushed: OnSettingsApplied only
-			// republishes the tile size, so a change to this setting takes
-			// effect on the next load.
+			// Seeded here and re-pushed by OnSettingsApplied: the UI's menu watcher and
+			// the upgrades panel read it, and C# reads the setting live.
 			_ReplaceVanillaBuildMenu = CreateBinding("ReplaceVanillaBuildMenu", Mod.Settings.ReplaceVanillaBuildMenu);
 			_LensOwnsCurrentMenu = CreateBinding("LensOwnsCurrentMenu", false);
 			_BuildingCatalogMatchesElsewhere = CreateBinding("BuildingCatalogMatchesElsewhere", 0);
@@ -235,7 +234,7 @@ namespace BetterBuildingMenu.Systems
 			// arrive comma-joined, because this bridge is happier with flat primitives.
 			CreateTrigger<string, string, bool, bool>("SetVanillaToolbarSelection", SetVanillaToolbarSelection);
 			CreateTrigger<int>("OnLocateButtonClicked", OnLocateButtonClicked);
-			CreateTrigger("LoadMoreBuildingCatalog", LoadMoreBuildingCatalog);
+			CreateTrigger<int>("LoadMoreBuildingCatalog", LoadMoreBuildingCatalog);
 				CreateTrigger<string, string, string>("SetBuildingCatalogMetricRange", SetBuildingCatalogMetricRange);
 				CreateTrigger("ClearBuildingCatalogMetricRanges", ClearBuildingCatalogMetricRanges);
 				CreateTrigger<string, string>("ToggleBuildingLensFacet", ToggleBuildingLensFacet);
@@ -271,6 +270,20 @@ namespace BetterBuildingMenu.Systems
 		private void OnSettingsApplied(Game.Settings.Setting setting)
 		{
 			_LensTileSize.Value = Mod.Settings.BuildingLensTileSize;
+			_ReplaceVanillaBuildMenu.Value = Mod.Settings.ReplaceVanillaBuildMenu;
+
+			// Switched off with the panel up: the menu goes back to its vanilla grid now
+			// rather than at the next click.
+			if (!Mod.Settings.ReplaceVanillaBuildMenu && _LensOwnsCurrentMenu.Value)
+			{
+				// With the setting off the watcher sends no deselect, so forget the menu here,
+				// as VanillaMenuDeselected does. A kept scope filters the next open to it, and
+				// a kept index makes switching back on over the same menu read as an echo.
+				_appliedMenuIndex = 0;
+				_appliedMenuFrame = null;
+				ReleaseMenuScope();
+				YieldMenuToVanilla();
+			}
 		}
 
 		protected override void OnUpdate()

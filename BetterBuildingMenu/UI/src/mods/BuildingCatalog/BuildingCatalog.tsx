@@ -1,7 +1,7 @@
 import { bindValue, trigger, useValue } from "cs2/api";
 import { Button } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import classNames from "classnames";
 import { shortenTileLabel, tableLabelCharBudget } from "domain/tileLabel";
 import { useTextScale } from "domain/textScaleSetting";
@@ -24,7 +24,7 @@ import {
   setSortColumnCommand,
   setSortDescendingCommand,
 } from "domain/buildingCatalogContracts";
-import { catalogWindowRemaining } from "domain/catalogWindow";
+import { catalogWindowRemaining, loadMoreCount } from "domain/catalogWindow";
 import type { SortColumn } from "domain/buildingCatalogContracts";
 import {
   getBuildingLensEmptyStateMessage,
@@ -32,7 +32,8 @@ import {
 } from "domain/buildingLensFilterSummary";
 import type { BuildingLensFacetState } from "domain/buildingCatalogFacets";
 import { menuSurfacePort } from "domain/menuSurfacePort";
-import { getSearchScopeNotice } from "domain/buildingSearchRank";
+import { enterDecision, getSearchScopeNotice, isEnterForSearch, isPlainEnter } from "domain/buildingSearchRank";
+import { isSearchField } from "mods/BuildingMenu/searchField";
 import { canPlace } from "domain/buildingLockState";
 import { getLensAnchorKey, getLensView, setLensAnchor, setLensView } from "domain/lensViewStore";
 // The view mode is shared with the control plane, which is a sibling of this
@@ -96,7 +97,7 @@ export const BuildingCatalogComponent = () => {
   // The root every DOM measurement below is scoped to. The hooks find the
   // rows and the scroller beneath it and never look above it.
   const rootRef = useRef<HTMLDivElement>(null);
-  const { items, totalCount, limit, status, hasMore, loadMore } = useCatalogWindow(rootRef, { viewMode, groupBy });
+  const { items, totalCount, status, hasMore, bestMatchId, searchText: pageSearch, loadMore } = useCatalogWindow(rootRef, { viewMode, groupBy });
   useRevealExpandedRow(rootRef, expandedId, styles.rowDetails);
   const facets = useValue(BuildingLensFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
@@ -222,6 +223,48 @@ export const BuildingCatalogComponent = () => {
 
   useScrollAnchor(rootRef, anchorKey, items.length);
 
+  // Enter arms the backend's best match, so a search can be finished without
+  // leaving the keyboard. One listener for every view, on the document because
+  // the search field is the header's; the ref keeps it reading this render.
+  // An Enter pressed before the page catches up with the box is held for it.
+  const pendingEnter = useRef<string | null>(null);
+  const onEnter = useRef<(event: KeyboardEvent) => void>(() => undefined);
+  onEnter.current = (event) => {
+    if (!isEnterForSearch(event.target, isSearchField(event.target))) return;
+
+    const decision = enterDecision({ items, bestMatchId, searchText: pageSearch }, currentSearch ?? "");
+    pendingEnter.current = decision && "wait" in decision ? decision.wait : null;
+    if (decision && "arm" in decision) activate(decision.arm);
+  };
+  useEffect(() => {
+    const waiting = pendingEnter.current;
+    if (waiting === null) return;
+
+    // Typing on after Enter takes it back.
+    if ((currentSearch ?? "").trim() !== waiting) {
+      pendingEnter.current = null;
+      return;
+    }
+
+    const decision = enterDecision({ items, bestMatchId, searchText: pageSearch }, waiting);
+    if (decision && "wait" in decision) return;
+
+    pendingEnter.current = null;
+    if (decision) activate(decision.arm);
+  }, [items, bestMatchId, pageSearch, currentSearch]);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (isPlainEnter(event)) onEnter.current(event);
+    };
+
+    // Capture phase: the game's app container stops keydown propagation, so a
+    // bubble listener on the document never hears an Enter typed in the search
+    // box. VanillaMenuWatcher's Escape listens the same way.
+    document.addEventListener("keydown", onKey, true);
+
+    return () => document.removeEventListener("keydown", onKey, true);
+  }, []);
+
 
   /*
    * The end of the feed, rendered as the last child INSIDE whichever element
@@ -241,7 +284,7 @@ export const BuildingCatalogComponent = () => {
         {remaining === null
           ? translate("Tooltip.LABEL[BetterBuildingMenu.LoadMore]", "Load more") ?? "Load more"
           : (translate("Tooltip.LABEL[BetterBuildingMenu.LoadMoreCount]", "Load {0} more")
-            ?? "Load {0} more").replace("{0}", `${Math.min(remaining, limit)}`)}
+            ?? "Load {0} more").replace("{0}", `${loadMoreCount(remaining)}`)}
       </Button>
     </div>
   ) : null;
@@ -296,7 +339,6 @@ export const BuildingCatalogComponent = () => {
               <GroupedResults
                 entries={items}
                 viewMode={viewMode}
-                searchText={currentSearch ?? ""}
                 onPlace={activate}
                 footer={catalogFooter}
               />

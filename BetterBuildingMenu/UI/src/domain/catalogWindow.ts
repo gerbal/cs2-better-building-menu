@@ -45,6 +45,17 @@ export function shouldLoadMore({ scrollTop, clientHeight, scrollHeight, threshol
 }
 
 /**
+ * How many rows one Load more adds: BuildingCatalogQuery.WindowStep, which a
+ * test reads from the C# so the two cannot drift.
+ */
+export const CATALOG_WINDOW_STEP = 100;
+
+/** The count the Load more button names: one step, or what is left when less. */
+export function loadMoreCount(remaining: number): number {
+  return Math.min(remaining, CATALOG_WINDOW_STEP);
+}
+
+/**
  * The limit to ask for next, clamped to what exists: `maxLimit` is the match
  * set the backend reported, so the window stops growing when it holds it all.
  */

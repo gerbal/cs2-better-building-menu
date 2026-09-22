@@ -110,7 +110,6 @@ const ExtensionMenuPanel = ({ className, buildingName, rows, selectedUpgrade, on
       <div className={classNames(styles.content, AssetMenuTheme?.assetPanel)} style={{ maxHeight: `${height}rem` }}>
         <BuildingList
           entries={rows.map((row) => row.entry)}
-          searchText=""
           variant="cards"
           selectedId={selectedId}
           onPlace={(entry) => {
