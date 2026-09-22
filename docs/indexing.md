@@ -162,7 +162,12 @@ index (`Progression.MILESTONE_NAME:<index>`), and the modding API's `translate(i
 takes no arguments, so the active dictionary is asked directly. `GetAssetName` does not cover it
 — a milestone prefab's title lookup misses and falls through to the prefab name, literally
 "Milestone7". Resolving at index time also means milestone names follow a language change for
-free, because `OnActiveDictionaryChanged` forces a full pass.
+free, because `OnActiveDictionaryChanged` runs a full pass when the active locale is not the one
+the names were resolved in. The game raises that same event for every locale source a mod adds
+or removes, and those do not change the language: `LocaleReindexPolicy` defers them to one full
+pass a second after the last, polled from `OnUpdate`, and a full pass run for any other reason
+(the save's own at `OnGameLoaded`) cancels the deferral. Eight full passes in the first minute at
+the main menu, one per mod locale file, is what that replaced.
 
 `GetMilestoneNames` and `GetMilestoneIcons` are sized from the highest index actually present
 rather than probed upward from index 0, which the game's first milestone need not use — probing

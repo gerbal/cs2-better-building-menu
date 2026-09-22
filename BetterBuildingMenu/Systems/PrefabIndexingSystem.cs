@@ -59,10 +59,10 @@ namespace BetterBuildingMenu.Systems
 		// pass's own trigger. A field rather than a RequireForUpdate gate,
 		// which would hold the system shut for unlock events too.
 		private EntityQuery _changedPrefabQuery;
-		// Guards against queueing a second pass while one is already pending:
-		// the locale event fires more than once per change. See
-		// OnActiveDictionaryChanged.
-		private bool _localeChanged;
+		// One full pass per settled burst of dictionary changes, at once for a
+		// language change. See OnActiveDictionaryChanged.
+		private readonly LocaleReindexPolicy _localeReindex = new(TimeSpan.FromSeconds(1));
+		private static readonly System.Diagnostics.Stopwatch IndexClock = System.Diagnostics.Stopwatch.StartNew();
 		// Set by the OnGameLoaded pass, cleared at preload, read at loading-
 		// complete to decide whether a second full pass is owed. See there.
 		private bool _indexedAtGameLoaded;
@@ -303,24 +303,20 @@ namespace BetterBuildingMenu.Systems
 			base.OnDestroy();
 		}
 
-		/// <summary>Marks the index stale when the player changes language.</summary>
-		/// <remarks>Names are resolved at index time and cached, so only a full pass follows one.
-		/// Dispatched to the main thread: a language change touches no entity, so OnUpdate sees none.</remarks>
+		/// <summary>A full pass when the dictionary changes: at once for a new language, once the
+		/// sources settle for anything else.</summary>
+		/// <remarks>Names are resolved at index time and cached, so only a full pass follows a language
+		/// change. The game raises this for every source a mod adds too, on the main thread already;
+		/// those are coalesced by LocaleReindexPolicy and fired from OnUpdate, so a burst is one pass.</remarks>
 		private void OnActiveDictionaryChanged()
 		{
-			if (_localeChanged)
+			var localeId = GameManager.instance.localizationManager.activeLocaleId;
+
+			if (_localeReindex.Observe(localeId, IndexClock.Elapsed) == LocaleReindexDecision.Immediate)
 			{
-				return;
-			}
-
-			_localeChanged = true;
-
-			MainThreadDispatcher.RunOnMainThread(() =>
-			{
-				_localeChanged = false;
-
+				Mod.Log.Info($"Full pass at locale change (locale={localeId})");
 				RunIndex(true);
-			});
+			}
 		}
 
 		/// <remarks>Registered at UIUpdate as well as PrefabUpdate: PrefabUpdate ticks only when
@@ -334,6 +330,12 @@ namespace BetterBuildingMenu.Systems
 				Mod.Log.Info("Full pass at first update: the mod joined a running game");
 				// _indexedAtGameLoaded stays false so loading-complete, if it is
 				// still to come, runs its own full pass over the finished save.
+				RunIndex(true);
+			}
+
+			if (_localeReindex.TryFireDeferred(IndexClock.Elapsed))
+			{
+				Mod.Log.Info("Full pass after dictionary sources settled");
 				RunIndex(true);
 			}
 
@@ -665,6 +667,9 @@ namespace BetterBuildingMenu.Systems
 			{
 				LogVanillaMenuCoverage();
 				LogVanillaMenuAudit();
+
+				// Whatever brought this pass about, the names are now this locale's.
+				_localeReindex.MarkIndexed(GameManager.instance.localizationManager.activeLocaleId);
 			}
 		}
 
