@@ -8,6 +8,9 @@ import { findScrollContainer, lastCatalogRow } from "./catalogDom";
 
 export type { BuildingCatalogPageStatus };
 
+/** How often the scroll position is checked: often enough to meet the bottom. */
+const LOAD_MORE_POLL_MS = 100;
+
 /**
  * The page as the backend published it, plus the one command that grows it. The
  * window is the backend's and always comes back as a prefix of the same
@@ -76,25 +79,38 @@ export function useCatalogWindow(
 
     let handle = 0;
     let cancelled = false;
+    let lastCheck = 0;
+    // Found once per layout, which is what this effect re-runs on: the walk up
+    // from the last row reads every ancestor's scrollHeight.
+    let scroller: HTMLElement | null = null;
 
     const step = () => {
       if (cancelled) {
         return;
       }
 
-      // The last row, for the same reason the anchor takes it — see
-      // lastCatalogRow.
-      const root = rootRef.current;
-      const row = root ? lastCatalogRow(root) : null;
-      const scroller = root && row ? findScrollContainer(row, root, isScrollContainer) : null;
+      const now = Date.now();
 
-      if (scroller && shouldLoadMore({
-        scrollTop: scroller.scrollTop,
-        clientHeight: scroller.clientHeight,
-        scrollHeight: scroller.scrollHeight,
-      })) {
-        latestLoadMore.current();
-        return;
+      if (now - lastCheck >= LOAD_MORE_POLL_MS) {
+        lastCheck = now;
+
+        // The last row, for the same reason the anchor takes it — see
+        // lastCatalogRow.
+        const root = rootRef.current;
+
+        if (!scroller && root) {
+          const row = lastCatalogRow(root);
+          scroller = row ? findScrollContainer(row, root, isScrollContainer) : null;
+        }
+
+        if (scroller && shouldLoadMore({
+          scrollTop: scroller.scrollTop,
+          clientHeight: scroller.clientHeight,
+          scrollHeight: scroller.scrollHeight,
+        })) {
+          latestLoadMore.current();
+          return;
+        }
       }
 
       handle = requestAnimationFrame(step);
