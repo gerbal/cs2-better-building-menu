@@ -91,8 +91,10 @@ namespace BetterBuildingMenu.Utilities
 
         /// <summary>A tooltip string for one of our short identifiers.</summary>
         /// <remarks>
-        /// The fallback is required, not optional: a key missing from English too
-        /// is answered with the id itself.
+        /// The fallback is required, not optional: each locale is registered as
+        /// its own DictionarySource (see GetAvailableLanguages), with English under
+        /// its Options keys only, so Translate answers any other missing key with
+        /// the id itself.
         /// </remarks>
         internal static string GetTooltip(string key, string fallback)
         {
@@ -100,8 +102,8 @@ namespace BetterBuildingMenu.Utilities
         }
 
         /// <summary>
-        /// One source per language, each translation over the English table, so a key a
-        /// translation lacks reads as English. See <see cref="LocaleFallback"/>.
+        /// One source per language, each translation with English under its Options keys,
+        /// the ones the game's Options screen reads with no fallback. See <see cref="LocaleFallback"/>.
         /// </summary>
         public IEnumerable<DictionarySource> GetAvailableLanguages()
         {
