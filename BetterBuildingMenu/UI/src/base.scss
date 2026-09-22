@@ -229,13 +229,18 @@ $laneButtonSize: 64rem;
 // catalogue at four picture sizes, so the badge is stated as a RATIO of the
 // picture and kept here rather than repeated per module.
 
-// Vanilla pins the badge inside the item and leaves its size auto; in this
-// engine auto-with-four-offsets stretches to the box, so the badge is CENTRED
-// on the building rather than cornered on it. This inset is what centres it.
+// Vanilla pins the badge inside the item and leaves its size auto, which the
+// engine resolves to the SVG's own pixels; ours states the size and this
+// inset, from the same ratio, is what centres it on the building.
 $mark-inset: 0.147;
 
 @function mark-inset($picture) {
   @return $picture * $mark-inset;
+}
+
+/// The badge's side: the picture less the inset on both sides.
+@function mark-size($picture) {
+  @return $picture - 2 * mark-inset($picture);
 }
 
 /// The inset that leaves the badge at the picture's ratio, expressed in the
@@ -260,13 +265,13 @@ $mark-inset: 0.147;
 @mixin unique-mark($picture, $frame: $picture) {
   position: absolute;
   top: mark-frame-inset($picture, $frame);
-  bottom: mark-frame-inset($picture, $frame);
   left: mark-frame-inset($picture, $frame);
-  right: mark-frame-inset($picture, $frame);
-  // Auto on both axes with all four sides pinned: that is what stretches the
-  // badge to the box and centres it. A stated width corners it top-left.
-  width: auto;
-  height: auto;
+  // Stated, never auto: Cohtml 2.2 sizes an auto absolute <img> to its
+  // intrinsic pixels (64 for AlreadyBuilt.svg) whatever its offsets pin, so
+  // the badge is the picture less the inset on both sides, which is what an
+  // inset-stretched box came to. The inset then centres it.
+  width: mark-size($picture);
+  height: mark-size($picture);
 }
 
 /// The picture itself, for the same specificity reason as unique-mark.
