@@ -617,37 +617,29 @@ namespace BetterBuildingMenu.Systems
 
 							if (processor.TryCreatePrefabIndex(prefab, entity, out prefabIndex))
 							{
-								if (prefab.TryGet<EditorAssetCategoryOverride>(out var overrides) && (overrides?.m_IncludeCategories?.Any() ?? false))
+								if (prefab.TryGet<EditorAssetCategoryOverride>(out var overrides) && overrides is not null)
 								{
-									// Legacy FindIt category overrides are still read, so existing assets
-									// keep their classification. An author's exclusion is honoured only for
-									// assets the game does not itself place in a menu.
-									if ((overrides?.m_ExcludeCategories?.Any(IsFindItCategoryOverride) ?? false)
-										&& !IsPlacedInVanillaMenu(entity.Index))
+									var categoryOverride = FindItCategoryOverride.Read(overrides.m_IncludeCategories, overrides.m_ExcludeCategories);
+
+									// An author's exclusion is honoured only for assets the game does
+									// not itself place in a menu. Removed as well as skipped, so a
+									// partial pass drops what an earlier pass indexed.
+									if (categoryOverride.Excluded && !IsPlacedInVanillaMenu(entity.Index))
 									{
+										BuildingMenuUtil.RemoveItem(entity);
+
 										continue;
 									}
 
-									if (overrides?.m_IncludeCategories?.Any() ?? false)
+									if (categoryOverride is { Category: { } category, SubCategory: { } subCategory })
 									{
-										for (var ind = 0; ind < overrides.m_IncludeCategories.Length; ind++)
-										{
-											if (IsFindItCategoryOverride(overrides.m_IncludeCategories[ind]))
-											{
-												var split = overrides.m_IncludeCategories[ind].Split('/');
+										prefabIndex.Category = category;
+										prefabIndex.SubCategory = subCategory;
+									}
 
-												if (split.Length >= 3 && int.TryParse(split[1], out var categeory) && int.TryParse(split[2], out var subCategeory))
-												{
-													prefabIndex.Category = (PrefabCategory)categeory;
-													prefabIndex.SubCategory = (PrefabSubCategory)subCategeory;
-												}
-
-												if (split.Length >= 4 && int.TryParse(split[3], out var pdxModsId))
-												{
-													prefabIndex.PdxModsId = pdxModsId.ToString();
-												}
-											}
-										}
+									if (categoryOverride.PdxModsId is not null)
+									{
+										prefabIndex.PdxModsId = categoryOverride.PdxModsId;
 									}
 								}
 
@@ -1125,14 +1117,6 @@ namespace BetterBuildingMenu.Systems
 
 					list.Add(what);
 				}
-			}
-
-			private static bool IsFindItCategoryOverride(string category)
-			{
-				return category == "FindIt"
-					|| category.StartsWith("FindIt/", StringComparison.Ordinal)
-					|| category == "BetterBuildingMenu"
-					|| category.StartsWith("BetterBuildingMenu/", StringComparison.Ordinal);
 			}
 
 			private void AddPrefab(PrefabBase prefab, Entity entity, PrefabIndex prefabIndex)
