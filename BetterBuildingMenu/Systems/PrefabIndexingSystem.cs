@@ -42,7 +42,9 @@ namespace BetterBuildingMenu.Systems
 		private PrefabUISystem _prefabUISystem;
 		private BuildingMenuUISystem _menuUISystem;
 		private HashSet<string> _blackList;
-		private ComponentType? roadBuilderDiscarded;
+		// Road Builder's mark on a road it has thrown away, once found. See RefreshModCompatibility.
+		private ComponentType? _roadBuilderDiscarded;
+		private bool _warnedRoadBuilderDiscarded;
 		private static Dictionary<Entity, ZoneTypeFilter> _zoneTypeCache;
 
 		/// <summary>Density per ZONE prefab: the zone's own tier, which adds Mixed and LowRent.</summary>
@@ -269,11 +271,6 @@ namespace BetterBuildingMenu.Systems
 		{
 			base.OnGameLoadingComplete(purpose, mode);
 
-			if (Mod.IsRoadBuilderEnabled)
-			{
-				roadBuilderDiscarded ??= new ComponentType(Assembly.Load("RoadBuilder").GetType("RoadBuilder.Domain.Components.DiscardedRoadBuilderPrefab"), ComponentType.AccessMode.ReadOnly);
-			}
-
 			if (mode is GameMode.Game or GameMode.Editor)
 			{
 				if (_indexedAtGameLoaded)
@@ -450,6 +447,67 @@ namespace BetterBuildingMenu.Systems
 				+ $"({Mod.Silhouettes.Generated} generated)");
 		}
 
+		/// <summary>Re-reads the mods the processors adapt to, before the pass that reads them.</summary>
+		/// <remarks>
+		/// Road Builder's discard mark was once resolved at loading-complete, which comes after the
+		/// OnGameLoaded pass and skips its own when no lock state drifted, so a load indexed the roads
+		/// Road Builder had thrown away. Found among the loaded assemblies, never loaded by name: a
+		/// renamed type is logged once and filters nothing, rather than throwing into the game's load.
+		/// </remarks>
+		private void RefreshModCompatibility()
+		{
+			try
+			{
+				Mod.RefreshEnabledMods();
+			}
+			catch (Exception ex)
+			{
+				// The last answer stands; a pass is worth more than knowing a mod joined.
+				Mod.Log.Warn(ex, "Could not read the enabled mods; keeping the last answer");
+			}
+
+			if (_roadBuilderDiscarded.HasValue || !Mod.IsRoadBuilderEnabled)
+			{
+				return;
+			}
+
+			Exception? failure = null;
+
+			try
+			{
+				var type = AppDomain.CurrentDomain.GetAssemblies()
+					.FirstOrDefault(assembly => assembly.GetName().Name == "RoadBuilder")
+					?.GetType("RoadBuilder.Domain.Components.DiscardedRoadBuilderPrefab", throwOnError: false);
+
+				if (type is not null)
+				{
+					_roadBuilderDiscarded = new ComponentType(type, ComponentType.AccessMode.ReadOnly);
+					return;
+				}
+			}
+			catch (Exception ex)
+			{
+				failure = ex;
+			}
+
+			if (_warnedRoadBuilderDiscarded)
+			{
+				return;
+			}
+
+			_warnedRoadBuilderDiscarded = true;
+			const string message = "Road Builder is enabled, but its DiscardedRoadBuilderPrefab could not be read; roads it discards stay listed";
+
+			if (failure is null)
+			{
+				Mod.Log.Warn(message);
+			}
+			else
+			{
+				Mod.Log.Warn(failure, message);
+			}
+		}
+
 		/// <summary>Narrows a processor's query to prefabs created or changed this frame.</summary>
 		/// <remarks>Edits the descriptions in place, so it is handed a copy of its own: processors build
 		/// new ones on every call. A description with an Any of its own is left whole, since it cannot
@@ -474,6 +532,8 @@ namespace BetterBuildingMenu.Systems
 
 			if (full)
 			{
+				RefreshModCompatibility();
+
 				BuildingMenuUtil.CategorizedPrefabs.Clear();
 
 				AddAllCategories();
@@ -543,7 +603,7 @@ namespace BetterBuildingMenu.Systems
 
 						try
 						{
-							if (roadBuilderDiscarded.HasValue && EntityManager.HasComponent(entity, roadBuilderDiscarded.Value))
+							if (_roadBuilderDiscarded.HasValue && EntityManager.HasComponent(entity, _roadBuilderDiscarded.Value))
 							{
 								BuildingMenuUtil.RemoveItem(entity);
 

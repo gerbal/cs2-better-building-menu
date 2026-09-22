@@ -27,6 +27,11 @@ plausibly have got wrong. `LockStateDrift` is the exact test for it — the same
 `ApplyUnlocks` uses, over every indexed prefab. Zero drift skips the second full pass; any drift
 runs it and logs how many prefabs moved.
 
+Mod detection (`Mod.RefreshEnabledMods`) and Road Builder's discard component are re-read at the
+start of every full pass. Reading them at loading-complete came after the `OnGameLoaded` pass.
+Reading them once per process missed a mod added to the playset between two city loads, which the
+game allows without a restart.
+
 ## Partial passes
 
 A prefab the game creates or changes mid-session, such as a Road Builder edit, is re-read by a
