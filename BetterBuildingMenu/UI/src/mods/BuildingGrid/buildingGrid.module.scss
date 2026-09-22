@@ -26,12 +26,10 @@
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
-  margin-left: -4rem;
-  margin-top: -4rem;
-  > * {
-    margin-left: 4rem;
-    margin-top: 4rem;
-  }
+  // gap, not a negative-margin gutter: a group is sized to this row's
+  // max-content, which counts gap and not item margins, so with margins a
+  // group sized for its tiles wrapped them on a rounding error.
+  gap: 4rem;
 }
 
 // Big enough to recognise by silhouette without reading the label. This is the

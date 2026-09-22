@@ -2505,3 +2505,14 @@ clipped, gaps 2.67 px, lists 38.7 px (2.67 shorter — the gutter's phantom top
 margin), cards 33.3 px, pictures 26.7 px. `object-fit: contain` removed from
 three rules: never implemented in Cohtml, so never did anything; the deny-list
 contract now refuses it and no longer refuses `gap`.
+
+## 2026-09-22 — the grid had the same gutter wrap (owner's QA, Zones in Grid)
+
+Two tiles in a group sized for two stacked into a column; three went two and
+one; five fit their row. Same arithmetic as the cards: content width exactly
+n × (66.7 tile + 2.67 gutter), zero slack, the negative-margin gutter's
+max-content again. `gap: 4rem` on `.tiles` live: every group one line, group
+heights 128 → 72 px, widths unchanged. Built, deployed, view reloaded, Grid
+reselected: 17 groups, none multi-line, none clipped, gaps 2.67 px, tiles
+53.3 px. `.groupRow` keeps its gutter: its wraps are real overflow (bands of
+768–2036 px in a 710 px row), and `gap` there changed no line count.
