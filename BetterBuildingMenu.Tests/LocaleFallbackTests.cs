@@ -4,51 +4,59 @@ namespace BetterBuildingMenu.Tests;
 
 public sealed class LocaleFallbackTests
 {
+    private const string OptionKey = "Options.OPTION[Replace]";
+    private const string LabelKey = "Tooltip.LABEL[Search]";
+
     private static readonly Dictionary<string, string> English = new()
     {
-        ["Options.OPTION[Replace]"] = "Replace the build menu",
-        ["Tooltip.LABEL[Search]"] = "Search",
+        [OptionKey] = "Replace the build menu",
+        [LabelKey] = "Search",
     };
 
     [Fact]
     public void Merge_KeepsTheTranslationWhereThereIsOne()
     {
-        var merged = LocaleFallback.Merge(English, new Dictionary<string, string> { ["Tooltip.LABEL[Search]"] = "Suche" });
+        var merged = LocaleFallback.Merge(English, new Dictionary<string, string> { [OptionKey] = "Baumenü ersetzen" });
 
-        Assert.Equal("Suche", merged["Tooltip.LABEL[Search]"]);
+        Assert.Equal("Baumenü ersetzen", merged[OptionKey]);
     }
 
     [Fact]
-    public void Merge_FillsEveryKeyTheTranslationLacksWithEnglish()
+    public void Merge_FillsAMissingOptionsKeyWithEnglish()
     {
-        // The translations cover 71 of 271 keys, the Options screen's labels among
-        // the missing: each gap reads as English, never as the raw key.
-        var merged = LocaleFallback.Merge(English, new Dictionary<string, string> { ["Tooltip.LABEL[Search]"] = "Suche" });
+        // The Options screen reads these with no fallback of its own; none of the 13
+        // translations carries them, so a gap there reached the player as a raw id.
+        var merged = LocaleFallback.Merge(English, new Dictionary<string, string>());
 
-        Assert.Equal("Replace the build menu", merged["Options.OPTION[Replace]"]);
-        Assert.Equal(English.Count, merged.Count);
+        Assert.Equal("Replace the build menu", merged[OptionKey]);
+    }
+
+    [Fact]
+    public void Merge_LeavesEveryOtherMissingKeyMissing()
+    {
+        // The UI asks for these with an English fallback of its own, and some it asks
+        // first so that a gap falls through to the game's translated name (the Roads
+        // menu). Filling them with English would hide the game's German, French, ...
+        var merged = LocaleFallback.Merge(English, new Dictionary<string, string>());
+
+        Assert.False(merged.ContainsKey(LabelKey));
     }
 
     [Fact]
     public void Merge_TreatsABlankTranslationAsMissing()
     {
-        var merged = LocaleFallback.Merge(English, new Dictionary<string, string> { ["Tooltip.LABEL[Search]"] = " " });
+        var merged = LocaleFallback.Merge(English, new Dictionary<string, string> { [OptionKey] = " ", [LabelKey] = "" });
 
-        Assert.Equal("Search", merged["Tooltip.LABEL[Search]"]);
+        Assert.Equal("Replace the build menu", merged[OptionKey]);
+        Assert.False(merged.ContainsKey(LabelKey));
     }
 
     [Fact]
     public void Merge_LeavesTheEnglishTableUntouched()
     {
-        LocaleFallback.Merge(English, new Dictionary<string, string> { ["Tooltip.LABEL[Search]"] = "Suche", ["Extra"] = "Nur hier" });
+        LocaleFallback.Merge(English, new Dictionary<string, string> { [OptionKey] = "Ersetzen", ["Extra"] = "Nur hier" });
 
-        Assert.Equal("Search", English["Tooltip.LABEL[Search]"]);
+        Assert.Equal("Replace the build menu", English[OptionKey]);
         Assert.False(English.ContainsKey("Extra"));
-    }
-
-    [Fact]
-    public void Merge_WithNoTranslationIsEnglish()
-    {
-        Assert.Equal(English, LocaleFallback.Merge(English, null));
     }
 }
