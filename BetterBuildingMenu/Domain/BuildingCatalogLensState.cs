@@ -232,6 +232,12 @@ namespace BetterBuildingMenu.Domain
 			return composed == Query ? this : this with { Query = composed };
 		}
 
+		/// <summary>
+		/// The query "Search everywhere" would run: this search with the menu, category, tab
+		/// and tier all dropped, so a count of what it finds is what that button delivers.
+		/// </summary>
+		public BuildingCatalogQuery EverywhereQuery() => ClearMenuScope().Compose().Query;
+
 		public static string GetPageStatus(bool isReady, int totalCount)
 		{
 			if (!isReady)

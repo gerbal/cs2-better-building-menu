@@ -133,6 +133,40 @@ public sealed class BuildingCatalogQueryEngineTests
     }
 
     [Fact]
+    public void Query_SearchIgnoresSurroundingWhitespace()
+    {
+        // The box sends what was typed, and the space before the next word must not
+        // drop every name that ends at this one.
+        BuildingCatalogPage trailing = BuildingCatalogQueryEngine.Query(
+            SampleEntries,
+            new BuildingCatalogQuery(SearchText: "turbine "));
+        BuildingCatalogPage leading = BuildingCatalogQueryEngine.Query(
+            SampleEntries,
+            new BuildingCatalogQuery(SearchText: "  wind"));
+
+        Assert.Equal(2, Assert.Single(trailing.Items).Id);
+        Assert.Equal(2, Assert.Single(leading.Items).Id);
+    }
+
+    [Fact]
+    public void Query_EverywhereQueryFindsMatchesOutsideTheSelectedCategory()
+    {
+        var entries = new[]
+        {
+            SampleEntries[0] with { Id = 1, Name = "Elementary School", UiMenu = "Education", UiCategory = "Schools" },
+            SampleEntries[0] with { Id = 2, Name = "Medical Clinic", UiMenu = "Healthcare", UiCategory = "Clinics" },
+        };
+        BuildingCatalogLensState lens = BuildingCatalogLensState.Initial
+            .SelectMenu("Education")
+            .SelectCategory("Schools")
+            .Search("clinic")
+            .Compose();
+
+        Assert.Equal(0, BuildingCatalogQueryEngine.Query(entries, lens.Query).TotalCount);
+        Assert.Equal(1, BuildingCatalogQueryEngine.Query(entries, lens.EverywhereQuery()).TotalCount);
+    }
+
+    [Fact]
     public void Query_RangeFilters_UseInclusiveBounds()
     {
         BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
@@ -737,7 +771,7 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.Equal(
             new[] { "items", "id", "prefabName", "name", "category", "subCategory", "categoryLabel", "subCategoryLabel", "thumbnail", "fallbackThumbnail", "silhouetteThumbnail", "uiMenu", "uiCategory", "lotWidth", "lotDepth", "buildingLevel", "zoneType", "hasParking", "isVanilla", "isLocked",
             "isUnique",
-            "isAlreadyBuilt", "unlockMilestone", "devTreeBranch", "devTreeBranchDepth", "unlockRequirements", "bonuses", "costIsPerDistance", "parkingSlots", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "supportedUpgrades", "constructionCost", "upkeep", "workers", "households", "capacity", "serviceRange", "serviceFacts", "footprints", "footprintOverflow", "serviceTextFacts", "speedLimit", "networkWidth", "leisureType", "leisureEfficiency", "electricityConsumption", "waterConsumption", "garbageAccumulation", "telecomNeed", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "groupPath", "groupLabelId", "reorderableSortColumns", "totalCount", "offset", "limit", "hasMore" },
+            "isAlreadyBuilt", "unlockMilestone", "devTreeBranch", "devTreeBranchDepth", "unlockRequirements", "bonuses", "costIsPerDistance", "parkingSlots", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "supportedUpgrades", "constructionCost", "upkeep", "workers", "households", "capacity", "serviceRange", "serviceFacts", "footprints", "footprintOverflow", "serviceTextFacts", "speedLimit", "networkWidth", "leisureType", "leisureEfficiency", "electricityConsumption", "waterConsumption", "garbageAccumulation", "telecomNeed", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "groupPath", "groupLabelId", "reorderableSortColumns", "totalCount", "offset", "limit", "hasMore", "bestMatchId" },
             writer.PropertyNames);
         Assert.Contains("Write:Int32:1", writer.Tokens);
         Assert.Contains("Write:String:Coal Power Plant", writer.Tokens);
@@ -838,6 +872,50 @@ public sealed class BuildingCatalogQueryEngineTests
             new BuildingCatalogQuery(SearchText: "clinic", GroupBy: "category"));
 
         Assert.Equal(new[] { 2, 1 }, page.Items.Select(e => e.Id).ToArray());
+    }
+
+    [Fact]
+    public void Query_BestMatchIsTheBestAcrossGroupsNotTheFirstRow()
+    {
+        // Grouping puts Old Clinic's group first; Enter should still arm Clinic.
+        var entries = new[]
+        {
+            SampleEntries[0] with { Id = 1, Name = "Clinic", Category = "ServiceBuildings" },
+            SampleEntries[0] with { Id = 2, Name = "Old Clinic", Category = "Buildings" },
+        };
+
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+            entries,
+            new BuildingCatalogQuery(SearchText: "clinic", GroupBy: "category"));
+
+        Assert.Equal(2, page.Items[0].Id);
+        Assert.Equal(1, page.BestMatchId);
+    }
+
+    [Fact]
+    public void Query_BestMatchTieGoesToTheShorterName()
+    {
+        // Two word-start hits score the same, and the plain name is nearly always
+        // what was meant — the tie-break the ordering within a group uses.
+        var entries = new[]
+        {
+            SampleEntries[0] with { Id = 1, Name = "Medical Clinic", Category = "Buildings" },
+            SampleEntries[0] with { Id = 2, Name = "Old Clinic", Category = "ServiceBuildings" },
+        };
+
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+            entries,
+            new BuildingCatalogQuery(SearchText: "clinic", GroupBy: "category"));
+
+        Assert.Equal(2, page.BestMatchId);
+    }
+
+    [Fact]
+    public void Query_HasNoBestMatchWithoutASearchOrAResult()
+    {
+        Assert.Null(BuildingCatalogQueryEngine.Query(SampleEntries, new BuildingCatalogQuery()).BestMatchId);
+        Assert.Null(BuildingCatalogQueryEngine.Query(SampleEntries, new BuildingCatalogQuery(SearchText: "   ")).BestMatchId);
+        Assert.Null(BuildingCatalogQueryEngine.Query(SampleEntries, new BuildingCatalogQuery(SearchText: "nothing-matches-this")).BestMatchId);
     }
 
     private static BuildingCatalogEntry Entry(

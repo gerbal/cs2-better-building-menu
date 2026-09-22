@@ -138,6 +138,13 @@ export interface BuildingCatalogPage {
   hasMore?: boolean;
 
   /**
+   * The row Enter arms while a search is active; null without a search or a
+   * result. C#'s answer, because only it scores, and a grouped page is ordered
+   * by group before relevance.
+   */
+  bestMatchId?: number | null;
+
+  /**
    * The offered sort fields that could actually move a row of these results;
    * the picker drops the rest, a control that responds while the list does not
    * reading as broken. C#'s answer, since only it sees the whole matched set.

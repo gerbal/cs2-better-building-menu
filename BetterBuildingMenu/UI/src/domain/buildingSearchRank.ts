@@ -1,7 +1,7 @@
 /**
  * What the UI says about a search: whether it matched elsewhere, and what Enter
- * should arm. The scoring is BuildingCatalogRelevance.cs's, and the page
- * arrives in relevance order for every view, so nothing here reorders it.
+ * should arm. The scoring is BuildingCatalogRelevance.cs's, and C# names the
+ * best match with the page, so nothing here scores or reorders.
  */
 
 export interface SearchScopeNotice {
@@ -28,13 +28,17 @@ export function getSearchScopeNotice(state: {
 
 /**
  * The entry Enter should arm, or null when Enter should do nothing. Only with
- * an active query: the first entry of a searched page is the backend's best
- * match, while in browse order it is just the first tile.
+ * an active query, and only the backend's pick: a grouped page is ordered by
+ * group before relevance, so its first row need not be the best match.
  */
-export function topSearchResult<T>(ranked: readonly T[], rawQuery: string): T | null {
-  if (!rawQuery.trim() || ranked.length === 0) {
+export function enterTarget<T extends { id: number }>(
+  items: readonly T[],
+  bestMatchId: number | null | undefined,
+  rawQuery: string
+): T | null {
+  if (!rawQuery.trim() || bestMatchId == null) {
     return null;
   }
 
-  return ranked[0];
+  return items.find((item) => item.id === bestMatchId) ?? null;
 }

@@ -87,7 +87,40 @@ namespace BetterBuildingMenu.Services
 				offset,
 				limit,
 				HasMore: hasMore,
-				ReorderableSortColumns: usableColumns);
+				ReorderableSortColumns: usableColumns,
+				BestMatchId: FindBestMatchId(items, query.SearchText));
+		}
+
+		/// <summary>
+		/// The best-scoring row of this window, by the tie-breaks a group orders by: relevance,
+		/// then the shorter name, then page order. Over the window because Enter arms what
+		/// the player can see.
+		/// </summary>
+		private static int? FindBestMatchId(IReadOnlyList<BuildingCatalogEntry> items, string? searchText)
+		{
+			if (string.IsNullOrWhiteSpace(searchText))
+			{
+				return null;
+			}
+
+			BuildingCatalogEntry? best = null;
+			var bestScore = 0;
+			var bestLength = 0;
+
+			foreach (var entry in items)
+			{
+				var score = BuildingCatalogRelevance.Score(entry, searchText);
+				var length = (entry.Name ?? string.Empty).Length;
+
+				if (best is null || score > bestScore || (score == bestScore && length < bestLength))
+				{
+					best = entry;
+					bestScore = score;
+					bestLength = length;
+				}
+			}
+
+			return best?.Id;
 		}
 
 		/// <summary>
@@ -135,10 +168,14 @@ namespace BetterBuildingMenu.Services
 				return false;
 			}
 
-			if (!string.IsNullOrWhiteSpace(query.SearchText)
-				&& !Contains(entry.Name, query.SearchText)
-				&& !Contains(entry.PrefabName, query.SearchText)
-				&& !Contains(entry.PdxModsId, query.SearchText))
+			// Trimmed here rather than in the lens state: the box echoes the stored text, so
+			// trimming that would eat the space typed between two words.
+			var search = query.SearchText?.Trim();
+
+			if (!string.IsNullOrEmpty(search)
+				&& !Contains(entry.Name, search!)
+				&& !Contains(entry.PrefabName, search!)
+				&& !Contains(entry.PdxModsId, search!))
 			{
 				return false;
 			}
