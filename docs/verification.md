@@ -2531,3 +2531,15 @@ in all three, with a stylesheet contract deriving the number and pinning the
 108, content 72 px, one row fully visible under both headings, 8.7 px below
 it. The Grid view's row is 80 rem tall, so at the floor it shows a partial
 row; the floor was asked for in cards.
+
+## 2026-09-22 — 0.1.12 shipped
+
+Release build of both sides (`all`, `test`, `package` under Release): 428
+backend tests, 658 unit and 77 render on the UI, package stamped 0.1.12 (dll
+`5dd2993e3251`) carrying the resize cursor, both `gap` migrations, the grid
+fix, the `object-fit` cleanup and the one-row floor. Game closed, `NewVersion`
+from a scratch directory with absolute image paths: "New mod version
+published". Stray `C:` tree removed from the scratch directory; none under
+the toolchain.
+The metadata `Update` two minutes later, first attempt: "Mod metadata
+Updated". No stray tree afterwards either.
