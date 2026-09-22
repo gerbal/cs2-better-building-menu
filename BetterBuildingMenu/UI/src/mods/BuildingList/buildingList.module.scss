@@ -20,6 +20,18 @@
   padding: 4rem 0;
 }
 
+// A group is sized to this list's max-content, so its cards fit with no slack
+// and Cohtml wraps the last one on a tenth of a pixel. This item counts toward
+// the max-content and needs nothing itself; at zero height, the line it may
+// fall onto draws nothing. Padding could not do this: it grows the max-content
+// by exactly what it takes.
+.list::after {
+  content: "";
+  flex: 0 0 2rem;
+  height: 0;
+  margin: 0;
+}
+
 .item {
   @include _base.transparentButton(false, true);
   display: flex;
