@@ -45,6 +45,14 @@ describe("the catalog container", () => {
     });
   }
 
+  it("names one step on the load-more, however large the window has grown", () => {
+    // Three loads in, the window is 300 rows; a click still adds 100.
+    setLensView({ viewMode: "table" });
+    page({ hasMore: true, totalCount: 403, limit: 300 });
+
+    assert.match(render(), /Load 100 more/);
+  });
+
   it("draws no load-more when the window holds everything", () => {
     setLensView({ viewMode: "table" });
     page({ hasMore: false, totalCount: 2 });

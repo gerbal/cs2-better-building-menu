@@ -83,13 +83,11 @@ namespace BetterBuildingMenu.Systems
 				return;
 			}
 
+			// Counted over the query "Search everywhere" runs, so the notice promises what
+			// the button delivers.
 			_BuildingCatalogMatchesElsewhere.Value =
 				page.TotalCount == 0 && !string.IsNullOrWhiteSpace(_lens.Query.SearchText)
-					? _buildingCatalogAdapter.Build(_lens.Query with
-					{
-						UiMenu = string.Empty,
-						Offset = 0,
-					}).Page.TotalCount
+					? _buildingCatalogAdapter.Build(_lens.EverywhereQuery()).Page.TotalCount
 					: 0;
 			var pageMs = Lap();
 			_BuildingCatalogBinding.Value = page with

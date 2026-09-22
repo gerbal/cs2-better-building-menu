@@ -1,7 +1,7 @@
 import { bindValue, trigger, useValue } from "cs2/api";
 import { Button } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import classNames from "classnames";
 import { shortenTileLabel, tableLabelCharBudget } from "domain/tileLabel";
 import { useTextScale } from "domain/textScaleSetting";
@@ -24,7 +24,7 @@ import {
   setSortColumnCommand,
   setSortDescendingCommand,
 } from "domain/buildingCatalogContracts";
-import { catalogWindowRemaining } from "domain/catalogWindow";
+import { catalogWindowRemaining, loadMoreCount } from "domain/catalogWindow";
 import type { SortColumn } from "domain/buildingCatalogContracts";
 import {
   getBuildingLensEmptyStateMessage,
@@ -32,7 +32,7 @@ import {
 } from "domain/buildingLensFilterSummary";
 import type { BuildingLensFacetState } from "domain/buildingCatalogFacets";
 import { menuSurfacePort } from "domain/menuSurfacePort";
-import { getSearchScopeNotice } from "domain/buildingSearchRank";
+import { enterTarget, getSearchScopeNotice } from "domain/buildingSearchRank";
 import { canPlace } from "domain/buildingLockState";
 import { getLensAnchorKey, getLensView, setLensAnchor, setLensView } from "domain/lensViewStore";
 // The view mode is shared with the control plane, which is a sibling of this
@@ -63,6 +63,9 @@ const BuildingCatalogMatchesElsewhere$ = bindValue<number>(mod.id, "BuildingCata
 // default, resolved on the C# side (BuildingCatalogGrouping.Effective) so this
 // component reads it rather than deriving and pushing it back.
 const BuildingCatalogGroupBy$ = bindValue<string>(mod.id, "BuildingCatalogGroupBy", "category");
+
+/** Enter, by code; see the listener below. */
+const ENTER_KEY_CODE = 13;
 
 /** Grid recognises, List scans, Table compares. */
 type ViewMode = CatalogViewMode;
@@ -96,7 +99,7 @@ export const BuildingCatalogComponent = () => {
   // The root every DOM measurement below is scoped to. The hooks find the
   // rows and the scroller beneath it and never look above it.
   const rootRef = useRef<HTMLDivElement>(null);
-  const { items, totalCount, limit, status, hasMore, loadMore } = useCatalogWindow(rootRef, { viewMode, groupBy });
+  const { items, totalCount, status, hasMore, bestMatchId, loadMore } = useCatalogWindow(rootRef, { viewMode, groupBy });
   useRevealExpandedRow(rootRef, expandedId, styles.rowDetails);
   const facets = useValue(BuildingLensFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
@@ -222,6 +225,26 @@ export const BuildingCatalogComponent = () => {
 
   useScrollAnchor(rootRef, anchorKey, items.length);
 
+  // Enter arms the backend's best match, so a search can be finished without
+  // leaving the keyboard. One listener for every view, on the document because
+  // the search field is the header's; the ref keeps it reading this render.
+  const onEnter = useRef<() => void>(() => undefined);
+  onEnter.current = () => {
+    const target = enterTarget(items, bestMatchId, currentSearch ?? "");
+    if (target) activate(target);
+  };
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      // Both spellings: Cohtml leaves `key` empty for some keys (see Escape in
+      // VanillaMenuWatcher), and `keyCode` is the one it fills.
+      if (event.key === "Enter" || event.keyCode === ENTER_KEY_CODE) onEnter.current();
+    };
+
+    document.addEventListener("keydown", onKey);
+
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
 
   /*
    * The end of the feed, rendered as the last child INSIDE whichever element
@@ -241,7 +264,7 @@ export const BuildingCatalogComponent = () => {
         {remaining === null
           ? translate("Tooltip.LABEL[BetterBuildingMenu.LoadMore]", "Load more") ?? "Load more"
           : (translate("Tooltip.LABEL[BetterBuildingMenu.LoadMoreCount]", "Load {0} more")
-            ?? "Load {0} more").replace("{0}", `${Math.min(remaining, limit)}`)}
+            ?? "Load {0} more").replace("{0}", `${loadMoreCount(remaining)}`)}
       </Button>
     </div>
   ) : null;
@@ -296,7 +319,6 @@ export const BuildingCatalogComponent = () => {
               <GroupedResults
                 entries={items}
                 viewMode={viewMode}
-                searchText={currentSearch ?? ""}
                 onPlace={activate}
                 footer={catalogFooter}
               />

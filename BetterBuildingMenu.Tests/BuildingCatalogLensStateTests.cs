@@ -44,6 +44,28 @@ public sealed class BuildingCatalogLensStateTests
     }
 
     [Fact]
+    public void EverywhereQuery_DropsTheWholeMenuScopeAndKeepsTheSearch()
+    {
+        // What "Search everywhere" runs. Dropping only the menu leaves the category, tab
+        // and tier pinning the count to the section that just came up empty.
+        BuildingCatalogLensState lens = new(
+            new BuildingCatalogQuery(StripTabs: new[] { "Small" }),
+            BuildingCatalogMetricRangeState.Empty,
+            Menu: "Healthcare",
+            Category: "Clinics",
+            SchoolTier: 2,
+            SearchText: "clinic");
+
+        BuildingCatalogQuery everywhere = lens.EverywhereQuery();
+
+        Assert.Equal(string.Empty, everywhere.UiMenu);
+        Assert.Equal(string.Empty, everywhere.UiCategory);
+        Assert.Null(everywhere.StripTabs);
+        Assert.Equal(-1, everywhere.SchoolTier);
+        Assert.Equal("clinic", everywhere.SearchText);
+    }
+
+    [Fact]
     public void PageStatus_DistinguishesIndexingFromReadyEmptyResults()
     {
         Assert.Equal(BuildingCatalogLensState.Indexing, BuildingCatalogLensState.GetPageStatus(isReady: false, totalCount: 0));

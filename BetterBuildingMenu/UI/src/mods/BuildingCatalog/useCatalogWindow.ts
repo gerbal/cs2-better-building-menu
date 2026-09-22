@@ -1,9 +1,9 @@
 import { bindValue, trigger, useValue } from "cs2/api";
-import { useEffect, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import mod from "../../../mod.json";
 import type { BuildingCatalogEntry, BuildingCatalogPage } from "domain/buildingCatalog";
 import { loadMoreCatalogCommand } from "domain/buildingCatalogContracts";
-import { isScrollContainer, shouldLoadMore } from "domain/catalogWindow";
+import { canRequestMore, isScrollContainer, shouldLoadMore, type PendingLoadMore } from "domain/catalogWindow";
 import { findScrollContainer, lastCatalogRow } from "./catalogDom";
 
 export type BuildingCatalogPageStatus = "indexing" | "ready" | "empty";
@@ -23,6 +23,8 @@ export interface CatalogWindow {
   limit: number;
   status: BuildingCatalogPageStatus;
   hasMore: boolean;
+  /** The row Enter arms while a search is active; see BuildingCatalogPage. */
+  bestMatchId: number | null;
   loadMore(): void;
 }
 
@@ -43,17 +45,20 @@ export function useCatalogWindow(
   const status: BuildingCatalogPageStatus = page?.status
     ?? (page ? (totalCount === 0 ? "empty" : "ready") : "indexing");
   const hasMore = page?.hasMore ?? false;
+  const bestMatchId = page?.bestMatchId ?? null;
 
-  /**
-   * Asks the backend for the next chunk. Guarded by `hasMore` alone rather than
-   * a local loading flag: the backend republishes the whole window, so a second
-   * request is idempotent, while a latched flag would stop the list for good.
-   */
+  // The request in flight. Each one grows the window by a step, so a second
+  // sent before the first is answered loads twice; see canRequestMore.
+  const pending = useRef<PendingLoadMore | null>(null);
+
+  /** Asks the backend for the next chunk, once per published page. */
   function loadMore(): void {
-    if (!hasMore) {
+    const now = Date.now();
+    if (!hasMore || !canRequestMore(pending.current, page, now)) {
       return;
     }
 
+    pending.current = { page, at: now };
     const command = loadMoreCatalogCommand();
     trigger(mod.id, command.method, ...command.args);
   }
@@ -102,5 +107,5 @@ export function useCatalogWindow(
     };
   }, [hasMore, items.length, scope.viewMode, scope.groupBy]);
 
-  return { items, totalCount, offset, limit, status, hasMore, loadMore };
+  return { items, totalCount, offset, limit, status, hasMore, bestMatchId, loadMore };
 }

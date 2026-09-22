@@ -25,7 +25,15 @@ namespace BetterBuildingMenu.Domain
 		/// The picker drops the rest rather than annotating them, the same way
 		/// groupDimensionsFor drops a grouping that cannot act.
 		/// </remarks>
-		IReadOnlyList<string>? ReorderableSortColumns = null) : IJsonWritable
+		IReadOnlyList<string>? ReorderableSortColumns = null,
+		/// <summary>
+		/// The row Enter arms while a search is active; null without a search or a result.
+		/// </summary>
+		/// <remarks>
+		/// Named here rather than inferred from the first row: grouping orders the page by
+		/// group first, so the best match can sit anywhere in it, and only this side scores.
+		/// </remarks>
+		int? BestMatchId = null) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -56,6 +64,8 @@ namespace BetterBuildingMenu.Domain
 			writer.Write(Limit);
 			writer.PropertyName("hasMore");
 			writer.Write(HasMore);
+			writer.PropertyName("bestMatchId");
+			if (BestMatchId.HasValue) writer.Write(BestMatchId.Value); else writer.WriteNull();
 			if (Status is not null)
 			{
 				writer.PropertyName("status");
