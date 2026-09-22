@@ -2481,3 +2481,27 @@ computed cursor `url(cursor://vertical-can-resize)`, grip
 carry). No glyph on the pill: vanilla's grabbable bars carry none. Still
 owed before anything larger: the footprint measurement, ours against the
 stock icon row at 720p and 1080p, control pane open and closed.
+
+## 2026-09-22 — what the Cohtml 1.64 → 2.2.1.3 jump changed, and the `gap` migration
+
+Version-gated against Coherent's feature changelog and probed live on 2.2.1.3.
+The three layout defects fixed earlier today each trace to a 2.2.0 row: images
+keep their source aspect ratio by default (the badge), and a new flex algorithm
+with real `gap` (the stretched wrapped line, and the rounding wrap). Vanilla's
+own 1.6.2 stylesheet already uses `gap` fourteen times and `aspect-ratio` twice.
+Still absent on 2.2.1.3, probed: `:not()`/`:has()`/`:is()`/`:where()`,
+`:nth-child(an+b)`, `:first-of-type`, `:empty`, `:checked`/`:disabled`, CSS
+Grid, `inset`, `min()`/`clamp()`, `position: sticky`, `will-change`,
+`object-fit`, `innerText`, `fetch`, `IntersectionObserver`, `structuredClone`,
+`Intl`, `scrollIntoView`, `CSS.supports`; `align-items: baseline` still rejected
+(2.2 added `vertical-align: baseline`, a different thing). V8 unchanged at 9.4.
+
+The card list now spaces with `gap: 4rem` instead of the negative-margin gutter,
+and the zero-height spacer from earlier today is gone: a shrink-to-fit group's
+max-content counts gap but not item margins, which was the whole rounding wrap.
+Live before the change, with the gap rules injected: all 17 Zones groups on one
+line. After the build and a view reload: 17 groups, none multi-line, none
+clipped, gaps 2.67 px, lists 38.7 px (2.67 shorter — the gutter's phantom top
+margin), cards 33.3 px, pictures 26.7 px. `object-fit: contain` removed from
+three rules: never implemented in Cohtml, so never did anything; the deny-list
+contract now refuses it and no longer refuses `gap`.

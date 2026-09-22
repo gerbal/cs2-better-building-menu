@@ -6,7 +6,7 @@
 
 // Sibling groups share a line where they fit. A wrapping row, not a column: a
 // full-width band whatever it holds spends most of a menu's height on headings
-// over half-empty rows. Spacing is the negative-gutter trick, not a gap.
+// over half-empty rows. Spacing is a negative-margin gutter.
 .groupRow {
   display: flex;
   flex-direction: row;

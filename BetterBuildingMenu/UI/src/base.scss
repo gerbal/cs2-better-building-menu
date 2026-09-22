@@ -1,4 +1,5 @@
-// Cohtml ignores `gap`; margins do the spacing throughout these stylesheets.
+// Spacing is margins throughout these stylesheets, except the card list, whose
+// group is sized to a max-content that counts gap and not item margins.
 
 $bottomBarHeight: 48rem;
 $bottomViewHeight: 108rem;
@@ -278,5 +279,4 @@ $mark-inset: 0.147;
 @mixin artwork-picture($picture) {
   width: $picture;
   height: $picture;
-  object-fit: contain;
 }
