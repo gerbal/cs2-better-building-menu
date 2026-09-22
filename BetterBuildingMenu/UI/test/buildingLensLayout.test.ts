@@ -104,6 +104,26 @@ describe("Building Lens catalog height", () => {
     assert.equal(draggedBuildingLensHeight(400, 500, 440, 2), 430);
   });
 
+  it("measures rem off the drawn resize strip", async () => {
+    const { pxPerRemFrom, LENS_RESIZE_HANDLE_HEIGHT } = await import("../src/domain/buildingLensLayout.ts");
+    // 14rem drawn 14px tall at 1080p, 21px at 1440p.
+    assert.equal(pxPerRemFrom(14, LENS_RESIZE_HANDLE_HEIGHT), 1);
+    assert.equal(pxPerRemFrom(21, LENS_RESIZE_HANDLE_HEIGHT), 1.5);
+    // Cohtml's pre-layout zero, or no rect at all, is no measurement.
+    for (const bad of [0, -3, Number.NaN, null, undefined]) {
+      assert.equal(pxPerRemFrom(bad, LENS_RESIZE_HANDLE_HEIGHT), undefined);
+    }
+  });
+
+  it("measures against the strip's real height", async () => {
+    const { LENS_RESIZE_HANDLE_HEIGHT } = await import("../src/domain/buildingLensLayout.ts");
+    const { readFileSync } = await import("node:fs");
+    const scss = readFileSync(new URL("../src/mods/LensResizeHandle/lensResizeHandle.module.scss", import.meta.url), "utf8");
+    const rule = /\.resizeHandle \{([^}]*)\}/.exec(scss)?.[1] ?? "";
+    const height = /(?:^|\n)\s*height:\s*(\d+)rem/.exec(rule)?.[1];
+    assert.equal(Number(height), LENS_RESIZE_HANDLE_HEIGHT);
+  });
+
   it("falls back to the 720p ratio when the measurement is unusable", () => {
     for (const bad of [0, -1, Number.NaN, Number.POSITIVE_INFINITY, undefined]) {
       assert.equal(draggedBuildingLensHeight(400, 500, 440, bad), draggedBuildingLensHeight(400, 500, 440, 2 / 3));

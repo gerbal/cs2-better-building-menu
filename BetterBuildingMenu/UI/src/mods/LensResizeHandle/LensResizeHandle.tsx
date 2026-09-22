@@ -4,7 +4,12 @@ import classNames from "classnames";
 import { useRef, useState } from "react";
 
 import mod from "../../../mod.json";
-import { clampBuildingLensHeight, draggedBuildingLensHeight } from "domain/buildingLensLayout";
+import {
+  LENS_RESIZE_HANDLE_HEIGHT,
+  clampBuildingLensHeight,
+  draggedBuildingLensHeight,
+  pxPerRemFrom,
+} from "domain/buildingLensLayout";
 
 import styles from "mods/LensResizeHandle/lensResizeHandle.module.scss";
 
@@ -21,26 +26,6 @@ export interface LensPanelHeight {
    * when it leaves the strip. Null between drags; render it beside the panel.
    */
   blocker: JSX.Element | null;
-}
-
-/**
- * Pixels per rem as the game is laying them out now, from a hidden 100rem probe.
- * Rem follows the resolution (and anything else the game scales the UI by), and
- * the pointer reports pixels. Null when the measurement is unusable.
- */
-function measurePxPerRem(): number | null {
-  if (typeof document === "undefined" || !document.body) return null;
-
-  const probe = document.createElement("div");
-  probe.style.position = "absolute";
-  probe.style.visibility = "hidden";
-  probe.style.width = "0";
-  probe.style.height = "100rem";
-  document.body.appendChild(probe);
-  const pxPerRem = probe.getBoundingClientRect().height / 100;
-  document.body.removeChild(probe);
-
-  return Number.isFinite(pxPerRem) && pxPerRem > 0 ? pxPerRem : null;
 }
 
 /**
@@ -61,7 +46,11 @@ export function useLensPanelHeight(): LensPanelHeight {
   function beginResize(event: any): void {
     event.preventDefault?.();
     event.stopPropagation?.();
-    resizeState.current = { active: true, startY: event.clientY, startHeight: height, pxPerRem: measurePxPerRem() ?? undefined };
+    // Rem follows the resolution and the pointer reports pixels, so the ratio is
+    // measured off the strip just pressed: drawn, and a known rem tall.
+    const pressed = event.currentTarget as Element | null | undefined;
+    const pxPerRem = pxPerRemFrom(pressed?.getBoundingClientRect?.().height, LENS_RESIZE_HANDLE_HEIGHT);
+    resizeState.current = { active: true, startY: event.clientY, startHeight: height, pxPerRem };
     setIsResizing(true);
   }
 
