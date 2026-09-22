@@ -1,9 +1,8 @@
-import { bindValue, trigger, useValue } from "cs2/api";
+import { useValue } from "cs2/api";
 import { game } from "cs2/bindings";
 import { ModuleRegistryExtend } from "cs2/modding";
 import classNames from "classnames";
 
-import mod from "../../../mod.json";
 import styles from "./LensToolOptions.module.scss";
 import lockIcon from "images/lock.svg";
 import unlockIcon from "images/unlock.svg";
@@ -11,9 +10,7 @@ import { BANK_DIMENSION_IDS, isBankDimension } from "domain/filterRail";
 import { shouldMountInAssetMenu } from "domain/buildingMenuMount";
 import { toggleBuildingLensFacetCommand, type BuildingLensFacetState } from "domain/buildingCatalogFacets";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
-
-const BuildingLensFacets$ = bindValue<BuildingLensFacetState | null>(mod.id, "BuildingLensFacets", null);
-const LensOwnsCurrentMenu$ = bindValue<boolean>(mod.id, "LensOwnsCurrentMenu", false);
+import { BuildingLensFacets$, LensOwnsCurrentMenu$, send } from "mods/bindings";
 
 /**
  * Availability, drawn in the game's own tool-options panel beside Theme and
@@ -57,7 +54,7 @@ const BankFacets = ({ facets }: { facets: BuildingLensFacetState | null | undefi
               selected={option.selected}
               multiSelect
               tooltip={option.label}
-              onSelect={() => trigger(mod.id, ...toggleArgs(group.id, option.id))}
+              onSelect={() => send(toggleBuildingLensFacetCommand(group.id, option.id))}
               focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED}
               className={classNames(
                 VanillaComponentResolver.instance.toolButtonTheme.button,
@@ -71,13 +68,6 @@ const BankFacets = ({ facets }: { facets: BuildingLensFacetState | null | undefi
     </>
   );
 };
-
-/** The command as (method, ...args), so the trigger call stays one line. */
-function toggleArgs(groupId: string, optionId: string): [string, ...unknown[]] {
-  const command = toggleBuildingLensFacetCommand(groupId, optionId);
-
-  return [command.method, ...command.args];
-}
 
 export const LensToolOptions: ModuleRegistryExtend = (Component: any) => {
   return () => {

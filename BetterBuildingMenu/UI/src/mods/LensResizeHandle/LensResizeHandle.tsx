@@ -1,9 +1,8 @@
-import { bindValue, trigger, useValue } from "cs2/api";
+import { useValue } from "cs2/api";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import { useRef, useState } from "react";
 
-import mod from "../../../mod.json";
 import {
   LENS_RESIZE_HANDLE_HEIGHT,
   clampBuildingLensHeight,
@@ -12,9 +11,7 @@ import {
 } from "domain/buildingLensLayout";
 
 import styles from "mods/LensResizeHandle/lensResizeHandle.module.scss";
-
-/** The panel height the player last dragged to; see BuildingMenuUISystem.Bindings. */
-const BuildingLensPanelHeight$ = bindValue<number>(mod.id, "BuildingLensPanelHeight", 420);
+import { BuildingLensPanelHeight$, send } from "mods/bindings";
 
 export interface LensPanelHeight {
   /** In rem, already clamped to the range the layout can hold. */
@@ -58,7 +55,10 @@ export function useLensPanelHeight(): LensPanelHeight {
     const state = resizeState.current;
     if (!state.active) return;
 
-    trigger(mod.id, "SetBuildingLensPanelHeight", draggedBuildingLensHeight(state.startHeight, state.startY, event.clientY, state.pxPerRem));
+    send({
+      method: "SetBuildingLensPanelHeight",
+      args: [draggedBuildingLensHeight(state.startHeight, state.startY, event.clientY, state.pxPerRem)],
+    });
   }
 
   function endResize(): void {
@@ -66,7 +66,7 @@ export function useLensPanelHeight(): LensPanelHeight {
 
     resizeState.current.active = false;
     setIsResizing(false);
-    trigger(mod.id, "CommitBuildingLensPanelHeight");
+    send({ method: "CommitBuildingLensPanelHeight", args: [] });
   }
 
   const blocker = isResizing

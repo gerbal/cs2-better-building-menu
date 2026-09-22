@@ -5,13 +5,11 @@
  */
 
 import type { BuildingLensFacetState } from "./buildingCatalogFacets";
+import type { Command } from "./command";
 import type { BuildingLensMetricRangeState } from "./buildingLensFilterSummary";
 import type { MetricRangeId } from "./buildingCatalogRanges";
 
-export interface ChipCommand {
-  method: string;
-  args: any[];
-}
+export type ChipCommand = Command;
 
 export interface FilterChip {
   /** Unique across every dimension, so React keys never collide. */

@@ -1,4 +1,4 @@
-import { bindValue, trigger, useValue } from "cs2/api";
+import { useValue } from "cs2/api";
 import { Theme } from "cs2/bindings";
 import { FOCUS_DISABLED } from "cs2/input";
 import { useLocalization } from "cs2/l10n";
@@ -6,7 +6,6 @@ import { getModule } from "cs2/modding";
 import { Button } from "cs2/ui";
 import classNames from "classnames";
 import { useEffect, useMemo, useState } from "react";
-import mod from "../../../mod.json";
 import {
   clearBuildingCatalogMetricRangesCommand,
   setBuildingCatalogMetricRangeCommand,
@@ -30,6 +29,7 @@ import { textInputValue } from "domain/textInput";
 import styles from "./buildingCatalog.module.scss";
 
 import type { BuildingLensMetricRangeState as BuildingCatalogMetricRangeState } from "domain/buildingLensFilterSummary";
+import { BuildingCatalogMetricBounds$, BuildingCatalogMetricRanges$, send } from "mods/bindings";
 
 const emptyMetricRangeState: BuildingCatalogMetricRangeState = {
   minCost: null,
@@ -46,23 +46,6 @@ const emptyMetricRangeState: BuildingCatalogMetricRangeState = {
   maxLotDepth: null,
   hasSelection: false,
 };
-
-const BuildingCatalogMetricRanges$ = bindValue<BuildingCatalogMetricRangeState>(
-  mod.id,
-  "BuildingCatalogMetricRanges",
-  emptyMetricRangeState,
-);
-
-/**
- * The spread each metric has in the current view. Same shape as the selection
- * above, and the pairing is the point: a field with no selection shows its
- * bound, so the control states the scale before asking anyone to narrow it.
- */
-const BuildingCatalogMetricBounds$ = bindValue<BuildingCatalogMetricRangeState>(
-  mod.id,
-  "BuildingCatalogMetricBounds",
-  emptyMetricRangeState,
-);
 
 const TextInput = getModule("game-ui/common/input/text/text-input.tsx", "TextInput");
 const TextInputTheme: Theme | any = getModule("game-ui/editor/widgets/item/editor-item.module.scss", "classes");
@@ -116,7 +99,9 @@ export const BuildingCatalogMetricFilters = () => {
     const current = getLensDisclosure(LENS_DISCLOSURE_KEYS.metricRanges);
     setLensDisclosure(LENS_DISCLOSURE_KEYS.metricRanges, typeof next === "function" ? next(current) : next);
   };
-  const bounds = useValue(BuildingCatalogMetricBounds$);
+  // The spread each metric has here. A field with no selection shows its bound,
+  // so the control states the scale before asking anyone to narrow it.
+  const bounds = useValue(BuildingCatalogMetricBounds$) ?? emptyMetricRangeState;
   // A stable key for the twelve numbers: the binding hands back a fresh object
   // on every emit, so depending on `bounds` itself re-seeds the drafts on
   // unrelated churn, including while the player is typing.
@@ -132,8 +117,7 @@ export const BuildingCatalogMetricFilters = () => {
   const metricRangeDebouncer = useMemo(
     () =>
       createMetricRangeDebouncer((id, input) => {
-        const command = setBuildingCatalogMetricRangeCommand(id, input.minText, input.maxText);
-        trigger(mod.id, command.method, ...command.args);
+        send(setBuildingCatalogMetricRangeCommand(id, input.minText, input.maxText));
       }, metricRangeScheduler),
     [],
   );
@@ -204,8 +188,7 @@ export const BuildingCatalogMetricFilters = () => {
     // Back to the full range of what is in view, not back to blank: clearing a
     // filter should say what is there again.
     setDrafts(draftsFromState(emptyMetricRangeState, bounds));
-    const command = clearBuildingCatalogMetricRangesCommand();
-    trigger(mod.id, command.method, ...command.args);
+    send(clearBuildingCatalogMetricRangesCommand());
   }
 
   return (

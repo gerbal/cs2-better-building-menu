@@ -1,8 +1,5 @@
-import { bindValue, trigger, useValue } from "cs2/api";
+import { trigger, useValue } from "cs2/api";
 import { useEffect, useRef } from "react";
-import mod from "../../../mod.json";
-import { UPSTREAM_FINDIT_GROUP, UPSTREAM_SHOW_PANEL } from "domain/upstreamFindIt";
-import type { ToolbarEntity } from "domain/toolbarEntity";
 import {
   nextWatchState,
   shouldClearOnEscape,
@@ -12,11 +9,13 @@ import {
   watchAction,
   type WatchState,
 } from "domain/vanillaMenuWatch";
-
-const SelectedAssetMenu$ = bindValue<ToolbarEntity | null>("toolbar", "selectedAssetMenu", null);
-const ReplaceVanillaBuildMenu$ = bindValue<boolean>(mod.id, "ReplaceVanillaBuildMenu", false);
-const LensOwnsCurrentMenu$ = bindValue<boolean>(mod.id, "LensOwnsCurrentMenu", false);
-const FindItPanelShown$ = bindValue<boolean>(UPSTREAM_FINDIT_GROUP, UPSTREAM_SHOW_PANEL, false);
+import {
+  FindItPanelShown$,
+  LensOwnsCurrentMenu$,
+  ReplaceVanillaBuildMenu$,
+  SelectedAssetMenu$,
+  send,
+} from "mods/bindings";
 
 /** Escape, by code. Cohtml leaves `key` empty for it; `keyCode` is right. */
 const ESCAPE_KEY_CODE = 27;
@@ -80,8 +79,7 @@ export const VanillaMenuWatcher = () => {
     const observed = ++generation.current;
 
     if (action === "open" && index !== null) {
-      const command = vanillaMenuSelectedCommand(index);
-      trigger(mod.id, command.method, ...command.args);
+      send(vanillaMenuSelectedCommand(index));
       return;
     }
 
@@ -97,8 +95,7 @@ export const VanillaMenuWatcher = () => {
         return;
       }
 
-      const command = vanillaMenuDeselectedCommand();
-      trigger(mod.id, command.method, ...command.args);
+      send(vanillaMenuDeselectedCommand());
     });
   }, [enabled, selected]);
 
