@@ -1,7 +1,7 @@
 import { useMapValue, useValue } from "cs2/api";
 import { selectedInfo, upgrade } from "cs2/bindings";
 import { useLocalization } from "cs2/l10n";
-import { ModuleRegistryExtend, getModule } from "cs2/modding";
+import { ModuleRegistryExtend } from "cs2/modding";
 import { Button, Tooltip } from "cs2/ui";
 import classNames from "classnames";
 import { decideExtensionMenu, type ExtensionRow, type VanillaUpgradeRow } from "domain/extensionMenu";
@@ -9,10 +9,11 @@ import { BuildingList } from "mods/BuildingList/BuildingList";
 import { LensResizeHandle, useLensPanelHeight } from "mods/LensResizeHandle/LensResizeHandle";
 import styles from "./extensionMenu.module.scss";
 import { BuildingExtensionMenu$, ReplaceVanillaBuildMenu$ } from "mods/bindings";
+import { gameClasses } from "mods/gameModules";
 
 // The same vanilla class the build menu's body wears, so both panels are sized
 // by the one rule vanilla applies to its asset panel.
-const AssetMenuTheme: Record<string, string> | undefined = getModule("game-ui/game/components/asset-menu/asset-menu.module.scss", "classes");
+const AssetMenuTheme = gameClasses("game-ui/game/components/asset-menu/asset-menu.module.scss");
 
 interface UpgradesMenuProps {
   focusKey?: unknown;
