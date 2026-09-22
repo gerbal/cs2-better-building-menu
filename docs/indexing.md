@@ -169,7 +169,7 @@ pass a second after the last, polled from `OnUpdate`, and a full pass run for an
 (the save's own at `OnGameLoaded`) cancels the deferral. Eight full passes in the first minute at
 the main menu, one per mod locale file, is what that replaced.
 
-`GetMilestoneNames` and `GetMilestoneIcons` are sized from the highest index actually present
+`GetMilestoneNames` is sized from the highest index actually present
 rather than probed upward from index 0, which the game's first milestone need not use — probing
 publishes an empty table in that case. Gaps stay empty strings so every later name keeps its own
-index. Icons are keyed by milestone index, which is genuinely unique, unlike a branch label.
+index.

@@ -976,7 +976,6 @@ public sealed class BuildingCatalogQueryEngineTests
             BuildingLevel: buildingLevel,
             ZoneType: ZoneTypeFilter.Any,
             HasParking: hasParking,
-            IsUniqueMesh: false,
             IsVanilla: true,
             PdxModsId: pdxModsId);
     }

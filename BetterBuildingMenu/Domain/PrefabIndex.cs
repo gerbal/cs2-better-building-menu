@@ -25,7 +25,6 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		public bool IsUnique { get; set; }
 		public ZoneTypeFilter ZoneType { get; set; } = ZoneTypeFilter.Any;
-		public BuildingCornerFilter CornerType { get; set; }
 		public int2 LotSize { get; set; }
 		public int BuildingLevel { get; set; }
 		public string? BuildingTypeName { get; set; }
@@ -102,7 +101,6 @@ namespace BetterBuildingMenu.Domain
 		/// CityModifierData for citywide effects and LocalModifierData for radius ones.
 		/// </remarks>
 		public string[] Bonuses { get; set; } = Array.Empty<string>();
-		public bool IsUniqueMesh { get; set; }
 		public ThemePrefab Theme { get; set; }
 		public AssetPackPrefab[] AssetPacks { get; set; }
 
@@ -115,7 +113,6 @@ namespace BetterBuildingMenu.Domain
 		/// read from ObjectRequirementElement; matching the wrong one disagrees with the game.
 		/// </remarks>
 		public VanillaAssetFacts VanillaFacts { get; set; }
-		public int[] RandomPrefabs { get; set; }
 		public string[]? ExtensionIds { get; set; }
 		/// <summary>
 		/// The upgrades this building supports, in the game's own order.
@@ -134,7 +131,6 @@ namespace BetterBuildingMenu.Domain
 		/// picker joins against vanilla's own rows, which carry prefab names, so it needs this.
 		/// </remarks>
 		public string[]? SupportedUpgradePrefabNames { get; set; }
-		public List<string> Tags { get; set; }
 		public int UIOrder { get; set; }
 		/// <summary>
 		/// A sub-building: placed from its parent's row, never from the grid.
@@ -257,8 +253,6 @@ namespace BetterBuildingMenu.Domain
 		public float? GroundPollution { get; set; }
 		public float? AirPollution { get; set; }
 		public float? NoisePollution { get; set; }
-		public DateTime? InstalledDate { get; set; }
-		public DateTime? UpdatedDate { get; set; }
 
 		public PrefabIndex(PrefabBase prefabBase) : base(prefabBase)
 		{

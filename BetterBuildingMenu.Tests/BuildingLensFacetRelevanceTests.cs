@@ -26,7 +26,6 @@ namespace BetterBuildingMenu.Tests
 			BuildingLevel: 1,
 			ZoneType: Domain.Enums.ZoneTypeFilter.Any,
 			HasParking: false,
-			IsUniqueMesh: false,
 			IsVanilla: true,
 			PdxModsId: "");
 

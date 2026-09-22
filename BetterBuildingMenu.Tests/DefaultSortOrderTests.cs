@@ -20,7 +20,7 @@ namespace BetterBuildingMenu.Tests
 			new BuildingCatalogEntry(
 				Id: id, PrefabName: name, Name: name, Category: "Networks", SubCategory: "Networks_Roads",
 				Thumbnail: "", LotWidth: 2, LotDepth: 2, BuildingLevel: 1, ZoneType: ZoneTypeFilter.Any,
-				HasParking: false, IsUniqueMesh: false, IsVanilla: true, PdxModsId: "")
+				HasParking: false, IsVanilla: true, PdxModsId: "")
 				with { UiMenu = "Roads", UiCategory = "RoadsSmallRoads", UIOrder = uiOrder };
 
 		[Fact]
