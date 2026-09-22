@@ -50,12 +50,17 @@ This mod was developed with AI assistance (Anthropic's Claude), under human dire
   <Screenshot Value="Properties/Screenshot_04.jpg" />
 
   <Tag Value="Code Mod" />
-  <ModVersion Value="0.1.11" />
+  <ModVersion Value="0.1.12" />
   <GameVersion Value="1.6.*" />
   <AccessLevel Value="Public" />
   <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/mod-better-building-menu.1941089/" />
 
   <ChangeLog>
+0.1.12
+
+Changes
+* The drag-to-resize edge on the panel shows the game's resize cursor on hover and while dragging, and its grip is drawn at the weight of the game's scrollbar thumb. Hovering it showed no cursor before.
+
 0.1.11
 
 Fixes
