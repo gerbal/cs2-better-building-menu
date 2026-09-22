@@ -103,20 +103,23 @@ namespace BetterBuildingMenu.Domain
 		}
 
 		/// <summary>One more chunk, up to the ceiling. At the ceiling, nothing.</summary>
-		public BuildingCatalogLensState LoadMore()
-		{
-			if (Query.Limit >= BuildingCatalogQuery.MaxLimit)
-			{
-				return this;
-			}
+		public BuildingCatalogLensState LoadMore() => LoadMoreTo(Query.Limit + BuildingCatalogQuery.WindowStep);
 
-			return this with
-			{
-				Query = Query with
-				{
-					Limit = Math.Min(Query.Limit + BuildingCatalogQuery.WindowStep, BuildingCatalogQuery.MaxLimit),
-				},
-			};
+		/// <summary>
+		/// The window grown to the limit the UI asked for: never by more than one chunk, never
+		/// shrunk, never past the ceiling.
+		/// </summary>
+		/// <remarks>
+		/// Idempotent, because the request can arrive twice (a double click, or the scroll poll
+		/// firing again before the answer lands) and each copy used to add a chunk.
+		/// </remarks>
+		public BuildingCatalogLensState LoadMoreTo(int requestedLimit)
+		{
+			var next = Math.Min(
+				Math.Min(requestedLimit, Query.Limit + BuildingCatalogQuery.WindowStep),
+				BuildingCatalogQuery.MaxLimit);
+
+			return next <= Query.Limit ? this : this with { Query = Query with { Limit = next } };
 		}
 
 		// --- Narrowing -----------------------------------------------------------
@@ -206,7 +209,9 @@ namespace BetterBuildingMenu.Domain
 		{
 			var composed = (Query with
 			{
-				SearchText = SearchText,
+				// Trimmed here and nowhere earlier: the box echoes SearchText, and trimming
+				// that would eat the space typed between two words.
+				SearchText = SearchText.Trim(),
 				UiMenu = Menu,
 				UiCategory = Category,
 				SchoolTier = SchoolTier,

@@ -386,14 +386,15 @@ namespace BetterBuildingMenu.Systems
 		private void SetBuildingCatalogSortDescending(bool descending) => Apply(_lens.SetDescending(descending));
 
 		/// <summary>
-		/// Grows the window by one step, keeping the offset at zero.
+		/// Grows the window to the limit the UI asked for, by one step at most, keeping the
+		/// offset at zero. A repeated request changes nothing; see LoadMoreTo.
 		/// </summary>
 		/// <remarks>
 		/// The window is owned here rather than accumulated on the client, because placing a
 		/// building unmounts the panel. A bigger Limit over the same predicates returns a longer
 		/// prefix of the same order, so the rows on screen keep their identity.
 		/// </remarks>
-		private void LoadMoreBuildingCatalog() => Apply(_lens.LoadMore());
+		private void LoadMoreBuildingCatalog(int requestedLimit) => Apply(_lens.LoadMoreTo(requestedLimit));
 
 		private void ToggleBuildingLensFacet(string facetId, string optionId) => Apply(_lens.ToggleFacet(facetId, optionId));
 

@@ -56,28 +56,6 @@ export function loadMoreCount(remaining: number): number {
 }
 
 /**
- * How long a request may go unanswered before another is allowed. Long enough
- * for the round trip through C#; short enough that a dropped request cannot
- * leave the list stuck.
- */
-export const CATALOG_LOAD_MORE_RETRY_MS = 1000;
-
-/** The Load more request in flight: the page it was made from, and when. */
-export interface PendingLoadMore {
-  page: unknown;
-  at: number;
-}
-
-/**
- * Whether to send Load more now. Each request grows the window by a step, so a
- * second one sent before the first is answered loads twice. The answer is a new
- * page, and that, or the retry time running out, allows the next.
- */
-export function canRequestMore(pending: PendingLoadMore | null, page: unknown, now: number): boolean {
-  return pending === null || pending.page !== page || now - pending.at >= CATALOG_LOAD_MORE_RETRY_MS;
-}
-
-/**
  * The limit to ask for next, clamped to what exists: `maxLimit` is the match
  * set the backend reported, so the window stops growing when it holds it all.
  */

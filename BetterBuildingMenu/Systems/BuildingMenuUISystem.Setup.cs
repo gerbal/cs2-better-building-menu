@@ -234,7 +234,7 @@ namespace BetterBuildingMenu.Systems
 			// arrive comma-joined, because this bridge is happier with flat primitives.
 			CreateTrigger<string, string, bool, bool>("SetVanillaToolbarSelection", SetVanillaToolbarSelection);
 			CreateTrigger<int>("OnLocateButtonClicked", OnLocateButtonClicked);
-			CreateTrigger("LoadMoreBuildingCatalog", LoadMoreBuildingCatalog);
+			CreateTrigger<int>("LoadMoreBuildingCatalog", LoadMoreBuildingCatalog);
 				CreateTrigger<string, string, string>("SetBuildingCatalogMetricRange", SetBuildingCatalogMetricRange);
 				CreateTrigger("ClearBuildingCatalogMetricRanges", ClearBuildingCatalogMetricRanges);
 				CreateTrigger<string, string>("ToggleBuildingLensFacet", ToggleBuildingLensFacet);
