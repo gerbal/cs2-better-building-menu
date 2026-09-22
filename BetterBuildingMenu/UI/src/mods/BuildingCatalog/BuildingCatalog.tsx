@@ -1,7 +1,7 @@
 import { useValue } from "cs2/api";
 import { Button } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
-import { useEffect, useRef } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import classNames from "classnames";
 import { tableLabelCharBudget } from "domain/tileLabel";
 import { useTextScale } from "domain/textScaleSetting";
@@ -63,7 +63,11 @@ const densityClassNames: Record<BuildingLensDensityTier, string> = {
   expanded: styles.densityExpanded,
 };
 
-export const BuildingCatalogComponent = () => {
+/**
+ * Memoised, and takes no props: it re-renders on its own bindings only, not on
+ * every drag echo or keystroke that re-renders the surface around it.
+ */
+export const BuildingCatalogComponent = memo(function BuildingCatalogComponent() {
   const { translate } = useLocalization();
   const panelWidth = useValue(PanelWidth$);
   const currentSearch = useValue(CurrentSearch$);
@@ -105,14 +109,17 @@ export const BuildingCatalogComponent = () => {
   // lines up only because both read the same widths. Figures do not scale with
   // the panel but do with the game's text scale.
   const textScale = useTextScale();
-  const columnWidths = getBuildingLensColumnWidths(panelWidth + BUILDING_LENS_PANEL_CHROME_WIDTH, textScale);
+  const columnWidths = useMemo(
+    () => getBuildingLensColumnWidths(panelWidth + BUILDING_LENS_PANEL_CHROME_WIDTH, textScale),
+    [panelWidth, textScale]
+  );
   // The widths are estimates and stay estimates: the row is a flex layout whose
   // column bases already exceed the room beside the name, so cells shrink to
   // what the row allows and an inline width is not what gets drawn.
-  const columnStyle = (metric: BuildingLensMetric) => ({
+  const columnStyle = useCallback((metric: BuildingLensMetric) => ({
     width: `${columnWidths[metric]}rem`,
     flexBasis: `${columnWidths[metric]}rem`,
-  });
+  }), [columnWidths]);
   // The width the NAME actually gets. panelWidth is NOT the panel: it is the
   // whole assembly, control pane included, so the pane comes off here as it
   // does in BuildingMenuSurface. Erring small shortens sooner, never later.
@@ -129,11 +136,11 @@ export const BuildingCatalogComponent = () => {
   // Row and filter name the same asset the same way: the entry carries raw ids
   // while the facet groups hold the display names, so resolving through those
   // beats a second lookup table that would drift.
-  const resolveFacetLabel = (groupId: string, value: string): string | null => {
+  const resolveFacetLabel = useCallback((groupId: string, value: string): string | null => {
     const group = facets?.groups?.find((candidate) => candidate.id === groupId);
 
     return group?.options?.find((option) => option.id === value)?.label ?? null;
-  };
+  }, [facets]);
   const scopeNotice = getSearchScopeNotice({
     searchText: currentSearch ?? "",
     shown: items.length,
@@ -175,11 +182,18 @@ export const BuildingCatalogComponent = () => {
       </div>
     : scopeNoticeBlock ?? <div className={styles.empty}>{emptyStateMessage}</div>;
 
-  function toggleExpanded(id: number): void {
+  const toggleExpanded = useCallback((id: number): void => {
     setLensView({ expandedId: getLensView().expandedId === id ? null : id });
-  }
+  }, []);
 
-  function activate(entry: BuildingCatalogEntry): void {
+  // Scoped to the surface and the layout, because which element owns the scroll
+  // and how tall its children are both depend on them: an offset remembered in
+  // the table means nothing in the grid.
+  const anchorKey = getLensAnchorKey({ surface: "catalog", viewMode, groupBy });
+
+  // Stable across renders, like every callback a row receives, so a memoised
+  // row skips the re-render its parent does on each keystroke.
+  const activate = useCallback((entry: BuildingCatalogEntry): void => {
     // A milestone-locked asset cannot be placed, and vanilla refuses the same
     // selection. Guarded here rather than in TryActivatePrefabTool, which
     // arrow-key navigation also calls and must step past a locked tile.
@@ -192,16 +206,12 @@ export const BuildingCatalogComponent = () => {
     // The backend resolves this id through its prefab index and activates the
     // normal prefab tool.
     menuSurfacePort.activatePrefab({ prefabId: entry.id });
-  }
+  }, [anchorKey]);
 
-  function setSort(column: SortColumn): void {
-    sendSort({ column: sortColumn, descending }, column);
-  }
-
-  // Scoped to the surface and the layout, because which element owns the scroll
-  // and how tall its children are both depend on them: an offset remembered in
-  // the table means nothing in the grid.
-  const anchorKey = getLensAnchorKey({ surface: "catalog", viewMode, groupBy });
+  const setSort = useCallback(
+    (column: SortColumn): void => sendSort({ column: sortColumn, descending }, column),
+    [sortColumn, descending]
+  );
 
   useScrollAnchor(rootRef, anchorKey, items.length);
 
@@ -252,7 +262,8 @@ export const BuildingCatalogComponent = () => {
    * names both ends, so a truncated list reads as one rather than as the whole.
    */
   const remaining = catalogWindowRemaining({ shown: items.length, total: totalCount });
-  const catalogFooter = hasMore ? (
+  // Memoised with what it shows, so the views it is handed to can skip a render.
+  const catalogFooter = useMemo(() => hasMore ? (
     <div className={styles.loadMoreRow}>
       <span className={styles.windowState}>
         {(translate("Tooltip.LABEL[BetterBuildingMenu.ShowingOfTotal]", "Showing {0} of {1}")
@@ -267,7 +278,7 @@ export const BuildingCatalogComponent = () => {
             ?? "Load {0} more").replace("{0}", `${loadMoreCount(remaining)}`)}
       </Button>
     </div>
-  ) : null;
+  ) : null, [hasMore, items.length, totalCount, remaining, translate, loadMore]);
 
   return (
     <div
@@ -328,4 +339,4 @@ export const BuildingCatalogComponent = () => {
 
     </div>
   );
-};
+});
