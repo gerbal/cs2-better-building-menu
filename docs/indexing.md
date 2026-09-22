@@ -27,6 +27,17 @@ plausibly have got wrong. `LockStateDrift` is the exact test for it — the same
 `ApplyUnlocks` uses, over every indexed prefab. Zero drift skips the second full pass; any drift
 runs it and logs how many prefabs moved.
 
+## Partial passes
+
+A prefab the game creates or changes mid-session, such as a Road Builder edit, is re-read by a
+partial pass. Each processor keeps two queries, both built in `OnCreate`: its own, and a copy
+narrowed to `Created` or `Updated`. A partial pass reads only the narrowed copy, so one edited road
+costs one prefab rather than every road its processor matches.
+
+Duplicate names are numbered after every pass, partial passes included, always starting from each
+prefab's `AssetName`. A partial pass gives the prefab it re-reads back its plain name. Numbering
+only what it touched would leave that prefab as "Foo" beside a sibling still called "Foo 2".
+
 ## The vanilla menu walk
 
 `IndexVanillaMenuPlacements` walks the game's own group tree downward: `UIAssetMenuData` menus →
