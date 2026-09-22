@@ -30,11 +30,9 @@ export function getSearchScopeNotice(state: {
 export type EnterDecision<T> = { arm: T } | { wait: string } | null;
 
 /**
- * What Enter does. Only with an active query, and only the backend's pick: a
- * grouped page is ordered by group before relevance, so its first row need not
- * be the best match. The box echoes a keystroke at once and the page follows a
- * debounce later, so until the page answers the search in the box, Enter waits
- * for it rather than arming the previous search's match.
+ * What Enter does: arm the backend's best match for an active search, since a
+ * grouped page's first row need not be it. The page trails the box by a
+ * debounce, so until it answers the search in the box, Enter waits for it.
  */
 export function enterDecision<T extends { id: number }>(
   page: { items: readonly T[]; bestMatchId?: number | null; searchText?: string | null },

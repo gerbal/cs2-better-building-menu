@@ -8,7 +8,7 @@ const read = (p: string) => readFileSync(new URL(p, import.meta.url), "utf8");
 describe("the Load more button", () => {
   it("steps by what the backend adds per request", () => {
     // BuildingCatalogLensState.LoadMoreTo grows the window by at most WindowStep;
-    // the label promised the window's size, so it said "300 more" and loaded 100.
+    // a label naming the window's size would say "300 more" and load 100.
     const query = read("../../Domain/BuildingCatalogQuery.cs");
     const step = Number(/const int WindowStep = (\d+);/.exec(query)?.[1]);
     assert.equal(CATALOG_WINDOW_STEP, step);
