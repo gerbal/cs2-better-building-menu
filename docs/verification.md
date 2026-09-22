@@ -2543,3 +2543,9 @@ published". Stray `C:` tree removed from the scratch directory; none under
 the toolchain.
 The metadata `Update` two minutes later, first attempt: "Mod metadata
 Updated". No stray tree afterwards either.
+
+The store's 0.1.12 changelog carried the 0.1.11 section too: the
+`<ChangeLog>` element had the new entry added above the old one instead of
+replacing it. Trimmed to 0.1.12 in the repo config and the scratch copy, and
+a second `Update` (game closed, first attempt) returned "Mod metadata
+Updated"; the echoed changelog holds only the 0.1.12 lines.

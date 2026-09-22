@@ -72,8 +72,13 @@ directory and delete the `C:` tree it leaves there afterwards.
 
    `Publish` prints `Mod published with Id=<n>`. Put that number in
    `<ModId Value="…"/>`; it is required by the other two commands.
-4. Later versions: bump `ModVersion`, mirror the `Changelog.json` entry into
-   `<ChangeLog>`, then run `NewVersion` with the same arguments. Metadata-only
+4. Later versions: bump `ModVersion`, and REPLACE the body of `<ChangeLog>`
+   with the new `Changelog.json` entry. The element is that one version's
+   notes, not a running history: the store shows it under the version, so
+   an older section left in it is published as part of the new version's
+   changelog (0.1.12 went out with 0.1.11's notes appended on 2026-09-22 and
+   needed an `Update` to trim). Then run `NewVersion` with the same
+   arguments. Metadata-only
    changes (description, images, access level) go through `Update`.
 
 ## Verifying the login without publishing
