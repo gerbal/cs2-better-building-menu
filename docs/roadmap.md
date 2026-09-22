@@ -1,75 +1,43 @@
-# Better Building Menu — Roadmap
+# Roadmap
 
-Better Building Menu keeps the proven asset-discovery foundation it inherited
-from Find It and adds a decision-oriented building workflow. It is not intended
-to discard the picker, placement, or broad asset coverage that make Find It
-useful.
+Open work, roughly in order of value. What has shipped is in
+`BetterBuildingMenu/Changelog.json`, and how it was checked is in
+[verification.md](verification.md). The reviews in [reviews/](reviews/) hold
+the detail behind the structural items.
 
-## Retain from Find It
+## Player-facing
 
-- Incremental prefab indexing and mod-added asset discovery
-- Comprehensive categories and subcategories
-- Search, sorting, filtering, favorites, and random selection
-- Picker integration and placement-tool continuity
-- Locate/selection behavior and tool-options compatibility
-- Settings, keybindings, localization, and the Cohtml binding helpers
+- **Player layout.** Let players re-categorise the panel: move an asset to
+  another tab or menu, and create, rename, reorder, merge or hide tabs. The
+  spec and its adversarial review are in
+  [superpowers/specs/](superpowers/specs/), awaiting the owner's review.
+- **Translations.** Every translation lacks about 200 of the 271 English
+  keys, including the option labels, and `ja-JP`, `pt-BR` and `uk-UA` are
+  English throughout. Either connect `crowdin.yml` to a project (with a
+  `languages_mapping`, since Crowdin's Chinese codes are `zh-CN` and `zh-TW`)
+  or ship English only. `Options.LABEL[…LotWidth]` and `…LotDepth` are
+  referenced and missing, and about 33 keys are referenced nowhere.
+- **Unmeasured paths.** Placing an upgrade through the upgrades picker, and
+  Road Builder's discarded roads leaving the panel, are known only from
+  reading the code.
 
-## Expand for building decisions
+## Structure
 
-1. **Identity and isolation** — migrate namespaces, assembly, UI, settings, and
-   publishing metadata to a unique successor identity; add a build guard that
-   cannot deploy the upstream `FindIt` ID.
-2. **Building lens** — make buildings a first-class view with service/category
-   taxonomy and a clear switch back to the complete asset catalog. The first
-   slice now exposes a bounded `BuildingCatalog` page binding backed by a
-   projection of `BuildingMenuUtil.CategorizedPrefabs`; it does not introduce a
-   second ECS scan or send an unbounded list to Gameface. A first Gameface
-   lens is now wired behind the top-bar building button with flexbox rows,
-   metric columns, sort controls, bounded paging, and a scroll-constrained
-   result region; selecting a row uses the existing prefab placement trigger.
-3. **Analytical catalog** — expose data-driven columns for cost, upkeep,
-   workers, capacity, utilities, pollution, and other available prefab data.
-   Construction cost, upkeep, workers, capacity, electricity, water, garbage,
-   water/sewage capacity, and pollution fields are now nullable and populated
-   during the existing prefab index pass when their components are present.
-4. **Constraint workflows** — extend the bounded query contract with range
-   filters, category-scoped filters, saved filter presets, and multi-column
-   sorting without moving the catalog into a giant client-side list. The
-   Building Lens now has a compact metric drawer for normalized Cost, Upkeep,
-   Workers, Capacity, Lot Width, and Lot Depth ranges; the drawer composes its
-   Capacity floor with the Education & Research preset and keeps all six
-   predicates in the bounded C# query. The first category-scoped control is a
-   bounded Education & Research capacity-floor preset; it maps to the existing
-   nullable capacity metric and clears when the active subcategory changes. The
-   first typed facet slice now also exposes role, vanilla/custom source, DLC,
-   theme, asset-pack, and static placement/access dimensions with bounded
-   multi-select controls; runtime and map-context predicates remain deferred.
-   Building extensions are also a separate toggleable facet, projected from
-   the existing prefab index; a future refinement can expose parent/extension
-   relationships in saved presets and category summaries.
-5. **Compare and place** — compare up to three candidates, inspect their
-   analytical summaries, and enter the normal placement tool without losing
-   the panel context. This first bounded tray is implemented and live-smoked.
-6. **Verification** — build, unit-test pure catalog/filter logic, and validate
-   search/filter/sort/paging/placement on a developed save before considering a
-   release. The 2026-07-26 parity run covers close/reopen, category/filter,
-   picker continuity, and OnlyPlaced locate; its evidence is archived in
-   `docs/verification.md`.
-
-## Release gates
-
-1. Keep only `BootDiagnostics` and `BetterBuildingMenu` in the isolated Mods
-   roots while validating a release candidate.
-2. Done 2026-09-09: published as Paradox Mods id `158589` on the upstream
-   csproj's MIT statement (docs/FORK.md); Find It's `77240` was never reused.
-3. Deploy the package to both Mods roots, launch a developed save, and repeat
-   `docs/verification.md` after any identity or release-build change. Never
-   rename a superseded package to `.disabled`; the game still scans UI bundles
-   in disabled folders.
-
-## Design boundary
-
-The fork should reuse the inherited game integration where it is stable and
-isolate new analytical behavior behind small services and typed UI bindings.
-Avoid a second indexing implementation or an unconditional rewrite of its
-tested placement flow.
+- **Rendering cost.** Memoise the rows, share one hover context, and read
+  the bindings through one module, so a hover or a page does not re-render
+  the whole panel.
+- **Split `PrefabIndexingSystem`.** Move the menu audit and coverage report,
+  and `PopulateAnalyticalData`, into their own classes.
+- **An atomic full pass.** Build the new index beside the old one and swap at
+  the end, keeping the old index if the pass throws.
+- **Per-load state.** Replace the static index, caches and registries with one
+  object created per city load and handed to the systems that read it.
+- **Refresh from the UI side.** Let `BuildingMenuUISystem.OnUpdate` notice a
+  new `IndexGeneration` and refresh once, while the panel is open, rather than
+  the indexer calling into the UI.
+- **Smaller cleanups.**
+  - Name the `BuildingMenuUISystem` partials by responsibility.
+  - Delete the dead side of the two C#/TypeScript pairs that have drifted
+    apart: the minimum panel width, and the density order.
+  - Settle on one noun for the panel (see the glossary in
+    [CONTRIBUTING.md](../CONTRIBUTING.md)).
