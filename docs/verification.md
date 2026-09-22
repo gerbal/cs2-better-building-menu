@@ -2447,3 +2447,20 @@ Opening Roads in the panel logged `[UNLOCK-PIP] cleared 3 highlight(s) under
 'Roads'` — asset, category, menu — and the flag read false, and stayed false
 across a close and reopen. The same on Transportation with a locked bus station.
 Zones held no locked asset in this save; the clearing is per menu and identical.
+
+## 2026-09-22 — 0.1.11 shipped
+
+Release build (`all`, `test`, `package` under `CS2_BUILD_CONFIG=Release`):
+428 backend tests, package stamped 0.1.11 (dll `6de7018a56b6`), the two
+card-row fixes present in the packaged stylesheet. Game closed first — the
+uploader rotates the login tokens the game reads. `NewVersion` from a scratch
+directory with the configuration's image paths made absolute: auto-login,
+"New mod version published". One `[L3_Error__] … IOERR_101 Invalid
+cross-device link` line came from the SDK's background mod downloader moving
+a file between `/tmp` and the prefix, before the upload; not the upload. The
+metadata `Update` two minutes later: "Mod metadata Updated" on the first
+attempt. The stray `C:` tree the uploader leaves was deleted from the scratch
+directory both times; none under the toolchain.
+
+Carries: the locale re-index policy, the badge size, the shared resize edge,
+and the two Cards-view row fixes found during the owner's QA the same day.
