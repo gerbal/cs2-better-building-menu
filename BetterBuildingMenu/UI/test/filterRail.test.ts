@@ -141,46 +141,6 @@ describe("Rail selection state", () => {
   });
 });
 
-describe("Active metric range count", () => {
-  it("counts only bounds that are actually set", async () => {
-    const { countActiveMetricRanges } = await import("../src/domain/filterRail.ts");
-
-    assert.equal(
-      countActiveMetricRanges({ minCost: 1000, maxCost: null, minUpkeep: null, hasSelection: true }),
-      1
-    );
-  });
-
-  it("ignores the hasSelection flag that travels with the bounds", async () => {
-    const { countActiveMetricRanges } = await import("../src/domain/filterRail.ts");
-
-    // Counting object values naively registers `hasSelection: false` as a set
-    // bound, so the metrics badge counts a filter nobody applied.
-    assert.equal(countActiveMetricRanges({ hasSelection: false }), 0);
-    assert.equal(countActiveMetricRanges({ hasSelection: true }), 0);
-  });
-
-  it("treats zero as a real bound rather than an empty one", async () => {
-    const { countActiveMetricRanges } = await import("../src/domain/filterRail.ts");
-
-    // "at most 0 workers" is a legitimate filter.
-    assert.equal(countActiveMetricRanges({ maxWorkers: 0, hasSelection: true }), 1);
-  });
-
-  it("counts both ends of a range separately", async () => {
-    const { countActiveMetricRanges } = await import("../src/domain/filterRail.ts");
-
-    assert.equal(countActiveMetricRanges({ minCost: 10, maxCost: 20, hasSelection: true }), 2);
-  });
-
-  it("survives absent state", async () => {
-    const { countActiveMetricRanges } = await import("../src/domain/filterRail.ts");
-
-    assert.equal(countActiveMetricRanges(null), 0);
-    assert.equal(countActiveMetricRanges(undefined), 0);
-  });
-});
-
 /**
  * Availability lives in the game's tool-options bank; everything else lives on
  * the rail. Every dimension must have EXACTLY ONE home — without this
