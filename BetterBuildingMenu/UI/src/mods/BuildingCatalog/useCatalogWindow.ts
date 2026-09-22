@@ -1,15 +1,12 @@
-import { bindValue, trigger, useValue } from "cs2/api";
+import { useValue } from "cs2/api";
 import { useEffect, useRef, type RefObject } from "react";
-import mod from "../../../mod.json";
-import type { BuildingCatalogEntry, BuildingCatalogPage } from "domain/buildingCatalog";
+import type { BuildingCatalogEntry } from "domain/buildingCatalog";
 import { loadMoreCatalogCommand } from "domain/buildingCatalogContracts";
 import { CATALOG_WINDOW_STEP, isScrollContainer, nextWindowLimit, shouldLoadMore } from "domain/catalogWindow";
+import { BuildingCatalog$, send, type BuildingCatalogPageStatus } from "mods/bindings";
 import { findScrollContainer, lastCatalogRow } from "./catalogDom";
 
-export type BuildingCatalogPageStatus = "indexing" | "ready" | "empty";
-type BuildingCatalogBindingPage = BuildingCatalogPage & { status?: BuildingCatalogPageStatus };
-
-const BuildingCatalog$ = bindValue<BuildingCatalogBindingPage>(mod.id, "BuildingCatalog");
+export type { BuildingCatalogPageStatus };
 
 /**
  * The page as the backend published it, plus the one command that grows it. The
@@ -59,8 +56,7 @@ export function useCatalogWindow(
       return;
     }
 
-    const command = loadMoreCatalogCommand(nextWindowLimit(limit, CATALOG_WINDOW_STEP, totalCount));
-    trigger(mod.id, command.method, ...command.args);
+    send(loadMoreCatalogCommand(nextWindowLimit(limit, CATALOG_WINDOW_STEP, totalCount)));
   }
 
   // The poll below outlives the render it started in; through the ref it always

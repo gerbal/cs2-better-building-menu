@@ -1,11 +1,10 @@
-import { bindValue, trigger, useValue } from "cs2/api";
+import { useValue } from "cs2/api";
 import { Button } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import { useEffect, useRef } from "react";
 import classNames from "classnames";
-import { shortenTileLabel, tableLabelCharBudget } from "domain/tileLabel";
+import { tableLabelCharBudget } from "domain/tileLabel";
 import { useTextScale } from "domain/textScaleSetting";
-import mod from "../../../mod.json";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
   BUILDING_LENS_PANEL_CHROME_WIDTH,
@@ -19,18 +18,9 @@ import {
   getBuildingLensMetricTextScale,
 } from "domain/buildingLensLayout";
 import type { BuildingLensDensityTier, BuildingLensMetric } from "domain/buildingLensLayout";
-import {
-  nextSortState,
-  setSortColumnCommand,
-  setSortDescendingCommand,
-} from "domain/buildingCatalogContracts";
 import { catalogWindowRemaining, loadMoreCount } from "domain/catalogWindow";
 import type { SortColumn } from "domain/buildingCatalogContracts";
-import {
-  getBuildingLensEmptyStateMessage,
-  type BuildingLensMetricRangeState,
-} from "domain/buildingLensFilterSummary";
-import type { BuildingLensFacetState } from "domain/buildingCatalogFacets";
+import { getBuildingLensEmptyStateMessage } from "domain/buildingLensFilterSummary";
 import { menuSurfacePort } from "domain/menuSurfacePort";
 import { enterDecision, getSearchScopeNotice, isEnterForSearch } from "domain/buildingSearchRank";
 import { isSearchField } from "mods/BuildingMenu/searchField";
@@ -47,23 +37,19 @@ import {
 import { TableView } from "./TableView";
 import { useCatalogWindow } from "./useCatalogWindow";
 import { useRevealExpandedRow, useScrollAnchor } from "./useScrollAnchor";
+import {
+  BuildingCatalogGroupBy$,
+  BuildingCatalogMatchesElsewhere$,
+  BuildingCatalogMetricRanges$,
+  BuildingCatalogSortColumn$,
+  BuildingCatalogSortDescending$,
+  BuildingLensFacets$,
+  CurrentSearch$,
+  PanelWidth$,
+  send,
+  sendSort,
+} from "mods/bindings";
 import styles from "./buildingCatalog.module.scss";
-
-const PanelWidth$ = bindValue<number>(mod.id, "PanelWidth");
-const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch");
-// The order lives in the backend query, which outlives this component, so
-// reading it back keeps the header honest across every remount.
-const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "BuildingCatalogSortColumn");
-const BuildingCatalogSortDescending$ = bindValue<boolean>(mod.id, "BuildingCatalogSortDescending");
-// Backend-owned too, so the shortlist the player built survives the unmount
-// that placing a building causes.
-const BuildingLensFacets$ = bindValue<BuildingLensFacetState>(mod.id, "BuildingLensFacets");
-const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState>(mod.id, "BuildingCatalogMetricRanges");
-const BuildingCatalogMatchesElsewhere$ = bindValue<number>(mod.id, "BuildingCatalogMatchesElsewhere", 0);
-// The grouping the page is ordered by — the player's choice or the menu's
-// default, resolved on the C# side (BuildingCatalogGrouping.Effective) so this
-// component reads it rather than deriving and pushing it back.
-const BuildingCatalogGroupBy$ = bindValue<string>(mod.id, "BuildingCatalogGroupBy", "category");
 
 /** Enter, by code; see the listener below. */
 const ENTER_KEY_CODE = 13;
@@ -173,7 +159,7 @@ export const BuildingCatalogComponent = () => {
       <Button
         className={styles.scopeNoticeAction}
         variant="icon"
-        onSelect={() => trigger(mod.id, "SearchEverything")}
+        onSelect={() => send({ method: "SearchEverything", args: [] })}
         aria-label={searchEverywhereLabel}
         title={searchEverywhereLabel}
       >
@@ -209,14 +195,7 @@ export const BuildingCatalogComponent = () => {
   }
 
   function setSort(column: SortColumn): void {
-    const next = nextSortState({ column: sortColumn, descending }, column);
-
-    // No local echo: the backend owns the order and publishes it back, so
-    // mirroring it here would be a second source of truth. The window shrinks
-    // to one chunk on the C# side, since a sort reorders everything anyway.
-    for (const command of [setSortColumnCommand(next.column), setSortDescendingCommand(next.descending)]) {
-      trigger(mod.id, command.method, ...command.args);
-    }
+    sendSort({ column: sortColumn, descending }, column);
   }
 
   // Scoped to the surface and the layout, because which element owns the scroll
@@ -266,7 +245,6 @@ export const BuildingCatalogComponent = () => {
 
     return () => document.removeEventListener("keydown", onKey);
   }, []);
-
 
   /*
    * The end of the feed, rendered as the last child INSIDE whichever element

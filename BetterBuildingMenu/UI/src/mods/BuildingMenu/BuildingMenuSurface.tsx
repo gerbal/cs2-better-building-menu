@@ -1,9 +1,8 @@
-import { bindValue, useValue } from "cs2/api";
+import { useValue } from "cs2/api";
 import { Theme } from "cs2/bindings";
 import { getModule } from "cs2/modding";
 import classNames from "classnames";
 
-import mod from "../../../mod.json";
 import { BuildingCatalogComponent } from "mods/BuildingCatalog/BuildingCatalog";
 import { LensControlPane, LENS_CONTROL_PANE_TOTAL } from "mods/LensControlPane/LensControlPane";
 import { BuildingMenuHeader } from "mods/BuildingMenu/BuildingMenuHeader";
@@ -12,8 +11,7 @@ import { VanillaTabBarHost } from "mods/VanillaTabBarHost/VanillaTabBarHost";
 import { useVanillaLayoutForLens } from "mods/BuildingMenu/vanillaLayout";
 
 import styles from "mods/BuildingMenu/buildingMenuSurface.module.scss";
-
-const PanelWidth$ = bindValue<number>(mod.id, "PanelWidth", 0);
+import { PanelWidth$ } from "mods/bindings";
 
 const AssetMenuTheme: Theme | any = getModule("game-ui/game/components/asset-menu/asset-menu.module.scss", "classes");
 

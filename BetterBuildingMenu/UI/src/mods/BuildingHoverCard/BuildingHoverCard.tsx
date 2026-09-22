@@ -1,8 +1,7 @@
-import { bindValue, useValue } from "cs2/api";
+import { useValue } from "cs2/api";
 import { Tooltip } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
-import mod from "../../../mod.json";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
   formatBuildingMetric,
@@ -28,9 +27,9 @@ import { RESOURCE_UPKEEP_PREFIX, isVanillaFact, orderFacts, renderServiceFacts, 
 import { clampAssetDescription, getBuildingExtensionLabels, resolveAssetDescription } from "domain/buildingLensRowDetails";
 import { isEntryAlreadyBuilt, isEntryLocked, listLockConditions } from "domain/buildingLockState";
 import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
-import type { ZoneFootprint } from "domain/zoningHierarchy";
 import { useUnitSystem } from "domain/unitSettings";
 import styles from "./buildingHoverCard.module.scss";
+import { BuildingLensMilestones$ } from "mods/bindings";
 
 // The fixed lines the game's own tooltip also carries: its states, cost and
 // upkeep, the headline capacity, and its effects. Range, lot, parking,
@@ -44,8 +43,6 @@ const PROMOTED_BY_CATEGORY: Readonly<Record<string, ReadonlySet<string>>> = {
   Networks: new Set(["speedLimit", "networkWidth"]),
   Zones: new Set(["zoneMaxHeight", "zoneHouseholds", "zoneHouseholdsPerCell", "zoneSpace"]),
 };
-
-const BuildingLensMilestones$ = bindValue<string[]>(mod.id, "BuildingLensMilestones", []);
 
 export interface HoverCardContext {
   milestoneNames: string[];

@@ -1,4 +1,4 @@
-import { bindValue, trigger, useValue } from "cs2/api";
+import { useValue } from "cs2/api";
 import { Theme } from "cs2/bindings";
 import { getModule } from "cs2/modding";
 import { Button, Tooltip } from "cs2/ui";
@@ -7,7 +7,6 @@ import { FOCUS_DISABLED } from "cs2/input";
 import classNames from "classnames";
 import { useRef } from "react";
 
-import mod from "../../../mod.json";
 import find from "images/find.svg";
 import { searchChangedCommand } from "domain/buildingCatalogContracts";
 import { MenuCategoryStrip } from "mods/MenuCategoryStrip/MenuCategoryStrip";
@@ -15,12 +14,10 @@ import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaC
 
 import styles from "mods/BuildingMenu/buildingMenuHeader.module.scss";
 import { noteSearchField } from "./searchField";
+import { CurrentSearch$, IsSearchLoading$, send } from "mods/bindings";
 
 const TextInput = getModule("game-ui/common/input/text/text-input.tsx", "TextInput");
 const TextInputTheme: Theme | any = getModule("game-ui/editor/widgets/item/editor-item.module.scss", "classes");
-
-const IsSearchLoading$ = bindValue<boolean>(mod.id, "IsSearchLoading", false);
-const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch", "");
 
 export interface BuildingMenuHeaderProps {
   /** Narrow panel: the strip and the field share a tighter row. */
@@ -48,8 +45,7 @@ export const BuildingMenuHeader = ({ small, large, onClose }: BuildingMenuHeader
   const localizedLabel = (key: string, fallback: string): string => translate(key, fallback) ?? fallback;
 
   const setSearchText = (value: string) => {
-    const command = searchChangedCommand(value);
-    trigger(mod.id, command.method, ...command.args);
+    send(searchChangedCommand(value));
   };
 
   const handleInputChange = (value: Event) => {

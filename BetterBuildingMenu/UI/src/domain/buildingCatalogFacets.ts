@@ -1,7 +1,6 @@
-export interface BuildingLensFacetTriggerCommand {
-  method: string;
-  args: any[];
-}
+import type { Command } from "./command";
+
+export type BuildingLensFacetTriggerCommand = Command;
 
 export interface BuildingLensFacetOption {
   id: string;
