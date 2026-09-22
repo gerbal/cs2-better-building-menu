@@ -120,11 +120,6 @@ export const BuildingGrid = ({ entries, onPlace, footer, standalone = true }: Bu
   // The name line is fontSizeM; its character budget follows the text scale.
   const textScale = useTextScale();
   const activePrefabId = useValue(ActivePrefabId$);
-  // The page arrives in the order every view shows: grouped, then by relevance
-  // while a search is active, then by the chosen sort. Nothing is re-ranked
-  // here, so the grid cannot disagree with the table.
-  const ordered = entries;
-
   const place = (entry: BuildingCatalogEntry) => {
     // Vanilla refuses the same selection rather than hiding the tile: its own
     // grid routes a locked click to a disabled sound, not a placement.
@@ -259,7 +254,8 @@ export const BuildingGrid = ({ entries, onPlace, footer, standalone = true }: Bu
 
   const tiles = (
     <div className={classNames(styles.tiles, styles.bodyTiles)}>
-      {ordered.map((entry) => tile(entry, `grid-${entry.id}`))}
+      {/* In page order, which every view shares; nothing is re-ranked here. */}
+      {entries.map((entry) => tile(entry, `grid-${entry.id}`))}
     </div>
   );
 

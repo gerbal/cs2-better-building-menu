@@ -61,9 +61,6 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId
     || translate("Tooltip.LABEL[BetterBuildingMenu.AlreadyBuilt]", "Already built")
     || "Already built";
   const cards = variant === "cards";
-  // The page arrives in the order every view shows — relevance first while a
-  // search is active — so list, grid and table agree.
-  const ordered = entries;
 
   const place = (entry: BuildingCatalogEntry) => {
     // See BuildingGrid: locked assets are shown and refused, not hidden.
@@ -94,7 +91,8 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId
 
   return (
     <div className={styles.list}>
-      {ordered.map((entry) => {
+      {/* In page order, which every view shares; nothing is re-ranked here. */}
+      {entries.map((entry) => {
         const label = entry.name || entry.prefabName;
         const cost = formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance);
         const lot = formatLotDimensions(entry.lotWidth, entry.lotDepth);
