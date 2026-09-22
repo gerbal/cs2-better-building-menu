@@ -211,6 +211,21 @@ const scssFiles = (): string[] =>
     .filter((name) => name.endsWith(".scss"))
     .map((name) => `../src/${name}`);
 
+describe("a wrapping row of cards keeps each card its own height", () => {
+  // Cohtml sizes a wrapping flex container for all its lines, then stretches
+  // the FIRST line's items to the whole container rather than the line: two
+  // cards grow to two rows' height and the third lands below the box, where
+  // the group's overflow clips it. A heading then says 3 over 2 visible cards.
+  // Only cards can grow — the compact row states its height — but the rule
+  // belongs on the container, which both share.
+  it("does not let a wrapped line stretch its items", () => {
+    const list = read("../src/mods/BuildingList/buildingList.module.scss").match(/\.list \{[^}]*\}/)?.[0] ?? "";
+
+    assert.match(list, /flex-wrap: wrap;/);
+    assert.match(list, /align-items: flex-start;/);
+  });
+});
+
 describe("Cohtml stylesheet support", () => {
   it("states no declaration the engine silently drops", () => {
     // Catching it here turns a silent log warning into a build failure.

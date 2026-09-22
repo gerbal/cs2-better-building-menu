@@ -7,6 +7,10 @@
   flex-direction: row;
   flex-wrap: wrap;
   align-content: flex-start;
+  // Never stretch: Cohtml stretches a wrapped first line's items to the whole
+  // container, so two cards grow to two rows' height and the third is pushed
+  // out of the box and clipped. Cards are the ones that can grow.
+  align-items: flex-start;
   margin-left: -4rem;
   margin-top: -4rem;
   > * {
