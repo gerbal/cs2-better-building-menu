@@ -1,8 +1,6 @@
 import { useValue } from "cs2/api";
-import { Theme } from "cs2/bindings";
 import { FOCUS_DISABLED } from "cs2/input";
 import { useLocalization } from "cs2/l10n";
-import { getModule } from "cs2/modding";
 import { Button } from "cs2/ui";
 import classNames from "classnames";
 import { useEffect, useMemo, useState } from "react";
@@ -30,6 +28,7 @@ import styles from "./buildingCatalog.module.scss";
 
 import type { BuildingLensMetricRangeState as BuildingCatalogMetricRangeState } from "domain/buildingLensFilterSummary";
 import { BuildingCatalogMetricBounds$, BuildingCatalogMetricRanges$, send } from "mods/bindings";
+import { GameTextInput, gameClasses } from "mods/gameModules";
 
 const emptyMetricRangeState: BuildingCatalogMetricRangeState = {
   minCost: null,
@@ -47,8 +46,7 @@ const emptyMetricRangeState: BuildingCatalogMetricRangeState = {
   hasSelection: false,
 };
 
-const TextInput = getModule("game-ui/common/input/text/text-input.tsx", "TextInput");
-const TextInputTheme: Theme | any = getModule("game-ui/editor/widgets/item/editor-item.module.scss", "classes");
+const TextInputTheme = gameClasses("game-ui/editor/widgets/item/editor-item.module.scss");
 
 const metricRangeScheduler: MetricRangeDebouncerScheduler = {
   setTimeout: (callback, delayMs) => setTimeout(callback, delayMs),
@@ -236,7 +234,7 @@ export const BuildingCatalogMetricFilters = () => {
               <div className={styles.metricRangeGroup} key={definition.id}>
                 <span className={styles.metricRangeLabel}>{label}</span>
                 <div className={styles.metricRangeInputs}>
-                  <TextInput
+                  <GameTextInput
                     multiline={1}
                     value={draft.minText}
                     disabled={false}
@@ -249,7 +247,7 @@ export const BuildingCatalogMetricFilters = () => {
                     onChange={(value: Event) => updateBound(definition.id, "minText", value)}
                   />
                   <span className={styles.metricRangeSeparator}>–</span>
-                  <TextInput
+                  <GameTextInput
                     multiline={1}
                     value={draft.maxText}
                     disabled={false}

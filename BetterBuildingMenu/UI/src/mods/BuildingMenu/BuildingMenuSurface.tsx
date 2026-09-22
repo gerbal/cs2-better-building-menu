@@ -1,6 +1,4 @@
 import { useValue } from "cs2/api";
-import { Theme } from "cs2/bindings";
-import { getModule } from "cs2/modding";
 import classNames from "classnames";
 
 import { BuildingCatalogComponent } from "mods/BuildingCatalog/BuildingCatalog";
@@ -12,8 +10,9 @@ import { useVanillaLayoutForLens } from "mods/BuildingMenu/vanillaLayout";
 
 import styles from "mods/BuildingMenu/buildingMenuSurface.module.scss";
 import { PanelWidth$ } from "mods/bindings";
+import { gameClasses } from "mods/gameModules";
 
-const AssetMenuTheme: Theme | any = getModule("game-ui/game/components/asset-menu/asset-menu.module.scss", "classes");
+const AssetMenuTheme = gameClasses("game-ui/game/components/asset-menu/asset-menu.module.scss");
 
 /**
  * The build menu, rendered from inside the game's own `AssetMenu` extension
