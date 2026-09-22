@@ -69,10 +69,9 @@ export function watchAction(state: WatchState, index: number | null): WatchActio
 }
 
 /**
- * What the watcher remembers while the setting is off. It keeps counting
- * observations, so the menu already open when the setting is switched on
- * reads as a fresh selection and the lens takes it over at once. `last` is
- * null because nothing was routed while off.
+ * What the watcher remembers while the setting is off: observations still count,
+ * so the menu open when the setting comes on reads as a fresh selection and the
+ * lens takes it over at once. Nothing is routed while off, so `last` is null.
  */
 export function watchStateWhileOff(): WatchState {
   return { seen: true, last: null };

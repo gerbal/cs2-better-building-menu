@@ -276,10 +276,9 @@ namespace BetterBuildingMenu.Systems
 			// rather than at the next click.
 			if (!Mod.Settings.ReplaceVanillaBuildMenu && _LensOwnsCurrentMenu.Value)
 			{
-				// With the setting off the watcher sends no deselect, so forget the menu
-				// here, as VanillaMenuDeselected would: otherwise the next open of the
-				// lens is still filtered to it, and switching back on and reopening the
-				// same menu reads as an echo.
+				// With the setting off the watcher sends no deselect, so forget the menu here,
+				// as VanillaMenuDeselected does. A kept scope filters the next open to it, and
+				// a kept index makes switching back on over the same menu read as an echo.
 				_appliedMenuIndex = 0;
 				_appliedMenuFrame = null;
 				ReleaseMenuScope();
