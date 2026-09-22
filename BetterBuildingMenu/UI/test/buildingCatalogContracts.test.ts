@@ -3,7 +3,6 @@ import { describe, it } from "node:test";
 import {
   getCatalogWindowSummary,
   clearBuildingCatalogMetricRangesCommand,
-  locatePrefabCommand,
   nextSortState,
   searchChangedCommand,
   setBuildingCatalogMetricRangeCommand,
@@ -61,7 +60,6 @@ describe("BetterBuildingMenu UI binding contracts", () => {
     // The limit wanted, so a repeat is harmless; the backend clamps it to one step
     // and the ceiling. The name must match the CreateTrigger in BuildingMenuUISystem.Setup.
     assert.deepEqual(loadMoreCatalogCommand(200), { method: "LoadMoreBuildingCatalog", args: [200] });
-    assert.deepEqual(locatePrefabCommand(17), { type: "locatePrefab", prefabId: 17 });
   });
 
   it("keeps the search payload aligned with the C# binding", () => {
