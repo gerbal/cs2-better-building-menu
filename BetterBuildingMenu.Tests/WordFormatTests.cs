@@ -1,0 +1,37 @@
+using System.Globalization;
+using BetterBuildingMenu.Domain;
+using Xunit;
+
+namespace BetterBuildingMenu.Tests
+{
+	public sealed class WordFormatTests
+	{
+		[Theory]
+		[InlineData("GarbageAccumulation", "Garbage Accumulation")]
+		[InlineData("big park", "Big Park")]
+		[InlineData("don't stop", "Don't Stop")]
+		public void SpellsAnIdentifierAsWords(string identifier, string expected)
+		{
+			Assert.Equal(expected, identifier.FormatWords());
+		}
+
+		[Fact]
+		public void IsTheSameUnderATurkishOs()
+		{
+			// Mono's culture is the OS's, not the game's language; a Turkish one
+			// upper-cases "i" to "İ", and "industrial" read "İndustrial".
+			var previous = CultureInfo.CurrentCulture;
+
+			try
+			{
+				CultureInfo.CurrentCulture = new CultureInfo("tr-TR");
+
+				Assert.Equal("Industrial Zone", "industrial zone".FormatWords());
+			}
+			finally
+			{
+				CultureInfo.CurrentCulture = previous;
+			}
+		}
+	}
+}
