@@ -145,9 +145,8 @@ namespace BetterBuildingMenu.Systems
 			// These establish the bindings with UI code.
 			_IsSearchLoading = CreateBinding("IsSearchLoading", false);
 			_ActivePrefabId = CreateBinding("ActivePrefabId", 0);
-			// Read once at setup and never re-pushed: OnSettingsApplied only
-			// republishes the tile size, so a change to this setting takes
-			// effect on the next load.
+			// Seeded here and re-pushed by OnSettingsApplied: the UI's menu watcher and
+			// the upgrades panel read it, and C# reads the setting live.
 			_ReplaceVanillaBuildMenu = CreateBinding("ReplaceVanillaBuildMenu", Mod.Settings.ReplaceVanillaBuildMenu);
 			_LensOwnsCurrentMenu = CreateBinding("LensOwnsCurrentMenu", false);
 			_BuildingCatalogMatchesElsewhere = CreateBinding("BuildingCatalogMatchesElsewhere", 0);
@@ -271,6 +270,14 @@ namespace BetterBuildingMenu.Systems
 		private void OnSettingsApplied(Game.Settings.Setting setting)
 		{
 			_LensTileSize.Value = Mod.Settings.BuildingLensTileSize;
+			_ReplaceVanillaBuildMenu.Value = Mod.Settings.ReplaceVanillaBuildMenu;
+
+			// Switched off with the panel up: the menu goes back to its vanilla grid now
+			// rather than at the next click.
+			if (!Mod.Settings.ReplaceVanillaBuildMenu && _LensOwnsCurrentMenu.Value)
+			{
+				YieldMenuToVanilla();
+			}
 		}
 
 		protected override void OnUpdate()
