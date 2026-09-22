@@ -30,7 +30,7 @@ import { DEFAULT_VIEW_MODE, ViewModeBar } from "mods/GroupedResults/ViewModeBar"
 import type { CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import { setLensView } from "domain/lensViewStore";
 import { useLensView } from "mods/useLensView";
-import { useState } from "react";
+import { memo, useState } from "react";
 import { BUILDING_LENS_CONTROL_PANE_TOTAL } from "domain/buildingLensLayout";
 import {
   BuildingCatalog$,
@@ -60,7 +60,7 @@ export const LENS_CONTROL_PANE_TOTAL = BUILDING_LENS_CONTROL_PANE_TOTAL;
  * mirroring vanilla's tool-options column, holding everything that acts on the
  * catalog — what narrows it, how it is grouped and ordered, what shape it draws.
  */
-export const LensControlPane = () => {
+export const LensControlPane = memo(function LensControlPane() {
   const { translate } = useLocalization();
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
@@ -364,4 +364,4 @@ export const LensControlPane = () => {
       </div>
     </div>
   );
-};
+});

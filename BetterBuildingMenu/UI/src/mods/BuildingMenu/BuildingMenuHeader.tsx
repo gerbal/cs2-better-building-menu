@@ -5,7 +5,7 @@ import { Button, Tooltip } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import { FOCUS_DISABLED } from "cs2/input";
 import classNames from "classnames";
-import { useRef } from "react";
+import { memo, useRef } from "react";
 
 import find from "images/find.svg";
 import { searchChangedCommand } from "domain/buildingCatalogContracts";
@@ -35,7 +35,7 @@ export interface BuildingMenuHeaderProps {
  * The build menu's own header: the category strip, the search field and the
  * game's close X, on one row.
  */
-export const BuildingMenuHeader = ({ small, large, onClose }: BuildingMenuHeaderProps) => {
+export const BuildingMenuHeader = memo(function BuildingMenuHeader({ small, large, onClose }: BuildingMenuHeaderProps) {
   const { translate } = useLocalization();
   const searchRef = useRef(null);
 
@@ -124,4 +124,4 @@ export const BuildingMenuHeader = ({ small, large, onClose }: BuildingMenuHeader
       </div>
     </div>
   );
-};
+});

@@ -2,6 +2,7 @@ import { useValue } from "cs2/api";
 import { Tooltip } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
+import { useMemo } from "react";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
   formatBuildingMetric,
@@ -91,7 +92,9 @@ export const useHoverCardContext = (): HoverCardContext => {
   const unitSystem = useUnitSystem();
   const milestoneNames = useValue(BuildingLensMilestones$) ?? [];
 
-  return {
+  // One object until one of these changes, so the rows it is handed to can skip
+  // a render; translate holds still until the language changes.
+  return useMemo(() => ({
     milestoneNames,
     // Clamped here, not in the resolver: the expanded table row shows the same
     // description where there is room for all of it, and shortening it there
@@ -132,7 +135,7 @@ export const useHoverCardContext = (): HoverCardContext => {
       // lanes, and naming the unit keeps it from reading as an exact capacity.
       parkingBays: translate("Tooltip.LABEL[BetterBuildingMenu.ParkingBays]", "bays") ?? "bays",
     },
-  };
+  }), [translate, unitSystem, milestoneNames]);
 };
 
 /**

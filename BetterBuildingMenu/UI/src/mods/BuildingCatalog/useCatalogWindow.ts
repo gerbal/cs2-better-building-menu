@@ -1,5 +1,5 @@
 import { useValue } from "cs2/api";
-import { useEffect, useRef, type RefObject } from "react";
+import { useCallback, useEffect, useRef, type RefObject } from "react";
 import type { BuildingCatalogEntry } from "domain/buildingCatalog";
 import { loadMoreCatalogCommand } from "domain/buildingCatalogContracts";
 import { CATALOG_WINDOW_STEP, isScrollContainer, nextWindowLimit, shouldLoadMore } from "domain/catalogWindow";
@@ -51,13 +51,13 @@ export function useCatalogWindow(
    * Asks the backend for the next chunk, by the limit wanted rather than "one
    * more": the same request arriving twice then grows the window once.
    */
-  function loadMore(): void {
+  const loadMore = useCallback((): void => {
     if (!hasMore) {
       return;
     }
 
     send(loadMoreCatalogCommand(nextWindowLimit(limit, CATALOG_WINDOW_STEP, totalCount)));
-  }
+  }, [hasMore, limit, totalCount]);
 
   // The poll below outlives the render it started in; through the ref it always
   // asks from the page on screen, not the one it started under.
