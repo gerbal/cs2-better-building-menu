@@ -4,8 +4,8 @@ import { readFileSync } from "node:fs";
 
 /**
  * The version lives in five files, and a release bump that misses one ships a
- * wrong number somewhere: UI/mod.json said 0.1.0 into the bundle's banner for
- * eleven releases. The csproj is the one the DLL carries; the rest must agree.
+ * wrong number somewhere, such as the UI bundle's banner. The csproj is the one
+ * the DLL carries; the rest must agree.
  */
 const read = (p: string) => readFileSync(new URL(p, import.meta.url), "utf8");
 const match = (text: string, pattern: RegExp, where: string): string => {
