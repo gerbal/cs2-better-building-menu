@@ -1,6 +1,19 @@
 [
   {
     "Stable": true,
+    "Version": "0.1.12",
+    "Date": "2026-09-22",
+    "ChangeGroups": [
+      {
+        "Name": "Changes",
+        "Changes": [
+          "The panel's drag-to-resize edge shows the game's own resize cursor on hover and while dragging, and its grip is drawn at the weight of the game's scrollbar thumb, so the edge reads as something to grab. Hovering it showed no cursor at all before."
+        ]
+      }
+    ]
+  },
+  {
+    "Stable": true,
     "Version": "0.1.11",
     "Date": "2026-09-22",
     "ChangeGroups": [

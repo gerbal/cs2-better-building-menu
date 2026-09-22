@@ -2464,3 +2464,20 @@ directory both times; none under the toolchain.
 
 Carries: the locale re-index policy, the badge size, the shared resize edge,
 and the two Cards-view row fixes found during the owner's QA the same day.
+
+## 2026-09-22 — the resize edge announces itself (cm-uact.7, first step)
+
+Chosen over auto-fit and header presets after a critical pass: the cheapest
+change that does not prejudge whether the "too much screen space" report is
+about height at all. What the stylesheets showed: the game draws its own
+cursors and never writes a CSS keyword past `default`/`pointer`/`none`, so
+the strip's `ns-resize` mapped to nothing — hovering the edge showed no
+cursor. Vanilla's draggable value fields use `cursor://vertical-can-resize`
+(hover) and `cursor://vertical-resize` (drag); the strip and the drag
+blocker now do the same, and the grip rests at the scrollbar thumb's
+`rgba(var(--scrollbarColor), 0.6)` instead of 0.35. Live on Porterville 6:
+computed cursor `url(cursor://vertical-can-resize)`, grip
+`rgba(255,255,255,0.6)` (the root token; not the dark variant some panels
+carry). No glyph on the pill: vanilla's grabbable bars carry none. Still
+owed before anything larger: the footprint measurement, ours against the
+stock icon row at 720p and 1080p, control pane open and closed.

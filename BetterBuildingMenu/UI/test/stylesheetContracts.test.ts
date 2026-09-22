@@ -117,13 +117,30 @@ describe("Building Lens stylesheet contracts", () => {
     const strip = lensResizeHandleStyles.match(/\.resizeHandle\s*\{[^}]*\}/)?.[0] ?? "";
     const grip = lensResizeHandleStyles.match(/\.resizeGrip\s*\{[^}]*\}/)?.[0] ?? "";
 
-    assert.match(strip, /cursor:\s*ns-resize/);
     // NOT absolute. As an overlay on the panel edge it is invisible AND
     // unclickable — the tab strip paints over it whatever z-index it carries.
     // In the flow above the strip it cannot be occluded by it.
     assert.doesNotMatch(strip, /position:\s*absolute/);
     // Taller than the mark it draws, so the edge is grabbable without aiming.
     assert.match(strip, /height:\s*14rem/);
+  });
+
+  it("announces the drag the way the game does: its cursors, its thumb's weight", () => {
+    // The game draws its own cursors and maps none of the CSS keywords past
+    // default/pointer/none: `ns-resize` shows NOTHING on hover, so the edge
+    // never announced itself. vertical-can-resize is what vanilla's own
+    // draggable value fields show, and vertical-resize is what they show
+    // mid-drag.
+    const strip = lensResizeHandleStyles.match(/\.resizeHandle\s*\{[^}]*\}/)?.[0] ?? "";
+    const blocker = lensResizeHandleStyles.match(/\.resizeBlocker\s*\{[^}]*\}/)?.[0] ?? "";
+    const grip = lensResizeHandleStyles.match(/\.resizeGrip\s*\{[^}]*\}/)?.[0] ?? "";
+
+    assert.match(strip, /cursor: url\(cursor:\/\/vertical-can-resize\);/);
+    assert.match(blocker, /cursor: url\(cursor:\/\/vertical-resize\);/);
+    assert.doesNotMatch(lensResizeHandleStyles, /cursor:\s*ns-resize/);
+    // At rest the pill weighs what the game's scrollbar thumb weighs, so it
+    // reads as a thing to grab rather than a texture of the chrome.
+    assert.match(grip, /background-color: rgba\(var\(--scrollbarColor\), 0\.6\);/);
     // A short bar on the edge. Anything wider is a border between two regions,
     // and rem and px differ here, so a smaller number draws a thinner mark.
     assert.match(grip, /height:\s*8rem/);
