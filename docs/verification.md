@@ -2516,3 +2516,18 @@ heights 128 → 72 px, widths unchanged. Built, deployed, view reloaded, Grid
 reselected: 17 groups, none multi-line, none clipped, gaps 2.67 px, tiles
 53.3 px. `.groupRow` keeps its gutter: its wraps are real overflow (bands of
 768–2036 px in a 710 px row), and `gap` there changed no line count.
+
+## 2026-09-22 — the height floor is one row of cards (owner's request)
+
+The floor was 200 rem in three unlinked places: the TS clamp, the C# clamp
+(a test asserts those two agree) and `.content { min-height }`. First try,
+75 rem = heading reserve + list padding + one card, clipped the row: the
+catalog's own 8 rem padding top and bottom was uncounted, and Zones groups two
+levels deep, so its first row sits under two heading reserves. Measured from
+the content top on Porterville 6: 5.3 + 11 + 11 + 2.7 px to the card, 33.3
+card, 2.7 + 5.3 below = 71.3 px. Floor set to 108 rem (16 + 2 × 17 + 8 + 50)
+in all three, with a stylesheet contract deriving the number and pinning the
+`min-height` to the TS constant. Live after a drag past the floor: binding
+108, content 72 px, one row fully visible under both headings, 8.7 px below
+it. The Grid view's row is 80 rem tall, so at the floor it shows a partial
+row; the floor was asked for in cards.

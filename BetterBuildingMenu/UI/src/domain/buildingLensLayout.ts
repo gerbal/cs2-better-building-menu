@@ -221,10 +221,12 @@ export type BuildingLensAlignment = "Left" | "Center" | "Right" | string;
 
 /**
  * The catalog's height range, twin of BuildingLensHeight in C# — a test asserts
- * they agree. Min is two tile rows plus padding, Max the viewport less the
- * chrome below the panel; between them the height is the player's to drag.
+ * they agree. Min is one row of cards under two headings, the deepest grouping
+ * a menu draws (catalog padding, two heading reserves, list padding, one
+ * card); Max the viewport less the chrome below the panel; between them the
+ * height is the player's to drag.
  */
-export const BUILDING_LENS_MIN_HEIGHT = 200;
+export const BUILDING_LENS_MIN_HEIGHT = 108;
 export const BUILDING_LENS_MAX_HEIGHT = 960;
 export const BUILDING_LENS_DEFAULT_HEIGHT = 420;
 

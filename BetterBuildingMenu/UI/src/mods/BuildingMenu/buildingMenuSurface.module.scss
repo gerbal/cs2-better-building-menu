@@ -155,9 +155,9 @@
   // Grow to the cap the parent sets, shrink below it.
   flex: 0 1 auto;
   // A floor rather than sizing to content: content-sized, the panel changes
-  // height on every keystroke and moves controls under the cursor. It only
-  // has to stop a collapse to a single row, not reserve a screenful.
-  min-height: 200rem;
+  // height on every keystroke and moves controls under the cursor. One row of
+  // cards under two headings, the same number the drag clamps to.
+  min-height: 108rem;
   // The Building Lens states its height inline from the player's setting, so
   // these bounds reach only the legacy FindIt panel. Kept as a backstop
   // against any future path putting the panel off screen.
