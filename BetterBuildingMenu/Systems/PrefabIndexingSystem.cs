@@ -106,7 +106,9 @@ namespace BetterBuildingMenu.Systems
 		// root is called "Basic", so a label-keyed icon would collide.
 		private Dictionary<Entity, (string Label, string Icon, int Depth)> _devTreeBranches = new();
 		private static Dictionary<string, (string Label, string Icon, int Depth)> _devTreeRoots = new();
-		private readonly List<IPrefabCategoryProcessor> _prefabCategoryProcessors = new();
+		// Each processor with its query, and that query narrowed to prefabs created or changed this
+		// frame, which is all a partial pass reads. Built once, in OnCreate.
+		private readonly List<(IPrefabCategoryProcessor Processor, EntityQuery All, EntityQuery Changed)> _processors = new();
 
 		/// <summary>Bumped whenever an indexed fact changes: a re-index, an unlock, a unique built or
 		/// bulldozed. The catalog's snapshot cache is keyed on it, so a stale projection cannot outlive
@@ -151,6 +153,8 @@ namespace BetterBuildingMenu.Systems
 
 			_blackList = new HashSet<string>(reader.ReadToEnd().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries));
 
+			var processors = new List<IPrefabCategoryProcessor>();
+
 			foreach (var type in typeof(PrefabIndexingSystem).Assembly.GetTypes())
 			{
 				if (typeof(IPrefabCategoryProcessor).IsAssignableFrom(type) && !type.IsAbstract)
@@ -175,14 +179,22 @@ namespace BetterBuildingMenu.Systems
 						}
 					}
 
-					_prefabCategoryProcessors.Add((IPrefabCategoryProcessor)Activator.CreateInstance(type, objectParams));
+					processors.Add((IPrefabCategoryProcessor)Activator.CreateInstance(type, objectParams));
 				}
 			}
 
 			// The catch-all runs last: it claims only what the others left.
-			_prefabCategoryProcessors.Sort((left, right) =>
+			processors.Sort((left, right) =>
 				(left is Utilities.PrefabCategoryProcessor.MenuPlacedPrefabCategoryProcessor ? 1 : 0)
 				- (right is Utilities.PrefabCategoryProcessor.MenuPlacedPrefabCategoryProcessor ? 1 : 0));
+
+			foreach (var processor in processors)
+			{
+				_processors.Add((
+					processor,
+					GetEntityQuery(processor.GetEntityQuery()),
+					GetEntityQuery(ChangedOnly(processor.GetEntityQuery()))));
+			}
 
 			// Unlock events are the second trigger: UnlockSystem.UnlockPrefab
 			// disables Locked and raises an Unlock event without marking the prefab
@@ -438,6 +450,23 @@ namespace BetterBuildingMenu.Systems
 				+ $"({Mod.Silhouettes.Generated} generated)");
 		}
 
+		/// <summary>Narrows a processor's query to prefabs created or changed this frame.</summary>
+		/// <remarks>Edits the descriptions in place, so it is handed a copy of its own: processors build
+		/// new ones on every call. A description with an Any of its own is left whole, since it cannot
+		/// take a second; that processor's partial passes read everything it matches.</remarks>
+		private static EntityQueryDesc[] ChangedOnly(EntityQueryDesc[] descs)
+		{
+			foreach (var desc in descs)
+			{
+				if (desc.Any is not { Length: > 0 })
+				{
+					desc.Any = new[] { ComponentType.ReadOnly<Created>(), ComponentType.ReadOnly<Updated>() };
+				}
+			}
+
+			return descs;
+		}
+
 		private void RunIndex(bool full)
 		{
 			var stopWatch = Stopwatch.StartNew();
@@ -460,7 +489,7 @@ namespace BetterBuildingMenu.Systems
 				IndexDevTreeBranches();
 			}
 
-			foreach (var processor in _prefabCategoryProcessors)
+			foreach (var (processor, allQuery, changedQuery) in _processors)
 			{
 				if (full)
 				{
@@ -469,21 +498,13 @@ namespace BetterBuildingMenu.Systems
 
 				try
 				{
-					var queries = processor.GetEntityQuery();
+					// A partial pass reads only what changed. The full query would re-index
+					// every road on the main thread for one Road Builder edit.
+					var query = full ? allQuery : changedQuery;
 
-					var query = GetEntityQuery(queries);
-
-					if (!full)
+					if (!full && query.IsEmptyIgnoreFilter)
 					{
-						for (var i = 0; i < queries.Length; i++)
-						{
-							queries[i].Any = new[] { ComponentType.ReadOnly<Created>(), ComponentType.ReadOnly<Updated>() };
-						}
-
-						if (GetEntityQuery(queries).IsEmptyIgnoreFilter)
-						{
-							continue;
-						}
+						continue;
 					}
 
 					var entities = query.ToEntityArray(Allocator.Temp);
@@ -599,10 +620,12 @@ namespace BetterBuildingMenu.Systems
 				}
 			}
 
+			// Partial passes too: one re-read prefab takes back its plain name, and its
+			// namesakes' numbers are only right if all of them are counted again.
+			AddNumberToDuplicatePrefabNames();
+
 			if (full)
 			{
-				AddNumberToDuplicatePrefabNames();
-
 				CleanupBrandPrefabs();
 			}
 
@@ -1056,7 +1079,8 @@ namespace BetterBuildingMenu.Systems
 		{
 			prefabIndex.Id = entity.Index;
 			prefabIndex.PrefabName = prefab.name;
-			prefabIndex.Name = GetAssetName(prefab);
+			prefabIndex.AssetName = GetAssetName(prefab);
+			prefabIndex.Name = prefabIndex.AssetName;
 			prefabIndex.Thumbnail = IconPath.Normalize(prefabIndex.Thumbnail ?? ImageSystem.GetThumbnail(prefab));
 			prefabIndex.FallbackThumbnail ??= CategoryIconAttribute.GetAttribute(prefabIndex.SubCategory).Icon;
 			prefabIndex.CategoryThumbnail ??= CategoryIconAttribute.GetAttribute(prefabIndex.SubCategory).Icon;
@@ -2354,30 +2378,23 @@ namespace BetterBuildingMenu.Systems
 				: prefab.name.Replace('_', ' ').FormatWords();
 		}
 
+		/// <summary>Numbers the display names indexed prefabs share. See <see cref="DuplicateNameNumbering"/>.</summary>
 		private static void AddNumberToDuplicatePrefabNames()
 		{
+			var all = BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any];
 			// Upgrades are left out of the numbering. Every school type has an
 			// "Extension Wing"; they are never listed beside each other, only on
 			// their own parent's picker, where "Extension Wing 2" has no referent.
-			foreach (var grp in BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any]
-				.Where(x => !x.IsServiceUpgrade)
-				.GroupBy(x => x.Name))
+			var numbered = all.Where(x => !x.IsServiceUpgrade).ToList();
+			var names = DuplicateNameNumbering.Names(numbered.Select(x => (x.AssetName, x.PrefabName)).ToList());
+
+			for (var i = 0; i < numbered.Count; i++)
 			{
-				var count = grp.Count();
-
-				if (count == 1)
-				{
-					continue;
-				}
-
-				var format = new string('0', count.ToString().Length);
-				var index = 1;
-
-				foreach (var prefab in grp)
-				{
-					prefab.Name = $"{prefab.Name} {index++.ToString(format)}";
-				}
+				numbered[i].Name = names[i];
 			}
+
+			// The name order was sorted on the names just replaced.
+			all.ResetOrder();
 		}
 
 		private void CleanupBrandPrefabs()
