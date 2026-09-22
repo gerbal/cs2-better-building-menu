@@ -94,7 +94,7 @@ public sealed class BuildingCatalogMetricRangeTests
     {
         BuildingCatalogEntry school = new BuildingCatalogEntry(
             1, "School", "School", "ServiceBuildings", "Education", "", 4, 4, 2,
-            BetterBuildingMenu.Domain.Enums.ZoneTypeFilter.Any, false, false, true, "") with
+            BetterBuildingMenu.Domain.Enums.ZoneTypeFilter.Any, false, true, "") with
         {
             Capacity = 500,
             BuildingType = "School",
