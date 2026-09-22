@@ -95,6 +95,20 @@ describe("Building Lens catalog height", () => {
   it("treats a non-finite pointer as no movement", () => {
     assert.equal(draggedBuildingLensHeight(400, Number.NaN, 300), 400);
   });
+
+  it("keeps the edge under the cursor at any scale", () => {
+    // 60px up is 60rem at 1080p (1px per rem) and 90rem at 720p (2/3px per
+    // rem). A fixed ratio ran the panel 1.5x ahead of the cursor at 1080p.
+    assert.equal(draggedBuildingLensHeight(400, 500, 440, 1), 460);
+    assert.equal(draggedBuildingLensHeight(400, 500, 440, 2 / 3), 490);
+    assert.equal(draggedBuildingLensHeight(400, 500, 440, 2), 430);
+  });
+
+  it("falls back to the 720p ratio when the measurement is unusable", () => {
+    for (const bad of [0, -1, Number.NaN, Number.POSITIVE_INFINITY, undefined]) {
+      assert.equal(draggedBuildingLensHeight(400, 500, 440, bad), draggedBuildingLensHeight(400, 500, 440, 2 / 3));
+    }
+  });
 });
 
 describe("Table column widths", () => {
