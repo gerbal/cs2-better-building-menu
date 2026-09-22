@@ -133,68 +133,8 @@
   animation: entryTranslate 0.2s ease-in-out;
 }
 
-// The panel's top edge, as the first row rather than an overlay: the tab strip
-// paints over an overlay whatever z-index it carries, so it is neither visible
-// nor clickable. Drawn, because it is the only way to change the height.
-.resizeHandle {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-  // The whole top of the panel, edge to edge, so the grab is the bar rather
-  // than a mark on it.
-  width: 100%;
-  height: 14rem;
-  pointer-events: auto;
-  cursor: ns-resize;
-  background-color: var(--panelColorDark);
-  backdrop-filter: var(--panelBlur);
-  border-top-left-radius: var(--panelRadius);
-  border-top-right-radius: var(--panelRadius);
-}
-
-// Sized in whole pixels at this engine's rem scale, so the mark draws crisply.
-.resizeGrip {
-  width: 75rem;
-  height: 8rem;
-  // Half the height: a pill, which is its own shape and reads as a grip. Not
-  // --panelRadius — that radius belongs to the panel's corners, and matching
-  // it would make the grip look like a clipped fragment of the chrome.
-  border-radius: 4rem;
-  background-color: rgba(255, 255, 255, 0.35);
-  transition: background-color 0.15s;
-}
-
-// Blue on direct hover of the strip, and only then. The grab area is the whole
-// top of the panel, so the mark answers all of it — but not the tab strip
-// below, which is a separate control this must not claim.
-.resizeHandle:hover .resizeGrip {
-  background-color: var(--accentColorNormal);
-}
-
-.resizeGripActive,
-.resizeHandle:hover .resizeGripActive {
-  background-color: var(--accentColorNormal);
-}
-
-// The strip is the top of the panel, so it owns the top rounding and the bar
-// below it must be square, or two curved edges stack one above the other.
-.resizeHandle + .topBar {
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
-}
-
-.resizeBlocker {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 10001;
-  pointer-events: auto;
-  cursor: ns-resize;
-}
+// The height drag on the top edge is LensResizeHandle's, shared with the
+// extension picker.
 
 .content {
   border-bottom-left-radius: var(--panelRadius);
@@ -228,8 +168,10 @@
   background-color: var(--panelColorDark);
   backdrop-filter: var(--panelBlur);
   color: var(--accentColorNormal);
-  border-top-left-radius: var(--panelRadius);
-  border-top-right-radius: var(--panelRadius);
+  // Square: the resize strip above owns the panel's top rounding, and two
+  // curved edges would stack one above the other.
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
   // Not hidden: the chip row lives here, and its section picker and the filter
   // rail's popovers hang below the bar — clipped, they are present, correctly
   // positioned and invisible. Only the top corners round, so the radius holds.

@@ -110,6 +110,29 @@ describe("the extension picker", () => {
     assert.match(render(), /class="[^"]*content[^"]*vanilla-assetPanel/);
   });
 
+  it("draws the height drag on its top edge, as the build menu does", () => {
+    // One affordance for both panels: a player who has learned to drag the
+    // build menu's edge finds the same edge here, instead of a picker that
+    // grows with its rows until it blocks the screen.
+    const html = render();
+
+    assert.match(html, /class="[^"]*resizeHandle/);
+    assert.match(html, /title="Drag to resize"/);
+    assert.match(html, /class="[^"]*resizeGrip/);
+  });
+
+  it("caps its body at the shared panel height rather than sizing it to it", () => {
+    // The same setting the build menu's drag writes. A cap, not a height: a
+    // two-row picker stays two rows, a long one scrolls at the dragged height.
+    setBinding("BetterBuildingMenu", "BuildingLensPanelHeight", 500);
+
+    const html = render();
+    const body = html.match(/<div class="[^"]*content[^"]*"[^>]*>/)?.[0] ?? "";
+
+    assert.match(body, /max-height:500rem/);
+    assert.doesNotMatch(body, /[^-]height:500rem/);
+  });
+
   it("hands the close to the game's own onClose", () => {
     let closed = 0;
     const html = renderHtml(<Ours focusKey="upgrades" className="toolPanel" onClose={() => { closed++; }} />);
