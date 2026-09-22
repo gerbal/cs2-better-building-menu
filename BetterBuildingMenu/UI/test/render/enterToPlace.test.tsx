@@ -17,9 +17,8 @@ let keydown: Listener[] = [];
 function installDocument(): void {
   keydown = [];
   globals.document = {
-    // Only capture-phase listeners hear a key typed in the panel: the game's
-    // app container stops keydown propagation before it bubbles to the document
-    // (measured in game, 2026-09-22), so a bubble listener never sees one.
+    // Only capture-phase listeners hear a key typed in the panel: the game's app
+    // container stops keydown propagation before it bubbles to the document.
     addEventListener: (type: string, listener: Listener, capture?: boolean) => {
       if (type === "keydown" && capture === true) keydown.push(listener);
     },

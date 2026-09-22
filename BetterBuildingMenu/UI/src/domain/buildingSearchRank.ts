@@ -57,10 +57,9 @@ const ENTER_KEY_CODE = 13;
 const IME_PROCESS_KEY_CODE = 229;
 
 /**
- * Whether a keydown is a plain Enter. Accepts either spelling, since Cohtml
- * fills `keyCode` where it leaves `key` empty. An Enter that confirms an input
- * method's candidate (Japanese, Korean, Chinese) belongs to the composition,
- * and must not place a building.
+ * Whether a keydown is a plain Enter, by `key` or by `keyCode` (Cohtml can leave
+ * `key` empty). An Enter that confirms an input method's candidate (Japanese,
+ * Korean, Chinese) belongs to the composition and must not place a building.
  */
 export function isPlainEnter(event: { key?: unknown; keyCode?: unknown; isComposing?: unknown }): boolean {
   if (event.isComposing === true || event.keyCode === IME_PROCESS_KEY_CODE) {
