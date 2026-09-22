@@ -110,8 +110,8 @@ namespace BetterBuildingMenu.Domain
 		/// shrunk, never past the ceiling.
 		/// </summary>
 		/// <remarks>
-		/// Idempotent, because the request can arrive twice (a double click, or the scroll poll
-		/// firing again before the answer lands) and each copy used to add a chunk.
+		/// Idempotent, because the request can arrive twice: a double click, or the scroll poll
+		/// firing again before the answer lands.
 		/// </remarks>
 		public BuildingCatalogLensState LoadMoreTo(int requestedLimit)
 		{

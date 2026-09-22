@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { textInputValue } from "../src/domain/textInput.ts";
 
-// The vanilla TextInput hands onChange an event; FilterRail once stored the
-// event itself and threw on the first keystroke.
+// The vanilla TextInput hands onChange an event; storing the event itself
+// throws on the first keystroke.
 const change = (value: unknown) => ({ target: { value } }) as unknown as Event;
 
 describe("reading a TextInput change", () => {
