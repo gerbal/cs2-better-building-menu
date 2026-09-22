@@ -265,3 +265,22 @@ export function draggedBuildingLensHeight(
  * Only the fallback for a drag whose measurement failed.
  */
 export const REM_IN_PX_AT_720P = 2 / 3;
+
+/**
+ * The resize strip's height, `.resizeHandle` in lensResizeHandle.module.scss; a
+ * test holds the two equal. It is what a drag measures rem against.
+ */
+export const LENS_RESIZE_HANDLE_HEIGHT = 14;
+
+/**
+ * Pixels per rem from an element of known rem height as drawn, or undefined when
+ * the rect is not a real measurement. Measured on something already laid out:
+ * Cohtml answers a rect asked for before layout with zeroes.
+ */
+export function pxPerRemFrom(heightPx: number | null | undefined, heightRem: number): number | undefined {
+  if (typeof heightPx !== "number" || !Number.isFinite(heightPx) || heightPx <= 0 || !(heightRem > 0)) {
+    return undefined;
+  }
+
+  return heightPx / heightRem;
+}
