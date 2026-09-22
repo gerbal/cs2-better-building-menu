@@ -244,14 +244,24 @@ export function clampBuildingLensHeight(height: number): number {
  * The height a drag from `startY` to `currentY` should produce. The panel is
  * bottom-anchored with the handle on its top edge, so dragging up makes it
  * taller — the sign flip is why this is a function and not an addition.
+ *
+ * `pxPerRem` is measured when the drag starts: the game scales rem with the
+ * resolution, so a fixed ratio moves the edge faster or slower than the cursor
+ * on every screen but one.
  */
-export function draggedBuildingLensHeight(startHeight: number, startY: number, currentY: number): number {
+export function draggedBuildingLensHeight(
+  startHeight: number,
+  startY: number,
+  currentY: number,
+  pxPerRem?: number
+): number {
   const delta = Number.isFinite(startY) && Number.isFinite(currentY) ? startY - currentY : 0;
-  return clampBuildingLensHeight(startHeight + delta / REM_IN_PX);
+  const scale = pxPerRem !== undefined && Number.isFinite(pxPerRem) && pxPerRem > 0 ? pxPerRem : REM_IN_PX_AT_720P;
+  return clampBuildingLensHeight(startHeight + delta / scale);
 }
 
 /**
- * Pixels per rem in the game's UI layer, at every resolution — see
- * getBuildingLensCatalogMaxHeight for why this is not resolution-dependent.
+ * Pixels per rem at 1280x720, where the UI's 1920-wide design is drawn at 2/3.
+ * Only the fallback for a drag whose measurement failed.
  */
-export const REM_IN_PX = 0.6667;
+export const REM_IN_PX_AT_720P = 2 / 3;

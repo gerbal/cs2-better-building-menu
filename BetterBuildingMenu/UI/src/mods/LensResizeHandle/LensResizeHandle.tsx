@@ -24,20 +24,44 @@ export interface LensPanelHeight {
 }
 
 /**
+ * Pixels per rem as the game is laying them out now, from a hidden 100rem probe.
+ * Rem follows the resolution (and anything else the game scales the UI by), and
+ * the pointer reports pixels. Null when the measurement is unusable.
+ */
+function measurePxPerRem(): number | null {
+  if (typeof document === "undefined" || !document.body) return null;
+
+  const probe = document.createElement("div");
+  probe.style.position = "absolute";
+  probe.style.visibility = "hidden";
+  probe.style.width = "0";
+  probe.style.height = "100rem";
+  document.body.appendChild(probe);
+  const pxPerRem = probe.getBoundingClientRect().height / 100;
+  document.body.removeChild(probe);
+
+  return Number.isFinite(pxPerRem) && pxPerRem > 0 ? pxPerRem : null;
+}
+
+/**
  * One height for both panels. The drag runs through the live binding and only
  * the release writes the settings file; the game owns the number, so the
  * build menu and the extension picker cannot disagree about it.
  */
 export function useLensPanelHeight(): LensPanelHeight {
   const [isResizing, setIsResizing] = useState(false);
-  const resizeState = useRef({ active: false, startY: 0, startHeight: 0 });
+  const resizeState = useRef<{ active: boolean; startY: number; startHeight: number; pxPerRem?: number }>({
+    active: false,
+    startY: 0,
+    startHeight: 0,
+  });
 
   const height = clampBuildingLensHeight(useValue(BuildingLensPanelHeight$));
 
   function beginResize(event: any): void {
     event.preventDefault?.();
     event.stopPropagation?.();
-    resizeState.current = { active: true, startY: event.clientY, startHeight: height };
+    resizeState.current = { active: true, startY: event.clientY, startHeight: height, pxPerRem: measurePxPerRem() ?? undefined };
     setIsResizing(true);
   }
 
@@ -45,7 +69,7 @@ export function useLensPanelHeight(): LensPanelHeight {
     const state = resizeState.current;
     if (!state.active) return;
 
-    trigger(mod.id, "SetBuildingLensPanelHeight", draggedBuildingLensHeight(state.startHeight, state.startY, event.clientY));
+    trigger(mod.id, "SetBuildingLensPanelHeight", draggedBuildingLensHeight(state.startHeight, state.startY, event.clientY, state.pxPerRem));
   }
 
   function endResize(): void {
