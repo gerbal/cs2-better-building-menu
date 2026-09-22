@@ -257,9 +257,12 @@ export const BuildingCatalogComponent = () => {
       if (isPlainEnter(event)) onEnter.current(event);
     };
 
-    document.addEventListener("keydown", onKey);
+    // Capture phase: the game's app container stops keydown propagation, so a
+    // bubble listener on the document never hears an Enter typed in the search
+    // box. VanillaMenuWatcher's Escape listens the same way.
+    document.addEventListener("keydown", onKey, true);
 
-    return () => document.removeEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey, true);
   }, []);
 
 
