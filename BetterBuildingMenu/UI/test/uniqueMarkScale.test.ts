@@ -32,14 +32,15 @@ describe("unique mark scale", () => {
     assert.match(base, /@function mark-frame-inset\(\$picture, \$frame\)[\s\S]*?mark-inset\(\$picture\)/);
   });
 
-  it("pins all four sides and leaves the size auto", () => {
-    // This is what makes the badge CENTRE on the building rather than corner
-    // itself on it: pinned-and-auto stretches to the box in this engine, while
-    // a stated width resolves to a fixed size anchored top-left.
+  it("states the badge's size from the picture and anchors it by inset", () => {
+    // Cohtml 2.2 resolves an auto-sized absolute <img> to the picture's
+    // INTRINSIC size (64px for AlreadyBuilt.svg) whatever its offsets pin, so
+    // pinned-and-auto no longer stretches to the box: the badge must carry its
+    // own width and height, derived from the same ratio the inset is.
     const mixin = base.slice(base.indexOf("@mixin unique-mark"));
     const body = mixin.slice(0, mixin.indexOf("\n}"));
 
-    for (const side of ["top", "bottom", "left", "right"]) {
+    for (const side of ["top", "left"]) {
       assert.match(
         body,
         new RegExp(`${side}: mark-frame-inset\\(\\$picture, \\$frame\\)`),
@@ -47,9 +48,12 @@ describe("unique mark scale", () => {
       );
     }
 
-    assert.match(body, /width: auto/);
-    assert.match(body, /height: auto/);
-    assert.doesNotMatch(body, /(width|height):\s*mark-size/);
+    assert.match(body, /width: mark-size\(\$picture\)/);
+    assert.match(body, /height: mark-size\(\$picture\)/);
+    assert.doesNotMatch(body, /(width|height): auto/);
+    // The size is the picture less the inset on both sides: what the old
+    // stretch produced, now stated.
+    assert.match(base, /@function mark-size\(\$picture\)[\s\S]*?\$picture - 2 \* mark-inset\(\$picture\)/);
   });
 
   it("derives the badge from the SAME picture the artwork box uses", () => {
