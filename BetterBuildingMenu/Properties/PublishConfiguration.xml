@@ -61,6 +61,9 @@ This mod was developed with AI assistance (Anthropic's Claude), under human dire
 Changes
 * The drag-to-resize edge on the panel shows the game's resize cursor on hover and while dragging, and its grip is drawn at the weight of the game's scrollbar thumb. Hovering it showed no cursor before.
 
+Fixes
+* In Grid view, a category with room for its tiles in one row no longer stacks some of them into a column. The Cards view had the same rounding error in how a row was spaced.
+
 0.1.11
 
 Fixes

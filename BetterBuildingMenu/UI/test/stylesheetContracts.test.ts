@@ -256,6 +256,17 @@ describe("a wrapping row of cards keeps each card its own height", () => {
     assert.doesNotMatch(list, /margin-top: -/);
     assert.doesNotMatch(source, /\.list::after/);
   });
+
+  it("spaces the grid's tiles with gap, for the same reason", () => {
+    // Two tiles in a group sized for two stacked into a column, three went
+    // two and one, while five fit their row: the same zero-slack rounding,
+    // flipping per group.
+    const tiles = read("../src/mods/BuildingGrid/buildingGrid.module.scss").match(/\.tiles \{[^}]*\}/)?.[0] ?? "";
+
+    assert.match(tiles, /\n\s*gap: 4rem;/);
+    assert.doesNotMatch(tiles, /margin-left: -/);
+    assert.doesNotMatch(tiles, /margin-top: -/);
+  });
 });
 
 describe("Cohtml stylesheet support", () => {

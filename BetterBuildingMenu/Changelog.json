@@ -9,6 +9,12 @@
         "Changes": [
           "The panel's drag-to-resize edge shows the game's own resize cursor on hover and while dragging, and its grip is drawn at the weight of the game's scrollbar thumb, so the edge reads as something to grab. Hovering it showed no cursor at all before."
         ]
+      },
+      {
+        "Name": "Fixes",
+        "Changes": [
+          "In Grid view, a category with room for its tiles in one row no longer stacks some of them into a column; in Cards view the same rows sit a hair tighter. Both were the same rounding error in how the panel spaced a row."
+        ]
       }
     ]
   },
