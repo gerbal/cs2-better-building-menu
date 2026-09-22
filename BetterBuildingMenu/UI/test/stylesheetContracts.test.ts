@@ -77,7 +77,7 @@ describe("Building Lens stylesheet contracts", () => {
     assert.match(hoverCardStyles, /\.cardLines \{[^}]*flex-wrap: wrap;/);
     assert.match(hoverCardStyles, /\.cardLine \{[^}]*flex: 0 0 50%;/);
     assert.match(hoverCardStyles, /\.cardLineWide \{[^}]*min-width: 100%;/);
-    // gap is a no-op in this engine, so row spacing is margins with the
+    // Row spacing here is margins, so the stack reads as one column with the
     // container pulling the first row's back off.
     assert.doesNotMatch(hoverCardStyles, /\.cardLines \{[^}]*[^-]gap:/);
     assert.match(hoverCardStyles, /\.cardLines \{[^}]*margin-top: -2rem;/);
@@ -214,12 +214,12 @@ const UNSUPPORTED: { pattern: RegExp; declaration: string; why: string }[] = [
   {
     pattern: /display:\s*(?:inline-)?grid\b/g,
     declaration: "display: grid",
-    why: "Cohtml 1.64 has no CSS grid. Lay it out with flex.",
+    why: "Cohtml has no CSS grid (still absent on 2.2.1.3). Lay it out with flex.",
   },
   {
-    pattern: /(?:^|[\s;{])(?:row-|column-)?gap:/gm,
-    declaration: "gap",
-    why: "A no-op in Cohtml. Space children with margins.",
+    pattern: /(?:^|[\s;{])object-fit:/gm,
+    declaration: "object-fit",
+    why: "Never implemented in Cohtml (no changelog row through 3.1; the parser rejects it). Size the picture's box instead.",
   },
 ];
 
@@ -242,21 +242,19 @@ describe("a wrapping row of cards keeps each card its own height", () => {
     assert.match(list, /align-items: flex-start;/);
   });
 
-  it("leaves the row a hair of slack so a fit-to-content group fits its own content", () => {
-    // The group is sized to the list's max-content, so its cards fit with no
-    // slack at all, and Cohtml then wraps the last one on a tenth of a pixel
-    // (Mixed Housing: three cards needing 531.4px in a 531.5px list, wrapped;
-    // five needing 532.5 in 532.6, not). Padding cannot help — it grows the
-    // max-content by as much as it takes. A spacer item does: it counts
-    // toward max-content and needs nothing itself, and at zero height a
-    // second line it falls onto draws nothing.
+  it("spaces the cards with gap, not a negative gutter", () => {
+    // A group is sized to the list's max-content. With the negative-margin
+    // gutter, Cohtml computed that max-content without the margins and then
+    // laid the cards out with them, so a row that fit its group by
+    // construction wrapped its last card on a tenth of a pixel. gap is part
+    // of the max-content, so the cards fit the group they sized.
     const source = read("../src/mods/BuildingList/buildingList.module.scss");
-    const spacer = source.match(/\.list::after \{[^}]*\}/)?.[0] ?? "";
+    const list = source.match(/\.list \{[^}]*\}/)?.[0] ?? "";
 
-    assert.match(spacer, /content: "";/);
-    assert.match(spacer, /flex: 0 0 \d+rem;/);
-    assert.match(spacer, /height: 0;/);
-    assert.match(spacer, /margin: 0;/);
+    assert.match(list, /\n\s*gap: 4rem;/);
+    assert.doesNotMatch(list, /margin-left: -/);
+    assert.doesNotMatch(list, /margin-top: -/);
+    assert.doesNotMatch(source, /\.list::after/);
   });
 });
 

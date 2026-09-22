@@ -187,9 +187,9 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
                   <span className={styles.facts}>
                     {/* Footprint first, and always: whether the thing fits the
                         gap in front of you is asked before anything else. */}
-                    {/* Separators are characters, not flex gap: Cohtml does
-                        not apply the gap here and two figures run together
-                        into one unreadable number. */}
+                    {/* Separators are characters, not spacing: the dot is
+                        punctuation between figures, and two figures with only
+                        space between them read as one number. */}
                     {lotKnown && (
                       <>
                         <span className={styles.fact}>{lot}</span>

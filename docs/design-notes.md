@@ -67,7 +67,11 @@ while lowering the toolbar changes exactly the one pair. The toolbar still
 renders (the screen paints no background behind it) and stays hit-testable.
 This is a stopgap; the real fix is moving the toast lane.
 
-## Hand-rolled floating surfaces in Cohtml 1.64
+## Hand-rolled floating surfaces in Cohtml
+
+Observed on Cohtml 1.64.0.7 (game 1.6.0); not re-checked on 2.2.1.3 (game
+1.6.2f1), whose flex layout is a new algorithm, so re-measure before relying on
+either workaround there.
 
 The filter rail's dropdown surface (`filterRail.module.scss`, `.menu`) states size
 only, because the vanilla `Dropdown` owns its own positioning and painting. A
