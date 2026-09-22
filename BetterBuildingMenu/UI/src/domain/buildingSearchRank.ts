@@ -51,6 +51,25 @@ export function enterDecision<T extends { id: number }>(
   return target ? { arm: target } : null;
 }
 
+/** Enter, by code: Cohtml leaves `key` empty for some keys. */
+const ENTER_KEY_CODE = 13;
+/** What a key reports while an input method is composing. */
+const IME_PROCESS_KEY_CODE = 229;
+
+/**
+ * Whether a keydown is a plain Enter. Accepts either spelling, since Cohtml
+ * fills `keyCode` where it leaves `key` empty. An Enter that confirms an input
+ * method's candidate (Japanese, Korean, Chinese) belongs to the composition,
+ * and must not place a building.
+ */
+export function isPlainEnter(event: { key?: unknown; keyCode?: unknown; isComposing?: unknown }): boolean {
+  if (event.isComposing === true || event.keyCode === IME_PROCESS_KEY_CODE) {
+    return false;
+  }
+
+  return event.key === "Enter" || event.keyCode === ENTER_KEY_CODE;
+}
+
 /**
  * Whether an Enter is the search's to act on: from the search box, or from no
  * text field at all. Enter in any other field (a metric bound, a filter's
