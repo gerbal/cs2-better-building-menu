@@ -93,10 +93,9 @@ namespace BetterBuildingMenu.Services
 		}
 
 		/// <summary>
-		/// The best-scoring row of this window that can be placed, by the tie-breaks a group
-		/// orders by: relevance, then the shorter name, then page order. Over the window
-		/// because Enter arms what the player can see; locked and already-built rows are
-		/// skipped because Enter on them would do nothing.
+		/// The best-scoring row of this window that can be placed: by relevance, then the shorter
+		/// name, then page order, as a group orders. Locked and already-built rows are skipped,
+		/// because Enter on them does nothing.
 		/// </summary>
 		private static int? FindBestMatchId(IReadOnlyList<BuildingCatalogEntry> items, string? searchText)
 		{

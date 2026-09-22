@@ -5,10 +5,9 @@ namespace BetterBuildingMenu.Domain
 {
 	/// <summary>A translation with English filled in where the Options screen needs it.</summary>
 	/// <remarks>
-	/// The translations cover a fraction of the English keys. Only the Options screen reads
-	/// ours with no fallback of its own, so only its keys are filled. Everywhere else the code
-	/// supplies English itself, and some lookups ask for our key first precisely so a gap
-	/// falls through to the game's own translated name.
+	/// Only the Options screen reads our keys with no fallback of its own, so only its keys
+	/// are filled. Elsewhere a gap must fall through, to the code's own English or to the
+	/// game's translated name.
 	/// </remarks>
 	public static class LocaleFallback
 	{
