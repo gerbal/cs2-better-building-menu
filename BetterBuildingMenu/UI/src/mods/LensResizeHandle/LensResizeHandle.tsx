@@ -4,7 +4,12 @@ import classNames from "classnames";
 import { useRef, useState } from "react";
 
 import mod from "../../../mod.json";
-import { clampBuildingLensHeight, draggedBuildingLensHeight } from "domain/buildingLensLayout";
+import {
+  LENS_RESIZE_HANDLE_HEIGHT,
+  clampBuildingLensHeight,
+  draggedBuildingLensHeight,
+  pxPerRemFrom,
+} from "domain/buildingLensLayout";
 
 import styles from "mods/LensResizeHandle/lensResizeHandle.module.scss";
 
@@ -30,14 +35,22 @@ export interface LensPanelHeight {
  */
 export function useLensPanelHeight(): LensPanelHeight {
   const [isResizing, setIsResizing] = useState(false);
-  const resizeState = useRef({ active: false, startY: 0, startHeight: 0 });
+  const resizeState = useRef<{ active: boolean; startY: number; startHeight: number; pxPerRem?: number }>({
+    active: false,
+    startY: 0,
+    startHeight: 0,
+  });
 
   const height = clampBuildingLensHeight(useValue(BuildingLensPanelHeight$));
 
   function beginResize(event: any): void {
     event.preventDefault?.();
     event.stopPropagation?.();
-    resizeState.current = { active: true, startY: event.clientY, startHeight: height };
+    // Rem follows the resolution and the pointer reports pixels, so the ratio is
+    // measured off the strip just pressed: drawn, and a known rem tall.
+    const pressed = event.currentTarget as Element | null | undefined;
+    const pxPerRem = pxPerRemFrom(pressed?.getBoundingClientRect?.().height, LENS_RESIZE_HANDLE_HEIGHT);
+    resizeState.current = { active: true, startY: event.clientY, startHeight: height, pxPerRem };
     setIsResizing(true);
   }
 
@@ -45,7 +58,7 @@ export function useLensPanelHeight(): LensPanelHeight {
     const state = resizeState.current;
     if (!state.active) return;
 
-    trigger(mod.id, "SetBuildingLensPanelHeight", draggedBuildingLensHeight(state.startHeight, state.startY, event.clientY));
+    trigger(mod.id, "SetBuildingLensPanelHeight", draggedBuildingLensHeight(state.startHeight, state.startY, event.clientY, state.pxPerRem));
   }
 
   function endResize(): void {

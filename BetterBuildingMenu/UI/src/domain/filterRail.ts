@@ -106,16 +106,3 @@ export function filterRailOptions(
 export function hasAnyRailSelection(rail: readonly RailDimension[]): boolean {
   return rail.some((dimension) => dimension.selected > 0);
 }
-
-/**
- * How many metric bounds are actually set, for the metrics badge. The binding
- * carries a `hasSelection` flag alongside the numbers, which is not a bound;
- * zero IS one, so only null and undefined count as unset.
- */
-export function countActiveMetricRanges(state: Record<string, unknown> | null | undefined): number {
-  if (!state) return 0;
-
-  return Object.entries(state).filter(
-    ([key, value]) => key !== "hasSelection" && typeof value === "number" && Number.isFinite(value)
-  ).length;
-}
