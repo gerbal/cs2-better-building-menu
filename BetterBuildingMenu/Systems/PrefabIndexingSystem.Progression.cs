@@ -90,7 +90,7 @@ namespace BetterBuildingMenu.Systems
 				ComponentType.ReadOnly<DevTreeNodeData>(),
 				ComponentType.ReadOnly<PrefabData>());
 			var nodes = query.ToEntityArray(Allocator.Temp);
-			var branches = new Dictionary<Entity, (string Label, string Icon, int Depth)>();
+			var branches = new Dictionary<Entity, (string Label, string Icon, int Depth, string Service)>();
 			var roots = new Dictionary<string, (string Label, string Icon, int Depth)>();
 			// Prefab name to node, so FoldedDevTreeNodes can be resolved once the
 			// whole tree is known — a fold's target may be indexed after it.
@@ -152,19 +152,23 @@ namespace BetterBuildingMenu.Systems
 				// "Police Headquarters", a separate unlock the player buys separately.
 				var rootLabel = isRoot ? RootBranchLabel(node) : string.Empty;
 
+				// The service whose tree the node sits in: its rank only orders it within that tree.
+				var service = EntityManager.TryGetComponent<DevTreeNodeData>(node, out var nodeData)
+					&& _prefabSystem.TryGetPrefab<PrefabBase>(nodeData.m_Service, out var servicePrefab)
+						? servicePrefab.name
+						: string.Empty;
+
 				branches[node] = isRoot
-					? (rootLabel, DevTreeIcon(prefab), 0)
-					: (DevTreeBranchName(prefab), DevTreeIcon(prefab), depth);
+					? (rootLabel, DevTreeIcon(prefab), 0, service)
+					: (DevTreeBranchName(prefab), DevTreeIcon(prefab), depth, service);
 
 				nodesByName[prefab.name] = node;
 
 				// The root also names the bucket for everything the tree never
 				// gated, so it is recorded against its service.
-				if (isRoot
-					&& EntityManager.TryGetComponent<DevTreeNodeData>(node, out var rootData)
-					&& _prefabSystem.TryGetPrefab<PrefabBase>(rootData.m_Service, out var rootService))
+				if (isRoot && service.Length > 0)
 				{
-					roots[rootService.name] = (rootLabel, DevTreeIcon(prefab), 0);
+					roots[service] = (rootLabel, DevTreeIcon(prefab), 0);
 				}
 			}
 
@@ -256,7 +260,8 @@ namespace BetterBuildingMenu.Systems
 			menu is not null && _devTreeRoots.TryGetValue(menu, out var root) ? root.Label : string.Empty;
 
 		/// <summary>The branch an asset's unlock node belongs to, or its service's root.</summary>
-		/// <remarks>More than one node can gate an asset; DevTreeGates.Pick decides which names it.</remarks>
+		/// <remarks>More than one node can gate an asset; DevTreeGates.Pick decides which names it,
+		/// preferring the nodes of the asset's own service, which its menu names.</remarks>
 		private (string Label, string Icon, int Depth) DevTreeBranchOf(
 			IReadOnlyList<(Entity Requirement, UnlockFlags Flags)> required,
 			string? menu)
@@ -267,11 +272,12 @@ namespace BetterBuildingMenu.Systems
 			{
 				if (_devTreeBranches.TryGetValue(requirement, out var branch) && branch.Label.Length > 0)
 				{
-					gates.Add(new DevTreeGates.Gate(branch.Label, branch.Icon, branch.Depth, (flags & UnlockFlags.RequireAll) != 0));
+					gates.Add(new DevTreeGates.Gate(
+						branch.Label, branch.Icon, branch.Depth, (flags & UnlockFlags.RequireAll) != 0, branch.Service));
 				}
 			}
 
-			if (DevTreeGates.Pick(gates) is { } gate)
+			if (DevTreeGates.Pick(gates, menu) is { } gate)
 			{
 				return (gate.Label, gate.Icon, gate.Depth);
 			}

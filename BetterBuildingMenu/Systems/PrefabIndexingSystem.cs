@@ -106,8 +106,9 @@ namespace BetterBuildingMenu.Systems
 		private int _loggedUniqueCandidateCount = -1;
 		// Node entity -> branch label, and service name -> its root's label.
 		// Label AND icon together, keyed by node and by service: every service's
-		// root is called "Basic", so a label-keyed icon would collide.
-		private Dictionary<Entity, (string Label, string Icon, int Depth)> _devTreeBranches = new();
+		// root is called "Basic", so a label-keyed icon would collide. A branch also
+		// names the service whose tree it sits in; see DevTreeGates.
+		private Dictionary<Entity, (string Label, string Icon, int Depth, string Service)> _devTreeBranches = new();
 		private static Dictionary<string, (string Label, string Icon, int Depth)> _devTreeRoots = new();
 		// Each processor with its query, and that query narrowed to prefabs created or changed this
 		// frame, which is all a partial pass reads. Built once, in OnCreate.
@@ -772,7 +773,7 @@ namespace BetterBuildingMenu.Systems
 			IReadOnlyList<VanillaMenuCategory> AssetMenus,
 			Dictionary<string, List<VanillaMenuCategory>> AssetCategories,
 			Dictionary<int, string> MilestoneNames,
-			Dictionary<Entity, (string Label, string Icon, int Depth)> DevTreeBranches,
+			Dictionary<Entity, (string Label, string Icon, int Depth, string Service)> DevTreeBranches,
 			Dictionary<string, (string Label, string Icon, int Depth)> DevTreeRoots);
 
 		private IndexSnapshot CaptureIndex() => new(
