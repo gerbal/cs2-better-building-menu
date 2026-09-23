@@ -12,8 +12,8 @@ the detail behind the structural items.
   spec and its adversarial review are in
   [superpowers/specs/](superpowers/specs/), awaiting the owner's review.
 - **Translations.** Every translation lacks about 200 of the 271 English
-  keys, including the option labels, and `ja-JP`, `pt-BR` and `uk-UA` are
-  English throughout. Either connect `crowdin.yml` to a project (with a
+  keys (the option labels fall back to English), and `ja-JP`, `pt-BR` and
+  `uk-UA` are English throughout. Either connect `crowdin.yml` to a project (with a
   `languages_mapping`, since Crowdin's Chinese codes are `zh-CN` and `zh-TW`)
   or ship English only. `Options.LABEL[…LotWidth]` and `…LotDepth` are
   referenced and missing, and about 33 keys are referenced nowhere.
