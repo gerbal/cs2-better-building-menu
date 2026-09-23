@@ -1,6 +1,4 @@
 import { useValue } from "cs2/api";
-import { Theme } from "cs2/bindings";
-import { getModule } from "cs2/modding";
 import { Button, Tooltip } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import { FOCUS_DISABLED } from "cs2/input";
@@ -14,10 +12,11 @@ import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaC
 
 import styles from "mods/BuildingMenu/buildingMenuHeader.module.scss";
 import { noteSearchField } from "./searchField";
+import { textInputText } from "domain/textInput";
 import { CurrentSearch$, IsSearchLoading$, send } from "mods/bindings";
+import { GameTextInput, gameClasses } from "mods/gameModules";
 
-const TextInput = getModule("game-ui/common/input/text/text-input.tsx", "TextInput");
-const TextInputTheme: Theme | any = getModule("game-ui/editor/widgets/item/editor-item.module.scss", "classes");
+const TextInputTheme = gameClasses("game-ui/editor/widgets/item/editor-item.module.scss");
 
 export interface BuildingMenuHeaderProps {
   /** Narrow panel: the strip and the field share a tighter row. */
@@ -51,8 +50,9 @@ export const BuildingMenuHeader = memo(function BuildingMenuHeader({ small, larg
   const handleInputChange = (value: Event) => {
     // So the catalog's Enter listener can tell this box from other text fields.
     noteSearchField(value?.target);
-    if (value?.target instanceof HTMLTextAreaElement) {
-      setSearchText(value.target.value);
+    const text = textInputText(value);
+    if (text !== undefined) {
+      setSearchText(text);
     }
   };
 
@@ -75,7 +75,7 @@ export const BuildingMenuHeader = memo(function BuildingMenuHeader({ small, larg
           )}
           {!IsSearchLoading && <img style={{ maskImage: `url(${find})` }} className={styles.searchIcon} alt="" aria-hidden="true" />}
           <div className={styles.searchArea}>
-            <TextInput
+            <GameTextInput
               ref={searchRef}
               multiline={1}
               value={CurrentSearch}
