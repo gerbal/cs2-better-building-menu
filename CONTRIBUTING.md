@@ -71,7 +71,7 @@ or the reader, in a sentence.
 | Filter rail | The row of filter icons, each opening a dropdown of one facet's options (`FilterRail`). |
 | Facet | One filter dimension, such as role, source, availability, content, theme, placement or extensions, with its options. Computed in C# (`BuildingCatalogFacet*`). |
 | Index | Every indexed prefab as a `PrefabIndex`, built by `PrefabIndexingSystem` into `BuildingMenuUtil.CategorizedPrefabs`. |
-| Processor | An `IPrefabCategoryProcessor`: decides whether a prefab is indexed, and under which category. |
+| Processor | An `IPrefabCategoryProcessor`: decides whether a prefab is indexed, and under which category. A pass runs them in the order `PrefabCategoryProcessors` lists them. |
 | Full / partial pass | A rebuild of the whole index, or a re-read of the prefabs that changed. See `docs/indexing.md`. |
 | Catalog | The index as the panel sees it. `BuildingCatalogAdapter` projects index entries into `BuildingCatalogEntry` rows, `CatalogView` answers one refresh's questions from them, and `BuildingCatalogQueryEngine` filters, sorts and pages them into a `BuildingCatalogPage`. |
 | Lens state | The query the panel is showing (`BuildingCatalogLensState`), held in C#. |
