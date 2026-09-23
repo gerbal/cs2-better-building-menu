@@ -17,11 +17,13 @@ let keydown: Listener[] = [];
 function installDocument(): void {
   keydown = [];
   globals.document = {
-    addEventListener: (type: string, listener: Listener) => {
-      if (type === "keydown") keydown.push(listener);
+    // Only capture-phase listeners hear a key typed in the panel: the game's app
+    // container stops keydown propagation before it bubbles to the document.
+    addEventListener: (type: string, listener: Listener, capture?: boolean) => {
+      if (type === "keydown" && capture === true) keydown.push(listener);
     },
-    removeEventListener: (type: string, listener: Listener) => {
-      if (type === "keydown") keydown = keydown.filter((other) => other !== listener);
+    removeEventListener: (type: string, listener: Listener, capture?: boolean) => {
+      if (type === "keydown" && capture === true) keydown = keydown.filter((other) => other !== listener);
     },
   };
   globals.requestAnimationFrame = () => 0;
