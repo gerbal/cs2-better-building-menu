@@ -17,6 +17,8 @@ namespace BetterBuildingMenu
 		public const string BEHAVIOR = "Behavior";
 		public const string UIUX = "UIUX";
 
+		private const int DefaultTileSize = 100;
+
 		public BetterBuildingMenuSettings(IMod mod) : base(mod)
 		{
 
@@ -53,10 +55,16 @@ namespace BetterBuildingMenu
 		// Step 4, not 8: 64 + 8k never lands on the default, so a player who nudged the
 		// slider could not get back to the shipped width.
 		[SettingsUISlider(min = 64, max = 144, step = 4, scalarMultiplier = 1, unit = Unit.kInteger)]
-		public int BuildingLensTileSize { get; set; } = 100;
+		public int BuildingLensTileSize { get; set; } = DefaultTileSize;
 
+		/// <summary>Puts every option back to the value it ships with.</summary>
+		/// <remarks>The same values as the initializers above, which apply before anything can call this.</remarks>
 		public override void SetDefaults()
 		{
+			BuildingLensPanelHeight = Domain.BuildingLensHeight.Default;
+			ReplaceVanillaBuildMenu = true;
+			AutoWidenSearch = false;
+			BuildingLensTileSize = DefaultTileSize;
 		}
 	}
 }
