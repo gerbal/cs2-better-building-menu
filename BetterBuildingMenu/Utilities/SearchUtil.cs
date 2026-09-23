@@ -2,16 +2,14 @@ using Colossal.Entities;
 
 using Game.Prefabs;
 
-using System.Text.RegularExpressions;
-
 using Unity.Entities;
 
 namespace BetterBuildingMenu.Utilities
 {
     /// <summary>
-    /// Two prefab-entity predicates the indexer asks for, plus the name
-    /// formatter. Catalog search itself lives in BuildingCatalogQueryEngine
-    /// and BuildingCatalogRelevance.
+    /// Two prefab-entity predicates the indexer asks for. Catalog search itself
+    /// lives in BuildingCatalogQueryEngine and BuildingCatalogRelevance, and the
+    /// name formatter in Domain/WordFormat.
     /// </summary>
     internal static class SearchUtil
     {
@@ -51,20 +49,6 @@ namespace BetterBuildingMenu.Utilities
             }
 
             return false;
-        }
-
-        public static string FormatWords(this string str, bool forceUpper = false)
-        {
-            str = Regex.Replace(Regex.Replace(str,
-                @"([a-z])([A-Z])", x => $"{x.Groups[1].Value} {x.Groups[2].Value}"),
-                @"(\b)(?<!')([a-z])", x => $"{x.Groups[1].Value}{x.Groups[2].Value.ToUpper()}");
-
-            if (forceUpper)
-            {
-                str = Regex.Replace(str, @"(^[a-z])|(\ [a-z])", x => x.Value.ToUpper(), RegexOptions.IgnoreCase);
-            }
-
-            return str;
         }
     }
 }
