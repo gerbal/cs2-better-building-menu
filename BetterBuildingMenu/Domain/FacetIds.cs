@@ -13,12 +13,11 @@ namespace BetterBuildingMenu.Domain
 		public const string Content = "content";
 		public const string Theme = "theme";
 		public const string Placement = "placement";
-		public const string Extension = "extension";
 
 		/// <summary>Every facet the adapter can emit, in the order it emits them.</summary>
 		public static readonly IReadOnlyList<string> All = new[]
 		{
-			BuildingType, Provenance, Availability, Content, Theme, Placement, Extension,
+			BuildingType, Provenance, Availability, Content, Theme, Placement,
 		};
 	}
 }
