@@ -25,7 +25,6 @@ export function entry(id: number, over: Partial<BuildingCatalogEntry> = {}): Bui
     buildingLevel: 1,
     zoneType: 0,
     hasParking: false,
-    isUniqueMesh: false,
     isVanilla: true,
     pdxModsId: "",
     constructionCost: 1000,

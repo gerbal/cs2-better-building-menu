@@ -22,7 +22,6 @@ namespace BetterBuildingMenu.Domain
 		int BuildingLevel,
 		ZoneTypeFilter ZoneType,
 		bool HasParking,
-		bool IsUniqueMesh,
 		bool IsVanilla,
 		string PdxModsId,
 		double? ConstructionCost = null,

@@ -693,7 +693,6 @@ namespace BetterBuildingMenu.Services
 				Provenance: prefab.IsVanilla ? "Vanilla" : "Custom",
 				ZoneType: prefab.ZoneType,
 				HasParking: prefab.HasParking,
-				IsUniqueMesh: prefab.IsUniqueMesh,
 				IsVanilla: prefab.IsVanilla,
 				IsLocked: prefab.IsLocked,
 				UnlockMilestone: prefab.UnlockMilestone,

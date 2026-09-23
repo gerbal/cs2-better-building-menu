@@ -15,7 +15,7 @@ namespace BetterBuildingMenu.Tests
 			new BuildingCatalogEntry(
 				Id: 1, PrefabName: "Thing", Name: "Thing", Category: "ServiceBuildings", SubCategory: "ServiceBuildings_Health",
 				Thumbnail: "", LotWidth: 4, LotDepth: 4, BuildingLevel: 1, ZoneType: ZoneTypeFilter.Any,
-				HasParking: false, IsUniqueMesh: false, IsVanilla: true, PdxModsId: "")
+				HasParking: false, IsVanilla: true, PdxModsId: "")
 				with
 			{
 				CategoryLabel = "Service Buildings",

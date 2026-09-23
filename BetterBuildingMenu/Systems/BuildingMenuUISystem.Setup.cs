@@ -32,7 +32,6 @@ namespace BetterBuildingMenu.Systems
 		private ToolSystem _toolSystem;
 		private PrefabSystem _prefabSystem;
 		private DefaultToolSystem _defaultToolSystem;
-		private CameraUpdateSystem _cameraUpdateSystem;
 		// Only for releasing the toolbar's menu selection when the lens closes;
 		// see CloseLens.
 		private Game.UI.InGame.ToolbarUISystem _toolbarUISystem;
@@ -132,7 +131,6 @@ namespace BetterBuildingMenu.Systems
 			_toolSystem = World.GetOrCreateSystemManaged<ToolSystem>();
 			_prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
 			_defaultToolSystem = World.GetOrCreateSystemManaged<DefaultToolSystem>();
-			_cameraUpdateSystem = World.GetOrCreateSystemManaged<CameraUpdateSystem>();
 			_toolbarUISystem = World.GetOrCreateSystemManaged<Game.UI.InGame.ToolbarUISystem>();
 			_selectedInfoUISystem = World.GetOrCreateSystemManaged<Game.UI.InGame.SelectedInfoUISystem>();
 
@@ -233,7 +231,6 @@ namespace BetterBuildingMenu.Systems
 			// ToolbarUISystem are private, so its bindings are the reachable route. Entity indices
 			// arrive comma-joined, because this bridge is happier with flat primitives.
 			CreateTrigger<string, string, bool, bool>("SetVanillaToolbarSelection", SetVanillaToolbarSelection);
-			CreateTrigger<int>("OnLocateButtonClicked", OnLocateButtonClicked);
 			CreateTrigger<int>("LoadMoreBuildingCatalog", LoadMoreBuildingCatalog);
 				CreateTrigger<string, string, string>("SetBuildingCatalogMetricRange", SetBuildingCatalogMetricRange);
 				CreateTrigger("ClearBuildingCatalogMetricRanges", ClearBuildingCatalogMetricRanges);
