@@ -1,7 +1,7 @@
 # Continuous integration
 
-Two workflows, kept in `tools/ci/` because a workflow file has to be added by someone with
-permission to change workflows. Copy both to `.github/workflows/` to turn them on.
+Two workflows, in `.github/workflows/`. Changing either needs a token with the `workflow`
+scope (`gh auth refresh -s workflow`); GitHub refuses a push that touches them otherwise.
 
 - **`ui.yml`** runs for every pull request and push, forks included: `npm test` (typecheck, lint,
   unit and render suites), the webpack build, and a parse of `build.sh`. The UI needs nothing
@@ -70,7 +70,7 @@ Two ways a test breaks against the mocks without calling a game method:
    - `cs2-game-refs-ci` (the private half) goes in **this repository → Settings → Secrets and
      variables → Actions** as `CS2_REFS_DEPLOY_KEY`.
    - Then delete both files.
-6. Copy `tools/ci/csharp.yml` and `tools/ci/ui.yml` to `.github/workflows/`.
+6. The workflows are already in `.github/workflows/`; the first run after the secret is set proves the setup.
 
 ## After a game update
 

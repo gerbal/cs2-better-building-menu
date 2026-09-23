@@ -1,6 +1,6 @@
 # Builds the mod and runs its tests against mock game assemblies kept in a
 # private repository: the game's types and signatures, every method body a
-# throw. Setup and upkeep are in docs/ci.md. Copy to .github/workflows/.
+# throw. Setup and upkeep are in docs/ci.md.
 name: C#
 
 on:
