@@ -28,6 +28,9 @@ the detail behind the structural items.
 
 ## Structure
 
+- **Rendering cost.** Memoise the rows, share one hover context, and read
+  the bindings through one module, so a hover or a page does not re-render
+  the whole panel.
 - **Split `PrefabIndexingSystem`.** Move the menu audit and coverage report,
   and `PopulateAnalyticalData`, into their own classes.
 - **An atomic full pass.** Build the new index beside the old one and swap at
