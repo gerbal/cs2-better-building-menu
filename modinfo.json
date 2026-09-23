@@ -3,7 +3,7 @@
   "version": "0.1.12",
   "authors": ["gerbal", "T. D. W."],
   "name": "Better Building Menu",
-  "description": "A better building menu for Cities: Skylines II: browse, search and compare every building and network from the game's own toolbar.",
+  "description": "A better building menu for Cities: Skylines II: browse, search, sort and filter every building and network from the game's own toolbar.",
   "documentationUrl": "https://github.com/gerbal/cs2-better-building-menu",
   "sourceUrl": "https://github.com/gerbal/cs2-better-building-menu"
 }

@@ -42,7 +42,9 @@ namespace BetterBuildingMenu.Systems
 		private PrefabUISystem _prefabUISystem;
 		private BuildingMenuUISystem _menuUISystem;
 		private HashSet<string> _blackList;
-		private ComponentType? roadBuilderDiscarded;
+		// Road Builder's mark on a road it has thrown away, once found. See RefreshModCompatibility.
+		private ComponentType? _roadBuilderDiscarded;
+		private bool _warnedRoadBuilderDiscarded;
 		private static Dictionary<Entity, ZoneTypeFilter> _zoneTypeCache;
 
 		/// <summary>Density per ZONE prefab: the zone's own tier, which adds Mixed and LowRent.</summary>
@@ -106,7 +108,9 @@ namespace BetterBuildingMenu.Systems
 		// root is called "Basic", so a label-keyed icon would collide.
 		private Dictionary<Entity, (string Label, string Icon, int Depth)> _devTreeBranches = new();
 		private static Dictionary<string, (string Label, string Icon, int Depth)> _devTreeRoots = new();
-		private readonly List<IPrefabCategoryProcessor> _prefabCategoryProcessors = new();
+		// Each processor with its query, and that query narrowed to prefabs created or changed this
+		// frame, which is all a partial pass reads. Built once, in OnCreate.
+		private readonly List<(IPrefabCategoryProcessor Processor, EntityQuery All, EntityQuery Changed)> _processors = new();
 
 		/// <summary>Bumped whenever an indexed fact changes: a re-index, an unlock, a unique built or
 		/// bulldozed. The catalog's snapshot cache is keyed on it, so a stale projection cannot outlive
@@ -151,6 +155,8 @@ namespace BetterBuildingMenu.Systems
 
 			_blackList = new HashSet<string>(reader.ReadToEnd().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries));
 
+			var processors = new List<IPrefabCategoryProcessor>();
+
 			foreach (var type in typeof(PrefabIndexingSystem).Assembly.GetTypes())
 			{
 				if (typeof(IPrefabCategoryProcessor).IsAssignableFrom(type) && !type.IsAbstract)
@@ -175,14 +181,22 @@ namespace BetterBuildingMenu.Systems
 						}
 					}
 
-					_prefabCategoryProcessors.Add((IPrefabCategoryProcessor)Activator.CreateInstance(type, objectParams));
+					processors.Add((IPrefabCategoryProcessor)Activator.CreateInstance(type, objectParams));
 				}
 			}
 
 			// The catch-all runs last: it claims only what the others left.
-			_prefabCategoryProcessors.Sort((left, right) =>
+			processors.Sort((left, right) =>
 				(left is Utilities.PrefabCategoryProcessor.MenuPlacedPrefabCategoryProcessor ? 1 : 0)
 				- (right is Utilities.PrefabCategoryProcessor.MenuPlacedPrefabCategoryProcessor ? 1 : 0));
+
+			foreach (var processor in processors)
+			{
+				_processors.Add((
+					processor,
+					GetEntityQuery(processor.GetEntityQuery()),
+					GetEntityQuery(ChangedOnly(processor.GetEntityQuery()))));
+			}
 
 			// Unlock events are the second trigger: UnlockSystem.UnlockPrefab
 			// disables Locked and raises an Unlock event without marking the prefab
@@ -256,11 +270,6 @@ namespace BetterBuildingMenu.Systems
 		protected override void OnGameLoadingComplete(Purpose purpose, GameMode mode)
 		{
 			base.OnGameLoadingComplete(purpose, mode);
-
-			if (Mod.IsRoadBuilderEnabled)
-			{
-				roadBuilderDiscarded ??= new ComponentType(Assembly.Load("RoadBuilder").GetType("RoadBuilder.Domain.Components.DiscardedRoadBuilderPrefab"), ComponentType.AccessMode.ReadOnly);
-			}
 
 			if (mode is GameMode.Game or GameMode.Editor)
 			{
@@ -438,6 +447,83 @@ namespace BetterBuildingMenu.Systems
 				+ $"({Mod.Silhouettes.Generated} generated)");
 		}
 
+		/// <summary>Re-reads the mods the processors adapt to, before the pass that reads them.</summary>
+		/// <remarks>
+		/// Every full pass, the first included; see docs/indexing.md, "Load timing". The type is
+		/// looked up among the loaded assemblies, so a renamed one is logged once and filters
+		/// nothing rather than throwing into the game's load.
+		/// </remarks>
+		private void RefreshModCompatibility()
+		{
+			try
+			{
+				Mod.RefreshEnabledMods();
+			}
+			catch (Exception ex)
+			{
+				// The last answer stands; a pass is worth more than knowing a mod joined.
+				Mod.Log.Warn(ex, "Could not read the enabled mods; keeping the last answer");
+			}
+
+			if (_roadBuilderDiscarded.HasValue || !Mod.IsRoadBuilderEnabled)
+			{
+				return;
+			}
+
+			Exception? failure = null;
+
+			try
+			{
+				var type = AppDomain.CurrentDomain.GetAssemblies()
+					.FirstOrDefault(assembly => assembly.GetName().Name == "RoadBuilder")
+					?.GetType("RoadBuilder.Domain.Components.DiscardedRoadBuilderPrefab", throwOnError: false);
+
+				if (type is not null)
+				{
+					_roadBuilderDiscarded = new ComponentType(type, ComponentType.AccessMode.ReadOnly);
+					return;
+				}
+			}
+			catch (Exception ex)
+			{
+				failure = ex;
+			}
+
+			if (_warnedRoadBuilderDiscarded)
+			{
+				return;
+			}
+
+			_warnedRoadBuilderDiscarded = true;
+			const string message = "Road Builder is enabled, but its DiscardedRoadBuilderPrefab could not be read; roads it discards stay listed";
+
+			if (failure is null)
+			{
+				Mod.Log.Warn(message);
+			}
+			else
+			{
+				Mod.Log.Warn(failure, message);
+			}
+		}
+
+		/// <summary>Narrows a processor's query to prefabs created or changed this frame.</summary>
+		/// <remarks>Edits the descriptions in place, so it is handed a copy of its own: processors build
+		/// new ones on every call. A description with an Any of its own is left whole, since it cannot
+		/// take a second; that processor's partial passes read everything it matches.</remarks>
+		private static EntityQueryDesc[] ChangedOnly(EntityQueryDesc[] descs)
+		{
+			foreach (var desc in descs)
+			{
+				if (desc.Any is not { Length: > 0 })
+				{
+					desc.Any = new[] { ComponentType.ReadOnly<Created>(), ComponentType.ReadOnly<Updated>() };
+				}
+			}
+
+			return descs;
+		}
+
 		private void RunIndex(bool full)
 		{
 			var stopWatch = Stopwatch.StartNew();
@@ -445,6 +531,8 @@ namespace BetterBuildingMenu.Systems
 
 			if (full)
 			{
+				RefreshModCompatibility();
+
 				BuildingMenuUtil.CategorizedPrefabs.Clear();
 
 				AddAllCategories();
@@ -460,7 +548,7 @@ namespace BetterBuildingMenu.Systems
 				IndexDevTreeBranches();
 			}
 
-			foreach (var processor in _prefabCategoryProcessors)
+			foreach (var (processor, allQuery, changedQuery) in _processors)
 			{
 				if (full)
 				{
@@ -469,21 +557,13 @@ namespace BetterBuildingMenu.Systems
 
 				try
 				{
-					var queries = processor.GetEntityQuery();
+					// A partial pass reads only what changed. The full query would re-index
+					// every road on the main thread for one Road Builder edit.
+					var query = full ? allQuery : changedQuery;
 
-					var query = GetEntityQuery(queries);
-
-					if (!full)
+					if (!full && query.IsEmptyIgnoreFilter)
 					{
-						for (var i = 0; i < queries.Length; i++)
-						{
-							queries[i].Any = new[] { ComponentType.ReadOnly<Created>(), ComponentType.ReadOnly<Updated>() };
-						}
-
-						if (GetEntityQuery(queries).IsEmptyIgnoreFilter)
-						{
-							continue;
-						}
+						continue;
 					}
 
 					var entities = query.ToEntityArray(Allocator.Temp);
@@ -522,7 +602,7 @@ namespace BetterBuildingMenu.Systems
 
 						try
 						{
-							if (roadBuilderDiscarded.HasValue && EntityManager.HasComponent(entity, roadBuilderDiscarded.Value))
+							if (_roadBuilderDiscarded.HasValue && EntityManager.HasComponent(entity, _roadBuilderDiscarded.Value))
 							{
 								BuildingMenuUtil.RemoveItem(entity);
 
@@ -536,37 +616,29 @@ namespace BetterBuildingMenu.Systems
 
 							if (processor.TryCreatePrefabIndex(prefab, entity, out prefabIndex))
 							{
-								if (prefab.TryGet<EditorAssetCategoryOverride>(out var overrides) && (overrides?.m_IncludeCategories?.Any() ?? false))
+								if (prefab.TryGet<EditorAssetCategoryOverride>(out var overrides) && overrides is not null)
 								{
-									// Legacy FindIt category overrides are still read, so existing assets
-									// keep their classification. An author's exclusion is honoured only for
-									// assets the game does not itself place in a menu.
-									if ((overrides?.m_ExcludeCategories?.Any(IsFindItCategoryOverride) ?? false)
-										&& !IsPlacedInVanillaMenu(entity.Index))
+									var categoryOverride = FindItCategoryOverride.Read(overrides.m_IncludeCategories, overrides.m_ExcludeCategories);
+
+									// An author's exclusion is honoured only for assets the game does
+									// not itself place in a menu. Removed as well as skipped, so a
+									// partial pass drops what an earlier pass indexed.
+									if (categoryOverride.Excluded && !IsPlacedInVanillaMenu(entity.Index))
 									{
+										BuildingMenuUtil.RemoveItem(entity);
+
 										continue;
 									}
 
-									if (overrides?.m_IncludeCategories?.Any() ?? false)
+									if (categoryOverride is { Category: { } category, SubCategory: { } subCategory })
 									{
-										for (var ind = 0; ind < overrides.m_IncludeCategories.Length; ind++)
-										{
-											if (IsFindItCategoryOverride(overrides.m_IncludeCategories[ind]))
-											{
-												var split = overrides.m_IncludeCategories[ind].Split('/');
+										prefabIndex.Category = category;
+										prefabIndex.SubCategory = subCategory;
+									}
 
-												if (split.Length >= 3 && int.TryParse(split[1], out var categeory) && int.TryParse(split[2], out var subCategeory))
-												{
-													prefabIndex.Category = (PrefabCategory)categeory;
-													prefabIndex.SubCategory = (PrefabSubCategory)subCategeory;
-												}
-
-												if (split.Length >= 4 && int.TryParse(split[3], out var pdxModsId))
-												{
-													prefabIndex.PdxModsId = pdxModsId.ToString();
-												}
-											}
-										}
+									if (categoryOverride.PdxModsId is not null)
+									{
+										prefabIndex.PdxModsId = categoryOverride.PdxModsId;
 									}
 								}
 
@@ -599,10 +671,12 @@ namespace BetterBuildingMenu.Systems
 				}
 			}
 
+			// Partial passes too: one re-read prefab takes back its plain name, and its
+			// namesakes' numbers are only right if all of them are counted again.
+			AddNumberToDuplicatePrefabNames();
+
 			if (full)
 			{
-				AddNumberToDuplicatePrefabNames();
-
 				CleanupBrandPrefabs();
 			}
 
@@ -1044,19 +1118,12 @@ namespace BetterBuildingMenu.Systems
 				}
 			}
 
-			private static bool IsFindItCategoryOverride(string category)
-			{
-				return category == "FindIt"
-					|| category.StartsWith("FindIt/", StringComparison.Ordinal)
-					|| category == "BetterBuildingMenu"
-					|| category.StartsWith("BetterBuildingMenu/", StringComparison.Ordinal);
-			}
-
 			private void AddPrefab(PrefabBase prefab, Entity entity, PrefabIndex prefabIndex)
 		{
 			prefabIndex.Id = entity.Index;
 			prefabIndex.PrefabName = prefab.name;
-			prefabIndex.Name = GetAssetName(prefab);
+			prefabIndex.AssetName = GetAssetName(prefab);
+			prefabIndex.Name = prefabIndex.AssetName;
 			prefabIndex.Thumbnail = IconPath.Normalize(prefabIndex.Thumbnail ?? ImageSystem.GetThumbnail(prefab));
 			prefabIndex.FallbackThumbnail ??= CategoryIconAttribute.GetAttribute(prefabIndex.SubCategory).Icon;
 			prefabIndex.CategoryThumbnail ??= CategoryIconAttribute.GetAttribute(prefabIndex.SubCategory).Icon;
@@ -2354,30 +2421,23 @@ namespace BetterBuildingMenu.Systems
 				: prefab.name.Replace('_', ' ').FormatWords();
 		}
 
+		/// <summary>Numbers the display names indexed prefabs share. See <see cref="DuplicateNameNumbering"/>.</summary>
 		private static void AddNumberToDuplicatePrefabNames()
 		{
+			var all = BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any];
 			// Upgrades are left out of the numbering. Every school type has an
 			// "Extension Wing"; they are never listed beside each other, only on
 			// their own parent's picker, where "Extension Wing 2" has no referent.
-			foreach (var grp in BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any]
-				.Where(x => !x.IsServiceUpgrade)
-				.GroupBy(x => x.Name))
+			var numbered = all.Where(x => !x.IsServiceUpgrade).ToList();
+			var names = DuplicateNameNumbering.Names(numbered.Select(x => (x.AssetName, x.PrefabName)).ToList());
+
+			for (var i = 0; i < numbered.Count; i++)
 			{
-				var count = grp.Count();
-
-				if (count == 1)
-				{
-					continue;
-				}
-
-				var format = new string('0', count.ToString().Length);
-				var index = 1;
-
-				foreach (var prefab in grp)
-				{
-					prefab.Name = $"{prefab.Name} {index++.ToString(format)}";
-				}
+				numbered[i].Name = names[i];
 			}
+
+			// The name order was sorted on the names just replaced.
+			all.ResetOrder();
 		}
 
 		private void CleanupBrandPrefabs()

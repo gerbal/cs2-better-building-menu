@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
+import { createRef, forwardRef } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import "../harness/render";
 import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
@@ -49,6 +50,23 @@ describe("a component we put into vanilla's tree", () => {
     act(() => { root = create(<Safe />); });
 
     assert.deepEqual(root!.toJSON(), { type: "span", props: {}, children: ["ours"] });
+  });
+
+  it("passes the ref vanilla gives to ours, and to the game's own in its place", () => {
+    const node = { measured: true };
+    const OursWithRef = forwardRef<unknown, object>((_, ref) => <span ref={ref as never}>ours</span>);
+    const VanillaWithRef = forwardRef<unknown, object>((_, ref) => <div ref={ref as never}>vanilla</div>);
+
+    const oursRef = createRef<unknown>();
+    const Working = safeExtension("ToolOptionsPanel", () => OursWithRef)(VanillaWithRef as never) as never as (props: { ref: unknown }) => JSX.Element;
+    act(() => { root = create(<Working ref={oursRef} />, { createNodeMock: () => node }); });
+    assert.equal(oursRef.current, node);
+    act(() => root?.unmount());
+
+    const vanillaRef = createRef<unknown>();
+    const Failing = safeExtension("ToolOptionsPanel", () => Broken)(VanillaWithRef as never) as never as (props: { ref: unknown }) => JSX.Element;
+    act(() => { root = create(<Failing ref={vanillaRef} />, { createNodeMock: () => node }); });
+    assert.equal(vanillaRef.current, node);
   });
 
   it("drops an appended watcher that throws, and nothing else", () => {

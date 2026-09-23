@@ -67,7 +67,9 @@ namespace BetterBuildingMenu.Utilities
 		{
 			if (CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any].TryGetValue(index, out var prefabIndex))
 			{
+				// All three lists AddPrefab files it in.
 				CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any].Remove(prefabIndex);
+				CategorizedPrefabs[prefabIndex.Category][PrefabSubCategory.Any].Remove(prefabIndex);
 				CategorizedPrefabs[prefabIndex.Category][prefabIndex.SubCategory].Remove(prefabIndex);
 			}
 		}
