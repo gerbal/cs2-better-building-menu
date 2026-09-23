@@ -1,4 +1,15 @@
 import { fontSizeRatio } from "./textScale";
+import sizes from "./buildingLensLayout.module.scss";
+
+/**
+ * A length lensGeometry.scss states, exported by buildingLensLayout.module.scss,
+ * in rem; NaN when there is no such length. The stylesheets draw these, so they
+ * hold the numbers and the arithmetic here reads them rather than a copy.
+ */
+function sheetRem(name: string): number {
+  const length = /^(\d+(?:\.\d+)?)rem$/.exec(sizes[name] ?? "");
+  return length ? Number(length[1]) : Number.NaN;
+}
 
 /**
  * Geometry shared by the Building Lens resize affordance and its contract
@@ -115,16 +126,15 @@ export const BUILDING_LENS_IDENTITY_MIN = 180;
 /**
  * Everything in a table row that is not the name, in rem: the trailing reserve,
  * the rows' scrollbar, the select padding and the thumbnail with its margin.
- * buildingCatalog.module.scss is the authority, and this has to follow it.
  */
-export const BUILDING_LENS_TABLE_ROW_FURNITURE = 37 + 16 + 8 + 80;
+export const BUILDING_LENS_TABLE_ROW_FURNITURE = sheetRem("tableRowFurniture");
 
 /**
  * What the control pane takes out of the assembly: its own width plus the margin
  * beside it. Here because both the surface and the table subtract it from the
  * width binding, which measures the whole assembly and not the panel.
  */
-export const BUILDING_LENS_CONTROL_PANE_TOTAL = 385;
+export const BUILDING_LENS_CONTROL_PANE_TOTAL = sheetRem("paneTotal");
 
 /**
  * What the table's panel spends around its rows: the row viewport's scrollbar,
@@ -262,11 +272,8 @@ export function draggedBuildingLensHeight(
  */
 export const REM_IN_PX_AT_720P = 2 / 3;
 
-/**
- * The resize strip's height, `.resizeHandle` in lensResizeHandle.module.scss; a
- * test holds the two equal. It is what a drag measures rem against.
- */
-export const LENS_RESIZE_HANDLE_HEIGHT = 14;
+/** The resize strip's height, which a drag measures rem against. */
+export const LENS_RESIZE_HANDLE_HEIGHT = sheetRem("handleHeight");
 
 /**
  * Pixels per rem from an element of known rem height as drawn, or undefined when

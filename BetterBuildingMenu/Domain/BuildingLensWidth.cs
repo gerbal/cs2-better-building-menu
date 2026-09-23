@@ -18,8 +18,9 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>What the control plane takes out of the assembly: its width plus the gap.</summary>
 		/// <remarks>
-		/// Duplicated from the UI's BUILDING_LENS_CONTROL_PANE_TOTAL. Nothing is shared
-		/// across the C#/TS boundary, so a test keeps the two honest instead.
+		/// Duplicated from the UI's $pane-width and $pane-gap in _lensGeometry.scss,
+		/// whose sum buildingLensLayout.ts reads as BUILDING_LENS_CONTROL_PANE_TOTAL.
+		/// Nothing is shared across the C#/UI boundary, so a test keeps the two honest.
 		/// </remarks>
 		public const float ControlPane = 385f;
 	}
