@@ -1,3 +1,5 @@
+@use "../../lensGeometry" as *;
+
 // The height drag, shared by the build menu and the extension picker: one
 // edge to learn, and one setting behind both.
 
@@ -13,7 +15,7 @@
   // The whole top of the panel, edge to edge, so the grab is the bar rather
   // than a mark on it.
   width: 100%;
-  height: 14rem;
+  height: $handle-height;
   pointer-events: auto;
   // The game's own cursor, the one its draggable value fields show. It draws
   // its cursors itself and maps no CSS keyword past default/pointer/none, so

@@ -1,17 +1,24 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
+import { declarationsOf, rem } from "./harness/compiledCss.ts";
 
-const here = dirname(fileURLToPath(import.meta.url));
-const read = (path: string) => readFileSync(resolve(here, "..", "src", path), "utf8");
+const base = readFileSync(new URL("../src/base.scss", import.meta.url), "utf8");
 
-const base = read("base.scss");
-const modules: Array<[string, string]> = [
-  ["grid", "mods/BuildingGrid/buildingGrid.module.scss"],
-  ["list and cards", "mods/BuildingList/buildingList.module.scss"],
-  ["table", "mods/BuildingCatalog/buildingCatalog.module.scss"],
+const GRID = "mods/BuildingGrid/buildingGrid.module.scss";
+const LIST = "mods/BuildingList/buildingList.module.scss";
+const TABLE = "mods/BuildingCatalog/buildingCatalog.module.scss";
+
+/**
+ * Each mode's badge, the picture it is measured against and the box it sits
+ * in. The table frames its 60rem picture in a 68rem tinted tile, the one mode
+ * where picture and frame differ.
+ */
+const MODES = [
+  { mode: "grid", sheet: GRID, badge: ".tile .artwork .uniqueAsset", picture: ".tile .artwork .thumb", frame: ".tile .artwork" },
+  { mode: "list", sheet: LIST, badge: ".artwork .uniqueAsset", picture: ".artwork .icon", frame: ".artwork" },
+  { mode: "cards", sheet: LIST, badge: ".artworkLarge .uniqueAssetLarge", picture: ".artworkLarge .iconLarge", frame: ".artworkLarge" },
+  { mode: "table", sheet: TABLE, badge: ".thumbnail .uniqueAsset", picture: ".thumbnail .picture", frame: ".thumbnail" },
 ];
 
 /**
@@ -32,70 +39,27 @@ describe("unique mark scale", () => {
     assert.match(base, /@function mark-frame-inset\(\$picture, \$frame\)[\s\S]*?mark-inset\(\$picture\)/);
   });
 
-  it("states the badge's size from the picture and anchors it by inset", () => {
-    // Cohtml 2.2 resolves an auto-sized absolute <img> to the picture's
-    // INTRINSIC size (64px for AlreadyBuilt.svg) whatever its offsets pin, so
-    // pinned-and-auto no longer stretches to the box: the badge must carry its
-    // own width and height, derived from the same ratio the inset is.
-    const mixin = base.slice(base.indexOf("@mixin unique-mark"));
-    const body = mixin.slice(0, mixin.indexOf("\n}"));
+  it("is the same fraction of its picture in every mode, square, and centred in its frame", () => {
+    // Read off the compiled sheets, so it is what each mode draws whatever
+    // mixin or literal produced it. Cohtml 2.2 sizes an auto-sized absolute
+    // <img> to its intrinsic size, so every badge must state its own.
+    const ratios = MODES.map(({ mode, sheet, badge, picture, frame }) => {
+      const mark = declarationsOf(sheet, badge);
+      const size = rem(mark.width);
+      const pictureSize = rem(declarationsOf(sheet, picture).width);
+      const frameSize = rem(declarationsOf(sheet, frame).width);
 
-    for (const side of ["top", "left"]) {
-      assert.match(
-        body,
-        new RegExp(`${side}: mark-frame-inset\\(\\$picture, \\$frame\\)`),
-        `missing ${side}`
-      );
-    }
+      assert.ok(size > 0 && pictureSize > 0 && frameSize > 0, `${mode}: badge ${mark.width}, picture, frame all sized`);
+      assert.equal(rem(mark.height), size, `${mode}: square`);
+      assert.equal(mark.position, "absolute", mode);
+      assert.equal(mark.top, mark.left, `${mode}: inset the same on both axes`);
+      assert.ok(Math.abs(rem(mark.top) - (frameSize - size) / 2) < 1e-6, `${mode}: centred in its ${frameSize}rem frame`);
 
-    assert.match(body, /width: mark-size\(\$picture\)/);
-    assert.match(body, /height: mark-size\(\$picture\)/);
-    assert.doesNotMatch(body, /(width|height): auto/);
-    // The size is the picture less the inset on both sides: what the old
-    // stretch produced, now stated.
-    assert.match(base, /@function mark-size\(\$picture\)[\s\S]*?\$picture - 2 \* mark-inset\(\$picture\)/);
-  });
+      return size / pictureSize;
+    });
 
-  it("derives the badge from the SAME picture the artwork box uses", () => {
-    // The invariant, not the numbers. Picture sizes change, and a test that
-    // pins them just has to be edited alongside. What must hold is that the
-    // badge is measured against the picture it sits on, in every mode.
-    for (const [mode, path] of modules) {
-      const source = read(path);
-      // The PICTURE, which is not always the box: table frames its 60rem
-      // picture in a 68rem tile, and reading the box there sizes the badge to
-      // the frame, so it overhangs the artwork.
-      const pictures = [...source.matchAll(/artwork-picture\((\d+(?:\.\d+)?rem)\)/g)].map((m) => m[1]);
-      // The FIRST argument, which is the picture. A second argument is the
-      // frame it is inset from — table's tinted tile — and must not be read
-      // as the thing the badge is measured against.
-      const badges = [...source.matchAll(/unique-mark\((\d+(?:\.\d+)?rem)(?:,\s*\d+(?:\.\d+)?rem)?\)/g)]
-        .map((m) => m[1]);
-
-      assert.ok(pictures.length > 0, `${mode} should declare its picture size through artwork-picture`);
-      assert.deepEqual(
-        badges,
-        pictures,
-        `${mode}: every unique-mark must use its artwork-PICTURE size, in the same order`
-      );
-    }
-  });
-
-  it("never hardcodes a badge size beside the mixin", () => {
-    // The failure this catches: a fifth mode copies another mode's literal
-    // badge size and it is a blob or a speck. The mixin owns width/height
-    // here; a literal in a .uniqueAsset rule means the ratio is bypassed.
-    for (const [mode, path] of modules) {
-      const source = read(path);
-      const rules = source.match(/\.uniqueAsset[A-Za-z]*\s*\{[^}]*\}/g) ?? [];
-      assert.ok(rules.length > 0, `${mode} should style a unique mark`);
-      for (const rule of rules) {
-        assert.doesNotMatch(
-          rule,
-          /(width|height):\s*\d/,
-          `${mode} sizes its badge directly: ${rule.trim()}`
-        );
-      }
+    for (const [i, ratio] of ratios.entries()) {
+      assert.ok(Math.abs(ratio - ratios[0]) < 1e-6, `${MODES[i].mode} draws its badge at ${ratio} of the picture, not ${ratios[0]}`);
     }
   });
 });

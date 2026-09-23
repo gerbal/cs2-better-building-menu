@@ -42,6 +42,19 @@ start of every full pass. Reading them at loading-complete came after the `OnGam
 Reading them once per process missed a mod added to the playset between two city loads, which the
 game allows without a restart.
 
+## Processors
+
+Each `IPrefabCategoryProcessor` decides whether a prefab is indexed and under which category. A
+pass runs them in the order `PrefabCategoryProcessors` lists them, which is the same on every
+build. A test fails if a processor in the assembly is missing from that list.
+
+The index holds one entry per prefab, so when two processors claim the same prefab the later
+one's entry replaces the earlier one's, category and all: `BuildingMenuUtil.File` takes the
+earlier entry out of every list it was filed in, so the prefab is listed under one category only.
+Nothing fails when that happens. The full pass that logs the census also logs each such pair at
+Info as `[PROCESSOR-OVERLAP]`, with how many prefabs they shared and one of them by name. `MenuPlacedPrefabCategoryProcessor` runs last and
+claims only what nothing else did, so it never appears there.
+
 ## Partial passes
 
 A prefab the game creates or changes mid-session, such as a Road Builder edit, is re-read by a

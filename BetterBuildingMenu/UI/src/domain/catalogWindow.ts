@@ -3,6 +3,7 @@
  * stays at zero and the window grows by asking for a larger limit, because
  * placing a building unmounts the lens and an accumulator would go with it.
  */
+import { CATALOG_WINDOW_STEP } from "./sharedContracts.generated";
 
 /**
  * How close to the bottom counts as "nearly there" — a few rows of runway, so
@@ -44,11 +45,8 @@ export function shouldLoadMore({ scrollTop, clientHeight, scrollHeight, threshol
   return scrollHeight - clientHeight - scrollTop <= band;
 }
 
-/**
- * How many rows one Load more adds: BuildingCatalogQuery.WindowStep, which a
- * test reads from the C# so the two cannot drift.
- */
-export const CATALOG_WINDOW_STEP = 100;
+// How many rows one Load more adds: BuildingCatalogQuery.WindowStep, generated.
+export { CATALOG_WINDOW_STEP };
 
 /** The count the Load more button names: one step, or what is left when less. */
 export function loadMoreCount(remaining: number): number {

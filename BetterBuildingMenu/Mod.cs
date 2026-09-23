@@ -69,6 +69,8 @@ namespace BetterBuildingMenu
 				.ToArray();
 		}
 
+		private const string ImagesHost = "betterbuildingmenu";
+
 		public void OnLoad(UpdateSystem updateSystem)
 		{
 			Log.Info(nameof(OnLoad));
@@ -78,7 +80,7 @@ namespace BetterBuildingMenu
 
 			if (GameManager.instance.modManager.TryGetExecutableAsset(this, out var asset))
 			{
-				UIManager.defaultUISystem.AddHostLocation("betterbuildingmenu", Path.Combine(Path.GetDirectoryName(asset.path), "images"), false);
+				UIManager.defaultUISystem.AddHostLocation(ImagesHost, Path.Combine(Path.GetDirectoryName(asset.path), "images"), false);
 			}
 
 			// A SECOND host, deliberately not the one above: blackened icon
@@ -107,10 +109,25 @@ namespace BetterBuildingMenu
 		{
 			Log.Info(nameof(OnDispose));
 
-			if (Settings != null)
+			// Never throws. The game also calls this from the catch around a failed
+			// OnLoad, and an exception from here escapes that catch and stops every
+			// mod after this one from initializing.
+			try
 			{
-				Settings.UnregisterInOptionsUI();
-				Settings = null;
+				if (Settings != null)
+				{
+					Settings.UnregisterInOptionsUI();
+					Settings = null;
+				}
+
+				// The locale sources stay registered: removing one makes the game reload
+				// the active dictionary, which at quit is work for nothing.
+				UIManager.defaultUISystem?.RemoveHostLocation(ImagesHost);
+				UIManager.defaultUISystem?.RemoveHostLocation(SilhouetteIcons.HostName);
+			}
+			catch (Exception ex)
+			{
+				Log.Error(ex, "OnDispose failed");
 			}
 		}
 	}

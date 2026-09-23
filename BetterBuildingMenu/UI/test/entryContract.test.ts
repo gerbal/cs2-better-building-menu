@@ -10,7 +10,8 @@ import { readFileSync } from "node:fs";
  *
  * The two halves live in different languages, so no compiler spans them. This
  * does: BuildingCatalogEntry.Write is the wire format, buildingCatalog.ts is
- * what the UI believes, and a name in one and not the other is the bug.
+ * what the UI believes, and a name in one and not the other is the bug, in
+ * either direction.
  */
 const read = (p: string) => readFileSync(new URL(p, import.meta.url), "utf8");
 
@@ -60,6 +61,19 @@ describe("the catalog entry's two halves agree", () => {
       missing,
       [],
       `declared in buildingCatalog.ts but never written by BuildingCatalogEntry.Write: ${missing.join(", ")}`,
+    );
+  });
+
+  it("declares every field the backend writes", () => {
+    // The other direction: a field written for nothing costs every entry, on
+    // every page, and reads as used to whoever changes the writer next.
+    const declared = new Set(declaredNames());
+    const unread = writtenNames().filter((name) => !declared.has(name));
+
+    assert.deepEqual(
+      unread,
+      [],
+      `written by BuildingCatalogEntry.Write but not declared in buildingCatalog.ts: ${unread.join(", ")}`,
     );
   });
 

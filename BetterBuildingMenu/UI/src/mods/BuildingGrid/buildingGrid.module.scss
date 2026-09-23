@@ -141,15 +141,13 @@
   width: 100%;
   // Belt and braces: wrapTileLabel already fits each line to the tile, but if
   // it is ever out by a character the cut should read as a cut.
-  overflow: hidden;
-  text-overflow: ellipsis;
+  @include _base.truncate;
   text-align: center;
   color: var(--menuText1Normal);
   // The game's own smallest label is 16rem; fontSizeXS would put every name a
   // step below anything vanilla uses and read as a different UI.
   font-size: var(--fontSizeM);
   line-height: 16rem;
-  white-space: nowrap;
 }
 
 // Milestone-locked, in vanilla's own treatment: a black silhouette over a
@@ -213,9 +211,7 @@ $sorted-metric-row: 14rem;
   color: var(--menuText2Normal);
   font-size: var(--fontSizeS);
   line-height: $sorted-metric-row;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  @include _base.truncate;
 }
 
 // The tile has nothing spare, so a metric row has to be paid for. Applied to

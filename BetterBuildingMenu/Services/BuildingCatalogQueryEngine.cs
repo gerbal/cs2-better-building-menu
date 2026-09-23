@@ -192,7 +192,6 @@ namespace BetterBuildingMenu.Services
 				// Any, not all, the way every other facet reads: the rail draws them
 				// identically, and "road or water" is the question a player asks.
 				|| !MatchesAny(entry.PlacementFlags, query.PlacementFlags)
-				|| !MatchesAny(entry.Extensions, query.Extensions)
 				|| !MatchesZoneType(entry.ZoneType, query.ZoneTypes))
 			{
 				return false;

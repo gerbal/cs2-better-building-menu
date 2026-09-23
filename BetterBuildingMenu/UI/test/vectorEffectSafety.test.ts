@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 import { hasVectorThumbnail } from "../src/domain/buildingLockState.ts";
+import { declarationsOf, everyDeclaration } from "./harness/compiledCss.ts";
 
 /**
  * No compositing effect may be drawn over a vector.
@@ -12,50 +13,39 @@ import { hasVectorThumbnail } from "../src/domain/buildingLockState.ts";
  * and some never draw, while `opacity` makes the same icons vanish outright.
  *
  * The failure is invisible in code review and to CDP — the DOM never changes
- * — so the rule is pinned here as text, against the stylesheets themselves.
+ * — so the rule is pinned here, against the compiled stylesheets: every
+ * selector is written out in full there, however the source nests it.
  */
-const read = (p: string) => readFileSync(new URL(p, import.meta.url), "utf8");
-
 const SHEETS = [
-  ["grid", "../src/mods/BuildingGrid/buildingGrid.module.scss"],
-  ["list", "../src/mods/BuildingList/buildingList.module.scss"],
-  ["table", "../src/mods/BuildingCatalog/buildingCatalog.module.scss"],
+  ["grid", "mods/BuildingGrid/buildingGrid.module.scss"],
+  ["list", "mods/BuildingList/buildingList.module.scss"],
+  ["table", "mods/BuildingCatalog/buildingCatalog.module.scss"],
 ] as const;
 
-/** Declarations with the file's comments stripped, so prose cannot pass or fail a check. */
-const rules = (src: string) =>
-  src.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "");
-
 describe("no compositing effect over a vector", () => {
-  for (const [name, path] of SHEETS) {
+  for (const [name, sheet] of SHEETS) {
     it(`${name}: every compositing effect is gated to rasters`, () => {
-      const src = rules(read(path));
-      // Each selector block that applies the silhouette must also require
-      // data-vector-thumb="false" somewhere in its selector list.
-      const blocks = src.split("}");
+      // Every compositing effect, not only the silhouette: a drop-shadow
+      // over a vector corrupts it the same way. The rule is "no compositing
+      // effect over a vector", not one named instance of it.
+      const effects = everyDeclaration(sheet).filter(({ value }) => /brightness\(0%\)|drop-shadow\(/.test(value));
+      assert.ok(effects.length > 0, `${name} draws its silhouette somewhere`);
 
-      for (const block of blocks) {
-        // Every compositing effect, not only the silhouette: a drop-shadow
-        // over a vector corrupts it the same way. The rule is "no compositing
-        // effect over a vector", not one named instance of it.
-        if (!/brightness\(0%\)|drop-shadow\(/.test(block)) continue;
+      for (const { selectors, prop, value } of effects) {
+        for (const selector of selectors) {
+          assert.ok(
+            selector.includes("[data-vector-thumb=false]"),
+            `${name}: ${prop}: ${value} is not gated to rasters: ${selector}`
+          );
 
-        assert.ok(
-          block.includes('data-vector-thumb="false"'),
-          `${name}: a compositing effect is not gated to rasters:\n${block.trim().slice(0, 240)}`
-        );
-
-        // The gate above is necessary and not sufficient: it asks whether the
-        // ENTRY's thumbnail is a raster, not which elements the selector then
-        // reaches. So every such selector must end in the picture's own class.
-        for (const selector of block.split("{")[0].split(",")) {
-          const target = selector.trim().split(/\s+/).pop() ?? "";
-          if (target === "") continue;
-
+          // The gate above is necessary and not sufficient: it asks whether the
+          // ENTRY's thumbnail is a raster, not which elements the selector then
+          // reaches. So every such selector must end in the picture's own class.
+          const target = selector.split(/\s+/).pop() ?? "";
           assert.ok(
             target.startsWith("."),
             `${name}: a compositing effect targets elements rather than the picture's own class, `
-              + `so it also silhouettes the badge over it: ${selector.trim()}`
+              + `so it also silhouettes the badge over it: ${selector}`
           );
         }
       }
@@ -63,13 +53,10 @@ describe("no compositing effect over a vector", () => {
   }
 
   it("the padlock is not a masked vector", () => {
-    const scss = rules(read("../src/mods/BuildingGrid/buildingGrid.module.scss"));
-    const lockGlyph = scss.slice(scss.indexOf(".lockGlyph"));
-    const rule = lockGlyph.slice(0, lockGlyph.indexOf("}"));
+    const masks = Object.keys(declarationsOf("mods/BuildingGrid/buildingGrid.module.scss", ".lockGlyph")).filter((property) => property.includes("mask"));
+    assert.deepEqual(masks, [], "lockGlyph regained a mask");
 
-    assert.ok(!/mask/.test(rule), `lockGlyph regained a mask:\n${rule}`);
-
-    const tsx = read("../src/mods/BuildingGrid/BuildingGrid.tsx");
+    const tsx = readFileSync(new URL("../src/mods/BuildingGrid/BuildingGrid.tsx", import.meta.url), "utf8");
     assert.ok(
       !/maskImage:\s*"url\(assetdb:\/\/gameui\/Media\/Glyphs\/Lock\.svg\)"/.test(tsx),
       "the padlock is masking Lock.svg again"

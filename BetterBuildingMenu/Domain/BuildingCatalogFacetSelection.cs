@@ -38,7 +38,6 @@ namespace BetterBuildingMenu.Domain
 				// rail writes them through toolbar.setSelectedAssetPacks and they filter
 				// through VanillaToolbarFilter, so there is no field here to toggle.
 				"placement" => query with { PlacementFlags = ToggleValue(query.PlacementFlags, normalizedOption), Offset = 0 },
-				"extension" or "extensions" => query with { Extensions = ToggleValue(query.Extensions, normalizedOption), Offset = 0 },
 				"zone" or "zonetype" => query with { ZoneTypes = ToggleValue(query.ZoneTypes, normalizedOption), Offset = 0 },
 				_ => query,
 			};
@@ -60,7 +59,6 @@ namespace BetterBuildingMenu.Domain
 				Themes = null,
 				PlacementFlags = null,
 				ZoneTypes = null,
-				Extensions = null,
 				// StripTabs is deliberately absent. It is the top bar's selection, which is
 				// navigation like UiCategory beside it, and the menu reset is what drops it.
 				Offset = 0,
@@ -86,9 +84,10 @@ namespace BetterBuildingMenu.Domain
 			/// <remarks>
 			/// Ordered the way the player meets them, and the order the control draws: what you can
 			/// build now, what you cannot build yet, what you have already built. The stored order is
-			/// the drawn order — there is no second list to keep in step.
+			/// the drawn order — there is no second list to keep in step. The UI's copy of the
+			/// options is generated from this.
 			/// </remarks>
-			public static readonly string[] All = { Unlocked, Locked, AlreadyBuilt };
+			public static readonly IReadOnlyList<string> All = new[] { Unlocked, Locked, AlreadyBuilt };
 		}
 
 		/// <summary>

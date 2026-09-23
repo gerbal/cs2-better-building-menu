@@ -215,10 +215,6 @@ namespace BetterBuildingMenu.Domain
 			writer.Write(FallbackThumbnail ?? string.Empty);
 			writer.PropertyName("silhouetteThumbnail");
 			writer.Write(SilhouetteThumbnail ?? string.Empty);
-			writer.PropertyName("uiMenu");
-			writer.Write(UiMenu ?? string.Empty);
-			writer.PropertyName("uiCategory");
-			writer.Write(UiCategory ?? string.Empty);
 			writer.PropertyName("lotWidth");
 			writer.Write(LotWidth);
 			writer.PropertyName("lotDepth");
