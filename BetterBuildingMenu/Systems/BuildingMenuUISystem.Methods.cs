@@ -31,14 +31,6 @@ namespace BetterBuildingMenu.Systems
 			RefreshBuildingCatalog();
 		}
 
-		/// <summary>Republishes the catalog when the CITY changed, not the index.</summary>
-		/// <remarks>
-		/// For the indexing system to call when a unique asset is built or
-		/// bulldozed: the prefabs are untouched, so a re-index would be waste,
-		/// but what the query returns has changed. See PlacedUniqueRegistry.
-		/// </remarks>
-		public void RefreshBuildingCatalogFromIndexing() => RefreshBuildingCatalog();
-
 		private void RefreshBuildingCatalog([System.Runtime.CompilerServices.CallerMemberName] string caller = "")
 		{
 			// The already-built answers belong to the city, not the index, and they can
@@ -46,6 +38,8 @@ namespace BetterBuildingMenu.Systems
 			// tracker off raises none. Rescanned here, before the snapshots below are
 			// keyed. See PrefabIndexingSystem.SyncPlacedUniques.
 			PrefabIndexingSystem.SyncPlacedUniques();
+			// After the rescan, which can itself bump the generation: this publish shows it.
+			_indexWatch.Published(PrefabIndexingSystem.IndexGeneration);
 
 			// Only resets the projection timing counters. The snapshots themselves live across
 			// refreshes and are dropped when PrefabIndexingSystem.IndexGeneration moves; see

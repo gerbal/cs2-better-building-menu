@@ -53,6 +53,16 @@ Duplicate names are numbered after every pass, partial passes included, always s
 prefab's `AssetName`. A partial pass gives the prefab it re-reads back its plain name. Numbering
 only what it touched would leave that prefab as "Foo" beside a sibling still called "Foo 2".
 
+## How the panel hears of a change
+
+The indexer never calls the panel. Whatever changes an indexed fact — a pass, an unlock, a unique
+asset built or bulldozed — bumps `IndexGeneration`, and `BuildingMenuUISystem.OnUpdate` compares
+it with the generation its last publish read (`IndexWatch`).
+
+A change while the panel is open schedules the same debounced refresh a keystroke does, so a burst
+of partial passes or unique events is one refresh rather than one each. A change while it is closed
+schedules nothing, because opening the panel publishes anyway.
+
 ## The vanilla menu walk
 
 `IndexVanillaMenuPlacements` walks the game's own group tree downward: `UIAssetMenuData` menus →
