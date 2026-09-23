@@ -53,6 +53,22 @@ Duplicate names are numbered after every pass, partial passes included, always s
 prefab's `AssetName`. A partial pass gives the prefab it re-reads back its plain name. Numbering
 only what it touched would leave that prefab as "Foo" beside a sibling still called "Foo 2".
 
+## A pass that fails
+
+A full pass clears the index and rebuilds it, along with the menus, zones, milestones and dev tree
+it reads. `RunIndex` captures what it is about to replace, and if anything in the build throws, it
+puts all of it back and logs the error. The panel keeps the index it had, and nothing reaches the
+game's load or locale dispatch.
+
+Capturing references is enough, because a pass never writes to the old collections. Every
+`Index*` step builds new ones and assigns them at its end, and `AddAllCategories` gives every
+category new lists. Before the first pass there is nothing to keep, so a failure there leaves an
+empty index laid out, and `IsReady` stays false.
+
+A failed pass at `OnGameLoaded` does not count as indexed, so loading-complete runs its own.
+Partial passes are not covered. They edit the live index in place, and each prefab and each
+processor in them has its own catch.
+
 ## How the panel hears of a change
 
 The indexer never calls the panel. Whatever changes an indexed fact — a pass, an unlock, a unique
