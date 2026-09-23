@@ -12,6 +12,7 @@ import { shouldMountInAssetMenu } from "domain/buildingMenuMount";
 import { toggleBuildingLensFacetCommand, type BuildingLensFacetState } from "domain/buildingCatalogFacets";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 import { BuildingLensFacets$, LensOwnsCurrentMenu$, send } from "mods/bindings";
+import { ExtensionBoundary } from "mods/ExtensionBoundary";
 
 /**
  * Availability, drawn in the game's own tool-options panel beside Theme and
@@ -86,14 +87,18 @@ export const LensToolOptions: ModuleRegistryExtend = (Component: any) => {
     }
 
     // A copy with our sections after vanilla's, never a push into vanilla's own
-    // element: its children may be one element rather than an array.
+    // element: its children may be one element rather than an array. The copy
+    // keeps vanilla's type with an array of children, which is what a mod
+    // extending after us pushes into. Our section alone sits behind a boundary.
     const children = (result.props as { children?: ReactNode }).children;
 
     return cloneElement(
       result,
       undefined,
       ...(Array.isArray(children) ? children : [children]),
-      <BankFacets key="betterBuildingMenuBank" facets={facets} />
+      <ExtensionBoundary key="betterBuildingMenuBank" name="MouseToolOptions" fallback={() => null}>
+        <BankFacets facets={facets} />
+      </ExtensionBoundary>
     );
   };
 };
