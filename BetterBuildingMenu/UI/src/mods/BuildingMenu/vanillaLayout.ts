@@ -2,8 +2,6 @@ import { getModule } from "cs2/modding";
 import { useEffect } from "react";
 import { firstClassToken, setInlineStyle } from "./vanillaLayoutPure";
 
-export { firstClassToken, setInlineStyle } from "./vanillaLayoutPure";
-
 const GAME_MAIN_SCREEN = "game-ui/game/components/game-main-screen.module.scss";
 const TOOLBAR = "game-ui/game/components/toolbar/toolbar.module.scss";
 

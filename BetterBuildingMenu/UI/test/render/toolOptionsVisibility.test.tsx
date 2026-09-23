@@ -9,7 +9,7 @@ import { ToolOptionsVisibility } from "../../src/mods/ToolOptionsVisibility/Tool
 // mounted (subscribe, then load a city in the same session). A wrapper around
 // a vanilla hook is then called by an instance that rendered without it.
 
-const vanillaUseToolOptionsVisible = () => {
+const useVanillaToolOptionsVisible = () => {
   const [visible] = useState(false);
   return visible;
 };
@@ -18,14 +18,14 @@ describe("ToolOptionsVisibility on a panel mounted before the mod loaded", () =>
   beforeEach(() => resetBindings());
 
   it("adds no hook of its own, so the panel's next render survives the swap", () => {
-    let useToolOptionsVisible = vanillaUseToolOptionsVisible;
+    let useToolOptionsVisible = useVanillaToolOptionsVisible;
     const Panel = () => <>{useToolOptionsVisible() ? "shown" : "hidden"}</>;
 
     let root!: ReturnType<typeof create>;
     act(() => { root = create(<Panel />); });
     assert.equal(root.toJSON(), "hidden");
 
-    useToolOptionsVisible = ToolOptionsVisibility(vanillaUseToolOptionsVisible);
+    useToolOptionsVisible = ToolOptionsVisibility(useVanillaToolOptionsVisible);
     setBinding("BetterBuildingMenu", "LensOwnsCurrentMenu", true);
 
     assert.doesNotThrow(() => act(() => { root.update(<Panel />); }));
@@ -33,7 +33,7 @@ describe("ToolOptionsVisibility on a panel mounted before the mod loaded", () =>
   });
 
   it("still keeps the bank open for the lens on a fresh mount", () => {
-    const useToolOptionsVisible = ToolOptionsVisibility(vanillaUseToolOptionsVisible);
+    const useToolOptionsVisible = ToolOptionsVisibility(useVanillaToolOptionsVisible);
     const Panel = () => <>{useToolOptionsVisible() ? "shown" : "hidden"}</>;
     setBinding("BetterBuildingMenu", "LensOwnsCurrentMenu", true);
     let root!: ReturnType<typeof create>;

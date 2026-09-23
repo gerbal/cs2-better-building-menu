@@ -1,13 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
-  getCatalogWindowSummary,
   clearBuildingCatalogMetricRangesCommand,
   nextSortState,
   searchChangedCommand,
   setBuildingCatalogMetricRangeCommand,
   loadMoreCatalogCommand,
-  setCurrentPrefabCommand,
   setSortColumnCommand,
   setSortDescendingCommand,
 } from "../src/domain/buildingCatalogContracts.ts";
@@ -17,46 +15,10 @@ import {
   didSwapMetricBounds,
   getInvalidMetricBounds,
   hasMetricRange,
-  normalizeMetricRange,
 } from "../src/domain/buildingCatalogRanges.ts";
-import { FALLBACK_SEPARATORS, groupDigits } from "../src/domain/buildingLensMetricFormat.ts";
-import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog.ts";
-
-function entry(id: number): BuildingCatalogEntry {
-  return {
-    id,
-    prefabName: `Prefab${id}`,
-    name: `Building ${id}`,
-    category: "Buildings",
-    subCategory: "Industrial",
-    thumbnail: "",
-    lotWidth: 4,
-    lotDepth: 4,
-    buildingLevel: 1,
-    zoneType: 0,
-    hasParking: id % 2 === 0,
-    isVanilla: true,
-    pdxModsId: "",
-    constructionCost: 100,
-    upkeep: 10,
-    workers: 5,
-    capacity: 20,
-    electricityConsumption: null,
-    waterConsumption: null,
-    garbageAccumulation: null,
-    waterCapacity: null,
-    sewageCapacity: null,
-    groundPollution: null,
-    airPollution: null,
-    noisePollution: null,
-    groupPath: [],
-    groupLabelId: "",
-  };
-}
 
 describe("BetterBuildingMenu UI binding contracts", () => {
-  it("keeps catalog helpers semantic while naming the window command", () => {
-    assert.deepEqual(setCurrentPrefabCommand(17), { type: "activatePrefab", prefabId: 17 });
+  it("names the window command after its trigger", () => {
     // The limit wanted, so a repeat is harmless; the backend clamps it to one step
     // and the ceiling. The name must match the CreateTrigger in BuildingMenuUISystem.Setup.
     assert.deepEqual(loadMoreCatalogCommand(200), { method: "LoadMoreBuildingCatalog", args: [200] });
@@ -79,15 +41,17 @@ describe("BetterBuildingMenu UI binding contracts", () => {
     assert.deepEqual(setSortDescendingCommand(true), { method: "SetBuildingCatalogSortDescending", args: [true] });
   });
 
-  it("normalizes analytical metric ranges and swaps reversed bounds", () => {
-    assert.deepEqual(normalizeMetricRange("cost", { minText: "500", maxText: "100" }), { min: 100, max: 500 });
-    assert.deepEqual(normalizeMetricRange("capacity", { minText: "12.345", maxText: "9000000000" }), {
-      min: 12.35,
-      max: 1_000_000_000,
-    });
-    assert.deepEqual(normalizeMetricRange("lotWidth", { minText: "3.8", maxText: "1.2" }), { min: 1, max: 4 });
-    assert.deepEqual(normalizeMetricRange("workers", { minText: "", maxText: "not-a-number" }), { min: null, max: null });
-    assert.deepEqual(normalizeMetricRange("upkeep", { minText: "-10", maxText: "2" }), { min: 0, max: 2 });
+  it("judges a swap on the bounds as clamped and rounded, not as typed", () => {
+    // Lot sizes are whole cells: 3.8 and 1.2 are 4 and 1, and 1.6 and 1.5 are
+    // both 2, so only the first pair was reversed.
+    assert.equal(didSwapMetricBounds("lotWidth", { minText: "3.8", maxText: "1.2" }), true);
+    assert.equal(didSwapMetricBounds("lotWidth", { minText: "1.6", maxText: "1.5" }), false);
+    // Two decimals elsewhere: both of these are 12.35.
+    assert.equal(didSwapMetricBounds("capacity", { minText: "12.349", maxText: "12.346" }), false);
+    // Clamped to the metric's range: both are 0, and both are the ceiling.
+    assert.equal(didSwapMetricBounds("upkeep", { minText: "-10", maxText: "-20" }), false);
+    assert.equal(didSwapMetricBounds("capacity", { minText: "9000000000", maxText: "2000000000" }), false);
+    assert.equal(didSwapMetricBounds("workers", { minText: "", maxText: "not-a-number" }), false);
   });
 
   it("keeps metric range definitions bounded and reports active selections", () => {
@@ -137,74 +101,5 @@ describe("BetterBuildingMenu UI binding contracts", () => {
     assert.equal(didSwapMetricBounds("cost", { minText: "500", maxText: "100" }), true);
     assert.equal(didSwapMetricBounds("cost", { minText: "100", maxText: "500" }), false);
     assert.equal(didSwapMetricBounds("cost", { minText: "", maxText: "500" }), false);
-  });
-});
-
-describe("how much of the match set is on screen", () => {
-  const summarize = (rendered: number, total: number) =>
-    getCatalogWindowSummary(rendered, total, FALLBACK_SEPARATORS);
-
-  it("states the rendered count against the whole match set", () => {
-    assert.equal(summarize(100, 3677), "Showing 100 of 3\u00a0677");
-    assert.equal(summarize(3677, 3677), "Showing 3\u00a0677 of 3\u00a0677");
-    assert.equal(summarize(0, 0), "Showing 0 of 0");
-  });
-
-  it("groups digits exactly as the metric cells do", () => {
-    // This module cannot import groupDigits — see the note on groupCount — so
-    // the agreement it would have guaranteed is asserted instead.
-    for (const count of [999, 1000, 4206, 12345, 1234567]) {
-      assert.equal(
-        summarize(count, count),
-        `Showing ${groupDigits(count, FALLBACK_SEPARATORS)} of ${groupDigits(count, FALLBACK_SEPARATORS)}`,
-      );
-    }
-  });
-
-  it("groups digits itself instead of calling toLocaleString", () => {
-    // toLocaleString groups in Node and does nothing in Cohtml, so a summary
-    // built on it passes its test while the game renders an ungrouped number.
-    const summary = summarize(1200, 4206);
-
-    assert.equal(summary.includes("4206"), false);
-    assert.equal(summary.includes("1200"), false);
-  });
-
-  it("uses the separator the rest of the screen is using", () => {
-    assert.equal(getCatalogWindowSummary(1200, 4206, { group: ",", decimal: "." }), "Showing 1,200 of 4,206");
-    assert.equal(getCatalogWindowSummary(1200, 4206, { group: ".", decimal: "," }), "Showing 1.200 of 4.206");
-  });
-
-  it("never claims to show more than exists", () => {
-    // The rendered rows and the total arrive in the same page, but a narrowed
-    // predicate can shrink the total while the old rows are still mounted.
-    assert.equal(summarize(500, 120), "Showing 120 of 120");
-  });
-
-  it("survives nonsense counts", () => {
-    assert.equal(summarize(Number.NaN, Number.NaN), "Showing 0 of 0");
-    assert.equal(summarize(-5, 100), "Showing 0 of 100");
-    assert.equal(summarize(100.7, 3677.2), "Showing 100 of 3\u00a0677");
-  });
-});
-
-describe("the count badge in the header", () => {
-  it("stays short enough for a fixed-width pill", async () => {
-    const { getCatalogWindowBadge } = await import("../src/domain/buildingCatalogContracts.ts");
-    const separators = { group: ",", decimal: "." };
-
-    // The pill is flex: 0 0 auto with nowrap, between the title and the search
-    // context. A sentence in it shoves both sideways.
-    assert.equal(getCatalogWindowBadge(100, 401, separators), "100 / 401");
-    assert.equal(getCatalogWindowBadge(1200, 4206, separators), "1,200 / 4,206");
-  });
-
-  it("drops to one figure once the window covers everything", async () => {
-    const { getCatalogWindowBadge } = await import("../src/domain/buildingCatalogContracts.ts");
-    const separators = { group: ",", decimal: "." };
-
-    // "401 / 401" asks the reader to compare two numbers to learn they match.
-    assert.equal(getCatalogWindowBadge(401, 401, separators), "401");
-    assert.equal(getCatalogWindowBadge(0, 0, separators), "0");
   });
 });

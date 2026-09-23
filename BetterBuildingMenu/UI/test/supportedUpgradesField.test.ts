@@ -20,10 +20,6 @@ import { readFileSync } from "node:fs";
  */
 const read = (p: string) => readFileSync(new URL(p, import.meta.url), "utf8");
 
-/** Comments stripped, so the prose above a call cannot pass or fail a check. */
-const code = (src: string) =>
-  src.replace(/\/\/[^\n]*/g, "").replace(/\/\*[\s\S]*?\*\//g, "").replace(/\{\/\*[\s\S]*?\*\/\}/g, "");
-
 // The two sites that read the field — the expanded table row and the hover
 // card — are tested by what they render: tableRow.test.tsx and
 // buildingHoverCard.test.tsx list an upgrade from supportedUpgrades.

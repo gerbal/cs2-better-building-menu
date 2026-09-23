@@ -94,8 +94,6 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId
         // A road's lot is 0x0 and a zone has none: "0 × 0" measures something
         // that does not exist, so the fact is dropped rather than stated.
         const lotKnown = hasFootprint(entry.lotWidth, entry.lotDepth);
-        const footprints = entry.footprints ?? [];
-        const footprintOverflow = entry.footprintOverflow ?? 0;
         // Category-aware, returning nothing where capacity means nothing, so
         // this needs no rule per category of its own.
         const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators);

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { fontSizeRatio } from "../src/domain/textScale.ts";
 import { tileLabelLineBudget, tableLabelCharBudget } from "../src/domain/tileLabel.ts";
-import { getBuildingLensColumnWidths, BUILDING_LENS_COLUMN_MAX, BUILDING_LENS_MAX_WIDTH, BUILDING_LENS_PANEL_CHROME_WIDTH, BUILDING_LENS_CONTROL_PANE_TOTAL, BUILDING_LENS_IDENTITY_MIN, BUILDING_LENS_TABLE_ROW_FURNITURE } from "../src/domain/buildingLensLayout.ts";
+import { getBuildingLensColumnWidths, BUILDING_LENS_COLUMN_MAX, BUILDING_LENS_PANEL_CHROME_WIDTH, BUILDING_LENS_CONTROL_PANE_TOTAL, BUILDING_LENS_IDENTITY_MIN, BUILDING_LENS_TABLE_ROW_FURNITURE } from "../src/domain/buildingLensLayout.ts";
 
 // The game's Interface › Text scale setting (100–150 %) reaches the page as
 // --fontScale and --fontScaleChange, and every --fontSize* is a calc() of the

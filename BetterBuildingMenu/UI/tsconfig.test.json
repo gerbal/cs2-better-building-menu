@@ -1,0 +1,13 @@
+{
+  // The tests, typechecked against the source they import. Tests import with
+  // the .ts extension, which only a non-emitting config may allow.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "typeRoots": ["./types", "./node_modules/@types"],
+    "types": ["node"]
+  },
+  "include": ["src", "test", "types"],
+  "exclude": []
+}

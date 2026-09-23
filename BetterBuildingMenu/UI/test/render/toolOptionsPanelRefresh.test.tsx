@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { forwardRef, useState } from "react";
-import { act, create } from "react-test-renderer";
+import { act, create, type ReactTestRendererJSON } from "react-test-renderer";
 import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
 import { ToolOptionsVisibility } from "../../src/mods/ToolOptionsVisibility/ToolOptionsVisibility";
 import { ToolOptionsPanelRefresh } from "../../src/mods/ToolOptionsVisibility/ToolOptionsPanelRefresh";
@@ -25,8 +25,8 @@ describe("ToolOptionsPanelRefresh", () => {
 
     setBinding("BetterBuildingMenu", "LensOwnsCurrentMenu", true);
     act(() => { root.update(<Panel className="bank" />); });
-    const json = root.toJSON() as { props: { className: string }; children: string[] };
-    assert.equal(json.children[0], "shown");
+    const json = root.toJSON() as ReactTestRendererJSON;
+    assert.equal(json.children?.[0], "shown");
     assert.equal(json.props.className, "bank", "props pass through");
   });
 });
