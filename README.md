@@ -48,5 +48,5 @@ alone. No Harmony patches; nothing is written to the save.
 Forked from **Find It 1.5.8** by **T. D. W.** and rebuilt around the vanilla
 menus. Credits carried over from that project: **YenYang** (UI),
 **Algernon** (contributions, and for allowing the original project to be taken
-on), **Chameleon** (icons), **Baka-gourd** (focus handling). License basis is
-in [docs/FORK.md](docs/FORK.md).
+on), **Chameleon** (icons), **Baka-gourd** (focus handling). MIT licensed; see
+[LICENSE](LICENSE), and [docs/FORK.md](docs/FORK.md) for the basis.
