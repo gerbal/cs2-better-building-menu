@@ -25,16 +25,26 @@ namespace BetterBuildingMenu
 	public class Mod : IMod
 	{
 		public const string Id = "BetterBuildingMenu";
-		private static bool? isExtraDetailingEnabled;
-		private static bool? isAssetIconLibraryEnabled;
-		private static bool? isRoadBuilderEnabled;
 
 		public static ILog Log { get; } = LogManager.GetLogger(nameof(BetterBuildingMenu)).SetShowsErrorsInUI(false);
 		public static BetterBuildingMenuSettings Settings { get; private set; }
 
-		public static bool IsExtraDetailingEnabled => isExtraDetailingEnabled ??= GameManager.instance.modManager.ListModsEnabled().Any(x => x.StartsWith("ExtraDetailingTools, "));
-		public static bool IsAssetIconLibraryEnabled => isAssetIconLibraryEnabled ??= GameManager.instance.modManager.ListModsEnabled().Any(x => x.StartsWith("AssetIconLibrary, "));
-		public static bool IsRoadBuilderEnabled => isRoadBuilderEnabled ??= GameManager.instance.modManager.ListModsEnabled().Any(x => x.StartsWith("RoadBuilder, "));
+		/// <summary>Whether Extra Detailing Tools is enabled, as of the last full index pass.</summary>
+		public static bool IsExtraDetailingEnabled { get; private set; }
+
+		/// <summary>Whether Road Builder is enabled, as of the last full index pass.</summary>
+		public static bool IsRoadBuilderEnabled { get; private set; }
+
+		/// <summary>Re-reads which of the mods we adapt to are enabled.</summary>
+		/// <remarks>Per full pass, not once per process: the game re-reads the playset at every city
+		/// load, so a mod can join without a restart. See docs/indexing.md, "Load timing".</remarks>
+		internal static void RefreshEnabledMods()
+		{
+			var enabled = GameManager.instance.modManager.ListModsEnabled();
+
+			IsExtraDetailingEnabled = EnabledMods.Contains(enabled, "ExtraDetailingTools");
+			IsRoadBuilderEnabled = EnabledMods.Contains(enabled, "RoadBuilder");
+		}
 
 		/// <summary>Black copies of the game's vector icons, for locked tiles.</summary>
 		public static SilhouetteIconCache Silhouettes { get; private set; }

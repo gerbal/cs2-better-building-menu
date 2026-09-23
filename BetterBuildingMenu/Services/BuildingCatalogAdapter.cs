@@ -844,7 +844,9 @@ namespace BetterBuildingMenu.Services
 				.Select(entry => entry.DlcId!)
 				.Where(dlc => !packedDlcs.Contains(dlc))
 				.Distinct(StringComparer.Ordinal)
-				.OrderBy(FormatDlcLabel, StringComparer.CurrentCultureIgnoreCase)
+				// Invariant rather than current: Mono's current culture is the OS's, not the
+				// game's language, so the same DLC list would sort differently per machine.
+				.OrderBy(FormatDlcLabel, StringComparer.InvariantCultureIgnoreCase)
 				.Select(dlc => new BuildingCatalogFacetOption(
 					ContentOption.Dlc + dlc,
 					FormatDlcLabel(dlc),

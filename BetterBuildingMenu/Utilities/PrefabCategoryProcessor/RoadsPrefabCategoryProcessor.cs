@@ -10,24 +10,6 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
     {
         public EntityQueryDesc[] GetEntityQuery()
         {
-            if (Mod.IsRoadBuilderEnabled)
-            {
-                return new[]
-                {
-                    new EntityQueryDesc
-                    {
-                        All = new[]
-                        {
-                            ComponentType.ReadOnly<RoadData>(),
-                        },
-                        None = new[]
-                        {
-                            ComponentType.ReadOnly<BridgeData>(),
-                        },
-                    },
-                };
-            }
-
             return new[]
             {
                 new EntityQueryDesc

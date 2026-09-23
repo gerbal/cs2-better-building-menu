@@ -7,6 +7,9 @@ namespace BetterBuildingMenu.Domain
 		public PrefabBase Prefab { get; }
 		public int Id { get; set; }
 		public string PrefabName { get; set; }
+		/// <summary>The game's name for the prefab, before <see cref="DuplicateNameNumbering"/>
+		/// numbers it apart from its namesakes into <see cref="Name"/>.</summary>
+		public string AssetName { get; set; }
 		public string Name { get; set; }
 		public string PdxModsId { get; set; }
 		public string Thumbnail { get; set; }
