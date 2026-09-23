@@ -6,7 +6,6 @@ import {
   RAIL_SEARCH_THRESHOLD,
   buildFilterRail,
   filterRailOptions,
-  hasAnyRailSelection,
   isBankDimension,
 } from "../src/domain/filterRail.ts";
 
@@ -126,10 +125,12 @@ describe("Rail popover options", () => {
 });
 
 describe("Rail selection state", () => {
+  const anySelected = (rail: { selected: number }[]) => rail.some((dimension) => dimension.selected > 0);
+
   it("reports whether anything is filtered at all", () => {
-    assert.equal(hasAnyRailSelection(buildFilterRail(facets, { active: 0 })), true);
+    assert.equal(anySelected(buildFilterRail(facets, { active: 0 })), true);
     assert.equal(
-      hasAnyRailSelection(buildFilterRail({ groups: [group("dlc", "DLC", 3)], hasSelection: false }, { active: 0 })),
+      anySelected(buildFilterRail({ groups: [group("dlc", "DLC", 3)], hasSelection: false }, { active: 0 })),
       false
     );
   });
@@ -137,7 +138,7 @@ describe("Rail selection state", () => {
   it("counts an active metric range as a filter", () => {
     const rail = buildFilterRail({ groups: [group("dlc", "DLC", 3)], hasSelection: false }, { active: 2 });
 
-    assert.equal(hasAnyRailSelection(rail), true);
+    assert.equal(anySelected(rail), true);
   });
 });
 

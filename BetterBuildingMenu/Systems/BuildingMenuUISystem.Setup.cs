@@ -24,10 +24,6 @@ namespace BetterBuildingMenu.Systems
 		// transition per trigger. The handlers in Bindings.cs apply a transition,
 		// PublishScope() mirrors it to the bindings, RefreshBuildingCatalog runs it.
 		private BuildingCatalogLensState _lens = BuildingCatalogLensState.Initial;
-		// The axis the fallback strip is drawn on. The SELECTION itself lives on
-		// the query as StripTabs, because the filter rail offers the same state
-		// and one field shown twice cannot disagree with itself.
-		private string _buildingLensStripAxis = string.Empty;
 
 		private ToolSystem _toolSystem;
 		private PrefabSystem _prefabSystem;
@@ -102,7 +98,6 @@ namespace BetterBuildingMenu.Systems
 		// varies per menu and a tab row whose meaning changes silently is not learnable.
 		private ValueBindingHelper<MenuBranchCount[]> _BuildingLensStripTabs = null!;
 		private ValueBindingHelper<string[]> _BuildingLensStripTabBinding = null!;
-		private ValueBindingHelper<string> _BuildingLensStripAxisBinding = null!;
 		// Which category the strip draws as its development branches, and those
 		// branches. Empty on the menus that expand nothing.
 		private ValueBindingHelper<MenuCategoryTabs[]> _BuildingLensExpandedCategories = null!;
@@ -196,7 +191,6 @@ namespace BetterBuildingMenu.Systems
 			_BuildingLensMenuCategoriesBinding = CreateBinding("BuildingLensMenuCategories", Array.Empty<VanillaMenuCategory>());
 			_BuildingLensMenuCategoryCounts = CreateBinding("BuildingLensMenuCategoryCounts", Array.Empty<MenuCategoryCount>());
 			_BuildingLensStripTabs = CreateBinding("BuildingLensStripTabs", Array.Empty<MenuBranchCount>());
-			_BuildingLensStripAxisBinding = CreateBinding("BuildingLensStripAxis", string.Empty);
 			_BuildingLensExpandedCategories = CreateBinding("BuildingLensExpandedCategories", Array.Empty<MenuCategoryTabs>());
 			// A plain value binding plus its own trigger, rather than the
 			// two-in-one form: the value is the LIST both controls share, while
@@ -235,7 +229,6 @@ namespace BetterBuildingMenu.Systems
 				CreateTrigger<string, string, string>("SetBuildingCatalogMetricRange", SetBuildingCatalogMetricRange);
 				CreateTrigger("ClearBuildingCatalogMetricRanges", ClearBuildingCatalogMetricRanges);
 				CreateTrigger<string, string>("ToggleBuildingLensFacet", ToggleBuildingLensFacet);
-				CreateTrigger("ClearBuildingLensFacets", ClearBuildingLensFacets);
 				CreateTrigger("ClearBuildingLensFilters", ClearBuildingLensFilters);
 				CreateTrigger("ResetBuildingLensMenu", ResetBuildingLensMenu);
 				CreateTrigger<string>("SetBuildingLensStripTab", SetBuildingLensStripTab);

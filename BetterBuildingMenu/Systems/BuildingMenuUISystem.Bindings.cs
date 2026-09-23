@@ -398,8 +398,6 @@ namespace BetterBuildingMenu.Systems
 
 		private void ToggleBuildingLensFacet(string facetId, string optionId) => Apply(_lens.ToggleFacet(facetId, optionId));
 
-		private void ClearBuildingLensFacets() => Apply(_lens.ClearFacets());
-
 		/// <summary>
 		/// Puts a menu back the way it opens.
 		/// </summary>

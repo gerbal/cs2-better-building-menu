@@ -1,4 +1,4 @@
-import { ModRegistrar } from "cs2/modding";
+import { ModRegistrar, ModuleRegistryExtend } from "cs2/modding";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 
 import { RemoveVanillaAssetMenuComponent } from "mods/RemoveVanillaAssetMenu/RemoveVanillaAssetMenu";
@@ -32,8 +32,9 @@ const register: ModRegistrar = (moduleRegistry) => {
   // Pack; the filter rail draws every other dimension.
   moduleRegistry.extend("game-ui/game/components/tool-options/mouse-tool-options/mouse-tool-options.tsx", "MouseToolOptions", safeExtension("MouseToolOptions", LensToolOptions));
   // That bank only mounts for an active tool and browsing is not one, so this
-  // holds it open while the lens owns the menu.
-  moduleRegistry.extend("game-ui/game/components/tool-options/tool-options-panel.tsx", "useToolOptionsVisible", ToolOptionsVisibility);
+  // holds it open while the lens owns the menu. The registry types every
+  // extension as a component wrapper; this one wraps a hook.
+  moduleRegistry.extend("game-ui/game/components/tool-options/tool-options-panel.tsx", "useToolOptionsVisible", ToolOptionsVisibility as unknown as ModuleRegistryExtend);
   // The hook above reads its binding without subscribing; this re-renders the
   // panel when that value changes.
   moduleRegistry.extend("game-ui/game/components/tool-options/tool-options-panel.tsx", "ToolOptionsPanel", safeExtension("ToolOptionsPanel", ToolOptionsPanelRefresh));

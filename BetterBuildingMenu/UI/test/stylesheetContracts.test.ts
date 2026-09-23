@@ -124,6 +124,8 @@ describe("Building Lens stylesheet contracts", () => {
     assert.doesNotMatch(strip, /position:\s*absolute/);
     // Taller than the mark it draws, so the edge is grabbable without aiming.
     assert.match(strip, /height:\s*14rem/);
+    const gripHeight = Number(grip.match(/height:\s*(\d+)rem/)?.[1]);
+    assert.ok(gripHeight > 0 && gripHeight < 14, `grip height ${gripHeight}rem`);
   });
 
   it("announces the drag the way the game does: its cursors, its thumb's weight", () => {
