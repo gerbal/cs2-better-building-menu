@@ -53,6 +53,32 @@ Duplicate names are numbered after every pass, partial passes included, always s
 prefab's `AssetName`. A partial pass gives the prefab it re-reads back its plain name. Numbering
 only what it touched would leave that prefab as "Foo" beside a sibling still called "Foo 2".
 
+## A pass that fails
+
+A full pass clears the index and rebuilds it, along with the menus, zones, milestones and dev tree
+it reads. `RunIndex` captures what it is about to replace, and if anything in the build throws, it
+puts all of it back and logs the error. The panel keeps the index it had, and nothing reaches the
+game's load or locale dispatch.
+
+Capturing references is enough, because a pass never writes to the old collections. Every
+`Index*` step builds new ones and assigns them at its end, and `AddAllCategories` gives every
+category new lists. Before the first pass there is nothing to keep, so a failure there leaves an
+empty index laid out, and `IsReady` stays false.
+
+A failed pass at `OnGameLoaded` does not count as indexed, so loading-complete runs its own.
+Partial passes are not covered. They edit the live index in place, and each prefab and each
+processor in them has its own catch.
+
+## How the panel hears of a change
+
+The indexer never calls the panel. Whatever changes an indexed fact — a pass, an unlock, a unique
+asset built or bulldozed — bumps `IndexGeneration`, and `BuildingMenuUISystem.OnUpdate` compares
+it with the generation its last publish read (`IndexWatch`).
+
+A change while the panel is open schedules the same debounced refresh a keystroke does, so a burst
+of partial passes or unique events is one refresh rather than one each. A change while it is closed
+schedules nothing, because opening the panel publishes anyway.
+
 ## The vanilla menu walk
 
 `IndexVanillaMenuPlacements` walks the game's own group tree downward: `UIAssetMenuData` menus →
@@ -75,7 +101,7 @@ deliberately NOT applied: those are player settings that hide assets which shoul
 indexed.
 
 Two things read the result: the coverage report, and the index itself, which treats placement as
-an override — see the blacklist check in `RunIndex` and `IsPlacedInVanillaMenu`.
+an override — see the blacklist check in `BuildIndex` and `IsPlacedInVanillaMenu`.
 
 ### The Zones menu
 
@@ -115,6 +141,10 @@ and is blind in two ways:
 `LogVanillaMenuAudit` is the census that closes both: every menu, its categories, what vanilla
 places, what we cover, and what we show that vanilla does not. It logs at Info whether or not
 anything is wrong, because the value is in reading it rather than in being warned by it.
+
+It runs once per city load, on the first full pass, with the processor census beside it. A
+language change or a lock-state recheck repeats the pass but not the menus it reports on, so the
+repeat would add a second copy of the same census. With Debug logging on, every full pass logs it.
 
 The arithmetic lives in `VanillaMenuAudit`, where it is a function of plain data and covered by
 tests; the system only gathers the facts out of the entity world and logs what comes back. As a
