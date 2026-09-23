@@ -12,11 +12,7 @@ using Game;
 using Game.Modding;
 using Game.SceneFlow;
 
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 
 using Unity.Entities;
 
@@ -82,7 +78,7 @@ namespace BetterBuildingMenu
 
 			if (GameManager.instance.modManager.TryGetExecutableAsset(this, out var asset))
 			{
-				UIManager.defaultUISystem.AddHostLocation($"betterbuildingmenu", Path.Combine(Path.GetDirectoryName(asset.path), "images"), false);
+				UIManager.defaultUISystem.AddHostLocation("betterbuildingmenu", Path.Combine(Path.GetDirectoryName(asset.path), "images"), false);
 			}
 
 			// A SECOND host, deliberately not the one above: blackened icon
@@ -97,8 +93,6 @@ namespace BetterBuildingMenu
 			}
 
 			AssetDatabase.global.LoadSettings(nameof(BetterBuildingMenu), Settings, new BetterBuildingMenuSettings(this));
-
-
 
 			updateSystem.UpdateAfter<PrefabIndexingSystem>(SystemUpdatePhase.PrefabUpdate);
 			// Twice, because PrefabUpdate is not a frame phase: PrefabSystem
