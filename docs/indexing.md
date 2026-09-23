@@ -1,6 +1,16 @@
 # Prefab indexing
 
-Design rationale for `BetterBuildingMenu/Systems/PrefabIndexingSystem.cs`. The code carries one-line pointers to the headings below.
+Design rationale for `PrefabIndexingSystem`, one partial class across six files in
+`BetterBuildingMenu/Systems/`:
+
+- `PrefabIndexingSystem.cs`: the lifecycle, the passes, and what each entry is built from;
+- `.Menus.cs`: the vanilla menus;
+- `.MenuAudit.cs`: the census and coverage report;
+- `.Facts.cs`: per-prefab facts;
+- `.Progression.cs`: milestones, the dev tree and unlock requirements;
+- `.Zones.cs`: the zone catalog.
+
+The code carries one-line pointers to the headings below.
 
 ## Load timing
 
