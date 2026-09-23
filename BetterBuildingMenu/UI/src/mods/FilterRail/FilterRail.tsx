@@ -8,6 +8,7 @@ import {
   filterRailOptions,
   type RailFacetState,
 } from "domain/filterRail";
+import type { FacetId } from "domain/sharedContracts.generated";
 import { textInputValue } from "domain/textInput";
 import lockIcon from "images/lock.svg";
 import unlockIcon from "images/unlock.svg";
@@ -39,20 +40,25 @@ interface FilterRailProps {
   renderMetrics: () => JSX.Element;
 }
 
-/** One icon per dimension. Popovers float, so a closed rail costs one row. */
-const DIMENSION_ICONS: Record<string, string> = {
+type RailIconId = FacetId | typeof RAIL_METRICS_ID;
+
+/**
+ * One icon per dimension. Popovers float, so a closed rail costs one row. Keyed
+ * by every facet C# can emit, so a new one fails to compile until it has an icon
+ * rather than drawing an empty button.
+ */
+const DIMENSION_ICONS: Readonly<Record<RailIconId, string>> = {
   buildingType: "Media/Game/Icons/Healthcare.svg",
   provenance: "coui://betterbuildingmenu/Icons/Colored/BaseGame.svg",
   // Our own padlock: "Media/Game/Icons/LockClosed.svg" does not exist, and an
   // invisible icon in a rail of icons reads as a filter that does not work.
   // It is the glyph the tiles use, so filter and filtered look alike.
   availability: lockIcon,
-  dlc: "coui://betterbuildingmenu/Icons/Colored/BaseGame.svg",
+  // DLC, packs and the base game: the star the separate pack filter wore.
+  content: "coui://betterbuildingmenu/Icons/Colored/StarFilled.svg",
   theme: "coui://betterbuildingmenu/Icons/Colored/HouseAlternative.svg",
-  assetPack: "coui://betterbuildingmenu/Icons/Colored/StarFilled.svg",
   placement: "coui://betterbuildingmenu/Icons/Colored/Road.svg",
   extension: "coui://betterbuildingmenu/Icons/Colored/ServiceBuilding.svg",
-  zone: "Media/Game/Icons/Zones.svg",
   [RAIL_METRICS_ID]: "coui://betterbuildingmenu/Icons/Standard/StarAll.svg",
 };
 
@@ -85,7 +91,7 @@ export const FilterRail = ({
           const only = chosen.length === 1 ? chosen[0].id : "";
           const icon = dimension.id === "availability" && (only === "Locked" || only === "Unlocked")
             ? (only === "Unlocked" ? unlockIcon : lockIcon)
-            : (DIMENSION_ICONS[dimension.id] ?? "");
+            : (DIMENSION_ICONS[dimension.id as RailIconId] ?? "");
           // The tooltip names the dimension when it is doing nothing, and names
           // what survives when it is. A count alone ("2") says how many boxes
           // are ticked, which is not the question the player has.

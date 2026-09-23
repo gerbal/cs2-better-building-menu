@@ -4,6 +4,8 @@
  * which dimensions exist, how many selections each holds, which need a search.
  */
 
+import type { FacetId } from "./sharedContracts.generated";
+
 export interface RailFacetOption {
   id: string;
   label: string;
@@ -45,11 +47,11 @@ export const RAIL_METRICS_ID = "metrics";
  * ONE list read by both homes, because two can disagree and strand a dimension
  * in neither. filterRail.test.ts asserts the partition rather than assuming it.
  */
-export const BANK_DIMENSION_IDS: readonly string[] = ["availability"];
+export const BANK_DIMENSION_IDS: readonly FacetId[] = ["availability"];
 
 /** Whether this dimension is drawn in the bank rather than on the rail. */
 export function isBankDimension(id: string): boolean {
-  return BANK_DIMENSION_IDS.includes(id);
+  return (BANK_DIMENSION_IDS as readonly string[]).includes(id);
 }
 
 export function buildFilterRail(
