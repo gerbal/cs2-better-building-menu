@@ -11,13 +11,14 @@ From the repository root:
 ```sh
 ./build.sh backend                       # C# mod, Debug
 ./build.sh test                          # xUnit on net10; starts no game process
-(cd BetterBuildingMenu/UI && npm ci --ignore-scripts && npx tsc --noEmit -p . && npm test)
+(cd BetterBuildingMenu/UI && npm ci --ignore-scripts && npm test)
 CS2_BUILD_CONFIG=Release ./build.sh all
 CS2_BUILD_CONFIG=Release ./build.sh package
 ```
 
-- The UI step typechecks, then runs the unit and render suites. It also holds
-  the five version sources together, so it fails on a half-done bump.
+- The UI step typechecks the source and tests, lints, then runs the unit and
+  render suites. It also holds the five version sources together, so it fails
+  on a half-done bump.
 - `package` writes `artifacts/BetterBuildingMenu/` and refuses a package that
   still carries a Find It identity. Give it the same `CS2_BUILD_CONFIG` as the
   build, or it copies whatever Debug DLL is on disk.
