@@ -68,6 +68,15 @@ export function watchAction(state: WatchState, index: number | null): WatchActio
   return state.last === index ? "ignore" : "open";
 }
 
+/**
+ * What the watcher remembers while the setting is off: observations still count,
+ * so the menu open when the setting comes on reads as a fresh selection and the
+ * lens takes it over at once. Nothing is routed while off, so `last` is null.
+ */
+export function watchStateWhileOff(): WatchState {
+  return { seen: true, last: null };
+}
+
 /** What the watcher should remember after acting on an observation. */
 export function nextWatchState(state: WatchState, index: number | null, action: WatchAction): WatchState {
   if (action === "ignore") {

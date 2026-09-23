@@ -31,6 +31,11 @@ The published listing and this repository credit Find It 1.5.8 by T. D. W.
 and state that basis. If the upstream author adds a license file or objects,
 this record and the listing are updated to match.
 
+Since 2026-09-22 the repository carries that basis as `LICENSE`: the MIT
+terms, with T. D. W.'s 2024 copyright line for Find It beside this fork's.
+MIT asks that the notice travel with every copy, which the csproj line alone
+did not do.
+
 ## Inherited assets removed
 
 Audited on 2026-09-02, comparing every tracked file against the upstream
