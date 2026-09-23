@@ -71,12 +71,6 @@ namespace BetterBuildingMenu
 
 		private const string ImagesHost = "betterbuildingmenu";
 
-		// What OnLoad hands the game, so OnDispose can take it back. Assigned in
-		// OnLoad, never by an initializer: the game builds this class with
-		// FormatterServices.GetUninitializedObject, so no constructor runs and an
-		// initialized field is null in game. See ModInstanceTests.
-		private List<LocaleHelper.DictionarySource> _localeSources;
-
 		public void OnLoad(UpdateSystem updateSystem)
 		{
 			Log.Info(nameof(OnLoad));
@@ -95,12 +89,9 @@ namespace BetterBuildingMenu
 			Silhouettes = new SilhouetteIconCache(ContentRoots(), SilhouetteFolder);
 			UIManager.defaultUISystem.AddHostLocation(SilhouetteIcons.HostName, SilhouetteFolder, false);
 
-			_localeSources = new List<LocaleHelper.DictionarySource>();
-
 			foreach (var item in new LocaleHelper("BetterBuildingMenu.Locale.json").GetAvailableLanguages())
 			{
 				GameManager.instance.localizationManager.AddSource(item.LocaleId, item);
-				_localeSources.Add(item);
 			}
 
 			AssetDatabase.global.LoadSettings(nameof(BetterBuildingMenu), Settings, new BetterBuildingMenuSettings(this));
@@ -129,17 +120,8 @@ namespace BetterBuildingMenu
 					Settings = null;
 				}
 
-				// At quit the game disposes mods before it destroys the world, so its
-				// managers are still up; after a failed OnLoad, this list may not be.
-				var localization = GameManager.instance?.localizationManager;
-
-				foreach (var item in _localeSources ?? Enumerable.Empty<LocaleHelper.DictionarySource>())
-				{
-					localization?.RemoveSource(item.LocaleId, item);
-				}
-
-				_localeSources = null;
-
+				// The locale sources stay registered: removing one makes the game reload
+				// the active dictionary, which at quit is work for nothing.
 				UIManager.defaultUISystem?.RemoveHostLocation(ImagesHost);
 				UIManager.defaultUISystem?.RemoveHostLocation(SilhouetteIcons.HostName);
 			}
