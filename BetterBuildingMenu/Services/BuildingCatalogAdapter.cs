@@ -351,19 +351,19 @@ namespace BetterBuildingMenu.Services
 			BuildingCatalogEntry[] source = entries.ToArray();
 			var groups = new List<BuildingCatalogFacetGroup>();
 
-			AddValueGroup(groups, "buildingType", "Role", source.Select(entry => entry.BuildingType), query.BuildingTypes, WordFormat.SplitIdentifier);
-			AddValueGroup(groups, "provenance", "Source", source.Select(entry => entry.Provenance), query.Provenance, FormatProvenanceLabel);
+			AddValueGroup(groups, FacetIds.BuildingType, "Role", source.Select(entry => entry.BuildingType), query.BuildingTypes, WordFormat.SplitIdentifier);
+			AddValueGroup(groups, FacetIds.Provenance, "Source", source.Select(entry => entry.Provenance), query.Provenance, FormatProvenanceLabel);
 			// Progression, which the vanilla menu shows only by greying an asset out.
 			AddAvailabilityGroup(groups, source, query.Availability);
 			// Where it came from, next to who made it: one axis, one place.
 			// See AddContentGroup.
 			AddContentGroup(groups, packScope is null ? source : packScope.ToArray(), query);
-			AddValueGroup(groups, "theme", "Theme", source.Select(entry => entry.Theme), query.Themes, WordFormat.SplitIdentifier);
+			AddValueGroup(groups, FacetIds.Theme, "Theme", source.Select(entry => entry.Theme), query.Themes, WordFormat.SplitIdentifier);
 			// Neither unlock modality is a facet. Development restates the strip's own
 			// axis and collides with Role, and "can I build this now" is the question
 			// Availability answers; both stay reachable as a Group by dimension.
-			AddArrayGroup(groups, "placement", "Placement", source.Select(entry => entry.PlacementFlags), query.PlacementFlags, FormatFlagLabel);
-			AddArrayGroup(groups, "extension", "Extensions", source.Select(entry => entry.Extensions), query.Extensions, WordFormat.SplitIdentifier);
+			AddArrayGroup(groups, FacetIds.Placement, "Placement", source.Select(entry => entry.PlacementFlags), query.PlacementFlags, FormatFlagLabel);
+			AddArrayGroup(groups, FacetIds.Extension, "Extensions", source.Select(entry => entry.Extensions), query.Extensions, WordFormat.SplitIdentifier);
 			// Density is not a facet either: every type+density tier is a category with
 			// its own tab and icon in the top bar, so the rail would be a dropdown of the
 			// tabs above it. It stays reachable as a Group by dimension and as a sort.
@@ -758,7 +758,7 @@ namespace BetterBuildingMenu.Services
 				.ToArray();
 
 			groups.Add(new BuildingCatalogFacetGroup(
-				"availability",
+				FacetIds.Availability,
 				"Availability",
 				options,
 				// Exhaustive, so a selection narrows only while it is partial.
@@ -857,7 +857,7 @@ namespace BetterBuildingMenu.Services
 			// a selection holds the group open so it can still be cleared.
 			if (options.Count > 1 || options.Any(option => option.Selected))
 			{
-				groups.Add(new BuildingCatalogFacetGroup("content", "Content", options.ToArray()));
+				groups.Add(new BuildingCatalogFacetGroup(FacetIds.Content, "Content", options.ToArray()));
 			}
 		}
 

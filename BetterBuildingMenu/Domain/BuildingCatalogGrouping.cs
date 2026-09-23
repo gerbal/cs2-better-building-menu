@@ -43,18 +43,39 @@ namespace BetterBuildingMenu.Domain
 		public const string Development = "development";
 
 		/// <summary>Every dimension the picker offers, by id, in the picker's order.</summary>
-		public static readonly string[] Dimensions =
+		/// <remarks>The UI's copy of the ids and the order is generated from this; the labels
+		/// are the UI's.</remarks>
+		public static readonly IReadOnlyList<string> Dimensions = new[]
 		{
-			MenuCategory, Category, SubCategory, Role, SchoolTier, Progression, Development, Theme, Source, Density, Footprint, Cost, None,
+			// The game's own categories, the split the tab strip shows: first, because it
+			// is the division the player already has in mind.
+			MenuCategory,
+			// Ours: Buildings, Networks, Service Buildings.
+			Category,
+			SubCategory,
+			Role,
+			// Directly under Role, because it is the level below it: Role answers
+			// "school", School tier answers "which one".
+			SchoolTier,
+			// The game's own progression, then the other unlock modality, the per-service
+			// tree bought with development points.
+			Progression,
+			Development,
+			Theme,
+			Source,
+			Density,
+			Footprint,
+			Cost,
+			None,
 		};
 
-		/// <summary>Cost band edges. Mirrored in buildingGroups.ts.</summary>
+		/// <summary>Cost band edges.</summary>
 		public static readonly double[] CostBands = { 5_000d, 25_000d, 100_000d };
 
-		/// <summary>Footprint band edges, by the longer lot side. Mirrored in TS.</summary>
+		/// <summary>Footprint band edges, by the longer lot side.</summary>
 		public static readonly int[] FootprintBands = { 2, 4, 6 };
 
-		/// <summary>Density tiers in reading order. Mirrored in buildingGroups.ts.</summary>
+		/// <summary>Density tiers in reading order.</summary>
 		/// <remarks>
 		/// An explicit table, because the enum's own values do not encode this order: Mixed and
 		/// LowRent read between Medium and High but sort past Signature. Row before Medium
@@ -101,7 +122,7 @@ namespace BetterBuildingMenu.Domain
 
 		public static bool IsDimension(string? value) =>
 			!string.IsNullOrWhiteSpace(value)
-			&& Array.Exists(Dimensions, dimension => Is(value!.Trim(), dimension));
+			&& Dimensions.Any(dimension => Is(value!.Trim(), dimension));
 
 		/// <summary>
 		/// What a menu opens grouped by when the player has not chosen.
@@ -200,7 +221,6 @@ namespace BetterBuildingMenu.Domain
 			string.Equals(value, dimension, StringComparison.OrdinalIgnoreCase);
 
 		/// <summary>The menu whose tier is what an asset IS, not when it unlocks.</summary>
-		/// <remarks>Mirrored as isTransitMenu in buildingGroups.ts.</remarks>
 		private static bool IsTransitMenu(string? menu) =>
 			!string.IsNullOrEmpty(menu)
 			&& menu!.IndexOf("Transportation", StringComparison.OrdinalIgnoreCase) >= 0;
@@ -416,7 +436,7 @@ namespace BetterBuildingMenu.Domain
 				.ToArray();
 		}
 
-		// ---- label helpers, mirrored in buildingGroups.ts ----
+		// ---- label helpers ----
 
 		private static string? Text(string? value)
 		{
