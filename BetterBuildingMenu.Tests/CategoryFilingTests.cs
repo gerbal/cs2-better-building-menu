@@ -3,16 +3,12 @@ using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Utilities;
 
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 using Xunit;
 
 namespace BetterBuildingMenu.Tests
 {
-	/// <remarks>
-	/// PrefabIndex holds the game's prefab types, which the mock assemblies CI builds against
-	/// cannot load, so these run only against an installed game. See docs/ci.md.
-	/// </remarks>
-	[Trait("Requires", "Game")]
 	public sealed class CategoryFilingTests
 	{
 		[Fact]
@@ -59,8 +55,18 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(1, index[PrefabCategory.Networks][PrefabSubCategory.Networks_Roads].Count);
 		}
 
-		private static PrefabIndex Entry(int id, PrefabCategory category, PrefabSubCategory subCategory) =>
-			new(null!) { Id = id, Category = category, SubCategory = subCategory };
+		/// <remarks>
+		/// Built without its constructor: the constructor loads the game's prefab types, which
+		/// the mock assemblies CI builds against cannot load. Filing reads only these three.
+		/// </remarks>
+		private static PrefabIndex Entry(int id, PrefabCategory category, PrefabSubCategory subCategory)
+		{
+			var entry = (PrefabIndex)RuntimeHelpers.GetUninitializedObject(typeof(PrefabIndex));
+			entry.Id = id;
+			entry.Category = category;
+			entry.SubCategory = subCategory;
+			return entry;
+		}
 
 		/// <summary>Its own index, laid out like the live one, so no test touches the shared static.</summary>
 		private static Dictionary<PrefabCategory, Dictionary<PrefabSubCategory, IndexedPrefabList>> EmptyIndex()
