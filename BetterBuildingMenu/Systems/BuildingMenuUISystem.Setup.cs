@@ -47,6 +47,8 @@ namespace BetterBuildingMenu.Systems
 		/// refresh, and tells the close paths whether there is anything to close.
 		/// </remarks>
 		private bool _lensMenuOpen;
+		// Whether the index moved since the catalog was last published. See OnUpdate.
+		private readonly IndexWatch _indexWatch = new();
 		private ValueBindingHelper<bool> _ReplaceVanillaBuildMenu = null!;
 		private ValueBindingHelper<int> _BuildingCatalogMatchesElsewhere = null!;
 		private ValueBindingHelper<int> _LensTileSize = null!;
@@ -285,6 +287,14 @@ namespace BetterBuildingMenu.Systems
 
 		protected override void OnUpdate()
 		{
+			// The indexer bumps IndexGeneration and leaves the rest to us: a pass, an
+			// unlock, a unique built or bulldozed. Scheduled like a search, so a burst of
+			// them is one refresh, and nothing is rebuilt for a closed panel.
+			if (_indexWatch.ShouldRefresh(_lensMenuOpen, PrefabIndexingSystem.IndexGeneration))
+			{
+				TriggerSearch();
+			}
+
 			if (_searchDebounce.TryFire(SearchClock.Elapsed))
 			{
 				_IsSearchLoading.Value = false;

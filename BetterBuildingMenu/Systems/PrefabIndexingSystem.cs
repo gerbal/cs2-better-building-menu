@@ -40,7 +40,6 @@ namespace BetterBuildingMenu.Systems
 		private ResourceSystem _resourceSystem;
 		private ImageSystem _imageSystem;
 		private PrefabUISystem _prefabUISystem;
-		private BuildingMenuUISystem _menuUISystem;
 		private HashSet<string> _blackList;
 		// Road Builder's mark on a road it has thrown away, once found. See RefreshModCompatibility.
 		private ComponentType? _roadBuilderDiscarded;
@@ -114,7 +113,7 @@ namespace BetterBuildingMenu.Systems
 
 		/// <summary>Bumped whenever an indexed fact changes: a re-index, an unlock, a unique built or
 		/// bulldozed. The catalog's snapshot cache is keyed on it, so a stale projection cannot outlive
-		/// the change that staled it.</summary>
+		/// the change that staled it, and the panel polls it to know when to republish.</summary>
 		public static int IndexGeneration { get; private set; } = 1;
 
 		// Set when this system is created inside a running city: the game adds a
@@ -133,7 +132,6 @@ namespace BetterBuildingMenu.Systems
 			_resourceSystem = World.GetOrCreateSystemManaged<ResourceSystem>();
 			_imageSystem = World.GetOrCreateSystemManaged<ImageSystem>();
 			_prefabUISystem = World.GetOrCreateSystemManaged<PrefabUISystem>();
-			_menuUISystem = World.GetOrCreateSystemManaged<BuildingMenuUISystem>();
 
 			GameManager.instance.localizationManager.onActiveDictionaryChanged += OnActiveDictionaryChanged;
 
@@ -411,7 +409,6 @@ namespace BetterBuildingMenu.Systems
 			// old lock state until it is rebuilt — and an Availability filter set
 			// to Unlocked would still be excluding them.
 			IndexGeneration++;
-			_menuUISystem.TriggerSearch();
 		}
 
 		/// <summary>Resolves every asset's silhouette now, while the game is still loading.</summary>
@@ -682,8 +679,6 @@ namespace BetterBuildingMenu.Systems
 
 			BuildingMenuUtil.IsReady = true;
 			IndexGeneration++;
-
-			_menuUISystem.TriggerSearch();
 
 			// Rescan the placed uniques against the city that just loaded: the
 			// tracker's loaded-asset events may already have run this frame, and a
@@ -1047,13 +1042,13 @@ namespace BetterBuildingMenu.Systems
 		}
 
 		/// <summary>Keeps the placed-unique set in step with the city.</summary>
-		/// <remarks>Fires on both edges, so the state goes stale in neither direction. Refreshed rather
-		/// than re-indexed: nothing about the PREFAB changed, only what the city holds.</remarks>
+		/// <remarks>Fires on both edges, so the state goes stale in neither direction. Not a re-index:
+		/// nothing about the PREFAB changed, only what the city holds, and the generation is enough for
+		/// the panel to republish.</remarks>
 		private void OnUniqueAssetStatusChanged(Entity prefab, bool placed)
 		{
 			PlacedUniqueRegistry.Set(prefab.Index, placed);
 			IndexGeneration++;
-			_menuUISystem?.RefreshBuildingCatalogFromIndexing();
 		}
 	}
 }

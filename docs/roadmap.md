@@ -31,9 +31,6 @@ the detail behind the structural items.
   the end, keeping the old index if the pass throws.
 - **Per-load state.** Replace the static index, caches and registries with one
   object created per city load and handed to the systems that read it.
-- **Refresh from the UI side.** Let `BuildingMenuUISystem.OnUpdate` notice a
-  new `IndexGeneration` and refresh once, while the panel is open, rather than
-  the indexer calling into the UI.
 - **Smaller cleanups.**
   - Name the `BuildingMenuUISystem` partials by responsibility.
   - Delete the dead side of the two C#/TypeScript pairs that have drifted
