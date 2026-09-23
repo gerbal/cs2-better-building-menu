@@ -1,6 +1,8 @@
 using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Services;
 
+using System;
+
 using Xunit;
 
 namespace BetterBuildingMenu.Tests
@@ -8,8 +10,12 @@ namespace BetterBuildingMenu.Tests
 	/// <summary>
 	/// The three availability states, and that they partition.
 	/// </summary>
-	public class AvailabilityStateTests
+	public class AvailabilityStateTests : IDisposable
 	{
+		// The registry is process-wide. Empty is how every test finds it, since nothing in a
+		// test run loads a city, so Dispose empties it again, pass or fail.
+		public void Dispose() => PlacedUniqueRegistry.Reset(Array.Empty<int>());
+
 		private static readonly BuildingCatalogEntry Base = new(
 			Id: 0,
 			PrefabName: "Base",
@@ -79,8 +85,6 @@ namespace BetterBuildingMenu.Tests
 			PlacedUniqueRegistry.Reset(new[] { 9 });
 			Assert.True(PlacedUniqueRegistry.IsAlreadyBuilt(9));
 			Assert.False(PlacedUniqueRegistry.IsAlreadyBuilt(1));
-
-			PlacedUniqueRegistry.Reset(null);
 		}
 
 		[Fact]
