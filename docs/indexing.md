@@ -183,6 +183,14 @@ around the chain they hang off, so measuring outward from the trunk takes the ge
 specialisations — the order the player meets them in. The trunk row is taken from the service's
 own root and is not necessarily zero.
 
+**More than one node** can gate an asset. `DevTreeGates.Pick` chooses by a stated rule rather
+than taking the first match, because the requirements arrive in hash order, which follows entity
+numbering and moves when the installed content does. A node the asset needs (`RequireAll`) comes
+before one of several ways in (`RequireAny`). Among the nodes it needs, the one furthest into the
+tree wins: the player buys it last, so it is what unlocks the asset, and the root and the chain
+below it never are. Among ways in, the nearest wins, since any one of them unlocks it. Ties go
+by label, then icon.
+
 **Labels and icons travel together**, keyed by node and by service. Keying an icon by label
 collides: every service's root is called "Basic", so all of them would share one entry.
 

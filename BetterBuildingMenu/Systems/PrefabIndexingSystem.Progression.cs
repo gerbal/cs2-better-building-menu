@@ -255,29 +255,25 @@ namespace BetterBuildingMenu.Systems
 		public static string GetDevTreeRootLabel(string? menu) =>
 			menu is not null && _devTreeRoots.TryGetValue(menu, out var root) ? root.Label : string.Empty;
 
-		/// <summary>The branch an asset's unlock node belongs to, or empty.</summary>
-		private (string Label, string Icon, int Depth) GetDevTreeBranch(Entity entity, string? menu)
+		/// <summary>The branch an asset's unlock node belongs to, or its service's root.</summary>
+		/// <remarks>More than one node can gate an asset; DevTreeGates.Pick decides which names it.</remarks>
+		private (string Label, string Icon, int Depth) DevTreeBranchOf(
+			IReadOnlyList<(Entity Requirement, UnlockFlags Flags)> required,
+			string? menu)
 		{
-			if (EntityManager.HasComponent<UnlockRequirement>(entity))
+			var gates = new List<DevTreeGates.Gate>();
+
+			foreach (var (requirement, flags) in required)
 			{
-				var required = new NativeParallelHashMap<Entity, UnlockFlags>(10, Allocator.TempJob);
-
-				try
+				if (_devTreeBranches.TryGetValue(requirement, out var branch) && branch.Label.Length > 0)
 				{
-					ProgressionUtils.CollectSubRequirements(EntityManager, entity, required);
+					gates.Add(new DevTreeGates.Gate(branch.Label, branch.Icon, branch.Depth, (flags & UnlockFlags.RequireAll) != 0));
+				}
+			}
 
-					foreach (var item in required)
-					{
-						if (_devTreeBranches.TryGetValue(item.Key, out var branch) && branch.Label.Length > 0)
-						{
-							return branch;
-						}
-					}
-				}
-				finally
-				{
-					required.Dispose();
-				}
+			if (DevTreeGates.Pick(gates) is { } gate)
+			{
+				return (gate.Label, gate.Icon, gate.Depth);
 			}
 
 			// No node gated it, so it belongs to the service's free root — the same
@@ -320,14 +316,16 @@ namespace BetterBuildingMenu.Systems
 			return names;
 		}
 
-		/// <summary>What the game still wants before this asset can be built.</summary>
-		/// <remarks>Mirrors PrefabUISystem.GetRequirements: collect the transitive requirements, take the
-		/// highest milestone, and let everything else contribute its own localized title.</remarks>
-		private (int Milestone, string[] Requirements) GetUnlockRequirements(Entity entity)
+		/// <summary>An asset's transitive unlock requirements, or none when nothing gates it.</summary>
+		/// <remarks>The milestone, the requirement lines and the dev-tree branch all read this one set,
+		/// so an asset indexed in full walks its requirements once.</remarks>
+		private List<(Entity Requirement, UnlockFlags Flags)> CollectRequirements(Entity entity)
 		{
+			var collected = new List<(Entity Requirement, UnlockFlags Flags)>();
+
 			if (!EntityManager.HasComponent<UnlockRequirement>(entity))
 			{
-				return (0, Array.Empty<string>());
+				return collected;
 			}
 
 			var required = new NativeParallelHashMap<Entity, UnlockFlags>(10, Allocator.TempJob);
@@ -336,49 +334,67 @@ namespace BetterBuildingMenu.Systems
 			{
 				ProgressionUtils.CollectSubRequirements(EntityManager, entity, required);
 
-				var milestone = 0;
-				var requirements = new List<string>();
-
 				foreach (var item in required)
 				{
-					// RequireAll, matching ProgressionUtils.GetRequiredMilestone:
-					// a milestone reachable through a RequireAny branch is one of
-					// several ways in, so it is not "the" milestone.
-					if (EntityManager.TryGetComponent<MilestoneData>(item.Key, out var milestoneData))
-					{
-						if ((item.Value & UnlockFlags.RequireAll) != 0 && milestoneData.m_Index > milestone)
-						{
-							milestone = milestoneData.m_Index;
-						}
-
-						continue;
-					}
-
-					// Tutorials are not a requirement the player can act on, and their
-					// titles are internal. Vanilla special-cases them too:
-					// BindUnlockRequirement tests m_TutorialRequirementEntity first.
-					if (!_prefabSystem.TryGetPrefab<PrefabBase>(item.Key, out var requirementPrefab)
-						|| requirementPrefab is TutorialPrefab
-						|| requirementPrefab is TutorialListPrefab
-						|| requirementPrefab is TutorialBalloonPrefab)
-					{
-						continue;
-					}
-
-					var described = DescribeRequirement(item.Key, requirementPrefab);
-
-					if (!string.IsNullOrEmpty(described))
-					{
-						requirements.Add(described);
-					}
+					collected.Add((item.Key, item.Value));
 				}
-
-				return (milestone, requirements.Distinct().ToArray());
 			}
 			finally
 			{
 				required.Dispose();
 			}
+
+			return collected;
+		}
+
+		/// <summary>What the game still wants before this asset can be built.</summary>
+		private (int Milestone, string[] Requirements) GetUnlockRequirements(Entity entity) =>
+			UnlockRequirementsOf(CollectRequirements(entity));
+
+		/// <summary>The highest milestone the requirements need, and a line for each of the rest.</summary>
+		/// <remarks>Mirrors PrefabUISystem.GetRequirements: take the highest milestone, and let
+		/// everything else contribute its own localized title.</remarks>
+		private (int Milestone, string[] Requirements) UnlockRequirementsOf(
+			IReadOnlyList<(Entity Requirement, UnlockFlags Flags)> required)
+		{
+			var milestone = 0;
+			var requirements = new List<string>();
+
+			foreach (var (requirement, flags) in required)
+			{
+				// RequireAll, matching ProgressionUtils.GetRequiredMilestone:
+				// a milestone reachable through a RequireAny branch is one of
+				// several ways in, so it is not "the" milestone.
+				if (EntityManager.TryGetComponent<MilestoneData>(requirement, out var milestoneData))
+				{
+					if ((flags & UnlockFlags.RequireAll) != 0 && milestoneData.m_Index > milestone)
+					{
+						milestone = milestoneData.m_Index;
+					}
+
+					continue;
+				}
+
+				// Tutorials are not a requirement the player can act on, and their
+				// titles are internal. Vanilla special-cases them too:
+				// BindUnlockRequirement tests m_TutorialRequirementEntity first.
+				if (!_prefabSystem.TryGetPrefab<PrefabBase>(requirement, out var requirementPrefab)
+					|| requirementPrefab is TutorialPrefab
+					|| requirementPrefab is TutorialListPrefab
+					|| requirementPrefab is TutorialBalloonPrefab)
+				{
+					continue;
+				}
+
+				var described = DescribeRequirement(requirement, requirementPrefab);
+
+				if (!string.IsNullOrEmpty(described))
+				{
+					requirements.Add(described);
+				}
+			}
+
+			return (milestone, requirements.Distinct().ToArray());
 		}
 
 		/// <summary>Says what a requirement actually asks of the player.</summary>
