@@ -568,7 +568,7 @@ namespace BetterBuildingMenu.Systems
 					{
 						var example = all.TryGetValue(overlap.ExampleId, out var indexed) ? indexed.PrefabName : overlap.ExampleId.ToString(CultureInfo.InvariantCulture);
 
-						Mod.Log.Warn($"[PROCESSOR-OVERLAP] {overlap.Later} replaced {overlap.Earlier} for {overlap.Count} prefab(s), e.g. {example}");
+						Mod.Log.Info($"[PROCESSOR-OVERLAP] {overlap.Later} replaced {overlap.Earlier} for {overlap.Count} prefab(s), e.g. {example}");
 					}
 
 					LogVanillaMenuCoverage();
@@ -941,12 +941,7 @@ namespace BetterBuildingMenu.Systems
 
 			PopulateAnalyticalData(entity, prefabIndex);
 
-			BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any][prefabIndex.Id] = prefabIndex;
-
-			BuildingMenuUtil.CategorizedPrefabs[prefabIndex.Category][PrefabSubCategory.Any][prefabIndex.Id] = prefabIndex;
-
-			BuildingMenuUtil.CategorizedPrefabs[prefabIndex.Category][prefabIndex.SubCategory][prefabIndex.Id] = prefabIndex;
-
+			BuildingMenuUtil.File(BuildingMenuUtil.CategorizedPrefabs, prefabIndex);
 		}
 
 		private string GetAssetName(PrefabBase prefab)
