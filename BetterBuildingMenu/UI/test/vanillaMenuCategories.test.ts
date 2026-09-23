@@ -20,15 +20,15 @@ const category = (id: string, priority = 0): VanillaMenuCategory => ({
 
 describe("category strip visibility", () => {
   it("hides the strip when the menu has no categories", () => {
-    assert.equal(shouldShowCategoryStrip([]), false);
-    assert.equal(shouldShowCategoryStrip(null), false);
-    assert.equal(shouldShowCategoryStrip(undefined), false);
+    assert.equal(shouldShowCategoryStrip([], "Roads"), false);
+    assert.equal(shouldShowCategoryStrip(null, "Roads"), false);
+    assert.equal(shouldShowCategoryStrip(undefined, "Roads"), false);
   });
 
   it("hides the strip at exactly one category, as vanilla does", () => {
     // Water & Sewage and Zones each have exactly one, so this is not a corner
     // case — it fires on real menus.
-    assert.equal(shouldShowCategoryStrip([category("Water")]), false);
+    assert.equal(shouldShowCategoryStrip([category("Water")], "Water & Sewage"), false);
   });
 
   it("shows the strip from two categories up", () => {

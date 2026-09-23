@@ -4,24 +4,7 @@ import {
   clearBuildingLensFiltersCommand,
   getBuildingLensEmptyStateMessage,
   getBuildingLensFilterSummary,
-  type BuildingLensMetricRangeState,
 } from "../src/domain/buildingLensFilterSummary.ts";
-
-const emptyRanges: BuildingLensMetricRangeState = {
-  minCost: null,
-  maxCost: null,
-  minUpkeep: null,
-  maxUpkeep: null,
-  minWorkers: null,
-  maxWorkers: null,
-  minCapacity: null,
-  maxCapacity: null,
-  minLotWidth: null,
-  maxLotWidth: null,
-  minLotDepth: null,
-  maxLotDepth: null,
-  hasSelection: false,
-};
 
 describe("Building Lens active-filter summary", () => {
   it("counts selected facets and metric ranges as one summary", () => {

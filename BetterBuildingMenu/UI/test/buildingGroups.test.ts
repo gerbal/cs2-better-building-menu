@@ -11,6 +11,7 @@ import {
   groupTreeFromPaths,
   isEducationMenu,
   shouldShowHeading,
+  type GroupedEntry,
 } from "../src/domain/buildingGroups.ts";
 
 /** A page item as C# sends it: its headings already decided. */
@@ -118,7 +119,8 @@ describe("Grouped tree from the page's paths", () => {
   it("yields nothing for an ungrouped page", () => {
     // "None", or a page C# never stamped: the views draw the flat list.
     assert.deepEqual(groupTreeFromPaths([item(1, []), item(2, [])]), []);
-    assert.deepEqual(groupTreeFromPaths([{ id: 1 }, { id: 2 }]), []);
+    const unstamped: (GroupedEntry & { id: number })[] = [{ id: 1 }, { id: 2 }];
+    assert.deepEqual(groupTreeFromPaths(unstamped), []);
   });
 
   it("survives absent and empty input", () => {
@@ -136,8 +138,9 @@ describe("Grouped tree from the page's paths", () => {
 });
 
 describe("Flattening groups for the table", () => {
-  const key = (e: { id: number }) => String(e.id);
-  const line = (r: ReturnType<typeof flattenGroupedRows<{ id: number; name: string }>>[number]) =>
+  type Row = GroupedEntry & { id: number; name: string };
+  const key = (e: Row) => String(e.id);
+  const line = (r: ReturnType<typeof flattenGroupedRows<Row>>[number]) =>
     r.kind === "heading" ? `${"  ".repeat(r.depth)}# ${r.label}` : r.entry.name;
 
   it("puts a heading before each group's rows, at every level", () => {

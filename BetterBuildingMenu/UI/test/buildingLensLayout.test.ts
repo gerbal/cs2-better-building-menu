@@ -2,8 +2,6 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   getBuildingLensRowGeometry,
-  BUILDING_LENS_MAX_WIDTH,
-  BUILDING_LENS_MIN_WIDTH,
   getBuildingLensDensity,
   getBuildingLensMetricLabel,
   getBuildingLensMetricTextScale,
