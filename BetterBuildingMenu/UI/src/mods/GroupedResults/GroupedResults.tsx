@@ -57,6 +57,10 @@ const GroupHeading = ({
   const boxRef = useRef<HTMLSpanElement>(null);
   const probeRef = useRef<HTMLSpanElement>(null);
   const [fitted, setFitted] = useState(estimate);
+  // The parent hands a fresh callback every render; the fit below re-runs on
+  // the label alone and reports through whichever is current.
+  const latestOnHeight = useRef(onHeight);
+  latestOnHeight.current = onHeight;
 
   useEffect(() => {
     const box = boxRef.current;
@@ -69,8 +73,8 @@ const GroupHeading = ({
     const report = () => {
       const heading = headingRef.current;
 
-      if (heading && onHeight) {
-        onHeight(heading.offsetHeight);
+      if (heading) {
+        latestOnHeight.current?.(heading.offsetHeight);
       }
     };
 

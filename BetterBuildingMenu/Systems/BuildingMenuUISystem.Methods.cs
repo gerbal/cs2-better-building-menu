@@ -107,11 +107,8 @@ namespace BetterBuildingMenu.Systems
 			// dead end as a facet option that cannot.
 			_BuildingLensMenuCategoryCounts.Value = view.MenuCategoryCounts.ToArray();
 			var countsMs = Lap();
-			// The axis is resolved BEFORE the tabs and stored, because the query
-			// carries it: the predicate has to match tabs against the same axis
-			// the tabs were counted on.
-			_buildingLensStripAxis = view.StripAxis;
-			_BuildingLensStripAxisBinding.Value = _buildingLensStripAxis;
+			// Resolved ahead of the tabs counted on it, so the log times the two apart.
+			_ = view.StripAxis;
 			var axisMs = Lap();
 			// The rail can change this behind the row's back, so republish it
 			// with the rest of the state rather than only when a tab is clicked.

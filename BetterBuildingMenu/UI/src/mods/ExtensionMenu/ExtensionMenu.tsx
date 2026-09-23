@@ -27,7 +27,7 @@ interface UpgradesMenuProps {
  * and it draws the panel unless we can account for every row it lists.
  */
 export const ExtensionMenuComponent: ModuleRegistryExtend = (Component) => {
-  return (props) => {
+  return function UpgradesMenuOrOurs(props) {
     const { className, onClose } = (props ?? {}) as UpgradesMenuProps;
     const enabled = useValue(ReplaceVanillaBuildMenu$) === true;
     const selected = useValue(selectedInfo.selectedEntity$);

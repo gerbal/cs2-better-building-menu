@@ -1,6 +1,3 @@
-/** The tier value that narrows nothing. Mirrors BuildingCatalogQuery.AnyMilestone. */
-export const ANY_MILESTONE = -1;
-
 /** One tier's share of the menu, published beside the milestone names. */
 export interface MenuBranchCount {
   id: string;
@@ -31,13 +28,6 @@ export function expandedTabsFor(
   return categories?.find((entry) => entry.categoryId === categoryId)?.tabs ?? [];
 }
 
-/** What a tab draws. Falls back to its match key, as the C# record does. */
-export function branchTabLabel(tab: MenuBranchCount | null | undefined): string {
-  const label = (tab?.label ?? "").trim();
-
-  return label !== "" ? label : tab?.id ?? "";
-}
-
 /**
  * What a tab's tooltip says, which is more than the tab carries: a density tab
  * is drawn IN ITS FAMILY'S PLACE, so nothing else on the row names the family.
@@ -56,67 +46,6 @@ export function branchTabTooltip(
   const family = (categoryLabel ?? "").trim();
 
   return family === "" ? tier : `${tier} ${family}`;
-}
-
-export interface MenuMilestoneCount {
-  milestone: number;
-  count: number;
-}
-
-/**
- * A tier tab, ready to draw. The name is joined on this side because the
- * milestone names are already published once by index, and a second copy
- * travelling with the counts is a second thing to keep in the player's language.
- */
-export interface MilestoneTab {
-  milestone: number;
-  label: string;
-  count: number;
-  icon: string;
-}
-
-/**
- * The tier tabs for a menu, ordered by index because the index IS the
- * progression — unlike the category strip, where order is only for stability.
- * Sorted again here so an out-of-order binding cannot mislead the strip.
- */
-export function milestoneTabs(
-  counts: readonly MenuBranchCount[] | null | undefined,
-  // Passed in, not imported: the naming rule lives in buildingGroups beside the
-  // progression group dimension, and these domain modules stay import-free of
-  // each other so the type-stripping test runner can load each on its own.
-  label: (milestone: number) => string
-): MilestoneTab[] {
-  return (counts ?? [])
-    .map((entry) => ({
-      milestone: Number(entry.id),
-      count: entry.count ?? 0,
-      icon: entry.icon ?? "",
-    }))
-    .filter((entry) => Number.isFinite(entry.milestone) && entry.milestone >= 0)
-    .sort((a, b) => a.milestone - b.milestone)
-    .map((entry) => ({
-      milestone: entry.milestone,
-      label: label(entry.milestone),
-      count: entry.count,
-      icon: entry.icon,
-    }));
-}
-
-/**
- * Whether the tier strip is worth drawing — the category strip's rule, that one
- * tab covering everything offers no choice. It matters more here: every menu
- * has a progression axis, and the small ones sit entirely in one tier.
- */
-export function shouldShowMilestoneTabs(tabs: readonly MilestoneTab[] | null | undefined): boolean {
-  return (tabs ?? []).length > 1;
-}
-
-export function isMilestoneSelected(
-  milestone: number,
-  selected: number | null | undefined
-): boolean {
-  return (selected ?? ANY_MILESTONE) === milestone;
 }
 
 /** One school-level tab, ready to draw. */

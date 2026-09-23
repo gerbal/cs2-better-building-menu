@@ -62,9 +62,6 @@ export const GROUP_DIMENSIONS: readonly GroupDimension[] = [
   { id: "none", label: "None", depth: 0 },
 ];
 
-/** Default when the section is unknown, and the fallback everywhere else. */
-export const DEFAULT_GROUP_DIMENSION: GroupDimensionId = "category";
-
 /**
  * The category whose assets the school levels stand in for. On the education
  * menu the four levels partition it exactly, so the strip draws them INSTEAD
@@ -100,57 +97,8 @@ export function groupDimensionsFor(
   return GROUP_DIMENSIONS.filter((dimension) => offered.includes(dimension.id));
 }
 
-/**
- * The four school tiers, from the game's `SchoolLevel` enum, reaching us as a
- * 1-based `SchoolData.m_EducationLevel`. The values that are not tiers — a
- * tierless upgrade, the outside connection — fall through to "no tier".
- */
-export interface SchoolTier {
-  /** `SchoolData.m_EducationLevel`. */
-  level: number;
-  /** Stable id for the tier. */
-  id: string;
-  /** Heading text, in the game's own wording. */
-  label: string;
-}
-
-export const SCHOOL_TIERS: readonly SchoolTier[] = [
-  { level: 1, id: "elementary", label: "Elementary School" },
-  { level: 2, id: "highSchool", label: "High School" },
-  { level: 3, id: "college", label: "College" },
-  { level: 4, id: "university", label: "University" },
-];
-
 /** What C# files an entry under when the dimension has no value for it. */
 export const UNGROUPED_LABEL = "Other";
-
-/** What the progression dimension calls an asset the game never gated. */
-export const PROGRESSION_UNGATED_LABEL = "From the start";
-
-/**
- * Names a milestone index out of the dense table the backend publishes. Falls
- * back to the bare index rather than "Other", because an unnamed milestone is
- * still a definite point in the progression.
- */
-export function milestoneLabel(
-  index: number | null | undefined,
-  names: readonly string[] | null | undefined
-): string {
-  if (typeof index !== "number" || !Number.isFinite(index) || index < 0) {
-    return UNGROUPED_LABEL;
-  }
-
-  const named = (names ?? [])[index];
-
-  if (named) {
-    return named;
-  }
-
-  // The game's milestones start at 1 and the published table is dense from 0,
-  // so an asset at 0 is one the game never gated rather than one at a
-  // milestone the player has to reach.
-  return index === 0 ? PROGRESSION_UNGATED_LABEL : `Milestone ${index}`;
-}
 
 /** The two fields C# stamps on every page item when the page is grouped. */
 export interface GroupedEntry {
@@ -242,10 +190,6 @@ export function shouldShowHeading(nodes: readonly GroupNode<unknown>[]): boolean
 
 export function groupDimensionLabel(id: GroupDimensionId): string {
   return GROUP_DIMENSIONS.find((dimension) => dimension.id === id)?.label ?? id;
-}
-
-export function isGroupDimension(value: unknown): value is GroupDimensionId {
-  return GROUP_DIMENSIONS.some((dimension) => dimension.id === value);
 }
 
 /** One line of a grouped table: a heading band, or a data row. */

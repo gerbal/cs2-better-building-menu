@@ -50,22 +50,6 @@ function normalizeBound(definition: MetricRangeDefinition, text: string): number
   return definition.integer ? Math.round(bounded) : Math.round(bounded * 100) / 100;
 }
 
-export function normalizeMetricRange(id: MetricRangeId | string, input: MetricRangeInput): NormalizedMetricRange {
-  const definition = definitionFor(id);
-  if (!definition) {
-    return { min: null, max: null };
-  }
-
-  let min = normalizeBound(definition, input?.minText ?? "");
-  let max = normalizeBound(definition, input?.maxText ?? "");
-
-  if (min !== null && max !== null && min > max) {
-    [min, max] = [max, min];
-  }
-
-  return { min, max };
-}
-
 /**
  * Reports text the player typed that will never become a bound. Dropped in
  * silence, a typo reads exactly like an applied filter and the empty result

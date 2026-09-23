@@ -19,6 +19,7 @@ import {
 } from "domain/buildingLensLayout";
 import type { BuildingLensDensityTier, BuildingLensMetric } from "domain/buildingLensLayout";
 import { catalogWindowRemaining, loadMoreCount } from "domain/catalogWindow";
+import { getNumberSeparators, groupDigits } from "domain/buildingLensMetricFormat";
 import type { SortColumn } from "domain/buildingCatalogContracts";
 import { getBuildingLensEmptyStateMessage } from "domain/buildingLensFilterSummary";
 import { menuSurfacePort } from "domain/menuSurfacePort";
@@ -240,7 +241,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
 
     pendingEnter.current = null;
     if (decision) activate(decision.arm);
-  }, [items, bestMatchId, pageSearch, currentSearch]);
+  }, [items, bestMatchId, pageSearch, currentSearch, activate]);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (isPlainEnter(event)) onEnter.current(event);
@@ -260,14 +261,15 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
    * names both ends, so a truncated list reads as one rather than as the whole.
    */
   const remaining = catalogWindowRemaining({ shown: items.length, total: totalCount });
+  const separators = useMemo(() => getNumberSeparators(translate), [translate]);
   // Memoised with what it shows, so the views it is handed to can skip a render.
   const catalogFooter = useMemo(() => hasMore ? (
     <div className={styles.loadMoreRow}>
       <span className={styles.windowState}>
         {(translate("Tooltip.LABEL[BetterBuildingMenu.ShowingOfTotal]", "Showing {0} of {1}")
           ?? "Showing {0} of {1}")
-          .replace("{0}", `${items.length}`)
-          .replace("{1}", `${totalCount}`)}
+          .replace("{0}", groupDigits(items.length, separators))
+          .replace("{1}", groupDigits(totalCount, separators))}
       </span>
       <Button className={styles.loadMore} variant="flat" onSelect={loadMore}>
         {remaining === null
@@ -276,7 +278,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
             ?? "Load {0} more").replace("{0}", `${loadMoreCount(remaining)}`)}
       </Button>
     </div>
-  ) : null, [hasMore, items.length, totalCount, remaining, translate, loadMore]);
+  ) : null, [hasMore, items.length, totalCount, remaining, translate, separators, loadMore]);
 
   return (
     <div
