@@ -1,9 +1,9 @@
-import { bindValue, trigger, useValue } from "cs2/api";
+import { useValue } from "cs2/api";
 import { game } from "cs2/bindings";
 import { ModuleRegistryExtend } from "cs2/modding";
 import classNames from "classnames";
+import { cloneElement, isValidElement, type ReactNode } from "react";
 
-import mod from "../../../mod.json";
 import styles from "./LensToolOptions.module.scss";
 import lockIcon from "images/lock.svg";
 import unlockIcon from "images/unlock.svg";
@@ -11,9 +11,7 @@ import { BANK_DIMENSION_IDS, isBankDimension } from "domain/filterRail";
 import { shouldMountInAssetMenu } from "domain/buildingMenuMount";
 import { toggleBuildingLensFacetCommand, type BuildingLensFacetState } from "domain/buildingCatalogFacets";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
-
-const BuildingLensFacets$ = bindValue<BuildingLensFacetState | null>(mod.id, "BuildingLensFacets", null);
-const LensOwnsCurrentMenu$ = bindValue<boolean>(mod.id, "LensOwnsCurrentMenu", false);
+import { BuildingLensFacets$, LensOwnsCurrentMenu$, send } from "mods/bindings";
 
 /**
  * Availability, drawn in the game's own tool-options panel beside Theme and
@@ -57,7 +55,7 @@ const BankFacets = ({ facets }: { facets: BuildingLensFacetState | null | undefi
               selected={option.selected}
               multiSelect
               tooltip={option.label}
-              onSelect={() => trigger(mod.id, ...toggleArgs(group.id, option.id))}
+              onSelect={() => send(toggleBuildingLensFacetCommand(group.id, option.id))}
               focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED}
               className={classNames(
                 VanillaComponentResolver.instance.toolButtonTheme.button,
@@ -72,13 +70,6 @@ const BankFacets = ({ facets }: { facets: BuildingLensFacetState | null | undefi
   );
 };
 
-/** The command as (method, ...args), so the trigger call stays one line. */
-function toggleArgs(groupId: string, optionId: string): [string, ...unknown[]] {
-  const command = toggleBuildingLensFacetCommand(groupId, optionId);
-
-  return [command.method, ...command.args];
-}
-
 export const LensToolOptions: ModuleRegistryExtend = (Component: any) => {
   return () => {
     const facets = useValue(BuildingLensFacets$);
@@ -90,13 +81,20 @@ export const LensToolOptions: ModuleRegistryExtend = (Component: any) => {
 
     // The same predicate the panel itself mounts on, so the bank cannot offer
     // a control for a menu that is not there, nor withhold one that is.
-    if (!shouldMountInAssetMenu({ lensOwnsCurrentMenu, isPhotoMode })) {
+    if (!isValidElement(result) || !shouldMountInAssetMenu({ lensOwnsCurrentMenu, isPhotoMode })) {
       return result;
     }
 
-    result.props.children?.push(<BankFacets facets={facets} />);
+    // A copy with our sections after vanilla's, never a push into vanilla's own
+    // element: its children may be one element rather than an array.
+    const children = (result.props as { children?: ReactNode }).children;
 
-    return result;
+    return cloneElement(
+      result,
+      undefined,
+      ...(Array.isArray(children) ? children : [children]),
+      <BankFacets key="betterBuildingMenuBank" facets={facets} />
+    );
   };
 };
 

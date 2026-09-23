@@ -1,16 +1,10 @@
-import { bindValue, trigger, useValue } from "cs2/api";
+import { useValue } from "cs2/api";
 import { useEffect, useRef } from "react";
-import mod from "../../../mod.json";
-import type { ToolbarEntity } from "domain/toolbarEntity";
 import {
   setVanillaToolbarSelectionCommand,
   toolbarSelectionKey,
 } from "domain/vanillaToolbarSelection";
-
-const SelectedThemes$ = bindValue<ToolbarEntity[]>("toolbar", "selectedThemes", []);
-const SelectedAssetPacks$ = bindValue<ToolbarEntity[]>("toolbar", "selectedAssetPacks", []);
-const VanillaSelected$ = bindValue<boolean>("toolbar", "vanillaSelected", false);
-const ModsSelected$ = bindValue<boolean>("toolbar", "modsSelected", false);
+import { ModsSelected$, SelectedAssetPacks$, SelectedThemes$, VanillaSelected$, send } from "mods/bindings";
 
 /**
  * Keeps the catalog in step with the game's own filter row; renders nothing. It
@@ -38,8 +32,7 @@ export const VanillaToolbarWatcher = () => {
 
     lastKey.current = key;
 
-    const command = setVanillaToolbarSelectionCommand(state);
-    trigger(mod.id, command.method, ...command.args);
+    send(setVanillaToolbarSelectionCommand(state));
   }, [themes, packs, vanillaSelected, modsSelected]);
 
   return null;

@@ -7,17 +7,25 @@ namespace BetterBuildingMenu.Tests
 	public sealed class FindItCategoryOverrideTests
 	{
 		[Fact]
-		public void AnExclusionNeedsNoInclude()
+		public void AnExclusionCountsBesideAnyInclude()
 		{
-			// An author who hides an asset from Find It writes the exclusion alone.
-			Assert.True(FindItCategoryOverride.Read(includes: null, excludes: new[] { "FindIt" }).Excluded);
-			Assert.True(FindItCategoryOverride.Read(new string[0], new[] { "BetterBuildingMenu/anything" }).Excluded);
+			// Find It's rule: the include can be any mod's tag, not only ours.
+			Assert.True(FindItCategoryOverride.Read(new[] { "W7/Buildings/Transport" }, new[] { "FindIt" }).Excluded);
+			Assert.True(FindItCategoryOverride.Read(new[] { "FindIt/1/101" }, new[] { "BetterBuildingMenu/anything" }).Excluded);
+		}
+
+		[Fact]
+		public void ABareExclusionLeavesTheAssetListed()
+		{
+			// Alone, exclude=FindIt opts out of Find It's prop generators, not its catalog.
+			Assert.False(FindItCategoryOverride.Read(includes: null, excludes: new[] { "FindIt" }).Excluded);
+			Assert.False(FindItCategoryOverride.Read(new string[0], new[] { "BetterBuildingMenu" }).Excluded);
 		}
 
 		[Fact]
 		public void OnlyOurTagsExclude()
 		{
-			Assert.False(FindItCategoryOverride.Read(null, new[] { "FindItExtras", "Signature", null }).Excluded);
+			Assert.False(FindItCategoryOverride.Read(new[] { "W7/Buildings/Transport" }, new[] { "FindItExtras", "Signature", null }).Excluded);
 		}
 
 		[Fact]

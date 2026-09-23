@@ -1,9 +1,8 @@
-import { bindValue, trigger, useValue } from "cs2/api";
+import { useValue } from "cs2/api";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import mod from "../../../mod.json";
 import {
   LENS_RESIZE_HANDLE_HEIGHT,
   clampBuildingLensHeight,
@@ -12,9 +11,7 @@ import {
 } from "domain/buildingLensLayout";
 
 import styles from "mods/LensResizeHandle/lensResizeHandle.module.scss";
-
-/** The panel height the player last dragged to; see BuildingMenuUISystem.Bindings. */
-const BuildingLensPanelHeight$ = bindValue<number>(mod.id, "BuildingLensPanelHeight", 420);
+import { BuildingLensPanelHeight$, send } from "mods/bindings";
 
 export interface LensPanelHeight {
   /** In rem, already clamped to the range the layout can hold. */
@@ -41,7 +38,22 @@ export function useLensPanelHeight(): LensPanelHeight {
     startHeight: 0,
   });
 
+  // The height the pointer last asked for, sent once per frame: the mouse can
+  // report several moves a frame, and each echo re-renders the surface.
+  const pending = useRef<{ frame: number; height: number | null }>({ frame: 0, height: null });
+
   const height = clampBuildingLensHeight(useValue(BuildingLensPanelHeight$));
+
+  function flushHeight(): void {
+    const next = pending.current.height;
+    pending.current = { frame: 0, height: null };
+
+    if (next !== null) {
+      send({ method: "SetBuildingLensPanelHeight", args: [next] });
+    }
+  }
+
+  useEffect(() => () => cancelAnimationFrame(pending.current.frame), []);
 
   function beginResize(event: any): void {
     event.preventDefault?.();
@@ -58,15 +70,22 @@ export function useLensPanelHeight(): LensPanelHeight {
     const state = resizeState.current;
     if (!state.active) return;
 
-    trigger(mod.id, "SetBuildingLensPanelHeight", draggedBuildingLensHeight(state.startHeight, state.startY, event.clientY, state.pxPerRem));
+    pending.current.height = draggedBuildingLensHeight(state.startHeight, state.startY, event.clientY, state.pxPerRem);
+
+    if (pending.current.frame === 0) {
+      pending.current.frame = requestAnimationFrame(flushHeight);
+    }
   }
 
   function endResize(): void {
     if (!resizeState.current.active) return;
 
+    // The last position first, so the commit saves where the drag ended.
+    cancelAnimationFrame(pending.current.frame);
+    flushHeight();
     resizeState.current.active = false;
     setIsResizing(false);
-    trigger(mod.id, "CommitBuildingLensPanelHeight");
+    send({ method: "CommitBuildingLensPanelHeight", args: [] });
   }
 
   const blocker = isResizing

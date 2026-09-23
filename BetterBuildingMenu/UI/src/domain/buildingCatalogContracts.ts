@@ -1,4 +1,4 @@
-import type { BuildingCatalogEntry } from "./buildingCatalog";
+import type { Command } from "./command";
 import type { ActivatePrefabAction } from "./menuSurfaceContracts";
 export type {
   ActivatePrefabAction,
@@ -27,8 +27,7 @@ export type SortColumn =
   | "BuildingLevel"
   | "HasParking";
 
-export interface TriggerCommand {
-  method: string;
+export interface TriggerCommand extends Command {
   args: readonly (string | number | boolean)[];
 }
 

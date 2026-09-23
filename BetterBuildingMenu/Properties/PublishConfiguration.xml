@@ -23,7 +23,7 @@ A better version of the vanilla building menu, with sorting, categories and more
 * Grid, list, cards or table. Category tabs and a search box.
 * Sort by cost, upkeep, workers, capacity, lot, level or parking.
 * Group by type, theme, source, density, footprint, cost or progression.
-* Filter by unlocked, DLC, theme, asset pack, placement, role, source, extensions or density.
+* Filter by unlocked, DLC, theme, asset pack, placement, role, source or extensions. Density has its own tabs.
 * Set a range for cost, upkeep, workers, capacity, lot width or lot depth.
 * Hover an asset to see its numbers and what unlocks it.
 * Building upgrades get names, cost and footprint too.
