@@ -247,6 +247,12 @@ namespace BetterBuildingMenu.Systems
 				Mod.Settings.onSettingsApplied -= OnSettingsApplied;
 			}
 
+			if (_toolSystem is not null)
+			{
+				_toolSystem.EventPrefabChanged -= OnPrefabChanged;
+				_toolSystem.EventToolChanged -= OnToolChanged;
+			}
+
 			base.OnDestroy();
 		}
 
