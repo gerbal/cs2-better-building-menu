@@ -1,4 +1,4 @@
-const { RawSource } = require("webpack").sources;
+const { ReplaceSource } = require("webpack").sources;
 
 exports.CSSPresencePlugin = class CSSPresencePlugin {
   apply(compiler) {
@@ -19,25 +19,14 @@ exports.CSSPresencePlugin = class CSSPresencePlugin {
             for (const file of chunk.files) {
               if (file.endsWith(".mjs")) {
                 const asset = compilation.getAsset(file);
-                const source = asset.source.source();
-                const updatedSource = source.replace(
-                  "export {",
-                  `const hasCSS = ${hasCSS}; export { hasCSS, `
-                );
+                const at = asset.source.source().indexOf("export {");
+                if (at < 0) continue;
 
-                // Generate a new source map for the modified source
-                const newSourceAndMap = {
-                  sources: [file],
-                  mappings: "",
-                  file,
-                  sourceRoot: "",
-                  sourcesContent: [updatedSource],
-                };
-
-                compilation.updateAsset(
-                  file,
-                  new RawSource(updatedSource, newSourceAndMap)
-                );
+                // An edit of the original source rather than a new one, so a
+                // development build keeps its source map.
+                const updated = new ReplaceSource(asset.source);
+                updated.replace(at, at + "export {".length - 1, `const hasCSS = ${hasCSS}; export { hasCSS, `);
+                compilation.updateAsset(file, updated);
               }
             }
           }
