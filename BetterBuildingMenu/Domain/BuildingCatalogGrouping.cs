@@ -117,8 +117,8 @@ namespace BetterBuildingMenu.Domain
 		private const string UnnamedKey = "\uFFFD";
 
 		public static bool IsGrouped(string? groupBy) =>
-			!string.IsNullOrWhiteSpace(groupBy)
-			&& !string.Equals(groupBy.Trim(), None, StringComparison.OrdinalIgnoreCase);
+			groupBy?.Trim() is { Length: > 0 } trimmed
+			&& !string.Equals(trimmed, None, StringComparison.OrdinalIgnoreCase);
 
 		public static bool IsDimension(string? value) =>
 			!string.IsNullOrWhiteSpace(value)
@@ -290,7 +290,7 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		public static string MenuCategoryRank(string? category, int priority)
 		{
-			if (string.IsNullOrWhiteSpace(category))
+			if (category?.Trim() is not { Length: > 0 } trimmed)
 			{
 				return UnnamedKey;
 			}
@@ -305,7 +305,7 @@ namespace BetterBuildingMenu.Domain
 			// outrank it. Written as an escape so the file stays text to grep.
 			return rank.ToString("D10", CultureInfo.InvariantCulture)
 				+ '\u0000'
-				+ category.Trim();
+				+ trimmed;
 		}
 
 		/// <summary>
@@ -605,6 +605,6 @@ namespace BetterBuildingMenu.Domain
 		}
 
 		private static string Normalize(string? value) =>
-			string.IsNullOrWhiteSpace(value) ? UnnamedKey : value.Trim();
+			value?.Trim() is { Length: > 0 } trimmed ? trimmed : UnnamedKey;
 	}
 }

@@ -33,7 +33,7 @@ namespace BetterBuildingMenu.Domain
 		}
 
 		/// <summary>The prefab ids to mark already built, each at most once.</summary>
-		public static List<int> Collect(IEnumerable<Candidate> candidates)
+		public static List<int> Collect(IEnumerable<Candidate>? candidates)
 		{
 			var placed = new List<int>();
 
