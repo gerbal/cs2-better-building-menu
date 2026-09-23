@@ -82,9 +82,9 @@ package_artifacts() {
     # is unsafe to deploy. Keep this check close to the artifact boundary, and
     # fail closed: grep exits 0 for a match, 1 for none and 2 (or 127, when it
     # cannot run at all) for an error, and only a clean 1 lets the package through.
-    # -I skips binaries, so the DLL's bytes cannot match by accident.
+    # -I skips binaries, whose bytes can match by accident; -o prints the match alone.
     local identity_status=0
-    grep -rnEI '"FindIt"|coui://findit([/"`]|$)|77240|CSII_TOOLPATH' "$PACKAGE_DIR" || identity_status=$?
+    grep -rnoEI '"FindIt"|coui://findit([/"`]|$)|77240|CSII_TOOLPATH' "$PACKAGE_DIR" || identity_status=$?
     case "$identity_status" in
         0)
             echo "ERROR: package contains an upstream Find It identity." >&2

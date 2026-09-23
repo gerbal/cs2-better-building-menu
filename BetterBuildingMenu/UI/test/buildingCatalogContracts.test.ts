@@ -3,7 +3,6 @@ import { describe, it } from "node:test";
 import {
   getCatalogWindowSummary,
   clearBuildingCatalogMetricRangesCommand,
-  locatePrefabCommand,
   nextSortState,
   searchChangedCommand,
   setBuildingCatalogMetricRangeCommand,
@@ -58,11 +57,9 @@ function entry(id: number): BuildingCatalogEntry {
 describe("BetterBuildingMenu UI binding contracts", () => {
   it("keeps catalog helpers semantic while naming the window command", () => {
     assert.deepEqual(setCurrentPrefabCommand(17), { type: "activatePrefab", prefabId: 17 });
-    // No argument: the backend owns the window's size, its step and its
-    // ceiling, so a client naming the next size would be a second opinion on
-    // all three. The name must match the CreateTrigger in BuildingMenuUISystem.Setup.
-    assert.deepEqual(loadMoreCatalogCommand(), { method: "LoadMoreBuildingCatalog", args: [] });
-    assert.deepEqual(locatePrefabCommand(17), { type: "locatePrefab", prefabId: 17 });
+    // The limit wanted, so a repeat is harmless; the backend clamps it to one step
+    // and the ceiling. The name must match the CreateTrigger in BuildingMenuUISystem.Setup.
+    assert.deepEqual(loadMoreCatalogCommand(200), { method: "LoadMoreBuildingCatalog", args: [200] });
   });
 
   it("keeps the search payload aligned with the C# binding", () => {

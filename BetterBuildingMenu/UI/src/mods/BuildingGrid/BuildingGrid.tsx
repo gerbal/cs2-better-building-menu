@@ -7,7 +7,6 @@ import classNames from "classnames";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import { canPlace, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
-import { topSearchResult } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { stripRedundantNamePrefix, tileLabelLineBudget, wrapTileLabel } from "domain/tileLabel";
 import { lineBudgetFromDrawn } from "domain/measuredFit";
@@ -29,7 +28,6 @@ const ActivePrefabId$ = bindValue<number>(mod.id, "ActivePrefabId", 0);
 
 interface BuildingGridProps {
   entries: BuildingCatalogEntry[];
-  searchText: string;
   onPlace: (entry: BuildingCatalogEntry) => void;
   /** The end of the feed, rendered inside this grid's own scroll. */
   footer?: ReactNode;
@@ -105,7 +103,7 @@ const TileName = ({ label, budget }: { label: string; budget: number }) => {
   );
 };
 
-export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone = true }: BuildingGridProps) => {
+export const BuildingGrid = ({ entries, onPlace, footer, standalone = true }: BuildingGridProps) => {
   const { translate } = useLocalization();
   // One card for every view mode, read once here rather than per tile: it is a
   // dozen live bindings, and a tile each would open hundreds of them to draw
@@ -122,29 +120,6 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
   // The name line is fontSizeM; its character budget follows the text scale.
   const textScale = useTextScale();
   const activePrefabId = useValue(ActivePrefabId$);
-  // The page arrives in the order every view shows: grouped, then by relevance
-  // while a search is active, then by the chosen sort. Nothing is re-ranked
-  // here, so the grid cannot disagree with the table.
-  const ordered = entries;
-
-  // Enter arms the best match, so a search can be completed without leaving
-  // the keyboard. Bound on the document because the search field belongs to
-  // the menu's own header, not to this component.
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Enter") return;
-
-      const top = topSearchResult(ordered, searchText ?? "");
-      if (!top) return;
-
-      onPlace(top);
-    };
-
-    document.addEventListener("keydown", onKey);
-
-    return () => document.removeEventListener("keydown", onKey);
-  }, [ordered, searchText, onPlace]);
-
   const place = (entry: BuildingCatalogEntry) => {
     // Vanilla refuses the same selection rather than hiding the tile: its own
     // grid routes a locked click to a disabled sound, not a placement.
@@ -279,7 +254,8 @@ export const BuildingGrid = ({ entries, searchText, onPlace, footer, standalone 
 
   const tiles = (
     <div className={classNames(styles.tiles, styles.bodyTiles)}>
-      {ordered.map((entry) => tile(entry, `grid-${entry.id}`))}
+      {/* In page order, which every view shares; nothing is re-ranked here. */}
+      {entries.map((entry) => tile(entry, `grid-${entry.id}`))}
     </div>
   );
 

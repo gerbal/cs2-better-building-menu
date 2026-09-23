@@ -18,7 +18,7 @@ namespace BetterBuildingMenu.Tests
 			new BuildingCatalogEntry(
 				Id: id, PrefabName: name, Name: name, Category: category, SubCategory: category + "_Any",
 				Thumbnail: "", LotWidth: 2, LotDepth: 2, BuildingLevel: 1, ZoneType: ZoneTypeFilter.Any,
-				HasParking: false, IsUniqueMesh: false, IsVanilla: true, PdxModsId: "")
+				HasParking: false, IsVanilla: true, PdxModsId: "")
 				with { UiMenu = menu, UiCategory = uiCategory };
 
 		private static readonly BuildingCatalogEntry[] Fixture =
@@ -65,7 +65,7 @@ namespace BetterBuildingMenu.Tests
 				new BuildingCatalogEntry(
 					Id: 9, PrefabName: "ParkingHall02", Name: "Parking Hall", Category: "ServiceBuildings", SubCategory: "ServiceBuildings_Transportation",
 					Thumbnail: "ParkingHall02?width=128", LotWidth: 4, LotDepth: 4, BuildingLevel: 1, ZoneType: ZoneTypeFilter.Any,
-					HasParking: true, IsUniqueMesh: false, IsVanilla: true, PdxModsId: "")
+					HasParking: true, IsVanilla: true, PdxModsId: "")
 					with { FallbackThumbnail = "Media/Game/Icons/Parking.svg", DevTreeBranch = "Parking", DevTreeBranchIcon = null },
 			};
 

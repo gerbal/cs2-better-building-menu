@@ -14,6 +14,7 @@ import { MenuCategoryStrip } from "mods/MenuCategoryStrip/MenuCategoryStrip";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 
 import styles from "mods/BuildingMenu/buildingMenuHeader.module.scss";
+import { noteSearchField } from "./searchField";
 
 const TextInput = getModule("game-ui/common/input/text/text-input.tsx", "TextInput");
 const TextInputTheme: Theme | any = getModule("game-ui/editor/widgets/item/editor-item.module.scss", "classes");
@@ -52,6 +53,8 @@ export const BuildingMenuHeader = ({ small, large, onClose }: BuildingMenuHeader
   };
 
   const handleInputChange = (value: Event) => {
+    // So the catalog's Enter listener can tell this box from other text fields.
+    noteSearchField(value?.target);
     if (value?.target instanceof HTMLTextAreaElement) {
       setSearchText(value.target.value);
     }

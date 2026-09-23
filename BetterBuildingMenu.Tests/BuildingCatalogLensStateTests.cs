@@ -44,6 +44,42 @@ public sealed class BuildingCatalogLensStateTests
     }
 
     [Fact]
+    public void EverywhereQuery_DropsTheWholeMenuScopeAndKeepsTheSearch()
+    {
+        // What "Search everywhere" runs. Dropping only the menu leaves the category, tab
+        // and tier pinning the count to the section that just came up empty.
+        BuildingCatalogLensState lens = new(
+            new BuildingCatalogQuery(StripTabs: new[] { "Small" }),
+            BuildingCatalogMetricRangeState.Empty,
+            Menu: "Healthcare",
+            Category: "Clinics",
+            SchoolTier: 2,
+            SearchText: "clinic");
+
+        BuildingCatalogQuery everywhere = lens.EverywhereQuery();
+
+        Assert.Equal(string.Empty, everywhere.UiMenu);
+        Assert.Equal(string.Empty, everywhere.UiCategory);
+        Assert.Null(everywhere.StripTabs);
+        Assert.Equal(-1, everywhere.SchoolTier);
+        Assert.Equal("clinic", everywhere.SearchText);
+    }
+
+    [Fact]
+    public void Compose_TrimsTheSearchSoATypedSpaceIsNotANewPredicate()
+    {
+        // The box echoes the lens's own text, so that keeps the space the player typed;
+        // the query does not, and a grown window survives the keystroke.
+        BuildingCatalogLensState grown = BuildingCatalogLensState.Initial.Search("clinic").Compose().LoadMore().Compose();
+
+        BuildingCatalogLensState spaced = grown.Search("clinic ").Compose();
+
+        Assert.Equal("clinic ", spaced.SearchText);
+        Assert.Equal("clinic", spaced.Query.SearchText);
+        Assert.Equal(grown.Query.Limit, spaced.Query.Limit);
+    }
+
+    [Fact]
     public void PageStatus_DistinguishesIndexingFromReadyEmptyResults()
     {
         Assert.Equal(BuildingCatalogLensState.Indexing, BuildingCatalogLensState.GetPageStatus(isReady: false, totalCount: 0));
@@ -162,6 +198,30 @@ public sealed class BuildingCatalogLensTransitionTests
 
         Assert.Equal(BuildingCatalogQuery.MaxLimit, state.Query.Limit);
         Assert.Same(state, state.LoadMore());
+    }
+
+    [Fact]
+    public void LoadMoreToIsIdempotentSoARepeatedRequestLoadsOneStep()
+    {
+        // A double click, or the scroll poll firing again before the answer lands,
+        // sends the same limit twice; the second must change nothing.
+        var once = S().LoadMoreTo(BuildingCatalogQuery.DefaultLimit + BuildingCatalogQuery.WindowStep);
+
+        Assert.Equal(BuildingCatalogQuery.DefaultLimit + BuildingCatalogQuery.WindowStep, once.Query.Limit);
+        Assert.Same(once, once.LoadMoreTo(BuildingCatalogQuery.DefaultLimit + BuildingCatalogQuery.WindowStep));
+    }
+
+    [Fact]
+    public void LoadMoreToGrowsAtMostOneStepAndNeverShrinks()
+    {
+        // A limit asked for from a page the window has since outgrown, or one
+        // reset under it, still means "one more chunk" at most.
+        Assert.Equal(
+            BuildingCatalogQuery.DefaultLimit + BuildingCatalogQuery.WindowStep,
+            S().LoadMoreTo(BuildingCatalogQuery.MaxLimit).Query.Limit);
+
+        var grown = S().LoadMore().LoadMore();
+        Assert.Same(grown, grown.LoadMoreTo(BuildingCatalogQuery.DefaultLimit));
     }
 
     [Fact]

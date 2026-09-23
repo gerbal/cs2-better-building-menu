@@ -31,7 +31,7 @@ import {
   toggleAssetPack,
 } from "domain/assetPackSelection";
 import type { ToolbarEntity } from "domain/toolbarEntity";
-import { countActiveMetricRanges } from "domain/filterRail";
+import { countActiveMetricRanges, metricRangesFromState } from "domain/buildingCatalogRanges";
 import type { BuildingLensFacetState } from "domain/buildingCatalogFacets";
 import type { BuildingLensMetricRangeState } from "domain/buildingLensFilterSummary";
 import { DEFAULT_VIEW_MODE, ViewModeBar } from "mods/GroupedResults/ViewModeBar";
@@ -207,7 +207,7 @@ export const LensControlPane = () => {
         <div className={styles.rowValue}>
           <FilterRail
             facets={facets}
-            metricsActive={countActiveMetricRanges(metricRanges as unknown as Record<string, unknown>)}
+            metricsActive={countActiveMetricRanges(metricRangesFromState(metricRanges))}
             onToggleOption={toggleFacetOption}
             renderMetrics={() => <BuildingCatalogMetricFilters />}
           />

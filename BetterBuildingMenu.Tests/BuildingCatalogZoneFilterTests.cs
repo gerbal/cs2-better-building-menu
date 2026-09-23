@@ -21,7 +21,6 @@ namespace BetterBuildingMenu.Tests
 				BuildingLevel: 1,
 				ZoneType: zone,
 				HasParking: false,
-				IsUniqueMesh: false,
 				IsVanilla: true,
 				PdxModsId: "");
 

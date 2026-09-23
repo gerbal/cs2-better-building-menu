@@ -31,7 +31,6 @@ namespace BetterBuildingMenu.Tests
 			BuildingLevel: 1,
 			ZoneType: Domain.Enums.ZoneTypeFilter.Any,
 			HasParking: false,
-			IsUniqueMesh: false,
 			IsVanilla: true,
 			PdxModsId: "");
 
@@ -47,11 +46,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void NoPackIsEverOffered()
 		{
-			// The rule this file exists for: two assets carrying registered packs and
-			// nothing else describe the control the game already draws.
-			AssetPackRegistry.Clear();
-			AssetPackRegistry.Record(4211, 1, "Bridges And Ports Asset Pack");
-			AssetPackRegistry.Record(4212, 3, "Dragon Gate Pack");
+			// The rule this file exists for: two assets carrying packs and nothing
+			// else describe the control the game already draws.
 			BuildingCatalogAdapter.ToolbarSelection = VanillaToolbarSelection.None;
 
 			var group = ContentGroup(Entry(1, 4211), Entry(2, 4212));
@@ -65,7 +61,6 @@ namespace BetterBuildingMenu.Tests
 		{
 			// Vanilla's Pack row is built from packs, so a DLC that ships none is
 			// unreachable there. This is the whole remaining job of the group.
-			AssetPackRegistry.Clear();
 			BuildingCatalogAdapter.ToolbarSelection = VanillaToolbarSelection.None;
 
 			var sanFrancisco = Base with { Id = 1, PrefabName = "SF", DlcId = "1" };
@@ -85,8 +80,6 @@ namespace BetterBuildingMenu.Tests
 		{
 			// Bridges & Ports has both a pack and a DLC id. Offering it here would
 			// duplicate the game's Pack row entry for the same content.
-			AssetPackRegistry.Clear();
-			AssetPackRegistry.Record(4211, 1, "Bridges And Ports Asset Pack");
 			BuildingCatalogAdapter.ToolbarSelection = VanillaToolbarSelection.None;
 
 			var bridges = Entry(1, 4211) with { DlcId = "77" };
@@ -111,7 +104,6 @@ namespace BetterBuildingMenu.Tests
 		{
 			// "Show me only what needs no DLC" is the same question the DLC options
 			// answer, and it reads first the way it does in the game's own row.
-			AssetPackRegistry.Clear();
 			BuildingCatalogAdapter.ToolbarSelection = VanillaToolbarSelection.None;
 
 			var vanilla = Base with { Id = 1, PrefabName = "V", DlcId = DlcId.BaseGame.id.ToString(System.Globalization.CultureInfo.InvariantCulture) };

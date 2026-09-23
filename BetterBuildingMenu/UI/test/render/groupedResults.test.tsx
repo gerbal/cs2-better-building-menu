@@ -10,7 +10,6 @@ const render = (paths: string[][], names: (string | undefined)[] = []) =>
       entries={paths.map((groupPath, i) =>
         entry(i + 1, names[i] === undefined ? { groupPath } : { groupPath, name: names[i]! }))}
       viewMode="grid"
-      searchText=""
       onPlace={() => undefined}
     />
   );
