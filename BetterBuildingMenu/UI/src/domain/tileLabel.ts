@@ -35,12 +35,6 @@ export const tileLabelLineBudget = (tileSize: number, textScale = 1): number => 
 };
 
 /**
- * Characters on the whole label — every line of it.
- */
-export const tileLabelCharBudget = (tileSize: number, textScale = 1): number =>
-  tileLabelLineBudget(tileSize, textScale) * TILE_LABEL_LINES;
-
-/**
  * The table's own characters-per-100rem figure. Erring short is the safe
  * direction for a cell that clips.
  */

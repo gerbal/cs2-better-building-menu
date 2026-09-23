@@ -42,7 +42,7 @@ the detail behind the structural items.
   the indexer calling into the UI.
 - **Smaller cleanups.**
   - Name the `BuildingMenuUISystem` partials by responsibility.
-  - Delete the dead side of the two C#/TypeScript pairs that have drifted
-    apart: the minimum panel width, and the density order.
+  - Delete the C# minimum panel width (`BuildingLensWidth.Min` and `Clamp`):
+    nothing calls it, and it says 1000 where the UI clamps at 735.
   - Settle on one noun for the panel (see the glossary in
     [CONTRIBUTING.md](../CONTRIBUTING.md)).

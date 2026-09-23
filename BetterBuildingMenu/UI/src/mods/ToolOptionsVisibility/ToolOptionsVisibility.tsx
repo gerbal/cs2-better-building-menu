@@ -1,5 +1,7 @@
-import { ModuleRegistryExtend } from "cs2/modding";
 import { LensOwnsCurrentMenu$ } from "mods/bindings";
+
+/** The game's hook for whether the tool options bank shows. */
+export type ToolOptionsVisibleHook = () => boolean;
 
 /**
  * Keeps the game's options bank on screen while the lens owns the menu. The
@@ -11,10 +13,10 @@ import { LensOwnsCurrentMenu$ } from "mods/bindings";
  * and take the whole UI down. ToolOptionsPanelRefresh re-renders the panel
  * when ownership changes.
  */
-export const ToolOptionsVisibility: ModuleRegistryExtend = (Component: any) => {
+export const ToolOptionsVisibility = (vanillaHook: ToolOptionsVisibleHook): ToolOptionsVisibleHook => {
   return () => {
     const lensOwnsCurrentMenu = LensOwnsCurrentMenu$.value;
 
-    return Component() || lensOwnsCurrentMenu;
+    return vanillaHook() || lensOwnsCurrentMenu;
   };
 };

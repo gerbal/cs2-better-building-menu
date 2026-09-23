@@ -51,7 +51,6 @@ export const BuildingLensMenuSchoolTier$ = bindValue<number>(mod.id, "BuildingLe
 export const BuildingLensMenuSchoolTierCounts$ = bindValue<MenuBranchCount[]>(mod.id, "BuildingLensMenuSchoolTierCounts", []);
 export const BuildingLensStripTabs$ = bindValue<MenuBranchCount[]>(mod.id, "BuildingLensStripTabs", []);
 export const BuildingLensStripTab$ = bindValue<string[]>(mod.id, "BuildingLensStripTab", []);
-export const BuildingLensStripAxis$ = bindValue<string>(mod.id, "BuildingLensStripAxis", "");
 export const BuildingLensExpandedCategories$ = bindValue<MenuCategoryTabs[]>(mod.id, "BuildingLensExpandedCategories", []);
 
 // --- The panel --------------------------------------------------------------

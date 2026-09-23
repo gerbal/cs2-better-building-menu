@@ -102,7 +102,3 @@ export function filterRailOptions(
 
   return group.options.filter((option) => option.label.toLowerCase().includes(needle));
 }
-
-export function hasAnyRailSelection(rail: readonly RailDimension[]): boolean {
-  return rail.some((dimension) => dimension.selected > 0);
-}

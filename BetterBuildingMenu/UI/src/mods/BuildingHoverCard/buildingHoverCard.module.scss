@@ -97,14 +97,6 @@
   line-height: 1.3;
 }
 
-// Zone facts: what the game measured about a zone and never showed. Not a
-// metric line, because they are already phrased as statements.
-.cardFacts {
-  color: var(--menuText2Normal);
-  font-size: var(--fontSizeS);
-  white-space: normal;
-}
-
 .glyphs {
   display: flex;
   flex-direction: row;

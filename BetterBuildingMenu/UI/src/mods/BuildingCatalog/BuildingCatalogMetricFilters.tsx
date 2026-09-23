@@ -136,6 +136,8 @@ export const BuildingCatalogMetricFilters = () => {
 
       return next;
     });
+    // Keyed on the numbers, not on the fresh objects the bindings emit; see boundsKey.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     state.minCost,
     state.maxCost,
@@ -155,6 +157,8 @@ export const BuildingCatalogMetricFilters = () => {
     boundsKey,
   ]);
 
+  // Keyed on the numbers, like the drafts above.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const ranges = useMemo(() => metricRangesFromState(state), [
     state.minCost,
     state.maxCost,
