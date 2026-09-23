@@ -1,4 +1,4 @@
-import { Component, type ComponentType, type ErrorInfo, type ReactNode } from "react";
+import { Component, forwardRef, type ComponentType, type ErrorInfo, type ReactNode } from "react";
 import type { ModuleRegistryExtend } from "cs2/modding";
 
 interface ExtensionBoundaryProps {
@@ -32,16 +32,21 @@ export class ExtensionBoundary extends Component<ExtensionBoundaryProps, { faile
 /**
  * A component extension that falls back to the component it extends. Only for
  * components: a hook extension (useToolOptionsVisible) cannot take a boundary.
+ * The ref vanilla passes reaches ours, or the game's own in its place.
  */
 export function safeExtension(name: string, extension: ModuleRegistryExtend): ModuleRegistryExtend {
   return (VanillaComponent: any) => {
     const Extended = extension(VanillaComponent) as ComponentType<any>;
 
-    return (props: any) => (
-      <ExtensionBoundary name={name} fallback={() => <VanillaComponent {...props} />}>
-        <Extended {...props} />
+    const Safe = forwardRef<unknown, any>((props, ref) => (
+      <ExtensionBoundary name={name} fallback={() => <VanillaComponent {...props} ref={ref} />}>
+        <Extended {...props} ref={ref} />
       </ExtensionBoundary>
-    );
+    ));
+
+    // The registry's type wants a plain function component; forwardRef's
+    // exotic component renders the same way.
+    return Safe as unknown as (props: any) => JSX.Element;
   };
 }
 
