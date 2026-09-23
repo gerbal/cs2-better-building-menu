@@ -11,9 +11,9 @@ namespace BetterBuildingMenu.Tests
 	/// The lens's width and height constants, and the UI copies of them.
 	/// </summary>
 	/// <remarks>
-	/// Each of these numbers is written twice, once in C# and once in TypeScript,
-	/// with no shared source between them, so a test is the only thing standing
-	/// between them and a silent drift.
+	/// Each of these numbers is written twice, once in C# and once in the UI's
+	/// TypeScript or stylesheets, with no shared source between them, so a test
+	/// is the only thing standing between them and a silent drift.
 	/// </remarks>
 	public class BuildingLensDimensionTests
 	{
@@ -21,15 +21,20 @@ namespace BetterBuildingMenu.Tests
 		public void PaneWidth_AgreesWithTheUiConstantItIsCopiedFrom()
 		{
 			// If this fails, the panel reserves a different width than the pane
-			// occupies. The number lives in buildingLensLayout.ts because the table
-			// also subtracts the pane to budget name width; LensControlPane re-exports it.
+			// occupies. The pane's width and the gap beside it are stated in
+			// _lensGeometry.scss: its stylesheet draws them, and buildingLensLayout.ts
+			// reads their sum to budget the table's name width.
 			var source = File.ReadAllText(Path.Combine(
-				RepoRoot(), "BetterBuildingMenu", "UI", "src", "domain", "buildingLensLayout.ts"));
+				RepoRoot(), "BetterBuildingMenu", "UI", "src", "_lensGeometry.scss"));
 
-			var match = Regex.Match(source, @"BUILDING_LENS_CONTROL_PANE_TOTAL\s*=\s*(\d+)");
+			var width = Regex.Match(source, @"^\$pane-width:\s*(\d+)rem;", RegexOptions.Multiline);
+			var gap = Regex.Match(source, @"^\$pane-gap:\s*(\d+)rem;", RegexOptions.Multiline);
 
-			Assert.True(match.Success, "BUILDING_LENS_CONTROL_PANE_TOTAL not found in buildingLensLayout.ts");
-			Assert.Equal(BuildingLensWidth.ControlPane, float.Parse(match.Groups[1].Value));
+			Assert.True(width.Success, "$pane-width not found in _lensGeometry.scss");
+			Assert.True(gap.Success, "$pane-gap not found in _lensGeometry.scss");
+			Assert.Equal(
+				BuildingLensWidth.ControlPane,
+				float.Parse(width.Groups[1].Value) + float.Parse(gap.Groups[1].Value));
 		}
 
 		[Fact]
