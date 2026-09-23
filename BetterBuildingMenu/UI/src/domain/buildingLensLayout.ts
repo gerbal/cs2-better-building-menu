@@ -244,14 +244,43 @@ export function clampBuildingLensHeight(height: number): number {
  * The height a drag from `startY` to `currentY` should produce. The panel is
  * bottom-anchored with the handle on its top edge, so dragging up makes it
  * taller — the sign flip is why this is a function and not an addition.
+ *
+ * `pxPerRem` is measured when the drag starts: the game scales rem with the
+ * resolution, so a fixed ratio moves the edge faster or slower than the cursor
+ * on every screen but one.
  */
-export function draggedBuildingLensHeight(startHeight: number, startY: number, currentY: number): number {
+export function draggedBuildingLensHeight(
+  startHeight: number,
+  startY: number,
+  currentY: number,
+  pxPerRem?: number
+): number {
   const delta = Number.isFinite(startY) && Number.isFinite(currentY) ? startY - currentY : 0;
-  return clampBuildingLensHeight(startHeight + delta / REM_IN_PX);
+  const scale = pxPerRem !== undefined && Number.isFinite(pxPerRem) && pxPerRem > 0 ? pxPerRem : REM_IN_PX_AT_720P;
+  return clampBuildingLensHeight(startHeight + delta / scale);
 }
 
 /**
- * Pixels per rem in the game's UI layer, at every resolution — see
- * getBuildingLensCatalogMaxHeight for why this is not resolution-dependent.
+ * Pixels per rem at 1280x720, where the UI's 1920-wide design is drawn at 2/3.
+ * Only the fallback for a drag whose measurement failed.
  */
-export const REM_IN_PX = 0.6667;
+export const REM_IN_PX_AT_720P = 2 / 3;
+
+/**
+ * The resize strip's height, `.resizeHandle` in lensResizeHandle.module.scss; a
+ * test holds the two equal. It is what a drag measures rem against.
+ */
+export const LENS_RESIZE_HANDLE_HEIGHT = 14;
+
+/**
+ * Pixels per rem from an element of known rem height as drawn, or undefined when
+ * the rect is not a real measurement. Measured on something already laid out:
+ * Cohtml answers a rect asked for before layout with zeroes.
+ */
+export function pxPerRemFrom(heightPx: number | null | undefined, heightRem: number): number | undefined {
+  if (typeof heightPx !== "number" || !Number.isFinite(heightPx) || heightPx <= 0 || !(heightRem > 0)) {
+    return undefined;
+  }
+
+  return heightPx / heightRem;
+}

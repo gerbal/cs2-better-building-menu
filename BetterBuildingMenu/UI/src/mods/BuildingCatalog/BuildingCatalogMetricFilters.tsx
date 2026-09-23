@@ -13,12 +13,12 @@ import {
 } from "domain/buildingCatalogContracts";
 import {
   countActiveMetricRanges,
+  metricRangesFromState,
   METRIC_RANGE_DEFINITIONS,
   didSwapMetricBounds,
   getInvalidMetricBounds,
   type MetricRangeId,
   type MetricRangeInput,
-  type NormalizedMetricRange,
 } from "domain/buildingCatalogRanges";
 import {
   createMetricRangeDebouncer,
@@ -26,6 +26,7 @@ import {
 } from "domain/metricRangeDebouncer";
 import { LENS_DISCLOSURE_KEYS, getLensDisclosure, setLensDisclosure } from "domain/lensViewStore";
 import { useLensView } from "mods/useLensView";
+import { textInputValue } from "domain/textInput";
 import styles from "./buildingCatalog.module.scss";
 
 import type { BuildingLensMetricRangeState as BuildingCatalogMetricRangeState } from "domain/buildingLensFilterSummary";
@@ -73,17 +74,6 @@ const metricRangeScheduler: MetricRangeDebouncerScheduler = {
 
 type MetricRangeDrafts = Record<MetricRangeId, MetricRangeInput>;
 
-function rangeStateToRanges(state: BuildingCatalogMetricRangeState): Record<MetricRangeId, NormalizedMetricRange> {
-  return {
-    cost: { min: state.minCost, max: state.maxCost },
-    upkeep: { min: state.minUpkeep, max: state.maxUpkeep },
-    workers: { min: state.minWorkers, max: state.maxWorkers },
-    capacity: { min: state.minCapacity, max: state.maxCapacity },
-    lotWidth: { min: state.minLotWidth, max: state.maxLotWidth },
-    lotDepth: { min: state.minLotDepth, max: state.maxLotDepth },
-  };
-}
-
 function formatBound(value: number | null, integer: boolean): string {
   if (value === null || value === undefined) {
     return "";
@@ -100,8 +90,8 @@ function draftsFromState(
   state: BuildingCatalogMetricRangeState,
   bounds: BuildingCatalogMetricRangeState = emptyMetricRangeState,
 ): MetricRangeDrafts {
-  const ranges = rangeStateToRanges(state);
-  const limits = rangeStateToRanges(bounds);
+  const ranges = metricRangesFromState(state);
+  const limits = metricRangesFromState(bounds);
   return METRIC_RANGE_DEFINITIONS.reduce((drafts, definition) => {
     const range = ranges[definition.id];
     const limit = limits[definition.id];
@@ -114,11 +104,6 @@ function draftsFromState(
     };
     return drafts;
   }, {} as MetricRangeDrafts);
-}
-
-function readInputValue(value: Event): string {
-  const target = value?.target as HTMLInputElement | HTMLTextAreaElement | null;
-  return target?.value ?? "";
 }
 
 export const BuildingCatalogMetricFilters = () => {
@@ -188,7 +173,7 @@ export const BuildingCatalogMetricFilters = () => {
     boundsKey,
   ]);
 
-  const ranges = useMemo(() => rangeStateToRanges(state), [
+  const ranges = useMemo(() => metricRangesFromState(state), [
     state.minCost,
     state.maxCost,
     state.minUpkeep,
@@ -205,7 +190,7 @@ export const BuildingCatalogMetricFilters = () => {
   const activeCount = countActiveMetricRanges(ranges);
 
   function updateBound(id: MetricRangeId, bound: "minText" | "maxText", value: Event): void {
-    const nextText = readInputValue(value);
+    const nextText = textInputValue(value);
     const nextInput: MetricRangeInput = {
       ...drafts[id],
       [bound]: nextText,

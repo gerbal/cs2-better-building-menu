@@ -87,7 +87,46 @@ namespace BetterBuildingMenu.Services
 				offset,
 				limit,
 				HasMore: hasMore,
-				ReorderableSortColumns: usableColumns);
+				ReorderableSortColumns: usableColumns,
+				BestMatchId: FindBestMatchId(items, query.SearchText),
+				SearchText: query.SearchText ?? string.Empty);
+		}
+
+		/// <summary>
+		/// The best-scoring row of this window that can be placed: by relevance, then the shorter
+		/// name, then page order, as a group orders. Locked and already-built rows are skipped,
+		/// because Enter on them does nothing.
+		/// </summary>
+		private static int? FindBestMatchId(IReadOnlyList<BuildingCatalogEntry> items, string? searchText)
+		{
+			if (string.IsNullOrWhiteSpace(searchText))
+			{
+				return null;
+			}
+
+			BuildingCatalogEntry? best = null;
+			var bestScore = 0;
+			var bestLength = 0;
+
+			foreach (var entry in items)
+			{
+				if (entry.IsLocked || entry.IsAlreadyBuilt)
+				{
+					continue;
+				}
+
+				var score = BuildingCatalogRelevance.Score(entry, searchText);
+				var length = (entry.Name ?? string.Empty).Length;
+
+				if (best is null || score > bestScore || (score == bestScore && length < bestLength))
+				{
+					best = entry;
+					bestScore = score;
+					bestLength = length;
+				}
+			}
+
+			return best?.Id;
 		}
 
 		/// <summary>

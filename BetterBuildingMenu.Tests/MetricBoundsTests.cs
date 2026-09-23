@@ -27,7 +27,6 @@ namespace BetterBuildingMenu.Tests
 				BuildingLevel: 1,
 				ZoneType: 0,
 				HasParking: false,
-				IsUniqueMesh: false,
 				IsVanilla: true,
 				PdxModsId: "",
 				ConstructionCost: cost,

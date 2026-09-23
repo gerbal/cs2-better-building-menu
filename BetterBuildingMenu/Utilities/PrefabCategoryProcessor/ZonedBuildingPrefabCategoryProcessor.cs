@@ -71,7 +71,6 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 			};
 
 			prefabIndex.CategoryThumbnail = prefabIndex.FallbackThumbnail = _imageSystem.GetIconOrGroupIcon(zonePrefab);
-			prefabIndex.CornerType = GetCornerType(buildingPrefab.m_AccessType);
 
 			if (_prefabSystem.TryGetPrefab<ZonePrefab>(zonePrefab, out var _zonePrefab))
 			{
@@ -111,18 +110,6 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 			}
 
 			return true;
-		}
-
-		private BuildingCornerFilter GetCornerType(BuildingAccessType m_AccessType)
-		{
-			return m_AccessType switch
-			{
-				BuildingAccessType.LeftCorner or BuildingAccessType.LeftAndBackCorner => BuildingCornerFilter.Left,
-				BuildingAccessType.RightCorner or BuildingAccessType.RightAndBackCorner => BuildingCornerFilter.Right,
-				BuildingAccessType.LeftAndRightCorner => BuildingCornerFilter.Left | BuildingCornerFilter.Right,
-				BuildingAccessType.All => BuildingCornerFilter.Left | BuildingCornerFilter.Right | BuildingCornerFilter.Front,
-				_ => BuildingCornerFilter.Front
-			};
 		}
 
 		private Entity GetZonePrefab(Entity entity, out int level)

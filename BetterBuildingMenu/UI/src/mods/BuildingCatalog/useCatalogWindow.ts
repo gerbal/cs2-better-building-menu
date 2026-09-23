@@ -1,9 +1,9 @@
 import { bindValue, trigger, useValue } from "cs2/api";
-import { useEffect, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import mod from "../../../mod.json";
 import type { BuildingCatalogEntry, BuildingCatalogPage } from "domain/buildingCatalog";
 import { loadMoreCatalogCommand } from "domain/buildingCatalogContracts";
-import { isScrollContainer, shouldLoadMore } from "domain/catalogWindow";
+import { CATALOG_WINDOW_STEP, isScrollContainer, nextWindowLimit, shouldLoadMore } from "domain/catalogWindow";
 import { findScrollContainer, lastCatalogRow } from "./catalogDom";
 
 export type BuildingCatalogPageStatus = "indexing" | "ready" | "empty";
@@ -23,6 +23,10 @@ export interface CatalogWindow {
   limit: number;
   status: BuildingCatalogPageStatus;
   hasMore: boolean;
+  /** The row Enter arms while a search is active; see BuildingCatalogPage. */
+  bestMatchId: number | null;
+  /** The search this page answers, which trails the box by a debounce. */
+  searchText: string;
   loadMore(): void;
 }
 
@@ -43,20 +47,26 @@ export function useCatalogWindow(
   const status: BuildingCatalogPageStatus = page?.status
     ?? (page ? (totalCount === 0 ? "empty" : "ready") : "indexing");
   const hasMore = page?.hasMore ?? false;
+  const bestMatchId = page?.bestMatchId ?? null;
+  const searchText = page?.searchText ?? "";
 
   /**
-   * Asks the backend for the next chunk. Guarded by `hasMore` alone rather than
-   * a local loading flag: the backend republishes the whole window, so a second
-   * request is idempotent, while a latched flag would stop the list for good.
+   * Asks the backend for the next chunk, by the limit wanted rather than "one
+   * more": the same request arriving twice then grows the window once.
    */
   function loadMore(): void {
     if (!hasMore) {
       return;
     }
 
-    const command = loadMoreCatalogCommand();
+    const command = loadMoreCatalogCommand(nextWindowLimit(limit, CATALOG_WINDOW_STEP, totalCount));
     trigger(mod.id, command.method, ...command.args);
   }
+
+  // The poll below outlives the render it started in; through the ref it always
+  // asks from the page on screen, not the one it started under.
+  const latestLoadMore = useRef(loadMore);
+  latestLoadMore.current = loadMore;
 
   /**
    * The passive half of the trigger: watch where the scroll actually is. It
@@ -87,7 +97,7 @@ export function useCatalogWindow(
         clientHeight: scroller.clientHeight,
         scrollHeight: scroller.scrollHeight,
       })) {
-        loadMore();
+        latestLoadMore.current();
         return;
       }
 
@@ -102,5 +112,5 @@ export function useCatalogWindow(
     };
   }, [hasMore, items.length, scope.viewMode, scope.groupBy]);
 
-  return { items, totalCount, offset, limit, status, hasMore, loadMore };
+  return { items, totalCount, offset, limit, status, hasMore, bestMatchId, searchText, loadMore };
 }

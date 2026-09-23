@@ -22,7 +22,6 @@ export type CatalogViewMode = "grid" | "list" | "cards" | "table";
 interface GroupedResultsProps {
   entries: BuildingCatalogEntry[];
   viewMode: CatalogViewMode;
-  searchText: string;
   onPlace: (entry: BuildingCatalogEntry) => void;
   /**
    * Rendered as the last child INSIDE the scroll, below every group. Passed
@@ -223,7 +222,6 @@ const GroupRow = ({
 export const GroupedResults = ({
   entries,
   viewMode,
-  searchText,
   onPlace,
   footer,
 }: GroupedResultsProps) => {
@@ -248,14 +246,13 @@ export const GroupedResults = ({
       return (
         <BuildingList
           entries={leaf}
-          searchText={searchText}
           onPlace={onPlace}
           variant={viewMode === "cards" ? "cards" : "compact"}
         />
       );
     }
 
-    return <BuildingGrid entries={leaf} searchText={searchText} onPlace={onPlace} standalone={false} />;
+    return <BuildingGrid entries={leaf} onPlace={onPlace} standalone={false} />;
   };
 
   const renderNodes = (
@@ -329,7 +326,6 @@ export const GroupedResults = ({
     return (
       <BuildingGrid
         entries={entries}
-        searchText={searchText}
         onPlace={onPlace}
         footer={footer}
       />

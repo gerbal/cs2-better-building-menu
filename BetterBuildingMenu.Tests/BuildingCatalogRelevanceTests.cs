@@ -11,7 +11,7 @@ namespace BetterBuildingMenu.Tests
 			new BuildingCatalogEntry(
 				Id: id, PrefabName: name.Replace(" ", string.Empty), Name: name, Category: category, SubCategory: sub,
 				Thumbnail: "", LotWidth: 4, LotDepth: 4, BuildingLevel: 1, ZoneType: ZoneTypeFilter.Any,
-				HasParking: false, IsUniqueMesh: false, IsVanilla: true, PdxModsId: "");
+				HasParking: false, IsVanilla: true, PdxModsId: "");
 
 		[Fact]
 		public void RanksAnExactNameAboveAPrefixAboveAWordStartAboveASubstring()
