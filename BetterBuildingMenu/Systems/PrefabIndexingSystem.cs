@@ -67,6 +67,8 @@ namespace BetterBuildingMenu.Systems
 		// Set by the OnGameLoaded pass, cleared at preload, read at loading-
 		// complete to decide whether a second full pass is owed. See there.
 		private bool _indexedAtGameLoaded;
+		// Whether this load's census and menu audit are in the log yet. See RunIndex.
+		private bool _auditedThisLoad;
 		/// <summary>
 		/// Every assignable zone, grouped by family in the zoning hierarchy.
 		/// </summary>
@@ -225,6 +227,7 @@ namespace BetterBuildingMenu.Systems
 
 			Enabled = false;
 			_indexedAtGameLoaded = false;
+			_auditedThisLoad = false;
 		}
 
 		/// <summary>The full pass, as soon as the save is deserialised.</summary>
@@ -549,7 +552,7 @@ namespace BetterBuildingMenu.Systems
 			{
 				if (full)
 				{
-					Mod.Log.Info($"Indexing prefabs with {processor.GetType().Name}");
+					Mod.Log.Debug($"Indexing prefabs with {processor.GetType().Name}");
 				}
 
 				try
@@ -567,7 +570,7 @@ namespace BetterBuildingMenu.Systems
 
 					if (full)
 					{
-						Mod.Log.Info($"\tTotal Entities Count: {entities.Length}");
+						Mod.Log.Debug($"\tTotal Entities Count: {entities.Length}");
 					}
 
 					for (var i = 0; i < entities.Length; i++)
@@ -651,7 +654,7 @@ namespace BetterBuildingMenu.Systems
 									ids.Add(prefabIndex.Id);
 								}
 							}
-							else
+							else if (Mod.Log.isLevelEnabled(Level.Debug))
 							{
 								Mod.Log.Debug($"\t\tSkipped: {prefab.name}");
 							}
@@ -696,31 +699,33 @@ namespace BetterBuildingMenu.Systems
 
 			if (full)
 			{
-				// Which processors feed anything the lens can show. A processor
-				// whose every prefab is neither a building/network nor placed in
-				// a vanilla menu is indexing for nobody; this is the count.
-				var all = BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any];
-
-				foreach (var pair in census.OrderBy(pair => pair.Key, StringComparer.Ordinal))
-				{
-					var lens = pair.Value.Count(id =>
-						all.TryGetValue(id, out var indexed)
-						&& (indexed.Category is PrefabCategory.Buildings or PrefabCategory.ServiceBuildings or PrefabCategory.Networks
-							|| IsPlacedInAnyMenu(id)));
-
-					Mod.Log.Info($"[PROCESSOR-CENSUS] {pair.Key} indexed={pair.Value.Count} lens={lens}");
-				}
-			}
-
-			if (full)
-			{
 				PrimeSilhouettes();
-			}
 
-			if (full)
-			{
-				LogVanillaMenuCoverage();
-				LogVanillaMenuAudit();
+				// Once per load, at Info so a player's log carries it: a language change
+				// or a lock-state recheck repeats the pass, not the menus it reports on.
+				// Every pass with Debug on.
+				if (!_auditedThisLoad || Mod.Log.isLevelEnabled(Level.Debug))
+				{
+					_auditedThisLoad = true;
+
+					// Which processors feed anything the lens can show. A processor
+					// whose every prefab is neither a building/network nor placed in
+					// a vanilla menu is indexing for nobody; this is the count.
+					var all = BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any];
+
+					foreach (var pair in census.OrderBy(pair => pair.Key, StringComparer.Ordinal))
+					{
+						var lens = pair.Value.Count(id =>
+							all.TryGetValue(id, out var indexed)
+							&& (indexed.Category is PrefabCategory.Buildings or PrefabCategory.ServiceBuildings or PrefabCategory.Networks
+								|| IsPlacedInAnyMenu(id)));
+
+						Mod.Log.Info($"[PROCESSOR-CENSUS] {pair.Key} indexed={pair.Value.Count} lens={lens}");
+					}
+
+					LogVanillaMenuCoverage();
+					LogVanillaMenuAudit();
+				}
 
 				// Whatever brought this pass about, the names are now this locale's.
 				_localeReindex.MarkIndexed(GameManager.instance.localizationManager.activeLocaleId);

@@ -126,6 +126,10 @@ and is blind in two ways:
 places, what we cover, and what we show that vanilla does not. It logs at Info whether or not
 anything is wrong, because the value is in reading it rather than in being warned by it.
 
+It runs once per city load, on the first full pass, with the processor census beside it. A
+language change or a lock-state recheck repeats the pass but not the menus it reports on, so the
+repeat would add a second copy of the same census. With Debug logging on, every full pass logs it.
+
 The arithmetic lives in `VanillaMenuAudit`, where it is a function of plain data and covered by
 tests; the system only gathers the facts out of the entity world and logs what comes back. As a
 log line alone the census could only be read by booting a save and grepping `Modding.log`, so

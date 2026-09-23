@@ -292,7 +292,7 @@ namespace BetterBuildingMenu.Systems
 
 			Mod.Log.Info(
 				$"[ZONE-PARITY] vanilla places {placedInZones.Count} in Zones; dropping {unplaced.Count} it does not offer: "
-				+ string.Join(" | ", unplaced.Select(entry => $"{entry.Name} [{entry.PrefabName}]")));
+				+ Cap(unplaced.Select(entry => $"{entry.Name} [{entry.PrefabName}]").ToList()));
 
 			// Show what the game shows, and nothing else: the ZoneData query returns
 			// every zone prefab that exists, including ones the player can never
