@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { textInputValue } from "../src/domain/textInput.ts";
+import { textInputText, textInputValue } from "../src/domain/textInput.ts";
 
 // The vanilla TextInput hands onChange an event; storing the event itself
 // throws on the first keystroke.
@@ -17,5 +17,18 @@ describe("reading a TextInput change", () => {
     assert.equal(textInputValue(undefined), "");
     assert.equal(textInputValue({ target: null } as unknown as Event), "");
     assert.equal(textInputValue(change(42)), "");
+  });
+});
+
+describe("reading the search box's change", () => {
+  it("takes the text from a textarea or the fallback input alike", () => {
+    assert.equal(textInputText(change("clinic")), "clinic");
+    assert.equal(textInputText(change("")), "");
+  });
+
+  it("answers undefined, not an empty search, when the event carries no text", () => {
+    assert.equal(textInputText(null), undefined);
+    assert.equal(textInputText({ target: null } as unknown as Event), undefined);
+    assert.equal(textInputText(change(42)), undefined);
   });
 });

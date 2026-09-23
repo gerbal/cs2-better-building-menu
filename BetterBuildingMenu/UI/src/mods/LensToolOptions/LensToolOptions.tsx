@@ -2,6 +2,7 @@ import { useValue } from "cs2/api";
 import { game } from "cs2/bindings";
 import { ModuleRegistryExtend } from "cs2/modding";
 import classNames from "classnames";
+import { cloneElement, isValidElement, type ReactNode } from "react";
 
 import styles from "./LensToolOptions.module.scss";
 import lockIcon from "images/lock.svg";
@@ -80,13 +81,20 @@ export const LensToolOptions: ModuleRegistryExtend = (Component: any) => {
 
     // The same predicate the panel itself mounts on, so the bank cannot offer
     // a control for a menu that is not there, nor withhold one that is.
-    if (!shouldMountInAssetMenu({ lensOwnsCurrentMenu, isPhotoMode })) {
+    if (!isValidElement(result) || !shouldMountInAssetMenu({ lensOwnsCurrentMenu, isPhotoMode })) {
       return result;
     }
 
-    result.props.children?.push(<BankFacets facets={facets} />);
+    // A copy with our sections after vanilla's, never a push into vanilla's own
+    // element: its children may be one element rather than an array.
+    const children = (result.props as { children?: ReactNode }).children;
 
-    return result;
+    return cloneElement(
+      result,
+      undefined,
+      ...(Array.isArray(children) ? children : [children]),
+      <BankFacets key="betterBuildingMenuBank" facets={facets} />
+    );
   };
 };
 
