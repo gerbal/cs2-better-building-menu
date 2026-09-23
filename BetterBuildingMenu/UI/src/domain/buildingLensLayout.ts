@@ -13,8 +13,6 @@ export const BUILDING_LENS_MIN_WIDTH = 700 + BUILDING_LENS_PANEL_CHROME_WIDTH;
  */
 export const BUILDING_LENS_BAND_WIDTH = 1476;
 export const BUILDING_LENS_MAX_WIDTH = BUILDING_LENS_BAND_WIDTH - BUILDING_LENS_PANEL_CHROME_WIDTH;
-export const BUILDING_LENS_TITLE_ICON = "coui://betterbuildingmenu/Icons/Colored/BuildingZoneSignature.svg";
-export const BUILDING_LENS_TITLE_GAP = 6;
 // The lens shell is bottom-aligned above the native toolbar. Reserve space
 // for that toolbar, the shell chrome, and a small top/bottom safety margin so
 // the catalog cannot push the shell's title/search bar outside a short view.
@@ -216,8 +214,6 @@ export function getBuildingLensCatalogMaxHeight(viewportHeight: number): number 
   const physicalHeight = Math.max(BUILDING_LENS_MIN_CATALOG_HEIGHT, safeViewportHeight - BUILDING_LENS_VIEWPORT_RESERVE);
   return Math.floor((physicalHeight * BUILDING_LENS_REFERENCE_HEIGHT) / safeViewportHeight);
 }
-
-export type BuildingLensAlignment = "Left" | "Center" | "Right" | string;
 
 /**
  * The catalog's height range, twin of BuildingLensHeight in C# — a test asserts

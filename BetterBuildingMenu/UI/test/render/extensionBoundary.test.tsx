@@ -58,7 +58,7 @@ describe("a component we put into vanilla's tree", () => {
     const VanillaWithRef = forwardRef<unknown, object>((_, ref) => <div ref={ref as never}>vanilla</div>);
 
     const oursRef = createRef<unknown>();
-    const Working = safeExtension("ToolOptionsPanel", () => OursWithRef)(VanillaWithRef as never) as never as (props: { ref: unknown }) => JSX.Element;
+    const Working = safeExtension("ToolOptionsPanel", (() => OursWithRef) as never)(VanillaWithRef as never) as never as (props: { ref: unknown }) => JSX.Element;
     act(() => { root = create(<Working ref={oursRef} />, { createNodeMock: () => node }); });
     assert.equal(oursRef.current, node);
     act(() => root?.unmount());

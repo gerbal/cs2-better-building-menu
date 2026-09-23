@@ -7,7 +7,7 @@ import { FindItPanelShown$, LensOwnsCurrentMenu$ } from "mods/bindings";
 
 export const RemoveVanillaAssetMenuComponent: ModuleRegistryExtend = (Component) => {
   // I believe you should not put anything here.
-  return (props) => {
+  return function AssetMenuOrLens(props) {
     const { children, ...otherProps } = props || {};
 
     const LensOwnsCurrentMenu = useValue(LensOwnsCurrentMenu$);

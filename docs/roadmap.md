@@ -11,12 +11,17 @@ the detail behind the structural items.
   another tab or menu, and create, rename, reorder, merge or hide tabs. The
   spec and its adversarial review are in
   [superpowers/specs/](superpowers/specs/), awaiting the owner's review.
-- **Translations.** Every translation lacks about 200 of the 271 English
-  keys (the option labels fall back to English), and `ja-JP`, `pt-BR` and
-  `uk-UA` are English throughout. Either connect `crowdin.yml` to a project (with a
+- **Translations.** Every translation lacks 186 of the 247 English keys (the
+  option labels fall back to English), and `ja-JP`, `pt-BR` and `uk-UA` are
+  English throughout. Either connect `crowdin.yml` to a project (with a
   `languages_mapping`, since Crowdin's Chinese codes are `zh-CN` and `zh-TW`)
-  or ship English only. `Options.LABEL[…LotWidth]` and `…LotDepth` are
-  referenced and missing, and about 33 keys are referenced nowhere.
+  or ship English only.
+- **The density-tier keys.** `ZoneLow` through `ZoneSignature` are kept because
+  `GameLocaleKeyTests` requires them, but nothing reads them: the density
+  headings come from `BuildingCatalogLabels.DensityTier`, which returns English
+  that the query engine also matches on. Either give those headings a label
+  separate from the match key and look it up through these keys, or drop the
+  keys and the test together.
 - **Unmeasured paths.** Placing an upgrade through the upgrades picker, and
   Road Builder's discarded roads leaving the panel, are known only from
   reading the code.
@@ -31,7 +36,7 @@ the detail behind the structural items.
   object created per city load and handed to the systems that read it.
 - **Smaller cleanups.**
   - Name the `BuildingMenuUISystem` partials by responsibility.
-  - Delete the dead side of the two C#/TypeScript pairs that have drifted
-    apart: the minimum panel width, and the density order.
+  - Delete the C# minimum panel width (`BuildingLensWidth.Min` and `Clamp`):
+    nothing calls it, and it says 1000 where the UI clamps at 735.
   - Settle on one noun for the panel (see the glossary in
     [CONTRIBUTING.md](../CONTRIBUTING.md)).

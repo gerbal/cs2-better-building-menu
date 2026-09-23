@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { readFileSync } from "node:fs";
 import {
   ALL_CATEGORIES_ID,
   isCategorySelected,
@@ -9,7 +8,6 @@ import {
   type VanillaMenuCategory,
   categoryCount,
   visibleCategories,
-  shouldWidenCategoryStrip,
 } from "../src/domain/vanillaMenuCategories.ts";
 
 const category = (id: string, priority = 0): VanillaMenuCategory => ({
@@ -21,15 +19,15 @@ const category = (id: string, priority = 0): VanillaMenuCategory => ({
 
 describe("category strip visibility", () => {
   it("hides the strip when the menu has no categories", () => {
-    assert.equal(shouldShowCategoryStrip([]), false);
-    assert.equal(shouldShowCategoryStrip(null), false);
-    assert.equal(shouldShowCategoryStrip(undefined), false);
+    assert.equal(shouldShowCategoryStrip([], "Roads"), false);
+    assert.equal(shouldShowCategoryStrip(null, "Roads"), false);
+    assert.equal(shouldShowCategoryStrip(undefined, "Roads"), false);
   });
 
   it("hides the strip at exactly one category, as vanilla does", () => {
     // Water & Sewage and Zones each have exactly one, so this is not a corner
     // case — it fires on real menus.
-    assert.equal(shouldShowCategoryStrip([category("Water")]), false);
+    assert.equal(shouldShowCategoryStrip([category("Water")], "Water & Sewage"), false);
   });
 
   it("shows the strip from two categories up", () => {
@@ -122,42 +120,6 @@ describe("Menu category counts", () => {
     // only emits a group for a category with something in it, and picking a
     // progression tier empties most of them at once.
     assert.equal(categoryCount([{ id: "Pathways", count: 0 }], "Vegetation"), 0);
-  });
-
-  it("widens the strip only once a row of glyphs stops being scannable", () => {
-    // Six works — Transportation has six modes. Fourteen does not: Landscaping
-    // drew fourteen icon-only squares over 379 assets, and the All view showed
-    // seven of those categories, so half the menu was behind a guess.
-    const tabs = (n: number) =>
-      Array.from({ length: n }, (_, i) => ({ id: `${i}`, name: `${i}`, icon: "", priority: i }));
-
-    assert.equal(shouldWidenCategoryStrip(tabs(6)), false);
-    assert.equal(shouldWidenCategoryStrip(tabs(7)), true);
-    assert.equal(shouldWidenCategoryStrip(tabs(14)), true);
-    assert.equal(shouldWidenCategoryStrip([]), false);
-    assert.equal(shouldWidenCategoryStrip(null), false);
-  });
-});
-
-describe("MenuCategoryStrip's hook order", () => {
-  // A useValue added BELOW the component's early return makes a render that
-  // returns early run fewer hooks than the one before it, and React throws
-  // #300. Asserted on source shape, because the failure is positional.
-  const source = readFileSync(
-    new URL("../src/mods/MenuCategoryStrip/MenuCategoryStrip.tsx", import.meta.url),
-    "utf8"
-  );
-
-  it("calls every hook before the early return", () => {
-    const body = source.slice(source.indexOf("export const MenuCategoryStrip"));
-    const earlyReturn = body.indexOf("return null;");
-
-    assert.ok(earlyReturn > 0, "expected the strip to keep its early return");
-    assert.doesNotMatch(
-      body.slice(earlyReturn),
-      /\buseValue\(|\buseState\(|\buseEffect\(|\buseMemo\(|\buseLocalization\(/,
-      "a hook below the early return renders conditionally and crashes React"
-    );
   });
 });
 

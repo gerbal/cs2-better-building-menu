@@ -4,7 +4,6 @@ import {
   shortenTileLabel,
   stripRedundantNamePrefix,
   tableLabelCharBudget,
-  tileLabelCharBudget,
   tileLabelLineBudget,
   wrapTileLabel,
 } from "../src/domain/tileLabel.ts";
@@ -20,7 +19,8 @@ describe("redundant name prefixes", () => {
   });
 
   it("keeps buildings distinguishable that a middle elision would have merged", () => {
-    const budget = tileLabelCharBudget(88);
+    // Both of the tile's lines.
+    const budget = tileLabelLineBudget(88) * 2;
     const gas = shortenTileLabel(
       stripRedundantNamePrefix("EU Commercial Gas Station 01 - L1 2x2", COMMERCIAL),
       budget
@@ -113,8 +113,8 @@ describe("grid tile label shortening", () => {
 
   it("scales the budget with the configured tile size", () => {
     assert.equal(tileLabelLineBudget(88), 11);
-    assert.ok(tileLabelCharBudget(132) > tileLabelCharBudget(88));
-    assert.ok(tileLabelCharBudget(60) < tileLabelCharBudget(88));
+    assert.ok(tileLabelLineBudget(132) > tileLabelLineBudget(88));
+    assert.ok(tileLabelLineBudget(60) < tileLabelLineBudget(88));
   });
 
   it("keeps a usable budget for nonsense tile sizes", () => {
@@ -133,8 +133,8 @@ describe("Tile label budget at the tile's actual width", () => {
     assert.equal(tileLabelLineBudget(100), 12);
   });
 
-  it("budgets two lines, because one could not hold the names", () => {
-    assert.equal(tileLabelCharBudget(100), 24);
+  it("draws two lines, because one could not hold the names", () => {
+    assert.equal(wrapTileLabel("Large Elementary School Campus North", tileLabelLineBudget(100)).length, 2);
   });
 
   it("scales with a larger tile", () => {

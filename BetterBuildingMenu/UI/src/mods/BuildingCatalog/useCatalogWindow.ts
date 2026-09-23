@@ -122,7 +122,7 @@ export function useCatalogWindow(
       cancelled = true;
       cancelAnimationFrame(handle);
     };
-  }, [hasMore, items.length, scope.viewMode, scope.groupBy]);
+  }, [rootRef, hasMore, items.length, scope.viewMode, scope.groupBy]);
 
   return { items, totalCount, offset, limit, status, hasMore, bestMatchId, searchText, loadMore };
 }

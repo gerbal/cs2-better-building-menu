@@ -97,22 +97,6 @@
   color: var(--menuText1Normal);
 }
 
-.card {
-  display: flex;
-  flex-direction: column;
-  max-width: 260rem;
-}
-
-.cardName {
-  font-size: var(--fontSizeM);
-  color: var(--menuText1Normal);
-}
-
-.cardMeta {
-  font-size: var(--fontSizeS);
-  color: var(--menuText2Normal);
-}
-
 // A larger icon and one line of facts. Still wrapped rows, so this sits
 // between the compact list and the table rather than becoming another table.
 
@@ -180,13 +164,6 @@
 
 // Nested flex rows, not CSS grid: Cohtml supports no grid layout.
 
-.glyphs {
-  display: flex;
-  flex-direction: row;
-  align-items: flex-end;
-  padding-top: 4rem;
-}
-
 .glyph {
   display: flex;
   flex-direction: column;
@@ -207,13 +184,6 @@
   margin: 0 1.5rem 1.5rem 0;
   background-color: var(--accentColorNormal);
   opacity: 0.75;
-}
-
-.glyphOverflow {
-  align-self: center;
-  padding-left: 2rem;
-  color: var(--menuText2Normal);
-  font-size: var(--fontSizeXS);
 }
 
 // Milestone-locked, and already-built with it: the same treatment as the grid

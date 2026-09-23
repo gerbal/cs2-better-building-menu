@@ -63,7 +63,7 @@ UI never holds more than a page. Terms are in the glossary in
 ./build.sh test                             # C# tests
 CS2_BUILD_CONFIG=Release ./build.sh all     # release build
 CS2_BUILD_CONFIG=Release ./build.sh package # artifacts/BetterBuildingMenu
-cd BetterBuildingMenu/UI && npm test        # UI unit and render suites
+cd BetterBuildingMenu/UI && npm test        # UI typecheck, lint, unit and render suites
 ```
 
 Deploy by copying the packaged folder into the game's `Mods/` directory. Never
