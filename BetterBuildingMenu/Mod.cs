@@ -71,8 +71,11 @@ namespace BetterBuildingMenu
 
 		private const string ImagesHost = "betterbuildingmenu";
 
-		// What OnLoad hands the game, so OnDispose can take it back.
-		private readonly List<LocaleHelper.DictionarySource> _localeSources = new();
+		// What OnLoad hands the game, so OnDispose can take it back. Assigned in
+		// OnLoad, never by an initializer: the game builds this class with
+		// FormatterServices.GetUninitializedObject, so no constructor runs and an
+		// initialized field is null in game. See ModInstanceTests.
+		private List<LocaleHelper.DictionarySource> _localeSources;
 
 		public void OnLoad(UpdateSystem updateSystem)
 		{
@@ -91,6 +94,8 @@ namespace BetterBuildingMenu
 			// folder makes the mod file watcher reload the UI. ModsData is ours.
 			Silhouettes = new SilhouetteIconCache(ContentRoots(), SilhouetteFolder);
 			UIManager.defaultUISystem.AddHostLocation(SilhouetteIcons.HostName, SilhouetteFolder, false);
+
+			_localeSources = new List<LocaleHelper.DictionarySource>();
 
 			foreach (var item in new LocaleHelper("BetterBuildingMenu.Locale.json").GetAvailableLanguages())
 			{
@@ -113,24 +118,35 @@ namespace BetterBuildingMenu
 		{
 			Log.Info(nameof(OnDispose));
 
-			if (Settings != null)
+			// Never throws. The game also calls this from the catch around a failed
+			// OnLoad, and an exception from here escapes that catch and stops every
+			// mod after this one from initializing.
+			try
 			{
-				Settings.UnregisterInOptionsUI();
-				Settings = null;
+				if (Settings != null)
+				{
+					Settings.UnregisterInOptionsUI();
+					Settings = null;
+				}
+
+				// At quit the game disposes mods before it destroys the world, so its
+				// managers are still up; after a failed OnLoad, this list may not be.
+				var localization = GameManager.instance?.localizationManager;
+
+				foreach (var item in _localeSources ?? Enumerable.Empty<LocaleHelper.DictionarySource>())
+				{
+					localization?.RemoveSource(item.LocaleId, item);
+				}
+
+				_localeSources = null;
+
+				UIManager.defaultUISystem?.RemoveHostLocation(ImagesHost);
+				UIManager.defaultUISystem?.RemoveHostLocation(SilhouetteIcons.HostName);
 			}
-
-			// The game may be tearing its own managers down by now.
-			var localization = GameManager.instance?.localizationManager;
-
-			foreach (var item in _localeSources)
+			catch (Exception ex)
 			{
-				localization?.RemoveSource(item.LocaleId, item);
+				Log.Error(ex, "OnDispose failed");
 			}
-
-			_localeSources.Clear();
-
-			UIManager.defaultUISystem?.RemoveHostLocation(ImagesHost);
-			UIManager.defaultUISystem?.RemoveHostLocation(SilhouetteIcons.HostName);
 		}
 	}
 }
