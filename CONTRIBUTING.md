@@ -21,6 +21,10 @@
 ./build.sh all                                           # C# and the UI bundle
 ```
 
+The C# tests run one class at a time (`TestParallelization.cs`), because the
+index, the placed uniques and the toolbar selection are process-wide statics.
+A test that sets one puts it back before it returns.
+
 A test that calls into the game, not just its types, carries
 `[Trait("Requires", "Game")]`: CI runs against mock game assemblies, and
 `CS2_TEST_FILTER=Requires!=Game ./build.sh test` runs what it runs. See
