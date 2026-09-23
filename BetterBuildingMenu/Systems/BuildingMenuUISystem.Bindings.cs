@@ -88,19 +88,32 @@ namespace BetterBuildingMenu.Systems
 		/// </remarks>
 		private void RefreshVanillaToolbarBindings()
 		{
-			_toolbarGroupsBinding ??= typeof(Game.UI.InGame.ToolbarUISystem)
-				.GetField("m_ToolbarGroupsBinding", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-				?.GetValue(_toolbarUISystem);
-			_assetCategoriesBinding ??= typeof(Game.UI.InGame.ToolbarUISystem)
-				.GetField("m_AssetMenuCategoriesBinding", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-				?.GetValue(_toolbarUISystem);
+			_toolbarGroupsBinding ??= ToolbarField<Colossal.UI.Binding.RawValueBinding>("m_ToolbarGroupsBinding");
+			_assetCategoriesBinding ??= ToolbarField<Colossal.UI.Binding.RawMapBinding<Entity>>("m_AssetMenuCategoriesBinding");
 
-			(_toolbarGroupsBinding as Colossal.UI.Binding.RawValueBinding)?.Update();
-			(_assetCategoriesBinding as Colossal.UI.Binding.RawMapBinding<Entity>)?.UpdateAll();
+			_toolbarGroupsBinding?.Update();
+			_assetCategoriesBinding?.UpdateAll();
 		}
 
-		private object _toolbarGroupsBinding;
-		private object _assetCategoriesBinding;
+		/// <summary>A private ToolbarUISystem field, or null once a game update has renamed or retyped it.</summary>
+		/// <remarks>Warned about once per field, so the log says why a cleared pip still shows.</remarks>
+		private T? ToolbarField<T>(string name) where T : class
+		{
+			var value = typeof(Game.UI.InGame.ToolbarUISystem)
+				.GetField(name, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+				?.GetValue(_toolbarUISystem) as T;
+
+			if (value is null && _warnedToolbarFields.Add(name))
+			{
+				Mod.Log.Warn($"[UNLOCK-PIP] ToolbarUISystem.{name} is missing or not a {typeof(T).Name}; a cleared highlight stays drawn until the toolbar next redraws");
+			}
+
+			return value;
+		}
+
+		private Colossal.UI.Binding.RawValueBinding? _toolbarGroupsBinding;
+		private Colossal.UI.Binding.RawMapBinding<Entity>? _assetCategoriesBinding;
+		private readonly HashSet<string> _warnedToolbarFields = new();
 
 		/// <summary>
 		/// Closes the lens and, when it was standing in for a vanilla menu,
