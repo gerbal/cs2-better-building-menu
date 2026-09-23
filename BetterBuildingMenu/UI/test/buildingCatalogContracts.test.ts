@@ -16,39 +16,6 @@ import {
   getInvalidMetricBounds,
   hasMetricRange,
 } from "../src/domain/buildingCatalogRanges.ts";
-import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog.ts";
-
-function entry(id: number): BuildingCatalogEntry {
-  return {
-    id,
-    prefabName: `Prefab${id}`,
-    name: `Building ${id}`,
-    category: "Buildings",
-    subCategory: "Industrial",
-    thumbnail: "",
-    lotWidth: 4,
-    lotDepth: 4,
-    buildingLevel: 1,
-    zoneType: 0,
-    hasParking: id % 2 === 0,
-    isVanilla: true,
-    pdxModsId: "",
-    constructionCost: 100,
-    upkeep: 10,
-    workers: 5,
-    capacity: 20,
-    electricityConsumption: null,
-    waterConsumption: null,
-    garbageAccumulation: null,
-    waterCapacity: null,
-    sewageCapacity: null,
-    groundPollution: null,
-    airPollution: null,
-    noisePollution: null,
-    groupPath: [],
-    groupLabelId: "",
-  };
-}
 
 describe("BetterBuildingMenu UI binding contracts", () => {
   it("names the window command after its trigger", () => {
