@@ -221,11 +221,9 @@
 .metricRangeLabel {
   flex: 1 1 auto;
   min-width: 0;
-  overflow: hidden;
+  @include _base.truncate;
   color: var(--menuText2Normal);
   font-size: var(--fontSizeS);
-  white-space: nowrap;
-  text-overflow: ellipsis;
 }
 
 .metricRangeInputs {
@@ -287,9 +285,7 @@
 .metricHeader {
   flex: 0 0 auto;
   min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  @include _base.truncate;
   text-align: center;
   color: var(--menuText2Normal);
   font-size: var(--fontSizeS);
@@ -495,9 +491,7 @@
   height: 18rem;
   min-height: 18rem;
   max-height: 18rem;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  @include _base.truncate;
   color: var(--menuTitleNormal);
   font-size: var(--fontSizeM);
   font-weight: bold;
@@ -537,9 +531,7 @@
   height: 16rem;
   min-height: 16rem;
   max-height: 16rem;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  @include _base.truncate;
   margin-top: 1rem;
   font-size: var(--fontSizeS);
   line-height: 16rem;
@@ -549,9 +541,7 @@
 .parking {
   flex: 0 0 auto;
   min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  @include _base.truncate;
   text-align: center;
   font-size: var(--fontSizeS);
   line-height: 18rem;
@@ -847,9 +837,7 @@
   color: var(--menuText1Normal);
   font-size: var(--fontSizeS);
   text-transform: uppercase;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  @include _base.truncate;
 }
 
 .tableGroupCount {
