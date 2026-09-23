@@ -722,7 +722,7 @@ public sealed class BuildingCatalogQueryEngineTests
         }
     }
 
-    [Fact]
+    [Fact, Trait("Requires", "Game")]
     public void BuildingMenuUtil_WhenIndexCategoriesAreMissing_ReturnsNulls()
     {
         bool previousReady = BuildingMenuUtil.IsReady;
@@ -749,7 +749,7 @@ public sealed class BuildingCatalogQueryEngineTests
         }
     }
 
-    [Fact]
+    [Fact, Trait("Requires", "Game")]
     public void PageWrite_EmitsStablePageAndEntryPropertyNames()
     {
         BuildingCatalogEntry labeledEntry = SampleEntries[0] with

@@ -100,7 +100,7 @@ namespace BetterBuildingMenu.Services
 			}
 
 			bool matchesDlc = dlcChosen
-				&& prefab.DlcId != DlcId.Invalid
+				&& prefab.DlcId.id != GameDlcIds.Invalid
 				&& dlcIds!.Any(id => string.Equals(
 					id,
 					prefab.DlcId.id.ToString(CultureInfo.InvariantCulture),
@@ -704,7 +704,7 @@ namespace BetterBuildingMenu.Services
 				CostIsPerDistance: prefab.CostIsPerDistance,
 				ParkingSlots: prefab.ParkingSlots,
 				PdxModsId: prefab.PdxModsId ?? string.Empty,
-				DlcId: prefab.DlcId == DlcId.Invalid ? null : prefab.DlcId.id.ToString(),
+				DlcId: prefab.DlcId.id == GameDlcIds.Invalid ? null : prefab.DlcId.id.ToString(),
 				Theme: prefab.Theme?.name,
 				AssetPacks: prefab.AssetPacks?.Where(pack => pack is not null).Select(pack => pack.name).Where(name => !string.IsNullOrWhiteSpace(name)).ToArray() ?? Array.Empty<string>(),
 				AssetPackIndices: prefab.VanillaFacts.AssetPacks?.ToArray() ?? Array.Empty<int>(),
@@ -826,7 +826,7 @@ namespace BetterBuildingMenu.Services
 			{
 				options.Add(new BuildingCatalogFacetOption(
 					ContentOption.Vanilla,
-					FormatDlcLabel(DlcId.BaseGame.id.ToString(CultureInfo.InvariantCulture)),
+					FormatDlcLabel(GameDlcIds.BaseGame.ToString(CultureInfo.InvariantCulture)),
 					ToolbarSelection.VanillaSelected));
 			}
 
@@ -865,7 +865,7 @@ namespace BetterBuildingMenu.Services
 		private static bool IsBaseGameContent(BuildingCatalogEntry entry) =>
 			string.Equals(
 				entry.DlcId,
-				DlcId.BaseGame.id.ToString(CultureInfo.InvariantCulture),
+				GameDlcIds.BaseGame.ToString(CultureInfo.InvariantCulture),
 				StringComparison.Ordinal);
 
 		private static void AddArrayGroup(
@@ -946,7 +946,7 @@ namespace BetterBuildingMenu.Services
 				return id;
 			}
 
-			if (numericId == DlcId.BaseGame.id)
+			if (numericId == GameDlcIds.BaseGame)
 			{
 					// Deliberately not "Base game": the Source facet already uses that
 					// label for content shipped by the studio rather than by a mod, and two
