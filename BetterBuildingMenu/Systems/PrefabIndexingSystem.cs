@@ -106,9 +106,6 @@ namespace BetterBuildingMenu.Systems
 		// root is called "Basic", so a label-keyed icon would collide.
 		private Dictionary<Entity, (string Label, string Icon, int Depth)> _devTreeBranches = new();
 		private static Dictionary<string, (string Label, string Icon, int Depth)> _devTreeRoots = new();
-		// Milestone index -> its progression-screen image. Safe to key by index
-		// because a milestone index IS unique, unlike a branch label.
-		private static Dictionary<int, string> _milestoneIcons = new();
 		private readonly List<IPrefabCategoryProcessor> _prefabCategoryProcessors = new();
 
 		/// <summary>Bumped whenever an indexed fact changes: a re-index, an unlock, a unique built or
@@ -444,7 +441,6 @@ namespace BetterBuildingMenu.Systems
 		private void RunIndex(bool full)
 		{
 			var stopWatch = Stopwatch.StartNew();
-			var existingMeshes = new List<string>();
 			var census = new Dictionary<string, List<int>>(StringComparer.Ordinal);
 
 			if (full)
@@ -540,15 +536,6 @@ namespace BetterBuildingMenu.Systems
 
 							if (processor.TryCreatePrefabIndex(prefab, entity, out prefabIndex))
 							{
-								if (full && prefab is ObjectGeometryPrefab geometryPrefab && geometryPrefab.m_Meshes?.FirstOrDefault()?.m_Mesh?.name is string meshName)
-								{
-									if (meshName is not null or "" && !existingMeshes.Contains(meshName))
-									{
-										prefabIndex.IsUniqueMesh = true;
-										existingMeshes.Add(meshName);
-									}
-								}
-
 								if (prefab.TryGet<EditorAssetCategoryOverride>(out var overrides) && (overrides?.m_IncludeCategories?.Any() ?? false))
 								{
 									// Legacy FindIt category overrides are still read, so existing assets
@@ -614,8 +601,6 @@ namespace BetterBuildingMenu.Systems
 
 			if (full)
 			{
-				FillPdxModsData();
-
 				AddNumberToDuplicatePrefabNames();
 
 				CleanupBrandPrefabs();
@@ -1102,11 +1087,6 @@ namespace BetterBuildingMenu.Systems
 			// second opinion: IsUniqueAsset reads PlaceableObjectData's Unique
 			// flag, which is what ToolbarUISystem.BindAssets asks too.
 			prefabIndex.IsUnique = _uniqueAssets is not null && _uniqueAssets.IsUniqueAsset(entity);
-			prefabIndex.ThemeThumbnail = prefabIndex.ThemeThumbnail is not null
-				? IconPath.Normalize(prefabIndex.ThemeThumbnail)
-				: prefabIndex.Theme is null ? null : IconPath.Normalize(ImageSystem.GetThumbnail(prefabIndex.Theme));
-			prefabIndex.PackThumbnails ??= prefabIndex.AssetPacks.Select(pack => IconPath.Normalize(ImageSystem.GetThumbnail(pack))).ToArray();
-			prefabIndex.Tags ??= new();
 			prefabIndex.UIOrder = prefab.TryGet<UIObject>(out var uIObject) ? uIObject.m_Priority : int.MaxValue;
 			// The menu placement the game itself uses. m_Group is
 			// the asset's UI category; a category that is a UIAssetCategoryPrefab
@@ -1149,12 +1129,9 @@ namespace BetterBuildingMenu.Systems
 			(prefabIndex.DevTreeBranch, prefabIndex.DevTreeBranchIcon, prefabIndex.DevTreeBranchDepth) =
 				GetDevTreeBranch(entity, prefabIndex.UiMenuName);
 			prefabIndex.IsRandom = prefabIndex.SubCategory is not PrefabSubCategory.Networks_Pillars && EntityManager.HasComponent<PlaceholderObjectData>(entity);
-			prefabIndex.IsResourceIntensive = CheckIfResourceIntensive(prefab);
 
 			if (prefab.asset?.database == AssetDatabase<ParadoxMods>.instance)
 			{
-				var meta = prefab.asset.GetMeta();
-
 				prefabIndex.PdxModsId = prefab.asset.GetMeta().platformID;
 			}
 
@@ -1171,42 +1148,21 @@ namespace BetterBuildingMenu.Systems
 			}
 #endif
 
-			if (prefabIndex.IsRandom && EntityManager.TryGetBuffer<PlaceholderObjectElement>(entity, true, out var placeholderObjectElements))
-			{
-				prefabIndex.RandomPrefabs = new int[placeholderObjectElements.Length];
-				prefabIndex.RandomPrefabThumbnails = new string[placeholderObjectElements.Length];
-
-				for (var i = 0; i < placeholderObjectElements.Length; i++)
-				{
-					prefabIndex.RandomPrefabs[i] = placeholderObjectElements[i].m_Object.Index;
-
-					if (_prefabSystem.TryGetPrefab<PrefabBase>(placeholderObjectElements[i].m_Object, out var randomPrefab))
-					{
-						prefabIndex.RandomPrefabThumbnails[i] = IconPath.Normalize(ImageSystem.GetThumbnail(randomPrefab));
-					}
-				}
-			}
-
 			// Asset packs come off the prefab's own AssetPackItem and are
 			// independent of DLC ownership, so they are read for every prefab.
 			if (prefab.TryGet<AssetPackItem>(out var assetPackItem) && assetPackItem.m_Packs is not null)
 			{
 				prefabIndex.AssetPacks = assetPackItem.m_Packs.Where(pack => pack is not null).ToArray();
-				prefabIndex.PackThumbnails = prefabIndex.AssetPacks
-					.Select(pack => IconPath.Normalize(ImageSystem.GetThumbnail(pack)))
-					.ToArray();
 			}
 			else
 			{
 				prefabIndex.AssetPacks = new AssetPackPrefab[0];
-				prefabIndex.PackThumbnails = new string[0];
 			}
 
 			if (prefab.TryGet<ContentPrerequisite>(out var contentPrerequisites)
 				&& contentPrerequisites.m_ContentPrerequisite.TryGet<DlcRequirement>(out var dlcRequirements))
 			{
 				prefabIndex.DlcId = dlcRequirements.m_Dlc;
-				prefabIndex.DlcThumbnail = $"Media/DLC/{PlatformManager.instance.GetDlcName(dlcRequirements.m_Dlc)}.svg";
 			}
 			else if (prefabIndex.IsVanilla)
 			{
@@ -1792,37 +1748,6 @@ namespace BetterBuildingMenu.Systems
 			}
 		}
 
-		private bool CheckIfResourceIntensive(PrefabBase prefab)
-		{
-			if (prefab is not ObjectGeometryPrefab geometryPrefab || geometryPrefab.m_Meshes is null || prefab.Has<TreeObject>() || prefab.isBuiltin)
-			{
-				return false;
-			}
-
-			return geometryPrefab.m_Meshes.Any(mesh =>
-			{
-				if (mesh.m_Mesh is not RenderPrefab meshPrefab)
-				{
-					return false;
-				}
-
-				var vertexCount = Math.Floor(meshPrefab.vertexCount / 3000D);
-				var lodCount = meshPrefab.TryGet<LodProperties>(out var lodProperties) ? lodProperties.m_LodMeshes.Length : 0;
-
-				if (vertexCount <= 4)
-				{
-					return false;
-				}
-
-				if (vertexCount <= 15)
-				{
-					return lodCount < 1;
-				}
-
-				return lodCount < 2;
-			});
-		}
-
 		/// <summary>Names every milestone once, so locked assets can carry a bare index.</summary>
 		/// <remarks>Resolved here because the modding API's translate(id, fallback) takes no arguments
 		/// and the game's milestone name is a lookup parameterised by index.</remarks>
@@ -1833,7 +1758,6 @@ namespace BetterBuildingMenu.Systems
 				ComponentType.ReadOnly<PrefabData>());
 			var milestones = query.ToEntityArray(Allocator.Temp);
 			var names = new Dictionary<int, string>();
-			var images = new Dictionary<int, string>();
 
 			for (var i = 0; i < milestones.Length; i++)
 			{
@@ -1841,16 +1765,10 @@ namespace BetterBuildingMenu.Systems
 					&& _prefabSystem.TryGetPrefab<PrefabBase>(milestones[i], out var prefab))
 				{
 					names[data.m_Index] = GetMilestoneTitle(data.m_Index) ?? GetAssetName(prefab);
-					// The progression screen's own image, so a tier tab carries
-					// the badge the player earned that milestone under.
-					images[data.m_Index] = prefab is MilestonePrefab milestone
-						? IconPath.Normalize(milestone.m_Image) ?? string.Empty
-						: string.Empty;
 				}
 			}
 
 			_milestoneNames = names;
-			_milestoneIcons = images;
 			Mod.Log.Info($"Indexed Milestones: {names.Count}");
 		}
 
@@ -2009,33 +1927,6 @@ namespace BetterBuildingMenu.Systems
 			return node.m_IconPrefab is not null
 				? IconPath.Normalize(ImageSystem.GetThumbnail(node.m_IconPrefab)) ?? string.Empty
 				: string.Empty;
-		}
-
-		/// <summary>Every milestone image, dense by index.</summary>
-		/// <remarks>Same shape and the same reason as GetMilestoneNames.</remarks>
-		public static string[] GetMilestoneIcons()
-		{
-			if (_milestoneIcons.Count == 0)
-			{
-				return Array.Empty<string>();
-			}
-
-			var highest = 0;
-			foreach (var index in _milestoneIcons.Keys)
-			{
-				if (index > highest)
-				{
-					highest = index;
-				}
-			}
-
-			var icons = new string[highest + 1];
-			for (var i = 0; i <= highest; i++)
-			{
-				icons[i] = _milestoneIcons.TryGetValue(i, out var icon) ? icon : string.Empty;
-			}
-
-			return icons;
 		}
 
 		/// <summary>What the service's free root node is called.</summary>
@@ -2461,26 +2352,6 @@ namespace BetterBuildingMenu.Systems
 			return GameManager.instance.localizationManager.activeDictionary.TryGetValue(titleId, out var name)
 				? name
 				: prefab.name.Replace('_', ' ').FormatWords();
-		}
-
-		private async void FillPdxModsData()
-		{
-			foreach (var grp in BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any].Where(x => int.TryParse(x.PdxModsId, out var id) && id > 0).GroupBy(x => x.PdxModsId))
-			{
-				var details = await PdxModsUtil.GetLocalModDetails(grp.Key);
-
-				if (details?.Success == true)
-				{
-					var folder = details.Mod.LocalData?.FolderAbsolutePath ?? string.Empty;
-					var installDate = Directory.Exists(folder) ? Directory.GetCreationTime(folder) : (DateTime?)null;
-
-					foreach (var item in grp)
-					{
-						item.InstalledDate = installDate;
-						item.UpdatedDate = details.Mod.UpdatedDate;
-					}
-				}
-			}
 		}
 
 		private static void AddNumberToDuplicatePrefabNames()
@@ -3076,19 +2947,6 @@ namespace BetterBuildingMenu.Systems
 			_menuUISystem?.RefreshBuildingCatalogFromIndexing();
 		}
 
-		/// <summary>Names a pack for <see cref="AssetPackRegistry"/>.</summary>
-		/// <remarks>Recorded as the packs are walked, the one place both halves of the entity are in
-		/// hand. Wider than vanilla's Pack row, which BindPacks builds from the selected CATEGORY.</remarks>
-		private void RecordAssetPack(Entity pack)
-		{
-			AssetPackRegistry.Record(
-				pack.Index,
-				pack.Version,
-				_prefabSystem.TryGetPrefab<PrefabBase>(pack, out var packPrefab)
-					? GetAssetName(packPrefab)
-					: string.Empty);
-		}
-
 		/// <summary>The upgrades a building supports, in the order vanilla offers them.</summary>
 		/// <remarks>Two buffers, as UpgradeMenuUISystem reads them — BuildingUpgradeElement for service
 		/// upgrades, BuildingModule for the modules signature towers take — filtered and ordered as it does.</remarks>
@@ -3175,7 +3033,6 @@ namespace BetterBuildingMenu.Systems
 				{
 					var pack = packElements[i].m_Pack;
 					packs.Add(pack.Index);
-					RecordAssetPack(pack);
 
 					if (isModAsset && EntityManager.HasComponent<ModPrerequisiteData>(pack))
 					{

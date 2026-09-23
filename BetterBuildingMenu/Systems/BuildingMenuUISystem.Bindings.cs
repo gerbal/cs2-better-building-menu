@@ -503,21 +503,5 @@ namespace BetterBuildingMenu.Systems
 			_CurrentSearch.ForceUpdate();
 			TriggerSearch();
 		}
-
-		private void OnLocateButtonClicked(int id)
-		{
-			var entities = PrefabTrackingSystem.GetPlacedEntities(id);
-			_interactionBoundary.TryLocate(id, entities.Count, index => JumpTo(entities[index]));
-		}
-
-		private void JumpTo(Entity entity)
-		{
-			if (_cameraUpdateSystem.orbitCameraController != null && entity != Entity.Null)
-			{
-				_cameraUpdateSystem.orbitCameraController.followedEntity = entity;
-				_cameraUpdateSystem.orbitCameraController.TryMatchPosition(_cameraUpdateSystem.activeCameraController);
-				_cameraUpdateSystem.activeCameraController = _cameraUpdateSystem.orbitCameraController;
-			}
-		}
 	}
 }

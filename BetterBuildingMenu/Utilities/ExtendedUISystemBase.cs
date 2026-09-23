@@ -320,7 +320,23 @@ namespace BetterBuildingMenu.Utilities
 
     public class GenericUIReader<T> : IReader<T>
     {
-        private static readonly Dictionary<Type, object> _readers = (Dictionary<Type, object>)typeof(ValueReaders).GetField("s_Readers", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
+        // The game's own reader table, read and never written. It is a private field, so a
+        // game patch can move it; that must not take every trigger down with this type's
+        // initializer. Without it, ReadGeneric below reads the primitives the triggers use.
+        private static readonly Dictionary<Type, object>? _readers = GameReaders();
+
+        private static Dictionary<Type, object>? GameReaders()
+        {
+            try
+            {
+                return typeof(ValueReaders).GetField("s_Readers", BindingFlags.NonPublic | BindingFlags.Static)?.GetValue(null) as Dictionary<Type, object>;
+            }
+            catch (Exception ex)
+            {
+                Mod.Log.Warn(ex, "ValueReaders.s_Readers is unreadable; triggers fall back to GenericUIReader");
+                return null;
+            }
+        }
 
         public static IReader<T> Create()
         {
@@ -331,7 +347,7 @@ namespace BetterBuildingMenu.Utilities
 
         private static object Create(Type type)
         {
-            if (_readers.TryGetValue(type, out var valueReader))
+            if (_readers is not null && _readers.TryGetValue(type, out var valueReader))
             {
                 return valueReader;
             }
@@ -341,7 +357,7 @@ namespace BetterBuildingMenu.Utilities
                 return Activator.CreateInstance(typeof(ValueReader<>).MakeGenericType(type));
             }
 
-            return _readers[type] = new GenericUIReader<T>();
+            return new GenericUIReader<T>();
         }
 
         public void Read(IJsonReader reader, out T value)
@@ -351,7 +367,7 @@ namespace BetterBuildingMenu.Utilities
 
         private static object ReadGeneric(IJsonReader reader, Type type)
         {
-            if (type.IsAssignableFrom(typeof(IJsonReadable)))
+            if (typeof(IJsonReadable).IsAssignableFrom(type))
             {
                 var value = (IJsonReadable)Activator.CreateInstance(type);
 
