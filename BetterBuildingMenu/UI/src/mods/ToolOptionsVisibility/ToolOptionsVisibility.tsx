@@ -1,8 +1,5 @@
 import { ModuleRegistryExtend } from "cs2/modding";
-import { bindValue } from "cs2/api";
-import mod from "../../../mod.json";
-
-export const LensOwnsCurrentMenu$ = bindValue<boolean>(mod.id, "LensOwnsCurrentMenu", false);
+import { LensOwnsCurrentMenu$ } from "mods/bindings";
 
 /**
  * Keeps the game's options bank on screen while the lens owns the menu. The

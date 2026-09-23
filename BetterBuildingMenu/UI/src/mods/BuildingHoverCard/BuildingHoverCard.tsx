@@ -1,8 +1,8 @@
-import { bindValue, useValue } from "cs2/api";
+import { useValue } from "cs2/api";
 import { Tooltip } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
-import mod from "../../../mod.json";
+import { useMemo } from "react";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
   formatBuildingMetric,
@@ -28,9 +28,9 @@ import { RESOURCE_UPKEEP_PREFIX, isVanillaFact, orderFacts, renderServiceFacts, 
 import { clampAssetDescription, getBuildingExtensionLabels, resolveAssetDescription } from "domain/buildingLensRowDetails";
 import { isEntryAlreadyBuilt, isEntryLocked, listLockConditions } from "domain/buildingLockState";
 import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
-import type { ZoneFootprint } from "domain/zoningHierarchy";
 import { useUnitSystem } from "domain/unitSettings";
 import styles from "./buildingHoverCard.module.scss";
+import { BuildingLensMilestones$ } from "mods/bindings";
 
 // The fixed lines the game's own tooltip also carries: its states, cost and
 // upkeep, the headline capacity, and its effects. Range, lot, parking,
@@ -44,8 +44,6 @@ const PROMOTED_BY_CATEGORY: Readonly<Record<string, ReadonlySet<string>>> = {
   Networks: new Set(["speedLimit", "networkWidth"]),
   Zones: new Set(["zoneMaxHeight", "zoneHouseholds", "zoneHouseholdsPerCell", "zoneSpace"]),
 };
-
-const BuildingLensMilestones$ = bindValue<string[]>(mod.id, "BuildingLensMilestones", []);
 
 export interface HoverCardContext {
   milestoneNames: string[];
@@ -94,7 +92,9 @@ export const useHoverCardContext = (): HoverCardContext => {
   const unitSystem = useUnitSystem();
   const milestoneNames = useValue(BuildingLensMilestones$) ?? [];
 
-  return {
+  // One object until one of these changes, so the rows it is handed to can skip
+  // a render; translate holds still until the language changes.
+  return useMemo(() => ({
     milestoneNames,
     // Clamped here, not in the resolver: the expanded table row shows the same
     // description where there is room for all of it, and shortening it there
@@ -135,7 +135,7 @@ export const useHoverCardContext = (): HoverCardContext => {
       // lanes, and naming the unit keeps it from reading as an exact capacity.
       parkingBays: translate("Tooltip.LABEL[BetterBuildingMenu.ParkingBays]", "bays") ?? "bays",
     },
-  };
+  }), [translate, unitSystem, milestoneNames]);
 };
 
 /**

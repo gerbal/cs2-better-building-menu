@@ -1,5 +1,6 @@
 import { countActiveMetricRanges, metricRangesFromState, type MetricRangeId, type NormalizedMetricRange } from "./buildingCatalogRanges";
 import type { BuildingLensFacetState } from "./buildingCatalogFacets";
+import type { Command } from "./command";
 
 export interface BuildingLensMetricRangeState {
   minCost: number | null;
@@ -32,10 +33,7 @@ export interface BuildingLensFilterSummary {
   lensCount: number;
 }
 
-export interface BuildingLensFilterTriggerCommand {
-  method: string;
-  args: any[];
-}
+export type BuildingLensFilterTriggerCommand = Command;
 
 const metricLabels: Record<MetricRangeId, string> = {
   cost: "Cost",

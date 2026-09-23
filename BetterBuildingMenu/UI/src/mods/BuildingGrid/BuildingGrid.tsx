@@ -1,4 +1,4 @@
-import { bindValue, useValue } from "cs2/api";
+import { useValue } from "cs2/api";
 import { Button, Scrollable } from "cs2/ui";
 import { type ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
@@ -12,19 +12,10 @@ import { stripRedundantNamePrefix, tileLabelLineBudget, wrapTileLabel } from "do
 import { lineBudgetFromDrawn } from "domain/measuredFit";
 import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
 import { formatBuildingMetric, getNumberSeparators } from "domain/buildingLensMetricFormat";
-import type { SortColumn } from "domain/buildingCatalogContracts";
 import { useUnitSystem } from "domain/unitSettings";
 import { useTextScale } from "domain/textScaleSetting";
-import mod from "../../../mod.json";
 import styles from "./buildingGrid.module.scss";
-
-const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "BuildingCatalogSortColumn", "Name");
-const TileSize$ = bindValue<number>(mod.id, "BuildingLensTileSize", 72);
-/**
- * The prefab the game currently has armed, drawn so something on screen says
- * which building is about to be placed.
- */
-const ActivePrefabId$ = bindValue<number>(mod.id, "ActivePrefabId", 0);
+import { ActivePrefabId$, BuildingCatalogSortColumn$, BuildingLensTileSize$ } from "mods/bindings";
 
 interface BuildingGridProps {
   entries: BuildingCatalogEntry[];
@@ -116,7 +107,7 @@ export const BuildingGrid = ({ entries, onPlace, footer, standalone = true }: Bu
   const lockedLabel = translate("Tooltip.LABEL[BetterBuildingMenu.Locked]", "Locked") ?? "Locked";
   const builtLabel =
     translate("Tooltip.LABEL[BetterBuildingMenu.AlreadyBuilt]", "Already built") ?? "Already built";
-  const tileSize = useValue(TileSize$);
+  const tileSize = useValue(BuildingLensTileSize$);
   // The name line is fontSizeM; its character budget follows the text scale.
   const textScale = useTextScale();
   const activePrefabId = useValue(ActivePrefabId$);
