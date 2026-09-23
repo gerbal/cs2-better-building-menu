@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { enterDecision, isEnterForSearch } from "../src/domain/buildingSearchRank.ts";
+import { enterDecision, isEnterForSearch, isPlainEnter } from "../src/domain/buildingSearchRank.ts";
 
 // Scoring lives in BuildingCatalogRelevance.cs, and C# names the best match with
 // the page. What is left here is the one rule the UI keeps: what Enter does.
@@ -35,6 +35,21 @@ describe("what Enter does", () => {
   it("does nothing when nothing on the page can be placed", () => {
     assert.equal(enterDecision(page("zzzz", null, []), "zzzz"), null);
     assert.equal(enterDecision(page("clinic", 7), "clinic"), null);
+  });
+});
+
+describe("which keys are Enter", () => {
+  it("takes either spelling", () => {
+    assert.equal(isPlainEnter({ key: "Enter" }), true);
+    // Cohtml can leave `key` empty and fill only `keyCode`.
+    assert.equal(isPlainEnter({ key: "", keyCode: 13 }), true);
+    assert.equal(isPlainEnter({ key: "a", keyCode: 65 }), false);
+  });
+
+  it("leaves an input method's Enter to the composition", () => {
+    // Confirming a Japanese candidate must not place a building.
+    assert.equal(isPlainEnter({ key: "Enter", keyCode: 13, isComposing: true }), false);
+    assert.equal(isPlainEnter({ key: "Process", keyCode: 229 }), false);
   });
 });
 
