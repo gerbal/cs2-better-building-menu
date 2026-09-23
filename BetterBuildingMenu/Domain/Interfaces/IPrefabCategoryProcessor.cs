@@ -1,5 +1,7 @@
 ﻿using Game.Prefabs;
 
+using System.Diagnostics.CodeAnalysis;
+
 using Unity.Entities;
 
 namespace BetterBuildingMenu.Domain.Interfaces
@@ -10,6 +12,6 @@ namespace BetterBuildingMenu.Domain.Interfaces
 		/// <remarks>New descriptions on every call: the indexer asks twice, once for full passes
 		/// and once for a copy it narrows to what changed.</remarks>
 		EntityQueryDesc[] GetEntityQuery();
-		bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, out PrefabIndex prefabIndex);
+		bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, [NotNullWhen(true)] out PrefabIndex? prefabIndex);
 	}
 }

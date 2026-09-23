@@ -3,6 +3,7 @@ using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Domain.Interfaces;
 using Game.Prefabs;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 using Unity.Entities;
@@ -67,7 +68,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
             };
         }
 
-        public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, out PrefabIndex prefabIndex)
+        public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
         {
             // A BuildingExtensionPrefab is a StaticObjectPrefab, not a
             // BuildingPrefab, so the gate has to admit both: the third query
@@ -80,7 +81,11 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 
             var subCategory = PrefabSubCategory.ServiceBuildings_Misc;
 
-            if (prefab.TryGet<ServiceObject>(out var serviceObject) || prefab.TryGet<ServiceUpgrade>(out var serviceUpgrade) && (serviceUpgrade.m_Buildings.FirstOrDefault()?.TryGet(out serviceObject) ?? false))
+            // An upgrade files under the service of the first building it upgrades.
+            if (prefab.TryGet<ServiceObject>(out var serviceObject)
+                || prefab.TryGet<ServiceUpgrade>(out var serviceUpgrade)
+                    && serviceUpgrade.m_Buildings.FirstOrDefault() is { } upgraded
+                    && upgraded.TryGet<ServiceObject>(out serviceObject))
             {
                 subCategory = serviceObject.m_Service.name switch
                 {

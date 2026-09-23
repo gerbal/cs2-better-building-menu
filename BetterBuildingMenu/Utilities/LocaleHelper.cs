@@ -58,7 +58,7 @@ namespace BetterBuildingMenu.Utilities
             }
         }
 
-        public static string Translate(string id, string fallback = null)
+        public static string Translate(string id, string? fallback = null)
         {
             if (GameManager.instance.localizationManager.activeDictionary.TryGetValue(id, out var result))
             {
@@ -76,7 +76,7 @@ namespace BetterBuildingMenu.Utilities
         /// </remarks>
         public static string TranslateLabel(string identifier, string fallback)
         {
-            string gameKey = GameLocaleKeys.For(identifier);
+            string? gameKey = GameLocaleKeys.For(identifier);
             if (gameKey != null)
             {
                 string localized = Translate(gameKey, string.Empty);
