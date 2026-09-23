@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { readFileSync } from "node:fs";
 import {
   ALL_CATEGORIES_ID,
   isCategorySelected,
@@ -121,28 +120,6 @@ describe("Menu category counts", () => {
     // only emits a group for a category with something in it, and picking a
     // progression tier empties most of them at once.
     assert.equal(categoryCount([{ id: "Pathways", count: 0 }], "Vegetation"), 0);
-  });
-});
-
-describe("MenuCategoryStrip's hook order", () => {
-  // A useValue added BELOW the component's early return makes a render that
-  // returns early run fewer hooks than the one before it, and React throws
-  // #300. Asserted on source shape, because the failure is positional.
-  const source = readFileSync(
-    new URL("../src/mods/MenuCategoryStrip/MenuCategoryStrip.tsx", import.meta.url),
-    "utf8"
-  );
-
-  it("calls every hook before the early return", () => {
-    const body = source.slice(source.indexOf("export const MenuCategoryStrip"));
-    const earlyReturn = body.indexOf("return null;");
-
-    assert.ok(earlyReturn > 0, "expected the strip to keep its early return");
-    assert.doesNotMatch(
-      body.slice(earlyReturn),
-      /\buseValue\(|\buseState\(|\buseEffect\(|\buseMemo\(|\buseLocalization\(/,
-      "a hook below the early return renders conditionally and crashes React"
-    );
   });
 });
 

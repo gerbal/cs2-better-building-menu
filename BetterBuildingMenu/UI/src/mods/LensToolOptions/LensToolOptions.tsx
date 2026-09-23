@@ -71,7 +71,7 @@ const BankFacets = ({ facets }: { facets: BuildingLensFacetState | null | undefi
 };
 
 export const LensToolOptions: ModuleRegistryExtend = (Component: any) => {
-  return () => {
+  return function MouseToolOptionsWithBank() {
     const facets = useValue(BuildingLensFacets$);
     const lensOwnsCurrentMenu = useValue(LensOwnsCurrentMenu$);
     const isPhotoMode = useValue(game.activeGamePanel$)?.__Type == game.GamePanelType.PhotoMode;
