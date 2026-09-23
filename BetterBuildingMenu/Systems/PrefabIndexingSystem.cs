@@ -243,9 +243,9 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			Mod.Log.Info($"Full pass at OnGameLoaded (purpose={serializationContext.purpose})");
-			RunIndex(true);
+			// A pass that failed leaves loading-complete to run its own.
+			_indexedAtGameLoaded = RunIndex(true);
 			Enabled = true;
-			_indexedAtGameLoaded = true;
 		}
 
 		/// <summary>How many indexed prefabs hold a lock state that differs from the game's.</summary>
@@ -524,11 +524,85 @@ namespace BetterBuildingMenu.Systems
 			return descs;
 		}
 
-		private void RunIndex(bool full)
+		/// <returns>False when a full pass threw and the previous index was kept.</returns>
+		private bool RunIndex(bool full)
 		{
 			var stopWatch = Stopwatch.StartNew();
 			var census = new Dictionary<string, List<int>>(StringComparer.Ordinal);
+			// A full pass rebuilds everything the panel reads. One that threw halfway would leave
+			// it half-built and throw into the game's load or locale dispatch, so the old index is
+			// put back instead. See docs/indexing.md, "A pass that fails".
+			var previous = full ? CaptureIndex() : null;
 
+			try
+			{
+				BuildIndex(full, census);
+			}
+			catch (Exception ex) when (previous is not null)
+			{
+				RestoreIndex(previous);
+				Mod.Log.Error(ex, "Full prefab indexing failed; the previous index stands");
+
+				return false;
+			}
+
+			BuildingMenuUtil.IsReady = true;
+			IndexGeneration++;
+
+			// Rescan the placed uniques against the city that just loaded: the
+			// tracker's loaded-asset events may already have run this frame, and a
+			// previous city's entries would otherwise survive into this one. Partial
+			// passes too, so a prefab a mod added at runtime joins the candidates.
+			RefreshPlacedUniques(rebuildCandidates: true);
+
+			stopWatch.Stop();
+
+			Mod.Log.Info($"{(full ? "Full" : "Partial")} Prefab Indexing completed in {stopWatch.Elapsed.TotalSeconds:0.000}s");
+			// The locked count is logged so a second full pass on the same load can
+			// be checked against the first.
+			Mod.Log.Info($"Indexed Prefabs Count: {BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any].Count}"
+				+ $" locked={BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any].Count(p => p.IsLocked)}");
+
+			if (full)
+			{
+				PrimeSilhouettes();
+
+				// Once per load, at Info so a player's log carries it: a language change
+				// or a lock-state recheck repeats the pass, not the menus it reports on.
+				// Every pass with Debug on.
+				if (!_auditedThisLoad || Mod.Log.isLevelEnabled(Level.Debug))
+				{
+					_auditedThisLoad = true;
+
+					// Which processors feed anything the lens can show. A processor
+					// whose every prefab is neither a building/network nor placed in
+					// a vanilla menu is indexing for nobody; this is the count.
+					var all = BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any];
+
+					foreach (var pair in census.OrderBy(pair => pair.Key, StringComparer.Ordinal))
+					{
+						var lens = pair.Value.Count(id =>
+							all.TryGetValue(id, out var indexed)
+							&& (indexed.Category is PrefabCategory.Buildings or PrefabCategory.ServiceBuildings or PrefabCategory.Networks
+								|| IsPlacedInAnyMenu(id)));
+
+						Mod.Log.Info($"[PROCESSOR-CENSUS] {pair.Key} indexed={pair.Value.Count} lens={lens}");
+					}
+
+					LogVanillaMenuCoverage();
+					LogVanillaMenuAudit();
+				}
+
+				// Whatever brought this pass about, the names are now this locale's.
+				_localeReindex.MarkIndexed(GameManager.instance.localizationManager.activeLocaleId);
+			}
+
+			return true;
+		}
+
+		/// <summary>Everything a pass writes to the index.</summary>
+		private void BuildIndex(bool full, Dictionary<string, List<int>> census)
+		{
 			if (full)
 			{
 				RefreshModCompatibility();
@@ -679,57 +753,73 @@ namespace BetterBuildingMenu.Systems
 			{
 				CleanupBrandPrefabs();
 			}
+		}
 
-			BuildingMenuUtil.IsReady = true;
-			IndexGeneration++;
+		/// <summary>What a full pass replaces, held so a pass that throws can put it back.</summary>
+		/// <remarks>References are enough: each Index* step builds new collections and assigns them
+		/// at its end, and AddAllCategories gives every category new lists, so a pass never writes to
+		/// the old ones.</remarks>
+		private sealed record IndexSnapshot(
+			KeyValuePair<PrefabCategory, Dictionary<PrefabSubCategory, IndexedPrefabList>>[] Categories,
+			Dictionary<int, VanillaMenuPlacement> MenuPlacements,
+			Dictionary<int, VanillaAssetFacts> ZoneFacts,
+			Dictionary<Entity, ZoneTypeFilter> ZoneTypes,
+			Dictionary<Entity, ZoneTypeFilter> ZoneDensities,
+			Dictionary<Entity, ZoneLotSizes> ZoneLotSizes,
+			List<ZoneCatalogEntry> ZoneCatalog,
+			Dictionary<int, string> AssetMenuNames,
+			Dictionary<string, Entity> AssetMenuEntities,
+			IReadOnlyList<VanillaMenuCategory> AssetMenus,
+			Dictionary<string, List<VanillaMenuCategory>> AssetCategories,
+			Dictionary<int, string> MilestoneNames,
+			Dictionary<Entity, (string Label, string Icon, int Depth)> DevTreeBranches,
+			Dictionary<string, (string Label, string Icon, int Depth)> DevTreeRoots);
 
-			// Rescan the placed uniques against the city that just loaded: the
-			// tracker's loaded-asset events may already have run this frame, and a
-			// previous city's entries would otherwise survive into this one. Partial
-			// passes too, so a prefab a mod added at runtime joins the candidates.
-			RefreshPlacedUniques(rebuildCandidates: true);
+		private IndexSnapshot CaptureIndex() => new(
+			BuildingMenuUtil.CategorizedPrefabs.ToArray(),
+			_menuPlacements,
+			_zoneFacts,
+			_zoneTypeCache,
+			_zoneDensityCache,
+			_zoneLotSizeCache,
+			_zoneCatalog,
+			_assetMenuNames,
+			_assetMenuEntities,
+			_assetMenus,
+			_assetCategories,
+			_milestoneNames,
+			_devTreeBranches,
+			_devTreeRoots);
 
-			stopWatch.Stop();
+		private void RestoreIndex(IndexSnapshot snapshot)
+		{
+			BuildingMenuUtil.CategorizedPrefabs.Clear();
 
-			Mod.Log.Info($"{(full ? "Full" : "Partial")} Prefab Indexing completed in {stopWatch.Elapsed.TotalSeconds:0.000}s");
-			// The locked count is logged so a second full pass on the same load can
-			// be checked against the first.
-			Mod.Log.Info($"Indexed Prefabs Count: {BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any].Count}"
-				+ $" locked={BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any].Count(p => p.IsLocked)}");
-
-			if (full)
+			foreach (var pair in snapshot.Categories)
 			{
-				PrimeSilhouettes();
-
-				// Once per load, at Info so a player's log carries it: a language change
-				// or a lock-state recheck repeats the pass, not the menus it reports on.
-				// Every pass with Debug on.
-				if (!_auditedThisLoad || Mod.Log.isLevelEnabled(Level.Debug))
-				{
-					_auditedThisLoad = true;
-
-					// Which processors feed anything the lens can show. A processor
-					// whose every prefab is neither a building/network nor placed in
-					// a vanilla menu is indexing for nobody; this is the count.
-					var all = BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any];
-
-					foreach (var pair in census.OrderBy(pair => pair.Key, StringComparer.Ordinal))
-					{
-						var lens = pair.Value.Count(id =>
-							all.TryGetValue(id, out var indexed)
-							&& (indexed.Category is PrefabCategory.Buildings or PrefabCategory.ServiceBuildings or PrefabCategory.Networks
-								|| IsPlacedInAnyMenu(id)));
-
-						Mod.Log.Info($"[PROCESSOR-CENSUS] {pair.Key} indexed={pair.Value.Count} lens={lens}");
-					}
-
-					LogVanillaMenuCoverage();
-					LogVanillaMenuAudit();
-				}
-
-				// Whatever brought this pass about, the names are now this locale's.
-				_localeReindex.MarkIndexed(GameManager.instance.localizationManager.activeLocaleId);
+				BuildingMenuUtil.CategorizedPrefabs[pair.Key] = pair.Value;
 			}
+
+			// Before the first pass there is no index to keep. An empty one, laid out, is what
+			// every reader of CategorizedPrefabs expects to find.
+			if (snapshot.Categories.Length == 0)
+			{
+				AddAllCategories();
+			}
+
+			_menuPlacements = snapshot.MenuPlacements;
+			_zoneFacts = snapshot.ZoneFacts;
+			_zoneTypeCache = snapshot.ZoneTypes;
+			_zoneDensityCache = snapshot.ZoneDensities;
+			_zoneLotSizeCache = snapshot.ZoneLotSizes;
+			_zoneCatalog = snapshot.ZoneCatalog;
+			_assetMenuNames = snapshot.AssetMenuNames;
+			_assetMenuEntities = snapshot.AssetMenuEntities;
+			_assetMenus = snapshot.AssetMenus;
+			_assetCategories = snapshot.AssetCategories;
+			_milestoneNames = snapshot.MilestoneNames;
+			_devTreeBranches = snapshot.DevTreeBranches;
+			_devTreeRoots = snapshot.DevTreeRoots;
 		}
 
 		private void AddPrefab(PrefabBase prefab, Entity entity, PrefabIndex prefabIndex)
