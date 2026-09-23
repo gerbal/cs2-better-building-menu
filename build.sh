@@ -51,9 +51,13 @@ build_ui() {
 run_tests() {
     require_command "$DOTNET_BIN"
     echo "=== Testing $MOD_NAME catalog contracts ==="
+    # CS2_TEST_FILTER narrows the run, as CI does against mock game assemblies
+    # (docs/ci.md). Unset, every test runs.
+    local filter=()
+    [ -n "${CS2_TEST_FILTER:-}" ] && filter=(--filter "$CS2_TEST_FILTER")
     (
         cd "$SCRIPT_DIR/BetterBuildingMenu.Tests"
-        "$DOTNET_BIN" test "$TEST_PROJECT" -p:SkipBuildUI=true
+        "$DOTNET_BIN" test "$TEST_PROJECT" -p:SkipBuildUI=true ${filter[@]+"${filter[@]}"}
     )
 }
 
