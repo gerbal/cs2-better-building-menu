@@ -12,6 +12,7 @@ import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaC
 
 import styles from "mods/BuildingMenu/buildingMenuHeader.module.scss";
 import { noteSearchField } from "./searchField";
+import { textInputText } from "domain/textInput";
 import { CurrentSearch$, IsSearchLoading$, send } from "mods/bindings";
 import { GameTextInput, gameClasses } from "mods/gameModules";
 
@@ -49,8 +50,9 @@ export const BuildingMenuHeader = memo(function BuildingMenuHeader({ small, larg
   const handleInputChange = (value: Event) => {
     // So the catalog's Enter listener can tell this box from other text fields.
     noteSearchField(value?.target);
-    if (value?.target instanceof HTMLTextAreaElement) {
-      setSearchText(value.target.value);
+    const text = textInputText(value);
+    if (text !== undefined) {
+      setSearchText(text);
     }
   };
 
