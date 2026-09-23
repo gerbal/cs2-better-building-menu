@@ -1,26 +1,13 @@
 @use "../../base.scss" as _base;
+@use "../../lensGeometry" as *;
 
 // No var(--name, fallback) in this file. Cohtml does not support the
 // two-argument form and logs an unresolved-variable warning for every element
 // carrying one, on every style pass. The game's theme always defines these.
 
-// Table column geometry. The header row and the data rows are two separate
-// flex containers describing one table, so a column lines up only if both
-// reserve identical space. A trailing control's width changes it HERE.
-$row-gap: 3rem;
-// Inside .rowSelect, after its last metric cell.
-$row-padding-right: 4rem;
-// On .row itself, after the details button.
-$row-outer-padding-right: 4rem;
-// The chevron that expands a row: a glyph, so vanilla's icon variant draws it
-// as a square of this width.
-$row-details-width: 26rem;
-$rows-scrollbar-width: 16rem;
-
-// Everything to the right of .rowSelect's last metric cell: the chevron, the
-// outer padding and ONE gap. The gap is counted once — without it the
-// header's identity column is wider than the cell's.
-$table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-padding-right + $row-gap;
+// Table column geometry is in lensGeometry.scss, shared with the column
+// arithmetic in buildingLensLayout.ts. A trailing control's width changes it
+// THERE.
 
 .catalog {
   display: flex;
@@ -278,9 +265,9 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
     margin-left: $row-gap;
   }
   // Right padding reserves exactly what the row spends after its last metric
-  // cell — see the geometry block at the top of this file. The rows' scrollbar
+  // cell — see the table geometry in lensGeometry.scss. The rows' scrollbar
   // is added on top of it when the rows actually scroll.
-  padding: 5rem $table-trailing-reserve 3rem 8rem;
+  padding: 5rem $table-trailing-reserve 3rem $row-padding-left;
 
   &[data-rows-scrollable="true"] {
     padding-right: $table-trailing-reserve + $rows-scrollbar-width;
@@ -423,7 +410,7 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   min-width: 0;
   height: 88rem;
   min-height: 88rem;
-  padding: 2rem $row-padding-right 2rem 8rem;
+  padding: 2rem $row-padding-right 2rem $row-padding-left;
   > * + * {
     margin-left: $row-gap;
   }
@@ -454,10 +441,10 @@ $table-trailing-reserve: $row-padding-right + $row-details-width + $row-outer-pa
   align-items: center;
   justify-content: center;
   // Through the shared box, like every other mode, so the badge is measured
-  // against the same number the picture is. 68rem is vanilla's own image size.
-  @include _base.artwork-box(68rem);
+  // against the same number the picture is.
+  @include _base.artwork-box($row-thumbnail-size);
   // The separation from the name.
-  margin-right: 12rem;
+  margin-right: $row-thumbnail-gap;
   border-radius: 4rem;
   background-color: rgba(0, 0, 0, 0.25);
 

@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { fileURLToPath } from "node:url";
+import * as sass from "sass";
 import {
   getBuildingLensRowGeometry,
   getBuildingLensDensity,
@@ -11,7 +13,26 @@ import {
   BUILDING_LENS_MIN_HEIGHT,
   BUILDING_LENS_MAX_HEIGHT,
   BUILDING_LENS_DEFAULT_HEIGHT,
+  BUILDING_LENS_CONTROL_PANE_TOTAL,
+  BUILDING_LENS_TABLE_ROW_FURNITURE,
+  LENS_RESIZE_HANDLE_HEIGHT,
 } from "../src/domain/buildingLensLayout.ts";
+
+const src = fileURLToPath(new URL("../src/", import.meta.url));
+
+/** A top-level rule's declarations in a compiled sheet, the last of each winning. */
+function compiledRule(sheet: string, selector: string): Record<string, string> {
+  const css = "\n" + sass.compile(src + sheet, { loadPaths: [src], logger: sass.Logger.silent }).css;
+  const start = css.indexOf(`\n${selector} {`);
+  assert.ok(start >= 0, `${sheet} has no ${selector} rule`);
+  const body = css.slice(css.indexOf("{", start) + 1, css.indexOf("}", start));
+
+  return Object.fromEntries(
+    body.split(";").map((declaration) => declaration.split(":").map((part) => part.trim())).filter(([name, value]) => name && value)
+  );
+}
+
+const rem = (length: string | undefined): number => Number(/^(\d+(?:\.\d+)?)rem$/.exec(length ?? "")?.[1] ?? Number.NaN);
 
 describe("Building Lens panel geometry", () => {
   it("maps exact outer-width boundaries to density tiers", () => {
@@ -104,15 +125,6 @@ describe("Building Lens catalog height", () => {
     for (const bad of [0, -3, Number.NaN, null, undefined]) {
       assert.equal(pxPerRemFrom(bad, LENS_RESIZE_HANDLE_HEIGHT), undefined);
     }
-  });
-
-  it("measures against the strip's real height", async () => {
-    const { LENS_RESIZE_HANDLE_HEIGHT } = await import("../src/domain/buildingLensLayout.ts");
-    const { readFileSync } = await import("node:fs");
-    const scss = readFileSync(new URL("../src/mods/LensResizeHandle/lensResizeHandle.module.scss", import.meta.url), "utf8");
-    const rule = /\.resizeHandle \{([^}]*)\}/.exec(scss)?.[1] ?? "";
-    const height = /(?:^|\n)\s*height:\s*(\d+)rem/.exec(rule)?.[1];
-    assert.equal(Number(height), LENS_RESIZE_HANDLE_HEIGHT);
   });
 
   it("falls back to the 720p ratio when the measurement is unusable", () => {
@@ -213,13 +225,32 @@ describe("the Upkeep column at the narrowest panel", () => {
   });
 });
 
-describe("the row's furniture", () => {
-  it("mirrors the stylesheet's trailing reserve, gap before the chevron included", async () => {
-    // $table-trailing-reserve = 4 + 26 + 4 + 3 = 37; then the rows' scrollbar
-    // (16), .rowSelect's left padding (8) and the thumbnail with its margin
-    // (80).
-    const { BUILDING_LENS_TABLE_ROW_FURNITURE } = await import("../src/domain/buildingLensLayout.ts");
-    assert.equal(BUILDING_LENS_TABLE_ROW_FURNITURE, 37 + 16 + 8 + 80);
+describe("sizes the stylesheets draw", () => {
+  // Read from each sheet's `:export`, so the numbers cannot drift from the
+  // sheet; what is checked here is that the export sums the rules it names.
+  it("the row's furniture is what the header and the row spend beside the name", () => {
+    const header = compiledRule("mods/BuildingCatalog/buildingCatalog.module.scss", ".columnHeader[data-rows-scrollable=true]");
+    const row = compiledRule("mods/BuildingCatalog/buildingCatalog.module.scss", ".rowSelect");
+    const thumbnail = compiledRule("mods/BuildingCatalog/buildingCatalog.module.scss", ".thumbnail");
+
+    // The trailing reserve and the rows' scrollbar, the row's left padding, the
+    // thumbnail and its gap.
+    const drawn = rem(header["padding-right"]) + rem(row.padding.split(/\s+/)[3]) + rem(thumbnail.width) + rem(thumbnail["margin-right"]);
+
+    assert.ok(Number.isFinite(drawn) && drawn > 0, `drawn ${drawn}`);
+    assert.equal(BUILDING_LENS_TABLE_ROW_FURNITURE, drawn);
+  });
+
+  it("the control pane's total is its width and the gap beside it", () => {
+    const pane = compiledRule("mods/LensControlPane/lensControlPane.module.scss", ".pane");
+
+    assert.equal(BUILDING_LENS_CONTROL_PANE_TOTAL, rem(pane.width) + rem(pane["margin-left"]));
+  });
+
+  it("a drag measures against the strip's real height", () => {
+    const strip = compiledRule("mods/LensResizeHandle/lensResizeHandle.module.scss", ".resizeHandle");
+
+    assert.equal(LENS_RESIZE_HANDLE_HEIGHT, rem(strip.height));
   });
 });
 

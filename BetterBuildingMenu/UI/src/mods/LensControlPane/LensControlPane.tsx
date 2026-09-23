@@ -31,7 +31,6 @@ import type { CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import { setLensView } from "domain/lensViewStore";
 import { useLensView } from "mods/useLensView";
 import { memo, useState } from "react";
-import { BUILDING_LENS_CONTROL_PANE_TOTAL } from "domain/buildingLensLayout";
 import {
   BuildingCatalog$,
   BuildingCatalogGroupBy$,
@@ -47,13 +46,6 @@ import {
   sendSort,
 } from "mods/bindings";
 import styles from "./lensControlPane.module.scss";
-
-/**
- * What the pane takes out of the panel's width: its own width plus the gap in
- * lensControlPane.module.scss. The figure is in rem, and a rem is not a pixel
- * here, so a pixel target copied straight in draws two thirds the width.
- */
-export const LENS_CONTROL_PANE_TOTAL = BUILDING_LENS_CONTROL_PANE_TOTAL;
 
 /**
  * The Building Lens control plane: a column to the right of the build menu,

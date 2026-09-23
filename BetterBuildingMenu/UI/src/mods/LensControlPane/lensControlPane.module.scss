@@ -1,9 +1,9 @@
 @use "../../base.scss" as _base;
+@use "../../lensGeometry" as *;
 
 // The control plane: a column to the right of the build menu, mirroring
-// vanilla's tool-options column. Its width is a REM value matching a column
-// measured in PIXELS — the pixel number written as rem draws two thirds of it.
-$pane-width: 379rem;
+// vanilla's tool-options column. Its width and the gap beside it are in
+// lensGeometry.scss.
 
 // Bottom-aligned and growing upward, like the column it mirrors: the build
 // menu's bottom edge is the line the eye tracks along the bottom bar.
@@ -16,7 +16,7 @@ $pane-width: 379rem;
   // column. `.lensRow` already shares the bottom edge, the one that matters.
   box-sizing: border-box;
   width: $pane-width;
-  margin-left: 6rem;
+  margin-left: $pane-gap;
   // Matches the tool-options panel opposite. The horizontal inset is the row's
   // job over there, not the panel's — see .row.
   padding: 6rem 0;

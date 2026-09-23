@@ -5,12 +5,19 @@ import { setBinding, resetBindings, triggers } from "../harness/stubs/cs2-api";
 import { bindValue, useValue, trigger } from "cs2/api";
 import { Button } from "cs2/ui";
 import styles from "../../src/mods/BuildingCatalog/buildingCatalog.module.scss";
+import sizes from "../../src/domain/buildingLensLayout.module.scss";
 
 describe("the render harness", () => {
   it("answers a stylesheet import with the class names themselves", () => {
     // So `styles.row` is "row" and a test can assert on class="row".
     assert.equal(styles.row, "row");
     assert.equal(styles.anything, "anything");
+  });
+
+  it("answers what a stylesheet exports with :export with the compiled value", () => {
+    // So a size TS reads from a sheet is the sheet's, sass arithmetic done.
+    assert.match(sizes.tableRowFurniture, /^\d+rem$/);
+    assert.equal(sizes.notExported, "notExported");
   });
 
   it("lets a test set what a binding reads and see what a trigger sent", () => {
