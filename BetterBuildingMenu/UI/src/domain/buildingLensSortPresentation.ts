@@ -1,5 +1,6 @@
 import type { SortColumn, SortState } from "./buildingCatalogContracts";
 import type { BuildingLensMetric } from "./buildingLensLayout";
+import { SORT_COLUMNS } from "./sharedContracts.generated";
 
 export interface BuildingLensSortOption {
   key: SortColumn;
@@ -18,24 +19,30 @@ export interface BuildingLensSortPresentation {
   expanded: BuildingLensSortChoice[];
 }
 
-export const BUILDING_LENS_SORT_OPTIONS: readonly BuildingLensSortOption[] = [
-  // First, and the one the lens opens on: the game's own UIObject.m_Priority
-  // order, authored per asset and derivable from nothing the player can see —
-  // hence "Default". Being first also makes it the fallback below.
-  { key: "Default", label: "Default" },
-  { key: "Name", label: "Name" },
-  { key: "Category", label: "Category" },
-  { key: "ConstructionCost", label: "Cost" },
-  { key: "Upkeep", label: "Upkeep" },
-  { key: "Workers", label: "Workers" },
-  { key: "Capacity", label: "Capacity" },
+/** What the picker calls each sort. A column C# adds has to be named here, or this fails to compile. */
+const SORT_LABELS: Readonly<Record<SortColumn, string>> = {
+  // The game's own UIObject.m_Priority order, authored per asset and
+  // derivable from nothing the player can see — hence "Default".
+  Default: "Default",
+  Name: "Name",
+  Category: "Category",
+  ConstructionCost: "Cost",
+  Upkeep: "Upkeep",
+  Workers: "Workers",
+  Capacity: "Capacity",
   // "Lot", not a bare "Width": beside Cost and Workers that reads as a
   // dimension of the building, and the figure sorted on is the lot's.
-  { key: "LotWidth", label: "Lot width" },
-  { key: "LotDepth", label: "Lot depth" },
-  { key: "BuildingLevel", label: "Level" },
-  { key: "HasParking", label: "Parking" },
-];
+  LotWidth: "Lot width",
+  LotDepth: "Lot depth",
+  BuildingLevel: "Level",
+  HasParking: "Parking",
+};
+
+/** In C#'s order, Default first: the one the lens opens on, and the fallback below. */
+export const BUILDING_LENS_SORT_OPTIONS: readonly BuildingLensSortOption[] = SORT_COLUMNS.map((key) => ({
+  key,
+  label: SORT_LABELS[key],
+}));
 
 /**
  * Which sort each metric column drives when its header is clicked, sorting a
