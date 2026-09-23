@@ -101,7 +101,7 @@ deliberately NOT applied: those are player settings that hide assets which shoul
 indexed.
 
 Two things read the result: the coverage report, and the index itself, which treats placement as
-an override — see the blacklist check in `RunIndex` and `IsPlacedInVanillaMenu`.
+an override — see the blacklist check in `BuildIndex` and `IsPlacedInVanillaMenu`.
 
 ### The Zones menu
 
