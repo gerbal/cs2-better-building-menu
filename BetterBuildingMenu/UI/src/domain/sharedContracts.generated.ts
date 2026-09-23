@@ -47,3 +47,11 @@ export type AvailabilityOption = "Unlocked" | "Locked" | "AlreadyBuilt";
 
 /** BuildingCatalogQuery.WindowStep: how many rows one Load more adds. */
 export const CATALOG_WINDOW_STEP = 100;
+
+/** BuildingLensHeight: the catalog height the player drags between, and where it starts. */
+export const BUILDING_LENS_MIN_HEIGHT = 108;
+export const BUILDING_LENS_MAX_HEIGHT = 960;
+export const BUILDING_LENS_DEFAULT_HEIGHT = 420;
+
+/** BuildingLensWidth.Max: the width the panel and its control pane are drawn at. */
+export const BUILDING_LENS_MAX_WIDTH = 1441;

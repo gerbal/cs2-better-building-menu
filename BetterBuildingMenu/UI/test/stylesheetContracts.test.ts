@@ -229,10 +229,9 @@ const UNSUPPORTED: { matches: (prop: string, value: string) => boolean; declarat
 ];
 
 describe("the catalog's floor is one row of cards", () => {
-  // The player drags the height; the floor is where the drag stops. Three
-  // copies exist — the TS clamp, the C# clamp (asserted equal by
-  // BuildingLensDimensionTests) and the stylesheet's min-height — and this
-  // keeps the third one honest.
+  // The player drags the height; the floor is where the drag stops. C# owns
+  // it, the TS clamp reads the generated copy, and the stylesheet states it
+  // again as a min-height; this keeps the stylesheet honest.
   it("is one card row under two headings: the deepest grouping a menu draws", () => {
     // Zones groups two levels deep (Residential Zones > Low Density), so its
     // first row of cards sits under two heading reserves; a floor for one

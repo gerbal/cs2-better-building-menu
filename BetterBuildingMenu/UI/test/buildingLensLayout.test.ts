@@ -13,9 +13,11 @@ import {
   BUILDING_LENS_MAX_HEIGHT,
   BUILDING_LENS_DEFAULT_HEIGHT,
   BUILDING_LENS_CONTROL_PANE_TOTAL,
+  BUILDING_LENS_PANEL_CHROME_WIDTH,
   BUILDING_LENS_TABLE_ROW_FURNITURE,
   LENS_RESIZE_HANDLE_HEIGHT,
 } from "../src/domain/buildingLensLayout.ts";
+import { BUILDING_LENS_MAX_WIDTH } from "../src/domain/sharedContracts.generated.ts";
 
 
 describe("Building Lens panel geometry", () => {
@@ -118,12 +120,21 @@ describe("Building Lens catalog height", () => {
   });
 });
 
+describe("the panel's width", () => {
+  it("and its chrome fill the band beside the tool columns, and no more", () => {
+    // The band left free beside the left-aligned tool columns, at the layout's
+    // reference resolution. C# sizes the panel (BuildingLensWidth.Max, generated)
+    // and the UI adds its chrome, so a wider chrome pushes the panel past it.
+    assert.equal(BUILDING_LENS_MAX_WIDTH + BUILDING_LENS_PANEL_CHROME_WIDTH, 1476);
+  });
+});
+
 describe("Table column widths", () => {
   // The widths the seven cells want when every column is set to a comfortable
   // width by hand. Taken from the whole assembly, control pane included,
   // rather than from the rows box alone, which undercounts the room.
   it("gives every column its comfortable width at the default assembly", async () => {
-    const { getBuildingLensColumnWidths, BUILDING_LENS_COLUMN_MAX, BUILDING_LENS_MAX_WIDTH, BUILDING_LENS_PANEL_CHROME_WIDTH } = await import(
+    const { getBuildingLensColumnWidths, BUILDING_LENS_COLUMN_MAX, BUILDING_LENS_PANEL_CHROME_WIDTH } = await import(
       "../src/domain/buildingLensLayout.ts"
     );
 
@@ -152,7 +163,7 @@ describe("Table column widths", () => {
   });
 
   it("moves monotonically between the two ends, in every column", async () => {
-    const { getBuildingLensColumnWidths, BUILDING_LENS_MIN_WIDTH, BUILDING_LENS_MAX_WIDTH } = await import(
+    const { getBuildingLensColumnWidths, BUILDING_LENS_MIN_WIDTH } = await import(
       "../src/domain/buildingLensLayout.ts"
     );
 
@@ -243,7 +254,7 @@ describe("the metric columns fit the room beside the name", () => {
   // panel's chrome around the rows − the row's own furniture − the name's
   // basis. At a typical panel that leaves enough for the 586rem maximum.
   it("is the measured row less the furniture and the name's basis at the default assembly", async () => {
-    const { tableColumnRoom, BUILDING_LENS_MAX_WIDTH, BUILDING_LENS_PANEL_CHROME_WIDTH, BUILDING_LENS_TABLE_ROW_FURNITURE } = await import("../src/domain/buildingLensLayout.ts");
+    const { tableColumnRoom, BUILDING_LENS_PANEL_CHROME_WIDTH, BUILDING_LENS_TABLE_ROW_FURNITURE } = await import("../src/domain/buildingLensLayout.ts");
 
     assert.equal(tableColumnRoom(BUILDING_LENS_MAX_WIDTH + BUILDING_LENS_PANEL_CHROME_WIDTH), 1026 - BUILDING_LENS_TABLE_ROW_FURNITURE - 260);
   });
@@ -272,7 +283,7 @@ describe("the metric columns fit the room beside the name", () => {
     // At 125 % the cells' figures are wider by the same ratio as the font,
     // so the set that fits is the room over that ratio: still at most the
     // room, and still whole units.
-    const { getBuildingLensColumnWidths, tableColumnRoom, BUILDING_LENS_MAX_WIDTH, BUILDING_LENS_PANEL_CHROME_WIDTH } = await import("../src/domain/buildingLensLayout.ts");
+    const { getBuildingLensColumnWidths, tableColumnRoom, BUILDING_LENS_PANEL_CHROME_WIDTH } = await import("../src/domain/buildingLensLayout.ts");
     const outer = BUILDING_LENS_MAX_WIDTH + BUILDING_LENS_PANEL_CHROME_WIDTH;
     const total = Object.values(getBuildingLensColumnWidths(outer, 1.25)).reduce((a, b) => a + b, 0);
 

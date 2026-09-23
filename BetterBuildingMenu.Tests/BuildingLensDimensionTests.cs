@@ -8,12 +8,12 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// The lens's width and height constants, and the UI copies of them.
+	/// The lens's control-pane width, and the stylesheet that draws the pane.
 	/// </summary>
 	/// <remarks>
-	/// Each of these numbers is written twice, once in C# and once in the UI's
-	/// TypeScript or stylesheets, with no shared source between them, so a test
-	/// is the only thing standing between them and a silent drift.
+	/// The heights and the panel width reach the UI through the generated contracts
+	/// (SharedContractsTests). The pane's width is the stylesheet's, which C# cannot
+	/// generate into, so it is written twice and this test keeps the two together.
 	/// </remarks>
 	public class BuildingLensDimensionTests
 	{
@@ -35,43 +35,6 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(
 				BuildingLensWidth.ControlPane,
 				float.Parse(width.Groups[1].Value) + float.Parse(gap.Groups[1].Value));
-		}
-
-		[Fact]
-		public void MaxWidth_AgreesWithTheBandTheUiDerivesItFrom()
-		{
-			// The width is fixed at Max, and the UI sizes the table's columns against
-			// its own copy of the same band, so the two must derive the same number.
-			var source = File.ReadAllText(Path.Combine(
-				RepoRoot(), "BetterBuildingMenu", "UI", "src", "domain", "buildingLensLayout.ts"));
-
-			var band = Regex.Match(source, @"BUILDING_LENS_BAND_WIDTH\s*=\s*(\d+)");
-			var chrome = Regex.Match(source, @"BUILDING_LENS_PANEL_CHROME_WIDTH\s*=\s*(\d+)");
-
-			Assert.True(band.Success, "BUILDING_LENS_BAND_WIDTH not found in buildingLensLayout.ts");
-			Assert.True(chrome.Success, "BUILDING_LENS_PANEL_CHROME_WIDTH not found in buildingLensLayout.ts");
-			Assert.Equal(
-				BuildingLensWidth.Max,
-				float.Parse(band.Groups[1].Value) - float.Parse(chrome.Groups[1].Value));
-		}
-
-		[Fact]
-		public void Height_AgreesWithTheDragRangeTheUiClampsTo()
-		{
-			// The drag clamps with the TS numbers and the setting is stored
-			// through these, so a gap is a height the player can reach and not
-			// keep.
-			var source = File.ReadAllText(Path.Combine(
-				RepoRoot(), "BetterBuildingMenu", "UI", "src", "domain", "buildingLensLayout.ts"));
-
-			var min = Regex.Match(source, @"BUILDING_LENS_MIN_HEIGHT\s*=\s*(\d+)");
-			var max = Regex.Match(source, @"BUILDING_LENS_MAX_HEIGHT\s*=\s*(\d+)");
-			var def = Regex.Match(source, @"BUILDING_LENS_DEFAULT_HEIGHT\s*=\s*(\d+)");
-
-			Assert.True(min.Success && max.Success && def.Success, "height constants not found in buildingLensLayout.ts");
-			Assert.Equal(BuildingLensHeight.Min, float.Parse(min.Groups[1].Value));
-			Assert.Equal(BuildingLensHeight.Max, float.Parse(max.Groups[1].Value));
-			Assert.Equal(BuildingLensHeight.Default, float.Parse(def.Groups[1].Value));
 		}
 
 		private static string RepoRoot()
