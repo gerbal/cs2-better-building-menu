@@ -1,6 +1,14 @@
 # Better Building Menu — structure & comment review
 
-**Scope.** All of `BetterBuildingMenu/` (Domain, Services, Systems, Utilities, UI/src, UI/test, UI stylesheets) plus `BetterBuildingMenu.Tests/`. Files read whole, not grepped. Everything below is cited; I mark **verified** where I read the code the comment describes, **suspicious** where I did not. All paths relative to `/var/home/gerbal/Games/CS-Modding/cs2-better-building-menu/`.
+> **Status, 2026-09-22: historical.** Its §2.6 list, P0 (bar some residue), P1
+> and the P2 comment pass are done, and its rule is now in
+> [CONTRIBUTING.md](../../CONTRIBUTING.md). The P3 items are open. §0 of
+> `2026-09-22-structure-practices-docs-review.md` has the item-by-item account.
+> Line numbers below are as of 2026-09-10 and no longer match.
+> `AGENTS.md` and the `cm-…` ids refer to the maintainer's workspace, not to
+> this repository.
+
+**Scope.** All of `BetterBuildingMenu/` (Domain, Services, Systems, Utilities, UI/src, UI/test, UI stylesheets) plus `BetterBuildingMenu.Tests/`. Files read whole, not grepped. Everything below is cited; I mark **verified** where I read the code the comment describes, **suspicious** where I did not. All paths are relative to the repository root.
 
 **Baseline.** ~41,400 source lines carry **~12,800 comment lines (31%)**. Excluding stylesheets: 11,401 comment lines in 2,025 blocks across .cs/.ts/.tsx. Density by area: Domain 36%, Services 39%, Systems 34%, UI/src (.ts/.tsx) 34%, UI stylesheets 29%, Utilities 13%. **58% of comment lines sit in blocks of 9 or more lines**; only 10% in 1-2 line blocks. The problem is not density — it is that the comments are essays.
 
