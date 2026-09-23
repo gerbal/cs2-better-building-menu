@@ -1,19 +1,23 @@
-import { bindValue, trigger, useValue } from "cs2/api";
+import { useValue } from "cs2/api";
 import { useLocalization } from "cs2/l10n";
-import { Button, Scrollable, Tooltip } from "cs2/ui";
+import { Button, Scrollable } from "cs2/ui";
 import classNames from "classnames";
 import { useState } from "react";
-import mod from "../../../mod.json";
-import { orderedCategories, type VanillaMenuCategory } from "domain/vanillaMenuCategories";
+import { orderedCategories } from "domain/vanillaMenuCategories";
 import { isScopedToMenu, lensScopeChipsFor } from "domain/lensScopeChips";
 import {
   resolveVanillaLabel,
   vanillaCategoryNameKeys,
   vanillaMenuNameKeys,
 } from "domain/vanillaServiceLabels";
-import type { BuildingLensFacetState } from "domain/buildingCatalogFacets";
-import type { BuildingLensMetricRangeState } from "domain/buildingLensFilterSummary";
 import styles from "./chipRow.module.scss";
+import {
+  BuildingLensMenu$,
+  BuildingLensMenuCategories$,
+  BuildingLensMenuCategory$,
+  BuildingLensMenus$,
+  send,
+} from "mods/bindings";
 
 /** One row of a picker: an id to fire, an icon to draw, a name to read. */
 interface VanillaBuildMenuTab {
@@ -28,26 +32,12 @@ interface VanillaBuildMenuTab {
  * that record them live in the control pane beside the results.
  */
 
-const BuildingLensFacets$ = bindValue<BuildingLensFacetState | null>(mod.id, "BuildingLensFacets", null);
-const BuildingLensMenu$ = bindValue<string>(mod.id, "BuildingLensMenu", "");
-const BuildingLensMenuCategory$ = bindValue<string>(mod.id, "BuildingLensMenuCategory", "");
-const BuildingLensMenuCategories$ = bindValue<VanillaMenuCategory[]>(mod.id, "BuildingLensMenuCategories", []);
-const BuildingLensMenus$ = bindValue<VanillaMenuCategory[]>(mod.id, "BuildingLensMenus", []);
-
-const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState | null>(
-  mod.id,
-  "BuildingCatalogMetricRanges",
-  null
-);
-
 type PickerId = "menuCategory" | "menu" | null;
 
 export const ChipRow = () => {
   const { translate } = useLocalization();
   const [picker, setPicker] = useState<PickerId>(null);
 
-  const facets = useValue(BuildingLensFacets$);
-  const metricRanges = useValue(BuildingCatalogMetricRanges$);
   const menu = useValue(BuildingLensMenu$) ?? "";
   const menuCategory = useValue(BuildingLensMenuCategory$) ?? "";
   const menuCategories = useValue(BuildingLensMenuCategories$) ?? [];
@@ -71,10 +61,7 @@ export const ChipRow = () => {
   const menuLabel = (id: string) => resolveVanillaLabel(vanillaMenuNameKeys(id), lookup, id);
   const categoryLabel = (id: string) => resolveVanillaLabel(vanillaCategoryNameKeys(id), lookup, id);
 
-  // readonly, because TriggerCommand declares its args that way and the facet
-  // and chip commands do not.
-  const fire = (command: { method: string; args: readonly any[] }) =>
-    trigger(mod.id, command.method, ...command.args);
+  const fire = send;
 
   const togglePicker = (id: Exclude<PickerId, null>) =>
     setPicker((current) => (current === id ? null : id));

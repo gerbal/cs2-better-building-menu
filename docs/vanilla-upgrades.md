@@ -5,7 +5,8 @@ loaded save. Written because the mod's extension work kept tripping over
 assumptions about this machinery that turned out to be wrong; every claim below
 names the file it came from so a future reader can re-check rather than re-guess.
 
-Paths are relative to `_decompiled/Game/Game/` in the workspace.
+Paths are relative to `_decompiled/Game/Game/`, a decompilation in the
+maintainer's workspace; it is not part of this repository.
 
 ## Vocabulary
 
@@ -66,7 +67,8 @@ is a `BuildingPrefab` (`Prefabs/ServiceUpgrade.cs:46-50`). A
 in `ServiceUpgradeData.m_UpgradeCost`, which is the `GenerateObjectsSystem`
 fallback path. So the indexer's `PlaceableObjectData` read is right for
 sub-buildings and empty for annexes — a school's Extension Wing showed "—"
-where vanilla shows ¢22,500 — and needs the `ServiceUpgradeData` fallback.
+where vanilla shows ¢22,500 — and needs the `ServiceUpgradeData` fallback,
+which `PopulateAnalyticalData` in `PrefabIndexingSystem.cs` now applies.
 
 ## Installing does two separate things
 
@@ -175,7 +177,8 @@ account without re-measuring.
 
 ## Implications for this mod
 
-1. **Cost needs no special handling** (see above).
+1. **An annex's cost comes from `ServiceUpgradeData`** (see Cost above); a
+   sub-building's comes from `PlaceableObjectData` like any other building.
 2. **A prefab's own figures are not its contribution.** The hover card shows
    per-prefab stats; what an upgrade actually does to the parent is decided by
    `Combine`. Additive fields read naturally as "+300 patients"; a max field like

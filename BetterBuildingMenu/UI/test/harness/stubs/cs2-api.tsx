@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 // cs2/api under the harness: bindings are a registry the test writes to.
 const values = new Map<string, unknown>();
+// Who reads each binding, so a write re-renders its readers as the game's
+// bindings do. A memoised component re-renders on its own bindings only.
+const readers = new Map<string, Set<() => void>>();
 export const triggers: Array<{ group: string; name: string; args: unknown[] }> = [];
 
 export interface StubBinding<T> { key: string; fallback: T | undefined; readonly value: T }
@@ -14,9 +17,17 @@ export function bindValue<T>(group: string, name: string, fallback?: T): StubBin
   return binding;
 }
 // A real hook, like the game's useValue, so a wrapper that calls it changes a
-// component's hook sequence in tests exactly as it would in the game.
+// component's hook sequence in tests exactly as it would in the game. It
+// subscribes, as the game's does, so setBinding re-renders a mounted reader.
 export function useValue<T>(binding: StubBinding<T>): T {
-  useState(0);
+  const [, rerender] = useState(0);
+  useEffect(() => {
+    const listener = () => rerender((count) => count + 1);
+    const set = readers.get(binding.key) ?? new Set<() => void>();
+    readers.set(binding.key, set);
+    set.add(listener);
+    return () => { set.delete(listener); };
+  }, [binding.key]);
   return read(binding);
 }
 export function trigger(group: string, name: string, ...args: unknown[]): void {
@@ -43,5 +54,9 @@ export function setMapBinding(group: string, name: string, key: unknown, value: 
 }
 
 /** Test seam: set what a binding reads. */
-export function setBinding(group: string, name: string, value: unknown): void { values.set(`${group}.${name}`, value); }
+export function setBinding(group: string, name: string, value: unknown): void {
+  const key = `${group}.${name}`;
+  values.set(key, value);
+  for (const listener of [...(readers.get(key) ?? [])]) listener();
+}
 export function resetBindings(): void { values.clear(); triggers.length = 0; }

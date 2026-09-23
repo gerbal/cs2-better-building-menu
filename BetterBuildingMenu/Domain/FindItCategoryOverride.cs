@@ -26,15 +26,16 @@ namespace BetterBuildingMenu.Domain
 				|| tag.StartsWith("BetterBuildingMenu/", StringComparison.Ordinal));
 
 		/// <remarks>
-		/// An exclusion stands on its own; an asset needs no include to be left out.
-		/// A category pair the index does not file is ignored, because the index keys on it
-		/// and would throw, dropping the asset. The last usable include wins.
+		/// An exclusion counts only beside an include, any mod's, as in Find It: a bare
+		/// exclude=FindIt opts out of Find It's prop generators, not the catalog. An unfiled
+		/// category pair is ignored, since the index would throw on it. The last usable include wins.
 		/// </remarks>
 		public static FindItCategoryOverride Read(IReadOnlyList<string?>? includes, IReadOnlyList<string?>? excludes)
 		{
 			var excluded = false;
+			var hasInclude = includes is { Count: > 0 };
 
-			for (var i = 0; i < (excludes?.Count ?? 0); i++)
+			for (var i = 0; hasInclude && i < (excludes?.Count ?? 0); i++)
 			{
 				excluded |= IsOurs(excludes![i]);
 			}

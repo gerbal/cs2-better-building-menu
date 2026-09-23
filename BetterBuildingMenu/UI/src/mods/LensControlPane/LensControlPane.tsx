@@ -1,14 +1,9 @@
-import { bindValue, trigger, useValue } from "cs2/api";
+import { trigger, useValue } from "cs2/api";
 import { Button } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
-import mod from "../../../mod.json";
 import type { SortColumn } from "domain/buildingCatalogContracts";
-import {
-  nextSortState,
-  setSortColumnCommand,
-  setSortDescendingCommand,
-} from "domain/buildingCatalogContracts";
+import type { Command } from "domain/command";
 import { getBuildingLensSortPresentation } from "domain/buildingLensSortPresentation";
 import {
   groupDimensionsFor,
@@ -30,45 +25,28 @@ import {
   isContentFacetCommand,
   toggleAssetPack,
 } from "domain/assetPackSelection";
-import type { ToolbarEntity } from "domain/toolbarEntity";
 import { countActiveMetricRanges, metricRangesFromState } from "domain/buildingCatalogRanges";
-import type { BuildingLensFacetState } from "domain/buildingCatalogFacets";
-import type { BuildingLensMetricRangeState } from "domain/buildingLensFilterSummary";
 import { DEFAULT_VIEW_MODE, ViewModeBar } from "mods/GroupedResults/ViewModeBar";
 import type { CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import { setLensView } from "domain/lensViewStore";
 import { useLensView } from "mods/useLensView";
-import { useState } from "react";
+import { memo, useState } from "react";
 import { BUILDING_LENS_CONTROL_PANE_TOTAL } from "domain/buildingLensLayout";
+import {
+  BuildingCatalog$,
+  BuildingCatalogGroupBy$,
+  BuildingCatalogMetricRanges$,
+  BuildingCatalogSortColumn$,
+  BuildingCatalogSortDescending$,
+  BuildingLensFacets$,
+  BuildingLensGroupDimensions$,
+  CurrentSearch$,
+  SelectedAssetPacks$,
+  VanillaSelected$,
+  send,
+  sendSort,
+} from "mods/bindings";
 import styles from "./lensControlPane.module.scss";
-
-const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "BuildingCatalogSortColumn");
-const BuildingCatalogSortDescending$ = bindValue<boolean>(mod.id, "BuildingCatalogSortDescending");
-const BuildingLensMenu$ = bindValue<string>(mod.id, "BuildingLensMenu", "");
-const BuildingCatalogGroupBy$ = bindValue<string>(mod.id, "BuildingCatalogGroupBy", "category");
-// The dimension ids that can act on the current menu. C# judges it over the
-// whole menu set; an empty list means it has not said yet.
-const BuildingLensGroupDimensions$ = bindValue<string[]>(mod.id, "BuildingLensGroupDimensions", []);
-const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch");
-const BuildingLensFacets$ = bindValue<BuildingLensFacetState | null>(mod.id, "BuildingLensFacets", null);
-// Read only to decide which grouping options can act on THIS menu. A page
-// rather than the whole result, deliberately: a dimension that splits nothing
-// on screen is one the player cannot see working either.
-const BuildingCatalogPage$ = bindValue<{ items?: unknown[]; reorderableSortColumns?: string[] } | null>(
-  mod.id,
-  "BuildingCatalog",
-  null
-);
-const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState | null>(
-  mod.id,
-  "BuildingCatalogMetricRanges",
-  null
-);
-// The GAME's pack selection, not one of ours: read so the rail can show what is
-// ticked, written so a rail toggle lands in the same place the vanilla Pack row
-// puts it. See domain/assetPackSelection.
-const SelectedAssetPacks$ = bindValue<ToolbarEntity[]>("toolbar", "selectedAssetPacks", []);
-const VanillaSelected$ = bindValue<boolean>("toolbar", "vanillaSelected", false);
 
 /**
  * What the pane takes out of the panel's width: its own width plus the gap in
@@ -82,12 +60,14 @@ export const LENS_CONTROL_PANE_TOTAL = BUILDING_LENS_CONTROL_PANE_TOTAL;
  * mirroring vanilla's tool-options column, holding everything that acts on the
  * catalog — what narrows it, how it is grouped and ordered, what shape it draws.
  */
-export const LensControlPane = () => {
+export const LensControlPane = memo(function LensControlPane() {
   const { translate } = useLocalization();
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
-  const menu = useValue(BuildingLensMenu$) ?? "";
-  const catalogPage = useValue(BuildingCatalogPage$);
+  // Only for which sort fields can act on these results; see BuildingCatalogPage.
+  const catalogPage = useValue(BuildingCatalog$);
+  // The dimension ids that can act on the current menu. C# judges it over the
+  // whole menu set; an empty list means it has not said yet.
   const offeredDimensions = useValue(BuildingLensGroupDimensions$) ?? [];
   // The fields that can actually reorder these results. The picker drops the
   // rest rather than offering a control that cannot act.
@@ -116,8 +96,7 @@ export const LensControlPane = () => {
     translate(`Tooltip.LABEL[BetterBuildingMenu.GroupBy_${groupBy}]`, groupDimensionLabel(groupBy))
     ?? groupDimensionLabel(groupBy);
 
-  const fire = (command: { method: string; args: readonly any[] }) =>
-    trigger(mod.id, command.method, ...command.args);
+  const fire = send;
 
   // Content is ONE axis over three pieces of state, so a click has to find its
   // way back to whichever owns it — two are the game's, and routing there keeps
@@ -147,7 +126,7 @@ export const LensControlPane = () => {
   // A chip is the same toggle wearing a different hat, so it takes the same
   // route: sending a pack removal through `fire` would address a field we do
   // not own, leaving the chip un-removable.
-  const removeChip = (command: { method: string; args: readonly any[] }) => {
+  const removeChip = (command: Command) => {
     if (isContentFacetCommand(command)) {
       toggleFacetOption(CONTENT_FACET_ID, String(command.args[1]));
       return;
@@ -163,18 +142,7 @@ export const LensControlPane = () => {
 
   const clearLabel = label("Tooltip.LABEL[BetterBuildingMenu.ClearFilters]", "Clear filters");
 
-  const setSort = (column: SortColumn) => {
-    const next = nextSortState({ column: sortColumn, descending }, column);
-
-    // No local echo: the backend owns the order and publishes it back, so
-    // mirroring it here would reintroduce a second source of truth.
-    for (const command of [
-      setSortColumnCommand(next.column),
-      setSortDescendingCommand(next.descending),
-    ]) {
-      trigger(mod.id, command.method, ...command.args);
-    }
-  };
+  const setSort = (column: SortColumn) => sendSort({ column: sortColumn, descending }, column);
 
   return (
     <div className={styles.pane}>
@@ -290,7 +258,7 @@ export const LensControlPane = () => {
                           )}
                           variant="icon"
                           onSelect={() => {
-                            trigger(mod.id, "SetBuildingCatalogGroupBy", dimension.id);
+                            send({ method: "SetBuildingCatalogGroupBy", args: [dimension.id] });
                             setGroupPickerOpen(false);
                           }}
                           aria-label={optionLabel}
@@ -387,7 +355,7 @@ export const LensControlPane = () => {
               // Back to the mode the lens opens in via the constant, not to a
               // named one, so this cannot drift from the default.
               setViewModeChoice(DEFAULT_VIEW_MODE);
-              trigger(mod.id, "ResetBuildingLensMenu");
+              send({ method: "ResetBuildingLensMenu", args: [] });
             }}
           >
             {label("Tooltip.LABEL[BetterBuildingMenu.ResetMenu]", "Reset menu")}
@@ -396,4 +364,4 @@ export const LensControlPane = () => {
       </div>
     </div>
   );
-};
+});

@@ -1,7 +1,6 @@
-import { bindValue, trigger, useValue } from "cs2/api";
+import { useValue } from "cs2/api";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
-import mod from "../../../mod.json";
 import {
   ALL_CATEGORIES_ID,
   allTabTotal,
@@ -10,50 +9,25 @@ import {
   visibleCategories,
   shouldShowCategoryStrip,
   isLensScoped,
-  type MenuCategoryCount,
   type VanillaMenuCategory,
 } from "domain/vanillaMenuCategories";
-import {
-  type MenuBranchCount,
-  type MenuCategoryTabs,
-  expandedTabsFor,
-  branchTabLabel,
-  branchTabTooltip,
-  schoolTierTabs,
-  romanNumeral,
-} from "domain/menuProgression";
+import { expandedTabsFor, branchTabTooltip, schoolTierTabs, romanNumeral } from "domain/menuProgression";
 import { isEducationMenu, isSchoolCategory } from "domain/buildingGroups";
 import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 import styles from "./menuCategoryStrip.module.scss";
-
-const BuildingLensMenuCategories$ = bindValue<VanillaMenuCategory[]>(
-  mod.id,
-  "BuildingLensMenuCategories",
-  []
-);
-const BuildingLensMenuCategory$ = bindValue<string>(mod.id, "BuildingLensMenuCategory", "");
-const BuildingLensMenuCategoryCounts$ = bindValue<MenuCategoryCount[]>(
-  mod.id,
-  "BuildingLensMenuCategoryCounts",
-  []
-);
-const BuildingLensMilestones$ = bindValue<string[]>(mod.id, "BuildingLensMilestones", []);
-const BuildingLensMenuSchoolTierCounts$ = bindValue<MenuBranchCount[]>(
-  mod.id,
-  "BuildingLensMenuSchoolTierCounts",
-  []
-);
-const BuildingLensMenuSchoolTier$ = bindValue<number>(mod.id, "BuildingLensMenuSchoolTier", -1);
-const BuildingLensMenu$ = bindValue<string>(mod.id, "BuildingLensMenu", "");
-const BuildingLensStripTabs$ = bindValue<MenuBranchCount[]>(mod.id, "BuildingLensStripTabs", []);
-const BuildingLensStripTab$ = bindValue<string[]>(mod.id, "BuildingLensStripTab", []);
-const BuildingLensStripAxis$ = bindValue<string>(mod.id, "BuildingLensStripAxis", "");
-const BuildingLensExpandedCategories$ = bindValue<MenuCategoryTabs[]>(
-  mod.id,
-  "BuildingLensExpandedCategories",
-  []
-);
+import {
+  BuildingLensExpandedCategories$,
+  BuildingLensMenu$,
+  BuildingLensMenuCategories$,
+  BuildingLensMenuCategory$,
+  BuildingLensMenuCategoryCounts$,
+  BuildingLensMenuSchoolTier$,
+  BuildingLensMenuSchoolTierCounts$,
+  BuildingLensStripTab$,
+  BuildingLensStripTabs$,
+  send,
+} from "mods/bindings";
 
 /**
  * Vanilla's second tier, rebuilt: the categories, tiers or branches that cut one
@@ -76,7 +50,6 @@ export const MenuCategoryStrip = () => {
   // The row stays single-select but has to show what the rail did.
   const selectedStripTabs = useValue(BuildingLensStripTab$) ?? [];
   const noStripTab = selectedStripTabs.length === 0;
-  const stripAxis = useValue(BuildingLensStripAxis$) ?? "";
   const expandedCategories = useValue(BuildingLensExpandedCategories$) ?? [];
 
   // Vanilla hides its own row below two categories, and a strip offering one
@@ -100,10 +73,10 @@ export const MenuCategoryStrip = () => {
     return null;
   }
 
-  const choose = (id: string) => trigger(mod.id, "SetBuildingLensMenuCategory", id);
-  const chooseBranch = (id: string) => trigger(mod.id, "SetBuildingLensStripTab", id);
+  const choose = (id: string) => send({ method: "SetBuildingLensMenuCategory", args: [id] });
+  const chooseBranch = (id: string) => send({ method: "SetBuildingLensStripTab", args: [id] });
   const chooseSchoolTier = (level: number) =>
-    trigger(mod.id, "SetBuildingLensMenuSchoolTier", level);
+    send({ method: "SetBuildingLensMenuSchoolTier", args: [level] });
 
   // The category prefab's own name is the id, and the game ships a localized
   // string under exactly that id, so a tab reads as the game words it rather

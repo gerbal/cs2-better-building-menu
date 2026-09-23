@@ -1,4 +1,4 @@
-import { bindValue, useValue } from "cs2/api";
+import { useValue } from "cs2/api";
 import { Button } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
@@ -12,16 +12,11 @@ import {
 } from "domain/buildingLensMetricFormat";
 import { canPlace, entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
-import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
 import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
-import type { ZoneFootprint } from "domain/zoningHierarchy";
 import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
-import type { SortColumn } from "domain/buildingCatalogContracts";
 import { useUnitSystem } from "domain/unitSettings";
-import mod from "../../../mod.json";
 import styles from "./buildingList.module.scss";
-
-const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "BuildingCatalogSortColumn", "Name");
+import { BuildingCatalogSortColumn$ } from "mods/bindings";
 
 /**
  * compact — icon and name only.

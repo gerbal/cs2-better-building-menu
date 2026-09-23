@@ -2,12 +2,18 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { renderHtml, entry } from "../harness/render";
 import { TableRow, type TableRowProps } from "../../src/mods/BuildingCatalog/TableRow";
+import { useHoverCardContext } from "../../src/mods/BuildingHoverCard/BuildingHoverCard";
 
 const labels = { place: "Place", inspect: "Details", locked: "Locked", built: "Already built" };
 
+// The table reads the hover card's context once and hands it to every row.
+const TableRowInTable = (props: Omit<TableRowProps, "hoverCard">) => (
+  <TableRow {...props} hoverCard={useHoverCardContext()} />
+);
+
 const row = (over: Partial<TableRowProps> = {}) =>
   renderHtml(
-    <TableRow
+    <TableRowInTable
       entry={entry(7, { name: "Clinic" })}
       expanded={false}
       nameBudget={40}

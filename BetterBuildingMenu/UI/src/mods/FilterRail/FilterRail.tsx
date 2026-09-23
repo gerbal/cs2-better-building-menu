@@ -1,6 +1,4 @@
 import { Dropdown, DropdownItem, DropdownToggle, Scrollable, Tooltip } from "cs2/ui";
-import { getModule } from "cs2/modding";
-import { Theme } from "cs2/bindings";
 import { useLocalization } from "cs2/l10n";
 import { useState } from "react";
 import classNames from "classnames";
@@ -14,18 +12,15 @@ import { textInputValue } from "domain/textInput";
 import lockIcon from "images/lock.svg";
 import unlockIcon from "images/unlock.svg";
 import styles from "./filterRail.module.scss";
+import { GameTextInput, gameClasses } from "mods/gameModules";
 
-const TextInput = getModule("game-ui/common/input/text/text-input.tsx", "TextInput");
 
 /**
  * The game's in-game dropdown theme. cs2/ui's Dropdown defaults to the light
  * settings-screen look, which draws a white panel over the map; taking the
  * game's own theme also keeps its hover, focus and open states.
  */
-const GameDropdownTheme: Theme | any = getModule(
-  "game-ui/game/themes/game-dropdown.module.scss",
-  "classes"
-);
+const GameDropdownTheme = gameClasses("game-ui/game/themes/game-dropdown.module.scss");
 
 /**
  * The menu half of that theme, and only that half: whole, it also replaces the
@@ -110,7 +105,7 @@ export const FilterRail = ({
               content={
                 <div className={styles.menu}>
                   {searchable && (
-                    <TextInput
+                    <GameTextInput
                       className={styles.menuSearch}
                       value={query}
                       placeholder={translate("Tooltip.LABEL[BetterBuildingMenu.FilterOptions]", "Filter options…") ?? "Filter options…"}

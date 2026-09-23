@@ -1,7 +1,7 @@
 import { Button, Scrollable } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
-import type { CSSProperties, ReactNode } from "react";
+import { useMemo, type CSSProperties, type ReactNode } from "react";
 import type { BuildingCatalogEntry } from "domain/buildingCatalog";
 import type { SortColumn } from "domain/buildingCatalogContracts";
 import { getBuildingLensMetricLabel } from "domain/buildingLensLayout";
@@ -14,6 +14,7 @@ import {
 import { flattenGroupedRows } from "domain/buildingGroups";
 import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 import { useUnitSystem } from "domain/unitSettings";
+import { useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { TableRow, type TableRowLabels } from "./TableRow";
 import styles from "./buildingCatalog.module.scss";
 
@@ -72,10 +73,14 @@ export const TableView = ({
   footer,
 }: TableViewProps) => {
   const { translate } = useLocalization();
+  const unitSystem = useUnitSystem();
+  // Read once for every row, which is what the hook asks of its caller.
+  const hoverCard = useHoverCardContext();
   // The player's own thousands/decimal marks, so our columns agree with the
-  // numbers the game is drawing elsewhere on the same screen.
-  const separators = getNumberSeparators(translate, useUnitSystem());
-  const labels: TableRowLabels = {
+  // numbers the game is drawing elsewhere on the same screen. Memoised, with
+  // the labels, so the rows' props hold still between renders.
+  const separators = useMemo(() => getNumberSeparators(translate, unitSystem), [translate, unitSystem]);
+  const labels: TableRowLabels = useMemo(() => ({
     place: translate("Tooltip.LABEL[BetterBuildingMenu.Place]", "Place") ?? "Place",
     inspect: translate("Tooltip.LABEL[BetterBuildingMenu.Inspect]", "Details") ?? "Details",
     locked: translate("Tooltip.LABEL[BetterBuildingMenu.Locked]", "Locked") ?? "Locked",
@@ -83,7 +88,7 @@ export const TableView = ({
       translate("Toolbar.ASSET_ALREADY_BUILT", "")
       || translate("Tooltip.LABEL[BetterBuildingMenu.AlreadyBuilt]", "Already built")
       || "Already built",
-  };
+  }), [translate]);
 
   return (
     <>
@@ -162,6 +167,7 @@ export const TableView = ({
               nameBudget={nameBudget}
               separators={separators}
               labels={labels}
+              hoverCard={hoverCard}
               columnStyle={columnStyle}
               resolveFacetLabel={resolveFacetLabel}
               onPlace={onPlace}

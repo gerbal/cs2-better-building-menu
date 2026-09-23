@@ -1,13 +1,10 @@
-import { bindValue, trigger, useValue } from "cs2/api";
-import { Theme } from "cs2/bindings";
-import { getModule } from "cs2/modding";
+import { useValue } from "cs2/api";
 import { Button, Tooltip } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import { FOCUS_DISABLED } from "cs2/input";
 import classNames from "classnames";
-import { useRef } from "react";
+import { memo, useRef } from "react";
 
-import mod from "../../../mod.json";
 import find from "images/find.svg";
 import { searchChangedCommand } from "domain/buildingCatalogContracts";
 import { MenuCategoryStrip } from "mods/MenuCategoryStrip/MenuCategoryStrip";
@@ -15,12 +12,11 @@ import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaC
 
 import styles from "mods/BuildingMenu/buildingMenuHeader.module.scss";
 import { noteSearchField } from "./searchField";
+import { textInputText } from "domain/textInput";
+import { CurrentSearch$, IsSearchLoading$, send } from "mods/bindings";
+import { GameTextInput, gameClasses } from "mods/gameModules";
 
-const TextInput = getModule("game-ui/common/input/text/text-input.tsx", "TextInput");
-const TextInputTheme: Theme | any = getModule("game-ui/editor/widgets/item/editor-item.module.scss", "classes");
-
-const IsSearchLoading$ = bindValue<boolean>(mod.id, "IsSearchLoading", false);
-const CurrentSearch$ = bindValue<string>(mod.id, "CurrentSearch", "");
+const TextInputTheme = gameClasses("game-ui/editor/widgets/item/editor-item.module.scss");
 
 export interface BuildingMenuHeaderProps {
   /** Narrow panel: the strip and the field share a tighter row. */
@@ -38,7 +34,7 @@ export interface BuildingMenuHeaderProps {
  * The build menu's own header: the category strip, the search field and the
  * game's close X, on one row.
  */
-export const BuildingMenuHeader = ({ small, large, onClose }: BuildingMenuHeaderProps) => {
+export const BuildingMenuHeader = memo(function BuildingMenuHeader({ small, large, onClose }: BuildingMenuHeaderProps) {
   const { translate } = useLocalization();
   const searchRef = useRef(null);
 
@@ -48,15 +44,15 @@ export const BuildingMenuHeader = ({ small, large, onClose }: BuildingMenuHeader
   const localizedLabel = (key: string, fallback: string): string => translate(key, fallback) ?? fallback;
 
   const setSearchText = (value: string) => {
-    const command = searchChangedCommand(value);
-    trigger(mod.id, command.method, ...command.args);
+    send(searchChangedCommand(value));
   };
 
   const handleInputChange = (value: Event) => {
     // So the catalog's Enter listener can tell this box from other text fields.
     noteSearchField(value?.target);
-    if (value?.target instanceof HTMLTextAreaElement) {
-      setSearchText(value.target.value);
+    const text = textInputText(value);
+    if (text !== undefined) {
+      setSearchText(text);
     }
   };
 
@@ -79,7 +75,7 @@ export const BuildingMenuHeader = ({ small, large, onClose }: BuildingMenuHeader
           )}
           {!IsSearchLoading && <img style={{ maskImage: `url(${find})` }} className={styles.searchIcon} alt="" aria-hidden="true" />}
           <div className={styles.searchArea}>
-            <TextInput
+            <GameTextInput
               ref={searchRef}
               multiline={1}
               value={CurrentSearch}
@@ -128,4 +124,4 @@ export const BuildingMenuHeader = ({ small, large, onClose }: BuildingMenuHeader
       </div>
     </div>
   );
-};
+});
