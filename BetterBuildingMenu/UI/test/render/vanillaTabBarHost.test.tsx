@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
 import { beforeEach, describe, it } from "node:test";
 import { renderHtml } from "../harness/render";
 import { resetModules, setModule } from "../harness/stubs/cs2-modding";
+import { declarationsOf, selectorsOf } from "../harness/compiledCss";
 import { VanillaTabBarHost } from "../../src/mods/VanillaTabBarHost/VanillaTabBarHost";
 
 const TAB_BAR = "game-ui/game/components/asset-menu/asset-category-tab-bar/asset-category-tab-bar.tsx";
@@ -35,11 +35,9 @@ describe("the tab bar host stylesheet", () => {
     // The DOM class is hyphenated (asset-category-tab-bar_XYZ); a camel-cased
     // selector matched nothing and left an empty bar and its close button on
     // screen.
-    const scss = readFileSync(
-      new URL("../../src/mods/VanillaTabBarHost/vanillaTabBarHost.module.scss", import.meta.url),
-      "utf8",
-    );
-    assert.match(scss, /\[class\*="asset-category-tab-bar"\]/);
-    assert.doesNotMatch(scss, /assetCategoryTabBar/);
+    const sheet = "mods/VanillaTabBarHost/vanillaTabBarHost.module.scss";
+    const hidden = selectorsOf(sheet).filter((selector) => declarationsOf(sheet, selector).display === "none");
+
+    assert.deepEqual(hidden, [".host > [class*=asset-category-tab-bar]"]);
   });
 });

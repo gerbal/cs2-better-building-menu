@@ -83,10 +83,8 @@
 
 // What the search is, on the far side of the screen from the field that set it.
 .searchContext {
-  overflow: hidden;
+  @include _base.truncate;
   padding: 2rem 12rem 4rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   color: var(--menuText2Normal);
   font-size: var(--fontSizeS);
 }
@@ -127,9 +125,7 @@
 }
 
 .pickerLabel {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @include _base.truncate;
 }
 
 .caret {
