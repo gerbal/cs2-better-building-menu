@@ -32,13 +32,8 @@ the detail behind the structural items.
   files (see [indexing.md](indexing.md)). Moving the menu audit and
   `PopulateAnalyticalData` into classes of their own would let a test reach
   the mapping from a prefab's components to its facts.
-- **An atomic full pass.** Build the new index beside the old one and swap at
-  the end, keeping the old index if the pass throws.
 - **Per-load state.** Replace the static index, caches and registries with one
   object created per city load and handed to the systems that read it.
-- **Refresh from the UI side.** Let `BuildingMenuUISystem.OnUpdate` notice a
-  new `IndexGeneration` and refresh once, while the panel is open, rather than
-  the indexer calling into the UI.
 - **Smaller cleanups.**
   - Name the `BuildingMenuUISystem` partials by responsibility.
   - Settle on one noun for the panel (see the glossary in
