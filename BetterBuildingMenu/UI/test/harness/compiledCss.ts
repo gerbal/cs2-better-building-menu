@@ -47,15 +47,77 @@ export function selectorsOf(path: string): string[] {
  * names the selector, so a renamed class cannot pass a check by absence.
  */
 export function declarationsOf(path: string, selector: string): Record<string, string> {
+  const declarations = declarationsIn(compiledSheet(path), selector);
+  assert.ok(declarations, `${path} has no rule for ${normalize(selector)}`);
+  return declarations;
+}
+
+// The box shorthands a test reads as four sides, and their longhands in
+// sides() order.
+const BOX_SIDES: Readonly<Record<string, readonly string[]>> = {
+  padding: ["padding-top", "padding-right", "padding-bottom", "padding-left"],
+  margin: ["margin-top", "margin-right", "margin-bottom", "margin-left"],
+};
+
+const IMPORTANT = " !important";
+
+/**
+ * declarationsOf over a parsed sheet; undefined when no rule names the
+ * selector.
+ *
+ * Resolved as the engine resolves them, not one entry per property name: a
+ * `padding-right` after a `padding` rewrites that side of the shorthand, and a
+ * `padding` after a `padding-right` rewrites the longhand. Read apart, a test
+ * of the shorthand would pass against a right padding the engine never draws.
+ * An `!important` declaration is not overridden by a later plain one.
+ */
+export function declarationsIn(root: Root, selector: string): Record<string, string> | undefined {
   const wanted = normalize(selector);
-  const rules = topLevelRules(compiledSheet(path)).filter((rule) => rule.selectors.map(normalize).includes(wanted));
-  assert.ok(rules.length > 0, `${path} has no rule for ${wanted}`);
+  const rules = topLevelRules(root).filter((rule) => rule.selectors.map(normalize).includes(wanted));
+  if (rules.length === 0) {
+    return undefined;
+  }
 
   const declarations: Record<string, string> = {};
+  const isImportant = (prop: string) => declarations[prop]?.endsWith(IMPORTANT) ?? false;
+  // False when an earlier !important keeps its value.
+  const set = (prop: string, value: string, important: boolean): boolean => {
+    if (!important && isImportant(prop)) {
+      return false;
+    }
+    declarations[prop] = important ? value + IMPORTANT : value;
+    return true;
+  };
+
   for (const rule of rules) {
     rule.walkDecls((declaration) => {
-      if (declaration.parent === rule) {
-        declarations[declaration.prop] = declaration.important ? `${declaration.value} !important` : declaration.value;
+      if (declaration.parent !== rule) {
+        return;
+      }
+
+      const { prop, value, important } = declaration;
+      if (!set(prop, value, important)) {
+        return;
+      }
+
+      const longhands = BOX_SIDES[prop];
+      if (longhands) {
+        // A shorthand after its longhands sets every side they named.
+        const values = sides(value);
+        longhands.forEach((longhand, side) => {
+          if (longhand in declarations) {
+            set(longhand, values[side], important);
+          }
+        });
+        return;
+      }
+
+      const shorthand = Object.keys(BOX_SIDES).find((box) => BOX_SIDES[box].includes(prop));
+      if (shorthand && shorthand in declarations && (important || !isImportant(shorthand))) {
+        // A longhand after its shorthand replaces that one side of it.
+        const values = sides(declarations[shorthand].replace(IMPORTANT, ""));
+        values[BOX_SIDES[shorthand].indexOf(prop)] = value;
+        declarations[shorthand] = values.join(" ") + (isImportant(shorthand) ? IMPORTANT : "");
       }
     });
   }
