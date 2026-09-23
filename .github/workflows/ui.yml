@@ -1,0 +1,45 @@
+# The UI builds and tests without the game: the test harness stubs its cs2/*
+# modules. See docs/ci.md.
+name: UI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ui:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: BetterBuildingMenu/UI
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # package.json's engines floor: the harness's loader hooks, the CDP
+          # scripts' global WebSocket, and ESLint 10.
+          node-version: 22
+          cache: npm
+          cache-dependency-path: BetterBuildingMenu/UI/package-lock.json
+
+      - name: Install
+        run: npm ci --ignore-scripts
+
+      # Typecheck, lint, then the unit and render suites.
+      - name: Test
+        run: npm test
+
+      - name: Build the bundle
+        run: npm run build
+        env:
+          CSII_UI_OUTPUT_DIR: build
+
+      - name: Check build.sh parses
+        working-directory: .
+        run: bash -n build.sh

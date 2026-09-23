@@ -15,6 +15,19 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(expected, identifier.FormatWords());
 		}
 
+		[Theory]
+		[InlineData("HospitalWing01", "Hospital Wing 01")]
+		[InlineData("EU_Commercial", "EU Commercial")]
+		[InlineData("EUCommercial", "EU Commercial")]
+		[InlineData("Level2Building", "Level 2 Building")]
+		[InlineData("big-park", "big park")]
+		[InlineData("__Leading", "Leading")]
+		[InlineData("", "")]
+		public void SplitsAnIdentifierKeepingItsCase(string identifier, string expected)
+		{
+			Assert.Equal(expected, WordFormat.SplitIdentifier(identifier));
+		}
+
 		[Fact]
 		public void IsTheSameUnderATurkishOs()
 		{
