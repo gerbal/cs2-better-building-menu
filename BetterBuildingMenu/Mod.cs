@@ -69,6 +69,14 @@ namespace BetterBuildingMenu
 				.ToArray();
 		}
 
+		private const string ImagesHost = "betterbuildingmenu";
+
+		// What OnLoad hands the game, so OnDispose can take it back. Assigned in
+		// OnLoad, never by an initializer: the game builds this class with
+		// FormatterServices.GetUninitializedObject, so no constructor runs and an
+		// initialized field is null in game. See ModInstanceTests.
+		private List<LocaleHelper.DictionarySource> _localeSources;
+
 		public void OnLoad(UpdateSystem updateSystem)
 		{
 			Log.Info(nameof(OnLoad));
@@ -78,7 +86,7 @@ namespace BetterBuildingMenu
 
 			if (GameManager.instance.modManager.TryGetExecutableAsset(this, out var asset))
 			{
-				UIManager.defaultUISystem.AddHostLocation("betterbuildingmenu", Path.Combine(Path.GetDirectoryName(asset.path), "images"), false);
+				UIManager.defaultUISystem.AddHostLocation(ImagesHost, Path.Combine(Path.GetDirectoryName(asset.path), "images"), false);
 			}
 
 			// A SECOND host, deliberately not the one above: blackened icon
@@ -87,9 +95,12 @@ namespace BetterBuildingMenu
 			Silhouettes = new SilhouetteIconCache(ContentRoots(), SilhouetteFolder);
 			UIManager.defaultUISystem.AddHostLocation(SilhouetteIcons.HostName, SilhouetteFolder, false);
 
+			_localeSources = new List<LocaleHelper.DictionarySource>();
+
 			foreach (var item in new LocaleHelper("BetterBuildingMenu.Locale.json").GetAvailableLanguages())
 			{
 				GameManager.instance.localizationManager.AddSource(item.LocaleId, item);
+				_localeSources.Add(item);
 			}
 
 			AssetDatabase.global.LoadSettings(nameof(BetterBuildingMenu), Settings, new BetterBuildingMenuSettings(this));
@@ -107,10 +118,34 @@ namespace BetterBuildingMenu
 		{
 			Log.Info(nameof(OnDispose));
 
-			if (Settings != null)
+			// Never throws. The game also calls this from the catch around a failed
+			// OnLoad, and an exception from here escapes that catch and stops every
+			// mod after this one from initializing.
+			try
 			{
-				Settings.UnregisterInOptionsUI();
-				Settings = null;
+				if (Settings != null)
+				{
+					Settings.UnregisterInOptionsUI();
+					Settings = null;
+				}
+
+				// At quit the game disposes mods before it destroys the world, so its
+				// managers are still up; after a failed OnLoad, this list may not be.
+				var localization = GameManager.instance?.localizationManager;
+
+				foreach (var item in _localeSources ?? Enumerable.Empty<LocaleHelper.DictionarySource>())
+				{
+					localization?.RemoveSource(item.LocaleId, item);
+				}
+
+				_localeSources = null;
+
+				UIManager.defaultUISystem?.RemoveHostLocation(ImagesHost);
+				UIManager.defaultUISystem?.RemoveHostLocation(SilhouetteIcons.HostName);
+			}
+			catch (Exception ex)
+			{
+				Log.Error(ex, "OnDispose failed");
 			}
 		}
 	}
