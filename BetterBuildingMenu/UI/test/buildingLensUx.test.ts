@@ -8,9 +8,9 @@ describe("Building Lens filter controls", () => {
       method: "ToggleBuildingLensFacet",
       args: ["buildingType", "School"],
     });
-    assert.deepEqual(toggleBuildingLensFacetCommand("extension", "HospitalWing01"), {
+    assert.deepEqual(toggleBuildingLensFacetCommand("placement", "RequireRoad"), {
       method: "ToggleBuildingLensFacet",
-      args: ["extension", "HospitalWing01"],
+      args: ["placement", "RequireRoad"],
     });
   });
 });

@@ -363,8 +363,9 @@ namespace BetterBuildingMenu.Services
 			// axis and collides with Role, and "can I build this now" is the question
 			// Availability answers; both stay reachable as a Group by dimension.
 			AddArrayGroup(groups, FacetIds.Placement, "Placement", source.Select(entry => entry.PlacementFlags), query.PlacementFlags, FormatFlagLabel);
-			AddArrayGroup(groups, FacetIds.Extension, "Extensions", source.Select(entry => entry.Extensions), query.Extensions, WordFormat.SplitIdentifier);
-			// Density is not a facet either: every type+density tier is a category with
+			// Upgrades are not a facet: most belong to a single building, so a filter by
+			// upgrade narrows to that building, which its hover card and the extension
+			// picker already show. Density is not a facet either: every type+density tier is a category with
 			// its own tab and icon in the top bar, so the rail would be a dropdown of the
 			// tabs above it. It stays reachable as a Group by dimension and as a sort.
 
@@ -373,8 +374,7 @@ namespace BetterBuildingMenu.Services
 				|| HasValues(query.Provenance)
 				|| HasValues(query.DlcIds)
 				|| HasValues(query.Themes)
-				|| HasValues(query.PlacementFlags)
-				|| HasValues(query.Extensions);
+				|| HasValues(query.PlacementFlags);
 
 			return new BuildingCatalogFacetState(groups.ToArray(), hasSelection);
 		}
@@ -473,7 +473,7 @@ namespace BetterBuildingMenu.Services
 			return allPrefabs
 				// Sub-buildings are not list entries, which is the test vanilla runs
 				// too: an upgrade is placed from its parent building's row. They stay
-				// INDEXED, so Extensions, search and the facets all still see them.
+				// INDEXED, so search and the extension picker still see them.
 				.Where(prefab => !prefab.IsServiceUpgrade)
 				// The game's own toolbar row — the theme toggle, the asset packs and
 				// Vanilla/Mods — transcribed rather than reimplemented, so a difference
