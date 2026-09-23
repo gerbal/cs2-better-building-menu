@@ -4,9 +4,6 @@
 		<OutputType>Library</OutputType>
 		<AssemblyName>BetterBuildingMenu</AssemblyName>
 		<RootNamespace>BetterBuildingMenu</RootNamespace>
-		<LangVersion>11.0</LangVersion>
-		<TargetFramework>net48</TargetFramework>
-		<Nullable>enable</Nullable>
 		<Configurations>Debug;Release</Configurations>
 		<Version>0.1.12</Version>
 		<FileVersion>$(Version)</FileVersion>
@@ -59,10 +56,6 @@
 		<Reference Include="Unity.Collections" HintPath="$(CS2ManagedPath)/Unity.Collections.dll" Private="false" />
 		<Reference Include="Unity.Entities" HintPath="$(CS2ManagedPath)/Unity.Entities.dll" Private="false" />
 		<Reference Include="Unity.Mathematics" HintPath="$(CS2ManagedPath)/Unity.Mathematics.dll" Private="false" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Resources\Images\" />
 	</ItemGroup>
 
 </Project>
