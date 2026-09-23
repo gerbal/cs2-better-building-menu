@@ -27,7 +27,8 @@ A test that calls into the game, not just its types, carries
 [docs/ci.md](docs/ci.md).
 
 The ids and numbers both sides use (sort columns, group dimensions, facet ids,
-availability options, the Load more step) are C#'s, and the UI reads them from
+availability options, the Load more step, the panel's height range and width)
+are C#'s, and the UI reads them from
 `UI/src/domain/sharedContracts.generated.ts`. Change the C#, then run
 `CS2_WRITE_CONTRACTS=1 ./build.sh test` and commit the file it writes; the C#
 tests fail while the two disagree. Never edit the generated file by hand.
