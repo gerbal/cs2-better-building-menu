@@ -200,6 +200,16 @@ describe("Vanilla menu watcher lifecycle", () => {
     });
   });
 
+  it("takes over the menu already open when the setting is switched on", async () => {
+    const { watchAction, watchStateWhileOff } = await import("../src/domain/vanillaMenuWatch.ts");
+
+    // Switching the option on mid-session with Education open: without this the
+    // vanilla grid stays up until the player clicks another menu.
+    assert.equal(watchAction(watchStateWhileOff(), 17102), "open");
+    // And nothing to close when no menu is open.
+    assert.equal(watchAction(watchStateWhileOff(), null), "ignore");
+  });
+
   it("names the close trigger the backend registers", async () => {
     const { vanillaMenuDeselectedCommand } = await import("../src/domain/vanillaMenuWatch.ts");
 
