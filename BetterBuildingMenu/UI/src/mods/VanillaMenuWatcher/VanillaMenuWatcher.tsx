@@ -7,6 +7,7 @@ import {
   vanillaMenuDeselectedCommand,
   vanillaMenuSelectedCommand,
   watchAction,
+  watchStateWhileOff,
   type WatchState,
 } from "domain/vanillaMenuWatch";
 import {
@@ -67,7 +68,7 @@ export const VanillaMenuWatcher = () => {
 
   useEffect(() => {
     if (!enabled) {
-      state.current = { seen: false, last: null };
+      state.current = watchStateWhileOff();
       return;
     }
 
