@@ -23,9 +23,6 @@ the detail behind the structural items.
 
 ## Structure
 
-- **Rendering cost.** Memoise the rows, share one hover context, and read
-  the bindings through one module, so a hover or a page does not re-render
-  the whole panel.
 - **Split `PrefabIndexingSystem` further.** It is one partial class across six
   files (see [indexing.md](indexing.md)). Moving the menu audit and
   `PopulateAnalyticalData` into classes of their own would let a test reach
