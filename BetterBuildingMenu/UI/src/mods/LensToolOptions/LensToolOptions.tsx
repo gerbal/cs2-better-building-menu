@@ -10,6 +10,7 @@ import unlockIcon from "images/unlock.svg";
 import { isBankDimension } from "domain/filterRail";
 import { shouldMountInAssetMenu } from "domain/buildingMenuMount";
 import { toggleBuildingLensFacetCommand, type BuildingLensFacetState } from "domain/buildingCatalogFacets";
+import type { AvailabilityOption } from "domain/sharedContracts.generated";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 import { BuildingLensFacets$, LensOwnsCurrentMenu$, send } from "mods/bindings";
 import { ExtensionBoundary } from "mods/ExtensionBoundary";
@@ -25,7 +26,7 @@ import { ExtensionBoundary } from "mods/ExtensionBoundary";
  * plus vanilla's AlreadyBuilt symbol. Plain <img>, no mask and no tint, because
  * these SVGs carry their own fill and this engine cannot composite a vector.
  */
-const OPTION_ICONS: Readonly<Record<string, string>> = {
+const OPTION_ICONS: Readonly<Record<AvailabilityOption, string>> = {
   Locked: lockIcon,
   Unlocked: unlockIcon,
   AlreadyBuilt: "Media/Game/Icons/AlreadyBuilt.svg",
@@ -52,7 +53,7 @@ const BankFacets = ({ facets }: { facets: BuildingLensFacetState | null | undefi
               key={option.id}
               // Vanilla's own icon button, as the Theme row beside this one
               // uses, so the two read as one panel.
-              src={OPTION_ICONS[option.id] ?? ""}
+              src={OPTION_ICONS[option.id as AvailabilityOption] ?? ""}
               selected={option.selected}
               multiSelect
               tooltip={option.label}

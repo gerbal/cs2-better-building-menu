@@ -5,19 +5,10 @@
  */
 import type { Command } from "./command";
 import type { MetricRangeId } from "./buildingCatalogRanges";
+import type { SortColumn } from "./sharedContracts.generated";
 
-export type SortColumn =
-  | "Default"
-  | "Name"
-  | "Category"
-  | "ConstructionCost"
-  | "Upkeep"
-  | "Workers"
-  | "Capacity"
-  | "LotWidth"
-  | "LotDepth"
-  | "BuildingLevel"
-  | "HasParking";
+// C# owns the sort columns; see sharedContracts.generated.ts.
+export type { SortColumn };
 
 export interface TriggerCommand extends Command {
   args: readonly (string | number | boolean)[];

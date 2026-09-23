@@ -4,9 +4,10 @@
  * wider view: the game's row is per category, the rail's is per menu.
  */
 
+import type { FacetId } from "./sharedContracts.generated";
 import type { ToolbarEntity, ToolbarEntityRef } from "./toolbarEntity";
 
-export const CONTENT_FACET_ID = "content";
+export const CONTENT_FACET_ID = "content" satisfies FacetId;
 
 /** Base game — the game's own Vanilla toggle owns it. */
 export const CONTENT_VANILLA = "vanilla";
