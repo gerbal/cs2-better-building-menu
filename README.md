@@ -42,6 +42,8 @@ UI never holds more than a page. Terms are in the glossary in
 * [docs/release-checklist.md](docs/release-checklist.md): what to run before
   a release. [docs/publishing.md](docs/publishing.md): uploading it, from
   Linux.
+* [docs/ci.md](docs/ci.md): what CI runs, and the private mock game
+  assemblies the C# job builds against.
 * [docs/verification.md](docs/verification.md): live checks, dated.
 * [docs/compatibility.md](docs/compatibility.md): other popular mods,
   measured.

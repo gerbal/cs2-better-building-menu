@@ -21,6 +21,11 @@
 ./build.sh all                                           # C# and the UI bundle
 ```
 
+A test that calls into the game, not just its types, carries
+`[Trait("Requires", "Game")]`: CI runs against mock game assemblies, and
+`CS2_TEST_FILTER=Requires!=Game ./build.sh test` runs what it runs. See
+[docs/ci.md](docs/ci.md).
+
 Releases follow [docs/release-checklist.md](docs/release-checklist.md), then
 [docs/publishing.md](docs/publishing.md).
 

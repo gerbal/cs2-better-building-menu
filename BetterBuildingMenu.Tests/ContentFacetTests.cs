@@ -106,7 +106,7 @@ namespace BetterBuildingMenu.Tests
 			// answer, and it reads first the way it does in the game's own row.
 			BuildingCatalogAdapter.ToolbarSelection = VanillaToolbarSelection.None;
 
-			var vanilla = Base with { Id = 1, PrefabName = "V", DlcId = DlcId.BaseGame.id.ToString(System.Globalization.CultureInfo.InvariantCulture) };
+			var vanilla = Base with { Id = 1, PrefabName = "V", DlcId = GameDlcIds.BaseGame.ToString(System.Globalization.CultureInfo.InvariantCulture) };
 			var sanFrancisco = Base with { Id = 2, PrefabName = "SF", DlcId = "1" };
 
 			var group = ContentGroup(vanilla, sanFrancisco);

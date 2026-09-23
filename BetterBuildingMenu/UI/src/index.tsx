@@ -18,7 +18,8 @@ const register: ModRegistrar = (moduleRegistry) => {
 
   // Every component we put into vanilla's tree sits behind a boundary: a
   // render error in ours draws the game's own instead of taking the screen.
-  // Not the useToolOptionsVisible hook, which no boundary can wrap.
+  // Not the useToolOptionsVisible hook, which no boundary can wrap, nor
+  // MouseToolOptions, whose boundary is inside it (see below).
 
   // Replaces the asset grid.
   moduleRegistry.extend("game-ui/game/components/asset-menu/asset-menu.tsx", "AssetMenu", safeExtension("AssetMenu", RemoveVanillaAssetMenuComponent));
@@ -29,8 +30,11 @@ const register: ModRegistrar = (moduleRegistry) => {
   moduleRegistry.extend("game-ui/game/components/upgrades-menu/upgrades-menu.tsx", "UpgradesMenu", safeExtension("UpgradesMenu", ExtensionMenuComponent));
 
   // Availability, drawn into the game's own tool-options bank beside Theme and
-  // Pack; the filter rail draws every other dimension.
-  moduleRegistry.extend("game-ui/game/components/tool-options/mouse-tool-options/mouse-tool-options.tsx", "MouseToolOptions", safeExtension("MouseToolOptions", LensToolOptions));
+  // Pack; the filter rail draws every other dimension. No boundary here: other
+  // mods extend this component by calling it as a function and pushing into its
+  // children, so it must stay a plain function returning vanilla's element. The
+  // boundary sits around our own section inside it instead.
+  moduleRegistry.extend("game-ui/game/components/tool-options/mouse-tool-options/mouse-tool-options.tsx", "MouseToolOptions", LensToolOptions);
   // That bank only mounts for an active tool and browsing is not one, so this
   // holds it open while the lens owns the menu. The registry types every
   // extension as a component wrapper; this one wraps a hook.

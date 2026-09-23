@@ -7,6 +7,8 @@ import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
 import { ExtensionBoundary, safeAppend, safeExtension } from "../../src/mods/ExtensionBoundary";
 import { gameClasses, gameModule, PlainTextInput } from "../../src/mods/gameModules";
 import { LensToolOptions } from "../../src/mods/LensToolOptions/LensToolOptions";
+import register from "../../src/index";
+import { installVanillaRegistry } from "../harness/vanillaRegistry";
 
 // React and the boundary both log a caught render error; the tests count ours.
 const originalError = console.error;
@@ -150,5 +152,54 @@ describe("the tool-options bank", () => {
     assert.ok(bank.findAll((node) => node.props["data-section"] === "Availability").length === 1);
     assert.equal((vanillaElement.props as { children: unknown }).children instanceof Array, false);
     act(() => root!.unmount());
+  });
+
+  it("stays a function a later mod can call and push into, as Anarchy and Find It do", () => {
+    // Their extensions run `const result = Component(); result.props.children.push(...)`.
+    // A boundary or forwardRef in place of our function broke that and took the UI down.
+    const extensions = new Map<string, (component: unknown) => unknown>();
+    register({
+      extend: (_path: string, name: string, extension: (component: unknown) => unknown) => { extensions.set(name, extension); },
+      append: () => undefined,
+    } as never);
+    // register() hands the resolver the registry it was given; put the harness's back.
+    installVanillaRegistry();
+    const vanillaElement = <div data-bank="true"><span>Theme</span><span>Pack</span></div>;
+    const Ours = extensions.get("MouseToolOptions")!(() => vanillaElement) as () => JSX.Element;
+    const TheirsAfterUs = (Component: () => JSX.Element) => () => {
+      const result = Component();
+      (result.props as { children: JSX.Element[] }).children.push(<span key="theirs" data-theirs="true">Anarchy</span>);
+      return result;
+    };
+    const Chain = TheirsAfterUs(Ours);
+    let root: ReactTestRenderer | undefined;
+
+    act(() => { root = create(<Chain />); });
+
+    const bank = root!.root.find((node) => node.props["data-bank"] === "true");
+    assert.equal(bank.findAll((node) => node.props["data-section"] === "Availability").length, 1);
+    assert.equal(bank.findAll((node) => node.props["data-theirs"] === "true").length, 1);
+    act(() => root!.unmount());
+  });
+
+  it("drops only our section when it throws, keeping vanilla's bank", () => {
+    setBinding("BetterBuildingMenu", "BuildingLensFacets", {
+      get groups(): never { throw new Error("our section broke"); },
+      hasSelection: false,
+    });
+    const originalError = console.error;
+    console.error = () => undefined;
+    const vanillaElement = <div data-bank="true"><span data-theme="true">Theme</span></div>;
+    const Bank = LensToolOptions(() => vanillaElement) as () => JSX.Element;
+    let root: ReactTestRenderer | undefined;
+
+    try {
+      act(() => { root = create(<Bank />); });
+      const bank = root!.root.find((node) => node.props["data-bank"] === "true");
+      assert.equal(bank.findAll((node) => node.props["data-theme"] === "true").length, 1);
+    } finally {
+      console.error = originalError;
+      act(() => root?.unmount());
+    }
   });
 });

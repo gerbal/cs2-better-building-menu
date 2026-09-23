@@ -36,7 +36,5 @@ the detail behind the structural items.
   object created per city load and handed to the systems that read it.
 - **Smaller cleanups.**
   - Name the `BuildingMenuUISystem` partials by responsibility.
-  - Delete the C# minimum panel width (`BuildingLensWidth.Min` and `Clamp`):
-    nothing calls it, and it says 1000 where the UI clamps at 735.
   - Settle on one noun for the panel (see the glossary in
     [CONTRIBUTING.md](../CONTRIBUTING.md)).
