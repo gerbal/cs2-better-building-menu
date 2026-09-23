@@ -183,13 +183,26 @@ around the chain they hang off, so measuring outward from the trunk takes the ge
 specialisations — the order the player meets them in. The trunk row is taken from the service's
 own root and is not necessarily zero.
 
-**More than one node** can gate an asset. `DevTreeGates.Pick` chooses by a stated rule rather
-than taking the first match, because the requirements arrive in hash order, which follows entity
-numbering and moves when the installed content does. A node the asset needs (`RequireAll`) comes
-before one of several ways in (`RequireAny`). Among the nodes it needs, the one furthest into the
-tree wins: the player buys it last, so it is what unlocks the asset, and the root and the chain
-below it never are. Among ways in, the nearest wins, since any one of them unlocks it. Ties go
-by label, then icon.
+**More than one node** can gate an asset, and `DevTreeGates.Pick` files it under the one the
+player reaches last. Taking the first match would not do: the requirements arrive in hash order,
+which follows entity numbering and moves when the installed content does. The rule follows the
+game's `UnlockSystem`, which unlocks an asset once every node it needs (`RequireAll`) is bought and
+at least one of its ways in (`RequireAny`).
+
+- **The deepest needed node and the nearest way in, whichever is later.** A tie goes to the needed
+  node. A lone way in needs no special case: the game treats it as needed, and the later of the two
+  is already the deepest.
+- **The asset's own service only**, when any of its gates is in it. Rank orders nodes within one
+  service's tree, so comparing it across services says nothing about which is bought first. With
+  no gate in its own service, the rule runs over the rest.
+- **Ties go by label, then icon, then service.**
+
+The gates are independent nodes, such as the asset's own and the one a building it needs sits
+behind. `ProgressionUtils.CollectSubRequirements` stops at each dev-tree node, so a node's
+ancestors are never among them. It also keeps only the flags of the last edge into each
+requirement. So an asset that needs either of two buildings arrives as needing both, and is
+filed under the deeper of their nodes. That mostly affects service upgrades, which the catalog
+hides.
 
 **Labels and icons travel together**, keyed by node and by service. Keying an icon by label
 collides: every service's root is called "Basic", so all of them would share one entry.
