@@ -34,6 +34,32 @@ const enumMembers = (file: string) =>
 const setting = readFileSync(join(MOD, "Setting.cs"), "utf8");
 const settings = [...setting.matchAll(/public (?:bool|int|float|string) (\w+) \{ get; set; \}/g)].map((m) => m[1]);
 
+// The settings the Options screen draws, which it labels from these keys with
+// no fallback of its own: a missing one shows the raw key in every language.
+const SETTINGS_CLASS = "BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings";
+const MOD_OPTIONS = "BetterBuildingMenu.BetterBuildingMenu.Mod";
+const visibleSettings = [...setting.matchAll(/public (?:bool|int|float|string) (\w+) \{ get; set; \}/g)]
+  .filter((m) => {
+    const before = setting.slice(0, m.index);
+    const attributes = before.slice(Math.max(before.lastIndexOf("}"), before.lastIndexOf(";")));
+    return !attributes.includes("[SettingsUIHidden]");
+  })
+  .map((m) => m[1]);
+const constants = new Map([...setting.matchAll(/public const string (\w+) = "([^"]+)";/g)].map((m) => [m[1], m[2]]));
+const constantsIn = (attribute: string) =>
+  [...setting.matchAll(new RegExp(`\\[${attribute}\\(([^)]*)\\)\\]`, "g"))]
+    .flatMap((m) => m[1].split(",").map((name) => constants.get(name.trim())))
+    .filter((value): value is string => value !== undefined);
+const optionsScreenKeys = [
+  `Options.SECTION[${MOD_OPTIONS}]`,
+  ...constantsIn("SettingsUITabOrder").map((tab) => `Options.TAB[${MOD_OPTIONS}.${tab}]`),
+  ...constantsIn("SettingsUIGroupOrder").map((group) => `Options.GROUP[${MOD_OPTIONS}.${group}]`),
+  ...visibleSettings.flatMap((name) => [
+    `Options.OPTION[${SETTINGS_CLASS}.${name}]`,
+    `Options.OPTION_DESCRIPTION[${SETTINGS_CLASS}.${name}]`,
+  ]),
+];
+
 function builtByCode(key: string): boolean {
   const label = /^Tooltip\.LABEL\[BetterBuildingMenu\.(\w+)\]$/.exec(key)?.[1];
   if (label !== undefined) {
@@ -54,6 +80,14 @@ function builtByCode(key: string): boolean {
 describe("Locale.json against the code", () => {
   it("has an English string for every key the code spells out", () => {
     const missing = [...literalKeys].filter((key) => !(key in locale));
+
+    assert.deepEqual(missing, []);
+  });
+
+  it("has an English string for every label the Options screen draws", () => {
+    // Guards the derivation too: a regex that matched nothing would pass vacuously.
+    assert.ok(visibleSettings.length > 0 && constantsIn("SettingsUIGroupOrder").length > 0);
+    const missing = optionsScreenKeys.filter((key) => !(key in locale));
 
     assert.deepEqual(missing, []);
   });
