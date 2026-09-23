@@ -891,14 +891,15 @@ namespace BetterBuildingMenu.Systems
 
 			// Milestone kept whatever the lock state; requirements only while
 			// locked. See the matching note in ApplyUnlocks.
-			(prefabIndex.UnlockMilestone, var unlockRequirements) = GetUnlockRequirements(entity);
+			var required = CollectRequirements(entity);
+			(prefabIndex.UnlockMilestone, var unlockRequirements) = UnlockRequirementsOf(required);
 			prefabIndex.UnlockRequirements = prefabIndex.IsLocked ? unlockRequirements : Array.Empty<string>();
 
 			// The other half of the progression, and the half that splits a service
 			// menu. After UiMenuName above: an asset the tree never gated falls into
 			// its service's root bucket, and the menu is what names the service.
 			(prefabIndex.DevTreeBranch, prefabIndex.DevTreeBranchIcon, prefabIndex.DevTreeBranchDepth) =
-				GetDevTreeBranch(entity, prefabIndex.UiMenuName);
+				DevTreeBranchOf(required, prefabIndex.UiMenuName);
 			prefabIndex.IsRandom = prefabIndex.SubCategory is not PrefabSubCategory.Networks_Pillars && EntityManager.HasComponent<PlaceholderObjectData>(entity);
 
 			if (prefab.asset?.database == AssetDatabase<ParadoxMods>.instance)
