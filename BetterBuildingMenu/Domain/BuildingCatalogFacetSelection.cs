@@ -86,9 +86,10 @@ namespace BetterBuildingMenu.Domain
 			/// <remarks>
 			/// Ordered the way the player meets them, and the order the control draws: what you can
 			/// build now, what you cannot build yet, what you have already built. The stored order is
-			/// the drawn order — there is no second list to keep in step.
+			/// the drawn order — there is no second list to keep in step. The UI's copy of the
+			/// options is generated from this.
 			/// </remarks>
-			public static readonly string[] All = { Unlocked, Locked, AlreadyBuilt };
+			public static readonly IReadOnlyList<string> All = new[] { Unlocked, Locked, AlreadyBuilt };
 		}
 
 		/// <summary>

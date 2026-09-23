@@ -51,7 +51,7 @@ namespace BetterBuildingMenu.Tests
 			var plain = BuildingCatalogQueryEngine.AvailabilityOf(Base);
 			Assert.Equal(BuildingCatalogFacetSelection.Availability.Unlocked, plain);
 			Assert.Contains(plain, BuildingCatalogFacetSelection.Availability.All);
-			Assert.Equal(3, BuildingCatalogFacetSelection.Availability.All.Length);
+			Assert.Equal(3, BuildingCatalogFacetSelection.Availability.All.Count);
 		}
 
 		[Fact]
