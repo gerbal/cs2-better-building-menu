@@ -21,9 +21,12 @@
 ./build.sh all                                           # C# and the UI bundle
 ```
 
-The C# tests run one class at a time (`TestParallelization.cs`), because the
-index, the placed uniques and the toolbar selection are process-wide statics.
-A test that sets one puts it back before it returns.
+Much of the mod's state is process-wide statics: the index, the placed
+uniques, the toolbar selection, and more on `PrefabIndexingSystem` and `Mod`.
+A test that sets one puts it back whether it passes or fails, in a `finally`
+or in the test class's `Dispose`. The C# tests also run one class at a time
+(`TestParallelization.cs`). Nothing needs that yet, since no class reads
+what another sets, but it keeps that from becoming a race.
 
 A test that calls into the game, not just its types, carries
 `[Trait("Requires", "Game")]`: CI runs against mock game assemblies, and
