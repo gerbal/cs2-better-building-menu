@@ -30,6 +30,17 @@ Tests that need the game's behaviour carry `[Trait("Requires", "Game")]`. CI run
 `CS2_TEST_FILTER=Requires!=Game`, which `build.sh test` passes to `dotnet test --filter`. Run
 without the filter locally, against the real install, they all run.
 
+Two ways a test breaks against the mocks without calling a game method:
+
+- **Reading a static field of a game type** runs its type initializer, which the mocks replace
+  with a throw. `DlcId.Invalid` and `DlcId.BaseGame` are the ones the catalog needs; it compares
+  against `Domain/GameDlcIds` instead, and `GameDlcIdsTests` (tagged `Requires=Game`) pins
+  those constants to the game's values.
+- **A game enum inside `[InlineData]`** cannot be decoded against the mocks, and xUnit drops the
+  cases without reporting anything: the run passes with fewer tests. Pass the member's name
+  (`nameof(AreaType.Residential)`) and parse it in the test. After a refresh, check that the
+  mock run's total is the full run's total less the tagged tests.
+
 ## One-time setup
 
 1. Create an empty **private** repository, `gerbal/cs2-game-refs`. If it is named otherwise,
