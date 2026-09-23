@@ -1,7 +1,7 @@
 import { ModuleRegistryExtend } from "cs2/modding";
 import { useValue } from "cs2/api";
 import { forwardRef } from "react";
-import { LensOwnsCurrentMenu$ } from "./ToolOptionsVisibility";
+import { LensOwnsCurrentMenu$ } from "mods/bindings";
 
 /**
  * Re-renders the vanilla tool options panel whenever lens ownership changes,
