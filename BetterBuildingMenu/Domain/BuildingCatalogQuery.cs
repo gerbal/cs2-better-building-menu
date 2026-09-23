@@ -41,7 +41,6 @@ namespace BetterBuildingMenu.Domain
 		IReadOnlyList<string>? DlcIds = null,
 		IReadOnlyList<string>? Themes = null,
 		IReadOnlyList<string>? PlacementFlags = null,
-		IReadOnlyList<string>? Extensions = null,
 		IReadOnlyList<string>? ZoneTypes = null,
 		// The game's own menu placement — UIObject.m_Group — which is the only
 		// scope there is.
@@ -57,14 +56,13 @@ namespace BetterBuildingMenu.Domain
 		int SchoolTier = -1)
 	{
 		/// <summary>
-		/// The sort fields the picker offers, mirrored by the UI's
-		/// BUILDING_LENS_SORT_OPTIONS.
+		/// The sort fields the picker offers, in its order.
 		/// </summary>
 		/// <remarks>
 		/// Here rather than in the UI because the backend has to answer which of them
-		/// can actually reorder the current set.
+		/// can actually reorder the current set. The UI's copy is generated from this.
 		/// </remarks>
-		public static readonly string[] OfferedSortColumns =
+		public static readonly IReadOnlyList<string> OfferedSortColumns = new[]
 		{
 			// First, and the default. It is the game's own order — see
 			// BuildingCatalogEntry.UIOrder — which no other column reproduces,

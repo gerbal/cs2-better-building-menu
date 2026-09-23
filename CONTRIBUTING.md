@@ -21,10 +21,23 @@
 ./build.sh all                                           # C# and the UI bundle
 ```
 
+Much of the mod's state is process-wide statics: the index, the placed
+uniques, the toolbar selection, and more on `PrefabIndexingSystem` and `Mod`.
+A test that sets one puts it back whether it passes or fails, in a `finally`
+or in the test class's `Dispose`. The C# tests also run one class at a time
+(`TestParallelization.cs`). Nothing needs that yet, since no class reads
+what another sets, but it keeps that from becoming a race.
+
 A test that calls into the game, not just its types, carries
 `[Trait("Requires", "Game")]`: CI runs against mock game assemblies, and
 `CS2_TEST_FILTER=Requires!=Game ./build.sh test` runs what it runs. See
 [docs/ci.md](docs/ci.md).
+
+The ids and numbers both sides use (sort columns, group dimensions, facet ids,
+availability options, the Load more step) are C#'s, and the UI reads them from
+`UI/src/domain/sharedContracts.generated.ts`. Change the C#, then run
+`CS2_WRITE_CONTRACTS=1 ./build.sh test` and commit the file it writes; the C#
+tests fail while the two disagree. Never edit the generated file by hand.
 
 Releases follow [docs/release-checklist.md](docs/release-checklist.md), then
 [docs/publishing.md](docs/publishing.md).
@@ -71,7 +84,7 @@ or the reader, in a sentence.
 | Filter rail | The row of filter icons, each opening a dropdown of one facet's options (`FilterRail`). |
 | Facet | One filter dimension, such as role, source, availability, content, theme, placement or extensions, with its options. Computed in C# (`BuildingCatalogFacet*`). |
 | Index | Every indexed prefab as a `PrefabIndex`, built by `PrefabIndexingSystem` into `BuildingMenuUtil.CategorizedPrefabs`. |
-| Processor | An `IPrefabCategoryProcessor`: decides whether a prefab is indexed, and under which category. |
+| Processor | An `IPrefabCategoryProcessor`: decides whether a prefab is indexed, and under which category. A pass runs them in the order `PrefabCategoryProcessors` lists them. |
 | Full / partial pass | A rebuild of the whole index, or a re-read of the prefabs that changed. See `docs/indexing.md`. |
 | Catalog | The index as the panel sees it. `BuildingCatalogAdapter` projects index entries into `BuildingCatalogEntry` rows, `CatalogView` answers one refresh's questions from them, and `BuildingCatalogQueryEngine` filters, sorts and pages them into a `BuildingCatalogPage`. |
 | Lens state | The query the panel is showing (`BuildingCatalogLensState`), held in C#. |

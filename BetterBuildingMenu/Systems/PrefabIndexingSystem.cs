@@ -10,6 +10,7 @@ using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Domain.Interfaces;
 using BetterBuildingMenu.Utilities;
+using BetterBuildingMenu.Utilities.PrefabCategoryProcessor;
 
 using Game;
 using Game.City;
@@ -26,7 +27,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 
 using Unity.Collections;
 using Unity.Entities;
@@ -155,40 +155,8 @@ namespace BetterBuildingMenu.Systems
 
 			_blackList = new HashSet<string>(reader.ReadToEnd().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries));
 
-			var processors = new List<IPrefabCategoryProcessor>();
-
-			foreach (var type in typeof(PrefabIndexingSystem).Assembly.GetTypes())
-			{
-				if (typeof(IPrefabCategoryProcessor).IsAssignableFrom(type) && !type.IsAbstract)
-				{
-					var constructor = type.GetConstructors()[0];
-					var parameters = constructor.GetParameters();
-					var objectParams = new object[parameters.Length];
-
-					for (var i = 0; i < parameters.Length; i++)
-					{
-						if (parameters[i].ParameterType == typeof(EntityManager))
-						{
-							objectParams[i] = EntityManager;
-						}
-						else if (parameters[i].ParameterType == typeof(PrefabSystem))
-						{
-							objectParams[i] = _prefabSystem;
-						}
-						else if (parameters[i].ParameterType == typeof(ImageSystem))
-						{
-							objectParams[i] = _imageSystem;
-						}
-					}
-
-					processors.Add((IPrefabCategoryProcessor)Activator.CreateInstance(type, objectParams));
-				}
-			}
-
-			// The catch-all runs last: it claims only what the others left.
-			processors.Sort((left, right) =>
-				(left is Utilities.PrefabCategoryProcessor.MenuPlacedPrefabCategoryProcessor ? 1 : 0)
-				- (right is Utilities.PrefabCategoryProcessor.MenuPlacedPrefabCategoryProcessor ? 1 : 0));
+			// In the order PrefabCategoryProcessors lists them, the same on every build.
+			var processors = PrefabCategoryProcessors.Create(new(EntityManager, _imageSystem, _prefabSystem));
 
 			foreach (var processor in processors)
 			{
@@ -306,6 +274,11 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			GameManager.instance.localizationManager.onActiveDictionaryChanged -= OnActiveDictionaryChanged;
+
+			if (_uniqueAssets is not null)
+			{
+				_uniqueAssets.EventUniqueAssetStatusChanged -= OnUniqueAssetStatusChanged;
+			}
 
 			base.OnDestroy();
 		}
@@ -585,6 +558,15 @@ namespace BetterBuildingMenu.Systems
 								|| IsPlacedInAnyMenu(id)));
 
 						Mod.Log.Info($"[PROCESSOR-CENSUS] {pair.Key} indexed={pair.Value.Count} lens={lens}");
+					}
+
+					// A prefab two processors claimed keeps the later one's category,
+					// whatever the earlier one decided. Each pair is named once.
+					foreach (var overlap in ProcessorOverlap.Find(_processors.Select(entry => entry.Processor.GetType().Name), census))
+					{
+						var example = all.TryGetValue(overlap.ExampleId, out var indexed) ? indexed.PrefabName : overlap.ExampleId.ToString(CultureInfo.InvariantCulture);
+
+						Mod.Log.Info($"[PROCESSOR-OVERLAP] {overlap.Later} replaced {overlap.Earlier} for {overlap.Count} prefab(s), e.g. {example}");
 					}
 
 					LogVanillaMenuCoverage();
@@ -957,12 +939,7 @@ namespace BetterBuildingMenu.Systems
 
 			PopulateAnalyticalData(entity, prefabIndex);
 
-			BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any][prefabIndex.Id] = prefabIndex;
-
-			BuildingMenuUtil.CategorizedPrefabs[prefabIndex.Category][PrefabSubCategory.Any][prefabIndex.Id] = prefabIndex;
-
-			BuildingMenuUtil.CategorizedPrefabs[prefabIndex.Category][prefabIndex.SubCategory][prefabIndex.Id] = prefabIndex;
-
+			BuildingMenuUtil.File(BuildingMenuUtil.CategorizedPrefabs, prefabIndex);
 		}
 
 		private string GetAssetName(PrefabBase prefab)

@@ -234,26 +234,6 @@ public sealed class BuildingCatalogQueryEngineTests
     }
 
     [Fact]
-    public void Query_ExtensionFacetMatchesStableExtensionIdentity()
-    {
-        BuildingCatalogEntry extension = SampleEntries[2] with
-        {
-            Id = 9,
-            PrefabName = "HospitalWing01",
-            Name = "Hospital Wing",
-            Extensions = new[] { "HospitalWing01" },
-        };
-
-        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
-            SampleEntries.Append(extension),
-            new BuildingCatalogQuery(Extensions: new[] { "hospitalwing01" }));
-
-        BuildingCatalogEntry entry = Assert.Single(page.Items);
-        Assert.Equal(9, entry.Id);
-        Assert.Equal(1, page.TotalCount);
-    }
-
-    [Fact]
     public void Adapter_ProjectsStablePlacementFlagNames()
     {
         BuildingFlags flags = BuildingFlags.RequireRoad
@@ -338,32 +318,6 @@ public sealed class BuildingCatalogQueryEngineTests
     }
 
     [Fact]
-    public void Adapter_ExtensionFacetUsesReadableStableOptionsAndOmitsEmptyMetadata()
-    {
-        BuildingCatalogEntry extension = SampleEntries[2] with
-        {
-            Id = 9,
-            PrefabName = "HospitalWing01",
-            Extensions = new[] { "HospitalWing01" },
-        };
-
-        BuildingCatalogFacetState state = BuildingCatalogAdapter.BuildFacetState(
-            new[] { SampleEntries[0], extension },
-            new BuildingCatalogQuery(Extensions: new[] { "HospitalWing01" }));
-
-        BuildingCatalogFacetGroup group = Assert.Single(state.Groups, facet => facet.Id == "extension");
-        BuildingCatalogFacetOption option = Assert.Single(group.Options);
-        Assert.Equal("HospitalWing01", option.Id);
-        Assert.Equal("Hospital Wing 01", option.Label);
-        Assert.True(option.Selected);
-
-        BuildingCatalogFacetState empty = BuildingCatalogAdapter.BuildFacetState(
-            new[] { SampleEntries[0] },
-            new BuildingCatalogQuery());
-        Assert.DoesNotContain(empty.Groups, facet => facet.Id == "extension");
-    }
-
-    [Fact]
     public void FacetSelection_TogglesValuesCaseInsensitivelyAndClearsOnlyLensFacets()
     {
         BuildingCatalogQuery selected = BuildingCatalogFacetSelection.Toggle(
@@ -383,15 +337,6 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.Null(cleared.BuildingTypes);
         Assert.Equal("school", cleared.SearchText);
         Assert.Equal(0, cleared.Offset);
-
-        BuildingCatalogQuery extensionSelected = BuildingCatalogFacetSelection.Toggle(
-            new BuildingCatalogQuery(SearchText: "wing", Offset: 50),
-            "extension",
-            "HospitalWing01");
-        Assert.Equal(new[] { "HospitalWing01" }, extensionSelected.Extensions);
-        BuildingCatalogQuery extensionCleared = BuildingCatalogFacetSelection.Clear(extensionSelected);
-        Assert.Null(extensionCleared.Extensions);
-        Assert.Equal("wing", extensionCleared.SearchText);
     }
 
     [Fact]
@@ -769,7 +714,7 @@ public sealed class BuildingCatalogQueryEngineTests
         page.Write(writer);
 
         Assert.Equal(
-            new[] { "items", "id", "prefabName", "name", "category", "subCategory", "categoryLabel", "subCategoryLabel", "thumbnail", "fallbackThumbnail", "silhouetteThumbnail", "uiMenu", "uiCategory", "lotWidth", "lotDepth", "buildingLevel", "zoneType", "hasParking", "isVanilla", "isLocked",
+            new[] { "items", "id", "prefabName", "name", "category", "subCategory", "categoryLabel", "subCategoryLabel", "thumbnail", "fallbackThumbnail", "silhouetteThumbnail", "lotWidth", "lotDepth", "buildingLevel", "zoneType", "hasParking", "isVanilla", "isLocked",
             "isUnique",
             "isAlreadyBuilt", "unlockMilestone", "devTreeBranch", "devTreeBranchDepth", "unlockRequirements", "bonuses", "costIsPerDistance", "parkingSlots", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "supportedUpgrades", "constructionCost", "upkeep", "workers", "households", "capacity", "serviceRange", "serviceFacts", "footprints", "footprintOverflow", "serviceTextFacts", "speedLimit", "networkWidth", "leisureType", "leisureEfficiency", "electricityConsumption", "waterConsumption", "garbageAccumulation", "telecomNeed", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "groupPath", "groupLabelId", "reorderableSortColumns", "totalCount", "offset", "limit", "hasMore", "bestMatchId", "searchText" },
             writer.PropertyNames);
@@ -788,7 +733,7 @@ public sealed class BuildingCatalogQueryEngineTests
     {
         // Vanilla drops service upgrades from every build menu, so a menu-scoped
         // query must not offer what the player cannot place. An unscoped query is
-        // not looking at a menu and must still find them for the Extensions facet.
+        // not looking at a menu, and search still finds them there.
         BuildingCatalogEntry upgrade = SampleEntries[3] with
         {
             Id = 41,
@@ -816,9 +761,9 @@ public sealed class BuildingCatalogQueryEngineTests
 
         BuildingCatalogPage unscoped = BuildingCatalogQueryEngine.Query(
             entries,
-            new BuildingCatalogQuery(Extensions: new[] { "hospitalwing02" }));
+            new BuildingCatalogQuery());
 
-        Assert.Equal(41, Assert.Single(unscoped.Items).Id);
+        Assert.Equal(new[] { 41, 42 }, unscoped.Items.Select(item => item.Id).OrderBy(id => id));
     }
 
     [Fact]
