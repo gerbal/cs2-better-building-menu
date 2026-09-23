@@ -41,7 +41,6 @@ namespace BetterBuildingMenu.Domain
 		IReadOnlyList<string>? DlcIds = null,
 		IReadOnlyList<string>? Themes = null,
 		IReadOnlyList<string>? PlacementFlags = null,
-		IReadOnlyList<string>? Extensions = null,
 		IReadOnlyList<string>? ZoneTypes = null,
 		// The game's own menu placement — UIObject.m_Group — which is the only
 		// scope there is.

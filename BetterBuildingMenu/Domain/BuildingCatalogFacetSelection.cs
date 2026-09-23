@@ -38,7 +38,6 @@ namespace BetterBuildingMenu.Domain
 				// rail writes them through toolbar.setSelectedAssetPacks and they filter
 				// through VanillaToolbarFilter, so there is no field here to toggle.
 				"placement" => query with { PlacementFlags = ToggleValue(query.PlacementFlags, normalizedOption), Offset = 0 },
-				"extension" or "extensions" => query with { Extensions = ToggleValue(query.Extensions, normalizedOption), Offset = 0 },
 				"zone" or "zonetype" => query with { ZoneTypes = ToggleValue(query.ZoneTypes, normalizedOption), Offset = 0 },
 				_ => query,
 			};
@@ -60,7 +59,6 @@ namespace BetterBuildingMenu.Domain
 				Themes = null,
 				PlacementFlags = null,
 				ZoneTypes = null,
-				Extensions = null,
 				// StripTabs is deliberately absent. It is the top bar's selection, which is
 				// navigation like UiCategory beside it, and the menu reset is what drops it.
 				Offset = 0,

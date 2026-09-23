@@ -58,7 +58,6 @@ const DIMENSION_ICONS: Readonly<Record<RailIconId, string>> = {
   content: "coui://betterbuildingmenu/Icons/Colored/StarFilled.svg",
   theme: "coui://betterbuildingmenu/Icons/Colored/HouseAlternative.svg",
   placement: "coui://betterbuildingmenu/Icons/Colored/Road.svg",
-  extension: "coui://betterbuildingmenu/Icons/Colored/ServiceBuilding.svg",
   [RAIL_METRICS_ID]: "coui://betterbuildingmenu/Icons/Standard/StarAll.svg",
 };
 
