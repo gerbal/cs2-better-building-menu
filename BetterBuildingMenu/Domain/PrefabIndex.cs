@@ -103,7 +103,7 @@ namespace BetterBuildingMenu.Domain
 		public string[] Bonuses { get; set; } = Array.Empty<string>();
 		public ThemePrefab? Theme { get; set; }
 
-		/// <summary>Null until the indexer fills it; a processor may fill it first.</summary>
+		/// <summary>The prefab's own asset packs, which AddPrefab always sets; null only before that.</summary>
 		public AssetPackPrefab[]? AssetPacks { get; set; }
 
 		/// <summary>
