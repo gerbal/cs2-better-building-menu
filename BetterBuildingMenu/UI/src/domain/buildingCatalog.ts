@@ -1,3 +1,9 @@
+/** One lot shape, in cells. */
+export interface LotFootprint {
+  width: number;
+  depth: number;
+}
+
 export interface BuildingCatalogEntry {
   id: number;
   prefabName: string;
@@ -86,7 +92,7 @@ export interface BuildingCatalogEntry {
    * rather than cast-read at each surface, because a cast compiles whether or
    * not anything produces the field and hides the gap.
    */
-  footprints?: { width: number; depth: number }[] | null;
+  footprints?: LotFootprint[] | null;
   footprintOverflow?: number | null;
   /** Figures that are words rather than numbers — see serviceFacts.ts. */
   serviceTextFacts?: { key: string; value: string }[] | null;

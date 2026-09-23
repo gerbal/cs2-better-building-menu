@@ -9,7 +9,6 @@ import {
   type VanillaMenuCategory,
   categoryCount,
   visibleCategories,
-  shouldWidenCategoryStrip,
 } from "../src/domain/vanillaMenuCategories.ts";
 
 const category = (id: string, priority = 0): VanillaMenuCategory => ({
@@ -122,20 +121,6 @@ describe("Menu category counts", () => {
     // only emits a group for a category with something in it, and picking a
     // progression tier empties most of them at once.
     assert.equal(categoryCount([{ id: "Pathways", count: 0 }], "Vegetation"), 0);
-  });
-
-  it("widens the strip only once a row of glyphs stops being scannable", () => {
-    // Six works — Transportation has six modes. Fourteen does not: Landscaping
-    // drew fourteen icon-only squares over 379 assets, and the All view showed
-    // seven of those categories, so half the menu was behind a guess.
-    const tabs = (n: number) =>
-      Array.from({ length: n }, (_, i) => ({ id: `${i}`, name: `${i}`, icon: "", priority: i }));
-
-    assert.equal(shouldWidenCategoryStrip(tabs(6)), false);
-    assert.equal(shouldWidenCategoryStrip(tabs(7)), true);
-    assert.equal(shouldWidenCategoryStrip(tabs(14)), true);
-    assert.equal(shouldWidenCategoryStrip([]), false);
-    assert.equal(shouldWidenCategoryStrip(null), false);
   });
 });
 

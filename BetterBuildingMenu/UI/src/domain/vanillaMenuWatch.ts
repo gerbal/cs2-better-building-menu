@@ -39,15 +39,6 @@ export interface WatchState {
   last: number | null;
 }
 
-/**
- * Whether an observed selection is a real user action worth routing. The
- * binding emits its current value on subscribe and re-emits on unrelated
- * toolbar churn, so neither the first observation nor a repeat is a click.
- */
-export function shouldRouteSelection(state: WatchState, index: number | null): boolean {
-  return watchAction(state, index) === "open";
-}
-
 /** What an observed selection asks the watcher to do. */
 export type WatchAction = "ignore" | "open" | "close";
 

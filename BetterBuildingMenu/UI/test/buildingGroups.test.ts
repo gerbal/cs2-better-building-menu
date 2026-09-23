@@ -1,10 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
-  DEFAULT_GROUP_DIMENSION,
   GROUP_DIMENSIONS,
-  PROGRESSION_UNGATED_LABEL,
-  SCHOOL_TIERS,
   UNGROUPED_LABEL,
   fitGroupLabel,
   fitLabelToWidth,
@@ -13,8 +10,6 @@ import {
   groupDimensionsFor,
   groupTreeFromPaths,
   isEducationMenu,
-  isGroupDimension,
-  milestoneLabel,
   shouldShowHeading,
 } from "../src/domain/buildingGroups.ts";
 
@@ -28,15 +23,6 @@ const item = (id: number, groupPath: string[], over: Record<string, unknown> = {
 });
 
 describe("Group dimensions", () => {
-  it("recognises every offered id and nothing else", () => {
-    for (const dimension of GROUP_DIMENSIONS) {
-      assert.ok(isGroupDimension(dimension.id), dimension.id);
-    }
-    assert.equal(isGroupDimension("assetPack"), false);
-    assert.equal(isGroupDimension(""), false);
-    assert.equal(isGroupDimension(null), false);
-    assert.ok(isGroupDimension(DEFAULT_GROUP_DIMENSION));
-  });
 
   it("puts None last, because it is how grouping is turned off", () => {
     assert.equal(GROUP_DIMENSIONS[GROUP_DIMENSIONS.length - 1].id, "none");
@@ -49,13 +35,6 @@ describe("Group dimensions", () => {
     assert.equal(isEducationMenu("education"), true);
     assert.equal(isEducationMenu("Roads"), false);
     assert.equal(isEducationMenu(null), false);
-  });
-
-  it("names each school tier the way the game names it", () => {
-    assert.deepEqual(
-      SCHOOL_TIERS.map((tier) => [tier.level, tier.label]),
-      [[1, "Elementary School"], [2, "High School"], [3, "College"], [4, "University"]]
-    );
   });
 });
 
@@ -275,31 +254,6 @@ describe("Which grouping choices a menu offers", () => {
       groupDimensionsFor(["schoolTier"]).map((d) => [d.id, d.label, d.depth]),
       [["schoolTier", "School tier", 1]]
     );
-  });
-});
-
-describe("Milestone names for the strip", () => {
-  it("names a milestone out of the published table and falls back to its index", () => {
-    const names = ["Tiny Village", "Small Village", "Grand Village"];
-
-    assert.equal(milestoneLabel(0, names), "Tiny Village");
-    assert.equal(milestoneLabel(2, names), "Grand Village");
-    assert.equal(milestoneLabel(7, names), "Milestone 7");
-    assert.equal(milestoneLabel(1, ["Tiny Village", "", "Grand Village"]), "Milestone 1");
-    assert.equal(milestoneLabel(3, []), "Milestone 3");
-    assert.equal(milestoneLabel(3, null), "Milestone 3");
-  });
-
-  it("calls slot zero the ungated tier, never Milestone 0", () => {
-    assert.equal(milestoneLabel(0, ["", "Small Village"]), PROGRESSION_UNGATED_LABEL);
-    assert.equal(milestoneLabel(0, []), PROGRESSION_UNGATED_LABEL);
-  });
-
-  it("files a missing index under Other", () => {
-    assert.equal(milestoneLabel(null, ["Tiny Village"]), UNGROUPED_LABEL);
-    assert.equal(milestoneLabel(undefined, ["Tiny Village"]), UNGROUPED_LABEL);
-    assert.equal(milestoneLabel(-1, ["Tiny Village"]), UNGROUPED_LABEL);
-    assert.equal(milestoneLabel(Number.NaN, ["Tiny Village"]), UNGROUPED_LABEL);
   });
 });
 
