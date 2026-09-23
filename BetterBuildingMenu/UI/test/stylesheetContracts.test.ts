@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, it } from "node:test";
-import { BUILDING_LENS_MIN_HEIGHT } from "../src/domain/buildingLensLayout.ts";
+import { BUILDING_LENS_MIN_HEIGHT, LENS_RESIZE_HANDLE_HEIGHT } from "../src/domain/buildingLensLayout.ts";
 
 /**
  * Stylesheet contracts: layout rules Cohtml gets wrong or the design pins,
@@ -11,6 +11,7 @@ import { BUILDING_LENS_MIN_HEIGHT } from "../src/domain/buildingLensLayout.ts";
 const read = (relative: string): string => readFileSync(new URL(relative, import.meta.url), "utf8");
 
 const buildingCatalogStyles = read("../src/mods/BuildingCatalog/buildingCatalog.module.scss");
+const lensGeometry = read("../src/_lensGeometry.scss");
 const lensControlPaneStyles = read("../src/mods/LensControlPane/lensControlPane.module.scss");
 const surfaceStylesFor = () => read("../src/mods/BuildingMenu/buildingMenuSurface.module.scss");
 const groupedResultsStyles = read("../src/mods/GroupedResults/groupedResults.module.scss");
@@ -85,12 +86,12 @@ describe("Building Lens stylesheet contracts", () => {
   });
 
   it("keeps the trailing reserve and the name budget agreeing", () => {
-    // buildingCatalog.module.scss is the authority for what a row reserves to
-    // the right of its name, and buildingLensLayout mirrors it so the name can
-    // be elided to fit. A control dropped from one mis-sizes every name.
-    assert.match(buildingCatalogStyles, /\$table-trailing-reserve: \$row-padding-right \+ \$row-details-width \+ \$row-outer-padding-right \+ \$row-gap;/);
-    assert.match(buildingCatalogStyles, /\$row-details-width: 26rem;/);
-    assert.doesNotMatch(buildingCatalogStyles, /\$row-place-width/, "Place is the row now; its reserve is gone");
+    // lensGeometry.scss states what a row reserves to the right of its name,
+    // and buildingLensLayout reads it so the name can be elided to fit. A
+    // control dropped from the reserve mis-sizes every name.
+    assert.match(lensGeometry, /\$table-trailing-reserve: \$row-padding-right \+ \$row-details-width \+ \$row-outer-padding-right \+ \$row-gap;/);
+    assert.match(lensGeometry, /\$row-details-width: 26rem;/);
+    assert.doesNotMatch(lensGeometry + buildingCatalogStyles, /\$row-place-width/, "Place is the row now; its reserve is gone");
   });
 
   it("spaces the header's columns as the rows space their cells", () => {
@@ -123,9 +124,10 @@ describe("Building Lens stylesheet contracts", () => {
     // In the flow above the strip it cannot be occluded by it.
     assert.doesNotMatch(strip, /position:\s*absolute/);
     // Taller than the mark it draws, so the edge is grabbable without aiming.
-    assert.match(strip, /height:\s*14rem/);
+    // The strip is drawn at the height a drag measures against.
+    assert.match(strip, /height:\s*\$handle-height/);
     const gripHeight = Number(grip.match(/height:\s*(\d+)rem/)?.[1]);
-    assert.ok(gripHeight > 0 && gripHeight < 14, `grip height ${gripHeight}rem`);
+    assert.ok(gripHeight > 0 && gripHeight < LENS_RESIZE_HANDLE_HEIGHT, `grip height ${gripHeight}rem`);
   });
 
   it("announces the drag the way the game does: its cursors, its thumb's weight", () => {
