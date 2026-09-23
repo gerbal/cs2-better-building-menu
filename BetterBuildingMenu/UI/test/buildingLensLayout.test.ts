@@ -14,6 +14,7 @@ import {
   BUILDING_LENS_MAX_HEIGHT,
   BUILDING_LENS_DEFAULT_HEIGHT,
   BUILDING_LENS_CONTROL_PANE_TOTAL,
+  BUILDING_LENS_PANEL_CHROME_WIDTH,
   BUILDING_LENS_TABLE_ROW_FURNITURE,
   LENS_RESIZE_HANDLE_HEIGHT,
 } from "../src/domain/buildingLensLayout.ts";
@@ -132,6 +133,15 @@ describe("Building Lens catalog height", () => {
     for (const bad of [0, -1, Number.NaN, Number.POSITIVE_INFINITY, undefined]) {
       assert.equal(draggedBuildingLensHeight(400, 500, 440, bad), draggedBuildingLensHeight(400, 500, 440, 2 / 3));
     }
+  });
+});
+
+describe("the panel's width", () => {
+  it("and its chrome fill the band beside the tool columns, and no more", () => {
+    // The band left free beside the left-aligned tool columns, at the layout's
+    // reference resolution. C# sizes the panel (BuildingLensWidth.Max, generated)
+    // and the UI adds its chrome, so a wider chrome pushes the panel past it.
+    assert.equal(BUILDING_LENS_MAX_WIDTH + BUILDING_LENS_PANEL_CHROME_WIDTH, 1476);
   });
 });
 
