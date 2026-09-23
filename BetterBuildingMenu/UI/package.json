@@ -1,42 +1,42 @@
 {
-  "main": "build/index.js",
-  "types": "build/index.d.ts",
+  "name": "better-building-menu-ui",
+  "private": true,
   "engines": {
-    "node": ">=18"
+    "node": ">=22.13"
   },
   "scripts": {
     "build": "webpack",
-    "dev": "webpack --watch",
-    "test": "npm run test:unit && npm run test:render",
+    "dev": "webpack --watch --mode development",
+    "typecheck": "tsc --noEmit -p . && tsc -p tsconfig.test.json",
+    "lint": "eslint .",
+    "test": "npm run typecheck && npm run lint && npm run test:unit && npm run test:render",
     "update": "npx create-csii-ui-mod update",
     "clean": "npx create-csii-ui-mod clean",
     "test:unit": "node --no-warnings --import ./test/harness/register.mjs --test test/*.test.ts",
     "test:render": "node --no-warnings --import ./test/harness/register.mjs --test test/render/*.test.tsx"
   },
-  "exclude": [
-    "node_modules",
-    "build"
-  ],
   "dependencies": {
     "classnames": "^2.3.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@swc/core": "^1.11.24",
+    "@types/node": "^22.20.4",
     "@types/react": "^18.0.26",
     "@types/react-dom": "^18.0.6",
     "@types/react-test-renderer": "^18.3.1",
     "css-loader": "^6.7.1",
+    "eslint": "^10.11.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "mini-css-extract-plugin": "^2.6.1",
     "react-test-renderer": "^18.3.1",
     "sass": "1.69.5",
     "sass-loader": "^13.0.2",
-    "style-loader": "^3.3.3",
-    "swc-loader": "^0.2.3",
     "terser-webpack-plugin": "^5.3.10",
     "ts-loader": "^9.5.1",
-    "tsconfig-paths-webpack-plugin": "^4.1.0",
-    "typescript": "^4.8.4",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.70.1",
     "webpack": "^5.74.0",
     "webpack-cli": "^4.10.0"
   }
