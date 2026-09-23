@@ -32,7 +32,7 @@ import {
 } from "domain/buildingLensFilterSummary";
 import type { BuildingLensFacetState } from "domain/buildingCatalogFacets";
 import { menuSurfacePort } from "domain/menuSurfacePort";
-import { enterDecision, getSearchScopeNotice, isEnterForSearch } from "domain/buildingSearchRank";
+import { enterDecision, getSearchScopeNotice, isEnterForSearch, isPlainEnter } from "domain/buildingSearchRank";
 import { isSearchField } from "mods/BuildingMenu/searchField";
 import { canPlace } from "domain/buildingLockState";
 import { getLensAnchorKey, getLensView, setLensAnchor, setLensView } from "domain/lensViewStore";
@@ -64,9 +64,6 @@ const BuildingCatalogMatchesElsewhere$ = bindValue<number>(mod.id, "BuildingCata
 // default, resolved on the C# side (BuildingCatalogGrouping.Effective) so this
 // component reads it rather than deriving and pushing it back.
 const BuildingCatalogGroupBy$ = bindValue<string>(mod.id, "BuildingCatalogGroupBy", "category");
-
-/** Enter, by code; see the listener below. */
-const ENTER_KEY_CODE = 13;
 
 /** Grid recognises, List scans, Table compares. */
 type ViewMode = CatalogViewMode;
@@ -257,14 +254,15 @@ export const BuildingCatalogComponent = () => {
   }, [items, bestMatchId, pageSearch, currentSearch]);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      // Both spellings: Cohtml leaves `key` empty for some keys (see Escape in
-      // VanillaMenuWatcher), and `keyCode` is the one it fills.
-      if (event.key === "Enter" || event.keyCode === ENTER_KEY_CODE) onEnter.current(event);
+      if (isPlainEnter(event)) onEnter.current(event);
     };
 
-    document.addEventListener("keydown", onKey);
+    // Capture phase: the game's app container stops keydown propagation, so a
+    // bubble listener on the document never hears an Enter typed in the search
+    // box. VanillaMenuWatcher's Escape listens the same way.
+    document.addEventListener("keydown", onKey, true);
 
-    return () => document.removeEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey, true);
   }, []);
 
 
