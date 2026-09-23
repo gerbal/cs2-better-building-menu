@@ -101,8 +101,10 @@ namespace BetterBuildingMenu.Domain
 		/// CityModifierData for citywide effects and LocalModifierData for radius ones.
 		/// </remarks>
 		public string[] Bonuses { get; set; } = Array.Empty<string>();
-		public ThemePrefab Theme { get; set; }
-		public AssetPackPrefab[] AssetPacks { get; set; }
+		public ThemePrefab? Theme { get; set; }
+
+		/// <summary>Null until the indexer fills it; a processor may fill it first.</summary>
+		public AssetPackPrefab[]? AssetPacks { get; set; }
 
 		/// <summary>
 		/// What the game's own toolbar filter row knows about this asset.
@@ -169,7 +171,7 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>
 		/// The lot shapes a zone grows, for the card's footprint glyphs.
 		/// </summary>
-		public ZoneFootprint[] Footprints { get; set; }
+		public ZoneFootprint[]? Footprints { get; set; }
 
 		/// <summary>Shapes beyond the ones drawn, as a "+N".</summary>
 		public int FootprintOverflow { get; set; }

@@ -375,7 +375,7 @@ namespace BetterBuildingMenu.Systems
 		}
 
 		/// <summary>The lot shapes a zone grows, or none.</summary>
-		public static ZoneLotSizes GetZoneLotSizes(Entity zonePrefab) =>
+		public static ZoneLotSizes? GetZoneLotSizes(Entity zonePrefab) =>
 			_zoneLotSizeCache != null && _zoneLotSizeCache.TryGetValue(zonePrefab, out var sizes)
 				? sizes
 				: null;

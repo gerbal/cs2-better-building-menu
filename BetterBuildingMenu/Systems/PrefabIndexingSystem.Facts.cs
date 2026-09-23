@@ -636,7 +636,7 @@ namespace BetterBuildingMenu.Systems
 		/// <summary>The map feature an extractor building requires, or null when it is not one.
 		/// PrefabUISystem.RequiredResourceBinder.GetExtractorType, transcribed: an upgrade defers to its
 		/// building, whose manufactured resource must itself require a natural resource.</summary>
-		private string GetExtractorFeature(Entity entity)
+		private string? GetExtractorFeature(Entity entity)
 		{
 			var building = entity;
 			if (EntityManager.TryGetBuffer<ServiceUpgradeBuilding>(entity, true, out var upgradeOf) && upgradeOf.Length >= 1)
@@ -728,7 +728,7 @@ namespace BetterBuildingMenu.Systems
 		/// upgrades, BuildingModule for the modules signature towers take — filtered and ordered as it does.</remarks>
 		private (string[] DisplayNames, string[] PrefabNames) GetSupportedUpgrades(Entity entity)
 		{
-			List<(int Priority, string Name, string PrefabName)> found = null;
+			List<(int Priority, string Name, string PrefabName)>? found = null;
 
 			if (EntityManager.TryGetBuffer<BuildingUpgradeElement>(entity, true, out var upgrades))
 			{
@@ -760,7 +760,7 @@ namespace BetterBuildingMenu.Systems
 				ordered.Select(entry => entry.PrefabName).ToArray());
 		}
 
-		private void CollectUpgrade(Entity upgrade, ref List<(int Priority, string Name, string PrefabName)> found)
+		private void CollectUpgrade(Entity upgrade, ref List<(int Priority, string Name, string PrefabName)>? found)
 		{
 			if (!EntityManager.TryGetComponent<UIObjectData>(upgrade, out var ui))
 			{

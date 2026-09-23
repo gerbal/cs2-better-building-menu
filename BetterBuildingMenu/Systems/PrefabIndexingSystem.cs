@@ -429,9 +429,7 @@ namespace BetterBuildingMenu.Systems
 
 			foreach (var prefab in BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any])
 			{
-				var thumbnail = prefab.Thumbnail ?? prefab.FallbackThumbnail;
-
-				if (string.IsNullOrEmpty(thumbnail))
+				if ((prefab.Thumbnail ?? prefab.FallbackThumbnail) is not { Length: > 0 } thumbnail)
 				{
 					continue;
 				}
@@ -672,7 +670,7 @@ namespace BetterBuildingMenu.Systems
 #endif
 						}
 
-						PrefabIndex prefabIndex = null;
+						PrefabIndex? prefabIndex = null;
 
 						try
 						{

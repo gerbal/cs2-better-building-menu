@@ -6,7 +6,6 @@ namespace BetterBuildingMenu.Utilities
     internal class FolderUtil
     {
         public static string ContentFolder { get; }
-        public static string SettingsFolder { get; }
 
         static FolderUtil()
         {
