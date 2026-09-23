@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { fileURLToPath } from "node:url";
-import * as sass from "sass";
+import { declarationsOf, rem, sides } from "./harness/compiledCss.ts";
 import {
   getBuildingLensRowGeometry,
   getBuildingLensDensity,
@@ -18,21 +17,6 @@ import {
   LENS_RESIZE_HANDLE_HEIGHT,
 } from "../src/domain/buildingLensLayout.ts";
 
-const src = fileURLToPath(new URL("../src/", import.meta.url));
-
-/** A top-level rule's declarations in a compiled sheet, the last of each winning. */
-function compiledRule(sheet: string, selector: string): Record<string, string> {
-  const css = "\n" + sass.compile(src + sheet, { loadPaths: [src], logger: sass.Logger.silent }).css;
-  const start = css.indexOf(`\n${selector} {`);
-  assert.ok(start >= 0, `${sheet} has no ${selector} rule`);
-  const body = css.slice(css.indexOf("{", start) + 1, css.indexOf("}", start));
-
-  return Object.fromEntries(
-    body.split(";").map((declaration) => declaration.split(":").map((part) => part.trim())).filter(([name, value]) => name && value)
-  );
-}
-
-const rem = (length: string | undefined): number => Number(/^(\d+(?:\.\d+)?)rem$/.exec(length ?? "")?.[1] ?? Number.NaN);
 
 describe("Building Lens panel geometry", () => {
   it("maps exact outer-width boundaries to density tiers", () => {
@@ -229,26 +213,26 @@ describe("sizes the stylesheets draw", () => {
   // Read from each sheet's `:export`, so the numbers cannot drift from the
   // sheet; what is checked here is that the export sums the rules it names.
   it("the row's furniture is what the header and the row spend beside the name", () => {
-    const header = compiledRule("mods/BuildingCatalog/buildingCatalog.module.scss", ".columnHeader[data-rows-scrollable=true]");
-    const row = compiledRule("mods/BuildingCatalog/buildingCatalog.module.scss", ".rowSelect");
-    const thumbnail = compiledRule("mods/BuildingCatalog/buildingCatalog.module.scss", ".thumbnail");
+    const header = declarationsOf("mods/BuildingCatalog/buildingCatalog.module.scss", ".columnHeader[data-rows-scrollable=true]");
+    const row = declarationsOf("mods/BuildingCatalog/buildingCatalog.module.scss", ".rowSelect");
+    const thumbnail = declarationsOf("mods/BuildingCatalog/buildingCatalog.module.scss", ".thumbnail");
 
     // The trailing reserve and the rows' scrollbar, the row's left padding, the
     // thumbnail and its gap.
-    const drawn = rem(header["padding-right"]) + rem(row.padding.split(/\s+/)[3]) + rem(thumbnail.width) + rem(thumbnail["margin-right"]);
+    const drawn = rem(header["padding-right"]) + rem(sides(row.padding)[3]) + rem(thumbnail.width) + rem(thumbnail["margin-right"]);
 
     assert.ok(Number.isFinite(drawn) && drawn > 0, `drawn ${drawn}`);
     assert.equal(BUILDING_LENS_TABLE_ROW_FURNITURE, drawn);
   });
 
   it("the control pane's total is its width and the gap beside it", () => {
-    const pane = compiledRule("mods/LensControlPane/lensControlPane.module.scss", ".pane");
+    const pane = declarationsOf("mods/LensControlPane/lensControlPane.module.scss", ".pane");
 
     assert.equal(BUILDING_LENS_CONTROL_PANE_TOTAL, rem(pane.width) + rem(pane["margin-left"]));
   });
 
   it("a drag measures against the strip's real height", () => {
-    const strip = compiledRule("mods/LensResizeHandle/lensResizeHandle.module.scss", ".resizeHandle");
+    const strip = declarationsOf("mods/LensResizeHandle/lensResizeHandle.module.scss", ".resizeHandle");
 
     assert.equal(LENS_RESIZE_HANDLE_HEIGHT, rem(strip.height));
   });
