@@ -96,35 +96,6 @@
   color: var(--accentColorNormal);
 }
 
-// The rail keeps its own popover positioning; this only reserves its place in
-// the flow between the breadcrumbs and the filters they produced.
-.railSlot {
-  display: flex;
-  align-items: center;
-
-  // Inside the chip row the rail is one control among several, not a band.
-  :global(*) > div {
-    border-bottom: none;
-  }
-}
-
-.clearAll {
-  @include _base.transparentButton(false, true);
-  width: auto !important;
-  height: 26rem;
-  margin-left: auto;
-  padding: 0 8rem;
-  border-radius: 13rem;
-  background-color: rgba(0, 0, 0, 0.25);
-  color: var(--accentColorNormal);
-  white-space: nowrap;
-  font-size: var(--fontSizeXS);
-}
-
-.clearAll:hover {
-  background-color: rgba(255, 255, 255, 0.12);
-}
-
 .picker {
   position: absolute;
   top: 100%;
