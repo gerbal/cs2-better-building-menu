@@ -100,7 +100,7 @@ namespace BetterBuildingMenu.Services
 			}
 
 			bool matchesDlc = dlcChosen
-				&& prefab.DlcId != DlcId.Invalid
+				&& prefab.DlcId.id != GameDlcIds.Invalid
 				&& dlcIds!.Any(id => string.Equals(
 					id,
 					prefab.DlcId.id.ToString(CultureInfo.InvariantCulture),
@@ -351,19 +351,19 @@ namespace BetterBuildingMenu.Services
 			BuildingCatalogEntry[] source = entries.ToArray();
 			var groups = new List<BuildingCatalogFacetGroup>();
 
-			AddValueGroup(groups, "buildingType", "Role", source.Select(entry => entry.BuildingType), query.BuildingTypes, FormatFacetWords);
+			AddValueGroup(groups, "buildingType", "Role", source.Select(entry => entry.BuildingType), query.BuildingTypes, WordFormat.SplitIdentifier);
 			AddValueGroup(groups, "provenance", "Source", source.Select(entry => entry.Provenance), query.Provenance, FormatProvenanceLabel);
 			// Progression, which the vanilla menu shows only by greying an asset out.
 			AddAvailabilityGroup(groups, source, query.Availability);
 			// Where it came from, next to who made it: one axis, one place.
 			// See AddContentGroup.
 			AddContentGroup(groups, packScope is null ? source : packScope.ToArray(), query);
-			AddValueGroup(groups, "theme", "Theme", source.Select(entry => entry.Theme), query.Themes, FormatFacetWords);
+			AddValueGroup(groups, "theme", "Theme", source.Select(entry => entry.Theme), query.Themes, WordFormat.SplitIdentifier);
 			// Neither unlock modality is a facet. Development restates the strip's own
 			// axis and collides with Role, and "can I build this now" is the question
 			// Availability answers; both stay reachable as a Group by dimension.
 			AddArrayGroup(groups, "placement", "Placement", source.Select(entry => entry.PlacementFlags), query.PlacementFlags, FormatFlagLabel);
-			AddArrayGroup(groups, "extension", "Extensions", source.Select(entry => entry.Extensions), query.Extensions, FormatFacetWords);
+			AddArrayGroup(groups, "extension", "Extensions", source.Select(entry => entry.Extensions), query.Extensions, WordFormat.SplitIdentifier);
 			// Density is not a facet either: every type+density tier is a category with
 			// its own tab and icon in the top bar, so the rail would be a dropdown of the
 			// tabs above it. It stays reachable as a Group by dimension and as a sort.
@@ -704,7 +704,7 @@ namespace BetterBuildingMenu.Services
 				CostIsPerDistance: prefab.CostIsPerDistance,
 				ParkingSlots: prefab.ParkingSlots,
 				PdxModsId: prefab.PdxModsId ?? string.Empty,
-				DlcId: prefab.DlcId == DlcId.Invalid ? null : prefab.DlcId.id.ToString(),
+				DlcId: prefab.DlcId.id == GameDlcIds.Invalid ? null : prefab.DlcId.id.ToString(),
 				Theme: prefab.Theme?.name,
 				AssetPacks: prefab.AssetPacks?.Where(pack => pack is not null).Select(pack => pack.name).Where(name => !string.IsNullOrWhiteSpace(name)).ToArray() ?? Array.Empty<string>(),
 				AssetPackIndices: prefab.VanillaFacts.AssetPacks?.ToArray() ?? Array.Empty<int>(),
@@ -752,7 +752,7 @@ namespace BetterBuildingMenu.Services
 			BuildingCatalogFacetOption[] options = BuildingCatalogFacetSelection.Availability.All
 				.Select(value => new BuildingCatalogFacetOption(
 					value,
-					FormatFacetWords(value),
+					WordFormat.SplitIdentifier(value),
 					selected is not null
 						&& selected.Any(option => string.Equals(option, value, StringComparison.OrdinalIgnoreCase))))
 				.ToArray();
@@ -826,7 +826,7 @@ namespace BetterBuildingMenu.Services
 			{
 				options.Add(new BuildingCatalogFacetOption(
 					ContentOption.Vanilla,
-					FormatDlcLabel(DlcId.BaseGame.id.ToString(CultureInfo.InvariantCulture)),
+					FormatDlcLabel(GameDlcIds.BaseGame.ToString(CultureInfo.InvariantCulture)),
 					ToolbarSelection.VanillaSelected));
 			}
 
@@ -865,7 +865,7 @@ namespace BetterBuildingMenu.Services
 		private static bool IsBaseGameContent(BuildingCatalogEntry entry) =>
 			string.Equals(
 				entry.DlcId,
-				DlcId.BaseGame.id.ToString(CultureInfo.InvariantCulture),
+				GameDlcIds.BaseGame.ToString(CultureInfo.InvariantCulture),
 				StringComparison.Ordinal);
 
 		private static void AddArrayGroup(
@@ -946,7 +946,7 @@ namespace BetterBuildingMenu.Services
 				return id;
 			}
 
-			if (numericId == DlcId.BaseGame.id)
+			if (numericId == GameDlcIds.BaseGame)
 			{
 					// Deliberately not "Base game": the Source facet already uses that
 					// label for content shipped by the studio rather than by a mod, and two
@@ -964,7 +964,7 @@ namespace BetterBuildingMenu.Services
 				{
 					return LocaleHelper.Translate(
 						$"Common.DLC_TITLE[{internalName}]",
-						LocaleHelper.Translate($"Assets.NAME[{internalName}]", FormatFacetWords(internalName)));
+						LocaleHelper.Translate($"Assets.NAME[{internalName}]", WordFormat.SplitIdentifier(internalName)));
 				}
 			}
 			catch
@@ -988,47 +988,7 @@ namespace BetterBuildingMenu.Services
 				return "Custom content";
 			}
 
-			return FormatFacetWords(value);
-		}
-
-		private static string FormatFacetWords(string value)
-		{
-			if (string.IsNullOrWhiteSpace(value))
-			{
-				return value;
-			}
-
-			var label = new StringBuilder(value.Length + 8);
-			for (int index = 0; index < value.Length; index++)
-			{
-				char current = value[index];
-				if (current == '_' || current == '-')
-				{
-					if (label.Length > 0 && label[label.Length - 1] != ' ')
-					{
-						label.Append(' ');
-					}
-
-					continue;
-				}
-
-				char previous = index > 0 ? value[index - 1] : '\0';
-				bool startsNewWord = index > 0
-					&& ((char.IsUpper(current)
-						&& (char.IsLower(previous)
-							|| char.IsDigit(previous)
-							|| (index + 1 < value.Length && char.IsUpper(previous) && char.IsLower(value[index + 1]))))
-						|| (char.IsDigit(current) && !char.IsDigit(previous))
-						|| (char.IsLetter(current) && char.IsDigit(previous)));
-				if (startsNewWord && label.Length > 0 && label[label.Length - 1] != ' ')
-				{
-					label.Append(' ');
-				}
-
-				label.Append(current);
-			}
-
-			return label.ToString().Trim();
+			return WordFormat.SplitIdentifier(value);
 		}
 
 		private static string FormatFlagLabel(string value)
