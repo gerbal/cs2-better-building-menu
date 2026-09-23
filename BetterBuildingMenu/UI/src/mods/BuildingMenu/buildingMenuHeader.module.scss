@@ -50,8 +50,7 @@
   padding-right: 6rem;
 }
 
-// Narrower than .textBox: the strip has only the room left to the right of the
-// last tab, not the whole row the legacy top bar's search field could spend.
+// Sized for the room left to the right of the last tab, not for a whole row.
 .stripTextBox {
   width: 200rem;
   padding: 6rem 8rem 4rem 8rem;
