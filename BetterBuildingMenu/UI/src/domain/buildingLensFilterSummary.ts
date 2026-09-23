@@ -59,10 +59,6 @@ function selectedFacetLabels(state: BuildingLensFacetState | null | undefined): 
     );
 }
 
-function selectedFacetCount(state: BuildingLensFacetState | null | undefined): number {
-  return selectedFacetLabels(state).length;
-}
-
 function formatBound(value: number): string {
   return Number.isInteger(value) ? value.toLocaleString() : value.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }

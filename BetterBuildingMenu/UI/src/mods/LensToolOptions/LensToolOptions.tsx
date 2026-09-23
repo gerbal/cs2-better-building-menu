@@ -7,7 +7,7 @@ import { cloneElement, isValidElement, type ReactNode } from "react";
 import styles from "./LensToolOptions.module.scss";
 import lockIcon from "images/lock.svg";
 import unlockIcon from "images/unlock.svg";
-import { BANK_DIMENSION_IDS, isBankDimension } from "domain/filterRail";
+import { isBankDimension } from "domain/filterRail";
 import { shouldMountInAssetMenu } from "domain/buildingMenuMount";
 import { toggleBuildingLensFacetCommand, type BuildingLensFacetState } from "domain/buildingCatalogFacets";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
@@ -97,5 +97,3 @@ export const LensToolOptions: ModuleRegistryExtend = (Component: any) => {
     );
   };
 };
-
-export { BANK_DIMENSION_IDS };

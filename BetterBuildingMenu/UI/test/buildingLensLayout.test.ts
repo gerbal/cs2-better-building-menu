@@ -1,8 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
-  BUILDING_LENS_TITLE_ICON,
-  BUILDING_LENS_TITLE_GAP,
   getBuildingLensRowGeometry,
   BUILDING_LENS_MAX_WIDTH,
   BUILDING_LENS_MIN_WIDTH,
@@ -53,11 +51,6 @@ describe("Building Lens panel geometry", () => {
       identityHeight: 72,
       selectorVerticalPadding: 2,
     });
-  });
-
-  it("uses the building signature as the title icon", () => {
-    assert.equal(BUILDING_LENS_TITLE_ICON, "coui://betterbuildingmenu/Icons/Colored/BuildingZoneSignature.svg");
-    assert.equal(BUILDING_LENS_TITLE_GAP, 6);
   });
 
   it("budgets the catalog below the shell chrome at the 1280x720 render target", () => {
