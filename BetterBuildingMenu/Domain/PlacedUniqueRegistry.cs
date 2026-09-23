@@ -36,7 +36,7 @@ namespace BetterBuildingMenu.Domain
 		/// bumping that generation for a rescan that found nothing new would throw a good
 		/// cache away on every keystroke.
 		/// </returns>
-		public static bool Reset(IEnumerable<int> placed)
+		public static bool Reset(IEnumerable<int>? placed)
 		{
 			var next = new HashSet<int>();
 

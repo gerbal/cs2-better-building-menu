@@ -18,6 +18,9 @@
     <TargetFramework>net48</TargetFramework>
     <LangVersion>11.0</LangVersion>
     <Nullable>enable</Nullable>
+    <!-- Nullable warnings fail the build. Both projects build without one, so a new one is a
+         missing null check or an annotation that does not match the code. -->
+    <WarningsAsErrors>$(WarningsAsErrors);nullable</WarningsAsErrors>
   </PropertyGroup>
 
   <!-- Keep UI node_modules trees out of the C# item graph. -->

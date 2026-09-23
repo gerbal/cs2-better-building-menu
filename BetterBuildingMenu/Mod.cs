@@ -23,7 +23,9 @@ namespace BetterBuildingMenu
 		public const string Id = "BetterBuildingMenu";
 
 		public static ILog Log { get; } = LogManager.GetLogger(nameof(BetterBuildingMenu)).SetShowsErrorsInUI(false);
-		public static BetterBuildingMenuSettings Settings { get; private set; }
+		// Set in OnLoad and cleared in OnDispose. Everything that reads it runs in between,
+		// except BuildingMenuUISystem.OnDestroy, which checks.
+		public static BetterBuildingMenuSettings Settings { get; private set; } = null!;
 
 		/// <summary>Whether Extra Detailing Tools is enabled, as of the last full index pass.</summary>
 		public static bool IsExtraDetailingEnabled { get; private set; }
@@ -43,7 +45,8 @@ namespace BetterBuildingMenu
 		}
 
 		/// <summary>Black copies of the game's vector icons, for locked tiles.</summary>
-		public static SilhouetteIconCache Silhouettes { get; private set; }
+		/// <remarks>Null until OnLoad, which a test run never calls.</remarks>
+		public static SilhouetteIconCache? Silhouettes { get; private set; }
 
 		private static string SilhouetteFolder =>
 			Path.Combine(FolderUtil.ContentFolder, "silhouettes");
@@ -117,7 +120,7 @@ namespace BetterBuildingMenu
 				if (Settings != null)
 				{
 					Settings.UnregisterInOptionsUI();
-					Settings = null;
+					Settings = null!;
 				}
 
 				// The locale sources stay registered: removing one makes the game reload
