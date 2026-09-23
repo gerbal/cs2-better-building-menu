@@ -275,6 +275,11 @@ namespace BetterBuildingMenu.Systems
 
 			GameManager.instance.localizationManager.onActiveDictionaryChanged -= OnActiveDictionaryChanged;
 
+			if (_uniqueAssets is not null)
+			{
+				_uniqueAssets.EventUniqueAssetStatusChanged -= OnUniqueAssetStatusChanged;
+			}
+
 			base.OnDestroy();
 		}
 

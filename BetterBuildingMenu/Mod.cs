@@ -69,6 +69,11 @@ namespace BetterBuildingMenu
 				.ToArray();
 		}
 
+		private const string ImagesHost = "betterbuildingmenu";
+
+		// What OnLoad hands the game, so OnDispose can take it back.
+		private readonly List<LocaleHelper.DictionarySource> _localeSources = new();
+
 		public void OnLoad(UpdateSystem updateSystem)
 		{
 			Log.Info(nameof(OnLoad));
@@ -78,7 +83,7 @@ namespace BetterBuildingMenu
 
 			if (GameManager.instance.modManager.TryGetExecutableAsset(this, out var asset))
 			{
-				UIManager.defaultUISystem.AddHostLocation("betterbuildingmenu", Path.Combine(Path.GetDirectoryName(asset.path), "images"), false);
+				UIManager.defaultUISystem.AddHostLocation(ImagesHost, Path.Combine(Path.GetDirectoryName(asset.path), "images"), false);
 			}
 
 			// A SECOND host, deliberately not the one above: blackened icon
@@ -90,6 +95,7 @@ namespace BetterBuildingMenu
 			foreach (var item in new LocaleHelper("BetterBuildingMenu.Locale.json").GetAvailableLanguages())
 			{
 				GameManager.instance.localizationManager.AddSource(item.LocaleId, item);
+				_localeSources.Add(item);
 			}
 
 			AssetDatabase.global.LoadSettings(nameof(BetterBuildingMenu), Settings, new BetterBuildingMenuSettings(this));
@@ -112,6 +118,19 @@ namespace BetterBuildingMenu
 				Settings.UnregisterInOptionsUI();
 				Settings = null;
 			}
+
+			// The game may be tearing its own managers down by now.
+			var localization = GameManager.instance?.localizationManager;
+
+			foreach (var item in _localeSources)
+			{
+				localization?.RemoveSource(item.LocaleId, item);
+			}
+
+			_localeSources.Clear();
+
+			UIManager.defaultUISystem?.RemoveHostLocation(ImagesHost);
+			UIManager.defaultUISystem?.RemoveHostLocation(SilhouetteIcons.HostName);
 		}
 	}
 }
