@@ -1,5 +1,5 @@
 # The UI builds and tests without the game: the test harness stubs its cs2/*
-# modules. Copy to .github/workflows/. See docs/ci.md.
+# modules. See docs/ci.md.
 name: UI
 
 on:
