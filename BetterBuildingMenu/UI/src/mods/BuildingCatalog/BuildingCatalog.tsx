@@ -241,7 +241,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
 
     pendingEnter.current = null;
     if (decision) activate(decision.arm);
-  }, [items, bestMatchId, pageSearch, currentSearch]);
+  }, [items, bestMatchId, pageSearch, currentSearch, activate]);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (isPlainEnter(event)) onEnter.current(event);

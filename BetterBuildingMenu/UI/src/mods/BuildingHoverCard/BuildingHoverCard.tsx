@@ -85,12 +85,14 @@ export interface HoverCardContext {
  * a dozen bindings here, and a view that subscribed per row would open hundreds
  * of them to render one hover card. The card takes the result as a prop.
  */
+const NO_MILESTONE_NAMES: string[] = [];
+
 export const useHoverCardContext = (): HoverCardContext => {
   const { translate } = useLocalization();
   // One subscription per grid, like the milestones below — the whole reason
   // this context exists rather than each card reading its own.
   const unitSystem = useUnitSystem();
-  const milestoneNames = useValue(BuildingLensMilestones$) ?? [];
+  const milestoneNames = useValue(BuildingLensMilestones$) ?? NO_MILESTONE_NAMES;
 
   // One object until one of these changes, so the rows it is handed to can skip
   // a render; translate holds still until the language changes.
