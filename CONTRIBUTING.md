@@ -28,6 +28,14 @@ or in the test class's `Dispose`. The C# tests also run one class at a time
 (`TestParallelization.cs`). Nothing needs that yet, since no class reads
 what another sets, but it keeps that from becoming a race.
 
+A nullable warning fails the build, in the mod and in the tests
+(`Directory.Build.props`). A field a system sets in `OnCreate` is declared
+`= null!`. A value that can really be missing is declared nullable, and
+its readers check it. net48's `string.IsNullOrEmpty` and
+`IsNullOrWhiteSpace` carry no annotations, so the compiler cannot see a
+check made with them. Write it as a pattern it can follow instead, such as
+`text?.Trim() is { Length: > 0 } trimmed`.
+
 A test that calls into the game, not just its types, carries
 `[Trait("Requires", "Game")]`: CI runs against mock game assemblies, and
 `CS2_TEST_FILTER=Requires!=Game ./build.sh test` runs what it runs. See
