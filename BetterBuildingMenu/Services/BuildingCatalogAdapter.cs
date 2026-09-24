@@ -485,9 +485,9 @@ namespace BetterBuildingMenu.Services
 					menuScoped: !string.IsNullOrEmpty(menu),
 					isBuilding: IsBuilding(prefab),
 					placedInThisMenu: !string.IsNullOrEmpty(menu)
-						&& PrefabIndexingSystem.IsPlacedInMenu(prefab.Id, menu),
-					placedInAnyMenu: PrefabIndexingSystem.IsPlacedInAnyMenu(prefab.Id),
-					gatheredNetwork: !string.IsNullOrEmpty(menu) && IsGatheredNetwork(prefab, menu)));
+						&& index.Menus.IsPlacedIn(prefab.Id, menu),
+					placedInAnyMenu: index.Menus.IsPlaced(prefab.Id),
+					gatheredNetwork: !string.IsNullOrEmpty(menu) && IsGatheredNetwork(index.Menus, prefab, menu)));
 		}
 
 		/// <summary>
@@ -498,14 +498,14 @@ namespace BetterBuildingMenu.Services
 		/// so the Roads menu gathers them without taking them out of the menus that hold them.
 		/// IsExtended is asked HERE so the argument enum ToString runs only for that menu.
 		/// </remarks>
-		private static bool IsGatheredNetwork(PrefabIndex prefab, string menu) =>
+		private static bool IsGatheredNetwork(VanillaMenuIndex menus, PrefabIndex prefab, string menu) =>
 			NetworkMenuExtension.IsExtended(menu)
 			&& NetworkMenuExtension.IsExtraNetwork(
 				prefab.Category.ToString(),
 				prefab.UiMenuName,
 				menu,
 				prefab.SubCategory.ToString())
-			&& PrefabIndexingSystem.IsPlacedInAnyMenu(prefab.Id);
+			&& menus.IsPlaced(prefab.Id);
 
 		/// <summary>The projections this adapter reuses across refreshes.</summary>
 		/// <remarks>

@@ -80,20 +80,6 @@ namespace BetterBuildingMenu.Systems
 		/// <remarks>Beside the catalog rather than on <see cref="ZoneCatalogEntry"/>: that record is
 		/// serialised to the UI, and this is backend-only data the UI has no use for.</remarks>
 		private static Dictionary<int, VanillaAssetFacts> _zoneFacts = new();
-		private static Dictionary<int, string> _assetMenuNames = new();
-		// The reverse: menu prefab name -> its entity, so the picker can ask the
-		// game to open the menu that holds the building it just picked.
-		private static Dictionary<string, Entity> _assetMenuEntities = new();
-		// Vanilla's second tier, keyed by menu name. See VanillaMenuCategory.
-		private static Dictionary<string, List<VanillaMenuCategory>> _assetCategories = new();
-		/// <summary>The vanilla build menus, in the game's own order.</summary>
-		/// <remarks>Published so the lens can offer them as a filter: a bottom-bar icon is a shortcut
-		/// to a menu, and the menu is a facet like any other.</remarks>
-		private static IReadOnlyList<VanillaMenuCategory> _assetMenus = System.Array.Empty<VanillaMenuCategory>();
-		// Where the vanilla build menu puts each asset, keyed by prefab entity
-		// index. Built by IndexVanillaMenuPlacements; read by the coverage
-		// report and by IsPlacedInVanillaMenu.
-		private static Dictionary<int, VanillaMenuPlacement> _menuPlacements = new();
 		// Milestone index -> the name the rest of the game calls it, resolved
 		// once per index pass rather than per locked asset.
 		private static Dictionary<int, string> _milestoneNames = new();
@@ -172,8 +158,7 @@ namespace BetterBuildingMenu.Systems
 			_blackList = new HashSet<string>(reader.ReadToEnd().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries));
 
 			// In the order PrefabCategoryProcessors lists them, the same on every build.
-			// IsIndexed reads whichever index is current, which during a full pass is the one being built.
-			var processors = PrefabCategoryProcessors.Create(new(EntityManager, _imageSystem, _prefabSystem, id => Index.Get(id) is not null));
+			var processors = PrefabCategoryProcessors.Create(new(EntityManager, _imageSystem, _prefabSystem));
 
 			foreach (var processor in processors)
 			{
@@ -577,7 +562,7 @@ namespace BetterBuildingMenu.Systems
 						var lens = pair.Value.Count(id =>
 							all.TryGetValue(id, out var indexed)
 							&& (indexed.Category is PrefabCategory.Buildings or PrefabCategory.ServiceBuildings or PrefabCategory.Networks
-								|| IsPlacedInAnyMenu(id)));
+								|| Index.Menus.IsPlaced(id)));
 
 						Mod.Log.Info($"[PROCESSOR-CENSUS] {pair.Key} indexed={pair.Value.Count} lens={lens}");
 					}
@@ -609,17 +594,17 @@ namespace BetterBuildingMenu.Systems
 			{
 				RefreshModCompatibility();
 
-				Index = new CatalogIndex();
-
 				// Before IndexZones and before the processors: the zone catalog
 				// inherits the game's own Zones menu, and the blacklist check below
 				// consults the placements too.
-				IndexVanillaMenuPlacements();
-				IndexZones();
-				IndexAssetMenus();
-				IndexAssetCategories();
+				var placements = IndexVanillaMenuPlacements();
+				IndexZones(placements);
+				var (menuNames, menuEntities, menus) = IndexAssetMenus();
+				var categories = IndexAssetCategories();
 				IndexMilestones();
 				IndexDevTreeBranches();
+
+				Index = new CatalogIndex(new VanillaMenuIndex(placements, menuNames, menuEntities, menus, categories));
 			}
 
 			foreach (var (processor, allQuery, changedQuery) in _processors)
@@ -659,7 +644,7 @@ namespace BetterBuildingMenu.Systems
 						// The blacklist is a list of names written for a flat asset browser. It
 						// cannot outrank the build menu: Extractor Lot and Landfill Site Lot are
 						// on it and are also tools the Areas and Garbage menus hand the player.
-						if (_blackList.Contains(prefab.name) && !IsPlacedInVanillaMenu(entity.Index))
+						if (_blackList.Contains(prefab.name) && !Index.Menus.IsPlaced(entity.Index))
 						{
 							continue;
 						}
@@ -688,7 +673,7 @@ namespace BetterBuildingMenu.Systems
 								Index.Remove(oldId);
 							}
 
-							if (processor.TryCreatePrefabIndex(prefab, entity, out prefabIndex))
+							if (processor.TryCreatePrefabIndex(prefab, entity, Index, out prefabIndex))
 							{
 								if (prefab.TryGet<EditorAssetCategoryOverride>(out var overrides) && overrides is not null)
 								{
@@ -697,7 +682,7 @@ namespace BetterBuildingMenu.Systems
 									// An author's exclusion is honoured only for assets the game does
 									// not itself place in a menu. Removed as well as skipped, so a
 									// partial pass drops what an earlier pass indexed.
-									if (categoryOverride.Excluded && !IsPlacedInVanillaMenu(entity.Index))
+									if (categoryOverride.Excluded && !Index.Menus.IsPlaced(entity.Index))
 									{
 										Index.Remove(entity.Index);
 
@@ -756,37 +741,27 @@ namespace BetterBuildingMenu.Systems
 		}
 
 		/// <summary>What a full pass replaces, held so a pass that throws can put it back.</summary>
-		/// <remarks>References are enough: each Index* step builds new collections and assigns them
-		/// at its end, and the pass files into a new CatalogIndex, so it never writes to the old
-		/// ones.</remarks>
+		/// <remarks>References are enough: each Index* step builds new collections, which it assigns
+		/// at its end or returns into the new CatalogIndex the pass files into, so the pass never
+		/// writes to the old ones.</remarks>
 		private sealed record IndexSnapshot(
 			CatalogIndex Index,
-			Dictionary<int, VanillaMenuPlacement> MenuPlacements,
 			Dictionary<int, VanillaAssetFacts> ZoneFacts,
 			Dictionary<Entity, ZoneTypeFilter> ZoneTypes,
 			Dictionary<Entity, ZoneTypeFilter> ZoneDensities,
 			Dictionary<Entity, ZoneLotSizes> ZoneLotSizes,
 			List<ZoneCatalogEntry> ZoneCatalog,
-			Dictionary<int, string> AssetMenuNames,
-			Dictionary<string, Entity> AssetMenuEntities,
-			IReadOnlyList<VanillaMenuCategory> AssetMenus,
-			Dictionary<string, List<VanillaMenuCategory>> AssetCategories,
 			Dictionary<int, string> MilestoneNames,
 			Dictionary<Entity, (string Label, string Icon, int Depth, string Service)> DevTreeBranches,
 			Dictionary<string, (string Label, string Icon, int Depth)> DevTreeRoots);
 
 		private IndexSnapshot CaptureIndex() => new(
 			Index,
-			_menuPlacements,
 			_zoneFacts,
 			_zoneTypeCache,
 			_zoneDensityCache,
 			_zoneLotSizeCache,
 			_zoneCatalog,
-			_assetMenuNames,
-			_assetMenuEntities,
-			_assetMenus,
-			_assetCategories,
 			_milestoneNames,
 			_devTreeBranches,
 			_devTreeRoots);
@@ -794,16 +769,11 @@ namespace BetterBuildingMenu.Systems
 		private void RestoreIndex(IndexSnapshot snapshot)
 		{
 			Index = snapshot.Index;
-			_menuPlacements = snapshot.MenuPlacements;
 			_zoneFacts = snapshot.ZoneFacts;
 			_zoneTypeCache = snapshot.ZoneTypes;
 			_zoneDensityCache = snapshot.ZoneDensities;
 			_zoneLotSizeCache = snapshot.ZoneLotSizes;
 			_zoneCatalog = snapshot.ZoneCatalog;
-			_assetMenuNames = snapshot.AssetMenuNames;
-			_assetMenuEntities = snapshot.AssetMenuEntities;
-			_assetMenus = snapshot.AssetMenus;
-			_assetCategories = snapshot.AssetCategories;
 			_milestoneNames = snapshot.MilestoneNames;
 			_devTreeBranches = snapshot.DevTreeBranches;
 			_devTreeRoots = snapshot.DevTreeRoots;
@@ -853,7 +823,7 @@ namespace BetterBuildingMenu.Systems
 			prefabIndex.UiMenuName = (uIObject?.m_Group as UIAssetCategoryPrefab)?.m_Menu?.name;
 			// The entity world's placement wins: mods that regroup the menu at
 			// runtime edit it there and leave the managed group on the stock tab.
-			if (_menuPlacements.TryGetValue(entity.Index, out var placed))
+			if (Index.Menus.Placements.TryGetValue(entity.Index, out var placed))
 			{
 				(prefabIndex.UiCategoryName, prefabIndex.UiMenuName) = MenuPlacementOverride.Resolve(
 					prefabIndex.UiCategoryName, prefabIndex.UiMenuName, placed.Category, placed.Menu);

@@ -1,4 +1,5 @@
 using BetterBuildingMenu.Domain.Enums;
+using BetterBuildingMenu.Utilities;
 
 using Game.Prefabs;
 
@@ -20,9 +21,17 @@ namespace BetterBuildingMenu.Domain.Catalog
 	{
 		private readonly Dictionary<PrefabCategory, Dictionary<PrefabSubCategory, IndexedPrefabList>> _lists = new();
 
-		/// <summary>An empty index with every list laid out, not yet ready.</summary>
+		/// <summary>An empty index with every list laid out and no menus, not yet ready.</summary>
 		public CatalogIndex()
+			: this(VanillaMenuIndex.Empty)
 		{
+		}
+
+		/// <summary>An empty index with every list laid out, over the menus a pass has read.</summary>
+		public CatalogIndex(VanillaMenuIndex menus)
+		{
+			Menus = menus;
+
 			foreach (PrefabCategory category in Enum.GetValues(typeof(PrefabCategory)))
 			{
 				_lists[category] = new() { { PrefabSubCategory.Any, new() } };
@@ -44,6 +53,9 @@ namespace BetterBuildingMenu.Domain.Catalog
 
 			All = _lists[PrefabCategory.Any][PrefabSubCategory.Any];
 		}
+
+		/// <summary>The game's own build menus, as the pass that built this index read them.</summary>
+		public VanillaMenuIndex Menus { get; }
 
 		/// <summary>Whether a pass has filled it; until then the panel shows the indexing notice.</summary>
 		public bool IsReady { get; internal set; }
@@ -68,6 +80,54 @@ namespace BetterBuildingMenu.Domain.Catalog
 		public PrefabIndex? Get(int id) => All.TryGetValue(id, out var entry) ? entry : null;
 
 		public PrefabBase? GetPrefab(int id) => Get(id)?.Prefab;
+
+		/// <summary>The tab strip for a menu, empty when the menu has none.</summary>
+		/// <remarks>Roads gets more tabs than the game gives it: the lens gathers every network there
+		/// (see <see cref="NetworkMenuExtension"/>), so the strip has to offer the extras too.</remarks>
+		public IReadOnlyList<VanillaMenuCategory> GetMenuCategories(string? menu)
+		{
+			var tabs = Menus.CategoriesOf(menu);
+
+			if (!NetworkMenuExtension.IsExtended(menu) || tabs.Count == 0)
+			{
+				return tabs;
+			}
+
+			return tabs.Concat(ExtraNetworkCategories()).ToArray();
+		}
+
+		/// <summary>A tab for each kind of network the Roads menu does not already hold.</summary>
+		/// <remarks>Built from what is indexed rather than from the enum, so a subcategory with nothing
+		/// in it draws no tab. Ids match what NetworkMenuExtension.Reframe writes onto the entries.</remarks>
+		private IEnumerable<VanillaMenuCategory> ExtraNetworkCategories()
+		{
+			foreach (var pair in ListsIn(PrefabCategory.Networks).OrderBy(pair => (int)pair.Key))
+			{
+				if (pair.Key == PrefabSubCategory.Any || pair.Value.Count == 0)
+				{
+					continue;
+				}
+
+				// Only the ones that arrive through the extension. A subcategory whose
+				// members are all in the Roads menu already has vanilla tabs covering
+				// them, and a second tab over the same assets would split the roads.
+				if (!pair.Value.Any(prefab => !string.Equals(
+						prefab.UiMenuName,
+						NetworkMenuExtension.RoadsMenu,
+						StringComparison.OrdinalIgnoreCase)))
+				{
+					continue;
+				}
+
+				var name = pair.Key.ToString();
+
+				yield return new VanillaMenuCategory(
+					Id: NetworkMenuExtension.GroupId(name),
+					Name: NetworkMenuExtension.GroupId(name),
+					Icon: IconPath.Normalize(CategoryIconAttribute.GetAttribute(pair.Key).Icon) ?? string.Empty,
+					Priority: NetworkMenuExtension.GroupPriority(name));
+			}
+		}
 
 		/// <summary>Files an entry in the three lists the panel reads: everything, its category, its subcategory.</summary>
 		/// <remarks>

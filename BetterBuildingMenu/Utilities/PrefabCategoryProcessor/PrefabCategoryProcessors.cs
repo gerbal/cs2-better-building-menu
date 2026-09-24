@@ -18,9 +18,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 	public static class PrefabCategoryProcessors
 	{
 		/// <summary>What a processor may be built with.</summary>
-		/// <param name="IsIndexed">Whether the index a pass is filling already holds a prefab
-		/// entity's index, for the processor that claims only what the others left.</param>
-		public sealed record Dependencies(EntityManager EntityManager, ImageSystem ImageSystem, PrefabSystem PrefabSystem, Func<int, bool> IsIndexed);
+		public sealed record Dependencies(EntityManager EntityManager, ImageSystem ImageSystem, PrefabSystem PrefabSystem);
 
 		/// <summary>Each processor's type, and how to build it, in run order.</summary>
 		/// <remarks>The type is read without building anything, so a test can check the list
@@ -50,7 +48,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 			Of(_ => new WaterwaysPrefabCategoryProcessor()),
 			Of(dependencies => new ZonePrefabCategoryProcessor(dependencies.EntityManager)),
 			Of(dependencies => new ZonedBuildingPrefabCategoryProcessor(dependencies.EntityManager, dependencies.ImageSystem, dependencies.PrefabSystem)),
-			Of(dependencies => new MenuPlacedPrefabCategoryProcessor(dependencies.EntityManager, dependencies.IsIndexed)),
+			Of(dependencies => new MenuPlacedPrefabCategoryProcessor(dependencies.EntityManager)),
 		};
 
 		public static IPrefabCategoryProcessor[] Create(Dependencies dependencies) =>

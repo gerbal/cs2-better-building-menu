@@ -1,5 +1,6 @@
 ﻿using Colossal.Entities;
 using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Interfaces;
 using Game.Prefabs;
 
@@ -42,7 +43,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
             };
         }
 
-        public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
+        public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
         {
             if (!Mod.IsExtraDetailingEnabled || prefab is not NetLaneGeometryPrefab)
             {
