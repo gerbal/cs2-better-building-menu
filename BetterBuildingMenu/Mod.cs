@@ -23,8 +23,9 @@ namespace BetterBuildingMenu
 		public const string Id = "BetterBuildingMenu";
 
 		public static ILog Log { get; } = LogManager.GetLogger(nameof(BetterBuildingMenu)).SetShowsErrorsInUI(false);
-		// Set in OnLoad and cleared in OnDispose. Everything that reads it runs in between,
-		// except BuildingMenuUISystem.OnDestroy, which checks.
+		// Set in OnLoad and cleared in OnDispose, so null outside them, a test run included.
+		// Everything that reads it runs in between, except BuildingMenuUISystem.OnDestroy,
+		// which checks.
 		public static BetterBuildingMenuSettings Settings { get; private set; } = null!;
 
 		/// <summary>Whether Extra Detailing Tools is enabled, as of the last full index pass.</summary>
@@ -117,6 +118,7 @@ namespace BetterBuildingMenu
 			// mod after this one from initializing.
 			try
 			{
+				// Null when OnLoad failed before setting it.
 				if (Settings != null)
 				{
 					Settings.UnregisterInOptionsUI();
