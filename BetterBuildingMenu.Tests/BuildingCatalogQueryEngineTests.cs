@@ -653,8 +653,9 @@ public sealed class BuildingCatalogQueryEngineTests
         {
             BuildingMenuUtil.IsReady = false;
 
-            BuildingCatalogPage page = new BuildingCatalogAdapter().Query(
-                new BuildingCatalogQuery(Limit: BuildingCatalogQuery.MaxLimit + 1));
+            BuildingCatalogPage page = new BuildingCatalogAdapter().Build(
+                new BuildingCatalogQuery(Limit: BuildingCatalogQuery.MaxLimit + 1),
+                VanillaToolbarSelection.None).Page;
 
             Assert.Empty(page.Items);
             Assert.Equal(0, page.TotalCount);

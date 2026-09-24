@@ -19,6 +19,10 @@ namespace BetterBuildingMenu.Systems
 		private static readonly System.Diagnostics.Stopwatch SearchClock = System.Diagnostics.Stopwatch.StartNew();
 		private readonly SearchDebounce _searchDebounce = new(TimeSpan.FromMilliseconds(250));
 		private readonly BuildingCatalogAdapter _buildingCatalogAdapter = new();
+		// The game's own toolbar filter row, as the UI last reported it. Not reset on
+		// a city load: the UI forwards the row only when it changes, so a reset here
+		// would leave a filter showing that the catalog no longer applies.
+		private VanillaToolbarSelection _toolbarSelection = VanillaToolbarSelection.None;
 		private readonly InteractionBoundary _interactionBoundary = new();
 		// Everything the player has told the lens, as one record with one tested
 		// transition per trigger. The handlers in Bindings.cs apply a transition,
