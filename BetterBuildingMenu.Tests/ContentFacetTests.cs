@@ -3,7 +3,6 @@ using Colossal.PSI.Common;
 using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Services;
 
-using System;
 using System.Linq;
 
 using Xunit;
@@ -18,16 +17,8 @@ namespace BetterBuildingMenu.Tests
 	/// holds Theme and Pack, so packs are not offered here. What is left is the part
 	/// it cannot express: a DLC shipping no creator pack, reachable only by DlcId.
 	/// </remarks>
-	public class ContentFacetTests : IDisposable
+	public class ContentFacetTests
 	{
-		private readonly VanillaToolbarSelection _previousSelection = BuildingCatalogAdapter.ToolbarSelection;
-
-		// Every test here reads the facet with nothing picked in the game's own row. The
-		// selection is process-wide, so Dispose puts it back, pass or fail.
-		public ContentFacetTests() => BuildingCatalogAdapter.ToolbarSelection = VanillaToolbarSelection.None;
-
-		public void Dispose() => BuildingCatalogAdapter.ToolbarSelection = _previousSelection;
-
 		private static readonly BuildingCatalogEntry Base = new(
 			Id: 0,
 			PrefabName: "Base",
@@ -47,8 +38,11 @@ namespace BetterBuildingMenu.Tests
 			Base with { Id = id, PrefabName = $"Entry{id}", AssetPackIndices = packs };
 
 		private static BuildingCatalogFacetGroup? ContentGroup(params BuildingCatalogEntry[] entries) =>
+			ContentGroup(vanillaSelected: false, entries);
+
+		private static BuildingCatalogFacetGroup? ContentGroup(bool vanillaSelected, params BuildingCatalogEntry[] entries) =>
 			BuildingCatalogAdapter
-				.BuildFacetState(entries, new BuildingCatalogQuery())
+				.BuildFacetState(entries, new BuildingCatalogQuery(), vanillaSelected: vanillaSelected)
 				.Groups
 				.FirstOrDefault(group => group.Id == "content");
 
@@ -114,6 +108,22 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.NotNull(group);
 			Assert.Equal("vanilla", group!.Options[0].Id);
+		}
+
+		[Theory]
+		[InlineData(false)]
+		[InlineData(true)]
+		public void TheBaseGameOptionShowsTheGamesOwnVanillaToggle(bool vanillaSelected)
+		{
+			// The option and the game's toggle are one control drawn twice, so the
+			// option is ticked exactly when the toggle is.
+			var vanilla = Base with { Id = 1, PrefabName = "V", DlcId = GameDlcIds.BaseGame.ToString(System.Globalization.CultureInfo.InvariantCulture) };
+			var sanFrancisco = Base with { Id = 2, PrefabName = "SF", DlcId = "1" };
+
+			var group = ContentGroup(vanillaSelected, vanilla, sanFrancisco);
+
+			Assert.NotNull(group);
+			Assert.Equal(vanillaSelected, group!.Options.Single(option => option.Id == "vanilla").Selected);
 		}
 	}
 }

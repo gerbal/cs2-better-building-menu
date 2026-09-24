@@ -210,7 +210,7 @@ namespace BetterBuildingMenu.Systems
 			if (MenuRouting.ShouldYield(
 				replaceEnabled: true,
 				menuName: menuName,
-				menuHasAssets: BuildingCatalogAdapter.MenuHasAssets(menuName ?? string.Empty)))
+				menuHasAssets: BuildingCatalogAdapter.MenuHasAssets(menuName ?? string.Empty, _toolbarSelection)))
 			{
 				YieldMenuToVanilla();
 				return;
@@ -459,13 +459,11 @@ namespace BetterBuildingMenu.Systems
 		/// </remarks>
 		private void SetVanillaToolbarSelection(string themes, string packs, bool vanillaSelected, bool modsSelected)
 		{
-			var selection = new VanillaToolbarSelection(
+			_toolbarSelection = new VanillaToolbarSelection(
 				ParseEntityIndices(themes),
 				ParseEntityIndices(packs),
 				vanillaSelected,
 				modsSelected);
-
-			BuildingCatalogAdapter.ToolbarSelection = selection;
 
 			RefreshBuildingCatalog();
 		}

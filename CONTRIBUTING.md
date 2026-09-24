@@ -22,7 +22,7 @@
 ```
 
 Much of the mod's state is process-wide statics: the index, the placed
-uniques, the toolbar selection, and more on `PrefabIndexingSystem` and `Mod`.
+uniques, and more on `PrefabIndexingSystem` and `Mod`.
 A test that sets one puts it back whether it passes or fails, in a `finally`
 or in the test class's `Dispose`. The C# tests also run one class at a time
 (`TestParallelization.cs`). Nothing needs that yet, since no class reads

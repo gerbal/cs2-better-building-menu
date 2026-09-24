@@ -21,6 +21,7 @@ namespace BetterBuildingMenu.Services
 		private readonly Func<CatalogView, string>? _groupByResolver;
 		private readonly IReadOnlyList<string>? _milestoneNames;
 		private readonly bool _educationMenu;
+		private readonly bool _vanillaSelected;
 		private string? _effectiveGroupBy;
 		private string[]? _dimensions;
 
@@ -39,7 +40,8 @@ namespace BetterBuildingMenu.Services
 			Func<IReadOnlyList<BuildingCatalogEntry>>? packScope = null,
 			Func<CatalogView, string>? groupByResolver = null,
 			IReadOnlyList<string>? milestoneNames = null,
-			bool educationMenu = false)
+			bool educationMenu = false,
+			bool vanillaSelected = false)
 		{
 			_snapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
 			_query = query ?? throw new ArgumentNullException(nameof(query));
@@ -47,6 +49,7 @@ namespace BetterBuildingMenu.Services
 			_groupByResolver = groupByResolver;
 			_milestoneNames = milestoneNames;
 			_educationMenu = educationMenu;
+			_vanillaSelected = vanillaSelected;
 		}
 
 		/// <summary>The dimension ids the picker should offer for this menu set.</summary>
@@ -102,8 +105,17 @@ namespace BetterBuildingMenu.Services
 		public BuildingCatalogFacetState FacetState => _facets ??= BuildingCatalogAdapter.BuildFacetState(
 			ViewSet,
 			_query,
-			_packScope is null ? ViewSet : BuildingCatalogQueryEngine.InScope(_packScope(), _query));
+			_packScope is null ? ViewSet : BuildingCatalogQueryEngine.InScope(_packScope(), _query),
+			_vanillaSelected);
 
+		/// <summary>
+		/// How many assets each of the menu's category tabs holds.
+		/// </summary>
+		/// <remarks>
+		/// The category's own axis is excluded, so choosing one tab does not read every
+		/// other as empty; search and facets do count. Counted against the category the
+		/// entry answers to IN THIS MENU rather than its own UiCategory.
+		/// </remarks>
 		public IReadOnlyList<MenuCategoryCount> MenuCategoryCounts => _counts ??= MenuSet
 			.GroupBy(entry => NetworkMenuExtension.EffectiveCategory(entry, _query.UiMenu) ?? string.Empty)
 			.Select(group => new MenuCategoryCount(group.Key, group.Count()))
@@ -177,6 +189,14 @@ namespace BetterBuildingMenu.Services
 				: new[] { new MenuCategoryTabs(branchCategory, ExpandedCategoryTabs.ToArray()) };
 		}
 
+		/// <summary>
+		/// Which axis the fallback strip should use for this menu, and its tabs.
+		/// </summary>
+		/// <remarks>
+		/// Only for the menus vanilla never split. The axis that cuts most evenly wins —
+		/// smallest largest bucket — among a short hand-picked list of cuts the game
+		/// itself authored; an axis yielding fewer than two groups is not a choice.
+		/// </remarks>
 		public string StripAxis => _axis ??= ComputeStripAxis();
 
 		private string ComputeStripAxis()
