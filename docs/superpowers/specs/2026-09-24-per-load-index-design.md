@@ -1,8 +1,8 @@
 # Per-load catalog index
 
 Date: 2026-09-24. Status: approved by the owner the same day, with decisions 1–7 below
-taken as recommended. Decision 8 came from the live-testing review; the owner chose (a). Steps 1–6
-are built (#32, #33, #36, #37, #38, #40, #42, #43). Roadmap: "Per-load state" in
+taken as recommended. Decision 8 came from the live-testing review; the owner chose (a). Steps 1–7
+are built (#32, #33, #36, #37, #38, #40, #42, #43, #44). Roadmap: "Per-load state" in
 [roadmap.md](../../roadmap.md).
 
 ## Goal
@@ -262,6 +262,7 @@ Decided on 2026-09-24: each as recommended.
    - Nothing reads the `[Category][Any]` lists; brand cleanup is the only code that touches them, and it only removes from them.
    - Brand cleanup skips `[Any][Any]`, so it affects only the Roads extra tabs, never the catalog.
    - **Recommended: keep both as they are, and simplify in a later PR.**
+   - **Done in #44:** an entry is filed under everything and its own subcategory only, so a category's catch-all holds just the entries filed under the category alone. Brand cleanup now reports how many entries it takes out, at Info on each full pass; if a real session shows none, a later PR deletes it.
 5. **The public API.** `BuildingMenuUtil` and the indexer's statics are public, so deleting them breaks any mod that reaches into them. None is known. **Recommended: accept.**
 6. **Building a `PrefabIndex` in tests (before step 7).**
    - Tests create it with `GetUninitializedObject`, because its constructor fails against the mocks. That leaves `ServiceFacts` and `ServiceTextFacts` null, and `Project` reads both.
