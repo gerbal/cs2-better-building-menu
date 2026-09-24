@@ -51,13 +51,8 @@ namespace BetterBuildingMenu.Systems
 			var stage = System.Diagnostics.Stopwatch.StartNew();
 			int Lap() { var ms = (int)stage.ElapsedMilliseconds; stage.Restart(); return ms; }
 
-			// The scope, the search and every metric bound fold into the query here,
-			// and the window resets if a predicate moved. See BuildingCatalogLensState.Compose.
-			_lens = _lens.Compose();
-
-			stage.Restart();
 			// One view, built once; every publish below reads it. See CatalogView.
-			var menu = _lens.Query.UiMenu;
+			var menu = _lens.Menu;
 			var menuHasCategories = PrefabIndexingSystem.GetMenuCategories(string.IsNullOrEmpty(menu) ? null : menu).Count > 0;
 			var view = _buildingCatalogAdapter.Build(
 				_lens.Query,
@@ -129,7 +124,7 @@ namespace BetterBuildingMenu.Systems
 				$"[LENS-REFRESH] {(int)refreshTimer.ElapsedMilliseconds}ms "
 				+ $"proj={_buildingCatalogAdapter.LastProjectionMs}ms({(_buildingCatalogAdapter.LastProjectionWasHit ? "hit" : "miss")}) "
 				+ $"page={pageMs} bounds={boundsMs} facets={facetsMs} counts={countsMs} axis={axisMs} tabs={tabsMs} expanded={expandedMs} tiers={tiersMs} "
-				+ $"menu='{_lens.Query.UiMenu}' total={page.TotalCount} from={caller}");
+				+ $"menu='{_lens.Menu}' total={page.TotalCount} from={caller}");
 		}
 
 		/// <summary>Publishes the milestone names the UI labels locked assets with.</summary>
