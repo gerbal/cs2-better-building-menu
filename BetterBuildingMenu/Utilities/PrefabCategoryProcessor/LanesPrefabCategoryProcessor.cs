@@ -3,6 +3,8 @@ using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Domain.Interfaces;
 using Game.Prefabs;
 
+using System.Diagnostics.CodeAnalysis;
+
 using Unity.Entities;
 
 namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
@@ -40,7 +42,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
             };
         }
 
-        public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, out PrefabIndex prefabIndex)
+        public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
         {
             if (!Mod.IsExtraDetailingEnabled || prefab is not NetLaneGeometryPrefab)
             {

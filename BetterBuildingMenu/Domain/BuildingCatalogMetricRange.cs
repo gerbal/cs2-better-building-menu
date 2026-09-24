@@ -91,13 +91,13 @@ namespace BetterBuildingMenu.Domain
 
 		private static bool TryParseBound(string? text, bool integer, out double? value)
 		{
-			if (string.IsNullOrWhiteSpace(text))
+			if (text?.Trim() is not { Length: > 0 } trimmed)
 			{
 				value = null;
 				return true;
 			}
 
-			if (!double.TryParse(text.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out double parsed)
+			if (!double.TryParse(trimmed, NumberStyles.Float, CultureInfo.InvariantCulture, out double parsed)
 				|| double.IsNaN(parsed)
 				|| double.IsInfinity(parsed))
 			{

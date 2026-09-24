@@ -59,12 +59,12 @@ namespace BetterBuildingMenu.Domain
 		/// </summary>
 		public static string? For(string? identifier)
 		{
-			if (string.IsNullOrWhiteSpace(identifier))
+			if (identifier?.Trim() is not { Length: > 0 } trimmed)
 			{
 				return null;
 			}
 
-			return Keys.TryGetValue(identifier.Trim(), out var key) ? key : null;
+			return Keys.TryGetValue(trimmed, out var key) ? key : null;
 		}
 
 		/// <summary>Exposed so tests can assert the shape of every entry.</summary>
