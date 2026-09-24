@@ -105,27 +105,32 @@ namespace BetterBuildingMenu.Systems
 				.Where(node => EntityManager.HasComponent<DevTreeNodeData>(node))
 				.GroupBy(node => EntityManager.GetComponentData<DevTreeNodeData>(node).m_Service))
 			{
-				var placed = service
-					.Select(node => (Node: node, Prefab: _prefabSystem.TryGetPrefab<PrefabBase>(node, out var pf) ? pf as DevTreeNodePrefab : null))
-					.Where(pair => pair.Prefab is not null)
-					.ToArray();
+				var placed = new List<(Entity Node, DevTreeNodePrefab Prefab)>();
+
+				foreach (var node in service)
+				{
+					if (_prefabSystem.TryGetPrefab<PrefabBase>(node, out var prefab) && prefab is DevTreeNodePrefab devTreeNode)
+					{
+						placed.Add((node, devTreeNode));
+					}
+				}
 
 				// The row the service's chain runs along, taken from its root.
 				// NOT zero: education's trunk sits at 1, with Technical above at
 				// 0 and Medical below at 2.
 				var trunk = placed
-					.Where(pair => pair.Prefab!.m_HorizontalPosition == 0)
-					.Select(pair => pair.Prefab!.m_VerticalPosition)
+					.Where(pair => pair.Prefab.m_HorizontalPosition == 0)
+					.Select(pair => pair.Prefab.m_VerticalPosition)
 					.DefaultIfEmpty(0f)
 					.First();
 
 				var ordered = placed
-					.OrderBy(pair => pair.Prefab!.m_HorizontalPosition)
+					.OrderBy(pair => pair.Prefab.m_HorizontalPosition)
 					// Then by distance from that trunk. Siblings in a column are drawn
 					// around the chain they hang off, so measuring outward takes the
 					// generic before its specialisations.
-					.ThenBy(pair => Math.Abs(pair.Prefab!.m_VerticalPosition - trunk))
-					.ThenBy(pair => pair.Prefab!.m_VerticalPosition)
+					.ThenBy(pair => Math.Abs(pair.Prefab.m_VerticalPosition - trunk))
+					.ThenBy(pair => pair.Prefab.m_VerticalPosition)
 					.ToArray();
 
 				for (var r = 0; r < ordered.Length; r++)

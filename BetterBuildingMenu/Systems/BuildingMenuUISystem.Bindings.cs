@@ -480,12 +480,12 @@ namespace BetterBuildingMenu.Systems
 		/// </remarks>
 		private static int[] ParseEntityIndices(string? joined)
 		{
-			if (string.IsNullOrWhiteSpace(joined))
+			if (joined?.Trim() is not { Length: > 0 })
 			{
 				return Array.Empty<int>();
 			}
 
-			var parts = joined!.Split(',');
+			var parts = joined.Split(',');
 			var indices = new List<int>(parts.Length);
 
 			foreach (var part in parts)
