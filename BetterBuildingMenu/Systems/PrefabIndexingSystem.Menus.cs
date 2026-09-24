@@ -141,10 +141,8 @@ namespace BetterBuildingMenu.Systems
 					Priority: uIObject?.m_Priority ?? 0)));
 			}
 
-			// A menu the bottom bar does not hold goes last, by priority. OrderBy is
-			// stable, so those keep the query's order among themselves. Should the
-			// toolbar walk fail, every menu is ordered that way rather than the pass
-			// failing with it.
+			// A menu the bottom bar does not hold goes last, by priority and then query
+			// order; if the toolbar walk fails, every menu does.
 			Dictionary<Entity, int> onToolbar;
 
 			try
@@ -169,10 +167,9 @@ namespace BetterBuildingMenu.Systems
 		}
 
 		/// <summary>Where each asset menu sits on the bottom bar, counted from 0.</summary>
-		/// <remarks>ToolbarUISystem's own steps: the toolbar groups sorted by
-		/// UIToolbarGroupData.m_Priority, then each group's members, from its UIGroupElement buffer,
-		/// sorted by UIObjectInfo. Its comparer is the priority alone and Unity's sort is not stable,
-		/// so only the same input put through the same sort gives the order the player sees.</remarks>
+		/// <remarks>ToolbarUISystem's own steps: the groups by UIToolbarGroupData.m_Priority, then
+		/// each group's members by UIObjectInfo. That sort is not stable, so only the same steps give
+		/// the player's order.</remarks>
 		private Dictionary<Entity, int> ToolbarOrder()
 		{
 			var order = new Dictionary<Entity, int>();
@@ -240,10 +237,8 @@ namespace BetterBuildingMenu.Systems
 					continue;
 				}
 
-				// GetObjects reads every member's PrefabData, and a member the game has
-				// removed outright stays in the buffer until the frame's clean-up. Vanilla
-				// would fail on that menu only when it draws it; this skips it rather
-				// than failing the pass.
+				// A member removed late in the frame can break GetObjects; that costs
+				// this menu its tabs for the pass, not the pass.
 				NativeList<UIObjectInfo> sorted;
 
 				try
@@ -267,7 +262,7 @@ namespace BetterBuildingMenu.Systems
 
 					prefab.TryGet<UIObject>(out var uIObject);
 
-					// Two menus sharing a prefab name share one list, as before.
+					// Two menus sharing a prefab name share one list.
 					if (!byMenu.TryGetValue(menuName, out var tabs))
 					{
 						tabs = new List<VanillaMenuCategory>();
@@ -290,11 +285,9 @@ namespace BetterBuildingMenu.Systems
 		}
 
 		/// <summary>A menu's category tabs, as ToolbarUISystem.GetSortedCategories orders them.</summary>
-		/// <remarks>Transcribed step for step. A member that is not a category, or has nothing in it,
-		/// is removed swap-back, which moves the last one into its place: vanilla drops an empty
-		/// category before it binds the row, and Transportation ships a ferry category that is empty
-		/// in a base-game save. Then Unity's sort by UIObjectInfo, whose comparer is the priority alone
-		/// and which is not stable, so only the same steps give the order the player sees.</remarks>
+		/// <remarks>Transcribed step for step: a member that is not a category, or is empty, is
+		/// removed swap-back, then Unity's unstable sort by priority, so only the same steps give the
+		/// player's order.</remarks>
 		private NativeList<UIObjectInfo> SortedCategories(Entity menu)
 		{
 			var objects = UIObjectInfo.GetObjects(
