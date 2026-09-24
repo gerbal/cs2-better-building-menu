@@ -250,17 +250,12 @@ namespace BetterBuildingMenu.Systems
 			return "Basic";
 		}
 
-		/// <summary>The node's name, without the "Node" the prefab titles all carry.</summary>
-		/// <remarks>An authoring artefact the player never sees in the dev tree, which draws the node
-		/// under its icon, so it is dropped rather than repeated across every tab of the strip.</remarks>
-		private string DevTreeBranchName(PrefabBase prefab)
-		{
-			var name = GetAssetName(prefab);
-
-			return name.EndsWith(" Node", StringComparison.Ordinal)
-				? name.Substring(0, name.Length - " Node".Length)
-				: name;
-		}
+		/// <summary>The node's name in the game's own words, as its dev tree shows it.</summary>
+		private string DevTreeBranchName(PrefabBase prefab) =>
+			DevTreeNodeName.Resolve(
+				GameManager.instance.localizationManager.activeDictionary
+					.TryGetValue(DevTreeNodeName.Key(prefab.name), out var name) ? name : null,
+				GetAssetName(prefab));
 
 		/// <summary>The branch an asset's unlock node belongs to, or its service's root.</summary>
 		/// <remarks>More than one node can gate an asset; DevTreeGates.Pick decides which names it,

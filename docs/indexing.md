@@ -92,12 +92,15 @@ re-reads back its plain name. Numbering only what it touched would leave that pr
 beside a sibling still called "Foo 2".
 
 A prefab the game recreates, such as a Road Builder road, arrives under a new entity, so a partial
-pass drops the old entry first. It finds it by prefab name with `CatalogIndex.GetByPrefabName`,
-which also answers the extension picker's rows, and removes it only if the game no longer maps
-that entry's prefab to its entity. `PrefabSystem.UpdatePrefab` keeps the `PrefabBase` and points it
-at the new entity, so this holds for the old entry and never for a live namesake of another type.
-Two prefab types can carry one name, and then the first in name order answers the lookup: if a
-live namesake sorts before the old entry, the old entry stays until the next full pass.
+pass drops the old entry first. `PrefabSystem.UpdatePrefab` marks the old entity `Deleted`, which
+it keeps until the frame's clean-up, after both ticks, so every partial pass starts by removing
+the entries of prefab entities marked `Deleted`. A `Deleted` prefab alone triggers a partial pass,
+so a prefab the game removes outright leaves the list too. The entity is the one link that
+always holds: Road Builder gives a road a new ID, and so a new prefab name, on every edit.
+
+The pass also looks the new entity's name up with `CatalogIndex.GetByPrefabName`, which answers the
+extension picker's rows too, and removes that entry if the game no longer maps its prefab to its
+entity. That covers a recreation whose old entity has already gone.
 
 ## A pass that fails
 
@@ -248,9 +251,13 @@ Power Plant under "Gas Power Plant", which are separate unlocks the player buys 
 
 **The root is named after its service** — Electricity, Water & Sewage, Police & Administration —
 because that is what the top bar already calls this bucket, and its tab draws the service's own
-glyph. The node's own name is worse: it has no localized title, so it falls through to a prefab
-name. Everything the tree never gated falls into that root bucket, which is why the root is also
+glyph. Everything the tree never gated falls into that root bucket, which is why the root is also
 recorded against its service name.
+
+**Node names come from `Progression.NODE_NAME[<node prefab>]`**, the key the dev tree itself
+reads. The prefab's title id points at `Assets.NAME`, which has no entry for a node, so asking for
+the prefab's title gets the English prefab name ("Police Headquarters Node") in every language.
+That name is still the fallback, without its "Node".
 
 **Ranking is the tree's own layout**, column first and then distance from the trunk row. The
 column alone leaves siblings tied, and an alphabetical tie-break puts Medical University and
