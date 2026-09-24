@@ -19,11 +19,13 @@ namespace BetterBuildingMenu.Domain
 
 		public int Count => _dictionary.Count;
 
-		// Name order, tie-broken on the prefab name so it is stable; the lens
-		// orders its own page. Private, so no reader can reorder or edit it.
+		// Name order, tie-broken on the prefab name and then the id so it is stable,
+		// and so CatalogIndex.GetByPrefabName agrees with it; the lens orders its own
+		// page. Private, so no reader can reorder or edit it.
 		private List<PrefabIndex> OrderedList => _orderedList ??= _dictionary.Values
 			.OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
 			.ThenBy(x => x.PrefabName, StringComparer.Ordinal)
+			.ThenBy(x => x.Id)
 			.ToList();
 
 		// Written only through CatalogIndex.File, which keeps the two lists an entry is

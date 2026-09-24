@@ -74,11 +74,18 @@ partial pass. Each processor keeps two queries, both built in `OnCreate`: its ow
 narrowed to `Created` or `Updated`. A partial pass reads only the narrowed copy, so one edited road
 costs one prefab rather than every road its processor matches.
 
-The indexer is registered at two phases, `PrefabUpdate` and `UIUpdate`, and both run every frame.
-`PrefabUpdate` runs inside `PrefabSystem`'s own update, which the main loop runs before
-`UnlockSystem`, so only the `UIUpdate` tick sees that frame's unlock events. A due full pass runs
-at whichever tick comes first. A partial pass runs at both: a changed prefab keeps its `Created`
-and `Updated` tags until the frame's clean-up, so the second tick re-reads what the first did.
+The indexer runs at one phase, `UIUpdate`. The main loop runs `PrefabSystem` (whose own update
+applies queued prefab updates and tags what it created or changed), then `UnlockSystem`, then
+`UIUpdateSystem`, every frame the world updates, in the game and the editor alike. So the indexer
+sees that frame's unlock events and every `Created` or `Updated` tag, which last until the frame's
+clean-up, and it runs before the panel's own `UIUpdate` system, which reads the index. It was once
+registered at `PrefabUpdate` too, which read each changed prefab twice a frame and added nothing
+else: nothing reads the index between the two.
+
+A prefab added and tagged after `UIUpdate` but before the frame's clean-up, for example by a mod's
+own main-loop system calling `PrefabSystem.AddPrefab`, has its tags cleared before the indexer
+next runs, and waits for the next full pass. `PrefabSystem.UpdatePrefab`, which Road Builder uses,
+queues the change for the next frame's `PrefabSystem` update, so it is not affected.
 
 Duplicate names are numbered after every pass, partial passes included, always starting from each
 prefab's `AssetName` (`CatalogIndex.NumberDuplicateNames`). A partial pass gives the prefab it
@@ -86,12 +93,22 @@ re-reads back its plain name. Numbering only what it touched would leave that pr
 beside a sibling still called "Foo 2".
 
 A prefab the game recreates, such as a Road Builder road, arrives under a new entity, so a partial
-pass drops the old entry first. It finds it by prefab name with `CatalogIndex.GetByPrefabName`,
-which also answers the extension picker's rows, and removes it only if the game no longer maps
-that entry's prefab to its entity. `PrefabSystem.UpdatePrefab` keeps the `PrefabBase` and points it
-at the new entity, so this holds for the old entry and never for a live namesake of another type.
-Two prefab types can carry one name, and then the first in name order answers the lookup: if a
-live namesake sorts before the old entry, the old entry stays until the next full pass.
+pass drops the old entry first. `PrefabSystem.UpdatePrefab` marks the old entity `Deleted`, which
+it keeps until the frame's clean-up, after the indexer's `UIUpdate` tick, so every partial pass
+starts by removing the entries of prefab entities marked `Deleted`. A `Deleted` prefab alone
+triggers a partial pass, so a prefab the game removes outright leaves the list too. The entity is
+the one link that always holds: Road Builder gives a road a new ID, and so a new prefab name, on
+every edit.
+
+For a recreation whose old entity has already gone, the pass also drops every entry filed under
+the new entity's name whose prefab the game no longer maps to that entry's entity.
+`PrefabSystem.UpdatePrefab` keeps the `PrefabBase` and points it at the new entity, so this holds
+for the old entries and never for a live namesake of another type. An entity the game has already
+replaced, as when a prefab is created and recreated in one frame, is skipped, and anything filed
+for it removed. `CatalogIndex` keeps the entries under each prefab name in step as it files and
+removes them, and `GetByPrefabName` answers the extension picker's rows from the same map. Two
+prefab types can carry one name; then the first by display name answers, as the lists order them,
+and the lower id between equal names.
 
 ## A pass that fails
 
@@ -160,6 +177,15 @@ is `FilterOutUpgrades`, which drops `ServiceUpgradeData`, because a service upgr
 from its parent building's row rather than from the grid. The theme and asset-pack filters are
 deliberately NOT applied: those are player settings that hide assets which should still be
 indexed.
+
+**The menus and their tabs are in the game's order**, reached the same way. A menu's tabs are
+`GetSortedCategories` run as is: the menu's members, less the non-categories and the empty ones
+(removed swap-back, which moves the last one into the gap), then Unity's sort by `UIObjectInfo`.
+That comparer is the priority alone and the sort is not stable, so any sort of our own, stable or
+not, could put equal priorities in a different order from the game's. The menus are the bottom
+bar's: the toolbar groups by priority, then each group's members sorted the same way. A menu no
+toolbar group holds goes last. The UI keeps the menus in that order. It sorts the tabs again, by
+the same priority and stably, which leaves them as they are.
 
 The walk's tables, with the menus and their category tabs, go into the pass's `VanillaMenuIndex`,
 which its `CatalogIndex` carries as `Menus`: a new pass reads the menus afresh, and nothing
@@ -288,8 +314,9 @@ That name is still the fallback, without its "Node".
 column alone leaves siblings tied, and an alphabetical tie-break puts Medical University and
 Technical University above the plain University they specialise. Siblings in a column are drawn
 around the chain they hang off, so measuring outward from the trunk takes the generic before its
-specialisations — the order the player meets them in. The trunk row is taken from the service's
-own root and is not necessarily zero.
+specialisations — the order the player meets them in. The trunk row is that of the service's first
+node in column 0, its root, and is not necessarily zero. `DevTreeLayout.Rank` does this, over each
+node's column and row; the system only reads where each node is drawn.
 
 **More than one node** can gate an asset. `DevTreeGates.Pick` files it by a rule modelled on
 the game's `UnlockSystem`, which unlocks an asset once every node it needs (`RequireAll`) is bought
@@ -339,13 +366,13 @@ are things you build at an airport, so they are drawn under the Airport tab.
 Folds are keyed on the dev tree NODE prefab name, not on the label (which is localized and would
 fold in English but not in German) and not on the asset name. A key that matches nothing is a
 typo rather than a no-op, and nothing in the build or the tests catches it, so an unmatched key
-warns and the fold count is logged.
+warns and the fold count is logged. `DevTreeLayout.Fold` applies them and returns the unmatched
+ones; the system logs the warnings.
 
-**An asset's branch** is looked up through `ProgressionUtils.CollectSubRequirements`: the first
-collected requirement that is a labelled dev tree node wins. A node can have several parents
-(Satellite Uplink requires both Server Farm and Telecom Tower); taking the first keeps the walk
-total, and nothing in the UI depends on that choice being canonical. An asset no node gated falls
-into the service's root bucket.
+**An asset's branch** comes from the requirements `ProgressionUtils.CollectSubRequirements`
+collects. `ProgressionIndex.BranchOf` turns each labelled node among them into a gate for
+`DevTreeGates.Pick`, as above, and falls back to the root bucket of the service the asset's menu is
+named after when no node gated it. The system only reads the asset's own service.
 
 ## Milestones
 

@@ -86,7 +86,7 @@ namespace BetterBuildingMenu.Tests
 		public void TwoEntriesSharingAPrefabNameResolveToTheFirstInNameOrder()
 		{
 			// Two prefab types can carry one name. The picker asks the index's own map,
-			// which answers with the first entry in name order, as a partial pass does.
+			// which answers with the first entry in name order.
 			var later = Hospital();
 			later.Name = "Hospital B";
 			var earlier = TestPrefabs.Entry(12, PrefabCategory.ServiceBuildings, PrefabSubCategory.ServiceBuildings_Health);
