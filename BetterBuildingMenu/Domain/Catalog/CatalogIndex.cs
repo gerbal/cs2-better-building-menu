@@ -58,9 +58,10 @@ namespace BetterBuildingMenu.Domain.Catalog
 				: null;
 
 		/// <summary>A category's lists, its own <see cref="PrefabSubCategory.Any"/> included.</summary>
+		/// <remarks>Projected rather than the dictionary itself, which a caller could cast back and edit.</remarks>
 		public IEnumerable<KeyValuePair<PrefabSubCategory, IndexedPrefabList>> ListsIn(PrefabCategory category) =>
 			_lists.TryGetValue(category, out var subCategories)
-				? subCategories
+				? subCategories.Select(pair => pair)
 				: Enumerable.Empty<KeyValuePair<PrefabSubCategory, IndexedPrefabList>>();
 
 		/// <summary>The entry for a prefab entity's index, or null when nothing indexed it.</summary>
