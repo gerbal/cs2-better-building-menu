@@ -68,8 +68,9 @@ only what it touched would leave that prefab as "Foo" beside a sibling still cal
 
 ## A pass that fails
 
-A full pass builds a new index, along with the menus, zones, milestones and dev tree it reads. `RunIndex` captures what it is about to replace, and if anything in the build throws, it
-puts all of it back and logs the error. The panel keeps the index it had, and nothing reaches the
+A full pass builds a new index, along with the menus, zones, milestones and dev tree it reads.
+`RunIndex` captures what it is about to replace, and if anything in the build throws, it puts all
+of it back and logs the error. The panel keeps the index it had, and nothing reaches the
 game's load or locale dispatch.
 
 Capturing references is enough, because a pass never writes to the old collections. Every
@@ -88,10 +89,9 @@ asset built or bulldozed — bumps the indexer's `Generation`, and `BuildingMenu
 compares it with the generation its last publish read (`IndexWatch`).
 
 Each publish reads the indexer's `Source` once: the index, the placed uniques and the generation
-together.
-Every cache the adapter keeps is keyed on that generation. It is never reset, because the caches
-compare plain ints, and a count that started again could land on a number an older projection was
-stored under.
+together. Every cache the adapter keeps is keyed on that generation. It is never reset, because
+the caches compare plain ints, and a count that started again could land on a number an older
+projection was stored under.
 
 A change while the panel is open schedules the same debounced refresh a keystroke does, so a burst
 of partial passes or unique events is one refresh rather than one each. A change while it is closed

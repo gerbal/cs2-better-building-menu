@@ -7,7 +7,6 @@ using Colossal.PSI.Common;
 using Colossal.Serialization.Entities;
 
 using BetterBuildingMenu.Domain;
-using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Domain.Interfaces;
 using BetterBuildingMenu.Utilities;
 
