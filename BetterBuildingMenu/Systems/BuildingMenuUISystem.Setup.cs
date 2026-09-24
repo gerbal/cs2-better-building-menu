@@ -242,11 +242,13 @@ namespace BetterBuildingMenu.Systems
 
 		protected override void OnDestroy()
 		{
+			// Null once Mod.OnDispose has run, which at quit can come first.
 			if (Mod.Settings != null)
 			{
 				Mod.Settings.onSettingsApplied -= OnSettingsApplied;
 			}
 
+			// Null if OnCreate threw before setting it.
 			if (_toolSystem is not null)
 			{
 				_toolSystem.EventPrefabChanged -= OnPrefabChanged;
