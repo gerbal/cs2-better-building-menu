@@ -24,15 +24,19 @@ namespace BetterBuildingMenu.Domain
 		public CoverageData? CoverageData { get; set; }
 		public DeathcareFacilityData? DeathcareFacilityData { get; set; }
 		public ElectricityConnectionData? ElectricityConnectionData { get; set; }
+		public EmergencyGeneratorData? EmergencyGeneratorData { get; set; }
 		public EmergencyShelterData? EmergencyShelterData { get; set; }
 		public FireStationData? FireStationData { get; set; }
 		public GarbageFacilityData? GarbageFacilityData { get; set; }
+		public GarbagePoweredData? GarbagePoweredData { get; set; }
+		public GroundWaterPoweredData? GroundWaterPoweredData { get; set; }
 		public HospitalData? HospitalData { get; set; }
 		public LeisureProviderData? LeisureProviderData { get; set; }
 		public MailBoxData? MailBoxData { get; set; }
 		public MaintenanceDepotData? MaintenanceDepotData { get; set; }
 		public NetGeometryData? NetGeometryData { get; set; }
 		public ParkData? ParkData { get; set; }
+		public ParkingFacilityData? ParkingFacilityData { get; set; }
 		public PathwayData? PathwayData { get; set; }
 		public PlaceableNetData? PlaceableNetData { get; set; }
 		public PlaceableObjectData? PlaceableObjectData { get; set; }
@@ -53,8 +57,10 @@ namespace BetterBuildingMenu.Domain
 		public TrackData? TrackData { get; set; }
 		public TransportDepotData? TransportDepotData { get; set; }
 		public TransportStationData? TransportStationData { get; set; }
+		public TransportStopData? TransportStopData { get; set; }
 		public WastewaterTreatmentPlantData? WastewaterTreatmentPlantData { get; set; }
 		public WaterPipeConnectionData? WaterPipeConnectionData { get; set; }
+		public WaterPoweredData? WaterPoweredData { get; set; }
 		public WaterPumpingStationData? WaterPumpingStationData { get; set; }
 		public WaterwayData? WaterwayData { get; set; }
 		public WindPoweredData? WindPoweredData { get; set; }
@@ -79,12 +85,8 @@ namespace BetterBuildingMenu.Domain
 		/// placeable network.</summary>
 		public bool ZonesAlongside { get; set; }
 
-		/// <summary><c>PlaceableNetPiece.m_ElevationCost</c> per cell, when a placeable network has
-		/// one above zero.</summary>
-		public float? ElevationCost { get; set; }
-
-		/// <summary>The <c>ServiceUpkeepData</c> buffer, as each entry's resource name and
-		/// amount.</summary>
+		/// <summary>The <c>ServiceUpkeepData</c> buffer, as each entry's resource name and amount;
+		/// empty when the prefab has the buffer with nothing in it, null when it has none.</summary>
 		public IReadOnlyList<(string Resource, int Amount)>? ServiceUpkeep { get; set; }
 
 		/// <summary>The <c>UpkeepModifierData</c> buffer's multipliers.</summary>

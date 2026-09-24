@@ -170,6 +170,8 @@ namespace BetterBuildingMenu.Tests
 						m_GroundPollutionMultiplier = -0.5f, m_AirPollutionMultiplier = 0.25f, m_NoisePollutionMultiplier = 0f,
 					},
 					UpkeepMultipliers = new[] { 0.75f },
+					ParkingFacilityData = new ParkingFacilityData { m_ComfortFactor = 0.25f },
+					TransportStopData = new TransportStopData { m_ComfortFactor = 0.1f },
 					TransportStationData = new TransportStationData { m_ComfortFactor = 0.5f },
 					StorageLimitData = new Game.Companies.StorageLimitData { m_Limit = 257 },
 					ElectricityConnectionData = new ElectricityConnectionData { m_Capacity = 263, m_Voltage = ElectricityConnection.Voltage.Low },
@@ -196,8 +198,8 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(199, entry.WaterCapacity);
 			// The treatment plant is read after the outlet, so its figure stands.
 			Assert.Equal(271, entry.SewageCapacity);
-			// The largest, and neither the first nor the last added.
-			Assert.Equal(5_000d, entry.Capacity);
+			// The primary role's own figure, not the largest: that is the plant's, in another unit.
+			Assert.Equal(53d, entry.Capacity);
 			Assert.Equal("School", entry.BuildingTypeName);
 			Assert.False(entry.CostIsPerDistance);
 			Assert.Null(entry.Footprints);
@@ -207,7 +209,7 @@ namespace BetterBuildingMenu.Tests
 				{
 					("xpReward", 2d), ("upkeep:Coal", 19d),
 					("minCrew", 29d), ("eveningShift", 50d), ("nightShift", 25d), ("workConditions", 31d),
-					("studentWellbeing", 4d), ("studentHealth", 6d), ("graduation", 0.75d),
+					("studentWellbeing", 4d), ("studentHealth", 6d), ("graduation", 75d),
 					("ambulances", 67d), ("helicopters", 71d),
 					("zoneUpkeep", 0.5d), ("zoneHouseholds", 73d), ("zoneSpace", 1.5d), ("zoneFireHazard", 2d), ("zoneMaxHeight", 79d),
 					("attractiveness", 83d), ("mailboxCapacity", 89d),
@@ -216,11 +218,14 @@ namespace BetterBuildingMenu.Tests
 					("helicopters", 149d), ("disasterResponse", 151d),
 					("jailCapacity", 167d), ("helicopters", 163d),
 					("prisonVans", 173d), ("prisonerWellbeing", 8d), ("prisonerHealth", 9d),
-					("hearses", 181d), ("processingRate", 0.125d), ("shelterVehicles", 197d),
+					("hearses", 181d), ("processingRate", 1d), ("shelterVehicles", 197d),
 					("purification", 25d), ("purification", 50d),
 					("batteryOutput", 233d), ("maintenancePool", 239d), ("depotVehicles", 241d), ("maintenanceVehicles", 251d),
-					("groundPollutionModifier", -50d), ("airPollutionModifier", 25d), ("upkeepChange", -25d),
-					("comfort", 50d), ("cargoCapacity", 257d), ("electricityCapacity", 263d), ("stormCapacity", 269d),
+					("groundPollutionModifier", -50d), ("airPollutionModifier", 25d), ("resourceConsumption", -25d),
+					("comfort", 25d), ("comfort", 10d), ("comfort", 50d),
+					("cargoCapacity", 257d), ("electricityCapacity", 263d), ("stormCapacity", 269d),
+					// The secondary roles' figures, last.
+					("garbageStorage", 113d), ("powerOutput", 5_450d),
 				},
 				entry.ServiceFacts.Select(fact => (fact.Key, fact.Value)));
 			Assert.Equal(
@@ -244,14 +249,22 @@ namespace BetterBuildingMenu.Tests
 				new PrefabSnapshot
 				{
 					PlaceableNetData = new PlaceableNetData { m_DefaultConstructionCost = 40, m_DefaultUpkeepCost = 0.6f },
-					ElevationCost = 2f,
 				},
 				PrefabCategory.Networks);
 
 			Assert.True(entry.CostIsPerDistance);
 			Assert.Equal(5_000u, entry.ConstructionCost);
 			Assert.Equal(75, entry.Upkeep);
-			Assert.Equal(250d, FactValue(entry, "elevationCost"));
+		}
+
+		[Fact]
+		public void ANetworkWithNoUpkeepHasNoUpkeepLine()
+		{
+			var entry = Apply(
+				new PrefabSnapshot { PlaceableNetData = new PlaceableNetData { m_DefaultConstructionCost = 40, m_DefaultUpkeepCost = 0.003f } },
+				PrefabCategory.Networks);
+
+			Assert.Null(entry.Upkeep);
 		}
 
 		[Fact]
@@ -342,24 +355,32 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void ConsumptionStandsInWhenTheBufferHasNoMoney()
+		public void ABufferWithNoMoneyIsAnUpkeepOfNothing()
 		{
-			var entry = Apply(new PrefabSnapshot
+			var coal = Apply(new PrefabSnapshot
 			{
 				ConsumptionData = new ConsumptionData { m_Upkeep = 1_000 },
 				ServiceUpkeep = new[] { ("Coal", 4_000) },
 			});
+			var empty = Apply(new PrefabSnapshot { ServiceUpkeep = System.Array.Empty<(string, int)>() });
 
-			Assert.Equal(1_000, entry.Upkeep);
+			Assert.Equal(0, coal.Upkeep);
+			Assert.Equal(4_000d, FactValue(coal, "upkeep:Coal"));
+			Assert.Equal(0, empty.Upkeep);
 		}
 
+		/// <summary>A zoned or signature building: its ConsumptionData upkeep is what its renters pay,
+		/// and vanilla, which reads only the buffer, shows none.</summary>
 		[Fact]
-		public void ABufferWithNoMoneyAndNoConsumptionLeavesTheUpkeepUnknown()
+		public void AConsumptionUpkeepWithoutTheBufferIsNotTheCitys()
 		{
-			var entry = Apply(new PrefabSnapshot { ServiceUpkeep = new[] { ("Coal", 4_000) } });
+			var entry = Apply(new PrefabSnapshot
+			{
+				ConsumptionData = new ConsumptionData { m_Upkeep = 1_000, m_ElectricityConsumption = 300f },
+			});
 
 			Assert.Null(entry.Upkeep);
-			Assert.Equal(4_000d, FactValue(entry, "upkeep:Coal"));
+			Assert.Equal(300f, entry.ElectricityConsumption);
 		}
 
 		[Fact]
@@ -541,7 +562,7 @@ namespace BetterBuildingMenu.Tests
 		{
 			var entry = Apply(new PrefabSnapshot { UpkeepMultipliers = multipliers });
 
-			Assert.Equal(expected, entry.ServiceFacts.Where(fact => fact.Key == "upkeepChange").Select(fact => (double?)fact.Value).SingleOrDefault());
+			Assert.Equal(expected, entry.ServiceFacts.Where(fact => fact.Key == "resourceConsumption").Select(fact => (double?)fact.Value).SingleOrDefault());
 		}
 
 		/// <summary>PrefabUISystem's pollution binders: a signed change, where 0 is none, as
@@ -566,6 +587,130 @@ namespace BetterBuildingMenu.Tests
 			});
 
 			Assert.Equal(expected, entry.ServiceFacts.Where(fact => fact.Key == "groundPollutionModifier").Select(fact => (double?)fact.Value).SingleOrDefault());
+		}
+
+		/// <summary>GarbagePowered requires GarbageFacility and PowerPlant, so every incinerator is
+		/// both, and vanilla shows its output and its store on two lines.</summary>
+		[Fact]
+		public void AnIncineratorIsAPowerPlantWithAGarbageStore()
+		{
+			var entry = Apply(new PrefabSnapshot
+			{
+				GarbageFacilityData = new GarbageFacilityData { m_GarbageCapacity = 100_000, m_ProcessingSpeed = 5_000 },
+				PowerPlantData = new PowerPlantData { m_ElectricityProduction = 0 },
+				GarbagePoweredData = new GarbagePoweredData { m_Capacity = 30_000 },
+			});
+
+			Assert.Equal("PowerPlant", entry.BuildingTypeName);
+			Assert.Equal(30_000d, entry.Capacity);
+			Assert.Equal(100_000d, FactValue(entry, "garbageStorage"));
+			Assert.DoesNotContain("powerOutput", Keys(entry));
+		}
+
+		[Fact]
+		public void APlantsOutputIsEverySourceAdded()
+		{
+			var entry = Apply(new PrefabSnapshot
+			{
+				PowerPlantData = new PowerPlantData { m_ElectricityProduction = 100 },
+				WindPoweredData = new WindPoweredData { m_Production = 10 },
+				SolarPoweredData = new SolarPoweredData { m_Production = 20 },
+				GarbagePoweredData = new GarbagePoweredData { m_Capacity = 30 },
+				// (int)(1000000f * factor), as vanilla truncates it.
+				WaterPoweredData = new WaterPoweredData { m_CapacityFactor = 0.0005f },
+				GroundWaterPoweredData = new GroundWaterPoweredData { m_Production = 40 },
+				EmergencyGeneratorData = new EmergencyGeneratorData { m_ElectricityProduction = 50 },
+			});
+
+			Assert.Equal("PowerPlant", entry.BuildingTypeName);
+			Assert.Equal(750d, entry.Capacity);
+		}
+
+		[Fact]
+		public void AnEmergencyGeneratorIsPowerWhereverItSits()
+		{
+			var generator = new EmergencyGeneratorData { m_ElectricityProduction = 500 };
+
+			var alone = Apply(new PrefabSnapshot { EmergencyGeneratorData = generator });
+			var onAShelter = Apply(new PrefabSnapshot
+			{
+				EmergencyShelterData = new EmergencyShelterData { m_ShelterCapacity = 200 },
+				EmergencyGeneratorData = generator,
+			});
+			// A source is not a plant: vanilla draws no output without one.
+			var sourceOnly = Apply(new PrefabSnapshot { SolarPoweredData = new SolarPoweredData { m_Production = 20 } });
+
+			Assert.Equal("PowerPlant", alone.BuildingTypeName);
+			Assert.Equal(500d, alone.Capacity);
+			Assert.Equal("EmergencyShelter", onAShelter.BuildingTypeName);
+			Assert.Equal(200d, onAShelter.Capacity);
+			Assert.Equal(500d, FactValue(onAShelter, "powerOutput"));
+			Assert.Null(sourceOnly.BuildingTypeName);
+			Assert.Null(sourceOnly.Capacity);
+		}
+
+		/// <summary>GraduationSystem adds the modifier to a probability, so it is points, signed.</summary>
+		[Theory]
+		[InlineData(0.05f, 5d)]
+		[InlineData(-0.1f, -10d)]
+		[InlineData(0f, null)]
+		public void AGraduationModifierIsPercentagePointsAdded(float modifier, double? expected)
+		{
+			var entry = Apply(new PrefabSnapshot { SchoolData = new SchoolData { m_StudentCapacity = 100, m_GraduationModifier = modifier } });
+
+			Assert.Equal(expected, entry.ServiceFacts.Where(fact => fact.Key == "graduation").Select(fact => (double?)fact.Value).SingleOrDefault());
+		}
+
+		[Fact]
+		public void AnOffsetThatHurtsIsStillAFigure()
+		{
+			var entry = Apply(new PrefabSnapshot
+			{
+				SchoolData = new SchoolData { m_StudentCapacity = 100, m_StudentWellbeing = -5, m_StudentHealth = 0 },
+				PrisonData = new PrisonData { m_PrisonerCapacity = 10, m_PrisonerWellbeing = -3, m_PrisonerHealth = 2 },
+				WorkplaceData = new WorkplaceData { m_MaxWorkers = 5, m_WorkConditions = -10 },
+			});
+
+			Assert.Equal(-5d, FactValue(entry, "studentWellbeing"));
+			Assert.DoesNotContain("studentHealth", Keys(entry));
+			Assert.Equal(-3d, FactValue(entry, "prisonerWellbeing"));
+			Assert.Equal(2d, FactValue(entry, "prisonerHealth"));
+			Assert.Equal(-10d, FactValue(entry, "workConditions"));
+		}
+
+		[Fact]
+		public void AParkingLotHasTheComfortVanillaShows()
+		{
+			var lot = Apply(new PrefabSnapshot { ParkingFacilityData = new ParkingFacilityData { m_ComfortFactor = 0.5f } });
+			var none = Apply(new PrefabSnapshot { TransportStopData = new TransportStopData { m_ComfortFactor = 0.004f } });
+
+			Assert.Equal(50d, FactValue(lot, "comfort"));
+			Assert.DoesNotContain("comfort", Keys(none));
+		}
+
+		/// <summary>RequiredResourceBinder asks about a groundwater-powered plant first.</summary>
+		[Fact]
+		public void AGroundwaterPlantDrawsGroundWater()
+		{
+			var entry = Apply(new PrefabSnapshot
+			{
+				GroundWaterPoweredData = new GroundWaterPoweredData { m_Production = 10 },
+				WaterPumpingStationData = new WaterPumpingStationData { m_Types = AllowedWaterTypes.SurfaceWater, m_Capacity = 10 },
+			});
+
+			Assert.Equal(new[] { "GroundWater" }, TextFacts(entry, "waterSource"));
+		}
+
+		/// <summary>Vanilla's DECEASED_PROCESSING_CAPACITY rounds up.</summary>
+		[Fact]
+		public void AProcessingRateRoundsUp()
+		{
+			var entry = Apply(new PrefabSnapshot
+			{
+				DeathcareFacilityData = new DeathcareFacilityData { m_StorageCapacity = 10, m_ProcessingRate = 2.4f },
+			});
+
+			Assert.Equal(3d, FactValue(entry, "processingRate"));
 		}
 
 		[Fact]

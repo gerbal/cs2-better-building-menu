@@ -837,7 +837,7 @@ namespace BetterBuildingMenu.Systems
 			// Enableable: presence alone would mark every unlockable asset
 			// locked forever, including the ones already earned.
 			prefabIndex.IsLocked = EntityManager.HasEnabledComponent<Locked>(entity);
-			prefabIndex.Bonuses = GetBonuses(entity);
+			prefabIndex.Bonuses = GetBonuses(DetailsSource(entity));
 
 			// Milestone kept whatever the lock state; requirements only while
 			// locked. See the matching note in ApplyUnlocks.

@@ -26,10 +26,10 @@ describe("renderServiceFacts", () => {
     ]);
   });
 
-  it("draws a modifier as a multiplier, not a quantity", () => {
-    // A graduation modifier of 1.15 is a different building from one of 1.5;
+  it("draws a multiplier as a multiplier, not a quantity", () => {
+    // A floor-space multiplier of 1.15 is a different zone from one of 1.5;
     // rounded to whole numbers both would read "×1".
-    const [fact] = renderServiceFacts([{ key: "graduation", value: 1.15 }], noTranslation);
+    const [fact] = renderServiceFacts([{ key: "zoneSpace", value: 1.15 }], noTranslation);
 
     assert.equal(fact.value, "×1.15");
   });
@@ -206,23 +206,45 @@ describe("what vanilla's tooltip shows on upgrades", () => {
     assert.equal(render("noisePollutionModifier", 100).label, "Noise pollution");
   });
 
-  it("shows an upkeep modifier signed, as vanilla does", () => {
+  it("shows an upkeep modifier signed, under vanilla's resource consumption label", () => {
     // UpkeepModifierData is signed too: the largest multiplier minus one, in
-    // percent. A saving reads as a minus.
-    assert.deepEqual(render("upkeepChange", -20), { key: "upkeepChange", label: "Upkeep", value: "-20 %" });
-    assert.equal(render("upkeepChange", 15).value, "+15 %");
+    // percent. A saving reads as a minus. It changes what the building burns,
+    // not what it costs, so it is not "Upkeep".
+    assert.deepEqual(render("resourceConsumption", -20), { key: "resourceConsumption", label: "Resource consumption", value: "-20 %" });
+    assert.equal(render("resourceConsumption", 15).value, "+15 %");
+  });
+
+  it("shows graduation as points added, and happiness offsets with their sign", () => {
+    // The indexer sends the graduation modifier ×100: 0.05 is five points on
+    // the probability, which "×0.05" would read as a 95 % cut.
+    assert.deepEqual(render("graduation", 5), { key: "graduation", label: "Graduation", value: "+5 %" });
+    assert.equal(render("graduation", -10).value, "-10 %");
+    assert.equal(render("studentWellbeing", -5).value, "-5");
+    assert.equal(render("prisonerHealth", 3).value, "+3");
+    assert.equal(render("workConditions", -10).value, "-10");
+  });
+
+  it("keeps a decimal on homes per cell", () => {
+    assert.equal(render("zoneHouseholdsPerCell", 1.4).value, "1.4 /cell");
+    assert.equal(render("zoneHouseholdsPerCell", 2).value, "2 /cell");
+    // A fixed count stays whole.
+    assert.equal(render("zoneHouseholds", 1.4).value, "1");
+  });
+
+  it("names a shelter's vehicles as vanilla does", () => {
+    assert.deepEqual(render("shelterVehicles", 4), { key: "shelterVehicles", label: "Evacuation buses", value: "4" });
   });
 
   it("places vehicles with vehicles and modifiers with how-well", () => {
     const ordered = orderFacts([
-      { key: "nightShift" }, { key: "upkeepChange" }, { key: "hearses" }, { key: "jailCapacity" }, { key: "groundPollutionModifier" }, { key: "collectionTrucks" },
+      { key: "nightShift" }, { key: "resourceConsumption" }, { key: "hearses" }, { key: "jailCapacity" }, { key: "groundPollutionModifier" }, { key: "collectionTrucks" },
     ]).map((fact) => fact.key);
 
     assert.ok(ordered.indexOf("jailCapacity") < ordered.indexOf("hearses"), "a capacity before a vehicle count");
     assert.ok(Math.abs(ordered.indexOf("hearses") - ordered.indexOf("collectionTrucks")) === 1, "vehicle counts sit together");
     assert.ok(ordered.indexOf("hearses") < ordered.indexOf("groundPollutionModifier"), "what it does before how well");
-    assert.ok(ordered.indexOf("groundPollutionModifier") < ordered.indexOf("upkeepChange"));
-    assert.ok(ordered.indexOf("upkeepChange") < ordered.indexOf("nightShift"), "modifiers before staffing");
+    assert.ok(ordered.indexOf("groundPollutionModifier") < ordered.indexOf("resourceConsumption"));
+    assert.ok(ordered.indexOf("resourceConsumption") < ordered.indexOf("nightShift"), "modifiers before staffing");
   });
 });
 
@@ -275,7 +297,8 @@ describe("which figures are vanilla's own", () => {
   it("marks the figures the game's tooltip binds", () => {
     for (const key of ["garbageProcessing", "sortingRate", "collectionTrucks", "ambulances", "hearses", "jailCapacity",
       "cargoCapacity", "batteryOutput", "electricityCapacity", "purification", "comfort", "attractiveness",
-      "shelterVehicles", "helicopters", "groundPollutionModifier", "upkeepChange", "voltage", "waterSource", "transportType"]) {
+      "shelterVehicles", "helicopters", "groundPollutionModifier", "resourceConsumption", "voltage", "waterSource",
+      "garbageStorage", "powerOutput"]) {
       assert.equal(isVanillaFact(key), true, key);
     }
   });
@@ -283,7 +306,9 @@ describe("which figures are vanilla's own", () => {
   it("leaves ours as ours", () => {
     for (const key of ["xpReward", "jobComplexity", "eveningShift", "nightShift", "workConditions", "minCrew",
       "graduation", "studentWellbeing", "studentHealth", "prisonerWellbeing", "disasterResponse", "maintenancePool",
-      "elevatedWidth", "elevationCost", "roadFeature", "trackType", "zoneHouseholds", "zoneSpace", "facilityFeature"]) {
+      "elevatedWidth", "roadFeature", "trackType", "zoneHouseholds", "zoneSpace", "facilityFeature",
+      // No binder shows these, whatever the game's data holds.
+      "stormCapacity", "transportType"]) {
       assert.equal(isVanillaFact(key), false, key);
     }
   });

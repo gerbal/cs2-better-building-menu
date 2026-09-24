@@ -63,7 +63,11 @@ namespace BetterBuildingMenu.Domain
 				// composition pieces for ONE cell, so it is converted to the per-kilometre
 				// figure the game itself shows and flagged as a rate.
 				prefabIndex.ConstructionCost = (uint)Math.Round(netData.m_DefaultConstructionCost * NetCellsPerKilometre);
-				prefabIndex.Upkeep = (int)Math.Round(netData.m_DefaultUpkeepCost * NetCellsPerKilometre);
+				// Rounded after the per-kilometre product, which is what NetUtils.GetUpkeepCost
+				// charges, where vanilla's tooltip rounds the per-cell figure first. Its silence
+				// on none is kept: a road with no upkeep has no upkeep line.
+				var netUpkeep = (int)Math.Round(netData.m_DefaultUpkeepCost * NetCellsPerKilometre);
+				prefabIndex.Upkeep = netUpkeep != 0 ? netUpkeep : null;
 				prefabIndex.CostIsPerDistance = true;
 
 				// Speed is per network TYPE rather than on a shared component, so each
@@ -131,32 +135,26 @@ namespace BetterBuildingMenu.Domain
 				{
 					TextFact(prefabIndex, "roadFeature", "zonesAlongside");
 				}
-
-				if (snapshot.ElevationCost is { } elevationCost)
-				{
-					Fact(prefabIndex, "elevationCost", elevationCost * NetCellsPerKilometre);
-				}
 			}
 
 			if (snapshot.ConsumptionData is { } consumptionData)
 			{
-				prefabIndex.Upkeep = consumptionData.m_Upkeep;
+				// Not its m_Upkeep: BuildingInitializeSystem copies a city-paid figure into the
+				// upkeep buffer below, and what stays here alone, on a zoned or signature
+				// building, is PropertyRenterSystem's rent-side upkeep, which the city never pays.
 				prefabIndex.ElectricityConsumption = consumptionData.m_ElectricityConsumption;
 				prefabIndex.WaterConsumption = consumptionData.m_WaterConsumption;
 				prefabIndex.GarbageAccumulation = consumptionData.m_GarbageAccumulation;
 				prefabIndex.TelecomNeed = consumptionData.m_TelecomNeed;
 			}
 
-			// The upkeep buffer is the game's own answer, and for a city service
-			// building the only place the money lives. Money entries are the upkeep;
-			// every other resource is a fact of its own, in kilograms a month.
-			if (snapshot.ServiceUpkeep is { Count: > 0 } stacks)
+			// The upkeep buffer is the game's own answer, and UpkeepPropertyBinderSystem shows an
+			// upkeep line for every prefab with one and for no other. Money entries are the
+			// upkeep; every other resource is a fact of its own, in kilograms a month.
+			if (snapshot.ServiceUpkeep is { } stacks)
 			{
-				var summary = ServiceUpkeepSummary.Summarise(prefabIndex.Upkeep ?? 0, stacks);
-				if (summary.Money > 0)
-				{
-					prefabIndex.Upkeep = summary.Money;
-				}
+				var summary = ServiceUpkeepSummary.Summarise(stacks);
+				prefabIndex.Upkeep = summary.Money;
 				foreach (var (resource, amount) in summary.Resources)
 				{
 					Fact(prefabIndex, ServiceUpkeepSummary.ResourceFactPrefix + resource, amount);
@@ -173,7 +171,8 @@ namespace BetterBuildingMenu.Domain
 				// `chance < m_EveningShiftProbability`. Shown as a percent, so scaled here.
 				Fact(prefabIndex, "eveningShift", workplaceData.m_EveningShiftProbability * 100d);
 				Fact(prefabIndex, "nightShift", workplaceData.m_NightShiftProbability * 100d);
-				Fact(prefabIndex, "workConditions", workplaceData.m_WorkConditions);
+				// An offset to employee happiness, so a penalty is a figure too.
+				SignedFact(prefabIndex, "workConditions", workplaceData.m_WorkConditions);
 				// Who the building employs. The game has no player-facing word for
 				// WorkplaceComplexity — its CITIZEN_JOB_LEVEL vocabulary does not map
 				// onto Manual/Simple/Complex/Hitech — so these are OUR words.
@@ -196,22 +195,33 @@ namespace BetterBuildingMenu.Domain
 				prefabIndex.NoisePollution = pollutionData.m_NoisePollution;
 			}
 
-			// Doubles: a telecom facility's capacity is gigabits a second with a
-			// decimal, which an int would truncate.
-			var capacities = new List<double>();
-			// Doubles as the Role facet source: these are exactly the service
-			// components that make a building a school, a hospital, and so on.
+			// The Role facet's source: these are exactly the service components that make a
+			// building a school, a hospital, and so on.
 			var roles = new List<string>();
+			// Each role's own figure, in its own unit, and the entry keeps its primary role's,
+			// the unit the UI formats it in. The largest of them all once gave an incinerator
+			// its garbage store as megawatts. Doubles: a telecom facility's capacity is
+			// gigabits a second with a decimal, which an int would truncate.
+			var capacityOf = new Dictionary<string, double>(StringComparer.Ordinal);
+			void Role(string role, double capacity)
+			{
+				roles.Add(role);
+				capacityOf[role] = capacity;
+			}
+
 			if (snapshot.SchoolData is { } schoolData)
 			{
-				roles.Add("School");
-				capacities.Add(schoolData.m_StudentCapacity);
-				Fact(prefabIndex, "studentWellbeing", schoolData.m_StudentWellbeing);
-				Fact(prefabIndex, "studentHealth", schoolData.m_StudentHealth);
+				Role("School", schoolData.m_StudentCapacity);
+				// Offsets SchoolAISystem adds to a student's wellbeing and health, so a
+				// penalty is a figure too.
+				SignedFact(prefabIndex, "studentWellbeing", schoolData.m_StudentWellbeing);
+				SignedFact(prefabIndex, "studentHealth", schoolData.m_StudentHealth);
 				// The tier the school grants, so nothing downstream has to guess it
 				// from the building's name.
 				prefabIndex.EducationLevel = schoolData.m_EducationLevel;
-				Fact(prefabIndex, "graduation", schoolData.m_GraduationModifier);
+				// Added to the graduation probability, not multiplied into it:
+				// GraduationSystem ends on `+ graduationModifier`, so 0.05 is five points.
+				SignedFact(prefabIndex, "graduation", Percent.FromFraction(schoolData.m_GraduationModifier));
 			}
 
 			// What a park gives the city: a park and a bowling alley are both
@@ -226,8 +236,7 @@ namespace BetterBuildingMenu.Domain
 
 			if (snapshot.HospitalData is { } hospitalData)
 			{
-				roles.Add("Hospital");
-				capacities.Add(hospitalData.m_PatientCapacity);
+				Role("Hospital", hospitalData.m_PatientCapacity);
 				Fact(prefabIndex, "ambulances", hospitalData.m_AmbulanceCapacity);
 				Fact(prefabIndex, "helicopters", hospitalData.m_MedicalHelicopterCapacity);
 			}
@@ -333,11 +342,10 @@ namespace BetterBuildingMenu.Domain
 
 			if (snapshot.PostFacilityData is { } postFacilityData)
 			{
-				roles.Add("PostFacility");
 				// Mail held, not vans or sorting rate: the vans are how it works
 				// and the rate is per unit time, while this is the size of the
 				// thing — the same question capacity answers everywhere else.
-				capacities.Add(postFacilityData.m_MailCapacity);
+				Role("PostFacility", postFacilityData.m_MailCapacity);
 				Fact(prefabIndex, "postTrucks", postFacilityData.m_PostTruckCapacity);
 				Fact(prefabIndex, "sortingRate", postFacilityData.m_SortingRate);
 				Fact(prefabIndex, "postVans", postFacilityData.m_PostVanCapacity);
@@ -345,8 +353,7 @@ namespace BetterBuildingMenu.Domain
 
 			if (snapshot.TelecomFacilityData is { } telecomFacilityData)
 			{
-				roles.Add("TelecomFacility");
-				capacities.Add(telecomFacilityData.m_NetworkCapacity);
+				Role("TelecomFacility", telecomFacilityData.m_NetworkCapacity);
 				// Telecom keeps its own range rather than using CoverageData's,
 				// so it is read here and not above.
 				if (telecomFacilityData.m_Range > 0f)
@@ -361,8 +368,7 @@ namespace BetterBuildingMenu.Domain
 
 			if (snapshot.GarbageFacilityData is { } garbageFacilityData)
 			{
-				roles.Add("GarbageFacility");
-				capacities.Add(garbageFacilityData.m_GarbageCapacity);
+				Role("GarbageFacility", garbageFacilityData.m_GarbageCapacity);
 				// Its own key: kilograms a month, not the deathcare rate's bodies.
 				Fact(prefabIndex, "garbageProcessing", garbageFacilityData.m_ProcessingSpeed);
 				// m_VehicleCapacity, not m_TransportCapacity: the first is the garbage
@@ -377,35 +383,32 @@ namespace BetterBuildingMenu.Domain
 
 			if (snapshot.FireStationData is { } fireStationData)
 			{
-				roles.Add("FireStation");
-				capacities.Add(fireStationData.m_FireEngineCapacity);
+				Role("FireStation", fireStationData.m_FireEngineCapacity);
 				Fact(prefabIndex, "helicopters", fireStationData.m_FireHelicopterCapacity);
 				Fact(prefabIndex, "disasterResponse", fireStationData.m_DisasterResponseCapacity);
 			}
 
 			if (snapshot.PoliceStationData is { } policeStationData)
 			{
-				roles.Add("PoliceStation");
-				capacities.Add(policeStationData.m_PatrolCarCapacity);
+				Role("PoliceStation", policeStationData.m_PatrolCarCapacity);
 				Fact(prefabIndex, "jailCapacity", policeStationData.m_JailCapacity);
 				Fact(prefabIndex, "helicopters", policeStationData.m_PoliceHelicopterCapacity);
 			}
 
 			if (snapshot.PrisonData is { } prisonData)
 			{
-				roles.Add("Prison");
-				capacities.Add(prisonData.m_PrisonerCapacity);
+				Role("Prison", prisonData.m_PrisonerCapacity);
 				Fact(prefabIndex, "prisonVans", prisonData.m_PrisonVanCapacity);
-				Fact(prefabIndex, "prisonerWellbeing", prisonData.m_PrisonerWellbeing);
-				Fact(prefabIndex, "prisonerHealth", prisonData.m_PrisonerHealth);
+				SignedFact(prefabIndex, "prisonerWellbeing", prisonData.m_PrisonerWellbeing);
+				SignedFact(prefabIndex, "prisonerHealth", prisonData.m_PrisonerHealth);
 			}
 
 			if (snapshot.DeathcareFacilityData is { } deathcareFacilityData)
 			{
-				roles.Add("DeathcareFacility");
-				capacities.Add(deathcareFacilityData.m_StorageCapacity);
+				Role("DeathcareFacility", deathcareFacilityData.m_StorageCapacity);
 				Fact(prefabIndex, "hearses", deathcareFacilityData.m_HearseCapacity);
-				Fact(prefabIndex, "processingRate", deathcareFacilityData.m_ProcessingRate);
+				// Rounded up, as vanilla's DECEASED_PROCESSING_CAPACITY binds it.
+				Fact(prefabIndex, "processingRate", Math.Ceiling(deathcareFacilityData.m_ProcessingRate));
 				if (deathcareFacilityData.m_LongTermStorage)
 				{
 					TextFact(prefabIndex, "facilityFeature", "longTermStorage");
@@ -414,59 +417,59 @@ namespace BetterBuildingMenu.Domain
 
 			if (snapshot.EmergencyShelterData is { } emergencyShelterData)
 			{
-				roles.Add("EmergencyShelter");
-				capacities.Add(emergencyShelterData.m_ShelterCapacity);
+				Role("EmergencyShelter", emergencyShelterData.m_ShelterCapacity);
 				Fact(prefabIndex, "shelterVehicles", emergencyShelterData.m_VehicleCapacity);
 			}
 
 			if (snapshot.WaterPumpingStationData is { } waterPumpingStationData)
 			{
-				roles.Add("WaterPumpingStation");
 				prefabIndex.WaterCapacity = waterPumpingStationData.m_Capacity;
-				capacities.Add(waterPumpingStationData.m_Capacity);
+				Role("WaterPumpingStation", waterPumpingStationData.m_Capacity);
 				Fact(prefabIndex, "purification", Percent.FromFraction(waterPumpingStationData.m_Purification));
-				// Vanilla's wording and vanilla's silence: a tower allows no type
-				// and says nothing, where the raw enum read "Draws from None".
+			}
+
+			// RequiredResourceBinder.RequiresWater, transcribed: a groundwater-powered plant
+			// draws ground water, and asks first. Otherwise vanilla's wording and vanilla's
+			// silence for a pumping station: a tower allows no type and says nothing, where
+			// the raw enum read "Draws from None".
+			if (snapshot.GroundWaterPoweredData.HasValue)
+			{
+				TextFact(prefabIndex, "waterSource", WaterSource.Describe(groundwater: true, surfaceWater: false));
+			}
+			else if (snapshot.WaterPumpingStationData is { } waterSourceData)
+			{
 				TextFact(prefabIndex, "waterSource", WaterSource.Describe(
-					(waterPumpingStationData.m_Types & AllowedWaterTypes.Groundwater) != 0,
-					(waterPumpingStationData.m_Types & AllowedWaterTypes.SurfaceWater) != 0));
+					(waterSourceData.m_Types & AllowedWaterTypes.Groundwater) != 0,
+					(waterSourceData.m_Types & AllowedWaterTypes.SurfaceWater) != 0));
 			}
 
 			if (snapshot.SewageOutletData is { } sewageOutletData)
 			{
-				roles.Add("SewageOutlet");
 				prefabIndex.SewageCapacity = sewageOutletData.m_Capacity;
-				capacities.Add(sewageOutletData.m_Capacity);
+				Role("SewageOutlet", sewageOutletData.m_Capacity);
 				Fact(prefabIndex, "purification", Percent.FromFraction(sewageOutletData.m_Purification));
 			}
 
-			// Power plants report output as production rather than capacity, so
-			// without this a coal plant has no capacity to forecast the city's
-			// demand against. Solar is a separate component with its own field.
-			if (snapshot.PowerPlantData is { } powerPlantData)
+			// PowerProductionBinder, transcribed: shown for a plant or an emergency generator, as
+			// the plant's own output, which is all it promises, up to that plus every source that
+			// can add to it. The entry keeps the top of that range. Each source requires the
+			// PowerPlant component, so a plant carries them all.
+			if (snapshot.PowerPlantData.HasValue || snapshot.EmergencyGeneratorData.HasValue)
 			{
-				roles.Add("PowerPlant");
-				capacities.Add(powerPlantData.m_ElectricityProduction);
-			}
-
-			if (snapshot.SolarPoweredData is { } solarData)
-			{
-				roles.Add("PowerPlant");
-				capacities.Add(solarData.m_Production);
-			}
-
-			// Wind is a third component again, with its own production field.
-			if (snapshot.WindPoweredData is { } windData)
-			{
-				roles.Add("PowerPlant");
-				capacities.Add(windData.m_Production);
+				Role("PowerPlant",
+					(snapshot.PowerPlantData?.m_ElectricityProduction ?? 0)
+					+ (snapshot.WindPoweredData?.m_Production ?? 0)
+					+ (snapshot.SolarPoweredData?.m_Production ?? 0)
+					+ (snapshot.GarbagePoweredData?.m_Capacity ?? 0)
+					+ (int)(1000000f * (snapshot.WaterPoweredData?.m_CapacityFactor ?? 0f))
+					+ (snapshot.GroundWaterPoweredData?.m_Production ?? 0)
+					+ (snapshot.EmergencyGeneratorData?.m_ElectricityProduction ?? 0));
 			}
 
 			// Each of these is the figure its building is FOR.
 			if (snapshot.BatteryData is { } batteryData)
 			{
-				roles.Add("Battery");
-				capacities.Add(batteryData.m_Capacity);
+				Role("Battery", batteryData.m_Capacity);
 				Fact(prefabIndex, "batteryOutput", batteryData.m_PowerOutput);
 			}
 
@@ -487,8 +490,8 @@ namespace BetterBuildingMenu.Domain
 			}
 
 			// The two properties vanilla authors only on service upgrades. The pollution
-			// factors are the signed whole percentages PrefabUISystem binds; the upkeep
-			// change is UpkeepModifierBinder's figure, below.
+			// factors are the signed whole percentages PrefabUISystem binds; the resource
+			// consumption change is UpkeepModifierBinder's figure, below.
 			if (snapshot.PollutionModifierData is { } pollutionModifier)
 			{
 				PollutionModifierFact(prefabIndex, "groundPollutionModifier", pollutionModifier.m_GroundPollutionMultiplier);
@@ -498,7 +501,10 @@ namespace BetterBuildingMenu.Domain
 
 			// UpkeepModifierBinder, transcribed: shown when any multiplier is not one, as the
 			// largest of them all, ones included, from a seed of zero. In float and through
-			// math, as vanilla computes it, so a figure on a half rounds the same way.
+			// math, as vanilla computes it, so a figure on a half rounds the same way. Not
+			// the money upkeep, whatever the component's name: CityServiceUpkeepSystem applies
+			// it only to the resources a building consumes, and vanilla labels it
+			// RESOURCE_CONSUMPTION.
 			if (snapshot.UpkeepMultipliers is { Count: > 0 } upkeepMultipliers
 				&& upkeepMultipliers.Any(multiplier => multiplier != 1f))
 			{
@@ -508,14 +514,25 @@ namespace BetterBuildingMenu.Domain
 					largest = math.max(largest, multiplier);
 				}
 
-				// Not through Fact: that helper drops anything at or below zero,
-				// and a saving is negative.
-				prefabIndex.ServiceFacts.Add(new ServiceFact("upkeepChange", (int)math.round(100f * (largest - 1f))));
+				// Not through a helper: vanilla shows the line once a multiplier is not one,
+				// even when the change rounds to none.
+				prefabIndex.ServiceFacts.Add(new ServiceFact("resourceConsumption", (int)math.round(100f * (largest - 1f))));
 			}
 
+			// Properties.COMFORT, from each of the three components vanilla binds it for, as
+			// (int)math.round(100f * factor) and silent only on zero. A parking lot's is 50
+			// unless its author set another.
+			if (snapshot.ParkingFacilityData is { } parkingData)
+			{
+				ComfortFact(prefabIndex, parkingData.m_ComfortFactor);
+			}
+			if (snapshot.TransportStopData is { } transportStopData)
+			{
+				ComfortFact(prefabIndex, transportStopData.m_ComfortFactor);
+			}
 			if (snapshot.TransportStationData is { } transportStationData)
 			{
-				Fact(prefabIndex, "comfort", Percent.FromFraction(transportStationData.m_ComfortFactor));
+				ComfortFact(prefabIndex, transportStationData.m_ComfortFactor);
 			}
 
 			// What vanilla's tooltip calls Cargo capacity: StorageLimitData on a
@@ -543,16 +560,28 @@ namespace BetterBuildingMenu.Domain
 
 			if (snapshot.WastewaterTreatmentPlantData is { } wastewaterData)
 			{
-				roles.Add("WastewaterTreatmentPlant");
 				prefabIndex.SewageCapacity = wastewaterData.m_Capacity;
-				capacities.Add(wastewaterData.m_Capacity);
+				Role("WastewaterTreatmentPlant", wastewaterData.m_Capacity);
 			}
 
-			prefabIndex.BuildingTypeName = BuildingRole.ResolvePrimary(roles);
+			var primary = BuildingRole.ResolvePrimary(roles);
+			prefabIndex.BuildingTypeName = primary;
 
-			if (capacities.Count > 0)
+			if (primary is not null && capacityOf.TryGetValue(primary, out var capacity))
 			{
-				prefabIndex.Capacity = capacities.Max();
+				prefabIndex.Capacity = capacity;
+			}
+
+			// The two secondary figures a building in the catalog carries, under the labels
+			// vanilla gives them: an incinerator is a power plant with a garbage store, and an
+			// emergency generator can sit on a building that is for something else.
+			if (primary != "GarbageFacility" && snapshot.GarbageFacilityData is { } garbageStore)
+			{
+				Fact(prefabIndex, "garbageStorage", garbageStore.m_GarbageCapacity);
+			}
+			if (primary != "PowerPlant" && capacityOf.TryGetValue("PowerPlant", out var powerOutput))
+			{
+				Fact(prefabIndex, "powerOutput", powerOutput);
 			}
 		}
 
@@ -578,6 +607,20 @@ namespace BetterBuildingMenu.Domain
 				prefabIndex.ServiceFacts.Add(new ServiceFact(key, value));
 			}
 		}
+
+		/// <summary>Records a figure that can fall as well as rise, dropping only a zero.</summary>
+		private static void SignedFact(PrefabIndex prefabIndex, string key, double value)
+		{
+			if (value != 0d)
+			{
+				prefabIndex.ServiceFacts.Add(new ServiceFact(key, value));
+			}
+		}
+
+		/// <summary>A comfort factor as the whole number Properties.COMFORT shows, unless it rounds
+		/// to none.</summary>
+		private static void ComfortFact(PrefabIndex prefabIndex, float factor) =>
+			SignedFact(prefabIndex, "comfort", (int)math.round(100f * factor));
 
 		/// <summary>A pollution factor as the signed whole percentage vanilla shows, unless it rounds
 		/// to none.</summary>
