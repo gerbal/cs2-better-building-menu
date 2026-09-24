@@ -23,6 +23,17 @@ JetBrains Refasmer (`--all --mock`):
 - Unlike a reference assembly, a mock loads at run time, so a test can use the game's types.
   A test that calls into the game gets `NotImplementedException: … not implemented in mock
   library`.
+- Refasmer also gives a body to the methods the runtime supplies itself: Unity's internal calls
+  and every delegate's `Invoke`. The runtime refuses to load a type holding one
+  (`TypeLoadException: Internal call method … with non-zero RVA`), which took out
+  `UnityEngine.Object` and every prefab type with it. `refresh.sh` then runs
+  `tools/game-refs/FixNativeMethods.cs`, which clears the internal-call flag and drops the
+  delegates' bodies in place. It needs no game install, so mocks made before it existed can be
+  fixed where they are:
+
+  ```sh
+  dotnet run tools/game-refs/FixNativeMethods.cs -- ../cs2-game-refs/Cities2_Data/Managed
+  ```
 - None of the game's code is in them, but they still carry its API, names included. Keep the
   repository that holds them private.
 
