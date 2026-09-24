@@ -4,6 +4,10 @@ Dated records of live checks, oldest first; the newest entry describes the
 current build. What to run before a release is in
 [release-checklist.md](release-checklist.md).
 
+The `[LENS-REFRESH]` lines quoted below come from development (Debug) builds,
+which still log one per refresh at Info. Since 2026-09-24 a release build logs
+them only with Debug logging on.
+
 Entries before 2026-09-01 covered the pre-rename lens: its compare tray,
 object picker, locate and capacity-floor presets, all since removed. They were
 dropped from this file on 2026-09-22 and remain in git history.

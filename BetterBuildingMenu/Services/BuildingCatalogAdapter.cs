@@ -602,9 +602,9 @@ namespace BetterBuildingMenu.Services
 
 			foreach (var key in new[] { $"SubServices.NAME[{id}]", $"Services.NAME[{id}]" })
 			{
-				if (dictionary.TryGetValue(key, out var name) && !string.IsNullOrWhiteSpace(name))
+				if (dictionary.TryGetValue(key, out var name) && WordFormat.GameText(name) is { } label)
 				{
-					return name;
+					return label;
 				}
 			}
 
