@@ -7,6 +7,7 @@ using Colossal.PSI.Common;
 using Colossal.Serialization.Entities;
 
 using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Domain.Interfaces;
 using BetterBuildingMenu.Utilities;
@@ -267,7 +268,8 @@ namespace BetterBuildingMenu.Systems
 		private (string Label, string Icon, int Depth) DevTreeBranchOf(
 			Entity asset,
 			IReadOnlyList<(Entity Requirement, UnlockFlags Flags)> required,
-			string? menu)
+			string? menu,
+			ProgressionIndex progression)
 		{
 			// The asset's own service, else the one its menu is named after: a mod that
 			// regroups the menus renames the menu, not the service.
@@ -282,7 +284,7 @@ namespace BetterBuildingMenu.Systems
 			{
 				var needed = (flags & UnlockFlags.RequireAll) != 0;
 
-				if (Index.Progression.TryGetBranch(requirement.Index, out var branch) && branch.Label.Length > 0)
+				if (progression.TryGetBranch(requirement.Index, out var branch) && branch.Label.Length > 0)
 				{
 					gates.Add(new DevTreeGates.Gate(branch.Label, branch.Icon, branch.Depth, needed, branch.Service));
 				}
@@ -302,7 +304,7 @@ namespace BetterBuildingMenu.Systems
 			// No node gated it, so it belongs to the service's free root — the same
 			// bucket the game puts the starting kit in. Named after the root node
 			// rather than "Other": it is a real place in the tree.
-			return Index.Progression.TryGetRoot(menu, out var root)
+			return progression.TryGetRoot(menu, out var root)
 				? root
 				: (string.Empty, string.Empty, 0);
 		}
