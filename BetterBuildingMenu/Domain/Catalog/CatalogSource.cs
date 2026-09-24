@@ -8,5 +8,6 @@ namespace BetterBuildingMenu.Domain.Catalog
 	/// <see cref="Index"/> and <see cref="Placed"/> are the live objects, not copies. See
 	/// docs/indexing.md, "How the panel hears of a change".
 	/// </remarks>
-	public readonly record struct CatalogSource(CatalogIndex Index, PlacedUniques Placed, int Generation);
+	public readonly record struct CatalogSource(
+		CatalogIndex Index, PlacedUniques Placed, int Generation);
 }
