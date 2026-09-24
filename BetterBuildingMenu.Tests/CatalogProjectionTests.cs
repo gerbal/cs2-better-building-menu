@@ -96,6 +96,24 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void TwoEntriesSharingAPrefabNameResolveToTheLastInNameOrder()
+		{
+			// Two prefab types can carry one name. The picker's lookup keeps the last
+			// entry in name order, where the index's Find keeps the first.
+			var later = Hospital();
+			later.Name = "Hospital B";
+			var earlier = TestPrefabs.Entry(12, PrefabCategory.ServiceBuildings, PrefabSubCategory.ServiceBuildings_Health);
+			earlier.PrefabName = "Hospital01";
+			earlier.Name = "Hospital A";
+
+			var row = new BuildingCatalogAdapter().EntryForPrefabName(
+				new CatalogSource(ReadyIndex(later, earlier), new PlacedUniques(), 1),
+				"Hospital01");
+
+			Assert.Equal(11, row?.Id);
+		}
+
+		[Fact]
 		public void AnUnreadyIndexProjectsNothingItHolds()
 		{
 			var index = new CatalogIndex();
