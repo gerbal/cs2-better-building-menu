@@ -196,9 +196,8 @@ namespace BetterBuildingMenu.Domain
 			// The Role facet's source: these are exactly the service components that make a
 			// building a school, a hospital, and so on.
 			var roles = new List<string>();
-			// Each role's own figure, in its own unit, and the entry keeps its primary role's,
-			// the unit the UI formats it in. The largest of them all once gave an incinerator
-			// its garbage store as megawatts. Doubles: a telecom facility's capacity is
+			// Each role's own figure, in its own unit, and the entry keeps its primary role's:
+			// the UI formats Capacity by that role. Doubles: a telecom facility's capacity is
 			// gigabits a second with a decimal, which an int would truncate.
 			var capacityOf = new Dictionary<string, double>(StringComparer.Ordinal);
 			void Role(string role, double capacity)
@@ -571,8 +570,7 @@ namespace BetterBuildingMenu.Domain
 			}
 
 			// The two secondary figures a building in the catalog carries, under the labels
-			// vanilla gives them: an incinerator is a power plant with a garbage store, and an
-			// emergency generator can sit on a building that is for something else.
+			// vanilla gives them. An incinerator is a garbage facility that also makes power.
 			if (primary != "GarbageFacility" && snapshot.GarbageFacilityData is { } garbageStore)
 			{
 				Fact(prefabIndex, "garbageStorage", garbageStore.m_GarbageCapacity);
