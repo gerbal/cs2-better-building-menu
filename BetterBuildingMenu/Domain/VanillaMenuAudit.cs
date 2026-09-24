@@ -11,8 +11,9 @@ namespace BetterBuildingMenu.Domain
 	/// </summary>
 	/// <remarks>
 	/// Deliberately plain data rather than <see cref="VanillaMenuPlacement"/>, which carries an
-	/// ECS <c>Entity</c>. The comparison is about identities and names, and taking the handle
-	/// would drag the whole entity world into a check that does not need it.
+	/// ECS <c>Entity</c>, so that <see cref="VanillaMenuAudit.Compare"/> is about identities and
+	/// names alone. <see cref="VanillaMenuAudit.Gather"/> is the adapter from the index, and takes
+	/// each placement's prefab name from the caller, which can ask the game.
 	/// </remarks>
 	public readonly record struct VanillaMenuPlacementFact(
 		int EntityIndex,
