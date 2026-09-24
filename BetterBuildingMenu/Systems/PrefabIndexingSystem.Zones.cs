@@ -366,7 +366,7 @@ namespace BetterBuildingMenu.Systems
 
 		public static ZoneTypeFilter GetZoneType(Entity zonePrefab)
 		{
-			if (_zoneTypeCache != null && _zoneTypeCache.TryGetValue(zonePrefab, out var type))
+			if (_zoneTypeCache.TryGetValue(zonePrefab, out var type))
 			{
 				return type;
 			}
@@ -376,7 +376,7 @@ namespace BetterBuildingMenu.Systems
 
 		/// <summary>The lot shapes a zone grows, or none.</summary>
 		public static ZoneLotSizes? GetZoneLotSizes(Entity zonePrefab) =>
-			_zoneLotSizeCache != null && _zoneLotSizeCache.TryGetValue(zonePrefab, out var sizes)
+			_zoneLotSizeCache.TryGetValue(zonePrefab, out var sizes)
 				? sizes
 				: null;
 
@@ -385,7 +385,7 @@ namespace BetterBuildingMenu.Systems
 		/// an untiered zone; IndexZones fills the cache before the prefab category processors start.</remarks>
 		public static ZoneTypeFilter GetZoneDensity(Entity zonePrefab)
 		{
-			if (_zoneDensityCache != null && _zoneDensityCache.TryGetValue(zonePrefab, out var density))
+			if (_zoneDensityCache.TryGetValue(zonePrefab, out var density))
 			{
 				return density;
 			}

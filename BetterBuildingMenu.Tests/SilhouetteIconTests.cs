@@ -69,7 +69,7 @@ namespace BetterBuildingMenu.Tests
 		[InlineData("StationElevated02?width=128&height=128", false)]
 		[InlineData("", false)]
 		[InlineData(null, false)]
-		public void RecognisesVectorThumbnails(string thumbnail, bool expected)
+		public void RecognisesVectorThumbnails(string? thumbnail, bool expected)
 		{
 			Assert.Equal(expected, SilhouetteIcons.IsVector(thumbnail));
 		}
