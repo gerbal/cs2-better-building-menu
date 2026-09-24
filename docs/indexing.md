@@ -86,12 +86,14 @@ order answers both.
 ## A pass that fails
 
 A full pass builds a new index aside, and the menus, zones, milestones, dev tree and mod flags it
-reads are built into it. Every read and write in the pass goes to that index, which `BuildIndex`
-passes down as `target`; the published `Index` is still the previous one until the pass returns.
-The one read of it is deliberate: its mod flags, the answer to keep if reading the enabled mods
-fails. `RunIndex` publishes the new index only then. If anything in the build throws, it logs the
-error and publishes nothing: the panel keeps the index it had, and nothing reaches the game's load
-or update loop.
+reads are built into it. `BuildIndex` passes it down as `target`. The published `Index` is still
+the previous one until the pass returns, and the pass reads it once, deliberately: its mod flags,
+the answer to keep if reading the enabled mods fails. Every other read and write in the pass goes
+to `target`.
+
+`RunIndex` publishes the new index only when the pass returns. If anything in the build throws, it
+logs the error and publishes nothing: the panel keeps the index it had, and nothing reaches the
+game's load or update loop.
 
 So a failed pass has nothing to put back. The published index keeps the tables and mod flags it
 was built with, and the partial passes after a failure read the same ones it was filled from. Road
