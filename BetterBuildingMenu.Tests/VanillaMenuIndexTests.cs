@@ -106,6 +106,54 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void ATabsPositionIsItsPlaceInItsMenusStrip()
+		{
+			var menus = Menus(
+				System.Array.Empty<(int, string, string)>(),
+				new() { ["Roads"] = new() { Tab("RoadsSmall", 10), Tab("RoadsRoundabouts", 70), Tab("RoadsCulDeSacs", 70) } });
+
+			Assert.Equal(0, menus.TabPosition("Roads", "RoadsSmall"));
+			Assert.Equal(2, menus.TabPosition("Roads", " RoadsCulDeSacs "));
+			Assert.Equal(int.MaxValue, menus.TabPosition("Roads", "roadssmall"));
+			Assert.Equal(int.MaxValue, menus.TabPosition("Zones", "RoadsSmall"));
+			Assert.Equal(int.MaxValue, menus.TabPosition(null, "RoadsSmall"));
+			Assert.Equal(int.MaxValue, menus.TabPosition("Roads", null));
+		}
+
+		/// <summary>The adapter hands each entry its tab's place in the strip, so the All tab's
+		/// headings break a priority tie the way the strip does rather than by name.</summary>
+		[Fact]
+		public void TheAllTabsHeadingsFollowTheStripOnATie()
+		{
+			PrefabIndex Placed(int id, string category)
+			{
+				var entry = TestPrefabs.Entry(id, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads);
+				entry.UiMenuName = "Roads";
+				entry.UiCategoryName = category;
+				entry.UiCategoryPriority = 70;
+				return entry;
+			}
+
+			var index = ReadyIndex(
+				Menus(
+					new[] { (41, "Roads", "RoadsRoundabouts"), (42, "Roads", "RoadsCulDeSacs") },
+					new() { ["Roads"] = new() { Tab("RoadsRoundabouts", 70), Tab("RoadsCulDeSacs", 70) } },
+					menuOrder: new[] { "Roads" }),
+				Placed(42, "RoadsCulDeSacs"),
+				Placed(41, "RoadsRoundabouts"));
+
+			var items = new BuildingCatalogAdapter()
+				.Build(
+					new CatalogSource(index, new PlacedUniques(), 1),
+					new BuildingCatalogQuery(GroupBy: BuildingCatalogGrouping.MenuCategory, UiMenu: "Roads"),
+					VanillaToolbarSelection.None)
+				.Page.Items;
+
+			Assert.Equal(new[] { "RoadsRoundabouts", "RoadsCulDeSacs" }, items.Select(item => item.UiCategory));
+			Assert.Equal(new[] { 0, 1 }, items.Select(item => item.UiCategoryTab));
+		}
+
+		[Fact]
 		public void EachIndexReadsItsOwnMenus()
 		{
 			var placed = new CatalogIndex(Menus(new[] { (1, "Landscaping", "Terraforming") }));

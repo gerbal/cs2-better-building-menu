@@ -105,14 +105,15 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void AnExtraIsHeadedByItsKindRatherThanByWhereTheGameKeepsIt()
 		{
-			var track = Network("Tram Track", "Networks_Tracks", "Transportation", "TransportationTram", 40);
+			var track = Network("Tram Track", "Networks_Tracks", "Transportation", "TransportationTram", 40) with { UiCategoryTab = 2 };
 			var reframed = NetworkMenuExtension.Reframe(track, "Roads");
 
 			// TransportationTram is useless as a heading in a menu about networks, and
-			// its priority belongs to another menu's ordering.
+			// its priority and tab belong to another menu's ordering.
 			Assert.Equal("Tracks", reframed.UiCategory);
 			Assert.Equal("Roads", reframed.UiMenu);
 			Assert.True(reframed.UiCategoryPriority >= NetworkMenuExtension.ExtraGroupPriorityBase);
+			Assert.Equal(int.MaxValue, reframed.UiCategoryTab);
 		}
 
 		[Fact]

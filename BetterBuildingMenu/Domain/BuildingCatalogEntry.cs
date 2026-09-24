@@ -142,6 +142,15 @@ namespace BetterBuildingMenu.Domain
 		/// which is vanilla's own default and sorts such a category into the middle.
 		/// </remarks>
 		int UiCategoryPriority = 0,
+		/// <summary>
+		/// Where <see cref="UiCategory"/>'s tab sits in its menu's strip, counted from 0;
+		/// int.MaxValue when the menu draws no such tab.
+		/// </summary>
+		/// <remarks>
+		/// Ordering only, like the priority: it breaks the ties the priority leaves the way the strip
+		/// breaks them, so the All tab's headings read in the strip's order.
+		/// </remarks>
+		int UiCategoryTab = int.MaxValue,
 		/// <summary>How far the building's service reaches, in metres.</summary>
 		double? ServiceRange = null,
 		/// <summary>
