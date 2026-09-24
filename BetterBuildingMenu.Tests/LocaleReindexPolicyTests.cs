@@ -7,8 +7,8 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// When a dictionary change earns a full pass: at once for a language the
-	/// player switched to, once and late for the sources mods add while loading.
+	/// When a dictionary change earns a full pass: on the next update for a language
+	/// the player switched to, once and late for the sources mods add while loading.
 	/// </summary>
 	/// <remarks>
 	/// The game raises onActiveDictionaryChanged for every source added or removed,
@@ -28,7 +28,7 @@ namespace BetterBuildingMenu.Tests
 			var policy = new LocaleReindexPolicy(Quiet);
 
 			Assert.Equal(LocaleReindexDecision.None, policy.Observe("en-US", T0));
-			Assert.False(policy.TryFireDeferred(T0 + Quiet + Quiet));
+			Assert.Equal(LocaleReindexDecision.None, policy.TakeDue(T0 + Quiet + Quiet));
 		}
 
 		[Fact]
@@ -38,10 +38,10 @@ namespace BetterBuildingMenu.Tests
 			policy.MarkIndexed("en-US");
 
 			Assert.Equal(LocaleReindexDecision.Deferred, policy.Observe("en-US", T0));
-			Assert.False(policy.TryFireDeferred(T0));
-			Assert.True(policy.TryFireDeferred(T0 + Quiet));
+			Assert.Equal(LocaleReindexDecision.None, policy.TakeDue(T0));
+			Assert.Equal(LocaleReindexDecision.Deferred, policy.TakeDue(T0 + Quiet));
 			// Consumed: the next frame must not run a second pass.
-			Assert.False(policy.TryFireDeferred(T0 + Quiet + Quiet));
+			Assert.Equal(LocaleReindexDecision.None, policy.TakeDue(T0 + Quiet + Quiet));
 		}
 
 		[Fact]
@@ -56,22 +56,80 @@ namespace BetterBuildingMenu.Tests
 			}
 
 			var last = T0 + TimeSpan.FromMilliseconds(1400);
-			Assert.False(policy.TryFireDeferred(last + TimeSpan.FromMilliseconds(999)));
-			Assert.True(policy.TryFireDeferred(last + Quiet));
-			Assert.False(policy.TryFireDeferred(last + Quiet + Quiet));
+			Assert.Equal(LocaleReindexDecision.None, policy.TakeDue(last + TimeSpan.FromMilliseconds(999)));
+			Assert.Equal(LocaleReindexDecision.Deferred, policy.TakeDue(last + Quiet));
+			Assert.Equal(LocaleReindexDecision.None, policy.TakeDue(last + Quiet + Quiet));
 		}
 
 		[Fact]
-		public void RunsAtOnceForALanguageThePlayerSwitchedTo()
+		public void ALanguageThePlayerSwitchedToIsDueOnTheNextUpdateOnce()
 		{
-			// Every cached name is in the wrong language: a late pass would show
-			// the old one for a second. And the switch supersedes any deferral.
+			// Every cached name is in the wrong language: no quiet interval to wait
+			// out. Due rather than run, so the pass comes from OnUpdate, which runs
+			// only while a city is loaded.
+			var policy = new LocaleReindexPolicy(Quiet);
+			policy.MarkIndexed("en-US");
+
+			Assert.Equal(LocaleReindexDecision.Immediate, policy.Observe("de-DE", T0));
+			Assert.Equal(LocaleReindexDecision.Immediate, policy.TakeDue(T0));
+			Assert.Equal(LocaleReindexDecision.None, policy.TakeDue(T0 + Quiet + Quiet));
+		}
+
+		[Fact]
+		public void ALanguageSwitchSupersedesAPendingDeferral()
+		{
 			var policy = new LocaleReindexPolicy(Quiet);
 			policy.MarkIndexed("en-US");
 			policy.Observe("en-US", T0);
 
 			Assert.Equal(LocaleReindexDecision.Immediate, policy.Observe("de-DE", T0 + TimeSpan.FromMilliseconds(100)));
-			Assert.False(policy.TryFireDeferred(T0 + Quiet + Quiet));
+			Assert.Equal(LocaleReindexDecision.Immediate, policy.TakeDue(T0 + Quiet + Quiet));
+			Assert.Equal(LocaleReindexDecision.None, policy.TakeDue(T0 + Quiet + Quiet + Quiet));
+		}
+
+		[Fact]
+		public void SwitchingAwayAndBackBeforeTheUpdateIsOnePass()
+		{
+			// The language change is answered first and marks the locale indexed, which
+			// covers the deferral the switch back scheduled: one pass, not two.
+			var policy = new LocaleReindexPolicy(Quiet);
+			policy.MarkIndexed("en-US");
+			policy.Observe("de-DE", T0);
+			Assert.Equal(LocaleReindexDecision.Deferred, policy.Observe("en-US", T0 + TimeSpan.FromMilliseconds(100)));
+
+			Assert.Equal(LocaleReindexDecision.Immediate, policy.TakeDue(T0 + Quiet + Quiet));
+			policy.MarkIndexed("en-US");
+
+			Assert.Equal(LocaleReindexDecision.None, policy.TakeDue(T0 + Quiet + Quiet + Quiet));
+		}
+
+		[Fact]
+		public void AFailedLanguagePassLeavesALaterDeferralToRetry()
+		{
+			// A pass that throws marks nothing, so the burst scheduled after the switch
+			// still fires: the one retry a failed language pass gets.
+			var policy = new LocaleReindexPolicy(Quiet);
+			policy.MarkIndexed("en-US");
+			policy.Observe("de-DE", T0);
+			policy.Observe("en-US", T0 + TimeSpan.FromMilliseconds(100));
+
+			Assert.Equal(LocaleReindexDecision.Immediate, policy.TakeDue(T0 + Quiet + Quiet));
+			Assert.Equal(LocaleReindexDecision.Deferred, policy.TakeDue(T0 + Quiet + Quiet));
+		}
+
+		[Fact]
+		public void TheNextCitysPassAbsorbsASwitchMadeWithNoCityLoaded()
+		{
+			// At the main menu, or during a load, OnUpdate is off and nothing takes
+			// the due pass. The next city's own pass reads the new language and
+			// marks it, so no second pass follows it once the city is up.
+			var policy = new LocaleReindexPolicy(Quiet);
+			policy.MarkIndexed("en-US");
+			policy.Observe("de-DE", T0);
+
+			policy.MarkIndexed("de-DE");
+
+			Assert.Equal(LocaleReindexDecision.None, policy.TakeDue(T0 + Quiet + Quiet));
 		}
 
 		[Fact]
@@ -85,7 +143,7 @@ namespace BetterBuildingMenu.Tests
 
 			policy.MarkIndexed("en-US");
 
-			Assert.False(policy.TryFireDeferred(T0 + Quiet + Quiet));
+			Assert.Equal(LocaleReindexDecision.None, policy.TakeDue(T0 + Quiet + Quiet));
 		}
 
 		[Fact]
