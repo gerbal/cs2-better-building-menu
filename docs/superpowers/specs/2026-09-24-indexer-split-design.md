@@ -55,7 +55,7 @@ the two names would clash wherever both namespaces are imported.
   `TryGetComponent` calls with no logic.
 
 **The menu audit → `VanillaMenuCoverage` + `IndexAuditLog`.**
-- `VanillaMenuCoverage.Compare(CatalogIndex, Func<Entity, string> describeMissing)`
+- `VanillaMenuCoverage.Compare(CatalogIndex, Func<VanillaMenuPlacement, string> describeMissing)`
   returns the coverage report: buckets keyed on menu and category, totals, the
   entries filed elsewhere. `describeMissing` stays in the system, since it asks
   the game about each missing prefab, and is called only for those.
@@ -93,8 +93,9 @@ real game assemblies, and changes no behaviour.
 - **Step 2:** the order facts are emitted in, which fields stay null, and the
   arithmetic types. For example, `m_ElevationCost * 125f` is a float, and the
   `Math.Round` calls must stay where they are.
-- **Every step:** `Indexed Prefabs Count`, `[PROCESSOR-CENSUS]`, `[MENU-AUDIT]`
-  and `[MENU-COVERAGE]` from one save, diffed before and after.
+- **Every step:** `Indexed Prefabs Count`, `[PROCESSOR-CENSUS]`, `[MENU-AUDIT]`,
+  `[DLC-AUDIT]`, `[MENU-COVERAGE]`, `[PROCESSOR-OVERLAP]` and `[ZONE-PARITY]` from
+  one save, diffed before and after. Step 1 moves or re-calls all of them.
 
 ### Checks per step
 
