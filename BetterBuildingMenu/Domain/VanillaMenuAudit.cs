@@ -1,3 +1,5 @@
+using BetterBuildingMenu.Domain.Catalog;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -93,6 +95,34 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		public const string Divergences =
 			"Service upgrades are indexed but never offered: vanilla places them from the parent building's row.";
+
+		/// <summary>The census of an index against the menus it was built over.</summary>
+		/// <param name="prefabNameOf">The name of the prefab a placement places; the caller asks
+		/// the game, which this cannot.</param>
+		/// <remarks>Zones count as held: they reach the player through the zoning hierarchy, not
+		/// the index's lists, and leaving them out is the blindness this exists to remove.</remarks>
+		public static VanillaMenuAuditReport Gather(CatalogIndex index, Func<VanillaMenuPlacement, string> prefabNameOf)
+		{
+			var held = new HashSet<int>(index.All.Select(entry => entry.Id));
+
+			foreach (var zone in index.Zones.Catalog)
+			{
+				held.Add(zone.Id);
+			}
+
+			return Compare(
+				index.Menus.Placements.Values.Select(placement => new VanillaMenuPlacementFact(
+					placement.Entity.Index,
+					prefabNameOf(placement),
+					placement.Menu ?? "(none)",
+					placement.Category ?? string.Empty)),
+				index.All.Select(entry => new IndexedMenuFact(
+					entry.Id,
+					entry.PrefabName ?? $"entity:{entry.Id}",
+					entry.UiMenuName ?? string.Empty,
+					entry.IsServiceUpgrade)),
+				held);
+		}
 
 		public static VanillaMenuAuditReport Compare(
 			IEnumerable<VanillaMenuPlacementFact> vanillaPlacements,
