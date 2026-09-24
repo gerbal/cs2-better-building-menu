@@ -28,10 +28,11 @@ the detail behind the structural items.
 
 ## Structure
 
-- **Split `PrefabIndexingSystem` further.** It is one partial class across six
-  files (see [indexing.md](indexing.md)). Moving the menu audit and
-  `PopulateAnalyticalData` into classes of their own would let a test reach
-  the mapping from a prefab's components to its facts. A plan in four PRs is in
+- **Finish splitting `PrefabIndexingSystem`.** The menu audit, the per-prefab
+  facts and the progression and zone rules are in `Domain/`, where tests reach
+  them, and the system keeps the game reads and the logging (see
+  [indexing.md](indexing.md)). What is left is optional: the bonuses, parking
+  and vanilla asset facts, step 4 of the plan in
   [superpowers/specs/](superpowers/specs/2026-09-24-indexer-split-design.md).
 - **Per-load state.** Replace the static index, caches and registries with one
   object created per city load and handed to the systems that read it.
