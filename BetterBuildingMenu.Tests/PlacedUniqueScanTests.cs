@@ -45,7 +45,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void ReportsEachPlacedUniqueOnce()
 		{
-			// Two prefab entries can share a prefab index; the registry is a set,
+			// Two prefab entries can share a prefab index; the placed set holds each once,
 			// and the scan must not pretend the city holds two of the same asset.
 			var placed = PlacedUniqueScan.Collect(new[] { Unique(42, true), Unique(42, true), Unique(9, true) });
 
