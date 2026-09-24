@@ -100,6 +100,26 @@ triggers a partial pass, so a prefab the game removes outright leaves the list t
 the one link that always holds: Road Builder gives a road a new ID, and so a new prefab name, on
 every edit.
 
+A recreated prefab's menu placement moves with it. The placements are keyed by entity, and by the
+indexer's tick the game's menus already hold the new one: `ReplacePrefabSystem` takes the old
+entity out of every `UIGroupElement` buffer, and `UIObject.LateInitialize`, which
+`PrefabInitializeSystem` runs on the new `Created` entity during `PrefabSystem`'s update, adds the
+new one to its category. (Read from the game's code; a Road Builder edit in game is the check.)
+So every partial pass walks the menus again (see "The vanilla menu walk") after dropping the
+deleted entries and before the processors run, and `CatalogIndex.RefreshPlacements` swaps the
+result into the published index. Without it, an edited road the game offers in a menu is placed
+nowhere until the next full pass: it drops out of that menu's view, which admits a network only
+when some menu places it, and a prefab only its placement admits (the menu-placed processor, and
+the blacklist and Find It overrides) leaves the index. A walk that throws keeps the placements it
+replaces.
+
+The menus and their tabs wait for the next full pass, as do the menu and category names on the
+entries a partial pass does not re-read. That matters only when the game regroups without
+recreating the assets. A recreated category is one: `ReplacePrefabSystem` does not move its
+members to the new entity, so it starts empty, and vanilla, which draws no empty category, hides
+the tab and its assets. The walk agrees and places none of them, but the tab stays in the strip,
+empty, until the next full pass.
+
 For a recreation whose old entity has already gone, the pass also drops every entry filed under
 the new entity's name whose prefab the game no longer maps to that entry's entity.
 `PrefabSystem.UpdatePrefab` keeps the `PrefabBase` and points it at the new entity, so this holds
@@ -159,7 +179,7 @@ schedules nothing, because opening the panel publishes anyway.
 
 ## The vanilla menu walk
 
-`IndexVanillaMenuPlacements` walks the game's own group tree downward: `UIAssetMenuData` menus →
+`TryIndexVanillaMenuPlacements` walks the game's own group tree downward: `UIAssetMenuData` menus →
 their `UIGroupElement` categories → the categories' members.
 
 The direction is the whole point. Everything else in the file reads upward: an indexed asset
@@ -176,7 +196,11 @@ of their own; `BindAssets` takes every element of those buffers. The one exclusi
 is `FilterOutUpgrades`, which drops `ServiceUpgradeData`, because a service upgrade is placed
 from its parent building's row rather than from the grid. The theme and asset-pack filters are
 deliberately NOT applied: those are player settings that hide assets which should still be
-indexed.
+indexed. A menu, category or asset the game has removed is skipped too. `UIInitializeSystem`
+takes a removed prefab out of its group during `PrefabSystem`'s update, but a
+`PrefabSystem.RemovePrefab` later in the frame, from a mod's own system or a UI trigger, leaves the
+entity in its group marked `Deleted`, and still there once the frame's clean-up destroys it, when
+its index can go to another entity and would place that entity instead.
 
 **The menus and their tabs are in the game's order**, reached the same way. A menu's tabs are
 `GetSortedCategories` run as is: the menu's members, less the non-categories and the empty ones
@@ -189,7 +213,8 @@ the same priority and stably, which leaves them as they are.
 
 The walk's tables, with the menus and their category tabs, go into the pass's `VanillaMenuIndex`,
 which its `CatalogIndex` carries as `Menus`: a new pass reads the menus afresh, and nothing
-outlives the index it was read for. The placements are read by:
+outlives the index it was read for. A partial pass walks again and swaps in a copy with the new
+placements (see "Partial passes"). The placements are read by:
 
 - the coverage report and the menu audit;
 - the zone catalog, which inherits the Zones menu (below);
