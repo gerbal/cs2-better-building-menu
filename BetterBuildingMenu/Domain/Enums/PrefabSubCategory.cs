@@ -77,7 +77,7 @@ namespace BetterBuildingMenu.Domain.Enums
 		Networks_Pillars,
 		// Appended rather than inserted, because these values are ordinal and the
 		// blocks below only survive that because each opens with an explicit
-		// `= PrefabCategory.X`. AddAllCategories needs them inside (Networks, +100).
+		// `= PrefabCategory.X`. CatalogIndex lays them out only inside (Networks, +100).
 		[CategoryIcon("Media/Game/Icons/Ship.svg")]
 		Networks_Waterways,
 		[CategoryIcon("Media/Game/Icons/Electricity.svg")]

@@ -4,7 +4,6 @@ using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Services;
-using BetterBuildingMenu.Utilities;
 
 using Game.Prefabs;
 
@@ -649,51 +648,14 @@ public sealed class BuildingCatalogQueryEngineTests
     [Fact]
     public void Adapter_WhenPrefabIndexIsUnready_ReturnsAnEmptyBoundedPage()
     {
-        bool previousReady = BuildingMenuUtil.IsReady;
-        try
-        {
-            BuildingMenuUtil.IsReady = false;
+        BuildingCatalogPage page = new BuildingCatalogAdapter().Build(
+            new CatalogSource(new CatalogIndex(), new PlacedUniques(), Generation: 1),
+            new BuildingCatalogQuery(Limit: BuildingCatalogQuery.MaxLimit + 1),
+            VanillaToolbarSelection.None).Page;
 
-            BuildingCatalogPage page = new BuildingCatalogAdapter().Build(
-                new CatalogSource(new PlacedUniques(), Generation: 1),
-                new BuildingCatalogQuery(Limit: BuildingCatalogQuery.MaxLimit + 1),
-                VanillaToolbarSelection.None).Page;
-
-            Assert.Empty(page.Items);
-            Assert.Equal(0, page.TotalCount);
-            Assert.Equal(BuildingCatalogQuery.MaxLimit, page.Limit);
-        }
-        finally
-        {
-            BuildingMenuUtil.IsReady = previousReady;
-        }
-    }
-
-    [Fact]
-    public void BuildingMenuUtil_WhenIndexCategoriesAreMissing_ReturnsNulls()
-    {
-        bool previousReady = BuildingMenuUtil.IsReady;
-        KeyValuePair<PrefabCategory, Dictionary<PrefabSubCategory, IndexedPrefabList>>[] previousCategories =
-            BuildingMenuUtil.CategorizedPrefabs.ToArray();
-
-        try
-        {
-            BuildingMenuUtil.CategorizedPrefabs.Clear();
-            BuildingMenuUtil.IsReady = true;
-
-            Assert.Null(BuildingMenuUtil.GetPrefabBase(0));
-            Assert.Null(BuildingMenuUtil.GetPrefabIndex(0));
-        }
-        finally
-        {
-            BuildingMenuUtil.CategorizedPrefabs.Clear();
-            foreach (KeyValuePair<PrefabCategory, Dictionary<PrefabSubCategory, IndexedPrefabList>> category in previousCategories)
-            {
-                BuildingMenuUtil.CategorizedPrefabs[category.Key] = category.Value;
-            }
-
-            BuildingMenuUtil.IsReady = previousReady;
-        }
+        Assert.Empty(page.Items);
+        Assert.Equal(0, page.TotalCount);
+        Assert.Equal(BuildingCatalogQuery.MaxLimit, page.Limit);
     }
 
     [Fact, Trait("Requires", "Game")]

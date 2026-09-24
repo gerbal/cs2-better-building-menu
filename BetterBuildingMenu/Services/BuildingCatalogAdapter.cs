@@ -437,8 +437,8 @@ namespace BetterBuildingMenu.Services
 		/// The game's own toolbar filter row. Its themes and Vanilla/Mods toggles can empty a
 		/// menu, which then goes back to vanilla; its pack selection is ignored here.
 		/// </param>
-		public static bool MenuHasAssets(string menu, VanillaToolbarSelection selection) =>
-			GetIndexedBuildings(menu, selection, ignorePackSelection: true).Any();
+		public static bool MenuHasAssets(CatalogIndex index, string menu, VanillaToolbarSelection selection) =>
+			GetIndexedBuildings(index, menu, selection, ignorePackSelection: true).Any();
 
 		/// <summary>
 		/// The candidate set, widened to whatever menu the player has open.
@@ -454,20 +454,19 @@ namespace BetterBuildingMenu.Services
 		/// before counting it: a dimension computed from the set it narrowed offers only itself.
 		/// </param>
 		private static IEnumerable<PrefabIndex> GetIndexedBuildings(
+			CatalogIndex index,
 			string? uiMenu,
 			VanillaToolbarSelection selection,
 			bool ignorePackSelection = false,
 			IReadOnlyList<string>? unionDlcIds = null)
 		{
-			if (!BuildingMenuUtil.IsReady
-				|| !BuildingMenuUtil.CategorizedPrefabs.TryGetValue(PrefabCategory.Any, out var allCategories)
-				|| !allCategories.TryGetValue(PrefabSubCategory.Any, out var allPrefabs))
+			if (!index.IsReady)
 			{
 				return Array.Empty<PrefabIndex>();
 			}
 
 			string menu = uiMenu?.Trim() ?? string.Empty;
-			return allPrefabs
+			return index.All
 				// Sub-buildings are not list entries, which is the test vanilla runs
 				// too: an upgrade is placed from its parent building's row. They stay
 				// INDEXED, so search and the extension picker still see them.
@@ -542,7 +541,7 @@ namespace BetterBuildingMenu.Services
 			}
 
 			var timer = System.Diagnostics.Stopwatch.StartNew();
-			var built = ProjectForMenuUncached(source.Placed, menu, selection, contentDlcs, ignorePacks).ToArray();
+			var built = ProjectForMenuUncached(source, menu, selection, contentDlcs, ignorePacks).ToArray();
 			_snapshots.Put(key, source.Generation, built);
 			LastProjectionMs += (int)timer.ElapsedMilliseconds;
 			LastProjectionWasHit = false;
@@ -551,14 +550,14 @@ namespace BetterBuildingMenu.Services
 		}
 
 		private IEnumerable<BuildingCatalogEntry> ProjectForMenuUncached(
-			PlacedUniques placed,
+			CatalogSource source,
 			string? menu,
 			VanillaToolbarSelection selection,
 			IReadOnlyList<string>? contentDlcs,
 			bool ignorePacks)
 		{
-			var entries = GetIndexedBuildings(menu, selection, ignorePackSelection: ignorePacks, unionDlcIds: contentDlcs)
-				.Select(prefab => Project(prefab, placed))
+			var entries = GetIndexedBuildings(source.Index, menu, selection, ignorePackSelection: ignorePacks, unionDlcIds: contentDlcs)
+				.Select(prefab => Project(prefab, source.Placed))
 				.ToArray();
 			var root = PrefabIndexingSystem.GetDevTreeRootLabel(menu);
 
@@ -623,7 +622,7 @@ namespace BetterBuildingMenu.Services
 		/// </remarks>
 		public BuildingCatalogEntry? EntryForPrefabName(CatalogSource source, string prefabName)
 		{
-			if (string.IsNullOrEmpty(prefabName) || !BuildingMenuUtil.IsReady)
+			if (string.IsNullOrEmpty(prefabName) || !source.Index.IsReady)
 			{
 				return null;
 			}
@@ -632,15 +631,11 @@ namespace BetterBuildingMenu.Services
 			{
 				_byName.Clear();
 
-				if (BuildingMenuUtil.CategorizedPrefabs.TryGetValue(PrefabCategory.Any, out var categories)
-					&& categories.TryGetValue(PrefabSubCategory.Any, out var prefabs))
+				foreach (var prefab in source.Index.All)
 				{
-					foreach (var prefab in prefabs)
+					if (prefab.PrefabName is { Length: > 0 } name)
 					{
-						if (prefab.PrefabName is { Length: > 0 } name)
-						{
-							_byName[name] = prefab;
-						}
+						_byName[name] = prefab;
 					}
 				}
 

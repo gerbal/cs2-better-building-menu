@@ -126,12 +126,15 @@ namespace BetterBuildingMenu.Systems
 		/// could land on a number an older projection was stored under.</remarks>
 		public int Generation { get; private set; } = 1;
 
+		/// <summary>The index the panel reads. A full pass replaces it; see <see cref="RunIndex"/>.</summary>
+		public CatalogIndex Index { get; private set; } = new();
+
 		/// <summary>The unique assets the city has already got one of, kept in step with the game's
 		/// tracker.</summary>
 		public PlacedUniques PlacedUniques { get; } = new();
 
 		/// <summary>What a catalog refresh reads, taken once, after <see cref="SyncPlacedUniques"/>.</summary>
-		public CatalogSource Source => new(PlacedUniques, Generation);
+		public CatalogSource Source => new(Index, PlacedUniques, Generation);
 
 		// Set when this system is created inside a running city: the game adds a
 		// newly subscribed mod to a session after the save is deserialised, so
@@ -169,7 +172,8 @@ namespace BetterBuildingMenu.Systems
 			_blackList = new HashSet<string>(reader.ReadToEnd().Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries));
 
 			// In the order PrefabCategoryProcessors lists them, the same on every build.
-			var processors = PrefabCategoryProcessors.Create(new(EntityManager, _imageSystem, _prefabSystem));
+			// IsIndexed reads whichever index is current, which during a full pass is the one being built.
+			var processors = PrefabCategoryProcessors.Create(new(EntityManager, _imageSystem, _prefabSystem, id => Index.Get(id) is not null));
 
 			foreach (var processor in processors)
 			{
@@ -236,7 +240,7 @@ namespace BetterBuildingMenu.Systems
 		{
 			var drift = 0;
 
-			foreach (var prefabIndex in BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any])
+			foreach (var prefabIndex in Index.All)
 			{
 				if (prefabIndex.Prefab is not null
 					&& _prefabSystem.TryGetEntity(prefabIndex.Prefab, out var entity)
@@ -351,7 +355,7 @@ namespace BetterBuildingMenu.Systems
 			for (var i = 0; i < events.Length; i++)
 			{
 				var entity = events[i].m_Prefab;
-				var prefabIndex = BuildingMenuUtil.GetPrefabIndex(entity.Index);
+				var prefabIndex = Index.Get(entity.Index);
 
 				// Not every unlock is ours: the game unlocks prefabs no processor
 				// indexes, and asking for one back returns null rather than throwing.
@@ -408,7 +412,7 @@ namespace BetterBuildingMenu.Systems
 			var timer = Stopwatch.StartNew();
 			var seen = 0;
 
-			foreach (var prefab in BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any])
+			foreach (var prefab in Index.All)
 			{
 				if ((prefab.Thumbnail ?? prefab.FallbackThumbnail) is not { Length: > 0 } thumbnail)
 				{
@@ -528,7 +532,7 @@ namespace BetterBuildingMenu.Systems
 				return false;
 			}
 
-			BuildingMenuUtil.IsReady = true;
+			Index.IsReady = true;
 			Generation++;
 
 			// Rescan the placed uniques against the city that just loaded: the
@@ -549,8 +553,8 @@ namespace BetterBuildingMenu.Systems
 #endif
 			// The locked count is logged so a second full pass on the same load can
 			// be checked against the first.
-			Mod.Log.Info($"Indexed Prefabs Count: {BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any].Count}"
-				+ $" locked={BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any].Count(p => p.IsLocked)}");
+			Mod.Log.Info($"Indexed Prefabs Count: {Index.All.Count}"
+				+ $" locked={Index.All.Count(p => p.IsLocked)}");
 
 			if (full)
 			{
@@ -566,7 +570,7 @@ namespace BetterBuildingMenu.Systems
 					// Which processors feed anything the lens can show. A processor
 					// whose every prefab is neither a building/network nor placed in
 					// a vanilla menu is indexing for nobody; this is the count.
-					var all = BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any];
+					var all = Index.All;
 
 					foreach (var pair in census.OrderBy(pair => pair.Key, StringComparer.Ordinal))
 					{
@@ -605,9 +609,7 @@ namespace BetterBuildingMenu.Systems
 			{
 				RefreshModCompatibility();
 
-				BuildingMenuUtil.CategorizedPrefabs.Clear();
-
-				AddAllCategories();
+				Index = new CatalogIndex();
 
 				// Before IndexZones and before the processors: the zone catalog
 				// inherits the game's own Zones menu, and the blacklist check below
@@ -676,14 +678,14 @@ namespace BetterBuildingMenu.Systems
 						{
 							if (_roadBuilderDiscarded.HasValue && EntityManager.HasComponent(entity, _roadBuilderDiscarded.Value))
 							{
-								BuildingMenuUtil.RemoveItem(entity);
+								Index.Remove(entity.Index);
 
 								continue;
 							}
 
-							if (!full && EntityManager.HasComponent<Created>(entity) && BuildingMenuUtil.Find(_prefabSystem.GetPrefab<PrefabBase>(entity), out var oldId))
+							if (!full && EntityManager.HasComponent<Created>(entity) && Index.Find(_prefabSystem.GetPrefab<PrefabBase>(entity).name, out var oldId))
 							{
-								BuildingMenuUtil.RemoveItem(oldId);
+								Index.Remove(oldId);
 							}
 
 							if (processor.TryCreatePrefabIndex(prefab, entity, out prefabIndex))
@@ -697,7 +699,7 @@ namespace BetterBuildingMenu.Systems
 									// partial pass drops what an earlier pass indexed.
 									if (categoryOverride.Excluded && !IsPlacedInVanillaMenu(entity.Index))
 									{
-										BuildingMenuUtil.RemoveItem(entity);
+										Index.Remove(entity.Index);
 
 										continue;
 									}
@@ -755,10 +757,10 @@ namespace BetterBuildingMenu.Systems
 
 		/// <summary>What a full pass replaces, held so a pass that throws can put it back.</summary>
 		/// <remarks>References are enough: each Index* step builds new collections and assigns them
-		/// at its end, and AddAllCategories gives every category new lists, so a pass never writes to
-		/// the old ones.</remarks>
+		/// at its end, and the pass files into a new CatalogIndex, so it never writes to the old
+		/// ones.</remarks>
 		private sealed record IndexSnapshot(
-			KeyValuePair<PrefabCategory, Dictionary<PrefabSubCategory, IndexedPrefabList>>[] Categories,
+			CatalogIndex Index,
 			Dictionary<int, VanillaMenuPlacement> MenuPlacements,
 			Dictionary<int, VanillaAssetFacts> ZoneFacts,
 			Dictionary<Entity, ZoneTypeFilter> ZoneTypes,
@@ -774,7 +776,7 @@ namespace BetterBuildingMenu.Systems
 			Dictionary<string, (string Label, string Icon, int Depth)> DevTreeRoots);
 
 		private IndexSnapshot CaptureIndex() => new(
-			BuildingMenuUtil.CategorizedPrefabs.ToArray(),
+			Index,
 			_menuPlacements,
 			_zoneFacts,
 			_zoneTypeCache,
@@ -791,20 +793,7 @@ namespace BetterBuildingMenu.Systems
 
 		private void RestoreIndex(IndexSnapshot snapshot)
 		{
-			BuildingMenuUtil.CategorizedPrefabs.Clear();
-
-			foreach (var pair in snapshot.Categories)
-			{
-				BuildingMenuUtil.CategorizedPrefabs[pair.Key] = pair.Value;
-			}
-
-			// Before the first pass there is no index to keep. An empty one, laid out, is what
-			// every reader of CategorizedPrefabs expects to find.
-			if (snapshot.Categories.Length == 0)
-			{
-				AddAllCategories();
-			}
-
+			Index = snapshot.Index;
 			_menuPlacements = snapshot.MenuPlacements;
 			_zoneFacts = snapshot.ZoneFacts;
 			_zoneTypeCache = snapshot.ZoneTypes;
@@ -963,7 +952,7 @@ namespace BetterBuildingMenu.Systems
 
 			PopulateAnalyticalData(entity, prefabIndex);
 
-			BuildingMenuUtil.File(BuildingMenuUtil.CategorizedPrefabs, prefabIndex);
+			Index.File(prefabIndex);
 		}
 
 		private string GetAssetName(PrefabBase prefab)
@@ -978,9 +967,9 @@ namespace BetterBuildingMenu.Systems
 		}
 
 		/// <summary>Numbers the display names indexed prefabs share. See <see cref="DuplicateNameNumbering"/>.</summary>
-		private static void AddNumberToDuplicatePrefabNames()
+		private void AddNumberToDuplicatePrefabNames()
 		{
-			var all = BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any];
+			var all = Index.All;
 			// Upgrades are left out of the numbering. Every school type has an
 			// "Extension Wing"; they are never listed beside each other, only on
 			// their own parent's picker, where "Extension Wing 2" has no referent.
@@ -998,54 +987,25 @@ namespace BetterBuildingMenu.Systems
 
 		private void CleanupBrandPrefabs()
 		{
-			var brands = new HashSet<string>(BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Props][PrefabSubCategory.Props_Branding].Select(x => x.PrefabName));
+			var branding = Index.List(PrefabCategory.Props, PrefabSubCategory.Props_Branding);
+			var brands = new HashSet<string>(branding?.Select(x => x.PrefabName) ?? Enumerable.Empty<string>());
 
-			foreach (var category in BuildingMenuUtil.CategorizedPrefabs.Keys)
+			foreach (var (category, subCategory, list) in Index.Lists())
 			{
-				if (category is PrefabCategory.Any)
+				if (category is PrefabCategory.Any
+					|| subCategory is PrefabSubCategory.Props_Branding
+					|| (category is PrefabCategory.Props && subCategory is PrefabSubCategory.Any))
 				{
 					continue;
 				}
 
-				foreach (var subCategory in BuildingMenuUtil.CategorizedPrefabs[category].Keys)
+				foreach (var item in list.ToList())
 				{
-					if (subCategory is PrefabSubCategory.Props_Branding || (category is PrefabCategory.Props && subCategory is PrefabSubCategory.Any))
+					if (brands.Contains(item.PrefabName))
 					{
-						continue;
-					}
+						list.Remove(item);
 
-					foreach (var item in BuildingMenuUtil.CategorizedPrefabs[category][subCategory].ToList())
-					{
-						if (brands.Contains(item.PrefabName))
-						{
-							BuildingMenuUtil.CategorizedPrefabs[category][subCategory].Remove(item);
-
-							Mod.Log.Debug($"Removed {item.PrefabName} from {subCategory}");
-						}
-					}
-				}
-			}
-		}
-
-		private void AddAllCategories()
-		{
-			foreach (PrefabCategory category in Enum.GetValues(typeof(PrefabCategory)))
-			{
-				BuildingMenuUtil.CategorizedPrefabs[category] = new()
-				{
-					{ PrefabSubCategory.Any, new() }
-				};
-
-				if (category == PrefabCategory.Any)
-				{
-					continue;
-				}
-
-				foreach (PrefabSubCategory subCategory in Enum.GetValues(typeof(PrefabSubCategory)))
-				{
-					if ((int)subCategory > (int)category && (int)subCategory < (int)category + 100)
-					{
-						BuildingMenuUtil.CategorizedPrefabs[category][subCategory] = new();
+						Mod.Log.Debug($"Removed {item.PrefabName} from {subCategory}");
 					}
 				}
 			}
@@ -1121,15 +1081,11 @@ namespace BetterBuildingMenu.Systems
 		{
 			var candidates = new List<(int Id, PrefabBase Prefab)>();
 
-			if (BuildingMenuUtil.CategorizedPrefabs.TryGetValue(PrefabCategory.Any, out var subCategories)
-				&& subCategories.TryGetValue(PrefabSubCategory.Any, out var prefabs))
+			foreach (var prefabIndex in Index.All)
 			{
-				foreach (var prefabIndex in prefabs)
+				if (prefabIndex.IsUnique && prefabIndex.Prefab is not null)
 				{
-					if (prefabIndex.IsUnique && prefabIndex.Prefab is not null)
-					{
-						candidates.Add((prefabIndex.Id, prefabIndex.Prefab));
-					}
+					candidates.Add((prefabIndex.Id, prefabIndex.Prefab));
 				}
 			}
 
