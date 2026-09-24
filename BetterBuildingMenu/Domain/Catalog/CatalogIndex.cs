@@ -61,8 +61,9 @@ namespace BetterBuildingMenu.Domain.Catalog
 			All = _lists[PrefabCategory.Any][PrefabSubCategory.Any];
 		}
 
-		/// <summary>The game's own build menus, as the pass that built this index read them.</summary>
-		public VanillaMenuIndex Menus { get; }
+		/// <summary>The game's own build menus, as the pass that built this index read them. A
+		/// partial pass reads the placements again; see <see cref="RefreshPlacements"/>.</summary>
+		public VanillaMenuIndex Menus { get; private set; }
 
 		/// <summary>The zones, as the pass that built this index read them.</summary>
 		public ZoneIndex Zones { get; }
@@ -209,6 +210,14 @@ namespace BetterBuildingMenu.Domain.Catalog
 				}
 			}
 		}
+
+		/// <summary>Swaps in placements a partial pass read again, keeping the menus and their tabs.</summary>
+		/// <remarks>The game moves a recreated prefab, such as a Road Builder road, to a new entity,
+		/// and the placements are keyed by entity: without this the new entity is placed nowhere until
+		/// the next full pass. A new table rather than an edit, so a caller still holding the previous
+		/// <see cref="Menus"/> keeps reading what it read. See docs/indexing.md, "Partial passes".</remarks>
+		internal void RefreshPlacements(IReadOnlyDictionary<int, VanillaMenuPlacement> placements) =>
+			Menus = Menus.WithPlacements(placements);
 
 		/// <summary>Removes every entry filed under a prefab name that <paramref name="which"/> picks.</summary>
 		/// <returns>How many it removed.</returns>

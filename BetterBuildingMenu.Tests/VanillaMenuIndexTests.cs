@@ -116,6 +116,58 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void PlacementsReadAgainKeepTheMenusAndTheirTabs()
+		{
+			var menus = Menus(
+				new[] { (1, "Roads", "RoadsSmall") },
+				new() { ["Roads"] = new() { Tab("RoadsSmall") } },
+				menuOrder: new[] { "Roads" },
+				menuEntities: new() { ["Roads"] = new Entity { Index = 7, Version = 3 } },
+				menuNames: new() { [7] = "Roads" });
+
+			var refreshed = menus.WithPlacements(new Dictionary<int, VanillaMenuPlacement>
+			{
+				[2] = new(default, "Roads", "RoadsMedium"),
+			});
+
+			Assert.True(refreshed.IsPlacedIn(2, "Roads"));
+			Assert.True(refreshed.TryGetCategory(2, out var category));
+			Assert.Equal("RoadsMedium", category);
+			Assert.False(refreshed.IsPlaced(1));
+			Assert.Equal(new[] { "Roads" }, refreshed.AssetMenus().Select(menu => menu.Id));
+			Assert.Equal(new[] { "RoadsSmall" }, refreshed.CategoriesOf("Roads").Select(tab => tab.Id));
+			Assert.True(refreshed.TryGetMenuEntity(" roads ", out var entity));
+			Assert.Equal(7, entity.Index);
+			Assert.Equal("Roads", refreshed.MenuName(7));
+
+			// A copy: whoever holds the old table keeps reading it.
+			Assert.True(menus.IsPlaced(1));
+			Assert.False(menus.IsPlaced(2));
+		}
+
+		[Fact]
+		public void ARecreatedPrefabIsBackInItsMenuOnceThePlacementsAreReadAgain()
+		{
+			// The game recreated entity 21 as 22: the index holds the new entry, and the
+			// placements it was built with still name the old entity.
+			var brush = TestPrefabs.Entry(22, PrefabCategory.Props, PrefabSubCategory.Props_Misc);
+			var index = ReadyIndex(Menus(new[] { (21, "Landscaping", "Terraforming") }), brush);
+			var before = index.Menus;
+
+			Assert.False(BuildingCatalogAdapter.MenuHasAssets(index, "Landscaping", VanillaToolbarSelection.None));
+
+			index.RefreshPlacements(new Dictionary<int, VanillaMenuPlacement>
+			{
+				[22] = new(default, "Landscaping", "Terraforming"),
+			});
+
+			Assert.True(BuildingCatalogAdapter.MenuHasAssets(index, "Landscaping", VanillaToolbarSelection.None));
+			Assert.False(index.Menus.IsPlaced(21));
+			Assert.NotSame(before, index.Menus);
+			Assert.True(before.IsPlaced(21));
+		}
+
+		[Fact]
 		public void AMenuHoldsWhatItsIndexPlacesThere()
 		{
 			var brush = TestPrefabs.Entry(21, PrefabCategory.Props, PrefabSubCategory.Props_Misc);

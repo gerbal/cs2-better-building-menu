@@ -11,9 +11,9 @@ namespace BetterBuildingMenu.Domain.Catalog
 	/// the menus and category tabs it draws.
 	/// </summary>
 	/// <remarks>
-	/// Not changed once built; a new pass builds a new one, handing over tables it keeps no hold on.
-	/// The walk that fills it is in PrefabIndexingSystem; see docs/indexing.md, "The vanilla
-	/// menu walk".
+	/// Not changed once built; a new pass builds a new one, handing over tables it keeps no hold on,
+	/// and a partial pass swaps in a copy with its placements read again. The walk that fills it is
+	/// in PrefabIndexingSystem; see docs/indexing.md, "The vanilla menu walk".
 	/// </remarks>
 	public sealed class VanillaMenuIndex
 	{
@@ -53,6 +53,12 @@ namespace BetterBuildingMenu.Domain.Catalog
 
 		/// <summary>Every placement, for the audits and AddPrefab's placement override.</summary>
 		public IReadOnlyDictionary<int, VanillaMenuPlacement> Placements => _placements;
+
+		/// <summary>The same menus and tabs over placements read again.</summary>
+		/// <remarks>A partial pass's: the game moves a recreated prefab to a new entity, and the
+		/// placements are keyed by entity. The menus and their tabs wait for the next full pass.</remarks>
+		public VanillaMenuIndex WithPlacements(IReadOnlyDictionary<int, VanillaMenuPlacement> placements) =>
+			new(placements, _menuNames, _menuEntities, _menus, _categories);
 
 		/// <summary>Whether the game offers this prefab in any of its build menus.</summary>
 		/// <remarks>The index's tie-breaker: whatever the game puts in front of the player, the lens
