@@ -167,7 +167,7 @@ namespace BetterBuildingMenu.Tests
 					MaintenanceDepotData = new MaintenanceDepotData { m_VehicleCapacity = 251 },
 					PollutionModifierData = new PollutionModifierData
 					{
-						m_GroundPollutionMultiplier = 0.5f, m_AirPollutionMultiplier = 1.25f, m_NoisePollutionMultiplier = 1f,
+						m_GroundPollutionMultiplier = -0.5f, m_AirPollutionMultiplier = 0.25f, m_NoisePollutionMultiplier = 0f,
 					},
 					UpkeepMultipliers = new[] { 0.75f },
 					TransportStationData = new TransportStationData { m_ComfortFactor = 0.5f },
@@ -219,7 +219,7 @@ namespace BetterBuildingMenu.Tests
 					("hearses", 181d), ("processingRate", 0.125d), ("shelterVehicles", 197d),
 					("purification", 25d), ("purification", 50d),
 					("batteryOutput", 233d), ("maintenancePool", 239d), ("depotVehicles", 241d), ("maintenanceVehicles", 251d),
-					("groundPollutionModifier", 50d), ("airPollutionModifier", 125d), ("upkeepChange", -25d),
+					("groundPollutionModifier", -50d), ("airPollutionModifier", 25d), ("upkeepChange", -25d),
 					("comfort", 50d), ("cargoCapacity", 257d), ("electricityCapacity", 263d), ("stormCapacity", 269d),
 				},
 				entry.ServiceFacts.Select(fact => (fact.Key, fact.Value)));
@@ -544,20 +544,24 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(expected, entry.ServiceFacts.Where(fact => fact.Key == "upkeepChange").Select(fact => (double?)fact.Value).SingleOrDefault());
 		}
 
-		/// <summary>PrefabUISystem's pollution binders: Mathf.RoundToInt of the float product. A double
-		/// product rounds 0.805 to 81 and 1.255 to 125.</summary>
+		/// <summary>PrefabUISystem's pollution binders: a signed change, where 0 is none, as
+		/// Mathf.RoundToInt of the float product. A double product rounds 0.805 to 81 and 1.255 to 125.</summary>
 		[Theory]
 		[InlineData(0.5f, 50d)]
+		[InlineData(1f, 100d)]
+		[InlineData(-0.3f, -30d)]
 		[InlineData(0.805f, 80d)]
 		[InlineData(1.255f, 126d)]
-		[InlineData(1f, null)]
-		public void APollutionModifierRoundsAsVanillaDoes(float multiplier, double? expected)
+		[InlineData(-0.255f, -26d)]
+		[InlineData(0f, null)]
+		[InlineData(0.004f, null)]
+		public void APollutionModifierIsTheSignedChangeVanillaShows(float factor, double? expected)
 		{
 			var entry = Apply(new PrefabSnapshot
 			{
 				PollutionModifierData = new PollutionModifierData
 				{
-					m_GroundPollutionMultiplier = multiplier, m_AirPollutionMultiplier = 1f, m_NoisePollutionMultiplier = 1f,
+					m_GroundPollutionMultiplier = factor, m_AirPollutionMultiplier = 0f, m_NoisePollutionMultiplier = 0f,
 				},
 			});
 

@@ -245,15 +245,14 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
   depotVehicles: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.DepotVehicles]", fallback: "Vehicles", unit: "" },
   maintenanceVehicles: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.MaintenanceVehicles]", fallback: "Maintenance vehicles", unit: "" },
   jailCapacity: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.JailCapacity]", fallback: "Jail capacity", unit: "" },
-  // PollutionModifierData multipliers, already ×100 by the indexer: vanilla
-  // shows them as a percentage under the pollution level's own name, and it
-  // authors the component only on service upgrades.
-  groundPollutionModifier: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.GroundPollutionModifier]", fallback: "Ground pollution", unit: "%" },
-  airPollutionModifier: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.AirPollutionModifier]", fallback: "Air pollution", unit: "%" },
-  noisePollutionModifier: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.NoisePollutionModifier]", fallback: "Noise pollution", unit: "%" },
-  // UpkeepModifierData: the largest multiplier minus one, in percent, signed —
-  // the one signed property in vanilla's table, and authored only on
-  // BuildingExtensionPrefab.
+  // PollutionModifierData factors, already ×100 by the indexer: a change, where
+  // 0 is none, so vanilla shows them signed, as a percentage under the pollution
+  // level's own name. It authors the component only on service upgrades.
+  groundPollutionModifier: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.GroundPollutionModifier]", fallback: "Ground pollution", unit: "%", signed: true },
+  airPollutionModifier: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.AirPollutionModifier]", fallback: "Air pollution", unit: "%", signed: true },
+  noisePollutionModifier: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.NoisePollutionModifier]", fallback: "Noise pollution", unit: "%", signed: true },
+  // UpkeepModifierData: the largest multiplier minus one, in percent, signed as
+  // vanilla binds it, and authored only on BuildingExtensionPrefab.
   upkeepChange: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.UpkeepChange]", fallback: "Upkeep", unit: "%", signed: true },
   elevatedWidth: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ElevatedWidth]",
