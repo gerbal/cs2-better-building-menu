@@ -984,11 +984,17 @@ namespace BetterBuildingMenu.Systems
 				Generation++;
 			}
 
-			// Logged on a change only: the rescan runs on every catalog publish.
+			// Logged on a change only: the rescan runs on every catalog publish. Not at
+			// all with no candidates, as on the main menu, where "0 of 0" says only that
+			// there is no city.
 			if (moved || _uniqueCandidates.Count != _loggedUniqueCandidateCount)
 			{
 				_loggedUniqueCandidateCount = _uniqueCandidates.Count;
-				Mod.Log.Info($"Placed unique assets: {PlacedUniques.Count} of {_uniqueCandidates.Count} unique assets");
+
+				if (_uniqueCandidates.Count > 0)
+				{
+					Mod.Log.Info($"Placed unique assets: {PlacedUniques.Count} of {_uniqueCandidates.Count} unique assets");
+				}
 			}
 		}
 
