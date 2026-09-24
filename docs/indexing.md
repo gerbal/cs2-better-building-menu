@@ -240,11 +240,25 @@ first is full, and then `IsDlcOwned` is false for everything but the base game.
 An entry's figures and facts (cost, upkeep, capacity, and the service figures a card lists) are
 a mapping from the components its prefab carries. `.Facts.cs` reads them into a `PrefabSnapshot`:
 each component, or null when the prefab has none, plus the few inputs that live elsewhere. Those
-are a network's authoring prefab (a road's three flags, and the elevation cost), the two upkeep
-buffers, an extractor's map feature, and a zone's lots. `PrefabFacts.Apply` in `Domain/` maps the
-snapshot onto the entry and never touches the entity world. So a test builds a snapshot by hand
-and checks what the entry gets, and `UI/test/factCoverage.test.ts` reads that file for every key
-it can emit.
+are a road's three flags from its authoring prefab, the two upkeep buffers, an extractor's map
+feature, and a zone's lots. `PrefabFacts.Apply` in `Domain/` maps the snapshot onto the entry and
+never touches the entity world. So a test builds a snapshot by hand and checks what the entry
+gets, and `UI/test/factCoverage.test.ts` reads that file for every key it can emit.
+
+Where the game's own tooltip shows a figure, `Apply` follows its binder in
+`PrefabUISystem.BuildDefaultPropertyBinders`. Three rules decide more than one line:
+
+- A network that owns a building, through a sub-object flagged `MakeOwner`, is read from that
+  building, as `BindPrefabDetails` reads it (`DetailsSource`).
+- Upkeep is the `ServiceUpkeepData` buffer's money and nothing else. A prefab without the buffer
+  has no upkeep line, as in vanilla: what `ConsumptionData` holds alone, on a zoned or signature
+  building, is the rent-side upkeep `PropertyRenterSystem` charges, not the city's.
+- Capacity is the primary role's own figure, in the unit the UI formats that role in. A secondary
+  role's figure that vanilla shows gets its own line: an incinerator is a power plant with a
+  garbage store.
+
+docs/verification.md, "Card facts against vanilla's binders", lists where the card still differs
+and why.
 
 The entry keeps the facts in the order they are added, but a card re-sorts them by `FACT_ORDER`
 in `serviceFacts.ts`. So the order `Apply` adds them in only breaks ties within one key, such as

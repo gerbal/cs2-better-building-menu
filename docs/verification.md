@@ -1932,3 +1932,53 @@ The store's 0.1.12 changelog carried the 0.1.11 section too: the
 replacing it. Trimmed to 0.1.12 in the repo config and the scratch copy, and
 a second `Update` (game closed, first attempt) returned "Mod metadata
 Updated"; the echoed changelog holds only the 0.1.12 lines.
+
+## 2026-09-24 — card facts against vanilla's binders (by code reading)
+
+Every figure the card draws was set against the binder that shows it in
+`PrefabUISystem` (1.6.2f1), and the arithmetic behind it. Not yet checked in
+game. Fixed:
+
+- An incinerator's Capacity was its garbage store drawn as megawatts: the
+  largest capacity of every role, in the primary role's unit. Capacity is now
+  the primary role's own figure, and the store gets vanilla's Garbage storage
+  line.
+- Power output is `PowerProductionBinder`'s sum: the plant plus wind, solar,
+  garbage, water, groundwater and an emergency generator, which is a power
+  source on its own too.
+- Upkeep comes from the `ServiceUpkeepData` buffer alone. A signature or zoned
+  building showed its renters' upkeep as the city's.
+- `UpkeepModifierData` is labelled Resource consumption, as vanilla labels it:
+  `CityServiceUpkeepSystem` applies it only to the resources a building burns.
+- Graduation is points added to a probability (`GraduationSystem` ends on
+  `+ graduationModifier`), drawn "+5 %", not "×0.05".
+- Student and inmate wellbeing and health, and work conditions, are offsets:
+  a negative one is drawn, signed.
+- Comfort is read from parking facilities and transport stops as well as
+  stations, as vanilla's three COMFORT binders do.
+- A groundwater-powered plant draws ground water (`RequiredResourceBinder`).
+- A network that owns a building is read from the building.
+- Effects take vanilla's units: a percentage for the absolute city effects
+  `CityModifierBinder.GetModifierUnit` names, one decimal otherwise, invariant.
+- The deathcare processing rate rounds up; a road with no upkeep has no
+  upkeep line; homes per cell keep a decimal; Fish is worded; the shelter's
+  vehicles are evacuation buses.
+- Stormwater capacity and transport type move to our tier: no binder shows
+  them. The elevation cost, which never matched a road, is gone.
+
+Deliberately not matched:
+
+- Network upkeep rounds the per-kilometre product, which is what
+  `NetUtils.GetUpkeepCost` charges; vanilla rounds the per-cell figure first
+  (¢487/km/mo. against ¢500).
+- Upkeep is the budget-free figure: vanilla scales it by the service's current
+  budget, which is city state, not a fact about the building.
+- Vanilla's upkeep is a range whose top prices the burned resources at market;
+  the card names each resource and its amount under the upkeep instead.
+- The deathcare capacity keeps its "plots" unit, though a crematorium's store
+  is bodies held, not plots.
+
+Not drawn yet, though vanilla shows them: pollution levels, transformer
+capacity and voltages, a pipe's water type, transport stop counts, a network's
+auxiliary networks in its cost, and the power-line rule's lighting and layer
+tests.

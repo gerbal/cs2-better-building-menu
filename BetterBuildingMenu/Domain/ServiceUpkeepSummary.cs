@@ -8,9 +8,9 @@ namespace BetterBuildingMenu.Domain
 	/// What a building costs to run, read the way the game reads it.
 	/// </summary>
 	/// <remarks>
-	/// The ServiceUpkeepData buffer is the authority: BuildingInitializeSystem copies
-	/// a ConsumptionData upkeep into it as a Money entry, so summing the buffer never
-	/// double-counts and the consumption figure is a fallback for a prefab with none.
+	/// The ServiceUpkeepData buffer is the authority: BuildingInitializeSystem copies a
+	/// city-paid ConsumptionData upkeep into it as a Money entry, so summing the buffer never
+	/// double-counts. A prefab without the buffer costs the city nothing; see PrefabFacts.
 	/// </remarks>
 	public static class ServiceUpkeepSummary
 	{
@@ -18,17 +18,15 @@ namespace BetterBuildingMenu.Domain
 
 		public readonly record struct Result(int Money, (string Resource, int Amount)[] Resources);
 
-		public static Result Summarise(int consumptionUpkeep, IEnumerable<(string Resource, int Amount)> buffer)
+		public static Result Summarise(IEnumerable<(string Resource, int Amount)> buffer)
 		{
 			var money = 0;
-			var sawMoney = false;
 			var resources = new List<(string, int)>();
 
 			foreach (var (resource, amount) in buffer)
 			{
 				if (resource == "Money")
 				{
-					sawMoney = true;
 					money += amount;
 				}
 				else if (amount > 0)
@@ -37,7 +35,7 @@ namespace BetterBuildingMenu.Domain
 				}
 			}
 
-			return new Result(sawMoney ? money : consumptionUpkeep, resources.ToArray());
+			return new Result(money, resources.ToArray());
 		}
 	}
 }
