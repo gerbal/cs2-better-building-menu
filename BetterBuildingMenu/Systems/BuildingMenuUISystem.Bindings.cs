@@ -210,7 +210,7 @@ namespace BetterBuildingMenu.Systems
 			if (MenuRouting.ShouldYield(
 				replaceEnabled: true,
 				menuName: menuName,
-				menuHasAssets: BuildingCatalogAdapter.MenuHasAssets(menuName ?? string.Empty, _toolbarSelection)))
+				menuHasAssets: BuildingCatalogAdapter.MenuHasAssets(_indexer.Index, menuName ?? string.Empty, _toolbarSelection)))
 			{
 				YieldMenuToVanilla();
 				return;
@@ -321,6 +321,7 @@ namespace BetterBuildingMenu.Systems
 		private void PublishScope()
 		{
 			_BuildingLensMenuCategoriesBinding.Value = PrefabIndexingSystem.GetMenuCategories(
+				_indexer.Index,
 				string.IsNullOrEmpty(_lens.Menu) ? null : _lens.Menu).ToArray();
 			_BuildingLensMenuBinding.Value = _lens.Menu;
 			_BuildingLensMenusBinding.Value = PrefabIndexingSystem.GetAssetMenus().ToArray();

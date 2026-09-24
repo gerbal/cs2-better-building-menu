@@ -7,7 +7,6 @@ using Colossal.PSI.Common;
 using Colossal.Serialization.Entities;
 
 using BetterBuildingMenu.Domain;
-using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Domain.Interfaces;
 using BetterBuildingMenu.Utilities;
 
@@ -44,7 +43,7 @@ namespace BetterBuildingMenu.Systems
 		{
 			try
 			{
-				var indexed = BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any];
+				var indexed = Index.All;
 
 				// Everything we hold at all, menu or not. Zones included
 				// deliberately — leaving them out is the blindness this exists
@@ -172,7 +171,7 @@ namespace BetterBuildingMenu.Systems
 		{
 			try
 			{
-				var indexed = BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any];
+				var indexed = Index.All;
 				// PrefabIndex.Id is the prefab entity's index (see AddPrefab), so this
 				// is an identity comparison rather than a name match.
 				var byEntity = new Dictionary<int, PrefabIndex>();

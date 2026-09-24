@@ -1,8 +1,6 @@
 using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Enums;
-using BetterBuildingMenu.Utilities;
-
-using System.Collections.Generic;
 
 using Xunit;
 
@@ -11,16 +9,28 @@ namespace BetterBuildingMenu.Tests
 	public sealed class CategoryFilingTests
 	{
 		[Fact]
+		public void ANewIndexIsLaidOutEmptyAndNotReady()
+		{
+			var index = new CatalogIndex();
+
+			Assert.False(index.IsReady);
+			Assert.Empty(index.All);
+			Assert.NotNull(index.List(PrefabCategory.Networks, PrefabSubCategory.Networks_Roads));
+			// A subcategory is laid out only under its own category.
+			Assert.Null(index.List(PrefabCategory.Props, PrefabSubCategory.Networks_Roads));
+		}
+
+		[Fact]
 		public void AnEntryIsListedUnderEverythingItsCategoryAndItsSubcategory()
 		{
-			var index = EmptyIndex();
-			var road = Entry(7, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads);
+			var index = new CatalogIndex();
+			var road = TestPrefabs.Entry(7, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads);
 
-			BuildingMenuUtil.File(index, road);
+			index.File(road);
 
-			Assert.Same(road, index[PrefabCategory.Any][PrefabSubCategory.Any][7]);
-			Assert.Same(road, index[PrefabCategory.Networks][PrefabSubCategory.Any][7]);
-			Assert.Same(road, index[PrefabCategory.Networks][PrefabSubCategory.Networks_Roads][7]);
+			Assert.Same(road, index.Get(7));
+			Assert.Same(road, ListOf(index, PrefabCategory.Networks, PrefabSubCategory.Any)[7]);
+			Assert.Same(road, ListOf(index, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads)[7]);
 		}
 
 		[Fact]
@@ -28,60 +38,91 @@ namespace BetterBuildingMenu.Tests
 		{
 			// Two processors can claim one prefab. The later entry wins, and the earlier
 			// one must not stay behind in the lists only it was filed in.
-			var index = EmptyIndex();
-			var earlier = Entry(7, PrefabCategory.ServiceBuildings, PrefabSubCategory.ServiceBuildings_Electricity);
-			var later = Entry(7, PrefabCategory.Props, PrefabSubCategory.Props_Misc);
+			var index = new CatalogIndex();
+			var earlier = TestPrefabs.Entry(7, PrefabCategory.ServiceBuildings, PrefabSubCategory.ServiceBuildings_Electricity);
+			var later = TestPrefabs.Entry(7, PrefabCategory.Props, PrefabSubCategory.Props_Misc);
 
-			BuildingMenuUtil.File(index, earlier);
-			BuildingMenuUtil.File(index, later);
+			index.File(earlier);
+			index.File(later);
 
-			Assert.Same(later, index[PrefabCategory.Any][PrefabSubCategory.Any][7]);
-			Assert.Same(later, index[PrefabCategory.Props][PrefabSubCategory.Any][7]);
-			Assert.Same(later, index[PrefabCategory.Props][PrefabSubCategory.Props_Misc][7]);
-			Assert.False(index[PrefabCategory.ServiceBuildings][PrefabSubCategory.Any].Contains(7));
-			Assert.False(index[PrefabCategory.ServiceBuildings][PrefabSubCategory.ServiceBuildings_Electricity].Contains(7));
+			Assert.Same(later, index.Get(7));
+			Assert.Same(later, ListOf(index, PrefabCategory.Props, PrefabSubCategory.Any)[7]);
+			Assert.Same(later, ListOf(index, PrefabCategory.Props, PrefabSubCategory.Props_Misc)[7]);
+			Assert.False(ListOf(index, PrefabCategory.ServiceBuildings, PrefabSubCategory.Any).Contains(7));
+			Assert.False(ListOf(index, PrefabCategory.ServiceBuildings, PrefabSubCategory.ServiceBuildings_Electricity).Contains(7));
 		}
 
 		[Fact]
 		public void RefilingInTheSameCategoryKeepsOneEntry()
 		{
-			var index = EmptyIndex();
+			var index = new CatalogIndex();
 
-			BuildingMenuUtil.File(index, Entry(7, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads));
-			BuildingMenuUtil.File(index, Entry(7, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads));
+			index.File(TestPrefabs.Entry(7, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads));
+			index.File(TestPrefabs.Entry(7, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads));
 
-			Assert.Equal(1, index[PrefabCategory.Any][PrefabSubCategory.Any].Count);
-			Assert.Equal(1, index[PrefabCategory.Networks][PrefabSubCategory.Networks_Roads].Count);
+			Assert.Single(index.All);
+			Assert.Single(ListOf(index, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads));
 		}
 
-		private static PrefabIndex Entry(int id, PrefabCategory category, PrefabSubCategory subCategory) =>
-			TestPrefabs.Entry(id, category, subCategory);
-
-		/// <summary>Its own index, laid out like the live one, so no test touches the shared static.</summary>
-		private static Dictionary<PrefabCategory, Dictionary<PrefabSubCategory, IndexedPrefabList>> EmptyIndex()
+		[Fact]
+		public void RemovingAnEntryTakesItOutOfEveryList()
 		{
-			var index = new Dictionary<PrefabCategory, Dictionary<PrefabSubCategory, IndexedPrefabList>>();
+			var index = new CatalogIndex();
+			index.File(TestPrefabs.Entry(7, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads));
 
-			foreach (var (category, subCategory) in new[]
-			{
-				(PrefabCategory.Any, PrefabSubCategory.Any),
-				(PrefabCategory.Networks, PrefabSubCategory.Any),
-				(PrefabCategory.Networks, PrefabSubCategory.Networks_Roads),
-				(PrefabCategory.ServiceBuildings, PrefabSubCategory.Any),
-				(PrefabCategory.ServiceBuildings, PrefabSubCategory.ServiceBuildings_Electricity),
-				(PrefabCategory.Props, PrefabSubCategory.Any),
-				(PrefabCategory.Props, PrefabSubCategory.Props_Misc),
-			})
-			{
-				if (!index.TryGetValue(category, out var subCategories))
-				{
-					index[category] = subCategories = new Dictionary<PrefabSubCategory, IndexedPrefabList>();
-				}
+			index.Remove(7);
+			// Removing what is not there is a no-op, as a partial pass relies on.
+			index.Remove(8);
 
-				subCategories[subCategory] = new IndexedPrefabList();
-			}
+			Assert.Null(index.Get(7));
+			Assert.Empty(ListOf(index, PrefabCategory.Networks, PrefabSubCategory.Any));
+			Assert.Empty(ListOf(index, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads));
+		}
 
-			return index;
+		[Fact]
+		public void FindLooksAnEntryUpByPrefabName()
+		{
+			var index = new CatalogIndex();
+			var road = TestPrefabs.Entry(7, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads);
+			road.PrefabName = "Small Road";
+			index.File(road);
+
+			Assert.True(index.Find("Small Road", out var id));
+			Assert.Equal(7, id);
+			Assert.False(index.Find("Highway", out _));
+		}
+
+		[Fact]
+		public void FindTakesTheFirstInNameOrderWhenTwoShareAPrefabName()
+		{
+			var index = new CatalogIndex();
+			var later = TestPrefabs.Entry(7, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads);
+			later.PrefabName = "Small Road";
+			later.Name = "Small Road B";
+			var earlier = TestPrefabs.Entry(8, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads);
+			earlier.PrefabName = "Small Road";
+			earlier.Name = "Small Road A";
+			index.File(later);
+			index.File(earlier);
+
+			Assert.True(index.Find("Small Road", out var id));
+			Assert.Equal(8, id);
+		}
+
+		[Fact]
+		public void AnUnindexedIdHasNoEntryAndNoPrefab()
+		{
+			var index = new CatalogIndex();
+
+			Assert.Null(index.Get(0));
+			Assert.Null(index.GetPrefab(0));
+		}
+
+		private static IndexedPrefabList ListOf(CatalogIndex index, PrefabCategory category, PrefabSubCategory subCategory)
+		{
+			var list = index.List(category, subCategory);
+			Assert.NotNull(list);
+			return list;
 		}
 	}
 }

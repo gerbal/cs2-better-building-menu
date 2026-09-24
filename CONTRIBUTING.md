@@ -26,12 +26,11 @@
 ./build.sh all                                           # C# and the UI bundle
 ```
 
-Much of the mod's state is process-wide statics: the index, and more on
-`PrefabIndexingSystem` and `Mod`. A test that sets one puts it back whether
-it passes or fails, in a `finally` or in the test class's `Dispose`. The C#
-tests also run one class at a time (`TestParallelization.cs`). Nothing needs
-that yet, since no class reads what another sets, but it keeps that from
-becoming a race.
+Some of the mod's state is still process-wide statics: the menu, zone and
+progression tables on `PrefabIndexingSystem`, and more on `Mod`. No test sets
+one; a test that has to puts it back whether it passes or fails, in a
+`finally` or in the test class's `Dispose`. The C# tests also run one class
+at a time (`TestParallelization.cs`), though nothing needs that now.
 
 Warnings fail the build in CI, in the mod and in the tests: the
 compiler's, the analyzers', MSBuild's and NuGet's (`Directory.Build.props`).
@@ -122,7 +121,7 @@ or the reader, in a sentence.
 | Control pane | The column beside the results with the count, Group by, Sort by and view mode (`LensControlPane`). |
 | Filter rail | The row of filter icons, each opening a dropdown of one facet's options (`FilterRail`). |
 | Facet | One filter dimension, such as role, source, availability, content, theme, placement or extensions, with its options. Computed in C# (`BuildingCatalogFacet*`). |
-| Index | Every indexed prefab as a `PrefabIndex`, built by `PrefabIndexingSystem` into `BuildingMenuUtil.CategorizedPrefabs`. |
+| Index | Every indexed prefab as a `PrefabIndex`, filed in the `CatalogIndex` that `PrefabIndexingSystem` publishes as `Index`. |
 | Processor | An `IPrefabCategoryProcessor`: decides whether a prefab is indexed, and under which category. A pass runs them in the order `PrefabCategoryProcessors` lists them. |
 | Full / partial pass | A rebuild of the whole index, or a re-read of the prefabs that changed. See `docs/indexing.md`. |
 | Catalog | The index as the panel sees it. `BuildingCatalogAdapter` projects index entries into `BuildingCatalogEntry` rows, `CatalogView` answers one refresh's questions from them, and `BuildingCatalogQueryEngine` filters, sorts and pages them into a `BuildingCatalogPage`. |

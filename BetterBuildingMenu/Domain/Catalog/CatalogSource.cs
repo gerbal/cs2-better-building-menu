@@ -7,8 +7,8 @@ namespace BetterBuildingMenu.Domain.Catalog
 	/// <remarks>
 	/// Every cache the adapter keeps is keyed on <see cref="Generation"/>, which moves
 	/// whenever anything a projection depends on changes: a pass, an unlock, a unique
-	/// built or bulldozed. <see cref="Placed"/> is the live set, not a copy. See
-	/// docs/indexing.md, "How the panel hears of a change".
+	/// built or bulldozed. <see cref="Index"/> and <see cref="Placed"/> are the live
+	/// objects, not copies. See docs/indexing.md, "How the panel hears of a change".
 	/// </remarks>
-	public readonly record struct CatalogSource(PlacedUniques Placed, int Generation);
+	public readonly record struct CatalogSource(CatalogIndex Index, PlacedUniques Placed, int Generation);
 }
