@@ -5,6 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <!-- The tests reference the net48 mod from net10 on purpose: they run its logic against the
+         mock game assemblies. NuGet warns that the frameworks differ, which is the point. -->
+    <NoWarn>$(NoWarn);NU1702</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

@@ -4,6 +4,8 @@
  * which dimensions exist, how many selections each holds, which need a search.
  */
 
+import type { FacetId } from "./sharedContracts.generated";
+
 export interface RailFacetOption {
   id: string;
   label: string;
@@ -45,11 +47,11 @@ export const RAIL_METRICS_ID = "metrics";
  * ONE list read by both homes, because two can disagree and strand a dimension
  * in neither. filterRail.test.ts asserts the partition rather than assuming it.
  */
-export const BANK_DIMENSION_IDS: readonly string[] = ["availability"];
+export const BANK_DIMENSION_IDS: readonly FacetId[] = ["availability"];
 
 /** Whether this dimension is drawn in the bank rather than on the rail. */
 export function isBankDimension(id: string): boolean {
-  return BANK_DIMENSION_IDS.includes(id);
+  return (BANK_DIMENSION_IDS as readonly string[]).includes(id);
 }
 
 export function buildFilterRail(
@@ -101,21 +103,4 @@ export function filterRailOptions(
   if (!needle) return group.options;
 
   return group.options.filter((option) => option.label.toLowerCase().includes(needle));
-}
-
-export function hasAnyRailSelection(rail: readonly RailDimension[]): boolean {
-  return rail.some((dimension) => dimension.selected > 0);
-}
-
-/**
- * How many metric bounds are actually set, for the metrics badge. The binding
- * carries a `hasSelection` flag alongside the numbers, which is not a bound;
- * zero IS one, so only null and undefined count as unset.
- */
-export function countActiveMetricRanges(state: Record<string, unknown> | null | undefined): number {
-  if (!state) return 0;
-
-  return Object.entries(state).filter(
-    ([key, value]) => key !== "hasSelection" && typeof value === "number" && Number.isFinite(value)
-  ).length;
 }

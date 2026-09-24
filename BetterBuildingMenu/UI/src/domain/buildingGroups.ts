@@ -4,20 +4,10 @@
  * group across a page and the heading lies. C# owns the key and the labels.
  */
 
-export type GroupDimensionId =
-  | "none"
-  | "category"
-  | "subCategory"
-  | "menuCategory"
-  | "role"
-  | "schoolTier"
-  | "progression"
-  | "development"
-  | "theme"
-  | "source"
-  | "density"
-  | "footprint"
-  | "cost";
+import { GROUP_DIMENSION_IDS, type GroupDimensionId } from "./sharedContracts.generated";
+
+// C# owns the ids and their order; see sharedContracts.generated.ts.
+export type { GroupDimensionId };
 
 export interface GroupDimension {
   id: GroupDimensionId;
@@ -26,44 +16,43 @@ export interface GroupDimension {
   depth: number;
 }
 
+/** What the picker calls each dimension, and how many heading levels it yields. */
+const GROUP_DIMENSION_PRESENTATION: Readonly<Record<GroupDimensionId, Omit<GroupDimension, "id">>> = {
+  // Depth 2: the category, then the tier within it — see C#'s CategoryTierLabel.
+  menuCategory: { label: "Category", depth: 2 },
+  // Ours, not the game's: Buildings, Networks, Service Buildings. Named "Asset
+  // type" so it does not compete with the game's own word for a different idea.
+  category: { label: "Asset type", depth: 2 },
+  subCategory: { label: "Type", depth: 1 },
+  role: { label: "Role", depth: 1 },
+  // Narrow on purpose, but so is Role outside a service menu, and the picker
+  // is opened deliberately.
+  schoolTier: { label: "School tier", depth: 1 },
+  // The one tier every asset has: when the game lets you build it, which is
+  // the axis the player is moving along.
+  progression: { label: "Progression", depth: 1 },
+  // On the big menus it chunks the set where the milestone split yields only
+  // a bucket or two.
+  development: { label: "Development", depth: 1 },
+  theme: { label: "Theme", depth: 1 },
+  source: { label: "Source", depth: 1 },
+  density: { label: "Density", depth: 1 },
+  footprint: { label: "Footprint", depth: 1 },
+  cost: { label: "Cost", depth: 1 },
+  // "None", not "Nothing": vanilla's vocabulary for an absent selection, and
+  // this dropdown is chrome, so it speaks the game's language.
+  none: { label: "None", depth: 0 },
+};
+
 /**
- * Offered in the picker, in this order. Array-valued dimensions — asset packs,
+ * Offered in the picker, in C#'s order. Array-valued dimensions — asset packs,
  * placement flags, extensions — are absent: an entry belongs to several of
  * each, so the group counts would no longer sum to the result total.
  */
-export const GROUP_DIMENSIONS: readonly GroupDimension[] = [
-  // The game's own categories, the same split the tab strip shows. First,
-  // because it is the division the player already has in mind. Depth 2: the
-  // category, then the tier within it — see C#'s CategoryTierLabel.
-  { id: "menuCategory", label: "Category", depth: 2 },
-  // Ours, not the game's: Buildings, Networks, Service Buildings. Named "Asset
-  // type" so it does not compete with the game's own word for a different idea.
-  { id: "category", label: "Asset type", depth: 2 },
-  { id: "subCategory", label: "Type", depth: 1 },
-  { id: "role", label: "Role", depth: 1 },
-  // Directly under Role, because it is the level below it: Role answers
-  // "school", School tier answers "which one". Narrow on purpose, but so is
-  // Role outside a service menu, and the picker is opened deliberately.
-  { id: "schoolTier", label: "School tier", depth: 1 },
-  // The game's own progression, the one tier every asset has: when the game
-  // lets you build it, which is the axis the player is moving along.
-  { id: "progression", label: "Progression", depth: 1 },
-  // The other unlock modality: the per-service tree bought with development
-  // points. On the big menus it chunks the set where the milestone split
-  // yields only a bucket or two.
-  { id: "development", label: "Development", depth: 1 },
-  { id: "theme", label: "Theme", depth: 1 },
-  { id: "source", label: "Source", depth: 1 },
-  { id: "density", label: "Density", depth: 1 },
-  { id: "footprint", label: "Footprint", depth: 1 },
-  { id: "cost", label: "Cost", depth: 1 },
-  // "None", not "Nothing": vanilla's vocabulary for an absent selection, and
-  // this dropdown is chrome, so it speaks the game's language.
-  { id: "none", label: "None", depth: 0 },
-];
-
-/** Default when the section is unknown, and the fallback everywhere else. */
-export const DEFAULT_GROUP_DIMENSION: GroupDimensionId = "category";
+export const GROUP_DIMENSIONS: readonly GroupDimension[] = GROUP_DIMENSION_IDS.map((id) => ({
+  id,
+  ...GROUP_DIMENSION_PRESENTATION[id],
+}));
 
 /**
  * The category whose assets the school levels stand in for. On the education
@@ -100,57 +89,8 @@ export function groupDimensionsFor(
   return GROUP_DIMENSIONS.filter((dimension) => offered.includes(dimension.id));
 }
 
-/**
- * The four school tiers, from the game's `SchoolLevel` enum, reaching us as a
- * 1-based `SchoolData.m_EducationLevel`. The values that are not tiers — a
- * tierless upgrade, the outside connection — fall through to "no tier".
- */
-export interface SchoolTier {
-  /** `SchoolData.m_EducationLevel`. */
-  level: number;
-  /** Stable id for the tier. */
-  id: string;
-  /** Heading text, in the game's own wording. */
-  label: string;
-}
-
-export const SCHOOL_TIERS: readonly SchoolTier[] = [
-  { level: 1, id: "elementary", label: "Elementary School" },
-  { level: 2, id: "highSchool", label: "High School" },
-  { level: 3, id: "college", label: "College" },
-  { level: 4, id: "university", label: "University" },
-];
-
 /** What C# files an entry under when the dimension has no value for it. */
 export const UNGROUPED_LABEL = "Other";
-
-/** What the progression dimension calls an asset the game never gated. */
-export const PROGRESSION_UNGATED_LABEL = "From the start";
-
-/**
- * Names a milestone index out of the dense table the backend publishes. Falls
- * back to the bare index rather than "Other", because an unnamed milestone is
- * still a definite point in the progression.
- */
-export function milestoneLabel(
-  index: number | null | undefined,
-  names: readonly string[] | null | undefined
-): string {
-  if (typeof index !== "number" || !Number.isFinite(index) || index < 0) {
-    return UNGROUPED_LABEL;
-  }
-
-  const named = (names ?? [])[index];
-
-  if (named) {
-    return named;
-  }
-
-  // The game's milestones start at 1 and the published table is dense from 0,
-  // so an asset at 0 is one the game never gated rather than one at a
-  // milestone the player has to reach.
-  return index === 0 ? PROGRESSION_UNGATED_LABEL : `Milestone ${index}`;
-}
 
 /** The two fields C# stamps on every page item when the page is grouped. */
 export interface GroupedEntry {
@@ -242,10 +182,6 @@ export function shouldShowHeading(nodes: readonly GroupNode<unknown>[]): boolean
 
 export function groupDimensionLabel(id: GroupDimensionId): string {
   return GROUP_DIMENSIONS.find((dimension) => dimension.id === id)?.label ?? id;
-}
-
-export function isGroupDimension(value: unknown): value is GroupDimensionId {
-  return GROUP_DIMENSIONS.some((dimension) => dimension.id === value);
 }
 
 /** One line of a grouped table: a heading band, or a data row. */

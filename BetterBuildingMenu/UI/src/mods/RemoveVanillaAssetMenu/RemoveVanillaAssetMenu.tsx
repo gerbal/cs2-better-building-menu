@@ -1,20 +1,13 @@
-import { bindValue, useValue } from "cs2/api";
+import { useValue } from "cs2/api";
 import { game } from "cs2/bindings";
-import mod from "../../../mod.json";
-import { UPSTREAM_FINDIT_GROUP, UPSTREAM_SHOW_PANEL } from "domain/upstreamFindIt";
 import { ModuleRegistryExtend } from "cs2/modding";
 import { BuildingMenuSurface } from "mods/BuildingMenu/BuildingMenuSurface";
 import { shouldMountInAssetMenu } from "domain/buildingMenuMount";
-
-// True while the toolbar's open menu is one the lens takes over.
-const LensOwnsCurrentMenu$ = bindValue<boolean>(mod.id, "LensOwnsCurrentMenu", false);
-// Upstream Find It's panel, when that mod is installed; the fallback covers
-// its absence. See buildingMenuMount for why we yield to it.
-const FindItPanelShown$ = bindValue<boolean>(UPSTREAM_FINDIT_GROUP, UPSTREAM_SHOW_PANEL, false);
+import { FindItPanelShown$, LensOwnsCurrentMenu$ } from "mods/bindings";
 
 export const RemoveVanillaAssetMenuComponent: ModuleRegistryExtend = (Component) => {
   // I believe you should not put anything here.
-  return (props) => {
+  return function AssetMenuOrLens(props) {
     const { children, ...otherProps } = props || {};
 
     const LensOwnsCurrentMenu = useValue(LensOwnsCurrentMenu$);

@@ -4,29 +4,26 @@
 		<OutputType>Library</OutputType>
 		<AssemblyName>BetterBuildingMenu</AssemblyName>
 		<RootNamespace>BetterBuildingMenu</RootNamespace>
-		<LangVersion>11.0</LangVersion>
-		<TargetFramework>net48</TargetFramework>
-		<Nullable>enable</Nullable>
 		<Configurations>Debug;Release</Configurations>
 		<Version>0.1.12</Version>
 		<FileVersion>$(Version)</FileVersion>
 		<AssemblyVersion>$(Version)</AssemblyVersion>
-		<Company>T. D. W.</Company>
-		<Copyright>@2024 MIT license</Copyright>
+		<Company>gerbal</Company>
+		<Copyright>Copyright © 2024 T. D. W., © 2026 gerbal. MIT License; see LICENSE.</Copyright>
 		<Product>Better Building Menu</Product>
 		<PublishConfigurationPath>Properties\PublishConfiguration.xml</PublishConfigurationPath>
 	</PropertyGroup>
 
-	<!-- The successor uses the workspace's shared Directory.Build.props and never
-	     imports the upstream user-scoped CSII_TOOLPATH build targets. -->
+	<!-- Uses the repository's Directory.Build.props and never imports the
+	     upstream user-scoped CSII_TOOLPATH build targets. -->
 	<Target Name="BuildUI" AfterTargets="AfterBuild" Condition="'$(SkipBuildUI)' != 'true' And Exists('$(ProjectDir)UI')">
 		<Exec Condition="!Exists('$(ProjectDir)UI/node_modules')" Command="npm ci --ignore-scripts" WorkingDirectory="$(ProjectDir)UI" />
 		<Exec Command="npm run build" WorkingDirectory="$(ProjectDir)UI" EnvironmentVariables="CSII_UI_OUTPUT_DIR=$(ProjectDir)UI/build" />
 	</Target>
 
 	<ItemGroup>
-		<!-- The unit tests exercise internal helpers (SearchUtil's matching rules,
-		     for one) without widening the mod's public surface to do it. -->
+		<!-- The unit tests exercise internal helpers without widening the
+		     mod's public surface to do it. -->
 		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
 			<_Parameter1>BetterBuildingMenu.Tests</_Parameter1>
 		</AssemblyAttribute>
@@ -59,10 +56,6 @@
 		<Reference Include="Unity.Collections" HintPath="$(CS2ManagedPath)/Unity.Collections.dll" Private="false" />
 		<Reference Include="Unity.Entities" HintPath="$(CS2ManagedPath)/Unity.Entities.dll" Private="false" />
 		<Reference Include="Unity.Mathematics" HintPath="$(CS2ManagedPath)/Unity.Mathematics.dll" Private="false" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <Folder Include="Resources\Images\" />
 	</ItemGroup>
 
 </Project>

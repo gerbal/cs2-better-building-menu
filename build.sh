@@ -51,9 +51,13 @@ build_ui() {
 run_tests() {
     require_command "$DOTNET_BIN"
     echo "=== Testing $MOD_NAME catalog contracts ==="
+    # CS2_TEST_FILTER narrows the run, as CI does against mock game assemblies
+    # (docs/ci.md). Unset, every test runs.
+    local filter=()
+    [ -n "${CS2_TEST_FILTER:-}" ] && filter=(--filter "$CS2_TEST_FILTER")
     (
         cd "$SCRIPT_DIR/BetterBuildingMenu.Tests"
-        "$DOTNET_BIN" test "$TEST_PROJECT" -p:SkipBuildUI=true
+        "$DOTNET_BIN" test "$TEST_PROJECT" -p:SkipBuildUI=true ${filter[@]+"${filter[@]}"}
     )
 }
 
@@ -79,11 +83,23 @@ package_artifacts() {
     fi
 
     # A package containing either the upstream runtime ID or its publisher ID
-    # is unsafe to deploy. Keep this check close to the artifact boundary.
-    if rg -n -S '"FindIt"|coui://findit([/"`]|$)|77240|CSII_TOOLPATH' "$PACKAGE_DIR"; then
-        echo "ERROR: package contains an upstream Find It identity." >&2
-        exit 1
-    fi
+    # is unsafe to deploy. Keep this check close to the artifact boundary, and
+    # fail closed: grep exits 0 for a match, 1 for none and 2 (or 127, when it
+    # cannot run at all) for an error, and only a clean 1 lets the package through.
+    # -I skips binaries, whose bytes can match by accident; -o prints the match alone.
+    local identity_status=0
+    grep -rnoEI '"FindIt"|coui://findit([/"`]|$)|77240|CSII_TOOLPATH' "$PACKAGE_DIR" || identity_status=$?
+    case "$identity_status" in
+        0)
+            echo "ERROR: package contains an upstream Find It identity." >&2
+            exit 1
+            ;;
+        1) ;;
+        *)
+            echo "ERROR: the Find It identity check could not run (grep exited $identity_status)." >&2
+            exit 1
+            ;;
+    esac
 
     echo "Package ready: $PACKAGE_DIR"
 }

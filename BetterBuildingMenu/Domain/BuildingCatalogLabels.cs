@@ -2,7 +2,6 @@ using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Utilities;
 
 using System;
-using System.Text;
 
 namespace BetterBuildingMenu.Domain
 {
@@ -84,48 +83,8 @@ namespace BetterBuildingMenu.Domain
 				return "Education & Research";
 			}
 
-			string formatted = FormatFacetWords(rawValue);
+			string formatted = WordFormat.SplitIdentifier(rawValue);
 			return unknownEnumPrefix is null ? formatted : $"{unknownEnumPrefix} {formatted}";
-		}
-
-		private static string FormatFacetWords(string value)
-		{
-			if (string.IsNullOrWhiteSpace(value))
-			{
-				return value;
-			}
-
-			var label = new StringBuilder(value.Length + 8);
-			for (int index = 0; index < value.Length; index++)
-			{
-				char current = value[index];
-				if (current == '_' || current == '-')
-				{
-					if (label.Length > 0 && label[label.Length - 1] != ' ')
-					{
-						label.Append(' ');
-					}
-
-					continue;
-				}
-
-				char previous = index > 0 ? value[index - 1] : '\0';
-				bool startsNewWord = index > 0
-					&& ((char.IsUpper(current)
-						&& (char.IsLower(previous)
-							|| char.IsDigit(previous)
-							|| (index + 1 < value.Length && char.IsUpper(previous) && char.IsLower(value[index + 1]))))
-						|| (char.IsDigit(current) && !char.IsDigit(previous))
-						|| (char.IsLetter(current) && char.IsDigit(previous)));
-				if (startsNewWord && label.Length > 0 && label[label.Length - 1] != ' ')
-				{
-					label.Append(' ');
-				}
-
-				label.Append(current);
-			}
-
-			return label.ToString().Trim();
 		}
 	}
 }

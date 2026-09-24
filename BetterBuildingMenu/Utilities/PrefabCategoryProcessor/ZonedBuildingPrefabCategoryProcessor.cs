@@ -1,12 +1,14 @@
 ﻿using Colossal.Entities;
 
 using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Domain.Interfaces;
-using BetterBuildingMenu.Systems;
 
 using Game.Prefabs;
 using Game.UI;
+
+using System.Diagnostics.CodeAnalysis;
 
 using Unity.Entities;
 
@@ -48,7 +50,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 			};
 		}
 
-		public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, out PrefabIndex prefabIndex)
+		public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
 		{
 			if (prefab is not BuildingPrefab buildingPrefab)
 			{
@@ -71,11 +73,10 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 			};
 
 			prefabIndex.CategoryThumbnail = prefabIndex.FallbackThumbnail = _imageSystem.GetIconOrGroupIcon(zonePrefab);
-			prefabIndex.CornerType = GetCornerType(buildingPrefab.m_AccessType);
 
 			if (_prefabSystem.TryGetPrefab<ZonePrefab>(zonePrefab, out var _zonePrefab))
 			{
-				prefabIndex.ZoneType = GetZoneType(entity, zonePrefab);
+				prefabIndex.ZoneType = GetZoneType(entity, zonePrefab, target.Zones);
 				prefabIndex.Theme = _zonePrefab.GetComponent<ThemeObject>()?.m_Theme;
 				prefabIndex.AssetPacks = _zonePrefab.GetComponent<AssetPackItem>()?.m_Packs ?? new AssetPackPrefab[0];
 			}
@@ -113,18 +114,6 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 			return true;
 		}
 
-		private BuildingCornerFilter GetCornerType(BuildingAccessType m_AccessType)
-		{
-			return m_AccessType switch
-			{
-				BuildingAccessType.LeftCorner or BuildingAccessType.LeftAndBackCorner => BuildingCornerFilter.Left,
-				BuildingAccessType.RightCorner or BuildingAccessType.RightAndBackCorner => BuildingCornerFilter.Right,
-				BuildingAccessType.LeftAndRightCorner => BuildingCornerFilter.Left | BuildingCornerFilter.Right,
-				BuildingAccessType.All => BuildingCornerFilter.Left | BuildingCornerFilter.Right | BuildingCornerFilter.Front,
-				_ => BuildingCornerFilter.Front
-			};
-		}
-
 		private Entity GetZonePrefab(Entity entity, out int level)
 		{
 			if (_entityManager.TryGetComponent<SpawnableBuildingData>(entity, out var component))
@@ -144,14 +133,14 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 			return Entity.Null;
 		}
 
-		private ZoneTypeFilter GetZoneType(Entity entity, Entity zonePrefab)
+		private ZoneTypeFilter GetZoneType(Entity entity, Entity zonePrefab, ZoneIndex zones)
 		{
 			if (_entityManager.HasComponent<SignatureBuildingData>(entity))
 			{
 				return ZoneTypeFilter.Signature;
 			}
 
-			return PrefabIndexingSystem.GetZoneType(zonePrefab);
+			return zones.TypeOf(zonePrefab.Index);
 		}
 	}
 }

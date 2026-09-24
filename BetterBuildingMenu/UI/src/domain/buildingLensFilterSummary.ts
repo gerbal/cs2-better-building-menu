@@ -1,5 +1,6 @@
-import type { MetricRangeId, NormalizedMetricRange } from "./buildingCatalogRanges";
+import { countActiveMetricRanges, metricRangesFromState, type MetricRangeId, type NormalizedMetricRange } from "./buildingCatalogRanges";
 import type { BuildingLensFacetState } from "./buildingCatalogFacets";
+import type { Command } from "./command";
 
 export interface BuildingLensMetricRangeState {
   minCost: number | null;
@@ -32,10 +33,7 @@ export interface BuildingLensFilterSummary {
   lensCount: number;
 }
 
-export interface BuildingLensFilterTriggerCommand {
-  method: string;
-  args: any[];
-}
+export type BuildingLensFilterTriggerCommand = Command;
 
 const metricLabels: Record<MetricRangeId, string> = {
   cost: "Cost",
@@ -48,17 +46,6 @@ const metricLabels: Record<MetricRangeId, string> = {
 
 const metricRangeIds = Object.keys(metricLabels) as MetricRangeId[];
 
-function rangesFromState(state: BuildingLensMetricRangeState | null | undefined): Record<MetricRangeId, NormalizedMetricRange> {
-  return {
-    cost: { min: state?.minCost ?? null, max: state?.maxCost ?? null },
-    upkeep: { min: state?.minUpkeep ?? null, max: state?.maxUpkeep ?? null },
-    workers: { min: state?.minWorkers ?? null, max: state?.maxWorkers ?? null },
-    capacity: { min: state?.minCapacity ?? null, max: state?.maxCapacity ?? null },
-    lotWidth: { min: state?.minLotWidth ?? null, max: state?.maxLotWidth ?? null },
-    lotDepth: { min: state?.minLotDepth ?? null, max: state?.maxLotDepth ?? null },
-  };
-}
-
 function selectedFacetLabels(state: BuildingLensFacetState | null | undefined): string[] {
   return (state?.groups ?? [])
     // Only groups that actually exclude something, and the backend says which:
@@ -70,10 +57,6 @@ function selectedFacetLabels(state: BuildingLensFacetState | null | undefined): 
         .filter((option) => option.selected)
         .map((option) => option.label || option.id),
     );
-}
-
-function selectedFacetCount(state: BuildingLensFacetState | null | undefined): number {
-  return selectedFacetLabels(state).length;
 }
 
 function formatBound(value: number): string {
@@ -103,8 +86,9 @@ export function getBuildingLensFilterSummary(
 ): BuildingLensFilterSummary {
   const facetLabels = selectedFacetLabels(input?.facets);
   const facets = facetLabels.length;
-  const ranges = rangesFromState(input?.metricRanges);
-  const activeRanges = metricRangeIds.filter((id) => ranges[id].min !== null || ranges[id].max !== null).length;
+  // The same count the rail's badge and the drawer show.
+  const ranges = metricRangesFromState(input?.metricRanges);
+  const activeRanges = countActiveMetricRanges(ranges);
   const count = facets + activeRanges;
   const details = [
     // Named, not counted: with filters composing freely an empty intersection

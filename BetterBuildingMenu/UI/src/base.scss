@@ -1,51 +1,6 @@
 // Spacing is margins throughout these stylesheets, except the card list, whose
 // group is sized to a max-content that counts gap and not item margins.
 
-$bottomBarHeight: 48rem;
-$bottomViewHeight: 108rem;
-$bottomBarOffset: 121rem;
-$bottomBarOffsetEditor: 145rem;
-
-$laneButtonSize: 64rem;
-
-@mixin textInputBasic {
-  background-color: rgba(0, 0, 0, 0.15);
-  color: #eee;
-  padding: 0.25em 0.5em;
-  line-height: 1.15em;
-  font-size: 1em;
-  border-width: 2.5rem;
-  border-radius: 5rem;
-  border-style: solid;
-  border-color: rgba(255, 255, 255, 0.2);
-
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-  }
-
-  &:active,
-  &:focus,
-  &.active {
-    background-color: rgba(255, 255, 255, 0.2);
-    border-top-color: var(--accentColorLight);
-    border-left-color: var(--accentColorLight);
-    border-bottom-color: var(--accentColorLight);
-    border-right-color: var(--accentColorLight);
-  }
-
-  &.focused {
-    border-color: #c7ff65;
-  }
-
-  &[disabled],
-  &[disabled]:hover,
-  &[disabled]:active {
-    background-color: rgba(0, 0, 0, 0);
-    border-color: rgba(255, 255, 255, 0.15);
-    color: rgba(128, 128, 128, 0.5);
-  }
-}
-
 @mixin baseButton($hasText: true, $coloredImage: false) {
   pointer-events: auto;
   padding: 8rem;
@@ -63,10 +18,6 @@ $laneButtonSize: 64rem;
     img {
       filter: none !important;
     }
-  }
-
-  &.hidden {
-    display: none;
   }
 
   &:active {
@@ -91,42 +42,6 @@ $laneButtonSize: 64rem;
   }
 }
 
-@mixin basicButton($hasText: true, $coloredImage: false) {
-  @include baseButton($hasText, $coloredImage);
-
-  filter: brightness(1.1) saturate(0.8);
-  background-color: var(--panelColorDark);
-  backdrop-filter: blur(4px);
-
-  &:hover {
-    background-color: var(--panelColorNormal);
-  }
-
-  &:active {
-    background-color: var(--accentColorDark-focused) !important;
-  }
-
-  @if $coloredImage == false {
-    img {
-      background-color: var(--menuText1Normal);
-    }
-  }
-
-  &[disabled],
-  &.disabled {
-    pointer-events: none !important;
-
-    color: var(--normalTextColorLocked) !important;
-    background-color: var(--panelColorDark) !important;
-
-    @if $coloredImage == false {
-      img {
-        background-color: var(--normalTextColorLocked) !important;
-      }
-    }
-  }
-}
-
 @mixin lightButton($hasText: true, $coloredImage: false) {
   @include baseButton($hasText, $coloredImage);
 
@@ -147,43 +62,9 @@ $laneButtonSize: 64rem;
     }
   }
 
-  &[disabled],
-  &.disabled {
+  &[disabled] {
     color: var(--normalTextColorLocked) !important;
     background-color: rgba(255, 255, 255, 0.1) !important;
-
-    @if $coloredImage == false {
-      img {
-        background-color: var(--normalTextColorLocked) !important;
-      }
-    }
-  }
-}
-
-@mixin blackButton($hasText: true, $coloredImage: false) {
-  @include baseButton($hasText, $coloredImage);
-
-  background-color: rgba(15, 16, 19, 1);
-  backdrop-filter: blur(4px);
-
-  &:hover {
-    background-color: rgba(29, 31, 37, 1);
-  }
-
-  &:active {
-    background-color: var(--accentColorDark-focused) !important;
-  }
-
-  @if $coloredImage == false {
-    img {
-      background-color: var(--menuText1Normal);
-    }
-  }
-
-  &[disabled],
-  &.disabled {
-    color: var(--normalTextColorLocked) !important;
-    background-color: rgba(15, 16, 19, 1) !important;
 
     @if $coloredImage == false {
       img {
@@ -212,8 +93,7 @@ $laneButtonSize: 64rem;
     }
   }
 
-  &[disabled],
-  &.disabled {
+  &[disabled] {
     color: var(--normalTextColorLocked) !important;
     background-color: transparent !important;
     opacity: 0.75;
@@ -279,4 +159,13 @@ $mark-inset: 0.147;
 @mixin artwork-picture($picture) {
   width: $picture;
   height: $picture;
+}
+
+/// One line of text, cut with an ellipsis where it runs out of room. On a
+/// flex item Cohtml ignores text-overflow and this only clips, which is why
+/// tileLabel.ts elides names in JS.
+@mixin truncate {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }

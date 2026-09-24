@@ -1,4 +1,16 @@
 import { fontSizeRatio } from "./textScale";
+import sizes from "./buildingLensLayout.module.scss";
+import { BUILDING_LENS_DEFAULT_HEIGHT, BUILDING_LENS_MAX_HEIGHT, BUILDING_LENS_MIN_HEIGHT } from "./sharedContracts.generated";
+
+/**
+ * A length lensGeometry.scss states, exported by buildingLensLayout.module.scss,
+ * in rem; NaN when there is no such length. The stylesheets draw these, so they
+ * hold the numbers and the arithmetic here reads them rather than a copy.
+ */
+function sheetRem(name: string): number {
+  const length = /^(\d+(?:\.\d+)?)rem$/.exec(sizes[name] ?? "");
+  return length ? Number(length[1]) : Number.NaN;
+}
 
 /**
  * Geometry shared by the Building Lens resize affordance and its contract
@@ -6,15 +18,6 @@ import { fontSizeRatio } from "./textScale";
  */
 export const BUILDING_LENS_PANEL_CHROME_WIDTH = 35;
 export const BUILDING_LENS_MIN_WIDTH = 700 + BUILDING_LENS_PANEL_CHROME_WIDTH;
-/**
- * The drag ceiling, and the twin of BuildingLensWidth.Max in C# — a test asserts
- * the two agree. Stated as the band total less the chrome, the way the C# side
- * derives it, so the two read as one number rather than two near guesses.
- */
-export const BUILDING_LENS_BAND_WIDTH = 1476;
-export const BUILDING_LENS_MAX_WIDTH = BUILDING_LENS_BAND_WIDTH - BUILDING_LENS_PANEL_CHROME_WIDTH;
-export const BUILDING_LENS_TITLE_ICON = "coui://betterbuildingmenu/Icons/Colored/BuildingZoneSignature.svg";
-export const BUILDING_LENS_TITLE_GAP = 6;
 // The lens shell is bottom-aligned above the native toolbar. Reserve space
 // for that toolbar, the shell chrome, and a small top/bottom safety margin so
 // the catalog cannot push the shell's title/search bar outside a short view.
@@ -117,16 +120,15 @@ export const BUILDING_LENS_IDENTITY_MIN = 180;
 /**
  * Everything in a table row that is not the name, in rem: the trailing reserve,
  * the rows' scrollbar, the select padding and the thumbnail with its margin.
- * buildingCatalog.module.scss is the authority, and this has to follow it.
  */
-export const BUILDING_LENS_TABLE_ROW_FURNITURE = 37 + 16 + 8 + 80;
+export const BUILDING_LENS_TABLE_ROW_FURNITURE = sheetRem("tableRowFurniture");
 
 /**
  * What the control pane takes out of the assembly: its own width plus the margin
  * beside it. Here because both the surface and the table subtract it from the
  * width binding, which measures the whole assembly and not the panel.
  */
-export const BUILDING_LENS_CONTROL_PANE_TOTAL = 385;
+export const BUILDING_LENS_CONTROL_PANE_TOTAL = sheetRem("paneTotal");
 
 /**
  * What the table's panel spends around its rows: the row viewport's scrollbar,
@@ -217,23 +219,13 @@ export function getBuildingLensCatalogMaxHeight(viewportHeight: number): number 
   return Math.floor((physicalHeight * BUILDING_LENS_REFERENCE_HEIGHT) / safeViewportHeight);
 }
 
-export type BuildingLensAlignment = "Left" | "Center" | "Right" | string;
+/** The catalog's height range: BuildingLensHeight's, generated into sharedContracts.generated.ts. */
+export { BUILDING_LENS_DEFAULT_HEIGHT, BUILDING_LENS_MAX_HEIGHT, BUILDING_LENS_MIN_HEIGHT };
 
 /**
- * The catalog's height range, twin of BuildingLensHeight in C# — a test asserts
- * they agree. Min is one row of cards under two headings, the deepest grouping
- * a menu draws (catalog padding, two heading reserves, list padding, one
- * card); Max the viewport less the chrome below the panel; between them the
- * height is the player's to drag.
- */
-export const BUILDING_LENS_MIN_HEIGHT = 108;
-export const BUILDING_LENS_MAX_HEIGHT = 960;
-export const BUILDING_LENS_DEFAULT_HEIGHT = 420;
-
-/**
- * Clamp a dragged height. Non-finite resolves to the default rather than
- * passing through: the value goes straight into an inline style, and
- * `height: NaNrem` leaves the catalog unsized rather than merely wrong.
+ * Clamp a dragged height to that range. Non-finite resolves to the default
+ * rather than passing through: the value goes straight into an inline style,
+ * and `height: NaNrem` leaves the catalog unsized rather than merely wrong.
  */
 export function clampBuildingLensHeight(height: number): number {
   if (!Number.isFinite(height)) return BUILDING_LENS_DEFAULT_HEIGHT;
@@ -244,14 +236,40 @@ export function clampBuildingLensHeight(height: number): number {
  * The height a drag from `startY` to `currentY` should produce. The panel is
  * bottom-anchored with the handle on its top edge, so dragging up makes it
  * taller — the sign flip is why this is a function and not an addition.
+ *
+ * `pxPerRem` is measured when the drag starts: the game scales rem with the
+ * resolution, so a fixed ratio moves the edge faster or slower than the cursor
+ * on every screen but one.
  */
-export function draggedBuildingLensHeight(startHeight: number, startY: number, currentY: number): number {
+export function draggedBuildingLensHeight(
+  startHeight: number,
+  startY: number,
+  currentY: number,
+  pxPerRem?: number
+): number {
   const delta = Number.isFinite(startY) && Number.isFinite(currentY) ? startY - currentY : 0;
-  return clampBuildingLensHeight(startHeight + delta / REM_IN_PX);
+  const scale = pxPerRem !== undefined && Number.isFinite(pxPerRem) && pxPerRem > 0 ? pxPerRem : REM_IN_PX_AT_720P;
+  return clampBuildingLensHeight(startHeight + delta / scale);
 }
 
 /**
- * Pixels per rem in the game's UI layer, at every resolution — see
- * getBuildingLensCatalogMaxHeight for why this is not resolution-dependent.
+ * Pixels per rem at 1280x720, where the UI's 1920-wide design is drawn at 2/3.
+ * Only the fallback for a drag whose measurement failed.
  */
-export const REM_IN_PX = 0.6667;
+export const REM_IN_PX_AT_720P = 2 / 3;
+
+/** The resize strip's height, which a drag measures rem against. */
+export const LENS_RESIZE_HANDLE_HEIGHT = sheetRem("handleHeight");
+
+/**
+ * Pixels per rem from an element of known rem height as drawn, or undefined when
+ * the rect is not a real measurement. Measured on something already laid out:
+ * Cohtml answers a rect asked for before layout with zeroes.
+ */
+export function pxPerRemFrom(heightPx: number | null | undefined, heightRem: number): number | undefined {
+  if (typeof heightPx !== "number" || !Number.isFinite(heightPx) || heightPx <= 0 || !(heightRem > 0)) {
+    return undefined;
+  }
+
+  return heightPx / heightRem;
+}

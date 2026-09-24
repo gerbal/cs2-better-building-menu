@@ -3,7 +3,7 @@ using Colossal.UI.Binding;
 namespace BetterBuildingMenu.Domain
 {
 	/// <summary>
-	/// A compact, stable option used by the Building Lens facet drawer.
+	/// One option of a facet, as the filter rail and the tool options bank draw it.
 	/// </summary>
 	public sealed record BuildingCatalogFacetOption(
 		string Id,

@@ -22,7 +22,6 @@ namespace BetterBuildingMenu.Domain
 		int BuildingLevel,
 		ZoneTypeFilter ZoneType,
 		bool HasParking,
-		bool IsUniqueMesh,
 		bool IsVanilla,
 		string PdxModsId,
 		double? ConstructionCost = null,
@@ -71,7 +70,7 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>A unique asset the city already holds one of.</summary>
 		/// <remarks>
 		/// Read per query rather than stored at index time, because it changes
-		/// as the player builds and bulldozes — see PlacedUniqueRegistry.
+		/// as the player builds and bulldozes — see PlacedUniques.
 		/// </remarks>
 		bool IsAlreadyBuilt = false,
 		/// <summary>
@@ -216,10 +215,6 @@ namespace BetterBuildingMenu.Domain
 			writer.Write(FallbackThumbnail ?? string.Empty);
 			writer.PropertyName("silhouetteThumbnail");
 			writer.Write(SilhouetteThumbnail ?? string.Empty);
-			writer.PropertyName("uiMenu");
-			writer.Write(UiMenu ?? string.Empty);
-			writer.PropertyName("uiCategory");
-			writer.Write(UiCategory ?? string.Empty);
 			writer.PropertyName("lotWidth");
 			writer.Write(LotWidth);
 			writer.PropertyName("lotDepth");
@@ -274,29 +269,11 @@ namespace BetterBuildingMenu.Domain
 			WriteNullable(writer, "households", Households);
 			WriteNullable(writer, "capacity", Capacity);
 			WriteNullable(writer, "serviceRange", ServiceRange);
-			writer.PropertyName("serviceFacts");
-			writer.ArrayBegin(ServiceFacts?.Count ?? 0);
-			for (var i = 0; i < (ServiceFacts?.Count ?? 0); i++)
-			{
-				ServiceFacts![i].Write(writer);
-			}
-			writer.ArrayEnd();
-			writer.PropertyName("footprints");
-			writer.ArrayBegin(Footprints?.Count ?? 0);
-			for (var i = 0; i < (Footprints?.Count ?? 0); i++)
-			{
-				Footprints![i].Write(writer);
-			}
-			writer.ArrayEnd();
+			WriteArray(writer, "serviceFacts", ServiceFacts);
+			WriteArray(writer, "footprints", Footprints);
 			writer.PropertyName("footprintOverflow");
 			writer.Write(FootprintOverflow);
-			writer.PropertyName("serviceTextFacts");
-			writer.ArrayBegin(ServiceTextFacts?.Count ?? 0);
-			for (var i = 0; i < (ServiceTextFacts?.Count ?? 0); i++)
-			{
-				ServiceTextFacts![i].Write(writer);
-			}
-			writer.ArrayEnd();
+			WriteArray(writer, "serviceTextFacts", ServiceTextFacts);
 			WriteNullable(writer, "speedLimit", SpeedLimit);
 			WriteNullable(writer, "networkWidth", NetworkWidth);
 			writer.PropertyName("leisureType");
@@ -336,6 +313,23 @@ namespace BetterBuildingMenu.Domain
 			{
 				writer.WriteNull();
 			}
+		}
+
+		private static void WriteArray<T>(IJsonWriter writer, string propertyName, IReadOnlyList<T>? items)
+			where T : IJsonWritable
+		{
+			writer.PropertyName(propertyName);
+			writer.ArrayBegin(items?.Count ?? 0);
+
+			if (items is not null)
+			{
+				for (var i = 0; i < items.Count; i++)
+				{
+					items[i].Write(writer);
+				}
+			}
+
+			writer.ArrayEnd();
 		}
 
 		private static void WriteStringArray(IJsonWriter writer, string propertyName, IEnumerable<string>? values)

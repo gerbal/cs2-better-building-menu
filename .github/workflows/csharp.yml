@@ -1,0 +1,47 @@
+# Builds the mod and runs all its tests against the game's own assemblies, kept
+# in a private repository. Treat this repository as public: those assemblies
+# must never leave the runner. Setup and upkeep are in docs/ci.md.
+name: C#
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  csharp:
+    # A pull request from a fork gets no secrets, so it skips this job rather
+    # than failing it. Never switch this workflow to pull_request_target.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      CS2_GAME_PATH: ${{ github.workspace }}/cs2-refs
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_NOLOGO: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      # Never upload cs2-refs as an artifact or put it in the Actions cache: it
+      # is the game's code, and both can be read by anyone who can see this
+      # repository, the cache by pull requests from forks.
+      - name: Check out the game assemblies
+        uses: actions/checkout@v4
+        with:
+          repository: gerbal/cs2-game-refs
+          ssh-key: ${{ secrets.CS2_REFS_DEPLOY_KEY }}
+          path: cs2-refs
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build
+        run: ./build.sh backend
+
+      - name: Test
+        run: ./build.sh test

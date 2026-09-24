@@ -39,15 +39,6 @@ export interface WatchState {
   last: number | null;
 }
 
-/**
- * Whether an observed selection is a real user action worth routing. The
- * binding emits its current value on subscribe and re-emits on unrelated
- * toolbar churn, so neither the first observation nor a repeat is a click.
- */
-export function shouldRouteSelection(state: WatchState, index: number | null): boolean {
-  return watchAction(state, index) === "open";
-}
-
 /** What an observed selection asks the watcher to do. */
 export type WatchAction = "ignore" | "open" | "close";
 
@@ -66,6 +57,15 @@ export function watchAction(state: WatchState, index: number | null): WatchActio
   }
 
   return state.last === index ? "ignore" : "open";
+}
+
+/**
+ * What the watcher remembers while the setting is off: observations still count,
+ * so the menu open when the setting comes on reads as a fresh selection and the
+ * lens takes it over at once. Nothing is routed while off, so `last` is null.
+ */
+export function watchStateWhileOff(): WatchState {
+  return { seen: true, last: null };
 }
 
 /** What the watcher should remember after acting on an observation. */

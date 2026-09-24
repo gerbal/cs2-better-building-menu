@@ -1,8 +1,7 @@
 import { FocusKey, Theme, UniqueFocusKey } from "cs2/bindings";
 import { ModuleRegistry } from "cs2/modding";
 import { HTMLAttributes, ReactNode } from "react";
-import { Tooltip } from "cs2/ui";
-import { PrefabRequirement } from "cs2/bindings";
+import { reportMissing } from "mods/gameModules";
 
 // Prop shapes for the vanilla components this mod borrows. The game ships no
 // types for them, so these are read off the shipped bundle in the UI developer
@@ -104,8 +103,14 @@ export class VanillaComponentResolver {
 
   private cachedData: Partial<Record<keyof typeof registryIndex, any>> = {};
   private updateCache(entry: keyof typeof registryIndex) {
-    const entryData = registryIndex[entry];
-    return (this.cachedData[entry] = this.registryData.registry.get(entryData[0])!![entryData[1]]);
+    const [path, name] = registryIndex[entry];
+    // A game update can move any of these. Missing, it is logged once here and
+    // the render that needed it falls to the extension's boundary.
+    const found = this.registryData.registry.get(path)?.[name];
+
+    if (found === undefined) reportMissing(`${path}#${name}`);
+
+    return (this.cachedData[entry] = found);
   }
 
   public get Section(): (props: PropsSection) => JSX.Element {
@@ -127,17 +132,18 @@ export class VanillaComponentResolver {
   public get TabNav(): (props: PropsTabNav) => JSX.Element {
     return this.cachedData["TabNav"] ?? this.updateCache("TabNav");
   }
+  // Stylesheets fall back to no classes: unstyled beats a render that throws.
   public get tabsTheme(): Theme | any {
-    return this.cachedData["tabsTheme"] ?? this.updateCache("tabsTheme");
+    return this.cachedData["tabsTheme"] ?? this.updateCache("tabsTheme") ?? {};
   }
   public get toolButtonTheme(): Theme | any {
-    return this.cachedData["toolButtonTheme"] ?? this.updateCache("toolButtonTheme");
+    return this.cachedData["toolButtonTheme"] ?? this.updateCache("toolButtonTheme") ?? {};
   }
   public get mouseToolOptionsTheme(): Theme | any {
-    return this.cachedData["mouseToolOptionsTheme"] ?? this.updateCache("mouseToolOptionsTheme");
+    return this.cachedData["mouseToolOptionsTheme"] ?? this.updateCache("mouseToolOptionsTheme") ?? {};
   }
   public get assetGridTheme(): Theme | any {
-    return this.cachedData["assetGridTheme"] ?? this.updateCache("assetGridTheme");
+    return this.cachedData["assetGridTheme"] ?? this.updateCache("assetGridTheme") ?? {};
   }
 
   public get FOCUS_DISABLED(): UniqueFocusKey {

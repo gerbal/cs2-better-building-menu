@@ -1,15 +1,15 @@
-import { bindValue, trigger, useValue } from "cs2/api";
-import { useEffect, type RefObject } from "react";
-import mod from "../../../mod.json";
-import type { BuildingCatalogEntry, BuildingCatalogPage } from "domain/buildingCatalog";
+import { useValue } from "cs2/api";
+import { useCallback, useEffect, useRef, type RefObject } from "react";
+import type { BuildingCatalogEntry } from "domain/buildingCatalog";
 import { loadMoreCatalogCommand } from "domain/buildingCatalogContracts";
-import { isScrollContainer, shouldLoadMore } from "domain/catalogWindow";
+import { CATALOG_WINDOW_STEP, isScrollContainer, nextWindowLimit, shouldLoadMore } from "domain/catalogWindow";
+import { BuildingCatalog$, send, type BuildingCatalogPageStatus } from "mods/bindings";
 import { findScrollContainer, lastCatalogRow } from "./catalogDom";
 
-export type BuildingCatalogPageStatus = "indexing" | "ready" | "empty";
-type BuildingCatalogBindingPage = BuildingCatalogPage & { status?: BuildingCatalogPageStatus };
+export type { BuildingCatalogPageStatus };
 
-const BuildingCatalog$ = bindValue<BuildingCatalogBindingPage>(mod.id, "BuildingCatalog");
+/** How often the scroll position is checked: often enough to meet the bottom. */
+const LOAD_MORE_POLL_MS = 100;
 
 /**
  * The page as the backend published it, plus the one command that grows it. The
@@ -23,6 +23,10 @@ export interface CatalogWindow {
   limit: number;
   status: BuildingCatalogPageStatus;
   hasMore: boolean;
+  /** The row Enter arms while a search is active; see BuildingCatalogPage. */
+  bestMatchId: number | null;
+  /** The search this page answers, which trails the box by a debounce. */
+  searchText: string;
   loadMore(): void;
 }
 
@@ -43,20 +47,25 @@ export function useCatalogWindow(
   const status: BuildingCatalogPageStatus = page?.status
     ?? (page ? (totalCount === 0 ? "empty" : "ready") : "indexing");
   const hasMore = page?.hasMore ?? false;
+  const bestMatchId = page?.bestMatchId ?? null;
+  const searchText = page?.searchText ?? "";
 
   /**
-   * Asks the backend for the next chunk. Guarded by `hasMore` alone rather than
-   * a local loading flag: the backend republishes the whole window, so a second
-   * request is idempotent, while a latched flag would stop the list for good.
+   * Asks the backend for the next chunk, by the limit wanted rather than "one
+   * more": the same request arriving twice then grows the window once.
    */
-  function loadMore(): void {
+  const loadMore = useCallback((): void => {
     if (!hasMore) {
       return;
     }
 
-    const command = loadMoreCatalogCommand();
-    trigger(mod.id, command.method, ...command.args);
-  }
+    send(loadMoreCatalogCommand(nextWindowLimit(limit, CATALOG_WINDOW_STEP, totalCount)));
+  }, [hasMore, limit, totalCount]);
+
+  // The poll below outlives the render it started in; through the ref it always
+  // asks from the page on screen, not the one it started under.
+  const latestLoadMore = useRef(loadMore);
+  latestLoadMore.current = loadMore;
 
   /**
    * The passive half of the trigger: watch where the scroll actually is. It
@@ -70,25 +79,38 @@ export function useCatalogWindow(
 
     let handle = 0;
     let cancelled = false;
+    let lastCheck = 0;
+    // Found once per layout, which is what this effect re-runs on: the walk up
+    // from the last row reads every ancestor's scrollHeight.
+    let scroller: HTMLElement | null = null;
 
     const step = () => {
       if (cancelled) {
         return;
       }
 
-      // The last row, for the same reason the anchor takes it — see
-      // lastCatalogRow.
-      const root = rootRef.current;
-      const row = root ? lastCatalogRow(root) : null;
-      const scroller = root && row ? findScrollContainer(row, root, isScrollContainer) : null;
+      const now = Date.now();
 
-      if (scroller && shouldLoadMore({
-        scrollTop: scroller.scrollTop,
-        clientHeight: scroller.clientHeight,
-        scrollHeight: scroller.scrollHeight,
-      })) {
-        loadMore();
-        return;
+      if (now - lastCheck >= LOAD_MORE_POLL_MS) {
+        lastCheck = now;
+
+        // The last row, for the same reason the anchor takes it — see
+        // lastCatalogRow.
+        const root = rootRef.current;
+
+        if (!scroller && root) {
+          const row = lastCatalogRow(root);
+          scroller = row ? findScrollContainer(row, root, isScrollContainer) : null;
+        }
+
+        if (scroller && shouldLoadMore({
+          scrollTop: scroller.scrollTop,
+          clientHeight: scroller.clientHeight,
+          scrollHeight: scroller.scrollHeight,
+        })) {
+          latestLoadMore.current();
+          return;
+        }
       }
 
       handle = requestAnimationFrame(step);
@@ -100,7 +122,7 @@ export function useCatalogWindow(
       cancelled = true;
       cancelAnimationFrame(handle);
     };
-  }, [hasMore, items.length, scope.viewMode, scope.groupBy]);
+  }, [rootRef, hasMore, items.length, scope.viewMode, scope.groupBy]);
 
-  return { items, totalCount, offset, limit, status, hasMore, loadMore };
+  return { items, totalCount, offset, limit, status, hasMore, bestMatchId, searchText, loadMore };
 }

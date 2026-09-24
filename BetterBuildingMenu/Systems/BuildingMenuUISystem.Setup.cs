@@ -18,27 +18,28 @@ namespace BetterBuildingMenu.Systems
 		// OnUpdate fires. See SearchDebounce for why there is no worker.
 		private static readonly System.Diagnostics.Stopwatch SearchClock = System.Diagnostics.Stopwatch.StartNew();
 		private readonly SearchDebounce _searchDebounce = new(TimeSpan.FromMilliseconds(250));
-		private readonly BuildingCatalogAdapter _buildingCatalogAdapter = new();
+		// Handed Mod's silhouette cache rather than reading Mod itself; see its constructor.
+		private readonly BuildingCatalogAdapter _buildingCatalogAdapter = new(thumbnail => Mod.Silhouettes?.UrlFor(thumbnail));
+		// The game's toolbar filter row, as the UI last reported it. Not reset on a load:
+		// the UI forwards the row only when it changes, so a reset would drop a filter the
+		// toolbar still shows.
+		private VanillaToolbarSelection _toolbarSelection = VanillaToolbarSelection.None;
 		private readonly InteractionBoundary _interactionBoundary = new();
 		// Everything the player has told the lens, as one record with one tested
 		// transition per trigger. The handlers in Bindings.cs apply a transition,
 		// PublishScope() mirrors it to the bindings, RefreshBuildingCatalog runs it.
 		private BuildingCatalogLensState _lens = BuildingCatalogLensState.Initial;
-		// The axis the fallback strip is drawn on. The SELECTION itself lives on
-		// the query as StripTabs, because the filter rail offers the same state
-		// and one field shown twice cannot disagree with itself.
-		private string _buildingLensStripAxis = string.Empty;
 
-		private ToolSystem _toolSystem;
-		private PrefabSystem _prefabSystem;
-		private DefaultToolSystem _defaultToolSystem;
-		private CameraUpdateSystem _cameraUpdateSystem;
+		private ToolSystem _toolSystem = null!;
+		private PrefabSystem _prefabSystem = null!;
+		private PrefabIndexingSystem _indexer = null!;
+		private DefaultToolSystem _defaultToolSystem = null!;
 		// Only for releasing the toolbar's menu selection when the lens closes;
 		// see CloseLens.
-		private Game.UI.InGame.ToolbarUISystem _toolbarUISystem;
+		private Game.UI.InGame.ToolbarUISystem _toolbarUISystem = null!;
 
 
-		private ValueBindingHelper<bool> _IsSearchLoading;
+		private ValueBindingHelper<bool> _IsSearchLoading = null!;
 		/// <summary>
 		/// Whether the lens menu is open.
 		/// </summary>
@@ -48,6 +49,8 @@ namespace BetterBuildingMenu.Systems
 		/// refresh, and tells the close paths whether there is anything to close.
 		/// </remarks>
 		private bool _lensMenuOpen;
+		// Whether the index moved since the catalog was last published. See OnUpdate.
+		private readonly IndexWatch _indexWatch = new();
 		private ValueBindingHelper<bool> _ReplaceVanillaBuildMenu = null!;
 		private ValueBindingHelper<int> _BuildingCatalogMatchesElsewhere = null!;
 		private ValueBindingHelper<int> _LensTileSize = null!;
@@ -62,10 +65,10 @@ namespace BetterBuildingMenu.Systems
 		// over. Lets the vanilla menu stay hidden after the panel is closed, so
 		// closing means closed rather than revealing the grid underneath.
 		private ValueBindingHelper<bool> _LensOwnsCurrentMenu = null!;
-		private ValueBindingHelper<int> _ActivePrefabId;
-		private ValueBindingHelper<float> _PanelWidth;
-		private ValueBindingHelper<float> _BuildingLensPanelHeight;
-		private ValueBindingHelper<string> _CurrentSearch;
+		private ValueBindingHelper<int> _ActivePrefabId = null!;
+		private ValueBindingHelper<float> _PanelWidth = null!;
+		private ValueBindingHelper<float> _BuildingLensPanelHeight = null!;
+		private ValueBindingHelper<string> _CurrentSearch = null!;
 		private ValueBindingHelper<BuildingCatalogPage> _BuildingCatalogBinding = null!;
 		/// <summary>
 		/// The catalog entries behind the selected building's upgrades, for the replaced extension
@@ -103,7 +106,6 @@ namespace BetterBuildingMenu.Systems
 		// varies per menu and a tab row whose meaning changes silently is not learnable.
 		private ValueBindingHelper<MenuBranchCount[]> _BuildingLensStripTabs = null!;
 		private ValueBindingHelper<string[]> _BuildingLensStripTabBinding = null!;
-		private ValueBindingHelper<string> _BuildingLensStripAxisBinding = null!;
 		// Which category the strip draws as its development branches, and those
 		// branches. Empty on the menus that expand nothing.
 		private ValueBindingHelper<MenuCategoryTabs[]> _BuildingLensExpandedCategories = null!;
@@ -131,8 +133,8 @@ namespace BetterBuildingMenu.Systems
 
 			_toolSystem = World.GetOrCreateSystemManaged<ToolSystem>();
 			_prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
+			_indexer = World.GetOrCreateSystemManaged<PrefabIndexingSystem>();
 			_defaultToolSystem = World.GetOrCreateSystemManaged<DefaultToolSystem>();
-			_cameraUpdateSystem = World.GetOrCreateSystemManaged<CameraUpdateSystem>();
 			_toolbarUISystem = World.GetOrCreateSystemManaged<Game.UI.InGame.ToolbarUISystem>();
 			_selectedInfoUISystem = World.GetOrCreateSystemManaged<Game.UI.InGame.SelectedInfoUISystem>();
 
@@ -145,9 +147,8 @@ namespace BetterBuildingMenu.Systems
 			// These establish the bindings with UI code.
 			_IsSearchLoading = CreateBinding("IsSearchLoading", false);
 			_ActivePrefabId = CreateBinding("ActivePrefabId", 0);
-			// Read once at setup and never re-pushed: OnSettingsApplied only
-			// republishes the tile size, so a change to this setting takes
-			// effect on the next load.
+			// Seeded here and re-pushed by OnSettingsApplied: the UI's menu watcher and
+			// the upgrades panel read it, and C# reads the setting live.
 			_ReplaceVanillaBuildMenu = CreateBinding("ReplaceVanillaBuildMenu", Mod.Settings.ReplaceVanillaBuildMenu);
 			_LensOwnsCurrentMenu = CreateBinding("LensOwnsCurrentMenu", false);
 			_BuildingCatalogMatchesElsewhere = CreateBinding("BuildingCatalogMatchesElsewhere", 0);
@@ -199,7 +200,6 @@ namespace BetterBuildingMenu.Systems
 			_BuildingLensMenuCategoriesBinding = CreateBinding("BuildingLensMenuCategories", Array.Empty<VanillaMenuCategory>());
 			_BuildingLensMenuCategoryCounts = CreateBinding("BuildingLensMenuCategoryCounts", Array.Empty<MenuCategoryCount>());
 			_BuildingLensStripTabs = CreateBinding("BuildingLensStripTabs", Array.Empty<MenuBranchCount>());
-			_BuildingLensStripAxisBinding = CreateBinding("BuildingLensStripAxis", string.Empty);
 			_BuildingLensExpandedCategories = CreateBinding("BuildingLensExpandedCategories", Array.Empty<MenuCategoryTabs>());
 			// A plain value binding plus its own trigger, rather than the
 			// two-in-one form: the value is the LIST both controls share, while
@@ -234,12 +234,10 @@ namespace BetterBuildingMenu.Systems
 			// ToolbarUISystem are private, so its bindings are the reachable route. Entity indices
 			// arrive comma-joined, because this bridge is happier with flat primitives.
 			CreateTrigger<string, string, bool, bool>("SetVanillaToolbarSelection", SetVanillaToolbarSelection);
-			CreateTrigger<int>("OnLocateButtonClicked", OnLocateButtonClicked);
-			CreateTrigger("LoadMoreBuildingCatalog", LoadMoreBuildingCatalog);
+			CreateTrigger<int>("LoadMoreBuildingCatalog", LoadMoreBuildingCatalog);
 				CreateTrigger<string, string, string>("SetBuildingCatalogMetricRange", SetBuildingCatalogMetricRange);
 				CreateTrigger("ClearBuildingCatalogMetricRanges", ClearBuildingCatalogMetricRanges);
 				CreateTrigger<string, string>("ToggleBuildingLensFacet", ToggleBuildingLensFacet);
-				CreateTrigger("ClearBuildingLensFacets", ClearBuildingLensFacets);
 				CreateTrigger("ClearBuildingLensFilters", ClearBuildingLensFilters);
 				CreateTrigger("ResetBuildingLensMenu", ResetBuildingLensMenu);
 				CreateTrigger<string>("SetBuildingLensStripTab", SetBuildingLensStripTab);
@@ -251,9 +249,17 @@ namespace BetterBuildingMenu.Systems
 
 		protected override void OnDestroy()
 		{
+			// Null once Mod.OnDispose has run, which at quit can come first.
 			if (Mod.Settings != null)
 			{
 				Mod.Settings.onSettingsApplied -= OnSettingsApplied;
+			}
+
+			// Null if OnCreate threw before setting it.
+			if (_toolSystem is not null)
+			{
+				_toolSystem.EventPrefabChanged -= OnPrefabChanged;
+				_toolSystem.EventToolChanged -= OnToolChanged;
 			}
 
 			base.OnDestroy();
@@ -271,10 +277,32 @@ namespace BetterBuildingMenu.Systems
 		private void OnSettingsApplied(Game.Settings.Setting setting)
 		{
 			_LensTileSize.Value = Mod.Settings.BuildingLensTileSize;
+			_ReplaceVanillaBuildMenu.Value = Mod.Settings.ReplaceVanillaBuildMenu;
+
+			// Switched off with the panel up: the menu goes back to its vanilla grid now
+			// rather than at the next click.
+			if (!Mod.Settings.ReplaceVanillaBuildMenu && _LensOwnsCurrentMenu.Value)
+			{
+				// With the setting off the watcher sends no deselect, so forget the menu here,
+				// as VanillaMenuDeselected does. A kept scope filters the next open to it, and
+				// a kept index makes switching back on over the same menu read as an echo.
+				_appliedMenuIndex = 0;
+				_appliedMenuFrame = null;
+				ReleaseMenuScope();
+				YieldMenuToVanilla();
+			}
 		}
 
 		protected override void OnUpdate()
 		{
+			// The indexer bumps its Generation and leaves the rest to us: a pass, an
+			// unlock, a unique built or bulldozed. Scheduled like a search, so a burst of
+			// them is one refresh, and nothing is rebuilt for a closed panel.
+			if (_indexWatch.ShouldRefresh(_lensMenuOpen, _indexer.Generation))
+			{
+				TriggerSearch();
+			}
+
 			if (_searchDebounce.TryFire(SearchClock.Elapsed))
 			{
 				_IsSearchLoading.Value = false;

@@ -1,3 +1,9 @@
+/** One lot shape, in cells. */
+export interface LotFootprint {
+  width: number;
+  depth: number;
+}
+
 export interface BuildingCatalogEntry {
   id: number;
   prefabName: string;
@@ -86,7 +92,7 @@ export interface BuildingCatalogEntry {
    * rather than cast-read at each surface, because a cast compiles whether or
    * not anything produces the field and hides the gap.
    */
-  footprints?: { width: number; depth: number }[] | null;
+  footprints?: LotFootprint[] | null;
   footprintOverflow?: number | null;
   /** Figures that are words rather than numbers — see serviceFacts.ts. */
   serviceTextFacts?: { key: string; value: string }[] | null;
@@ -136,6 +142,16 @@ export interface BuildingCatalogPage {
    * comparison would offer rows the backend has already refused to serve.
    */
   hasMore?: boolean;
+
+  /**
+   * The row Enter arms while a search is active; null without a search or a
+   * result. C#'s answer, because only it scores, and a grouped page is ordered
+   * by group before relevance.
+   */
+  bestMatchId?: number | null;
+
+  /** The search this page answers; it trails the box by the search debounce. */
+  searchText?: string;
 
   /**
    * The offered sort fields that could actually move a row of these results;

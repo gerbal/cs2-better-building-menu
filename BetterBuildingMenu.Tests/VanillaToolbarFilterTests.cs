@@ -30,6 +30,19 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void TheDefaultSelectionIsNone()
+		{
+			// The adapter takes the selection as a struct argument, so a default one must
+			// read as an untouched toolbar rather than as a pair of null lists.
+			var selection = default(VanillaToolbarSelection);
+
+			Assert.Empty(selection.SelectedThemes);
+			Assert.Empty(selection.SelectedPacks);
+			Assert.True(selection.IsEmpty);
+			Assert.True(VanillaToolbarFilter.IsVisible(InPacks(5), selection));
+		}
+
+		[Fact]
 		public void AThemedAssetShowsOnlyUnderItsOwnTheme()
 		{
 			var eu = new VanillaToolbarSelection(new[] { European }, null, false, false);

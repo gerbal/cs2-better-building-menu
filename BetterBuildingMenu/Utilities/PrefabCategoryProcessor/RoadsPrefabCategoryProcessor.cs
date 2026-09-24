@@ -1,6 +1,9 @@
 ﻿using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Interfaces;
 using Game.Prefabs;
+
+using System.Diagnostics.CodeAnalysis;
 
 using Unity.Entities;
 
@@ -10,24 +13,6 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
     {
         public EntityQueryDesc[] GetEntityQuery()
         {
-            if (Mod.IsRoadBuilderEnabled)
-            {
-                return new[]
-                {
-                    new EntityQueryDesc
-                    {
-                        All = new[]
-                        {
-                            ComponentType.ReadOnly<RoadData>(),
-                        },
-                        None = new[]
-                        {
-                            ComponentType.ReadOnly<BridgeData>(),
-                        },
-                    },
-                };
-            }
-
             return new[]
             {
                 new EntityQueryDesc
@@ -44,7 +29,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
             };
         }
 
-        public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, out PrefabIndex prefabIndex)
+        public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
         {
             if (prefab is not RoadPrefab roadPrefab)
             {

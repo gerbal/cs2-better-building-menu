@@ -4,6 +4,7 @@ import { renderHtml, entry, catalogPage } from "../harness/render";
 import { setBinding, resetBindings } from "../harness/stubs/cs2-api";
 import { resetLensView, setLensView } from "../../src/domain/lensViewStore";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
+import { FALLBACK_SEPARATORS, groupDigits } from "../../src/domain/buildingLensMetricFormat";
 
 const page = (over: Record<string, unknown> = {}) =>
   setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1), entry(2)], over));
@@ -44,6 +45,25 @@ describe("the catalog container", () => {
       assert.match(html, /aria-label="Search everything"/);
     });
   }
+
+  it("groups the digits of the window count like every other number on the panel", () => {
+    // Built by hand, the count read "Showing 1200 of 4206" beside cells that
+    // group theirs. toLocaleString would group it under node and not in Cohtml.
+    setLensView({ viewMode: "table" });
+    page({ hasMore: true, totalCount: 4206 });
+    const html = render();
+
+    assert.ok(html.includes(`Showing 2 of ${groupDigits(4206, FALLBACK_SEPARATORS)}`));
+    assert.doesNotMatch(html, /4206/);
+  });
+
+  it("names one step on the load-more, however large the window has grown", () => {
+    // Three loads in, the window is 300 rows; a click still adds 100.
+    setLensView({ viewMode: "table" });
+    page({ hasMore: true, totalCount: 403, limit: 300 });
+
+    assert.match(render(), /Load 100 more/);
+  });
 
   it("draws no load-more when the window holds everything", () => {
     setLensView({ viewMode: "table" });

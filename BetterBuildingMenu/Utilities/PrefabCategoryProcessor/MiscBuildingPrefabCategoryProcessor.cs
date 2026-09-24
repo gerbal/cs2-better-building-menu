@@ -1,6 +1,9 @@
 ﻿using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Interfaces;
 using Game.Prefabs;
+
+using System.Diagnostics.CodeAnalysis;
 
 using Unity.Entities;
 
@@ -36,7 +39,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
             };
         }
 
-        public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, out PrefabIndex prefabIndex)
+        public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
         {
             if (prefab is not BuildingPrefab)
             {
@@ -47,7 +50,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
             // A building with properties but no zone and no service is normally
             // a placeholder or a brand shell, and stays out — unless the game's
             // own menus place it, which outranks this filter.
-            var placed = Systems.PrefabIndexingSystem.TryGetVanillaCategory(entity.Index, out var vanillaCategory);
+            var placed = target.Menus.TryGetCategory(entity.Index, out var vanillaCategory);
 
             if (_entityManager.HasComponent<BuildingPropertyData>(entity) && !placed)
             {

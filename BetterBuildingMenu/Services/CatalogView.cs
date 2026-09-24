@@ -21,6 +21,7 @@ namespace BetterBuildingMenu.Services
 		private readonly Func<CatalogView, string>? _groupByResolver;
 		private readonly IReadOnlyList<string>? _milestoneNames;
 		private readonly bool _educationMenu;
+		private readonly bool _vanillaSelected;
 		private string? _effectiveGroupBy;
 		private string[]? _dimensions;
 
@@ -39,7 +40,8 @@ namespace BetterBuildingMenu.Services
 			Func<IReadOnlyList<BuildingCatalogEntry>>? packScope = null,
 			Func<CatalogView, string>? groupByResolver = null,
 			IReadOnlyList<string>? milestoneNames = null,
-			bool educationMenu = false)
+			bool educationMenu = false,
+			bool vanillaSelected = false)
 		{
 			_snapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
 			_query = query ?? throw new ArgumentNullException(nameof(query));
@@ -47,6 +49,7 @@ namespace BetterBuildingMenu.Services
 			_groupByResolver = groupByResolver;
 			_milestoneNames = milestoneNames;
 			_educationMenu = educationMenu;
+			_vanillaSelected = vanillaSelected;
 		}
 
 		/// <summary>The dimension ids the picker should offer for this menu set.</summary>
@@ -102,8 +105,18 @@ namespace BetterBuildingMenu.Services
 		public BuildingCatalogFacetState FacetState => _facets ??= BuildingCatalogAdapter.BuildFacetState(
 			ViewSet,
 			_query,
-			_packScope is null ? ViewSet : BuildingCatalogQueryEngine.InScope(_packScope(), _query));
+			_packScope is null ? ViewSet : BuildingCatalogQueryEngine.InScope(_packScope(), _query),
+			_vanillaSelected);
 
+		/// <summary>
+		/// How many assets each of the menu's category tabs holds.
+		/// </summary>
+		/// <remarks>
+		/// Over <see cref="MenuSet"/>, so the category's own axis is excluded and choosing
+		/// one tab does not read every other as empty. Search counts; the facet selections do
+		/// not. Counted against the category the entry answers to IN THIS MENU rather than its
+		/// own UiCategory.
+		/// </remarks>
 		public IReadOnlyList<MenuCategoryCount> MenuCategoryCounts => _counts ??= MenuSet
 			.GroupBy(entry => NetworkMenuExtension.EffectiveCategory(entry, _query.UiMenu) ?? string.Empty)
 			.Select(group => new MenuCategoryCount(group.Key, group.Count()))
@@ -144,8 +157,8 @@ namespace BetterBuildingMenu.Services
 			// The menu set narrowed to that category, tier kept, tabs cleared.
 			var tabs = BuildingCatalogQueryEngine
 				.InScope(MenuSet, _query with { UiCategory = category, StripTabs = null })
-				.Where(entry => !string.IsNullOrEmpty(entry.DevTreeBranch))
-				.GroupBy(entry => entry.DevTreeBranch!)
+				.GroupBy(entry => entry.DevTreeBranch ?? string.Empty)
+				.Where(group => group.Key.Length > 0)
 				.OrderBy(group => group.Min(entry => entry.DevTreeBranchDepth))
 				.ThenBy(group => group.Key, StringComparer.Ordinal)
 				.Select(group => new MenuBranchCount(
@@ -177,6 +190,15 @@ namespace BetterBuildingMenu.Services
 				: new[] { new MenuCategoryTabs(branchCategory, ExpandedCategoryTabs.ToArray()) };
 		}
 
+		/// <summary>
+		/// Which axis the strip's tabs cut this menu along, or empty for none.
+		/// </summary>
+		/// <remarks>
+		/// A menu split into categories uses the development tree when one of its
+		/// categories expands. A menu vanilla never split takes the axis that cuts most
+		/// evenly — smallest largest bucket — among a short hand-picked list of cuts the
+		/// game itself authored; an axis yielding fewer than two groups is not a choice.
+		/// </remarks>
 		public string StripAxis => _axis ??= ComputeStripAxis();
 
 		private string ComputeStripAxis()
@@ -301,7 +323,7 @@ namespace BetterBuildingMenu.Services
 
 					var replacement = distinctIcon(tab);
 
-					return string.IsNullOrEmpty(replacement) ? tab : tab with { Icon = replacement! };
+					return replacement is { Length: > 0 } ? tab with { Icon = replacement } : tab;
 				})
 				.ToArray();
 		}
@@ -354,7 +376,7 @@ namespace BetterBuildingMenu.Services
 
 		public IReadOnlyList<MenuBranchCount> SchoolTierCounts => _tiers ??= TierSet
 			.Where(entry => entry.EducationLevel is >= 1 and <= 4)
-			.GroupBy(entry => entry.EducationLevel!.Value)
+			.GroupBy(entry => entry.EducationLevel.GetValueOrDefault())
 			.Select(group => new MenuBranchCount(
 				group.Key.ToString(System.Globalization.CultureInfo.InvariantCulture),
 				group.Count(),

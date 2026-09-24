@@ -1,9 +1,12 @@
 ﻿using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Domain.Interfaces;
 using BetterBuildingMenu.Utilities;
 using Game.Prefabs;
 
+using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 using Unity.Entities;
@@ -44,7 +47,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
             };
         }
 
-        public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, out PrefabIndex prefabIndex)
+        public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
         {
             if (TryGetSubCategory(prefab, entity, _entityManager, out var subCategory))
 			{
@@ -75,11 +78,11 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 				return true;
 			}
 
-			var assetCategoryOverride = prefab.GetComponent<EditorAssetCategoryOverride>();
+			var includes = prefab.GetComponent<EditorAssetCategoryOverride>()?.m_IncludeCategories ?? Array.Empty<string>();
 
-			for (var i = 0; i < (assetCategoryOverride?.m_IncludeCategories?.Length ?? 0); i++)
+			foreach (var include in includes)
 			{
-				switch (assetCategoryOverride.m_IncludeCategories[i])
+				switch (include)
 				{
 					case "Props/Props/Brand Graphics":
 					case "Props/Decorations/Brand Graphics":
@@ -140,7 +143,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 				return false;
 			}
 
-			if (prefab.isBuiltin && prefab.name.StartsWith("NotreDame"))
+			if (prefab.isBuiltin && prefab.name.StartsWith("NotreDame", StringComparison.Ordinal))
 			{
 				subCategory = PrefabSubCategory.Props_Misc;
 				return true;

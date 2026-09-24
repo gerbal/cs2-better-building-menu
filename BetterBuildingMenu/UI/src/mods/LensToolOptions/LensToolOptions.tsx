@@ -1,19 +1,19 @@
-import { bindValue, trigger, useValue } from "cs2/api";
+import { useValue } from "cs2/api";
 import { game } from "cs2/bindings";
 import { ModuleRegistryExtend } from "cs2/modding";
 import classNames from "classnames";
+import { cloneElement, isValidElement, type ReactNode } from "react";
 
-import mod from "../../../mod.json";
 import styles from "./LensToolOptions.module.scss";
 import lockIcon from "images/lock.svg";
 import unlockIcon from "images/unlock.svg";
-import { BANK_DIMENSION_IDS, isBankDimension } from "domain/filterRail";
+import { isBankDimension } from "domain/filterRail";
 import { shouldMountInAssetMenu } from "domain/buildingMenuMount";
 import { toggleBuildingLensFacetCommand, type BuildingLensFacetState } from "domain/buildingCatalogFacets";
+import type { AvailabilityOption } from "domain/sharedContracts.generated";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
-
-const BuildingLensFacets$ = bindValue<BuildingLensFacetState | null>(mod.id, "BuildingLensFacets", null);
-const LensOwnsCurrentMenu$ = bindValue<boolean>(mod.id, "LensOwnsCurrentMenu", false);
+import { BuildingLensFacets$, LensOwnsCurrentMenu$, send } from "mods/bindings";
+import { ExtensionBoundary } from "mods/ExtensionBoundary";
 
 /**
  * Availability, drawn in the game's own tool-options panel beside Theme and
@@ -26,7 +26,7 @@ const LensOwnsCurrentMenu$ = bindValue<boolean>(mod.id, "LensOwnsCurrentMenu", f
  * plus vanilla's AlreadyBuilt symbol. Plain <img>, no mask and no tint, because
  * these SVGs carry their own fill and this engine cannot composite a vector.
  */
-const OPTION_ICONS: Readonly<Record<string, string>> = {
+const OPTION_ICONS: Readonly<Record<AvailabilityOption, string>> = {
   Locked: lockIcon,
   Unlocked: unlockIcon,
   AlreadyBuilt: "Media/Game/Icons/AlreadyBuilt.svg",
@@ -53,11 +53,11 @@ const BankFacets = ({ facets }: { facets: BuildingLensFacetState | null | undefi
               key={option.id}
               // Vanilla's own icon button, as the Theme row beside this one
               // uses, so the two read as one panel.
-              src={OPTION_ICONS[option.id] ?? ""}
+              src={OPTION_ICONS[option.id as AvailabilityOption] ?? ""}
               selected={option.selected}
               multiSelect
               tooltip={option.label}
-              onSelect={() => trigger(mod.id, ...toggleArgs(group.id, option.id))}
+              onSelect={() => send(toggleBuildingLensFacetCommand(group.id, option.id))}
               focusKey={VanillaComponentResolver.instance.FOCUS_DISABLED}
               className={classNames(
                 VanillaComponentResolver.instance.toolButtonTheme.button,
@@ -72,15 +72,8 @@ const BankFacets = ({ facets }: { facets: BuildingLensFacetState | null | undefi
   );
 };
 
-/** The command as (method, ...args), so the trigger call stays one line. */
-function toggleArgs(groupId: string, optionId: string): [string, ...unknown[]] {
-  const command = toggleBuildingLensFacetCommand(groupId, optionId);
-
-  return [command.method, ...command.args];
-}
-
 export const LensToolOptions: ModuleRegistryExtend = (Component: any) => {
-  return () => {
+  return function MouseToolOptionsWithBank() {
     const facets = useValue(BuildingLensFacets$);
     const lensOwnsCurrentMenu = useValue(LensOwnsCurrentMenu$);
     const isPhotoMode = useValue(game.activeGamePanel$)?.__Type == game.GamePanelType.PhotoMode;
@@ -90,14 +83,23 @@ export const LensToolOptions: ModuleRegistryExtend = (Component: any) => {
 
     // The same predicate the panel itself mounts on, so the bank cannot offer
     // a control for a menu that is not there, nor withhold one that is.
-    if (!shouldMountInAssetMenu({ lensOwnsCurrentMenu, isPhotoMode })) {
+    if (!isValidElement(result) || !shouldMountInAssetMenu({ lensOwnsCurrentMenu, isPhotoMode })) {
       return result;
     }
 
-    result.props.children?.push(<BankFacets facets={facets} />);
+    // A copy with our sections after vanilla's, never a push into vanilla's own
+    // element: its children may be one element rather than an array. The copy
+    // keeps vanilla's type with an array of children, which is what a mod
+    // extending after us pushes into. Our section alone sits behind a boundary.
+    const children = (result.props as { children?: ReactNode }).children;
 
-    return result;
+    return cloneElement(
+      result,
+      undefined,
+      ...(Array.isArray(children) ? children : [children]),
+      <ExtensionBoundary key="betterBuildingMenuBank" name="MouseToolOptions" fallback={() => null}>
+        <BankFacets facets={facets} />
+      </ExtensionBoundary>
+    );
   };
 };
-
-export { BANK_DIMENSION_IDS };

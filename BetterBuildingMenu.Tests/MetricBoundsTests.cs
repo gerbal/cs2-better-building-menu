@@ -27,7 +27,6 @@ namespace BetterBuildingMenu.Tests
 				BuildingLevel: 1,
 				ZoneType: 0,
 				HasParking: false,
-				IsUniqueMesh: false,
 				IsVanilla: true,
 				PdxModsId: "",
 				ConstructionCost: cost,
@@ -51,7 +50,7 @@ namespace BetterBuildingMenu.Tests
 				new BuildingCatalogQuery(PlacementFlags: new[] { "RequireRoad" }));
 
 			BuildingCatalogFacetGroup placement = Assert.Single(
-				state.Groups.Where(group => group.Id == "placement"));
+				state.Groups, group => group.Id == "placement");
 			BuildingCatalogFacetOption option = Assert.Single(placement.Options);
 
 			Assert.Equal("RequireRoad", option.Id);

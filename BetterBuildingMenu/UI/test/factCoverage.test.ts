@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { SERVICE_FACT_KEYS, SERVICE_TEXT_FACT_KEYS, RESOURCE_UPKEEP_PREFIX } from "../src/domain/serviceFacts.ts";
 
@@ -8,7 +8,12 @@ import { SERVICE_FACT_KEYS, SERVICE_TEXT_FACT_KEYS, RESOURCE_UPKEEP_PREFIX } fro
 // rather than drawn raw. That policy makes a missing presentation silent —
 // the fact simply never appears — so this reads the indexer's source and
 // checks every key it can emit has a presentation.
-const source = readFileSync(new URL("../../Systems/PrefabIndexingSystem.cs", import.meta.url), "utf8");
+// The indexer is one partial class over several files; read them all.
+const systems = new URL("../../Systems/", import.meta.url);
+const source = readdirSync(systems)
+  .filter((file) => /^PrefabIndexingSystem(\.\w+)?\.cs$/.test(file))
+  .map((file) => readFileSync(new URL(file, systems), "utf8"))
+  .join("\n");
 
 const literalKeysOf = (call: string): string[] => {
   const keys = new Set<string>();

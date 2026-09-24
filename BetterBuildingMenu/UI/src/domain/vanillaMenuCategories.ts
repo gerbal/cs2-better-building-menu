@@ -116,15 +116,3 @@ export function visibleCategories(
 
   return ordered.filter((category) => (categoryCount(counts, category.id) ?? 0) > 0);
 }
-
-/**
- * Above this many tabs a row of icons stops being something you read and
- * becomes a wall you search, so the strip widens instead.
- */
-export const CATEGORY_STRIP_WIDE_THRESHOLD = 6;
-
-export function shouldWidenCategoryStrip(
-  categories: readonly VanillaMenuCategory[] | null | undefined
-): boolean {
-  return (categories ?? []).length > CATEGORY_STRIP_WIDE_THRESHOLD;
-}

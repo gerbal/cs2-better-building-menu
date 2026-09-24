@@ -22,7 +22,7 @@ namespace BetterBuildingMenu.Tests
 		/// <remarks>
 		/// Two implications hold in the live index and would otherwise generate
 		/// states that cannot occur: an asset placed in THIS menu is placed in some
-		/// menu, and IsGatheredNetwork is itself guarded on IsPlacedInAnyMenu.
+		/// menu, and IsGatheredNetwork is itself guarded on VanillaMenuIndex.IsPlaced.
 		/// </remarks>
 		public static IEnumerable<object[]> ReachableStates()
 		{

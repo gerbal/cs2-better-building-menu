@@ -1,8 +1,8 @@
-import type { ZoneFootprint } from "domain/zoningHierarchy";
+import type { LotFootprint } from "domain/buildingCatalog";
 import styles from "../BuildingList/buildingList.module.scss";
 
 interface FootprintGlyphProps {
-  footprint: ZoneFootprint;
+  footprint: LotFootprint;
 }
 
 /**

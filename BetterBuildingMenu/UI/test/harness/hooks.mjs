@@ -2,6 +2,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
 import { transformSync } from "@swc/core";
+import * as sass from "sass";
 
 const UI_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const SRC = path.join(UI_ROOT, "src");
@@ -37,13 +38,36 @@ export async function resolve(specifier, context, next) {
   return next(specifier, context);
 }
 
+/** What a sheet's `:export` blocks hold, compiled; most sheets have none and skip sass. */
+function sheetExports(file) {
+  if (!file.endsWith(".scss") || !readFileSync(file, "utf8").includes(":export")) return {};
+
+  const exported = {};
+  const { css } = sass.compile(file, { loadPaths: [SRC], logger: sass.Logger.silent });
+  for (const [, body] of css.matchAll(/:export\s*\{([^}]*)\}/g)) {
+    for (const declaration of body.split(";")) {
+      const colon = declaration.indexOf(":");
+      if (colon > 0) exported[declaration.slice(0, colon).trim()] = declaration.slice(colon + 1).trim();
+    }
+  }
+
+  return exported;
+}
+
 export async function load(url, context, next) {
   if (!url.startsWith("file:")) return next(url, context);
   const file = fileURLToPath(url);
 
   if (file.endsWith(".scss") || file.endsWith(".css")) {
     // CSS modules: every class name is its own key, so `styles.row` is "row".
-    return { format: "module", shortCircuit: true, source: 'export default new Proxy({}, { get: (_, key) => (typeof key === "string" ? key : "") });' };
+    // A value the sheet exports with ICSS `:export` is the compiled one, so
+    // code that reads a size from a sheet reads the real size here too.
+    const exported = JSON.stringify(sheetExports(file));
+    return {
+      format: "module",
+      shortCircuit: true,
+      source: `const exported = ${exported}; export default new Proxy({}, { get: (_, key) => (typeof key !== "string" ? "" : Object.hasOwn(exported, key) ? exported[key] : key) });`,
+    };
   }
   if (file.endsWith(".svg") || file.endsWith(".png")) {
     return { format: "module", shortCircuit: true, source: `export default ${JSON.stringify(path.basename(file))};` };

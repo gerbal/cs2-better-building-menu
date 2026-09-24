@@ -5,6 +5,7 @@ using Colossal.Reflection;
 using Colossal.UI;
 
 using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Systems;
 using BetterBuildingMenu.Utilities;
 
@@ -12,11 +13,7 @@ using Game;
 using Game.Modding;
 using Game.SceneFlow;
 
-using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 
 using Unity.Entities;
 
@@ -25,19 +22,28 @@ namespace BetterBuildingMenu
 	public class Mod : IMod
 	{
 		public const string Id = "BetterBuildingMenu";
-		private static bool? isExtraDetailingEnabled;
-		private static bool? isAssetIconLibraryEnabled;
-		private static bool? isRoadBuilderEnabled;
 
 		public static ILog Log { get; } = LogManager.GetLogger(nameof(BetterBuildingMenu)).SetShowsErrorsInUI(false);
-		public static BetterBuildingMenuSettings Settings { get; private set; }
+		// Set in OnLoad and cleared in OnDispose, so null outside them, a test run included.
+		// Everything that reads it runs in between, except BuildingMenuUISystem.OnDestroy,
+		// which checks.
+		public static BetterBuildingMenuSettings Settings { get; private set; } = null!;
 
-		public static bool IsExtraDetailingEnabled => isExtraDetailingEnabled ??= GameManager.instance.modManager.ListModsEnabled().Any(x => x.StartsWith("ExtraDetailingTools, "));
-		public static bool IsAssetIconLibraryEnabled => isAssetIconLibraryEnabled ??= GameManager.instance.modManager.ListModsEnabled().Any(x => x.StartsWith("AssetIconLibrary, "));
-		public static bool IsRoadBuilderEnabled => isRoadBuilderEnabled ??= GameManager.instance.modManager.ListModsEnabled().Any(x => x.StartsWith("RoadBuilder, "));
+		/// <summary>Reads which of the mods we adapt to are enabled.</summary>
+		/// <remarks>Per full pass, not once per process: the game re-reads the playset at every city
+		/// load, so a mod can join without a restart. See docs/indexing.md, "Load timing".</remarks>
+		internal static ModCompatibility ReadEnabledMods()
+		{
+			var enabled = GameManager.instance.modManager.ListModsEnabled();
+
+			return new ModCompatibility(
+				ExtraDetailing: EnabledMods.Contains(enabled, "ExtraDetailingTools"),
+				RoadBuilder: EnabledMods.Contains(enabled, "RoadBuilder"));
+		}
 
 		/// <summary>Black copies of the game's vector icons, for locked tiles.</summary>
-		public static SilhouetteIconCache Silhouettes { get; private set; }
+		/// <remarks>Null until OnLoad, which a test run never calls.</remarks>
+		public static SilhouetteIconCache? Silhouettes { get; private set; }
 
 		private static string SilhouetteFolder =>
 			Path.Combine(FolderUtil.ContentFolder, "silhouettes");
@@ -63,6 +69,8 @@ namespace BetterBuildingMenu
 				.ToArray();
 		}
 
+		private const string ImagesHost = "betterbuildingmenu";
+
 		public void OnLoad(UpdateSystem updateSystem)
 		{
 			Log.Info(nameof(OnLoad));
@@ -72,7 +80,7 @@ namespace BetterBuildingMenu
 
 			if (GameManager.instance.modManager.TryGetExecutableAsset(this, out var asset))
 			{
-				UIManager.defaultUISystem.AddHostLocation($"betterbuildingmenu", Path.Combine(Path.GetDirectoryName(asset.path), "images"), false);
+				UIManager.defaultUISystem.AddHostLocation(ImagesHost, Path.Combine(Path.GetDirectoryName(asset.path), "images"), false);
 			}
 
 			// A SECOND host, deliberately not the one above: blackened icon
@@ -88,15 +96,13 @@ namespace BetterBuildingMenu
 
 			AssetDatabase.global.LoadSettings(nameof(BetterBuildingMenu), Settings, new BetterBuildingMenuSettings(this));
 
-
-
 			updateSystem.UpdateAfter<PrefabIndexingSystem>(SystemUpdatePhase.PrefabUpdate);
-			// Twice, because PrefabUpdate is not a frame phase: PrefabSystem
-			// drives it only when prefabs change, and an unlock flips Locked
-			// without touching one. UIUpdate ticks every frame.
+			// Twice. Both phases run every frame, but PrefabUpdate runs inside
+			// PrefabSystem's update, which the main loop runs before UnlockSystem;
+			// UIUpdate runs after it, so only that tick sees this frame's unlock
+			// events.
 			updateSystem.UpdateAt<PrefabIndexingSystem>(SystemUpdatePhase.UIUpdate);
 			updateSystem.UpdateAt<BuildingMenuUISystem>(SystemUpdatePhase.UIUpdate);
-			updateSystem.UpdateAt<PrefabTrackingSystem>(SystemUpdatePhase.PrefabUpdate);
 
 		}
 
@@ -104,10 +110,26 @@ namespace BetterBuildingMenu
 		{
 			Log.Info(nameof(OnDispose));
 
-			if (Settings != null)
+			// Never throws. The game also calls this from the catch around a failed
+			// OnLoad, and an exception from here escapes that catch and stops every
+			// mod after this one from initializing.
+			try
 			{
-				Settings.UnregisterInOptionsUI();
-				Settings = null;
+				// Null when OnLoad failed before setting it.
+				if (Settings != null)
+				{
+					Settings.UnregisterInOptionsUI();
+					Settings = null!;
+				}
+
+				// The locale sources stay registered: removing one makes the game reload
+				// the active dictionary, which at quit is work for nothing.
+				UIManager.defaultUISystem?.RemoveHostLocation(ImagesHost);
+				UIManager.defaultUISystem?.RemoveHostLocation(SilhouetteIcons.HostName);
+			}
+			catch (Exception ex)
+			{
+				Log.Error(ex, "OnDispose failed");
 			}
 		}
 	}

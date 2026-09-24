@@ -37,33 +37,4 @@ public sealed class InteractionBoundaryTests
 
         Assert.Equal(new[] { 10 }, activatedIds);
     }
-
-    [Fact]
-    public void TryLocate_UsesZeroThenCyclesForTheSamePrefab()
-    {
-        var locatedIndices = new List<int>();
-        var boundary = new InteractionBoundary();
-
-        Assert.True(boundary.TryLocate(10, sequenceLength: 3, locatedIndices.Add));
-        Assert.True(boundary.TryLocate(10, sequenceLength: 3, locatedIndices.Add));
-        Assert.True(boundary.TryLocate(10, sequenceLength: 3, locatedIndices.Add));
-        Assert.True(boundary.TryLocate(10, sequenceLength: 3, locatedIndices.Add));
-
-        Assert.Equal(new[] { 0, 1, 2, 0 }, locatedIndices);
-    }
-
-    [Fact]
-    public void TryLocate_ResetsForADifferentPrefabOrAnEmptySequence()
-    {
-        var locatedIndices = new List<int>();
-        var boundary = new InteractionBoundary();
-
-        Assert.True(boundary.TryLocate(10, sequenceLength: 2, locatedIndices.Add));
-        Assert.True(boundary.TryLocate(10, sequenceLength: 2, locatedIndices.Add));
-        Assert.True(boundary.TryLocate(11, sequenceLength: 2, locatedIndices.Add));
-        Assert.False(boundary.TryLocate(11, sequenceLength: 0, locatedIndices.Add));
-        Assert.True(boundary.TryLocate(11, sequenceLength: 2, locatedIndices.Add));
-
-        Assert.Equal(new[] { 0, 1, 0, 0 }, locatedIndices);
-    }
 }

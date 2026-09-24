@@ -6,7 +6,6 @@ import {
   RAIL_SEARCH_THRESHOLD,
   buildFilterRail,
   filterRailOptions,
-  hasAnyRailSelection,
   isBankDimension,
 } from "../src/domain/filterRail.ts";
 
@@ -126,10 +125,12 @@ describe("Rail popover options", () => {
 });
 
 describe("Rail selection state", () => {
+  const anySelected = (rail: { selected: number }[]) => rail.some((dimension) => dimension.selected > 0);
+
   it("reports whether anything is filtered at all", () => {
-    assert.equal(hasAnyRailSelection(buildFilterRail(facets, { active: 0 })), true);
+    assert.equal(anySelected(buildFilterRail(facets, { active: 0 })), true);
     assert.equal(
-      hasAnyRailSelection(buildFilterRail({ groups: [group("dlc", "DLC", 3)], hasSelection: false }, { active: 0 })),
+      anySelected(buildFilterRail({ groups: [group("dlc", "DLC", 3)], hasSelection: false }, { active: 0 })),
       false
     );
   });
@@ -137,47 +138,7 @@ describe("Rail selection state", () => {
   it("counts an active metric range as a filter", () => {
     const rail = buildFilterRail({ groups: [group("dlc", "DLC", 3)], hasSelection: false }, { active: 2 });
 
-    assert.equal(hasAnyRailSelection(rail), true);
-  });
-});
-
-describe("Active metric range count", () => {
-  it("counts only bounds that are actually set", async () => {
-    const { countActiveMetricRanges } = await import("../src/domain/filterRail.ts");
-
-    assert.equal(
-      countActiveMetricRanges({ minCost: 1000, maxCost: null, minUpkeep: null, hasSelection: true }),
-      1
-    );
-  });
-
-  it("ignores the hasSelection flag that travels with the bounds", async () => {
-    const { countActiveMetricRanges } = await import("../src/domain/filterRail.ts");
-
-    // Counting object values naively registers `hasSelection: false` as a set
-    // bound, so the metrics badge counts a filter nobody applied.
-    assert.equal(countActiveMetricRanges({ hasSelection: false }), 0);
-    assert.equal(countActiveMetricRanges({ hasSelection: true }), 0);
-  });
-
-  it("treats zero as a real bound rather than an empty one", async () => {
-    const { countActiveMetricRanges } = await import("../src/domain/filterRail.ts");
-
-    // "at most 0 workers" is a legitimate filter.
-    assert.equal(countActiveMetricRanges({ maxWorkers: 0, hasSelection: true }), 1);
-  });
-
-  it("counts both ends of a range separately", async () => {
-    const { countActiveMetricRanges } = await import("../src/domain/filterRail.ts");
-
-    assert.equal(countActiveMetricRanges({ minCost: 10, maxCost: 20, hasSelection: true }), 2);
-  });
-
-  it("survives absent state", async () => {
-    const { countActiveMetricRanges } = await import("../src/domain/filterRail.ts");
-
-    assert.equal(countActiveMetricRanges(null), 0);
-    assert.equal(countActiveMetricRanges(undefined), 0);
+    assert.equal(anySelected(rail), true);
   });
 });
 

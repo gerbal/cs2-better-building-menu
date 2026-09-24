@@ -1,6 +1,6 @@
 import { Button } from "cs2/ui";
 import classNames from "classnames";
-import type { CSSProperties } from "react";
+import { memo, type CSSProperties } from "react";
 import { BuildingCatalogEntry, formatBuildingCatalogLabels } from "domain/buildingCatalog";
 import type { BuildingLensMetric } from "domain/buildingLensLayout";
 import {
@@ -22,7 +22,7 @@ import {
   isEntryLocked,
   lockedThumbnail,
 } from "domain/buildingLockState";
-import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
+import { BuildingHoverCard, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { BuildingResultDetails } from "./BuildingResultDetails";
 import styles from "./buildingCatalog.module.scss";
 
@@ -41,6 +41,8 @@ export interface TableRowProps {
   nameBudget: number;
   separators: ReturnType<typeof getNumberSeparators>;
   labels: TableRowLabels;
+  /** What the hover card reads, the same card every view shows; read once by the table. */
+  hoverCard: HoverCardContext;
   /** The width of one metric column, shared with the header so they line up. */
   columnStyle(metric: BuildingLensMetric): CSSProperties;
   /** Resolves a raw facet id (a DLC's numeric id) to the name the filter shows. */
@@ -52,22 +54,21 @@ export interface TableRowProps {
 /**
  * One row of the table: the hover-carded Place control holding the identity
  * cell and the seven metric cells, the details chevron, and the details
- * themselves when expanded.
+ * themselves when expanded. Memoised: a keystroke re-renders the table, and a
+ * row whose props hold still need not follow it.
  */
-export const TableRow = ({
+export const TableRow = memo(function TableRow({
   entry,
   expanded,
   nameBudget,
   separators,
   labels,
+  hoverCard,
   columnStyle,
   resolveFacetLabel,
   onPlace,
   onToggleExpanded,
-}: TableRowProps) => {
-  // The same card every other view mode shows, so the table can answer a
-  // question its columns have no room for.
-  const hoverCard = useHoverCardContext();
+}: TableRowProps) {
   const rawCategoryIdentity = entry.subCategory
     ? `${entry.category} · ${entry.subCategory}`
     : entry.category;
@@ -220,4 +221,4 @@ export const TableRow = ({
       )}
     </div>
   );
-};
+});

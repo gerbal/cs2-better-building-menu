@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Diagnostics.CodeAnalysis;
 
 namespace BetterBuildingMenu.Domain
 {
@@ -43,18 +44,39 @@ namespace BetterBuildingMenu.Domain
 		public const string Development = "development";
 
 		/// <summary>Every dimension the picker offers, by id, in the picker's order.</summary>
-		public static readonly string[] Dimensions =
+		/// <remarks>The UI's copy of the ids and the order is generated from this; the labels
+		/// are the UI's.</remarks>
+		public static readonly IReadOnlyList<string> Dimensions = new[]
 		{
-			MenuCategory, Category, SubCategory, Role, SchoolTier, Progression, Development, Theme, Source, Density, Footprint, Cost, None,
+			// The game's own categories, the split the tab strip shows: first, because it
+			// is the division the player already has in mind.
+			MenuCategory,
+			// Ours: Buildings, Networks, Service Buildings.
+			Category,
+			SubCategory,
+			Role,
+			// Directly under Role, because it is the level below it: Role answers
+			// "school", School tier answers "which one".
+			SchoolTier,
+			// The game's own progression, then the other unlock modality, the per-service
+			// tree bought with development points.
+			Progression,
+			Development,
+			Theme,
+			Source,
+			Density,
+			Footprint,
+			Cost,
+			None,
 		};
 
-		/// <summary>Cost band edges. Mirrored in buildingGroups.ts.</summary>
+		/// <summary>Cost band edges.</summary>
 		public static readonly double[] CostBands = { 5_000d, 25_000d, 100_000d };
 
-		/// <summary>Footprint band edges, by the longer lot side. Mirrored in TS.</summary>
+		/// <summary>Footprint band edges, by the longer lot side.</summary>
 		public static readonly int[] FootprintBands = { 2, 4, 6 };
 
-		/// <summary>Density tiers in reading order. Mirrored in buildingGroups.ts.</summary>
+		/// <summary>Density tiers in reading order.</summary>
 		/// <remarks>
 		/// An explicit table, because the enum's own values do not encode this order: Mixed and
 		/// LowRent read between Medium and High but sort past Signature. Row before Medium
@@ -95,13 +117,13 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		private const string UnnamedKey = "\uFFFD";
 
-		public static bool IsGrouped(string? groupBy) =>
-			!string.IsNullOrWhiteSpace(groupBy)
-			&& !string.Equals(groupBy.Trim(), None, StringComparison.OrdinalIgnoreCase);
+		public static bool IsGrouped([NotNullWhen(true)] string? groupBy) =>
+			groupBy?.Trim() is { Length: > 0 } trimmed
+			&& !string.Equals(trimmed, None, StringComparison.OrdinalIgnoreCase);
 
-		public static bool IsDimension(string? value) =>
-			!string.IsNullOrWhiteSpace(value)
-			&& Array.Exists(Dimensions, dimension => Is(value!.Trim(), dimension));
+		public static bool IsDimension([NotNullWhen(true)] string? value) =>
+			value?.Trim() is { Length: > 0 } trimmed
+			&& Dimensions.Any(dimension => Is(trimmed, dimension));
 
 		/// <summary>
 		/// What a menu opens grouped by when the player has not chosen.
@@ -125,7 +147,7 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>The choice when there is one, otherwise the default. Empty means auto.</summary>
 		public static string Effective(string? choice, bool menuHasCategories, string? stripAxis, bool educationMenu) =>
-			IsDimension(choice) ? choice!.Trim() : DefaultDimension(menuHasCategories, stripAxis, educationMenu);
+			IsDimension(choice) ? choice.Trim() : DefaultDimension(menuHasCategories, stripAxis, educationMenu);
 
 		/// <summary>
 		/// <see cref="Effective(string?, bool, string?, bool)"/>, held to the
@@ -175,7 +197,7 @@ namespace BetterBuildingMenu.Domain
 				return string.Empty;
 			}
 
-			string dimension = groupBy!.Trim();
+			string dimension = groupBy.Trim();
 
 			if (Is(dimension, Category)) return Normalize(entry.Category);
 			if (Is(dimension, MenuCategory)) return MenuCategoryRank(entry.UiCategory, entry.UiCategoryPriority);
@@ -200,10 +222,9 @@ namespace BetterBuildingMenu.Domain
 			string.Equals(value, dimension, StringComparison.OrdinalIgnoreCase);
 
 		/// <summary>The menu whose tier is what an asset IS, not when it unlocks.</summary>
-		/// <remarks>Mirrored as isTransitMenu in buildingGroups.ts.</remarks>
 		private static bool IsTransitMenu(string? menu) =>
-			!string.IsNullOrEmpty(menu)
-			&& menu!.IndexOf("Transportation", StringComparison.OrdinalIgnoreCase) >= 0;
+			menu is { Length: > 0 }
+			&& menu.IndexOf("Transportation", StringComparison.OrdinalIgnoreCase) >= 0;
 
 		/// <summary>
 		/// Second group level. Only Category has one — the subcategory beneath
@@ -217,7 +238,7 @@ namespace BetterBuildingMenu.Domain
 				return string.Empty;
 			}
 
-			var dimension = groupBy!.Trim();
+			var dimension = groupBy.Trim();
 
 			if (Is(dimension, Category))
 			{
@@ -270,7 +291,7 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		public static string MenuCategoryRank(string? category, int priority)
 		{
-			if (string.IsNullOrWhiteSpace(category))
+			if (category?.Trim() is not { Length: > 0 } trimmed)
 			{
 				return UnnamedKey;
 			}
@@ -285,7 +306,7 @@ namespace BetterBuildingMenu.Domain
 			// outrank it. Written as an escape so the file stays text to grep.
 			return rank.ToString("D10", CultureInfo.InvariantCulture)
 				+ '\u0000'
-				+ category.Trim();
+				+ trimmed;
 		}
 
 		/// <summary>
@@ -364,7 +385,7 @@ namespace BetterBuildingMenu.Domain
 				return new GroupLabels(Array.Empty<string>(), null);
 			}
 
-			var dimension = groupBy!.Trim();
+			var dimension = groupBy.Trim();
 
 			if (Is(dimension, Category))
 			{
@@ -416,17 +437,10 @@ namespace BetterBuildingMenu.Domain
 				.ToArray();
 		}
 
-		// ---- label helpers, mirrored in buildingGroups.ts ----
+		// ---- label helpers ----
 
-		private static string? Text(string? value)
-		{
-			if (string.IsNullOrWhiteSpace(value))
-			{
-				return null;
-			}
-
-			return Humanize(value!.Trim());
-		}
+		private static string? Text(string? value) =>
+			value?.Trim() is { Length: > 0 } trimmed ? Humanize(trimmed) : null;
 
 		/// <summary>Word-splits an id so a heading does not read as one shout.</summary>
 		public static string Humanize(string value)
@@ -585,6 +599,6 @@ namespace BetterBuildingMenu.Domain
 		}
 
 		private static string Normalize(string? value) =>
-			string.IsNullOrWhiteSpace(value) ? UnnamedKey : value.Trim();
+			value?.Trim() is { Length: > 0 } trimmed ? trimmed : UnnamedKey;
 	}
 }

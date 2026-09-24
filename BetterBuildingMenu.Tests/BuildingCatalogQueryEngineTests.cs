@@ -1,9 +1,9 @@
 using Colossal.UI.Binding;
 
 using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Services;
-using BetterBuildingMenu.Utilities;
 
 using Game.Prefabs;
 
@@ -133,6 +133,39 @@ public sealed class BuildingCatalogQueryEngineTests
     }
 
     [Fact]
+    public void Query_SearchIgnoresSurroundingWhitespaceTheBoxSends()
+    {
+        // The box sends what was typed, and the space before the next word must not
+        // drop every name that ends at this one. The lens trims the query's copy.
+        BuildingCatalogPage trailing = BuildingCatalogQueryEngine.Query(
+            SampleEntries,
+            BuildingCatalogLensState.Initial.Search("turbine ").Query);
+        BuildingCatalogPage leading = BuildingCatalogQueryEngine.Query(
+            SampleEntries,
+            BuildingCatalogLensState.Initial.Search("  wind").Query);
+
+        Assert.Equal(2, Assert.Single(trailing.Items).Id);
+        Assert.Equal(2, Assert.Single(leading.Items).Id);
+    }
+
+    [Fact]
+    public void Query_EverywhereQueryFindsMatchesOutsideTheSelectedCategory()
+    {
+        var entries = new[]
+        {
+            SampleEntries[0] with { Id = 1, Name = "Elementary School", UiMenu = "Education", UiCategory = "Schools" },
+            SampleEntries[0] with { Id = 2, Name = "Medical Clinic", UiMenu = "Healthcare", UiCategory = "Clinics" },
+        };
+        BuildingCatalogLensState lens = BuildingCatalogLensState.Initial
+            .SelectMenu("Education")
+            .SelectCategory("Schools")
+            .Search("clinic");
+
+        Assert.Equal(0, BuildingCatalogQueryEngine.Query(entries, lens.Query).TotalCount);
+        Assert.Equal(1, BuildingCatalogQueryEngine.Query(entries, lens.EverywhereQuery()).TotalCount);
+    }
+
+    [Fact]
     public void Query_RangeFilters_UseInclusiveBounds()
     {
         BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
@@ -197,26 +230,6 @@ public sealed class BuildingCatalogQueryEngineTests
             new BuildingCatalogQuery(BuildingTypes: new[] { "School" }));
 
         Assert.Empty(page.Items);
-    }
-
-    [Fact]
-    public void Query_ExtensionFacetMatchesStableExtensionIdentity()
-    {
-        BuildingCatalogEntry extension = SampleEntries[2] with
-        {
-            Id = 9,
-            PrefabName = "HospitalWing01",
-            Name = "Hospital Wing",
-            Extensions = new[] { "HospitalWing01" },
-        };
-
-        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
-            SampleEntries.Append(extension),
-            new BuildingCatalogQuery(Extensions: new[] { "hospitalwing01" }));
-
-        BuildingCatalogEntry entry = Assert.Single(page.Items);
-        Assert.Equal(9, entry.Id);
-        Assert.Equal(1, page.TotalCount);
     }
 
     [Fact]
@@ -304,32 +317,6 @@ public sealed class BuildingCatalogQueryEngineTests
     }
 
     [Fact]
-    public void Adapter_ExtensionFacetUsesReadableStableOptionsAndOmitsEmptyMetadata()
-    {
-        BuildingCatalogEntry extension = SampleEntries[2] with
-        {
-            Id = 9,
-            PrefabName = "HospitalWing01",
-            Extensions = new[] { "HospitalWing01" },
-        };
-
-        BuildingCatalogFacetState state = BuildingCatalogAdapter.BuildFacetState(
-            new[] { SampleEntries[0], extension },
-            new BuildingCatalogQuery(Extensions: new[] { "HospitalWing01" }));
-
-        BuildingCatalogFacetGroup group = Assert.Single(state.Groups, facet => facet.Id == "extension");
-        BuildingCatalogFacetOption option = Assert.Single(group.Options);
-        Assert.Equal("HospitalWing01", option.Id);
-        Assert.Equal("Hospital Wing 01", option.Label);
-        Assert.True(option.Selected);
-
-        BuildingCatalogFacetState empty = BuildingCatalogAdapter.BuildFacetState(
-            new[] { SampleEntries[0] },
-            new BuildingCatalogQuery());
-        Assert.DoesNotContain(empty.Groups, facet => facet.Id == "extension");
-    }
-
-    [Fact]
     public void FacetSelection_TogglesValuesCaseInsensitivelyAndClearsOnlyLensFacets()
     {
         BuildingCatalogQuery selected = BuildingCatalogFacetSelection.Toggle(
@@ -349,15 +336,6 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.Null(cleared.BuildingTypes);
         Assert.Equal("school", cleared.SearchText);
         Assert.Equal(0, cleared.Offset);
-
-        BuildingCatalogQuery extensionSelected = BuildingCatalogFacetSelection.Toggle(
-            new BuildingCatalogQuery(SearchText: "wing", Offset: 50),
-            "extension",
-            "HospitalWing01");
-        Assert.Equal(new[] { "HospitalWing01" }, extensionSelected.Extensions);
-        BuildingCatalogQuery extensionCleared = BuildingCatalogFacetSelection.Clear(extensionSelected);
-        Assert.Null(extensionCleared.Extensions);
-        Assert.Equal("wing", extensionCleared.SearchText);
     }
 
     [Fact]
@@ -670,52 +648,17 @@ public sealed class BuildingCatalogQueryEngineTests
     [Fact]
     public void Adapter_WhenPrefabIndexIsUnready_ReturnsAnEmptyBoundedPage()
     {
-        bool previousReady = BuildingMenuUtil.IsReady;
-        try
-        {
-            BuildingMenuUtil.IsReady = false;
+        BuildingCatalogPage page = new BuildingCatalogAdapter().Build(
+            new CatalogSource(new CatalogIndex(), new PlacedUniques(), Generation: 1),
+            new BuildingCatalogQuery(Limit: BuildingCatalogQuery.MaxLimit + 1),
+            VanillaToolbarSelection.None).Page;
 
-            BuildingCatalogPage page = new BuildingCatalogAdapter().Query(
-                new BuildingCatalogQuery(Limit: BuildingCatalogQuery.MaxLimit + 1));
-
-            Assert.Empty(page.Items);
-            Assert.Equal(0, page.TotalCount);
-            Assert.Equal(BuildingCatalogQuery.MaxLimit, page.Limit);
-        }
-        finally
-        {
-            BuildingMenuUtil.IsReady = previousReady;
-        }
+        Assert.Empty(page.Items);
+        Assert.Equal(0, page.TotalCount);
+        Assert.Equal(BuildingCatalogQuery.MaxLimit, page.Limit);
     }
 
-    [Fact]
-    public void BuildingMenuUtil_WhenIndexCategoriesAreMissing_ReturnsNulls()
-    {
-        bool previousReady = BuildingMenuUtil.IsReady;
-        KeyValuePair<PrefabCategory, Dictionary<PrefabSubCategory, IndexedPrefabList>>[] previousCategories =
-            BuildingMenuUtil.CategorizedPrefabs.ToArray();
-
-        try
-        {
-            BuildingMenuUtil.CategorizedPrefabs.Clear();
-            BuildingMenuUtil.IsReady = true;
-
-            Assert.Null(BuildingMenuUtil.GetPrefabBase(0));
-            Assert.Null(BuildingMenuUtil.GetPrefabIndex(0));
-        }
-        finally
-        {
-            BuildingMenuUtil.CategorizedPrefabs.Clear();
-            foreach (KeyValuePair<PrefabCategory, Dictionary<PrefabSubCategory, IndexedPrefabList>> category in previousCategories)
-            {
-                BuildingMenuUtil.CategorizedPrefabs[category.Key] = category.Value;
-            }
-
-            BuildingMenuUtil.IsReady = previousReady;
-        }
-    }
-
-    [Fact]
+    [Fact, Trait("Requires", "Game")]
     public void PageWrite_EmitsStablePageAndEntryPropertyNames()
     {
         BuildingCatalogEntry labeledEntry = SampleEntries[0] with
@@ -735,9 +678,9 @@ public sealed class BuildingCatalogQueryEngineTests
         page.Write(writer);
 
         Assert.Equal(
-            new[] { "items", "id", "prefabName", "name", "category", "subCategory", "categoryLabel", "subCategoryLabel", "thumbnail", "fallbackThumbnail", "silhouetteThumbnail", "uiMenu", "uiCategory", "lotWidth", "lotDepth", "buildingLevel", "zoneType", "hasParking", "isVanilla", "isLocked",
+            new[] { "items", "id", "prefabName", "name", "category", "subCategory", "categoryLabel", "subCategoryLabel", "thumbnail", "fallbackThumbnail", "silhouetteThumbnail", "lotWidth", "lotDepth", "buildingLevel", "zoneType", "hasParking", "isVanilla", "isLocked",
             "isUnique",
-            "isAlreadyBuilt", "unlockMilestone", "devTreeBranch", "devTreeBranchDepth", "unlockRequirements", "bonuses", "costIsPerDistance", "parkingSlots", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "supportedUpgrades", "constructionCost", "upkeep", "workers", "households", "capacity", "serviceRange", "serviceFacts", "footprints", "footprintOverflow", "serviceTextFacts", "speedLimit", "networkWidth", "leisureType", "leisureEfficiency", "electricityConsumption", "waterConsumption", "garbageAccumulation", "telecomNeed", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "groupPath", "groupLabelId", "reorderableSortColumns", "totalCount", "offset", "limit", "hasMore" },
+            "isAlreadyBuilt", "unlockMilestone", "devTreeBranch", "devTreeBranchDepth", "unlockRequirements", "bonuses", "costIsPerDistance", "parkingSlots", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "supportedUpgrades", "constructionCost", "upkeep", "workers", "households", "capacity", "serviceRange", "serviceFacts", "footprints", "footprintOverflow", "serviceTextFacts", "speedLimit", "networkWidth", "leisureType", "leisureEfficiency", "electricityConsumption", "waterConsumption", "garbageAccumulation", "telecomNeed", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "groupPath", "groupLabelId", "reorderableSortColumns", "totalCount", "offset", "limit", "hasMore", "bestMatchId", "searchText" },
             writer.PropertyNames);
         Assert.Contains("Write:Int32:1", writer.Tokens);
         Assert.Contains("Write:String:Coal Power Plant", writer.Tokens);
@@ -749,12 +692,52 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.Contains("Write:Double:80000", writer.Tokens);
     }
 
+    [Fact, Trait("Requires", "Game")]
+    public void EntryWrite_WritesEachFactListAsAnArrayOfItsItems()
+    {
+        // The three lists share one writer, so one list's items must not leak
+        // into the next, and an empty list is still an array.
+        BuildingCatalogEntry entry = SampleEntries[0] with
+        {
+            ServiceFacts = new[] { new ServiceFact("capacity", 5), new ServiceFact("range", 3) },
+            Footprints = new[] { new ZoneFootprint(2, 3) },
+            ServiceTextFacts = System.Array.Empty<ServiceTextFact>(),
+        };
+        RecordingJsonWriter writer = new();
+
+        entry.Write(writer);
+
+        List<string> After(string property, int count) =>
+            writer.Tokens.SkipWhile(token => token != "PropertyName:" + property).Skip(1).Take(count).ToList();
+
+        Assert.Equal(
+            new[]
+            {
+                "ArrayBegin:2",
+                "TypeBegin:" + typeof(ServiceFact).FullName, "PropertyName:key", "Write:String:capacity", "PropertyName:value", "Write:Double:5", "TypeEnd",
+                "TypeBegin:" + typeof(ServiceFact).FullName, "PropertyName:key", "Write:String:range", "PropertyName:value", "Write:Double:3", "TypeEnd",
+                "ArrayEnd",
+                "PropertyName:footprints",
+            },
+            After("serviceFacts", 15));
+        Assert.Equal(
+            new[]
+            {
+                "ArrayBegin:1",
+                "TypeBegin:" + typeof(ZoneFootprint).FullName, "PropertyName:width", "Write:Int32:2", "PropertyName:depth", "Write:Int32:3", "TypeEnd",
+                "ArrayEnd",
+                "PropertyName:footprintOverflow",
+            },
+            After("footprints", 9));
+        Assert.Equal(new[] { "ArrayBegin:0", "ArrayEnd" }, After("serviceTextFacts", 2));
+    }
+
     [Fact]
     public void Query_MenuScopeDropsUpgradesButUnscopedQueriesKeepThem()
     {
         // Vanilla drops service upgrades from every build menu, so a menu-scoped
         // query must not offer what the player cannot place. An unscoped query is
-        // not looking at a menu and must still find them for the Extensions facet.
+        // not looking at a menu, and search still finds them there.
         BuildingCatalogEntry upgrade = SampleEntries[3] with
         {
             Id = 41,
@@ -782,9 +765,9 @@ public sealed class BuildingCatalogQueryEngineTests
 
         BuildingCatalogPage unscoped = BuildingCatalogQueryEngine.Query(
             entries,
-            new BuildingCatalogQuery(Extensions: new[] { "hospitalwing02" }));
+            new BuildingCatalogQuery());
 
-        Assert.Equal(41, Assert.Single(unscoped.Items).Id);
+        Assert.Equal(new[] { 41, 42 }, unscoped.Items.Select(item => item.Id).OrderBy(id => id));
     }
 
     [Fact]
@@ -840,6 +823,84 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.Equal(new[] { 2, 1 }, page.Items.Select(e => e.Id).ToArray());
     }
 
+    [Fact]
+    public void Query_BestMatchIsTheBestAcrossGroupsNotTheFirstRow()
+    {
+        // Grouping puts Old Clinic's group first; Enter should still arm Clinic.
+        var entries = new[]
+        {
+            SampleEntries[0] with { Id = 1, Name = "Clinic", Category = "ServiceBuildings" },
+            SampleEntries[0] with { Id = 2, Name = "Old Clinic", Category = "Buildings" },
+        };
+
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+            entries,
+            new BuildingCatalogQuery(SearchText: "clinic", GroupBy: "category"));
+
+        Assert.Equal(2, page.Items[0].Id);
+        Assert.Equal(1, page.BestMatchId);
+    }
+
+    [Fact]
+    public void Query_BestMatchTieGoesToTheShorterName()
+    {
+        // Two word-start hits score the same, and the plain name is nearly always
+        // what was meant — the tie-break the ordering within a group uses.
+        var entries = new[]
+        {
+            SampleEntries[0] with { Id = 1, Name = "Medical Clinic", Category = "Buildings" },
+            SampleEntries[0] with { Id = 2, Name = "Old Clinic", Category = "ServiceBuildings" },
+        };
+
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+            entries,
+            new BuildingCatalogQuery(SearchText: "clinic", GroupBy: "category"));
+
+        Assert.Equal(2, page.BestMatchId);
+    }
+
+    [Fact]
+    public void Query_BestMatchSkipsWhatCannotBePlaced()
+    {
+        // Enter on a locked or already-built match does nothing, so it goes to the
+        // best one that can actually be placed.
+        var entries = new[]
+        {
+            SampleEntries[0] with { Id = 1, Name = "Hospital", IsLocked = true },
+            SampleEntries[0] with { Id = 2, Name = "Hospital", IsUnique = true, IsAlreadyBuilt = true },
+            SampleEntries[0] with { Id = 3, Name = "General Hospital" },
+        };
+
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(entries, new BuildingCatalogQuery(SearchText: "hospital"));
+
+        Assert.Equal(3, page.BestMatchId);
+    }
+
+    [Fact]
+    public void Query_HasNoBestMatchWhenNothingCanBePlaced()
+    {
+        var entries = new[] { SampleEntries[0] with { Id = 1, Name = "Hospital", IsLocked = true } };
+
+        Assert.Null(BuildingCatalogQueryEngine.Query(entries, new BuildingCatalogQuery(SearchText: "hospital")).BestMatchId);
+    }
+
+    [Fact]
+    public void Query_NamesTheSearchThePageWasBuiltFor()
+    {
+        // The box echoes at once and the page follows a debounce later; the UI holds
+        // Enter until the two agree, so the page has to say which search it answers.
+        Assert.Equal("clinic", BuildingCatalogQueryEngine.Query(SampleEntries, new BuildingCatalogQuery(SearchText: "clinic")).SearchText);
+        Assert.Equal(string.Empty, BuildingCatalogQueryEngine.Query(SampleEntries, new BuildingCatalogQuery()).SearchText);
+    }
+
+    [Fact]
+    public void Query_HasNoBestMatchWithoutASearchOrAResult()
+    {
+        Assert.Null(BuildingCatalogQueryEngine.Query(SampleEntries, new BuildingCatalogQuery()).BestMatchId);
+        Assert.Null(BuildingCatalogQueryEngine.Query(SampleEntries, new BuildingCatalogQuery(SearchText: "   ")).BestMatchId);
+        Assert.Null(BuildingCatalogQueryEngine.Query(SampleEntries, new BuildingCatalogQuery(SearchText: "nothing-matches-this")).BestMatchId);
+    }
+
     private static BuildingCatalogEntry Entry(
         int id,
         string prefabName,
@@ -864,7 +925,6 @@ public sealed class BuildingCatalogQueryEngineTests
             BuildingLevel: buildingLevel,
             ZoneType: ZoneTypeFilter.Any,
             HasParking: hasParking,
-            IsUniqueMesh: false,
             IsVanilla: true,
             PdxModsId: pdxModsId);
     }

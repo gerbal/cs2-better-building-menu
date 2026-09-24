@@ -1,11 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { declarationsOf, rem, sides } from "./harness/compiledCss.ts";
 import {
-  BUILDING_LENS_TITLE_ICON,
-  BUILDING_LENS_TITLE_GAP,
   getBuildingLensRowGeometry,
-  BUILDING_LENS_MAX_WIDTH,
-  BUILDING_LENS_MIN_WIDTH,
   getBuildingLensDensity,
   getBuildingLensMetricLabel,
   getBuildingLensMetricTextScale,
@@ -15,7 +12,13 @@ import {
   BUILDING_LENS_MIN_HEIGHT,
   BUILDING_LENS_MAX_HEIGHT,
   BUILDING_LENS_DEFAULT_HEIGHT,
+  BUILDING_LENS_CONTROL_PANE_TOTAL,
+  BUILDING_LENS_PANEL_CHROME_WIDTH,
+  BUILDING_LENS_TABLE_ROW_FURNITURE,
+  LENS_RESIZE_HANDLE_HEIGHT,
 } from "../src/domain/buildingLensLayout.ts";
+import { BUILDING_LENS_MAX_WIDTH } from "../src/domain/sharedContracts.generated.ts";
+
 
 describe("Building Lens panel geometry", () => {
   it("maps exact outer-width boundaries to density tiers", () => {
@@ -55,11 +58,6 @@ describe("Building Lens panel geometry", () => {
     });
   });
 
-  it("uses the building signature as the title icon", () => {
-    assert.equal(BUILDING_LENS_TITLE_ICON, "coui://betterbuildingmenu/Icons/Colored/BuildingZoneSignature.svg");
-    assert.equal(BUILDING_LENS_TITLE_GAP, 6);
-  });
-
   it("budgets the catalog below the shell chrome at the 1280x720 render target", () => {
     assert.equal(getBuildingLensCatalogMaxHeight(720), 765);
     assert.equal(getBuildingLensCatalogMaxHeight(1080), 870);
@@ -95,6 +93,40 @@ describe("Building Lens catalog height", () => {
   it("treats a non-finite pointer as no movement", () => {
     assert.equal(draggedBuildingLensHeight(400, Number.NaN, 300), 400);
   });
+
+  it("keeps the edge under the cursor at any scale", () => {
+    // 60px up is 60rem at 1080p (1px per rem) and 90rem at 720p (2/3px per
+    // rem). A fixed ratio would run the panel 1.5x ahead of the cursor at 1080p.
+    assert.equal(draggedBuildingLensHeight(400, 500, 440, 1), 460);
+    assert.equal(draggedBuildingLensHeight(400, 500, 440, 2 / 3), 490);
+    assert.equal(draggedBuildingLensHeight(400, 500, 440, 2), 430);
+  });
+
+  it("measures rem off the drawn resize strip", async () => {
+    const { pxPerRemFrom, LENS_RESIZE_HANDLE_HEIGHT } = await import("../src/domain/buildingLensLayout.ts");
+    // 14rem drawn 14px tall at 1080p, 21px at 1440p.
+    assert.equal(pxPerRemFrom(14, LENS_RESIZE_HANDLE_HEIGHT), 1);
+    assert.equal(pxPerRemFrom(21, LENS_RESIZE_HANDLE_HEIGHT), 1.5);
+    // Cohtml's pre-layout zero, or no rect at all, is no measurement.
+    for (const bad of [0, -3, Number.NaN, null, undefined]) {
+      assert.equal(pxPerRemFrom(bad, LENS_RESIZE_HANDLE_HEIGHT), undefined);
+    }
+  });
+
+  it("falls back to the 720p ratio when the measurement is unusable", () => {
+    for (const bad of [0, -1, Number.NaN, Number.POSITIVE_INFINITY, undefined]) {
+      assert.equal(draggedBuildingLensHeight(400, 500, 440, bad), draggedBuildingLensHeight(400, 500, 440, 2 / 3));
+    }
+  });
+});
+
+describe("the panel's width", () => {
+  it("and its chrome fill the band beside the tool columns, and no more", () => {
+    // The band left free beside the left-aligned tool columns, at the layout's
+    // reference resolution. C# sizes the panel (BuildingLensWidth.Max, generated)
+    // and the UI adds its chrome, so a wider chrome pushes the panel past it.
+    assert.equal(BUILDING_LENS_MAX_WIDTH + BUILDING_LENS_PANEL_CHROME_WIDTH, 1476);
+  });
 });
 
 describe("Table column widths", () => {
@@ -102,7 +134,7 @@ describe("Table column widths", () => {
   // width by hand. Taken from the whole assembly, control pane included,
   // rather than from the rows box alone, which undercounts the room.
   it("gives every column its comfortable width at the default assembly", async () => {
-    const { getBuildingLensColumnWidths, BUILDING_LENS_COLUMN_MAX, BUILDING_LENS_MAX_WIDTH, BUILDING_LENS_PANEL_CHROME_WIDTH } = await import(
+    const { getBuildingLensColumnWidths, BUILDING_LENS_COLUMN_MAX, BUILDING_LENS_PANEL_CHROME_WIDTH } = await import(
       "../src/domain/buildingLensLayout.ts"
     );
 
@@ -131,7 +163,7 @@ describe("Table column widths", () => {
   });
 
   it("moves monotonically between the two ends, in every column", async () => {
-    const { getBuildingLensColumnWidths, BUILDING_LENS_MIN_WIDTH, BUILDING_LENS_MAX_WIDTH } = await import(
+    const { getBuildingLensColumnWidths, BUILDING_LENS_MIN_WIDTH } = await import(
       "../src/domain/buildingLensLayout.ts"
     );
 
@@ -188,13 +220,32 @@ describe("the Upkeep column at the narrowest panel", () => {
   });
 });
 
-describe("the row's furniture", () => {
-  it("mirrors the stylesheet's trailing reserve, gap before the chevron included", async () => {
-    // $table-trailing-reserve = 4 + 26 + 4 + 3 = 37; then the rows' scrollbar
-    // (16), .rowSelect's left padding (8) and the thumbnail with its margin
-    // (80).
-    const { BUILDING_LENS_TABLE_ROW_FURNITURE } = await import("../src/domain/buildingLensLayout.ts");
-    assert.equal(BUILDING_LENS_TABLE_ROW_FURNITURE, 37 + 16 + 8 + 80);
+describe("sizes the stylesheets draw", () => {
+  // Read from each sheet's `:export`, so the numbers cannot drift from the
+  // sheet; what is checked here is that the export sums the rules it names.
+  it("the row's furniture is what the header and the row spend beside the name", () => {
+    const header = declarationsOf("mods/BuildingCatalog/buildingCatalog.module.scss", ".columnHeader[data-rows-scrollable=true]");
+    const row = declarationsOf("mods/BuildingCatalog/buildingCatalog.module.scss", ".rowSelect");
+    const thumbnail = declarationsOf("mods/BuildingCatalog/buildingCatalog.module.scss", ".thumbnail");
+
+    // The trailing reserve and the rows' scrollbar, the row's left padding, the
+    // thumbnail and its gap.
+    const drawn = rem(header["padding-right"]) + rem(sides(row.padding)[3]) + rem(thumbnail.width) + rem(thumbnail["margin-right"]);
+
+    assert.ok(Number.isFinite(drawn) && drawn > 0, `drawn ${drawn}`);
+    assert.equal(BUILDING_LENS_TABLE_ROW_FURNITURE, drawn);
+  });
+
+  it("the control pane's total is its width and the gap beside it", () => {
+    const pane = declarationsOf("mods/LensControlPane/lensControlPane.module.scss", ".pane");
+
+    assert.equal(BUILDING_LENS_CONTROL_PANE_TOTAL, rem(pane.width) + rem(pane["margin-left"]));
+  });
+
+  it("a drag measures against the strip's real height", () => {
+    const strip = declarationsOf("mods/LensResizeHandle/lensResizeHandle.module.scss", ".resizeHandle");
+
+    assert.equal(LENS_RESIZE_HANDLE_HEIGHT, rem(strip.height));
   });
 });
 
@@ -203,7 +254,7 @@ describe("the metric columns fit the room beside the name", () => {
   // panel's chrome around the rows − the row's own furniture − the name's
   // basis. At a typical panel that leaves enough for the 586rem maximum.
   it("is the measured row less the furniture and the name's basis at the default assembly", async () => {
-    const { tableColumnRoom, BUILDING_LENS_MAX_WIDTH, BUILDING_LENS_PANEL_CHROME_WIDTH, BUILDING_LENS_TABLE_ROW_FURNITURE } = await import("../src/domain/buildingLensLayout.ts");
+    const { tableColumnRoom, BUILDING_LENS_PANEL_CHROME_WIDTH, BUILDING_LENS_TABLE_ROW_FURNITURE } = await import("../src/domain/buildingLensLayout.ts");
 
     assert.equal(tableColumnRoom(BUILDING_LENS_MAX_WIDTH + BUILDING_LENS_PANEL_CHROME_WIDTH), 1026 - BUILDING_LENS_TABLE_ROW_FURNITURE - 260);
   });
@@ -232,7 +283,7 @@ describe("the metric columns fit the room beside the name", () => {
     // At 125 % the cells' figures are wider by the same ratio as the font,
     // so the set that fits is the room over that ratio: still at most the
     // room, and still whole units.
-    const { getBuildingLensColumnWidths, tableColumnRoom, BUILDING_LENS_MAX_WIDTH, BUILDING_LENS_PANEL_CHROME_WIDTH } = await import("../src/domain/buildingLensLayout.ts");
+    const { getBuildingLensColumnWidths, tableColumnRoom, BUILDING_LENS_PANEL_CHROME_WIDTH } = await import("../src/domain/buildingLensLayout.ts");
     const outer = BUILDING_LENS_MAX_WIDTH + BUILDING_LENS_PANEL_CHROME_WIDTH;
     const total = Object.values(getBuildingLensColumnWidths(outer, 1.25)).reduce((a, b) => a + b, 0);
 

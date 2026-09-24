@@ -48,20 +48,6 @@ namespace BetterBuildingMenu.Domain
 				query.MaxLotDepth);
 		}
 
-		public BuildingCatalogMetricRangeState With(BuildingCatalogMetricRange range)
-		{
-			return range.MetricId switch
-			{
-				"cost" => this with { MinCost = range.Min, MaxCost = range.Max },
-				"upkeep" => this with { MinUpkeep = range.Min, MaxUpkeep = range.Max },
-				"workers" => this with { MinWorkers = range.Min, MaxWorkers = range.Max },
-				"capacity" => this with { MinCapacity = range.Min, MaxCapacity = range.Max },
-				"lotwidth" => this with { MinLotWidth = range.Min, MaxLotWidth = range.Max },
-				"lotdepth" => this with { MinLotDepth = range.Min, MaxLotDepth = range.Max },
-				_ => this,
-			};
-		}
-
 		public void Write(IJsonWriter writer)
 		{
 			writer.TypeBegin(GetType().FullName);

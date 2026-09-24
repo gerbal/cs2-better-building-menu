@@ -26,7 +26,7 @@ namespace BetterBuildingMenu.Systems
 		{
 			try
 			{
-				if (!PrefabIndexingSystem.TryGetAssetMenuEntity(menuName, out var menuEntity)
+				if (!_indexer.Index.Menus.TryGetMenuEntity(menuName, out var menuEntity)
 					|| !EntityManager.TryGetBuffer<Game.Prefabs.UIGroupElement>(menuEntity, true, out var categories))
 				{
 					return;
@@ -88,19 +88,32 @@ namespace BetterBuildingMenu.Systems
 		/// </remarks>
 		private void RefreshVanillaToolbarBindings()
 		{
-			_toolbarGroupsBinding ??= typeof(Game.UI.InGame.ToolbarUISystem)
-				.GetField("m_ToolbarGroupsBinding", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-				?.GetValue(_toolbarUISystem);
-			_assetCategoriesBinding ??= typeof(Game.UI.InGame.ToolbarUISystem)
-				.GetField("m_AssetMenuCategoriesBinding", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
-				?.GetValue(_toolbarUISystem);
+			_toolbarGroupsBinding ??= ToolbarField<Colossal.UI.Binding.RawValueBinding>("m_ToolbarGroupsBinding");
+			_assetCategoriesBinding ??= ToolbarField<Colossal.UI.Binding.RawMapBinding<Entity>>("m_AssetMenuCategoriesBinding");
 
-			(_toolbarGroupsBinding as Colossal.UI.Binding.RawValueBinding)?.Update();
-			(_assetCategoriesBinding as Colossal.UI.Binding.RawMapBinding<Entity>)?.UpdateAll();
+			_toolbarGroupsBinding?.Update();
+			_assetCategoriesBinding?.UpdateAll();
 		}
 
-		private object _toolbarGroupsBinding;
-		private object _assetCategoriesBinding;
+		/// <summary>A private ToolbarUISystem field, or null once a game update has renamed or retyped it.</summary>
+		/// <remarks>Warned about once per field, so the log says why a cleared pip still shows.</remarks>
+		private T? ToolbarField<T>(string name) where T : class
+		{
+			var value = typeof(Game.UI.InGame.ToolbarUISystem)
+				.GetField(name, System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+				?.GetValue(_toolbarUISystem) as T;
+
+			if (value is null && _warnedToolbarFields.Add(name))
+			{
+				Mod.Log.Warn($"[UNLOCK-PIP] ToolbarUISystem.{name} is missing or not a {typeof(T).Name}; a cleared highlight stays drawn until the toolbar next redraws");
+			}
+
+			return value;
+		}
+
+		private Colossal.UI.Binding.RawValueBinding? _toolbarGroupsBinding;
+		private Colossal.UI.Binding.RawMapBinding<Entity>? _assetCategoriesBinding;
+		private readonly HashSet<string> _warnedToolbarFields = new();
 
 		/// <summary>
 		/// Closes the lens and, when it was standing in for a vanilla menu,
@@ -187,9 +200,9 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			// The menu's own name is the whole constraint the query needs: assets carry
-			// the menu the game placed them in, and GetAssetMenuName resolves the
+			// the menu the game placed them in, and MenuName resolves the
 			// UIAssetMenuPrefab's name, which is that same untranslated string.
-			var menuName = PrefabIndexingSystem.GetAssetMenuName(menuEntityIndex);
+			var menuName = _indexer.Index.Menus.MenuName(menuEntityIndex);
 
 			// A menu the index never saw, or one it holds nothing for (a mod's menu
 			// built from nested categories): the panel sits where the vanilla grid
@@ -197,7 +210,7 @@ namespace BetterBuildingMenu.Systems
 			if (MenuRouting.ShouldYield(
 				replaceEnabled: true,
 				menuName: menuName,
-				menuHasAssets: BuildingCatalogAdapter.MenuHasAssets(menuName ?? string.Empty)))
+				menuHasAssets: BuildingCatalogAdapter.MenuHasAssets(_indexer.Index, menuName ?? string.Empty, _toolbarSelection)))
 			{
 				YieldMenuToVanilla();
 				return;
@@ -307,10 +320,10 @@ namespace BetterBuildingMenu.Systems
 		/// <summary>The scope bindings, from the one state that owns them.</summary>
 		private void PublishScope()
 		{
-			_BuildingLensMenuCategoriesBinding.Value = PrefabIndexingSystem.GetMenuCategories(
+			_BuildingLensMenuCategoriesBinding.Value = _indexer.Index.GetMenuCategories(
 				string.IsNullOrEmpty(_lens.Menu) ? null : _lens.Menu).ToArray();
 			_BuildingLensMenuBinding.Value = _lens.Menu;
-			_BuildingLensMenusBinding.Value = PrefabIndexingSystem.GetAssetMenus().ToArray();
+			_BuildingLensMenusBinding.Value = _indexer.Index.Menus.AssetMenus().ToArray();
 			_BuildingLensMenuCategoryBinding.Value = _lens.Category;
 			_BuildingLensMenuSchoolTierBinding.Value = _lens.SchoolTier;
 			_BuildingLensStripTabBinding.Value = _lens.Query.StripTabs?.ToArray() ?? Array.Empty<string>();
@@ -386,18 +399,17 @@ namespace BetterBuildingMenu.Systems
 		private void SetBuildingCatalogSortDescending(bool descending) => Apply(_lens.SetDescending(descending));
 
 		/// <summary>
-		/// Grows the window by one step, keeping the offset at zero.
+		/// Grows the window to the limit the UI asked for, by one step at most, keeping the
+		/// offset at zero. A repeated request changes nothing; see LoadMoreTo.
 		/// </summary>
 		/// <remarks>
 		/// The window is owned here rather than accumulated on the client, because placing a
 		/// building unmounts the panel. A bigger Limit over the same predicates returns a longer
 		/// prefix of the same order, so the rows on screen keep their identity.
 		/// </remarks>
-		private void LoadMoreBuildingCatalog() => Apply(_lens.LoadMore());
+		private void LoadMoreBuildingCatalog(int requestedLimit) => Apply(_lens.LoadMoreTo(requestedLimit));
 
 		private void ToggleBuildingLensFacet(string facetId, string optionId) => Apply(_lens.ToggleFacet(facetId, optionId));
-
-		private void ClearBuildingLensFacets() => Apply(_lens.ClearFacets());
 
 		/// <summary>
 		/// Puts a menu back the way it opens.
@@ -447,13 +459,11 @@ namespace BetterBuildingMenu.Systems
 		/// </remarks>
 		private void SetVanillaToolbarSelection(string themes, string packs, bool vanillaSelected, bool modsSelected)
 		{
-			var selection = new VanillaToolbarSelection(
+			_toolbarSelection = new VanillaToolbarSelection(
 				ParseEntityIndices(themes),
 				ParseEntityIndices(packs),
 				vanillaSelected,
 				modsSelected);
-
-			BuildingCatalogAdapter.ToolbarSelection = selection;
 
 			RefreshBuildingCatalog();
 		}
@@ -468,12 +478,12 @@ namespace BetterBuildingMenu.Systems
 		/// </remarks>
 		private static int[] ParseEntityIndices(string? joined)
 		{
-			if (string.IsNullOrWhiteSpace(joined))
+			if (joined?.Trim() is not { Length: > 0 })
 			{
 				return Array.Empty<int>();
 			}
 
-			var parts = joined!.Split(',');
+			var parts = joined.Split(',');
 			var indices = new List<int>(parts.Length);
 
 			foreach (var part in parts)
@@ -501,22 +511,6 @@ namespace BetterBuildingMenu.Systems
 			_CurrentSearch.Value = _lens.SearchText;
 			_CurrentSearch.ForceUpdate();
 			TriggerSearch();
-		}
-
-		private void OnLocateButtonClicked(int id)
-		{
-			var entities = PrefabTrackingSystem.GetPlacedEntities(id);
-			_interactionBoundary.TryLocate(id, entities.Count, index => JumpTo(entities[index]));
-		}
-
-		private void JumpTo(Entity entity)
-		{
-			if (_cameraUpdateSystem.orbitCameraController != null && entity != Entity.Null)
-			{
-				_cameraUpdateSystem.orbitCameraController.followedEntity = entity;
-				_cameraUpdateSystem.orbitCameraController.TryMatchPosition(_cameraUpdateSystem.activeCameraController);
-				_cameraUpdateSystem.activeCameraController = _cameraUpdateSystem.orbitCameraController;
-			}
 		}
 	}
 }

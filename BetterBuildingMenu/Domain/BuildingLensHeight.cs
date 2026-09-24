@@ -4,6 +4,10 @@ namespace BetterBuildingMenu.Domain
 	/// How tall the Building Lens catalog is drawn — one number the player sets
 	/// by dragging, and the panel then keeps.
 	/// </summary>
+	/// <remarks>
+	/// The UI clamps its drag with the same three numbers, generated from these into
+	/// sharedContracts.generated.ts: see SharedContractsTests.
+	/// </remarks>
 	public static class BuildingLensHeight
 	{
 		/// <summary>

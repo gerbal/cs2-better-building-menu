@@ -1,12 +1,30 @@
 # Compatibility with popular mods
 
-Surveyed 2026-09-11. Subscriber counts are Paradox Mods totals as cached by
-the game on this machine. "Touch points" are what each mod does to the
-surfaces this mod also uses: the vanilla AssetMenu export, the tool options
-bank (`MouseToolOptions`, `useToolOptionsVisible`), the toolbar's C# side
-(`ToolbarUISystem`), and the prefab menu tree (`UIObject.m_Group`,
-`UIAssetCategoryPrefab`). Sources read from the mods' GitHub repositories
-where public; "closed" means not read.
+Popular code mods, surveyed from source on 2026-09-11 and each measured live
+since. The table is the current answer; the dated sections below it are the
+measurements behind it, oldest first. Screenshots cited as
+`compat/probe/*.png`, and the source clones under `compat/repos/`, are in the
+maintainer's workspace, not in this repository.
+
+## Current status
+
+| Mod | Version tested | Ours | Result | Measured |
+|---|---|---|---|---|
+| Water Features (yenyang) | — | 0.1.8 | Works. Its WaterTool tab and water sources appear under Landscaping; the catch-all processor indexes them. | 2026-09-12 |
+| Extra Assets Importer, with ExtraLib (Triton) | — | 0.1.8 | Works. We yield its ExtraAssetsMenu to vanilla, which draws its 18 items. Its 13 nested child categories are tabs, not assets, and stay out of the index by design. | 2026-09-12 |
+| Asset UI Manager (StarQ) | — | 0.1.8 | Works. The panel groups by its runtime categories, with their own icons; the audit reports 0 misplaced. | 2026-09-12 |
+| Zone Organizer (Mimonsi) | — | 0.1.8 | Works. Its ten Zones tabs sit in our strip; all 22 zones are listed. | 2026-09-12 |
+| Road Builder (TDW) | — | 0.1.8 | Works, including a road created while playing. Removal of the roads it discards is by code reading only. | 2026-09-12 |
+| Zone Color Changer (TDW) | — | 0.1.9 | Works. Its button is hosted in the panel's top bar while a zone is armed. | 2026-09-12 |
+| Tree Controller (yenyang), Advanced Line Tool (algernon) | 1.7.4, 1.2.3 | 0.1.9 | Work. Their options sit in the tool options bank beside ours, and line mode survives picking a tree here. | 2026-09-12 |
+| Anarchy (yenyang) | 1.7.24 | 0.1.10 | Works. Its options sit beside ours, and "place multiple unique buildings" reaches this panel. | 2026-09-13 |
+| Asset Icon Library (TDW) | — | 0.1.6 | Works. Tiles draw its icons: 85 of 100 in Landscaping. | 2026-09-11 |
+| Extra Landscaping Tools, Extra Detailing Tools (Triton) | — | 0.1.6 | Work. Their tools and props are indexed. | 2026-09-11 |
+| Toggle Overlays, Unified Icon Library, I18n Everywhere | — | 0.1.6 | No interaction. | 2026-09-11 |
+| Asset Menu Tweaks (Luca) | 1.0.7 | 0.1.4 | No effect on our panel, in either load order and with every option on. See docs/verification.md. | 2026-09-10 |
+| Find It (TDW) | 1.5.8 | pre-release | Both install together. Its panel takes the asset-menu slot while open and ours returns when it closes; its picker is the only one. See docs/verification.md. | 2026-09-02 |
+| Platter (Luca), Extra Networks and Areas (Mimonsi), Recolor (yenyang) | — | — | Source read only. The first two add or regroup menu entries at load, before our index runs; Recolor's palettes are not toolbar assets. | 2026-09-10/11 |
+| Traffic, Better Bulldozer, Move It, Plop the Growables, 529 Tiles, Historical Start, Skyve, Extended Tooltip, Detailed Descriptions, Region Flag Icons, First Person Camera, Time & Weather Anarchy, Realistic Parking, Traffic Lights Enhancement | — | — | Source read only: no asset-menu or menu-tree hooks. | 2026-09-11 |
 
 ## What this mod touches
 
@@ -20,55 +38,21 @@ where public; "closed" means not read.
   `ActivatePrefabTool` and `BindAssets` do not run for a tile click here.
 - Reads the menu tree at the city's loaded hook and on prefab changes.
 
-## Ranked, by likely trouble
+## Method
 
-| Mod | Subs | Touch points | Risk | Why |
-|---|---:|---|---|---|
-| Tree Controller (yenyang) | high | Harmony postfix on `ToolbarUISystem.Apply`; extends `MouseToolOptions`, `useToolOptionsVisible` | **High** | Its postfix registers a tree picked in the toolbar with its own tool and keeps Line Tool active. A tree picked from our Landscaping panel never passes through `Apply`, so that step is skipped. Needs a live check of picking trees with Tree Controller and Line Tool active. |
-| Line Tool (algernon) | 525k | Harmony postfix on `ToolbarUISystem.Apply`; extends `MouseToolOptions`, `useToolOptionsVisible` | **High** | Same `Apply` bypass: its age-mask sync runs only for toolbar picks. Line Tool mode may drop when a prefab is chosen from our panel. Live check. |
-| Anarchy (yenyang) | 1.10M | Harmony postfix on `ToolbarUISystem.ActivatePrefabTool` and `OnUpdate`; four `MouseToolOptions` extensions; `useToolOptionsVisible` | Medium | Its "place multiple unique buildings" postfix re-activates a built unique when picked in the toolbar. Our tile click bypasses it and our own `canPlace` guard blocks already-built uniques, so that Anarchy option has no effect through our panel. Tool-options bank ordering with four extra sections is worth a look. |
-| Zone Organizer (Mimonsi) | 259k | Creates `UIAssetCategoryPrefab` tabs under Zones and regroups every zone asset (`m_Group`, priorities) | Medium | Our Zones surface inherits categories from the menu tree, so its tabs should appear, but we also split by density ourselves; expect doubled tiers. Live check. |
-| Water Features (yenyang) | 454k | Harmony prefix on `ToolbarUISystem.BindAssets` for its "WaterTool" tab under Landscaping; extends `MouseToolOptions`, `useToolOptionsVisible` | Medium | It repairs its tab's group elements lazily when the toolbar binds that tab. We never call `BindAssets`, so its assets may be missing or misplaced in our Landscaping panel. Live check. |
-| Asset Icon Library (TDW) | 756k | Rewrites `UIObject.m_Icon` for thousands of prefabs | Medium | Our thumbnails are read at index time; if its replacer runs later, our tiles keep the old icons. Live check. |
-| Zone Color Changer (TDW) | mid | Extends `AssetCategoryTabBar` with its panel button | Medium | That tab bar is vanilla's; while our panel is open the button is not drawn, so its panel has no opener. Not a crash, a hidden feature. |
-| Asset UI Manager (StarQ) | 67k | Reorganises menus and categories (closed) | Medium | Unknown mechanism; it rewrites the same tree we read. Live check only. |
-| Find It (TDW) | 731k | Extends `AssetMenu`, `MouseToolOptions`, `useToolOptionsVisible`, `ToolOptionsPanel`, `RightMenu` | Low | Already handled: this mod yields while Find It's panel is shown; measured earlier. |
-| Asset Menu Tweaks (Luca) | 5k | Extends `AssetMenu`, `AssetGrid`; body-class CSS | Low | Measured 2026-09-10 in both load orders and with every option on: no effect on our panel. |
-| Road Builder (TDW) | 605k | Generates road prefabs with `UIObject` groups at runtime; own right-menu button | Low | Our change-driven index picks up new prefabs; its tool is already special-cased. Worth one live check that a freshly built road appears in our Roads panel. |
-| Extra Networks and Areas (Mimonsi) | 403k | Assigns `m_Group` to its prefabs at load | Low | Runs before our index; nothing dynamic. |
-| Recolor (yenyang) | high | Extends `MouseToolOptions`, `useToolOptionsVisible`; adds palette prefabs | Low | Palettes are not toolbar assets. |
-| Platter (Luca) | 130k | Adds a Zones category; Harmony on tool systems | Low | Read 2026-09-10; no menu conflict. |
-| Toggleable Overlays (TDW) | 152k | Harmony prefix on `ToolBaseSystem.UpdateInfoview` | None | Orthogonal. |
-| Traffic, Better Bulldozer, Move It, Plop the Growables, 529 Tiles, Historical Start, Unified Icon Library, I18n Everywhere, ExtraLib, Skyve, Extended Tooltip, Detailed Descriptions, Region Flag Icons, First Person Camera, Time & Weather Anarchy, Realistic Parking, Traffic Lights Enhancement | 176k–1.33M | No asset-menu or menu-tree hooks found | None | Move It's tool is already special-cased. |
-| Extra Landscaping Tools, Extra Detailing Tools, Extra Assets Importer (Triton) | 479k–578k | Closed; add tools, props, decals and surfaces to Landscaping | Unknown | Closed source; the Landscaping panel with them installed needs a live look. |
-
-## Suggested live order
-
-1. Tree Controller + Line Tool + Anarchy together (one yenyang/algernon stack): pick trees and a unique building from our panel, check Line Tool stays active and Tree Controller's selection follows.
-2. Zone Organizer: open Zones, compare its tabs against our density tiers.
-3. Asset Icon Library: open Roads and Landscaping, count tiles drawing its icons.
-4. Water Features: Landscaping panel shows the WaterTool tab and its assets.
-5. Extra Landscaping/Detailing Tools and Extra Assets Importer: Landscaping panel completeness.
-6. Asset UI Manager: any menu at all.
-
-## Method notes
-
-Sources cloned to the session scratchpad under `compat/repos/`. Hooks found
-with a grep for `moduleRegistry.(extend|override|append)` and Harmony
-attributes; menu-tree writers with a grep for `m_Group`, `m_Menu`,
-`UIAssetCategoryPrefab` and `AddPrefab`. The in-game "Most popular" page
-could not be filtered to code mods reliably from the DOM, so the ranking
-uses the cached subscriber totals.
+Sources were cloned and grepped for `moduleRegistry.(extend|override|append)`
+and Harmony attributes, and for the menu-tree writers `m_Group`, `m_Menu`,
+`UIAssetCategoryPrefab` and `AddPrefab`. Subscriber totals from the game's
+package cache ranked the survey, since the in-game "Most popular" page could
+not be filtered to code mods reliably.
 
 ## Measured 2026-09-11 (Porterville, main prefix, our 0.1.6 from the store)
 
 Fifteen mods loaded together from the game's package cache as local mods
 (the playset is server-side and ignores local edits; the store view was too
 flaky to add eleven mods by hand). Zero exceptions in every mod log and
-zero JS errors across both stages. Tree Controller and Line Tool could not
-be tested: the store search never returned Tree Controller's card, and the
-cached Line Tool package is an old build that fails to load on 1.6
-(`TypeLoadException` on a moved game type, not ours).
+zero JS errors across both stages. Tree Controller and Line Tool were not
+found that day; both were measured on 2026-09-12, below.
 
 | Mod | Result |
 |---|---|
@@ -83,16 +67,14 @@ cached Line Tool package is an old build that fails to load on 1.6
 | Zone Color Changer | As predicted: its opener button lives in vanilla's category tab bar, so it is absent while our panel is open. |
 | Toggle Overlays, Unified Icon Library, I18n Everywhere | No interaction. |
 
-Fixes suggested, in order: (1) yield a menu to vanilla when our catalog for
-it is empty, which covers ExtraLib menus and any future menu we cannot
-fill; (2) index prefabs the menu tree places regardless of type, or at
-least `WaterSourcePrefab`; (3) take each asset's category from the menu
-walk's placement (ECS `UIObjectData`) instead of the managed `UIObject`, so
-runtime regroups by Asset UI Manager and Zone Organizer are honoured.
-
 ## After the fixes (0.1.7 / 0.1.8, measured 2026-09-11)
 
-Re-run on Porterville with the same mods installed as local packages.
+Three fixes followed: yield a menu to vanilla when our catalog for it is
+empty, which covers ExtraLib menus and any future menu we cannot fill; index
+prefabs the menu tree places whatever their type; and take each asset's
+category from the menu walk's placement (ECS `UIObjectData`) instead of the
+managed `UIObject`, so runtime regroups are honoured. Re-run on Porterville
+with the same mods installed as local packages.
 
 | Was | Now |
 |---|---|
@@ -117,8 +99,6 @@ toolbar writes too) and then rejecting every `assetdb://` URL as undrawable,
 which threw away the good path along with the hash. `CategoryIcon` now
 rejects only the `assetdb://global/` hash form. Measured after: Police 0
 placeholders, Zones, Landscaping and Roads unchanged at 0.
-
-Still untested: Tree Controller and Line Tool (see above).
 
 ### Road Builder, roads created while playing (2026-09-12)
 
@@ -158,8 +138,6 @@ can arm, so the catch-all leaves them alone by design.
 | Zones | Ours, 22 zones, Zone Organizer's ten tabs in the strip (`after-Zones.png`). |
 | ExtraAssetsMenu | Vanilla's, 18 items across its own tab bar; we stand aside (`after-ExtraAssetsMenu.png`). |
 
-Tree Controller and Line Tool remain untested for the reasons above.
-
 ## Zone Color Changer, integrated (0.1.9, 2026-09-12)
 
 Its "Edit Zone Colors" button is appended to the game's `AssetCategoryTabBar`,
@@ -179,44 +157,18 @@ matched nothing, so an empty bar and a stray close button showed inside the
 panel. The game's DOM class is hyphenated. A render test now pins the
 selector.
 
-## Tree Controller and Advanced Line Tool: versions found, install blocked (2026-09-12)
-
-Both are current and target this game version, so the earlier "untested"
-notes were about finding them, not about them being unavailable.
+## Tree Controller and Advanced Line Tool (0.1.9, 2026-09-12)
 
 | Mod | Store id | Version | For game | Updated | Subscribers |
 |---|---|---|---|---|---|
 | Tree Controller (yenyang) | 75993 | 1.7.4 | 1.6.* | 23 Aug 2026 | 344.8k |
 | Advanced Line Tool (algernon) | 75816 | 1.2.3 | 1.6.* | 6 Jul 2026 | 525.5k |
 
-Two reasons they were missed before. Line Tool is now published as **Advanced
-Line Tool**, so a search anchored on the old name found nothing; and the
-cached package here is build 18 (0.9.8.4, declaring game 1.1), which is why
-it failed to load on 1.6. The store carries build 41. Tree Controller was
-never cached here, and its GitHub releases stop at 2024 pre-releases because
-it publishes to Paradox Mods; its own project file reads 1.7.4.
-
-Installing them is currently blocked, not refused. Pressing "Add to active
-playset" flips the button to INSTALLING and nothing downloads: no package
-appears under `.cache/Mods/pdx_mods`, the playset is unchanged, and
-`PdxSdk.log` records no error. Tried twice either side of a restart, and on
-the second attempt the detail page itself came up without its fields until
-polled. `Player.log` shows unrelated modding-toolchain downloads timing out
-over HTTP in the same session, which points at the game process's network
-rather than at these two mods; downloads did work here earlier the same day.
-
-Neither can be fetched from GitHub instead: Advanced Line Tool's latest
-release has no build attached, and Tree Controller's only release asset is
-a 2024 native library.
-
-So the compatibility check for these two is still pending. Both patch
-`ToolbarUISystem.Apply`, which a click in this panel does not go through, so
-the questions to answer are whether a tree picked here registers with Tree
-Controller's tool and whether Advanced Line Tool keeps its mode and age
-mask. The quickest route is to subscribe to both from the Paradox Mods
-website or in a normal session, after which the usual run answers it.
-
-## Tree Controller and Advanced Line Tool: installed and passing (2026-09-12)
+**Why they were missed on 2026-09-11.** Line Tool is now published as
+Advanced Line Tool, so a search on the old name found nothing, and the
+package cached here was build 18 (0.9.8.4, declaring game 1.1), which fails
+to load on 1.6. Tree Controller publishes to Paradox Mods only; its GitHub
+releases stop at 2024 pre-releases.
 
 Both now installed from the store and run beside this mod: Tree Controller
 1.7.4 (75993) and Advanced Line Tool 1.2.3 (75816, package 75816_41), with
@@ -248,7 +200,8 @@ different tree from the panel afterwards keeps the tool on Line Tool with its
 options intact (`compat/probe/line-mode-on.png`), so line mode survives
 picking an asset here, which was the specific worry.
 
-That closes the survey: every mod on the list has now been measured.
+That closes the survey: every mod on it with a menu touch point has now been
+measured.
 
 ## Anarchy's "place multiple unique buildings" (0.1.10, measured 2026-09-13)
 
@@ -291,6 +244,6 @@ the scan re-runs on every catalog publish rather than only on a city load, so
 a tracker that is switched off and raises no events cannot leave us stale.
 Any mod that overrides the same public accessor changes our answer with it;
 nothing here names Anarchy. `PlacedUniqueScan` holds the rule,
-`PlacedUniqueRegistry.Reset` reports whether the set moved so the snapshot
+`PlacedUniques.Reset` reports whether the set moved so the snapshot
 cache is only dropped when it did.
 

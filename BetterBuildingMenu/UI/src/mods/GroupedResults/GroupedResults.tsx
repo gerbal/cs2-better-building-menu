@@ -1,5 +1,5 @@
 import { Scrollable } from "cs2/ui";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { memo, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import classNames from "classnames";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
@@ -22,7 +22,6 @@ export type CatalogViewMode = "grid" | "list" | "cards" | "table";
 interface GroupedResultsProps {
   entries: BuildingCatalogEntry[];
   viewMode: CatalogViewMode;
-  searchText: string;
   onPlace: (entry: BuildingCatalogEntry) => void;
   /**
    * Rendered as the last child INSIDE the scroll, below every group. Passed
@@ -58,6 +57,10 @@ const GroupHeading = ({
   const boxRef = useRef<HTMLSpanElement>(null);
   const probeRef = useRef<HTMLSpanElement>(null);
   const [fitted, setFitted] = useState(estimate);
+  // The parent hands a fresh callback every render; the fit below re-runs on
+  // the label alone and reports through whichever is current.
+  const latestOnHeight = useRef(onHeight);
+  latestOnHeight.current = onHeight;
 
   useEffect(() => {
     const box = boxRef.current;
@@ -70,8 +73,8 @@ const GroupHeading = ({
     const report = () => {
       const heading = headingRef.current;
 
-      if (heading && onHeight) {
-        onHeight(heading.offsetHeight);
+      if (heading) {
+        latestOnHeight.current?.(heading.offsetHeight);
       }
     };
 
@@ -220,14 +223,18 @@ const GroupRow = ({
  * through here too, mapped onto catalog entries, so there is one grouped
  * renderer. Table is not handled here: it flattens headings into its own rows.
  */
-export const GroupedResults = ({
+export const GroupedResults = memo(function GroupedResults({
   entries,
   viewMode,
-  searchText,
   onPlace,
   footer,
-}: GroupedResultsProps) => {
+}: GroupedResultsProps) {
   const { translate } = useLocalization();
+  // C# stamped every item with its headings for the effective dimension;
+  // the tree is read off the page, never derived from the entries. Memoised
+  // with the page, and the component with its props, so a keystroke that
+  // re-renders the catalog leaves every tile alone.
+  const groups = useMemo(() => groupTreeFromPaths(entries), [entries]);
 
   /**
    * The game's word for a heading, where the game has one: a category heading
@@ -248,14 +255,13 @@ export const GroupedResults = ({
       return (
         <BuildingList
           entries={leaf}
-          searchText={searchText}
           onPlace={onPlace}
           variant={viewMode === "cards" ? "cards" : "compact"}
         />
       );
     }
 
-    return <BuildingGrid entries={leaf} searchText={searchText} onPlace={onPlace} standalone={false} />;
+    return <BuildingGrid entries={leaf} onPlace={onPlace} standalone={false} />;
   };
 
   const renderNodes = (
@@ -318,10 +324,6 @@ export const GroupedResults = ({
     return <GroupRow className={styles.groupRow} groups={boxes} />;
   };
 
-  // C# stamped every item with its headings for the effective dimension;
-  // the tree is read off the page, never derived from the entries.
-  const groups = groupTreeFromPaths(entries);
-
   // The ungrouped grid keeps its own scroll; anything else gets one scroll
   // around the whole result, because a scrollbar per heading makes the set
   // impossible to read as one thing.
@@ -329,7 +331,6 @@ export const GroupedResults = ({
     return (
       <BuildingGrid
         entries={entries}
-        searchText={searchText}
         onPlace={onPlace}
         footer={footer}
       />
@@ -346,4 +347,4 @@ export const GroupedResults = ({
       {footer}
     </Scrollable>
   );
-};
+});

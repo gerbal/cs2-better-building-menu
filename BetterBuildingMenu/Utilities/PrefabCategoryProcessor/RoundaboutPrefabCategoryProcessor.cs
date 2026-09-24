@@ -1,6 +1,9 @@
 ﻿using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Interfaces;
 using Game.Prefabs;
+
+using System.Diagnostics.CodeAnalysis;
 
 using Unity.Entities;
 
@@ -33,7 +36,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
             };
         }
 
-        public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, out PrefabIndex prefabIndex)
+        public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
         {
             var netObjectData = _entityManager.GetComponentData<NetObjectData>(entity);
 

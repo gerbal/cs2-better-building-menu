@@ -1,7 +1,7 @@
 /**
  * What the UI says about a search: whether it matched elsewhere, and what Enter
- * should arm. The scoring is BuildingCatalogRelevance.cs's, and the page
- * arrives in relevance order for every view, so nothing here reorders it.
+ * should arm. The scoring is BuildingCatalogRelevance.cs's, and C# names the
+ * best match with the page, so nothing here scores or reorders.
  */
 
 export interface SearchScopeNotice {
@@ -26,15 +26,61 @@ export function getSearchScopeNotice(state: {
   return { elsewhere: state.elsewhere, canWiden: true };
 }
 
+/** Arm this entry, wait for the page that answers this search, or do nothing. */
+export type EnterDecision<T> = { arm: T } | { wait: string } | null;
+
 /**
- * The entry Enter should arm, or null when Enter should do nothing. Only with
- * an active query: the first entry of a searched page is the backend's best
- * match, while in browse order it is just the first tile.
+ * What Enter does: arm the backend's best match for an active search, since a
+ * grouped page's first row need not be it. The page trails the box by a
+ * debounce, so until it answers the search in the box, Enter waits for it.
  */
-export function topSearchResult<T>(ranked: readonly T[], rawQuery: string): T | null {
-  if (!rawQuery.trim() || ranked.length === 0) {
+export function enterDecision<T extends { id: number }>(
+  page: { items: readonly T[]; bestMatchId?: number | null; searchText?: string | null },
+  rawQuery: string
+): EnterDecision<T> {
+  const query = rawQuery.trim();
+  if (!query) {
     return null;
   }
 
-  return ranked[0];
+  if ((page.searchText ?? "").trim() !== query) {
+    return { wait: query };
+  }
+
+  const target = page.bestMatchId == null ? undefined : page.items.find((item) => item.id === page.bestMatchId);
+  return target ? { arm: target } : null;
+}
+
+/** Enter, by code: Cohtml leaves `key` empty for some keys. */
+const ENTER_KEY_CODE = 13;
+/** What a key reports while an input method is composing. */
+const IME_PROCESS_KEY_CODE = 229;
+
+/**
+ * Whether a keydown is a plain Enter, by `key` or by `keyCode` (Cohtml can leave
+ * `key` empty). An Enter that confirms an input method's candidate (Japanese,
+ * Korean, Chinese) belongs to the composition and must not place a building.
+ */
+export function isPlainEnter(event: { key?: unknown; keyCode?: unknown; isComposing?: unknown }): boolean {
+  if (event.isComposing === true || event.keyCode === IME_PROCESS_KEY_CODE) {
+    return false;
+  }
+
+  return event.key === "Enter" || event.keyCode === ENTER_KEY_CODE;
+}
+
+/**
+ * Whether an Enter is the search's to act on: from the search box, or from no
+ * text field at all. Enter in any other field (a metric bound, a filter's
+ * option search) commits that field, and must not place a building.
+ */
+export function isEnterForSearch(target: unknown, fromSearchField: boolean): boolean {
+  if (fromSearchField) {
+    return true;
+  }
+
+  const element = target as { tagName?: unknown; isContentEditable?: unknown } | null | undefined;
+  const tag = typeof element?.tagName === "string" ? element.tagName.toUpperCase() : "";
+
+  return tag !== "INPUT" && tag !== "TEXTAREA" && tag !== "SELECT" && element?.isContentEditable !== true;
 }

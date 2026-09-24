@@ -286,7 +286,7 @@ FakesAssemblies/
 
 # Node.js Tools for Visual Studio
 .ntvs_analysis.dat
-node_modules/
+node_modules
 
 # Visual Studio 6 build log
 *.plg
@@ -365,4 +365,6 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 KEYS.cs
-BetterBuildingMenu/Library/ilpp.pid
+
+# The private mock game assemblies, when checked out inside the working tree (docs/ci.md).
+/cs2-refs/

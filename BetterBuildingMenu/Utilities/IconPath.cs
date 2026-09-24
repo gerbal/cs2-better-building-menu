@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace BetterBuildingMenu.Utilities
 {
@@ -11,9 +12,10 @@ namespace BetterBuildingMenu.Utilities
 		private const string UnifiedIconLibraryPrefix = "coui://uil/";
 		private const string VendoredIconPrefix = "coui://betterbuildingmenu/Icons/";
 
-		public static string Normalize(string path)
+		[return: NotNullIfNotNull(nameof(path))]
+		public static string? Normalize(string? path)
 		{
-			if (string.IsNullOrEmpty(path)
+			if (path is null
 				|| !path.StartsWith(UnifiedIconLibraryPrefix, StringComparison.OrdinalIgnoreCase))
 			{
 				return path;

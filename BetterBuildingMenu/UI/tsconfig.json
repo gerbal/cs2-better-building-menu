@@ -6,15 +6,14 @@
     "moduleResolution": "Node",
     "isolatedModules": true,
     "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "baseUrl": "src",
     "skipLibCheck": true,
     "typeRoots": ["./types"],
-    "resolveJsonModule": true,
-    "paths": {
-      "mod.json": ["../mod.json"]
-    }
+    "resolveJsonModule": true
   },
   "exclude": ["test"]
 }

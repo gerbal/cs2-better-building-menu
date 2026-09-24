@@ -1,7 +1,6 @@
-import { bindValue, useValue } from "cs2/api";
+import { useValue } from "cs2/api";
 import { Button } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
-import { useEffect } from "react";
 import classNames from "classnames";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
@@ -12,18 +11,12 @@ import {
   hasFootprint,
 } from "domain/buildingLensMetricFormat";
 import { canPlace, entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
-import { topSearchResult } from "domain/buildingSearchRank";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
-import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
 import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
-import type { ZoneFootprint } from "domain/zoningHierarchy";
 import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
-import type { SortColumn } from "domain/buildingCatalogContracts";
 import { useUnitSystem } from "domain/unitSettings";
-import mod from "../../../mod.json";
 import styles from "./buildingList.module.scss";
-
-const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "BuildingCatalogSortColumn", "Name");
+import { BuildingCatalogSortColumn$ } from "mods/bindings";
 
 /**
  * compact — icon and name only.
@@ -34,7 +27,6 @@ export type BuildingListVariant = "compact" | "cards";
 
 interface BuildingListProps {
   entries: BuildingCatalogEntry[];
-  searchText: string;
   onPlace: (entry: BuildingCatalogEntry) => void;
   variant?: BuildingListVariant;
   /**
@@ -49,7 +41,7 @@ interface BuildingListProps {
  * what a building is called among hundreds. Cards adds one line of constraints
  * (does it fit, can I afford it), never comparisons.
  */
-export const BuildingList = ({ entries, searchText, onPlace, variant = "compact", selectedId }: BuildingListProps) => {
+export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId }: BuildingListProps) => {
   const { translate } = useLocalization();
   const separators = getNumberSeparators(translate, useUnitSystem());
   // The same card the grid and the table show, so which facts a building
@@ -64,24 +56,6 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
     || translate("Tooltip.LABEL[BetterBuildingMenu.AlreadyBuilt]", "Already built")
     || "Already built";
   const cards = variant === "cards";
-  // The page arrives in the order every view shows — relevance first while a
-  // search is active — so list, grid and table agree.
-  const ordered = entries;
-
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Enter") return;
-
-      const top = topSearchResult(ordered, searchText ?? "");
-      if (!top) return;
-
-      onPlace(top);
-    };
-
-    document.addEventListener("keydown", onKey);
-
-    return () => document.removeEventListener("keydown", onKey);
-  }, [ordered, searchText, onPlace]);
 
   const place = (entry: BuildingCatalogEntry) => {
     // See BuildingGrid: locked assets are shown and refused, not hidden.
@@ -112,15 +86,14 @@ export const BuildingList = ({ entries, searchText, onPlace, variant = "compact"
 
   return (
     <div className={styles.list}>
-      {ordered.map((entry) => {
+      {/* In page order, which every view shares; nothing is re-ranked here. */}
+      {entries.map((entry) => {
         const label = entry.name || entry.prefabName;
         const cost = formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance);
         const lot = formatLotDimensions(entry.lotWidth, entry.lotDepth);
         // A road's lot is 0x0 and a zone has none: "0 × 0" measures something
         // that does not exist, so the fact is dropped rather than stated.
         const lotKnown = hasFootprint(entry.lotWidth, entry.lotDepth);
-        const footprints = entry.footprints ?? [];
-        const footprintOverflow = entry.footprintOverflow ?? 0;
         // Category-aware, returning nothing where capacity means nothing, so
         // this needs no rule per category of its own.
         const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators);

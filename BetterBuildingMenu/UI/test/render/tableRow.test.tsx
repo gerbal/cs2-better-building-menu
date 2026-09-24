@@ -2,16 +2,23 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { renderHtml, entry } from "../harness/render";
 import { TableRow, type TableRowProps } from "../../src/mods/BuildingCatalog/TableRow";
+import { useHoverCardContext } from "../../src/mods/BuildingHoverCard/BuildingHoverCard";
+import { FALLBACK_SEPARATORS } from "../../src/domain/buildingLensMetricFormat";
 
 const labels = { place: "Place", inspect: "Details", locked: "Locked", built: "Already built" };
 
+// The table reads the hover card's context once and hands it to every row.
+const TableRowInTable = (props: Omit<TableRowProps, "hoverCard">) => (
+  <TableRow {...props} hoverCard={useHoverCardContext()} />
+);
+
 const row = (over: Partial<TableRowProps> = {}) =>
   renderHtml(
-    <TableRow
+    <TableRowInTable
       entry={entry(7, { name: "Clinic" })}
       expanded={false}
       nameBudget={40}
-      separators={{ thousands: ",", decimal: "." } as never}
+      separators={FALLBACK_SEPARATORS}
       labels={labels}
       columnStyle={() => ({})}
       resolveFacetLabel={() => null}
@@ -78,11 +85,9 @@ describe("a network's lot in the table", () => {
   // "0 × 0" in the Table, a measurement of something that does not exist. The
   // hover card and the tile already omit it through hasFootprint.
   it("is no data, not 0 × 0", () => {
-    const html = renderHtml(row({ entry: entry(1, { lotWidth: 0, lotDepth: 0 }) }));
+    const html = row({ entry: entry(1, { lotWidth: 0, lotDepth: 0 }) });
 
     assert.doesNotMatch(html, /0 × 0/);
-    // The row's cells come back HTML-escaped inside the hover-card wrapper's
-    // attribute, so the quotes and brackets may be entities.
-    assert.match(html, /data-metric=(?:"|&quot;)lot(?:"|&quot;)[^>]*?(?:&gt;|>)—/);
+    assert.match(html, /data-metric="lot"[^>]*>—/);
   });
 });

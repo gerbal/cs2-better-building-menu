@@ -1,8 +1,8 @@
 ﻿using Colossal.PSI.Common;
 
 using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Enums;
-using BetterBuildingMenu.Systems;
 using BetterBuildingMenu.Utilities;
 
 using Game.Prefabs;
@@ -46,15 +46,17 @@ namespace BetterBuildingMenu.Services
 			(BuildingFlags.HasResourceNode, nameof(BuildingFlags.HasResourceNode)),
 		};
 
-		/// <summary>
-		/// The state of the game's own toolbar filter row.
-		/// </summary>
-		/// <remarks>
-		/// Static because there is exactly one toolbar. BuildingMenuUISystem writes it
-		/// when the UI reports a change; <see cref="VanillaToolbarSelection.None"/>
-		/// filters nothing.
-		/// </remarks>
-		public static VanillaToolbarSelection ToolbarSelection { get; set; } = VanillaToolbarSelection.None;
+		private readonly Func<string, string?> _silhouetteUrl;
+
+		/// <param name="silhouetteUrl">
+		/// The blackened copy of a vector icon, or null when it has none. Passed in so that
+		/// projecting reads nothing from Mod, whose type initializer needs the running game.
+		/// Defaults to no silhouettes.
+		/// </param>
+		public BuildingCatalogAdapter(Func<string, string?>? silhouetteUrl = null)
+		{
+			_silhouetteUrl = silhouetteUrl ?? (_ => null);
+		}
 
 		public static string[] GetPlacementFlagNames(BuildingFlags? flags)
 		{
@@ -92,24 +94,17 @@ namespace BetterBuildingMenu.Services
 
 			var content = ContentOnly(selection);
 			bool packsChosen = !content.IsEmpty;
-			bool dlcChosen = dlcIds is { Count: > 0 };
 
-			if (!packsChosen && !dlcChosen)
+			if (dlcIds is not { Count: > 0 })
 			{
-				return true;
+				return !packsChosen || VanillaToolbarFilter.IsVisible(prefab.VanillaFacts, content);
 			}
 
-			bool matchesDlc = dlcChosen
-				&& prefab.DlcId != DlcId.Invalid
-				&& dlcIds!.Any(id => string.Equals(
+			bool matchesDlc = prefab.DlcId.id != GameDlcIds.Invalid
+				&& dlcIds.Any(id => string.Equals(
 					id,
 					prefab.DlcId.id.ToString(CultureInfo.InvariantCulture),
 					StringComparison.Ordinal));
-
-			if (!dlcChosen)
-			{
-				return VanillaToolbarFilter.IsVisible(prefab.VanillaFacts, content);
-			}
 
 			// Content is ONE axis, so its options combine as OR. Two of them
 			// live in the game's selection, which ORs them itself; the third is
@@ -130,16 +125,6 @@ namespace BetterBuildingMenu.Services
 		/// <summary>The same toolbar selection with its packs dropped.</summary>
 		private static VanillaToolbarSelection WithoutPacks(VanillaToolbarSelection selection) =>
 			new(selection.SelectedThemes, null, selection.VanillaSelected, selection.ModsSelected);
-
-		/// <summary>
-		/// How many assets each of the menu's category tabs holds.
-		/// </summary>
-		/// <remarks>
-		/// The category's own axis is excluded, so choosing one tab does not read every
-		/// other as empty; search and facets do count. Counted against the category the
-		/// entry answers to IN THIS MENU rather than its own UiCategory.
-		/// </remarks>
-		public IReadOnlyList<MenuCategoryCount> GetMenuCategoryCounts(BuildingCatalogQuery query) => Build(query).MenuCategoryCounts;
 
 		/// <summary>
 		/// Every category whose density tiers should be drawn in its place.
@@ -179,16 +164,6 @@ namespace BetterBuildingMenu.Services
 		}
 
 		/// <summary>
-		/// Which axis the fallback strip should use for this menu, and its tabs.
-		/// </summary>
-		/// <remarks>
-		/// Only for the menus vanilla never split. The axis that cuts most evenly wins —
-		/// smallest largest bucket — among a short hand-picked list of cuts the game
-		/// itself authored; an axis yielding fewer than two groups is not a choice.
-		/// </remarks>
-		public string GetStripAxis(BuildingCatalogQuery query) => Build(query).StripAxis;
-
-		/// <summary>
 		/// The glyph every school-level tab is built on.
 		/// </summary>
 		/// <remarks>
@@ -222,11 +197,11 @@ namespace BetterBuildingMenu.Services
 				// photograph in a row of glyphs, so it counts as no icon.
 				var icon = entries
 					.Select(entry => entry.DevTreeBranchIcon)
-					.FirstOrDefault(value => !string.IsNullOrEmpty(value) && !IsPhotograph(value!));
+					.FirstOrDefault(value => value is { Length: > 0 } && !IsPhotograph(value));
 
-				if (!string.IsNullOrEmpty(icon))
+				if (icon is { Length: > 0 })
 				{
-					return icon!;
+					return icon;
 				}
 			}
 
@@ -242,11 +217,11 @@ namespace BetterBuildingMenu.Services
 			{
 				var glyph = ordered
 					.Select(entry => entry.FallbackThumbnail)
-					.FirstOrDefault(value => !string.IsNullOrEmpty(value));
+					.FirstOrDefault(value => value is { Length: > 0 });
 
-				if (!string.IsNullOrEmpty(glyph))
+				if (glyph is { Length: > 0 })
 				{
-					return glyph!;
+					return glyph;
 				}
 			}
 
@@ -333,10 +308,15 @@ namespace BetterBuildingMenu.Services
 		/// Defaults to <paramref name="entries"/>; the adapter passes a pack-unfiltered set
 		/// so the group can offer a pack other than the one already chosen.
 		/// </param>
+		/// <param name="vanillaSelected">
+		/// Whether the game's own row has its base-game option ticked, which the Content
+		/// group's matching option mirrors.
+		/// </param>
 		public static BuildingCatalogFacetState BuildFacetState(
 			IEnumerable<BuildingCatalogEntry> entries,
 			BuildingCatalogQuery query,
-			IEnumerable<BuildingCatalogEntry>? packScope = null)
+			IEnumerable<BuildingCatalogEntry>? packScope = null,
+			bool vanillaSelected = false)
 		{
 			if (entries is null)
 			{
@@ -351,20 +331,21 @@ namespace BetterBuildingMenu.Services
 			BuildingCatalogEntry[] source = entries.ToArray();
 			var groups = new List<BuildingCatalogFacetGroup>();
 
-			AddValueGroup(groups, "buildingType", "Role", source.Select(entry => entry.BuildingType), query.BuildingTypes, FormatFacetWords);
-			AddValueGroup(groups, "provenance", "Source", source.Select(entry => entry.Provenance), query.Provenance, FormatProvenanceLabel);
+			AddValueGroup(groups, FacetIds.BuildingType, "Role", source.Select(entry => entry.BuildingType), query.BuildingTypes, WordFormat.SplitIdentifier);
+			AddValueGroup(groups, FacetIds.Provenance, "Source", source.Select(entry => entry.Provenance), query.Provenance, FormatProvenanceLabel);
 			// Progression, which the vanilla menu shows only by greying an asset out.
 			AddAvailabilityGroup(groups, source, query.Availability);
 			// Where it came from, next to who made it: one axis, one place.
 			// See AddContentGroup.
-			AddContentGroup(groups, packScope is null ? source : packScope.ToArray(), query);
-			AddValueGroup(groups, "theme", "Theme", source.Select(entry => entry.Theme), query.Themes, FormatFacetWords);
+			AddContentGroup(groups, packScope is null ? source : packScope.ToArray(), query, vanillaSelected);
+			AddValueGroup(groups, FacetIds.Theme, "Theme", source.Select(entry => entry.Theme), query.Themes, WordFormat.SplitIdentifier);
 			// Neither unlock modality is a facet. Development restates the strip's own
 			// axis and collides with Role, and "can I build this now" is the question
 			// Availability answers; both stay reachable as a Group by dimension.
-			AddArrayGroup(groups, "placement", "Placement", source.Select(entry => entry.PlacementFlags), query.PlacementFlags, FormatFlagLabel);
-			AddArrayGroup(groups, "extension", "Extensions", source.Select(entry => entry.Extensions), query.Extensions, FormatFacetWords);
-			// Density is not a facet either: every type+density tier is a category with
+			AddArrayGroup(groups, FacetIds.Placement, "Placement", source.Select(entry => entry.PlacementFlags), query.PlacementFlags, FormatFlagLabel);
+			// Upgrades are not a facet: most belong to a single building, so a filter by
+			// upgrade narrows to that building, which its hover card and the extension
+			// picker already show. Density is not a facet either: every type+density tier is a category with
 			// its own tab and icon in the top bar, so the rail would be a dropdown of the
 			// tabs above it. It stays reachable as a Group by dimension and as a sort.
 
@@ -373,28 +354,36 @@ namespace BetterBuildingMenu.Services
 				|| HasValues(query.Provenance)
 				|| HasValues(query.DlcIds)
 				|| HasValues(query.Themes)
-				|| HasValues(query.PlacementFlags)
-				|| HasValues(query.Extensions);
+				|| HasValues(query.PlacementFlags);
 
 			return new BuildingCatalogFacetState(groups.ToArray(), hasSelection);
 		}
 
-		/// <summary>One page of the catalog for this query.</summary>
-		public BuildingCatalogPage Query(BuildingCatalogQuery query) => Build(query).Page;
-
-		/// <summary>One view per refresh: every per-query answer above comes from it.</summary>
+		/// <summary>One view per refresh: every per-query answer comes from it.</summary>
 		/// <remarks>
-		/// The public one-line delegations above all read from it; BuildingMenuUISystem
-		/// calls this once per refresh and reads the view's properties.
+		/// BuildingMenuUISystem calls this once per refresh and reads the view's properties,
+		/// and once more for the matches-elsewhere count when a search finds nothing.
 		/// </remarks>
-		public CatalogView Build(BuildingCatalogQuery query, Func<CatalogView, string>? groupByResolver = null)
+		/// <param name="source">
+		/// What this refresh reads from the indexer, taken once after the placed-unique
+		/// rescan, so every cache is keyed on one generation; see PrefabIndexingSystem.Source.
+		/// </param>
+		/// <param name="selection">
+		/// The game's own toolbar filter row, which BuildingMenuUISystem holds;
+		/// <see cref="VanillaToolbarSelection.None"/> filters nothing.
+		/// </param>
+		public CatalogView Build(
+			CatalogSource source,
+			BuildingCatalogQuery query,
+			VanillaToolbarSelection selection,
+			Func<CatalogView, string>? groupByResolver = null)
 		{
 			if (query is null)
 			{
 				throw new ArgumentNullException(nameof(query));
 			}
 
-			var snapshot = ProjectForMenu(query.UiMenu, query.DlcIds);
+			var snapshot = ProjectForMenu(source, query.UiMenu, selection, query.DlcIds);
 
 			// Packs alone are counted before the pack filter runs, because that
 			// filter is upstream of InScope and InScope cannot undo it. Only a
@@ -402,12 +391,13 @@ namespace BetterBuildingMenu.Services
 			return new CatalogView(
 				snapshot,
 				query,
-				ToolbarSelection.SelectedPacks.Count > 0
-					? () => ProjectForMenu(query.UiMenu, query.DlcIds, ignorePacks: true)
+				selection.SelectedPacks.Count > 0
+					? () => ProjectForMenu(source, query.UiMenu, selection, query.DlcIds, ignorePacks: true)
 					: null,
 				groupByResolver,
-				PrefabIndexingSystem.GetMilestoneNames(),
-				VanillaMenus.IsEducation(query.UiMenu));
+				source.Index.Progression.MilestoneNames(),
+				VanillaMenus.IsEducation(query.UiMenu),
+				selection.VanillaSelected);
 		}
 
 		/// <summary>
@@ -441,6 +431,14 @@ namespace BetterBuildingMenu.Services
 				? placedInThisMenu || gatheredNetwork
 				: isBuilding || placedInAnyMenu;
 
+		/// <summary>Whether the index holds anything the given menu places.</summary>
+		/// <param name="selection">
+		/// The game's own toolbar filter row. Its themes and Vanilla/Mods toggles can empty a
+		/// menu, which then goes back to vanilla; its pack selection is ignored here.
+		/// </param>
+		public static bool MenuHasAssets(CatalogIndex index, string menu, VanillaToolbarSelection selection) =>
+			GetIndexedBuildings(index, menu, selection, ignorePackSelection: true).Any();
+
 		/// <summary>
 		/// The candidate set, widened to whatever menu the player has open.
 		/// </summary>
@@ -454,33 +452,30 @@ namespace BetterBuildingMenu.Services
 		/// pack facet wants this, for the same reason InScope drops a facet's own selection
 		/// before counting it: a dimension computed from the set it narrowed offers only itself.
 		/// </param>
-		/// <summary>Whether the index holds anything the given menu places.</summary>
-		public static bool MenuHasAssets(string menu) => GetIndexedBuildings(menu, ignorePackSelection: true).Any();
-
 		private static IEnumerable<PrefabIndex> GetIndexedBuildings(
-			string? uiMenu = null,
+			CatalogIndex index,
+			string? uiMenu,
+			VanillaToolbarSelection selection,
 			bool ignorePackSelection = false,
 			IReadOnlyList<string>? unionDlcIds = null)
 		{
-			if (!BuildingMenuUtil.IsReady
-				|| !BuildingMenuUtil.CategorizedPrefabs.TryGetValue(PrefabCategory.Any, out var allCategories)
-				|| !allCategories.TryGetValue(PrefabSubCategory.Any, out var allPrefabs))
+			if (!index.IsReady)
 			{
 				return Array.Empty<PrefabIndex>();
 			}
 
 			string menu = uiMenu?.Trim() ?? string.Empty;
-			return allPrefabs
+			return index.All
 				// Sub-buildings are not list entries, which is the test vanilla runs
 				// too: an upgrade is placed from its parent building's row. They stay
-				// INDEXED, so Extensions, search and the facets all still see them.
+				// INDEXED, so search and the extension picker still see them.
 				.Where(prefab => !prefab.IsServiceUpgrade)
 				// The game's own toolbar row — the theme toggle, the asset packs and
 				// Vanilla/Mods — transcribed rather than reimplemented, so a difference
 				// is a bug. IsVisible early-outs on an empty selection.
 				.Where(prefab => ContentVisible(
 					prefab,
-					ignorePackSelection ? WithoutPacks(ToolbarSelection) : ToolbarSelection,
+					ignorePackSelection ? WithoutPacks(selection) : selection,
 					unionDlcIds))
 				// Membership comes from the game's own tree, walked DOWN from
 				// UIAssetMenuData the way ToolbarUISystem does: a scoped view shows that
@@ -489,9 +484,9 @@ namespace BetterBuildingMenu.Services
 					menuScoped: !string.IsNullOrEmpty(menu),
 					isBuilding: IsBuilding(prefab),
 					placedInThisMenu: !string.IsNullOrEmpty(menu)
-						&& PrefabIndexingSystem.IsPlacedInMenu(prefab.Id, menu),
-					placedInAnyMenu: PrefabIndexingSystem.IsPlacedInAnyMenu(prefab.Id),
-					gatheredNetwork: !string.IsNullOrEmpty(menu) && IsGatheredNetwork(prefab, menu)));
+						&& index.Menus.IsPlacedIn(prefab.Id, menu),
+					placedInAnyMenu: index.Menus.IsPlaced(prefab.Id),
+					gatheredNetwork: !string.IsNullOrEmpty(menu) && IsGatheredNetwork(index.Menus, prefab, menu)));
 		}
 
 		/// <summary>
@@ -502,19 +497,19 @@ namespace BetterBuildingMenu.Services
 		/// so the Roads menu gathers them without taking them out of the menus that hold them.
 		/// IsExtended is asked HERE so the argument enum ToString runs only for that menu.
 		/// </remarks>
-		private static bool IsGatheredNetwork(PrefabIndex prefab, string menu) =>
+		private static bool IsGatheredNetwork(VanillaMenuIndex menus, PrefabIndex prefab, string menu) =>
 			NetworkMenuExtension.IsExtended(menu)
 			&& NetworkMenuExtension.IsExtraNetwork(
 				prefab.Category.ToString(),
 				prefab.UiMenuName,
 				menu,
 				prefab.SubCategory.ToString())
-			&& PrefabIndexingSystem.IsPlacedInAnyMenu(prefab.Id);
+			&& menus.IsPlaced(prefab.Id);
 
 		/// <summary>The projections this adapter reuses across refreshes.</summary>
 		/// <remarks>
-		/// Keyed by scope and kept until PrefabIndexingSystem's IndexGeneration changes, so
-		/// they DO survive from one refresh to the next; see SnapshotCache.
+		/// Keyed by scope and kept until the source's generation changes, so they DO
+		/// survive from one refresh to the next; see SnapshotCache.
 		/// </remarks>
 		private readonly SnapshotCache _snapshots = new();
 
@@ -531,20 +526,22 @@ namespace BetterBuildingMenu.Services
 		}
 
 		private BuildingCatalogEntry[] ProjectForMenu(
+			CatalogSource source,
 			string? menu,
+			VanillaToolbarSelection selection,
 			IReadOnlyList<string>? contentDlcs = null,
 			bool ignorePacks = false)
 		{
-			var key = SnapshotKey.For(menu, contentDlcs, ignorePacks, ToolbarSelection);
+			var key = SnapshotKey.For(menu, contentDlcs, ignorePacks, selection);
 
-			if (_snapshots.TryGet(key, PrefabIndexingSystem.IndexGeneration, out var cached))
+			if (_snapshots.TryGet(key, source.Generation, out var cached))
 			{
 				return cached;
 			}
 
 			var timer = System.Diagnostics.Stopwatch.StartNew();
-			var built = ProjectForMenuUncached(menu, contentDlcs, ignorePacks).ToArray();
-			_snapshots.Put(key, PrefabIndexingSystem.IndexGeneration, built);
+			var built = ProjectForMenuUncached(source, menu, selection, contentDlcs, ignorePacks).ToArray();
+			_snapshots.Put(key, source.Generation, built);
 			LastProjectionMs += (int)timer.ElapsedMilliseconds;
 			LastProjectionWasHit = false;
 
@@ -552,12 +549,16 @@ namespace BetterBuildingMenu.Services
 		}
 
 		private IEnumerable<BuildingCatalogEntry> ProjectForMenuUncached(
+			CatalogSource source,
 			string? menu,
+			VanillaToolbarSelection selection,
 			IReadOnlyList<string>? contentDlcs,
 			bool ignorePacks)
 		{
-			var entries = GetIndexedBuildings(menu, ignorePackSelection: ignorePacks, unionDlcIds: contentDlcs).Select(Project).ToArray();
-			var root = PrefabIndexingSystem.GetDevTreeRootLabel(menu);
+			var entries = GetIndexedBuildings(source.Index, menu, selection, ignorePackSelection: ignorePacks, unionDlcIds: contentDlcs)
+				.Select(prefab => Project(prefab, source.Placed))
+				.ToArray();
+			var root = source.Index.Progression.RootLabel(menu);
 
 			if (string.IsNullOrEmpty(root))
 			{
@@ -600,9 +601,9 @@ namespace BetterBuildingMenu.Services
 
 			foreach (var key in new[] { $"SubServices.NAME[{id}]", $"Services.NAME[{id}]" })
 			{
-				if (dictionary.TryGetValue(key, out var name) && !string.IsNullOrWhiteSpace(name))
+				if (dictionary.TryGetValue(key, out var name) && WordFormat.GameText(name) is { } label)
 				{
-					return name;
+					return label;
 				}
 			}
 
@@ -618,39 +619,17 @@ namespace BetterBuildingMenu.Services
 		/// applies none of the menu's own filters: vanilla has already decided what is
 		/// listed, and the question here is only how to draw a row that is.
 		/// </remarks>
-		public BuildingCatalogEntry? EntryForPrefabName(string prefabName)
+		public BuildingCatalogEntry? EntryForPrefabName(CatalogSource source, string prefabName)
 		{
-			if (string.IsNullOrEmpty(prefabName) || !BuildingMenuUtil.IsReady)
+			if (string.IsNullOrEmpty(prefabName) || !source.Index.IsReady)
 			{
 				return null;
 			}
 
-			if (_byNameGeneration != PrefabIndexingSystem.IndexGeneration)
-			{
-				_byName.Clear();
-
-				if (BuildingMenuUtil.CategorizedPrefabs.TryGetValue(PrefabCategory.Any, out var categories)
-					&& categories.TryGetValue(PrefabSubCategory.Any, out var prefabs))
-				{
-					foreach (var prefab in prefabs)
-					{
-						if (!string.IsNullOrEmpty(prefab.PrefabName))
-						{
-							_byName[prefab.PrefabName!] = prefab;
-						}
-					}
-				}
-
-				_byNameGeneration = PrefabIndexingSystem.IndexGeneration;
-			}
-
-			return _byName.TryGetValue(prefabName, out var found) ? Project(found) : null;
+			return source.Index.GetByPrefabName(prefabName) is { } found ? Project(found, source.Placed) : null;
 		}
 
-		private readonly Dictionary<string, PrefabIndex> _byName = new(StringComparer.Ordinal);
-		private int _byNameGeneration = -1;
-
-		private static BuildingCatalogEntry Project(PrefabIndex prefab)
+		private BuildingCatalogEntry Project(PrefabIndex prefab, PlacedUniques placed)
 		{
 			return new BuildingCatalogEntry(
 				Id: prefab.Id,
@@ -668,7 +647,7 @@ namespace BetterBuildingMenu.Services
 					prefab.FallbackThumbnail ?? prefab.CategoryThumbnail ?? string.Empty),
 				// Generated on first sight and cached on disk: one file read per distinct
 				// vector icon for the life of the install, not one per projection.
-				SilhouetteThumbnail: Mod.Silhouettes?.UrlFor(
+				SilhouetteThumbnail: _silhouetteUrl(
 					IconPath.Normalize(prefab.Thumbnail ?? prefab.FallbackThumbnail ?? string.Empty)),
 				UiMenu: prefab.UiMenuName,
 				UiCategory: prefab.UiCategoryName,
@@ -693,7 +672,6 @@ namespace BetterBuildingMenu.Services
 				Provenance: prefab.IsVanilla ? "Vanilla" : "Custom",
 				ZoneType: prefab.ZoneType,
 				HasParking: prefab.HasParking,
-				IsUniqueMesh: prefab.IsUniqueMesh,
 				IsVanilla: prefab.IsVanilla,
 				IsLocked: prefab.IsLocked,
 				UnlockMilestone: prefab.UnlockMilestone,
@@ -705,14 +683,14 @@ namespace BetterBuildingMenu.Services
 				CostIsPerDistance: prefab.CostIsPerDistance,
 				ParkingSlots: prefab.ParkingSlots,
 				PdxModsId: prefab.PdxModsId ?? string.Empty,
-				DlcId: prefab.DlcId == DlcId.Invalid ? null : prefab.DlcId.id.ToString(),
+				DlcId: prefab.DlcId.id == GameDlcIds.Invalid ? null : prefab.DlcId.id.ToString(),
 				Theme: prefab.Theme?.name,
 				AssetPacks: prefab.AssetPacks?.Where(pack => pack is not null).Select(pack => pack.name).Where(name => !string.IsNullOrWhiteSpace(name)).ToArray() ?? Array.Empty<string>(),
 				AssetPackIndices: prefab.VanillaFacts.AssetPacks?.ToArray() ?? Array.Empty<int>(),
 				// Per query, not per index: the city gains and loses these as
-				// the player builds and bulldozes. See PlacedUniqueRegistry.
+				// the player builds and bulldozes. See PlacedUniques.
 				IsUnique: prefab.IsUnique,
-				IsAlreadyBuilt: PlacedUniqueRegistry.IsAlreadyBuilt(prefab.Id),
+				IsAlreadyBuilt: placed.IsAlreadyBuilt(prefab.Id),
 				PlacementFlags: GetPlacementFlagNames(prefab.BuildingFlagsValue),
 				Extensions: prefab.ExtensionIds ?? Array.Empty<string>(),
 				SupportedUpgrades: prefab.SupportedUpgradeIds ?? Array.Empty<string>(),
@@ -753,13 +731,13 @@ namespace BetterBuildingMenu.Services
 			BuildingCatalogFacetOption[] options = BuildingCatalogFacetSelection.Availability.All
 				.Select(value => new BuildingCatalogFacetOption(
 					value,
-					FormatFacetWords(value),
+					WordFormat.SplitIdentifier(value),
 					selected is not null
 						&& selected.Any(option => string.Equals(option, value, StringComparison.OrdinalIgnoreCase))))
 				.ToArray();
 
 			groups.Add(new BuildingCatalogFacetGroup(
-				"availability",
+				FacetIds.Availability,
 				"Availability",
 				options,
 				// Exhaustive, so a selection narrows only while it is partial.
@@ -818,7 +796,8 @@ namespace BetterBuildingMenu.Services
 		private static void AddContentGroup(
 			ICollection<BuildingCatalogFacetGroup> groups,
 			IReadOnlyList<BuildingCatalogEntry> source,
-			BuildingCatalogQuery query)
+			BuildingCatalogQuery query,
+			bool vanillaSelected)
 		{
 			var options = new List<BuildingCatalogFacetOption>();
 
@@ -827,8 +806,8 @@ namespace BetterBuildingMenu.Services
 			{
 				options.Add(new BuildingCatalogFacetOption(
 					ContentOption.Vanilla,
-					FormatDlcLabel(DlcId.BaseGame.id.ToString(CultureInfo.InvariantCulture)),
-					ToolbarSelection.VanillaSelected));
+					FormatDlcLabel(GameDlcIds.BaseGame.ToString(CultureInfo.InvariantCulture)),
+					vanillaSelected));
 			}
 
 			// The tail: DLC no pack speaks for.
@@ -839,13 +818,13 @@ namespace BetterBuildingMenu.Services
 				StringComparer.Ordinal);
 
 			options.AddRange(source
-				.Where(entry => !IsBaseGameContent(entry)
-					&& (entry.AssetPackIndices?.Length ?? 0) == 0
-					&& !string.IsNullOrEmpty(entry.DlcId))
-				.Select(entry => entry.DlcId!)
-				.Where(dlc => !packedDlcs.Contains(dlc))
+				.Where(entry => !IsBaseGameContent(entry) && (entry.AssetPackIndices?.Length ?? 0) == 0)
+				.Select(entry => entry.DlcId ?? string.Empty)
+				.Where(dlc => dlc.Length > 0 && !packedDlcs.Contains(dlc))
 				.Distinct(StringComparer.Ordinal)
-				.OrderBy(FormatDlcLabel, StringComparer.CurrentCultureIgnoreCase)
+				// Invariant rather than current: Mono's current culture is the OS's, not the
+				// game's language, so the same DLC list would sort differently per machine.
+				.OrderBy(FormatDlcLabel, StringComparer.InvariantCultureIgnoreCase)
 				.Select(dlc => new BuildingCatalogFacetOption(
 					ContentOption.Dlc + dlc,
 					FormatDlcLabel(dlc),
@@ -856,7 +835,7 @@ namespace BetterBuildingMenu.Services
 			// a selection holds the group open so it can still be cleared.
 			if (options.Count > 1 || options.Any(option => option.Selected))
 			{
-				groups.Add(new BuildingCatalogFacetGroup("content", "Content", options.ToArray()));
+				groups.Add(new BuildingCatalogFacetGroup(FacetIds.Content, "Content", options.ToArray()));
 			}
 		}
 
@@ -864,7 +843,7 @@ namespace BetterBuildingMenu.Services
 		private static bool IsBaseGameContent(BuildingCatalogEntry entry) =>
 			string.Equals(
 				entry.DlcId,
-				DlcId.BaseGame.id.ToString(CultureInfo.InvariantCulture),
+				GameDlcIds.BaseGame.ToString(CultureInfo.InvariantCulture),
 				StringComparison.Ordinal);
 
 		private static void AddArrayGroup(
@@ -925,8 +904,8 @@ namespace BetterBuildingMenu.Services
 		private static string[] DistinctValues(IEnumerable<string?> values)
 		{
 			return values
-				.Where(value => !string.IsNullOrWhiteSpace(value))
-				.Select(value => value!.Trim())
+				.Select(value => value?.Trim() ?? string.Empty)
+				.Where(value => value.Length > 0)
 				.GroupBy(value => value, StringComparer.OrdinalIgnoreCase)
 				.Select(group => group.First())
 				.OrderBy(value => value, StringComparer.OrdinalIgnoreCase)
@@ -945,7 +924,7 @@ namespace BetterBuildingMenu.Services
 				return id;
 			}
 
-			if (numericId == DlcId.BaseGame.id)
+			if (numericId == GameDlcIds.BaseGame)
 			{
 					// Deliberately not "Base game": the Source facet already uses that
 					// label for content shipped by the studio rather than by a mod, and two
@@ -963,7 +942,7 @@ namespace BetterBuildingMenu.Services
 				{
 					return LocaleHelper.Translate(
 						$"Common.DLC_TITLE[{internalName}]",
-						LocaleHelper.Translate($"Assets.NAME[{internalName}]", FormatFacetWords(internalName)));
+						LocaleHelper.Translate($"Assets.NAME[{internalName}]", WordFormat.SplitIdentifier(internalName)));
 				}
 			}
 			catch
@@ -987,47 +966,7 @@ namespace BetterBuildingMenu.Services
 				return "Custom content";
 			}
 
-			return FormatFacetWords(value);
-		}
-
-		private static string FormatFacetWords(string value)
-		{
-			if (string.IsNullOrWhiteSpace(value))
-			{
-				return value;
-			}
-
-			var label = new StringBuilder(value.Length + 8);
-			for (int index = 0; index < value.Length; index++)
-			{
-				char current = value[index];
-				if (current == '_' || current == '-')
-				{
-					if (label.Length > 0 && label[label.Length - 1] != ' ')
-					{
-						label.Append(' ');
-					}
-
-					continue;
-				}
-
-				char previous = index > 0 ? value[index - 1] : '\0';
-				bool startsNewWord = index > 0
-					&& ((char.IsUpper(current)
-						&& (char.IsLower(previous)
-							|| char.IsDigit(previous)
-							|| (index + 1 < value.Length && char.IsUpper(previous) && char.IsLower(value[index + 1]))))
-						|| (char.IsDigit(current) && !char.IsDigit(previous))
-						|| (char.IsLetter(current) && char.IsDigit(previous)));
-				if (startsNewWord && label.Length > 0 && label[label.Length - 1] != ' ')
-				{
-					label.Append(' ');
-				}
-
-				label.Append(current);
-			}
-
-			return label.ToString().Trim();
+			return WordFormat.SplitIdentifier(value);
 		}
 
 		private static string FormatFlagLabel(string value)
