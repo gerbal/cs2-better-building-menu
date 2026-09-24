@@ -7,6 +7,26 @@ namespace BetterBuildingMenu.Tests
 	public sealed class WordFormatTests
 	{
 		[Theory]
+		[InlineData("Small Roads\r\n", "Small Roads")]
+		[InlineData("  Hospital\t", "Hospital")]
+		[InlineData("Power Plant", "Power Plant")]
+		public void GameTextLosesTheWhitespaceAroundIt(string text, string expected)
+		{
+			Assert.Equal(expected, WordFormat.GameText(text));
+		}
+
+		[Theory]
+		[InlineData(null)]
+		[InlineData("")]
+		[InlineData("\r\n")]
+		[InlineData("   ")]
+		public void GameTextWithNoWordsIsNone(string? text)
+		{
+			// So a caller falls back to a name of its own rather than showing nothing.
+			Assert.Null(WordFormat.GameText(text));
+		}
+
+		[Theory]
 		[InlineData("GarbageAccumulation", "Garbage Accumulation")]
 		[InlineData("big park", "Big Park")]
 		[InlineData("don't stop", "Don't Stop")]
