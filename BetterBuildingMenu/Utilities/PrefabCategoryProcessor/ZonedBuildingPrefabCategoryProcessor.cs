@@ -8,6 +8,8 @@ using BetterBuildingMenu.Systems;
 using Game.Prefabs;
 using Game.UI;
 
+using System.Diagnostics.CodeAnalysis;
+
 using Unity.Entities;
 
 namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
@@ -48,7 +50,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 			};
 		}
 
-		public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, out PrefabIndex prefabIndex)
+		public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
 		{
 			if (prefab is not BuildingPrefab buildingPrefab)
 			{

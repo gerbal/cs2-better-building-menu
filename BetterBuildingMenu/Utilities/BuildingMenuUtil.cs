@@ -18,7 +18,7 @@ namespace BetterBuildingMenu.Utilities
 		public static Dictionary<PrefabCategory, Dictionary<PrefabSubCategory, IndexedPrefabList>> CategorizedPrefabs { get; } = new();
 		public static bool IsReady { get; set; }
 
-		public static PrefabBase GetPrefabBase(int id)
+		public static PrefabBase? GetPrefabBase(int id)
 		{
 			if (CategorizedPrefabs.TryGetValue(PrefabCategory.Any, out var categories)
 				&& categories.TryGetValue(PrefabSubCategory.Any, out var prefabs)
@@ -30,7 +30,7 @@ namespace BetterBuildingMenu.Utilities
 			return null;
 		}
 
-		public static PrefabIndex GetPrefabIndex(int id)
+		public static PrefabIndex? GetPrefabIndex(int id)
 		{
 			if (CategorizedPrefabs.TryGetValue(PrefabCategory.Any, out var categories)
 				&& categories.TryGetValue(PrefabSubCategory.Any, out var prefabs)

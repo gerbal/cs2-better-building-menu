@@ -128,12 +128,12 @@ public static class ZoningSurfaceCatalog
 	/// </remarks>
 	public static string? ResolveFamilyFromGroup(string? groupName)
 	{
-		if (string.IsNullOrWhiteSpace(groupName))
+		if (groupName?.Trim() is not { Length: > 0 } trimmed)
 		{
 			return null;
 		}
 
-		return GroupFamilies.TryGetValue(groupName.Trim(), out var family) ? family : null;
+		return GroupFamilies.TryGetValue(trimmed, out var family) ? family : null;
 	}
 
 	/// <summary>
@@ -147,12 +147,10 @@ public static class ZoningSurfaceCatalog
 	/// </remarks>
 	public static string? ResolveGroupFromFamily(string? family)
 	{
-		if (string.IsNullOrWhiteSpace(family))
+		if (family?.Trim() is not { Length: > 0 } trimmed)
 		{
 			return null;
 		}
-
-		string trimmed = family.Trim();
 
 		foreach (var pair in GroupFamilies)
 		{
@@ -199,7 +197,7 @@ public static class ZoningSurfaceCatalog
 	/// </remarks>
 	public static string? ResolveFamily(string? prefabName)
 	{
-		if (string.IsNullOrWhiteSpace(prefabName))
+		if (prefabName is null || string.IsNullOrWhiteSpace(prefabName))
 		{
 			return null;
 		}

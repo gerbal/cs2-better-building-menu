@@ -9,7 +9,7 @@ namespace BetterBuildingMenu.Domain
 	public class IndexedPrefabList : IEnumerable<PrefabIndex>
 	{
 		private readonly Dictionary<int, PrefabIndex> _dictionary;
-		private List<PrefabIndex> _orderedList;
+		private List<PrefabIndex>? _orderedList;
 
 
 		public IndexedPrefabList()
