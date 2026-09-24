@@ -41,6 +41,8 @@ namespace BetterBuildingMenu.Systems
 		private ResourceSystem _resourceSystem = null!;
 		private ImageSystem _imageSystem = null!;
 		private PrefabUISystem _prefabUISystem = null!;
+		// Says which of the two phases this system is registered at is running.
+		private UpdateSystem _updateSystem = null!;
 		private HashSet<string> _blackList = null!;
 		// Road Builder's mark on a road it has thrown away, once found. See RefreshModCompatibility.
 		private ComponentType? _roadBuilderDiscarded;
@@ -106,6 +108,7 @@ namespace BetterBuildingMenu.Systems
 			_resourceSystem = World.GetOrCreateSystemManaged<ResourceSystem>();
 			_imageSystem = World.GetOrCreateSystemManaged<ImageSystem>();
 			_prefabUISystem = World.GetOrCreateSystemManaged<PrefabUISystem>();
+			_updateSystem = World.GetOrCreateSystemManaged<UpdateSystem>();
 
 			GameManager.instance.localizationManager.onActiveDictionaryChanged += OnActiveDictionaryChanged;
 
@@ -286,8 +289,8 @@ namespace BetterBuildingMenu.Systems
 		}
 
 		/// <remarks>Registered at PrefabUpdate and UIUpdate, both every frame; only UIUpdate
-		/// follows UnlockSystem. A partial pass runs at both, since the Created and Updated tags
-		/// last until the frame's clean-up. See docs/indexing.md, "Partial passes".</remarks>
+		/// follows UnlockSystem. A partial pass runs at UIUpdate only. See docs/indexing.md,
+		/// "Partial passes".</remarks>
 		protected override void OnUpdate()
 		{
 			if (_indexOnFirstUpdate)
@@ -324,7 +327,10 @@ namespace BetterBuildingMenu.Systems
 				ApplyUnlocks();
 			}
 
-			if (_changedPrefabQuery.IsEmptyIgnoreFilter)
+			// Once a frame, at the later tick: the Created and Updated tags last until the
+			// frame's clean-up, so it sees every change the PrefabUpdate tick would.
+			if (_updateSystem.currentPhase != SystemUpdatePhase.UIUpdate
+				|| _changedPrefabQuery.IsEmptyIgnoreFilter)
 			{
 				return;
 			}
