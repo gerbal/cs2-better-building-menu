@@ -261,23 +261,38 @@ namespace BetterBuildingMenu.Systems
 
 		/// <summary>The branch an asset's unlock node belongs to, or its service's root.</summary>
 		/// <remarks>More than one node can gate an asset; DevTreeGates.Pick decides which names it,
-		/// preferring the nodes of the asset's own service, which its menu names.</remarks>
+		/// preferring the nodes of the asset's own service.</remarks>
 		private (string Label, string Icon, int Depth) DevTreeBranchOf(
+			Entity asset,
 			IReadOnlyList<(Entity Requirement, UnlockFlags Flags)> required,
 			string? menu)
 		{
+			// The asset's own service, else the one its menu is named after: a mod that
+			// regroups the menus renames the menu, not the service.
+			var service = EntityManager.TryGetComponent<ServiceObjectData>(asset, out var serviceObject)
+				&& _prefabSystem.TryGetPrefab<PrefabBase>(serviceObject.m_Service, out var servicePrefab)
+					? servicePrefab.name
+					: menu;
 			var gates = new List<DevTreeGates.Gate>();
+			var otherWaysIn = false;
 
 			foreach (var (requirement, flags) in required)
 			{
+				var needed = (flags & UnlockFlags.RequireAll) != 0;
+
 				if (_devTreeBranches.TryGetValue(requirement, out var branch) && branch.Label.Length > 0)
 				{
-					gates.Add(new DevTreeGates.Gate(
-						branch.Label, branch.Icon, branch.Depth, (flags & UnlockFlags.RequireAll) != 0, branch.Service));
+					gates.Add(new DevTreeGates.Gate(branch.Label, branch.Icon, branch.Depth, needed, branch.Service));
+				}
+				else if (!needed)
+				{
+					// A way in that is not a node, such as a milestone. UnlockSystem lets the
+					// asset in through it as through any other.
+					otherWaysIn = true;
 				}
 			}
 
-			if (DevTreeGates.Pick(gates, menu) is { } gate)
+			if (DevTreeGates.Pick(gates, service, otherWaysIn) is { } gate)
 			{
 				return (gate.Label, gate.Icon, gate.Depth);
 			}
