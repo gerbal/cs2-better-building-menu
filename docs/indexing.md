@@ -160,6 +160,14 @@ from its parent building's row rather than from the grid. The theme and asset-pa
 deliberately NOT applied: those are player settings that hide assets which should still be
 indexed.
 
+**The menus and their tabs are in the game's order**, reached the same way. A menu's tabs are
+`GetSortedCategories` run as is: the menu's members, less the non-categories and the empty ones
+(removed swap-back, which moves the last one into the gap), then Unity's sort by `UIObjectInfo`.
+That comparer is the priority alone and the sort is not stable, so any sort of our own, stable or
+not, would put equal priorities in a different order from the game's. The menus are the bottom
+bar's: the toolbar groups by priority, then each group's members sorted the same way. A menu no
+toolbar group holds goes last.
+
 The walk's tables, with the menus and their category tabs, go into the pass's `VanillaMenuIndex`,
 which its `CatalogIndex` carries as `Menus`: a new pass reads the menus afresh, and nothing
 outlives the index it was read for. The placements are read by:
