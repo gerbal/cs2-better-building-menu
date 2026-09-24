@@ -46,16 +46,6 @@ namespace BetterBuildingMenu.Services
 			(BuildingFlags.HasResourceNode, nameof(BuildingFlags.HasResourceNode)),
 		};
 
-		/// <summary>
-		/// The state of the game's own toolbar filter row.
-		/// </summary>
-		/// <remarks>
-		/// Static because there is exactly one toolbar. BuildingMenuUISystem writes it
-		/// when the UI reports a change; <see cref="VanillaToolbarSelection.None"/>
-		/// filters nothing.
-		/// </remarks>
-		public static VanillaToolbarSelection ToolbarSelection { get; set; } = VanillaToolbarSelection.None;
-
 		public static string[] GetPlacementFlagNames(BuildingFlags? flags)
 		{
 			if (!flags.HasValue)
@@ -125,16 +115,6 @@ namespace BetterBuildingMenu.Services
 			new(selection.SelectedThemes, null, selection.VanillaSelected, selection.ModsSelected);
 
 		/// <summary>
-		/// How many assets each of the menu's category tabs holds.
-		/// </summary>
-		/// <remarks>
-		/// The category's own axis is excluded, so choosing one tab does not read every
-		/// other as empty; search and facets do count. Counted against the category the
-		/// entry answers to IN THIS MENU rather than its own UiCategory.
-		/// </remarks>
-		public IReadOnlyList<MenuCategoryCount> GetMenuCategoryCounts(BuildingCatalogQuery query) => Build(query).MenuCategoryCounts;
-
-		/// <summary>
 		/// Every category whose density tiers should be drawn in its place.
 		/// </summary>
 		/// <remarks>
@@ -170,16 +150,6 @@ namespace BetterBuildingMenu.Services
 						.ToArray()))
 				.ToArray();
 		}
-
-		/// <summary>
-		/// Which axis the fallback strip should use for this menu, and its tabs.
-		/// </summary>
-		/// <remarks>
-		/// Only for the menus vanilla never split. The axis that cuts most evenly wins —
-		/// smallest largest bucket — among a short hand-picked list of cuts the game
-		/// itself authored; an axis yielding fewer than two groups is not a choice.
-		/// </remarks>
-		public string GetStripAxis(BuildingCatalogQuery query) => Build(query).StripAxis;
 
 		/// <summary>
 		/// The glyph every school-level tab is built on.
@@ -326,10 +296,15 @@ namespace BetterBuildingMenu.Services
 		/// Defaults to <paramref name="entries"/>; the adapter passes a pack-unfiltered set
 		/// so the group can offer a pack other than the one already chosen.
 		/// </param>
+		/// <param name="vanillaSelected">
+		/// Whether the game's own row has its base-game option ticked, which the Content
+		/// group's matching option mirrors.
+		/// </param>
 		public static BuildingCatalogFacetState BuildFacetState(
 			IEnumerable<BuildingCatalogEntry> entries,
 			BuildingCatalogQuery query,
-			IEnumerable<BuildingCatalogEntry>? packScope = null)
+			IEnumerable<BuildingCatalogEntry>? packScope = null,
+			bool vanillaSelected = false)
 		{
 			if (entries is null)
 			{
@@ -350,7 +325,7 @@ namespace BetterBuildingMenu.Services
 			AddAvailabilityGroup(groups, source, query.Availability);
 			// Where it came from, next to who made it: one axis, one place.
 			// See AddContentGroup.
-			AddContentGroup(groups, packScope is null ? source : packScope.ToArray(), query);
+			AddContentGroup(groups, packScope is null ? source : packScope.ToArray(), query, vanillaSelected);
 			AddValueGroup(groups, FacetIds.Theme, "Theme", source.Select(entry => entry.Theme), query.Themes, WordFormat.SplitIdentifier);
 			// Neither unlock modality is a facet. Development restates the strip's own
 			// axis and collides with Role, and "can I build this now" is the question
@@ -372,22 +347,26 @@ namespace BetterBuildingMenu.Services
 			return new BuildingCatalogFacetState(groups.ToArray(), hasSelection);
 		}
 
-		/// <summary>One page of the catalog for this query.</summary>
-		public BuildingCatalogPage Query(BuildingCatalogQuery query) => Build(query).Page;
-
-		/// <summary>One view per refresh: every per-query answer above comes from it.</summary>
+		/// <summary>One view per refresh: every per-query answer comes from it.</summary>
 		/// <remarks>
-		/// The public one-line delegations above all read from it; BuildingMenuUISystem
-		/// calls this once per refresh and reads the view's properties.
+		/// BuildingMenuUISystem calls this once per refresh and reads the view's properties,
+		/// and once more for the matches-elsewhere count when a search finds nothing.
 		/// </remarks>
-		public CatalogView Build(BuildingCatalogQuery query, Func<CatalogView, string>? groupByResolver = null)
+		/// <param name="selection">
+		/// The game's own toolbar filter row, which BuildingMenuUISystem holds;
+		/// <see cref="VanillaToolbarSelection.None"/> filters nothing.
+		/// </param>
+		public CatalogView Build(
+			BuildingCatalogQuery query,
+			VanillaToolbarSelection selection,
+			Func<CatalogView, string>? groupByResolver = null)
 		{
 			if (query is null)
 			{
 				throw new ArgumentNullException(nameof(query));
 			}
 
-			var snapshot = ProjectForMenu(query.UiMenu, query.DlcIds);
+			var snapshot = ProjectForMenu(query.UiMenu, selection, query.DlcIds);
 
 			// Packs alone are counted before the pack filter runs, because that
 			// filter is upstream of InScope and InScope cannot undo it. Only a
@@ -395,12 +374,13 @@ namespace BetterBuildingMenu.Services
 			return new CatalogView(
 				snapshot,
 				query,
-				ToolbarSelection.SelectedPacks.Count > 0
-					? () => ProjectForMenu(query.UiMenu, query.DlcIds, ignorePacks: true)
+				selection.SelectedPacks.Count > 0
+					? () => ProjectForMenu(query.UiMenu, selection, query.DlcIds, ignorePacks: true)
 					: null,
 				groupByResolver,
 				PrefabIndexingSystem.GetMilestoneNames(),
-				VanillaMenus.IsEducation(query.UiMenu));
+				VanillaMenus.IsEducation(query.UiMenu),
+				selection.VanillaSelected);
 		}
 
 		/// <summary>
@@ -434,6 +414,14 @@ namespace BetterBuildingMenu.Services
 				? placedInThisMenu || gatheredNetwork
 				: isBuilding || placedInAnyMenu;
 
+		/// <summary>Whether the index holds anything the given menu places.</summary>
+		/// <param name="selection">
+		/// The game's own toolbar filter row. Its themes and Vanilla/Mods toggles can empty a
+		/// menu, which then goes back to vanilla; its pack selection is ignored here.
+		/// </param>
+		public static bool MenuHasAssets(string menu, VanillaToolbarSelection selection) =>
+			GetIndexedBuildings(menu, selection, ignorePackSelection: true).Any();
+
 		/// <summary>
 		/// The candidate set, widened to whatever menu the player has open.
 		/// </summary>
@@ -447,11 +435,9 @@ namespace BetterBuildingMenu.Services
 		/// pack facet wants this, for the same reason InScope drops a facet's own selection
 		/// before counting it: a dimension computed from the set it narrowed offers only itself.
 		/// </param>
-		/// <summary>Whether the index holds anything the given menu places.</summary>
-		public static bool MenuHasAssets(string menu) => GetIndexedBuildings(menu, ignorePackSelection: true).Any();
-
 		private static IEnumerable<PrefabIndex> GetIndexedBuildings(
-			string? uiMenu = null,
+			string? uiMenu,
+			VanillaToolbarSelection selection,
 			bool ignorePackSelection = false,
 			IReadOnlyList<string>? unionDlcIds = null)
 		{
@@ -473,7 +459,7 @@ namespace BetterBuildingMenu.Services
 				// is a bug. IsVisible early-outs on an empty selection.
 				.Where(prefab => ContentVisible(
 					prefab,
-					ignorePackSelection ? WithoutPacks(ToolbarSelection) : ToolbarSelection,
+					ignorePackSelection ? WithoutPacks(selection) : selection,
 					unionDlcIds))
 				// Membership comes from the game's own tree, walked DOWN from
 				// UIAssetMenuData the way ToolbarUISystem does: a scoped view shows that
@@ -525,10 +511,11 @@ namespace BetterBuildingMenu.Services
 
 		private BuildingCatalogEntry[] ProjectForMenu(
 			string? menu,
+			VanillaToolbarSelection selection,
 			IReadOnlyList<string>? contentDlcs = null,
 			bool ignorePacks = false)
 		{
-			var key = SnapshotKey.For(menu, contentDlcs, ignorePacks, ToolbarSelection);
+			var key = SnapshotKey.For(menu, contentDlcs, ignorePacks, selection);
 
 			if (_snapshots.TryGet(key, PrefabIndexingSystem.IndexGeneration, out var cached))
 			{
@@ -536,7 +523,7 @@ namespace BetterBuildingMenu.Services
 			}
 
 			var timer = System.Diagnostics.Stopwatch.StartNew();
-			var built = ProjectForMenuUncached(menu, contentDlcs, ignorePacks).ToArray();
+			var built = ProjectForMenuUncached(menu, selection, contentDlcs, ignorePacks).ToArray();
 			_snapshots.Put(key, PrefabIndexingSystem.IndexGeneration, built);
 			LastProjectionMs += (int)timer.ElapsedMilliseconds;
 			LastProjectionWasHit = false;
@@ -546,10 +533,11 @@ namespace BetterBuildingMenu.Services
 
 		private IEnumerable<BuildingCatalogEntry> ProjectForMenuUncached(
 			string? menu,
+			VanillaToolbarSelection selection,
 			IReadOnlyList<string>? contentDlcs,
 			bool ignorePacks)
 		{
-			var entries = GetIndexedBuildings(menu, ignorePackSelection: ignorePacks, unionDlcIds: contentDlcs).Select(Project).ToArray();
+			var entries = GetIndexedBuildings(menu, selection, ignorePackSelection: ignorePacks, unionDlcIds: contentDlcs).Select(Project).ToArray();
 			var root = PrefabIndexingSystem.GetDevTreeRootLabel(menu);
 
 			if (string.IsNullOrEmpty(root))
@@ -810,7 +798,8 @@ namespace BetterBuildingMenu.Services
 		private static void AddContentGroup(
 			ICollection<BuildingCatalogFacetGroup> groups,
 			IReadOnlyList<BuildingCatalogEntry> source,
-			BuildingCatalogQuery query)
+			BuildingCatalogQuery query,
+			bool vanillaSelected)
 		{
 			var options = new List<BuildingCatalogFacetOption>();
 
@@ -820,7 +809,7 @@ namespace BetterBuildingMenu.Services
 				options.Add(new BuildingCatalogFacetOption(
 					ContentOption.Vanilla,
 					FormatDlcLabel(GameDlcIds.BaseGame.ToString(CultureInfo.InvariantCulture)),
-					ToolbarSelection.VanillaSelected));
+					vanillaSelected));
 			}
 
 			// The tail: DLC no pack speaks for.

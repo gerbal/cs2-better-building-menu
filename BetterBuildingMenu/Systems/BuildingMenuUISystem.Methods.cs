@@ -56,6 +56,7 @@ namespace BetterBuildingMenu.Systems
 			var menuHasCategories = PrefabIndexingSystem.GetMenuCategories(string.IsNullOrEmpty(menu) ? null : menu).Count > 0;
 			var view = _buildingCatalogAdapter.Build(
 				_lens.Query,
+				_toolbarSelection,
 				built => BuildingCatalogGrouping.Effective(
 					_lens.Query.GroupBy, menuHasCategories, built.StripAxis, VanillaMenus.IsEducation(menu), built.GroupDimensions));
 			BuildingCatalogPage page = view.Page;
@@ -76,7 +77,7 @@ namespace BetterBuildingMenu.Systems
 			// the button delivers.
 			_BuildingCatalogMatchesElsewhere.Value =
 				page.TotalCount == 0 && !string.IsNullOrWhiteSpace(_lens.Query.SearchText)
-					? _buildingCatalogAdapter.Build(_lens.EverywhereQuery()).Page.TotalCount
+					? _buildingCatalogAdapter.Build(_lens.EverywhereQuery(), _toolbarSelection).Page.TotalCount
 					: 0;
 			var pageMs = Lap();
 			_BuildingCatalogBinding.Value = page with
