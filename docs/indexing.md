@@ -5,7 +5,8 @@ Design rationale for `PrefabIndexingSystem`, one partial class across six files 
 
 - `PrefabIndexingSystem.cs`: the lifecycle, the passes, and what each entry is built from;
 - `.Menus.cs`: the vanilla menus;
-- `.MenuAudit.cs`: the census and coverage report;
+- `.MenuAudit.cs`: the census and coverage report, which ask the game about prefabs and log what
+  `VanillaMenuAudit`, `VanillaMenuCoverage` and `IndexAuditLog` return;
 - `.Facts.cs`: per-prefab facts;
 - `.Progression.cs`: milestones, the dev tree and unlock requirements;
 - `.Zones.cs`: the zone catalog.
@@ -215,10 +216,14 @@ It runs once per city load, on the first full pass, with the processor census be
 language change or a lock-state recheck repeats the pass but not the menus it reports on, so the
 repeat would add a second copy of the same census. With Debug logging on, every full pass logs it.
 
-The arithmetic lives in `VanillaMenuAudit`, where it is a function of plain data and covered by
-tests; the system only gathers the facts out of the entity world and logs what comes back. As a
-log line alone the census could only be read by booting a save and grepping `Modding.log`, so
-nothing would stop the mapping regressing between boots.
+The arithmetic and the wording live in `Domain/`, where they are functions of the index and
+covered by tests: `VanillaMenuAudit` for the census, `VanillaMenuCoverage` for the coverage
+report, and `IndexAuditLog` for the lines of both and of the processor census. They return lines
+rather than log them, since anything that touches `Mod` cannot run in a test. For those, the
+system only asks the game what a placed prefab is, and logs what comes back. The DLC audit, the
+processor overlap, the zone parity check and the failure lines are still worded in the system.
+As a log line alone the census could only be read by booting a save and grepping
+`Modding.log`, so nothing would stop the mapping regressing between boots.
 
 Extras are split in the output: ones a recorded divergence explains are `expectedExtras`,
 anything else is `UNEXPLAINED`, which is either a new divergence to write down or a bug. The
