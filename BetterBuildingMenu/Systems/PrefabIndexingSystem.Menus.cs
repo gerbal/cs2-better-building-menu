@@ -107,6 +107,7 @@ namespace BetterBuildingMenu.Systems
 
 		/// <summary>Reads the vanilla toolbar's asset menus: by entity index, so a menu selection
 		/// arriving from the UI can be resolved to a prefab name, and by name, so the lens can open one.</summary>
+		/// <remarks>The list is in the bottom bar's order; see <see cref="ToolbarOrder"/>.</remarks>
 		private (Dictionary<int, string> Names, Dictionary<string, Entity> Entities, List<VanillaMenuCategory> Menus) IndexAssetMenus()
 		{
 			var query = GetEntityQuery(
@@ -115,7 +116,7 @@ namespace BetterBuildingMenu.Systems
 			var menus = query.ToEntityArray(Allocator.Temp);
 			var names = new Dictionary<int, string>();
 			var entities = new Dictionary<string, Entity>(System.StringComparer.OrdinalIgnoreCase);
-			var list = new List<VanillaMenuCategory>();
+			var found = new List<(Entity Menu, VanillaMenuCategory Record)>();
 
 			for (var i = 0; i < menus.Length; i++)
 			{
@@ -133,77 +134,150 @@ namespace BetterBuildingMenu.Systems
 				prefab.TryGet<UIObject>(out var uIObject);
 
 				// Same record as a category tab, because a menu is the tier above one.
-				// Priority is UIObject.m_Priority; the bottom bar also sorts by toolbar
-				// GROUP first, which is not modelled here.
-				list.Add(new VanillaMenuCategory(
+				found.Add((menus[i], new VanillaMenuCategory(
 					Id: prefab.name,
 					Name: prefab.name,
 					Icon: IconPath.Normalize(CategoryIcon.Resolve(uIObject?.m_Icon, _imageSystem.GetIconOrGroupIcon(menus[i]))) ?? string.Empty,
-					Priority: uIObject?.m_Priority ?? 0));
+					Priority: uIObject?.m_Priority ?? 0)));
 			}
 
-			list.Sort((left, right) => left.Priority.CompareTo(right.Priority));
+			// A menu the bottom bar does not hold goes last, by priority. OrderBy is
+			// stable, so those keep the query's order among themselves.
+			var onToolbar = ToolbarOrder();
+			var list = found
+				.OrderBy(menu => onToolbar.TryGetValue(menu.Menu, out var place) ? place : int.MaxValue)
+				.ThenBy(menu => menu.Record.Priority)
+				.Select(menu => menu.Record)
+				.ToList();
 
 			Mod.Log.Info($"Indexed Asset Menus Count: {names.Count}");
 
 			return (names, entities, list);
 		}
 
-		/// <summary>Reads each menu's category tabs, which are vanilla's second tier.</summary>
-		/// <remarks>A category that names no menu is not a build-menu tab — UIAssetCategoryPrefab adds
-		/// UIAssetCategoryData only when m_Menu is set — so that check is belt and braces.</remarks>
+		/// <summary>Where each asset menu sits on the bottom bar, counted from 0.</summary>
+		/// <remarks>ToolbarUISystem's own steps: the toolbar groups sorted by
+		/// UIToolbarGroupData.m_Priority, then each group's members, from its UIGroupElement buffer,
+		/// sorted by UIObjectInfo. Its comparer is the priority alone and Unity's sort is not stable,
+		/// so only the same input put through the same sort gives the order the player sees.</remarks>
+		private Dictionary<Entity, int> ToolbarOrder()
+		{
+			var order = new Dictionary<Entity, int>();
+			var query = GetEntityQuery(
+				ComponentType.ReadOnly<PrefabData>(),
+				ComponentType.ReadOnly<UIGroupElement>(),
+				ComponentType.ReadOnly<UIToolbarGroupData>());
+
+			using var groups = query.ToEntityArray(Allocator.Temp);
+			using var groupData = query.ToComponentDataArray<UIToolbarGroupData>(Allocator.Temp);
+			var sortedGroups = new NativeArray<UIObjectInfo>(groups.Length, Allocator.Temp);
+
+			for (var i = 0; i < groups.Length; i++)
+			{
+				sortedGroups[i] = new UIObjectInfo(groups[i], groupData[i].m_Priority);
+			}
+
+			sortedGroups.Sort();
+
+			foreach (var group in sortedGroups)
+			{
+				using var members = UIObjectInfo.GetObjects(
+					EntityManager,
+					EntityManager.GetBuffer<UIGroupElement>(group.entity, isReadOnly: true),
+					Allocator.Temp);
+				members.Sort();
+
+				foreach (var member in members)
+				{
+					if (EntityManager.HasComponent<UIAssetMenuData>(member.entity) && !order.ContainsKey(member.entity))
+					{
+						order[member.entity] = order.Count;
+					}
+				}
+			}
+
+			sortedGroups.Dispose();
+
+			return order;
+		}
+
+		/// <summary>Reads each menu's category tabs, which are vanilla's second tier, in the order the
+		/// game draws them.</summary>
+		/// <remarks>A category joins its menu's UIGroupElement buffer when UIAssetCategoryPrefab
+		/// initializes, so the menu's members are its categories. See <see cref="SortedCategories"/>.</remarks>
 		private Dictionary<string, List<VanillaMenuCategory>> IndexAssetCategories()
 		{
 			var query = GetEntityQuery(
-				ComponentType.ReadOnly<UIAssetCategoryData>(),
+				ComponentType.ReadOnly<UIAssetMenuData>(),
+				ComponentType.ReadOnly<UIGroupElement>(),
 				ComponentType.ReadOnly<PrefabData>());
-			var categories = query.ToEntityArray(Allocator.Temp);
+			using var menus = query.ToEntityArray(Allocator.Temp);
 			var byMenu = new Dictionary<string, List<VanillaMenuCategory>>();
 
-			for (var i = 0; i < categories.Length; i++)
+			for (var i = 0; i < menus.Length; i++)
 			{
-				if (!_prefabSystem.TryGetPrefab<PrefabBase>(categories[i], out var prefab)
-					|| prefab is not UIAssetCategoryPrefab category
-					|| category.m_Menu?.name is not string menuName)
+				if (!_prefabSystem.TryGetPrefab<PrefabBase>(menus[i], out var menu) || menu?.name is not string menuName)
 				{
 					continue;
 				}
 
-				// A category with no members is not a tab: vanilla drops these in
-				// GetSortedCategories before it binds the row. Transportation ships a
-				// ferry category that is empty in a base-game save.
-				if (!EntityManager.TryGetBuffer<UIGroupElement>(categories[i], true, out var members)
-					|| members.Length == 0)
+				using var sorted = SortedCategories(menus[i]);
+
+				foreach (var tab in sorted)
 				{
-					continue;
+					if (!_prefabSystem.TryGetPrefab<PrefabBase>(tab.entity, out var prefab) || prefab?.name is null)
+					{
+						continue;
+					}
+
+					prefab.TryGet<UIObject>(out var uIObject);
+
+					// Two menus sharing a prefab name share one list, as before.
+					if (!byMenu.TryGetValue(menuName, out var tabs))
+					{
+						tabs = new List<VanillaMenuCategory>();
+						byMenu[menuName] = tabs;
+					}
+
+					tabs.Add(new VanillaMenuCategory(
+						Id: prefab.name,
+						Name: prefab.name,
+						Icon: IconPath.Normalize(CategoryIcon.Resolve(uIObject?.m_Icon, _imageSystem.GetIconOrGroupIcon(tab.entity))) ?? string.Empty,
+						Priority: uIObject?.m_Priority ?? 0));
 				}
-
-				prefab.TryGet<UIObject>(out var uIObject);
-
-				if (!byMenu.TryGetValue(menuName, out var tabs))
-				{
-					tabs = new List<VanillaMenuCategory>();
-					byMenu[menuName] = tabs;
-				}
-
-				tabs.Add(new VanillaMenuCategory(
-					Id: prefab.name,
-					Name: prefab.name,
-					Icon: IconPath.Normalize(CategoryIcon.Resolve(uIObject?.m_Icon, _imageSystem.GetIconOrGroupIcon(categories[i]))) ?? string.Empty,
-					// Vanilla orders its tabs by this and defaults it to 0, so
-					// categories that never set one keep their query order rather
-					// than being pushed to the end.
-					Priority: uIObject?.m_Priority ?? 0));
-			}
-
-			foreach (var tabs in byMenu.Values)
-			{
-				tabs.Sort((left, right) => left.Priority.CompareTo(right.Priority));
 			}
 
 			Mod.Log.Info($"Indexed Asset Categories: {byMenu.Count} menus, {byMenu.Values.Sum(list => list.Count)} tabs");
 
 			return byMenu;
+		}
+
+		/// <summary>A menu's category tabs, as ToolbarUISystem.GetSortedCategories orders them.</summary>
+		/// <remarks>Transcribed step for step. A member that is not a category, or has nothing in it,
+		/// is removed swap-back, which moves the last one into its place: vanilla drops an empty
+		/// category before it binds the row, and Transportation ships a ferry category that is empty
+		/// in a base-game save. Then Unity's sort by UIObjectInfo, whose comparer is the priority alone
+		/// and which is not stable, so only the same steps give the order the player sees.</remarks>
+		private NativeList<UIObjectInfo> SortedCategories(Entity menu)
+		{
+			var objects = UIObjectInfo.GetObjects(
+				EntityManager,
+				EntityManager.GetBuffer<UIGroupElement>(menu, isReadOnly: true),
+				Allocator.Temp);
+
+			for (var i = objects.Length - 1; i >= 0; i--)
+			{
+				if (!EntityManager.HasComponent<UIAssetCategoryData>(objects[i].entity)
+					|| !EntityManager.TryGetBuffer<UIGroupElement>(objects[i].entity, true, out var members)
+					|| members.Length == 0)
+				{
+					objects.RemoveAtSwapBack(i);
+				}
+			}
+
+			objects.Sort();
+
+			return objects;
 		}
 	}
 }
