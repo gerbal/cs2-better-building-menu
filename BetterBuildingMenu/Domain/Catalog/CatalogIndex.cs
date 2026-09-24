@@ -173,12 +173,9 @@ namespace BetterBuildingMenu.Domain.Catalog
 
 		/// <summary>Files an entry in the two lists it belongs to: everything, and its own subcategory's.</summary>
 		/// <remarks>
-		/// An entry already filed under the same id is taken out of its own list first. Two
-		/// processors can claim one prefab, and the later entry would otherwise replace the
-		/// earlier one only in the list they share, leaving it listed under the earlier
-		/// category too. A category's <see cref="PrefabSubCategory.Any"/> list holds only the
-		/// entries filed under the category alone, as a Find It override can file them, not a
-		/// second copy of the whole category: nothing reads one.
+		/// An entry already filed under the same id is taken out first, so when two processors
+		/// claim one prefab it stays listed under the later one's category only. A category's
+		/// <see cref="PrefabSubCategory.Any"/> list holds just the entries filed under it alone.
 		/// </remarks>
 		internal void File(PrefabIndex entry)
 		{
