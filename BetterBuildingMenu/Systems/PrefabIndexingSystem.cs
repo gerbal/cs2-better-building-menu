@@ -305,7 +305,8 @@ namespace BetterBuildingMenu.Systems
 				_indexOnFirstUpdate = false;
 				Mod.Log.Info("Full pass at first update: the mod joined a running game");
 				// There is no load to retry it: if this fails, the index stays empty until the
-				// next load or language change, and the panel shows its indexing notice.
+				// next load, and the panel shows its indexing notice. With no pass behind it, a
+				// language change has no indexed locale to differ from, so it cannot retry.
 				RunIndex(true);
 			}
 
