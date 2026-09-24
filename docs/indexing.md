@@ -72,6 +72,8 @@ only what it touched would leave that prefab as "Foo" beside a sibling still cal
 A full pass builds a new index aside, and the menus, zones, milestones, dev tree and mod flags it
 reads are built into it. Every read and write in the pass goes to that index, which `BuildIndex`
 passes down as `target`; the published `Index` is still the previous one until the pass returns.
+The one read of it is deliberate: its mod flags, the answer to keep if reading the enabled mods
+fails.
 `RunIndex` publishes the new index only then. If anything in the build throws, it logs the error
 and publishes nothing: the panel keeps the index it had, and nothing reaches the game's load or
 locale dispatch.
