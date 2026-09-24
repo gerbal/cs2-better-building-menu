@@ -323,7 +323,7 @@ namespace BetterBuildingMenu.Systems
 			_BuildingLensMenuCategoriesBinding.Value = _indexer.Index.GetMenuCategories(
 				string.IsNullOrEmpty(_lens.Menu) ? null : _lens.Menu).ToArray();
 			_BuildingLensMenuBinding.Value = _lens.Menu;
-			_BuildingLensMenusBinding.Value = _indexer.Index.Menus.Menus().ToArray();
+			_BuildingLensMenusBinding.Value = _indexer.Index.Menus.AssetMenus().ToArray();
 			_BuildingLensMenuCategoryBinding.Value = _lens.Category;
 			_BuildingLensMenuSchoolTierBinding.Value = _lens.SchoolTier;
 			_BuildingLensStripTabBinding.Value = _lens.Query.StripTabs?.ToArray() ?? Array.Empty<string>();

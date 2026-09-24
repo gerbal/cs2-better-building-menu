@@ -4,7 +4,6 @@ using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Services;
-using BetterBuildingMenu.Utilities;
 
 using Game.Prefabs;
 

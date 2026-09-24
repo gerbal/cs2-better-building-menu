@@ -90,10 +90,9 @@ asset built or bulldozed — bumps the indexer's `Generation`, and `BuildingMenu
 compares it with the generation its last publish read (`IndexWatch`).
 
 Each publish reads the indexer's `Source` once: the index, the placed uniques and the generation
-together.
-Every cache the adapter keeps is keyed on that generation. It is never reset, because the caches
-compare plain ints, and a count that started again could land on a number an older projection was
-stored under.
+together. Every cache the adapter keeps is keyed on that generation. It is never reset, because
+the caches compare plain ints, and a count that started again could land on a number an older
+projection was stored under.
 
 A change while the panel is open schedules the same debounced refresh a keystroke does, so a burst
 of partial passes or unique events is one refresh rather than one each. A change while it is closed
@@ -122,9 +121,15 @@ indexed.
 
 The walk's tables, with the menus and their category tabs, go into the pass's `VanillaMenuIndex`,
 which its `CatalogIndex` carries as `Menus`: a new pass reads the menus afresh, and nothing
-outlives the index it was read for. Two things read the placements: the coverage report, and the
-index itself, which treats placement as an override — see the blacklist check in `BuildIndex` and
-`VanillaMenuIndex.IsPlaced`.
+outlives the index it was read for. The placements are read by:
+
+- the coverage report and the menu audit;
+- the zone catalog, which inherits the Zones menu (below);
+- the index itself, which treats placement as an override: the blacklist and Find It checks in
+  `BuildIndex`, the menu-placed, terraforming and misc-building processors, and `AddPrefab`'s
+  placement override, which takes the menu and category the entity world gives;
+- the adapter, which scopes a menu's view by them and gathers networks into Roads only when some
+  menu places them.
 
 ### The Zones menu
 
