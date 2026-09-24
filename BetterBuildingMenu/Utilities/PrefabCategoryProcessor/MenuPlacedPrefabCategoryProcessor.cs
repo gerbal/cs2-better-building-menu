@@ -3,6 +3,7 @@ using BetterBuildingMenu.Domain.Interfaces;
 
 using Game.Prefabs;
 
+using System;
 using System.Diagnostics.CodeAnalysis;
 
 using Unity.Entities;
@@ -17,10 +18,12 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 	public class MenuPlacedPrefabCategoryProcessor : IPrefabCategoryProcessor
 	{
 		private readonly EntityManager _entityManager;
+		private readonly Func<int, bool> _isIndexed;
 
-		public MenuPlacedPrefabCategoryProcessor(EntityManager entityManager)
+		public MenuPlacedPrefabCategoryProcessor(EntityManager entityManager, Func<int, bool> isIndexed)
 		{
 			_entityManager = entityManager;
+			_isIndexed = isIndexed;
 		}
 
 		public EntityQueryDesc[] GetEntityQuery()
@@ -48,7 +51,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 			if (!MenuPlacedFallback.ShouldIndex(
 				placedInVanillaMenu: Systems.PrefabIndexingSystem.IsPlacedInVanillaMenu(entity.Index),
 				isCategory: isCategory,
-				alreadyIndexed: BuildingMenuUtil.GetPrefabIndex(entity.Index) is not null))
+				alreadyIndexed: _isIndexed(entity.Index)))
 			{
 				prefabIndex = null!;
 				return false;

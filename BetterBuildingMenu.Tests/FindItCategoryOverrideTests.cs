@@ -87,7 +87,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void EveryPairTheIndexLaysOutIsFiled()
 		{
-			// The same range rule AddAllCategories builds the index with.
+			// The same range rule CatalogIndex lays its lists out by.
 			foreach (PrefabCategory category in Enum.GetValues(typeof(PrefabCategory)))
 			{
 				if (category is PrefabCategory.Any)

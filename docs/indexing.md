@@ -49,7 +49,7 @@ pass runs them in the order `PrefabCategoryProcessors` lists them, which is the 
 build. A test fails if a processor in the assembly is missing from that list.
 
 The index holds one entry per prefab, so when two processors claim the same prefab the later
-one's entry replaces the earlier one's, category and all: `BuildingMenuUtil.File` takes the
+one's entry replaces the earlier one's, category and all: `CatalogIndex.File` takes the
 earlier entry out of every list it was filed in, so the prefab is listed under one category only.
 Nothing fails when that happens. The full pass that logs the census also logs each such pair at
 Info as `[PROCESSOR-OVERLAP]`, with how many prefabs they shared and one of them by name. `MenuPlacedPrefabCategoryProcessor` runs last and
@@ -68,15 +68,14 @@ only what it touched would leave that prefab as "Foo" beside a sibling still cal
 
 ## A pass that fails
 
-A full pass clears the index and rebuilds it, along with the menus, zones, milestones and dev tree
-it reads. `RunIndex` captures what it is about to replace, and if anything in the build throws, it
+A full pass builds a new index, along with the menus, zones, milestones and dev tree it reads. `RunIndex` captures what it is about to replace, and if anything in the build throws, it
 puts all of it back and logs the error. The panel keeps the index it had, and nothing reaches the
 game's load or locale dispatch.
 
 Capturing references is enough, because a pass never writes to the old collections. Every
-`Index*` step builds new ones and assigns them at its end, and `AddAllCategories` gives every
-category new lists. Before the first pass there is nothing to keep, so a failure there leaves an
-empty index laid out, and `IsReady` stays false.
+`Index*` step builds new ones and assigns them at its end, and the pass files into a new
+`CatalogIndex`. Before the first pass there is nothing to keep, so a failure there leaves an
+empty index laid out, not yet ready.
 
 A failed pass at `OnGameLoaded` does not count as indexed, so loading-complete runs its own.
 Partial passes are not covered. They edit the live index in place, and each prefab and each
@@ -88,7 +87,8 @@ The indexer never calls the panel. Whatever changes an indexed fact — a pass, 
 asset built or bulldozed — bumps the indexer's `Generation`, and `BuildingMenuUISystem.OnUpdate`
 compares it with the generation its last publish read (`IndexWatch`).
 
-Each publish reads the indexer's `Source` once: the generation and the placed uniques together.
+Each publish reads the indexer's `Source` once: the index, the placed uniques and the generation
+together.
 Every cache the adapter keeps is keyed on that generation. It is never reset, because the caches
 compare plain ints, and a count that started again could land on a number an older projection was
 stored under.

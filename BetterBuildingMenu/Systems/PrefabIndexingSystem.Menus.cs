@@ -7,6 +7,7 @@ using Colossal.PSI.Common;
 using Colossal.Serialization.Entities;
 
 using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Domain.Interfaces;
 using BetterBuildingMenu.Utilities;
@@ -263,7 +264,7 @@ namespace BetterBuildingMenu.Systems
 		/// <summary>The tab strip for a menu, empty when the menu has none.</summary>
 		/// <remarks>Roads gets more tabs than the game gives it: the lens gathers every network there
 		/// (see <see cref="NetworkMenuExtension"/>), so the strip has to offer the extras too.</remarks>
-		public static IReadOnlyList<VanillaMenuCategory> GetMenuCategories(string? menuName)
+		public static IReadOnlyList<VanillaMenuCategory> GetMenuCategories(CatalogIndex index, string? menuName)
 		{
 			var tabs = menuName is not null && _assetCategories.TryGetValue(menuName, out var found)
 				? found
@@ -274,20 +275,15 @@ namespace BetterBuildingMenu.Systems
 				return tabs;
 			}
 
-			return tabs.Concat(GetExtraNetworkCategories()).ToArray();
+			return tabs.Concat(GetExtraNetworkCategories(index)).ToArray();
 		}
 
 		/// <summary>A tab for each kind of network the Roads menu does not already hold.</summary>
 		/// <remarks>Built from what is indexed rather than from the enum, so a subcategory with nothing
 		/// in it draws no tab. Ids match what NetworkMenuExtension.Reframe writes onto the entries.</remarks>
-		private static IEnumerable<VanillaMenuCategory> GetExtraNetworkCategories()
+		private static IEnumerable<VanillaMenuCategory> GetExtraNetworkCategories(CatalogIndex index)
 		{
-			if (!BuildingMenuUtil.CategorizedPrefabs.TryGetValue(PrefabCategory.Networks, out var networks))
-			{
-				yield break;
-			}
-
-			foreach (var pair in networks.OrderBy(pair => (int)pair.Key))
+			foreach (var pair in index.ListsIn(PrefabCategory.Networks).OrderBy(pair => (int)pair.Key))
 			{
 				if (pair.Key == PrefabSubCategory.Any || pair.Value.Count == 0)
 				{
