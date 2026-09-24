@@ -66,8 +66,11 @@ namespace BetterBuildingMenu.Systems
 
 			// A search that matches nothing in the current section reads as "this building does
 			// not exist" when it usually means "not here". With auto-widen on a scoped miss drops
-			// the scope instead of asking; it cannot recurse, because the retry is unscoped.
+			// the scope instead of asking; it cannot recurse, because the retry is unscoped. Not
+			// on an index still being built: during a load everything misses, and the scope it
+			// dropped would stay dropped once the city's pass lands.
 			if (Mod.Settings.AutoWidenSearch
+				&& source.Index.IsReady
 				&& page.TotalCount == 0
 				&& !string.IsNullOrWhiteSpace(_lens.Query.SearchText)
 				&& _lens.Query.IsScopedToMenu)

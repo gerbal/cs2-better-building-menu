@@ -32,6 +32,15 @@ the save's lock state is restored by the Deserialize phase that `OnGameLoaded` f
 The gate is on `Purpose`, not `GameMode`: the main menu's Cleanup load raises `OnGameLoaded` too,
 and there is nothing to index for.
 
+Every load starts from nothing. `OnGamePreload` empties the index, keeping only the mod flags,
+which belong to the playset rather than the city. It also empties the placed uniques and their
+candidates, bumps the generation, and switches the system off. Nothing the last city indexed is
+served to the next one, even if the next one's first pass fails. The system comes back on at
+`OnGameLoaded` for a game or map, or at loading-complete for the game or the editor. The main
+menu's Cleanup load passes neither, so no pass runs outside a city: not a partial pass, not an
+unlock, and not the pass a language change earns (see "Milestones"). The main menu at boot raises
+no preload at all, and the system starts off there.
+
 `OnGameLoadingComplete` still runs, and lock state is the one fact the earlier pass could
 plausibly have got wrong. `LockStateDrift` is the exact test for it — the same `Locked` read
 `ApplyUnlocks` uses, over every indexed prefab. Zero drift skips the second full pass; any drift
@@ -73,26 +82,35 @@ A full pass builds a new index aside, and the menus, zones, milestones, dev tree
 reads are built into it. Every read and write in the pass goes to that index, which `BuildIndex`
 passes down as `target`; the published `Index` is still the previous one until the pass returns.
 The one read of it is deliberate: its mod flags, the answer to keep if reading the enabled mods
-fails.
-`RunIndex` publishes the new index only then. If anything in the build throws, it logs the error
-and publishes nothing: the panel keeps the index it had, and nothing reaches the game's load or
-locale dispatch.
+fails. `RunIndex` publishes the new index only then. If anything in the build throws, it logs the
+error and publishes nothing: the panel keeps the index it had, and nothing reaches the game's load
+or update loop.
 
 So a failed pass has nothing to put back. The published index keeps the tables and mod flags it
 was built with, and the partial passes after a failure read the same ones it was filled from. Road
 Builder's discard component is the exception: once a pass has found it, it is kept whether or not
-that pass succeeds. Before the first pass the published index is empty, laid out and not yet
-ready, and a failure leaves it so.
+that pass succeeds.
 
-A failed pass at `OnGameLoaded` does not count as indexed, so loading-complete runs its own.
-Partial passes are not covered. They edit the live index in place, and each prefab and each
-processor in them has its own catch.
+A city's first pass is the exception to keeping what it had: the load emptied the index at
+preload, so a first pass that fails leaves it empty and not ready. The panel shows the indexing
+notice and hands every menu back to vanilla, which is better than the last city's catalog.
+Loading-complete runs its own pass unless the index is ready by then. Ready means a full pass has
+succeeded since the preload, `OnGameLoaded`'s or a locale pass after it; partial passes cannot
+make it so. Until a pass succeeds, partial passes and unlocks are skipped: there is nothing to
+patch, and the next full pass reads their changes afresh. If every pass of a load fails, or the
+first-update pass of a mod joining a running game does, that lasts until the next load. A
+language change retries it only if a pass has succeeded earlier in the session, since the
+policy has no indexed locale to compare against until one has.
+
+Partial passes are not covered by any of this. They edit the live index in place, and each prefab
+and each processor in them has its own catch.
 
 ## How the panel hears of a change
 
 The indexer never calls the panel. Whatever changes an indexed fact — a pass, an unlock, a unique
-asset built or bulldozed — bumps the indexer's `Generation`, and `BuildingMenuUISystem.OnUpdate`
-compares it with the generation its last publish read (`IndexWatch`).
+asset built or bulldozed, a load emptying the index — bumps the indexer's `Generation`, and
+`BuildingMenuUISystem.OnUpdate` compares it with the generation its last publish read
+(`IndexWatch`).
 
 Each publish reads the indexer's `Source` once: the index, the placed uniques and the generation
 together. Every cache the adapter keeps is keyed on that generation. It is never reset, because
@@ -274,16 +292,19 @@ into the service's root bucket.
 
 ## Milestones
 
-Milestone names are resolved at index time, not in the UI: the game's key is parameterised by
-index (`Progression.MILESTONE_NAME:<index>`), and the modding API's `translate(id, fallback)`
-takes no arguments, so the active dictionary is asked directly. `GetAssetName` does not cover it
-— a milestone prefab's title lookup misses and falls through to the prefab name, literally
-"Milestone7". Resolving at index time also means milestone names follow a language change for
-free, because `OnActiveDictionaryChanged` runs a full pass when the active locale is not the one
-the names were resolved in. The game raises that same event for every locale source a mod adds
-or removes, and those do not change the language: `LocaleReindexPolicy` defers them to one full
-pass a second after the last, polled from `OnUpdate`, and a full pass run for any other reason
-(the save's own at `OnGameLoaded`) cancels the deferral. Eight full passes in the first minute at
+Milestone names are resolved at index time, not in the UI: the game's key is parameterised by index
+(`Progression.MILESTONE_NAME:<index>`), and the modding API's `translate(id, fallback)` takes no
+arguments, so the active dictionary is asked directly. `GetAssetName` does not cover it — a
+milestone prefab's title lookup misses and falls through to the prefab name, literally
+"Milestone7". Resolving at index time also means milestone names follow a language change for free,
+because a full pass follows `OnActiveDictionaryChanged` when the active locale is not the one the
+names were resolved in. The game raises that same event for every locale source a mod adds or
+removes, and those do not change the language: `LocaleReindexPolicy` defers them to one full pass a
+second after the last. Both passes are taken from `OnUpdate`, never run from the event: the event
+also fires at the main menu and between a preload and `OnGameLoaded`, where `OnUpdate` is off, and
+a pass there would publish an index outside a city or from a half-loaded world. A full pass run for
+any other reason (the save's own at `OnGameLoaded`) covers either, so a language switched at the
+main menu is simply read by the next city's first pass. Eight full passes in the first minute at
 the main menu, one per mod locale file, is what that replaced.
 
 `ProgressionIndex.MilestoneNames` is sized from the highest index actually present

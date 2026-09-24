@@ -50,13 +50,10 @@ namespace BetterBuildingMenu.Systems
 		// pass's own trigger. A field rather than a RequireForUpdate gate,
 		// which would hold the system shut for unlock events too.
 		private EntityQuery _changedPrefabQuery;
-		// One full pass per settled burst of dictionary changes, at once for a
-		// language change. See OnActiveDictionaryChanged.
+		// One full pass per settled burst of dictionary changes, on the next update for
+		// a language change. See OnActiveDictionaryChanged.
 		private readonly LocaleReindexPolicy _localeReindex = new(TimeSpan.FromSeconds(1));
 		private static readonly System.Diagnostics.Stopwatch IndexClock = System.Diagnostics.Stopwatch.StartNew();
-		// Set by the OnGameLoaded pass, cleared at preload, read at loading-
-		// complete to decide whether a second full pass is owed. See there.
-		private bool _indexedAtGameLoaded;
 		// Whether this load's census and menu audit are in the log yet. See RunIndex.
 		private bool _auditedThisLoad;
 		private UniqueAssetTrackingSystem? _uniqueAssets;
@@ -76,19 +73,20 @@ namespace BetterBuildingMenu.Systems
 		private readonly List<(IPrefabCategoryProcessor Processor, EntityQuery All, EntityQuery Changed)> _processors = new();
 
 		/// <summary>Bumped whenever an indexed fact changes: a re-index, an unlock, a unique built or
-		/// bulldozed. The catalog's snapshot cache is keyed on it, so a stale projection cannot outlive
+		/// bulldozed, a load emptying the index. The catalog's snapshot cache is keyed on it, so a stale projection cannot outlive
 		/// the change that staled it, and the panel polls it to know when to republish.</summary>
 		/// <remarks>Never reset: the caches compare it as a plain int, so a count that started again
 		/// could land on a number an older projection was stored under.</remarks>
 		public int Generation { get; private set; } = 1;
 
-		/// <summary>The index the panel reads. A full pass builds its replacement aside and publishes it
-		/// only when the pass succeeds; a partial pass edits it in place. See <see cref="RunIndex"/>.</summary>
+		/// <summary>The index the panel reads. A load empties it at preload; a full pass builds its
+		/// replacement aside and publishes it only when the pass succeeds; a partial pass edits it in
+		/// place. See <see cref="RunIndex"/>.</summary>
 		public CatalogIndex Index { get; private set; } = new();
 
 		/// <summary>The unique assets the city has already got one of, kept in step with the game's
 		/// tracker.</summary>
-		public PlacedUniques PlacedUniques { get; } = new();
+		public PlacedUniques PlacedUniques { get; private set; } = new();
 
 		/// <summary>What a catalog refresh reads, taken once, after <see cref="SyncPlacedUniques"/>.</summary>
 		public CatalogSource Source => new(Index, PlacedUniques, Generation);
@@ -162,13 +160,32 @@ namespace BetterBuildingMenu.Systems
 			}
 		}
 
+		/// <summary>A new load starts from nothing the last city left behind.</summary>
+		/// <remarks>
+		/// The index and the placed uniques belong to a city: kept, the panel would serve the
+		/// last city's until this one's pass replaced them, and for good if that pass failed.
+		/// A fresh index rather than a shared empty one, because a partial pass files into the
+		/// published index in place. It keeps the mod flags, which belong to the playset rather
+		/// than the city, so a failed read at the next pass still has the last answer. The
+		/// generation moves so nothing cached from the last city is served. The system stays
+		/// off until a city finishes loading, and the main menu is a load of its own, so no
+		/// pass runs outside a city; see docs/indexing.md, "Load timing".
+		/// </remarks>
 		protected override void OnGamePreload(Purpose purpose, GameMode mode)
 		{
 			base.OnGamePreload(purpose, mode);
 
 			Enabled = false;
-			_indexedAtGameLoaded = false;
 			_auditedThisLoad = false;
+
+			Index = new CatalogIndex(mods: Index.Mods);
+			PlacedUniques = new PlacedUniques();
+			_uniqueCandidates = new List<(int Id, PrefabBase Prefab)>();
+			// So the next city's placed-unique line is logged, whatever its count.
+			_loggedUniqueCandidateCount = -1;
+			Generation++;
+
+			Mod.Log.Info($"Index emptied at preload (purpose={purpose}, mode={mode}); indexing waits for a city");
 		}
 
 		/// <summary>The full pass, as soon as the save is deserialised.</summary>
@@ -184,8 +201,9 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			Mod.Log.Info($"Full pass at OnGameLoaded (purpose={serializationContext.purpose})");
-			// A pass that failed leaves loading-complete to run its own.
-			_indexedAtGameLoaded = RunIndex(true);
+			// A pass that failed leaves the index empty and not ready, and loading-complete
+			// runs its own.
+			RunIndex(true);
 			Enabled = true;
 		}
 
@@ -215,13 +233,16 @@ namespace BetterBuildingMenu.Systems
 
 			if (mode is GameMode.Game or GameMode.Editor)
 			{
-				if (_indexedAtGameLoaded)
+				// Ready means a full pass has succeeded since this load's preload: the
+				// OnGameLoaded pass, or a locale pass that ran after it. Partial passes cannot
+				// make it so, because they skip an index that is not ready.
+				if (Index.IsReady)
 				{
 					var drift = LockStateDrift();
 
 					if (drift == 0)
 					{
-						Mod.Log.Info("Skipped full pass at OnGameLoadingComplete: indexed at OnGameLoaded and lock state agrees");
+						Mod.Log.Info("Skipped full pass at OnGameLoadingComplete: indexed earlier in this load and lock state agrees");
 						Enabled = true;
 						return;
 					}
@@ -251,19 +272,26 @@ namespace BetterBuildingMenu.Systems
 			base.OnDestroy();
 		}
 
-		/// <summary>A full pass when the dictionary changes: at once for a new language, once the
-		/// sources settle for anything else.</summary>
-		/// <remarks>Names are resolved at index time and cached, so only a full pass follows a language
-		/// change. The game raises this for every source a mod adds too, on the main thread already;
-		/// those are coalesced by LocaleReindexPolicy and fired from OnUpdate, so a burst is one pass.</remarks>
+		/// <summary>Notes that the dictionary changed; the full pass it earns runs from OnUpdate.</summary>
+		/// <remarks>
+		/// Names are resolved at index time and cached, so only a full pass follows a language
+		/// change. The game raises this for every source a mod adds too; LocaleReindexPolicy
+		/// coalesces those, so a burst is one pass. Never a pass from here: the event also fires
+		/// at the main menu and during a load, where a pass would publish an index outside a city
+		/// or from a half-loaded world. OnUpdate runs only while a city is loaded, and a change
+		/// made outside one is absorbed by the next city's own pass.
+		/// </remarks>
 		private void OnActiveDictionaryChanged()
 		{
 			var localeId = GameManager.instance.localizationManager.activeLocaleId;
 
 			if (_localeReindex.Observe(localeId, IndexClock.Elapsed) == LocaleReindexDecision.Immediate)
 			{
-				Mod.Log.Info($"Full pass at locale change (locale={localeId})");
-				RunIndex(true);
+				// Enabled says whether a city is loaded: the log line that confirms, in game,
+				// that the main menu keeps the system off.
+				Mod.Log.Info(Enabled
+					? $"Locale changed to {localeId}; full pass on the next update"
+					: $"Locale changed to {localeId} with no city loaded; the next city's pass indexes in it");
 			}
 		}
 
@@ -276,15 +304,32 @@ namespace BetterBuildingMenu.Systems
 			{
 				_indexOnFirstUpdate = false;
 				Mod.Log.Info("Full pass at first update: the mod joined a running game");
-				// _indexedAtGameLoaded stays false so loading-complete, if it is
-				// still to come, runs its own full pass over the finished save.
+				// There is no load to retry it: if this fails, the index stays empty until the
+				// next load, and the panel shows its indexing notice. With no pass behind it, a
+				// language change has no indexed locale to differ from, so it cannot retry.
 				RunIndex(true);
 			}
 
-			if (_localeReindex.TryFireDeferred(IndexClock.Elapsed))
+			switch (_localeReindex.TakeDue(IndexClock.Elapsed))
 			{
-				Mod.Log.Info("Full pass after dictionary sources settled");
-				RunIndex(true);
+				case LocaleReindexDecision.Immediate:
+					Mod.Log.Info($"Full pass at locale change (locale={GameManager.instance.localizationManager.activeLocaleId})");
+					RunIndex(true);
+					break;
+				case LocaleReindexDecision.Deferred:
+					Mod.Log.Info("Full pass after dictionary sources settled");
+					RunIndex(true);
+					break;
+			}
+
+			// Nothing to patch until a full pass has filled the index. It is empty after a
+			// failed OnGameLoaded pass until loading-complete or a locale pass succeeds, for
+			// the rest of the city if every pass this load fails, and after a failed
+			// first-update pass. Unlock events and changed prefabs are this frame's only, so
+			// skipping them loses nothing the next full pass does not read afresh.
+			if (!Index.IsReady)
+			{
+				return;
 			}
 
 			if (!_unlockEventQuery.IsEmptyIgnoreFilter)
@@ -486,7 +531,7 @@ namespace BetterBuildingMenu.Systems
 			{
 				// A full pass files into an index of its own, so one that threw halfway
 				// never touched the published index, and nothing reaches the game's load
-				// or locale dispatch. See docs/indexing.md, "A pass that fails".
+				// or update loop. See docs/indexing.md, "A pass that fails".
 				Mod.Log.Error(ex, "Full prefab indexing failed; the previous index stands");
 
 				return false;
