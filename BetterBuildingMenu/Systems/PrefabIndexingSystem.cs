@@ -900,7 +900,7 @@ namespace BetterBuildingMenu.Systems
 			// menu. After UiMenuName above: an asset the tree never gated falls into
 			// its service's root bucket, and the menu is what names the service.
 			(prefabIndex.DevTreeBranch, prefabIndex.DevTreeBranchIcon, prefabIndex.DevTreeBranchDepth) =
-				DevTreeBranchOf(required, prefabIndex.UiMenuName);
+				DevTreeBranchOf(entity, required, prefabIndex.UiMenuName);
 			prefabIndex.IsRandom = prefabIndex.SubCategory is not PrefabSubCategory.Networks_Pillars && EntityManager.HasComponent<PlaceholderObjectData>(entity);
 
 			if (prefab.asset?.database == AssetDatabase<ParadoxMods>.instance)
