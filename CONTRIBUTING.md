@@ -63,7 +63,7 @@ CI runs every test against the game's own assemblies, kept in a private
 repository, so a test that fails locally fails there too. A test that
 calls into the game, not just its types, still carries
 `[Trait("Requires", "Game")]`, for a run against mock assemblies
-(`refresh.sh --mock`), which filters them out with
+(the workspace's `tools/game-refs/refresh.sh --mock`), which filters them out with
 `CS2_TEST_FILTER=Requires!=Game`. See [docs/ci.md](docs/ci.md).
 
 The ids and numbers both sides use (sort columns, group dimensions, facet ids,
