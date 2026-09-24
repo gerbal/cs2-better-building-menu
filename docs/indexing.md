@@ -105,8 +105,9 @@ Loading-complete runs its own pass unless the index is ready by then. Ready mean
 succeeded since the preload, `OnGameLoaded`'s or a locale pass after it; partial passes cannot
 make it so. Until a pass succeeds, partial passes and unlocks are skipped: there is nothing to
 patch, and the next full pass reads their changes afresh. If every pass of a load fails, or the
-first-update pass of a mod joining a running game does, that lasts until the next load or
-language change.
+first-update pass of a mod joining a running game does, that lasts until the next load. A
+language change retries it only if a pass has succeeded earlier in the session, since the
+policy has no indexed locale to compare against until one has.
 
 Partial passes are not covered by any of this. They edit the live index in place, and each prefab
 and each processor in them has its own catch.
