@@ -224,9 +224,9 @@ namespace BetterBuildingMenu.Tests
 		{
 			var source = new[]
 			{
-				MenuEntry(1, "RoadsCulDeSacs", 70) with { UiCategoryTab = 5 },
-				MenuEntry(2, "RoadsRoundabouts", 70) with { UiCategoryTab = 4 },
-				MenuEntry(3, "RoadsSmall", 10) with { UiCategoryTab = 0 },
+				MenuEntry(1, "RoadsCulDeSacs", 70) with { UiMenu = "Roads", UiCategoryTab = 5 },
+				MenuEntry(2, "RoadsRoundabouts", 70) with { UiMenu = "Roads", UiCategoryTab = 4 },
+				MenuEntry(3, "RoadsSmall", 10) with { UiMenu = "Roads", UiCategoryTab = 0 },
 			};
 
 			var page = BuildingCatalogQueryEngine.Query(
@@ -244,11 +244,14 @@ namespace BetterBuildingMenu.Tests
 			Assert.True(string.CompareOrdinal(
 				BuildingCatalogGrouping.MenuCategoryRank("Aardvark", 20),
 				BuildingCatalogGrouping.MenuCategoryRank("Zebra", 20, tab: 3)) > 0);
-			// Priority still leads: the strip is sorted by it, and entries from two menus
-			// share no strip.
+			// Priority still leads: the strip is sorted by it.
 			Assert.True(string.CompareOrdinal(
 				BuildingCatalogGrouping.MenuCategoryRank("Zebra", 10),
 				BuildingCatalogGrouping.MenuCategoryRank("Aardvark", 20, tab: 0)) < 0);
+			// A negative position is no position before the first, and keeps the key's width.
+			Assert.Equal(
+				BuildingCatalogGrouping.MenuCategoryRank("Zebra", 10, tab: 0),
+				BuildingCatalogGrouping.MenuCategoryRank("Zebra", 10, tab: -5));
 		}
 
 		[Fact]

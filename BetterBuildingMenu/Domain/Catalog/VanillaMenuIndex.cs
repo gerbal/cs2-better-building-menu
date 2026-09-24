@@ -111,13 +111,13 @@ namespace BetterBuildingMenu.Domain.Catalog
 				? tabs
 				: Array.Empty<VanillaMenuCategory>();
 
-		/// <summary>Where a category's tab sits in its menu's strip, counted from 0, or int.MaxValue
-		/// when the menu draws no such tab.</summary>
-		public int TabPosition(string? menu, string? category)
+		/// <summary>A category's tab in its menu's strip: its place there, counted from 0, and the
+		/// priority the strip was sorted by. Null when the menu draws no such tab.</summary>
+		public (int Position, int Priority)? TabOf(string? menu, string? category)
 		{
 			if (category?.Trim() is not { Length: > 0 } trimmed)
 			{
-				return int.MaxValue;
+				return null;
 			}
 
 			var tabs = CategoriesOf(menu);
@@ -126,11 +126,11 @@ namespace BetterBuildingMenu.Domain.Catalog
 			{
 				if (string.Equals(tabs[i].Id, trimmed, StringComparison.Ordinal))
 				{
-					return i;
+					return (i, tabs[i].Priority);
 				}
 			}
 
-			return int.MaxValue;
+			return null;
 		}
 
 		// The UI names a menu the way the player's toolbar does, which need not match the

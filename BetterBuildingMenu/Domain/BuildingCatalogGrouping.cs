@@ -286,7 +286,7 @@ namespace BetterBuildingMenu.Domain
 		/// </summary>
 		/// <remarks>
 		/// By priority, then by the tab's place in the strip, which breaks a tie the way vanilla's
-		/// unstable sort broke it (see <see cref="BuildingCatalogEntry.UiCategoryTab"/>). The name
+		/// unstable sort breaks it (see <see cref="BuildingCatalogEntry.UiCategoryTab"/>). The name
 		/// comes last: a key must be a function of the group, or two categories sharing both would
 		/// interleave.
 		/// </remarks>
