@@ -244,6 +244,6 @@ the scan re-runs on every catalog publish rather than only on a city load, so
 a tracker that is switched off and raises no events cannot leave us stale.
 Any mod that overrides the same public accessor changes our answer with it;
 nothing here names Anarchy. `PlacedUniqueScan` holds the rule,
-`PlacedUniqueRegistry.Reset` reports whether the set moved so the snapshot
+`PlacedUniques.Reset` reports whether the set moved so the snapshot
 cache is only dropped when it did.
 

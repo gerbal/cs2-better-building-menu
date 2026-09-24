@@ -41,7 +41,7 @@ namespace BetterBuildingMenu.Services
 	/// </summary>
 	/// <remarks>
 	/// Each scope's projection is held until the index itself changes
-	/// (PrefabIndexingSystem.IndexGeneration), the only event that can make a projected entry wrong.
+	/// (PrefabIndexingSystem.Generation), the only event that can make a projected entry wrong.
 	/// </remarks>
 	public sealed class SnapshotCache
 	{

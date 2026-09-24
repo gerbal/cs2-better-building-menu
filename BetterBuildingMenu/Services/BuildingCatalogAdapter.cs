@@ -1,6 +1,7 @@
 ﻿using Colossal.PSI.Common;
 
 using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Systems;
 using BetterBuildingMenu.Utilities;
@@ -45,6 +46,18 @@ namespace BetterBuildingMenu.Services
 			(BuildingFlags.CanBeRoadSide, nameof(BuildingFlags.CanBeRoadSide)),
 			(BuildingFlags.HasResourceNode, nameof(BuildingFlags.HasResourceNode)),
 		};
+
+		private readonly Func<string, string?> _silhouetteUrl;
+
+		/// <param name="silhouetteUrl">
+		/// The blackened copy of a vector icon, or null when it has none. Passed in so that
+		/// projecting reads nothing from Mod, whose type initializer needs the running game.
+		/// Defaults to no silhouettes.
+		/// </param>
+		public BuildingCatalogAdapter(Func<string, string?>? silhouetteUrl = null)
+		{
+			_silhouetteUrl = silhouetteUrl ?? (_ => null);
+		}
 
 		public static string[] GetPlacementFlagNames(BuildingFlags? flags)
 		{
@@ -352,11 +365,16 @@ namespace BetterBuildingMenu.Services
 		/// BuildingMenuUISystem calls this once per refresh and reads the view's properties,
 		/// and once more for the matches-elsewhere count when a search finds nothing.
 		/// </remarks>
+		/// <param name="source">
+		/// What this refresh reads from the indexer, taken once after the placed-unique
+		/// rescan, so every cache is keyed on one generation; see PrefabIndexingSystem.Source.
+		/// </param>
 		/// <param name="selection">
 		/// The game's own toolbar filter row, which BuildingMenuUISystem holds;
 		/// <see cref="VanillaToolbarSelection.None"/> filters nothing.
 		/// </param>
 		public CatalogView Build(
+			CatalogSource source,
 			BuildingCatalogQuery query,
 			VanillaToolbarSelection selection,
 			Func<CatalogView, string>? groupByResolver = null)
@@ -366,7 +384,7 @@ namespace BetterBuildingMenu.Services
 				throw new ArgumentNullException(nameof(query));
 			}
 
-			var snapshot = ProjectForMenu(query.UiMenu, selection, query.DlcIds);
+			var snapshot = ProjectForMenu(source, query.UiMenu, selection, query.DlcIds);
 
 			// Packs alone are counted before the pack filter runs, because that
 			// filter is upstream of InScope and InScope cannot undo it. Only a
@@ -375,7 +393,7 @@ namespace BetterBuildingMenu.Services
 				snapshot,
 				query,
 				selection.SelectedPacks.Count > 0
-					? () => ProjectForMenu(query.UiMenu, selection, query.DlcIds, ignorePacks: true)
+					? () => ProjectForMenu(source, query.UiMenu, selection, query.DlcIds, ignorePacks: true)
 					: null,
 				groupByResolver,
 				PrefabIndexingSystem.GetMilestoneNames(),
@@ -492,8 +510,8 @@ namespace BetterBuildingMenu.Services
 
 		/// <summary>The projections this adapter reuses across refreshes.</summary>
 		/// <remarks>
-		/// Keyed by scope and kept until PrefabIndexingSystem's IndexGeneration changes, so
-		/// they DO survive from one refresh to the next; see SnapshotCache.
+		/// Keyed by scope and kept until the source's generation changes, so they DO
+		/// survive from one refresh to the next; see SnapshotCache.
 		/// </remarks>
 		private readonly SnapshotCache _snapshots = new();
 
@@ -510,6 +528,7 @@ namespace BetterBuildingMenu.Services
 		}
 
 		private BuildingCatalogEntry[] ProjectForMenu(
+			CatalogSource source,
 			string? menu,
 			VanillaToolbarSelection selection,
 			IReadOnlyList<string>? contentDlcs = null,
@@ -517,14 +536,14 @@ namespace BetterBuildingMenu.Services
 		{
 			var key = SnapshotKey.For(menu, contentDlcs, ignorePacks, selection);
 
-			if (_snapshots.TryGet(key, PrefabIndexingSystem.IndexGeneration, out var cached))
+			if (_snapshots.TryGet(key, source.Generation, out var cached))
 			{
 				return cached;
 			}
 
 			var timer = System.Diagnostics.Stopwatch.StartNew();
-			var built = ProjectForMenuUncached(menu, selection, contentDlcs, ignorePacks).ToArray();
-			_snapshots.Put(key, PrefabIndexingSystem.IndexGeneration, built);
+			var built = ProjectForMenuUncached(source.Placed, menu, selection, contentDlcs, ignorePacks).ToArray();
+			_snapshots.Put(key, source.Generation, built);
 			LastProjectionMs += (int)timer.ElapsedMilliseconds;
 			LastProjectionWasHit = false;
 
@@ -532,12 +551,15 @@ namespace BetterBuildingMenu.Services
 		}
 
 		private IEnumerable<BuildingCatalogEntry> ProjectForMenuUncached(
+			PlacedUniques placed,
 			string? menu,
 			VanillaToolbarSelection selection,
 			IReadOnlyList<string>? contentDlcs,
 			bool ignorePacks)
 		{
-			var entries = GetIndexedBuildings(menu, selection, ignorePackSelection: ignorePacks, unionDlcIds: contentDlcs).Select(Project).ToArray();
+			var entries = GetIndexedBuildings(menu, selection, ignorePackSelection: ignorePacks, unionDlcIds: contentDlcs)
+				.Select(prefab => Project(prefab, placed))
+				.ToArray();
 			var root = PrefabIndexingSystem.GetDevTreeRootLabel(menu);
 
 			if (string.IsNullOrEmpty(root))
@@ -599,14 +621,14 @@ namespace BetterBuildingMenu.Services
 		/// applies none of the menu's own filters: vanilla has already decided what is
 		/// listed, and the question here is only how to draw a row that is.
 		/// </remarks>
-		public BuildingCatalogEntry? EntryForPrefabName(string prefabName)
+		public BuildingCatalogEntry? EntryForPrefabName(CatalogSource source, string prefabName)
 		{
 			if (string.IsNullOrEmpty(prefabName) || !BuildingMenuUtil.IsReady)
 			{
 				return null;
 			}
 
-			if (_byNameGeneration != PrefabIndexingSystem.IndexGeneration)
+			if (_byNameGeneration != source.Generation)
 			{
 				_byName.Clear();
 
@@ -622,16 +644,16 @@ namespace BetterBuildingMenu.Services
 					}
 				}
 
-				_byNameGeneration = PrefabIndexingSystem.IndexGeneration;
+				_byNameGeneration = source.Generation;
 			}
 
-			return _byName.TryGetValue(prefabName, out var found) ? Project(found) : null;
+			return _byName.TryGetValue(prefabName, out var found) ? Project(found, source.Placed) : null;
 		}
 
 		private readonly Dictionary<string, PrefabIndex> _byName = new(StringComparer.Ordinal);
 		private int _byNameGeneration = -1;
 
-		private static BuildingCatalogEntry Project(PrefabIndex prefab)
+		private BuildingCatalogEntry Project(PrefabIndex prefab, PlacedUniques placed)
 		{
 			return new BuildingCatalogEntry(
 				Id: prefab.Id,
@@ -649,7 +671,7 @@ namespace BetterBuildingMenu.Services
 					prefab.FallbackThumbnail ?? prefab.CategoryThumbnail ?? string.Empty),
 				// Generated on first sight and cached on disk: one file read per distinct
 				// vector icon for the life of the install, not one per projection.
-				SilhouetteThumbnail: Mod.Silhouettes?.UrlFor(
+				SilhouetteThumbnail: _silhouetteUrl(
 					IconPath.Normalize(prefab.Thumbnail ?? prefab.FallbackThumbnail ?? string.Empty)),
 				UiMenu: prefab.UiMenuName,
 				UiCategory: prefab.UiCategoryName,
@@ -690,9 +712,9 @@ namespace BetterBuildingMenu.Services
 				AssetPacks: prefab.AssetPacks?.Where(pack => pack is not null).Select(pack => pack.name).Where(name => !string.IsNullOrWhiteSpace(name)).ToArray() ?? Array.Empty<string>(),
 				AssetPackIndices: prefab.VanillaFacts.AssetPacks?.ToArray() ?? Array.Empty<int>(),
 				// Per query, not per index: the city gains and loses these as
-				// the player builds and bulldozes. See PlacedUniqueRegistry.
+				// the player builds and bulldozes. See PlacedUniques.
 				IsUnique: prefab.IsUnique,
-				IsAlreadyBuilt: PlacedUniqueRegistry.IsAlreadyBuilt(prefab.Id),
+				IsAlreadyBuilt: placed.IsAlreadyBuilt(prefab.Id),
 				PlacementFlags: GetPlacementFlagNames(prefab.BuildingFlagsValue),
 				Extensions: prefab.ExtensionIds ?? Array.Empty<string>(),
 				SupportedUpgrades: prefab.SupportedUpgradeIds ?? Array.Empty<string>(),

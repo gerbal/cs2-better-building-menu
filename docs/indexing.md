@@ -85,8 +85,13 @@ processor in them has its own catch.
 ## How the panel hears of a change
 
 The indexer never calls the panel. Whatever changes an indexed fact — a pass, an unlock, a unique
-asset built or bulldozed — bumps `IndexGeneration`, and `BuildingMenuUISystem.OnUpdate` compares
-it with the generation its last publish read (`IndexWatch`).
+asset built or bulldozed — bumps the indexer's `Generation`, and `BuildingMenuUISystem.OnUpdate`
+compares it with the generation its last publish read (`IndexWatch`).
+
+Each publish reads the indexer's `Source` once: the generation and the placed uniques together.
+Every cache the adapter keeps is keyed on that generation. It is never reset, because the caches
+compare plain ints, and a count that started again could land on a number an older projection was
+stored under.
 
 A change while the panel is open schedules the same debounced refresh a keystroke does, so a burst
 of partial passes or unique events is one refresh rather than one each. A change while it is closed

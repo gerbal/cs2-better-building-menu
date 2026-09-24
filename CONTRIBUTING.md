@@ -26,12 +26,12 @@
 ./build.sh all                                           # C# and the UI bundle
 ```
 
-Much of the mod's state is process-wide statics: the index, the placed
-uniques, and more on `PrefabIndexingSystem` and `Mod`.
-A test that sets one puts it back whether it passes or fails, in a `finally`
-or in the test class's `Dispose`. The C# tests also run one class at a time
-(`TestParallelization.cs`). Nothing needs that yet, since no class reads
-what another sets, but it keeps that from becoming a race.
+Much of the mod's state is process-wide statics: the index, and more on
+`PrefabIndexingSystem` and `Mod`. A test that sets one puts it back whether
+it passes or fails, in a `finally` or in the test class's `Dispose`. The C#
+tests also run one class at a time (`TestParallelization.cs`). Nothing needs
+that yet, since no class reads what another sets, but it keeps that from
+becoming a race.
 
 Warnings fail the build in CI, in the mod and in the tests: the
 compiler's, the analyzers', MSBuild's and NuGet's (`Directory.Build.props`).
