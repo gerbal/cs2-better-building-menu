@@ -29,19 +29,6 @@ namespace BetterBuildingMenu.Tests
 			return entry;
 		}
 
-		private static CatalogIndex ReadyIndex(params PrefabIndex[] entries)
-		{
-			var index = new CatalogIndex();
-
-			foreach (var entry in entries)
-			{
-				index.File(entry);
-			}
-
-			index.IsReady = true;
-			return index;
-		}
-
 		private static BuildingCatalogEntry ProjectOnly(CatalogSource source, BuildingCatalogAdapter? adapter = null) =>
 			Assert.Single((adapter ?? new BuildingCatalogAdapter())
 				.Build(source, new BuildingCatalogQuery(), VanillaToolbarSelection.None)
@@ -50,7 +37,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void AnEntryIsProjectedWithItsNameAndFacts()
 		{
-			var row = ProjectOnly(new CatalogSource(ReadyIndex(Hospital()), new PlacedUniques(), 1));
+			var row = ProjectOnly(new CatalogSource(TestPrefabs.ReadyIndex(Hospital()), new PlacedUniques(), 1));
 
 			Assert.Equal(11, row.Id);
 			Assert.Equal("Hospital", row.Name);
@@ -65,8 +52,8 @@ namespace BetterBuildingMenu.Tests
 			var placed = new PlacedUniques();
 			placed.Set(11, placed: true);
 
-			Assert.True(ProjectOnly(new CatalogSource(ReadyIndex(Hospital()), placed, 1)).IsAlreadyBuilt);
-			Assert.False(ProjectOnly(new CatalogSource(ReadyIndex(Hospital()), new PlacedUniques(), 1)).IsAlreadyBuilt);
+			Assert.True(ProjectOnly(new CatalogSource(TestPrefabs.ReadyIndex(Hospital()), placed, 1)).IsAlreadyBuilt);
+			Assert.False(ProjectOnly(new CatalogSource(TestPrefabs.ReadyIndex(Hospital()), new PlacedUniques(), 1)).IsAlreadyBuilt);
 		}
 
 		[Fact]
@@ -74,10 +61,10 @@ namespace BetterBuildingMenu.Tests
 		{
 			var adapter = new BuildingCatalogAdapter(thumbnail => "silhouette:" + thumbnail);
 
-			var row = ProjectOnly(new CatalogSource(ReadyIndex(Hospital()), new PlacedUniques(), 1), adapter);
+			var row = ProjectOnly(new CatalogSource(TestPrefabs.ReadyIndex(Hospital()), new PlacedUniques(), 1), adapter);
 
 			Assert.Equal("silhouette:" + row.Thumbnail, row.SilhouetteThumbnail);
-			Assert.Null(ProjectOnly(new CatalogSource(ReadyIndex(Hospital()), new PlacedUniques(), 1)).SilhouetteThumbnail);
+			Assert.Null(ProjectOnly(new CatalogSource(TestPrefabs.ReadyIndex(Hospital()), new PlacedUniques(), 1)).SilhouetteThumbnail);
 		}
 
 		[Fact]
@@ -86,7 +73,7 @@ namespace BetterBuildingMenu.Tests
 			var wing = TestPrefabs.Entry(12, PrefabCategory.ServiceBuildings, PrefabSubCategory.ServiceBuildings_Health);
 			wing.IsServiceUpgrade = true;
 
-			var index = ReadyIndex(Hospital(), wing);
+			var index = TestPrefabs.ReadyIndex(Hospital(), wing);
 			var page = new BuildingCatalogAdapter()
 				.Build(new CatalogSource(index, new PlacedUniques(), 1), new BuildingCatalogQuery(), VanillaToolbarSelection.None)
 				.Page;
@@ -96,10 +83,10 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void TwoEntriesSharingAPrefabNameResolveToTheLastInNameOrder()
+		public void TwoEntriesSharingAPrefabNameResolveToTheFirstInNameOrder()
 		{
-			// Two prefab types can carry one name. The picker's lookup keeps the last
-			// entry in name order, where the index's Find keeps the first.
+			// Two prefab types can carry one name. The picker asks the index's own map,
+			// which answers with the first entry in name order, as a partial pass does.
 			var later = Hospital();
 			later.Name = "Hospital B";
 			var earlier = TestPrefabs.Entry(12, PrefabCategory.ServiceBuildings, PrefabSubCategory.ServiceBuildings_Health);
@@ -107,10 +94,10 @@ namespace BetterBuildingMenu.Tests
 			earlier.Name = "Hospital A";
 
 			var row = new BuildingCatalogAdapter().EntryForPrefabName(
-				new CatalogSource(ReadyIndex(later, earlier), new PlacedUniques(), 1),
+				new CatalogSource(TestPrefabs.ReadyIndex(later, earlier), new PlacedUniques(), 1),
 				"Hospital01");
 
-			Assert.Equal(11, row?.Id);
+			Assert.Equal(12, row?.Id);
 		}
 
 		[Fact]

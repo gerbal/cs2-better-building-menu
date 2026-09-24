@@ -73,8 +73,14 @@ narrowed to `Created` or `Updated`. A partial pass reads only the narrowed copy,
 costs one prefab rather than every road its processor matches.
 
 Duplicate names are numbered after every pass, partial passes included, always starting from each
-prefab's `AssetName`. A partial pass gives the prefab it re-reads back its plain name. Numbering
-only what it touched would leave that prefab as "Foo" beside a sibling still called "Foo 2".
+prefab's `AssetName` (`CatalogIndex.NumberDuplicateNames`). A partial pass gives the prefab it
+re-reads back its plain name. Numbering only what it touched would leave that prefab as "Foo"
+beside a sibling still called "Foo 2".
+
+A prefab the game recreates, such as a Road Builder road, arrives under a new entity, so a partial
+pass drops the old entry by prefab name first. `CatalogIndex.GetByPrefabName` answers that, and
+the extension picker's rows too. Two prefab types can carry one name; then the first entry in name
+order answers both.
 
 ## A pass that fails
 

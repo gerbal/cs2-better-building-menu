@@ -295,9 +295,10 @@ namespace BetterBuildingMenu.Systems
 			}
 		}
 
-		/// <remarks>Registered at UIUpdate as well as PrefabUpdate: PrefabUpdate ticks only when
-		/// prefabs change and an unlock is not a prefab change, so the unlock branch needs a phase that
-		/// runs every frame after UnlockSystem has raised its events.</remarks>
+		/// <remarks>Registered at UIUpdate as well as PrefabUpdate. Both run every frame, but
+		/// PrefabUpdate runs inside PrefabSystem's update, which the main loop runs before UnlockSystem,
+		/// so the unlock branch needs the UIUpdate tick, which runs after UnlockSystem has raised its
+		/// events. A due pass runs at whichever comes first.</remarks>
 		protected override void OnUpdate()
 		{
 			if (_indexOnFirstUpdate)
@@ -709,9 +710,9 @@ namespace BetterBuildingMenu.Systems
 								continue;
 							}
 
-							if (!full && EntityManager.HasComponent<Created>(entity) && target.Find(_prefabSystem.GetPrefab<PrefabBase>(entity).name, out var oldId))
+							if (!full && EntityManager.HasComponent<Created>(entity) && target.GetByPrefabName(_prefabSystem.GetPrefab<PrefabBase>(entity).name) is { } old)
 							{
-								target.Remove(oldId);
+								target.Remove(old.Id);
 							}
 
 							if (processor.TryCreatePrefabIndex(prefab, entity, target, out prefabIndex))
@@ -771,13 +772,13 @@ namespace BetterBuildingMenu.Systems
 				}
 			}
 
-			// Partial passes too: one re-read prefab takes back its plain name, and its
-			// namesakes' numbers are only right if all of them are counted again.
-			AddNumberToDuplicatePrefabNames(target);
+			target.NumberDuplicateNames();
 
 			if (full)
 			{
-				CleanupBrandPrefabs(target);
+				// Counted rather than logged per entry: whether it ever finds anything decides
+				// whether it stays. See CatalogIndex.RemoveBrandDuplicates.
+				Mod.Log.Info($"Brand cleanup took {target.RemoveBrandDuplicates()} entries out of subcategory lists");
 			}
 
 			return target;
@@ -941,50 +942,6 @@ namespace BetterBuildingMenu.Systems
 		}
 
 		/// <summary>Numbers the display names indexed prefabs share. See <see cref="DuplicateNameNumbering"/>.</summary>
-		private static void AddNumberToDuplicatePrefabNames(CatalogIndex target)
-		{
-			var all = target.All;
-			// Upgrades are left out of the numbering. Every school type has an
-			// "Extension Wing"; they are never listed beside each other, only on
-			// their own parent's picker, where "Extension Wing 2" has no referent.
-			var numbered = all.Where(x => !x.IsServiceUpgrade).ToList();
-			var names = DuplicateNameNumbering.Names(numbered.Select(x => (x.AssetName, x.PrefabName)).ToList());
-
-			for (var i = 0; i < numbered.Count; i++)
-			{
-				numbered[i].Name = names[i];
-			}
-
-			// The name order was sorted on the names just replaced.
-			all.ResetOrder();
-		}
-
-		private static void CleanupBrandPrefabs(CatalogIndex target)
-		{
-			var branding = target.List(PrefabCategory.Props, PrefabSubCategory.Props_Branding);
-			var brands = new HashSet<string>(branding?.Select(x => x.PrefabName) ?? Enumerable.Empty<string>());
-
-			foreach (var (category, subCategory, list) in target.Lists())
-			{
-				if (category is PrefabCategory.Any
-					|| subCategory is PrefabSubCategory.Props_Branding
-					|| (category is PrefabCategory.Props && subCategory is PrefabSubCategory.Any))
-				{
-					continue;
-				}
-
-				foreach (var item in list.ToList())
-				{
-					if (brands.Contains(item.PrefabName))
-					{
-						list.Remove(item);
-
-						Mod.Log.Debug($"Removed {item.PrefabName} from {subCategory}");
-					}
-				}
-			}
-		}
-
 		/// <summary>
 		/// Asks the game which unique assets the city already holds, for the panel to
 		/// refuse a second one of.
