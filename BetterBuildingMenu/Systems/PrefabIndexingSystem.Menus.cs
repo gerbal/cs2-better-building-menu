@@ -142,8 +142,21 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			// A menu the bottom bar does not hold goes last, by priority. OrderBy is
-			// stable, so those keep the query's order among themselves.
-			var onToolbar = ToolbarOrder();
+			// stable, so those keep the query's order among themselves. Should the
+			// toolbar walk fail, every menu is ordered that way rather than the pass
+			// failing with it.
+			Dictionary<Entity, int> onToolbar;
+
+			try
+			{
+				onToolbar = ToolbarOrder();
+			}
+			catch (Exception ex)
+			{
+				Mod.Log.Error(ex, "Reading the bottom bar's menu order failed; menus fall back to priority order");
+				onToolbar = new Dictionary<Entity, int>();
+			}
+
 			var list = found
 				.OrderBy(menu => onToolbar.TryGetValue(menu.Menu, out var place) ? place : int.MaxValue)
 				.ThenBy(menu => menu.Record.Priority)
@@ -170,33 +183,39 @@ namespace BetterBuildingMenu.Systems
 
 			using var groups = query.ToEntityArray(Allocator.Temp);
 			using var groupData = query.ToComponentDataArray<UIToolbarGroupData>(Allocator.Temp);
+			// Not a using: a using variable cannot be written through its indexer.
 			var sortedGroups = new NativeArray<UIObjectInfo>(groups.Length, Allocator.Temp);
 
-			for (var i = 0; i < groups.Length; i++)
+			try
 			{
-				sortedGroups[i] = new UIObjectInfo(groups[i], groupData[i].m_Priority);
-			}
-
-			sortedGroups.Sort();
-
-			foreach (var group in sortedGroups)
-			{
-				using var members = UIObjectInfo.GetObjects(
-					EntityManager,
-					EntityManager.GetBuffer<UIGroupElement>(group.entity, isReadOnly: true),
-					Allocator.Temp);
-				members.Sort();
-
-				foreach (var member in members)
+				for (var i = 0; i < groups.Length; i++)
 				{
-					if (EntityManager.HasComponent<UIAssetMenuData>(member.entity) && !order.ContainsKey(member.entity))
+					sortedGroups[i] = new UIObjectInfo(groups[i], groupData[i].m_Priority);
+				}
+
+				sortedGroups.Sort();
+
+				foreach (var group in sortedGroups)
+				{
+					using var members = UIObjectInfo.GetObjects(
+						EntityManager,
+						EntityManager.GetBuffer<UIGroupElement>(group.entity, isReadOnly: true),
+						Allocator.Temp);
+					members.Sort();
+
+					foreach (var member in members)
 					{
-						order[member.entity] = order.Count;
+						if (EntityManager.HasComponent<UIAssetMenuData>(member.entity) && !order.ContainsKey(member.entity))
+						{
+							order[member.entity] = order.Count;
+						}
 					}
 				}
 			}
-
-			sortedGroups.Dispose();
+			finally
+			{
+				sortedGroups.Dispose();
+			}
 
 			return order;
 		}
@@ -221,7 +240,23 @@ namespace BetterBuildingMenu.Systems
 					continue;
 				}
 
-				using var sorted = SortedCategories(menus[i]);
+				// GetObjects reads every member's PrefabData, and a member the game has
+				// removed outright stays in the buffer until the frame's clean-up. Vanilla
+				// would fail on that menu only when it draws it; this skips it rather
+				// than failing the pass.
+				NativeList<UIObjectInfo> sorted;
+
+				try
+				{
+					sorted = SortedCategories(menus[i]);
+				}
+				catch (Exception ex)
+				{
+					Mod.Log.Error(ex, $"Reading the tabs of menu {menuName} failed; it has none this pass");
+					continue;
+				}
+
+				using var disposeSorted = sorted;
 
 				foreach (var tab in sorted)
 				{
@@ -243,7 +278,9 @@ namespace BetterBuildingMenu.Systems
 						Id: prefab.name,
 						Name: prefab.name,
 						Icon: IconPath.Normalize(CategoryIcon.Resolve(uIObject?.m_Icon, _imageSystem.GetIconOrGroupIcon(tab.entity))) ?? string.Empty,
-						Priority: uIObject?.m_Priority ?? 0));
+						// The priority the tabs were sorted by, UIObjectData's, so the UI's
+						// stable re-sort by it leaves them in vanilla's order.
+						Priority: tab.priority));
 				}
 			}
 
