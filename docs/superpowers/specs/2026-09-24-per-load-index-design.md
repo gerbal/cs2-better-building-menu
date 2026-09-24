@@ -210,7 +210,7 @@ step 6 does.
 | 3b | **The C# tests run in parallel again**: `TestParallelization.cs` and its CONTRIBUTING paragraph go. One file, so it can be reverted on its own. | Low | Tests only |
 | 4 | **The menu, zone, progression and mod-flag tables join the index.** Each `Index*` step returns its table. Processors take `target`. `_zoneFacts` and `TryGetMenuEntityFor` go. Can be split into 4a (menus) and 4b (the rest). | Medium–high by size, mechanical | 24 processor files (6 with real changes), the indexer's partials, Bindings, Methods, Adapter; new `CatalogIndexTests` |
 | 5 | **Build aside, publish at the end.** Every read in the pass goes to `next`. | The riskiest change, so it is on its own | The indexer's partials; small, because step 4 added the parameter |
-| 6 | **A new city starts from an empty index.** At `OnGamePreload`: `Index = Empty`, new placed uniques, `Generation++`. Partial passes and unlocks skip while `!Index.IsReady`. A language change's pass runs from `OnUpdate`, as the deferred one does (decision 8). | Behaviour change, medium | The indexer; indexing.md's "Load timing" and "A pass that fails" |
+| 6 | **A new city starts from an empty index.** At `OnGamePreload`: `Index = new CatalogIndex()`, new placed uniques, `Generation++`. A fresh index rather than a shared `Empty`: a partial pass files into the published index, so a shared one would be filled and marked ready. Partial passes and unlocks skip while `!Index.IsReady`. A language change's pass runs from `OnUpdate`, as the deferred one does (decision 8). The mod-flag fallback then has no last answer across loads, so a failed read on a city's first pass means `ModCompatibility.None`; carry the last flags aside if that matters. | Behaviour change, medium | The indexer; indexing.md's "Load timing" and "A pass that fails" |
 | 7 | (Optional) **Test builders and projection tests.** A name map inside the index replaces the adapter's `_byName` and the O(n) `Find`. | Low | Tests, `CatalogIndex`, Adapter |
 
 ### Checks per step
@@ -222,7 +222,7 @@ step 6 does.
   - `[MENU-AUDIT]` and `[MENU-COVERAGE]`.
 
   Then switch the language with the panel open.
-- **Step 5:** a review search for `Index.` inside `BuildIndex`, `AddPrefab` and the `Index*` methods. Any hit reads the previous index during a full pass. For example, the menu-placed processor would skip whatever it indexed last time, and the blacklist and Find It checks would use old placements.
+- **Step 5:** a review search for `Index.` inside `BuildIndex`, `AddPrefab` and the `Index*` methods. Any hit reads the previous index during a full pass. For example, the menu-placed processor would skip whatever it indexed last time, and the blacklist and Find It checks would use old placements. The census and audit lines log once per load at Info, so the A/B compares a second city in one session, whose first pass runs against a full previous index, or turns Debug logging on; `Indexed Prefabs Count` logs on every pass.
 - **Step 6:** the full set of load paths:
   - city A → main menu → city B;
   - Load Game from the pause menu;
@@ -234,7 +234,7 @@ step 6 does.
   - a full-chain load with the DLC, which adds about 1,500 prefabs (19,198 against 17,698) and changes the menu counts;
   - a second city in the same session with the panel open before the load, where a stale `CatalogSource` or `SnapshotCache` entry would show;
   - a language change at the main menu after leaving a city, and during a load (decision 8). A log line confirms the system is disabled at the main menu after a city; if it is not, decision 8 falls back to (b);
-  - a failed first pass, forced with a throwing processor in a debug build, so the `!Index.IsReady` guard's one window is exercised;
+  - a failed first pass, forced in a debug build, so the `!Index.IsReady` guard's one window is exercised. A throwing processor cannot do it: every prefab and every processor has its own catch, and the pass succeeds. The throw has to come from outside them: a prologue walk such as `IndexMilestones`, or duplicate numbering or brand cleanup. Once on the `OnGameLoaded` pass and once on a language-change pass: the log says "the previous index stands", `Generation` does not move, and after a first-pass failure loading-complete runs its own;
   - a pack or theme filter set in city A, then city B loaded (ideally with a different theme): the C# selection matches what the toolbar shows.
 - **Step 7:** pin today's handling of duplicate prefab names with a test first. Today `_byName` keeps the last entry in name order, `Find` returns the first, and a map would keep the last one filed.
 
