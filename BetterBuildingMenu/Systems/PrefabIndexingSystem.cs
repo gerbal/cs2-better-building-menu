@@ -61,7 +61,8 @@ namespace BetterBuildingMenu.Systems
 		// placed-unique rescan walks these rather than all 17k prefabs, so it can
 		// afford to run on every catalog publish. See PlacedUniqueScan.
 		private List<(int Id, PrefabBase Prefab)> _uniqueCandidates = new();
-		// What the last log line said, so a rescan that found nothing stays quiet.
+		// The count the last rescan logged or, outside a city, would have logged, so a
+		// rescan that found nothing new stays quiet.
 		private int _loggedUniqueCandidateCount = -1;
 #if DEBUG
 		// The assets a pass indexed without an icon, logged as one line when it ends: one line
@@ -176,7 +177,8 @@ namespace BetterBuildingMenu.Systems
 			Index = new CatalogIndex(mods: Index.Mods);
 			PlacedUniques = new PlacedUniques();
 			_uniqueCandidates = new List<(int Id, PrefabBase Prefab)>();
-			// So the next city's placed-unique line is logged, whatever its count.
+			// So the next city's placed-unique line is logged, whatever its count, once its
+			// index is ready.
 			_loggedUniqueCandidateCount = -1;
 			Generation++;
 
@@ -984,14 +986,15 @@ namespace BetterBuildingMenu.Systems
 				Generation++;
 			}
 
-			// Logged on a change only: the rescan runs on every catalog publish. Not at
-			// all with no candidates, as on the main menu, where "0 of 0" says only that
-			// there is no city.
+			// Logged on a change only: the rescan runs on every catalog publish. Not before
+			// a pass has made the index ready, as on the main menu, where "0 of 0" says
+			// only that there is no city. In a city, "0 of 0" says unique detection found
+			// nothing, and is worth the line.
 			if (moved || _uniqueCandidates.Count != _loggedUniqueCandidateCount)
 			{
 				_loggedUniqueCandidateCount = _uniqueCandidates.Count;
 
-				if (_uniqueCandidates.Count > 0)
+				if (Index.IsReady)
 				{
 					Mod.Log.Info($"Placed unique assets: {PlacedUniques.Count} of {_uniqueCandidates.Count} unique assets");
 				}
