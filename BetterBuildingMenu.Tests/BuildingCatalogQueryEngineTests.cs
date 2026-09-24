@@ -1,6 +1,7 @@
 using Colossal.UI.Binding;
 
 using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Services;
 using BetterBuildingMenu.Utilities;
@@ -654,6 +655,7 @@ public sealed class BuildingCatalogQueryEngineTests
             BuildingMenuUtil.IsReady = false;
 
             BuildingCatalogPage page = new BuildingCatalogAdapter().Build(
+                new CatalogSource(new PlacedUniques(), Generation: 1),
                 new BuildingCatalogQuery(Limit: BuildingCatalogQuery.MaxLimit + 1),
                 VanillaToolbarSelection.None).Page;
 
