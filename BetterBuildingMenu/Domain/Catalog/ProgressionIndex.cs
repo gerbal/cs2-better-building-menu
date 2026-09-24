@@ -27,7 +27,8 @@ namespace BetterBuildingMenu.Domain.Catalog
 		/// <param name="milestoneNames">Each milestone's name, by its index.</param>
 		/// <param name="branches">The branch every dev-tree node files what it gates under, by node.
 		/// A branch also names the service whose tree it sits in; see DevTreeGates.</param>
-		/// <param name="roots">Each service's free root, by service prefab name.</param>
+		/// <param name="roots">Each service's free root, by service prefab name, matched exactly
+		/// whatever comparer the caller's dictionary has.</param>
 		public ProgressionIndex(
 			IReadOnlyDictionary<int, string> milestoneNames,
 			IReadOnlyDictionary<int, (string Label, string Icon, int Depth, string Service)> branches,
@@ -35,7 +36,7 @@ namespace BetterBuildingMenu.Domain.Catalog
 		{
 			_milestoneNames = milestoneNames;
 			_branches = branches;
-			_roots = roots;
+			_roots = Exactly(roots);
 		}
 
 		/// <summary>The name the game gives a milestone index, or empty.</summary>
@@ -79,5 +80,20 @@ namespace BetterBuildingMenu.Domain.Catalog
 		/// bucket, which needs the whole set of ungated assets. See ProjectForMenu.</remarks>
 		public string RootLabel(string? menu) =>
 			TryGetRoot(menu, out var root) ? root.Label : string.Empty;
+
+		// Prefab names are exact: a menu that differs from its service only in case is
+		// another menu. A copy, so that holds whoever built the dictionary.
+		private static Dictionary<string, (string Label, string Icon, int Depth)> Exactly(
+			IReadOnlyDictionary<string, (string Label, string Icon, int Depth)> byService)
+		{
+			var copy = new Dictionary<string, (string Label, string Icon, int Depth)>(StringComparer.Ordinal);
+
+			foreach (var pair in byService)
+			{
+				copy[pair.Key] = pair.Value;
+			}
+
+			return copy;
+		}
 	}
 }

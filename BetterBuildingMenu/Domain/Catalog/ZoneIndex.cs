@@ -7,7 +7,7 @@ namespace BetterBuildingMenu.Domain.Catalog
 {
 	/// <summary>
 	/// The zones as a full pass read them: how each classifies its buildings, its own density
-	/// tier, the lots it grows, and the catalog the zoning surface browses.
+	/// tier, the lots it grows, and the catalog of assignable zones the menu audit checks.
 	/// </summary>
 	/// <remarks>
 	/// Fixed once built; a new pass builds a new one. Keyed by the zone prefab entity's index,

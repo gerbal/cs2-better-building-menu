@@ -39,7 +39,7 @@ namespace BetterBuildingMenu.Systems
 	public partial class PrefabIndexingSystem
 	{
 		/// <summary>Reads every zone: how it classifies its buildings, its own tier, the lots it grows,
-		/// and the catalog the zoning surface browses.</summary>
+		/// and the catalog of assignable zones the menu audit checks.</summary>
 		/// <remarks>Rebuilt with the catalog, not merged into it. A reindex can drop zones, and entity
 		/// indices are reused within a session, so a stale entry would answer for whatever took its
 		/// place.</remarks>

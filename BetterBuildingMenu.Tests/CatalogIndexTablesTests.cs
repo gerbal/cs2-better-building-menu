@@ -1,6 +1,7 @@
 using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Enums;
+using BetterBuildingMenu.Services;
 using BetterBuildingMenu.Utilities.PrefabCategoryProcessor;
 
 using Game.Prefabs;
@@ -117,7 +118,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void ARootIsFoundByItsServiceAndNamesTheLabel()
 		{
-			var progression = Progression(roots: new() { ["Healthcare"] = ("Healthcare", "Media/Health.svg", 0) });
+			// A dictionary that ignores case: the index matches exactly whatever the caller built.
+			var progression = Progression(roots: new(System.StringComparer.OrdinalIgnoreCase) { ["Healthcare"] = ("Healthcare", "Media/Health.svg", 0) });
 
 			Assert.True(progression.TryGetRoot("Healthcare", out var root));
 			Assert.Equal("Media/Health.svg", root.Icon);
@@ -143,6 +145,25 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(ZoneTypeFilter.Any, empty.Zones.TypeOf(5));
 			Assert.Empty(empty.Progression.MilestoneNames());
 			Assert.False(empty.Mods.ExtraDetailing);
+		}
+
+		[Fact]
+		public void TheCatalogNamesMilestonesFromItsOwnIndex()
+		{
+			var hospital = TestPrefabs.Entry(7, PrefabCategory.ServiceBuildings, PrefabSubCategory.ServiceBuildings_Health);
+			hospital.UnlockMilestone = 1;
+			var index = new CatalogIndex(progression: Progression(milestones: new() { [1] = "Tiny Village" }));
+			index.File(hospital);
+			index.IsReady = true;
+
+			var page = new BuildingCatalogAdapter()
+				.Build(
+					new CatalogSource(index, new PlacedUniques(), 1),
+					new BuildingCatalogQuery(GroupBy: BuildingCatalogGrouping.Progression),
+					VanillaToolbarSelection.None)
+				.Page;
+
+			Assert.Equal(new[] { "Tiny Village" }, Assert.Single(page.Items).GroupPath);
 		}
 
 		[Fact]
