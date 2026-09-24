@@ -10,18 +10,21 @@ using System.Linq;
 namespace BetterBuildingMenu.Domain.Catalog
 {
 	/// <summary>
-	/// Every indexed prefab, filed three ways: everything, its category, and its subcategory.
+	/// Every indexed prefab, filed twice: under everything, and under its subcategory.
 	/// </summary>
 	/// <remarks>
 	/// A load publishes an empty one at preload, and a full pass builds a new one aside and
-	/// publishes it when the pass succeeds.
-	/// PrefabIndexingSystem is the only writer, on the main thread, and a partial pass or an
-	/// unlock edits the published one in place, then bumps the generation. See
-	/// docs/indexing.md, "A pass that fails".
+	/// publishes it when the pass succeeds. PrefabIndexingSystem is the only writer, on the
+	/// main thread, and a partial pass or an unlock edits the published one in place, then
+	/// bumps the generation. See docs/indexing.md, "A pass that fails".
 	/// </remarks>
 	public sealed class CatalogIndex
 	{
 		private readonly Dictionary<PrefabCategory, Dictionary<PrefabSubCategory, IndexedPrefabList>> _lists = new();
+
+		// Prefab name -> entry, built on first use and dropped by anything that files,
+		// removes or renames. See GetByPrefabName.
+		private Dictionary<string, PrefabIndex>? _byPrefabName;
 
 		/// <summary>An empty index with every list laid out, over the tables a full pass has read.</summary>
 		/// <remarks>A table left out is empty, as before the first pass; tests build only what they read.</remarks>
@@ -92,6 +95,32 @@ namespace BetterBuildingMenu.Domain.Catalog
 		/// <summary>The entry for a prefab entity's index, or null when nothing indexed it.</summary>
 		public PrefabIndex? Get(int id) => All.TryGetValue(id, out var entry) ? entry : null;
 
+		/// <summary>The entry a prefab name resolves to, or null when nothing indexed carries it.</summary>
+		/// <remarks>
+		/// Two prefab types can carry one name, and then the first entry in name order answers,
+		/// for every caller: the extension picker drawing an upgrade's row and a partial pass
+		/// replacing a prefab the game recreated. Built once, on the first lookup after a
+		/// change, rather than kept in step with every edit: a pass files thousands of entries
+		/// and looks names up rarely.
+		/// </remarks>
+		public PrefabIndex? GetByPrefabName(string prefabName)
+		{
+			if (_byPrefabName is null)
+			{
+				_byPrefabName = new Dictionary<string, PrefabIndex>(StringComparer.Ordinal);
+
+				foreach (var entry in All)
+				{
+					if (entry.PrefabName is { Length: > 0 } name && !_byPrefabName.ContainsKey(name))
+					{
+						_byPrefabName[name] = entry;
+					}
+				}
+			}
+
+			return _byPrefabName.TryGetValue(prefabName, out var found) ? found : null;
+		}
+
 		public PrefabBase? GetPrefab(int id) => Get(id)?.Prefab;
 
 		/// <summary>The tab strip for a menu, empty when the menu has none.</summary>
@@ -142,20 +171,22 @@ namespace BetterBuildingMenu.Domain.Catalog
 			}
 		}
 
-		/// <summary>Files an entry in the three lists the panel reads: everything, its category, its subcategory.</summary>
+		/// <summary>Files an entry in the two lists it belongs to: everything, and its own subcategory's.</summary>
 		/// <remarks>
-		/// An entry already filed under the same id is taken out of its own lists first. Two
+		/// An entry already filed under the same id is taken out of its own list first. Two
 		/// processors can claim one prefab, and the later entry would otherwise replace the
-		/// earlier one only in the lists they share, leaving it listed under the earlier
-		/// category too.
+		/// earlier one only in the list they share, leaving it listed under the earlier
+		/// category too. A category's <see cref="PrefabSubCategory.Any"/> list holds only the
+		/// entries filed under the category alone, as a Find It override can file them, not a
+		/// second copy of the whole category: nothing reads one.
 		/// </remarks>
 		internal void File(PrefabIndex entry)
 		{
 			Remove(entry.Id);
 
-			_lists[PrefabCategory.Any][PrefabSubCategory.Any][entry.Id] = entry;
-			_lists[entry.Category][PrefabSubCategory.Any][entry.Id] = entry;
+			All[entry.Id] = entry;
 			_lists[entry.Category][entry.SubCategory][entry.Id] = entry;
+			_byPrefabName = null;
 		}
 
 		internal void Remove(int id)
@@ -163,21 +194,74 @@ namespace BetterBuildingMenu.Domain.Catalog
 			if (All.TryGetValue(id, out var entry))
 			{
 				All.Remove(entry);
-				_lists[entry.Category][PrefabSubCategory.Any].Remove(entry);
 				_lists[entry.Category][entry.SubCategory].Remove(entry);
+				_byPrefabName = null;
 			}
 		}
 
-		/// <summary>The first entry in name order with this prefab name.</summary>
-		internal bool Find(string prefabName, out int id)
+		/// <summary>Numbers the display names that repeat, so each row can be told apart.</summary>
+		/// <remarks>
+		/// Every pass, partial ones too: one re-read prefab takes back its plain name, and its
+		/// namesakes' numbers are only right if all of them are counted again. Upgrades are left
+		/// out: every school type has an "Extension Wing", and they are never listed beside each
+		/// other, only on their own parent's picker, where "Extension Wing 2" has no referent.
+		/// </remarks>
+		internal void NumberDuplicateNames()
 		{
-			var entry = All.FirstOrDefault(candidate => candidate.PrefabName == prefabName);
-			id = entry?.Id ?? 0;
+			var numbered = All.Where(entry => !entry.IsServiceUpgrade).ToList();
+			var names = DuplicateNameNumbering.Names(numbered.Select(entry => (entry.AssetName, entry.PrefabName)).ToList());
 
-			return entry is not null;
+			for (var i = 0; i < numbered.Count; i++)
+			{
+				numbered[i].Name = names[i];
+			}
+
+			// Every list is in name order, and so is the name map's choice between namesakes.
+			foreach (var (_, _, list) in Lists())
+			{
+				list.ResetOrder();
+			}
+
+			_byPrefabName = null;
 		}
 
-		/// <summary>Every list, for the indexer's clean-up passes.</summary>
+		/// <summary>Takes any entry that shares a brand's prefab name out of its subcategory's list.</summary>
+		/// <returns>How many it took out.</returns>
+		/// <remarks>
+		/// Everything and the brands' own list are left alone, so the catalog, which reads
+		/// everything, still lists them; only the subcategory lists change, and the Roads menu's
+		/// extra tabs are the only reader of those. Kept, and counted, until a game session
+		/// shows whether it ever finds anything.
+		/// </remarks>
+		internal int RemoveBrandDuplicates()
+		{
+			var branding = List(PrefabCategory.Props, PrefabSubCategory.Props_Branding);
+			var brands = new HashSet<string>(branding?.Select(entry => entry.PrefabName) ?? Enumerable.Empty<string>());
+			var removed = 0;
+
+			foreach (var (category, subCategory, list) in Lists())
+			{
+				if (category is PrefabCategory.Any
+					|| subCategory is PrefabSubCategory.Props_Branding
+					|| (category is PrefabCategory.Props && subCategory is PrefabSubCategory.Any))
+				{
+					continue;
+				}
+
+				foreach (var entry in list.ToList())
+				{
+					if (brands.Contains(entry.PrefabName))
+					{
+						list.Remove(entry);
+						removed++;
+					}
+				}
+			}
+
+			return removed;
+		}
+
+		/// <summary>Every list, for the clean-up passes.</summary>
 		internal IEnumerable<(PrefabCategory Category, PrefabSubCategory SubCategory, IndexedPrefabList List)> Lists() =>
 			_lists.SelectMany(category => category.Value.Select(sub => (category.Key, sub.Key, sub.Value)));
 	}

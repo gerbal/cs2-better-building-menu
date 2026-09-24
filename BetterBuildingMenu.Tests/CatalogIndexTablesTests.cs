@@ -152,9 +152,7 @@ namespace BetterBuildingMenu.Tests
 		{
 			var hospital = TestPrefabs.Entry(7, PrefabCategory.ServiceBuildings, PrefabSubCategory.ServiceBuildings_Health);
 			hospital.UnlockMilestone = 1;
-			var index = new CatalogIndex(progression: Progression(milestones: new() { [1] = "Tiny Village" }));
-			index.File(hospital);
-			index.IsReady = true;
+			var index = TestPrefabs.ReadyIndex(new CatalogIndex(progression: Progression(milestones: new() { [1] = "Tiny Village" })), hospital);
 
 			var page = new BuildingCatalogAdapter()
 				.Build(
