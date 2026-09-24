@@ -254,8 +254,8 @@ column alone leaves siblings tied, and an alphabetical tie-break puts Medical Un
 Technical University above the plain University they specialise. Siblings in a column are drawn
 around the chain they hang off, so measuring outward from the trunk takes the generic before its
 specialisations — the order the player meets them in. The trunk row is that of the service's first
-node in column 0, its root, and is not necessarily zero. `DevTreeLayout.Rank` does this, over each node's column and
-row; the system only reads where each node is drawn.
+node in column 0, its root, and is not necessarily zero. `DevTreeLayout.Rank` does this, over each
+node's column and row; the system only reads where each node is drawn.
 
 **More than one node** can gate an asset. `DevTreeGates.Pick` files it by a rule modelled on
 the game's `UnlockSystem`, which unlocks an asset once every node it needs (`RequireAll`) is bought
