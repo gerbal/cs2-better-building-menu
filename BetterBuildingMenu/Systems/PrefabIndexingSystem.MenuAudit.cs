@@ -7,7 +7,6 @@ using Colossal.PSI.Common;
 using Colossal.Serialization.Entities;
 
 using BetterBuildingMenu.Domain;
-using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Domain.Interfaces;
 using BetterBuildingMenu.Utilities;
 
@@ -44,20 +43,20 @@ namespace BetterBuildingMenu.Systems
 		{
 			try
 			{
-				var indexed = BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any];
+				var indexed = Index.All;
 
 				// Everything we hold at all, menu or not. Zones included
 				// deliberately — leaving them out is the blindness this exists
 				// to remove.
 				var held = new HashSet<int>(indexed.Select(entry => entry.Id));
 
-				foreach (var zone in _zoneCatalog)
+				foreach (var zone in Index.Zones.Catalog)
 				{
 					held.Add(zone.Id);
 				}
 
 				var report = VanillaMenuAudit.Compare(
-					_menuPlacements.Values.Select(placement => new VanillaMenuPlacementFact(
+					Index.Menus.Placements.Values.Select(placement => new VanillaMenuPlacementFact(
 						placement.Entity.Index,
 						_prefabSystem.TryGetPrefab<PrefabBase>(placement.Entity, out var placed)
 							? placed?.name ?? string.Empty
@@ -73,7 +72,7 @@ namespace BetterBuildingMenu.Systems
 
 				Mod.Log.Info(
 					$"[MENU-AUDIT] {report.Menus.Count} vanilla menus, {report.PlacementCount} placements, "
-					+ $"{indexed.Count} indexed assets, {_zoneCatalog.Count} zones"
+					+ $"{indexed.Count} indexed assets, {Index.Zones.Catalog.Count} zones"
 					+ (report.IsClean ? "" : " — NOT CLEAN"));
 
 				// The reason goes next to the census, once, rather than living
@@ -172,7 +171,7 @@ namespace BetterBuildingMenu.Systems
 		{
 			try
 			{
-				var indexed = BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any];
+				var indexed = Index.All;
 				// PrefabIndex.Id is the prefab entity's index (see AddPrefab), so this
 				// is an identity comparison rather than a name match.
 				var byEntity = new Dictionary<int, PrefabIndex>();
@@ -185,12 +184,12 @@ namespace BetterBuildingMenu.Systems
 				// Zones reach the player through the zoning hierarchy rather than the
 				// prefab index, so they are covered without being in it. Left out, the
 				// report would accuse itself of losing every one of them.
-				var zoned = new HashSet<int>(_zoneCatalog.Select(zone => zone.Id));
+				var zoned = new HashSet<int>(Index.Zones.Catalog.Select(zone => zone.Id));
 				var missing = new Dictionary<string, List<string>>();
 				var misplaced = new Dictionary<string, List<string>>();
 				var shown = new Dictionary<string, int>();
 
-				foreach (var placement in _menuPlacements.Values)
+				foreach (var placement in Index.Menus.Placements.Values)
 				{
 					var where = placement.Menu + '\u0000' + placement.Category;
 
@@ -249,7 +248,7 @@ namespace BetterBuildingMenu.Systems
 						+ ((strays?.Count ?? 0) == 0 ? string.Empty : $" misplaced=[{string.Join(",", strays)}]"));
 				}
 
-				var summary = $"[MENU-COVERAGE] vanilla shows {_menuPlacements.Count} assets across its menus; "
+				var summary = $"[MENU-COVERAGE] vanilla shows {Index.Menus.Placements.Count} assets across its menus; "
 					+ $"{totalMissing} missing from the index";
 
 				if (totalMissing == 0)

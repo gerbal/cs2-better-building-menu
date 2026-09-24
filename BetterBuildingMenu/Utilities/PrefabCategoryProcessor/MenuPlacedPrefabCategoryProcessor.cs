@@ -1,4 +1,5 @@
 using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Interfaces;
 
 using Game.Prefabs;
@@ -38,7 +39,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 			};
 		}
 
-		public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
+		public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
 		{
 			var isCategory = prefab is UIGroupPrefab
 				|| _entityManager.HasComponent<UIAssetCategoryData>(entity)
@@ -46,9 +47,9 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 				|| prefab.GetType().Name.Contains("Category");
 
 			if (!MenuPlacedFallback.ShouldIndex(
-				placedInVanillaMenu: Systems.PrefabIndexingSystem.IsPlacedInVanillaMenu(entity.Index),
+				placedInVanillaMenu: target.Menus.IsPlaced(entity.Index),
 				isCategory: isCategory,
-				alreadyIndexed: BuildingMenuUtil.GetPrefabIndex(entity.Index) is not null))
+				alreadyIndexed: target.Get(entity.Index) is not null))
 			{
 				prefabIndex = null!;
 				return false;

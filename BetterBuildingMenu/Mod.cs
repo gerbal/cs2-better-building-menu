@@ -5,6 +5,7 @@ using Colossal.Reflection;
 using Colossal.UI;
 
 using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Systems;
 using BetterBuildingMenu.Utilities;
 
@@ -28,21 +29,16 @@ namespace BetterBuildingMenu
 		// which checks.
 		public static BetterBuildingMenuSettings Settings { get; private set; } = null!;
 
-		/// <summary>Whether Extra Detailing Tools is enabled, as of the last full index pass.</summary>
-		public static bool IsExtraDetailingEnabled { get; private set; }
-
-		/// <summary>Whether Road Builder is enabled, as of the last full index pass.</summary>
-		public static bool IsRoadBuilderEnabled { get; private set; }
-
-		/// <summary>Re-reads which of the mods we adapt to are enabled.</summary>
+		/// <summary>Reads which of the mods we adapt to are enabled.</summary>
 		/// <remarks>Per full pass, not once per process: the game re-reads the playset at every city
 		/// load, so a mod can join without a restart. See docs/indexing.md, "Load timing".</remarks>
-		internal static void RefreshEnabledMods()
+		internal static ModCompatibility ReadEnabledMods()
 		{
 			var enabled = GameManager.instance.modManager.ListModsEnabled();
 
-			IsExtraDetailingEnabled = EnabledMods.Contains(enabled, "ExtraDetailingTools");
-			IsRoadBuilderEnabled = EnabledMods.Contains(enabled, "RoadBuilder");
+			return new ModCompatibility(
+				ExtraDetailing: EnabledMods.Contains(enabled, "ExtraDetailingTools"),
+				RoadBuilder: EnabledMods.Contains(enabled, "RoadBuilder"));
 		}
 
 		/// <summary>Black copies of the game's vector icons, for locked tiles.</summary>
@@ -101,9 +97,10 @@ namespace BetterBuildingMenu
 			AssetDatabase.global.LoadSettings(nameof(BetterBuildingMenu), Settings, new BetterBuildingMenuSettings(this));
 
 			updateSystem.UpdateAfter<PrefabIndexingSystem>(SystemUpdatePhase.PrefabUpdate);
-			// Twice, because PrefabUpdate is not a frame phase: PrefabSystem
-			// drives it only when prefabs change, and an unlock flips Locked
-			// without touching one. UIUpdate ticks every frame.
+			// Twice. Both phases run every frame, but PrefabUpdate runs inside
+			// PrefabSystem's update, which the main loop runs before UnlockSystem;
+			// UIUpdate runs after it, so only that tick sees this frame's unlock
+			// events.
 			updateSystem.UpdateAt<PrefabIndexingSystem>(SystemUpdatePhase.UIUpdate);
 			updateSystem.UpdateAt<BuildingMenuUISystem>(SystemUpdatePhase.UIUpdate);
 

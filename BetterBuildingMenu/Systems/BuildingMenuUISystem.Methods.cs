@@ -1,4 +1,5 @@
 ﻿using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Utilities;
 using Colossal.Entities;
 using Game.Prefabs;
@@ -21,9 +22,8 @@ namespace BetterBuildingMenu.Systems
 		/// Re-publish the lens after something changed what it should show.
 		/// </summary>
 		/// <remarks>
-		/// The options panel's sorting sections still reach the lens: CategorizedPrefabs holds
-		/// IndexedPrefabList, whose enumerator returns the statically-sorted order, so that sort
-		/// still decides the ties the catalog's own sort leaves open.
+		/// The index hands its entries over in name order, so that order decides the ties
+		/// the catalog's own sort leaves open.
 		/// </remarks>
 		internal void RefreshLens()
 		{
@@ -37,12 +37,14 @@ namespace BetterBuildingMenu.Systems
 			// change without an event reaching us: a mod that switches the game's unique
 			// tracker off raises none. Rescanned here, before the snapshots below are
 			// keyed. See PrefabIndexingSystem.SyncPlacedUniques.
-			PrefabIndexingSystem.SyncPlacedUniques();
-			// After the rescan, which can itself bump the generation: this publish shows it.
-			_indexWatch.Published(PrefabIndexingSystem.IndexGeneration);
+			_indexer.SyncPlacedUniques();
+			// After the rescan, which can itself bump the generation: this publish shows it,
+			// and every Build below reads this one source.
+			var source = _indexer.Source;
+			_indexWatch.Published(source.Generation);
 
 			// Only resets the projection timing counters. The snapshots themselves live across
-			// refreshes and are dropped when PrefabIndexingSystem.IndexGeneration moves; see
+			// refreshes and are dropped when the indexer's Generation moves; see
 			// BuildingCatalogAdapter._snapshots.
 			_buildingCatalogAdapter.BeginRefresh();
 
@@ -53,17 +55,22 @@ namespace BetterBuildingMenu.Systems
 
 			// One view, built once; every publish below reads it. See CatalogView.
 			var menu = _lens.Menu;
-			var menuHasCategories = PrefabIndexingSystem.GetMenuCategories(string.IsNullOrEmpty(menu) ? null : menu).Count > 0;
+			var menuHasCategories = source.Index.GetMenuCategories(string.IsNullOrEmpty(menu) ? null : menu).Count > 0;
 			var view = _buildingCatalogAdapter.Build(
+				source,
 				_lens.Query,
+				_toolbarSelection,
 				built => BuildingCatalogGrouping.Effective(
 					_lens.Query.GroupBy, menuHasCategories, built.StripAxis, VanillaMenus.IsEducation(menu), built.GroupDimensions));
 			BuildingCatalogPage page = view.Page;
 
 			// A search that matches nothing in the current section reads as "this building does
 			// not exist" when it usually means "not here". With auto-widen on a scoped miss drops
-			// the scope instead of asking; it cannot recurse, because the retry is unscoped.
+			// the scope instead of asking; it cannot recurse, because the retry is unscoped. Not
+			// on an index still being built: during a load everything misses, and the scope it
+			// dropped would stay dropped once the city's pass lands.
 			if (Mod.Settings.AutoWidenSearch
+				&& source.Index.IsReady
 				&& page.TotalCount == 0
 				&& !string.IsNullOrWhiteSpace(_lens.Query.SearchText)
 				&& _lens.Query.IsScopedToMenu)
@@ -76,12 +83,12 @@ namespace BetterBuildingMenu.Systems
 			// the button delivers.
 			_BuildingCatalogMatchesElsewhere.Value =
 				page.TotalCount == 0 && !string.IsNullOrWhiteSpace(_lens.Query.SearchText)
-					? _buildingCatalogAdapter.Build(_lens.EverywhereQuery()).Page.TotalCount
+					? _buildingCatalogAdapter.Build(source, _lens.EverywhereQuery(), _toolbarSelection).Page.TotalCount
 					: 0;
 			var pageMs = Lap();
 			_BuildingCatalogBinding.Value = page with
 			{
-				Status = BuildingCatalogLensState.GetPageStatus(BuildingMenuUtil.IsReady, page.TotalCount),
+				Status = BuildingCatalogLensState.GetPageStatus(source.Index.IsReady, page.TotalCount),
 			};
 			// Publish the order the query actually ran with, so the header can
 			// never disagree with the rows beneath it.
@@ -119,12 +126,26 @@ namespace BetterBuildingMenu.Systems
 			var tiersMs = Lap();
 			refreshTimer.Stop();
 			// Every refresh, and named by its caller: one line per user action is the only way
-			// a redundant refresh is visible at all.
-			Mod.Log.Info(
-				$"[LENS-REFRESH] {(int)refreshTimer.ElapsedMilliseconds}ms "
-				+ $"proj={_buildingCatalogAdapter.LastProjectionMs}ms({(_buildingCatalogAdapter.LastProjectionWasHit ? "hit" : "miss")}) "
-				+ $"page={pageMs} bounds={boundsMs} facets={facetsMs} counts={countsMs} axis={axisMs} tabs={tabsMs} expanded={expandedMs} tiers={tiersMs} "
-				+ $"menu='{_lens.Menu}' total={page.TotalCount} from={caller}");
+			// a redundant refresh is visible at all. At Info in a development build, where that
+			// is the point; at Debug in a release, where it is a line in the player's log for
+			// every search, filter and menu opened.
+#if DEBUG
+			const bool logRefresh = true;
+#else
+			var logRefresh = Mod.Log.isLevelEnabled(Colossal.Logging.Level.Debug);
+#endif
+			if (logRefresh)
+			{
+				var line = $"[LENS-REFRESH] {(int)refreshTimer.ElapsedMilliseconds}ms "
+					+ $"proj={_buildingCatalogAdapter.LastProjectionMs}ms({(_buildingCatalogAdapter.LastProjectionWasHit ? "hit" : "miss")}) "
+					+ $"page={pageMs} bounds={boundsMs} facets={facetsMs} counts={countsMs} axis={axisMs} tabs={tabsMs} expanded={expandedMs} tiers={tiersMs} "
+					+ $"menu='{_lens.Menu}' total={page.TotalCount} from={caller}";
+#if DEBUG
+				Mod.Log.Info(line);
+#else
+				Mod.Log.Debug(line);
+#endif
+			}
 		}
 
 		/// <summary>Publishes the milestone names the UI labels locked assets with.</summary>
@@ -133,7 +154,7 @@ namespace BetterBuildingMenu.Systems
 			// Dense by index: entry N is milestone N's name. Every asset ships a bare milestone
 			// index and the UI reads the name out of here, so the names resolve once per index
 			// pass rather than once per asset.
-			_BuildingLensMilestonesBinding.Value = PrefabIndexingSystem.GetMilestoneNames();
+			_BuildingLensMilestonesBinding.Value = _indexer.Index.Progression.MilestoneNames();
 
 		}
 
@@ -152,39 +173,52 @@ namespace BetterBuildingMenu.Systems
 				? attached.m_Parent
 				: selected;
 
-			if (upgradable == _extensionMenuFor && PrefabIndexingSystem.IndexGeneration == _extensionMenuGeneration)
+			if (upgradable == _extensionMenuFor && _indexer.Generation == _extensionMenuGeneration)
 			{
 				return;
 			}
 
 			_extensionMenuFor = upgradable;
-			_extensionMenuGeneration = PrefabIndexingSystem.IndexGeneration;
+			// Rescanned first, as a catalog refresh does: a tracker switched off raises no
+			// event, and the rescan can move the generation read next.
+			_indexer.SyncPlacedUniques();
+			_extensionMenuGeneration = _indexer.Generation;
 
 			if (upgradable == Entity.Null
 				|| !EntityManager.TryGetComponent<PrefabRef>(upgradable, out var prefabRef)
-				|| BuildingMenuUtil.GetPrefabIndex(prefabRef.m_Prefab.Index) is not { } building)
+				|| _indexer.Index.Get(prefabRef.m_Prefab.Index) is not { } building)
 			{
 				_BuildingExtensionMenu.Value = BuildingExtensionMenu.Empty;
 				return;
 			}
 
+			PublishExtensionMenu(building, _indexer.Source);
+		}
+
+		// Its own method so the lookup's closure is allocated only on a rebuild, not on
+		// every frame RefreshExtensionMenu polls and returns early.
+		private void PublishExtensionMenu(PrefabIndex building, CatalogSource source)
+		{
 			_BuildingExtensionMenu.Value = BuildingExtensionMenu.Build(
 				building.Name ?? building.PrefabName ?? string.Empty,
 				// Prefab names, not the display names the hover card shows:
 				// the UI joins these to vanilla's rows, which are keyed by
 				// prefab.name.
 				building.SupportedUpgradePrefabNames,
-				_buildingCatalogAdapter.EntryForPrefabName);
+				prefabName => _buildingCatalogAdapter.EntryForPrefabName(source, prefabName));
 		}
 
 		internal void TryActivatePrefabTool(int id)
 		{
-			var prefabBase = BuildingMenuUtil.GetPrefabBase(id);
+			var prefabBase = _indexer.Index.GetPrefab(id);
 			_interactionBoundary.TryActivatePrefab(
 				id,
 				prefabBase is not null,
 				_toolSystem.activePrefab == prefabBase,
-				() => ActivatePrefabTool(id, prefabBase!));
+				// The boundary calls this only when the prefab exists, which the lambda cannot see.
+				() => ActivatePrefabTool(
+					id,
+					prefabBase ?? throw new InvalidOperationException($"Prefab {id} was armed without existing.")));
 		}
 
 		private void ActivatePrefabTool(int id, PrefabBase prefabBase)

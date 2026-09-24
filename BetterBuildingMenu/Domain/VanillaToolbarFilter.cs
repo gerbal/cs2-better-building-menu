@@ -62,8 +62,13 @@ namespace BetterBuildingMenu.Domain
 	/// </remarks>
 	public readonly struct VanillaToolbarSelection
 	{
-		public IReadOnlyList<int> SelectedThemes { get; }
-		public IReadOnlyList<int> SelectedPacks { get; }
+		// Read through the properties, so default(VanillaToolbarSelection) is None
+		// rather than a pair of nulls.
+		private readonly IReadOnlyList<int>? _selectedThemes;
+		private readonly IReadOnlyList<int>? _selectedPacks;
+
+		public IReadOnlyList<int> SelectedThemes => _selectedThemes ?? System.Array.Empty<int>();
+		public IReadOnlyList<int> SelectedPacks => _selectedPacks ?? System.Array.Empty<int>();
 		public bool VanillaSelected { get; }
 		public bool ModsSelected { get; }
 
@@ -73,8 +78,8 @@ namespace BetterBuildingMenu.Domain
 			bool vanillaSelected,
 			bool modsSelected)
 		{
-			SelectedThemes = selectedThemes ?? System.Array.Empty<int>();
-			SelectedPacks = selectedPacks ?? System.Array.Empty<int>();
+			_selectedThemes = selectedThemes;
+			_selectedPacks = selectedPacks;
 			VanillaSelected = vanillaSelected;
 			ModsSelected = modsSelected;
 		}

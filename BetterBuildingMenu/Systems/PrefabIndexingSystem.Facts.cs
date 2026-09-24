@@ -7,6 +7,7 @@ using Colossal.PSI.Common;
 using Colossal.Serialization.Entities;
 
 using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Domain.Interfaces;
 using BetterBuildingMenu.Utilities;
@@ -42,7 +43,7 @@ namespace BetterBuildingMenu.Systems
 		/// PlaceableNetData, and the shipped UI renders it through VALUE_MONEY_PER_KILOMETER.</remarks>
 		private const float NetCellsPerKilometre = 125f;
 
-		private void PopulateAnalyticalData(Entity entity, PrefabIndex prefabIndex)
+		private void PopulateAnalyticalData(Entity entity, PrefabIndex prefabIndex, ZoneIndex zones)
 		{
 			// A filter on work, not on correctness: a component that does not apply
 			// to a category simply does not match. Networks, zones, trees and props
@@ -297,10 +298,10 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			// The shapes the zone grows, for the glyphs the card already knows how
-			// to draw. Computed once by IndexZones and cached, because it needs
-			// every spawnable building's lot and this pass sees one prefab.
+			// to draw. Computed once by IndexZones and kept in the index, because it
+			// needs every spawnable building's lot and this pass sees one prefab.
 			if (prefabIndex.Category == Domain.Enums.PrefabCategory.Zones
-				&& GetZoneLotSizes(entity) is ZoneLotSizes lots
+				&& zones.LotSizesOf(entity.Index) is ZoneLotSizes lots
 				&& lots.Footprints is { Length: > 0 })
 			{
 				prefabIndex.Footprints = lots.Footprints;
@@ -717,9 +718,9 @@ namespace BetterBuildingMenu.Systems
 		/// <summary>Records one worded figure, dropping the blanks.</summary>
 		private static void TextFact(PrefabIndex prefabIndex, string key, string? value)
 		{
-			if (!string.IsNullOrWhiteSpace(value))
+			if (value?.Trim() is { Length: > 0 } trimmed)
 			{
-				prefabIndex.ServiceTextFacts.Add(new Domain.ServiceTextFact(key, value!.Trim()));
+				prefabIndex.ServiceTextFacts.Add(new Domain.ServiceTextFact(key, trimmed));
 			}
 		}
 

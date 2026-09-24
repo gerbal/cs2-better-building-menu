@@ -20,7 +20,7 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>Vanilla's PlacementFlags.Unique — only one may exist.</summary>
 		/// <remarks>
 		/// Static per prefab, so indexed here, unlike whether one has been
-		/// PLACED — see PlacedUniqueRegistry. Vanilla badges every unique asset
+		/// PLACED — see PlacedUniques. Vanilla badges every unique asset
 		/// whether or not the city has one yet, so the menu needs both facts.
 		/// </remarks>
 		public bool IsUnique { get; set; }

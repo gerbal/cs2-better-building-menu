@@ -7,6 +7,7 @@ using Colossal.PSI.Common;
 using Colossal.Serialization.Entities;
 
 using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Domain.Interfaces;
 using BetterBuildingMenu.Utilities;
@@ -40,7 +41,7 @@ namespace BetterBuildingMenu.Systems
 		/// <summary>Records where the vanilla build menu places each asset, walking the game's own
 		/// group tree from the menus downward.</summary>
 		/// <remarks>The direction is the whole point; see docs/indexing.md, "The vanilla menu walk".</remarks>
-		private void IndexVanillaMenuPlacements()
+		private Dictionary<int, VanillaMenuPlacement> IndexVanillaMenuPlacements()
 		{
 			var placements = new Dictionary<int, VanillaMenuPlacement>();
 
@@ -99,69 +100,14 @@ namespace BetterBuildingMenu.Systems
 				Mod.Log.Error(ex, "[MENU-COVERAGE] walk failed");
 			}
 
-			_menuPlacements = placements;
 			Mod.Log.Info($"Indexed Vanilla Menu Placements: {placements.Count}");
+
+			return placements;
 		}
 
-		/// <summary>Whether the vanilla build menu offers this prefab to the player.</summary>
-		/// <remarks>The index's tie-breaker: whatever the game puts in front of the player, the lens
-		/// carries too, whichever of our own rules — the blacklist, the brush filter — would drop it.</remarks>
-		public static bool IsPlacedInVanillaMenu(int entityIndex) =>
-			_menuPlacements.ContainsKey(entityIndex);
-
-		/// <summary>The vanilla menu that holds an asset, as an entity the game's toolbar accepts.</summary>
-		/// <remarks>Fails for anything the game places in no menu — most assets — so the caller needs a
-		/// fallback.</remarks>
-		public static bool TryGetMenuEntityFor(int assetEntityIndex, out Entity menu)
-		{
-			menu = Entity.Null;
-
-			return _menuPlacements.TryGetValue(assetEntityIndex, out var placement)
-				&& placement.Menu is not null
-				&& _assetMenuEntities.TryGetValue(placement.Menu.Trim(), out menu);
-		}
-
-		/// <summary>A menu's own entity, by the name the lens scopes itself with.</summary>
-		/// <remarks>The same table <see cref="TryGetMenuEntityFor"/> reaches through, keyed straight
-		/// off the menu name: the lens knows which menu it took over without holding an asset from it.</remarks>
-		public static bool TryGetAssetMenuEntity(string menu, out Entity entity)
-		{
-			entity = Entity.Null;
-
-			return !string.IsNullOrWhiteSpace(menu)
-				&& _assetMenuEntities.TryGetValue(menu.Trim(), out entity);
-		}
-
-		/// <summary>Whether the game places this asset in that named menu.</summary>
-		/// <remarks>The downward read. Its opposite number, <c>PrefabIndex.UiMenuName</c>, reads upward
-		/// from an asset we hold, so it can only ever describe assets some processor indexed.</remarks>
-		public static bool IsPlacedInMenu(int entityIndex, string menu) =>
-			_menuPlacements.TryGetValue(entityIndex, out var placement)
-			&& string.Equals(placement.Menu?.Trim(), menu, System.StringComparison.OrdinalIgnoreCase);
-
-		/// <summary>The vanilla menu category an asset is placed in, when the game places it at all.</summary>
-		public static bool TryGetVanillaCategory(int entityIndex, out string category)
-		{
-			category = string.Empty;
-
-			if (!_menuPlacements.TryGetValue(entityIndex, out var placement) || string.IsNullOrWhiteSpace(placement.Category))
-			{
-				return false;
-			}
-
-			category = placement.Category.Trim();
-			return true;
-		}
-
-		/// <summary>Whether the game places this asset in any menu at all.</summary>
-		/// <remarks>The guard on the Roads menu's network gathering: the index also holds networks the
-		/// game never offers, and admitting those would put unplaceable rows in that menu.</remarks>
-		public static bool IsPlacedInAnyMenu(int entityIndex) =>
-			_menuPlacements.ContainsKey(entityIndex);
-
-		/// <summary>Caches the vanilla toolbar's asset menus by entity index, so a menu selection
-		/// arriving from the UI can be resolved to a prefab name.</summary>
-		private void IndexAssetMenus()
+		/// <summary>Reads the vanilla toolbar's asset menus: by entity index, so a menu selection
+		/// arriving from the UI can be resolved to a prefab name, and by name, so the lens can open one.</summary>
+		private (Dictionary<int, string> Names, Dictionary<string, Entity> Entities, List<VanillaMenuCategory> Menus) IndexAssetMenus()
 		{
 			var query = GetEntityQuery(
 				ComponentType.ReadOnly<UIAssetMenuData>(),
@@ -198,16 +144,15 @@ namespace BetterBuildingMenu.Systems
 
 			list.Sort((left, right) => left.Priority.CompareTo(right.Priority));
 
-			_assetMenuNames = names;
-			_assetMenuEntities = entities;
-			_assetMenus = list;
-			Mod.Log.Info($"Indexed Asset Menus Count: {_assetMenuNames.Count}");
+			Mod.Log.Info($"Indexed Asset Menus Count: {names.Count}");
+
+			return (names, entities, list);
 		}
 
-		/// <summary>Caches each menu's category tabs, which are vanilla's second tier.</summary>
+		/// <summary>Reads each menu's category tabs, which are vanilla's second tier.</summary>
 		/// <remarks>A category that names no menu is not a build-menu tab — UIAssetCategoryPrefab adds
 		/// UIAssetCategoryData only when m_Menu is set — so that check is belt and braces.</remarks>
-		private void IndexAssetCategories()
+		private Dictionary<string, List<VanillaMenuCategory>> IndexAssetCategories()
 		{
 			var query = GetEntityQuery(
 				ComponentType.ReadOnly<UIAssetCategoryData>(),
@@ -256,76 +201,9 @@ namespace BetterBuildingMenu.Systems
 				tabs.Sort((left, right) => left.Priority.CompareTo(right.Priority));
 			}
 
-			_assetCategories = byMenu;
 			Mod.Log.Info($"Indexed Asset Categories: {byMenu.Count} menus, {byMenu.Values.Sum(list => list.Count)} tabs");
+
+			return byMenu;
 		}
-
-		/// <summary>The tab strip for a menu, empty when the menu has none.</summary>
-		/// <remarks>Roads gets more tabs than the game gives it: the lens gathers every network there
-		/// (see <see cref="NetworkMenuExtension"/>), so the strip has to offer the extras too.</remarks>
-		public static IReadOnlyList<VanillaMenuCategory> GetMenuCategories(string? menuName)
-		{
-			var tabs = menuName is not null && _assetCategories.TryGetValue(menuName, out var found)
-				? found
-				: (IReadOnlyList<VanillaMenuCategory>)Array.Empty<VanillaMenuCategory>();
-
-			if (!NetworkMenuExtension.IsExtended(menuName) || tabs.Count == 0)
-			{
-				return tabs;
-			}
-
-			return tabs.Concat(GetExtraNetworkCategories()).ToArray();
-		}
-
-		/// <summary>A tab for each kind of network the Roads menu does not already hold.</summary>
-		/// <remarks>Built from what is indexed rather than from the enum, so a subcategory with nothing
-		/// in it draws no tab. Ids match what NetworkMenuExtension.Reframe writes onto the entries.</remarks>
-		private static IEnumerable<VanillaMenuCategory> GetExtraNetworkCategories()
-		{
-			if (!BuildingMenuUtil.CategorizedPrefabs.TryGetValue(PrefabCategory.Networks, out var networks))
-			{
-				yield break;
-			}
-
-			foreach (var pair in networks.OrderBy(pair => (int)pair.Key))
-			{
-				if (pair.Key == PrefabSubCategory.Any || pair.Value.Count == 0)
-				{
-					continue;
-				}
-
-				// Only the ones that arrive through the extension. A subcategory whose
-				// members are all in the Roads menu already has vanilla tabs covering
-				// them, and a second tab over the same assets would split the roads.
-				if (!pair.Value.Any(prefab => !string.Equals(
-						prefab.UiMenuName,
-						NetworkMenuExtension.RoadsMenu,
-						StringComparison.OrdinalIgnoreCase)))
-				{
-					continue;
-				}
-
-				var name = pair.Key.ToString();
-
-				yield return new VanillaMenuCategory(
-					Id: NetworkMenuExtension.GroupId(name),
-					Name: NetworkMenuExtension.GroupId(name),
-					Icon: IconPath.Normalize(CategoryIconAttribute.GetAttribute(pair.Key).Icon) ?? string.Empty,
-					Priority: NetworkMenuExtension.GroupPriority(name));
-			}
-		}
-
-		/// <summary>Every vanilla menu that has something in it, in the game's order.</summary>
-		/// <remarks>Filtered to menus with at least one category tab, the same test vanilla applies
-		/// before drawing one: a menu whose categories are all empty is a button the game hides.</remarks>
-		public static IReadOnlyList<VanillaMenuCategory> GetAssetMenus() =>
-			_assetMenus.Where(menu => _assetCategories.ContainsKey(menu.Id)).ToArray();
-
-		/// <summary>The prefab name of a vanilla toolbar asset menu, by entity index.</summary>
-		/// <remarks>The UI reads the game's toolbar.selectedAssetMenu binding but receives only an
-		/// entity, and entity indices are runtime values that must not be persisted.</remarks>
-		public static string? GetAssetMenuName(int entityIndex) => _assetMenuNames.TryGetValue(entityIndex, out var name)
-			? name
-			: null;
 	}
 }

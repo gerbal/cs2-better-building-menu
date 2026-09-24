@@ -11,8 +11,8 @@ namespace BetterBuildingMenu.Tests
 		[Fact, Trait("Requires", "Game")]
 		public void MatchTheGamesDlcIds()
 		{
-			Assert.Equal(DlcId.Invalid.id, GameDlcIds.Invalid);
-			Assert.Equal(DlcId.BaseGame.id, GameDlcIds.BaseGame);
+			Assert.Equal(GameDlcIds.Invalid, DlcId.Invalid.id);
+			Assert.Equal(GameDlcIds.BaseGame, DlcId.BaseGame.id);
 		}
 	}
 }

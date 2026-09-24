@@ -1,9 +1,9 @@
 using Colossal.UI.Binding;
 
 using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Services;
-using BetterBuildingMenu.Utilities;
 
 using Game.Prefabs;
 
@@ -648,49 +648,14 @@ public sealed class BuildingCatalogQueryEngineTests
     [Fact]
     public void Adapter_WhenPrefabIndexIsUnready_ReturnsAnEmptyBoundedPage()
     {
-        bool previousReady = BuildingMenuUtil.IsReady;
-        try
-        {
-            BuildingMenuUtil.IsReady = false;
+        BuildingCatalogPage page = new BuildingCatalogAdapter().Build(
+            new CatalogSource(new CatalogIndex(), new PlacedUniques(), Generation: 1),
+            new BuildingCatalogQuery(Limit: BuildingCatalogQuery.MaxLimit + 1),
+            VanillaToolbarSelection.None).Page;
 
-            BuildingCatalogPage page = new BuildingCatalogAdapter().Query(
-                new BuildingCatalogQuery(Limit: BuildingCatalogQuery.MaxLimit + 1));
-
-            Assert.Empty(page.Items);
-            Assert.Equal(0, page.TotalCount);
-            Assert.Equal(BuildingCatalogQuery.MaxLimit, page.Limit);
-        }
-        finally
-        {
-            BuildingMenuUtil.IsReady = previousReady;
-        }
-    }
-
-    [Fact, Trait("Requires", "Game")]
-    public void BuildingMenuUtil_WhenIndexCategoriesAreMissing_ReturnsNulls()
-    {
-        bool previousReady = BuildingMenuUtil.IsReady;
-        KeyValuePair<PrefabCategory, Dictionary<PrefabSubCategory, IndexedPrefabList>>[] previousCategories =
-            BuildingMenuUtil.CategorizedPrefabs.ToArray();
-
-        try
-        {
-            BuildingMenuUtil.CategorizedPrefabs.Clear();
-            BuildingMenuUtil.IsReady = true;
-
-            Assert.Null(BuildingMenuUtil.GetPrefabBase(0));
-            Assert.Null(BuildingMenuUtil.GetPrefabIndex(0));
-        }
-        finally
-        {
-            BuildingMenuUtil.CategorizedPrefabs.Clear();
-            foreach (KeyValuePair<PrefabCategory, Dictionary<PrefabSubCategory, IndexedPrefabList>> category in previousCategories)
-            {
-                BuildingMenuUtil.CategorizedPrefabs[category.Key] = category.Value;
-            }
-
-            BuildingMenuUtil.IsReady = previousReady;
-        }
+        Assert.Empty(page.Items);
+        Assert.Equal(0, page.TotalCount);
+        Assert.Equal(BuildingCatalogQuery.MaxLimit, page.Limit);
     }
 
     [Fact, Trait("Requires", "Game")]
@@ -725,6 +690,46 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.Contains("Write:String:Education & Research", writer.Tokens);
         Assert.Contains("Write:Int32:100", writer.Tokens);
         Assert.Contains("Write:Double:80000", writer.Tokens);
+    }
+
+    [Fact, Trait("Requires", "Game")]
+    public void EntryWrite_WritesEachFactListAsAnArrayOfItsItems()
+    {
+        // The three lists share one writer, so one list's items must not leak
+        // into the next, and an empty list is still an array.
+        BuildingCatalogEntry entry = SampleEntries[0] with
+        {
+            ServiceFacts = new[] { new ServiceFact("capacity", 5), new ServiceFact("range", 3) },
+            Footprints = new[] { new ZoneFootprint(2, 3) },
+            ServiceTextFacts = System.Array.Empty<ServiceTextFact>(),
+        };
+        RecordingJsonWriter writer = new();
+
+        entry.Write(writer);
+
+        List<string> After(string property, int count) =>
+            writer.Tokens.SkipWhile(token => token != "PropertyName:" + property).Skip(1).Take(count).ToList();
+
+        Assert.Equal(
+            new[]
+            {
+                "ArrayBegin:2",
+                "TypeBegin:" + typeof(ServiceFact).FullName, "PropertyName:key", "Write:String:capacity", "PropertyName:value", "Write:Double:5", "TypeEnd",
+                "TypeBegin:" + typeof(ServiceFact).FullName, "PropertyName:key", "Write:String:range", "PropertyName:value", "Write:Double:3", "TypeEnd",
+                "ArrayEnd",
+                "PropertyName:footprints",
+            },
+            After("serviceFacts", 15));
+        Assert.Equal(
+            new[]
+            {
+                "ArrayBegin:1",
+                "TypeBegin:" + typeof(ZoneFootprint).FullName, "PropertyName:width", "Write:Int32:2", "PropertyName:depth", "Write:Int32:3", "TypeEnd",
+                "ArrayEnd",
+                "PropertyName:footprintOverflow",
+            },
+            After("footprints", 9));
+        Assert.Equal(new[] { "ArrayBegin:0", "ArrayEnd" }, After("serviceTextFacts", 2));
     }
 
     [Fact]

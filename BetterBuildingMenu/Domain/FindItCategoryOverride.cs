@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Diagnostics.CodeAnalysis;
 
 using BetterBuildingMenu.Domain.Enums;
 
@@ -18,7 +19,7 @@ namespace BetterBuildingMenu.Domain
 		PrefabSubCategory? SubCategory,
 		string? PdxModsId)
 	{
-		public static bool IsOurs(string? tag) =>
+		public static bool IsOurs([NotNullWhen(true)] string? tag) =>
 			tag is not null
 			&& (tag == "FindIt"
 				|| tag.StartsWith("FindIt/", StringComparison.Ordinal)
@@ -35,25 +36,26 @@ namespace BetterBuildingMenu.Domain
 			var excluded = false;
 			var hasInclude = includes is { Count: > 0 };
 
-			for (var i = 0; hasInclude && i < (excludes?.Count ?? 0); i++)
+			if (hasInclude && excludes is not null)
 			{
-				excluded |= IsOurs(excludes![i]);
+				foreach (var exclude in excludes)
+				{
+					excluded |= IsOurs(exclude);
+				}
 			}
 
 			PrefabCategory? category = null;
 			PrefabSubCategory? subCategory = null;
 			string? pdxModsId = null;
 
-			for (var i = 0; i < (includes?.Count ?? 0); i++)
+			foreach (var tag in includes ?? Array.Empty<string?>())
 			{
-				var tag = includes![i];
-
 				if (!IsOurs(tag))
 				{
 					continue;
 				}
 
-				var split = tag!.Split('/');
+				var split = tag.Split('/');
 
 				if (split.Length >= 3
 					&& TryParse(split[1], out var categoryValue)
@@ -75,7 +77,8 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>Whether the index files this subcategory under this category.</summary>
 		/// <remarks>The same rule that lays the index out: a category's subcategories take the
-		/// hundred values above it, and each category also files under Any.</remarks>
+		/// hundred values above it, and each category also has an Any list, for entries filed
+		/// under the category alone.</remarks>
 		public static bool IsFiled(PrefabCategory category, PrefabSubCategory subCategory) =>
 			category is not PrefabCategory.Any
 			&& Enum.IsDefined(typeof(PrefabCategory), category)

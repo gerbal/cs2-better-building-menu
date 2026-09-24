@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Diagnostics.CodeAnalysis;
 
 namespace BetterBuildingMenu.Domain
 {
@@ -116,13 +117,13 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		private const string UnnamedKey = "\uFFFD";
 
-		public static bool IsGrouped(string? groupBy) =>
+		public static bool IsGrouped([NotNullWhen(true)] string? groupBy) =>
 			groupBy?.Trim() is { Length: > 0 } trimmed
 			&& !string.Equals(trimmed, None, StringComparison.OrdinalIgnoreCase);
 
-		public static bool IsDimension(string? value) =>
-			!string.IsNullOrWhiteSpace(value)
-			&& Dimensions.Any(dimension => Is(value!.Trim(), dimension));
+		public static bool IsDimension([NotNullWhen(true)] string? value) =>
+			value?.Trim() is { Length: > 0 } trimmed
+			&& Dimensions.Any(dimension => Is(trimmed, dimension));
 
 		/// <summary>
 		/// What a menu opens grouped by when the player has not chosen.
@@ -146,7 +147,7 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>The choice when there is one, otherwise the default. Empty means auto.</summary>
 		public static string Effective(string? choice, bool menuHasCategories, string? stripAxis, bool educationMenu) =>
-			IsDimension(choice) ? choice!.Trim() : DefaultDimension(menuHasCategories, stripAxis, educationMenu);
+			IsDimension(choice) ? choice.Trim() : DefaultDimension(menuHasCategories, stripAxis, educationMenu);
 
 		/// <summary>
 		/// <see cref="Effective(string?, bool, string?, bool)"/>, held to the
@@ -196,7 +197,7 @@ namespace BetterBuildingMenu.Domain
 				return string.Empty;
 			}
 
-			string dimension = groupBy!.Trim();
+			string dimension = groupBy.Trim();
 
 			if (Is(dimension, Category)) return Normalize(entry.Category);
 			if (Is(dimension, MenuCategory)) return MenuCategoryRank(entry.UiCategory, entry.UiCategoryPriority);
@@ -222,8 +223,8 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>The menu whose tier is what an asset IS, not when it unlocks.</summary>
 		private static bool IsTransitMenu(string? menu) =>
-			!string.IsNullOrEmpty(menu)
-			&& menu!.IndexOf("Transportation", StringComparison.OrdinalIgnoreCase) >= 0;
+			menu is { Length: > 0 }
+			&& menu.IndexOf("Transportation", StringComparison.OrdinalIgnoreCase) >= 0;
 
 		/// <summary>
 		/// Second group level. Only Category has one — the subcategory beneath
@@ -237,7 +238,7 @@ namespace BetterBuildingMenu.Domain
 				return string.Empty;
 			}
 
-			var dimension = groupBy!.Trim();
+			var dimension = groupBy.Trim();
 
 			if (Is(dimension, Category))
 			{
@@ -384,7 +385,7 @@ namespace BetterBuildingMenu.Domain
 				return new GroupLabels(Array.Empty<string>(), null);
 			}
 
-			var dimension = groupBy!.Trim();
+			var dimension = groupBy.Trim();
 
 			if (Is(dimension, Category))
 			{
@@ -438,15 +439,8 @@ namespace BetterBuildingMenu.Domain
 
 		// ---- label helpers ----
 
-		private static string? Text(string? value)
-		{
-			if (string.IsNullOrWhiteSpace(value))
-			{
-				return null;
-			}
-
-			return Humanize(value!.Trim());
-		}
+		private static string? Text(string? value) =>
+			value?.Trim() is { Length: > 0 } trimmed ? Humanize(trimmed) : null;
 
 		/// <summary>Word-splits an id so a heading does not read as one shout.</summary>
 		public static string Humanize(string value)

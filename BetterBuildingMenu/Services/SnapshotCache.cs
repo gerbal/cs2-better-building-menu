@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using BetterBuildingMenu.Domain;
 
 namespace BetterBuildingMenu.Services
@@ -40,7 +41,7 @@ namespace BetterBuildingMenu.Services
 	/// </summary>
 	/// <remarks>
 	/// Each scope's projection is held until the index itself changes
-	/// (PrefabIndexingSystem.IndexGeneration), the only event that can make a projected entry wrong.
+	/// (PrefabIndexingSystem.Generation), the only event that can make a projected entry wrong.
 	/// </remarks>
 	public sealed class SnapshotCache
 	{
@@ -49,7 +50,7 @@ namespace BetterBuildingMenu.Services
 
 		public int Count => _entries.Count;
 
-		public bool TryGet(SnapshotKey key, int generation, out BuildingCatalogEntry[] entries)
+		public bool TryGet(SnapshotKey key, int generation, [NotNullWhen(true)] out BuildingCatalogEntry[]? entries)
 		{
 			if (generation != _generation)
 			{
@@ -57,7 +58,7 @@ namespace BetterBuildingMenu.Services
 				_generation = generation;
 			}
 
-			return _entries.TryGetValue(key, out entries!);
+			return _entries.TryGetValue(key, out entries);
 		}
 
 		public void Put(SnapshotKey key, int generation, BuildingCatalogEntry[] entries)

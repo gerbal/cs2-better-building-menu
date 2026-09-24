@@ -39,14 +39,14 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>The game's menu the lens stands in for. Blank clears the scope.</summary>
 		public BuildingCatalogLensState SelectMenu(string? name)
 		{
-			if (string.IsNullOrWhiteSpace(name))
+			if (name?.Trim() is not { Length: > 0 } trimmed)
 			{
 				return ClearMenuScope();
 			}
 
 			return this with
 			{
-				Query = ResetWindow(Query with { UiMenu = name!.Trim(), UiCategory = string.Empty, SchoolTier = -1, StripTabs = null }),
+				Query = ResetWindow(Query with { UiMenu = trimmed, UiCategory = string.Empty, SchoolTier = -1, StripTabs = null }),
 			};
 		}
 
@@ -68,7 +68,7 @@ namespace BetterBuildingMenu.Domain
 			Query = ResetWindow(Query with
 			{
 				UiCategory = string.Empty,
-				StripTabs = string.IsNullOrEmpty(tab) ? null : new[] { tab! },
+				StripTabs = tab is { Length: > 0 } ? new[] { tab } : null,
 			}),
 		};
 
@@ -82,12 +82,12 @@ namespace BetterBuildingMenu.Domain
 
 		public BuildingCatalogLensState SetSortColumn(string? column)
 		{
-			if (string.IsNullOrWhiteSpace(column))
+			if (column?.Trim() is not { Length: > 0 })
 			{
 				return this;
 			}
 
-			return this with { Query = ResetWindow(Query with { SortColumn = column! }) };
+			return this with { Query = ResetWindow(Query with { SortColumn = column }) };
 		}
 
 		public BuildingCatalogLensState SetDescending(bool descending) =>
