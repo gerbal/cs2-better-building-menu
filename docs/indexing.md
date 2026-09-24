@@ -254,7 +254,8 @@ column alone leaves siblings tied, and an alphabetical tie-break puts Medical Un
 Technical University above the plain University they specialise. Siblings in a column are drawn
 around the chain they hang off, so measuring outward from the trunk takes the generic before its
 specialisations — the order the player meets them in. The trunk row is taken from the service's
-own root and is not necessarily zero.
+own root and is not necessarily zero. `DevTreeLayout.Rank` does this, over each node's column and
+row; the system only reads where each node is drawn.
 
 **More than one node** can gate an asset. `DevTreeGates.Pick` files it by a rule modelled on
 the game's `UnlockSystem`, which unlocks an asset once every node it needs (`RequireAll`) is bought
@@ -304,13 +305,13 @@ are things you build at an airport, so they are drawn under the Airport tab.
 Folds are keyed on the dev tree NODE prefab name, not on the label (which is localized and would
 fold in English but not in German) and not on the asset name. A key that matches nothing is a
 typo rather than a no-op, and nothing in the build or the tests catches it, so an unmatched key
-warns and the fold count is logged.
+warns and the fold count is logged. `DevTreeLayout.Fold` applies them and returns the unmatched
+ones; the system logs the warnings.
 
-**An asset's branch** is looked up through `ProgressionUtils.CollectSubRequirements`: the first
-collected requirement that is a labelled dev tree node wins. A node can have several parents
-(Satellite Uplink requires both Server Farm and Telecom Tower); taking the first keeps the walk
-total, and nothing in the UI depends on that choice being canonical. An asset no node gated falls
-into the service's root bucket.
+**An asset's branch** comes from the requirements `ProgressionUtils.CollectSubRequirements`
+collects. `ProgressionIndex.BranchOf` turns each labelled node among them into a gate for
+`DevTreeGates.Pick`, as above, and falls back to the root bucket of the service the asset's menu is
+named after when no node gated it. The system only reads the asset's own service.
 
 ## Milestones
 

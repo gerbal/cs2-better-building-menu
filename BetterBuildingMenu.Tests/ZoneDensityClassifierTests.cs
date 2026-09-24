@@ -132,5 +132,51 @@ namespace BetterBuildingMenu.Tests
 				ZoneDensityClassifier.Classify(
 					Residential(0.75f, 1f, scale: true, sells: false, 0, "Residential Medium")));
 		}
+
+		/// <summary>The building-side tier: the five a building can be filtered by, from the same
+		/// real zones.</summary>
+		[Theory]
+		[InlineData("EU Commercial High", 0f, 30f, true, 6, ZoneTypeFilter.Any)]
+		[InlineData("CN Residential Low", 1f, 1f, false, 4, ZoneTypeFilter.Low)]
+		[InlineData("EU Residential Medium Row", 0.5f, 1f, true, 2, ZoneTypeFilter.Row)]
+		[InlineData("CN Residential Medium", 0.75f, 1f, true, 4, ZoneTypeFilter.Medium)]
+		[InlineData("CN Residential High", 6f, 3f, true, 6, ZoneTypeFilter.High)]
+		public void FiltersBuildingsByFiveTiers(
+			string name, float properties, float space, bool scale, int maxLotWidth, ZoneTypeFilter expected)
+		{
+			Assert.Equal(
+				expected,
+				ZoneDensityClassifier.ClassifyBuildings(
+					new ZoneDensityFacts(properties > 0f, properties, space, scale, false, maxLotWidth, name)));
+		}
+
+		[Fact]
+		public void FiltersTheBuildingsOfAZoneWithNoSpawnableBuildingsAsRow()
+		{
+			Assert.Equal(
+				ZoneTypeFilter.Row,
+				ZoneDensityClassifier.ClassifyBuildings(
+					Residential(0.75f, 1f, scale: true, sells: false, 0, "Residential Medium")));
+		}
+
+		/// <summary>The zone's own tier is wider than its buildings': Mixed and Low Rent are the
+		/// zone's alone, and never the name.</summary>
+		[Fact]
+		public void KeepsMixedLowRentAndTheNameOutOfTheBuildingTier()
+		{
+			// EU Residential Mixed: 2 per 2.667 is below 1, and its widest building is 5.
+			Assert.Equal(
+				ZoneTypeFilter.Medium,
+				ZoneDensityClassifier.ClassifyBuildings(
+					Residential(2f, 2.667f, scale: true, sells: true, 5, "EU Residential Mixed")));
+			Assert.Equal(
+				ZoneTypeFilter.High,
+				ZoneDensityClassifier.ClassifyBuildings(
+					Residential(4f, 1f, scale: true, sells: false, 6, "CN Residential LowRent")));
+			Assert.Equal(
+				ZoneTypeFilter.Any,
+				ZoneDensityClassifier.ClassifyBuildings(
+					new ZoneDensityFacts(false, 0f, 30f, false, true, 6, "EU Commercial High")));
+		}
 	}
 }

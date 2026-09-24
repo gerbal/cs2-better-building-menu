@@ -26,7 +26,8 @@ namespace BetterBuildingMenu.Domain.Catalog
 			new Dictionary<int, ZoneLotSizes>(),
 			Array.Empty<ZoneCatalogEntry>());
 
-		/// <param name="types">The building-side answer per zone, by which a building is filtered.</param>
+		/// <param name="types">The building-side answer per zone, by which a building is filtered: see
+		/// ZoneDensityClassifier.ClassifyBuildings.</param>
 		/// <param name="densities">Each zone's own tier, which adds Mixed and LowRent.</param>
 		/// <param name="lotSizes">The lot shapes each zone's spawnable buildings actually take.</param>
 		/// <param name="catalog">Every assignable zone, grouped by family in the zoning hierarchy.</param>
