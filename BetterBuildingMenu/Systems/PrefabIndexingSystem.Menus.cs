@@ -40,10 +40,14 @@ namespace BetterBuildingMenu.Systems
 	{
 		/// <summary>Records where the vanilla build menu places each asset, walking the game's own
 		/// group tree from the menus downward.</summary>
-		/// <remarks>The direction is the whole point; see docs/indexing.md, "The vanilla menu walk".</remarks>
-		private Dictionary<int, VanillaMenuPlacement> IndexVanillaMenuPlacements()
+		/// <remarks>The direction is the whole point; see docs/indexing.md, "The vanilla menu walk".
+		/// A partial pass walks again, since the game moves a recreated prefab to a new entity.</remarks>
+		/// <returns>False when the walk threw; <paramref name="placements"/> then holds what it read
+		/// before that.</returns>
+		private bool TryIndexVanillaMenuPlacements(bool full, out Dictionary<int, VanillaMenuPlacement> placements)
 		{
-			var placements = new Dictionary<int, VanillaMenuPlacement>();
+			placements = new Dictionary<int, VanillaMenuPlacement>();
+			var complete = true;
 
 			try
 			{
@@ -54,7 +58,8 @@ namespace BetterBuildingMenu.Systems
 
 				for (var i = 0; i < menus.Length; i++)
 				{
-					if (!_prefabSystem.TryGetPrefab<PrefabBase>(menus[i], out var menuPrefab)
+					if (!IsLive(menus[i])
+						|| !_prefabSystem.TryGetPrefab<PrefabBase>(menus[i], out var menuPrefab)
 						|| menuPrefab?.name is not string menuName
 						|| !EntityManager.TryGetBuffer<UIGroupElement>(menus[i], true, out var categories))
 					{
@@ -65,9 +70,11 @@ namespace BetterBuildingMenu.Systems
 					{
 						var categoryEntity = categories[c].m_Prefab;
 
-						// GetSortedCategories drops both of these, so a tab the player
-						// cannot reach places nothing.
-						if (!EntityManager.HasComponent<UIAssetCategoryData>(categoryEntity)
+						// GetSortedCategories drops a member that is not a category and a
+						// category with no members, so a tab the player cannot reach places
+						// nothing.
+						if (!IsLive(categoryEntity)
+							|| !EntityManager.HasComponent<UIAssetCategoryData>(categoryEntity)
 							|| !EntityManager.TryGetBuffer<UIGroupElement>(categoryEntity, true, out var assets)
 							|| assets.Length == 0
 							|| !_prefabSystem.TryGetPrefab<PrefabBase>(categoryEntity, out var categoryPrefab))
@@ -75,11 +82,15 @@ namespace BetterBuildingMenu.Systems
 							continue;
 						}
 
+						// Once per tab: the name is a native getter that allocates, and
+						// the walk now runs on every partial pass.
+						var categoryName = categoryPrefab.name;
+
 						for (var a = 0; a < assets.Length; a++)
 						{
 							var assetEntity = assets[a].m_Prefab;
 
-							if (EntityManager.HasComponent<ServiceUpgradeData>(assetEntity))
+							if (!IsLive(assetEntity) || EntityManager.HasComponent<ServiceUpgradeData>(assetEntity))
 							{
 								continue;
 							}
@@ -88,7 +99,7 @@ namespace BetterBuildingMenu.Systems
 							// holds and what the diff compares against; the whole entity
 							// rides along so a gap can still be named.
 							placements[assetEntity.Index] = new VanillaMenuPlacement(
-								assetEntity, menuName, categoryPrefab.name);
+								assetEntity, menuName, categoryName);
 						}
 					}
 				}
@@ -97,13 +108,33 @@ namespace BetterBuildingMenu.Systems
 			}
 			catch (Exception ex)
 			{
+				complete = false;
 				Mod.Log.Error(ex, "[MENU-COVERAGE] walk failed");
 			}
 
-			Mod.Log.Info($"Indexed Vanilla Menu Placements: {placements.Count}");
+			// A partial pass can run every frame a mod edits prefabs.
+			var message = $"Indexed Vanilla Menu Placements: {placements.Count}";
 
-			return placements;
+			if (full)
+			{
+				Mod.Log.Info(message);
+			}
+			else
+			{
+				Mod.Log.Debug(message);
+			}
+
+			return complete;
 		}
+
+		/// <summary>Whether a menu, or a group's member, is still a prefab the game holds.</summary>
+		/// <remarks>UIInitializeSystem takes a removed prefab out of its group during PrefabSystem's
+		/// update, and ReplacePrefabSystem a recreated one's old entity. A PrefabSystem.RemovePrefab
+		/// later in the frame, from a mod's own system or a UI trigger, leaves the entity in its
+		/// group marked Deleted, and still there once the frame's clean-up destroys it, when its index
+		/// can go to another entity.</remarks>
+		private bool IsLive(Entity entity) =>
+			EntityManager.Exists(entity) && !EntityManager.HasComponent<Deleted>(entity);
 
 		/// <summary>Reads the vanilla toolbar's asset menus: by entity index, so a menu selection
 		/// arriving from the UI can be resolved to a prefab name, and by name, so the lens can open one.</summary>
