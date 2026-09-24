@@ -139,7 +139,8 @@ constructor), so these defaults are safe. The static `_instance` goes.
 Dependencies run one way: the UI reads the indexer, never the reverse.
 
 **`BuildingCatalogAdapter`:**
-- It takes the source and the toolbar selection as arguments, and a silhouette URL function in its constructor. The UI system passes `url => Mod.Silhouettes?.UrlFor(url)`, a lambda, so `Mod` is still read only when a projection runs, as today.
+- It takes the source and the toolbar selection as arguments, and a silhouette lookup in its constructor. The UI system passes `thumbnail => Mod.Silhouettes?.UrlFor(thumbnail)`, a lambda, so `Mod` is still read only when a projection runs, as today.
+- The source is taken once per refresh, after the placed-unique rescan, which can bump the generation. Its placed set is the live one, not a copy.
 - `BuildFacetState` and `CatalogView` take `vanillaSelected` as a flag.
 
 **Processors** get the index they are filling as a parameter:
