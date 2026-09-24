@@ -40,7 +40,7 @@ namespace BetterBuildingMenu.Systems
 		/// <summary>Names every milestone once, so locked assets can carry a bare index.</summary>
 		/// <remarks>Resolved here because the modding API's translate(id, fallback) takes no arguments
 		/// and the game's milestone name is a lookup parameterised by index.</remarks>
-		private void IndexMilestones()
+		private Dictionary<int, string> IndexMilestones()
 		{
 			var query = GetEntityQuery(
 				ComponentType.ReadOnly<MilestoneData>(),
@@ -57,8 +57,9 @@ namespace BetterBuildingMenu.Systems
 				}
 			}
 
-			_milestoneNames = names;
 			Mod.Log.Info($"Indexed Milestones: {names.Count}");
+
+			return names;
 		}
 
 		/// <summary>The milestone's name in the game's own words, or null.</summary>
@@ -84,13 +85,15 @@ namespace BetterBuildingMenu.Systems
 		/// <summary>Maps every development-tree node to the label assets it gates are filed under.</summary>
 		/// <remarks>The node ITSELF, ranked by the tree's own layout, with the free root taking the
 		/// service's name. See docs/indexing.md, "Dev tree branches".</remarks>
-		private void IndexDevTreeBranches()
+		/// <returns>Node -> branch, and service name -> its root. Label AND icon together, keyed by node
+		/// and by service: every service's root is called "Basic", so a label-keyed icon would collide.</returns>
+		private (Dictionary<int, (string Label, string Icon, int Depth, string Service)> Branches, Dictionary<string, (string Label, string Icon, int Depth)> Roots) IndexDevTreeBranches()
 		{
 			var query = GetEntityQuery(
 				ComponentType.ReadOnly<DevTreeNodeData>(),
 				ComponentType.ReadOnly<PrefabData>());
 			var nodes = query.ToEntityArray(Allocator.Temp);
-			var branches = new Dictionary<Entity, (string Label, string Icon, int Depth, string Service)>();
+			var branches = new Dictionary<int, (string Label, string Icon, int Depth, string Service)>();
 			var roots = new Dictionary<string, (string Label, string Icon, int Depth)>();
 			// Prefab name to node, so FoldedDevTreeNodes can be resolved once the
 			// whole tree is known — a fold's target may be indexed after it.
@@ -163,7 +166,7 @@ namespace BetterBuildingMenu.Systems
 						? servicePrefab.name
 						: string.Empty;
 
-				branches[node] = isRoot
+				branches[node.Index] = isRoot
 					? (rootLabel, DevTreeIcon(prefab), 0, service)
 					: (DevTreeBranchName(prefab), DevTreeIcon(prefab), depth, service);
 
@@ -186,10 +189,10 @@ namespace BetterBuildingMenu.Systems
 			{
 				if (nodesByName.TryGetValue(fold.Key, out var from)
 					&& nodesByName.TryGetValue(fold.Value, out var into)
-					&& branches.TryGetValue(into, out var target)
+					&& branches.TryGetValue(into.Index, out var target)
 					&& target.Label.Length > 0)
 				{
-					branches[from] = target;
+					branches[from.Index] = target;
 					folded++;
 				}
 				else
@@ -202,9 +205,9 @@ namespace BetterBuildingMenu.Systems
 				}
 			}
 
-			_devTreeBranches = branches;
-			_devTreeRoots = roots;
 			Mod.Log.Info($"Indexed Dev Tree: {nodes.Length} nodes, {roots.Count} services, {folded} folded");
+
+			return (branches, roots);
 		}
 
 		/// <summary>The node's icon, resolved the way the game's own dev tree resolves it.</summary>
@@ -258,12 +261,6 @@ namespace BetterBuildingMenu.Systems
 				: name;
 		}
 
-		/// <summary>The label the tree's root carries for a menu, or empty.</summary>
-		/// <remarks>A sentinel more than a name: the adapter replaces it with what the MENU calls that
-		/// bucket, which needs the whole set of ungated assets. See ProjectForMenu.</remarks>
-		public static string GetDevTreeRootLabel(string? menu) =>
-			menu is not null && _devTreeRoots.TryGetValue(menu, out var root) ? root.Label : string.Empty;
-
 		/// <summary>The branch an asset's unlock node belongs to, or its service's root.</summary>
 		/// <remarks>More than one node can gate an asset; DevTreeGates.Pick decides which names it,
 		/// preferring the nodes of the asset's own service.</remarks>
@@ -285,7 +282,7 @@ namespace BetterBuildingMenu.Systems
 			{
 				var needed = (flags & UnlockFlags.RequireAll) != 0;
 
-				if (_devTreeBranches.TryGetValue(requirement, out var branch) && branch.Label.Length > 0)
+				if (Index.Progression.TryGetBranch(requirement.Index, out var branch) && branch.Label.Length > 0)
 				{
 					gates.Add(new DevTreeGates.Gate(branch.Label, branch.Icon, branch.Depth, needed, branch.Service));
 				}
@@ -305,41 +302,9 @@ namespace BetterBuildingMenu.Systems
 			// No node gated it, so it belongs to the service's free root — the same
 			// bucket the game puts the starting kit in. Named after the root node
 			// rather than "Other": it is a real place in the tree.
-			return menu is not null && _devTreeRoots.TryGetValue(menu, out var root)
+			return Index.Progression.TryGetRoot(menu, out var root)
 				? root
 				: (string.Empty, string.Empty, 0);
-		}
-
-		/// <summary>The name the game gives a milestone index.</summary>
-		public static string GetMilestoneName(int index) =>
-			_milestoneNames.TryGetValue(index, out var name) ? name : string.Empty;
-
-		/// <summary>Every milestone name, dense by index.</summary>
-		/// <remarks>Sized from the highest index present rather than probed from 0, which the game's
-		/// first milestone need not use. Gaps stay empty so every later name keeps its own index.</remarks>
-		public static string[] GetMilestoneNames()
-		{
-			if (_milestoneNames.Count == 0)
-			{
-				return Array.Empty<string>();
-			}
-
-			var highest = 0;
-			foreach (var index in _milestoneNames.Keys)
-			{
-				if (index > highest)
-				{
-					highest = index;
-				}
-			}
-
-			var names = new string[highest + 1];
-			for (var i = 0; i <= highest; i++)
-			{
-				names[i] = GetMilestoneName(i);
-			}
-
-			return names;
 		}
 
 		/// <summary>An asset's transitive unlock requirements, or none when nothing gates it.</summary>

@@ -58,7 +58,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 				// Without this every zone entry carries ZoneType = Any, and a
 				// group-by dimension whose entries all share one value is
 				// dropped. IndexZones fills the cache before this loop runs.
-				ZoneType = Systems.PrefabIndexingSystem.GetZoneDensity(entity),
+				ZoneType = target.Zones.DensityOf(entity.Index),
 			};
 
 			return true;
