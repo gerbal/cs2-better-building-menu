@@ -25,15 +25,15 @@ namespace BetterBuildingMenu.Systems
 		// PublishScope() mirrors it to the bindings, RefreshBuildingCatalog runs it.
 		private BuildingCatalogLensState _lens = BuildingCatalogLensState.Initial;
 
-		private ToolSystem _toolSystem;
-		private PrefabSystem _prefabSystem;
-		private DefaultToolSystem _defaultToolSystem;
+		private ToolSystem _toolSystem = null!;
+		private PrefabSystem _prefabSystem = null!;
+		private DefaultToolSystem _defaultToolSystem = null!;
 		// Only for releasing the toolbar's menu selection when the lens closes;
 		// see CloseLens.
-		private Game.UI.InGame.ToolbarUISystem _toolbarUISystem;
+		private Game.UI.InGame.ToolbarUISystem _toolbarUISystem = null!;
 
 
-		private ValueBindingHelper<bool> _IsSearchLoading;
+		private ValueBindingHelper<bool> _IsSearchLoading = null!;
 		/// <summary>
 		/// Whether the lens menu is open.
 		/// </summary>
@@ -59,10 +59,10 @@ namespace BetterBuildingMenu.Systems
 		// over. Lets the vanilla menu stay hidden after the panel is closed, so
 		// closing means closed rather than revealing the grid underneath.
 		private ValueBindingHelper<bool> _LensOwnsCurrentMenu = null!;
-		private ValueBindingHelper<int> _ActivePrefabId;
-		private ValueBindingHelper<float> _PanelWidth;
-		private ValueBindingHelper<float> _BuildingLensPanelHeight;
-		private ValueBindingHelper<string> _CurrentSearch;
+		private ValueBindingHelper<int> _ActivePrefabId = null!;
+		private ValueBindingHelper<float> _PanelWidth = null!;
+		private ValueBindingHelper<float> _BuildingLensPanelHeight = null!;
+		private ValueBindingHelper<string> _CurrentSearch = null!;
 		private ValueBindingHelper<BuildingCatalogPage> _BuildingCatalogBinding = null!;
 		/// <summary>
 		/// The catalog entries behind the selected building's upgrades, for the replaced extension
@@ -242,11 +242,13 @@ namespace BetterBuildingMenu.Systems
 
 		protected override void OnDestroy()
 		{
+			// Null once Mod.OnDispose has run, which at quit can come first.
 			if (Mod.Settings != null)
 			{
 				Mod.Settings.onSettingsApplied -= OnSettingsApplied;
 			}
 
+			// Null if OnCreate threw before setting it.
 			if (_toolSystem is not null)
 			{
 				_toolSystem.EventPrefabChanged -= OnPrefabChanged;

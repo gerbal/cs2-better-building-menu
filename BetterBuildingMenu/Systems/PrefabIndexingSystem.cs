@@ -36,25 +36,26 @@ namespace BetterBuildingMenu.Systems
 {
 	public partial class PrefabIndexingSystem : GameSystemBase
 	{
-		private PrefabSystem _prefabSystem;
-		private ResourceSystem _resourceSystem;
-		private ImageSystem _imageSystem;
-		private PrefabUISystem _prefabUISystem;
-		private HashSet<string> _blackList;
+		private PrefabSystem _prefabSystem = null!;
+		private ResourceSystem _resourceSystem = null!;
+		private ImageSystem _imageSystem = null!;
+		private PrefabUISystem _prefabUISystem = null!;
+		private HashSet<string> _blackList = null!;
 		// Road Builder's mark on a road it has thrown away, once found. See RefreshModCompatibility.
 		private ComponentType? _roadBuilderDiscarded;
 		private bool _warnedRoadBuilderDiscarded;
-		private static Dictionary<Entity, ZoneTypeFilter> _zoneTypeCache;
+		// Empty until IndexZones fills it, which reads the same as a zone it has no entry for.
+		private static Dictionary<Entity, ZoneTypeFilter> _zoneTypeCache = new();
 
 		/// <summary>Density per ZONE prefab: the zone's own tier, which adds Mixed and LowRent.</summary>
 		/// <remarks>Kept apart from <see cref="_zoneTypeCache"/>, which classifies a zone so its
 		/// buildings can be filtered; widening that one would reclassify thousands of buildings.</remarks>
-		private static Dictionary<Entity, ZoneTypeFilter> _zoneDensityCache;
+		private static Dictionary<Entity, ZoneTypeFilter> _zoneDensityCache = new();
 
 		/// <summary>The lot shapes each zone actually grows, by zone prefab.</summary>
 		/// <remarks>Cached because IndexZones computes it before the processor loop that builds each
 		/// zone's PrefabIndex, and the entry needs it there.</remarks>
-		private static Dictionary<Entity, ZoneLotSizes> _zoneLotSizeCache;
+		private static Dictionary<Entity, ZoneLotSizes> _zoneLotSizeCache = new();
 		private EntityQuery _unlockEventQuery;
 		// Prefabs the game created or changed this frame — the incremental
 		// pass's own trigger. A field rather than a RequireForUpdate gate,
@@ -715,7 +716,7 @@ namespace BetterBuildingMenu.Systems
 						}
 						catch (Exception ex)
 						{
-							Mod.Log.Error(ex, $"Prefab indexing failed for prefab '{prefab.name}'" + (string.IsNullOrEmpty(prefabIndex?.PdxModsId) ? "" : $" (Pdx Mods ID: {prefabIndex.PdxModsId})"));
+							Mod.Log.Error(ex, $"Prefab indexing failed for prefab '{prefab.name}'" + (prefabIndex?.PdxModsId is { Length: > 0 } pdxModsId ? $" (Pdx Mods ID: {pdxModsId})" : ""));
 						}
 					}
 				}

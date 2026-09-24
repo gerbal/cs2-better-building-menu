@@ -58,9 +58,9 @@ namespace BetterBuildingMenu.Utilities
 		}
 
 		/// <summary>Whether this thumbnail is a vector, and so needs the swap.</summary>
-		public static bool IsVector(string thumbnail)
+		public static bool IsVector(string? thumbnail)
 		{
-			if (string.IsNullOrEmpty(thumbnail))
+			if (thumbnail is null or "")
 			{
 				return false;
 			}
