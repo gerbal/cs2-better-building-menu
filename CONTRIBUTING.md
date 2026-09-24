@@ -55,8 +55,9 @@ check as a pattern it can follow instead of adding `!` after it:
 
 A method that answers that question for its caller, such as
 `BuildingCatalogGrouping.IsGrouped`, says so with `[NotNullWhen(true)]`.
-The few `!` left sit in LINQ chains, where a filter in one step cannot
-tell the compiler about the next.
+The mod has no `!` left apart from `= null!` on those `OnCreate` fields.
+Where a LINQ filter in one step cannot tell the compiler about the next,
+a loop that keeps only the non-null values can.
 
 A test that calls into the game, not just its types, carries
 `[Trait("Requires", "Game")]`: CI runs against mock game assemblies, and
