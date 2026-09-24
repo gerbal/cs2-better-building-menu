@@ -88,22 +88,24 @@ scans that folder.
 ```csharp
 public sealed class CatalogIndex                   // one per successful full pass
 {
-    public static CatalogIndex Empty { get; }      // laid out; IsReady false
+    public CatalogIndex(VanillaMenuIndex? menus = null, ZoneIndex? zones = null,
+        ProgressionIndex? progression = null, ModCompatibility? mods = null);  // laid out; IsReady false
     public bool IsReady { get; }
     public VanillaMenuIndex Menus { get; }         // fixed once built
     public ZoneIndex Zones { get; }                // fixed once built
     public ProgressionIndex Progression { get; }   // milestone names, dev-tree branches and roots
     public ModCompatibility Mods { get; }          // Extra Detailing, Road Builder, as of this pass
     public IndexedPrefabList All { get; }          // today's [Any][Any]
-    public IndexedPrefabList List(PrefabCategory category, PrefabSubCategory subCategory);
+    public IndexedPrefabList? List(PrefabCategory category, PrefabSubCategory subCategory);
     public PrefabIndex? Get(int id);
+    public PrefabIndex? GetByPrefabName(string prefabName);  // namesakes: the first by name
     public IReadOnlyList<VanillaMenuCategory> GetMenuCategories(string? menu);
 
     // The indexer's only way in. Main thread only; see "Updates" below.
     internal void File(PrefabIndex entry);
     internal void Remove(int id);
     internal void NumberDuplicateNames();
-    internal void RemoveBrandDuplicates();
+    internal List<(PrefabIndex Entry, PrefabSubCategory From)> RemoveBrandDuplicates();
 }
 
 public sealed class PlacedUniques { /* today's PlacedUniqueRegistry, as an instance */ }
@@ -126,7 +128,7 @@ public readonly record struct CatalogSource(CatalogIndex Index, PlacedUniques Pl
 It gains:
 
 ```csharp
-public CatalogIndex Index { get; private set; } = CatalogIndex.Empty;
+public CatalogIndex Index { get; private set; } = new();   // laid out, not ready
 public PlacedUniques PlacedUniques { get; private set; } = new();
 public int Generation { get; private set; } = 1;
 public CatalogSource Source => new(Index, PlacedUniques, Generation);
@@ -199,8 +201,9 @@ replaces. It moves when:
 ## Steps
 
 Seven PRs, starting once #28 has merged. Each one builds with no warnings
-of any kind, as CI requires. Steps 1 to 5 and step 7 change no behaviour;
-step 6 does.
+of any kind, as CI requires. Steps 1 to 5 change no behaviour. Step 6 does,
+and so does step 7 in small ways: namesakes, the catch-all lists, a log line
+and a partial-pass fix (see its row).
 
 | # | PR | Risk | Main files |
 |---|---|---|---|
@@ -211,7 +214,7 @@ step 6 does.
 | 4 | **The menu, zone, progression and mod-flag tables join the index.** Each `Index*` step returns its table. Processors take `target`. `_zoneFacts` and `TryGetMenuEntityFor` go. Can be split into 4a (menus) and 4b (the rest). | Medium–high by size, mechanical | 24 processor files (6 with real changes), the indexer's partials, Bindings, Methods, Adapter; new `CatalogIndexTests` |
 | 5 | **Build aside, publish at the end.** Every read in the pass goes to `next`. | The riskiest change, so it is on its own | The indexer's partials; small, because step 4 added the parameter |
 | 6 | **A new city starts from an empty index.** At `OnGamePreload`: `Index = new CatalogIndex(mods: Index.Mods)`, new placed uniques and candidates, `Generation++`. A fresh index rather than a shared `Empty`: a partial pass files into the published index, so a shared one would be filled and marked ready. It keeps the mod flags, which belong to the playset, so the fallback still has the last answer across loads. Partial passes and unlocks skip while `!Index.IsReady`. A language change's pass runs from `OnUpdate`, as the deferred one does (decision 8). | Behaviour change, medium | The indexer; indexing.md's "Load timing" and "A pass that fails" |
-| 7 | (Optional) **Test builders and projection tests.** A name map inside the index replaces the adapter's `_byName` and the O(n) `Find`. | Low | Tests, `CatalogIndex`, Adapter |
+| 7 | (Optional) **One name lookup in the index, and test builders.** As built in #44: `GetByPrefabName` replaces the adapter's `_byName` and the O(n) `Find`, and both callers get the first namesake in name order. Numbering and brand cleanup move onto `CatalogIndex`, and brand cleanup logs what it takes out. An entry is filed under everything and its own subcategory only (decision 4). A partial pass no longer drops a recreated prefab that two processors match. The projection tests came earlier, once the mocks were fixed (decision 6). | Low | `CatalogIndex`, the indexer, Adapter, tests |
 
 ### Checks per step
 
@@ -236,7 +239,10 @@ step 6 does.
   - a language change at the main menu after leaving a city, and during a load (decision 8). A log line confirms the system is disabled at the main menu after a city; if it is not, decision 8 falls back to (b);
   - a failed first pass, forced in a debug build, so the `!Index.IsReady` guard's one window is exercised. A throwing processor cannot do it: every prefab and every processor has its own catch, and the pass succeeds. The throw has to come from outside them: a prologue walk such as `IndexMilestones`, or duplicate numbering or brand cleanup. Once on the `OnGameLoaded` pass and once on a language-change pass: the log says "the previous index stands", `Generation` does not move, and after a first-pass failure loading-complete runs its own;
   - a pack or theme filter set in city A, then city B loaded (ideally with a different theme): the C# selection matches what the toolbar shows.
-- **Step 7:** pin today's handling of duplicate prefab names with a test first. Today `_byName` keeps the last entry in name order, `Find` returns the first, and a map would keep the last one filed.
+- **Step 7:** pin today's handling of duplicate prefab names with a test first. `_byName` kept the last entry in name order and `Find` returned the first; #44 pins the old answer (aa8ed48), then changes it (1bee143). In game:
+  - the brand cleanup count, once per full pass;
+  - the extension picker's rows and built state;
+  - a Road Builder edit whose road is still listed right after the edit, not only after the next full pass.
 
 ### Overlap with open PRs
 
@@ -252,7 +258,7 @@ Decided on 2026-09-24: each as recommended.
    - After step 6 it is empty instead: the status reads `indexing`, the panel yields every menu to vanilla (`MenuHasAssets` is false), and loading-complete retries the pass.
    - **Recommended: empty.** The UI already handles `indexing`.
 2. **Editing in place, or copy-on-write, for partial passes and unlocks?**
-   - The index holds about 17,700 entries, filed about three times over, so about 53,000 dictionary slots.
+   - The index holds about 17,700 entries. When this was decided each was filed about three times over, about 53,000 dictionary slots; since #44 each is filed twice, about 35,400.
    - Road Builder triggers a partial pass per edit, measured at 43–45 ms.
    - Copy-on-write would add a few MB of garbage and a re-sort to each one, and every entry's `Name` is rewritten on each pass, so entries would need cloning too.
    - **Recommended: in place, under the rule above.** Revisit only if something ever reads the index off the main thread.
@@ -262,7 +268,7 @@ Decided on 2026-09-24: each as recommended.
    - Nothing reads the `[Category][Any]` lists; brand cleanup is the only code that touches them, and it only removes from them.
    - Brand cleanup skips `[Any][Any]`, so it affects only the Roads extra tabs, never the catalog.
    - **Recommended: keep both as they are, and simplify in a later PR.**
-   - **Done in #44:** an entry is filed under everything and its own subcategory only, so a category's catch-all holds just the entries filed under the category alone. Brand cleanup now reports how many entries it takes out, at Info on each full pass; if a real session shows none, a later PR deletes it.
+   - **Done in #44:** an entry is filed under everything and its own subcategory only, so a category's catch-all holds just the entries filed under the category alone. Brand cleanup now reports how many entries it takes out, at Info on each full pass, and each one at Debug; if a real session shows none, a later PR deletes it.
 5. **The public API.** `BuildingMenuUtil` and the indexer's statics are public, so deleting them breaks any mod that reaches into them. None is known. **Recommended: accept.**
 6. **Building a `PrefabIndex` in tests (before step 7).**
    - Tests create it with `GetUninitializedObject`, because its constructor fails against the mocks. That leaves `ServiceFacts` and `ServiceTextFacts` null, and `Project` reads both.
