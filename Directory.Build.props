@@ -18,11 +18,17 @@
     <TargetFramework>net48</TargetFramework>
     <LangVersion>11.0</LangVersion>
     <Nullable>enable</Nullable>
-    <!-- Every warning fails the build in CI, which sets CI=true. Both projects build without
-         one, so a new one is a real problem: most often a missing null check, or an annotation
-         that does not match the code. Locally they stay warnings: that build is the one played,
-         and a game or SDK update that adds a warning should not stop it. -->
+    <!-- Warnings fail the build in CI, which sets CI=true: the compiler's and the analyzers'
+         (TreatWarningsAsErrors), and MSBuild's and NuGet's (MSBuildTreatWarningsAsErrors). Both
+         projects build without one, so a new one is a real problem: most often a missing null
+         check, or an annotation that does not match the code. Locally they stay warnings: that
+         build is the one played, and a game or SDK update that adds a warning should not stop it.
+         NuGet's vulnerability audit (NU1900-NU1904) stays a warning even in CI: a feed that is
+         down, or an advisory published tomorrow, should not fail a change that touched neither. -->
     <TreatWarningsAsErrors Condition="'$(CI)' == 'true'">true</TreatWarningsAsErrors>
+    <MSBuildTreatWarningsAsErrors Condition="'$(CI)' == 'true'">true</MSBuildTreatWarningsAsErrors>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1900;NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
+    <MSBuildWarningsNotAsErrors>$(MSBuildWarningsNotAsErrors);NU1900;NU1901;NU1902;NU1903;NU1904</MSBuildWarningsNotAsErrors>
   </PropertyGroup>
 
   <!-- Keep UI node_modules trees out of the C# item graph. -->

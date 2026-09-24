@@ -185,13 +185,9 @@ namespace BetterBuildingMenu.Systems
 				prefabBase is not null,
 				_toolSystem.activePrefab == prefabBase,
 				// The boundary calls this only when the prefab exists, which the lambda cannot see.
-				() =>
-				{
-					if (prefabBase is not null)
-					{
-						ActivatePrefabTool(id, prefabBase);
-					}
-				});
+				() => ActivatePrefabTool(
+					id,
+					prefabBase ?? throw new InvalidOperationException($"Prefab {id} was armed without existing.")));
 		}
 
 		private void ActivatePrefabTool(int id, PrefabBase prefabBase)

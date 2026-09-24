@@ -727,6 +727,46 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.Contains("Write:Double:80000", writer.Tokens);
     }
 
+    [Fact, Trait("Requires", "Game")]
+    public void EntryWrite_WritesEachFactListAsAnArrayOfItsItems()
+    {
+        // The three lists share one writer, so one list's items must not leak
+        // into the next, and an empty list is still an array.
+        BuildingCatalogEntry entry = SampleEntries[0] with
+        {
+            ServiceFacts = new[] { new ServiceFact("capacity", 5), new ServiceFact("range", 3) },
+            Footprints = new[] { new ZoneFootprint(2, 3) },
+            ServiceTextFacts = System.Array.Empty<ServiceTextFact>(),
+        };
+        RecordingJsonWriter writer = new();
+
+        entry.Write(writer);
+
+        List<string> After(string property, int count) =>
+            writer.Tokens.SkipWhile(token => token != "PropertyName:" + property).Skip(1).Take(count).ToList();
+
+        Assert.Equal(
+            new[]
+            {
+                "ArrayBegin:2",
+                "TypeBegin:" + typeof(ServiceFact).FullName, "PropertyName:key", "Write:String:capacity", "PropertyName:value", "Write:Double:5", "TypeEnd",
+                "TypeBegin:" + typeof(ServiceFact).FullName, "PropertyName:key", "Write:String:range", "PropertyName:value", "Write:Double:3", "TypeEnd",
+                "ArrayEnd",
+                "PropertyName:footprints",
+            },
+            After("serviceFacts", 16));
+        Assert.Equal(
+            new[]
+            {
+                "ArrayBegin:1",
+                "TypeBegin:" + typeof(ZoneFootprint).FullName, "PropertyName:width", "Write:Int32:2", "PropertyName:depth", "Write:Int32:3", "TypeEnd",
+                "ArrayEnd",
+                "PropertyName:footprintOverflow",
+            },
+            After("footprints", 9));
+        Assert.Equal(new[] { "ArrayBegin:0", "ArrayEnd" }, After("serviceTextFacts", 2));
+    }
+
     [Fact]
     public void Query_MenuScopeDropsUpgradesButUnscopedQueriesKeepThem()
     {

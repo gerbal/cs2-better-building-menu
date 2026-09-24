@@ -68,7 +68,7 @@ namespace BetterBuildingMenu.Domain
 			Query = ResetWindow(Query with
 			{
 				UiCategory = string.Empty,
-				StripTabs = string.IsNullOrEmpty(tab) ? null : new[] { tab! },
+				StripTabs = tab is { Length: > 0 } ? new[] { tab } : null,
 			}),
 		};
 
@@ -82,12 +82,12 @@ namespace BetterBuildingMenu.Domain
 
 		public BuildingCatalogLensState SetSortColumn(string? column)
 		{
-			if (string.IsNullOrWhiteSpace(column))
+			if (column?.Trim() is not { Length: > 0 })
 			{
 				return this;
 			}
 
-			return this with { Query = ResetWindow(Query with { SortColumn = column! }) };
+			return this with { Query = ResetWindow(Query with { SortColumn = column }) };
 		}
 
 		public BuildingCatalogLensState SetDescending(bool descending) =>

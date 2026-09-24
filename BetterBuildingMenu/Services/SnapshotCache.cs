@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using BetterBuildingMenu.Domain;
 
 namespace BetterBuildingMenu.Services
@@ -49,7 +50,7 @@ namespace BetterBuildingMenu.Services
 
 		public int Count => _entries.Count;
 
-		public bool TryGet(SnapshotKey key, int generation, out BuildingCatalogEntry[] entries)
+		public bool TryGet(SnapshotKey key, int generation, [NotNullWhen(true)] out BuildingCatalogEntry[]? entries)
 		{
 			if (generation != _generation)
 			{
