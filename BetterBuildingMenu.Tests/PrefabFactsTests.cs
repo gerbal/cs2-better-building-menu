@@ -219,7 +219,7 @@ namespace BetterBuildingMenu.Tests
 					("hearses", 181d), ("processingRate", 0.125d), ("shelterVehicles", 197d),
 					("purification", 25d), ("purification", 50d),
 					("batteryOutput", 233d), ("maintenancePool", 239d), ("depotVehicles", 241d), ("maintenanceVehicles", 251d),
-					("groundPollutionModifier", 50d), ("airPollutionModifier", 125d), ("upkeepChange", -25d),
+					("groundPollutionModifier", 50d), ("airPollutionModifier", 125d), ("resourceConsumption", -25d),
 					("comfort", 50d), ("cargoCapacity", 257d), ("electricityCapacity", 263d), ("stormCapacity", 269d),
 				},
 				entry.ServiceFacts.Select(fact => (fact.Key, fact.Value)));
@@ -541,7 +541,7 @@ namespace BetterBuildingMenu.Tests
 		{
 			var entry = Apply(new PrefabSnapshot { UpkeepMultipliers = multipliers });
 
-			Assert.Equal(expected, entry.ServiceFacts.Where(fact => fact.Key == "upkeepChange").Select(fact => (double?)fact.Value).SingleOrDefault());
+			Assert.Equal(expected, entry.ServiceFacts.Where(fact => fact.Key == "resourceConsumption").Select(fact => (double?)fact.Value).SingleOrDefault());
 		}
 
 		[Fact]

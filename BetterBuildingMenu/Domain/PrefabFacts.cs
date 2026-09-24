@@ -15,10 +15,8 @@ namespace BetterBuildingMenu.Domain
 	/// what <see cref="PrefabSnapshot"/> holds.
 	/// </summary>
 	/// <remarks>
-	/// The indexer fills the snapshot from the game and this only maps it, so a test can build one
-	/// by hand. The entry keeps the order facts are added in, but a card re-sorts them by the UI's
-	/// FACT_ORDER, so that order only breaks ties within one key. UI/test/factCoverage.test.ts reads
-	/// this file for every key it can emit. See docs/indexing.md.
+	/// The indexer fills the snapshot and this only maps it, so a test can build one by hand.
+	/// See docs/indexing.md, "Per-prefab facts".
 	/// </remarks>
 	public static class PrefabFacts
 	{
@@ -487,8 +485,8 @@ namespace BetterBuildingMenu.Domain
 			}
 
 			// The two properties vanilla authors only on service upgrades. The multipliers
-			// are the whole percentages PrefabUISystem binds; the upkeep change is
-			// UpkeepModifierBinder's figure, below.
+			// are the whole percentages PrefabUISystem binds; the resource consumption
+			// change is UpkeepModifierBinder's figure, below.
 			if (snapshot.PollutionModifierData is { } pollutionModifier)
 			{
 				// A multiplier of one changes nothing and "100 %" would say so at
@@ -500,7 +498,10 @@ namespace BetterBuildingMenu.Domain
 
 			// UpkeepModifierBinder, transcribed: shown when any multiplier is not one, as the
 			// largest of them all, ones included, from a seed of zero. In float and through
-			// math, as vanilla computes it, so a figure on a half rounds the same way.
+			// math, as vanilla computes it, so a figure on a half rounds the same way. Not
+			// the money upkeep, whatever the component's name: CityServiceUpkeepSystem applies
+			// it only to the resources a building consumes, and vanilla labels it
+			// RESOURCE_CONSUMPTION.
 			if (snapshot.UpkeepMultipliers is { Count: > 0 } upkeepMultipliers
 				&& upkeepMultipliers.Any(multiplier => multiplier != 1f))
 			{
@@ -512,7 +513,7 @@ namespace BetterBuildingMenu.Domain
 
 				// Not through Fact: that helper drops anything at or below zero,
 				// and a saving is negative.
-				prefabIndex.ServiceFacts.Add(new ServiceFact("upkeepChange", (int)math.round(100f * (largest - 1f))));
+				prefabIndex.ServiceFacts.Add(new ServiceFact("resourceConsumption", (int)math.round(100f * (largest - 1f))));
 			}
 
 			if (snapshot.TransportStationData is { } transportStationData)
