@@ -105,6 +105,11 @@ namespace BetterBuildingMenu.Systems
 		private List<(int Id, PrefabBase Prefab)> _uniqueCandidates = new();
 		// What the last log line said, so a rescan that found nothing stays quiet.
 		private int _loggedUniqueCandidateCount = -1;
+#if DEBUG
+		// The assets a pass indexed without an icon, logged as one line when it ends: one line
+		// each came to thousands per full pass, repeated on every language change.
+		private readonly List<string> _missingIcons = new();
+#endif
 		// Node entity -> branch label, and service name -> its root's label.
 		// Label AND icon together, keyed by node and by service: every service's
 		// root is called "Basic", so a label-keyed icon would collide. A branch also
@@ -506,6 +511,9 @@ namespace BetterBuildingMenu.Systems
 			// it half-built and throw into the game's load or locale dispatch, so the old index is
 			// put back instead. See docs/indexing.md, "A pass that fails".
 			var previous = full ? CaptureIndex() : null;
+#if DEBUG
+			_missingIcons.Clear();
+#endif
 
 			try
 			{
@@ -531,6 +539,13 @@ namespace BetterBuildingMenu.Systems
 			stopWatch.Stop();
 
 			Mod.Log.Info($"{(full ? "Full" : "Partial")} Prefab Indexing completed in {stopWatch.Elapsed.TotalSeconds:0.000}s");
+#if DEBUG
+			if (_missingIcons.Count > 0)
+			{
+				// The count and a sample at Info; every name only with Debug on.
+				Mod.Log.Info($"[MISSINGICON] {_missingIcons.Count} indexed asset(s) have no icon, e.g. {string.Join(", ", _missingIcons.Take(8))}");
+			}
+#endif
 			// The locked count is logged so a second full pass on the same load can
 			// be checked against the first.
 			Mod.Log.Info($"Indexed Prefabs Count: {BuildingMenuUtil.CategorizedPrefabs[PrefabCategory.Any][PrefabSubCategory.Any].Count}"
@@ -897,7 +912,12 @@ namespace BetterBuildingMenu.Systems
 					|| !prefab.isBuiltin
 					|| !uIObject.m_Group.isBuiltin)
 				{
-					Mod.Log.Info("MISSINGICON: " + prefab.name);
+					_missingIcons.Add(prefab.name);
+
+					if (Mod.Log.isLevelEnabled(Level.Debug))
+					{
+						Mod.Log.Debug("MISSINGICON: " + prefab.name);
+					}
 				}
 			}
 #endif
@@ -949,9 +969,11 @@ namespace BetterBuildingMenu.Systems
 		{
 			_prefabUISystem.GetTitleAndDescription(_prefabSystem.GetEntity(prefab), out var titleId, out var _);
 
-			return GameManager.instance.localizationManager.activeDictionary.TryGetValue(titleId, out var name)
+			var localized = GameManager.instance.localizationManager.activeDictionary.TryGetValue(titleId, out var name)
 				? name
-				: prefab.name.Replace('_', ' ').FormatWords();
+				: null;
+
+			return WordFormat.GameText(localized) ?? prefab.name.Replace('_', ' ').FormatWords();
 		}
 
 		/// <summary>Numbers the display names indexed prefabs share. See <see cref="DuplicateNameNumbering"/>.</summary>

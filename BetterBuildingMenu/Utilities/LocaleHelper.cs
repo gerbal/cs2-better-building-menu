@@ -60,9 +60,10 @@ namespace BetterBuildingMenu.Utilities
 
         public static string Translate(string id, string? fallback = null)
         {
-            if (GameManager.instance.localizationManager.activeDictionary.TryGetValue(id, out var result))
+            if (GameManager.instance.localizationManager.activeDictionary.TryGetValue(id, out var result)
+                && WordFormat.GameText(result) is { } text)
             {
-                return result;
+                return text;
             }
 
             return fallback ?? id;
