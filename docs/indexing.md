@@ -230,6 +230,18 @@ the shipped manifest, so it lists what the install has; `EnumerateDLCs` goes thr
 backends, so it lists what the store says. A stubbed Steamworks leaves the second empty while the
 first is full, and then `IsDlcOwned` is false for everything but the base game.
 
+## Per-prefab facts
+
+An entry's figures and facts (cost, upkeep, capacity, and the service figures a card lists) are
+a mapping from the components its prefab carries. `.Facts.cs` reads them into a `PrefabSnapshot`:
+each component, or null when the prefab has none, plus the few inputs that live elsewhere. Those
+are the authoring `RoadPrefab`'s flags, the two upkeep buffers, an extractor's map feature, and a
+zone's lots. `PrefabFacts.Apply` in `Domain/` maps the snapshot onto the entry and never touches
+the entity world. So a test builds a snapshot by hand and checks what the entry gets, and
+`UI/test/factCoverage.test.ts` reads that one file for every key it can emit.
+
+The order the facts are added in is the order a card lists them.
+
 ## Dev tree branches
 
 A service's tree is a free `Basic<Service>` root with chains hanging off it.
