@@ -162,9 +162,9 @@ namespace BetterBuildingMenu.Systems
 					SupportsNarrow: (zoneData[i].m_ZoneFlags & ZoneFlags.SupportNarrow) != 0,
 					SupportsCorners: (zoneData[i].m_ZoneFlags
 						& (ZoneFlags.SupportLeftCorner | ZoneFlags.SupportRightCorner)) != 0,
-					AllowedSold: ResourceName(propertiesData[i].m_AllowedSold),
-					AllowedManufactured: ResourceName(propertiesData[i].m_AllowedManufactured),
-					AllowedStored: ResourceName(propertiesData[i].m_AllowedStored),
+					AllowedSold: PrefabFacts.ResourceName(propertiesData[i].m_AllowedSold),
+					AllowedManufactured: PrefabFacts.ResourceName(propertiesData[i].m_AllowedManufactured),
+					AllowedStored: PrefabFacts.ResourceName(propertiesData[i].m_AllowedStored),
 					// What will actually grow here. A zone whose buildings are
 					// all 2x2 fills a 2-wide strip and nothing else, which
 					// decides how the block gets drawn and is stated nowhere.
@@ -320,18 +320,6 @@ namespace BetterBuildingMenu.Systems
 			Mod.Log.Info($"Indexed Extractor Areas: {areas.Length}");
 			areas.Dispose();
 			areaData.Dispose();
-		}
-
-		/// <summary>The name of a single allowed resource, or null.</summary>
-		/// <remarks><c>Resource</c> is a ulong flags enum: zero ToString()s as "NoResource" and a
-		/// composite value as a raw number — and only a single flag tells the player anything.</remarks>
-		private static string? ResourceName(Game.Economy.Resource resource)
-		{
-			ulong value = (ulong)resource;
-
-			bool isSingleResource = value != 0UL && (value & (value - 1UL)) == 0UL;
-
-			return isSingleResource ? resource.ToString() : null;
 		}
 	}
 }

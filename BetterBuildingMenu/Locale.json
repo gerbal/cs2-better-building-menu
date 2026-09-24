@@ -224,7 +224,7 @@
   "Tooltip.LABEL[BetterBuildingMenu.GroundPollutionModifier]": "Ground pollution",
   "Tooltip.LABEL[BetterBuildingMenu.AirPollutionModifier]": "Air pollution",
   "Tooltip.LABEL[BetterBuildingMenu.NoisePollutionModifier]": "Noise pollution",
-  "Tooltip.LABEL[BetterBuildingMenu.UpkeepChange]": "Upkeep",
+  "Tooltip.LABEL[BetterBuildingMenu.ResourceConsumption]": "Resource consumption",
   "Tooltip.LABEL[BetterBuildingMenu.ElevatedWidth]": "Elevated width",
   "Tooltip.LABEL[BetterBuildingMenu.ElevationCost]": "Elevation",
   "Tooltip.LABEL[BetterBuildingMenu.MailboxCapacity]": "Mailbox capacity",
