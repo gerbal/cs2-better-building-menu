@@ -297,6 +297,21 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(expected, entry.LeisureType);
 		}
 
+		/// <summary>Vanilla's UpkeepModifierBinder: the largest multiplier of all, ones included,
+		/// shown only when one of them is not one.</summary>
+		[Theory]
+		[InlineData(new[] { 0.8f }, -20d)]
+		[InlineData(new[] { 1.25f }, 25d)]
+		[InlineData(new[] { 0.8f, 1.1f }, 10d)]
+		[InlineData(new[] { 1f, 0.8f }, 0d)]
+		[InlineData(new[] { 1f }, null)]
+		public void TheUpkeepChangeIsTheLargestMultiplier(float[] multipliers, double? expected)
+		{
+			var entry = Apply(new PrefabSnapshot { UpkeepMultipliers = multipliers });
+
+			Assert.Equal(expected, entry.ServiceFacts.Where(fact => fact.Key == "upkeepChange").Select(fact => (double?)fact.Value).SingleOrDefault());
+		}
+
 		[Fact]
 		public void ANetworkHasNoFactsWithoutComponents()
 		{

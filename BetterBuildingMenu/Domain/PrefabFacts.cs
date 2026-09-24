@@ -496,26 +496,14 @@ namespace BetterBuildingMenu.Domain
 				PollutionModifierFact(prefabIndex, "noisePollutionModifier", pollutionModifier.m_NoisePollutionMultiplier);
 			}
 
-			if (snapshot.UpkeepMultipliers is { Count: > 0 } upkeepMultipliers)
+			// UpkeepModifierBinder, transcribed: shown when any multiplier is not one, as the
+			// largest of them all, ones included, taken from zero.
+			if (snapshot.UpkeepMultipliers is { Count: > 0 } upkeepMultipliers
+				&& upkeepMultipliers.Any(multiplier => multiplier != 1f))
 			{
-				var largest = 1f;
-				var changes = false;
-
-				for (var i = 0; i < upkeepMultipliers.Count; i++)
-				{
-					if (upkeepMultipliers[i] != 1f)
-					{
-						changes = true;
-						largest = Math.Max(largest, upkeepMultipliers[i]);
-					}
-				}
-
-				if (changes)
-				{
-					// Not through Fact: that helper drops anything at or below zero,
-					// and a saving — the usual case for this modifier — is negative.
-					prefabIndex.ServiceFacts.Add(new ServiceFact("upkeepChange", Math.Round(100d * (largest - 1d))));
-				}
+				// Not through Fact: that helper drops anything at or below zero,
+				// and a saving is negative.
+				prefabIndex.ServiceFacts.Add(new ServiceFact("upkeepChange", Math.Round(100d * (upkeepMultipliers.Max() - 1d))));
 			}
 
 			if (snapshot.TransportStationData is { } transportStationData)
