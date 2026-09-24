@@ -22,7 +22,7 @@ namespace BetterBuildingMenu.Systems
 		/// Re-publish the lens after something changed what it should show.
 		/// </summary>
 		/// <remarks>
-		/// The options panel's sorting sections still reach the lens: CategorizedPrefabs holds
+		/// The options panel's sorting sections still reach the lens: the index holds
 		/// IndexedPrefabList, whose enumerator returns the statically-sorted order, so that sort
 		/// still decides the ties the catalog's own sort leaves open.
 		/// </remarks>
@@ -56,7 +56,7 @@ namespace BetterBuildingMenu.Systems
 
 			// One view, built once; every publish below reads it. See CatalogView.
 			var menu = _lens.Menu;
-			var menuHasCategories = PrefabIndexingSystem.GetMenuCategories(string.IsNullOrEmpty(menu) ? null : menu).Count > 0;
+			var menuHasCategories = PrefabIndexingSystem.GetMenuCategories(source.Index, string.IsNullOrEmpty(menu) ? null : menu).Count > 0;
 			var view = _buildingCatalogAdapter.Build(
 				source,
 				_lens.Query,
@@ -86,7 +86,7 @@ namespace BetterBuildingMenu.Systems
 			var pageMs = Lap();
 			_BuildingCatalogBinding.Value = page with
 			{
-				Status = BuildingCatalogLensState.GetPageStatus(BuildingMenuUtil.IsReady, page.TotalCount),
+				Status = BuildingCatalogLensState.GetPageStatus(source.Index.IsReady, page.TotalCount),
 			};
 			// Publish the order the query actually ran with, so the header can
 			// never disagree with the rows beneath it.
@@ -167,7 +167,7 @@ namespace BetterBuildingMenu.Systems
 
 			if (upgradable == Entity.Null
 				|| !EntityManager.TryGetComponent<PrefabRef>(upgradable, out var prefabRef)
-				|| BuildingMenuUtil.GetPrefabIndex(prefabRef.m_Prefab.Index) is not { } building)
+				|| _indexer.Index.Get(prefabRef.m_Prefab.Index) is not { } building)
 			{
 				_BuildingExtensionMenu.Value = BuildingExtensionMenu.Empty;
 				return;
@@ -191,7 +191,7 @@ namespace BetterBuildingMenu.Systems
 
 		internal void TryActivatePrefabTool(int id)
 		{
-			var prefabBase = BuildingMenuUtil.GetPrefabBase(id);
+			var prefabBase = _indexer.Index.GetPrefab(id);
 			_interactionBoundary.TryActivatePrefab(
 				id,
 				prefabBase is not null,
