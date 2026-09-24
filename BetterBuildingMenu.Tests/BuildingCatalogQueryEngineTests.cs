@@ -720,7 +720,7 @@ public sealed class BuildingCatalogQueryEngineTests
                 "ArrayEnd",
                 "PropertyName:footprints",
             },
-            After("serviceFacts", 16));
+            After("serviceFacts", 15));
         Assert.Equal(
             new[]
             {
