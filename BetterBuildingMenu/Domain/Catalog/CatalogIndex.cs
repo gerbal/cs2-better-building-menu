@@ -96,13 +96,9 @@ namespace BetterBuildingMenu.Domain.Catalog
 		public PrefabIndex? Get(int id) => All.TryGetValue(id, out var entry) ? entry : null;
 
 		/// <summary>The entry a prefab name resolves to, or null when nothing indexed carries it.</summary>
-		/// <remarks>
-		/// Two prefab types can carry one name, and then the first entry in name order answers,
-		/// for every caller: the extension picker drawing an upgrade's row and a partial pass
-		/// replacing a prefab the game recreated. Built once, on the first lookup after a
-		/// change, rather than kept in step with every edit: a pass files thousands of entries
-		/// and looks names up rarely.
-		/// </remarks>
+		/// <remarks>Two prefab types can carry one name; then the first in name order answers.
+		/// Built on the first lookup after a change, since a pass files far more than it looks
+		/// up.</remarks>
 		public PrefabIndex? GetByPrefabName(string prefabName)
 		{
 			if (_byPrefabName is null)
