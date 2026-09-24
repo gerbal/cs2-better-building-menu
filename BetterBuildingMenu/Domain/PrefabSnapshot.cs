@@ -13,7 +13,7 @@ namespace BetterBuildingMenu.Domain
 	/// Filled by the indexer, which asks the game; built directly in a test. Every game component
 	/// struct here has public fields, so a test can write
 	/// <c>new SchoolData { m_StudentCapacity = 500 }</c>.
-	/// See docs/superpowers/specs/2026-09-24-indexer-split-design.md.
+	/// See docs/indexing.md, "Per-prefab facts".
 	/// </remarks>
 	public sealed class PrefabSnapshot
 	{

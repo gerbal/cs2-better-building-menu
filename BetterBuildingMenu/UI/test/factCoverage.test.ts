@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { SERVICE_FACT_KEYS, SERVICE_TEXT_FACT_KEYS, RESOURCE_UPKEEP_PREFIX } from "../src/domain/serviceFacts.ts";
 
@@ -8,9 +8,14 @@ import { SERVICE_FACT_KEYS, SERVICE_TEXT_FACT_KEYS, RESOURCE_UPKEEP_PREFIX } fro
 // rather than drawn raw. That policy makes a missing presentation silent —
 // the fact simply never appears — so this reads the C# mapper and
 // checks every key it can emit has a presentation.
-// Fact, PollutionModifierFact and TextFact are private to PrefabFacts, so every
-// call is in this one file.
-const source = readFileSync(new URL("../../Domain/PrefabFacts.cs", import.meta.url), "utf8");
+// Fact, PollutionModifierFact and TextFact are private to Domain/PrefabFacts.cs.
+// The indexer's partials are read as well, for any fact added there directly.
+const systems = new URL("../../Systems/", import.meta.url);
+const source = readdirSync(systems)
+  .filter((file) => /^PrefabIndexingSystem(\.\w+)?\.cs$/.test(file))
+  .map((file) => readFileSync(new URL(file, systems), "utf8"))
+  .concat(readFileSync(new URL("../../Domain/PrefabFacts.cs", import.meta.url), "utf8"))
+  .join("\n");
 
 const literalKeysOf = (call: string): string[] => {
   const keys = new Set<string>();
@@ -25,12 +30,18 @@ const literalKeysOf = (call: string): string[] => {
   return [...keys];
 };
 
-describe("every fact the index can emit has a wording", () => {
-  const numeric = literalKeysOf("Fact").concat(literalKeysOf("PollutionModifierFact"));
-  const worded = literalKeysOf("TextFact");
+// A fact added without a helper, such as upkeepChange, which a helper would drop
+// for being negative.
+const constructedKeysOf = (record: string): string[] =>
+  [...source.matchAll(new RegExp(`new ${record}\\("([a-zA-Z]+:?)"`, "g"))].map((match) => match[1]);
 
-  it("reads the mapper's source", () => {
+describe("every fact the index can emit has a wording", () => {
+  const numeric = literalKeysOf("Fact").concat(literalKeysOf("PollutionModifierFact"), constructedKeysOf("ServiceFact"));
+  const worded = literalKeysOf("TextFact").concat(constructedKeysOf("ServiceTextFact"));
+
+  it("reads the source that emits facts", () => {
     assert.ok(numeric.includes("cargoCapacity") && numeric.includes("zoneUpkeep"), `numeric keys found: ${numeric.length}`);
+    assert.ok(numeric.includes("upkeepChange"), "a fact constructed directly is found too");
     assert.ok(worded.includes("requiredResource") && worded.includes("waterSource"), `worded keys found: ${worded.length}`);
   });
 
