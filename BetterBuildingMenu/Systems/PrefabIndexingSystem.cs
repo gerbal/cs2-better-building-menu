@@ -82,7 +82,8 @@ namespace BetterBuildingMenu.Systems
 		/// could land on a number an older projection was stored under.</remarks>
 		public int Generation { get; private set; } = 1;
 
-		/// <summary>The index the panel reads. A full pass replaces it; see <see cref="RunIndex"/>.</summary>
+		/// <summary>The index the panel reads. A full pass builds its replacement aside and publishes it
+		/// only when the pass succeeds; a partial pass edits it in place. See <see cref="RunIndex"/>.</summary>
 		public CatalogIndex Index { get; private set; } = new();
 
 		/// <summary>The unique assets the city has already got one of, kept in step with the game's
@@ -471,29 +472,29 @@ namespace BetterBuildingMenu.Systems
 		{
 			var stopWatch = Stopwatch.StartNew();
 			var census = new Dictionary<string, List<int>>(StringComparer.Ordinal);
-			// A full pass rebuilds everything the panel reads. One that threw halfway would leave
-			// it half-built and throw into the game's load or locale dispatch, so the old index is
-			// put back instead. See docs/indexing.md, "A pass that fails".
-			// The index is the whole of it: every table a full pass reads is built into the
-			// new one, and the pass never writes to the old one.
-			var previous = full ? Index : null;
 #if DEBUG
 			_missingIcons.Clear();
 #endif
+			CatalogIndex built;
 
 			try
 			{
-				BuildIndex(full, census);
+				built = BuildIndex(full, census);
 			}
-			catch (Exception ex) when (previous is not null)
+			catch (Exception ex) when (full)
 			{
-				Index = previous;
+				// A full pass files into an index of its own, so one that threw halfway
+				// never touched the published index, and nothing reaches the game's load
+				// or locale dispatch. See docs/indexing.md, "A pass that fails".
 				Mod.Log.Error(ex, "Full prefab indexing failed; the previous index stands");
 
 				return false;
 			}
 
-			Index.IsReady = true;
+			// A full pass publishes the index it built; a partial pass built into the
+			// published one, so this assigns it to itself.
+			built.IsReady = true;
+			Index = built;
 			Generation++;
 
 			// Rescan the placed uniques against the city that just loaded: the
@@ -564,8 +565,14 @@ namespace BetterBuildingMenu.Systems
 		}
 
 		/// <summary>Everything a pass writes to the index.</summary>
-		private void BuildIndex(bool full, Dictionary<string, List<int>> census)
+		/// <returns>The index the pass filed into: a new one for a full pass, which the caller
+		/// publishes only if this returns, or the published one for a partial pass, which edits it
+		/// in place. Every read and write in the pass goes to it, never to <see cref="Index"/>,
+		/// which during a full pass is still the previous one.</returns>
+		private CatalogIndex BuildIndex(bool full, Dictionary<string, List<int>> census)
 		{
+			var target = Index;
+
 			if (full)
 			{
 				var mods = RefreshModCompatibility();
@@ -580,8 +587,9 @@ namespace BetterBuildingMenu.Systems
 				var milestones = IndexMilestones();
 				var (branches, roots) = IndexDevTreeBranches();
 
-				// Published before the processors run, which read these tables back.
-				Index = new CatalogIndex(
+				// Built before the processors run, which read these tables back, and
+				// kept aside until the pass succeeds.
+				target = new CatalogIndex(
 					new VanillaMenuIndex(placements, menuNames, menuEntities, menus, categories),
 					zones,
 					new ProgressionIndex(milestones, branches, roots),
@@ -625,7 +633,7 @@ namespace BetterBuildingMenu.Systems
 						// The blacklist is a list of names written for a flat asset browser. It
 						// cannot outrank the build menu: Extractor Lot and Landfill Site Lot are
 						// on it and are also tools the Areas and Garbage menus hand the player.
-						if (_blackList.Contains(prefab.name) && !Index.Menus.IsPlaced(entity.Index))
+						if (_blackList.Contains(prefab.name) && !target.Menus.IsPlaced(entity.Index))
 						{
 							continue;
 						}
@@ -644,17 +652,17 @@ namespace BetterBuildingMenu.Systems
 						{
 							if (_roadBuilderDiscarded.HasValue && EntityManager.HasComponent(entity, _roadBuilderDiscarded.Value))
 							{
-								Index.Remove(entity.Index);
+								target.Remove(entity.Index);
 
 								continue;
 							}
 
-							if (!full && EntityManager.HasComponent<Created>(entity) && Index.Find(_prefabSystem.GetPrefab<PrefabBase>(entity).name, out var oldId))
+							if (!full && EntityManager.HasComponent<Created>(entity) && target.Find(_prefabSystem.GetPrefab<PrefabBase>(entity).name, out var oldId))
 							{
-								Index.Remove(oldId);
+								target.Remove(oldId);
 							}
 
-							if (processor.TryCreatePrefabIndex(prefab, entity, Index, out prefabIndex))
+							if (processor.TryCreatePrefabIndex(prefab, entity, target, out prefabIndex))
 							{
 								if (prefab.TryGet<EditorAssetCategoryOverride>(out var overrides) && overrides is not null)
 								{
@@ -663,9 +671,9 @@ namespace BetterBuildingMenu.Systems
 									// An author's exclusion is honoured only for assets the game does
 									// not itself place in a menu. Removed as well as skipped, so a
 									// partial pass drops what an earlier pass indexed.
-									if (categoryOverride.Excluded && !Index.Menus.IsPlaced(entity.Index))
+									if (categoryOverride.Excluded && !target.Menus.IsPlaced(entity.Index))
 									{
-										Index.Remove(entity.Index);
+										target.Remove(entity.Index);
 
 										continue;
 									}
@@ -682,7 +690,7 @@ namespace BetterBuildingMenu.Systems
 									}
 								}
 
-								AddPrefab(prefab, entity, prefabIndex);
+								AddPrefab(prefab, entity, prefabIndex, target);
 
 								if (full)
 								{
@@ -713,15 +721,17 @@ namespace BetterBuildingMenu.Systems
 
 			// Partial passes too: one re-read prefab takes back its plain name, and its
 			// namesakes' numbers are only right if all of them are counted again.
-			AddNumberToDuplicatePrefabNames();
+			AddNumberToDuplicatePrefabNames(target);
 
 			if (full)
 			{
-				CleanupBrandPrefabs();
+				CleanupBrandPrefabs(target);
 			}
+
+			return target;
 		}
 
-		private void AddPrefab(PrefabBase prefab, Entity entity, PrefabIndex prefabIndex)
+		private void AddPrefab(PrefabBase prefab, Entity entity, PrefabIndex prefabIndex, CatalogIndex target)
 		{
 			prefabIndex.Id = entity.Index;
 			prefabIndex.PrefabName = prefab.name;
@@ -765,7 +775,7 @@ namespace BetterBuildingMenu.Systems
 			prefabIndex.UiMenuName = (uIObject?.m_Group as UIAssetCategoryPrefab)?.m_Menu?.name;
 			// The entity world's placement wins: mods that regroup the menu at
 			// runtime edit it there and leave the managed group on the stock tab.
-			if (Index.Menus.Placements.TryGetValue(entity.Index, out var placed))
+			if (target.Menus.Placements.TryGetValue(entity.Index, out var placed))
 			{
 				(prefabIndex.UiCategoryName, prefabIndex.UiMenuName) = MenuPlacementOverride.Resolve(
 					prefabIndex.UiCategoryName, prefabIndex.UiMenuName, placed.Category, placed.Menu);
@@ -798,7 +808,7 @@ namespace BetterBuildingMenu.Systems
 			// menu. After UiMenuName above: an asset the tree never gated falls into
 			// its service's root bucket, and the menu is what names the service.
 			(prefabIndex.DevTreeBranch, prefabIndex.DevTreeBranchIcon, prefabIndex.DevTreeBranchDepth) =
-				DevTreeBranchOf(entity, required, prefabIndex.UiMenuName);
+				DevTreeBranchOf(entity, required, prefabIndex.UiMenuName, target.Progression);
 			prefabIndex.IsRandom = prefabIndex.SubCategory is not PrefabSubCategory.Networks_Pillars && EntityManager.HasComponent<PlaceholderObjectData>(entity);
 
 			if (prefab.asset?.database == AssetDatabase<ParadoxMods>.instance)
@@ -862,9 +872,9 @@ namespace BetterBuildingMenu.Systems
 				prefabIndex.LotSize = extensionData.m_LotSize;
 			}
 
-			PopulateAnalyticalData(entity, prefabIndex);
+			PopulateAnalyticalData(entity, prefabIndex, target.Zones);
 
-			Index.File(prefabIndex);
+			target.File(prefabIndex);
 		}
 
 		private string GetAssetName(PrefabBase prefab)
@@ -879,9 +889,9 @@ namespace BetterBuildingMenu.Systems
 		}
 
 		/// <summary>Numbers the display names indexed prefabs share. See <see cref="DuplicateNameNumbering"/>.</summary>
-		private void AddNumberToDuplicatePrefabNames()
+		private static void AddNumberToDuplicatePrefabNames(CatalogIndex target)
 		{
-			var all = Index.All;
+			var all = target.All;
 			// Upgrades are left out of the numbering. Every school type has an
 			// "Extension Wing"; they are never listed beside each other, only on
 			// their own parent's picker, where "Extension Wing 2" has no referent.
@@ -897,12 +907,12 @@ namespace BetterBuildingMenu.Systems
 			all.ResetOrder();
 		}
 
-		private void CleanupBrandPrefabs()
+		private static void CleanupBrandPrefabs(CatalogIndex target)
 		{
-			var branding = Index.List(PrefabCategory.Props, PrefabSubCategory.Props_Branding);
+			var branding = target.List(PrefabCategory.Props, PrefabSubCategory.Props_Branding);
 			var brands = new HashSet<string>(branding?.Select(x => x.PrefabName) ?? Enumerable.Empty<string>());
 
-			foreach (var (category, subCategory, list) in Index.Lists())
+			foreach (var (category, subCategory, list) in target.Lists())
 			{
 				if (category is PrefabCategory.Any
 					|| subCategory is PrefabSubCategory.Props_Branding
