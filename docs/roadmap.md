@@ -31,7 +31,8 @@ the detail behind the structural items.
 - **Split `PrefabIndexingSystem` further.** It is one partial class across six
   files (see [indexing.md](indexing.md)). Moving the menu audit and
   `PopulateAnalyticalData` into classes of their own would let a test reach
-  the mapping from a prefab's components to its facts.
+  the mapping from a prefab's components to its facts. A plan in four PRs is in
+  [superpowers/specs/](superpowers/specs/2026-09-24-indexer-split-design.md).
 - **Per-load state.** Replace the static index, caches and registries with one
   object created per city load and handed to the systems that read it.
 - **Smaller cleanups.**
