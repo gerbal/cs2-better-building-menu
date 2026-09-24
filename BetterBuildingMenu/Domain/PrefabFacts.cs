@@ -582,11 +582,13 @@ namespace BetterBuildingMenu.Domain
 		}
 
 		/// <summary>A pollution multiplier as the whole percentage vanilla shows, unless it is one.</summary>
+		/// <remarks>Rounded as PrefabUISystem's binder does, Mathf.RoundToInt of the float product, so a
+		/// figure on a half rounds the same way.</remarks>
 		private static void PollutionModifierFact(PrefabIndex prefabIndex, string key, float multiplier)
 		{
 			if (Math.Abs(multiplier - 1f) > 0.0005f)
 			{
-				Fact(prefabIndex, key, Math.Round(multiplier * 100d));
+				Fact(prefabIndex, key, (int)math.round(multiplier * 100f));
 			}
 		}
 

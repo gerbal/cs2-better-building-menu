@@ -544,6 +544,26 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(expected, entry.ServiceFacts.Where(fact => fact.Key == "upkeepChange").Select(fact => (double?)fact.Value).SingleOrDefault());
 		}
 
+		/// <summary>PrefabUISystem's pollution binders: Mathf.RoundToInt of the float product. A double
+		/// product rounds 0.805 to 81 and 1.255 to 125.</summary>
+		[Theory]
+		[InlineData(0.5f, 50d)]
+		[InlineData(0.805f, 80d)]
+		[InlineData(1.255f, 126d)]
+		[InlineData(1f, null)]
+		public void APollutionModifierRoundsAsVanillaDoes(float multiplier, double? expected)
+		{
+			var entry = Apply(new PrefabSnapshot
+			{
+				PollutionModifierData = new PollutionModifierData
+				{
+					m_GroundPollutionMultiplier = multiplier, m_AirPollutionMultiplier = 1f, m_NoisePollutionMultiplier = 1f,
+				},
+			});
+
+			Assert.Equal(expected, entry.ServiceFacts.Where(fact => fact.Key == "groundPollutionModifier").Select(fact => (double?)fact.Value).SingleOrDefault());
+		}
+
 		[Fact]
 		public void AnEmptySnapshotGivesNoFigures()
 		{
