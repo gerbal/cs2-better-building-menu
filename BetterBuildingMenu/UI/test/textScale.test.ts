@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { fontSizeRatio } from "../src/domain/textScale.ts";
 import { tileLabelLineBudget, tableLabelCharBudget } from "../src/domain/tileLabel.ts";
+import { BUILDING_LENS_MAX_WIDTH } from "../src/domain/sharedContracts.generated.ts";
 import { getBuildingLensColumnWidths, BUILDING_LENS_COLUMN_MAX, BUILDING_LENS_PANEL_CHROME_WIDTH, BUILDING_LENS_CONTROL_PANE_TOTAL, BUILDING_LENS_IDENTITY_MIN, BUILDING_LENS_TABLE_ROW_FURNITURE } from "../src/domain/buildingLensLayout.ts";
 
 // The game's Interface › Text scale setting (100–150 %) reaches the page as
@@ -48,7 +49,7 @@ describe("the table's columns at a large text scale and a narrow panel", () => {
   // allows and no further; what does not fit clips inside its cell.
   it("never squeezes the name below its minimum", () => {
     // The assembly plus its chrome — the figure the catalog passes.
-    const outer = 1441 + BUILDING_LENS_PANEL_CHROME_WIDTH;
+    const outer = BUILDING_LENS_MAX_WIDTH + BUILDING_LENS_PANEL_CHROME_WIDTH;
     for (const scale of [1.25, 1.5]) {
       const widths = getBuildingLensColumnWidths(outer, scale);
       const columns = Object.values(widths).reduce((a, b) => a + b, 0);

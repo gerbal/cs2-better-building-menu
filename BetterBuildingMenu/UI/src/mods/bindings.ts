@@ -7,6 +7,7 @@ import type { BuildingLensFacetState } from "domain/buildingCatalogFacets";
 import type { BuildingLensMetricRangeState } from "domain/buildingLensFilterSummary";
 import type { Command } from "domain/command";
 import type { MenuBranchCount, MenuCategoryTabs } from "domain/menuProgression";
+import { BUILDING_LENS_DEFAULT_HEIGHT } from "domain/sharedContracts.generated";
 import type { ToolbarEntity } from "domain/toolbarEntity";
 import { UPSTREAM_FINDIT_GROUP, UPSTREAM_SHOW_PANEL } from "domain/upstreamFindIt";
 import type { MenuCategoryCount, VanillaMenuCategory } from "domain/vanillaMenuCategories";
@@ -57,7 +58,7 @@ export const BuildingLensExpandedCategories$ = bindValue<MenuCategoryTabs[]>(mod
 
 export const PanelWidth$ = bindValue<number>(mod.id, "PanelWidth", 0);
 /** The panel height the player last dragged to; see BuildingMenuUISystem.Bindings. */
-export const BuildingLensPanelHeight$ = bindValue<number>(mod.id, "BuildingLensPanelHeight", 420);
+export const BuildingLensPanelHeight$ = bindValue<number>(mod.id, "BuildingLensPanelHeight", BUILDING_LENS_DEFAULT_HEIGHT);
 export const BuildingLensTileSize$ = bindValue<number>(mod.id, "BuildingLensTileSize", 72);
 /** True while the toolbar's open menu is one the panel takes over. */
 export const LensOwnsCurrentMenu$ = bindValue<boolean>(mod.id, "LensOwnsCurrentMenu", false);
