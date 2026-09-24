@@ -741,9 +741,9 @@ namespace BetterBuildingMenu.Systems
 		}
 
 		/// <summary>What a full pass replaces, held so a pass that throws can put it back.</summary>
-		/// <remarks>References are enough: each Index* step builds new collections and assigns them
-		/// at its end, and the pass files into a new CatalogIndex, so it never writes to the old
-		/// ones.</remarks>
+		/// <remarks>References are enough: each Index* step builds new collections, which it assigns
+		/// at its end or returns into the new CatalogIndex the pass files into, so the pass never
+		/// writes to the old ones.</remarks>
 		private sealed record IndexSnapshot(
 			CatalogIndex Index,
 			Dictionary<int, VanillaAssetFacts> ZoneFacts,
