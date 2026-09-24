@@ -9,8 +9,8 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// The view answers, from one pass, what the adapter's per-query methods answer:
-	/// equivalence against the static helpers, not a re-specification.
+	/// The view answers, from one pass, what the static helpers answer over the same
+	/// scope: equivalence against them, not a re-specification.
 	/// </summary>
 	public sealed class CatalogViewTests
 	{
@@ -30,6 +30,23 @@ namespace BetterBuildingMenu.Tests
 			Entry(5, "Gas Plant", "ServiceBuildings", "Electricity", "Electricity") with { DevTreeBranch = "Gas Power Plant", DevTreeBranchDepth = 1, Capacity = 30 },
 			Entry(6, "High School", "ServiceBuildings", "Education & Research", "Education") with { EducationLevel = 2 },
 		};
+
+		[Theory]
+		[InlineData(false)]
+		[InlineData(true)]
+		public void TheContentFacetShowsTheGamesVanillaToggle(bool vanillaSelected)
+		{
+			// The adapter reads the toggle from the toolbar selection the panel holds and
+			// hands it to the view; the view must pass it on to the facet it builds.
+			var baseGame = Entry(1, "Clinic", "ServiceBuildings", "Health & Deathcare", "Healthcare")
+				with { DlcId = GameDlcIds.BaseGame.ToString(System.Globalization.CultureInfo.InvariantCulture) };
+			var sanFrancisco = Entry(2, "Cable Car", "ServiceBuildings", "Health & Deathcare", "Healthcare") with { DlcId = "1" };
+
+			var view = new CatalogView(new[] { baseGame, sanFrancisco }, new BuildingCatalogQuery(), vanillaSelected: vanillaSelected);
+
+			var content = view.FacetState.Groups.Single(group => group.Id == FacetIds.Content);
+			Assert.Equal(vanillaSelected, content.Options.Single(option => option.Id == ContentOption.Vanilla).Selected);
+		}
 
 		[Fact]
 		public void AStripTabKeepsItsIconWhenANarrowingRemovesTheAssetItCameFrom()
