@@ -2,6 +2,7 @@ using BetterBuildingMenu.Domain;
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -87,6 +88,14 @@ namespace BetterBuildingMenu.Tests
 			ts.Append("\n/** BuildingCatalogQuery.WindowStep: how many rows one Load more adds. */\n");
 			ts.Append($"export const CATALOG_WINDOW_STEP = {BuildingCatalogQuery.WindowStep};\n");
 
+			ts.Append("\n/** BuildingLensHeight: the catalog height the player drags between, and where it starts. */\n");
+			AppendNumber(ts, "BUILDING_LENS_MIN_HEIGHT", BuildingLensHeight.Min);
+			AppendNumber(ts, "BUILDING_LENS_MAX_HEIGHT", BuildingLensHeight.Max);
+			AppendNumber(ts, "BUILDING_LENS_DEFAULT_HEIGHT", BuildingLensHeight.Default);
+
+			ts.Append("\n/** BuildingLensWidth.Max: the width the panel and its control pane are drawn at. */\n");
+			AppendNumber(ts, "BUILDING_LENS_MAX_WIDTH", BuildingLensWidth.Max);
+
 			return ts.ToString();
 		}
 
@@ -101,6 +110,9 @@ namespace BetterBuildingMenu.Tests
 
 			ts.Append("] as const;\n");
 		}
+
+		private static void AppendNumber(StringBuilder ts, string name, float value) =>
+			ts.Append($"export const {name} = {value.ToString(CultureInfo.InvariantCulture)};\n");
 
 		private static void AppendUnion(StringBuilder ts, string name, IEnumerable<string> values) =>
 			ts.Append($"export type {name} = {string.Join(" | ", values.Select(Quote))};\n");

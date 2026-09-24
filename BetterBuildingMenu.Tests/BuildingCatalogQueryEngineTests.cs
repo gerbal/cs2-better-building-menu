@@ -136,13 +136,13 @@ public sealed class BuildingCatalogQueryEngineTests
     public void Query_SearchIgnoresSurroundingWhitespaceTheBoxSends()
     {
         // The box sends what was typed, and the space before the next word must not
-        // drop every name that ends at this one. Compose trims it on the way in.
+        // drop every name that ends at this one. The lens trims the query's copy.
         BuildingCatalogPage trailing = BuildingCatalogQueryEngine.Query(
             SampleEntries,
-            BuildingCatalogLensState.Initial.Search("turbine ").Compose().Query);
+            BuildingCatalogLensState.Initial.Search("turbine ").Query);
         BuildingCatalogPage leading = BuildingCatalogQueryEngine.Query(
             SampleEntries,
-            BuildingCatalogLensState.Initial.Search("  wind").Compose().Query);
+            BuildingCatalogLensState.Initial.Search("  wind").Query);
 
         Assert.Equal(2, Assert.Single(trailing.Items).Id);
         Assert.Equal(2, Assert.Single(leading.Items).Id);
@@ -159,8 +159,7 @@ public sealed class BuildingCatalogQueryEngineTests
         BuildingCatalogLensState lens = BuildingCatalogLensState.Initial
             .SelectMenu("Education")
             .SelectCategory("Schools")
-            .Search("clinic")
-            .Compose();
+            .Search("clinic");
 
         Assert.Equal(0, BuildingCatalogQueryEngine.Query(entries, lens.Query).TotalCount);
         Assert.Equal(1, BuildingCatalogQueryEngine.Query(entries, lens.EverywhereQuery()).TotalCount);
