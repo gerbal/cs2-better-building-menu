@@ -969,9 +969,11 @@ namespace BetterBuildingMenu.Systems
 		{
 			_prefabUISystem.GetTitleAndDescription(_prefabSystem.GetEntity(prefab), out var titleId, out var _);
 
-			return GameManager.instance.localizationManager.activeDictionary.TryGetValue(titleId, out var name)
+			var localized = GameManager.instance.localizationManager.activeDictionary.TryGetValue(titleId, out var name)
 				? name
-				: prefab.name.Replace('_', ' ').FormatWords();
+				: null;
+
+			return WordFormat.GameText(localized) ?? prefab.name.Replace('_', ' ').FormatWords();
 		}
 
 		/// <summary>Numbers the display names indexed prefabs share. See <see cref="DuplicateNameNumbering"/>.</summary>
