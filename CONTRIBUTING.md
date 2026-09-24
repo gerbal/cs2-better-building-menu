@@ -11,6 +11,11 @@
   Run it again after pulling a change to `package-lock.json`: an older
   install lacks the TypeScript and eslint that `npm test` runs.
   The UI's tests stub the game's `cs2/*` modules, so they run without the game.
+- **The game's source.** The private repository `gerbal/cs2-game-decompiled`
+  holds the decompiled C# of the game's modding-relevant assemblies, for the
+  version the mod builds against. Read it before relying on how a game system
+  behaves, especially without an install. It is the game's code: never copy
+  from it into this repository, an issue, a pull request or a CI log.
 
 ## Build and test
 
