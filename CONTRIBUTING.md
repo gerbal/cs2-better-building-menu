@@ -11,6 +11,11 @@
   Run it again after pulling a change to `package-lock.json`: an older
   install lacks the TypeScript and eslint that `npm test` runs.
   The UI's tests stub the game's `cs2/*` modules, so they run without the game.
+- **The game's source.** The private repository `gerbal/cs2-game-decompiled`
+  holds the decompiled C# of the game's modding-relevant assemblies, for the
+  version the mod builds against. Read it before relying on how a game system
+  behaves, especially without an install. It is the game's code: never copy
+  from it into this repository, an issue, a pull request or a CI log.
 
 ## Build and test
 
@@ -39,7 +44,7 @@ not repeat warnings for what it does not recompile:
 ```sh
 rm -rf BetterBuildingMenu/obj BetterBuildingMenu/bin BetterBuildingMenu.Tests/obj BetterBuildingMenu.Tests/bin
 CI=true ./build.sh backend
-CI=true CS2_TEST_FILTER=Requires!=Game ./build.sh test
+CI=true ./build.sh test
 ```
 
 Most warnings will be nullable: a field a system sets in `OnCreate` is
@@ -59,10 +64,12 @@ The mod has no `!` left apart from `= null!` on those `OnCreate` fields.
 Where a LINQ filter in one step cannot tell the compiler about the next,
 a loop that keeps only the non-null values can.
 
-A test that calls into the game, not just its types, carries
-`[Trait("Requires", "Game")]`: CI runs against mock game assemblies, and
-`CS2_TEST_FILTER=Requires!=Game ./build.sh test` runs what it runs. See
-[docs/ci.md](docs/ci.md).
+CI runs every test against the game's own assemblies, kept in a private
+repository, so a test that fails locally fails there too. A test that
+calls into the game, not just its types, still carries
+`[Trait("Requires", "Game")]`, for a run against mock assemblies
+(the workspace's `tools/game-refs/refresh.sh --mock`), which filters them out with
+`CS2_TEST_FILTER=Requires!=Game`. See [docs/ci.md](docs/ci.md).
 
 The ids and numbers both sides use (sort columns, group dimensions, facet ids,
 availability options, the Load more step, the panel's height range and width)
