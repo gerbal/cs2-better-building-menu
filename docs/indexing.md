@@ -241,9 +241,13 @@ Power Plant under "Gas Power Plant", which are separate unlocks the player buys 
 
 **The root is named after its service** — Electricity, Water & Sewage, Police & Administration —
 because that is what the top bar already calls this bucket, and its tab draws the service's own
-glyph. The node's own name is worse: it has no localized title, so it falls through to a prefab
-name. Everything the tree never gated falls into that root bucket, which is why the root is also
+glyph. Everything the tree never gated falls into that root bucket, which is why the root is also
 recorded against its service name.
+
+**Node names come from `Progression.NODE_NAME[<node prefab>]`**, the key the dev tree itself
+reads. The prefab's title id points at `Assets.NAME`, which has no entry for a node, so asking for
+the prefab's title gets the English prefab name ("Police Headquarters Node") in every language.
+That name is still the fallback, without its "Node".
 
 **Ranking is the tree's own layout**, column first and then distance from the trunk row. The
 column alone leaves siblings tied, and an alphabetical tie-break puts Medical University and
