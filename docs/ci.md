@@ -6,15 +6,33 @@ scope (`gh auth refresh -s workflow`); GitHub refuses a push that touches them o
 - **`ui.yml`** runs for every pull request and push, forks included: `npm test` (typecheck, lint,
   unit and render suites), the webpack build, and a parse of `build.sh`. The UI needs nothing
   from the game; the test harness stubs its `cs2/*` modules.
-- **`csharp.yml`** builds the mod and runs the xUnit tests (`./build.sh backend`,
-  `./build.sh test`) against **mock game assemblies** checked out from a private repository.
-  A pull request from a fork gets no secrets, so it skips this job rather than failing it.
+- **`csharp.yml`** builds the mod and runs every xUnit test (`./build.sh backend`,
+  `./build.sh test`) against **the game's own assemblies**, checked out from a private
+  repository. A pull request from a fork gets no secrets, so it skips this job rather than
+  failing it.
 
-## The mock assemblies
+## The game assemblies
 
-The mod compiles against 18 of the game's assemblies from `Cities2_Data/Managed`. This
-repository is public and those assemblies are the game's code, so CI never sees them. It uses
-copies with every method body replaced by `throw new NotImplementedException()`, made with
+The mod compiles against 18 of the game's assemblies from `Cities2_Data/Managed`. The private
+repository `gerbal/cs2-game-refs` holds unmodified copies of them, so CI builds exactly as a
+local build does and runs the whole suite, `Requires=Game` tests included.
+
+- **They are the game's code.** This repository is public; the copies may exist only in the
+  private repository and inside a runner. See "Keeping them private" below.
+- **What still cannot run anywhere outside the game:** Unity's native side. A test that reaches
+  an internal call (a `LogManager` logger, `Application.persistentDataPath`, the static
+  initializer of `Mod`) fails with a `SecurityException` (`ECall methods must be packaged into a
+  system module`) locally and in CI alike. Such a test doesn't belong in the suite; the in-game
+  checks cover that code.
+
+Until 2026-09-24 CI used mock copies instead, and `refresh.sh --mock` still writes them, for a
+setup that must not hold the game's code. Tests that call into the game fail against mocks, so
+they carry `[Trait("Requires", "Game")]` and a mock run filters them out with
+`CS2_TEST_FILTER=Requires!=Game`, which `build.sh test` passes to `dotnet test --filter`.
+
+### Mock copies (`--mock`)
+
+Mock copies have every method body replaced by `throw new NotImplementedException()`, made with
 JetBrains Refasmer (`--all --mock`):
 
 - Every type, member and signature is kept, private struct fields included, so the mod
@@ -37,11 +55,7 @@ JetBrains Refasmer (`--all --mock`):
 - None of the game's code is in them, but they still carry its API, names included. Keep the
   repository that holds them private.
 
-Tests that need the game's behaviour carry `[Trait("Requires", "Game")]`. CI runs with
-`CS2_TEST_FILTER=Requires!=Game`, which `build.sh test` passes to `dotnet test --filter`. Run
-without the filter locally, against the real install, they all run.
-
-Two ways a test breaks against the mocks without calling a game method:
+Two ways a test breaks against mocks without calling a game method:
 
 - **Reading a static field of a game type** runs its type initializer, which the mocks replace
   with a throw. `DlcId.Invalid` and `DlcId.BaseGame` are the ones the catalog needs; it compares
@@ -57,18 +71,19 @@ Two ways a test breaks against the mocks without calling a game method:
 1. Create an empty **private** repository, `gerbal/cs2-game-refs`. If it is named otherwise,
    change `repository:` in `csharp.yml` to match.
 2. Clone it somewhere outside this repository (the script refuses a path inside it), and
-   generate the mocks from your install:
+   copy the assemblies from your install:
 
    ```sh
    tools/game-refs/refresh.sh --refs ../cs2-game-refs --label <game version> --verify
    ```
 
    It reads the game from `$CS2_GAME_PATH`, or the Steam path `Directory.Build.props` defaults
-   to. It takes the list of assemblies from the two `.csproj` files, writes the mocks to
-   `Cities2_Data/Managed` in the clone with a `MANIFEST.md` of what they were made from, and
-   `--verify` then builds and tests this repository against them, as CI will.
-3. A test that fails under `--verify` but passes with a plain `./build.sh test` calls into the
-   game: tag it `[Trait("Requires", "Game")]`. A test that fails both ways is a real failure.
+   to. It takes the list of assemblies from the two `.csproj` files, copies them to
+   `Cities2_Data/Managed` in the clone with a `MANIFEST.md` of their hashes, and `--verify`
+   then builds from clean and runs every test against them, as CI will.
+3. A test that fails under `--verify` fails in CI too. With `--mock`, a test that fails there but
+   passes with a plain `./build.sh test` calls into the game: tag it
+   `[Trait("Requires", "Game")]`.
 4. Commit and push the clone; the script prints the command.
 5. Give CI read access with a deploy key, which reaches that one repository and nothing else:
 
@@ -104,9 +119,11 @@ Until then, CI builds against the previous version's assemblies and cannot see w
   repository's secrets.
 - **The checkout does not keep the key** (`persist-credentials: false`), so later steps cannot
   reuse it.
+- **Nothing in the job may print the assemblies' contents**, such as a step that decompiles or
+  dumps them. The job's log is public.
 
 ## What CI does not cover
 
-- The tests tagged `Requires=Game`. Run `./build.sh test` locally before a release.
-- The game itself: a mock compiles and loads, and does nothing more. The in-game checks in
-  [release-checklist.md](release-checklist.md) still apply.
+- The game itself: the assemblies load, but Unity's native side and the game's ECS world do not
+  run outside it. The in-game checks in [release-checklist.md](release-checklist.md) still
+  apply.
