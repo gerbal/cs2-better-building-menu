@@ -99,9 +99,15 @@ triggers a partial pass, so a prefab the game removes outright leaves the list t
 the one link that always holds: Road Builder gives a road a new ID, and so a new prefab name, on
 every edit.
 
-The pass also looks the new entity's name up with `CatalogIndex.GetByPrefabName`, which answers the
-extension picker's rows too, and removes that entry if the game no longer maps its prefab to its
-entity. That covers a recreation whose old entity has already gone.
+For a recreation whose old entity has already gone, the pass also drops every entry filed under
+the new entity's name whose prefab the game no longer maps to that entry's entity.
+`PrefabSystem.UpdatePrefab` keeps the `PrefabBase` and points it at the new entity, so this holds
+for the old entries and never for a live namesake of another type. An entity the game has already
+replaced, as when a prefab is created and recreated in one frame, is skipped, and anything filed
+for it removed. `CatalogIndex` keeps the entries under each prefab name in step as it files and
+removes them, and `GetByPrefabName` answers the extension picker's rows from the same map. Two
+prefab types can carry one name; then the first by display name answers, as the lists order them,
+and the lower id between equal names.
 
 ## A pass that fails
 
