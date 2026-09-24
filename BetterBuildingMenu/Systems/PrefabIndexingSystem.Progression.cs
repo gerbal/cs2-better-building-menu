@@ -67,7 +67,7 @@ namespace BetterBuildingMenu.Systems
 		private static string? GetMilestoneTitle(int index) =>
 			GameManager.instance.localizationManager.activeDictionary
 				.TryGetValue($"Progression.MILESTONE_NAME:{index}", out var name)
-					? name
+					? WordFormat.GameText(name)
 					: null;
 
 		/// <summary>Dev-tree nodes drawn under another node's tab.</summary>
