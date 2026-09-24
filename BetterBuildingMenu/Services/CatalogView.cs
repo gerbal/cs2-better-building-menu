@@ -301,7 +301,7 @@ namespace BetterBuildingMenu.Services
 
 					var replacement = distinctIcon(tab);
 
-					return string.IsNullOrEmpty(replacement) ? tab : tab with { Icon = replacement! };
+					return replacement is { Length: > 0 } ? tab with { Icon = replacement } : tab;
 				})
 				.ToArray();
 		}

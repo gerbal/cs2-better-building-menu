@@ -92,24 +92,17 @@ namespace BetterBuildingMenu.Services
 
 			var content = ContentOnly(selection);
 			bool packsChosen = !content.IsEmpty;
-			bool dlcChosen = dlcIds is { Count: > 0 };
 
-			if (!packsChosen && !dlcChosen)
+			if (dlcIds is not { Count: > 0 })
 			{
-				return true;
+				return !packsChosen || VanillaToolbarFilter.IsVisible(prefab.VanillaFacts, content);
 			}
 
-			bool matchesDlc = dlcIds is { Count: > 0 }
-				&& prefab.DlcId.id != GameDlcIds.Invalid
+			bool matchesDlc = prefab.DlcId.id != GameDlcIds.Invalid
 				&& dlcIds.Any(id => string.Equals(
 					id,
 					prefab.DlcId.id.ToString(CultureInfo.InvariantCulture),
 					StringComparison.Ordinal));
-
-			if (!dlcChosen)
-			{
-				return VanillaToolbarFilter.IsVisible(prefab.VanillaFacts, content);
-			}
 
 			// Content is ONE axis, so its options combine as OR. Two of them
 			// live in the game's selection, which ORs them itself; the third is
@@ -634,9 +627,9 @@ namespace BetterBuildingMenu.Services
 				{
 					foreach (var prefab in prefabs)
 					{
-						if (!string.IsNullOrEmpty(prefab.PrefabName))
+						if (prefab.PrefabName is { Length: > 0 } name)
 						{
-							_byName[prefab.PrefabName!] = prefab;
+							_byName[name] = prefab;
 						}
 					}
 				}
