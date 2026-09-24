@@ -137,6 +137,9 @@ namespace BetterBuildingMenu.Domain
 				UiMenu = RoadsMenu,
 				UiCategory = GroupId(entry.SubCategory),
 				UiCategoryPriority = GroupPriority(entry.SubCategory),
+				// Its tab is one of ours, ordered by the priority above; the position
+				// it had in its own menu's strip means nothing here.
+				UiCategoryTab = int.MaxValue,
 			};
 		}
 	}

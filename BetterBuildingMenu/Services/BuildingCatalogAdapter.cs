@@ -556,7 +556,7 @@ namespace BetterBuildingMenu.Services
 			bool ignorePacks)
 		{
 			var entries = GetIndexedBuildings(source.Index, menu, selection, ignorePackSelection: ignorePacks, unionDlcIds: contentDlcs)
-				.Select(prefab => Project(prefab, source.Placed))
+				.Select(prefab => Project(prefab, source))
 				.ToArray();
 			var root = source.Index.Progression.RootLabel(menu);
 
@@ -626,11 +626,13 @@ namespace BetterBuildingMenu.Services
 				return null;
 			}
 
-			return source.Index.GetByPrefabName(prefabName) is { } found ? Project(found, source.Placed) : null;
+			return source.Index.GetByPrefabName(prefabName) is { } found ? Project(found, source) : null;
 		}
 
-		private BuildingCatalogEntry Project(PrefabIndex prefab, PlacedUniques placed)
+		private BuildingCatalogEntry Project(PrefabIndex prefab, CatalogSource source)
 		{
+			var placed = source.Placed;
+
 			return new BuildingCatalogEntry(
 				Id: prefab.Id,
 				PrefabName: prefab.PrefabName ?? string.Empty,
@@ -661,6 +663,7 @@ namespace BetterBuildingMenu.Services
 				LeisureType: prefab.LeisureType ?? string.Empty,
 				LeisureEfficiency: prefab.LeisureEfficiency,
 				UiCategoryPriority: prefab.UiCategoryPriority,
+				UiCategoryTab: source.Index.Menus.TabPosition(prefab.UiMenuName, prefab.UiCategoryName),
 				// int.MaxValue means the prefab had no UIObject at all; vanilla
 				// reads that as 0. See BuildingCatalogEntry.UIOrder.
 				UIOrder: prefab.UIOrder == int.MaxValue ? 0 : prefab.UIOrder,

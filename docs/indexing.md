@@ -185,7 +185,9 @@ That comparer is the priority alone and the sort is not stable, so any sort of o
 not, could put equal priorities in a different order from the game's. The menus are the bottom
 bar's: the toolbar groups by priority, then each group's members sorted the same way. A menu no
 toolbar group holds goes last. The UI keeps the menus in that order. It sorts the tabs again, by
-the same priority and stably, which leaves them as they are.
+the same priority and stably, which leaves them as they are. The All tab's category headings
+follow the strip too: the adapter gives each entry its tab's place in it
+(`VanillaMenuIndex.TabPosition`), which breaks a priority tie where the name once did.
 
 The walk's tables, with the menus and their category tabs, go into the pass's `VanillaMenuIndex`,
 which its `CatalogIndex` carries as `Menus`: a new pass reads the menus afresh, and nothing
