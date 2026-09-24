@@ -69,17 +69,20 @@ only what it touched would leave that prefab as "Foo" beside a sibling still cal
 
 ## A pass that fails
 
-A full pass builds a new index, and the menus, zones, milestones, dev tree and mod flags it reads
-are built into it. `RunIndex` holds on to the index it is about to replace, and if anything in the
-build throws, it puts that one back and logs the error. The panel keeps the index it had, and
-nothing reaches the game's load or locale dispatch.
+A full pass builds a new index aside, and the menus, zones, milestones, dev tree and mod flags it
+reads are built into it. Every read and write in the pass goes to that index, which `BuildIndex`
+passes down as `target`; the published `Index` is still the previous one until the pass returns.
+The one read of it is deliberate: its mod flags, the answer to keep if reading the enabled mods
+fails.
+`RunIndex` publishes the new index only then. If anything in the build throws, it logs the error
+and publishes nothing: the panel keeps the index it had, and nothing reaches the game's load or
+locale dispatch.
 
-Holding the reference is enough, because a pass never writes to the old index. Every `Index*`
-step returns new tables, and the pass files into a new `CatalogIndex` built over them. The old
-index keeps the tables and mod flags it was built with, so the partial passes after a failure
-read the same ones it was filled from. Road Builder's discard component is the exception: once a
-pass has found it, it is kept whether or not that pass succeeds. Before the first pass there is nothing to keep, so a
-failure there leaves an empty index laid out, not yet ready.
+So a failed pass has nothing to put back. The published index keeps the tables and mod flags it
+was built with, and the partial passes after a failure read the same ones it was filled from. Road
+Builder's discard component is the exception: once a pass has found it, it is kept whether or not
+that pass succeeds. Before the first pass the published index is empty, laid out and not yet
+ready, and a failure leaves it so.
 
 A failed pass at `OnGameLoaded` does not count as indexed, so loading-complete runs its own.
 Partial passes are not covered. They edit the live index in place, and each prefab and each
