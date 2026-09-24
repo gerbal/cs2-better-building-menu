@@ -10,7 +10,7 @@ namespace BetterBuildingMenu.Domain
 	/// "place multiple unique buildings" option is on, and disables the system that
 	/// fills the collection either way, so only the accessor follows the player's
 	/// choice. Reading it is what makes any mod that overrides the same accessor
-	/// reach this panel without a mod-specific case here. See PlacedUniqueRegistry.
+	/// reach this panel without a mod-specific case here. See PlacedUniques.
 	/// </remarks>
 	public static class PlacedUniqueScan
 	{

@@ -37,12 +37,14 @@ namespace BetterBuildingMenu.Systems
 			// change without an event reaching us: a mod that switches the game's unique
 			// tracker off raises none. Rescanned here, before the snapshots below are
 			// keyed. See PrefabIndexingSystem.SyncPlacedUniques.
-			PrefabIndexingSystem.SyncPlacedUniques();
-			// After the rescan, which can itself bump the generation: this publish shows it.
-			_indexWatch.Published(PrefabIndexingSystem.IndexGeneration);
+			_indexer.SyncPlacedUniques();
+			// After the rescan, which can itself bump the generation: this publish shows it,
+			// and every Build below reads this one source.
+			var source = _indexer.Source;
+			_indexWatch.Published(source.Generation);
 
 			// Only resets the projection timing counters. The snapshots themselves live across
-			// refreshes and are dropped when PrefabIndexingSystem.IndexGeneration moves; see
+			// refreshes and are dropped when the indexer's Generation moves; see
 			// BuildingCatalogAdapter._snapshots.
 			_buildingCatalogAdapter.BeginRefresh();
 
@@ -55,6 +57,7 @@ namespace BetterBuildingMenu.Systems
 			var menu = _lens.Menu;
 			var menuHasCategories = PrefabIndexingSystem.GetMenuCategories(string.IsNullOrEmpty(menu) ? null : menu).Count > 0;
 			var view = _buildingCatalogAdapter.Build(
+				source,
 				_lens.Query,
 				_toolbarSelection,
 				built => BuildingCatalogGrouping.Effective(
@@ -77,7 +80,7 @@ namespace BetterBuildingMenu.Systems
 			// the button delivers.
 			_BuildingCatalogMatchesElsewhere.Value =
 				page.TotalCount == 0 && !string.IsNullOrWhiteSpace(_lens.Query.SearchText)
-					? _buildingCatalogAdapter.Build(_lens.EverywhereQuery(), _toolbarSelection).Page.TotalCount
+					? _buildingCatalogAdapter.Build(source, _lens.EverywhereQuery(), _toolbarSelection).Page.TotalCount
 					: 0;
 			var pageMs = Lap();
 			_BuildingCatalogBinding.Value = page with
@@ -153,13 +156,15 @@ namespace BetterBuildingMenu.Systems
 				? attached.m_Parent
 				: selected;
 
-			if (upgradable == _extensionMenuFor && PrefabIndexingSystem.IndexGeneration == _extensionMenuGeneration)
+			var source = _indexer.Source;
+
+			if (upgradable == _extensionMenuFor && source.Generation == _extensionMenuGeneration)
 			{
 				return;
 			}
 
 			_extensionMenuFor = upgradable;
-			_extensionMenuGeneration = PrefabIndexingSystem.IndexGeneration;
+			_extensionMenuGeneration = source.Generation;
 
 			if (upgradable == Entity.Null
 				|| !EntityManager.TryGetComponent<PrefabRef>(upgradable, out var prefabRef)
@@ -175,7 +180,7 @@ namespace BetterBuildingMenu.Systems
 				// the UI joins these to vanilla's rows, which are keyed by
 				// prefab.name.
 				building.SupportedUpgradePrefabNames,
-				_buildingCatalogAdapter.EntryForPrefabName);
+				prefabName => _buildingCatalogAdapter.EntryForPrefabName(source, prefabName));
 		}
 
 		internal void TryActivatePrefabTool(int id)

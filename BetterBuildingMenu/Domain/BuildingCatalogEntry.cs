@@ -70,7 +70,7 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>A unique asset the city already holds one of.</summary>
 		/// <remarks>
 		/// Read per query rather than stored at index time, because it changes
-		/// as the player builds and bulldozes — see PlacedUniqueRegistry.
+		/// as the player builds and bulldozes — see PlacedUniques.
 		/// </remarks>
 		bool IsAlreadyBuilt = false,
 		/// <summary>

@@ -1,7 +1,6 @@
 using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Services;
-
-using System;
 
 using Xunit;
 
@@ -10,12 +9,8 @@ namespace BetterBuildingMenu.Tests
 	/// <summary>
 	/// The three availability states, and that they partition.
 	/// </summary>
-	public class AvailabilityStateTests : IDisposable
+	public class AvailabilityStateTests
 	{
-		// The registry is process-wide. Empty is how every test finds it, since nothing in a
-		// test run loads a city, so Dispose empties it again, pass or fail.
-		public void Dispose() => PlacedUniqueRegistry.Reset(Array.Empty<int>());
-
 		private static readonly BuildingCatalogEntry Base = new(
 			Id: 0,
 			PrefabName: "Base",
@@ -61,30 +56,31 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void TheRegistryTracksBothEdges()
+		public void ThePlacedSetTracksBothEdges()
 		{
 			// Both directions matter: building a unique takes it off the
 			// buildable list, bulldozing it puts it back.
-			PlacedUniqueRegistry.Reset(null);
-			Assert.False(PlacedUniqueRegistry.IsAlreadyBuilt(42));
+			var placedUniques = new PlacedUniques();
+			Assert.False(placedUniques.IsAlreadyBuilt(42));
 
-			PlacedUniqueRegistry.Set(42, placed: true);
-			Assert.True(PlacedUniqueRegistry.IsAlreadyBuilt(42));
+			placedUniques.Set(42, placed: true);
+			Assert.True(placedUniques.IsAlreadyBuilt(42));
 
-			PlacedUniqueRegistry.Set(42, placed: false);
-			Assert.False(PlacedUniqueRegistry.IsAlreadyBuilt(42));
+			placedUniques.Set(42, placed: false);
+			Assert.False(placedUniques.IsAlreadyBuilt(42));
 		}
 
 		[Fact]
 		public void ResetClearsThePreviousCity()
 		{
 			// A city load must not inherit the last one's uniques.
-			PlacedUniqueRegistry.Reset(new[] { 1, 2, 3 });
-			Assert.Equal(3, PlacedUniqueRegistry.Count);
+			var placedUniques = new PlacedUniques();
+			placedUniques.Reset(new[] { 1, 2, 3 });
+			Assert.Equal(3, placedUniques.Count);
 
-			PlacedUniqueRegistry.Reset(new[] { 9 });
-			Assert.True(PlacedUniqueRegistry.IsAlreadyBuilt(9));
-			Assert.False(PlacedUniqueRegistry.IsAlreadyBuilt(1));
+			placedUniques.Reset(new[] { 9 });
+			Assert.True(placedUniques.IsAlreadyBuilt(9));
+			Assert.False(placedUniques.IsAlreadyBuilt(1));
 		}
 
 		[Fact]
@@ -92,12 +88,13 @@ namespace BetterBuildingMenu.Tests
 		{
 			// The catalog's snapshot cache is keyed on the index generation, so a
 			// rescan that changes nothing must not bump it and throw the cache away.
-			PlacedUniqueRegistry.Reset(new[] { 1, 2 });
+			var placedUniques = new PlacedUniques();
+			placedUniques.Reset(new[] { 1, 2 });
 
-			Assert.False(PlacedUniqueRegistry.Reset(new[] { 2, 1 }));
-			Assert.True(PlacedUniqueRegistry.Reset(new[] { 1 }));
-			Assert.True(PlacedUniqueRegistry.Reset(null));
-			Assert.False(PlacedUniqueRegistry.Reset(null));
+			Assert.False(placedUniques.Reset(new[] { 2, 1 }));
+			Assert.True(placedUniques.Reset(new[] { 1 }));
+			Assert.True(placedUniques.Reset(null));
+			Assert.False(placedUniques.Reset(null));
 		}
 	}
 }
