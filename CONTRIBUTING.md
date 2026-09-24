@@ -23,9 +23,8 @@
 
 Some of the mod's state is still process-wide statics: the menu, zone and
 progression tables on `PrefabIndexingSystem`, and more on `Mod`. No test sets
-one; a test that has to puts it back whether it passes or fails, in a
-`finally` or in the test class's `Dispose`. The C# tests also run one class
-at a time (`TestParallelization.cs`), though nothing needs that now.
+one, and the C# test classes run in parallel, so none may: give the code under
+test an object of its own instead, as `CatalogIndex` and `PlacedUniques` allow.
 
 Warnings fail the build in CI, in the mod and in the tests: the
 compiler's, the analyzers', MSBuild's and NuGet's (`Directory.Build.props`).
