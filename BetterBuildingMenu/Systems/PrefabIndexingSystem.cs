@@ -50,6 +50,9 @@ namespace BetterBuildingMenu.Systems
 		// pass's own trigger. A field rather than a RequireForUpdate gate,
 		// which would hold the system shut for unlock events too.
 		private EntityQuery _changedPrefabQuery;
+		// Prefab entities the game is replacing or removing, until the frame's clean-up.
+		// The entity is the only link to their entry: Road Builder renames a road on every edit.
+		private EntityQuery _deletedPrefabQuery;
 		// One full pass per settled burst of dictionary changes, on the next update for
 		// a language change. See OnActiveDictionaryChanged.
 		private readonly LocaleReindexPolicy _localeReindex = new(TimeSpan.FromSeconds(1));
@@ -151,6 +154,7 @@ namespace BetterBuildingMenu.Systems
 					ComponentType.ReadOnly<Updated>(),
 				}
 			});
+			_deletedPrefabQuery = GetEntityQuery(ComponentType.ReadOnly<PrefabData>(), ComponentType.ReadOnly<Deleted>());
 
 			Enabled = false;
 
@@ -324,7 +328,7 @@ namespace BetterBuildingMenu.Systems
 				ApplyUnlocks();
 			}
 
-			if (_changedPrefabQuery.IsEmptyIgnoreFilter)
+			if (_changedPrefabQuery.IsEmptyIgnoreFilter && _deletedPrefabQuery.IsEmptyIgnoreFilter)
 			{
 				return;
 			}
@@ -483,6 +487,21 @@ namespace BetterBuildingMenu.Systems
 			return mods;
 		}
 
+		/// <summary>Drops the entries of prefab entities the game is deleting this frame.</summary>
+		/// <remarks>PrefabSystem.UpdatePrefab marks the old entity Deleted and files the prefab under
+		/// a new one, so without this the old row stays listed until the next full pass.</remarks>
+		private void RemoveDeletedPrefabs(CatalogIndex target)
+		{
+			var deleted = _deletedPrefabQuery.ToEntityArray(Allocator.Temp);
+
+			for (var i = 0; i < deleted.Length; i++)
+			{
+				target.Remove(deleted[i].Index);
+			}
+
+			deleted.Dispose();
+		}
+
 		/// <summary>Narrows a processor's query to prefabs created or changed this frame.</summary>
 		/// <remarks>Edits the descriptions in place, so it is handed a copy of its own: processors build
 		/// new ones on every call. A description with an Any of its own is left whole, since it cannot
@@ -632,6 +651,7 @@ namespace BetterBuildingMenu.Systems
 			else
 			{
 				target = Index;
+				RemoveDeletedPrefabs(target);
 			}
 
 			foreach (var (processor, allQuery, changedQuery) in _processors)
