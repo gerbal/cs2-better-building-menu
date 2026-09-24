@@ -180,7 +180,7 @@ So it counts up for the life of the World and never resets. It moves when:
 ### Per-load and per-session state
 
 - **Placed uniques belong to a city load.** The indexer owns them and replaces them when a new city starts loading (step 6). The rescan after each pass resets them anyway.
-- **The toolbar selection belongs to the UI session and must not reset per load.** The UI forwards it only when it changes (`toolbarSelectionKey`), so a reset in C# alone would leave a filter showing in the toolbar but no longer applied to the catalog.
+- **The toolbar selection belongs to the UI session and must not reset per load.** The UI forwards it when it mounts and when it changes (`toolbarSelectionKey`), not on a load, so a reset in C# alone could leave a filter showing in the toolbar but no longer applied to the catalog.
 
 ## Steps
 
@@ -190,7 +190,7 @@ step 6 does.
 
 | # | PR | Risk | Main files |
 |---|---|---|---|
-| 1 | **The toolbar selection moves to the UI system.** The static goes. `MenuHasAssets` becomes an instance method, and `BuildFacetState` takes `vanillaSelected`. | Low | Adapter, `CatalogView`, Bindings, Methods; `ContentFacetTests` drops its save and restore |
+| 1 | **The toolbar selection moves to the UI system.** The static goes. `Build` and `MenuHasAssets` take the selection, and `BuildFacetState` and `CatalogView` take `vanillaSelected`. `MenuHasAssets` stays static until step 3 gives it an index to read. | Low | Adapter, `CatalogView`, Bindings, Methods; `ContentFacetTests` drops its save and restore |
 | 2 | **The UI system holds the indexer, and placed uniques become an object.** `Generation` becomes an instance property, the static `_instance` goes, and the adapter's silhouette function is passed in. | Low–medium | `PrefabIndexingSystem`, `PlacedUniques`, Setup, Methods, Adapter; `AvailabilityStateTests` builds its own |
 | 3 | **`CatalogIndex` replaces `BuildingMenuUtil`**, holding the lists, `IsReady`, `Get`, `File` and `Remove`. The full pass still publishes first and rolls back on failure, which is today's behaviour exactly. | Medium | New `CatalogIndex`; `BuildingMenuUtil` deleted; the indexer, the audit, the Menus partial, the menu-placed processor, the adapter, Methods |
 | 3b | **The C# tests run in parallel again**: `TestParallelization.cs` and its CONTRIBUTING paragraph go. One file, so it can be reverted on its own. | Low | Tests only |
@@ -242,9 +242,9 @@ step 6 does.
    - **Recommended: keep both as they are, and simplify in a later PR.**
 5. **The public API.** `BuildingMenuUtil` and the indexer's statics are public, so deleting them breaks any mod that reaches into them. None is known. **Recommended: accept.**
 6. **Building a `PrefabIndex` in tests (before step 7).**
-   - Tests create it with `GetUninitializedObject`, because its constructor fails against the mocks (why is not yet known). That leaves `ServiceFacts` and `ServiceTextFacts` null, and `Project` reads both.
-   - The options: a test helper that sets them, a settable property, or a projection that tolerates null.
-   - **Recommended: first find out why the constructor fails.**
+   - Tests create it with `GetUninitializedObject`, because its constructor fails against the mocks. That leaves `ServiceFacts` and `ServiceTextFacts` null, and `Project` reads both.
+   - **The cause is the mocks, and #34 fixes them.** Refasmer gives Unity's internal calls a body, and the runtime then refuses to load `UnityEngine.Object`, so no type derived from it loads, `PrefabBase` included. With the fixed mocks the constructor works.
+   - **Recommended: fix the mocks in the refs repository, then use the constructor.** No test helper and no null-tolerant projection are needed.
 7. **Mod flags on a failed pass.** Today the new flags stick even when the pass fails. After step 4 they roll back with it. **Recommended: accept;** the index and its flags then always agree.
 
 ## Not in scope
