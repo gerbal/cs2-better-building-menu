@@ -17,11 +17,9 @@ namespace BetterBuildingMenu.Domain
 	{
 		/// <summary>Each node's rank within its own service's tree, by node.</summary>
 		/// <remarks>
-		/// The tree's OWN LAYOUT: column first, then distance from the trunk row, then row. The game
-		/// lays siblings out in a deliberate order, and any other tie-break invents one. The trunk is
-		/// the row of the service's first node in column 0, and not necessarily zero: education's sits
-		/// at 1, with Technical above at 0 and Medical below at 2. Nodes tied on all three keep the
-		/// order they were given in.
+		/// The tree's own layout: column, then distance from the trunk row, then row, then the order
+		/// given. The trunk is the row of the service's first node in column 0, which need not be
+		/// zero. See docs/indexing.md, "Dev tree branches".
 		/// </remarks>
 		public static Dictionary<int, int> Rank(IEnumerable<DevTreeNodePlace> nodes)
 		{

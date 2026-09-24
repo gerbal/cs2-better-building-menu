@@ -101,9 +101,9 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>The tier a zone's BUILDINGS are filtered by, which is narrower than the zone's own.</summary>
 		/// <remarks>
-		/// Older than <see cref="Classify"/> and kept as it was: no Mixed and no Low Rent, and Any for a
-		/// zone with no residents. It exists so a building can be filtered by the zone it grows in, and
-		/// widening it would reclassify thousands of them. See ZoneIndex.TypeOf.
+		/// No Mixed and no Low Rent, and Any for a zone with no residents: a building is filtered by
+		/// the zone it grows in, and those tiers would reclassify thousands of them. See
+		/// ZoneIndex.TypeOf.
 		/// </remarks>
 		public static ZoneTypeFilter ClassifyBuildings(ZoneDensityFacts facts)
 		{
