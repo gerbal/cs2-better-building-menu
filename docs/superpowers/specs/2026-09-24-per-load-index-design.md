@@ -1,9 +1,9 @@
 # Per-load catalog index
 
-Date: 2026-09-24. Status: approved by the owner the same day, with decisions 1–7 below
-taken as recommended. Decision 8 came from the live-testing review; the owner chose (a). Steps 1–7
-are built (#32, #33, #36, #37, #38, #40, #42, #43, #44). Roadmap: "Per-load state" in
-[roadmap.md](../../roadmap.md).
+Date: 2026-09-24. Status: done. Approved by the owner the same day, with decisions 1–7 below
+taken as recommended. Decision 8 came from the live-testing review; the owner chose (a). Every
+step has merged: #32, #33, #36, #37, #38, #40, #42, #43 and #44. It was the roadmap's
+"Per-load state" item.
 
 ## Goal
 

@@ -32,10 +32,6 @@ the detail behind the structural items.
   files (see [indexing.md](indexing.md)). Moving the menu audit and
   `PopulateAnalyticalData` into classes of their own would let a test reach
   the mapping from a prefab's components to its facts.
-- **Per-load state.** Replace the static index, caches and registries with one
-  object created per city load and handed to the systems that read it. The
-  design and its PR sequence, approved, are in
-  [superpowers/specs/](superpowers/specs/2026-09-24-per-load-index-design.md).
 - **Smaller cleanups.**
   - Name the `BuildingMenuUISystem` partials by responsibility.
   - Settle on one noun for the panel (see the glossary in
