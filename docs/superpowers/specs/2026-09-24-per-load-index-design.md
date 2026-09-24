@@ -1,7 +1,7 @@
 # Per-load catalog index
 
 Date: 2026-09-24. Status: approved by the owner the same day, with decisions 1–7 below
-taken as recommended. Decision 8 came from the live-testing review and is open. Steps 1–4
+taken as recommended. Decision 8 came from the live-testing review; the owner chose (a). Steps 1–4
 are built (#32, #33, #36, #37, #38, #40). Roadmap: "Per-load state" in
 [roadmap.md](../../roadmap.md).
 
@@ -193,7 +193,7 @@ replaces. It moves when:
 
 - **Placed uniques belong to a city load.** The indexer owns them and replaces them when a new city starts loading (step 6). The rescan after each pass resets them anyway.
 - **The toolbar selection belongs to the UI session and must not reset per load.** The UI forwards it when it mounts and when it changes (`toolbarSelectionKey`), not on a load, so a reset in C# alone could leave a filter showing in the toolbar but no longer applied to the catalog. Step 6's checks confirm it in game rather than assume it: if vanilla resets its own selection on a load, the binding changes and the UI forwards that.
-- **No full pass outside a loaded city (step 6, decision 8).** A language change calls `RunIndex(true)` straight from `OnActiveDictionaryChanged` when the locale differs from the last one indexed. Nothing gates it, so it runs at the main menu after leaving a city, and between `OnGamePreload` and `OnGameLoaded` if the language changes during a load. Once step 6 empties the index at preload, either would publish a full index outside a city: at the main menu, undoing the empty state, or from a half-loaded world. The deferred branch for mod locale sources runs from `OnUpdate`, but whether that runs at the main menu depends on `Enabled`, so it takes the same gate.
+- **No full pass outside a loaded city (step 6, decision 8).** A language change calls `RunIndex(true)` straight from `OnActiveDictionaryChanged` when the locale differs from the last one indexed. Nothing gates it, so it runs at the main menu after leaving a city, and between `OnGamePreload` and `OnGameLoaded` if the language changes during a load. Once step 6 empties the index at preload, either would publish a full index outside a city: at the main menu, undoing the empty state, or from a half-loaded world. The deferred branch for mod locale sources already runs from `OnUpdate`, so `Enabled` gates it: the system is disabled at boot and from every `OnGamePreload` until a city finishes loading (`OnGameLoaded` for a game or map, or loading-complete for the game or the editor).
 - **What step 6's `!Index.IsReady` guard protects.** `OnGamePreload` already sets `Enabled = false`, so partial passes and unlocks, which run in `OnUpdate`, cannot run during a load. `OnGameLoaded` sets `Enabled = true` even when its pass failed. The guard therefore matters in one window: after a failed `OnGameLoaded` pass, until loading-complete retries. Unlock events are one-frame event entities, so one skipped there loses only that delta; the next full pass reads `Locked` from the components. On a normal load the unlock batch arrives 0.5–1 s after the `OnGameLoaded` pass, so the guard never sees it.
 
 ## Steps
@@ -210,7 +210,7 @@ step 6 does.
 | 3b | **The C# tests run in parallel again**: `TestParallelization.cs` and its CONTRIBUTING paragraph go. One file, so it can be reverted on its own. | Low | Tests only |
 | 4 | **The menu, zone, progression and mod-flag tables join the index.** Each `Index*` step returns its table. Processors take `target`. `_zoneFacts` and `TryGetMenuEntityFor` go. Can be split into 4a (menus) and 4b (the rest). | Medium–high by size, mechanical | 24 processor files (6 with real changes), the indexer's partials, Bindings, Methods, Adapter; new `CatalogIndexTests` |
 | 5 | **Build aside, publish at the end.** Every read in the pass goes to `next`. | The riskiest change, so it is on its own | The indexer's partials; small, because step 4 added the parameter |
-| 6 | **A new city starts from an empty index.** At `OnGamePreload`: `Index = Empty`, new placed uniques, `Generation++`. Partial passes and unlocks skip while `!Index.IsReady`. Language-change passes run only while a city is loaded (decision 8). | Behaviour change, medium | The indexer; indexing.md's "Load timing" and "A pass that fails" |
+| 6 | **A new city starts from an empty index.** At `OnGamePreload`: `Index = Empty`, new placed uniques, `Generation++`. Partial passes and unlocks skip while `!Index.IsReady`. A language change's pass runs from `OnUpdate`, as the deferred one does (decision 8). | Behaviour change, medium | The indexer; indexing.md's "Load timing" and "A pass that fails" |
 | 7 | (Optional) **Test builders and projection tests.** A name map inside the index replaces the adapter's `_byName` and the O(n) `Find`. | Low | Tests, `CatalogIndex`, Adapter |
 
 ### Checks per step
@@ -233,7 +233,7 @@ step 6 does.
   - quitting to desktop while the index is held;
   - a full-chain load with the DLC, which adds about 1,500 prefabs (19,198 against 17,698) and changes the menu counts;
   - a second city in the same session with the panel open before the load, where a stale `CatalogSource` or `SnapshotCache` entry would show;
-  - a language change at the main menu after leaving a city, and during a load (decision 8);
+  - a language change at the main menu after leaving a city, and during a load (decision 8). A log line confirms the system is disabled at the main menu after a city; if it is not, decision 8 falls back to (b);
   - a failed first pass, forced with a throwing processor in a debug build, so the `!Index.IsReady` guard's one window is exercised;
   - a pack or theme filter set in city A, then city B loaded (ideally with a different theme): the C# selection matches what the toolbar shows.
 - **Step 7:** pin today's handling of duplicate prefab names with a test first. Today `_byName` keeps the last entry in name order, `Find` returns the first, and a map would keep the last one filed.
@@ -269,10 +269,10 @@ Decided on 2026-09-24: each as recommended.
    - **Recommended: fix the mocks in the refs repository, then use the constructor.** No test helper and no null-tolerant projection are needed.
    - **Done:** #34 and #35 merged, the refs repository carries the fixed mocks, and the constructor works against the real assemblies too.
 7. **Mod flags on a failed pass.** Today the new flags stick even when the pass fails. After step 4 they roll back with it. **Recommended: accept;** the index and its flags then always agree.
-8. **Open. How step 6 keeps language-change passes inside a city** (from the live-testing review; see "Per-load and per-session state").
-   - **(a) Route the immediate branch through `OnUpdate`** with a flag. That covers a load, where `Enabled` is false, but not the main menu unless the system is disabled there too.
-   - **(b) Run a language-change pass only while a city is loaded:** a flag set at `OnGameLoaded` and cleared at `OnGamePreload`, checked by both the immediate and the deferred branch. A skipped change leaves its locale unmarked, and the next `OnGameLoaded` pass indexes in the new language, which it does today anyway.
-   - **Recommended: (b).** It closes both windows with one check, and it drops the main-menu passes, which nothing reads: the panel exists only in a city.
+8. **How step 6 keeps language-change passes inside a city** (from the live-testing review; see "Per-load and per-session state"). *Decided on 2026-09-24: (a).*
+   - **(a) The immediate branch runs from `OnUpdate`, as the deferred one does.** The change is recorded as due, and the next `OnUpdate` runs the pass. `Enabled` is then the one gate for every pass outside the load hooks. It is already the "a city is loaded" flag: false at boot and from every `OnGamePreload`, true only once a game or editor session finishes loading. `LocaleReindexPolicy` cancels pending work whenever any full pass marks the locale indexed, so a change made at the main menu or during a load is absorbed by the next city's own `OnGameLoaded` pass, with no extra pass. In a city, the pass runs one frame later, which the panel's own one-frame refresh hides.
+   - **(b) An explicit "a city is loaded" flag,** set when a city finishes loading and cleared at `OnGamePreload`, checked by both branches. Independent of `Enabled`, but a second lifecycle flag to keep in step with it across every path: game, editor, and the mod joining a running game.
+   - **Why (a):** one gate, and no state to keep in step. It rests on one thing to confirm in game: that the game raises `OnGamePreload` on the way back to the main menu, which is what disables the system there. Step 6 logs it; if it does not hold, (b)'s flag is added.
 
 ## Not in scope
 
