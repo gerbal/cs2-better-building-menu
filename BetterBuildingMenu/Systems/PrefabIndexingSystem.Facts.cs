@@ -297,10 +297,10 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			// The shapes the zone grows, for the glyphs the card already knows how
-			// to draw. Computed once by IndexZones and cached, because it needs
-			// every spawnable building's lot and this pass sees one prefab.
+			// to draw. Computed once by IndexZones and kept in the index, because it
+			// needs every spawnable building's lot and this pass sees one prefab.
 			if (prefabIndex.Category == Domain.Enums.PrefabCategory.Zones
-				&& GetZoneLotSizes(entity) is ZoneLotSizes lots
+				&& Index.Zones.LotSizesOf(entity.Index) is ZoneLotSizes lots
 				&& lots.Footprints is { Length: > 0 })
 			{
 				prefabIndex.Footprints = lots.Footprints;

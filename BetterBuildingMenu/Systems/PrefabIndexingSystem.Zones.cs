@@ -7,6 +7,7 @@ using Colossal.PSI.Common;
 using Colossal.Serialization.Entities;
 
 using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Domain.Interfaces;
 using BetterBuildingMenu.Utilities;
@@ -37,13 +38,13 @@ namespace BetterBuildingMenu.Systems
 	// The zone catalog: every assignable zone, its density and lot sizes, and the extractor areas.
 	public partial class PrefabIndexingSystem
 	{
-		private void IndexZones(IReadOnlyDictionary<int, VanillaMenuPlacement> placements)
+		/// <summary>Reads every zone: how it classifies its buildings, its own tier, the lots it grows,
+		/// and the catalog of assignable zones the menu audit checks.</summary>
+		/// <remarks>Rebuilt with the catalog, not merged into it. A reindex can drop zones, and entity
+		/// indices are reused within a session, so a stale entry would answer for whatever took its
+		/// place.</remarks>
+		private ZoneIndex IndexZones(IReadOnlyDictionary<int, VanillaMenuPlacement> placements)
 		{
-			// Rebuilt with the catalog, not merged into it. A reindex can drop
-			// zones, and entity indices are reused within a session, so a stale
-			// entry here would answer for whatever took its place.
-			_zoneFacts = new Dictionary<int, VanillaAssetFacts>();
-
 			var zonesQuery = GetEntityQuery(
 				ComponentType.ReadOnly<ZoneData>(),
 				ComponentType.ReadOnly<ZonePropertiesData>(),
@@ -68,7 +69,7 @@ namespace BetterBuildingMenu.Systems
 			// One pass over the buildings rather than a rescan per zone. It also
 			// yields the lot sizes each zone can actually fill, which the game never
 			// tells the player: some zones only ever grow 2x2.
-			var lotSizes = new Dictionary<Entity, ZoneLotSizes>();
+			var lotSizes = new Dictionary<int, ZoneLotSizes>();
 
 			for (var j = 0; j < spawnableBuildings.Length; j++)
 			{
@@ -80,24 +81,24 @@ namespace BetterBuildingMenu.Systems
 
 				var lot = buildingsData[j].m_LotSize;
 
-				lotSizes[zonePrefab] = lotSizes.TryGetValue(zonePrefab, out var seen)
+				lotSizes[zonePrefab.Index] = lotSizes.TryGetValue(zonePrefab.Index, out var seen)
 					? seen.Include(lot.x, lot.y)
 					: ZoneLotSizes.From(lot.x, lot.y);
 			}
 
-			var dictionary = new Dictionary<Entity, ZoneTypeFilter>();
-			var densities = new Dictionary<Entity, ZoneTypeFilter>();
+			var dictionary = new Dictionary<int, ZoneTypeFilter>();
+			var densities = new Dictionary<int, ZoneTypeFilter>();
 
 			for (var i = 0; i < zones.Length; i++)
 			{
 				var zone = zones[i];
 				var info = propertiesData[i];
-				var maxLotWidth = lotSizes.TryGetValue(zone, out var sizes) ? sizes.MaxWidth : 0;
+				var maxLotWidth = lotSizes.TryGetValue(zone.Index, out var sizes) ? sizes.MaxWidth : 0;
 
 				// The ZONE'S OWN tier, which is what the zoning menu navigates by, and
 				// which is computed for every zone including the ones the building-side
 				// answer below skips.
-				densities[zone] = ZoneDensityClassifier.Classify(new ZoneDensityFacts(
+				densities[zone.Index] = ZoneDensityClassifier.Classify(new ZoneDensityFacts(
 					IsResidential: info.m_ResidentialProperties > 0f,
 					ResidentialProperties: info.m_ResidentialProperties,
 					SpaceMultiplier: info.m_SpaceMultiplier,
@@ -108,12 +109,12 @@ namespace BetterBuildingMenu.Systems
 						? densityPrefab?.name ?? string.Empty
 						: string.Empty));
 
-				// The BUILDING-side answer, unchanged. See _zoneTypeCache: this
+				// The BUILDING-side answer, unchanged. See ZoneIndex.TypeOf: this
 				// one exists so a building can be filtered by the zone it grows
 				// in, and widening it would reclassify thousands of them.
 				if (info.m_ResidentialProperties <= 0f)
 				{
-					dictionary[zone] = ZoneTypeFilter.Any;
+					dictionary[zone.Index] = ZoneTypeFilter.Any;
 					continue;
 				}
 
@@ -121,23 +122,19 @@ namespace BetterBuildingMenu.Systems
 
 				if (!info.m_ScaleResidentials)
 				{
-					dictionary[zone] = ZoneTypeFilter.Low;
+					dictionary[zone.Index] = ZoneTypeFilter.Low;
 				}
 				else if (ratio < 1f)
 				{
 					// "No spawnable building wider than 2" is exactly "the widest is at
 					// most 2". A zone with no spawnable buildings at all stays Row.
-					dictionary[zone] = maxLotWidth <= 2 ? ZoneTypeFilter.Row : ZoneTypeFilter.Medium;
+					dictionary[zone.Index] = maxLotWidth <= 2 ? ZoneTypeFilter.Row : ZoneTypeFilter.Medium;
 				}
 				else
 				{
-					dictionary[zone] = ZoneTypeFilter.High;
+					dictionary[zone.Index] = ZoneTypeFilter.High;
 				}
 			}
-
-			_zoneTypeCache = dictionary;
-			_zoneDensityCache = densities;
-			_zoneLotSizeCache = lotSizes;
 
 			// The same pass that classifies buildings by zone also yields the zones
 			// themselves, which the zoning hierarchy browses. Family comes from
@@ -171,8 +168,6 @@ namespace BetterBuildingMenu.Systems
 					? GetUnlockRequirements(zone)
 					: (0, Array.Empty<string>());
 
-				_zoneFacts[zone.Index] = GetVanillaAssetFacts(zone);
-
 				catalog.Add(new ZoneCatalogEntry(
 					Id: zone.Index,
 					Version: zone.Version,
@@ -182,7 +177,7 @@ namespace BetterBuildingMenu.Systems
 					// One source for the tier, shared with the prefab index:
 					// ZoneDensityClassifier owns the rules, including the name fallback
 					// for commercial and office.
-					Density: GetZoneDensity(zone),
+					Density: densities.TryGetValue(zone.Index, out var density) ? density : ZoneTypeFilter.Any,
 					Thumbnail: IconPath.Normalize(ImageSystem.GetThumbnail(prefab)),
 					// Measured by the game, never shown by it: BuildingInitializeSystem
 					// raises MaxHeight to the tallest mesh of every spawnable building the
@@ -197,7 +192,7 @@ namespace BetterBuildingMenu.Systems
 					// What will actually grow here. A zone whose buildings are
 					// all 2x2 fills a 2-wide strip and nothing else, which
 					// decides how the block gets drawn and is stated nowhere.
-					MinLotWidth: lotSizes.TryGetValue(zone, out var zoneLots) ? zoneLots.MinWidth : 0,
+					MinLotWidth: lotSizes.TryGetValue(zone.Index, out var zoneLots) ? zoneLots.MinWidth : 0,
 					MaxLotWidth: zoneLots?.MaxWidth ?? 0,
 					MinLotDepth: zoneLots?.MinDepth ?? 0,
 					MaxLotDepth: zoneLots?.MaxDepth ?? 0,
@@ -220,8 +215,9 @@ namespace BetterBuildingMenu.Systems
 				IndexExtractorAreas(catalog);
 			}
 
-			_zoneCatalog = catalog;
-			Mod.Log.Info($"Indexed Zones Count: {_zoneCatalog.Count}");
+			Mod.Log.Info($"Indexed Zones Count: {catalog.Count}");
+
+			return new ZoneIndex(dictionary, densities, lotSizes, catalog);
 		}
 
 		/// <summary>Takes the Zones menu's categories and members from the game itself.</summary>
@@ -258,8 +254,6 @@ namespace BetterBuildingMenu.Systems
 				var feature = EntityManager.TryGetComponent<ExtractorAreaData>(placement.Entity, out var extractor)
 					? extractor.m_MapFeature.ToString()
 					: null;
-
-				_zoneFacts[placement.Entity.Index] = GetVanillaAssetFacts(placement.Entity);
 
 				catalog.Add(new ZoneCatalogEntry(
 					Id: placement.Entity.Index,
@@ -362,35 +356,6 @@ namespace BetterBuildingMenu.Systems
 			bool isSingleResource = value != 0UL && (value & (value - 1UL)) == 0UL;
 
 			return isSingleResource ? resource.ToString() : null;
-		}
-
-		public static ZoneTypeFilter GetZoneType(Entity zonePrefab)
-		{
-			if (_zoneTypeCache.TryGetValue(zonePrefab, out var type))
-			{
-				return type;
-			}
-
-			return ZoneTypeFilter.Any;
-		}
-
-		/// <summary>The lot shapes a zone grows, or none.</summary>
-		public static ZoneLotSizes? GetZoneLotSizes(Entity zonePrefab) =>
-			_zoneLotSizeCache.TryGetValue(zonePrefab, out var sizes)
-				? sizes
-				: null;
-
-		/// <summary>The zone's own density tier. Any when it has none.</summary>
-		/// <remarks>Fails soft like <see cref="GetZoneType"/>, so a cold read is indistinguishable from
-		/// an untiered zone; IndexZones fills the cache before the prefab category processors start.</remarks>
-		public static ZoneTypeFilter GetZoneDensity(Entity zonePrefab)
-		{
-			if (_zoneDensityCache.TryGetValue(zonePrefab, out var density))
-			{
-				return density;
-			}
-
-			return ZoneTypeFilter.Any;
 		}
 	}
 }
