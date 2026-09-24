@@ -256,7 +256,7 @@ namespace BetterBuildingMenu.Domain.Catalog
 		}
 
 		/// <summary>Every list, for renumbering.</summary>
-		internal IEnumerable<(PrefabCategory Category, PrefabSubCategory SubCategory, IndexedPrefabList List)> Lists() =>
+		private IEnumerable<(PrefabCategory Category, PrefabSubCategory SubCategory, IndexedPrefabList List)> Lists() =>
 			_lists.SelectMany(category => category.Value.Select(sub => (category.Key, sub.Key, sub.Value)));
 	}
 }

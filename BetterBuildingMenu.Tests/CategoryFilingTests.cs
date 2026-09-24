@@ -141,7 +141,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void TheNameLookupFollowsFilingAndRemoving()
 		{
-			// Built on first use, so a lookup made before an edit must not answer after it.
+			// Kept in step with every edit, so a lookup made before one must not answer after it.
 			var index = TestPrefabs.ReadyIndex(TestPrefabs.Named(7, "Small Road", PrefabCategory.Networks, PrefabSubCategory.Networks_Roads));
 			Assert.Equal(7, index.GetByPrefabName("Small Road")?.Id);
 
@@ -212,11 +212,50 @@ namespace BetterBuildingMenu.Tests
 		public void EqualDisplayNamesResolveToTheLowerId()
 		{
 			// Upgrades keep their plain names, so two namesakes can share a display name too.
-			var index = TestPrefabs.ReadyIndex(
+			var laterFiledFirst = TestPrefabs.ReadyIndex(
 				TestPrefabs.Named(9, "Wing", PrefabCategory.Props, PrefabSubCategory.Props_Misc, "Extension Wing"),
 				TestPrefabs.Named(4, "Wing", PrefabCategory.Props, PrefabSubCategory.Props_Misc, "Extension Wing"));
+			var lowerFiledFirst = TestPrefabs.ReadyIndex(
+				TestPrefabs.Named(4, "Wing", PrefabCategory.Props, PrefabSubCategory.Props_Misc, "Extension Wing"),
+				TestPrefabs.Named(9, "Wing", PrefabCategory.Props, PrefabSubCategory.Props_Misc, "Extension Wing"));
 
-			Assert.Equal(4, index.GetByPrefabName("Wing")?.Id);
+			Assert.Equal(4, laterFiledFirst.GetByPrefabName("Wing")?.Id);
+			Assert.Equal(4, lowerFiledFirst.GetByPrefabName("Wing")?.Id);
+			// And the lists agree, whatever order the entries were filed in.
+			Assert.Equal(new[] { 4, 9 }, laterFiledFirst.All.Select(entry => entry.Id));
+			Assert.Equal(new[] { 4, 9 }, ListOf(laterFiledFirst, PrefabCategory.Props, PrefabSubCategory.Props_Misc).Select(entry => entry.Id));
+		}
+
+		[Fact]
+		public void NamesakesAreOrderedByDisplayNameIgnoringCase()
+		{
+			var index = TestPrefabs.ReadyIndex(
+				TestPrefabs.Named(2, "Shared", PrefabCategory.Props, PrefabSubCategory.Props_Misc, "Beta"),
+				TestPrefabs.Named(1, "Shared", PrefabCategory.Props, PrefabSubCategory.Props_Misc, "alpha"));
+
+			Assert.Equal(1, index.GetByPrefabName("Shared")?.Id);
+		}
+
+		[Fact]
+		public void AnEntryWithNoPrefabNameIsNotFoundByName()
+		{
+			var index = TestPrefabs.ReadyIndex(TestPrefabs.Named(1, "", PrefabCategory.Props, PrefabSubCategory.Props_Misc, "Unnamed"));
+
+			Assert.Null(index.GetByPrefabName(""));
+
+			index.Remove(1);
+			Assert.Empty(index.All);
+		}
+
+		[Fact]
+		public void RefilingAnIdUnderAnotherNameMovesItsLookup()
+		{
+			var index = TestPrefabs.ReadyIndex(TestPrefabs.Named(7, "RoadA", PrefabCategory.Networks, PrefabSubCategory.Networks_Roads));
+
+			index.File(TestPrefabs.Named(7, "RoadB", PrefabCategory.Networks, PrefabSubCategory.Networks_Roads));
+
+			Assert.Null(index.GetByPrefabName("RoadA"));
+			Assert.Equal(7, index.GetByPrefabName("RoadB")?.Id);
 		}
 
 		[Fact]
