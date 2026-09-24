@@ -18,7 +18,8 @@ namespace BetterBuildingMenu.Systems
 		// OnUpdate fires. See SearchDebounce for why there is no worker.
 		private static readonly System.Diagnostics.Stopwatch SearchClock = System.Diagnostics.Stopwatch.StartNew();
 		private readonly SearchDebounce _searchDebounce = new(TimeSpan.FromMilliseconds(250));
-		private readonly BuildingCatalogAdapter _buildingCatalogAdapter = new();
+		// Handed Mod's silhouette cache rather than reading Mod itself; see its constructor.
+		private readonly BuildingCatalogAdapter _buildingCatalogAdapter = new(url => Mod.Silhouettes?.UrlFor(url));
 		// The game's own toolbar filter row, as the UI last reported it. Not reset on
 		// a city load: the UI forwards the row only when it changes, so a reset here
 		// would leave a filter showing that the catalog no longer applies.
@@ -31,6 +32,8 @@ namespace BetterBuildingMenu.Systems
 
 		private ToolSystem _toolSystem = null!;
 		private PrefabSystem _prefabSystem = null!;
+		// The placed uniques and the generation the panel reads; see its Source.
+		private PrefabIndexingSystem _indexer = null!;
 		private DefaultToolSystem _defaultToolSystem = null!;
 		// Only for releasing the toolbar's menu selection when the lens closes;
 		// see CloseLens.
@@ -131,6 +134,7 @@ namespace BetterBuildingMenu.Systems
 
 			_toolSystem = World.GetOrCreateSystemManaged<ToolSystem>();
 			_prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
+			_indexer = World.GetOrCreateSystemManaged<PrefabIndexingSystem>();
 			_defaultToolSystem = World.GetOrCreateSystemManaged<DefaultToolSystem>();
 			_toolbarUISystem = World.GetOrCreateSystemManaged<Game.UI.InGame.ToolbarUISystem>();
 			_selectedInfoUISystem = World.GetOrCreateSystemManaged<Game.UI.InGame.SelectedInfoUISystem>();
@@ -292,10 +296,10 @@ namespace BetterBuildingMenu.Systems
 
 		protected override void OnUpdate()
 		{
-			// The indexer bumps IndexGeneration and leaves the rest to us: a pass, an
+			// The indexer bumps its Generation and leaves the rest to us: a pass, an
 			// unlock, a unique built or bulldozed. Scheduled like a search, so a burst of
 			// them is one refresh, and nothing is rebuilt for a closed panel.
-			if (_indexWatch.ShouldRefresh(_lensMenuOpen, PrefabIndexingSystem.IndexGeneration))
+			if (_indexWatch.ShouldRefresh(_lensMenuOpen, _indexer.Generation))
 			{
 				TriggerSearch();
 			}
