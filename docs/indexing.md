@@ -73,11 +73,13 @@ partial pass. Each processor keeps two queries, both built in `OnCreate`: its ow
 narrowed to `Created` or `Updated`. A partial pass reads only the narrowed copy, so one edited road
 costs one prefab rather than every road its processor matches.
 
-The indexer is registered at two phases, `PrefabUpdate` and `UIUpdate`, and both run every frame.
-`PrefabUpdate` runs inside `PrefabSystem`'s own update, which the main loop runs before
-`UnlockSystem`, so only the `UIUpdate` tick sees that frame's unlock events. A due full pass runs
-at whichever tick comes first. A partial pass runs at both: a changed prefab keeps its `Created`
-and `Updated` tags until the frame's clean-up, so the second tick re-reads what the first did.
+The indexer is registered at two phases, `PrefabUpdate` and `UIUpdate`, and both run every frame,
+in the game and the editor alike. `PrefabUpdate` runs inside `PrefabSystem`'s own update, which
+the main loop runs before `UnlockSystem`, so only the `UIUpdate` tick sees that frame's unlock
+events. A due full pass runs at whichever tick comes first. A partial pass runs at the `UIUpdate`
+tick only, as `UpdateSystem.currentPhase` tells it: a changed prefab keeps its `Created` and
+`Updated` tags until the frame's clean-up, so the later tick sees every change the earlier one
+would. Running at both read each changed prefab twice a frame.
 
 Duplicate names are numbered after every pass, partial passes included, always starting from each
 prefab's `AssetName` (`CatalogIndex.NumberDuplicateNames`). A partial pass gives the prefab it
