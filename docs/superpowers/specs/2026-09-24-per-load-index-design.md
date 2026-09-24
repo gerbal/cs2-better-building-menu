@@ -1,6 +1,7 @@
 # Per-load catalog index
 
-Date: 2026-09-24. Status: proposal, awaiting the owner's review. Roadmap:
+Date: 2026-09-24. Status: approved by the owner the same day, with every decision below
+taken as recommended. Steps 1 and 2 are built (#32, #33). Roadmap:
 "Per-load state" in [roadmap.md](../../roadmap.md).
 
 ## Goal
@@ -225,6 +226,8 @@ step 6 does.
 - **#29** edits `GetAssetName` and the milestone title in `Progression.cs`. Step 4 changes that file too, so whichever lands second takes a merge. Nothing in the plan depends on #29.
 
 ## Decisions for the owner
+
+Decided on 2026-09-24: each as recommended.
 
 1. **A failed first pass on a new city.**
    - Today the panel keeps serving the previous city's index.

@@ -34,9 +34,8 @@ the detail behind the structural items.
   the mapping from a prefab's components to its facts.
 - **Per-load state.** Replace the static index, caches and registries with one
   object created per city load and handed to the systems that read it. The
-  design and its PR sequence are in
-  [superpowers/specs/](superpowers/specs/2026-09-24-per-load-index-design.md),
-  awaiting the owner's review.
+  design and its PR sequence, approved, are in
+  [superpowers/specs/](superpowers/specs/2026-09-24-per-load-index-design.md).
 - **Smaller cleanups.**
   - Name the `BuildingMenuUISystem` partials by responsibility.
   - Settle on one noun for the panel (see the glossary in
