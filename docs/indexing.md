@@ -73,11 +73,18 @@ partial pass. Each processor keeps two queries, both built in `OnCreate`: its ow
 narrowed to `Created` or `Updated`. A partial pass reads only the narrowed copy, so one edited road
 costs one prefab rather than every road its processor matches.
 
-The indexer is registered at two phases, `PrefabUpdate` and `UIUpdate`, and both run every frame.
-`PrefabUpdate` runs inside `PrefabSystem`'s own update, which the main loop runs before
-`UnlockSystem`, so only the `UIUpdate` tick sees that frame's unlock events. A due full pass runs
-at whichever tick comes first. A partial pass runs at both: a changed prefab keeps its `Created`
-and `Updated` tags until the frame's clean-up, so the second tick re-reads what the first did.
+The indexer runs at one phase, `UIUpdate`. The main loop runs `PrefabSystem` (whose own update
+applies queued prefab updates and tags what it created or changed), then `UnlockSystem`, then
+`UIUpdateSystem`, every frame the world updates, in the game and the editor alike. So the indexer
+sees that frame's unlock events and every `Created` or `Updated` tag, which last until the frame's
+clean-up, and it runs before the panel's own `UIUpdate` system, which reads the index. It was once
+registered at `PrefabUpdate` too, which read each changed prefab twice a frame and added nothing
+else: nothing reads the index between the two.
+
+A prefab added and tagged after `UIUpdate` but before the frame's clean-up, for example by a mod's
+own main-loop system calling `PrefabSystem.AddPrefab`, has its tags cleared before the indexer
+next runs, and waits for the next full pass. `PrefabSystem.UpdatePrefab`, which Road Builder uses,
+queues the change for the next frame's `PrefabSystem` update, so it is not affected.
 
 Duplicate names are numbered after every pass, partial passes included, always starting from each
 prefab's `AssetName` (`CatalogIndex.NumberDuplicateNames`). A partial pass gives the prefab it
@@ -86,10 +93,11 @@ beside a sibling still called "Foo 2".
 
 A prefab the game recreates, such as a Road Builder road, arrives under a new entity, so a partial
 pass drops the old entry first. `PrefabSystem.UpdatePrefab` marks the old entity `Deleted`, which
-it keeps until the frame's clean-up, after both ticks, so every partial pass starts by removing
-the entries of prefab entities marked `Deleted`. A `Deleted` prefab alone triggers a partial pass,
-so a prefab the game removes outright leaves the list too. The entity is the one link that
-always holds: Road Builder gives a road a new ID, and so a new prefab name, on every edit.
+it keeps until the frame's clean-up, after the indexer's `UIUpdate` tick, so every partial pass
+starts by removing the entries of prefab entities marked `Deleted`. A `Deleted` prefab alone
+triggers a partial pass, so a prefab the game removes outright leaves the list too. The entity is
+the one link that always holds: Road Builder gives a road a new ID, and so a new prefab name, on
+every edit.
 
 The pass also looks the new entity's name up with `CatalogIndex.GetByPrefabName`, which answers the
 extension picker's rows too, and removes that entry if the game no longer maps its prefab to its
