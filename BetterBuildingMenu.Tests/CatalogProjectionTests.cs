@@ -13,8 +13,8 @@ namespace BetterBuildingMenu.Tests
 	/// An index entry, projected into the row the panel draws, through the adapter.
 	/// </summary>
 	/// <remarks>
-	/// Each test builds its own small index and source, so nothing here touches the
-	/// indexer or shares state with another test.
+	/// Each test builds its own small index and source, so no test shares state with
+	/// another.
 	/// </remarks>
 	public sealed class CatalogProjectionTests
 	{
@@ -86,11 +86,32 @@ namespace BetterBuildingMenu.Tests
 			var wing = TestPrefabs.Entry(12, PrefabCategory.ServiceBuildings, PrefabSubCategory.ServiceBuildings_Health);
 			wing.IsServiceUpgrade = true;
 
+			var index = ReadyIndex(Hospital(), wing);
 			var page = new BuildingCatalogAdapter()
-				.Build(new CatalogSource(ReadyIndex(Hospital(), wing), new PlacedUniques(), 1), new BuildingCatalogQuery(), VanillaToolbarSelection.None)
+				.Build(new CatalogSource(index, new PlacedUniques(), 1), new BuildingCatalogQuery(), VanillaToolbarSelection.None)
 				.Page;
 
+			Assert.NotNull(index.Get(12));
 			Assert.Equal(new[] { 11 }, page.Items.Select(item => item.Id));
+		}
+
+		[Fact]
+		public void AnUnreadyIndexProjectsNothingItHolds()
+		{
+			var index = new CatalogIndex();
+			index.File(Hospital());
+			var source = new CatalogSource(index, new PlacedUniques(), 1);
+			var adapter = new BuildingCatalogAdapter();
+
+			Assert.Empty(adapter.Build(source, new BuildingCatalogQuery(), VanillaToolbarSelection.None).Page.Items);
+			Assert.Null(adapter.EntryForPrefabName(source, "Hospital01"));
+
+			// As a pass does: ready, then a new generation, which the adapter's caches key on.
+			index.IsReady = true;
+			source = source with { Generation = 2 };
+
+			Assert.Single(adapter.Build(source, new BuildingCatalogQuery(), VanillaToolbarSelection.None).Page.Items);
+			Assert.NotNull(adapter.EntryForPrefabName(source, "Hospital01"));
 		}
 	}
 }

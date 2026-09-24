@@ -15,8 +15,8 @@
 		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/BenchAndLampProps.svg")]
 		Props = 500,
 		// Zones are a category only because the index has to file them somewhere, and
-		// being in the index is what makes them armable — CatalogIndex.GetPrefab reads
-		// only the index. The catalog's zone/building split is EntryKind.
+		// being in the index is what makes them armable: TryActivatePrefabTool arms only
+		// what CatalogIndex.GetPrefab finds. The catalog's zone/building split is EntryKind.
 		[CategoryIcon("Media/Game/Icons/Zones.svg")]
 		Zones = 700
 	}
