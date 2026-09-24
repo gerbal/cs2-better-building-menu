@@ -152,7 +152,7 @@ namespace BetterBuildingMenu.Systems
 			// Dense by index: entry N is milestone N's name. Every asset ships a bare milestone
 			// index and the UI reads the name out of here, so the names resolve once per index
 			// pass rather than once per asset.
-			_BuildingLensMilestonesBinding.Value = PrefabIndexingSystem.GetMilestoneNames();
+			_BuildingLensMilestonesBinding.Value = _indexer.Index.Progression.MilestoneNames();
 
 		}
 

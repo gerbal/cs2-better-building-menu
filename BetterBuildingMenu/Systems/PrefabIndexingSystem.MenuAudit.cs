@@ -51,7 +51,7 @@ namespace BetterBuildingMenu.Systems
 				// to remove.
 				var held = new HashSet<int>(indexed.Select(entry => entry.Id));
 
-				foreach (var zone in _zoneCatalog)
+				foreach (var zone in Index.Zones.Catalog)
 				{
 					held.Add(zone.Id);
 				}
@@ -73,7 +73,7 @@ namespace BetterBuildingMenu.Systems
 
 				Mod.Log.Info(
 					$"[MENU-AUDIT] {report.Menus.Count} vanilla menus, {report.PlacementCount} placements, "
-					+ $"{indexed.Count} indexed assets, {_zoneCatalog.Count} zones"
+					+ $"{indexed.Count} indexed assets, {Index.Zones.Catalog.Count} zones"
 					+ (report.IsClean ? "" : " — NOT CLEAN"));
 
 				// The reason goes next to the census, once, rather than living
@@ -185,7 +185,7 @@ namespace BetterBuildingMenu.Systems
 				// Zones reach the player through the zoning hierarchy rather than the
 				// prefab index, so they are covered without being in it. Left out, the
 				// report would accuse itself of losing every one of them.
-				var zoned = new HashSet<int>(_zoneCatalog.Select(zone => zone.Id));
+				var zoned = new HashSet<int>(Index.Zones.Catalog.Select(zone => zone.Id));
 				var missing = new Dictionary<string, List<string>>();
 				var misplaced = new Dictionary<string, List<string>>();
 				var shown = new Dictionary<string, int>();

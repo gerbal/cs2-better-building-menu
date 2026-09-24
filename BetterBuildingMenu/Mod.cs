@@ -5,6 +5,7 @@ using Colossal.Reflection;
 using Colossal.UI;
 
 using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Systems;
 using BetterBuildingMenu.Utilities;
 
@@ -28,21 +29,16 @@ namespace BetterBuildingMenu
 		// which checks.
 		public static BetterBuildingMenuSettings Settings { get; private set; } = null!;
 
-		/// <summary>Whether Extra Detailing Tools is enabled, as of the last full index pass.</summary>
-		public static bool IsExtraDetailingEnabled { get; private set; }
-
-		/// <summary>Whether Road Builder is enabled, as of the last full index pass.</summary>
-		public static bool IsRoadBuilderEnabled { get; private set; }
-
-		/// <summary>Re-reads which of the mods we adapt to are enabled.</summary>
+		/// <summary>Reads which of the mods we adapt to are enabled.</summary>
 		/// <remarks>Per full pass, not once per process: the game re-reads the playset at every city
 		/// load, so a mod can join without a restart. See docs/indexing.md, "Load timing".</remarks>
-		internal static void RefreshEnabledMods()
+		internal static ModCompatibility ReadEnabledMods()
 		{
 			var enabled = GameManager.instance.modManager.ListModsEnabled();
 
-			IsExtraDetailingEnabled = EnabledMods.Contains(enabled, "ExtraDetailingTools");
-			IsRoadBuilderEnabled = EnabledMods.Contains(enabled, "RoadBuilder");
+			return new ModCompatibility(
+				ExtraDetailing: EnabledMods.Contains(enabled, "ExtraDetailingTools"),
+				RoadBuilder: EnabledMods.Contains(enabled, "RoadBuilder"));
 		}
 
 		/// <summary>Black copies of the game's vector icons, for locked tiles.</summary>

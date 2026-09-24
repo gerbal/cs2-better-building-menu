@@ -21,9 +21,8 @@
 ./build.sh all                                           # C# and the UI bundle
 ```
 
-Some of the mod's state is still process-wide statics: the zone and
-progression tables on `PrefabIndexingSystem`, and more on `Mod`. No test sets
-one, and the C# test classes run in parallel, so none may: give the code under
+Some of the mod's state is still process-wide statics: `Mod`'s settings and
+silhouette cache. No test sets one, and the C# test classes run in parallel, so none may: give the code under
 test an object of its own instead, as `CatalogIndex` and `PlacedUniques` allow.
 
 Warnings fail the build in CI, in the mod and in the tests: the
