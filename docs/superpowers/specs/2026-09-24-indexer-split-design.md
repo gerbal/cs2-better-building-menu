@@ -1,7 +1,8 @@
 # Splitting PrefabIndexingSystem
 
-Date: 2026-09-24. Status: proposed, for the owner's review. Roadmap: "Split
-`PrefabIndexingSystem` further" in [roadmap.md](../../roadmap.md).
+Date: 2026-09-24. Status: approved by the owner the same day, with decisions 1–3
+below taken as recommended. Roadmap: "Split `PrefabIndexingSystem` further" in
+[roadmap.md](../../roadmap.md).
 
 ## Goal
 
@@ -111,6 +112,8 @@ real game assemblies, and changes no behaviour.
 code calls. The new tests cover the wiring around them, not the helpers again.
 
 ## Decisions for the owner
+
+Decided on 2026-09-24: each as recommended.
 
 1. **Audit output: returned lines, or an injected logger?** Returned lines keep
    the new classes free of `Mod` and any interface. **Recommended: returned
