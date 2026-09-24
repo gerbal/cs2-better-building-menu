@@ -99,6 +99,18 @@ triggers a partial pass, so a prefab the game removes outright leaves the list t
 the one link that always holds: Road Builder gives a road a new ID, and so a new prefab name, on
 every edit.
 
+A recreated prefab's menu placement moves with it. The placements are keyed by entity, and by the
+indexer's tick the game's menus already hold the new one: `ReplacePrefabSystem` takes the old
+entity out of every `UIGroupElement` buffer, and `UIObject.LateInitialize`, which
+`PrefabInitializeSystem` runs on the new `Created` entity during `PrefabSystem`'s update, adds the
+new one to its category. So every partial pass walks the menus again (see "The vanilla menu walk")
+after dropping the deleted entries and before the processors run, and
+`CatalogIndex.RefreshPlacements` swaps the result into the published index; the menus and their
+tabs wait for the next full pass.
+Without it, a road the game offers in a menu loses its placement on its first Road Builder edit:
+it drops out of that menu's view and files under its own category rather than the game's tab
+until the next full pass. A walk that throws keeps the placements it replaces.
+
 For a recreation whose old entity has already gone, the pass also drops every entry filed under
 the new entity's name whose prefab the game no longer maps to that entry's entity.
 `PrefabSystem.UpdatePrefab` keeps the `PrefabBase` and points it at the new entity, so this holds
@@ -175,11 +187,16 @@ of their own; `BindAssets` takes every element of those buffers. The one exclusi
 is `FilterOutUpgrades`, which drops `ServiceUpgradeData`, because a service upgrade is placed
 from its parent building's row rather than from the grid. The theme and asset-pack filters are
 deliberately NOT applied: those are player settings that hide assets which should still be
-indexed.
+indexed. A category or asset the game has removed is skipped too. `PrefabSystem.RemovePrefab` only
+marks the entity `Deleted`, leaving it in its group's buffer, where it stays once the frame's
+clean-up destroys it and its index can go to another entity. Vanilla's `UIObjectInfo.GetObjects`
+reads each member's `PrefabData`, which a destroyed entity no longer has, so the toolbar never
+draws what this skips.
 
 The walk's tables, with the menus and their category tabs, go into the pass's `VanillaMenuIndex`,
 which its `CatalogIndex` carries as `Menus`: a new pass reads the menus afresh, and nothing
-outlives the index it was read for. The placements are read by:
+outlives the index it was read for. A partial pass walks again and swaps in a copy with the new
+placements (see "Partial passes"). The placements are read by:
 
 - the coverage report and the menu audit;
 - the zone catalog, which inherits the Zones menu (below);
