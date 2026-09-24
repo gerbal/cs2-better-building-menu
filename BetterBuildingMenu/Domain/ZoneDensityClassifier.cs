@@ -107,14 +107,14 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		public static ZoneTypeFilter FromName(string? prefabName)
 		{
-			if (string.IsNullOrWhiteSpace(prefabName))
+			if (prefabName?.Trim() is not { Length: > 0 })
 			{
 				return ZoneTypeFilter.Any;
 			}
 
 			foreach (var (stem, density) in NameStems)
 			{
-				if (prefabName!.IndexOf(stem, StringComparison.OrdinalIgnoreCase) >= 0)
+				if (prefabName.IndexOf(stem, StringComparison.OrdinalIgnoreCase) >= 0)
 				{
 					return density;
 				}

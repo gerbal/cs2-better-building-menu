@@ -57,7 +57,7 @@ namespace BetterBuildingMenu.Services
 				_generation = generation;
 			}
 
-			return _entries.TryGetValue(key, out entries!);
+			return _entries.TryGetValue(key, out entries);
 		}
 
 		public void Put(SnapshotKey key, int generation, BuildingCatalogEntry[] entries)

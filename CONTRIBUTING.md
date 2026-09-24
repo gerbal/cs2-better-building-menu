@@ -28,11 +28,12 @@ or in the test class's `Dispose`. The C# tests also run one class at a time
 (`TestParallelization.cs`). Nothing needs that yet, since no class reads
 what another sets, but it keeps that from becoming a race.
 
-A nullable warning fails the build in CI, in the mod and in the tests, as
-does xUnit's null-argument rule xUnit1012 (`Directory.Build.props`). A
-local build reports them as warnings, so check it shows none before you
-push. A field a system sets in `OnCreate` is declared `= null!`. A value
-that can really be missing is declared nullable, and its readers check it.
+Any warning fails the build in CI, in the mod and in the tests
+(`Directory.Build.props`), and both build without one. A local build
+reports them as warnings, so check it shows none before you push. Most
+will be nullable: a field a system sets in `OnCreate` is declared
+`= null!`, and a value that can really be missing is declared nullable,
+with readers that check it.
 
 net48's `string.IsNullOrEmpty` and `IsNullOrWhiteSpace` carry no
 annotations, so the compiler cannot see a check made with them. Write the
@@ -41,7 +42,10 @@ check as a pattern it can follow instead of adding `!` after it:
 - `text?.Trim() is { Length: > 0 } trimmed` for
   `!string.IsNullOrWhiteSpace(text)`.
 
-The `!` after such a check in older code predates this rule.
+A method that answers that question for its caller, such as
+`BuildingCatalogGrouping.IsGrouped`, says so with `[NotNullWhen(true)]`.
+The few `!` left sit in LINQ chains, where a filter in one step cannot
+tell the compiler about the next.
 
 A test that calls into the game, not just its types, carries
 `[Trait("Requires", "Game")]`: CI runs against mock game assemblies, and

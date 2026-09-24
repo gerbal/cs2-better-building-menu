@@ -44,12 +44,12 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		public static string For(string? uiCategory, ZoneTypeFilter density)
 		{
-			if (string.IsNullOrWhiteSpace(uiCategory) || density == ZoneTypeFilter.Any)
+			if (density == ZoneTypeFilter.Any || uiCategory?.Trim() is not { Length: > 0 } category)
 			{
 				return string.Empty;
 			}
 
-			return Icons.TryGetValue($"{uiCategory!.Trim()}|{density}", out var name)
+			return Icons.TryGetValue($"{category}|{density}", out var name)
 				? Root + name + ".svg"
 				: string.Empty;
 		}

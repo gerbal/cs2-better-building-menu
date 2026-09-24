@@ -99,9 +99,9 @@ namespace BetterBuildingMenu.Services
 				return true;
 			}
 
-			bool matchesDlc = dlcChosen
+			bool matchesDlc = dlcIds is { Count: > 0 }
 				&& prefab.DlcId.id != GameDlcIds.Invalid
-				&& dlcIds!.Any(id => string.Equals(
+				&& dlcIds.Any(id => string.Equals(
 					id,
 					prefab.DlcId.id.ToString(CultureInfo.InvariantCulture),
 					StringComparison.Ordinal));
@@ -222,11 +222,11 @@ namespace BetterBuildingMenu.Services
 				// photograph in a row of glyphs, so it counts as no icon.
 				var icon = entries
 					.Select(entry => entry.DevTreeBranchIcon)
-					.FirstOrDefault(value => !string.IsNullOrEmpty(value) && !IsPhotograph(value!));
+					.FirstOrDefault(value => value is { Length: > 0 } && !IsPhotograph(value));
 
-				if (!string.IsNullOrEmpty(icon))
+				if (icon is { Length: > 0 })
 				{
-					return icon!;
+					return icon;
 				}
 			}
 
@@ -242,11 +242,11 @@ namespace BetterBuildingMenu.Services
 			{
 				var glyph = ordered
 					.Select(entry => entry.FallbackThumbnail)
-					.FirstOrDefault(value => !string.IsNullOrEmpty(value));
+					.FirstOrDefault(value => value is { Length: > 0 });
 
-				if (!string.IsNullOrEmpty(glyph))
+				if (glyph is { Length: > 0 })
 				{
-					return glyph!;
+					return glyph;
 				}
 			}
 
@@ -838,11 +838,9 @@ namespace BetterBuildingMenu.Services
 				StringComparer.Ordinal);
 
 			options.AddRange(source
-				.Where(entry => !IsBaseGameContent(entry)
-					&& (entry.AssetPackIndices?.Length ?? 0) == 0
-					&& !string.IsNullOrEmpty(entry.DlcId))
-				.Select(entry => entry.DlcId!)
-				.Where(dlc => !packedDlcs.Contains(dlc))
+				.Where(entry => !IsBaseGameContent(entry) && (entry.AssetPackIndices?.Length ?? 0) == 0)
+				.Select(entry => entry.DlcId ?? string.Empty)
+				.Where(dlc => dlc.Length > 0 && !packedDlcs.Contains(dlc))
 				.Distinct(StringComparer.Ordinal)
 				// Invariant rather than current: Mono's current culture is the OS's, not the
 				// game's language, so the same DLC list would sort differently per machine.
@@ -926,8 +924,8 @@ namespace BetterBuildingMenu.Services
 		private static string[] DistinctValues(IEnumerable<string?> values)
 		{
 			return values
-				.Where(value => !string.IsNullOrWhiteSpace(value))
-				.Select(value => value!.Trim())
+				.Select(value => value?.Trim() ?? string.Empty)
+				.Where(value => value.Length > 0)
 				.GroupBy(value => value, StringComparer.OrdinalIgnoreCase)
 				.Select(group => group.First())
 				.OrderBy(value => value, StringComparer.OrdinalIgnoreCase)

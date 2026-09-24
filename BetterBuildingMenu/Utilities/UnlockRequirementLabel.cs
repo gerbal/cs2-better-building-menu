@@ -38,7 +38,7 @@ namespace BetterBuildingMenu.Utilities
 			// nothing, because it reads as a bug rather than as a condition.
 			var translated = translate(key);
 
-			return string.IsNullOrWhiteSpace(translated) ? string.Empty : translated!.Trim();
+			return translated?.Trim() ?? string.Empty;
 		}
 	}
 }
