@@ -242,7 +242,7 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     measure: "volume",
   },
   // Properties.GARBAGE_STORAGE, for a building whose Capacity line is another
-  // role's figure: an incinerator's is its power output.
+  // role's figure.
   garbageStorage: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.GarbageStorage]",
     fallback: "Garbage storage",
@@ -250,7 +250,7 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     measure: "weight",
   },
   // Properties.POWER_PLANT_OUTPUT, for a building whose Capacity line is
-  // another role's figure, such as an emergency generator on a shelter.
+  // another role's figure: an incinerator's is its garbage store.
   powerOutput: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PowerOutput]",
     fallback: "Power output",
@@ -267,8 +267,8 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     measure: "weight",
   },
   // The rest of what vanilla's tooltip carries. Most are what an upgrade IS —
-  // an ambulance depot, a hearse garage, jail cells, a modifier on the parent's
-  // upkeep — so they are the whole content of an upgrade's card.
+  // an ambulance depot, a hearse garage, jail cells, a change to what the
+  // parent burns — so they are the whole content of an upgrade's card.
   ambulances: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Ambulances]", fallback: "Ambulances", unit: "" },
   hearses: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Hearses]", fallback: "Hearses", unit: "" },
   prisonVans: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PrisonVans]", fallback: "Prison vans", unit: "" },
@@ -367,8 +367,8 @@ export function renderServiceFacts(
     }
 
     if (presentation.multiplier) {
-      // One decimal: a graduation modifier of 1.15 is a different building
-      // from one of 1.5, and rounding to whole numbers makes both read "×1".
+      // Two decimals: floor space of 1.15 is a different zone from 1.5, and
+      // rounding to whole numbers makes both read "×1".
       value = `×${(Math.round(fact.value * 100) / 100).toFixed(2).replace(/0$/, "")}`;
     } else {
       const scale = 10 ** (presentation.decimals ?? 0);

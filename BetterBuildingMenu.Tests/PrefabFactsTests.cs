@@ -558,7 +558,7 @@ namespace BetterBuildingMenu.Tests
 		[InlineData(new[] { 1f }, null)]
 		[InlineData(new[] { 0.805f }, -20d)]
 		[InlineData(new[] { float.NaN }, -100d)]
-		public void TheUpkeepChangeIsTheLargestMultiplier(float[] multipliers, double? expected)
+		public void TheResourceConsumptionChangeIsTheLargestMultiplier(float[] multipliers, double? expected)
 		{
 			var entry = Apply(new PrefabSnapshot { UpkeepMultipliers = multipliers });
 
@@ -590,9 +590,10 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		/// <summary>GarbagePowered requires GarbageFacility and PowerPlant, so every incinerator is
-		/// both, and vanilla shows its output and its store on two lines.</summary>
+		/// both, and vanilla shows its store and its output on two lines. It is filed with the
+		/// landfills, so its Capacity is theirs: a weight.</summary>
 		[Fact]
-		public void AnIncineratorIsAPowerPlantWithAGarbageStore()
+		public void AnIncineratorIsAGarbageFacilityThatMakesPower()
 		{
 			var entry = Apply(new PrefabSnapshot
 			{
@@ -601,10 +602,29 @@ namespace BetterBuildingMenu.Tests
 				GarbagePoweredData = new GarbagePoweredData { m_Capacity = 30_000 },
 			});
 
-			Assert.Equal("PowerPlant", entry.BuildingTypeName);
-			Assert.Equal(30_000d, entry.Capacity);
-			Assert.Equal(100_000d, FactValue(entry, "garbageStorage"));
-			Assert.DoesNotContain("powerOutput", Keys(entry));
+			Assert.Equal("GarbageFacility", entry.BuildingTypeName);
+			Assert.Equal(100_000d, entry.Capacity);
+			Assert.Equal(30_000d, FactValue(entry, "powerOutput"));
+			Assert.DoesNotContain("garbageStorage", Keys(entry));
+		}
+
+		[Fact]
+		public void ALandfillsStoreIsItsCapacityAlone()
+		{
+			var entry = Apply(new PrefabSnapshot { GarbageFacilityData = new GarbageFacilityData { m_GarbageCapacity = 500_000 } });
+
+			Assert.Equal(500_000d, entry.Capacity);
+			Assert.DoesNotContain("garbageStorage", Keys(entry));
+		}
+
+		[Fact]
+		public void ASewageOutletsCapacityIsItsOwn()
+		{
+			var entry = Apply(new PrefabSnapshot { SewageOutletData = new SewageOutletData { m_Capacity = 400, m_Purification = 0f } });
+
+			Assert.Equal("SewageOutlet", entry.BuildingTypeName);
+			Assert.Equal(400d, entry.Capacity);
+			Assert.Equal(400, entry.SewageCapacity);
 		}
 
 		[Fact]
@@ -616,35 +636,26 @@ namespace BetterBuildingMenu.Tests
 				WindPoweredData = new WindPoweredData { m_Production = 10 },
 				SolarPoweredData = new SolarPoweredData { m_Production = 20 },
 				GarbagePoweredData = new GarbagePoweredData { m_Capacity = 30 },
-				// (int)(1000000f * factor), as vanilla truncates it.
-				WaterPoweredData = new WaterPoweredData { m_CapacityFactor = 0.0005f },
+				// (int)(1000000f * factor), as vanilla truncates it: 501.69998 is 501.
+				WaterPoweredData = new WaterPoweredData { m_CapacityFactor = 0.0005017f },
 				GroundWaterPoweredData = new GroundWaterPoweredData { m_Production = 40 },
 				EmergencyGeneratorData = new EmergencyGeneratorData { m_ElectricityProduction = 50 },
 			});
 
 			Assert.Equal("PowerPlant", entry.BuildingTypeName);
-			Assert.Equal(750d, entry.Capacity);
+			Assert.Equal(751d, entry.Capacity);
 		}
 
+		/// <summary>An emergency generator, a battery building's upgrade, is a power source on its
+		/// own; a source without a plant is not, and vanilla draws no output for one.</summary>
 		[Fact]
-		public void AnEmergencyGeneratorIsPowerWhereverItSits()
+		public void AnEmergencyGeneratorIsPowerAndABareSourceIsNot()
 		{
-			var generator = new EmergencyGeneratorData { m_ElectricityProduction = 500 };
-
-			var alone = Apply(new PrefabSnapshot { EmergencyGeneratorData = generator });
-			var onAShelter = Apply(new PrefabSnapshot
-			{
-				EmergencyShelterData = new EmergencyShelterData { m_ShelterCapacity = 200 },
-				EmergencyGeneratorData = generator,
-			});
-			// A source is not a plant: vanilla draws no output without one.
+			var generator = Apply(new PrefabSnapshot { EmergencyGeneratorData = new EmergencyGeneratorData { m_ElectricityProduction = 500 } });
 			var sourceOnly = Apply(new PrefabSnapshot { SolarPoweredData = new SolarPoweredData { m_Production = 20 } });
 
-			Assert.Equal("PowerPlant", alone.BuildingTypeName);
-			Assert.Equal(500d, alone.Capacity);
-			Assert.Equal("EmergencyShelter", onAShelter.BuildingTypeName);
-			Assert.Equal(200d, onAShelter.Capacity);
-			Assert.Equal(500d, FactValue(onAShelter, "powerOutput"));
+			Assert.Equal("PowerPlant", generator.BuildingTypeName);
+			Assert.Equal(500d, generator.Capacity);
 			Assert.Null(sourceOnly.BuildingTypeName);
 			Assert.Null(sourceOnly.Capacity);
 		}
@@ -666,15 +677,15 @@ namespace BetterBuildingMenu.Tests
 		{
 			var entry = Apply(new PrefabSnapshot
 			{
-				SchoolData = new SchoolData { m_StudentCapacity = 100, m_StudentWellbeing = -5, m_StudentHealth = 0 },
-				PrisonData = new PrisonData { m_PrisonerCapacity = 10, m_PrisonerWellbeing = -3, m_PrisonerHealth = 2 },
+				SchoolData = new SchoolData { m_StudentCapacity = 100, m_StudentWellbeing = -5, m_StudentHealth = -2 },
+				PrisonData = new PrisonData { m_PrisonerCapacity = 10, m_PrisonerWellbeing = -3, m_PrisonerHealth = -4 },
 				WorkplaceData = new WorkplaceData { m_MaxWorkers = 5, m_WorkConditions = -10 },
 			});
 
 			Assert.Equal(-5d, FactValue(entry, "studentWellbeing"));
-			Assert.DoesNotContain("studentHealth", Keys(entry));
+			Assert.Equal(-2d, FactValue(entry, "studentHealth"));
 			Assert.Equal(-3d, FactValue(entry, "prisonerWellbeing"));
-			Assert.Equal(2d, FactValue(entry, "prisonerHealth"));
+			Assert.Equal(-4d, FactValue(entry, "prisonerHealth"));
 			Assert.Equal(-10d, FactValue(entry, "workConditions"));
 		}
 
@@ -683,9 +694,14 @@ namespace BetterBuildingMenu.Tests
 		{
 			var lot = Apply(new PrefabSnapshot { ParkingFacilityData = new ParkingFacilityData { m_ComfortFactor = 0.5f } });
 			var none = Apply(new PrefabSnapshot { TransportStopData = new TransportStopData { m_ComfortFactor = 0.004f } });
+			// Rounded, not truncated, and a discomfort is a figure too.
+			var rounded = Apply(new PrefabSnapshot { TransportStopData = new TransportStopData { m_ComfortFactor = 0.337f } });
+			var negative = Apply(new PrefabSnapshot { TransportStopData = new TransportStopData { m_ComfortFactor = -0.1f } });
 
 			Assert.Equal(50d, FactValue(lot, "comfort"));
 			Assert.DoesNotContain("comfort", Keys(none));
+			Assert.Equal(34d, FactValue(rounded, "comfort"));
+			Assert.Equal(-10d, FactValue(negative, "comfort"));
 		}
 
 		/// <summary>RequiredResourceBinder asks about a groundwater-powered plant first.</summary>
@@ -701,16 +717,19 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(new[] { "GroundWater" }, TextFacts(entry, "waterSource"));
 		}
 
-		/// <summary>Vanilla's DECEASED_PROCESSING_CAPACITY rounds up.</summary>
-		[Fact]
-		public void AProcessingRateRoundsUp()
+		/// <summary>Vanilla's DECEASED_PROCESSING_CAPACITY rounds up, however little is over.</summary>
+		[Theory]
+		[InlineData(2.4f, 3d)]
+		[InlineData(2.05f, 3d)]
+		[InlineData(3f, 3d)]
+		public void AProcessingRateRoundsUp(float rate, double expected)
 		{
 			var entry = Apply(new PrefabSnapshot
 			{
-				DeathcareFacilityData = new DeathcareFacilityData { m_StorageCapacity = 10, m_ProcessingRate = 2.4f },
+				DeathcareFacilityData = new DeathcareFacilityData { m_StorageCapacity = 10, m_ProcessingRate = rate },
 			});
 
-			Assert.Equal(3d, FactValue(entry, "processingRate"));
+			Assert.Equal(expected, FactValue(entry, "processingRate"));
 		}
 
 		[Fact]

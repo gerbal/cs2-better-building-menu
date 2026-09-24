@@ -73,6 +73,13 @@ describe("renderServiceFacts", () => {
 });
 
 describe("renderServiceTextFacts", () => {
+  it("words each map feature with the game's own string", () => {
+    const translate = (key: string, fallback: string | null) => key === "Properties.MAP_RESOURCE[Fish]" ? "Fisch" : fallback;
+    const [line] = renderServiceTextFacts([{ key: "requiredResource", value: "Fish" }], translate);
+
+    assert.equal(line.value, "Fisch");
+  });
+
   it("labels a worded figure the game already named", () => {
     // A traded resource arrives named by the game, so it passes through.
     const rendered = renderServiceTextFacts(
@@ -220,8 +227,23 @@ describe("what vanilla's tooltip shows on upgrades", () => {
     assert.deepEqual(render("graduation", 5), { key: "graduation", label: "Graduation", value: "+5 %" });
     assert.equal(render("graduation", -10).value, "-10 %");
     assert.equal(render("studentWellbeing", -5).value, "-5");
-    assert.equal(render("prisonerHealth", 3).value, "+3");
     assert.equal(render("workConditions", -10).value, "-10");
+    // A bonus carries its "+" too, which is what tells an offset from a count.
+    for (const key of ["studentWellbeing", "studentHealth", "prisonerWellbeing", "prisonerHealth", "workConditions"]) {
+      assert.equal(render(key, 3).value, "+3", key);
+    }
+  });
+
+  it("draws a secondary role's figure in its own unit", () => {
+    const measured = { weight: (v: number) => `W(${v})`, power: (v: number) => `P(${v})` };
+    const rendered = renderServiceFacts(
+      [{ key: "garbageStorage", value: 100000 }, { key: "powerOutput", value: 30000 }],
+      noTranslation,
+      String,
+      measured,
+    );
+
+    assert.deepEqual(rendered.map((line) => `${line.label} ${line.value}`), ["Garbage storage W(100000)", "Power output P(30000)"]);
   });
 
   it("keeps a decimal on homes per cell", () => {
@@ -268,6 +290,14 @@ describe("orderFacts", () => {
     assert.ok(first.indexOf("helicopters") < first.indexOf("graduation"));
     assert.ok(first.indexOf("graduation") < first.indexOf("nightShift"));
     assert.ok(first.indexOf("nightShift") < first.indexOf("xpReward"));
+  });
+
+  it("files a secondary role's figure with what the building does", () => {
+    const ordered = orderFacts([
+      { key: "xpReward" }, { key: "powerOutput" }, { key: "graduation" }, { key: "garbageStorage" }, { key: "cargoCapacity" },
+    ]).map((fact) => fact.key);
+
+    assert.deepEqual(ordered, ["powerOutput", "garbageStorage", "cargoCapacity", "graduation", "xpReward"]);
   });
 
   it("keeps a key it has never heard of, last and in the order given", () => {

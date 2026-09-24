@@ -1941,13 +1941,15 @@ game. Fixed:
 
 - An incinerator's Capacity was its garbage store drawn as megawatts: the
   largest capacity of every role, in the primary role's unit. Capacity is now
-  the primary role's own figure, and the store gets vanilla's Garbage storage
-  line.
+  the primary role's own figure. An incinerator is filed as a garbage facility,
+  as a landfill is, so its Capacity is a weight like theirs, and its output
+  gets vanilla's Power output line.
 - Power output is `PowerProductionBinder`'s sum: the plant plus wind, solar,
   garbage, water, groundwater and an emergency generator, which is a power
   source on its own too.
 - Upkeep comes from the `ServiceUpkeepData` buffer alone. A signature or zoned
-  building showed its renters' upkeep as the city's.
+  building showed its renters' upkeep as the city's. It now has none, so the
+  table's Upkeep column, its sort and its range skip those buildings.
 - `UpkeepModifierData` is labelled Resource consumption, as vanilla labels it:
   `CityServiceUpkeepSystem` applies it only to the resources a building burns.
 - Graduation is points added to a probability (`GraduationSystem` ends on
@@ -1958,8 +1960,10 @@ game. Fixed:
   stations, as vanilla's three COMFORT binders do.
 - A groundwater-powered plant draws ground water (`RequiredResourceBinder`).
 - A network that owns a building is read from the building.
-- Effects take vanilla's units: a percentage for the absolute city effects
-  `CityModifierBinder.GetModifierUnit` names, one decimal otherwise, invariant.
+- Effects take vanilla's units: a whole percentage (the game ships
+  `percentageSingleFraction` separately, so `percentage` is whole) for relative
+  effects and the absolute city effects `CityModifierBinder.GetModifierUnit`
+  names, one decimal otherwise, invariant.
 - The deathcare processing rate rounds up; a road with no upkeep has no
   upkeep line; homes per cell keep a decimal; Fish is worded; the shelter's
   vehicles are evacuation buses.
@@ -1977,6 +1981,11 @@ Deliberately not matched:
   the card names each resource and its amount under the upkeep instead.
 - The deathcare capacity keeps its "plots" unit, though a crematorium's store
   is bodies held, not plots.
+- A telecom facility's capacity keeps its decimal; vanilla rounds it up.
+- An effect that rounds to nothing draws no line; vanilla binds every one but
+  CriminalMonitorProbability, zeros included.
+- Effect numbers are invariant, so a comma-decimal locale reads "1.5" in an
+  effect line beside "1,5" elsewhere on the card.
 
 Not drawn yet, though vanilla shows them: pollution levels, transformer
 capacity and voltages, a pipe's water type, transport stop counts, a network's

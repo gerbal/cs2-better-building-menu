@@ -49,11 +49,9 @@ namespace BetterBuildingMenu.Systems
 
 		/// <summary>The prefab whose figures a card shows for this one: for a network that owns a
 		/// building, the building.</summary>
-		/// <remarks>PrefabUISystem.BindPrefabDetails, transcribed: a network with a sub-object
-		/// flagged MakeOwner has its cost, effects and properties bound from that object.
-		/// NetInitializeSystem sets the flag on the first course-start or course-end object, and
-		/// PowerProductionBinder looks for a power plant among a network's sub-objects, which is
-		/// how a hydroelectric dam is built. Not checked against the assets.</remarks>
+		/// <remarks>PrefabUISystem.BindPrefabDetails, transcribed: a network's cost, effects and
+		/// properties come from its first sub-object flagged MakeOwner, as a hydroelectric dam's
+		/// come from its power plant.</remarks>
 		private Entity DetailsSource(Entity entity)
 		{
 			if (EntityManager.HasComponent<NetData>(entity)
@@ -63,7 +61,11 @@ namespace BetterBuildingMenu.Systems
 				{
 					if ((subObjects[i].m_Flags & SubObjectFlags.MakeOwner) != 0)
 					{
-						return subObjects[i].m_Prefab;
+						// Vanilla shows no details at all for an owner it cannot read;
+						// the network's own figures are the better fallback.
+						return EntityManager.HasEnabledComponent<PrefabData>(subObjects[i].m_Prefab)
+							? subObjects[i].m_Prefab
+							: entity;
 					}
 				}
 			}
@@ -200,12 +202,11 @@ namespace BetterBuildingMenu.Systems
 						continue;
 					}
 
-					bonuses.Add(DescribeModifier(
+					bonuses.Add(EffectWording.Describe(
 						modifier.m_Type.ToString(),
 						modifier.m_Mode,
 						modifier.m_Range.max,
-						percent: modifier.m_Mode != ModifierValueMode.Absolute
-							|| AbsolutePercentModifiers.Contains(modifier.m_Type)));
+						EffectWording.IsPercent(modifier.m_Type, modifier.m_Mode)));
 				}
 			}
 
@@ -215,11 +216,11 @@ namespace BetterBuildingMenu.Systems
 				{
 					var modifier = localModifiers[i];
 
-					bonuses.Add(DescribeModifier(
+					bonuses.Add(EffectWording.Describe(
 						modifier.m_Type.ToString(),
 						modifier.m_Mode,
 						modifier.m_Delta.max,
-						percent: modifier.m_Mode != ModifierValueMode.Absolute));
+						EffectWording.IsPercent(modifier.m_Mode)));
 				}
 			}
 
@@ -260,51 +261,6 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			return null;
-		}
-
-		/// <summary>The city effects CityModifierBinder.GetModifierUnit shows as a percentage even
-		/// when their value is absolute.</summary>
-		private static readonly HashSet<CityModifierType> AbsolutePercentModifiers = new()
-		{
-			CityModifierType.DiseaseProbability,
-			CityModifierType.OfficeSoftwareEfficiency,
-			CityModifierType.IndustrialElectronicsEfficiency,
-			CityModifierType.CollegeGraduation,
-			CityModifierType.UniversityGraduation,
-			CityModifierType.IndustrialEfficiency,
-			CityModifierType.OfficeEfficiency,
-			CityModifierType.HospitalEfficiency,
-			CityModifierType.IndustrialFishInputEfficiency,
-			CityModifierType.IndustrialFishHubEfficiency,
-		};
-
-		/// <summary>One effect, signed, in the unit vanilla binds it with.</summary>
-		/// <remarks>Vanilla's two units are a percentage and floatSingleFraction, one decimal. The
-		/// number is invariant, as the rest of the card's words are.</remarks>
-		private static string DescribeModifier(string type, ModifierValueMode mode, float value, bool percent)
-		{
-			// ModifierUIUtils.GetModifierDelta, transcribed: a relative mode is a
-			// fraction and reads as a percentage; absolute is already the number.
-			var scaled = mode switch
-			{
-				ModifierValueMode.Relative => 100f * value,
-				ModifierValueMode.InverseRelative => 100f * (1f / Math.Max(0.001f, 1f + value) - 1f),
-				_ => value,
-			};
-
-			var number = scaled.ToString(percent ? "0.##" : "0.#", CultureInfo.InvariantCulture);
-
-			// What rounds to nothing says nothing, whichever sign it rounded from.
-			if (number is "0" or "-0")
-			{
-				return string.Empty;
-			}
-
-			// The sign is the point — a modifier can make something worse, and an
-			// unsigned number would read as a benefit either way.
-			var sign = scaled > 0 ? "+" : string.Empty;
-
-			return $"{type.FormatWords()} {sign}{number}{(percent ? "%" : string.Empty)}";
 		}
 
 		/// <summary>The upgrades a building supports, in the order vanilla offers them.</summary>

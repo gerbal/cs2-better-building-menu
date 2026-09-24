@@ -250,12 +250,13 @@ Where the game's own tooltip shows a figure, `Apply` follows its binder in
 
 - A network that owns a building, through a sub-object flagged `MakeOwner`, is read from that
   building, as `BindPrefabDetails` reads it (`DetailsSource`).
-- Upkeep is the `ServiceUpkeepData` buffer's money and nothing else. A prefab without the buffer
-  has no upkeep line, as in vanilla: what `ConsumptionData` holds alone, on a zoned or signature
-  building, is the rent-side upkeep `PropertyRenterSystem` charges, not the city's.
-- Capacity is the primary role's own figure, in the unit the UI formats that role in. A secondary
-  role's figure that vanilla shows gets its own line: an incinerator is a power plant with a
-  garbage store.
+- A building's upkeep is the `ServiceUpkeepData` buffer's money and nothing else; a network's
+  comes from `PlaceableNetData`. A building without the buffer has no upkeep line, as in vanilla:
+  what `ConsumptionData` holds alone, on a zoned or signature building, is the rent-side upkeep
+  `PropertyRenterSystem` charges, not the city's.
+- Capacity is the primary role's own figure, in the unit the UI formats that role in. Two
+  secondary figures vanilla shows get lines of their own, a garbage store and a power output: an
+  incinerator is filed as a garbage facility, and its output is the second.
 
 docs/verification.md, "Card facts against vanilla's binders", lists where the card still differs
 and why.
