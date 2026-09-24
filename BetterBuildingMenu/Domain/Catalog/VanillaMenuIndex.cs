@@ -11,8 +11,9 @@ namespace BetterBuildingMenu.Domain.Catalog
 	/// the menus and category tabs it draws.
 	/// </summary>
 	/// <remarks>
-	/// Fixed once built; a new pass builds a new one. The walk that fills it is in
-	/// PrefabIndexingSystem; see docs/indexing.md, "The vanilla menu walk".
+	/// Fixed once built; a new pass builds a new one, handing over tables it keeps no hold on.
+	/// The walk that fills it is in PrefabIndexingSystem; see docs/indexing.md, "The vanilla
+	/// menu walk".
 	/// </remarks>
 	public sealed class VanillaMenuIndex
 	{
@@ -32,7 +33,8 @@ namespace BetterBuildingMenu.Domain.Catalog
 
 		/// <param name="placements">Where the game places each asset, by prefab entity index.</param>
 		/// <param name="menuNames">Each menu's prefab name, by its entity index.</param>
-		/// <param name="menuEntities">Each menu's entity, by prefab name, compared ignoring case.</param>
+		/// <param name="menuEntities">Each menu's entity, by prefab name. Looked up ignoring case,
+		/// whatever comparer the caller's dictionary has.</param>
 		/// <param name="menus">Every menu, in the game's order.</param>
 		/// <param name="categories">Each menu's category tabs, by menu name, in the game's order.</param>
 		public VanillaMenuIndex(
@@ -44,12 +46,12 @@ namespace BetterBuildingMenu.Domain.Catalog
 		{
 			_placements = placements;
 			_menuNames = menuNames;
-			_menuEntities = menuEntities;
+			_menuEntities = IgnoringCase(menuEntities);
 			_menus = menus;
 			_categories = categories;
 		}
 
-		/// <summary>Every placement, for the audits and the zone catalog.</summary>
+		/// <summary>Every placement, for the audits and AddPrefab's placement override.</summary>
 		public IReadOnlyDictionary<int, VanillaMenuPlacement> Placements => _placements;
 
 		/// <summary>Whether the game offers this prefab in any of its build menus.</summary>
@@ -100,7 +102,7 @@ namespace BetterBuildingMenu.Domain.Catalog
 		/// <summary>Every vanilla menu that has something in it, in the game's order.</summary>
 		/// <remarks>Filtered to menus with at least one category tab, the same test vanilla applies
 		/// before drawing one: a menu whose categories are all empty is a button the game hides.</remarks>
-		public IReadOnlyList<VanillaMenuCategory> Menus() =>
+		public IReadOnlyList<VanillaMenuCategory> AssetMenus() =>
 			_menus.Where(menu => _categories.ContainsKey(menu.Id)).ToArray();
 
 		/// <summary>A menu's own category tabs, empty when it has none.</summary>
@@ -108,5 +110,19 @@ namespace BetterBuildingMenu.Domain.Catalog
 			menu is not null && _categories.TryGetValue(menu, out var tabs)
 				? tabs
 				: Array.Empty<VanillaMenuCategory>();
+
+		// The UI names a menu the way the player's toolbar does, which need not match the
+		// prefab's case. A copy, so the comparison holds whoever built the dictionary.
+		private static Dictionary<string, Entity> IgnoringCase(IReadOnlyDictionary<string, Entity> byName)
+		{
+			var copy = new Dictionary<string, Entity>(StringComparer.OrdinalIgnoreCase);
+
+			foreach (var pair in byName)
+			{
+				copy[pair.Key] = pair.Value;
+			}
+
+			return copy;
+		}
 	}
 }

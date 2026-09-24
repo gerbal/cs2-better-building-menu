@@ -74,8 +74,8 @@ of it back and logs the error. The panel keeps the index it had, and nothing rea
 game's load or locale dispatch.
 
 Capturing references is enough, because a pass never writes to the old collections. Every
-`Index*` step builds new ones and assigns them at its end, and the pass files into a new
-`CatalogIndex`. Before the first pass there is nothing to keep, so a failure there leaves an
+`Index*` step builds new ones, which it either assigns at its end or returns into the new
+`CatalogIndex` the pass files into. Before the first pass there is nothing to keep, so a failure there leaves an
 empty index laid out, not yet ready.
 
 A failed pass at `OnGameLoaded` does not count as indexed, so loading-complete runs its own.
@@ -120,9 +120,15 @@ indexed.
 
 The walk's tables, with the menus and their category tabs, go into the pass's `VanillaMenuIndex`,
 which its `CatalogIndex` carries as `Menus`: a new pass reads the menus afresh, and nothing
-outlives the index it was read for. Two things read the placements: the coverage report, and the
-index itself, which treats placement as an override — see the blacklist check in `BuildIndex` and
-`VanillaMenuIndex.IsPlaced`.
+outlives the index it was read for. The placements are read by:
+
+- the coverage report and the menu audit;
+- the zone catalog, which inherits the Zones menu (below);
+- the index itself, which treats placement as an override: the blacklist and Find It checks in
+  `BuildIndex`, the menu-placed, terraforming and misc-building processors, and `AddPrefab`'s
+  placement override, which takes the menu and category the entity world gives;
+- the adapter, which scopes a menu's view by them and gathers networks into Roads only when some
+  menu places them.
 
 ### The Zones menu
 
