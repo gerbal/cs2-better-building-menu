@@ -143,8 +143,8 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		int UiCategoryPriority = 0,
 		/// <summary>
-		/// Where <see cref="UiCategory"/>'s tab sits in its menu's strip, counted from 0;
-		/// int.MaxValue when the menu draws no such tab.
+		/// Where <see cref="UiCategory"/>'s tab sits in its menu's strip, counted from 0, in one
+		/// menu's view; int.MaxValue in any other, or when the menu draws no such tab.
 		/// </summary>
 		/// <remarks>
 		/// Ordering only, like the priority: it breaks the ties the priority leaves the way the strip

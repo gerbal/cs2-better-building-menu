@@ -186,8 +186,9 @@ not, could put equal priorities in a different order from the game's. The menus 
 bar's: the toolbar groups by priority, then each group's members sorted the same way. A menu no
 toolbar group holds goes last. The UI keeps the menus in that order. It sorts the tabs again, by
 the same priority and stably, which leaves them as they are. The All tab's category headings
-follow the strip too: the adapter gives each entry its tab's place in it
-(`VanillaMenuIndex.TabPosition`), which breaks a priority tie where the name once did.
+follow the strip too: in one menu's view the adapter gives each entry its tab's priority and place
+in the strip (`VanillaMenuIndex.TabOf`). So a priority tie breaks as the strip breaks it, before
+the name, and every entry of one tab ranks alike, a moved asset included.
 
 The walk's tables, with the menus and their category tabs, go into the pass's `VanillaMenuIndex`,
 which its `CatalogIndex` carries as `Menus`: a new pass reads the menus afresh, and nothing

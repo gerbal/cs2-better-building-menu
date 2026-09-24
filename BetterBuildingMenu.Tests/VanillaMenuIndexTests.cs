@@ -106,18 +106,18 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void ATabsPositionIsItsPlaceInItsMenusStrip()
+		public void ATabIsItsPlaceAndPriorityInItsMenusStrip()
 		{
 			var menus = Menus(
 				System.Array.Empty<(int, string, string)>(),
 				new() { ["Roads"] = new() { Tab("RoadsSmall", 10), Tab("RoadsRoundabouts", 70), Tab("RoadsCulDeSacs", 70) } });
 
-			Assert.Equal(0, menus.TabPosition("Roads", "RoadsSmall"));
-			Assert.Equal(2, menus.TabPosition("Roads", " RoadsCulDeSacs "));
-			Assert.Equal(int.MaxValue, menus.TabPosition("Roads", "roadssmall"));
-			Assert.Equal(int.MaxValue, menus.TabPosition("Zones", "RoadsSmall"));
-			Assert.Equal(int.MaxValue, menus.TabPosition(null, "RoadsSmall"));
-			Assert.Equal(int.MaxValue, menus.TabPosition("Roads", null));
+			Assert.Equal((0, 10), menus.TabOf("Roads", "RoadsSmall"));
+			Assert.Equal((2, 70), menus.TabOf("Roads", " RoadsCulDeSacs "));
+			Assert.Null(menus.TabOf("Roads", "roadssmall"));
+			Assert.Null(menus.TabOf("Zones", "RoadsSmall"));
+			Assert.Null(menus.TabOf(null, "RoadsSmall"));
+			Assert.Null(menus.TabOf("Roads", null));
 		}
 
 		/// <summary>The adapter hands each entry its tab's place in the strip, so the All tab's
@@ -151,6 +151,84 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.Equal(new[] { "RoadsRoundabouts", "RoadsCulDeSacs" }, items.Select(item => item.UiCategory));
 			Assert.Equal(new[] { 0, 1 }, items.Select(item => item.UiCategoryTab));
+		}
+
+		private static PrefabIndex PlacedIn(int id, string menu, string category, int priority)
+		{
+			var entry = TestPrefabs.Entry(id, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads);
+			entry.UiMenuName = menu;
+			entry.UiCategoryName = category;
+			entry.UiCategoryPriority = priority;
+			return entry;
+		}
+
+		private static BuildingCatalogEntry[] Grouped(CatalogIndex index, string menu) =>
+			new BuildingCatalogAdapter()
+				.Build(
+					new CatalogSource(index, new PlacedUniques(), 1),
+					new BuildingCatalogQuery(GroupBy: BuildingCatalogGrouping.MenuCategory, UiMenu: menu),
+					VanillaToolbarSelection.None)
+				.Page.Items.ToArray();
+
+		/// <summary>An asset a mod moved into a tab keeps its old group's priority on its prefab;
+		/// the strip's priority is the one its heading ranks by, so the tab is one heading.</summary>
+		[Fact]
+		public void AMovedAssetRanksByTheTabItWasMovedTo()
+		{
+			var index = ReadyIndex(
+				Menus(
+					new[] { (1, "Roads", "RoadsSmall"), (2, "Roads", "RoadsRoundabouts"), (3, "Roads", "RoadsCulDeSacs"), (4, "Roads", "RoadsCulDeSacs") },
+					new() { ["Roads"] = new() { Tab("RoadsSmall", 10), Tab("RoadsRoundabouts", 70), Tab("RoadsCulDeSacs", 70) } },
+					menuOrder: new[] { "Roads" }),
+				PlacedIn(1, "Roads", "RoadsSmall", 10),
+				PlacedIn(2, "Roads", "RoadsRoundabouts", 70),
+				PlacedIn(3, "Roads", "RoadsCulDeSacs", 70),
+				// Moved from RoadsSmall: its managed group still says 10.
+				PlacedIn(4, "Roads", "RoadsCulDeSacs", 10));
+
+			var items = Grouped(index, "Roads");
+
+			Assert.Equal(
+				new[] { "RoadsSmall", "RoadsRoundabouts", "RoadsCulDeSacs", "RoadsCulDeSacs" },
+				items.Select(item => item.UiCategory));
+			Assert.All(items.Where(item => item.UiCategory == "RoadsCulDeSacs"), item => Assert.Equal(70, item.UiCategoryPriority));
+		}
+
+		[Fact]
+		public void EachMenusHeadingsFollowItsOwnStrip()
+		{
+			var index = ReadyIndex(
+				Menus(
+					new[] { (5, "Landscaping", "LandscapingPiersAndQuays"), (6, "Landscaping", "LandscapingBikePaths") },
+					new()
+					{
+						["Roads"] = new() { Tab("LandscapingBikePaths", 1), Tab("LandscapingPiersAndQuays", 2) },
+						["Landscaping"] = new() { Tab("LandscapingPiersAndQuays", 31), Tab("LandscapingBikePaths", 31) },
+					},
+					menuOrder: new[] { "Roads", "Landscaping" }),
+				PlacedIn(6, "Landscaping", "LandscapingBikePaths", 31),
+				PlacedIn(5, "Landscaping", "LandscapingPiersAndQuays", 31));
+
+			Assert.Equal(
+				new[] { "LandscapingPiersAndQuays", "LandscapingBikePaths" },
+				Grouped(index, "Landscaping").Select(item => item.UiCategory));
+		}
+
+		/// <summary>With no menu there is no one strip, so no position is compared.</summary>
+		[Fact]
+		public void TheUnscopedCatalogComparesNoTabPositions()
+		{
+			var index = ReadyIndex(
+				Menus(
+					new[] { (1, "Roads", "RoadsRoundabouts") },
+					new() { ["Roads"] = new() { Tab("RoadsRoundabouts", 70) } },
+					menuOrder: new[] { "Roads" }),
+				PlacedIn(1, "Roads", "RoadsRoundabouts", 70));
+
+			var item = Assert.Single(Grouped(index, string.Empty));
+
+			Assert.Equal(int.MaxValue, item.UiCategoryTab);
+			Assert.Equal(70, item.UiCategoryPriority);
 		}
 
 		[Fact]

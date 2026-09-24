@@ -207,6 +207,7 @@ namespace BetterBuildingMenu.Services
 
 			var ordered = entries
 				.OrderBy(entry => entry.UiCategoryPriority)
+				.ThenBy(entry => entry.UiCategoryTab)
 				.ThenBy(entry => entry.Name, StringComparer.Ordinal)
 				.ToArray();
 
@@ -556,7 +557,7 @@ namespace BetterBuildingMenu.Services
 			bool ignorePacks)
 		{
 			var entries = GetIndexedBuildings(source.Index, menu, selection, ignorePackSelection: ignorePacks, unionDlcIds: contentDlcs)
-				.Select(prefab => Project(prefab, source))
+				.Select(prefab => Project(prefab, source, scoped: !string.IsNullOrWhiteSpace(menu)))
 				.ToArray();
 			var root = source.Index.Progression.RootLabel(menu);
 
@@ -626,12 +627,14 @@ namespace BetterBuildingMenu.Services
 				return null;
 			}
 
-			return source.Index.GetByPrefabName(prefabName) is { } found ? Project(found, source) : null;
+			return source.Index.GetByPrefabName(prefabName) is { } found ? Project(found, source, scoped: false) : null;
 		}
 
-		private BuildingCatalogEntry Project(PrefabIndex prefab, CatalogSource source)
+		/// <param name="scoped">Whether the view is one menu's, where its strip orders the headings.</param>
+		private BuildingCatalogEntry Project(PrefabIndex prefab, CatalogSource source, bool scoped)
 		{
 			var placed = source.Placed;
+			var tab = source.Index.Menus.TabOf(prefab.UiMenuName, prefab.UiCategoryName);
 
 			return new BuildingCatalogEntry(
 				Id: prefab.Id,
@@ -662,8 +665,12 @@ namespace BetterBuildingMenu.Services
 				NetworkWidth: prefab.NetworkWidth,
 				LeisureType: prefab.LeisureType ?? string.Empty,
 				LeisureEfficiency: prefab.LeisureEfficiency,
-				UiCategoryPriority: prefab.UiCategoryPriority,
-				UiCategoryTab: source.Index.Menus.TabPosition(prefab.UiMenuName, prefab.UiCategoryName),
+				// The strip's own priority where it draws the tab, so every entry of one tab
+				// ranks alike whatever its managed group says: a moved asset keeps its old
+				// group there.
+				UiCategoryPriority: tab?.Priority ?? prefab.UiCategoryPriority,
+				// Only in one menu's view: two menus' strips are not one order.
+				UiCategoryTab: scoped && tab is { } drawn ? drawn.Position : int.MaxValue,
 				// int.MaxValue means the prefab had no UIObject at all; vanilla
 				// reads that as 0. See BuildingCatalogEntry.UIOrder.
 				UIOrder: prefab.UIOrder == int.MaxValue ? 0 : prefab.UIOrder,
