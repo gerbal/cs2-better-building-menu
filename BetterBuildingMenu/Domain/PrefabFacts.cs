@@ -15,10 +15,8 @@ namespace BetterBuildingMenu.Domain
 	/// what <see cref="PrefabSnapshot"/> holds.
 	/// </summary>
 	/// <remarks>
-	/// The indexer fills the snapshot from the game and this only maps it, so a test can build one
-	/// by hand. The entry keeps the order facts are added in, but a card re-sorts them by the UI's
-	/// FACT_ORDER, so that order only breaks ties within one key. UI/test/factCoverage.test.ts reads
-	/// this file for every key it can emit. See docs/indexing.md.
+	/// The indexer fills the snapshot and this only maps it, so a test can build one by hand.
+	/// See docs/indexing.md, "Per-prefab facts".
 	/// </remarks>
 	public static class PrefabFacts
 	{
