@@ -7,8 +7,8 @@ using Unity.Entities;
 namespace BetterBuildingMenu.Domain.Catalog
 {
 	/// <summary>
-	/// The game's own build menus as a full pass read them: where each asset is placed, and
-	/// the menus and category tabs it draws.
+	/// The game's own build menus as a full pass read them: where each asset is placed, as the
+	/// latest pass read it, and the menus and category tabs it draws.
 	/// </summary>
 	/// <remarks>
 	/// Not changed once built; a new pass builds a new one, handing over tables it keeps no hold on,
