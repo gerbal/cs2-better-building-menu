@@ -1,6 +1,6 @@
-# Builds the mod and runs its tests against mock game assemblies kept in a
-# private repository: the game's types and signatures, every method body a
-# throw. Setup and upkeep are in docs/ci.md.
+# Builds the mod and runs all its tests against the game's own assemblies, kept
+# in a private repository. This repository is public: those assemblies must
+# never leave the runner. Setup and upkeep are in docs/ci.md.
 name: C#
 
 on:
@@ -20,18 +20,15 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CS2_GAME_PATH: ${{ github.workspace }}/cs2-refs
-      # Tests that call into the game cannot pass against mocks; they run
-      # locally against the real install.
-      CS2_TEST_FILTER: Requires!=Game
       DOTNET_CLI_TELEMETRY_OPTOUT: "1"
       DOTNET_NOLOGO: "1"
     steps:
       - uses: actions/checkout@v4
 
-      # Never upload cs2-refs as an artifact or put it in the Actions cache: on
-      # a public repository both can be read by others, the cache by pull
-      # requests from forks.
-      - name: Check out the mock game assemblies
+      # Never upload cs2-refs as an artifact or put it in the Actions cache: it
+      # is the game's code, and on a public repository both can be read by
+      # others, the cache by pull requests from forks.
+      - name: Check out the game assemblies
         uses: actions/checkout@v4
         with:
           repository: gerbal/cs2-game-refs
