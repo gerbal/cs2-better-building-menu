@@ -22,9 +22,8 @@ namespace BetterBuildingMenu.Systems
 		/// Re-publish the lens after something changed what it should show.
 		/// </summary>
 		/// <remarks>
-		/// The options panel's sorting sections still reach the lens: the index holds
-		/// IndexedPrefabList, whose enumerator returns the statically-sorted order, so that sort
-		/// still decides the ties the catalog's own sort leaves open.
+		/// The index hands its entries over in name order, so that order decides the ties
+		/// the catalog's own sort leaves open.
 		/// </remarks>
 		internal void RefreshLens()
 		{

@@ -33,7 +33,7 @@ namespace BetterBuildingMenu.Tests
 			new(
 				placements.ToDictionary(placement => placement.Id, placement => new VanillaMenuPlacement(default, placement.Menu, placement.Category)),
 				menuNames ?? new Dictionary<int, string>(),
-				menuEntities ?? new Dictionary<string, Entity>(System.StringComparer.OrdinalIgnoreCase),
+				menuEntities ?? new Dictionary<string, Entity>(),
 				(menuOrder ?? System.Array.Empty<string>()).Select(menu => Tab(menu)).ToArray(),
 				categories ?? new Dictionary<string, List<VanillaMenuCategory>>());
 
@@ -60,12 +60,12 @@ namespace BetterBuildingMenu.Tests
 			Assert.False(menus.TryGetCategory(1, out _));
 			Assert.False(menus.TryGetMenuEntity("Roads", out _));
 			Assert.Null(menus.MenuName(1));
-			Assert.Empty(menus.Menus());
+			Assert.Empty(menus.AssetMenus());
 			Assert.Empty(menus.CategoriesOf("Roads"));
 		}
 
 		[Fact]
-		public void APlacementNamesItsMenuIgnoringCaseAndSpace()
+		public void APlacementsMenuMatchesIgnoringCaseAndItsOwnSpaces()
 		{
 			var menus = Menus(new[] { (1, " Landscaping ", "Terraforming") });
 
@@ -86,9 +86,10 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void AMenuEntityIsFoundByItsTrimmedName()
+		public void AMenuEntityIsFoundByItsTrimmedNameIgnoringCase()
 		{
-			var entities = new Dictionary<string, Entity>(System.StringComparer.OrdinalIgnoreCase)
+			// A plain dictionary: the index ignores case whatever the caller built.
+			var entities = new Dictionary<string, Entity>
 			{
 				["Roads"] = new Entity { Index = 7, Version = 3 },
 			};
@@ -109,7 +110,7 @@ namespace BetterBuildingMenu.Tests
 				new() { ["Roads"] = new() { Tab("RoadsSmall") }, ["Zones"] = new() { Tab("ZonesResidential") } },
 				menuOrder: new[] { "Zones", "Empty", "Roads" });
 
-			Assert.Equal(new[] { "Zones", "Roads" }, menus.Menus().Select(menu => menu.Id));
+			Assert.Equal(new[] { "Zones", "Roads" }, menus.AssetMenus().Select(menu => menu.Id));
 			Assert.Empty(menus.CategoriesOf("Empty"));
 			Assert.Empty(menus.CategoriesOf(null));
 		}
