@@ -362,7 +362,8 @@ namespace BetterBuildingMenu.Services
 
 		/// <summary>One view per refresh: every per-query answer comes from it.</summary>
 		/// <remarks>
-		/// BuildingMenuUISystem calls this once per refresh and reads the view's properties.
+		/// BuildingMenuUISystem calls this once per refresh and reads the view's properties,
+		/// and once more for the matches-elsewhere count when a search finds nothing.
 		/// </remarks>
 		/// <param name="source">
 		/// What this refresh reads from the indexer, taken once so every answer in it
@@ -432,6 +433,10 @@ namespace BetterBuildingMenu.Services
 				: isBuilding || placedInAnyMenu;
 
 		/// <summary>Whether the index holds anything the given menu places.</summary>
+		/// <param name="selection">
+		/// The game's own toolbar filter row. Its themes and Vanilla/Mods toggles can empty a
+		/// menu, which then goes back to vanilla; its pack selection is ignored here.
+		/// </param>
 		public static bool MenuHasAssets(string menu, VanillaToolbarSelection selection) =>
 			GetIndexedBuildings(menu, selection, ignorePackSelection: true).Any();
 
