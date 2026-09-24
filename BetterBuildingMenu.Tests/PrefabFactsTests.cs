@@ -45,10 +45,10 @@ namespace BetterBuildingMenu.Tests
 			Assert.False(PrefabFacts.AppliesTo(PrefabCategory.Any));
 		}
 
-		/// <summary>A hospital, end to end: the figures, the order its facts are listed in, and what
+		/// <summary>A hospital, end to end: the figures, the order its facts are added in, and what
 		/// is left out.</summary>
 		[Fact]
-		public void AHospitalGetsItsFiguresAndItsFactsInCardOrder()
+		public void AHospitalGetsItsFiguresAndItsFactsInEmitOrder()
 		{
 			var entry = Apply(new PrefabSnapshot
 			{
@@ -90,6 +90,153 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(new[] { new ServiceTextFact("jobComplexity", "Complex") }, entry.ServiceTextFacts);
 		}
 
+		/// <summary>A building carrying every service component at once, each figure distinct, so a
+		/// dropped, swapped or reordered line changes the result.</summary>
+		/// <remarks>No real prefab carries all of these; this pins the whole mapping, fact by fact, in
+		/// the order it is added.</remarks>
+		[Fact]
+		public void EveryServiceFamilyMapsToItsOwnFigures()
+		{
+			var entry = Apply(
+				new PrefabSnapshot
+				{
+					PlaceableObjectData = new PlaceableObjectData { m_ConstructionCost = 101, m_XPReward = 2 },
+					ConsumptionData = new ConsumptionData
+					{
+						m_Upkeep = 3, m_ElectricityConsumption = 5f, m_WaterConsumption = 7f, m_GarbageAccumulation = 11f, m_TelecomNeed = 13f,
+					},
+					ServiceUpkeep = new[] { ("Money", 17), ("Coal", 19), ("Oil", 0) },
+					WorkplaceData = new WorkplaceData
+					{
+						m_MaxWorkers = 23,
+						m_MinimumWorkersLimit = 29,
+						m_EveningShiftProbability = 0.5f,
+						m_NightShiftProbability = 0.25f,
+						m_WorkConditions = 31,
+						m_Complexity = WorkplaceComplexity.Hitech,
+					},
+					BuildingPropertyData = new BuildingPropertyData { m_ResidentialProperties = 37 },
+					PollutionData = new PollutionData { m_GroundPollution = 41f, m_AirPollution = 43f, m_NoisePollution = 47f },
+					SchoolData = new SchoolData
+					{
+						m_StudentCapacity = 53, m_StudentWellbeing = 4, m_StudentHealth = 6, m_EducationLevel = 2, m_GraduationModifier = 0.75f,
+					},
+					LeisureProviderData = new LeisureProviderData { m_Efficiency = 59, m_LeisureType = Game.Agents.LeisureType.Meals },
+					HospitalData = new HospitalData { m_PatientCapacity = 61, m_AmbulanceCapacity = 67, m_MedicalHelicopterCapacity = 71 },
+					ZoneServiceConsumptionData = new ZoneServiceConsumptionData { m_Upkeep = 0.5f },
+					ZonePropertiesData = new ZonePropertiesData
+					{
+						m_ResidentialProperties = 73f,
+						m_SpaceMultiplier = 1.5f,
+						m_FireHazardMultiplier = 2f,
+						m_IgnoreLandValue = true,
+						m_AllowedSold = Game.Economy.Resource.Coal,
+						m_AllowedManufactured = Game.Economy.Resource.Oil,
+						m_AllowedStored = Game.Economy.Resource.Wood,
+					},
+					ZoneData = new ZoneData { m_MaxHeight = 79, m_ZoneFlags = ZoneFlags.SupportNarrow | ZoneFlags.SupportLeftCorner },
+					AttractionData = new AttractionData { m_Attractiveness = 83 },
+					CoverageData = new CoverageData { m_Range = 1_000f },
+					MailBoxData = new MailBoxData { m_MailCapacity = 89 },
+					RequiredResource = "Ore",
+					PostFacilityData = new PostFacilityData { m_PostVanCapacity = 97, m_PostTruckCapacity = 103, m_MailCapacity = 107, m_SortingRate = 109 },
+					TelecomFacilityData = new TelecomFacilityData { m_Range = 2_000f, m_NetworkCapacity = 1.5f, m_PenetrateTerrain = true },
+					GarbageFacilityData = new GarbageFacilityData
+					{
+						m_GarbageCapacity = 113, m_VehicleCapacity = 127, m_TransportCapacity = 131, m_ProcessingSpeed = 137, m_IndustrialWasteOnly = true,
+					},
+					FireStationData = new FireStationData { m_FireEngineCapacity = 139, m_FireHelicopterCapacity = 149, m_DisasterResponseCapacity = 151 },
+					PoliceStationData = new PoliceStationData { m_PatrolCarCapacity = 157, m_PoliceHelicopterCapacity = 163, m_JailCapacity = 167 },
+					PrisonData = new PrisonData { m_PrisonVanCapacity = 173, m_PrisonerCapacity = 179, m_PrisonerWellbeing = 8, m_PrisonerHealth = 9 },
+					DeathcareFacilityData = new DeathcareFacilityData
+					{
+						m_HearseCapacity = 181, m_StorageCapacity = 191, m_ProcessingRate = 0.125f, m_LongTermStorage = true,
+					},
+					EmergencyShelterData = new EmergencyShelterData { m_ShelterCapacity = 193, m_VehicleCapacity = 197 },
+					WaterPumpingStationData = new WaterPumpingStationData
+					{
+						m_Types = AllowedWaterTypes.Groundwater, m_Capacity = 199, m_Purification = 0.25f,
+					},
+					SewageOutletData = new SewageOutletData { m_Capacity = 211, m_Purification = 0.5f },
+					PowerPlantData = new PowerPlantData { m_ElectricityProduction = 223 },
+					SolarPoweredData = new SolarPoweredData { m_Production = 227 },
+					WindPoweredData = new WindPoweredData { m_Production = 5_000 },
+					BatteryData = new BatteryData { m_Capacity = 229, m_PowerOutput = 233 },
+					ParkData = new ParkData { m_MaintenancePool = 239 },
+					TransportDepotData = new TransportDepotData { m_TransportType = TransportType.Bus, m_VehicleCapacity = 241 },
+					MaintenanceDepotData = new MaintenanceDepotData { m_VehicleCapacity = 251 },
+					PollutionModifierData = new PollutionModifierData
+					{
+						m_GroundPollutionMultiplier = 0.5f, m_AirPollutionMultiplier = 1.25f, m_NoisePollutionMultiplier = 1f,
+					},
+					UpkeepMultipliers = new[] { 0.75f },
+					TransportStationData = new TransportStationData { m_ComfortFactor = 0.5f },
+					StorageLimitData = new Game.Companies.StorageLimitData { m_Limit = 257 },
+					ElectricityConnectionData = new ElectricityConnectionData { m_Capacity = 263, m_Voltage = ElectricityConnection.Voltage.Low },
+					WaterPipeConnectionData = new WaterPipeConnectionData { m_StormCapacity = 269 },
+					WastewaterTreatmentPlantData = new WastewaterTreatmentPlantData { m_Capacity = 271 },
+				},
+				PrefabCategory.Buildings);
+
+			Assert.Equal(101u, entry.ConstructionCost);
+			Assert.Equal(17, entry.Upkeep);
+			Assert.Equal(5f, entry.ElectricityConsumption);
+			Assert.Equal(7f, entry.WaterConsumption);
+			Assert.Equal(11f, entry.GarbageAccumulation);
+			Assert.Equal(13f, entry.TelecomNeed);
+			Assert.Equal(23, entry.Workers);
+			Assert.Equal(37, entry.Households);
+			Assert.Equal(41f, entry.GroundPollution);
+			Assert.Equal(43f, entry.AirPollution);
+			Assert.Equal(47f, entry.NoisePollution);
+			Assert.Equal(2, entry.EducationLevel);
+			Assert.Equal("Meals", entry.LeisureType);
+			Assert.Equal(59, entry.LeisureEfficiency);
+			Assert.Equal(2_000f, entry.ServiceRange);
+			Assert.Equal(199, entry.WaterCapacity);
+			// The treatment plant is read after the outlet, so its figure stands.
+			Assert.Equal(271, entry.SewageCapacity);
+			// The largest, and neither the first nor the last added.
+			Assert.Equal(5_000d, entry.Capacity);
+			Assert.Equal("School", entry.BuildingTypeName);
+			Assert.False(entry.CostIsPerDistance);
+			Assert.Null(entry.Footprints);
+
+			Assert.Equal(
+				new[]
+				{
+					("xpReward", 2d), ("upkeep:Coal", 19d),
+					("minCrew", 29d), ("eveningShift", 50d), ("nightShift", 25d), ("workConditions", 31d),
+					("studentWellbeing", 4d), ("studentHealth", 6d), ("graduation", 0.75d),
+					("ambulances", 67d), ("helicopters", 71d),
+					("zoneUpkeep", 0.5d), ("zoneHouseholds", 73d), ("zoneSpace", 1.5d), ("zoneFireHazard", 2d), ("zoneMaxHeight", 79d),
+					("attractiveness", 83d), ("mailboxCapacity", 89d),
+					("postTrucks", 103d), ("sortingRate", 109d), ("postVans", 97d),
+					("garbageProcessing", 137d), ("collectionTrucks", 127d),
+					("helicopters", 149d), ("disasterResponse", 151d),
+					("jailCapacity", 167d), ("helicopters", 163d),
+					("prisonVans", 173d), ("prisonerWellbeing", 8d), ("prisonerHealth", 9d),
+					("hearses", 181d), ("processingRate", 0.125d), ("shelterVehicles", 197d),
+					("purification", 25d), ("purification", 50d),
+					("batteryOutput", 233d), ("maintenancePool", 239d), ("depotVehicles", 241d), ("maintenanceVehicles", 251d),
+					("groundPollutionModifier", 50d), ("airPollutionModifier", 125d), ("upkeepChange", -25d),
+					("comfort", 50d), ("cargoCapacity", 257d), ("electricityCapacity", 263d), ("stormCapacity", 269d),
+				},
+				entry.ServiceFacts.Select(fact => (fact.Key, fact.Value)));
+			Assert.Equal(
+				new[]
+				{
+					("jobComplexity", "Hitech"),
+					("zoneFeature", "ignoresLandValue"),
+					("zoneSold", "Coal"), ("zoneManufactured", "Oil"), ("zoneStored", "Wood"),
+					("zoneLotShapes", "narrow"), ("zoneLotShapes", "corners"),
+					("requiredResource", "Ore"),
+					("facilityFeature", "signalThroughTerrain"), ("facilityFeature", "industrialWasteOnly"), ("facilityFeature", "longTermStorage"),
+					("waterSource", "GroundWater"), ("transportType", "Bus"), ("voltage", "Low"),
+				},
+				entry.ServiceTextFacts.Select(fact => (fact.Key, fact.Value)));
+		}
+
 		[Fact]
 		public void ANetworkIsPricedPerKilometre()
 		{
@@ -105,6 +252,52 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(5_000u, entry.ConstructionCost);
 			Assert.Equal(75, entry.Upkeep);
 			Assert.Equal(250d, FactValue(entry, "elevationCost"));
+		}
+
+		[Fact]
+		public void ANetworkRoundsItsUpkeepAndLeavesOutAZeroWidth()
+		{
+			var entry = Apply(
+				new PrefabSnapshot
+				{
+					PlaceableNetData = new PlaceableNetData { m_DefaultUpkeepCost = 0.599f },
+					NetGeometryData = new NetGeometryData { m_DefaultWidth = 0f },
+				},
+				PrefabCategory.Networks);
+
+			Assert.Equal(75, entry.Upkeep);
+			Assert.Null(entry.NetworkWidth);
+		}
+
+		/// <summary>Each network type holds its own speed, and the first that answers wins.</summary>
+		[Fact]
+		public void ANetworkTakesItsSpeedFromItsOwnType()
+		{
+			PrefabIndex Network(PrefabSnapshot snapshot)
+			{
+				snapshot.PlaceableNetData = new PlaceableNetData();
+				return Apply(snapshot, PrefabCategory.Networks);
+			}
+
+			var road = Network(new PrefabSnapshot
+			{
+				RoadData = new RoadData { m_SpeedLimit = 10f },
+				TrackData = new TrackData { m_SpeedLimit = 20f, m_TrackType = Game.Net.TrackTypes.Tram },
+			});
+			var track = Network(new PrefabSnapshot { TrackData = new TrackData { m_SpeedLimit = 20f, m_TrackType = Game.Net.TrackTypes.Train } });
+			var untyped = Network(new PrefabSnapshot { TrackData = new TrackData { m_SpeedLimit = 20f } });
+			var path = Network(new PrefabSnapshot { PathwayData = new PathwayData { m_SpeedLimit = 3f } });
+			var waterway = Network(new PrefabSnapshot { WaterwayData = new WaterwayData { m_SpeedLimit = 7f } });
+			var taxiway = Network(new PrefabSnapshot { TaxiwayData = new TaxiwayData { m_SpeedLimit = 5f } });
+
+			Assert.Equal(SpeedLimit.KilometresPerHour(10f), road.SpeedLimit);
+			Assert.Equal(new[] { "Tram" }, TextFacts(road, "trackType"));
+			Assert.Equal(SpeedLimit.KilometresPerHour(20f), track.SpeedLimit);
+			Assert.Equal(new[] { "Train" }, TextFacts(track, "trackType"));
+			Assert.Empty(TextFacts(untyped, "trackType"));
+			Assert.Equal(SpeedLimit.KilometresPerHour(3f), path.SpeedLimit);
+			Assert.Equal(SpeedLimit.KilometresPerHour(7f), waterway.SpeedLimit);
+			Assert.Equal(SpeedLimit.KilometresPerHour(5f), taxiway.SpeedLimit);
 		}
 
 		[Fact]
@@ -207,6 +400,7 @@ namespace BetterBuildingMenu.Tests
 
 		[Theory]
 		[InlineData(8.005f, false)]
+		[InlineData(8.02f, true)]
 		[InlineData(10f, true)]
 		public void TheElevatedWidthIsStatedOnlyWhenItDiffers(float elevatedWidth, bool stated)
 		{
@@ -231,11 +425,12 @@ namespace BetterBuildingMenu.Tests
 					PlaceableNetData = new PlaceableNetData(),
 					HasUndergroundVariant = true,
 					TrafficLights = true,
+					HighwayRules = true,
 					ZonesAlongside = true,
 				},
 				PrefabCategory.Networks);
 
-			Assert.Equal(new[] { "underground", "trafficLights", "zonesAlongside" }, TextFacts(entry, "roadFeature"));
+			Assert.Equal(new[] { "underground", "trafficLights", "highwayRules", "zonesAlongside" }, TextFacts(entry, "roadFeature"));
 		}
 
 		[Theory]
@@ -250,7 +445,7 @@ namespace BetterBuildingMenu.Tests
 			});
 
 			Assert.Equal(expected, entry.ServiceRange);
-			Assert.Equal(1.5d, entry.Capacity!.Value, 3);
+			Assert.Equal(1.5d, entry.Capacity ?? double.NaN, 3);
 		}
 
 		[Theory]
@@ -272,6 +467,41 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.Equal(new[] { key }, Keys(entry));
 			Assert.Equal(1.5d, FactValue(entry, key));
+		}
+
+		[Fact]
+		public void AZeroCoverageRangeIsLeftOut()
+		{
+			Assert.Null(Apply(new PrefabSnapshot { CoverageData = new CoverageData() }).ServiceRange);
+		}
+
+		[Fact]
+		public void AZoneCountsTheWidthsItCannotShow()
+		{
+			var lots = ZoneLotSizes.From(1, 2);
+			for (var width = 2; width <= ZoneLotSizes.MaxFootprintsShown + 2; width++)
+			{
+				lots.Include(width, 2);
+			}
+
+			var entry = Apply(new PrefabSnapshot { LotSizes = lots }, PrefabCategory.Zones);
+
+			Assert.Equal(ZoneLotSizes.MaxFootprintsShown, entry.Footprints?.Length);
+			Assert.Equal(2, entry.FootprintOverflow);
+		}
+
+		/// <summary>×1 is the absence of a modifier; either side of it is a fact.</summary>
+		[Theory]
+		[InlineData(0.5f, true)]
+		[InlineData(1f, false)]
+		[InlineData(2f, true)]
+		public void AZoneFireHazardIsStatedUnlessItIsOne(float multiplier, bool stated)
+		{
+			var entry = Apply(
+				new PrefabSnapshot { ZonePropertiesData = new ZonePropertiesData { m_FireHazardMultiplier = multiplier } },
+				PrefabCategory.Zones);
+
+			Assert.Equal(stated, Keys(entry).Contains("zoneFireHazard"));
 		}
 
 		[Theory]
@@ -305,6 +535,8 @@ namespace BetterBuildingMenu.Tests
 		[InlineData(new[] { 0.8f, 1.1f }, 10d)]
 		[InlineData(new[] { 1f, 0.8f }, 0d)]
 		[InlineData(new[] { 1f }, null)]
+		[InlineData(new[] { 0.805f }, -20d)]
+		[InlineData(new[] { float.NaN }, -100d)]
 		public void TheUpkeepChangeIsTheLargestMultiplier(float[] multipliers, double? expected)
 		{
 			var entry = Apply(new PrefabSnapshot { UpkeepMultipliers = multipliers });
@@ -313,7 +545,7 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void ANetworkHasNoFactsWithoutComponents()
+		public void AnEmptySnapshotGivesNoFigures()
 		{
 			var entry = Apply(new PrefabSnapshot(), PrefabCategory.Networks);
 
