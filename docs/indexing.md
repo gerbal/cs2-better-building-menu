@@ -85,12 +85,15 @@ re-reads back its plain name. Numbering only what it touched would leave that pr
 beside a sibling still called "Foo 2".
 
 A prefab the game recreates, such as a Road Builder road, arrives under a new entity, so a partial
-pass drops the old entry first. It finds it by prefab name with `CatalogIndex.GetByPrefabName`,
-which also answers the extension picker's rows, and removes it only if the game no longer maps
-that entry's prefab to its entity. `PrefabSystem.UpdatePrefab` keeps the `PrefabBase` and points it
-at the new entity, so this holds for the old entry and never for a live namesake of another type.
-Two prefab types can carry one name, and then the first in name order answers the lookup: if a
-live namesake sorts before the old entry, the old entry stays until the next full pass.
+pass drops the old entry first. `PrefabSystem.UpdatePrefab` marks the old entity `Deleted`, which
+it keeps until the frame's clean-up, after both ticks, so every partial pass starts by removing
+the entries of prefab entities marked `Deleted`. A `Deleted` prefab alone triggers a partial pass,
+so a prefab the game removes outright leaves the list too. The entity is the one link that
+always holds: Road Builder gives a road a new ID, and so a new prefab name, on every edit.
+
+The pass also looks the new entity's name up with `CatalogIndex.GetByPrefabName`, which answers the
+extension picker's rows too, and removes that entry if the game no longer maps its prefab to its
+entity. That covers a recreation whose old entity has already gone.
 
 ## A pass that fails
 
