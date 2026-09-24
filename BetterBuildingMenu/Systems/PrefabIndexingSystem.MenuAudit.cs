@@ -45,11 +45,13 @@ namespace BetterBuildingMenu.Systems
 		{
 			try
 			{
+				// Null when the prefab cannot be resolved, so the line names the entity,
+				// as the coverage report does, rather than printing a blank.
 				var report = VanillaMenuAudit.Gather(
 					Index,
 					placement => _prefabSystem.TryGetPrefab<PrefabBase>(placement.Entity, out var placed)
-						? placed?.name ?? string.Empty
-						: string.Empty);
+						? placed?.name
+						: null);
 
 				Log(IndexAuditLog.MenuAuditHeader(report, Index.All.Count, Index.Zones.Catalog.Count));
 				LogDlcAudit();
