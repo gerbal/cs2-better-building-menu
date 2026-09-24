@@ -73,15 +73,24 @@ partial pass. Each processor keeps two queries, both built in `OnCreate`: its ow
 narrowed to `Created` or `Updated`. A partial pass reads only the narrowed copy, so one edited road
 costs one prefab rather than every road its processor matches.
 
+The indexer is registered at two phases, `PrefabUpdate` and `UIUpdate`, and both run every frame.
+`PrefabUpdate` runs inside `PrefabSystem`'s own update, which the main loop runs before
+`UnlockSystem`, so only the `UIUpdate` tick sees that frame's unlock events. A due full pass runs
+at whichever tick comes first. A partial pass runs at both: a changed prefab keeps its `Created`
+and `Updated` tags until the frame's clean-up, so the second tick re-reads what the first did.
+
 Duplicate names are numbered after every pass, partial passes included, always starting from each
 prefab's `AssetName` (`CatalogIndex.NumberDuplicateNames`). A partial pass gives the prefab it
 re-reads back its plain name. Numbering only what it touched would leave that prefab as "Foo"
 beside a sibling still called "Foo 2".
 
 A prefab the game recreates, such as a Road Builder road, arrives under a new entity, so a partial
-pass drops the old entry by prefab name first. `CatalogIndex.GetByPrefabName` answers that, and
-the extension picker's rows too. Two prefab types can carry one name; then the first entry in name
-order answers both.
+pass drops the old entry first. It finds it by prefab name with `CatalogIndex.GetByPrefabName`,
+which also answers the extension picker's rows, and removes it only if the game no longer maps
+that entry's prefab to its entity. `PrefabSystem.UpdatePrefab` keeps the `PrefabBase` and points it
+at the new entity, so this holds for the old entry and never for a live namesake of another type.
+Two prefab types can carry one name, and then the first in name order answers the lookup: if a
+live namesake sorts before the old entry, the old entry stays until the next full pass.
 
 ## A pass that fails
 

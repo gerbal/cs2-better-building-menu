@@ -285,12 +285,9 @@ namespace BetterBuildingMenu.Systems
 			}
 		}
 
-		/// <remarks>Registered at UIUpdate as well as PrefabUpdate. Both run every frame, but
-		/// PrefabUpdate runs inside PrefabSystem's update, which the main loop runs before UnlockSystem,
-		/// so the unlock branch needs the UIUpdate tick, which runs after UnlockSystem has raised its
-		/// events. A due full pass runs at whichever tick comes first. A partial pass runs at both: a
-		/// changed prefab keeps its Created and Updated tags until the frame's clean-up, so the second
-		/// tick re-reads what the first did.</remarks>
+		/// <remarks>Registered at PrefabUpdate and UIUpdate, both every frame; only UIUpdate
+		/// follows UnlockSystem. A partial pass runs at both, since the Created and Updated tags
+		/// last until the frame's clean-up. See docs/indexing.md, "Partial passes".</remarks>
 		protected override void OnUpdate()
 		{
 			if (_indexOnFirstUpdate)
@@ -691,23 +688,22 @@ namespace BetterBuildingMenu.Systems
 
 						try
 						{
+							// A recreated prefab's old entry. Only one the game has replaced: a
+							// namesake of another type is live, and so is the entry an earlier
+							// processor just filed for this entity.
+							if (!full
+								&& EntityManager.HasComponent<Created>(entity)
+								&& target.GetByPrefabName(prefab.name) is { } old
+								&& IsReplaced(old))
+							{
+								target.Remove(old.Id);
+							}
+
 							if (_roadBuilderDiscarded.HasValue && EntityManager.HasComponent(entity, _roadBuilderDiscarded.Value))
 							{
 								target.Remove(entity.Index);
 
 								continue;
-							}
-
-							// Once per processor that matches the prefab, so a later one finds the
-							// entry an earlier one just filed for this very entity: that is not
-							// the old one, and removing it would lose the prefab until the next
-							// full pass.
-							if (!full
-								&& EntityManager.HasComponent<Created>(entity)
-								&& target.GetByPrefabName(_prefabSystem.GetPrefab<PrefabBase>(entity).name) is { } old
-								&& old.Id != entity.Index)
-							{
-								target.Remove(old.Id);
 							}
 
 							if (processor.TryCreatePrefabIndex(prefab, entity, target, out prefabIndex))
@@ -930,6 +926,12 @@ namespace BetterBuildingMenu.Systems
 
 			target.File(prefabIndex);
 		}
+
+		/// <summary>Whether the game has moved the entry's prefab to another entity.</summary>
+		/// <remarks>PrefabSystem.UpdatePrefab keeps the PrefabBase, marks its entity Deleted and
+		/// points the prefab at a new one, so this holds for the old entry only.</remarks>
+		private bool IsReplaced(PrefabIndex entry) =>
+			!_prefabSystem.TryGetEntity(entry.Prefab, out var current) || current.Index != entry.Id;
 
 		private string GetAssetName(PrefabBase prefab)
 		{
