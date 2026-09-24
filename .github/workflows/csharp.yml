@@ -1,6 +1,6 @@
 # Builds the mod and runs all its tests against the game's own assemblies, kept
-# in a private repository. This repository is public: those assemblies must
-# never leave the runner. Setup and upkeep are in docs/ci.md.
+# in a private repository. Treat this repository as public: those assemblies
+# must never leave the runner. Setup and upkeep are in docs/ci.md.
 name: C#
 
 on:
@@ -26,8 +26,8 @@ jobs:
       - uses: actions/checkout@v4
 
       # Never upload cs2-refs as an artifact or put it in the Actions cache: it
-      # is the game's code, and on a public repository both can be read by
-      # others, the cache by pull requests from forks.
+      # is the game's code, and both can be read by anyone who can see this
+      # repository, the cache by pull requests from forks.
       - name: Check out the game assemblies
         uses: actions/checkout@v4
         with:
