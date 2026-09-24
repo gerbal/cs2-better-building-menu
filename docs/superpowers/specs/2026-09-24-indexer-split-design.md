@@ -37,7 +37,9 @@ has no test at all.
 
 ## The seams
 
-**`PopulateAnalyticalData` → `PrefabComponents` + `PrefabFacts`.**
+**`PopulateAnalyticalData` → `PrefabComponents` + `PrefabFacts`.** Built in #51 as
+`PrefabSnapshot`, since `Game.Prefabs.PrefabComponents` is already an enum and
+the two names would clash wherever both namespaces are imported.
 - `Domain/PrefabComponents.cs`: a sealed class the system fills from the entity,
   one nullable game struct per component it reads (`WorkplaceData? Workplace`,
   …), the two buffers as arrays, and the handful of values that come from the
@@ -118,7 +120,7 @@ Decided on 2026-09-24: each as recommended.
 1. **Audit output: returned lines, or an injected logger?** Returned lines keep
    the new classes free of `Mod` and any interface. **Recommended: returned
    lines.**
-2. **`PrefabComponents`: a class, or a struct passed by reference?** A class is
+2. **`PrefabComponents` (built as `PrefabSnapshot`): a class, or a struct passed by reference?** A class is
    simpler and costs one allocation per indexed prefab, about 17,700 per full
    pass, beside the `PrefabIndex` each one already allocates. **Recommended: a
    class.**
@@ -134,6 +136,12 @@ for 16 items or fewer and not beyond. A menu with more than 16 tabs, or a
 playset whose mods add enough menus, could see equal-priority entries swap. The
 fix, a stable `OrderBy`, can change the order a player sees, so it is a separate
 PR.
+
+Found while building step 2: the upkeep change on a service upgrade could never
+go below zero. It started from 1 and took the largest multiplier that was not 1,
+where vanilla's `UpkeepModifierBinder` takes the largest of them all from 0, so
+an upgrade whose only multiplier is 0.8 showed +0 % instead of −20 %. #51 fixes
+it in a commit of its own.
 
 ## Docs to update as the steps land
 
