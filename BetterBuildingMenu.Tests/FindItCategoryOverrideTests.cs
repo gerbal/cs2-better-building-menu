@@ -1,4 +1,5 @@
 using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Enums;
 using Xunit;
 
@@ -85,24 +86,20 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void EveryPairTheIndexLaysOutIsFiled()
+		public void AnOverrideIsFiledExactlyWhereTheIndexHasAList()
 		{
-			// The same range rule CatalogIndex lays its lists out by.
+			// Read off a real index rather than a second copy of its layout rule. Any is
+			// the one exception: the index has an everything list, but no override names it.
+			var index = new CatalogIndex();
+
 			foreach (PrefabCategory category in Enum.GetValues(typeof(PrefabCategory)))
 			{
-				if (category is PrefabCategory.Any)
-				{
-					continue;
-				}
-
-				Assert.True(FindItCategoryOverride.IsFiled(category, PrefabSubCategory.Any));
-
 				foreach (PrefabSubCategory subCategory in Enum.GetValues(typeof(PrefabSubCategory)))
 				{
-					if ((int)subCategory > (int)category && (int)subCategory < (int)category + 100)
-					{
-						Assert.True(FindItCategoryOverride.IsFiled(category, subCategory), $"{category}/{subCategory}");
-					}
+					Assert.True(
+						FindItCategoryOverride.IsFiled(category, subCategory)
+							== (category is not PrefabCategory.Any && index.List(category, subCategory) is not null),
+						$"{category}/{subCategory}");
 				}
 			}
 		}
