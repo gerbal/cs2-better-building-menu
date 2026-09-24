@@ -88,9 +88,11 @@ A prefab the game recreates, such as a Road Builder road, arrives under a new en
 pass drops the old entries first: every entry filed under the prefab's name whose prefab the game
 no longer maps to that entry's entity. `PrefabSystem.UpdatePrefab` keeps the `PrefabBase` and
 points it at the new entity, so this holds for the old entries and never for a live namesake of
-another type. `CatalogIndex` keeps the entries under each prefab name in step as it files and
-removes them, and `GetByPrefabName` answers the extension picker's rows from the same map. Two
-prefab types can carry one name; then the first by display name answers, as the lists order them.
+another type. An entity the game has already replaced, as when a prefab is created and recreated in
+one frame, is skipped, and anything filed for it removed. `CatalogIndex` keeps the entries under
+each prefab name in step as it files and removes them, and `GetByPrefabName` answers the extension
+picker's rows from the same map. Two prefab types can carry one name; then the first by display
+name answers, as the lists order them, and the lower id between equal names.
 
 ## A pass that fails
 
