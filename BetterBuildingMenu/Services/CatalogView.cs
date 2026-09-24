@@ -112,9 +112,10 @@ namespace BetterBuildingMenu.Services
 		/// How many assets each of the menu's category tabs holds.
 		/// </summary>
 		/// <remarks>
-		/// The category's own axis is excluded, so choosing one tab does not read every
-		/// other as empty; search and facets do count. Counted against the category the
-		/// entry answers to IN THIS MENU rather than its own UiCategory.
+		/// Over <see cref="MenuSet"/>, so the category's own axis is excluded and choosing
+		/// one tab does not read every other as empty. Search counts; the facet selections do
+		/// not. Counted against the category the entry answers to IN THIS MENU rather than its
+		/// own UiCategory.
 		/// </remarks>
 		public IReadOnlyList<MenuCategoryCount> MenuCategoryCounts => _counts ??= MenuSet
 			.GroupBy(entry => NetworkMenuExtension.EffectiveCategory(entry, _query.UiMenu) ?? string.Empty)
@@ -190,12 +191,13 @@ namespace BetterBuildingMenu.Services
 		}
 
 		/// <summary>
-		/// Which axis the fallback strip should use for this menu, and its tabs.
+		/// Which axis the strip's tabs cut this menu along, or empty for none.
 		/// </summary>
 		/// <remarks>
-		/// Only for the menus vanilla never split. The axis that cuts most evenly wins —
-		/// smallest largest bucket — among a short hand-picked list of cuts the game
-		/// itself authored; an axis yielding fewer than two groups is not a choice.
+		/// A menu split into categories uses the development tree when one of its
+		/// categories expands. A menu vanilla never split takes the axis that cuts most
+		/// evenly — smallest largest bucket — among a short hand-picked list of cuts the
+		/// game itself authored; an axis yielding fewer than two groups is not a choice.
 		/// </remarks>
 		public string StripAxis => _axis ??= ComputeStripAxis();
 
