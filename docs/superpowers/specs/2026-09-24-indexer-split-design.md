@@ -129,13 +129,11 @@ Decided on 2026-09-24: each as recommended.
 
 ## Found while planning, out of scope
 
-`.Menus.cs:145` and `:201` sort menus and their tabs by priority with
-`List.Sort`. The comment at `:193` says tabs that never set a priority keep
-their query order, but `List<T>.Sort` is not stable: it happens to keep order
-for 16 items or fewer and not beyond. A menu with more than 16 tabs, or a
-playset whose mods add enough menus, could see equal-priority entries swap. The
-fix, a stable `OrderBy`, can change the order a player sees, so it is a separate
-PR.
+`.Menus.cs` sorted menus and their tabs by priority with `List.Sort`, which is
+not stable, over the order a query returned them in. A stable `OrderBy` would
+not have matched the game either: vanilla sorts each menu's own member buffer
+with Unity's unstable sort, and the bottom bar orders menus by toolbar group
+first. #54 fixes it by running vanilla's own steps.
 
 Found while building step 2: the upkeep change on a service upgrade could never
 go below zero. It started from 1 and took the largest multiplier that was not 1,
