@@ -289,9 +289,8 @@ namespace BetterBuildingMenu.Systems
 			}
 		}
 
-		/// <remarks>Registered at PrefabUpdate and UIUpdate, both every frame; only UIUpdate
-		/// follows UnlockSystem. A partial pass runs at both, since the Created and Updated tags
-		/// last until the frame's clean-up. See docs/indexing.md, "Partial passes".</remarks>
+		/// <remarks>Registered at UIUpdate only, which follows PrefabSystem and UnlockSystem in
+		/// the same frame. See docs/indexing.md, "Partial passes".</remarks>
 		protected override void OnUpdate()
 		{
 			if (_indexOnFirstUpdate)
@@ -325,7 +324,16 @@ namespace BetterBuildingMenu.Systems
 
 			if (!_unlockEventQuery.IsEmptyIgnoreFilter)
 			{
-				ApplyUnlocks();
+				// Caught here so it cannot cost this frame's partial pass: the changed prefabs'
+				// tags are gone after the frame's clean-up. The next full pass reads lock state.
+				try
+				{
+					ApplyUnlocks();
+				}
+				catch (Exception ex)
+				{
+					Mod.Log.Error(ex, "Applying unlocks failed");
+				}
 			}
 
 			if (_changedPrefabQuery.IsEmptyIgnoreFilter && _deletedPrefabQuery.IsEmptyIgnoreFilter)
