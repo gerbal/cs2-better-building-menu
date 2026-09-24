@@ -75,8 +75,8 @@ game's load or locale dispatch.
 
 Capturing references is enough, because a pass never writes to the old collections. Every
 `Index*` step builds new ones, which it either assigns at its end or returns into the new
-`CatalogIndex` the pass files into. Before the first pass there is nothing to keep, so a failure there leaves an
-empty index laid out, not yet ready.
+`CatalogIndex` the pass files into. Before the first pass there is nothing to keep, so a failure
+there leaves an empty index laid out, not yet ready.
 
 A failed pass at `OnGameLoaded` does not count as indexed, so loading-complete runs its own.
 Partial passes are not covered. They edit the live index in place, and each prefab and each
