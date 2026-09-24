@@ -73,13 +73,18 @@ partial pass. Each processor keeps two queries, both built in `OnCreate`: its ow
 narrowed to `Created` or `Updated`. A partial pass reads only the narrowed copy, so one edited road
 costs one prefab rather than every road its processor matches.
 
-The indexer is registered at two phases, `PrefabUpdate` and `UIUpdate`, and both run every frame,
-in the game and the editor alike. `PrefabUpdate` runs inside `PrefabSystem`'s own update, which
-the main loop runs before `UnlockSystem`, so only the `UIUpdate` tick sees that frame's unlock
-events. A due full pass runs at whichever tick comes first. A partial pass runs at the `UIUpdate`
-tick only, as `UpdateSystem.currentPhase` tells it: a changed prefab keeps its `Created` and
-`Updated` tags until the frame's clean-up, so the later tick sees every change the earlier one
-would. Running at both read each changed prefab twice a frame.
+The indexer runs at one phase, `UIUpdate`. The main loop runs `PrefabSystem` (whose own update
+applies queued prefab updates and tags what it created or changed), then `UnlockSystem`, then
+`UIUpdateSystem`, every frame the world updates, in the game and the editor alike. So the indexer
+sees that frame's unlock events and every `Created` or `Updated` tag, which last until the frame's
+clean-up, and it runs before the panel's own `UIUpdate` system, which reads the index. It was once
+registered at `PrefabUpdate` too, which read each changed prefab twice a frame and added nothing
+else: nothing reads the index between the two.
+
+A prefab added and tagged after `UIUpdate` but before the frame's clean-up, for example by a mod's
+own main-loop system calling `PrefabSystem.AddPrefab`, has its tags cleared before the indexer
+next runs, and waits for the next full pass. `PrefabSystem.UpdatePrefab`, which Road Builder uses,
+queues the change for the next frame's `PrefabSystem` update, so it is not affected.
 
 Duplicate names are numbered after every pass, partial passes included, always starting from each
 prefab's `AssetName` (`CatalogIndex.NumberDuplicateNames`). A partial pass gives the prefab it

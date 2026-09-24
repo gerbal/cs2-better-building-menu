@@ -96,10 +96,9 @@ namespace BetterBuildingMenu
 
 			AssetDatabase.global.LoadSettings(nameof(BetterBuildingMenu), Settings, new BetterBuildingMenuSettings(this));
 
-			updateSystem.UpdateAfter<PrefabIndexingSystem>(SystemUpdatePhase.PrefabUpdate);
-			// Twice. Both phases run every frame, but only UIUpdate follows
-			// UnlockSystem; partial passes run there only. See docs/indexing.md,
-			// "Partial passes".
+			// UIUpdate follows PrefabSystem and UnlockSystem in the same frame, and the
+			// indexer is registered before the panel, which reads it. See
+			// docs/indexing.md, "Partial passes".
 			updateSystem.UpdateAt<PrefabIndexingSystem>(SystemUpdatePhase.UIUpdate);
 			updateSystem.UpdateAt<BuildingMenuUISystem>(SystemUpdatePhase.UIUpdate);
 
