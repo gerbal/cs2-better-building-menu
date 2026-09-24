@@ -11,7 +11,7 @@ namespace BetterBuildingMenu.Domain.Catalog
 	/// the menus and category tabs it draws.
 	/// </summary>
 	/// <remarks>
-	/// Fixed once built; a new pass builds a new one, handing over tables it keeps no hold on.
+	/// Not changed once built; a new pass builds a new one, handing over tables it keeps no hold on.
 	/// The walk that fills it is in PrefabIndexingSystem; see docs/indexing.md, "The vanilla
 	/// menu walk".
 	/// </remarks>

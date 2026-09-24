@@ -58,12 +58,13 @@ Each `IPrefabCategoryProcessor` decides whether a prefab is indexed and under wh
 pass runs them in the order `PrefabCategoryProcessors` lists them, which is the same on every
 build. A test fails if a processor in the assembly is missing from that list.
 
-The index holds one entry per prefab, so when two processors claim the same prefab the later
-one's entry replaces the earlier one's, category and all: `CatalogIndex.File` takes the
-earlier entry out of every list it was filed in, so the prefab is listed under one category only.
-Nothing fails when that happens. The full pass that logs the census also logs each such pair at
-Info as `[PROCESSOR-OVERLAP]`, with how many prefabs they shared and one of them by name. `MenuPlacedPrefabCategoryProcessor` runs last and
-claims only what nothing else did, so it never appears there.
+The index holds one entry per prefab, so when two processors claim the same prefab the later one's
+entry replaces the earlier one's, category and all: `CatalogIndex.File` takes the earlier entry out
+of every list it was filed in, so the prefab is listed under one category only. Nothing fails when
+that happens. The full pass that logs the census also logs each such pair at Info as
+`[PROCESSOR-OVERLAP]`, with how many prefabs they shared and one of them by name.
+`MenuPlacedPrefabCategoryProcessor` runs last and claims only what nothing else did, so it never
+appears there.
 
 ## Partial passes
 
@@ -72,19 +73,36 @@ partial pass. Each processor keeps two queries, both built in `OnCreate`: its ow
 narrowed to `Created` or `Updated`. A partial pass reads only the narrowed copy, so one edited road
 costs one prefab rather than every road its processor matches.
 
+The indexer is registered at two phases, `PrefabUpdate` and `UIUpdate`, and both run every frame.
+`PrefabUpdate` runs inside `PrefabSystem`'s own update, which the main loop runs before
+`UnlockSystem`, so only the `UIUpdate` tick sees that frame's unlock events. A due full pass runs
+at whichever tick comes first. A partial pass runs at both: a changed prefab keeps its `Created`
+and `Updated` tags until the frame's clean-up, so the second tick re-reads what the first did.
+
 Duplicate names are numbered after every pass, partial passes included, always starting from each
-prefab's `AssetName`. A partial pass gives the prefab it re-reads back its plain name. Numbering
-only what it touched would leave that prefab as "Foo" beside a sibling still called "Foo 2".
+prefab's `AssetName` (`CatalogIndex.NumberDuplicateNames`). A partial pass gives the prefab it
+re-reads back its plain name. Numbering only what it touched would leave that prefab as "Foo"
+beside a sibling still called "Foo 2".
+
+A prefab the game recreates, such as a Road Builder road, arrives under a new entity, so a partial
+pass drops the old entry first. It finds it by prefab name with `CatalogIndex.GetByPrefabName`,
+which also answers the extension picker's rows, and removes it only if the game no longer maps
+that entry's prefab to its entity. `PrefabSystem.UpdatePrefab` keeps the `PrefabBase` and points it
+at the new entity, so this holds for the old entry and never for a live namesake of another type.
+Two prefab types can carry one name, and then the first in name order answers the lookup: if a
+live namesake sorts before the old entry, the old entry stays until the next full pass.
 
 ## A pass that fails
 
 A full pass builds a new index aside, and the menus, zones, milestones, dev tree and mod flags it
-reads are built into it. Every read and write in the pass goes to that index, which `BuildIndex`
-passes down as `target`; the published `Index` is still the previous one until the pass returns.
-The one read of it is deliberate: its mod flags, the answer to keep if reading the enabled mods
-fails. `RunIndex` publishes the new index only then. If anything in the build throws, it logs the
-error and publishes nothing: the panel keeps the index it had, and nothing reaches the game's load
-or update loop.
+reads are built into it. `BuildIndex` passes it down as `target`. The published `Index` is still
+the previous one until the pass returns, and the pass reads it once, deliberately: its mod flags,
+the answer to keep if reading the enabled mods fails. Every other read and write in the pass goes
+to `target`.
+
+`RunIndex` publishes the new index only when the pass returns. If anything in the build throws, it
+logs the error and publishes nothing: the panel keeps the index it had, and nothing reaches the
+game's load or update loop.
 
 So a failed pass has nothing to put back. The published index keeps the tables and mod flags it
 was built with, and the partial passes after a failure read the same ones it was filled from. Road

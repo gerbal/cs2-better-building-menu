@@ -97,9 +97,10 @@ namespace BetterBuildingMenu
 			AssetDatabase.global.LoadSettings(nameof(BetterBuildingMenu), Settings, new BetterBuildingMenuSettings(this));
 
 			updateSystem.UpdateAfter<PrefabIndexingSystem>(SystemUpdatePhase.PrefabUpdate);
-			// Twice, because PrefabUpdate is not a frame phase: PrefabSystem
-			// drives it only when prefabs change, and an unlock flips Locked
-			// without touching one. UIUpdate ticks every frame.
+			// Twice. Both phases run every frame, but PrefabUpdate runs inside
+			// PrefabSystem's update, which the main loop runs before UnlockSystem;
+			// UIUpdate runs after it, so only that tick sees this frame's unlock
+			// events.
 			updateSystem.UpdateAt<PrefabIndexingSystem>(SystemUpdatePhase.UIUpdate);
 			updateSystem.UpdateAt<BuildingMenuUISystem>(SystemUpdatePhase.UIUpdate);
 

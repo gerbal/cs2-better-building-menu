@@ -37,18 +37,8 @@ namespace BetterBuildingMenu.Tests
 				(menuOrder ?? System.Array.Empty<string>()).Select(menu => Tab(menu)).ToArray(),
 				categories ?? new Dictionary<string, List<VanillaMenuCategory>>());
 
-		private static CatalogIndex ReadyIndex(VanillaMenuIndex menus, params PrefabIndex[] entries)
-		{
-			var index = new CatalogIndex(menus);
-
-			foreach (var entry in entries)
-			{
-				index.File(entry);
-			}
-
-			index.IsReady = true;
-			return index;
-		}
+		private static CatalogIndex ReadyIndex(VanillaMenuIndex menus, params PrefabIndex[] entries) =>
+			TestPrefabs.ReadyIndex(new CatalogIndex(menus), entries);
 
 		[Fact]
 		public void TheEmptyMenusPlaceNothingAndDrawNothing()
