@@ -85,12 +85,12 @@ re-reads back its plain name. Numbering only what it touched would leave that pr
 beside a sibling still called "Foo 2".
 
 A prefab the game recreates, such as a Road Builder road, arrives under a new entity, so a partial
-pass drops the old entry first. It finds it by prefab name with `CatalogIndex.GetByPrefabName`,
-which also answers the extension picker's rows, and removes it only if the game no longer maps
-that entry's prefab to its entity. `PrefabSystem.UpdatePrefab` keeps the `PrefabBase` and points it
-at the new entity, so this holds for the old entry and never for a live namesake of another type.
-Two prefab types can carry one name, and then the first in name order answers the lookup: if a
-live namesake sorts before the old entry, the old entry stays until the next full pass.
+pass drops the old entries first: every entry filed under the prefab's name whose prefab the game
+no longer maps to that entry's entity. `PrefabSystem.UpdatePrefab` keeps the `PrefabBase` and
+points it at the new entity, so this holds for the old entries and never for a live namesake of
+another type. `CatalogIndex` keeps the entries under each prefab name in step as it files and
+removes them, and `GetByPrefabName` answers the extension picker's rows from the same map. Two
+prefab types can carry one name; then the first by display name answers, as the lists order them.
 
 ## A pass that fails
 

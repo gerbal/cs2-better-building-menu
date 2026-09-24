@@ -22,9 +22,9 @@ namespace BetterBuildingMenu.Domain.Catalog
 	{
 		private readonly Dictionary<PrefabCategory, Dictionary<PrefabSubCategory, IndexedPrefabList>> _lists = new();
 
-		// Prefab name -> entry, built on first use and dropped by anything that files,
-		// removes or renames. See GetByPrefabName.
-		private Dictionary<string, PrefabIndex>? _byPrefabName;
+		// Prefab name -> every entry filed under it, kept in step by File and Remove. A
+		// prefab's name is set before it is filed and never after.
+		private readonly Dictionary<string, List<PrefabIndex>> _namesakes = new(StringComparer.Ordinal);
 
 		/// <summary>An empty index with every list laid out, over the tables a full pass has read.</summary>
 		/// <remarks>A table left out is empty, as before the first pass; tests build only what they read.</remarks>
@@ -96,25 +96,28 @@ namespace BetterBuildingMenu.Domain.Catalog
 		public PrefabIndex? Get(int id) => All.TryGetValue(id, out var entry) ? entry : null;
 
 		/// <summary>The entry a prefab name resolves to, or null when nothing indexed carries it.</summary>
-		/// <remarks>Two prefab types can carry one name; then the first in name order answers.
-		/// Built on the first lookup after a change, since a pass files far more than it looks
-		/// up.</remarks>
+		/// <remarks>Two prefab types can carry one name; then the first by display name answers,
+		/// as the lists order them, and the lower id between equal names.</remarks>
 		public PrefabIndex? GetByPrefabName(string prefabName)
 		{
-			if (_byPrefabName is null)
+			if (!_namesakes.TryGetValue(prefabName, out var namesakes))
 			{
-				_byPrefabName = new Dictionary<string, PrefabIndex>(All.Count, StringComparer.Ordinal);
+				return null;
+			}
 
-				foreach (var entry in All)
+			var first = namesakes[0];
+
+			for (var i = 1; i < namesakes.Count; i++)
+			{
+				var order = StringComparer.OrdinalIgnoreCase.Compare(namesakes[i].Name, first.Name);
+
+				if (order < 0 || (order == 0 && namesakes[i].Id < first.Id))
 				{
-					if (entry.PrefabName is { Length: > 0 } name && !_byPrefabName.ContainsKey(name))
-					{
-						_byPrefabName[name] = entry;
-					}
+					first = namesakes[i];
 				}
 			}
 
-			return _byPrefabName.TryGetValue(prefabName, out var found) ? found : null;
+			return first;
 		}
 
 		public PrefabBase? GetPrefab(int id) => Get(id)?.Prefab;
@@ -176,10 +179,19 @@ namespace BetterBuildingMenu.Domain.Catalog
 		internal void File(PrefabIndex entry)
 		{
 			Remove(entry.Id);
-			_byPrefabName = null;
 
 			All[entry.Id] = entry;
 			_lists[entry.Category][entry.SubCategory][entry.Id] = entry;
+
+			if (entry.PrefabName.Length > 0)
+			{
+				if (!_namesakes.TryGetValue(entry.PrefabName, out var namesakes))
+				{
+					_namesakes[entry.PrefabName] = namesakes = new List<PrefabIndex>(1);
+				}
+
+				namesakes.Add(entry);
+			}
 		}
 
 		internal void Remove(int id)
@@ -188,8 +200,33 @@ namespace BetterBuildingMenu.Domain.Catalog
 			{
 				All.Remove(entry);
 				_lists[entry.Category][entry.SubCategory].Remove(entry);
-				_byPrefabName = null;
+
+				if (_namesakes.TryGetValue(entry.PrefabName, out var namesakes)
+					&& namesakes.RemoveAll(namesake => namesake.Id == id) > 0
+					&& namesakes.Count == 0)
+				{
+					_namesakes.Remove(entry.PrefabName);
+				}
 			}
+		}
+
+		/// <summary>Removes every entry filed under a prefab name that <paramref name="which"/> picks.</summary>
+		/// <returns>How many it removed.</returns>
+		internal int RemoveNamesakes(string prefabName, Func<PrefabIndex, bool> which)
+		{
+			if (!_namesakes.TryGetValue(prefabName, out var namesakes))
+			{
+				return 0;
+			}
+
+			var ids = namesakes.Where(which).Select(entry => entry.Id).ToList();
+
+			foreach (var id in ids)
+			{
+				Remove(id);
+			}
+
+			return ids.Count;
 		}
 
 		/// <summary>Numbers the display names that repeat, so each row can be told apart.</summary>
@@ -211,50 +248,14 @@ namespace BetterBuildingMenu.Domain.Catalog
 				numbered[i].Name = names[i];
 			}
 
-			// Every list is in name order, and so is the name map's choice between namesakes.
+			// Every list is in name order.
 			foreach (var (_, _, list) in Lists())
 			{
 				list.ResetOrder();
 			}
-
-			_byPrefabName = null;
 		}
 
-		/// <summary>Takes any entry that shares a brand's prefab name out of its subcategory's list.</summary>
-		/// <returns>Each entry it took out, with the subcategory it was taken out of.</returns>
-		/// <remarks>
-		/// Everything and the brands' own list are left alone, so the catalog, which reads
-		/// everything, still lists them; only the subcategory lists change, and the Roads menu's
-		/// extra tabs are the only reader of those. Kept, and counted, until a game session
-		/// shows whether it ever finds anything.
-		/// </remarks>
-		internal List<(PrefabIndex Entry, PrefabSubCategory From)> RemoveBrandDuplicates()
-		{
-			var branding = List(PrefabCategory.Props, PrefabSubCategory.Props_Branding);
-			var brands = new HashSet<string>(branding?.Select(entry => entry.PrefabName) ?? Enumerable.Empty<string>());
-			var removed = new List<(PrefabIndex Entry, PrefabSubCategory From)>();
-
-			foreach (var (category, subCategory, list) in Lists())
-			{
-				if (category is PrefabCategory.Any || subCategory is PrefabSubCategory.Props_Branding)
-				{
-					continue;
-				}
-
-				foreach (var entry in list.ToList())
-				{
-					if (brands.Contains(entry.PrefabName))
-					{
-						list.Remove(entry);
-						removed.Add((entry, subCategory));
-					}
-				}
-			}
-
-			return removed;
-		}
-
-		/// <summary>Every list, for the clean-up passes.</summary>
+		/// <summary>Every list, for renumbering.</summary>
 		internal IEnumerable<(PrefabCategory Category, PrefabSubCategory SubCategory, IndexedPrefabList List)> Lists() =>
 			_lists.SelectMany(category => category.Value.Select(sub => (category.Key, sub.Key, sub.Value)));
 	}

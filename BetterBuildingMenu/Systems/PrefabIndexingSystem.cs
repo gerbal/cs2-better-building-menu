@@ -688,15 +688,12 @@ namespace BetterBuildingMenu.Systems
 
 						try
 						{
-							// A recreated prefab's old entry. Only one the game has replaced: a
-							// namesake of another type is live, and so is the entry an earlier
-							// processor just filed for this entity.
-							if (!full
-								&& EntityManager.HasComponent<Created>(entity)
-								&& target.GetByPrefabName(prefab.name) is { } old
-								&& IsReplaced(old))
+							// A recreated prefab's old entries: every namesake the game has
+							// replaced. A namesake of another type is live, and so is the entry
+							// an earlier processor just filed for this entity.
+							if (!full && EntityManager.HasComponent<Created>(entity))
 							{
-								target.Remove(old.Id);
+								target.RemoveNamesakes(prefab.name, IsReplaced);
 							}
 
 							if (_roadBuilderDiscarded.HasValue && EntityManager.HasComponent(entity, _roadBuilderDiscarded.Value))
@@ -764,19 +761,6 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			target.NumberDuplicateNames();
-
-			if (full)
-			{
-				// The count at Info, since whether it ever finds anything decides whether it
-				// stays; each entry at Debug. See CatalogIndex.RemoveBrandDuplicates.
-				var removed = target.RemoveBrandDuplicates();
-				Mod.Log.Info($"Brand cleanup took {removed.Count} entries out of subcategory lists");
-
-				foreach (var (entry, from) in removed)
-				{
-					Mod.Log.Debug($"Removed {entry.PrefabName} from {from}");
-				}
-			}
 
 			return target;
 		}

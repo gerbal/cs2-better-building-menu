@@ -209,41 +209,45 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void BrandCleanupTakesANamesakeOutOfItsSubcategoryOnly()
+		public void EqualDisplayNamesResolveToTheLowerId()
 		{
-			var brand = TestPrefabs.Named(1, "Brand01", PrefabCategory.Props, PrefabSubCategory.Props_Branding);
-			var namesake = TestPrefabs.Named(2, "Brand01", PrefabCategory.Networks, PrefabSubCategory.Networks_Roads);
-			var road = TestPrefabs.Named(3, "Road01", PrefabCategory.Networks, PrefabSubCategory.Networks_Roads);
-			var index = TestPrefabs.ReadyIndex(brand, namesake, road);
+			// Upgrades keep their plain names, so two namesakes can share a display name too.
+			var index = TestPrefabs.ReadyIndex(
+				TestPrefabs.Named(9, "Wing", PrefabCategory.Props, PrefabSubCategory.Props_Misc, "Extension Wing"),
+				TestPrefabs.Named(4, "Wing", PrefabCategory.Props, PrefabSubCategory.Props_Misc, "Extension Wing"));
 
-			var removed = index.RemoveBrandDuplicates();
-
-			Assert.Equal(new[] { (2, PrefabSubCategory.Networks_Roads) }, removed.Select(taken => (taken.Entry.Id, taken.From)));
-			Assert.Equal(new[] { 3 }, ListOf(index, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads).Select(entry => entry.Id));
-			// Everything, which the catalog reads, and the brands' own list keep theirs.
-			Assert.Equal(new[] { 1, 2, 3 }, index.All.Select(entry => entry.Id).OrderBy(id => id));
-			Assert.Equal(new[] { 1 }, ListOf(index, PrefabCategory.Props, PrefabSubCategory.Props_Branding).Select(entry => entry.Id));
-			Assert.Empty(index.RemoveBrandDuplicates());
+			Assert.Equal(4, index.GetByPrefabName("Wing")?.Id);
 		}
 
 		[Fact]
-		public void BrandCleanupTakesEveryNamesakeOutAndReportsEach()
+		public void RemovingNamesakesTakesOutEveryOneItPicksAndNoOther()
 		{
-			// One in a subcategory, one filed under Props alone: the brand itself is not in
-			// Props' catch-all, so nothing there is the brand's to keep.
+			// As a partial pass does for a recreated prefab: the kept namesake sorts first,
+			// and the ones after it still go.
 			var index = TestPrefabs.ReadyIndex(
-				TestPrefabs.Named(1, "Brand01", PrefabCategory.Props, PrefabSubCategory.Props_Branding),
-				TestPrefabs.Named(2, "Brand01", PrefabCategory.Networks, PrefabSubCategory.Networks_Roads),
-				TestPrefabs.Named(3, "Brand01", PrefabCategory.Props, PrefabSubCategory.Any),
-				TestPrefabs.Named(4, "Road01", PrefabCategory.Networks, PrefabSubCategory.Networks_Roads));
+				TestPrefabs.Named(1, "Road01", PrefabCategory.Networks, PrefabSubCategory.Networks_Roads, "Road C"),
+				TestPrefabs.Named(2, "Road01", PrefabCategory.Networks, PrefabSubCategory.Networks_Roads, "Road A"),
+				TestPrefabs.Named(3, "Road01", PrefabCategory.Networks, PrefabSubCategory.Networks_Roads, "Road B"),
+				TestPrefabs.Named(4, "Road02", PrefabCategory.Networks, PrefabSubCategory.Networks_Roads));
 
-			var removed = index.RemoveBrandDuplicates();
+			Assert.Equal(2, index.RemoveNamesakes("Road01", entry => entry.Id != 2));
 
-			Assert.Equal(
-				new[] { (2, PrefabSubCategory.Networks_Roads), (3, PrefabSubCategory.Any) },
-				removed.Select(taken => (taken.Entry.Id, taken.From)).OrderBy(taken => taken.Item1));
-			Assert.Empty(ListOf(index, PrefabCategory.Props, PrefabSubCategory.Any));
-			Assert.Equal(new[] { 4 }, ListOf(index, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads).Select(entry => entry.Id));
+			Assert.Equal(new[] { 2, 4 }, index.All.Select(entry => entry.Id).OrderBy(id => id));
+			Assert.Equal(new[] { 2, 4 }, ListOf(index, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads).Select(entry => entry.Id).OrderBy(id => id));
+			Assert.Equal(2, index.GetByPrefabName("Road01")?.Id);
+			Assert.Equal(0, index.RemoveNamesakes("Highway", _ => true));
+		}
+
+		[Fact]
+		public void RefilingAnEntryLeavesItOneNamesake()
+		{
+			var index = TestPrefabs.ReadyIndex(TestPrefabs.Named(7, "Road01", PrefabCategory.Networks, PrefabSubCategory.Networks_Roads));
+
+			index.File(TestPrefabs.Named(7, "Road01", PrefabCategory.Props, PrefabSubCategory.Props_Misc));
+
+			Assert.Equal(1, index.RemoveNamesakes("Road01", _ => true));
+			Assert.Null(index.GetByPrefabName("Road01"));
+			Assert.Empty(index.All);
 		}
 
 		[Fact]
