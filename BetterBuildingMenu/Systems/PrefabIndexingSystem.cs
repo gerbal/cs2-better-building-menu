@@ -387,14 +387,15 @@ namespace BetterBuildingMenu.Systems
 		}
 
 		/// <summary>Re-reads the mods the processors adapt to, for the pass about to read them.</summary>
+		/// <param name="fallback">The answer to keep if the read fails: the published index's.</param>
 		/// <remarks>
 		/// Every full pass, the first included; see docs/indexing.md, "Load timing". The type is
 		/// looked up among the loaded assemblies, so a renamed one is logged once and filters
 		/// nothing rather than throwing into the game's load.
 		/// </remarks>
-		private ModCompatibility RefreshModCompatibility()
+		private ModCompatibility RefreshModCompatibility(ModCompatibility fallback)
 		{
-			var mods = Index.Mods;
+			var mods = fallback;
 
 			try
 			{
@@ -567,15 +568,18 @@ namespace BetterBuildingMenu.Systems
 		/// <summary>Everything a pass writes to the index.</summary>
 		/// <returns>The index the pass filed into: a new one for a full pass, which the caller
 		/// publishes only if this returns, or the published one for a partial pass, which edits it
-		/// in place. Every read and write in the pass goes to it, never to <see cref="Index"/>,
-		/// which during a full pass is still the previous one.</returns>
+		/// in place. Every read and write in the pass goes to it. The one read of
+		/// <see cref="Index"/>, still the previous index during a full pass, is the mod flags to
+		/// fall back on, taken below where it shows.</returns>
 		private CatalogIndex BuildIndex(bool full, Dictionary<string, List<int>> census)
 		{
-			var target = Index;
+			// Assigned in both branches, so nothing in a full pass's prologue can reach
+			// the published index through it before the new one exists.
+			CatalogIndex target;
 
 			if (full)
 			{
-				var mods = RefreshModCompatibility();
+				var mods = RefreshModCompatibility(fallback: Index.Mods);
 
 				// Before IndexZones and before the processors: the zone catalog
 				// inherits the game's own Zones menu, and the blacklist check below
@@ -594,6 +598,10 @@ namespace BetterBuildingMenu.Systems
 					zones,
 					new ProgressionIndex(milestones, branches, roots),
 					mods);
+			}
+			else
+			{
+				target = Index;
 			}
 
 			foreach (var (processor, allQuery, changedQuery) in _processors)

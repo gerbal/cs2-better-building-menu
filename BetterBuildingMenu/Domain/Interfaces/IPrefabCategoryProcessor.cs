@@ -16,9 +16,11 @@ namespace BetterBuildingMenu.Domain.Interfaces
 		EntityQueryDesc[] GetEntityQuery();
 
 		/// <summary>Whether this processor indexes the prefab, and under which category.</summary>
-		/// <param name="target">The index the pass is filing into. It holds the tables the full pass
-		/// read before any processor ran, and every entry an earlier processor filed in this pass,
-		/// which is how the menu-placed fallback claims only what the others left.</param>
+		/// <param name="target">The index the pass is filing into. In a full pass it is a new index,
+		/// holding the tables the pass read before any processor ran and every entry an earlier
+		/// processor filed in this pass, which is how the menu-placed fallback claims only what the
+		/// others left. In a partial pass it is the published index, edited in place, so it also
+		/// holds everything earlier passes filed.</param>
 		bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex);
 	}
 }
