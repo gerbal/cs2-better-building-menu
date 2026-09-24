@@ -136,18 +136,33 @@ namespace BetterBuildingMenu.Tests
 		/// <summary>The building-side tier: the five a building can be filtered by, from the same
 		/// real zones.</summary>
 		[Theory]
-		[InlineData("EU Commercial High", 0f, 30f, true, 6, ZoneTypeFilter.Any)]
-		[InlineData("CN Residential Low", 1f, 1f, false, 4, ZoneTypeFilter.Low)]
-		[InlineData("EU Residential Medium Row", 0.5f, 1f, true, 2, ZoneTypeFilter.Row)]
-		[InlineData("CN Residential Medium", 0.75f, 1f, true, 4, ZoneTypeFilter.Medium)]
-		[InlineData("CN Residential High", 6f, 3f, true, 6, ZoneTypeFilter.High)]
+		[InlineData("EU Commercial High", 0f, 30f, false, true, 6, ZoneTypeFilter.Any)]
+		[InlineData("CN Residential Low", 1f, 1f, false, false, 4, ZoneTypeFilter.Low)]
+		[InlineData("EU Residential Medium Row", 0.5f, 1f, true, false, 2, ZoneTypeFilter.Row)]
+		[InlineData("CN Residential Medium", 0.75f, 1f, true, false, 4, ZoneTypeFilter.Medium)]
+		[InlineData("CN Residential High", 6f, 3f, true, false, 6, ZoneTypeFilter.High)]
 		public void FiltersBuildingsByFiveTiers(
-			string name, float properties, float space, bool scale, int maxLotWidth, ZoneTypeFilter expected)
+			string name, float properties, float space, bool scale, bool sells, int maxLotWidth, ZoneTypeFilter expected)
 		{
 			Assert.Equal(
 				expected,
 				ZoneDensityClassifier.ClassifyBuildings(
-					new ZoneDensityFacts(properties > 0f, properties, space, scale, false, maxLotWidth, name)));
+					new ZoneDensityFacts(properties > 0f, properties, space, scale, sells, maxLotWidth, name)));
+		}
+
+		/// <summary>The building tier's edges. Boundaries, not real zones: a ratio of exactly 1 is
+		/// High, a widest lot of 3 is Medium, and no space at all, an infinite ratio, is High, where
+		/// the zone's own tier falls back to its name.</summary>
+		[Theory]
+		[InlineData(1f, 1f, 6, ZoneTypeFilter.High)]
+		[InlineData(0.75f, 1f, 3, ZoneTypeFilter.Medium)]
+		[InlineData(1f, 0f, 6, ZoneTypeFilter.High)]
+		public void FiltersBuildingsAtTheEdges(float properties, float space, int maxLotWidth, ZoneTypeFilter expected)
+		{
+			Assert.Equal(
+				expected,
+				ZoneDensityClassifier.ClassifyBuildings(
+					Residential(properties, space, scale: true, sells: false, maxLotWidth, "Residential")));
 		}
 
 		[Fact]

@@ -60,6 +60,28 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void EachServiceMeasuresFromItsOwnTrunk()
+		{
+			// Education's root is given first, at row 0; Police's trunk is at 2, so 1.5 is nearer than 0.
+			var ranked = DevTreeLayout.Rank(new[]
+			{
+				At(1, 0, 0f, Education), At(2, 0, 2f, Police), At(3, 1, 0f, Police), At(4, 1, 1.5f, Police),
+			});
+
+			Assert.Equal(1, ranked[4]);
+			Assert.Equal(2, ranked[3]);
+		}
+
+		[Fact]
+		public void DistanceIsMeasuredInWholeRowsAndFractions()
+		{
+			// Trunk 0: 1.2 is nearer than -1.9, which a whole-row distance would call a tie at 1.
+			var ranked = DevTreeLayout.Rank(new[] { At(1, 1, -1.9f), At(2, 1, 1.2f) });
+
+			Assert.Equal(new[] { 2, 1 }, InRankOrder(ranked));
+		}
+
+		[Fact]
 		public void EachServiceIsRankedOnItsOwn()
 		{
 			var ranked = DevTreeLayout.Rank(new[]
@@ -73,9 +95,10 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void AnExactTieKeepsTheOrderGiven()
 		{
-			var ranked = DevTreeLayout.Rank(new[] { At(1, 0, 0f), At(3, 1, 1f), At(2, 1, 1f) });
+			// Neither ascending nor descending by id, so only the order given explains it.
+			var ranked = DevTreeLayout.Rank(new[] { At(1, 0, 0f), At(5, 1, 1f), At(3, 1, 1f), At(4, 1, 1f) });
 
-			Assert.Equal(new[] { 1, 3, 2 }, InRankOrder(ranked));
+			Assert.Equal(new[] { 1, 5, 3, 4 }, InRankOrder(ranked));
 		}
 
 		private static Dictionary<int, (string Label, string Icon, int Depth, string Service)> Branches() => new()
