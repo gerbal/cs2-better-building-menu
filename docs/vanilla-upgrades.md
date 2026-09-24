@@ -68,7 +68,7 @@ in `ServiceUpgradeData.m_UpgradeCost`, which is the `GenerateObjectsSystem`
 fallback path. So the indexer's `PlaceableObjectData` read is right for
 sub-buildings and empty for annexes — a school's Extension Wing showed "—"
 where vanilla shows ¢22,500 — and needs the `ServiceUpgradeData` fallback,
-which `PopulateAnalyticalData` in `PrefabIndexingSystem.Facts.cs` now applies.
+which `PrefabFacts.Apply` now applies.
 
 ## Installing does two separate things
 

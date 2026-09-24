@@ -253,8 +253,15 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
   noisePollutionModifier: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.NoisePollutionModifier]", fallback: "Noise pollution", unit: "%" },
   // UpkeepModifierData: the largest multiplier minus one, in percent, signed —
   // the one signed property in vanilla's table, and authored only on
-  // BuildingExtensionPrefab.
-  upkeepChange: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.UpkeepChange]", fallback: "Upkeep", unit: "%", signed: true },
+  // BuildingExtensionPrefab. Not the money upkeep, whatever the component's
+  // name: the game applies it to the resources a building consumes, and labels
+  // it RESOURCE_CONSUMPTION.
+  resourceConsumption: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ResourceConsumption]",
+    fallback: "Resource consumption",
+    unit: "%",
+    signed: true,
+  },
   elevatedWidth: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ElevatedWidth]",
     fallback: "Elevated width",
@@ -530,7 +537,7 @@ export const VANILLA_FACT_KEYS: ReadonlySet<string> = new Set([
   // electricity
   "batteryOutput", "electricityCapacity", "voltage",
   // quality and modifiers
-  "comfort", "attractiveness", "groundPollutionModifier", "airPollutionModifier", "noisePollutionModifier", "upkeepChange",
+  "comfort", "attractiveness", "groundPollutionModifier", "airPollutionModifier", "noisePollutionModifier", "resourceConsumption",
   // mail
   "mailboxCapacity",
   // worded
@@ -570,7 +577,7 @@ export const FACT_ORDER: readonly string[] = [
   // 2. How well.
   "graduation", "studentWellbeing", "studentHealth",
   "prisonerWellbeing", "prisonerHealth", "attractiveness",
-  "groundPollutionModifier", "airPollutionModifier", "noisePollutionModifier", "upkeepChange",
+  "groundPollutionModifier", "airPollutionModifier", "noisePollutionModifier", "resourceConsumption",
   // 3. Who runs it.
   "jobComplexity", "minCrew", "workConditions", "eveningShift", "nightShift",
   // 4. Placement, network and zone.
