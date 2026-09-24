@@ -1,8 +1,9 @@
 # Per-load catalog index
 
-Date: 2026-09-24. Status: approved by the owner the same day, with every decision below
-taken as recommended. Steps 1 and 2 are built (#32, #33). Roadmap:
-"Per-load state" in [roadmap.md](../../roadmap.md).
+Date: 2026-09-24. Status: approved by the owner the same day, with decisions 1–7 below
+taken as recommended. Decision 8 came from the live-testing review and is open. Steps 1–4
+are built (#32, #33, #36, #37, #38, #40). Roadmap: "Per-load state" in
+[roadmap.md](../../roadmap.md).
 
 ## Goal
 
@@ -112,6 +113,8 @@ public readonly record struct CatalogSource(CatalogIndex Index, PlacedUniques Pl
 
 - `PrefabIndexingSystem`'s 16 public static methods go. The menu, zone and progression lookups become methods on these objects, and `SyncPlacedUniques` becomes an instance method on the system.
 - Tables keyed by `Entity` are re-keyed by `entity.Index`, as `PrefabIndex.Id` and the placements already are. Against the mocks, `Entity`'s `Equals` and `GetHashCode` throw like every other game method body, so a test cannot fill a `Dictionary<Entity, …>`. Among one pass's live prefab entities, the two keys are equivalent.
+  - **One caveat, not new:** Road Builder creates and discards road prefab entities at runtime, and an index can come back with a new version. A recreated road can inherit a stale placement until the next full pass. The placements are keyed this way today, so the re-keyed tables add nothing to it.
+  - **Never persist these keys.** Entity numbering is not stable across boots: the live-testing review saw the toolbar menu entities shift by one between two launches.
 
 ### Who holds what
 
@@ -131,6 +134,9 @@ public CatalogSource Source => new(Index, PlacedUniques, Generation);
 
 A system's initializers do run (only `Mod` is built without its
 constructor), so these defaults are safe. The static `_instance` goes.
+
+State stays off `Mod`: the game builds it with `GetUninitializedObject`, so an instance field
+initializer there never runs (`ModInstanceTests` guards this). Systems are constructed normally.
 
 **`BuildingMenuUISystem`:**
 - Looks up the indexer in `OnCreate`. The indexer is registered first, and `GetOrCreateSystemManaged` would create it anyway.
@@ -157,7 +163,11 @@ changed. Two tempting simplifications are wrong:
 - **Using the index object itself as the version.** Partial passes and unlocks edit the published index in place. A placed unique moving changes no index at all, but it is baked into every cached projection.
 - **Restarting the count for each index or each load.** `SnapshotCache` and `IndexWatch` compare ints. If city B's count reached a number city A's had used, the panel would serve city A's cached projection.
 
-So it counts up for the life of the World and never resets. It moves when:
+So it counts up for the life of the World and never resets. Confirmed in game (1.6.2f1): the
+World and the mod's systems live across city loads. `OnCreate` and `OnLoad` run once per boot,
+and at quit `ModManager.Dispose()` runs before `DestroyWorld()`, so the systems are alive during
+`Mod.OnDispose`. Instance state on the indexer therefore lives exactly as long as the statics it
+replaces. It moves when:
 - an index is published;
 - a partial pass finishes;
 - an unlock batch changes something;
@@ -182,7 +192,9 @@ So it counts up for the life of the World and never resets. It moves when:
 ### Per-load and per-session state
 
 - **Placed uniques belong to a city load.** The indexer owns them and replaces them when a new city starts loading (step 6). The rescan after each pass resets them anyway.
-- **The toolbar selection belongs to the UI session and must not reset per load.** The UI forwards it when it mounts and when it changes (`toolbarSelectionKey`), not on a load, so a reset in C# alone could leave a filter showing in the toolbar but no longer applied to the catalog.
+- **The toolbar selection belongs to the UI session and must not reset per load.** The UI forwards it when it mounts and when it changes (`toolbarSelectionKey`), not on a load, so a reset in C# alone could leave a filter showing in the toolbar but no longer applied to the catalog. Step 6's checks confirm it in game rather than assume it: if vanilla resets its own selection on a load, the binding changes and the UI forwards that.
+- **No full pass outside a loaded city (step 6, decision 8).** A language change calls `RunIndex(true)` straight from `OnActiveDictionaryChanged` when the locale differs from the last one indexed. Nothing gates it, so it runs at the main menu after leaving a city, and between `OnGamePreload` and `OnGameLoaded` if the language changes during a load. Once step 6 empties the index at preload, either would publish a full index outside a city: at the main menu, undoing the empty state, or from a half-loaded world. The deferred branch for mod locale sources runs from `OnUpdate`, but whether that runs at the main menu depends on `Enabled`, so it takes the same gate.
+- **What step 6's `!Index.IsReady` guard protects.** `OnGamePreload` already sets `Enabled = false`, so partial passes and unlocks, which run in `OnUpdate`, cannot run during a load. `OnGameLoaded` sets `Enabled = true` even when its pass failed. The guard therefore matters in one window: after a failed `OnGameLoaded` pass, until loading-complete retries. Unlock events are one-frame event entities, so one skipped there loses only that delta; the next full pass reads `Locked` from the components. On a normal load the unlock batch arrives 0.5–1 s after the `OnGameLoaded` pass, so the guard never sees it.
 
 ## Steps
 
@@ -198,12 +210,12 @@ step 6 does.
 | 3b | **The C# tests run in parallel again**: `TestParallelization.cs` and its CONTRIBUTING paragraph go. One file, so it can be reverted on its own. | Low | Tests only |
 | 4 | **The menu, zone, progression and mod-flag tables join the index.** Each `Index*` step returns its table. Processors take `target`. `_zoneFacts` and `TryGetMenuEntityFor` go. Can be split into 4a (menus) and 4b (the rest). | Medium–high by size, mechanical | 24 processor files (6 with real changes), the indexer's partials, Bindings, Methods, Adapter; new `CatalogIndexTests` |
 | 5 | **Build aside, publish at the end.** Every read in the pass goes to `next`. | The riskiest change, so it is on its own | The indexer's partials; small, because step 4 added the parameter |
-| 6 | **A new city starts from an empty index.** At `OnGamePreload`: `Index = Empty`, new placed uniques, `Generation++`. Partial passes and unlocks skip while `!Index.IsReady`. | Behaviour change, medium | The indexer; indexing.md's "Load timing" and "A pass that fails" |
+| 6 | **A new city starts from an empty index.** At `OnGamePreload`: `Index = Empty`, new placed uniques, `Generation++`. Partial passes and unlocks skip while `!Index.IsReady`. Language-change passes run only while a city is loaded (decision 8). | Behaviour change, medium | The indexer; indexing.md's "Load timing" and "A pass that fails" |
 | 7 | (Optional) **Test builders and projection tests.** A name map inside the index replaces the adapter's `_byName` and the O(n) `Find`. | Low | Tests, `CatalogIndex`, Adapter |
 
 ### Checks per step
 
-- **Every step:** the C# and UI suites, and a clean `CI=true` build.
+- **Every step:** the C# and UI suites, and a clean `CI=true` build. Also `./build.sh test` against the real game assemblies on the merged tree: two PRs passed CI's mock run and failed only there (#19's page-write test, #28's writer test), and each step touches the adapter and the index those tests cover. #39 moves CI itself onto the real assemblies; until it lands, the validator runs this.
 - **Steps 3–5:** an in-game A/B on one save. After a load, compare with `main`:
   - `Indexed Prefabs Count` and the locked count;
   - `[PROCESSOR-CENSUS]` and `[PROCESSOR-OVERLAP]`;
@@ -217,7 +229,13 @@ step 6 does.
   - a new game;
   - the editor;
   - the mod joining a game already running;
-  - placing and bulldozing a unique asset, with and without Anarchy.
+  - placing and bulldozing a unique asset, with and without Anarchy;
+  - quitting to desktop while the index is held;
+  - a full-chain load with the DLC, which adds about 1,500 prefabs (19,198 against 17,698) and changes the menu counts;
+  - a second city in the same session with the panel open before the load, where a stale `CatalogSource` or `SnapshotCache` entry would show;
+  - a language change at the main menu after leaving a city, and during a load (decision 8);
+  - a failed first pass, forced with a throwing processor in a debug build, so the `!Index.IsReady` guard's one window is exercised;
+  - a pack or theme filter set in city A, then city B loaded (ideally with a different theme): the C# selection matches what the toolbar shows.
 - **Step 7:** pin today's handling of duplicate prefab names with a test first. Today `_byName` keeps the last entry in name order, `Find` returns the first, and a map would keep the last one filed.
 
 ### Overlap with open PRs
@@ -249,7 +267,12 @@ Decided on 2026-09-24: each as recommended.
    - Tests create it with `GetUninitializedObject`, because its constructor fails against the mocks. That leaves `ServiceFacts` and `ServiceTextFacts` null, and `Project` reads both.
    - **The cause is the mocks, and #34 fixes them.** Refasmer gives Unity's internal calls a body, and the runtime then refuses to load `UnityEngine.Object`, so no type derived from it loads, `PrefabBase` included. With the fixed mocks the constructor works.
    - **Recommended: fix the mocks in the refs repository, then use the constructor.** No test helper and no null-tolerant projection are needed.
+   - **Done:** #34 and #35 merged, the refs repository carries the fixed mocks, and the constructor works against the real assemblies too.
 7. **Mod flags on a failed pass.** Today the new flags stick even when the pass fails. After step 4 they roll back with it. **Recommended: accept;** the index and its flags then always agree.
+8. **Open. How step 6 keeps language-change passes inside a city** (from the live-testing review; see "Per-load and per-session state").
+   - **(a) Route the immediate branch through `OnUpdate`** with a flag. That covers a load, where `Enabled` is false, but not the main menu unless the system is disabled there too.
+   - **(b) Run a language-change pass only while a city is loaded:** a flag set at `OnGameLoaded` and cleared at `OnGamePreload`, checked by both the immediate and the deferred branch. A skipped change leaves its locale unmarked, and the next `OnGameLoaded` pass indexes in the new language, which it does today anyway.
+   - **Recommended: (b).** It closes both windows with one check, and it drops the main-menu passes, which nothing reads: the panel exists only in a city.
 
 ## Not in scope
 
