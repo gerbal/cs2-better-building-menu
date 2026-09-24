@@ -6,6 +6,13 @@ namespace BetterBuildingMenu.Domain
 	/// <summary>Turns an identifier into words, for names the game gives no string of its own.</summary>
 	public static class WordFormat
 	{
+		/// <summary>A string from the game's locale, without the whitespace around it, or null when it
+		/// has no words at all.</summary>
+		/// <remarks>Some entries carry it: "Small Roads" ends in a line break, which would otherwise
+		/// reach its Development heading and every comparison of the label.</remarks>
+		public static string? GameText(string? text) =>
+			text?.Trim() is { Length: > 0 } trimmed ? trimmed : null;
+
 		/// <summary>"GarbageAccumulation" becomes "Garbage Accumulation", and "big park" "Big Park".</summary>
 		/// <remarks>Upper-cased invariantly. Mono's culture is the OS's, not the game's language, and a
 		/// Turkish one turns "industrial" into "İndustrial".</remarks>
