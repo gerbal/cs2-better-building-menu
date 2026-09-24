@@ -112,9 +112,43 @@ namespace BetterBuildingMenu.Systems
 				Mod.Log.Error(ex, "[MENU-COVERAGE] walk failed");
 			}
 
-			// A partial pass can run every frame a mod edits prefabs.
-			var message = $"Indexed Vanilla Menu Placements: {placements.Count}";
+			LogCount(full, $"Indexed Vanilla Menu Placements: {placements.Count}");
 
+			return complete;
+		}
+
+		/// <summary>A partial pass's read of the menus: the placements, the menus and their tabs,
+		/// as a full pass reads them, swapped into the published index.</summary>
+		/// <remarks>A recreated prefab is placed under its new entity, and a recreated category,
+		/// which the game leaves empty, loses its tab as it does in vanilla. A walk that threw keeps
+		/// the placements it would have replaced, and menus or tabs that could not be read keep
+		/// theirs. See docs/indexing.md, "Partial passes".</remarks>
+		private void RefreshMenus(CatalogIndex target)
+		{
+			var menus = target.Menus;
+
+			if (TryIndexVanillaMenuPlacements(full: false, out var placements))
+			{
+				menus = menus.WithPlacements(placements);
+			}
+
+			try
+			{
+				var (names, entities, list) = IndexAssetMenus(full: false);
+				menus = menus.WithMenus(names, entities, list, IndexAssetCategories(full: false));
+			}
+			catch (Exception ex)
+			{
+				Mod.Log.Error(ex, "Reading the menus and their tabs failed; the partial pass keeps the last ones");
+			}
+
+			target.ReplaceMenus(menus);
+		}
+
+		/// <summary>A count a pass logs: at Info in a full pass, at Debug in a partial one, which can
+		/// run every frame a mod edits prefabs.</summary>
+		private static void LogCount(bool full, string message)
+		{
 			if (full)
 			{
 				Mod.Log.Info(message);
@@ -123,8 +157,6 @@ namespace BetterBuildingMenu.Systems
 			{
 				Mod.Log.Debug(message);
 			}
-
-			return complete;
 		}
 
 		/// <summary>Whether a menu, or a group's member, is still a prefab the game holds.</summary>
@@ -139,7 +171,7 @@ namespace BetterBuildingMenu.Systems
 		/// <summary>Reads the vanilla toolbar's asset menus: by entity index, so a menu selection
 		/// arriving from the UI can be resolved to a prefab name, and by name, so the lens can open one.</summary>
 		/// <remarks>The list is in the bottom bar's order; see <see cref="ToolbarOrder"/>.</remarks>
-		private (Dictionary<int, string> Names, Dictionary<string, Entity> Entities, List<VanillaMenuCategory> Menus) IndexAssetMenus()
+		private (Dictionary<int, string> Names, Dictionary<string, Entity> Entities, List<VanillaMenuCategory> Menus) IndexAssetMenus(bool full)
 		{
 			var query = GetEntityQuery(
 				ComponentType.ReadOnly<UIAssetMenuData>(),
@@ -151,7 +183,9 @@ namespace BetterBuildingMenu.Systems
 
 			for (var i = 0; i < menus.Length; i++)
 			{
-				if (!_prefabSystem.TryGetPrefab<PrefabBase>(menus[i], out var prefab) || prefab?.name is null)
+				// A recreated menu's old entity carries the same name until the frame's
+				// clean-up, and the new one is the handle to keep.
+				if (!IsLive(menus[i]) || !_prefabSystem.TryGetPrefab<PrefabBase>(menus[i], out var prefab) || prefab?.name is null)
 				{
 					continue;
 				}
@@ -192,7 +226,7 @@ namespace BetterBuildingMenu.Systems
 				.Select(menu => menu.Record)
 				.ToList();
 
-			Mod.Log.Info($"Indexed Asset Menus Count: {names.Count}");
+			LogCount(full, $"Indexed Asset Menus Count: {names.Count}");
 
 			return (names, entities, list);
 		}
@@ -252,7 +286,7 @@ namespace BetterBuildingMenu.Systems
 		/// game draws them.</summary>
 		/// <remarks>A category joins its menu's UIGroupElement buffer when UIAssetCategoryPrefab
 		/// initializes, so the menu's members are its categories. See <see cref="SortedCategories"/>.</remarks>
-		private Dictionary<string, List<VanillaMenuCategory>> IndexAssetCategories()
+		private Dictionary<string, List<VanillaMenuCategory>> IndexAssetCategories(bool full)
 		{
 			var query = GetEntityQuery(
 				ComponentType.ReadOnly<UIAssetMenuData>(),
@@ -263,7 +297,7 @@ namespace BetterBuildingMenu.Systems
 
 			for (var i = 0; i < menus.Length; i++)
 			{
-				if (!_prefabSystem.TryGetPrefab<PrefabBase>(menus[i], out var menu) || menu?.name is not string menuName)
+				if (!IsLive(menus[i]) || !_prefabSystem.TryGetPrefab<PrefabBase>(menus[i], out var menu) || menu?.name is not string menuName)
 				{
 					continue;
 				}
@@ -310,7 +344,7 @@ namespace BetterBuildingMenu.Systems
 				}
 			}
 
-			Mod.Log.Info($"Indexed Asset Categories: {byMenu.Count} menus, {byMenu.Values.Sum(list => list.Count)} tabs");
+			LogCount(full, $"Indexed Asset Categories: {byMenu.Count} menus, {byMenu.Values.Sum(list => list.Count)} tabs");
 
 			return byMenu;
 		}

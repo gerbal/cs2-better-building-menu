@@ -634,8 +634,8 @@ namespace BetterBuildingMenu.Systems
 				// table of its own to keep, and the menus it did read are still right.
 				TryIndexVanillaMenuPlacements(full: true, out var placements);
 				var zones = IndexZones(placements);
-				var (menuNames, menuEntities, menus) = IndexAssetMenus();
-				var categories = IndexAssetCategories();
+				var (menuNames, menuEntities, menus) = IndexAssetMenus(full: true);
+				var categories = IndexAssetCategories(full: true);
 				var milestones = IndexMilestones();
 				var (branches, roots) = IndexDevTreeBranches();
 
@@ -652,12 +652,8 @@ namespace BetterBuildingMenu.Systems
 				target = Index;
 				RemoveDeletedPrefabs(target);
 
-				// Before the processors, which read the placements back: a recreated prefab
-				// is placed under its new entity. A walk that threw keeps the old table.
-				if (TryIndexVanillaMenuPlacements(full: false, out var placements))
-				{
-					target.RefreshPlacements(placements);
-				}
+				// Before the processors, which read the tables back.
+				RefreshMenus(target);
 			}
 
 			foreach (var (processor, allQuery, changedQuery) in _processors)

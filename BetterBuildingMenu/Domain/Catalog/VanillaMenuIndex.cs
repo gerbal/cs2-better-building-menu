@@ -7,12 +7,12 @@ using Unity.Entities;
 namespace BetterBuildingMenu.Domain.Catalog
 {
 	/// <summary>
-	/// The game's own build menus as a full pass read them: where each asset is placed, as the
-	/// latest pass read it, and the menus and category tabs it draws.
+	/// The game's own build menus as the latest pass read them: where each asset is placed, and
+	/// the menus and category tabs it draws.
 	/// </summary>
 	/// <remarks>
 	/// Not changed once built; a new pass builds a new one, handing over tables it keeps no hold on,
-	/// and a partial pass swaps in a copy with its placements read again. The walk that fills it is
+	/// and a partial pass swaps in a copy with its tables read again. The walk that fills it is
 	/// in PrefabIndexingSystem; see docs/indexing.md, "The vanilla menu walk".
 	/// </remarks>
 	public sealed class VanillaMenuIndex
@@ -59,6 +59,16 @@ namespace BetterBuildingMenu.Domain.Catalog
 		/// placements are keyed by entity. The menus and their tabs wait for the next full pass.</remarks>
 		public VanillaMenuIndex WithPlacements(IReadOnlyDictionary<int, VanillaMenuPlacement> placements) =>
 			new(placements, _menuNames, _menuEntities, _menus, _categories);
+
+		/// <summary>The same placements under menus and tabs read again.</summary>
+		/// <remarks>A partial pass's, alongside <see cref="WithPlacements"/>: a recreated category
+		/// starts empty, and the tab the strip drew for it has to go as vanilla's does.</remarks>
+		public VanillaMenuIndex WithMenus(
+			IReadOnlyDictionary<int, string> menuNames,
+			IReadOnlyDictionary<string, Entity> menuEntities,
+			IReadOnlyList<VanillaMenuCategory> menus,
+			IReadOnlyDictionary<string, List<VanillaMenuCategory>> categories) =>
+			new(_placements, menuNames, menuEntities, menus, categories);
 
 		/// <summary>Whether the game offers this prefab in any of its build menus.</summary>
 		/// <remarks>The index's tie-breaker: whatever the game puts in front of the player, the lens

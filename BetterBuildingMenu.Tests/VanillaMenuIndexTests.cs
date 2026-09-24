@@ -156,15 +156,41 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.False(BuildingCatalogAdapter.MenuHasAssets(index, "Landscaping", VanillaToolbarSelection.None));
 
-			index.RefreshPlacements(new Dictionary<int, VanillaMenuPlacement>
+			index.ReplaceMenus(index.Menus.WithPlacements(new Dictionary<int, VanillaMenuPlacement>
 			{
 				[22] = new(default, "Landscaping", "Terraforming"),
-			});
+			}));
 
 			Assert.True(BuildingCatalogAdapter.MenuHasAssets(index, "Landscaping", VanillaToolbarSelection.None));
 			Assert.False(index.Menus.IsPlaced(21));
 			Assert.NotSame(before, index.Menus);
 			Assert.True(before.IsPlaced(21));
+		}
+
+		/// <summary>The game leaves a recreated category empty, and vanilla draws no empty tab; the
+		/// strip drops it once the tabs are read again, and the placements stay as they were.</summary>
+		[Fact]
+		public void TabsReadAgainDropARecreatedCategorysTab()
+		{
+			var index = new CatalogIndex(Menus(
+				new[] { (1, "Roads", "RoadsSmall") },
+				new() { ["Roads"] = new() { Tab("RoadsSmall", 10), Tab("RoadsCulDeSacs", 70) } },
+				menuOrder: new[] { "Roads" }));
+			var before = index.Menus;
+
+			index.ReplaceMenus(index.Menus.WithMenus(
+				new Dictionary<int, string> { [7] = "Roads" },
+				new Dictionary<string, Entity> { ["Roads"] = new Entity { Index = 7, Version = 2 } },
+				new[] { Tab("Roads") },
+				new Dictionary<string, List<VanillaMenuCategory>> { ["Roads"] = new() { Tab("RoadsSmall", 10) } }));
+
+			Assert.Equal(new[] { "RoadsSmall" }, index.GetMenuCategories("Roads").Select(tab => tab.Id));
+			Assert.True(index.Menus.IsPlacedIn(1, "Roads"));
+			Assert.True(index.Menus.TryGetMenuEntity("roads", out var menu));
+			Assert.Equal(2, menu.Version);
+			Assert.Equal("Roads", index.Menus.MenuName(7));
+			// The old table is untouched, for whoever still holds it.
+			Assert.Equal(new[] { "RoadsSmall", "RoadsCulDeSacs" }, before.CategoriesOf("Roads").Select(tab => tab.Id));
 		}
 
 		[Fact]

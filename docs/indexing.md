@@ -104,21 +104,21 @@ A recreated prefab's menu placement moves with it. The placements are keyed by e
 indexer's tick the game's menus already hold the new one: `ReplacePrefabSystem` takes the old
 entity out of every `UIGroupElement` buffer, and `UIObject.LateInitialize`, which
 `PrefabInitializeSystem` runs on the new `Created` entity during `PrefabSystem`'s update, adds the
-new one to its category. (Read from the game's code; a Road Builder edit in game is the check.)
-So every partial pass walks the menus again (see "The vanilla menu walk") after dropping the
-deleted entries and before the processors run, and `CatalogIndex.RefreshPlacements` swaps the
-result into the published index. Without it, an edited road the game offers in a menu is placed
-nowhere until the next full pass: it drops out of that menu's view, which admits a network only
-when some menu places it, and a prefab only its placement admits (the menu-placed processor, and
-the blacklist and Find It overrides) leaves the index. A walk that throws keeps the placements it
-replaces.
+new one to its category. A Road Builder edit in game confirms it: the edited road's row moves
+from the old entity to the new one at the partial pass, with no gap. So every partial pass reads
+the menus again (see "The vanilla menu walk"), after dropping the deleted entries and before the
+processors run: the placements, the menus and their tabs, as a full pass reads them.
+`RefreshMenus` swaps the result into the published index. Without it, an edited road the game
+offers in a menu is placed nowhere until the next full pass: it drops out of that menu's view,
+which admits a network only when some menu places it, and a prefab only its placement admits (the
+menu-placed processor, and the blacklist and Find It overrides) leaves the index. A walk that
+throws keeps the placements it replaces, and menus or tabs that could not be read keep theirs.
 
-The menus and their tabs wait for the next full pass, as do the menu and category names on the
-entries a partial pass does not re-read. That matters only when the game regroups without
-recreating the assets. A recreated category is one: `ReplacePrefabSystem` does not move its
-members to the new entity, so it starts empty, and vanilla, which draws no empty category, hides
-the tab and its assets. The walk agrees and places none of them, but the tab stays in the strip,
-empty, until the next full pass.
+The tabs matter when the game regroups. A recreated category starts empty: `ReplacePrefabSystem`
+does not move its members to the new entity. Vanilla, which draws no empty category, hides the tab
+and its assets, and the partial pass reads the same: the walk places none of them and the strip
+loses the tab. The menu and category names on entries a partial pass does not re-read wait for the
+next full pass.
 
 For a recreation whose old entity has already gone, the pass also drops every entry filed under
 the new entity's name whose prefab the game no longer maps to that entry's entity.
@@ -213,8 +213,8 @@ the same priority and stably, which leaves them as they are.
 
 The walk's tables, with the menus and their category tabs, go into the pass's `VanillaMenuIndex`,
 which its `CatalogIndex` carries as `Menus`: a new pass reads the menus afresh, and nothing
-outlives the index it was read for. A partial pass walks again and swaps in a copy with the new
-placements (see "Partial passes"). The placements are read by:
+outlives the index it was read for. A partial pass reads them all again and swaps in a copy (see
+"Partial passes"). The placements are read by:
 
 - the coverage report and the menu audit;
 - the zone catalog, which inherits the Zones menu (below);
