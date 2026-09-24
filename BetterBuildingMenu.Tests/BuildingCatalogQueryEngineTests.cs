@@ -666,7 +666,7 @@ public sealed class BuildingCatalogQueryEngineTests
         }
     }
 
-    [Fact, Trait("Requires", "Game")]
+    [Fact]
     public void BuildingMenuUtil_WhenIndexCategoriesAreMissing_ReturnsNulls()
     {
         bool previousReady = BuildingMenuUtil.IsReady;
