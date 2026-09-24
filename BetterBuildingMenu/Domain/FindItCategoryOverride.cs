@@ -77,7 +77,8 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>Whether the index files this subcategory under this category.</summary>
 		/// <remarks>The same rule that lays the index out: a category's subcategories take the
-		/// hundred values above it, and each category also files under Any.</remarks>
+		/// hundred values above it, and each category also has an Any list, for entries filed
+		/// under the category alone.</remarks>
 		public static bool IsFiled(PrefabCategory category, PrefabSubCategory subCategory) =>
 			category is not PrefabCategory.Any
 			&& Enum.IsDefined(typeof(PrefabCategory), category)

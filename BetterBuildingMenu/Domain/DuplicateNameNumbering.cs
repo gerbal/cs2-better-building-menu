@@ -15,7 +15,8 @@ namespace BetterBuildingMenu.Domain
 	{
 		/// <summary>The display name of each item, in the order given.</summary>
 		/// <param name="items">Each prefab's asset name and prefab name. The prefab name
-		/// sets the numbers' order, so a given set numbers the same way in any input order.</param>
+		/// sets the numbers' order; items that share a prefab name too keep the order they are
+		/// given in, so a caller that wants the same numbers every time sorts them first.</param>
 		public static string[] Names(IReadOnlyList<(string AssetName, string PrefabName)> items)
 		{
 			var names = new string[items.Count];

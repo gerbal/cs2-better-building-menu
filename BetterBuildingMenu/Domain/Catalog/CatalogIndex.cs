@@ -107,7 +107,7 @@ namespace BetterBuildingMenu.Domain.Catalog
 		{
 			if (_byPrefabName is null)
 			{
-				_byPrefabName = new Dictionary<string, PrefabIndex>(StringComparer.Ordinal);
+				_byPrefabName = new Dictionary<string, PrefabIndex>(All.Count, StringComparer.Ordinal);
 
 				foreach (var entry in All)
 				{
@@ -180,10 +180,10 @@ namespace BetterBuildingMenu.Domain.Catalog
 		internal void File(PrefabIndex entry)
 		{
 			Remove(entry.Id);
+			_byPrefabName = null;
 
 			All[entry.Id] = entry;
 			_lists[entry.Category][entry.SubCategory][entry.Id] = entry;
-			_byPrefabName = null;
 		}
 
 		internal void Remove(int id)
@@ -205,7 +205,9 @@ namespace BetterBuildingMenu.Domain.Catalog
 		/// </remarks>
 		internal void NumberDuplicateNames()
 		{
-			var numbered = All.Where(entry => !entry.IsServiceUpgrade).ToList();
+			// In id order, so namesakes that share a prefab name too are numbered the same way
+			// on every pass, whatever order they were filed in.
+			var numbered = All.Where(entry => !entry.IsServiceUpgrade).OrderBy(entry => entry.Id).ToList();
 			var names = DuplicateNameNumbering.Names(numbered.Select(entry => (entry.AssetName, entry.PrefabName)).ToList());
 
 			for (var i = 0; i < numbered.Count; i++)
@@ -223,24 +225,22 @@ namespace BetterBuildingMenu.Domain.Catalog
 		}
 
 		/// <summary>Takes any entry that shares a brand's prefab name out of its subcategory's list.</summary>
-		/// <returns>How many it took out.</returns>
+		/// <returns>Each entry it took out, with the subcategory it was taken out of.</returns>
 		/// <remarks>
 		/// Everything and the brands' own list are left alone, so the catalog, which reads
 		/// everything, still lists them; only the subcategory lists change, and the Roads menu's
 		/// extra tabs are the only reader of those. Kept, and counted, until a game session
 		/// shows whether it ever finds anything.
 		/// </remarks>
-		internal int RemoveBrandDuplicates()
+		internal List<(PrefabIndex Entry, PrefabSubCategory From)> RemoveBrandDuplicates()
 		{
 			var branding = List(PrefabCategory.Props, PrefabSubCategory.Props_Branding);
 			var brands = new HashSet<string>(branding?.Select(entry => entry.PrefabName) ?? Enumerable.Empty<string>());
-			var removed = 0;
+			var removed = new List<(PrefabIndex Entry, PrefabSubCategory From)>();
 
 			foreach (var (category, subCategory, list) in Lists())
 			{
-				if (category is PrefabCategory.Any
-					|| subCategory is PrefabSubCategory.Props_Branding
-					|| (category is PrefabCategory.Props && subCategory is PrefabSubCategory.Any))
+				if (category is PrefabCategory.Any || subCategory is PrefabSubCategory.Props_Branding)
 				{
 					continue;
 				}
@@ -250,7 +250,7 @@ namespace BetterBuildingMenu.Domain.Catalog
 					if (brands.Contains(entry.PrefabName))
 					{
 						list.Remove(entry);
-						removed++;
+						removed.Add((entry, subCategory));
 					}
 				}
 			}

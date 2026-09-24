@@ -298,7 +298,9 @@ namespace BetterBuildingMenu.Systems
 		/// <remarks>Registered at UIUpdate as well as PrefabUpdate. Both run every frame, but
 		/// PrefabUpdate runs inside PrefabSystem's update, which the main loop runs before UnlockSystem,
 		/// so the unlock branch needs the UIUpdate tick, which runs after UnlockSystem has raised its
-		/// events. A due pass runs at whichever comes first.</remarks>
+		/// events. A due full pass runs at whichever tick comes first. A partial pass runs at both: a
+		/// changed prefab keeps its Created and Updated tags until the frame's clean-up, so the second
+		/// tick re-reads what the first did.</remarks>
 		protected override void OnUpdate()
 		{
 			if (_indexOnFirstUpdate)
@@ -710,7 +712,14 @@ namespace BetterBuildingMenu.Systems
 								continue;
 							}
 
-							if (!full && EntityManager.HasComponent<Created>(entity) && target.GetByPrefabName(_prefabSystem.GetPrefab<PrefabBase>(entity).name) is { } old)
+							// Once per processor that matches the prefab, so a later one finds the
+							// entry an earlier one just filed for this very entity: that is not
+							// the old one, and removing it would lose the prefab until the next
+							// full pass.
+							if (!full
+								&& EntityManager.HasComponent<Created>(entity)
+								&& target.GetByPrefabName(_prefabSystem.GetPrefab<PrefabBase>(entity).name) is { } old
+								&& old.Id != entity.Index)
 							{
 								target.Remove(old.Id);
 							}
@@ -776,9 +785,15 @@ namespace BetterBuildingMenu.Systems
 
 			if (full)
 			{
-				// Counted rather than logged per entry: whether it ever finds anything decides
-				// whether it stays. See CatalogIndex.RemoveBrandDuplicates.
-				Mod.Log.Info($"Brand cleanup took {target.RemoveBrandDuplicates()} entries out of subcategory lists");
+				// The count at Info, since whether it ever finds anything decides whether it
+				// stays; each entry at Debug. See CatalogIndex.RemoveBrandDuplicates.
+				var removed = target.RemoveBrandDuplicates();
+				Mod.Log.Info($"Brand cleanup took {removed.Count} entries out of subcategory lists");
+
+				foreach (var (entry, from) in removed)
+				{
+					Mod.Log.Debug($"Removed {entry.PrefabName} from {from}");
+				}
 			}
 
 			return target;
@@ -941,7 +956,6 @@ namespace BetterBuildingMenu.Systems
 			return WordFormat.GameText(localized) ?? prefab.name.Replace('_', ' ').FormatWords();
 		}
 
-		/// <summary>Numbers the display names indexed prefabs share. See <see cref="DuplicateNameNumbering"/>.</summary>
 		/// <summary>
 		/// Asks the game which unique assets the city already holds, for the panel to
 		/// refuse a second one of.

@@ -116,6 +116,29 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void TheFirstInNameOrderAnswersAcrossCategories()
+		{
+			// Not the first category's, the first filed or the lowest id: the one first by name,
+			// which here is in the later category, filed last, with the higher id.
+			var index = TestPrefabs.ReadyIndex(
+				TestPrefabs.Named(7, "Shared", PrefabCategory.Networks, PrefabSubCategory.Networks_Roads, "Zeta"),
+				TestPrefabs.Named(8, "Shared", PrefabCategory.Props, PrefabSubCategory.Props_Misc, "Alpha"));
+
+			Assert.Equal(8, index.GetByPrefabName("Shared")?.Id);
+		}
+
+		[Fact]
+		public void ANamesakeFiledAfterALookupThatSortsFirstAnswersNext()
+		{
+			var index = TestPrefabs.ReadyIndex(TestPrefabs.Named(7, "Shared", PrefabCategory.Props, PrefabSubCategory.Props_Misc, "Zeta"));
+			Assert.Equal(7, index.GetByPrefabName("Shared")?.Id);
+
+			index.File(TestPrefabs.Named(9, "Shared", PrefabCategory.Props, PrefabSubCategory.Props_Misc, "Alpha"));
+
+			Assert.Equal(9, index.GetByPrefabName("Shared")?.Id);
+		}
+
+		[Fact]
 		public void TheNameLookupFollowsFilingAndRemoving()
 		{
 			// Built on first use, so a lookup made before an edit must not answer after it.
@@ -152,6 +175,21 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void NamesakesThatShareAPrefabNameTooAreNumberedInIdOrder()
+		{
+			// Nothing else tells them apart, and a pass files them in whatever order the game's
+			// queries give.
+			var index = TestPrefabs.ReadyIndex(
+				TestPrefabs.Named(4, "Park01", PrefabCategory.Props, PrefabSubCategory.Props_Misc, "Park"),
+				TestPrefabs.Named(3, "Park01", PrefabCategory.Props, PrefabSubCategory.Props_Misc, "Park"));
+
+			index.NumberDuplicateNames();
+
+			Assert.Equal("Park 1", index.Get(3)?.Name);
+			Assert.Equal("Park 2", index.Get(4)?.Name);
+		}
+
+		[Fact]
 		public void NumberingReordersEveryListAndTheNameLookup()
 		{
 			// Lists are in name order, cached; numbering renames, so every order and the
@@ -178,13 +216,34 @@ namespace BetterBuildingMenu.Tests
 			var road = TestPrefabs.Named(3, "Road01", PrefabCategory.Networks, PrefabSubCategory.Networks_Roads);
 			var index = TestPrefabs.ReadyIndex(brand, namesake, road);
 
-			Assert.Equal(1, index.RemoveBrandDuplicates());
+			var removed = index.RemoveBrandDuplicates();
 
+			Assert.Equal(new[] { (2, PrefabSubCategory.Networks_Roads) }, removed.Select(taken => (taken.Entry.Id, taken.From)));
 			Assert.Equal(new[] { 3 }, ListOf(index, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads).Select(entry => entry.Id));
 			// Everything, which the catalog reads, and the brands' own list keep theirs.
 			Assert.Equal(new[] { 1, 2, 3 }, index.All.Select(entry => entry.Id).OrderBy(id => id));
 			Assert.Equal(new[] { 1 }, ListOf(index, PrefabCategory.Props, PrefabSubCategory.Props_Branding).Select(entry => entry.Id));
-			Assert.Equal(0, index.RemoveBrandDuplicates());
+			Assert.Empty(index.RemoveBrandDuplicates());
+		}
+
+		[Fact]
+		public void BrandCleanupTakesEveryNamesakeOutAndReportsEach()
+		{
+			// One in a subcategory, one filed under Props alone: the brand itself is not in
+			// Props' catch-all, so nothing there is the brand's to keep.
+			var index = TestPrefabs.ReadyIndex(
+				TestPrefabs.Named(1, "Brand01", PrefabCategory.Props, PrefabSubCategory.Props_Branding),
+				TestPrefabs.Named(2, "Brand01", PrefabCategory.Networks, PrefabSubCategory.Networks_Roads),
+				TestPrefabs.Named(3, "Brand01", PrefabCategory.Props, PrefabSubCategory.Any),
+				TestPrefabs.Named(4, "Road01", PrefabCategory.Networks, PrefabSubCategory.Networks_Roads));
+
+			var removed = index.RemoveBrandDuplicates();
+
+			Assert.Equal(
+				new[] { (2, PrefabSubCategory.Networks_Roads), (3, PrefabSubCategory.Any) },
+				removed.Select(taken => (taken.Entry.Id, taken.From)).OrderBy(taken => taken.Item1));
+			Assert.Empty(ListOf(index, PrefabCategory.Props, PrefabSubCategory.Any));
+			Assert.Equal(new[] { 4 }, ListOf(index, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads).Select(entry => entry.Id));
 		}
 
 		[Fact]

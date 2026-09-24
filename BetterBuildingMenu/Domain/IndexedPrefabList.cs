@@ -26,7 +26,7 @@ namespace BetterBuildingMenu.Domain
 			.ThenBy(x => x.PrefabName, StringComparer.Ordinal)
 			.ToList();
 
-		// Written only through CatalogIndex.File, which keeps the three lists an entry is
+		// Written only through CatalogIndex.File, which keeps the two lists an entry is
 		// filed in together.
 		public PrefabIndex this[int index]
 		{
