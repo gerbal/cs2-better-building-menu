@@ -600,9 +600,11 @@ namespace BetterBuildingMenu.Services
 
 			foreach (var key in new[] { $"SubServices.NAME[{id}]", $"Services.NAME[{id}]" })
 			{
-				if (dictionary.TryGetValue(key, out var name) && !string.IsNullOrWhiteSpace(name))
+				// Trimmed: the game's own SubServices.NAME[Small Roads] ends in "\r\n", which
+				// otherwise travels into the Development group heading.
+				if (dictionary.TryGetValue(key, out var name) && name?.Trim() is { Length: > 0 } trimmed)
 				{
-					return name;
+					return trimmed;
 				}
 			}
 
