@@ -94,7 +94,7 @@ manifest="$refs/MANIFEST.md"
     echo
     echo "- Game version: ${label:-not recorded}"
     echo "- Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-    echo "- Tool: JetBrains.Refasmer.CliTool $REFASMER_VERSION, \`--all --mock\`"
+    echo "- Tool: JetBrains.Refasmer.CliTool $REFASMER_VERSION, \`--all --mock\`, then \`tools/game-refs/FixNativeMethods.cs\`"
     echo
     echo "| Assembly | SHA-256 of the game's copy |"
     echo "|---|---|"
@@ -112,6 +112,10 @@ for name in "${assemblies[@]}"; do
 
     echo "| $name | $(sha256 "$source") |" >> "$manifest"
 done
+
+# Refasmer gives the runtime's own methods a body too, and the runtime then refuses
+# to load their types: every UnityEngine.Object, so every prefab, and every delegate.
+"$DOTNET_BIN" run "$SCRIPT_DIR/FixNativeMethods.cs" -- "$out" >/dev/null
 
 echo "Wrote ${#assemblies[@]} mock assemblies to $out"
 
