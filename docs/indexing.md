@@ -221,7 +221,7 @@ covered by tests: `VanillaMenuAudit` for the census, `VanillaMenuCoverage` for t
 report, and `IndexAuditLog` for the lines of both and of the processor census. They return lines
 rather than log them, since anything that touches `Mod` cannot run in a test. For those, the
 system only asks the game what a placed prefab is, and logs what comes back. The DLC audit, the
-processor overlap, the zone parity check and the failure lines are still worded in the system.
+processor overlap, the zone parity check and the failure lines are worded in the system.
 As a log line alone the census could only be read by booting a save and grepping
 `Modding.log`, so nothing would stop the mapping regressing between boots.
 
