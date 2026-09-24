@@ -1,5 +1,6 @@
 import { fontSizeRatio } from "./textScale";
 import sizes from "./buildingLensLayout.module.scss";
+import { BUILDING_LENS_DEFAULT_HEIGHT, BUILDING_LENS_MAX_HEIGHT, BUILDING_LENS_MIN_HEIGHT } from "./sharedContracts.generated";
 
 /**
  * A length lensGeometry.scss states, exported by buildingLensLayout.module.scss,
@@ -17,13 +18,6 @@ function sheetRem(name: string): number {
  */
 export const BUILDING_LENS_PANEL_CHROME_WIDTH = 35;
 export const BUILDING_LENS_MIN_WIDTH = 700 + BUILDING_LENS_PANEL_CHROME_WIDTH;
-/**
- * The drag ceiling, and the twin of BuildingLensWidth.Max in C# — a test asserts
- * the two agree. Stated as the band total less the chrome, the way the C# side
- * derives it, so the two read as one number rather than two near guesses.
- */
-export const BUILDING_LENS_BAND_WIDTH = 1476;
-export const BUILDING_LENS_MAX_WIDTH = BUILDING_LENS_BAND_WIDTH - BUILDING_LENS_PANEL_CHROME_WIDTH;
 // The lens shell is bottom-aligned above the native toolbar. Reserve space
 // for that toolbar, the shell chrome, and a small top/bottom safety margin so
 // the catalog cannot push the shell's title/search bar outside a short view.
@@ -225,21 +219,13 @@ export function getBuildingLensCatalogMaxHeight(viewportHeight: number): number 
   return Math.floor((physicalHeight * BUILDING_LENS_REFERENCE_HEIGHT) / safeViewportHeight);
 }
 
-/**
- * The catalog's height range, twin of BuildingLensHeight in C# — a test asserts
- * they agree. Min is one row of cards under two headings, the deepest grouping
- * a menu draws (catalog padding, two heading reserves, list padding, one
- * card); Max the viewport less the chrome below the panel; between them the
- * height is the player's to drag.
- */
-export const BUILDING_LENS_MIN_HEIGHT = 108;
-export const BUILDING_LENS_MAX_HEIGHT = 960;
-export const BUILDING_LENS_DEFAULT_HEIGHT = 420;
+/** The catalog's height range: BuildingLensHeight's, generated into sharedContracts.generated.ts. */
+export { BUILDING_LENS_DEFAULT_HEIGHT, BUILDING_LENS_MAX_HEIGHT, BUILDING_LENS_MIN_HEIGHT };
 
 /**
- * Clamp a dragged height. Non-finite resolves to the default rather than
- * passing through: the value goes straight into an inline style, and
- * `height: NaNrem` leaves the catalog unsized rather than merely wrong.
+ * Clamp a dragged height to that range. Non-finite resolves to the default
+ * rather than passing through: the value goes straight into an inline style,
+ * and `height: NaNrem` leaves the catalog unsized rather than merely wrong.
  */
 export function clampBuildingLensHeight(height: number): number {
   if (!Number.isFinite(height)) return BUILDING_LENS_DEFAULT_HEIGHT;
