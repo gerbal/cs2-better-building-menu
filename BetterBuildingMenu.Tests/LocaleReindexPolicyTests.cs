@@ -88,6 +88,36 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void SwitchingAwayAndBackBeforeTheUpdateIsOnePass()
+		{
+			// The language change is answered first and marks the locale indexed, which
+			// covers the deferral the switch back scheduled: one pass, not two.
+			var policy = new LocaleReindexPolicy(Quiet);
+			policy.MarkIndexed("en-US");
+			policy.Observe("de-DE", T0);
+			Assert.Equal(LocaleReindexDecision.Deferred, policy.Observe("en-US", T0 + TimeSpan.FromMilliseconds(100)));
+
+			Assert.Equal(LocaleReindexDecision.Immediate, policy.TakeDue(T0 + Quiet + Quiet));
+			policy.MarkIndexed("en-US");
+
+			Assert.Equal(LocaleReindexDecision.None, policy.TakeDue(T0 + Quiet + Quiet + Quiet));
+		}
+
+		[Fact]
+		public void AFailedLanguagePassLeavesALaterDeferralToRetry()
+		{
+			// A pass that throws marks nothing, so the burst scheduled after the switch
+			// still fires: the one retry a failed language pass gets.
+			var policy = new LocaleReindexPolicy(Quiet);
+			policy.MarkIndexed("en-US");
+			policy.Observe("de-DE", T0);
+			policy.Observe("en-US", T0 + TimeSpan.FromMilliseconds(100));
+
+			Assert.Equal(LocaleReindexDecision.Immediate, policy.TakeDue(T0 + Quiet + Quiet));
+			Assert.Equal(LocaleReindexDecision.Deferred, policy.TakeDue(T0 + Quiet + Quiet));
+		}
+
+		[Fact]
 		public void TheNextCitysPassAbsorbsASwitchMadeWithNoCityLoaded()
 		{
 			// At the main menu, or during a load, OnUpdate is off and nothing takes

@@ -13,7 +13,8 @@ namespace BetterBuildingMenu.Domain.Catalog
 	/// Every indexed prefab, filed three ways: everything, its category, and its subcategory.
 	/// </summary>
 	/// <remarks>
-	/// A full pass builds a new one aside and publishes it when the pass succeeds.
+	/// A load publishes an empty one at preload, and a full pass builds a new one aside and
+	/// publishes it when the pass succeeds.
 	/// PrefabIndexingSystem is the only writer, on the main thread, and a partial pass or an
 	/// unlock edits the published one in place, then bumps the generation. See
 	/// docs/indexing.md, "A pass that fails".
