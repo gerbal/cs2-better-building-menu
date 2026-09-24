@@ -58,7 +58,8 @@ namespace BetterBuildingMenu.Systems
 
 				for (var i = 0; i < menus.Length; i++)
 				{
-					if (!_prefabSystem.TryGetPrefab<PrefabBase>(menus[i], out var menuPrefab)
+					if (!IsLive(menus[i])
+						|| !_prefabSystem.TryGetPrefab<PrefabBase>(menus[i], out var menuPrefab)
 						|| menuPrefab?.name is not string menuName
 						|| !EntityManager.TryGetBuffer<UIGroupElement>(menus[i], true, out var categories))
 					{
@@ -69,8 +70,9 @@ namespace BetterBuildingMenu.Systems
 					{
 						var categoryEntity = categories[c].m_Prefab;
 
-						// GetSortedCategories drops both of these, so a tab the player
-						// cannot reach places nothing.
+						// GetSortedCategories drops a member that is not a category and a
+						// category with no members, so a tab the player cannot reach places
+						// nothing.
 						if (!IsLive(categoryEntity)
 							|| !EntityManager.HasComponent<UIAssetCategoryData>(categoryEntity)
 							|| !EntityManager.TryGetBuffer<UIGroupElement>(categoryEntity, true, out var assets)
@@ -79,6 +81,10 @@ namespace BetterBuildingMenu.Systems
 						{
 							continue;
 						}
+
+						// Once per tab: the name is a native getter that allocates, and
+						// the walk now runs on every partial pass.
+						var categoryName = categoryPrefab.name;
 
 						for (var a = 0; a < assets.Length; a++)
 						{
@@ -93,7 +99,7 @@ namespace BetterBuildingMenu.Systems
 							// holds and what the diff compares against; the whole entity
 							// rides along so a gap can still be named.
 							placements[assetEntity.Index] = new VanillaMenuPlacement(
-								assetEntity, menuName, categoryPrefab.name);
+								assetEntity, menuName, categoryName);
 						}
 					}
 				}
@@ -121,10 +127,12 @@ namespace BetterBuildingMenu.Systems
 			return complete;
 		}
 
-		/// <summary>Whether a group's member is still a prefab the game holds.</summary>
-		/// <remarks>PrefabSystem.RemovePrefab only marks the entity Deleted: it stays in its group's
-		/// buffer, and still does once the frame's clean-up destroys it, when its index can be handed
-		/// to another entity. ReplacePrefabSystem takes a recreated prefab's old entity out itself.</remarks>
+		/// <summary>Whether a menu, or a group's member, is still a prefab the game holds.</summary>
+		/// <remarks>UIInitializeSystem takes a removed prefab out of its group during PrefabSystem's
+		/// update, and ReplacePrefabSystem a recreated one's old entity. A PrefabSystem.RemovePrefab
+		/// later in the frame, from a mod's own system or a UI trigger, leaves the entity in its
+		/// group marked Deleted, and still there once the frame's clean-up destroys it, when its index
+		/// can go to another entity.</remarks>
 		private bool IsLive(Entity entity) =>
 			EntityManager.Exists(entity) && !EntityManager.HasComponent<Deleted>(entity);
 

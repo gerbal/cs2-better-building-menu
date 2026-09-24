@@ -641,6 +641,8 @@ namespace BetterBuildingMenu.Systems
 				// Before IndexZones and before the processors: the zone catalog
 				// inherits the game's own Zones menu, and the blacklist check below
 				// consults the placements too.
+				// A walk that threw still hands over what it read: a full pass has no
+				// table of its own to keep, and the menus it did read are still right.
 				TryIndexVanillaMenuPlacements(full: true, out var placements);
 				var zones = IndexZones(placements);
 				var (menuNames, menuEntities, menus) = IndexAssetMenus();
