@@ -98,7 +98,9 @@ export const ChipRow = () => {
     </div>
   );
 
-  const menuTabs: VanillaBuildMenuTab[] = orderedCategories(menus).map((entry) => ({
+  // In the order the index sends them, which is the bottom bar's: toolbar group
+  // first, then priority. A re-sort by priority alone would undo the groups.
+  const menuTabs: VanillaBuildMenuTab[] = menus.map((entry) => ({
     id: entry.id,
     icon: entry.icon,
     toolTip: menuLabel(entry.id),

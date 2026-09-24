@@ -75,6 +75,48 @@ namespace BetterBuildingMenu.Domain.Catalog
 			return service is not null && _roots.TryGetValue(service, out root);
 		}
 
+		/// <summary>The branch an asset is filed under: the node DevTreeGates.Pick chooses among its
+		/// requirements, or its menu's root when none of them is a labelled node.</summary>
+		/// <param name="required">The asset's unlock requirements: each one's prefab entity index, and
+		/// whether the asset needs it (RequireAll) rather than having it as one way in.</param>
+		/// <param name="service">The asset's own service, or null when it has none. Its menu stands
+		/// in then: a mod that regroups the menus renames the menu, not the service.</param>
+		/// <param name="menu">The menu the asset is filed under, which names its service's root.</param>
+		public (string Label, string Icon, int Depth) BranchOf(
+			IEnumerable<(int Requirement, bool Needed)> required,
+			string? service,
+			string? menu)
+		{
+			var gates = new List<DevTreeGates.Gate>();
+			var otherWaysIn = false;
+
+			foreach (var (requirement, needed) in required)
+			{
+				if (TryGetBranch(requirement, out var branch) && branch.Label.Length > 0)
+				{
+					gates.Add(new DevTreeGates.Gate(branch.Label, branch.Icon, branch.Depth, needed, branch.Service));
+				}
+				else if (!needed)
+				{
+					// A way in that is not a node, such as a milestone. UnlockSystem lets the
+					// asset in through it as through any other.
+					otherWaysIn = true;
+				}
+			}
+
+			if (DevTreeGates.Pick(gates, service ?? menu, otherWaysIn) is { } gate)
+			{
+				return (gate.Label, gate.Icon, gate.Depth);
+			}
+
+			// No node gated it, so it belongs to the service's free root — the same
+			// bucket the game puts the starting kit in. Named after the root node
+			// rather than "Other": it is a real place in the tree.
+			return TryGetRoot(menu, out var root)
+				? root
+				: (string.Empty, string.Empty, 0);
+		}
+
 		/// <summary>The label the tree's root carries for a menu, or empty.</summary>
 		/// <remarks>A sentinel more than a name: the adapter replaces it with what the MENU calls that
 		/// bucket, which needs the whole set of ungated assets. See ProjectForMenu.</remarks>
