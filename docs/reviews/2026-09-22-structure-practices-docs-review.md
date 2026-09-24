@@ -1,5 +1,12 @@
 # Better Building Menu — structure, practices and documentation review
 
+> **Status, 2026-09-24: historical.** A snapshot at `dc1beea`. The eighteen bugs
+> in section 1 have been fixed since, and most of its other findings acted on,
+> in PRs #2 to #44. The per-load state that section 2.2 called for is done
+> (#30). What is still open is on the [roadmap](../roadmap.md), including
+> splitting `PrefabIndexingSystem` and naming the UI system's partials. Line
+> numbers are as of `dc1beea` and no longer match.
+
 **Date:** 2026-09-22, at `dc1beea` (0.1.12).
 
 **Scope:** every tracked file under `BetterBuildingMenu/`, `BetterBuildingMenu.Tests/` and `docs/`, the root build and metadata files, and the store metadata. Paths are relative to the repository root.
