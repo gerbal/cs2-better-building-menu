@@ -18,7 +18,9 @@ namespace BetterBuildingMenu.Domain.Catalog
 		/// <summary>Whether the city already holds one of this prefab.</summary>
 		public bool IsAlreadyBuilt(int prefabId) => _placed.Contains(prefabId);
 
-		public void Set(int prefabId, bool placed)
+		// Internal, like Reset: a change that does not also bump PrefabIndexingSystem.Generation
+		// leaves the cached projections showing the old set.
+		internal void Set(int prefabId, bool placed)
 		{
 			if (placed)
 			{
@@ -37,7 +39,7 @@ namespace BetterBuildingMenu.Domain.Catalog
 		/// bumping that generation for a rescan that found nothing new would throw a good
 		/// cache away on every keystroke.
 		/// </returns>
-		public bool Reset(IEnumerable<int>? placed)
+		internal bool Reset(IEnumerable<int>? placed)
 		{
 			var next = new HashSet<int>();
 

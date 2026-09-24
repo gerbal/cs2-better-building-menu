@@ -19,7 +19,7 @@ namespace BetterBuildingMenu.Systems
 		private static readonly System.Diagnostics.Stopwatch SearchClock = System.Diagnostics.Stopwatch.StartNew();
 		private readonly SearchDebounce _searchDebounce = new(TimeSpan.FromMilliseconds(250));
 		// Handed Mod's silhouette cache rather than reading Mod itself; see its constructor.
-		private readonly BuildingCatalogAdapter _buildingCatalogAdapter = new(url => Mod.Silhouettes?.UrlFor(url));
+		private readonly BuildingCatalogAdapter _buildingCatalogAdapter = new(thumbnail => Mod.Silhouettes?.UrlFor(thumbnail));
 		// The game's own toolbar filter row, as the UI last reported it. Not reset on
 		// a city load: the UI forwards the row when it mounts and when it changes, not
 		// on a load, so a reset could leave the row showing a filter the catalog dropped.
@@ -32,7 +32,6 @@ namespace BetterBuildingMenu.Systems
 
 		private ToolSystem _toolSystem = null!;
 		private PrefabSystem _prefabSystem = null!;
-		// The placed uniques and the generation the panel reads; see its Source.
 		private PrefabIndexingSystem _indexer = null!;
 		private DefaultToolSystem _defaultToolSystem = null!;
 		// Only for releasing the toolbar's menu selection when the lens closes;

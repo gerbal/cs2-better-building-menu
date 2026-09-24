@@ -1,4 +1,5 @@
 ﻿using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Utilities;
 using Colossal.Entities;
 using Game.Prefabs;
@@ -156,15 +157,13 @@ namespace BetterBuildingMenu.Systems
 				? attached.m_Parent
 				: selected;
 
-			var source = _indexer.Source;
-
-			if (upgradable == _extensionMenuFor && source.Generation == _extensionMenuGeneration)
+			if (upgradable == _extensionMenuFor && _indexer.Generation == _extensionMenuGeneration)
 			{
 				return;
 			}
 
 			_extensionMenuFor = upgradable;
-			_extensionMenuGeneration = source.Generation;
+			_extensionMenuGeneration = _indexer.Generation;
 
 			if (upgradable == Entity.Null
 				|| !EntityManager.TryGetComponent<PrefabRef>(upgradable, out var prefabRef)
@@ -174,6 +173,13 @@ namespace BetterBuildingMenu.Systems
 				return;
 			}
 
+			PublishExtensionMenu(building, _indexer.Source);
+		}
+
+		// Its own method so the lookup's closure is allocated only on a rebuild, not on
+		// every frame RefreshExtensionMenu polls and returns early.
+		private void PublishExtensionMenu(PrefabIndex building, CatalogSource source)
+		{
 			_BuildingExtensionMenu.Value = BuildingExtensionMenu.Build(
 				building.Name ?? building.PrefabName ?? string.Empty,
 				// Prefab names, not the display names the hover card shows:

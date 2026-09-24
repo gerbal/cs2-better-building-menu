@@ -125,7 +125,7 @@ namespace BetterBuildingMenu.Systems
 		/// tracker.</summary>
 		public PlacedUniques PlacedUniques { get; } = new();
 
-		/// <summary>What a catalog refresh reads, taken once at its start.</summary>
+		/// <summary>What a catalog refresh reads, taken once, after <see cref="SyncPlacedUniques"/>.</summary>
 		public CatalogSource Source => new(PlacedUniques, Generation);
 
 		// Set when this system is created inside a running city: the game adds a

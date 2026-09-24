@@ -50,9 +50,9 @@ namespace BetterBuildingMenu.Services
 		private readonly Func<string, string?> _silhouetteUrl;
 
 		/// <param name="silhouetteUrl">
-		/// The blackened copy of a vector icon, or null when it has none. Passed in rather
-		/// than read from Mod, whose type initializer needs the running game, so a test can
-		/// project an entry. Defaults to no silhouettes.
+		/// The blackened copy of a vector icon, or null when it has none. Passed in so that
+		/// projecting reads nothing from Mod, whose type initializer needs the running game.
+		/// Defaults to no silhouettes.
 		/// </param>
 		public BuildingCatalogAdapter(Func<string, string?>? silhouetteUrl = null)
 		{
@@ -366,8 +366,8 @@ namespace BetterBuildingMenu.Services
 		/// and once more for the matches-elsewhere count when a search finds nothing.
 		/// </remarks>
 		/// <param name="source">
-		/// What this refresh reads from the indexer, taken once so every answer in it
-		/// agrees; see PrefabIndexingSystem.Source.
+		/// What this refresh reads from the indexer, taken once after the placed-unique
+		/// rescan, so every cache is keyed on one generation; see PrefabIndexingSystem.Source.
 		/// </param>
 		/// <param name="selection">
 		/// The game's own toolbar filter row, which BuildingMenuUISystem holds;
