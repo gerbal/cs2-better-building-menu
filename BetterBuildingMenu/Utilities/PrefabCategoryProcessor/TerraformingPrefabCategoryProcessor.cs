@@ -1,4 +1,5 @@
 using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Interfaces;
 
 using Game.Prefabs;
@@ -40,7 +41,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 			};
 		}
 
-		public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
+		public bool TryCreatePrefabIndex(PrefabBase prefab, Entity entity, CatalogIndex target, [NotNullWhen(true)] out PrefabIndex? prefabIndex)
 		{
 			// The type check and not the component alone: TerraformingData is
 			// what the query found, but only a TerraformingPrefab is something
@@ -55,7 +56,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 			// editor resource brushes, kept out so an unscoped search for "level"
 			// cannot turn one up — unless the vanilla menu itself places it.
 			if (terraforming.m_Target != TerraformingTarget.Height
-				&& !Systems.PrefabIndexingSystem.IsPlacedInVanillaMenu(entity.Index))
+				&& !target.Menus.IsPlaced(entity.Index))
 			{
 				prefabIndex = null!;
 				return false;

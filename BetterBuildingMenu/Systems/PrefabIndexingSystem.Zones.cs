@@ -37,7 +37,7 @@ namespace BetterBuildingMenu.Systems
 	// The zone catalog: every assignable zone, its density and lot sizes, and the extractor areas.
 	public partial class PrefabIndexingSystem
 	{
-		private void IndexZones()
+		private void IndexZones(IReadOnlyDictionary<int, VanillaMenuPlacement> placements)
 		{
 			// Rebuilt with the catalog, not merged into it. A reindex can drop
 			// zones, and entity indices are reused within a session, so a stale
@@ -214,7 +214,7 @@ namespace BetterBuildingMenu.Systems
 			// The menu is the authority: it lists the specialised industries the
 			// player can actually pick. The component query is only a fallback, and
 			// it finds the underlying extractor LOTS vanilla does not offer.
-			if (!InheritVanillaZoneMenu(catalog))
+			if (!InheritVanillaZoneMenu(catalog, placements))
 			{
 				Mod.Log.Warn("Zones menu inherited nothing; falling back to the extractor query.");
 				IndexExtractorAreas(catalog);
@@ -227,13 +227,13 @@ namespace BetterBuildingMenu.Systems
 		/// <summary>Takes the Zones menu's categories and members from the game itself.</summary>
 		/// <remarks>Membership is not in components, so no query can reproduce the menu. See
 		/// docs/indexing.md, "The vanilla menu walk".</remarks>
-		private bool InheritVanillaZoneMenu(List<ZoneCatalogEntry> catalog)
+		private bool InheritVanillaZoneMenu(List<ZoneCatalogEntry> catalog, IReadOnlyDictionary<int, VanillaMenuPlacement> placements)
 		{
 			var known = new HashSet<int>(catalog.Select(entry => entry.Id));
 			var added = 0;
 			var categoriesSeen = new HashSet<string>();
 
-			foreach (var placement in _menuPlacements.Values)
+			foreach (var placement in placements.Values)
 			{
 				if (!string.Equals(placement.Menu?.Trim(), "Zones", StringComparison.OrdinalIgnoreCase))
 				{
@@ -285,7 +285,7 @@ namespace BetterBuildingMenu.Systems
 			// vanilla never shows is one the player cannot use, so this is the list
 			// to justify or drop.
 			var placedInZones = new HashSet<int>(
-				_menuPlacements.Values
+				placements.Values
 					.Where(p => string.Equals(p.Menu?.Trim(), "Zones", StringComparison.OrdinalIgnoreCase))
 					.Select(p => p.Entity.Index));
 			var unplaced = catalog.Where(entry => !placedInZones.Contains(entry.Id)).ToList();
