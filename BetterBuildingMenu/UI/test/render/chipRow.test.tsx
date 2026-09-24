@@ -89,8 +89,10 @@ describe("the chip row", () => {
     render();
     assert.deepEqual(pickerItems(), [], "closed until pressed");
 
+    // The index sends the menus in the bottom bar's order, toolbar group first,
+    // so the picker keeps it rather than re-sorting by priority.
     press("Roads");
-    assert.deepEqual(pickerItems(), ["Roads", "Zones", "Parks"]);
+    assert.deepEqual(pickerItems(), ["Zones", "Roads", "Parks"]);
     assert.deepEqual(chosen(), ["Roads"]);
 
     // The chip and the picker item share a label; the chip is the first.

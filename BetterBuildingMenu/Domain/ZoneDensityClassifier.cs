@@ -99,6 +99,39 @@ namespace BetterBuildingMenu.Domain
 			return FromName(facts.PrefabName);
 		}
 
+		/// <summary>The tier a zone's BUILDINGS are filtered by, which is narrower than the zone's own.</summary>
+		/// <remarks>
+		/// No Mixed and no Low Rent, and Any for a zone with no residents: a building is filtered by
+		/// the zone it grows in, and those tiers would reclassify thousands of them. See
+		/// ZoneIndex.TypeOf.
+		/// </remarks>
+		public static ZoneTypeFilter ClassifyBuildings(ZoneDensityFacts facts)
+		{
+			if (facts is null)
+			{
+				throw new ArgumentNullException(nameof(facts));
+			}
+
+			if (facts.ResidentialProperties <= 0f)
+			{
+				return ZoneTypeFilter.Any;
+			}
+
+			if (!facts.ScaleResidentials)
+			{
+				return ZoneTypeFilter.Low;
+			}
+
+			if (facts.ResidentialProperties / facts.SpaceMultiplier < 1f)
+			{
+				// "No spawnable building wider than 2" is exactly "the widest is at
+				// most 2". A zone with no spawnable buildings at all stays Row.
+				return facts.MaxLotWidth <= 2 ? ZoneTypeFilter.Row : ZoneTypeFilter.Medium;
+			}
+
+			return ZoneTypeFilter.High;
+		}
+
 		/// <summary>The tier a zone's name carries, or Any for none.</summary>
 		/// <remarks>
 		/// The only source for commercial and office zones, whose residential count is
