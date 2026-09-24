@@ -717,9 +717,9 @@ namespace BetterBuildingMenu.Systems
 		/// <summary>Records one worded figure, dropping the blanks.</summary>
 		private static void TextFact(PrefabIndex prefabIndex, string key, string? value)
 		{
-			if (!string.IsNullOrWhiteSpace(value))
+			if (value?.Trim() is { Length: > 0 } trimmed)
 			{
-				prefabIndex.ServiceTextFacts.Add(new Domain.ServiceTextFact(key, value!.Trim()));
+				prefabIndex.ServiceTextFacts.Add(new Domain.ServiceTextFact(key, trimmed));
 			}
 		}
 

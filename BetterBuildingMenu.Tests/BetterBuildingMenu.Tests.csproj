@@ -5,9 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
-    <!-- xUnit's own null check on test arguments, which the compiler's nullable group does not
-         cover. In CI only, like the rest; see Directory.Build.props. -->
-    <WarningsAsErrors Condition="'$(CI)' == 'true'">$(WarningsAsErrors);xUnit1012</WarningsAsErrors>
+    <!-- The tests reference the net48 mod from net10 on purpose: they run its logic against the
+         mock game assemblies. NuGet warns that the frameworks differ, which is the point. -->
+    <NoWarn>$(NoWarn);NU1702</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

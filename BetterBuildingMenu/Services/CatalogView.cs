@@ -144,8 +144,8 @@ namespace BetterBuildingMenu.Services
 			// The menu set narrowed to that category, tier kept, tabs cleared.
 			var tabs = BuildingCatalogQueryEngine
 				.InScope(MenuSet, _query with { UiCategory = category, StripTabs = null })
-				.Where(entry => !string.IsNullOrEmpty(entry.DevTreeBranch))
-				.GroupBy(entry => entry.DevTreeBranch!)
+				.GroupBy(entry => entry.DevTreeBranch ?? string.Empty)
+				.Where(group => group.Key.Length > 0)
 				.OrderBy(group => group.Min(entry => entry.DevTreeBranchDepth))
 				.ThenBy(group => group.Key, StringComparer.Ordinal)
 				.Select(group => new MenuBranchCount(
@@ -301,7 +301,7 @@ namespace BetterBuildingMenu.Services
 
 					var replacement = distinctIcon(tab);
 
-					return string.IsNullOrEmpty(replacement) ? tab : tab with { Icon = replacement! };
+					return replacement is { Length: > 0 } ? tab with { Icon = replacement } : tab;
 				})
 				.ToArray();
 		}
@@ -354,7 +354,7 @@ namespace BetterBuildingMenu.Services
 
 		public IReadOnlyList<MenuBranchCount> SchoolTierCounts => _tiers ??= TierSet
 			.Where(entry => entry.EducationLevel is >= 1 and <= 4)
-			.GroupBy(entry => entry.EducationLevel!.Value)
+			.GroupBy(entry => entry.EducationLevel.GetValueOrDefault())
 			.Select(group => new MenuBranchCount(
 				group.Key.ToString(System.Globalization.CultureInfo.InvariantCulture),
 				group.Count(),

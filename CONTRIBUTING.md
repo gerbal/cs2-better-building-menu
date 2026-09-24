@@ -28,11 +28,23 @@ or in the test class's `Dispose`. The C# tests also run one class at a time
 (`TestParallelization.cs`). Nothing needs that yet, since no class reads
 what another sets, but it keeps that from becoming a race.
 
-A nullable warning fails the build in CI, in the mod and in the tests, as
-does xUnit's null-argument rule xUnit1012 (`Directory.Build.props`). A
-local build reports them as warnings, so check it shows none before you
-push. A field a system sets in `OnCreate` is declared `= null!`. A value
-that can really be missing is declared nullable, and its readers check it.
+Warnings fail the build in CI, in the mod and in the tests: the
+compiler's, the analyzers', MSBuild's and NuGet's (`Directory.Build.props`).
+Both build without one. NuGet's vulnerability audit is the exception and
+stays a warning, since a feed outage or a new advisory is no fault of the
+change being built. A local build reports warnings but does not fail on
+them. To build as CI does, start clean, because an incremental build does
+not repeat warnings for what it does not recompile:
+
+```sh
+rm -rf BetterBuildingMenu/obj BetterBuildingMenu/bin BetterBuildingMenu.Tests/obj BetterBuildingMenu.Tests/bin
+CI=true ./build.sh backend
+CI=true CS2_TEST_FILTER=Requires!=Game ./build.sh test
+```
+
+Most warnings will be nullable: a field a system sets in `OnCreate` is
+declared `= null!`, and a value that can really be missing is declared
+nullable, with readers that check it.
 
 net48's `string.IsNullOrEmpty` and `IsNullOrWhiteSpace` carry no
 annotations, so the compiler cannot see a check made with them. Write the
@@ -41,7 +53,11 @@ check as a pattern it can follow instead of adding `!` after it:
 - `text?.Trim() is { Length: > 0 } trimmed` for
   `!string.IsNullOrWhiteSpace(text)`.
 
-The `!` after such a check in older code predates this rule.
+A method that answers that question for its caller, such as
+`BuildingCatalogGrouping.IsGrouped`, says so with `[NotNullWhen(true)]`.
+The mod has no `!` left apart from `= null!` on those `OnCreate` fields.
+Where a LINQ filter in one step cannot tell the compiler about the next,
+a loop that keeps only the non-null values can.
 
 A test that calls into the game, not just its types, carries
 `[Trait("Requires", "Game")]`: CI runs against mock game assemblies, and

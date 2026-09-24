@@ -92,24 +92,17 @@ namespace BetterBuildingMenu.Services
 
 			var content = ContentOnly(selection);
 			bool packsChosen = !content.IsEmpty;
-			bool dlcChosen = dlcIds is { Count: > 0 };
 
-			if (!packsChosen && !dlcChosen)
+			if (dlcIds is not { Count: > 0 })
 			{
-				return true;
+				return !packsChosen || VanillaToolbarFilter.IsVisible(prefab.VanillaFacts, content);
 			}
 
-			bool matchesDlc = dlcChosen
-				&& prefab.DlcId.id != GameDlcIds.Invalid
-				&& dlcIds!.Any(id => string.Equals(
+			bool matchesDlc = prefab.DlcId.id != GameDlcIds.Invalid
+				&& dlcIds.Any(id => string.Equals(
 					id,
 					prefab.DlcId.id.ToString(CultureInfo.InvariantCulture),
 					StringComparison.Ordinal));
-
-			if (!dlcChosen)
-			{
-				return VanillaToolbarFilter.IsVisible(prefab.VanillaFacts, content);
-			}
 
 			// Content is ONE axis, so its options combine as OR. Two of them
 			// live in the game's selection, which ORs them itself; the third is
@@ -222,11 +215,11 @@ namespace BetterBuildingMenu.Services
 				// photograph in a row of glyphs, so it counts as no icon.
 				var icon = entries
 					.Select(entry => entry.DevTreeBranchIcon)
-					.FirstOrDefault(value => !string.IsNullOrEmpty(value) && !IsPhotograph(value!));
+					.FirstOrDefault(value => value is { Length: > 0 } && !IsPhotograph(value));
 
-				if (!string.IsNullOrEmpty(icon))
+				if (icon is { Length: > 0 })
 				{
-					return icon!;
+					return icon;
 				}
 			}
 
@@ -242,11 +235,11 @@ namespace BetterBuildingMenu.Services
 			{
 				var glyph = ordered
 					.Select(entry => entry.FallbackThumbnail)
-					.FirstOrDefault(value => !string.IsNullOrEmpty(value));
+					.FirstOrDefault(value => value is { Length: > 0 });
 
-				if (!string.IsNullOrEmpty(glyph))
+				if (glyph is { Length: > 0 })
 				{
-					return glyph!;
+					return glyph;
 				}
 			}
 
@@ -634,9 +627,9 @@ namespace BetterBuildingMenu.Services
 				{
 					foreach (var prefab in prefabs)
 					{
-						if (!string.IsNullOrEmpty(prefab.PrefabName))
+						if (prefab.PrefabName is { Length: > 0 } name)
 						{
-							_byName[prefab.PrefabName!] = prefab;
+							_byName[name] = prefab;
 						}
 					}
 				}
@@ -838,11 +831,9 @@ namespace BetterBuildingMenu.Services
 				StringComparer.Ordinal);
 
 			options.AddRange(source
-				.Where(entry => !IsBaseGameContent(entry)
-					&& (entry.AssetPackIndices?.Length ?? 0) == 0
-					&& !string.IsNullOrEmpty(entry.DlcId))
-				.Select(entry => entry.DlcId!)
-				.Where(dlc => !packedDlcs.Contains(dlc))
+				.Where(entry => !IsBaseGameContent(entry) && (entry.AssetPackIndices?.Length ?? 0) == 0)
+				.Select(entry => entry.DlcId ?? string.Empty)
+				.Where(dlc => dlc.Length > 0 && !packedDlcs.Contains(dlc))
 				.Distinct(StringComparer.Ordinal)
 				// Invariant rather than current: Mono's current culture is the OS's, not the
 				// game's language, so the same DLC list would sort differently per machine.
@@ -926,8 +917,8 @@ namespace BetterBuildingMenu.Services
 		private static string[] DistinctValues(IEnumerable<string?> values)
 		{
 			return values
-				.Where(value => !string.IsNullOrWhiteSpace(value))
-				.Select(value => value!.Trim())
+				.Select(value => value?.Trim() ?? string.Empty)
+				.Where(value => value.Length > 0)
 				.GroupBy(value => value, StringComparer.OrdinalIgnoreCase)
 				.Select(group => group.First())
 				.OrderBy(value => value, StringComparer.OrdinalIgnoreCase)

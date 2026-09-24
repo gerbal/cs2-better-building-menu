@@ -117,10 +117,14 @@ echo "Wrote ${#assemblies[@]} mock assemblies to $out"
 
 if $verify; then
     echo "=== Building and testing against the mocks, as CI does ==="
-    CS2_GAME_PATH="$refs" "$REPO_ROOT/build.sh" backend
+    # From clean and with CI=true, as CI builds: an incremental build prints no
+    # warnings for what it does not recompile, and CI fails on any warning.
+    rm -rf "$REPO_ROOT"/BetterBuildingMenu/obj "$REPO_ROOT"/BetterBuildingMenu/bin \
+        "$REPO_ROOT"/BetterBuildingMenu.Tests/obj "$REPO_ROOT"/BetterBuildingMenu.Tests/bin
+    CI=true CS2_GAME_PATH="$refs" "$REPO_ROOT/build.sh" backend
     # A test that fails here and passes against the real game calls into it;
     # tag it [Trait("Requires", "Game")]. See docs/ci.md.
-    CS2_GAME_PATH="$refs" CS2_TEST_FILTER="Requires!=Game" "$REPO_ROOT/build.sh" test
+    CI=true CS2_GAME_PATH="$refs" CS2_TEST_FILTER="Requires!=Game" "$REPO_ROOT/build.sh" test
 fi
 
 echo

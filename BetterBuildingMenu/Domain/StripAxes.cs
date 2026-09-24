@@ -47,12 +47,12 @@ namespace BetterBuildingMenu.Domain
 				category = string.Empty;
 				tier = string.Empty;
 
-				if (string.IsNullOrEmpty(tab))
+				if (tab is null or "")
 				{
 					return false;
 				}
 
-				var at = tab!.IndexOf(Separator);
+				var at = tab.IndexOf(Separator);
 
 				if (at <= 0 || at == tab.Length - 1)
 				{

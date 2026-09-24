@@ -7,8 +7,8 @@ namespace BetterBuildingMenu.Domain
 		/// <remarks>Mods that regroup the menu at runtime change the entity world's placement and leave
 		/// the managed UIObject on the stock group.</remarks>
 		public static (string? Category, string? Menu) Resolve(string? managedCategory, string? managedMenu, string? placedCategory, string? placedMenu) =>
-			string.IsNullOrWhiteSpace(placedCategory)
-				? (managedCategory, managedMenu)
-				: (placedCategory!.Trim(), string.IsNullOrWhiteSpace(placedMenu) ? managedMenu : placedMenu!.Trim());
+			placedCategory?.Trim() is { Length: > 0 } category
+				? (category, placedMenu?.Trim() is { Length: > 0 } menu ? menu : managedMenu)
+				: (managedCategory, managedMenu);
 	}
 }
