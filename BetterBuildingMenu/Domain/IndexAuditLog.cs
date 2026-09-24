@@ -47,7 +47,8 @@ namespace BetterBuildingMenu.Domain
 			}
 		}
 
-		/// <summary>The menu audit's opening lines, logged before the DLC audit.</summary>
+		/// <summary>The menu audit's opening lines: the totals the census counts against, and the
+		/// reason for the divergences it expects, when any menu has one.</summary>
 		public static IEnumerable<AuditLine> MenuAuditHeader(VanillaMenuAuditReport report, int indexedCount, int zoneCount)
 		{
 			yield return new AuditLine(
