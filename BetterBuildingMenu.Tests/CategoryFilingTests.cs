@@ -93,6 +93,23 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void FindTakesTheFirstInNameOrderWhenTwoShareAPrefabName()
+		{
+			var index = new CatalogIndex();
+			var later = TestPrefabs.Entry(7, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads);
+			later.PrefabName = "Small Road";
+			later.Name = "Small Road B";
+			var earlier = TestPrefabs.Entry(8, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads);
+			earlier.PrefabName = "Small Road";
+			earlier.Name = "Small Road A";
+			index.File(later);
+			index.File(earlier);
+
+			Assert.True(index.Find("Small Road", out var id));
+			Assert.Equal(8, id);
+		}
+
+		[Fact]
 		public void AnUnindexedIdHasNoEntryAndNoPrefab()
 		{
 			var index = new CatalogIndex();
