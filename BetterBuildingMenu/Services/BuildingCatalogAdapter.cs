@@ -3,7 +3,6 @@
 using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Enums;
-using BetterBuildingMenu.Systems;
 using BetterBuildingMenu.Utilities;
 
 using Game.Prefabs;
@@ -396,7 +395,7 @@ namespace BetterBuildingMenu.Services
 					? () => ProjectForMenu(source, query.UiMenu, selection, query.DlcIds, ignorePacks: true)
 					: null,
 				groupByResolver,
-				PrefabIndexingSystem.GetMilestoneNames(),
+				source.Index.Progression.MilestoneNames(),
 				VanillaMenus.IsEducation(query.UiMenu),
 				selection.VanillaSelected);
 		}
@@ -559,7 +558,7 @@ namespace BetterBuildingMenu.Services
 			var entries = GetIndexedBuildings(source.Index, menu, selection, ignorePackSelection: ignorePacks, unionDlcIds: contentDlcs)
 				.Select(prefab => Project(prefab, source.Placed))
 				.ToArray();
-			var root = PrefabIndexingSystem.GetDevTreeRootLabel(menu);
+			var root = source.Index.Progression.RootLabel(menu);
 
 			if (string.IsNullOrEmpty(root))
 			{

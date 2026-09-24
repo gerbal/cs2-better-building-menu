@@ -21,16 +21,18 @@ namespace BetterBuildingMenu.Domain.Catalog
 	{
 		private readonly Dictionary<PrefabCategory, Dictionary<PrefabSubCategory, IndexedPrefabList>> _lists = new();
 
-		/// <summary>An empty index with every list laid out and no menus, not yet ready.</summary>
-		public CatalogIndex()
-			: this(VanillaMenuIndex.Empty)
+		/// <summary>An empty index with every list laid out, over the tables a full pass has read.</summary>
+		/// <remarks>A table left out is empty, as before the first pass; tests build only what they read.</remarks>
+		public CatalogIndex(
+			VanillaMenuIndex? menus = null,
+			ZoneIndex? zones = null,
+			ProgressionIndex? progression = null,
+			ModCompatibility? mods = null)
 		{
-		}
-
-		/// <summary>An empty index with every list laid out, over the menus a pass has read.</summary>
-		public CatalogIndex(VanillaMenuIndex menus)
-		{
-			Menus = menus;
+			Menus = menus ?? VanillaMenuIndex.Empty;
+			Zones = zones ?? ZoneIndex.Empty;
+			Progression = progression ?? ProgressionIndex.Empty;
+			Mods = mods ?? ModCompatibility.None;
 
 			foreach (PrefabCategory category in Enum.GetValues(typeof(PrefabCategory)))
 			{
@@ -56,6 +58,15 @@ namespace BetterBuildingMenu.Domain.Catalog
 
 		/// <summary>The game's own build menus, as the pass that built this index read them.</summary>
 		public VanillaMenuIndex Menus { get; }
+
+		/// <summary>The zones, as the pass that built this index read them.</summary>
+		public ZoneIndex Zones { get; }
+
+		/// <summary>The milestones and the development tree, as the pass that built this index read them.</summary>
+		public ProgressionIndex Progression { get; }
+
+		/// <summary>The mods this index adapted to, as of the pass that built it.</summary>
+		public ModCompatibility Mods { get; }
 
 		/// <summary>Whether a pass has filled it; until then the panel shows the indexing notice.</summary>
 		public bool IsReady { get; internal set; }

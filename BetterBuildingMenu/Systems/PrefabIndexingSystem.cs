@@ -45,18 +45,6 @@ namespace BetterBuildingMenu.Systems
 		// Road Builder's mark on a road it has thrown away, once found. See RefreshModCompatibility.
 		private ComponentType? _roadBuilderDiscarded;
 		private bool _warnedRoadBuilderDiscarded;
-		// Empty until IndexZones fills it, which reads the same as a zone it has no entry for.
-		private static Dictionary<Entity, ZoneTypeFilter> _zoneTypeCache = new();
-
-		/// <summary>Density per ZONE prefab: the zone's own tier, which adds Mixed and LowRent.</summary>
-		/// <remarks>Kept apart from <see cref="_zoneTypeCache"/>, which classifies a zone so its
-		/// buildings can be filtered; widening that one would reclassify thousands of buildings.</remarks>
-		private static Dictionary<Entity, ZoneTypeFilter> _zoneDensityCache = new();
-
-		/// <summary>The lot shapes each zone actually grows, by zone prefab.</summary>
-		/// <remarks>Cached because IndexZones computes it before the processor loop that builds each
-		/// zone's PrefabIndex, and the entry needs it there.</remarks>
-		private static Dictionary<Entity, ZoneLotSizes> _zoneLotSizeCache = new();
 		private EntityQuery _unlockEventQuery;
 		// Prefabs the game created or changed this frame — the incremental
 		// pass's own trigger. A field rather than a RequireForUpdate gate,
@@ -71,18 +59,6 @@ namespace BetterBuildingMenu.Systems
 		private bool _indexedAtGameLoaded;
 		// Whether this load's census and menu audit are in the log yet. See RunIndex.
 		private bool _auditedThisLoad;
-		/// <summary>
-		/// Every assignable zone, grouped by family in the zoning hierarchy.
-		/// </summary>
-		private static List<ZoneCatalogEntry> _zoneCatalog = new();
-
-		/// <summary>The vanilla toolbar's facts for each zone, keyed by entity index.</summary>
-		/// <remarks>Beside the catalog rather than on <see cref="ZoneCatalogEntry"/>: that record is
-		/// serialised to the UI, and this is backend-only data the UI has no use for.</remarks>
-		private static Dictionary<int, VanillaAssetFacts> _zoneFacts = new();
-		// Milestone index -> the name the rest of the game calls it, resolved
-		// once per index pass rather than per locked asset.
-		private static Dictionary<int, string> _milestoneNames = new();
 		private UniqueAssetTrackingSystem? _uniqueAssets;
 		// Every indexed prefab the game flags Unique, rebuilt with the index. The
 		// placed-unique rescan walks these rather than all 17k prefabs, so it can
@@ -95,12 +71,6 @@ namespace BetterBuildingMenu.Systems
 		// each came to thousands per full pass, repeated on every language change.
 		private readonly List<string> _missingIcons = new();
 #endif
-		// Node entity -> branch label, and service name -> its root's label.
-		// Label AND icon together, keyed by node and by service: every service's
-		// root is called "Basic", so a label-keyed icon would collide. A branch also
-		// names the service whose tree it sits in; see DevTreeGates.
-		private Dictionary<Entity, (string Label, string Icon, int Depth, string Service)> _devTreeBranches = new();
-		private static Dictionary<string, (string Label, string Icon, int Depth)> _devTreeRoots = new();
 		// Each processor with its query, and that query narrowed to prefabs created or changed this
 		// frame, which is all a partial pass reads. Built once, in OnCreate.
 		private readonly List<(IPrefabCategoryProcessor Processor, EntityQuery All, EntityQuery Changed)> _processors = new();
@@ -415,17 +385,19 @@ namespace BetterBuildingMenu.Systems
 				+ $"({Mod.Silhouettes.Generated} generated)");
 		}
 
-		/// <summary>Re-reads the mods the processors adapt to, before the pass that reads them.</summary>
+		/// <summary>Re-reads the mods the processors adapt to, for the pass about to read them.</summary>
 		/// <remarks>
 		/// Every full pass, the first included; see docs/indexing.md, "Load timing". The type is
 		/// looked up among the loaded assemblies, so a renamed one is logged once and filters
 		/// nothing rather than throwing into the game's load.
 		/// </remarks>
-		private void RefreshModCompatibility()
+		private ModCompatibility RefreshModCompatibility()
 		{
+			var mods = Index.Mods;
+
 			try
 			{
-				Mod.RefreshEnabledMods();
+				mods = Mod.ReadEnabledMods();
 			}
 			catch (Exception ex)
 			{
@@ -433,9 +405,9 @@ namespace BetterBuildingMenu.Systems
 				Mod.Log.Warn(ex, "Could not read the enabled mods; keeping the last answer");
 			}
 
-			if (_roadBuilderDiscarded.HasValue || !Mod.IsRoadBuilderEnabled)
+			if (_roadBuilderDiscarded.HasValue || !mods.RoadBuilder)
 			{
-				return;
+				return mods;
 			}
 
 			Exception? failure = null;
@@ -449,7 +421,7 @@ namespace BetterBuildingMenu.Systems
 				if (type is not null)
 				{
 					_roadBuilderDiscarded = new ComponentType(type, ComponentType.AccessMode.ReadOnly);
-					return;
+					return mods;
 				}
 			}
 			catch (Exception ex)
@@ -459,7 +431,7 @@ namespace BetterBuildingMenu.Systems
 
 			if (_warnedRoadBuilderDiscarded)
 			{
-				return;
+				return mods;
 			}
 
 			_warnedRoadBuilderDiscarded = true;
@@ -473,6 +445,8 @@ namespace BetterBuildingMenu.Systems
 			{
 				Mod.Log.Warn(failure, message);
 			}
+
+			return mods;
 		}
 
 		/// <summary>Narrows a processor's query to prefabs created or changed this frame.</summary>
@@ -500,7 +474,9 @@ namespace BetterBuildingMenu.Systems
 			// A full pass rebuilds everything the panel reads. One that threw halfway would leave
 			// it half-built and throw into the game's load or locale dispatch, so the old index is
 			// put back instead. See docs/indexing.md, "A pass that fails".
-			var previous = full ? CaptureIndex() : null;
+			// The index is the whole of it: every table a full pass reads is built into the
+			// new one, and the pass never writes to the old one.
+			var previous = full ? Index : null;
 #if DEBUG
 			_missingIcons.Clear();
 #endif
@@ -511,7 +487,7 @@ namespace BetterBuildingMenu.Systems
 			}
 			catch (Exception ex) when (previous is not null)
 			{
-				RestoreIndex(previous);
+				Index = previous;
 				Mod.Log.Error(ex, "Full prefab indexing failed; the previous index stands");
 
 				return false;
@@ -592,19 +568,24 @@ namespace BetterBuildingMenu.Systems
 		{
 			if (full)
 			{
-				RefreshModCompatibility();
+				var mods = RefreshModCompatibility();
 
 				// Before IndexZones and before the processors: the zone catalog
 				// inherits the game's own Zones menu, and the blacklist check below
 				// consults the placements too.
 				var placements = IndexVanillaMenuPlacements();
-				IndexZones(placements);
+				var zones = IndexZones(placements);
 				var (menuNames, menuEntities, menus) = IndexAssetMenus();
 				var categories = IndexAssetCategories();
-				IndexMilestones();
-				IndexDevTreeBranches();
+				var milestones = IndexMilestones();
+				var (branches, roots) = IndexDevTreeBranches();
 
-				Index = new CatalogIndex(new VanillaMenuIndex(placements, menuNames, menuEntities, menus, categories));
+				// Published before the processors run, which read these tables back.
+				Index = new CatalogIndex(
+					new VanillaMenuIndex(placements, menuNames, menuEntities, menus, categories),
+					zones,
+					new ProgressionIndex(milestones, branches, roots),
+					mods);
 			}
 
 			foreach (var (processor, allQuery, changedQuery) in _processors)
@@ -738,45 +719,6 @@ namespace BetterBuildingMenu.Systems
 			{
 				CleanupBrandPrefabs();
 			}
-		}
-
-		/// <summary>What a full pass replaces, held so a pass that throws can put it back.</summary>
-		/// <remarks>References are enough: each Index* step builds new collections, which it assigns
-		/// at its end or returns into the new CatalogIndex the pass files into, so the pass never
-		/// writes to the old ones.</remarks>
-		private sealed record IndexSnapshot(
-			CatalogIndex Index,
-			Dictionary<int, VanillaAssetFacts> ZoneFacts,
-			Dictionary<Entity, ZoneTypeFilter> ZoneTypes,
-			Dictionary<Entity, ZoneTypeFilter> ZoneDensities,
-			Dictionary<Entity, ZoneLotSizes> ZoneLotSizes,
-			List<ZoneCatalogEntry> ZoneCatalog,
-			Dictionary<int, string> MilestoneNames,
-			Dictionary<Entity, (string Label, string Icon, int Depth, string Service)> DevTreeBranches,
-			Dictionary<string, (string Label, string Icon, int Depth)> DevTreeRoots);
-
-		private IndexSnapshot CaptureIndex() => new(
-			Index,
-			_zoneFacts,
-			_zoneTypeCache,
-			_zoneDensityCache,
-			_zoneLotSizeCache,
-			_zoneCatalog,
-			_milestoneNames,
-			_devTreeBranches,
-			_devTreeRoots);
-
-		private void RestoreIndex(IndexSnapshot snapshot)
-		{
-			Index = snapshot.Index;
-			_zoneFacts = snapshot.ZoneFacts;
-			_zoneTypeCache = snapshot.ZoneTypes;
-			_zoneDensityCache = snapshot.ZoneDensities;
-			_zoneLotSizeCache = snapshot.ZoneLotSizes;
-			_zoneCatalog = snapshot.ZoneCatalog;
-			_milestoneNames = snapshot.MilestoneNames;
-			_devTreeBranches = snapshot.DevTreeBranches;
-			_devTreeRoots = snapshot.DevTreeRoots;
 		}
 
 		private void AddPrefab(PrefabBase prefab, Entity entity, PrefabIndex prefabIndex)

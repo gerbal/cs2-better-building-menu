@@ -4,7 +4,6 @@ using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Domain.Interfaces;
-using BetterBuildingMenu.Systems;
 
 using Game.Prefabs;
 using Game.UI;
@@ -77,7 +76,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 
 			if (_prefabSystem.TryGetPrefab<ZonePrefab>(zonePrefab, out var _zonePrefab))
 			{
-				prefabIndex.ZoneType = GetZoneType(entity, zonePrefab);
+				prefabIndex.ZoneType = GetZoneType(entity, zonePrefab, target.Zones);
 				prefabIndex.Theme = _zonePrefab.GetComponent<ThemeObject>()?.m_Theme;
 				prefabIndex.AssetPacks = _zonePrefab.GetComponent<AssetPackItem>()?.m_Packs ?? new AssetPackPrefab[0];
 			}
@@ -134,14 +133,14 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 			return Entity.Null;
 		}
 
-		private ZoneTypeFilter GetZoneType(Entity entity, Entity zonePrefab)
+		private ZoneTypeFilter GetZoneType(Entity entity, Entity zonePrefab, ZoneIndex zones)
 		{
 			if (_entityManager.HasComponent<SignatureBuildingData>(entity))
 			{
 				return ZoneTypeFilter.Signature;
 			}
 
-			return PrefabIndexingSystem.GetZoneType(zonePrefab);
+			return zones.TypeOf(zonePrefab.Index);
 		}
 	}
 }
