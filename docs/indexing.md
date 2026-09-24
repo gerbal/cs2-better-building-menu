@@ -58,12 +58,13 @@ Each `IPrefabCategoryProcessor` decides whether a prefab is indexed and under wh
 pass runs them in the order `PrefabCategoryProcessors` lists them, which is the same on every
 build. A test fails if a processor in the assembly is missing from that list.
 
-The index holds one entry per prefab, so when two processors claim the same prefab the later
-one's entry replaces the earlier one's, category and all: `CatalogIndex.File` takes the
-earlier entry out of every list it was filed in, so the prefab is listed under one category only.
-Nothing fails when that happens. The full pass that logs the census also logs each such pair at
-Info as `[PROCESSOR-OVERLAP]`, with how many prefabs they shared and one of them by name. `MenuPlacedPrefabCategoryProcessor` runs last and
-claims only what nothing else did, so it never appears there.
+The index holds one entry per prefab, so when two processors claim the same prefab the later one's
+entry replaces the earlier one's, category and all: `CatalogIndex.File` takes the earlier entry out
+of every list it was filed in, so the prefab is listed under one category only. Nothing fails when
+that happens. The full pass that logs the census also logs each such pair at Info as
+`[PROCESSOR-OVERLAP]`, with how many prefabs they shared and one of them by name.
+`MenuPlacedPrefabCategoryProcessor` runs last and claims only what nothing else did, so it never
+appears there.
 
 ## Partial passes
 

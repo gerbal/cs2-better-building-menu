@@ -179,6 +179,11 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			_extensionMenuFor = upgradable;
+			// The placed uniques first, as a catalog refresh takes them: each row says
+			// whether it is already built, and a tracker switched off raises no event
+			// that would move the generation. Before the generation is read, since the
+			// rescan can move it.
+			_indexer.SyncPlacedUniques();
 			_extensionMenuGeneration = _indexer.Generation;
 
 			if (upgradable == Entity.Null
