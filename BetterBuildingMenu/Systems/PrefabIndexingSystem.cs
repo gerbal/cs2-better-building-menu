@@ -107,8 +107,9 @@ namespace BetterBuildingMenu.Systems
 		private int _loggedUniqueCandidateCount = -1;
 		// Node entity -> branch label, and service name -> its root's label.
 		// Label AND icon together, keyed by node and by service: every service's
-		// root is called "Basic", so a label-keyed icon would collide.
-		private Dictionary<Entity, (string Label, string Icon, int Depth)> _devTreeBranches = new();
+		// root is called "Basic", so a label-keyed icon would collide. A branch also
+		// names the service whose tree it sits in; see DevTreeGates.
+		private Dictionary<Entity, (string Label, string Icon, int Depth, string Service)> _devTreeBranches = new();
 		private static Dictionary<string, (string Label, string Icon, int Depth)> _devTreeRoots = new();
 		// Each processor with its query, and that query narrowed to prefabs created or changed this
 		// frame, which is all a partial pass reads. Built once, in OnCreate.
@@ -753,7 +754,7 @@ namespace BetterBuildingMenu.Systems
 			IReadOnlyList<VanillaMenuCategory> AssetMenus,
 			Dictionary<string, List<VanillaMenuCategory>> AssetCategories,
 			Dictionary<int, string> MilestoneNames,
-			Dictionary<Entity, (string Label, string Icon, int Depth)> DevTreeBranches,
+			Dictionary<Entity, (string Label, string Icon, int Depth, string Service)> DevTreeBranches,
 			Dictionary<string, (string Label, string Icon, int Depth)> DevTreeRoots);
 
 		private IndexSnapshot CaptureIndex() => new(
@@ -872,14 +873,15 @@ namespace BetterBuildingMenu.Systems
 
 			// Milestone kept whatever the lock state; requirements only while
 			// locked. See the matching note in ApplyUnlocks.
-			(prefabIndex.UnlockMilestone, var unlockRequirements) = GetUnlockRequirements(entity);
+			var required = CollectRequirements(entity);
+			(prefabIndex.UnlockMilestone, var unlockRequirements) = UnlockRequirementsOf(required);
 			prefabIndex.UnlockRequirements = prefabIndex.IsLocked ? unlockRequirements : Array.Empty<string>();
 
 			// The other half of the progression, and the half that splits a service
 			// menu. After UiMenuName above: an asset the tree never gated falls into
 			// its service's root bucket, and the menu is what names the service.
 			(prefabIndex.DevTreeBranch, prefabIndex.DevTreeBranchIcon, prefabIndex.DevTreeBranchDepth) =
-				GetDevTreeBranch(entity, prefabIndex.UiMenuName);
+				DevTreeBranchOf(entity, required, prefabIndex.UiMenuName);
 			prefabIndex.IsRandom = prefabIndex.SubCategory is not PrefabSubCategory.Networks_Pillars && EntityManager.HasComponent<PlaceholderObjectData>(entity);
 
 			if (prefab.asset?.database == AssetDatabase<ParadoxMods>.instance)

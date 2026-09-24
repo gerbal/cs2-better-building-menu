@@ -196,6 +196,34 @@ around the chain they hang off, so measuring outward from the trunk takes the ge
 specialisations — the order the player meets them in. The trunk row is taken from the service's
 own root and is not necessarily zero.
 
+**More than one node** can gate an asset. `DevTreeGates.Pick` files it by a rule modelled on
+the game's `UnlockSystem`, which unlocks an asset once every node it needs (`RequireAll`) is bought
+and one of its ways in (`RequireAny`). Taking the first match would not do: the requirements
+arrive in hash order, which follows entity numbering and moves when the installed content does.
+
+- **The asset's own service only**, when any of its gates is in it. That is its `ServiceObject`'s
+  service, or failing that the one its menu is named after. Depth is a node's rank in its own
+  service's tree, so comparing it across services means nothing. With no gate in its own service,
+  the rule runs over all of them.
+- **The deepest needed node, or the nearest way in when that is deeper.** A tie goes to the needed
+  node. A lone way in needs no special case: the game treats it as needed, and the deeper of the
+  two is already the deepest.
+- **Unless the asset has a way in the rule cannot weigh**: a requirement that is not a node, such
+  as a milestone, or a node in another service. That could let the asset in first, so the ways in
+  the rule can weigh are set aside and the deepest needed node decides.
+- **Ties go by label, then icon, then service.**
+
+Depth stands in for the order the player buys nodes in, and matches it only along one chain.
+Siblings in a column get different ranks, and nodes on separate branches have no fixed order.
+
+The gates are independent nodes, such as the asset's own and the one a building it needs sits
+behind. `ProgressionUtils.CollectSubRequirements` stops at each dev-tree node, so a node's
+ancestors are never among them. It also flattens the requirements: a node keeps only the flags of
+the edges straight into it, so how they nested above is lost. An asset that needs either of two
+buildings arrives as needing both their nodes. One that needs two buildings, each with ways in of
+its own, arrives with every node a way in, so it is filed under the nearest. Both mostly affect
+service upgrades, which the catalog hides.
+
 **Labels and icons travel together**, keyed by node and by service. Keying an icon by label
 collides: every service's root is called "Basic", so all of them would share one entry.
 
