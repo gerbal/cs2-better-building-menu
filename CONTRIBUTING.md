@@ -27,8 +27,9 @@
 ```
 
 Some of the mod's state is still process-wide statics: `Mod`'s settings and
-silhouette cache. No test sets one, and the C# test classes run in parallel, so none may: give the code under
-test an object of its own instead, as `CatalogIndex` and `PlacedUniques` allow.
+silhouette cache. No test sets one, and the C# test classes run in parallel,
+so none may: give the code under test an object of its own instead, as
+`CatalogIndex` and `PlacedUniques` allow.
 
 Warnings fail the build in CI, in the mod and in the tests: the
 compiler's, the analyzers', MSBuild's and NuGet's (`Directory.Build.props`).

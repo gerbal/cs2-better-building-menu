@@ -57,7 +57,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 				SubCategory = ResolveSubCategory(entity),
 				// Without this every zone entry carries ZoneType = Any, and a
 				// group-by dimension whose entries all share one value is
-				// dropped. IndexZones fills the cache before this loop runs.
+				// dropped. IndexZones reads the tiers before any processor runs.
 				ZoneType = target.Zones.DensityOf(entity.Index),
 			};
 

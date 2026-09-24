@@ -37,10 +37,11 @@ plausibly have got wrong. `LockStateDrift` is the exact test for it — the same
 `ApplyUnlocks` uses, over every indexed prefab. Zero drift skips the second full pass; any drift
 runs it and logs how many prefabs moved.
 
-Mod detection (`Mod.ReadEnabledMods`, kept in the index as `Mods`) and Road Builder's discard
-component are re-read at the start of every full pass. Reading them at loading-complete came after the `OnGameLoaded` pass.
-Reading them once per process missed a mod added to the playset between two city loads, which the
-game allows without a restart.
+Mod detection (`Mod.ReadEnabledMods`, kept in the index as `Mods`) is re-read at the start of
+every full pass, and Road Builder's discard component is looked up there until it is found.
+Reading them at loading-complete came after the `OnGameLoaded` pass. Reading them once per process
+missed a mod added to the playset between two city loads, which the game allows without a
+restart.
 
 ## Processors
 
@@ -76,7 +77,8 @@ nothing reaches the game's load or locale dispatch.
 Holding the reference is enough, because a pass never writes to the old index. Every `Index*`
 step returns new tables, and the pass files into a new `CatalogIndex` built over them. The old
 index keeps the tables and mod flags it was built with, so the partial passes after a failure
-read the same ones it was filled from. Before the first pass there is nothing to keep, so a
+read the same ones it was filled from. Road Builder's discard component is the exception: once a
+pass has found it, it is kept whether or not that pass succeeds. Before the first pass there is nothing to keep, so a
 failure there leaves an empty index laid out, not yet ready.
 
 A failed pass at `OnGameLoaded` does not count as indexed, so loading-complete runs its own.
