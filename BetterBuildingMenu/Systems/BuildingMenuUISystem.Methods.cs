@@ -179,6 +179,9 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			_extensionMenuFor = upgradable;
+			// Rescanned first, as a catalog refresh does: a tracker switched off raises no
+			// event, and the rescan can move the generation read next.
+			_indexer.SyncPlacedUniques();
 			_extensionMenuGeneration = _indexer.Generation;
 
 			if (upgradable == Entity.Null

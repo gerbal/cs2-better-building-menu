@@ -20,9 +20,9 @@ namespace BetterBuildingMenu.Systems
 		private readonly SearchDebounce _searchDebounce = new(TimeSpan.FromMilliseconds(250));
 		// Handed Mod's silhouette cache rather than reading Mod itself; see its constructor.
 		private readonly BuildingCatalogAdapter _buildingCatalogAdapter = new(thumbnail => Mod.Silhouettes?.UrlFor(thumbnail));
-		// The game's own toolbar filter row, as the UI last reported it. Not reset on
-		// a city load: the UI forwards the row when it mounts and when it changes, not
-		// on a load, so a reset could leave the row showing a filter the catalog dropped.
+		// The game's toolbar filter row, as the UI last reported it. Not reset on a load:
+		// the UI forwards the row only when it changes, so a reset would drop a filter the
+		// toolbar still shows.
 		private VanillaToolbarSelection _toolbarSelection = VanillaToolbarSelection.None;
 		private readonly InteractionBoundary _interactionBoundary = new();
 		// Everything the player has told the lens, as one record with one tested

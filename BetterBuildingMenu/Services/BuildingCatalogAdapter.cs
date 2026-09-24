@@ -626,26 +626,8 @@ namespace BetterBuildingMenu.Services
 				return null;
 			}
 
-			if (_byNameGeneration != source.Generation)
-			{
-				_byName.Clear();
-
-				foreach (var prefab in source.Index.All)
-				{
-					if (prefab.PrefabName is { Length: > 0 } name)
-					{
-						_byName[name] = prefab;
-					}
-				}
-
-				_byNameGeneration = source.Generation;
-			}
-
-			return _byName.TryGetValue(prefabName, out var found) ? Project(found, source.Placed) : null;
+			return source.Index.GetByPrefabName(prefabName) is { } found ? Project(found, source.Placed) : null;
 		}
-
-		private readonly Dictionary<string, PrefabIndex> _byName = new(StringComparer.Ordinal);
-		private int _byNameGeneration = -1;
 
 		private BuildingCatalogEntry Project(PrefabIndex prefab, PlacedUniques placed)
 		{
