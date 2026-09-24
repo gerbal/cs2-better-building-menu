@@ -80,6 +80,15 @@ namespace BetterBuildingMenu.Tests
 			Assert.Empty(line.Missing);
 			Assert.Equal(new[] { "Road7->RoadsLarge", "Road8->none" }, line.Misplaced);
 			Assert.Equal(0, report.MissingCount);
+			Assert.Equal(
+				new[]
+				{
+					new AuditLine(
+						AuditSeverity.Warn,
+						"[MENU-COVERAGE] menu=\"Roads\" category=\"RoadsSmall\" vanilla=2 missing=0 [] misplaced=[Road7->RoadsLarge,Road8->none]"),
+					new AuditLine(AuditSeverity.Info, "[MENU-COVERAGE] vanilla shows 2 assets across its menus; 0 missing from the index"),
+				},
+				IndexAuditLog.MenuCoverage(report));
 		}
 
 		[Fact]
@@ -153,6 +162,35 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(1, line.Held);
 			Assert.Empty(line.Missing);
 			Assert.True(report.IsClean);
+			// Clean, and with no extras to explain: one line, no verdict, no divergence note.
+			Assert.Equal(
+				new[] { new AuditLine(AuditSeverity.Info, "[MENU-AUDIT] 1 vanilla menus, 1 placements, 0 indexed assets, 1 zones") },
+				IndexAuditLog.MenuAuditHeader(report, index.All.Count, index.Zones.Catalog.Count));
+		}
+
+		[Fact]
+		public void TheAuditCapsBothListsAndNamesTheUnexplained()
+		{
+			var ours = Enumerable.Range(10, 9).Select(id => Held(id, "Roads", "RoadsSmall")).ToArray();
+			var index = IndexOver(
+				Enumerable.Range(1, 9).Select(id => (id, "Roads", "RoadsSmall")).ToArray(),
+				Array.Empty<int>(),
+				ours);
+
+			var report = VanillaMenuAudit.Gather(index, Describe);
+
+			Assert.Equal(
+				new[] { new AuditLine(AuditSeverity.Info, "[MENU-AUDIT] 1 vanilla menus, 9 placements, 9 indexed assets, 0 zones — NOT CLEAN") },
+				IndexAuditLog.MenuAuditHeader(report, index.All.Count, index.Zones.Catalog.Count));
+			Assert.Equal(
+				new[]
+				{
+					new AuditLine(
+						AuditSeverity.Info,
+						"[MENU-AUDIT] menu=\"Roads\" categories=1 vanilla=9 held=0 missing=9 ours=9 [P1,P2,P3,P4,P5,P6,P7,P8,…] "
+						+ "UNEXPLAINED=9 [Road10,Road11,Road12,Road13,Road14,Road15,Road16,Road17,…]"),
+				},
+				IndexAuditLog.MenuAuditBody(report));
 		}
 
 		[Fact]
@@ -214,16 +252,24 @@ namespace BetterBuildingMenu.Tests
 			var placed = TestPrefabs.Named(1, "Bench", PrefabCategory.Props, PrefabSubCategory.Props_Misc);
 			var unplaced = TestPrefabs.Named(2, "Crate", PrefabCategory.Props, PrefabSubCategory.Props_Misc);
 			var road = TestPrefabs.Named(3, "Road", PrefabCategory.Networks, PrefabSubCategory.Networks_Roads);
-			var index = IndexOver(new[] { (1, "Landscaping", "Props") }, Array.Empty<int>(), placed, unplaced, road);
+			var school = TestPrefabs.Named(4, "School", PrefabCategory.ServiceBuildings, PrefabSubCategory.Any);
+			var index = IndexOver(new[] { (1, "Landscaping", "Props") }, Array.Empty<int>(), placed, unplaced, road, school);
+			// 99 is not in the index: counted as indexed, never as shown.
 			var census = new Dictionary<string, List<int>>
 			{
 				["Roads"] = new() { 3 },
+				["Services"] = new() { 4, 99 },
 				["Props"] = new() { 1, 2 },
 			};
 
 			Assert.Equal(
-				new[] { "[PROCESSOR-CENSUS] Props indexed=2 lens=1", "[PROCESSOR-CENSUS] Roads indexed=1 lens=1" },
-				IndexAuditLog.ProcessorCensus(census, index).Select(line => line.Text));
+				new[]
+				{
+					new AuditLine(AuditSeverity.Info, "[PROCESSOR-CENSUS] Props indexed=2 lens=1"),
+					new AuditLine(AuditSeverity.Info, "[PROCESSOR-CENSUS] Roads indexed=1 lens=1"),
+					new AuditLine(AuditSeverity.Info, "[PROCESSOR-CENSUS] Services indexed=2 lens=1"),
+				},
+				IndexAuditLog.ProcessorCensus(census, index));
 		}
 	}
 }
