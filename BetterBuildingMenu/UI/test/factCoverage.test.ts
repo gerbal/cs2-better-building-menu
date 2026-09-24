@@ -30,8 +30,8 @@ const literalKeysOf = (call: string): string[] => {
   return [...keys];
 };
 
-// A fact added without a helper, such as upkeepChange, which a helper would drop
-// for being negative.
+// A fact added without a helper, such as resourceConsumption, which a helper
+// would drop for being negative.
 const constructedKeysOf = (record: string): string[] =>
   [...source.matchAll(new RegExp(`new ${record}\\("([a-zA-Z]+:?)"`, "g"))].map((match) => match[1]);
 
@@ -41,7 +41,7 @@ describe("every fact the index can emit has a wording", () => {
 
   it("reads the source that emits facts", () => {
     assert.ok(numeric.includes("cargoCapacity") && numeric.includes("zoneUpkeep"), `numeric keys found: ${numeric.length}`);
-    assert.ok(numeric.includes("upkeepChange"), "a fact constructed directly is found too");
+    assert.ok(numeric.includes("resourceConsumption"), "a fact constructed directly is found too");
     assert.ok(worded.includes("requiredResource") && worded.includes("waterSource"), `worded keys found: ${worded.length}`);
   });
 
