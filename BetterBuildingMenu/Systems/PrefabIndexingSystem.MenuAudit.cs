@@ -56,7 +56,7 @@ namespace BetterBuildingMenu.Systems
 				}
 
 				var report = VanillaMenuAudit.Compare(
-					_menuPlacements.Values.Select(placement => new VanillaMenuPlacementFact(
+					Index.Menus.Placements.Values.Select(placement => new VanillaMenuPlacementFact(
 						placement.Entity.Index,
 						_prefabSystem.TryGetPrefab<PrefabBase>(placement.Entity, out var placed)
 							? placed?.name ?? string.Empty
@@ -189,7 +189,7 @@ namespace BetterBuildingMenu.Systems
 				var misplaced = new Dictionary<string, List<string>>();
 				var shown = new Dictionary<string, int>();
 
-				foreach (var placement in _menuPlacements.Values)
+				foreach (var placement in Index.Menus.Placements.Values)
 				{
 					var where = placement.Menu + '\u0000' + placement.Category;
 
@@ -248,7 +248,7 @@ namespace BetterBuildingMenu.Systems
 						+ ((strays?.Count ?? 0) == 0 ? string.Empty : $" misplaced=[{string.Join(",", strays)}]"));
 				}
 
-				var summary = $"[MENU-COVERAGE] vanilla shows {_menuPlacements.Count} assets across its menus; "
+				var summary = $"[MENU-COVERAGE] vanilla shows {Index.Menus.Placements.Count} assets across its menus; "
 					+ $"{totalMissing} missing from the index";
 
 				if (totalMissing == 0)

@@ -26,7 +26,7 @@ namespace BetterBuildingMenu.Systems
 		{
 			try
 			{
-				if (!PrefabIndexingSystem.TryGetAssetMenuEntity(menuName, out var menuEntity)
+				if (!_indexer.Index.Menus.TryGetMenuEntity(menuName, out var menuEntity)
 					|| !EntityManager.TryGetBuffer<Game.Prefabs.UIGroupElement>(menuEntity, true, out var categories))
 				{
 					return;
@@ -200,9 +200,9 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			// The menu's own name is the whole constraint the query needs: assets carry
-			// the menu the game placed them in, and GetAssetMenuName resolves the
+			// the menu the game placed them in, and MenuName resolves the
 			// UIAssetMenuPrefab's name, which is that same untranslated string.
-			var menuName = PrefabIndexingSystem.GetAssetMenuName(menuEntityIndex);
+			var menuName = _indexer.Index.Menus.MenuName(menuEntityIndex);
 
 			// A menu the index never saw, or one it holds nothing for (a mod's menu
 			// built from nested categories): the panel sits where the vanilla grid
@@ -320,11 +320,10 @@ namespace BetterBuildingMenu.Systems
 		/// <summary>The scope bindings, from the one state that owns them.</summary>
 		private void PublishScope()
 		{
-			_BuildingLensMenuCategoriesBinding.Value = PrefabIndexingSystem.GetMenuCategories(
-				_indexer.Index,
+			_BuildingLensMenuCategoriesBinding.Value = _indexer.Index.GetMenuCategories(
 				string.IsNullOrEmpty(_lens.Menu) ? null : _lens.Menu).ToArray();
 			_BuildingLensMenuBinding.Value = _lens.Menu;
-			_BuildingLensMenusBinding.Value = PrefabIndexingSystem.GetAssetMenus().ToArray();
+			_BuildingLensMenusBinding.Value = _indexer.Index.Menus.AssetMenus().ToArray();
 			_BuildingLensMenuCategoryBinding.Value = _lens.Category;
 			_BuildingLensMenuSchoolTierBinding.Value = _lens.SchoolTier;
 			_BuildingLensStripTabBinding.Value = _lens.Query.StripTabs?.ToArray() ?? Array.Empty<string>();
