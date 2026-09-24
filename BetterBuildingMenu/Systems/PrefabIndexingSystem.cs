@@ -589,20 +589,9 @@ namespace BetterBuildingMenu.Systems
 				{
 					_auditedThisLoad = true;
 
-					// Which processors feed anything the lens can show. A processor
-					// whose every prefab is neither a building/network nor placed in
-					// a vanilla menu is indexing for nobody; this is the count.
+					// Which processors feed anything the lens can show.
+					Log(IndexAuditLog.ProcessorCensus(census, Index));
 					var all = Index.All;
-
-					foreach (var pair in census.OrderBy(pair => pair.Key, StringComparer.Ordinal))
-					{
-						var lens = pair.Value.Count(id =>
-							all.TryGetValue(id, out var indexed)
-							&& (indexed.Category is PrefabCategory.Buildings or PrefabCategory.ServiceBuildings or PrefabCategory.Networks
-								|| Index.Menus.IsPlaced(id)));
-
-						Mod.Log.Info($"[PROCESSOR-CENSUS] {pair.Key} indexed={pair.Value.Count} lens={lens}");
-					}
 
 					// A prefab two processors claimed keeps the later one's category,
 					// whatever the earlier one decided. Each pair is named once.
