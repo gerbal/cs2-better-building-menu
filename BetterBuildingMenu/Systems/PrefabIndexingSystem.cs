@@ -716,15 +716,21 @@ namespace BetterBuildingMenu.Systems
 
 						try
 						{
-							// A recreated prefab's old entry. Only one the game has replaced: a
-							// namesake of another type is live, and so is the entry an earlier
-							// processor just filed for this entity.
-							if (!full
-								&& EntityManager.HasComponent<Created>(entity)
-								&& target.GetByPrefabName(prefab.name) is { } old
-								&& IsReplaced(old))
+							// A recreated prefab's old entries: every namesake the game has
+							// replaced. A namesake of another type is live, and so is the entry
+							// an earlier processor just filed for this entity.
+							// An entity the game has already replaced, as when it creates and
+							// recreates a prefab in one frame, is stale whatever its tags.
+							if (!full && !IsCurrent(prefab, entity.Index))
 							{
-								target.Remove(old.Id);
+								target.Remove(entity.Index);
+
+								continue;
+							}
+
+							if (!full && EntityManager.HasComponent<Created>(entity))
+							{
+								target.RemoveNamesakes(prefab.name, IsReplaced);
 							}
 
 							if (_roadBuilderDiscarded.HasValue && EntityManager.HasComponent(entity, _roadBuilderDiscarded.Value))
@@ -792,19 +798,6 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			target.NumberDuplicateNames();
-
-			if (full)
-			{
-				// The count at Info, since whether it ever finds anything decides whether it
-				// stays; each entry at Debug. See CatalogIndex.RemoveBrandDuplicates.
-				var removed = target.RemoveBrandDuplicates();
-				Mod.Log.Info($"Brand cleanup took {removed.Count} entries out of subcategory lists");
-
-				foreach (var (entry, from) in removed)
-				{
-					Mod.Log.Debug($"Removed {entry.PrefabName} from {from}");
-				}
-			}
 
 			return target;
 		}
@@ -958,8 +951,11 @@ namespace BetterBuildingMenu.Systems
 		/// <summary>Whether the game has moved the entry's prefab to another entity.</summary>
 		/// <remarks>PrefabSystem.UpdatePrefab keeps the PrefabBase, marks its entity Deleted and
 		/// points the prefab at a new one, so this holds for the old entry only.</remarks>
-		private bool IsReplaced(PrefabIndex entry) =>
-			!_prefabSystem.TryGetEntity(entry.Prefab, out var current) || current.Index != entry.Id;
+		private bool IsReplaced(PrefabIndex entry) => !IsCurrent(entry.Prefab, entry.Id);
+
+		/// <summary>Whether the game maps this prefab to the entity with this index.</summary>
+		private bool IsCurrent(PrefabBase prefab, int id) =>
+			_prefabSystem.TryGetEntity(prefab, out var current) && current.Index == id;
 
 		private string GetAssetName(PrefabBase prefab)
 		{
