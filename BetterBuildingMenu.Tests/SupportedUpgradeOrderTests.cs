@@ -22,7 +22,8 @@ namespace BetterBuildingMenu.Tests
 				new UpgradeOffer(20, "Helipad", "HospitalHelipad"),
 				new UpgradeOffer(10, "Extra Wing", "HospitalWing"),
 				new UpgradeOffer(20, "Ambulance Depot", "HospitalAmbulance"),
-				// A module after the service upgrades, as the indexer reads the two buffers.
+				// Last, where a module would be: the indexer reads BuildingModule after
+				// BuildingUpgradeElement. A hospital has no modules, so this upgrade stands in for one.
 				new UpgradeOffer(20, "Research Wing", "HospitalResearch"),
 			};
 

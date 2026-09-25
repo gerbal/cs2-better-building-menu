@@ -411,14 +411,16 @@ namespace BetterBuildingMenu.Systems
 		/// which themes or packs they are, so a theme or pack a mod ships needs no change here.</remarks>
 		private VanillaAssetFacts GetVanillaAssetFacts(Entity entity)
 		{
-			var requirements = new List<(int Index, bool IsTheme)>();
+			var requirements = Array.Empty<(int Index, bool IsTheme)>();
 
 			if (EntityManager.TryGetBuffer<ObjectRequirementElement>(entity, true, out var requirementElements))
 			{
+				requirements = new (int Index, bool IsTheme)[requirementElements.Length];
+
 				for (var i = 0; i < requirementElements.Length; i++)
 				{
 					var requirement = requirementElements[i].m_Requirement;
-					requirements.Add((requirement.Index, EntityManager.HasComponent<ThemeData>(requirement)));
+					requirements[i] = (requirement.Index, EntityManager.HasComponent<ThemeData>(requirement));
 				}
 			}
 
@@ -448,7 +450,7 @@ namespace BetterBuildingMenu.Systems
 			var parkingSpawn = prefab.TryGet<SpawnLocation>(out var spawnLocation)
 				&& spawnLocation.m_ConnectionType == RouteConnectionType.Parking;
 
-			List<ParkingLaneShape>? lanes = null;
+			IList<ParkingLaneShape>? lanes = null;
 
 			if (prefab.TryGet<ObjectSubLanes>(out var subLanes) && subLanes.m_SubLanes is not null)
 			{
@@ -462,7 +464,7 @@ namespace BetterBuildingMenu.Systems
 				}
 			}
 
-			var slots = ParkingSlots.Own(garageCapacity, parkingSpawn, (IEnumerable<ParkingLaneShape>?)lanes ?? Array.Empty<ParkingLaneShape>());
+			var slots = ParkingSlots.Own(garageCapacity, parkingSpawn, lanes ?? Array.Empty<ParkingLaneShape>());
 
 			if (prefab.TryGet<ObjectSubObjects>(out var subObjects) && subObjects.m_SubObjects is not null)
 			{
