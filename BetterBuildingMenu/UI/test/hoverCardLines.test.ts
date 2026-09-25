@@ -53,7 +53,7 @@ describe("the hover card's lines", () => {
       households: 4,
       workers: 60,
       supportedUpgrades: ["Hospital01 Wing"],
-      bonuses: ["+10 Health"],
+      bonuses: [{ label: "Health", delta: 10, unit: "floatSingleFraction" }],
       serviceFacts: [{ key: "upkeep:Coal", value: 500 }, { key: "ambulances", value: 10 }, { key: "xpReward", value: 300 }],
     }), context);
 
@@ -99,11 +99,33 @@ describe("the hover card's lines", () => {
   });
 
   it("list upgrades and effects one per line, effects in the good tone", () => {
-    const entry = building({ supportedUpgrades: ["Hospital01 Wing", "Hospital01 Helipad"], bonuses: ["+10 Health", "+5 Wellbeing"] });
+    const entry = building({
+      supportedUpgrades: ["Hospital01 Wing", "Hospital01 Helipad"],
+      bonuses: [
+        { label: "Health", delta: 10, unit: "floatSingleFraction" },
+        { label: "Hospital Efficiency", delta: 12.5, unit: "percentage" },
+      ],
+    });
 
     assert.equal(line(entry, "upgrades")?.values?.length, 2);
-    assert.deepEqual(line(entry, "bonuses")?.values, ["+10 Health", "+5 Wellbeing"]);
+    assert.deepEqual(line(entry, "bonuses")?.values, ["Health +10", "Hospital Efficiency +13%"]);
     assert.equal(line(entry, "bonuses")?.tone, "good");
+  });
+
+  it("draw an effect's number with the game's own renderer where there is one", () => {
+    const drawn: [number, string][] = [];
+    const withGame: HoverCardLineContext = {
+      ...context,
+      renderGameNumber: (value, unit) => {
+        drawn.push([value, unit]);
+        return `<${value} ${unit}>`;
+      },
+    };
+    const entry = building({ bonuses: [{ label: "Wellbeing", delta: 0, unit: "floatSingleFraction" }] });
+    const { vanilla } = hoverCardTiers(entry, withGame);
+
+    assert.deepEqual(vanilla.find((candidate) => candidate.key === "bonuses")?.values, ["Wellbeing <0 floatSingleFraction>"]);
+    assert.deepEqual(drawn, [[0, "floatSingleFraction"]]);
   });
 
   it("move a road's speed and width, and a zone's make-up, into the game's tier", () => {
@@ -123,7 +145,7 @@ describe("the hover card's lines", () => {
       .map((key) => ({ key, value: 3 }));
     const { vanilla, extra } = hoverCardTiers(building({
       isLocked: true,
-      bonuses: ["+1"],
+      bonuses: [{ label: "Wellbeing", delta: 1, unit: "floatSingleFraction" }],
       serviceRange: 1500,
       parkingSlots: 20,
       households: 4,

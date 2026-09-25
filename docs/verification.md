@@ -2114,3 +2114,44 @@ Deliberately not matched:
 - The headline capacity keeps ours: vanilla names it per service
   (`PATIENT_CAPACITY`, `STUDENT_CAPACITY` and so on) and the card draws one
   line with a unit.
+
+## 2026-09-25 — the card follows vanilla where the owner decided (#62, by code reading)
+
+The owner's call on the seven differences #57 left in place: follow vanilla, except that upkeep
+stays the building's base figure, a better reference than one that moves with the city. Each
+change follows the binder in `PrefabUISystem` (1.6.2f1). Not yet checked in game.
+
+- A deathcare facility's capacity is a bare count, as `Properties.DECEASED_STORAGE` binds it with
+  the "integer" unit. The "plots" unit is gone; a crematorium's store was never plots.
+- A telecom facility's capacity is rounded up, as `Properties.NETWORK_CAPACITY` binds it
+  (`Mathf.CeilToInt`). The table's Capacity column and its sort take the same figure.
+- A network's upkeep is vanilla's: the cell's figure rounded as `Convert.ToInt32` rounds it,
+  halves to even, then the 125 cells, so a road at 3.9 a cell reads ¢500/km/mo., not ¢487. One
+  under half a cent a cell has no upkeep line, as in vanilla. The table's Upkeep column, sort and
+  range filter take the same figure.
+- Every effect draws a line, as `CityModifierBinder` and `LocalModifierBinder` bind them: one that
+  rounds to nothing, a zero and a repeat included. `CriminalMonitorProbability` is still left out,
+  as vanilla leaves it out.
+- An effect's number is drawn by the game's own renderer, `LocalizedNumber.renderString` from
+  `cs2/l10n`, signed, in the unit the binder names (`percentage` or `floatSingleFraction`), so it
+  takes the game's rounding, sign and separators in each language. The indexer sends each effect
+  as its label, its unrounded delta (`ModifierUIUtils.GetModifierDelta`) and its unit
+  (`EffectLine`), where it used to send finished English lines. Where the renderer is missing or
+  draws nothing, the card formats the number itself, with the same rounding and the player's
+  separators (`formatEffectDelta`).
+
+Kept, by the owner's decision:
+
+- Upkeep is the budget-free figure: vanilla scales it by the service's current budget.
+- Upkeep resources are named with their amounts under the money, where vanilla prices them at
+  market into a range.
+
+Still different, and outside #62:
+
+- A network's construction cost is rounded once, per kilometre; vanilla rounds each cell's cost
+  and truncates each auxiliary network's share on its own (see the section before last).
+- The effect labels are ours, the type's name in English; vanilla's UI names each effect itself.
+
+To check in game: an effect line's number in a comma-decimal language ("+1,5" in de-DE), a zero
+effect's line, a telecom facility's capacity against its tooltip, and a road's upkeep against its
+tooltip (¢500/km/mo. at 3.9 a cell).
