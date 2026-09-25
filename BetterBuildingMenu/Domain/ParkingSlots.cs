@@ -61,7 +61,8 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>The spacing between bays, derived the way the game bakes it.</summary>
 		/// <remarks>NetInitializeSystem computes ParkingLaneData.m_SlotInterval from the managed slot
-		/// size and angle; deriving it here keeps to the prefab graph the rest of the walk uses.</remarks>
+		/// size and angle; deriving it from them lets the indexer read the prefab graph's managed
+		/// ParkingLane rather than the baked component.</remarks>
 		public static float Interval(float2 slotSize, float slotAngle)
 		{
 			var angle = math.radians(math.clamp(slotAngle, 0f, 90f));

@@ -1,5 +1,7 @@
 using BetterBuildingMenu.Domain;
 
+using System.Linq;
+
 using Xunit;
 
 namespace BetterBuildingMenu.Tests
@@ -11,10 +13,10 @@ namespace BetterBuildingMenu.Tests
 	public sealed class SupportedUpgradeOrderTests
 	{
 		[Fact]
-		public void UpgradesSharingAPriorityKeepTheBuffersOrder()
+		public void TiesAreNotBrokenByName()
 		{
 			// The three at 20 are in neither alphabetical order nor its reverse, by name or by
-			// prefab name, so only a stable sort keeps them as the buffers hold them.
+			// prefab name, so a sort that broke the tie by either would reorder them.
 			var offers = new[]
 			{
 				new UpgradeOffer(20, "Helipad", "HospitalHelipad"),
@@ -28,6 +30,21 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.Equal(new[] { "Extra Wing", "Helipad", "Ambulance Depot", "Research Wing" }, names);
 			Assert.Equal(new[] { "HospitalWing", "HospitalHelipad", "HospitalAmbulance", "HospitalResearch" }, prefabNames);
+		}
+
+		[Fact]
+		public void UpgradesSharingAPriorityKeepTheBuffersOrder()
+		{
+			// More than sixteen: .NET's own sort insertion-sorts up to sixteen, which happens to be
+			// stable, so only a longer list tells a stable sort from an unstable one.
+			var offers = Enumerable.Range(0, 40)
+				.Select(i => new UpgradeOffer(i % 3 == 0 ? 2 : 1, $"Upgrade {i:00}", $"U{i:00}"))
+				.ToArray();
+
+			var (names, _) = SupportedUpgrades.InMenuOrder(offers);
+
+			var expected = offers.Where(o => o.Priority == 1).Concat(offers.Where(o => o.Priority == 2)).Select(o => o.Name);
+			Assert.Equal(expected, names);
 		}
 
 		[Fact]
