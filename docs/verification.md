@@ -2122,7 +2122,8 @@ section above, are decided:
 
 - **Changed:** a deathcare facility's capacity is a bare count, as vanilla's `DECEASED_STORAGE`
   binds it with the `integer` unit, where the card said plots: a crematorium's store holds the
-  deceased as a cemetery's does. Post and telecom capacities are bare counts for the same reason.
+  deceased as a cemetery's does. A post facility's mail capacity is a bare count for the same
+  reason.
 - **Kept, as they were:** a telecom facility's capacity keeps its decimal; a network's upkeep
   rounds the per-kilometre product, what `NetUtils.GetUpkeepCost` charges; upkeep is the
   budget-free figure; upkeep resources are named with their amounts; and an effect that rounds to
