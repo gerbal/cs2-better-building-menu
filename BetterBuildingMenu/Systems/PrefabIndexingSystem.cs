@@ -631,7 +631,9 @@ namespace BetterBuildingMenu.Systems
 				// Before IndexZones and before the processors: the zone catalog
 				// inherits the game's own Zones menu, and the blacklist check below
 				// consults the placements too.
-				var placements = IndexVanillaMenuPlacements();
+				// A walk that threw still hands over what it read: a full pass has no
+				// table of its own to keep, and the menus it did read are still right.
+				TryIndexVanillaMenuPlacements(full: true, out var placements);
 				var zones = IndexZones(placements);
 				var (menuNames, menuEntities, menus) = IndexAssetMenus();
 				var categories = IndexAssetCategories();
@@ -650,6 +652,13 @@ namespace BetterBuildingMenu.Systems
 			{
 				target = Index;
 				RemoveDeletedPrefabs(target);
+
+				// Before the processors, which read the placements back: a recreated prefab
+				// is placed under its new entity. A walk that threw keeps the old table.
+				if (TryIndexVanillaMenuPlacements(full: false, out var placements))
+				{
+					target.RefreshPlacements(placements);
+				}
 			}
 
 			foreach (var (processor, allQuery, changedQuery) in _processors)
