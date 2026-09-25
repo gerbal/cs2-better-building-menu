@@ -151,6 +151,18 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(new[] { 6 }, described);
 		}
 
+		/// <summary>A placement the game cannot resolve is named by its entity, as the coverage
+		/// report names it, not left blank.</summary>
+		[Fact]
+		public void AnAssetTheGameCannotNameIsNamedByItsEntity()
+		{
+			var index = IndexOver(new[] { (6, "Roads", "RoadsSmall") }, Array.Empty<int>());
+
+			var body = Assert.Single(IndexAuditLog.MenuAuditBody(VanillaMenuAudit.Gather(index, _ => null)));
+
+			Assert.Equal("[MENU-AUDIT] menu=\"Roads\" categories=1 vanilla=1 held=0 missing=1 ours=0 [entity:6]", body.Text);
+		}
+
 		[Fact]
 		public void TheAuditCountsAZoneAsHeld()
 		{

@@ -15,9 +15,10 @@ namespace BetterBuildingMenu.Domain
 	/// names alone. <see cref="VanillaMenuAudit.Gather"/> is the adapter from the index, and takes
 	/// each placement's prefab name from the caller, which can ask the game.
 	/// </remarks>
+	/// <param name="PrefabName">Null when the game cannot say; the audit then names the entity.</param>
 	public readonly record struct VanillaMenuPlacementFact(
 		int EntityIndex,
-		string PrefabName,
+		string? PrefabName,
 		string Menu,
 		string Category);
 
@@ -98,11 +99,11 @@ namespace BetterBuildingMenu.Domain
 			"Service upgrades are indexed but never offered: vanilla places them from the parent building's row.";
 
 		/// <summary>The census of an index against the menus it was built over.</summary>
-		/// <param name="prefabNameOf">The name of the prefab a placement places; the caller asks
-		/// the game, which this cannot.</param>
+		/// <param name="prefabNameOf">The name of the prefab a placement places, or null when the game
+		/// cannot resolve it; the caller asks the game, which this cannot.</param>
 		/// <remarks>Zones count as held: they reach the player through the zoning hierarchy, not
 		/// the index's lists, and leaving them out is the blindness this exists to remove.</remarks>
-		public static VanillaMenuAuditReport Gather(CatalogIndex index, Func<VanillaMenuPlacement, string> prefabNameOf)
+		public static VanillaMenuAuditReport Gather(CatalogIndex index, Func<VanillaMenuPlacement, string?> prefabNameOf)
 		{
 			var held = new HashSet<int>(index.All.Select(entry => entry.Id));
 
