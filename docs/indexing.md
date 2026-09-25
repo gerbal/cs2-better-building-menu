@@ -118,11 +118,10 @@ entries a partial pass does not re-read. That matters only when the game regroup
 recreating the assets. A recreated category is one: `ReplacePrefabSystem` does not move its
 members to the new entity, so it starts empty, and vanilla, which draws no empty category, hides
 the tab and its assets. The walk agrees and places none of them, so the tab counts nothing, and
-the strip, which draws only tabs with something behind them (`visibleCategories`), hides it at the
-same pass. Only the chip row's category picker, which lists every tab, keeps it until the next
-full pass. Re-reading the tabs on a partial pass would not be worth it: the picker would still wait
-for a scope change to be republished, and a category removed late in the frame would make its
-menu's read fail on every partial pass rather than on the next full one.
+the strip and the chip row's category picker, which draw only tabs with something behind them
+(`visibleCategories`), hide it at the same pass. Re-reading the tabs on a partial pass would not
+be worth it: a category removed late in the frame would make its menu's read fail on every
+partial pass rather than on the next full one.
 
 For a recreation whose old entity has already gone, the pass also drops every entry filed under
 the new entity's name whose prefab the game no longer maps to that entry's entity.
