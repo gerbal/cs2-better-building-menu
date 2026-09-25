@@ -4,6 +4,7 @@ using Game.Prefabs;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 
 namespace BetterBuildingMenu.Domain
 {
@@ -28,6 +29,49 @@ namespace BetterBuildingMenu.Domain
 			CityModifierType.IndustrialFishInputEfficiency,
 			CityModifierType.IndustrialFishHubEfficiency,
 		};
+
+		/// <summary>What a building does for the city, one line per effect: its city effects, then
+		/// its local ones.</summary>
+		/// <remarks>Both buffers the game applies, with m_Range.max and m_Delta.max, the figures
+		/// vanilla binds. CriminalMonitorProbability is left out, as vanilla leaves it out of its
+		/// own effect list; a line that rounds to nothing is dropped, and a repeat is shown once.</remarks>
+		public static string[] Lines(IReadOnlyList<CityModifierData>? city, IReadOnlyList<LocalModifierData>? local)
+		{
+			var lines = new List<string>();
+
+			if (city is not null)
+			{
+				foreach (var modifier in city)
+				{
+					// Vanilla hides this one from its own effect list, so a card that showed it
+					// would be inventing an effect the game does not acknowledge.
+					if (modifier.m_Type == CityModifierType.CriminalMonitorProbability)
+					{
+						continue;
+					}
+
+					lines.Add(Describe(
+						modifier.m_Type.ToString(),
+						modifier.m_Mode,
+						modifier.m_Range.max,
+						IsPercent(modifier.m_Type, modifier.m_Mode)));
+				}
+			}
+
+			if (local is not null)
+			{
+				foreach (var modifier in local)
+				{
+					lines.Add(Describe(
+						modifier.m_Type.ToString(),
+						modifier.m_Mode,
+						modifier.m_Delta.max,
+						IsPercent(modifier.m_Mode)));
+				}
+			}
+
+			return lines.Where(line => !string.IsNullOrEmpty(line)).Distinct().ToArray();
+		}
 
 		/// <summary>Whether vanilla shows a city effect as a percentage.</summary>
 		public static bool IsPercent(CityModifierType type, ModifierValueMode mode) =>

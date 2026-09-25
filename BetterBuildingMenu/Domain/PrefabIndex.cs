@@ -215,8 +215,8 @@ namespace BetterBuildingMenu.Domain
 		public bool HasParking { get; set; }
 
 		/// <summary>
-		/// Parking bays, matching what the building has once placed. See
-		/// PrefabIndexingSystem.GetParkingSlots.
+		/// Parking bays, matching what the building has once placed, its sub-objects' included.
+		/// See <see cref="Domain.ParkingSlots"/>.
 		/// </summary>
 		public int ParkingSlots { get; set; }
 		// Nullable analytical values come from the prefab entity already being indexed.

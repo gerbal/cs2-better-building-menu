@@ -1,5 +1,8 @@
 using BetterBuildingMenu.Domain;
 
+using Colossal.Mathematics;
+
+using Game.Buildings;
 using Game.City;
 using Game.Prefabs;
 
@@ -57,6 +60,69 @@ namespace BetterBuildingMenu.Tests
 			Assert.True(EffectWording.IsPercent(CityModifierType.CrimeProbability, ModifierValueMode.Relative));
 			Assert.False(EffectWording.IsPercent(ModifierValueMode.Absolute));
 			Assert.True(EffectWording.IsPercent(ModifierValueMode.InverseRelative));
+		}
+
+		private static CityModifierData City(CityModifierType type, ModifierValueMode mode, float max) =>
+			new(type, mode, new Bounds1(0f, max));
+
+		private static LocalModifierData Local(LocalModifierType type, ModifierValueMode mode, float max) =>
+			new(type, mode, ModifierRadiusCombineMode.Additive, new Bounds1(0f, max), new Bounds1(0f, 100f));
+
+		[Fact]
+		public void ABuildingsEffectsAreItsCityOnesThenItsLocalOnes()
+		{
+			var lines = EffectWording.Lines(
+				new[] { City(CityModifierType.CrimeAccumulation, ModifierValueMode.Relative, -0.1f) },
+				new[] { Local(LocalModifierType.CrimeAccumulation, ModifierValueMode.Relative, -0.2f) });
+
+			Assert.Equal(new[] { "Crime Accumulation -10%", "Crime Accumulation -20%" }, lines);
+		}
+
+		[Fact]
+		public void TheEffectVanillaHidesIsHiddenHereToo()
+		{
+			var lines = EffectWording.Lines(
+				new[] { City(CityModifierType.CriminalMonitorProbability, ModifierValueMode.Relative, 0.5f) },
+				null);
+
+			Assert.Empty(lines);
+		}
+
+		[Fact]
+		public void AnEffectThatRoundsToNothingDrawsNoLineAndARepeatDrawsOne()
+		{
+			var lines = EffectWording.Lines(
+				null,
+				new[]
+				{
+					// 0.4 %, which the whole-number percentage rounds to 0.
+					Local(LocalModifierType.Health, ModifierValueMode.Relative, 0.004f),
+					Local(LocalModifierType.Wellbeing, ModifierValueMode.Absolute, 5f),
+					Local(LocalModifierType.Wellbeing, ModifierValueMode.Absolute, 5f),
+				});
+
+			Assert.Equal(new[] { "Wellbeing +5" }, lines);
+		}
+
+		[Fact]
+		public void ABuildingWithNeitherBufferHasNoEffects()
+		{
+			Assert.Empty(EffectWording.Lines(null, null));
+		}
+
+		/// <summary>A park: attractiveness for the city, wellbeing and health nearby.</summary>
+		[Fact]
+		public void GoldenPark()
+		{
+			var lines = EffectWording.Lines(
+				new[] { City(CityModifierType.Attractiveness, ModifierValueMode.Absolute, 20f) },
+				new[]
+				{
+					Local(LocalModifierType.Wellbeing, ModifierValueMode.Absolute, 3f),
+					Local(LocalModifierType.Health, ModifierValueMode.Absolute, 1.5f),
+				});
+
+			Assert.Equal(new[] { "Attractiveness +20", "Wellbeing +3", "Health +1.5" }, lines);
 		}
 	}
 }
