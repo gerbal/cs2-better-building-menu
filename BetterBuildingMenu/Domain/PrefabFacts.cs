@@ -59,8 +59,8 @@ namespace BetterBuildingMenu.Domain
 			else if (snapshot.PlaceableNetData is { } netData)
 			{
 				// A network prices by length: m_DefaultConstructionCost is ONE cell's, plus its
-				// auxiliary networks' share as PlaceableNetCostBinder adds it, converted to the
-				// per-kilometre figure the game itself shows and flagged as a rate.
+				// auxiliary networks' share as PlaceableNetCostBinder adds it, converted to a
+				// per-kilometre figure and flagged as a rate.
 				prefabIndex.ConstructionCost = (uint)Math.Round(
 					(netData.m_DefaultConstructionCost + AuxiliaryNetCost(snapshot.AuxiliaryNetCosts)) * NetCellsPerKilometre);
 				// Rounded after the per-kilometre product, which is what NetUtils.GetUpkeepCost
@@ -586,8 +586,8 @@ namespace BetterBuildingMenu.Domain
 				Fact(prefabIndex, "stormCapacity", pipeConnection.m_StormCapacity);
 			}
 
-			// WaterConnectionBinder, transcribed: what a water pipe carries. A resource pipeline
-			// is left out.
+			// WaterConnectionBinder, transcribed: the pipes a network carries built in, as a road
+			// does. A pipe itself is a pipeline, which the binder leaves out.
 			if (snapshot.WaterPipeConnectionData is { } waterPipe
 				&& (waterPipe.m_FreshCapacity > 0 || waterPipe.m_SewageCapacity > 0)
 				&& snapshot.NetData is { } pipeNet

@@ -472,7 +472,7 @@ describe("the power and water lines vanilla's tooltip binds", () => {
   };
   const inGame = (key: string) => gameWords[key] ?? null;
 
-  it("words a voltage in the game's own terms, and both of them in ours", () => {
+  it("words a voltage in the game's own terms, with a fallback for both", () => {
     const rendered = renderServiceTextFacts(
       [{ key: "voltage", value: "Low" }, { key: "transformerInput", value: "High" }, { key: "transformerOutput", value: "Low" }],
       inGame,
@@ -483,9 +483,11 @@ describe("the power and water lines vanilla's tooltip binds", () => {
 
     const [both] = renderServiceTextFacts([{ key: "voltage", value: "Both" }], noTranslation);
     assert.equal(both.value, "Low and high");
+    const [pipes] = renderServiceTextFacts([{ key: "pipeType", value: "Fresh" }], noTranslation);
+    assert.equal(pipes.label, "Water pipes", "not the road features' Carries");
   });
 
-  it("names what a water pipe carries", () => {
+  it("names the pipes a road carries", () => {
     const words = ["Fresh", "Sewage", "Combined"].map((token) =>
       renderServiceTextFacts([{ key: "pipeType", value: token }], inGame)[0].value);
 

@@ -629,6 +629,11 @@ namespace BetterBuildingMenu.Systems
 
 			if (full)
 			{
+				if (_pollutionScale is null)
+				{
+					Mod.Log.Info("No pollution thresholds in the game's settings: cards draw no pollution levels");
+				}
+
 				var mods = RefreshModCompatibility(fallback: Index.Mods);
 
 				// Before IndexZones and before the processors: the zone catalog

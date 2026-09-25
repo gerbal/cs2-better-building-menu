@@ -12,7 +12,7 @@ namespace BetterBuildingMenu.Domain
 		/// <param name="stops">Each sub-object's stop, in the building's order, leaving out the
 		/// sub-objects that are not stops.</param>
 		/// <remarks>TransportStopBinder, transcribed: the first stop decides whether there is a line
-		/// at all, so a building whose first stop carries cargo shows none, whatever follows it.
+		/// at all, so a building whose first stop takes no passengers shows none, whatever follows it.
 		/// Then every passenger stop is counted by kind. A network shows none either, which the
 		/// caller checks.</remarks>
 		public static TransportStopCounts? Of(IReadOnlyList<TransportStopData> stops)

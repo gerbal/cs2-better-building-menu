@@ -150,8 +150,8 @@ namespace BetterBuildingMenu.Systems
 
 			if (snapshot.PlaceableNetData.HasValue)
 			{
-				var auxiliary = new List<(float Cost, float Share)>();
-				CollectAuxiliaryNetCosts(entity, 1f, auxiliary, depth: 0);
+				List<(float Cost, float Share)>? auxiliary = null;
+				CollectAuxiliaryNetCosts(entity, 1f, ref auxiliary, depth: 0);
 				snapshot.AuxiliaryNetCosts = auxiliary;
 			}
 
@@ -293,7 +293,7 @@ namespace BetterBuildingMenu.Systems
 		/// cell and the share of it the owner pays.</summary>
 		/// <remarks>PlaceableNetCostBinder's walk: each one is scaled by (1000 - 2z) / 1000 of its
 		/// offset along the owner. The depth is capped only so a cycle cannot recurse forever.</remarks>
-		private void CollectAuxiliaryNetCosts(Entity net, float share, List<(float Cost, float Share)> into, int depth)
+		private void CollectAuxiliaryNetCosts(Entity net, float share, ref List<(float Cost, float Share)>? into, int depth)
 		{
 			if (depth > 8 || !EntityManager.TryGetBuffer<AuxiliaryNet>(net, true, out var auxiliaryNets))
 			{
@@ -307,10 +307,10 @@ namespace BetterBuildingMenu.Systems
 
 				if (EntityManager.TryGetComponent<PlaceableNetData>(auxiliary.m_Prefab, out var auxiliaryData))
 				{
-					into.Add((auxiliaryData.m_DefaultConstructionCost, auxiliaryShare));
+					(into ??= new List<(float Cost, float Share)>()).Add((auxiliaryData.m_DefaultConstructionCost, auxiliaryShare));
 				}
 
-				CollectAuxiliaryNetCosts(auxiliary.m_Prefab, auxiliaryShare, into, depth + 1);
+				CollectAuxiliaryNetCosts(auxiliary.m_Prefab, auxiliaryShare, ref into, depth + 1);
 			}
 		}
 
