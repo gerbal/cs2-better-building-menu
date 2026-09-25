@@ -248,6 +248,72 @@ namespace BetterBuildingMenu.Tests
 			}
 		}
 
+		/// <summary>A partial pass files every entry the game places under its placement now, re-read
+		/// or not, and leaves an entry it no longer places as it was.</summary>
+		[Fact]
+		public void APartialPassFilesEveryPlacedEntryUnderItsPlacementNow()
+		{
+			var index = ReadyIndex(
+				Menus(new[] { (1, "Roads", "Pathways"), (2, "Roads", "Pathways") }),
+				PlacedIn(1, "Roads", "Pathways", 66),
+				PlacedIn(2, "Roads", "Pathways", 66));
+
+			index.RefreshPlacements(new Dictionary<int, VanillaMenuPlacement>
+			{
+				[1] = new(default, "Terraforming", "Pathways", CategoryPriority: 30),
+			});
+
+			var moved = index.Get(1);
+			var dropped = index.Get(2);
+			Assert.NotNull(moved);
+			Assert.NotNull(dropped);
+			Assert.Equal(("Pathways", "Terraforming", 30), (moved.UiCategoryName, moved.UiMenuName, moved.UiCategoryPriority));
+			Assert.Equal(("Pathways", "Roads", 66), (dropped.UiCategoryName, dropped.UiMenuName, dropped.UiCategoryPriority));
+		}
+
+		/// <summary>Asset UI Manager moves a whole category to another menu, at a new priority, and
+		/// marks nothing changed, so a partial pass re-reads only the prefabs something else touched.
+		/// The category must still be one heading in its new menu.</summary>
+		[Fact]
+		public void ACategoryAModMovesStaysOneHeadingWhenAPartialPassRereadsPartOfIt()
+		{
+			var index = ReadyIndex(
+				Menus(
+					new[] { (1, "Roads", "Pathways"), (2, "Roads", "Pathways"), (3, "Terraforming", "TerraformingTools") },
+					new()
+					{
+						["Roads"] = new() { Tab("RoadsSmall", 10), Tab("Pathways", 66) },
+						["Terraforming"] = new() { Tab("TerraformingTools", 10) },
+					},
+					menuOrder: new[] { "Roads", "Terraforming" }),
+				PlacedIn(1, "Roads", "Pathways", 66),
+				PlacedIn(2, "Roads", "Pathways", 66),
+				PlacedIn(3, "Terraforming", "TerraformingTools", 10));
+
+			index.RefreshPlacements(new Dictionary<int, VanillaMenuPlacement>
+			{
+				[1] = new(default, "Terraforming", "Pathways", CategoryPriority: 30),
+				[2] = new(default, "Terraforming", "Pathways", CategoryPriority: 30),
+				[3] = new(default, "Terraforming", "TerraformingTools", CategoryPriority: 10),
+			});
+
+			// The pass re-read the first pathway for some other reason, and AddPrefab filed it from
+			// its managed group and its placement.
+			var reread = index.Get(1);
+			Assert.NotNull(reread);
+			var placed = index.Menus.Placements[1];
+			(reread.UiCategoryName, reread.UiMenuName, reread.UiCategoryPriority) = MenuPlacementOverride.Resolve(
+				"Pathways", "Roads", 66, placed.Category, placed.Menu, placed.CategoryPriority);
+
+			var items = Grouped(index, "Terraforming");
+
+			Assert.Equal(new[] { "TerraformingTools", "Pathways", "Pathways" }, items.Select(item => item.UiCategory));
+			Assert.Single(items
+				.Where(item => item.UiCategory == "Pathways")
+				.Select(item => BuildingCatalogGrouping.PrimaryKey(item, BuildingCatalogGrouping.MenuCategory))
+				.Distinct());
+		}
+
 		[Fact]
 		public void EachMenusHeadingsFollowItsOwnStrip()
 		{
