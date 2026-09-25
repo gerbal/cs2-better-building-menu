@@ -73,6 +73,10 @@ describe("resolving a label", () => {
     );
   });
 
+  it("drops the line break some of the game's strings end in", () => {
+    assert.equal(resolveVanillaLabel(["a"], () => "Small Roads\r\n", "fallback"), "Small Roads");
+  });
+
   it("treats a blank answer as no answer", () => {
     assert.equal(resolveVanillaLabel(["a"], () => "   ", "fallback"), "fallback");
     assert.equal(resolveVanillaLabel(["a"], () => undefined, "fallback"), "fallback");
