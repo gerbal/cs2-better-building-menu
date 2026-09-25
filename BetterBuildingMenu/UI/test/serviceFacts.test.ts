@@ -64,10 +64,11 @@ describe("renderServiceFacts", () => {
 
   it("ships a string for every key it can ask for", () => {
     // The localization audit scans source for literal keys; these live in a
-    // table, so this is the check that the table and Locale.json agree.
+    // table, so this is the check that the table and Locale.json agree. A key
+    // in the game's own namespaces is the game's to translate.
     assert.ok(SERVICE_FACT_LOCALIZATION_KEYS.length > 0);
     for (const key of SERVICE_FACT_LOCALIZATION_KEYS) {
-      assert.match(key, /^Tooltip\.LABEL\[BetterBuildingMenu\.[A-Za-z]+\]$/);
+      assert.match(key, /^(Tooltip\.LABEL\[BetterBuildingMenu\.[A-Za-z]+\]|Properties\.[A-Z_]+(\[[A-Za-z]+\])?)$/);
     }
   });
 });
@@ -472,13 +473,13 @@ describe("the power and water lines vanilla's tooltip binds", () => {
   };
   const inGame = (key: string) => gameWords[key] ?? null;
 
-  it("words a voltage in the game's own terms, with a fallback for both", () => {
+  it("words a voltage in the game's own terms", () => {
     const rendered = renderServiceTextFacts(
       [{ key: "voltage", value: "Low" }, { key: "transformerInput", value: "High" }, { key: "transformerOutput", value: "Low" }],
       inGame,
     );
     assert.deepEqual(rendered.map((f) => `${f.label}: ${f.value}`), [
-      "Voltage: Low Voltage", "Input: High Voltage", "Output: Low Voltage",
+      "Voltage: Low Voltage", "Electricity input: High Voltage", "Electricity output: Low Voltage",
     ]);
 
     const [both] = renderServiceTextFacts([{ key: "voltage", value: "Both" }], noTranslation);
@@ -527,6 +528,22 @@ describe("a building's pollution levels", () => {
     assert.deepEqual(rendered.map((f) => `${f.label}: ${f.value}`), ["Air pollution: High", "Noise pollution: Medium"]);
   });
 
+  it("reads in the game's own words, which it translates", () => {
+    const german: Record<string, string> = {
+      "SelectedInfoPanel.POLLUTION_LEVELS_AIR": "Luftverschmutzung",
+      "SelectedInfoPanel.POLLUTION_LEVELS:3": "Hoch",
+      "Properties.TRANSPORT_STOP_COUNT[Bus]": "Bussteige",
+      "Properties.TRANSFORMER_CAPACITY": "Transformatorkapazität",
+    };
+    const inGerman = (key: string) => german[key] ?? null;
+
+    const [level] = renderServiceTextFacts([{ key: "airPollutionLevel", value: "High" }], inGerman);
+    assert.equal(`${level.label}: ${level.value}`, "Luftverschmutzung: Hoch");
+    const labels = renderServiceFacts([{ key: "busStops", value: 2 }, { key: "transformerCapacity", value: 400 }], inGerman)
+      .map((fact) => fact.label);
+    assert.deepEqual(labels, ["Bussteige", "Transformatorkapazität"]);
+  });
+
   it("sits with how well the building does, ahead of an upgrade's change to it", () => {
     const ordered = orderFacts([
       { key: "groundPollutionModifier" }, { key: "noisePollutionLevel" }, { key: "attractiveness" }, { key: "groundPollutionLevel" },
@@ -544,6 +561,6 @@ describe("a building's stops", () => {
     );
     const ordered = orderFacts(rendered).map((f) => `${f.label} ${f.value}`);
 
-    assert.deepEqual(ordered, ["Subway stops 1", "Train stops 2", "Bus stops 4"]);
+    assert.deepEqual(ordered, ["Subway platforms 1", "Train platforms 2", "Bus platforms 4"]);
   });
 });

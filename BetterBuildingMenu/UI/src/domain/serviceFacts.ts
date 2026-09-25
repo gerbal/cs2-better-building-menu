@@ -23,7 +23,8 @@ export interface ServiceTextFact {
 }
 
 interface ServiceFactPresentation {
-  /** Our own key, so a translation can be shipped for it. */
+  /** The game's own key where it names the line, which it translates; otherwise
+   *  ours, so a translation can ship with the mod. */
   localizationKey: string;
   fallback: string;
   /** Appended after the number; "" for a bare count. */
@@ -243,19 +244,20 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
   // Properties.TRANSFORMER_CAPACITY: the smaller of what its two sides carry,
   // in the power unit, as a power line's capacity is.
   transformerCapacity: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.TransformerCapacity]",
+    localizationKey: "Properties.TRANSFORMER_CAPACITY",
     fallback: "Transformer capacity",
     unit: "MW",
     measure: "power",
   },
-  // TransportStopBinder's counts: a building's passenger stops, one line per kind.
-  airplaneStops: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.AirplaneStops]", fallback: "Airplane stops", unit: "" },
-  helicopterStops: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.HelicopterStops]", fallback: "Helicopter stops", unit: "" },
-  shipStops: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ShipStops]", fallback: "Ship stops", unit: "" },
-  subwayStops: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.SubwayStops]", fallback: "Subway stops", unit: "" },
-  tramStops: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.TramStops]", fallback: "Tram stops", unit: "" },
-  trainStops: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.TrainStops]", fallback: "Train stops", unit: "" },
-  busStops: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.BusStops]", fallback: "Bus stops", unit: "" },
+  // TransportStopBinder's counts: a building's passenger stops, one line per kind,
+  // under the game's own Properties.TRANSPORT_STOP_COUNT words.
+  airplaneStops: { localizationKey: "Properties.TRANSPORT_STOP_COUNT[Airplane]", fallback: "Gates", unit: "" },
+  helicopterStops: { localizationKey: "Properties.TRANSPORT_STOP_COUNT[Helicopter]", fallback: "Landing pads", unit: "" },
+  shipStops: { localizationKey: "Properties.TRANSPORT_STOP_COUNT[Ship]", fallback: "Piers", unit: "" },
+  subwayStops: { localizationKey: "Properties.TRANSPORT_STOP_COUNT[Subway]", fallback: "Subway platforms", unit: "" },
+  tramStops: { localizationKey: "Properties.TRANSPORT_STOP_COUNT[Tram]", fallback: "Tram platforms", unit: "" },
+  trainStops: { localizationKey: "Properties.TRANSPORT_STOP_COUNT[Train]", fallback: "Train platforms", unit: "" },
+  busStops: { localizationKey: "Properties.TRANSPORT_STOP_COUNT[Bus]", fallback: "Bus platforms", unit: "" },
   // Properties.GARBAGE_STORAGE, for a building whose Capacity line is another
   // role's figure.
   garbageStorage: {
@@ -421,9 +423,9 @@ const VOLTAGE_WORDS = {
 };
 
 const POLLUTION_WORDS = {
-  Low: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PollutionLow]", fallback: "Low" },
-  Medium: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PollutionMedium]", fallback: "Medium" },
-  High: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PollutionHigh]", fallback: "High" },
+  Low: { localizationKey: "SelectedInfoPanel.POLLUTION_LEVELS:1", fallback: "Low" },
+  Medium: { localizationKey: "SelectedInfoPanel.POLLUTION_LEVELS:2", fallback: "Medium" },
+  High: { localizationKey: "SelectedInfoPanel.POLLUTION_LEVELS:3", fallback: "High" },
 };
 
 const TEXT_PRESENTATION: Readonly<Record<string, ServiceTextPresentation>> = {
@@ -484,22 +486,21 @@ const TEXT_PRESENTATION: Readonly<Record<string, ServiceTextPresentation>> = {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.TransportType]",
     fallback: "Transport",
   },
-  // ElectricityUIUtils.GetVoltage's three answers. The game's transformer lines name
-  // Properties.VOLTAGE:0 and :1 for the first two; :2 follows for the third, and
-  // the fallback stands in if the game has no such line.
+  // ElectricityUIUtils.GetVoltage's three answers, in the game's own
+  // Properties.VOLTAGE words.
   voltage: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Voltage]",
     fallback: "Voltage",
     values: VOLTAGE_WORDS,
   },
   transformerInput: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.TransformerInput]",
-    fallback: "Input",
+    localizationKey: "Properties.TRANSFORMER_INPUT",
+    fallback: "Electricity input",
     values: VOLTAGE_WORDS,
   },
   transformerOutput: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.TransformerOutput]",
-    fallback: "Output",
+    localizationKey: "Properties.TRANSFORMER_OUTPUT",
+    fallback: "Electricity output",
     values: VOLTAGE_WORDS,
   },
   // WaterConnectionBinder's Properties.WATER_PIPE_TYPE words, for the pipes a road
@@ -516,19 +517,19 @@ const TEXT_PRESENTATION: Readonly<Record<string, ServiceTextPresentation>> = {
   // PollutionBinder's levels. It sends a level of none too, and a line saying so
   // is noise beside the ones that are not.
   groundPollutionLevel: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.GroundPollutionLevel]",
+    localizationKey: "SelectedInfoPanel.POLLUTION_LEVELS_GROUND",
     fallback: "Ground pollution",
     values: POLLUTION_WORDS,
     omit: ["None"],
   },
   airPollutionLevel: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.AirPollutionLevel]",
+    localizationKey: "SelectedInfoPanel.POLLUTION_LEVELS_AIR",
     fallback: "Air pollution",
     values: POLLUTION_WORDS,
     omit: ["None"],
   },
   noisePollutionLevel: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.NoisePollutionLevel]",
+    localizationKey: "SelectedInfoPanel.POLLUTION_LEVELS_NOISE",
     fallback: "Noise pollution",
     values: POLLUTION_WORDS,
     omit: ["None"],
@@ -674,8 +675,7 @@ export const FACT_ORDER: readonly string[] = [
   "collectionTrucks", "postVans", "postTrucks", "ambulances", "hearses", "prisonVans",
   "depotVehicles", "maintenanceVehicles",
   "helicopters", "disasterResponse", "shelterVehicles",
-  "powerOutput", "garbageStorage",
-  "batteryOutput", "electricityCapacity", "voltage",
+  "powerOutput", "electricityCapacity", "voltage", "garbageStorage", "batteryOutput",
   "transformerCapacity", "transformerInput", "transformerOutput",
   "pipeType", "stormCapacity", "cargoCapacity", "mailboxCapacity",
   "purification", "waterSource", "maintenancePool",
