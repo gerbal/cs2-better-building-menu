@@ -98,7 +98,8 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>The lots a zone grows, from the zone table a full pass built.</summary>
 		public ZoneLotSizes? LotSizes { get; set; }
-		/// <summary>The prefab carries <c>PipelineData</c>: a resource pipeline, not a water pipe.</summary>
+		/// <summary>The prefab carries <c>PipelineData</c>: it is a pipe, not a network with pipes built
+		/// in.</summary>
 		public bool IsPipeline { get; set; }
 		/// <summary>The prefab carries <c>TransformerData</c>.</summary>
 		public bool IsTransformer { get; set; }

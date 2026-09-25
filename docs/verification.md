@@ -2013,11 +2013,12 @@ Each line the audit above found missing, transcribed from its binder in
   `TransformerOutputBinder`): the smaller of what the low- and high-voltage
   connections carry, over the sub-nets that start and end on one node; input
   high, output low. A power plant's own transformer shows only its output.
-- A pipe's water type (`WaterConnectionBinder`): fresh water, sewage or both,
-  for a water or sewage pipe but not a resource pipeline.
+- The pipes a network carries built in (`WaterConnectionBinder`): fresh
+  water, sewage or both. A pipe itself is a pipeline, which the binder leaves
+  out, so this is a road's line, labelled "Water pipes" beside its features.
 - Transport stops (`TransportStopBinder`): a building's passenger stops,
   counted by kind. The first stop decides whether there is a line at all, so a
-  building whose first stop carries cargo shows none; a network shows none.
+  building whose first stop takes no passengers shows none; a network shows none.
 - Auxiliary networks (`PlaceableNetCostBinder`): a network's cost adds each
   auxiliary network's, and theirs in turn, scaled by (1000 − 2z) / 1000 of its
   offset.
@@ -2026,10 +2027,16 @@ Deliberately not matched:
 
 - The labels are ours, so a translation can ship with the mod. The values use
   the game's keys where its code names them (`Properties.VOLTAGE:0` and `:1`,
-  `Properties.WATER_PIPE_TYPE[…]`). The pollution levels and "Low and high"
-  are ours: the game words them in its UI files, which the refs do not hold.
-- An auxiliary network's share is added before the per-kilometre rounding, as
-  the network's own cost is; vanilla truncates each share on its own.
+  `Properties.WATER_PIPE_TYPE[…]`). "Low and high" asks for
+  `Properties.VOLTAGE:2`, which follows the binder's numbering but is not
+  confirmed, and falls back to English. The pollution level words are ours: the
+  game words them in its UI files, which the refs do not hold.
+- A network's cost is rounded once, per kilometre, with each auxiliary
+  network's share added first. Vanilla rounds the network's own cost for a cell
+  before multiplying by 125 and truncates each share on its own, so a cell cost
+  of 12.4 reads ¢1,550/km on the card and ¢1,500 in vanilla. The rounding
+  predates the auxiliary networks, and is the same choice as the network
+  upkeep's above.
 - A transformer with no capacity draws no capacity line; vanilla binds a zero.
 - Stops are one line per kind, where vanilla draws one map of them.
 - A network whose sub-objects hold a power plant without one owning the

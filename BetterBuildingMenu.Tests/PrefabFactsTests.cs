@@ -550,7 +550,7 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void AWaterPipeNamesWhatItCarries()
+		public void ANetworkNamesThePipesBuiltIntoIt()
 		{
 			PrefabIndex Pipe(int fresh, int sewage, Layer layers, bool pipeline = false, int storm = 0) =>
 				Apply(
@@ -567,6 +567,7 @@ namespace BetterBuildingMenu.Tests
 					PrefabCategory.Networks);
 
 			Assert.Equal(new[] { "Combined" }, TextFacts(Pipe(10, 10, Layer.WaterPipe | Layer.SewagePipe), "pipeType"));
+			// A pipe itself is a pipeline: the line is for a road's built-in pipes.
 			Assert.Equal(new[] { "Fresh" }, TextFacts(Pipe(10, 0, Layer.WaterPipe), "pipeType"));
 			Assert.Equal(new[] { "Sewage" }, TextFacts(Pipe(0, 10, Layer.SewagePipe), "pipeType"));
 			Assert.Empty(TextFacts(Pipe(10, 0, Layer.WaterPipe, pipeline: true), "pipeType"));

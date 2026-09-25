@@ -418,7 +418,7 @@ interface ServiceTextPresentation {
 const VOLTAGE_WORDS = {
   Low: { localizationKey: "Properties.VOLTAGE:0", fallback: "Low" },
   High: { localizationKey: "Properties.VOLTAGE:1", fallback: "High" },
-  Both: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.VoltageBoth]", fallback: "Low and high" },
+  Both: { localizationKey: "Properties.VOLTAGE:2", fallback: "Low and high" },
 };
 
 const POLLUTION_WORDS = {
@@ -485,8 +485,9 @@ const TEXT_PRESENTATION: Readonly<Record<string, ServiceTextPresentation>> = {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.TransportType]",
     fallback: "Transport",
   },
-  // ElectricityUIUtils.GetVoltage's three answers, in the game's own words where
-  // it has them: its transformer lines name Properties.VOLTAGE:0 and :1.
+  // ElectricityUIUtils.GetVoltage's three answers. The game's transformer lines name
+  // Properties.VOLTAGE:0 and :1 for the first two; :2 follows for the third, and
+  // the fallback stands in if the game has no such line.
   voltage: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Voltage]",
     fallback: "Voltage",
@@ -502,14 +503,15 @@ const TEXT_PRESENTATION: Readonly<Record<string, ServiceTextPresentation>> = {
     fallback: "Output",
     values: VOLTAGE_WORDS,
   },
-  // WaterConnectionBinder's Properties.WATER_PIPE_TYPE words.
+  // WaterConnectionBinder's Properties.WATER_PIPE_TYPE words, for the pipes a road
+  // carries built in. Its own label: a road's features already read "Carries".
   pipeType: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PipeType]",
-    fallback: "Carries",
+    fallback: "Water pipes",
     values: {
       Fresh: { localizationKey: "Properties.WATER_PIPE_TYPE[Fresh]", fallback: "Fresh water" },
       Sewage: { localizationKey: "Properties.WATER_PIPE_TYPE[Sewage]", fallback: "Sewage" },
-      Combined: { localizationKey: "Properties.WATER_PIPE_TYPE[Combined]", fallback: "Fresh water and sewage" },
+      Combined: { localizationKey: "Properties.WATER_PIPE_TYPE[Combined]", fallback: "Water and sewage" },
     },
   },
   // PollutionBinder's levels. It sends a level of none too, and a line saying so
