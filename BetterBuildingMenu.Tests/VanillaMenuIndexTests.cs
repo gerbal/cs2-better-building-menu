@@ -196,39 +196,56 @@ namespace BetterBuildingMenu.Tests
 
 		/// <summary>A partial pass can place an asset in a category that had no tab at the last full
 		/// pass. The placement brings the category's own priority, so an asset moved there from
-		/// another tab ranks with the category's own assets, and the heading stays whole.</summary>
+		/// another tab ranks with the category's own assets, and the heading stays whole, in the
+		/// menu's view and in the unscoped one.</summary>
 		[Fact]
 		public void AMovedAssetUnderATabTheStripDoesNotDrawKeepsOneHeading()
 		{
-			PrefabIndex Filed(int id, string managedCategory, int managedPriority, string placedCategory, int placedPriority)
+			var menus = new VanillaMenuIndex(
+				new Dictionary<int, VanillaMenuPlacement>
+				{
+					[1] = new(default, "Roads", "RoadsSmall", CategoryPriority: 10),
+					[2] = new(default, "Roads", "RoadsMedium", CategoryPriority: 20),
+					[3] = new(default, "Roads", "ModRoads", CategoryPriority: 40),
+					[4] = new(default, "Roads", "ModRoads", CategoryPriority: 40),
+				},
+				new Dictionary<int, string>(),
+				new Dictionary<string, Entity>(),
+				new[] { Tab("Roads") },
+				// No ModRoads tab: the strip was read before anything was in it.
+				new Dictionary<string, List<VanillaMenuCategory>> { ["Roads"] = new() { Tab("RoadsSmall", 10), Tab("RoadsMedium", 20) } });
+
+			// As AddPrefab files an asset: its managed group, overridden by where the game places it.
+			PrefabIndex Filed(int id, string groupCategory, int groupPriority)
 			{
 				var entry = TestPrefabs.Entry(id, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads);
+				var placed = menus.Placements[id];
 				(entry.UiCategoryName, entry.UiMenuName, entry.UiCategoryPriority) = MenuPlacementOverride.Resolve(
-					managedCategory, "Roads", managedPriority, placedCategory, "Roads", placedPriority);
+					groupCategory, "Roads", groupPriority, placed.Category, placed.Menu, placed.CategoryPriority);
 				return entry;
 			}
 
 			var index = ReadyIndex(
-				Menus(
-					new[] { (1, "Roads", "RoadsSmall"), (2, "Roads", "RoadsMedium"), (3, "Roads", "ModRoads"), (4, "Roads", "ModRoads") },
-					// No ModRoads tab: the strip was read before anything was in it.
-					new() { ["Roads"] = new() { Tab("RoadsSmall", 10), Tab("RoadsMedium", 20) } },
-					menuOrder: new[] { "Roads" }),
-				Filed(1, "RoadsSmall", 10, "RoadsSmall", 10),
-				Filed(2, "RoadsMedium", 20, "RoadsMedium", 20),
-				Filed(3, "ModRoads", 40, "ModRoads", 40),
+				menus,
+				Filed(1, "RoadsSmall", 10),
+				Filed(2, "RoadsMedium", 20),
+				Filed(3, "ModRoads", 40),
 				// Moved from RoadsSmall: its managed group still says 10.
-				Filed(4, "RoadsSmall", 10, "ModRoads", 40));
+				Filed(4, "RoadsSmall", 10));
 
-			var items = Grouped(index, "Roads");
+			var scoped = Grouped(index, "Roads");
 
 			Assert.Equal(
 				new[] { "RoadsSmall", "RoadsMedium", "ModRoads", "ModRoads" },
-				items.Select(item => item.UiCategory));
-			Assert.Single(items
-				.Where(item => item.UiCategory == "ModRoads")
-				.Select(item => BuildingCatalogGrouping.PrimaryKey(item, BuildingCatalogGrouping.MenuCategory))
-				.Distinct());
+				scoped.Select(item => item.UiCategory));
+
+			foreach (var view in new[] { scoped, Grouped(index, string.Empty) })
+			{
+				Assert.Single(view
+					.Where(item => item.UiCategory == "ModRoads")
+					.Select(item => BuildingCatalogGrouping.PrimaryKey(item, BuildingCatalogGrouping.MenuCategory))
+					.Distinct());
+			}
 		}
 
 		[Fact]
