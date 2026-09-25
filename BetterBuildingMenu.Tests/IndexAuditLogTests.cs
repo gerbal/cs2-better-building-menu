@@ -27,7 +27,7 @@ namespace BetterBuildingMenu.Tests
 			var menus = new VanillaMenuIndex(
 				placements.ToDictionary(
 					placement => placement.Id,
-					placement => new VanillaMenuPlacement(new Entity { Index = placement.Id, Version = 1 }, placement.Menu, placement.Category)),
+					placement => new VanillaMenuPlacement(new Entity { Index = placement.Id, Version = 1 }, placement.Menu, placement.Category, CategoryPriority: 0)),
 				new Dictionary<int, string>(),
 				new Dictionary<string, Entity>(),
 				Array.Empty<VanillaMenuCategory>(),
