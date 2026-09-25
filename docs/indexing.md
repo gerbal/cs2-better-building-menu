@@ -219,9 +219,10 @@ the name, and every entry of one tab ranks alike, a moved asset included. The wa
 each category's priority as the strip does (`UIObjectData.m_Priority`), and `AddPrefab`'s
 placement override files a placed asset under that priority rather than its managed group's. So
 where the strip draws no tab for a placed category, its assets still share one priority and one
-heading. That happens when a partial pass places an asset in a category that was empty at the last
-full pass (a partial pass reads the placements again but keeps the tabs), or when a menu's tabs
-fail to read.
+heading. A placed category has no tab when a menu's tabs fail to read, or after a partial pass:
+it reads the placements again but keeps the last full pass's tabs, so a category that was empty
+then, or has been created or moved into the menu since, has none. There the assets the pass
+indexes take their placement, and the rest keep what they were filed under when last indexed.
 
 The walk's tables, with the menus and their category tabs, go into the pass's `VanillaMenuIndex`,
 which its `CatalogIndex` carries as `Menus`: a new pass reads the menus afresh, and nothing
@@ -232,7 +233,8 @@ placements (see "Partial passes"). The placements are read by:
 - the zone catalog, which inherits the Zones menu (below);
 - the index itself, which treats placement as an override: the blacklist and Find It checks in
   `BuildIndex`, the menu-placed, terraforming and misc-building processors, and `AddPrefab`'s
-  placement override, which takes the menu and category the entity world gives;
+  placement override, which takes the menu, category and category priority the entity world
+  gives;
 - the adapter, which scopes a menu's view by them and gathers networks into Roads only when some
   menu places them.
 
