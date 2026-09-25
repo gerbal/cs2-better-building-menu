@@ -1,6 +1,6 @@
 import { useValue } from "cs2/api";
 import { Tooltip } from "cs2/ui";
-import { LocalizedNumber, useLocalization, type Localization, type Unit } from "cs2/l10n";
+import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
@@ -11,7 +11,6 @@ import { clampAssetDescription, leisureLabel, resolveAssetDescription } from "do
 import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
 import { useUnitSystem } from "domain/unitSettings";
 import { overflowsBox } from "domain/measuredFit";
-import type { RenderGameNumber } from "domain/effectFormat";
 import styles from "./buildingHoverCard.module.scss";
 import { BuildingLensMilestones$ } from "mods/bindings";
 
@@ -31,13 +30,8 @@ export interface HoverCardContext extends HoverCardLineContext {
  */
 const NO_MILESTONE_NAMES: string[] = [];
 
-/** The game's own number renderer, signed, as vanilla's tooltip draws an effect. */
-const gameNumberRenderer = (localization: Localization): RenderGameNumber => (value, unit) =>
-  LocalizedNumber.renderString(localization, { value, unit: unit as Unit, signed: true });
-
 export const useHoverCardContext = (): HoverCardContext => {
-  const localization = useLocalization();
-  const { translate } = localization;
+  const { translate } = useLocalization();
   // One subscription per grid, like the milestones below — the whole reason
   // this context exists rather than each card reading its own.
   const unitSystem = useUnitSystem();
@@ -57,8 +51,7 @@ export const useHoverCardContext = (): HoverCardContext => {
     translateFact: translate,
     separators: getNumberSeparators(translate, unitSystem),
     labels: hoverCardLabels(translate),
-    renderGameNumber: gameNumberRenderer(localization),
-  }), [localization, translate, unitSystem, milestoneNames]);
+  }), [translate, unitSystem, milestoneNames]);
 };
 
 /**

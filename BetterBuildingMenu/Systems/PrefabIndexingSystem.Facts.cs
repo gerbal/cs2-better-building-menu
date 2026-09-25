@@ -312,8 +312,9 @@ namespace BetterBuildingMenu.Systems
 			}
 		}
 
-		/// <summary>What this building does for the city. See <see cref="EffectWording.Lines"/>.</summary>
-		private EffectLine[] GetBonuses(Entity entity)
+		/// <summary>What this building does for the city, phrased for a hover card. See
+		/// <see cref="EffectWording.Lines"/>.</summary>
+		private string[] GetBonuses(Entity entity)
 		{
 			var city = EntityManager.TryGetBuffer<CityModifierData>(entity, true, out var cityModifiers)
 				? cityModifiers.AsNativeArray().ToArray()

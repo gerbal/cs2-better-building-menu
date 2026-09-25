@@ -122,7 +122,7 @@ namespace BetterBuildingMenu.Domain
 		/// What the building gives the city. Signature buildings are free, so
 		/// the effect is the whole basis for choosing one over another.
 		/// </summary>
-		IReadOnlyList<EffectLine>? Bonuses = null,
+		string[]? Bonuses = null,
 		/// <summary>
 		/// Cost and Upkeep are per kilometre, not per instance. True for
 		/// networks, which price by length.
@@ -251,7 +251,7 @@ namespace BetterBuildingMenu.Domain
 			writer.PropertyName("devTreeBranchDepth");
 			writer.Write(DevTreeBranchDepth);
 			WriteStringArray(writer, "unlockRequirements", UnlockRequirements);
-			WriteArray(writer, "bonuses", Bonuses);
+			WriteStringArray(writer, "bonuses", Bonuses);
 			writer.PropertyName("costIsPerDistance");
 			writer.Write(CostIsPerDistance);
 			writer.PropertyName("parkingSlots");
