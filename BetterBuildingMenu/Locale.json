@@ -220,5 +220,6 @@
   "Tooltip.LABEL[BetterBuildingMenu.FacilityFeatureLongTermStorage]": "stores long term",
   "Tooltip.LABEL[BetterBuildingMenu.FacilityFeatureIndustrialWaste]": "industrial waste only",
   "Tooltip.LABEL[BetterBuildingMenu.FacilityFeatureThroughTerrain]": "reaches through terrain",
-  "Tooltip.LABEL[BetterBuildingMenu.ZoneFeatureIgnoresLandValue]": "ignores land value"
+  "Tooltip.LABEL[BetterBuildingMenu.ZoneFeatureIgnoresLandValue]": "ignores land value",
+  "Tooltip.LABEL[BetterBuildingMenu.ReverseSortButton]": "Reverse sort"
 }
