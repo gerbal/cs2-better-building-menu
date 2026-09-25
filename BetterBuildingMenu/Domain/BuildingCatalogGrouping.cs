@@ -530,14 +530,7 @@ namespace BetterBuildingMenu.Domain
 			return label.Length == 0 ? Other : label;
 		}
 
-		public static string? SchoolTierLabel(int? level) => level switch
-		{
-			1 => "Elementary School",
-			2 => "High School",
-			3 => "College",
-			4 => "University",
-			_ => null,
-		};
+		public static string? SchoolTierLabel(int? level) => BuildingCatalogLabels.SchoolLevel(level);
 
 		private static string FormatCurrency(double value) =>
 			value >= 1000

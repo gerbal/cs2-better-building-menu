@@ -62,7 +62,7 @@ export const MenuCategoryStrip = () => {
   // Education navigates by LEVEL, not by the milestone a school unlocked at:
   // with several region packs the level is what has dozens behind it, and the
   // milestone they share cuts nothing.
-  const schoolTiers = schoolTierTabs(schoolTierCounts);
+  const schoolTiers = schoolTierTabs(schoolTierCounts, translate);
   const showSchoolTiers = scoped && isEducationMenu(menu) && schoolTiers.length > 1;
   // The fallback, and why the strip exists on a service menu at all: vanilla
   // gives some menus one category and no way to cut them. The development tree

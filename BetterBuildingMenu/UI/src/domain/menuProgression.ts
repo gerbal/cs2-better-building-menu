@@ -48,6 +48,9 @@ export function branchTabTooltip(
   return family === "" ? tier : `${tier} ${family}`;
 }
 
+/** The shape of the game's `translate`, which answers null for a missing key. */
+type Translate = (key: string, fallback: string | null) => string | null;
+
 /** One school-level tab, ready to draw. */
 export interface SchoolTierTab {
   level: number;
@@ -62,7 +65,8 @@ export interface SchoolTierTab {
  * level because the alphabet puts College before High School.
  */
 export function schoolTierTabs(
-  counts: readonly MenuBranchCount[] | null | undefined
+  counts: readonly MenuBranchCount[] | null | undefined,
+  translate: Translate = () => null
 ): SchoolTierTab[] {
   return (counts ?? [])
     .map((entry) => ({ level: Number(entry.id), count: entry.count ?? 0, icon: entry.icon ?? "" }))
@@ -70,30 +74,34 @@ export function schoolTierTabs(
     .sort((a, b) => a.level - b.level)
     .map((entry) => ({
       level: entry.level,
-      label: schoolTierLabel(entry.level),
+      label: schoolTierLabel(entry.level, translate),
       count: entry.count,
       icon: entry.icon,
     }));
 }
 
 /**
- * The game's own word for a school level. Kept here rather than imported,
- * because these domain modules do not import each other by value; the words are
- * the game's SchoolLevel enum, and a test pins them to buildingGroups' copy.
+ * The name of each of the game's SchoolLevel values, under our keys: no key of
+ * the game's for a school's level has turned up. C#'s
+ * BuildingCatalogLabels.SchoolLevel asks for the same ones, so a tab and its
+ * group heading read alike.
  */
-export function schoolTierLabel(level: number): string {
-  switch (level) {
-    case 1:
-      return "Elementary School";
-    case 2:
-      return "High School";
-    case 3:
-      return "College";
-    case 4:
-      return "University";
-    default:
-      return `Level ${level}`;
+const SCHOOL_LEVELS: Readonly<Record<number, { key: string; english: string }>> = {
+  1: { key: "Tooltip.LABEL[BetterBuildingMenu.SchoolElementary]", english: "Elementary School" },
+  2: { key: "Tooltip.LABEL[BetterBuildingMenu.SchoolHigh]", english: "High School" },
+  3: { key: "Tooltip.LABEL[BetterBuildingMenu.SchoolCollege]", english: "College" },
+  4: { key: "Tooltip.LABEL[BetterBuildingMenu.SchoolUniversity]", english: "University" },
+};
+
+/** A school level's name, in the player's language where the mod ships one. */
+export function schoolTierLabel(level: number, translate: Translate = () => null): string {
+  const named = SCHOOL_LEVELS[level];
+
+  if (named) {
+    return translate(named.key, named.english) ?? named.english;
   }
+
+  return `${translate("Tooltip.LABEL[BetterBuildingMenu.Level]", "Level") ?? "Level"} ${level}`;
 }
 
 
