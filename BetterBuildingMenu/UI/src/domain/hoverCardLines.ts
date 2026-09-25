@@ -24,7 +24,6 @@ import {
 import { buildTileTooltipLines, isMetricPresent, TILE_TOOLTIP_MAX_LINES, type TileTooltipLine } from "./buildingTileTooltip";
 import { RESOURCE_UPKEEP_PREFIX, isVanillaFact, orderFacts, renderServiceFacts, renderServiceTextFacts } from "./serviceFacts";
 import { getBuildingExtensionLabels } from "./buildingLensRowDetails";
-import { effectLines, type RenderGameNumber } from "./effectFormat";
 import { isEntryAlreadyBuilt, isEntryLocked, listLockConditions } from "./buildingLockState";
 
 type Translate = (key: string, fallback: string | null) => string | null;
@@ -59,11 +58,6 @@ export interface HoverCardLineContext {
   /** Bound translate, for the service-fact table's own keys. */
   translateFact: Translate;
   labels: HoverCardLabels;
-  /**
-   * The game's own number renderer, which vanilla's tooltip draws an effect
-   * with. Absent, the effects take ours.
-   */
-  renderGameNumber?: RenderGameNumber;
 }
 
 /** The card's two blocks. */
@@ -127,7 +121,7 @@ export function hoverCardLabels(translate: Translate): HoverCardLabels {
 
 /** Every line the building earns, in card order, uncapped. */
 function hoverCardLines(entry: BuildingCatalogEntry, context: HoverCardLineContext): TileTooltipLine[] {
-  const { milestoneNames, separators, labels, leisureName, translateFact, renderGameNumber } = context;
+  const { milestoneNames, separators, labels, leisureName, translateFact } = context;
 
   const cost = formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance);
   const upkeep = formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance);
@@ -310,7 +304,7 @@ function hoverCardLines(entry: BuildingCatalogEntry, context: HoverCardLineConte
       label: labels.bonuses,
       applicable: (entry.bonuses?.length ?? 0) > 0,
       value: labels.bonuses,
-      values: effectLines(entry.bonuses, renderGameNumber, separators),
+      values: entry.bonuses ?? [],
       tone: "good",
     },
     { key: "lot", label: labels.lot, applicable: hasFootprint(entry.lotWidth, entry.lotDepth), value: lot },

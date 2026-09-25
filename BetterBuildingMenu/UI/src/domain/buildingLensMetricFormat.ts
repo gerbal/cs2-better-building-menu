@@ -373,8 +373,9 @@ export function formatBuildingMetric(
 const ROLE_UNITS: Record<string, string> = {
   School: "students",
   Hospital: "patients",
-  // Vanilla binds DECEASED_STORAGE with the "integer" unit, a bare count.
-  DeathcareFacility: "",
+  // Bodies, not plots: a crematorium's store holds the deceased as a
+  // cemetery's does, and vanilla's DECEASED_STORAGE is a bare count of them.
+  DeathcareFacility: "bodies",
   PowerPlant: "MW",
   WaterPumpingStation: "m³",
   SewageOutlet: "m³",
@@ -385,8 +386,8 @@ const ROLE_UNITS: Record<string, string> = {
   Prison: "prisoners",
   EmergencyShelter: "people",
   // Communications. Vanilla binds a post facility's mail capacity with the
-  // "integer" unit, the same as its van count — a count, not a weight. A
-  // telecom facility's is a data rate, which formatCapacity draws before this.
+  // "integer" unit, the same as its van count — a count, not a weight. Network
+  // capacity is a count of connections the game names no unit for.
   PostFacility: "",
   TelecomFacility: "",
 };

@@ -15,7 +15,9 @@ the detail behind the structural items.
   option labels fall back to English), and `ja-JP`, `pt-BR` and `uk-UA` are
   English throughout. Either connect `crowdin.yml` to a project (with a
   `languages_mapping`, since Crowdin's Chinese codes are `zh-CN` and `zh-TW`)
-  or ship English only.
+  or ship English only. The card's effect lines belong with this work: their
+  labels are English and their numbers invariant, so a comma-decimal language
+  reads "1.5" in an effect beside "1,5" elsewhere on the card (#62).
 - **The density-tier keys.** `ZoneLow` through `ZoneSignature` are kept because
   `GameLocaleKeyTests` requires them, but nothing reads them: the density
   headings come from `BuildingCatalogLabels.DensityTier`, which returns English

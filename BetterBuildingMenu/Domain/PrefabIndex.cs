@@ -100,7 +100,7 @@ namespace BetterBuildingMenu.Domain
 		/// reason to choose one over another. Read from the two buffers the game applies:
 		/// CityModifierData for citywide effects and LocalModifierData for radius ones.
 		/// </remarks>
-		public EffectLine[] Bonuses { get; set; } = Array.Empty<EffectLine>();
+		public string[] Bonuses { get; set; } = Array.Empty<string>();
 		public ThemePrefab? Theme { get; set; }
 
 		/// <summary>The prefab's own asset packs, which AddPrefab always sets; null only before that.</summary>
