@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { reduceBudgetToFit, contentOverflowPx } from "../src/domain/measuredFit.ts";
+import { reduceBudgetToFit, contentOverflowPx, overflowsBox } from "../src/domain/measuredFit.ts";
 
 // Character budgets and rem widths are estimates; the drawn text is the fact.
 // The px-per-rem ratio changes with resolution, so a budget that exactly fills
@@ -73,5 +73,26 @@ describe("the budget a set of drawn lines allows", () => {
     // case and must not count as overflow.
     const { lineBudgetFromDrawn } = await import("../src/domain/measuredFit.ts");
     assert.equal(lineBudgetFromDrawn(12, [{ clientWidth: 0, offsetWidth: 0, scrollWidth: 0 }]), 12);
+  });
+});
+
+describe("a hover card line that does not fit its half", () => {
+  it("overflows when its content runs past the box by more than rounding", () => {
+    // A German label wider than half the card.
+    assert.equal(overflowsBox({ clientWidth: 180, offsetWidth: 180, scrollWidth: 240 }), true);
+    assert.equal(overflowsBox({ clientWidth: 180, offsetWidth: 180, scrollWidth: 182 }), true);
+  });
+
+  it("fits when it runs past by a pixel, or not at all", () => {
+    assert.equal(overflowsBox({ clientWidth: 180, offsetWidth: 180, scrollWidth: 181 }), false);
+    assert.equal(overflowsBox({ clientWidth: 180, offsetWidth: 180, scrollWidth: 180 }), false);
+  });
+
+  it("reads Cohtml's scrollWidth, which matches offsetWidth when nothing overflows", () => {
+    assert.equal(overflowsBox({ clientWidth: 170, offsetWidth: 180, scrollWidth: 180 }), false);
+  });
+
+  it("never overflows before it is laid out", () => {
+    assert.equal(overflowsBox({ clientWidth: 0, offsetWidth: 0, scrollWidth: 0 }), false);
   });
 });
