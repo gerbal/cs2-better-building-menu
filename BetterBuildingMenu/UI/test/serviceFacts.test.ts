@@ -64,10 +64,11 @@ describe("renderServiceFacts", () => {
 
   it("ships a string for every key it can ask for", () => {
     // The localization audit scans source for literal keys; these live in a
-    // table, so this is the check that the table and Locale.json agree.
+    // table, so this is the check that the table and Locale.json agree. A key
+    // in the game's own namespaces is the game's to translate.
     assert.ok(SERVICE_FACT_LOCALIZATION_KEYS.length > 0);
     for (const key of SERVICE_FACT_LOCALIZATION_KEYS) {
-      assert.match(key, /^Tooltip\.LABEL\[BetterBuildingMenu\.[A-Za-z]+\]$/);
+      assert.match(key, /^(Tooltip\.LABEL\[BetterBuildingMenu\.[A-Za-z]+\]|Properties\.[A-Z_]+(\[[A-Za-z]+\])?)$/);
     }
   });
 });
@@ -328,7 +329,8 @@ describe("which figures are vanilla's own", () => {
     for (const key of ["garbageProcessing", "sortingRate", "collectionTrucks", "ambulances", "hearses", "jailCapacity",
       "cargoCapacity", "batteryOutput", "electricityCapacity", "purification", "comfort", "attractiveness",
       "shelterVehicles", "helicopters", "groundPollutionModifier", "resourceConsumption", "voltage", "waterSource",
-      "garbageStorage", "powerOutput"]) {
+      "garbageStorage", "powerOutput", "transformerCapacity", "transformerInput", "transformerOutput", "pipeType",
+      "busStops", "subwayStops", "groundPollutionLevel", "noisePollutionLevel"]) {
       assert.equal(isVanillaFact(key), true, key);
     }
   });
@@ -460,5 +462,105 @@ describe("comfort, as the game states it", () => {
     const [fact] = renderServiceFacts([{ key: "comfort", value: 120 }], () => null);
 
     assert.equal(fact.value, "120");
+  });
+});
+
+describe("the power and water lines vanilla's tooltip binds", () => {
+  const gameWords: Record<string, string> = {
+    "Properties.VOLTAGE:0": "Low Voltage",
+    "Properties.VOLTAGE:1": "High Voltage",
+    "Properties.WATER_PIPE_TYPE[Combined]": "Water & Sewage",
+  };
+  const inGame = (key: string) => gameWords[key] ?? null;
+
+  it("words a voltage in the game's own terms", () => {
+    const rendered = renderServiceTextFacts(
+      [{ key: "voltage", value: "Low" }, { key: "transformerInput", value: "High" }, { key: "transformerOutput", value: "Low" }],
+      inGame,
+    );
+    assert.deepEqual(rendered.map((f) => `${f.label}: ${f.value}`), [
+      "Voltage: Low Voltage", "Electricity input: High Voltage", "Electricity output: Low Voltage",
+    ]);
+
+    const [both] = renderServiceTextFacts([{ key: "voltage", value: "Both" }], noTranslation);
+    assert.equal(both.value, "Low and high");
+    const [pipes] = renderServiceTextFacts([{ key: "pipeType", value: "Fresh" }], noTranslation);
+    assert.equal(pipes.label, "Water pipes", "not the road features' Carries");
+  });
+
+  it("names the pipes a road carries", () => {
+    const words = ["Fresh", "Sewage", "Combined"].map((token) =>
+      renderServiceTextFacts([{ key: "pipeType", value: token }], inGame)[0].value);
+
+    assert.deepEqual(words, ["Fresh water", "Sewage", "Water & Sewage"]);
+  });
+
+  it("draws a transformer's capacity in the power unit", () => {
+    const [fact] = renderServiceFacts([{ key: "transformerCapacity", value: 400 }], noTranslation, undefined,
+      { power: (value) => `${value / 10} MW` });
+
+    assert.equal(`${fact.label} ${fact.value}`, "Transformer capacity 40 MW");
+  });
+
+  it("puts a line's voltage and a transformer's sides with its capacity", () => {
+    const ordered = orderFacts([
+      { key: "elevatedWidth" }, { key: "transformerOutput" }, { key: "voltage" }, { key: "electricityCapacity" },
+      { key: "transformerCapacity" }, { key: "transformerInput" }, { key: "pipeType" },
+    ]).map((fact) => fact.key);
+
+    assert.deepEqual(ordered, [
+      "electricityCapacity", "voltage", "transformerCapacity", "transformerInput", "transformerOutput", "pipeType", "elevatedWidth",
+    ]);
+  });
+});
+
+describe("a building's pollution levels", () => {
+  it("draws the levels there are and leaves out none", () => {
+    const rendered = renderServiceTextFacts(
+      [
+        { key: "groundPollutionLevel", value: "None" },
+        { key: "airPollutionLevel", value: "High" },
+        { key: "noisePollutionLevel", value: "Medium" },
+      ],
+      noTranslation,
+    );
+
+    assert.deepEqual(rendered.map((f) => `${f.label}: ${f.value}`), ["Air pollution: High", "Noise pollution: Medium"]);
+  });
+
+  it("reads in the game's own words, which it translates", () => {
+    const german: Record<string, string> = {
+      "SelectedInfoPanel.POLLUTION_LEVELS_AIR": "Luftverschmutzung",
+      "SelectedInfoPanel.POLLUTION_LEVELS:3": "Hoch",
+      "Properties.TRANSPORT_STOP_COUNT[Bus]": "Bussteige",
+      "Properties.TRANSFORMER_CAPACITY": "Transformatorkapazität",
+    };
+    const inGerman = (key: string) => german[key] ?? null;
+
+    const [level] = renderServiceTextFacts([{ key: "airPollutionLevel", value: "High" }], inGerman);
+    assert.equal(`${level.label}: ${level.value}`, "Luftverschmutzung: Hoch");
+    const labels = renderServiceFacts([{ key: "busStops", value: 2 }, { key: "transformerCapacity", value: 400 }], inGerman)
+      .map((fact) => fact.label);
+    assert.deepEqual(labels, ["Bussteige", "Transformatorkapazität"]);
+  });
+
+  it("sits with how well the building does, ahead of an upgrade's change to it", () => {
+    const ordered = orderFacts([
+      { key: "groundPollutionModifier" }, { key: "noisePollutionLevel" }, { key: "attractiveness" }, { key: "groundPollutionLevel" },
+    ]).map((fact) => fact.key);
+
+    assert.deepEqual(ordered, ["attractiveness", "groundPollutionLevel", "noisePollutionLevel", "groundPollutionModifier"]);
+  });
+});
+
+describe("a building's stops", () => {
+  it("counts each kind on its own line, in vanilla's order", () => {
+    const rendered = renderServiceFacts(
+      [{ key: "busStops", value: 4 }, { key: "trainStops", value: 2 }, { key: "subwayStops", value: 1 }],
+      noTranslation,
+    );
+    const ordered = orderFacts(rendered).map((f) => `${f.label} ${f.value}`);
+
+    assert.deepEqual(ordered, ["Subway platforms 1", "Train platforms 2", "Bus platforms 4"]);
   });
 });

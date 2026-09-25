@@ -1,5 +1,6 @@
 using BetterBuildingMenu.Domain.Enums;
 
+using Game.Net;
 using Game.Prefabs;
 
 using System;
@@ -57,10 +58,11 @@ namespace BetterBuildingMenu.Domain
 			}
 			else if (snapshot.PlaceableNetData is { } netData)
 			{
-				// A network prices by length: m_DefaultConstructionCost is the sum of its
-				// composition pieces for ONE cell, so it is converted to the per-kilometre
-				// figure the game itself shows and flagged as a rate.
-				prefabIndex.ConstructionCost = (uint)Math.Round(netData.m_DefaultConstructionCost * NetCellsPerKilometre);
+				// A network prices by length: m_DefaultConstructionCost is ONE cell's, plus its
+				// auxiliary networks' share as PlaceableNetCostBinder adds it, converted to a
+				// per-kilometre figure and flagged as a rate.
+				prefabIndex.ConstructionCost = (uint)Math.Round(
+					(netData.m_DefaultConstructionCost + AuxiliaryNetCost(snapshot.AuxiliaryNetCosts)) * NetCellsPerKilometre);
 				// Rounded after the per-kilometre product, which is what NetUtils.GetUpkeepCost
 				// charges, where vanilla's tooltip rounds the per-cell figure first. Its silence
 				// on none is kept: a road with no upkeep has no upkeep line.
@@ -191,6 +193,16 @@ namespace BetterBuildingMenu.Domain
 				prefabIndex.GroundPollution = pollutionData.m_GroundPollution;
 				prefabIndex.AirPollution = pollutionData.m_AirPollution;
 				prefabIndex.NoisePollution = pollutionData.m_NoisePollution;
+
+				// PollutionBinder, transcribed: the level each figure falls in, once the three
+				// sum to anything. A level of none is sent too; the card leaves it out.
+				if (snapshot.PollutionScale is { } scale
+					&& pollutionData.m_AirPollution + pollutionData.m_GroundPollution + pollutionData.m_NoisePollution != 0f)
+				{
+					TextFact(prefabIndex, "groundPollutionLevel", scale.Ground.LevelOf(pollutionData.m_GroundPollution));
+					TextFact(prefabIndex, "airPollutionLevel", scale.Air.LevelOf(pollutionData.m_AirPollution));
+					TextFact(prefabIndex, "noisePollutionLevel", scale.Noise.LevelOf(pollutionData.m_NoisePollution));
+				}
 			}
 
 			// The Role facet's source: these are exactly the service components that make a
@@ -461,6 +473,10 @@ namespace BetterBuildingMenu.Domain
 					+ (int)(1000000f * (snapshot.WaterPoweredData?.m_CapacityFactor ?? 0f))
 					+ (snapshot.GroundWaterPoweredData?.m_Production ?? 0)
 					+ (snapshot.EmergencyGeneratorData?.m_ElectricityProduction ?? 0));
+				// The binder's voltage: a transformer's low side and whatever its own power lines
+				// connect on.
+				TextFact(prefabIndex, "voltage", PowerLineVoltage.Of(
+					(snapshot.IsTransformer ? Layer.PowerlineLow : Layer.None) | snapshot.SubNetPowerLayers));
 			}
 
 			// Each of these is the figure its building is FOR.
@@ -541,18 +557,61 @@ namespace BetterBuildingMenu.Domain
 				Fact(prefabIndex, "cargoCapacity", storageLimit.m_Limit);
 			}
 
+			// ElectricityConnectionBinder, transcribed: a network that carries a power line. A
+			// road's street lighting is a connection too, and is left out.
 			if (snapshot.ElectricityConnectionData is { } electricityConnection
 				&& electricityConnection.m_Capacity > 0
-				&& !snapshot.RoadData.HasValue)
+				&& (electricityConnection.m_CompositionAll.m_General & CompositionFlags.General.Lighting) == 0
+				&& snapshot.NetData is { } powerLine
+				&& PowerLineVoltage.Carries(powerLine.m_LocalConnectLayers))
 			{
 				Fact(prefabIndex, "electricityCapacity", electricityConnection.m_Capacity);
-				TextFact(prefabIndex, "voltage", electricityConnection.m_Voltage.ToString());
+				TextFact(prefabIndex, "voltage", PowerLineVoltage.Of(powerLine.m_LocalConnectLayers));
+			}
+
+			// The three transformer binders. A power plant's own transformer shows only its output.
+			if (snapshot.IsTransformer && !snapshot.PowerPlantData.HasValue)
+			{
+				Fact(prefabIndex, "transformerCapacity", TransformerCapacity(snapshot.TransformerConnections));
+				TextFact(prefabIndex, "transformerInput", "High");
+			}
+			if (snapshot.IsTransformer)
+			{
+				TextFact(prefabIndex, "transformerOutput", "Low");
 			}
 
 			if (snapshot.WaterPipeConnectionData is { } pipeConnection
 				&& pipeConnection.m_StormCapacity > 0)
 			{
 				Fact(prefabIndex, "stormCapacity", pipeConnection.m_StormCapacity);
+			}
+
+			// WaterConnectionBinder, transcribed: the pipes a network carries built in, as a road
+			// does. A pipe itself is a pipeline, which the binder leaves out.
+			if (snapshot.WaterPipeConnectionData is { } waterPipe
+				&& (waterPipe.m_FreshCapacity > 0 || waterPipe.m_SewageCapacity > 0)
+				&& snapshot.NetData is { } pipeNet
+				&& !snapshot.IsPipeline
+				&& (pipeNet.m_LocalConnectLayers & (Layer.WaterPipe | Layer.SewagePipe)) != 0)
+			{
+				TextFact(prefabIndex, "pipeType",
+					waterPipe.m_FreshCapacity > 0 && waterPipe.m_SewageCapacity > 0 ? "Combined"
+						: waterPipe.m_FreshCapacity > 0 ? "Fresh"
+						: "Sewage");
+			}
+
+			// TransportStopBinder: a building's passenger stops, by kind. Never a network's.
+			if (!snapshot.NetData.HasValue
+				&& snapshot.TransportStops is { } stops
+				&& TransportStopCounts.Of(stops) is { } stopCounts)
+			{
+				Fact(prefabIndex, "airplaneStops", stopCounts.Airplane);
+				Fact(prefabIndex, "helicopterStops", stopCounts.Helicopter);
+				Fact(prefabIndex, "shipStops", stopCounts.Ship);
+				Fact(prefabIndex, "subwayStops", stopCounts.Subway);
+				Fact(prefabIndex, "tramStops", stopCounts.Tram);
+				Fact(prefabIndex, "trainStops", stopCounts.Train);
+				Fact(prefabIndex, "busStops", stopCounts.Bus);
 			}
 
 			if (snapshot.WastewaterTreatmentPlantData is { } wastewaterData)
@@ -595,6 +654,46 @@ namespace BetterBuildingMenu.Domain
 			bool isSingleResource = value != 0UL && (value & (value - 1UL)) == 0UL;
 
 			return isSingleResource ? resource.ToString() : null;
+		}
+
+		/// <summary>What a network's auxiliary networks add to the cost of one cell.</summary>
+		private static float AuxiliaryNetCost(IReadOnlyList<(float Cost, float Share)>? auxiliary)
+		{
+			var total = 0f;
+
+			if (auxiliary is not null)
+			{
+				foreach (var (cost, share) in auxiliary)
+				{
+					total += cost * share;
+				}
+			}
+
+			return total;
+		}
+
+		/// <summary>TransformerCapacityBinder's figure: the smaller of what its low-voltage and its
+		/// high-voltage connections carry.</summary>
+		private static int TransformerCapacity(IReadOnlyList<(Game.Prefabs.ElectricityConnection.Voltage Voltage, int Capacity)>? connections)
+		{
+			int low = 0, high = 0;
+
+			if (connections is not null)
+			{
+				foreach (var (voltage, capacity) in connections)
+				{
+					if (voltage == Game.Prefabs.ElectricityConnection.Voltage.Low)
+					{
+						low += capacity;
+					}
+					else
+					{
+						high += capacity;
+					}
+				}
+			}
+
+			return Math.Min(low, high);
 		}
 
 		/// <summary>Records one service figure, dropping the zeros.</summary>

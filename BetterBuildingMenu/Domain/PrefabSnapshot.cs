@@ -34,6 +34,7 @@ namespace BetterBuildingMenu.Domain
 		public LeisureProviderData? LeisureProviderData { get; set; }
 		public MailBoxData? MailBoxData { get; set; }
 		public MaintenanceDepotData? MaintenanceDepotData { get; set; }
+		public NetData? NetData { get; set; }
 		public NetGeometryData? NetGeometryData { get; set; }
 		public ParkData? ParkData { get; set; }
 		public ParkingFacilityData? ParkingFacilityData { get; set; }
@@ -97,5 +98,23 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>The lots a zone grows, from the zone table a full pass built.</summary>
 		public ZoneLotSizes? LotSizes { get; set; }
+		/// <summary>The prefab carries <c>PipelineData</c>: it is a pipe, not a network with pipes built
+		/// in.</summary>
+		public bool IsPipeline { get; set; }
+		/// <summary>The prefab carries <c>TransformerData</c>.</summary>
+		public bool IsTransformer { get; set; }
+		/// <summary>A transformer's power connections: each sub-net that starts and ends on one node
+		/// and carries <c>ElectricityConnectionData</c>, as its voltage and capacity.</summary>
+		public IReadOnlyList<(ElectricityConnection.Voltage Voltage, int Capacity)>? TransformerConnections { get; set; }
+		/// <summary>Every layer the prefab's power-line sub-nets connect on.</summary>
+		public Game.Net.Layer SubNetPowerLayers { get; set; }
+		/// <summary>Each sub-object's <c>TransportStopData</c>, in the prefab's order, leaving out
+		/// the sub-objects that are not stops.</summary>
+		public IReadOnlyList<TransportStopData>? TransportStops { get; set; }
+		/// <summary>A network's auxiliary networks, nested ones included, as each one's cost for a
+		/// cell and the share of it the owner pays.</summary>
+		public IReadOnlyList<(float Cost, float Share)>? AuxiliaryNetCosts { get; set; }
+		/// <summary>The pollution thresholds, which are settings and the same for every prefab.</summary>
+		public PollutionScale? PollutionScale { get; set; }
 	}
 }

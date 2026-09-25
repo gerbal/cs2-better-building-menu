@@ -235,6 +235,7 @@
   "Tooltip.LABEL[BetterBuildingMenu.TrackType]": "Track",
   "Tooltip.LABEL[BetterBuildingMenu.TransportType]": "Transport",
   "Tooltip.LABEL[BetterBuildingMenu.Voltage]": "Voltage",
+  "Tooltip.LABEL[BetterBuildingMenu.PipeType]": "Water pipes",
   "Tooltip.LABEL[BetterBuildingMenu.WaterSource]": "Draws from",
   "Tooltip.LABEL[BetterBuildingMenu.RoadFeature]": "Carries",
   "Tooltip.LABEL[BetterBuildingMenu.FacilityFeature]": "Also",

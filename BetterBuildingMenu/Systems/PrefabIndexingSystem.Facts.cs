@@ -96,6 +96,7 @@ namespace BetterBuildingMenu.Systems
 				LeisureProviderData = Read<LeisureProviderData>(entity),
 				MailBoxData = Read<MailBoxData>(entity),
 				MaintenanceDepotData = Read<MaintenanceDepotData>(entity),
+				NetData = Read<NetData>(entity),
 				NetGeometryData = Read<NetGeometryData>(entity),
 				ParkData = Read<ParkData>(entity),
 				ParkingFacilityData = Read<ParkingFacilityData>(entity),
@@ -132,7 +133,27 @@ namespace BetterBuildingMenu.Systems
 				ZoneServiceConsumptionData = Read<ZoneServiceConsumptionData>(entity),
 				RequiredResource = GetExtractorFeature(entity),
 				LotSizes = zones.LotSizesOf(entity.Index),
+				IsPipeline = EntityManager.HasComponent<PipelineData>(entity),
+				IsTransformer = EntityManager.HasComponent<TransformerData>(entity),
+				PollutionScale = _pollutionScale,
 			};
+
+			if (snapshot.IsTransformer || snapshot.PowerPlantData.HasValue || snapshot.EmergencyGeneratorData.HasValue)
+			{
+				ReadPowerSubNets(entity, snapshot);
+			}
+
+			if (!snapshot.NetData.HasValue)
+			{
+				snapshot.TransportStops = ReadTransportStops(entity);
+			}
+
+			if (snapshot.PlaceableNetData.HasValue)
+			{
+				List<(float Cost, float Share)>? auxiliary = null;
+				CollectAuxiliaryNetCosts(entity, 1f, ref auxiliary, depth: 0);
+				snapshot.AuxiliaryNetCosts = auxiliary;
+			}
 
 			if (snapshot.PlaceableNetData is { } netData)
 			{
@@ -180,6 +201,118 @@ namespace BetterBuildingMenu.Systems
 		private T? Read<T>(Entity entity)
 			where T : unmanaged, IComponentData =>
 			EntityManager.TryGetComponent<T>(entity, out var value) ? value : default(T?);
+
+		/// <summary>The pollution thresholds, or null when the game has none.</summary>
+		/// <remarks>Settings from the game's UIPollutionConfigurationPrefab, which PollutionBinder
+		/// grades every building by. Read once a pass rather than once a prefab.</remarks>
+		private PollutionScale? ReadPollutionScale()
+		{
+			var query = GetEntityQuery(ComponentType.ReadOnly<UIPollutionConfigurationData>());
+
+			if (query.IsEmptyIgnoreFilter)
+			{
+				return null;
+			}
+
+			using var entities = query.ToEntityArray(Allocator.Temp);
+
+			if (!_prefabSystem.TryGetPrefab<UIPollutionConfigurationPrefab>(entities[0], out var config)
+				|| config.m_GroundPollution is not { } ground
+				|| config.m_AirPollution is not { } air
+				|| config.m_NoisePollution is not { } noise)
+			{
+				return null;
+			}
+
+			return new PollutionScale(
+				new PollutionThresholds(ground.m_Low, ground.m_Medium, ground.m_High),
+				new PollutionThresholds(air.m_Low, air.m_Medium, air.m_High),
+				new PollutionThresholds(noise.m_Low, noise.m_Medium, noise.m_High));
+		}
+
+		/// <summary>A transformer's connections and a power plant's power-line layers, from the
+		/// prefab's sub-nets.</summary>
+		/// <remarks>TransformerCapacityBinder counts only the connections that start and end on one
+		/// node. ElectricityUIUtils.GetPowerLineLayers takes every power-line sub-net's.</remarks>
+		private void ReadPowerSubNets(Entity entity, PrefabSnapshot snapshot)
+		{
+			if (!EntityManager.TryGetBuffer<Game.Prefabs.SubNet>(entity, true, out var subNets))
+			{
+				return;
+			}
+
+			var connections = new List<(ElectricityConnection.Voltage Voltage, int Capacity)>();
+			var layers = Game.Net.Layer.None;
+
+			for (var i = 0; i < subNets.Length; i++)
+			{
+				var subNet = subNets[i];
+
+				if (!EntityManager.TryGetComponent<ElectricityConnectionData>(subNet.m_Prefab, out var connection))
+				{
+					continue;
+				}
+
+				if (subNet.m_NodeIndex.x == subNet.m_NodeIndex.y)
+				{
+					connections.Add((connection.m_Voltage, connection.m_Capacity));
+				}
+
+				if (EntityManager.TryGetComponent<NetData>(subNet.m_Prefab, out var net))
+				{
+					layers |= net.m_LocalConnectLayers;
+				}
+			}
+
+			snapshot.TransformerConnections = connections;
+			snapshot.SubNetPowerLayers = layers;
+		}
+
+		/// <summary>Each sub-object's stop, in the prefab's order, or null when it has none.</summary>
+		private List<TransportStopData>? ReadTransportStops(Entity entity)
+		{
+			if (!EntityManager.TryGetBuffer<Game.Prefabs.SubObject>(entity, true, out var subObjects))
+			{
+				return null;
+			}
+
+			List<TransportStopData>? stops = null;
+
+			for (var i = 0; i < subObjects.Length; i++)
+			{
+				if (EntityManager.TryGetComponent<TransportStopData>(subObjects[i].m_Prefab, out var stop))
+				{
+					(stops ??= new List<TransportStopData>()).Add(stop);
+				}
+			}
+
+			return stops;
+		}
+
+		/// <summary>A network's auxiliary networks, and theirs in turn, as each one's cost for a
+		/// cell and the share of it the owner pays.</summary>
+		/// <remarks>PlaceableNetCostBinder's walk: each one is scaled by (1000 - 2z) / 1000 of its
+		/// offset along the owner. The depth is capped only so a cycle cannot recurse forever.</remarks>
+		private void CollectAuxiliaryNetCosts(Entity net, float share, ref List<(float Cost, float Share)>? into, int depth)
+		{
+			if (depth > 8 || !EntityManager.TryGetBuffer<AuxiliaryNet>(net, true, out var auxiliaryNets))
+			{
+				return;
+			}
+
+			for (var i = 0; i < auxiliaryNets.Length; i++)
+			{
+				var auxiliary = auxiliaryNets[i];
+				var auxiliaryShare = share * ((1000f - auxiliary.m_Position.z * 2f) / 1000f);
+
+				if (EntityManager.TryGetComponent<PlaceableNetData>(auxiliary.m_Prefab, out var auxiliaryData))
+				{
+					(into ??= new List<(float Cost, float Share)>()).Add((auxiliaryData.m_DefaultConstructionCost, auxiliaryShare));
+				}
+
+				CollectAuxiliaryNetCosts(auxiliary.m_Prefab, auxiliaryShare, ref into, depth + 1);
+			}
+		}
 
 		/// <summary>What this building does for the city, phrased for a hover card.</summary>
 		/// <remarks>Both buffers the game applies, with vanilla's own arithmetic in
