@@ -297,9 +297,12 @@ An entry's figures and facts (cost, upkeep, capacity, and the service figures a 
 a mapping from the components its prefab carries. `.Facts.cs` reads them into a `PrefabSnapshot`:
 each component, or null when the prefab has none, plus the few inputs that live elsewhere. Those
 are a road's three flags from its authoring prefab, the two upkeep buffers, an extractor's map
-feature, and a zone's lots. `PrefabFacts.Apply` in `Domain/` maps the snapshot onto the entry and
-never touches the entity world. So a test builds a snapshot by hand and checks what the entry
-gets, and `UI/test/factCoverage.test.ts` reads that file for every key it can emit.
+feature, a zone's lots, and what a prefab's sub-nets, sub-objects and auxiliary networks add: a
+transformer's connections, a power plant's power lines, a building's stops and a network's extra
+cost. The pollution thresholds are settings rather than a fact about any prefab, so a pass reads
+them once and hands them to every snapshot. `PrefabFacts.Apply` in `Domain/` maps the snapshot
+onto the entry and never touches the entity world. So a test builds a snapshot by hand and checks
+what the entry gets, and `UI/test/factCoverage.test.ts` reads that file for every key it can emit.
 
 Where the game's own tooltip shows a figure, `Apply` follows its binder in
 `PrefabUISystem.BuildDefaultPropertyBinders`. Three rules decide more than one line:
