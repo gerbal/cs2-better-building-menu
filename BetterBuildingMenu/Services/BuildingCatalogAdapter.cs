@@ -630,6 +630,8 @@ namespace BetterBuildingMenu.Services
 			return source.Index.GetByPrefabName(prefabName) is { } found ? Project(found, source, scoped: false) : null;
 		}
 
+		/// <remarks>The tab is looked up in the entry's own menu. In one menu's view that is the viewed
+		/// menu for every entry but the networks the Roads menu gathers, whose tab Reframe resets.</remarks>
 		/// <param name="scoped">Whether the view is one menu's, where its strip orders the headings.</param>
 		private BuildingCatalogEntry Project(PrefabIndex prefab, CatalogSource source, bool scoped)
 		{

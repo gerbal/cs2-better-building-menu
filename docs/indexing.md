@@ -188,7 +188,9 @@ toolbar group holds goes last. The UI keeps the menus in that order. It sorts th
 the same priority and stably, which leaves them as they are. The All tab's category headings
 follow the strip too: in one menu's view the adapter gives each entry its tab's priority and place
 in the strip (`VanillaMenuIndex.TabOf`). So a priority tie breaks as the strip breaks it, before
-the name, and every entry of one tab ranks alike, a moved asset included.
+the name, and every entry of one tab ranks alike, a moved asset included. A category the strip
+draws no tab for keeps each asset's own group priority, so there a moved asset can still split
+the heading.
 
 The walk's tables, with the menus and their category tabs, go into the pass's `VanillaMenuIndex`,
 which its `CatalogIndex` carries as `Menus`: a new pass reads the menus afresh, and nothing
