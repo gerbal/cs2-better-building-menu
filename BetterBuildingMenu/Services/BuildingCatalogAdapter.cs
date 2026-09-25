@@ -667,9 +667,10 @@ namespace BetterBuildingMenu.Services
 				NetworkWidth: prefab.NetworkWidth,
 				LeisureType: prefab.LeisureType ?? string.Empty,
 				LeisureEfficiency: prefab.LeisureEfficiency,
-				// The strip's own priority where it draws the tab, so every entry of one tab
-				// ranks alike whatever its managed group says: a moved asset keeps its old
-				// group there.
+				// The strip's own priority where it draws the tab, so the heading ranks as the
+				// tab does. Elsewhere the index's: that of the category the asset was filed under
+				// when last indexed, the placed one where the game placed it, so a moved asset
+				// ranks with its new siblings under a tab the strip does not draw.
 				UiCategoryPriority: tab?.Priority ?? prefab.UiCategoryPriority,
 				// Only in one menu's view: two menus' strips are not one order.
 				UiCategoryTab: scoped && tab is { } drawn ? drawn.Position : int.MaxValue,

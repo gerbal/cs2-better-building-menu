@@ -31,7 +31,7 @@ namespace BetterBuildingMenu.Tests
 			Dictionary<string, Entity>? menuEntities = null,
 			Dictionary<int, string>? menuNames = null) =>
 			new(
-				placements.ToDictionary(placement => placement.Id, placement => new VanillaMenuPlacement(default, placement.Menu, placement.Category)),
+				placements.ToDictionary(placement => placement.Id, placement => new VanillaMenuPlacement(default, placement.Menu, placement.Category, CategoryPriority: 0)),
 				menuNames ?? new Dictionary<int, string>(),
 				menuEntities ?? new Dictionary<string, Entity>(),
 				(menuOrder ?? System.Array.Empty<string>()).Select(menu => Tab(menu)).ToArray(),
@@ -194,6 +194,126 @@ namespace BetterBuildingMenu.Tests
 			Assert.All(items.Where(item => item.UiCategory == "RoadsCulDeSacs"), item => Assert.Equal(70, item.UiCategoryPriority));
 		}
 
+		/// <summary>A partial pass can place an asset in a category that had no tab at the last full
+		/// pass. The placement brings the category's own priority, so an asset moved there from
+		/// another tab ranks with the category's own assets, and the heading stays whole, in the
+		/// menu's view and in the unscoped one.</summary>
+		[Fact]
+		public void AMovedAssetUnderATabTheStripDoesNotDrawKeepsOneHeading()
+		{
+			var menus = new VanillaMenuIndex(
+				new Dictionary<int, VanillaMenuPlacement>
+				{
+					[1] = new(default, "Roads", "RoadsSmall", CategoryPriority: 10),
+					[2] = new(default, "Roads", "RoadsMedium", CategoryPriority: 20),
+					[3] = new(default, "Roads", "ModRoads", CategoryPriority: 40),
+					[4] = new(default, "Roads", "ModRoads", CategoryPriority: 40),
+				},
+				new Dictionary<int, string>(),
+				new Dictionary<string, Entity>(),
+				new[] { Tab("Roads") },
+				// No ModRoads tab: the strip was read before anything was in it.
+				new Dictionary<string, List<VanillaMenuCategory>> { ["Roads"] = new() { Tab("RoadsSmall", 10), Tab("RoadsMedium", 20) } });
+
+			// As AddPrefab files an asset: its managed group, overridden by where the game places it.
+			PrefabIndex Filed(int id, string groupCategory, int groupPriority)
+			{
+				var entry = TestPrefabs.Entry(id, PrefabCategory.Networks, PrefabSubCategory.Networks_Roads);
+				var placed = menus.Placements[id];
+				(entry.UiCategoryName, entry.UiMenuName, entry.UiCategoryPriority) = MenuPlacementOverride.Resolve(
+					groupCategory, "Roads", groupPriority, placed.Category, placed.Menu, placed.CategoryPriority);
+				return entry;
+			}
+
+			var index = ReadyIndex(
+				menus,
+				Filed(1, "RoadsSmall", 10),
+				Filed(2, "RoadsMedium", 20),
+				Filed(3, "ModRoads", 40),
+				// Moved from RoadsSmall: its managed group still says 10.
+				Filed(4, "RoadsSmall", 10));
+
+			var scoped = Grouped(index, "Roads");
+
+			Assert.Equal(
+				new[] { "RoadsSmall", "RoadsMedium", "ModRoads", "ModRoads" },
+				scoped.Select(item => item.UiCategory));
+
+			foreach (var view in new[] { scoped, Grouped(index, string.Empty) })
+			{
+				Assert.Single(view
+					.Where(item => item.UiCategory == "ModRoads")
+					.Select(item => BuildingCatalogGrouping.PrimaryKey(item, BuildingCatalogGrouping.MenuCategory))
+					.Distinct());
+			}
+		}
+
+		/// <summary>A partial pass files every entry the game places under its placement now, re-read
+		/// or not, and leaves an entry it no longer places as it was.</summary>
+		[Fact]
+		public void APartialPassFilesEveryPlacedEntryUnderItsPlacementNow()
+		{
+			var index = ReadyIndex(
+				Menus(new[] { (1, "Roads", "Pathways"), (2, "Roads", "Pathways") }),
+				PlacedIn(1, "Roads", "Pathways", 66),
+				PlacedIn(2, "Roads", "Pathways", 66));
+
+			index.RefreshPlacements(new Dictionary<int, VanillaMenuPlacement>
+			{
+				[1] = new(default, "Terraforming", "Pathways", CategoryPriority: 30),
+			});
+
+			var moved = index.Get(1);
+			var dropped = index.Get(2);
+			Assert.NotNull(moved);
+			Assert.NotNull(dropped);
+			Assert.Equal(("Pathways", "Terraforming", 30), (moved.UiCategoryName, moved.UiMenuName, moved.UiCategoryPriority));
+			Assert.Equal(("Pathways", "Roads", 66), (dropped.UiCategoryName, dropped.UiMenuName, dropped.UiCategoryPriority));
+		}
+
+		/// <summary>Asset UI Manager moves a whole category to another menu, at a new priority, and
+		/// marks nothing changed, so a partial pass re-reads only the prefabs something else touched.
+		/// The category must still be one heading in its new menu.</summary>
+		[Fact]
+		public void ACategoryAModMovesStaysOneHeadingWhenAPartialPassRereadsPartOfIt()
+		{
+			var index = ReadyIndex(
+				Menus(
+					new[] { (1, "Roads", "Pathways"), (2, "Roads", "Pathways"), (3, "Terraforming", "TerraformingTools") },
+					new()
+					{
+						["Roads"] = new() { Tab("RoadsSmall", 10), Tab("Pathways", 66) },
+						["Terraforming"] = new() { Tab("TerraformingTools", 10) },
+					},
+					menuOrder: new[] { "Roads", "Terraforming" }),
+				PlacedIn(1, "Roads", "Pathways", 66),
+				PlacedIn(2, "Roads", "Pathways", 66),
+				PlacedIn(3, "Terraforming", "TerraformingTools", 10));
+
+			index.RefreshPlacements(new Dictionary<int, VanillaMenuPlacement>
+			{
+				[1] = new(default, "Terraforming", "Pathways", CategoryPriority: 30),
+				[2] = new(default, "Terraforming", "Pathways", CategoryPriority: 30),
+				[3] = new(default, "Terraforming", "TerraformingTools", CategoryPriority: 10),
+			});
+
+			// The pass re-read the first pathway for some other reason, and AddPrefab filed it from
+			// its managed group and its placement.
+			var reread = index.Get(1);
+			Assert.NotNull(reread);
+			var placed = index.Menus.Placements[1];
+			(reread.UiCategoryName, reread.UiMenuName, reread.UiCategoryPriority) = MenuPlacementOverride.Resolve(
+				"Pathways", "Roads", 66, placed.Category, placed.Menu, placed.CategoryPriority);
+
+			var items = Grouped(index, "Terraforming");
+
+			Assert.Equal(new[] { "TerraformingTools", "Pathways", "Pathways" }, items.Select(item => item.UiCategory));
+			Assert.Single(items
+				.Where(item => item.UiCategory == "Pathways")
+				.Select(item => BuildingCatalogGrouping.PrimaryKey(item, BuildingCatalogGrouping.MenuCategory))
+				.Distinct());
+		}
+
 		[Fact]
 		public void EachMenusHeadingsFollowItsOwnStrip()
 		{
@@ -253,7 +373,7 @@ namespace BetterBuildingMenu.Tests
 
 			var refreshed = menus.WithPlacements(new Dictionary<int, VanillaMenuPlacement>
 			{
-				[2] = new(default, "Roads", "RoadsMedium"),
+				[2] = new(default, "Roads", "RoadsMedium", CategoryPriority: 0),
 			});
 
 			Assert.True(refreshed.IsPlacedIn(2, "Roads"));
@@ -284,7 +404,7 @@ namespace BetterBuildingMenu.Tests
 
 			index.RefreshPlacements(new Dictionary<int, VanillaMenuPlacement>
 			{
-				[22] = new(default, "Landscaping", "Terraforming"),
+				[22] = new(default, "Landscaping", "Terraforming", CategoryPriority: 0),
 			});
 
 			Assert.True(BuildingCatalogAdapter.MenuHasAssets(index, "Landscaping", VanillaToolbarSelection.None));

@@ -113,9 +113,13 @@ when some menu places it, and a prefab only its placement admits (the menu-place
 the blacklist and Find It overrides) leaves the index. A walk that throws keeps the placements it
 replaces.
 
-The menus and their tabs wait for the next full pass, as do the menu and category names on the
-entries a partial pass does not re-read. That matters only when the game regroups without
-recreating the assets. A recreated category is one: `ReplacePrefabSystem` does not move its
+The menus and their tabs wait for the next full pass. The entries do not: `RefreshPlacements`
+files every indexed entry the game places under its placement now, with its category's priority,
+whether or not the pass re-reads the prefab. A mod can regroup without marking anything changed:
+Asset UI Manager moves whole categories between menus, and rewrites their priorities, whenever its
+settings change. Left alone, the entries the pass re-read and the rest would name different menus
+for one category, and its heading would appear twice. The stale tabs matter only when the game
+regroups without recreating the assets. A recreated category is one: `ReplacePrefabSystem` does not move its
 members to the new entity, so it starts empty, and vanilla, which draws no empty category, hides
 the tab and its assets. The walk agrees and places none of them, so the tab counts nothing, and
 the strip and the chip row's category picker, which draw only tabs with something behind them
@@ -215,9 +219,14 @@ toolbar group holds goes last. The UI keeps the menus in that order. It sorts th
 the same priority and stably, which leaves them as they are. The All tab's category headings
 follow the strip too: in one menu's view the adapter gives each entry its tab's priority and place
 in the strip (`VanillaMenuIndex.TabOf`). So a priority tie breaks as the strip breaks it, before
-the name, and every entry of one tab ranks alike, a moved asset included. A category the strip
-draws no tab for keeps each asset's own group priority, so there a moved asset can still split
-the heading.
+the name, and every entry of one tab ranks alike, a moved asset included. The walk also reads
+each category's priority as the strip does (`UIObjectData.m_Priority`), and `AddPrefab`'s
+placement override files a placed asset under that priority rather than its managed group's, and
+a partial pass files every placed entry again (see "Partial passes"). So where the strip draws no
+tab for a placed category, the assets the game places there still share one priority and one
+heading. A placed category has no tab when a menu's tabs fail to read, or after a partial pass:
+it reads the placements again but keeps the last full pass's tabs, so a category that was empty
+then, or has been created or moved into the menu since, has none.
 
 The walk's tables, with the menus and their category tabs, go into the pass's `VanillaMenuIndex`,
 which its `CatalogIndex` carries as `Menus`: a new pass reads the menus afresh, and nothing
@@ -228,7 +237,8 @@ placements (see "Partial passes"). The placements are read by:
 - the zone catalog, which inherits the Zones menu (below);
 - the index itself, which treats placement as an override: the blacklist and Find It checks in
   `BuildIndex`, the menu-placed, terraforming and misc-building processors, and `AddPrefab`'s
-  placement override, which takes the menu and category the entity world gives;
+  placement override, which takes the menu, category and category priority the entity world
+  gives;
 - the adapter, which scopes a menu's view by them and gathers networks into Roads only when some
   menu places them.
 
