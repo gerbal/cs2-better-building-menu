@@ -17,10 +17,22 @@ the detail behind the structural items.
   against. A native speaker's pass is still worth having, through pull
   requests or `crowdin.yml` connected to a project (with a
   `languages_mapping`, since Crowdin's Chinese codes are `zh-CN` and `zh-TW`).
-  Some English reaches the player through no key at all: the UI register's
-  unplumbed strings (`localizableStrings.ts`), most group headings built in
-  C# (Other, Stations, density tiers, cost bands, role names), and a
-  resource's name in an unlock requirement and a zone's traded goods.
+  Some English reaches the player through no key at all:
+  - the sort picker's names (`buildingLensSortPresentation.ts`), drawn under
+    the translated "Sort by";
+  - the compact table's column headers ("Upk", "Wkr", "Lvl", "Park", "Cap"
+    in `buildingLensLayout.ts`) and the lot column's "Lot dimensions" title;
+  - the UI register's unplumbed strings (`localizableStrings.ts`); twelve of
+    the keys it marks plumbed are read by nothing (GroupedBy, SortedBy,
+    SortByOption, the sort directions and the Zone fragments);
+  - most group headings built in C# (Other, Stations, density tiers, cost
+    bands, role names);
+  - a resource's name in an unlock requirement and a zone's traded goods,
+    which could take the game's `Resources.TITLE[…]`.
+
+  And the units after a number ("households", "jobs", "bays") have one form
+  per language, so in Polish, Russian and Ukrainian, which inflect by count,
+  they read wrong for some counts. Fixing that needs plural forms in the code.
 - **The density-tier keys.** `ZoneLow` through `ZoneSignature` are kept because
   `GameLocaleKeyTests` requires them, but nothing reads them: the density
   headings come from `BuildingCatalogLabels.DensityTier`, which returns English

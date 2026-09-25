@@ -204,7 +204,7 @@
   "Tooltip.LABEL[BetterBuildingMenu.MaintenancePool]": "Maintenance",
   "Tooltip.LABEL[BetterBuildingMenu.StormCapacity]": "Eaux pluviales",
   "Tooltip.LABEL[BetterBuildingMenu.ElevatedWidth]": "Largeur surélevée",
-  "Tooltip.LABEL[BetterBuildingMenu.ZoneSpace]": "Surface habitable",
+  "Tooltip.LABEL[BetterBuildingMenu.ZoneSpace]": "Surface de plancher",
   "Tooltip.LABEL[BetterBuildingMenu.ZoneFireHazard]": "Risque d'incendie",
   "Tooltip.LABEL[BetterBuildingMenu.TrackType]": "Voie",
   "Tooltip.LABEL[BetterBuildingMenu.TransportType]": "Transport",

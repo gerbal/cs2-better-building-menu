@@ -2117,6 +2117,18 @@ the language's existing translations to match. The game's own locale was not
 available to match its terms against, so a term can differ from the game's.
 Placeholders were checked to survive in every string.
 
+An adversarial review then read every new string against the code that shows
+it. From it:
+- The table's narrow headers, Parking (44–52 rem), Workers (48–62) and Level
+  (38–46), took shorter words where the draft ran far past the English
+  ("Estacionamento" to "Estac.", "Arbeitskräfte" to "Personal").
+- A zone's floor space is shown on every zone, not only homes, so it no longer
+  reads as living space in German, French, Italian, Russian, Ukrainian and
+  Chinese.
+- Italian names a park's maintenance "Cura del parco", apart from upkeep.
+- Simplified Chinese's Options group "Behavior" read "search settings", and
+  its Trees read "landscape"; both older strings are corrected.
+
 The strings kept English on purpose: the product name, "{0} × {1}", and loan
 words a language uses as they are (French "Parking", Italian "Hi-tech", Polish
 "Transport", "UI / UX").
