@@ -2,7 +2,7 @@ import { useValue } from "cs2/api";
 import { Tooltip } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import { getNumberSeparators } from "domain/buildingLensMetricFormat";
 import type { TileTooltipLine } from "domain/buildingTileTooltip";
@@ -10,6 +10,7 @@ import { hoverCardLabels, hoverCardTiers, type HoverCardLineContext } from "doma
 import { clampAssetDescription, leisureLabel, resolveAssetDescription } from "domain/buildingLensRowDetails";
 import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
 import { useUnitSystem } from "domain/unitSettings";
+import { overflowsBox } from "domain/measuredFit";
 import styles from "./buildingHoverCard.module.scss";
 import { BuildingLensMilestones$ } from "mods/bindings";
 
@@ -54,6 +55,76 @@ export const useHoverCardContext = (): HoverCardContext => {
 };
 
 /**
+ * One label/value pair. Half the card, unless it needs the whole row: a list of
+ * values is a stack, and pairing it with a neighbour would put a one-line
+ * figure beside a three-line block; and a label never wraps, so one too long
+ * for its half, as a translated label can be, would run into its neighbour.
+ * That second case is measured from what was drawn, since the width a label
+ * takes depends on the language, the font and the card.
+ */
+const CardLine = ({ line }: { line: TileTooltipLine }) => {
+  const lineRef = useRef<HTMLDivElement>(null);
+  const [overflowed, setOverflowed] = useState(false);
+  const stacked = !!line.values && line.values.length > 0;
+  // New words are measured afresh.
+  useEffect(() => {
+    setOverflowed(false);
+  }, [line.label, line.value]);
+
+  useEffect(() => {
+    const element = lineRef.current;
+    if (!element || stacked || overflowed) return;
+    const measure = () => {
+      if (overflowsBox(element)) setOverflowed(true);
+    };
+    // Never in the tick of the render: Cohtml reports the PREVIOUS text's
+    // scrollWidth for a line whose text just changed, and 0 for one it has not
+    // laid out. Every read waits two frames, the observer's included.
+    let outer = 0;
+    let inner = 0;
+    const scheduleMeasure = () => {
+      cancelAnimationFrame(outer);
+      cancelAnimationFrame(inner);
+      outer = requestAnimationFrame(() => {
+        inner = requestAnimationFrame(measure);
+      });
+    };
+    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(scheduleMeasure) : null;
+    observer?.observe(element);
+    scheduleMeasure();
+    return () => {
+      observer?.disconnect();
+      cancelAnimationFrame(outer);
+      cancelAnimationFrame(inner);
+    };
+  }, [line.label, line.value, stacked, overflowed]);
+
+  return (
+    <div
+      ref={lineRef}
+      data-line={line.key}
+      className={classNames(
+        styles.cardLine,
+        (stacked || overflowed) && styles.cardLineWide,
+        line.tone === "warn" && styles.cardWarn,
+        line.tone === "good" && styles.cardGood,
+      )}
+    >
+      <span className={styles.cardLabel}>{line.label}</span>
+      {line.values
+        ? (
+          <span className={classNames(styles.cardValue, styles.cardValueList)}>
+            {line.values.map((entryValue) => (
+              <span key={entryValue} className={styles.cardValueLine}>{entryValue}</span>
+            ))}
+          </span>
+        )
+        : <span className={styles.cardValue}>{line.value}</span>}
+    </div>
+  );
+};
+
+/**
  * One card body, shared by every view mode, rendered only when the tooltip is
  * shown. Its own component ON PURPOSE: React does not invoke the function until
  * then, so the lines are worked out on hover, not once per tile.
@@ -73,39 +144,14 @@ const HoverCardContent = ({
   const footprints = entry.footprints ?? [];
   const footprintOverflow = entry.footprintOverflow ?? 0;
 
-  const renderLine = (line: TileTooltipLine) => (
-    <div
-      key={line.key}
-      data-line={line.key}
-      className={classNames(
-        styles.cardLine,
-        // A list of values is a stack; pairing it with a neighbour would
-        // put a one-line figure beside a three-line block.
-        line.values && line.values.length > 0 && styles.cardLineWide,
-        line.tone === "warn" && styles.cardWarn,
-        line.tone === "good" && styles.cardGood,
-      )}
-    >
-      <span className={styles.cardLabel}>{line.label}</span>
-      {line.values
-        ? (
-          <span className={classNames(styles.cardValue, styles.cardValueList)}>
-            {line.values.map((entryValue) => (
-              <span key={entryValue} className={styles.cardValueLine}>{entryValue}</span>
-            ))}
-          </span>
-        )
-        : <span className={styles.cardValue}>{line.value}</span>}
-    </div>
-  );
+  const renderLine = (line: TileTooltipLine) => <CardLine key={line.key} line={line} />;
 
   return (
     <div className={styles.card}>
       <div className={styles.cardName}>{label}</div>
       {description && <div className={styles.cardDescription}>{description}</div>}
       {/* Two across where they fit, so short figures do not each take a whole
-          row. Paired by the flow rather than by a column count, so a long line
-          still gets a row to itself. */}
+          row. A line too long for its half gets a row to itself: see CardLine. */}
       {/* With the game's tier empty, ours IS the card: normal weight, no
           divider, so it does not read as an afterthought. With both empty
           there is no block at all — a frame around nothing promises detail. */}

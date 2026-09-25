@@ -138,8 +138,9 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
   // The one consumption coefficient the game reads: PropertyRenterSystem's
   // GetUpkeep is level^exp × this × lotSize, so at level 1 it is money per cell
   // per month. Its unread neighbours are not facts and get no presentation.
+  // Ours: the renters pay it, where the game's UPKEEP is what the city pays.
   zoneUpkeep: {
-    localizationKey: "Properties.UPKEEP",
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Upkeep]",
     fallback: "Upkeep",
     unit: "",
     measure: "moneyPerCellPerMonth",
