@@ -214,7 +214,7 @@ namespace BetterBuildingMenu.Systems
 				return null;
 			}
 
-			var entities = query.ToEntityArray(Allocator.Temp);
+			using var entities = query.ToEntityArray(Allocator.Temp);
 
 			if (!_prefabSystem.TryGetPrefab<UIPollutionConfigurationPrefab>(entities[0], out var config)
 				|| config.m_GroundPollution is not { } ground

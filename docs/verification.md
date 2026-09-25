@@ -2033,12 +2033,17 @@ Each line the audit above found missing, transcribed from its binder in
 
 Deliberately not matched:
 
-- The labels are ours, so a translation can ship with the mod. The values use
-  the game's keys where its code names them (`Properties.VOLTAGE:0` and `:1`,
-  `Properties.WATER_PIPE_TYPE[…]`). "Low and high" asks for
-  `Properties.VOLTAGE:2`, which follows the binder's numbering but is not
-  confirmed, and falls back to English. The pollution level words are ours: the
-  game words them in its UI files, which the refs do not hold.
+- The words are the game's own, which it translates into its twelve languages,
+  wherever it has them: `Properties.VOLTAGE:0` to `:2`,
+  `Properties.WATER_PIPE_TYPE[…]`, `Properties.TRANSFORMER_CAPACITY`,
+  `_INPUT` and `_OUTPUT`, `Properties.TRANSPORT_STOP_COUNT[…]`,
+  `SelectedInfoPanel.POLLUTION_LEVELS_GROUND`, `_AIR` and `_NOISE` and
+  `SelectedInfoPanel.POLLUTION_LEVELS:1` to `:3`. They are in the game's
+  `Locale.cok`, checked in game; the refs hold only its assemblies. Two labels
+  are ours: "Voltage", and "Water pipes", where the game's "Pipes" would sit
+  beside a road's own "Carries" line.
+- A network whose own cost for a cell rounds to nothing still shows a cost line;
+  vanilla leaves it off. The same rounding choice as below.
 - A network's cost is rounded once, per kilometre, with each auxiliary
   network's share added first. Vanilla rounds the network's own cost for a cell
   before multiplying by 125 and truncates each share on its own, so a cell cost
