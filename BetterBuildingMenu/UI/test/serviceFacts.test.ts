@@ -6,6 +6,7 @@ import {
   renderServiceTextFacts,
   orderFacts,
   isVanillaFact,
+  VANILLA_FACT_KEYS,
 } from "../src/domain/serviceFacts.ts";
 
 const noTranslation = () => null;
@@ -50,10 +51,10 @@ describe("renderServiceFacts", () => {
   it("prefers the game's translation over the fallback", () => {
     const [fact] = renderServiceFacts(
       [{ key: "attractiveness", value: 40 }],
-      (key) => (key === "Tooltip.LABEL[BetterBuildingMenu.Attractiveness]" ? "Anziehungskraft" : null),
+      (key) => (key === "Properties.ATTRACTIVENESS" ? "Attraktivität" : null),
     );
 
-    assert.equal(fact.label, "Anziehungskraft");
+    assert.equal(fact.label, "Attraktivität");
   });
 
   it("says nothing for a building with no service figures", () => {
@@ -68,7 +69,7 @@ describe("renderServiceFacts", () => {
     // in the game's own namespaces is the game's to translate.
     assert.ok(SERVICE_FACT_LOCALIZATION_KEYS.length > 0);
     for (const key of SERVICE_FACT_LOCALIZATION_KEYS) {
-      assert.match(key, /^(Tooltip\.LABEL\[BetterBuildingMenu\.[A-Za-z]+\]|Properties\.[A-Z_]+(\[[A-Za-z]+\])?)$/);
+      assert.match(key, /^(Tooltip\.LABEL\[BetterBuildingMenu\.[A-Za-z]+\]|(Properties|SelectedInfoPanel)\.[A-Z_]+(\[[A-Za-z]+\])?)$/);
     }
   });
 });
@@ -136,7 +137,7 @@ describe("cargo capacity", () => {
   // with the weight unit; a cargo harbour's warehouses add to it.
   it("is a weight, labelled with the game's own words, placed with the capacities", () => {
     const translate = (key: string, fallback: string | null) =>
-      key === "Tooltip.LABEL[BetterBuildingMenu.CargoCapacity]" ? "Cargo Capacity" : fallback;
+      key === "Properties.CARGO_CAPACITY" ? "Cargo Capacity" : fallback;
     const [line] = renderServiceFacts(
       [{ key: "cargoCapacity", value: 500000 }],
       translate,
@@ -333,6 +334,31 @@ describe("which figures are vanilla's own", () => {
       "busStops", "subwayStops", "groundPollutionLevel", "noisePollutionLevel"]) {
       assert.equal(isVanillaFact(key), true, key);
     }
+  });
+
+  it("labels each of the game's lines with the game's own key", () => {
+    // Vanilla's words in every language it ships. The binder each key comes from
+    // is in PrefabUISystem; a fact that stands for several binders' lines keeps ours.
+    const oursByDesign = new Set(["helicopters", "purification", "voltage", "pipeType"]);
+    const labelKey = (key: string) => {
+      const ask = (asked: string) => `key:${asked}`;
+      const [line] = [...renderServiceFacts([{ key, value: 1 }], ask), ...renderServiceTextFacts([{ key, value: "Ore" }], ask)];
+      return line.label.slice("key:".length);
+    };
+
+    for (const key of VANILLA_FACT_KEYS) {
+      const asked = labelKey(key);
+      if (oursByDesign.has(key)) {
+        assert.match(asked, /^Tooltip\.LABEL\[BetterBuildingMenu\./, key);
+      } else {
+        assert.match(asked, /^(Properties|SelectedInfoPanel)\./, key);
+      }
+    }
+
+    assert.equal(labelKey("processingRate"), "Properties.DECEASED_PROCESSING_CAPACITY");
+    assert.equal(labelKey("depotVehicles"), "Properties.TRANSPORT_VEHICLE_COUNT");
+    assert.equal(labelKey("waterSource"), "Properties.REQUIRED_RESOURCE");
+    assert.equal(labelKey("noisePollutionModifier"), "SelectedInfoPanel.POLLUTION_LEVELS_NOISE");
   });
 
   it("leaves ours as ours", () => {
