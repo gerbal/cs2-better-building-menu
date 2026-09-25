@@ -60,6 +60,9 @@
 .cardLineWide {
   flex: 1 1 100%;
   min-width: 100%;
+  // Lifts .cardLine's half: Cohtml wraps by the basis clamped to max-width, so a
+  // line still capped at 50% stayed beside its neighbour and ran off the card.
+  max-width: 100%;
   padding-right: 0;
 
   // With the row to itself, a value longer still wraps rather than leave the card.

@@ -78,6 +78,9 @@ describe("Building Lens stylesheet contracts", () => {
     assert.equal(card(".cardLines")["flex-wrap"], "wrap");
     assert.equal(card(".cardLine").flex, "0 0 50%");
     assert.equal(card(".cardLineWide")["min-width"], "100%");
+    // Cohtml wraps by the flex basis clamped to max-width, so the half's cap has
+    // to be lifted too, or the wide line stays beside its neighbour.
+    assert.equal(card(".cardLineWide")["max-width"], "100%");
     // A value keeps its width in a half, so a pair too long for it overflows the
     // line where CardLine can measure it; Cohtml squeezed a shrinkable value to
     // a sliver instead, and drew its text over the label. With the row to
