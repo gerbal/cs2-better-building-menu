@@ -224,5 +224,6 @@
   "Tooltip.LABEL[BetterBuildingMenu.SchoolElementary]": "Elementary School",
   "Tooltip.LABEL[BetterBuildingMenu.SchoolHigh]": "High School",
   "Tooltip.LABEL[BetterBuildingMenu.SchoolCollege]": "College",
-  "Tooltip.LABEL[BetterBuildingMenu.SchoolUniversity]": "University"
+  "Tooltip.LABEL[BetterBuildingMenu.SchoolUniversity]": "University",
+  "Tooltip.LABEL[BetterBuildingMenu.ReverseSortButton]": "Reverse sort"
 }
