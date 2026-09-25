@@ -851,13 +851,6 @@ namespace BetterBuildingMenu.Systems
 			// names its menu. Two managed references, no ECS lookup.
 			prefabIndex.UiCategoryName = uIObject?.m_Group?.name;
 			prefabIndex.UiMenuName = (uIObject?.m_Group as UIAssetCategoryPrefab)?.m_Menu?.name;
-			// The entity world's placement wins: mods that regroup the menu at
-			// runtime edit it there and leave the managed group on the stock tab.
-			if (target.Menus.Placements.TryGetValue(entity.Index, out var placed))
-			{
-				(prefabIndex.UiCategoryName, prefabIndex.UiMenuName) = MenuPlacementOverride.Resolve(
-					prefabIndex.UiCategoryName, prefabIndex.UiMenuName, placed.Category, placed.Menu);
-			}
 			// The category's own priority, so a group of assets can be ordered the
 			// way the tab strip above it is. Guarded on UIAssetCategoryPrefab rather
 			// than on m_Group: a menu's priority ranks menus, a different space.
@@ -866,6 +859,14 @@ namespace BetterBuildingMenu.Systems
 				&& category.TryGet<UIObject>(out var categoryUi)
 					? categoryUi.m_Priority
 					: 0;
+			// The entity world's placement wins: mods that regroup the menu at
+			// runtime edit it there and leave the managed group on the stock tab.
+			if (target.Menus.Placements.TryGetValue(entity.Index, out var placed))
+			{
+				(prefabIndex.UiCategoryName, prefabIndex.UiMenuName, prefabIndex.UiCategoryPriority) = MenuPlacementOverride.Resolve(
+					prefabIndex.UiCategoryName, prefabIndex.UiMenuName, prefabIndex.UiCategoryPriority,
+					placed.Category, placed.Menu, placed.CategoryPriority);
+			}
 			prefabIndex.IsVanilla = prefab.isBuiltin;
 			// Every category, not only buildings: a parking lot reached through the
 			// Roads menu is a network, and parking is the whole point of one.
