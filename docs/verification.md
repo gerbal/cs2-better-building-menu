@@ -1987,7 +1987,50 @@ Deliberately not matched:
 - Effect numbers are invariant, so a comma-decimal locale reads "1.5" in an
   effect line beside "1,5" elsewhere on the card.
 
-Not drawn yet, though vanilla shows them: pollution levels, transformer
+Not drawn then, though vanilla shows them: pollution levels, transformer
 capacity and voltages, a pipe's water type, transport stop counts, a network's
 auxiliary networks in its cost, and the power-line rule's lighting and layer
-tests.
+tests. All are drawn since; see the next section.
+
+## 2026-09-25 — the tooltip lines the card did not draw (by code reading)
+
+Each line the audit above found missing, transcribed from its binder in
+`PrefabUISystem` (1.6.2f1). Not yet checked in game.
+
+- Pollution levels (`PollutionBinder`): ground, air and noise, each graded
+  against the thresholds in `UIPollutionConfigurationPrefab`. A figure has to
+  pass a threshold to reach its level (`PollutionUIUtils.GetPollutionKey`).
+  Shown once the three figures sum to anything; a level of none is left off.
+- Voltage: a power plant's from its transformer's low side and its own
+  power-line sub-nets (`PowerProductionBinder`), a power line's from its
+  network's layers. Anything but one voltage alone reads "Low and high", no
+  power line at all included, as `ElectricityUIUtils.GetVoltage` words it.
+- Power-line capacity follows `ElectricityConnectionBinder`: a connection that
+  is not street lighting, on a network with a power-line layer. It replaces a
+  rule of ours that left out every road, so a road whose connection passes the
+  binder's test now shows one, as vanilla's tooltip does.
+- Transformers (`TransformerCapacityBinder`, `TransformerInputBinder`,
+  `TransformerOutputBinder`): the smaller of what the low- and high-voltage
+  connections carry, over the sub-nets that start and end on one node; input
+  high, output low. A power plant's own transformer shows only its output.
+- A pipe's water type (`WaterConnectionBinder`): fresh water, sewage or both,
+  for a water or sewage pipe but not a resource pipeline.
+- Transport stops (`TransportStopBinder`): a building's passenger stops,
+  counted by kind. The first stop decides whether there is a line at all, so a
+  building whose first stop carries cargo shows none; a network shows none.
+- Auxiliary networks (`PlaceableNetCostBinder`): a network's cost adds each
+  auxiliary network's, and theirs in turn, scaled by (1000 − 2z) / 1000 of its
+  offset.
+
+Deliberately not matched:
+
+- The labels are ours, so a translation can ship with the mod. The values use
+  the game's keys where its code names them (`Properties.VOLTAGE:0` and `:1`,
+  `Properties.WATER_PIPE_TYPE[…]`). The pollution levels and "Low and high"
+  are ours: the game words them in its UI files, which the refs do not hold.
+- An auxiliary network's share is added before the per-kilometre rounding, as
+  the network's own cost is; vanilla truncates each share on its own.
+- A transformer with no capacity draws no capacity line; vanilla binds a zero.
+- Stops are one line per kind, where vanilla draws one map of them.
+- A network whose sub-objects hold a power plant without one owning the
+  network shows no output or voltage; vanilla sums its sub-objects' output.

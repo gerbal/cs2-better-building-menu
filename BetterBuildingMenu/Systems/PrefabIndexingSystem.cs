@@ -66,6 +66,8 @@ namespace BetterBuildingMenu.Systems
 		private List<(int Id, PrefabBase Prefab)> _uniqueCandidates = new();
 		// The count the last rescan logged, so a rescan that found nothing new stays quiet.
 		private int _loggedUniqueCandidateCount = -1;
+		// The thresholds a building's pollution is graded by, read at the start of every pass.
+		private PollutionScale? _pollutionScale;
 #if DEBUG
 		// The assets a pass indexed without an icon, logged as one line when it ends: one line
 		// each came to thousands per full pass, repeated on every language change.
@@ -623,6 +625,7 @@ namespace BetterBuildingMenu.Systems
 			// Assigned in both branches, so nothing in a full pass's prologue can reach
 			// the published index through it before the new one exists.
 			CatalogIndex target;
+			_pollutionScale = ReadPollutionScale();
 
 			if (full)
 			{

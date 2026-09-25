@@ -241,6 +241,22 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     unit: "m³",
     measure: "volume",
   },
+  // Properties.TRANSFORMER_CAPACITY: the smaller of what its two sides carry,
+  // in the power unit, as a power line's capacity is.
+  transformerCapacity: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.TransformerCapacity]",
+    fallback: "Transformer capacity",
+    unit: "MW",
+    measure: "power",
+  },
+  // TransportStopBinder's counts: a building's passenger stops, one line per kind.
+  airplaneStops: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.AirplaneStops]", fallback: "Airplane stops", unit: "" },
+  helicopterStops: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.HelicopterStops]", fallback: "Helicopter stops", unit: "" },
+  shipStops: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ShipStops]", fallback: "Ship stops", unit: "" },
+  subwayStops: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.SubwayStops]", fallback: "Subway stops", unit: "" },
+  tramStops: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.TramStops]", fallback: "Tram stops", unit: "" },
+  trainStops: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.TrainStops]", fallback: "Train stops", unit: "" },
+  busStops: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.BusStops]", fallback: "Bus stops", unit: "" },
   // Properties.GARBAGE_STORAGE, for a building whose Capacity line is another
   // role's figure.
   garbageStorage: {
@@ -399,6 +415,18 @@ interface ServiceTextPresentation {
   omit?: readonly string[];
 }
 
+const VOLTAGE_WORDS = {
+  Low: { localizationKey: "Properties.VOLTAGE:0", fallback: "Low" },
+  High: { localizationKey: "Properties.VOLTAGE:1", fallback: "High" },
+  Both: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.VoltageBoth]", fallback: "Low and high" },
+};
+
+const POLLUTION_WORDS = {
+  Low: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PollutionLow]", fallback: "Low" },
+  Medium: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PollutionMedium]", fallback: "Medium" },
+  High: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PollutionHigh]", fallback: "High" },
+};
+
 const TEXT_PRESENTATION: Readonly<Record<string, ServiceTextPresentation>> = {
   // RequiredResourceBinder: the map feature an extractor's product needs,
   // worded with the game's own Properties.MAP_RESOURCE[<feature>] strings.
@@ -457,9 +485,52 @@ const TEXT_PRESENTATION: Readonly<Record<string, ServiceTextPresentation>> = {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.TransportType]",
     fallback: "Transport",
   },
+  // ElectricityUIUtils.GetVoltage's three answers, in the game's own words where
+  // it has them: its transformer lines name Properties.VOLTAGE:0 and :1.
   voltage: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Voltage]",
     fallback: "Voltage",
+    values: VOLTAGE_WORDS,
+  },
+  transformerInput: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.TransformerInput]",
+    fallback: "Input",
+    values: VOLTAGE_WORDS,
+  },
+  transformerOutput: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.TransformerOutput]",
+    fallback: "Output",
+    values: VOLTAGE_WORDS,
+  },
+  // WaterConnectionBinder's Properties.WATER_PIPE_TYPE words.
+  pipeType: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PipeType]",
+    fallback: "Carries",
+    values: {
+      Fresh: { localizationKey: "Properties.WATER_PIPE_TYPE[Fresh]", fallback: "Fresh water" },
+      Sewage: { localizationKey: "Properties.WATER_PIPE_TYPE[Sewage]", fallback: "Sewage" },
+      Combined: { localizationKey: "Properties.WATER_PIPE_TYPE[Combined]", fallback: "Fresh water and sewage" },
+    },
+  },
+  // PollutionBinder's levels. It sends a level of none too, and a line saying so
+  // is noise beside the ones that are not.
+  groundPollutionLevel: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.GroundPollutionLevel]",
+    fallback: "Ground pollution",
+    values: POLLUTION_WORDS,
+    omit: ["None"],
+  },
+  airPollutionLevel: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.AirPollutionLevel]",
+    fallback: "Air pollution",
+    values: POLLUTION_WORDS,
+    omit: ["None"],
+  },
+  noisePollutionLevel: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.NoisePollutionLevel]",
+    fallback: "Noise pollution",
+    values: POLLUTION_WORDS,
+    omit: ["None"],
   },
   // RequiredResourceBinder's wording — Properties.MAP_RESOURCE[GroundWater] /
   // [SurfaceWater] — and its silence: a water tower allows no type at all.
@@ -559,8 +630,13 @@ export const VANILLA_FACT_KEYS: ReadonlySet<string> = new Set([
   // vehicle counts
   "collectionTrucks", "postVans", "postTrucks", "ambulances", "hearses", "prisonVans",
   "depotVehicles", "maintenanceVehicles", "helicopters", "shelterVehicles",
-  // electricity
+  // electricity and water
   "batteryOutput", "electricityCapacity", "voltage", "powerOutput",
+  "transformerCapacity", "transformerInput", "transformerOutput", "pipeType",
+  // stops
+  "airplaneStops", "helicopterStops", "shipStops", "subwayStops", "tramStops", "trainStops", "busStops",
+  // pollution
+  "groundPollutionLevel", "airPollutionLevel", "noisePollutionLevel",
   // quality and modifiers
   "comfort", "attractiveness", "groundPollutionModifier", "airPollutionModifier", "noisePollutionModifier", "resourceConsumption",
   // mail
@@ -598,17 +674,22 @@ export const FACT_ORDER: readonly string[] = [
   "depotVehicles", "maintenanceVehicles",
   "helicopters", "disasterResponse", "shelterVehicles",
   "powerOutput", "garbageStorage",
-  "batteryOutput", "electricityCapacity", "stormCapacity", "cargoCapacity", "mailboxCapacity",
-  "purification", "waterSource", "maintenancePool", "comfort",
+  "batteryOutput", "electricityCapacity", "voltage",
+  "transformerCapacity", "transformerInput", "transformerOutput",
+  "pipeType", "stormCapacity", "cargoCapacity", "mailboxCapacity",
+  "purification", "waterSource", "maintenancePool",
+  "airplaneStops", "helicopterStops", "shipStops", "subwayStops", "tramStops", "trainStops", "busStops",
+  "comfort",
   "transportType", "trackType",
   // 2. How well.
   "graduation", "studentWellbeing", "studentHealth",
   "prisonerWellbeing", "prisonerHealth", "attractiveness",
+  "groundPollutionLevel", "airPollutionLevel", "noisePollutionLevel",
   "groundPollutionModifier", "airPollutionModifier", "noisePollutionModifier", "resourceConsumption",
   // 3. Who runs it.
   "jobComplexity", "minCrew", "workConditions", "eveningShift", "nightShift",
   // 4. Placement, network and zone.
-  "elevatedWidth", "voltage", "roadFeature",
+  "elevatedWidth", "roadFeature",
   "zoneMaxHeight", "zoneHouseholds", "zoneHouseholdsPerCell", "zoneSpace",
   "zoneUpkeep", "zoneFireHazard", "zoneLotShapes",
   "zoneSold", "zoneManufactured", "zoneStored",
