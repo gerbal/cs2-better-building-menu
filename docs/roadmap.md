@@ -11,7 +11,7 @@ the detail behind the structural items.
   another tab or menu, and create, rename, reorder, merge or hide tabs. The
   spec and its adversarial review are in
   [superpowers/specs/](superpowers/specs/), awaiting the owner's review.
-- **Translations.** Every translation lacks 161 of the 222 English keys (the
+- **Translations.** Every translation lacks 162 of the 223 English keys (the
   option labels fall back to English), and `ja-JP`, `pt-BR` and `uk-UA` are
   English throughout. Either connect `crowdin.yml` to a project (with a
   `languages_mapping`, since Crowdin's Chinese codes are `zh-CN` and `zh-TW`)

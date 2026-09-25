@@ -2090,7 +2090,9 @@ A label never wraps, and a line is half the card, so a label too long for its
 half, as the game's German ones can be, ran into its neighbour. A line now
 measures what it drew, two frames after drawing it as the tile names do, and
 takes the whole row when it overflows. A game string's trailing line break
-("Small Roads") is trimmed as C#'s `WordFormat.GameText` trims it.
+("Small Roads") is trimmed as C#'s `WordFormat.GameText` trims it. The
+reverse-sort button has a key of its own: it shared the table header's hint,
+"reverse this sort", and so read in lowercase.
 
 Deliberately not matched:
 
