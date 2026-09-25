@@ -153,4 +153,13 @@ describe("the hover card's labels", () => {
     const withoutGame = hoverCardLabels((key, fallback) => (key === "Toolbar.ASSET_ALREADY_BUILT" ? "" : fallback === "Already built" ? "Bereits gebaut" : fallback));
     assert.equal(withoutGame.alreadyBuilt, "Bereits gebaut");
   });
+
+  it("name cost and upkeep as vanilla's tooltip does, by its own keys", () => {
+    const german: Record<string, string> = { "Properties.CONSTRUCTION_COST": "Baukosten", "Properties.UPKEEP": "Unterhalt" };
+    const labels = hoverCardLabels((key, fallback) => german[key] ?? fallback);
+
+    assert.equal(labels.cost, "Baukosten");
+    assert.equal(labels.upkeep, "Unterhalt");
+    assert.equal(hoverCardLabels(() => null).cost, "Cost");
+  });
 });
