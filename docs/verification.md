@@ -2062,9 +2062,10 @@ binder passes (`PrefabUISystem`, 1.6.2f1), so they read as the game's tooltip
 does in each of its twelve languages. Our English stays as the fallback. Not
 yet checked in game.
 
-- Cost and upkeep: `Properties.CONSTRUCTION_COST` and `Properties.UPKEEP`, on
-  the card only. A zone's upkeep takes `Properties.UPKEEP` too. The table's
-  columns and the range filters keep ours, which are shorter.
+- Cost and upkeep: `Properties.CONSTRUCTION_COST`, or for a network
+  `Common.ASSET_CONSTRUCTION_COST` as `PlaceableNetCostBinder` has it, and
+  `Properties.UPKEEP`, on the card only. The table's columns and the range
+  filters keep ours, which are shorter.
 - The service figures: `DECEASED_PROCESSING_CAPACITY`,
   `GARBAGE_PROCESSING_CAPACITY`, `MAIL_SORTING_RATE`, `CARGO_CAPACITY`,
   `JAIL_CAPACITY`, `GARBAGE_STORAGE`, `MAIL_BOX_CAPACITY`, `ATTRACTIVENESS`,
@@ -2080,10 +2081,16 @@ yet checked in game.
 - An extractor's map resource and a pumping station's water source both take
   `Properties.REQUIRED_RESOURCE`, the one binder behind both.
 
-The English changes with them: "Processing" reads as vanilla's
-deceased-processing line, "Grid capacity" as its power-line capacity, "Draws
-from" as its required resource. A test holds every fact in vanilla's tier to a
-key in the game's namespaces, apart from the four below.
+The English changes with them: the two "Processing" lines read as vanilla's
+deceased- and garbage-processing lines, "Grid capacity" as its power-line
+capacity, "Draws from" as its required resource. A test holds every fact in
+vanilla's tier to its binder's exact key, and every other fact to ours.
+
+A label never wraps, and a line is half the card, so a label too long for its
+half, as the game's German ones can be, ran into its neighbour. A line now
+measures what it drew, two frames after drawing it as the tile names do, and
+takes the whole row when it overflows. A game string's trailing line break
+("Small Roads") is trimmed as C#'s `WordFormat.GameText` trims it.
 
 Deliberately not matched:
 
@@ -2091,6 +2098,11 @@ Deliberately not matched:
   vanilla's lines: `MEDICAL_`, `FIRE_` and `POLICE_HELICOPTER_COUNT`, and
   `WATER_` and `SEWAGE_PURIFICATION_RATE`.
 - "Voltage" and "Water pipes" stay ours, as recorded above.
+- A zone's upkeep stays ours: its renters pay it, where the game's
+  `Properties.UPKEEP` names what the city pays to run a building.
+- An upgrade that carries both a pollution level and a pollution change shows
+  two lines under the same name, as vanilla's does; vanilla tells the change
+  apart with an icon, which the card does not draw.
 - The headline capacity keeps ours: vanilla names it per service
   (`PATIENT_CAPACITY`, `STUDENT_CAPACITY` and so on) and the card draws one
   line with a unit.
