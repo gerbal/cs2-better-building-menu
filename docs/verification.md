@@ -2114,3 +2114,19 @@ Deliberately not matched:
 - The headline capacity keeps ours: vanilla names it per service
   (`PATIENT_CAPACITY`, `STUDENT_CAPACITY` and so on) and the card draws one
   line with a unit.
+
+## 2026-09-25 — the owner's decisions on the card's differences from vanilla (#62)
+
+The seven differences #57 left in place, under "Deliberately not matched" in the 2026-09-24
+section above, are decided:
+
+- **Changed:** a deathcare facility's capacity is a bare count, as vanilla's `DECEASED_STORAGE`
+  binds it with the `integer` unit, where the card said plots: a crematorium's store holds the
+  deceased as a cemetery's does. Post and telecom capacities are bare counts for the same reason.
+- **Kept, as they were:** a telecom facility's capacity keeps its decimal; a network's upkeep
+  rounds the per-kilometre product, what `NetUtils.GetUpkeepCost` charges; upkeep is the
+  budget-free figure; upkeep resources are named with their amounts; and an effect that rounds to
+  nothing draws no line. For upkeep the owner's reason is that the base figure is the more useful
+  reference, where vanilla's moves with the city's budget and prices.
+- **Deferred to the translation work:** effect numbers stay invariant, beside their English labels.
+  The roadmap's Translations entry carries it.

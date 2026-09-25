@@ -373,7 +373,9 @@ export function formatBuildingMetric(
 const ROLE_UNITS: Record<string, string> = {
   School: "students",
   Hospital: "patients",
-  DeathcareFacility: "plots",
+  // A bare count, as vanilla binds DECEASED_STORAGE with the "integer" unit:
+  // a crematorium's store holds the deceased as a cemetery's does, not plots.
+  DeathcareFacility: "",
   PowerPlant: "MW",
   WaterPumpingStation: "m³",
   SewageOutlet: "m³",
