@@ -26,10 +26,10 @@ describe("renderServiceFacts", () => {
     ]);
   });
 
-  it("draws a modifier as a multiplier, not a quantity", () => {
-    // A graduation modifier of 1.15 is a different building from one of 1.5;
+  it("draws a multiplier as a multiplier, not a quantity", () => {
+    // A floor-space multiplier of 1.15 is a different zone from one of 1.5;
     // rounded to whole numbers both would read "×1".
-    const [fact] = renderServiceFacts([{ key: "graduation", value: 1.15 }], noTranslation);
+    const [fact] = renderServiceFacts([{ key: "zoneSpace", value: 1.15 }], noTranslation);
 
     assert.equal(fact.value, "×1.15");
   });
@@ -73,6 +73,13 @@ describe("renderServiceFacts", () => {
 });
 
 describe("renderServiceTextFacts", () => {
+  it("words each map feature with the game's own string", () => {
+    const translate = (key: string, fallback: string | null) => key === "Properties.MAP_RESOURCE[Fish]" ? "Fisch" : fallback;
+    const [line] = renderServiceTextFacts([{ key: "requiredResource", value: "Fish" }], translate);
+
+    assert.equal(line.value, "Fisch");
+  });
+
   it("labels a worded figure the game already named", () => {
     // A traded resource arrives named by the game, so it passes through.
     const rendered = renderServiceTextFacts(
@@ -214,6 +221,42 @@ describe("what vanilla's tooltip shows on upgrades", () => {
     assert.equal(render("resourceConsumption", 15).value, "+15 %");
   });
 
+  it("shows graduation as points added, and happiness offsets with their sign", () => {
+    // The indexer sends the graduation modifier ×100: 0.05 is five points on
+    // the probability, which "×0.05" would read as a 95 % cut.
+    assert.deepEqual(render("graduation", 5), { key: "graduation", label: "Graduation", value: "+5 %" });
+    assert.equal(render("graduation", -10).value, "-10 %");
+    assert.equal(render("studentWellbeing", -5).value, "-5");
+    assert.equal(render("workConditions", -10).value, "-10");
+    // A bonus carries its "+" too, which is what tells an offset from a count.
+    for (const key of ["studentWellbeing", "studentHealth", "prisonerWellbeing", "prisonerHealth", "workConditions"]) {
+      assert.equal(render(key, 3).value, "+3", key);
+    }
+  });
+
+  it("draws a secondary role's figure in its own unit", () => {
+    const measured = { weight: (v: number) => `W(${v})`, power: (v: number) => `P(${v})` };
+    const rendered = renderServiceFacts(
+      [{ key: "garbageStorage", value: 100000 }, { key: "powerOutput", value: 30000 }],
+      noTranslation,
+      String,
+      measured,
+    );
+
+    assert.deepEqual(rendered.map((line) => `${line.label} ${line.value}`), ["Garbage storage W(100000)", "Power output P(30000)"]);
+  });
+
+  it("keeps a decimal on homes per cell", () => {
+    assert.equal(render("zoneHouseholdsPerCell", 1.4).value, "1.4 /cell");
+    assert.equal(render("zoneHouseholdsPerCell", 2).value, "2 /cell");
+    // A fixed count stays whole.
+    assert.equal(render("zoneHouseholds", 1.4).value, "1");
+  });
+
+  it("names a shelter's vehicles as vanilla does", () => {
+    assert.deepEqual(render("shelterVehicles", 4), { key: "shelterVehicles", label: "Evacuation buses", value: "4" });
+  });
+
   it("places vehicles with vehicles and modifiers with how-well", () => {
     const ordered = orderFacts([
       { key: "nightShift" }, { key: "resourceConsumption" }, { key: "hearses" }, { key: "jailCapacity" }, { key: "groundPollutionModifier" }, { key: "collectionTrucks" },
@@ -249,6 +292,14 @@ describe("orderFacts", () => {
     assert.ok(first.indexOf("nightShift") < first.indexOf("xpReward"));
   });
 
+  it("files a secondary role's figure with what the building does", () => {
+    const ordered = orderFacts([
+      { key: "xpReward" }, { key: "powerOutput" }, { key: "graduation" }, { key: "garbageStorage" }, { key: "cargoCapacity" },
+    ]).map((fact) => fact.key);
+
+    assert.deepEqual(ordered, ["powerOutput", "garbageStorage", "cargoCapacity", "graduation", "xpReward"]);
+  });
+
   it("keeps a key it has never heard of, last and in the order given", () => {
     // A new fact must not vanish because nobody added it to the order — it
     // shows up at the end until someone places it deliberately.
@@ -276,7 +327,8 @@ describe("which figures are vanilla's own", () => {
   it("marks the figures the game's tooltip binds", () => {
     for (const key of ["garbageProcessing", "sortingRate", "collectionTrucks", "ambulances", "hearses", "jailCapacity",
       "cargoCapacity", "batteryOutput", "electricityCapacity", "purification", "comfort", "attractiveness",
-      "shelterVehicles", "helicopters", "groundPollutionModifier", "resourceConsumption", "voltage", "waterSource", "transportType"]) {
+      "shelterVehicles", "helicopters", "groundPollutionModifier", "resourceConsumption", "voltage", "waterSource",
+      "garbageStorage", "powerOutput"]) {
       assert.equal(isVanillaFact(key), true, key);
     }
   });
@@ -284,7 +336,9 @@ describe("which figures are vanilla's own", () => {
   it("leaves ours as ours", () => {
     for (const key of ["xpReward", "jobComplexity", "eveningShift", "nightShift", "workConditions", "minCrew",
       "graduation", "studentWellbeing", "studentHealth", "prisonerWellbeing", "disasterResponse", "maintenancePool",
-      "elevatedWidth", "elevationCost", "roadFeature", "trackType", "zoneHouseholds", "zoneSpace", "facilityFeature"]) {
+      "elevatedWidth", "roadFeature", "trackType", "zoneHouseholds", "zoneSpace", "facilityFeature",
+      // No binder shows these, whatever the game's data holds.
+      "stormCapacity", "transportType"]) {
       assert.equal(isVanillaFact(key), false, key);
     }
   });

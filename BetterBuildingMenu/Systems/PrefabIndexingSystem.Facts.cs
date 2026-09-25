@@ -43,8 +43,34 @@ namespace BetterBuildingMenu.Systems
 		{
 			if (PrefabFacts.AppliesTo(prefabIndex.Category))
 			{
-				PrefabFacts.Apply(ReadSnapshot(entity, zones), prefabIndex);
+				PrefabFacts.Apply(ReadSnapshot(DetailsSource(entity), zones), prefabIndex);
 			}
+		}
+
+		/// <summary>The prefab whose figures a card shows for this one: for a network that owns a
+		/// building, the building.</summary>
+		/// <remarks>PrefabUISystem.BindPrefabDetails, transcribed: a network's cost, effects and
+		/// properties come from its first sub-object flagged MakeOwner, as a hydroelectric dam's
+		/// come from its power plant.</remarks>
+		private Entity DetailsSource(Entity entity)
+		{
+			if (EntityManager.HasComponent<NetData>(entity)
+				&& EntityManager.TryGetBuffer<Game.Prefabs.SubObject>(entity, true, out var subObjects))
+			{
+				for (var i = 0; i < subObjects.Length; i++)
+				{
+					if ((subObjects[i].m_Flags & SubObjectFlags.MakeOwner) != 0)
+					{
+						// Vanilla shows no details at all for an owner it cannot read;
+						// the network's own figures are the better fallback.
+						return EntityManager.HasEnabledComponent<PrefabData>(subObjects[i].m_Prefab)
+							? subObjects[i].m_Prefab
+							: entity;
+					}
+				}
+			}
+
+			return entity;
 		}
 
 		/// <summary>What <see cref="PrefabFacts.Apply"/> maps, read from the prefab's entity, its
@@ -60,15 +86,19 @@ namespace BetterBuildingMenu.Systems
 				CoverageData = Read<CoverageData>(entity),
 				DeathcareFacilityData = Read<DeathcareFacilityData>(entity),
 				ElectricityConnectionData = Read<ElectricityConnectionData>(entity),
+				EmergencyGeneratorData = Read<EmergencyGeneratorData>(entity),
 				EmergencyShelterData = Read<EmergencyShelterData>(entity),
 				FireStationData = Read<FireStationData>(entity),
 				GarbageFacilityData = Read<GarbageFacilityData>(entity),
+				GarbagePoweredData = Read<GarbagePoweredData>(entity),
+				GroundWaterPoweredData = Read<GroundWaterPoweredData>(entity),
 				HospitalData = Read<HospitalData>(entity),
 				LeisureProviderData = Read<LeisureProviderData>(entity),
 				MailBoxData = Read<MailBoxData>(entity),
 				MaintenanceDepotData = Read<MaintenanceDepotData>(entity),
 				NetGeometryData = Read<NetGeometryData>(entity),
 				ParkData = Read<ParkData>(entity),
+				ParkingFacilityData = Read<ParkingFacilityData>(entity),
 				PathwayData = Read<PathwayData>(entity),
 				PlaceableNetData = Read<PlaceableNetData>(entity),
 				PlaceableObjectData = Read<PlaceableObjectData>(entity),
@@ -89,8 +119,10 @@ namespace BetterBuildingMenu.Systems
 				TrackData = Read<TrackData>(entity),
 				TransportDepotData = Read<TransportDepotData>(entity),
 				TransportStationData = Read<TransportStationData>(entity),
+				TransportStopData = Read<TransportStopData>(entity),
 				WastewaterTreatmentPlantData = Read<WastewaterTreatmentPlantData>(entity),
 				WaterPipeConnectionData = Read<WaterPipeConnectionData>(entity),
+				WaterPoweredData = Read<WaterPoweredData>(entity),
 				WaterPumpingStationData = Read<WaterPumpingStationData>(entity),
 				WaterwayData = Read<WaterwayData>(entity),
 				WindPoweredData = Read<WindPoweredData>(entity),
@@ -115,15 +147,12 @@ namespace BetterBuildingMenu.Systems
 						snapshot.HighwayRules = roadPrefab.m_HighwayRules;
 						snapshot.ZonesAlongside = roadPrefab.m_ZoneBlock is not null;
 					}
-
-					if (netPrefab.TryGet<PlaceableNetPiece>(out var netPiece) && netPiece.m_ElevationCost > 0)
-					{
-						snapshot.ElevationCost = netPiece.m_ElevationCost;
-					}
 				}
 			}
 
-			if (EntityManager.TryGetBuffer<ServiceUpkeepData>(entity, true, out var upkeepBuffer) && upkeepBuffer.Length > 0)
+			// Even empty: UpkeepPropertyBinderSystem shows the line for any prefab with the
+			// buffer, and for no other.
+			if (EntityManager.TryGetBuffer<ServiceUpkeepData>(entity, true, out var upkeepBuffer))
 			{
 				var stacks = new List<(string Resource, int Amount)>(upkeepBuffer.Length);
 				for (var i = 0; i < upkeepBuffer.Length; i++)
@@ -173,10 +202,11 @@ namespace BetterBuildingMenu.Systems
 						continue;
 					}
 
-					bonuses.Add(DescribeModifier(
+					bonuses.Add(EffectWording.Describe(
 						modifier.m_Type.ToString(),
 						modifier.m_Mode,
-						modifier.m_Range.max));
+						modifier.m_Range.max,
+						EffectWording.IsPercent(modifier.m_Type, modifier.m_Mode)));
 				}
 			}
 
@@ -186,10 +216,11 @@ namespace BetterBuildingMenu.Systems
 				{
 					var modifier = localModifiers[i];
 
-					bonuses.Add(DescribeModifier(
+					bonuses.Add(EffectWording.Describe(
 						modifier.m_Type.ToString(),
 						modifier.m_Mode,
-						modifier.m_Delta.max));
+						modifier.m_Delta.max,
+						EffectWording.IsPercent(modifier.m_Mode)));
 				}
 			}
 
@@ -230,31 +261,6 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			return null;
-		}
-
-		/// <summary>One effect, signed, with the unit its mode implies.</summary>
-		private static string DescribeModifier(string type, ModifierValueMode mode, float value)
-		{
-			// ModifierUIUtils.GetModifierDelta, transcribed: a relative mode is a
-			// fraction and reads as a percentage; absolute is already the number.
-			var scaled = mode switch
-			{
-				ModifierValueMode.Relative => 100f * value,
-				ModifierValueMode.InverseRelative => 100f * (1f / Math.Max(0.001f, 1f + value) - 1f),
-				_ => value,
-			};
-
-			if (Math.Abs(scaled) < 0.005f)
-			{
-				return string.Empty;
-			}
-
-			var unit = mode == ModifierValueMode.Absolute ? string.Empty : "%";
-			// The sign is the point — a modifier can make something worse, and an
-			// unsigned number would read as a benefit either way.
-			var sign = scaled > 0 ? "+" : string.Empty;
-
-			return $"{type.FormatWords()} {sign}{scaled:0.##}{unit}";
 		}
 
 		/// <summary>The upgrades a building supports, in the order vanilla offers them.</summary>

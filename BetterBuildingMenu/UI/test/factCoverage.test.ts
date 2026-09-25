@@ -8,7 +8,7 @@ import { SERVICE_FACT_KEYS, SERVICE_TEXT_FACT_KEYS, RESOURCE_UPKEEP_PREFIX } fro
 // rather than drawn raw. That policy makes a missing presentation silent —
 // the fact simply never appears — so this reads the C# mapper and
 // checks every key it can emit has a presentation.
-// Fact, PollutionModifierFact and TextFact are private to Domain/PrefabFacts.cs.
+// Fact, SignedFact, PollutionModifierFact and TextFact are private to Domain/PrefabFacts.cs.
 // The indexer's partials are read as well, for any fact added there directly.
 const systems = new URL("../../Systems/", import.meta.url);
 const source = readdirSync(systems)
@@ -30,18 +30,23 @@ const literalKeysOf = (call: string): string[] => {
   return [...keys];
 };
 
-// A fact added without a helper, such as resourceConsumption, which a helper
-// would drop for being negative.
+// A fact added without a helper, such as resourceConsumption, which vanilla shows
+// even when it rounds to none.
 const constructedKeysOf = (record: string): string[] =>
   [...source.matchAll(new RegExp(`new ${record}\\("([a-zA-Z]+:?)"`, "g"))].map((match) => match[1]);
 
 describe("every fact the index can emit has a wording", () => {
-  const numeric = literalKeysOf("Fact").concat(literalKeysOf("PollutionModifierFact"), constructedKeysOf("ServiceFact"));
+  const numeric = literalKeysOf("Fact").concat(
+    literalKeysOf("SignedFact"),
+    literalKeysOf("PollutionModifierFact"),
+    constructedKeysOf("ServiceFact"),
+  );
   const worded = literalKeysOf("TextFact").concat(constructedKeysOf("ServiceTextFact"));
 
   it("reads the source that emits facts", () => {
     assert.ok(numeric.includes("cargoCapacity") && numeric.includes("zoneUpkeep"), `numeric keys found: ${numeric.length}`);
     assert.ok(numeric.includes("resourceConsumption"), "a fact constructed directly is found too");
+    assert.ok(numeric.includes("graduation") && numeric.includes("comfort"), "a signed fact is found too");
     assert.ok(worded.includes("requiredResource") && worded.includes("waterSource"), `worded keys found: ${worded.length}`);
   });
 

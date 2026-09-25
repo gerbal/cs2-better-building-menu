@@ -34,8 +34,10 @@ namespace BetterBuildingMenu.Domain
 			"WaterPumpingStation",
 			"WastewaterTreatmentPlant",
 			"SewageOutlet",
-			"PowerPlant",
+			// Garbage first: an incinerator is both, and is filed with the landfills it
+			// sits beside, its store their unit, and its output a line of its own.
 			"GarbageFacility",
+			"PowerPlant",
 			"DeathcareFacility",
 			// Communications. Both name the building's whole purpose, so they sit with the
 			// other primaries; they are last only because nothing in the catalog carries
