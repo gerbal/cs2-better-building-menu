@@ -323,6 +323,10 @@ Where the game's own tooltip shows a figure, `Apply` follows its binder in
 docs/verification.md, "Card facts against vanilla's binders", lists where the card still differs
 and why.
 
+The entry keeps the facts in the order they are added, but a card re-sorts them by `FACT_ORDER`
+in `serviceFacts.ts`. So the order `Apply` adds them in only breaks ties within one key, such as
+a road's features.
+
 The rest of an entry's per-prefab data is split the same way: `.Facts.cs` reads, and a plain class
 in `Domain/` decides, so a test can reach every rule without the entity world.
 
@@ -337,10 +341,6 @@ in `Domain/` decides, so a test can reach every rule without the entity world.
 An extractor's map feature stays in the system: every step of it is a read, in the order
 `RequiredResourceBinder.GetExtractorType` guards them, and what is left once the reads are done is
 the choice of the first matching area.
-
-The entry keeps the facts in the order they are added, but a card re-sorts them by `FACT_ORDER`
-in `serviceFacts.ts`. So the order `Apply` adds them in only breaks ties within one key, such as
-a road's features.
 
 ## Dev tree branches
 

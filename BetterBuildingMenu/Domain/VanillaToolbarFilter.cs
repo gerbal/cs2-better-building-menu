@@ -35,7 +35,8 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		public bool HasPackBuffer { get; }
 
-		/// <summary>Carries <c>ModPrerequisiteData</c>, directly or via a pack.</summary>
+		/// <summary>Carries <c>ModPrerequisiteData</c> itself, and no pack of its carries it too: one
+		/// that does answers to the pack filter instead. See <see cref="From"/>.</summary>
 		public bool IsModAsset { get; }
 
 		public VanillaAssetFacts(

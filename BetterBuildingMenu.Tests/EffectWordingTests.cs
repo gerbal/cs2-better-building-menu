@@ -62,11 +62,12 @@ namespace BetterBuildingMenu.Tests
 			Assert.True(EffectWording.IsPercent(ModifierValueMode.InverseRelative));
 		}
 
+		// Initialisers, not the game's constructors, so these run against mock assemblies too.
 		private static CityModifierData City(CityModifierType type, ModifierValueMode mode, float max) =>
-			new(type, mode, new Bounds1(0f, max));
+			new() { m_Type = type, m_Mode = mode, m_Range = new Bounds1 { min = 0f, max = max } };
 
 		private static LocalModifierData Local(LocalModifierType type, ModifierValueMode mode, float max) =>
-			new(type, mode, ModifierRadiusCombineMode.Additive, new Bounds1(0f, max), new Bounds1(0f, 100f));
+			new() { m_Type = type, m_Mode = mode, m_Delta = new Bounds1 { min = 0f, max = max } };
 
 		[Fact]
 		public void ABuildingsEffectsAreItsCityOnesThenItsLocalOnes()
@@ -76,6 +77,17 @@ namespace BetterBuildingMenu.Tests
 				new[] { Local(LocalModifierType.CrimeAccumulation, ModifierValueMode.Relative, -0.2f) });
 
 			Assert.Equal(new[] { "Crime Accumulation -10%", "Crime Accumulation -20%" }, lines);
+		}
+
+		[Fact]
+		public void ACityEffectVanillaShowsAsAPercentageIsOneHereToo()
+		{
+			// Absolute, but in CityModifierBinder.GetModifierUnit's percentage list.
+			var lines = EffectWording.Lines(
+				new[] { City(CityModifierType.HospitalEfficiency, ModifierValueMode.Absolute, 10f) },
+				null);
+
+			Assert.Equal(new[] { "Hospital Efficiency +10%" }, lines);
 		}
 
 		[Fact]

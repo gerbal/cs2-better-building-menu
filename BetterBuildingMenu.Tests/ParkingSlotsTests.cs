@@ -10,6 +10,9 @@ namespace BetterBuildingMenu.Tests
 	/// The bays an object parks, counted with the game's own arithmetic: NetInitializeSystem's slot
 	/// interval and GetParkingSlotCount's divide.
 	/// </summary>
+	/// <remarks>Requires the game: the interval is Unity.Mathematics' arithmetic, which a mock
+	/// assembly does not carry.</remarks>
+	[Trait("Requires", "Game")]
 	public sealed class ParkingSlotsTests
 	{
 		private static readonly ParkingLaneShape[] NoLanes = System.Array.Empty<ParkingLaneShape>();
@@ -21,6 +24,7 @@ namespace BetterBuildingMenu.Tests
 		public void AGarageDeclaresItsCapacityAndIsNotAlsoADriveway()
 		{
 			Assert.Equal(40, ParkingSlots.Own(garageCapacity: 40, parkingSpawn: true, NoLanes));
+			Assert.Equal(1, ParkingSlots.Own(garageCapacity: 1, parkingSpawn: false, NoLanes));
 		}
 
 		[Fact]
@@ -37,8 +41,8 @@ namespace BetterBuildingMenu.Tests
 		[InlineData(0f, 8)]
 		// Angled at 60°: the smaller of width / sin and depth / cos, 2.887 m.
 		[InlineData(60f, 13)]
-		// Clamped to 90°.
-		[InlineData(120f, 16)]
+		// Clamped to 90°. Unclamped, 300° would take the depth, as 0° does.
+		[InlineData(300f, 16)]
 		public void ALaneHoldsItsLengthOverTheSlotInterval(float angle, int bays)
 		{
 			var lane = new ParkingLaneShape(40f, Bay, angle);
@@ -49,8 +53,9 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void AVirtualLaneHasNoBays()
 		{
-			// No slot width: RoadsInfoviewUISystem drops a VirtualLane before counting.
-			var lane = new ParkingLaneShape(40f, new float2(0f, 5f), 90f);
+			// No slot width: RoadsInfoviewUISystem drops a VirtualLane before counting. Parallel, so
+			// the depth alone would otherwise give it eight bays.
+			var lane = new ParkingLaneShape(40f, new float2(0f, 5f), 0f);
 
 			Assert.Equal(0, ParkingSlots.Own(0, false, new[] { lane }));
 		}
@@ -63,6 +68,9 @@ namespace BetterBuildingMenu.Tests
 			var lane = new ParkingLaneShape(9.9999f, Bay, 90f);
 
 			Assert.Equal(4, ParkingSlots.Own(0, false, new[] { lane }));
+
+			// Added to the length, not to the quotient: 9.98 m is 3.996 bays, not 4.002.
+			Assert.Equal(3, ParkingSlots.Own(0, false, new[] { new ParkingLaneShape(9.98f, Bay, 90f) }));
 		}
 
 		[Fact]

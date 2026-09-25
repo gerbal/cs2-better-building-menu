@@ -26,12 +26,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Mathematics;
 
 namespace BetterBuildingMenu.Systems
 {
@@ -450,7 +448,7 @@ namespace BetterBuildingMenu.Systems
 			var parkingSpawn = prefab.TryGet<SpawnLocation>(out var spawnLocation)
 				&& spawnLocation.m_ConnectionType == RouteConnectionType.Parking;
 
-			var lanes = new List<ParkingLaneShape>();
+			List<ParkingLaneShape>? lanes = null;
 
 			if (prefab.TryGet<ObjectSubLanes>(out var subLanes) && subLanes.m_SubLanes is not null)
 			{
@@ -458,12 +456,13 @@ namespace BetterBuildingMenu.Systems
 				{
 					if (lane?.m_LanePrefab is not null && lane.m_LanePrefab.TryGet<ParkingLane>(out var parkingLane))
 					{
-						lanes.Add(new ParkingLaneShape(MathUtils.Length(lane.m_BezierCurve), parkingLane.m_SlotSize, parkingLane.m_SlotAngle));
+						(lanes ??= new List<ParkingLaneShape>()).Add(
+							new ParkingLaneShape(MathUtils.Length(lane.m_BezierCurve), parkingLane.m_SlotSize, parkingLane.m_SlotAngle));
 					}
 				}
 			}
 
-			var slots = ParkingSlots.Own(garageCapacity, parkingSpawn, lanes);
+			var slots = ParkingSlots.Own(garageCapacity, parkingSpawn, (IEnumerable<ParkingLaneShape>?)lanes ?? Array.Empty<ParkingLaneShape>());
 
 			if (prefab.TryGet<ObjectSubObjects>(out var subObjects) && subObjects.m_SubObjects is not null)
 			{
