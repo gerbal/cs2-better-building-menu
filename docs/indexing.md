@@ -215,9 +215,13 @@ toolbar group holds goes last. The UI keeps the menus in that order. It sorts th
 the same priority and stably, which leaves them as they are. The All tab's category headings
 follow the strip too: in one menu's view the adapter gives each entry its tab's priority and place
 in the strip (`VanillaMenuIndex.TabOf`). So a priority tie breaks as the strip breaks it, before
-the name, and every entry of one tab ranks alike, a moved asset included. A category the strip
-draws no tab for keeps each asset's own group priority, so there a moved asset can still split
-the heading.
+the name, and every entry of one tab ranks alike, a moved asset included. The walk also reads
+each category's priority as the strip does (`UIObjectData.m_Priority`), and `AddPrefab`'s
+placement override files a placed asset under that priority rather than its managed group's. So
+where the strip draws no tab for a placed category, its assets still share one priority and one
+heading. That happens when a partial pass places an asset in a category that was empty at the last
+full pass (a partial pass reads the placements again but keeps the tabs), or when a menu's tabs
+fail to read.
 
 The walk's tables, with the menus and their category tabs, go into the pass's `VanillaMenuIndex`,
 which its `CatalogIndex` carries as `Menus`: a new pass reads the menus afresh, and nothing

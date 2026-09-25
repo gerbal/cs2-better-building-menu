@@ -85,6 +85,10 @@ namespace BetterBuildingMenu.Systems
 						// Once per tab: the name is a native getter that allocates, and
 						// the walk now runs on every partial pass.
 						var categoryName = categoryPrefab.name;
+						// Read as UIObjectInfo reads it for the strip, which ranks the tab by it.
+						var categoryPriority = EntityManager.TryGetComponent<UIObjectData>(categoryEntity, out var categoryUi)
+							? categoryUi.m_Priority
+							: 0;
 
 						for (var a = 0; a < assets.Length; a++)
 						{
@@ -99,7 +103,7 @@ namespace BetterBuildingMenu.Systems
 							// holds and what the diff compares against; the whole entity
 							// rides along so a gap can still be named.
 							placements[assetEntity.Index] = new VanillaMenuPlacement(
-								assetEntity, menuName, categoryName);
+								assetEntity, menuName, categoryName, categoryPriority);
 						}
 					}
 				}

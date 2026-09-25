@@ -148,12 +148,15 @@ namespace BetterBuildingMenu.Domain
 		public string? UiMenuName { get; set; }
 
 		/// <summary>
-		/// The category's own UIObject.m_Priority — the game's tab order.
+		/// The priority of the category the asset is filed under — the game's tab order.
 		/// </summary>
 		/// <remarks>
-		/// Read off the category prefab rather than the asset, or two assets in one category could
-		/// rank apart and split a heading in two. Defaults to 0 like vanilla's, so a category that
-		/// never set one belongs in the middle of the strip rather than at the end.
+		/// Read off the category rather than the asset, or two assets in one category could rank
+		/// apart and split a heading in two. Where the game places the asset, the placed category's
+		/// UIObjectData.m_Priority, as the strip reads it: a mod that moves an asset leaves its
+		/// managed group on the old tab. Otherwise the managed group's UIObject.m_Priority. Defaults
+		/// to 0 like vanilla's, so a category that never set one belongs in the middle of the strip
+		/// rather than at the end.
 		/// </remarks>
 		public int UiCategoryPriority { get; set; }
 		/// <summary>
