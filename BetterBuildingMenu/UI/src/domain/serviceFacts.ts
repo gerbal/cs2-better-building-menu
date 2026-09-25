@@ -36,10 +36,9 @@ interface ServiceFactPresentation {
   signed?: boolean;
   /**
    * Follows the player's unit system instead of carrying a fixed `unit`. Each
-   * name is one of vanilla's own rules, and a per-distance cost converts its
-   * figure as well as its suffix.
+   * name is one of vanilla's own rules.
    */
-  measure?: "length" | "height" | "volume" | "moneyPerDistance" | "moneyPerCellPerMonth" | "weight" | "weightPerMonth" | "perMonth" | "power";
+  measure?: "length" | "height" | "volume" | "moneyPerCellPerMonth" | "weight" | "weightPerMonth" | "perMonth" | "power";
 }
 
 const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {

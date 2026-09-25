@@ -461,8 +461,8 @@ namespace BetterBuildingMenu.Domain
 
 			// PowerProductionBinder, transcribed: shown for a plant or an emergency generator, as
 			// the plant's own output, which is all it promises, up to that plus every source that
-			// can add to it. The entry keeps the top of that range. Each source requires the
-			// PowerPlant component, so a plant carries them all.
+			// can add to it. The entry keeps the top of that range. Every other source requires
+			// the PowerPlant component; an emergency generator counts on its own.
 			if (snapshot.PowerPlantData.HasValue || snapshot.EmergencyGeneratorData.HasValue)
 			{
 				Role("PowerPlant",
@@ -620,7 +620,11 @@ namespace BetterBuildingMenu.Domain
 				Role("WastewaterTreatmentPlant", wastewaterData.m_Capacity);
 			}
 
-			var primary = BuildingRole.ResolvePrimary(roles);
+			// The first role that has a figure, so Capacity is always a figure in its own role's
+			// unit: a water treatment plant's pumping station holds nothing, and its sewage is what
+			// it is for. Only a building whose roles all hold nothing is filed by rank alone.
+			var primary = BuildingRole.ResolvePrimary(roles.Where(role => capacityOf[role] > 0))
+				?? BuildingRole.ResolvePrimary(roles);
 			prefabIndex.BuildingTypeName = primary;
 
 			if (primary is not null && capacityOf.TryGetValue(primary, out var capacity))

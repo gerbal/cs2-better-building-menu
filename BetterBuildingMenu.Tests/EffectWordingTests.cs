@@ -28,10 +28,24 @@ namespace BetterBuildingMenu.Tests
 		[Theory]
 		[InlineData(ModifierValueMode.Relative, 0.004f, true)]
 		[InlineData(ModifierValueMode.Relative, -0.004f, true)]
-		[InlineData(ModifierValueMode.Absolute, 0.04f, false)]
+		[InlineData(ModifierValueMode.Absolute, 0f, false)]
 		public void AnEffectThatRoundsToNothingSaysNothing(ModifierValueMode mode, float value, bool percent)
 		{
 			Assert.Equal(string.Empty, EffectWording.Describe("CrimeProbability", mode, value, percent));
+		}
+
+		/// <summary>floatSingleFraction, as the game's UI draws it: a small effect never rounds
+		/// away, and a large one drops its decimal.</summary>
+		[Theory]
+		[InlineData(0.04f, "Crime Probability +0.1")]
+		[InlineData(-0.04f, "Crime Probability -0.1")]
+		[InlineData(0.14f, "Crime Probability +0.1")]
+		[InlineData(99.44f, "Crime Probability +99.4")]
+		[InlineData(150.44f, "Crime Probability +150")]
+		[InlineData(-250.6f, "Crime Probability -251")]
+		public void AOneDecimalEffectReadsAsTheGameDrawsIt(float value, string expected)
+		{
+			Assert.Equal(expected, EffectWording.Describe("CrimeProbability", ModifierValueMode.Absolute, value, percent: false));
 		}
 
 		[Fact]
