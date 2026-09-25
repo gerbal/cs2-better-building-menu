@@ -4,6 +4,17 @@ export interface LotFootprint {
   depth: number;
 }
 
+/**
+ * One effect, as vanilla's modifier binders bind it: the delta, unrounded, and
+ * the game's unit for it ("percentage" or "floatSingleFraction"). The label is
+ * the indexer's, the effect's type in words.
+ */
+export interface EffectLine {
+  label: string;
+  delta: number;
+  unit: string;
+}
+
 export interface BuildingCatalogEntry {
   id: number;
   prefabName: string;
@@ -48,10 +59,11 @@ export interface BuildingCatalogEntry {
    */
   unlockRequirements: string[];
   /**
-   * What the building does for the city, already phrased. Signature buildings
-   * cost nothing, so this is the whole basis for choosing between them.
+   * What the building does for the city, one entry per effect, its number left
+   * for the card to format. Signature buildings cost nothing, so this is the
+   * whole basis for choosing between them.
    */
-  bonuses: string[];
+  bonuses: EffectLine[];
   /**
    * Cost and upkeep are per kilometre rather than per instance, as a network's
    * are. Without it the figures invite a comparison they do not support: a

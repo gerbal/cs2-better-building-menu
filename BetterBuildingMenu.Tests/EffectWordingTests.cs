@@ -6,49 +6,45 @@ using Game.Buildings;
 using Game.City;
 using Game.Prefabs;
 
+using System;
+using System.Linq;
+
 using Xunit;
 
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// An effect line as vanilla's modifier binders word it: ModifierUIUtils' arithmetic, and the
-	/// unit CityModifierBinder.GetModifierUnit picks.
+	/// A building's effects as vanilla's modifier binders bind them: ModifierUIUtils' arithmetic,
+	/// and the unit CityModifierBinder.GetModifierUnit picks.
 	/// </summary>
 	public sealed class EffectWordingTests
 	{
+		private const string Percent = EffectLine.Percentage;
+		private const string OneDecimal = EffectLine.FloatSingleFraction;
+
 		[Theory]
-		[InlineData(ModifierValueMode.Relative, 0.125f, true, "Crime Probability +13%")]
-		[InlineData(ModifierValueMode.Relative, -0.2f, true, "Crime Probability -20%")]
+		[InlineData(ModifierValueMode.Relative, 0.125f, true, 12.5f, Percent)]
+		[InlineData(ModifierValueMode.Relative, -0.2f, true, -20f, Percent)]
 		// 100 × (1 / (1 + 0.25) − 1) is −20.
-		[InlineData(ModifierValueMode.InverseRelative, 0.25f, true, "Crime Probability -20%")]
-		[InlineData(ModifierValueMode.Absolute, 5f, true, "Crime Probability +5%")]
-		[InlineData(ModifierValueMode.Absolute, 1.24f, false, "Crime Probability +1.2")]
-		public void AnEffectIsSignedInVanillasUnit(ModifierValueMode mode, float value, bool percent, string expected)
+		[InlineData(ModifierValueMode.InverseRelative, 0.25f, true, -20f, Percent)]
+		[InlineData(ModifierValueMode.Absolute, 5f, true, 5f, Percent)]
+		[InlineData(ModifierValueMode.Absolute, 1.24f, false, 1.24f, OneDecimal)]
+		public void AnEffectIsVanillasDeltaInVanillasUnit(ModifierValueMode mode, float value, bool percent, float delta, string unit)
 		{
-			Assert.Equal(expected, EffectWording.Describe("CrimeProbability", mode, value, percent));
+			var line = EffectWording.Describe("CrimeProbability", mode, value, percent);
+
+			Assert.Equal("Crime Probability", line.Label);
+			Assert.Equal(delta, line.Delta, 4);
+			Assert.Equal(unit, line.Unit);
 		}
 
-		[Theory]
-		[InlineData(ModifierValueMode.Relative, 0.004f, true)]
-		[InlineData(ModifierValueMode.Relative, -0.004f, true)]
-		[InlineData(ModifierValueMode.Absolute, 0f, false)]
-		public void AnEffectThatRoundsToNothingSaysNothing(ModifierValueMode mode, float value, bool percent)
+		/// <summary>The delta goes to the UI unrounded, as vanilla binds it: the unit's rounding is
+		/// the game's number format's to apply.</summary>
+		[Fact]
+		public void TheDeltaIsNotRoundedHere()
 		{
-			Assert.Equal(string.Empty, EffectWording.Describe("CrimeProbability", mode, value, percent));
-		}
-
-		/// <summary>floatSingleFraction, as the game's UI draws it: a small effect never rounds
-		/// away, and a large one drops its decimal.</summary>
-		[Theory]
-		[InlineData(0.04f, "Crime Probability +0.1")]
-		[InlineData(-0.04f, "Crime Probability -0.1")]
-		[InlineData(0.14f, "Crime Probability +0.1")]
-		[InlineData(99.44f, "Crime Probability +99.4")]
-		[InlineData(150.44f, "Crime Probability +150")]
-		[InlineData(-250.6f, "Crime Probability -251")]
-		public void AOneDecimalEffectReadsAsTheGameDrawsIt(float value, string expected)
-		{
-			Assert.Equal(expected, EffectWording.Describe("CrimeProbability", ModifierValueMode.Absolute, value, percent: false));
+			Assert.Equal(0.4f, EffectWording.Describe("Health", ModifierValueMode.Relative, 0.004f, percent: true).Delta, 4);
+			Assert.Equal(0.04f, EffectWording.Describe("Health", ModifierValueMode.Absolute, 0.04f, percent: false).Delta, 4);
 		}
 
 		[Fact]
@@ -69,6 +65,10 @@ namespace BetterBuildingMenu.Tests
 		private static LocalModifierData Local(LocalModifierType type, ModifierValueMode mode, float max) =>
 			new() { m_Type = type, m_Mode = mode, m_Delta = new Bounds1 { min = 0f, max = max } };
 
+		// The delta rounded to what the assertions state, so a float's last bits cannot fail them.
+		private static (string Label, float Delta, string Unit)[] Shapes(EffectLine[] lines) =>
+			lines.Select(line => (line.Label, (float)Math.Round(line.Delta, 3), line.Unit)).ToArray();
+
 		[Fact]
 		public void ABuildingsEffectsAreItsCityOnesThenItsLocalOnes()
 		{
@@ -76,7 +76,7 @@ namespace BetterBuildingMenu.Tests
 				new[] { City(CityModifierType.CrimeAccumulation, ModifierValueMode.Relative, -0.1f) },
 				new[] { Local(LocalModifierType.CrimeAccumulation, ModifierValueMode.Relative, -0.2f) });
 
-			Assert.Equal(new[] { "Crime Accumulation -10%", "Crime Accumulation -20%" }, lines);
+			Assert.Equal(new[] { ("Crime Accumulation", -10f, Percent), ("Crime Accumulation", -20f, Percent) }, Shapes(lines));
 		}
 
 		[Fact]
@@ -87,7 +87,7 @@ namespace BetterBuildingMenu.Tests
 				new[] { City(CityModifierType.HospitalEfficiency, ModifierValueMode.Absolute, 10f) },
 				null);
 
-			Assert.Equal(new[] { "Hospital Efficiency +10%" }, lines);
+			Assert.Equal(new[] { ("Hospital Efficiency", 10f, Percent) }, Shapes(lines));
 		}
 
 		[Fact]
@@ -100,11 +100,13 @@ namespace BetterBuildingMenu.Tests
 			Assert.Empty(lines);
 		}
 
+		/// <summary>Vanilla binds every effect: one that rounds to nothing, a zero and a repeat
+		/// each draw a line.</summary>
 		[Fact]
-		public void AnEffectThatRoundsToNothingDrawsNoLineAndARepeatDrawsOne()
+		public void EveryEffectDrawsALineAZeroAndARepeatIncluded()
 		{
 			var lines = EffectWording.Lines(
-				null,
+				new[] { City(CityModifierType.Attractiveness, ModifierValueMode.Absolute, 0f) },
 				new[]
 				{
 					// 0.4 %, which the whole-number percentage rounds to 0.
@@ -113,7 +115,15 @@ namespace BetterBuildingMenu.Tests
 					Local(LocalModifierType.Wellbeing, ModifierValueMode.Absolute, 5f),
 				});
 
-			Assert.Equal(new[] { "Wellbeing +5" }, lines);
+			Assert.Equal(
+				new[]
+				{
+					("Attractiveness", 0f, OneDecimal),
+					("Health", 0.4f, Percent),
+					("Wellbeing", 5f, OneDecimal),
+					("Wellbeing", 5f, OneDecimal),
+				},
+				Shapes(lines));
 		}
 
 		[Fact]
@@ -134,7 +144,9 @@ namespace BetterBuildingMenu.Tests
 					Local(LocalModifierType.Health, ModifierValueMode.Absolute, 1.5f),
 				});
 
-			Assert.Equal(new[] { "Attractiveness +20", "Wellbeing +3", "Health +1.5" }, lines);
+			Assert.Equal(
+				new[] { ("Attractiveness", 20f, OneDecimal), ("Wellbeing", 3f, OneDecimal), ("Health", 1.5f, OneDecimal) },
+				Shapes(lines));
 		}
 	}
 }

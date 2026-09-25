@@ -7,3 +7,9 @@ const localization = {
 export function useLocalization() {
   return localization;
 }
+
+// Draws nothing, so the card falls back to its own formatting and a render
+// test reads the same whatever the game's renderer would say.
+export const LocalizedNumber = {
+  renderString: () => "",
+};

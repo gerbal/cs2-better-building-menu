@@ -261,7 +261,8 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.True(entry.CostIsPerDistance);
 			Assert.Equal(5_000u, entry.ConstructionCost);
-			Assert.Equal(75, entry.Upkeep);
+			// Vanilla's upkeep binder: 0.6 a cell rounds to 1, then the 125 cells.
+			Assert.Equal(125, entry.Upkeep);
 		}
 
 		[Fact]
@@ -277,7 +278,7 @@ namespace BetterBuildingMenu.Tests
 
 			// (40 + 10 × 0.5 + 20) a cell, 125 cells a kilometre. The upkeep is the network's own.
 			Assert.Equal(8_125u, entry.ConstructionCost);
-			Assert.Equal(75, entry.Upkeep);
+			Assert.Equal(125, entry.Upkeep);
 		}
 
 		[Fact]
@@ -301,8 +302,34 @@ namespace BetterBuildingMenu.Tests
 				},
 				PrefabCategory.Networks);
 
-			Assert.Equal(75, entry.Upkeep);
+			Assert.Equal(125, entry.Upkeep);
 			Assert.Null(entry.NetworkWidth);
+		}
+
+		/// <summary>Vanilla's upkeep binder rounds a cell's upkeep before the 125 cells, as
+		/// Convert.ToInt32 rounds, halves to even; NetUtils.GetUpkeepCost's 3.9 × 125 is 487.5.</summary>
+		[Theory]
+		[InlineData(3.9f, 500)]
+		[InlineData(2.5f, 250)]
+		[InlineData(3.5f, 500)]
+		public void ANetworksUpkeepIsRoundedPerCellAsVanillaShowsIt(float perCell, int expected)
+		{
+			var entry = Apply(
+				new PrefabSnapshot { PlaceableNetData = new PlaceableNetData { m_DefaultUpkeepCost = perCell } },
+				PrefabCategory.Networks);
+
+			Assert.Equal(expected, entry.Upkeep);
+		}
+
+		/// <summary>Under half a cent a cell rounds to none, and vanilla shows none.</summary>
+		[Fact]
+		public void ANetworkUnderHalfACentACellHasNoUpkeepLine()
+		{
+			var entry = Apply(
+				new PrefabSnapshot { PlaceableNetData = new PlaceableNetData { m_DefaultConstructionCost = 40, m_DefaultUpkeepCost = 0.4f } },
+				PrefabCategory.Networks);
+
+			Assert.Null(entry.Upkeep);
 		}
 
 		/// <summary>Each network type holds its own speed, and the first that answers wins.</summary>
@@ -660,7 +687,8 @@ namespace BetterBuildingMenu.Tests
 			});
 
 			Assert.Equal(expected, entry.ServiceRange);
-			Assert.Equal(1.5d, entry.Capacity ?? double.NaN, 3);
+			// Rounded up, as vanilla's NETWORK_CAPACITY line binds it.
+			Assert.Equal(2d, entry.Capacity);
 		}
 
 		[Theory]

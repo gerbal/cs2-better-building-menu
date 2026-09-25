@@ -63,10 +63,11 @@ namespace BetterBuildingMenu.Domain
 				// per-kilometre figure and flagged as a rate.
 				prefabIndex.ConstructionCost = (uint)Math.Round(
 					(netData.m_DefaultConstructionCost + AuxiliaryNetCost(snapshot.AuxiliaryNetCosts)) * NetCellsPerKilometre);
-				// Rounded after the per-kilometre product, which is what NetUtils.GetUpkeepCost
-				// charges, where vanilla's tooltip rounds the per-cell figure first. Its silence
-				// on none is kept: a road with no upkeep has no upkeep line.
-				var netUpkeep = (int)Math.Round(netData.m_DefaultUpkeepCost * NetCellsPerKilometre);
+				// Vanilla's upkeep binder, to the cent: the cell's figure rounded, as Convert.ToInt32
+				// rounds it, then the 125 cells. NetUtils.GetUpkeepCost charges the unrounded
+				// product, but the card shows what the game's tooltip shows. Its silence on none is
+				// kept: a road under half a cent a cell has no upkeep line.
+				var netUpkeep = Convert.ToInt32(netData.m_DefaultUpkeepCost) * (int)NetCellsPerKilometre;
 				prefabIndex.Upkeep = netUpkeep != 0 ? netUpkeep : null;
 				prefabIndex.CostIsPerDistance = true;
 
@@ -362,7 +363,8 @@ namespace BetterBuildingMenu.Domain
 
 			if (snapshot.TelecomFacilityData is { } telecomFacilityData)
 			{
-				Role("TelecomFacility", telecomFacilityData.m_NetworkCapacity);
+				// Rounded up, as vanilla's NETWORK_CAPACITY line binds it (Mathf.CeilToInt).
+				Role("TelecomFacility", Math.Ceiling(telecomFacilityData.m_NetworkCapacity));
 				// Telecom keeps its own range rather than using CoverageData's,
 				// so it is read here and not above.
 				if (telecomFacilityData.m_Range > 0f)
