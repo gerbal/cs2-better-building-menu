@@ -1,6 +1,69 @@
 [
   {
     "Stable": true,
+    "Version": "0.2.0",
+    "Date": "2026-09-25",
+    "ChangeGroups": [
+      {
+        "Name": "Changes",
+        "Changes": [
+          "Each menu's tabs are in the order of the game's own tab row, the menu picker follows the toolbar's order, and the All tab's headings follow the tabs. In Roads, Roundabouts now come before Cul-de-sacs; in Landscaping, Piers and Quays come before Bike Paths.",
+          "Development headings are in the game's language: Police Headquarters, Prison, Welfare Office, City Hall and Central Bank were English in every language.",
+          "Grouped by development, an asset that several dev tree nodes unlock is filed by a rule modelled on how the game unlocks it. Before, it went under whichever node came first, which could differ between setups.",
+          "Changing a filter or a range, or clearing them, starts the list again at its first 100 rows instead of keeping a list grown with Load more.",
+          "The footer's counts group their digits the way the game does.",
+          "Replace the vanilla build menu takes effect at once, without a restart. Turning it off hands an open menu back to the game."
+        ]
+      },
+      {
+        "Name": "Asset details",
+        "Changes": [
+          "Hovering an asset shows more of what the game's own tooltip shows: pollution levels, voltage, power line and transformer capacity, water pipes on roads, transport stops, and the cost of auxiliary networks. The lines the game's tooltip also has now use its wording, in every language the game ships; they were English everywhere.",
+          "An incinerator's Capacity is its garbage store, a weight like a landfill's, instead of a figure in megawatts. Its electricity gets a Power output line.",
+          "Power output adds up every source a building has (plant, wind, solar, garbage, water, groundwater and emergency generator) instead of showing only the largest.",
+          "Zoned and signature buildings no longer show an upkeep figure, as in the game's tooltip; what they showed was what their renters pay. The table's Upkeep column, sort and range skip them.",
+          "Upgrades read as the game reads them: Resource consumption -20 % where it said Upkeep +0 %, pollution changes as signed percentages with reductions included, and graduation as +5 % instead of x0.05. Negative wellbeing, health and work condition effects are shown; they were left out.",
+          "Cemetery and crematorium capacity is a plain number, as in the game's tooltip, instead of a number of plots.",
+          "Comfort is shown for parking and transport stops too, a groundwater plant says it draws ground water, and a hydroelectric dam shows its own cost and upkeep instead of per-km figures."
+        ]
+      },
+      {
+        "Name": "Fixes",
+        "Changes": [
+          "Enter arms the best match you can place, skipping locked and already built assets, in every view. With grouped results it could arm the wrong building, and in Table view it did nothing.",
+          "A trailing space in the search box no longer loses matches: \"clinic \" found no Medical Clinic.",
+          "With a tab selected, \"Found N elsewhere\" counts what Search everywhere finds. It almost always said 0.",
+          "Typing in a filter's own search box no longer breaks the panel.",
+          "The resize edge stays under the cursor while dragging, at every resolution. At 1080p it ran ahead of it.",
+          "Load more says how many rows it adds, and a double click loads once.",
+          "The metric filter's badge counts the ranges set, as its drawer does.",
+          "The chip row's category picker offers only the categories the strip shows. Picking a hidden one showed an empty list.",
+          "The Roads menu no longer shows an extra, empty tab, and its Small Roads heading no longer carries a stray line break.",
+          "The Content filter's rail icon is drawn; it was blank.",
+          "The Options screen shows its labels in English in the 13 languages that had none translated.",
+          "On a Turkish system, words such as Industrial are capitalised correctly.",
+          "If the panel fails while drawing, the game's own menu, upgrades picker or tool options take its place instead of the interface breaking. If indexing fails, the panel keeps the city's last complete index, or hands the menus to the game until there is one."
+        ]
+      },
+      {
+        "Name": "Compatibility",
+        "Changes": [
+          "Road Builder: after an edit, the old road leaves the list at once and the new one appears in its menu and tab without a reload. Before, the old road stayed listed, and could be armed, for a second or two. Only the edited roads are re-read, numbered duplicates keep their numbers, and roads Road Builder discarded no longer appear on the first load of a session.",
+          "Find It: an asset Find It excludes and gives no category is hidden, unless the game's own menus place it. An override naming a category pair that does not exist no longer hides the asset.",
+          "Asset UI Manager and other mods that move a category or an asset between menus mid-game: it gets one heading in the All tab, in its tab's place, instead of a second one."
+        ]
+      },
+      {
+        "Name": "Performance",
+        "Changes": [
+          "Typing a search or dragging the resize edge no longer redraws every row.",
+          "The mod no longer copies every object and road in the city once a minute for a feature nothing used."
+        ]
+      }
+    ]
+  },
+  {
+    "Stable": true,
     "Version": "0.1.12",
     "Date": "2026-09-22",
     "ChangeGroups": [
