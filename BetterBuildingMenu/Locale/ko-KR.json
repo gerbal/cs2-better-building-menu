@@ -77,7 +77,7 @@
   "Tooltip.LABEL[BetterBuildingMenu.Zones_Misc]": "기타 구역들",
   "Options.SECTION[BetterBuildingMenu.BetterBuildingMenu.Mod]": "Better Building Menu",
   "Options.TAB[BetterBuildingMenu.BetterBuildingMenu.Mod.Settings]": "일반 설정",
-  "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.Behavior]": "행동",
+  "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.Behavior]": "동작",
   "Options.GROUP[BetterBuildingMenu.BetterBuildingMenu.Mod.UIUX]": "UI / UX",
   "Tooltip.LABEL[BetterBuildingMenu.MetricFilters]": "수치 필터",
   "Tooltip.LABEL[BetterBuildingMenu.HideMetricFilters]": "수치 필터 숨기기",
