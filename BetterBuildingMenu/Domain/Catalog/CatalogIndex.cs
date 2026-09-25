@@ -211,13 +211,31 @@ namespace BetterBuildingMenu.Domain.Catalog
 			}
 		}
 
-		/// <summary>Swaps in placements a partial pass read again, keeping the menus and their tabs.</summary>
+		/// <summary>Swaps in placements a partial pass read again, keeping the menus and their tabs, and
+		/// files every entry the game places under where it places it now.</summary>
 		/// <remarks>The game moves a recreated prefab, such as a Road Builder road, to a new entity,
 		/// and the placements are keyed by entity: without this the new entity is placed nowhere until
 		/// the next full pass. A new table rather than an edit, so a caller still holding the previous
-		/// <see cref="Menus"/> keeps reading what it read. See docs/indexing.md, "Partial passes".</remarks>
-		internal void RefreshPlacements(IReadOnlyDictionary<int, VanillaMenuPlacement> placements) =>
+		/// <see cref="Menus"/> keeps reading what it read. See docs/indexing.md, "Partial passes".
+		/// <para>Every entry, not only the ones the pass re-indexes: a mod can move an asset, or a
+		/// whole category, without marking anything changed. The entries the pass re-indexed and the
+		/// rest would then name different menus and priorities for one category, and its heading
+		/// would appear twice.</para></remarks>
+		internal void RefreshPlacements(IReadOnlyDictionary<int, VanillaMenuPlacement> placements)
+		{
 			Menus = Menus.WithPlacements(placements);
+
+			foreach (var pair in placements)
+			{
+				if (All.TryGetValue(pair.Key, out var entry))
+				{
+					var placed = pair.Value;
+					(entry.UiCategoryName, entry.UiMenuName, entry.UiCategoryPriority) = MenuPlacementOverride.Resolve(
+						entry.UiCategoryName, entry.UiMenuName, entry.UiCategoryPriority,
+						placed.Category, placed.Menu, placed.CategoryPriority);
+				}
+			}
+		}
 
 		/// <summary>Removes every entry filed under a prefab name that <paramref name="which"/> picks.</summary>
 		/// <returns>How many it removed.</returns>
