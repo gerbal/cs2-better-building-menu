@@ -2120,9 +2120,9 @@ Deliberately not matched:
 The seven differences #57 left in place, under "Deliberately not matched" in the 2026-09-24
 section above, are decided:
 
-- **Changed:** a deathcare facility's capacity reads in bodies, not plots: a crematorium's store
-  holds the deceased as a cemetery's does. Vanilla's `DECEASED_STORAGE` is a bare count; the card
-  keeps a unit on its headline capacity, as for every other role.
+- **Changed:** a deathcare facility's capacity is a bare count, as vanilla's `DECEASED_STORAGE`
+  binds it with the `integer` unit, where the card said plots: a crematorium's store holds the
+  deceased as a cemetery's does. Post and telecom capacities are bare counts for the same reason.
 - **Kept, as they were:** a telecom facility's capacity keeps its decimal; a network's upkeep
   rounds the per-kilometre product, what `NetUtils.GetUpkeepCost` charges; upkeep is the
   budget-free figure; upkeep resources are named with their amounts; and an effect that rounds to
