@@ -2062,10 +2062,12 @@ binder passes (`PrefabUISystem`, 1.6.2f1), so they read as the game's tooltip
 does in each of its twelve languages. Our English stays as the fallback. Not
 yet checked in game.
 
-- Cost and upkeep: `Properties.CONSTRUCTION_COST`, or for a network
-  `Common.ASSET_CONSTRUCTION_COST` as `PlaceableNetCostBinder` has it, and
-  `Properties.UPKEEP`, on the card only. The table's columns and the range
-  filters keep ours, which are shorter.
+- Cost and upkeep: `Properties.CONSTRUCTION_COST` and `Properties.UPKEEP`, on
+  the card only. A network's cost takes the building's key too:
+  `PlaceableNetCostBinder` passes `Common.ASSET_CONSTRUCTION_COST`, but no
+  locale carries that key (checked in game), so it would read "Cost" in every
+  language. The table's columns and the range filters keep ours, which are
+  shorter.
 - The service figures: `DECEASED_PROCESSING_CAPACITY`,
   `GARBAGE_PROCESSING_CAPACITY`, `MAIL_SORTING_RATE`, `CARGO_CAPACITY`,
   `JAIL_CAPACITY`, `GARBAGE_STORAGE`, `MAIL_BOX_CAPACITY`, `ATTRACTIVENESS`,
@@ -2089,7 +2091,11 @@ vanilla's tier to its binder's exact key, and every other fact to ours.
 A label never wraps, and a line is half the card, so a label too long for its
 half, as the game's German ones can be, ran into its neighbour. A line now
 measures what it drew, two frames after drawing it as the tile names do, and
-takes the whole row when it overflows. A game string's trailing line break
+takes the whole row when it overflows. For that the value keeps its whole
+width in a half: in game, a value allowed to shrink was squeezed to 3 px with
+its text drawn over the label ("Starkstromleitungskap" under "40 MW" on a
+two-lane road in de-DE), and the line reported no overflow. With the row to
+itself, a value may wrap. A game string's trailing line break
 ("Small Roads") is trimmed as C#'s `WordFormat.GameText` trims it. The
 reverse-sort button has a key of its own: it shared the table header's hint,
 "reverse this sort", and so read in lowercase.
