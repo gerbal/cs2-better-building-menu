@@ -7,7 +7,7 @@ Design rationale for `PrefabIndexingSystem`, one partial class across six files 
 - `.Menus.cs`: the vanilla menus;
 - `.MenuAudit.cs`: the census and coverage report, which ask the game about prefabs and log what
   `VanillaMenuAudit`, `VanillaMenuCoverage` and `IndexAuditLog` return;
-- `.Facts.cs`: per-prefab facts;
+- `.Facts.cs`: the reads behind per-prefab facts;
 - `.Progression.cs`: milestones, the dev tree and unlock requirements;
 - `.Zones.cs`: the zone catalog.
 
@@ -326,6 +326,21 @@ and why.
 The entry keeps the facts in the order they are added, but a card re-sorts them by `FACT_ORDER`
 in `serviceFacts.ts`. So the order `Apply` adds them in only breaks ties within one key, such as
 a road's features.
+
+The rest of an entry's per-prefab data is split the same way: `.Facts.cs` reads, and a plain class
+in `Domain/` decides, so a test can reach every rule without the entity world.
+
+- A building's effect lines: `EffectWording.Lines`, from its city and local modifier buffers.
+- Its upgrades, in the order vanilla offers them: `SupportedUpgrades.InMenuOrder`, from the offers
+  the system collects out of the `BuildingUpgradeElement` and `BuildingModule` buffers.
+- What the toolbar's filter row knows about it: `VanillaAssetFacts.From`, from its requirement and
+  pack entities and which of them carry `ThemeData` and `ModPrerequisiteData`.
+- Its parking bays: `ParkingSlots.Own`, from its garage capacity, its parking connection and the
+  shape of each parking lane. The system adds each sub-object's own count, walking the prefab graph.
+
+An extractor's map feature stays in the system: every step of it is a read, in the order
+`RequiredResourceBinder.GetExtractorType` guards them, and what is left once the reads are done is
+the choice of the first matching area.
 
 ## Dev tree branches
 

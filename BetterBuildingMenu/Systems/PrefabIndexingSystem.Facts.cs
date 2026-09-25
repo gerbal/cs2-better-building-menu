@@ -26,12 +26,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Mathematics;
 
 namespace BetterBuildingMenu.Systems
 {
@@ -314,50 +312,18 @@ namespace BetterBuildingMenu.Systems
 			}
 		}
 
-		/// <summary>What this building does for the city, phrased for a hover card.</summary>
-		/// <remarks>Both buffers the game applies, with vanilla's own arithmetic in
-		/// ModifierUIUtils.GetModifierDelta. m_Range.max is the figure vanilla binds.</remarks>
+		/// <summary>What this building does for the city, phrased for a hover card. See
+		/// <see cref="EffectWording.Lines"/>.</summary>
 		private string[] GetBonuses(Entity entity)
 		{
-			var bonuses = new List<string>();
+			var city = EntityManager.TryGetBuffer<CityModifierData>(entity, true, out var cityModifiers)
+				? cityModifiers.AsNativeArray().ToArray()
+				: null;
+			var local = EntityManager.TryGetBuffer<LocalModifierData>(entity, true, out var localModifiers)
+				? localModifiers.AsNativeArray().ToArray()
+				: null;
 
-			if (EntityManager.TryGetBuffer<CityModifierData>(entity, true, out var cityModifiers))
-			{
-				for (var i = 0; i < cityModifiers.Length; i++)
-				{
-					var modifier = cityModifiers[i];
-
-					// Vanilla hides this one from its own effect list, so a card
-					// that showed it would be inventing an effect the game does
-					// not acknowledge.
-					if (modifier.m_Type == CityModifierType.CriminalMonitorProbability)
-					{
-						continue;
-					}
-
-					bonuses.Add(EffectWording.Describe(
-						modifier.m_Type.ToString(),
-						modifier.m_Mode,
-						modifier.m_Range.max,
-						EffectWording.IsPercent(modifier.m_Type, modifier.m_Mode)));
-				}
-			}
-
-			if (EntityManager.TryGetBuffer<LocalModifierData>(entity, true, out var localModifiers))
-			{
-				for (var i = 0; i < localModifiers.Length; i++)
-				{
-					var modifier = localModifiers[i];
-
-					bonuses.Add(EffectWording.Describe(
-						modifier.m_Type.ToString(),
-						modifier.m_Mode,
-						modifier.m_Delta.max,
-						EffectWording.IsPercent(modifier.m_Mode)));
-				}
-			}
-
-			return bonuses.Where(b => !string.IsNullOrEmpty(b)).Distinct().ToArray();
+			return EffectWording.Lines(city, local);
 		}
 
 		/// <summary>The map feature an extractor building requires, or null when it is not one.
@@ -396,18 +362,19 @@ namespace BetterBuildingMenu.Systems
 			return null;
 		}
 
-		/// <summary>The upgrades a building supports, in the order vanilla offers them.</summary>
-		/// <remarks>Two buffers, as UpgradeMenuUISystem reads them — BuildingUpgradeElement for service
-		/// upgrades, BuildingModule for the modules signature towers take — filtered and ordered as it does.</remarks>
+		/// <summary>The upgrades a building supports, in the order vanilla offers them. See
+		/// <see cref="SupportedUpgrades.InMenuOrder"/>.</summary>
+		/// <remarks>Two buffers, as UpgradeMenuUISystem reads them: BuildingUpgradeElement for service
+		/// upgrades, BuildingModule for the modules signature towers take.</remarks>
 		private (string[] DisplayNames, string[] PrefabNames) GetSupportedUpgrades(Entity entity)
 		{
-			List<(int Priority, string Name, string PrefabName)>? found = null;
+			List<UpgradeOffer>? offers = null;
 
 			if (EntityManager.TryGetBuffer<BuildingUpgradeElement>(entity, true, out var upgrades))
 			{
 				for (var i = 0; i < upgrades.Length; i++)
 				{
-					CollectUpgrade(upgrades[i].m_Upgrade, ref found);
+					CollectUpgrade(upgrades[i].m_Upgrade, ref offers);
 				}
 			}
 
@@ -415,25 +382,15 @@ namespace BetterBuildingMenu.Systems
 			{
 				for (var i = 0; i < modules.Length; i++)
 				{
-					CollectUpgrade(modules[i].m_Module, ref found);
+					CollectUpgrade(modules[i].m_Module, ref offers);
 				}
 			}
 
-			if (found is null)
-			{
-				return (Array.Empty<string>(), Array.Empty<string>());
-			}
-
-			// OrderBy, not Sort: it is stable, so two upgrades sharing a priority
-			// keep the order the game's own buffers hold them in.
-			var ordered = found.OrderBy(entry => entry.Priority).ToArray();
-
-			return (
-				ordered.Select(entry => entry.Name).ToArray(),
-				ordered.Select(entry => entry.PrefabName).ToArray());
+			return SupportedUpgrades.InMenuOrder(offers);
 		}
 
-		private void CollectUpgrade(Entity upgrade, ref List<(int Priority, string Name, string PrefabName)>? found)
+		/// <summary>One upgrade, when it has the UIObject and the prefab a menu entry needs.</summary>
+		private void CollectUpgrade(Entity upgrade, ref List<UpgradeOffer>? offers)
 		{
 			if (!EntityManager.TryGetComponent<UIObjectData>(upgrade, out var ui))
 			{
@@ -445,105 +402,69 @@ namespace BetterBuildingMenu.Systems
 				return;
 			}
 
-			(found ??= new List<(int Priority, string Name, string PrefabName)>()).Add((ui.m_Priority, GetAssetName(prefab), prefab.name));
+			(offers ??= new List<UpgradeOffer>()).Add(new UpgradeOffer(ui.m_Priority, GetAssetName(prefab), prefab.name));
 		}
 
-		/// <summary>What the game's own toolbar filter row knows about a prefab.</summary>
+		/// <summary>What the game's own toolbar filter row knows about a prefab. See
+		/// <see cref="VanillaAssetFacts.From"/>.</summary>
 		/// <remarks>Identity-free by design: WHICH requirement and pack entities an asset carries, never
 		/// which themes or packs they are, so a theme or pack a mod ships needs no change here.</remarks>
 		private VanillaAssetFacts GetVanillaAssetFacts(Entity entity)
 		{
-			var themeRequirements = new List<int>();
+			var requirements = Array.Empty<(int Index, bool IsTheme)>();
 
-			if (EntityManager.TryGetBuffer<ObjectRequirementElement>(entity, true, out var requirements))
+			if (EntityManager.TryGetBuffer<ObjectRequirementElement>(entity, true, out var requirementElements))
 			{
-				for (var i = 0; i < requirements.Length; i++)
-				{
-					var requirement = requirements[i].m_Requirement;
+				requirements = new (int Index, bool IsTheme)[requirementElements.Length];
 
-					if (EntityManager.HasComponent<ThemeData>(requirement))
-					{
-						themeRequirements.Add(requirement.Index);
-					}
+				for (var i = 0; i < requirementElements.Length; i++)
+				{
+					var requirement = requirementElements[i].m_Requirement;
+					requirements[i] = (requirement.Index, EntityManager.HasComponent<ThemeData>(requirement));
 				}
 			}
 
-			var packs = new List<int>();
-			var hasPackBuffer = EntityManager.TryGetBuffer<AssetPackElement>(entity, true, out var packElements);
+			List<(int Index, bool HasModPrerequisite)>? packs = null;
 
-			// IsModAsset, and the second half is easy to get backwards: an asset
-			// carrying ModPrerequisiteData is NOT a mod asset when one of its packs
-			// carries it too, so the pack filter governs it, not the Mods toggle.
-			var isModAsset = EntityManager.HasComponent<ModPrerequisiteData>(entity);
-
-			if (hasPackBuffer)
+			if (EntityManager.TryGetBuffer<AssetPackElement>(entity, true, out var packElements))
 			{
+				packs = new List<(int Index, bool HasModPrerequisite)>(packElements.Length);
+
 				for (var i = 0; i < packElements.Length; i++)
 				{
 					var pack = packElements[i].m_Pack;
-					packs.Add(pack.Index);
-
-					if (isModAsset && EntityManager.HasComponent<ModPrerequisiteData>(pack))
-					{
-						isModAsset = false;
-					}
+					packs.Add((pack.Index, EntityManager.HasComponent<ModPrerequisiteData>(pack)));
 				}
 			}
 
-			return new VanillaAssetFacts(themeRequirements, packs, hasPackBuffer, isModAsset);
+			return VanillaAssetFacts.From(requirements, packs, EntityManager.HasComponent<ModPrerequisiteData>(entity));
 		}
 
-		/// <summary>How many cars the asset can park, counted rather than merely detected.</summary>
-		/// <remarks>Exact for an object's own lanes: LaneSystem.CreateObjectLane sets FindConnections on
-		/// every one, so the curve is never trimmed and the game's own arithmetic reproduces the count.</remarks>
+		/// <summary>How many cars the asset can park, its sub-objects' included. See
+		/// <see cref="ParkingSlots.Own"/>.</summary>
 		private int GetParkingSlots(PrefabBase prefab)
 		{
-			var slots = 0;
+			var garageCapacity = prefab.TryGet<ParkingFacility>(out var parkingFacility)
+				? parkingFacility.m_GarageMarkerCapacity
+				: 0;
+			var parkingSpawn = prefab.TryGet<SpawnLocation>(out var spawnLocation)
+				&& spawnLocation.m_ConnectionType == RouteConnectionType.Parking;
 
-			// A garage parks cars inside rather than along marked lanes, so it has
-			// no sub-lanes to divide up and declares its capacity outright.
-			if (prefab.TryGet<ParkingFacility>(out var parkingFacility)
-				&& parkingFacility.m_GarageMarkerCapacity > 0)
-			{
-				slots += parkingFacility.m_GarageMarkerCapacity;
-			}
-			else if (prefab.TryGet<SpawnLocation>(out var spawnLocation)
-				&& spawnLocation.m_ConnectionType == RouteConnectionType.Parking)
-			{
-				// A parking connection with no declared capacity really is one
-				// dedicated space — a driveway rather than a car park.
-				slots++;
-			}
+			IList<ParkingLaneShape>? lanes = null;
 
 			if (prefab.TryGet<ObjectSubLanes>(out var subLanes) && subLanes.m_SubLanes is not null)
 			{
 				foreach (var lane in subLanes.m_SubLanes)
 				{
-					if (lane?.m_LanePrefab is null
-						|| !lane.m_LanePrefab.TryGet<ParkingLane>(out var parkingLane))
+					if (lane?.m_LanePrefab is not null && lane.m_LanePrefab.TryGet<ParkingLane>(out var parkingLane))
 					{
-						continue;
-					}
-
-					// A lane with no slot width is Virtual, and the game's own capacity sum
-					// skips those: RoadsInfoviewUISystem drops VirtualLane before adding
-					// slots, and a slot angle near zero would otherwise count bays.
-					if (parkingLane.m_SlotSize.x < 0.001f)
-					{
-						continue;
-					}
-
-					var interval = GetParkingSlotInterval(parkingLane);
-
-					if (interval > 0.001f)
-					{
-						// The +0.01 is the game's, not a fudge: GetParkingSlotCount
-						// adds it before the divide, and dropping it loses a bay
-						// whenever the length divides exactly.
-						slots += (int)Math.Floor((MathUtils.Length(lane.m_BezierCurve) + 0.01f) / interval);
+						(lanes ??= new List<ParkingLaneShape>()).Add(
+							new ParkingLaneShape(MathUtils.Length(lane.m_BezierCurve), parkingLane.m_SlotSize, parkingLane.m_SlotAngle));
 					}
 				}
 			}
+
+			var slots = ParkingSlots.Own(garageCapacity, parkingSpawn, lanes ?? Array.Empty<ParkingLaneShape>());
 
 			if (prefab.TryGet<ObjectSubObjects>(out var subObjects) && subObjects.m_SubObjects is not null)
 			{
@@ -557,31 +478,6 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			return slots;
-		}
-
-		/// <summary>The spacing between bays, derived the way the game bakes it.</summary>
-		/// <remarks>NetInitializeSystem computes ParkingLaneData.m_SlotInterval from the managed slot
-		/// size and angle; deriving it here keeps to the prefab graph the rest of the walk uses.</remarks>
-		private static float GetParkingSlotInterval(ParkingLane parkingLane)
-		{
-			var angle = math.radians(math.clamp(parkingLane.m_SlotAngle, 0f, 90f));
-			var slotSize = math.select(parkingLane.m_SlotSize, 0f, parkingLane.m_SlotSize < 0.001f);
-			var y = new float2(math.cos(angle), math.sin(angle));
-
-			if (y.y < 0.001f)
-			{
-				return slotSize.y;
-			}
-
-			if (y.x < 0.001f)
-			{
-				return slotSize.x;
-			}
-
-			var scaled = slotSize / new float2(y.y, y.x);
-			scaled = math.select(scaled, 0f, scaled < 0.001f);
-
-			return math.min(scaled.x, scaled.y);
 		}
 	}
 }
