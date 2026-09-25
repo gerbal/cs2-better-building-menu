@@ -1932,3 +1932,185 @@ The store's 0.1.12 changelog carried the 0.1.11 section too: the
 replacing it. Trimmed to 0.1.12 in the repo config and the scratch copy, and
 a second `Update` (game closed, first attempt) returned "Mod metadata
 Updated"; the echoed changelog holds only the 0.1.12 lines.
+
+## 2026-09-24 — card facts against vanilla's binders (by code reading)
+
+Every figure the card draws was set against the binder that shows it in
+`PrefabUISystem` (1.6.2f1), and the arithmetic behind it. Not yet checked in
+game. Fixed:
+
+- An incinerator's Capacity was its garbage store drawn as megawatts: the
+  largest capacity of every role, in the primary role's unit. Capacity is now
+  the primary role's own figure. An incinerator is filed as a garbage facility,
+  as a landfill is, so its Capacity is a weight like theirs, and its output
+  gets vanilla's Power output line. The primary is the first role that has a
+  figure: a water treatment plant's pumping station holds no water, so it is
+  filed by its sewage, and keeps its 400,000 m³ a month.
+- Power output is `PowerProductionBinder`'s sum: the plant plus wind, solar,
+  garbage, water, groundwater and an emergency generator, which is a power
+  source on its own too.
+- Upkeep comes from the `ServiceUpkeepData` buffer alone. A signature or zoned
+  building showed its renters' upkeep as the city's. It now has none, so the
+  table's Upkeep column, its sort and its range skip those buildings.
+- `UpkeepModifierData` is labelled Resource consumption, as vanilla labels it:
+  `CityServiceUpkeepSystem` applies it only to the resources a building burns.
+- Graduation is points added to a probability (`GraduationSystem` ends on
+  `+ graduationModifier`), drawn "+5 %", not "×0.05".
+- Student and inmate wellbeing and health, and work conditions, are offsets:
+  a negative one is drawn, signed.
+- Comfort is read from parking facilities and transport stops as well as
+  stations, as vanilla's three COMFORT binders do.
+- A groundwater-powered plant draws ground water (`RequiredResourceBinder`).
+- A network that owns a building is read from the building.
+- Effects take vanilla's units: a whole percentage (the game ships
+  `percentageSingleFraction` separately, so `percentage` is whole) for relative
+  effects and the absolute city effects `CityModifierBinder.GetModifierUnit`
+  names, one decimal otherwise, invariant. The one-decimal unit is a whole
+  number from 100 up, and 0.1 for anything smaller that is not zero, as the
+  game's UI formats it.
+- The deathcare processing rate rounds up; a road with no upkeep has no
+  upkeep line; homes per cell keep a decimal; Fish is worded; the shelter's
+  vehicles are evacuation buses.
+- Stormwater capacity and transport type move to our tier: no binder shows
+  them. The elevation cost, which never matched a road, is gone.
+
+Deliberately not matched:
+
+- Network upkeep rounds the per-kilometre product, which is what
+  `NetUtils.GetUpkeepCost` charges; vanilla rounds the per-cell figure first
+  (¢487/km/mo. against ¢500). So a network under half a cent a cell, whose
+  upkeep vanilla leaves off, shows one.
+- Power output is one figure, the top of vanilla's range: vanilla shows the
+  plant's own output up to that plus every source that can add to it, as
+  0–400,000 for an incinerator. The table's column and sort need one number.
+- Upkeep is the budget-free figure: vanilla scales it by the service's current
+  budget, which is city state, not a fact about the building.
+- Vanilla's upkeep is a range whose top prices the burned resources at market;
+  the card names each resource and its amount under the upkeep instead.
+- The deathcare capacity keeps its "plots" unit, though a crematorium's store
+  is bodies held, not plots.
+- A telecom facility's capacity keeps its decimal; vanilla rounds it up.
+- A percentage effect that rounds to nothing draws no line; vanilla binds every
+  one but CriminalMonitorProbability, zeros included.
+- Effect numbers are invariant, so a comma-decimal locale reads "1.5" in an
+  effect line beside "1,5" elsewhere on the card.
+
+Not drawn then, though vanilla shows them: pollution levels, transformer
+capacity and voltages, a pipe's water type, transport stop counts, a network's
+auxiliary networks in its cost, and the power-line rule's lighting and layer
+tests. All are drawn since; see the next section.
+
+## 2026-09-25 — the tooltip lines the card did not draw (by code reading)
+
+Each line the audit above found missing, transcribed from its binder in
+`PrefabUISystem` (1.6.2f1). Not yet checked in game.
+
+- Pollution levels (`PollutionBinder`): ground, air and noise, each graded
+  against the thresholds in `UIPollutionConfigurationPrefab`. A figure has to
+  pass a threshold to reach its level (`PollutionUIUtils.GetPollutionKey`).
+  Shown once the three figures sum to anything; a level of none is left off.
+- Voltage: a power plant's from its transformer's low side and its own
+  power-line sub-nets (`PowerProductionBinder`), a power line's from its
+  network's layers. Anything but one voltage alone reads "Low and high", no
+  power line at all included, as `ElectricityUIUtils.GetVoltage` words it.
+- Power-line capacity follows `ElectricityConnectionBinder`: a connection that
+  is not street lighting, on a network with a power-line layer. It replaces a
+  rule of ours that left out every road, so a road whose connection passes the
+  binder's test now shows one, as vanilla's tooltip does.
+- Transformers (`TransformerCapacityBinder`, `TransformerInputBinder`,
+  `TransformerOutputBinder`): the smaller of what the low- and high-voltage
+  connections carry, over the sub-nets that start and end on one node; input
+  high, output low. A power plant's own transformer shows only its output.
+- The pipes a network carries built in (`WaterConnectionBinder`): fresh
+  water, sewage or both. A pipe itself is a pipeline, which the binder leaves
+  out, so this is a road's line, labelled "Water pipes" beside its features.
+- Transport stops (`TransportStopBinder`): a building's passenger stops,
+  counted by kind. The first stop decides whether there is a line at all, so a
+  building whose first stop takes no passengers shows none; a network shows none.
+- Auxiliary networks (`PlaceableNetCostBinder`): a network's cost adds each
+  auxiliary network's, and theirs in turn, scaled by (1000 − 2z) / 1000 of its
+  offset.
+
+Deliberately not matched:
+
+- The words are the game's own, which it translates into its twelve languages,
+  wherever it has them: `Properties.VOLTAGE:0` to `:2`,
+  `Properties.WATER_PIPE_TYPE[…]`, `Properties.TRANSFORMER_CAPACITY`,
+  `_INPUT` and `_OUTPUT`, `Properties.TRANSPORT_STOP_COUNT[…]`,
+  `SelectedInfoPanel.POLLUTION_LEVELS_GROUND`, `_AIR` and `_NOISE` and
+  `SelectedInfoPanel.POLLUTION_LEVELS:1` to `:3`. They are in the game's
+  `Locale.cok`, checked in game; the refs hold only its assemblies. Two labels
+  are ours: "Voltage", and "Water pipes", where the game's "Pipes" would sit
+  beside a road's own "Carries" line.
+- A network whose own cost for a cell rounds to nothing still shows a cost line;
+  vanilla leaves it off. The same rounding choice as below.
+- A network's cost is rounded once, per kilometre, with each auxiliary
+  network's share added first. Vanilla rounds the network's own cost for a cell
+  before multiplying by 125 and truncates each share on its own, so a cell cost
+  of 12.4 reads ¢1,550/km on the card and ¢1,500 in vanilla. The rounding
+  predates the auxiliary networks, and is the same choice as the network
+  upkeep's above.
+- A transformer with no capacity draws no capacity line; vanilla binds a zero.
+- Stops are one line per kind, where vanilla draws one map of them.
+- A network whose sub-objects hold a power plant without one owning the
+  network shows no output or voltage; vanilla sums its sub-objects' output.
+
+## 2026-09-25 — the card's vanilla lines in the game's own words (by code reading)
+
+The lines the card draws in vanilla's tier now take the label key vanilla's
+binder passes (`PrefabUISystem`, 1.6.2f1), so they read as the game's tooltip
+does in each of its twelve languages. Our English stays as the fallback. Not
+yet checked in game.
+
+- Cost and upkeep: `Properties.CONSTRUCTION_COST` and `Properties.UPKEEP`, on
+  the card only. A network's cost takes the building's key too:
+  `PlaceableNetCostBinder` passes `Common.ASSET_CONSTRUCTION_COST`, but no
+  locale carries that key (checked in game), so it would read "Cost" in every
+  language. The table's columns and the range filters keep ours, which are
+  shorter.
+- The service figures: `DECEASED_PROCESSING_CAPACITY`,
+  `GARBAGE_PROCESSING_CAPACITY`, `MAIL_SORTING_RATE`, `CARGO_CAPACITY`,
+  `JAIL_CAPACITY`, `GARBAGE_STORAGE`, `MAIL_BOX_CAPACITY`, `ATTRACTIVENESS`,
+  `COMFORT` and `RESOURCE_CONSUMPTION`, all under `Properties.`.
+- The vehicle counts: `GARBAGE_TRUCK_COUNT`, `POST_VAN_COUNT`,
+  `POST_TRUCK_COUNT`, `AMBULANCE_COUNT`, `HEARSE_COUNT`, `PRISON_VAN_COUNT`,
+  `TRANSPORT_VEHICLE_COUNT`, `MAINTENANCE_VEHICLES` and `EVACUATION_BUS_COUNT`.
+- Power: `BATTERY_POWER_OUTPUT`, `POWER_LINE_CAPACITY` and
+  `POWER_PLANT_OUTPUT`.
+- An upgrade's pollution change takes the level's own name,
+  `SelectedInfoPanel.POLLUTION_LEVELS_GROUND`, `_AIR` and `_NOISE`, as vanilla
+  binds it.
+- An extractor's map resource and a pumping station's water source both take
+  `Properties.REQUIRED_RESOURCE`, the one binder behind both.
+
+The English changes with them: the two "Processing" lines read as vanilla's
+deceased- and garbage-processing lines, "Grid capacity" as its power-line
+capacity, "Draws from" as its required resource. A test holds every fact in
+vanilla's tier to its binder's exact key, and every other fact to ours.
+
+A label never wraps, and a line is half the card, so a label too long for its
+half, as the game's German ones can be, ran into its neighbour. A line now
+measures what it drew, two frames after drawing it as the tile names do, and
+takes the whole row when it overflows. For that the value keeps its whole
+width in a half: in game, a value allowed to shrink was squeezed to 3 px with
+its text drawn over the label ("Starkstromleitungskap" under "40 MW" on a
+two-lane road in de-DE), and the line reported no overflow. With the row to
+itself, a value may wrap. A game string's trailing line break
+("Small Roads") is trimmed as C#'s `WordFormat.GameText` trims it. The
+reverse-sort button has a key of its own: it shared the table header's hint,
+"reverse this sort", and so read in lowercase.
+
+Deliberately not matched:
+
+- Helicopters and purification keep ours. Each is one fact for several of
+  vanilla's lines: `MEDICAL_`, `FIRE_` and `POLICE_HELICOPTER_COUNT`, and
+  `WATER_` and `SEWAGE_PURIFICATION_RATE`.
+- "Voltage" and "Water pipes" stay ours, as recorded above.
+- A zone's upkeep stays ours: its renters pay it, where the game's
+  `Properties.UPKEEP` names what the city pays to run a building.
+- An upgrade that carries both a pollution level and a pollution change shows
+  two lines under the same name, as vanilla's does; vanilla tells the change
+  apart with an icon, which the card does not draw.
+- The headline capacity keeps ours: vanilla names it per service
+  (`PATIENT_CAPACITY`, `STUDENT_CAPACITY` and so on) and the card draws one
+  line with a unit.

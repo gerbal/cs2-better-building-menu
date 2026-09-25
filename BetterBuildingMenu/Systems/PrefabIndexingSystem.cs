@@ -50,6 +50,9 @@ namespace BetterBuildingMenu.Systems
 		// pass's own trigger. A field rather than a RequireForUpdate gate,
 		// which would hold the system shut for unlock events too.
 		private EntityQuery _changedPrefabQuery;
+		// Prefab entities the game is replacing or removing, until the frame's clean-up.
+		// The entity is the only link to their entry: Road Builder renames a road on every edit.
+		private EntityQuery _deletedPrefabQuery;
 		// One full pass per settled burst of dictionary changes, on the next update for
 		// a language change. See OnActiveDictionaryChanged.
 		private readonly LocaleReindexPolicy _localeReindex = new(TimeSpan.FromSeconds(1));
@@ -61,8 +64,10 @@ namespace BetterBuildingMenu.Systems
 		// placed-unique rescan walks these rather than all 17k prefabs, so it can
 		// afford to run on every catalog publish. See PlacedUniqueScan.
 		private List<(int Id, PrefabBase Prefab)> _uniqueCandidates = new();
-		// What the last log line said, so a rescan that found nothing stays quiet.
+		// The count the last rescan logged, so a rescan that found nothing new stays quiet.
 		private int _loggedUniqueCandidateCount = -1;
+		// The thresholds a building's pollution is graded by, read at the start of every pass.
+		private PollutionScale? _pollutionScale;
 #if DEBUG
 		// The assets a pass indexed without an icon, logged as one line when it ends: one line
 		// each came to thousands per full pass, repeated on every language change.
@@ -151,6 +156,7 @@ namespace BetterBuildingMenu.Systems
 					ComponentType.ReadOnly<Updated>(),
 				}
 			});
+			_deletedPrefabQuery = GetEntityQuery(ComponentType.ReadOnly<PrefabData>(), ComponentType.ReadOnly<Deleted>());
 
 			Enabled = false;
 
@@ -176,7 +182,8 @@ namespace BetterBuildingMenu.Systems
 			Index = new CatalogIndex(mods: Index.Mods);
 			PlacedUniques = new PlacedUniques();
 			_uniqueCandidates = new List<(int Id, PrefabBase Prefab)>();
-			// So the next city's placed-unique line is logged, whatever its count.
+			// So the next city's placed-unique line is logged, whatever its count, once its
+			// index is ready.
 			_loggedUniqueCandidateCount = -1;
 			Generation++;
 
@@ -285,9 +292,8 @@ namespace BetterBuildingMenu.Systems
 			}
 		}
 
-		/// <remarks>Registered at PrefabUpdate and UIUpdate, both every frame; only UIUpdate
-		/// follows UnlockSystem. A partial pass runs at both, since the Created and Updated tags
-		/// last until the frame's clean-up. See docs/indexing.md, "Partial passes".</remarks>
+		/// <remarks>Registered at UIUpdate only, which follows PrefabSystem and UnlockSystem in
+		/// the same frame. See docs/indexing.md, "Partial passes".</remarks>
 		protected override void OnUpdate()
 		{
 			if (_indexOnFirstUpdate)
@@ -321,10 +327,19 @@ namespace BetterBuildingMenu.Systems
 
 			if (!_unlockEventQuery.IsEmptyIgnoreFilter)
 			{
-				ApplyUnlocks();
+				// Caught here so it cannot cost this frame's partial pass: the changed prefabs'
+				// tags are gone after the frame's clean-up. The next full pass reads lock state.
+				try
+				{
+					ApplyUnlocks();
+				}
+				catch (Exception ex)
+				{
+					Mod.Log.Error(ex, "Applying unlocks failed");
+				}
 			}
 
-			if (_changedPrefabQuery.IsEmptyIgnoreFilter)
+			if (_changedPrefabQuery.IsEmptyIgnoreFilter && _deletedPrefabQuery.IsEmptyIgnoreFilter)
 			{
 				return;
 			}
@@ -483,6 +498,21 @@ namespace BetterBuildingMenu.Systems
 			return mods;
 		}
 
+		/// <summary>Drops the entries of prefab entities the game is deleting this frame.</summary>
+		/// <remarks>PrefabSystem.UpdatePrefab marks the old entity Deleted and files the prefab under
+		/// a new one, so without this the old row stays listed until the next full pass.</remarks>
+		private void RemoveDeletedPrefabs(CatalogIndex target)
+		{
+			var deleted = _deletedPrefabQuery.ToEntityArray(Allocator.Temp);
+
+			for (var i = 0; i < deleted.Length; i++)
+			{
+				target.Remove(deleted[i].Index);
+			}
+
+			deleted.Dispose();
+		}
+
 		/// <summary>Narrows a processor's query to prefabs created or changed this frame.</summary>
 		/// <remarks>Edits the descriptions in place, so it is handed a copy of its own: processors build
 		/// new ones on every call. A description with an Any of its own is left whole, since it cannot
@@ -562,20 +592,9 @@ namespace BetterBuildingMenu.Systems
 				{
 					_auditedThisLoad = true;
 
-					// Which processors feed anything the lens can show. A processor
-					// whose every prefab is neither a building/network nor placed in
-					// a vanilla menu is indexing for nobody; this is the count.
+					// Which processors feed anything the lens can show.
+					Log(IndexAuditLog.ProcessorCensus(census, Index));
 					var all = Index.All;
-
-					foreach (var pair in census.OrderBy(pair => pair.Key, StringComparer.Ordinal))
-					{
-						var lens = pair.Value.Count(id =>
-							all.TryGetValue(id, out var indexed)
-							&& (indexed.Category is PrefabCategory.Buildings or PrefabCategory.ServiceBuildings or PrefabCategory.Networks
-								|| Index.Menus.IsPlaced(id)));
-
-						Mod.Log.Info($"[PROCESSOR-CENSUS] {pair.Key} indexed={pair.Value.Count} lens={lens}");
-					}
 
 					// A prefab two processors claimed keeps the later one's category,
 					// whatever the earlier one decided. Each pair is named once.
@@ -606,15 +625,23 @@ namespace BetterBuildingMenu.Systems
 			// Assigned in both branches, so nothing in a full pass's prologue can reach
 			// the published index through it before the new one exists.
 			CatalogIndex target;
+			_pollutionScale = ReadPollutionScale();
 
 			if (full)
 			{
+				if (_pollutionScale is null)
+				{
+					Mod.Log.Info("No pollution thresholds in the game's settings: cards draw no pollution levels");
+				}
+
 				var mods = RefreshModCompatibility(fallback: Index.Mods);
 
 				// Before IndexZones and before the processors: the zone catalog
 				// inherits the game's own Zones menu, and the blacklist check below
 				// consults the placements too.
-				var placements = IndexVanillaMenuPlacements();
+				// A walk that threw still hands over what it read: a full pass has no
+				// table of its own to keep, and the menus it did read are still right.
+				TryIndexVanillaMenuPlacements(full: true, out var placements);
 				var zones = IndexZones(placements);
 				var (menuNames, menuEntities, menus) = IndexAssetMenus();
 				var categories = IndexAssetCategories();
@@ -632,6 +659,14 @@ namespace BetterBuildingMenu.Systems
 			else
 			{
 				target = Index;
+				RemoveDeletedPrefabs(target);
+
+				// Before the processors, which read the placements back: a recreated prefab
+				// is placed under its new entity. A walk that threw keeps the old table.
+				if (TryIndexVanillaMenuPlacements(full: false, out var placements))
+				{
+					target.RefreshPlacements(placements);
+				}
 			}
 
 			foreach (var (processor, allQuery, changedQuery) in _processors)
@@ -688,15 +723,21 @@ namespace BetterBuildingMenu.Systems
 
 						try
 						{
-							// A recreated prefab's old entry. Only one the game has replaced: a
-							// namesake of another type is live, and so is the entry an earlier
-							// processor just filed for this entity.
-							if (!full
-								&& EntityManager.HasComponent<Created>(entity)
-								&& target.GetByPrefabName(prefab.name) is { } old
-								&& IsReplaced(old))
+							// A recreated prefab's old entries: every namesake the game has
+							// replaced. A namesake of another type is live, and so is the entry
+							// an earlier processor just filed for this entity.
+							// An entity the game has already replaced, as when it creates and
+							// recreates a prefab in one frame, is stale whatever its tags.
+							if (!full && !IsCurrent(prefab, entity.Index))
 							{
-								target.Remove(old.Id);
+								target.Remove(entity.Index);
+
+								continue;
+							}
+
+							if (!full && EntityManager.HasComponent<Created>(entity))
+							{
+								target.RemoveNamesakes(prefab.name, IsReplaced);
 							}
 
 							if (_roadBuilderDiscarded.HasValue && EntityManager.HasComponent(entity, _roadBuilderDiscarded.Value))
@@ -764,19 +805,6 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			target.NumberDuplicateNames();
-
-			if (full)
-			{
-				// The count at Info, since whether it ever finds anything decides whether it
-				// stays; each entry at Debug. See CatalogIndex.RemoveBrandDuplicates.
-				var removed = target.RemoveBrandDuplicates();
-				Mod.Log.Info($"Brand cleanup took {removed.Count} entries out of subcategory lists");
-
-				foreach (var (entry, from) in removed)
-				{
-					Mod.Log.Debug($"Removed {entry.PrefabName} from {from}");
-				}
-			}
 
 			return target;
 		}
@@ -846,7 +874,7 @@ namespace BetterBuildingMenu.Systems
 			// Enableable: presence alone would mark every unlockable asset
 			// locked forever, including the ones already earned.
 			prefabIndex.IsLocked = EntityManager.HasEnabledComponent<Locked>(entity);
-			prefabIndex.Bonuses = GetBonuses(entity);
+			prefabIndex.Bonuses = GetBonuses(DetailsSource(entity));
 
 			// Milestone kept whatever the lock state; requirements only while
 			// locked. See the matching note in ApplyUnlocks.
@@ -930,8 +958,11 @@ namespace BetterBuildingMenu.Systems
 		/// <summary>Whether the game has moved the entry's prefab to another entity.</summary>
 		/// <remarks>PrefabSystem.UpdatePrefab keeps the PrefabBase, marks its entity Deleted and
 		/// points the prefab at a new one, so this holds for the old entry only.</remarks>
-		private bool IsReplaced(PrefabIndex entry) =>
-			!_prefabSystem.TryGetEntity(entry.Prefab, out var current) || current.Index != entry.Id;
+		private bool IsReplaced(PrefabIndex entry) => !IsCurrent(entry.Prefab, entry.Id);
+
+		/// <summary>Whether the game maps this prefab to the entity with this index.</summary>
+		private bool IsCurrent(PrefabBase prefab, int id) =>
+			_prefabSystem.TryGetEntity(prefab, out var current) && current.Index == id;
 
 		private string GetAssetName(PrefabBase prefab)
 		{
@@ -995,8 +1026,10 @@ namespace BetterBuildingMenu.Systems
 				Generation++;
 			}
 
-			// Logged on a change only: the rescan runs on every catalog publish.
-			if (moved || _uniqueCandidates.Count != _loggedUniqueCandidateCount)
+			// On a change only, as the rescan runs on every catalog publish, and only once a
+			// pass has made the index ready: at the main menu "0 of 0" means no city, but in a
+			// city it means unique detection found nothing.
+			if (Index.IsReady && (moved || _uniqueCandidates.Count != _loggedUniqueCandidateCount))
 			{
 				_loggedUniqueCandidateCount = _uniqueCandidates.Count;
 				Mod.Log.Info($"Placed unique assets: {PlacedUniques.Count} of {_uniqueCandidates.Count} unique assets");

@@ -14,28 +14,29 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void MoneyEntriesAreTheUpkeepAndResourcesAreNamed()
 		{
-			var summary = ServiceUpkeepSummary.Summarise(0, new[] { ("Money", 5000), ("Coal", 4000) });
+			var summary = ServiceUpkeepSummary.Summarise(new[] { ("Money", 5000), ("Coal", 4000) });
 
 			Assert.Equal(5000, summary.Money);
 			Assert.Equal(new[] { ("Coal", 4000) }, summary.Resources);
 		}
 
 		[Fact]
-		public void TheConsumptionFigureStandsInOnlyWhenTheBufferHasNoMoney()
+		public void EveryMoneyEntryCountsAndNoneIsZero()
 		{
-			// A school: no ConsumptionData upkeep, money in the buffer.
-			Assert.Equal(7000, ServiceUpkeepSummary.Summarise(0, new[] { ("Money", 7000) }).Money);
-			// A plain placeable with no buffer at all.
-			Assert.Equal(3000, ServiceUpkeepSummary.Summarise(3000, System.Array.Empty<(string, int)>()).Money);
-			// Both present: the game warns and the buffer already carries the
-			// copy, so counting the consumption figure too would double it.
-			Assert.Equal(5000, ServiceUpkeepSummary.Summarise(5000, new[] { ("Money", 5000) }).Money);
+			Assert.Equal(7000, ServiceUpkeepSummary.Summarise(new[] { ("Money", 7000) }).Money);
+			// Two entries, as when BuildingInitializeSystem copies a ConsumptionData
+			// upkeep beside one the author put in the buffer: the game warns, and its
+			// tooltip sums both.
+			Assert.Equal(8000, ServiceUpkeepSummary.Summarise(new[] { ("Money", 5000), ("Money", 3000) }).Money);
+			// A buffer with no money in it: vanilla still draws the line, at nothing.
+			Assert.Equal(0, ServiceUpkeepSummary.Summarise(new[] { ("Coal", 4000) }).Money);
+			Assert.Equal(0, ServiceUpkeepSummary.Summarise(System.Array.Empty<(string, int)>()).Money);
 		}
 
 		[Fact]
 		public void ZeroAndNegativeAmountsAreNotFacts()
 		{
-			var summary = ServiceUpkeepSummary.Summarise(0, new[] { ("Coal", 0), ("Oil", -5), ("Wood", 12) });
+			var summary = ServiceUpkeepSummary.Summarise(new[] { ("Coal", 0), ("Oil", -5), ("Wood", 12) });
 
 			Assert.Equal(new[] { ("Wood", 12) }, summary.Resources);
 		}

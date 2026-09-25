@@ -310,8 +310,8 @@ export const LensControlPane = memo(function LensControlPane() {
                 className={styles.direction}
                 variant="icon"
                 onSelect={() => setSort(sortColumn)}
-                aria-label={label("Tooltip.LABEL[BetterBuildingMenu.ReverseSort]", "Reverse sort")}
-                title={label("Tooltip.LABEL[BetterBuildingMenu.ReverseSort]", "Reverse sort")}
+                aria-label={label("Tooltip.LABEL[BetterBuildingMenu.ReverseSortButton]", "Reverse sort")}
+                title={label("Tooltip.LABEL[BetterBuildingMenu.ReverseSortButton]", "Reverse sort")}
               >
                 <span aria-hidden="true">{sortPresentation.compact.indicator}</span>
               </Button>

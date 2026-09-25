@@ -26,152 +26,152 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 
 using Unity.Collections;
 using Unity.Entities;
-using Unity.Mathematics;
 
 namespace BetterBuildingMenu.Systems
 {
 	// The per-prefab facts an entry carries: costs, service figures, bonuses, parking, upgrades.
 	public partial class PrefabIndexingSystem
 	{
-		/// <summary>Cells per kilometre, so a network's per-cell cost reads as a per-km one.</summary>
-		/// <remarks>Vanilla's own factor: PrefabUISystem binds int2(cost, cost * 125) for
-		/// PlaceableNetData, and the shipped UI renders it through VALUE_MONEY_PER_KILOMETER.</remarks>
-		private const float NetCellsPerKilometre = 125f;
-
+		/// <summary>An entry's figures and facts. See <see cref="PrefabFacts"/>.</summary>
 		private void PopulateAnalyticalData(Entity entity, PrefabIndex prefabIndex, ZoneIndex zones)
 		{
-			// A filter on work, not on correctness: a component that does not apply
-			// to a category simply does not match. Networks, zones, trees and props
-			// are all priced from components read below, so they belong here.
-			if (prefabIndex.Category is not PrefabCategory.Buildings
-				and not PrefabCategory.ServiceBuildings
-				and not PrefabCategory.Networks
-				and not PrefabCategory.Zones
-				and not PrefabCategory.Trees
-				and not PrefabCategory.Props)
+			if (PrefabFacts.AppliesTo(prefabIndex.Category))
 			{
-				return;
+				PrefabFacts.Apply(ReadSnapshot(DetailsSource(entity), zones), prefabIndex);
+			}
+		}
+
+		/// <summary>The prefab whose figures a card shows for this one: for a network that owns a
+		/// building, the building.</summary>
+		/// <remarks>PrefabUISystem.BindPrefabDetails, transcribed: a network's cost, effects and
+		/// properties come from its first sub-object flagged MakeOwner, as a hydroelectric dam's
+		/// come from its power plant.</remarks>
+		private Entity DetailsSource(Entity entity)
+		{
+			if (EntityManager.HasComponent<NetData>(entity)
+				&& EntityManager.TryGetBuffer<Game.Prefabs.SubObject>(entity, true, out var subObjects))
+			{
+				for (var i = 0; i < subObjects.Length; i++)
+				{
+					if ((subObjects[i].m_Flags & SubObjectFlags.MakeOwner) != 0)
+					{
+						// Vanilla shows no details at all for an owner it cannot read;
+						// the network's own figures are the better fallback.
+						return EntityManager.HasEnabledComponent<PrefabData>(subObjects[i].m_Prefab)
+							? subObjects[i].m_Prefab
+							: entity;
+					}
+				}
 			}
 
-			if (EntityManager.TryGetComponent<PlaceableObjectData>(entity, out var placeableData))
+			return entity;
+		}
+
+		/// <summary>What <see cref="PrefabFacts.Apply"/> maps, read from the prefab's entity, its
+		/// authoring prefab and the zone table.</summary>
+		private PrefabSnapshot ReadSnapshot(Entity entity, ZoneIndex zones)
+		{
+			var snapshot = new PrefabSnapshot
 			{
-				prefabIndex.ConstructionCost = placeableData.m_ConstructionCost;
-				Fact(prefabIndex, "xpReward", placeableData.m_XPReward);
+				AttractionData = Read<AttractionData>(entity),
+				BatteryData = Read<BatteryData>(entity),
+				BuildingPropertyData = Read<BuildingPropertyData>(entity),
+				ConsumptionData = Read<ConsumptionData>(entity),
+				CoverageData = Read<CoverageData>(entity),
+				DeathcareFacilityData = Read<DeathcareFacilityData>(entity),
+				ElectricityConnectionData = Read<ElectricityConnectionData>(entity),
+				EmergencyGeneratorData = Read<EmergencyGeneratorData>(entity),
+				EmergencyShelterData = Read<EmergencyShelterData>(entity),
+				FireStationData = Read<FireStationData>(entity),
+				GarbageFacilityData = Read<GarbageFacilityData>(entity),
+				GarbagePoweredData = Read<GarbagePoweredData>(entity),
+				GroundWaterPoweredData = Read<GroundWaterPoweredData>(entity),
+				HospitalData = Read<HospitalData>(entity),
+				LeisureProviderData = Read<LeisureProviderData>(entity),
+				MailBoxData = Read<MailBoxData>(entity),
+				MaintenanceDepotData = Read<MaintenanceDepotData>(entity),
+				NetData = Read<NetData>(entity),
+				NetGeometryData = Read<NetGeometryData>(entity),
+				ParkData = Read<ParkData>(entity),
+				ParkingFacilityData = Read<ParkingFacilityData>(entity),
+				PathwayData = Read<PathwayData>(entity),
+				PlaceableNetData = Read<PlaceableNetData>(entity),
+				PlaceableObjectData = Read<PlaceableObjectData>(entity),
+				PoliceStationData = Read<PoliceStationData>(entity),
+				PollutionData = Read<PollutionData>(entity),
+				PollutionModifierData = Read<PollutionModifierData>(entity),
+				PostFacilityData = Read<PostFacilityData>(entity),
+				PowerPlantData = Read<PowerPlantData>(entity),
+				PrisonData = Read<PrisonData>(entity),
+				RoadData = Read<RoadData>(entity),
+				SchoolData = Read<SchoolData>(entity),
+				ServiceUpgradeData = Read<ServiceUpgradeData>(entity),
+				SewageOutletData = Read<SewageOutletData>(entity),
+				SolarPoweredData = Read<SolarPoweredData>(entity),
+				StorageLimitData = Read<StorageLimitData>(entity),
+				TaxiwayData = Read<TaxiwayData>(entity),
+				TelecomFacilityData = Read<TelecomFacilityData>(entity),
+				TrackData = Read<TrackData>(entity),
+				TransportDepotData = Read<TransportDepotData>(entity),
+				TransportStationData = Read<TransportStationData>(entity),
+				TransportStopData = Read<TransportStopData>(entity),
+				WastewaterTreatmentPlantData = Read<WastewaterTreatmentPlantData>(entity),
+				WaterPipeConnectionData = Read<WaterPipeConnectionData>(entity),
+				WaterPoweredData = Read<WaterPoweredData>(entity),
+				WaterPumpingStationData = Read<WaterPumpingStationData>(entity),
+				WaterwayData = Read<WaterwayData>(entity),
+				WindPoweredData = Read<WindPoweredData>(entity),
+				WorkplaceData = Read<WorkplaceData>(entity),
+				ZoneData = Read<ZoneData>(entity),
+				ZonePropertiesData = Read<ZonePropertiesData>(entity),
+				ZoneServiceConsumptionData = Read<ZoneServiceConsumptionData>(entity),
+				RequiredResource = GetExtractorFeature(entity),
+				LotSizes = zones.LotSizesOf(entity.Index),
+				IsPipeline = EntityManager.HasComponent<PipelineData>(entity),
+				IsTransformer = EntityManager.HasComponent<TransformerData>(entity),
+				PollutionScale = _pollutionScale,
+			};
+
+			if (snapshot.IsTransformer || snapshot.PowerPlantData.HasValue || snapshot.EmergencyGeneratorData.HasValue)
+			{
+				ReadPowerSubNets(entity, snapshot);
 			}
-			else if (!EntityManager.HasComponent<PlaceableNetData>(entity)
-				&& EntityManager.TryGetComponent<ServiceUpgradeData>(entity, out var upgradeData))
+
+			if (!snapshot.NetData.HasValue)
 			{
-				// An annex — a BuildingExtensionPrefab carrying ServiceUpgrade — has no
-				// PlaceableObjectData: ServiceUpgrade adds that only to a BuildingPrefab.
-				// Its price lives here, which is where GenerateObjectsSystem falls back to.
-				prefabIndex.ConstructionCost = upgradeData.m_UpgradeCost;
-				Fact(prefabIndex, "xpReward", upgradeData.m_XPReward);
+				snapshot.TransportStops = ReadTransportStops(entity);
 			}
-			else if (EntityManager.TryGetComponent<PlaceableNetData>(entity, out var netData))
+
+			if (snapshot.PlaceableNetData.HasValue)
 			{
-				// A network prices by length: m_DefaultConstructionCost is the sum of its
-				// composition pieces for ONE cell, so it is converted to the per-kilometre
-				// figure the game itself shows and flagged as a rate.
-				prefabIndex.ConstructionCost = (uint)Math.Round(netData.m_DefaultConstructionCost * NetCellsPerKilometre);
-				prefabIndex.Upkeep = (int)Math.Round(netData.m_DefaultUpkeepCost * NetCellsPerKilometre);
-				prefabIndex.CostIsPerDistance = true;
+				List<(float Cost, float Share)>? auxiliary = null;
+				CollectAuxiliaryNetCosts(entity, 1f, ref auxiliary, depth: 0);
+				snapshot.AuxiliaryNetCosts = auxiliary;
+			}
 
-				// Speed is per network TYPE rather than on a shared component, so each
-				// is asked in turn and the first that answers wins. Each holds metres
-				// per second; the catalog states km/h — see SpeedLimit.
-				if (EntityManager.TryGetComponent<RoadData>(entity, out var roadData))
-				{
-					prefabIndex.SpeedLimit = SpeedLimit.KilometresPerHour(roadData.m_SpeedLimit);
-				}
-				else if (EntityManager.TryGetComponent<TrackData>(entity, out var trackData))
-				{
-					prefabIndex.SpeedLimit = SpeedLimit.KilometresPerHour(trackData.m_SpeedLimit);
-				}
-				else if (EntityManager.TryGetComponent<PathwayData>(entity, out var pathwayData))
-				{
-					prefabIndex.SpeedLimit = SpeedLimit.KilometresPerHour(pathwayData.m_SpeedLimit);
-				}
-				else if (EntityManager.TryGetComponent<WaterwayData>(entity, out var waterwayData))
-				{
-					prefabIndex.SpeedLimit = SpeedLimit.KilometresPerHour(waterwayData.m_SpeedLimit);
-				}
-				else if (EntityManager.TryGetComponent<TaxiwayData>(entity, out var taxiwayData))
-				{
-					prefabIndex.SpeedLimit = SpeedLimit.KilometresPerHour(taxiwayData.m_SpeedLimit);
-				}
+			if (snapshot.PlaceableNetData is { } netData)
+			{
+				snapshot.HasUndergroundVariant = netData.m_UndergroundPrefab != Entity.Null;
 
-				if (EntityManager.TryGetComponent<NetGeometryData>(entity, out var geometryData)
-					&& geometryData.m_DefaultWidth > 0f)
-				{
-					prefabIndex.NetworkWidth = geometryData.m_DefaultWidth;
-				}
-
-				if (EntityManager.TryGetComponent<NetGeometryData>(entity, out var elevatedGeometry)
-					&& elevatedGeometry.m_ElevatedWidth > 0f
-					&& Math.Abs(elevatedGeometry.m_ElevatedWidth - elevatedGeometry.m_DefaultWidth) > 0.01f)
-				{
-					// Only when it DIFFERS from the ground width. Stating both when
-					// they are the same number is a line that says nothing.
-					Fact(prefabIndex, "elevatedWidth", elevatedGeometry.m_ElevatedWidth);
-				}
-
-				if (netData.m_UndergroundPrefab != Entity.Null)
-				{
-					TextFact(prefabIndex, "roadFeature", "underground");
-				}
-
-				if (EntityManager.TryGetComponent<TrackData>(entity, out var trackKind)
-					&& trackKind.m_TrackType != Game.Net.TrackTypes.None)
-				{
-					TextFact(prefabIndex, "trackType", trackKind.m_TrackType.ToString());
-				}
-
-				// Road class, traffic lights and zoning live on the AUTHORING prefab
-				// rather than on a component, so they need the PrefabBase back. They are
-				// three of the facts a player chooses a road by.
+				// Road class, traffic lights and zoning live on the authoring prefab.
 				if (_prefabSystem.TryGetPrefab<PrefabBase>(entity, out var netPrefab))
 				{
 					if (netPrefab is RoadPrefab roadPrefab)
 					{
-						if (roadPrefab.m_TrafficLights)
-						{
-							TextFact(prefabIndex, "roadFeature", "trafficLights");
-						}
-						if (roadPrefab.m_HighwayRules)
-						{
-							TextFact(prefabIndex, "roadFeature", "highwayRules");
-						}
-						if (roadPrefab.m_ZoneBlock is not null)
-						{
-							TextFact(prefabIndex, "roadFeature", "zonesAlongside");
-						}
-					}
-
-					if (netPrefab.TryGet<PlaceableNetPiece>(out var netPiece) && netPiece.m_ElevationCost > 0)
-					{
-						Fact(prefabIndex, "elevationCost", netPiece.m_ElevationCost * NetCellsPerKilometre);
+						snapshot.TrafficLights = roadPrefab.m_TrafficLights;
+						snapshot.HighwayRules = roadPrefab.m_HighwayRules;
+						snapshot.ZonesAlongside = roadPrefab.m_ZoneBlock is not null;
 					}
 				}
 			}
 
-			if (EntityManager.TryGetComponent<ConsumptionData>(entity, out var consumptionData))
-			{
-				prefabIndex.Upkeep = consumptionData.m_Upkeep;
-				prefabIndex.ElectricityConsumption = consumptionData.m_ElectricityConsumption;
-				prefabIndex.WaterConsumption = consumptionData.m_WaterConsumption;
-				prefabIndex.GarbageAccumulation = consumptionData.m_GarbageAccumulation;
-				prefabIndex.TelecomNeed = consumptionData.m_TelecomNeed;
-			}
-
-			// The upkeep buffer is the game's own answer, and for a city service
-			// building the only place the money lives. Money entries are the upkeep;
-			// every other resource is a fact of its own, in kilograms a month.
-			if (EntityManager.TryGetBuffer<ServiceUpkeepData>(entity, true, out var upkeepBuffer) && upkeepBuffer.Length > 0)
+			// Even empty: UpkeepPropertyBinderSystem shows the line for any prefab with the
+			// buffer, and for no other.
+			if (EntityManager.TryGetBuffer<ServiceUpkeepData>(entity, true, out var upkeepBuffer))
 			{
 				var stacks = new List<(string Resource, int Amount)>(upkeepBuffer.Length);
 				for (var i = 0; i < upkeepBuffer.Length; i++)
@@ -179,459 +179,151 @@ namespace BetterBuildingMenu.Systems
 					stacks.Add((upkeepBuffer[i].m_Upkeep.m_Resource.ToString(), upkeepBuffer[i].m_Upkeep.m_Amount));
 				}
 
-				var summary = ServiceUpkeepSummary.Summarise(prefabIndex.Upkeep ?? 0, stacks);
-				if (summary.Money > 0)
-				{
-					prefabIndex.Upkeep = summary.Money;
-				}
-				foreach (var (resource, amount) in summary.Resources)
-				{
-					Fact(prefabIndex, ServiceUpkeepSummary.ResourceFactPrefix + resource, amount);
-				}
-			}
-
-			if (EntityManager.TryGetComponent<WorkplaceData>(entity, out var workplaceData))
-			{
-				prefabIndex.Workers = workplaceData.m_MaxWorkers;
-				// The rest of the staffing picture. MaxWorkers says how many; these
-				// say how few it can run on and when they are there.
-				Fact(prefabIndex, "minCrew", workplaceData.m_MinimumWorkersLimit);
-				// 0-1 probabilities, not percentages: FindJobSystem rolls
-				// `chance < m_EveningShiftProbability`. Shown as a percent, so scaled here.
-				Fact(prefabIndex, "eveningShift", workplaceData.m_EveningShiftProbability * 100d);
-				Fact(prefabIndex, "nightShift", workplaceData.m_NightShiftProbability * 100d);
-				Fact(prefabIndex, "workConditions", workplaceData.m_WorkConditions);
-				// Who the building employs. The game has no player-facing word for
-				// WorkplaceComplexity — its CITIZEN_JOB_LEVEL vocabulary does not map
-				// onto Manual/Simple/Complex/Hitech — so these are OUR words.
-				TextFact(prefabIndex, "jobComplexity", workplaceData.m_Complexity.ToString());
-			}
-
-			// Zero is not a household count, it is "not residential": every service
-			// building carries this component too. Left null so the card drops the
-			// line rather than telling a fire station it houses nobody.
-			if (EntityManager.TryGetComponent<BuildingPropertyData>(entity, out var propertyData)
-				&& propertyData.m_ResidentialProperties > 0)
-			{
-				prefabIndex.Households = propertyData.m_ResidentialProperties;
-			}
-
-			if (EntityManager.TryGetComponent<PollutionData>(entity, out var pollutionData))
-			{
-				prefabIndex.GroundPollution = pollutionData.m_GroundPollution;
-				prefabIndex.AirPollution = pollutionData.m_AirPollution;
-				prefabIndex.NoisePollution = pollutionData.m_NoisePollution;
-			}
-
-			// Doubles: a telecom facility's capacity is gigabits a second with a
-			// decimal, which an int would truncate.
-			var capacities = new List<double>();
-			// Doubles as the Role facet source: these are exactly the service
-			// components that make a building a school, a hospital, and so on.
-			var roles = new List<string>();
-			if (EntityManager.TryGetComponent<SchoolData>(entity, out var schoolData))
-			{
-				roles.Add("School");
-				capacities.Add(schoolData.m_StudentCapacity);
-				Fact(prefabIndex, "studentWellbeing", schoolData.m_StudentWellbeing);
-				Fact(prefabIndex, "studentHealth", schoolData.m_StudentHealth);
-				// The tier the school grants, so nothing downstream has to guess it
-				// from the building's name.
-				prefabIndex.EducationLevel = schoolData.m_EducationLevel;
-				Fact(prefabIndex, "graduation", schoolData.m_GraduationModifier);
-			}
-
-			// What a park gives the city: a park and a bowling alley are both
-			// "ParksAndRecreation". The efficiency gate is vanilla's own —
-			// LeisureProvider adds the component only when m_Efficiency > 0.
-			if (EntityManager.TryGetComponent<LeisureProviderData>(entity, out var leisureData)
-				&& leisureData.m_Efficiency > 0)
-			{
-				prefabIndex.LeisureType = leisureData.m_LeisureType.ToString();
-				prefabIndex.LeisureEfficiency = leisureData.m_Efficiency;
-			}
-
-			if (EntityManager.TryGetComponent<HospitalData>(entity, out var hospitalData))
-			{
-				roles.Add("Hospital");
-				capacities.Add(hospitalData.m_PatientCapacity);
-				Fact(prefabIndex, "ambulances", hospitalData.m_AmbulanceCapacity);
-				Fact(prefabIndex, "helicopters", hospitalData.m_MedicalHelicopterCapacity);
-			}
-
-			// A zone's own figures, carried as service facts rather than as new
-			// columns: they are per-cell rates on ONE family of asset, which is the
-			// same shape the per-service figures have.
-			if (EntityManager.TryGetComponent<ZoneServiceConsumptionData>(entity, out var zoneConsumption))
-			{
-				// Only the upkeep: PropertyRenterSystem.GetUpkeep reads it as
-				// level^exp × upkeep × lotSize. The electricity, water, garbage and
-				// telecom coefficients beside it have no reader anywhere in the game.
-				Fact(prefabIndex, "zoneUpkeep", zoneConsumption.m_Upkeep);
-			}
-
-			if (EntityManager.TryGetComponent<ZonePropertiesData>(entity, out var zoneProperties))
-			{
-				// Residential only; the other families report none rather than a zero
-				// that would read as "no homes here". With ScaleResidentials the figure
-				// is apartments per cell, without it a fixed count — hence two keys.
-				Fact(prefabIndex, zoneProperties.m_ScaleResidentials ? "zoneHouseholdsPerCell" : "zoneHouseholds",
-					zoneProperties.m_ResidentialProperties);
-				Fact(prefabIndex, "zoneSpace", zoneProperties.m_SpaceMultiplier);
-				// ×1 is the absence of a modifier, as with the pollution modifiers.
-				if (zoneProperties.m_FireHazardMultiplier != 1f)
-				{
-					Fact(prefabIndex, "zoneFireHazard", zoneProperties.m_FireHazardMultiplier);
-				}
-				if (zoneProperties.m_IgnoreLandValue)
-				{
-					TextFact(prefabIndex, "zoneFeature", "ignoresLandValue");
-				}
-			}
-
-			// The zone figures that are words rather than numbers.
-			if (EntityManager.TryGetComponent<ZonePropertiesData>(entity, out var zoneResources))
-			{
-				TextFact(prefabIndex, "zoneSold", ResourceName(zoneResources.m_AllowedSold));
-				TextFact(prefabIndex, "zoneManufactured", ResourceName(zoneResources.m_AllowedManufactured));
-				TextFact(prefabIndex, "zoneStored", ResourceName(zoneResources.m_AllowedStored));
-			}
-
-			// The shapes the zone grows, for the glyphs the card already knows how
-			// to draw. Computed once by IndexZones and kept in the index, because it
-			// needs every spawnable building's lot and this pass sees one prefab.
-			if (prefabIndex.Category == Domain.Enums.PrefabCategory.Zones
-				&& zones.LotSizesOf(entity.Index) is ZoneLotSizes lots
-				&& lots.Footprints is { Length: > 0 })
-			{
-				prefabIndex.Footprints = lots.Footprints;
-				prefabIndex.FootprintOverflow = lots.FootprintOverflow;
-			}
-
-			if (EntityManager.TryGetComponent<ZoneData>(entity, out var zoneHeights))
-			{
-				// What the zone actually grows to, measured by the game from the
-				// tallest mesh it can spawn and never shown by it.
-				Fact(prefabIndex, "zoneMaxHeight", zoneHeights.m_MaxHeight);
-
-				// Stated only when true: "does not support corners" is noise on
-				// the majority of zones that do not.
-				if ((zoneHeights.m_ZoneFlags & ZoneFlags.SupportNarrow) != 0)
-				{
-					TextFact(prefabIndex, "zoneLotShapes", "narrow");
-				}
-
-				if ((zoneHeights.m_ZoneFlags
-					& (ZoneFlags.SupportLeftCorner | ZoneFlags.SupportRightCorner)) != 0)
-				{
-					TextFact(prefabIndex, "zoneLotShapes", "corners");
-				}
-			}
-
-			// Tourism, and one of the few figures that matters across services
-			// rather than inside one — a park, a landmark and a signature
-			// building all trade on it.
-			if (EntityManager.TryGetComponent<AttractionData>(entity, out var attractionData))
-			{
-				Fact(prefabIndex, "attractiveness", attractionData.m_Attractiveness);
-			}
-
-			if (EntityManager.TryGetComponent<CoverageData>(entity, out var coverageData)
-				&& coverageData.m_Range > 0f)
-			{
-				prefabIndex.ServiceRange = coverageData.m_Range;
-			}
-
-			// The figure a mailbox is FOR, and the one vanilla reads for it:
-			// Properties.MAIL_BOX_CAPACITY, an integer.
-			if (EntityManager.TryGetComponent<MailBoxData>(entity, out var mailBox))
-			{
-				Fact(prefabIndex, "mailboxCapacity", mailBox.m_MailCapacity);
-			}
-
-			// RequiredResourceBinder's rule, transcribed: an extractor building whose
-			// product needs a natural resource names the map feature of its extractor
-			// area. The water half of that binder is already the waterSource fact.
-			var requiredFeature = GetExtractorFeature(entity);
-			if (requiredFeature is not null)
-			{
-				TextFact(prefabIndex, "requiredResource", requiredFeature);
-			}
-
-			if (EntityManager.TryGetComponent<PostFacilityData>(entity, out var postFacilityData))
-			{
-				roles.Add("PostFacility");
-				// Mail held, not vans or sorting rate: the vans are how it works
-				// and the rate is per unit time, while this is the size of the
-				// thing — the same question capacity answers everywhere else.
-				capacities.Add(postFacilityData.m_MailCapacity);
-				Fact(prefabIndex, "postTrucks", postFacilityData.m_PostTruckCapacity);
-				Fact(prefabIndex, "sortingRate", postFacilityData.m_SortingRate);
-				Fact(prefabIndex, "postVans", postFacilityData.m_PostVanCapacity);
-			}
-
-			if (EntityManager.TryGetComponent<TelecomFacilityData>(entity, out var telecomFacilityData))
-			{
-				roles.Add("TelecomFacility");
-				capacities.Add(telecomFacilityData.m_NetworkCapacity);
-				// Telecom keeps its own range rather than using CoverageData's,
-				// so it is read here and not above.
-				if (telecomFacilityData.m_Range > 0f)
-				{
-					prefabIndex.ServiceRange = telecomFacilityData.m_Range;
-				}
-				if (telecomFacilityData.m_PenetrateTerrain)
-				{
-					TextFact(prefabIndex, "facilityFeature", "signalThroughTerrain");
-				}
-			}
-
-			if (EntityManager.TryGetComponent<GarbageFacilityData>(entity, out var garbageFacilityData))
-			{
-				roles.Add("GarbageFacility");
-				capacities.Add(garbageFacilityData.m_GarbageCapacity);
-				// Its own key: kilograms a month, not the deathcare rate's bodies.
-				Fact(prefabIndex, "garbageProcessing", garbageFacilityData.m_ProcessingSpeed);
-				// m_VehicleCapacity, not m_TransportCapacity: the first is the garbage
-				// trucks (GARBAGE_TRUCK_COUNT in vanilla's tooltip), the second the
-				// delivery trucks that haul processed waste out.
-				Fact(prefabIndex, "collectionTrucks", garbageFacilityData.m_VehicleCapacity);
-				if (garbageFacilityData.m_IndustrialWasteOnly)
-				{
-					TextFact(prefabIndex, "facilityFeature", "industrialWasteOnly");
-				}
-			}
-
-			if (EntityManager.TryGetComponent<FireStationData>(entity, out var fireStationData))
-			{
-				roles.Add("FireStation");
-				capacities.Add(fireStationData.m_FireEngineCapacity);
-				Fact(prefabIndex, "helicopters", fireStationData.m_FireHelicopterCapacity);
-				Fact(prefabIndex, "disasterResponse", fireStationData.m_DisasterResponseCapacity);
-			}
-
-			if (EntityManager.TryGetComponent<PoliceStationData>(entity, out var policeStationData))
-			{
-				roles.Add("PoliceStation");
-				capacities.Add(policeStationData.m_PatrolCarCapacity);
-				Fact(prefabIndex, "jailCapacity", policeStationData.m_JailCapacity);
-				Fact(prefabIndex, "helicopters", policeStationData.m_PoliceHelicopterCapacity);
-			}
-
-			if (EntityManager.TryGetComponent<PrisonData>(entity, out var prisonData))
-			{
-				roles.Add("Prison");
-				capacities.Add(prisonData.m_PrisonerCapacity);
-				Fact(prefabIndex, "prisonVans", prisonData.m_PrisonVanCapacity);
-				Fact(prefabIndex, "prisonerWellbeing", prisonData.m_PrisonerWellbeing);
-				Fact(prefabIndex, "prisonerHealth", prisonData.m_PrisonerHealth);
-			}
-
-			if (EntityManager.TryGetComponent<DeathcareFacilityData>(entity, out var deathcareFacilityData))
-			{
-				roles.Add("DeathcareFacility");
-				capacities.Add(deathcareFacilityData.m_StorageCapacity);
-				Fact(prefabIndex, "hearses", deathcareFacilityData.m_HearseCapacity);
-				Fact(prefabIndex, "processingRate", deathcareFacilityData.m_ProcessingRate);
-				if (deathcareFacilityData.m_LongTermStorage)
-				{
-					TextFact(prefabIndex, "facilityFeature", "longTermStorage");
-				}
-			}
-
-			if (EntityManager.TryGetComponent<EmergencyShelterData>(entity, out var emergencyShelterData))
-			{
-				roles.Add("EmergencyShelter");
-				capacities.Add(emergencyShelterData.m_ShelterCapacity);
-				Fact(prefabIndex, "shelterVehicles", emergencyShelterData.m_VehicleCapacity);
-			}
-
-			if (EntityManager.TryGetComponent<WaterPumpingStationData>(entity, out var waterPumpingStationData))
-			{
-				roles.Add("WaterPumpingStation");
-				prefabIndex.WaterCapacity = waterPumpingStationData.m_Capacity;
-				capacities.Add(waterPumpingStationData.m_Capacity);
-				Fact(prefabIndex, "purification", Percent.FromFraction(waterPumpingStationData.m_Purification));
-				// Vanilla's wording and vanilla's silence: a tower allows no type
-				// and says nothing, where the raw enum read "Draws from None".
-				TextFact(prefabIndex, "waterSource", Domain.WaterSource.Describe(
-					(waterPumpingStationData.m_Types & AllowedWaterTypes.Groundwater) != 0,
-					(waterPumpingStationData.m_Types & AllowedWaterTypes.SurfaceWater) != 0));
-			}
-
-			if (EntityManager.TryGetComponent<SewageOutletData>(entity, out var sewageOutletData))
-			{
-				roles.Add("SewageOutlet");
-				prefabIndex.SewageCapacity = sewageOutletData.m_Capacity;
-				capacities.Add(sewageOutletData.m_Capacity);
-				Fact(prefabIndex, "purification", Percent.FromFraction(sewageOutletData.m_Purification));
-			}
-
-			// Power plants report output as production rather than capacity, so
-			// without this a coal plant has no capacity to forecast the city's
-			// demand against. Solar is a separate component with its own field.
-			if (EntityManager.TryGetComponent<PowerPlantData>(entity, out var powerPlantData))
-			{
-				roles.Add("PowerPlant");
-				capacities.Add(powerPlantData.m_ElectricityProduction);
-			}
-
-			if (EntityManager.TryGetComponent<SolarPoweredData>(entity, out var solarData))
-			{
-				roles.Add("PowerPlant");
-				capacities.Add(solarData.m_Production);
-			}
-
-			// Wind is a third component again, with its own production field.
-			if (EntityManager.TryGetComponent<WindPoweredData>(entity, out var windData))
-			{
-				roles.Add("PowerPlant");
-				capacities.Add(windData.m_Production);
-			}
-
-			// Each of these is the figure its building is FOR.
-			if (EntityManager.TryGetComponent<BatteryData>(entity, out var batteryData))
-			{
-				roles.Add("Battery");
-				capacities.Add(batteryData.m_Capacity);
-				Fact(prefabIndex, "batteryOutput", batteryData.m_PowerOutput);
-			}
-
-			if (EntityManager.TryGetComponent<ParkData>(entity, out var parkData))
-			{
-				Fact(prefabIndex, "maintenancePool", parkData.m_MaintenancePool);
-			}
-
-			if (EntityManager.TryGetComponent<TransportDepotData>(entity, out var transportDepotData))
-			{
-				TextFact(prefabIndex, "transportType", transportDepotData.m_TransportType.ToString());
-				Fact(prefabIndex, "depotVehicles", transportDepotData.m_VehicleCapacity);
-			}
-
-			if (EntityManager.TryGetComponent<MaintenanceDepotData>(entity, out var maintenanceDepotData))
-			{
-				Fact(prefabIndex, "maintenanceVehicles", maintenanceDepotData.m_VehicleCapacity);
-			}
-
-			// The two properties vanilla authors only on service upgrades. Both are
-			// read exactly as PrefabUISystem binds them: multipliers as whole
-			// percentages, the upkeep change as the largest multiplier minus one.
-			if (EntityManager.TryGetComponent<PollutionModifierData>(entity, out var pollutionModifier))
-			{
-				// A multiplier of one changes nothing and "100 %" would say so at
-				// length; only the factors that move a level are facts.
-				PollutionModifierFact(prefabIndex, "groundPollutionModifier", pollutionModifier.m_GroundPollutionMultiplier);
-				PollutionModifierFact(prefabIndex, "airPollutionModifier", pollutionModifier.m_AirPollutionMultiplier);
-				PollutionModifierFact(prefabIndex, "noisePollutionModifier", pollutionModifier.m_NoisePollutionMultiplier);
+				snapshot.ServiceUpkeep = stacks;
 			}
 
 			if (EntityManager.TryGetBuffer<UpkeepModifierData>(entity, true, out var upkeepModifiers) && upkeepModifiers.Length > 0)
 			{
-				var largest = 1f;
-				var changes = false;
-
+				var multipliers = new float[upkeepModifiers.Length];
 				for (var i = 0; i < upkeepModifiers.Length; i++)
 				{
-					if (upkeepModifiers[i].m_Multiplier != 1f)
-					{
-						changes = true;
-						largest = Math.Max(largest, upkeepModifiers[i].m_Multiplier);
-					}
+					multipliers[i] = upkeepModifiers[i].m_Multiplier;
 				}
 
-				if (changes)
+				snapshot.UpkeepMultipliers = multipliers;
+			}
+
+			return snapshot;
+		}
+
+		private T? Read<T>(Entity entity)
+			where T : unmanaged, IComponentData =>
+			EntityManager.TryGetComponent<T>(entity, out var value) ? value : default(T?);
+
+		/// <summary>The pollution thresholds, or null when the game has none.</summary>
+		/// <remarks>Settings from the game's UIPollutionConfigurationPrefab, which PollutionBinder
+		/// grades every building by. Read once a pass rather than once a prefab.</remarks>
+		private PollutionScale? ReadPollutionScale()
+		{
+			var query = GetEntityQuery(ComponentType.ReadOnly<UIPollutionConfigurationData>());
+
+			if (query.IsEmptyIgnoreFilter)
+			{
+				return null;
+			}
+
+			using var entities = query.ToEntityArray(Allocator.Temp);
+
+			if (!_prefabSystem.TryGetPrefab<UIPollutionConfigurationPrefab>(entities[0], out var config)
+				|| config.m_GroundPollution is not { } ground
+				|| config.m_AirPollution is not { } air
+				|| config.m_NoisePollution is not { } noise)
+			{
+				return null;
+			}
+
+			return new PollutionScale(
+				new PollutionThresholds(ground.m_Low, ground.m_Medium, ground.m_High),
+				new PollutionThresholds(air.m_Low, air.m_Medium, air.m_High),
+				new PollutionThresholds(noise.m_Low, noise.m_Medium, noise.m_High));
+		}
+
+		/// <summary>A transformer's connections and a power plant's power-line layers, from the
+		/// prefab's sub-nets.</summary>
+		/// <remarks>TransformerCapacityBinder counts only the connections that start and end on one
+		/// node. ElectricityUIUtils.GetPowerLineLayers takes every power-line sub-net's.</remarks>
+		private void ReadPowerSubNets(Entity entity, PrefabSnapshot snapshot)
+		{
+			if (!EntityManager.TryGetBuffer<Game.Prefabs.SubNet>(entity, true, out var subNets))
+			{
+				return;
+			}
+
+			var connections = new List<(ElectricityConnection.Voltage Voltage, int Capacity)>();
+			var layers = Game.Net.Layer.None;
+
+			for (var i = 0; i < subNets.Length; i++)
+			{
+				var subNet = subNets[i];
+
+				if (!EntityManager.TryGetComponent<ElectricityConnectionData>(subNet.m_Prefab, out var connection))
 				{
-					// Not through Fact: that helper drops anything at or below zero,
-					// and a saving — the usual case for this modifier — is negative.
-					prefabIndex.ServiceFacts.Add(new Domain.ServiceFact("upkeepChange", Math.Round(100d * (largest - 1d))));
+					continue;
+				}
+
+				if (subNet.m_NodeIndex.x == subNet.m_NodeIndex.y)
+				{
+					connections.Add((connection.m_Voltage, connection.m_Capacity));
+				}
+
+				if (EntityManager.TryGetComponent<NetData>(subNet.m_Prefab, out var net))
+				{
+					layers |= net.m_LocalConnectLayers;
 				}
 			}
 
-			if (EntityManager.TryGetComponent<TransportStationData>(entity, out var transportStationData))
+			snapshot.TransformerConnections = connections;
+			snapshot.SubNetPowerLayers = layers;
+		}
+
+		/// <summary>Each sub-object's stop, in the prefab's order, or null when it has none.</summary>
+		private List<TransportStopData>? ReadTransportStops(Entity entity)
+		{
+			if (!EntityManager.TryGetBuffer<Game.Prefabs.SubObject>(entity, true, out var subObjects))
 			{
-				Fact(prefabIndex, "comfort", Percent.FromFraction(transportStationData.m_ComfortFactor));
+				return null;
 			}
 
-			// What vanilla's tooltip calls Cargo capacity: StorageLimitData on a
-			// cargo station, and on the warehouse upgrade that adds to it.
-			// Kilograms; the UI follows the game's own weight rule.
-			if (EntityManager.TryGetComponent<StorageLimitData>(entity, out var storageLimit)
-				&& storageLimit.m_Limit > 0)
+			List<TransportStopData>? stops = null;
+
+			for (var i = 0; i < subObjects.Length; i++)
 			{
-				Fact(prefabIndex, "cargoCapacity", storageLimit.m_Limit);
+				if (EntityManager.TryGetComponent<TransportStopData>(subObjects[i].m_Prefab, out var stop))
+				{
+					(stops ??= new List<TransportStopData>()).Add(stop);
+				}
 			}
 
-			if (EntityManager.TryGetComponent<ElectricityConnectionData>(entity, out var electricityConnection)
-				&& electricityConnection.m_Capacity > 0
-				&& !EntityManager.HasComponent<RoadData>(entity))
+			return stops;
+		}
+
+		/// <summary>A network's auxiliary networks, and theirs in turn, as each one's cost for a
+		/// cell and the share of it the owner pays.</summary>
+		/// <remarks>PlaceableNetCostBinder's walk: each one is scaled by (1000 - 2z) / 1000 of its
+		/// offset along the owner. The depth is capped only so a cycle cannot recurse forever.</remarks>
+		private void CollectAuxiliaryNetCosts(Entity net, float share, ref List<(float Cost, float Share)>? into, int depth)
+		{
+			if (depth > 8 || !EntityManager.TryGetBuffer<AuxiliaryNet>(net, true, out var auxiliaryNets))
 			{
-				Fact(prefabIndex, "electricityCapacity", electricityConnection.m_Capacity);
-				TextFact(prefabIndex, "voltage", electricityConnection.m_Voltage.ToString());
+				return;
 			}
 
-			if (EntityManager.TryGetComponent<WaterPipeConnectionData>(entity, out var pipeConnection)
-				&& pipeConnection.m_StormCapacity > 0)
+			for (var i = 0; i < auxiliaryNets.Length; i++)
 			{
-				Fact(prefabIndex, "stormCapacity", pipeConnection.m_StormCapacity);
-			}
+				var auxiliary = auxiliaryNets[i];
+				var auxiliaryShare = share * ((1000f - auxiliary.m_Position.z * 2f) / 1000f);
 
-			if (EntityManager.TryGetComponent<WastewaterTreatmentPlantData>(entity, out var wastewaterData))
-			{
-				roles.Add("WastewaterTreatmentPlant");
-				prefabIndex.SewageCapacity = wastewaterData.m_Capacity;
-				capacities.Add(wastewaterData.m_Capacity);
-			}
+				if (EntityManager.TryGetComponent<PlaceableNetData>(auxiliary.m_Prefab, out var auxiliaryData))
+				{
+					(into ??= new List<(float Cost, float Share)>()).Add((auxiliaryData.m_DefaultConstructionCost, auxiliaryShare));
+				}
 
-			prefabIndex.BuildingTypeName = BuildingRole.ResolvePrimary(roles);
-
-			if (capacities.Count > 0)
-			{
-				prefabIndex.Capacity = capacities.Max();
+				CollectAuxiliaryNetCosts(auxiliary.m_Prefab, auxiliaryShare, ref into, depth + 1);
 			}
 		}
 
-		/// <summary>What this building does for the city, phrased for a hover card.</summary>
-		/// <remarks>Both buffers the game applies, with vanilla's own arithmetic in
-		/// ModifierUIUtils.GetModifierDelta. m_Range.max is the figure vanilla binds.</remarks>
+		/// <summary>What this building does for the city, phrased for a hover card. See
+		/// <see cref="EffectWording.Lines"/>.</summary>
 		private string[] GetBonuses(Entity entity)
 		{
-			var bonuses = new List<string>();
+			var city = EntityManager.TryGetBuffer<CityModifierData>(entity, true, out var cityModifiers)
+				? cityModifiers.AsNativeArray().ToArray()
+				: null;
+			var local = EntityManager.TryGetBuffer<LocalModifierData>(entity, true, out var localModifiers)
+				? localModifiers.AsNativeArray().ToArray()
+				: null;
 
-			if (EntityManager.TryGetBuffer<CityModifierData>(entity, true, out var cityModifiers))
-			{
-				for (var i = 0; i < cityModifiers.Length; i++)
-				{
-					var modifier = cityModifiers[i];
-
-					// Vanilla hides this one from its own effect list, so a card
-					// that showed it would be inventing an effect the game does
-					// not acknowledge.
-					if (modifier.m_Type == CityModifierType.CriminalMonitorProbability)
-					{
-						continue;
-					}
-
-					bonuses.Add(DescribeModifier(
-						modifier.m_Type.ToString(),
-						modifier.m_Mode,
-						modifier.m_Range.max));
-				}
-			}
-
-			if (EntityManager.TryGetBuffer<LocalModifierData>(entity, true, out var localModifiers))
-			{
-				for (var i = 0; i < localModifiers.Length; i++)
-				{
-					var modifier = localModifiers[i];
-
-					bonuses.Add(DescribeModifier(
-						modifier.m_Type.ToString(),
-						modifier.m_Mode,
-						modifier.m_Delta.max));
-				}
-			}
-
-			return bonuses.Where(b => !string.IsNullOrEmpty(b)).Distinct().ToArray();
+			return EffectWording.Lines(city, local);
 		}
 
 		/// <summary>The map feature an extractor building requires, or null when it is not one.
@@ -670,72 +362,19 @@ namespace BetterBuildingMenu.Systems
 			return null;
 		}
 
-		/// <summary>One effect, signed, with the unit its mode implies.</summary>
-		private static string DescribeModifier(string type, ModifierValueMode mode, float value)
-		{
-			// ModifierUIUtils.GetModifierDelta, transcribed: a relative mode is a
-			// fraction and reads as a percentage; absolute is already the number.
-			var scaled = mode switch
-			{
-				ModifierValueMode.Relative => 100f * value,
-				ModifierValueMode.InverseRelative => 100f * (1f / Math.Max(0.001f, 1f + value) - 1f),
-				_ => value,
-			};
-
-			if (Math.Abs(scaled) < 0.005f)
-			{
-				return string.Empty;
-			}
-
-			var unit = mode == ModifierValueMode.Absolute ? string.Empty : "%";
-			// The sign is the point — a modifier can make something worse, and an
-			// unsigned number would read as a benefit either way.
-			var sign = scaled > 0 ? "+" : string.Empty;
-
-			return $"{type.FormatWords()} {sign}{scaled:0.##}{unit}";
-		}
-
-		/// <summary>Records one service figure, dropping the zeros.</summary>
-		/// <remarks>A zero means "this building has none of that", and a card that has already dropped
-		/// every field that does not apply has no use for the line.</remarks>
-		private static void Fact(PrefabIndex prefabIndex, string key, double value)
-		{
-			if (value > 0d)
-			{
-				prefabIndex.ServiceFacts.Add(new Domain.ServiceFact(key, value));
-			}
-		}
-
-		/// <summary>A pollution multiplier as the whole percentage vanilla shows, unless it is one.</summary>
-		private static void PollutionModifierFact(PrefabIndex prefabIndex, string key, float multiplier)
-		{
-			if (Math.Abs(multiplier - 1f) > 0.0005f)
-			{
-				Fact(prefabIndex, key, Math.Round(multiplier * 100d));
-			}
-		}
-
-		/// <summary>Records one worded figure, dropping the blanks.</summary>
-		private static void TextFact(PrefabIndex prefabIndex, string key, string? value)
-		{
-			if (value?.Trim() is { Length: > 0 } trimmed)
-			{
-				prefabIndex.ServiceTextFacts.Add(new Domain.ServiceTextFact(key, trimmed));
-			}
-		}
-
-		/// <summary>The upgrades a building supports, in the order vanilla offers them.</summary>
-		/// <remarks>Two buffers, as UpgradeMenuUISystem reads them — BuildingUpgradeElement for service
-		/// upgrades, BuildingModule for the modules signature towers take — filtered and ordered as it does.</remarks>
+		/// <summary>The upgrades a building supports, in the order vanilla offers them. See
+		/// <see cref="SupportedUpgrades.InMenuOrder"/>.</summary>
+		/// <remarks>Two buffers, as UpgradeMenuUISystem reads them: BuildingUpgradeElement for service
+		/// upgrades, BuildingModule for the modules signature towers take.</remarks>
 		private (string[] DisplayNames, string[] PrefabNames) GetSupportedUpgrades(Entity entity)
 		{
-			List<(int Priority, string Name, string PrefabName)>? found = null;
+			List<UpgradeOffer>? offers = null;
 
 			if (EntityManager.TryGetBuffer<BuildingUpgradeElement>(entity, true, out var upgrades))
 			{
 				for (var i = 0; i < upgrades.Length; i++)
 				{
-					CollectUpgrade(upgrades[i].m_Upgrade, ref found);
+					CollectUpgrade(upgrades[i].m_Upgrade, ref offers);
 				}
 			}
 
@@ -743,25 +382,15 @@ namespace BetterBuildingMenu.Systems
 			{
 				for (var i = 0; i < modules.Length; i++)
 				{
-					CollectUpgrade(modules[i].m_Module, ref found);
+					CollectUpgrade(modules[i].m_Module, ref offers);
 				}
 			}
 
-			if (found is null)
-			{
-				return (Array.Empty<string>(), Array.Empty<string>());
-			}
-
-			// OrderBy, not Sort: it is stable, so two upgrades sharing a priority
-			// keep the order the game's own buffers hold them in.
-			var ordered = found.OrderBy(entry => entry.Priority).ToArray();
-
-			return (
-				ordered.Select(entry => entry.Name).ToArray(),
-				ordered.Select(entry => entry.PrefabName).ToArray());
+			return SupportedUpgrades.InMenuOrder(offers);
 		}
 
-		private void CollectUpgrade(Entity upgrade, ref List<(int Priority, string Name, string PrefabName)>? found)
+		/// <summary>One upgrade, when it has the UIObject and the prefab a menu entry needs.</summary>
+		private void CollectUpgrade(Entity upgrade, ref List<UpgradeOffer>? offers)
 		{
 			if (!EntityManager.TryGetComponent<UIObjectData>(upgrade, out var ui))
 			{
@@ -773,105 +402,69 @@ namespace BetterBuildingMenu.Systems
 				return;
 			}
 
-			(found ??= new List<(int Priority, string Name, string PrefabName)>()).Add((ui.m_Priority, GetAssetName(prefab), prefab.name));
+			(offers ??= new List<UpgradeOffer>()).Add(new UpgradeOffer(ui.m_Priority, GetAssetName(prefab), prefab.name));
 		}
 
-		/// <summary>What the game's own toolbar filter row knows about a prefab.</summary>
+		/// <summary>What the game's own toolbar filter row knows about a prefab. See
+		/// <see cref="VanillaAssetFacts.From"/>.</summary>
 		/// <remarks>Identity-free by design: WHICH requirement and pack entities an asset carries, never
 		/// which themes or packs they are, so a theme or pack a mod ships needs no change here.</remarks>
 		private VanillaAssetFacts GetVanillaAssetFacts(Entity entity)
 		{
-			var themeRequirements = new List<int>();
+			var requirements = Array.Empty<(int Index, bool IsTheme)>();
 
-			if (EntityManager.TryGetBuffer<ObjectRequirementElement>(entity, true, out var requirements))
+			if (EntityManager.TryGetBuffer<ObjectRequirementElement>(entity, true, out var requirementElements))
 			{
-				for (var i = 0; i < requirements.Length; i++)
-				{
-					var requirement = requirements[i].m_Requirement;
+				requirements = new (int Index, bool IsTheme)[requirementElements.Length];
 
-					if (EntityManager.HasComponent<ThemeData>(requirement))
-					{
-						themeRequirements.Add(requirement.Index);
-					}
+				for (var i = 0; i < requirementElements.Length; i++)
+				{
+					var requirement = requirementElements[i].m_Requirement;
+					requirements[i] = (requirement.Index, EntityManager.HasComponent<ThemeData>(requirement));
 				}
 			}
 
-			var packs = new List<int>();
-			var hasPackBuffer = EntityManager.TryGetBuffer<AssetPackElement>(entity, true, out var packElements);
+			List<(int Index, bool HasModPrerequisite)>? packs = null;
 
-			// IsModAsset, and the second half is easy to get backwards: an asset
-			// carrying ModPrerequisiteData is NOT a mod asset when one of its packs
-			// carries it too, so the pack filter governs it, not the Mods toggle.
-			var isModAsset = EntityManager.HasComponent<ModPrerequisiteData>(entity);
-
-			if (hasPackBuffer)
+			if (EntityManager.TryGetBuffer<AssetPackElement>(entity, true, out var packElements))
 			{
+				packs = new List<(int Index, bool HasModPrerequisite)>(packElements.Length);
+
 				for (var i = 0; i < packElements.Length; i++)
 				{
 					var pack = packElements[i].m_Pack;
-					packs.Add(pack.Index);
-
-					if (isModAsset && EntityManager.HasComponent<ModPrerequisiteData>(pack))
-					{
-						isModAsset = false;
-					}
+					packs.Add((pack.Index, EntityManager.HasComponent<ModPrerequisiteData>(pack)));
 				}
 			}
 
-			return new VanillaAssetFacts(themeRequirements, packs, hasPackBuffer, isModAsset);
+			return VanillaAssetFacts.From(requirements, packs, EntityManager.HasComponent<ModPrerequisiteData>(entity));
 		}
 
-		/// <summary>How many cars the asset can park, counted rather than merely detected.</summary>
-		/// <remarks>Exact for an object's own lanes: LaneSystem.CreateObjectLane sets FindConnections on
-		/// every one, so the curve is never trimmed and the game's own arithmetic reproduces the count.</remarks>
+		/// <summary>How many cars the asset can park, its sub-objects' included. See
+		/// <see cref="ParkingSlots.Own"/>.</summary>
 		private int GetParkingSlots(PrefabBase prefab)
 		{
-			var slots = 0;
+			var garageCapacity = prefab.TryGet<ParkingFacility>(out var parkingFacility)
+				? parkingFacility.m_GarageMarkerCapacity
+				: 0;
+			var parkingSpawn = prefab.TryGet<SpawnLocation>(out var spawnLocation)
+				&& spawnLocation.m_ConnectionType == RouteConnectionType.Parking;
 
-			// A garage parks cars inside rather than along marked lanes, so it has
-			// no sub-lanes to divide up and declares its capacity outright.
-			if (prefab.TryGet<ParkingFacility>(out var parkingFacility)
-				&& parkingFacility.m_GarageMarkerCapacity > 0)
-			{
-				slots += parkingFacility.m_GarageMarkerCapacity;
-			}
-			else if (prefab.TryGet<SpawnLocation>(out var spawnLocation)
-				&& spawnLocation.m_ConnectionType == RouteConnectionType.Parking)
-			{
-				// A parking connection with no declared capacity really is one
-				// dedicated space — a driveway rather than a car park.
-				slots++;
-			}
+			IList<ParkingLaneShape>? lanes = null;
 
 			if (prefab.TryGet<ObjectSubLanes>(out var subLanes) && subLanes.m_SubLanes is not null)
 			{
 				foreach (var lane in subLanes.m_SubLanes)
 				{
-					if (lane?.m_LanePrefab is null
-						|| !lane.m_LanePrefab.TryGet<ParkingLane>(out var parkingLane))
+					if (lane?.m_LanePrefab is not null && lane.m_LanePrefab.TryGet<ParkingLane>(out var parkingLane))
 					{
-						continue;
-					}
-
-					// A lane with no slot width is Virtual, and the game's own capacity sum
-					// skips those: RoadsInfoviewUISystem drops VirtualLane before adding
-					// slots, and a slot angle near zero would otherwise count bays.
-					if (parkingLane.m_SlotSize.x < 0.001f)
-					{
-						continue;
-					}
-
-					var interval = GetParkingSlotInterval(parkingLane);
-
-					if (interval > 0.001f)
-					{
-						// The +0.01 is the game's, not a fudge: GetParkingSlotCount
-						// adds it before the divide, and dropping it loses a bay
-						// whenever the length divides exactly.
-						slots += (int)Math.Floor((MathUtils.Length(lane.m_BezierCurve) + 0.01f) / interval);
+						(lanes ??= new List<ParkingLaneShape>()).Add(
+							new ParkingLaneShape(MathUtils.Length(lane.m_BezierCurve), parkingLane.m_SlotSize, parkingLane.m_SlotAngle));
 					}
 				}
 			}
+
+			var slots = ParkingSlots.Own(garageCapacity, parkingSpawn, lanes ?? Array.Empty<ParkingLaneShape>());
 
 			if (prefab.TryGet<ObjectSubObjects>(out var subObjects) && subObjects.m_SubObjects is not null)
 			{
@@ -885,31 +478,6 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			return slots;
-		}
-
-		/// <summary>The spacing between bays, derived the way the game bakes it.</summary>
-		/// <remarks>NetInitializeSystem computes ParkingLaneData.m_SlotInterval from the managed slot
-		/// size and angle; deriving it here keeps to the prefab graph the rest of the walk uses.</remarks>
-		private static float GetParkingSlotInterval(ParkingLane parkingLane)
-		{
-			var angle = math.radians(math.clamp(parkingLane.m_SlotAngle, 0f, 90f));
-			var slotSize = math.select(parkingLane.m_SlotSize, 0f, parkingLane.m_SlotSize < 0.001f);
-			var y = new float2(math.cos(angle), math.sin(angle));
-
-			if (y.y < 0.001f)
-			{
-				return slotSize.y;
-			}
-
-			if (y.x < 0.001f)
-			{
-				return slotSize.x;
-			}
-
-			var scaled = slotSize / new float2(y.y, y.x);
-			scaled = math.select(scaled, 0f, scaled < 0.001f);
-
-			return math.min(scaled.x, scaled.y);
 		}
 	}
 }

@@ -89,8 +89,10 @@ describe("the chip row", () => {
     render();
     assert.deepEqual(pickerItems(), [], "closed until pressed");
 
+    // The index sends the menus in the bottom bar's order, toolbar group first,
+    // so the picker keeps it rather than re-sorting by priority.
     press("Roads");
-    assert.deepEqual(pickerItems(), ["Roads", "Zones", "Parks"]);
+    assert.deepEqual(pickerItems(), ["Zones", "Roads", "Parks"]);
     assert.deepEqual(chosen(), ["Roads"]);
 
     // The chip and the picker item share a label; the chip is the first.
@@ -119,5 +121,29 @@ describe("the chip row", () => {
 
     act(() => buttons().find((node) => node.props["aria-label"] === "SmallRoads")!.props.onSelect());
     assert.deepEqual(sent(), [["SetBuildingLensMenuCategory", "SmallRoads"]]);
+  });
+
+  it("leaves out a category the strip hides for having nothing in it", () => {
+    seed({ menuCategory: "Highways" });
+    setBinding("BetterBuildingMenu", "BuildingLensMenuCategories", [
+      category("Highways", 2), category("SmallRoads", 1), category("Roundabouts", 3),
+    ]);
+    // By id, as the backend sends them, so the picker's own order is what is pinned.
+    setBinding("BetterBuildingMenu", "BuildingLensMenuCategoryCounts", [
+      { id: "Highways", count: 2 }, { id: "Roundabouts", count: 0 }, { id: "SmallRoads", count: 4 },
+    ]);
+    render();
+
+    press("Highways");
+    assert.deepEqual(pickerItems(), ["SmallRoads", "Highways"]);
+  });
+
+  it("lists every category until the counts arrive", () => {
+    seed({ menuCategory: "Highways" });
+    setBinding("BetterBuildingMenu", "BuildingLensMenuCategoryCounts", []);
+    render();
+
+    press("Highways");
+    assert.deepEqual(pickerItems(), ["SmallRoads", "Highways"]);
   });
 });

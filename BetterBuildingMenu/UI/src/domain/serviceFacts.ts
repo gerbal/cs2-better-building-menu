@@ -23,24 +23,29 @@ export interface ServiceTextFact {
 }
 
 interface ServiceFactPresentation {
-  /** Our own key, so a translation can be shipped for it. */
+  /** The game's own key where vanilla's tooltip draws the same line, which it
+   *  translates into every language it ships; otherwise ours, so a translation
+   *  can ship with the mod. Ours too where one fact stands for several of the
+   *  game's lines, since no one key names it. */
   localizationKey: string;
   fallback: string;
   /** Appended after the number; "" for a bare count. */
   unit: string;
+  /** Decimals kept, where a whole number would say too little; none by default. */
+  decimals?: number;
   /** A multiplier reads as "×1.2", not as a quantity. */
   multiplier?: boolean;
   /** A change, so a positive figure carries its "+" — vanilla's signed binder. */
   signed?: boolean;
   /**
    * Follows the player's unit system instead of carrying a fixed `unit`. Each
-   * name is one of vanilla's own rules, and a per-distance cost converts its
-   * figure as well as its suffix.
+   * name is one of vanilla's own rules.
    */
-  measure?: "length" | "height" | "volume" | "moneyPerDistance" | "moneyPerCellPerMonth" | "weight" | "weightPerMonth" | "perMonth" | "power";
+  measure?: "length" | "height" | "volume" | "moneyPerCellPerMonth" | "weight" | "weightPerMonth" | "perMonth" | "power";
 }
 
 const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
+  // Ours: the medical, fire and police helicopter counts, three keys in vanilla.
   helicopters: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Helicopters]",
     fallback: "Helicopters",
@@ -55,7 +60,7 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     // DeathcareFacilityData.m_ProcessingRate — bodies a month, an integer per
     // month in vanilla's table. Garbage has its own key below because its
     // figure is a weight, and a crematorium's bodies are not tonnes.
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ProcessingRate]",
+    localizationKey: "Properties.DECEASED_PROCESSING_CAPACITY",
     fallback: "Processing",
     unit: "/mo.",
     measure: "perMonth",
@@ -63,37 +68,40 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
   garbageProcessing: {
     // GarbageFacilityData.m_ProcessingSpeed — kilograms a month, so it goes
     // through the game's WeightPerMonth rule rather than wearing "t/mo" raw.
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.GarbageProcessing]",
+    localizationKey: "Properties.GARBAGE_PROCESSING_CAPACITY",
     fallback: "Processing",
     unit: "t/mo.",
     measure: "weightPerMonth",
   },
   collectionTrucks: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.CollectionTrucks]",
+    localizationKey: "Properties.GARBAGE_TRUCK_COUNT",
     fallback: "Collection trucks",
     unit: "",
   },
   sortingRate: {
     // PostFacilityData.m_SortingRate — mail items a month, an integer per
     // month in vanilla's table, not a weight.
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.SortingRate]",
+    localizationKey: "Properties.MAIL_SORTING_RATE",
     fallback: "Sorting",
     unit: "/mo.",
     measure: "perMonth",
   },
   postVans: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PostVans]",
+    localizationKey: "Properties.POST_VAN_COUNT",
     fallback: "Post vans",
     unit: "",
   },
+  // SchoolData.m_GraduationModifier, already ×100 by the indexer: points added
+  // to the graduation probability (GraduationSystem ends on "+ modifier"), not
+  // a factor on it.
   graduation: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Graduation]",
     fallback: "Graduation",
-    unit: "",
-    multiplier: true,
+    unit: "%",
+    signed: true,
   },
   attractiveness: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Attractiveness]",
+    localizationKey: "Properties.ATTRACTIVENESS",
     fallback: "Attractiveness",
     unit: "",
   },
@@ -102,7 +110,7 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
   // the player paints rather than a thing they place.
   // Properties.MAIL_BOX_CAPACITY: MailBoxData.m_MailCapacity, an integer.
   mailboxCapacity: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.MailboxCapacity]",
+    localizationKey: "Properties.MAIL_BOX_CAPACITY",
     fallback: "Mailbox capacity",
     unit: "",
   },
@@ -114,10 +122,12 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     fallback: "Homes",
     unit: "",
   },
+  // A rate, and a fractional one: 1.4 homes a cell is not 1.
   zoneHouseholdsPerCell: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneHouseholds]",
     fallback: "Homes",
     unit: "/cell",
+    decimals: 1,
   },
   zoneMaxHeight: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneHeight]",
@@ -128,6 +138,7 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
   // The one consumption coefficient the game reads: PropertyRenterSystem's
   // GetUpkeep is level^exp × this × lotSize, so at level 1 it is money per cell
   // per month. Its unread neighbours are not facts and get no presentation.
+  // Ours: the renters pay it, where the game's UPKEEP is what the city pays.
   zoneUpkeep: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Upkeep]",
     fallback: "Upkeep",
@@ -149,10 +160,13 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     fallback: "Night shift",
     unit: "%",
   },
+  // Offsets to happiness, so each carries its sign: a penalty is as much a
+  // figure as a bonus.
   workConditions: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.WorkConditions]",
     fallback: "Conditions",
     unit: "",
+    signed: true,
   },
   xpReward: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.XpReward]",
@@ -163,22 +177,27 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.StudentWellbeing]",
     fallback: "Student wellbeing",
     unit: "",
+    signed: true,
   },
   studentHealth: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.StudentHealth]",
     fallback: "Student health",
     unit: "",
+    signed: true,
   },
   prisonerWellbeing: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PrisonerWellbeing]",
     fallback: "Inmate wellbeing",
     unit: "",
+    signed: true,
   },
   prisonerHealth: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PrisonerHealth]",
     fallback: "Inmate health",
     unit: "",
+    signed: true,
   },
+  // Ours: WATER_PURIFICATION_RATE for a pumping station, SEWAGE_ for an outlet.
   purification: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Purification]",
     fallback: "Purification",
@@ -187,7 +206,7 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
   batteryOutput: {
     // BatteryData.m_PowerOutput, bound with the power unit: hundreds of watts,
     // so it goes through the game's kW/MW rule rather than wearing "MW" raw.
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.BatteryOutput]",
+    localizationKey: "Properties.BATTERY_POWER_OUTPUT",
     fallback: "Output",
     unit: "MW",
     measure: "power",
@@ -197,16 +216,17 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     fallback: "Maintenance",
     unit: "",
   },
+  // Properties.EVACUATION_BUS_COUNT.
   shelterVehicles: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ShelterVehicles]",
-    fallback: "Shelter vans",
+    localizationKey: "Properties.EVACUATION_BUS_COUNT",
+    fallback: "Evacuation buses",
     unit: "",
   },
   // Properties.COMFORT: the game shows round(100 × m_ComfortFactor) as a whole
   // number and the index scales it the same way, so this is a count and not
   // the raw multiplier.
   comfort: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Comfort]",
+    localizationKey: "Properties.COMFORT",
     fallback: "Comfort",
     unit: "",
   },
@@ -214,47 +234,86 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     // ElectricityConnectionData.m_Capacity. Vanilla binds TRANSFORMER_CAPACITY
     // and POWER_LINE_CAPACITY with the power unit — hundreds of watts — so the
     // raw figure is not megawatts.
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ElectricityCapacity]",
+    localizationKey: "Properties.POWER_LINE_CAPACITY",
     fallback: "Grid capacity",
     unit: "MW",
     measure: "power",
   },
+  // Ours: no binder shows it, and nothing in the simulation reads the amount.
   stormCapacity: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.StormCapacity]",
     fallback: "Stormwater",
     unit: "m³",
     measure: "volume",
   },
+  // Properties.TRANSFORMER_CAPACITY: the smaller of what its two sides carry,
+  // in the power unit, as a power line's capacity is.
+  transformerCapacity: {
+    localizationKey: "Properties.TRANSFORMER_CAPACITY",
+    fallback: "Transformer capacity",
+    unit: "MW",
+    measure: "power",
+  },
+  // TransportStopBinder's counts: a building's passenger stops, one line per kind,
+  // under the game's own Properties.TRANSPORT_STOP_COUNT words.
+  airplaneStops: { localizationKey: "Properties.TRANSPORT_STOP_COUNT[Airplane]", fallback: "Gates", unit: "" },
+  helicopterStops: { localizationKey: "Properties.TRANSPORT_STOP_COUNT[Helicopter]", fallback: "Landing pads", unit: "" },
+  shipStops: { localizationKey: "Properties.TRANSPORT_STOP_COUNT[Ship]", fallback: "Piers", unit: "" },
+  subwayStops: { localizationKey: "Properties.TRANSPORT_STOP_COUNT[Subway]", fallback: "Subway platforms", unit: "" },
+  tramStops: { localizationKey: "Properties.TRANSPORT_STOP_COUNT[Tram]", fallback: "Tram platforms", unit: "" },
+  trainStops: { localizationKey: "Properties.TRANSPORT_STOP_COUNT[Train]", fallback: "Train platforms", unit: "" },
+  busStops: { localizationKey: "Properties.TRANSPORT_STOP_COUNT[Bus]", fallback: "Bus platforms", unit: "" },
+  // Properties.GARBAGE_STORAGE, for a building whose Capacity line is another
+  // role's figure.
+  garbageStorage: {
+    localizationKey: "Properties.GARBAGE_STORAGE",
+    fallback: "Garbage storage",
+    unit: "t",
+    measure: "weight",
+  },
+  // Properties.POWER_PLANT_OUTPUT, for a building whose Capacity line is
+  // another role's figure: an incinerator's is its garbage store.
+  powerOutput: {
+    localizationKey: "Properties.POWER_PLANT_OUTPUT",
+    fallback: "Power output",
+    unit: "MW",
+    measure: "power",
+  },
   cargoCapacity: {
-    // Vanilla's Properties.CARGO_CAPACITY wording under our own key, because
-    // every entry in this table ships its own string. StorageLimitData.m_Limit
-    // is kilograms bound with the weight unit, so it follows the unit system.
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.CargoCapacity]",
+    // StorageLimitBinder's line. StorageLimitData.m_Limit is kilograms bound
+    // with the weight unit, so it follows the unit system.
+    localizationKey: "Properties.CARGO_CAPACITY",
     fallback: "Cargo capacity",
     unit: "t",
     measure: "weight",
   },
   // The rest of what vanilla's tooltip carries. Most are what an upgrade IS —
-  // an ambulance depot, a hearse garage, jail cells, a modifier on the parent's
-  // upkeep — so they are the whole content of an upgrade's card.
-  ambulances: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Ambulances]", fallback: "Ambulances", unit: "" },
-  hearses: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Hearses]", fallback: "Hearses", unit: "" },
-  prisonVans: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PrisonVans]", fallback: "Prison vans", unit: "" },
-  postTrucks: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PostTrucks]", fallback: "Post trucks", unit: "" },
+  // an ambulance depot, a hearse garage, jail cells, a change to what the
+  // parent burns — so they are the whole content of an upgrade's card.
+  ambulances: { localizationKey: "Properties.AMBULANCE_COUNT", fallback: "Ambulances", unit: "" },
+  hearses: { localizationKey: "Properties.HEARSE_COUNT", fallback: "Hearses", unit: "" },
+  prisonVans: { localizationKey: "Properties.PRISON_VAN_COUNT", fallback: "Prison vans", unit: "" },
+  postTrucks: { localizationKey: "Properties.POST_TRUCK_COUNT", fallback: "Post trucks", unit: "" },
   // TransportDepotData.m_VehicleCapacity — the game says "Vehicles" too.
-  depotVehicles: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.DepotVehicles]", fallback: "Vehicles", unit: "" },
-  maintenanceVehicles: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.MaintenanceVehicles]", fallback: "Maintenance vehicles", unit: "" },
-  jailCapacity: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.JailCapacity]", fallback: "Jail capacity", unit: "" },
-  // PollutionModifierData multipliers, already ×100 by the indexer: vanilla
-  // shows them as a percentage under the pollution level's own name, and it
-  // authors the component only on service upgrades.
-  groundPollutionModifier: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.GroundPollutionModifier]", fallback: "Ground pollution", unit: "%" },
-  airPollutionModifier: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.AirPollutionModifier]", fallback: "Air pollution", unit: "%" },
-  noisePollutionModifier: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.NoisePollutionModifier]", fallback: "Noise pollution", unit: "%" },
-  // UpkeepModifierData: the largest multiplier minus one, in percent, signed —
-  // the one signed property in vanilla's table, and authored only on
-  // BuildingExtensionPrefab.
-  upkeepChange: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.UpkeepChange]", fallback: "Upkeep", unit: "%", signed: true },
+  depotVehicles: { localizationKey: "Properties.TRANSPORT_VEHICLE_COUNT", fallback: "Vehicles", unit: "" },
+  maintenanceVehicles: { localizationKey: "Properties.MAINTENANCE_VEHICLES", fallback: "Maintenance vehicles", unit: "" },
+  jailCapacity: { localizationKey: "Properties.JAIL_CAPACITY", fallback: "Jail capacity", unit: "" },
+  // PollutionModifierData factors, already ×100 by the indexer: a change, where
+  // 0 is none, so vanilla shows them signed, as a percentage under the pollution
+  // level's own name. It authors the component only on service upgrades.
+  groundPollutionModifier: { localizationKey: "SelectedInfoPanel.POLLUTION_LEVELS_GROUND", fallback: "Ground pollution", unit: "%", signed: true },
+  airPollutionModifier: { localizationKey: "SelectedInfoPanel.POLLUTION_LEVELS_AIR", fallback: "Air pollution", unit: "%", signed: true },
+  noisePollutionModifier: { localizationKey: "SelectedInfoPanel.POLLUTION_LEVELS_NOISE", fallback: "Noise pollution", unit: "%", signed: true },
+  // UpkeepModifierData: the largest multiplier minus one, in percent, signed as
+  // vanilla binds it, and authored only on BuildingExtensionPrefab. Not the money
+  // upkeep, whatever the component's name: the game applies it to the resources
+  // a building consumes, and labels it RESOURCE_CONSUMPTION.
+  resourceConsumption: {
+    localizationKey: "Properties.RESOURCE_CONSUMPTION",
+    fallback: "Resource consumption",
+    unit: "%",
+    signed: true,
+  },
   elevatedWidth: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ElevatedWidth]",
     fallback: "Elevated width",
@@ -262,15 +321,6 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     // A LENGTH, so it follows the player's unit system rather than carrying a
     // hard "m" beside a width already stated in feet.
     measure: "length",
-  },
-  elevationCost: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ElevationCost]",
-    fallback: "Elevation",
-    unit: "¢/km",
-    // Money, so it goes through the game's own per-distance template rather
-    // than bolting "¢/km" onto a number and putting the symbol on the wrong
-    // side of every other cost on the card.
-    measure: "moneyPerDistance",
   },
   zoneSpace: {
     // The authoring tooltip: "an abstraction of amount of floors in a
@@ -338,11 +388,12 @@ export function renderServiceFacts(
     }
 
     if (presentation.multiplier) {
-      // One decimal: a graduation modifier of 1.15 is a different building
-      // from one of 1.5, and rounding to whole numbers makes both read "×1".
+      // Two decimals: floor space of 1.15 is a different zone from 1.5, and
+      // rounding to whole numbers makes both read "×1".
       value = `×${(Math.round(fact.value * 100) / 100).toFixed(2).replace(/0$/, "")}`;
     } else {
-      const rounded = Math.round(fact.value);
+      const scale = 10 ** (presentation.decimals ?? 0);
+      const rounded = Math.round(fact.value * scale) / scale;
       const number = presentation.signed
         ? `${rounded < 0 ? "-" : "+"}${formatNumber(Math.abs(rounded))}`
         : formatNumber(rounded);
@@ -369,14 +420,27 @@ interface ServiceTextPresentation {
   omit?: readonly string[];
 }
 
+const VOLTAGE_WORDS = {
+  Low: { localizationKey: "Properties.VOLTAGE:0", fallback: "Low" },
+  High: { localizationKey: "Properties.VOLTAGE:1", fallback: "High" },
+  Both: { localizationKey: "Properties.VOLTAGE:2", fallback: "Low and high" },
+};
+
+const POLLUTION_WORDS = {
+  Low: { localizationKey: "SelectedInfoPanel.POLLUTION_LEVELS:1", fallback: "Low" },
+  Medium: { localizationKey: "SelectedInfoPanel.POLLUTION_LEVELS:2", fallback: "Medium" },
+  High: { localizationKey: "SelectedInfoPanel.POLLUTION_LEVELS:3", fallback: "High" },
+};
+
 const TEXT_PRESENTATION: Readonly<Record<string, ServiceTextPresentation>> = {
   // RequiredResourceBinder: the map feature an extractor's product needs,
   // worded with the game's own Properties.MAP_RESOURCE[<feature>] strings.
   requiredResource: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.RequiredResource]",
+    localizationKey: "Properties.REQUIRED_RESOURCE",
     fallback: "Requires",
     values: {
       Ore: { localizationKey: "Properties.MAP_RESOURCE[Ore]", fallback: "Ore" },
+      Fish: { localizationKey: "Properties.MAP_RESOURCE[Fish]", fallback: "Fish" },
       Oil: { localizationKey: "Properties.MAP_RESOURCE[Oil]", fallback: "Oil" },
       Forest: { localizationKey: "Properties.MAP_RESOURCE[Forest]", fallback: "Forest" },
       FertileLand: { localizationKey: "Properties.MAP_RESOURCE[FertileLand]", fallback: "Fertile land" },
@@ -426,14 +490,58 @@ const TEXT_PRESENTATION: Readonly<Record<string, ServiceTextPresentation>> = {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.TransportType]",
     fallback: "Transport",
   },
+  // ElectricityUIUtils.GetVoltage's three answers, in the game's own
+  // Properties.VOLTAGE words.
   voltage: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Voltage]",
     fallback: "Voltage",
+    values: VOLTAGE_WORDS,
+  },
+  transformerInput: {
+    localizationKey: "Properties.TRANSFORMER_INPUT",
+    fallback: "Electricity input",
+    values: VOLTAGE_WORDS,
+  },
+  transformerOutput: {
+    localizationKey: "Properties.TRANSFORMER_OUTPUT",
+    fallback: "Electricity output",
+    values: VOLTAGE_WORDS,
+  },
+  // WaterConnectionBinder's Properties.WATER_PIPE_TYPE words, for the pipes a road
+  // carries built in. Its own label: a road's features already read "Carries".
+  pipeType: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PipeType]",
+    fallback: "Water pipes",
+    values: {
+      Fresh: { localizationKey: "Properties.WATER_PIPE_TYPE[Fresh]", fallback: "Fresh water" },
+      Sewage: { localizationKey: "Properties.WATER_PIPE_TYPE[Sewage]", fallback: "Sewage" },
+      Combined: { localizationKey: "Properties.WATER_PIPE_TYPE[Combined]", fallback: "Water and sewage" },
+    },
+  },
+  // PollutionBinder's levels. It sends a level of none too, and a line saying so
+  // is noise beside the ones that are not.
+  groundPollutionLevel: {
+    localizationKey: "SelectedInfoPanel.POLLUTION_LEVELS_GROUND",
+    fallback: "Ground pollution",
+    values: POLLUTION_WORDS,
+    omit: ["None"],
+  },
+  airPollutionLevel: {
+    localizationKey: "SelectedInfoPanel.POLLUTION_LEVELS_AIR",
+    fallback: "Air pollution",
+    values: POLLUTION_WORDS,
+    omit: ["None"],
+  },
+  noisePollutionLevel: {
+    localizationKey: "SelectedInfoPanel.POLLUTION_LEVELS_NOISE",
+    fallback: "Noise pollution",
+    values: POLLUTION_WORDS,
+    omit: ["None"],
   },
   // RequiredResourceBinder's wording — Properties.MAP_RESOURCE[GroundWater] /
   // [SurfaceWater] — and its silence: a water tower allows no type at all.
   waterSource: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.WaterSource]",
+    localizationKey: "Properties.REQUIRED_RESOURCE",
     fallback: "Draws from",
     values: {
       GroundWater: { localizationKey: "Properties.MAP_RESOURCE[GroundWater]", fallback: "Ground water" },
@@ -523,24 +631,31 @@ export function renderServiceTextFacts(
  */
 export const VANILLA_FACT_KEYS: ReadonlySet<string> = new Set([
   // rates and capacities
-  "processingRate", "garbageProcessing", "sortingRate", "purification", "cargoCapacity", "jailCapacity", "stormCapacity",
+  "processingRate", "garbageProcessing", "sortingRate", "purification", "cargoCapacity", "jailCapacity",
+  "garbageStorage",
   // vehicle counts
   "collectionTrucks", "postVans", "postTrucks", "ambulances", "hearses", "prisonVans",
   "depotVehicles", "maintenanceVehicles", "helicopters", "shelterVehicles",
-  // electricity
-  "batteryOutput", "electricityCapacity", "voltage",
+  // electricity and water
+  "batteryOutput", "electricityCapacity", "voltage", "powerOutput",
+  "transformerCapacity", "transformerInput", "transformerOutput", "pipeType",
+  // stops
+  "airplaneStops", "helicopterStops", "shipStops", "subwayStops", "tramStops", "trainStops", "busStops",
+  // pollution
+  "groundPollutionLevel", "airPollutionLevel", "noisePollutionLevel",
   // quality and modifiers
-  "comfort", "attractiveness", "groundPollutionModifier", "airPollutionModifier", "noisePollutionModifier", "upkeepChange",
+  "comfort", "attractiveness", "groundPollutionModifier", "airPollutionModifier", "noisePollutionModifier", "resourceConsumption",
   // mail
   "mailboxCapacity",
   // worded
-  "waterSource", "transportType", "requiredResource",
+  "waterSource", "requiredResource",
 ]);
 
 /**
  * A resource the building burns, from the ServiceUpkeepData buffer: one key
  * per resource, "upkeep:Coal", labelled with the game's own Resources.TITLE.
- * Part of vanilla's upkeep, so part of its tier.
+ * Part of vanilla's upkeep, so part of its tier: vanilla prices these into the
+ * top of its upkeep range, and the card names them instead.
  */
 export const RESOURCE_UPKEEP_PREFIX = "upkeep:";
 
@@ -564,17 +679,22 @@ export const FACT_ORDER: readonly string[] = [
   "collectionTrucks", "postVans", "postTrucks", "ambulances", "hearses", "prisonVans",
   "depotVehicles", "maintenanceVehicles",
   "helicopters", "disasterResponse", "shelterVehicles",
-  "batteryOutput", "electricityCapacity", "stormCapacity", "cargoCapacity", "mailboxCapacity",
-  "purification", "waterSource", "maintenancePool", "comfort",
+  "powerOutput", "electricityCapacity", "voltage", "garbageStorage", "batteryOutput",
+  "transformerCapacity", "transformerInput", "transformerOutput",
+  "pipeType", "stormCapacity", "cargoCapacity", "mailboxCapacity",
+  "purification", "waterSource", "maintenancePool",
+  "airplaneStops", "helicopterStops", "shipStops", "subwayStops", "tramStops", "trainStops", "busStops",
+  "comfort",
   "transportType", "trackType",
   // 2. How well.
   "graduation", "studentWellbeing", "studentHealth",
   "prisonerWellbeing", "prisonerHealth", "attractiveness",
-  "groundPollutionModifier", "airPollutionModifier", "noisePollutionModifier", "upkeepChange",
+  "groundPollutionLevel", "airPollutionLevel", "noisePollutionLevel",
+  "groundPollutionModifier", "airPollutionModifier", "noisePollutionModifier", "resourceConsumption",
   // 3. Who runs it.
   "jobComplexity", "minCrew", "workConditions", "eveningShift", "nightShift",
   // 4. Placement, network and zone.
-  "elevatedWidth", "elevationCost", "voltage", "roadFeature",
+  "elevatedWidth", "roadFeature",
   "zoneMaxHeight", "zoneHouseholds", "zoneHouseholdsPerCell", "zoneSpace",
   "zoneUpkeep", "zoneFireHazard", "zoneLotShapes",
   "zoneSold", "zoneManufactured", "zoneStored",

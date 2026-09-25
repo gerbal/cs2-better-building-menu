@@ -7,13 +7,13 @@ using Unity.Entities;
 namespace BetterBuildingMenu.Domain.Catalog
 {
 	/// <summary>
-	/// The game's own build menus as a full pass read them: where each asset is placed, and
-	/// the menus and category tabs it draws.
+	/// The game's own build menus as a full pass read them: where each asset is placed, as the
+	/// latest pass read it, and the menus and category tabs it draws.
 	/// </summary>
 	/// <remarks>
-	/// Not changed once built; a new pass builds a new one, handing over tables it keeps no hold on.
-	/// The walk that fills it is in PrefabIndexingSystem; see docs/indexing.md, "The vanilla
-	/// menu walk".
+	/// Not changed once built; a new pass builds a new one, handing over tables it keeps no hold on,
+	/// and a partial pass swaps in a copy with its placements read again. The walk that fills it is
+	/// in PrefabIndexingSystem; see docs/indexing.md, "The vanilla menu walk".
 	/// </remarks>
 	public sealed class VanillaMenuIndex
 	{
@@ -53,6 +53,12 @@ namespace BetterBuildingMenu.Domain.Catalog
 
 		/// <summary>Every placement, for the audits and AddPrefab's placement override.</summary>
 		public IReadOnlyDictionary<int, VanillaMenuPlacement> Placements => _placements;
+
+		/// <summary>The same menus and tabs over placements read again.</summary>
+		/// <remarks>A partial pass's: the game moves a recreated prefab to a new entity, and the
+		/// placements are keyed by entity. The menus and their tabs wait for the next full pass.</remarks>
+		public VanillaMenuIndex WithPlacements(IReadOnlyDictionary<int, VanillaMenuPlacement> placements) =>
+			new(placements, _menuNames, _menuEntities, _menus, _categories);
 
 		/// <summary>Whether the game offers this prefab in any of its build menus.</summary>
 		/// <remarks>The index's tie-breaker: whatever the game puts in front of the player, the lens
@@ -110,6 +116,28 @@ namespace BetterBuildingMenu.Domain.Catalog
 			menu is not null && _categories.TryGetValue(menu, out var tabs)
 				? tabs
 				: Array.Empty<VanillaMenuCategory>();
+
+		/// <summary>A category's tab in its menu's strip: its place there, counted from 0, and the
+		/// priority the strip was sorted by. Null when the menu draws no such tab.</summary>
+		public (int Position, int Priority)? TabOf(string? menu, string? category)
+		{
+			if (category?.Trim() is not { Length: > 0 } trimmed)
+			{
+				return null;
+			}
+
+			var tabs = CategoriesOf(menu);
+
+			for (var i = 0; i < tabs.Count; i++)
+			{
+				if (string.Equals(tabs[i].Id, trimmed, StringComparison.Ordinal))
+				{
+					return (i, tabs[i].Priority);
+				}
+			}
+
+			return null;
+		}
 
 		// The UI names a menu the way the player's toolbar does, which need not match the
 		// prefab's case. A copy, so the comparison holds whoever built the dictionary.

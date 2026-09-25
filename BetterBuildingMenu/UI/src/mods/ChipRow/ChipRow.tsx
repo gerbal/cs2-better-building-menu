@@ -3,7 +3,7 @@ import { useLocalization } from "cs2/l10n";
 import { Button, Scrollable } from "cs2/ui";
 import classNames from "classnames";
 import { useState } from "react";
-import { orderedCategories } from "domain/vanillaMenuCategories";
+import { visibleCategories } from "domain/vanillaMenuCategories";
 import { isScopedToMenu, lensScopeChipsFor } from "domain/lensScopeChips";
 import {
   resolveVanillaLabel,
@@ -15,6 +15,7 @@ import {
   BuildingLensMenu$,
   BuildingLensMenuCategories$,
   BuildingLensMenuCategory$,
+  BuildingLensMenuCategoryCounts$,
   BuildingLensMenus$,
   send,
 } from "mods/bindings";
@@ -41,6 +42,7 @@ export const ChipRow = () => {
   const menu = useValue(BuildingLensMenu$) ?? "";
   const menuCategory = useValue(BuildingLensMenuCategory$) ?? "";
   const menuCategories = useValue(BuildingLensMenuCategories$) ?? [];
+  const menuCategoryCounts = useValue(BuildingLensMenuCategoryCounts$) ?? [];
   const menus = useValue(BuildingLensMenus$) ?? [];
 
   const scopedToMenu = isScopedToMenu(menu);
@@ -98,13 +100,17 @@ export const ChipRow = () => {
     </div>
   );
 
-  const menuTabs: VanillaBuildMenuTab[] = orderedCategories(menus).map((entry) => ({
+  // In the order the index sends them, which is the bottom bar's: toolbar group
+  // first, then priority. A re-sort by priority alone would undo the groups.
+  const menuTabs: VanillaBuildMenuTab[] = menus.map((entry) => ({
     id: entry.id,
     icon: entry.icon,
     toolTip: menuLabel(entry.id),
   }));
 
-  const categoryTabs: VanillaBuildMenuTab[] = orderedCategories(menuCategories).map((category) => ({
+  // The categories the strip shows. It hides one with nothing behind it, and
+  // this is the same choice reached another way, so it is left out here too.
+  const categoryTabs: VanillaBuildMenuTab[] = visibleCategories(menuCategories, menuCategoryCounts).map((category) => ({
     id: category.id,
     icon: category.icon,
     toolTip: categoryLabel(category.id),

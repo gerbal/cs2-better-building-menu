@@ -39,6 +39,11 @@ export function contentOverflowPx(clientWidth: number, offsetWidth: number, scro
 /** The three widths a drawn line reports; see contentOverflowPx. */
 export type DrawnLine = { clientWidth: number; offsetWidth: number; scrollWidth: number };
 
+/** Whether a drawn line's content runs past its box by more than rounding. */
+export function overflowsBox(line: DrawnLine): boolean {
+  return contentOverflowPx(line.clientWidth, line.offsetWidth, line.scrollWidth) > ROUNDING_NOISE_PX;
+}
+
 /**
  * The budget a set of drawn lines allows: the tightest correction any of them
  * asks for. Call it a frame AFTER the render — in the same tick an element

@@ -42,7 +42,8 @@ export function vanillaCategoryNameKeys(id: string | null | undefined): string[]
 /**
  * The first key that resolves, or the raw id. `lookup` is the component's
  * `translate` bound to a null fallback, so a missing key comes back null
- * rather than as the key itself.
+ * rather than as the key itself. Trimmed, as C#'s WordFormat.GameText trims:
+ * some of the game's strings end in a line break ("Small Roads").
  */
 export function resolveVanillaLabel(
   keys: readonly string[],
@@ -53,7 +54,7 @@ export function resolveVanillaLabel(
     const resolved = lookup(key);
 
     if (typeof resolved === "string" && resolved.trim() !== "") {
-      return resolved;
+      return resolved.trim();
     }
   }
 

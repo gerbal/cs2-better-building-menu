@@ -35,7 +35,8 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		public bool HasPackBuffer { get; }
 
-		/// <summary>Carries <c>ModPrerequisiteData</c>, directly or via a pack.</summary>
+		/// <summary>Carries <c>ModPrerequisiteData</c> itself, and no pack of its carries it too: one
+		/// that does answers to the pack filter instead. See <see cref="From"/>.</summary>
 		public bool IsModAsset { get; }
 
 		public VanillaAssetFacts(
@@ -48,6 +49,49 @@ namespace BetterBuildingMenu.Domain
 			AssetPacks = assetPacks ?? System.Array.Empty<int>();
 			HasPackBuffer = hasPackBuffer;
 			IsModAsset = isModAsset;
+		}
+
+		/// <summary>The facts from what the indexer read off an asset's entity.</summary>
+		/// <param name="requirements">Each ObjectRequirementElement's entity index, and whether that
+		/// entity carries ThemeData.</param>
+		/// <param name="packs">Each AssetPackElement's entity index, and whether that pack carries
+		/// ModPrerequisiteData; null when the asset has no AssetPackElement buffer.</param>
+		/// <param name="hasModPrerequisite">Whether the asset itself carries ModPrerequisiteData.</param>
+		/// <remarks>IsModAsset, and the second half is easy to get backwards: an asset carrying
+		/// ModPrerequisiteData is NOT a mod asset when one of its packs carries it too, so the pack
+		/// filter governs it, not the Mods toggle.</remarks>
+		public static VanillaAssetFacts From(
+			IEnumerable<(int Index, bool IsTheme)> requirements,
+			IReadOnlyList<(int Index, bool HasModPrerequisite)>? packs,
+			bool hasModPrerequisite)
+		{
+			var themeRequirements = new List<int>();
+
+			foreach (var (index, isTheme) in requirements)
+			{
+				if (isTheme)
+				{
+					themeRequirements.Add(index);
+				}
+			}
+
+			var packIndices = new List<int>();
+			var isModAsset = hasModPrerequisite;
+
+			if (packs is not null)
+			{
+				foreach (var (index, packHasModPrerequisite) in packs)
+				{
+					packIndices.Add(index);
+
+					if (isModAsset && packHasModPrerequisite)
+					{
+						isModAsset = false;
+					}
+				}
+			}
+
+			return new VanillaAssetFacts(themeRequirements, packIndices, packs is not null, isModAsset);
 		}
 	}
 

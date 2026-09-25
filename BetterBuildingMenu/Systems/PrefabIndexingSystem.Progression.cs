@@ -98,50 +98,26 @@ namespace BetterBuildingMenu.Systems
 			var roots = new Dictionary<string, (string Label, string Icon, int Depth)>();
 			// Prefab name to node, so FoldedDevTreeNodes can be resolved once the
 			// whole tree is known — a fold's target may be indexed after it.
-			var nodesByName = new Dictionary<string, Entity>(StringComparer.Ordinal);
+			var nodesByName = new Dictionary<string, int>(StringComparer.Ordinal);
 
-			// Ranked per service by the tree's OWN LAYOUT — column first, then
-			// distance from the trunk row. The game lays its siblings out in a
-			// deliberate order; any other tie-break invents one.
-			var ranked = new Dictionary<Entity, int>();
+			// Where each node is drawn, in query order, for DevTreeLayout to rank.
+			var places = new List<DevTreeNodePlace>();
 
-			foreach (var service in nodes
-				.Where(node => EntityManager.HasComponent<DevTreeNodeData>(node))
-				.GroupBy(node => EntityManager.GetComponentData<DevTreeNodeData>(node).m_Service))
+			for (var i = 0; i < nodes.Length; i++)
 			{
-				var placed = new List<(Entity Node, DevTreeNodePrefab Prefab)>();
-
-				foreach (var node in service)
+				if (EntityManager.TryGetComponent<DevTreeNodeData>(nodes[i], out var data)
+					&& _prefabSystem.TryGetPrefab<PrefabBase>(nodes[i], out var prefab)
+					&& prefab is DevTreeNodePrefab devTreeNode)
 				{
-					if (_prefabSystem.TryGetPrefab<PrefabBase>(node, out var prefab) && prefab is DevTreeNodePrefab devTreeNode)
-					{
-						placed.Add((node, devTreeNode));
-					}
-				}
-
-				// The row the service's chain runs along, taken from its root.
-				// NOT zero: education's trunk sits at 1, with Technical above at
-				// 0 and Medical below at 2.
-				var trunk = placed
-					.Where(pair => pair.Prefab.m_HorizontalPosition == 0)
-					.Select(pair => pair.Prefab.m_VerticalPosition)
-					.DefaultIfEmpty(0f)
-					.First();
-
-				var ordered = placed
-					.OrderBy(pair => pair.Prefab.m_HorizontalPosition)
-					// Then by distance from that trunk. Siblings in a column are drawn
-					// around the chain they hang off, so measuring outward takes the
-					// generic before its specialisations.
-					.ThenBy(pair => Math.Abs(pair.Prefab.m_VerticalPosition - trunk))
-					.ThenBy(pair => pair.Prefab.m_VerticalPosition)
-					.ToArray();
-
-				for (var r = 0; r < ordered.Length; r++)
-				{
-					ranked[ordered[r].Node] = r;
+					places.Add(new DevTreeNodePlace(
+						nodes[i].Index,
+						data.m_Service.Index,
+						devTreeNode.m_HorizontalPosition,
+						devTreeNode.m_VerticalPosition));
 				}
 			}
+
+			var ranked = DevTreeLayout.Rank(places);
 
 			for (var i = 0; i < nodes.Length; i++)
 			{
@@ -154,7 +130,7 @@ namespace BetterBuildingMenu.Systems
 
 				var isRoot = !EntityManager.TryGetBuffer<DevTreeNodeRequirement>(node, true, out var reqs)
 					|| reqs.Length == 0;
-				var depth = ranked.TryGetValue(node, out var rank) ? rank : 0;
+				var depth = ranked.TryGetValue(node.Index, out var rank) ? rank : 0;
 
 				// The node ITSELF, not the chain it hangs off: collapsing a chain to
 				// the branch below the root files the Central Intelligence Bureau under
@@ -171,7 +147,7 @@ namespace BetterBuildingMenu.Systems
 					? (rootLabel, DevTreeIcon(prefab), 0, service)
 					: (DevTreeBranchName(prefab), DevTreeIcon(prefab), depth, service);
 
-				nodesByName[prefab.name] = node;
+				nodesByName[prefab.name] = node.Index;
 
 				// The root also names the bucket for everything the tree never
 				// gated, so it is recorded against its service.
@@ -184,27 +160,18 @@ namespace BetterBuildingMenu.Systems
 			// Applied after the walk: an asset gated by a folded node now reports
 			// the target's branch, so it lands in that tab with the target's
 			// label, icon and rank rather than opening one of its own.
-			var folded = 0;
+			var unmatched = DevTreeLayout.Fold(branches, nodesByName, FoldedDevTreeNodes);
 
-			foreach (var fold in FoldedDevTreeNodes)
+			foreach (var (from, into) in unmatched)
 			{
-				if (nodesByName.TryGetValue(fold.Key, out var from)
-					&& nodesByName.TryGetValue(fold.Value, out var into)
-					&& branches.TryGetValue(into.Index, out var target)
-					&& target.Label.Length > 0)
-				{
-					branches[from.Index] = target;
-					folded++;
-				}
-				else
-				{
-					// A fold that matches nothing is a typo, not a no-op, and nothing in
-					// the build or the tests can catch it.
-					Mod.Log.Warn(
-						$"[DEVTREE] fold '{fold.Key}' -> '{fold.Value}' matched no node; "
-						+ "the key is a dev tree NODE prefab name, not an asset name");
-				}
+				// A fold that matches nothing is a typo, not a no-op, and nothing in
+				// the build or the tests can catch it.
+				Mod.Log.Warn(
+					$"[DEVTREE] fold '{from}' -> '{into}' matched no node; "
+					+ "the key is a dev tree NODE prefab name, not an asset name");
 			}
+
+			var folded = FoldedDevTreeNodes.Count - unmatched.Count;
 
 			Mod.Log.Info($"Indexed Dev Tree: {nodes.Length} nodes, {roots.Count} services, {folded} folded");
 
@@ -250,63 +217,30 @@ namespace BetterBuildingMenu.Systems
 			return "Basic";
 		}
 
-		/// <summary>The node's name, without the "Node" the prefab titles all carry.</summary>
-		/// <remarks>An authoring artefact the player never sees in the dev tree, which draws the node
-		/// under its icon, so it is dropped rather than repeated across every tab of the strip.</remarks>
-		private string DevTreeBranchName(PrefabBase prefab)
-		{
-			var name = GetAssetName(prefab);
-
-			return name.EndsWith(" Node", StringComparison.Ordinal)
-				? name.Substring(0, name.Length - " Node".Length)
-				: name;
-		}
+		/// <summary>The node's name in the game's own words, as its dev tree shows it.</summary>
+		private string DevTreeBranchName(PrefabBase prefab) =>
+			DevTreeNodeName.Resolve(
+				GameManager.instance.localizationManager.activeDictionary
+					.TryGetValue(DevTreeNodeName.Key(prefab.name), out var name) ? name : null,
+				GetAssetName(prefab));
 
 		/// <summary>The branch an asset's unlock node belongs to, or its service's root.</summary>
-		/// <remarks>More than one node can gate an asset; DevTreeGates.Pick decides which names it,
-		/// preferring the nodes of the asset's own service.</remarks>
+		/// <remarks>Only the asset's own service is read here; ProgressionIndex.BranchOf decides.</remarks>
 		private (string Label, string Icon, int Depth) DevTreeBranchOf(
 			Entity asset,
 			IReadOnlyList<(Entity Requirement, UnlockFlags Flags)> required,
 			string? menu,
 			ProgressionIndex progression)
 		{
-			// The asset's own service, else the one its menu is named after: a mod that
-			// regroups the menus renames the menu, not the service.
 			var service = EntityManager.TryGetComponent<ServiceObjectData>(asset, out var serviceObject)
 				&& _prefabSystem.TryGetPrefab<PrefabBase>(serviceObject.m_Service, out var servicePrefab)
 					? servicePrefab.name
-					: menu;
-			var gates = new List<DevTreeGates.Gate>();
-			var otherWaysIn = false;
+					: null;
 
-			foreach (var (requirement, flags) in required)
-			{
-				var needed = (flags & UnlockFlags.RequireAll) != 0;
-
-				if (progression.TryGetBranch(requirement.Index, out var branch) && branch.Label.Length > 0)
-				{
-					gates.Add(new DevTreeGates.Gate(branch.Label, branch.Icon, branch.Depth, needed, branch.Service));
-				}
-				else if (!needed)
-				{
-					// A way in that is not a node, such as a milestone. UnlockSystem lets the
-					// asset in through it as through any other.
-					otherWaysIn = true;
-				}
-			}
-
-			if (DevTreeGates.Pick(gates, service, otherWaysIn) is { } gate)
-			{
-				return (gate.Label, gate.Icon, gate.Depth);
-			}
-
-			// No node gated it, so it belongs to the service's free root — the same
-			// bucket the game puts the starting kit in. Named after the root node
-			// rather than "Other": it is a real place in the tree.
-			return progression.TryGetRoot(menu, out var root)
-				? root
-				: (string.Empty, string.Empty, 0);
+			return progression.BranchOf(
+				required.Select(pair => (pair.Requirement.Index, (pair.Flags & UnlockFlags.RequireAll) != 0)),
+				service,
+				menu);
 		}
 
 		/// <summary>An asset's transitive unlock requirements, or none when nothing gates it.</summary>

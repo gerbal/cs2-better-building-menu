@@ -78,6 +78,17 @@ describe("Building Lens stylesheet contracts", () => {
     assert.equal(card(".cardLines")["flex-wrap"], "wrap");
     assert.equal(card(".cardLine").flex, "0 0 50%");
     assert.equal(card(".cardLineWide")["min-width"], "100%");
+    // Cohtml wraps by the flex basis clamped to max-width, so the half's cap has
+    // to be lifted too, or the wide line stays beside its neighbour.
+    assert.equal(card(".cardLineWide")["max-width"], "100%");
+    // A value keeps its width in a half, so a pair too long for it overflows the
+    // line where CardLine can measure it; Cohtml squeezed a shrinkable value to
+    // a sliver instead, and drew its text over the label. With the row to
+    // itself, the value may wrap.
+    assert.equal(card(".cardValue").flex, "1 0 auto");
+    assert.equal(card(".cardValue")["white-space"], "nowrap");
+    assert.equal(card(".cardLineWide .cardValue")["flex-shrink"], "1");
+    assert.equal(card(".cardLineWide .cardValue")["white-space"], "normal");
     // Row spacing here is margins, so the stack reads as one column with the
     // container pulling the first row's back off.
     assert.equal(card(".cardLines").gap, undefined);
@@ -345,7 +356,8 @@ describe("hover card figures line up", () => {
     // there is a column to run an eye down. justify-content, NOT text-align:
     // .cardValue computes to display: flex, which text-align does not reach.
     assert.equal(card(".cardValue")["justify-content"], "flex-end");
-    assert.equal(card(".cardValue").flex, "1 1 auto");
+    // Grows to reach the edge; never shrinks in a half (see the pairing test).
+    assert.equal(card(".cardValue").flex, "1 0 auto");
     // The stacked list opts out: a column of conditions reads down the left,
     // not the right.
     assert.equal(card(".cardValueList")["justify-content"], "flex-start");

@@ -95,10 +95,7 @@ namespace BetterBuildingMenu.Systems
 				var info = propertiesData[i];
 				var maxLotWidth = lotSizes.TryGetValue(zone.Index, out var sizes) ? sizes.MaxWidth : 0;
 
-				// The ZONE'S OWN tier, which is what the zoning menu navigates by, and
-				// which is computed for every zone including the ones the building-side
-				// answer below skips.
-				densities[zone.Index] = ZoneDensityClassifier.Classify(new ZoneDensityFacts(
+				var facts = new ZoneDensityFacts(
 					IsResidential: info.m_ResidentialProperties > 0f,
 					ResidentialProperties: info.m_ResidentialProperties,
 					SpaceMultiplier: info.m_SpaceMultiplier,
@@ -107,33 +104,12 @@ namespace BetterBuildingMenu.Systems
 					MaxLotWidth: maxLotWidth,
 					PrefabName: _prefabSystem.TryGetPrefab<PrefabBase>(zone, out var densityPrefab)
 						? densityPrefab?.name ?? string.Empty
-						: string.Empty));
+						: string.Empty);
 
-				// The BUILDING-side answer, unchanged. See ZoneIndex.TypeOf: this
-				// one exists so a building can be filtered by the zone it grows
-				// in, and widening it would reclassify thousands of them.
-				if (info.m_ResidentialProperties <= 0f)
-				{
-					dictionary[zone.Index] = ZoneTypeFilter.Any;
-					continue;
-				}
-
-				var ratio = info.m_ResidentialProperties / info.m_SpaceMultiplier;
-
-				if (!info.m_ScaleResidentials)
-				{
-					dictionary[zone.Index] = ZoneTypeFilter.Low;
-				}
-				else if (ratio < 1f)
-				{
-					// "No spawnable building wider than 2" is exactly "the widest is at
-					// most 2". A zone with no spawnable buildings at all stays Row.
-					dictionary[zone.Index] = maxLotWidth <= 2 ? ZoneTypeFilter.Row : ZoneTypeFilter.Medium;
-				}
-				else
-				{
-					dictionary[zone.Index] = ZoneTypeFilter.High;
-				}
+				// The ZONE'S OWN tier, which is what the zoning menu navigates by, and
+				// the narrower tier its buildings are filtered by.
+				densities[zone.Index] = ZoneDensityClassifier.Classify(facts);
+				dictionary[zone.Index] = ZoneDensityClassifier.ClassifyBuildings(facts);
 			}
 
 			// The same pass that classifies buildings by zone also yields the zones
@@ -186,9 +162,9 @@ namespace BetterBuildingMenu.Systems
 					SupportsNarrow: (zoneData[i].m_ZoneFlags & ZoneFlags.SupportNarrow) != 0,
 					SupportsCorners: (zoneData[i].m_ZoneFlags
 						& (ZoneFlags.SupportLeftCorner | ZoneFlags.SupportRightCorner)) != 0,
-					AllowedSold: ResourceName(propertiesData[i].m_AllowedSold),
-					AllowedManufactured: ResourceName(propertiesData[i].m_AllowedManufactured),
-					AllowedStored: ResourceName(propertiesData[i].m_AllowedStored),
+					AllowedSold: PrefabFacts.ResourceName(propertiesData[i].m_AllowedSold),
+					AllowedManufactured: PrefabFacts.ResourceName(propertiesData[i].m_AllowedManufactured),
+					AllowedStored: PrefabFacts.ResourceName(propertiesData[i].m_AllowedStored),
 					// What will actually grow here. A zone whose buildings are
 					// all 2x2 fills a 2-wide strip and nothing else, which
 					// decides how the block gets drawn and is stated nowhere.
@@ -286,7 +262,7 @@ namespace BetterBuildingMenu.Systems
 
 			Mod.Log.Info(
 				$"[ZONE-PARITY] vanilla places {placedInZones.Count} in Zones; dropping {unplaced.Count} it does not offer: "
-				+ Cap(unplaced.Select(entry => $"{entry.Name} [{entry.PrefabName}]").ToList()));
+				+ IndexAuditLog.Cap(unplaced.Select(entry => $"{entry.Name} [{entry.PrefabName}]").ToList()));
 
 			// Show what the game shows, and nothing else: the ZoneData query returns
 			// every zone prefab that exists, including ones the player can never
@@ -344,18 +320,6 @@ namespace BetterBuildingMenu.Systems
 			Mod.Log.Info($"Indexed Extractor Areas: {areas.Length}");
 			areas.Dispose();
 			areaData.Dispose();
-		}
-
-		/// <summary>The name of a single allowed resource, or null.</summary>
-		/// <remarks><c>Resource</c> is a ulong flags enum: zero ToString()s as "NoResource" and a
-		/// composite value as a raw number — and only a single flag tells the player anything.</remarks>
-		private static string? ResourceName(Game.Economy.Resource resource)
-		{
-			ulong value = (ulong)resource;
-
-			bool isSingleResource = value != 0UL && (value & (value - 1UL)) == 0UL;
-
-			return isSingleResource ? resource.ToString() : null;
 		}
 	}
 }
