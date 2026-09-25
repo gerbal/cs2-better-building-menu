@@ -30,6 +30,8 @@ type Translate = (key: string, fallback: string | null) => string | null;
 
 export interface HoverCardLabels {
   cost: string;
+  /** A network's cost, which vanilla labels under a key of its own. */
+  networkCost: string;
   upkeep: string;
   capacity: string;
   range: string;
@@ -84,8 +86,10 @@ const PROMOTED_BY_CATEGORY: Readonly<Record<string, ReadonlySet<string>>> = {
 export function hoverCardLabels(translate: Translate): HoverCardLabels {
   return {
     // Vanilla's own lines under its own keys, so they read as its tooltip does
-    // in every language. The table's narrower columns keep ours.
+    // in every language: ConstructionCostBinder's, PlaceableNetCostBinder's and
+    // the upkeep binders'. The table's narrower columns keep ours.
     cost: translate("Properties.CONSTRUCTION_COST", "Cost") ?? "Cost",
+    networkCost: translate("Common.ASSET_CONSTRUCTION_COST", "Cost") ?? "Cost",
     upkeep: translate("Properties.UPKEEP", "Upkeep") ?? "Upkeep",
     capacity: translate("Tooltip.LABEL[BetterBuildingMenu.Capacity]", "Capacity") ?? "Capacity",
     range: translate("Tooltip.LABEL[BetterBuildingMenu.Range]", "Range") ?? "Range",
@@ -192,7 +196,7 @@ function hoverCardLines(entry: BuildingCatalogEntry, context: HoverCardLineConte
     },
     {
       key: "cost",
-      label: labels.cost,
+      label: entry.costIsPerDistance ? labels.networkCost : labels.cost,
       applicable: isMetricPresent(entry.constructionCost),
       // The price, and nothing about the treasury: the balance is on the HUD,
       // and a share of it is a fact about the CITY on a card about a BUILDING.
