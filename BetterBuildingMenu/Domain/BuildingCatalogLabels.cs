@@ -28,6 +28,38 @@ namespace BetterBuildingMenu.Domain
 			_ => string.Empty,
 		};
 
+		/// <summary>A school level's name, Elementary School through University; null past them.</summary>
+		/// <remarks>
+		/// Our keys: no key of the game's for a school's level has turned up. The strip's tabs ask
+		/// for the same ones (menuProgression.ts), so a tab and its heading read alike.
+		/// </remarks>
+		public static string? SchoolLevel(int? level)
+		{
+			var (key, english) = level switch
+			{
+				1 => ("Tooltip.LABEL[BetterBuildingMenu.SchoolElementary]", "Elementary School"),
+				2 => ("Tooltip.LABEL[BetterBuildingMenu.SchoolHigh]", "High School"),
+				3 => ("Tooltip.LABEL[BetterBuildingMenu.SchoolCollege]", "College"),
+				4 => ("Tooltip.LABEL[BetterBuildingMenu.SchoolUniversity]", "University"),
+				_ => (null, null),
+			};
+
+			if (key is null || english is null)
+			{
+				return null;
+			}
+
+			try
+			{
+				return LocaleHelper.Translate(key, english);
+			}
+			catch
+			{
+				// Pure tests and early startup run without the game's localization manager.
+				return english;
+			}
+		}
+
 		public static string ForCategory(PrefabCategory category, string? rawValue = null)
 		{
 			string enumIdentity = category.ToString();

@@ -27,6 +27,19 @@ describe("education tier tabs", () => {
     assert.deepEqual(tabs.map((t) => t.count), [12, 8, 5, 2]);
   });
 
+  it("names each level in the player's language, through the keys the headings use", () => {
+    const german: Record<string, string> = {
+      "Tooltip.LABEL[BetterBuildingMenu.SchoolElementary]": "Grundschule",
+      "Tooltip.LABEL[BetterBuildingMenu.SchoolUniversity]": "Universität",
+    };
+    const tabs = schoolTierTabs(
+      [{ id: "1", count: 1, icon: "" }, { id: "3", count: 1, icon: "" }, { id: "4", count: 1, icon: "" }],
+      (key, fallback) => german[key] ?? fallback,
+    );
+
+    assert.deepEqual(tabs.map((t) => t.label), ["Grundschule", "College", "Universität"]);
+  });
+
   it("drops the levels that are not tiers", () => {
     // 0 is a capacity upgrade with no tier of its own and 5 is the outside
     // connection. The backend already filters them; this is the second wall.
