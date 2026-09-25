@@ -1,6 +1,7 @@
 using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Domain.Enums;
 
+using Game.Net;
 using Game.Prefabs;
 
 using System;
@@ -174,9 +175,13 @@ namespace BetterBuildingMenu.Tests
 					TransportStopData = new TransportStopData { m_ComfortFactor = 0.1f },
 					TransportStationData = new TransportStationData { m_ComfortFactor = 0.5f },
 					StorageLimitData = new Game.Companies.StorageLimitData { m_Limit = 257 },
-					ElectricityConnectionData = new ElectricityConnectionData { m_Capacity = 263, m_Voltage = ElectricityConnection.Voltage.Low },
+					// A building's own connection is no power line: that needs a network's layers.
+					ElectricityConnectionData = new ElectricityConnectionData { m_Capacity = 263, m_Voltage = Game.Prefabs.ElectricityConnection.Voltage.Low },
 					WaterPipeConnectionData = new WaterPipeConnectionData { m_StormCapacity = 269 },
 					WastewaterTreatmentPlantData = new WastewaterTreatmentPlantData { m_Capacity = 271 },
+					// Ground 41 sits on its medium threshold, so it stays low.
+					PollutionScale = new PollutionScale(new(10, 41, 100), new(10, 20, 40), new(50, 60, 70)),
+					SubNetPowerLayers = Layer.PowerlineLow,
 				},
 				PrefabCategory.Buildings);
 
@@ -223,7 +228,7 @@ namespace BetterBuildingMenu.Tests
 					("batteryOutput", 233d), ("maintenancePool", 239d), ("depotVehicles", 241d), ("maintenanceVehicles", 251d),
 					("groundPollutionModifier", -50d), ("airPollutionModifier", 25d), ("resourceConsumption", -25d),
 					("comfort", 25d), ("comfort", 10d), ("comfort", 50d),
-					("cargoCapacity", 257d), ("electricityCapacity", 263d), ("stormCapacity", 269d),
+					("cargoCapacity", 257d), ("stormCapacity", 269d),
 					// The secondary roles' figures, last.
 					("garbageStorage", 113d), ("powerOutput", 5_450d),
 				},
@@ -232,12 +237,14 @@ namespace BetterBuildingMenu.Tests
 				new[]
 				{
 					("jobComplexity", "Hitech"),
+					("groundPollutionLevel", "Low"), ("airPollutionLevel", "High"), ("noisePollutionLevel", "None"),
 					("zoneFeature", "ignoresLandValue"),
 					("zoneSold", "Coal"), ("zoneManufactured", "Oil"), ("zoneStored", "Wood"),
 					("zoneLotShapes", "narrow"), ("zoneLotShapes", "corners"),
 					("requiredResource", "Ore"),
 					("facilityFeature", "signalThroughTerrain"), ("facilityFeature", "industrialWasteOnly"), ("facilityFeature", "longTermStorage"),
-					("waterSource", "GroundWater"), ("transportType", "Bus"), ("voltage", "Low"),
+					// The plant's voltage, from its power lines, before the depot's transport type.
+					("waterSource", "GroundWater"), ("voltage", "Low"), ("transportType", "Bus"),
 				},
 				entry.ServiceTextFacts.Select(fact => (fact.Key, fact.Value)));
 		}
@@ -254,6 +261,22 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.True(entry.CostIsPerDistance);
 			Assert.Equal(5_000u, entry.ConstructionCost);
+			Assert.Equal(75, entry.Upkeep);
+		}
+
+		[Fact]
+		public void AnAuxiliaryNetworkAddsItsShareToTheCost()
+		{
+			var entry = Apply(
+				new PrefabSnapshot
+				{
+					PlaceableNetData = new PlaceableNetData { m_DefaultConstructionCost = 40, m_DefaultUpkeepCost = 0.6f },
+					AuxiliaryNetCosts = new[] { (10f, 0.5f), (20f, 1f) },
+				},
+				PrefabCategory.Networks);
+
+			// (40 + 10 × 0.5 + 20) a cell, 125 cells a kilometre. The upkeep is the network's own.
+			Assert.Equal(8_125u, entry.ConstructionCost);
 			Assert.Equal(75, entry.Upkeep);
 		}
 
@@ -396,27 +419,198 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal("FireStation", entry.BuildingTypeName);
 		}
 
+		/// <summary>ElectricityConnectionBinder's rule: a connection with a capacity, not a road's
+		/// street lighting, on a network with a power-line layer.</summary>
 		[Fact]
-		public void ARoadCarryingPowerHasNoPowerCapacity()
+		public void APowerLineIsDrawnByVanillasRule()
 		{
-			var connection = new ElectricityConnectionData { m_Capacity = 400, m_Voltage = ElectricityConnection.Voltage.High };
+			PrefabIndex Line(int capacity, Layer layers, CompositionFlags.General composition = 0, bool network = true) =>
+				Apply(
+					new PrefabSnapshot
+					{
+						PlaceableNetData = new PlaceableNetData(),
+						ElectricityConnectionData = new ElectricityConnectionData
+						{
+							m_Capacity = capacity,
+							m_CompositionAll = new CompositionFlags { m_General = composition },
+						},
+						NetData = network ? new NetData { m_LocalConnectLayers = layers } : null,
+					},
+					PrefabCategory.Networks);
 
-			var road = Apply(
-				new PrefabSnapshot
+			var high = Line(400, Layer.PowerlineHigh | Layer.Road);
+			Assert.Equal(400d, FactValue(high, "electricityCapacity"));
+			Assert.Equal(new[] { "High" }, TextFacts(high, "voltage"));
+
+			Assert.Equal(new[] { "Low" }, TextFacts(Line(400, Layer.PowerlineLow), "voltage"));
+			Assert.Equal(new[] { "Both" }, TextFacts(Line(400, Layer.PowerlineLow | Layer.PowerlineHigh), "voltage"));
+
+			foreach (var none in new[]
+			{
+				Line(400, Layer.PowerlineLow, CompositionFlags.General.Lighting),
+				Line(400, Layer.Road),
+				Line(0, Layer.PowerlineLow),
+				Line(400, Layer.PowerlineLow, network: false),
+			})
+			{
+				Assert.DoesNotContain("electricityCapacity", Keys(none));
+				Assert.Empty(TextFacts(none, "voltage"));
+			}
+		}
+
+		[Theory]
+		[InlineData(10f, "None")]
+		[InlineData(10.5f, "Low")]
+		[InlineData(20f, "Low")]
+		[InlineData(20.5f, "Medium")]
+		[InlineData(40f, "Medium")]
+		[InlineData(40.5f, "High")]
+		[InlineData(-3f, "None")]
+		public void APollutionFigureHasToPassAThreshold(float pollution, string level) =>
+			Assert.Equal(level, new PollutionThresholds(10, 20, 40).LevelOf(pollution));
+
+		[Fact]
+		public void PollutionLevelsNeedTheScaleAndSomethingToGrade()
+		{
+			var scale = new PollutionScale(new(10, 20, 40), new(10, 20, 40), new(10, 20, 40));
+			PrefabIndex Polluter(PollutionData pollution, PollutionScale? withScale) =>
+				Apply(new PrefabSnapshot { PollutionData = pollution, PollutionScale = withScale });
+
+			var noisy = Polluter(new PollutionData { m_NoisePollution = 25f }, scale);
+			Assert.Equal(
+				new[] { ("groundPollutionLevel", "None"), ("airPollutionLevel", "None"), ("noisePollutionLevel", "Medium") },
+				noisy.ServiceTextFacts.Select(fact => (fact.Key, fact.Value)));
+
+			// Vanilla tests the sum, so figures that cancel out draw no levels.
+			Assert.Empty(Polluter(new PollutionData { m_GroundPollution = -5f, m_AirPollution = 5f }, scale).ServiceTextFacts);
+			Assert.Empty(Polluter(new PollutionData(), scale).ServiceTextFacts);
+			Assert.Empty(Polluter(new PollutionData { m_NoisePollution = 25f }, null).ServiceTextFacts);
+			// The figures themselves are kept either way.
+			Assert.Equal(25f, Polluter(new PollutionData { m_NoisePollution = 25f }, null).NoisePollution);
+		}
+
+		/// <summary>PowerProductionBinder's voltage: a transformer's low side, and the power lines
+		/// among the plant's own sub-nets.</summary>
+		[Theory]
+		[InlineData(true, Layer.None, "Low")]
+		[InlineData(false, Layer.PowerlineHigh, "High")]
+		[InlineData(true, Layer.PowerlineHigh, "Both")]
+		[InlineData(false, Layer.PowerlineLow | Layer.Road, "Low")]
+		// No power line at all is "Both" too, as ElectricityUIUtils.GetVoltage words it.
+		[InlineData(false, Layer.None, "Both")]
+		public void APowerPlantNamesTheVoltageItFeeds(bool transformer, Layer subNets, string voltage)
+		{
+			var plant = Apply(new PrefabSnapshot
+			{
+				PowerPlantData = new PowerPlantData { m_ElectricityProduction = 100 },
+				IsTransformer = transformer,
+				SubNetPowerLayers = subNets,
+			});
+			var generator = Apply(new PrefabSnapshot
+			{
+				EmergencyGeneratorData = new EmergencyGeneratorData { m_ElectricityProduction = 100 },
+				IsTransformer = transformer,
+				SubNetPowerLayers = subNets,
+			});
+
+			Assert.Equal(new[] { voltage }, TextFacts(plant, "voltage"));
+			Assert.Equal(new[] { voltage }, TextFacts(generator, "voltage"));
+			Assert.Empty(TextFacts(Apply(new PrefabSnapshot { SubNetPowerLayers = subNets }), "voltage"));
+		}
+
+		[Fact]
+		public void ATransformerShowsTheSmallerSideAndItsVoltages()
+		{
+			var connections = new[]
+			{
+				(Game.Prefabs.ElectricityConnection.Voltage.Low, 300),
+				(Game.Prefabs.ElectricityConnection.Voltage.Low, 200),
+				(Game.Prefabs.ElectricityConnection.Voltage.High, 400),
+			};
+
+			var substation = Apply(new PrefabSnapshot { IsTransformer = true, TransformerConnections = connections });
+			Assert.Equal(400d, FactValue(substation, "transformerCapacity"));
+			Assert.Equal(new[] { "High" }, TextFacts(substation, "transformerInput"));
+			Assert.Equal(new[] { "Low" }, TextFacts(substation, "transformerOutput"));
+
+			// A plant's own transformer shows only its output.
+			var plant = Apply(new PrefabSnapshot
+			{
+				PowerPlantData = new PowerPlantData { m_ElectricityProduction = 100 },
+				IsTransformer = true,
+				TransformerConnections = connections,
+			});
+			Assert.DoesNotContain("transformerCapacity", Keys(plant));
+			Assert.Empty(TextFacts(plant, "transformerInput"));
+			Assert.Equal(new[] { "Low" }, TextFacts(plant, "transformerOutput"));
+
+			var noTransformer = Apply(new PrefabSnapshot { TransformerConnections = connections });
+			Assert.DoesNotContain("transformerCapacity", Keys(noTransformer));
+			Assert.Empty(noTransformer.ServiceTextFacts);
+		}
+
+		[Fact]
+		public void ANetworkNamesThePipesBuiltIntoIt()
+		{
+			PrefabIndex Pipe(int fresh, int sewage, Layer layers, bool pipeline = false, int storm = 0) =>
+				Apply(
+					new PrefabSnapshot
+					{
+						PlaceableNetData = new PlaceableNetData(),
+						WaterPipeConnectionData = new WaterPipeConnectionData
+						{
+							m_FreshCapacity = fresh, m_SewageCapacity = sewage, m_StormCapacity = storm,
+						},
+						NetData = new NetData { m_LocalConnectLayers = layers },
+						IsPipeline = pipeline,
+					},
+					PrefabCategory.Networks);
+
+			Assert.Equal(new[] { "Combined" }, TextFacts(Pipe(10, 10, Layer.WaterPipe | Layer.SewagePipe), "pipeType"));
+			// A pipe itself is a pipeline: the line is for a road's built-in pipes.
+			Assert.Equal(new[] { "Fresh" }, TextFacts(Pipe(10, 0, Layer.WaterPipe), "pipeType"));
+			Assert.Equal(new[] { "Sewage" }, TextFacts(Pipe(0, 10, Layer.SewagePipe), "pipeType"));
+			Assert.Empty(TextFacts(Pipe(10, 0, Layer.WaterPipe, pipeline: true), "pipeType"));
+			Assert.Empty(TextFacts(Pipe(10, 0, Layer.Road), "pipeType"));
+
+			var stormDrain = Pipe(0, 0, Layer.StormwaterPipe, storm: 10);
+			Assert.Empty(TextFacts(stormDrain, "pipeType"));
+			Assert.Equal(10d, FactValue(stormDrain, "stormCapacity"));
+		}
+
+		[Fact]
+		public void ABuildingCountsItsPassengerStopsByKind()
+		{
+			static TransportStopData Stop(TransportType type, bool passengers = true) =>
+				new() { m_TransportType = type, m_PassengerTransport = passengers, m_CargoTransport = !passengers };
+
+			var hub = Apply(new PrefabSnapshot
+			{
+				TransportStops = new[]
 				{
-					PlaceableNetData = new PlaceableNetData(),
-					RoadData = new RoadData(),
-					ElectricityConnectionData = connection,
+					Stop(TransportType.Train), Stop(TransportType.Bus), Stop(TransportType.Bus),
+					Stop(TransportType.Train, passengers: false), Stop(TransportType.Taxi), Stop(TransportType.Subway),
 				},
-				PrefabCategory.Networks);
-			var powerLine = Apply(
-				new PrefabSnapshot { PlaceableNetData = new PlaceableNetData(), ElectricityConnectionData = connection },
-				PrefabCategory.Networks);
+			});
+			Assert.Equal(
+				new[] { ("subwayStops", 1d), ("trainStops", 1d), ("busStops", 2d) },
+				hub.ServiceFacts.Select(fact => (fact.Key, fact.Value)));
 
-			Assert.DoesNotContain("electricityCapacity", Keys(road));
-			Assert.Empty(TextFacts(road, "voltage"));
-			Assert.Equal(400d, FactValue(powerLine, "electricityCapacity"));
-			Assert.Equal(new[] { "High" }, TextFacts(powerLine, "voltage"));
+			// The first stop decides whether there is a line at all.
+			Assert.Empty(Apply(new PrefabSnapshot
+			{
+				TransportStops = new[] { Stop(TransportType.Train, passengers: false), Stop(TransportType.Train) },
+			}).ServiceFacts);
+			Assert.Empty(Apply(new PrefabSnapshot
+			{
+				TransportStops = new[] { Stop(TransportType.Taxi), Stop(TransportType.Bus) },
+			}).ServiceFacts);
+			// A network's stops are not counted.
+			Assert.Empty(Apply(new PrefabSnapshot
+			{
+				NetData = new NetData(),
+				TransportStops = new[] { Stop(TransportType.Bus) },
+			}).ServiceFacts);
 		}
 
 		[Theory]
