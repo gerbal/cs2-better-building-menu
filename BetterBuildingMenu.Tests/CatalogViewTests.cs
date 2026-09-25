@@ -96,6 +96,22 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal("Media/Game/Icons/Parking.svg", BuildingCatalogAdapter.TabIcon(new[] { lone[0] with { DevTreeBranchIcon = "thumbnail://ThumbnailCamera/BuildingPrefab/ParkingHall02?width=128" } }, authored: true));
 		}
 
+		[Fact]
+		public void ATabsGlyphBreaksAPriorityTieByThePlaceInTheStrip()
+		{
+			// Two categories at one priority, as a tie in the game's strip: the glyph
+			// comes from the one the strip draws first, not the first by name.
+			var alpha = new BuildingCatalogEntry(
+				Id: 1, PrefabName: "Alpha", Name: "Alpha", Category: "ServiceBuildings", SubCategory: "ServiceBuildings_Transportation",
+				Thumbnail: "alpha.png", LotWidth: 2, LotDepth: 2, BuildingLevel: 1, ZoneType: ZoneTypeFilter.Any,
+				HasParking: false, IsVanilla: true, PdxModsId: "")
+				with { UiCategoryPriority = 70, UiCategoryTab = 5, FallbackThumbnail = "alpha.svg" };
+			var beta = alpha with { Id = 2, PrefabName = "Beta", Name = "Beta", Thumbnail = "beta.png", UiCategoryTab = 2, FallbackThumbnail = "beta.svg" };
+
+			Assert.Equal("beta.png", BuildingCatalogAdapter.TabIcon(new[] { alpha, beta }, authored: false));
+			Assert.Equal("beta.svg", BuildingCatalogAdapter.TabIcon(new[] { alpha, beta }, authored: true));
+		}
+
 		/// <summary>Counts enumerations; the count is the fact under test.</summary>
 		private sealed class CountingList : IReadOnlyList<BuildingCatalogEntry>
 		{

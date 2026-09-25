@@ -200,7 +200,7 @@ namespace BetterBuildingMenu.Domain
 			string dimension = groupBy.Trim();
 
 			if (Is(dimension, Category)) return Normalize(entry.Category);
-			if (Is(dimension, MenuCategory)) return MenuCategoryRank(entry.UiCategory, entry.UiCategoryPriority);
+			if (Is(dimension, MenuCategory)) return MenuCategoryRank(entry.UiCategory, entry.UiCategoryPriority, entry.UiCategoryTab);
 			if (Is(dimension, SubCategory)) return Normalize(entry.SubCategory);
 			if (Is(dimension, Role)) return Normalize(entry.BuildingType);
 			if (Is(dimension, SchoolTier)) return SchoolTierRank(entry.EducationLevel);
@@ -285,11 +285,12 @@ namespace BetterBuildingMenu.Domain
 		/// Orders category groups the way the game orders the tabs above them.
 		/// </summary>
 		/// <remarks>
-		/// Vanilla sorts a menu's categories by UIObject.m_Priority ascending with no tiebreak at
-		/// all. The name is still part of the key even though vanilla never compares it: a key must
-		/// be a function of the group, or two categories sharing a priority would interleave.
+		/// By priority, then by the tab's place in the strip, which breaks a tie the way vanilla's
+		/// unstable sort breaks it (see <see cref="BuildingCatalogEntry.UiCategoryTab"/>). The name
+		/// comes last: a key must be a function of the group, or two categories sharing both would
+		/// interleave.
 		/// </remarks>
-		public static string MenuCategoryRank(string? category, int priority)
+		public static string MenuCategoryRank(string? category, int priority, int tab = int.MaxValue)
 		{
 			if (category?.Trim() is not { Length: > 0 } trimmed)
 			{
@@ -305,6 +306,7 @@ namespace BetterBuildingMenu.Domain
 			// name can hold, so a name that is another name's prefix cannot
 			// outrank it. Written as an escape so the file stays text to grep.
 			return rank.ToString("D10", CultureInfo.InvariantCulture)
+				+ Math.Max(0, tab).ToString("D10", CultureInfo.InvariantCulture)
 				+ '\u0000'
 				+ trimmed;
 		}

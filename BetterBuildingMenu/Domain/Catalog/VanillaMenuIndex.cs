@@ -117,6 +117,28 @@ namespace BetterBuildingMenu.Domain.Catalog
 				? tabs
 				: Array.Empty<VanillaMenuCategory>();
 
+		/// <summary>A category's tab in its menu's strip: its place there, counted from 0, and the
+		/// priority the strip was sorted by. Null when the menu draws no such tab.</summary>
+		public (int Position, int Priority)? TabOf(string? menu, string? category)
+		{
+			if (category?.Trim() is not { Length: > 0 } trimmed)
+			{
+				return null;
+			}
+
+			var tabs = CategoriesOf(menu);
+
+			for (var i = 0; i < tabs.Count; i++)
+			{
+				if (string.Equals(tabs[i].Id, trimmed, StringComparison.Ordinal))
+				{
+					return (i, tabs[i].Priority);
+				}
+			}
+
+			return null;
+		}
+
 		// The UI names a menu the way the player's toolbar does, which need not match the
 		// prefab's case. A copy, so the comparison holds whoever built the dictionary.
 		private static Dictionary<string, Entity> IgnoringCase(IReadOnlyDictionary<string, Entity> byName)
