@@ -28,16 +28,17 @@ interface ServiceFactPresentation {
   fallback: string;
   /** Appended after the number; "" for a bare count. */
   unit: string;
+  /** Decimals kept, where a whole number would say too little; none by default. */
+  decimals?: number;
   /** A multiplier reads as "×1.2", not as a quantity. */
   multiplier?: boolean;
   /** A change, so a positive figure carries its "+" — vanilla's signed binder. */
   signed?: boolean;
   /**
    * Follows the player's unit system instead of carrying a fixed `unit`. Each
-   * name is one of vanilla's own rules, and a per-distance cost converts its
-   * figure as well as its suffix.
+   * name is one of vanilla's own rules.
    */
-  measure?: "length" | "height" | "volume" | "moneyPerDistance" | "moneyPerCellPerMonth" | "weight" | "weightPerMonth" | "perMonth" | "power";
+  measure?: "length" | "height" | "volume" | "moneyPerCellPerMonth" | "weight" | "weightPerMonth" | "perMonth" | "power";
 }
 
 const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
@@ -86,11 +87,14 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     fallback: "Post vans",
     unit: "",
   },
+  // SchoolData.m_GraduationModifier, already ×100 by the indexer: points added
+  // to the graduation probability (GraduationSystem ends on "+ modifier"), not
+  // a factor on it.
   graduation: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Graduation]",
     fallback: "Graduation",
-    unit: "",
-    multiplier: true,
+    unit: "%",
+    signed: true,
   },
   attractiveness: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Attractiveness]",
@@ -114,10 +118,12 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     fallback: "Homes",
     unit: "",
   },
+  // A rate, and a fractional one: 1.4 homes a cell is not 1.
   zoneHouseholdsPerCell: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneHouseholds]",
     fallback: "Homes",
     unit: "/cell",
+    decimals: 1,
   },
   zoneMaxHeight: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ZoneHeight]",
@@ -149,10 +155,13 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     fallback: "Night shift",
     unit: "%",
   },
+  // Offsets to happiness, so each carries its sign: a penalty is as much a
+  // figure as a bonus.
   workConditions: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.WorkConditions]",
     fallback: "Conditions",
     unit: "",
+    signed: true,
   },
   xpReward: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.XpReward]",
@@ -163,21 +172,25 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.StudentWellbeing]",
     fallback: "Student wellbeing",
     unit: "",
+    signed: true,
   },
   studentHealth: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.StudentHealth]",
     fallback: "Student health",
     unit: "",
+    signed: true,
   },
   prisonerWellbeing: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PrisonerWellbeing]",
     fallback: "Inmate wellbeing",
     unit: "",
+    signed: true,
   },
   prisonerHealth: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PrisonerHealth]",
     fallback: "Inmate health",
     unit: "",
+    signed: true,
   },
   purification: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Purification]",
@@ -197,9 +210,10 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     fallback: "Maintenance",
     unit: "",
   },
+  // Properties.EVACUATION_BUS_COUNT.
   shelterVehicles: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ShelterVehicles]",
-    fallback: "Shelter vans",
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.EvacuationBuses]",
+    fallback: "Evacuation buses",
     unit: "",
   },
   // Properties.COMFORT: the game shows round(100 × m_ComfortFactor) as a whole
@@ -219,11 +233,28 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     unit: "MW",
     measure: "power",
   },
+  // Ours: no binder shows it, and nothing in the simulation reads the amount.
   stormCapacity: {
     localizationKey: "Tooltip.LABEL[BetterBuildingMenu.StormCapacity]",
     fallback: "Stormwater",
     unit: "m³",
     measure: "volume",
+  },
+  // Properties.GARBAGE_STORAGE, for a building whose Capacity line is another
+  // role's figure.
+  garbageStorage: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.GarbageStorage]",
+    fallback: "Garbage storage",
+    unit: "t",
+    measure: "weight",
+  },
+  // Properties.POWER_PLANT_OUTPUT, for a building whose Capacity line is
+  // another role's figure: an incinerator's is its garbage store.
+  powerOutput: {
+    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PowerOutput]",
+    fallback: "Power output",
+    unit: "MW",
+    measure: "power",
   },
   cargoCapacity: {
     // Vanilla's Properties.CARGO_CAPACITY wording under our own key, because
@@ -235,8 +266,8 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     measure: "weight",
   },
   // The rest of what vanilla's tooltip carries. Most are what an upgrade IS —
-  // an ambulance depot, a hearse garage, jail cells, a modifier on the parent's
-  // upkeep — so they are the whole content of an upgrade's card.
+  // an ambulance depot, a hearse garage, jail cells, a change to what the
+  // parent burns — so they are the whole content of an upgrade's card.
   ambulances: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Ambulances]", fallback: "Ambulances", unit: "" },
   hearses: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.Hearses]", fallback: "Hearses", unit: "" },
   prisonVans: { localizationKey: "Tooltip.LABEL[BetterBuildingMenu.PrisonVans]", fallback: "Prison vans", unit: "" },
@@ -268,15 +299,6 @@ const PRESENTATION: Readonly<Record<string, ServiceFactPresentation>> = {
     // A LENGTH, so it follows the player's unit system rather than carrying a
     // hard "m" beside a width already stated in feet.
     measure: "length",
-  },
-  elevationCost: {
-    localizationKey: "Tooltip.LABEL[BetterBuildingMenu.ElevationCost]",
-    fallback: "Elevation",
-    unit: "¢/km",
-    // Money, so it goes through the game's own per-distance template rather
-    // than bolting "¢/km" onto a number and putting the symbol on the wrong
-    // side of every other cost on the card.
-    measure: "moneyPerDistance",
   },
   zoneSpace: {
     // The authoring tooltip: "an abstraction of amount of floors in a
@@ -344,11 +366,12 @@ export function renderServiceFacts(
     }
 
     if (presentation.multiplier) {
-      // One decimal: a graduation modifier of 1.15 is a different building
-      // from one of 1.5, and rounding to whole numbers makes both read "×1".
+      // Two decimals: floor space of 1.15 is a different zone from 1.5, and
+      // rounding to whole numbers makes both read "×1".
       value = `×${(Math.round(fact.value * 100) / 100).toFixed(2).replace(/0$/, "")}`;
     } else {
-      const rounded = Math.round(fact.value);
+      const scale = 10 ** (presentation.decimals ?? 0);
+      const rounded = Math.round(fact.value * scale) / scale;
       const number = presentation.signed
         ? `${rounded < 0 ? "-" : "+"}${formatNumber(Math.abs(rounded))}`
         : formatNumber(rounded);
@@ -383,6 +406,7 @@ const TEXT_PRESENTATION: Readonly<Record<string, ServiceTextPresentation>> = {
     fallback: "Requires",
     values: {
       Ore: { localizationKey: "Properties.MAP_RESOURCE[Ore]", fallback: "Ore" },
+      Fish: { localizationKey: "Properties.MAP_RESOURCE[Fish]", fallback: "Fish" },
       Oil: { localizationKey: "Properties.MAP_RESOURCE[Oil]", fallback: "Oil" },
       Forest: { localizationKey: "Properties.MAP_RESOURCE[Forest]", fallback: "Forest" },
       FertileLand: { localizationKey: "Properties.MAP_RESOURCE[FertileLand]", fallback: "Fertile land" },
@@ -529,24 +553,26 @@ export function renderServiceTextFacts(
  */
 export const VANILLA_FACT_KEYS: ReadonlySet<string> = new Set([
   // rates and capacities
-  "processingRate", "garbageProcessing", "sortingRate", "purification", "cargoCapacity", "jailCapacity", "stormCapacity",
+  "processingRate", "garbageProcessing", "sortingRate", "purification", "cargoCapacity", "jailCapacity",
+  "garbageStorage",
   // vehicle counts
   "collectionTrucks", "postVans", "postTrucks", "ambulances", "hearses", "prisonVans",
   "depotVehicles", "maintenanceVehicles", "helicopters", "shelterVehicles",
   // electricity
-  "batteryOutput", "electricityCapacity", "voltage",
+  "batteryOutput", "electricityCapacity", "voltage", "powerOutput",
   // quality and modifiers
   "comfort", "attractiveness", "groundPollutionModifier", "airPollutionModifier", "noisePollutionModifier", "resourceConsumption",
   // mail
   "mailboxCapacity",
   // worded
-  "waterSource", "transportType", "requiredResource",
+  "waterSource", "requiredResource",
 ]);
 
 /**
  * A resource the building burns, from the ServiceUpkeepData buffer: one key
  * per resource, "upkeep:Coal", labelled with the game's own Resources.TITLE.
- * Part of vanilla's upkeep, so part of its tier.
+ * Part of vanilla's upkeep, so part of its tier: vanilla prices these into the
+ * top of its upkeep range, and the card names them instead.
  */
 export const RESOURCE_UPKEEP_PREFIX = "upkeep:";
 
@@ -570,6 +596,7 @@ export const FACT_ORDER: readonly string[] = [
   "collectionTrucks", "postVans", "postTrucks", "ambulances", "hearses", "prisonVans",
   "depotVehicles", "maintenanceVehicles",
   "helicopters", "disasterResponse", "shelterVehicles",
+  "powerOutput", "garbageStorage",
   "batteryOutput", "electricityCapacity", "stormCapacity", "cargoCapacity", "mailboxCapacity",
   "purification", "waterSource", "maintenancePool", "comfort",
   "transportType", "trackType",
@@ -580,7 +607,7 @@ export const FACT_ORDER: readonly string[] = [
   // 3. Who runs it.
   "jobComplexity", "minCrew", "workConditions", "eveningShift", "nightShift",
   // 4. Placement, network and zone.
-  "elevatedWidth", "elevationCost", "voltage", "roadFeature",
+  "elevatedWidth", "voltage", "roadFeature",
   "zoneMaxHeight", "zoneHouseholds", "zoneHouseholdsPerCell", "zoneSpace",
   "zoneUpkeep", "zoneFireHazard", "zoneLotShapes",
   "zoneSold", "zoneManufactured", "zoneStored",
