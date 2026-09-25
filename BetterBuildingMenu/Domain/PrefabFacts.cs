@@ -249,7 +249,7 @@ namespace BetterBuildingMenu.Domain
 				Fact(prefabIndex, zoneProperties.m_ScaleResidentials ? "zoneHouseholdsPerCell" : "zoneHouseholds",
 					zoneProperties.m_ResidentialProperties);
 				Fact(prefabIndex, "zoneSpace", zoneProperties.m_SpaceMultiplier);
-				// ×1 is the absence of a modifier, as with the pollution modifiers.
+				// ×1 is the absence of a modifier.
 				if (zoneProperties.m_FireHazardMultiplier != 1f)
 				{
 					Fact(prefabIndex, "zoneFireHazard", zoneProperties.m_FireHazardMultiplier);
@@ -484,13 +484,11 @@ namespace BetterBuildingMenu.Domain
 				Fact(prefabIndex, "maintenanceVehicles", maintenanceDepotData.m_VehicleCapacity);
 			}
 
-			// The two properties vanilla authors only on service upgrades. The multipliers
-			// are the whole percentages PrefabUISystem binds; the resource consumption
-			// change is UpkeepModifierBinder's figure, below.
+			// The two properties vanilla authors only on service upgrades. The pollution
+			// factors are the signed whole percentages PrefabUISystem binds; the resource
+			// consumption change is UpkeepModifierBinder's figure, below.
 			if (snapshot.PollutionModifierData is { } pollutionModifier)
 			{
-				// A multiplier of one changes nothing and "100 %" would say so at
-				// length; only the factors that move a level are facts.
 				PollutionModifierFact(prefabIndex, "groundPollutionModifier", pollutionModifier.m_GroundPollutionMultiplier);
 				PollutionModifierFact(prefabIndex, "airPollutionModifier", pollutionModifier.m_AirPollutionMultiplier);
 				PollutionModifierFact(prefabIndex, "noisePollutionModifier", pollutionModifier.m_NoisePollutionMultiplier);
@@ -582,12 +580,20 @@ namespace BetterBuildingMenu.Domain
 			}
 		}
 
-		/// <summary>A pollution multiplier as the whole percentage vanilla shows, unless it is one.</summary>
-		private static void PollutionModifierFact(PrefabIndex prefabIndex, string key, float multiplier)
+		/// <summary>A pollution factor as the signed whole percentage vanilla shows, unless it rounds
+		/// to none.</summary>
+		/// <remarks>A change, not a multiplier: the game scales a level by max(0, 1 + factor) and adds
+		/// upgrades' factors together. The product stays a float so a half rounds as vanilla's
+		/// Mathf.RoundToInt(factor * 100f) rounds it.</remarks>
+		private static void PollutionModifierFact(PrefabIndex prefabIndex, string key, float factor)
 		{
-			if (Math.Abs(multiplier - 1f) > 0.0005f)
+			var percent = (int)math.round(factor * 100f);
+
+			if (percent != 0)
 			{
-				Fact(prefabIndex, key, Math.Round(multiplier * 100d));
+				// Not through Fact: that helper drops anything at or below zero, and a
+				// reduction, the point of most of these upgrades, is negative.
+				prefabIndex.ServiceFacts.Add(new ServiceFact(key, percent));
 			}
 		}
 

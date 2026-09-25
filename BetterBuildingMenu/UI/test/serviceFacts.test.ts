@@ -196,18 +196,20 @@ describe("what vanilla's tooltip shows on upgrades", () => {
     assert.deepEqual(render("jailCapacity", 20), { key: "jailCapacity", label: "Jail capacity", value: "20" });
   });
 
-  it("shows a pollution modifier as the percentage vanilla shows", () => {
-    // PollutionModifierData holds multipliers; vanilla binds round(x * 100)
-    // under the pollution level's own name. The indexer sends the percentage.
-    assert.deepEqual(render("groundPollutionModifier", 50), { key: "groundPollutionModifier", label: "Ground pollution", value: "50 %" });
+  it("shows a pollution modifier as the signed change vanilla shows", () => {
+    // PollutionModifierData holds changes, where 0 is none; vanilla binds
+    // round(x * 100), signed, under the pollution level's own name. The
+    // indexer sends the percentage.
+    assert.deepEqual(render("groundPollutionModifier", -30), { key: "groundPollutionModifier", label: "Ground pollution", value: "-30 %" });
+    assert.equal(render("airPollutionModifier", 50).value, "+50 %");
     assert.equal(render("airPollutionModifier", 75).label, "Air pollution");
     assert.equal(render("noisePollutionModifier", 100).label, "Noise pollution");
   });
 
   it("shows an upkeep modifier signed, under vanilla's resource consumption label", () => {
-    // UpkeepModifierData is the one signed property in the table: the largest
-    // multiplier minus one, in percent. A saving reads as a minus. It changes
-    // what the building burns, not what it costs, so it is not "Upkeep".
+    // UpkeepModifierData is signed too: the largest multiplier minus one, in
+    // percent. A saving reads as a minus. It changes what the building burns,
+    // not what it costs, so it is not "Upkeep".
     assert.deepEqual(render("resourceConsumption", -20), { key: "resourceConsumption", label: "Resource consumption", value: "-20 %" });
     assert.equal(render("resourceConsumption", 15).value, "+15 %");
   });
