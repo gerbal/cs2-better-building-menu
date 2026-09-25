@@ -257,7 +257,7 @@ namespace BetterBuildingMenu.Domain
 				Fact(prefabIndex, zoneProperties.m_ScaleResidentials ? "zoneHouseholdsPerCell" : "zoneHouseholds",
 					zoneProperties.m_ResidentialProperties);
 				Fact(prefabIndex, "zoneSpace", zoneProperties.m_SpaceMultiplier);
-				// ×1 is the absence of a modifier, as with the pollution modifiers.
+				// ×1 is the absence of a modifier.
 				if (zoneProperties.m_FireHazardMultiplier != 1f)
 				{
 					Fact(prefabIndex, "zoneFireHazard", zoneProperties.m_FireHazardMultiplier);
@@ -620,11 +620,9 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>A pollution factor as the signed whole percentage vanilla shows, unless it rounds
 		/// to none.</summary>
-		/// <remarks>A change, not a multiplier: BuildingPollutionAddSystem scales a level by
-		/// max(0, 1 + factor), so 0 changes nothing, -0.3 cuts it by 30 % and 1 doubles it, and
-		/// upgrades add their factors together. PrefabUISystem's binder shows
-		/// Mathf.RoundToInt(factor * 100f), signed, and omits a zero; the float product is kept so a
-		/// figure on a half rounds the same way.</remarks>
+		/// <remarks>A change, not a multiplier: the game scales a level by max(0, 1 + factor) and adds
+		/// upgrades' factors together. The product stays a float so a half rounds as vanilla's
+		/// Mathf.RoundToInt(factor * 100f) rounds it.</remarks>
 		private static void PollutionModifierFact(PrefabIndex prefabIndex, string key, float factor)
 		{
 			var percent = (int)math.round(factor * 100f);
