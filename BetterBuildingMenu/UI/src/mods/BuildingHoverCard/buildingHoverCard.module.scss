@@ -47,7 +47,8 @@
   color: var(--menuText2Normal);
   font-size: var(--fontSizeS);
   // Exactly half, and no growing: two per row, and a lone last row keeps its
-  // column instead of stretching across both.
+  // column instead of stretching across both. A line that does not fit its half
+  // is measured and given .cardLineWide (BuildingHoverCard's CardLine).
   flex: 0 0 50%;
   max-width: 50%;
   box-sizing: border-box;
@@ -55,11 +56,20 @@
   padding-right: 6rem;
 }
 // A whole row: a stack of values beside a single figure reads as one line with
-// a ragged neighbour.
+// a ragged neighbour, and a pair too long for its half would run into it.
 .cardLineWide {
   flex: 1 1 100%;
   min-width: 100%;
+  // Lifts .cardLine's half: Cohtml wraps by the basis clamped to max-width, so a
+  // line still capped at 50% stayed beside its neighbour and ran off the card.
+  max-width: 100%;
   padding-right: 0;
+
+  // With the row to itself, a value longer still wraps rather than leave the card.
+  .cardValue {
+    flex-shrink: 1;
+    white-space: normal;
+  }
 }
 
 // The word recedes and the number leads: the figure is what is being compared,
@@ -72,18 +82,21 @@
   white-space: nowrap;
 }
 
-// Wraps rather than truncates. A capacity forecast is the longest thing here
-// and it is also the reason to stop and read the card, so an ellipsis would cut
-// exactly the figure the hover was for.
+// Never truncated: a capacity forecast is the longest thing here and it is also
+// the reason to stop and read the card, so an ellipsis would cut exactly the
+// figure the hover was for. In a half it keeps its whole width, so a pair too
+// long for the half overflows the line, which CardLine measures and gives the
+// row, where the value may wrap. Allowed to shrink here, Cohtml squeezed it to
+// a sliver and drew its text over the label, and the line reported no overflow.
 .cardValue {
-  flex: 1 1 auto;
+  flex: 1 0 auto;
   min-width: 0;
   // The figure sits on the column's edge, so the numbers form a column of
   // their own rather than each starting where its label ended.
   // justify-content, NOT text-align: this element computes to display: flex.
   justify-content: flex-end;
   color: var(--menuText1Normal);
-  white-space: normal;
+  white-space: nowrap;
 }
 
 // The game's own sentence about the asset; the name above it is its label.

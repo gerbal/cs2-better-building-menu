@@ -83,8 +83,13 @@ const PROMOTED_BY_CATEGORY: Readonly<Record<string, ReadonlySet<string>>> = {
 
 export function hoverCardLabels(translate: Translate): HoverCardLabels {
   return {
-    cost: translate("Tooltip.LABEL[BetterBuildingMenu.Cost]", "Cost") ?? "Cost",
-    upkeep: translate("Tooltip.LABEL[BetterBuildingMenu.Upkeep]", "Upkeep") ?? "Upkeep",
+    // Vanilla's own lines under its own keys, so they read as its tooltip does
+    // in every language. A network's cost too: PlaceableNetCostBinder passes
+    // Common.ASSET_CONSTRUCTION_COST, which no locale carries (checked in
+    // game), so the card takes ConstructionCostBinder's key, the same word.
+    // The table's narrower columns keep ours.
+    cost: translate("Properties.CONSTRUCTION_COST", "Cost") ?? "Cost",
+    upkeep: translate("Properties.UPKEEP", "Upkeep") ?? "Upkeep",
     capacity: translate("Tooltip.LABEL[BetterBuildingMenu.Capacity]", "Capacity") ?? "Capacity",
     range: translate("Tooltip.LABEL[BetterBuildingMenu.Range]", "Range") ?? "Range",
     speed: translate("Tooltip.LABEL[BetterBuildingMenu.SpeedLimit]", "Speed limit") ?? "Speed limit",

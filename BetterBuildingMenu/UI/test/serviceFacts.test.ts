@@ -6,9 +6,19 @@ import {
   renderServiceTextFacts,
   orderFacts,
   isVanillaFact,
+  VANILLA_FACT_KEYS,
+  SERVICE_FACT_KEYS,
+  SERVICE_TEXT_FACT_KEYS,
 } from "../src/domain/serviceFacts.ts";
 
 const noTranslation = () => null;
+
+/** The key a fact's label asks for, read off a translate that answers with the key. */
+const labelKeyOf = (key: string): string => {
+  const ask = (asked: string) => `key:${asked}`;
+  const [line] = [...renderServiceFacts([{ key, value: 1 }], ask), ...renderServiceTextFacts([{ key, value: "Ore" }], ask)];
+  return line.label.slice("key:".length);
+};
 
 describe("renderServiceFacts", () => {
   it("labels a service figure and gives it its unit", () => {
@@ -50,10 +60,10 @@ describe("renderServiceFacts", () => {
   it("prefers the game's translation over the fallback", () => {
     const [fact] = renderServiceFacts(
       [{ key: "attractiveness", value: 40 }],
-      (key) => (key === "Tooltip.LABEL[BetterBuildingMenu.Attractiveness]" ? "Anziehungskraft" : null),
+      (key) => (key === "Properties.ATTRACTIVENESS" ? "Attraktivität" : null),
     );
 
-    assert.equal(fact.label, "Anziehungskraft");
+    assert.equal(fact.label, "Attraktivität");
   });
 
   it("says nothing for a building with no service figures", () => {
@@ -68,7 +78,7 @@ describe("renderServiceFacts", () => {
     // in the game's own namespaces is the game's to translate.
     assert.ok(SERVICE_FACT_LOCALIZATION_KEYS.length > 0);
     for (const key of SERVICE_FACT_LOCALIZATION_KEYS) {
-      assert.match(key, /^(Tooltip\.LABEL\[BetterBuildingMenu\.[A-Za-z]+\]|Properties\.[A-Z_]+(\[[A-Za-z]+\])?)$/);
+      assert.match(key, /^(Tooltip\.LABEL\[BetterBuildingMenu\.[A-Za-z]+\]|(Properties|SelectedInfoPanel)\.[A-Z_]+(\[[A-Za-z]+\])?)$/);
     }
   });
 });
@@ -136,7 +146,7 @@ describe("cargo capacity", () => {
   // with the weight unit; a cargo harbour's warehouses add to it.
   it("is a weight, labelled with the game's own words, placed with the capacities", () => {
     const translate = (key: string, fallback: string | null) =>
-      key === "Tooltip.LABEL[BetterBuildingMenu.CargoCapacity]" ? "Cargo Capacity" : fallback;
+      key === "Properties.CARGO_CAPACITY" ? "Cargo Capacity" : fallback;
     const [line] = renderServiceFacts(
       [{ key: "cargoCapacity", value: 500000 }],
       translate,
@@ -332,6 +342,71 @@ describe("which figures are vanilla's own", () => {
       "garbageStorage", "powerOutput", "transformerCapacity", "transformerInput", "transformerOutput", "pipeType",
       "busStops", "subwayStops", "groundPollutionLevel", "noisePollutionLevel"]) {
       assert.equal(isVanillaFact(key), true, key);
+    }
+  });
+
+  it("labels each of the game's lines with its binder's own key", () => {
+    // Vanilla's words in every language it ships, one key per binder in
+    // PrefabUISystem. A fact that stands for several binders' lines keeps ours.
+    const expected: Record<string, string> = {
+      processingRate: "Properties.DECEASED_PROCESSING_CAPACITY",
+      garbageProcessing: "Properties.GARBAGE_PROCESSING_CAPACITY",
+      sortingRate: "Properties.MAIL_SORTING_RATE",
+      cargoCapacity: "Properties.CARGO_CAPACITY",
+      jailCapacity: "Properties.JAIL_CAPACITY",
+      garbageStorage: "Properties.GARBAGE_STORAGE",
+      mailboxCapacity: "Properties.MAIL_BOX_CAPACITY",
+      collectionTrucks: "Properties.GARBAGE_TRUCK_COUNT",
+      postVans: "Properties.POST_VAN_COUNT",
+      postTrucks: "Properties.POST_TRUCK_COUNT",
+      ambulances: "Properties.AMBULANCE_COUNT",
+      hearses: "Properties.HEARSE_COUNT",
+      prisonVans: "Properties.PRISON_VAN_COUNT",
+      depotVehicles: "Properties.TRANSPORT_VEHICLE_COUNT",
+      maintenanceVehicles: "Properties.MAINTENANCE_VEHICLES",
+      shelterVehicles: "Properties.EVACUATION_BUS_COUNT",
+      batteryOutput: "Properties.BATTERY_POWER_OUTPUT",
+      electricityCapacity: "Properties.POWER_LINE_CAPACITY",
+      powerOutput: "Properties.POWER_PLANT_OUTPUT",
+      transformerCapacity: "Properties.TRANSFORMER_CAPACITY",
+      transformerInput: "Properties.TRANSFORMER_INPUT",
+      transformerOutput: "Properties.TRANSFORMER_OUTPUT",
+      airplaneStops: "Properties.TRANSPORT_STOP_COUNT[Airplane]",
+      helicopterStops: "Properties.TRANSPORT_STOP_COUNT[Helicopter]",
+      shipStops: "Properties.TRANSPORT_STOP_COUNT[Ship]",
+      subwayStops: "Properties.TRANSPORT_STOP_COUNT[Subway]",
+      tramStops: "Properties.TRANSPORT_STOP_COUNT[Tram]",
+      trainStops: "Properties.TRANSPORT_STOP_COUNT[Train]",
+      busStops: "Properties.TRANSPORT_STOP_COUNT[Bus]",
+      groundPollutionLevel: "SelectedInfoPanel.POLLUTION_LEVELS_GROUND",
+      airPollutionLevel: "SelectedInfoPanel.POLLUTION_LEVELS_AIR",
+      noisePollutionLevel: "SelectedInfoPanel.POLLUTION_LEVELS_NOISE",
+      groundPollutionModifier: "SelectedInfoPanel.POLLUTION_LEVELS_GROUND",
+      airPollutionModifier: "SelectedInfoPanel.POLLUTION_LEVELS_AIR",
+      noisePollutionModifier: "SelectedInfoPanel.POLLUTION_LEVELS_NOISE",
+      comfort: "Properties.COMFORT",
+      attractiveness: "Properties.ATTRACTIVENESS",
+      resourceConsumption: "Properties.RESOURCE_CONSUMPTION",
+      requiredResource: "Properties.REQUIRED_RESOURCE",
+      waterSource: "Properties.REQUIRED_RESOURCE",
+      // Ours: one fact for several binders' lines, or no key of vanilla's.
+      helicopters: "Tooltip.LABEL[BetterBuildingMenu.Helicopters]",
+      purification: "Tooltip.LABEL[BetterBuildingMenu.Purification]",
+      voltage: "Tooltip.LABEL[BetterBuildingMenu.Voltage]",
+      pipeType: "Tooltip.LABEL[BetterBuildingMenu.PipeType]",
+    };
+
+    // Every fact in vanilla's tier is in the table, so dropping one from the
+    // tier cannot drop it from this check.
+    assert.deepEqual([...VANILLA_FACT_KEYS].sort(), Object.keys(expected).sort());
+    for (const [key, labelKey] of Object.entries(expected)) {
+      assert.equal(labelKeyOf(key), labelKey, key);
+    }
+  });
+
+  it("labels ours with ours, since only the game's own lines take its words", () => {
+    for (const key of [...SERVICE_FACT_KEYS, ...SERVICE_TEXT_FACT_KEYS].filter((key) => !VANILLA_FACT_KEYS.has(key))) {
+      assert.match(labelKeyOf(key), /^Tooltip\.LABEL\[BetterBuildingMenu\./, key);
     }
   });
 
