@@ -128,8 +128,9 @@ describe("the chip row", () => {
     setBinding("BetterBuildingMenu", "BuildingLensMenuCategories", [
       category("Highways", 2), category("SmallRoads", 1), category("Roundabouts", 3),
     ]);
+    // By id, as the backend sends them, so the picker's own order is what is pinned.
     setBinding("BetterBuildingMenu", "BuildingLensMenuCategoryCounts", [
-      { id: "SmallRoads", count: 4 }, { id: "Highways", count: 2 }, { id: "Roundabouts", count: 0 },
+      { id: "Highways", count: 2 }, { id: "Roundabouts", count: 0 }, { id: "SmallRoads", count: 4 },
     ]);
     render();
 

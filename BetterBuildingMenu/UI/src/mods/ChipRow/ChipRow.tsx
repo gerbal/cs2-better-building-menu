@@ -108,8 +108,8 @@ export const ChipRow = () => {
     toolTip: menuLabel(entry.id),
   }));
 
-  // The tabs the strip draws. It hides one with nothing behind it, and this is
-  // the same choice reached another way, so an empty tab is left out here too.
+  // The categories the strip shows. It hides one with nothing behind it, and
+  // this is the same choice reached another way, so it is left out here too.
   const categoryTabs: VanillaBuildMenuTab[] = visibleCategories(menuCategories, menuCategoryCounts).map((category) => ({
     id: category.id,
     icon: category.icon,
