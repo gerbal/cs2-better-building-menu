@@ -146,7 +146,6 @@ function hoverCardLines(entry: BuildingCatalogEntry, context: HoverCardLineConte
       weightPerMonth: (value) => formatWeightPerMonth(value, separators),
       perMonth: (value) => formatPerMonth(value, separators),
       power: (value) => formatPower(value, separators),
-      moneyPerDistance: (value) => formatBuildingMetric(value, "cost", separators, true),
       moneyPerCellPerMonth: (value) => `${formatBuildingMetric(value, "cost", separators)} /cell/mo.`,
     },
   );

@@ -38,8 +38,8 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>The line for one effect, or empty when it rounds to nothing.</summary>
 		/// <remarks>ModifierUIUtils.GetModifierDelta's arithmetic. The game's percentage unit is a
-		/// whole number, and floatSingleFraction one decimal. Invariant, as the card's other words
-		/// are.</remarks>
+		/// whole number, and floatSingleFraction one decimal (see <see cref="SingleFraction"/>).
+		/// Invariant, as the card's other words are.</remarks>
 		public static string Describe(string type, ModifierValueMode mode, float value, bool percent)
 		{
 			var scaled = mode switch
@@ -49,7 +49,7 @@ namespace BetterBuildingMenu.Domain
 				_ => value,
 			};
 
-			var number = scaled.ToString(percent ? "0" : "0.#", CultureInfo.InvariantCulture);
+			var number = percent ? scaled.ToString("0", CultureInfo.InvariantCulture) : SingleFraction(scaled);
 
 			// What rounds to nothing says nothing, whichever sign it rounded from.
 			if (number is "0" or "-0")
@@ -62,6 +62,26 @@ namespace BetterBuildingMenu.Domain
 			var sign = scaled > 0 ? "+" : string.Empty;
 
 			return $"{type.FormatWords()} {sign}{number}{(percent ? "%" : string.Empty)}";
+		}
+
+		/// <summary>A figure as the game's floatSingleFraction unit draws it.</summary>
+		/// <remarks>One decimal, but a whole number from 100 up, and never less than 0.1 for a
+		/// figure that is not zero, so a small effect still reads as one.</remarks>
+		internal static string SingleFraction(float value)
+		{
+			var magnitude = Math.Abs(value);
+
+			if (magnitude >= 100f)
+			{
+				return value.ToString("0", CultureInfo.InvariantCulture);
+			}
+
+			if (magnitude > 0f && magnitude < 0.1f)
+			{
+				value = Math.Sign(value) * 0.1f;
+			}
+
+			return value.ToString("0.#", CultureInfo.InvariantCulture);
 		}
 	}
 }

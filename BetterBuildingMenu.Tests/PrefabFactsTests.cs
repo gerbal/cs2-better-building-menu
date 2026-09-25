@@ -589,6 +589,29 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(expected, entry.ServiceFacts.Where(fact => fact.Key == "groundPollutionModifier").Select(fact => (double?)fact.Value).SingleOrDefault());
 		}
 
+		[Fact]
+		public void ARoleWithNoFigureDoesNotHideAnother()
+		{
+			// A water treatment plant: its pumping station holds no water, and its sewage is what
+			// it is for.
+			var plant = Apply(new PrefabSnapshot
+			{
+				WaterPumpingStationData = new WaterPumpingStationData { m_Capacity = 0, m_Purification = 0.5f },
+				SewageOutletData = new SewageOutletData { m_Capacity = 400_000, m_Purification = 0.5f },
+			});
+			Assert.Equal("SewageOutlet", plant.BuildingTypeName);
+			Assert.Equal(400_000d, plant.Capacity);
+
+			// When no role has a figure, rank alone decides, as before.
+			var depot = Apply(new PrefabSnapshot
+			{
+				FireStationData = new FireStationData { m_FireEngineCapacity = 0, m_FireHelicopterCapacity = 2 },
+				PoliceStationData = new PoliceStationData { m_PatrolCarCapacity = 0 },
+			});
+			Assert.Equal("FireStation", depot.BuildingTypeName);
+			Assert.Equal(0d, depot.Capacity);
+		}
+
 		/// <summary>GarbagePowered requires GarbageFacility and PowerPlant, so every incinerator is
 		/// both, and vanilla shows its store and its output on two lines. It is filed with the
 		/// landfills, so its Capacity is theirs: a weight.</summary>
