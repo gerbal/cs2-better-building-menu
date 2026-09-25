@@ -2106,3 +2106,24 @@ Deliberately not matched:
 - The headline capacity keeps ours: vanilla names it per service
   (`PATIENT_CAPACITY`, `STUDENT_CAPACITY` and so on) and the card draws one
   line with a unit.
+
+## 2026-09-25 — the mod's own strings in thirteen languages (drafted, not yet checked in game)
+
+Every key in `Locale.json` now has a translation in each file under `Locale/`.
+Before, each lacked 161 of the 222 keys and `ja-JP`, `pt-BR` and `uk-UA` were
+English copies. The drafts are a machine's, one per language family, each
+given every string's English, where it is shown and how short it must be, and
+the language's existing translations to match. The game's own locale was not
+available to match its terms against, so a term can differ from the game's.
+Placeholders were checked to survive in every string.
+
+The strings kept English on purpose: the product name, "{0} × {1}", and loan
+words a language uses as they are (French "Parking", Italian "Hi-tech", Polish
+"Transport", "UI / UX").
+
+- School levels (#67): the education menu's tier tabs and the school-tier
+  group headings ask for four keys of ours, the same four in the UI and C#. No
+  key of the game's for a school's level has turned up.
+- The reverse-sort button has a key of its own. It shared the table header's
+  hint, "reverse this sort", which is a lowercase fragment, so the button read
+  in lowercase too.

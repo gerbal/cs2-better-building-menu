@@ -11,11 +11,16 @@ the detail behind the structural items.
   another tab or menu, and create, rename, reorder, merge or hide tabs. The
   spec and its adversarial review are in
   [superpowers/specs/](superpowers/specs/), awaiting the owner's review.
-- **Translations.** Every translation lacks 161 of the 222 English keys (the
-  option labels fall back to English), and `ja-JP`, `pt-BR` and `uk-UA` are
-  English throughout. Either connect `crowdin.yml` to a project (with a
-  `languages_mapping`, since Crowdin's Chinese codes are `zh-CN` and `zh-TW`)
-  or ship English only.
+- **Translations.** Every key in `Locale.json` has a translation in each of
+  the thirteen languages, drafted by machine on 2026-09-25 rather than by
+  native speakers, and without the game's own locale to match its terms
+  against. A native speaker's pass is still worth having, through pull
+  requests or `crowdin.yml` connected to a project (with a
+  `languages_mapping`, since Crowdin's Chinese codes are `zh-CN` and `zh-TW`).
+  Some English reaches the player through no key at all: the UI register's
+  unplumbed strings (`localizableStrings.ts`), most group headings built in
+  C# (Other, Stations, density tiers, cost bands, role names), and a
+  resource's name in an unlock requirement and a zone's traded goods.
 - **The density-tier keys.** `ZoneLow` through `ZoneSignature` are kept because
   `GameLocaleKeyTests` requires them, but nothing reads them: the density
   headings come from `BuildingCatalogLabels.DensityTier`, which returns English
