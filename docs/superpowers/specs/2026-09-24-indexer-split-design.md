@@ -1,8 +1,8 @@
 # Splitting PrefabIndexingSystem
 
-Date: 2026-09-24. Status: approved by the owner the same day, with decisions 1–3
-below taken as recommended. Roadmap: "Split `PrefabIndexingSystem` further" in
-[roadmap.md](../../roadmap.md).
+Date: 2026-09-24. Status: done. Approved by the owner the same day, with decisions 1–3
+below taken as recommended. Every step has merged: #50, #51, #52 and, on 2026-09-25, #73.
+It was the roadmap's "Split `PrefabIndexingSystem` further" item.
 
 ## Goal
 
@@ -84,7 +84,7 @@ real game assemblies, and changes no behaviour.
 | 1 | **The menu audit leaves the system.** `VanillaMenuCoverage`, the gathering half of the audit, `IndexAuditLog`, the census lens count. | Low: logs only | A placed zone counts in `vanilla=` but never as missing; an entry filed elsewhere shows as `X->Cat` or `X->none`; a clean bucket logs no line; the summary is Info at 0 missing and Warn otherwise; buckets in ordinal order; `describeMissing` never called for held assets; `Cap` adds `,…` at 9 names and not at 8; one golden `[MENU-AUDIT]` line. |
 | 2 | **`PopulateAnalyticalData` becomes `PrefabComponents` + `PrefabFacts`.** | Medium: every fact passes through it | A network's cost and upkeep ×125 with `CostIsPerDistance`; an annex priced from its upgrade cost; ConsumptionData upkeep overriding a network's, and money in the upkeep buffer overriding both; zero helicopters emit no fact; a road's electricity connection emits no capacity; the elevated width only when it differs by more than 0.01; the telecom range over the coverage range; household facts per zone cell; footprints for zones only; `AppliesTo` false for decals; one golden hospital pinning the whole `ServiceFacts` order. |
 | 3 | **Progression and zone seams.** `ProgressionIndex.BranchOf`, `DevTreeLayout.Rank`, the folds, `ClassifyBuildings`. | Low | An education column with its trunk at row 1 ranks University, then Technical, then Medical; column beats row; an asset with no gate falls to its menu's root; a fold into a node with no label is reported as unmatched; the five building-side tiers, and a lot width of 0 as Row. |
-| 4 | (Optional) **Bonuses, parking, vanilla asset facts.** | Low | After step 2's golden tests are in. |
+| 4 | (Optional) **Bonuses, parking, vanilla asset facts.** Built in #73 as `EffectWording.Lines`, `SupportedUpgrades.InMenuOrder`, `VanillaAssetFacts.From` and `ParkingSlots.Own`. `GetExtractorFeature` stays in the system: every step of it is a read. | Low | Effect lines' order, the hidden effect and rounding; upgrade ties kept in buffer order; the mod-pack rule; bays per lane angle, the virtual lane and the `+0.01`. |
 
 ### What must stay the same
 
