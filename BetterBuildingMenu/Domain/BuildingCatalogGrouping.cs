@@ -414,7 +414,10 @@ namespace BetterBuildingMenu.Domain
 			}
 
 			if (Is(dimension, SubCategory)) return new GroupLabels(new[] { Text(entry.SubCategoryLabel) ?? Text(entry.SubCategory) ?? Other }, null);
-			if (Is(dimension, Role)) return new GroupLabels(new[] { Text(entry.BuildingType) ?? Other }, null);
+			if (Is(dimension, Role))
+			{
+				return new GroupLabels(new[] { entry.BuildingType?.Trim() is { Length: > 0 } role ? BuildingCatalogLabels.ForRole(role) : Other }, null);
+			}
 			if (Is(dimension, Progression)) return new GroupLabels(new[] { MilestoneLabel(entry.UnlockMilestone, milestoneNames) }, null);
 			if (Is(dimension, Development)) return new GroupLabels(new[] { Text(entry.DevTreeBranch) ?? Other }, null);
 			if (Is(dimension, SchoolTier))
@@ -430,7 +433,10 @@ namespace BetterBuildingMenu.Domain
 
 				return new GroupLabels(new[] { MenuCategoryLabel(entry) }, category.Length == 0 ? null : category);
 			}
-			if (Is(dimension, Theme)) return new GroupLabels(new[] { Text(entry.Theme) ?? Other }, null);
+			if (Is(dimension, Theme))
+			{
+				return new GroupLabels(new[] { entry.Theme?.Trim() is { Length: > 0 } theme ? BuildingCatalogLabels.ForTheme(theme) : Other }, null);
+			}
 			if (Is(dimension, Source)) return new GroupLabels(new[] { Text(entry.DlcId) ?? Text(entry.Provenance) ?? Other }, null);
 			if (Is(dimension, Density)) return new GroupLabels(new[] { DensityTierLabel(entry.ZoneType) }, null);
 			if (Is(dimension, Footprint)) return new GroupLabels(new[] { FootprintBandLabel(entry.LotWidth, entry.LotDepth) }, null);
