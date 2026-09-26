@@ -62,7 +62,6 @@ namespace BetterBuildingMenu.Tests
 			Assert.True(EffectWording.IsPercent(ModifierValueMode.InverseRelative));
 		}
 
-		// Initialisers, not the game's constructors, so these run against mock assemblies too.
 		private static CityModifierData City(CityModifierType type, ModifierValueMode mode, float max) =>
 			new() { m_Type = type, m_Mode = mode, m_Range = new Bounds1 { min = 0f, max = max } };
 

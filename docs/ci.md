@@ -15,8 +15,8 @@ scope (`gh auth refresh -s workflow`); GitHub refuses a push that touches them o
 
 The mod compiles against 18 of the game's assemblies from `Cities2_Data/Managed`. CI checks out
 unmodified copies of them, kept in a private repository with a read-only deploy key
-(`CS2_REFS_DEPLOY_KEY`), so it builds exactly as a local build does and runs the whole suite,
-`Requires=Game` tests included. The maintainer refreshes those copies after each game update;
+(`CS2_REFS_DEPLOY_KEY`), so it builds exactly as a local build does and runs the whole suite.
+The maintainer refreshes those copies after each game update;
 until then, CI builds against the previous version's.
 
 **What cannot run anywhere outside the game:** Unity's native side. A test that reaches an
@@ -24,28 +24,6 @@ internal call (a `LogManager` logger, `Application.persistentDataPath`, the stat
 of `Mod`) fails with a `SecurityException` (`ECall methods must be packaged into a system
 module`) locally and in CI alike. Such a test doesn't belong in the suite; the in-game checks
 cover that code.
-
-## The mock assemblies
-
-The suite is kept runnable against mock copies of those assemblies too, for a setup that must
-not hold the game's code. A mock keeps every type, member and signature, private struct fields
-included, and replaces every method body with `throw new NotImplementedException()` (JetBrains
-Refasmer's `--all --mock`, with Unity's internal calls and delegates' `Invoke` left bodiless so
-the runtime loads them).
-
-A test that calls into the game fails against mocks, so it carries
-`[Trait("Requires", "Game")]`, and a mock run filters it out with
-`CS2_TEST_FILTER=Requires!=Game`, which `build.sh test` passes to `dotnet test --filter`.
-
-Two ways a test breaks against mocks without calling a game method:
-
-- **Reading a static field of a game type** runs its type initializer, which the mocks replace
-  with a throw. `DlcId.Invalid` and `DlcId.BaseGame` are the ones the catalog needs; it compares
-  against `Domain/GameDlcIds` instead, and `GameDlcIdsTests` (tagged `Requires=Game`) pins
-  those constants to the game's values.
-- **A game enum inside `[InlineData]`** cannot be decoded against the mocks, and xUnit drops the
-  cases without reporting anything: the run passes with fewer tests. Pass the member's name
-  (`nameof(AreaType.Residential)`) and parse it in the test.
 
 ## Keeping them private
 

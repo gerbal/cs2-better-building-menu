@@ -8,18 +8,16 @@ namespace BetterBuildingMenu.Tests
 {
 	public sealed class ZoningSurfaceTests
 	{
-		// The area type goes in by name: a game enum inside [InlineData] cannot be decoded
-		// against CI's mock assemblies, and xUnit then drops the cases without a word.
 		[Theory]
-		[InlineData(nameof(AreaType.Residential), ZoningFamilies.Residential)]
-		[InlineData(nameof(AreaType.Commercial), ZoningFamilies.Commercial)]
-		[InlineData(nameof(AreaType.Industrial), ZoningFamilies.Industrial)]
-		public void ClassifiesFamilyFromZoneDataRatherThanTheName(string areaType, string expected)
+		[InlineData(AreaType.Residential, ZoningFamilies.Residential)]
+		[InlineData(AreaType.Commercial, ZoningFamilies.Commercial)]
+		[InlineData(AreaType.Industrial, ZoningFamilies.Industrial)]
+		public void ClassifiesFamilyFromZoneDataRatherThanTheName(AreaType areaType, string expected)
 		{
 			// ZoneData carries the authority: m_AreaType plus m_ZoneFlags. The
 			// name-based classifier is only a fallback for prefabs that have no
 			// ZoneData at all.
-			Assert.Equal(expected, ZoningSurfaceCatalog.ResolveFamily((AreaType)System.Enum.Parse(typeof(AreaType), areaType), (ZoneFlags)0));
+			Assert.Equal(expected, ZoningSurfaceCatalog.ResolveFamily(areaType, (ZoneFlags)0));
 		}
 
 		[Fact]

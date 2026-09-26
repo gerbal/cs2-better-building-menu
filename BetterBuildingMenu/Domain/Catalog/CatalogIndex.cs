@@ -145,10 +145,8 @@ namespace BetterBuildingMenu.Domain.Catalog
 		/// level 1 beside the Elementary School, and the Medical and Technical Universities level 4
 		/// beside the University they specialise, so neither vanilla's menu order nor a test on
 		/// uniqueness or size is sure to pick the plain one.
-		/// ElementarySchool01 and University01 are the game's names for two of them (the first has a
-		/// description and an extension wing under that name; the second is in the upgrade census in
-		/// docs/vanilla-upgrades.md). HighSchool01 and College01 follow their pattern, and the in-game
-		/// check confirms them: a level whose school is missing keeps its English word.
+		/// ElementarySchool01 and University01 are the game's names for two of them, and HighSchool01
+		/// and College01 follow their pattern. A level whose school is missing keeps its English word.
 		/// </remarks>
 		internal static readonly (int Level, string Prefab)[] SchoolTierPrefabs =
 		{

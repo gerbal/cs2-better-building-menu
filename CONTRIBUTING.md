@@ -63,11 +63,8 @@ Where a LINQ filter in one step cannot tell the compiler about the next,
 a loop that keeps only the non-null values can.
 
 CI runs every test against the game's own assemblies, kept in a private
-repository, so a test that fails locally fails there too. A test that
-calls into the game, not just its types, still carries
-`[Trait("Requires", "Game")]`, for a run against mock assemblies, which
-filters them out with `CS2_TEST_FILTER=Requires!=Game`. See
-[docs/ci.md](docs/ci.md), "The mock assemblies".
+repository, so a test that fails locally fails there too. See
+[docs/ci.md](docs/ci.md).
 
 The ids and numbers both sides use (sort columns, group dimensions, facet ids,
 availability options, the Load more step, the panel's height range and width)
@@ -90,12 +87,11 @@ Releases follow [docs/release-checklist.md](docs/release-checklist.md).
 - Reflection into the game is a last resort, and must fail safe: a missing
   member costs a feature, never an exception.
 
-## Comments
+## Comments and docs
 
-The rule that the 2026-09-10 comment pass applied, for `.cs`, `.ts`, `.tsx`
-and `.scss` alike: a comment says why the code is the way it is, in about
-three lines. No past tense, no issue ids, no measurements, no commit hashes,
-no `file:line` references.
+For `.cs`, `.ts`, `.tsx` and `.scss` alike, a comment says why the code is
+the way it is, in about three lines. No past tense, no issue ids, no
+measurements, no commit hashes, no `file:line` references.
 
 - Longer rationale goes in `docs/indexing.md` or `docs/design-notes.md`, under
   a heading, with a one-line pointer from the code:
@@ -103,6 +99,9 @@ no `file:line` references.
   one means updating its pointers.
 - Measurements and dated findings go in the pull request that makes them.
   What a later reader needs from them goes in `docs/`, as current fact.
+- `docs/` follows the same rule: it says how things are and why, not how
+  they came to be. Open questions and things not yet checked in game go in
+  [docs/roadmap.md](docs/roadmap.md).
 
 ## Commits
 

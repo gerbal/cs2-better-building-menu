@@ -92,8 +92,6 @@ namespace BetterBuildingMenu.Domain.Catalog
 		/// an asset from it.</remarks>
 		public bool TryGetMenuEntity(string menu, out Entity entity)
 		{
-			// Entity.Null is default(Entity), spelt so because the mock game assemblies
-			// the tests run against give that getter no body.
 			entity = default;
 
 			return menu?.Trim() is { Length: > 0 } trimmed

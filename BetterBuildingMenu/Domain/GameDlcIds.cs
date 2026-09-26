@@ -2,8 +2,8 @@ namespace BetterBuildingMenu.Domain
 {
 	/// <summary>The two DlcId values the catalog compares against, as constants.</summary>
 	/// <remarks>
-	/// Reading DlcId.Invalid or DlcId.BaseGame runs DlcId's type initializer, which CI's
-	/// mock assemblies replace with a throw. GameDlcIdsTests pins these to the game's values.
+	/// Constants, so a default parameter or a pattern can use them; the game's are static
+	/// fields. GameDlcIdsTests pins these to the game's values.
 	/// </remarks>
 	public static class GameDlcIds
 	{

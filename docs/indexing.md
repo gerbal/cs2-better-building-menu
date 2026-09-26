@@ -48,10 +48,9 @@ plausibly have got wrong. `LockStateDrift` is the exact test for it — the same
 runs it and logs how many prefabs moved.
 
 Mod detection (`Mod.ReadEnabledMods`, kept in the index as `Mods`) is re-read at the start of
-every full pass, and Road Builder's discard component is looked up there until it is found.
-Reading them at loading-complete came after the `OnGameLoaded` pass. Reading them once per process
-missed a mod added to the playset between two city loads, which the game allows without a
-restart.
+every full pass, and Road Builder's discard component is looked up there until it is found. Not
+at loading-complete, which comes after the `OnGameLoaded` pass, and not once per process: the game
+lets a mod join the playset between two city loads without a restart.
 
 ## Processors
 
@@ -78,9 +77,9 @@ The indexer runs at one phase, `UIUpdate`. The main loop runs `PrefabSystem` (wh
 applies queued prefab updates and tags what it created or changed), then `UnlockSystem`, then
 `UIUpdateSystem`, every frame the world updates, in the game and the editor alike. So the indexer
 sees that frame's unlock events and every `Created` or `Updated` tag, which last until the frame's
-clean-up, and it runs before the panel's own `UIUpdate` system, which reads the index. It was once
-registered at `PrefabUpdate` too, which read each changed prefab twice a frame and added nothing
-else: nothing reads the index between the two.
+clean-up, and it runs before the panel's own `UIUpdate` system, which reads the index. Running at
+`PrefabUpdate` as well would read each changed prefab twice a frame and add nothing: nothing reads
+the index between the two.
 
 A prefab added and tagged after `UIUpdate` but before the frame's clean-up, for example by a mod's
 own main-loop system calling `PrefabSystem.AddPrefab`, has its tags cleared before the indexer
@@ -104,8 +103,7 @@ A recreated prefab's menu placement moves with it. The placements are keyed by e
 indexer's tick the game's menus already hold the new one: `ReplacePrefabSystem` takes the old
 entity out of every `UIGroupElement` buffer, and `UIObject.LateInitialize`, which
 `PrefabInitializeSystem` runs on the new `Created` entity during `PrefabSystem`'s update, adds the
-new one to its category. (Read from the game's code; a Road Builder edit in game is the check.)
-So every partial pass walks the menus again (see "The vanilla menu walk") after dropping the
+new one to its category. So every partial pass walks the menus again (see "The vanilla menu walk") after dropping the
 deleted entries and before the processors run, and `CatalogIndex.RefreshPlacements` swaps the
 result into the published index. Without it, an edited road the game offers in a menu is placed
 nowhere until the next full pass: it drops out of that menu's view, which admits a network only
@@ -119,9 +117,9 @@ whether or not the pass re-reads the prefab. A mod can regroup without marking a
 Asset UI Manager moves whole categories between menus, and rewrites their priorities, whenever its
 settings change. Left alone, the entries the pass re-read and the rest would name different menus
 for one category, and its heading would appear twice. The stale tabs matter only when the game
-regroups without recreating the assets. A recreated category is one: `ReplacePrefabSystem` does not move its
-members to the new entity, so it starts empty, and vanilla, which draws no empty category, hides
-the tab and its assets. The walk agrees and places none of them, so the tab counts nothing, and
+regroups without recreating the assets. A recreated category is one: `ReplacePrefabSystem` does
+not move its members to the new entity, so it starts empty, and vanilla, which draws no empty
+category, hides the tab and its assets. The walk agrees and places none of them, so the tab counts nothing, and
 the strip and the chip row's category picker, which draw only tabs with something behind them
 (`visibleCategories`), hide it at the same pass. Re-reading the tabs on a partial pass would not
 be worth it: a category removed late in the frame would make its menu's read fail on every
@@ -192,9 +190,9 @@ their `UIGroupElement` categories → the categories' members.
 The direction is the whole point. Everything else in the file reads upward: an indexed asset
 names its category through `UIObject.m_Group` and its menu through that category's `m_Menu`. An
 upward view can only describe assets we already hold, so an asset no processor queries is absent
-from it entirely, and the menu it belongs to looks complete while being short. That is the shape
-behind gaps such as terrain brushes under Landscaping and seaway tools under Transportation:
-never indexed, and so invisible to any report built from the index.
+from it entirely, and the menu it belongs to looks complete while being short. Terrain brushes
+under Landscaping or seaway tools under Transportation, say, that no processor queried would be
+invisible to any report built from the index.
 
 The walk is vanilla's, step for step, so a difference is ours rather than an artefact of reading
 the tree differently. `ToolbarUISystem.BindAssetCategories` takes each menu's `UIGroupElement`
@@ -216,7 +214,9 @@ That comparer is the priority alone and the sort is not stable, so any sort of o
 not, could put equal priorities in a different order from the game's. The menus are the bottom
 bar's: the toolbar groups by priority, then each group's members sorted the same way. A menu no
 toolbar group holds goes last. The UI keeps the menus in that order. It sorts the tabs again, by
-the same priority and stably, which leaves them as they are. The All tab's category headings
+the same priority and stably, which leaves them as they are.
+
+The All tab's category headings
 follow the strip too: in one menu's view the adapter gives each entry its tab's priority and place
 in the strip (`VanillaMenuIndex.TabOf`). So a priority tie breaks as the strip breaks it, before
 the name, and every entry of one tab ranks alike, a moved asset included. The walk also reads
@@ -449,8 +449,7 @@ second after the last. Both passes are taken from `OnUpdate`, never run from the
 also fires at the main menu and between a preload and `OnGameLoaded`, where `OnUpdate` is off, and
 a pass there would publish an index outside a city or from a half-loaded world. A full pass run for
 any other reason (the save's own at `OnGameLoaded`) covers either, so a language switched at the
-main menu is simply read by the next city's first pass. Eight full passes in the first minute at
-the main menu, one per mod locale file, is what that replaced.
+main menu is simply read by the next city's first pass.
 
 `ProgressionIndex.MilestoneNames` is sized from the highest index actually present
 rather than probed upward from index 0, which the game's first milestone need not use — probing

@@ -18,14 +18,7 @@ namespace BetterBuildingMenu.Tests
 	/// </summary>
 	public sealed class SchoolTierNamesTests
 	{
-		private static DlcId Dlc(int id)
-		{
-			// Set, not constructed: DlcId's statics throw under CI's mock assemblies, and the
-			// field is all the index reads.
-			var dlc = default(DlcId);
-			dlc.id = id;
-			return dlc;
-		}
+		private static DlcId Dlc(int id) => new(id);
 
 		private static PrefabIndex School(int id, string prefabName, int level, string name, int order = 0, int dlc = GameDlcIds.BaseGame, bool vanilla = true)
 		{
