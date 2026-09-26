@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Read by the game's ModPublisher (Cities2_Data/Content/Game/.ModdingToolchain/
-  ModPublisher), which runs natively under dotnet on Linux and signs in with the
-  game's stored Paradox session. See docs/publishing.md for the exact steps.
+  ModPublisher). What a release changes here is in docs/release-checklist.md.
 
   * ModId 158589 was assigned by the first "Publish" run on 2026-09-09.
     The upstream Find It id (77240) must never appear here. See docs/FORK.md.

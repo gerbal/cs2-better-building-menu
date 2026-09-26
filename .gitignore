@@ -366,5 +366,5 @@ MigrationBackup/
 FodyWeavers.xsd
 KEYS.cs
 
-# The private mock game assemblies, when checked out inside the working tree (docs/ci.md).
+# The private game assemblies, when checked out inside the working tree (docs/ci.md).
 /cs2-refs/

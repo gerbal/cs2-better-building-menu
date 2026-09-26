@@ -1,16 +1,14 @@
 # Roadmap
 
 Open work, roughly in order of value. What has shipped is in
-`BetterBuildingMenu/Changelog.json`, and how it was checked is in
-[verification.md](verification.md). The reviews in [reviews/](reviews/) hold
-the detail behind the structural items.
+`BetterBuildingMenu/Changelog.json`.
 
 ## Player-facing
 
 - **Player layout.** Let players re-categorise the panel: move an asset to
-  another tab or menu, and create, rename, reorder, merge or hide tabs. The
-  spec and its adversarial review are in
-  [superpowers/specs/](superpowers/specs/), awaiting the owner's review.
+  another tab or menu, and create, rename, reorder, merge or hide tabs. A
+  spec is written and awaiting the owner's review; the research behind it is
+  in [customisation-prior-art.md](customisation-prior-art.md).
 - **Translations.** Every translation lacks 162 of the 223 English keys (the
   option labels fall back to English), and `ja-JP`, `pt-BR` and `uk-UA` are
   English throughout. Either connect `crowdin.yml` to a project (with a

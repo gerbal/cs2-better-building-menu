@@ -40,11 +40,9 @@ UI never holds more than a page. Terms are in the glossary in
   glossary.
 * [docs/roadmap.md](docs/roadmap.md): open work.
 * [docs/release-checklist.md](docs/release-checklist.md): what to run before
-  a release. [docs/publishing.md](docs/publishing.md): uploading it, from
-  Linux.
-* [docs/ci.md](docs/ci.md): what CI runs, and the private mock game
-  assemblies the C# job builds against.
-* [docs/verification.md](docs/verification.md): live checks, dated.
+  a release.
+* [docs/ci.md](docs/ci.md): what CI runs, and the private game assemblies the
+  C# job builds against.
 * [docs/compatibility.md](docs/compatibility.md): other popular mods,
   measured.
 * [docs/indexing.md](docs/indexing.md) and
@@ -52,11 +50,9 @@ UI never holds more than a page. Terms are in the glossary in
   indexer and the UI, pointed to from the code.
 * [docs/vanilla-upgrades.md](docs/vanilla-upgrades.md): how vanilla handles
   building upgrades and extensions.
-* [docs/customisation-prior-art.md](docs/customisation-prior-art.md) and
-  [docs/superpowers/specs/](docs/superpowers/specs/): research and the spec
+* [docs/customisation-prior-art.md](docs/customisation-prior-art.md): research
   for player layout.
 * [docs/FORK.md](docs/FORK.md): provenance and license.
-* [docs/reviews/](docs/reviews/): code reviews, dated.
 
 ## Build and test
 
