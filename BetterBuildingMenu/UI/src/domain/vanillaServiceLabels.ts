@@ -14,6 +14,15 @@ const EXTENDED_NETWORK_MENU = "Roads";
 /** Our name for it, which has to win over the game's. */
 export const EXTENDED_NETWORK_MENU_KEY = "Tooltip.LABEL[BetterBuildingMenu.MenuRoadsAndNetworks]";
 
+/**
+ * The "All" tab and chip. The game's word first: it ships it in every language,
+ * where ours is English only.
+ */
+export const ALL_CATEGORIES_KEYS: readonly string[] = [
+  "Editor.ASSET_CATEGORY_TITLE[All]",
+  "Tooltip.LABEL[BetterBuildingMenu.AllCategories]",
+];
+
 /** Ordered candidate keys for a vanilla menu's display name. */
 export function vanillaMenuNameKeys(id: string | null | undefined): string[] {
   const trimmed = typeof id === "string" ? id.trim() : "";

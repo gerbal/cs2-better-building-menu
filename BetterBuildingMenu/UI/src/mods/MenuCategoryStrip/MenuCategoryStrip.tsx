@@ -13,7 +13,7 @@ import {
 } from "domain/vanillaMenuCategories";
 import { expandedTabsFor, branchTabTooltip, schoolTierTabs, romanNumeral } from "domain/menuProgression";
 import { isEducationMenu, isSchoolCategory } from "domain/buildingGroups";
-import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
+import { ALL_CATEGORIES_KEYS, resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 import styles from "./menuCategoryStrip.module.scss";
 import {
@@ -88,7 +88,7 @@ export const MenuCategoryStrip = () => {
       category.name
     );
 
-  const allLabel = translate("Tooltip.LABEL[BetterBuildingMenu.AllCategories]", "All") ?? "All";
+  const allLabel = resolveVanillaLabel(ALL_CATEGORIES_KEYS, (key) => translate(key, null), "All");
   // The count rides in the tooltip whatever the width, because a narrow strip
   // still leaves the player asking how much is behind a glyph.
   const withCount = (text: string, id: string) => {
