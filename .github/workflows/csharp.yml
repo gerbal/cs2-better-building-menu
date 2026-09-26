@@ -36,9 +36,11 @@ jobs:
           path: cs2-refs
           persist-credentials: false
 
+      # One exact SDK, not the newest 10.0.x: CI fails on any warning, and a new SDK
+      # can bring new ones. Bump it in a pull request of its own; see docs/ci.md.
       - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 10.0.x
+          dotnet-version: 10.0.401
 
       - name: Build
         run: ./build.sh backend
