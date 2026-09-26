@@ -30,12 +30,6 @@ Open work, roughly in order of value. What has shipped is in
 
 ## Structure
 
-- **Split `PrefabIndexingSystem` further.** It is one partial class across six
-  files (see [indexing.md](indexing.md)). Moving the menu audit and
-  `PopulateAnalyticalData` into classes of their own would let a test reach
-  the mapping from a prefab's components to its facts.
-- **Per-load state.** Replace the static index, caches and registries with one
-  object created per city load and handed to the systems that read it.
 - **Smaller cleanups.**
   - Name the `BuildingMenuUISystem` partials by responsibility.
   - Settle on one noun for the panel (see the glossary in
