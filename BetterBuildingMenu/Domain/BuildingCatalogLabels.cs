@@ -76,6 +76,23 @@ namespace BetterBuildingMenu.Domain
 			}
 		}
 
+		/// <summary>A theme's name in the player's language, or the split prefab name.</summary>
+		public static string ForTheme(string theme)
+		{
+			string fallback = WordFormat.SplitIdentifier(theme);
+			try
+			{
+				string? gameKey = GameLocaleKeys.ForTheme(theme);
+				string localized = gameKey is null ? string.Empty : LocaleHelper.Translate(gameKey, string.Empty);
+				return string.IsNullOrWhiteSpace(localized) ? fallback : localized;
+			}
+			catch
+			{
+				// No localization manager in pure tests and early startup.
+				return fallback;
+			}
+		}
+
 		private static string Fallback(string rawValue, string? unknownEnumPrefix)
 		{
 			if (string.Equals(rawValue, "ServiceBuildings_EducationResearch", StringComparison.Ordinal))

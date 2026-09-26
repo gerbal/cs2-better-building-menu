@@ -6,6 +6,7 @@ import { useState } from "react";
 import { visibleCategories } from "domain/vanillaMenuCategories";
 import { isScopedToMenu, lensScopeChipsFor } from "domain/lensScopeChips";
 import {
+  ALL_CATEGORIES_KEYS,
   resolveVanillaLabel,
   vanillaCategoryNameKeys,
   vanillaMenuNameKeys,
@@ -135,7 +136,7 @@ export const ChipRow = () => {
 
   // The same word the strip's extra tab carries, because they are the same
   // choice reached two ways.
-  const allCategoriesLabel = label("Tooltip.LABEL[BetterBuildingMenu.AllCategories]", "All");
+  const allCategoriesLabel = resolveVanillaLabel(ALL_CATEGORIES_KEYS, lookup, "All");
   const allMenusLabel = label("Tooltip.LABEL[BetterBuildingMenu.AllMenus]", "All menus");
 
   return (
