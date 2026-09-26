@@ -133,6 +133,43 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void NamesARoleAfterItsPlainBuildingOrItsTab()
+		{
+			Assert.Equal("Assets.NAME[Hospital01]", GameLocaleKeys.ForRole("Hospital"));
+			Assert.Equal("Assets.NAME[SewageOutlet01]", GameLocaleKeys.ForRole(" SewageOutlet "));
+			Assert.Equal("SubServices.NAME[CommunicationsPost]", GameLocaleKeys.ForRole("PostFacility"));
+		}
+
+		[Fact]
+		public void LeavesTheRolesWithNoSingleGameNameToUs()
+		{
+			// School spans four levels, a power plant is no one building and the
+			// game's only "Electricity" names the whole service, and the plain
+			// shelter is the "Small" one.
+			Assert.Null(GameLocaleKeys.ForRole("School"));
+			Assert.Null(GameLocaleKeys.ForRole("PowerPlant"));
+			Assert.Null(GameLocaleKeys.ForRole("EmergencyShelter"));
+			Assert.Null(GameLocaleKeys.ForRole(null));
+			Assert.Null(GameLocaleKeys.ForRole(" "));
+		}
+
+		[Fact]
+		public void NamesOnlyRolesTheIndexerProducesEachUnderItsOwnKey()
+		{
+			// Two roles under one key would draw one heading for both, since the
+			// page merges consecutive headings by their text.
+			Assert.All(GameLocaleKeys.Roles.Keys, role => Assert.Contains(role, BuildingRole.Known));
+			Assert.Equal(GameLocaleKeys.Roles.Count, GameLocaleKeys.Roles.Values.Distinct().Count());
+		}
+
+		[Fact]
+		public void ARoleWithNoLocalizationManagerKeepsItsSplitId()
+		{
+			Assert.Equal("Fire Station", BuildingCatalogLabels.ForRole("FireStation"));
+			Assert.Equal("Battery", BuildingCatalogLabels.ForRole("Battery"));
+		}
+
+		[Fact]
 		public void MapsNoIdentifierTwice()
 		{
 			Assert.Equal(GameLocaleKeys.All.Count, GameLocaleKeys.All.Keys.Distinct().Count());

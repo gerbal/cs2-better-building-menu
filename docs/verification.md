@@ -2199,3 +2199,44 @@ and the unmapped ids above.
 
 On this save the extractor zones file under Buildings_Specialized ("Spezialisierte Gebäude"), so
 Zones_Extractors did not appear in the catalog. Its key is checked in `Locale.cok` only.
+
+## 2026-09-26 — building roles in the game's language; density tiers left English (#79, steps 3–4)
+
+**Roles (step 4).** The Role filter and the headings when grouped by role showed the role id, split
+into words, in every language. A role now takes the name of the plain building it is built around,
+as #78 named the school levels: Hospital, Fire Station, Police Station, Prison, Water Pumping
+Station, Sewage Outlet and Wastewater Treatment Plant take `Assets.NAME[<building>01]`. Garbage,
+Deathcare, Post and Telecom have no one typical building, so they take the vanilla tab's name
+(`SubServices.NAME`). That changes their English to "Garbage Management", "Deathcare", "Post" and
+"Telecom". School, Power Plant, Emergency Shelter (whose plain building is the "Small" one) and
+Battery keep ours. Every key was read out of `Locale.cok` in all 12 languages first, and no two roles
+share a name in any of them. The names are the game's own for those buildings, so they carry its
+quirks: the Italian fire station is "…grande", and the Japanese sewage outlet reads as a treatment
+plant.
+
+The vanilla Water Treatment Plant files under Sewage Outlet, its first role with a capacity. So the
+Wastewater Treatment Plant name matters only for a modded plant.
+
+Checked in game on the testbed, `--no-steam`:
+- **en-US:** the Role filter lists Battery, Deathcare, Emergency Shelter, Fire Station, Garbage
+  Management, Hospital, Police Station, Post, Power Plant, Prison, School, Sewage Outlet, Telecom
+  and Water Pumping Station. Health & Deathcare grouped by role draws DEATHCARE and HOSPITAL.
+- **de-DE:** the Role filter lists Bestattung, Feuerwache, Müllverwaltung, Krankenhaus,
+  Polizeiwache, Post, Gefängnis, Abwasserabfluss, Telekommunikation and Wasserpumpstation.
+  Water & Sewage grouped by role draws ABWASSERABFLUSS and WASSERPUMPSTATION.
+- **Filtering:** picking "Krankenhaus" still filters on the id `Hospital`, and narrows the
+  Everything search from 4,009 to its five buildings.
+
+The filter orders its options by id, so in German they are no longer alphabetical by what they say.
+
+**Density tiers (step 3): not done.** The game has no word for a density tier alone. Its zone
+names are whole phrases: the zone type, the tier and, for residential and commercial zones, the
+region ("Wohnhäuser mit hoher Dichte (EU)"). The region sits somewhere different in each language,
+and stripping it leaves debris:
+- Korean keeps "스타일" ("style");
+- Japanese keeps "（式）";
+- Russian keeps a trailing dash;
+- Polish starts lowercase.
+
+The tiers also span residential, commercial and office zones, which one name cannot. Only Office
+Low/High and Low Rent Housing carry no region. The tiers join the mod's own translations instead.
