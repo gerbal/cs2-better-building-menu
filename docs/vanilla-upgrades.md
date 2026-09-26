@@ -5,8 +5,8 @@ loaded save. Written because the mod's extension work kept tripping over
 assumptions about this machinery that turned out to be wrong; every claim below
 names the file it came from so a future reader can re-check rather than re-guess.
 
-Paths are relative to `_decompiled/Game/Game/`, a decompilation in the
-maintainer's workspace; it is not part of this repository.
+Paths are relative to the `Game` namespace root of a decompilation of the
+game's `Game.dll`; it is not part of this repository.
 
 ## Vocabulary
 
@@ -149,7 +149,7 @@ city-wide case comes from `UniqueAssetTrackingSystem`.
 
 ## Measured, not assumed
 
-Census run 2026-09-06 on the dev save, prefix `949230-b`, via a throwaway pass in
+Census run 2026-09-06 on the dev save, via a throwaway pass in
 `PrefabIndexingSystem` over every entity carrying either buffer (17,582 prefabs
 indexed):
 

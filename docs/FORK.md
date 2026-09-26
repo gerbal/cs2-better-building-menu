@@ -6,8 +6,6 @@
 - Upstream branch: `main`
 - Upstream revision: `d865b795b1c00491aa529934b906ba5c5ce6f42c`
 - Upstream release marker: `v1.5.8`
-- Local reference checkout: `reference-mods/FindIt-CSII`, in the
-  maintainer's workspace rather than this repository
 - Fork method: tracked files exported from the upstream revision into this
   separate successor directory; the upstream checkout was not modified.
 
@@ -99,7 +97,7 @@ both may be installed together. Find It's panel takes the asset-menu slot while
 it is open and this menu returns when it closes, its object picker is the only
 one (this mod dropped its own on 2026-09-09), and the two ship no file at the
 same shared path. Verified live
-against Find It 1.5.8 (`docs/verification.md`, 2026-09-02).
+against Find It 1.5.8 on 2026-09-02; see [compatibility.md](compatibility.md).
 
 ## Rename on 2026-09-02
 

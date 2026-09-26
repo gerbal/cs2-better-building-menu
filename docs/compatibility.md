@@ -3,8 +3,8 @@
 Popular code mods, surveyed from source on 2026-09-11 and each measured live
 since. The table is the current answer; the dated sections below it are the
 measurements behind it, oldest first. Screenshots cited as
-`compat/probe/*.png`, and the source clones under `compat/repos/`, are in the
-maintainer's workspace, not in this repository.
+`compat/probe/*.png`, and the source clones under `compat/repos/`, were made for
+these measurements and are not in this repository.
 
 ## Current status
 
@@ -21,8 +21,8 @@ maintainer's workspace, not in this repository.
 | Asset Icon Library (TDW) | — | 0.1.6 | Works. Tiles draw its icons: 85 of 100 in Landscaping. | 2026-09-11 |
 | Extra Landscaping Tools, Extra Detailing Tools (Triton) | — | 0.1.6 | Work. Their tools and props are indexed. | 2026-09-11 |
 | Toggle Overlays, Unified Icon Library, I18n Everywhere | — | 0.1.6 | No interaction. | 2026-09-11 |
-| Asset Menu Tweaks (Luca) | 1.0.7 | 0.1.4 | No effect on our panel, in either load order and with every option on. See docs/verification.md. | 2026-09-10 |
-| Find It (TDW) | 1.5.8 | pre-release | Both install together. Its panel takes the asset-menu slot while open and ours returns when it closes; its picker is the only one. See docs/verification.md. | 2026-09-02 |
+| Asset Menu Tweaks (Luca) | 1.0.7 | 0.1.4 | No effect on our panel, in either load order and with every option on. | 2026-09-10 |
+| Find It (TDW) | 1.5.8 | pre-release | Both install together. Its panel takes the asset-menu slot while open and ours returns when it closes; its picker is the only one. | 2026-09-02 |
 | Platter (Luca), Extra Networks and Areas (Mimonsi), Recolor (yenyang) | — | — | Source read only. The first two add or regroup menu entries at load, before our index runs; Recolor's palettes are not toolbar assets. | 2026-09-10/11 |
 | Traffic, Better Bulldozer, Move It, Plop the Growables, 529 Tiles, Historical Start, Skyve, Extended Tooltip, Detailed Descriptions, Region Flag Icons, First Person Camera, Time & Weather Anarchy, Realistic Parking, Traffic Lights Enhancement | — | — | Source read only: no asset-menu or menu-tree hooks. | 2026-09-11 |
 
@@ -46,7 +46,7 @@ and Harmony attributes, and for the menu-tree writers `m_Group`, `m_Menu`,
 package cache ranked the survey, since the in-game "Most popular" page could
 not be filtered to code mods reliably.
 
-## Measured 2026-09-11 (Porterville, main prefix, our 0.1.6 from the store)
+## Measured 2026-09-11 (Porterville, our 0.1.6 from the store)
 
 Fifteen mods loaded together from the game's package cache as local mods
 (the playset is server-side and ignores local edits; the store view was too
@@ -224,7 +224,7 @@ read was empty and `EventUniqueAssetStatusChanged` never fired. The log said
 
 **Measured, on Porterville with Anarchy 1.7.24 installed as a local package.**
 A unique asset (Early Disaster Warning System) was placed in the city through
-the QA bridge's synthetic input, and Anarchy's option was then flipped through
+synthetic input, and Anarchy's option was then flipped through
 its settings object with the city still running — no reload between readings.
 
 | Anarchy's option | The game's `IsPlacedUniqueAsset` | Our panel's `isAlreadyBuilt` | Clicking the tile |

@@ -11,11 +11,11 @@
   Run it again after pulling a change to `package-lock.json`: an older
   install lacks the TypeScript and eslint that `npm test` runs.
   The UI's tests stub the game's `cs2/*` modules, so they run without the game.
-- **The game's source.** The private repository `gerbal/cs2-game-decompiled`
-  holds the decompiled C# of the game's modding-relevant assemblies, for the
-  version the mod builds against. Read it before relying on how a game system
-  behaves, especially without an install. It is the game's code: never copy
-  from it into this repository, an issue, a pull request or a CI log.
+- **The game's source.** Read a decompilation of the game's assemblies (ILSpy
+  or similar) before relying on how a game system behaves. It is the game's
+  code, as are the assemblies themselves: never copy from either into this
+  repository, an issue, a pull request or a CI log. Name the type or member
+  instead.
 
 ## Build and test
 
@@ -65,9 +65,9 @@ a loop that keeps only the non-null values can.
 CI runs every test against the game's own assemblies, kept in a private
 repository, so a test that fails locally fails there too. A test that
 calls into the game, not just its types, still carries
-`[Trait("Requires", "Game")]`, for a run against mock assemblies
-(the workspace's `tools/game-refs/refresh.sh --mock`), which filters them out with
-`CS2_TEST_FILTER=Requires!=Game`. See [docs/ci.md](docs/ci.md).
+`[Trait("Requires", "Game")]`, for a run against mock assemblies, which
+filters them out with `CS2_TEST_FILTER=Requires!=Game`. See
+[docs/ci.md](docs/ci.md), "The mock assemblies".
 
 The ids and numbers both sides use (sort columns, group dimensions, facet ids,
 availability options, the Load more step, the panel's height range and width)
@@ -76,8 +76,7 @@ are C#'s, and the UI reads them from
 `CS2_WRITE_CONTRACTS=1 ./build.sh test` and commit the file it writes; the C#
 tests fail while the two disagree. Never edit the generated file by hand.
 
-Releases follow [docs/release-checklist.md](docs/release-checklist.md), then
-[docs/publishing.md](docs/publishing.md).
+Releases follow [docs/release-checklist.md](docs/release-checklist.md).
 
 ## Boundaries
 
@@ -102,7 +101,8 @@ no `file:line` references.
   a heading, with a one-line pointer from the code:
   `See docs/indexing.md, "Load timing".` Headings are the anchors, so renaming
   one means updating its pointers.
-- Measurements and dated findings go in `docs/verification.md`.
+- Measurements and dated findings go in the pull request that makes them.
+  What a later reader needs from them goes in `docs/`, as current fact.
 
 ## Commits
 
