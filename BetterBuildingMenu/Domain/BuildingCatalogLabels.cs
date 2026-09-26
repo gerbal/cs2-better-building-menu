@@ -77,12 +77,16 @@ namespace BetterBuildingMenu.Domain
 		}
 
 		/// <summary>A theme's name in the player's language, or the split prefab name.</summary>
-		public static string ForTheme(string theme)
+		public static string ForTheme(string theme) => GameNameOr(GameLocaleKeys.ForTheme(theme), theme);
+
+		/// <summary>A building role's name in the player's language, or the split role id.</summary>
+		public static string ForRole(string role) => GameNameOr(GameLocaleKeys.ForRole(role), role);
+
+		private static string GameNameOr(string? gameKey, string identifier)
 		{
-			string fallback = WordFormat.SplitIdentifier(theme);
+			string fallback = WordFormat.SplitIdentifier(identifier);
 			try
 			{
-				string? gameKey = GameLocaleKeys.ForTheme(theme);
 				string localized = gameKey is null ? string.Empty : LocaleHelper.Translate(gameKey, string.Empty);
 				return string.IsNullOrWhiteSpace(localized) ? fallback : localized;
 			}

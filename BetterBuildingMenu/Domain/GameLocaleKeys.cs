@@ -108,6 +108,35 @@ namespace BetterBuildingMenu.Domain
 			return Keys.TryGetValue(trimmed, out var key) ? key : null;
 		}
 
+		// A role takes the name of the plain building it is built around, as #78 named
+		// the school levels, where the game has one: Hospital01 is "Hospital" in every
+		// language. The roles with no single typical building take the toolbar tab
+		// they sit under, and the rest keep ours: School spans four levels, and
+		// neither "Electricity" nor "Small Emergency Shelter" names a role.
+		private static readonly Dictionary<string, string> RoleKeys = new(StringComparer.Ordinal)
+		{
+			["Hospital"] = AssetName("Hospital01"),
+			["FireStation"] = AssetName("FireStation01"),
+			["PoliceStation"] = AssetName("PoliceStation01"),
+			["Prison"] = AssetName("Prison01"),
+			["WaterPumpingStation"] = AssetName("WaterPumpingStation01"),
+			["WastewaterTreatmentPlant"] = AssetName("WastewaterTreatmentPlant01"),
+			["SewageOutlet"] = AssetName("SewageOutlet01"),
+			["GarbageFacility"] = SubService("GarbageManagement"),
+			["DeathcareFacility"] = SubService("Deathcare"),
+			["PostFacility"] = SubService("CommunicationsPost"),
+			["TelecomFacility"] = SubService("CommunicationsTelecom"),
+		};
+
+		private static string AssetName(string prefab) => $"Assets.NAME[{prefab}]";
+
+		/// <summary>The game's key for a building role, or null when ours is the only name.</summary>
+		public static string? ForRole(string? role) =>
+			role?.Trim() is { Length: > 0 } trimmed && RoleKeys.TryGetValue(trimmed, out var key) ? key : null;
+
+		/// <summary>Exposed so tests can assert the role keys' shape and uniqueness.</summary>
+		public static IReadOnlyDictionary<string, string> Roles => RoleKeys;
+
 		/// <summary>
 		/// The game's key for a theme prefab's name, as its own theme picker reads
 		/// it. A modded theme has none, and the lookup falls back to the name.
