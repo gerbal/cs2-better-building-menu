@@ -138,40 +138,59 @@ namespace BetterBuildingMenu.Domain.Catalog
 			return tabs.Concat(ExtraNetworkCategories()).ToArray();
 		}
 
-		/// <summary>What each school level is called, by level: the name the game gives that
-		/// level's base-game school.</summary>
+		/// <summary>The school each level is named after, by level: the plain school the base game
+		/// builds that level around.</summary>
 		/// <remarks>
-		/// The base game has one school per level, and the game names it in every language it
-		/// ships, so its name serves as the level's: "Grundschule" in German, where the mod's own
-		/// English said "Elementary School" in every language (#67). A DLC's or a mod's school is
-		/// not asked, since its name is its own rather than the level's. The first in vanilla's
-		/// menu order answers, then the lower id; a level with no base-game school is left out,
-		/// and <see cref="BuildingCatalogGrouping.SchoolTierLabel"/> falls back to English for it.
+		/// Named, because nothing in the data singles it out. A Small Elementary School teaches
+		/// level 1 beside the Elementary School, and the Medical and Technical Universities level 4
+		/// beside the University they specialise, so neither vanilla's menu order nor a test on
+		/// uniqueness or size is sure to pick the plain one.
+		/// ElementarySchool01 and University01 are the game's names for two of them (the first has a
+		/// description and an extension wing under that name; the second is in the upgrade census in
+		/// docs/vanilla-upgrades.md). HighSchool01 and College01 follow their pattern, and the in-game
+		/// check confirms them: a level whose school is missing keeps its English word.
+		/// </remarks>
+		internal static readonly (int Level, string Prefab)[] SchoolTierPrefabs =
+		{
+			(1, "ElementarySchool01"),
+			(2, "HighSchool01"),
+			(3, "College01"),
+			(4, "University01"),
+		};
+
+		/// <summary>What each school level is called, by level: the name the game gives the school
+		/// it is named after (see <see cref="SchoolTierPrefabs"/>).</summary>
+		/// <remarks>
+		/// The game names that school in every language it ships, so its name serves as the level's:
+		/// "Grundschule" in German, where the mod's own English said "Elementary School" in every
+		/// language (#67). Only the game's own prefab of that level answers, not a mod's that reuses
+		/// the name. A level left out falls back to English in
+		/// <see cref="BuildingCatalogGrouping.SchoolTierLabel"/>, and so does one whose name an
+		/// earlier level already has: the page merges consecutive headings by their text, so two
+		/// levels under one name would draw as one heading.
 		/// </remarks>
 		public IReadOnlyDictionary<int, string> SchoolTierNames()
 		{
-			var schools = new Dictionary<int, PrefabIndex>();
+			var names = new Dictionary<int, string>();
 
-			foreach (var entry in All)
+			foreach (var (level, prefab) in SchoolTierPrefabs)
 			{
-				if (entry.EducationLevel is not int level
-					|| entry.IsServiceUpgrade
-					|| !entry.IsVanilla
-					|| entry.DlcId.id != GameDlcIds.BaseGame
-					|| string.IsNullOrWhiteSpace(entry.AssetName))
+				if (!_namesakes.TryGetValue(prefab, out var namesakes))
 				{
 					continue;
 				}
 
-				if (!schools.TryGetValue(level, out var first)
-					|| entry.UIOrder < first.UIOrder
-					|| (entry.UIOrder == first.UIOrder && entry.Id < first.Id))
+				var school = namesakes.FirstOrDefault(entry => entry.IsVanilla && entry.EducationLevel == level);
+
+				if (school is null || string.IsNullOrWhiteSpace(school.AssetName) || names.ContainsValue(school.AssetName))
 				{
-					schools[level] = entry;
+					continue;
 				}
+
+				names[level] = school.AssetName;
 			}
 
-			return schools.ToDictionary(pair => pair.Key, pair => pair.Value.AssetName.Trim());
+			return names;
 		}
 
 		/// <summary>A tab for each kind of network the Roads menu does not already hold.</summary>

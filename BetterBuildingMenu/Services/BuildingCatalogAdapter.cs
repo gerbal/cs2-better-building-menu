@@ -401,8 +401,7 @@ namespace BetterBuildingMenu.Services
 				educationMenu,
 				selection.VanillaSelected,
 				// From the whole index, not the snapshot: a filter that hides the base-game
-				// school must not turn its tier's name back into English. Only where the tiers
-				// are, since it walks every entry.
+				// school must not turn its tier's name back into English. Only where the tiers are.
 				educationMenu ? source.Index.SchoolTierNames() : null);
 		}
 
