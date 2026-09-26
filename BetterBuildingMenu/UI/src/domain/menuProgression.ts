@@ -6,7 +6,8 @@ export interface MenuBranchCount {
   /**
    * What the tab says, where that differs from what it matches on. A density
    * tier repeats across families, so its id carries the family too and only
-   * this is shown; a development branch is unique and needs neither.
+   * this is shown; a school tier's id is its level, and this is the game's
+   * name for it; a development branch is unique and needs neither.
    */
   label?: string;
 }
@@ -58,28 +59,39 @@ export interface SchoolTierTab {
 
 /**
  * The education menu's tier tabs, in career order. Keyed by the raw
- * SchoolData.m_EducationLevel so the labels stay in one place, and ordered by
- * level because the alphabet puts College before High School.
+ * SchoolData.m_EducationLevel, and ordered by level because the alphabet puts
+ * College before High School. Each says what C# named it: the game's name for
+ * the level's base-game school, or the English word. A tab C# sent no label
+ * for arrives with its id as the label (MenuBranchCount.DisplayLabel), and
+ * the English word stands in for that too.
  */
 export function schoolTierTabs(
   counts: readonly MenuBranchCount[] | null | undefined
 ): SchoolTierTab[] {
   return (counts ?? [])
-    .map((entry) => ({ level: Number(entry.id), count: entry.count ?? 0, icon: entry.icon ?? "" }))
+    .map((entry) => {
+      const label = (entry.label ?? "").trim();
+
+      return {
+        level: Number(entry.id),
+        name: label === entry.id ? "" : label,
+        count: entry.count ?? 0,
+        icon: entry.icon ?? "",
+      };
+    })
     .filter((entry) => Number.isFinite(entry.level) && entry.level >= 1)
     .sort((a, b) => a.level - b.level)
     .map((entry) => ({
       level: entry.level,
-      label: schoolTierLabel(entry.level),
+      label: entry.name === "" ? schoolTierLabel(entry.level) : entry.name,
       count: entry.count,
       icon: entry.icon,
     }));
 }
 
 /**
- * The game's own word for a school level. Kept here rather than imported,
- * because these domain modules do not import each other by value; the words are
- * the game's SchoolLevel enum, and a test pins them to buildingGroups' copy.
+ * The English word for a school level, for a tab C# sent no name for. The
+ * same words as BuildingCatalogGrouping.SchoolTierLabel's fallback.
  */
 export function schoolTierLabel(level: number): string {
   switch (level) {

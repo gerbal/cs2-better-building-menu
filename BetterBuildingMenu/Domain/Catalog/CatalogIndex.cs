@@ -138,6 +138,61 @@ namespace BetterBuildingMenu.Domain.Catalog
 			return tabs.Concat(ExtraNetworkCategories()).ToArray();
 		}
 
+		/// <summary>The school each level is named after, by level: the plain school the base game
+		/// builds that level around.</summary>
+		/// <remarks>
+		/// Named, because nothing in the data singles it out. A Small Elementary School teaches
+		/// level 1 beside the Elementary School, and the Medical and Technical Universities level 4
+		/// beside the University they specialise, so neither vanilla's menu order nor a test on
+		/// uniqueness or size is sure to pick the plain one.
+		/// ElementarySchool01 and University01 are the game's names for two of them (the first has a
+		/// description and an extension wing under that name; the second is in the upgrade census in
+		/// docs/vanilla-upgrades.md). HighSchool01 and College01 follow their pattern, and the in-game
+		/// check confirms them: a level whose school is missing keeps its English word.
+		/// </remarks>
+		internal static readonly (int Level, string Prefab)[] SchoolTierPrefabs =
+		{
+			(1, "ElementarySchool01"),
+			(2, "HighSchool01"),
+			(3, "College01"),
+			(4, "University01"),
+		};
+
+		/// <summary>What each school level is called, by level: the name the game gives the school
+		/// it is named after (see <see cref="SchoolTierPrefabs"/>).</summary>
+		/// <remarks>
+		/// The game names that school in every language it ships, so its name serves as the level's:
+		/// "Grundschule" in German, where the mod's own English said "Elementary School" in every
+		/// language (#67). Only the game's own prefab of that level answers, not a mod's that reuses
+		/// the name. A level left out falls back to English in
+		/// <see cref="BuildingCatalogGrouping.SchoolTierLabel"/>, and so does one whose name an
+		/// earlier level already has: the page merges consecutive headings by their text, so two
+		/// levels under one name would draw as one heading.
+		/// </remarks>
+		public IReadOnlyDictionary<int, string> SchoolTierNames()
+		{
+			var names = new Dictionary<int, string>();
+
+			foreach (var (level, prefab) in SchoolTierPrefabs)
+			{
+				if (!_namesakes.TryGetValue(prefab, out var namesakes))
+				{
+					continue;
+				}
+
+				var school = namesakes.FirstOrDefault(entry => entry.IsVanilla && entry.EducationLevel == level);
+
+				if (school is null || string.IsNullOrWhiteSpace(school.AssetName) || names.ContainsValue(school.AssetName))
+				{
+					continue;
+				}
+
+				names[level] = school.AssetName;
+			}
+
+			return names;
+		}
+
 		/// <summary>A tab for each kind of network the Roads menu does not already hold.</summary>
 		/// <remarks>Built from what is indexed rather than from the enum, so a subcategory with nothing
 		/// in it draws no tab. Ids match what NetworkMenuExtension.Reframe writes onto the entries.</remarks>
