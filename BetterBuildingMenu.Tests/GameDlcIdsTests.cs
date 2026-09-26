@@ -8,7 +8,7 @@ namespace BetterBuildingMenu.Tests
 {
 	public sealed class GameDlcIdsTests
 	{
-		[Fact, Trait("Requires", "Game")]
+		[Fact]
 		public void MatchTheGamesDlcIds()
 		{
 			Assert.Equal(GameDlcIds.Invalid, DlcId.Invalid.id);

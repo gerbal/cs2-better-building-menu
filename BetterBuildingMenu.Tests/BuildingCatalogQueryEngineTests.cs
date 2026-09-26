@@ -658,7 +658,7 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.Equal(BuildingCatalogQuery.MaxLimit, page.Limit);
     }
 
-    [Fact, Trait("Requires", "Game")]
+    [Fact]
     public void PageWrite_EmitsStablePageAndEntryPropertyNames()
     {
         BuildingCatalogEntry labeledEntry = SampleEntries[0] with
@@ -692,7 +692,7 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.Contains("Write:Double:80000", writer.Tokens);
     }
 
-    [Fact, Trait("Requires", "Game")]
+    [Fact]
     public void EntryWrite_WritesEachFactListAsAnArrayOfItsItems()
     {
         // The three lists share one writer, so one list's items must not leak

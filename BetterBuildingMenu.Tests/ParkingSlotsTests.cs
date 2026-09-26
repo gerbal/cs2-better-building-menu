@@ -10,9 +10,6 @@ namespace BetterBuildingMenu.Tests
 	/// The bays an object parks, counted with the game's own arithmetic: NetInitializeSystem's slot
 	/// interval and GetParkingSlotCount's divide.
 	/// </summary>
-	/// <remarks>Requires the game: the interval is Unity.Mathematics' arithmetic, which a mock
-	/// assembly does not carry.</remarks>
-	[Trait("Requires", "Game")]
 	public sealed class ParkingSlotsTests
 	{
 		private static readonly ParkingLaneShape[] NoLanes = System.Array.Empty<ParkingLaneShape>();
