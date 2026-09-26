@@ -1,6 +1,6 @@
 # Player customisation of the build catalogue: prior art and ideation
 
-Research for cm-uact.4 (Loki's re-categorisation request), 2026-09-22.
+Research for player layout (Loki's re-categorisation request), 2026-09-22.
 Gathered by three research passes over the web and three cloned mod repos.
 Claims are the sources' own; items the passes could not confirm are marked
 [unverified]. Planning assumption: this mod is the only one altering the

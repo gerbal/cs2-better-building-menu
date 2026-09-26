@@ -330,7 +330,7 @@ Where the game's own tooltip shows a figure, `Apply` follows its binder in
   secondary figures vanilla shows get lines of their own, a garbage store and a power output: an
   incinerator is filed as a garbage facility, and its output is the second.
 
-docs/verification.md, "Card facts against vanilla's binders", lists where the card still differs
+docs/design-notes.md, "The card against vanilla", lists where the card differs from vanilla
 and why.
 
 The entry keeps the facts in the order they are added, but a card re-sorts them by `FACT_ORDER`

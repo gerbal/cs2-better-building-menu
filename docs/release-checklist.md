@@ -1,8 +1,26 @@
 # Release checklist
 
-What to run before a release, and the live check that goes with it. The upload
-itself is in [publishing.md](publishing.md). Each release's results go in
-[verification.md](verification.md) as a dated entry.
+What to run before a release, and the live check that goes with it. The
+maintainer uploads the package to Paradox Mods with the game's own
+`ModPublisher`, which reads `BetterBuildingMenu/Properties/PublishConfiguration.xml`.
+
+## Version
+
+The version is stated in five places, and all five change together:
+
+- `<Version>` in `BetterBuildingMenu/BetterBuildingMenu.csproj`;
+- `modinfo.json`;
+- `BetterBuildingMenu/UI/mod.json`;
+- `ModVersion` in `BetterBuildingMenu/Properties/PublishConfiguration.xml`;
+- a new first entry in `BetterBuildingMenu/Changelog.json`.
+
+Then REPLACE the body of `<ChangeLog>` in `PublishConfiguration.xml` with that
+entry's text. The element holds one version's notes, not a running history:
+the store shows it under the version, so an older section left in it is
+published as part of the new version's notes. `npm test` in
+`BetterBuildingMenu/UI` fails until all five agree and the `<ChangeLog>` opens
+with the new number. If the game's minor version has moved, update
+`GameVersion` too.
 
 ## Build and test
 

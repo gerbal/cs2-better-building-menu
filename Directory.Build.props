@@ -1,7 +1,7 @@
 <Project>
 
   <!--
-    Shared MSBuild defaults for the mod and its tests (copied from the CS-Modding workspace root when the mod moved to its own repository).
+    Shared MSBuild defaults for the mod and its tests.
   -->
 
   <!-- CS2 game path: env var with fallback to the default Steam install. -->
