@@ -14,7 +14,8 @@ namespace BetterBuildingMenu.Domain
 	/// <param name="Label">
 	/// What the tab says, when that differs from what it MATCHES on. Empty for a
 	/// development branch, whose name is unique; a density tab matches on a composite
-	/// carrying its family (<see cref="StripAxes.DensityTab"/>) and shows only the tier.
+	/// carrying its family (<see cref="StripAxes.DensityTab"/>) and shows only the tier;
+	/// a school tier matches on its level and shows the game's name for it.
 	/// </param>
 	public sealed record MenuBranchCount(string Id, int Count, string Icon, string Label = "") : IJsonWritable
 	{
