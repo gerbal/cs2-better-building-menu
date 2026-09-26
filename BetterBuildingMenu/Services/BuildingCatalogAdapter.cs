@@ -332,7 +332,7 @@ namespace BetterBuildingMenu.Services
 			BuildingCatalogEntry[] source = entries.ToArray();
 			var groups = new List<BuildingCatalogFacetGroup>();
 
-			AddValueGroup(groups, FacetIds.BuildingType, "Role", source.Select(entry => entry.BuildingType), query.BuildingTypes, WordFormat.SplitIdentifier);
+			AddValueGroup(groups, FacetIds.BuildingType, "Role", source.Select(entry => entry.BuildingType), query.BuildingTypes, BuildingCatalogLabels.ForRole);
 			AddValueGroup(groups, FacetIds.Provenance, "Source", source.Select(entry => entry.Provenance), query.Provenance, FormatProvenanceLabel);
 			// Progression, which the vanilla menu shows only by greying an asset out.
 			AddAvailabilityGroup(groups, source, query.Availability);
