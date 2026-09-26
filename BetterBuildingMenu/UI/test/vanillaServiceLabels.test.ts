@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  ALL_CATEGORIES_KEYS,
   resolveVanillaLabel,
   vanillaCategoryNameKeys,
   vanillaMenuNameKeys,
@@ -116,5 +117,24 @@ describe("the menu the lens renamed", () => {
     );
 
     assert.equal(label, "Straßen");
+  });
+});
+
+describe("the All tab", () => {
+  it("takes the game's word, which every language has, before ours", () => {
+    const strings: Record<string, string> = {
+      "Editor.ASSET_CATEGORY_TITLE[All]": "Alle",
+      "Tooltip.LABEL[BetterBuildingMenu.AllCategories]": "All",
+    };
+
+    assert.equal(resolveVanillaLabel(ALL_CATEGORIES_KEYS, (key) => strings[key], "All"), "Alle");
+  });
+
+  it("falls back to ours, then to English, when the game has none", () => {
+    assert.equal(
+      resolveVanillaLabel(ALL_CATEGORIES_KEYS, (key) => (key.startsWith("Tooltip") ? "Tout" : null), "All"),
+      "Tout"
+    );
+    assert.equal(resolveVanillaLabel(ALL_CATEGORIES_KEYS, () => null, "All"), "All");
   });
 });

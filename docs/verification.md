@@ -2158,3 +2158,44 @@ Not yet checked in game. With the game in de-DE, hover the Education menu's scho
 Roman numerals and name the level in their tooltip, and group by school tier: all four levels and
 Research should read in German, as the game's own panels name them. A level still in English means
 its prefab name is wrong. In en-US they should read as before.
+
+## 2026-09-25 — categories, subcategories and themes in the game's language (#79, steps 1–2)
+
+Twenty-two category and subcategory ids already took the game's `Editor.ASSET_CATEGORY_TITLE[…]`
+names. Nineteen more now take the game's word where it names the same thing, from three key
+families (`GameLocaleKeys`). Each key was read out of `Locale.cok` in all 12 languages first:
+
+- **`SubServices.NAME`, a vanilla toolbar tab:** Highways, Road Services, Pathways (the pathway
+  prefabs), Residential, Commercial and Industrial Props, Decals, and the Residential, Commercial,
+  Industrial, Office and Specialized Industry zone tabs.
+- **`Services.NAME`, a vanilla menu:** Zones and Landscaping.
+- **`Editor.ASSET_CATEGORY_TITLE`, the editor's tree:** All, Props, Trees, Bushes and Spawners.
+
+Our English changes in three places: "Paths" becomes "Pathways", "Shrubs & Bushes" becomes
+"Bushes" and "Extractor Zones" becomes "Specialized Industry", the game's words for each.
+
+Some ids have a game name that was not used. Park and Lights would read "Park" and "Lights". The
+game leaves "Fences" English in German. "Foliage" leaves out the rocks and spawners the Trees
+category holds. Twenty ids have no game counterpart and keep ours, among them Networks, Pipes,
+Power Lines, Transit Lines, Seaways, the Misc groups and Rocks & Miscellaneous.
+
+The strip's "All" tab and the chip row's "All" read `Editor.ASSET_CATEGORY_TITLE[All]` before our
+English. Theme names, in the facet and in the headings when grouped by theme, read
+`Assets.THEME[<theme>]`. A modded theme has no key and keeps its prefab name.
+
+Checked in game on the testbed, `--no-steam`. A capture of the whole catalog in each language gave
+these distinct labels. In en-US they read as before apart from the three changes above. In de-DE
+every mapped id read in German: Straßen, Schnellstraßen, Straßendienste, Bahnen, Requisiten,
+Gewerberequisiten, Industrierequisiten, Wohnrequisiten, Markierungen, Bäume, Büsche, Zonen,
+Wohnzonen, Gewerbezonen, Industriezonen and Bürozonen. Screenshots showed:
+
+- the Zones menu's headings in German, and "Alle" on the tab and the chip after the UI change;
+- a German "EUROPÄISCH" heading when grouped by theme, with the theme facet offering
+  "Europäisch" and "Nordamerikanisch";
+- "EUROPEAN" and "All" in en-US.
+
+Still English in German, outside this change: the density tier headings (#79 step 3), "Other",
+and the unmapped ids above.
+
+On this save the extractor zones file under Buildings_Specialized ("Spezialisierte Gebäude"), so
+Zones_Extractors did not appear in the catalog. Its key is checked in `Locale.cok` only.
