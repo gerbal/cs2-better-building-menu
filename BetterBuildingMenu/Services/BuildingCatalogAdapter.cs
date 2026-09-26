@@ -385,6 +385,7 @@ namespace BetterBuildingMenu.Services
 			}
 
 			var snapshot = ProjectForMenu(source, query.UiMenu, selection, query.DlcIds);
+			var educationMenu = VanillaMenus.IsEducation(query.UiMenu);
 
 			// Packs alone are counted before the pack filter runs, because that
 			// filter is upstream of InScope and InScope cannot undo it. Only a
@@ -397,8 +398,12 @@ namespace BetterBuildingMenu.Services
 					: null,
 				groupByResolver,
 				source.Index.Progression.MilestoneNames(),
-				VanillaMenus.IsEducation(query.UiMenu),
-				selection.VanillaSelected);
+				educationMenu,
+				selection.VanillaSelected,
+				// From the whole index, not the snapshot: a filter that hides the base-game
+				// school must not turn its tier's name back into English. Only where the tiers
+				// are, since it walks every entry.
+				educationMenu ? source.Index.SchoolTierNames() : null);
 		}
 
 		/// <summary>

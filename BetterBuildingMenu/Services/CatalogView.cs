@@ -20,6 +20,7 @@ namespace BetterBuildingMenu.Services
 		private readonly Func<IReadOnlyList<BuildingCatalogEntry>>? _packScope;
 		private readonly Func<CatalogView, string>? _groupByResolver;
 		private readonly IReadOnlyList<string>? _milestoneNames;
+		private readonly IReadOnlyDictionary<int, string>? _schoolTierNames;
 		private readonly bool _educationMenu;
 		private readonly bool _vanillaSelected;
 		private string? _effectiveGroupBy;
@@ -41,7 +42,8 @@ namespace BetterBuildingMenu.Services
 			Func<CatalogView, string>? groupByResolver = null,
 			IReadOnlyList<string>? milestoneNames = null,
 			bool educationMenu = false,
-			bool vanillaSelected = false)
+			bool vanillaSelected = false,
+			IReadOnlyDictionary<int, string>? schoolTierNames = null)
 		{
 			_snapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
 			_query = query ?? throw new ArgumentNullException(nameof(query));
@@ -50,6 +52,7 @@ namespace BetterBuildingMenu.Services
 			_milestoneNames = milestoneNames;
 			_educationMenu = educationMenu;
 			_vanillaSelected = vanillaSelected;
+			_schoolTierNames = schoolTierNames;
 		}
 
 		/// <summary>The dimension ids the picker should offer for this menu set.</summary>
@@ -91,7 +94,7 @@ namespace BetterBuildingMenu.Services
 			{
 				Items = page.Items.Select(entry =>
 				{
-					var labels = BuildingCatalogGrouping.Labels(entry, dimension, _milestoneNames);
+					var labels = BuildingCatalogGrouping.Labels(entry, dimension, _milestoneNames, _schoolTierNames);
 					return entry with { GroupPath = labels.Path, GroupLabelId = labels.LabelId };
 				}).ToArray(),
 			};
@@ -380,7 +383,8 @@ namespace BetterBuildingMenu.Services
 			.Select(group => new MenuBranchCount(
 				group.Key.ToString(System.Globalization.CultureInfo.InvariantCulture),
 				group.Count(),
-				BuildingCatalogAdapter.SchoolTierIcon))
+				BuildingCatalogAdapter.SchoolTierIcon,
+				BuildingCatalogGrouping.SchoolTierLabel(group.Key, _schoolTierNames) ?? string.Empty))
 			.OrderBy(count => count.Id, StringComparer.Ordinal)
 			.ToArray();
 	}
