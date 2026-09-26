@@ -23,13 +23,13 @@ jobs:
       DOTNET_CLI_TELEMETRY_OPTOUT: "1"
       DOTNET_NOLOGO: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Never upload cs2-refs as an artifact or put it in the Actions cache: it
       # is the game's code, and both can be read by anyone who can see this
       # repository, the cache by pull requests from forks.
       - name: Check out the game assemblies
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: gerbal/cs2-game-refs
           ssh-key: ${{ secrets.CS2_REFS_DEPLOY_KEY }}
@@ -38,7 +38,7 @@ jobs:
 
       # One exact SDK, not the newest 10.0.x: CI fails on any warning, and a new SDK
       # can bring new ones. Bump it in a pull request of its own; see docs/ci.md.
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: 10.0.401
 
