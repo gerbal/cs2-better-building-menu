@@ -138,6 +138,42 @@ namespace BetterBuildingMenu.Domain.Catalog
 			return tabs.Concat(ExtraNetworkCategories()).ToArray();
 		}
 
+		/// <summary>What each school level is called, by level: the name the game gives that
+		/// level's base-game school.</summary>
+		/// <remarks>
+		/// The base game has one school per level, and the game names it in every language it
+		/// ships, so its name serves as the level's: "Grundschule" in German, where the mod's own
+		/// English said "Elementary School" in every language (#67). A DLC's or a mod's school is
+		/// not asked, since its name is its own rather than the level's. The first in vanilla's
+		/// menu order answers, then the lower id; a level with no base-game school is left out,
+		/// and <see cref="BuildingCatalogGrouping.SchoolTierLabel"/> falls back to English for it.
+		/// </remarks>
+		public IReadOnlyDictionary<int, string> SchoolTierNames()
+		{
+			var schools = new Dictionary<int, PrefabIndex>();
+
+			foreach (var entry in All)
+			{
+				if (entry.EducationLevel is not int level
+					|| entry.IsServiceUpgrade
+					|| !entry.IsVanilla
+					|| entry.DlcId.id != GameDlcIds.BaseGame
+					|| string.IsNullOrWhiteSpace(entry.AssetName))
+				{
+					continue;
+				}
+
+				if (!schools.TryGetValue(level, out var first)
+					|| entry.UIOrder < first.UIOrder
+					|| (entry.UIOrder == first.UIOrder && entry.Id < first.Id))
+				{
+					schools[level] = entry;
+				}
+			}
+
+			return schools.ToDictionary(pair => pair.Key, pair => pair.Value.AssetName.Trim());
+		}
+
 		/// <summary>A tab for each kind of network the Roads menu does not already hold.</summary>
 		/// <remarks>Built from what is indexed rather than from the enum, so a subcategory with nothing
 		/// in it draws no tab. Ids match what NetworkMenuExtension.Reframe writes onto the entries.</remarks>

@@ -380,7 +380,13 @@ namespace BetterBuildingMenu.Domain
 		/// the keys above agree by reading the same constants. LabelId carries the game's own
 		/// category id for a menu-category heading; every other label is final text.
 		/// </remarks>
-		public static GroupLabels Labels(BuildingCatalogEntry entry, string? groupBy, IReadOnlyList<string>? milestoneNames = null)
+		/// <param name="schoolTierNames">The game's name for each school level, from
+		/// CatalogIndex.SchoolTierNames; English for a level it has none for.</param>
+		public static GroupLabels Labels(
+			BuildingCatalogEntry entry,
+			string? groupBy,
+			IReadOnlyList<string>? milestoneNames = null,
+			IReadOnlyDictionary<int, string>? schoolTierNames = null)
 		{
 			if (entry is null || !IsGrouped(groupBy))
 			{
@@ -411,7 +417,7 @@ namespace BetterBuildingMenu.Domain
 			if (Is(dimension, Role)) return new GroupLabels(new[] { Text(entry.BuildingType) ?? Other }, null);
 			if (Is(dimension, Progression)) return new GroupLabels(new[] { MilestoneLabel(entry.UnlockMilestone, milestoneNames) }, null);
 			if (Is(dimension, Development)) return new GroupLabels(new[] { Text(entry.DevTreeBranch) ?? Other }, null);
-			if (Is(dimension, SchoolTier)) return new GroupLabels(new[] { SchoolTierLabel(entry.EducationLevel) ?? MenuCategoryLabel(entry) }, null);
+			if (Is(dimension, SchoolTier)) return new GroupLabels(new[] { SchoolTierLabel(entry.EducationLevel, schoolTierNames) ?? MenuCategoryLabel(entry) }, null);
 			if (Is(dimension, Theme)) return new GroupLabels(new[] { Text(entry.Theme) ?? Other }, null);
 			if (Is(dimension, Source)) return new GroupLabels(new[] { Text(entry.DlcId) ?? Text(entry.Provenance) ?? Other }, null);
 			if (Is(dimension, Density)) return new GroupLabels(new[] { DensityTierLabel(entry.ZoneType) }, null);
@@ -530,7 +536,15 @@ namespace BetterBuildingMenu.Domain
 			return label.Length == 0 ? Other : label;
 		}
 
-		public static string? SchoolTierLabel(int? level) => level switch
+		/// <summary>A school level's heading: the game's name for it from <paramref name="names"/>
+		/// (see CatalogIndex.SchoolTierNames), or the English word when that has none.</summary>
+		/// <returns>Null for a level beyond the game's four, which files under its menu category.</returns>
+		public static string? SchoolTierLabel(int? level, IReadOnlyDictionary<int, string>? names = null) =>
+			level is int known && names is not null && names.TryGetValue(known, out var name)
+				? name
+				: EnglishSchoolTierLabel(level);
+
+		private static string? EnglishSchoolTierLabel(int? level) => level switch
 		{
 			1 => "Elementary School",
 			2 => "High School",

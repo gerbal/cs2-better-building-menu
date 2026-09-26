@@ -43,12 +43,21 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void NamesEachSchoolTierTheWayTheGameNamesIt()
+		public void WithoutTheGamesNamesEachSchoolTierIsInEnglish()
 		{
 			Assert.Equal(new[] { "Elementary School" }, Path(Entry() with { EducationLevel = 1 }, "schoolTier"));
 			Assert.Equal(new[] { "High School" }, Path(Entry() with { EducationLevel = 2 }, "schoolTier"));
 			Assert.Equal(new[] { "College" }, Path(Entry() with { EducationLevel = 3 }, "schoolTier"));
 			Assert.Equal(new[] { "University" }, Path(Entry() with { EducationLevel = 4 }, "schoolTier"));
+		}
+
+		[Fact]
+		public void ASchoolTierIsWhatTheGameCallsItsBaseGameSchool()
+		{
+			var names = new System.Collections.Generic.Dictionary<int, string> { [1] = "Grundschule" };
+
+			Assert.Equal(new[] { "Grundschule" }, BuildingCatalogGrouping.Labels(Entry() with { EducationLevel = 1 }, "schoolTier", schoolTierNames: names).Path);
+			Assert.Equal(new[] { "High School" }, BuildingCatalogGrouping.Labels(Entry() with { EducationLevel = 2 }, "schoolTier", schoolTierNames: names).Path);
 		}
 
 		[Fact]

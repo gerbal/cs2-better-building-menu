@@ -2131,3 +2131,19 @@ section above, are decided:
   reference, where vanilla's moves with the city's budget and prices.
 - **Deferred to the translation work:** effect numbers stay invariant, beside their English labels.
   The roadmap's Translations entry carries it.
+
+## 2026-09-26 — school tiers in the game's language (#67, by code reading)
+
+The Education menu's school tabs, and its headings when grouped by school tier, said "Elementary
+School", "High School", "College" and "University" in every language. Each level now takes the
+name the game gives its base-game school: the entry with that `EducationLevel` that is vanilla,
+has the base game's `DlcId` and is not an upgrade, the first in vanilla's menu order and then the
+lower id. The name is the unnumbered `AssetName`. A DLC's or a mod's school is not asked, since its
+name is its own. `CatalogIndex.SchoolTierNames` reads the whole index, so a filter that hides the
+base-game school leaves the name as it is. A level with no base-game school keeps the English word.
+
+Tests: `SchoolTierNamesTests` (the rule, the tabs, the headings) and the UI's tier-tab tests. Each
+condition of the rule was mutated in turn and a test failed each time.
+
+Not yet checked in game: with the game in de-DE, the Education menu's tabs and grouped headings
+should read as the game's own names for its four schools.
