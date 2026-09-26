@@ -339,7 +339,7 @@ namespace BetterBuildingMenu.Services
 			// Where it came from, next to who made it: one axis, one place.
 			// See AddContentGroup.
 			AddContentGroup(groups, packScope is null ? source : packScope.ToArray(), query, vanillaSelected);
-			AddValueGroup(groups, FacetIds.Theme, "Theme", source.Select(entry => entry.Theme), query.Themes, WordFormat.SplitIdentifier);
+			AddValueGroup(groups, FacetIds.Theme, "Theme", source.Select(entry => entry.Theme), query.Themes, BuildingCatalogLabels.ForTheme);
 			// Neither unlock modality is a facet. Development restates the strip's own
 			// axis and collides with Role, and "can I build this now" is the question
 			// Availability answers; both stay reachable as a Group by dimension.
