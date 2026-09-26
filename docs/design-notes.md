@@ -134,3 +134,31 @@ Where the card differs from vanilla on purpose:
 - **An upgrade with both a pollution level and a pollution change** shows two lines under the
   same name, as vanilla's does; vanilla tells the change apart with an icon, which the card
   does not draw.
+
+## Labels in the game's words
+
+Where the game already has a word for what a label names, the label reads the game's word, so
+it appears in each of the game's languages without a translation of ours: category and
+subcategory names (the editor's `Editor.ASSET_CATEGORY_TITLE`, the toolbar's `Services.NAME` and
+`SubServices.NAME`), the "All" tab and chip, themes (`Assets.THEME`), the school levels and the
+building roles. `GameLocaleKeys` and `CatalogIndex.SchoolTierPrefabs` hold the keys. Our English
+is the fallback, and a modded theme, which has no key, keeps its prefab name.
+
+- **A key is used only where it names the same thing, in every language.** Each is read out of
+  the game's `Locale.cok` in all twelve of its languages before it is added. So some ids keep
+  ours although the game has a word nearby: Park and Lights; Fences, which the game leaves
+  English in German; and Foliage, which leaves out the rocks and spawners the Trees category
+  holds. Ids with no counterpart keep ours too, among them Networks, Pipes, Power Lines, Transit
+  Lines, Seaways, the Misc groups and Rocks & Miscellaneous.
+- **Roles take a building's name.** A role reads the name of the plain building it is built
+  around, as a school level does, or the toolbar tab it sits under when it has no one typical
+  building. No two roles may share a name in any language, or a filter would offer the same word
+  twice. The names carry the game's quirks with them: the Italian fire station is "…grande", and
+  the Japanese sewage outlet reads as a treatment plant. The Role filter orders its options by
+  id, so outside English they are not alphabetical by what they say.
+- **Density tiers keep ours.** The game has no word for a tier alone. Its zone names are whole
+  phrases, the zone type, the tier and, for residential and commercial zones, the region, and the
+  region sits somewhere different in each language, so cutting it out leaves debris: Korean
+  keeps "스타일", Japanese "（式）", Russian a trailing dash, and Polish starts lowercase. A tier
+  also spans residential, commercial and office zones, which no one zone name does. The tiers are
+  translated as the mod's own strings instead; see [roadmap.md](roadmap.md).

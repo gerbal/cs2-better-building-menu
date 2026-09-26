@@ -11,7 +11,8 @@ namespace BetterBuildingMenu.Domain
 	/// <remarks>
 	/// The game ships these category names in every language it supports, so the
 	/// lookup asks it first and falls back to the mod's own English key. Partial by
-	/// design: the vocabulary the lens invented has no game key to borrow.
+	/// design: the vocabulary the lens invented has no game key to borrow. See
+	/// docs/design-notes.md, "Labels in the game's words".
 	/// </remarks>
 	public static class GameLocaleKeys
 	{
