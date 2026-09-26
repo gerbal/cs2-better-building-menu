@@ -6,9 +6,7 @@ Open work, roughly in order of value. What has shipped is in
 ## Player-facing
 
 - **Player layout.** Let players re-categorise the panel: move an asset to
-  another tab or menu, and create, rename, reorder, merge or hide tabs. A
-  spec is written and awaiting the owner's review; the research behind it is
-  in [customisation-prior-art.md](customisation-prior-art.md).
+  another tab or menu, and create, rename, reorder, merge or hide tabs.
 - **Translations.** Every translation lacks 162 of the 223 English keys (the
   option labels fall back to English), and `ja-JP`, `pt-BR` and `uk-UA` are
   English throughout. Either connect `crowdin.yml` to a project (with a
@@ -24,13 +22,25 @@ Open work, roughly in order of value. What has shipped is in
   from the match key, looked up through the mod's `ZoneLow` through
   `ZoneSignature` keys, which `GameLocaleKeyTests` requires and nothing reads
   yet. This belongs with the translation work above.
-- **Unmeasured paths.** Placing an upgrade through the upgrades picker, and
-  Road Builder's discarded roads leaving the panel, are known only from
-  reading the code.
+- **Unchecked in game.** Known only from reading the code, or checked on an
+  older game:
+  - placing an upgrade through the upgrades picker;
+  - Road Builder's discarded roads leaving the panel, and an edited road
+    keeping its menu placement (see [indexing.md](indexing.md), "Partial
+    passes");
+  - whether Cohtml 2.2 (game 1.6.2) still needs the floating-surface
+    workarounds (see [design-notes.md](design-notes.md), "Hand-rolled
+    floating surfaces in Cohtml");
+  - whether any prefab carries a `BuildingModule` buffer.
+    `GetSupportedUpgrades` reads one for the modules signature towers take,
+    but a census of one base-game save found none.
 
 ## Structure
 
 - **Smaller cleanups.**
+  - Move the chirper's toasts out of the control pane's way, so the lens can
+    stop sinking the toolbar (see [design-notes.md](design-notes.md),
+    "Patching vanilla's layout for the lens").
   - Name the `BuildingMenuUISystem` partials by responsibility.
   - Settle on one noun for the panel (see the glossary in
     [CONTRIBUTING.md](../CONTRIBUTING.md)).

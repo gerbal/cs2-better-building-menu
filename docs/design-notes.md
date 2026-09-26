@@ -65,13 +65,10 @@ pane — no z-index on our own row can change that. Raising `main-container`
 instead breaks the game's portalled dropdowns, which rely on tree order to win,
 while lowering the toolbar changes exactly the one pair. The toolbar still
 renders (the screen paints no background behind it) and stays hit-testable.
-This is a stopgap; the real fix is moving the toast lane.
+Moving the chirper's toasts out of the pane's way would make this unnecessary; see
+[roadmap.md](roadmap.md).
 
 ## Hand-rolled floating surfaces in Cohtml
-
-Observed on Cohtml 1.64.0.7 (game 1.6.0); not re-checked on 2.2.1.3 (game
-1.6.2f1), whose flex layout is a new algorithm, so re-measure before relying on
-either workaround there.
 
 The filter rail's dropdown surface (`filterRail.module.scss`, `.menu`) states size
 only, because the vanilla `Dropdown` owns its own positioning and painting. A
@@ -84,7 +81,8 @@ already carries:
   Without it the head's text does not rasterise at all.
 
 Both apply to any floating surface built by hand rather than taken from the game's
-own controls.
+own controls. They hold on Cohtml 1.64 (game 1.6.0). Cohtml 2.2 (game 1.6.2) lays out flex
+with a new algorithm, and whether it still needs them is open; see [roadmap.md](roadmap.md).
 
 ## The card against vanilla
 

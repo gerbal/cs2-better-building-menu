@@ -7,6 +7,10 @@ namespace BetterBuildingMenu.Utilities
 	/// Rewrites Unified Icon Library URLs to this mod's vendored copies, so
 	/// prefab thumbnails resolve without that mod installed.
 	/// </summary>
+	/// <remarks>
+	/// So a vendored icon that no source here names can still be drawn: a prefab's
+	/// thumbnail may name it.
+	/// </remarks>
 	public static class IconPath
 	{
 		private const string UnifiedIconLibraryPrefix = "coui://uil/";

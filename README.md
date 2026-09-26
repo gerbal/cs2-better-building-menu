@@ -36,22 +36,20 @@ UI never holds more than a page. Terms are in the glossary in
 
 ## Docs
 
-* [CONTRIBUTING.md](CONTRIBUTING.md): setup, boundaries, the comment rule,
-  glossary.
+* [CONTRIBUTING.md](CONTRIBUTING.md): setup, boundaries, the rule for
+  comments and docs, glossary.
 * [docs/roadmap.md](docs/roadmap.md): open work.
 * [docs/release-checklist.md](docs/release-checklist.md): what to run before
   a release.
 * [docs/ci.md](docs/ci.md): what CI runs, and the private game assemblies the
   C# job builds against.
-* [docs/compatibility.md](docs/compatibility.md): other popular mods,
-  measured.
+* [docs/compatibility.md](docs/compatibility.md): how popular mods fare
+  beside this one, and why.
 * [docs/indexing.md](docs/indexing.md) and
   [docs/design-notes.md](docs/design-notes.md): the reasoning behind the
   indexer and the UI, pointed to from the code.
 * [docs/vanilla-upgrades.md](docs/vanilla-upgrades.md): how vanilla handles
   building upgrades and extensions.
-* [docs/customisation-prior-art.md](docs/customisation-prior-art.md): research
-  for player layout.
 * [docs/FORK.md](docs/FORK.md): provenance and license.
 
 ## Build and test
