@@ -63,6 +63,17 @@ private repository and inside a runner:
 - **Nothing in the job may print the assemblies' contents**, such as a step that decompiles or
   dumps them. Anyone who can see the repository can read the job's log.
 
+## The .NET SDK
+
+`csharp.yml` installs one exact SDK, the `dotnet-version` its `setup-dotnet` step names, rather
+than the newest `10.0.x`. CI fails on any warning, and a newer SDK can bring new ones, so it
+arrives as a change of its own instead of overnight in someone else's pull request. To move to a
+newer SDK, change that version in a pull request of its own and fix whatever its warnings show
+there.
+
+Local builds are not pinned. There is no `global.json`, so the build you play with uses whatever
+.NET 10 SDK is installed. A local build that shows a warning CI does not may just be a newer SDK.
+
 ## What CI does not cover
 
 - The game itself: the assemblies load, but Unity's native side and the game's ECS world do not
