@@ -16,12 +16,14 @@ Open work, roughly in order of value. What has shipped is in
   or ship English only. The card's effect lines belong with this work: their
   labels are English and their numbers invariant, so a comma-decimal language
   reads "1.5" in an effect beside "1,5" elsewhere on the card (#62).
-- **The density-tier keys.** `ZoneLow` through `ZoneSignature` are kept because
-  `GameLocaleKeyTests` requires them, but nothing reads them: the density
-  headings come from `BuildingCatalogLabels.DensityTier`, which returns English
-  that the query engine also matches on. Either give those headings a label
-  separate from the match key and look it up through these keys, or drop the
-  keys and the test together.
+- **The density-tier headings.** They stay English in every language. The game
+  has no word for a tier alone (see [design-notes.md](design-notes.md), "Labels
+  in the game's words"), so they are to be translated as the mod's own strings.
+  The headings come from `BuildingCatalogLabels.DensityTier`, which returns
+  English that the query engine also matches on: give them a label separate
+  from the match key, looked up through the mod's `ZoneLow` through
+  `ZoneSignature` keys, which `GameLocaleKeyTests` requires and nothing reads
+  yet. This belongs with the translation work above.
 - **Unmeasured paths.** Placing an upgrade through the upgrades picker, and
   Road Builder's discarded roads leaving the panel, are known only from
   reading the code.
