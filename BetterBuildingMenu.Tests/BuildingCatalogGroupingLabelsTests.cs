@@ -43,7 +43,7 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void NamesEachSchoolTierTheWayTheGameNamesIt()
+		public void WithoutTheGamesNamesEachSchoolTierIsInEnglish()
 		{
 			Assert.Equal(new[] { "Elementary School" }, Path(Entry() with { EducationLevel = 1 }, "schoolTier"));
 			Assert.Equal(new[] { "High School" }, Path(Entry() with { EducationLevel = 2 }, "schoolTier"));
@@ -52,9 +52,27 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void ASchoolTierIsWhatTheGameCallsItsBaseGameSchool()
+		{
+			var names = new System.Collections.Generic.Dictionary<int, string> { [1] = "Grundschule" };
+
+			Assert.Equal(new[] { "Grundschule" }, BuildingCatalogGrouping.Labels(Entry() with { EducationLevel = 1 }, "schoolTier", schoolTierNames: names).Path);
+			Assert.Equal(new[] { "High School" }, BuildingCatalogGrouping.Labels(Entry() with { EducationLevel = 2 }, "schoolTier", schoolTierNames: names).Path);
+		}
+
+		[Fact]
 		public void FilesANonSchoolUnderItsOwnCategoryNotUnderOther()
 		{
 			Assert.Equal(new[] { "Research" }, Path(Entry() with { EducationLevel = null, UiCategory = "Research" }, "schoolTier"));
+		}
+
+		[Fact]
+		public void ANonSchoolsHeadingCarriesItsCategoryIdForTheGamesName()
+		{
+			// Beside the school levels in the game's language, a research heading takes the game's
+			// name for its category too, as a menuCategory heading does.
+			Assert.Equal("Research", BuildingCatalogGrouping.Labels(Entry() with { EducationLevel = null, UiCategory = " Research " }, "schoolTier").LabelId);
+			Assert.Null(BuildingCatalogGrouping.Labels(Entry() with { EducationLevel = 1, UiCategory = "Education" }, "schoolTier").LabelId);
 		}
 
 		[Fact]

@@ -27,6 +27,29 @@ describe("education tier tabs", () => {
     assert.deepEqual(tabs.map((t) => t.count), [12, 8, 5, 2]);
   });
 
+  it("says the game's name for each level, which C# sends as the label", () => {
+    // In German the base-game schools are the level's names; the English
+    // words were drawn in every language before (#67).
+    const tabs = schoolTierTabs([
+      { id: "2", count: 8, icon: "", label: "Gymnasium" },
+      { id: "1", count: 12, icon: "", label: " Grundschule " },
+    ]);
+
+    assert.deepEqual(tabs.map((t) => t.label), ["Grundschule", "Gymnasium"]);
+  });
+
+  it("falls back to English for a tab C# sent no label for", () => {
+    // An empty label reaches the UI as the id (MenuBranchCount.DisplayLabel),
+    // and a "2" on the tab would read as a count.
+    const tabs = schoolTierTabs([
+      { id: "1", count: 12, icon: "", label: "1" },
+      { id: "2", count: 8, icon: "", label: "" },
+      { id: "3", count: 5, icon: "" },
+    ]);
+
+    assert.deepEqual(tabs.map((t) => t.label), ["Elementary School", "High School", "College"]);
+  });
+
   it("drops the levels that are not tiers", () => {
     // 0 is a capacity upgrade with no tier of its own and 5 is the outside
     // connection. The backend already filters them; this is the second wall.

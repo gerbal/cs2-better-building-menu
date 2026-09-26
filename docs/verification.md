@@ -2131,3 +2131,30 @@ section above, are decided:
   reference, where vanilla's moves with the city's budget and prices.
 - **Deferred to the translation work:** effect numbers stay invariant, beside their English labels.
   The roadmap's Translations entry carries it.
+
+## 2026-09-26 — school tiers in the game's language (#67, by code reading)
+
+The Education menu's school tabs, and its headings when grouped by school tier, said "Elementary
+School", "High School", "College" and "University" in every language. Each level now takes the
+name the game gives the plain school it is built around, the owner's suggestion:
+`ElementarySchool01`, `HighSchool01`, `College01` and `University01`
+(`CatalogIndex.SchoolTierPrefabs`). They are named because nothing in the data singles them out: a
+Small Elementary School teaches level 1 too, and the Medical and Technical Universities level 4, so
+the first in vanilla's menu order could be any of them. `ElementarySchool01` and `University01` are
+the game's names (its description and extension wing, and the upgrade census in
+[vanilla-upgrades.md](vanilla-upgrades.md)); the other two follow their pattern and are unconfirmed.
+
+Only the game's own prefab of that level answers, and its unnumbered `AssetName` is the name. A
+level whose school is missing, or whose name an earlier level already has, keeps the English word.
+The names come from the whole index, so a filter that hides the school leaves them as they are.
+Grouped by school tier, a non-school heading such as Research now carries its category's id, so it
+takes the game's name for the category like a menuCategory heading.
+
+Tests: `SchoolTierNamesTests` (the rule, a DLC filter through the adapter, the tabs and the
+headings), the grouping label tests and the UI's tier-tab tests. Each condition of the rule, the
+adapter's wiring and the category id were mutated in turn, and a test failed each time.
+
+Not yet checked in game. With the game in de-DE, hover the Education menu's school tabs, which draw
+Roman numerals and name the level in their tooltip, and group by school tier: all four levels and
+Research should read in German, as the game's own panels name them. A level still in English means
+its prefab name is wrong. In en-US they should read as before.
