@@ -11,6 +11,11 @@
   Run it again after pulling a change to `package-lock.json`: an older
   install lacks the TypeScript and eslint that `npm test` runs.
   The UI's tests stub the game's `cs2/*` modules, so they run without the game.
+- **The game's source.** Read a decompilation of the game's assemblies (ILSpy
+  or similar) before relying on how a game system behaves. It is the game's
+  code, as are the assemblies themselves: never copy from either into this
+  repository, an issue, a pull request or a CI log. Name the type or member
+  instead.
 
 ## Build and test
 
