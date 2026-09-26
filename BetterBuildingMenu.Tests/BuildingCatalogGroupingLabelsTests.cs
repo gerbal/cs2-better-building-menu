@@ -67,6 +67,15 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void ANonSchoolsHeadingCarriesItsCategoryIdForTheGamesName()
+		{
+			// Beside the school levels in the game's language, a research heading takes the game's
+			// name for its category too, as a menuCategory heading does.
+			Assert.Equal("Research", BuildingCatalogGrouping.Labels(Entry() with { EducationLevel = null, UiCategory = " Research " }, "schoolTier").LabelId);
+			Assert.Null(BuildingCatalogGrouping.Labels(Entry() with { EducationLevel = 1, UiCategory = "Education" }, "schoolTier").LabelId);
+		}
+
+		[Fact]
 		public void CarriesTheGamesCategoryIdOnTheCategoryLevelOnly()
 		{
 			// The renderer resolves LabelId back to the game's own category name.

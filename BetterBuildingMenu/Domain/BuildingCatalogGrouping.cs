@@ -417,7 +417,19 @@ namespace BetterBuildingMenu.Domain
 			if (Is(dimension, Role)) return new GroupLabels(new[] { Text(entry.BuildingType) ?? Other }, null);
 			if (Is(dimension, Progression)) return new GroupLabels(new[] { MilestoneLabel(entry.UnlockMilestone, milestoneNames) }, null);
 			if (Is(dimension, Development)) return new GroupLabels(new[] { Text(entry.DevTreeBranch) ?? Other }, null);
-			if (Is(dimension, SchoolTier)) return new GroupLabels(new[] { SchoolTierLabel(entry.EducationLevel, schoolTierNames) ?? MenuCategoryLabel(entry) }, null);
+			if (Is(dimension, SchoolTier))
+			{
+				if (SchoolTierLabel(entry.EducationLevel, schoolTierNames) is { } tier)
+				{
+					return new GroupLabels(new[] { tier }, null);
+				}
+
+				// Not a school, such as a research facility: its category's heading, with the
+				// game's id so the UI can say it in the game's language, as menuCategory's does.
+				var category = (entry.UiCategory ?? string.Empty).Trim();
+
+				return new GroupLabels(new[] { MenuCategoryLabel(entry) }, category.Length == 0 ? null : category);
+			}
 			if (Is(dimension, Theme)) return new GroupLabels(new[] { Text(entry.Theme) ?? Other }, null);
 			if (Is(dimension, Source)) return new GroupLabels(new[] { Text(entry.DlcId) ?? Text(entry.Provenance) ?? Other }, null);
 			if (Is(dimension, Density)) return new GroupLabels(new[] { DensityTierLabel(entry.ZoneType) }, null);
