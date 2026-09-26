@@ -22,8 +22,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          # package.json's engines floor: the harness's loader hooks, the CDP
-          # scripts' global WebSocket, and ESLint 10.
+          # package.json's engines floor: the harness's loader hooks and ESLint 10.
           node-version: 22
           cache: npm
           cache-dependency-path: BetterBuildingMenu/UI/package-lock.json
