@@ -195,6 +195,22 @@ namespace BetterBuildingMenu.Systems
 			PublishExtensionMenu(building, _indexer.Source);
 		}
 
+		/// <summary>
+		/// Closes the menu the lens stands in for when the map selects something new, so the
+		/// game draws that selection's panel. See SelectionHandOff.
+		/// </summary>
+		private void HandSelectionToTheGame()
+		{
+			var selected = _selectedInfoUISystem.selectedEntity;
+			var changed = selected != _lastSelectedEntity;
+			_lastSelectedEntity = selected;
+
+			if (SelectionHandOff.ShouldCloseMenu(changed, selected != Entity.Null, _lensMenuOpen, _LensOwnsCurrentMenu.Value))
+			{
+				CloseLens();
+			}
+		}
+
 		// Its own method so the lookup's closure is allocated only on a rebuild, not on
 		// every frame RefreshExtensionMenu polls and returns early.
 		private void PublishExtensionMenu(PrefabIndex building, CatalogSource source)
