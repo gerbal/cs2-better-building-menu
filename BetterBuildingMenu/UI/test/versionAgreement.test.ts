@@ -41,4 +41,13 @@ describe("the publish configuration", () => {
     assert.doesNotMatch(xml, /&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)/);
     assert.doesNotMatch(xml.replace(/<!--[\s\S]*?-->/g, "").replace(/<[^>]*>/g, ""), /</);
   });
+
+  it("keeps the store notes within Paradox Mods' 5000 characters", () => {
+    // The server refuses a longer changelogEntry after sign-in, and nothing
+    // before the upload says so: 0.2.0's first draft was 6819.
+    const xml = read("../../Properties/PublishConfiguration.xml");
+    const notes = /<ChangeLog>([\s\S]*?)<\/ChangeLog>/.exec(xml)?.[1] ?? "";
+    const text = notes.trim().replace(/&(amp|lt|gt|quot|apos);/g, "_");
+    assert.ok(text.length >= 1 && text.length <= 5000, `${text.length} characters`);
+  });
 });

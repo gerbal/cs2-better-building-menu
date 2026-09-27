@@ -58,56 +58,56 @@ This mod was developed with AI assistance (Anthropic's Claude), under human dire
 0.2.0
 
 Changes
-* Each menu's tabs are in the order of the game's own tab row, the menu picker follows the toolbar's order, and the All tab's headings follow the tabs. In Roads, Roundabouts now come before Cul-de-sacs; in Landscaping, Piers and Quays come before Bike Paths.
-* Development tree tabs and headings use the game's own names, in the game's language. They were English in every language, for example Police Headquarters, Prison, Welfare Office, City Hall and Central Bank.
-* Education's school tabs, and its headings grouped by school tier, name each level after the game's own school for it, in the game's language: Grundschule in German. They read Elementary School, High School, College and University in every language.
-* Subcategory headings and labels, the All tab and chip, and theme names use the game's own words, in the game's language. In English, Paths now reads Pathways, Shrubs &amp; Bushes reads Bushes, and Extractor Zones reads Specialized Industry.
-* The Role filter and the role headings use the game's name for each role, in the game's language, for example Hospital, Fire Station and Garbage Management. They showed the role's id split into words, in English.
-* An asset that several development tree nodes unlock is filed under one of them, on the Development tabs and headings, by a rule modelled on how the game unlocks it. Before, it went under whichever node came first, which could differ between setups.
-* Changing most filters or a range, or clearing them, starts the list again at its first 100 rows instead of keeping a list grown with Load more.
+* Each menu's tabs follow the game's own tab row, the menu picker follows the toolbar, and the All tab's headings follow the tabs.
+* Development tree tabs and headings use the game's own names, in the game's language, instead of English.
+* Education's school tabs and school-tier headings name each level after the game's own school, in the game's language.
+* Subcategory headings and labels, the All tab and chip, and theme names use the game's own words, in the game's language. In English, Paths reads Pathways, Shrubs &amp; Bushes reads Bushes, and Extractor Zones reads Specialized Industry.
+* The Role filter and role headings use the game's name for each role, in the game's language.
+* An asset that several development tree nodes unlock is filed under one of them by a rule modelled on how the game unlocks it, instead of whichever came first.
+* Changing or clearing a filter or a range starts the list again at its first 100 rows.
 * The footer's counts group their digits the way the game does.
 * Replace the vanilla build menu takes effect at once, without a restart. Turning it off hands an open menu back to the game.
 
 Asset details
-* Hovering an asset shows more of what the game's own tooltip shows: pollution levels, a power plant's voltage, power line capacity on roads, transformer capacity, input and output, water pipes on roads, and transport stops. A network's cost includes its auxiliary networks. Most lines the game's tooltip also has now use its wording, in every language the game ships; they were English everywhere.
-* An incinerator's Capacity is its garbage store, a weight like a landfill's, instead of a figure in megawatts. Its electricity gets a Power output line.
-* Power output adds up every source a building has (plant, wind, solar, garbage, hydro, geothermal and emergency generator) instead of showing only the largest.
-* Zoned and signature buildings no longer show an upkeep figure, as in the game's tooltip; what they showed was what their renters pay. The table's Upkeep column, sort and range skip them.
-* Upgrades read as the game reads them: Resource consumption -20 % where it said Upkeep +0 %, pollution changes as signed percentages with reductions included, and graduation as +5 % instead of x0.05.
-* Negative student and prisoner wellbeing and health, and negative work conditions, are shown with their sign; they were left out.
-* Cemetery and crematorium capacity is a plain number, as in the game's tooltip, instead of a number of plots.
-* Comfort is shown for parking and transport stops too, a geothermal plant says it needs ground water, and a hydroelectric dam shows its own cost and upkeep instead of per-km figures.
-* Effects use the game's units, a shelter's vehicles read Evacuation buses where they said Shelter vans, homes per cell keep a decimal, a road with no upkeep has no upkeep line, and deathcare processing rounds up.
+* Hovering an asset shows more of the game's own tooltip: pollution levels, a power plant's voltage, power line capacity on roads, transformer capacity, input and output, water pipes on roads, and transport stops. A network's cost includes its auxiliary networks. Most lines use the game's wording, in every language it ships.
+* An incinerator's Capacity is its garbage store, and its electricity gets a Power output line.
+* Power output adds up every source a building has instead of showing only the largest.
+* Zoned and signature buildings show no upkeep figure, as in the game's tooltip. The table's Upkeep column, sort and range skip them.
+* Upgrades read as the game reads them: Resource consumption -20 %, pollution changes as signed percentages, and graduation as +5 %.
+* Negative wellbeing, health and work conditions are shown with their sign.
+* Cemetery and crematorium capacity is a plain number, as in the game's tooltip.
+* Comfort is shown for parking and transport stops, a geothermal plant says it needs ground water, and a hydroelectric dam shows its own cost and upkeep.
+* Effects use the game's units, a shelter's vehicles read Evacuation buses, homes per cell keep a decimal, a road with no upkeep has no upkeep line, and deathcare processing rounds up.
 
 Fixes
-* With a menu open, clicking a building on the map shows its info panel. The building was selected, but its panel stayed hidden behind the menu, so the click seemed to do nothing.
-* After a search, Enter picks the best match you can place, skipping locked and already built assets, in every view. With grouped results it could pick the wrong building, and in Table view it did nothing.
-* A trailing space in the search box no longer loses matches: "clinic " found no Medical Clinic.
-* With a tab selected, the number of matches elsewhere is what Search everything finds. It almost always said 0.
+* With a menu open, clicking a building on the map shows its info panel.
+* After a search, Enter picks the best match you can place, in every view.
+* A trailing space in the search box no longer loses matches.
+* With a tab selected, the number of matches elsewhere is what Search everything finds.
 * Typing in a filter's own search box no longer breaks the panel.
-* The resize edge stays under the cursor while dragging, at every resolution. At 1080p it ran ahead of it.
+* The resize edge stays under the cursor while dragging, at every resolution.
 * Load more says how many rows it adds, and a double click loads once.
-* The metric filter's badge counts the ranges set, as its drawer does.
-* The category chip's picker offers only the category tabs shown. Picking a hidden one showed an empty list.
-* The Roads menu's Small Roads tab and heading no longer carry a stray line break.
-* The Content filter's icon is drawn; it was blank.
-* The reverse-sort button's tooltip reads Reverse sort; it read reverse this sort.
+* The metric filter's badge counts the ranges set.
+* The category chip's picker offers only the tabs shown.
+* The Small Roads tab and heading no longer carry a stray line break.
+* The Content filter's icon is drawn.
+* The reverse-sort button's tooltip reads Reverse sort.
 * The Options screen shows its labels in English in the 13 languages that had none translated.
 * On a Turkish system, words such as Industrial are capitalised correctly.
-* If the panel fails while drawing, the game's own menu, upgrades picker or tool options take its place instead of the interface breaking. If indexing fails, the panel keeps the city's last complete index, or hands the menus to the game until there is one.
-* With the upgrades picker open, the mouse wheel zooms and extensions can be placed above it. The whole area above the picker took the mouse.
-* A filter row with only two icons keeps them on one line. At some resolutions the second wrapped below the first.
-* Search everything shows its whole label. At 1280x720 it was cut to "Search ev".
-* A name longer than 56 characters is shortened in the middle in the list and card views. One asset ships its name six times over, and its card stretched across the panel.
+* If the panel fails while drawing, the game's own menu, upgrades picker or tool options take its place. If indexing fails, the panel keeps the city's last complete index.
+* With the upgrades picker open, the mouse wheel zooms and extensions can be placed above it.
+* A filter row with two icons keeps them on one line at every resolution.
+* Search everything shows its whole label at 1280x720.
+* Very long names are shortened in the middle in the list and card views.
 
 Compatibility
-* Road Builder: after an edit, the old road leaves the list at once and the new one appears in its menu and tab at once. Before, the old road stayed listed, and could be picked, for a second or two, and the new one appeared a few seconds later. Only the edited roads are re-read, numbered duplicates keep their numbers, and roads Road Builder discarded no longer appear on the first load of a session.
-* Find It: an asset whose Find It tag names a category pair the panel does not have is listed under its own category instead of being dropped.
-* Asset UI Manager and other mods that move a category or an asset between menus, at load or mid-game: it gets one heading in the All tab, in its place, instead of a second one.
+* Road Builder: an edited road is replaced in its menu and tab at once, numbered duplicates keep their numbers, and discarded roads no longer appear on a session's first load.
+* Find It: an asset whose tag names a category pair the panel does not have is listed under its own category instead of being dropped.
+* Asset UI Manager and other mods that move a category or an asset between menus: it gets one heading in the All tab, in its place.
 
 Performance
 * Typing a search or dragging the resize edge no longer redraws every row.
-* The mod no longer copies every object and road in the city once a minute for a feature nothing used.
-* A full index pass, as at load, no longer checks each building's mesh against every other's, and building or bulldozing a unique building no longer refreshes a closed panel.
+* The mod no longer copies every object and road in the city once a minute.
+* A full index pass no longer checks each building's mesh against every other's, and building or bulldozing a unique building no longer refreshes a closed panel.
 </ChangeLog>
 </Publish>
