@@ -77,6 +77,8 @@ namespace BetterBuildingMenu.Systems
 		/// </summary>
 		private ValueBindingHelper<BuildingExtensionMenu> _BuildingExtensionMenu = null!;
 		private Game.UI.InGame.SelectedInfoUISystem _selectedInfoUISystem = null!;
+		// The selection HandSelectionToTheGame saw last frame, to tell a new one from a kept one.
+		private Unity.Entities.Entity _lastSelectedEntity;
 		/// <summary>The upgradable the extension menu was last built for, and the index it was built from.</summary>
 		private Unity.Entities.Entity _extensionMenuFor;
 		private int _extensionMenuGeneration;
@@ -310,6 +312,7 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			RefreshExtensionMenu();
+			HandSelectionToTheGame();
 
 			base.OnUpdate();
 		}
