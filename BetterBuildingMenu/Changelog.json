@@ -9,6 +9,9 @@
         "Changes": [
           "Each menu's tabs are in the order of the game's own tab row, the menu picker follows the toolbar's order, and the All tab's headings follow the tabs. In Roads, Roundabouts now come before Cul-de-sacs; in Landscaping, Piers and Quays come before Bike Paths.",
           "Development tree tabs and headings use the game's own names, in the game's language. They were English in every language, for example Police Headquarters, Prison, Welfare Office, City Hall and Central Bank.",
+          "Education's school tabs, and its headings grouped by school tier, name each level after the game's own school for it, in the game's language: Grundschule in German. They read Elementary School, High School, College and University in every language.",
+          "Subcategory headings and labels, the All tab and chip, and theme names use the game's own words, in the game's language. In English, Paths now reads Pathways, Shrubs & Bushes reads Bushes, and Extractor Zones reads Specialized Industry.",
+          "The Role filter and the role headings use the game's name for each role, in the game's language, for example Hospital, Fire Station and Garbage Management. They showed the role's id split into words, in English.",
           "An asset that several development tree nodes unlock is filed under one of them, on the Development tabs and headings, by a rule modelled on how the game unlocks it. Before, it went under whichever node came first, which could differ between setups.",
           "Changing most filters or a range, or clearing them, starts the list again at its first 100 rows instead of keeping a list grown with Load more.",
           "The footer's counts group their digits the way the game does.",
@@ -45,7 +48,11 @@
           "The reverse-sort button's tooltip reads Reverse sort; it read reverse this sort.",
           "The Options screen shows its labels in English in the 13 languages that had none translated.",
           "On a Turkish system, words such as Industrial are capitalised correctly.",
-          "If the panel fails while drawing, the game's own menu, upgrades picker or tool options take its place instead of the interface breaking. If indexing fails, the panel keeps the city's last complete index, or hands the menus to the game until there is one."
+          "If the panel fails while drawing, the game's own menu, upgrades picker or tool options take its place instead of the interface breaking. If indexing fails, the panel keeps the city's last complete index, or hands the menus to the game until there is one.",
+          "With the upgrades picker open, the mouse wheel zooms and extensions can be placed above it. The whole area above the picker took the mouse.",
+          "A filter row with only two icons keeps them on one line. At some resolutions the second wrapped below the first.",
+          "Search everything shows its whole label. At 1280x720 it was cut to \"Search ev\".",
+          "A name longer than 56 characters is shortened in the middle in the list and card views. One asset ships its name six times over, and its card stretched across the panel."
         ]
       },
       {
