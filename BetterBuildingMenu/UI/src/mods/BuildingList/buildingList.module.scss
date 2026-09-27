@@ -90,8 +90,9 @@
 }
 
 .name {
-  // Never truncated. That is the mode's entire reason to exist — if a name
-  // needs an ellipsis here, the tile should get wider, not the name shorter.
+  // Not truncated by width. That is the mode's entire reason to exist — if a
+  // name needs an ellipsis here, the tile should get wider, not the name
+  // shorter. Only a runaway name is cut, by length, in listLabel.
   white-space: nowrap;
   font-size: var(--fontSizeS);
   color: var(--menuText1Normal);

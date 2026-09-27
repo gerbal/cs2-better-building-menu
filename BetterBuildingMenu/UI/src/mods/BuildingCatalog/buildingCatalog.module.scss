@@ -358,6 +358,9 @@
 .scopeNoticeAction {
   @include _base.transparentButton(false, true);
   flex: 0 0 auto;
+  // The icon variant fixes the width at 24rem, which cut the label to
+  // "Search ev" at 720p. This button carries words, so it takes their width.
+  width: auto !important;
   min-height: 26rem;
   padding: 3rem 8rem;
   border-radius: 3rem;

@@ -5,11 +5,20 @@
 // The frame is the build menu's, rule for rule: buildingMenuSurface's .topBar
 // for the header and its .content for the body. Vanilla draws this slot as a
 // Panel, so without these the rows sit on bare black.
+// Click-through itself, solid in its children. The game's tool column lays
+// this root out as tall as the column, from the top of the screen down to the
+// toolbar, with the drawn panel at its foot; a root that took the pointer
+// swallowed the wheel and every click above the menu, so the camera would not
+// zoom and an extension could not be placed there.
 .panel {
   display: flex;
   flex-direction: column;
   min-width: 0;
-  pointer-events: auto;
+  pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
 }
 
 .header {

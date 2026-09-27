@@ -12,6 +12,7 @@ import {
 } from "domain/buildingLensMetricFormat";
 import { canPlace, entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
+import { listLabel } from "domain/tileLabel";
 import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
 import { useUnitSystem } from "domain/unitSettings";
@@ -88,7 +89,8 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId
     <div className={styles.list}>
       {/* In page order, which every view shares; nothing is re-ranked here. */}
       {entries.map((entry) => {
-        const label = entry.name || entry.prefabName;
+        const fullName = entry.name || entry.prefabName;
+        const label = listLabel(fullName);
         const cost = formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance);
         const lot = formatLotDimensions(entry.lotWidth, entry.lotDepth);
         // A road's lot is 0x0 and a zone has none: "0 × 0" measures something
@@ -115,7 +117,7 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId
               aria-label={
                 (() => {
                   const word = entryStateWord(entry, lockedLabel, builtLabel);
-                  return word ? `${label} — ${word}` : label;
+                  return word ? `${fullName} — ${word}` : fullName;
                 })()
               }
               aria-disabled={!canPlace(entry) ? "true" : undefined}

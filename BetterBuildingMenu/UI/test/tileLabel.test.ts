@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  LIST_NAME_MAX_CHARS,
+  listLabel,
   shortenTileLabel,
   stripRedundantNamePrefix,
   tableLabelCharBudget,
@@ -313,5 +315,20 @@ describe("The ellipsis costs the same on every path", () => {
         assert.ok(cost <= LINE, `"${line}" costs ${cost} of ${LINE} (${name})`);
       }
     }
+  });
+});
+
+describe("list and card row names", () => {
+  it("draws real names whole, the longest vanilla one included", () => {
+    const longest = "Fishing And Open Water Fish Farming Area Hub";
+    assert.equal(listLabel(longest), longest);
+  });
+
+  it("cuts a name an asset ships repeated, so one row cannot span the panel", () => {
+    const repeated = "Oriental Pearl Radio & TV Tower".repeat(6);
+    const drawn = listLabel(repeated);
+    assert.ok(drawn.length <= LIST_NAME_MAX_CHARS, drawn);
+    assert.ok(drawn.startsWith("Oriental Pearl"), drawn);
+    assert.ok(drawn.includes("…"), drawn);
   });
 });

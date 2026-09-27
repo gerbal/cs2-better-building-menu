@@ -399,8 +399,11 @@ describe("the extension picker wears the same panel frame as the build menu", ()
     }
   });
 
-  it("takes the pointer, as vanilla's Panel does", () => {
-    assert.equal(picker(".panel")["pointer-events"], "auto");
+  it("takes the pointer only where it draws", () => {
+    // The tool column lays the root out as tall as the column, so a root that
+    // took the pointer swallowed the wheel and every click above the menu.
+    assert.equal(picker(".panel")["pointer-events"], "none");
+    assert.equal(picker(".panel > *")["pointer-events"], "auto");
   });
 });
 
