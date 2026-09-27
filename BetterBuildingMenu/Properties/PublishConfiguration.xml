@@ -80,6 +80,7 @@ Asset details
 * Effects use the game's units, a shelter's vehicles read Evacuation buses where they said Shelter vans, homes per cell keep a decimal, a road with no upkeep has no upkeep line, and deathcare processing rounds up.
 
 Fixes
+* With a menu open, clicking a building on the map shows its info panel. The building was selected, but its panel stayed hidden behind the menu, so the click seemed to do nothing.
 * After a search, Enter picks the best match you can place, skipping locked and already built assets, in every view. With grouped results it could pick the wrong building, and in Table view it did nothing.
 * A trailing space in the search box no longer loses matches: "clinic " found no Medical Clinic.
 * With a tab selected, the number of matches elsewhere is what Search everything finds. It almost always said 0.
