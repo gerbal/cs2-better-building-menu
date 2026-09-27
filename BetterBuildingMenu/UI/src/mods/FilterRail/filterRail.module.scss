@@ -3,11 +3,15 @@
 // The rail itself is one row. Each dimension opens the game's own dropdown,
 // which floats above the layout, so an open filter costs nothing in the
 // layout — the whole reason this replaces the stacked facet and metric drawers.
+// It takes the row's free width rather than hugging its icons. Hugged, the
+// rail was exactly as wide as its icons, and at a resolution where 1rem is a
+// fraction of a pixel the rounding wrapped the last icon onto a second line.
 .rail {
   position: relative;
   display: flex;
   flex-direction: column;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 // Inside the game's options bank now, so no padding or rule of its own — the
@@ -17,6 +21,8 @@
   flex-direction: row;
   align-items: center;
   flex-wrap: wrap;
+  // Right-aligned, where the hugging rail used to put them.
+  justify-content: flex-end;
 }
 
 // Vanilla's own icon-button treatment, taken from the Theme row this rail sits
