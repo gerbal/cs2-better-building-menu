@@ -31,3 +31,14 @@ describe("the release version", () => {
     });
   }
 });
+
+describe("the publish configuration", () => {
+  it("is well-formed XML where the changelog's text can break it", () => {
+    // ModPublisher refuses a file with a bare ampersand before it signs in, and
+    // the changelog is prose that names things like "Shrubs & Bushes". Every &
+    // must open an entity.
+    const xml = read("../../Properties/PublishConfiguration.xml");
+    assert.doesNotMatch(xml, /&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[0-9a-fA-F]+);)/);
+    assert.doesNotMatch(xml.replace(/<!--[\s\S]*?-->/g, "").replace(/<[^>]*>/g, ""), /</);
+  });
+});
