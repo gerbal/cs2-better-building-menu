@@ -68,7 +68,7 @@ instead breaks the game's portalled dropdowns, which rely on tree order to win,
 while lowering the toolbar changes exactly the one pair. The toolbar still
 renders (the screen paints no background behind it) and stays hit-testable.
 Moving the chirper's toasts out of the pane's way would make this unnecessary; see
-[roadmap.md](roadmap.md).
+[issue #104](https://github.com/gerbal/cs2-better-building-menu/issues/104).
 
 ## Hand-rolled floating surfaces in Cohtml
 
@@ -84,7 +84,7 @@ already carries:
 
 Both apply to any floating surface built by hand rather than taken from the game's
 own controls. They hold on Cohtml 1.64 (game 1.6.0). Cohtml 2.2 (game 1.6.2) lays out flex
-with a new algorithm, and whether it still needs them is open; see [roadmap.md](roadmap.md).
+with a new algorithm, and whether it still needs them is open; see [issue #102](https://github.com/gerbal/cs2-better-building-menu/issues/102).
 
 ## The card against vanilla
 
@@ -121,7 +121,7 @@ Where the card differs from vanilla on purpose:
   no capacity draws no capacity line, where vanilla binds a zero.
 - **Effect numbers are invariant**, beside English labels, so a comma-decimal language reads
   "1.5" in an effect line beside "1,5" elsewhere on the card. This waits on the translation
-  work in [roadmap.md](roadmap.md).
+  work in [issue #98](https://github.com/gerbal/cs2-better-building-menu/issues/98).
 - **Some labels stay ours.** "Voltage"; "Water pipes", where the game's "Pipes" would sit beside
   a road's own "Carries" line; a zone's upkeep, which its renters pay, where the game's
   `Properties.UPKEEP` names what the city pays to run a building; helicopters and purification,
@@ -164,4 +164,4 @@ is the fallback, and a modded theme, which has no key, keeps its prefab name.
   region sits somewhere different in each language, so cutting it out leaves debris: Korean
   keeps "스타일", Japanese "（式）", Russian a trailing dash, and Polish starts lowercase. A tier
   also spans residential, commercial and office zones, which no one zone name does. The tiers are
-  to be translated as the mod's own strings instead; see [roadmap.md](roadmap.md).
+  to be translated as the mod's own strings instead; see [issue #99](https://github.com/gerbal/cs2-better-building-menu/issues/99).

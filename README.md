@@ -49,20 +49,29 @@ Setup, packaging and deploying are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Docs
 
+Start here:
+
 * [CONTRIBUTING.md](CONTRIBUTING.md): setup, building and trying it in game,
   boundaries, the rule for comments and docs, glossary.
-* [docs/roadmap.md](docs/roadmap.md): open work.
+* [Open issues](https://github.com/gerbal/cs2-better-building-menu/issues):
+  open work, and what is not yet checked in game.
+
+When you work on that part of the mod:
+
+* [docs/design-notes.md](docs/design-notes.md) and
+  [docs/indexing.md](docs/indexing.md): the reasoning behind the UI and the
+  indexer. The code links to the heading that explains it.
+* [docs/vanilla-upgrades.md](docs/vanilla-upgrades.md): how vanilla handles
+  building upgrades and extensions, behind the upgrades picker.
+* [docs/compatibility.md](docs/compatibility.md): what lets other mods work
+  beside this one, and how popular ones fared.
+
+For maintainers:
+
 * [docs/release-checklist.md](docs/release-checklist.md): what to run before
   a release.
 * [docs/ci.md](docs/ci.md): what CI runs, and the private game assemblies the
   C# job builds against.
-* [docs/compatibility.md](docs/compatibility.md): how popular mods fare
-  beside this one, and why.
-* [docs/indexing.md](docs/indexing.md) and
-  [docs/design-notes.md](docs/design-notes.md): the reasoning behind the
-  indexer and the UI, pointed to from the code.
-* [docs/vanilla-upgrades.md](docs/vanilla-upgrades.md): how vanilla handles
-  building upgrades and extensions.
 * [docs/FORK.md](docs/FORK.md): provenance and license.
 
 ## Compatibility

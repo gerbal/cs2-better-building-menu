@@ -7,8 +7,8 @@ In short, the index holds one entry per indexed prefab, together with the menus,
 milestones and dev tree needed to file them.
 
 - A **full pass** rebuilds it from nothing: on each load of a game, map or the editor ("Load
-  timing"), and in a few other cases such as a language change ("Milestones"). A full pass that
-  fails publishes nothing ("A pass that fails").
+  timing"), and in a few other cases such as a language change ("Language changes"). A full
+  pass that fails publishes nothing ("A pass that fails").
 - A **partial pass** re-reads the prefabs the game created or changed in a frame, drops the ones
   it removed, and refreshes where every entry sits in the menus ("Partial passes").
 - Each pass runs the **processors**, which decide what is indexed and under which category
@@ -59,7 +59,8 @@ So nothing the last city indexed is served to the next one, even if the next one
 fails. The system comes back on at `OnGameLoaded` for a game or map, or at loading-complete for
 the game or the editor. The main menu's Cleanup load passes neither, so no pass of any kind runs
 outside a city: no partial pass, no unlock, and not the pass a language change triggers (see
-"Milestones"). The main menu at boot raises no preload at all, and the system starts off there.
+"Language changes"). The main menu at boot raises no preload at all, and the system starts off
+there.
 
 At loading-complete, lock state is the one fact the earlier pass could plausibly have got
 wrong. `LockStateDrift` checks exactly that, with the same `Locked` read `ApplyUnlocks` uses, over
@@ -334,7 +335,7 @@ catalog drops everything vanilla does not place in Zones: the `ZoneData` query r
 prefab that exists, including internal ones the player can never pick (the area-hub zones the
 specialised-industry system uses, and the theme-less base zones whose EU and NA variants the menu
 offers instead). The trim runs whether or not the walk found the menu, so if the walk found
-nothing under Zones, only the fallback below is left (see [roadmap.md](roadmap.md)).
+nothing under Zones, only the fallback below is left (see [issue #107](https://github.com/gerbal/cs2-better-building-menu/issues/107)).
 
 `IndexExtractorAreas` is the fallback for when the walk adds nothing to the zone catalog. It
 queries
@@ -437,101 +438,52 @@ the choice of the first matching area.
 
 ## Dev tree branches
 
-A service's tree is a free `Basic<Service>` root with chains hanging off it.
+A service's tree is a free `Basic<Service>` root with chains hanging off it. The rules are stated
+where they are applied: `IndexDevTreeBranches`, `DevTreeLayout`, `DevTreeGates`,
+`DevTreeNodeName` and `ProgressionIndex.BranchOf`. This section holds the reasoning and examples
+they leave out.
 
-**A node is its own branch.** `IndexDevTreeBranches` labels each node with its own name, not with
-the branch below the root that it hangs off. Collapsing chains reads as the game's structure and
-is not: it files the Central Intelligence Bureau under "Police Headquarters" and the Nuclear
-Power Plant under "Gas Power Plant", which are separate unlocks the player buys separately.
+**A node is its own branch.** Collapsing a chain to the branch below the root looks like the
+game's structure and is not: it would also file the Nuclear Power Plant under "Gas Power Plant",
+a separate unlock the player buys separately.
 
-**The root bucket is named after the tab it sits under.** Everything the tree never gated falls
-into the root. The indexer records the root against its service's name, but only as a sentinel:
-in a menu's view the adapter renames the bucket, per category, to the game's own word for that
-category, or for the menu when the entry has no category (`ProjectForMenu`,
-`VanillaServiceLabel`). A tab drawn for the bucket holds one category, so a menu-wide name would
-claim more than the tab holds.
+**Ranking.** The column alone leaves siblings tied, and an alphabetical tie-break puts Medical
+University and Technical University above the plain University they specialise. Measuring
+outward from the trunk takes the generic first, the order the player meets them in. Depth
+matches the order the player buys nodes in only along one chain: siblings in a column get
+different ranks, and nodes on separate branches have no fixed order.
 
-**Node names come from `Progression.NODE_NAME[<node prefab>]`**, the key the dev tree itself
-reads. The prefab's title id points at `Assets.NAME`, which has no entry for a node, so asking for
-the prefab's title gets the English prefab name ("Police Headquarters Node") in every language.
-That name is still the fallback, without its "Node".
+**Gates.** The asset's own service is its `ServiceObject`'s, or failing that the one its menu is
+named after. With no gate in that service, the rule runs over every service's gates.
 
-**Ranking is the tree's own layout**, column first and then distance from the trunk row. The
-column alone leaves siblings tied, and an alphabetical tie-break puts Medical University and
-Technical University above the plain University they specialise. Siblings in a column are drawn
-around the chain they hang off, so measuring outward from the trunk takes the generic before its
-specialisations — the order the player meets them in. The trunk row is that of the service's first
-node in column 0, its root, and is not necessarily zero. `DevTreeLayout.Rank` does this, over each
-node's column and row; the system only reads where each node is drawn.
+The requirements the rule sees come from `ProgressionUtils.CollectSubRequirements`, which stops at
+each dev-tree node, so a node's ancestors are never among them. It also flattens the
+requirements: a node keeps only the flags of the edges straight into it, so how they nested above
+is lost. An asset that needs either of two buildings arrives as needing both their nodes. One that
+needs two buildings, each with ways in of its own, arrives with every node a way in, so it is
+filed under the nearest. Both mostly affect service upgrades, which the catalog hides.
 
-**More than one node** can gate an asset. `DevTreeGates.Pick` files it by a rule modelled on
-the game's `UnlockSystem`, which unlocks an asset once every node it needs (`RequireAll`) is bought
-and one of its ways in (`RequireAny`). Taking the first match would not do: the requirements
-arrive in hash order, which follows entity numbering and moves when the installed content does.
+**Icons.** A node with no icon gets none, rather than a placeholder, because a placeholder glyph
+reads as a broken icon rather than as none.
 
-- **The asset's own service only**, when any of its gates is in it. That is its `ServiceObject`'s
-  service, or failing that the one its menu is named after. Depth is a node's rank in its own
-  service's tree, so comparing it across services means nothing. With no gate in its own service,
-  the rule runs over all of them.
-- **The deepest needed node, or the nearest way in when that is deeper.** A tie goes to the needed
-  node. A lone way in needs no special case: the game treats it as needed, and the deeper of the
-  two is already the deepest.
-- **Unless the asset has a way in the rule cannot weigh**: a requirement that is not a node, such
-  as a milestone, or a node in another service. That could let the asset in first, so the ways in
-  the rule can weigh are set aside and the deepest needed node decides.
-- **Ties go by label, then icon, then service.**
+**Folds** (`FoldedDevTreeNodes`). Transportation's Air category carries three assets and the tree
+gives each of the big two its own node, so the strip would draw one tab of three and two tabs of
+one, and neither of those nodes has an icon, so both would fall back to the menu's glyph and
+render as a pair of identical marks. An international airport and a space centre are things you
+build at an airport, so they are drawn under the Airport tab. Folds are keyed on the node prefab
+name because the label is localized: a label key would fold in English but not in German. The
+fold count is logged beside the warning for a key that matches nothing.
 
-Depth stands in for the order the player buys nodes in, and matches it only along one chain.
-Siblings in a column get different ranks, and nodes on separate branches have no fixed order.
+## Language changes
 
-The gates are independent nodes, such as the asset's own and the one a building it needs sits
-behind. `ProgressionUtils.CollectSubRequirements` stops at each dev-tree node, so a node's
-ancestors are never among them. It also flattens the requirements: a node keeps only the flags of
-the edges straight into it, so how they nested above is lost. An asset that needs either of two
-buildings arrives as needing both their nodes. One that needs two buildings, each with ways in of
-its own, arrives with every node a way in, so it is filed under the nearest. Both mostly affect
-service upgrades, which the catalog hides.
+Names the index resolves from the game's dictionary, such as milestone names, follow a language
+change because a full pass follows `OnActiveDictionaryChanged` when the active locale is not the
+one the names were resolved in. The game raises the same event whenever a mod adds or removes a
+locale source, which does not change the language; `LocaleReindexPolicy` gathers those into one
+full pass a second after the last.
 
-**Labels and icons travel together**, keyed by node and by service. Keying an icon by label
-collides: every service's root is called "Basic", so all of them would share one entry.
-
-**Icons** are resolved as `DevTreeUISystem.GetDevTreeIcon` does: an explicit `m_IconPath` wins,
-otherwise the thumbnail of the prefab the node points at, otherwise empty. Empty rather than a
-placeholder, because a placeholder glyph reads as a broken icon rather than as none.
-
-**Folds** (`FoldedDevTreeNodes`) are the narrow exception. Transportation's Air category carries
-three assets and the tree gives each of the big two its own node, so the strip draws one tab of
-three and two tabs of one — and neither of those nodes has an icon, so both fall back to the
-menu's glyph and render as a pair of identical marks. An international airport and a space centre
-are things you build at an airport, so they are drawn under the Airport tab.
-
-Folds are keyed on the dev tree NODE prefab name, not on the label (which is localized and would
-fold in English but not in German) and not on the asset name. A key that matches nothing is a
-typo rather than a no-op, and nothing in the build or the tests catches it, so an unmatched key
-warns and the fold count is logged. `DevTreeLayout.Fold` applies them and returns the unmatched
-ones; the system logs the warnings.
-
-**An asset's branch** comes from the requirements `ProgressionUtils.CollectSubRequirements`
-collects. `ProgressionIndex.BranchOf` turns each labelled node among them into a gate for
-`DevTreeGates.Pick`, as above, and falls back to the root bucket of the service the asset's menu is
-named after when no node gated it. The system only reads the asset's own service.
-
-## Milestones
-
-Milestone names are resolved at index time, not in the UI. The game's key is parameterised by
-index (`Progression.MILESTONE_NAME:<index>`), and the modding API's `translate(id, fallback)`
-takes no arguments, so the indexer asks the active dictionary directly. `GetAssetName` does not
-cover it: a milestone prefab's title lookup misses and falls through to the prefab name,
-literally "Milestone7".
-
-Resolving at index time also means milestone names follow a language change for free, because a
-full pass follows `OnActiveDictionaryChanged` when the active locale is not the one the names
-were resolved in. The game raises that same event whenever a mod adds or removes a locale
-source, which does not change the language; `LocaleReindexPolicy` gathers those into one full
-pass a second after the last.
-
-Both kinds of pass are started from `OnUpdate`, never from the event itself. The event also
-fires at the main menu and between a preload and `OnGameLoaded`, where `OnUpdate` is off, and a
-pass there would publish an index outside a city or from a half-loaded world. A full pass run for
-any other reason (the save's own at `OnGameLoaded`) covers either, so a language switched at the
-main menu is simply read by the next city's first pass.
+Both kinds of pass are started from `OnUpdate`, never from the event itself. The event also fires
+at the main menu and between a preload and `OnGameLoaded`, where `OnUpdate` is off, and a pass
+there would publish an index outside a city or from a half-loaded world. A full pass run for any
+other reason, such as the save's own at `OnGameLoaded`, covers either, so a language switched at
+the main menu is simply read by the next city's first pass.

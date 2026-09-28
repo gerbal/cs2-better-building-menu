@@ -126,7 +126,7 @@ measurements, no commit hashes, no `file:line` references.
   What a later reader needs from them goes in `docs/`, as current fact.
 - `docs/` follows the same rule: it says how things are and why, not how
   they came to be. Open questions and things not yet checked in game go in
-  [docs/roadmap.md](docs/roadmap.md).
+  a [GitHub issue](https://github.com/gerbal/cs2-better-building-menu/issues).
 
 ## Commits
 
