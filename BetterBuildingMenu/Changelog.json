@@ -1,6 +1,19 @@
 [
   {
     "Stable": true,
+    "Version": "0.2.2",
+    "Date": "2026-09-27",
+    "ChangeGroups": [
+      {
+        "Name": "Compatibility",
+        "Changes": [
+          "Extra Assets Importer: the panel opens its Extra Assets menu too, with a tab for each of its categories, such as Misc Decals, Parking Decals and Grass Surfaces. It used to leave that menu to the game's own grid."
+        ]
+      }
+    ]
+  },
+  {
+    "Stable": true,
     "Version": "0.2.1",
     "Date": "2026-09-27",
     "ChangeGroups": [
