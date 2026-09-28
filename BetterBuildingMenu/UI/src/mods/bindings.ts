@@ -57,7 +57,7 @@ export const BuildingLensExpandedCategories$ = bindValue<MenuCategoryTabs[]>(mod
 // --- The panel --------------------------------------------------------------
 
 export const PanelWidth$ = bindValue<number>(mod.id, "PanelWidth", 0);
-/** The panel height the player last dragged to; see BuildingMenuUISystem.Bindings. */
+/** The panel height the player last dragged to; see BuildingMenuUISystem.PanelSize. */
 export const BuildingLensPanelHeight$ = bindValue<number>(mod.id, "BuildingLensPanelHeight", BUILDING_LENS_DEFAULT_HEIGHT);
 export const BuildingLensTileSize$ = bindValue<number>(mod.id, "BuildingLensTileSize", 72);
 /** True while the toolbar's open menu is one the panel takes over. */
