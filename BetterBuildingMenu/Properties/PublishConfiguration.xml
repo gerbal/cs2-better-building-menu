@@ -49,15 +49,15 @@ This mod was developed with AI assistance (Anthropic's Claude), under human dire
   <Screenshot Value="Properties/Screenshot_04.jpg" />
 
   <Tag Value="Code Mod" />
-  <ModVersion Value="0.2.1" />
+  <ModVersion Value="0.2.2" />
   <GameVersion Value="1.6.*" />
   <AccessLevel Value="Public" />
   <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/mod-better-building-menu.1941089/" />
 
   <ChangeLog>
-0.2.1
+0.2.2
 
-Changes
-* The mod's log holds a line or two per city load instead of about 10 KB of diagnostics, and the game's own log no longer gets warnings from it that a player could not act on.
+Compatibility
+* Extra Assets Importer: the panel opens its Extra Assets menu too, with a tab for each of its categories, such as Misc Decals, Parking Decals and Grass Surfaces. It used to leave that menu to the game's own grid.
 </ChangeLog>
 </Publish>
