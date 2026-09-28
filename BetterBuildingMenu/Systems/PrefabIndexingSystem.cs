@@ -57,8 +57,6 @@ namespace BetterBuildingMenu.Systems
 		// a language change. See OnActiveDictionaryChanged.
 		private readonly LocaleReindexPolicy _localeReindex = new(TimeSpan.FromSeconds(1));
 		private static readonly System.Diagnostics.Stopwatch IndexClock = System.Diagnostics.Stopwatch.StartNew();
-		// Whether this load's census and menu audit are in the log yet. See RunIndex.
-		private bool _auditedThisLoad;
 		private UniqueAssetTrackingSystem? _uniqueAssets;
 		// Every indexed prefab the game flags Unique, rebuilt with the index. The
 		// placed-unique rescan walks these rather than all 17k prefabs, so it can
@@ -175,7 +173,6 @@ namespace BetterBuildingMenu.Systems
 			base.OnGamePreload(purpose, mode);
 
 			Enabled = false;
-			_auditedThisLoad = false;
 			// The load indexes the next city itself.
 			_indexOnFirstUpdate = false;
 
@@ -187,7 +184,7 @@ namespace BetterBuildingMenu.Systems
 			_loggedUniqueCandidateCount = -1;
 			Generation++;
 
-			Mod.Log.Info($"Index emptied at preload (purpose={purpose}, mode={mode}); indexing waits for a city");
+			Mod.Log.Debug($"Index emptied at preload (purpose={purpose}, mode={mode}); indexing waits for a city");
 		}
 
 		/// <summary>The full pass, as soon as the save is deserialised.</summary>
@@ -202,7 +199,7 @@ namespace BetterBuildingMenu.Systems
 				return;
 			}
 
-			Mod.Log.Info($"Full pass at OnGameLoaded (purpose={serializationContext.purpose})");
+			Mod.Log.Debug($"Full pass at OnGameLoaded (purpose={serializationContext.purpose})");
 			// A pass that failed leaves the index empty and not ready, and loading-complete
 			// runs its own.
 			RunIndex(true);
@@ -244,16 +241,16 @@ namespace BetterBuildingMenu.Systems
 
 					if (drift == 0)
 					{
-						Mod.Log.Info("Skipped full pass at OnGameLoadingComplete: indexed earlier in this load and lock state agrees");
+						Mod.Log.Debug("Skipped full pass at OnGameLoadingComplete: indexed earlier in this load and lock state agrees");
 						Enabled = true;
 						return;
 					}
 
-					Mod.Log.Info($"Full pass at OnGameLoadingComplete: {drift} prefab(s) changed lock state since OnGameLoaded");
+					Mod.Log.Debug($"Full pass at OnGameLoadingComplete: {drift} prefab(s) changed lock state since OnGameLoaded");
 				}
 				else
 				{
-					Mod.Log.Info($"Full pass at OnGameLoadingComplete (purpose={purpose}, mode={mode})");
+					Mod.Log.Debug($"Full pass at OnGameLoadingComplete (purpose={purpose}, mode={mode})");
 				}
 
 				RunIndex(true);
@@ -286,7 +283,7 @@ namespace BetterBuildingMenu.Systems
 			{
 				// Enabled says whether a city is loaded: the log line that confirms, in game,
 				// that the main menu keeps the system off.
-				Mod.Log.Info(Enabled
+				Mod.Log.Debug(Enabled
 					? $"Locale changed to {localeId}; full pass on the next update"
 					: $"Locale changed to {localeId} with no city loaded; the next city's pass indexes in it");
 			}
@@ -299,7 +296,7 @@ namespace BetterBuildingMenu.Systems
 			if (_indexOnFirstUpdate)
 			{
 				_indexOnFirstUpdate = false;
-				Mod.Log.Info("Full pass at first update: the mod joined a running game");
+				Mod.Log.Debug("Full pass at first update: the mod joined a running game");
 				// There is no load to retry it: if this fails, the index stays empty until the
 				// next load, and the panel shows its indexing notice. With no pass behind it, a
 				// language change has no indexed locale to differ from, so it cannot retry.
@@ -309,11 +306,11 @@ namespace BetterBuildingMenu.Systems
 			switch (_localeReindex.TakeDue(IndexClock.Elapsed))
 			{
 				case LocaleReindexDecision.Immediate:
-					Mod.Log.Info($"Full pass at locale change (locale={GameManager.instance.localizationManager.activeLocaleId})");
+					Mod.Log.Debug($"Full pass at locale change (locale={GameManager.instance.localizationManager.activeLocaleId})");
 					RunIndex(true);
 					break;
 				case LocaleReindexDecision.Deferred:
-					Mod.Log.Info("Full pass after dictionary sources settled");
+					Mod.Log.Debug("Full pass after dictionary sources settled");
 					RunIndex(true);
 					break;
 			}
@@ -394,7 +391,7 @@ namespace BetterBuildingMenu.Systems
 				return;
 			}
 
-			Mod.Log.Info($"Unlocked {changed} indexed prefab(s)");
+			Mod.Log.Debug($"Unlocked {changed} indexed prefab(s)");
 
 			// The catalog is served from a cached search, so the rows keep their
 			// old lock state until it is rebuilt — and an Availability filter set
@@ -428,7 +425,7 @@ namespace BetterBuildingMenu.Systems
 				seen++;
 			}
 
-			Mod.Log.Info(
+			Mod.Log.Debug(
 				$"Primed silhouettes for {seen} prefab(s) in {timer.Elapsed.TotalSeconds:0.000}s "
 				+ $"({Mod.Silhouettes.Generated} generated)");
 		}
@@ -568,30 +565,32 @@ namespace BetterBuildingMenu.Systems
 
 			stopWatch.Stop();
 
-			Mod.Log.Info($"{(full ? "Full" : "Partial")} Prefab Indexing completed in {stopWatch.Elapsed.TotalSeconds:0.000}s");
+			// The one line a player's log gets per load: release logging stays this
+			// small, and everything else a pass has to say is at Debug.
+			var summary = $"{(full ? "Full" : "Partial")} prefab indexing: {Index.All.Count} prefabs"
+				+ $" ({Index.All.Count(p => p.IsLocked)} locked) in {stopWatch.Elapsed.TotalSeconds:0.000}s";
+			if (full)
+			{
+				Mod.Log.Info(summary);
+			}
+			else
+			{
+				Mod.Log.Debug(summary);
+			}
 #if DEBUG
 			if (_missingIcons.Count > 0)
 			{
-				// The count and a sample at Info; every name only with Debug on.
-				Mod.Log.Info($"[MISSINGICON] {_missingIcons.Count} indexed asset(s) have no icon, e.g. {string.Join(", ", _missingIcons.Take(8))}");
+				Mod.Log.Debug($"[MISSINGICON] {_missingIcons.Count} indexed asset(s) have no icon, e.g. {string.Join(", ", _missingIcons.Take(8))}");
 			}
 #endif
-			// The locked count is logged so a second full pass on the same load can
-			// be checked against the first.
-			Mod.Log.Info($"Indexed Prefabs Count: {Index.All.Count}"
-				+ $" locked={Index.All.Count(p => p.IsLocked)}");
-
 			if (full)
 			{
 				PrimeSilhouettes();
 
-				// Once per load, at Info so a player's log carries it: a language change
-				// or a lock-state recheck repeats the pass, not the menus it reports on.
-				// Every pass with Debug on.
-				if (!_auditedThisLoad || Mod.Log.isLevelEnabled(Level.Debug))
+				// Diagnostics for development, about 10 KB a pass: only with Debug on,
+				// and not even computed otherwise. See docs/indexing.md.
+				if (Mod.Log.isLevelEnabled(Level.Debug))
 				{
-					_auditedThisLoad = true;
-
 					// Which processors feed anything the lens can show.
 					Log(IndexAuditLog.ProcessorCensus(census, Index));
 					var all = Index.All;
@@ -602,7 +601,7 @@ namespace BetterBuildingMenu.Systems
 					{
 						var example = all.TryGetValue(overlap.ExampleId, out var indexed) ? indexed.PrefabName : overlap.ExampleId.ToString(CultureInfo.InvariantCulture);
 
-						Mod.Log.Info($"[PROCESSOR-OVERLAP] {overlap.Later} replaced {overlap.Earlier} for {overlap.Count} prefab(s), e.g. {example}");
+						Mod.Log.Debug($"[PROCESSOR-OVERLAP] {overlap.Later} replaced {overlap.Earlier} for {overlap.Count} prefab(s), e.g. {example}");
 					}
 
 					LogVanillaMenuCoverage();
@@ -631,7 +630,7 @@ namespace BetterBuildingMenu.Systems
 			{
 				if (_pollutionScale is null)
 				{
-					Mod.Log.Info("No pollution thresholds in the game's settings: cards draw no pollution levels");
+					Mod.Log.Debug("No pollution thresholds in the game's settings: cards draw no pollution levels");
 				}
 
 				var mods = RefreshModCompatibility(fallback: Index.Mods);
@@ -1033,7 +1032,7 @@ namespace BetterBuildingMenu.Systems
 			if (Index.IsReady && (moved || _uniqueCandidates.Count != _loggedUniqueCandidateCount))
 			{
 				_loggedUniqueCandidateCount = _uniqueCandidates.Count;
-				Mod.Log.Info($"Placed unique assets: {PlacedUniques.Count} of {_uniqueCandidates.Count} unique assets");
+				Mod.Log.Debug($"Placed unique assets: {PlacedUniques.Count} of {_uniqueCandidates.Count} unique assets");
 			}
 		}
 

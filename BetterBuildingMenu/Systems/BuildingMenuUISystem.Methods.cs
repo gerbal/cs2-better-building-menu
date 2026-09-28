@@ -126,25 +126,15 @@ namespace BetterBuildingMenu.Systems
 			var tiersMs = Lap();
 			refreshTimer.Stop();
 			// Every refresh, and named by its caller: one line per user action is the only way
-			// a redundant refresh is visible at all. At Info in a development build, where that
-			// is the point; at Debug in a release, where it is a line in the player's log for
-			// every search, filter and menu opened.
-#if DEBUG
-			const bool logRefresh = true;
-#else
-			var logRefresh = Mod.Log.isLevelEnabled(Colossal.Logging.Level.Debug);
-#endif
-			if (logRefresh)
+			// a redundant refresh is visible at all. At Debug, which a development build turns
+			// on (see Mod.Log) and a release leaves off, where it would be a line in the
+			// player's log for every search, filter and menu opened.
+			if (Mod.Log.isLevelEnabled(Colossal.Logging.Level.Debug))
 			{
-				var line = $"[LENS-REFRESH] {(int)refreshTimer.ElapsedMilliseconds}ms "
+				Mod.Log.Debug($"[LENS-REFRESH] {(int)refreshTimer.ElapsedMilliseconds}ms "
 					+ $"proj={_buildingCatalogAdapter.LastProjectionMs}ms({(_buildingCatalogAdapter.LastProjectionWasHit ? "hit" : "miss")}) "
 					+ $"page={pageMs} bounds={boundsMs} facets={facetsMs} counts={countsMs} axis={axisMs} tabs={tabsMs} expanded={expandedMs} tiers={tiersMs} "
-					+ $"menu='{_lens.Menu}' total={page.TotalCount} from={caller}";
-#if DEBUG
-				Mod.Log.Info(line);
-#else
-				Mod.Log.Debug(line);
-#endif
+					+ $"menu='{_lens.Menu}' total={page.TotalCount} from={caller}");
 			}
 		}
 

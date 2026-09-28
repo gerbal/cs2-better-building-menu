@@ -39,7 +39,7 @@ namespace BetterBuildingMenu.Systems
 	public partial class PrefabIndexingSystem
 	{
 		/// <summary>A per-menu census of the vanilla build menu, in both directions.</summary>
-		/// <remarks>A census rather than an alarm, logged at Info whether or not anything is wrong.
+		/// <remarks>A census rather than an alarm, logged at Debug whether or not anything is wrong.
 		/// See docs/indexing.md, "The menu audit".</remarks>
 		private void LogVanillaMenuAudit()
 		{
@@ -83,19 +83,19 @@ namespace BetterBuildingMenu.Systems
 					.OrderByDescending(line => line.Count)
 					.ToArray();
 
-				Mod.Log.Info(
+				Mod.Log.Debug(
 					"[DLC-AUDIT] indexed by DLC: "
 					+ string.Join(", ", byDlc.Select(line => $"{line.Name}={line.Count}")));
 
 				var local = platform.EnumerateLocalDLCs().ToArray();
 				var store = platform.EnumerateDLCs().ToArray();
 
-				Mod.Log.Info(
+				Mod.Log.Debug(
 					$"[DLC-AUDIT] {platform.dlcBackends?.Count ?? 0} backend(s), "
 					+ $"{local.Length} installed, {store.Length} from the store, "
 					+ $"dlcCount={platform.dlcCount}");
 
-				Mod.Log.Info(
+				Mod.Log.Debug(
 					"[DLC-AUDIT] ownership: "
 					+ string.Join(
 						", ",
@@ -155,18 +155,14 @@ namespace BetterBuildingMenu.Systems
 			return $"{assetPrefab.name}({string.Join(" ", parts)})";
 		}
 
+		// Every line at Debug, a gap included: the audits are for development, and a gap is
+		// a real state of the game, not something a player can act on. The severity stays
+		// in AuditLine, where the tests read it.
 		private static void Log(IEnumerable<AuditLine> lines)
 		{
 			foreach (var line in lines)
 			{
-				if (line.Severity == AuditSeverity.Warn)
-				{
-					Mod.Log.Warn(line.Text);
-				}
-				else
-				{
-					Mod.Log.Info(line.Text);
-				}
+				Mod.Log.Debug(line.Text);
 			}
 		}
 	}

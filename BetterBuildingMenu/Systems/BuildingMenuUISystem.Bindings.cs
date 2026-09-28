@@ -54,7 +54,7 @@ namespace BetterBuildingMenu.Systems
 				if (cleared > 0)
 				{
 					RefreshVanillaToolbarBindings();
-					Mod.Log.Info($"[UNLOCK-PIP] cleared {cleared} highlight(s) under '{menuName}'");
+					Mod.Log.Debug($"[UNLOCK-PIP] cleared {cleared} highlight(s) under '{menuName}'");
 				}
 			}
 			catch (Exception ex)

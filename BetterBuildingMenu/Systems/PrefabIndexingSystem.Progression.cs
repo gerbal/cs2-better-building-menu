@@ -58,7 +58,7 @@ namespace BetterBuildingMenu.Systems
 				}
 			}
 
-			Mod.Log.Info($"Indexed Milestones: {names.Count}");
+			Mod.Log.Debug($"Indexed Milestones: {names.Count}");
 
 			return names;
 		}
@@ -173,7 +173,7 @@ namespace BetterBuildingMenu.Systems
 
 			var folded = FoldedDevTreeNodes.Count - unmatched.Count;
 
-			Mod.Log.Info($"Indexed Dev Tree: {nodes.Length} nodes, {roots.Count} services, {folded} folded");
+			Mod.Log.Debug($"Indexed Dev Tree: {nodes.Length} nodes, {roots.Count} services, {folded} folded");
 
 			return (branches, roots);
 		}

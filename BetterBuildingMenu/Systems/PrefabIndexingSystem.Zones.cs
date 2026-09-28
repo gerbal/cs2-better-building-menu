@@ -191,7 +191,7 @@ namespace BetterBuildingMenu.Systems
 				IndexExtractorAreas(catalog);
 			}
 
-			Mod.Log.Info($"Indexed Zones Count: {catalog.Count}");
+			Mod.Log.Debug($"Indexed Zones Count: {catalog.Count}");
 
 			return new ZoneIndex(dictionary, densities, lotSizes, catalog);
 		}
@@ -248,7 +248,7 @@ namespace BetterBuildingMenu.Systems
 				added++;
 			}
 
-			Mod.Log.Info(
+			Mod.Log.Debug(
 				$"Inherited Zones menu: {added} assets added, categories seen: {string.Join(", ", categoriesSeen)}");
 
 			// Which of our entries the game does NOT offer in that menu. An entry
@@ -260,7 +260,7 @@ namespace BetterBuildingMenu.Systems
 					.Select(p => p.Entity.Index));
 			var unplaced = catalog.Where(entry => !placedInZones.Contains(entry.Id)).ToList();
 
-			Mod.Log.Info(
+			Mod.Log.Debug(
 				$"[ZONE-PARITY] vanilla places {placedInZones.Count} in Zones; dropping {unplaced.Count} it does not offer: "
 				+ IndexAuditLog.Cap(unplaced.Select(entry => $"{entry.Name} [{entry.PrefabName}]").ToList()));
 
@@ -317,7 +317,7 @@ namespace BetterBuildingMenu.Systems
 					MapFeature: areaData[i].m_MapFeature.ToString()));
 			}
 
-			Mod.Log.Info($"Indexed Extractor Areas: {areas.Length}");
+			Mod.Log.Debug($"Indexed Extractor Areas: {areas.Length}");
 			areas.Dispose();
 			areaData.Dispose();
 		}
