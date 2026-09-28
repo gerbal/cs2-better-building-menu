@@ -7,7 +7,7 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// The lens opens in the order the game itself draws.
+	/// The asset menu opens in the order the game itself draws.
 	/// </summary>
 	/// <remarks>
 	/// Vanilla's sort is UIObject.m_Priority ascending and nothing else. It is
@@ -24,7 +24,7 @@ namespace BetterBuildingMenu.Tests
 				with { UiMenu = "Roads", UiCategory = "RoadsSmallRoads", UIOrder = uiOrder };
 
 		[Fact]
-		public void TheLensOpensInTheGamesOwnOrder()
+		public void TheAssetMenuOpensInTheGamesOwnOrder()
 		{
 			// Deliberately alphabetical-hostile: sorted by name this is Alley,
 			// Gravel, Highway, and by priority it is the reverse.

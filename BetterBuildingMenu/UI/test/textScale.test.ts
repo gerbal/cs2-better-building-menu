@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { fontSizeRatio } from "../src/domain/textScale.ts";
 import { tileLabelLineBudget, tableLabelCharBudget } from "../src/domain/tileLabel.ts";
-import { BUILDING_LENS_MAX_WIDTH } from "../src/domain/sharedContracts.generated.ts";
-import { getBuildingLensColumnWidths, BUILDING_LENS_COLUMN_MAX, BUILDING_LENS_PANEL_CHROME_WIDTH, BUILDING_LENS_CONTROL_PANE_TOTAL, BUILDING_LENS_IDENTITY_MIN, BUILDING_LENS_TABLE_ROW_FURNITURE } from "../src/domain/buildingLensLayout.ts";
+import { ASSET_MENU_MAX_WIDTH } from "../src/domain/sharedContracts.generated.ts";
+import { getAssetMenuColumnWidths, ASSET_MENU_COLUMN_MAX, ASSET_MENU_CHROME_WIDTH, CONTROL_PANE_TOTAL, ASSET_MENU_IDENTITY_MIN, ASSET_MENU_TABLE_ROW_FURNITURE } from "../src/domain/assetMenuLayout.ts";
 
 // The game's Interface › Text scale setting (100–150 %) reaches the page as
 // --fontScale and --fontScaleChange, and every --fontSize* is a calc() of the
@@ -35,32 +35,32 @@ describe("the game's text scale", () => {
 
   it("widens the table's metric columns with the S size", () => {
     // Wide enough that the room beside the name never caps the ratio.
-    const base = getBuildingLensColumnWidths(3000);
-    const scaled = getBuildingLensColumnWidths(3000, 1.25);
+    const base = getAssetMenuColumnWidths(3000);
+    const scaled = getAssetMenuColumnWidths(3000, 1.25);
 
-    assert.deepEqual(base, BUILDING_LENS_COLUMN_MAX);
-    assert.equal(scaled.upkeep, Math.round(BUILDING_LENS_COLUMN_MAX.upkeep * fontSizeRatio("s", 1.25)));
+    assert.deepEqual(base, ASSET_MENU_COLUMN_MAX);
+    assert.equal(scaled.upkeep, Math.round(ASSET_MENU_COLUMN_MAX.upkeep * fontSizeRatio("s", 1.25)));
   });
 });
 
-describe("the table's columns at a large text scale and a narrow panel", () => {
-  // Scaling the columns by the full ratio at the narrowest panel pushes the
-  // name cell below its own minimum. The columns scale as far as the panel
+describe("the table's columns at a large text scale and a narrow build menu", () => {
+  // Scaling the columns by the full ratio at the narrowest build menu pushes the
+  // name cell below its own minimum. The columns scale as far as the build menu
   // allows and no further; what does not fit clips inside its cell.
   it("never squeezes the name below its minimum", () => {
     // The assembly plus its chrome — the figure the catalog passes.
-    const outer = BUILDING_LENS_MAX_WIDTH + BUILDING_LENS_PANEL_CHROME_WIDTH;
+    const outer = ASSET_MENU_MAX_WIDTH + ASSET_MENU_CHROME_WIDTH;
     for (const scale of [1.25, 1.5]) {
-      const widths = getBuildingLensColumnWidths(outer, scale);
+      const widths = getAssetMenuColumnWidths(outer, scale);
       const columns = Object.values(widths).reduce((a, b) => a + b, 0);
-      const name = outer - BUILDING_LENS_PANEL_CHROME_WIDTH - BUILDING_LENS_CONTROL_PANE_TOTAL - columns - BUILDING_LENS_TABLE_ROW_FURNITURE;
+      const name = outer - ASSET_MENU_CHROME_WIDTH - CONTROL_PANE_TOTAL - columns - ASSET_MENU_TABLE_ROW_FURNITURE;
 
-      assert.ok(name >= BUILDING_LENS_IDENTITY_MIN - 1, `at ${scale}: name would get ${name}rem of ${BUILDING_LENS_IDENTITY_MIN}`);
+      assert.ok(name >= ASSET_MENU_IDENTITY_MIN - 1, `at ${scale}: name would get ${name}rem of ${ASSET_MENU_IDENTITY_MIN}`);
     }
   });
 
   it("still scales fully where there is room", () => {
-    const scaled = getBuildingLensColumnWidths(3000, 1.25);
-    assert.equal(scaled.upkeep, Math.round(BUILDING_LENS_COLUMN_MAX.upkeep * fontSizeRatio("s", 1.25)));
+    const scaled = getAssetMenuColumnWidths(3000, 1.25);
+    assert.equal(scaled.upkeep, Math.round(ASSET_MENU_COLUMN_MAX.upkeep * fontSizeRatio("s", 1.25)));
   });
 });

@@ -4,7 +4,7 @@ namespace BetterBuildingMenu.Domain
 	/// Tells a toolbar menu the player chose from one the game echoed back.
 	/// </summary>
 	/// <remarks>
-	/// Opening the lens makes the game re-assert the armed tool's asset menu, so one
+	/// Opening the asset menu makes the game re-assert the armed tool's own menu, so one
 	/// click emits two selections. The echo is indistinguishable from a click by
 	/// content, so it is caught by proximity: nobody switches menus within a frame or two.
 	/// </remarks>

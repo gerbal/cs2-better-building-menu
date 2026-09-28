@@ -54,11 +54,11 @@ export function findVanillaToolbar(doc: Document): HTMLElement | null {
 }
 
 /**
- * The two patches vanilla's layout needs while the lens is open, applied on
+ * The two patches vanilla's layout needs while the asset menu is open, applied on
  * mount and undone on unmount: `toolLayout` left-aligned, and the toolbar sunk
- * below us. See docs/design-notes.md, "Patching vanilla's layout for the lens".
+ * below us. See docs/design-notes.md, "Patching vanilla's layout for the asset menu".
  */
-export function useVanillaLayoutForLens(): void {
+export function useVanillaLayoutForAssetMenu(): void {
   useEffect(() => {
     const restores: Array<() => void> = [];
     const layout = findVanillaToolLayout(document);

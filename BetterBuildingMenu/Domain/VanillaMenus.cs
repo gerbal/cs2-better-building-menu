@@ -3,7 +3,7 @@ using System;
 namespace BetterBuildingMenu.Domain
 {
 	/// <summary>
-	/// The vanilla toolbar menus the lens treats specially, by the name the
+	/// The vanilla toolbar menus the asset menu treats specially, by the name the
 	/// game's UIAssetMenuPrefab carries — the same string assets record as
 	/// PrefabIndex.UiMenuName.
 	/// </summary>

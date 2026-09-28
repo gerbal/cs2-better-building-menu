@@ -1,18 +1,18 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { sortedMetricFor, sortedMetricValue } from "../src/domain/sortedMetric.ts";
-import { BUILDING_LENS_COLUMN_SORT } from "../src/domain/buildingLensSortPresentation.ts";
-import type { BuildingLensMetric } from "../src/domain/buildingLensLayout.ts";
+import { ASSET_MENU_COLUMN_SORT } from "../src/domain/assetMenuSortPresentation.ts";
+import type { AssetMenuMetric } from "../src/domain/assetMenuLayout.ts";
 
 describe("the metric a sort is ordering by", () => {
   it("inverts the column-header map exactly", () => {
     // The table's headers and the tile badge must name the same metric for the
     // same sort, or clicking "Capacity" in the table and picking "Capacity"
     // from the sort list would label the figure two different ways.
-    for (const [metric, column] of Object.entries(BUILDING_LENS_COLUMN_SORT)) {
+    for (const [metric, column] of Object.entries(ASSET_MENU_COLUMN_SORT)) {
       assert.equal(
         sortedMetricFor(column),
-        metric as BuildingLensMetric,
+        metric as AssetMenuMetric,
         `${column} should resolve back to ${metric}`
       );
     }

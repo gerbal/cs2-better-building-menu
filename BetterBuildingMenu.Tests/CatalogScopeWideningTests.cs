@@ -125,7 +125,7 @@ namespace BetterBuildingMenu.Tests
 		{
 			// The floor IsBuilding still sets. Without it the union would be a
 			// straight replacement, and anything vanilla forgot to place would
-			// vanish from the lens too.
+			// vanish from the asset menu too.
 			Assert.True(BuildingCatalogAdapter.BelongsInCatalog(
 				menuScoped: false,
 				isBuilding: true,
@@ -142,11 +142,11 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void TheGeneratedPropsStayOutOfTheLensAtBothScopes()
+		public void TheGeneratedPropsStayOutOfTheAssetMenuAtBothScopes()
 		{
 			// A prefab that is not a building and sits in no menu stays out at both
 			// scopes, with no special case. Do not add an arm to BelongsInCatalog
-			// that admits group-less prefabs: they unmount the panel under the player.
+			// that admits group-less prefabs: they unmount the asset menu under the player.
 			foreach (var menuScoped in new[] { false, true })
 			{
 				Assert.False(BuildingCatalogAdapter.BelongsInCatalog(

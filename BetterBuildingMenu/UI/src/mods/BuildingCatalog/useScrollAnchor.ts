@@ -8,12 +8,12 @@ import {
   revealScrollTop,
 } from "domain/catalogWindow";
 import type { AnchorGeometry } from "domain/catalogWindow";
-import { getLensAnchor, setLensAnchor } from "domain/lensViewStore";
+import { getAssetMenuAnchor, setAssetMenuAnchor } from "domain/assetMenuViewStore";
 import { findScrollContainer, lastCatalogRow } from "./catalogDom";
 
 /**
  * Breathing room under a revealed detail, in CSS pixels. Small on purpose: it
- * keeps the last line clear of the panel edge, not centred.
+ * keeps the last line clear of the asset menu's edge, not centred.
  */
 const EXPANDED_ROW_REVEAL_MARGIN = 6;
 
@@ -24,7 +24,7 @@ const EXPANDED_ROW_REVEAL_MARGIN = 6;
  */
 export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: string, itemCount: number): void {
   useEffect(() => {
-    const anchored = getLensAnchor(anchorKey);
+    const anchored = getAssetMenuAnchor(anchorKey);
 
     if (anchored === null || itemCount === 0) {
       return;
@@ -37,7 +37,7 @@ export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: stri
     // Cleared only when the loop finishes: clearing up front would lose the
     // anchor to the first frame's zero-height rects.
     const finish = () => {
-      setLensAnchor(anchorKey, null);
+      setAssetMenuAnchor(anchorKey, null);
     };
 
     const measure = (): { scroller: HTMLElement; geometry: AnchorGeometry } | null => {
@@ -74,7 +74,7 @@ export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: stri
       }
 
       if (frame++ >= CATALOG_ANCHOR_MAX_FRAMES) {
-        // The row never became reachable — a predicate changed while the panel
+        // The row never became reachable — a predicate changed while the asset menu
         // was down, or it sits beyond a window that stopped growing. Top of
         // the list is the honest answer, and where we already are.
         finish();

@@ -6,7 +6,7 @@ import { Button, Tooltip } from "cs2/ui";
 import classNames from "classnames";
 import { decideExtensionMenu, type ExtensionRow, type VanillaUpgradeRow } from "domain/extensionMenu";
 import { BuildingList } from "mods/BuildingList/BuildingList";
-import { LensResizeHandle, useLensPanelHeight } from "mods/LensResizeHandle/LensResizeHandle";
+import { AssetMenuResizeHandle, useAssetMenuHeight } from "mods/AssetMenuResizeHandle/AssetMenuResizeHandle";
 import styles from "./extensionMenu.module.scss";
 import { BuildingExtensionMenu$, ReplaceVanillaBuildMenu$ } from "mods/bindings";
 import { gameClasses } from "mods/gameModules";
@@ -71,7 +71,7 @@ const ExtensionMenuPanel = ({ className, buildingName, rows, selectedUpgrade, on
   const { translate } = useLocalization();
   // The build menu's height, as a CAP: a two-row picker stays two rows, a
   // long one scrolls at the dragged height instead of growing over the screen.
-  const { height, isResizing, beginResize, blocker } = useLensPanelHeight();
+  const { height, isResizing, beginResize, blocker } = useAssetMenuHeight();
   const kind = translate("UpgradesMenu.TITLE", "Upgrades") ?? "Upgrades";
   const closeLabel = translate("Tooltip.LABEL[BetterBuildingMenu.CloseMenu]", "Close") ?? "Close";
   const byId = new Map(rows.map((row) => [row.entry.id, row]));
@@ -82,7 +82,7 @@ const ExtensionMenuPanel = ({ className, buildingName, rows, selectedUpgrade, on
   return (
     <div className={classNames(styles.panel, className)} data-extension-menu="true">
       {blocker}
-      <LensResizeHandle active={isResizing} onBeginResize={beginResize} />
+      <AssetMenuResizeHandle active={isResizing} onBeginResize={beginResize} />
       <div className={styles.header}>
         <div className={styles.heading}>
           <span className={styles.title}>{buildingName}</span>

@@ -84,7 +84,7 @@ describe("resolving a label", () => {
   });
 });
 
-describe("the menu the lens renamed", () => {
+describe("the menu the asset menu renamed", () => {
   it("offers our name for Roads ahead of the game's", async () => {
     const { EXTENDED_NETWORK_MENU_KEY, vanillaMenuNameKeys } =
       await import("../src/domain/vanillaServiceLabels.ts");

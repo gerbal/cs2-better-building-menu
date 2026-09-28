@@ -5,7 +5,7 @@
 
 export interface BuildingMenuMountState {
   /** The toolbar's open menu is one we stand in for. */
-  lensOwnsCurrentMenu: boolean;
+  ownsCurrentMenu: boolean;
   /** Photo mode hides every panel. */
   isPhotoMode: boolean;
   /**
@@ -19,12 +19,12 @@ export interface BuildingMenuMountState {
 /**
  * Whether the game's asset-menu slot should draw the menu: does the toolbar
  * have a menu open that we stand in for, and is nothing else claiming the
- * screen. The lens REPLACES the build menu, so there is no enabled state.
+ * screen. The asset menu REPLACES the build menu, so there is no enabled state.
  */
 export function shouldMountInAssetMenu(state: BuildingMenuMountState): boolean {
   if (state.isPhotoMode || state.findItPanelShown) {
     return false;
   }
 
-  return state.lensOwnsCurrentMenu;
+  return state.ownsCurrentMenu;
 }

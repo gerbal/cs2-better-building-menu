@@ -57,13 +57,13 @@ On a developed save:
    `0 missing from the index`, and the `[MENU-AUDIT]` census line does not end
    in `NOT CLEAN`.
 3. **Menus.** Open Roads, Zones, Landscaping and a service menu. For each:
-   - the panel replaces the grid, with the category strip across the top;
+   - the asset menu replaces the grid, with the category strip across the top;
    - tiles draw their icons, with no placeholders;
    - a search finds an asset, and Enter arms the best match;
    - a long menu offers Load more.
 4. **Views.** Switch through grid, list, cards and table, and drag the
    resize edge.
-5. **Place.** Arm an asset from a tile and place it. Escape closes the panel.
+5. **Place.** Arm an asset from a tile and place it. Escape closes the asset menu.
 6. **Options.** Flip each option under Options › Better Building Menu with a
    menu open, and see it take effect.
 7. **Upgrades.** On a release that touches them, open the upgrades picker from

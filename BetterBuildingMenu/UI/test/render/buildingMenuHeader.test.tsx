@@ -8,7 +8,7 @@ describe("the menu header", () => {
   beforeEach(() => {
     resetBindings();
     setBinding("BetterBuildingMenu", "CurrentSearch", "road");
-    setBinding("BetterBuildingMenu", "BuildingLensMenu", "Roads");
+    setBinding("BetterBuildingMenu", "AssetMenu", "Roads");
   });
 
   it("provides explicit labels for its icon actions", () => {
@@ -27,7 +27,7 @@ describe("the menu header", () => {
   });
 
   it("draws no close control when the game hands it no close", () => {
-    // The surface must still render if the game ever mounts it without one.
+    // The asset menu must still render if the game ever mounts it without one.
     const html = renderHtml(<BuildingMenuHeader small={false} large={false} />);
 
     assert.doesNotMatch(html, /aria-label="Close"/);

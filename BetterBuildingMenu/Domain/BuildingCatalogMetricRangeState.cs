@@ -5,7 +5,7 @@ using System;
 namespace BetterBuildingMenu.Domain
 {
 	/// <summary>
-	/// Normalized metric ranges published to the controlled Building Lens drawer.
+	/// Normalized metric ranges published to the controlled asset menu drawer.
 	/// </summary>
 	public sealed record BuildingCatalogMetricRangeState(
 		double? MinCost,

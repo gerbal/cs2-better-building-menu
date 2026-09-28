@@ -5,7 +5,7 @@ import { RemoveVanillaAssetMenuComponent } from "mods/RemoveVanillaAssetMenu/Rem
 import { ExtensionMenuComponent } from "mods/ExtensionMenu/ExtensionMenu";
 import { ToolOptionsVisibility } from "mods/ToolOptionsVisibility/ToolOptionsVisibility";
 import { ToolOptionsPanelRefresh } from "mods/ToolOptionsVisibility/ToolOptionsPanelRefresh";
-import { LensToolOptions } from "mods/LensToolOptions/LensToolOptions";
+import { AssetMenuToolOptions } from "mods/AssetMenuToolOptions/AssetMenuToolOptions";
 
 import { VanillaMenuWatcher } from "mods/VanillaMenuWatcher/VanillaMenuWatcher";
 import { VanillaToolbarWatcher } from "mods/VanillaMenuWatcher/VanillaToolbarWatcher";
@@ -34,16 +34,16 @@ const register: ModRegistrar = (moduleRegistry) => {
   // mods extend this component by calling it as a function and pushing into its
   // children, so it must stay a plain function returning vanilla's element. The
   // boundary sits around our own section inside it instead.
-  moduleRegistry.extend("game-ui/game/components/tool-options/mouse-tool-options/mouse-tool-options.tsx", "MouseToolOptions", LensToolOptions);
+  moduleRegistry.extend("game-ui/game/components/tool-options/mouse-tool-options/mouse-tool-options.tsx", "MouseToolOptions", AssetMenuToolOptions);
   // That bank only mounts for an active tool and browsing is not one, so this
-  // holds it open while the lens owns the menu. The registry types every
+  // holds it open while the asset menu owns the menu. The registry types every
   // extension as a component wrapper; this one wraps a hook.
   moduleRegistry.extend("game-ui/game/components/tool-options/tool-options-panel.tsx", "useToolOptionsVisible", ToolOptionsVisibility as unknown as ModuleRegistryExtend);
   // The hook above reads its binding without subscribing; this re-renders the
   // panel when that value changes.
   moduleRegistry.extend("game-ui/game/components/tool-options/tool-options-panel.tsx", "ToolOptionsPanel", safeExtension("ToolOptionsPanel", ToolOptionsPanelRefresh));
 
-  // Renders nothing; watches the vanilla toolbar so its menus open the lens.
+  // Renders nothing; watches the vanilla toolbar so its menus open the asset menu.
   moduleRegistry.append("Game", safeAppend("VanillaMenuWatcher", VanillaMenuWatcher));
   // Also renders nothing; forwards the game's own theme/pack/Vanilla/Mods row
   // so the catalog hides what the vanilla grid would hide.

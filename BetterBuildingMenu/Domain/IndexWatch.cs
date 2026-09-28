@@ -1,12 +1,12 @@
 namespace BetterBuildingMenu.Domain
 {
 	/// <summary>
-	/// When the panel owes a republish because the index moved under it.
+	/// When the asset menu owes a republish because the index moved under it.
 	/// </summary>
 	/// <remarks>
-	/// The indexer bumps a generation and knows nothing of the panel; the panel polls it from
+	/// The indexer bumps a generation and knows nothing of the asset menu; the asset menu polls it from
 	/// OnUpdate. A publish records the generation it read, so only a change after it asks again,
-	/// and a closed panel asks nothing: opening it publishes anyway.
+	/// and a closed asset menu asks nothing: opening it publishes anyway.
 	/// </remarks>
 	public sealed class IndexWatch
 	{

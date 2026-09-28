@@ -33,7 +33,7 @@ working on the code.
 5. The React UI, which extends vanilla's `AssetMenu`, draws them, and sends
    what the player does back as triggers.
 
-The query state lives in C# (`BuildingCatalogLensState`), so the UI never
+The query state lives in C# (`AssetMenuState`), so the UI never
 holds more than a page. Terms are in the glossary in
 [CONTRIBUTING.md](CONTRIBUTING.md).
 

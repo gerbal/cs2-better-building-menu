@@ -105,7 +105,7 @@ describe("the extension picker", () => {
   });
 
   it("wears vanilla's asset-panel class on its body, as the build menu does", () => {
-    // BuildingMenuSurface puts AssetMenuTheme.assetPanel on its content; the
+    // AssetMenu puts AssetMenuTheme.assetPanel on its content; the
     // same class here keeps the two panels sized by the same vanilla rule.
     assert.match(render(), /class="[^"]*content[^"]*vanilla-assetPanel/);
   });
@@ -121,10 +121,10 @@ describe("the extension picker", () => {
     assert.match(html, /class="[^"]*resizeGrip/);
   });
 
-  it("caps its body at the shared panel height rather than sizing it to it", () => {
+  it("caps its body at the asset menu's height rather than sizing it to it", () => {
     // The same setting the build menu's drag writes. A cap, not a height: a
     // two-row picker stays two rows, a long one scrolls at the dragged height.
-    setBinding("BetterBuildingMenu", "BuildingLensPanelHeight", 500);
+    setBinding("BetterBuildingMenu", "AssetMenuHeight", 500);
 
     const html = render();
     const body = html.match(/<div class="[^"]*content[^"]*"[^>]*>/)?.[0] ?? "";

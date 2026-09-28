@@ -1,5 +1,5 @@
 import { bindValue, useValue } from "cs2/api";
-import { UnitSystem } from "domain/buildingLensMetricFormat";
+import { UnitSystem } from "domain/assetMenuMetricFormat";
 
 /**
  * The player's unit system, from the game's own ("options", "unitSettings")

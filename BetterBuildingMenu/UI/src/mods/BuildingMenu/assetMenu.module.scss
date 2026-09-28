@@ -1,0 +1,93 @@
+@keyframes entry {
+  0% {
+    bottom: 137rem - 20rem;
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes entryTranslate {
+  0% {
+    transform: translateY(10rem);
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+// The tool panel becomes a row once the asset menu is on: the build menu, then the
+// control plane beside it. Bottom-aligned because the two have different
+// heights and the bottom bar is the line the eye tracks along.
+.assetMenuRow {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+
+  // No z-index here: this engine settles the order between `main-container`
+  // and `toolbar`, and a value on a descendant cannot reorder its ancestor.
+  // AssetMenu sets it on the game's own element instead.
+}
+
+.toolContainer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
+  pointer-events: auto;
+  animation: entryTranslate 0.2s ease-in-out;
+}
+
+// The height drag on the top edge is AssetMenuResizeHandle's, shared with the
+// extension picker.
+
+.content {
+  border-bottom-left-radius: var(--panelRadius);
+  border-bottom-right-radius: var(--panelRadius);
+  background-color: var(--panelColorNormal);
+  backdrop-filter: var(--panelBlur);
+  background-image: linear-gradient( var(--panelGradientStart) , var(--panelGradientEnd) );
+  color: rgba(255, 255, 255, 1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  // Explicit, and below the chip row's 30. Both are positioned siblings, and
+  // with z-index auto the later one in the DOM wins on paint order — the
+  // zoning tiles then paint straight over the section picker.
+  z-index: 0;
+
+  // Grow to the cap the parent sets, shrink below it.
+  flex: 0 1 auto;
+  // A floor rather than sizing to content: content-sized, the asset menu changes
+  // height on every keystroke and moves controls under the cursor. One row of
+  // cards under two headings, the same number the drag clamps to.
+  min-height: 108rem;
+  // The asset menu states its height inline from the player's setting, so
+  // these bounds reach only the legacy FindIt panel. Kept as a backstop
+  // against any future path putting the asset menu off screen.
+  max-height: 100%;
+}
+
+.topBar {
+  background-color: var(--panelColorDark);
+  backdrop-filter: var(--panelBlur);
+  color: var(--accentColorNormal);
+  // Square: the resize strip above owns the asset menu's top rounding, and two
+  // curved edges would stack one above the other.
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  // Not hidden: the chip row lives here, and its section picker and the filter
+  // rail's popovers hang below the bar — clipped, they are present, correctly
+  // positioned and invisible. Only the top corners round, so the radius holds.
+  overflow: visible;
+
+  // The comparison that decides whether a popover is visible happens between
+  // this element and .content, because those are the siblings: a z-index on a
+  // nested descendant does not reorder its ancestor against that sibling.
+  position: relative;
+  z-index: 40;
+}

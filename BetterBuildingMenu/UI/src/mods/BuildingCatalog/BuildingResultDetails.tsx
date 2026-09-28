@@ -5,13 +5,13 @@ import { useUnitSystem } from "domain/unitSettings";
 import {
   getBuildingDetailMetrics,
   getNumberSeparators,
-} from "domain/buildingLensMetricFormat";
+} from "domain/assetMenuMetricFormat";
 import {
   getBuildingExtensionLabels,
   getBuildingFlagGroups,
   getBuildingProvenanceChips,
   resolveAssetDescription,
-} from "domain/buildingLensRowDetails";
+} from "domain/assetMenuRowDetails";
 
 import styles from "./buildingCatalog.module.scss";
 

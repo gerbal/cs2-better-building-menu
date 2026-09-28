@@ -20,10 +20,10 @@ import {
   formatWeightPerMonth,
   formatPerMonth,
   formatPower,
-} from "./buildingLensMetricFormat";
+} from "./assetMenuMetricFormat";
 import { buildTileTooltipLines, isMetricPresent, TILE_TOOLTIP_MAX_LINES, type TileTooltipLine } from "./buildingTileTooltip";
 import { RESOURCE_UPKEEP_PREFIX, isVanillaFact, orderFacts, renderServiceFacts, renderServiceTextFacts } from "./serviceFacts";
-import { getBuildingExtensionLabels } from "./buildingLensRowDetails";
+import { getBuildingExtensionLabels } from "./assetMenuRowDetails";
 import { isEntryAlreadyBuilt, isEntryLocked, listLockConditions } from "./buildingLockState";
 
 type Translate = (key: string, fallback: string | null) => string | null;

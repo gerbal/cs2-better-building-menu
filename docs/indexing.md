@@ -1,6 +1,6 @@
 # Prefab indexing
 
-How `PrefabIndexingSystem` builds the index the panel lists from, and why it works the way it
+How `PrefabIndexingSystem` builds the index the asset menu lists from, and why it works the way it
 does. The code carries one-line pointers to the headings below.
 
 In short, the index holds one entry per indexed prefab, together with the menus, zones,
@@ -14,7 +14,7 @@ milestones and dev tree needed to file them.
 - Each pass runs the **processors**, which decide what is indexed and under which category
   (`PrefabCategoryProcessors` lists them in order), and walks the game's own menus to learn where
   each asset sits ("The vanilla menu walk").
-- Anything that changes an indexed fact bumps the indexer's `Generation`, which is how the panel
+- Anything that changes an indexed fact bumps the indexer's `Generation`, which is how the asset menu
   knows to refresh (`IndexWatch`).
 
 The system is one partial class across six files in `BetterBuildingMenu/Systems/`:
@@ -88,10 +88,10 @@ editor alike, the main loop runs:
 1. `PrefabSystem`, whose own update applies queued prefab updates and tags what it created or
    changed;
 2. `UnlockSystem`;
-3. `UIUpdateSystem`: the indexer, then the panel's own system, which reads the index.
+3. `UIUpdateSystem`: the indexer, then the asset menu's own system, which reads the index.
 
 So the indexer sees that frame's unlock events and every `Created` or `Updated` tag (the tags last
-until the frame's clean-up), and the panel reads the index after it. Running at `PrefabUpdate` as
+until the frame's clean-up), and the asset menu reads the index after it. Running at `PrefabUpdate` as
 well would read each changed prefab twice a frame and add nothing, since nothing reads the index
 in between.
 
@@ -163,7 +163,7 @@ Inside the build, each processor and each prefab has its own catch, in full and 
 alike: a failure there is logged, costs that processor's or that prefab's entries, and the pass
 goes on. Anything that throws outside those catches, in the tables read before the processors or
 the renumbering after them, fails the pass. `RunIndex` then logs the error and publishes nothing:
-the panel keeps the index it had, and nothing reaches the game's load or update loop.
+the asset menu keeps the index it had, and nothing reaches the game's load or update loop.
 
 So a failed pass has nothing to put back. The published index keeps the tables and mod flags it
 was built with, and the partial passes after a failure read the same ones. Road Builder's discard
@@ -171,7 +171,7 @@ component is the exception: once a pass has found it, it is kept whether or not 
 succeeds.
 
 A city's first pass is different, because the preload has already emptied the index. If it
-fails, the index stays empty and not ready: the panel shows the indexing notice and hands every
+fails, the index stays empty and not ready: the asset menu shows the indexing notice and hands every
 menu back to vanilla, which is better than showing the last city's catalog.
 
 If every pass of a load fails, or the first-update pass of a mod joining a running game does, the
@@ -251,7 +251,7 @@ lots, which vanilla does not put in the menu, rather than the resource-specific 
 
 So `InheritVanillaZoneMenu` inherits the categories from the same downward walk `ToolbarUISystem`
 draws from: whatever the game puts under Zones appears here too, including anything a mod adds.
-`ZoningSurfaceCatalog`'s family map already speaks the category names.
+`ZoningCatalog`'s family map already speaks the category names.
 
 Entries the zone pass produced are left alone — they carry density, footprints and allowed
 resources the walk cannot know — and the walk adds what the queries missed. Afterwards the
@@ -278,7 +278,7 @@ and is blind in two ways:
 - It skips zones outright, because they reach the player through the zoning hierarchy rather than
   the prefab index. A whole Zones tab can be missing while the report says "0 missing".
 - It only looks one way. It never asks what WE show that vanilla does not place, which is how
-  unbuildable zones can sit in the surface until a player tries to build one.
+  unbuildable zones can sit in the asset menu until a player tries to build one.
 
 `LogVanillaMenuAudit` is the census that closes both: every menu, its categories, what vanilla
 places, what we cover, and what we show that vanilla does not. It logs whether or not anything

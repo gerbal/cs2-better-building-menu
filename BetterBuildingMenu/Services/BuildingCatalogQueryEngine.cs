@@ -303,7 +303,7 @@ namespace BetterBuildingMenu.Services
 				return true;
 			}
 
-			// The Roads menu is the one place the lens shows more than the game does: every
+			// The Roads menu is the one place the asset menu shows more than the game does: every
 			// network belongs there, not only the ones vanilla files under Roads. See
 			// NetworkMenuExtension, which takes nothing out of the menus that hold them.
 			var extraNetwork = NetworkMenuExtension.IsExtraNetwork(entry.Category, entry.UiMenu, menu, entry.SubCategory);

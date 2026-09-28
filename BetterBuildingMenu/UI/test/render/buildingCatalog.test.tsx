@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { renderHtml, entry, catalogPage } from "../harness/render";
 import { setBinding, resetBindings } from "../harness/stubs/cs2-api";
-import { resetLensView, setLensView } from "../../src/domain/lensViewStore";
+import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
-import { FALLBACK_SEPARATORS, groupDigits } from "../../src/domain/buildingLensMetricFormat";
+import { FALLBACK_SEPARATORS, groupDigits } from "../../src/domain/assetMenuMetricFormat";
 
 const page = (over: Record<string, unknown> = {}) =>
   setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1), entry(2)], over));
@@ -13,15 +13,15 @@ const render = () => renderHtml(<BuildingCatalogComponent />);
 describe("the catalog container", () => {
   beforeEach(() => {
     resetBindings();
-    resetLensView();
-    setBinding("BetterBuildingMenu", "PanelWidth", 700);
+    resetAssetMenuView();
+    setBinding("BetterBuildingMenu", "AssetMenuWidth", 700);
   });
 
   for (const mode of ["table", "grid", "list", "cards"]) {
     it(`ends the feed with a load-more inside the scroll in ${mode} mode`, () => {
       // Below the scroll is where nobody reads it. The number too: on
       // Landscaping that is 100 rows of 368 with nothing on screen saying so.
-      setLensView({ viewMode: mode });
+      setAssetMenuView({ viewMode: mode });
       page({ hasMore: true, totalCount: 403 });
       const html = render();
       const scroll = html.indexOf('data-scrollable="true"');
@@ -35,7 +35,7 @@ describe("the catalog container", () => {
     it(`offers to widen a scoped miss in ${mode} mode`, () => {
       // A search that misses in Table mode must not simply say "No buildings
       // match": that leaves no count of what exists elsewhere and no way there.
-      setLensView({ viewMode: mode });
+      setAssetMenuView({ viewMode: mode });
       page({ items: [], totalCount: 0 });
       setBinding("BetterBuildingMenu", "CurrentSearch", "police");
       setBinding("BetterBuildingMenu", "BuildingCatalogMatchesElsewhere", 5);
@@ -46,10 +46,10 @@ describe("the catalog container", () => {
     });
   }
 
-  it("groups the digits of the window count like every other number on the panel", () => {
+  it("groups the digits of the window count like every other number in the asset menu", () => {
     // Built by hand, the count read "Showing 1200 of 4206" beside cells that
     // group theirs. toLocaleString would group it under node and not in Cohtml.
-    setLensView({ viewMode: "table" });
+    setAssetMenuView({ viewMode: "table" });
     page({ hasMore: true, totalCount: 4206 });
     const html = render();
 
@@ -59,33 +59,33 @@ describe("the catalog container", () => {
 
   it("names one step on the load-more, however large the window has grown", () => {
     // Three loads in, the window is 300 rows; a click still adds 100.
-    setLensView({ viewMode: "table" });
+    setAssetMenuView({ viewMode: "table" });
     page({ hasMore: true, totalCount: 403, limit: 300 });
 
     assert.match(render(), /Load 100 more/);
   });
 
   it("draws no load-more when the window holds everything", () => {
-    setLensView({ viewMode: "table" });
+    setAssetMenuView({ viewMode: "table" });
     page({ hasMore: false, totalCount: 2 });
 
     assert.doesNotMatch(render(), /class="loadMoreRow"/);
   });
 
-  it("obeys the chosen view mode whatever the panel width", () => {
+  it("obeys the chosen view mode whatever the width", () => {
     // Overridden to "grid" at the resting height, pressing Table would light
     // the button, change nothing, and say nothing about why.
-    setLensView({ viewMode: "table" });
+    setAssetMenuView({ viewMode: "table" });
     page();
 
     for (const width of [300, 700, 1100]) {
-      setBinding("BetterBuildingMenu", "PanelWidth", width);
+      setBinding("BetterBuildingMenu", "AssetMenuWidth", width);
       assert.match(render(), /class="columnHeader"/, `width ${width}`);
     }
   });
 
   it("names the constraints that emptied the table rather than blaming search", () => {
-    setLensView({ viewMode: "table" });
+    setAssetMenuView({ viewMode: "table" });
     page({ items: [], totalCount: 0 });
 
     assert.match(render(), /class="empty"/);
@@ -93,9 +93,9 @@ describe("the catalog container", () => {
 
   it("draws no control chrome of its own", () => {
     // Identity, count, Group by, Sort by and the view mode live in the
-    // control plane beside the panel, visible at the strip height this rests
+    // control plane beside the build menu, visible at the strip height this rests
     // at.
-    setLensView({ viewMode: "grid" });
+    setAssetMenuView({ viewMode: "grid" });
     page();
     const html = render();
 
@@ -105,7 +105,7 @@ describe("the catalog container", () => {
   });
 
   it("marks every row with the id the scroll hooks find it by", () => {
-    setLensView({ viewMode: "table" });
+    setAssetMenuView({ viewMode: "table" });
     page();
     const html = render();
 
@@ -122,8 +122,8 @@ describe("the table under a larger text scale", () => {
     resetBindings();
     setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1)], {}));
     // Wide, so the room beside the name does not cap the ratio — at a 720p
-    // panel it does, and the columns grow only as far as the name allows.
-    setBinding("BetterBuildingMenu", "PanelWidth", 2400);
+    // width it does, and the columns grow only as far as the name allows.
+    setBinding("BetterBuildingMenu", "AssetMenuWidth", 2400);
     const widthOf = (html: string) => Number(/metricUpkeep[^>]*style="[^"]*width:\s*([0-9.]+)rem/.exec(html)?.[1]);
 
     const base = widthOf(render());

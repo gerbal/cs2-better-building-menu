@@ -5,7 +5,7 @@ import { setBinding, resetBindings, triggers } from "../harness/stubs/cs2-api";
 import { bindValue, useValue, trigger } from "cs2/api";
 import { Button } from "cs2/ui";
 import styles from "../../src/mods/BuildingCatalog/buildingCatalog.module.scss";
-import sizes from "../../src/domain/buildingLensLayout.module.scss";
+import sizes from "../../src/domain/assetMenuLayout.module.scss";
 
 describe("the render harness", () => {
   it("answers a stylesheet import with the class names themselves", () => {

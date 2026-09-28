@@ -19,9 +19,9 @@ import { GameTextInput, gameClasses } from "mods/gameModules";
 const TextInputTheme = gameClasses("game-ui/editor/widgets/item/editor-item.module.scss");
 
 export interface BuildingMenuHeaderProps {
-  /** Narrow panel: the strip and the field share a tighter row. */
+  /** Narrow asset menu: the strip and the field share a tighter row. */
   small?: boolean;
-  /** Wide panel. */
+  /** Wide asset menu. */
   large?: boolean;
   /**
    * The game's own menu close, threaded from the AssetMenu extension point.

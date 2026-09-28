@@ -13,7 +13,7 @@ namespace BetterBuildingMenu.Tests
 	/// The Content facet, which covers only what the game's own row cannot.
 	/// </summary>
 	/// <remarks>
-	/// Vanilla's tool-options panel is on screen while the lens is open and already
+	/// Vanilla's tool-options panel is on screen while the asset menu is open and already
 	/// holds Theme and Pack, so packs are not offered here. What is left is the part
 	/// it cannot express: a DLC shipping no creator pack, reachable only by DlcId.
 	/// </remarks>

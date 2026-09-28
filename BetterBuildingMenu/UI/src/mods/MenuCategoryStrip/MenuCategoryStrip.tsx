@@ -8,7 +8,7 @@ import {
   isCategorySelected,
   visibleCategories,
   shouldShowCategoryStrip,
-  isLensScoped,
+  isAssetMenuScoped,
   type VanillaMenuCategory,
 } from "domain/vanillaMenuCategories";
 import { expandedTabsFor, branchTabTooltip, schoolTierTabs, romanNumeral } from "domain/menuProgression";
@@ -17,15 +17,15 @@ import { ALL_CATEGORIES_KEYS, resolveVanillaLabel, vanillaCategoryNameKeys } fro
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 import styles from "./menuCategoryStrip.module.scss";
 import {
-  BuildingLensExpandedCategories$,
-  BuildingLensMenu$,
-  BuildingLensMenuCategories$,
-  BuildingLensMenuCategory$,
-  BuildingLensMenuCategoryCounts$,
-  BuildingLensMenuSchoolTier$,
-  BuildingLensMenuSchoolTierCounts$,
-  BuildingLensStripTab$,
-  BuildingLensStripTabs$,
+  AssetMenuExpandedCategories$,
+  AssetMenu$,
+  AssetMenuCategories$,
+  AssetMenuCategory$,
+  AssetMenuCategoryCounts$,
+  AssetMenuSchoolTier$,
+  AssetMenuSchoolTierCounts$,
+  AssetMenuStripTab$,
+  AssetMenuStripTabs$,
   send,
 } from "mods/bindings";
 
@@ -36,21 +36,21 @@ import {
  */
 export const MenuCategoryStrip = () => {
   const { translate } = useLocalization();
-  const categories = useValue(BuildingLensMenuCategories$);
-  const selected = useValue(BuildingLensMenuCategory$);
+  const categories = useValue(AssetMenuCategories$);
+  const selected = useValue(AssetMenuCategory$);
   // ALL hooks belong above the early return below. One under it renders
   // conditionally, and React #300 takes the whole view down on any menu the
   // strip hides itself for. A test asserts the ordering on this file's source.
-  const counts = useValue(BuildingLensMenuCategoryCounts$) ?? [];
-  const schoolTierCounts = useValue(BuildingLensMenuSchoolTierCounts$) ?? [];
-  const selectedSchoolTier = useValue(BuildingLensMenuSchoolTier$) ?? -1;
-  const menu = useValue(BuildingLensMenu$) ?? "";
-  const stripTabs = useValue(BuildingLensStripTabs$) ?? [];
+  const counts = useValue(AssetMenuCategoryCounts$) ?? [];
+  const schoolTierCounts = useValue(AssetMenuSchoolTierCounts$) ?? [];
+  const selectedSchoolTier = useValue(AssetMenuSchoolTier$) ?? -1;
+  const menu = useValue(AssetMenu$) ?? "";
+  const stripTabs = useValue(AssetMenuStripTabs$) ?? [];
   // A LIST, because the filter rail writes the same state and can hold several.
   // The row stays single-select but has to show what the rail did.
-  const selectedStripTabs = useValue(BuildingLensStripTab$) ?? [];
+  const selectedStripTabs = useValue(AssetMenuStripTab$) ?? [];
   const noStripTab = selectedStripTabs.length === 0;
-  const expandedCategories = useValue(BuildingLensExpandedCategories$) ?? [];
+  const expandedCategories = useValue(AssetMenuExpandedCategories$) ?? [];
 
   // Vanilla hides its own row below two categories, and a strip offering one
   // choice is not a choice. The branch fallback below carries the strip on the
@@ -58,7 +58,7 @@ export const MenuCategoryStrip = () => {
   const showCategories = shouldShowCategoryStrip(categories, menu);
   // Every segment obeys the scope, not only the categories: the all-menus scope
   // has branches too, and the fallback below would otherwise draw them.
-  const scoped = isLensScoped(menu);
+  const scoped = isAssetMenuScoped(menu);
   // Education navigates by LEVEL, not by the milestone a school unlocked at:
   // with several region packs the level is what has dozens behind it, and the
   // milestone they share cuts nothing.
@@ -73,10 +73,10 @@ export const MenuCategoryStrip = () => {
     return null;
   }
 
-  const choose = (id: string) => send({ method: "SetBuildingLensMenuCategory", args: [id] });
-  const chooseBranch = (id: string) => send({ method: "SetBuildingLensStripTab", args: [id] });
+  const choose = (id: string) => send({ method: "SetAssetMenuCategory", args: [id] });
+  const chooseBranch = (id: string) => send({ method: "SetAssetMenuStripTab", args: [id] });
   const chooseSchoolTier = (level: number) =>
-    send({ method: "SetBuildingLensMenuSchoolTier", args: [level] });
+    send({ method: "SetAssetMenuSchoolTier", args: [level] });
 
   // The category prefab's own name is the id, and the game ships a localized
   // string under exactly that id, so a tab reads as the game words it rather

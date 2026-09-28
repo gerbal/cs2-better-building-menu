@@ -17,7 +17,7 @@ using System.Text;
 namespace BetterBuildingMenu.Services
 {
 		/// <summary>
-		/// Projects the indexed prefab records into the building lens. Deliberately not an
+		/// Projects the indexed prefab records into the asset menu. Deliberately not an
 		/// ECS query: PrefabIndexingSystem stays the single source of truth for discovery,
 		/// categorisation, thumbnails and placement identity.
 		/// </summary>
@@ -406,10 +406,10 @@ namespace BetterBuildingMenu.Services
 		}
 
 		/// <summary>
-		/// What the lens catalogues.
+		/// What the asset menu catalogues.
 		/// </summary>
 		/// <remarks>
-		/// Networks belong beside buildings because the lens can name and group what the
+		/// Networks belong beside buildings because the asset menu can name and group what the
 		/// vanilla Roads grid leaves unlabelled; placement still hands off to the native
 		/// net tool. This is the floor only — BelongsInCatalog decides per scope.
 		/// </remarks>
@@ -519,7 +519,7 @@ namespace BetterBuildingMenu.Services
 		private readonly SnapshotCache _snapshots = new();
 
 		/// <summary>How long the last <see cref="ProjectForMenu"/> took, and whether it was served from cache.</summary>
-		/// <remarks>Read by BuildingMenuUISystem for the [LENS-REFRESH] breakdown. Reset by <see cref="BeginRefresh"/>.</remarks>
+		/// <remarks>Read by BuildingMenuUISystem for the [ASSET-MENU-REFRESH] breakdown. Reset by <see cref="BeginRefresh"/>.</remarks>
 		public int LastProjectionMs { get; private set; }
 		public bool LastProjectionWasHit { get; private set; } = true;
 
@@ -806,7 +806,7 @@ namespace BetterBuildingMenu.Services
 		/// The content a menu's assets require that the game's own row cannot reach.
 		/// </summary>
 		/// <remarks>
-		/// Packs belong to vanilla's tool-options panel, which is on screen while the lens is
+		/// Packs belong to vanilla's tool-options panel, which is on screen while the asset menu is
 		/// open. What is left is the part that panel cannot express: a DLC shipping no creator
 		/// pack. The packedDlcs test below skips any DLC the game's own row already carries.
 		/// </remarks>

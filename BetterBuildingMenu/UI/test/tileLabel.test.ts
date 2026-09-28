@@ -271,8 +271,8 @@ describe("Wrapping a name over the tile's lines", () => {
 
 describe("Table name budget", () => {
   it("gives the table more characters than one tile line, at a realistic width", () => {
-    // A ~270rem drawable name box is what a 1000rem panel actually leaves once
-    // the metric columns and BUILDING_LENS_TABLE_ROW_FURNITURE are taken.
+    // A ~270rem drawable name box is what a 1000rem build menu actually leaves once
+    // the metric columns and ASSET_MENU_TABLE_ROW_FURNITURE are taken.
     assert.ok(tableLabelCharBudget(270) > tileLabelLineBudget(100));
   });
 
@@ -324,7 +324,7 @@ describe("list and card row names", () => {
     assert.equal(listLabel(longest), longest);
   });
 
-  it("cuts a name an asset ships repeated, so one row cannot span the panel", () => {
+  it("cuts a name an asset ships repeated, so one row cannot span the asset menu", () => {
     const repeated = "Oriental Pearl Radio & TV Tower".repeat(6);
     const drawn = listLabel(repeated);
     assert.ok(drawn.length <= LIST_NAME_MAX_CHARS, drawn);

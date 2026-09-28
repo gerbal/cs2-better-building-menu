@@ -88,13 +88,13 @@ namespace BetterBuildingMenu.Tests
 			ts.Append("\n/** BuildingCatalogQuery.WindowStep: how many rows one Load more adds. */\n");
 			ts.Append($"export const CATALOG_WINDOW_STEP = {BuildingCatalogQuery.WindowStep};\n");
 
-			ts.Append("\n/** BuildingLensHeight: the catalog height the player drags between, and where it starts. */\n");
-			AppendNumber(ts, "BUILDING_LENS_MIN_HEIGHT", BuildingLensHeight.Min);
-			AppendNumber(ts, "BUILDING_LENS_MAX_HEIGHT", BuildingLensHeight.Max);
-			AppendNumber(ts, "BUILDING_LENS_DEFAULT_HEIGHT", BuildingLensHeight.Default);
+			ts.Append("\n/** AssetMenuHeight: the catalog height the player drags between, and where it starts. */\n");
+			AppendNumber(ts, "ASSET_MENU_MIN_HEIGHT", AssetMenuHeight.Min);
+			AppendNumber(ts, "ASSET_MENU_MAX_HEIGHT", AssetMenuHeight.Max);
+			AppendNumber(ts, "ASSET_MENU_DEFAULT_HEIGHT", AssetMenuHeight.Default);
 
-			ts.Append("\n/** BuildingLensWidth.Max: the width the panel and its control pane are drawn at. */\n");
-			AppendNumber(ts, "BUILDING_LENS_MAX_WIDTH", BuildingLensWidth.Max);
+			ts.Append("\n/** AssetMenuWidth.Max: the width the build menu and its control pane are drawn at. */\n");
+			AppendNumber(ts, "ASSET_MENU_MAX_WIDTH", AssetMenuWidth.Max);
 
 			return ts.ToString();
 		}

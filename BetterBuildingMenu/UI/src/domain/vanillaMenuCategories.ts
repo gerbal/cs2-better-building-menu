@@ -21,15 +21,15 @@ export function shouldShowCategoryStrip(
   categories: readonly VanillaMenuCategory[] | null | undefined,
   menu: string | null | undefined
 ): boolean {
-  return isLensScoped(menu) && (categories?.length ?? 0) >= 2;
+  return isAssetMenuScoped(menu) && (categories?.length ?? 0) >= 2;
 }
 
 /**
- * Whether the lens stands in for one of the game's menus. Unscoped — Search
+ * Whether the asset menu stands in for one of the game's menus. Unscoped — Search
  * everything — the strip would carry every category of every menu across four
  * wrapped rows, and the group headings already say the same thing.
  */
-export function isLensScoped(menu: string | null | undefined): boolean {
+export function isAssetMenuScoped(menu: string | null | undefined): boolean {
   return (menu ?? "").trim() !== "";
 }
 

@@ -3,11 +3,11 @@ import mod from "../../mod.json";
 import type { BuildingCatalogEntry, BuildingCatalogPage } from "domain/buildingCatalog";
 import { nextSortState, setSortColumnCommand, setSortDescendingCommand } from "domain/buildingCatalogContracts";
 import type { SortColumn, SortState } from "domain/buildingCatalogContracts";
-import type { BuildingLensFacetState } from "domain/buildingCatalogFacets";
-import type { BuildingLensMetricRangeState } from "domain/buildingLensFilterSummary";
+import type { AssetMenuFacetState } from "domain/buildingCatalogFacets";
+import type { AssetMenuMetricRangeState } from "domain/assetMenuFilterSummary";
 import type { Command } from "domain/command";
 import type { MenuBranchCount, MenuCategoryTabs } from "domain/menuProgression";
-import { BUILDING_LENS_DEFAULT_HEIGHT } from "domain/sharedContracts.generated";
+import { ASSET_MENU_DEFAULT_HEIGHT } from "domain/sharedContracts.generated";
 import type { ToolbarEntity } from "domain/toolbarEntity";
 import { UPSTREAM_FINDIT_GROUP, UPSTREAM_SHOW_PANEL } from "domain/upstreamFindIt";
 import type { MenuCategoryCount, VanillaMenuCategory } from "domain/vanillaMenuCategories";
@@ -32,36 +32,36 @@ export const BuildingCatalogMatchesElsewhere$ = bindValue<number>(mod.id, "Build
 export const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "BuildingCatalogSortColumn", "Name");
 export const BuildingCatalogSortDescending$ = bindValue<boolean>(mod.id, "BuildingCatalogSortDescending", false);
 export const BuildingCatalogGroupBy$ = bindValue<string>(mod.id, "BuildingCatalogGroupBy", "category");
-export const BuildingLensGroupDimensions$ = bindValue<string[]>(mod.id, "BuildingLensGroupDimensions", []);
-export const BuildingLensFacets$ = bindValue<BuildingLensFacetState | null>(mod.id, "BuildingLensFacets", null);
-export const BuildingCatalogMetricRanges$ = bindValue<BuildingLensMetricRangeState | null>(mod.id, "BuildingCatalogMetricRanges", null);
+export const AssetMenuGroupDimensions$ = bindValue<string[]>(mod.id, "AssetMenuGroupDimensions", []);
+export const AssetMenuFacets$ = bindValue<AssetMenuFacetState | null>(mod.id, "AssetMenuFacets", null);
+export const BuildingCatalogMetricRanges$ = bindValue<AssetMenuMetricRangeState | null>(mod.id, "BuildingCatalogMetricRanges", null);
 /** The spread each metric has in the current view, in the selection's shape. */
-export const BuildingCatalogMetricBounds$ = bindValue<BuildingLensMetricRangeState | null>(mod.id, "BuildingCatalogMetricBounds", null);
+export const BuildingCatalogMetricBounds$ = bindValue<AssetMenuMetricRangeState | null>(mod.id, "BuildingCatalogMetricBounds", null);
 /** The prefab the game has armed, drawn so the screen says what is about to be placed. */
 export const ActivePrefabId$ = bindValue<number>(mod.id, "ActivePrefabId", 0);
-export const BuildingLensMilestones$ = bindValue<string[]>(mod.id, "BuildingLensMilestones", []);
+export const AssetMenuMilestones$ = bindValue<string[]>(mod.id, "AssetMenuMilestones", []);
 
 // --- The menu and its strip -------------------------------------------------
 
-export const BuildingLensMenu$ = bindValue<string>(mod.id, "BuildingLensMenu", "");
-export const BuildingLensMenus$ = bindValue<VanillaMenuCategory[]>(mod.id, "BuildingLensMenus", []);
-export const BuildingLensMenuCategories$ = bindValue<VanillaMenuCategory[]>(mod.id, "BuildingLensMenuCategories", []);
-export const BuildingLensMenuCategory$ = bindValue<string>(mod.id, "BuildingLensMenuCategory", "");
-export const BuildingLensMenuCategoryCounts$ = bindValue<MenuCategoryCount[]>(mod.id, "BuildingLensMenuCategoryCounts", []);
-export const BuildingLensMenuSchoolTier$ = bindValue<number>(mod.id, "BuildingLensMenuSchoolTier", -1);
-export const BuildingLensMenuSchoolTierCounts$ = bindValue<MenuBranchCount[]>(mod.id, "BuildingLensMenuSchoolTierCounts", []);
-export const BuildingLensStripTabs$ = bindValue<MenuBranchCount[]>(mod.id, "BuildingLensStripTabs", []);
-export const BuildingLensStripTab$ = bindValue<string[]>(mod.id, "BuildingLensStripTab", []);
-export const BuildingLensExpandedCategories$ = bindValue<MenuCategoryTabs[]>(mod.id, "BuildingLensExpandedCategories", []);
+export const AssetMenu$ = bindValue<string>(mod.id, "AssetMenu", "");
+export const AssetMenus$ = bindValue<VanillaMenuCategory[]>(mod.id, "AssetMenus", []);
+export const AssetMenuCategories$ = bindValue<VanillaMenuCategory[]>(mod.id, "AssetMenuCategories", []);
+export const AssetMenuCategory$ = bindValue<string>(mod.id, "AssetMenuCategory", "");
+export const AssetMenuCategoryCounts$ = bindValue<MenuCategoryCount[]>(mod.id, "AssetMenuCategoryCounts", []);
+export const AssetMenuSchoolTier$ = bindValue<number>(mod.id, "AssetMenuSchoolTier", -1);
+export const AssetMenuSchoolTierCounts$ = bindValue<MenuBranchCount[]>(mod.id, "AssetMenuSchoolTierCounts", []);
+export const AssetMenuStripTabs$ = bindValue<MenuBranchCount[]>(mod.id, "AssetMenuStripTabs", []);
+export const AssetMenuStripTab$ = bindValue<string[]>(mod.id, "AssetMenuStripTab", []);
+export const AssetMenuExpandedCategories$ = bindValue<MenuCategoryTabs[]>(mod.id, "AssetMenuExpandedCategories", []);
 
-// --- The panel --------------------------------------------------------------
+// --- The asset menu ---------------------------------------------------------
 
-export const PanelWidth$ = bindValue<number>(mod.id, "PanelWidth", 0);
-/** The panel height the player last dragged to; see BuildingMenuUISystem.PanelSize. */
-export const BuildingLensPanelHeight$ = bindValue<number>(mod.id, "BuildingLensPanelHeight", BUILDING_LENS_DEFAULT_HEIGHT);
-export const BuildingLensTileSize$ = bindValue<number>(mod.id, "BuildingLensTileSize", 72);
-/** True while the toolbar's open menu is one the panel takes over. */
-export const LensOwnsCurrentMenu$ = bindValue<boolean>(mod.id, "LensOwnsCurrentMenu", false);
+export const AssetMenuWidth$ = bindValue<number>(mod.id, "AssetMenuWidth", 0);
+/** The asset menu height the player last dragged to; see BuildingMenuUISystem.AssetMenuSize. */
+export const AssetMenuHeight$ = bindValue<number>(mod.id, "AssetMenuHeight", ASSET_MENU_DEFAULT_HEIGHT);
+export const AssetMenuTileSize$ = bindValue<number>(mod.id, "AssetMenuTileSize", 72);
+/** True while the toolbar's open menu is one the asset menu takes over. */
+export const OwnsCurrentMenu$ = bindValue<boolean>(mod.id, "OwnsCurrentMenu", false);
 /** The mod's replace-vanilla-menus setting: one switch for both pickers. */
 export const ReplaceVanillaBuildMenu$ = bindValue<boolean>(mod.id, "ReplaceVanillaBuildMenu", false);
 

@@ -19,7 +19,7 @@ namespace BetterBuildingMenu.Domain
 	public sealed record LeafTab(int Key, string Name, int Priority, IReadOnlyList<int> AssetKeys);
 
 	/// <summary>
-	/// Turns a menu's category tree into the one row of tabs the lens draws.
+	/// Turns a menu's category tree into the one row of tabs the asset menu draws.
 	/// </summary>
 	/// <remarks>
 	/// Vanilla menus are one level deep, and pass through unchanged, priorities included. A menu

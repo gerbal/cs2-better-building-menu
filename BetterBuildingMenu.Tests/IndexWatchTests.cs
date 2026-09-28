@@ -5,7 +5,7 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// The panel's side of an index change: it asks for one republish per change, while open.
+	/// The asset menu's side of an index change: it asks for one republish per change, while open.
 	/// </summary>
 	public sealed class IndexWatchTests
 	{
@@ -55,7 +55,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void AChangeWhileClosedIsLeftToTheOpeningPublish()
 		{
-			// Opening the panel publishes, which records the generation; nothing is owed after.
+			// Opening the asset menu publishes, which records the generation; nothing is owed after.
 			var watch = new IndexWatch();
 			watch.Published(1);
 

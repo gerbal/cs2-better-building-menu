@@ -47,7 +47,7 @@
   position: relative;
   // 1 padding + 45 thumb + 1 gap + 32 label (two 16rem lines) + 1 padding. Two
   // rows have to fit the visible scroll region, which is the constraint rather
-  // than the panel. Width is BuildingLensTileSize, applied inline by the view.
+  // than the asset menu. Width is AssetMenuTileSize, applied inline by the view.
   box-sizing: border-box;
   height: 80rem;
   padding: 1rem 2rem;

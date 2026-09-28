@@ -11,11 +11,11 @@ import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { stripRedundantNamePrefix, tileLabelLineBudget, wrapTileLabel } from "domain/tileLabel";
 import { lineBudgetFromDrawn } from "domain/measuredFit";
 import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
-import { formatBuildingMetric, getNumberSeparators } from "domain/buildingLensMetricFormat";
+import { formatBuildingMetric, getNumberSeparators } from "domain/assetMenuMetricFormat";
 import { useUnitSystem } from "domain/unitSettings";
 import { useTextScale } from "domain/textScaleSetting";
 import styles from "./buildingGrid.module.scss";
-import { ActivePrefabId$, BuildingCatalogSortColumn$, BuildingLensTileSize$ } from "mods/bindings";
+import { ActivePrefabId$, BuildingCatalogSortColumn$, AssetMenuTileSize$ } from "mods/bindings";
 
 interface BuildingGridProps {
   entries: BuildingCatalogEntry[];
@@ -107,7 +107,7 @@ export const BuildingGrid = ({ entries, onPlace, footer, standalone = true }: Bu
   const lockedLabel = translate("Tooltip.LABEL[BetterBuildingMenu.Locked]", "Locked") ?? "Locked";
   const builtLabel =
     translate("Tooltip.LABEL[BetterBuildingMenu.AlreadyBuilt]", "Already built") ?? "Already built";
-  const tileSize = useValue(BuildingLensTileSize$);
+  const tileSize = useValue(AssetMenuTileSize$);
   // The name line is fontSizeM; its character budget follows the text scale.
   const textScale = useTextScale();
   const activePrefabId = useValue(ActivePrefabId$);
@@ -166,7 +166,7 @@ export const BuildingGrid = ({ entries, onPlace, footer, standalone = true }: Bu
           style={{ width: `${tileSize}rem` }}
           variant="icon"
           // See the table row: this is how the scroll anchor finds the tile
-          // again after placement rebuilds the panel.
+          // again after placement rebuilds the asset menu.
           data-catalog-entry={entry.id}
           // Announced as well as drawn, for the same reason the locked state is.
           aria-current={armed ? "true" : undefined}

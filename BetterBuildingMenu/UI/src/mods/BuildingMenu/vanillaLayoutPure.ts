@@ -4,7 +4,7 @@
  * React and no `cs2/modding` here, so the test runner can load it.
  */
 
-/** The two properties the lens patches on vanilla's elements. */
+/** The two properties the asset menu patches on vanilla's elements. */
 export type PatchedProperty = "justifyContent" | "zIndex";
 
 const CSS_NAME: Record<PatchedProperty, string> = {

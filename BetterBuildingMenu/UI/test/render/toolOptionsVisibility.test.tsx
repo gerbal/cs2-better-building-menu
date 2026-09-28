@@ -26,16 +26,16 @@ describe("ToolOptionsVisibility on a panel mounted before the mod loaded", () =>
     assert.equal(root.toJSON(), "hidden");
 
     useToolOptionsVisible = ToolOptionsVisibility(useVanillaToolOptionsVisible);
-    setBinding("BetterBuildingMenu", "LensOwnsCurrentMenu", true);
+    setBinding("BetterBuildingMenu", "OwnsCurrentMenu", true);
 
     assert.doesNotThrow(() => act(() => { root.update(<Panel />); }));
     assert.equal(root.toJSON(), "shown");
   });
 
-  it("still keeps the bank open for the lens on a fresh mount", () => {
+  it("still keeps the bank open for the asset menu on a fresh mount", () => {
     const useToolOptionsVisible = ToolOptionsVisibility(useVanillaToolOptionsVisible);
     const Panel = () => <>{useToolOptionsVisible() ? "shown" : "hidden"}</>;
-    setBinding("BetterBuildingMenu", "LensOwnsCurrentMenu", true);
+    setBinding("BetterBuildingMenu", "OwnsCurrentMenu", true);
     let root!: ReturnType<typeof create>;
     act(() => { root = create(<Panel />); });
     assert.equal(root.toJSON(), "shown");

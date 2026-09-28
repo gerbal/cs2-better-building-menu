@@ -77,13 +77,13 @@ namespace BetterBuildingMenu.Systems
 
 		/// <summary>Bumped whenever an indexed fact changes: a re-index, an unlock, a unique built or
 		/// bulldozed, a load emptying the index. The catalog's snapshot cache is keyed on it, so
-		/// a stale projection cannot outlive the change that staled it, and the panel polls it to
+		/// a stale projection cannot outlive the change that staled it, and the asset menu polls it to
 		/// know when to republish.</summary>
 		/// <remarks>Never reset: the caches compare it as a plain int, so a count that started again
 		/// could land on a number an older projection was stored under.</remarks>
 		public int Generation { get; private set; } = 1;
 
-		/// <summary>The index the panel reads. A load empties it at preload; a full pass builds its
+		/// <summary>The index the asset menu reads. A load empties it at preload; a full pass builds its
 		/// replacement aside and publishes it only when the pass succeeds; a partial pass edits it in
 		/// place. See <see cref="RunIndex"/>.</summary>
 		public CatalogIndex Index { get; private set; } = new();
@@ -298,7 +298,7 @@ namespace BetterBuildingMenu.Systems
 				_indexOnFirstUpdate = false;
 				Mod.Log.Debug("Full pass at first update: the mod joined a running game");
 				// There is no load to retry it: if this fails, the index stays empty until the
-				// next load, and the panel shows its indexing notice. With no pass behind it, a
+				// next load, and the asset menu shows its indexing notice. With no pass behind it, a
 				// language change has no indexed locale to differ from, so it cannot retry.
 				RunIndex(true);
 			}
@@ -591,7 +591,7 @@ namespace BetterBuildingMenu.Systems
 				// and not even computed otherwise. See docs/indexing.md.
 				if (Mod.Log.isLevelEnabled(Level.Debug))
 				{
-					// Which processors feed anything the lens can show.
+					// Which processors feed anything the asset menu can show.
 					Log(IndexAuditLog.ProcessorCensus(census, Index));
 					var all = Index.All;
 
@@ -976,7 +976,7 @@ namespace BetterBuildingMenu.Systems
 		}
 
 		/// <summary>
-		/// Asks the game which unique assets the city already holds, for the panel to
+		/// Asks the game which unique assets the city already holds, for the asset menu to
 		/// refuse a second one of.
 		/// </summary>
 		/// <remarks>
@@ -1061,7 +1061,7 @@ namespace BetterBuildingMenu.Systems
 		/// <summary>Keeps the placed-unique set in step with the city.</summary>
 		/// <remarks>Fires on both edges, so the state goes stale in neither direction. Not a re-index:
 		/// nothing about the PREFAB changed, only what the city holds, and the generation is enough for
-		/// the panel to republish.</remarks>
+		/// the asset menu to republish.</remarks>
 		private void OnUniqueAssetStatusChanged(Entity prefab, bool placed)
 		{
 			PlacedUniques.Set(prefab.Index, placed);

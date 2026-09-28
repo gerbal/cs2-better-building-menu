@@ -1,10 +1,10 @@
-import { LensOwnsCurrentMenu$ } from "mods/bindings";
+import { OwnsCurrentMenu$ } from "mods/bindings";
 
 /** The game's hook for whether the tool options bank shows. */
 export type ToolOptionsVisibleHook = () => boolean;
 
 /**
- * Keeps the game's options bank on screen while the lens owns the menu. The
+ * Keeps the game's options bank on screen while the asset menu owns the menu. The
  * bank only shows for an active tool and browsing is not one.
  *
  * Reads the binding without a hook, deliberately: the game can add this
@@ -15,8 +15,8 @@ export type ToolOptionsVisibleHook = () => boolean;
  */
 export const ToolOptionsVisibility = (vanillaHook: ToolOptionsVisibleHook): ToolOptionsVisibleHook => {
   return () => {
-    const lensOwnsCurrentMenu = LensOwnsCurrentMenu$.value;
+    const ownsCurrentMenu = OwnsCurrentMenu$.value;
 
-    return vanillaHook() || lensOwnsCurrentMenu;
+    return vanillaHook() || ownsCurrentMenu;
   };
 };

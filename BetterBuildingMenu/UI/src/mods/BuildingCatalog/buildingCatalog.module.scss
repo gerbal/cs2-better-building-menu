@@ -1,12 +1,12 @@
 @use "../../base.scss" as _base;
-@use "../../lensGeometry" as *;
+@use "../../assetMenuGeometry" as *;
 
 // No var(--name, fallback) in this file. Cohtml does not support the
 // two-argument form and logs an unresolved-variable warning for every element
 // carrying one, on every style pass. The game's theme always defines these.
 
-// Table column geometry is in lensGeometry.scss, shared with the column
-// arithmetic in buildingLensLayout.ts. A trailing control's width changes it
+// Table column geometry is in assetMenuGeometry.scss, shared with the column
+// arithmetic in assetMenuLayout.ts. A trailing control's width changes it
 // THERE.
 
 .catalog {
@@ -14,7 +14,7 @@
   flex-direction: column;
   flex: 1 1 auto;
   height: auto;
-  // The React surface supplies a render-target-aware max-height. Keep this
+  // The asset menu supplies a render-target-aware max-height. Keep this
   // fallback for the first frame before bindings/window metrics settle.
   max-height: 100%;
   min-height: 0;
@@ -263,7 +263,7 @@
     margin-left: $row-gap;
   }
   // Right padding reserves exactly what the row spends after its last metric
-  // cell — see the table geometry in lensGeometry.scss. The rows' scrollbar
+  // cell — see the table geometry in assetMenuGeometry.scss. The rows' scrollbar
   // is added on top of it when the rows actually scroll.
   padding: 5rem $table-trailing-reserve 3rem $row-padding-left;
 
@@ -431,7 +431,7 @@
   flex: 1 1 auto;
   // Zero, and it has to be: in Cohtml a min-width on a flex item disables its
   // flex-grow, so a floor written here freezes the column rather than
-  // protecting it. getBuildingLensColumnWidths narrows the metric cells.
+  // protecting it. getAssetMenuColumnWidths narrows the metric cells.
   min-width: 0;
 }
 
@@ -581,7 +581,7 @@
 
 // Numbers compare by magnitude, so they align on their right edge. Lot, level
 // and parking are labels rather than quantities and stay centred. Column
-// widths come inline from getBuildingLensColumnWidths, around the gutter below.
+// widths come inline from getAssetMenuColumnWidths, around the gutter below.
 .metricCost,
 .metricUpkeep,
 .metricWorkers,

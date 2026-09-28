@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog.ts";
-import { getNumberSeparators } from "../src/domain/buildingLensMetricFormat.ts";
+import { getNumberSeparators } from "../src/domain/assetMenuMetricFormat.ts";
 import { TILE_TOOLTIP_MAX_LINES } from "../src/domain/buildingTileTooltip.ts";
 import { hoverCardLabels, hoverCardTiers, type HoverCardLineContext } from "../src/domain/hoverCardLines.ts";
 

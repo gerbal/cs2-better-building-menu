@@ -36,7 +36,7 @@ export interface BuildingCatalogEntry {
   /**
    * Milestone index the asset waits on, 0 for none. Meaningful only while
    * isLocked. An index rather than a name because the ~20 names arrive once in
-   * their own table — see BuildingLensMilestones.
+   * their own table — see AssetMenuMilestones.
    */
   unlockMilestone: number;
   devTreeBranch?: string | null;

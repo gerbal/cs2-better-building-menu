@@ -1,6 +1,6 @@
 /**
  * The game's own filter row, forwarded to the backend: `ToolbarUISystem`
- * filters its own grid on four bindings, and the lens replaced that grid and
+ * filters its own grid on four bindings, and the asset menu replaced that grid and
  * not the row. The rule is C#'s; this only carries the selection across.
  */
 

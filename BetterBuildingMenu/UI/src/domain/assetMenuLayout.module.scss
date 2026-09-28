@@ -1,0 +1,9 @@
+@use "../assetMenuGeometry" as *;
+
+// No rules: assetMenuLayout.ts imports this for the numbers alone, and a
+// sheet with rules would load them ahead of the components' own sheets.
+:export {
+  tableRowFurniture: $table-row-furniture;
+  paneTotal: $pane-width + $pane-gap;
+  handleHeight: $handle-height;
+}

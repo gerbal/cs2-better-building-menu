@@ -3,7 +3,7 @@ import type { ToolbarEntity } from "./toolbarEntity";
 /**
  * The entity index behind a toolbar selection, or null when nothing is
  * selected. Index 0 is `Entity.Null`: treating it as a real selection would
- * reopen the lens every time the player closes a menu.
+ * reopen the asset menu every time the player closes a menu.
  */
 export function toolbarEntityIndex(entity: ToolbarEntity | null | undefined): number | null {
   if (entity === null || entity === undefined) {
@@ -23,7 +23,7 @@ export function vanillaMenuSelectedCommand(entityIndex: number) {
   } as const;
 }
 
-/** Tells the backend the toolbar dropped its menu, so the lens should go too. */
+/** Tells the backend the toolbar dropped its menu, so the asset menu should go too. */
 export function vanillaMenuDeselectedCommand() {
   return {
     method: "VanillaMenuDeselected",
@@ -62,7 +62,7 @@ export function watchAction(state: WatchState, index: number | null): WatchActio
 /**
  * What the watcher remembers while the setting is off: observations still count,
  * so the menu open when the setting comes on reads as a fresh selection and the
- * lens takes it over at once. Nothing is routed while off, so `last` is null.
+ * asset menu takes it over at once. Nothing is routed while off, so `last` is null.
  */
 export function watchStateWhileOff(): WatchState {
   return { seen: true, last: null };
@@ -81,19 +81,19 @@ export function nextWatchState(state: WatchState, index: number | null, action: 
 
 /** What the Escape rule needs to know. */
 export interface EscapeContext {
-  /** Whether the lens is on screen. */
-  lensOpen: boolean;
+  /** Whether the asset menu is on screen. */
+  assetMenuOpen: boolean;
   /** Upstream Find It's panel is up; Escape is theirs then. */
   findItPanelShown?: boolean;
 }
 
 /**
- * Whether an Escape should clear the toolbar selection, taking the lens with it.
+ * Whether an Escape should clear the toolbar selection, taking the asset menu with it.
  * One condition, deliberately: see docs/design-notes.md, "Escape closes the
- * lens unconditionally".
+ * asset menu unconditionally".
  */
-export function shouldClearOnEscape({ lensOpen, findItPanelShown = false }: EscapeContext): boolean {
+export function shouldClearOnEscape({ assetMenuOpen, findItPanelShown = false }: EscapeContext): boolean {
   // Escape belongs to Find It's panel while it is up; clearing the menu
   // selection underneath it would close our menu behind their back.
-  return lensOpen && !findItPanelShown;
+  return assetMenuOpen && !findItPanelShown;
 }

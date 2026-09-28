@@ -12,7 +12,7 @@ import { ToolOptionsPanelRefresh } from "../../src/mods/ToolOptionsVisibility/To
 describe("ToolOptionsPanelRefresh", () => {
   beforeEach(() => resetBindings());
 
-  it("re-renders the vanilla panel when lens ownership changes", () => {
+  it("re-renders the vanilla panel when asset menu ownership changes", () => {
     const useToolOptionsVisible = ToolOptionsVisibility(() => { const [v] = useState(false); return v; });
     const Vanilla = forwardRef<HTMLDivElement, { className?: string }>((props, ref) => (
       <div ref={ref} className={props.className}>{useToolOptionsVisible() ? "shown" : "hidden"}</div>
@@ -23,7 +23,7 @@ describe("ToolOptionsPanelRefresh", () => {
     act(() => { root = create(<Panel className="bank" />); });
     assert.equal((root.toJSON() as { children: string[] }).children[0], "hidden");
 
-    setBinding("BetterBuildingMenu", "LensOwnsCurrentMenu", true);
+    setBinding("BetterBuildingMenu", "OwnsCurrentMenu", true);
     act(() => { root.update(<Panel className="bank" />); });
     const json = root.toJSON() as ReactTestRendererJSON;
     assert.equal(json.children?.[0], "shown");

@@ -136,13 +136,13 @@ public sealed class BuildingCatalogQueryEngineTests
     public void Query_SearchIgnoresSurroundingWhitespaceTheBoxSends()
     {
         // The box sends what was typed, and the space before the next word must not
-        // drop every name that ends at this one. The lens trims the query's copy.
+        // drop every name that ends at this one. The asset menu trims the query's copy.
         BuildingCatalogPage trailing = BuildingCatalogQueryEngine.Query(
             SampleEntries,
-            BuildingCatalogLensState.Initial.Search("turbine ").Query);
+            AssetMenuState.Initial.Search("turbine ").Query);
         BuildingCatalogPage leading = BuildingCatalogQueryEngine.Query(
             SampleEntries,
-            BuildingCatalogLensState.Initial.Search("  wind").Query);
+            AssetMenuState.Initial.Search("  wind").Query);
 
         Assert.Equal(2, Assert.Single(trailing.Items).Id);
         Assert.Equal(2, Assert.Single(leading.Items).Id);
@@ -156,13 +156,13 @@ public sealed class BuildingCatalogQueryEngineTests
             SampleEntries[0] with { Id = 1, Name = "Elementary School", UiMenu = "Education", UiCategory = "Schools" },
             SampleEntries[0] with { Id = 2, Name = "Medical Clinic", UiMenu = "Healthcare", UiCategory = "Clinics" },
         };
-        BuildingCatalogLensState lens = BuildingCatalogLensState.Initial
+        AssetMenuState state = AssetMenuState.Initial
             .SelectMenu("Education")
             .SelectCategory("Schools")
             .Search("clinic");
 
-        Assert.Equal(0, BuildingCatalogQueryEngine.Query(entries, lens.Query).TotalCount);
-        Assert.Equal(1, BuildingCatalogQueryEngine.Query(entries, lens.EverywhereQuery()).TotalCount);
+        Assert.Equal(0, BuildingCatalogQueryEngine.Query(entries, state.Query).TotalCount);
+        Assert.Equal(1, BuildingCatalogQueryEngine.Query(entries, state.EverywhereQuery()).TotalCount);
     }
 
     [Fact]
@@ -317,7 +317,7 @@ public sealed class BuildingCatalogQueryEngineTests
     }
 
     [Fact]
-    public void FacetSelection_TogglesValuesCaseInsensitivelyAndClearsOnlyLensFacets()
+    public void FacetSelection_TogglesValuesCaseInsensitivelyAndClearsOnlyAssetMenuFacets()
     {
         BuildingCatalogQuery selected = BuildingCatalogFacetSelection.Toggle(
             new BuildingCatalogQuery(SearchText: "school", Offset: 50),

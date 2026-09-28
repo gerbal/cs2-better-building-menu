@@ -7,7 +7,7 @@ namespace BetterBuildingMenu.Tests
 	/// <summary>
 	/// Asserted against the decompiled ToolbarUISystem.FilterByThemes and
 	/// FilterByPacks rather than against what the filter ought to do: a "nicer"
-	/// rule is a lens that shows a different set from the menu it replaces.
+	/// rule is an asset menu that shows a different set from the menu it replaces.
 	/// </summary>
 	public class VanillaToolbarFilterTests
 	{
@@ -23,7 +23,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void AnUntouchedToolbarHidesNothing()
 		{
-			// The early out both halves carry. Without it the lens opens empty,
+			// The early out both halves carry. Without it the asset menu opens empty,
 			// which is how a filter nobody has set would announce itself.
 			Assert.True(VanillaToolbarFilter.IsVisible(ThemedBy(European), VanillaToolbarSelection.None));
 			Assert.True(VanillaToolbarFilter.IsVisible(InPacks(5), VanillaToolbarSelection.None));

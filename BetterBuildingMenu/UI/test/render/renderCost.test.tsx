@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { catalogPage, entry } from "../harness/render";
 import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
-import { resetLensView, setLensView } from "../../src/domain/lensViewStore";
+import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import type { BuildingCatalogEntry } from "../../src/domain/buildingCatalog";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
 
@@ -29,13 +29,13 @@ describe("what a keystroke re-renders", () => {
 
   beforeEach(() => {
     resetBindings();
-    resetLensView();
+    resetAssetMenuView();
     reads = 0;
     globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined };
     globals.requestAnimationFrame = () => 0;
     globals.cancelAnimationFrame = () => undefined;
-    setBinding("BetterBuildingMenu", "PanelWidth", 700);
-    setLensView({ viewMode: "table" });
+    setBinding("BetterBuildingMenu", "AssetMenuWidth", 700);
+    setAssetMenuView({ viewMode: "table" });
   });
 
   afterEach(() => {
@@ -51,7 +51,7 @@ describe("what a keystroke re-renders", () => {
     it(`leaves the rows alone in ${mode} mode when only the search box moves`, () => {
       // The box echoes every keystroke, and the catalog reads it; the rows'
       // props do not change until the page does.
-      setLensView({ viewMode: mode });
+      setAssetMenuView({ viewMode: mode });
       setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([counted(1), counted(2), counted(3)]));
       mount();
       const afterMount = reads;

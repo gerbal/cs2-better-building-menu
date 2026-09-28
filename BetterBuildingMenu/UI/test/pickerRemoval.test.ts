@@ -34,14 +34,14 @@ describe("the object picker is gone", () => {
     }
   });
 
-  it("keeps the options bank visible for the lens alone", () => {
+  it("keeps the options bank visible for the asset menu alone", () => {
     const visibility = src("mods/ToolOptionsVisibility/ToolOptionsVisibility.tsx");
     assert.doesNotMatch(visibility, /BetterBuildingMenu\.Picker/);
-    assert.match(visibility, /lensOwnsCurrentMenu/);
+    assert.match(visibility, /ownsCurrentMenu/);
   });
 
-  it("offers no picker action on the menu surface", () => {
-    assert.doesNotMatch(src("domain/menuSurfaceContracts.ts"), /PickerOption/);
+  it("offers no picker action on the asset menu", () => {
+    assert.doesNotMatch(src("domain/assetMenuContracts.ts"), /PickerOption/);
     assert.doesNotMatch(src("domain/buildingCatalogContracts.ts"), /pickerOption/);
   });
 });

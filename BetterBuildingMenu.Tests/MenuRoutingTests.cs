@@ -22,7 +22,7 @@ namespace BetterBuildingMenu.Tests
 		public void YieldsAMenuWeCannotFill()
 		{
 			// Extra Assets Importer's menu is built from nested categories the
-			// index never descends into; taking it over would draw an empty panel.
+			// index never descends into; taking it over would draw an empty asset menu.
 			Assert.True(MenuRouting.ShouldYield(replaceEnabled: true, menuName: "ExtraAssetsMenu", menuHasAssets: false));
 		}
 

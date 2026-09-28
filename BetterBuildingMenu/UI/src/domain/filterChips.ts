@@ -4,9 +4,9 @@
  * cause. Model only and import-free, so the commands here are literals.
  */
 
-import type { BuildingLensFacetState } from "./buildingCatalogFacets";
+import type { AssetMenuFacetState } from "./buildingCatalogFacets";
 import type { Command } from "./command";
-import type { BuildingLensMetricRangeState } from "./buildingLensFilterSummary";
+import type { AssetMenuMetricRangeState } from "./assetMenuFilterSummary";
 import type { MetricRangeId } from "./buildingCatalogRanges";
 
 export type ChipCommand = Command;
@@ -23,8 +23,8 @@ export interface FilterChip {
 }
 
 export interface FilterChipInput {
-  facets?: BuildingLensFacetState | null;
-  metricRanges?: BuildingLensMetricRangeState | null;
+  facets?: AssetMenuFacetState | null;
+  metricRanges?: AssetMenuMetricRangeState | null;
 }
 
 const METRIC_LABELS: Record<MetricRangeId, string> = {
@@ -36,7 +36,7 @@ const METRIC_LABELS: Record<MetricRangeId, string> = {
   lotDepth: "Lot depth",
 };
 
-const METRIC_BOUNDS: Record<MetricRangeId, [keyof BuildingLensMetricRangeState, keyof BuildingLensMetricRangeState]> = {
+const METRIC_BOUNDS: Record<MetricRangeId, [keyof AssetMenuMetricRangeState, keyof AssetMenuMetricRangeState]> = {
   cost: ["minCost", "maxCost"],
   upkeep: ["minUpkeep", "maxUpkeep"],
   workers: ["minWorkers", "maxWorkers"],
@@ -60,7 +60,7 @@ function formatRange(min: number | null, max: number | null): string {
   return `≤ ${formatBound(max as number)}`;
 }
 
-function readBound(state: BuildingLensMetricRangeState, key: keyof BuildingLensMetricRangeState): number | null {
+function readBound(state: AssetMenuMetricRangeState, key: keyof AssetMenuMetricRangeState): number | null {
   const value = state[key];
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -90,7 +90,7 @@ export function buildFilterChips(input: FilterChipInput | null | undefined): Fil
         removable: true,
         // The same trigger that selected it: toggling is symmetric, so removal
         // needs no C# path of its own.
-        remove: { method: "ToggleBuildingLensFacet", args: [group.id, option.id] },
+        remove: { method: "ToggleAssetMenuFacet", args: [group.id, option.id] },
       });
     }
   }

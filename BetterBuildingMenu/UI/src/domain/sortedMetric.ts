@@ -5,7 +5,7 @@
  */
 
 import type { SortColumn } from "./buildingCatalogContracts";
-import type { BuildingLensMetric } from "./buildingLensLayout";
+import type { AssetMenuMetric } from "./assetMenuLayout";
 
 /** Enough of a catalog entry to read a metric off. */
 export interface SortedMetricEntry {
@@ -21,10 +21,10 @@ export interface SortedMetricEntry {
 
 /**
  * The metric a sort column is ordering by, or null when there is nothing to
- * show. The inverse of BUILDING_LENS_COLUMN_SORT, plus the two columns that
+ * show. The inverse of ASSET_MENU_COLUMN_SORT, plus the two columns that
  * have no column of their own.
  */
-export function sortedMetricFor(column: SortColumn | null | undefined): BuildingLensMetric | null {
+export function sortedMetricFor(column: SortColumn | null | undefined): AssetMenuMetric | null {
   switch (column) {
     case "ConstructionCost":
       return "cost";
@@ -54,7 +54,7 @@ export function sortedMetricFor(column: SortColumn | null | undefined): Building
  */
 export function sortedMetricValue(
   entry: SortedMetricEntry | null | undefined,
-  metric: BuildingLensMetric | null,
+  metric: AssetMenuMetric | null,
 ): number | null {
   if (!entry || metric === null) {
     return null;

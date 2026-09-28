@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { declarationsOf } from "./harness/compiledCss.ts";
 
 /**
- * Scroll containers in the lens sit inside .catalog, whose height is a cap
+ * Scroll containers in the asset menu sit inside .catalog, whose height is a cap
  * rather than a height. A zero flex-basis resolves against nothing there, so
  * the container contributes no height and its rows lay out below the viewport,
  * present in the DOM and invisible on screen.
@@ -13,7 +13,7 @@ const SCROLL_CONTAINERS: { file: string; selector: string }[] = [
   { file: "mods/GroupedResults/groupedResults.module.scss", selector: ".groupScroll" },
 ];
 
-describe("lens scroll containers", () => {
+describe("asset menu scroll containers", () => {
   for (const { file, selector } of SCROLL_CONTAINERS) {
     const declarations = declarationsOf(file, selector);
 
@@ -27,8 +27,8 @@ describe("lens scroll containers", () => {
       );
     });
 
-    it(`${selector} caps its height so it cannot outgrow the panel`, () => {
-      assert.equal(declarations["max-height"], "100%", `${selector} should cap at the panel`);
+    it(`${selector} caps its height so it cannot outgrow the asset menu`, () => {
+      assert.equal(declarations["max-height"], "100%", `${selector} should cap at the asset menu`);
     });
 
     it(`${selector} allows itself to shrink below its content`, () => {

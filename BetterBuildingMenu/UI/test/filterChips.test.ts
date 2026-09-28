@@ -134,7 +134,7 @@ describe("Filter chips", () => {
     });
 
     // Toggling is symmetric, so removal needs no separate C# path.
-    assert.deepEqual(chips[0].remove, { method: "ToggleBuildingLensFacet", args: ["zone", "office"] });
+    assert.deepEqual(chips[0].remove, { method: "ToggleAssetMenuFacet", args: ["zone", "office"] });
     assert.deepEqual(chips[1].remove, { method: "SetBuildingCatalogMetricRange", args: ["capacity", "", ""] });
   });
 

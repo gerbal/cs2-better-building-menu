@@ -12,7 +12,7 @@ import {
 } from "domain/vanillaMenuWatch";
 import {
   FindItPanelShown$,
-  LensOwnsCurrentMenu$,
+  OwnsCurrentMenu$,
   ReplaceVanillaBuildMenu$,
   SelectedAssetMenu$,
   send,
@@ -22,7 +22,7 @@ import {
 const ESCAPE_KEY_CODE = 27;
 
 /**
- * Routes vanilla toolbar menus into the lens; renders nothing. The entity index
+ * Routes vanilla toolbar menus into the asset menu; renders nothing. The entity index
  * goes to the backend because naming a menu needs the prefab system, and a menu
  * the index cannot name is declined quietly and keeps its vanilla grid.
  */
@@ -36,13 +36,13 @@ export const VanillaMenuWatcher = () => {
   // toolbar moved on after it was scheduled.
   const generation = useRef(0);
 
-  const lensOpen = useValue(LensOwnsCurrentMenu$);
+  const assetMenuOpen = useValue(OwnsCurrentMenu$);
   const findItPanelShown = useValue(FindItPanelShown$) === true;
 
   /**
-   * Escape takes the lens down by clearing the GAME's selection, so the close
+   * Escape takes the asset menu down by clearing the GAME's selection, so the close
    * branch below does the work and there is one route out. Capture phase, so a
-   * control inside the panel cannot swallow it. See shouldClearOnEscape.
+   * control inside the asset menu cannot swallow it. See shouldClearOnEscape.
    */
   useEffect(() => {
     if (!enabled) {
@@ -54,7 +54,7 @@ export const VanillaMenuWatcher = () => {
         return;
       }
 
-      if (!shouldClearOnEscape({ lensOpen, findItPanelShown })) {
+      if (!shouldClearOnEscape({ assetMenuOpen, findItPanelShown })) {
         return;
       }
 
@@ -64,7 +64,7 @@ export const VanillaMenuWatcher = () => {
     document.addEventListener("keydown", onKeyDown, true);
 
     return () => document.removeEventListener("keydown", onKeyDown, true);
-  }, [enabled, lensOpen, findItPanelShown]);
+  }, [enabled, assetMenuOpen, findItPanelShown]);
 
   useEffect(() => {
     if (!enabled) {
@@ -89,7 +89,7 @@ export const VanillaMenuWatcher = () => {
     }
 
     // Switching menus passes through Entity.Null within one JS tick, so
-    // closing the moment a null arrives would dismiss the lens on every move
+    // closing the moment a null arrives would dismiss the asset menu on every move
     // between menus. The microtask lets the replacement land first.
     Promise.resolve().then(() => {
       if (generation.current !== observed) {
