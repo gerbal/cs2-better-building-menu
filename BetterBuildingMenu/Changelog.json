@@ -1,6 +1,19 @@
 [
   {
     "Stable": true,
+    "Version": "0.2.1",
+    "Date": "2026-09-27",
+    "ChangeGroups": [
+      {
+        "Name": "Changes",
+        "Changes": [
+          "The mod's log holds a line or two per city load instead of about 10 KB of diagnostics, and the game's own log no longer gets warnings from it that a player could not act on."
+        ]
+      }
+    ]
+  },
+  {
+    "Stable": true,
     "Version": "0.2.0",
     "Date": "2026-09-25",
     "ChangeGroups": [
