@@ -34,8 +34,8 @@ The system is one partial class across six files in `BetterBuildingMenu/Systems/
 1. Deserialise the save. `LoadGameSystem` raises `OnGameLoaded` at the end of it.
 2. `SetGameActive` — the toolbar goes live here, and the city is playable.
 3. Await the loading screen, which waits on three progress groups. One of them, `LoadTextures`,
-   is the virtual-texturing material pass and runs on a per-frame budget, so on a slow or
-   headless frame rate it can take minutes.
+   is the virtual-texturing material pass and runs on a per-frame budget, so at a low
+   frame rate it can take minutes.
 4. Raise `onGameLoadingComplete`.
 
 Indexing only at step 4 would leave a playable city with vanilla's menu standing and nothing of
@@ -301,8 +301,7 @@ divergence list is logged beside the census so a reader of the log has the reaso
 The DLC lines beside it exist because two very different causes look identical from the UI: the
 DLC prefabs may be absent, or present and filtered for being unowned. `EnumerateLocalDLCs` reads
 the shipped manifest, so it lists what the install has; `EnumerateDLCs` goes through the platform
-backends, so it lists what the store says. A stubbed Steamworks leaves the second empty while the
-first is full, and then `IsDlcOwned` is false for everything but the base game.
+backends, so it lists what the store says.
 
 ## Per-prefab facts
 

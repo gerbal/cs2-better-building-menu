@@ -156,12 +156,10 @@ is the fallback, and a modded theme, which has no key, keeps its prefab name.
 - **Roles take a building's name.** A role reads the name of the plain building it is built
   around, as a school level does, or the toolbar tab it sits under when it has no one typical
   building. No two roles may share a name in any language, or a filter would offer the same word
-  twice. The names carry the game's quirks with them: the Italian fire station is "…grande", and
-  the Japanese sewage outlet reads as a treatment plant. The Role filter orders its options by
+  twice. The Role filter orders its options by
   id, so outside English they are not alphabetical by what they say.
 - **Density tiers keep ours.** The game has no word for a tier alone. Its zone names are whole
   phrases, the zone type, the tier and, for residential and commercial zones, the region, and the
-  region sits somewhere different in each language, so cutting it out leaves debris: Korean
-  keeps "스타일", Japanese "（式）", Russian a trailing dash, and Polish starts lowercase. A tier
+  region sits somewhere different in each language, so cutting it out leaves fragments behind. A tier
   also spans residential, commercial and office zones, which no one zone name does. The tiers are
   to be translated as the mod's own strings instead; see [issue #99](https://github.com/gerbal/cs2-better-building-menu/issues/99).

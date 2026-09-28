@@ -36,29 +36,12 @@ CS2_BUILD_CONFIG=Release ./build.sh package
 
 - The UI step typechecks the source and tests, lints, then runs the unit and
   render suites.
-- `package` writes `artifacts/BetterBuildingMenu/` and refuses a package that
-  still carries a Find It identity. Give it the same `CS2_BUILD_CONFIG` as the
-  build, or it copies whatever Debug DLL is on disk.
+- `package` writes `artifacts/BetterBuildingMenu/`. Give it the same
+  `CS2_BUILD_CONFIG` as the build, or it copies whatever Debug DLL is on disk.
 
 ## Deploy
 
-Copy `artifacts/BetterBuildingMenu/` into the game's `Mods/` directory, or let
-`build.sh` do it into an empty, isolated one; it refuses to overwrite a target:
-
-```sh
-CS2_BUILD_CONFIG=Release CSII_SUCCESSOR_MODS_DIR=/path/to/empty/isolated/Mods ./build.sh deploy
-```
-
-Never leave a `.disabled` copy containing a UI bundle in `Mods/`: the asset
-scanner registers it as a duplicate module.
-
-Check that the deployed DLL is the one you built before trusting a run. A stale
-Debug DLL copied over a Release build logs as healthily as the right one.
-Metadata strings are UTF-16, so `-el` is required:
-
-```sh
-strings -el "<Mods>/BetterBuildingMenu/BetterBuildingMenu.dll" | grep '<a literal from the change>'
-```
+Copy `artifacts/BetterBuildingMenu/` into the game's `Mods/` directory.
 
 ## Live check
 

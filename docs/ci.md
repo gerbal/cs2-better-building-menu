@@ -1,7 +1,6 @@
 # Continuous integration
 
-Two workflows, in `.github/workflows/`. Changing either needs a token with the `workflow`
-scope (`gh auth refresh -s workflow`); GitHub refuses a push that touches them otherwise.
+Two workflows, in `.github/workflows/`.
 
 - **`ui.yml`** runs for every pull request, forks included, and every push to `main`: `npm test` (typecheck, lint,
   unit and render suites), the webpack build, and a parse of `build.sh`. The UI needs nothing

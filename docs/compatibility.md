@@ -64,6 +64,4 @@ result can predate later changes, which are in `BetterBuildingMenu/Changelog.jso
 
 Sources were cloned and grepped for `moduleRegistry.(extend|override|append)`
 and Harmony attributes, and for the menu-tree writers `m_Group`, `m_Menu`,
-`UIAssetCategoryPrefab` and `AddPrefab`. Subscriber totals from the game's
-package cache ranked the survey, since the in-game "Most popular" page could
-not be filtered to code mods reliably.
+`UIAssetCategoryPrefab` and `AddPrefab`.

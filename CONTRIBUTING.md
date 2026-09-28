@@ -8,8 +8,6 @@
   `~/.local/share/Steam/steamapps/common/Cities Skylines II`
   (`Directory.Build.props`).
 - **UI.** Node 22.13 or later, then `npm ci --ignore-scripts` in `BetterBuildingMenu/UI`.
-  Run it again after pulling a change to `package-lock.json`: an older
-  install lacks the TypeScript and eslint that `npm test` runs.
   The UI's tests stub the game's `cs2/*` modules, so they run without the game.
 - **The game's source.** Read a decompilation of the game's assemblies (ILSpy
   or similar) before relying on how a game system behaves. It is the game's
@@ -42,11 +40,8 @@ A test cannot reach Unity's native side, such as a `LogManager` logger or
 
 ### Warnings
 
-Warnings fail the build in CI, in the mod and in the tests: the
-compiler's, the analyzers', MSBuild's and NuGet's (`Directory.Build.props`).
-Both build without one. NuGet's vulnerability audit is the exception and
-stays a warning, since a feed outage or a new advisory is no fault of the
-change being built. A local build reports warnings but does not fail on
+Warnings fail the build in CI, in the mod and in the tests
+(`Directory.Build.props`); a local build reports them but does not fail on
 them. To build as CI does, start clean, because an incremental build does
 not repeat warnings for what it does not recompile:
 
@@ -58,9 +53,8 @@ CI=true ./build.sh test
 
 Most warnings will be nullable:
 
-- A field a system sets in `OnCreate` is declared `= null!`. The mod's only
-  other `!` are the same `= null!`: on `Mod.Settings`, set in `OnLoad`, and on
-  a processor's `out` parameter when it returns false.
+- A field a system sets in `OnCreate` is declared `= null!`. Elsewhere, write
+  a check the compiler can follow (below) rather than add `!`.
 - A value that can really be missing is declared nullable, with readers that
   check it.
 
@@ -73,8 +67,6 @@ check as a pattern it can follow instead of adding `!` after it:
 
 A method that answers that question for its caller, such as
 `BuildingCatalogGrouping.IsGrouped`, says so with `[NotNullWhen(true)]`.
-Where a LINQ filter in one step cannot tell the compiler about the next,
-a loop that keeps only the non-null values can.
 
 ### Shared contracts
 
@@ -92,9 +84,7 @@ tests fail while the two disagree. Never edit the generated file by hand.
 ./build.sh package      # artifacts/BetterBuildingMenu
 ```
 
-Deploy by copying the packaged folder into the game's `Mods/` directory. Never
-leave a `.disabled` copy containing a UI bundle in `Mods/`: the asset scanner
-registers it as a duplicate module.
+Deploy by copying the packaged folder into the game's `Mods/` directory.
 
 A Debug build logs the index audits (see [docs/indexing.md](docs/indexing.md),
 "The menu audit"). Releases follow
