@@ -49,65 +49,15 @@ This mod was developed with AI assistance (Anthropic's Claude), under human dire
   <Screenshot Value="Properties/Screenshot_04.jpg" />
 
   <Tag Value="Code Mod" />
-  <ModVersion Value="0.2.0" />
+  <ModVersion Value="0.2.1" />
   <GameVersion Value="1.6.*" />
   <AccessLevel Value="Public" />
   <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/mod-better-building-menu.1941089/" />
 
   <ChangeLog>
-0.2.0
+0.2.1
 
 Changes
-* Each menu's tabs follow the game's own tab row, the menu picker follows the toolbar, and the All tab's headings follow the tabs.
-* Development tree tabs and headings use the game's own names, in the game's language, instead of English.
-* Education's school tabs and school-tier headings name each level after the game's own school, in the game's language.
-* Subcategory headings and labels, the All tab and chip, and theme names use the game's own words, in the game's language. In English, Paths reads Pathways, Shrubs &amp; Bushes reads Bushes, and Extractor Zones reads Specialized Industry.
-* The Role filter and role headings use the game's name for each role, in the game's language.
-* An asset that several development tree nodes unlock is filed under one of them by a rule modelled on how the game unlocks it, instead of whichever came first.
-* Changing or clearing a filter or a range starts the list again at its first 100 rows.
-* The footer's counts group their digits the way the game does.
-* Replace the vanilla build menu takes effect at once, without a restart. Turning it off hands an open menu back to the game.
-
-Asset details
-* Hovering an asset shows more of the game's own tooltip: pollution levels, a power plant's voltage, power line capacity on roads, transformer capacity, input and output, water pipes on roads, and transport stops. A network's cost includes its auxiliary networks. Most lines use the game's wording, in every language it ships.
-* An incinerator's Capacity is its garbage store, and its electricity gets a Power output line.
-* Power output adds up every source a building has instead of showing only the largest.
-* Zoned and signature buildings show no upkeep figure, as in the game's tooltip. The table's Upkeep column, sort and range skip them.
-* Upgrades read as the game reads them: Resource consumption -20 %, pollution changes as signed percentages, and graduation as +5 %.
-* Negative wellbeing, health and work conditions are shown with their sign.
-* Cemetery and crematorium capacity is a plain number, as in the game's tooltip.
-* Comfort is shown for parking and transport stops, a geothermal plant says it needs ground water, and a hydroelectric dam shows its own cost and upkeep.
-* Effects use the game's units, a shelter's vehicles read Evacuation buses, homes per cell keep a decimal, a road with no upkeep has no upkeep line, and deathcare processing rounds up.
-
-Fixes
-* With a menu open, clicking a building on the map shows its info panel.
-* After a search, Enter picks the best match you can place, in every view.
-* A trailing space in the search box no longer loses matches.
-* With a tab selected, the number of matches elsewhere is what Search everything finds.
-* Typing in a filter's own search box no longer breaks the panel.
-* The resize edge stays under the cursor while dragging, at every resolution.
-* Load more says how many rows it adds, and a double click loads once.
-* The metric filter's badge counts the ranges set.
-* The category chip's picker offers only the tabs shown.
-* The Small Roads tab and heading no longer carry a stray line break.
-* The Content filter's icon is drawn.
-* The reverse-sort button's tooltip reads Reverse sort.
-* The Options screen shows its labels in English in the 13 languages that had none translated.
-* On a Turkish system, words such as Industrial are capitalised correctly.
-* If the panel fails while drawing, the game's own menu, upgrades picker or tool options take its place. If indexing fails, the panel keeps the city's last complete index.
-* With the upgrades picker open, the mouse wheel zooms and extensions can be placed above it.
-* A filter row with two icons keeps them on one line at every resolution.
-* Search everything shows its whole label at 1280x720.
-* Very long names are shortened in the middle in the list and card views.
-
-Compatibility
-* Road Builder: an edited road is replaced in its menu and tab at once, numbered duplicates keep their numbers, and discarded roads no longer appear on a session's first load.
-* Find It: an asset whose tag names a category pair the panel does not have is listed under its own category instead of being dropped.
-* Asset UI Manager and other mods that move a category or an asset between menus: it gets one heading in the All tab, in its place.
-
-Performance
-* Typing a search or dragging the resize edge no longer redraws every row.
-* The mod no longer copies every object and road in the city once a minute.
-* A full index pass no longer checks each building's mesh against every other's, and building or bulldozing a unique building no longer refreshes a closed panel.
+* The mod's log holds a line or two per city load instead of about 10 KB of diagnostics, and the game's own log no longer gets warnings from it that a player could not act on.
 </ChangeLog>
 </Publish>
