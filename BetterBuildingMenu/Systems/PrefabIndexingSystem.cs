@@ -274,7 +274,7 @@ namespace BetterBuildingMenu.Systems
 		/// <summary>Notes that the dictionary changed; the full pass it earns runs from OnUpdate.</summary>
 		/// <remarks>Never a pass from here: the event also fires at the main menu and during a
 		/// load, and OnUpdate runs only while a city is loaded. LocaleReindexPolicy makes a burst
-		/// of sources one pass. See docs/indexing.md, "Load timing".</remarks>
+		/// of sources one pass. See docs/indexing.md, "Language changes".</remarks>
 		private void OnActiveDictionaryChanged()
 		{
 			var localeId = GameManager.instance.localizationManager.activeLocaleId;

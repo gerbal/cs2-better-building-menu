@@ -23,54 +23,63 @@ working on the code.
 
 ## How it fits together
 
-`PrefabIndexingSystem` indexes every prefab once per load, and again for
-prefabs that change. `BuildingCatalogAdapter` projects that index into
-catalog rows. For each refresh, `CatalogView` scopes the rows to the open
-menu, has `BuildingCatalogQueryEngine` filter, sort and page them, and works
-out the tabs, facets and metric ranges alongside.
-`BuildingMenuUISystem` publishes the results as bindings. The React UI, which
-extends vanilla's `AssetMenu`, draws them, and sends what the player does back
-as triggers. The query state lives in C# (`BuildingCatalogLensState`), so the
-UI never holds more than a page. Terms are in the glossary in
+1. `PrefabIndexingSystem` indexes every prefab once per load, and again for
+   prefabs that change.
+2. `BuildingCatalogAdapter` projects that index into catalog rows.
+3. For each refresh, `CatalogView` scopes the rows to the open menu, has
+   `BuildingCatalogQueryEngine` filter, sort and page them, and works out the
+   tabs, facets and metric ranges alongside.
+4. `BuildingMenuUISystem` publishes the results as bindings.
+5. The React UI, which extends vanilla's `AssetMenu`, draws them, and sends
+   what the player does back as triggers.
+
+The query state lives in C# (`BuildingCatalogLensState`), so the UI never
+holds more than a page. Terms are in the glossary in
 [CONTRIBUTING.md](CONTRIBUTING.md).
-
-## Docs
-
-* [CONTRIBUTING.md](CONTRIBUTING.md): setup, boundaries, the rule for
-  comments and docs, glossary.
-* [docs/roadmap.md](docs/roadmap.md): open work.
-* [docs/release-checklist.md](docs/release-checklist.md): what to run before
-  a release.
-* [docs/ci.md](docs/ci.md): what CI runs, and the private game assemblies the
-  C# job builds against.
-* [docs/compatibility.md](docs/compatibility.md): how popular mods fare
-  beside this one, and why.
-* [docs/indexing.md](docs/indexing.md) and
-  [docs/design-notes.md](docs/design-notes.md): the reasoning behind the
-  indexer and the UI, pointed to from the code.
-* [docs/vanilla-upgrades.md](docs/vanilla-upgrades.md): how vanilla handles
-  building upgrades and extensions.
-* [docs/FORK.md](docs/FORK.md): provenance and license.
 
 ## Build and test
 
 ```sh
 ./build.sh all                              # C# (Debug) and UI
 ./build.sh test                             # C# tests
-CS2_BUILD_CONFIG=Release ./build.sh all     # release build
-CS2_BUILD_CONFIG=Release ./build.sh package # artifacts/BetterBuildingMenu
-cd BetterBuildingMenu/UI && npm test        # UI typecheck, lint, unit and render suites
+(cd BetterBuildingMenu/UI && npm test)      # UI typecheck, lint, unit and render suites
 ```
 
-Deploy by copying the packaged folder into the game's `Mods/` directory. Never
-leave a `.disabled` copy containing a UI bundle in `Mods/`: the asset scanner
-registers it as a duplicate module.
+Setup, packaging and deploying are in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## Docs
+
+Start here:
+
+* [CONTRIBUTING.md](CONTRIBUTING.md): setup, building and trying it in game,
+  boundaries, the rule for comments and docs, glossary.
+* [Open issues](https://github.com/gerbal/cs2-better-building-menu/issues):
+  open work, and what is not yet checked in game.
+
+When you work on that part of the mod:
+
+* [docs/design-notes.md](docs/design-notes.md) and
+  [docs/indexing.md](docs/indexing.md): the reasoning behind the UI and the
+  indexer. The code links to the heading that explains it.
+* [docs/vanilla-upgrades.md](docs/vanilla-upgrades.md): how vanilla handles
+  building upgrades and extensions, behind the upgrades picker.
+* [docs/compatibility.md](docs/compatibility.md): what lets other mods work
+  beside this one, and how popular ones fared.
+
+For maintainers:
+
+* [docs/release-checklist.md](docs/release-checklist.md): what to run before
+  a release.
+* [docs/ci.md](docs/ci.md): what CI runs, and the private game assemblies the
+  C# job builds against.
+* [docs/FORK.md](docs/FORK.md): provenance and license.
 
 ## Compatibility
 
 Find It may be installed alongside. Its window takes the asset-menu slot while
 open and this panel returns when it closes; the object picker is Find It's
-alone. No Harmony patches; nothing is written to the save.
+alone. No Harmony patches; nothing is written to the save. Other mods are in
+[docs/compatibility.md](docs/compatibility.md).
 
 ## Credits
 

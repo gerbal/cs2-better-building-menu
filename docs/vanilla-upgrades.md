@@ -78,7 +78,7 @@ plus all *remaining* installed upgrades and strips the difference.
 ### It combines statistics
 
 `UpgradeUtils` walks the parent's `InstalledUpgrade` buffer and calls
-`ICombineData<T>.Combine` per stat. **32 stat types implement it.** The rules are
+`ICombineData<T>.Combine` per stat. **34 stat types implement it.** The rules are
 per-field and not uniformly additive:
 
 - `HospitalData.Combine` adds patient capacity, takes the larger top of the health

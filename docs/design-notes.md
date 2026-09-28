@@ -36,11 +36,13 @@ treatment that filters the thumbnail is therefore broken for that slice.
 
 `hasVectorThumbnail` in `domain/buildingLockState.ts` splits the two paths.
 Rasters keep vanilla's filter, which works over them. Vector entries swap to a
-pre-blackened copy of their own icon supplied by the backend (`lockedThumbnail`),
-giving the same silhouette with no compositing effect, and fall back to the
-ordinary thumbnail when no blackened copy exists. The remaining locked signals —
-dimmed tile ground, locked label colour, padlock — cost nothing on either path.
-`buildingGrid.module.scss` carries the rule this drives.
+pre-blackened copy of their own icon, which the backend makes from the player's
+install (`SilhouetteIcons`, sent as `silhouetteThumbnail`; `lockedThumbnail`
+picks it), giving the same silhouette with no compositing effect, and fall back
+to the ordinary thumbnail when no blackened copy exists. The remaining locked
+signals — a lighter tile ground, locked label colour, padlock — cost nothing on
+either path. The grid's, list's and table's stylesheets carry the rule this
+drives.
 
 ## Patching vanilla's layout for the lens
 
@@ -66,7 +68,7 @@ instead breaks the game's portalled dropdowns, which rely on tree order to win,
 while lowering the toolbar changes exactly the one pair. The toolbar still
 renders (the screen paints no background behind it) and stays hit-testable.
 Moving the chirper's toasts out of the pane's way would make this unnecessary; see
-[roadmap.md](roadmap.md).
+[issue #104](https://github.com/gerbal/cs2-better-building-menu/issues/104).
 
 ## Hand-rolled floating surfaces in Cohtml
 
@@ -82,7 +84,7 @@ already carries:
 
 Both apply to any floating surface built by hand rather than taken from the game's
 own controls. They hold on Cohtml 1.64 (game 1.6.0). Cohtml 2.2 (game 1.6.2) lays out flex
-with a new algorithm, and whether it still needs them is open; see [roadmap.md](roadmap.md).
+with a new algorithm, and whether it still needs them is open; see [issue #102](https://github.com/gerbal/cs2-better-building-menu/issues/102).
 
 ## The card against vanilla
 
@@ -99,13 +101,16 @@ Where the card differs from vanilla on purpose:
   is city state rather than a fact about the building, and the base figure is the more useful
   reference. Vanilla's upkeep is also a range whose top prices the burned resources at market;
   the card names each resource and its amount under the upkeep instead.
-- **A network's cost and upkeep are rounded once, per kilometre.** Upkeep rounds the
-  per-kilometre product, which is what `NetUtils.GetUpkeepCost` charges; vanilla rounds the
-  per-cell figure first (¢487/km/mo. against ¢500). Cost adds each auxiliary network's share
-  before rounding; vanilla rounds a cell's own cost before multiplying by 125 and truncates each
-  share on its own, so a cell cost of 12.4 reads ¢1,550/km on the card and ¢1,500 in vanilla.
-  So a network whose cost or upkeep for a cell rounds to nothing still shows a line, where
-  vanilla leaves it off.
+- **A network's cost and upkeep are rounded once, per kilometre.** Vanilla rounds the
+  per-cell figure first and multiplies it out after.
+  - Upkeep: the card rounds the per-kilometre figure, which is what `NetUtils.GetUpkeepCost`
+    charges (¢487/km/mo. where vanilla shows ¢500).
+  - Cost: the card adds each auxiliary network's share before rounding. Vanilla rounds a cell's
+    own cost before multiplying by 125, and truncates each share on its own, so a cell cost of
+    12.4 reads ¢1,550/km on the card and ¢1,500 in vanilla.
+
+  So a network whose per-cell cost or upkeep rounds to nothing still gets a line on the card,
+  where vanilla leaves it off.
 - **Power output is one figure**, the top of vanilla's range: vanilla shows the plant's own
   output up to that plus every source that can add to it, as 0–400,000 for an incinerator. The
   table's column and sort need one number. A network whose sub-objects hold a power plant,
@@ -116,7 +121,7 @@ Where the card differs from vanilla on purpose:
   no capacity draws no capacity line, where vanilla binds a zero.
 - **Effect numbers are invariant**, beside English labels, so a comma-decimal language reads
   "1.5" in an effect line beside "1,5" elsewhere on the card. This waits on the translation
-  work in [roadmap.md](roadmap.md).
+  work in [issue #98](https://github.com/gerbal/cs2-better-building-menu/issues/98).
 - **Some labels stay ours.** "Voltage"; "Water pipes", where the game's "Pipes" would sit beside
   a road's own "Carries" line; a zone's upkeep, which its renters pay, where the game's
   `Properties.UPKEEP` names what the city pays to run a building; helicopters and purification,
@@ -151,12 +156,10 @@ is the fallback, and a modded theme, which has no key, keeps its prefab name.
 - **Roles take a building's name.** A role reads the name of the plain building it is built
   around, as a school level does, or the toolbar tab it sits under when it has no one typical
   building. No two roles may share a name in any language, or a filter would offer the same word
-  twice. The names carry the game's quirks with them: the Italian fire station is "…grande", and
-  the Japanese sewage outlet reads as a treatment plant. The Role filter orders its options by
+  twice. The Role filter orders its options by
   id, so outside English they are not alphabetical by what they say.
 - **Density tiers keep ours.** The game has no word for a tier alone. Its zone names are whole
   phrases, the zone type, the tier and, for residential and commercial zones, the region, and the
-  region sits somewhere different in each language, so cutting it out leaves debris: Korean
-  keeps "스타일", Japanese "（式）", Russian a trailing dash, and Polish starts lowercase. A tier
+  region sits somewhere different in each language, so cutting it out leaves fragments behind. A tier
   also spans residential, commercial and office zones, which no one zone name does. The tiers are
-  translated as the mod's own strings instead; see [roadmap.md](roadmap.md).
+  to be translated as the mod's own strings instead; see [issue #99](https://github.com/gerbal/cs2-better-building-menu/issues/99).

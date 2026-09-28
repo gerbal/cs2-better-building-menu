@@ -8,8 +8,6 @@
   `~/.local/share/Steam/steamapps/common/Cities Skylines II`
   (`Directory.Build.props`).
 - **UI.** Node 22.13 or later, then `npm ci --ignore-scripts` in `BetterBuildingMenu/UI`.
-  Run it again after pulling a change to `package-lock.json`: an older
-  install lacks the TypeScript and eslint that `npm test` runs.
   The UI's tests stub the game's `cs2/*` modules, so they run without the game.
 - **The game's source.** Read a decompilation of the game's assemblies (ILSpy
   or similar) before relying on how a game system behaves. It is the game's
@@ -26,16 +24,24 @@
 ./build.sh all                                           # C# and the UI bundle
 ```
 
+CI runs the C# tests against the game's own assemblies, kept in a private
+repository, so a test that fails locally fails there too. See
+[docs/ci.md](docs/ci.md).
+
+### Tests
+
 Some of the mod's state is still process-wide statics: `Mod`'s settings and
-silhouette cache. No test sets one, and the C# test classes run in parallel,
-so none may: give the code under test an object of its own instead, as
+silhouette cache. The C# test classes run in parallel, so no test may set
+one: give the code under test an object of its own instead, as
 `CatalogIndex` and `PlacedUniques` allow.
 
-Warnings fail the build in CI, in the mod and in the tests: the
-compiler's, the analyzers', MSBuild's and NuGet's (`Directory.Build.props`).
-Both build without one. NuGet's vulnerability audit is the exception and
-stays a warning, since a feed outage or a new advisory is no fault of the
-change being built. A local build reports warnings but does not fail on
+A test cannot reach Unity's native side, such as a `LogManager` logger or
+`Mod`'s static initializer; see [docs/ci.md](docs/ci.md).
+
+### Warnings
+
+Warnings fail the build in CI, in the mod and in the tests
+(`Directory.Build.props`); a local build reports them but does not fail on
 them. To build as CI does, start clean, because an incremental build does
 not repeat warnings for what it does not recompile:
 
@@ -45,9 +51,12 @@ CI=true ./build.sh backend
 CI=true ./build.sh test
 ```
 
-Most warnings will be nullable: a field a system sets in `OnCreate` is
-declared `= null!`, and a value that can really be missing is declared
-nullable, with readers that check it.
+Most warnings will be nullable:
+
+- A field a system sets in `OnCreate` is declared `= null!`. Elsewhere, write
+  a check the compiler can follow (below) rather than add `!`.
+- A value that can really be missing is declared nullable, with readers that
+  check it.
 
 net48's `string.IsNullOrEmpty` and `IsNullOrWhiteSpace` carry no
 annotations, so the compiler cannot see a check made with them. Write the
@@ -58,13 +67,8 @@ check as a pattern it can follow instead of adding `!` after it:
 
 A method that answers that question for its caller, such as
 `BuildingCatalogGrouping.IsGrouped`, says so with `[NotNullWhen(true)]`.
-The mod has no `!` left apart from `= null!` on those `OnCreate` fields.
-Where a LINQ filter in one step cannot tell the compiler about the next,
-a loop that keeps only the non-null values can.
 
-CI runs every test against the game's own assemblies, kept in a private
-repository, so a test that fails locally fails there too. See
-[docs/ci.md](docs/ci.md).
+### Shared contracts
 
 The ids and numbers both sides use (sort columns, group dimensions, facet ids,
 availability options, the Load more step, the panel's height range and width)
@@ -73,7 +77,18 @@ are C#'s, and the UI reads them from
 `CS2_WRITE_CONTRACTS=1 ./build.sh test` and commit the file it writes; the C#
 tests fail while the two disagree. Never edit the generated file by hand.
 
-Releases follow [docs/release-checklist.md](docs/release-checklist.md).
+## Trying it in game
+
+```sh
+./build.sh all
+./build.sh package      # artifacts/BetterBuildingMenu
+```
+
+Deploy by copying the packaged folder into the game's `Mods/` directory.
+
+A Debug build logs the index audits (see [docs/indexing.md](docs/indexing.md),
+"The menu audit"). Releases follow
+[docs/release-checklist.md](docs/release-checklist.md).
 
 ## Boundaries
 
@@ -101,7 +116,7 @@ measurements, no commit hashes, no `file:line` references.
   What a later reader needs from them goes in `docs/`, as current fact.
 - `docs/` follows the same rule: it says how things are and why, not how
   they came to be. Open questions and things not yet checked in game go in
-  [docs/roadmap.md](docs/roadmap.md).
+  a [GitHub issue](https://github.com/gerbal/cs2-better-building-menu/issues).
 
 ## Commits
 
@@ -118,7 +133,7 @@ or the reader, in a sentence.
 | Strip | The category tabs across the top of the panel (`MenuCategoryStrip`): vanilla's second tier, or tiers and branches where those cut a menu better. |
 | Control pane | The column beside the results with the count, Group by, Sort by and view mode (`LensControlPane`). |
 | Filter rail | The row of filter icons, each opening a dropdown of one facet's options (`FilterRail`). |
-| Facet | One filter dimension, such as role, source, availability, content, theme, placement or extensions, with its options. Computed in C# (`BuildingCatalogFacet*`). |
+| Facet | One filter dimension, such as role, source, availability, content, theme or placement, with its options. Computed in C# (`BuildingCatalogFacet*`). |
 | Index | Every indexed prefab as a `PrefabIndex`, filed in the `CatalogIndex` that `PrefabIndexingSystem` publishes as `Index`. |
 | Processor | An `IPrefabCategoryProcessor`: decides whether a prefab is indexed, and under which category. A pass runs them in the order `PrefabCategoryProcessors` lists them. |
 | Full / partial pass | A rebuild of the whole index, or a re-read of the prefabs that changed. See `docs/indexing.md`. |
