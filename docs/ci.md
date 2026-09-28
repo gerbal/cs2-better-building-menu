@@ -1,7 +1,7 @@
 # Continuous integration
 
-Two workflows, in `.github/workflows/`. GitHub refuses a push that changes either unless the
-token has the `workflow` scope (with the `gh` CLI: `gh auth refresh -s workflow`).
+Two workflows, in `.github/workflows/`. Changing either needs a token with the `workflow`
+scope (`gh auth refresh -s workflow`); GitHub refuses a push that touches them otherwise.
 
 - **`ui.yml`** runs for every pull request and push, forks included: `npm test` (typecheck, lint,
   unit and render suites), the webpack build, and a parse of `build.sh`. The UI needs nothing
@@ -13,7 +13,7 @@ token has the `workflow` scope (with the `gh` CLI: `gh auth refresh -s workflow`
 
 ## The game assemblies
 
-The mod compiles against the game assemblies its `.csproj` references from `Cities2_Data/Managed`. CI checks out
+The mod compiles against 18 of the game's assemblies from `Cities2_Data/Managed`. CI checks out
 unmodified copies of them, kept in a private repository with a read-only deploy key
 (`CS2_REFS_DEPLOY_KEY`), so it builds exactly as a local build does and runs the whole suite.
 The maintainer refreshes those copies after each game update;

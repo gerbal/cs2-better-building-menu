@@ -23,19 +23,19 @@ working on the code.
 
 ## How it fits together
 
-1. `PrefabIndexingSystem` indexes every prefab once per city load, and again
-   for prefabs that change while playing.
-2. `BuildingCatalogAdapter` turns that index into catalog rows.
-3. On each refresh, `CatalogView` narrows the rows to the open menu, and
-   `BuildingCatalogQueryEngine` filters, sorts and pages them. `CatalogView`
-   also works out the tabs, filter options and value ranges.
-4. `BuildingMenuUISystem` sends the result to the UI as bindings.
-5. The React UI, which extends vanilla's `AssetMenu`, draws it and sends the
-   player's clicks and keystrokes back as triggers.
+1. `PrefabIndexingSystem` indexes every prefab once per load, and again for
+   prefabs that change.
+2. `BuildingCatalogAdapter` projects that index into catalog rows.
+3. For each refresh, `CatalogView` scopes the rows to the open menu, has
+   `BuildingCatalogQueryEngine` filter, sort and page them, and works out the
+   tabs, facets and metric ranges alongside.
+4. `BuildingMenuUISystem` publishes the results as bindings.
+5. The React UI, which extends vanilla's `AssetMenu`, draws them, and sends
+   what the player does back as triggers.
 
-The query (search text, filters, sort) lives in C# as
-`BuildingCatalogLensState`, so the UI only ever holds one page of results.
-The glossary in [CONTRIBUTING.md](CONTRIBUTING.md) explains the terms.
+The query state lives in C# (`BuildingCatalogLensState`), so the UI never
+holds more than a page. Terms are in the glossary in
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Build and test
 
@@ -45,12 +45,12 @@ The glossary in [CONTRIBUTING.md](CONTRIBUTING.md) explains the terms.
 (cd BetterBuildingMenu/UI && npm test)      # UI typecheck, lint, unit and render suites
 ```
 
-[CONTRIBUTING.md](CONTRIBUTING.md) covers setup and trying a build in game.
+Setup, packaging and deploying are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Docs
 
-* [CONTRIBUTING.md](CONTRIBUTING.md): setup, building, the project's rules,
-  glossary.
+* [CONTRIBUTING.md](CONTRIBUTING.md): setup, building and trying it in game,
+  boundaries, the rule for comments and docs, glossary.
 * [docs/roadmap.md](docs/roadmap.md): open work.
 * [docs/release-checklist.md](docs/release-checklist.md): what to run before
   a release.
@@ -59,17 +59,18 @@ The glossary in [CONTRIBUTING.md](CONTRIBUTING.md) explains the terms.
 * [docs/compatibility.md](docs/compatibility.md): how popular mods fare
   beside this one, and why.
 * [docs/indexing.md](docs/indexing.md) and
-  [docs/design-notes.md](docs/design-notes.md): why the indexer and the UI
-  work the way they do. The code links to their headings.
-* [docs/vanilla-upgrades.md](docs/vanilla-upgrades.md): how the game handles
-  building upgrades, which the extension picker builds on.
-* [docs/FORK.md](docs/FORK.md): where the code came from, and its license.
+  [docs/design-notes.md](docs/design-notes.md): the reasoning behind the
+  indexer and the UI, pointed to from the code.
+* [docs/vanilla-upgrades.md](docs/vanilla-upgrades.md): how vanilla handles
+  building upgrades and extensions.
+* [docs/FORK.md](docs/FORK.md): provenance and license.
 
 ## Compatibility
 
-No Harmony patches, and nothing is written to the save. Find It can be
-installed alongside. See [docs/compatibility.md](docs/compatibility.md) for
-other mods.
+Find It may be installed alongside. Its window takes the asset-menu slot while
+open and this panel returns when it closes; the object picker is Find It's
+alone. No Harmony patches; nothing is written to the save. Other mods are in
+[docs/compatibility.md](docs/compatibility.md).
 
 ## Credits
 

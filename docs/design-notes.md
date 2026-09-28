@@ -100,7 +100,7 @@ Where the card differs from vanilla on purpose:
   reference. Vanilla's upkeep is also a range whose top prices the burned resources at market;
   the card names each resource and its amount under the upkeep instead.
 - **A network's cost and upkeep are rounded once, per kilometre.** Vanilla rounds the
-  per-cell figure first and multiplies it out after, which can move the result a long way.
+  per-cell figure first and multiplies it out after.
   - Upkeep: the card rounds the per-kilometre figure, which is what `NetUtils.GetUpkeepCost`
     charges (¢487/km/mo. where vanilla shows ¢500).
   - Cost: the card adds each auxiliary network's share before rounding. Vanilla rounds a cell's

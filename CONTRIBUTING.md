@@ -9,7 +9,7 @@
   (`Directory.Build.props`).
 - **UI.** Node 22.13 or later, then `npm ci --ignore-scripts` in `BetterBuildingMenu/UI`.
   Run it again after pulling a change to `package-lock.json`: an older
-  install can lack tools that `npm test` runs.
+  install lacks the TypeScript and eslint that `npm test` runs.
   The UI's tests stub the game's `cs2/*` modules, so they run without the game.
 - **The game's source.** Read a decompilation of the game's assemblies (ILSpy
   or similar) before relying on how a game system behaves. It is the game's
@@ -26,17 +26,29 @@
 ./build.sh all                                           # C# and the UI bundle
 ```
 
-CI runs the C# tests against the game's own assemblies, kept in a private
-repository, so CI and a local run give the same results. See
+CI runs every test against the game's own assemblies, kept in a private
+repository, so a test that fails locally fails there too. See
 [docs/ci.md](docs/ci.md).
+
+### Tests
+
+Some of the mod's state is still process-wide statics: `Mod`'s settings and
+silhouette cache. The C# test classes run in parallel, so no test may set
+one: give the code under test an object of its own instead, as
+`CatalogIndex` and `PlacedUniques` allow.
+
+A test cannot reach Unity's native side, such as a `LogManager` logger or
+`Mod`'s static initializer; see [docs/ci.md](docs/ci.md).
 
 ### Warnings
 
-CI fails on any warning, in the mod and the tests (`Directory.Build.props`).
-NuGet's vulnerability audit is the one exception, since a feed outage or a
-new advisory is no fault of the change being built. A local build reports
-warnings without failing. To build as CI does, start clean, because an
-incremental build does not repeat warnings for files it does not recompile:
+Warnings fail the build in CI, in the mod and in the tests: the
+compiler's, the analyzers', MSBuild's and NuGet's (`Directory.Build.props`).
+Both build without one. NuGet's vulnerability audit is the exception and
+stays a warning, since a feed outage or a new advisory is no fault of the
+change being built. A local build reports warnings but does not fail on
+them. To build as CI does, start clean, because an incremental build does
+not repeat warnings for what it does not recompile:
 
 ```sh
 rm -rf BetterBuildingMenu/obj BetterBuildingMenu/bin BetterBuildingMenu.Tests/obj BetterBuildingMenu.Tests/bin
@@ -44,53 +56,48 @@ CI=true ./build.sh backend
 CI=true ./build.sh test
 ```
 
-Most warnings are about nullability. The conventions:
+Most warnings will be nullable:
 
-- A field a system sets in `OnCreate` is declared `= null!`. Use `!` nowhere
-  else.
-- A value that can really be missing is declared nullable, and its readers
+- A field a system sets in `OnCreate` is declared `= null!`. The mod has no
+  other `!`.
+- A value that can really be missing is declared nullable, with readers that
   check it.
-- net48's `string.IsNullOrEmpty` and `IsNullOrWhiteSpace` carry no nullable
-  annotations, so the compiler cannot see a check made with them. Write
-  `text is { Length: > 0 }` or `text?.Trim() is { Length: > 0 } trimmed`
-  instead.
-- A method that answers "is this non-null?" for its caller, such as
-  `BuildingCatalogGrouping.IsGrouped`, says so with `[NotNullWhen(true)]`.
 
-### Tests
+net48's `string.IsNullOrEmpty` and `IsNullOrWhiteSpace` carry no
+annotations, so the compiler cannot see a check made with them. Write the
+check as a pattern it can follow instead of adding `!` after it:
+- `text is { Length: > 0 }` for `!string.IsNullOrEmpty(text)`;
+- `text?.Trim() is { Length: > 0 } trimmed` for
+  `!string.IsNullOrWhiteSpace(text)`.
 
-- The C# test classes run in parallel, so no test may set process-wide state:
-  `Mod`'s settings or the silhouette cache. Give the code under test an
-  object of its own instead, as `CatalogIndex` and `PlacedUniques` allow.
-- Code that calls into Unity's native side cannot run in a test at all; see
-  [docs/ci.md](docs/ci.md). Keep such calls in the systems, and the logic
-  they feed in plain classes under `Domain/` that a test can reach.
+A method that answers that question for its caller, such as
+`BuildingCatalogGrouping.IsGrouped`, says so with `[NotNullWhen(true)]`.
+Where a LINQ filter in one step cannot tell the compiler about the next,
+a loop that keeps only the non-null values can.
 
 ### Shared contracts
 
-The ids and numbers both sides use (sort columns, group dimensions, filter
-ids, availability options, the Load more step, the panel's height range and
-width) are defined in C#. The UI reads them from
-`UI/src/domain/sharedContracts.generated.ts`. To change one, change the C#,
-then run `CS2_WRITE_CONTRACTS=1 ./build.sh test` and commit the file it
-writes. The C# tests fail while the two disagree. Never edit the generated
-file by hand.
+The ids and numbers both sides use (sort columns, group dimensions, facet ids,
+availability options, the Load more step, the panel's height range and width)
+are C#'s, and the UI reads them from
+`UI/src/domain/sharedContracts.generated.ts`. Change the C#, then run
+`CS2_WRITE_CONTRACTS=1 ./build.sh test` and commit the file it writes; the C#
+tests fail while the two disagree. Never edit the generated file by hand.
 
 ## Trying it in game
 
 ```sh
 ./build.sh all
-./build.sh package      # writes artifacts/BetterBuildingMenu/
+./build.sh package      # artifacts/BetterBuildingMenu
 ```
 
-Copy `artifacts/BetterBuildingMenu/` into the game's `Mods/` directory. A
-Debug build logs the index audits described in
-[docs/indexing.md](docs/indexing.md), "The menu audit".
+Deploy by copying the packaged folder into the game's `Mods/` directory. Never
+leave a `.disabled` copy containing a UI bundle in `Mods/`: the asset scanner
+registers it as a duplicate module.
 
-Never leave a `.disabled` copy containing a UI bundle in `Mods/`: the game's
-asset scanner still finds it and registers a second copy of the UI module.
-
-Releases follow [docs/release-checklist.md](docs/release-checklist.md).
+A Debug build logs the index audits (see [docs/indexing.md](docs/indexing.md),
+"The menu audit"). Releases follow
+[docs/release-checklist.md](docs/release-checklist.md).
 
 ## Boundaries
 
@@ -106,22 +113,23 @@ Releases follow [docs/release-checklist.md](docs/release-checklist.md).
 
 ## Comments and docs
 
-A comment says why the code is the way it is, in about three lines. That
-goes for `.cs`, `.ts`, `.tsx` and `.scss` alike. Comments describe the code
-as it is now: history, issue numbers, commit hashes, measurements and
-`file:line` references go stale, and belong in the pull request.
+For `.cs`, `.ts`, `.tsx` and `.scss` alike, a comment says why the code is
+the way it is, in about three lines. No past tense, no issue ids, no
+measurements, no commit hashes, no `file:line` references.
 
 - Longer rationale goes in `docs/indexing.md` or `docs/design-notes.md`, under
   a heading, with a one-line pointer from the code:
   `See docs/indexing.md, "Load timing".` Headings are the anchors, so renaming
   one means updating its pointers.
+- Measurements and dated findings go in the pull request that makes them.
+  What a later reader needs from them goes in `docs/`, as current fact.
 - `docs/` follows the same rule: it says how things are and why, not how
   they came to be. Open questions and things not yet checked in game go in
   [docs/roadmap.md](docs/roadmap.md).
 
 ## Commits
 
-Start the subject with a conventional prefix: `fix:`, `feat:`, `docs:`,
+Conventional prefixes, as in the history: `fix:`, `feat:`, `docs:`,
 `refactor:`, `perf:`, `chore:`. The subject says what changed for the player
 or the reader, in a sentence.
 

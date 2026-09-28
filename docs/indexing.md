@@ -3,11 +3,11 @@
 How `PrefabIndexingSystem` builds the index the panel lists from, and why it works the way it
 does. The code carries one-line pointers to the headings below.
 
-In short, the index holds one entry for every prefab the panel can list, together with the
-menus, zones, milestones and dev tree needed to file them.
+In short, the index holds one entry per indexed prefab, together with the menus, zones,
+milestones and dev tree needed to file them.
 
-- A **full pass** rebuilds it from nothing: when a city loads ("Load timing"), and in a few
-  other cases such as a language change ("Milestones"). A pass that throws publishes nothing
+- A **full pass** rebuilds it from nothing: on each load of a game, map or the editor ("Load
+  timing"), and in a few other cases such as a language change ("Milestones"). A pass that throws publishes nothing
   ("A pass that fails").
 - A **partial pass** re-reads the prefabs the game created or changed in a frame, drops the ones
   it removed, and refreshes where every entry sits in the menus ("Partial passes").
