@@ -121,7 +121,7 @@ namespace BetterBuildingMenu.Systems
 
 			if (full)
 			{
-				Mod.Log.Info(message);
+				Mod.Log.Debug(message);
 			}
 			else
 			{
@@ -196,7 +196,7 @@ namespace BetterBuildingMenu.Systems
 				.Select(menu => menu.Record)
 				.ToList();
 
-			Mod.Log.Info($"Indexed Asset Menus Count: {names.Count}");
+			Mod.Log.Debug($"Indexed Asset Menus Count: {names.Count}");
 
 			return (names, entities, list);
 		}
@@ -314,7 +314,7 @@ namespace BetterBuildingMenu.Systems
 				}
 			}
 
-			Mod.Log.Info($"Indexed Asset Categories: {byMenu.Count} menus, {byMenu.Values.Sum(list => list.Count)} tabs");
+			Mod.Log.Debug($"Indexed Asset Categories: {byMenu.Count} menus, {byMenu.Values.Sum(list => list.Count)} tabs");
 
 			return byMenu;
 		}

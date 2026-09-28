@@ -23,7 +23,15 @@ namespace BetterBuildingMenu
 	{
 		public const string Id = "BetterBuildingMenu";
 
-		public static ILog Log { get; } = LogManager.GetLogger(nameof(BetterBuildingMenu)).SetShowsErrorsInUI(false);
+		// A release logs two Info lines a load (OnLoad and the full pass's summary) plus
+		// warnings and errors; every diagnostic is at Debug. A development build turns
+		// Debug on, so the audits and per-refresh timings are there while developing.
+		public static ILog Log { get; } = LogManager.GetLogger(nameof(BetterBuildingMenu))
+			.SetShowsErrorsInUI(false)
+#if DEBUG
+			.SetEffectiveness(Level.Debug)
+#endif
+			;
 		// Set in OnLoad and cleared in OnDispose, so null outside them, a test run included.
 		// Everything that reads it runs in between, except BuildingMenuUISystem.OnDestroy,
 		// which checks.
@@ -106,7 +114,7 @@ namespace BetterBuildingMenu
 
 		public void OnDispose()
 		{
-			Log.Info(nameof(OnDispose));
+			Log.Debug(nameof(OnDispose));
 
 			// Never throws. The game also calls this from the catch around a failed
 			// OnLoad, and an exception from here escapes that catch and stops every

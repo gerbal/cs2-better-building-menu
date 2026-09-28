@@ -61,7 +61,7 @@ build. A test fails if a processor in the assembly is missing from that list.
 The index holds one entry per prefab, so when two processors claim the same prefab the later one's
 entry replaces the earlier one's, category and all: `CatalogIndex.File` takes the earlier entry out
 of every list it was filed in, so the prefab is listed under one category only. Nothing fails when
-that happens. The full pass that logs the census also logs each such pair at Info as
+that happens. The full pass that logs the census also logs each such pair, at Debug, as
 `[PROCESSOR-OVERLAP]`, with how many prefabs they shared and one of them by name.
 `MenuPlacedPrefabCategoryProcessor` runs last and claims only what nothing else did, so it never
 appears there.
@@ -278,12 +278,15 @@ and is blind in two ways:
   unbuildable zones can sit in the surface until a player tries to build one.
 
 `LogVanillaMenuAudit` is the census that closes both: every menu, its categories, what vanilla
-places, what we cover, and what we show that vanilla does not. It logs at Info whether or not
-anything is wrong, because the value is in reading it rather than in being warned by it.
+places, what we cover, and what we show that vanilla does not. It logs whether or not anything
+is wrong, because the value is in reading it rather than in being warned by it.
 
-It runs once per city load, on the first full pass, with the processor census beside it. A
-language change or a lock-state recheck repeats the pass but not the menus it reports on, so the
-repeat would add a second copy of the same census. With Debug logging on, every full pass logs it.
+It runs on every full pass, with the processor census, the overlap pairs, the coverage report
+and the DLC audit beside it, and only with Debug logging on: together they are about 10 KB a
+pass, and a release logs almost nothing. With Debug off none of it is even computed. A
+development build turns Debug on (`Mod.Log`). A release's log carries two Info lines a load,
+`OnLoad` and the full pass's summary (prefab count, locked count, time), plus any warning or
+error.
 
 The arithmetic and the wording live in `Domain/`, where they are functions of the index and
 covered by tests: `VanillaMenuAudit` for the census, `VanillaMenuCoverage` for the coverage
