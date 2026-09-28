@@ -22,7 +22,8 @@ How this mod meets other mods, and a record of how popular ones fared beside it.
   a tab for each category that holds assets. See [indexing.md](indexing.md), "The vanilla menu
   walk".
 - **Whatever the menu tree places is indexed**, whatever its prefab type: that is how Water
-  Features' water tools arrive. See [indexing.md](indexing.md), "Processors".
+  Features' water tools arrive: `MenuPlacedPrefabCategoryProcessor` runs last and indexes what
+  the menus place and nothing else claimed.
 - **Entries sit where the game's menus put them now**, so a mod that regroups categories at
   runtime, as Asset UI Manager and Zone Organizer do, regroups the panel with them. See
   [indexing.md](indexing.md), "Partial passes".

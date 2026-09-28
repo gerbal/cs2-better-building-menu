@@ -12,10 +12,10 @@ milestones and dev tree needed to file them.
 - A **partial pass** re-reads the prefabs the game created or changed in a frame, drops the ones
   it removed, and refreshes where every entry sits in the menus ("Partial passes").
 - Each pass runs the **processors**, which decide what is indexed and under which category
-  ("Processors"), and walks the game's own menus to learn where each asset sits ("The vanilla
-  menu walk").
-- Anything that changes an indexed fact bumps a generation number, which is how the panel knows
-  to refresh ("How the panel hears of a change").
+  (`PrefabCategoryProcessors` lists them in order), and walks the game's own menus to learn where
+  each asset sits ("The vanilla menu walk").
+- Anything that changes an indexed fact bumps the indexer's `Generation`, which is how the panel
+  knows to refresh (`IndexWatch`).
 
 The system is one partial class across six files in `BetterBuildingMenu/Systems/`:
 
@@ -73,20 +73,6 @@ between two city loads, which the game allows without a restart, and loading-com
 late for the `OnGameLoaded` pass. Road Builder's discard component is looked up at the same
 point, on each full pass until it is found.
 
-## Processors
-
-Each `IPrefabCategoryProcessor` decides whether a prefab is indexed and under which category. A
-pass runs them in the order `PrefabCategoryProcessors` lists them, which is the same on every
-build. A test fails if a processor in the assembly is missing from that list.
-
-The index holds one entry per prefab, so when two processors claim the same prefab the later one's
-entry replaces the earlier one's, category and all: `CatalogIndex.File` takes the earlier entry out
-of every list it was filed in, so the prefab is listed under one category only. Nothing fails when
-that happens. The full pass that logs the census also logs each such pair, at Debug, as
-`[PROCESSOR-OVERLAP]`, with how many prefabs they shared and one of them by name.
-`MenuPlacedPrefabCategoryProcessor` runs last and claims only what nothing else did, so it never
-appears there.
-
 ## Partial passes
 
 A prefab the game creates or changes mid-session, such as a Road Builder edit, is re-read by a
@@ -109,18 +95,11 @@ until the frame's clean-up), and the panel reads the index after it. Running at 
 well would read each changed prefab twice a frame and add nothing, since nothing reads the index
 in between.
 
-A prefab added and tagged after `UIUpdate` but before the frame's clean-up, for
-example by a mod's own main-loop system calling `PrefabSystem.AddPrefab`, has its tags cleared
-before the indexer next runs, and waits for the next full pass. `PrefabSystem.UpdatePrefab`, which
+A prefab added and tagged after `UIUpdate` but before the frame's clean-up, for example by a
+mod's own main-loop system calling `PrefabSystem.AddPrefab`, has its tags cleared before the
+indexer next runs, and waits for the next full pass. `PrefabSystem.UpdatePrefab`, which
 Road Builder uses, queues the change for the next frame's `PrefabSystem` update, so it is not
 affected.
-
-### Duplicate names
-
-Duplicate names are numbered after every pass, partial passes included, always starting again
-from each prefab's `AssetName` (`CatalogIndex.NumberDuplicateNames`). A partial pass gives the
-prefab it re-reads its plain name back, so numbering only what it touched would leave that
-prefab as "Foo" beside a sibling still called "Foo 2".
 
 ### Recreated and removed prefabs
 
@@ -138,11 +117,6 @@ entity. `PrefabSystem.UpdatePrefab` keeps the `PrefabBase` and points it at the 
 this catches the old entries and never a live namesake of another prefab type. An entity the game
 has already replaced, as when a prefab is created and recreated in one frame, is skipped, and
 anything filed for it is removed.
-
-`CatalogIndex` keeps a map from prefab name to entries, updated as it files and removes them,
-and `GetByPrefabName` answers the extension picker's rows from the same map. Two prefab types can
-share a name; then the entry that sorts first by display name answers, as the lists order them,
-and between equal names the lower id.
 
 ### Menu placements
 
@@ -200,13 +174,6 @@ A city's first pass is different, because the preload has already emptied the in
 fails, the index stays empty and not ready: the panel shows the indexing notice and hands every
 menu back to vanilla, which is better than showing the last city's catalog.
 
-*Ready* means a full pass has succeeded since the preload, either `OnGameLoaded`'s or a locale
-pass after it. Partial passes cannot make the index ready. Until it is ready:
-
-- loading-complete runs its own full pass;
-- partial passes and unlocks are skipped: there is nothing to patch, and the next full pass reads
-  their changes afresh.
-
 If every pass of a load fails, or the first-update pass of a mod joining a running game does, the
 index stays empty until the next load. A language change retries it only if a pass has succeeded
 earlier in the session, since until then the locale policy has no indexed locale to compare
@@ -214,22 +181,6 @@ against.
 
 A partial pass edits the live index in place, so none of this applies to it beyond the
 per-processor and per-prefab catches.
-
-## How the panel hears of a change
-
-The indexer never calls the panel. Whatever changes an indexed fact — a pass, an unlock, a unique
-asset built or bulldozed, a load emptying the index — bumps the indexer's `Generation`, and
-`BuildingMenuUISystem.OnUpdate` compares it with the generation its last publish read
-(`IndexWatch`).
-
-Each publish reads the indexer's `Source` once: the index, the placed uniques and the generation
-together. Every cache the adapter keeps is keyed on that generation. It is never reset, because
-the caches compare plain ints, and a count that started again could land on a number an older
-projection was stored under.
-
-A change while the panel is open schedules the same debounced refresh a keystroke does, so a burst
-of partial passes or unique events is one refresh rather than one each. A change while it is closed
-schedules nothing, because opening the panel publishes anyway.
 
 ## The vanilla menu walk
 
@@ -256,13 +207,9 @@ because a service upgrade is placed from its parent building's row rather than f
 The theme and asset-pack filters are deliberately not applied: those are player settings that
 hide assets which should still be indexed.
 
-A menu, or an asset in a category, that the game has removed is skipped too; a top-level category
-is not checked, and one removed late in the frame can cost its menu's tabs for the pass (see the
-comment in `PrefabIndexingSystem.Menus.cs`). `UIInitializeSystem` takes a
-removed prefab out of its group during `PrefabSystem`'s update. But a `PrefabSystem.RemovePrefab`
-later in the frame, from a mod's own system or a UI trigger, leaves the entity in its group
-marked `Deleted`. It is still there after the frame's clean-up destroys it, when its index can
-be reused by another entity, and the walk would then place that entity instead.
+A menu, or a category's member, that the game has removed is skipped too (`IsLive` says why a
+removed entity can still be in its group). A top-level category is not checked, and one removed
+late in the frame can cost its menu's tabs for the pass.
 
 **Nested categories are flattened into tabs.** ExtraLib, which Extra Assets Importer builds its
 menu with, nests categories: `UIAssetChildCategoryPrefab` gives a child `UIAssetCategoryData` and
@@ -276,32 +223,9 @@ index for a tie). A nested menu's tabs are numbered 0, 1, 2… in that order, an
 take the same numbers, so the strip, the headings and the placements agree. A menu with no
 nesting keeps the game's priorities untouched.
 
-**The menus and their tabs are in the game's order**, worked out the way the game works it out.
-
-- A menu's tabs are `GetSortedCategories` run as is: the menu's members, less the non-categories
-  and the empty ones (removed by swap-back, which moves the last one into the gap), then Unity's
-  sort by `UIObjectInfo`. That comparer looks at priority alone and the sort is not stable, so
-  any sort of our own, stable or not, could put equal priorities in a different order from the
-  game's.
-- The menus are in the bottom bar's order: the toolbar's groups by priority, then each group's
-  members sorted the same way. A menu no toolbar group holds goes last.
-
-The UI keeps the menus in that order. It sorts the tabs again, by the same priority and stably,
-which leaves them as they are.
-
-**The All tab's category headings follow the strip too.** In one menu's view, the adapter gives
-each entry its tab's priority and position in the strip (`VanillaMenuIndex.TabOf`). So headings
-with equal priority are ordered as the strip orders them, before falling back to the name, and
-every entry of one tab ranks alike, including an asset moved there from another category.
-
-A placed category can have no tab: when a menu's tabs fail to read, or after a partial pass (see
-"Partial passes"). The assets the game places there still share one priority and one heading,
-because:
-
-- the walk reads each category's priority as the strip does (`UIObjectData.m_Priority`);
-- `AddPrefab`'s placement override files a placed asset under that priority rather than its
-  managed group's;
-- a partial pass files every placed entry again (see "Partial passes").
+**The menus and their tabs are in the game's order**, reached by the game's own steps
+(`SortedCategories`, `ToolbarOrder`), and the All tab's headings follow the strip's order
+(`VanillaMenuIndex.TabOf`). The comments there say why.
 
 The walk's tables, with the menus and their category tabs, go into the pass's `VanillaMenuIndex`,
 which its `CatalogIndex` carries as `Menus`: a new pass reads the menus afresh, and nothing
@@ -335,13 +259,13 @@ catalog drops everything vanilla does not place in Zones: the `ZoneData` query r
 prefab that exists, including internal ones the player can never pick (the area-hub zones the
 specialised-industry system uses, and the theme-less base zones whose EU and NA variants the menu
 offers instead). The trim runs whether or not the walk found the menu, so if the walk found
-nothing under Zones, only the fallback below is left (see [issue #107](https://github.com/gerbal/cs2-better-building-menu/issues/107)).
+nothing under Zones, only the fallback below is left (see
+[issue #107](https://github.com/gerbal/cs2-better-building-menu/issues/107)).
 
 `IndexExtractorAreas` is the fallback for when the walk adds nothing to the zone catalog. It
-queries
-the specialised industries directly: they are `LotPrefab`s carrying `ExtractorArea` and holding a
-`MapFeature`, placed by the Area tool, so the zone query (which requires `ZoneData`) never
-returns one. That query finds the feature-level lots rather than the resource-specific assets the
+queries the specialised industries directly: they are `LotPrefab`s carrying `ExtractorArea` and
+holding a `MapFeature`, placed by the Area tool, so the zone query (which requires `ZoneData`)
+never returns one. That query finds the feature-level lots rather than the resource-specific assets the
 menu offers (see above), which is why it is only a fallback.
 
 The specialised industries join the zone catalog rather than getting their own binding because
@@ -361,22 +285,14 @@ and is blind in two ways:
 places, what we cover, and what we show that vanilla does not. It logs whether or not anything
 is wrong, because the value is in reading it rather than in being warned by it.
 
-It runs on every full pass, with the processor census, the overlap pairs, the coverage report
-and the DLC audit beside it, and only with Debug logging on: together they are about 10 KB a
-pass, and a release logs almost nothing. With Debug off none of the audits is computed. A
-development build turns Debug on (`Mod.Log`). A release's log carries two Info lines a load,
-`OnLoad` and the full pass's summary (prefab count, locked count, time), plus any warning or
-error.
+It runs on every full pass with Debug logging on, beside the processor census, the overlap
+pairs, the coverage report and the DLC audit (see `Mod.Log`). With Debug off, none of them is
+logged and the audits are not computed.
 
-The arithmetic and the wording live in `Domain/`, where they are functions of the index and
-covered by tests: `VanillaMenuAudit` for the census, `VanillaMenuCoverage` for the coverage
-report, and `IndexAuditLog` for the lines of both and of the processor census. They return lines
-rather than log them, since anything that touches `Mod` cannot run in a test. For the census
-and the coverage report, the system only asks the game what a placed prefab is, and logs what
-comes back. The DLC audit, the
-processor overlap, the zone parity check and the failure lines are worded in the system.
-As a log line alone the census could only be checked by booting a save and reading the log,
-so nothing would stop the mapping regressing between boots.
+The census and the coverage report are counted and worded in `Domain/` and tested there, because
+as a log line alone the census could only be checked by booting a save and reading the log, and
+nothing would stop the mapping regressing between boots. The DLC audit, the processor overlap,
+the zone parity check and the failure lines are worded in the system.
 
 Extras are split in the output: ones a recorded divergence explains are `expectedExtras`,
 anything else is `UNEXPLAINED`, which is either a new divergence to write down or a bug. The
@@ -390,29 +306,16 @@ first is full, and then `IsDlcOwned` is false for everything but the base game.
 
 ## Per-prefab facts
 
-An entry's figures and facts (cost, upkeep, capacity, and the service figures a card lists) are
-a mapping from the components its prefab carries. `.Facts.cs` reads them into a `PrefabSnapshot`:
-each component, or null when the prefab has none, plus the few inputs that live elsewhere. Those
-are a road's three flags from its authoring prefab, the two upkeep buffers, an extractor's map
-feature, a zone's lots, and what a prefab's sub-nets, sub-objects and auxiliary networks add: a
-transformer's connections, a power plant's power lines, a building's stops and a network's extra
-cost. The pollution thresholds are settings rather than a fact about any prefab, so a pass reads
-them once and hands them to every snapshot. `PrefabFacts.Apply` in `Domain/` maps the snapshot
-onto the entry and never touches the entity world. So a test builds a snapshot by hand and checks
-what the entry gets, and `UI/test/factCoverage.test.ts` reads that file for every key it can emit.
+`.Facts.cs` reads a prefab's components into a `PrefabSnapshot`, and `PrefabFacts.Apply` in
+`Domain/` maps the snapshot onto the entry; the comments on both list what goes in and why.
 
 Where the game's own tooltip shows a figure, `Apply` follows its binder in
-`PrefabUISystem.BuildDefaultPropertyBinders`. Three rules decide more than one line:
+`PrefabUISystem.BuildDefaultPropertyBinders`. Two rules decide more than one line:
 
-- A network that owns a building, through a sub-object flagged `MakeOwner`, is read from that
-  building, as `BindPrefabDetails` reads it (`DetailsSource`).
-- A building's upkeep is the `ServiceUpkeepData` buffer's money and nothing else; a network's
-  comes from `PlaceableNetData`. A building without the buffer has no upkeep line, as in vanilla:
-  what `ConsumptionData` holds alone, on a zoned or signature building, is the rent-side upkeep
-  `PropertyRenterSystem` charges, not the city's.
-- Capacity is the primary role's own figure, in the unit the UI formats that role in. Two
-  secondary figures vanilla shows get lines of their own, a garbage store and a power output: an
-  incinerator is filed as a garbage facility, and its output is the second.
+- A network's upkeep comes from `PlaceableNetData`; a building's is its `ServiceUpkeepData`
+  buffer's money alone.
+- Capacity is the primary role's own figure. The two secondary figures vanilla shows, a garbage
+  store and a power output, get lines of their own.
 
 docs/design-notes.md, "The card against vanilla", lists where the card differs from vanilla
 and why.
@@ -421,16 +324,9 @@ The entry keeps the facts in the order they are added, but a card re-sorts them 
 in `serviceFacts.ts`. So the order `Apply` adds them in only breaks ties within one key, such as
 a road's features.
 
-The rest of an entry's per-prefab data is split the same way: `.Facts.cs` reads, and a plain class
-in `Domain/` decides, so a test can reach every rule without the entity world.
-
-- A building's effect lines: `EffectWording.Lines`, from its city and local modifier buffers.
-- Its upgrades, in the order vanilla offers them: `SupportedUpgrades.InMenuOrder`, from the offers
-  the system collects out of the `BuildingUpgradeElement` and `BuildingModule` buffers.
-- What the toolbar's filter row knows about it: `VanillaAssetFacts.From`, from its requirement and
-  pack entities and which of them carry `ThemeData` and `ModPrerequisiteData`.
-- Its parking bays: `ParkingSlots.Own`, from its garage capacity, its parking connection and the
-  shape of each parking lane. The system adds each sub-object's own count, walking the prefab graph.
+The rest of an entry's per-prefab data is split the same way, `.Facts.cs` reading and a plain
+class in `Domain/` deciding, so a test can reach every rule without the entity world:
+`EffectWording`, `SupportedUpgrades`, `VanillaAssetFacts` and `ParkingSlots`.
 
 An extractor's map feature stays in the system: every step of it is a read, in the order
 `RequiredResourceBinder.GetExtractorType` guards them, and what is left once the reads are done is
@@ -471,8 +367,7 @@ gives each of the big two its own node, so the strip would draw one tab of three
 one, and neither of those nodes has an icon, so both would fall back to the menu's glyph and
 render as a pair of identical marks. An international airport and a space centre are things you
 build at an airport, so they are drawn under the Airport tab. Folds are keyed on the node prefab
-name because the label is localized: a label key would fold in English but not in German. The
-fold count is logged beside the warning for a key that matches nothing.
+name because the label is localized: a label key would fold in English but not in German.
 
 ## Language changes
 

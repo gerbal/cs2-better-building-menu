@@ -5,8 +5,8 @@ namespace BetterBuildingMenu.Domain.Catalog
 	/// placed-unique rescan.
 	/// </summary>
 	/// <remarks>
-	/// <see cref="Index"/> and <see cref="Placed"/> are the live objects, not copies. See
-	/// docs/indexing.md, "How the panel hears of a change".
+	/// <see cref="Index"/> and <see cref="Placed"/> are the live objects, not copies. The
+	/// generation is how the panel hears of a change; see IndexWatch.
 	/// </remarks>
 	public readonly record struct CatalogSource(
 		CatalogIndex Index, PlacedUniques Placed, int Generation);
