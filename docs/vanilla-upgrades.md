@@ -11,7 +11,7 @@ Four distinct things share the word "upgrade":
 |---|---|
 | `ServiceUpgrade` (authoring) | A component declaring "this prefab can be attached to those buildings", with cost, XP and placement rules |
 | `BuildingExtensionPrefab` | A `StaticObjectPrefab` that is a physical annex — position, lot size, external flag |
-| `BuildingModules` | A separate list of modules a modular building takes |
+| `BuildingModules` | A separate list of modules a modular building takes. The City Stations DLC's bus, tram, train and subway stations, depots and yards carry one |
 | `NetUpgrade` | Road-piece upgrades (lights, trees). Unrelated to buildings |
 
 The first two **compose**: an extension prefab carrying `ServiceUpgrade` is both
