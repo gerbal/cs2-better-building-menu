@@ -6,14 +6,16 @@ does. The code carries one-line pointers to the headings below.
 In short, the index holds one entry for every prefab the panel can list, together with the
 menus, zones, milestones and dev tree needed to file them.
 
-- A **full pass** rebuilds it from nothing when a city loads ("Load timing"), and publishes the
-  result only if the whole pass succeeds ("A pass that fails").
-- A **partial pass** re-reads only the prefabs the game created, changed or removed in a frame
-  ("Partial passes").
+- A **full pass** rebuilds it from nothing: when a city loads ("Load timing"), and in a few
+  other cases such as a language change ("Milestones"). A pass that throws publishes nothing
+  ("A pass that fails").
+- A **partial pass** re-reads the prefabs the game created or changed in a frame, drops the ones
+  it removed, and refreshes where every entry sits in the menus ("Partial passes").
 - Each pass runs the **processors**, which decide what is indexed and under which category
   ("Processors"), and walks the game's own menus to learn where each asset sits ("The vanilla
   menu walk").
-- The panel notices a new index by its generation number ("How the panel hears of a change").
+- Anything that changes an indexed fact bumps a generation number, which is how the panel knows
+  to refresh ("How the panel hears of a change").
 
 The system is one partial class across six files in `BetterBuildingMenu/Systems/`:
 
@@ -106,7 +108,7 @@ until the frame's clean-up), and the panel reads the index after it. Running at 
 well would read each changed prefab twice a frame and add nothing, since nothing reads the index
 in between.
 
-One gap remains. A prefab added and tagged after `UIUpdate` but before the frame's clean-up, for
+A prefab added and tagged after `UIUpdate` but before the frame's clean-up, for
 example by a mod's own main-loop system calling `PrefabSystem.AddPrefab`, has its tags cleared
 before the indexer next runs, and waits for the next full pass. `PrefabSystem.UpdatePrefab`, which
 Road Builder uses, queues the change for the next frame's `PrefabSystem` update, so it is not
@@ -121,13 +123,13 @@ prefab as "Foo" beside a sibling still called "Foo 2".
 
 ### Recreated and removed prefabs
 
-A prefab the game recreates, such as a Road Builder road, arrives under a new entity. The
-entity is the one link between old and new that always holds: Road Builder gives a road a new
-ID, and so a new prefab name, on every edit. `PrefabSystem.UpdatePrefab` marks the old entity
+A prefab the game recreates, such as a Road Builder road, arrives under a new entity, so a
+partial pass drops the old entry first. `PrefabSystem.UpdatePrefab` marks the old entity
 `Deleted`, and the mark lasts until the frame's clean-up, after the indexer's tick. So every
-partial pass starts by removing the entries of prefab entities marked `Deleted`. A `Deleted`
-prefab on its own also triggers a partial pass, so a prefab the game removes outright leaves the
-list too.
+partial pass starts by removing the entries of prefab entities marked `Deleted`. The old entity
+is the one handle on the old entry that always holds: Road Builder gives a road a new ID, and so
+a new prefab name, on every edit. A `Deleted` prefab on its own also triggers a partial pass, so
+a prefab the game removes outright leaves the list too.
 
 Sometimes the old entity has already gone by then. For that case the pass also drops every entry
 filed under the new entity's prefab name whose prefab the game no longer maps to that entry's
@@ -152,7 +154,8 @@ new one to its category.
 So every partial pass, after dropping the deleted entries and before the processors run, walks
 the menus again (see "The vanilla menu walk"), and `CatalogIndex.RefreshPlacements` swaps the
 result into the published index. If the walk throws, the placements it would have replaced stay.
-Without this, an edited road would be placed in no menu until the next full pass:
+Without this, an edited road the game offers in a menu would be placed nowhere until the next
+full pass:
 
 - it would drop out of its menu's view, which admits a network only when some menu places it;
 - a prefab that only its placement admits would leave the index altogether: the menu-placed
@@ -330,10 +333,14 @@ specialised-industry system uses, and the theme-less base zones whose EU and NA 
 offers instead). That trim is applied only when the walk actually found the menu; if it ever
 stops working, an over-broad catalog beats an empty one.
 
-`IndexExtractorAreas` keeps the specialised industries in the catalog even if the walk stops
-working. They are `LotPrefab`s carrying `ExtractorArea` and holding a `MapFeature`, placed by the
-Area tool, so the zone query (which requires `ZoneData`) never returns one. They join the zone catalog rather than getting
-their own binding because the player reaches both the same way, by opening Zones.
+`IndexExtractorAreas` is the fallback for when the walk finds nothing under Zones. It queries
+the specialised industries directly: they are `LotPrefab`s carrying `ExtractorArea` and holding a
+`MapFeature`, placed by the Area tool, so the zone query (which requires `ZoneData`) never
+returns one. That query finds the feature-level lots rather than the resource-specific assets the
+menu offers (see above), which is why it is only a fallback.
+
+The specialised industries join the zone catalog rather than getting their own binding because
+the player reaches both the same way, by opening Zones.
 
 ## The menu audit
 
