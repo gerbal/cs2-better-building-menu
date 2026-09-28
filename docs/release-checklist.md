@@ -14,7 +14,7 @@ The version is stated in five places, and all five change together:
 - `ModVersion` in `BetterBuildingMenu/Properties/PublishConfiguration.xml`;
 - a new first entry in `BetterBuildingMenu/Changelog.json`.
 
-Then REPLACE the body of `<ChangeLog>` in `PublishConfiguration.xml` with that
+Then replace the whole body of `<ChangeLog>` in `PublishConfiguration.xml` with that
 entry's text. The element holds one version's notes, not a running history:
 the store shows it under the version, so an older section left in it is
 published as part of the new version's notes. `npm test` in
@@ -65,12 +65,15 @@ strings -el "<Mods>/BetterBuildingMenu/BetterBuildingMenu.dll" | grep '<a litera
 
 On a developed save:
 
-1. **Logs.** The mod's log shows one `Full pass at OnGameLoaded` for the load
-   and no exceptions. `UI.log` shows no JS errors.
-2. **Audit.** In the mod's log, `[MENU-COVERAGE]` reports
-   `0 missing from the index` and the `[MENU-AUDIT]` census line does not end
-   in `NOT CLEAN`. With ExtraLib installed, its nested child categories are
-   the expected exception (see [compatibility.md](compatibility.md)).
+1. **Logs.** A release build logs two Info lines a load: `OnLoad`, and one
+   `Full prefab indexing: … prefabs (… locked) in …s`. The mod's log shows no
+   exceptions, and `UI.log` shows no JS errors.
+2. **Audit.** A release build does not compute the audit, so run this step on
+   a Debug build of the same commit. In the mod's log, `[MENU-COVERAGE]`
+   reports `0 missing from the index`, and the `[MENU-AUDIT]` census line does
+   not end in `NOT CLEAN`. With ExtraLib installed, its nested child
+   categories are the expected exception (see
+   [compatibility.md](compatibility.md)).
 3. **Menus.** Open Roads, Zones, Landscaping and a service menu. For each:
    - the panel replaces the grid, with the category strip across the top;
    - tiles draw their icons, with no placeholders;

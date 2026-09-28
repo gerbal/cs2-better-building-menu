@@ -99,13 +99,16 @@ Where the card differs from vanilla on purpose:
   is city state rather than a fact about the building, and the base figure is the more useful
   reference. Vanilla's upkeep is also a range whose top prices the burned resources at market;
   the card names each resource and its amount under the upkeep instead.
-- **A network's cost and upkeep are rounded once, per kilometre.** Upkeep rounds the
-  per-kilometre product, which is what `NetUtils.GetUpkeepCost` charges; vanilla rounds the
-  per-cell figure first (¢487/km/mo. against ¢500). Cost adds each auxiliary network's share
-  before rounding; vanilla rounds a cell's own cost before multiplying by 125 and truncates each
-  share on its own, so a cell cost of 12.4 reads ¢1,550/km on the card and ¢1,500 in vanilla.
-  So a network whose cost or upkeep for a cell rounds to nothing still shows a line, where
-  vanilla leaves it off.
+- **A network's cost and upkeep are rounded once, per kilometre.** Vanilla rounds the
+  per-cell figure first and multiplies it out after, which can move the result a long way.
+  - Upkeep: the card rounds the per-kilometre figure, which is what `NetUtils.GetUpkeepCost`
+    charges (¢487/km/mo. where vanilla shows ¢500).
+  - Cost: the card adds each auxiliary network's share before rounding. Vanilla rounds a cell's
+    own cost before multiplying by 125, and truncates each share on its own, so a cell cost of
+    12.4 reads ¢1,550/km on the card and ¢1,500 in vanilla.
+
+  So a network whose per-cell cost or upkeep rounds to nothing still gets a line on the card,
+  where vanilla leaves it off.
 - **Power output is one figure**, the top of vanilla's range: vanilla shows the plant's own
   output up to that plus every source that can add to it, as 0–400,000 for an incinerator. The
   table's column and sort need one number. A network whose sub-objects hold a power plant,

@@ -8,7 +8,7 @@ has no menu touch point. "Ours" is the version of this mod each result holds for
 | Mod | Version tested | Ours | Result |
 |---|---|---|---|
 | Water Features (yenyang) | — | 0.1.8 | Works. Its WaterTool tab and water sources appear under Landscaping; the catch-all processor indexes them. |
-| Extra Assets Importer, with ExtraLib (Triton) | — | 0.2.1 | Works. The panel takes over ExtraAssetsMenu: its 13 nested child categories are tabs, in ExtraLib's order, and hold what the game's own lists hold under the toolbar's theme (259 of 328 with the European theme on 2026-09-27, all 13 counts equal). |
+| Extra Assets Importer, with ExtraLib (Triton) | — | 0.2.1 | Works. The panel takes over ExtraAssetsMenu: its nested child categories become tabs, in ExtraLib's order, and hold what the game's own lists hold under the toolbar's theme. |
 | Asset UI Manager (StarQ) | — | 0.1.8 | Works. The panel groups by its runtime categories, with their own icons; the audit reports 0 misplaced. |
 | Zone Organizer (Mimonsi) | — | 0.1.8 | Works. Its ten Zones tabs sit in our strip; all 22 zones are listed. |
 | Road Builder (TDW) | — | 0.1.8 | Works, including a road created while playing. Removal of the roads it discards is by code reading only. |

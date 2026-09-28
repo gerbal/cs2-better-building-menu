@@ -23,21 +23,34 @@ working on the code.
 
 ## How it fits together
 
-`PrefabIndexingSystem` indexes every prefab once per load, and again for
-prefabs that change. `BuildingCatalogAdapter` projects that index into
-catalog rows. For each refresh, `CatalogView` scopes the rows to the open
-menu, has `BuildingCatalogQueryEngine` filter, sort and page them, and works
-out the tabs, facets and metric ranges alongside.
-`BuildingMenuUISystem` publishes the results as bindings. The React UI, which
-extends vanilla's `AssetMenu`, draws them, and sends what the player does back
-as triggers. The query state lives in C# (`BuildingCatalogLensState`), so the
-UI never holds more than a page. Terms are in the glossary in
-[CONTRIBUTING.md](CONTRIBUTING.md).
+1. `PrefabIndexingSystem` indexes every prefab once per city load, and again
+   for prefabs that change while playing.
+2. `BuildingCatalogAdapter` turns that index into catalog rows.
+3. On each refresh, `CatalogView` narrows the rows to the open menu, and
+   `BuildingCatalogQueryEngine` filters, sorts and pages them. `CatalogView`
+   also works out the tabs, filter options and value ranges.
+4. `BuildingMenuUISystem` sends the result to the UI as bindings.
+5. The React UI, which extends vanilla's `AssetMenu`, draws it and sends the
+   player's clicks and keystrokes back as triggers.
+
+The query (search text, filters, sort) lives in C# as
+`BuildingCatalogLensState`, so the UI only ever holds one page of results.
+The glossary in [CONTRIBUTING.md](CONTRIBUTING.md) explains the terms.
+
+## Build and test
+
+```sh
+./build.sh all                              # C# (Debug) and UI
+./build.sh test                             # C# tests
+(cd BetterBuildingMenu/UI && npm test)      # UI typecheck, lint, unit and render suites
+```
+
+[CONTRIBUTING.md](CONTRIBUTING.md) covers setup and trying a build in game.
 
 ## Docs
 
-* [CONTRIBUTING.md](CONTRIBUTING.md): setup, boundaries, the rule for
-  comments and docs, glossary.
+* [CONTRIBUTING.md](CONTRIBUTING.md): setup, building, the project's rules,
+  glossary.
 * [docs/roadmap.md](docs/roadmap.md): open work.
 * [docs/release-checklist.md](docs/release-checklist.md): what to run before
   a release.
@@ -46,31 +59,17 @@ UI never holds more than a page. Terms are in the glossary in
 * [docs/compatibility.md](docs/compatibility.md): how popular mods fare
   beside this one, and why.
 * [docs/indexing.md](docs/indexing.md) and
-  [docs/design-notes.md](docs/design-notes.md): the reasoning behind the
-  indexer and the UI, pointed to from the code.
-* [docs/vanilla-upgrades.md](docs/vanilla-upgrades.md): how vanilla handles
-  building upgrades and extensions.
-* [docs/FORK.md](docs/FORK.md): provenance and license.
-
-## Build and test
-
-```sh
-./build.sh all                              # C# (Debug) and UI
-./build.sh test                             # C# tests
-CS2_BUILD_CONFIG=Release ./build.sh all     # release build
-CS2_BUILD_CONFIG=Release ./build.sh package # artifacts/BetterBuildingMenu
-cd BetterBuildingMenu/UI && npm test        # UI typecheck, lint, unit and render suites
-```
-
-Deploy by copying the packaged folder into the game's `Mods/` directory. Never
-leave a `.disabled` copy containing a UI bundle in `Mods/`: the asset scanner
-registers it as a duplicate module.
+  [docs/design-notes.md](docs/design-notes.md): why the indexer and the UI
+  work the way they do. The code links to their headings.
+* [docs/vanilla-upgrades.md](docs/vanilla-upgrades.md): how the game handles
+  building upgrades, which the extension picker builds on.
+* [docs/FORK.md](docs/FORK.md): where the code came from, and its license.
 
 ## Compatibility
 
-Find It may be installed alongside. Its window takes the asset-menu slot while
-open and this panel returns when it closes; the object picker is Find It's
-alone. No Harmony patches; nothing is written to the save.
+No Harmony patches, and nothing is written to the save. Find It can be
+installed alongside. See [docs/compatibility.md](docs/compatibility.md) for
+other mods.
 
 ## Credits
 

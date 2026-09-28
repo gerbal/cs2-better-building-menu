@@ -1,7 +1,8 @@
 # How vanilla handles building upgrades and extensions
 
-How the game's upgrade machinery works, as the mod relies on it. It names the game's types
-and members, to be read in a decompilation of `Game.dll`.
+How the game's upgrade machinery works, as far as the mod's extension picker and hover card
+rely on it. It names the game's types and members, to be read in a decompilation of
+`Game.dll`.
 
 ## Vocabulary
 
@@ -33,19 +34,6 @@ Nothing on a building lists its upgrades. The relationship is declared on the
 
 This is why a mod can attach an upgrade to a vanilla building without editing it.
 
-## Placement
-
-`ServiceUpgradeData` carries two constraints:
-
-- `m_MaxPlacementDistance == 0` — must snap to the parent's lot edge.
-  `BuildingInitializeSystem.OnUpdate` sets `PlacementFlags.OwnerSide`; the snapping
-  is `ObjectToolSystem`'s `SnapJob`, under `Snap.OwnerSide`.
-- non-zero — also gets `PlacementFlags.RoadSide` and may sit away from the parent,
-  inside a region sized from `m_MaxPlacementDistance` and the parent's lot depth
-  (`BuildingUtils.CalculateUpgradeRangeValues`).
-- `m_MaxPlacementOffset` overrides how far along the edge it may slide, in the same
-  `SnapJob`.
-
 ## Cost
 
 `BuildingInitializeSystem.OnUpdate` overwrites
@@ -61,42 +49,23 @@ The overwrite reaches only upgrades that have `PlaceableObjectData`, and
 sub-building's cost and nothing for an annex, such as a school's Extension Wing, and
 `PrefabFacts.Apply` falls back to `m_UpgradeCost` for it.
 
-## Installing does two separate things
+## What installing an upgrade does
 
-### It grants components to the parent
+Installing an upgrade does two separate things to its parent:
 
-`ServiceUpgradeSystem`'s `UpgradeInstalled` collects
-`IServiceUpgrade.GetUpgradeComponents` from every component on the upgrade prefab
-and adds to the parent any it lacks. **41 components implement `IServiceUpgrade`**
-— `Hospital`, `School`, `PowerPlant`, `Workplace`, `Pollution`, `ParkingFacility`,
-`TransportStation` and most other service capabilities.
+- **It can grant the parent new abilities.** `ServiceUpgradeSystem`'s `UpgradeInstalled` adds
+  to the parent every `IServiceUpgrade.GetUpgradeComponents` component it lacks, such as
+  `Hospital`, `School`, `PowerPlant` or `ParkingFacility`. So an upgrade can give a building
+  something it did not do at all, not merely a bigger number. `UpgradeRemoved` takes back
+  whatever neither the parent's own prefab nor a remaining upgrade provides.
+- **It combines statistics, field by field.** `UpgradeUtils` walks the parent's
+  `InstalledUpgrade` buffer and calls `ICombineData<T>.Combine` per stat, and the rules are
+  not uniformly additive. `HospitalData.Combine` adds patient capacity but takes the larger
+  top of the health range; `SchoolData.Combine` takes the larger education level rather than
+  adding them.
 
-So an upgrade can give a building an ability it did not have at all, not merely a
-bigger number. `UpgradeRemoved` recomputes the union of the parent's own prefab
-plus all *remaining* installed upgrades and strips the difference.
-
-### It combines statistics
-
-`UpgradeUtils` walks the parent's `InstalledUpgrade` buffer and calls
-`ICombineData<T>.Combine` per stat. **32 stat types implement it.** The rules are
-per-field and not uniformly additive:
-
-- `HospitalData.Combine` adds patient capacity, takes the larger top of the health
-  range, and ORs the diseases treated.
-- `SchoolData.Combine` takes the larger education level. It does not add them.
-- `WorkplaceData.Combine` blends the evening-shift probability, weighted by each
-  side's workers.
-
-`PollutionData` has its own path (`CombinePollutionStats`) so a
-`PollutionEmitModifier` on the upgrade instance applies before combining.
-
-## Disabling
-
-Every combine is skipped when
-`BuildingUtils.CheckOption(installedUpgrade, BuildingOption.Inactive)` is true.
-That is the toggle in `UpgradesSection.OnToggle` — it applies the
-"Out of Service" policy to the extension. A disabled extension stays standing and
-contributes nothing.
+An upgrade switched off in the building's panel (`UpgradesSection.OnToggle`, which applies
+the "Out of Service" policy to it) stays standing and contributes nothing.
 
 ## Two parent links, used for different questions
 
@@ -116,9 +85,9 @@ They are different systems and answer different questions:
 | Picker | `upgradeMenu` | what you *may* add — `BuildingUpgradeElement` then `BuildingModule`, both `UIObjectData`-filtered and sorted by `m_Priority`, in **one flat list** | `UpgradeMenuUISystem` |
 | Built list | `UpgradesSection` | what is *already* attached, split into `extensions` (has `Extension`) vs `subBuildings`, with delete / relocate / focus / toggle | `UpgradesSection` |
 
-Note the asymmetry: **vanilla draws the extension/sub-building distinction only in
-the built list.** The picker deliberately flattens it. Any redesign that labels
-groups in the picker is inventing a distinction at the wrong end of the pipeline.
+**Vanilla draws the extension/sub-building distinction only in the built list.** The
+picker flattens it, so grouping the picker by that distinction would be inventing one the
+game does not make there.
 
 Each picker row is written by `ToolbarUISystem.BindAsset`, which already supplies
 `entity`, `name` (`prefab.name`), `priority`, `icon`, `dlc`, `theme`, `locked`,
@@ -132,12 +101,12 @@ city-wide case comes from `UniqueAssetTrackingSystem`.
 
 ## Implications for this mod
 
-1. **An annex's cost comes from `ServiceUpgradeData`** (see Cost above); a
+1. **An annex's cost comes from `ServiceUpgradeData`** (see "Cost"); a
    sub-building's comes from `PlaceableObjectData` like any other building.
 2. **A prefab's own figures are not its contribution.** The hover card shows
-   per-prefab stats; what an upgrade actually does to the parent is decided by
-   `Combine`. Additive fields read naturally as "+300 patients"; a max field like
-   education level would be actively misleading shown the same way.
-3. **The thing vanilla cannot tell you** is what an upgrade *grants* — which
-   `IServiceUpgrade` components the parent does not already have. That is the
-   "what does this do for me" question the icon grid answers with a picture.
+   per-prefab figures; what an upgrade actually does to its parent is decided by
+   `Combine`. An additive field reads naturally as "+300 patients", but a field
+   the game takes the larger of, such as education level, would mislead shown
+   the same way.
+3. **The game's own UI never shows what an upgrade grants**, that is, which
+   `IServiceUpgrade` components the parent does not already have.
