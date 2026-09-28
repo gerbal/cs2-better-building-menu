@@ -258,15 +258,14 @@ resources the walk cannot know — and the walk adds what the queries missed. Af
 catalog drops everything vanilla does not place in Zones: the `ZoneData` query returns every zone
 prefab that exists, including internal ones the player can never pick (the area-hub zones the
 specialised-industry system uses, and the theme-less base zones whose EU and NA variants the menu
-offers instead). The trim runs whether or not the walk found the menu, so if the walk found
-nothing under Zones, only the fallback below is left (see
-[issue #107](https://github.com/gerbal/cs2-better-building-menu/issues/107)).
+offers instead). The trim applies only when the walk sees the menu: if the walk ever stops
+working, an over-broad catalog beats an empty one.
 
-`IndexExtractorAreas` is the fallback for when the walk adds nothing to the zone catalog. It
-queries the specialised industries directly: they are `LotPrefab`s carrying `ExtractorArea` and
-holding a `MapFeature`, placed by the Area tool, so the zone query (which requires `ZoneData`)
-never returns one. That query finds the feature-level lots rather than the resource-specific assets the
-menu offers (see above), which is why it is only a fallback.
+`IndexExtractorAreas` is the fallback for when the walk sees no Zones menu. It queries the
+specialised industries directly: they are `LotPrefab`s carrying `ExtractorArea` and holding a
+`MapFeature`, placed by the Area tool, so the zone query (which requires `ZoneData`) never returns
+one. That query finds the feature-level lots rather than the resource-specific assets the menu
+offers (see above), which is why it is only a fallback.
 
 The specialised industries join the zone catalog rather than getting their own binding because
 the player reaches both the same way, by opening Zones.
