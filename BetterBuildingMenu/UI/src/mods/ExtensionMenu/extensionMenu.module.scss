@@ -1,6 +1,6 @@
 // The extension picker: vanilla's UpgradesMenu, redrawn as our list. The game
 // renders it into the same toolMainColumn slot as the asset menu, with the
-// same toolPanel class on the root — see docs/vanilla-upgrades.md.
+// same toolPanel class on the root.
 
 // The frame is the build menu's, rule for rule: buildingMenuSurface's .topBar
 // for the header and its .content for the body. Vanilla draws this slot as a

@@ -8,7 +8,7 @@ has no menu touch point. "Ours" is the version of this mod each result holds for
 | Mod | Version tested | Ours | Result |
 |---|---|---|---|
 | Water Features (yenyang) | — | 0.1.8 | Works. Its WaterTool tab and water sources appear under Landscaping; the catch-all processor indexes them. |
-| Extra Assets Importer, with ExtraLib (Triton) | — | 0.2.1 | Works. The panel takes over ExtraAssetsMenu: its 13 nested child categories are tabs, in ExtraLib's order, and hold what the game's own lists hold under the toolbar's theme (259 of 328 with the European theme on 2026-09-27, all 13 counts equal). |
+| Extra Assets Importer, with ExtraLib (Triton) | — | 0.2.2 | Works. The panel takes over ExtraAssetsMenu: its 13 nested child categories are tabs, in ExtraLib's order, and hold what the game's own lists hold under the toolbar's theme (259 of 328 with the European theme on 2026-09-27, all 13 counts equal). |
 | Asset UI Manager (StarQ) | — | 0.1.8 | Works. The panel groups by its runtime categories, with their own icons; the audit reports 0 misplaced. |
 | Zone Organizer (Mimonsi) | — | 0.1.8 | Works. Its ten Zones tabs sit in our strip; all 22 zones are listed. |
 | Road Builder (TDW) | — | 0.1.8 | Works, including a road created while playing. Removal of the roads it discards is by code reading only. |
@@ -18,7 +18,7 @@ has no menu touch point. "Ours" is the version of this mod each result holds for
 | Asset Icon Library (TDW) | — | 0.1.6 | Works. Tiles draw its icons: 85 of 100 in Landscaping. |
 | Extra Landscaping Tools, Extra Detailing Tools (Triton) | — | 0.1.6 | Work. Their tools and props are indexed. |
 | Toggle Overlays, Unified Icon Library, I18n Everywhere | — | 0.1.6 | No interaction. |
-| Asset Menu Tweaks (Luca) | 1.0.7 | 0.1.4 | No effect on our panel, in either load order and with every option on. |
+| Asset Menu Tweaks (Luca) | 1.0.7 | 0.1.5 | No effect on our panel, in either load order and with every option on. |
 | Find It (TDW) | 1.5.8 | pre-release | Both install together. Its panel takes the asset-menu slot while open and ours returns when it closes; its picker is the only one. |
 | Platter (Luca), Extra Networks and Areas (Mimonsi), Recolor (yenyang) | — | — | Source read only. The first two add or regroup menu entries at load, before our index runs; Recolor's palettes are not toolbar assets. |
 | Traffic, Better Bulldozer, Move It, Plop the Growables, 529 Tiles, Historical Start, Skyve, Extended Tooltip, Detailed Descriptions, Region Flag Icons, First Person Camera, Time & Weather Anarchy, Realistic Parking, Traffic Lights Enhancement | — | — | Source read only: no asset-menu or menu-tree hooks. |

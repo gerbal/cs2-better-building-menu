@@ -26,7 +26,7 @@
 ./build.sh all                                           # C# and the UI bundle
 ```
 
-CI runs every test against the game's own assemblies, kept in a private
+CI runs the C# tests against the game's own assemblies, kept in a private
 repository, so a test that fails locally fails there too. See
 [docs/ci.md](docs/ci.md).
 
@@ -58,8 +58,9 @@ CI=true ./build.sh test
 
 Most warnings will be nullable:
 
-- A field a system sets in `OnCreate` is declared `= null!`. The mod has no
-  other `!`.
+- A field a system sets in `OnCreate` is declared `= null!`. The mod's only
+  other `!` are the same `= null!`: on `Mod.Settings`, set in `OnLoad`, and on
+  a processor's `out` parameter when it returns false.
 - A value that can really be missing is declared nullable, with readers that
   check it.
 
@@ -142,7 +143,7 @@ or the reader, in a sentence.
 | Strip | The category tabs across the top of the panel (`MenuCategoryStrip`): vanilla's second tier, or tiers and branches where those cut a menu better. |
 | Control pane | The column beside the results with the count, Group by, Sort by and view mode (`LensControlPane`). |
 | Filter rail | The row of filter icons, each opening a dropdown of one facet's options (`FilterRail`). |
-| Facet | One filter dimension, such as role, source, availability, content, theme, placement or extensions, with its options. Computed in C# (`BuildingCatalogFacet*`). |
+| Facet | One filter dimension, such as role, source, availability, content, theme or placement, with its options. Computed in C# (`BuildingCatalogFacet*`). |
 | Index | Every indexed prefab as a `PrefabIndex`, filed in the `CatalogIndex` that `PrefabIndexingSystem` publishes as `Index`. |
 | Processor | An `IPrefabCategoryProcessor`: decides whether a prefab is indexed, and under which category. A pass runs them in the order `PrefabCategoryProcessors` lists them. |
 | Full / partial pass | A rebuild of the whole index, or a re-read of the prefabs that changed. See `docs/indexing.md`. |

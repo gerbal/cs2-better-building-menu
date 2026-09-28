@@ -7,8 +7,8 @@ In short, the index holds one entry per indexed prefab, together with the menus,
 milestones and dev tree needed to file them.
 
 - A **full pass** rebuilds it from nothing: on each load of a game, map or the editor ("Load
-  timing"), and in a few other cases such as a language change ("Milestones"). A pass that throws publishes nothing
-  ("A pass that fails").
+  timing"), and in a few other cases such as a language change ("Milestones"). A full pass that
+  fails publishes nothing ("A pass that fails").
 - A **partial pass** re-reads the prefabs the game created or changed in a frame, drops the ones
   it removed, and refreshes where every entry sits in the menus ("Partial passes").
 - Each pass runs the **processors**, which decide what is indexed and under which category
@@ -184,9 +184,11 @@ published `Index` is still the previous one. The pass reads the published index 
 deliberately, for its mod flags: they are the answer to keep if reading the enabled mods fails.
 Every other read and write in the pass goes to `target`.
 
-`RunIndex` publishes the new index only when the pass returns. If anything in the build throws, it
-logs the error and publishes nothing: the panel keeps the index it had, and nothing reaches the
-game's load or update loop.
+Inside the build, each processor and each prefab has its own catch, in full and partial passes
+alike: a failure there is logged, costs that processor's or that prefab's entries, and the pass
+goes on. Anything that throws outside those catches, in the tables read before the processors or
+the renumbering after them, fails the pass. `RunIndex` then logs the error and publishes nothing:
+the panel keeps the index it had, and nothing reaches the game's load or update loop.
 
 So a failed pass has nothing to put back. The published index keeps the tables and mod flags it
 was built with, and the partial passes after a failure read the same ones. Road Builder's discard
@@ -209,8 +211,8 @@ index stays empty until the next load. A language change retries it only if a pa
 earlier in the session, since until then the locale policy has no indexed locale to compare
 against.
 
-Partial passes are not covered by any of this. They edit the live index in place, and each prefab
-and each processor in them has its own catch.
+A partial pass edits the live index in place, so none of this applies to it beyond the
+per-processor and per-prefab catches.
 
 ## How the panel hears of a change
 
@@ -253,7 +255,9 @@ because a service upgrade is placed from its parent building's row rather than f
 The theme and asset-pack filters are deliberately not applied: those are player settings that
 hide assets which should still be indexed.
 
-A menu, category or asset the game has removed is skipped too. `UIInitializeSystem` takes a
+A menu, or an asset in a category, that the game has removed is skipped too; a top-level category
+is not checked, and one removed late in the frame can cost its menu's tabs for the pass (see the
+comment in `PrefabIndexingSystem.Menus.cs`). `UIInitializeSystem` takes a
 removed prefab out of its group during `PrefabSystem`'s update. But a `PrefabSystem.RemovePrefab`
 later in the frame, from a mod's own system or a UI trigger, leaves the entity in its group
 marked `Deleted`. It is still there after the frame's clean-up destroys it, when its index can
@@ -289,10 +293,9 @@ each entry its tab's priority and position in the strip (`VanillaMenuIndex.TabOf
 with equal priority are ordered as the strip orders them, before falling back to the name, and
 every entry of one tab ranks alike, including an asset moved there from another category.
 
-A placed category can have no tab: when a menu's tabs fail to read, or after a partial pass,
-which reads the placements again but keeps the last full pass's tabs, so a category that was
-empty then, or has been created or moved into the menu since, has none. The assets the game
-places there still share one priority and one heading, because:
+A placed category can have no tab: when a menu's tabs fail to read, or after a partial pass (see
+"Partial passes"). The assets the game places there still share one priority and one heading,
+because:
 
 - the walk reads each category's priority as the strip does (`UIObjectData.m_Priority`);
 - `AddPrefab`'s placement override files a placed asset under that priority rather than its
@@ -317,8 +320,8 @@ placements (see "Partial passes"). The placements are read by:
 
 Menu membership is not in components, so no ECS query can reproduce the Zones menu.
 `Game.Zones.AreaType` has only None, Residential, Commercial and Industrial, and the
-`ZonesExtractors` tag is assigned in asset data through `ManualUITagsConfiguration`, so no
-component predicate can name it. A query on `ExtractorAreaData` finds the feature-level extractor
+`ZonesExtractors` group is defined in the game's asset data, not its code, so no component
+predicate can name it. A query on `ExtractorAreaData` finds the feature-level extractor
 lots, which vanilla does not put in the menu, rather than the resource-specific assets it does.
 
 So `InheritVanillaZoneMenu` inherits the categories from the same downward walk `ToolbarUISystem`
@@ -330,10 +333,11 @@ resources the walk cannot know — and the walk adds what the queries missed. Af
 catalog drops everything vanilla does not place in Zones: the `ZoneData` query returns every zone
 prefab that exists, including internal ones the player can never pick (the area-hub zones the
 specialised-industry system uses, and the theme-less base zones whose EU and NA variants the menu
-offers instead). That trim is applied only when the walk actually found the menu; if it ever
-stops working, an over-broad catalog beats an empty one.
+offers instead). The trim runs whether or not the walk found the menu, so if the walk found
+nothing under Zones, only the fallback below is left (see [roadmap.md](roadmap.md)).
 
-`IndexExtractorAreas` is the fallback for when the walk finds nothing under Zones. It queries
+`IndexExtractorAreas` is the fallback for when the walk adds nothing to the zone catalog. It
+queries
 the specialised industries directly: they are `LotPrefab`s carrying `ExtractorArea` and holding a
 `MapFeature`, placed by the Area tool, so the zone query (which requires `ZoneData`) never
 returns one. That query finds the feature-level lots rather than the resource-specific assets the
@@ -358,7 +362,7 @@ is wrong, because the value is in reading it rather than in being warned by it.
 
 It runs on every full pass, with the processor census, the overlap pairs, the coverage report
 and the DLC audit beside it, and only with Debug logging on: together they are about 10 KB a
-pass, and a release logs almost nothing. With Debug off none of it is even computed. A
+pass, and a release logs almost nothing. With Debug off none of the audits is computed. A
 development build turns Debug on (`Mod.Log`). A release's log carries two Info lines a load,
 `OnLoad` and the full pass's summary (prefab count, locked count, time), plus any warning or
 error.
@@ -440,10 +444,12 @@ the branch below the root that it hangs off. Collapsing chains reads as the game
 is not: it files the Central Intelligence Bureau under "Police Headquarters" and the Nuclear
 Power Plant under "Gas Power Plant", which are separate unlocks the player buys separately.
 
-**The root is named after its service** — Electricity, Water & Sewage, Police & Administration —
-because that is what the top bar already calls this bucket, and its tab draws the service's own
-glyph. Everything the tree never gated falls into that root bucket, which is why the root is also
-recorded against its service name.
+**The root bucket is named after the tab it sits under.** Everything the tree never gated falls
+into the root. The indexer records the root against its service's name, but only as a sentinel:
+in a menu's view the adapter renames the bucket, per category, to the game's own word for that
+category, or for the menu when the entry has no category (`ProjectForMenu`,
+`VanillaServiceLabel`). A tab drawn for the bucket holds one category, so a menu-wide name would
+claim more than the tab holds.
 
 **Node names come from `Progression.NODE_NAME[<node prefab>]`**, the key the dev tree itself
 reads. The prefab's title id points at `Assets.NAME`, which has no entry for a node, so asking for
@@ -493,10 +499,6 @@ collides: every service's root is called "Basic", so all of them would share one
 otherwise the thumbnail of the prefab the node points at, otherwise empty. Empty rather than a
 placeholder, because a placeholder glyph reads as a broken icon rather than as none.
 
-**The `Node` suffix is dropped** from a node's display name. The game's localized title is "Gas
-Power Plant Node"; the word is an authoring artefact the player never sees in the dev tree, which
-draws the node under its icon.
-
 **Folds** (`FoldedDevTreeNodes`) are the narrow exception. Transportation's Air category carries
 three assets and the tree gives each of the big two its own node, so the strip draws one tab of
 three and two tabs of one — and neither of those nodes has an icon, so both fall back to the
@@ -533,8 +535,3 @@ fires at the main menu and between a preload and `OnGameLoaded`, where `OnUpdate
 pass there would publish an index outside a city or from a half-loaded world. A full pass run for
 any other reason (the save's own at `OnGameLoaded`) covers either, so a language switched at the
 main menu is simply read by the next city's first pass.
-
-`ProgressionIndex.MilestoneNames` is sized from the highest index actually present
-rather than probed upward from index 0, which the game's first milestone need not use — probing
-publishes an empty table in that case. Gaps stay empty strings so every later name keeps its own
-index.

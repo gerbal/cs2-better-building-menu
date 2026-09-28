@@ -35,8 +35,7 @@ CS2_BUILD_CONFIG=Release ./build.sh package
 ```
 
 - The UI step typechecks the source and tests, lints, then runs the unit and
-  render suites. It also holds the five version sources together, so it fails
-  on a half-done bump.
+  render suites.
 - `package` writes `artifacts/BetterBuildingMenu/` and refuses a package that
   still carries a Find It identity. Give it the same `CS2_BUILD_CONFIG` as the
   build, or it copies whatever Debug DLL is on disk.
@@ -47,7 +46,7 @@ Copy `artifacts/BetterBuildingMenu/` into the game's `Mods/` directory, or let
 `build.sh` do it into an empty, isolated one; it refuses to overwrite a target:
 
 ```sh
-CSII_SUCCESSOR_MODS_DIR=/path/to/empty/isolated/Mods ./build.sh deploy
+CS2_BUILD_CONFIG=Release CSII_SUCCESSOR_MODS_DIR=/path/to/empty/isolated/Mods ./build.sh deploy
 ```
 
 Never leave a `.disabled` copy containing a UI bundle in `Mods/`: the asset
@@ -73,8 +72,7 @@ On a developed save:
    developer mode set the `BetterBuildingMenu` logger to Debug in the debug
    panel's Logs tab and load the save again. Then `[MENU-COVERAGE]` reports
    `0 missing from the index`, and the `[MENU-AUDIT]` census line does not end
-   in `NOT CLEAN`. With ExtraLib installed, its nested child categories are
-   the expected exception (see [compatibility.md](compatibility.md)).
+   in `NOT CLEAN`.
 3. **Menus.** Open Roads, Zones, Landscaping and a service menu. For each:
    - the panel replaces the grid, with the category strip across the top;
    - tiles draw their icons, with no placeholders;

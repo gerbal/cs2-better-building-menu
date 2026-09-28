@@ -36,11 +36,13 @@ treatment that filters the thumbnail is therefore broken for that slice.
 
 `hasVectorThumbnail` in `domain/buildingLockState.ts` splits the two paths.
 Rasters keep vanilla's filter, which works over them. Vector entries swap to a
-pre-blackened copy of their own icon supplied by the backend (`lockedThumbnail`),
-giving the same silhouette with no compositing effect, and fall back to the
-ordinary thumbnail when no blackened copy exists. The remaining locked signals —
-dimmed tile ground, locked label colour, padlock — cost nothing on either path.
-`buildingGrid.module.scss` carries the rule this drives.
+pre-blackened copy of their own icon, which the backend makes from the player's
+install (`SilhouetteIcons`, sent as `silhouetteThumbnail`; `lockedThumbnail`
+picks it), giving the same silhouette with no compositing effect, and fall back
+to the ordinary thumbnail when no blackened copy exists. The remaining locked
+signals — a lighter tile ground, locked label colour, padlock — cost nothing on
+either path. The grid's, list's and table's stylesheets carry the rule this
+drives.
 
 ## Patching vanilla's layout for the lens
 
@@ -162,4 +164,4 @@ is the fallback, and a modded theme, which has no key, keeps its prefab name.
   region sits somewhere different in each language, so cutting it out leaves debris: Korean
   keeps "스타일", Japanese "（式）", Russian a trailing dash, and Polish starts lowercase. A tier
   also spans residential, commercial and office zones, which no one zone name does. The tiers are
-  translated as the mod's own strings instead; see [roadmap.md](roadmap.md).
+  to be translated as the mod's own strings instead; see [roadmap.md](roadmap.md).

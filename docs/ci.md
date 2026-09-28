@@ -3,7 +3,7 @@
 Two workflows, in `.github/workflows/`. Changing either needs a token with the `workflow`
 scope (`gh auth refresh -s workflow`); GitHub refuses a push that touches them otherwise.
 
-- **`ui.yml`** runs for every pull request and push, forks included: `npm test` (typecheck, lint,
+- **`ui.yml`** runs for every pull request, forks included, and every push to `main`: `npm test` (typecheck, lint,
   unit and render suites), the webpack build, and a parse of `build.sh`. The UI needs nothing
   from the game; the test harness stubs its `cs2/*` modules.
 - **`csharp.yml`** builds the mod and runs every xUnit test (`./build.sh backend`,

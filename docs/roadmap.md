@@ -44,3 +44,8 @@ Open work, roughly in order of value. What has shipped is in
   - Name the `BuildingMenuUISystem` partials by responsibility.
   - Settle on one noun for the panel (see the glossary in
     [CONTRIBUTING.md](../CONTRIBUTING.md)).
+  - `InheritVanillaZoneMenu` trims the zone catalog to what vanilla places in
+    Zones even when the walk found nothing there, though its comment says the
+    trim is applied only when it did. A walk that finds nothing then leaves
+    only the extractor fallback (see [indexing.md](indexing.md), "The Zones
+    menu").
