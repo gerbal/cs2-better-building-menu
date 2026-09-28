@@ -207,6 +207,16 @@ takes a removed prefab out of its group during `PrefabSystem`'s update, but a
 entity in its group marked `Deleted`, and still there once the frame's clean-up destroys it, when
 its index can go to another entity and would place that entity instead.
 
+**Nested categories are flattened into tabs.** ExtraLib, which Extra Assets Importer builds its
+menu with, nests categories: `UIAssetChildCategoryPrefab` gives a child `UIAssetCategoryData` and
+adds it to its parent category's `UIGroupElement` buffer, and the assets sit in the child. Its UI
+draws a second row of tabs for them. The walk follows a member that carries `UIAssetCategoryData`
+and has members of its own down into it (`CategoryTree`), and `NestedCategories.Flatten` makes a
+tab of every category that holds assets: each parent's own assets first, then its children in
+their order (priority, then entity index for a tie). A nested menu's tabs are numbered 0, 1, 2… in
+that order, and both the tabs and the placements take the same numbers, so the strip, the headings
+and the placements agree. A menu with no nesting keeps the game's priorities untouched.
+
 **The menus and their tabs are in the game's order**, reached the same way. A menu's tabs are
 `GetSortedCategories` run as is: the menu's members, less the non-categories and the empty ones
 (removed swap-back, which moves the last one into the gap), then Unity's sort by `UIObjectInfo`.

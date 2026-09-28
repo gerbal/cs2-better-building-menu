@@ -22,6 +22,27 @@ namespace BetterBuildingMenu.Systems
 		/// selection moves off a category; the lens replaces the grid instead of selecting
 		/// categories in it, and showing a menu whole means all of them have been seen.
 		/// </remarks>
+		/// <summary>Unmarks a category and everything in it, down through any categories Extra Lib
+		/// nests inside it.</summary>
+		private int UnmarkGroup(Entity group, int depth)
+		{
+			var cleared = 0;
+
+			if (depth <= Domain.NestedCategories.MaxDepth
+				&& EntityManager.TryGetBuffer<Game.Prefabs.UIGroupElement>(group, true, out var members))
+			{
+				for (var m = 0; m < members.Length; m++)
+				{
+					var member = members[m].m_Prefab;
+					cleared += EntityManager.HasBuffer<Game.Prefabs.UIGroupElement>(member)
+						? UnmarkGroup(member, depth + 1)
+						: Unmark(member);
+				}
+			}
+
+			return cleared + Unmark(group);
+		}
+
 		private void ClearVanillaMenuHighlights(string menuName)
 		{
 			try
@@ -36,17 +57,7 @@ namespace BetterBuildingMenu.Systems
 
 				for (var c = 0; c < categories.Length; c++)
 				{
-					var category = categories[c].m_Prefab;
-
-					if (EntityManager.TryGetBuffer<Game.Prefabs.UIGroupElement>(category, true, out var assets))
-					{
-						for (var a = 0; a < assets.Length; a++)
-						{
-							cleared += Unmark(assets[a].m_Prefab);
-						}
-					}
-
-					cleared += Unmark(category);
+					cleared += UnmarkGroup(categories[c].m_Prefab, 0);
 				}
 
 				cleared += Unmark(menuEntity);

@@ -8,7 +8,7 @@ has no menu touch point. "Ours" is the version of this mod each result holds for
 | Mod | Version tested | Ours | Result |
 |---|---|---|---|
 | Water Features (yenyang) | — | 0.1.8 | Works. Its WaterTool tab and water sources appear under Landscaping; the catch-all processor indexes them. |
-| Extra Assets Importer, with ExtraLib (Triton) | — | 0.1.8 | Works. We yield its ExtraAssetsMenu to vanilla, which draws its 18 items. Its 13 nested child categories are tabs, not assets, and stay out of the index by design. |
+| Extra Assets Importer, with ExtraLib (Triton) | — | 0.2.1 | Works. The panel takes over ExtraAssetsMenu: its 13 nested child categories are tabs, in ExtraLib's order, and hold what the game's own lists hold under the toolbar's theme (259 of 328 with the European theme on 2026-09-27, all 13 counts equal). |
 | Asset UI Manager (StarQ) | — | 0.1.8 | Works. The panel groups by its runtime categories, with their own icons; the audit reports 0 misplaced. |
 | Zone Organizer (Mimonsi) | — | 0.1.8 | Works. Its ten Zones tabs sit in our strip; all 22 zones are listed. |
 | Road Builder (TDW) | — | 0.1.8 | Works, including a road created while playing. Removal of the roads it discards is by code reading only. |
@@ -37,10 +37,11 @@ has no menu touch point. "Ours" is the version of this mod each result holds for
 
 ## What lets other mods work here
 
-- **A menu we cannot fill is left to vanilla.** A toolbar menu with nothing indexed under it,
-  such as ExtraLib's, which is built from nested categories, draws as its mod intends
-  (`MenuRouting.ShouldYield`). Those nested categories are tabs, not assets, so the menu audit
-  counts them missing.
+- **A menu we cannot fill is left to vanilla.** A toolbar menu with nothing indexed under it
+  draws as its mod intends (`MenuRouting.ShouldYield`).
+- **Nested categories become tabs.** A menu built from nested categories, such as ExtraLib's, has
+  a tab for each category that holds assets. See [indexing.md](indexing.md), "The vanilla menu
+  walk".
 - **Whatever the menu tree places is indexed**, whatever its prefab type: that is how Water
   Features' water tools arrive. See [indexing.md](indexing.md), "Processors".
 - **Entries sit where the game's menus put them now**, so a mod that regroups categories at

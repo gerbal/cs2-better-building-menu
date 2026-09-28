@@ -47,6 +47,7 @@ namespace BetterBuildingMenu.Systems
 		private bool TryIndexVanillaMenuPlacements(bool full, out Dictionary<int, VanillaMenuPlacement> placements)
 		{
 			placements = new Dictionary<int, VanillaMenuPlacement>();
+			_flattenedAssets.Clear();
 			var complete = true;
 
 			try
@@ -61,49 +62,22 @@ namespace BetterBuildingMenu.Systems
 					if (!IsLive(menus[i])
 						|| !_prefabSystem.TryGetPrefab<PrefabBase>(menus[i], out var menuPrefab)
 						|| menuPrefab?.name is not string menuName
-						|| !EntityManager.TryGetBuffer<UIGroupElement>(menus[i], true, out var categories))
+						|| !EntityManager.HasBuffer<UIGroupElement>(menus[i]))
 					{
 						continue;
 					}
 
-					for (var c = 0; c < categories.Length; c++)
+					// The strip's own tabs, nested categories flattened (NestedCategories), so
+					// an asset's tab here is the tab the strip lists.
+					foreach (var (tab, _) in FlattenedTabs(menus[i]))
 					{
-						var categoryEntity = categories[c].m_Prefab;
-
-						// GetSortedCategories drops a member that is not a category and a
-						// category with no members, so a tab the player cannot reach places
-						// nothing.
-						if (!IsLive(categoryEntity)
-							|| !EntityManager.HasComponent<UIAssetCategoryData>(categoryEntity)
-							|| !EntityManager.TryGetBuffer<UIGroupElement>(categoryEntity, true, out var assets)
-							|| assets.Length == 0
-							|| !_prefabSystem.TryGetPrefab<PrefabBase>(categoryEntity, out var categoryPrefab))
+						foreach (var assetKey in tab.AssetKeys)
 						{
-							continue;
-						}
-
-						// Once per tab: the name is a native getter that allocates, and
-						// the walk now runs on every partial pass.
-						var categoryName = categoryPrefab.name;
-						// Read as UIObjectInfo reads it for the strip, which ranks the tab by it.
-						var categoryPriority = EntityManager.TryGetComponent<UIObjectData>(categoryEntity, out var categoryUi)
-							? categoryUi.m_Priority
-							: 0;
-
-						for (var a = 0; a < assets.Length; a++)
-						{
-							var assetEntity = assets[a].m_Prefab;
-
-							if (!IsLive(assetEntity) || EntityManager.HasComponent<ServiceUpgradeData>(assetEntity))
-							{
-								continue;
-							}
-
 							// Keyed by index alone because that is what PrefabIndex.Id
 							// holds and what the diff compares against; the whole entity
 							// rides along so a gap can still be named.
-							placements[assetEntity.Index] = new VanillaMenuPlacement(
-								assetEntity, menuName, categoryName, categoryPriority);
+							placements[assetKey] = new VanillaMenuPlacement(
+								_flattenedAssets[assetKey], menuName, tab.Name, tab.Priority);
 						}
 					}
 				}
@@ -274,11 +248,11 @@ namespace BetterBuildingMenu.Systems
 
 				// A member removed late in the frame can break GetObjects; that costs
 				// this menu its tabs for the pass, not the pass.
-				NativeList<UIObjectInfo> sorted;
+				List<(LeafTab Tab, Entity Entity)> flattened;
 
 				try
 				{
-					sorted = SortedCategories(menus[i]);
+					flattened = FlattenedTabs(menus[i]);
 				}
 				catch (Exception ex)
 				{
@@ -286,11 +260,9 @@ namespace BetterBuildingMenu.Systems
 					continue;
 				}
 
-				using var disposeSorted = sorted;
-
-				foreach (var tab in sorted)
+				foreach (var (tab, entity) in flattened)
 				{
-					if (!_prefabSystem.TryGetPrefab<PrefabBase>(tab.entity, out var prefab) || prefab?.name is null)
+					if (!_prefabSystem.TryGetPrefab<PrefabBase>(entity, out var prefab) || prefab?.name is null)
 					{
 						continue;
 					}
@@ -307,16 +279,102 @@ namespace BetterBuildingMenu.Systems
 					tabs.Add(new VanillaMenuCategory(
 						Id: prefab.name,
 						Name: prefab.name,
-						Icon: IconPath.Normalize(CategoryIcon.Resolve(uIObject?.m_Icon, _imageSystem.GetIconOrGroupIcon(tab.entity))) ?? string.Empty,
+						Icon: IconPath.Normalize(CategoryIcon.Resolve(uIObject?.m_Icon, _imageSystem.GetIconOrGroupIcon(entity))) ?? string.Empty,
 						// The priority the tabs were sorted by, UIObjectData's, so the UI's
-						// stable re-sort by it leaves them in vanilla's order.
-						Priority: tab.priority));
+						// stable re-sort by it leaves them in vanilla's order. A nested menu's
+						// are renumbered in its rows' order; see NestedCategories.
+						Priority: tab.Priority));
 				}
 			}
 
 			Mod.Log.Debug($"Indexed Asset Categories: {byMenu.Count} menus, {byMenu.Values.Sum(list => list.Count)} tabs");
 
 			return byMenu;
+		}
+
+		// The assets FlattenedTabs last read, by entity index: LeafTab carries indices, and a
+		// placement keeps the whole entity so a gap can still be named.
+		private readonly Dictionary<int, Entity> _flattenedAssets = new();
+
+		/// <summary>A menu's tabs as the lens lists them: its categories in the game's order, with
+		/// any Extra Lib nests flattened into a tab per category that holds assets.</summary>
+		private List<(LeafTab Tab, Entity Entity)> FlattenedTabs(Entity menu)
+		{
+			var categoryEntities = new Dictionary<int, Entity>();
+			var top = new List<CategoryNode>();
+
+			using (var sorted = SortedCategories(menu))
+			{
+				foreach (var tab in sorted)
+				{
+					top.Add(CategoryTree(tab.entity, tab.priority, 0, categoryEntities));
+				}
+			}
+
+			var result = new List<(LeafTab, Entity)>();
+			foreach (var leaf in NestedCategories.Flatten(top))
+			{
+				result.Add((leaf, categoryEntities[leaf.Key]));
+			}
+
+			return result;
+		}
+
+		/// <summary>One category and what it holds. A member with the game's category data and
+		/// members of its own is a subcategory (Extra Lib's UIAssetChildCategoryPrefab gives its
+		/// children UIAssetCategoryData); anything else live is an asset.</summary>
+		private CategoryNode CategoryTree(Entity category, int priority, int depth, Dictionary<int, Entity> categoryEntities)
+		{
+			categoryEntities[category.Index] = category;
+			var name = _prefabSystem.TryGetPrefab<PrefabBase>(category, out var prefab) && prefab?.name is string named
+				? named
+				: category.Index.ToString(CultureInfo.InvariantCulture);
+			var subcategories = new List<(int Priority, int Index, Entity Entity)>();
+			var assets = new List<int>();
+
+			if (EntityManager.TryGetBuffer<UIGroupElement>(category, true, out var members))
+			{
+				for (var m = 0; m < members.Length; m++)
+				{
+					var member = members[m].m_Prefab;
+
+					if (!IsLive(member))
+					{
+						continue;
+					}
+
+					if (depth < NestedCategories.MaxDepth
+						&& EntityManager.HasComponent<UIAssetCategoryData>(member)
+						&& EntityManager.TryGetBuffer<UIGroupElement>(member, true, out var inner)
+						&& inner.Length > 0)
+					{
+						var memberPriority = EntityManager.TryGetComponent<UIObjectData>(member, out var ui) ? ui.m_Priority : 0;
+						subcategories.Add((memberPriority, member.Index, member));
+						continue;
+					}
+
+					// An upgrade is placed from its parent building's row, not a menu.
+					if (EntityManager.HasComponent<ServiceUpgradeData>(member))
+					{
+						continue;
+					}
+
+					assets.Add(member.Index);
+					_flattenedAssets[member.Index] = member;
+				}
+			}
+
+			// Priority first, as Extra Lib's rows sort them; the index breaks a tie so the
+			// order holds from one pass to the next.
+			subcategories.Sort((a, b) => a.Priority != b.Priority ? a.Priority.CompareTo(b.Priority) : a.Index.CompareTo(b.Index));
+
+			var children = new List<CategoryNode>(subcategories.Count);
+			foreach (var sub in subcategories)
+			{
+				children.Add(CategoryTree(sub.Entity, sub.Priority, depth + 1, categoryEntities));
+			}
+
+			return new CategoryNode(category.Index, name, priority, children, assets);
 		}
 
 		/// <summary>A menu's category tabs, as ToolbarUISystem.GetSortedCategories orders them.</summary>
