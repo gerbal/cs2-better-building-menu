@@ -183,11 +183,12 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			// The menu is the authority: it lists the specialised industries the
-			// player can actually pick. The component query is only a fallback, and
-			// it finds the underlying extractor LOTS vanilla does not offer.
+			// player can actually pick. The component query is only a fallback, for a
+			// walk that sees no Zones menu, and it finds the underlying extractor LOTS
+			// vanilla does not offer.
 			if (!InheritVanillaZoneMenu(catalog, placements))
 			{
-				Mod.Log.Warn("Zones menu inherited nothing; falling back to the extractor query.");
+				Mod.Log.Warn("The walk found no Zones menu; falling back to the extractor query.");
 				IndexExtractorAreas(catalog);
 			}
 
@@ -199,6 +200,7 @@ namespace BetterBuildingMenu.Systems
 		/// <summary>Takes the Zones menu's categories and members from the game itself.</summary>
 		/// <remarks>Membership is not in components, so no query can reproduce the menu. See
 		/// docs/indexing.md, "The vanilla menu walk".</remarks>
+		/// <returns>Whether the walk sees a Zones menu.</returns>
 		private bool InheritVanillaZoneMenu(List<ZoneCatalogEntry> catalog, IReadOnlyDictionary<int, VanillaMenuPlacement> placements)
 		{
 			var known = new HashSet<int>(catalog.Select(entry => entry.Id));
@@ -251,25 +253,25 @@ namespace BetterBuildingMenu.Systems
 			Mod.Log.Debug(
 				$"Inherited Zones menu: {added} assets added, categories seen: {string.Join(", ", categoriesSeen)}");
 
-			// Which of our entries the game does NOT offer in that menu. An entry
-			// vanilla never shows is one the player cannot use, so this is the list
-			// to justify or drop.
 			var placedInZones = new HashSet<int>(
 				placements.Values
 					.Where(p => string.Equals(p.Menu?.Trim(), "Zones", StringComparison.OrdinalIgnoreCase))
 					.Select(p => p.Entity.Index));
-			var unplaced = catalog.Where(entry => !placedInZones.Contains(entry.Id)).ToList();
 
-			Mod.Log.Debug(
-				$"[ZONE-PARITY] vanilla places {placedInZones.Count} in Zones; dropping {unplaced.Count} it does not offer: "
-				+ IndexAuditLog.Cap(unplaced.Select(entry => $"{entry.Name} [{entry.PrefabName}]").ToList()));
+			if (placedInZones.Count > 0)
+			{
+				// Which of our entries the game does NOT offer in that menu. An entry
+				// vanilla never shows is one the player cannot use, so this is the list
+				// to justify or drop.
+				var unplaced = catalog.Where(entry => !placedInZones.Contains(entry.Id)).ToList();
 
-			// Show what the game shows, and nothing else: the ZoneData query returns
-			// every zone prefab that exists, including ones the player can never
-			// pick. Applied only when the walk actually found the menu.
-			catalog.RemoveAll(entry => !placedInZones.Contains(entry.Id));
+				Mod.Log.Debug(
+					$"[ZONE-PARITY] vanilla places {placedInZones.Count} in Zones; dropping {unplaced.Count} it does not offer: "
+					+ IndexAuditLog.Cap(unplaced.Select(entry => $"{entry.Name} [{entry.PrefabName}]").ToList()));
+			}
 
-			return added > 0;
+			// Show what the game shows, and nothing else, when the walk sees the menu.
+			return ZoneMenuTrim.Apply(catalog, placedInZones);
 		}
 
 		/// <summary>The specialised industries, which are areas rather than zones.</summary>
