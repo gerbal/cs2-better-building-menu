@@ -219,7 +219,7 @@ namespace BetterBuildingMenu.Domain.Catalog
 				yield return new VanillaMenuCategory(
 					Id: NetworkMenuExtension.GroupId(name),
 					Name: NetworkMenuExtension.GroupId(name),
-					Icon: IconPath.Normalize(CategoryIconAttribute.GetAttribute(pair.Key).Icon) ?? string.Empty,
+					Icon: CategoryIconAttribute.GetAttribute(pair.Key).Icon ?? string.Empty,
 					Priority: NetworkMenuExtension.GroupPriority(name));
 			}
 		}

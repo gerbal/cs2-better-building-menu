@@ -49,16 +49,16 @@ type RailIconId = FacetId | typeof RAIL_METRICS_ID;
  */
 const DIMENSION_ICONS: Readonly<Record<RailIconId, string>> = {
   buildingType: "Media/Game/Icons/Healthcare.svg",
-  provenance: "coui://betterbuildingmenu/Icons/Colored/BaseGame.svg",
+  provenance: "coui://uil/Colored/BaseGame.svg",
   // Our own padlock: "Media/Game/Icons/LockClosed.svg" does not exist, and an
   // invisible icon in a rail of icons reads as a filter that does not work.
   // It is the glyph the tiles use, so filter and filtered look alike.
   availability: lockIcon,
   // DLC, packs and the base game: the star the separate pack filter wore.
-  content: "coui://betterbuildingmenu/Icons/Colored/StarFilled.svg",
-  theme: "coui://betterbuildingmenu/Icons/Colored/HouseAlternative.svg",
-  placement: "coui://betterbuildingmenu/Icons/Colored/Road.svg",
-  [RAIL_METRICS_ID]: "coui://betterbuildingmenu/Icons/Standard/StarAll.svg",
+  content: "coui://uil/Colored/StarFilled.svg",
+  theme: "coui://uil/Colored/HouseAlternative.svg",
+  placement: "coui://uil/Colored/Road.svg",
+  [RAIL_METRICS_ID]: "coui://uil/Standard/StarAll.svg",
 };
 
 export const FilterRail = ({

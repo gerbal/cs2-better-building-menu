@@ -69,7 +69,7 @@ export const BuildingMenuHeader = memo(function BuildingMenuHeader({ small, larg
         <div className={styles.catalogStripSearch}>
           {IsSearchLoading && (
             <img
-              style={{ maskImage: "url(coui://betterbuildingmenu/Icons/Standard/HalfCircleProgress.svg)" }}
+              style={{ maskImage: "url(coui://uil/Standard/HalfCircleProgress.svg)" }}
               className={styles.loadingIcon}
             alt="" aria-hidden="true" />
           )}
@@ -95,7 +95,7 @@ export const BuildingMenuHeader = memo(function BuildingMenuHeader({ small, larg
                   aria-label={localizedLabel("Tooltip.LABEL[BetterBuildingMenu.ClearSearch]", "Clear search")}
                   onSelect={() => setSearchText("")}
                 >
-                  <img src="coui://betterbuildingmenu/Icons/Standard/ArrowLeftClear.svg" alt="" aria-hidden="true" />
+                  <img src="coui://uil/Standard/ArrowLeftClear.svg" alt="" aria-hidden="true" />
                 </Button>
               </Tooltip>
             )}

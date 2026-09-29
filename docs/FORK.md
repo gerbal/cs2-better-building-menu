@@ -36,15 +36,15 @@ feature. What is still upstream's:
   `Resources/Images/ZoneResidentialMixed.svg` is covered under [Art from the
   game](#art-from-the-game).
 
-## Third-party icons
+## Unified Icon Library
 
-The icons under `Resources/Images/Icons/`, all but `Standard/LockRaster.png`, are
+The panel's category, filter and header icons are
 [Unified Icon Library](https://github.com/algernon-A/UnifiedIconLibrary)'s, by algernon,
-drawn by Chamëleon TBN. They are unmodified copies used under the Apache License 2.0, whose
-text and the library's NOTICE are in `THIRD-PARTY-NOTICES.txt`; `build.sh package` puts that
-file in every package beside `LICENSE`. They are copies, not a dependency: a prefab
-thumbnail that names `coui://uil/...` is drawn from them (`IconPath`), with or without
-that mod installed.
+drawn by Chamëleon TBN, as Find It's were. The mod names them by `coui://uil/...` and ships
+no copies: `PublishConfiguration.xml` declares that mod (Paradox Mods id `74417`) a
+dependency, so the game installs it with this one. Without it those icons draw blank. Other
+mods' `coui://uil/...` thumbnails pass through unchanged, and load as they do in the
+game's own menus.
 
 ## Art from the game
 
@@ -53,12 +53,9 @@ icons are:
 
 - `Resources/Images/ZoneResidentialMixed.svg`: the game's icon of that name
   (`Media/Game/Icons/`), recoloured. It came from Find It.
-- `Resources/Images/Icons/Standard/LockRaster.png`: the game's `Media/Glyphs/Lock.svg`,
+- `Resources/Images/LockRaster.png`: the game's `Media/Glyphs/Lock.svg`,
   rasterised and tinted. It stands in for that glyph because Cohtml re-rasterises a vector
   under a filter every frame, and the vector flickered.
-- Among the Unified Icon Library copies, `Colored/BaseGame.svg` carries the game's logo mark,
-  and `Standard/StarAll.svg`, `Colored/TreeVanilla.svg` and
-  `Colored/BuildingZoneSignature.svg` follow the game's icons of the same subjects.
 
 ## Runtime identity safety
 

@@ -421,7 +421,7 @@ namespace BetterBuildingMenu.Systems
 
 				// Cheap and self-limiting: the cache returns immediately for a
 				// raster, and remembers a miss as readily as a hit.
-				Mod.Silhouettes.UrlFor(IconPath.Normalize(thumbnail));
+				Mod.Silhouettes.UrlFor(thumbnail);
 				seen++;
 			}
 
@@ -814,7 +814,7 @@ namespace BetterBuildingMenu.Systems
 			prefabIndex.PrefabName = prefab.name;
 			prefabIndex.AssetName = GetAssetName(prefab);
 			prefabIndex.Name = prefabIndex.AssetName;
-			prefabIndex.Thumbnail = IconPath.Normalize(prefabIndex.Thumbnail ?? ImageSystem.GetThumbnail(prefab));
+			prefabIndex.Thumbnail = prefabIndex.Thumbnail ?? ImageSystem.GetThumbnail(prefab);
 			prefabIndex.FallbackThumbnail ??= CategoryIconAttribute.GetAttribute(prefabIndex.SubCategory).Icon;
 			prefabIndex.CategoryThumbnail ??= CategoryIconAttribute.GetAttribute(prefabIndex.SubCategory).Icon;
 			prefabIndex.Theme ??= prefab.GetComponent<ThemeObject>()?.m_Theme;

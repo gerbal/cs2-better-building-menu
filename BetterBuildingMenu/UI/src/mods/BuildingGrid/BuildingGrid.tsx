@@ -208,7 +208,7 @@ export const BuildingGrid = ({ entries, onPlace, footer, standalone = true }: Bu
             {locked && (
               <img
                 className={styles.lockGlyph}
-                src="coui://betterbuildingmenu/Icons/Standard/LockRaster.png"
+                src="coui://betterbuildingmenu/LockRaster.png"
                 alt=""
                 aria-hidden="true"
               />

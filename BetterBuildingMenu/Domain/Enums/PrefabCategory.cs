@@ -2,17 +2,17 @@
 {
 	public enum PrefabCategory
 	{
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Standard/StarAll.svg")]
+		[CategoryIcon("coui://uil/Standard/StarAll.svg")]
 		Any = -1,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/BuildingZoneSignature.svg")]
+		[CategoryIcon("coui://uil/Colored/BuildingZoneSignature.svg")]
 		Buildings = 100,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/ServiceBuilding.svg")]
+		[CategoryIcon("coui://uil/Colored/ServiceBuilding.svg")]
 		ServiceBuildings = 200,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/Road.svg")]
+		[CategoryIcon("coui://uil/Colored/Road.svg")]
 		Networks = 300,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/Nature.svg")]
+		[CategoryIcon("coui://uil/Colored/Nature.svg")]
 		Trees = 400,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/BenchAndLampProps.svg")]
+		[CategoryIcon("coui://uil/Colored/BenchAndLampProps.svg")]
 		Props = 500,
 		// Zones are a category only because the index has to file them somewhere, and
 		// being in the index is what makes them armable: TryActivatePrefabTool arms only

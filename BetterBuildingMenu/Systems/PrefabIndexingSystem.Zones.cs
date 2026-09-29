@@ -154,7 +154,7 @@ namespace BetterBuildingMenu.Systems
 					// ZoneDensityClassifier owns the rules, including the name fallback
 					// for commercial and office.
 					Density: densities.TryGetValue(zone.Index, out var density) ? density : ZoneTypeFilter.Any,
-					Thumbnail: IconPath.Normalize(ImageSystem.GetThumbnail(prefab)),
+					Thumbnail: ImageSystem.GetThumbnail(prefab),
 					// Measured by the game, never shown by it: BuildingInitializeSystem
 					// raises MaxHeight to the tallest mesh of every spawnable building the
 					// zone can grow, so this is real geometry rather than the tier's name.
@@ -240,7 +240,7 @@ namespace BetterBuildingMenu.Systems
 					Name: GetAssetName(prefab),
 					Family: family,
 					Density: ZoneTypeFilter.Any,
-					Thumbnail: IconPath.Normalize(ImageSystem.GetThumbnail(prefab)),
+					Thumbnail: ImageSystem.GetThumbnail(prefab),
 					IsLocked: locked,
 					UnlockMilestone: milestone,
 					UnlockRequirements: requirements,
@@ -309,7 +309,7 @@ namespace BetterBuildingMenu.Systems
 					// the asset menu labels that "No density tier" rather than
 					// inventing one.
 					Density: ZoneTypeFilter.Any,
-					Thumbnail: IconPath.Normalize(ImageSystem.GetThumbnail(prefab)),
+					Thumbnail: ImageSystem.GetThumbnail(prefab),
 					IsLocked: locked,
 					UnlockMilestone: milestone,
 					UnlockRequirements: requirements,
