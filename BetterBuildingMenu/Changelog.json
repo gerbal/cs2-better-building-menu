@@ -1,6 +1,31 @@
 [
   {
     "Stable": true,
+    "Version": "0.2.3",
+    "Date": "2026-09-29",
+    "ChangeGroups": [
+      {
+        "Name": "Required mod",
+        "Changes": [
+          "Unified Icon Library is now required. The panel's category and filter icons come from it, and it is installed along with this mod."
+        ]
+      },
+      {
+        "Name": "Fixed",
+        "Changes": [
+          "Icons that other mods take from Unified Icon Library now show in the panel. Some drew blank."
+        ]
+      },
+      {
+        "Name": "Settings",
+        "Changes": [
+          "Tile size and the panel's height go back to their defaults once with this update. Set them again under Options > Better Building Menu > Tile size, and by dragging the top edge of the panel."
+        ]
+      }
+    ]
+  },
+  {
+    "Stable": true,
     "Version": "0.2.2",
     "Date": "2026-09-27",
     "ChangeGroups": [
