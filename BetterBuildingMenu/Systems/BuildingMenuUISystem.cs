@@ -26,7 +26,7 @@ namespace BetterBuildingMenu.Systems
 		private VanillaToolbarSelection _toolbarSelection = VanillaToolbarSelection.None;
 		private readonly InteractionBoundary _interactionBoundary = new();
 		// Everything the player has told the lens, as one record with one tested
-		// transition per trigger. The handlers in Bindings.cs apply a transition,
+		// transition per trigger. Each trigger handler applies a transition,
 		// PublishScope() mirrors it to the bindings, RefreshBuildingCatalog runs it.
 		private BuildingCatalogLensState _lens = BuildingCatalogLensState.Initial;
 

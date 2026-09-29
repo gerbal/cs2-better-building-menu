@@ -20,7 +20,7 @@ import {
 describe("BetterBuildingMenu UI binding contracts", () => {
   it("names the window command after its trigger", () => {
     // The limit wanted, so a repeat is harmless; the backend clamps it to one step
-    // and the ceiling. The name must match the CreateTrigger in BuildingMenuUISystem.Setup.
+    // and the ceiling. The name must match the CreateTrigger in BuildingMenuUISystem.OnCreate.
     assert.deepEqual(loadMoreCatalogCommand(200), { method: "LoadMoreBuildingCatalog", args: [200] });
   });
 
