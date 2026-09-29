@@ -28,7 +28,7 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void CoversEveryServiceSubcategoryTheLensNavigatesTo()
+		public void CoversEveryServiceSubcategoryTheAssetMenuNavigatesTo()
 		{
 			// A gap here is a heading that stays English while the ones beside
 			// it translate, which reads worse than none of them translating.
@@ -57,7 +57,7 @@ namespace BetterBuildingMenu.Tests
 		public void DeclinesWhatTheGameHasNoCounterpartFor()
 		{
 			// Networks has none — the game splits it across Roads, Bridges and
-			// Tracks — and the vocabulary the lens invented is genuinely ours.
+			// Tracks — and the vocabulary the asset menu invented is genuinely ours.
 			Assert.Null(GameLocaleKeys.For("Networks"));
 			Assert.Null(GameLocaleKeys.For("GroupBy_cost"));
 			Assert.Null(GameLocaleKeys.For("Cards"));
@@ -104,11 +104,11 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void LeavesTheLensOwnWordingWhereTheGamesSaysLess()
+		public void LeavesTheAssetMenuOwnWordingWhereTheGamesSaysLess()
 		{
 			// The game's "Park" and "Lights" drop the "props" that places them, its
 			// German "Fences" is untranslated, and its "Foliage" leaves out the rocks
-			// and spawners the lens files beside trees.
+			// and spawners the asset menu files beside trees.
 			Assert.Null(GameLocaleKeys.For(nameof(PrefabSubCategory.Props_Park)));
 			Assert.Null(GameLocaleKeys.For(nameof(PrefabSubCategory.Props_Lights)));
 			Assert.Null(GameLocaleKeys.For(nameof(PrefabSubCategory.Props_Fences)));

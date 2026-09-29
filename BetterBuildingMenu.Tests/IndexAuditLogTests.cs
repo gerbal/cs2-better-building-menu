@@ -259,7 +259,7 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void TheCensusCountsAPlacedPropInTheLens()
+		public void TheCensusCountsAPlacedPropInTheAssetMenu()
 		{
 			var placed = TestPrefabs.Named(1, "Bench", PrefabCategory.Props, PrefabSubCategory.Props_Misc);
 			var unplaced = TestPrefabs.Named(2, "Crate", PrefabCategory.Props, PrefabSubCategory.Props_Misc);
@@ -277,9 +277,9 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(
 				new[]
 				{
-					new AuditLine(AuditSeverity.Info, "[PROCESSOR-CENSUS] Props indexed=2 lens=1"),
-					new AuditLine(AuditSeverity.Info, "[PROCESSOR-CENSUS] Roads indexed=1 lens=1"),
-					new AuditLine(AuditSeverity.Info, "[PROCESSOR-CENSUS] Services indexed=2 lens=1"),
+					new AuditLine(AuditSeverity.Info, "[PROCESSOR-CENSUS] Props indexed=2 shown=1"),
+					new AuditLine(AuditSeverity.Info, "[PROCESSOR-CENSUS] Roads indexed=1 shown=1"),
+					new AuditLine(AuditSeverity.Info, "[PROCESSOR-CENSUS] Services indexed=2 shown=1"),
 				},
 				IndexAuditLog.ProcessorCensus(census, index));
 		}

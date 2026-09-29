@@ -1,27 +1,27 @@
 import type { Command } from "./command";
 
-export type BuildingLensFacetTriggerCommand = Command;
+export type AssetMenuFacetTriggerCommand = Command;
 
-export interface BuildingLensFacetOption {
+export interface AssetMenuFacetOption {
   id: string;
   label: string;
   selected: boolean;
 }
 
-export interface BuildingLensFacetGroup {
+export interface AssetMenuFacetGroup {
   id: string;
   label: string;
-  options: BuildingLensFacetOption[];
+  options: AssetMenuFacetOption[];
   /** Whether this group's selection actually excludes anything in view. */
   narrowing?: boolean;
 }
 
-export interface BuildingLensFacetState {
-  groups: BuildingLensFacetGroup[];
+export interface AssetMenuFacetState {
+  groups: AssetMenuFacetGroup[];
   hasSelection: boolean;
 }
 
-export const toggleBuildingLensFacetCommand = (facetId: string, optionId: string): BuildingLensFacetTriggerCommand => ({
-  method: "ToggleBuildingLensFacet",
+export const toggleAssetMenuFacetCommand = (facetId: string, optionId: string): AssetMenuFacetTriggerCommand => ({
+  method: "ToggleAssetMenuFacet",
   args: [facetId, optionId],
 });

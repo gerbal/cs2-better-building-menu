@@ -5,7 +5,7 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// The mapping from a vanilla toolbar section to what the lens shows, pinned by
+	/// The mapping from a vanilla toolbar section to what the asset menu shows, pinned by
 	/// tests rather than by a runtime census. Fixtures stay small enough to name
 	/// what each one asserts.
 	/// </summary>
@@ -46,7 +46,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void AnAssetVanillaPlacesAndWeDoNotHoldIsNamed()
 		{
-			// The failure the audit exists for: the lens is short something the
+			// The failure the audit exists for: the asset menu is short something the
 			// vanilla menu offers. Named rather than counted, because the name says
 			// which asset and a count only says that one is gone.
 			var report = Compare(

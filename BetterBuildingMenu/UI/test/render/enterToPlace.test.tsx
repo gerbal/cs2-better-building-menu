@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { catalogPage, entry } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
-import { resetLensView, setLensView } from "../../src/domain/lensViewStore";
+import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
 import { searchFieldClass } from "../../src/mods/BuildingMenu/searchField";
 
@@ -17,7 +17,7 @@ let keydown: Listener[] = [];
 function installDocument(): void {
   keydown = [];
   globals.document = {
-    // Only capture-phase listeners hear a key typed in the panel: the game's app
+    // Only capture-phase listeners hear a key typed in the asset menu: the game's app
     // container stops keydown propagation before it bubbles to the document.
     addEventListener: (type: string, listener: Listener, capture?: boolean) => {
       if (type === "keydown" && capture === true) keydown.push(listener);
@@ -55,9 +55,9 @@ describe("Enter in the catalog", () => {
 
   beforeEach(() => {
     resetBindings();
-    resetLensView();
+    resetAssetMenuView();
     installDocument();
-    setBinding("BetterBuildingMenu", "PanelWidth", 700);
+    setBinding("BetterBuildingMenu", "AssetMenuWidth", 700);
   });
 
   afterEach(() => {
@@ -74,7 +74,7 @@ describe("Enter in the catalog", () => {
 
   for (const mode of ["grid", "list", "cards", "table"]) {
     it(`arms the best match exactly once in ${mode} mode`, () => {
-      setLensView({ viewMode: mode });
+      setAssetMenuView({ viewMode: mode });
       groupedPage("clinic", 1);
       typed("clinic");
       mount();

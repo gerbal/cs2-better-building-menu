@@ -1,4 +1,4 @@
-import type { BuildingLensMetricRangeState } from "./buildingLensFilterSummary";
+import type { AssetMenuMetricRangeState } from "./assetMenuFilterSummary";
 
 export type MetricRangeId = "cost" | "upkeep" | "workers" | "capacity" | "lotWidth" | "lotDepth";
 
@@ -98,7 +98,7 @@ export function hasMetricRange(range: NormalizedMetricRange | null | undefined):
 
 /** The published bounds as one range per metric; absent state or bounds read as unset. */
 export function metricRangesFromState(
-  state: BuildingLensMetricRangeState | null | undefined,
+  state: AssetMenuMetricRangeState | null | undefined,
 ): Record<MetricRangeId, NormalizedMetricRange> {
   const range = (min: number | null | undefined, max: number | null | undefined) => ({ min: min ?? null, max: max ?? null });
 

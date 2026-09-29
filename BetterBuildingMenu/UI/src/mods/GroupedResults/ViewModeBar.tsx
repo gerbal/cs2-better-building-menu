@@ -11,7 +11,7 @@ export interface ViewModeOption {
 }
 
 /**
- * Where the lens opens, and what "Reset menu" goes back to. ONE constant, so
+ * Where the asset menu opens, and what "Reset menu" goes back to. ONE constant, so
  * moving the default cannot leave the catalog, the view bar and Reset
  * disagreeing about which mode that is.
  */
@@ -32,12 +32,12 @@ export const VIEW_MODES: readonly ViewModeOption[] = [
 interface ViewModeBarProps {
   value: CatalogViewMode;
   onChange: (mode: CatalogViewMode) => void;
-  /** Modes this surface cannot render. Table has no zone equivalent. */
+  /** Modes this list cannot render. Table has no zone equivalent. */
   omit?: readonly CatalogViewMode[];
 }
 
 /**
- * The Cards/List/Grid/Table control, shared by every surface that has one, so
+ * The Cards/List/Grid/Table control, shared by every list that has one, so
  * the same results carry the same affordances however they were reached. On
  * the vanilla ToolButton, so the selected state is the game's.
  */

@@ -4,13 +4,13 @@ import classNames from "classnames";
 import { useMemo, type CSSProperties, type ReactNode } from "react";
 import type { BuildingCatalogEntry } from "domain/buildingCatalog";
 import type { SortColumn } from "domain/buildingCatalogContracts";
-import { getBuildingLensMetricLabel } from "domain/buildingLensLayout";
-import type { BuildingLensDensityTier, BuildingLensMetric } from "domain/buildingLensLayout";
-import { getNumberSeparators } from "domain/buildingLensMetricFormat";
+import { getAssetMenuMetricLabel } from "domain/assetMenuLayout";
+import type { AssetMenuDensityTier, AssetMenuMetric } from "domain/assetMenuLayout";
+import { getNumberSeparators } from "domain/assetMenuMetricFormat";
 import {
-  BUILDING_LENS_COLUMN_SORT,
-  getBuildingLensColumnSortIndicator,
-} from "domain/buildingLensSortPresentation";
+  ASSET_MENU_COLUMN_SORT,
+  getAssetMenuColumnSortIndicator,
+} from "domain/assetMenuSortPresentation";
 import { flattenGroupedRows } from "domain/buildingGroups";
 import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 import { useUnitSystem } from "domain/unitSettings";
@@ -19,7 +19,7 @@ import { TableRow, type TableRowLabels } from "./TableRow";
 import styles from "./buildingCatalog.module.scss";
 
 const metricColumns: Array<{
-  key: BuildingLensMetric;
+  key: AssetMenuMetric;
   localizationKey: string;
   fallback: string;
   className: string;
@@ -37,9 +37,9 @@ export interface TableViewProps {
   items: BuildingCatalogEntry[];
   /** What to draw when there are no rows: the indexing notice, the scope notice, or the empty message. */
   emptyState: ReactNode;
-  density: BuildingLensDensityTier;
+  density: AssetMenuDensityTier;
   /** The width of one metric column; the header and every row read the same numbers. */
-  columnStyle(metric: BuildingLensMetric): CSSProperties;
+  columnStyle(metric: AssetMenuMetric): CSSProperties;
   nameBudget: number;
   resolveFacetLabel(groupId: string, value: string): string | null;
   sortColumn: SortColumn;
@@ -103,8 +103,8 @@ export const TableView = ({
         <span className={styles.identityHeader}>{translate("Tooltip.LABEL[BetterBuildingMenu.Name]", "Name")}</span>
         {metricColumns.map((column) => {
           const fullLabel = translate(column.localizationKey, column.fallback) ?? column.fallback;
-          const indicator = getBuildingLensColumnSortIndicator(column.key, { column: sortColumn, descending });
-          const sortTarget = BUILDING_LENS_COLUMN_SORT[column.key];
+          const indicator = getAssetMenuColumnSortIndicator(column.key, { column: sortColumn, descending });
+          const sortTarget = ASSET_MENU_COLUMN_SORT[column.key];
           const headerTitle = indicator === ""
             ? `${fullLabel} — ${translate("Tooltip.LABEL[BetterBuildingMenu.SortByColumn]", "sort by this column") ?? "sort by this column"}`
             : `${fullLabel} — ${translate("Tooltip.LABEL[BetterBuildingMenu.ReverseSort]", "reverse this sort") ?? "reverse this sort"}`;
@@ -121,7 +121,7 @@ export const TableView = ({
               aria-label={headerTitle}
               data-sort-indicator={indicator}
             >
-              {getBuildingLensMetricLabel(column.key, density, fullLabel)}
+              {getAssetMenuMetricLabel(column.key, density, fullLabel)}
               {indicator !== "" && <span className={styles.metricHeaderIndicator} aria-hidden="true">{indicator}</span>}
             </Button>
           );

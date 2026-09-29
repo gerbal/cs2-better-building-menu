@@ -1,6 +1,6 @@
 /**
  * The filter rail: one icon per dimension, with floating popovers rather than
- * stacked drawers, so the filters cost one row of the panel. The model only —
+ * stacked drawers, so the filters cost one row of the asset menu. The model only —
  * which dimensions exist, how many selections each holds, which need a search.
  */
 

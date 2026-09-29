@@ -12,7 +12,7 @@ namespace BetterBuildingMenu.Domain
 	/// </summary>
 	/// <remarks>
 	/// Vanilla scatters networks by the service that owns them, so building one means knowing
-	/// which service that is. This is the one place the lens deliberately shows more than the
+	/// which service that is. This is the one place the asset menu deliberately shows more than the
 	/// game: the extras rank behind every vanilla category, and none is removed from its own menu.
 	/// </remarks>
 	public static class NetworkMenuExtension

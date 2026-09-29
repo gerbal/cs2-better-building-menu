@@ -6,7 +6,7 @@ import "../harness/render";
 import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
 import { ExtensionBoundary, safeAppend, safeExtension } from "../../src/mods/ExtensionBoundary";
 import { gameClasses, gameModule, PlainTextInput } from "../../src/mods/gameModules";
-import { LensToolOptions } from "../../src/mods/LensToolOptions/LensToolOptions";
+import { AssetMenuToolOptions } from "../../src/mods/AssetMenuToolOptions/AssetMenuToolOptions";
 import register from "../../src/index";
 import { installVanillaRegistry } from "../harness/vanillaRegistry";
 
@@ -133,8 +133,8 @@ describe("a game UI module a game update has moved", () => {
 describe("the tool-options bank", () => {
   beforeEach(() => {
     resetBindings();
-    setBinding("BetterBuildingMenu", "LensOwnsCurrentMenu", true);
-    setBinding("BetterBuildingMenu", "BuildingLensFacets", {
+    setBinding("BetterBuildingMenu", "OwnsCurrentMenu", true);
+    setBinding("BetterBuildingMenu", "AssetMenuFacets", {
       groups: [{ id: "availability", label: "Availability", options: [{ id: "Locked", label: "Locked", selected: false }] }],
       hasSelection: false,
     });
@@ -143,7 +143,7 @@ describe("the tool-options bank", () => {
   it("adds our section after a vanilla bank that holds a single child, and leaves vanilla's element alone", () => {
     // push() would throw here: one child is an element, not an array.
     const vanillaElement = <div data-bank="true"><span>Theme</span></div>;
-    const Bank = LensToolOptions(() => vanillaElement) as () => JSX.Element;
+    const Bank = AssetMenuToolOptions(() => vanillaElement) as () => JSX.Element;
     let root: ReactTestRenderer | undefined;
 
     act(() => { root = create(<Bank />); });
@@ -183,14 +183,14 @@ describe("the tool-options bank", () => {
   });
 
   it("drops only our section when it throws, keeping vanilla's bank", () => {
-    setBinding("BetterBuildingMenu", "BuildingLensFacets", {
+    setBinding("BetterBuildingMenu", "AssetMenuFacets", {
       get groups(): never { throw new Error("our section broke"); },
       hasSelection: false,
     });
     const originalError = console.error;
     console.error = () => undefined;
     const vanillaElement = <div data-bank="true"><span data-theme="true">Theme</span></div>;
-    const Bank = LensToolOptions(() => vanillaElement) as () => JSX.Element;
+    const Bank = AssetMenuToolOptions(() => vanillaElement) as () => JSX.Element;
     let root: ReactTestRenderer | undefined;
 
     try {

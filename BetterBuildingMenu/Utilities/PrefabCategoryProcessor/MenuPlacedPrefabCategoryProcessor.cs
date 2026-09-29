@@ -13,7 +13,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 	/// <summary>
 	/// Whatever the vanilla menu places that no other processor claimed. Runs
 	/// last, so a prefab type this mod has never heard of (a mod's tool) still
-	/// reaches the panel the way it reaches the vanilla grid.
+	/// reaches the asset menu the way it reaches the vanilla grid.
 	/// </summary>
 	public class MenuPlacedPrefabCategoryProcessor : IPrefabCategoryProcessor
 	{

@@ -10,7 +10,7 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// An index entry, projected into the row the panel draws, through the adapter.
+	/// An index entry, projected into the row the asset menu draws, through the adapter.
 	/// </summary>
 	/// <remarks>
 	/// Each test builds its own small index and source, so no test shares state with

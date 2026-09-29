@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { BUILDING_LENS_MIN_HEIGHT, LENS_RESIZE_HANDLE_HEIGHT } from "../src/domain/buildingLensLayout.ts";
+import { ASSET_MENU_MIN_HEIGHT, ASSET_MENU_RESIZE_HANDLE_HEIGHT } from "../src/domain/assetMenuLayout.ts";
 import { declarationsOf, everyDeclaration, moduleSheets, rem, selectorsOf, sides } from "./harness/compiledCss.ts";
 
 /**
@@ -10,13 +10,13 @@ import { declarationsOf, everyDeclaration, moduleSheets, rem, selectorsOf, sides
  * sliced.
  */
 const CATALOG = "mods/BuildingCatalog/buildingCatalog.module.scss";
-const PANE = "mods/LensControlPane/lensControlPane.module.scss";
-const SURFACE = "mods/BuildingMenu/buildingMenuSurface.module.scss";
+const PANE = "mods/ControlPane/controlPane.module.scss";
+const ASSET_MENU = "mods/BuildingMenu/assetMenu.module.scss";
 const HEADER = "mods/BuildingMenu/buildingMenuHeader.module.scss";
 const GROUPS = "mods/GroupedResults/groupedResults.module.scss";
 const CARD = "mods/BuildingHoverCard/buildingHoverCard.module.scss";
 const PICKER = "mods/ExtensionMenu/extensionMenu.module.scss";
-const RESIZE = "mods/LensResizeHandle/lensResizeHandle.module.scss";
+const RESIZE = "mods/AssetMenuResizeHandle/assetMenuResizeHandle.module.scss";
 const LIST = "mods/BuildingList/buildingList.module.scss";
 const GRID = "mods/BuildingGrid/buildingGrid.module.scss";
 
@@ -27,7 +27,7 @@ const card = (selector: string) => declarationsOf(CARD, selector);
 const picker = (selector: string) => declarationsOf(PICKER, selector);
 const resize = (selector: string) => declarationsOf(RESIZE, selector);
 
-describe("Building Lens stylesheet contracts", () => {
+describe("Asset menu stylesheet contracts", () => {
   it("sizes a group to its tiles and lets the heading wrap inside it", () => {
     // The heading wraps to the width the tiles occupy, rather than the tiles
     // being spread to the width the heading wants: reserving label room buys
@@ -146,9 +146,9 @@ describe("Building Lens stylesheet contracts", () => {
     assert.notEqual(strip.position, "absolute");
     // Taller than the mark it draws, so the edge is grabbable without aiming.
     // The strip is drawn at the height a drag measures against.
-    assert.equal(rem(strip.height), LENS_RESIZE_HANDLE_HEIGHT);
+    assert.equal(rem(strip.height), ASSET_MENU_RESIZE_HANDLE_HEIGHT);
     const gripHeight = rem(resize(".resizeGrip").height);
-    assert.ok(gripHeight > 0 && gripHeight < LENS_RESIZE_HANDLE_HEIGHT, `grip height ${gripHeight}rem`);
+    assert.ok(gripHeight > 0 && gripHeight < ASSET_MENU_RESIZE_HANDLE_HEIGHT, `grip height ${gripHeight}rem`);
   });
 
   it("announces the drag the way the game does: its cursors, its thumb's weight", () => {
@@ -256,11 +256,11 @@ describe("the catalog's floor is one row of cards", () => {
     const border = rem(declarationsOf(LIST, ".item").border.split(/\s+/)[0]);
     const cardHeight = rem(declarationsOf(LIST, ".itemCard")["min-height"]) + 2 * border;
 
-    assert.equal(BUILDING_LENS_MIN_HEIGHT, catalogPadding + 2 * groupReserve + listPadding + cardHeight);
+    assert.equal(ASSET_MENU_MIN_HEIGHT, catalogPadding + 2 * groupReserve + listPadding + cardHeight);
   });
 
   it("states the same floor in the stylesheet", () => {
-    assert.equal(rem(declarationsOf(SURFACE, ".content")["min-height"]), BUILDING_LENS_MIN_HEIGHT);
+    assert.equal(rem(declarationsOf(ASSET_MENU, ".content")["min-height"]), ASSET_MENU_MIN_HEIGHT);
   });
 });
 
@@ -392,7 +392,7 @@ describe("the extension picker wears the same panel frame as the build menu", ()
   it("gives the body the content surface", () => {
     // The build menu's own body, surface for surface.
     const body = picker(".content");
-    const buildMenuBody = declarationsOf(SURFACE, ".content");
+    const buildMenuBody = declarationsOf(ASSET_MENU, ".content");
     for (const property of ["background-color", "backdrop-filter", "background-image", "border-bottom-left-radius", "border-bottom-right-radius"]) {
       assert.ok(body[property], `the picker's body has no ${property}`);
       assert.equal(body[property], buildMenuBody[property], property);

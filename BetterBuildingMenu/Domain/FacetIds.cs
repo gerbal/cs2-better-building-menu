@@ -1,6 +1,6 @@
 namespace BetterBuildingMenu.Domain
 {
-	/// <summary>The filter dimensions the panel offers, by the id the UI sends back.</summary>
+	/// <summary>The filter dimensions the asset menu offers, by the id the UI sends back.</summary>
 	/// <remarks>
 	/// The UI's copy is generated from <see cref="All"/>: see sharedContracts.generated.ts
 	/// and SharedContractsTests.

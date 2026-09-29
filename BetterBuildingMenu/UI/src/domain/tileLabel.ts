@@ -211,7 +211,7 @@ export const wrapTileLabel = (
 /**
  * The longest name the list and card rows draw whole. Those rows grow to fit
  * their name, which is the point of them, but an asset that ships its name
- * repeated (one does, six times over) would stretch its row across the panel.
+ * repeated (one does, six times over) would stretch its row across the asset menu.
  * Set well above real names ("Fishing And Open Water Fish Farming Area Hub" is
  * 44), so it only catches names like that one; the hover card has the whole.
  */

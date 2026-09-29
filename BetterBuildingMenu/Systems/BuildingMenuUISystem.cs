@@ -25,49 +25,49 @@ namespace BetterBuildingMenu.Systems
 		// toolbar still shows.
 		private VanillaToolbarSelection _toolbarSelection = VanillaToolbarSelection.None;
 		private readonly InteractionBoundary _interactionBoundary = new();
-		// Everything the player has told the lens, as one record with one tested
+		// Everything the player has told the asset menu, as one record with one tested
 		// transition per trigger. Each trigger handler applies a transition,
 		// PublishScope() mirrors it to the bindings, RefreshBuildingCatalog runs it.
-		private BuildingCatalogLensState _lens = BuildingCatalogLensState.Initial;
+		private AssetMenuState _assetMenu = AssetMenuState.Initial;
 
 		private ToolSystem _toolSystem = null!;
 		private PrefabSystem _prefabSystem = null!;
 		private PrefabIndexingSystem _indexer = null!;
 		private DefaultToolSystem _defaultToolSystem = null!;
-		// Only for releasing the toolbar's menu selection when the lens closes;
-		// see CloseLens.
+		// Only for releasing the toolbar's menu selection when the asset menu closes;
+		// see CloseAssetMenu.
 		private Game.UI.InGame.ToolbarUISystem _toolbarUISystem = null!;
 
 
 		private ValueBindingHelper<bool> _IsSearchLoading = null!;
 		/// <summary>
-		/// Whether the lens menu is open.
+		/// Whether the asset menu is open.
 		/// </summary>
 		/// <remarks>
-		/// Our own open state rather than a published binding: it makes SetLensMenuOpen
+		/// Our own open state rather than a published binding: it makes SetAssetMenuOpen
 		/// idempotent, tells a cold open from a menu-to-menu switch so the switch gets its extra
 		/// refresh, and tells the close paths whether there is anything to close.
 		/// </remarks>
-		private bool _lensMenuOpen;
+		private bool _assetMenuOpen;
 		// Whether the index moved since the catalog was last published. See OnUpdate.
 		private readonly IndexWatch _indexWatch = new();
 		private ValueBindingHelper<bool> _ReplaceVanillaBuildMenu = null!;
 		private ValueBindingHelper<int> _BuildingCatalogMatchesElsewhere = null!;
-		private ValueBindingHelper<int> _LensTileSize = null!;
+		private ValueBindingHelper<int> _AssetMenuTileSize = null!;
 		// Set when a toolbar preset is applied, so the game's echo of the armed
 		// tool's menu can be told apart from a real click. See MenuEchoGuard.
 		private int? _appliedMenuFrame;
 		private int _appliedMenuIndex;
 		private ValueBindingHelper<string> _BuildingCatalogGroupBy = null!;
 		// The grouping dimensions that can act on the current menu set; the picker lists these.
-		private ValueBindingHelper<string[]> _BuildingLensGroupDimensions = null!;
-		// Whether the menu the toolbar currently has open is one the lens takes
-		// over. Lets the vanilla menu stay hidden after the panel is closed, so
+		private ValueBindingHelper<string[]> _AssetMenuGroupDimensions = null!;
+		// Whether the menu the toolbar currently has open is one the asset menu takes
+		// over. Lets the vanilla menu stay hidden after the asset menu is closed, so
 		// closing means closed rather than revealing the grid underneath.
-		private ValueBindingHelper<bool> _LensOwnsCurrentMenu = null!;
+		private ValueBindingHelper<bool> _OwnsCurrentMenu = null!;
 		private ValueBindingHelper<int> _ActivePrefabId = null!;
-		private ValueBindingHelper<float> _PanelWidth = null!;
-		private ValueBindingHelper<float> _BuildingLensPanelHeight = null!;
+		private ValueBindingHelper<float> _AssetMenuWidth = null!;
+		private ValueBindingHelper<float> _AssetMenuHeight = null!;
 		private ValueBindingHelper<string> _CurrentSearch = null!;
 		private ValueBindingHelper<BuildingCatalogPage> _BuildingCatalogBinding = null!;
 		/// <summary>
@@ -92,42 +92,42 @@ namespace BetterBuildingMenu.Systems
 		/// says what the player asked for, the other what is there to ask about.
 		/// </remarks>
 		private ValueBindingHelper<BuildingCatalogMetricRangeState> _BuildingCatalogMetricBounds = null!;
-		private ValueBindingHelper<BuildingCatalogFacetState> _BuildingLensFacets = null!;
+		private ValueBindingHelper<BuildingCatalogFacetState> _AssetMenuFacets = null!;
 		private ValueBindingHelper<string> _BuildingCatalogSortColumn = null!;
 
 		private ValueBindingHelper<bool> _BuildingCatalogSortDescending = null!;
 		// Vanilla's second tier: the tab strip for whichever menu is scoped, and
 		// which of its tabs is active. Empty list means "no strip", which is also
 		// how vanilla renders a menu with fewer than two categories.
-		private ValueBindingHelper<VanillaMenuCategory[]> _BuildingLensMenuCategoriesBinding = null!;
+		private ValueBindingHelper<VanillaMenuCategory[]> _AssetMenuCategoriesBinding = null!;
 		// Sidecar to the above. See MenuCategoryCount for why it is not a field
 		// on the category record.
-		private ValueBindingHelper<MenuCategoryCount[]> _BuildingLensMenuCategoryCounts = null!;
+		private ValueBindingHelper<MenuCategoryCount[]> _AssetMenuCategoryCounts = null!;
 		// The strip's fallback axis for menus vanilla gives no categories: the tabs, which tab
 		// is picked, and WHICH AXIS they are — published so the row can say so, because the axis
 		// varies per menu and a tab row whose meaning changes silently is not learnable.
-		private ValueBindingHelper<MenuBranchCount[]> _BuildingLensStripTabs = null!;
-		private ValueBindingHelper<string[]> _BuildingLensStripTabBinding = null!;
+		private ValueBindingHelper<MenuBranchCount[]> _AssetMenuStripTabs = null!;
+		private ValueBindingHelper<string[]> _AssetMenuStripTabBinding = null!;
 		// Which category the strip draws as its development branches, and those
 		// branches. Empty on the menus that expand nothing.
-		private ValueBindingHelper<MenuCategoryTabs[]> _BuildingLensExpandedCategories = null!;
+		private ValueBindingHelper<MenuCategoryTabs[]> _AssetMenuExpandedCategories = null!;
 		// The tier segment's other axis. Education navigates by level, not by
 		// the milestone the school unlocked at.
-		private ValueBindingHelper<MenuBranchCount[]> _BuildingLensMenuSchoolTierCounts = null!;
-		private ValueBindingHelper<int> _BuildingLensMenuSchoolTierBinding = null!;
-		private ValueBindingHelper<string> _BuildingLensMenuCategoryBinding = null!;
+		private ValueBindingHelper<MenuBranchCount[]> _AssetMenuSchoolTierCounts = null!;
+		private ValueBindingHelper<int> _AssetMenuSchoolTierBinding = null!;
+		private ValueBindingHelper<string> _AssetMenuCategoryBinding = null!;
 		/// <summary>
-		/// The vanilla menu the lens is scoped to, or empty for the whole catalog.
+		/// The vanilla menu the asset menu is scoped to, or empty for the whole catalog.
 		/// </summary>
 		/// <remarks>
 		/// Published so the chip row can name it: the scope is set by clicking a toolbar icon,
 		/// and would otherwise be applied with nothing on screen saying so.
 		/// </remarks>
-		private ValueBindingHelper<string> _BuildingLensMenuBinding = null!;
+		private ValueBindingHelper<string> _AssetMenuBinding = null!;
 		/// <summary>Every vanilla menu, so one can be chosen as a filter.</summary>
-		private ValueBindingHelper<VanillaMenuCategory[]> _BuildingLensMenusBinding = null!;
+		private ValueBindingHelper<VanillaMenuCategory[]> _AssetMenusBinding = null!;
 		// Milestone index -> name, published once. Locked assets carry the index.
-		private ValueBindingHelper<string[]> _BuildingLensMilestonesBinding = null!;
+		private ValueBindingHelper<string[]> _AssetMenuMilestonesBinding = null!;
 
 		protected override void OnCreate()
 		{
@@ -152,75 +152,75 @@ namespace BetterBuildingMenu.Systems
 			// Seeded here and re-pushed by OnSettingsApplied: the UI's menu watcher and
 			// the upgrades panel read it, and C# reads the setting live.
 			_ReplaceVanillaBuildMenu = CreateBinding("ReplaceVanillaBuildMenu", Mod.Settings.ReplaceVanillaBuildMenu);
-			_LensOwnsCurrentMenu = CreateBinding("LensOwnsCurrentMenu", false);
+			_OwnsCurrentMenu = CreateBinding("OwnsCurrentMenu", false);
 			_BuildingCatalogMatchesElsewhere = CreateBinding("BuildingCatalogMatchesElsewhere", 0);
 			_BuildingExtensionMenu = CreateBinding("BuildingExtensionMenu", BuildingExtensionMenu.Empty);
 			// Seeded here and re-pushed by OnSettingsApplied, so the options screen's Tile
 			// size slider takes effect without a reload.
-			_LensTileSize = CreateBinding("BuildingLensTileSize", Mod.Settings.BuildingLensTileSize);
+			_AssetMenuTileSize = CreateBinding("AssetMenuTileSize", Mod.Settings.AssetMenuTileSize);
 			Mod.Settings.onSettingsApplied += OnSettingsApplied;
 			CreateTrigger("SearchEverything", SearchEverything);
-			_PanelWidth = CreateBinding("PanelWidth", 0f);
-			// Seeded from the setting rather than 0: the panel draws from this
+			_AssetMenuWidth = CreateBinding("AssetMenuWidth", 0f);
+			// Seeded from the setting rather than 0: the asset menu draws from this
 			// on its first frame, and a zero height would flash a collapsed
 			// catalog before the first drag published anything.
-			_BuildingLensPanelHeight = CreateBinding(
-				"BuildingLensPanelHeight",
-				BuildingLensHeight.Clamp(Mod.Settings.BuildingLensPanelHeight));
+			_AssetMenuHeight = CreateBinding(
+				"AssetMenuHeight",
+				AssetMenuHeight.Clamp(Mod.Settings.AssetMenuHeight));
 			_CurrentSearch = CreateBinding("CurrentSearch", string.Empty);
 			_BuildingCatalogBinding = CreateBinding("BuildingCatalog", new BuildingCatalogPage(
 				Array.Empty<BuildingCatalogEntry>(),
 				0,
 				0,
 				100,
-				BuildingCatalogLensState.Indexing));
+				AssetMenuState.Indexing));
 			_BuildingCatalogMetricRanges = CreateBinding("BuildingCatalogMetricRanges", BuildingCatalogMetricRangeState.Empty);
 			_BuildingCatalogMetricBounds = CreateBinding("BuildingCatalogMetricBounds", BuildingCatalogMetricRangeState.Empty);
-			_BuildingLensFacets = CreateBinding("BuildingLensFacets", new BuildingCatalogFacetState(Array.Empty<BuildingCatalogFacetGroup>(), false));
+			_AssetMenuFacets = CreateBinding("AssetMenuFacets", new BuildingCatalogFacetState(Array.Empty<BuildingCatalogFacetGroup>(), false));
 			// Sort is a read/write binding rather than a write-only trigger: the order lives in
 			// the persistent query, so a UI that could only write it would show a stale indicator
 			// over correctly-sorted rows after any remount.
 			_BuildingCatalogSortColumn = CreateBinding(
 				"BuildingCatalogSortColumn",
 				"SetBuildingCatalogSortColumn",
-				_lens.Query.EffectiveSortColumn,
+				_assetMenu.Query.EffectiveSortColumn,
 				SetBuildingCatalogSortColumn);
 			// Group-by rides with sort for the same reason: it is part of the
 			// persistent query, so a write-only trigger would leave the picker
 			// showing "Nothing" over grouped rows after any remount.
-			_BuildingLensGroupDimensions = CreateBinding("BuildingLensGroupDimensions", Array.Empty<string>());
+			_AssetMenuGroupDimensions = CreateBinding("AssetMenuGroupDimensions", Array.Empty<string>());
 			_BuildingCatalogGroupBy = CreateBinding(
 				"BuildingCatalogGroupBy",
 				"SetBuildingCatalogGroupBy",
-				_lens.Query.GroupBy,
+				_assetMenu.Query.GroupBy,
 				SetBuildingCatalogGroupBy);
 			_BuildingCatalogSortDescending = CreateBinding(
 				"BuildingCatalogSortDescending",
 				"SetBuildingCatalogSortDescending",
-				_lens.Query.Descending,
+				_assetMenu.Query.Descending,
 				SetBuildingCatalogSortDescending);
-			_BuildingLensMenuCategoriesBinding = CreateBinding("BuildingLensMenuCategories", Array.Empty<VanillaMenuCategory>());
-			_BuildingLensMenuCategoryCounts = CreateBinding("BuildingLensMenuCategoryCounts", Array.Empty<MenuCategoryCount>());
-			_BuildingLensStripTabs = CreateBinding("BuildingLensStripTabs", Array.Empty<MenuBranchCount>());
-			_BuildingLensExpandedCategories = CreateBinding("BuildingLensExpandedCategories", Array.Empty<MenuCategoryTabs>());
+			_AssetMenuCategoriesBinding = CreateBinding("AssetMenuCategories", Array.Empty<VanillaMenuCategory>());
+			_AssetMenuCategoryCounts = CreateBinding("AssetMenuCategoryCounts", Array.Empty<MenuCategoryCount>());
+			_AssetMenuStripTabs = CreateBinding("AssetMenuStripTabs", Array.Empty<MenuBranchCount>());
+			_AssetMenuExpandedCategories = CreateBinding("AssetMenuExpandedCategories", Array.Empty<MenuCategoryTabs>());
 			// A plain value binding plus its own trigger, rather than the
 			// two-in-one form: the value is the LIST both controls share, while
 			// the trigger takes the single tab the row clicked.
-			_BuildingLensStripTabBinding = CreateBinding("BuildingLensStripTab", Array.Empty<string>());
-			_BuildingLensMenuSchoolTierCounts = CreateBinding("BuildingLensMenuSchoolTierCounts", Array.Empty<MenuBranchCount>());
-			_BuildingLensMenuSchoolTierBinding = CreateBinding(
-				"BuildingLensMenuSchoolTier",
-				"SetBuildingLensMenuSchoolTier",
+			_AssetMenuStripTabBinding = CreateBinding("AssetMenuStripTab", Array.Empty<string>());
+			_AssetMenuSchoolTierCounts = CreateBinding("AssetMenuSchoolTierCounts", Array.Empty<MenuBranchCount>());
+			_AssetMenuSchoolTierBinding = CreateBinding(
+				"AssetMenuSchoolTier",
+				"SetAssetMenuSchoolTier",
 				-1,
-				SetBuildingLensMenuSchoolTier);
-			_BuildingLensMenuBinding = CreateBinding("BuildingLensMenu", string.Empty);
-			_BuildingLensMenusBinding = CreateBinding("BuildingLensMenus", Array.Empty<VanillaMenuCategory>());
-			_BuildingLensMilestonesBinding = CreateBinding("BuildingLensMilestones", Array.Empty<string>());
-			_BuildingLensMenuCategoryBinding = CreateBinding(
-				"BuildingLensMenuCategory",
-				"SetBuildingLensMenuCategory",
+				SetAssetMenuSchoolTier);
+			_AssetMenuBinding = CreateBinding("AssetMenu", string.Empty);
+			_AssetMenusBinding = CreateBinding("AssetMenus", Array.Empty<VanillaMenuCategory>());
+			_AssetMenuMilestonesBinding = CreateBinding("AssetMenuMilestones", Array.Empty<string>());
+			_AssetMenuCategoryBinding = CreateBinding(
+				"AssetMenuCategory",
+				"SetAssetMenuCategory",
 				string.Empty,
-				SetBuildingLensMenuCategory);
+				SetAssetMenuCategory);
 
 			// These establish UI actions triggering methods on the C# side.
 			CreateTrigger<string>("SearchChanged", t => SearchChanged(t));
@@ -239,14 +239,14 @@ namespace BetterBuildingMenu.Systems
 			CreateTrigger<int>("LoadMoreBuildingCatalog", LoadMoreBuildingCatalog);
 				CreateTrigger<string, string, string>("SetBuildingCatalogMetricRange", SetBuildingCatalogMetricRange);
 				CreateTrigger("ClearBuildingCatalogMetricRanges", ClearBuildingCatalogMetricRanges);
-				CreateTrigger<string, string>("ToggleBuildingLensFacet", ToggleBuildingLensFacet);
-				CreateTrigger("ClearBuildingLensFilters", ClearBuildingLensFilters);
-				CreateTrigger("ResetBuildingLensMenu", ResetBuildingLensMenu);
-				CreateTrigger<string>("SetBuildingLensStripTab", SetBuildingLensStripTab);
-				CreateTrigger("ClearBuildingLensMenuScope", ClearBuildingLensMenuScope);
-				CreateTrigger<string>("SetBuildingLensMenu", SetBuildingLensMenu);
-			CreateTrigger<float>("SetBuildingLensPanelHeight", SetBuildingLensPanelHeight);
-			CreateTrigger("CommitBuildingLensPanelHeight", CommitBuildingLensPanelHeight);
+				CreateTrigger<string, string>("ToggleAssetMenuFacet", ToggleAssetMenuFacet);
+				CreateTrigger("ClearAssetMenuFilters", ClearAssetMenuFilters);
+				CreateTrigger("ResetAssetMenu", ResetAssetMenu);
+				CreateTrigger<string>("SetAssetMenuStripTab", SetAssetMenuStripTab);
+				CreateTrigger("ClearAssetMenuScope", ClearAssetMenuScope);
+				CreateTrigger<string>("SetAssetMenu", SetAssetMenu);
+			CreateTrigger<float>("SetAssetMenuHeight", SetAssetMenuHeight);
+			CreateTrigger("CommitAssetMenuHeight", CommitAssetMenuHeight);
 		}
 
 		protected override void OnDestroy()
@@ -273,17 +273,17 @@ namespace BetterBuildingMenu.Systems
 		/// </summary>
 		/// <remarks>
 		/// The parameter is the base game's <see cref="Game.Settings.Setting"/> — the delegate's
-		/// own type — not this mod's settings class. The panel height needs no re-publishing; it
+		/// own type — not this mod's settings class. The asset menu's height needs no re-publishing; it
 		/// travels the other way, from the drag handle into the setting.
 		/// </remarks>
 		private void OnSettingsApplied(Game.Settings.Setting setting)
 		{
-			_LensTileSize.Value = Mod.Settings.BuildingLensTileSize;
+			_AssetMenuTileSize.Value = Mod.Settings.AssetMenuTileSize;
 			_ReplaceVanillaBuildMenu.Value = Mod.Settings.ReplaceVanillaBuildMenu;
 
-			// Switched off with the panel up: the menu goes back to its vanilla grid now
+			// Switched off with the asset menu up: the menu goes back to its vanilla grid now
 			// rather than at the next click.
-			if (!Mod.Settings.ReplaceVanillaBuildMenu && _LensOwnsCurrentMenu.Value)
+			if (!Mod.Settings.ReplaceVanillaBuildMenu && _OwnsCurrentMenu.Value)
 			{
 				// With the setting off the watcher sends no deselect, so forget the menu here,
 				// as VanillaMenuDeselected does. A kept scope filters the next open to it, and
@@ -299,8 +299,8 @@ namespace BetterBuildingMenu.Systems
 		{
 			// The indexer bumps its Generation and leaves the rest to us: a pass, an
 			// unlock, a unique built or bulldozed. Scheduled like a search, so a burst of
-			// them is one refresh, and nothing is rebuilt for a closed panel.
-			if (_indexWatch.ShouldRefresh(_lensMenuOpen, _indexer.Generation))
+			// them is one refresh, and nothing is rebuilt for a closed asset menu.
+			if (_indexWatch.ShouldRefresh(_assetMenuOpen, _indexer.Generation))
 			{
 				TriggerSearch();
 			}

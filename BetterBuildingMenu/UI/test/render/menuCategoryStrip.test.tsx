@@ -7,17 +7,17 @@ import { MenuCategoryStrip } from "../../src/mods/MenuCategoryStrip/MenuCategory
 const category = (id: string) => ({ id, name: id, icon: `Media/Game/Icons/${id}.svg`, priority: 0 });
 
 const seed = (menu: string) => {
-  setBinding("BetterBuildingMenu", "BuildingLensMenu", menu);
-  setBinding("BetterBuildingMenu", "BuildingLensMenuCategories", [category("Small Roads"), category("Medium Roads")]);
-  setBinding("BetterBuildingMenu", "BuildingLensMenuCategory", "");
-  setBinding("BetterBuildingMenu", "BuildingLensMenuCategoryCounts", [
+  setBinding("BetterBuildingMenu", "AssetMenu", menu);
+  setBinding("BetterBuildingMenu", "AssetMenuCategories", [category("Small Roads"), category("Medium Roads")]);
+  setBinding("BetterBuildingMenu", "AssetMenuCategory", "");
+  setBinding("BetterBuildingMenu", "AssetMenuCategoryCounts", [
     { id: "", count: 40 },
     { id: "Small Roads", count: 24 },
     { id: "Medium Roads", count: 16 },
   ]);
   // The branch fallback the strip draws where a menu has no categories — it
   // must obey the same guard, because All menus has branches too.
-  setBinding("BetterBuildingMenu", "BuildingLensStripTabs", [
+  setBinding("BetterBuildingMenu", "AssetMenuStripTabs", [
     { id: "Fossil", count: 7, icon: "" },
     { id: "Renewable", count: 5, icon: "" },
   ]);
@@ -36,7 +36,7 @@ describe("the category strip", () => {
     assert.ok(count(html, /aria-label="/) >= 3, "All plus a tab per category");
   });
 
-  it("draws nothing while the lens is unscoped", () => {
+  it("draws nothing while the asset menu is unscoped", () => {
     // Under All menus the strip would publish every category of every menu
     // and wrap to four rows of icon-only tabs.
     seed("");

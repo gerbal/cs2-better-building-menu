@@ -1,5 +1,5 @@
 /**
- * The register of user-visible strings the lens invented — the ones with no
+ * The register of user-visible strings the asset menu invented — the ones with no
  * game counterpart to borrow. One list for a translation pass and a guard the
  * tests fail against; `plumbed: false` means a pure module returns it as text.
  */
@@ -39,7 +39,7 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   { key: key("Households"), english: "Households", source: "BuildingHoverCard", plumbed: true },
   { key: key("HouseholdsUnit"), english: "households", source: "BuildingHoverCard", plumbed: true },
   { key: key("WorkersUnit"), english: "jobs", source: "BuildingHoverCard", plumbed: true },
-  // Vanilla's menus close from an X in the top-right corner; the panel stands
+  // Vanilla's menus close from an X in the top-right corner; the asset menu stands
   // in for one, so it offers the same way out.
   { key: key("CloseMenu"), english: "Close", source: "BuildingMenuHeader", plumbed: true },
   { key: key("ViewList"), english: "List", source: "BuildingCatalog", plumbed: true },
@@ -65,7 +65,7 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
 
   // --- Chip row. Already behind translate(). -------------------------------
   { key: key("AllMenus"), english: "All menus", source: "ChipRow", plumbed: true },
-  // The one menu the lens renames, because it is the one whose contents it
+  // The one menu the asset menu renames, because it is the one whose contents it
   // changes: Roads gathers every network, which the game's own word does not
   // describe. Offered ahead of that string rather than instead of it.
   { key: key("MenuRoadsAndNetworks"), english: "Roads & Networks", source: "vanillaServiceLabels", plumbed: true },
@@ -91,29 +91,29 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   { key: key("GroupOther"), english: "Other", source: "buildingGroups.UNGROUPED_LABEL", plumbed: false },
 
   // --- Filter summary and empty states. Pure module. -----------------------
-  { key: key("NoActiveFilters"), english: "No active filters", source: "buildingLensFilterSummary", plumbed: false },
-  { key: key("ActiveFilterCount"), english: "{0} active filters", source: "buildingLensFilterSummary", plumbed: false },
-  { key: key("NoBuildingsInCategory"), english: "No buildings in this category.", source: "buildingLensFilterSummary", plumbed: false },
-  { key: key("NoBuildingsMatch"), english: "No buildings match {0}.", source: "buildingLensFilterSummary", plumbed: false },
-  { key: key("SearchConstraint"), english: 'search "{0}"', source: "buildingLensFilterSummary", plumbed: false },
+  { key: key("NoActiveFilters"), english: "No active filters", source: "assetMenuFilterSummary", plumbed: false },
+  { key: key("ActiveFilterCount"), english: "{0} active filters", source: "assetMenuFilterSummary", plumbed: false },
+  { key: key("NoBuildingsInCategory"), english: "No buildings in this category.", source: "assetMenuFilterSummary", plumbed: false },
+  { key: key("NoBuildingsMatch"), english: "No buildings match {0}.", source: "assetMenuFilterSummary", plumbed: false },
+  { key: key("SearchConstraint"), english: 'search "{0}"', source: "assetMenuFilterSummary", plumbed: false },
 
   // --- Metric names used in chips and summaries. Pure module. --------------
   // The table's column headers are already translated; these are the same
   // words reached by a different path, which is what a register is for.
-  { key: key("MetricCost"), english: "Cost", source: "filterChips, buildingLensFilterSummary", plumbed: false },
-  { key: key("MetricUpkeep"), english: "Upkeep", source: "filterChips, buildingLensFilterSummary", plumbed: false },
-  { key: key("MetricWorkers"), english: "Workers", source: "filterChips, buildingLensFilterSummary", plumbed: false },
-  { key: key("MetricCapacity"), english: "Capacity", source: "filterChips, buildingLensFilterSummary", plumbed: false },
-  { key: key("MetricLotWidth"), english: "Lot width", source: "filterChips, buildingLensFilterSummary", plumbed: false },
-  { key: key("MetricLotDepth"), english: "Lot depth", source: "filterChips, buildingLensFilterSummary", plumbed: false },
+  { key: key("MetricCost"), english: "Cost", source: "filterChips, assetMenuFilterSummary", plumbed: false },
+  { key: key("MetricUpkeep"), english: "Upkeep", source: "filterChips, assetMenuFilterSummary", plumbed: false },
+  { key: key("MetricWorkers"), english: "Workers", source: "filterChips, assetMenuFilterSummary", plumbed: false },
+  { key: key("MetricCapacity"), english: "Capacity", source: "filterChips, assetMenuFilterSummary", plumbed: false },
+  { key: key("MetricLotWidth"), english: "Lot width", source: "filterChips, assetMenuFilterSummary", plumbed: false },
+  { key: key("MetricLotDepth"), english: "Lot depth", source: "filterChips, assetMenuFilterSummary", plumbed: false },
 
   // --- Units and no-data markers. Pure module. -----------------------------
-  { key: key("MetricNoData"), english: "—", source: "buildingLensMetricFormat", plumbed: false },
-  { key: key("MetricFree"), english: "Free", source: "buildingLensMetricFormat", plumbed: false },
-  { key: key("UpkeepPerMonth"), english: "{0}/mo", source: "buildingLensMetricFormat", plumbed: false },
-  { key: key("UnitStudents"), english: "students", source: "buildingLensMetricFormat", plumbed: false },
-  { key: key("UnitPatients"), english: "patients", source: "buildingLensMetricFormat", plumbed: false },
-  { key: key("UnitVehicles"), english: "vehicles", source: "buildingLensMetricFormat", plumbed: false },
+  { key: key("MetricNoData"), english: "—", source: "assetMenuMetricFormat", plumbed: false },
+  { key: key("MetricFree"), english: "Free", source: "assetMenuMetricFormat", plumbed: false },
+  { key: key("UpkeepPerMonth"), english: "{0}/mo", source: "assetMenuMetricFormat", plumbed: false },
+  { key: key("UnitStudents"), english: "students", source: "assetMenuMetricFormat", plumbed: false },
+  { key: key("UnitPatients"), english: "patients", source: "assetMenuMetricFormat", plumbed: false },
+  { key: key("UnitVehicles"), english: "vehicles", source: "assetMenuMetricFormat", plumbed: false },
 ];
 
 /** The register's own contract: keys are unique and well formed. */

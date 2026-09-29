@@ -36,7 +36,7 @@ namespace BetterBuildingMenu.Tests
 		[InlineData(true)]
 		public void TheContentFacetShowsTheGamesVanillaToggle(bool vanillaSelected)
 		{
-			// The adapter reads the toggle from the toolbar selection the panel holds and
+			// The adapter reads the toggle from the toolbar selection the asset menu holds and
 			// hands it to the view; the view must pass it on to the facet it builds.
 			var baseGame = Entry(1, "Clinic", "ServiceBuildings", "Health & Deathcare", "Healthcare")
 				with { DlcId = GameDlcIds.BaseGame.ToString(System.Globalization.CultureInfo.InvariantCulture) };

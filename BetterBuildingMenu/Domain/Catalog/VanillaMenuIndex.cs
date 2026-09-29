@@ -61,7 +61,7 @@ namespace BetterBuildingMenu.Domain.Catalog
 			new(placements, _menuNames, _menuEntities, _menus, _categories);
 
 		/// <summary>Whether the game offers this prefab in any of its build menus.</summary>
-		/// <remarks>The index's tie-breaker: whatever the game puts in front of the player, the lens
+		/// <remarks>The index's tie-breaker: whatever the game puts in front of the player, the asset menu
 		/// carries too, whichever of our own rules would drop it. It also keeps networks the game never
 		/// offers out of the Roads menu's gathering.</remarks>
 		public bool IsPlaced(int entityIndex) => _placements.ContainsKey(entityIndex);
@@ -87,8 +87,8 @@ namespace BetterBuildingMenu.Domain.Catalog
 			return true;
 		}
 
-		/// <summary>A menu's own entity, by the name the lens scopes itself with.</summary>
-		/// <remarks>Keyed off the menu name: the lens knows which menu it took over without holding
+		/// <summary>A menu's own entity, by the name the asset menu scopes itself with.</summary>
+		/// <remarks>Keyed off the menu name: the asset menu knows which menu it took over without holding
 		/// an asset from it.</remarks>
 		public bool TryGetMenuEntity(string menu, out Entity entity)
 		{

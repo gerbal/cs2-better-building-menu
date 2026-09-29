@@ -21,12 +21,12 @@ import {
   createMetricRangeDebouncer,
   type MetricRangeDebouncerScheduler,
 } from "domain/metricRangeDebouncer";
-import { LENS_DISCLOSURE_KEYS, getLensDisclosure, setLensDisclosure } from "domain/lensViewStore";
-import { useLensView } from "mods/useLensView";
+import { ASSET_MENU_DISCLOSURE_KEYS, getAssetMenuDisclosure, setAssetMenuDisclosure } from "domain/assetMenuViewStore";
+import { useAssetMenuView } from "mods/useAssetMenuView";
 import { textInputValue } from "domain/textInput";
 import styles from "./buildingCatalog.module.scss";
 
-import type { BuildingLensMetricRangeState as BuildingCatalogMetricRangeState } from "domain/buildingLensFilterSummary";
+import type { AssetMenuMetricRangeState as BuildingCatalogMetricRangeState } from "domain/assetMenuFilterSummary";
 import { BuildingCatalogMetricBounds$, BuildingCatalogMetricRanges$, send } from "mods/bindings";
 import { GameTextInput, gameClasses } from "mods/gameModules";
 
@@ -92,10 +92,10 @@ export const BuildingCatalogMetricFilters = () => {
   const state = useValue(BuildingCatalogMetricRanges$) ?? emptyMetricRangeState;
   // In the shared store, so this drawer outlives the remount and the metric
   // ranges the player set stay visible.
-  const open = useLensView((view) => view.disclosures[LENS_DISCLOSURE_KEYS.metricRanges] ?? false);
+  const open = useAssetMenuView((view) => view.disclosures[ASSET_MENU_DISCLOSURE_KEYS.metricRanges] ?? false);
   const setOpen = (next: boolean | ((current: boolean) => boolean)): void => {
-    const current = getLensDisclosure(LENS_DISCLOSURE_KEYS.metricRanges);
-    setLensDisclosure(LENS_DISCLOSURE_KEYS.metricRanges, typeof next === "function" ? next(current) : next);
+    const current = getAssetMenuDisclosure(ASSET_MENU_DISCLOSURE_KEYS.metricRanges);
+    setAssetMenuDisclosure(ASSET_MENU_DISCLOSURE_KEYS.metricRanges, typeof next === "function" ? next(current) : next);
   };
   // The spread each metric has here. A field with no selection shows its bound,
   // so the control states the scale before asking anyone to narrow it.
@@ -210,7 +210,7 @@ export const BuildingCatalogMetricFilters = () => {
         </Button>
         {activeCount > 0 && (
           <Button className={styles.metricRangeClear} variant="icon" onSelect={clear}>
-            {translate("Tooltip.LABEL[BetterBuildingMenu.ClearLensMetricRanges]", "Clear metric ranges")}
+            {translate("Tooltip.LABEL[BetterBuildingMenu.ClearAssetMenuMetricRanges]", "Clear metric ranges")}
           </Button>
         )}
       </div>

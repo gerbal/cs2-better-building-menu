@@ -7,29 +7,29 @@ import { tableLabelCharBudget } from "domain/tileLabel";
 import { useTextScale } from "domain/textScaleSetting";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
-  BUILDING_LENS_PANEL_CHROME_WIDTH,
-  getBuildingLensCatalogMaxHeight,
-  BUILDING_LENS_IDENTITY_MIN,
-  BUILDING_LENS_CONTROL_PANE_TOTAL,
-  BUILDING_LENS_TABLE_ROW_FURNITURE,
-  getBuildingLensColumnWidths,
-  getBuildingLensDensity,
-  getBuildingLensRowGeometry,
-  getBuildingLensMetricTextScale,
-} from "domain/buildingLensLayout";
-import type { BuildingLensDensityTier, BuildingLensMetric } from "domain/buildingLensLayout";
+  ASSET_MENU_CHROME_WIDTH,
+  getAssetMenuCatalogMaxHeight,
+  ASSET_MENU_IDENTITY_MIN,
+  CONTROL_PANE_TOTAL,
+  ASSET_MENU_TABLE_ROW_FURNITURE,
+  getAssetMenuColumnWidths,
+  getAssetMenuDensity,
+  getAssetMenuRowGeometry,
+  getAssetMenuMetricTextScale,
+} from "domain/assetMenuLayout";
+import type { AssetMenuDensityTier, AssetMenuMetric } from "domain/assetMenuLayout";
 import { catalogWindowRemaining, loadMoreCount } from "domain/catalogWindow";
-import { getNumberSeparators, groupDigits } from "domain/buildingLensMetricFormat";
+import { getNumberSeparators, groupDigits } from "domain/assetMenuMetricFormat";
 import type { SortColumn } from "domain/buildingCatalogContracts";
-import { getBuildingLensEmptyStateMessage } from "domain/buildingLensFilterSummary";
-import { menuSurfacePort } from "domain/menuSurfacePort";
+import { getAssetMenuEmptyStateMessage } from "domain/assetMenuFilterSummary";
+import { assetMenuPort } from "domain/assetMenuPort";
 import { enterDecision, getSearchScopeNotice, isEnterForSearch, isPlainEnter } from "domain/buildingSearchRank";
 import { isSearchField } from "mods/BuildingMenu/searchField";
 import { canPlace } from "domain/buildingLockState";
-import { getLensAnchorKey, getLensView, setLensAnchor, setLensView } from "domain/lensViewStore";
+import { getAssetMenuAnchorKey, getAssetMenuView, setAssetMenuAnchor, setAssetMenuView } from "domain/assetMenuViewStore";
 // The view mode is shared with the control plane, which is a sibling of this
-// panel rather than a descendant, so it goes through the subscribing hook.
-import { useLensView } from "mods/useLensView";
+// asset menu rather than a descendant, so it goes through the subscribing hook.
+import { useAssetMenuView } from "mods/useAssetMenuView";
 import { GroupedResults, type CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import { DEFAULT_VIEW_MODE } from "mods/GroupedResults/ViewModeBar";
 import {
@@ -44,9 +44,9 @@ import {
   BuildingCatalogMetricRanges$,
   BuildingCatalogSortColumn$,
   BuildingCatalogSortDescending$,
-  BuildingLensFacets$,
+  AssetMenuFacets$,
   CurrentSearch$,
-  PanelWidth$,
+  AssetMenuWidth$,
   send,
   sendSort,
 } from "mods/bindings";
@@ -55,7 +55,7 @@ import styles from "./buildingCatalog.module.scss";
 /** Grid recognises, List scans, Table compares. */
 type ViewMode = CatalogViewMode;
 
-const densityClassNames: Record<BuildingLensDensityTier, string> = {
+const densityClassNames: Record<AssetMenuDensityTier, string> = {
   compact: styles.densityCompact,
   default: styles.densityDefault,
   expanded: styles.densityExpanded,
@@ -63,19 +63,19 @@ const densityClassNames: Record<BuildingLensDensityTier, string> = {
 
 /**
  * Memoised, and takes no props: it re-renders on its own bindings only, not on
- * every drag echo or keystroke that re-renders the surface around it.
+ * every drag echo or keystroke that re-renders the asset menu around it.
  */
 export const BuildingCatalogComponent = memo(function BuildingCatalogComponent() {
   const { translate } = useLocalization();
-  const panelWidth = useValue(PanelWidth$);
+  const assetMenuWidth = useValue(AssetMenuWidth$);
   const currentSearch = useValue(CurrentSearch$);
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
   // In the shared store, not useState: the control plane is a sibling of this
-  // panel rather than a descendant, and the choice has to survive the remount
+  // asset menu rather than a descendant, and the choice has to survive the remount
   // that placing a building causes.
-  const viewModeChoice = useLensView((view) => view.viewMode) || DEFAULT_VIEW_MODE;
-  // Obeyed at every panel height. A control that lights up and changes nothing
+  const viewModeChoice = useAssetMenuView((view) => view.viewMode) || DEFAULT_VIEW_MODE;
+  // Obeyed at every asset menu height. A control that lights up and changes nothing
   // is the same defect as a control that is missing, and the height is the
   // player's to set.
   const viewMode = viewModeChoice as ViewMode;
@@ -83,54 +83,54 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   const groupBy = (useValue(BuildingCatalogGroupBy$) || "category") as GroupDimensionId;
   // In the store rather than useState so the open row survives the remount
   // that placing a building causes, the way the anchor does.
-  const expandedId = useLensView((view) => view.expandedId);
+  const expandedId = useAssetMenuView((view) => view.expandedId);
 
   // The root every DOM measurement below is scoped to. The hooks find the
   // rows and the scroller beneath it and never look above it.
   const rootRef = useRef<HTMLDivElement>(null);
   const { items, totalCount, status, hasMore, bestMatchId, searchText: pageSearch, loadMore } = useCatalogWindow(rootRef, { viewMode, groupBy });
   useRevealExpandedRow(rootRef, expandedId, styles.rowDetails);
-  const facets = useValue(BuildingLensFacets$);
+  const facets = useValue(AssetMenuFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
   const matchesElsewhere = useValue(BuildingCatalogMatchesElsewhere$);
 
   // Names the constraints that actually emptied the table, rather than always
   // blaming search and category.
-  const emptyStateMessage = getBuildingLensEmptyStateMessage({
+  const emptyStateMessage = getAssetMenuEmptyStateMessage({
     searchText: currentSearch,
     facets,
     metricRanges,
   });
 
-  const density = getBuildingLensDensity(panelWidth + BUILDING_LENS_PANEL_CHROME_WIDTH);
+  const density = getAssetMenuDensity(assetMenuWidth + ASSET_MENU_CHROME_WIDTH);
   // One set of numbers for the header and every row: a table with no CSS grid
   // lines up only because both read the same widths. Figures do not scale with
-  // the panel but do with the game's text scale.
+  // the build menu but do with the game's text scale.
   const textScale = useTextScale();
   const columnWidths = useMemo(
-    () => getBuildingLensColumnWidths(panelWidth + BUILDING_LENS_PANEL_CHROME_WIDTH, textScale),
-    [panelWidth, textScale]
+    () => getAssetMenuColumnWidths(assetMenuWidth + ASSET_MENU_CHROME_WIDTH, textScale),
+    [assetMenuWidth, textScale]
   );
   // The widths are estimates and stay estimates: the row is a flex layout whose
   // column bases already exceed the room beside the name, so cells shrink to
   // what the row allows and an inline width is not what gets drawn.
-  const columnStyle = useCallback((metric: BuildingLensMetric) => ({
+  const columnStyle = useCallback((metric: AssetMenuMetric) => ({
     width: `${columnWidths[metric]}rem`,
     flexBasis: `${columnWidths[metric]}rem`,
   }), [columnWidths]);
-  // The width the NAME actually gets. panelWidth is NOT the panel: it is the
-  // whole assembly, control pane included, so the pane comes off here as it
-  // does in BuildingMenuSurface. Erring small shortens sooner, never later.
+  // The width the NAME actually gets. assetMenuWidth is NOT the build menu: it is
+  // the whole assembly, control pane included, so the pane comes off here as it
+  // does in AssetMenu. Erring small shortens sooner, never later.
   const nameWidth = Math.max(
-    BUILDING_LENS_IDENTITY_MIN - BUILDING_LENS_TABLE_ROW_FURNITURE,
-    panelWidth
-      - BUILDING_LENS_CONTROL_PANE_TOTAL
+    ASSET_MENU_IDENTITY_MIN - ASSET_MENU_TABLE_ROW_FURNITURE,
+    assetMenuWidth
+      - CONTROL_PANE_TOTAL
       - Object.values(columnWidths).reduce((total, width) => total + width, 0)
-      - BUILDING_LENS_TABLE_ROW_FURNITURE
+      - ASSET_MENU_TABLE_ROW_FURNITURE
   );
   const nameBudget = tableLabelCharBudget(nameWidth, textScale);
-  const rowGeometry = getBuildingLensRowGeometry(density);
-  const catalogMaxHeight = getBuildingLensCatalogMaxHeight(typeof window === "undefined" ? 720 : window.innerHeight);
+  const rowGeometry = getAssetMenuRowGeometry(density);
+  const catalogMaxHeight = getAssetMenuCatalogMaxHeight(typeof window === "undefined" ? 720 : window.innerHeight);
   // Row and filter name the same asset the same way: the entry carries raw ids
   // while the facet groups hold the display names, so resolving through those
   // beats a second lookup table that would drift.
@@ -181,13 +181,13 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
     : scopeNoticeBlock ?? <div className={styles.empty}>{emptyStateMessage}</div>;
 
   const toggleExpanded = useCallback((id: number): void => {
-    setLensView({ expandedId: getLensView().expandedId === id ? null : id });
+    setAssetMenuView({ expandedId: getAssetMenuView().expandedId === id ? null : id });
   }, []);
 
-  // Scoped to the surface and the layout, because which element owns the scroll
+  // Scoped to the list and the layout, because which element owns the scroll
   // and how tall its children are both depend on them: an offset remembered in
   // the table means nothing in the grid.
-  const anchorKey = getLensAnchorKey({ surface: "catalog", viewMode, groupBy });
+  const anchorKey = getAssetMenuAnchorKey({ list: "catalog", viewMode, groupBy });
 
   // Stable across renders, like every callback a row receives, so a memoised
   // row skips the re-render its parent does on each keystroke.
@@ -197,13 +197,13 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
     // arrow-key navigation also calls and must step past a locked tile.
     if (!canPlace(entry)) return;
 
-    // Placing unmounts the whole lens, so this is the last moment the scroll
+    // Placing unmounts the whole asset menu, so this is the last moment the scroll
     // position exists — and the building just chosen is what to come back to.
-    setLensAnchor(anchorKey, entry.id);
+    setAssetMenuAnchor(anchorKey, entry.id);
 
     // The backend resolves this id through its prefab index and activates the
     // normal prefab tool.
-    menuSurfacePort.activatePrefab({ prefabId: entry.id });
+    assetMenuPort.activatePrefab({ prefabId: entry.id });
   }, [anchorKey]);
 
   const setSort = useCallback(
@@ -287,14 +287,14 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
       data-density={density}
       data-row-height={rowGeometry.rowHeight}
       data-selector-height={rowGeometry.selectorHeight}
-      data-metric-text-scale={getBuildingLensMetricTextScale(density)}
-      // Published as data, not applied as a max-height: the panel states its
+      data-metric-text-scale={getAssetMenuMetricTextScale(density)}
+      // Published as data, not applied as a max-height: the asset menu states its
       // own height and .catalog is flex: 1 1 auto inside it, so a second
-      // ceiling here could only cut the panel short.
+      // ceiling here could only cut the asset menu short.
       data-catalog-max-height={catalogMaxHeight}
     >
       {/* No toolbar band here. Identity, grouping, sort and view live in
-          LensControlPane, which is on screen at every panel height. */}
+          ControlPane, which is on screen at every asset menu height. */}
 
       {/* No filter chrome either: the rail and the active-filter chips are the
           control plane's, so this component draws results and nothing else. */}
@@ -319,7 +319,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
         <>
           {scopeNoticeBlock}
           {/* Filters compose, so an empty intersection is easy to reach by
-              accident, and silence there reads as a broken panel. */}
+              accident, and silence there reads as a broken asset menu. */}
           {items.length === 0
             ? (scopeNotice
                 // The notice above already says the set is empty AND what to do

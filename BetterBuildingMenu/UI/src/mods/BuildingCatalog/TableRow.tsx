@@ -2,7 +2,7 @@ import { Button } from "cs2/ui";
 import classNames from "classnames";
 import { memo, type CSSProperties } from "react";
 import { BuildingCatalogEntry, formatBuildingCatalogLabels } from "domain/buildingCatalog";
-import type { BuildingLensMetric } from "domain/buildingLensLayout";
+import type { AssetMenuMetric } from "domain/assetMenuLayout";
 import {
   formatBuildingLevel,
   formatBuildingMetric,
@@ -11,7 +11,7 @@ import {
   formatLotDimensions,
   getNumberSeparators,
   hasFootprint, METRIC_NO_DATA,
-} from "domain/buildingLensMetricFormat";
+} from "domain/assetMenuMetricFormat";
 import { shortenTileLabel } from "domain/tileLabel";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import {
@@ -44,7 +44,7 @@ export interface TableRowProps {
   /** What the hover card reads, the same card every view shows; read once by the table. */
   hoverCard: HoverCardContext;
   /** The width of one metric column, shared with the header so they line up. */
-  columnStyle(metric: BuildingLensMetric): CSSProperties;
+  columnStyle(metric: AssetMenuMetric): CSSProperties;
   /** Resolves a raw facet id (a DLC's numeric id) to the name the filter shows. */
   resolveFacetLabel(groupId: string, value: string): string | null;
   onPlace(entry: BuildingCatalogEntry): void;
@@ -80,7 +80,7 @@ export const TableRow = memo(function TableRow({
   return (
     <div
       className={styles.row}
-      // How the scroll anchor finds this row again after the panel is rebuilt.
+      // How the scroll anchor finds this row again after the asset menu is rebuilt.
       // An id rather than a position: the window can come back a different
       // length, and an expanded row is height: auto.
       data-catalog-entry={entry.id}

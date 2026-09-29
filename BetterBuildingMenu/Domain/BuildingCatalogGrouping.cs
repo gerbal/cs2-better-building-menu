@@ -155,7 +155,7 @@ namespace BetterBuildingMenu.Domain
 		/// </summary>
 		/// <remarks>
 		/// A default or a stored choice can name a dimension this menu does not offer, which would
-		/// open the lens on a grouping its own picker does not list. The answer is the first of the
+		/// open the asset menu on a grouping its own picker does not list. The answer is the first of the
 		/// candidates that can act here; <paramref name="offered"/> empty means "not judged yet".
 		/// </remarks>
 		public static string Effective(

@@ -9,7 +9,7 @@ import {
   formatLotDimensions,
   getNumberSeparators,
   hasFootprint,
-} from "domain/buildingLensMetricFormat";
+} from "domain/assetMenuMetricFormat";
 import { canPlace, entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { listLabel } from "domain/tileLabel";

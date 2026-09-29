@@ -11,10 +11,10 @@ import { ChipRow } from "../../src/mods/ChipRow/ChipRow";
 const category = (id: string, priority: number) => ({ id, name: id, icon: `${id}.svg`, priority });
 
 const seed = ({ menu = "Roads", menuCategory = "", categories = 2 } = {}) => {
-  setBinding("BetterBuildingMenu", "BuildingLensMenu", menu);
-  setBinding("BetterBuildingMenu", "BuildingLensMenuCategory", menuCategory);
-  setBinding("BetterBuildingMenu", "BuildingLensMenuCategories", [category("Highways", 2), category("SmallRoads", 1)].slice(0, categories));
-  setBinding("BetterBuildingMenu", "BuildingLensMenus", [category("Zones", 2), category("Roads", 1), category("Parks", 3)]);
+  setBinding("BetterBuildingMenu", "AssetMenu", menu);
+  setBinding("BetterBuildingMenu", "AssetMenuCategory", menuCategory);
+  setBinding("BetterBuildingMenu", "AssetMenuCategories", [category("Highways", 2), category("SmallRoads", 1)].slice(0, categories));
+  setBinding("BetterBuildingMenu", "AssetMenus", [category("Zones", 2), category("Roads", 1), category("Parks", 3)]);
 };
 
 const sent = () => triggers.map((call) => [call.name, ...call.args]);
@@ -53,7 +53,7 @@ describe("the chip row", () => {
     button("Roads");
     press("Remove Roads");
 
-    assert.deepEqual(sent(), [["ClearBuildingLensMenuScope"]]);
+    assert.deepEqual(sent(), [["ClearAssetMenuScope"]]);
   });
 
   it("says All menus, with nothing to drop, when no menu is scoped", () => {
@@ -81,7 +81,7 @@ describe("the chip row", () => {
 
     press("Remove Highways");
 
-    assert.deepEqual(sent(), [["SetBuildingLensMenuCategory", ""]]);
+    assert.deepEqual(sent(), [["SetAssetMenuCategory", ""]]);
   });
 
   it("opens a menu picker in the game's order, the current menu marked, and closes it on a second press", () => {
@@ -107,7 +107,7 @@ describe("the chip row", () => {
     press("Roads");
     act(() => buttons().find((node) => node.props["aria-label"] === "Parks")!.props.onSelect());
 
-    assert.deepEqual(sent(), [["SetBuildingLensMenu", "Parks"]]);
+    assert.deepEqual(sent(), [["SetAssetMenu", "Parks"]]);
     assert.deepEqual(pickerItems(), []);
   });
 
@@ -120,16 +120,16 @@ describe("the chip row", () => {
     assert.deepEqual(chosen(), ["Highways"]);
 
     act(() => buttons().find((node) => node.props["aria-label"] === "SmallRoads")!.props.onSelect());
-    assert.deepEqual(sent(), [["SetBuildingLensMenuCategory", "SmallRoads"]]);
+    assert.deepEqual(sent(), [["SetAssetMenuCategory", "SmallRoads"]]);
   });
 
   it("leaves out a category the strip hides for having nothing in it", () => {
     seed({ menuCategory: "Highways" });
-    setBinding("BetterBuildingMenu", "BuildingLensMenuCategories", [
+    setBinding("BetterBuildingMenu", "AssetMenuCategories", [
       category("Highways", 2), category("SmallRoads", 1), category("Roundabouts", 3),
     ]);
     // By id, as the backend sends them, so the picker's own order is what is pinned.
-    setBinding("BetterBuildingMenu", "BuildingLensMenuCategoryCounts", [
+    setBinding("BetterBuildingMenu", "AssetMenuCategoryCounts", [
       { id: "Highways", count: 2 }, { id: "Roundabouts", count: 0 }, { id: "SmallRoads", count: 4 },
     ]);
     render();
@@ -140,7 +140,7 @@ describe("the chip row", () => {
 
   it("lists every category until the counts arrive", () => {
     seed({ menuCategory: "Highways" });
-    setBinding("BetterBuildingMenu", "BuildingLensMenuCategoryCounts", []);
+    setBinding("BetterBuildingMenu", "AssetMenuCategoryCounts", []);
     render();
 
     press("Highways");

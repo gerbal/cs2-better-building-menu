@@ -2,13 +2,13 @@
 
 Rationale that is too long for a code comment. The code carries one-line pointers to the headings below.
 
-## Escape closes the lens unconditionally
+## Escape closes the asset menu unconditionally
 
 `shouldClearOnEscape` in `domain/vanillaMenuWatch.ts` asks one question: is the
-lens open (and is Find It's own panel not up)? It clears the *game's* toolbar
-selection rather than hiding our panel, reusing the path the toolbar button
+asset menu open (and is Find It's own panel not up)? It clears the *game's* toolbar
+selection rather than hiding our asset menu, reusing the path the toolbar button
 takes — `VanillaMenuWatcher`'s close branch picks up the resulting null, so the
-lens has one way to close rather than two. `ClearAssetSelection` nulls menu,
+asset menu has one way to close rather than two. `ClearAssetSelection` nulls menu,
 category and asset together, so no vanilla grid appears in the gap.
 
 The absence of a second condition is the point. Vanilla keeps its menu open when
@@ -19,7 +19,7 @@ tool disarmed, and what the tool last reported as — depend on the game's disar
 notification, which races the keypress. Closing on every Escape is
 deterministic, and the divergence is accepted: cancelling a tool with Escape
 also puts the menu away. The pause menu still works, because the game opens it
-when Escape finds nothing to close, and the lens is gone after the first press.
+when Escape finds nothing to close, and the asset menu is gone after the first press.
 
 ## Locked artwork for vector thumbnails
 
@@ -44,24 +44,24 @@ signals — a lighter tile ground, locked label colour, padlock — cost nothing
 either path. The grid's, list's and table's stylesheets carry the rule this
 drives.
 
-## Patching vanilla's layout for the lens
+## Patching vanilla's layout for the asset menu
 
-`useVanillaLayoutForLens` in `mods/BuildingMenu/vanillaLayout.ts` makes two
+`useVanillaLayoutForAssetMenu` in `mods/BuildingMenu/vanillaLayout.ts` makes two
 changes to elements the game owns, applied on mount and undone on unmount. Both
 are imperative and scoped to the mount rather than expressed as a stylesheet
 rule: a rule would restyle the game for the whole session, including while the
-panel is closed and for whatever other mod is looking at the same node. A
+asset menu is closed and for whatever other mod is looking at the same node. A
 missing module or class makes the patch a silent no-op.
 
 **`toolLayout` left-aligned.** Vanilla centres its side + main + side trio in
-the screen, which puts the main column too far right for this panel and its
+the screen, which puts the main column too far right for the asset menu and its
 control pane to fit beside the tool-options column. Left-aligned, the main
 column starts far enough left that everything fits. Only vanilla's own element
 can decide this: a container of ours can neither shift left over the options
 column nor fit to the right of it.
 
 **The toolbar sunk to `z-index: -1`.** The chirper hangs off `toolbar` and the
-lens hangs off `main-container`. Both are children of `game-main-screen` at
+asset menu hangs off `main-container`. Both are children of `game-main-screen` at
 `z-index: auto`, so they paint in tree order and the toast covers the control
 pane — no z-index on our own row can change that. Raising `main-container`
 instead breaks the game's portalled dropdowns, which rely on tree order to win,
@@ -84,7 +84,7 @@ already carries:
 
 Both held on Cohtml 1.64 (game 1.6.0). Cohtml 2.2 (game 1.6.2) lays out flex with a new
 algorithm, and the two surfaces the mod builds by hand paint in full, text included, with
-neither workaround: `LensControlPane`'s `.pickerOptions`, anchored by a fixed `bottom` offset,
+neither workaround: `ControlPane`'s `.pickerOptions`, anchored by a fixed `bottom` offset,
 and `ChipRow`'s `.picker`, which hangs from `top: 100%`. A surface anchored by `bottom: 100%`
 has not been tried on 2.2, so anchor a new one by `top` all the same.
 

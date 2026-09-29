@@ -3,7 +3,7 @@ import { describe, it } from "node:test";
 import { renderHtml, entry } from "../harness/render";
 import { TableRow, type TableRowProps } from "../../src/mods/BuildingCatalog/TableRow";
 import { useHoverCardContext } from "../../src/mods/BuildingHoverCard/BuildingHoverCard";
-import { FALLBACK_SEPARATORS } from "../../src/domain/buildingLensMetricFormat";
+import { FALLBACK_SEPARATORS } from "../../src/domain/assetMenuMetricFormat";
 
 const labels = { place: "Place", inspect: "Details", locked: "Locked", built: "Already built" };
 

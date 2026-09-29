@@ -129,10 +129,10 @@ namespace BetterBuildingMenu.Systems
 				// The zone's own data first: ZoneData.m_AreaType plus ZoneFlags.Office
 				// is what the game itself switches on. The query requires ZoneData, so
 				// the fallbacks only run for a zone whose AreaType is None.
-				var family = ZoningSurfaceCatalog.ResolveFamily(zoneData[i].m_AreaType, zoneData[i].m_ZoneFlags)
-					?? ZoningSurfaceCatalog.ResolveFamilyFromGroup(
+				var family = ZoningCatalog.ResolveFamily(zoneData[i].m_AreaType, zoneData[i].m_ZoneFlags)
+					?? ZoningCatalog.ResolveFamilyFromGroup(
 						prefab.TryGet<UIObject>(out var zoneUi) ? zoneUi.m_Group?.name : null)
-					?? ZoningSurfaceCatalog.ResolveFamily(prefab.name);
+					?? ZoningCatalog.ResolveFamily(prefab.name);
 
 				if (family is null)
 				{
@@ -223,7 +223,7 @@ namespace BetterBuildingMenu.Systems
 					continue;
 				}
 
-				var family = ZoningSurfaceCatalog.ResolveFamilyFromGroup(placement.Category)
+				var family = ZoningCatalog.ResolveFamilyFromGroup(placement.Category)
 					?? ZoningFamilies.Extractors;
 				var locked = EntityManager.HasEnabledComponent<Locked>(placement.Entity);
 				var (milestone, requirements) = locked
@@ -306,7 +306,7 @@ namespace BetterBuildingMenu.Systems
 					Name: GetAssetName(prefab),
 					Family: ZoningFamilies.Extractors,
 					// An area has no density tier. Saying "Any" is honest here:
-					// the surface labels that "No density tier" rather than
+					// the asset menu labels that "No density tier" rather than
 					// inventing one.
 					Density: ZoneTypeFilter.Any,
 					Thumbnail: IconPath.Normalize(ImageSystem.GetThumbnail(prefab)),
@@ -315,7 +315,7 @@ namespace BetterBuildingMenu.Systems
 					UnlockRequirements: requirements,
 					// What it works: FertileLand, Forest, Oil, Ore. This is the
 					// only thing separating grain from cotton in the data, so it
-					// is what the surface groups and labels them by.
+					// is what the asset menu groups and labels them by.
 					MapFeature: areaData[i].m_MapFeature.ToString()));
 			}
 

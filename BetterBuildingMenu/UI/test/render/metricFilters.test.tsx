@@ -5,14 +5,14 @@ import "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { getModule } from "../harness/stubs/cs2-modding";
 import { Button } from "../harness/stubs/cs2-ui";
-import type { BuildingLensMetricRangeState } from "../../src/domain/buildingLensFilterSummary";
+import type { AssetMenuMetricRangeState } from "../../src/domain/assetMenuFilterSummary";
 import { METRIC_RANGE_DEBOUNCE_MS } from "../../src/domain/metricRangeDebouncer";
-import { LENS_DISCLOSURE_KEYS, resetLensView, setLensDisclosure } from "../../src/domain/lensViewStore";
+import { ASSET_MENU_DISCLOSURE_KEYS, resetAssetMenuView, setAssetMenuDisclosure } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogMetricFilters } from "../../src/mods/BuildingCatalog/BuildingCatalogMetricFilters";
 
 const TextInput = getModule("game-ui/common/input/text/text-input.tsx", "TextInput") as () => JSX.Element;
 
-const none: BuildingLensMetricRangeState = {
+const none: AssetMenuMetricRangeState = {
   minCost: null, maxCost: null,
   minUpkeep: null, maxUpkeep: null,
   minWorkers: null, maxWorkers: null,
@@ -24,7 +24,7 @@ const none: BuildingLensMetricRangeState = {
 // The spread of what is in view, which an empty field shows.
 const bounds = { ...none, minCost: 500, maxCost: 90000, minUpkeep: 0, maxUpkeep: 1200, minLotWidth: 1.4, maxLotWidth: 6 };
 
-const ranges = (over: Partial<BuildingLensMetricRangeState>) => setBinding("BetterBuildingMenu", "BuildingCatalogMetricRanges", { ...none, ...over });
+const ranges = (over: Partial<AssetMenuMetricRangeState>) => setBinding("BetterBuildingMenu", "BuildingCatalogMetricRanges", { ...none, ...over });
 
 describe("the metric-range drawer", () => {
   let root: ReactTestRenderer | undefined;
@@ -41,12 +41,12 @@ describe("the metric-range drawer", () => {
   const notices = (): string[] => root!.root.findAll((node) => node.props.className === "metricRangeNotice").map(text);
   const sent = () => triggers.map((call) => [call.name, ...call.args]);
   const wait = (ms: number) => act(() => mock.timers.tick(ms));
-  const open = () => setLensDisclosure(LENS_DISCLOSURE_KEYS.metricRanges, true);
+  const open = () => setAssetMenuDisclosure(ASSET_MENU_DISCLOSURE_KEYS.metricRanges, true);
 
   beforeEach(() => {
     mock.timers.enable({ apis: ["setTimeout"] });
     resetBindings();
-    resetLensView();
+    resetAssetMenuView();
     setBinding("BetterBuildingMenu", "BuildingCatalogMetricBounds", bounds);
   });
 

@@ -17,12 +17,12 @@ const src = resolve(dirname(fileURLToPath(import.meta.url)), "../src");
 
 /** Exported so a test can reach them, and said so where they are declared. */
 const TEST_SEAMS: Readonly<Record<string, string>> = {
-  resetLensView: "clears the module's state between tests",
+  resetAssetMenuView: "clears the module's state between tests",
   getUnplumbedStrings: "the localizable-strings register's own contract",
   SERVICE_FACT_KEYS: "the fact-coverage test compares it with the indexer's keys",
   SERVICE_FACT_LOCALIZATION_KEYS: "the service-facts test checks each key's wording",
   SERVICE_TEXT_FACT_KEYS: "the fact-coverage test compares it with the indexer's keys",
-  BUILDING_LENS_MAX_WIDTH: "the widest panel the column-width tests sweep to",
+  ASSET_MENU_MAX_WIDTH: "the widest assembly the column-width tests sweep to",
 };
 
 const withoutComments = (source: string): string =>

@@ -14,7 +14,7 @@ type TabBarProps = {
 /**
  * A home for whatever other mods add to the game's asset category tab bar.
  *
- * Their buttons ride on that component, which this panel stands in for, so
+ * Their buttons ride on that component, which the asset menu stands in for, so
  * without this they have nowhere to draw. It is mounted with no categories of
  * its own and the vanilla bar inside it is hidden; only the additions show.
  */

@@ -5,7 +5,7 @@
  */
 
 /**
- * The one menu whose contents the lens changes, so the one whose game-supplied
+ * The one menu whose contents the asset menu changes, so the one whose game-supplied
  * name does not describe it: Roads gathers every network. Only the LABEL
  * changes; the id stays the prefab name every other layer keys on.
  */

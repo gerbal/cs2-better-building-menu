@@ -13,9 +13,9 @@ namespace BetterBuildingMenu.Systems
 		/// </summary>
 		/// <remarks>
 		/// The empty string is "every category in this menu", the state a menu opens in.
-		/// Vanilla has no such tab, but the lens can show a whole menu at once.
+		/// Vanilla has no such tab, but the asset menu can show a whole menu at once.
 		/// </remarks>
-		private void SetBuildingLensMenuCategory(string category) => Apply(_lens.SelectCategory(category));
+		private void SetAssetMenuCategory(string category) => Apply(_assetMenu.SelectCategory(category));
 
 		/// <summary>
 		/// Narrows the menu to one branch of its service's development tree.
@@ -24,20 +24,20 @@ namespace BetterBuildingMenu.Systems
 		/// The strip's fallback axis. Single-select, like the category and
 		/// progression tabs beside it — the strip asks one question per segment.
 		/// </remarks>
-		private void SetBuildingLensStripTab(string tab) => Apply(_lens.SelectStripTab(tab));
+		private void SetAssetMenuStripTab(string tab) => Apply(_assetMenu.SelectStripTab(tab));
 
 		/// <summary>Narrows the education menu to one school tier.</summary>
-		private void SetBuildingLensMenuSchoolTier(int tier) => Apply(_lens.SelectSchoolTier(tier));
+		private void SetAssetMenuSchoolTier(int tier) => Apply(_assetMenu.SelectSchoolTier(tier));
 
 		/// <summary>
-		/// Scopes the lens to a vanilla menu chosen from the filters.
+		/// Scopes the asset menu to a vanilla menu chosen from the filters.
 		/// </summary>
 		/// <remarks>
 		/// The same state a bottom-bar icon sets, reached the other way, so the view the menu
 		/// chip names stays reachable without the shortcut. Deliberately not VanillaMenuSelected:
-		/// that one answers the game, this one answers a player already inside the lens.
+		/// that one answers the game, this one answers a player already inside the asset menu.
 		/// </remarks>
-		private void SetBuildingLensMenu(string menuName) => Apply(_lens.SelectMenu(menuName), navigation: true);
+		private void SetAssetMenu(string menuName) => Apply(_assetMenu.SelectMenu(menuName), navigation: true);
 
 		/// <summary>
 		/// Drops the vanilla-menu scope and shows the whole catalog.
@@ -47,19 +47,19 @@ namespace BetterBuildingMenu.Systems
 		/// locked inside. The facets deliberately survive: this clears the scope, not the
 		/// narrowing chosen within it, so one × does one job.
 		/// </remarks>
-		private void ClearBuildingLensMenuScope() => Apply(_lens.ClearMenuScope(), navigation: true);
+		private void ClearAssetMenuScope() => Apply(_assetMenu.ClearMenuScope(), navigation: true);
 
 		/// <summary>The scope bindings, from the one state that owns them.</summary>
 		private void PublishScope()
 		{
-			_BuildingLensMenuCategoriesBinding.Value = _indexer.Index.GetMenuCategories(
-				string.IsNullOrEmpty(_lens.Menu) ? null : _lens.Menu).ToArray();
-			_BuildingLensMenuBinding.Value = _lens.Menu;
-			_BuildingLensMenusBinding.Value = _indexer.Index.Menus.AssetMenus().ToArray();
-			_BuildingLensMenuCategoryBinding.Value = _lens.Category;
-			_BuildingLensMenuSchoolTierBinding.Value = _lens.SchoolTier;
-			_BuildingLensStripTabBinding.Value = _lens.Query.StripTabs?.ToArray() ?? Array.Empty<string>();
-			_CurrentSearch.Value = _lens.SearchText;
+			_AssetMenuCategoriesBinding.Value = _indexer.Index.GetMenuCategories(
+				string.IsNullOrEmpty(_assetMenu.Menu) ? null : _assetMenu.Menu).ToArray();
+			_AssetMenuBinding.Value = _assetMenu.Menu;
+			_AssetMenusBinding.Value = _indexer.Index.Menus.AssetMenus().ToArray();
+			_AssetMenuCategoryBinding.Value = _assetMenu.Category;
+			_AssetMenuSchoolTierBinding.Value = _assetMenu.SchoolTier;
+			_AssetMenuStripTabBinding.Value = _assetMenu.Query.StripTabs?.ToArray() ?? Array.Empty<string>();
+			_CurrentSearch.Value = _assetMenu.SearchText;
 		}
 
 		/// <summary>
@@ -67,19 +67,19 @@ namespace BetterBuildingMenu.Systems
 		/// refresh. A transition that changed nothing (reference-equal) costs
 		/// nothing.
 		/// </summary>
-		private void Apply(BuildingCatalogLensState next, bool navigation = false)
+		private void Apply(AssetMenuState next, bool navigation = false)
 		{
-			if (ReferenceEquals(next, _lens))
+			if (ReferenceEquals(next, _assetMenu))
 			{
 				return;
 			}
 
-			_lens = next;
+			_assetMenu = next;
 			PublishScope();
 
 			if (navigation)
 			{
-				RefreshBuildingLensNavigation();
+				RefreshAssetMenuNavigation();
 			}
 
 			RefreshBuildingCatalog();
@@ -90,13 +90,13 @@ namespace BetterBuildingMenu.Systems
 		/// </summary>
 		private void SearchEverything()
 		{
-			_lens = _lens.ClearMenuScope();
+			_assetMenu = _assetMenu.ClearMenuScope();
 			PublishScope();
 
-			RefreshLens();
+			RefreshAssetMenu();
 		}
 
-		private void SetBuildingCatalogSortColumn(string column) => Apply(_lens.SetSortColumn(column));
+		private void SetBuildingCatalogSortColumn(string column) => Apply(_assetMenu.SetSortColumn(column));
 
 		/// <summary>
 		/// Chooses the heading dimension, which is also the query's primary key.
@@ -106,10 +106,10 @@ namespace BetterBuildingMenu.Systems
 		/// Returns early when nothing changed: the UI derives this value from the menu, so it
 		/// re-sends it on every menu open.
 		/// </remarks>
-		private void SetBuildingCatalogGroupBy(string groupBy) => Apply(_lens.SetGroupBy(groupBy));
+		private void SetBuildingCatalogGroupBy(string groupBy) => Apply(_assetMenu.SetGroupBy(groupBy));
 
 		/// <remarks>Same idempotence guard as the group-by above.</remarks>
-		private void SetBuildingCatalogSortDescending(bool descending) => Apply(_lens.SetDescending(descending));
+		private void SetBuildingCatalogSortDescending(bool descending) => Apply(_assetMenu.SetDescending(descending));
 
 		/// <summary>
 		/// Grows the window to the limit the UI asked for, by one step at most, keeping the
@@ -117,12 +117,12 @@ namespace BetterBuildingMenu.Systems
 		/// </summary>
 		/// <remarks>
 		/// The window is owned here rather than accumulated on the client, because placing a
-		/// building unmounts the panel. A bigger Limit over the same predicates returns a longer
+		/// building unmounts the asset menu. A bigger Limit over the same predicates returns a longer
 		/// prefix of the same order, so the rows on screen keep their identity.
 		/// </remarks>
-		private void LoadMoreBuildingCatalog(int requestedLimit) => Apply(_lens.LoadMoreTo(requestedLimit));
+		private void LoadMoreBuildingCatalog(int requestedLimit) => Apply(_assetMenu.LoadMoreTo(requestedLimit));
 
-		private void ToggleBuildingLensFacet(string facetId, string optionId) => Apply(_lens.ToggleFacet(facetId, optionId));
+		private void ToggleAssetMenuFacet(string facetId, string optionId) => Apply(_assetMenu.ToggleFacet(facetId, optionId));
 
 		/// <summary>
 		/// Puts a menu back the way it opens.
@@ -132,26 +132,26 @@ namespace BetterBuildingMenu.Systems
 		/// search and a sort, and this is the one gesture back to a known state. Grouping and
 		/// view mode are UI-side choices, so the pane clears its own alongside this.
 		/// </remarks>
-		private void ResetBuildingLensMenu() => Apply(_lens.ResetMenu());
+		private void ResetAssetMenu() => Apply(_assetMenu.ResetMenu());
 
-		private void ClearBuildingLensFilters() => Apply(_lens.ClearFilters());
+		private void ClearAssetMenuFilters() => Apply(_assetMenu.ClearFilters());
 
 		private void SetBuildingCatalogMetricRange(string metricId, string minText, string maxText) =>
-			Apply(_lens.SetMetricRange(metricId, minText, maxText));
+			Apply(_assetMenu.SetMetricRange(metricId, minText, maxText));
 
-		private void ClearBuildingCatalogMetricRanges() => Apply(_lens.ClearMetricRanges());
+		private void ClearBuildingCatalogMetricRanges() => Apply(_assetMenu.ClearMetricRanges());
 
 		private void SearchChanged(string text)
 		{
-			var next = _lens.Search(text);
+			var next = _assetMenu.Search(text);
 
-			if (ReferenceEquals(next, _lens))
+			if (ReferenceEquals(next, _assetMenu))
 			{
 				return;
 			}
 
-			_lens = next;
-			_CurrentSearch.Value = _lens.SearchText;
+			_assetMenu = next;
+			_CurrentSearch.Value = _assetMenu.SearchText;
 			_CurrentSearch.ForceUpdate();
 			TriggerSearch();
 		}

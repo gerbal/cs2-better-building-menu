@@ -81,7 +81,7 @@ namespace BetterBuildingMenu.Utilities.PrefabCategoryProcessor
 
 			var data = _entityManager.GetComponentData<ZoneData>(entity);
 
-			return ZoningSurfaceCatalog.ResolveFamily(data.m_AreaType, data.m_ZoneFlags) switch
+			return ZoningCatalog.ResolveFamily(data.m_AreaType, data.m_ZoneFlags) switch
 			{
 				ZoningFamilies.Residential => Domain.Enums.PrefabSubCategory.Zones_Residential,
 				ZoningFamilies.Commercial => Domain.Enums.PrefabSubCategory.Zones_Commercial,

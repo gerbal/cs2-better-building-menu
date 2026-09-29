@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace BetterBuildingMenu.Domain
 {
 	/// <summary>
-	/// A bounded query for the building lens. Range fields are inclusive and are
+	/// A bounded query for the asset menu. Range fields are inclusive and are
 	/// applied before paging so the returned total is useful to the UI.
 	/// </summary>
 	public sealed record BuildingCatalogQuery(

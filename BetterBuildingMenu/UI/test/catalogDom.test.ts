@@ -29,7 +29,7 @@ describe("finding the element that scrolls", () => {
   });
 
   it("stops at the root rather than walking into the game's own tree", () => {
-    // The panel's own root never overflows; what is above it is vanilla, and
+    // The asset menu's own root never overflows; what is above it is vanilla, and
     // a walk that kept going would land on whatever container of the game's
     // happened to overflow.
     const game = box(500, null);

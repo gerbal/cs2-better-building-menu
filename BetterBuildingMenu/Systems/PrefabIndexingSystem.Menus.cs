@@ -115,7 +115,7 @@ namespace BetterBuildingMenu.Systems
 			EntityManager.Exists(entity) && !EntityManager.HasComponent<Deleted>(entity);
 
 		/// <summary>Reads the vanilla toolbar's asset menus: by entity index, so a menu selection
-		/// arriving from the UI can be resolved to a prefab name, and by name, so the lens can open one.</summary>
+		/// arriving from the UI can be resolved to a prefab name, and by name, so the asset menu can open one.</summary>
 		/// <remarks>The list is in the bottom bar's order; see <see cref="ToolbarOrder"/>.</remarks>
 		private (Dictionary<int, string> Names, Dictionary<string, Entity> Entities, List<VanillaMenuCategory> Menus) IndexAssetMenus()
 		{
@@ -296,7 +296,7 @@ namespace BetterBuildingMenu.Systems
 		// placement keeps the whole entity so a gap can still be named.
 		private readonly Dictionary<int, Entity> _flattenedAssets = new();
 
-		/// <summary>A menu's tabs as the lens lists them: its categories in the game's order, with
+		/// <summary>A menu's tabs as the asset menu lists them: its categories in the game's order, with
 		/// any Extra Lib nests flattened into a tab per category that holds assets.</summary>
 		private List<(LeafTab Tab, Entity Entity)> FlattenedTabs(Entity menu)
 		{

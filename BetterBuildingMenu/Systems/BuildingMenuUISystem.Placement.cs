@@ -45,7 +45,7 @@ namespace BetterBuildingMenu.Systems
 
 			if (!settingPrefab)
 			{
-				SetLensMenuOpen(false);
+				SetAssetMenuOpen(false);
 			}
 		}
 
@@ -54,12 +54,12 @@ namespace BetterBuildingMenu.Systems
 			if (tool.toolID is "RoadBuilderTool" or "MoveItTool" or "Terrain Tool")
 			{
 				// Another tool brings its own UI and wants the screen. Ours goes.
-				SetLensMenuOpen(false);
+				SetAssetMenuOpen(false);
 				return;
 			}
 
 			// The Zone tool is deliberately not one of those. Picking a zone arms it, so vacating
-			// here would close the zoning surface the instant it was used, and the still-selected
+			// here would close the Zones menu the instant it was used, and the still-selected
 			// vanilla Zones menu would draw its own grid into the space.
 			if (tool.toolID is "Zone Tool")
 			{
@@ -72,9 +72,9 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			// The tool went back to default: Escape, a right-click cancel, or a finished placement,
-			// and this handler cannot tell them apart. Deliberately NOT CloseLens and deliberately
+			// and this handler cannot tell them apart. Deliberately NOT CloseAssetMenu and deliberately
 			// not touching the selection, or the game's Escape chain opens the pause menu instead.
-			SetLensMenuOpen(false);
+			SetAssetMenuOpen(false);
 		}
 	}
 }

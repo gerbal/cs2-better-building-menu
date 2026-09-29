@@ -71,7 +71,7 @@ A method that answers that question for its caller, such as
 ### Shared contracts
 
 The ids and numbers both sides use (sort columns, group dimensions, facet ids,
-availability options, the Load more step, the panel's height range and width)
+availability options, the Load more step, the asset menu's height range and width)
 are C#'s, and the UI reads them from
 `UI/src/domain/sharedContracts.generated.ts`. Change the C#, then run
 `CS2_WRITE_CONTRACTS=1 ./build.sh test` and commit the file it writes; the C#
@@ -128,14 +128,13 @@ or the reader, in a sentence.
 
 | Term | Meaning |
 |---|---|
-| Menu | One of vanilla's toolbar menus: Roads, Zones, Police & Administration and so on. The menu the player opens decides what the panel lists. |
-| Panel | What this mod draws in place of vanilla's asset grid. Code also calls it the lens (`BuildingLens*`, `LensControlPane`) or the surface (`BuildingMenuSurface`). |
-| Strip | The category tabs across the top of the panel (`MenuCategoryStrip`): vanilla's second tier, or tiers and branches where those cut a menu better. |
-| Control pane | The column beside the results with the count, Group by, Sort by and view mode (`LensControlPane`). |
+| Asset menu | Vanilla's name for one of its toolbar menus (Roads, Zones, Police & Administration and so on) and for what opens from it. This mod draws its own in place of vanilla's asset grid (`AssetMenu`, bindings and types named `AssetMenu*`): the build menu, with the strip and the results, beside the control pane. The menu the player opens decides what it lists. |
+| Strip | The category tabs across the top of the asset menu (`MenuCategoryStrip`): vanilla's second tier, or tiers and branches where those cut a menu better. |
+| Control pane | The column beside the results with the count, Group by, Sort by and view mode (`ControlPane`). |
 | Filter rail | The row of filter icons, each opening a dropdown of one facet's options (`FilterRail`). |
 | Facet | One filter dimension, such as role, source, availability, content, theme or placement, with its options. Computed in C# (`BuildingCatalogFacet*`). |
 | Index | Every indexed prefab as a `PrefabIndex`, filed in the `CatalogIndex` that `PrefabIndexingSystem` publishes as `Index`. |
 | Processor | An `IPrefabCategoryProcessor`: decides whether a prefab is indexed, and under which category. A pass runs them in the order `PrefabCategoryProcessors` lists them. |
 | Full / partial pass | A rebuild of the whole index, or a re-read of the prefabs that changed. See `docs/indexing.md`. |
-| Catalog | The index as the panel sees it. `BuildingCatalogAdapter` projects index entries into `BuildingCatalogEntry` rows, `CatalogView` answers one refresh's questions from them, and `BuildingCatalogQueryEngine` filters, sorts and pages them into a `BuildingCatalogPage`. |
-| Lens state | The query the panel is showing (`BuildingCatalogLensState`), held in C#. |
+| Catalog | The index as the asset menu sees it. `BuildingCatalogAdapter` projects index entries into `BuildingCatalogEntry` rows, `CatalogView` answers one refresh's questions from them, and `BuildingCatalogQueryEngine` filters, sorts and pages them into a `BuildingCatalogPage`. |
+| Asset menu state | The query the asset menu is showing (`AssetMenuState`), held in C#. |

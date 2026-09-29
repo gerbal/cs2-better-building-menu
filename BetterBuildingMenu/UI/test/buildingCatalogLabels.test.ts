@@ -12,7 +12,7 @@ function identity(
   return { category, subCategory, categoryLabel, subCategoryLabel };
 }
 
-describe("Building Lens catalog labels", () => {
+describe("Asset menu catalog labels", () => {
   it("prefers player-facing labels over raw enum identities", () => {
     assert.equal(
       formatBuildingCatalogLabels(

@@ -9,7 +9,7 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// Every subcategory the lens can show has a label to show it under. Nothing
+	/// Every subcategory the asset menu can show has a label to show it under. Nothing
 	/// else connects the enum to the string table, and a missing entry falls back
 	/// quietly to a raw identifier. Only Locale.json is checked.
 	/// </summary>

@@ -9,7 +9,7 @@ namespace BetterBuildingMenu.Domain.Catalog
 	/// A third availability state, and the only one that is not a property of the
 	/// asset: it changes mid-session both ways, so it is kept in step with the game's
 	/// UniqueAssetTrackingSystem. Keyed by prefab index, as PrefabIndexBase.Id is.
-	/// PrefabIndexingSystem owns the one the panel reads.
+	/// PrefabIndexingSystem owns the one the asset menu reads.
 	/// </remarks>
 	public sealed class PlacedUniques
 	{

@@ -4,15 +4,15 @@ import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
-import { getNumberSeparators } from "domain/buildingLensMetricFormat";
+import { getNumberSeparators } from "domain/assetMenuMetricFormat";
 import type { TileTooltipLine } from "domain/buildingTileTooltip";
 import { hoverCardLabels, hoverCardTiers, type HoverCardLineContext } from "domain/hoverCardLines";
-import { clampAssetDescription, leisureLabel, resolveAssetDescription } from "domain/buildingLensRowDetails";
+import { clampAssetDescription, leisureLabel, resolveAssetDescription } from "domain/assetMenuRowDetails";
 import { FootprintGlyph } from "mods/BuildingGlyphs/FootprintGlyph";
 import { useUnitSystem } from "domain/unitSettings";
 import { overflowsBox } from "domain/measuredFit";
 import styles from "./buildingHoverCard.module.scss";
-import { BuildingLensMilestones$ } from "mods/bindings";
+import { AssetMenuMilestones$ } from "mods/bindings";
 
 export interface HoverCardContext extends HoverCardLineContext {
   /**
@@ -35,7 +35,7 @@ export const useHoverCardContext = (): HoverCardContext => {
   // One subscription per grid, like the milestones below — the whole reason
   // this context exists rather than each card reading its own.
   const unitSystem = useUnitSystem();
-  const milestoneNames = useValue(BuildingLensMilestones$) ?? NO_MILESTONE_NAMES;
+  const milestoneNames = useValue(AssetMenuMilestones$) ?? NO_MILESTONE_NAMES;
 
   // One object until one of these changes, so the rows it is handed to can skip
   // a render; translate holds still until the language changes.

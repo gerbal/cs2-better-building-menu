@@ -22,7 +22,7 @@ namespace BetterBuildingMenu.Tests
 		{
 			// Anarchy's "place multiple unique buildings" option makes the game's own
 			// accessor answer false for a signature building the city already holds.
-			// Our panel has to follow it, or it refuses what the vanilla menu allows.
+			// Our asset menu has to follow it, or it refuses what the vanilla menu allows.
 			Assert.Empty(PlacedUniqueScan.Collect(new[] { Unique(42, placed: false) }));
 		}
 

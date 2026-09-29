@@ -10,11 +10,11 @@ namespace BetterBuildingMenu.Systems
     internal partial class BuildingMenuUISystem : ExtendedUISystemBase
 	{
 		/// <summary>
-		/// Drops the "newly unlocked" marks under a menu the lens has taken over.
+		/// Drops the "newly unlocked" marks under a menu the asset menu has taken over.
 		/// </summary>
 		/// <remarks>
 		/// ToolbarUISystem drops <see cref="UIHighlight"/> as the player's asset-category
-		/// selection moves off a category; the lens replaces the grid instead of selecting
+		/// selection moves off a category; the asset menu replaces the grid instead of selecting
 		/// categories in it, and showing a menu whole means all of them have been seen.
 		/// </remarks>
 		private void ClearVanillaMenuHighlights(string menuName)

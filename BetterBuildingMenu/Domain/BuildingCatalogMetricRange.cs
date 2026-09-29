@@ -4,7 +4,7 @@ using System.Globalization;
 namespace BetterBuildingMenu.Domain
 {
 	/// <summary>
-	/// One normalized analytical range at the Building Lens binding boundary.
+	/// One normalized analytical range at the asset menu binding boundary.
 	/// </summary>
 	public sealed record BuildingCatalogMetricRange(string MetricId, double? Min, double? Max)
 	{

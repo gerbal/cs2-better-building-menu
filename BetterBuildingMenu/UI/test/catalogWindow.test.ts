@@ -6,7 +6,7 @@ import {
   shouldLoadMore,
   catalogWindowRemaining,
 } from "../src/domain/catalogWindow.ts";
-import { BUILDING_LENS_MIN_CATALOG_HEIGHT } from "../src/domain/buildingLensLayout.ts";
+import { ASSET_MENU_MIN_CATALOG_HEIGHT } from "../src/domain/assetMenuLayout.ts";
 
 describe("when the growing window asks for more", () => {
   it("asks once the viewport bottom is inside the threshold band", () => {
@@ -56,7 +56,7 @@ describe("when the growing window asks for more", () => {
   it("says no until the player has actually scrolled", () => {
     // Cohtml fills a scroll container over several frames, so a window still
     // being laid out reports a short content height that sits inside the band
-    // while nobody has touched anything — and the lens grows itself on mount.
+    // while nobody has touched anything — and the asset menu grows itself on mount.
     assert.equal(
       shouldLoadMore({ scrollTop: 0, clientHeight: 468, scrollHeight: 700, threshold: 280 }),
       false,
@@ -105,7 +105,7 @@ describe("when the growing window asks for more", () => {
   it("keeps the default threshold smaller than the shortest catalog viewport", () => {
     // A band taller than the viewport is armed at scrollTop 0, which makes the
     // window grow before the player has scrolled at all.
-    assert.equal(CATALOG_WINDOW_SCROLL_THRESHOLD < BUILDING_LENS_MIN_CATALOG_HEIGHT, true);
+    assert.equal(CATALOG_WINDOW_SCROLL_THRESHOLD < ASSET_MENU_MIN_CATALOG_HEIGHT, true);
   });
 });
 
@@ -234,7 +234,7 @@ describe("checking the anchor actually landed", () => {
       isAnchorOnScreen({ containerTop: 163, containerHeight: 468, rowTop: 40, rowHeight: 75 }),
       false,
     );
-    // The row is present, far down a panel whose viewport ends well above it,
+    // The row is present, far down a list whose viewport ends well above it,
     // and the list is sitting at scrollTop 0.
     assert.equal(
       isAnchorOnScreen({ containerTop: 163, containerHeight: 468, rowTop: 2174, rowHeight: 75 }),

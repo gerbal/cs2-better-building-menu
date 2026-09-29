@@ -4,7 +4,7 @@ import { Button, Scrollable } from "cs2/ui";
 import classNames from "classnames";
 import { useState } from "react";
 import { visibleCategories } from "domain/vanillaMenuCategories";
-import { isScopedToMenu, lensScopeChipsFor } from "domain/lensScopeChips";
+import { isScopedToMenu, assetMenuScopeChipsFor } from "domain/assetMenuScopeChips";
 import {
   ALL_CATEGORIES_KEYS,
   resolveVanillaLabel,
@@ -13,11 +13,11 @@ import {
 } from "domain/vanillaServiceLabels";
 import styles from "./chipRow.module.scss";
 import {
-  BuildingLensMenu$,
-  BuildingLensMenuCategories$,
-  BuildingLensMenuCategory$,
-  BuildingLensMenuCategoryCounts$,
-  BuildingLensMenus$,
+  AssetMenu$,
+  AssetMenuCategories$,
+  AssetMenuCategory$,
+  AssetMenuCategoryCounts$,
+  AssetMenus$,
   send,
 } from "mods/bindings";
 
@@ -40,17 +40,17 @@ export const ChipRow = () => {
   const { translate } = useLocalization();
   const [picker, setPicker] = useState<PickerId>(null);
 
-  const menu = useValue(BuildingLensMenu$) ?? "";
-  const menuCategory = useValue(BuildingLensMenuCategory$) ?? "";
-  const menuCategories = useValue(BuildingLensMenuCategories$) ?? [];
-  const menuCategoryCounts = useValue(BuildingLensMenuCategoryCounts$) ?? [];
-  const menus = useValue(BuildingLensMenus$) ?? [];
+  const menu = useValue(AssetMenu$) ?? "";
+  const menuCategory = useValue(AssetMenuCategory$) ?? "";
+  const menuCategories = useValue(AssetMenuCategories$) ?? [];
+  const menuCategoryCounts = useValue(AssetMenuCategoryCounts$) ?? [];
+  const menus = useValue(AssetMenus$) ?? [];
 
   const scopedToMenu = isScopedToMenu(menu);
 
   // One rule, in its own module so it can be tested: a chip is drawn only when
-  // the state it writes is applied to the result. See lensScopeChips.ts.
-  const chips = lensScopeChipsFor({
+  // the state it writes is applied to the result. See assetMenuScopeChips.ts.
+  const chips = assetMenuScopeChipsFor({
     menu,
     menuCategory,
     menuCategoryCount: menuCategories.length,
@@ -128,8 +128,8 @@ export const ChipRow = () => {
   const choose = (id: string) => {
     fire(
       picker === "menuCategory"
-        ? { method: "SetBuildingLensMenuCategory", args: [id] }
-        : { method: "SetBuildingLensMenu", args: [id] }
+        ? { method: "SetAssetMenuCategory", args: [id] }
+        : { method: "SetAssetMenu", args: [id] }
     );
     setPicker(null);
   };
@@ -151,7 +151,7 @@ export const ChipRow = () => {
             "menu",
             scopedToMenu ? menuLabel(menu) : allMenusLabel,
             picker === "menu",
-            scopedToMenu ? () => fire({ method: "ClearBuildingLensMenuScope", args: [] }) : null
+            scopedToMenu ? () => fire({ method: "ClearAssetMenuScope", args: [] }) : null
           )}
 
         {/* The category within it, which the strip also picks. Two ways to one
@@ -162,7 +162,7 @@ export const ChipRow = () => {
             "menuCategory",
             menuCategory === "" ? allCategoriesLabel : categoryLabel(menuCategory),
             picker === "menuCategory",
-            menuCategory === "" ? null : () => fire({ method: "SetBuildingLensMenuCategory", args: [""] })
+            menuCategory === "" ? null : () => fire({ method: "SetAssetMenuCategory", args: [""] })
           )}
 
       </div>

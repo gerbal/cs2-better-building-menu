@@ -1,5 +1,5 @@
 /**
- * One error handler for every result thumbnail in the lens. The thumbnail
+ * One error handler for every result thumbnail in the asset menu. The thumbnail
  * camera returns a well-formed URL for every prefab but renders only what
  * vanilla shows, so only the image element finds out. One rule, not four.
  */

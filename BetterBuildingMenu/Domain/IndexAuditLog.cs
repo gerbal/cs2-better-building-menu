@@ -31,19 +31,19 @@ namespace BetterBuildingMenu.Domain
 		public static string Cap(IReadOnlyList<string> names) =>
 			string.Join(",", names.Take(8)) + (names.Count > 8 ? ",…" : string.Empty);
 
-		/// <summary>How many prefabs each processor indexed, and how many of them the lens can show.</summary>
-		/// <remarks>The lens shows buildings and networks, and whatever vanilla places in a menu. A
+		/// <summary>How many prefabs each processor indexed, and how many of them the asset menu can show.</summary>
+		/// <remarks>The asset menu shows buildings and networks, and whatever vanilla places in a menu. A
 		/// processor whose every prefab is neither is indexing for nobody. In processor name order.</remarks>
 		public static IEnumerable<AuditLine> ProcessorCensus(IReadOnlyDictionary<string, List<int>> census, CatalogIndex index)
 		{
 			foreach (var pair in census.OrderBy(pair => pair.Key, System.StringComparer.Ordinal))
 			{
-				var lens = pair.Value.Count(id =>
+				var shown = pair.Value.Count(id =>
 					index.All.TryGetValue(id, out var indexed)
 					&& (indexed.Category is PrefabCategory.Buildings or PrefabCategory.ServiceBuildings or PrefabCategory.Networks
 						|| index.Menus.IsPlaced(id)));
 
-				yield return new AuditLine(AuditSeverity.Info, $"[PROCESSOR-CENSUS] {pair.Key} indexed={pair.Value.Count} lens={lens}");
+				yield return new AuditLine(AuditSeverity.Info, $"[PROCESSOR-CENSUS] {pair.Key} indexed={pair.Value.Count} shown={shown}");
 			}
 		}
 

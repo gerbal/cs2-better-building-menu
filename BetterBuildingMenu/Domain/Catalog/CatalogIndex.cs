@@ -74,7 +74,7 @@ namespace BetterBuildingMenu.Domain.Catalog
 		/// <summary>The mods this index adapted to, as of the pass that built it.</summary>
 		public ModCompatibility Mods { get; }
 
-		/// <summary>Whether a pass has filled it; until then the panel shows the indexing notice.</summary>
+		/// <summary>Whether a pass has filled it; until then the asset menu shows the indexing notice.</summary>
 		public bool IsReady { get; internal set; }
 
 		/// <summary>Every entry, in name order.</summary>
@@ -124,7 +124,7 @@ namespace BetterBuildingMenu.Domain.Catalog
 		public PrefabBase? GetPrefab(int id) => Get(id)?.Prefab;
 
 		/// <summary>The tab strip for a menu, empty when the menu has none.</summary>
-		/// <remarks>Roads gets more tabs than the game gives it: the lens gathers every network there
+		/// <remarks>Roads gets more tabs than the game gives it: the asset menu gathers every network there
 		/// (see <see cref="NetworkMenuExtension"/>), so the strip has to offer the extras too.</remarks>
 		public IReadOnlyList<VanillaMenuCategory> GetMenuCategories(string? menu)
 		{

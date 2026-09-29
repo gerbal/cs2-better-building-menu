@@ -1,7 +1,7 @@
 namespace BetterBuildingMenu.Domain
 {
 	/// <summary>
-	/// Pure state transitions for the lens facet selection. Outside the UI system, so trigger
+	/// Pure state transitions for the asset menu facet selection. Outside the UI system, so trigger
 	/// behaviour is deterministic and can be exercised without a running world.
 	/// </summary>
 	public static class BuildingCatalogFacetSelection

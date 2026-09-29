@@ -35,7 +35,7 @@ describe("Localizable strings register", () => {
   });
 
   it("agrees with Locale.json about what the English is", () => {
-    // Drift here means the panel shows one string and a translator is handed
+    // Drift here means the asset menu shows one string and a translator is handed
     // another.
     for (const entry of LOCALIZABLE_STRINGS.filter((candidate) => candidate.plumbed)) {
       if (!Object.prototype.hasOwnProperty.call(locale, entry.key)) continue;
@@ -72,7 +72,7 @@ describe("Localizable strings register", () => {
     for (const entry of getUnplumbedStrings()) {
       assert.match(
         entry.source,
-        /buildingGroups|buildingLensFilterSummary|filterChips|buildingLensMetricFormat/,
+        /buildingGroups|assetMenuFilterSummary|filterChips|assetMenuMetricFormat/,
         `${entry.key} claims a source no pure module owns`
       );
     }
