@@ -28,8 +28,8 @@ namespace BetterBuildingMenu.Utilities
 		/// The cache directory's contents, listed once instead of stat'd per icon.
 		/// </summary>
 		/// <remarks>
-		/// One listing answers every icon, instead of a File.Exists each through
-		/// Wine on the first visit to a menu. Null until first use, so a mod that
+		/// One listing answers every icon, instead of a File.Exists for each on
+		/// the first visit to a menu. Null until first use, so a mod that
 		/// never shows a locked vector asset never pays for it.
 		/// </remarks>
 		private HashSet<string>? _cachedFiles;

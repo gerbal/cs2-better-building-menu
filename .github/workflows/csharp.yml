@@ -1,6 +1,6 @@
 # Builds the mod and runs all its tests against the game's own assemblies, kept
-# in a private repository. Treat this repository as public: those assemblies
-# must never leave the runner. Setup and upkeep are in docs/ci.md.
+# in a private repository. This repository is public: those assemblies must
+# never leave the runner. Setup and upkeep are in docs/ci.md.
 name: C#
 
 on:
@@ -14,9 +14,13 @@ permissions:
 
 jobs:
   csharp:
-    # A pull request from a fork gets no secrets, so it skips this job rather
-    # than failing it. Never switch this workflow to pull_request_target.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    # Only this repository holds the key to the assemblies. A pull request from
+    # a fork gets no secrets, and a fork's own runs have no key, so both skip
+    # this job rather than failing it. Never switch this workflow to
+    # pull_request_target.
+    if: >-
+      github.repository == 'gerbal/cs2-better-building-menu'
+      && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
     runs-on: ubuntu-latest
     env:
       CS2_GAME_PATH: ${{ github.workspace }}/cs2-refs

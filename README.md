@@ -88,3 +88,7 @@ menus. Credits carried over from that project: **YenYang** (UI),
 **Algernon** (contributions, and for allowing the original project to be taken
 on), **Chameleon** (icons), **Baka-gourd** (focus handling). MIT licensed; see
 [LICENSE](LICENSE), and [docs/FORK.md](docs/FORK.md) for the basis.
+
+Most category icons are [Unified Icon Library](https://github.com/algernon-A/UnifiedIconLibrary)'s,
+by **algernon**, drawn by **Chamëleon TBN**, under the Apache License 2.0; see
+[THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).
