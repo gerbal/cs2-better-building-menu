@@ -4,7 +4,7 @@ namespace BetterBuildingMenu.Domain.Enums
 {
 	public enum PrefabSubCategory
 	{
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Standard/StarAll.svg")]
+		[CategoryIcon("coui://uil/Standard/StarAll.svg")]
 		Any = PrefabCategory.Any,
 
 		[Obsolete("Use PrefabCategory", true)]
@@ -21,9 +21,9 @@ namespace BetterBuildingMenu.Domain.Enums
 		Buildings_Office,
 		[CategoryIcon("Media/Game/Icons/ZoneExtractors.svg")]
 		Buildings_Specialized,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/ServiceBuilding.svg")]
+		[CategoryIcon("coui://uil/Colored/ServiceBuilding.svg")]
 		Buildings_Services,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/HouseAlternative.svg")]
+		[CategoryIcon("coui://uil/Colored/HouseAlternative.svg")]
 		Buildings_Miscellaneous,
 
 		[Obsolete("Use PrefabCategory", true)]
@@ -52,28 +52,28 @@ namespace BetterBuildingMenu.Domain.Enums
 		ServiceBuildings_Landscaping,
 		[CategoryIcon("Media/Game/Icons/ParksAndRecreation.svg")]
 		ServiceBuildings_Parks,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Standard/StarAll.svg")]
+		[CategoryIcon("coui://uil/Standard/StarAll.svg")]
 		ServiceBuildings_Misc,
 
 		[Obsolete("Use PrefabCategory", true)]
 		Networks = PrefabCategory.Networks,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/Road.svg")]
+		[CategoryIcon("coui://uil/Colored/Road.svg")]
 		Networks_Roads,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/Highway.svg")]
+		[CategoryIcon("coui://uil/Colored/Highway.svg")]
 		Networks_Highways,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/RailTrack.svg")]
+		[CategoryIcon("coui://uil/Colored/RailTrack.svg")]
 		Networks_Tracks,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/Bridge.svg")]
+		[CategoryIcon("coui://uil/Colored/Bridge.svg")]
 		Networks_Bridges,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/Intersection.svg")]
+		[CategoryIcon("coui://uil/Colored/Intersection.svg")]
 		Networks_Intersections,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/PedestrianPath.svg")]
+		[CategoryIcon("coui://uil/Colored/PedestrianPath.svg")]
 		Networks_Paths,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/Lanes.svg")]
+		[CategoryIcon("coui://uil/Colored/Lanes.svg")]
 		Networks_Lanes,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/BusShelter.svg")]
+		[CategoryIcon("coui://uil/Colored/BusShelter.svg")]
 		Networks_Stops,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/Pillar.svg")]
+		[CategoryIcon("coui://uil/Colored/Pillar.svg")]
 		Networks_Pillars,
 		// Appended rather than inserted, because these values are ordinal and the
 		// blocks below only survive that because each opens with an explicit
@@ -95,40 +95,40 @@ namespace BetterBuildingMenu.Domain.Enums
 
 		[Obsolete("Use PrefabCategory", true)]
 		Trees = PrefabCategory.Trees,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/TreeVanilla.svg")]
+		[CategoryIcon("coui://uil/Colored/TreeVanilla.svg")]
 		Trees_Trees,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/Bush.svg")]
+		[CategoryIcon("coui://uil/Colored/Bush.svg")]
 		Trees_Shrubs,
 		[CategoryIcon("Media/Game/Resources/Stone.svg")]
 		Trees_Rocks,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/FlowerPot.svg")]
+		[CategoryIcon("coui://uil/Colored/FlowerPot.svg")]
 		Trees_Props,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/MarkerSpawner.svg")]
+		[CategoryIcon("coui://uil/Colored/MarkerSpawner.svg")]
 		Trees_Spawners,
 
 		[Obsolete("Use PrefabCategory", true)]
 		Props = PrefabCategory.Props,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/FurnitureIso.svg")]
+		[CategoryIcon("coui://uil/Colored/FurnitureIso.svg")]
 		Props_Misc,
 		[CategoryIcon("Media/Game/Icons/LotTool.svg")]
 		Props_Surfaces,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/PropResidential.svg")]
+		[CategoryIcon("coui://uil/Colored/PropResidential.svg")]
 		Props_Residential,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/PropCommercial.svg")]
+		[CategoryIcon("coui://uil/Colored/PropCommercial.svg")]
 		Props_Commercial,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/PropIndustrial.svg")]
+		[CategoryIcon("coui://uil/Colored/PropIndustrial.svg")]
 		Props_Industrial,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/HealthcareServiceProps.svg")]
+		[CategoryIcon("coui://uil/Colored/HealthcareServiceProps.svg")]
 		Props_Service,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/FenceIsometric.svg")]
+		[CategoryIcon("coui://uil/Colored/FenceIsometric.svg")]
 		Props_Fences,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/BenchAndParkProps.svg")]
+		[CategoryIcon("coui://uil/Colored/BenchAndParkProps.svg")]
 		Props_Park,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/Decals.svg")]
+		[CategoryIcon("coui://uil/Colored/Decals.svg")]
 		Props_Decals,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/LampProps.svg")]
+		[CategoryIcon("coui://uil/Colored/LampProps.svg")]
 		Props_Lights,
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Colored/Billboard.svg")]
+		[CategoryIcon("coui://uil/Colored/Billboard.svg")]
 		Props_Branding,
 		[CategoryIcon("Media/Game/Icons/Lighting.svg")]
 		Props_Road,
@@ -151,7 +151,7 @@ namespace BetterBuildingMenu.Domain.Enums
 		// Zones whose AreaType the data does not distinguish at all. IndexZones
 		// drops these from its own catalog; the index keeps them, because being
 		// unclassifiable is not a reason to be unarmable.
-		[CategoryIcon("coui://betterbuildingmenu/Icons/Standard/StarAll.svg")]
+		[CategoryIcon("coui://uil/Standard/StarAll.svg")]
 		Zones_Misc,
 	}
 }

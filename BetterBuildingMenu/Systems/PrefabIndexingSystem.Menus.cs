@@ -146,7 +146,7 @@ namespace BetterBuildingMenu.Systems
 				found.Add((menus[i], new VanillaMenuCategory(
 					Id: prefab.name,
 					Name: prefab.name,
-					Icon: IconPath.Normalize(CategoryIcon.Resolve(uIObject?.m_Icon, _imageSystem.GetIconOrGroupIcon(menus[i]))) ?? string.Empty,
+					Icon: CategoryIcon.Resolve(uIObject?.m_Icon, _imageSystem.GetIconOrGroupIcon(menus[i])) ?? string.Empty,
 					Priority: uIObject?.m_Priority ?? 0)));
 			}
 
@@ -279,7 +279,7 @@ namespace BetterBuildingMenu.Systems
 					tabs.Add(new VanillaMenuCategory(
 						Id: prefab.name,
 						Name: prefab.name,
-						Icon: IconPath.Normalize(CategoryIcon.Resolve(uIObject?.m_Icon, _imageSystem.GetIconOrGroupIcon(entity))) ?? string.Empty,
+						Icon: CategoryIcon.Resolve(uIObject?.m_Icon, _imageSystem.GetIconOrGroupIcon(entity)) ?? string.Empty,
 						// The priority the tabs were sorted by, UIObjectData's, so the UI's
 						// stable re-sort by it leaves them in vanilla's order. A nested menu's
 						// are renumbered in its rows' order; see NestedCategories.

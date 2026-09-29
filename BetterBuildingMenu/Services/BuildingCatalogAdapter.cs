@@ -653,13 +653,11 @@ namespace BetterBuildingMenu.Services
 				// Both, not one coalesced into the other: the thumbnail camera returns
 				// a URL for every prefab but renders only the ones vanilla shows, so a
 				// ?? here cannot see the blank that the renderer can.
-				Thumbnail: IconPath.Normalize(prefab.Thumbnail ?? prefab.FallbackThumbnail ?? string.Empty),
-				FallbackThumbnail: IconPath.Normalize(
-					prefab.FallbackThumbnail ?? prefab.CategoryThumbnail ?? string.Empty),
+				Thumbnail: prefab.Thumbnail ?? prefab.FallbackThumbnail ?? string.Empty,
+				FallbackThumbnail: prefab.FallbackThumbnail ?? prefab.CategoryThumbnail ?? string.Empty,
 				// Generated on first sight and cached on disk: one file read per distinct
 				// vector icon for the life of the install, not one per projection.
-				SilhouetteThumbnail: _silhouetteUrl(
-					IconPath.Normalize(prefab.Thumbnail ?? prefab.FallbackThumbnail ?? string.Empty)),
+				SilhouetteThumbnail: _silhouetteUrl(prefab.Thumbnail ?? prefab.FallbackThumbnail ?? string.Empty),
 				UiMenu: prefab.UiMenuName,
 				UiCategory: prefab.UiCategoryName,
 				ServiceRange: prefab.ServiceRange,

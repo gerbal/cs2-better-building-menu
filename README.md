@@ -89,6 +89,5 @@ menus. Credits carried over from that project: **YenYang** (UI),
 on), **Chameleon** (icons), **Baka-gourd** (focus handling). MIT licensed; see
 [LICENSE](LICENSE), and [docs/FORK.md](docs/FORK.md) for the basis.
 
-Most category icons are [Unified Icon Library](https://github.com/algernon-A/UnifiedIconLibrary)'s,
-by **algernon**, drawn by **Chamëleon TBN**, under the Apache License 2.0; see
-[THIRD-PARTY-NOTICES.txt](THIRD-PARTY-NOTICES.txt).
+The panel's icons come from [Unified Icon Library](https://github.com/algernon-A/UnifiedIconLibrary),
+by **algernon**, drawn by **Chamëleon TBN**, which the mod requires on Paradox Mods.

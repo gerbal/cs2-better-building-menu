@@ -190,11 +190,11 @@ namespace BetterBuildingMenu.Systems
 
 			if (!string.IsNullOrEmpty(node.m_IconPath))
 			{
-				return IconPath.Normalize(node.m_IconPath) ?? string.Empty;
+				return node.m_IconPath;
 			}
 
 			return node.m_IconPrefab is not null
-				? IconPath.Normalize(ImageSystem.GetThumbnail(node.m_IconPrefab)) ?? string.Empty
+				? ImageSystem.GetThumbnail(node.m_IconPrefab) ?? string.Empty
 				: string.Empty;
 		}
 

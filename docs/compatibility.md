@@ -54,7 +54,8 @@ result can predate later changes, which are in `BetterBuildingMenu/Changelog.jso
 | Anarchy (yenyang) | 1.7.24 | 0.1.10 | Works. Its options sit beside ours, and "place multiple unique buildings" reaches the asset menu. |
 | Asset Icon Library (TDW) | — | 0.1.6 | Works. Tiles draw its icons: 85 of 100 in Landscaping. |
 | Extra Landscaping Tools, Extra Detailing Tools (Triton) | — | 0.1.6 | Work. Their tools and props are indexed. |
-| Toggle Overlays, Unified Icon Library, I18n Everywhere | — | 0.1.6 | No interaction. |
+| Toggle Overlays, I18n Everywhere | — | 0.1.6 | No interaction. |
+| Unified Icon Library | 1.0.14 | 0.2.2 | Required: the panel draws its icons from it. |
 | Asset Menu Tweaks (Luca) | 1.0.7 | 0.1.5 | No effect on our asset menu, in either load order and with every option on. |
 | Find It (TDW) | 1.5.8 | pre-release | Both install together. Its panel takes the asset-menu slot while open and ours returns when it closes; its picker is the only one. |
 | Platter (Luca), Extra Networks and Areas (Mimonsi), Recolor (yenyang) | — | — | Source read only. The first two add or regroup menu entries at load, before our index runs; Recolor's palettes are not toolbar assets. |

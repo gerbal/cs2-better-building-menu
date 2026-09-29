@@ -11,6 +11,8 @@
     being published before every "NewVersion" run.
   * AccessLevel: Unlisted from the first upload (0.1.0) until the listing was
     checked; Public since the 0.1.4 "Update" run on 2026-09-09.
+  * Dependency 74417: Unified Icon Library. The panel draws its icons from it
+    (coui://uil/...) instead of shipping copies; see docs/FORK.md.
 -->
 <Publish>
   <ModId Value="158589" />
@@ -53,6 +55,7 @@ This mod was developed with AI assistance (Anthropic's Claude), under human dire
   <GameVersion Value="1.6.*" />
   <AccessLevel Value="Public" />
   <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/mod-better-building-menu.1941089/" />
+  <Dependency Id="74417" />
 
   <ChangeLog>
 0.2.2
