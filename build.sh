@@ -69,6 +69,11 @@ package_artifacts() {
     cp "$SCRIPT_DIR/modinfo.json" "$PACKAGE_DIR/modinfo.json"
     cp "$UI_BUILD/$MOD_NAME.mjs" "$PACKAGE_DIR/$MOD_NAME.mjs"
     cp "$UI_BUILD/$MOD_NAME.css" "$PACKAGE_DIR/$MOD_NAME.css"
+    # The licenses travel with every copy: MIT's notice, the vendored icons'
+    # Apache NOTICE, and the notices of what webpack bundled.
+    cp "$SCRIPT_DIR/LICENSE" "$PACKAGE_DIR/LICENSE.txt"
+    cp "$SCRIPT_DIR/THIRD-PARTY-NOTICES.txt" "$PACKAGE_DIR/THIRD-PARTY-NOTICES.txt"
+    [ -f "$UI_BUILD/$MOD_NAME.mjs.LICENSE.txt" ] && cp "$UI_BUILD/$MOD_NAME.mjs.LICENSE.txt" "$PACKAGE_DIR/$MOD_NAME.mjs.LICENSE.txt"
     if [ -d "$UI_BUILD/images" ] || [ -d "$PROJECT_DIR/Resources/Images" ]; then
         mkdir -p "$PACKAGE_DIR/images"
         # Webpack assets and the fork's runtime-hosted icons share the same

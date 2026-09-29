@@ -22,9 +22,43 @@ The published listing credits Find It 1.5.8 by T. D. W.; this repository also st
 basis. If the upstream author adds a license file or objects, this record and the
 listing change to match.
 
-None of Find It's store art or panel images ships here, nor its fuzzy-search engine or its
-favourites feature. The files still identical to upstream are shared scaffolding: the CS2 UI
-mod template's `types/*.d.ts` and `Resources/Blacklist.txt`.
+None of Find It's store art ships here, nor its fuzzy-search engine or its favourites
+feature. What is still upstream's:
+
+- **Scaffolding.** The CS2 UI mod template's `UI/types/*.d.ts`, which every UI mod carries,
+  `Resources/Blacklist.txt` and `.gitattributes`, all unchanged.
+- **Translations.** 780 of the 793 strings in `Locale/*.json` are upstream's translators'
+  work, unchanged. The mod's other 162 strings have no translations yet, so every language
+  shows them in English.
+- **Images.** `UI/src/images/find.svg` unchanged, and `lock.svg` and `unlock.svg`
+  recoloured. All three came to Find It from [SVG Repo](https://www.svgrepo.com), whose
+  license is set per icon, and upstream did not record which.
+  `Resources/Images/ZoneResidentialMixed.svg` is covered under [Art from the
+  game](#art-from-the-game).
+
+## Third-party icons
+
+The icons under `Resources/Images/Icons/`, all but `Standard/LockRaster.png`, are
+[Unified Icon Library](https://github.com/algernon-A/UnifiedIconLibrary)'s, by algernon,
+drawn by Chamëleon TBN. They are unmodified copies used under the Apache License 2.0, whose
+text and the library's NOTICE are in `THIRD-PARTY-NOTICES.txt`; `build.sh package` puts that
+file in every package beside `LICENSE`. They are copies, not a dependency: a prefab
+thumbnail that names `coui://uil/...` is drawn from them (`IconPath`), with or without
+that mod installed.
+
+## Art from the game
+
+A few images are drawn from the game's own UI art, which is the publisher's, as many mods'
+icons are:
+
+- `Resources/Images/ZoneResidentialMixed.svg`: the game's icon of that name
+  (`Media/Game/Icons/`), recoloured. It came from Find It.
+- `Resources/Images/Icons/Standard/LockRaster.png`: the game's `Media/Glyphs/Lock.svg`,
+  rasterised and tinted. It stands in for that glyph because Cohtml re-rasterises a vector
+  under a filter every frame, and the vector flickered.
+- Among the Unified Icon Library copies, `Colored/BaseGame.svg` carries the game's logo mark,
+  and `Standard/StarAll.svg`, `Colored/TreeVanilla.svg` and
+  `Colored/BuildingZoneSignature.svg` follow the game's icons of the same subjects.
 
 ## Runtime identity safety
 

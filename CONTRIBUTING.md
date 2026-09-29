@@ -4,9 +4,14 @@
 
 - **C#.** The .NET 10 SDK and an installed copy of the game. The build reads
   the game's managed assemblies from `$CS2_GAME_PATH/Cities2_Data/Managed`.
-  `CS2_GAME_PATH` defaults to the Steam install under
-  `~/.local/share/Steam/steamapps/common/Cities Skylines II`
-  (`Directory.Build.props`).
+  `CS2_GAME_PATH` defaults to the Steam install:
+  `C:\Program Files (x86)\Steam\steamapps\common\Cities Skylines II` on Windows,
+  `~/.local/share/Steam/steamapps/common/Cities Skylines II` elsewhere
+  (`Directory.Build.props`). Set it for any other install.
+- **A shell.** `build.sh` is bash; on Windows, Git Bash runs it. Without one,
+  `dotnet build BetterBuildingMenu -p:SkipBuildUI=true` and
+  `dotnet test BetterBuildingMenu.Tests -p:SkipBuildUI=true` are the backend and
+  test steps.
 - **UI.** Node 22.13 or later, then `npm ci --ignore-scripts` in `BetterBuildingMenu/UI`.
   The UI's tests stub the game's `cs2/*` modules, so they run without the game.
 - **The game's source.** Read a decompilation of the game's assemblies (ILSpy

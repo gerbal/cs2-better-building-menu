@@ -7,6 +7,7 @@
   <!-- CS2 game path: env var with fallback to the default Steam install. -->
   <PropertyGroup>
     <CS2GamePath Condition="'$(CS2GamePath)' == ''">$([System.Environment]::GetEnvironmentVariable('CS2_GAME_PATH'))</CS2GamePath>
+    <CS2GamePath Condition="'$(CS2GamePath)' == '' And '$(OS)' == 'Windows_NT'">$(MSBuildProgramFiles32)\Steam\steamapps\common\Cities Skylines II</CS2GamePath>
     <CS2GamePath Condition="'$(CS2GamePath)' == ''">$([System.Environment]::GetEnvironmentVariable('HOME'))/.local/share/Steam/steamapps/common/Cities Skylines II</CS2GamePath>
     <CS2ManagedPath>$(CS2GamePath)/Cities2_Data/Managed</CS2ManagedPath>
   </PropertyGroup>

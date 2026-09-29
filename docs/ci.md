@@ -7,8 +7,9 @@ Two workflows, in `.github/workflows/`.
   from the game; the test harness stubs its `cs2/*` modules.
 - **`csharp.yml`** builds the mod and runs every xUnit test (`./build.sh backend`,
   `./build.sh test`) against **the game's own assemblies**, checked out from a private
-  repository. A pull request from a fork gets no secrets, so it skips this job rather than
-  failing it: run the same two commands against your own install before opening one.
+  repository. A pull request from a fork gets no secrets, and a fork's own runs have no key,
+  so both skip this job rather than failing it: run the same two commands against your own
+  install before opening one.
 
 ## The game assemblies
 
@@ -26,7 +27,7 @@ cover that code.
 
 ## Keeping them private
 
-The copies are the game's code, and this repository may be public. They may exist only in the
+The copies are the game's code, and this repository is public. They may exist only in the
 private repository and inside a runner:
 
 - **Never upload `cs2-refs` as a workflow artifact.** Anyone who can see the repository can
