@@ -82,9 +82,11 @@ already carries:
 - Put `transform: translateZ(0)` on that head to promote it to its own layer.
   Without it the head's text does not rasterise at all.
 
-Both apply to any floating surface built by hand rather than taken from the game's
-own controls. They hold on Cohtml 1.64 (game 1.6.0). Cohtml 2.2 (game 1.6.2) lays out flex
-with a new algorithm, and whether it still needs them is open; see [issue #102](https://github.com/gerbal/cs2-better-building-menu/issues/102).
+Both held on Cohtml 1.64 (game 1.6.0). Cohtml 2.2 (game 1.6.2) lays out flex with a new
+algorithm, and the two surfaces the mod builds by hand paint in full, text included, with
+neither workaround: `ControlPane`'s `.pickerOptions`, anchored by a fixed `bottom` offset,
+and `ChipRow`'s `.picker`, which hangs from `top: 100%`. A surface anchored by `bottom: 100%`
+has not been tried on 2.2, so anchor a new one by `top` all the same.
 
 ## The card against vanilla
 

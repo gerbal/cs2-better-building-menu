@@ -365,7 +365,8 @@ namespace BetterBuildingMenu.Systems
 		/// <summary>The upgrades a building supports, in the order vanilla offers them. See
 		/// <see cref="SupportedUpgrades.InMenuOrder"/>.</summary>
 		/// <remarks>Two buffers, as UpgradeMenuUISystem reads them: BuildingUpgradeElement for service
-		/// upgrades, BuildingModule for the modules signature towers take.</remarks>
+		/// upgrades, BuildingModule for the modules a modular building takes, such as the City Stations
+		/// DLC's stations and depots.</remarks>
 		private (string[] DisplayNames, string[] PrefabNames) GetSupportedUpgrades(Entity entity)
 		{
 			List<UpgradeOffer>? offers = null;
