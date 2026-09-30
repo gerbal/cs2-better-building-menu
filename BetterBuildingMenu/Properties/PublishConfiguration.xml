@@ -51,16 +51,23 @@ This mod was developed with AI assistance (Anthropic's Claude), under human dire
   <Screenshot Value="Properties/Screenshot_04.jpg" />
 
   <Tag Value="Code Mod" />
-  <ModVersion Value="0.2.2" />
+  <ModVersion Value="0.2.3" />
   <GameVersion Value="1.6.*" />
   <AccessLevel Value="Public" />
   <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/mod-better-building-menu.1941089/" />
+  <ExternalLink Type="github" Url="https://github.com/gerbal/cs2-better-building-menu" />
   <Dependency Id="74417" />
 
   <ChangeLog>
-0.2.2
+0.2.3
 
-Compatibility
-* Extra Assets Importer: the panel opens its Extra Assets menu too, with a tab for each of its categories, such as Misc Decals, Parking Decals and Grass Surfaces. It used to leave that menu to the game's own grid.
+Required mod
+* Unified Icon Library is now required. The panel's category and filter icons come from it, and it is installed along with this mod.
+
+Fixed
+* Icons that other mods take from Unified Icon Library now show in the panel. Some drew blank.
+
+Settings
+* Tile size and the panel's height go back to their defaults once with this update. Set them again under Options > Better Building Menu > Tile size, and by dragging the top edge of the panel.
 </ChangeLog>
 </Publish>
