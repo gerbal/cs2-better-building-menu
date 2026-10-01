@@ -74,7 +74,26 @@ export function useAssetMenuWidthDrag(
     }
   }
 
-  useEffect(() => () => cancelAnimationFrame(pending.current.frame), []);
+  // What a release measures against, read when the asset menu goes away, after
+  // the render that last set it.
+  const room = useRef({ bandWidth, paneShown });
+  room.current = { bandWidth, paneShown };
+
+  // The asset menu going away mid-drag (closed by a key or by the game) ends the
+  // drag as a release does. Left unsaved, the dragged width would sit in the
+  // binding until the next save of any setting re-pushed the saved one.
+  useEffect(() => () => {
+    cancelAnimationFrame(pending.current.frame);
+    const state = drag.current;
+    if (!state.active) return;
+
+    state.active = false;
+    pending.current = { frame: 0, width: null };
+    if (!state.moved) return;
+
+    send({ method: "SetAssetMenuCatalogWidth", args: [releasedCatalogWidth(state.last, room.current.bandWidth, room.current.paneShown)] });
+    send({ method: "CommitAssetMenuCatalogWidth", args: [] });
+  }, []);
 
   function fill(): void {
     send({ method: "SetAssetMenuCatalogWidth", args: [ASSET_MENU_CATALOG_FILL] });

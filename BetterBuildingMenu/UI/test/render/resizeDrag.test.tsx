@@ -130,7 +130,9 @@ describe("the asset menu's height between drags", () => {
     assert.equal(assetMenu.isResizing, false);
   });
 
-  it("sends nothing after the asset menu goes away mid-drag", () => {
+  it("ends the drag as a release does when the asset menu goes away mid-drag", () => {
+    // Closed by a key or by the game: saved, so the binding and the setting
+    // agree, and nothing is sent once the menu has gone.
     mount();
     begin();
     act(() => blocker()[0].props.onMouseMove({ clientY: 480 }));
@@ -138,7 +140,8 @@ describe("the asset menu's height between drags", () => {
     root = undefined;
 
     nextFrame();
-    assert.deepEqual(names(), []);
+    assert.deepEqual(names(), ["SetAssetMenuHeight", "CommitAssetMenuHeight"]);
+    assert.deepEqual(heights(), [440]);
   });
 });
 

@@ -160,14 +160,27 @@ describe("dragging the build menu's width", () => {
     assert.equal(drag.isResizing, false);
   });
 
-  it("sends nothing after the asset menu goes away mid-drag", () => {
+  it("ends the drag where it was when the asset menu goes away mid-drag, as a release does", () => {
+    // Closed by a key or by the game: saved, so the binding and the setting
+    // agree and a later save of another setting has nothing to snap back.
     mount();
     press();
     move(480);
     act(() => root!.unmount());
     root = undefined;
 
+    assert.deepEqual(names(), ["SetAssetMenuCatalogWidth", "CommitAssetMenuCatalogWidth"]);
+    assert.deepEqual(widths(), [880]);
     nextFrame();
+    assert.equal(names().length, 2, "nothing after the menu has gone");
+  });
+
+  it("saves nothing when the asset menu goes away after a press that never moved", () => {
+    mount();
+    press();
+    act(() => root!.unmount());
+    root = undefined;
+
     assert.deepEqual(names(), []);
   });
 });

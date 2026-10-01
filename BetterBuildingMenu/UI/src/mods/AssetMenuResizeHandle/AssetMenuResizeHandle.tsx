@@ -53,7 +53,21 @@ export function useAssetMenuHeight(): AssetMenuHeight {
     }
   }
 
-  useEffect(() => () => cancelAnimationFrame(pending.current.frame), []);
+  // The asset menu going away mid-drag (closed by a key or by the game) ends the
+  // drag as a release does. Left unsaved, the dragged height would sit in the
+  // binding until the next save of any setting re-pushed the saved one.
+  useEffect(() => () => {
+    cancelAnimationFrame(pending.current.frame);
+    if (!resizeState.current.active) return;
+
+    resizeState.current.active = false;
+    const next = pending.current.height;
+    pending.current = { frame: 0, height: null };
+    if (next !== null) {
+      send({ method: "SetAssetMenuHeight", args: [next] });
+    }
+    send({ method: "CommitAssetMenuHeight", args: [] });
+  }, []);
 
   function beginResize(event: any): void {
     event.preventDefault?.();
