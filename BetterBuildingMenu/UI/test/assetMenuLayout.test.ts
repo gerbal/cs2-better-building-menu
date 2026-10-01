@@ -18,6 +18,7 @@ import {
   ASSET_MENU_RESIZE_HANDLE_HEIGHT,
   ASSET_MENU_CATALOG_FILL,
   ASSET_MENU_CATALOG_MIN_WIDTH,
+  ASSET_MENU_WIDTH_HANDLE_WIDTH,
   REM_IN_PX_AT_720P,
   assetMenuRowWidth,
   catalogLayoutWidth,
@@ -254,6 +255,17 @@ describe("sizes the stylesheets draw", () => {
     const strip = declarationsOf("mods/AssetMenuResizeHandle/assetMenuResizeHandle.module.scss", ".resizeHandle");
 
     assert.equal(ASSET_MENU_RESIZE_HANDLE_HEIGHT, rem(strip.height));
+  });
+
+  it("a width drag measures against the strip's real width, and the strip stays out of the pane", () => {
+    const strip = declarationsOf("mods/AssetMenuWidthHandle/assetMenuWidthHandle.module.scss", ".widthHandle");
+    const pane = declarationsOf("mods/ControlPane/controlPane.module.scss", ".pane");
+
+    assert.equal(ASSET_MENU_WIDTH_HANDLE_WIDTH, rem(strip.width));
+    // Centred on the build menu's edge: half inside it, half in the gap.
+    assert.equal(strip.right, `-${ASSET_MENU_WIDTH_HANDLE_WIDTH / 2}rem`);
+    assert.ok(ASSET_MENU_WIDTH_HANDLE_WIDTH / 2 <= rem(pane["margin-left"]), "the strip reaches into the pane");
+    assert.equal(strip.cursor, "url(cursor://horizontal-can-resize)");
   });
 });
 

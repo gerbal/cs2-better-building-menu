@@ -169,6 +169,7 @@
   "Requirement.DEV_TREE": "{0} tech",
   "Tooltip.LABEL[BetterBuildingMenu.ActiveFilters]": "Active",
   "Tooltip.LABEL[BetterBuildingMenu.ResizeHeight]": "Drag to resize",
+  "Tooltip.LABEL[BetterBuildingMenu.ResizeWidth]": "Drag to resize, double-click to fill the space",
   "Tooltip.LABEL[BetterBuildingMenu.Upgrades]": "Upgrades",
   "Tooltip.LABEL[BetterBuildingMenu.ViewMode]": "View",
   "Tooltip.LABEL[BetterBuildingMenu.ResetMenu]": "Reset menu",

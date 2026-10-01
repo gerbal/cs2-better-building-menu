@@ -1,0 +1,49 @@
+@use "../../assetMenuGeometry" as *;
+
+// The width drag: a strip down the build menu's right edge, centred on it, so half
+// of it reaches into the gap beside the control pane and no further.
+
+.widthHandle {
+  position: absolute;
+  top: $handle-height;
+  bottom: 0;
+  right: $width-handle-width * -0.5;
+  width: $width-handle-width;
+  // Below the header (topBar is 40), whose popovers hang over the catalog's top,
+  // and above the catalog (0), so it can be grabbed all down the catalog's side.
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  // The game's own cursor, as on the height strip: the game draws its cursors and
+  // maps no CSS keyword past default/pointer/none.
+  cursor: url(cursor://horizontal-can-resize);
+}
+
+// The height strip's grip on its side: the same pill, the same resting weight.
+.widthGrip {
+  width: 8rem;
+  height: 75rem;
+  border-radius: 4rem;
+  background-color: rgba(var(--scrollbarColor), 0.6);
+  transition: background-color 0.15s;
+}
+
+.widthHandle:hover .widthGrip,
+.widthGripActive,
+.widthHandle:hover .widthGripActive {
+  background-color: var(--accentColorNormal);
+}
+
+.widthBlocker {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10001;
+  pointer-events: auto;
+  // Mid-drag, the game's own resize cursor.
+  cursor: url(cursor://horizontal-resize);
+}
