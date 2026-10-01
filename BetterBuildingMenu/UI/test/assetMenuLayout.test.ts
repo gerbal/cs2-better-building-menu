@@ -20,8 +20,9 @@ import {
   ASSET_MENU_CATALOG_MIN_WIDTH,
   ASSET_MENU_WIDTH_HANDLE_WIDTH,
   ASSET_MENU_TABLE_MIN_WIDTH,
-  ASSET_MENU_COLUMN_MIN,
+  ASSET_MENU_COLUMN_MAX as COMFORTABLE_COLUMNS,
   REM_IN_PX_AT_720P,
+  getAssetMenuColumnWidths as columnWidthsAt,
   catalogMinWidth,
   tableColumnRoom,
   assetMenuRowWidth,
@@ -389,11 +390,14 @@ describe("where a width drag lands", () => {
 });
 
 describe("the table's narrowest build menu", () => {
-  const minTotal = Object.values(ASSET_MENU_COLUMN_MIN).reduce((total, width) => total + width, 0);
+  const comfortable = Object.values(COMFORTABLE_COLUMNS).reduce((total, width) => total + width, 0);
 
-  it("is the width at which the metric columns' minima fit beside the name", () => {
-    assert.equal(tableColumnRoom(ASSET_MENU_TABLE_MIN_WIDTH + CONTROL_PANE_TOTAL), minTotal);
-    assert.ok(tableColumnRoom(ASSET_MENU_TABLE_MIN_WIDTH - 1 + CONTROL_PANE_TOTAL) < minTotal);
+  // Not the minima: those were never drawn before the width could change, and
+  // in game they clip a network's per-km cost in every row.
+  it("is the width at which the metric columns reach their comfortable widths beside the name", () => {
+    assert.equal(tableColumnRoom(ASSET_MENU_TABLE_MIN_WIDTH + CONTROL_PANE_TOTAL), comfortable);
+    assert.deepEqual(columnWidthsAt(ASSET_MENU_TABLE_MIN_WIDTH + CONTROL_PANE_TOTAL), COMFORTABLE_COLUMNS);
+    assert.ok(tableColumnRoom(ASSET_MENU_TABLE_MIN_WIDTH - 1 + CONTROL_PANE_TOTAL) < comfortable);
   });
 
   it("applies to the table alone, and fits beside the pane", () => {
@@ -406,11 +410,11 @@ describe("the table's narrowest build menu", () => {
 
   it("holds a narrower chosen width at the table's minimum, and leaves fill alone", () => {
     assert.equal(resolveCatalogWidth(735, BAND, true, ASSET_MENU_TABLE_MIN_WIDTH), ASSET_MENU_TABLE_MIN_WIDTH);
-    assert.equal(resolveCatalogWidth(1000, BAND, true, ASSET_MENU_TABLE_MIN_WIDTH), 1000);
+    assert.equal(resolveCatalogWidth(1080, BAND, true, ASSET_MENU_TABLE_MIN_WIDTH), 1080);
     assert.equal(resolveCatalogWidth(ASSET_MENU_CATALOG_FILL, BAND, true, ASSET_MENU_TABLE_MIN_WIDTH), 1091);
   });
 
   it("stops a drag at the table's minimum", () => {
-    assert.equal(draggedCatalogWidth(1000, 500, -5000, BAND, true, 1, ASSET_MENU_TABLE_MIN_WIDTH), ASSET_MENU_TABLE_MIN_WIDTH);
+    assert.equal(draggedCatalogWidth(1080, 500, -5000, BAND, true, 1, ASSET_MENU_TABLE_MIN_WIDTH), ASSET_MENU_TABLE_MIN_WIDTH);
   });
 });

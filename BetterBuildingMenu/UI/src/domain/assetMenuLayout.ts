@@ -171,12 +171,13 @@ const sumWidths = (widths: AssetMenuColumnWidths): number =>
   Object.values(widths).reduce((total, width) => total + width, 0);
 
 /**
- * The narrowest build menu the table fits: the metric columns at their minima,
- * the name's basis, the row's furniture and the chromes. Narrower, the cells
- * shrink below their minima and clip their figures, so the table is drawn at
- * least this wide whatever width the player chose.
+ * The narrowest build menu the table is drawn at: the metric columns at their
+ * comfortable widths, the name's basis, the row's furniture and the chromes. Not
+ * the minima: the table was only ever drawn at the comfortable set before the
+ * width could change, and at the minima a network's per-km cost clips in every
+ * row. The player's narrower width is kept for the other views.
  */
-export const ASSET_MENU_TABLE_MIN_WIDTH = sumWidths(ASSET_MENU_COLUMN_MIN)
+export const ASSET_MENU_TABLE_MIN_WIDTH = sumWidths(ASSET_MENU_COLUMN_MAX)
   + ASSET_MENU_TABLE_NAME_BASIS
   + ASSET_MENU_TABLE_ROW_FURNITURE
   + ASSET_MENU_TABLE_CHROME
