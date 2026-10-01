@@ -79,8 +79,10 @@ each pushed to its binding.
 
 **Fill.** The width setting holds either a width or `Fill` (0). A filling menu
 takes the room the row has: 1,091 beside the pane at the reference resolution, and
-1,476 without it. Fill is the default, so a settings file from before this draws the
-layout it always did. A drag released within 2 of the room stores fill, and so does
+1,471 without it. That is the band less half the width strip: the strip is centred
+on the menu's edge, and filling the whole band put its outer half over the social
+icons, so a press on their left edge started a drag. Fill is the default, so a
+settings file from before this draws the layout it always did. A drag released within 2 of the room stores fill, and so does
 a second press on the strip soon after the first.
 
 **A chosen width stays put.** If showing the pane leaves less room than the
@@ -97,21 +99,29 @@ tier and the name budget were tuned against the whole row with the pane in it, s
 they are handed the build menu plus the pane (`catalogLayoutWidth`) whether or not
 the pane is shown. At the default width that is the number they always had.
 
-**The table has a minimum of its own.** Table view draws the menu at least 1,052 rem
-wide (`ASSET_MENU_TABLE_MIN_WIDTH`): the seven metric columns at their comfortable
-widths, the name's basis, the row's furniture and the chromes. Measured in game on
-Roads: at 735 and 900 the columns cannot even reach their minima and 59 of 607
-cells clip; at the minima themselves (944) a road's per-km cost still clips in
-every row; at 1,000 and 1,052 nothing does. The drag stops at that minimum, and
-the player's narrower width is kept and returns in Grid, List and Cards, which fit
-down to 735.
+**A narrow table drops columns.** Table view draws at the player's width and shows
+as many metric columns as fit beside the name at their comfortable widths, grown
+by the game's text scale (`visibleTableMetrics`). Parking, Level, Lot, Workers and
+Capacity go first; the column the table is sorted by always stays. Measured in game
+on Roads: below the comfortable set, a road's per-km cost ("¢3,500 /km") clips in
+every row, even at the columns' minima. A first version kept the table at least
+1,052 wide instead, but switching to Table at a narrow width then moved the pane,
+and the View control just clicked, out from under the cursor. At the default width
+all seven still fit; at 125 % text, four do.
 
 **Cursors and the double press.** The game draws its own cursors, so the strip
 uses `cursor://horizontal-can-resize` and `cursor://horizontal-resize`, from the
 game's own stylesheet, as the height strip uses the vertical pair. The double press
 is counted in the drag hook rather than left to a `dblclick` listener: the first
 press starts a drag, whose blocker covers the screen, so the second click never
-reaches the strip.
+reaches the strip. A press becomes a drag only once the pointer has moved three
+pixels, so the wobble inside a click neither saves a width nor spoils the double
+press.
+
+**A drag cut short is saved.** If the asset menu closes mid-drag, by a key or by
+the game, both the width and the height drag end as a release does. Left unsaved,
+the dragged value sat in the binding until the next save of any setting re-pushed
+the saved one, so hiding the pane could change the width.
 
 ## Hand-rolled floating surfaces in Cohtml
 

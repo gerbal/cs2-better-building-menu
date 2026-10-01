@@ -160,7 +160,6 @@ namespace BetterBuildingMenu.Systems
 			// Seeded here and re-pushed by OnSettingsApplied, so the options screen's Tile
 			// size slider takes effect without a reload.
 			_AssetMenuTileSize = CreateBinding("AssetMenuTileSize", Mod.Settings.AssetMenuTileSize);
-			Mod.Settings.onSettingsApplied += OnSettingsApplied;
 			CreateTrigger("SearchEverything", SearchEverything);
 			_AssetMenuWidth = CreateBinding("AssetMenuWidth", 0f);
 			// Seeded from the setting rather than 0: the asset menu draws from this
@@ -175,6 +174,8 @@ namespace BetterBuildingMenu.Systems
 				"AssetMenuCatalogWidth",
 				AssetMenuCatalogWidth.Sanitize(Mod.Settings.AssetMenuCatalogWidth));
 			_ControlPaneShown = CreateBinding("ControlPaneShown", Mod.Settings.ControlPaneShown);
+			// Only now, with every binding OnSettingsApplied re-pushes created.
+			Mod.Settings.onSettingsApplied += OnSettingsApplied;
 			_CurrentSearch = CreateBinding("CurrentSearch", string.Empty);
 			_BuildingCatalogBinding = CreateBinding("BuildingCatalog", new BuildingCatalogPage(
 				Array.Empty<BuildingCatalogEntry>(),
@@ -284,8 +285,9 @@ namespace BetterBuildingMenu.Systems
 		/// </summary>
 		/// <remarks>
 		/// The parameter is the base game's <see cref="Game.Settings.Setting"/> — the delegate's
-		/// own type — not this mod's settings class. The asset menu's height needs no re-publishing; it
-		/// travels the other way, from the drag handle into the setting.
+		/// own type — not this mod's settings class. The asset menu's sizes travel both ways: from
+		/// the drag handles into the settings, and back from here when anything else, such as an
+		/// Options reset, changes the settings.
 		/// </remarks>
 		private void OnSettingsApplied(Game.Settings.Setting setting)
 		{

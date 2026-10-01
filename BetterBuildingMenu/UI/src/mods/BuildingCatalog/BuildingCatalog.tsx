@@ -66,7 +66,8 @@ const densityClassNames: Record<AssetMenuDensityTier, string> = {
 
 /**
  * Memoised, and takes no props: it re-renders on its own bindings only, not on
- * every drag echo or keystroke that re-renders the asset menu around it.
+ * every height-drag echo or keystroke that re-renders the asset menu around it.
+ * A width drag does re-render it, since the table's columns follow the width.
  */
 export const BuildingCatalogComponent = memo(function BuildingCatalogComponent() {
   const { translate } = useLocalization();

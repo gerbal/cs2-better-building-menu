@@ -93,7 +93,7 @@ namespace BetterBuildingMenu.Tests
 			AppendNumber(ts, "ASSET_MENU_MAX_HEIGHT", AssetMenuHeight.Max);
 			AppendNumber(ts, "ASSET_MENU_DEFAULT_HEIGHT", AssetMenuHeight.Default);
 
-			ts.Append("\n/** AssetMenuWidth.Max: the width the build menu and its control pane are drawn at. */\n");
+			ts.Append("\n/** AssetMenuWidth.Max: the band the build menu and its control pane may fill. */\n");
 			AppendNumber(ts, "ASSET_MENU_MAX_WIDTH", AssetMenuWidth.Max);
 
 			ts.Append("\n/** AssetMenuCatalogWidth: the build menu's narrowest width, the value that means fill, and how near the room a drag must end to fill. */\n");
