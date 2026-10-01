@@ -8,6 +8,7 @@ import { useTextScale } from "domain/textScaleSetting";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
   ASSET_MENU_CHROME_WIDTH,
+  catalogLayoutWidth,
   getAssetMenuCatalogMaxHeight,
   ASSET_MENU_IDENTITY_MIN,
   CONTROL_PANE_TOTAL,
@@ -30,6 +31,7 @@ import { getAssetMenuAnchorKey, getAssetMenuView, setAssetMenuAnchor, setAssetMe
 // The view mode is shared with the control plane, which is a sibling of this
 // asset menu rather than a descendant, so it goes through the subscribing hook.
 import { useAssetMenuView } from "mods/useAssetMenuView";
+import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
 import { GroupedResults, type CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import { DEFAULT_VIEW_MODE } from "mods/GroupedResults/ViewModeBar";
 import {
@@ -46,7 +48,6 @@ import {
   BuildingCatalogSortDescending$,
   AssetMenuFacets$,
   CurrentSearch$,
-  AssetMenuWidth$,
   send,
   sendSort,
 } from "mods/bindings";
@@ -67,7 +68,9 @@ const densityClassNames: Record<AssetMenuDensityTier, string> = {
  */
 export const BuildingCatalogComponent = memo(function BuildingCatalogComponent() {
   const { translate } = useLocalization();
-  const assetMenuWidth = useValue(AssetMenuWidth$);
+  // The build menu as drawn, plus the pane: the row the table arithmetic was tuned
+  // against, so the default width budgets exactly as it always has.
+  const layoutWidth = catalogLayoutWidth(useAssetMenuLayout().menuWidth);
   const currentSearch = useValue(CurrentSearch$);
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
@@ -102,14 +105,14 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
     metricRanges,
   });
 
-  const density = getAssetMenuDensity(assetMenuWidth + ASSET_MENU_CHROME_WIDTH);
+  const density = getAssetMenuDensity(layoutWidth);
   // One set of numbers for the header and every row: a table with no CSS grid
   // lines up only because both read the same widths. Figures do not scale with
   // the build menu but do with the game's text scale.
   const textScale = useTextScale();
   const columnWidths = useMemo(
-    () => getAssetMenuColumnWidths(assetMenuWidth + ASSET_MENU_CHROME_WIDTH, textScale),
-    [assetMenuWidth, textScale]
+    () => getAssetMenuColumnWidths(layoutWidth, textScale),
+    [layoutWidth, textScale]
   );
   // The widths are estimates and stay estimates: the row is a flex layout whose
   // column bases already exceed the room beside the name, so cells shrink to
@@ -118,12 +121,13 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
     width: `${columnWidths[metric]}rem`,
     flexBasis: `${columnWidths[metric]}rem`,
   }), [columnWidths]);
-  // The width the NAME actually gets. assetMenuWidth is NOT the build menu: it is
-  // the whole assembly, control pane included, so the pane comes off here as it
-  // does in AssetMenu. Erring small shortens sooner, never later.
+  // The width the NAME actually gets: the layout width less the pane and the
+  // chrome is the build menu, then the columns and the row's furniture come off.
+  // Erring small shortens sooner, never later.
   const nameWidth = Math.max(
     ASSET_MENU_IDENTITY_MIN - ASSET_MENU_TABLE_ROW_FURNITURE,
-    assetMenuWidth
+    layoutWidth
+      - ASSET_MENU_CHROME_WIDTH
       - CONTROL_PANE_TOTAL
       - Object.values(columnWidths).reduce((total, width) => total + width, 0)
       - ASSET_MENU_TABLE_ROW_FURNITURE

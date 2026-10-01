@@ -134,3 +134,32 @@ describe("the table under a larger text scale", () => {
     assert.equal(scaled, Math.round(base * (21.35 / 14)));
   });
 });
+
+describe("the table follows the build menu's width", () => {
+  // Cost, because its column has a range (76 to 100); upkeep's minimum is its maximum.
+  const costWidth = (html: string) => Number(/metricCost[^>]*style="[^"]*width:\s*([0-9.]+)rem/.exec(html)?.[1]);
+
+  beforeEach(() => {
+    resetBindings();
+    resetAssetMenuView();
+    setAssetMenuView({ viewMode: "table" });
+    setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1)], {}));
+    setBinding("BetterBuildingMenu", "AssetMenuWidth", 1441);
+  });
+
+  it("narrows its metric columns when the player narrows the menu", () => {
+    const filling = costWidth(render());
+    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 735);
+    const narrowed = costWidth(render());
+
+    assert.ok(filling > 0 && narrowed > 0, `${filling} and ${narrowed}`);
+    assert.ok(narrowed < filling, `${narrowed} < ${filling}`);
+  });
+
+  it("keeps the columns it has at fill when the pane is hidden: the table's arithmetic counts the pane either way", () => {
+    const shown = costWidth(render());
+    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
+
+    assert.ok(costWidth(render()) >= shown);
+  });
+});
