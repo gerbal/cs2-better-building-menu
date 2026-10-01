@@ -1,6 +1,13 @@
 import { fontSizeRatio } from "./textScale";
 import sizes from "./assetMenuLayout.module.scss";
-import { ASSET_MENU_DEFAULT_HEIGHT, ASSET_MENU_MAX_HEIGHT, ASSET_MENU_MIN_HEIGHT } from "./sharedContracts.generated";
+import {
+  ASSET_MENU_CATALOG_FILL,
+  ASSET_MENU_CATALOG_FILL_SNAP,
+  ASSET_MENU_CATALOG_MIN_WIDTH,
+  ASSET_MENU_DEFAULT_HEIGHT,
+  ASSET_MENU_MAX_HEIGHT,
+  ASSET_MENU_MIN_HEIGHT,
+} from "./sharedContracts.generated";
 
 /**
  * A length assetMenuGeometry.scss states, exported by assetMenuLayout.module.scss,
@@ -272,4 +279,69 @@ export function pxPerRemFrom(heightPx: number | null | undefined, heightRem: num
   }
 
   return heightPx / heightRem;
+}
+
+/** The build menu's width range and its fill value: AssetMenuCatalogWidth's, generated. */
+export { ASSET_MENU_CATALOG_FILL, ASSET_MENU_CATALOG_FILL_SNAP, ASSET_MENU_CATALOG_MIN_WIDTH };
+
+/** The width strip's width, which a width drag measures rem against. */
+export const ASSET_MENU_WIDTH_HANDLE_WIDTH = sheetRem("widthHandleWidth");
+
+/** The room the build menu has: the band, less the control pane while it is shown. */
+export function catalogRoom(bandWidth: number, paneShown: boolean): number {
+  return paneShown ? bandWidth - CONTROL_PANE_TOTAL : bandWidth;
+}
+
+/**
+ * The width the build menu draws at. Fill takes the room; a chosen width is held
+ * at the minimum or above and at the room or below, so a width chosen with the
+ * pane hidden draws narrower beside the pane and comes back when it goes.
+ */
+export function resolveCatalogWidth(chosen: number, bandWidth: number, paneShown: boolean): number {
+  const room = catalogRoom(bandWidth, paneShown);
+  if (!Number.isFinite(chosen) || chosen <= ASSET_MENU_CATALOG_FILL) return room;
+  return Math.min(room, Math.max(ASSET_MENU_CATALOG_MIN_WIDTH, chosen));
+}
+
+/**
+ * The width a drag from `startX` to `currentX` asks for. The strip is on the right
+ * edge, so moving right widens. Clamped here rather than resolved, because a drag
+ * far to the left would otherwise reach zero, which reads as fill.
+ */
+export function draggedCatalogWidth(
+  startWidth: number,
+  startX: number,
+  currentX: number,
+  bandWidth: number,
+  paneShown: boolean,
+  pxPerRem?: number
+): number {
+  const delta = Number.isFinite(startX) && Number.isFinite(currentX) ? currentX - startX : 0;
+  const scale = pxPerRem !== undefined && Number.isFinite(pxPerRem) && pxPerRem > 0 ? pxPerRem : REM_IN_PX_AT_720P;
+  const raw = startWidth + delta / scale;
+  if (!Number.isFinite(raw)) return startWidth;
+  return Math.min(catalogRoom(bandWidth, paneShown), Math.max(ASSET_MENU_CATALOG_MIN_WIDTH, raw));
+}
+
+/** What a drag that ended at `width` stores: fill when it ended against the room, else the width. */
+export function releasedCatalogWidth(width: number, bandWidth: number, paneShown: boolean): number {
+  return width >= catalogRoom(bandWidth, paneShown) - ASSET_MENU_CATALOG_FILL_SNAP ? ASSET_MENU_CATALOG_FILL : width;
+}
+
+/**
+ * The row's width: the build menu, and the pane beside it while shown. Sized to
+ * what it holds, so no empty stretch of the row is left to take the mouse.
+ */
+export function assetMenuRowWidth(menuWidth: number, paneShown: boolean): number {
+  return paneShown ? menuWidth + CONTROL_PANE_TOTAL : menuWidth;
+}
+
+/**
+ * The width the catalog's table arithmetic takes. Its functions were tuned
+ * against the whole row with the pane in it, and they subtract the pane
+ * themselves, so they get the build menu plus the pane, whether or not the pane
+ * is shown. At today's 1,091 that is the 1,476 they always had.
+ */
+export function catalogLayoutWidth(menuWidth: number): number {
+  return menuWidth + CONTROL_PANE_TOTAL;
 }

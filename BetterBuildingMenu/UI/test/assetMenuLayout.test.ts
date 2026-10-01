@@ -16,6 +16,14 @@ import {
   ASSET_MENU_CHROME_WIDTH,
   ASSET_MENU_TABLE_ROW_FURNITURE,
   ASSET_MENU_RESIZE_HANDLE_HEIGHT,
+  ASSET_MENU_CATALOG_FILL,
+  ASSET_MENU_CATALOG_MIN_WIDTH,
+  REM_IN_PX_AT_720P,
+  assetMenuRowWidth,
+  catalogLayoutWidth,
+  draggedCatalogWidth,
+  releasedCatalogWidth,
+  resolveCatalogWidth,
 } from "../src/domain/assetMenuLayout.ts";
 import { ASSET_MENU_MAX_WIDTH } from "../src/domain/sharedContracts.generated.ts";
 
@@ -294,5 +302,72 @@ describe("the metric columns fit the room beside the name", () => {
   it("does not cap where there is room to spare", async () => {
     const { getAssetMenuColumnWidths, ASSET_MENU_COLUMN_MAX } = await import("../src/domain/assetMenuLayout.ts");
     assert.deepEqual(getAssetMenuColumnWidths(3000), ASSET_MENU_COLUMN_MAX);
+  });
+});
+
+// The band at the layout's reference resolution: C#'s width and the UI's chrome.
+const BAND = ASSET_MENU_MAX_WIDTH + ASSET_MENU_CHROME_WIDTH;
+
+describe("the build menu's width", () => {
+  it("fills the room: beside the pane, and the whole band without it", () => {
+    assert.equal(resolveCatalogWidth(ASSET_MENU_CATALOG_FILL, BAND, true), 1091);
+    assert.equal(resolveCatalogWidth(ASSET_MENU_CATALOG_FILL, BAND, false), 1476);
+  });
+
+  it("holds a chosen width between the minimum and the room", () => {
+    assert.equal(resolveCatalogWidth(900, BAND, true), 900);
+    assert.equal(resolveCatalogWidth(100, BAND, true), ASSET_MENU_CATALOG_MIN_WIDTH);
+    assert.equal(resolveCatalogWidth(5000, BAND, false), 1476);
+  });
+
+  it("draws a width that no longer fits at the room, and gives it back when the pane goes", () => {
+    assert.equal(resolveCatalogWidth(1200, BAND, true), 1091);
+    assert.equal(resolveCatalogWidth(1200, BAND, false), 1200);
+  });
+
+  it("reads anything that is not a width as fill", () => {
+    for (const width of [Number.NaN, Number.POSITIVE_INFINITY, -5]) {
+      assert.equal(resolveCatalogWidth(width, BAND, true), 1091, String(width));
+    }
+  });
+
+  it("sizes the row to what it holds, so no empty stretch of it takes the mouse", () => {
+    assert.equal(assetMenuRowWidth(900, true), 900 + CONTROL_PANE_TOTAL);
+    assert.equal(assetMenuRowWidth(900, false), 900);
+  });
+
+  it("hands the table the row it was tuned against, so today's width budgets as before", () => {
+    assert.equal(catalogLayoutWidth(1091), BAND);
+  });
+});
+
+describe("dragging the build menu's width", () => {
+  it("follows the pointer rightward at the measured scale", () => {
+    assert.equal(draggedCatalogWidth(900, 500, 560, BAND, true, 2), 930);
+  });
+
+  it("stops at the minimum however far left it goes, and never wraps round to fill", () => {
+    assert.equal(draggedCatalogWidth(900, 500, -5000, BAND, true, 1), ASSET_MENU_CATALOG_MIN_WIDTH);
+  });
+
+  it("stops at the room", () => {
+    assert.equal(draggedCatalogWidth(900, 500, 5000, BAND, true, 1), 1091);
+    assert.equal(draggedCatalogWidth(900, 500, 5000, BAND, false, 1), 1476);
+  });
+
+  it("falls back to the 720p scale when the strip could not be measured", () => {
+    assert.equal(draggedCatalogWidth(900, 500, 520, BAND, true), 900 + 20 / REM_IN_PX_AT_720P);
+  });
+});
+
+describe("where a width drag lands", () => {
+  it("stores fill when it ends against the room", () => {
+    assert.equal(releasedCatalogWidth(1091, BAND, true), ASSET_MENU_CATALOG_FILL);
+    assert.equal(releasedCatalogWidth(1089.5, BAND, true), ASSET_MENU_CATALOG_FILL);
+    assert.equal(releasedCatalogWidth(1476, BAND, false), ASSET_MENU_CATALOG_FILL);
+  });
+
+  it("stores the width anywhere else", () => {
+    assert.equal(releasedCatalogWidth(1000, BAND, true), 1000);
   });
 });
