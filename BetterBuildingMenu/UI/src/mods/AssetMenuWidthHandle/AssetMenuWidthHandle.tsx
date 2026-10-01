@@ -29,15 +29,21 @@ export interface AssetMenuWidthDrag {
   blocker: JSX.Element | null;
 }
 
+/** What a width drag works from: the width drawn now, and what bounds it. */
+export interface AssetMenuWidthBounds {
+  menuWidth: number;
+  bandWidth: number;
+  paneShown: boolean;
+  /** The view's narrowest width: the drag stops there, as the drawing does. */
+  minWidth: number;
+}
+
 /**
  * The build menu's width drag, run as the height's is: one width a frame through
- * the live binding, and only the release writes the settings file. `menuWidth` is
- * the width drawn now; the band and the pane bound the drag.
+ * the live binding, and only the release writes the settings file.
  */
 export function useAssetMenuWidthDrag(
-  menuWidth: number,
-  bandWidth: number,
-  paneShown: boolean,
+  { menuWidth, bandWidth, paneShown, minWidth }: AssetMenuWidthBounds,
   now: () => number = Date.now
 ): AssetMenuWidthDrag {
   const [isResizing, setIsResizing] = useState(false);
@@ -93,7 +99,7 @@ export function useAssetMenuWidthDrag(
     const state = drag.current;
     if (!state.active) return;
 
-    state.last = draggedCatalogWidth(state.startWidth, state.startX, event.clientX, bandWidth, paneShown, state.pxPerRem);
+    state.last = draggedCatalogWidth(state.startWidth, state.startX, event.clientX, bandWidth, paneShown, state.pxPerRem, minWidth);
     state.moved = state.moved || state.last !== state.startWidth;
     pending.current.width = state.last;
 

@@ -1,7 +1,9 @@
 import { useValue } from "cs2/api";
 
-import { ASSET_MENU_CHROME_WIDTH, assetMenuRowWidth, resolveCatalogWidth } from "domain/assetMenuLayout";
+import { ASSET_MENU_CHROME_WIDTH, assetMenuRowWidth, catalogMinWidth, resolveCatalogWidth } from "domain/assetMenuLayout";
 import { AssetMenuCatalogWidth$, AssetMenuWidth$, ControlPaneShown$ } from "mods/bindings";
+import { DEFAULT_VIEW_MODE } from "mods/GroupedResults/ViewModeBar";
+import { useAssetMenuView } from "mods/useAssetMenuView";
 
 /** The asset menu's widths as drawn now, in rem. */
 export interface AssetMenuLayout {
@@ -12,6 +14,8 @@ export interface AssetMenuLayout {
   /** The row: the build menu and, while shown, the control pane beside it. */
   rowWidth: number;
   paneShown: boolean;
+  /** The narrowest the build menu draws in the current view: the table needs more. */
+  minWidth: number;
 }
 
 /**
@@ -23,7 +27,8 @@ export function useAssetMenuLayout(): AssetMenuLayout {
   const bandWidth = useValue(AssetMenuWidth$) + ASSET_MENU_CHROME_WIDTH;
   const chosenWidth = useValue(AssetMenuCatalogWidth$);
   const paneShown = useValue(ControlPaneShown$);
-  const menuWidth = resolveCatalogWidth(chosenWidth, bandWidth, paneShown);
+  const minWidth = catalogMinWidth(useAssetMenuView((view) => view.viewMode) || DEFAULT_VIEW_MODE);
+  const menuWidth = resolveCatalogWidth(chosenWidth, bandWidth, paneShown, minWidth);
 
-  return { bandWidth, menuWidth, rowWidth: assetMenuRowWidth(menuWidth, paneShown), paneShown };
+  return { bandWidth, menuWidth, rowWidth: assetMenuRowWidth(menuWidth, paneShown), paneShown, minWidth };
 }

@@ -171,6 +171,23 @@ const sumWidths = (widths: AssetMenuColumnWidths): number =>
   Object.values(widths).reduce((total, width) => total + width, 0);
 
 /**
+ * The narrowest build menu the table fits: the metric columns at their minima,
+ * the name's basis, the row's furniture and the chromes. Narrower, the cells
+ * shrink below their minima and clip their figures, so the table is drawn at
+ * least this wide whatever width the player chose.
+ */
+export const ASSET_MENU_TABLE_MIN_WIDTH = sumWidths(ASSET_MENU_COLUMN_MIN)
+  + ASSET_MENU_TABLE_NAME_BASIS
+  + ASSET_MENU_TABLE_ROW_FURNITURE
+  + ASSET_MENU_TABLE_CHROME
+  + ASSET_MENU_CHROME_WIDTH;
+
+/** The narrowest the build menu draws in a view mode: the table's own, or the menu's. */
+export function catalogMinWidth(viewMode: string): number {
+  return viewMode === "table" ? ASSET_MENU_TABLE_MIN_WIDTH : ASSET_MENU_CATALOG_MIN_WIDTH;
+}
+
+/**
  * The seven metric column widths, moving between minimum and comfortable by the
  * ROOM beside the name — every metric cell is flex: 0 0 auto and the name is
  * the only item that yields. The figures scale, so the room is read unscaled.
@@ -295,12 +312,18 @@ export function catalogRoom(bandWidth: number, paneShown: boolean): number {
 /**
  * The width the build menu draws at. Fill takes the room; a chosen width is held
  * at the minimum or above and at the room or below, so a width chosen with the
- * pane hidden draws narrower beside the pane and comes back when it goes.
+ * pane hidden draws narrower beside the pane and comes back when it goes. The
+ * minimum is the view's (catalogMinWidth): the table needs more than the rest.
  */
-export function resolveCatalogWidth(chosen: number, bandWidth: number, paneShown: boolean): number {
+export function resolveCatalogWidth(
+  chosen: number,
+  bandWidth: number,
+  paneShown: boolean,
+  minimum: number = ASSET_MENU_CATALOG_MIN_WIDTH
+): number {
   const room = catalogRoom(bandWidth, paneShown);
   if (!Number.isFinite(chosen) || chosen <= ASSET_MENU_CATALOG_FILL) return room;
-  return Math.min(room, Math.max(ASSET_MENU_CATALOG_MIN_WIDTH, chosen));
+  return Math.min(room, Math.max(minimum, chosen));
 }
 
 /**
@@ -314,13 +337,14 @@ export function draggedCatalogWidth(
   currentX: number,
   bandWidth: number,
   paneShown: boolean,
-  pxPerRem?: number
+  pxPerRem?: number,
+  minimum: number = ASSET_MENU_CATALOG_MIN_WIDTH
 ): number {
   const delta = Number.isFinite(startX) && Number.isFinite(currentX) ? currentX - startX : 0;
   const scale = pxPerRem !== undefined && Number.isFinite(pxPerRem) && pxPerRem > 0 ? pxPerRem : REM_IN_PX_AT_720P;
   const raw = startWidth + delta / scale;
   if (!Number.isFinite(raw)) return startWidth;
-  return Math.min(catalogRoom(bandWidth, paneShown), Math.max(ASSET_MENU_CATALOG_MIN_WIDTH, raw));
+  return Math.min(catalogRoom(bandWidth, paneShown), Math.max(minimum, raw));
 }
 
 /** What a drag that ended at `width` stores: fill when it ended against the room, else the width. */

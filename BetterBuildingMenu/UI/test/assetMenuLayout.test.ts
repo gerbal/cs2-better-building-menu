@@ -19,7 +19,11 @@ import {
   ASSET_MENU_CATALOG_FILL,
   ASSET_MENU_CATALOG_MIN_WIDTH,
   ASSET_MENU_WIDTH_HANDLE_WIDTH,
+  ASSET_MENU_TABLE_MIN_WIDTH,
+  ASSET_MENU_COLUMN_MIN,
   REM_IN_PX_AT_720P,
+  catalogMinWidth,
+  tableColumnRoom,
   assetMenuRowWidth,
   catalogLayoutWidth,
   draggedCatalogWidth,
@@ -381,5 +385,32 @@ describe("where a width drag lands", () => {
 
   it("stores the width anywhere else", () => {
     assert.equal(releasedCatalogWidth(1000, BAND, true), 1000);
+  });
+});
+
+describe("the table's narrowest build menu", () => {
+  const minTotal = Object.values(ASSET_MENU_COLUMN_MIN).reduce((total, width) => total + width, 0);
+
+  it("is the width at which the metric columns' minima fit beside the name", () => {
+    assert.equal(tableColumnRoom(ASSET_MENU_TABLE_MIN_WIDTH + CONTROL_PANE_TOTAL), minTotal);
+    assert.ok(tableColumnRoom(ASSET_MENU_TABLE_MIN_WIDTH - 1 + CONTROL_PANE_TOTAL) < minTotal);
+  });
+
+  it("applies to the table alone, and fits beside the pane", () => {
+    assert.equal(catalogMinWidth("table"), ASSET_MENU_TABLE_MIN_WIDTH);
+    for (const mode of ["grid", "list", "cards", ""]) {
+      assert.equal(catalogMinWidth(mode), ASSET_MENU_CATALOG_MIN_WIDTH, mode);
+    }
+    assert.ok(ASSET_MENU_TABLE_MIN_WIDTH <= BAND - CONTROL_PANE_TOTAL);
+  });
+
+  it("holds a narrower chosen width at the table's minimum, and leaves fill alone", () => {
+    assert.equal(resolveCatalogWidth(735, BAND, true, ASSET_MENU_TABLE_MIN_WIDTH), ASSET_MENU_TABLE_MIN_WIDTH);
+    assert.equal(resolveCatalogWidth(1000, BAND, true, ASSET_MENU_TABLE_MIN_WIDTH), 1000);
+    assert.equal(resolveCatalogWidth(ASSET_MENU_CATALOG_FILL, BAND, true, ASSET_MENU_TABLE_MIN_WIDTH), 1091);
+  });
+
+  it("stops a drag at the table's minimum", () => {
+    assert.equal(draggedCatalogWidth(1000, 500, -5000, BAND, true, 1, ASSET_MENU_TABLE_MIN_WIDTH), ASSET_MENU_TABLE_MIN_WIDTH);
   });
 });

@@ -30,9 +30,10 @@ export interface AssetMenuProps {
 }
 
 export const AssetMenu = ({ onClose }: AssetMenuProps) => {
-  const { bandWidth, menuWidth, rowWidth, paneShown } = useAssetMenuLayout();
+  const layout = useAssetMenuLayout();
+  const { menuWidth, rowWidth, paneShown } = layout;
   const { height: catalogHeight, isResizing, beginResize, blocker } = useAssetMenuHeight();
-  const widthDrag = useAssetMenuWidthDrag(menuWidth, bandWidth, paneShown);
+  const widthDrag = useAssetMenuWidthDrag(layout);
   // The header's modes were tuned against the whole row, pane included, as the
   // table's were; at the default width this is the band, as before.
   const headerWidth = catalogLayoutWidth(menuWidth);

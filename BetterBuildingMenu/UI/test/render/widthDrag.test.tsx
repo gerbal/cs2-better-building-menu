@@ -22,8 +22,8 @@ const nextFrame = () => act(() => {
 let clock = 1000;
 
 let drag: AssetMenuWidthDrag;
-const Probe = ({ width }: { width: number }) => {
-  drag = useAssetMenuWidthDrag(width, BAND, true, () => clock);
+const Probe = ({ width, minWidth = 735 }: { width: number; minWidth?: number }) => {
+  drag = useAssetMenuWidthDrag({ menuWidth: width, bandWidth: BAND, paneShown: true, minWidth }, () => clock);
   return drag.blocker;
 };
 
@@ -34,8 +34,8 @@ const press = (clientX = 500) => act(() => drag.beginResize({ clientX, currentTa
 
 describe("dragging the build menu's width", () => {
   let root: ReactTestRenderer | undefined;
-  const mount = (width = 900) => act(() => {
-    root = create(<Probe width={width} />);
+  const mount = (width = 900, minWidth = 735) => act(() => {
+    root = create(<Probe width={width} minWidth={minWidth} />);
   });
   const blocker = () => root!.root.find((node) => node.props.onMouseUp !== undefined);
   const move = (clientX: number) => act(() => blocker().props.onMouseMove({ clientX }));
@@ -75,6 +75,15 @@ describe("dragging the build menu's width", () => {
 
     assert.deepEqual(widths(), [850]);
     assert.equal(names().at(-1), "CommitAssetMenuCatalogWidth");
+  });
+
+  it("stops at the minimum it is given, as the table's is", () => {
+    mount(1000, 944);
+    press();
+    move(-5000);
+    release();
+
+    assert.deepEqual(widths(), [944]);
   });
 
   it("stores fill when the drag ends against the room", () => {
