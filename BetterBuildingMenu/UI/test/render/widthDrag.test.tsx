@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { resetBindings, triggers } from "../harness/stubs/cs2-api";
-import { ASSET_MENU_CATALOG_FILL, draggedCatalogWidth } from "../../src/domain/assetMenuLayout";
+import { ASSET_MENU_CATALOG_DEFAULT, ASSET_MENU_CATALOG_FULL, draggedCatalogWidth } from "../../src/domain/assetMenuLayout";
 import {
   AssetMenuWidthHandle,
   DOUBLE_PRESS_MS,
@@ -10,7 +10,7 @@ import {
   type AssetMenuWidthDrag,
 } from "../../src/mods/AssetMenuWidthHandle/AssetMenuWidthHandle";
 
-// The band at the reference resolution; the pane is shown, so the room is 1,091.
+// The band at the reference resolution; with the pane shown the room is 1,091.
 const BAND = 1476;
 const globals = globalThis as unknown as Record<string, unknown>;
 let frames: Array<(() => void) | null> = [];
@@ -22,23 +22,24 @@ const nextFrame = () => act(() => {
 let clock = 1000;
 
 let drag: AssetMenuWidthDrag;
-const Probe = ({ width }: { width: number }) => {
-  drag = useAssetMenuWidthDrag({ menuWidth: width, bandWidth: BAND, paneShown: true }, () => clock);
+const Probe = ({ width, paneShown }: { width: number; paneShown: boolean }) => {
+  drag = useAssetMenuWidthDrag({ menuWidth: width, bandWidth: BAND, paneShown }, () => clock);
   return drag.blocker;
 };
 
 const widths = () => triggers.filter((call) => call.name === "SetAssetMenuCatalogWidth").map((call) => call.args[0]);
 const names = () => triggers.map((call) => call.name);
 // The strip is drawn 10px wide, so a pixel is a rem here.
-const press = (clientX = 500) => act(() => drag.beginResize({ clientX, currentTarget: { getBoundingClientRect: () => ({ width: 10 }) } }));
+const press = (clientX = 500, button = 0) =>
+  act(() => drag.beginResize({ button, clientX, currentTarget: { getBoundingClientRect: () => ({ width: 10 }) } }));
 
 describe("dragging the build menu's width", () => {
   let root: ReactTestRenderer | undefined;
-  const mount = (width = 900) => act(() => {
-    root = create(<Probe width={width} />);
+  const mount = (width = 900, paneShown = true) => act(() => {
+    root = create(<Probe width={width} paneShown={paneShown} />);
   });
   const blocker = () => root!.root.find((node) => node.props.onMouseUp !== undefined);
-  const move = (clientX: number) => act(() => blocker().props.onMouseMove({ clientX }));
+  const move = (clientX: number, buttons = 1) => act(() => blocker().props.onMouseMove({ clientX, buttons }));
   const release = () => act(() => blocker().props.onMouseUp());
 
   beforeEach(() => {
@@ -83,7 +84,7 @@ describe("dragging the build menu's width", () => {
     move(5000);
     release();
 
-    assert.deepEqual(widths(), [ASSET_MENU_CATALOG_FILL]);
+    assert.deepEqual(widths(), [ASSET_MENU_CATALOG_DEFAULT]);
   });
 
   it("changes nothing on a press and release that never moved", () => {
@@ -102,7 +103,7 @@ describe("dragging the build menu's width", () => {
     press();
 
     assert.deepEqual(names(), ["SetAssetMenuCatalogWidth", "CommitAssetMenuCatalogWidth"]);
-    assert.deepEqual(widths(), [ASSET_MENU_CATALOG_FILL]);
+    assert.deepEqual(widths(), [ASSET_MENU_CATALOG_DEFAULT]);
     assert.equal(drag.isResizing, false, "the second press starts no drag");
   });
 
@@ -115,6 +116,47 @@ describe("dragging the build menu's width", () => {
     assert.deepEqual(names(), []);
   });
 
+  it("fills the whole band on a double press with the pane hidden", () => {
+    mount(900, false);
+    press();
+    release();
+    clock += 100;
+    press();
+
+    assert.deepEqual(widths(), [ASSET_MENU_CATALOG_FULL]);
+  });
+
+  it("stores full when a drag with the pane hidden ends against the room", () => {
+    mount(900, false);
+    press();
+    move(5000);
+    release();
+
+    assert.deepEqual(widths(), [ASSET_MENU_CATALOG_FULL]);
+  });
+
+  it("starts a drag on a press that comes a double press's time after a click", () => {
+    mount();
+    press();
+    release();
+    clock += DOUBLE_PRESS_MS;
+    press();
+
+    assert.equal(drag.isResizing, true);
+    assert.deepEqual(names(), []);
+  });
+
+  it("sends nothing after a release, not even the frame the drag had asked for", () => {
+    mount();
+    press();
+    move(480);
+    release();
+    assert.deepEqual(names(), ["SetAssetMenuCatalogWidth", "CommitAssetMenuCatalogWidth"]);
+
+    nextFrame();
+    assert.equal(names().length, 2);
+  });
+
   it("fills the room on a double press even when the first click wobbled", () => {
     mount();
     press();
@@ -123,7 +165,7 @@ describe("dragging the build menu's width", () => {
     clock += 300;
     press();
 
-    assert.deepEqual(widths(), [ASSET_MENU_CATALOG_FILL]);
+    assert.deepEqual(widths(), [ASSET_MENU_CATALOG_DEFAULT]);
     assert.equal(drag.isResizing, false);
   });
 
@@ -136,7 +178,7 @@ describe("dragging the build menu's width", () => {
     press();
 
     assert.equal(drag.isResizing, true, "the second press starts a drag");
-    assert.ok(!widths().includes(ASSET_MENU_CATALOG_FILL), "nothing filled");
+    assert.ok(!widths().includes(ASSET_MENU_CATALOG_DEFAULT), "nothing filled");
   });
 
   it("starts a new drag on a press soon after a drag that moved", () => {

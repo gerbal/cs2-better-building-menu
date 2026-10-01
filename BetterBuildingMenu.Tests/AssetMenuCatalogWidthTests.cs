@@ -16,9 +16,9 @@ namespace BetterBuildingMenu.Tests
 		[InlineData(float.NegativeInfinity)]
 		[InlineData(0f)]
 		[InlineData(-5f)]
-		public void AnythingThatIsNotAWidthIsFill(float width)
+		public void AnythingThatIsNotAWidthIsTheDefault(float width)
 		{
-			Assert.Equal(AssetMenuCatalogWidth.Fill, AssetMenuCatalogWidth.Sanitize(width));
+			Assert.Equal(AssetMenuCatalogWidth.Default, AssetMenuCatalogWidth.Sanitize(width));
 		}
 
 		[Fact]

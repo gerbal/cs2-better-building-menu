@@ -1,11 +1,12 @@
 import { fontSizeRatio } from "./textScale";
 import sizes from "./assetMenuLayout.module.scss";
 import {
-  ASSET_MENU_CATALOG_FILL,
+  ASSET_MENU_CATALOG_DEFAULT,
   ASSET_MENU_CATALOG_FILL_SNAP,
   ASSET_MENU_CATALOG_MIN_WIDTH,
   ASSET_MENU_DEFAULT_HEIGHT,
   ASSET_MENU_MAX_HEIGHT,
+  ASSET_MENU_MAX_WIDTH,
   ASSET_MENU_MIN_HEIGHT,
 } from "./sharedContracts.generated";
 
@@ -187,9 +188,8 @@ export const ASSET_MENU_COLUMN_DROP_ORDER: readonly AssetMenuMetric[] = [
  * never clipped. A narrow build menu drops the least asked-for first; the column
  * the table is sorted by always stays, and so does at least one.
  *
- * Not the column minima: the table was only ever drawn at the comfortable set
- * before the width could change, and at the minima a network's per-km cost
- * ("¢3,500 /km") clips in every row.
+ * Not the column minima: at the minima a network's per-km cost ("¢3,500 /km")
+ * clips in every row.
  */
 export function visibleTableMetrics(
   outerWidth: number,
@@ -313,20 +313,41 @@ export const REM_IN_PX_AT_720P = 2 / 3;
 export const ASSET_MENU_RESIZE_HANDLE_HEIGHT = sheetRem("handleHeight");
 
 /**
- * Pixels per rem from an element of known rem height as drawn, or undefined when
- * the rect is not a real measurement. Measured on something already laid out:
- * Cohtml answers a rect asked for before layout with zeroes.
+ * Pixels per rem from an element of known rem length as drawn, its height or its
+ * width, or undefined when the rect is not a real measurement. Measured on
+ * something already laid out: Cohtml answers a rect asked for before layout with
+ * zeroes.
  */
-export function pxPerRemFrom(heightPx: number | null | undefined, heightRem: number): number | undefined {
-  if (typeof heightPx !== "number" || !Number.isFinite(heightPx) || heightPx <= 0 || !(heightRem > 0)) {
+export function pxPerRemFrom(lengthPx: number | null | undefined, lengthRem: number): number | undefined {
+  if (typeof lengthPx !== "number" || !Number.isFinite(lengthPx) || lengthPx <= 0 || !(lengthRem > 0)) {
     return undefined;
   }
 
-  return heightPx / heightRem;
+  return lengthPx / lengthRem;
 }
 
-/** The build menu's width range and its fill value: AssetMenuCatalogWidth's, generated. */
-export { ASSET_MENU_CATALOG_FILL, ASSET_MENU_CATALOG_FILL_SNAP, ASSET_MENU_CATALOG_MIN_WIDTH };
+/** The build menu's width range and its default: AssetMenuCatalogWidth's, generated. */
+export { ASSET_MENU_CATALOG_DEFAULT, ASSET_MENU_CATALOG_FILL_SNAP, ASSET_MENU_CATALOG_MIN_WIDTH };
+
+/**
+ * The stored width that fills the room with the pane hidden: the widest the band
+ * ever is, so it is at the room or beyond it at every text scale, and the room is
+ * what draws.
+ */
+export const ASSET_MENU_CATALOG_FULL = ASSET_MENU_MAX_WIDTH + ASSET_MENU_CHROME_WIDTH;
+
+/** Vanilla's tool-side column at the game's own text size, which the row starts beside. */
+export const VANILLA_TOOL_COLUMN_WIDTH = 380;
+
+/**
+ * The band the row may fill: C#'s width and the chrome, less what vanilla's tool
+ * column gains with the text scale. The column grows by half the scale's increase
+ * and pushes the row right, while the social icons stay put at the screen's edge.
+ */
+export function assetMenuBandWidth(cSharpWidth: number, textScale: number): number {
+  const scale = Number.isFinite(textScale) && textScale > 1 ? textScale : 1;
+  return cSharpWidth + ASSET_MENU_CHROME_WIDTH - VANILLA_TOOL_COLUMN_WIDTH * (scale - 1) / 2;
+}
 
 /** The width strip's width, which a width drag measures rem against. */
 export const ASSET_MENU_WIDTH_HANDLE_WIDTH = sheetRem("widthHandleWidth");
@@ -342,9 +363,11 @@ export function catalogRoom(bandWidth: number, paneShown: boolean): number {
 }
 
 /**
- * The width the build menu draws at. Fill takes the room; a chosen width is held
- * at the minimum or above and at the room or below, so a width chosen with the
- * pane hidden draws narrower beside the pane and comes back when it goes.
+ * The width the build menu draws at. The default is the room beside the pane,
+ * shown or hidden, so the toggle changes nothing it has room for. Any other width
+ * is held at the minimum or above and at the room or below: a width wider than
+ * the room beside the pane draws narrower while the pane is shown and comes back
+ * when it goes.
  */
 export function resolveCatalogWidth(
   chosen: number,
@@ -352,8 +375,15 @@ export function resolveCatalogWidth(
   paneShown: boolean
 ): number {
   const room = catalogRoom(bandWidth, paneShown);
-  if (!Number.isFinite(chosen) || chosen <= ASSET_MENU_CATALOG_FILL) return room;
+  if (!Number.isFinite(chosen) || chosen <= ASSET_MENU_CATALOG_DEFAULT) {
+    return Math.min(room, catalogRoom(bandWidth, true));
+  }
   return Math.min(room, Math.max(ASSET_MENU_CATALOG_MIN_WIDTH, chosen));
+}
+
+/** What filling the room in view stores: the default beside the pane, full without it. */
+export function filledCatalogWidth(paneShown: boolean): number {
+  return paneShown ? ASSET_MENU_CATALOG_DEFAULT : ASSET_MENU_CATALOG_FULL;
 }
 
 /**
@@ -376,9 +406,9 @@ export function draggedCatalogWidth(
   return Math.min(catalogRoom(bandWidth, paneShown), Math.max(ASSET_MENU_CATALOG_MIN_WIDTH, raw));
 }
 
-/** What a drag that ended at `width` stores: fill when it ended against the room, else the width. */
+/** What a drag that ended at `width` stores: the room filled when it ended against the room, else the width. */
 export function releasedCatalogWidth(width: number, bandWidth: number, paneShown: boolean): number {
-  return width >= catalogRoom(bandWidth, paneShown) - ASSET_MENU_CATALOG_FILL_SNAP ? ASSET_MENU_CATALOG_FILL : width;
+  return width >= catalogRoom(bandWidth, paneShown) - ASSET_MENU_CATALOG_FILL_SNAP ? filledCatalogWidth(paneShown) : width;
 }
 
 /**
@@ -393,7 +423,7 @@ export function assetMenuRowWidth(menuWidth: number, paneShown: boolean): number
  * The width the catalog's table arithmetic takes. Its functions were tuned
  * against the whole row with the pane in it, and they subtract the pane
  * themselves, so they get the build menu plus the pane, whether or not the pane
- * is shown. At today's 1,091 that is the 1,476 they always had.
+ * is shown.
  */
 export function catalogLayoutWidth(menuWidth: number): number {
   return menuWidth + CONTROL_PANE_TOTAL;

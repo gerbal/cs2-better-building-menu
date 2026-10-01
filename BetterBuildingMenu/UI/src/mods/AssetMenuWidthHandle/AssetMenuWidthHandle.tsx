@@ -3,9 +3,9 @@ import classNames from "classnames";
 import { useEffect, useRef, useState } from "react";
 
 import {
-  ASSET_MENU_CATALOG_FILL,
   ASSET_MENU_WIDTH_HANDLE_WIDTH,
   draggedCatalogWidth,
+  filledCatalogWidth,
   pxPerRemFrom,
   releasedCatalogWidth,
 } from "domain/assetMenuLayout";
@@ -96,7 +96,7 @@ export function useAssetMenuWidthDrag(
   }, []);
 
   function fill(): void {
-    send({ method: "SetAssetMenuCatalogWidth", args: [ASSET_MENU_CATALOG_FILL] });
+    send({ method: "SetAssetMenuCatalogWidth", args: [filledCatalogWidth(paneShown)] });
     send({ method: "CommitAssetMenuCatalogWidth", args: [] });
   }
 

@@ -22,7 +22,6 @@ const TEST_SEAMS: Readonly<Record<string, string>> = {
   SERVICE_FACT_KEYS: "the fact-coverage test compares it with the indexer's keys",
   SERVICE_FACT_LOCALIZATION_KEYS: "the service-facts test checks each key's wording",
   SERVICE_TEXT_FACT_KEYS: "the fact-coverage test compares it with the indexer's keys",
-  ASSET_MENU_MAX_WIDTH: "the widest assembly the column-width tests sweep to",
 };
 
 const withoutComments = (source: string): string =>

@@ -7,7 +7,7 @@ import type { AssetMenuFacetState } from "domain/buildingCatalogFacets";
 import type { AssetMenuMetricRangeState } from "domain/assetMenuFilterSummary";
 import type { Command } from "domain/command";
 import type { MenuBranchCount, MenuCategoryTabs } from "domain/menuProgression";
-import { ASSET_MENU_CATALOG_FILL, ASSET_MENU_DEFAULT_HEIGHT } from "domain/sharedContracts.generated";
+import { ASSET_MENU_CATALOG_DEFAULT, ASSET_MENU_DEFAULT_HEIGHT } from "domain/sharedContracts.generated";
 import type { ToolbarEntity } from "domain/toolbarEntity";
 import { UPSTREAM_FINDIT_GROUP, UPSTREAM_SHOW_PANEL } from "domain/upstreamFindIt";
 import type { MenuCategoryCount, VanillaMenuCategory } from "domain/vanillaMenuCategories";
@@ -60,7 +60,7 @@ export const AssetMenuWidth$ = bindValue<number>(mod.id, "AssetMenuWidth", 0);
 /** The asset menu height the player last dragged to; see BuildingMenuUISystem.AssetMenuSize. */
 export const AssetMenuHeight$ = bindValue<number>(mod.id, "AssetMenuHeight", ASSET_MENU_DEFAULT_HEIGHT);
 /** The build menu's width the player chose, or fill; see BuildingMenuUISystem.AssetMenuSize. */
-export const AssetMenuCatalogWidth$ = bindValue<number>(mod.id, "AssetMenuCatalogWidth", ASSET_MENU_CATALOG_FILL);
+export const AssetMenuCatalogWidth$ = bindValue<number>(mod.id, "AssetMenuCatalogWidth", ASSET_MENU_CATALOG_DEFAULT);
 /** Whether the control pane is shown beside the build menu. */
 export const ControlPaneShown$ = bindValue<boolean>(mod.id, "ControlPaneShown", true);
 export const AssetMenuTileSize$ = bindValue<number>(mod.id, "AssetMenuTileSize", 72);

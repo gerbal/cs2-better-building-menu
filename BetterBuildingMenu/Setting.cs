@@ -38,11 +38,11 @@ namespace BetterBuildingMenu
 
 		/// <summary>
 		/// The build menu's width, set by dragging its right edge, or <see
-		/// cref="Domain.AssetMenuCatalogWidth.Fill"/> to take the room the row has.
+		/// cref="Domain.AssetMenuCatalogWidth.Default"/> for the room beside the control pane.
 		/// </summary>
 		/// <remarks>Hidden like the height, and for the same reason.</remarks>
 		[SettingsUIHidden]
-		public float AssetMenuCatalogWidth { get; set; } = Domain.AssetMenuCatalogWidth.Fill;
+		public float AssetMenuCatalogWidth { get; set; } = Domain.AssetMenuCatalogWidth.Default;
 
 		/// <summary>Whether the control pane beside the build menu is shown, toggled from the menu's header.</summary>
 		[SettingsUIHidden]
@@ -74,7 +74,7 @@ namespace BetterBuildingMenu
 		public override void SetDefaults()
 		{
 			AssetMenuHeight = Domain.AssetMenuHeight.Default;
-			AssetMenuCatalogWidth = Domain.AssetMenuCatalogWidth.Fill;
+			AssetMenuCatalogWidth = Domain.AssetMenuCatalogWidth.Default;
 			ControlPaneShown = true;
 			ReplaceVanillaBuildMenu = true;
 			AutoWidenSearch = false;

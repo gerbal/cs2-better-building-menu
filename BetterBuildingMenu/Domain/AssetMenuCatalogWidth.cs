@@ -2,7 +2,7 @@ namespace BetterBuildingMenu.Domain
 {
 	/// <summary>
 	/// The build menu's width as the player sets it by dragging its right edge, or
-	/// "fill".
+	/// the default.
 	/// </summary>
 	/// <remarks>
 	/// Only kept well-formed here. Which width is drawn depends on whether the control
@@ -12,30 +12,30 @@ namespace BetterBuildingMenu.Domain
 	public static class AssetMenuCatalogWidth
 	{
 		/// <summary>
-		/// The narrowest the build menu draws: the old panel minimum, at which the header
-		/// and a row of cards still fit.
+		/// The narrowest the build menu draws: the header and a row of cards still fit.
 		/// </summary>
 		public const float Min = 735f;
 
-		/// <summary>Not a width: the build menu takes all the room the row has.</summary>
+		/// <summary>Not a width: the build menu takes the room beside the control pane, shown or not.</summary>
 		/// <remarks>
-		/// The default, and the layout from before the width could change. Zero, because no
-		/// real width is zero, so a settings file written before this existed reads as fill.
+		/// Zero, because no real width is zero, and a value the settings file cannot read
+		/// decodes as zero, so it too draws the default.
 		/// </remarks>
-		public const float Fill = 0f;
+		public const float Default = 0f;
 
-		/// <summary>How near the room a drag must end to be stored as fill.</summary>
+		/// <summary>How near the room a drag must end to be stored as filling it.</summary>
 		public const float FillSnap = 2f;
 
 		/// <summary>
-		/// A width fit to keep: anything that is not a width is fill, a width below the
-		/// minimum is the minimum, and any other is kept for the UI to fit to the room.
+		/// A width fit to keep: anything that is not a width is the default, a width
+		/// below the minimum is the minimum, and any other is kept for the UI to fit to
+		/// the room.
 		/// </summary>
 		public static float Sanitize(float width)
 		{
-			if (float.IsNaN(width) || float.IsInfinity(width) || width <= Fill)
+			if (float.IsNaN(width) || float.IsInfinity(width) || width <= Default)
 			{
-				return Fill;
+				return Default;
 			}
 
 			return width < Min ? Min : width;

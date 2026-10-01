@@ -3,6 +3,7 @@ import { beforeEach, describe, it } from "node:test";
 import { act, create } from "react-test-renderer";
 import { setBinding, resetBindings } from "../harness/stubs/cs2-api";
 import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
+import { ASSET_MENU_CATALOG_FULL } from "../../src/domain/assetMenuLayout";
 import { useAssetMenuLayout, type AssetMenuLayout } from "../../src/mods/useAssetMenuLayout";
 
 let layout: AssetMenuLayout;
@@ -28,10 +29,21 @@ describe("the asset menu's layout", () => {
     assert.deepEqual(read(), { bandWidth: 1476, menuWidth: 1091, rowWidth: 1476, paneShown: true });
   });
 
-  it("gives the menu the whole band when the pane is hidden", () => {
+  it("keeps the default width when the pane is hidden, so the toggle moves nothing it has room for", () => {
     setBinding("BetterBuildingMenu", "ControlPaneShown", false);
+    assert.deepEqual(read(), { bandWidth: 1476, menuWidth: 1091, rowWidth: 1091, paneShown: false });
+  });
+
+  it("gives the menu the whole band when the player fills it with the pane hidden", () => {
+    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
+    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", ASSET_MENU_CATALOG_FULL);
     // Less half the width strip, so its outer half stays inside the band.
     assert.deepEqual(read(), { bandWidth: 1476, menuWidth: 1471, rowWidth: 1471, paneShown: false });
+  });
+
+  it("narrows the band by what vanilla's tool column gains at a larger text scale", () => {
+    setBinding("options", "textScale", 1.5);
+    assert.deepEqual(read(), { bandWidth: 1381, menuWidth: 996, rowWidth: 1381, paneShown: true });
   });
 
   it("sizes the row to a chosen width, leaving no empty stretch", () => {

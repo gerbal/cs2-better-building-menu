@@ -77,18 +77,31 @@ and shows or hides the control pane with the button beside the X. Both are saved
 like the height: `AssetMenuCatalogWidth` and `ControlPaneShown`, hidden settings,
 each pushed to its binding.
 
-**Fill.** The width setting holds either a width or `Fill` (0). A filling menu
-takes the room the row has: 1,091 beside the pane at the reference resolution, and
-1,471 without it. That is the band less half the width strip: the strip is centred
-on the menu's edge, and filling the whole band put its outer half over the social
-icons, so a press on their left edge started a drag. Fill is the default, so a
-settings file from before this draws the layout it always did. A drag released within 2 of the room stores fill, and so does
-a second press on the strip soon after the first.
+**The default width, and filling the room.** The width setting holds a width or
+`Default` (0). The default is the room beside the pane, 1,091 at the reference
+resolution, whether the pane is shown or hidden: the toggle changes nothing the
+pane has room for. A width wider than the room beside the pane, which only a drag
+with the pane hidden reaches, draws at that room while the pane is shown and comes
+back when the pane goes, so the menu makes room for the pane and never the other
+way round. The UI resolves this, in `resolveCatalogWidth`, because it depends on
+the pane; C# only keeps the stored value well-formed.
 
-**A chosen width stays put.** If showing the pane leaves less room than the
-player's width, the menu draws at the room and keeps the width for when the pane
-goes. The UI resolves this, in `resolveCatalogWidth`, because it depends on the
-pane; C# only keeps the stored value well-formed.
+Filling the room in view stores the default with the pane shown, and full
+(`ASSET_MENU_CATALOG_FULL`, the widest band there is) with it hidden. A drag
+released within 2 of the room fills it, and so does a second press on the strip
+soon after the first. With the pane hidden the room is the band less half the
+width strip: the strip is centred on the menu's edge, and filling the whole band
+put its outer half over the social icons, so a press on their left edge started a
+drag. A settings file from before any of this reads as the default, which draws
+the layout it always did.
+
+**The band follows the text scale.** Vanilla's tool column, which the row starts
+beside, is 380 wide at the game's own text size and grows by half the text scale's
+increase, while the social icons the band runs up to stay where they are. The band
+shrinks by the same amount (`assetMenuBandWidth`): 1,476 at 100 %, 1,381 at 150 %,
+where the default menu is 996. With a band that ignored the text scale, the row
+ran 47 past the screen's edge at 150 %, and with the pane hidden the menu's X and
+its width strip went with it.
 
 **The row is no wider than what it holds.** A row left at the band's width would
 leave an empty stretch beside a narrow menu. In 0.1.x such a stretch, above the
