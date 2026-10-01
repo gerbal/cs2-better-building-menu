@@ -70,6 +70,40 @@ renders (the screen paints no background behind it) and stays hit-testable.
 Moving the chirper's toasts out of the pane's way would make this unnecessary; see
 [issue #104](https://github.com/gerbal/cs2-better-building-menu/issues/104).
 
+## The asset menu's width and the control pane
+
+The player sets the build menu's width by dragging the strip on its right edge,
+and shows or hides the control pane with the button beside the X. Both are saved
+like the height: `AssetMenuCatalogWidth` and `ControlPaneShown`, hidden settings,
+each pushed to its binding.
+
+**Fill.** The width setting holds either a width or `Fill` (0). A filling menu
+takes the room the row has: 1,091 beside the pane at the reference resolution, and
+1,476 without it. Fill is the default, so a settings file from before this draws the
+layout it always did. A drag released within 2 of the room stores fill, and so does
+a second press on the strip soon after the first.
+
+**A chosen width stays put.** If showing the pane leaves less room than the
+player's width, the menu draws at the room and keeps the width for when the pane
+goes. The UI resolves this, in `resolveCatalogWidth`, because it depends on the
+pane; C# only keeps the stored value well-formed.
+
+**The row is no wider than what it holds.** A row left at the band's width would
+leave an empty stretch beside a narrow menu. In 0.1.x such a stretch, above the
+Upgrades picker, took every click meant for the city.
+
+**The table's arithmetic still counts the pane.** The column widths, the density
+tier and the name budget were tuned against the whole row with the pane in it, so
+they are handed the build menu plus the pane (`catalogLayoutWidth`) whether or not
+the pane is shown. At the default width that is the number they always had.
+
+**Cursors and the double press.** The game draws its own cursors, so the strip
+uses `cursor://horizontal-can-resize` and `cursor://horizontal-resize`, from the
+game's own stylesheet, as the height strip uses the vertical pair. The double press
+is counted in the drag hook rather than left to a `dblclick` listener: the first
+press starts a drag, whose blocker covers the screen, so the second click never
+reaches the strip.
+
 ## Hand-rolled floating surfaces in Cohtml
 
 The filter rail's dropdown surface (`filterRail.module.scss`, `.menu`) states size
