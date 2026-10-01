@@ -115,6 +115,39 @@ describe("dragging the build menu's width", () => {
     assert.equal(drag.isResizing, false, "the second press starts no drag");
   });
 
+  it("keeps a press that wobbles less than the threshold a click", () => {
+    mount();
+    press();
+    move(502);
+    release();
+
+    assert.deepEqual(names(), []);
+  });
+
+  it("fills the room on a double press even when the first click wobbled", () => {
+    mount();
+    press();
+    move(502);
+    release();
+    clock += 300;
+    press();
+
+    assert.deepEqual(widths(), [ASSET_MENU_CATALOG_FILL]);
+    assert.equal(drag.isResizing, false);
+  });
+
+  it("does not take a drag pinned at the minimum for the first half of a double press", () => {
+    mount(735);
+    press();
+    move(400);
+    release();
+    clock += 100;
+    press();
+
+    assert.equal(drag.isResizing, true, "the second press starts a drag");
+    assert.ok(!widths().includes(ASSET_MENU_CATALOG_FILL), "nothing filled");
+  });
+
   it("starts a new drag on a press soon after a drag that moved", () => {
     mount();
     press();

@@ -19,6 +19,14 @@ import styles from "mods/AssetMenuWidthHandle/assetMenuWidthHandle.module.scss";
  */
 export const DOUBLE_PRESS_MS = 400;
 
+/**
+ * How far the pointer must travel, in pixels, before a press becomes a drag. A
+ * hand wobbles a pixel or two inside a click, and that must stay a click: one
+ * counted as a drag would save a width the player never chose and break the
+ * double press that follows.
+ */
+export const DRAG_THRESHOLD_PX = 3;
+
 export interface AssetMenuWidthDrag {
   isResizing: boolean;
   beginResize: (event: any) => void;
@@ -98,9 +106,12 @@ export function useAssetMenuWidthDrag(
   function moveResize(event: any): void {
     const state = drag.current;
     if (!state.active) return;
+    if (!state.moved && Math.abs(event.clientX - state.startX) < DRAG_THRESHOLD_PX) return;
 
+    // Moved, once past the threshold, even when the edge is pinned at a bound:
+    // the player dragged, so the release is no half of a double press.
+    state.moved = true;
     state.last = draggedCatalogWidth(state.startWidth, state.startX, event.clientX, bandWidth, paneShown, state.pxPerRem, minWidth);
-    state.moved = state.moved || state.last !== state.startWidth;
     pending.current.width = state.last;
 
     if (pending.current.frame === 0) {
@@ -117,9 +128,9 @@ export function useAssetMenuWidthDrag(
     state.active = false;
     setIsResizing(false);
 
-    // A press that never moved the edge is a click, and a click on the strip
-    // changes nothing: it must not turn a chosen width into fill. A drag that did
-    // move is no first half of a double press.
+    // A press that never passed the threshold is a click, and a click on the
+    // strip changes nothing: it must not turn a chosen width into fill. A drag is
+    // no first half of a double press.
     if (!state.moved) return;
     lastPress.current = 0;
 
