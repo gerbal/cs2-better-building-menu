@@ -68,6 +68,8 @@ namespace BetterBuildingMenu.Systems
 		private ValueBindingHelper<int> _ActivePrefabId = null!;
 		private ValueBindingHelper<float> _AssetMenuWidth = null!;
 		private ValueBindingHelper<float> _AssetMenuHeight = null!;
+		private ValueBindingHelper<float> _AssetMenuCatalogWidth = null!;
+		private ValueBindingHelper<bool> _ControlPaneShown = null!;
 		private ValueBindingHelper<string> _CurrentSearch = null!;
 		private ValueBindingHelper<BuildingCatalogPage> _BuildingCatalogBinding = null!;
 		/// <summary>
@@ -167,6 +169,12 @@ namespace BetterBuildingMenu.Systems
 			_AssetMenuHeight = CreateBinding(
 				"AssetMenuHeight",
 				AssetMenuHeight.Clamp(Mod.Settings.AssetMenuHeight));
+			// Seeded from the settings like the height, so the first frame draws the
+			// player's width and pane rather than flashing the defaults.
+			_AssetMenuCatalogWidth = CreateBinding(
+				"AssetMenuCatalogWidth",
+				AssetMenuCatalogWidth.Sanitize(Mod.Settings.AssetMenuCatalogWidth));
+			_ControlPaneShown = CreateBinding("ControlPaneShown", Mod.Settings.ControlPaneShown);
 			_CurrentSearch = CreateBinding("CurrentSearch", string.Empty);
 			_BuildingCatalogBinding = CreateBinding("BuildingCatalog", new BuildingCatalogPage(
 				Array.Empty<BuildingCatalogEntry>(),
@@ -247,6 +255,9 @@ namespace BetterBuildingMenu.Systems
 				CreateTrigger<string>("SetAssetMenu", SetAssetMenu);
 			CreateTrigger<float>("SetAssetMenuHeight", SetAssetMenuHeight);
 			CreateTrigger("CommitAssetMenuHeight", CommitAssetMenuHeight);
+			CreateTrigger<float>("SetAssetMenuCatalogWidth", SetAssetMenuCatalogWidth);
+			CreateTrigger("CommitAssetMenuCatalogWidth", CommitAssetMenuCatalogWidth);
+			CreateTrigger<bool>("SetControlPaneShown", SetControlPaneShown);
 		}
 
 		protected override void OnDestroy()
@@ -280,6 +291,11 @@ namespace BetterBuildingMenu.Systems
 		{
 			_AssetMenuTileSize.Value = Mod.Settings.AssetMenuTileSize;
 			_ReplaceVanillaBuildMenu.Value = Mod.Settings.ReplaceVanillaBuildMenu;
+			// The sizes too, so an Options reset (SetDefaults) redraws the asset menu at
+			// once rather than at the next drag. The height was missed here before.
+			_AssetMenuHeight.Value = AssetMenuHeight.Clamp(Mod.Settings.AssetMenuHeight);
+			_AssetMenuCatalogWidth.Value = AssetMenuCatalogWidth.Sanitize(Mod.Settings.AssetMenuCatalogWidth);
+			_ControlPaneShown.Value = Mod.Settings.ControlPaneShown;
 
 			// Switched off with the asset menu up: the menu goes back to its vanilla grid now
 			// rather than at the next click.
