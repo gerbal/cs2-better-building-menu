@@ -1,10 +1,18 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
+import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { renderHtml, entry, catalogPage } from "../harness/render";
 import { setBinding, resetBindings } from "../harness/stubs/cs2-api";
 import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
 import { FALLBACK_SEPARATORS, groupDigits } from "../../src/domain/assetMenuMetricFormat";
+import {
+  ASSET_MENU_CHROME_WIDTH,
+  ASSET_MENU_COLUMN_MAX,
+  ASSET_MENU_TABLE_ROW_FURNITURE,
+  type AssetMenuMetric,
+} from "../../src/domain/assetMenuLayout";
+import { shortenTileLabel, tableLabelCharBudget } from "../../src/domain/tileLabel";
 
 const page = (over: Record<string, unknown> = {}) =>
   setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1), entry(2)], over));
@@ -166,10 +174,96 @@ describe("the table follows the build menu's width", () => {
     assert.match(render(), /metricParking/);
   });
 
+  it("keeps the lot column when sorted by lot depth, as by lot width: one cell shows both", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 735);
+    setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", "LotDepth");
+
+    assert.match(render(), /metricLot/);
+  });
+
   it("keeps the columns it has at fill when the pane is hidden: the table's arithmetic counts the pane either way", () => {
     const shown = costWidth(render());
     setBinding("BetterBuildingMenu", "ControlPaneShown", false);
 
     assert.ok(costWidth(render()) >= shown);
+  });
+});
+
+describe("the table's names follow the build menu's width", () => {
+  // Long enough to be shortened at every width the menu reaches.
+  const name = "Regional Transit Interchange with Underground Parking, Bus Terminal and Rooftop Gardens Extension";
+  // The room the name has: the build menu, less its chrome, the columns at their
+  // comfortable widths and the row's furniture.
+  const shortenedAt = (menuWidth: number, metrics: AssetMenuMetric[]) => shortenTileLabel(
+    name,
+    tableLabelCharBudget(
+      menuWidth - ASSET_MENU_CHROME_WIDTH
+        - metrics.reduce((total, metric) => total + ASSET_MENU_COLUMN_MAX[metric], 0)
+        - ASSET_MENU_TABLE_ROW_FURNITURE
+    )
+  );
+  const ALL: AssetMenuMetric[] = ["cost", "upkeep", "workers", "capacity", "lot", "level", "parking"];
+
+  beforeEach(() => {
+    resetBindings();
+    resetAssetMenuView();
+    setAssetMenuView({ viewMode: "table" });
+    setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1, { name })], {}));
+    setBinding("BetterBuildingMenu", "AssetMenuWidth", 1441);
+  });
+
+  it("gives the name what the default width leaves beside the columns", () => {
+    const expected = shortenedAt(1091, ALL);
+    assert.notEqual(expected, name);
+    assert.ok(render().includes(expected), expected);
+  });
+
+  it("gives the name what a narrow menu leaves beside the columns it keeps", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 735);
+    assert.ok(render().includes(shortenedAt(735, ["cost", "upkeep"])));
+  });
+
+  it("gives a wide menu with the pane hidden its own room, counted without the pane", () => {
+    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
+    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 1300);
+    const expected = shortenedAt(1300, ALL);
+    assert.notEqual(expected, shortenedAt(1091, ALL));
+    assert.ok(render().includes(expected), expected);
+  });
+});
+
+describe("the table while the build menu's width is dragged", () => {
+  const globals = globalThis as unknown as Record<string, unknown>;
+  let saved: unknown;
+  let root: ReactTestRenderer | undefined;
+
+  beforeEach(() => {
+    resetBindings();
+    resetAssetMenuView();
+    setAssetMenuView({ viewMode: "table" });
+    setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1)], {}));
+    setBinding("BetterBuildingMenu", "AssetMenuWidth", 1441);
+    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
+    saved = globals.document;
+    globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined, querySelector: () => null };
+    globals.requestAnimationFrame = () => 0;
+    globals.cancelAnimationFrame = () => undefined;
+  });
+
+  it("hands the rows the same columns while a new width changes none of them", () => {
+    // Every row is memoised: new column props each frame would redraw them all.
+    act(() => {
+      root = create(<BuildingCatalogComponent />);
+    });
+    const row = () => root!.root.find((node) => node.props.columnStyle !== undefined && node.props.entry !== undefined).props;
+    const before = row();
+
+    act(() => setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 1300));
+    const after = row();
+    act(() => root?.unmount());
+    globals.document = saved;
+
+    assert.equal(after.metrics, before.metrics);
+    assert.equal(after.columnStyle, before.columnStyle);
   });
 });

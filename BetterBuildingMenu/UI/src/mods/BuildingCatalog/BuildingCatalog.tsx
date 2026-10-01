@@ -19,11 +19,11 @@ import {
   getAssetMenuMetricTextScale,
   visibleTableMetrics,
 } from "domain/assetMenuLayout";
-import type { AssetMenuDensityTier, AssetMenuMetric } from "domain/assetMenuLayout";
+import type { AssetMenuColumnWidths, AssetMenuDensityTier, AssetMenuMetric } from "domain/assetMenuLayout";
 import { catalogWindowRemaining, loadMoreCount } from "domain/catalogWindow";
 import { getNumberSeparators, groupDigits } from "domain/assetMenuMetricFormat";
 import type { SortColumn } from "domain/buildingCatalogContracts";
-import { ASSET_MENU_COLUMN_SORT } from "domain/assetMenuSortPresentation";
+import { sortedMetricFor } from "domain/sortedMetric";
 import { getAssetMenuEmptyStateMessage } from "domain/assetMenuFilterSummary";
 import { assetMenuPort } from "domain/assetMenuPort";
 import { enterDecision, getSearchScopeNotice, isEnterForSearch, isPlainEnter } from "domain/buildingSearchRank";
@@ -72,7 +72,7 @@ const densityClassNames: Record<AssetMenuDensityTier, string> = {
 export const BuildingCatalogComponent = memo(function BuildingCatalogComponent() {
   const { translate } = useLocalization();
   // The build menu as drawn, plus the pane: the row the table arithmetic was tuned
-  // against, so the default width budgets exactly as it always has.
+  // against, which subtracts the pane itself.
   const layoutWidth = catalogLayoutWidth(useAssetMenuLayout().menuWidth);
   const currentSearch = useValue(CurrentSearch$);
   const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
@@ -115,16 +115,13 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   const textScale = useTextScale();
   // The columns the table draws at this width: a narrow menu drops the least
   // asked-for rather than clip their figures, and never the one sorted by.
-  const sortedMetric = (Object.keys(ASSET_MENU_COLUMN_SORT) as AssetMenuMetric[])
-    .find((metric) => ASSET_MENU_COLUMN_SORT[metric] === sortColumn) ?? null;
-  const tableMetrics = useMemo(
-    () => visibleTableMetrics(layoutWidth, textScale, sortedMetric),
-    [layoutWidth, textScale, sortedMetric]
-  );
-  const columnWidths = useMemo(
-    () => getAssetMenuColumnWidths(layoutWidth, textScale, tableMetrics),
-    [layoutWidth, textScale, tableMetrics]
-  );
+  const sortedMetric = sortedMetricFor(sortColumn);
+  // Kept by value, not by width: a width drag changes the width every frame, and
+  // new column props would redraw every memoised row even where nothing moved.
+  const metricsKey = visibleTableMetrics(layoutWidth, textScale, sortedMetric).join(",");
+  const tableMetrics = useMemo(() => metricsKey.split(",") as AssetMenuMetric[], [metricsKey]);
+  const widthsKey = JSON.stringify(getAssetMenuColumnWidths(layoutWidth, textScale, tableMetrics));
+  const columnWidths = useMemo(() => JSON.parse(widthsKey) as AssetMenuColumnWidths, [widthsKey]);
   // The widths are estimates and stay estimates: the row is a flex layout whose
   // column bases already exceed the room beside the name, so cells shrink to
   // what the row allows and an inline width is not what gets drawn.
@@ -309,7 +306,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
       data-catalog-max-height={catalogMaxHeight}
     >
       {/* No toolbar band here. Identity, grouping, sort and view live in
-          ControlPane, which is on screen at every asset menu height. */}
+          ControlPane, beside the menu at every height while the player shows it. */}
 
       {/* No filter chrome either: the rail and the active-filter chips are the
           control plane's, so this component draws results and nothing else. */}
