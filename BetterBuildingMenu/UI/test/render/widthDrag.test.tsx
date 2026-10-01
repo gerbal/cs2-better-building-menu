@@ -157,6 +157,35 @@ describe("dragging the build menu's width", () => {
     assert.equal(names().length, 2);
   });
 
+  it("leaves a press with any button but the left alone", () => {
+    mount();
+    press(500, 2);
+
+    assert.equal(drag.isResizing, false);
+  });
+
+  it("takes no right press for the first half of a double press", () => {
+    mount();
+    press(500, 2);
+    clock += 100;
+    press();
+
+    assert.equal(drag.isResizing, true, "the left press starts a drag");
+    assert.deepEqual(widths(), []);
+  });
+
+  it("ends the drag where the button was last held when a move says none is", () => {
+    // A release the blocker never saw, such as one outside the window.
+    mount();
+    press();
+    move(480);
+    move(470, 0);
+
+    assert.deepEqual(names(), ["SetAssetMenuCatalogWidth", "CommitAssetMenuCatalogWidth"]);
+    assert.deepEqual(widths(), [880]);
+    assert.equal(drag.isResizing, false);
+  });
+
   it("fills the room on a double press even when the first click wobbled", () => {
     mount();
     press();
@@ -231,9 +260,11 @@ describe("the width strip", () => {
   const strip = (active: boolean, onBeginResize: (event: unknown) => void = () => undefined) =>
     create(<AssetMenuWidthHandle active={active} onBeginResize={onBeginResize} />);
 
-  it("says what it is for, and shows the grip pressed while a drag is on", () => {
+  it("says what it is for in the game's own tooltip, and shows the grip pressed while a drag is on", () => {
     const idle = strip(false).root;
-    assert.equal(idle.findByProps({ className: "widthHandle" }).props.title, "Drag to resize, double-click to fill the space");
+    // The game draws no title attribute, so the hint goes through its Tooltip.
+    assert.equal(idle.findByProps({ className: "widthHandle" }).props.title, undefined);
+    assert.deepEqual(idle.findByProps({ "data-tooltip": "true" }).children, ["Drag to resize, double-click to fill the space"]);
     assert.equal(idle.findAll((node) => node.props.className === "widthGrip").length, 1);
 
     assert.equal(strip(true).root.findAll((node) => node.props.className === "widthGrip widthGripActive").length, 1);

@@ -65,6 +65,22 @@ describe("dragging the asset menu's height", () => {
     assert.deepEqual(heights(), [expected(470)]);
   });
 
+  it("ends the drag where the button was last held when a move says none is", () => {
+    move(490);
+    act(() => root!.root.find((node) => node.props.onMouseMove).props.onMouseMove({ clientY: 480, buttons: 0 }));
+
+    assert.deepEqual(heights(), [expected(490)]);
+    assert.equal(names().at(-1), "CommitAssetMenuHeight");
+    assert.equal(assetMenu.isResizing, false);
+  });
+
+  it("leaves a press with any button but the left alone", () => {
+    release();
+    act(() => assetMenu.beginResize({ button: 2, clientY: 500, currentTarget: { getBoundingClientRect: () => ({ height: 14 }) } }));
+
+    assert.equal(assetMenu.isResizing, false);
+  });
+
   it("sends where the drag ended before it commits", () => {
     move(490);
     nextFrame();

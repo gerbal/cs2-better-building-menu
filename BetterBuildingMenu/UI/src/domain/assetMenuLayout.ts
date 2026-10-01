@@ -309,6 +309,14 @@ export function draggedAssetMenuHeight(
  */
 export const REM_IN_PX_AT_720P = 2 / 3;
 
+/**
+ * Whether a press starts a drag: the left button only, as the game's own drags
+ * have it. A press that names no button counts as the left.
+ */
+export function isPrimaryPress(event: { button?: number } | null | undefined): boolean {
+  return event?.button === undefined || event.button === 0;
+}
+
 /** The resize strip's height, which a drag measures rem against. */
 export const ASSET_MENU_RESIZE_HANDLE_HEIGHT = sheetRem("handleHeight");
 

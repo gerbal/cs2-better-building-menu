@@ -1,3 +1,4 @@
+import { Tooltip } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import { useEffect, useRef, useState } from "react";
@@ -6,6 +7,7 @@ import {
   ASSET_MENU_WIDTH_HANDLE_WIDTH,
   draggedCatalogWidth,
   filledCatalogWidth,
+  isPrimaryPress,
   pxPerRemFrom,
   releasedCatalogWidth,
 } from "domain/assetMenuLayout";
@@ -14,8 +16,8 @@ import styles from "mods/AssetMenuWidthHandle/assetMenuWidthHandle.module.scss";
 
 /**
  * How soon a second press must follow the first to fill the room again. Counted
- * here, not left to a dblclick listener: a press that starts a drag covers the
- * screen with the blocker, so the second click never reaches the strip.
+ * here, not left to a dblclick listener: the first press puts the blocker up, so
+ * its release lands there and the strip never sees a whole click.
  */
 export const DOUBLE_PRESS_MS = 400;
 
@@ -101,6 +103,7 @@ export function useAssetMenuWidthDrag(
   }
 
   function beginResize(event: any): void {
+    if (!isPrimaryPress(event)) return;
     event.preventDefault?.();
     event.stopPropagation?.();
 
@@ -123,6 +126,11 @@ export function useAssetMenuWidthDrag(
   function moveResize(event: any): void {
     const state = drag.current;
     if (!state.active) return;
+    // A release the blocker never saw, such as one outside the window.
+    if (event.buttons === 0) {
+      endResize();
+      return;
+    }
     if (!state.moved && Math.abs(event.clientX - state.startX) < DRAG_THRESHOLD_PX) return;
 
     // Moved, once past the threshold, even when the edge is pinned at a bound:
@@ -167,18 +175,20 @@ export interface AssetMenuWidthHandleProps {
   onBeginResize: (event: any) => void;
 }
 
-/** The strip on the build menu's right edge: drag for the width, press twice to fill the room again. */
+/**
+ * The strip on the build menu's right edge: drag for the width, press twice to
+ * fill the room again. Its hint is the game's Tooltip: the game draws no title
+ * attribute, and the double press is told nowhere else.
+ */
 export const AssetMenuWidthHandle = ({ active, onBeginResize }: AssetMenuWidthHandleProps) => {
   const { translate } = useLocalization();
   const fallback = "Drag to resize, double-click to fill the space";
 
   return (
-    <div
-      className={styles.widthHandle}
-      onMouseDown={onBeginResize}
-      title={translate("Tooltip.LABEL[BetterBuildingMenu.ResizeWidth]", fallback) ?? fallback}
-    >
-      <div className={classNames(styles.widthGrip, active && styles.widthGripActive)} />
-    </div>
+    <Tooltip tooltip={translate("Tooltip.LABEL[BetterBuildingMenu.ResizeWidth]", fallback) ?? fallback}>
+      <div className={styles.widthHandle} onMouseDown={onBeginResize}>
+        <div className={classNames(styles.widthGrip, active && styles.widthGripActive)} />
+      </div>
+    </Tooltip>
   );
 };

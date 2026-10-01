@@ -122,14 +122,17 @@ every row, even at the columns' minima. A first version kept the table at least
 and the View control just clicked, out from under the cursor. At the default width
 all seven still fit; at 125 % text, four do.
 
-**Cursors and the double press.** The game draws its own cursors, so the strip
-uses `cursor://horizontal-can-resize` and `cursor://horizontal-resize`, from the
-game's own stylesheet, as the height strip uses the vertical pair. The double press
-is counted in the drag hook rather than left to a `dblclick` listener: the first
-press starts a drag, whose blocker covers the screen, so the second click never
-reaches the strip. A press becomes a drag only once the pointer has moved three
-pixels, so the wobble inside a click neither saves a width nor spoils the double
-press.
+**Cursors, the double press and the hint.** The game draws its own cursors, so
+the strip uses `cursor://horizontal-can-resize` and `cursor://horizontal-resize`,
+from the game's own stylesheet, as the height strip uses the vertical pair. The
+double press is counted in the drag hook rather than left to a `dblclick`
+listener: the first press puts up the blocker, which covers the screen, so its
+release lands there and the strip never sees a whole click. A press becomes a drag
+only once the pointer has moved three pixels, so the wobble inside a click neither
+saves a width nor spoils the double press. Only the left button drags, as in the
+game's own drags, and a move that reports no button held ends the drag where it
+was, for a release the blocker never saw. The strip's hint is the game's Tooltip:
+the game draws no `title` attribute, and the double press is told nowhere else.
 
 **A drag cut short is saved.** If the asset menu closes mid-drag, by a key or by
 the game, both the width and the height drag end as a release does. Left unsaved,

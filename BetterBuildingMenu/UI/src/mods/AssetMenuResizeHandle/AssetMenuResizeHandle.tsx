@@ -7,6 +7,7 @@ import {
   ASSET_MENU_RESIZE_HANDLE_HEIGHT,
   clampAssetMenuHeight,
   draggedAssetMenuHeight,
+  isPrimaryPress,
   pxPerRemFrom,
 } from "domain/assetMenuLayout";
 
@@ -70,6 +71,7 @@ export function useAssetMenuHeight(): AssetMenuHeight {
   }, []);
 
   function beginResize(event: any): void {
+    if (!isPrimaryPress(event)) return;
     event.preventDefault?.();
     event.stopPropagation?.();
     // Rem follows the resolution and the pointer reports pixels, so the ratio is
@@ -83,6 +85,11 @@ export function useAssetMenuHeight(): AssetMenuHeight {
   function moveResize(event: any): void {
     const state = resizeState.current;
     if (!state.active) return;
+    // A release the blocker never saw, such as one outside the window.
+    if (event.buttons === 0) {
+      endResize();
+      return;
+    }
 
     pending.current.height = draggedAssetMenuHeight(state.startHeight, state.startY, event.clientY, state.pxPerRem);
 
