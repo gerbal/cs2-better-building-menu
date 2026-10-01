@@ -1,0 +1,48 @@
+// The control pane's show/hide button: an icon button in the build menu's header,
+// beside the close X, where desktop apps keep the toggle for a side panel.
+
+.toggle {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 30rem;
+  width: 30rem;
+  padding: 0;
+  margin-left: 8rem;
+  background: none;
+}
+
+// Masked and tinted like the header's search glyph.
+.glyph {
+  height: 24rem;
+  width: 24rem;
+  background-color: var(--menuText1Normal);
+  mask-size: contain;
+  mask-position: 50% 50%;
+}
+
+// Shown reads as pressed: the glyph takes the accent, as the resize grips do
+// while they are held.
+.toggleShown .glyph {
+  background-color: var(--accentColorNormal);
+}
+
+// Filters on, counted, in the corner: present whether the pane is shown or not,
+// so a filter left on while the pane is hidden never narrows the menu unseen.
+.badge {
+  position: absolute;
+  top: -6rem;
+  right: -8rem;
+  min-width: 18rem;
+  height: 18rem;
+  padding: 0 4rem;
+  border-radius: 9rem;
+  background-color: var(--accentColorNormal);
+  color: rgba(255, 255, 255, 1);
+  font-size: 12rem;
+  line-height: 18rem;
+  text-align: center;
+  pointer-events: none;
+}

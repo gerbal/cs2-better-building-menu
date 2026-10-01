@@ -13,7 +13,8 @@ import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaC
 import styles from "mods/BuildingMenu/buildingMenuHeader.module.scss";
 import { noteSearchField } from "./searchField";
 import { textInputText } from "domain/textInput";
-import { CurrentSearch$, IsSearchLoading$, send } from "mods/bindings";
+import { ControlPaneShown$, CurrentSearch$, IsSearchLoading$, send } from "mods/bindings";
+import { ControlPaneToggle, useActiveFilterCount } from "mods/ControlPaneToggle/ControlPaneToggle";
 import { GameTextInput, gameClasses } from "mods/gameModules";
 
 const TextInputTheme = gameClasses("game-ui/editor/widgets/item/editor-item.module.scss");
@@ -40,6 +41,8 @@ export const BuildingMenuHeader = memo(function BuildingMenuHeader({ small, larg
 
   const IsSearchLoading = useValue(IsSearchLoading$);
   const CurrentSearch = useValue(CurrentSearch$);
+  const paneShown = useValue(ControlPaneShown$);
+  const filterCount = useActiveFilterCount();
 
   const localizedLabel = (key: string, fallback: string): string => translate(key, fallback) ?? fallback;
 
@@ -101,6 +104,14 @@ export const BuildingMenuHeader = memo(function BuildingMenuHeader({ small, larg
             )}
           </div>
         </div>
+        {/* The control pane's switch, beside the X like a desktop app's side-panel
+            button. In the header rather than the pane, so it is there while the
+            pane is hidden. */}
+        <ControlPaneToggle
+          shown={paneShown}
+          filterCount={filterCount}
+          onToggle={() => send({ method: "SetControlPaneShown", args: [!paneShown] })}
+        />
         {/* Vanilla closes its menus from an X here, so ours does too. Masked
             and tinted like .searchIcon because Close.svg carries no fill of its
             own; no assetGridTheme.item, which is the 48x48 TILE theme. */}
