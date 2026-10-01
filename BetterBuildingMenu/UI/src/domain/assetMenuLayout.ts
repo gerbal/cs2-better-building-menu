@@ -331,9 +331,14 @@ export { ASSET_MENU_CATALOG_FILL, ASSET_MENU_CATALOG_FILL_SNAP, ASSET_MENU_CATAL
 /** The width strip's width, which a width drag measures rem against. */
 export const ASSET_MENU_WIDTH_HANDLE_WIDTH = sheetRem("widthHandleWidth");
 
-/** The room the build menu has: the band, less the control pane while it is shown. */
+/**
+ * The room the build menu has: the band, less the control pane while it is
+ * shown. Without the pane, less half the width strip instead: the strip is
+ * centred on the menu's edge, and its outer half would otherwise reach past the
+ * band over the social icons beside it.
+ */
 export function catalogRoom(bandWidth: number, paneShown: boolean): number {
-  return paneShown ? bandWidth - CONTROL_PANE_TOTAL : bandWidth;
+  return paneShown ? bandWidth - CONTROL_PANE_TOTAL : bandWidth - ASSET_MENU_WIDTH_HANDLE_WIDTH / 2;
 }
 
 /**

@@ -30,7 +30,8 @@ describe("the asset menu's layout", () => {
 
   it("gives the menu the whole band when the pane is hidden", () => {
     setBinding("BetterBuildingMenu", "ControlPaneShown", false);
-    assert.deepEqual(read(), { bandWidth: 1476, menuWidth: 1476, rowWidth: 1476, paneShown: false });
+    // Less half the width strip, so its outer half stays inside the band.
+    assert.deepEqual(read(), { bandWidth: 1476, menuWidth: 1471, rowWidth: 1471, paneShown: false });
   });
 
   it("sizes the row to a chosen width, leaving no empty stretch", () => {

@@ -327,13 +327,15 @@ const BAND = ASSET_MENU_MAX_WIDTH + ASSET_MENU_CHROME_WIDTH;
 describe("the build menu's width", () => {
   it("fills the room: beside the pane, and the whole band without it", () => {
     assert.equal(resolveCatalogWidth(ASSET_MENU_CATALOG_FILL, BAND, true), 1091);
-    assert.equal(resolveCatalogWidth(ASSET_MENU_CATALOG_FILL, BAND, false), 1476);
+    // Hidden, less half the width strip, whose outer half then ends at the band's
+    // edge rather than over the social icons beside it.
+    assert.equal(resolveCatalogWidth(ASSET_MENU_CATALOG_FILL, BAND, false), 1476 - ASSET_MENU_WIDTH_HANDLE_WIDTH / 2);
   });
 
   it("holds a chosen width between the minimum and the room", () => {
     assert.equal(resolveCatalogWidth(900, BAND, true), 900);
     assert.equal(resolveCatalogWidth(100, BAND, true), ASSET_MENU_CATALOG_MIN_WIDTH);
-    assert.equal(resolveCatalogWidth(5000, BAND, false), 1476);
+    assert.equal(resolveCatalogWidth(5000, BAND, false), 1471);
   });
 
   it("draws a width that no longer fits at the room, and gives it back when the pane goes", () => {
@@ -368,7 +370,7 @@ describe("dragging the build menu's width", () => {
 
   it("stops at the room", () => {
     assert.equal(draggedCatalogWidth(900, 500, 5000, BAND, true, 1), 1091);
-    assert.equal(draggedCatalogWidth(900, 500, 5000, BAND, false, 1), 1476);
+    assert.equal(draggedCatalogWidth(900, 500, 5000, BAND, false, 1), 1471);
   });
 
   it("falls back to the 720p scale when the strip could not be measured", () => {
@@ -380,7 +382,7 @@ describe("where a width drag lands", () => {
   it("stores fill when it ends against the room", () => {
     assert.equal(releasedCatalogWidth(1091, BAND, true), ASSET_MENU_CATALOG_FILL);
     assert.equal(releasedCatalogWidth(1089.5, BAND, true), ASSET_MENU_CATALOG_FILL);
-    assert.equal(releasedCatalogWidth(1476, BAND, false), ASSET_MENU_CATALOG_FILL);
+    assert.equal(releasedCatalogWidth(1471, BAND, false), ASSET_MENU_CATALOG_FILL);
   });
 
   it("stores the width anywhere else", () => {

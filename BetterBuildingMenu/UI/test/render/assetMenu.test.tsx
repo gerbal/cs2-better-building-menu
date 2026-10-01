@@ -26,12 +26,12 @@ describe("the asset menu's row", () => {
     assert.match(html, /class="widthHandle"/);
   });
 
-  it("leaves the pane out when it is hidden, and gives the menu the whole band", () => {
+  it("leaves the pane out when it is hidden, and gives the menu the band less the strip's outer half", () => {
     setBinding("BetterBuildingMenu", "ControlPaneShown", false);
     const html = render();
 
-    assert.equal(widthOf(html, "assetMenuRow"), 1476);
-    assert.equal(widthOf(html, "toolContainer"), 1476);
+    assert.equal(widthOf(html, "assetMenuRow"), 1471);
+    assert.equal(widthOf(html, "toolContainer"), 1471);
     assert.doesNotMatch(html, /class="pane"/);
   });
 
