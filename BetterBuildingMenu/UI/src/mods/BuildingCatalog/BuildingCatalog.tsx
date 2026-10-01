@@ -17,11 +17,13 @@ import {
   getAssetMenuDensity,
   getAssetMenuRowGeometry,
   getAssetMenuMetricTextScale,
+  visibleTableMetrics,
 } from "domain/assetMenuLayout";
 import type { AssetMenuDensityTier, AssetMenuMetric } from "domain/assetMenuLayout";
 import { catalogWindowRemaining, loadMoreCount } from "domain/catalogWindow";
 import { getNumberSeparators, groupDigits } from "domain/assetMenuMetricFormat";
 import type { SortColumn } from "domain/buildingCatalogContracts";
+import { ASSET_MENU_COLUMN_SORT } from "domain/assetMenuSortPresentation";
 import { getAssetMenuEmptyStateMessage } from "domain/assetMenuFilterSummary";
 import { assetMenuPort } from "domain/assetMenuPort";
 import { enterDecision, getSearchScopeNotice, isEnterForSearch, isPlainEnter } from "domain/buildingSearchRank";
@@ -110,9 +112,17 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   // lines up only because both read the same widths. Figures do not scale with
   // the build menu but do with the game's text scale.
   const textScale = useTextScale();
+  // The columns the table draws at this width: a narrow menu drops the least
+  // asked-for rather than clip their figures, and never the one sorted by.
+  const sortedMetric = (Object.keys(ASSET_MENU_COLUMN_SORT) as AssetMenuMetric[])
+    .find((metric) => ASSET_MENU_COLUMN_SORT[metric] === sortColumn) ?? null;
+  const tableMetrics = useMemo(
+    () => visibleTableMetrics(layoutWidth, textScale, sortedMetric),
+    [layoutWidth, textScale, sortedMetric]
+  );
   const columnWidths = useMemo(
-    () => getAssetMenuColumnWidths(layoutWidth, textScale),
-    [layoutWidth, textScale]
+    () => getAssetMenuColumnWidths(layoutWidth, textScale, tableMetrics),
+    [layoutWidth, textScale, tableMetrics]
   );
   // The widths are estimates and stay estimates: the row is a flex layout whose
   // column bases already exceed the room beside the name, so cells shrink to
@@ -129,7 +139,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
     layoutWidth
       - ASSET_MENU_CHROME_WIDTH
       - CONTROL_PANE_TOTAL
-      - Object.values(columnWidths).reduce((total, width) => total + width, 0)
+      - Object.values(columnWidths).reduce<number>((total, width) => total + (width ?? 0), 0)
       - ASSET_MENU_TABLE_ROW_FURNITURE
   );
   const nameBudget = tableLabelCharBudget(nameWidth, textScale);
@@ -308,6 +318,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
           items={items}
           emptyState={emptyState}
           density={density}
+          metrics={tableMetrics}
           columnStyle={columnStyle}
           nameBudget={nameBudget}
           resolveFacetLabel={resolveFacetLabel}

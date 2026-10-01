@@ -42,8 +42,6 @@ export interface AssetMenuWidthBounds {
   menuWidth: number;
   bandWidth: number;
   paneShown: boolean;
-  /** The view's narrowest width: the drag stops there, as the drawing does. */
-  minWidth: number;
 }
 
 /**
@@ -51,7 +49,7 @@ export interface AssetMenuWidthBounds {
  * the live binding, and only the release writes the settings file.
  */
 export function useAssetMenuWidthDrag(
-  { menuWidth, bandWidth, paneShown, minWidth }: AssetMenuWidthBounds,
+  { menuWidth, bandWidth, paneShown }: AssetMenuWidthBounds,
   now: () => number = Date.now
 ): AssetMenuWidthDrag {
   const [isResizing, setIsResizing] = useState(false);
@@ -111,7 +109,7 @@ export function useAssetMenuWidthDrag(
     // Moved, once past the threshold, even when the edge is pinned at a bound:
     // the player dragged, so the release is no half of a double press.
     state.moved = true;
-    state.last = draggedCatalogWidth(state.startWidth, state.startX, event.clientX, bandWidth, paneShown, state.pxPerRem, minWidth);
+    state.last = draggedCatalogWidth(state.startWidth, state.startX, event.clientX, bandWidth, paneShown, state.pxPerRem);
     pending.current.width = state.last;
 
     if (pending.current.frame === 0) {

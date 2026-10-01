@@ -19,12 +19,10 @@ import {
   ASSET_MENU_CATALOG_FILL,
   ASSET_MENU_CATALOG_MIN_WIDTH,
   ASSET_MENU_WIDTH_HANDLE_WIDTH,
-  ASSET_MENU_TABLE_MIN_WIDTH,
   ASSET_MENU_COLUMN_MAX as COMFORTABLE_COLUMNS,
   REM_IN_PX_AT_720P,
   getAssetMenuColumnWidths as columnWidthsAt,
-  catalogMinWidth,
-  tableColumnRoom,
+  visibleTableMetrics,
   assetMenuRowWidth,
   catalogLayoutWidth,
   draggedCatalogWidth,
@@ -186,7 +184,8 @@ describe("Table column widths", () => {
     for (let w = ASSET_MENU_MIN_WIDTH; w <= ASSET_MENU_MAX_WIDTH; w += 25) {
       const widths = getAssetMenuColumnWidths(w);
       for (const key of Object.keys(widths) as (keyof typeof widths)[]) {
-        assert.ok(widths[key] >= previous[key], `${key} fell from ${previous[key]} to ${widths[key]} at ${w}`);
+        // All seven are sized when none is named, so every key is present.
+        assert.ok(widths[key]! >= previous[key]!, `${key} fell from ${previous[key]} to ${widths[key]} at ${w}`);
       }
       previous = widths;
     }
@@ -298,7 +297,7 @@ describe("the metric columns fit the room beside the name", () => {
 
   it("keeps every column's share of the room in proportion to its preference", async () => {
     const { getAssetMenuColumnWidths, ASSET_MENU_COLUMN_MAX } = await import("../src/domain/assetMenuLayout.ts");
-    const widths = getAssetMenuColumnWidths(1350);
+    const widths = getAssetMenuColumnWidths(1350) as Required<ReturnType<typeof getAssetMenuColumnWidths>>;
 
     assert.ok(widths.upkeep > widths.cost && widths.capacity > widths.cost, "upkeep and capacity stay the widest");
     assert.ok(widths.upkeep / widths.level > ASSET_MENU_COLUMN_MAX.upkeep / ASSET_MENU_COLUMN_MAX.level * 0.9);
@@ -389,32 +388,37 @@ describe("where a width drag lands", () => {
   });
 });
 
-describe("the table's narrowest build menu", () => {
-  const comfortable = Object.values(COMFORTABLE_COLUMNS).reduce((total, width) => total + width, 0);
+describe("the table's columns at a narrow build menu", () => {
+  // The room the table has at a build menu width: the menu plus the pane is the
+  // row its arithmetic is tuned against.
+  const at = (menu: number) => menu + CONTROL_PANE_TOTAL;
+  const ALL = ["cost", "upkeep", "workers", "capacity", "lot", "level", "parking"];
 
-  // Not the minima: those were never drawn before the width could change, and
-  // in game they clip a network's per-km cost in every row.
-  it("is the width at which the metric columns reach their comfortable widths beside the name", () => {
-    assert.equal(tableColumnRoom(ASSET_MENU_TABLE_MIN_WIDTH + CONTROL_PANE_TOTAL), comfortable);
-    assert.deepEqual(columnWidthsAt(ASSET_MENU_TABLE_MIN_WIDTH + CONTROL_PANE_TOTAL), COMFORTABLE_COLUMNS);
-    assert.ok(tableColumnRoom(ASSET_MENU_TABLE_MIN_WIDTH - 1 + CONTROL_PANE_TOTAL) < comfortable);
+  it("keeps all seven at today's width", () => {
+    assert.deepEqual(visibleTableMetrics(at(1091)), ALL);
   });
 
-  it("applies to the table alone, and fits beside the pane", () => {
-    assert.equal(catalogMinWidth("table"), ASSET_MENU_TABLE_MIN_WIDTH);
-    for (const mode of ["grid", "list", "cards", ""]) {
-      assert.equal(catalogMinWidth(mode), ASSET_MENU_CATALOG_MIN_WIDTH, mode);
-    }
-    assert.ok(ASSET_MENU_TABLE_MIN_WIDTH <= BAND - CONTROL_PANE_TOTAL);
+  it("drops the least asked-for first until the rest fit at their comfortable widths", () => {
+    assert.deepEqual(visibleTableMetrics(at(900)), ["cost", "upkeep", "workers", "capacity"]);
+    assert.deepEqual(visibleTableMetrics(at(735)), ["cost", "upkeep"]);
   });
 
-  it("holds a narrower chosen width at the table's minimum, and leaves fill alone", () => {
-    assert.equal(resolveCatalogWidth(735, BAND, true, ASSET_MENU_TABLE_MIN_WIDTH), ASSET_MENU_TABLE_MIN_WIDTH);
-    assert.equal(resolveCatalogWidth(1080, BAND, true, ASSET_MENU_TABLE_MIN_WIDTH), 1080);
-    assert.equal(resolveCatalogWidth(ASSET_MENU_CATALOG_FILL, BAND, true, ASSET_MENU_TABLE_MIN_WIDTH), 1091);
+  it("always keeps the column the table is sorted by", () => {
+    // Parking's 52 still fits beside cost and upkeep (268 of 269) once the rest have gone.
+    assert.deepEqual(visibleTableMetrics(at(735), 1, "parking"), ["cost", "upkeep", "parking"]);
+    assert.ok(visibleTableMetrics(at(735), 1, "capacity").includes("capacity"));
   });
 
-  it("stops a drag at the table's minimum", () => {
-    assert.equal(draggedCatalogWidth(1080, 500, -5000, BAND, true, 1, ASSET_MENU_TABLE_MIN_WIDTH), ASSET_MENU_TABLE_MIN_WIDTH);
+  it("never drops the last column", () => {
+    assert.deepEqual(visibleTableMetrics(10), ["cost"]);
+  });
+
+  it("drops more when the game's text scale enlarges the figures", () => {
+    assert.ok(visibleTableMetrics(at(1091), 1.25).length < ALL.length);
+  });
+
+  it("gives the columns it keeps their comfortable widths", () => {
+    assert.deepEqual(columnWidthsAt(at(735), 1, visibleTableMetrics(at(735))), { cost: 100, upkeep: 116 });
+    assert.deepEqual(columnWidthsAt(at(1091), 1, ALL as never), COMFORTABLE_COLUMNS);
   });
 });

@@ -147,14 +147,23 @@ describe("the table follows the build menu's width", () => {
     setBinding("BetterBuildingMenu", "AssetMenuWidth", 1441);
   });
 
-  it("keeps its comfortable columns when the player narrows the menu below what the table needs", () => {
-    // The table is drawn no narrower than its comfortable columns need
-    // (ASSET_MENU_TABLE_MIN_WIDTH); at the minima a road's per-km cost clips.
-    const filling = costWidth(render());
+  it("drops columns rather than clip them when the player narrows the menu", () => {
     setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 735);
+    const html = render();
 
-    assert.ok(filling > 0, `${filling}`);
-    assert.equal(costWidth(render()), filling);
+    assert.match(html, /metricCost/);
+    assert.match(html, /metricUpkeep/);
+    for (const dropped of ["metricWorkers", "metricCapacity", "metricLot", "metricLevel", "metricParking"]) {
+      assert.doesNotMatch(html, new RegExp(dropped), dropped);
+    }
+    assert.equal(costWidth(html), 100);
+  });
+
+  it("keeps the column the table is sorted by at any width", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 735);
+    setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", "HasParking");
+
+    assert.match(render(), /metricParking/);
   });
 
   it("keeps the columns it has at fill when the pane is hidden: the table's arithmetic counts the pane either way", () => {

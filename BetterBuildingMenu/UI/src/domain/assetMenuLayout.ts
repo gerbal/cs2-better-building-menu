@@ -165,51 +165,77 @@ export function tableColumnRoom(outerWidth: number): number {
   return Math.max(room, 0);
 }
 
-export type AssetMenuColumnWidths = Record<AssetMenuMetric, number>;
+/** The widths of the metric columns the table draws; a column it drops has none. */
+export type AssetMenuColumnWidths = Partial<Record<AssetMenuMetric, number>>;
 
 const sumWidths = (widths: AssetMenuColumnWidths): number =>
-  Object.values(widths).reduce((total, width) => total + width, 0);
+  Object.values(widths).reduce<number>((total, width) => total + (width ?? 0), 0);
+
+/** The metric columns, in the order the table draws them. */
+export const ASSET_MENU_TABLE_METRICS: readonly AssetMenuMetric[] = [
+  "cost", "upkeep", "workers", "capacity", "lot", "level", "parking",
+];
+
+/** The order the table gives its columns up when the build menu is too narrow for all of them: the least asked-for first. */
+export const ASSET_MENU_COLUMN_DROP_ORDER: readonly AssetMenuMetric[] = [
+  "parking", "level", "lot", "workers", "capacity", "upkeep", "cost",
+];
 
 /**
- * The narrowest build menu the table is drawn at: the metric columns at their
- * comfortable widths, the name's basis, the row's furniture and the chromes. Not
- * the minima: the table was only ever drawn at the comfortable set before the
- * width could change, and at the minima a network's per-km cost clips in every
- * row. The player's narrower width is kept for the other views.
+ * The metric columns the table draws at this width: as many as fit beside the
+ * name at their comfortable widths, grown by the text scale, so a figure is
+ * never clipped. A narrow build menu drops the least asked-for first; the column
+ * the table is sorted by always stays, and so does at least one.
+ *
+ * Not the column minima: the table was only ever drawn at the comfortable set
+ * before the width could change, and at the minima a network's per-km cost
+ * ("¢3,500 /km") clips in every row.
  */
-export const ASSET_MENU_TABLE_MIN_WIDTH = sumWidths(ASSET_MENU_COLUMN_MAX)
-  + ASSET_MENU_TABLE_NAME_BASIS
-  + ASSET_MENU_TABLE_ROW_FURNITURE
-  + ASSET_MENU_TABLE_CHROME
-  + ASSET_MENU_CHROME_WIDTH;
+export function visibleTableMetrics(
+  outerWidth: number,
+  textScale = 1,
+  sorted: AssetMenuMetric | null = null
+): AssetMenuMetric[] {
+  const room = tableColumnRoom(Number.isFinite(outerWidth) ? outerWidth : ASSET_MENU_MIN_WIDTH);
+  const textRatio = fontSizeRatio("s", textScale);
+  const kept = new Set<AssetMenuMetric>(ASSET_MENU_TABLE_METRICS);
+  const needs = () => [...kept].reduce((total, metric) => total + ASSET_MENU_COLUMN_MAX[metric], 0) * textRatio;
 
-/** The narrowest the build menu draws in a view mode: the table's own, or the menu's. */
-export function catalogMinWidth(viewMode: string): number {
-  return viewMode === "table" ? ASSET_MENU_TABLE_MIN_WIDTH : ASSET_MENU_CATALOG_MIN_WIDTH;
+  for (const metric of ASSET_MENU_COLUMN_DROP_ORDER) {
+    if (needs() <= room || kept.size === 1) break;
+    if (metric !== sorted) kept.delete(metric);
+  }
+
+  return ASSET_MENU_TABLE_METRICS.filter((metric) => kept.has(metric));
 }
 
 /**
- * The seven metric column widths, moving between minimum and comfortable by the
- * ROOM beside the name — every metric cell is flex: 0 0 auto and the name is
- * the only item that yields. The figures scale, so the room is read unscaled.
+ * The metric column widths, moving between minimum and comfortable by the ROOM
+ * beside the name — every metric cell is flex: 0 0 auto and the name is the
+ * only item that yields. The figures scale, so the room is read unscaled. Only
+ * the columns given are sized: the ones the table draws (visibleTableMetrics).
  */
-export function getAssetMenuColumnWidths(outerWidth: number, textScale = 1): AssetMenuColumnWidths {
+export function getAssetMenuColumnWidths(
+  outerWidth: number,
+  textScale = 1,
+  metrics: readonly AssetMenuMetric[] = ASSET_MENU_TABLE_METRICS
+): AssetMenuColumnWidths {
   const width = Number.isFinite(outerWidth) ? outerWidth : ASSET_MENU_MIN_WIDTH;
   const textRatio = fontSizeRatio("s", textScale);
   const room = tableColumnRoom(width);
 
   // How far along from the minimum set to the comfortable set the room
   // reaches, read in unscaled units since the figures grow with the text.
-  const minTotal = sumWidths(ASSET_MENU_COLUMN_MIN);
-  const span = sumWidths(ASSET_MENU_COLUMN_MAX) - minTotal;
+  const minTotal = metrics.reduce((total, metric) => total + ASSET_MENU_COLUMN_MIN[metric], 0);
+  const span = metrics.reduce((total, metric) => total + ASSET_MENU_COLUMN_MAX[metric], 0) - minTotal;
   // A degenerate range would divide by zero; every column simply gets its
   // comfortable width, which is what a single supported set deserves.
   const share = span <= 0
     ? 1
     : Math.max(0, Math.min(1, (room / textRatio - minTotal) / span));
 
-  const base = {} as AssetMenuColumnWidths;
-  for (const metric of Object.keys(ASSET_MENU_COLUMN_MAX) as AssetMenuMetric[]) {
+  const base: AssetMenuColumnWidths = {};
+  for (const metric of metrics) {
     const min = ASSET_MENU_COLUMN_MIN[metric];
     const max = ASSET_MENU_COLUMN_MAX[metric];
     base[metric] = min + (max - min) * share;
@@ -223,11 +249,11 @@ export function getAssetMenuColumnWidths(outerWidth: number, textScale = 1): Ass
     ? Math.min(textRatio, Math.max(1, room / baseTotal))
     : 1;
 
-  const widths = {} as AssetMenuColumnWidths;
-  for (const metric of Object.keys(base) as AssetMenuMetric[]) {
+  const widths: AssetMenuColumnWidths = {};
+  for (const metric of metrics) {
     // Whole units: a fractional width lands on a different pixel in the header
     // than in the rows, and the columns stop lining up.
-    widths[metric] = Math.round(base[metric] * grow);
+    widths[metric] = Math.round((base[metric] ?? 0) * grow);
   }
 
   return widths;
@@ -313,18 +339,16 @@ export function catalogRoom(bandWidth: number, paneShown: boolean): number {
 /**
  * The width the build menu draws at. Fill takes the room; a chosen width is held
  * at the minimum or above and at the room or below, so a width chosen with the
- * pane hidden draws narrower beside the pane and comes back when it goes. The
- * minimum is the view's (catalogMinWidth): the table needs more than the rest.
+ * pane hidden draws narrower beside the pane and comes back when it goes.
  */
 export function resolveCatalogWidth(
   chosen: number,
   bandWidth: number,
-  paneShown: boolean,
-  minimum: number = ASSET_MENU_CATALOG_MIN_WIDTH
+  paneShown: boolean
 ): number {
   const room = catalogRoom(bandWidth, paneShown);
   if (!Number.isFinite(chosen) || chosen <= ASSET_MENU_CATALOG_FILL) return room;
-  return Math.min(room, Math.max(minimum, chosen));
+  return Math.min(room, Math.max(ASSET_MENU_CATALOG_MIN_WIDTH, chosen));
 }
 
 /**
@@ -338,14 +362,13 @@ export function draggedCatalogWidth(
   currentX: number,
   bandWidth: number,
   paneShown: boolean,
-  pxPerRem?: number,
-  minimum: number = ASSET_MENU_CATALOG_MIN_WIDTH
+  pxPerRem?: number
 ): number {
   const delta = Number.isFinite(startX) && Number.isFinite(currentX) ? currentX - startX : 0;
   const scale = pxPerRem !== undefined && Number.isFinite(pxPerRem) && pxPerRem > 0 ? pxPerRem : REM_IN_PX_AT_720P;
   const raw = startWidth + delta / scale;
   if (!Number.isFinite(raw)) return startWidth;
-  return Math.min(catalogRoom(bandWidth, paneShown), Math.max(minimum, raw));
+  return Math.min(catalogRoom(bandWidth, paneShown), Math.max(ASSET_MENU_CATALOG_MIN_WIDTH, raw));
 }
 
 /** What a drag that ended at `width` stores: fill when it ended against the room, else the width. */
