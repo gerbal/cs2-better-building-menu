@@ -286,15 +286,15 @@ namespace BetterBuildingMenu.Systems
 		/// <remarks>
 		/// The parameter is the base game's <see cref="Game.Settings.Setting"/> — the delegate's
 		/// own type — not this mod's settings class. The asset menu's sizes travel both ways: from
-		/// the drag handles into the settings, and back from here when anything else, such as an
-		/// Options reset, changes the settings.
+		/// the drag handles into the settings, and back from here when anything else changes and
+		/// applies the settings.
 		/// </remarks>
 		private void OnSettingsApplied(Game.Settings.Setting setting)
 		{
 			_AssetMenuTileSize.Value = Mod.Settings.AssetMenuTileSize;
 			_ReplaceVanillaBuildMenu.Value = Mod.Settings.ReplaceVanillaBuildMenu;
-			// The sizes too, so an Options reset (SetDefaults) redraws the asset menu at
-			// once rather than at the next drag. The height was missed here before.
+			// The sizes too, so settings applied from anywhere but a drag (the Options
+			// screen, a tool, SetDefaults) redraw the asset menu at once.
 			_AssetMenuHeight.Value = AssetMenuHeight.Clamp(Mod.Settings.AssetMenuHeight);
 			_AssetMenuCatalogWidth.Value = AssetMenuCatalogWidth.Sanitize(Mod.Settings.AssetMenuCatalogWidth);
 			_ControlPaneShown.Value = Mod.Settings.ControlPaneShown;

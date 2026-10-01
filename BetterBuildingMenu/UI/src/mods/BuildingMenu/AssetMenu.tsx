@@ -34,8 +34,8 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
   const { menuWidth, rowWidth, paneShown } = layout;
   const { height: catalogHeight, isResizing, beginResize, blocker } = useAssetMenuHeight();
   const widthDrag = useAssetMenuWidthDrag(layout);
-  // The header's small and large modes, judged as before against the menu plus
-  // the pane. Their classes carry no rules today, so neither changes what is drawn.
+  // The header's small and large modes, judged against the menu plus the pane.
+  // Their classes carry no rules, so neither changes what is drawn.
   const headerWidth = catalogLayoutWidth(menuWidth);
 
   // The two patches on vanilla's own layout — the column trio left-aligned,
