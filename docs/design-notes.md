@@ -70,6 +70,75 @@ renders (the screen paints no background behind it) and stays hit-testable.
 Moving the chirper's toasts out of the pane's way would make this unnecessary; see
 [issue #104](https://github.com/gerbal/cs2-better-building-menu/issues/104).
 
+## The asset menu's width and the control pane
+
+The player sets the build menu's width by dragging the strip on its right edge,
+and shows or hides the control pane with the button beside the X. Both are saved
+like the height: `AssetMenuCatalogWidth` and `ControlPaneShown`, hidden settings,
+each pushed to its binding.
+
+**The default width, and filling the room.** The width setting holds a width or
+`Default` (0). The default is the room beside the pane, 1,091 at the reference
+resolution, whether the pane is shown or hidden: the toggle changes nothing the
+pane has room for. A width wider than the room beside the pane, which only a drag
+with the pane hidden reaches, draws at that room while the pane is shown and comes
+back when the pane goes, so the menu makes room for the pane and never the other
+way round. The UI resolves this, in `resolveCatalogWidth`, because it depends on
+the pane; C# only keeps the stored value well-formed.
+
+Filling the room in view stores the default with the pane shown, and full
+(`ASSET_MENU_CATALOG_FULL`, the widest band there is) with it hidden. A drag
+released within 2 of the room fills it, and so does a second press on the strip
+soon after the first. With the pane hidden the room is the band less half the
+width strip: the strip is centred on the menu's edge, and filling the whole band
+put its outer half over the social icons, so a press on their left edge started a
+drag. A settings file from before any of this reads as the default, which draws
+the layout it always did.
+
+**The band follows the text scale.** Vanilla's tool column, which the row starts
+beside, is 380 wide at the game's own text size and grows by half the text scale's
+increase, while the social icons the band runs up to stay where they are. The band
+shrinks by the same amount (`assetMenuBandWidth`): 1,476 at 100 %, 1,381 at 150 %,
+where the default menu is 996. With a band that ignored the text scale, the row
+ran 47 past the screen's edge at 150 %, and with the pane hidden the menu's X and
+its width strip went with it.
+
+**The row is no wider than what it holds.** A row left at the band's width would
+leave an empty stretch beside a narrow menu. In 0.1.x such a stretch, above the
+Upgrades picker, took every click meant for the city.
+
+**The table's arithmetic still counts the pane.** The column widths, the density
+tier and the name budget were tuned against the whole row with the pane in it, so
+they are handed the build menu plus the pane (`catalogLayoutWidth`) whether or not
+the pane is shown. At the default width that is the number they always had.
+
+**A narrow table drops columns.** Table view draws at the player's width and shows
+as many metric columns as fit beside the name at their comfortable widths, grown
+by the game's text scale (`visibleTableMetrics`). Parking, Level, Lot, Workers and
+Capacity go first; the column the table is sorted by always stays. Measured in game
+on Roads: below the comfortable set, a road's per-km cost ("¢3,500 /km") clips in
+every row, even at the columns' minima. A first version kept the table at least
+1,052 wide instead, but switching to Table at a narrow width then moved the pane,
+and the View control just clicked, out from under the cursor. At the default width
+all seven still fit; at 125 % text, four do.
+
+**Cursors, the double press and the hint.** The game draws its own cursors, so
+the strip uses `cursor://horizontal-can-resize` and `cursor://horizontal-resize`,
+from the game's own stylesheet, as the height strip uses the vertical pair. The
+double press is counted in the drag hook rather than left to a `dblclick`
+listener: the first press puts up the blocker, which covers the screen, so its
+release lands there and the strip never sees a whole click. A press becomes a drag
+only once the pointer has moved three pixels, so the wobble inside a click neither
+saves a width nor spoils the double press. Only the left button drags, as in the
+game's own drags, and a move that reports no button held ends the drag where it
+was, for a release the blocker never saw. The strip's hint is the game's Tooltip:
+the game draws no `title` attribute, and the double press is told nowhere else.
+
+**A drag cut short is saved.** If the asset menu closes mid-drag, by a key or by
+the game, both the width and the height drag end as a release does. Left unsaved,
+the dragged value sat in the binding until the next save of any setting re-pushed
+the saved one, so hiding the pane could change the width.
+
 ## Hand-rolled floating surfaces in Cohtml
 
 The filter rail's dropdown surface (`filterRail.module.scss`, `.menu`) states size

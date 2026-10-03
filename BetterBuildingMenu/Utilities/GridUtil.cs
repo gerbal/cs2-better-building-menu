@@ -6,9 +6,9 @@ namespace BetterBuildingMenu.Utilities
     {
         internal static float GetCurrentAssetMenuWidth()
         {
-            // One width, and it is not a choice: the asset menu fills the band between
-            // vanilla's options column on the left and the social column on the
-            // right, so anything narrower is only giving space back.
+            // The band the asset menu may fill, between vanilla's options column on
+            // the left and the social column on the right, less the UI's chrome. The
+            // UI fits it to the text scale and resolves the build menu's width in it.
             return AssetMenuWidth.Max;
         }
     }

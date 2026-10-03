@@ -87,15 +87,19 @@
   align-items: center;
 }
 
-// The end of the feed, inside the scroll. Full width so it is unmissable, and
-// its own rule because styling it through a selector the rows share gives
-// .columnHeader and every .row the button's centring, padding and background.
+// The end of the feed, inside the scroll. As wide as the count beside it allows,
+// so it is unmissable, and its own rule because styling it through a selector the
+// rows share gives .columnHeader and every .row the button's centring, padding
+// and background.
 .loadMore {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  margin: 6rem 0 10rem;
+  // The room the count beside it leaves, not the row's: the row's width would
+  // reach past the build menu by the count's.
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 6rem 0 10rem 12rem;
   padding: 8rem 0;
   color: var(--menuText1Normal);
   font-size: var(--fontSizeM);

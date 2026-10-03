@@ -2,7 +2,7 @@ import { Button } from "cs2/ui";
 import classNames from "classnames";
 import { memo, type CSSProperties } from "react";
 import { BuildingCatalogEntry, formatBuildingCatalogLabels } from "domain/buildingCatalog";
-import type { AssetMenuMetric } from "domain/assetMenuLayout";
+import { ASSET_MENU_TABLE_METRICS, type AssetMenuMetric } from "domain/assetMenuLayout";
 import {
   formatBuildingLevel,
   formatBuildingMetric,
@@ -43,6 +43,8 @@ export interface TableRowProps {
   labels: TableRowLabels;
   /** What the hover card reads, the same card every view shows; read once by the table. */
   hoverCard: HoverCardContext;
+  /** The metric columns to draw, the header's own: a narrow build menu drops some. All seven when absent. */
+  metrics?: readonly AssetMenuMetric[];
   /** The width of one metric column, shared with the header so they line up. */
   columnStyle(metric: AssetMenuMetric): CSSProperties;
   /** Resolves a raw facet id (a DLC's numeric id) to the name the filter shows. */
@@ -53,7 +55,7 @@ export interface TableRowProps {
 
 /**
  * One row of the table: the hover-carded Place control holding the identity
- * cell and the seven metric cells, the details chevron, and the details
+ * cell and the metric cells the table draws, the details chevron, and the details
  * themselves when expanded. Memoised: a keystroke re-renders the table, and a
  * row whose props hold still need not follow it.
  */
@@ -64,11 +66,13 @@ export const TableRow = memo(function TableRow({
   separators,
   labels,
   hoverCard,
+  metrics = ASSET_MENU_TABLE_METRICS,
   columnStyle,
   resolveFacetLabel,
   onPlace,
   onToggleExpanded,
 }: TableRowProps) {
+  const shows = (metric: AssetMenuMetric) => metrics.includes(metric);
   const rawCategoryIdentity = entry.subCategory
     ? `${entry.category} · ${entry.subCategory}`
     : entry.category;
@@ -156,44 +160,58 @@ export const TableRow = memo(function TableRow({
               </div>
             </div>
           </div>
-          <div className={classNames(styles.metric, styles.metricCost)} style={columnStyle("cost")} data-metric="cost" title={`Cost ${formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance)}`}>
-            {formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance)}
-          </div>
-          <div className={classNames(styles.metric, styles.metricUpkeep)} style={columnStyle("upkeep")} data-metric="upkeep" title={`Upkeep ${formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance)}`}>
-            {formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance)}
-          </div>
-          <div className={classNames(styles.metric, styles.metricWorkers)} style={columnStyle("workers")} data-metric="workers" title={`Workers ${formatBuildingMetric(entry.workers, "workers", separators)}`}>
-            {formatBuildingMetric(entry.workers, "workers", separators)}
-          </div>
-          <div className={classNames(styles.metric, styles.metricCapacity)} style={columnStyle("capacity")} data-metric="capacity" title={`Capacity ${formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators)}`}>
-            {formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators)}
-          </div>
-          <div className={classNames(styles.metric, styles.metricLot)} style={columnStyle("lot")} data-metric="lot" title="Lot dimensions">
-            {/* A road's lot is 0x0 and a zone has none: a measurement of
-                something that does not exist, so no data rather than "0 × 0"
-                — the rule the tile and the hover card already follow. */}
-            {hasFootprint(entry.lotWidth, entry.lotDepth) ? formatLotDimensions(entry.lotWidth, entry.lotDepth) : METRIC_NO_DATA}
-          </div>
-          <div
-            className={classNames(styles.metric, styles.metricLevel)}
-            style={columnStyle("level")} data-metric="level"
-            title={entry.buildingLevel >= 1 ? "Building level" : "No building level"}
-          >
-            {/* Not the raw number: a service building has no level, and a 0
-                beside a Workers dash meaning "not known" reads as one we
-                failed to read. */}
-            {formatBuildingLevel(entry.buildingLevel)}
-          </div>
-          <div
-            className={classNames(styles.parking, styles.metricParking, entry.hasParking && styles.parkingActive)}
-            style={columnStyle("parking")} data-metric="parking"
-            title={entry.hasParking ? `${entry.parkingSlots} parking bays (approximate)` : "No parking"}
-          >
-            {/* The count, not a glyph: between two car parks "does it park
-                cars" is yes either way. Not the no-data dash for zero, since
-                no parking is a fact rather than a gap. */}
-            {entry.hasParking ? entry.parkingSlots : METRIC_NOT_APPLICABLE}
-          </div>
+          {shows("cost") && (
+            <div className={classNames(styles.metric, styles.metricCost)} style={columnStyle("cost")} data-metric="cost" title={`Cost ${formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance)}`}>
+              {formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance)}
+            </div>
+          )}
+          {shows("upkeep") && (
+            <div className={classNames(styles.metric, styles.metricUpkeep)} style={columnStyle("upkeep")} data-metric="upkeep" title={`Upkeep ${formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance)}`}>
+              {formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance)}
+            </div>
+          )}
+          {shows("workers") && (
+            <div className={classNames(styles.metric, styles.metricWorkers)} style={columnStyle("workers")} data-metric="workers" title={`Workers ${formatBuildingMetric(entry.workers, "workers", separators)}`}>
+              {formatBuildingMetric(entry.workers, "workers", separators)}
+            </div>
+          )}
+          {shows("capacity") && (
+            <div className={classNames(styles.metric, styles.metricCapacity)} style={columnStyle("capacity")} data-metric="capacity" title={`Capacity ${formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators)}`}>
+              {formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators)}
+            </div>
+          )}
+          {shows("lot") && (
+            <div className={classNames(styles.metric, styles.metricLot)} style={columnStyle("lot")} data-metric="lot" title="Lot dimensions">
+              {/* A road's lot is 0x0 and a zone has none: a measurement of
+                  something that does not exist, so no data rather than "0 × 0"
+                  — the rule the tile and the hover card already follow. */}
+              {hasFootprint(entry.lotWidth, entry.lotDepth) ? formatLotDimensions(entry.lotWidth, entry.lotDepth) : METRIC_NO_DATA}
+            </div>
+          )}
+          {shows("level") && (
+            <div
+              className={classNames(styles.metric, styles.metricLevel)}
+              style={columnStyle("level")} data-metric="level"
+              title={entry.buildingLevel >= 1 ? "Building level" : "No building level"}
+            >
+              {/* Not the raw number: a service building has no level, and a 0
+                  beside a Workers dash meaning "not known" reads as one we
+                  failed to read. */}
+              {formatBuildingLevel(entry.buildingLevel)}
+            </div>
+          )}
+          {shows("parking") && (
+            <div
+              className={classNames(styles.parking, styles.metricParking, entry.hasParking && styles.parkingActive)}
+              style={columnStyle("parking")} data-metric="parking"
+              title={entry.hasParking ? `${entry.parkingSlots} parking bays (approximate)` : "No parking"}
+            >
+              {/* The count, not a glyph: between two car parks "does it park
+                  cars" is yes either way. Not the no-data dash for zero, since
+                  no parking is a fact rather than a gap. */}
+              {entry.hasParking ? entry.parkingSlots : METRIC_NOT_APPLICABLE}
+            </div>
+          )}
         </Button>
       </BuildingHoverCard>
       {/* Expanding is its own control, so the row keeps one verb — Place —

@@ -65,6 +65,22 @@ describe("dragging the asset menu's height", () => {
     assert.deepEqual(heights(), [expected(470)]);
   });
 
+  it("ends the drag where the button was last held when a move says none is", () => {
+    move(490);
+    act(() => root!.root.find((node) => node.props.onMouseMove).props.onMouseMove({ clientY: 480, buttons: 0 }));
+
+    assert.deepEqual(heights(), [expected(490)]);
+    assert.equal(names().at(-1), "CommitAssetMenuHeight");
+    assert.equal(assetMenu.isResizing, false);
+  });
+
+  it("leaves a press with any button but the left alone", () => {
+    release();
+    act(() => assetMenu.beginResize({ button: 2, clientY: 500, currentTarget: { getBoundingClientRect: () => ({ height: 14 }) } }));
+
+    assert.equal(assetMenu.isResizing, false);
+  });
+
   it("sends where the drag ended before it commits", () => {
     move(490);
     nextFrame();
@@ -130,7 +146,9 @@ describe("the asset menu's height between drags", () => {
     assert.equal(assetMenu.isResizing, false);
   });
 
-  it("sends nothing after the asset menu goes away mid-drag", () => {
+  it("ends the drag as a release does when the asset menu goes away mid-drag", () => {
+    // Closed by a key or by the game: saved, so the binding and the setting
+    // agree, and nothing is sent once the menu has gone.
     mount();
     begin();
     act(() => blocker()[0].props.onMouseMove({ clientY: 480 }));
@@ -138,7 +156,8 @@ describe("the asset menu's height between drags", () => {
     root = undefined;
 
     nextFrame();
-    assert.deepEqual(names(), []);
+    assert.deepEqual(names(), ["SetAssetMenuHeight", "CommitAssetMenuHeight"]);
+    assert.deepEqual(heights(), [440]);
   });
 });
 

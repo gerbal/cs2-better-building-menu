@@ -36,6 +36,18 @@ namespace BetterBuildingMenu
 		[SettingsUIHidden]
 		public float AssetMenuHeight { get; set; } = Domain.AssetMenuHeight.Default;
 
+		/// <summary>
+		/// The build menu's width, set by dragging its right edge, or <see
+		/// cref="Domain.AssetMenuCatalogWidth.Default"/> for the room beside the control pane.
+		/// </summary>
+		/// <remarks>Hidden like the height, and for the same reason.</remarks>
+		[SettingsUIHidden]
+		public float AssetMenuCatalogWidth { get; set; } = Domain.AssetMenuCatalogWidth.Default;
+
+		/// <summary>Whether the control pane beside the build menu is shown, toggled from the menu's header.</summary>
+		[SettingsUIHidden]
+		public bool ControlPaneShown { get; set; } = true;
+
 		// On by default: replacing the build menu is what this mod is for. Turning it off
 		// restores the vanilla menu wholesale, including the Zones button's own hierarchy.
 		[SettingsUISection(SETTINGS, BEHAVIOR)]
@@ -62,6 +74,8 @@ namespace BetterBuildingMenu
 		public override void SetDefaults()
 		{
 			AssetMenuHeight = Domain.AssetMenuHeight.Default;
+			AssetMenuCatalogWidth = Domain.AssetMenuCatalogWidth.Default;
+			ControlPaneShown = true;
 			ReplaceVanillaBuildMenu = true;
 			AutoWidenSearch = false;
 			AssetMenuTileSize = DefaultTileSize;

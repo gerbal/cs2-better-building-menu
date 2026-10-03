@@ -25,5 +25,36 @@ namespace BetterBuildingMenu.Systems
 			Mod.Settings.AssetMenuHeight = height;
 			Mod.Settings.ApplyAndSave();
 		}
+
+		private void SetAssetMenuCatalogWidth(float width)
+		{
+			_AssetMenuCatalogWidth.Value = AssetMenuCatalogWidth.Sanitize(width);
+		}
+
+		private void CommitAssetMenuCatalogWidth()
+		{
+			// On release only, as the height is.
+			var width = AssetMenuCatalogWidth.Sanitize(_AssetMenuCatalogWidth);
+			if (Math.Abs(Mod.Settings.AssetMenuCatalogWidth - width) < 0.1f)
+			{
+				return;
+			}
+
+			Mod.Settings.AssetMenuCatalogWidth = width;
+			Mod.Settings.ApplyAndSave();
+		}
+
+		private void SetControlPaneShown(bool shown)
+		{
+			// One click, one write: there is no drag to wait out.
+			_ControlPaneShown.Value = shown;
+			if (Mod.Settings.ControlPaneShown == shown)
+			{
+				return;
+			}
+
+			Mod.Settings.ControlPaneShown = shown;
+			Mod.Settings.ApplyAndSave();
+		}
 	}
 }

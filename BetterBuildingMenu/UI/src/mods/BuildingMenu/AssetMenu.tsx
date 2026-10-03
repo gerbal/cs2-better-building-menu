@@ -1,16 +1,16 @@
-import { useValue } from "cs2/api";
 import classNames from "classnames";
 
 import { BuildingCatalogComponent } from "mods/BuildingCatalog/BuildingCatalog";
 import { ControlPane } from "mods/ControlPane/ControlPane";
 import { BuildingMenuHeader } from "mods/BuildingMenu/BuildingMenuHeader";
 import { AssetMenuResizeHandle, useAssetMenuHeight } from "mods/AssetMenuResizeHandle/AssetMenuResizeHandle";
+import { AssetMenuWidthHandle, useAssetMenuWidthDrag } from "mods/AssetMenuWidthHandle/AssetMenuWidthHandle";
 import { VanillaTabBarHost } from "mods/VanillaTabBarHost/VanillaTabBarHost";
 import { useVanillaLayoutForAssetMenu } from "mods/BuildingMenu/vanillaLayout";
-import { CONTROL_PANE_TOTAL, ASSET_MENU_CHROME_WIDTH } from "domain/assetMenuLayout";
+import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
+import { catalogLayoutWidth } from "domain/assetMenuLayout";
 
 import styles from "mods/BuildingMenu/assetMenu.module.scss";
-import { AssetMenuWidth$ } from "mods/bindings";
 import { gameClasses } from "mods/gameModules";
 
 const AssetMenuTheme = gameClasses("game-ui/game/components/asset-menu/asset-menu.module.scss");
@@ -30,8 +30,13 @@ export interface AssetMenuProps {
 }
 
 export const AssetMenu = ({ onClose }: AssetMenuProps) => {
-  const AssetMenuWidth = useValue(AssetMenuWidth$) + ASSET_MENU_CHROME_WIDTH;
+  const layout = useAssetMenuLayout();
+  const { menuWidth, rowWidth, paneShown } = layout;
   const { height: catalogHeight, isResizing, beginResize, blocker } = useAssetMenuHeight();
+  const widthDrag = useAssetMenuWidthDrag(layout);
+  // The header's small and large modes, judged against the menu plus the pane.
+  // Their classes carry no rules, so neither changes what is drawn.
+  const headerWidth = catalogLayoutWidth(menuWidth);
 
   // The two patches on vanilla's own layout — the column trio left-aligned,
   // the toolbar sunk beneath the control pane — live with their reasons in
@@ -41,16 +46,16 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
   return (
     <>
       {blocker}
+      {widthDrag.blocker}
       {/* The width is stated here rather than inherited: this row is wider
-          than the slot, and the slot's `overflow: visible` is what allows it. */}
-      <div className={classNames(styles.assetMenuRow)} style={{ width: AssetMenuWidth + "rem" }}>
-        <div
-          className={styles.toolContainer}
-          style={{ width: AssetMenuWidth - CONTROL_PANE_TOTAL + "rem" }}
-        >
+          than the slot, and the slot's `overflow: visible` is what allows it.
+          It is the build menu and the pane and nothing more, so no empty
+          stretch of it is left to take the mouse. */}
+      <div className={classNames(styles.assetMenuRow)} style={{ width: rowWidth + "rem" }}>
+        <div className={styles.toolContainer} style={{ width: menuWidth + "rem" }}>
           <AssetMenuResizeHandle active={isResizing} onBeginResize={beginResize} />
           <div className={styles.topBar}>
-            <BuildingMenuHeader small={AssetMenuWidth <= 685} large={AssetMenuWidth >= 850} onClose={onClose} />
+            <BuildingMenuHeader small={headerWidth <= 685} large={headerWidth >= 850} onClose={onClose} />
             <VanillaTabBarHost onClose={onClose} />
           </div>
           <div
@@ -59,8 +64,9 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
           >
             <BuildingCatalogComponent />
           </div>
+          <AssetMenuWidthHandle active={widthDrag.isResizing} onBeginResize={widthDrag.beginResize} />
         </div>
-        <ControlPane />
+        {paneShown && <ControlPane />}
       </div>
     </>
   );

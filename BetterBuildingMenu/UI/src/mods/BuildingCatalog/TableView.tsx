@@ -38,6 +38,8 @@ export interface TableViewProps {
   /** What to draw when there are no rows: the indexing notice, the scope notice, or the empty message. */
   emptyState: ReactNode;
   density: AssetMenuDensityTier;
+  /** The metric columns to draw, in order: a narrow build menu drops some (visibleTableMetrics). */
+  metrics: readonly AssetMenuMetric[];
   /** The width of one metric column; the header and every row read the same numbers. */
   columnStyle(metric: AssetMenuMetric): CSSProperties;
   nameBudget: number;
@@ -61,6 +63,7 @@ export const TableView = ({
   items,
   emptyState,
   density,
+  metrics,
   columnStyle,
   nameBudget,
   resolveFacetLabel,
@@ -101,7 +104,7 @@ export const TableView = ({
             Name and sorting by it reorders THIS column, and the column holds
             roads, props and zones, none of which are buildings. */}
         <span className={styles.identityHeader}>{translate("Tooltip.LABEL[BetterBuildingMenu.Name]", "Name")}</span>
-        {metricColumns.map((column) => {
+        {metricColumns.filter((column) => metrics.includes(column.key)).map((column) => {
           const fullLabel = translate(column.localizationKey, column.fallback) ?? column.fallback;
           const indicator = getAssetMenuColumnSortIndicator(column.key, { column: sortColumn, descending });
           const sortTarget = ASSET_MENU_COLUMN_SORT[column.key];
@@ -168,6 +171,7 @@ export const TableView = ({
               separators={separators}
               labels={labels}
               hoverCard={hoverCard}
+              metrics={metrics}
               columnStyle={columnStyle}
               resolveFacetLabel={resolveFacetLabel}
               onPlace={onPlace}

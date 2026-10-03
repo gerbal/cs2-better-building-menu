@@ -68,6 +68,8 @@ namespace BetterBuildingMenu.Systems
 		private ValueBindingHelper<int> _ActivePrefabId = null!;
 		private ValueBindingHelper<float> _AssetMenuWidth = null!;
 		private ValueBindingHelper<float> _AssetMenuHeight = null!;
+		private ValueBindingHelper<float> _AssetMenuCatalogWidth = null!;
+		private ValueBindingHelper<bool> _ControlPaneShown = null!;
 		private ValueBindingHelper<string> _CurrentSearch = null!;
 		private ValueBindingHelper<BuildingCatalogPage> _BuildingCatalogBinding = null!;
 		/// <summary>
@@ -158,7 +160,6 @@ namespace BetterBuildingMenu.Systems
 			// Seeded here and re-pushed by OnSettingsApplied, so the options screen's Tile
 			// size slider takes effect without a reload.
 			_AssetMenuTileSize = CreateBinding("AssetMenuTileSize", Mod.Settings.AssetMenuTileSize);
-			Mod.Settings.onSettingsApplied += OnSettingsApplied;
 			CreateTrigger("SearchEverything", SearchEverything);
 			_AssetMenuWidth = CreateBinding("AssetMenuWidth", 0f);
 			// Seeded from the setting rather than 0: the asset menu draws from this
@@ -167,6 +168,14 @@ namespace BetterBuildingMenu.Systems
 			_AssetMenuHeight = CreateBinding(
 				"AssetMenuHeight",
 				AssetMenuHeight.Clamp(Mod.Settings.AssetMenuHeight));
+			// Seeded from the settings like the height, so the first frame draws the
+			// player's width and pane rather than flashing the defaults.
+			_AssetMenuCatalogWidth = CreateBinding(
+				"AssetMenuCatalogWidth",
+				AssetMenuCatalogWidth.Sanitize(Mod.Settings.AssetMenuCatalogWidth));
+			_ControlPaneShown = CreateBinding("ControlPaneShown", Mod.Settings.ControlPaneShown);
+			// Only now, with every binding OnSettingsApplied re-pushes created.
+			Mod.Settings.onSettingsApplied += OnSettingsApplied;
 			_CurrentSearch = CreateBinding("CurrentSearch", string.Empty);
 			_BuildingCatalogBinding = CreateBinding("BuildingCatalog", new BuildingCatalogPage(
 				Array.Empty<BuildingCatalogEntry>(),
@@ -247,6 +256,9 @@ namespace BetterBuildingMenu.Systems
 				CreateTrigger<string>("SetAssetMenu", SetAssetMenu);
 			CreateTrigger<float>("SetAssetMenuHeight", SetAssetMenuHeight);
 			CreateTrigger("CommitAssetMenuHeight", CommitAssetMenuHeight);
+			CreateTrigger<float>("SetAssetMenuCatalogWidth", SetAssetMenuCatalogWidth);
+			CreateTrigger("CommitAssetMenuCatalogWidth", CommitAssetMenuCatalogWidth);
+			CreateTrigger<bool>("SetControlPaneShown", SetControlPaneShown);
 		}
 
 		protected override void OnDestroy()
@@ -273,13 +285,19 @@ namespace BetterBuildingMenu.Systems
 		/// </summary>
 		/// <remarks>
 		/// The parameter is the base game's <see cref="Game.Settings.Setting"/> — the delegate's
-		/// own type — not this mod's settings class. The asset menu's height needs no re-publishing; it
-		/// travels the other way, from the drag handle into the setting.
+		/// own type — not this mod's settings class. The asset menu's sizes travel both ways: from
+		/// the drag handles into the settings, and back from here when anything else changes and
+		/// applies the settings.
 		/// </remarks>
 		private void OnSettingsApplied(Game.Settings.Setting setting)
 		{
 			_AssetMenuTileSize.Value = Mod.Settings.AssetMenuTileSize;
 			_ReplaceVanillaBuildMenu.Value = Mod.Settings.ReplaceVanillaBuildMenu;
+			// The sizes too, so settings applied from anywhere but a drag (the Options
+			// screen, a tool, SetDefaults) redraw the asset menu at once.
+			_AssetMenuHeight.Value = AssetMenuHeight.Clamp(Mod.Settings.AssetMenuHeight);
+			_AssetMenuCatalogWidth.Value = AssetMenuCatalogWidth.Sanitize(Mod.Settings.AssetMenuCatalogWidth);
+			_ControlPaneShown.Value = Mod.Settings.ControlPaneShown;
 
 			// Switched off with the asset menu up: the menu goes back to its vanilla grid now
 			// rather than at the next click.

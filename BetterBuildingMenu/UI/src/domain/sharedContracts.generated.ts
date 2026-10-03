@@ -53,5 +53,10 @@ export const ASSET_MENU_MIN_HEIGHT = 108;
 export const ASSET_MENU_MAX_HEIGHT = 960;
 export const ASSET_MENU_DEFAULT_HEIGHT = 420;
 
-/** AssetMenuWidth.Max: the width the build menu and its control pane are drawn at. */
+/** AssetMenuWidth.Max: the band the build menu and its control pane may fill. */
 export const ASSET_MENU_MAX_WIDTH = 1441;
+
+/** AssetMenuCatalogWidth: the build menu's narrowest width, the value that means the default, and how near the room a drag must end to fill it. */
+export const ASSET_MENU_CATALOG_MIN_WIDTH = 735;
+export const ASSET_MENU_CATALOG_DEFAULT = 0;
+export const ASSET_MENU_CATALOG_FILL_SNAP = 2;

@@ -1,8 +1,8 @@
 namespace BetterBuildingMenu.Domain
 {
 	/// <summary>
-	/// The asset menu assembly's width: the build menu plus the control plane
-	/// beside it.
+	/// The band the asset menu row may fill: the build menu and, when shown, the
+	/// control pane beside it.
 	/// </summary>
 	/// <remarks>
 	/// Pure arithmetic, deliberately: here rather than in GridUtil, which reads it,
@@ -11,8 +11,10 @@ namespace BetterBuildingMenu.Domain
 	public static class AssetMenuWidth
 	{
 		/// <summary>
-		/// The assembly's width: the band left free beside the left-aligned tool
-		/// columns, at the layout's reference resolution.
+		/// The band left free beside the left-aligned tool columns, less the chrome the
+		/// UI adds, at the layout's reference resolution and the game's own text size.
+		/// The UI narrows it as the text scale widens vanilla's column, and resolves the
+		/// build menu's own width (AssetMenuCatalogWidth) within it.
 		/// </summary>
 		/// <remarks>The UI's copy is generated from this: see SharedContractsTests.</remarks>
 		public const float Max = 1441f;
