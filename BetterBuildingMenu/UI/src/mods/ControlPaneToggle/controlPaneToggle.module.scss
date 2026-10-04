@@ -30,10 +30,11 @@
 }
 
 // Filters on, counted, in the corner: present whether the pane is shown or not,
-// so a filter left on while the pane is hidden never narrows the menu unseen.
+// so a filter left on while the pane is hidden never narrows the menu unseen. Top
+// left, where the glyph is empty in both states: its right column shows the state.
 .badge {
   @include number-badge;
   position: absolute;
   top: -6rem;
-  right: -6rem;
+  left: -6rem;
 }

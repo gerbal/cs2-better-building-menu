@@ -24,14 +24,17 @@
   border-bottom-right-radius: var(--panelRadius);
 }
 
-// The game's resizer fills white under the mouse and while dragging.
-.widthHandle:hover,
-.widthReach:hover {
+// The game's resizer fills white under the mouse and more while dragging. The
+// strip and its reach share one hover, set from either, so they light as one.
+.widthHandleHovered,
+.widthReachHovered {
   background-color: rgba(255, 255, 255, 0.1);
 }
 
 .widthHandleActive,
-.widthReachActive {
+.widthReachActive,
+.widthHandleActive.widthHandleHovered,
+.widthReachActive.widthReachHovered {
   background-color: rgba(255, 255, 255, 0.15);
 }
 
@@ -44,18 +47,18 @@
   background-color: rgba(var(--scrollbarColor), 0.6);
 }
 
-.widthHandle:hover .widthGrip {
+.widthGripHovered {
   background-color: rgba(var(--scrollbarColor), 0.8);
 }
 
 .widthGripActive,
-.widthHandle:hover .widthGripActive {
+.widthGripActive.widthGripHovered {
   background-color: rgba(var(--scrollbarColor), 1);
 }
 
-// More of the strip to grab, past the menu's edge across the gap beside the pane:
-// nothing until the mouse is on it, so the gap still shows the city. Beside the
-// header too, which paints over the strip itself.
+// More of the strip to grab, past the menu's edge across the gap to the pane, for
+// the menu's full height, so beside the header and above a shorter pane too:
+// nothing until the mouse is on it, so the gap still shows the city.
 .widthReach {
   position: absolute;
   top: $handle-height;

@@ -310,3 +310,41 @@ describe("the width strip", () => {
     assert.deepEqual(pressed, [event]);
   });
 });
+
+describe("the width strip and its reach under the mouse", () => {
+  let hook: AssetMenuWidthDrag;
+  const Both = () => {
+    hook = useAssetMenuWidthDrag({ menuWidth: 900, bandWidth: BAND, paneShown: true });
+    return (
+      <>
+        <AssetMenuWidthHandle active={hook.isResizing} hovered={hook.isHovered} hoverProps={hook.hoverProps} onBeginResize={hook.beginResize} />
+        <AssetMenuWidthReach active={hook.isResizing} hovered={hook.isHovered} hoverProps={hook.hoverProps} onBeginResize={hook.beginResize} />
+      </>
+    );
+  };
+  const classOf = (root: ReactTestRenderer, name: string) =>
+    String(root.root.find((node) => typeof node.props.className === "string" && node.props.className.split(" ")[0] === name).props.className);
+
+  it("lights both as one handle, wherever the mouse is on them", () => {
+    let root: ReactTestRenderer | undefined;
+    act(() => {
+      root = create(<Both />);
+    });
+    const reach = root!.root.find((node) => String(node.props.className ?? "").startsWith("widthReach"));
+
+    act(() => reach.props.onMouseEnter());
+    assert.equal(classOf(root!, "widthHandle"), "widthHandle widthHandleHovered");
+    assert.equal(classOf(root!, "widthGrip"), "widthGrip widthGripHovered");
+    assert.equal(classOf(root!, "widthReach"), "widthReach widthReachHovered");
+
+    act(() => reach.props.onMouseLeave());
+    assert.equal(classOf(root!, "widthHandle"), "widthHandle");
+    assert.equal(classOf(root!, "widthReach"), "widthReach");
+    act(() => root?.unmount());
+  });
+
+  it("gives the reach the strip's hint", () => {
+    const reach = create(<AssetMenuWidthReach active={false} onBeginResize={() => undefined} />).root;
+    assert.deepEqual(reach.findByProps({ "data-tooltip": "true" }).children, ["Drag to resize, double-click to fill the space"]);
+  });
+});

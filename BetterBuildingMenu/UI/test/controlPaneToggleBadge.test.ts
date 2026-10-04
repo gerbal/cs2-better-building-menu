@@ -10,20 +10,32 @@ describe("the count badges", () => {
   const rail = declarationsOf("mods/FilterRail/filterRail.module.scss", ".badge");
 
   it("are the game's number badge", () => {
+    const game: Record<string, string> = {
+      "background-color": "var(--accentColorNormal)",
+      color: "var(--textColor)",
+      "font-weight": "bold",
+      "text-align": "center",
+      "border-radius": "10rem",
+      "box-shadow": "0 0 3rem 3rem rgba(0, 0, 0, 0.15)",
+      height: "calc(14rem * var(--fontScale))",
+      "min-width": "calc(14rem * var(--fontScale))",
+      "font-size": "calc(13rem * var(--fontScale))",
+      "line-height": "calc(11rem * var(--fontScale))",
+      "padding-top": "1rem",
+      "padding-right": "4rem",
+      "padding-bottom": "0",
+      "padding-left": "4rem",
+    };
     for (const badge of [toggle, rail]) {
-      assert.equal(badge["background-color"], "var(--accentColorNormal)");
-      assert.equal(badge.color, "var(--textColor)");
-      assert.equal(badge["font-weight"], "bold");
-      assert.equal(badge["border-radius"], "10rem");
-      assert.equal(badge["box-shadow"], "0 0 3rem 3rem rgba(0, 0, 0, 0.15)");
-      assert.match(badge.height ?? "", /14rem \* var\(--fontScale\)/);
-      assert.match(badge["font-size"] ?? "", /13rem \* var\(--fontScale\)/);
+      for (const [property, value] of Object.entries(game)) {
+        assert.equal(badge[property], value, property);
+      }
     }
   });
 
-  it("look the same on the pane button and on the filter rail", () => {
-    for (const property of ["height", "min-width", "font-size", "line-height", "padding-top", "padding-left", "border-radius", "color", "background-color", "font-weight", "box-shadow"]) {
-      assert.equal(toggle[property], rail[property], property);
-    }
+  it("sits on the pane button's empty top-left corner, clear of the column that shows the pane's state", () => {
+    assert.equal(toggle.top, "-6rem");
+    assert.equal(toggle.left, "-6rem");
+    assert.equal(toggle.right, undefined);
   });
 });

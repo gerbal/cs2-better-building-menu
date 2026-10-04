@@ -38,6 +38,15 @@ export interface AssetMenuWidthDrag {
    * when it leaves the strip. Null between drags; render it beside the menu.
    */
   blocker: JSX.Element | null;
+  /** Whether the mouse is on the strip or its reach: the two answer as one handle. */
+  isHovered: boolean;
+  /** Spread on the strip and its reach so either lights both. */
+  hoverProps: AssetMenuWidthHoverProps;
+}
+
+export interface AssetMenuWidthHoverProps {
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
 }
 
 /** What a width drag works from: the width drawn now, and what bounds it. */
@@ -56,6 +65,7 @@ export function useAssetMenuWidthDrag(
   now: () => number = Date.now
 ): AssetMenuWidthDrag {
   const [isResizing, setIsResizing] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const drag = useRef<{ active: boolean; moved: boolean; startX: number; startWidth: number; last: number; pxPerRem?: number }>({
     active: false,
     moved: false,
@@ -168,41 +178,56 @@ export function useAssetMenuWidthDrag(
     ? <div className={styles.widthBlocker} onMouseMove={moveResize} onMouseUp={endResize} onMouseLeave={endResize} />
     : null;
 
-  return { isResizing, beginResize, blocker };
+  const hoverProps: AssetMenuWidthHoverProps = {
+    onMouseEnter: () => setIsHovered(true),
+    onMouseLeave: () => setIsHovered(false),
+  };
+
+  return { isResizing, beginResize, blocker, isHovered, hoverProps };
+}
+
+/** The strip's hint, the one place the double press is told. */
+function useWidthHint(): string {
+  const { translate } = useLocalization();
+  const fallback = "Drag to resize, double-click to fill the space";
+  return translate("Tooltip.LABEL[BetterBuildingMenu.ResizeWidth]", fallback) ?? fallback;
 }
 
 export interface AssetMenuWidthHandleProps {
   active: boolean;
+  hovered?: boolean;
+  hoverProps?: AssetMenuWidthHoverProps;
   onBeginResize: (event: any) => void;
 }
 
 /**
  * The strip on the build menu's right edge: drag for the width, press twice to
  * fill the room again. Its hint is the game's Tooltip: the game draws no title
- * attribute, and the double press is told nowhere else.
+ * attribute.
  */
-export const AssetMenuWidthHandle = ({ active, onBeginResize }: AssetMenuWidthHandleProps) => {
-  const { translate } = useLocalization();
-  const fallback = "Drag to resize, double-click to fill the space";
-
-  return (
-    <Tooltip tooltip={translate("Tooltip.LABEL[BetterBuildingMenu.ResizeWidth]", fallback) ?? fallback}>
-      <div className={classNames(styles.widthHandle, active && styles.widthHandleActive)} onMouseDown={onBeginResize}>
-        <div className={classNames(styles.widthGrip, active && styles.widthGripActive)} />
-      </div>
-    </Tooltip>
-  );
-};
-
-export interface AssetMenuWidthReachProps {
-  active: boolean;
-  onBeginResize: (event: any) => void;
-}
+export const AssetMenuWidthHandle = ({ active, hovered = false, hoverProps, onBeginResize }: AssetMenuWidthHandleProps) => (
+  <Tooltip tooltip={useWidthHint()}>
+    <div
+      className={classNames(styles.widthHandle, hovered && styles.widthHandleHovered, active && styles.widthHandleActive)}
+      onMouseDown={onBeginResize}
+      {...hoverProps}
+    >
+      <div className={classNames(styles.widthGrip, hovered && styles.widthGripHovered, active && styles.widthGripActive)} />
+    </div>
+  </Tooltip>
+);
 
 /**
- * The strip's grab area past the menu's edge, across the gap beside the pane.
- * Separate from the strip because the catalog's box clips what the strip draws.
+ * The strip's grab area past the menu's edge, across the gap beside the pane, for
+ * the menu's full height. Separate from the strip because the catalog's box clips
+ * what the strip draws; it lights and hints as the strip does.
  */
-export const AssetMenuWidthReach = ({ active, onBeginResize }: AssetMenuWidthReachProps) => (
-  <div className={classNames(styles.widthReach, active && styles.widthReachActive)} onMouseDown={onBeginResize} />
+export const AssetMenuWidthReach = ({ active, hovered = false, hoverProps, onBeginResize }: AssetMenuWidthHandleProps) => (
+  <Tooltip tooltip={useWidthHint()}>
+    <div
+      className={classNames(styles.widthReach, hovered && styles.widthReachHovered, active && styles.widthReachActive)}
+      onMouseDown={onBeginResize}
+      {...hoverProps}
+    />
+  </Tooltip>
 );

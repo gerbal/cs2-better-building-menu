@@ -63,13 +63,20 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
             style={{ height: `${catalogHeight}rem` }}
           >
             <BuildingCatalogComponent />
-            <AssetMenuWidthHandle active={widthDrag.isResizing} onBeginResize={widthDrag.beginResize} />
+            <AssetMenuWidthHandle
+              active={widthDrag.isResizing}
+              hovered={widthDrag.isHovered}
+              hoverProps={widthDrag.hoverProps}
+              onBeginResize={widthDrag.beginResize}
+            />
           </div>
           {/* Only beside the pane: with it hidden the menu may reach the band's
               edge, and nothing may go past that over the social icons. */}
           {paneShown && (
             <AssetMenuWidthReach
               active={widthDrag.isResizing}
+              hovered={widthDrag.isHovered}
+              hoverProps={widthDrag.hoverProps}
               onBeginResize={(event) => widthDrag.beginResize(event, ASSET_MENU_WIDTH_HANDLE_REACH)}
             />
           )}
