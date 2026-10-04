@@ -280,8 +280,8 @@ describe("the metric columns fit the room beside the name", () => {
   it("is the measured row less the furniture and the name's basis at the default assembly", async () => {
     const { tableColumnRoom, ASSET_MENU_CHROME_WIDTH, ASSET_MENU_TABLE_ROW_FURNITURE } = await import("../src/domain/assetMenuLayout.ts");
 
-    // The row measured in game beside the pane, less the width strip the catalog
-    // now stops short of.
+    // The row the arithmetic models beside the pane (the band less the chrome, the
+    // pane and the table's chrome), less the width strip the catalog stops short of.
     assert.equal(
       tableColumnRoom(ASSET_MENU_MAX_WIDTH + ASSET_MENU_CHROME_WIDTH),
       1026 - ASSET_MENU_WIDTH_HANDLE_WIDTH - ASSET_MENU_TABLE_ROW_FURNITURE - 260
