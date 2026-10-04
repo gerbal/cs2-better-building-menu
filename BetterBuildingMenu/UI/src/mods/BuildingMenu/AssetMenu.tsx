@@ -68,7 +68,10 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
           {/* Only beside the pane: with it hidden the menu may reach the band's
               edge, and nothing may go past that over the social icons. */}
           {paneShown && (
-            <AssetMenuWidthReach onBeginResize={(event) => widthDrag.beginResize(event, ASSET_MENU_WIDTH_HANDLE_REACH)} />
+            <AssetMenuWidthReach
+              active={widthDrag.isResizing}
+              onBeginResize={(event) => widthDrag.beginResize(event, ASSET_MENU_WIDTH_HANDLE_REACH)}
+            />
           )}
         </div>
         {paneShown && <ControlPane />}

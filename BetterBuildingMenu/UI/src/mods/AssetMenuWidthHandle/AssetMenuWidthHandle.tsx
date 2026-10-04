@@ -187,7 +187,7 @@ export const AssetMenuWidthHandle = ({ active, onBeginResize }: AssetMenuWidthHa
 
   return (
     <Tooltip tooltip={translate("Tooltip.LABEL[BetterBuildingMenu.ResizeWidth]", fallback) ?? fallback}>
-      <div className={styles.widthHandle} onMouseDown={onBeginResize}>
+      <div className={classNames(styles.widthHandle, active && styles.widthHandleActive)} onMouseDown={onBeginResize}>
         <div className={classNames(styles.widthGrip, active && styles.widthGripActive)} />
       </div>
     </Tooltip>
@@ -195,6 +195,7 @@ export const AssetMenuWidthHandle = ({ active, onBeginResize }: AssetMenuWidthHa
 };
 
 export interface AssetMenuWidthReachProps {
+  active: boolean;
   onBeginResize: (event: any) => void;
 }
 
@@ -202,6 +203,6 @@ export interface AssetMenuWidthReachProps {
  * The strip's grab area past the menu's edge, across the gap beside the pane.
  * Separate from the strip because the catalog's box clips what the strip draws.
  */
-export const AssetMenuWidthReach = ({ onBeginResize }: AssetMenuWidthReachProps) => (
-  <div className={styles.widthReach} onMouseDown={onBeginResize} />
+export const AssetMenuWidthReach = ({ active, onBeginResize }: AssetMenuWidthReachProps) => (
+  <div className={classNames(styles.widthReach, active && styles.widthReachActive)} onMouseDown={onBeginResize} />
 );

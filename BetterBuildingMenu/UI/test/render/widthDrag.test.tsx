@@ -11,6 +11,7 @@ import {
 } from "../../src/domain/assetMenuLayout";
 import {
   AssetMenuWidthHandle,
+  AssetMenuWidthReach,
   DOUBLE_PRESS_MS,
   useAssetMenuWidthDrag,
   type AssetMenuWidthDrag,
@@ -287,6 +288,18 @@ describe("the width strip", () => {
     assert.equal(idle.findAll((node) => node.props.className === "widthGrip").length, 1);
 
     assert.equal(strip(true).root.findAll((node) => node.props.className === "widthGrip widthGripActive").length, 1);
+  });
+
+  it("marks the strip itself as held while a drag is on", () => {
+    assert.equal(strip(true).root.findAll((node) => node.props.className === "widthHandle widthHandleActive").length, 1);
+    assert.equal(strip(false).root.findAll((node) => node.props.className === "widthHandle").length, 1);
+  });
+
+  it("marks the reach beside the pane as held while a drag is on", () => {
+    const reach = (active: boolean) => create(<AssetMenuWidthReach active={active} onBeginResize={() => undefined} />).root;
+
+    assert.equal(reach(true).findAll((node) => node.props.className === "widthReach widthReachActive").length, 1);
+    assert.equal(reach(false).findAll((node) => node.props.className === "widthReach").length, 1);
   });
 
   it("starts the drag on a press", () => {

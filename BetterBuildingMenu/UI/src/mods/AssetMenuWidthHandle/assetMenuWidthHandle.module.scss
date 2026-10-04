@@ -1,8 +1,9 @@
 @use "../../assetMenuGeometry" as *;
 
-// The width drag: the top strip's dark bar down the catalog's right side, laid over
-// the catalog's own right margin so it takes nothing from the catalog, carrying a
-// slimmer pill than the top strip's to fit that margin.
+// The width drag: a strip down the catalog's right side, over the catalog's own
+// right margin so it takes nothing from the catalog. Drawn as the game draws its
+// resizer, as nothing until the mouse is on it, plus the top strip's pill on its
+// side, as long and half as thick to fit the margin.
 
 .widthHandle {
   position: absolute;
@@ -19,31 +20,42 @@
   // The game's own cursor, as on the height strip: the game draws its cursors and
   // maps no CSS keyword past default/pointer/none.
   cursor: url(cursor://horizontal-can-resize);
-  background-color: var(--panelColorDark);
-  backdrop-filter: var(--panelBlur);
-  // The menu's bottom corner, as the top strip carries its top ones.
+  // The menu's bottom corner, for the fill below.
   border-bottom-right-radius: var(--panelRadius);
 }
 
-// The top strip's pill on its side, as long and half as thick, at the same resting
-// weight.
+// The game's resizer fills white under the mouse and while dragging.
+.widthHandle:hover,
+.widthReach:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.widthHandleActive,
+.widthReachActive {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+// The top strip's pill on its side: the game's scrollbar thumb at rest, brightening
+// in white as the thumb does, at once and never in the accent.
 .widthGrip {
   width: 4rem;
   height: 75rem;
   border-radius: 2rem;
   background-color: rgba(var(--scrollbarColor), 0.6);
-  transition: background-color 0.15s;
 }
 
-.widthHandle:hover .widthGrip,
+.widthHandle:hover .widthGrip {
+  background-color: rgba(var(--scrollbarColor), 0.8);
+}
+
 .widthGripActive,
 .widthHandle:hover .widthGripActive {
-  background-color: var(--accentColorNormal);
+  background-color: rgba(var(--scrollbarColor), 1);
 }
 
 // More of the strip to grab, past the menu's edge across the gap beside the pane:
-// drawn as nothing, so the gap still shows the city. Beside the header too, which
-// paints over the strip itself.
+// nothing until the mouse is on it, so the gap still shows the city. Beside the
+// header too, which paints over the strip itself.
 .widthReach {
   position: absolute;
   top: $handle-height;

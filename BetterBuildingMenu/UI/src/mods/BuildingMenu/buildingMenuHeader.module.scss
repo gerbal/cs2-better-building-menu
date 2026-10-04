@@ -108,11 +108,10 @@
   height: 24rem;
   width: 24rem;
   padding: 0;
-  margin-left: 8rem;
+  margin-left: 10rem;
   // Aligns the X with the content column below rather than with the asset menu
   // edge: the catalog pads itself by 8rem, and this row sits outside it.
   margin-right: 8rem;
-  background: none;
 }
 
 // White, like vanilla's, rather than --menuText1Normal like the magnifier

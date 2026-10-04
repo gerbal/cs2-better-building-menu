@@ -27,6 +27,17 @@
   border-top-right-radius: var(--panelRadius);
 }
 
+// The game's resizer fills white under the mouse and while dragging; laid over the
+// header's dark paint here, which this strip shares.
+.resizeHandle:hover {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.1));
+}
+
+.resizeHandleActive,
+.resizeHandleActive:hover {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.15));
+}
+
 // Sized in whole pixels at this engine's rem scale, so the mark draws crisply.
 .resizeGrip {
   width: 75rem;
@@ -35,22 +46,18 @@
   // --panelRadius — that radius belongs to the panel's corners, and matching
   // it would make the grip look like a clipped fragment of the chrome.
   border-radius: 4rem;
-  // The scrollbar thumb's resting weight: a thing to grab, not a texture of
-  // the chrome.
+  // The game's scrollbar thumb at rest, brightening in white as the thumb does,
+  // at once and never in the accent.
   background-color: rgba(var(--scrollbarColor), 0.6);
-  transition: background-color 0.15s;
 }
 
-// Blue on direct hover of the strip, and only then. The grab area is the whole
-// top of the panel, so the mark answers all of it — but not the bar below,
-// which is a separate control this must not claim.
 .resizeHandle:hover .resizeGrip {
-  background-color: var(--accentColorNormal);
+  background-color: rgba(var(--scrollbarColor), 0.8);
 }
 
 .resizeGripActive,
 .resizeHandle:hover .resizeGripActive {
-  background-color: var(--accentColorNormal);
+  background-color: rgba(var(--scrollbarColor), 1);
 }
 
 .resizeBlocker {

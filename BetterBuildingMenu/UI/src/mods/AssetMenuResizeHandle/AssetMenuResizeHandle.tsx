@@ -127,7 +127,7 @@ export const AssetMenuResizeHandle = ({ active, onBeginResize }: AssetMenuResize
 
   return (
     <div
-      className={styles.resizeHandle}
+      className={classNames(styles.resizeHandle, active && styles.resizeHandleActive)}
       onMouseDown={onBeginResize}
       title={translate("Tooltip.LABEL[BetterBuildingMenu.ResizeHeight]", "Drag to resize") ?? "Drag to resize"}
     >

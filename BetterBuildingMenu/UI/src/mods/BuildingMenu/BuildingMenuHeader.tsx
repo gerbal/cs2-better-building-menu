@@ -119,7 +119,7 @@ export const BuildingMenuHeader = memo(function BuildingMenuHeader({ small, larg
           <Tooltip tooltip={localizedLabel("Tooltip.LABEL[BetterBuildingMenu.CloseMenu]", "Close")}>
             <Button
               className={styles.menuClose}
-              variant="icon"
+              variant="round"
               aria-label={localizedLabel("Tooltip.LABEL[BetterBuildingMenu.CloseMenu]", "Close")}
               onSelect={onClose}
             >

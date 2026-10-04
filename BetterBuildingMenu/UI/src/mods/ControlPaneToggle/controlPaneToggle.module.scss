@@ -1,50 +1,39 @@
+@use "../../numberBadge" as *;
+
 // The control pane's show/hide button: an icon button in the build menu's header,
 // beside the close X, where desktop apps keep the toggle for a side panel.
 
+// Drawn as the game draws its close buttons: 24rem on the round highlight theme,
+// which paints the hover and the press, so no background here.
 .toggle {
   position: relative;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 30rem;
-  width: 30rem;
+  height: 24rem;
+  width: 24rem;
   padding: 0;
-  margin-left: 8rem;
-  background: none;
+  margin-left: 10rem;
 }
 
-// Masked and tinted like the header's search glyph.
+// White and masked like the close glyph beside it. The pane's state is the glyph
+// itself, an outline or a filled column, as the game's collapsible panels swap
+// theirs; the accent would read as keyboard focus.
 .glyph {
   height: 24rem;
   width: 24rem;
-  background-color: var(--menuText1Normal);
+  background-color: rgb(255, 255, 255);
   mask-size: contain;
   mask-position: 50% 50%;
-}
-
-// Shown reads as pressed: the glyph takes the accent, as the resize grips do
-// while they are held.
-.toggleShown .glyph {
-  background-color: var(--accentColorNormal);
+  mask-repeat: no-repeat;
 }
 
 // Filters on, counted, in the corner: present whether the pane is shown or not,
 // so a filter left on while the pane is hidden never narrows the menu unseen.
-// Dark on the accent like the filter rail's badge, and sized by the text scale.
 .badge {
+  @include number-badge;
   position: absolute;
   top: -6rem;
-  right: -8rem;
-  min-width: calc(18rem * var(--fontScale));
-  height: calc(18rem * var(--fontScale));
-  padding-left: 4rem;
-  padding-right: 4rem;
-  border-radius: 9rem;
-  background-color: var(--accentColorNormal);
-  color: rgba(0, 0, 0, 0.85);
-  font-size: var(--fontSizeXS);
-  line-height: calc(18rem * var(--fontScale));
-  text-align: center;
-  pointer-events: none;
+  right: -6rem;
 }
