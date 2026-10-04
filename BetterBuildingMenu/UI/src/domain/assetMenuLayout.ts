@@ -153,12 +153,14 @@ export const ASSET_MENU_TABLE_NAME_BASIS = 260;
 
 /**
  * The room the metric columns really have: the assembly less the control pane,
- * the build menu's chrome, the row's furniture and the name's basis. Never negative
- * — a narrow build menu runs the arithmetic out and the columns sit at their minima.
+ * the build menu's chrome, the width strip, the row's furniture and the name's
+ * basis. Never negative — a narrow build menu runs the arithmetic out and the
+ * columns sit at their minima.
  */
 export function tableColumnRoom(outerWidth: number): number {
   const room = outerWidth
     - ASSET_MENU_CHROME_WIDTH
+    - ASSET_MENU_WIDTH_HANDLE_WIDTH
     - CONTROL_PANE_TOTAL
     - ASSET_MENU_TABLE_CHROME
     - ASSET_MENU_TABLE_ROW_FURNITURE
@@ -362,12 +364,11 @@ export const ASSET_MENU_WIDTH_HANDLE_WIDTH = sheetRem("widthHandleWidth");
 
 /**
  * The room the build menu has: the band, less the control pane while it is
- * shown. Without the pane, less half the width strip instead: the strip is
- * centred on the menu's edge, and its outer half would otherwise reach past the
- * band over the social icons beside it.
+ * shown. The width strip lies inside the menu, so without the pane the menu may
+ * take the whole band.
  */
 export function catalogRoom(bandWidth: number, paneShown: boolean): number {
-  return paneShown ? bandWidth - CONTROL_PANE_TOTAL : bandWidth - ASSET_MENU_WIDTH_HANDLE_WIDTH / 2;
+  return paneShown ? bandWidth - CONTROL_PANE_TOTAL : bandWidth;
 }
 
 /**

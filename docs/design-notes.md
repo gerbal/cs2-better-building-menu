@@ -89,11 +89,18 @@ the pane; C# only keeps the stored value well-formed.
 Filling the room in view stores the default with the pane shown, and full
 (`ASSET_MENU_CATALOG_FULL`, the widest band there is) with it hidden. A drag
 released within 2 of the room fills it, and so does a second press on the strip
-soon after the first. With the pane hidden the room is the band less half the
-width strip: the strip is centred on the menu's edge, and filling the whole band
-put its outer half over the social icons, so a press on their left edge started a
-drag. A settings file from before any of this reads as the default, which draws
-the layout it always did.
+soon after the first. With the pane hidden the room is the whole band: the width
+strip lies inside the menu, so a filled menu ends where the row with the pane
+does, at the social icons. A settings file from before any of this reads as the
+default, which draws the layout it always did.
+
+**The width strip is the height strip on its side.** The same dark bar, as thick,
+carrying the same pill, down the catalog's right side inside the build menu, with
+the menu's bottom corner rounded on it as the top strip carries the top ones. The
+catalog stops short of it by the strip's width, which the table's arithmetic takes
+off the name's room. A first version was a bare pill centred on the menu's edge:
+half over the catalog and half over the city, it read as the catalog's scrollbar
+rather than as the top strip's twin.
 
 **The band follows the text scale.** Vanilla's tool column, which the row starts
 beside, is 380 wide at the game's own text size and grows by half the text scale's

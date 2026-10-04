@@ -264,14 +264,11 @@ describe("sizes the stylesheets draw", () => {
     assert.equal(ASSET_MENU_RESIZE_HANDLE_HEIGHT, rem(strip.height));
   });
 
-  it("a width drag measures against the strip's real width, and the strip stays out of the pane", () => {
+  it("a width drag measures against the strip's real width, and the strip lies inside the build menu", () => {
     const strip = declarationsOf("mods/AssetMenuWidthHandle/assetMenuWidthHandle.module.scss", ".widthHandle");
-    const pane = declarationsOf("mods/ControlPane/controlPane.module.scss", ".pane");
 
     assert.equal(ASSET_MENU_WIDTH_HANDLE_WIDTH, rem(strip.width));
-    // Centred on the build menu's edge: half inside it, half in the gap.
-    assert.equal(strip.right, `-${ASSET_MENU_WIDTH_HANDLE_WIDTH / 2}rem`);
-    assert.ok(ASSET_MENU_WIDTH_HANDLE_WIDTH / 2 <= rem(pane["margin-left"]), "the strip reaches into the pane");
+    assert.equal(strip.right, "0");
     assert.equal(strip.cursor, "url(cursor://horizontal-can-resize)");
   });
 });
@@ -283,7 +280,12 @@ describe("the metric columns fit the room beside the name", () => {
   it("is the measured row less the furniture and the name's basis at the default assembly", async () => {
     const { tableColumnRoom, ASSET_MENU_CHROME_WIDTH, ASSET_MENU_TABLE_ROW_FURNITURE } = await import("../src/domain/assetMenuLayout.ts");
 
-    assert.equal(tableColumnRoom(ASSET_MENU_MAX_WIDTH + ASSET_MENU_CHROME_WIDTH), 1026 - ASSET_MENU_TABLE_ROW_FURNITURE - 260);
+    // The row measured in game beside the pane, less the width strip the catalog
+    // now stops short of.
+    assert.equal(
+      tableColumnRoom(ASSET_MENU_MAX_WIDTH + ASSET_MENU_CHROME_WIDTH),
+      1026 - ASSET_MENU_WIDTH_HANDLE_WIDTH - ASSET_MENU_TABLE_ROW_FURNITURE - 260
+    );
   });
 
   it("holds the set to the room where the preference would overrun it", async () => {
@@ -335,21 +337,21 @@ describe("the build menu's width", () => {
 
   it("fills the room it has when told to fill: beside the pane, and the band without it", () => {
     assert.equal(resolveCatalogWidth(ASSET_MENU_CATALOG_FULL, BAND, true), 1091);
-    // Hidden, less half the width strip, whose outer half then ends at the band's
-    // edge rather than over the social icons beside it.
-    assert.equal(resolveCatalogWidth(ASSET_MENU_CATALOG_FULL, BAND, false), 1476 - ASSET_MENU_WIDTH_HANDLE_WIDTH / 2);
+    // Hidden, the whole band: the width strip lies inside the menu, so nothing
+    // reaches past the band's edge over the social icons beside it.
+    assert.equal(resolveCatalogWidth(ASSET_MENU_CATALOG_FULL, BAND, false), 1476);
   });
 
   it("fills a band the text scale has narrowed", () => {
     const band = assetMenuBandWidth(ASSET_MENU_MAX_WIDTH, 1.5);
-    assert.equal(resolveCatalogWidth(ASSET_MENU_CATALOG_FULL, band, false), band - ASSET_MENU_WIDTH_HANDLE_WIDTH / 2);
+    assert.equal(resolveCatalogWidth(ASSET_MENU_CATALOG_FULL, band, false), band);
     assert.equal(resolveCatalogWidth(ASSET_MENU_CATALOG_DEFAULT, band, false), band - CONTROL_PANE_TOTAL);
   });
 
   it("holds a chosen width between the minimum and the room", () => {
     assert.equal(resolveCatalogWidth(900, BAND, true), 900);
     assert.equal(resolveCatalogWidth(100, BAND, true), ASSET_MENU_CATALOG_MIN_WIDTH);
-    assert.equal(resolveCatalogWidth(5000, BAND, false), 1471);
+    assert.equal(resolveCatalogWidth(5000, BAND, false), 1476);
   });
 
   it("draws a width that no longer fits at the room, and gives it back when the pane goes", () => {
@@ -385,7 +387,7 @@ describe("dragging the build menu's width", () => {
 
   it("stops at the room", () => {
     assert.equal(draggedCatalogWidth(900, 500, 5000, BAND, true, 1), 1091);
-    assert.equal(draggedCatalogWidth(900, 500, 5000, BAND, false, 1), 1471);
+    assert.equal(draggedCatalogWidth(900, 500, 5000, BAND, false, 1), 1476);
   });
 
   it("falls back to the 720p scale when the strip could not be measured", () => {
@@ -400,8 +402,8 @@ describe("where a width drag lands", () => {
   });
 
   it("stores full when it ends against the room with the pane hidden", () => {
-    assert.equal(releasedCatalogWidth(1471, BAND, false), ASSET_MENU_CATALOG_FULL);
-    assert.equal(releasedCatalogWidth(1469.5, BAND, false), ASSET_MENU_CATALOG_FULL);
+    assert.equal(releasedCatalogWidth(1476, BAND, false), ASSET_MENU_CATALOG_FULL);
+    assert.equal(releasedCatalogWidth(1474.5, BAND, false), ASSET_MENU_CATALOG_FULL);
   });
 
   it("stores the width anywhere else", () => {
@@ -459,8 +461,9 @@ describe("the table's columns at a narrow build menu", () => {
   });
 
   it("always keeps the column the table is sorted by", () => {
-    // Parking's 52 still fits beside cost and upkeep (268 of 269) once the rest have gone.
-    assert.deepEqual(visibleTableMetrics(at(735), 1, "parking"), ["cost", "upkeep", "parking"]);
+    // Cost, upkeep and parking need 268 and the narrowest menu has 255, so upkeep
+    // goes before the sorted column would.
+    assert.deepEqual(visibleTableMetrics(at(735), 1, "parking"), ["cost", "parking"]);
     assert.ok(visibleTableMetrics(at(735), 1, "capacity").includes("capacity"));
   });
 

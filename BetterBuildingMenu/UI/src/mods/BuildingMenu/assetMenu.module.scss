@@ -1,3 +1,5 @@
+@use "../../assetMenuGeometry" as *;
+
 @keyframes entry {
   0% {
     bottom: 137rem - 20rem;
@@ -59,6 +61,9 @@
   // with z-index auto the later one in the DOM wins on paint order — the
   // zoning tiles then paint straight over the section picker.
   z-index: 0;
+
+  // The width strip runs down this edge; the catalog stops short of it.
+  padding-right: $width-handle-width;
 
   // Grow to the cap the parent sets, shrink below it.
   flex: 0 1 auto;

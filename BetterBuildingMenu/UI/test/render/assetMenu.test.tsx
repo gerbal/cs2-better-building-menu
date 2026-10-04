@@ -37,13 +37,13 @@ describe("the asset menu's row", () => {
     assert.doesNotMatch(html, /class="pane"/);
   });
 
-  it("gives a filled menu the band less the strip's outer half when the pane is hidden", () => {
+  it("gives a filled menu the whole band when the pane is hidden", () => {
     setBinding("BetterBuildingMenu", "ControlPaneShown", false);
     setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", ASSET_MENU_CATALOG_FULL);
     const html = render();
 
-    assert.equal(widthOf(html, "assetMenuRow"), 1471);
-    assert.equal(widthOf(html, "toolContainer"), 1471);
+    assert.equal(widthOf(html, "assetMenuRow"), 1476);
+    assert.equal(widthOf(html, "toolContainer"), 1476);
   });
 
   it("is no wider than the menu and the pane, so nothing beside a narrow menu takes the mouse", () => {
@@ -89,5 +89,14 @@ describe("the asset menu's width strip", () => {
     act(() => strip.props.onMouseDown({ button: 0, clientX: 500, currentTarget: { getBoundingClientRect: () => ({ width: 10 }) } }));
 
     assert.equal(root!.root.findAll((node) => node.props.className === "widthBlocker").length, 1);
+  });
+
+  it("draws the strip down the catalog's side, below the header", () => {
+    act(() => {
+      root = create(<AssetMenu onClose={() => {}} />);
+    });
+    const content = root!.root.find((node) => node.type === "div" && String(node.props.className ?? "").split(" ").includes("content"));
+
+    assert.equal(content.findAll((node) => node.props.className === "widthHandle").length, 1);
   });
 });

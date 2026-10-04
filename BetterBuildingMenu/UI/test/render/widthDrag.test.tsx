@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { resetBindings, triggers } from "../harness/stubs/cs2-api";
-import { ASSET_MENU_CATALOG_DEFAULT, ASSET_MENU_CATALOG_FULL, draggedCatalogWidth } from "../../src/domain/assetMenuLayout";
+import { ASSET_MENU_CATALOG_DEFAULT, ASSET_MENU_CATALOG_FULL, ASSET_MENU_WIDTH_HANDLE_WIDTH, draggedCatalogWidth } from "../../src/domain/assetMenuLayout";
 import {
   AssetMenuWidthHandle,
   DOUBLE_PRESS_MS,
@@ -29,9 +29,9 @@ const Probe = ({ width, paneShown }: { width: number; paneShown: boolean }) => {
 
 const widths = () => triggers.filter((call) => call.name === "SetAssetMenuCatalogWidth").map((call) => call.args[0]);
 const names = () => triggers.map((call) => call.name);
-// The strip is drawn 10px wide, so a pixel is a rem here.
+// The strip is drawn as many pixels wide as it is rem, so a pixel is a rem here.
 const press = (clientX = 500, button = 0) =>
-  act(() => drag.beginResize({ button, clientX, currentTarget: { getBoundingClientRect: () => ({ width: 10 }) } }));
+  act(() => drag.beginResize({ button, clientX, currentTarget: { getBoundingClientRect: () => ({ width: ASSET_MENU_WIDTH_HANDLE_WIDTH }) } }));
 
 describe("dragging the build menu's width", () => {
   let root: ReactTestRenderer | undefined;

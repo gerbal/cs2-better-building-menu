@@ -1,17 +1,17 @@
 @use "../../assetMenuGeometry" as *;
 
-// The width drag: a strip down the build menu's right edge, centred on it, so half
-// of it reaches into the gap beside the control pane and no further.
+// The width drag: the height strip's bar turned on its side, down the catalog's
+// right edge inside the build menu. The same dark bar, as thick, carrying the same
+// pill, so the two edges read as one control.
 
 .widthHandle {
   position: absolute;
-  top: $handle-height;
+  top: 0;
   bottom: 0;
-  right: $width-handle-width * -0.5;
+  right: 0;
   width: $width-handle-width;
-  // Below the header (topBar is 40), whose popovers hang over the catalog's top,
-  // and above the catalog (0), so it can be grabbed all down the catalog's side.
-  z-index: 30;
+  // Above the catalog it borders, which keeps out from under it by its padding.
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -19,6 +19,10 @@
   // The game's own cursor, as on the height strip: the game draws its cursors and
   // maps no CSS keyword past default/pointer/none.
   cursor: url(cursor://horizontal-can-resize);
+  background-color: var(--panelColorDark);
+  backdrop-filter: var(--panelBlur);
+  // The menu's bottom corner, as the top strip carries its top ones.
+  border-bottom-right-radius: var(--panelRadius);
 }
 
 // The height strip's grip on its side: the same pill, the same resting weight.

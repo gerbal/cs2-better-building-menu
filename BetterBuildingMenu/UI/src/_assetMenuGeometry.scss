@@ -40,7 +40,7 @@ $pane-gap: 6rem;
 // reports pixels, and this is a length known in both.
 $handle-height: 14rem;
 
-// The width strip on the build menu's right edge, which a width drag measures rem
-// against, as the height drag measures the top strip. Half of it reaches into the
-// gap beside the control pane, so it must stay within twice $pane-gap.
-$width-handle-width: 10rem;
+// The width strip down the build menu's right side, which a width drag measures rem
+// against, as the height drag measures the top strip: as thick as that strip, so
+// the two read as one control on two edges.
+$width-handle-width: $handle-height;

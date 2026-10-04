@@ -8,6 +8,7 @@ import { useTextScale } from "domain/textScaleSetting";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
 import {
   ASSET_MENU_CHROME_WIDTH,
+  ASSET_MENU_WIDTH_HANDLE_WIDTH,
   catalogLayoutWidth,
   getAssetMenuCatalogMaxHeight,
   ASSET_MENU_IDENTITY_MIN,
@@ -130,12 +131,14 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
     flexBasis: `${columnWidths[metric]}rem`,
   }), [columnWidths]);
   // The width the NAME actually gets: the layout width less the pane and the
-  // chrome is the build menu, then the columns and the row's furniture come off.
+  // chrome is the build menu, then the width strip, the columns and the row's
+  // furniture come off.
   // Erring small shortens sooner, never later.
   const nameWidth = Math.max(
     ASSET_MENU_IDENTITY_MIN - ASSET_MENU_TABLE_ROW_FURNITURE,
     layoutWidth
       - ASSET_MENU_CHROME_WIDTH
+      - ASSET_MENU_WIDTH_HANDLE_WIDTH
       - CONTROL_PANE_TOTAL
       - Object.values(columnWidths).reduce<number>((total, width) => total + (width ?? 0), 0)
       - ASSET_MENU_TABLE_ROW_FURNITURE

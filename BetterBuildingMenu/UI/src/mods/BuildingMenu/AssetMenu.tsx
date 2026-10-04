@@ -63,8 +63,8 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
             style={{ height: `${catalogHeight}rem` }}
           >
             <BuildingCatalogComponent />
+            <AssetMenuWidthHandle active={widthDrag.isResizing} onBeginResize={widthDrag.beginResize} />
           </div>
-          <AssetMenuWidthHandle active={widthDrag.isResizing} onBeginResize={widthDrag.beginResize} />
         </div>
         {paneShown && <ControlPane />}
       </div>
