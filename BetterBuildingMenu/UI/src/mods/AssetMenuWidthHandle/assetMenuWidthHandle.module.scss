@@ -56,8 +56,9 @@
   background-color: rgba(var(--scrollbarColor), 1);
 }
 
-// More of the strip to grab, past the menu's edge across the gap to the pane, for
-// the menu's full height, so beside the header and above a shorter pane too:
+// More of the strip to grab, past the menu's edge across the gap to the pane, from
+// the header down to the menu's bottom (never beside the top strip), so beside the
+// header and above a shorter pane too:
 // nothing until the mouse is on it, so the gap still shows the city.
 .widthReach {
   position: absolute;

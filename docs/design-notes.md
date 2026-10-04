@@ -99,9 +99,10 @@ catalog's right side over the catalog's right padding, so the catalog keeps its
 width and the table's arithmetic is untouched; the compact density's right padding
 is 8 rem for it too. It carries the top strip's pill on its side, as long and half
 as thick to fit the margin. While the pane is shown, the grab area continues across
-the 6 rem gap to the pane, for the menu's full height: beside the header, and above
-the pane where the pane is the shorter, so that 6 rem column of city takes no world
-click. The catalog's box clips what the strip draws, so that part is its own
+the 6 rem gap to the pane, from the header down to the menu's bottom: beside the
+header, and above the pane where the pane is the shorter, so that 6 rem column of
+city takes no world click. It stops at the top strip; nothing grabs beside or above
+that. The catalog's box clips what the strip draws, so that part is its own
 element; it lights, hints and measures a press as the strip does, and it is absent
 with the pane hidden so nothing reaches past the band's edge.
 

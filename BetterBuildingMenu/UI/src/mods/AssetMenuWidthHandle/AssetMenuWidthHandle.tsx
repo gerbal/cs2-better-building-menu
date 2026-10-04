@@ -218,8 +218,8 @@ export const AssetMenuWidthHandle = ({ active, hovered = false, hoverProps, onBe
 );
 
 /**
- * The strip's grab area past the menu's edge, across the gap beside the pane, for
- * the menu's full height. Separate from the strip because the catalog's box clips
+ * The strip's grab area past the menu's edge, across the gap beside the pane, from
+ * the header down to the menu's bottom. Separate from the strip because the catalog's box clips
  * what the strip draws; it lights and hints as the strip does.
  */
 export const AssetMenuWidthReach = ({ active, hovered = false, hoverProps, onBeginResize }: AssetMenuWidthHandleProps) => (
