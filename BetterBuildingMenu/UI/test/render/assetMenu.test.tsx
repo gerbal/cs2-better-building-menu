@@ -91,6 +91,28 @@ describe("the asset menu's width strip", () => {
     assert.equal(root!.root.findAll((node) => node.props.className === "widthBlocker").length, 1);
   });
 
+  it("reaches into the gap beside the pane while it is shown, and a press there starts the drag", () => {
+    act(() => {
+      root = create(<AssetMenu onClose={() => {}} />);
+    });
+    const content = root!.root.find((node) => node.type === "div" && String(node.props.className ?? "").split(" ").includes("content"));
+    const reach = root!.root.findAll((node) => node.props.className === "widthReach");
+
+    assert.equal(reach.length, 1);
+    assert.equal(content.findAll((node) => node.props.className === "widthReach").length, 0, "outside the catalog's clipped box");
+    act(() => reach[0].props.onMouseDown({ button: 0, clientX: 500, currentTarget: { getBoundingClientRect: () => ({ width: 6 }) } }));
+    assert.equal(root!.root.findAll((node) => node.props.className === "widthBlocker").length, 1);
+  });
+
+  it("reaches nowhere past the menu while the pane is hidden", () => {
+    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
+    act(() => {
+      root = create(<AssetMenu onClose={() => {}} />);
+    });
+
+    assert.equal(root!.root.findAll((node) => node.props.className === "widthReach").length, 0);
+  });
+
   it("draws the strip down the catalog's side, below the header", () => {
     act(() => {
       root = create(<AssetMenu onClose={() => {}} />);

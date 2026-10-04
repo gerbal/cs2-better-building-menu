@@ -20,6 +20,7 @@ import {
   ASSET_MENU_CATALOG_FULL,
   ASSET_MENU_CATALOG_MIN_WIDTH,
   ASSET_MENU_WIDTH_HANDLE_WIDTH,
+  ASSET_MENU_WIDTH_HANDLE_REACH,
   ASSET_MENU_COLUMN_MAX as COMFORTABLE_COLUMNS,
   REM_IN_PX_AT_720P,
   getAssetMenuColumnWidths as columnWidthsAt,
@@ -271,6 +272,12 @@ describe("sizes the stylesheets draw", () => {
     assert.equal(strip.right, "0");
     assert.equal(strip.cursor, "url(cursor://horizontal-can-resize)");
   });
+
+  it("a press on the reach beside the pane measures against the reach's real width", () => {
+    const reach = declarationsOf("mods/AssetMenuWidthHandle/assetMenuWidthHandle.module.scss", ".widthReach");
+
+    assert.equal(ASSET_MENU_WIDTH_HANDLE_REACH, rem(reach.width));
+  });
 });
 
 describe("the metric columns fit the room beside the name", () => {
@@ -280,12 +287,7 @@ describe("the metric columns fit the room beside the name", () => {
   it("is the measured row less the furniture and the name's basis at the default assembly", async () => {
     const { tableColumnRoom, ASSET_MENU_CHROME_WIDTH, ASSET_MENU_TABLE_ROW_FURNITURE } = await import("../src/domain/assetMenuLayout.ts");
 
-    // The row the arithmetic models beside the pane (the band less the chrome, the
-    // pane and the table's chrome), less the width strip the catalog stops short of.
-    assert.equal(
-      tableColumnRoom(ASSET_MENU_MAX_WIDTH + ASSET_MENU_CHROME_WIDTH),
-      1026 - ASSET_MENU_WIDTH_HANDLE_WIDTH - ASSET_MENU_TABLE_ROW_FURNITURE - 260
-    );
+    assert.equal(tableColumnRoom(ASSET_MENU_MAX_WIDTH + ASSET_MENU_CHROME_WIDTH), 1026 - ASSET_MENU_TABLE_ROW_FURNITURE - 260);
   });
 
   it("holds the set to the room where the preference would overrun it", async () => {
@@ -461,9 +463,8 @@ describe("the table's columns at a narrow build menu", () => {
   });
 
   it("always keeps the column the table is sorted by", () => {
-    // Cost, upkeep and parking need 268 and the narrowest menu has 255, so upkeep
-    // goes before the sorted column would.
-    assert.deepEqual(visibleTableMetrics(at(735), 1, "parking"), ["cost", "parking"]);
+    // Parking's 52 still fits beside cost and upkeep (268 of 269) once the rest have gone.
+    assert.deepEqual(visibleTableMetrics(at(735), 1, "parking"), ["cost", "upkeep", "parking"]);
     assert.ok(visibleTableMetrics(at(735), 1, "capacity").includes("capacity"));
   });
 

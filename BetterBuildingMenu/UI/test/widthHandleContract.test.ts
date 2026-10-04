@@ -1,37 +1,47 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { declarationsOf } from "./harness/compiledCss.ts";
+import { declarationsOf, rem, sides } from "./harness/compiledCss.ts";
 
-// The two drag strips are one control on two edges: the same dark bar, as thick,
-// carrying the same pill.
-describe("the width strip beside the height strip", () => {
+// The width grip lives in the catalog's own right margin, so the catalog keeps its
+// width: a dark band like the top strip's, carrying a slimmer pill.
+describe("the width strip in the catalog's margin", () => {
   const top = declarationsOf("mods/AssetMenuResizeHandle/assetMenuResizeHandle.module.scss", ".resizeHandle");
   const topGrip = declarationsOf("mods/AssetMenuResizeHandle/assetMenuResizeHandle.module.scss", ".resizeGrip");
-  const side = declarationsOf("mods/AssetMenuWidthHandle/assetMenuWidthHandle.module.scss", ".widthHandle");
-  const sideGrip = declarationsOf("mods/AssetMenuWidthHandle/assetMenuWidthHandle.module.scss", ".widthGrip");
+  const band = declarationsOf("mods/AssetMenuWidthHandle/assetMenuWidthHandle.module.scss", ".widthHandle");
+  const grip = declarationsOf("mods/AssetMenuWidthHandle/assetMenuWidthHandle.module.scss", ".widthGrip");
+  const reach = declarationsOf("mods/AssetMenuWidthHandle/assetMenuWidthHandle.module.scss", ".widthReach");
   const content = declarationsOf("mods/BuildingMenu/assetMenu.module.scss", ".content");
+  const pane = declarationsOf("mods/ControlPane/controlPane.module.scss", ".pane");
+  const rightPadding = (selector: string) =>
+    rem(declarationsOf("mods/BuildingCatalog/buildingCatalog.module.scss", selector)["padding-right"] ?? sides(declarationsOf("mods/BuildingCatalog/buildingCatalog.module.scss", selector).padding)[1]);
 
-  it("is the same dark bar", () => {
-    assert.equal(side["background-color"], top["background-color"]);
-    assert.equal(side["backdrop-filter"], top["backdrop-filter"]);
+  it("is the top strip's dark bar", () => {
+    assert.equal(band["background-color"], top["background-color"]);
+    assert.equal(band["backdrop-filter"], top["backdrop-filter"]);
   });
 
-  it("is as thick as the top strip", () => {
-    assert.equal(side.width, top.height);
+  it("fits the catalog's right margin in every density, so the catalog keeps its width", () => {
+    for (const selector of [".catalog", ".densityDefault", ".densityCompact"]) {
+      assert.ok(rem(band.width) <= rightPadding(selector), `${selector}: ${band.width} over ${rightPadding(selector)}rem`);
+    }
+    assert.equal(content["padding-right"], undefined, "the catalog is not pushed in");
   });
 
-  it("carries the same pill, turned on its side", () => {
-    assert.equal(sideGrip.width, topGrip.height);
-    assert.equal(sideGrip.height, topGrip.width);
-    assert.equal(sideGrip["border-radius"], topGrip["border-radius"]);
-    assert.equal(sideGrip["background-color"], topGrip["background-color"]);
+  it("carries a pill as long as the top strip's, half as thick, rounded the same way", () => {
+    assert.equal(grip.height, topGrip.width);
+    assert.equal(rem(grip.width), rem(topGrip.height) / 2);
+    assert.equal(rem(grip["border-radius"]), rem(grip.width) / 2);
+    assert.equal(grip["background-color"], topGrip["background-color"]);
   });
 
   it("rounds the menu's bottom corner, as the top strip rounds the top ones", () => {
-    assert.equal(side["border-bottom-right-radius"], "var(--panelRadius)");
+    assert.equal(band.right, "0");
+    assert.equal(band["border-bottom-right-radius"], "var(--panelRadius)");
   });
 
-  it("keeps the catalog out from under it", () => {
-    assert.equal(content["padding-right"], side.width);
+  it("reaches across the gap beside the pane, and no further", () => {
+    assert.equal(reach.width, pane["margin-left"]);
+    assert.equal(reach.right, `-${pane["margin-left"]}`);
+    assert.equal(reach.cursor, "url(cursor://horizontal-can-resize)");
   });
 });

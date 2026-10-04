@@ -2,7 +2,13 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { resetBindings, triggers } from "../harness/stubs/cs2-api";
-import { ASSET_MENU_CATALOG_DEFAULT, ASSET_MENU_CATALOG_FULL, ASSET_MENU_WIDTH_HANDLE_WIDTH, draggedCatalogWidth } from "../../src/domain/assetMenuLayout";
+import {
+  ASSET_MENU_CATALOG_DEFAULT,
+  ASSET_MENU_CATALOG_FULL,
+  ASSET_MENU_WIDTH_HANDLE_REACH,
+  ASSET_MENU_WIDTH_HANDLE_WIDTH,
+  draggedCatalogWidth,
+} from "../../src/domain/assetMenuLayout";
 import {
   AssetMenuWidthHandle,
   DOUBLE_PRESS_MS,
@@ -114,6 +120,19 @@ describe("dragging the build menu's width", () => {
     release();
 
     assert.deepEqual(names(), []);
+  });
+
+  it("measures a press on the reach beside the pane against the reach's own width", () => {
+    mount();
+    // Drawn as many pixels wide as it is rem, so a pixel is a rem here too.
+    act(() => drag.beginResize(
+      { button: 0, clientX: 500, currentTarget: { getBoundingClientRect: () => ({ width: ASSET_MENU_WIDTH_HANDLE_REACH }) } },
+      ASSET_MENU_WIDTH_HANDLE_REACH
+    ));
+    move(520);
+    nextFrame();
+
+    assert.deepEqual(widths(), [draggedCatalogWidth(900, 500, 520, BAND, true, 1)]);
   });
 
   it("fills the whole band on a double press with the pane hidden", () => {

@@ -10,7 +10,6 @@ import {
   ASSET_MENU_CHROME_WIDTH,
   ASSET_MENU_COLUMN_MAX,
   ASSET_MENU_TABLE_ROW_FURNITURE,
-  ASSET_MENU_WIDTH_HANDLE_WIDTH,
   type AssetMenuMetric,
 } from "../../src/domain/assetMenuLayout";
 import { shortenTileLabel, tableLabelCharBudget } from "../../src/domain/tileLabel";
@@ -193,12 +192,13 @@ describe("the table follows the build menu's width", () => {
 describe("the table's names follow the build menu's width", () => {
   // Long enough to be shortened at every width the menu reaches.
   const name = "Regional Transit Interchange with Underground Parking, Bus Terminal and Rooftop Gardens Extension";
-  // The room the name has: the build menu, less its chrome, the width strip down
-  // its side, the columns at their comfortable widths and the row's furniture.
+  // The room the name has: the build menu, less its chrome, the columns at their
+  // comfortable widths and the row's furniture. The width strip sits in the
+  // catalog's own margin and takes none of it.
   const shortenedAt = (menuWidth: number, metrics: AssetMenuMetric[]) => shortenTileLabel(
     name,
     tableLabelCharBudget(
-      menuWidth - ASSET_MENU_CHROME_WIDTH - ASSET_MENU_WIDTH_HANDLE_WIDTH
+      menuWidth - ASSET_MENU_CHROME_WIDTH
         - metrics.reduce((total, metric) => total + ASSET_MENU_COLUMN_MAX[metric], 0)
         - ASSET_MENU_TABLE_ROW_FURNITURE
     )

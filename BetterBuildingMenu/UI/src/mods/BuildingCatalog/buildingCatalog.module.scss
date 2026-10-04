@@ -31,6 +31,8 @@
 
 .densityCompact {
   padding: 6rem;
+  // The width strip lies in this margin, so it stays as wide as the strip.
+  padding-right: $width-handle-width;
 
   .row {
     height: 84rem;

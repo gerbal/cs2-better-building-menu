@@ -4,11 +4,11 @@ import { BuildingCatalogComponent } from "mods/BuildingCatalog/BuildingCatalog";
 import { ControlPane } from "mods/ControlPane/ControlPane";
 import { BuildingMenuHeader } from "mods/BuildingMenu/BuildingMenuHeader";
 import { AssetMenuResizeHandle, useAssetMenuHeight } from "mods/AssetMenuResizeHandle/AssetMenuResizeHandle";
-import { AssetMenuWidthHandle, useAssetMenuWidthDrag } from "mods/AssetMenuWidthHandle/AssetMenuWidthHandle";
+import { AssetMenuWidthHandle, AssetMenuWidthReach, useAssetMenuWidthDrag } from "mods/AssetMenuWidthHandle/AssetMenuWidthHandle";
 import { VanillaTabBarHost } from "mods/VanillaTabBarHost/VanillaTabBarHost";
 import { useVanillaLayoutForAssetMenu } from "mods/BuildingMenu/vanillaLayout";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
-import { catalogLayoutWidth } from "domain/assetMenuLayout";
+import { ASSET_MENU_WIDTH_HANDLE_REACH, catalogLayoutWidth } from "domain/assetMenuLayout";
 
 import styles from "mods/BuildingMenu/assetMenu.module.scss";
 import { gameClasses } from "mods/gameModules";
@@ -65,6 +65,11 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
             <BuildingCatalogComponent />
             <AssetMenuWidthHandle active={widthDrag.isResizing} onBeginResize={widthDrag.beginResize} />
           </div>
+          {/* Only beside the pane: with it hidden the menu may reach the band's
+              edge, and nothing may go past that over the social icons. */}
+          {paneShown && (
+            <AssetMenuWidthReach onBeginResize={(event) => widthDrag.beginResize(event, ASSET_MENU_WIDTH_HANDLE_REACH)} />
+          )}
         </div>
         {paneShown && <ControlPane />}
       </div>

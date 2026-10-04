@@ -31,7 +31,8 @@ export const DRAG_THRESHOLD_PX = 3;
 
 export interface AssetMenuWidthDrag {
   isResizing: boolean;
-  beginResize: (event: any) => void;
+  /** Starts a drag from a press on an element `widthRem` wide, which the press measures rem against. */
+  beginResize: (event: any, widthRem?: number) => void;
   /**
    * Covers the screen for the length of a drag so the menu keeps the mouse
    * when it leaves the strip. Null between drags; render it beside the menu.
@@ -102,7 +103,7 @@ export function useAssetMenuWidthDrag(
     send({ method: "CommitAssetMenuCatalogWidth", args: [] });
   }
 
-  function beginResize(event: any): void {
+  function beginResize(event: any, widthRem: number = ASSET_MENU_WIDTH_HANDLE_WIDTH): void {
     if (!isPrimaryPress(event)) return;
     event.preventDefault?.();
     event.stopPropagation?.();
@@ -116,9 +117,9 @@ export function useAssetMenuWidthDrag(
     lastPress.current = pressedAt;
 
     // Rem follows the resolution and the pointer reports pixels, so the ratio is
-    // measured off the strip just pressed: drawn, and a known rem wide.
+    // measured off the element just pressed: drawn, and a known rem wide.
     const pressed = event.currentTarget as Element | null | undefined;
-    const pxPerRem = pxPerRemFrom(pressed?.getBoundingClientRect?.().width, ASSET_MENU_WIDTH_HANDLE_WIDTH);
+    const pxPerRem = pxPerRemFrom(pressed?.getBoundingClientRect?.().width, widthRem);
     drag.current = { active: true, moved: false, startX: event.clientX, startWidth: menuWidth, last: menuWidth, pxPerRem };
     setIsResizing(true);
   }
@@ -192,3 +193,15 @@ export const AssetMenuWidthHandle = ({ active, onBeginResize }: AssetMenuWidthHa
     </Tooltip>
   );
 };
+
+export interface AssetMenuWidthReachProps {
+  onBeginResize: (event: any) => void;
+}
+
+/**
+ * The strip's grab area past the menu's edge, across the gap beside the pane.
+ * Separate from the strip because the catalog's box clips what the strip draws.
+ */
+export const AssetMenuWidthReach = ({ onBeginResize }: AssetMenuWidthReachProps) => (
+  <div className={styles.widthReach} onMouseDown={onBeginResize} />
+);

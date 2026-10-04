@@ -1,8 +1,8 @@
 @use "../../assetMenuGeometry" as *;
 
-// The width drag: the height strip's bar turned on its side, down the catalog's
-// right edge inside the build menu. The same dark bar, as thick, carrying the same
-// pill, so the two edges read as one control.
+// The width drag: the top strip's dark bar down the catalog's right side, laid over
+// the catalog's own right margin so it takes nothing from the catalog, carrying a
+// slimmer pill than the top strip's to fit that margin.
 
 .widthHandle {
   position: absolute;
@@ -10,7 +10,7 @@
   bottom: 0;
   right: 0;
   width: $width-handle-width;
-  // Above the catalog it borders, which keeps out from under it by its padding.
+  // Above the catalog, whose margin it covers.
   z-index: 1;
   display: flex;
   align-items: center;
@@ -25,11 +25,12 @@
   border-bottom-right-radius: var(--panelRadius);
 }
 
-// The height strip's grip on its side: the same pill, the same resting weight.
+// The top strip's pill on its side, as long and half as thick, at the same resting
+// weight.
 .widthGrip {
-  width: 8rem;
+  width: 4rem;
   height: 75rem;
-  border-radius: 4rem;
+  border-radius: 2rem;
   background-color: rgba(var(--scrollbarColor), 0.6);
   transition: background-color 0.15s;
 }
@@ -38,6 +39,20 @@
 .widthGripActive,
 .widthHandle:hover .widthGripActive {
   background-color: var(--accentColorNormal);
+}
+
+// More of the strip to grab, past the menu's edge across the gap beside the pane:
+// drawn as nothing, so the gap still shows the city. Beside the header too, which
+// paints over the strip itself.
+.widthReach {
+  position: absolute;
+  top: $handle-height;
+  bottom: 0;
+  right: -$width-handle-reach;
+  width: $width-handle-reach;
+  z-index: 30;
+  pointer-events: auto;
+  cursor: url(cursor://horizontal-can-resize);
 }
 
 .widthBlocker {

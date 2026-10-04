@@ -41,6 +41,10 @@ $pane-gap: 6rem;
 $handle-height: 14rem;
 
 // The width strip down the build menu's right side, which a width drag measures rem
-// against, as the height drag measures the top strip: as thick as that strip, so
-// the two read as one control on two edges.
-$width-handle-width: $handle-height;
+// against, as the height drag measures the top strip. As wide as the catalog's own
+// right margin, so it takes nothing from the catalog.
+$width-handle-width: 8rem;
+
+// Past the menu's edge the strip can also be grabbed across the gap beside the
+// pane, and no further.
+$width-handle-reach: $pane-gap;

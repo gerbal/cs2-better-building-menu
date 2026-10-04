@@ -94,13 +94,16 @@ strip lies inside the menu, so a filled menu ends where the row with the pane
 does, at the social icons. A settings file from before any of this reads as the
 default, which draws the layout it always did.
 
-**The width strip is the height strip on its side.** The same dark bar, as thick,
-carrying the same pill, down the catalog's right side inside the build menu, with
-the menu's bottom corner rounded on it as the top strip carries the top ones. The
-catalog stops short of it by the strip's width, which the table's arithmetic takes
-off the name's room. A first version was a bare pill centred on the menu's edge:
-half over the catalog and half over the city, it read as the catalog's scrollbar
-rather than as the top strip's twin.
+**The width strip lies in the catalog's own margin.** The top strip's dark bar,
+8 rem wide, down the catalog's right side over the catalog's right padding, so the
+catalog keeps its width and the table's arithmetic is untouched. It carries the
+top strip's pill on its side, as long and half as thick to fit the margin, and the
+menu's bottom-right corner is rounded on it as the top strip carries the top ones.
+While the pane is shown, an undrawn grab area continues across the 6 rem gap beside
+it; the catalog's box clips what the strip draws, so that part is its own element,
+and it is absent with the pane hidden so nothing reaches past the band's edge. Two
+earlier versions: a bare pill centred on the menu's edge read as the catalog's
+scrollbar, and a 14 rem bar matching the top strip cost the catalog 14 rem.
 
 **The band follows the text scale.** Vanilla's tool column, which the row starts
 beside, is 380 wide at the game's own text size and grows by half the text scale's
