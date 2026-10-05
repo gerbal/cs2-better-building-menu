@@ -37,8 +37,7 @@ describe("the asset menu's layout", () => {
   it("gives the menu the whole band when the player fills it with the pane hidden", () => {
     setBinding("BetterBuildingMenu", "ControlPaneShown", false);
     setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", ASSET_MENU_CATALOG_FULL);
-    // Less half the width strip, so its outer half stays inside the band.
-    assert.deepEqual(read(), { bandWidth: 1476, menuWidth: 1471, rowWidth: 1471, paneShown: false });
+    assert.deepEqual(read(), { bandWidth: 1476, menuWidth: 1476, rowWidth: 1476, paneShown: false });
   });
 
   it("narrows the band by what vanilla's tool column gains at a larger text scale", () => {

@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { renderHtml } from "../harness/render";
-import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
+import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
-import { ASSET_MENU_CATALOG_FULL } from "../../src/domain/assetMenuLayout";
+import { ASSET_MENU_CATALOG_FULL, ASSET_MENU_WIDTH_HANDLE_REACH, draggedCatalogWidth } from "../../src/domain/assetMenuLayout";
 import { AssetMenu } from "../../src/mods/BuildingMenu/AssetMenu";
 
 // The widths AssetMenu writes inline, read off the markup by class.
@@ -37,13 +37,13 @@ describe("the asset menu's row", () => {
     assert.doesNotMatch(html, /class="pane"/);
   });
 
-  it("gives a filled menu the band less the strip's outer half when the pane is hidden", () => {
+  it("gives a filled menu the whole band when the pane is hidden", () => {
     setBinding("BetterBuildingMenu", "ControlPaneShown", false);
     setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", ASSET_MENU_CATALOG_FULL);
     const html = render();
 
-    assert.equal(widthOf(html, "assetMenuRow"), 1471);
-    assert.equal(widthOf(html, "toolContainer"), 1471);
+    assert.equal(widthOf(html, "assetMenuRow"), 1476);
+    assert.equal(widthOf(html, "toolContainer"), 1476);
   });
 
   it("is no wider than the menu and the pane, so nothing beside a narrow menu takes the mouse", () => {
@@ -89,5 +89,74 @@ describe("the asset menu's width strip", () => {
     act(() => strip.props.onMouseDown({ button: 0, clientX: 500, currentTarget: { getBoundingClientRect: () => ({ width: 10 }) } }));
 
     assert.equal(root!.root.findAll((node) => node.props.className === "widthBlocker").length, 1);
+  });
+
+  it("reaches into the gap beside the pane while it is shown, and a press there starts the drag", () => {
+    act(() => {
+      root = create(<AssetMenu onClose={() => {}} />);
+    });
+    const content = root!.root.find((node) => node.type === "div" && String(node.props.className ?? "").split(" ").includes("content"));
+    const reach = root!.root.findAll((node) => node.props.className === "widthReach");
+
+    assert.equal(reach.length, 1);
+    assert.equal(content.findAll((node) => node.props.className === "widthReach").length, 0, "outside the catalog's clipped box");
+    act(() => reach[0].props.onMouseDown({ button: 0, clientX: 500, currentTarget: { getBoundingClientRect: () => ({ width: 6 }) } }));
+    assert.equal(root!.root.findAll((node) => node.props.className === "widthBlocker").length, 1);
+  });
+
+  it("reaches nowhere past the menu while the pane is hidden", () => {
+    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
+    act(() => {
+      root = create(<AssetMenu onClose={() => {}} />);
+    });
+
+    assert.equal(root!.root.findAll((node) => node.props.className === "widthReach").length, 0);
+  });
+
+  it("draws the strip down the catalog's side, below the header", () => {
+    act(() => {
+      root = create(<AssetMenu onClose={() => {}} />);
+    });
+    const content = root!.root.find((node) => node.type === "div" && String(node.props.className ?? "").split(" ").includes("content"));
+
+    assert.equal(content.findAll((node) => node.props.className === "widthHandle").length, 1);
+  });
+});
+
+describe("a press in the gap beside the pane", () => {
+  const globals = globalThis as unknown as Record<string, unknown>;
+  let saved: unknown;
+  let frames: Array<() => void> = [];
+
+  beforeEach(() => {
+    resetBindings();
+    resetAssetMenuView();
+    setBinding("BetterBuildingMenu", "AssetMenuWidth", 1441);
+    saved = globals.document;
+    globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined, querySelector: () => null };
+    frames = [];
+    globals.requestAnimationFrame = (callback: () => void) => frames.push(callback);
+    globals.cancelAnimationFrame = () => undefined;
+  });
+
+  afterEach(() => {
+    globals.document = saved;
+  });
+
+  it("measures the pointer against the gap's own width", () => {
+    let root: ReactTestRenderer | undefined;
+    act(() => {
+      root = create(<AssetMenu onClose={() => {}} />);
+    });
+    const reach = root!.root.find((node) => String(node.props.className ?? "").startsWith("widthReach"));
+    // Drawn as many pixels wide as it is rem, so a pixel is a rem.
+    act(() => reach.props.onMouseDown({ button: 0, clientX: 500, currentTarget: { getBoundingClientRect: () => ({ width: ASSET_MENU_WIDTH_HANDLE_REACH }) } }));
+    const blocker = root!.root.find((node) => node.props.className === "widthBlocker");
+    act(() => blocker.props.onMouseMove({ clientX: 480, buttons: 1 }));
+    act(() => frames.splice(0).forEach((callback) => callback()));
+    const widths = triggers.filter((call) => call.name === "SetAssetMenuCatalogWidth").map((call) => call.args[0]);
+    act(() => root?.unmount());
+
+    assert.deepEqual(widths, [draggedCatalogWidth(1091, 500, 480, 1476, true, 1)]);
   });
 });

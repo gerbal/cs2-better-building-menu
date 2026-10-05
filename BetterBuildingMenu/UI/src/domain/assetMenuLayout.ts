@@ -360,14 +360,16 @@ export function assetMenuBandWidth(cSharpWidth: number, textScale: number): numb
 /** The width strip's width, which a width drag measures rem against. */
 export const ASSET_MENU_WIDTH_HANDLE_WIDTH = sheetRem("widthHandleWidth");
 
+/** The strip's grab area across the gap beside the pane, which a press there measures against. */
+export const ASSET_MENU_WIDTH_HANDLE_REACH = sheetRem("widthHandleReach");
+
 /**
  * The room the build menu has: the band, less the control pane while it is
- * shown. Without the pane, less half the width strip instead: the strip is
- * centred on the menu's edge, and its outer half would otherwise reach past the
- * band over the social icons beside it.
+ * shown. The width strip lies inside the menu, so without the pane the menu may
+ * take the whole band.
  */
 export function catalogRoom(bandWidth: number, paneShown: boolean): number {
-  return paneShown ? bandWidth - CONTROL_PANE_TOTAL : bandWidth - ASSET_MENU_WIDTH_HANDLE_WIDTH / 2;
+  return paneShown ? bandWidth - CONTROL_PANE_TOTAL : bandWidth;
 }
 
 /**

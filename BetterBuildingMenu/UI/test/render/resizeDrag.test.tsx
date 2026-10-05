@@ -173,6 +173,10 @@ describe("the resize strip", () => {
     assert.equal(strip(true).root.findAll((node) => node.props.className === "resizeGrip resizeGripActive").length, 1);
   });
 
+  it("marks the strip itself as held while a drag is on", () => {
+    assert.equal(strip(true).root.findAll((node) => node.props.className === "resizeHandle resizeHandleActive").length, 1);
+  });
+
   it("starts the drag on a press", () => {
     const pressed: unknown[] = [];
     const event = { clientY: 12 };

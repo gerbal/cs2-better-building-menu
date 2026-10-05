@@ -89,11 +89,40 @@ the pane; C# only keeps the stored value well-formed.
 Filling the room in view stores the default with the pane shown, and full
 (`ASSET_MENU_CATALOG_FULL`, the widest band there is) with it hidden. A drag
 released within 2 of the room fills it, and so does a second press on the strip
-soon after the first. With the pane hidden the room is the band less half the
-width strip: the strip is centred on the menu's edge, and filling the whole band
-put its outer half over the social icons, so a press on their left edge started a
-drag. A settings file from before any of this reads as the default, which draws
-the layout it always did.
+soon after the first. With the pane hidden the room is the whole band: the width
+strip lies inside the menu, so a filled menu ends where the row with the pane
+does, at the social icons. A settings file from before any of this reads as the
+default, which draws the layout it always did.
+
+**The width strip lies in the catalog's own margin.** An 8 rem strip down the
+catalog's right side over the catalog's right padding, so the catalog keeps its
+width and the table's arithmetic is untouched; the compact density's right padding
+is 8 rem for it too. It carries the top strip's pill on its side, as long and half
+as thick to fit the margin. While the pane is shown, the grab area continues across
+the 6 rem gap to the pane, from the header down to the menu's bottom: beside the
+header, and above the pane where the pane is the shorter, so that 6 rem column of
+city takes no world click. It stops at the top strip; nothing grabs beside or above
+that. The catalog's box clips what the strip draws, so that part is its own
+element; it lights, hints and measures a press as the strip does, and it is absent
+with the pane hidden so nothing reaches past the band's edge.
+
+**The controls follow the game's own UI.** Audited against the game's stylesheet:
+- The grab strips draw as the game's one panel resizer does: nothing until the mouse
+  is on them, then a white fill (10 %, 15 % while dragging, whether or not the mouse
+  is still on them). Their pills are the scrollbar thumb's at rest and brighten in
+  white as it does, at once, never in the accent. The top strip keeps the header's
+  dark paint, which is the header's own.
+- At rest the width pill looks like a scrollbar thumb; the white fill under the
+  mouse is what marks it as a handle. The owner chose that over a dark band, which
+  the game draws nowhere.
+- The pane button and the close × are 24 rem white icons on the round highlight
+  theme the game's close buttons use, 10 rem apart. The pane button shows its state
+  by its glyph's right column, filled or outlined, as the game's collapsible panels
+  swap theirs; an accent-tinted glyph would read as keyboard focus.
+- Both count badges are the game's number badge (`_numberBadge.scss`): light bold
+  text on the accent with a soft shadow, sized by the text scale. On the pane button
+  it sits top left, where the glyph is empty in both states, so it never covers the
+  column that shows the pane's state.
 
 **The band follows the text scale.** Vanilla's tool column, which the row starts
 beside, is 380 wide at the game's own text size and grows by half the text scale's

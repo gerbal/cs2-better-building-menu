@@ -1,9 +1,9 @@
 import { useValue } from "cs2/api";
 import { Button, Tooltip } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
-import classNames from "classnames";
 
 import panelRight from "images/panel-right.svg";
+import panelRightOff from "images/panel-right-off.svg";
 import { buildFilterChips, removableChipCount } from "domain/filterChips";
 import { AssetMenuFacets$, BuildingCatalogMetricRanges$ } from "mods/bindings";
 import styles from "mods/ControlPaneToggle/controlPaneToggle.module.scss";
@@ -35,13 +35,13 @@ export const ControlPaneToggle = ({ shown, filterCount, onToggle }: ControlPaneT
   return (
     <Tooltip tooltip={description}>
       <Button
-        className={classNames(styles.toggle, shown && styles.toggleShown)}
-        variant="icon"
+        className={styles.toggle}
+        variant="round"
         aria-label={description}
         aria-pressed={shown}
         onSelect={onToggle}
       >
-        <img className={styles.glyph} style={{ maskImage: `url(${panelRight})` }} alt="" aria-hidden="true" />
+        <img className={styles.glyph} style={{ maskImage: `url(${shown ? panelRight : panelRightOff})` }} alt="" aria-hidden="true" />
         {filterCount > 0 && <span className={styles.badge} aria-hidden="true">{filterCount}</span>}
       </Button>
     </Tooltip>

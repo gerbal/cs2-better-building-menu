@@ -2,9 +2,16 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { resetBindings, triggers } from "../harness/stubs/cs2-api";
-import { ASSET_MENU_CATALOG_DEFAULT, ASSET_MENU_CATALOG_FULL, draggedCatalogWidth } from "../../src/domain/assetMenuLayout";
+import {
+  ASSET_MENU_CATALOG_DEFAULT,
+  ASSET_MENU_CATALOG_FULL,
+  ASSET_MENU_WIDTH_HANDLE_REACH,
+  ASSET_MENU_WIDTH_HANDLE_WIDTH,
+  draggedCatalogWidth,
+} from "../../src/domain/assetMenuLayout";
 import {
   AssetMenuWidthHandle,
+  AssetMenuWidthReach,
   DOUBLE_PRESS_MS,
   useAssetMenuWidthDrag,
   type AssetMenuWidthDrag,
@@ -29,9 +36,9 @@ const Probe = ({ width, paneShown }: { width: number; paneShown: boolean }) => {
 
 const widths = () => triggers.filter((call) => call.name === "SetAssetMenuCatalogWidth").map((call) => call.args[0]);
 const names = () => triggers.map((call) => call.name);
-// The strip is drawn 10px wide, so a pixel is a rem here.
+// The strip is drawn as many pixels wide as it is rem, so a pixel is a rem here.
 const press = (clientX = 500, button = 0) =>
-  act(() => drag.beginResize({ button, clientX, currentTarget: { getBoundingClientRect: () => ({ width: 10 }) } }));
+  act(() => drag.beginResize({ button, clientX, currentTarget: { getBoundingClientRect: () => ({ width: ASSET_MENU_WIDTH_HANDLE_WIDTH }) } }));
 
 describe("dragging the build menu's width", () => {
   let root: ReactTestRenderer | undefined;
@@ -114,6 +121,19 @@ describe("dragging the build menu's width", () => {
     release();
 
     assert.deepEqual(names(), []);
+  });
+
+  it("measures a press on the reach beside the pane against the reach's own width", () => {
+    mount();
+    // Drawn as many pixels wide as it is rem, so a pixel is a rem here too.
+    act(() => drag.beginResize(
+      { button: 0, clientX: 500, currentTarget: { getBoundingClientRect: () => ({ width: ASSET_MENU_WIDTH_HANDLE_REACH }) } },
+      ASSET_MENU_WIDTH_HANDLE_REACH
+    ));
+    move(520);
+    nextFrame();
+
+    assert.deepEqual(widths(), [draggedCatalogWidth(900, 500, 520, BAND, true, 1)]);
   });
 
   it("fills the whole band on a double press with the pane hidden", () => {
@@ -270,11 +290,61 @@ describe("the width strip", () => {
     assert.equal(strip(true).root.findAll((node) => node.props.className === "widthGrip widthGripActive").length, 1);
   });
 
+  it("marks the strip itself as held while a drag is on", () => {
+    assert.equal(strip(true).root.findAll((node) => node.props.className === "widthHandle widthHandleActive").length, 1);
+    assert.equal(strip(false).root.findAll((node) => node.props.className === "widthHandle").length, 1);
+  });
+
+  it("marks the reach beside the pane as held while a drag is on", () => {
+    const reach = (active: boolean) => create(<AssetMenuWidthReach active={active} onBeginResize={() => undefined} />).root;
+
+    assert.equal(reach(true).findAll((node) => node.props.className === "widthReach widthReachActive").length, 1);
+    assert.equal(reach(false).findAll((node) => node.props.className === "widthReach").length, 1);
+  });
+
   it("starts the drag on a press", () => {
     const pressed: unknown[] = [];
     const event = { clientX: 12 };
     strip(false, (received) => pressed.push(received)).root.findByProps({ className: "widthHandle" }).props.onMouseDown(event);
 
     assert.deepEqual(pressed, [event]);
+  });
+});
+
+describe("the width strip and its reach under the mouse", () => {
+  let hook: AssetMenuWidthDrag;
+  const Both = () => {
+    hook = useAssetMenuWidthDrag({ menuWidth: 900, bandWidth: BAND, paneShown: true });
+    return (
+      <>
+        <AssetMenuWidthHandle active={hook.isResizing} hovered={hook.isHovered} hoverProps={hook.hoverProps} onBeginResize={hook.beginResize} />
+        <AssetMenuWidthReach active={hook.isResizing} hovered={hook.isHovered} hoverProps={hook.hoverProps} onBeginResize={hook.beginResize} />
+      </>
+    );
+  };
+  const classOf = (root: ReactTestRenderer, name: string) =>
+    String(root.root.find((node) => typeof node.props.className === "string" && node.props.className.split(" ")[0] === name).props.className);
+
+  it("lights both as one handle, wherever the mouse is on them", () => {
+    let root: ReactTestRenderer | undefined;
+    act(() => {
+      root = create(<Both />);
+    });
+    const reach = root!.root.find((node) => String(node.props.className ?? "").startsWith("widthReach"));
+
+    act(() => reach.props.onMouseEnter());
+    assert.equal(classOf(root!, "widthHandle"), "widthHandle widthHandleHovered");
+    assert.equal(classOf(root!, "widthGrip"), "widthGrip widthGripHovered");
+    assert.equal(classOf(root!, "widthReach"), "widthReach widthReachHovered");
+
+    act(() => reach.props.onMouseLeave());
+    assert.equal(classOf(root!, "widthHandle"), "widthHandle");
+    assert.equal(classOf(root!, "widthReach"), "widthReach");
+    act(() => root?.unmount());
+  });
+
+  it("gives the reach the strip's hint", () => {
+    const reach = create(<AssetMenuWidthReach active={false} onBeginResize={() => undefined} />).root;
+    assert.deepEqual(reach.findByProps({ "data-tooltip": "true" }).children, ["Drag to resize, double-click to fill the space"]);
   });
 });

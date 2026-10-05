@@ -38,6 +38,13 @@ describe("the options toggle", () => {
     assert.doesNotMatch(toggle(true, 0), /class="badge"/);
   });
 
+  it("shows the pane's state by its icon: a filled column while shown, an outline while hidden", () => {
+    const glyphOf = (html: string) => /<img class="glyph" style="mask-image:url\(([^)]*)\)/.exec(html)?.[1];
+
+    assert.equal(glyphOf(toggle(true, 0)), "panel-right.svg");
+    assert.equal(glyphOf(toggle(false, 0)), "panel-right-off.svg");
+  });
+
   it("hides its icon from assistive readers", () => {
     assert.match(toggle(true, 0), /<img class="glyph"[^>]*alt="" aria-hidden="true"/);
   });
@@ -45,6 +52,15 @@ describe("the options toggle", () => {
 
 describe("the options toggle in the menu header", () => {
   beforeEach(() => resetBindings());
+
+  it("draws the pane button and the close on the game's round highlight button", () => {
+    const root = create(<BuildingMenuHeader onClose={() => {}} />).root;
+    const variantOf = (label: string) =>
+      root.find((node) => node.props["aria-label"] === label && typeof node.props.onSelect === "function").props.variant;
+
+    assert.equal(variantOf("Hide options"), "round");
+    assert.equal(variantOf("Close"), "round");
+  });
 
   it("is drawn whether or not the game hands the header a close", () => {
     assert.match(renderHtml(<BuildingMenuHeader />), /aria-label="Hide options"/);

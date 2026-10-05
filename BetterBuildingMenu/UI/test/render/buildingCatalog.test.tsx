@@ -193,7 +193,8 @@ describe("the table's names follow the build menu's width", () => {
   // Long enough to be shortened at every width the menu reaches.
   const name = "Regional Transit Interchange with Underground Parking, Bus Terminal and Rooftop Gardens Extension";
   // The room the name has: the build menu, less its chrome, the columns at their
-  // comfortable widths and the row's furniture.
+  // comfortable widths and the row's furniture. The width strip sits in the
+  // catalog's own margin and takes none of it.
   const shortenedAt = (menuWidth: number, metrics: AssetMenuMetric[]) => shortenTileLabel(
     name,
     tableLabelCharBudget(

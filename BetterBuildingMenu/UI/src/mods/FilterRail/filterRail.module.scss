@@ -1,4 +1,5 @@
 @use "../../base.scss" as _base;
+@use "../../numberBadge" as *;
 
 // The rail itself is one row. Each dimension opens the game's own dropdown,
 // which floats above the layout, so an open filter costs nothing in the
@@ -57,19 +58,13 @@
   background-color: rgba(30, 131, 170, 1) !important;
 }
 
-// Answers "is anything filtered" without opening anything.
+// Answers "is anything filtered" without opening anything: the game's count badge,
+// tucked closer to the corner than on the larger header button.
 .badge {
+  @include number-badge;
   position: absolute;
   top: -3rem;
   right: -3rem;
-  min-width: 13rem;
-  padding: 0 3rem;
-  border-radius: 7rem;
-  background-color: var(--accentColorNormal);
-  color: rgba(0, 0, 0, 0.85);
-  font-size: var(--fontSizeXS);
-  line-height: 13rem;
-  text-align: center;
 }
 
 // The dropdown's own surface. Sizing only — colour, border, positioning and

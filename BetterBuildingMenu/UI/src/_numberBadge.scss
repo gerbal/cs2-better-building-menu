@@ -1,0 +1,20 @@
+// The game's count badge, the one on the toolbar's Notifications button: light bold
+// text on the accent with a soft shadow. Sized by the text scale where the game
+// sizes it by the toolbar's. Placement is the host's.
+@mixin number-badge {
+  min-width: calc(14rem * var(--fontScale));
+  height: calc(14rem * var(--fontScale));
+  padding-top: 1rem;
+  padding-right: 4rem;
+  padding-bottom: 0;
+  padding-left: 4rem;
+  border-radius: 10rem;
+  background-color: var(--accentColorNormal);
+  color: var(--textColor);
+  font-size: calc(13rem * var(--fontScale));
+  line-height: calc(11rem * var(--fontScale));
+  font-weight: bold;
+  text-align: center;
+  box-shadow: 0 0 3rem 3rem rgba(0, 0, 0, 0.15);
+  pointer-events: none;
+}
