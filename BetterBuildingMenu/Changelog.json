@@ -1,6 +1,28 @@
 [
   {
     "Stable": true,
+    "Version": "0.2.4",
+    "Date": "2026-10-05",
+    "ChangeGroups": [
+      {
+        "Name": "Changes",
+        "Changes": [
+          "Drag the panel's right edge to make it wider or narrower, and double-click the edge to fill the space beside it. The panel keeps the width you set.",
+          "A new button beside the panel's × shows or hides the options on its right (Filters, Group by, Sort by, View). While a filter is on, the button shows how many. Showing the options narrows a wide panel to make room, and hiding them gives the width back.",
+          "The panel's top and right edges light up under the mouse, to show where to drag."
+        ]
+      },
+      {
+        "Name": "Fixed",
+        "Changes": [
+          "With a large Text Scaling (Options > Interface), the options beside the panel no longer run off the right edge of the screen.",
+          "A Table too narrow for every column drops Parking, Level, Lot, Workers, then Capacity, instead of cutting figures short. The column you sort by always stays."
+        ]
+      }
+    ]
+  },
+  {
+    "Stable": true,
     "Version": "0.2.3",
     "Date": "2026-09-29",
     "ChangeGroups": [
