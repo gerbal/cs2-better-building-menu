@@ -37,8 +37,9 @@ $pane-width: 379rem;
 $pane-gap: 6rem;
 
 // The resize strip's height, which a drag measures rem against: the pointer
-// reports pixels, and this is a length known in both.
-$handle-height: 14rem;
+// reports pixels, and this is a length known in both. As thick as the width
+// strip, so the two edges read as one affordance.
+$handle-height: 8rem;
 
 // The width strip down the build menu's right side, which a width drag measures rem
 // against, as the height drag measures the top strip. As wide as the catalog's own

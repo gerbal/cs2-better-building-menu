@@ -3,7 +3,7 @@
 // The width drag: a strip down the catalog's right side, over the catalog's own
 // right margin so it takes nothing from the catalog. Drawn as the game draws its
 // resizer, as nothing until the mouse is on it, plus the top strip's pill on its
-// side, as long and half as thick to fit the margin.
+// side.
 
 .widthHandle {
   position: absolute;

@@ -120,9 +120,9 @@ describe("Asset menu catalog height", () => {
 
   it("measures rem off the drawn resize strip", async () => {
     const { pxPerRemFrom, ASSET_MENU_RESIZE_HANDLE_HEIGHT } = await import("../src/domain/assetMenuLayout.ts");
-    // 14rem drawn 14px tall at 1080p, 21px at 1440p.
-    assert.equal(pxPerRemFrom(14, ASSET_MENU_RESIZE_HANDLE_HEIGHT), 1);
-    assert.equal(pxPerRemFrom(21, ASSET_MENU_RESIZE_HANDLE_HEIGHT), 1.5);
+    // 8rem drawn 8px tall at 1080p, 12px at 1620p.
+    assert.equal(pxPerRemFrom(8, ASSET_MENU_RESIZE_HANDLE_HEIGHT), 1);
+    assert.equal(pxPerRemFrom(12, ASSET_MENU_RESIZE_HANDLE_HEIGHT), 1.5);
     // Cohtml's pre-layout zero, or no rect at all, is no measurement.
     for (const bad of [0, -3, Number.NaN, null, undefined]) {
       assert.equal(pxPerRemFrom(bad, ASSET_MENU_RESIZE_HANDLE_HEIGHT), undefined);

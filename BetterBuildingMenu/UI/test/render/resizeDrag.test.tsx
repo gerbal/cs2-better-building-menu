@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import {
+  ASSET_MENU_DEFAULT_HEIGHT,
   ASSET_MENU_MAX_HEIGHT,
   ASSET_MENU_MIN_HEIGHT,
   clampAssetMenuHeight,
@@ -41,8 +42,8 @@ describe("dragging the asset menu's height", () => {
     act(() => {
       root = create(<Probe />);
     });
-    // The strip is drawn 14px tall, so a pixel is a rem here.
-    act(() => assetMenu.beginResize({ clientY: 500, currentTarget: { getBoundingClientRect: () => ({ height: 14 }) } }));
+    // The strip is drawn 8px tall, so a pixel is a rem here.
+    act(() => assetMenu.beginResize({ clientY: 500, currentTarget: { getBoundingClientRect: () => ({ height: 8 }) } }));
   });
 
   afterEach(() => {
@@ -52,7 +53,7 @@ describe("dragging the asset menu's height", () => {
 
   const move = (clientY: number) => act(() => root!.root.find((node) => node.props.onMouseMove).props.onMouseMove({ clientY }));
   const release = () => act(() => root!.root.find((node) => node.props.onMouseUp).props.onMouseUp());
-  const expected = (clientY: number) => draggedAssetMenuHeight(clampAssetMenuHeight(420), 500, clientY, 1);
+  const expected = (clientY: number) => draggedAssetMenuHeight(clampAssetMenuHeight(ASSET_MENU_DEFAULT_HEIGHT), 500, clientY, 1);
 
   it("sends one height per frame, the latest", () => {
     move(490);
@@ -76,7 +77,7 @@ describe("dragging the asset menu's height", () => {
 
   it("leaves a press with any button but the left alone", () => {
     release();
-    act(() => assetMenu.beginResize({ button: 2, clientY: 500, currentTarget: { getBoundingClientRect: () => ({ height: 14 }) } }));
+    act(() => assetMenu.beginResize({ button: 2, clientY: 500, currentTarget: { getBoundingClientRect: () => ({ height: 8 }) } }));
 
     assert.equal(assetMenu.isResizing, false);
   });
@@ -98,7 +99,7 @@ describe("the asset menu's height between drags", () => {
     root = create(<Probe />);
   });
   const blocker = () => root!.root.findAll((node) => node.props.onMouseUp !== undefined);
-  const begin = () => act(() => assetMenu.beginResize({ clientY: 500, currentTarget: { getBoundingClientRect: () => ({ height: 14 }) } }));
+  const begin = () => act(() => assetMenu.beginResize({ clientY: 500, currentTarget: { getBoundingClientRect: () => ({ height: 8 }) } }));
 
   beforeEach(() => {
     resetBindings();
@@ -157,7 +158,7 @@ describe("the asset menu's height between drags", () => {
 
     nextFrame();
     assert.deepEqual(names(), ["SetAssetMenuHeight", "CommitAssetMenuHeight"]);
-    assert.deepEqual(heights(), [440]);
+    assert.deepEqual(heights(), [ASSET_MENU_DEFAULT_HEIGHT + 20]);
   });
 });
 

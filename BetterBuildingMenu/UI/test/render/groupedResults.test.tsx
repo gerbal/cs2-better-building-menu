@@ -33,6 +33,8 @@ describe("grouped results", () => {
       ["Small Roads", "Small Roads"],
       ["Small Roads", "Small Roads"],
       ["Cul-De-Sacs", "Cul De Sacs"],
+      ["Cul-De-Sacs", "Cul De Sacs"],
+      ["Cul-De-Sacs", "Roundabouts"],
       ["Cul-De-Sacs", "Roundabouts"],
     ]);
     const found = groups(html);
@@ -60,7 +62,9 @@ describe("grouped results", () => {
       ["Medium Roads", "Medium Roads"],
       ["Medium Roads", "Medium Roads"],
       ["Medium Roads", "Bridges"],
+      ["Medium Roads", "Bridges"],
       ["Large Roads", "Large Roads"],
+      ["Large Roads", "Highways"],
       ["Large Roads", "Highways"],
     ]);
     const found = groups(html);
@@ -75,23 +79,27 @@ describe("grouped results", () => {
     assert.equal(found.filter((g) => g.heading === "Medium Roads").length, 1, "the name appears once");
   });
 
-  it("keeps every branch's heading, even a one-asset branch that restates its tile", () => {
-    // Collapsing these as redundant merges Healthcare's Hospital, Disease
-    // Control Center and Health Research Institute into one unlabeled block —
-    // and the tiles elide, so the heading is the only legible full name.
+  it("draws no sub-heading over a one-building branch, and leaves it in place", () => {
+    // The card names the one building, so a sub-heading over it says it twice
+    // and costs the row a heading's height. A branch of two or more still heads.
     const html = render(
       [
+        ["Healthcare", "Hospital"],
         ["Healthcare", "Hospital"],
         ["Healthcare", "Disease Control Center"],
         ["Healthcare", "Health Research Institute"],
       ],
-      ["Hospital", "Disease Control Center", "Health Research Institute"]
+      ["Hospital", "Hospital 2", "Disease Control Center", "Health Research Institute"]
     );
     const found = groups(html);
 
-    for (const name of ["Hospital", "Disease Control Center", "Health Research Institute"]) {
-      assert.ok(found.some((g) => g.heading === name), `${name} keeps its heading`);
+    assert.ok(found.some((g) => g.heading === "Hospital"), "a two-building branch keeps its heading");
+    for (const name of ["Disease Control Center", "Health Research Institute"]) {
+      assert.ok(!found.some((g) => g.heading === name), `${name} draws none`);
     }
+    // In place: the bare branches still follow Hospital, in the backend's order.
+    assert.ok(html.indexOf("Hospital 2") < html.indexOf("Disease Control Center"));
+    assert.ok(html.indexOf("Disease Control Center") < html.indexOf("Health Research Institute"));
   });
 
   it("reserves no heading row for a lone child whose heading is not drawn", () => {
@@ -115,9 +123,13 @@ describe("grouped results", () => {
     // different heights. GroupBox equalises within a row, not across one.
     const html = render([
       ["Commercial Zones", "Low Density"],
+      ["Commercial Zones", "Low Density"],
+      ["Commercial Zones", "High Density"],
       ["Commercial Zones", "High Density"],
       ["Industrial Zones", "Industrial"],
       ["Office Zones", "Low Density"],
+      ["Office Zones", "Low Density"],
+      ["Office Zones", "High Density"],
       ["Office Zones", "High Density"],
     ]);
     const found = groups(html);

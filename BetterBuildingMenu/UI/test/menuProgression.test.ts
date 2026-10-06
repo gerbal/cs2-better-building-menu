@@ -121,6 +121,12 @@ describe("branchTabTooltip", () => {
     assert.equal(branchTabTooltip(branch, "Small Roads"), "Roundabouts");
   });
 
+  it("leaves a branch alone as C# sends it, its id standing in for a label", () => {
+    // MenuBranchCount writes DisplayLabel, so a branch with no label arrives
+    // labelled with its own id; "Prison Police" names no density tier.
+    assert.equal(branchTabTooltip({ ...branch, id: "Prison", label: "Prison" }, "Police"), "Prison");
+  });
+
   it("falls back to the tier when the category has no label", () => {
     assert.equal(branchTabTooltip(density, ""), "Low Density");
     assert.equal(branchTabTooltip(density, null), "Low Density");

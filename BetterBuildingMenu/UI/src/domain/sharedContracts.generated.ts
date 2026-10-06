@@ -51,7 +51,7 @@ export const CATALOG_WINDOW_STEP = 100;
 /** AssetMenuHeight: the catalog height the player drags between, and where it starts. */
 export const ASSET_MENU_MIN_HEIGHT = 108;
 export const ASSET_MENU_MAX_HEIGHT = 960;
-export const ASSET_MENU_DEFAULT_HEIGHT = 420;
+export const ASSET_MENU_DEFAULT_HEIGHT = 155;
 
 /** AssetMenuWidth.Max: the band the build menu and its control pane may fill. */
 export const ASSET_MENU_MAX_WIDTH = 1441;

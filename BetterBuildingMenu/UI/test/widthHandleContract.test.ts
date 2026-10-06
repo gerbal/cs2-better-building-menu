@@ -78,10 +78,12 @@ describe("the grab strips", () => {
     assert.equal(strip["z-index"], "1");
   });
 
-  it("carry a side pill as long as the top one, half as thick", () => {
+  it("are one strip turned on its side: as thick, with the same pill", () => {
+    assert.equal(rem(topStrip.height), rem(strip.width));
     assert.equal(grip.height, topGrip.width);
-    assert.equal(rem(grip.width), rem(topGrip.height) / 2);
+    assert.equal(rem(grip.width), rem(topGrip.height));
     assert.equal(rem(grip["border-radius"]), rem(grip.width) / 2);
+    assert.equal(rem(topGrip["border-radius"]), rem(topGrip.height) / 2);
   });
 
   it("reach across the gap beside the pane, below the top strip, taking presses", () => {

@@ -27,13 +27,14 @@ namespace BetterBuildingMenu.Domain
 		public const float Max = 960f;
 
 		/// <summary>
-		/// A useful working height rather than the shortest legal one.
+		/// The catalog's share of the vanilla build menu: with the strip and header above it, the
+		/// menu starts exactly as tall as the two-row menu it replaces.
 		/// </summary>
 		/// <remarks>
-		/// Roughly five tile rows — enough for every view mode to be itself, since nothing grows the
-		/// asset menu automatically — and the player can drag it anywhere between Min and Max.
+		/// Judged at the game's own text size and the default width. More rows are a drag of the top
+		/// edge away, anywhere between Min and Max.
 		/// </remarks>
-		public const float Default = 420f;
+		public const float Default = 155f;
 
 		public static float Clamp(float height)
 		{

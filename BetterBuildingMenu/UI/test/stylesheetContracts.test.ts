@@ -28,12 +28,14 @@ const picker = (selector: string) => declarationsOf(PICKER, selector);
 const resize = (selector: string) => declarationsOf(RESIZE, selector);
 
 describe("Asset menu stylesheet contracts", () => {
-  it("sizes a group to its tiles and lets the heading wrap inside it", () => {
-    // The heading wraps to the width the tiles occupy, rather than the tiles
+  it("sizes a group to its tiles and keeps the heading to one line inside it", () => {
+    // The heading is cut to the width the tiles occupy, rather than the tiles
     // being spread to the width the heading wants: reserving label room buys
-    // readable headings at the price of mostly-empty groups.
+    // readable headings at the price of mostly-empty groups. Never a second
+    // line, which costs every group in the row a line of tiles.
     assert.equal(groups(".group")["min-width"], undefined);
-    assert.equal(groups(".groupLabel")["white-space"], "normal");
+    assert.equal(groups(".groupLabel")["white-space"], "nowrap");
+    assert.equal(groups(".groupLabel").overflow, "hidden");
     // A band sizes to its content rather than claiming the whole line: one
     // that is wider than the row still fills it, via max-width and its own
     // children wrapping, while a narrow one lets a sibling share the line.
@@ -167,7 +169,7 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(grip["background-color"], "rgba(var(--scrollbarColor), 0.6)");
     // A short bar on the edge. Anything wider is a border between two regions,
     // and rem and px differ here, so a smaller number draws a thinner mark.
-    assert.equal(grip.height, "8rem");
+    assert.equal(grip.height, "4rem");
     assert.equal(grip.width, "75rem");
   });
 

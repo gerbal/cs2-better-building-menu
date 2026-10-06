@@ -41,11 +41,11 @@
 // Sized in whole pixels at this engine's rem scale, so the mark draws crisply.
 .resizeGrip {
   width: 75rem;
-  height: 8rem;
+  height: 4rem;
   // Half the height: a pill, which is its own shape and reads as a grip. Not
   // --panelRadius — that radius belongs to the panel's corners, and matching
   // it would make the grip look like a clipped fragment of the chrome.
-  border-radius: 4rem;
+  border-radius: 2rem;
   // The game's scrollbar thumb at rest, brightening in white as the thumb does,
   // at once and never in the accent.
   background-color: rgba(var(--scrollbarColor), 0.6);
