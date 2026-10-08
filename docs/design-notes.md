@@ -210,6 +210,41 @@ setting `AssetMenuViewMode`, so the next session opens in it. Until the player p
 - **Reset menu forgets it.** It sends `""`, so the next session opens in Cards; the store holds
   Cards for the rest of this one.
 
+## The placement history
+
+The mod keeps, in `ModsData/BetterBuildingMenu/history.json`, how often the player places each
+prefab, per game menu: the counts, the latest placement, and the two most placed, which hold the
+menu's slots. It stays on the player's computer; nothing is sent anywhere.
+
+```json
+{ "version": 1,
+  "menus": { "Roads": { "latest": "<prefab>", "held": ["<prefab>", "<prefab>"],
+                        "counts": { "<prefab>": 6.5 } } } }
+```
+
+- **Keys.** A menu is the game's UIAssetMenuPrefab name as the index entry holds it
+  (`PrefabIndex.UiMenuName`), not the catalog row's, which shows some extra networks under Roads.
+  A prefab is its prefab name, so a prefab a mod renames starts again. Every city shares one
+  history.
+- **Slots.** The first two prefabs placed in a menu hold its slots, most placed first. A newcomer
+  takes the weaker slot once its count reaches 1.25 times that holder's (5 against 4), so two close
+  favourites do not trade places.
+- **Ageing.** Once a launch, as the file is read, every count halves, counts under a half go, and
+  each menu keeps its eight most placed; the latest and the holders are never cut, and count
+  towards the eight. Recent habits outweigh old ones, and a miscount fades. The halving alone
+  does not write the file, so a launch that places nothing leaves it as it was.
+- **Writing.** Only when something was placed since the last write: when the build menu closes,
+  at a city load or an exit to the main menu, every two minutes, and at quit; never at each
+  placement, and never through the settings. Through `history.json.tmp`, then `File.Replace`, or
+  `File.Move` when there is no file yet. A crash loses at most two minutes. A write that fails
+  warns once a session and is tried again at the next flush.
+- **Reading.** A file that is not JSON, or has no numeric `version`, is kept as
+  `history.json.bad` and the history starts empty. In a readable file, what is not well-formed
+  (a count that is not a positive number, a holder or latest with no count) is dropped and the
+  rest kept. A file from a newer release is left as it is and nothing is counted that session,
+  so going back to an older release never loses a newer one's data. A file that exists but
+  cannot be read is not written over that session.
+
 ## Hand-rolled floating surfaces in Cohtml
 
 The filter rail's dropdown surface (`filterRail.module.scss`, `.menu`) states size
