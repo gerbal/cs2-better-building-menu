@@ -246,6 +246,34 @@ menu's slots. It stays on the player's computer; nothing is sent anywhere.
   so going back to an older release never loses a newer one's data. A file that exists but
   cannot be read is not written over that session.
 
+## Counting placements
+
+`PlacementWatchSystem` counts what the player places with the game's own tools into the placement
+history, whatever "Replace the vanilla build menu" holds: it watches the tools, not the menu.
+
+- **What counts.** The game's object, net, area and route tools, by exact type: a mod's tool can
+  derive from one of them and inherit its id, and is not counted. The object tool counts placing
+  and brushing, not moving, upgrading or erasing; the area and route tools count a new district,
+  surface or line, not an edit. The prefab must be indexed and in a game menu. The bulldozer and
+  the zone, terrain and upgrade tools never count, so Zones has no history. The editors use the
+  same tools, so only a city counts.
+- **When.** The game runs `ApplyTool` only on frames a tool applies, and the system counts there.
+  It also runs at `PreTool`, every frame, to read what is armed before the tool updates: a tool can
+  hand over to another in the update that applies, as a move does to the default tool.
+- **One placement per burst.** A building, a district or a transit line is one apply. A brush
+  stroke counts once, from the press to the release: the brush applies only on held frames where
+  the object fits and the pointer is over the ground, so the stroke is read from the tool's held
+  state, not from unbroken applies. A road applies once per segment and counts once while the net
+  tool keeps drawing from the last point placed; a right-click that ends the road, or another
+  prefab, starts a new one. An apply the game repeats on the next frame, as the net and area tools
+  do after a focus change, counts once. A road upgrade counts once per drag, a removal included,
+  which the tool's public state cannot tell apart.
+- **The fallback.** If a game update changes which frames apply, `PlacementWatchSystem.Rule`
+  becomes `PerArm`: a prefab counts once until the player arms another tool or prefab, or the same
+  one again.
+- **Never in the way.** A failure warns once a session and the game goes on. The flushes are the
+  placement history's: on a close of the build menu, at a load, every two minutes and at quit.
+
 ## Hand-rolled floating surfaces in Cohtml
 
 The filter rail's dropdown surface (`filterRail.module.scss`, `.menu`) states size

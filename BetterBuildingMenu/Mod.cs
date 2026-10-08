@@ -112,6 +112,10 @@ namespace BetterBuildingMenu
 			// indexer is registered before the asset menu, which reads it. See
 			// docs/indexing.md, "Partial passes".
 			updateSystem.UpdateAt<PrefabIndexingSystem>(SystemUpdatePhase.UIUpdate);
+			// PreTool reads what is armed before the tools update; ApplyTool runs only when one
+			// applies. See docs/design-notes.md, "Counting placements".
+			updateSystem.UpdateAt<PlacementWatchSystem>(SystemUpdatePhase.PreTool);
+			updateSystem.UpdateAt<PlacementWatchSystem>(SystemUpdatePhase.ApplyTool);
 			updateSystem.UpdateAt<BuildingMenuUISystem>(SystemUpdatePhase.UIUpdate);
 
 		}

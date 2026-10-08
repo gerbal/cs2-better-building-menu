@@ -33,6 +33,7 @@ namespace BetterBuildingMenu.Systems
 		private ToolSystem _toolSystem = null!;
 		private PrefabSystem _prefabSystem = null!;
 		private PrefabIndexingSystem _indexer = null!;
+		private PlacementWatchSystem _placementWatch = null!;
 		private DefaultToolSystem _defaultToolSystem = null!;
 		// Only for releasing the toolbar's menu selection when the asset menu closes;
 		// see CloseAssetMenu.
@@ -139,6 +140,7 @@ namespace BetterBuildingMenu.Systems
 			_toolSystem = World.GetOrCreateSystemManaged<ToolSystem>();
 			_prefabSystem = World.GetOrCreateSystemManaged<PrefabSystem>();
 			_indexer = World.GetOrCreateSystemManaged<PrefabIndexingSystem>();
+			_placementWatch = World.GetOrCreateSystemManaged<PlacementWatchSystem>();
 			_defaultToolSystem = World.GetOrCreateSystemManaged<DefaultToolSystem>();
 			_toolbarUISystem = World.GetOrCreateSystemManaged<Game.UI.InGame.ToolbarUISystem>();
 			_selectedInfoUISystem = World.GetOrCreateSystemManaged<Game.UI.InGame.SelectedInfoUISystem>();
