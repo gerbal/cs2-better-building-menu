@@ -343,8 +343,8 @@ export const ControlPane = memo(function ControlPane() {
         </div>
       </div>
 
-      {/* Back to how the menu opens, in one gesture. It clears BOTH halves —
-          the backend's query state and the view mode held on this side —
+      {/* Back to how the menu opens, in one gesture. It clears the backend's query
+          state and the view mode, in the UI's store and in the saved setting alike,
           because a half reset looks reset and behaves otherwise. */}
       <div className={styles.row}>
         <span className={styles.rowLabel} />
@@ -352,13 +352,12 @@ export const ControlPane = memo(function ControlPane() {
           <button
             className={styles.resetButton}
             onClick={() => {
-              // The grouping is the query's; ResetAssetMenu clears it.
-              // Back to the mode the asset menu opens in via the constant, not to a
-              // named one, so this cannot drift from the default.
-              // The default for the rest of this session, and nothing kept for
-              // the next: "" is "no pick", so it opens at the default too.
+              // The view returns to the mode the menu opens in, by the constant so it
+              // cannot drift from it, and "" is "no pick" in the settings, so the next
+              // session opens there too.
               setAssetMenuView({ viewMode: DEFAULT_VIEW_MODE });
               send({ method: "SetAssetMenuViewMode", args: [""] });
+              // The grouping is the query's; ResetAssetMenu clears it.
               send({ method: "ResetAssetMenu", args: [] });
             }}
           >

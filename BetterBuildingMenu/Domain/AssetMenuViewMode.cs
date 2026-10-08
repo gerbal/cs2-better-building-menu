@@ -14,7 +14,7 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>One of the four kinds, exactly, or <see cref="None"/>.</summary>
 		public static string Sanitize(string? value) =>
-			value is "grid" or "list" or "cards" or "table" ? value : None;
+			value is not null && Kinds.Contains(value) ? value : None;
 
 		/// <summary>Whether a pick changes what the settings file holds, which is when it is saved.</summary>
 		public static bool ShouldSave(string stored, string picked) =>

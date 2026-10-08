@@ -271,8 +271,8 @@ history, whatever "Replace the vanilla build menu" holds: it watches the tools, 
   do after a focus change, counts once. A road upgrade counts once per drag, a removal included,
   which the tool's public state cannot tell apart.
 - **The fallback.** If a game update changes which frames apply, `PlacementWatchSystem.Rule`
-  becomes `PerArm`: a prefab counts once until the player arms another tool or prefab, or the same
-  one again.
+  is set to `PerArm`: a prefab counts once, and counts again after the player arms another tool
+  or prefab, or leaves the tool.
 - **Never in the way.** A failure warns once a session and the game goes on. The flushes are the
   placement history's: on a close of the build menu, at a load, every two minutes and at quit.
 

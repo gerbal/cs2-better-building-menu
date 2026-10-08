@@ -27,6 +27,7 @@ namespace BetterBuildingMenu.Systems
 
 		private static readonly TimeSpan FlushEvery = TimeSpan.FromSeconds(120);
 		private static readonly Stopwatch FlushClock = Stopwatch.StartNew();
+		private static bool _loggedChainRead;
 
 		private readonly PlacementCounter _counter = new(Rule);
 		private ToolSystem _toolSystem = null!;
@@ -205,8 +206,15 @@ namespace BetterBuildingMenu.Systems
 
 				return points.IsCreated && points.Length >= 2;
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
+				// Once: PreTool reads the chain every frame.
+				if (!_loggedChainRead)
+				{
+					_loggedChainRead = true;
+					Mod.Log.Debug($"[PLACEMENT] The net tool's control points could not be read ({ex.Message}); its road counts as still open");
+				}
+
 				return true;
 			}
 		}

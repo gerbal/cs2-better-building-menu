@@ -60,6 +60,22 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void SanitizeReadsTheKindsRatherThanSpellingThem()
+		{
+			// Kinds is the list tied to the UI above; a second spelling in Sanitize could drift from it.
+			var source = File.ReadAllText(RepoFile("BetterBuildingMenu/Domain/AssetMenuViewMode.cs"));
+			var start = source.IndexOf("public static string Sanitize", StringComparison.Ordinal);
+			var body = source.Substring(start, source.IndexOf(';', start) - start);
+
+			Assert.Contains("Kinds", body);
+
+			foreach (var kind in AssetMenuViewMode.Kinds)
+			{
+				Assert.DoesNotContain($"\"{kind}\"", body);
+			}
+		}
+
+		[Fact]
 		public void TheSettingIsHiddenStartsUnpickedAndSetDefaultsForgetsThePick()
 		{
 			var property = typeof(BetterBuildingMenuSettings).GetProperty(nameof(BetterBuildingMenuSettings.AssetMenuViewMode));

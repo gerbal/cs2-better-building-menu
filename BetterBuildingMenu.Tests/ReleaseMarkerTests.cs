@@ -181,6 +181,19 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void TheMarkerIsWrittenBeforeTheSilhouetteCacheIsBuilt()
+		{
+			// The cache writes the stamp as it is built, and the marker records whether one was there before.
+			var source = File.ReadAllText(ModFile("Mod.cs"));
+			var marker = source.IndexOf("WriteReleaseMarker();", StringComparison.Ordinal);
+			var cache = source.IndexOf("new SilhouetteIconCache(", StringComparison.Ordinal);
+
+			Assert.True(marker >= 0, "Mod.cs no longer calls WriteReleaseMarker();");
+			Assert.True(cache >= 0, "Mod.cs no longer builds the SilhouetteIconCache");
+			Assert.True(marker < cache, "the release marker must be written before the silhouette cache is built");
+		}
+
+		[Fact]
 		public void ACorruptFileIsReplacedWithOneWarning()
 		{
 			Directory.CreateDirectory(Folder);
