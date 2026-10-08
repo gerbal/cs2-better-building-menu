@@ -94,6 +94,12 @@ namespace BetterBuildingMenu.Domain.Placement
 			}
 		}
 
+		/// <summary>The file lacks what is in memory, though nothing was placed: a history read from a temporary file.</summary>
+		public void MarkDirty()
+		{
+			IsDirty = true;
+		}
+
 		/// <summary>The file now holds every placement.</summary>
 		public void MarkClean()
 		{

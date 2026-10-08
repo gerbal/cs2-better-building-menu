@@ -266,6 +266,67 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void ACompleteTemporaryFileIsReadWhenTheHistoryItselfIsMissing()
+		{
+			// A first flush killed between the write and the move: the data is under .tmp alone.
+			File.WriteAllText(HistoryPath + ".tmp", PlacementHistoryJson.Write(Placed(Roads, "Small Road", "Small Road", "Small Road", "Small Road")));
+			var file = HistoryFile();
+
+			var loaded = file.Load();
+
+			Assert.False(loaded.IsReadOnly);
+			Assert.Equal(2f, loaded.Menus[Roads].Counts["Small Road"]);
+			Assert.True(loaded.IsDirty);
+			Assert.Empty(_warnings);
+			Assert.False(File.Exists(HistoryPath + ".bad"));
+
+			file.FlushIfDirty(loaded);
+
+			Assert.False(File.Exists(HistoryPath + ".tmp"));
+			Assert.Equal(2f, PlacementHistoryJson.Read(File.ReadAllText(HistoryPath)).History.Menus[Roads].Counts["Small Road"]);
+		}
+
+		[Theory]
+		[InlineData("{\"version\":1,\"menus\":{\"Ro")]
+		[InlineData("not json")]
+		[InlineData("{\"version\":2,\"menus\":{\"Roads\":{\"counts\":{\"Small Road\":3}}}}")]
+		[InlineData("{\"version\":0,\"menus\":{\"Roads\":{\"counts\":{\"Small Road\":3}}}}")]
+		public void AnUnreadableTemporaryFileIsIgnoredWhenTheHistoryIsMissing(string text)
+		{
+			File.WriteAllText(HistoryPath + ".tmp", text);
+			var file = HistoryFile();
+
+			var loaded = file.Load();
+
+			Assert.False(loaded.IsReadOnly);
+			Assert.Empty(loaded.Menus);
+			Assert.False(loaded.IsDirty);
+			Assert.Empty(_warnings);
+			Assert.Equal(text, File.ReadAllText(HistoryPath + ".tmp"));
+			Assert.False(File.Exists(HistoryPath + ".bad"));
+			Assert.False(File.Exists(HistoryPath + ".tmp.bad"));
+
+			loaded.Record(Roads, "Small Road");
+			file.FlushIfDirty(loaded);
+
+			Assert.False(File.Exists(HistoryPath + ".tmp"));
+			Assert.Equal(1f, PlacementHistoryJson.Read(File.ReadAllText(HistoryPath)).History.Menus[Roads].Counts["Small Road"]);
+		}
+
+		[Fact]
+		public void ACompleteTemporaryFileIsIgnoredWhenTheHistoryExists()
+		{
+			HistoryFile().FlushIfDirty(Placed(Roads, "Small Road", "Small Road"));
+			File.WriteAllText(HistoryPath + ".tmp", PlacementHistoryJson.Write(Placed(Roads, "Medium Road", "Medium Road", "Medium Road", "Medium Road")));
+
+			var loaded = HistoryFile().Load();
+
+			Assert.False(loaded.Menus[Roads].Counts.ContainsKey("Medium Road"));
+			Assert.Equal(1f, loaded.Menus[Roads].Counts["Small Road"]);
+			Assert.False(loaded.IsDirty);
+		}
+
+		[Fact]
 		public void NamesThatNeedEscapingRoundTrip()
 		{
 			var history = new PlacementHistory();

@@ -37,8 +37,7 @@ namespace BetterBuildingMenu.Utilities
 			{
 				if (!File.Exists(FilePath))
 				{
-					_debug($"No {FileName} yet: the placement history starts empty");
-					return new PlacementHistory();
+					return LoadTemporary();
 				}
 
 				text = File.ReadAllText(FilePath);
@@ -65,6 +64,42 @@ namespace BetterBuildingMenu.Utilities
 					read.History.Decay();
 					return read.History;
 			}
+		}
+
+		/// <summary>The history a flush left under history.json.tmp when history.json itself is missing, or an empty one.</summary>
+		/// <remarks>
+		/// A first flush killed between the write and the move leaves the data only there, and so
+		/// does a replace that fails once the old file is gone. It is read like the file, and dirty,
+		/// so the next flush writes history.json. See docs/design-notes.md, "The placement history".
+		/// </remarks>
+		private PlacementHistory LoadTemporary()
+		{
+			var temporary = FilePath + ".tmp";
+
+			try
+			{
+				if (File.Exists(temporary))
+				{
+					var read = PlacementHistoryJson.Read(File.ReadAllText(temporary));
+
+					if (read.State == PlacementHistoryReadState.Read)
+					{
+						read.History.Decay();
+						read.History.MarkDirty();
+						_debug($"No {FileName}: the placement history is read from {FileName}.tmp, and written at the next flush");
+
+						return read.History;
+					}
+				}
+			}
+			catch (Exception ex)
+			{
+				_debug($"Could not read {FileName}.tmp ({ex.Message}); it is ignored");
+			}
+
+			_debug($"No {FileName} yet: the placement history starts empty");
+
+			return new PlacementHistory();
 		}
 
 		/// <summary>Writes the history if it has placements the file lacks. Never throws.</summary>
