@@ -48,6 +48,18 @@ namespace BetterBuildingMenu
 		[SettingsUIHidden]
 		public bool ControlPaneShown { get; set; } = true;
 
+		/// <summary>
+		/// The settings file's format version: 0 in a file no release has stepped, raised at
+		/// load by <see cref="Domain.SettingsVersionStep"/>.
+		/// </summary>
+		/// <remarks>
+		/// No initializer, and left out of SetDefaults: the game writes a key only once it differs
+		/// from the default object's. See docs/design-notes.md, "The release marker and the
+		/// settings version".
+		/// </remarks>
+		[SettingsUIHidden]
+		public int SettingsVersion { get; set; }
+
 		// On by default: replacing the build menu is what this mod is for. Turning it off
 		// restores the vanilla menu wholesale, including the Zones button's own hierarchy.
 		[SettingsUISection(SETTINGS, BEHAVIOR)]

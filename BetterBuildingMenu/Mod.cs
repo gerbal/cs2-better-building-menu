@@ -54,7 +54,7 @@ namespace BetterBuildingMenu
 		public static SilhouetteIconCache? Silhouettes { get; private set; }
 
 		private static string SilhouetteFolder =>
-			Path.Combine(FolderUtil.ContentFolder, "silhouettes");
+			Path.Combine(FolderUtil.ContentFolder, SilhouetteIconCache.FolderName);
 
 		/// <summary>Every UI content root the game serves icons from.</summary>
 		/// <remarks>
@@ -83,6 +83,9 @@ namespace BetterBuildingMenu
 		{
 			Log.Info(nameof(OnLoad));
 
+			// First: the silhouette cache below writes the stamp the marker reads.
+			WriteReleaseMarker();
+
 			Settings = new BetterBuildingMenuSettings(this);
 			Settings.RegisterInOptionsUI();
 
@@ -103,6 +106,7 @@ namespace BetterBuildingMenu
 			}
 
 			AssetDatabase.global.LoadSettings(nameof(BetterBuildingMenu), Settings, new BetterBuildingMenuSettings(this));
+			StepSettingsVersion();
 
 			// UIUpdate follows PrefabSystem and UnlockSystem in the same frame, and the
 			// indexer is registered before the asset menu, which reads it. See
@@ -110,6 +114,48 @@ namespace BetterBuildingMenu
 			updateSystem.UpdateAt<PrefabIndexingSystem>(SystemUpdatePhase.UIUpdate);
 			updateSystem.UpdateAt<BuildingMenuUISystem>(SystemUpdatePhase.UIUpdate);
 
+		}
+
+		/// <summary>Moves release.json to this release. Never throws.</summary>
+		/// <remarks>
+		/// FolderUtil is first touched inside the guard: its static constructor creates the folder
+		/// and can fail. See docs/design-notes.md, "The release marker and the settings version".
+		/// </remarks>
+		private static void WriteReleaseMarker()
+		{
+			try
+			{
+				ReleaseMarkerFile.Update(
+					FolderUtil.ContentFolder,
+					ReleaseMarker.ReleaseOf(typeof(Mod).Assembly.GetName().Version),
+					message => Log.Warn(message));
+			}
+			catch (Exception ex)
+			{
+				Log.Warn(ex, "Could not update the release marker");
+			}
+		}
+
+		/// <summary>Raises the stored settings version to this release's, saving once if it moved.</summary>
+		/// <remarks>Before the systems are created, so nothing is subscribed to the apply yet.</remarks>
+		private static void StepSettingsVersion()
+		{
+			try
+			{
+				var next = SettingsVersionStep.Next(Settings.SettingsVersion);
+
+				if (next == Settings.SettingsVersion)
+				{
+					return;
+				}
+
+				Settings.SettingsVersion = next;
+				Settings.ApplyAndSave();
+			}
+			catch (Exception ex)
+			{
+				Log.Warn(ex, "Could not save the settings version");
+			}
 		}
 
 		public void OnDispose()

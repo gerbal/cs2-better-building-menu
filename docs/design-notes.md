@@ -168,6 +168,31 @@ the game, both the width and the height drag end as a release does. Left unsaved
 the dragged value sat in the binding until the next save of any setting re-pushed
 the saved one, so hiding the pane could change the width.
 
+## The release marker and the settings version
+
+A release leaves two signs that it ran, so a later release can tell a player who upgraded from
+one who installed it fresh.
+
+- **`SettingsVersion`**, a hidden setting. A load raises a stored value below 1 to 1 and saves
+  once; a higher value is kept, so a later release's version survives a return to this one. Its
+  initializer stays 0 and `SetDefaults` never touches it: the game writes a key only once it
+  differs from the default object's, and from then on rewrites it at every save.
+- **`release.json`**, in ModsData: `version` (the format, 1), `first` (the release that first
+  wrote it), `last` (the release that loaded last) and `stampBefore` (whether the silhouettes
+  stamp existed before the first release that wrote the file ran). `first` and `stampBefore` are
+  kept once written, since every later load finds a stamp its own cache wrote; `last` moves at
+  every load. A release is the assembly version in three parts, which a later release compares.
+  A marker in a later format is left as it is, and one that cannot be read is replaced.
+
+**The order in `OnLoad`.** The marker is read and written first, because the silhouette cache
+writes its stamp as it is built. The version is stepped after the settings load and before the
+systems are created, so nothing is subscribed to the apply.
+
+**Nothing here stops a load.** A failure is one warning. `FolderUtil` is first touched inside the
+marker's guard, since its static constructor creates the folder and can fail. The file is written
+through `release.json.tmp`, then `File.Replace`, or `File.Move` when there is no file yet: the
+mod runs on net48, where `File.Move` cannot overwrite.
+
 ## Hand-rolled floating surfaces in Cohtml
 
 The filter rail's dropdown surface (`filterRail.module.scss`, `.menu`) states size
