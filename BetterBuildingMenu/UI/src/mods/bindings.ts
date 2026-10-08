@@ -63,6 +63,8 @@ export const AssetMenuHeight$ = bindValue<number>(mod.id, "AssetMenuHeight", ASS
 export const AssetMenuCatalogWidth$ = bindValue<number>(mod.id, "AssetMenuCatalogWidth", ASSET_MENU_CATALOG_DEFAULT);
 /** Whether the control pane is shown beside the build menu. */
 export const ControlPaneShown$ = bindValue<boolean>(mod.id, "ControlPaneShown", true);
+/** The view the player last picked, kept across sessions; "" while none is. See BuildingMenuUISystem.SetAssetMenuViewMode. */
+export const AssetMenuViewMode$ = bindValue<string>(mod.id, "AssetMenuViewMode", "");
 export const AssetMenuTileSize$ = bindValue<number>(mod.id, "AssetMenuTileSize", 72);
 /** True while the toolbar's open menu is one the asset menu takes over. */
 export const OwnsCurrentMenu$ = bindValue<boolean>(mod.id, "OwnsCurrentMenu", false);

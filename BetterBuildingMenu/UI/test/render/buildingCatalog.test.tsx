@@ -99,6 +99,23 @@ describe("the catalog container", () => {
     assert.match(render(), /class="empty"/);
   });
 
+  it("draws the view C# kept while nothing was picked this session", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuViewMode", "list");
+    page();
+    const html = render();
+
+    assert.match(html, /class="item"/);
+    assert.doesNotMatch(html, /itemCard/);
+  });
+
+  it("draws the session's pick over the kept view", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuViewMode", "list");
+    setAssetMenuView({ viewMode: "cards" });
+    page();
+
+    assert.match(render(), /class="item itemCard"/);
+  });
+
   it("draws no control chrome of its own", () => {
     // Identity, count, Group by, Sort by and the view mode live in the
     // control plane beside the build menu, visible at the strip height this rests

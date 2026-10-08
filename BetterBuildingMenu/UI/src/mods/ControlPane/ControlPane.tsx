@@ -29,6 +29,7 @@ import { countActiveMetricRanges, metricRangesFromState } from "domain/buildingC
 import { DEFAULT_VIEW_MODE, ViewModeBar } from "mods/GroupedResults/ViewModeBar";
 import type { CatalogViewMode } from "mods/GroupedResults/GroupedResults";
 import { setAssetMenuView } from "domain/assetMenuViewStore";
+import { chooseViewMode } from "domain/viewModeChoice";
 import { useAssetMenuView } from "mods/useAssetMenuView";
 import { memo, useState } from "react";
 import {
@@ -39,6 +40,7 @@ import {
   BuildingCatalogSortDescending$,
   AssetMenuFacets$,
   AssetMenuGroupDimensions$,
+  AssetMenuViewMode$,
   CurrentSearch$,
   SelectedAssetPacks$,
   VanillaSelected$,
@@ -73,8 +75,18 @@ export const ControlPane = memo(function ControlPane() {
   const [groupPickerOpen, setGroupPickerOpen] = useState(false);
   const [sortPickerOpen, setSortPickerOpen] = useState(false);
 
-  const viewModeChoice = useAssetMenuView((view) => view.viewMode) || DEFAULT_VIEW_MODE;
-  const setViewModeChoice = (next: string): void => setAssetMenuView({ viewMode: next });
+  const viewModeChoice = chooseViewMode(
+    useAssetMenuView((view) => view.viewMode),
+    useValue(AssetMenuViewMode$),
+    DEFAULT_VIEW_MODE
+  );
+  // The store first, so the pick redraws now; then C#, which keeps it for the
+  // next session. Only from a click: an effect that sent on a binding change
+  // would answer C#'s own echo.
+  const pickViewMode = (next: CatalogViewMode): void => {
+    setAssetMenuView({ viewMode: next });
+    send({ method: "SetAssetMenuViewMode", args: [next] });
+  };
   // Resolved on the C# side: the player's choice, or the menu's default.
   const groupBy = (useValue(BuildingCatalogGroupBy$) || "category") as GroupDimensionId;
 
@@ -327,10 +339,7 @@ export const ControlPane = memo(function ControlPane() {
           {label("Tooltip.LABEL[BetterBuildingMenu.ViewMode]", "View")}
         </span>
         <div className={styles.rowValue}>
-          <ViewModeBar
-            value={viewModeChoice as CatalogViewMode}
-            onChange={(next) => setViewModeChoice(next)}
-          />
+          <ViewModeBar value={viewModeChoice} onChange={pickViewMode} />
         </div>
       </div>
 
@@ -346,7 +355,10 @@ export const ControlPane = memo(function ControlPane() {
               // The grouping is the query's; ResetAssetMenu clears it.
               // Back to the mode the asset menu opens in via the constant, not to a
               // named one, so this cannot drift from the default.
-              setViewModeChoice(DEFAULT_VIEW_MODE);
+              // The default for the rest of this session, and nothing kept for
+              // the next: "" is "no pick", so it opens at the default too.
+              setAssetMenuView({ viewMode: DEFAULT_VIEW_MODE });
+              send({ method: "SetAssetMenuViewMode", args: [""] });
               send({ method: "ResetAssetMenu", args: [] });
             }}
           >

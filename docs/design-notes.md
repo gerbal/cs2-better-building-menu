@@ -193,6 +193,23 @@ marker's guard, since its static constructor creates the folder and can fail. Th
 through `release.json.tmp`, then `File.Replace`, or `File.Move` when there is no file yet: the
 mod runs on net48, where `File.Move` cannot overwrite.
 
+## The remembered view
+
+The view the player picks in the control pane (Cards, List, Grid or Table) is kept in the hidden
+setting `AssetMenuViewMode`, so the next session opens in it. Until the player picks one it holds
+`""`, and the menu opens in Cards.
+
+- **This session's pick draws first.** The UI's store keeps it, so a pick redraws at once, with
+  no round trip. `chooseViewMode` draws that pick, else the stored view, else Cards, and both the
+  catalog and the control pane read it, so they cannot disagree. A stored value the UI does not
+  know, from a file edited by hand, draws Cards.
+- **A pick saves once.** The click sends `SetAssetMenuViewMode`. C# keeps one of the four kinds,
+  or `""` for anything else, and saves only when the stored value changes. The binding is
+  read/write, like the sort's, so the stored view reaches the UI on its first frame; nothing is
+  sent back from an effect, which would answer C#'s own echo.
+- **Reset menu forgets it.** It sends `""`, so the next session opens in Cards; the store holds
+  Cards for the rest of this one.
+
 ## Hand-rolled floating surfaces in Cohtml
 
 The filter rail's dropdown surface (`filterRail.module.scss`, `.menu`) states size

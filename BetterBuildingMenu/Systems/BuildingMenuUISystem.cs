@@ -70,6 +70,7 @@ namespace BetterBuildingMenu.Systems
 		private ValueBindingHelper<float> _AssetMenuHeight = null!;
 		private ValueBindingHelper<float> _AssetMenuCatalogWidth = null!;
 		private ValueBindingHelper<bool> _ControlPaneShown = null!;
+		private ValueBindingHelper<string> _AssetMenuViewMode = null!;
 		private ValueBindingHelper<string> _CurrentSearch = null!;
 		private ValueBindingHelper<BuildingCatalogPage> _BuildingCatalogBinding = null!;
 		/// <summary>
@@ -174,6 +175,13 @@ namespace BetterBuildingMenu.Systems
 				"AssetMenuCatalogWidth",
 				AssetMenuCatalogWidth.Sanitize(Mod.Settings.AssetMenuCatalogWidth));
 			_ControlPaneShown = CreateBinding("ControlPaneShown", Mod.Settings.ControlPaneShown);
+			// Read/write like the sort, so the UI can draw the stored view until the player
+			// picks one, and seeded here like the pane.
+			_AssetMenuViewMode = CreateBinding(
+				"AssetMenuViewMode",
+				"SetAssetMenuViewMode",
+				AssetMenuViewMode.Sanitize(Mod.Settings.AssetMenuViewMode),
+				SetAssetMenuViewMode);
 			// Only now, with every binding OnSettingsApplied re-pushes created.
 			Mod.Settings.onSettingsApplied += OnSettingsApplied;
 			_CurrentSearch = CreateBinding("CurrentSearch", string.Empty);
@@ -298,6 +306,7 @@ namespace BetterBuildingMenu.Systems
 			_AssetMenuHeight.Value = AssetMenuHeight.Clamp(Mod.Settings.AssetMenuHeight);
 			_AssetMenuCatalogWidth.Value = AssetMenuCatalogWidth.Sanitize(Mod.Settings.AssetMenuCatalogWidth);
 			_ControlPaneShown.Value = Mod.Settings.ControlPaneShown;
+			_AssetMenuViewMode.Value = AssetMenuViewMode.Sanitize(Mod.Settings.AssetMenuViewMode);
 
 			// Switched off with the asset menu up: the menu goes back to its vanilla grid now
 			// rather than at the next click.

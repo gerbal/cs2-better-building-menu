@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
+import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { renderHtml, entry, catalogPage, count } from "../harness/render";
-import { setBinding, resetBindings } from "../harness/stubs/cs2-api";
-import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
+import { setBinding, resetBindings, triggers } from "../harness/stubs/cs2-api";
+import { getAssetMenuView, resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { GROUP_DIMENSIONS } from "../../src/domain/buildingGroups";
 import { ControlPane } from "../../src/mods/ControlPane/ControlPane";
 
@@ -92,5 +93,63 @@ describe("the control pane", () => {
     for (const gone of [/aria-label="Lock/, /aria-label="Close/, /aria-label="Expand/, /aria-label="Collapse/]) {
       assert.doesNotMatch(html, gone);
     }
+  });
+});
+
+describe("the control pane's view", () => {
+  let root: ReactTestRenderer | undefined;
+  const sent = () => triggers.filter((call) => call.name === "SetAssetMenuViewMode").map((call) => call.args);
+  const selected = () => root!.root.find((node) => node.props.selected === true && typeof node.props.onSelect === "function").props.tooltip;
+  const press = (label: string) =>
+    act(() => root!.root.find((node) => node.props.tooltip === label && typeof node.props.onSelect === "function").props.onSelect());
+
+  beforeEach(() => {
+    resetBindings();
+    resetAssetMenuView();
+    seed();
+  });
+
+  it("opens on the view C# kept while nothing was picked this session", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuViewMode", "list");
+    act(() => { root = create(<ControlPane />); });
+
+    assert.equal(selected(), "List");
+    assert.deepEqual(sent(), [], "reading the kept view sends nothing back");
+    act(() => root?.unmount());
+  });
+
+  it("draws a pick at once and sends it to C# once", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuViewMode", "list");
+    act(() => { root = create(<ControlPane />); });
+    press("Table");
+
+    assert.equal(selected(), "Table");
+    assert.deepEqual(sent(), [["table"]]);
+
+    // C#'s echo of the same value redraws nothing and sends nothing.
+    act(() => setBinding("BetterBuildingMenu", "AssetMenuViewMode", "table"));
+    assert.equal(selected(), "Table");
+    assert.deepEqual(sent(), [["table"]]);
+    act(() => root?.unmount());
+  });
+
+  it("keeps the session's pick over a stale value C# pushes later", () => {
+    act(() => { root = create(<ControlPane />); });
+    press("Grid");
+    act(() => setBinding("BetterBuildingMenu", "AssetMenuViewMode", "list"));
+
+    assert.equal(selected(), "Grid");
+    act(() => root?.unmount());
+  });
+
+  it("goes back to Cards on Reset menu and keeps no view for the next session", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuViewMode", "list");
+    act(() => { root = create(<ControlPane />); });
+    act(() => root!.root.find((node) => node.type === "button" && node.props.className === "resetButton").props.onClick());
+
+    assert.equal(selected(), "Cards");
+    assert.equal(getAssetMenuView().viewMode, "cards");
+    assert.deepEqual(sent(), [[""]]);
+    act(() => root?.unmount());
   });
 });
