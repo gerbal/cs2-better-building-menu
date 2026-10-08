@@ -180,6 +180,49 @@ export function shouldShowHeading(nodes: readonly GroupNode<unknown>[]): boolean
   return nodes.length > 1;
 }
 
+/**
+ * Whether one group of a headed level draws its own heading. A sub-group of
+ * one building names nothing its card does not, so only a top-level group
+ * heads a single building.
+ */
+export function headsGroup(node: GroupNode<unknown>, depth: number): boolean {
+  return depth === 0 || node.count > 1;
+}
+
+/** Whether a level draws any heading at all, once groups of one are left bare. */
+export function levelDrawsHeading(nodes: readonly GroupNode<unknown>[], depth: number): boolean {
+  return shouldShowHeading(nodes) && nodes.some((node) => headsGroup(node, depth));
+}
+
+/** One group of a row: the line it wrapped onto (its top) and its heading's height. */
+export interface GroupPlacement {
+  key: string;
+  top: number | null;
+  heading: number | null;
+}
+
+/**
+ * The band each group of a row reserves above its tiles: the tallest heading
+ * on ITS line, so tiles beside a heading share its baseline while a line with
+ * no heading on it spends nothing. Until every line is known, the row's tallest.
+ */
+export function headingBands(groups: readonly GroupPlacement[]): Record<string, number | null> {
+  const tallest = (members: readonly GroupPlacement[]): number | null => {
+    const heights = members.map((group) => group.heading).filter((height): height is number => height !== null);
+    return heights.length > 0 ? Math.max(...heights) : null;
+  };
+  const measured = groups.every((group) => group.top !== null);
+  const bands: Record<string, number | null> = {};
+
+  for (const group of groups) {
+    bands[group.key] = measured
+      ? tallest(groups.filter((other) => Math.round(other.top!) === Math.round(group.top!)))
+      : tallest(groups);
+  }
+
+  return bands;
+}
+
 export function groupDimensionLabel(id: GroupDimensionId): string {
   return GROUP_DIMENSIONS.find((dimension) => dimension.id === id)?.label ?? id;
 }
@@ -215,7 +258,7 @@ export function flattenGroupedRows<T extends GroupedEntry>(
     const withHeadings = shouldShowHeading(level);
 
     for (const node of level) {
-      if (withHeadings) {
+      if (withHeadings && headsGroup(node, depth)) {
         out.push({
           kind: "heading",
           key: `h:${node.path.join("/")}`,
