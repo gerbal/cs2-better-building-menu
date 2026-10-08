@@ -26,7 +26,7 @@ namespace BetterBuildingMenu.Domain.Placement
 
 		private readonly Dictionary<string, MenuHistory> _menus = new(StringComparer.Ordinal);
 
-		/// <param name="readOnly">True for a file a newer release wrote: this release counts nothing into it.</param>
+		/// <param name="readOnly">True for a file this session must not write over: a newer release's, or one that cannot be read or kept aside.</param>
 		public PlacementHistory(bool readOnly = false)
 		{
 			IsReadOnly = readOnly;

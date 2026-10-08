@@ -59,8 +59,8 @@ namespace BetterBuildingMenu.Utilities
 					_warn($"{FileName} is from a newer release: it is left as it is, and nothing is counted this session");
 					return read.History;
 				case PlacementHistoryReadState.Corrupt:
-					SetAside();
-					return read.History;
+					// Unless it is kept aside, the next flush would replace it with this session's placements alone.
+					return SetAside() ? read.History : new PlacementHistory(readOnly: true);
 				default:
 					read.History.Decay();
 					return read.History;
@@ -92,7 +92,8 @@ namespace BetterBuildingMenu.Utilities
 			}
 		}
 
-		private void SetAside()
+		/// <returns>Whether the file was moved to history.json.bad.</returns>
+		private bool SetAside()
 		{
 			var bad = FilePath + ".bad";
 
@@ -100,10 +101,14 @@ namespace BetterBuildingMenu.Utilities
 			{
 				AtomicFile.MoveOver(FilePath, bad);
 				_warn($"{FileName} could not be read: it is kept as {FileName}.bad, and the placement history starts empty");
+
+				return true;
 			}
 			catch (Exception ex)
 			{
-				_warn($"{FileName} could not be read, nor kept aside ({ex.Message}): the placement history starts empty");
+				_warn($"{FileName} could not be read, nor kept aside ({ex.Message}); placements are not kept this session");
+
+				return false;
 			}
 		}
 	}

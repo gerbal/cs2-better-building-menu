@@ -149,6 +149,24 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void ACorruptFileThatCannotBeKeptAsideIsLeftAloneForTheSession()
+		{
+			const string Corrupt = "{ \"version\": 1, \"menus\": { \"Roads\": { \"counts\": { \"Small Road\": 40 ";
+			File.WriteAllText(HistoryPath, Corrupt);
+			// A folder where the .bad copy goes stands in for a locked file or a full disk.
+			Directory.CreateDirectory(HistoryPath + ".bad");
+			var file = HistoryFile();
+
+			var loaded = file.Load();
+			loaded.Record(Roads, "Medium Road");
+			file.FlushIfDirty(loaded);
+
+			Assert.True(loaded.IsReadOnly);
+			Assert.Single(_warnings);
+			Assert.Equal(Corrupt, File.ReadAllText(HistoryPath));
+		}
+
+		[Fact]
 		public void ABadFileReplacesAnOlderBadOne()
 		{
 			File.WriteAllText(HistoryPath + ".bad", "older");

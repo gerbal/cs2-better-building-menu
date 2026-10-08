@@ -239,7 +239,8 @@ menu's slots. It stays on the player's computer; nothing is sent anywhere.
   `File.Move` when there is no file yet. A crash loses at most two minutes. A write that fails
   warns once a session and is tried again at the next flush.
 - **Reading.** A file that is not JSON, or has no numeric `version`, is kept as
-  `history.json.bad` and the history starts empty. In a readable file, what is not well-formed
+  `history.json.bad` and the history starts empty; if it cannot be kept aside either, it is left as
+  it is and nothing is counted that session. In a readable file, what is not well-formed
   (a count that is not a positive number, a holder or latest with no count) is dropped and the
   rest kept. A file from a newer release is left as it is and nothing is counted that session,
   so going back to an older release never loses a newer one's data. A file that exists but
