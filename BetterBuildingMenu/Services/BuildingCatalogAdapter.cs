@@ -567,10 +567,10 @@ namespace BetterBuildingMenu.Services
 
 			if (string.IsNullOrEmpty(root))
 			{
-				return entries;
+				return RoadsLoneBranches.Fold(entries, menu);
 			}
 
-			return entries.Select(entry =>
+			return RoadsLoneBranches.Fold(entries.Select(entry =>
 			{
 				if (!string.Equals(entry.DevTreeBranch, root, StringComparison.Ordinal))
 				{
@@ -584,7 +584,7 @@ namespace BetterBuildingMenu.Services
 				var label = VanillaServiceLabel(category.Length > 0 ? category : menu ?? string.Empty);
 
 				return label.Length == 0 ? entry : entry with { DevTreeBranch = label };
-			});
+			}).ToArray(), menu);
 		}
 
 		/// <summary>

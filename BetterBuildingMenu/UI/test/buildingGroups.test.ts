@@ -9,7 +9,9 @@ import {
   groupDimensionLabel,
   groupDimensionsFor,
   groupTreeFromPaths,
+  headingBands,
   isEducationMenu,
+  levelDrawsHeading,
   shouldShowHeading,
   type GroupedEntry,
 } from "../src/domain/buildingGroups.ts";
@@ -135,6 +137,15 @@ describe("Grouped tree from the page's paths", () => {
     assert.equal(shouldShowHeading(groupTreeFromPaths(rows)), false);
     assert.equal(shouldShowHeading(groupTreeFromPaths(rows)[0].children), true);
   });
+
+  it("counts a level of one-building sub-groups as drawing no heading", () => {
+    // Its neighbours then reserve no heading row on its account.
+    const children = (paths: string[][]) => groupTreeFromPaths(paths.map((path, i) => item(i + 1, path)))[0].children;
+    assert.equal(levelDrawsHeading(children([["Fire", "Tower"], ["Fire", "Depot"]]), 1), false);
+    assert.equal(levelDrawsHeading(children([["Fire", "Tower"], ["Fire", "Depot"], ["Fire", "Depot"]]), 1), true);
+    // A top-level group of one still heads.
+    assert.equal(levelDrawsHeading(groupTreeFromPaths([item(1, ["Fire"]), item(2, ["Police"])]), 0), true);
+  });
 });
 
 describe("Flattening groups for the table", () => {
@@ -168,11 +179,41 @@ describe("Flattening groups for the table", () => {
         item(1, ["Networks", "Roads"], { name: "Alley" }),
         item(3, ["Networks", "Roads"], { name: "Road" }),
         item(2, ["Networks", "Bridges"], { name: "Quay" }),
+        item(4, ["Networks", "Bridges"], { name: "Viaduct" }),
       ],
       key,
     );
 
-    assert.deepEqual(rows.map(line), ["  # Roads", "Alley", "Road", "  # Bridges", "Quay"]);
+    assert.deepEqual(rows.map(line), ["  # Roads", "Alley", "Road", "  # Bridges", "Quay", "Viaduct"]);
+  });
+
+  it("draws no sub-heading over a single building, and leaves it in place", () => {
+    // The card already names the one building, so a sub-heading over it says it
+    // twice and spends a line on it. A top-level group of one still heads.
+    const rows = flattenGroupedRows(
+      [
+        item(1, ["Fire", "Station"], { name: "Fire Station" }),
+        item(2, ["Fire", "Station"], { name: "Fire Station 2" }),
+        item(3, ["Fire", "Tower"], { name: "Firewatch Tower" }),
+        item(4, ["Fire", "Depot"], { name: "Depot" }),
+        item(5, ["Fire", "Depot"], { name: "Depot 2" }),
+        item(6, ["Prison", "Prison"], { name: "Prison" }),
+      ],
+      key,
+    );
+
+    assert.deepEqual(rows.map(line), [
+      "# Fire",
+      "  # Station",
+      "Fire Station",
+      "Fire Station 2",
+      "Firewatch Tower",
+      "  # Depot",
+      "Depot",
+      "Depot 2",
+      "# Prison",
+      "Prison",
+    ]);
   });
 
   it("emits a flat list when nothing is grouped", () => {
@@ -288,7 +329,7 @@ describe("Fitting a heading", () => {
   it("budgets a heading at three tiles of room however few tiles it has", () => {
     // A budget straight from the tile count cuts every name in a run of small
     // groups — "ROAD SER…" over one tile — so the estimate floors at
-    // GROUP_LABEL_MIN_TILES and lets a long heading wrap instead.
+    // GROUP_LABEL_MIN_TILES and leaves the measured fit to cut a long heading.
     assert.equal(fitGroupLabel("ROAD SERVICES", 1), "ROAD SERVICES");
     assert.equal(fitGroupLabel("GAS POWER PLANT", 1), "GAS POWER PLANT");
     assert.equal(fitGroupLabel("CENTRAL INTELLIGENCE BUREAU", 1), "CENTRAL INTELLIGENCE BUREAU");
@@ -309,5 +350,32 @@ describe("Fitting a heading", () => {
     // A budget straight from the tile width would leave "C…", which identifies
     // nothing; the count beside it is what the width is really being spent on.
     assert.ok(fitGroupLabel("WELFARE OFFICE", 1).length >= 7);
+  });
+});
+
+describe("Heading bands", () => {
+  const at = (key: string, top: number | null, heading: number | null) => ({ key, top, heading });
+
+  it("gives every group on a line the tallest heading on that line", () => {
+    // Tiles beside a heading sit on its baseline whether or not they have one.
+    assert.deepEqual(headingBands([at("a", 0, 22), at("b", 0, null), at("c", 0, 30)]), { a: 30, b: 30, c: 30 });
+  });
+
+  it("gives a line with no heading on it no band, whatever the row's other lines hold", () => {
+    // A headingless group that wrapped below its headed sibling kept the
+    // sibling's band, as empty space between a title and its first row.
+    assert.deepEqual(headingBands([at("a", 0, 22), at("b", 120, null)]), { a: 22, b: null });
+  });
+
+  it("sizes each line to its own headings", () => {
+    assert.deepEqual(headingBands([at("a", 0, 22), at("b", 120, 30), at("c", 120, null)]), { a: 22, b: 30, c: 30 });
+  });
+
+  it("falls back to the row's tallest heading until every position is measured", () => {
+    assert.deepEqual(headingBands([at("a", null, 22), at("b", 120, null)]), { a: 22, b: 22 });
+  });
+
+  it("has no band anywhere when nothing is headed", () => {
+    assert.deepEqual(headingBands([at("a", 0, null), at("b", 120, null)]), { a: null, b: null });
   });
 });

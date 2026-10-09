@@ -51,7 +51,7 @@ This mod was developed with AI assistance (Anthropic's Claude), under human dire
   <Screenshot Value="Properties/Screenshot_04.jpg" />
 
   <Tag Value="Code Mod" />
-  <ModVersion Value="0.2.4" />
+  <ModVersion Value="0.2.5" />
   <GameVersion Value="1.6.*" />
   <AccessLevel Value="Public" />
   <ForumLink Value="https://forum.paradoxplaza.com/forum/threads/mod-better-building-menu.1941089/" />
@@ -59,15 +59,14 @@ This mod was developed with AI assistance (Anthropic's Claude), under human dire
   <Dependency Id="74417" />
 
   <ChangeLog>
-0.2.4
+0.2.5
 
 Changes
-* Drag the panel's right edge to make it wider or narrower, and double-click the edge to fill the space beside it. The panel keeps the width you set.
-* A new button beside the panel's × shows or hides the options on its right (Filters, Group by, Sort by, View). While a filter is on, the button shows how many. Showing the options narrows a wide panel to make room, and hiding them gives the width back.
-* The panel's top and right edges light up under the mouse, to show where to drag.
+* The menu reopens in the view you last picked.
+* The mod now keeps a list, on your computer, of what you place with the game's own tools; nothing uses it yet, and nothing is sent anywhere.
 
 Fixed
-* With a large Text Scaling (Options > Interface), the options beside the panel no longer run off the right edge of the screen.
-* A Table too narrow for every column drops Parking, Level, Lot, Workers, then Capacity, instead of cutting figures short. The column you sort by always stays.
+* Roads: one tab per category, and Parking Hall and Automated Parking Building sit with the rest of Parking.
+* Headings stay on one line.
 </ChangeLog>
 </Publish>
