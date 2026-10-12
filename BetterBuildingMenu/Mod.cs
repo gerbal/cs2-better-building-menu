@@ -196,6 +196,7 @@ namespace BetterBuildingMenu
 		/// </remarks>
 		private static IReadOnlyCollection<string> SettingsFileKeysOnDisk() =>
 			SettingsFileKeys.FirstFound(
+				WarnKeyReadOnce(),
 				() => SettingsFileKeys.Of(AssetDatabase.global
 					.GetAssets(SearchFilter<SettingAsset>.ByCondition(asset => asset.name == nameof(BetterBuildingMenu)))
 					.SelectMany<SettingAsset, SettingAsset.Fragment>(asset => asset)
@@ -206,6 +207,21 @@ namespace BetterBuildingMenu
 
 					return File.Exists(path) ? SettingsFileKeys.FromFileText(File.ReadAllText(path)) : Array.Empty<string>();
 				});
+
+		/// <summary>A callback that warns for the first failed key read only, so a load logs one line.</summary>
+		private static Action<Exception> WarnKeyReadOnce()
+		{
+			var warned = false;
+
+			return ex =>
+			{
+				if (!warned)
+				{
+					warned = true;
+					Log.Warn(ex, "Could not read the settings file's keys; treating it as having none");
+				}
+			};
+		}
 
 		/// <summary>The screen's aspect, which sizes the Width step an upgrader's width becomes.</summary>
 		private static double ScreenAspect() =>

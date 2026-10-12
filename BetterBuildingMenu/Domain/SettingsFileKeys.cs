@@ -51,8 +51,8 @@ namespace BetterBuildingMenu.Domain
 		}
 
 		/// <summary>The first read that finds keys; a read that throws counts as finding none.</summary>
-		/// <remarks>An unreadable file is no reason to skip the migration, which then runs on no keys.</remarks>
-		public static IReadOnlyCollection<string> FirstFound(params Func<IReadOnlyCollection<string>>[] reads)
+		/// <remarks>Each failure goes to <paramref name="failed"/>. An unreadable file is no reason to skip the migration, which then runs on no keys.</remarks>
+		public static IReadOnlyCollection<string> FirstFound(Action<Exception> failed, params Func<IReadOnlyCollection<string>>[] reads)
 		{
 			foreach (var read in reads)
 			{
@@ -65,9 +65,10 @@ namespace BetterBuildingMenu.Domain
 						return keys;
 					}
 				}
-				catch (Exception)
+				catch (Exception ex)
 				{
 					// Another read may still answer.
+					failed(ex);
 				}
 			}
 

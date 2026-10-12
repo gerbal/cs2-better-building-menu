@@ -21,7 +21,9 @@ namespace BetterBuildingMenu.Domain
 	/// </summary>
 	/// <remarks>
 	/// Pure, over <see cref="ISettingsValues"/>, so tests never build the settings class. Only a
-	/// value that was an earlier release's default moves. See docs/design-notes.md, "The settings
+	/// value that was an earlier release's default moves. A per-load sanitiser also brings a
+	/// Width step outside its range to the first, but only in a file at this version or earlier:
+	/// a later release's file is left whole. See docs/design-notes.md, "The settings
 	/// migration".
 	/// </remarks>
 	public static class SettingsMigration
@@ -35,7 +37,7 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>How near an earlier default a stored height must be to count as it: the height commit's own tolerance.</summary>
 		public const float HeightTolerance = 0.1f;
 
-		/// <summary>Runs every step newer than the stored version, then keeps the Width step within its range.</summary>
+		/// <summary>Runs every step newer than the stored version, then, for a file at this version or earlier, keeps the Width step within its range.</summary>
 		/// <param name="values">The settings as loaded, changed in place.</param>
 		/// <param name="fileKeys">The key names the settings file held.</param>
 		/// <param name="prior">What ModsData held before this load wrote to it.</param>
@@ -54,8 +56,12 @@ namespace BetterBuildingMenu.Domain
 				ToWidthSteps(values, asked.IsUpgrader, aspect, changes);
 			}
 
-			// On every load: a hand edit or a bad write can leave a step the UI has no width for.
-			Set(nameof(ISettingsValues.AssetMenuWidthStep), values.AssetMenuWidthStep, WidthSteps.Sanitize(values.AssetMenuWidthStep), value => values.AssetMenuWidthStep = value, changes);
+			// On every load at this version or earlier: a hand edit or a bad write can leave a step
+			// the UI has no width for. A later release's file is left alone, its steps included.
+			if (from <= Current)
+			{
+				Set(nameof(ISettingsValues.AssetMenuWidthStep), values.AssetMenuWidthStep, WidthSteps.Sanitize(values.AssetMenuWidthStep), value => values.AssetMenuWidthStep = value, changes);
+			}
 
 			if (from < Current)
 			{

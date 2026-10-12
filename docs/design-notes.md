@@ -258,7 +258,8 @@ created, every step newer than the stored `SettingsVersion` runs, the version is
 settings are saved once, only if a value moved. It works on `ISettingsValues`, which the settings
 class implements, so its tests never build the settings class. A second load finds the version
 current and changes nothing; a version above this release's, a later release's, is left alone.
-On every load, a stored Width step outside 1 to 5 becomes 1 and is saved.
+On every load of a file at this version or earlier, a stored Width step outside 1 to 5 becomes
+1 and is saved; a later release's file is not touched.
 
 **Version 2, the Width steps.**
 - The hidden `Upgrader` is set for an upgrader (see "Who is an upgrader").

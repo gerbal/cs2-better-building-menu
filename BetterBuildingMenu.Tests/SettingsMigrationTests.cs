@@ -287,15 +287,28 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void ALaterReleasesFileKeepsItsStepAndIsNotChanged()
+		{
+			var values = new FakeSettings { SettingsVersion = 7, AssetMenuWidthStep = 6 };
+			var result = SettingsMigration.Migrate(values, Array.Empty<string>(), StampOnly, SixteenNine);
+
+			Assert.False(result.Changed);
+			Assert.Equal(6, values.AssetMenuWidthStep);
+		}
+
+		[Fact]
 		public void AnUnreadableFileGivesNoKeysAndTheMigrationStillRuns()
 		{
 			static IReadOnlyCollection<string> Throws() => throw new IOException("locked");
 
-			var keys = SettingsFileKeys.FirstFound(Throws, Throws);
+			var failures = new List<Exception>();
+			var keys = SettingsFileKeys.FirstFound(failures.Add, Throws, Throws);
 			var values = new FakeSettings();
 			var result = SettingsMigration.Migrate(values, keys, PriorInstall.Nothing, SixteenNine);
 
 			Assert.Empty(keys);
+			Assert.Equal(2, failures.Count);
+			Assert.All(failures, failure => Assert.IsType<IOException>(failure));
 			Assert.True(result.Changed);
 			Assert.Equal(SettingsMigration.Current, values.SettingsVersion);
 		}
@@ -303,9 +316,11 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void ALaterReadAnswersWhenAnEarlierOneThrows()
 		{
-			var keys = SettingsFileKeys.FirstFound(() => throw new IOException("locked"), () => new[] { "ReplaceVanillaBuildMenu" });
+			var failures = new List<Exception>();
+			var keys = SettingsFileKeys.FirstFound(failures.Add, () => throw new IOException("locked"), () => new[] { "ReplaceVanillaBuildMenu" });
 
 			Assert.Equal(new[] { "ReplaceVanillaBuildMenu" }, keys);
+			Assert.IsType<IOException>(Assert.Single(failures));
 		}
 
 		[Fact]
