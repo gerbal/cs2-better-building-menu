@@ -67,9 +67,8 @@ namespace BetterBuildingMenu.Systems
 		// closing means closed rather than revealing the grid underneath.
 		private ValueBindingHelper<bool> _OwnsCurrentMenu = null!;
 		private ValueBindingHelper<int> _ActivePrefabId = null!;
-		private ValueBindingHelper<float> _AssetMenuWidth = null!;
 		private ValueBindingHelper<float> _AssetMenuHeight = null!;
-		private ValueBindingHelper<float> _AssetMenuCatalogWidth = null!;
+		private ValueBindingHelper<int> _AssetMenuWidthStep = null!;
 		private ValueBindingHelper<bool> _ControlPaneShown = null!;
 		private ValueBindingHelper<string> _AssetMenuViewMode = null!;
 		private ValueBindingHelper<string> _CurrentSearch = null!;
@@ -164,18 +163,19 @@ namespace BetterBuildingMenu.Systems
 			// size slider takes effect without a reload.
 			_AssetMenuTileSize = CreateBinding("AssetMenuTileSize", Mod.Settings.AssetMenuTileSize);
 			CreateTrigger("SearchEverything", SearchEverything);
-			_AssetMenuWidth = CreateBinding("AssetMenuWidth", 0f);
 			// Seeded from the setting rather than 0: the asset menu draws from this
 			// on its first frame, and a zero height would flash a collapsed
 			// catalog before the first drag published anything.
 			_AssetMenuHeight = CreateBinding(
 				"AssetMenuHeight",
 				AssetMenuHeight.Clamp(Mod.Settings.AssetMenuHeight));
-			// Seeded from the settings like the height, so the first frame draws the
-			// player's width and pane rather than flashing the defaults.
-			_AssetMenuCatalogWidth = CreateBinding(
-				"AssetMenuCatalogWidth",
-				AssetMenuCatalogWidth.Sanitize(Mod.Settings.AssetMenuCatalogWidth));
+			// Read/write, and seeded from the settings like the height, so the first frame
+			// draws the player's step and pane rather than flashing the defaults.
+			_AssetMenuWidthStep = CreateBinding(
+				"AssetMenuWidthStep",
+				"SetAssetMenuWidthStep",
+				WidthSteps.Sanitize(Mod.Settings.AssetMenuWidthStep),
+				SetAssetMenuWidthStep);
 			_ControlPaneShown = CreateBinding("ControlPaneShown", Mod.Settings.ControlPaneShown);
 			// Read/write like the sort, so the UI can draw the stored view until the player
 			// picks one, and seeded here like the pane.
@@ -266,8 +266,6 @@ namespace BetterBuildingMenu.Systems
 				CreateTrigger<string>("SetAssetMenu", SetAssetMenu);
 			CreateTrigger<float>("SetAssetMenuHeight", SetAssetMenuHeight);
 			CreateTrigger("CommitAssetMenuHeight", CommitAssetMenuHeight);
-			CreateTrigger<float>("SetAssetMenuCatalogWidth", SetAssetMenuCatalogWidth);
-			CreateTrigger("CommitAssetMenuCatalogWidth", CommitAssetMenuCatalogWidth);
 			CreateTrigger<bool>("SetControlPaneShown", SetControlPaneShown);
 		}
 
@@ -306,7 +304,7 @@ namespace BetterBuildingMenu.Systems
 			// The sizes too, so settings applied from anywhere but a drag (the Options
 			// screen, a tool, SetDefaults) redraw the asset menu at once.
 			_AssetMenuHeight.Value = AssetMenuHeight.Clamp(Mod.Settings.AssetMenuHeight);
-			_AssetMenuCatalogWidth.Value = AssetMenuCatalogWidth.Sanitize(Mod.Settings.AssetMenuCatalogWidth);
+			_AssetMenuWidthStep.Value = WidthSteps.Sanitize(Mod.Settings.AssetMenuWidthStep);
 			_ControlPaneShown.Value = Mod.Settings.ControlPaneShown;
 			_AssetMenuViewMode.Value = AssetMenuViewMode.Sanitize(Mod.Settings.AssetMenuViewMode);
 

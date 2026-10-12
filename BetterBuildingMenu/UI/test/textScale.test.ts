@@ -2,8 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { fontSizeRatio } from "../src/domain/textScale.ts";
 import { tileLabelLineBudget, tableLabelCharBudget } from "../src/domain/tileLabel.ts";
-import { ASSET_MENU_MAX_WIDTH } from "../src/domain/sharedContracts.generated.ts";
-import { getAssetMenuColumnWidths, ASSET_MENU_COLUMN_MAX, ASSET_MENU_CHROME_WIDTH, CONTROL_PANE_TOTAL, ASSET_MENU_IDENTITY_MIN, ASSET_MENU_TABLE_ROW_FURNITURE } from "../src/domain/assetMenuLayout.ts";
+import { catalogLayoutWidth, getAssetMenuColumnWidths, ASSET_MENU_COLUMN_MAX, ASSET_MENU_CHROME_WIDTH, CONTROL_PANE_TOTAL, ASSET_MENU_IDENTITY_MIN, ASSET_MENU_TABLE_ROW_FURNITURE } from "../src/domain/assetMenuLayout.ts";
 
 // The game's Interface › Text scale setting (100–150 %) reaches the page as
 // --fontScale and --fontScaleChange, and every --fontSize* is a calc() of the
@@ -48,8 +47,8 @@ describe("the table's columns at a large text scale and a narrow build menu", ()
   // name cell below its own minimum. The columns scale as far as the build menu
   // allows and no further; what does not fit clips inside its cell.
   it("never squeezes the name below its minimum", () => {
-    // The assembly plus its chrome — the figure the catalog passes.
-    const outer = ASSET_MENU_MAX_WIDTH + ASSET_MENU_CHROME_WIDTH;
+    // The menu at step 3 and the pane: the figure the catalog passes.
+    const outer = catalogLayoutWidth(1091);
     for (const scale of [1.25, 1.5]) {
       const widths = getAssetMenuColumnWidths(outer, scale);
       const columns = Object.values(widths).reduce((a, b) => a + b, 0);

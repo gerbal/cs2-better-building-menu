@@ -57,7 +57,6 @@ describe("Enter in the catalog", () => {
     resetBindings();
     resetAssetMenuView();
     installDocument();
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 700);
   });
 
   afterEach(() => {

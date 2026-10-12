@@ -19,7 +19,6 @@ describe("Load more", () => {
     globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined };
     globals.requestAnimationFrame = () => 0;
     globals.cancelAnimationFrame = () => undefined;
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 700);
   });
 
   afterEach(() => {

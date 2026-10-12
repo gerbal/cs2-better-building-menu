@@ -22,7 +22,6 @@ describe("the catalog container", () => {
   beforeEach(() => {
     resetBindings();
     resetAssetMenuView();
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 700);
   });
 
   for (const mode of ["table", "grid", "list", "cards"]) {
@@ -80,15 +79,15 @@ describe("the catalog container", () => {
     assert.doesNotMatch(render(), /class="loadMoreRow"/);
   });
 
-  it("obeys the chosen view mode whatever the width", () => {
+  it("obeys the chosen view mode at every Width step", () => {
     // Overridden to "grid" at the resting height, pressing Table would light
     // the button, change nothing, and say nothing about why.
     setAssetMenuView({ viewMode: "table" });
     page();
 
-    for (const width of [300, 700, 1100]) {
-      setBinding("BetterBuildingMenu", "AssetMenuWidth", width);
-      assert.match(render(), /class="columnHeader"/, `width ${width}`);
+    for (const step of [1, 3, 5]) {
+      setBinding("BetterBuildingMenu", "AssetMenuWidthStep", step);
+      assert.match(render(), /class="columnHeader"/, `step ${step}`);
     }
   });
 
@@ -146,9 +145,10 @@ describe("the table under a larger text scale", () => {
   it("widens the metric columns by the S size's ratio", () => {
     resetBindings();
     setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1)], {}));
-    // Wide, so the room beside the name does not cap the ratio — at a 720p
-    // width it does, and the columns grow only as far as the name allows.
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 2400);
+    // The widest step with the pane hidden, so the room beside the name does not
+    // cap the ratio: at a narrow menu the columns grow only as far as the name allows.
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 5);
+    setBinding("BetterBuildingMenu", "ControlPaneShown", false);
     const widthOf = (html: string) => Number(/metricUpkeep[^>]*style="[^"]*width:\s*([0-9.]+)rem/.exec(html)?.[1]);
 
     const base = widthOf(render());
@@ -160,7 +160,7 @@ describe("the table under a larger text scale", () => {
   });
 });
 
-describe("the table follows the build menu's width", () => {
+describe("the table follows the build menu's Width step", () => {
   // Cost, because its column has a range (76 to 100); upkeep's minimum is its maximum.
   const costWidth = (html: string) => Number(/metricCost[^>]*style="[^"]*width:\s*([0-9.]+)rem/.exec(html)?.[1]);
 
@@ -169,11 +169,10 @@ describe("the table follows the build menu's width", () => {
     resetAssetMenuView();
     setAssetMenuView({ viewMode: "table" });
     setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1)], {}));
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 1441);
   });
 
-  it("drops columns rather than clip them when the player narrows the menu", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 735);
+  it("drops columns rather than clip them at the game's own width", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 1);
     const html = render();
 
     assert.match(html, /metricCost/);
@@ -185,20 +184,21 @@ describe("the table follows the build menu's width", () => {
   });
 
   it("keeps the column the table is sorted by at any width", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 735);
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 1);
     setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", "HasParking");
 
     assert.match(render(), /metricParking/);
   });
 
   it("keeps the lot column when sorted by lot depth, as by lot width: one cell shows both", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 735);
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 1);
     setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", "LotDepth");
 
     assert.match(render(), /metricLot/);
   });
 
-  it("keeps the columns it has at fill when the pane is hidden: the table's arithmetic counts the pane either way", () => {
+  it("keeps the columns it has when the pane is hidden: the table's arithmetic counts the pane either way", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 3);
     const shown = costWidth(render());
     setBinding("BetterBuildingMenu", "ControlPaneShown", false);
 
@@ -227,30 +227,30 @@ describe("the table's names follow the build menu's width", () => {
     resetAssetMenuView();
     setAssetMenuView({ viewMode: "table" });
     setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1, { name })], {}));
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 1441);
   });
 
-  it("gives the name what the default width leaves beside the columns", () => {
+  it("gives the name what step 3 leaves beside the columns", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 3);
     const expected = shortenedAt(1091, ALL);
     assert.notEqual(expected, name);
     assert.ok(render().includes(expected), expected);
   });
 
-  it("gives the name what a narrow menu leaves beside the columns it keeps", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 735);
-    assert.ok(render().includes(shortenedAt(735, ["cost", "upkeep"])));
+  it("gives the name what the game's own width leaves beside the columns it keeps", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 1);
+    assert.ok(render().includes(shortenedAt(706, ["cost", "upkeep"])));
   });
 
   it("gives a wide menu with the pane hidden its own room, counted without the pane", () => {
     setBinding("BetterBuildingMenu", "ControlPaneShown", false);
-    setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 1300);
-    const expected = shortenedAt(1300, ALL);
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 4);
+    const expected = shortenedAt(1280, ALL);
     assert.notEqual(expected, shortenedAt(1091, ALL));
     assert.ok(render().includes(expected), expected);
   });
 });
 
-describe("the table while the build menu's width is dragged", () => {
+describe("the table across a step that changes none of its columns", () => {
   const globals = globalThis as unknown as Record<string, unknown>;
   let saved: unknown;
   let root: ReactTestRenderer | undefined;
@@ -260,7 +260,7 @@ describe("the table while the build menu's width is dragged", () => {
     resetAssetMenuView();
     setAssetMenuView({ viewMode: "table" });
     setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1)], {}));
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 1441);
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 4);
     setBinding("BetterBuildingMenu", "ControlPaneShown", false);
     saved = globals.document;
     globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined, querySelector: () => null };
@@ -268,15 +268,15 @@ describe("the table while the build menu's width is dragged", () => {
     globals.cancelAnimationFrame = () => undefined;
   });
 
-  it("hands the rows the same columns while a new width changes none of them", () => {
-    // Every row is memoised: new column props each frame would redraw them all.
+  it("hands the rows the same columns when the step changes none of them", () => {
+    // Every row is memoised: new column props would redraw them all.
     act(() => {
       root = create(<BuildingCatalogComponent />);
     });
     const row = () => root!.root.find((node) => node.props.columnStyle !== undefined && node.props.entry !== undefined).props;
     const before = row();
 
-    act(() => setBinding("BetterBuildingMenu", "AssetMenuCatalogWidth", 1300));
+    act(() => setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 5));
     const after = row();
     act(() => root?.unmount());
     globals.document = saved;

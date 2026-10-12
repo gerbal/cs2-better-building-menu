@@ -62,6 +62,20 @@ namespace BetterBuildingMenu.Tests
 			}
 		}
 
+		[Fact]
+		public void TheUiGetsTheStepRuleAndNoFreeWidth()
+		{
+			var ts = RenderTypeScript();
+
+			Assert.Contains("export const WIDTH_STEP_SHARES = [0, 187, 385, 574, 769] as const;", ts);
+			Assert.Contains("export const WIDTH_ROOM_RIGHT_OFFSET = 49;", ts);
+			Assert.Contains("export const SOCIAL_COLUMN_RIGHT_OFFSET = 48;", ts);
+			Assert.Contains("  \"16:9\": [706, 893, 1091, 1280, 1475],", ts);
+			Assert.Contains("export const ASSET_MENU_DEFAULT_HEIGHT = 149;", ts);
+			Assert.DoesNotContain("ASSET_MENU_MAX_WIDTH", ts);
+			Assert.DoesNotContain("ASSET_MENU_CATALOG", ts);
+		}
+
 		private static string RenderTypeScript()
 		{
 			var ts = new StringBuilder();
@@ -93,13 +107,25 @@ namespace BetterBuildingMenu.Tests
 			AppendNumber(ts, "ASSET_MENU_MAX_HEIGHT", AssetMenuHeight.Max);
 			AppendNumber(ts, "ASSET_MENU_DEFAULT_HEIGHT", AssetMenuHeight.Default);
 
-			ts.Append("\n/** AssetMenuWidth.Max: the band the build menu and its control pane may fill. */\n");
-			AppendNumber(ts, "ASSET_MENU_MAX_WIDTH", AssetMenuWidth.Max);
+			ts.Append("\n/** WidthSteps: the build menu's five Width steps. A step is 706 plus its share, over 769, of the room beyond 706, and the room runs from the tool options' edge to 1 rem short of the social column. */\n");
+			AppendNumber(ts, "LAYOUT_HEIGHT", (float)WidthSteps.LayoutHeight);
+			AppendNumber(ts, "WIDTH_STEP_VANILLA", WidthSteps.Vanilla);
+			AppendNumber(ts, "WIDTH_STEP_DEFAULT", WidthSteps.DefaultStep);
+			AppendNumbers(ts, "WIDTH_STEP_SHARES", WidthSteps.Shares);
+			AppendNumber(ts, "WIDTH_STEP_SHARE_DENOMINATOR", WidthSteps.ShareDenominator);
+			AppendNumber(ts, "WIDTH_ROOM_LEFT", (float)WidthSteps.RoomLeft);
+			AppendNumber(ts, "WIDTH_ROOM_RIGHT_OFFSET", (float)WidthSteps.RoomRightOffset);
+			AppendNumber(ts, "SOCIAL_COLUMN_RIGHT_OFFSET", (float)WidthSteps.SocialColumnOffset);
+			// A double, because the UI computes the widths from the same aspect C# does.
+			ts.Append($"export const WIDTH_STEP_REFERENCE_ASPECT = {WidthSteps.ReferenceAspect.ToString("R", CultureInfo.InvariantCulture)};\n");
 
-			ts.Append("\n/** AssetMenuCatalogWidth: the build menu's narrowest width, the value that means the default, and how near the room a drag must end to fill it. */\n");
-			AppendNumber(ts, "ASSET_MENU_CATALOG_MIN_WIDTH", AssetMenuCatalogWidth.Min);
-			AppendNumber(ts, "ASSET_MENU_CATALOG_DEFAULT", AssetMenuCatalogWidth.Default);
-			AppendNumber(ts, "ASSET_MENU_CATALOG_FILL_SNAP", AssetMenuCatalogWidth.FillSnap);
+			ts.Append("\n/** WidthSteps.For at three aspects: what the UI's copy of the rule is tested against. */\n");
+			ts.Append("export const WIDTH_STEPS_REFERENCE = {\n");
+			foreach (var (label, width) in new[] { ("16:9", 1920.0), ("21:9", 2520.0), ("32:9", 3840.0) })
+			{
+				ts.Append($"  \"{label}\": [{string.Join(", ", WidthSteps.For(width / WidthSteps.LayoutHeight))}],\n");
+			}
+			ts.Append("} as const;\n");
 
 			return ts.ToString();
 		}
@@ -118,6 +144,9 @@ namespace BetterBuildingMenu.Tests
 
 		private static void AppendNumber(StringBuilder ts, string name, float value) =>
 			ts.Append($"export const {name} = {value.ToString(CultureInfo.InvariantCulture)};\n");
+
+		private static void AppendNumbers(StringBuilder ts, string name, IEnumerable<int> values) =>
+			ts.Append($"export const {name} = [{string.Join(", ", values.Select(value => value.ToString(CultureInfo.InvariantCulture)))}] as const;\n");
 
 		private static void AppendUnion(StringBuilder ts, string name, IEnumerable<string> values) =>
 			ts.Append($"export type {name} = {string.Join(" | ", values.Select(Quote))};\n");

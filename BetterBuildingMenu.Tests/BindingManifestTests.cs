@@ -88,6 +88,22 @@ namespace BetterBuildingMenu.Tests
 			}
 		}
 
+		[Fact]
+		public void TheWidthStepIsNamedOnBothSidesAndTheFreeWidthIsGone()
+		{
+			foreach (var name in new[] { "AssetMenuWidthStep", "SetAssetMenuWidthStep" })
+			{
+				Assert.Contains(name, CSharpNames());
+				Assert.Contains(name, TypeScriptNames());
+			}
+
+			foreach (var name in new[] { "AssetMenuWidth", "AssetMenuCatalogWidth", "SetAssetMenuCatalogWidth", "CommitAssetMenuCatalogWidth" })
+			{
+				Assert.DoesNotContain(name, CSharpNames());
+				Assert.DoesNotContain(name, TypeScriptNames());
+			}
+		}
+
 		// Matches CreateBinding, CreateTrigger and the two-name CreateBinding
 		// overload. The generic argument may not contain parentheses, which
 		// keeps a lazy match from spanning one call into the next.

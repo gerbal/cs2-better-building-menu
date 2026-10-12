@@ -184,8 +184,6 @@ namespace BetterBuildingMenu.Systems
 				return;
 			}
 
-			_AssetMenuWidth.Value = GridUtil.GetCurrentAssetMenuWidth();
-
 			RefreshAssetMenu();
 
 			// RefreshAssetMenu already ran RefreshBuildingCatalog, which refreshes the options

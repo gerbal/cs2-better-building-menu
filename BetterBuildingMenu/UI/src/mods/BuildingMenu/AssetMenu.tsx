@@ -8,7 +8,7 @@ import { AssetMenuWidthHandle, AssetMenuWidthReach, useAssetMenuWidthDrag } from
 import { VanillaTabBarHost } from "mods/VanillaTabBarHost/VanillaTabBarHost";
 import { useVanillaLayoutForAssetMenu } from "mods/BuildingMenu/vanillaLayout";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
-import { ASSET_MENU_WIDTH_HANDLE_REACH, catalogLayoutWidth } from "domain/assetMenuLayout";
+import { ASSET_MENU_WIDTH_HANDLE_REACH, assetMenuRowWidth, catalogLayoutWidth } from "domain/assetMenuLayout";
 
 import styles from "mods/BuildingMenu/assetMenu.module.scss";
 import { gameClasses } from "mods/gameModules";
@@ -30,13 +30,15 @@ export interface AssetMenuProps {
 }
 
 export const AssetMenu = ({ onClose }: AssetMenuProps) => {
-  const layout = useAssetMenuLayout();
-  const { menuWidth, rowWidth, paneShown } = layout;
+  const { step, menuWidth, paneShown, snaps } = useAssetMenuLayout();
   const { height: catalogHeight, isResizing, beginResize, blocker } = useAssetMenuHeight();
-  const widthDrag = useAssetMenuWidthDrag(layout);
+  const widthDrag = useAssetMenuWidthDrag({ menuWidth, step, snaps });
+  // The box follows a width drag, and keeps the snapped width until the stored step comes back.
+  const shownWidth = widthDrag.liveWidth ?? menuWidth;
+  const rowWidth = assetMenuRowWidth(shownWidth, paneShown);
   // The header's small and large modes, judged against the menu plus the pane.
   // Their classes carry no rules, so neither changes what is drawn.
-  const headerWidth = catalogLayoutWidth(menuWidth);
+  const headerWidth = catalogLayoutWidth(shownWidth);
 
   // The two patches on vanilla's own layout — the column trio left-aligned,
   // the toolbar sunk beneath the control pane — live with their reasons in
@@ -52,7 +54,7 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
           It is the build menu and the pane and nothing more, so no empty
           stretch of it is left to take the mouse. */}
       <div className={classNames(styles.assetMenuRow)} style={{ width: rowWidth + "rem" }}>
-        <div className={styles.toolContainer} style={{ width: menuWidth + "rem" }}>
+        <div className={styles.toolContainer} style={{ width: shownWidth + "rem" }}>
           <AssetMenuResizeHandle active={isResizing} onBeginResize={beginResize} />
           <div className={styles.topBar}>
             <BuildingMenuHeader small={headerWidth <= 685} large={headerWidth >= 850} onClose={onClose} />
@@ -70,7 +72,7 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
               onBeginResize={widthDrag.beginResize}
             />
           </div>
-          {/* Only beside the pane: with it hidden the menu may reach the band's
+          {/* Only beside the pane: with it hidden the menu may reach the room's
               edge, and nothing may go past that over the social icons. */}
           {paneShown && (
             <AssetMenuWidthReach

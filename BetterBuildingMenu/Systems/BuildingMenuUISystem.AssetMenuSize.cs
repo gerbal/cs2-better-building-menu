@@ -14,7 +14,7 @@ namespace BetterBuildingMenu.Systems
 
 		private void CommitAssetMenuHeight()
 		{
-			// Only on release, like the width: a drag publishes on every mouse move, and
+			// Only on release: a drag publishes on every mouse move, and
 			// writing the settings file at that rate is what the live binding avoids.
 			var height = AssetMenuHeight.Clamp(_AssetMenuHeight);
 			if (Math.Abs(Mod.Settings.AssetMenuHeight - height) < 0.1f)
@@ -26,21 +26,20 @@ namespace BetterBuildingMenu.Systems
 			Mod.Settings.ApplyAndSave();
 		}
 
-		private void SetAssetMenuCatalogWidth(float width)
+		private void SetAssetMenuWidthStep(int picked)
 		{
-			_AssetMenuCatalogWidth.Value = AssetMenuCatalogWidth.Sanitize(width);
-		}
+			// The binding helper has already published what the UI sent: publish the kept
+			// step over it, then save only a release that changes the file. A drag sends
+			// once, on release, so there is nothing to wait out.
+			var step = WidthSteps.Sanitize(picked);
+			_AssetMenuWidthStep.Value = step;
 
-		private void CommitAssetMenuCatalogWidth()
-		{
-			// On release only, as the height is.
-			var width = AssetMenuCatalogWidth.Sanitize(_AssetMenuCatalogWidth);
-			if (Math.Abs(Mod.Settings.AssetMenuCatalogWidth - width) < 0.1f)
+			if (Mod.Settings.AssetMenuWidthStep == step)
 			{
 				return;
 			}
 
-			Mod.Settings.AssetMenuCatalogWidth = width;
+			Mod.Settings.AssetMenuWidthStep = step;
 			Mod.Settings.ApplyAndSave();
 		}
 

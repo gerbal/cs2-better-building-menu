@@ -1,12 +1,8 @@
 import { fontSizeRatio } from "./textScale";
 import sizes from "./assetMenuLayout.module.scss";
 import {
-  ASSET_MENU_CATALOG_DEFAULT,
-  ASSET_MENU_CATALOG_FILL_SNAP,
-  ASSET_MENU_CATALOG_MIN_WIDTH,
   ASSET_MENU_DEFAULT_HEIGHT,
   ASSET_MENU_MAX_HEIGHT,
-  ASSET_MENU_MAX_WIDTH,
   ASSET_MENU_MIN_HEIGHT,
 } from "./sharedContracts.generated";
 
@@ -298,9 +294,18 @@ export function draggedAssetMenuHeight(
   currentY: number,
   pxPerRem?: number
 ): number {
-  const delta = Number.isFinite(startY) && Number.isFinite(currentY) ? startY - currentY : 0;
+  return clampAssetMenuHeight(startHeight + dragDistanceRem(currentY, startY, pxPerRem));
+}
+
+/**
+ * How far a drag has gone, in rem, from `fromPx` to `toPx`: zero when either
+ * is not a number, and measured at `pxPerRem` or, for a drag whose measurement
+ * failed, the 720p ratio.
+ */
+export function dragDistanceRem(fromPx: number, toPx: number, pxPerRem?: number): number {
+  const delta = Number.isFinite(fromPx) && Number.isFinite(toPx) ? toPx - fromPx : 0;
   const scale = pxPerRem !== undefined && Number.isFinite(pxPerRem) && pxPerRem > 0 ? pxPerRem : REM_IN_PX_AT_720P;
-  return clampAssetMenuHeight(startHeight + delta / scale);
+  return delta / scale;
 }
 
 /**
@@ -334,92 +339,17 @@ export function pxPerRemFrom(lengthPx: number | null | undefined, lengthRem: num
   return lengthPx / lengthRem;
 }
 
-/** The build menu's width range and its default: AssetMenuCatalogWidth's, generated. */
-export { ASSET_MENU_CATALOG_DEFAULT, ASSET_MENU_CATALOG_FILL_SNAP, ASSET_MENU_CATALOG_MIN_WIDTH };
-
 /**
- * The stored width that fills the room with the pane hidden: the widest the band
- * ever is, so it is at the room or beyond it at every text scale, and the room is
- * what draws.
+ * Vanilla's tool-side column at the game's own text size, which the row starts
+ * beside. It grows by half the text scale's increase: see widthSteps.ts.
  */
-export const ASSET_MENU_CATALOG_FULL = ASSET_MENU_MAX_WIDTH + ASSET_MENU_CHROME_WIDTH;
-
-/** Vanilla's tool-side column at the game's own text size, which the row starts beside. */
 export const VANILLA_TOOL_COLUMN_WIDTH = 380;
-
-/**
- * The band the row may fill: C#'s width and the chrome, less what vanilla's tool
- * column gains with the text scale. The column grows by half the scale's increase
- * and pushes the row right, while the social icons stay put at the screen's edge.
- */
-export function assetMenuBandWidth(cSharpWidth: number, textScale: number): number {
-  const scale = Number.isFinite(textScale) && textScale > 1 ? textScale : 1;
-  return cSharpWidth + ASSET_MENU_CHROME_WIDTH - VANILLA_TOOL_COLUMN_WIDTH * (scale - 1) / 2;
-}
 
 /** The width strip's width, which a width drag measures rem against. */
 export const ASSET_MENU_WIDTH_HANDLE_WIDTH = sheetRem("widthHandleWidth");
 
 /** The strip's grab area across the gap beside the pane, which a press there measures against. */
 export const ASSET_MENU_WIDTH_HANDLE_REACH = sheetRem("widthHandleReach");
-
-/**
- * The room the build menu has: the band, less the control pane while it is
- * shown. The width strip lies inside the menu, so without the pane the menu may
- * take the whole band.
- */
-export function catalogRoom(bandWidth: number, paneShown: boolean): number {
-  return paneShown ? bandWidth - CONTROL_PANE_TOTAL : bandWidth;
-}
-
-/**
- * The width the build menu draws at. The default is the room beside the pane,
- * shown or hidden, so the toggle changes nothing it has room for. Any other width
- * is held at the minimum or above and at the room or below: a width wider than
- * the room beside the pane draws narrower while the pane is shown and comes back
- * when it goes.
- */
-export function resolveCatalogWidth(
-  chosen: number,
-  bandWidth: number,
-  paneShown: boolean
-): number {
-  const room = catalogRoom(bandWidth, paneShown);
-  if (!Number.isFinite(chosen) || chosen <= ASSET_MENU_CATALOG_DEFAULT) {
-    return Math.min(room, catalogRoom(bandWidth, true));
-  }
-  return Math.min(room, Math.max(ASSET_MENU_CATALOG_MIN_WIDTH, chosen));
-}
-
-/** What filling the room in view stores: the default beside the pane, full without it. */
-export function filledCatalogWidth(paneShown: boolean): number {
-  return paneShown ? ASSET_MENU_CATALOG_DEFAULT : ASSET_MENU_CATALOG_FULL;
-}
-
-/**
- * The width a drag from `startX` to `currentX` asks for. The strip is on the right
- * edge, so moving right widens. Clamped here rather than resolved, because a drag
- * far to the left would otherwise reach zero, which reads as fill.
- */
-export function draggedCatalogWidth(
-  startWidth: number,
-  startX: number,
-  currentX: number,
-  bandWidth: number,
-  paneShown: boolean,
-  pxPerRem?: number
-): number {
-  const delta = Number.isFinite(startX) && Number.isFinite(currentX) ? currentX - startX : 0;
-  const scale = pxPerRem !== undefined && Number.isFinite(pxPerRem) && pxPerRem > 0 ? pxPerRem : REM_IN_PX_AT_720P;
-  const raw = startWidth + delta / scale;
-  if (!Number.isFinite(raw)) return startWidth;
-  return Math.min(catalogRoom(bandWidth, paneShown), Math.max(ASSET_MENU_CATALOG_MIN_WIDTH, raw));
-}
-
-/** What a drag that ended at `width` stores: the room filled when it ended against the room, else the width. */
-export function releasedCatalogWidth(width: number, bandWidth: number, paneShown: boolean): number {
-  return width >= catalogRoom(bandWidth, paneShown) - ASSET_MENU_CATALOG_FILL_SNAP ? filledCatalogWidth(paneShown) : width;
-}
 
 /**
  * The row's width: the build menu, and the pane beside it while shown. Sized to

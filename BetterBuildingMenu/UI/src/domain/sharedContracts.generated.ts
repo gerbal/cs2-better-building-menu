@@ -53,10 +53,20 @@ export const ASSET_MENU_MIN_HEIGHT = 108;
 export const ASSET_MENU_MAX_HEIGHT = 960;
 export const ASSET_MENU_DEFAULT_HEIGHT = 149;
 
-/** AssetMenuWidth.Max: the band the build menu and its control pane may fill. */
-export const ASSET_MENU_MAX_WIDTH = 1441;
+/** WidthSteps: the build menu's five Width steps. A step is 706 plus its share, over 769, of the room beyond 706, and the room runs from the tool options' edge to 1 rem short of the social column. */
+export const LAYOUT_HEIGHT = 1080;
+export const WIDTH_STEP_VANILLA = 706;
+export const WIDTH_STEP_DEFAULT = 1;
+export const WIDTH_STEP_SHARES = [0, 187, 385, 574, 769] as const;
+export const WIDTH_STEP_SHARE_DENOMINATOR = 769;
+export const WIDTH_ROOM_LEFT = 396;
+export const WIDTH_ROOM_RIGHT_OFFSET = 49;
+export const SOCIAL_COLUMN_RIGHT_OFFSET = 48;
+export const WIDTH_STEP_REFERENCE_ASPECT = 1.7777777777777777;
 
-/** AssetMenuCatalogWidth: the build menu's narrowest width, the value that means the default, and how near the room a drag must end to fill it. */
-export const ASSET_MENU_CATALOG_MIN_WIDTH = 735;
-export const ASSET_MENU_CATALOG_DEFAULT = 0;
-export const ASSET_MENU_CATALOG_FILL_SNAP = 2;
+/** WidthSteps.For at three aspects: what the UI's copy of the rule is tested against. */
+export const WIDTH_STEPS_REFERENCE = {
+  "16:9": [706, 893, 1091, 1280, 1475],
+  "21:9": [706, 1039, 1391, 1728, 2075],
+  "32:9": [706, 1360, 2052, 2713, 3395],
+} as const;

@@ -34,7 +34,6 @@ describe("what a keystroke re-renders", () => {
     globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined };
     globals.requestAnimationFrame = () => 0;
     globals.cancelAnimationFrame = () => undefined;
-    setBinding("BetterBuildingMenu", "AssetMenuWidth", 700);
     setAssetMenuView({ viewMode: "table" });
   });
 

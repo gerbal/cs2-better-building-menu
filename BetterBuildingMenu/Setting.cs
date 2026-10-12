@@ -37,10 +37,13 @@ namespace BetterBuildingMenu
 		public float AssetMenuHeight { get; set; } = Domain.AssetMenuHeight.Default;
 
 		/// <summary>
-		/// The build menu's width, set by dragging its right edge, or <see
+		/// The width 0.2.4 stored for the build menu, or <see
 		/// cref="Domain.AssetMenuCatalogWidth.Default"/> for the room beside the control pane.
 		/// </summary>
-		/// <remarks>Hidden like the height, and for the same reason.</remarks>
+		/// <remarks>
+		/// Legacy: only the settings migration reads it, once, and nothing writes it. Declared so
+		/// the game keeps the key in the file until then.
+		/// </remarks>
 		[SettingsUIHidden]
 		public float AssetMenuCatalogWidth { get; set; } = Domain.AssetMenuCatalogWidth.Default;
 
@@ -64,7 +67,8 @@ namespace BetterBuildingMenu
 		/// Which of the build menu's five widths it draws at, from 1, the game's own, to 5.
 		/// </summary>
 		/// <remarks>
-		/// Hidden. A number rather than a width, because the widths follow the screen. See
+		/// Hidden: the build menu's right edge sets it. A number rather than a width, because the
+		/// widths follow the screen. See
 		/// <see cref="Domain.WidthSteps"/>.
 		/// </remarks>
 		[SettingsUIHidden]

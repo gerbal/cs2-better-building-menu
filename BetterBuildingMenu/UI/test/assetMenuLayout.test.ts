@@ -9,32 +9,25 @@ import {
   getAssetMenuCatalogMaxHeight,
   clampAssetMenuHeight,
   draggedAssetMenuHeight,
+  dragDistanceRem,
   ASSET_MENU_MIN_HEIGHT,
   ASSET_MENU_MAX_HEIGHT,
   ASSET_MENU_DEFAULT_HEIGHT,
   CONTROL_PANE_TOTAL,
-  ASSET_MENU_CHROME_WIDTH,
   ASSET_MENU_TABLE_ROW_FURNITURE,
   ASSET_MENU_RESIZE_HANDLE_HEIGHT,
-  ASSET_MENU_CATALOG_DEFAULT,
-  ASSET_MENU_CATALOG_FULL,
-  ASSET_MENU_CATALOG_MIN_WIDTH,
   ASSET_MENU_WIDTH_HANDLE_WIDTH,
   ASSET_MENU_WIDTH_HANDLE_REACH,
   ASSET_MENU_COLUMN_MAX as COMFORTABLE_COLUMNS,
   REM_IN_PX_AT_720P,
   getAssetMenuColumnWidths as columnWidthsAt,
   visibleTableMetrics,
-  assetMenuBandWidth,
   assetMenuRowWidth,
   catalogLayoutWidth,
-  filledCatalogWidth,
-  draggedCatalogWidth,
-  releasedCatalogWidth,
-  resolveCatalogWidth,
 } from "../src/domain/assetMenuLayout.ts";
-import { ASSET_MENU_MAX_WIDTH } from "../src/domain/sharedContracts.generated.ts";
 
+// 0.2.4's row at step 3, the box and the pane beside it: what the table's arithmetic was tuned at.
+const ROW_AT_STEP_3 = catalogLayoutWidth(1091);
 
 describe("Asset menu geometry", () => {
   it("maps exact outer-width boundaries to density tiers", () => {
@@ -136,25 +129,16 @@ describe("Asset menu catalog height", () => {
   });
 });
 
-describe("the asset menu's width", () => {
-  it("and its chrome fill the band beside the tool columns, and no more", () => {
-    // The band left free beside the left-aligned tool columns, at the layout's
-    // reference resolution. C# sizes the assembly (AssetMenuWidth.Max, generated)
-    // and the UI adds its chrome, so a wider chrome pushes the assembly past it.
-    assert.equal(ASSET_MENU_MAX_WIDTH + ASSET_MENU_CHROME_WIDTH, 1476);
-  });
-});
-
 describe("Table column widths", () => {
   // The widths the seven cells want when every column is set to a comfortable
   // width by hand. Taken from the whole assembly, control pane included,
   // rather than from the rows box alone, which undercounts the room.
   it("gives every column its comfortable width at the default assembly", async () => {
-    const { getAssetMenuColumnWidths, ASSET_MENU_COLUMN_MAX, ASSET_MENU_CHROME_WIDTH } = await import(
+    const { getAssetMenuColumnWidths, ASSET_MENU_COLUMN_MAX } = await import(
       "../src/domain/assetMenuLayout.ts"
     );
 
-    assert.deepEqual(getAssetMenuColumnWidths(ASSET_MENU_MAX_WIDTH + ASSET_MENU_CHROME_WIDTH), ASSET_MENU_COLUMN_MAX);
+    assert.deepEqual(getAssetMenuColumnWidths(ROW_AT_STEP_3), ASSET_MENU_COLUMN_MAX);
   });
 
   it("never goes below the minimum table, however narrow the build menu", async () => {
@@ -185,7 +169,7 @@ describe("Table column widths", () => {
 
     let previous = getAssetMenuColumnWidths(ASSET_MENU_MIN_WIDTH);
 
-    for (let w = ASSET_MENU_MIN_WIDTH; w <= ASSET_MENU_MAX_WIDTH; w += 25) {
+    for (let w = ASSET_MENU_MIN_WIDTH; w <= ROW_AT_STEP_3; w += 25) {
       const widths = getAssetMenuColumnWidths(w);
       for (const key of Object.keys(widths) as (keyof typeof widths)[]) {
         // All seven are sized when none is named, so every key is present.
@@ -285,9 +269,9 @@ describe("the metric columns fit the room beside the name", () => {
   // build menu's chrome around the rows − the row's own furniture − the name's
   // basis. At a typical width that leaves enough for the 586rem maximum.
   it("is the measured row less the furniture and the name's basis at the default assembly", async () => {
-    const { tableColumnRoom, ASSET_MENU_CHROME_WIDTH, ASSET_MENU_TABLE_ROW_FURNITURE } = await import("../src/domain/assetMenuLayout.ts");
+    const { tableColumnRoom, ASSET_MENU_TABLE_ROW_FURNITURE } = await import("../src/domain/assetMenuLayout.ts");
 
-    assert.equal(tableColumnRoom(ASSET_MENU_MAX_WIDTH + ASSET_MENU_CHROME_WIDTH), 1026 - ASSET_MENU_TABLE_ROW_FURNITURE - 260);
+    assert.equal(tableColumnRoom(ROW_AT_STEP_3), 1026 - ASSET_MENU_TABLE_ROW_FURNITURE - 260);
   });
 
   it("holds the set to the room where the preference would overrun it", async () => {
@@ -314,8 +298,8 @@ describe("the metric columns fit the room beside the name", () => {
     // At 125 % the cells' figures are wider by the same ratio as the font,
     // so the set that fits is the room over that ratio: still at most the
     // room, and still whole units.
-    const { getAssetMenuColumnWidths, tableColumnRoom, ASSET_MENU_CHROME_WIDTH } = await import("../src/domain/assetMenuLayout.ts");
-    const outer = ASSET_MENU_MAX_WIDTH + ASSET_MENU_CHROME_WIDTH;
+    const { getAssetMenuColumnWidths, tableColumnRoom } = await import("../src/domain/assetMenuLayout.ts");
+    const outer = ROW_AT_STEP_3;
     const total = Object.values(getAssetMenuColumnWidths(outer, 1.25)).reduce((a, b) => a + b, 0);
 
     assert.ok(total <= tableColumnRoom(outer) + 3, `columns sum to ${total}rem of ${tableColumnRoom(outer)}`);
@@ -328,122 +312,27 @@ describe("the metric columns fit the room beside the name", () => {
   });
 });
 
-// The band at the layout's reference resolution: C#'s width and the UI's chrome.
-const BAND = ASSET_MENU_MAX_WIDTH + ASSET_MENU_CHROME_WIDTH;
-
-describe("the build menu's width", () => {
-  it("keeps the width beside the pane whether the pane is shown or not", () => {
-    assert.equal(resolveCatalogWidth(ASSET_MENU_CATALOG_DEFAULT, BAND, true), 1091);
-    assert.equal(resolveCatalogWidth(ASSET_MENU_CATALOG_DEFAULT, BAND, false), 1091);
-  });
-
-  it("fills the room it has when told to fill: beside the pane, and the band without it", () => {
-    assert.equal(resolveCatalogWidth(ASSET_MENU_CATALOG_FULL, BAND, true), 1091);
-    // Hidden, the whole band: the width strip lies inside the menu, so nothing
-    // reaches past the band's edge over the social icons beside it.
-    assert.equal(resolveCatalogWidth(ASSET_MENU_CATALOG_FULL, BAND, false), 1476);
-  });
-
-  it("fills a band the text scale has narrowed", () => {
-    const band = assetMenuBandWidth(ASSET_MENU_MAX_WIDTH, 1.5);
-    assert.equal(resolveCatalogWidth(ASSET_MENU_CATALOG_FULL, band, false), band);
-    assert.equal(resolveCatalogWidth(ASSET_MENU_CATALOG_DEFAULT, band, false), band - CONTROL_PANE_TOTAL);
-  });
-
-  it("holds a chosen width between the minimum and the room", () => {
-    assert.equal(resolveCatalogWidth(900, BAND, true), 900);
-    assert.equal(resolveCatalogWidth(100, BAND, true), ASSET_MENU_CATALOG_MIN_WIDTH);
-    assert.equal(resolveCatalogWidth(5000, BAND, false), 1476);
-  });
-
-  it("draws a width that no longer fits at the room, and gives it back when the pane goes", () => {
-    assert.equal(resolveCatalogWidth(1200, BAND, true), 1091);
-    assert.equal(resolveCatalogWidth(1200, BAND, false), 1200);
-  });
-
-  it("reads anything that is not a width as the default", () => {
-    for (const width of [Number.NaN, Number.POSITIVE_INFINITY, -5]) {
-      assert.equal(resolveCatalogWidth(width, BAND, true), 1091, String(width));
-      assert.equal(resolveCatalogWidth(width, BAND, false), 1091, String(width));
-    }
-  });
-
-  it("sizes the row to what it holds, so no empty stretch of it takes the mouse", () => {
+describe("the row", () => {
+  it("is sized to what it holds, so no empty stretch of it takes the mouse", () => {
     assert.equal(assetMenuRowWidth(900, true), 900 + CONTROL_PANE_TOTAL);
     assert.equal(assetMenuRowWidth(900, false), 900);
   });
 
-  it("hands the table the row it was tuned against, so today's width budgets as before", () => {
-    assert.equal(catalogLayoutWidth(1091), BAND);
+  it("hands the table the row it was tuned against: at step 3, 0.2.4's own", () => {
+    assert.equal(ROW_AT_STEP_3, 1476);
   });
 });
 
-describe("dragging the build menu's width", () => {
-  it("follows the pointer rightward at the measured scale", () => {
-    assert.equal(draggedCatalogWidth(900, 500, 560, BAND, true, 2), 930);
+describe("a drag's distance", () => {
+  it("is the pixels moved over the pixels per rem, from the first point to the second", () => {
+    assert.equal(dragDistanceRem(500, 520, 2), 10);
+    assert.equal(dragDistanceRem(520, 500, 2), -10);
   });
 
-  it("stops at the minimum however far left it goes, and never wraps round to fill", () => {
-    assert.equal(draggedCatalogWidth(900, 500, -5000, BAND, true, 1), ASSET_MENU_CATALOG_MIN_WIDTH);
-  });
-
-  it("stops at the room", () => {
-    assert.equal(draggedCatalogWidth(900, 500, 5000, BAND, true, 1), 1091);
-    assert.equal(draggedCatalogWidth(900, 500, 5000, BAND, false, 1), 1476);
-  });
-
-  it("falls back to the 720p scale when the strip could not be measured", () => {
-    assert.equal(draggedCatalogWidth(900, 500, 520, BAND, true), 900 + 20 / REM_IN_PX_AT_720P);
-  });
-});
-
-describe("where a width drag lands", () => {
-  it("stores the default when it ends against the room beside the pane", () => {
-    assert.equal(releasedCatalogWidth(1091, BAND, true), ASSET_MENU_CATALOG_DEFAULT);
-    assert.equal(releasedCatalogWidth(1089.5, BAND, true), ASSET_MENU_CATALOG_DEFAULT);
-  });
-
-  it("stores full when it ends against the room with the pane hidden", () => {
-    assert.equal(releasedCatalogWidth(1476, BAND, false), ASSET_MENU_CATALOG_FULL);
-    assert.equal(releasedCatalogWidth(1474.5, BAND, false), ASSET_MENU_CATALOG_FULL);
-  });
-
-  it("stores the width anywhere else", () => {
-    assert.equal(releasedCatalogWidth(1000, BAND, true), 1000);
-    assert.equal(releasedCatalogWidth(1091, BAND, false), 1091);
-  });
-
-  it("fills the room in view: the default beside the pane, full without it", () => {
-    assert.equal(filledCatalogWidth(true), ASSET_MENU_CATALOG_DEFAULT);
-    assert.equal(filledCatalogWidth(false), ASSET_MENU_CATALOG_FULL);
-  });
-});
-
-describe("the band beside vanilla's tool column", () => {
-  const near = (actual: number, expected: number) => assert.ok(Math.abs(actual - expected) < 1e-9, `${actual} ≠ ${expected}`);
-
-  it("is C#'s width and the chrome at the game's own text size", () => {
-    assert.equal(assetMenuBandWidth(ASSET_MENU_MAX_WIDTH, 1), BAND);
-  });
-
-  it("gives up what the tool column gains as the text grows", () => {
-    // Vanilla's column is 380 wide and grows by half the text scale's increase.
-    near(assetMenuBandWidth(ASSET_MENU_MAX_WIDTH, 1.1), BAND - 19);
-    near(assetMenuBandWidth(ASSET_MENU_MAX_WIDTH, 1.5), BAND - 95);
-  });
-
-  it("reads a text scale it cannot use as the game's own", () => {
-    for (const scale of [Number.NaN, 0, -1, 0.8]) {
-      assert.equal(assetMenuBandWidth(ASSET_MENU_MAX_WIDTH, scale), BAND, String(scale));
-    }
-  });
-
-  it("never narrows past the narrowest menu and the pane", () => {
-    assert.ok(assetMenuBandWidth(ASSET_MENU_MAX_WIDTH, 1.5) - CONTROL_PANE_TOTAL >= ASSET_MENU_CATALOG_MIN_WIDTH);
-  });
-
-  it("is never narrower than full, so full fills every band", () => {
-    assert.ok(ASSET_MENU_CATALOG_FULL >= assetMenuBandWidth(ASSET_MENU_MAX_WIDTH, 1));
+  it("falls back to the 720p scale when the strip could not be measured, and is zero for a point it cannot read", () => {
+    assert.equal(dragDistanceRem(500, 520), 20 / REM_IN_PX_AT_720P);
+    assert.equal(dragDistanceRem(500, 520, 0), 20 / REM_IN_PX_AT_720P);
+    assert.equal(dragDistanceRem(Number.NaN, 520, 1), 0);
   });
 });
 
