@@ -6,8 +6,9 @@ import classNames from "classnames";
 import { useMemo, useState, type SyntheticEvent } from "react";
 
 import { getNumberSeparators, groupDigits } from "domain/assetMenuMetricFormat";
+import { useTextScale } from "domain/textScaleSetting";
 import { NO_TIER_BRACKET } from "domain/menuProgression";
-import { fitIcon, SQUARE, tabRow, type IconFit, type TabCell } from "domain/tabRow";
+import { arrivedCount, fitIcon, planTabRow, readoutRange, SQUARE, tabRow, type IconFit, type TabCell } from "domain/tabRow";
 import type { VanillaMenuCategory } from "domain/vanillaMenuCategories";
 import { ALL_CATEGORIES_KEYS, resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 import {
@@ -22,6 +23,7 @@ import {
   AssetMenuStripTab$,
   AssetMenuStripTabs$,
   AssetMenuTierBracket$,
+  BuildingCatalog$,
   CurrentSearch$,
   send,
 } from "mods/bindings";
@@ -54,13 +56,16 @@ const TabIcon = ({ src, plate }: { src: string; plate: boolean }) => {
  * The menu's tabs along the box's bottom edge, under the list: All, then the game's tabs with their
  * branches or levels, each with its count, on one line. See docs/design-notes.md, "The tab row".
  */
-export const TabRow = () => {
+export const TabRow = ({ width }: { width: number }) => {
   const { translate } = useLocalization();
+  const page = useValue(BuildingCatalog$);
+  const textScale = useTextScale();
   const menu = useValue(AssetMenu$) ?? "";
   const menus = useValue(AssetMenus$) ?? [];
   const categories = useValue(AssetMenuCategories$) ?? [];
   const counts = useValue(AssetMenuCategoryCounts$) ?? [];
-  const allCount = useValue(AssetMenuAllCount$) ?? 0;
+  // Negative until C# sends the counts, which the row draws blank.
+  const allCount = arrivedCount(useValue(AssetMenuAllCount$));
   const selectedCategory = useValue(AssetMenuCategory$) ?? "";
   const expanded = useValue(AssetMenuExpandedCategories$) ?? [];
   const stripTabs = useValue(AssetMenuStripTabs$) ?? [];
@@ -90,6 +95,19 @@ export const TabRow = () => {
     categoryLabel,
   });
 
+  const format = (count: number) => groupDigits(count, separators);
+  // The window the list holds, with the true total, so a list that stops is never silent.
+  const range = readoutRange(
+    page?.items?.length ?? 0,
+    page?.totalCount ?? 0,
+    translate("Tooltip.LABEL[BetterBuildingMenu.ReadoutRange]", "1–{0} of {1}") ?? "1–{0} of {1}",
+    format
+  );
+  const place = searching && allCount !== null
+    ? (translate("Tooltip.LABEL[BetterBuildingMenu.ReadoutHere]", "{0} here") ?? "{0} here").replace("{0}", format(allCount))
+    : row.place;
+  const plan = planTabRow(row.items, { place, range }, width, textScale, format);
+
   const select = (cell: TabCell) => {
     if (cell.kind === "branch") send({ method: "SetAssetMenuStripTab", args: [cell.id] });
     else if (cell.kind === "tier") send({ method: "SetAssetMenuSchoolTier", args: [Number(cell.id)] });
@@ -98,7 +116,7 @@ export const TabRow = () => {
   };
 
   const renderCell = (cell: TabCell) => {
-    const count = cell.count === null ? "" : groupDigits(cell.count, separators);
+    const count = cell.count === null ? "" : format(cell.count);
     const label = cell.count === null ? cell.label : `${cell.label} · ${count}`;
     const worded = cell.named || cell.kind === "tier";
 
@@ -123,13 +141,19 @@ export const TabRow = () => {
 
   return (
     <div className={styles.band}>
-      <div className={styles.tabRow}>
-        {row.items.map((item) =>
-          item.kind === "bracket"
-            ? <div key={item.key} className={styles.segment}>{[item.parent, ...item.tiers].map(renderCell)}</div>
-            : renderCell(item)
-        )}
+      <div className={styles.tabRow} data-clipped={plan.clipped ? "true" : undefined}>
+        <div className={styles.cells}>
+          {row.items.map((item) =>
+            item.kind === "bracket"
+              ? <div key={item.key} className={styles.segment}>{[item.parent, ...item.tiers].map(renderCell)}</div>
+              : renderCell(item)
+          )}
+        </div>
         <div className={styles.spacer} />
+        <div className={styles.readout} data-readout={plan.readout}>
+          {plan.readout === "full" && <span className={styles.place}>{place}</span>}
+          <span className={styles.range}>{range}</span>
+        </div>
       </div>
     </div>
   );

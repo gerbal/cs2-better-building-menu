@@ -88,7 +88,7 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
           </div>
           {/* The tabs, on the box's bottom edge next to the bar. The list above is the box less
               their band, so the box keeps its height. See docs/design-notes.md, "The tab row". */}
-          <TabRow />
+          <TabRow width={shownWidth} />
           {/* Only beside the pane: with it hidden the menu may reach the room's
               edge, and nothing may go past that over the social icons. */}
           {paneShown && (

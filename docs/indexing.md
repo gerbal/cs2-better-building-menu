@@ -362,8 +362,8 @@ reads as a broken icon rather than as none.
 
 **Folds** (`FoldedDevTreeNodes`). Transportation's Air category carries three assets and the tree
 gives each of the big two its own node, so the tab row would draw one tab of three and two tabs of
-one, and neither of those nodes has an icon, so both would fall back to the menu's glyph and
-render as a pair of identical marks. An international airport and a space centre are things you
+one, and neither of those nodes has an icon, so both would have no picture to draw and say
+their names in its place. An international airport and a space centre are things you
 build at an airport, so they are drawn under the Airport tab. Folds are keyed on the node prefab
 name because the label is localized: a label key would fold in English but not in German.
 

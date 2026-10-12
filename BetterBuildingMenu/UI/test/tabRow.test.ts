@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { cellsOf, fitIcon, SQUARE, tabRow, type TabRowInput } from "../src/domain/tabRow.ts";
+import { arrivedCount, cellsOf, fitIcon, planTabRow, readoutRange, SQUARE, tabRow, type TabRowInput } from "../src/domain/tabRow.ts";
 import { NO_TIER_BRACKET } from "../src/domain/menuProgression.ts";
 
 const ROADS_ICON = "Media/Game/Icons/Roads.svg";
@@ -151,5 +151,80 @@ describe("a tab's picture", () => {
     assert.ok(Math.abs(fit.height - 0.8506) < 0.0001, String(fit.height));
     assert.deepEqual(fitIcon(0, 0), SQUARE);
     assert.deepEqual(fitIcon(Number.NaN, 10), SQUARE);
+  });
+});
+
+describe("the row at the first step", () => {
+  /** All and nineteen tabs, the size of the Roads menu: three counts in the hundreds. */
+  const nineteen = () => tabRow(roads({
+    categories: Array.from({ length: 19 }, (_, index) => category(`Tab${index}`)),
+    counts: Array.from({ length: 19 }, (_, index) => ({ id: `Tab${index}`, count: [183, 120, 410][index] ?? 12 + index })),
+    allCount: 779,
+  })).items;
+  const readout = { place: "Medium Roads", range: "1–100 of 779" };
+  const plain = (count: number) => String(count);
+
+  it("keeps All and nineteen tabs on one line at 100% text, with the readout whole", () => {
+    assert.deepEqual(planTabRow(nineteen(), readout, 706, 1, plain), { readout: "full", clipped: false });
+  });
+
+  it("keeps the readout's range alone from 110% text, where its two lines no longer fit the row", () => {
+    assert.deepEqual(planTabRow(nineteen(), readout, 706, 1.1, plain), { readout: "range", clipped: false });
+  });
+
+  it("keeps the range at 130% and at 150% text, where the last tabs clip instead", () => {
+    for (const scale of [1.3, 1.5]) {
+      const plan = planTabRow(nineteen(), readout, 706, scale, plain);
+
+      assert.deepEqual(plan, { readout: "range", clipped: true }, `at ${scale}`);
+    }
+  });
+
+  it("cuts the row at the box's edge, never wrapping it, when the tabs do not fit", () => {
+    const forty = tabRow(roads({
+      categories: Array.from({ length: 40 }, (_, index) => category(`Tab${index}`)),
+      counts: Array.from({ length: 40 }, (_, index) => ({ id: `Tab${index}`, count: 100 + index })),
+    })).items;
+
+    assert.deepEqual(planTabRow(forty, readout, 706, 1, plain), { readout: "range", clipped: true });
+  });
+
+  it("fits Education's plate and its four worded levels with the readout whole", () => {
+    const levels = tabRow(education()).items;
+
+    assert.deepEqual(planTabRow(levels, { place: "Elementary School", range: "1–22 of 22" }, 706, 1, plain), { readout: "full", clipped: false });
+  });
+
+  it("budgets a count that has not arrived as blank", () => {
+    const blank = tabRow(roads({ counts: [], allCount: null })).items;
+
+    assert.deepEqual(planTabRow(blank, readout, 706, 1, plain), { readout: "full", clipped: false });
+  });
+});
+
+describe("the readout's range", () => {
+  const plain = (count: number) => String(count);
+
+  it("is the window the list holds, with the true total", () => {
+    assert.equal(readoutRange(100, 779, "1–{0} of {1}", plain), "1–100 of 779");
+    assert.equal(readoutRange(34, 34, "1–{0} of {1}", plain), "1–34 of 34");
+  });
+
+  it("is the total alone while nothing is loaded, or nothing matches", () => {
+    assert.equal(readoutRange(0, 64, "1–{0} of {1}", plain), "64");
+    assert.equal(readoutRange(0, 0, "1–{0} of {1}", plain), "0");
+  });
+});
+
+describe("a count C# has not sent", () => {
+  it("is the binding's negative initial value, which the row draws blank", () => {
+    assert.equal(arrivedCount(-1), null);
+    assert.equal(arrivedCount(undefined), null);
+    assert.equal(arrivedCount(0), 0);
+    assert.equal(arrivedCount(779), 779);
+  });
+
+  it("leaves the All cell's count blank, like every other", () => {
+    assert.equal(cellsOf(tabRow(roads({ allCount: null })).items)[0].count, null);
   });
 });

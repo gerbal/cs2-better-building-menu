@@ -155,7 +155,7 @@ namespace BetterBuildingMenu.Services
 								BuildingCatalogLabels.DensityTier(tier.Key)),
 							tier.Count(),
 						// Vanilla's own zoning icon for this family AND tier; a tab with none
-						// draws the menu's icon and says its name, rather than a derived mark.
+						// says its name where a picture would be, rather than a derived mark.
 							ZoneDensityIcons.For(category.Key, tier.Key),
 							BuildingCatalogLabels.DensityTier(tier.Key)))
 						.ToArray()))

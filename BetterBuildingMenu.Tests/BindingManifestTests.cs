@@ -112,6 +112,17 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void TheAllCountStartsNegativeOnBothSidesSoTheRowDrawsItBlank()
+		{
+			var root = RepoRoot();
+
+			Assert.Contains("CreateBinding(\"AssetMenuAllCount\", -1)",
+				File.ReadAllText(Path.Combine(root, "BetterBuildingMenu", "Systems", "BuildingMenuUISystem.cs")));
+			Assert.Contains("\"AssetMenuAllCount\", -1)",
+				File.ReadAllText(Path.Combine(root, "BetterBuildingMenu", "UI", "src", "mods", "bindings.ts")));
+		}
+
+		[Fact]
 		public void TheTierBracketReplacesTheTierCounts()
 		{
 			Assert.Contains("AssetMenuTierBracket", CSharpNames());

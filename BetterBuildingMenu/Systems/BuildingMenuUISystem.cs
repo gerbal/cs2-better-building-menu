@@ -229,7 +229,7 @@ namespace BetterBuildingMenu.Systems
 				SetBuildingCatalogSortDescending);
 			_AssetMenuCategoriesBinding = CreateBinding("AssetMenuCategories", Array.Empty<VanillaMenuCategory>());
 			_AssetMenuCategoryCounts = CreateBinding("AssetMenuCategoryCounts", Array.Empty<MenuCategoryCount>());
-			_AssetMenuAllCount = CreateBinding("AssetMenuAllCount", 0);
+			_AssetMenuAllCount = CreateBinding("AssetMenuAllCount", -1);
 			_AssetMenuStripTabs = CreateBinding("AssetMenuStripTabs", Array.Empty<MenuBranchCount>());
 			_AssetMenuExpandedCategories = CreateBinding("AssetMenuExpandedCategories", Array.Empty<MenuCategoryTabs>());
 			// A plain value binding plus its own trigger, rather than the

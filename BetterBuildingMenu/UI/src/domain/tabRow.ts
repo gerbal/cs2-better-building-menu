@@ -2,6 +2,17 @@
  * The tab row's cells, from the bindings: which draw, in what order, what each says and sends, and
  * which is lit. Pure, so every rule is a test. See docs/design-notes.md, "The tab row".
  */
+import {
+  TAB_CELL_GAP,
+  TAB_CELL_MIN_WIDTH,
+  TAB_CELL_PADDING,
+  TAB_COUNT_SIZE,
+  TAB_NAME_GAP,
+  TAB_NAME_SIZE,
+  TAB_ROW_HEIGHT,
+  TAB_ROW_INSET,
+  TAB_SEGMENT_MARGIN,
+} from "./assetMenuLayout";
 import { isEducationMenu } from "./buildingGroups";
 import { branchTabTooltip, expandedTabsFor, schoolTierTabs, type MenuBranchCount, type MenuCategoryTabs, type TierBracket } from "./menuProgression";
 import {
@@ -50,7 +61,8 @@ export interface TabRowInput {
   /** The menu's own icon, which the All cell draws on its plate. */
   menuIcon: string;
   allLabel: string;
-  allCount: number;
+  /** Null until C# sends the menu's counts: the All cell draws it blank, like the others. */
+  allCount: number | null;
   categories: readonly VanillaMenuCategory[];
   counts: readonly MenuCategoryCount[];
   selectedCategory: string;
@@ -171,4 +183,75 @@ export function fitIcon(naturalWidth: number, naturalHeight: number): IconFit {
   if (!(naturalWidth > 0) || !(naturalHeight > 0)) return SQUARE;
   const long = Math.max(naturalWidth, naturalHeight);
   return { width: naturalWidth / long, height: naturalHeight / long };
+}
+
+/** A count C# sent, or null while it has not: the binding's initial value is negative. */
+export function arrivedCount(value: number | null | undefined): number | null {
+  return typeof value === "number" && value >= 0 ? value : null;
+}
+
+/** Overpass draws about half an em a character; an estimate erring wide only costs the readout its place line sooner. */
+const EM_PER_CHARACTER = 0.55;
+
+/** A run of text's width in rem, estimated: the row cuts what an estimate gets wrong. */
+export function textWidth(text: string, fontRem: number): number {
+  return text.length * EM_PER_CHARACTER * fontRem;
+}
+
+/** How much of the readout the row shows: its place over its range, or the range alone, which always stays. */
+export type ReadoutForm = "full" | "range";
+
+export interface TabRowPlan {
+  readout: ReadoutForm;
+  /** The last tabs run past the room the readout leaves, and the row cuts them. */
+  clipped: boolean;
+}
+
+/** A cell's width as the sheet lays it out: a picture over its count, or a name beside it. */
+function cellWidth(cell: TabCell, scale: number, format: (count: number) => string): number {
+  const countWidth = textWidth(cell.count === null ? "" : format(cell.count), TAB_COUNT_SIZE * scale);
+
+  if (cell.named || cell.kind === "tier") {
+    return textWidth(cell.label, TAB_NAME_SIZE * scale) + TAB_NAME_GAP + countWidth + 2 * TAB_CELL_PADDING;
+  }
+
+  return Math.max(TAB_CELL_MIN_WIDTH, Math.max(TAB_ROW_HEIGHT - TAB_COUNT_SIZE * scale, countWidth) + 2 * TAB_CELL_PADDING);
+}
+
+function itemWidth(item: TabRowItem, scale: number, format: (count: number) => string): number {
+  if (item.kind !== "bracket") return cellWidth(item, scale, format);
+
+  const cells = [item.parent, ...item.tiers];
+  return 2 * TAB_SEGMENT_MARGIN
+    + cells.reduce((sum, member) => sum + cellWidth(member, scale, format), 0)
+    + (cells.length - 1) * TAB_CELL_GAP;
+}
+
+/**
+ * How the row fits a box this wide. The readout's place line gives way first: the two lines fit
+ * the row only at 100% text. Its range always stays, and the last tabs run past the room it leaves,
+ * where the row cuts them: it never wraps.
+ */
+export function planTabRow(
+  items: readonly TabRowItem[],
+  readout: { place: string; range: string },
+  boxWidth: number,
+  scale: number,
+  format: (count: number) => string
+): TabRowPlan {
+  const widths = items.map((item) => itemWidth(item, scale, format));
+  const cells = widths.reduce((sum, width) => sum + width, 0) + Math.max(0, widths.length - 1) * TAB_CELL_GAP;
+  // The spacer and the readout each sit a gap past what comes before them.
+  const room = boxWidth - 2 * TAB_ROW_INSET - cells - 2 * TAB_CELL_GAP;
+  const range = textWidth(readout.range, TAB_COUNT_SIZE * scale);
+  const place = textWidth(readout.place, TAB_NAME_SIZE * scale);
+  const full = scale <= 1 && Math.max(place, range) <= room;
+
+  return { readout: full ? "full" : "range", clipped: range > room };
+}
+
+/** The readout's second line: the window the list holds, with the true total; the total alone while nothing is loaded. */
+export function readoutRange(loaded: number, total: number, template: string, format: (count: number) => string): string {
+  if (loaded <= 0 || total <= 0) return format(Math.max(0, total));
+  return template.replace("{0}", format(Math.min(loaded, total))).replace("{1}", format(total));
 }

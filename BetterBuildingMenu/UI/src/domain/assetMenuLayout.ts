@@ -372,6 +372,17 @@ export function catalogLayoutWidth(menuWidth: number): number {
 /** The tab row's band under the list: the gap, the row and the pad above the bar. */
 export const TAB_ROW_BAND = sheetRem("tabRowBand");
 
+/** The tab row's own numbers, which its sheet draws and its plan budgets: see _assetMenuGeometry.scss. */
+export const TAB_ROW_HEIGHT = sheetRem("tabRowHeight");
+export const TAB_ROW_INSET = sheetRem("tabRowInset");
+export const TAB_CELL_MIN_WIDTH = sheetRem("tabCellMinWidth");
+export const TAB_CELL_PADDING = sheetRem("tabCellPadding");
+export const TAB_CELL_GAP = sheetRem("tabCellGap");
+export const TAB_COUNT_SIZE = sheetRem("tabCountSize");
+export const TAB_NAME_SIZE = sheetRem("tabNameSize");
+export const TAB_NAME_GAP = sheetRem("tabNameGap");
+export const TAB_SEGMENT_MARGIN = sheetRem("tabSegmentMargin");
+
 /**
  * The list's height as drawn: the stored height less the tab row's band, so the band fits inside
  * the box's height rather than adding to it, never below the drag's floor. The stored height keeps

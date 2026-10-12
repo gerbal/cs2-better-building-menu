@@ -118,7 +118,43 @@
   background-color: var(--bbm-tabSeg);
 }
 
+// The tabs, which shrink to the room the readout leaves and cut their last ones there.
+.cells {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: $tab-cell-gap;
+  overflow: hidden;
+}
+
 .spacer {
   flex: 1 1 0;
   min-width: 0;
+}
+
+// The readout: the lit tab's name over the window the list holds, with the true total, right of
+// the tabs. Its range always shows; the name goes first when the row is short, then the last tabs
+// clip.
+.readout {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.place {
+  color: var(--bbm-tRead1);
+  font-size: calc(#{$tab-name-size} * var(--fontScale));
+  line-height: 13rem;
+  white-space: nowrap;
+}
+
+.range {
+  color: var(--bbm-tRead2);
+  font-size: calc(#{$tab-count-size} * var(--fontScale));
+  line-height: 12rem;
+  white-space: nowrap;
 }

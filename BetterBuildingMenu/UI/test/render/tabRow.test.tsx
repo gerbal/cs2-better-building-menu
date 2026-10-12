@@ -36,13 +36,13 @@ function seedEducation(): void {
   });
 }
 
-const render = () => renderHtml(<TabRow />);
+const render = () => renderHtml(<TabRow width={706} />);
 
 /** The row mounted, as the game mounts it. */
 function mount(): ReactTestRenderer {
   let root: ReactTestRenderer | undefined;
   act(() => {
-    root = create(<TabRow />);
+    root = create(<TabRow width={706} />);
   });
   return root!;
 }
@@ -150,5 +150,46 @@ describe("the tab row", () => {
     });
 
     assert.deepEqual(imageOf(root, "Media/Game/Icons/Electricity.svg").props.style, { width: "100%", height: "100%" });
+  });
+});
+
+describe("the readout", () => {
+  beforeEach(() => {
+    resetBindings();
+    seedRoads();
+  });
+
+  it("names the lit tab over the window the list holds, with the true total", () => {
+    set("BuildingCatalog", { items: Array.from({ length: 100 }, (_, id) => ({ id })), totalCount: 779 });
+
+    assert.match(render(), /data-readout="full"><span class="place">MediumRoads<\/span><span class="range">1–100 of 779<\/span>/);
+  });
+
+  it("counts the matches here while a search is typed", () => {
+    set("CurrentSearch", "four");
+    set("AssetMenuAllCount", 37);
+    set("BuildingCatalog", { items: [], totalCount: 37 });
+
+    assert.match(render(), /<span class="place">37 here<\/span>/);
+  });
+
+  it("keeps one line, its range, from 110% text", () => {
+    setBinding("options", "textScale", 1.1);
+    set("BuildingCatalog", { items: [], totalCount: 64 });
+
+    assert.match(render(), /data-readout="range"><span class="range">64<\/span><\/div>/);
+  });
+
+  it("keeps its range at 150% text", () => {
+    setBinding("options", "textScale", 1.5);
+    set("BuildingCatalog", { items: [], totalCount: 64 });
+
+    assert.match(render(), /data-readout="range"><span class="range">64<\/span>/);
+  });
+
+  it("draws the All count blank before C# sends it", () => {
+    set("AssetMenuAllCount", -1);
+
+    assert.match(render(), /<span class="count"><\/span>/);
   });
 });

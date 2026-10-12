@@ -331,6 +331,21 @@ its source, so a new menu's picture starts square rather than at the fit of the 
 Every one of these lengths is stated once, in `_assetMenuGeometry.scss`: the stylesheet draws
 them, and the layout arithmetic reads the ones it needs through `assetMenuLayout.module.scss`.
 
+**The readout** sits at the row's right: the lit tab's name over the window the list holds, with
+the true total ("Medium Roads" over "1–100 of 779"), so a list that stops is never silent; while a
+search is typed its first line reads "37 here". Until increment 9's bodies, which place every cell
+from a slot index, the range is the window the list has loaded rather than the rows on screen. Its
+two lines fit the 26 rem row only at 100% text, so from 110% it keeps the range alone.
+
+**When the row is short of room** (`planTabRow`), the readout's name gives way first, leaving its
+range, which always stays. Only then do the last tabs run past the room the range leaves, where the
+row cuts them; it never wraps. The plan estimates text at 0.55 em a character, erring wide, so the
+worst an estimate does is drop the name a little early, and the row's own clipping covers the rest.
+By that estimate a Roads with All and nineteen tabs keeps one line at the first step at every text
+scale the game offers, the name going from 110% and the last tabs clipping from 130%. "+N ▾", which
+folds the last tabs into a list, is increment 20's. The All count, like the others, draws blank
+until C# sends it: its binding starts negative.
+
 ## The release marker and the settings version
 
 A release leaves two signs that it ran, so a later release can tell a player who upgraded from
