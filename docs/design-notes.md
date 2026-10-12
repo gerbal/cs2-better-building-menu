@@ -251,7 +251,10 @@ the tab from the last refresh (`_tierParent`), so the trigger needs only the lev
 Every tab draws the picture its binding carries, and every tab binding passes through one chain,
 `CategoryIcon.Chain`: the tab's own icon when it can be drawn, else its menu's, else the game's own
 placeholder (`Media/Placeholder.svg`). "Can be drawn" is `CategoryIcon.IsResolvable`: not empty and
-not an `assetdb://global/` content hash, which an `<img>` cannot load. The game's categories
+not an unresolved `assetdb://global/` content hash. The game's `UIExtensions.ResolveUri` resolves an
+address with exactly that prefix, compared case for case, before its tab bar draws it, and hands
+anything else on as it is; a mod's `assetdb://Global/…` icon is one it hands on, and the page loads
+it, so BBM's tab draws it as the game's does. The game's categories
 (`GetMenuCategories`, Roads' extra tabs included), the strip tabs, the tabs drawn in a category's
 place, and each menu's own icon (`AssetMenus`, which the All cell draws) all pass through it, so no
 binding publishes a blank or a hash. Where the game's toolbar would draw its placeholder for a

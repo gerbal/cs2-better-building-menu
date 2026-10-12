@@ -27,9 +27,9 @@ How this mod meets other mods, and a record of how popular ones fared beside it.
 - **Entries sit where the game's menus put them now**, so a mod that regroups categories at
   runtime, as Asset UI Manager and Zone Organizer do, regroups the asset menu with them. See
   [indexing.md](indexing.md), "Partial passes".
-- **A category's icon is an address that draws.** A category has two: a content hash
-  (`assetdb://global/…`), which draws nothing, and an archive path, which does
-  (`CategoryIcon`).
+- **A category's icon is an address that draws.** A category can carry an unresolved content
+  hash (`assetdb://global/…`), which draws nothing, beside the address the game resolves it to;
+  BBM's tab draws the one the game's own tab bar draws (`CategoryIcon`).
 - **Buttons other mods add to the game's category tab bar** draw in the asset menu's top bar
   (`VanillaTabBarHost`), as Zone Color Changer's does.
 - **"Already built" is the game's answer for each unique asset** (`IsPlacedUniqueAsset`),
