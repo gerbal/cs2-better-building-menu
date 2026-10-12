@@ -49,5 +49,29 @@ namespace BetterBuildingMenu.Domain
 				return Array.Empty<string>();
 			}
 		}
+
+		/// <summary>The first read that finds keys; a read that throws counts as finding none.</summary>
+		/// <remarks>An unreadable file is no reason to skip the migration, which then runs on no keys.</remarks>
+		public static IReadOnlyCollection<string> FirstFound(params Func<IReadOnlyCollection<string>>[] reads)
+		{
+			foreach (var read in reads)
+			{
+				try
+				{
+					var keys = read();
+
+					if (keys.Count > 0)
+					{
+						return keys;
+					}
+				}
+				catch (Exception)
+				{
+					// Another read may still answer.
+				}
+			}
+
+			return Array.Empty<string>();
+		}
 	}
 }

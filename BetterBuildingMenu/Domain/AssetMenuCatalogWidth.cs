@@ -23,6 +23,10 @@ namespace BetterBuildingMenu.Domain
 		/// </remarks>
 		public const float Default = 0f;
 
+		/// <summary>The width <see cref="Default"/> drew: the room beside the control pane, on any screen.</summary>
+		/// <remarks>The settings migration gives a 0.2.4 player at the default the Width step nearest it.</remarks>
+		public const float UpgraderWidth = 1091f;
+
 		/// <summary>How near the room a drag must end to be stored as filling it.</summary>
 		public const float FillSnap = 2f;
 

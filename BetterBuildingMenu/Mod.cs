@@ -1,6 +1,7 @@
 ﻿using Colossal.Core;
 using Colossal.IO.AssetDatabase;
 using Colossal.Logging;
+using Colossal.PSI.Environment;
 using Colossal.Reflection;
 using Colossal.UI;
 
@@ -83,7 +84,9 @@ namespace BetterBuildingMenu
 		{
 			Log.Info(nameof(OnLoad));
 
-			// First: the silhouette cache below writes the stamp the marker reads.
+			// First, in this order: what earlier releases left, then this release's marker. The
+			// silhouette cache below writes the stamp both read.
+			var prior = ReadPriorInstall();
 			WriteReleaseMarker();
 
 			Settings = new BetterBuildingMenuSettings(this);
@@ -106,7 +109,7 @@ namespace BetterBuildingMenu
 			}
 
 			AssetDatabase.global.LoadSettings(nameof(BetterBuildingMenu), Settings, new BetterBuildingMenuSettings(this));
-			StepSettingsVersion();
+			MigrateSettings(prior);
 
 			// UIUpdate follows PrefabSystem and UnlockSystem in the same frame, and the
 			// indexer is registered before the asset menu, which reads it. See
@@ -122,8 +125,8 @@ namespace BetterBuildingMenu
 
 		/// <summary>Moves release.json to this release. Never throws.</summary>
 		/// <remarks>
-		/// FolderUtil is first touched inside the guard: its static constructor creates the folder
-		/// and can fail. See docs/design-notes.md, "The release marker and the settings version".
+		/// FolderUtil is first touched in ReadPriorInstall's guard, which runs first. See
+		/// docs/design-notes.md, "The release marker and the settings version".
 		/// </remarks>
 		private static void WriteReleaseMarker()
 		{
@@ -140,27 +143,75 @@ namespace BetterBuildingMenu
 			}
 		}
 
-		/// <summary>Raises the stored settings version to this release's, saving once if it moved.</summary>
-		/// <remarks>Before the systems are created, so nothing is subscribed to the apply yet.</remarks>
-		private static void StepSettingsVersion()
+		/// <summary>What ModsData holds before this load writes there. Never throws.</summary>
+		/// <remarks>
+		/// FolderUtil is first touched inside the guard: its static constructor creates the folder
+		/// and can fail, and the marker update that follows warns about it. See
+		/// docs/design-notes.md, "Who is an upgrader".
+		/// </remarks>
+		private static PriorInstall ReadPriorInstall()
 		{
 			try
 			{
-				var next = SettingsVersionStep.Next(Settings.SettingsVersion);
+				return ReleaseMarkerFile.ReadPrior(FolderUtil.ContentFolder);
+			}
+			catch (Exception)
+			{
+				return PriorInstall.Nothing;
+			}
+		}
 
-				if (next == Settings.SettingsVersion)
+		/// <summary>Runs the settings migration, saving once if it moved anything. Never throws.</summary>
+		/// <remarks>
+		/// Before the systems are created, so nothing is subscribed to the apply yet. See
+		/// docs/design-notes.md, "The settings migration".
+		/// </remarks>
+		private static void MigrateSettings(PriorInstall prior)
+		{
+			try
+			{
+				var fileKeys = SettingsFileKeysOnDisk();
+				var result = SettingsMigration.Migrate(Settings, fileKeys, prior, ScreenAspect());
+
+				if (Log.isLevelEnabled(Level.Debug))
 				{
-					return;
+					Log.Debug("[SETTINGS-MIGRATION] " + SettingsMigration.Describe(fileKeys, prior, result));
 				}
 
-				Settings.SettingsVersion = next;
-				Settings.ApplyAndSave();
+				if (result.Changed)
+				{
+					Settings.ApplyAndSave();
+				}
 			}
 			catch (Exception ex)
 			{
-				Log.Warn(ex, "Could not save the settings version");
+				Log.Warn(ex, "Could not migrate the settings");
 			}
 		}
+
+		/// <summary>The key names BBM's settings file held: from the file as the game parsed it, else from its text.</summary>
+		/// <remarks>
+		/// The game keeps each parsed file on its setting asset. The text read covers a lookup that
+		/// finds none. A read that throws gives no keys, and the migration still runs.
+		/// </remarks>
+		private static IReadOnlyCollection<string> SettingsFileKeysOnDisk() =>
+			SettingsFileKeys.FirstFound(
+				() => SettingsFileKeys.Of(AssetDatabase.global
+					.GetAssets(SearchFilter<SettingAsset>.ByCondition(asset => asset.name == nameof(BetterBuildingMenu)))
+					.SelectMany<SettingAsset, SettingAsset.Fragment>(asset => asset)
+					.Select(fragment => fragment.variant)),
+				() =>
+				{
+					var path = Path.Combine(EnvPath.kUserDataPath, nameof(BetterBuildingMenu) + SettingAsset.kExtension);
+
+					return File.Exists(path) ? SettingsFileKeys.FromFileText(File.ReadAllText(path)) : Array.Empty<string>();
+				});
+
+		/// <summary>The screen's aspect, which sizes the Width step an upgrader's width becomes.</summary>
+		private static double ScreenAspect() =>
+			UnityEngine.Screen.width > 0 && UnityEngine.Screen.height > 0
+				? (double)UnityEngine.Screen.width / UnityEngine.Screen.height
+				: WidthSteps.ReferenceAspect;
 
 		public void OnDispose()
 		{

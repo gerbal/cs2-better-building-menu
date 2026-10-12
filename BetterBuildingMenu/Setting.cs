@@ -11,7 +11,7 @@ namespace BetterBuildingMenu
 	[SettingsUITabOrder(SETTINGS)]
 	[SettingsUIGroupOrder(BEHAVIOR, UIUX)]
 	[SettingsUIShowGroupName(BEHAVIOR, UIUX)]
-	public class BetterBuildingMenuSettings : ModSetting
+	public class BetterBuildingMenuSettings : ModSetting, Domain.ISettingsValues
 	{
 		public const string SETTINGS = "Settings";
 		public const string BEHAVIOR = "Behavior";
@@ -49,8 +49,8 @@ namespace BetterBuildingMenu
 		public bool ControlPaneShown { get; set; } = true;
 
 		/// <summary>
-		/// The settings file's format version: 0 in a file no release has stepped, raised at
-		/// load by <see cref="Domain.SettingsVersionStep"/>.
+		/// The settings file's format version: 0 in a file no release has stepped, stored at
+		/// load by <see cref="Domain.SettingsMigration"/> once it has run.
 		/// </summary>
 		/// <remarks>
 		/// No initializer, and left out of SetDefaults: the game writes a key only once it differs
@@ -59,6 +59,24 @@ namespace BetterBuildingMenu
 		/// </remarks>
 		[SettingsUIHidden]
 		public int SettingsVersion { get; set; }
+
+		/// <summary>
+		/// Which of the build menu's five widths it draws at, from 1, the game's own, to 5.
+		/// </summary>
+		/// <remarks>
+		/// Hidden. A number rather than a width, because the widths follow the screen. See
+		/// <see cref="Domain.WidthSteps"/>.
+		/// </remarks>
+		[SettingsUIHidden]
+		public int AssetMenuWidthStep { get; set; } = Domain.WidthSteps.DefaultStep;
+
+		/// <summary>
+		/// Whether the settings migration found that this player ran a release from before the
+		/// Width steps.
+		/// </summary>
+		/// <remarks>Hidden. See docs/design-notes.md, "Who is an upgrader".</remarks>
+		[SettingsUIHidden]
+		public bool Upgrader { get; set; }
 
 		/// <summary>
 		/// The view the player last picked in the control pane, or <see
@@ -90,11 +108,16 @@ namespace BetterBuildingMenu
 		public int AssetMenuTileSize { get; set; } = DefaultTileSize;
 
 		/// <summary>Puts every option back to the value it ships with.</summary>
-		/// <remarks>The same values as the initializers above, which apply before anything can call this.</remarks>
+		/// <remarks>
+		/// The same values as the initializers above, which apply before anything can call this.
+		/// Not the settings version, which records the migration, nor the legacy width, which only
+		/// the migration reads.
+		/// </remarks>
 		public override void SetDefaults()
 		{
 			AssetMenuHeight = Domain.AssetMenuHeight.Default;
-			AssetMenuCatalogWidth = Domain.AssetMenuCatalogWidth.Default;
+			AssetMenuWidthStep = Domain.WidthSteps.DefaultStep;
+			Upgrader = false;
 			ControlPaneShown = true;
 			AssetMenuViewMode = Domain.AssetMenuViewMode.None;
 			ReplaceVanillaBuildMenu = true;

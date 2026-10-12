@@ -193,10 +193,11 @@ the saved one, so hiding the pane could change the width.
 A release leaves two signs that it ran, so a later release can tell a player who upgraded from
 one who installed it fresh.
 
-- **`SettingsVersion`**, a hidden setting. A load raises a stored value below 1 to 1 and saves
-  once; a higher value is kept, so a later release's version survives a return to this one. Its
-  initializer stays 0 and `SetDefaults` never touches it: the game writes a key only once it
-  differs from the default object's, and from then on rewrites it at every save.
+- **`SettingsVersion`**, a hidden setting: the settings file's format version, 0 in a file no
+  release has stepped. 0.2.5 writes 1; the settings migration stores 2 once it has run, and keeps
+  a higher value, a later release's (see "The settings migration"). Its initializer stays 0 and
+  `SetDefaults` never touches it: the game writes a key only once it differs from the default
+  object's, and from then on rewrites it at every save.
 - **`release.json`**, in ModsData: `version` (the format, 1), `first` (the release that first
   wrote it), `last` (the release that loaded last) and `stampBefore` (whether the silhouettes
   stamp existed before the first release that wrote the file ran). `first` and `stampBefore` are
@@ -204,12 +205,13 @@ one who installed it fresh.
   every load. A release is the assembly version in three parts, which a later release compares.
   A marker in a later format is left as it is, and one that cannot be read is replaced.
 
-**The order in `OnLoad`.** The marker is read and written first, because the silhouette cache
-writes its stamp as it is built. The version is stepped after the settings load and before the
-systems are created, so nothing is subscribed to the apply.
+**The order in `OnLoad`.** What ModsData holds is read first (`ReleaseMarkerFile.ReadPrior`, see
+"Who is an upgrader"), then the marker is written, both before the silhouette cache writes its
+stamp as it is built. The settings migration runs after the settings load and before the systems
+are created, so nothing is subscribed to the apply.
 
-**Nothing here stops a load.** A failure is one warning. `FolderUtil` is first touched inside the
-marker's guard, since its static constructor creates the folder and can fail. The file is written
+**Nothing here stops a load.** A failure is one warning. `FolderUtil` is first touched inside
+`ReadPriorInstall`'s guard, since its static constructor creates the folder and can fail. The file is written
 through `release.json.tmp`, then `File.Replace`, or `File.Move` when there is no file yet: the
 mod runs on net48, where `File.Move` cannot overwrite.
 
@@ -246,6 +248,40 @@ file's own text, whose first line names the setting.
 **What it cannot tell.** A 0.2.4 player whose file holds no key and whose ModsData folder is gone
 reads as new; anyone who once ran 0.1 or later reads as an upgrader, however long ago.
 
+
+## The settings migration
+
+The game rewrites every key already in the settings file at its current value, so a changed
+default never reaches a player whose file holds the key. `SettingsMigration.Migrate` moves a file
+an earlier release wrote, once. At load, after the settings load and before the systems are
+created, every step newer than the stored `SettingsVersion` runs, the version is stored, and the
+settings are saved once, only if a value moved. It works on `ISettingsValues`, which the settings
+class implements, so its tests never build the settings class. A second load finds the version
+current and changes nothing; a version above this release's, a later release's, is left alone.
+On every load, a stored Width step outside 1 to 5 becomes 1 and is saved.
+
+**Version 2, the Width steps.**
+- The hidden `Upgrader` is set for an upgrader (see "Who is an upgrader").
+- A height within 0.1 of an earlier release's default, 420 (0.2.3 to 0.2.5) or 155 (an unreleased
+  build's), becomes 149: the catalog height that makes the menu, under its 14 rem top strip and
+  45 rem header, as tall as the game's own, 208. Any other height is the player's and is kept.
+- An upgrader's width becomes the Width step nearest the one they had, on this screen. The legacy
+  `AssetMenuCatalogWidth` of 0, 0.2.4's default, drew the room beside the pane, 1,091 on any
+  screen: the third step on 16:9, the second on 21:9 and 32:9. A dragged width gives the step
+  nearest it, 735 the first. Everyone else gets the first step.
+
+**It cannot tell a choice from an old default.** A player who chose 420, 155 or 735 by hand moves
+with the defaults, once.
+
+**Legacy keys stay declared.** `AssetMenuCatalogWidth` stays a property, which only the migration
+reads, so the game keeps its key in the file: it drops a key no property reads at its next save.
+`SetDefaults` touches neither it nor `SettingsVersion`.
+
+**An unreadable file.** A read of the key names that throws gives no keys and the migration still
+runs, so the file is treated as one with no signs.
+
+**What it logs.** One Debug line, `[SETTINGS-MIGRATION]`: the versions, the key names the file
+held, the marker and the stamp as they stood, the sign that decided, and each value that moved.
 
 ## The remembered view
 

@@ -141,26 +141,6 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(declared, ReleaseMarker.ReleaseOf(typeof(Mod).Assembly.GetName().Version));
 		}
 
-		[Theory]
-		[InlineData(0, 1)]
-		[InlineData(-3, 1)]
-		[InlineData(1, 1)]
-		[InlineData(2, 2)]
-		[InlineData(5, 5)]
-		public void TheVersionStepRaisesOnlyAVersionBelowThisRelease(int stored, int expected)
-		{
-			Assert.Equal(expected, SettingsVersionStep.Next(stored));
-		}
-
-		[Fact]
-		public void ASecondLoadHasNoVersionToSave()
-		{
-			// OnLoad saves only when the step changes the stored value.
-			var first = SettingsVersionStep.Next(0);
-
-			Assert.Equal(first, SettingsVersionStep.Next(first));
-		}
-
 		[Fact]
 		public void TheVersionKeyIsHiddenStartsAtZeroAndIsLeftOutOfSetDefaults()
 		{
@@ -172,7 +152,7 @@ namespace BetterBuildingMenu.Tests
 
 			var source = File.ReadAllText(ModFile("Setting.cs"));
 
-			// No initializer: the default object's 0 is what makes the game write a stepped 1.
+			// No initializer: the default object's 0 is what makes the game write the migration's version.
 			Assert.Matches(@"public int SettingsVersion \{ get; set; \}\r?\n", source);
 			Assert.DoesNotContain("SettingsVersion", source.Substring(source.IndexOf("public override void SetDefaults()", StringComparison.Ordinal)));
 		}
