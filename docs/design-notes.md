@@ -83,9 +83,17 @@ the toolbar's open menu, and moving the mouse brings BBM's back on the same menu
 - **Under the gamepad.** A menu the toolbar opens is recorded and left to the game; a menu it
   closes clears the record, before anything else `VanillaMenuDeselected` checks.
 - **Back to the mouse.** A recorded menu is opened again as a fresh open, past the echo guard, and
-  the record goes. With Replace the vanilla build menu off, nothing reopens.
+  the record goes. It reopens only while the toolbar still has a menu open
+  (`ToolbarUISystem.hasActiveSelection`), and with Replace the vanilla build menu off nothing
+  reopens.
+- **Forgetting without a deselect.** Two events can leave the record behind with no deselect to
+  clear it. A load, or a return to the main menu, clears the toolbar while the UI is unmounted,
+  and the UI's watcher ignores its first answer when it mounts again; with Replace off the watcher
+  sends nothing. So the game's preload forgets the record, as does every settings apply with
+  Replace off, whoever had the menu.
 - **The rule** is `MenuOwnership`, which is pure: BBM stands in for a menu only while Replace is on
-  and the scheme is not the gamepad.
+  and the scheme is not the gamepad. `GamepadMenuRecord`, pure too, keeps the record through each
+  event that sets or forgets it.
 - **Where each menu sits.** The game's keeps its own place, x 607 at the game's text size, while
   BBM's starts beside the tool options, so at the first Width step the hand-off moves the menu
   sideways until BBM's box takes the game's place.

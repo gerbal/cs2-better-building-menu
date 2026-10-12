@@ -11,8 +11,8 @@ namespace BetterBuildingMenu.Systems
     internal partial class BuildingMenuUISystem : ExtendedUISystemBase
 	{
 		// The toolbar menu BBM has given the game's own while a gamepad is in use, to take back
-		// when the mouse returns, or 0 for none.
-		private int _gamepadMenuIndex;
+		// when the mouse returns.
+		private readonly GamepadMenuRecord _gamepadMenu = new();
 
 		// Set once the handler has warned, so a failing handler logs once per session.
 		private bool _controlSchemeWarned;
@@ -35,16 +35,16 @@ namespace BetterBuildingMenu.Systems
 
 			try
 			{
-				var recorded = _gamepadMenuIndex;
-				var handOff = MenuOwnership.SchemeChanged(
+				// The toolbar itself is asked whether a menu is open: a load clears it with no deselect
+				// reaching BBM.
+				var action = _gamepadMenu.SchemeChanged(
 					scheme == InputManager.ControlScheme.Gamepad,
 					Mod.Settings.ReplaceVanillaBuildMenu,
 					_OwnsCurrentMenu.Value ? _appliedMenuIndex : 0,
-					recorded);
+					_toolbarUISystem.hasActiveSelection,
+					out var reopen);
 
-				_gamepadMenuIndex = handOff.Recorded;
-
-				switch (handOff.Action)
+				switch (action)
 				{
 					case HandOffAction.Yield:
 						YieldMenuToVanilla();
@@ -52,7 +52,7 @@ namespace BetterBuildingMenu.Systems
 					case HandOffAction.Reopen:
 						// A fresh open, which the echo guard must not take for the game's echo.
 						_appliedMenuFrame = null;
-						VanillaMenuSelected(recorded);
+						VanillaMenuSelected(reopen);
 						break;
 				}
 			}
@@ -144,11 +144,8 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			// Under a gamepad the game's own menu serves, and this one is taken back for the mouse.
-			var handOff = MenuOwnership.MenuSelected(InputManager.instance?.isGamepadControlSchemeActive == true, menuEntityIndex);
-
-			if (handOff.Action == HandOffAction.Yield)
+			if (_gamepadMenu.MenuSelected(InputManager.instance?.isGamepadControlSchemeActive == true, menuEntityIndex) == HandOffAction.Yield)
 			{
-				_gamepadMenuIndex = handOff.Recorded;
 				YieldMenuToVanilla();
 				return;
 			}
@@ -215,7 +212,7 @@ namespace BetterBuildingMenu.Systems
 		{
 			// Before the check below: a menu closing under a gamepad is the game's, and leaves
 			// nothing to take back.
-			_gamepadMenuIndex = 0;
+			_gamepadMenu.Forget();
 
 			if (!Mod.Settings.ReplaceVanillaBuildMenu || !_OwnsCurrentMenu)
 			{

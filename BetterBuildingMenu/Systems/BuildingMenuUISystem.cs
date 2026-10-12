@@ -2,6 +2,8 @@
 using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Services;
 using BetterBuildingMenu.Utilities;
+using Colossal.Serialization.Entities;
+using Game;
 using Game.Input;
 using Game.Prefabs;
 using Game.Rendering;
@@ -299,6 +301,15 @@ namespace BetterBuildingMenu.Systems
 			base.OnDestroy();
 		}
 
+		protected override void OnGamePreload(Purpose purpose, GameMode mode)
+		{
+			base.OnGamePreload(purpose, mode);
+
+			// A load or a return to the main menu clears the toolbar while the UI is gone, so no
+			// deselect arrives to forget a menu given up under the gamepad.
+			_gamepadMenu.Forget();
+		}
+
 		/// <summary>
 		/// Re-publishes the settings the UI reads, when the options screen
 		/// applies a change.
@@ -319,6 +330,10 @@ namespace BetterBuildingMenu.Systems
 			_AssetMenuWidthStep.Value = WidthSteps.Sanitize(Mod.Settings.AssetMenuWidthStep);
 			_ControlPaneShown.Value = Mod.Settings.ControlPaneShown;
 			_AssetMenuViewMode.Value = AssetMenuViewMode.Sanitize(Mod.Settings.AssetMenuViewMode);
+
+			// Whoever has the menu: with the setting off the watcher sends no deselect, so a menu
+			// given up under the gamepad could outlive its close and reopen once switched back on.
+			_gamepadMenu.SettingsApplied(Mod.Settings.ReplaceVanillaBuildMenu);
 
 			// Switched off with the asset menu up: the menu goes back to its vanilla grid now
 			// rather than at the next click.

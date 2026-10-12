@@ -36,15 +36,20 @@ namespace BetterBuildingMenu.Domain
 		/// <param name="replaceEnabled">Whether Replace the vanilla build menu is on.</param>
 		/// <param name="ownedMenu">The menu BBM stands in for, or 0.</param>
 		/// <param name="recorded">The menu BBM has given up and recorded, or 0.</param>
-		public static HandOff SchemeChanged(bool gamepad, bool replaceEnabled, int ownedMenu, int recorded)
+		/// <param name="toolbarHasMenu">
+		/// Whether the toolbar still has a menu open. A load clears it while the UI is gone, so no
+		/// deselect forgets the record, and the menu recorded is no longer there to take back.
+		/// </param>
+		public static HandOff SchemeChanged(bool gamepad, bool replaceEnabled, int ownedMenu, int recorded, bool toolbarHasMenu)
 		{
 			if (gamepad)
 			{
 				return ownedMenu != 0 ? new HandOff(HandOffAction.Yield, ownedMenu) : new HandOff(HandOffAction.None, recorded);
 			}
 
-			// The mouse is back: the recorded menu returns once, and is then forgotten.
-			return MayOwn(replaceEnabled, gamepad: false) && recorded != 0
+			// The mouse is back: the recorded menu returns once, if the toolbar still has it, and is
+			// then forgotten.
+			return MayOwn(replaceEnabled, gamepad: false) && recorded != 0 && toolbarHasMenu
 				? new HandOff(HandOffAction.Reopen, 0)
 				: new HandOff(HandOffAction.None, 0);
 		}
