@@ -75,12 +75,23 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>One school tier (1–4); anything below zero is "all".</summary>
 		/// <remarks>
 		/// With the tab that holds the levels, the tab is picked too, so both read lit and the list is
-		/// that tab's schools at that level. Without one, the category is cleared.
+		/// that tab's schools at that level; picking the tab clears a strip tab, as a tab's own pick
+		/// does, and the list is what the level counts. Without one, the category is cleared.
 		/// </remarks>
-		public AssetMenuState SelectSchoolTier(int tier, string? parent = null) => this with
+		public AssetMenuState SelectSchoolTier(int tier, string? parent = null)
 		{
-			Query = ResetWindow(Query with { UiCategory = parent?.Trim() ?? string.Empty, SchoolTier = tier < 0 ? -1 : tier }),
-		};
+			var tab = parent?.Trim() ?? string.Empty;
+
+			return this with
+			{
+				Query = ResetWindow(Query with
+				{
+					UiCategory = tab,
+					SchoolTier = tier < 0 ? -1 : tier,
+					StripTabs = tab.Length > 0 ? null : Query.StripTabs,
+				}),
+			};
+		}
 
 		// --- Order, grouping, window ------------------------------------------
 

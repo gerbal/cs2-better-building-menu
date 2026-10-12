@@ -52,6 +52,35 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void ALevelsCountIsWhatAClickOnItLists()
+		{
+			// A strip tab, a filter and a search on. The levels count past the strip tab, as every
+			// tab does, so a level's pick must clear it, as a tab's own pick does.
+			var schools = new[]
+			{
+				School(1, "Education", 1) with { Name = "Small Elementary", DevTreeBranch = "Primary" },
+				School(2, "Education", 1, locked: true) with { Name = "Elementary", DevTreeBranch = "Primary" },
+				School(3, "Education", 2, locked: true) with { Name = "High School", DevTreeBranch = "Secondary" },
+				School(4, "Education", 2, locked: true) with { Name = "Elite High", DevTreeBranch = "Secondary" },
+				School(5, "Education", 4, locked: true) with { Name = "University", DevTreeBranch = "Higher" },
+			};
+			var state = AssetMenuState.Initial
+				.SelectMenu(Education)
+				.SelectStripTab("Primary")
+				.ToggleFacet(FacetIds.Availability, Locked)
+				.Search("e");
+			var bracket = new CatalogView(schools, state.Query, educationMenu: true).TierBracket;
+
+			Assert.Equal(new[] { ("1", 1), ("2", 1), ("4", 1) }, bracket.Tiers.Select(tier => (tier.Id, tier.Count)));
+			foreach (var tier in bracket.Tiers)
+			{
+				var picked = state.SelectSchoolTier(int.Parse(tier.Id, System.Globalization.CultureInfo.InvariantCulture), bracket.ParentCategory);
+
+				Assert.Equal(tier.Count, new CatalogView(schools, picked.Query, educationMenu: true).Page.TotalCount);
+			}
+		}
+
+		[Fact]
 		public void AMenuWithNoSchoolsHasNoLevels()
 		{
 			// Outside Education, and in an Education holding no school with a level.

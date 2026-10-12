@@ -157,6 +157,16 @@ public sealed class AssetMenuStateTransitionTests
     }
 
     [Fact]
+    public void ALevelPickedWithItsTabClearsTheStripTabAsTheTabsOwnPickDoes()
+    {
+        var tabbed = S().SelectMenu("Education").SelectStripTab("Primary");
+
+        Assert.Null(tabbed.SelectSchoolTier(2, "Education").Query.StripTabs);
+        // Without a tab to set, the level narrows the strip tab's list rather than replacing it.
+        Assert.Equal(new[] { "Primary" }, tabbed.SelectSchoolTier(2).Query.StripTabs);
+    }
+
+    [Fact]
     public void BlankTabsAndCategoriesClearRatherThanSelect()
     {
         var state = S().SelectMenu("Roads").SelectStripTab("Bridges").SelectStripTab("");
