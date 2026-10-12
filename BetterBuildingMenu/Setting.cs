@@ -158,6 +158,16 @@ namespace BetterBuildingMenu
 		[SettingsUISlider(min = Domain.Tuning.SlotMarginMin, max = Domain.Tuning.SlotMarginMax, step = 5, scalarMultiplier = 1, unit = Unit.kPercentage)]
 		public int DevSlotMargin { get; set; } = Domain.Tuning.SlotMarginPercent;
 
+		/// <summary>
+		/// Developer only: whether the build menu follows the game's interface style, or keeps its
+		/// look's own colours under every style, to compare.
+		/// </summary>
+		/// <remarks>Read through Utilities.Knobs, so it counts only in developer mode. See docs/design-notes.md, "Developer knobs".</remarks>
+		[SettingsUISection(SETTINGS, TUNING)]
+		[SettingsUIDeveloper]
+		[SettingsUISearchHidden]
+		public bool DevInterfaceStyles { get; set; } = Domain.Tuning.InterfaceStyles;
+
 		/// <summary>Puts every option back to the value it ships with.</summary>
 		/// <remarks>
 		/// The initializers above read the same constants. See docs/design-notes.md, "Reset the

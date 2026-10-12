@@ -1,3 +1,4 @@
+import { useValue } from "cs2/api";
 import classNames from "classnames";
 import type { CSSProperties } from "react";
 
@@ -9,6 +10,7 @@ import { AssetMenuWidthHandle, AssetMenuWidthReach, useAssetMenuWidthDrag } from
 import { VanillaTabBarHost } from "mods/VanillaTabBarHost/VanillaTabBarHost";
 import { useVanillaLayoutForAssetMenu } from "mods/BuildingMenu/vanillaLayout";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
+import { AssetMenuTuning$ } from "mods/bindings";
 import { ASSET_MENU_WIDTH_HANDLE_REACH, assetMenuRowWidth, catalogLayoutWidth } from "domain/assetMenuLayout";
 import { surfaceAlphaStyle } from "domain/looks";
 import { useInterfaceTransparency } from "domain/interfaceTransparencySetting";
@@ -38,6 +40,7 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
   const { height: catalogHeight, isResizing, beginResize, blocker } = useAssetMenuHeight();
   const widthDrag = useAssetMenuWidthDrag({ menuWidth, step, snaps });
   const transparency = useInterfaceTransparency();
+  const tuning = useValue(AssetMenuTuning$);
   // The box follows a width drag, and keeps the snapped width until the stored step comes back.
   const shownWidth = widthDrag.liveWidth ?? menuWidth;
   const rowWidth = assetMenuRowWidth(shownWidth, paneShown);
@@ -62,7 +65,7 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
         {/* The box carries the look: its tokens, the game's interface style followed, and its
             panels' alphas under the game's transparency. See docs/design-notes.md, "The looks' tokens". */}
         <div
-          className={classNames(styles.toolContainer, looks.standard, looks.followStyle)}
+          className={classNames(styles.toolContainer, looks.standard, tuning.interfaceStyles && looks.followStyle)}
           style={{ width: shownWidth + "rem", ...surfaceAlphaStyle(transparency) } as CSSProperties}
         >
           <AssetMenuResizeHandle active={isResizing} onBeginResize={beginResize} />

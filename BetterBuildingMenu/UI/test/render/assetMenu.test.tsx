@@ -202,4 +202,10 @@ describe("the asset menu's look", () => {
 
     assert.match(render(), /--bbm-a-head:0\.598;--bbm-a-body:0\.526;--bbm-a-popBg:0\.604/);
   });
+
+  it("keeps the look's own colours under every style while the knob says so", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuTuning", { developerMode: true, interfaceStyles: false });
+
+    assert.match(render(), /class="toolContainer standard" style=/);
+  });
 });

@@ -526,6 +526,12 @@ knob's row carries `[SettingsUIDeveloper]`, so the game draws it only in develop
   is enough. A stored value outside 0 to 50, as a
   hand edit could leave, reads as the nearer end.
 - **Pick logger** (off or on, ships off): see "The pick logger".
+- **Interface styles** (on or off, ships on): whether the build menu follows the game's interface
+  style (see "The looks' tokens"); off, the root drops `followStyle` and the look keeps its own
+  colours under every style, to compare. It is the first knob the UI reads: C# resolves every such
+  knob into one binding, `AssetMenuTuning` (`TuningValues`: whether this run is in developer mode,
+  and each knob the UI reads), seeded when the system starts and pushed again whenever Options
+  applies, so a stored value counts only in developer mode on the UI's side too.
 
 ## The pick logger
 

@@ -73,6 +73,8 @@ namespace BetterBuildingMenu.Systems
 		private ValueBindingHelper<int> _AssetMenuWidthStep = null!;
 		private ValueBindingHelper<bool> _ControlPaneShown = null!;
 		private ValueBindingHelper<string> _AssetMenuViewMode = null!;
+		// The developer knobs the UI reads, resolved: a stored value counts only in developer mode.
+		private ValueBindingHelper<TuningValues> _AssetMenuTuning = null!;
 		private ValueBindingHelper<string> _CurrentSearch = null!;
 		private ValueBindingHelper<BuildingCatalogPage> _BuildingCatalogBinding = null!;
 		/// <summary>
@@ -190,6 +192,7 @@ namespace BetterBuildingMenu.Systems
 				"SetAssetMenuViewMode",
 				AssetMenuViewMode.Sanitize(Mod.Settings.AssetMenuViewMode),
 				SetAssetMenuViewMode);
+			_AssetMenuTuning = CreateBinding("AssetMenuTuning", CurrentTuning());
 			// Only now, with every binding OnSettingsApplied re-pushes created.
 			Mod.Settings.onSettingsApplied += OnSettingsApplied;
 			_CurrentSearch = CreateBinding("CurrentSearch", string.Empty);
@@ -335,6 +338,7 @@ namespace BetterBuildingMenu.Systems
 			_AssetMenuWidthStep.Value = WidthSteps.Sanitize(Mod.Settings.AssetMenuWidthStep);
 			_ControlPaneShown.Value = Mod.Settings.ControlPaneShown;
 			_AssetMenuViewMode.Value = AssetMenuViewMode.Sanitize(Mod.Settings.AssetMenuViewMode);
+			_AssetMenuTuning.Value = CurrentTuning();
 
 			// Whoever has the menu: with the setting off the watcher sends no deselect, so a menu
 			// given up under the gamepad could outlive its close and reopen once switched back on.
@@ -353,6 +357,10 @@ namespace BetterBuildingMenu.Systems
 				YieldMenuToVanilla();
 			}
 		}
+
+		/// <summary>The knobs the UI reads, through the one rule every knob is read by.</summary>
+		private static TuningValues CurrentTuning() =>
+			new(Knobs.DeveloperMode, Knobs.Value(settings => settings.DevInterfaceStyles, Tuning.InterfaceStyles));
 
 		protected override void OnUpdate()
 		{

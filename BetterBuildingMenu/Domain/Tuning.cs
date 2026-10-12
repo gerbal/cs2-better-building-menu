@@ -11,6 +11,9 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>The pick logger ships off.</summary>
 		public const bool PickLogger = false;
 
+		/// <summary>The build menu follows the game's interface style as it ships.</summary>
+		public const bool InterfaceStyles = true;
+
 		/// <summary>The slot margin's shipped value, in percent: a newcomer needs 1.25 times a holder's placements.</summary>
 		public const int SlotMarginPercent = 25;
 

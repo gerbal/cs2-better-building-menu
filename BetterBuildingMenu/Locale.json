@@ -132,6 +132,8 @@
   "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.DevSlotMargin]": "Developer mode only. How many more placements, in percent, a building needs than the less placed of a menu's two slots to take its place. 25 ships; at 0 a tie is enough.",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.DevPickLogger]": "Pick logger",
   "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.DevPickLogger]": "Developer mode only. Writes a line for each building armed, each swap and each placement to picks.jsonl in the mod's ModsData folder, on this computer. Nothing is sent anywhere, and Reset the build menu… leaves the file alone.",
+  "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.DevInterfaceStyles]": "Interface styles",
+  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.DevInterfaceStyles]": "Developer mode only. On, as it ships, the build menu follows the game's interface style. Off, it keeps its own colours under every style, to compare.",
   "Tooltip.LABEL[BetterBuildingMenu.GroupBy]": "Group by",
   "Tooltip.LABEL[BetterBuildingMenu.GroupedBy]": "Grouped by {0}",
   "Tooltip.LABEL[BetterBuildingMenu.SortedBy]": "Sorted by {0}, {1}",

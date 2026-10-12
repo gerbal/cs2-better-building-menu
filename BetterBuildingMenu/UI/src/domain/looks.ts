@@ -11,7 +11,7 @@ export const STANDARD_SURFACE_ALPHAS = { head: 0.96, body: 0.92, popBg: 0.97 } a
 export type Surface = keyof typeof STANDARD_SURFACE_ALPHAS;
 
 /** The game's default transparency, where a look draws as it is designed. */
-const DEFAULT_TRANSPARENCY = 0.5;
+export const DEFAULT_TRANSPARENCY = 0.5;
 
 /** Which of the game's two panel opacities each surface follows: the head and the popovers are its dark panels. */
 const OPACITY_OF: Readonly<Record<Surface, "normal" | "dark">> = { head: "dark", body: "normal", popBg: "dark" };

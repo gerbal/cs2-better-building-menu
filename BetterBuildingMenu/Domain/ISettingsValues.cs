@@ -32,5 +32,7 @@ namespace BetterBuildingMenu.Domain
 		int DevSlotMargin { get; set; }
 
 		bool DevPickLogger { get; set; }
+
+		bool DevInterfaceStyles { get; set; }
 	}
 }

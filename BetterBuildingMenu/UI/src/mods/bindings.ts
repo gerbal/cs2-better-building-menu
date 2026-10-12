@@ -66,6 +66,15 @@ export const AssetMenuWidthStep$ = bindValue<number>(mod.id, "AssetMenuWidthStep
 export const ControlPaneShown$ = bindValue<boolean>(mod.id, "ControlPaneShown", true);
 /** The view the player last picked, kept across sessions; "" while none is. See BuildingMenuUISystem.SetAssetMenuViewMode. */
 export const AssetMenuViewMode$ = bindValue<string>(mod.id, "AssetMenuViewMode", "");
+
+/** What the UI reads of the developer knobs, resolved in C#: a knob counts only in developer mode. See TuningValues.cs. */
+export interface AssetMenuTuning {
+  developerMode: boolean;
+  /** Whether the build menu follows the game's interface style. */
+  interfaceStyles: boolean;
+}
+
+export const AssetMenuTuning$ = bindValue<AssetMenuTuning>(mod.id, "AssetMenuTuning", { developerMode: false, interfaceStyles: true });
 export const AssetMenuTileSize$ = bindValue<number>(mod.id, "AssetMenuTileSize", 72);
 /** True while the toolbar's open menu is one the asset menu takes over. */
 export const OwnsCurrentMenu$ = bindValue<boolean>(mod.id, "OwnsCurrentMenu", false);
