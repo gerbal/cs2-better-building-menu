@@ -64,24 +64,32 @@
 }
 
 // The icon takes what the count leaves of the row, so it shrinks as the text grows.
+$icon-side: calc(#{$tab-row-height} - #{$tab-count-size} * var(--fontScale));
+
 .iconSlot {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: calc(#{$tab-row-height} - #{$tab-count-size} * var(--fontScale));
-  height: calc(#{$tab-row-height} - #{$tab-count-size} * var(--fontScale));
+  width: $icon-side;
+  height: $icon-side;
+}
+
+// The picture fills the slot as a background, contained and centred, so a picture that is not
+// square keeps its shape: Cohtml has no object-fit and reports no picture's natural size.
+.picture {
+  flex: 0 0 auto;
+  width: $icon-side;
+  height: $icon-side;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
 // The All cell's plate, which tells the menu's own icon from a tab that draws it.
 .plate {
   border-radius: 50%;
   background-color: var(--bbm-tabSeg);
-}
-
-// Sized inline from its natural size: Cohtml draws an unsized picture at its own pixels.
-.icon {
-  flex: 0 0 auto;
 }
 
 .name {

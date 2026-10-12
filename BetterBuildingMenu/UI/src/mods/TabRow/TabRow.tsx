@@ -3,12 +3,12 @@ import { FOCUS_DISABLED } from "cs2/input";
 import { useLocalization } from "cs2/l10n";
 import { Button, Tooltip } from "cs2/ui";
 import classNames from "classnames";
-import { useMemo, useState, type SyntheticEvent } from "react";
+import { useMemo } from "react";
 
 import { getNumberSeparators, groupDigits } from "domain/assetMenuMetricFormat";
 import { useTextScale } from "domain/textScaleSetting";
 import { NO_TIER_BRACKET } from "domain/menuProgression";
-import { arrivedCount, fitIcon, planTabRow, readoutRange, SQUARE, tabRow, type IconFit, type TabCell } from "domain/tabRow";
+import { arrivedCount, cssUrl, planTabRow, readoutRange, tabRow, type TabCell } from "domain/tabRow";
 import type { VanillaMenuCategory } from "domain/vanillaMenuCategories";
 import { ALL_CATEGORIES_KEYS, resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 import {
@@ -29,28 +29,15 @@ import {
 } from "mods/bindings";
 import styles from "./tabRow.module.scss";
 
-const percent = (fraction: number): string => `${Math.round(fraction * 10000) / 100}%`;
-
-/** A picture in a cell's icon slot: square until it loads, then fitted by its long side. */
-const TabIcon = ({ src, plate }: { src: string; plate: boolean }) => {
-  const [fit, setFit] = useState<IconFit>(SQUARE);
-  // Cohtml has no object-fit, and a mod's picture need not be square.
-  const onLoad = (event: SyntheticEvent<HTMLImageElement>) =>
-    setFit(fitIcon(event.currentTarget.naturalWidth, event.currentTarget.naturalHeight));
-
-  return (
-    <span className={classNames(styles.iconSlot, plate && styles.plate)}>
-      <img
-        className={styles.icon}
-        src={src}
-        alt=""
-        aria-hidden="true"
-        onLoad={onLoad}
-        style={{ width: percent(fit.width), height: percent(fit.height) }}
-      />
-    </span>
-  );
-};
+/**
+ * A picture in a cell's icon slot, drawn as a background, whole at its own aspect: Cohtml has no
+ * object-fit and reports no picture's natural size, and a mod's picture need not be square.
+ */
+const TabIcon = ({ src, plate }: { src: string; plate: boolean }) => (
+  <span className={styles.iconSlot}>
+    <span className={classNames(styles.picture, plate && styles.plate)} style={{ backgroundImage: cssUrl(src) }} />
+  </span>
+);
 
 /**
  * The menu's tabs along the box's bottom edge, under the list: All, then the game's tabs with their
@@ -134,9 +121,7 @@ export const TabRow = ({ width }: { width: number }) => {
           aria-current={cell.lit ? "true" : undefined}
           onSelect={() => select(cell)}
         >
-          {/* Keyed by its picture, so a new menu's picture starts square rather than at the fit
-              the cell's last picture loaded with. */}
-          {worded ? <span className={styles.name}>{cell.label}</span> : <TabIcon key={cell.icon} src={cell.icon} plate={cell.kind === "all"} />}
+          {worded ? <span className={styles.name}>{cell.label}</span> : <TabIcon src={cell.icon} plate={cell.kind === "all"} />}
           <span className={styles.count}>{count}</span>
         </Button>
       </Tooltip>

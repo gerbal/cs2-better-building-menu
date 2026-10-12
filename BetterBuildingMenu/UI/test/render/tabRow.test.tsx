@@ -51,8 +51,8 @@ function mount(): ReactTestRenderer {
 const press = (root: ReactTestRenderer, label: string) =>
   act(() => root.root.find((node) => node.props["aria-label"] === label && typeof node.props.onSelect === "function").props.onSelect());
 
-/** A picture the row draws, found by its source. */
-const imageOf = (root: ReactTestRenderer, src: string) => root.root.find((node) => node.type === "img" && node.props.src === src);
+/** How a cell's picture is drawn in the markup: its slot's background, whole at its own aspect. */
+const picture = (src: string) => `style="background-image:url(&quot;${src}&quot;)"`;
 
 describe("the tab row", () => {
   beforeEach(() => resetBindings());
@@ -61,8 +61,8 @@ describe("the tab row", () => {
     seedRoads();
     const html = render();
 
-    assert.match(html, /class="iconSlot plate"><img class="icon" src="Media\/Game\/Icons\/Roads\.svg"/);
-    assert.ok(html.indexOf('class="iconSlot plate"') < html.indexOf("SmallRoads.svg"), "All comes first");
+    assert.ok(html.includes(`<span class="iconSlot"><span class="picture plate" ${picture("Media/Game/Icons/Roads.svg")}>`), html);
+    assert.ok(html.indexOf('class="picture plate"') < html.indexOf("SmallRoads.svg"), "All comes first");
     assert.match(html, /aria-label="All · 779"/);
   });
 
@@ -70,7 +70,7 @@ describe("the tab row", () => {
     seedRoads();
     const html = render();
 
-    assert.match(html, /<img class="icon" src="Media\/Game\/Icons\/SmallRoads\.svg"[^>]*\/><\/span><span class="count">30<\/span>/);
+    assert.ok(html.includes(`<span class="picture" ${picture("Media/Game/Icons/SmallRoads.svg")}></span></span><span class="count">30</span>`), html);
   });
 
   it("names the tab whose picture is the menu's own, and draws no empty picture", () => {
@@ -78,7 +78,7 @@ describe("the tab row", () => {
     const html = render();
 
     assert.match(html, /<span class="name">Highways<\/span><span class="count">0<\/span>/);
-    assert.doesNotMatch(html, /src=""/);
+    assert.ok(!html.includes(picture("")), "an empty picture");
   });
 
   it("lights the picked tab and draws a tab the filters empty faint", () => {
@@ -94,7 +94,7 @@ describe("the tab row", () => {
     set("AssetMenuCategoryCounts", []);
     const html = render();
 
-    assert.match(html, /aria-label="SmallRoads"><span class="iconSlot"><img [^>]*\/><\/span><span class="count"><\/span><\/button>/);
+    assert.match(html, /aria-label="SmallRoads"><span class="iconSlot"><span class="picture" [^>]*><\/span><\/span><span class="count"><\/span><\/button>/);
     assert.doesNotMatch(html, /class="cell[^"]*empty/);
   });
 
@@ -102,7 +102,7 @@ describe("the tab row", () => {
     seedEducation();
     const html = render();
 
-    assert.match(html, /class="segment">.*src="Media\/Game\/Icons\/Education\.svg".*<span class="name">Elementary School<\/span><span class="count">22<\/span>/s);
+    assert.match(html, /class="segment">.*url\(&quot;Media\/Game\/Icons\/Education\.svg&quot;\).*<span class="name">Elementary School<\/span><span class="count">22<\/span>/s);
   });
 
   it("sends the pick each cell stands for: All, a tab, a level and a branch", () => {
@@ -130,26 +130,11 @@ describe("the tab row", () => {
     assert.match(render(), /data-tooltip="true">MediumRoads · 34</);
   });
 
-  it("fits a picture that is not square by its long side once it loads", () => {
+  it("draws a picture whose name has a space or a quote as one address", () => {
     seedRoads();
-    const root = mount();
+    set("AssetMenuCategories", [category("SmallRoads", 'coui://ail/BuildingPrefab.JP_Wastewater Treatment "2".png'), category("MediumRoads")]);
 
-    act(() => imageOf(root, "Media/Game/Icons/SmallRoads.svg").props.onLoad({ currentTarget: { naturalWidth: 890, naturalHeight: 757 } }));
-
-    assert.deepEqual(imageOf(root, "Media/Game/Icons/SmallRoads.svg").props.style, { width: "100%", height: "85.06%" });
-  });
-
-  it("draws a new menu's picture square until it loads, not at the last picture's fit", () => {
-    seedRoads();
-    const root = mount();
-    act(() => imageOf(root, "Media/Game/Icons/Roads.svg").props.onLoad({ currentTarget: { naturalWidth: 890, naturalHeight: 757 } }));
-
-    act(() => {
-      set("AssetMenus", [category("Roads", "Media/Game/Icons/Roads.svg"), category("Electricity", "Media/Game/Icons/Electricity.svg")]);
-      set("AssetMenu", "Electricity");
-    });
-
-    assert.deepEqual(imageOf(root, "Media/Game/Icons/Electricity.svg").props.style, { width: "100%", height: "100%" });
+    assert.ok(render().includes(picture('coui://ail/BuildingPrefab.JP_Wastewater Treatment \\&quot;2\\&quot;.png')));
   });
 });
 

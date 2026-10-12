@@ -332,10 +332,9 @@ Its icon takes what the count leaves of the row, `26 − 10 × text scale`, over
 `10 × text scale`: 16 over 10 at 100%, 13 over 13 at 130%, 11 over 15 at 150%. A worded cell's
 name is `11 × text scale`, 4 from its count, and Education's plate keeps 4 more from the cells
 beside it. A line box rounds up to whole pixels, so a count can run half a rem past the row; the
-cell cuts it. A picture gets an explicit size: square until it loads, then fitted by its long side,
-since Cohtml has no `object-fit` and a mod's picture need not be square. The picture is keyed by
-its source, so a new menu's picture starts square rather than at the fit of the one before it.
-Every one of these lengths is stated once, in `_assetMenuGeometry.scss`: the stylesheet draws
+cell cuts it. A picture draws as its slot's background, contained and centred, so a mod's picture
+that is not square keeps its shape: Cohtml has no `object-fit`, and its images report no natural
+size to fit one by. Every one of these lengths is stated once, in `_assetMenuGeometry.scss`: the stylesheet draws
 them, and the layout arithmetic reads the ones it needs through `assetMenuLayout.module.scss`.
 
 **The readout** sits at the row's right: the lit tab's name over the window the list holds, with

@@ -198,6 +198,17 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(count(), "var(--bbm-tabCount)");
   });
 
+  it("draws a tab's picture whole at its own aspect, without measuring it", () => {
+    // Cohtml has no object-fit and reports no natural size for a picture, and a mod's picture
+    // need not be square: drawn as a background, contained and centred, it keeps its shape.
+    const shown = declarationsOf(TAB_ROW, ".picture");
+
+    assert.equal(shown["background-size"], "contain");
+    assert.equal(shown["background-position"], "center");
+    assert.equal(shown["background-repeat"], "no-repeat");
+    assert.equal(shown.width, shown.height);
+  });
+
   it("squares the list's bottom corners, which the tab row's band rounds", () => {
     // The band under the list is the box's bottom edge, so it carries the rounding. A rounded
     // list above the band's square top would notch the seam between them.

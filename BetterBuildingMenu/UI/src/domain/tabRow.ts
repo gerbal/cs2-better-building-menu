@@ -183,19 +183,9 @@ function nameUntoldPictures(items: readonly TabRowItem[], menuIcon: string): Tab
   return eachCell(items, name);
 }
 
-/** A picture's size in its slot, as fractions of the slot's side. */
-export interface IconFit {
-  width: number;
-  height: number;
-}
-
-export const SQUARE: IconFit = { width: 1, height: 1 };
-
-/** Its long side fills the slot and its short side scales, since Cohtml has no object-fit; square until its size is known. */
-export function fitIcon(naturalWidth: number, naturalHeight: number): IconFit {
-  if (!(naturalWidth > 0) || !(naturalHeight > 0)) return SQUARE;
-  const long = Math.max(naturalWidth, naturalHeight);
-  return { width: naturalWidth / long, height: naturalHeight / long };
+/** A picture's address as a CSS `url()`, quoted, so a space or a quote in a mod's file name stays in it. */
+export function cssUrl(src: string): string {
+  return `url("${src.replace(/["\\]/g, "\\$&")}")`;
 }
 
 /** A count C# sent, or null while it has not: the binding's initial value is negative. */

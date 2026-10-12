@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { arrivedCount, cellsOf, fitIcon, planTabRow, readoutRange, SQUARE, tabRow, type TabRowInput } from "../src/domain/tabRow.ts";
+import { arrivedCount, cellsOf, planTabRow, readoutRange, tabRow, type TabRowInput } from "../src/domain/tabRow.ts";
 import { NO_TIER_BRACKET } from "../src/domain/menuProgression.ts";
 
 const ROADS_ICON = "Media/Game/Icons/Roads.svg";
@@ -183,17 +183,6 @@ describe("the tab row's cells", () => {
       "all::null:lit", "branch:Basic:null", "branch:Hospitals:null", "category:Deathcare:null",
     ]);
     assert.deepEqual(row(education({ indexing: true })).slice(1, 3), ["tierParent:Education:null", "tier:1:null:named"]);
-  });
-});
-
-describe("a tab's picture", () => {
-  it("fills its slot by its long side, and stays square until its size is known", () => {
-    const fit = fitIcon(890, 757);
-
-    assert.equal(fit.width, 1);
-    assert.ok(Math.abs(fit.height - 0.8506) < 0.0001, String(fit.height));
-    assert.deepEqual(fitIcon(0, 0), SQUARE);
-    assert.deepEqual(fitIcon(Number.NaN, 10), SQUARE);
   });
 });
 
