@@ -70,6 +70,26 @@ renders (the screen paints no background behind it) and stays hit-testable.
 Moving the chirper's toasts out of the pane's way would make this unnecessary; see
 [issue #104](https://github.com/gerbal/cs2-better-building-menu/issues/104).
 
+## The Width steps
+
+The build menu draws at one of five widths, the same rectangle in every menu. The setting holds
+the step's number, 1 to 5, never a width, because the widths follow the screen: a screen is
+1,080 rem tall at any aspect, so 16:9 is 1,920 rem wide, 21:9 about 2,520 and 32:9 about 3,840.
+
+- **The room** runs from the tool options' right edge at the game's own text size (x 396) to 1 rem
+  short of the social column, which starts 48 rem from the screen's right edge. On 16:9 it is
+  1,475 wide.
+- **A step's width** is 706, the game's own build menu's, plus its share of the room beyond 706,
+  rounded to the whole rem. The shares are the 16:9 steps' exact ones, 0, 187, 385, 574 and 769
+  over 769, so 16:9 gives 706, 893, 1,091, 1,280 and 1,475; 21:9 gives 706, 1,039, 1,391, 1,728
+  and 2,075; 32:9 gives 706, 1,360, 2,052, 2,713 and 3,395. The first step is 706 on every screen,
+  and a screen with no room beyond 706 draws 706 at every step.
+- **The nearest step** to a width is the one whose width on this screen is closest, a tie going
+  to the narrower. The settings migration uses it to turn an earlier release's width into a step.
+- **One rule, two copies.** `WidthSteps` in C# holds the numbers and the rule. The UI computes the
+  same widths from the generated copy, in `widthSteps.ts`, which a test holds to C#'s own widths
+  at 16:9, 21:9 and 32:9, and decides where the box sits for a step.
+
 ## The asset menu's width and the control pane
 
 The player sets the build menu's width by dragging the strip on its right edge,
