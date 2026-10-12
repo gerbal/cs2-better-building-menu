@@ -108,7 +108,8 @@ namespace BetterBuildingMenu.Services
 		/// </summary>
 		/// <remarks>
 		/// Over every match, not the window, so a target past the loaded rows, or under a sort
-		/// or a grouping that does not lead with it, is still the one armed.
+		/// or a grouping that does not lead with it, is still the one armed. The skip rule must
+		/// stay equal to the UI's canPlace (buildingLockState.ts): Enter trusts this alone.
 		/// </remarks>
 		private static BuildingCatalogBestMatch? FindBestMatch(IReadOnlyList<BuildingCatalogEntry> ordered, string? searchText)
 		{

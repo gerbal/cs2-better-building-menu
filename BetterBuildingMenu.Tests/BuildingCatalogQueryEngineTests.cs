@@ -959,7 +959,7 @@ public sealed class BuildingCatalogQueryEngineTests
     }
 
     [Fact]
-    public void Query_UnderACostSortTheBestRelevanceStillWinsOverTheCheapest()
+    public void Query_UnderACostSortEqualRelevanceArmsTheFirstRowInDisplayOrderPastTheLoadedWindow()
     {
         // Relevance leads under any sort, so 110 locked exact matches fill the first window
         // and the three that can be placed follow. The cost sort runs cheapest first among
@@ -981,6 +981,22 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.All(page.Items, item => Assert.True(item.IsLocked));
         Assert.Equal(503, page.BestMatchId);
         Assert.Equal(new BuildingCatalogBestMatch(503, "Parking Lot C", string.Empty, 110), page.BestMatch);
+    }
+
+    [Fact]
+    public void Query_UnderACostSortTheBestRelevanceStillWinsOverTheCheapest()
+    {
+        var entries = new[]
+        {
+            SampleEntries[0] with { Id = 601, PrefabName = "ParkingExact", Name = "Parking", ConstructionCost = 9000 },
+            SampleEntries[0] with { Id = 602, PrefabName = "ParkingLot", Name = "Parking Lot", ConstructionCost = 100 },
+        };
+
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+            entries,
+            new BuildingCatalogQuery(SearchText: "parking", SortColumn: "ConstructionCost", Limit: 100));
+
+        Assert.Equal(601, page.BestMatchId);
     }
 
     [Fact]

@@ -1,6 +1,5 @@
 import { useValue } from "cs2/api";
 
-import { assetMenuRowWidth } from "domain/assetMenuLayout";
 import { useTextScale } from "domain/textScaleSetting";
 import { REFERENCE_ASPECT, drawnStepWidth, sanitizeWidthStep, snapTargets, type WidthSnap } from "domain/widthSteps";
 import { AssetMenuWidthStep$, ControlPaneShown$ } from "mods/bindings";
@@ -11,8 +10,6 @@ export interface AssetMenuLayout {
   step: number;
   /** The build menu: the stored step's width on this screen, narrowed or swapped where it does not fit. */
   menuWidth: number;
-  /** The row: the build menu and, while shown, the control pane beside it. */
-  rowWidth: number;
   paneShown: boolean;
   /** The steps the right edge snaps to. */
   snaps: WidthSnap[];
@@ -36,5 +33,5 @@ export function useAssetMenuLayout(): AssetMenuLayout {
   const screen = { aspect: screenAspect(), textScale: useTextScale(), paneShown };
   const menuWidth = drawnStepWidth(step, screen);
 
-  return { step, menuWidth, rowWidth: assetMenuRowWidth(menuWidth, paneShown), paneShown, snaps: snapTargets(screen) };
+  return { step, menuWidth, paneShown, snaps: snapTargets(screen) };
 }

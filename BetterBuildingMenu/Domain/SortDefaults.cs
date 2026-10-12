@@ -18,7 +18,7 @@ namespace BetterBuildingMenu.Domain
 		};
 
 		/// <summary>The sorts by a number, spelled as the query engine matches them.</summary>
-		public static readonly HashSet<string> Numeric = new(StringComparer.OrdinalIgnoreCase)
+		internal static readonly HashSet<string> Numeric = new(StringComparer.OrdinalIgnoreCase)
 		{
 			"ConstructionCost", "Cost", "Upkeep", "Workers", "Capacity", "Households", "WaterCapacity",
 			"SewageCapacity", "Sewage", "LotWidth", "LotDepth", "BuildingLevel",

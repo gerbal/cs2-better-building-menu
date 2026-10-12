@@ -13,7 +13,8 @@ namespace BetterBuildingMenu.Domain
 
 		float AssetMenuHeight { get; set; }
 
-		float AssetMenuCatalogWidth { get; set; }
+		// Read only here: the settings class keeps its setter for the game's loader.
+		float AssetMenuCatalogWidth { get; }
 
 		int AssetMenuWidthStep { get; set; }
 	}

@@ -31,6 +31,9 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>This release's settings version: 1 is 0.2.5's, 2 the Width steps'.</summary>
 		public const int Current = 2;
 
+		/// <summary>The version that introduced the Width steps, and the one question the upgrader test is asked for.</summary>
+		private const int WidthStepsVersion = 2;
+
 		/// <summary>The heights earlier releases shipped as their default: 420, from 0.2.3 to 0.2.5, and an unreleased build's 155.</summary>
 		public static readonly IReadOnlyList<float> EarlierDefaultHeights = new[] { 420f, 155f };
 
@@ -42,30 +45,34 @@ namespace BetterBuildingMenu.Domain
 		/// <param name="fileKeys">The key names the settings file held.</param>
 		/// <param name="prior">What ModsData held before this load wrote to it.</param>
 		/// <param name="aspect">The screen's aspect, which sizes the Width steps.</param>
-		public static SettingsMigrationResult Migrate(ISettingsValues values, IReadOnlyCollection<string> fileKeys, PriorInstall prior, double aspect)
+		public static SettingsMigrationResult Migrate(ISettingsValues values, IReadOnlyCollection<string> fileKeys, PriorInstall prior, double aspect) =>
+			Migrate(values, fileKeys, prior, aspect, Current);
+
+		/// <summary>Migrates to a given version, so a test can run the steps a later release will add.</summary>
+		internal static SettingsMigrationResult Migrate(ISettingsValues values, IReadOnlyCollection<string> fileKeys, PriorInstall prior, double aspect, int target)
 		{
 			var from = values.SettingsVersion;
 			var changes = new List<string>();
 			UpgraderDecision? decision = null;
 
-			if (from < Current)
+			if (from < WidthStepsVersion)
 			{
-				var asked = UpgraderTest.Decide(from, prior, fileKeys, UpgraderTest.FirstRedesignRelease)
-					?? new UpgraderDecision(UpgraderSignal.None, string.Empty);
+				// Below version 2 the test always answers, so the default is never read.
+				var asked = UpgraderTest.Decide(from, prior, fileKeys, UpgraderTest.FirstRedesignRelease).GetValueOrDefault();
 				decision = asked;
 				ToWidthSteps(values, asked.IsUpgrader, aspect, changes);
 			}
 
 			// On every load at this version or earlier: a hand edit or a bad write can leave a step
 			// the UI has no width for. A later release's file is left alone, its steps included.
-			if (from <= Current)
+			if (from <= target)
 			{
 				Set(nameof(ISettingsValues.AssetMenuWidthStep), values.AssetMenuWidthStep, WidthSteps.Sanitize(values.AssetMenuWidthStep), value => values.AssetMenuWidthStep = value, changes);
 			}
 
-			if (from < Current)
+			if (from < target)
 			{
-				Set(nameof(ISettingsValues.SettingsVersion), values.SettingsVersion, Current, value => values.SettingsVersion = value, changes);
+				Set(nameof(ISettingsValues.SettingsVersion), values.SettingsVersion, target, value => values.SettingsVersion = value, changes);
 			}
 
 			return new SettingsMigrationResult(changes.Count > 0, from, values.SettingsVersion, decision, changes);

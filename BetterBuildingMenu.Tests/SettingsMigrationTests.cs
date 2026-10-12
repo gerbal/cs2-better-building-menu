@@ -92,6 +92,19 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void AVersionTwoFileMigratedToALaterVersionOnlyMovesTheVersion()
+		{
+			var values = new FakeSettings { SettingsVersion = 2, Upgrader = true, AssetMenuHeight = 149, AssetMenuWidthStep = 4 };
+
+			var result = SettingsMigration.Migrate(values, new[] { "SettingsVersion" }, PriorInstall.Nothing, SixteenNine, SettingsMigration.Current + 1);
+
+			Assert.Null(result.Decision);
+			Assert.Equal(4, values.AssetMenuWidthStep);
+			Assert.True(values.Upgrader);
+			Assert.Equal(new[] { "SettingsVersion 2 -> 3" }, result.Changes);
+		}
+
+		[Fact]
 		public void TheSameFileAfterTheInterimIsAnUpgraderByItsVersion()
 		{
 			var (first, after, _, _) = TwoLoads(SettingsFixtures.Width735Height420Version1, PriorInstall.Nothing);
@@ -321,6 +334,16 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.Equal(new[] { "ReplaceVanillaBuildMenu" }, keys);
 			Assert.IsType<IOException>(Assert.Single(failures));
+		}
+
+		[Fact]
+		public void ALaterReadAnswersWhenAnEarlierOneFindsNoKeys()
+		{
+			var failures = new List<Exception>();
+			var keys = SettingsFileKeys.FirstFound(failures.Add, () => Array.Empty<string>(), () => new[] { "ReplaceVanillaBuildMenu" });
+
+			Assert.Equal(new[] { "ReplaceVanillaBuildMenu" }, keys);
+			Assert.Empty(failures);
 		}
 
 		[Fact]

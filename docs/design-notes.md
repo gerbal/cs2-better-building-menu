@@ -204,9 +204,9 @@ stamp as it is built. The settings migration runs after the settings load and be
 are created, so nothing is subscribed to the apply.
 
 **Nothing here stops a load.** A failure is one warning. `FolderUtil` is first touched inside
-`ReadPriorInstall`'s guard, since its static constructor creates the folder and can fail. The file is written
-through `release.json.tmp`, then `File.Replace`, or `File.Move` when there is no file yet: the
-mod runs on net48, where `File.Move` cannot overwrite.
+`ReadPriorInstall`'s guard, since its static constructor creates the folder and can fail. The
+file is written through `release.json.tmp`, then `File.Replace`, or `File.Move` when there is no
+file yet: the mod runs on net48, where `File.Move` cannot overwrite.
 
 ## Who is an upgrader
 
@@ -240,7 +240,6 @@ file's own text, whose first line names the setting.
 
 **What it cannot tell.** A 0.2.4 player whose file holds no key and whose ModsData folder is gone
 reads as new; anyone who once ran 0.1 or later reads as an upgrader, however long ago.
-
 
 ## The settings migration
 
@@ -483,4 +482,5 @@ is the fallback, and a modded theme, which has no key, keeps its prefab name.
   phrases, the zone type, the tier and, for residential and commercial zones, the region, and the
   region sits somewhere different in each language, so cutting it out leaves fragments behind. A tier
   also spans residential, commercial and office zones, which no one zone name does. The tiers are
-  to be translated as the mod's own strings instead; see [issue #99](https://github.com/gerbal/cs2-better-building-menu/issues/99).
+  to be translated as the mod's own strings instead; see
+  [issue #99](https://github.com/gerbal/cs2-better-building-menu/issues/99).

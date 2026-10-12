@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create } from "react-test-renderer";
 import { setBinding, resetBindings } from "../harness/stubs/cs2-api";
 import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
+import { assetMenuRowWidth } from "../../src/domain/assetMenuLayout";
 import { useAssetMenuLayout, type AssetMenuLayout } from "../../src/mods/useAssetMenuLayout";
 
 const globals = globalThis as unknown as Record<string, unknown>;
@@ -33,7 +34,6 @@ describe("the asset menu's layout", () => {
     assert.deepEqual(read(), {
       step: 1,
       menuWidth: 706,
-      rowWidth: 1091,
       paneShown: true,
       snaps: [{ step: 1, width: 706 }, { step: 2, width: 893 }, { step: 3, width: 1091 }],
     });
@@ -41,10 +41,10 @@ describe("the asset menu's layout", () => {
 
   it("draws step 3 as 0.2.4's row: the pane ends at the social column", () => {
     setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 3);
-    const { menuWidth, rowWidth } = read();
+    const { menuWidth } = read();
 
     assert.equal(menuWidth, 1091);
-    assert.equal(396 + rowWidth, 1872);
+    assert.equal(396 + assetMenuRowWidth(menuWidth, true), 1872);
   });
 
   it("draws a step that does not fit beside the pane as the widest that does, and gives it back when the pane hides", () => {
@@ -54,7 +54,7 @@ describe("the asset menu's layout", () => {
     setBinding("BetterBuildingMenu", "ControlPaneShown", false);
     const hidden = read();
     assert.equal(hidden.menuWidth, 1475);
-    assert.equal(hidden.rowWidth, 1475);
+    assert.equal(assetMenuRowWidth(hidden.menuWidth, false), 1475);
     assert.deepEqual(hidden.snaps.map((snap) => snap.step), [1, 2, 3, 4, 5]);
   });
 

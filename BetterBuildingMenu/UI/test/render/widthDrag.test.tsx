@@ -133,6 +133,20 @@ describe("dragging the build menu's right edge", () => {
     assert.equal(drag.liveWidth, null);
   });
 
+  it("draws nothing from a frame queued before the release: the snapped width holds, then the stored step", () => {
+    mount();
+    press();
+    move(580);
+    move(650);
+    release();
+    nextFrame();
+    assert.equal(drag.liveWidth, 893, "the queued frame does not pull the box back to the pointer");
+
+    update(893, 2);
+    nextFrame();
+    assert.equal(drag.liveWidth, null);
+  });
+
   it("starts a new drag from the width the box shows", () => {
     mount();
     press();
