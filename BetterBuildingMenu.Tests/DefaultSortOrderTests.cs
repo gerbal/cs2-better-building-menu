@@ -1,4 +1,8 @@
+using System;
+using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Domain.Enums;
 using BetterBuildingMenu.Services;
@@ -197,18 +201,32 @@ namespace BetterBuildingMenu.Tests
 			}
 		}
 
-		[Theory]
-		[InlineData("constructioncost"), InlineData("cost"), InlineData("upkeep"), InlineData("workers")]
-		[InlineData("capacity"), InlineData("households"), InlineData("watercapacity"), InlineData("sewagecapacity")]
-		[InlineData("sewage"), InlineData("lotwidth"), InlineData("lotdepth"), InlineData("buildinglevel")]
-		[InlineData("hasparking"), InlineData("zonetype"), InlineData("electricity"), InlineData("electricityconsumption")]
-		[InlineData("water"), InlineData("waterconsumption"), InlineData("garbage"), InlineData("garbageaccumulation")]
-		[InlineData("groundpollution"), InlineData("airpollution"), InlineData("noisepollution"), InlineData("noise")]
-		public void EveryNumericArmOfTheQueryEnginesSortIsInTheNumericSet(string column)
+		[Fact]
+		public void TheNumericSetIsExactlyTheNumericSortKeysOfTheQueryEngine()
 		{
-			// Mirrors the numeric arms of BuildingCatalogQueryEngine.Order/SortValueOf: a later number
-			// sort that forgets to join SortDefaults.Numeric fails here.
-			Assert.True(SortDefaults.BreaksTiesByCost(column), column);
+			// Reads BuildingCatalogQueryEngine.cs as text: every key the engine orders by a number,
+			// in Order and SortValueOf, must be in SortDefaults.Numeric, and nothing else may be.
+			// A numeric sort added to the engine without joining the set fails here.
+			var source = File.ReadAllText(EngineFile());
+			var words = new[] { "default", "category", "subcategory" };
+			var labels = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+			foreach (Match arm in Regex.Matches(source, @"^\s*((?:""[a-z]+""(?:\s+or\s+)?)+)\s*=>", RegexOptions.Multiline))
+			{
+				foreach (Match label in Regex.Matches(arm.Groups[1].Value, "\"([a-z]+)\""))
+				{
+					if (!words.Contains(label.Groups[1].Value))
+					{
+						labels.Add(label.Groups[1].Value);
+					}
+				}
+			}
+
+			Assert.True(labels.Count >= 15, $"the scan found {labels.Count} sort keys; the engine's switch was restructured");
+			Assert.Empty(labels.Except(SortDefaults.Numeric, StringComparer.OrdinalIgnoreCase));
+			Assert.Empty(SortDefaults.Numeric.Except(labels, StringComparer.OrdinalIgnoreCase));
 		}
+
+		private static string EngineFile([CallerFilePath] string testFile = "") =>
+			Path.GetFullPath(Path.Combine(Path.GetDirectoryName(testFile)!, "..", "BetterBuildingMenu", "Services", "BuildingCatalogQueryEngine.cs"));
 	}
 }
