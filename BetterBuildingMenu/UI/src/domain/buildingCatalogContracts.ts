@@ -5,7 +5,7 @@
  */
 import type { Command } from "./command";
 import type { MetricRangeId } from "./buildingCatalogRanges";
-import type { SortColumn } from "./sharedContracts.generated";
+import { SORT_FIRST_DESCENDING, type SortColumn } from "./sharedContracts.generated";
 
 // C# owns the sort columns; see sharedContracts.generated.ts.
 export type { SortColumn };
@@ -37,10 +37,15 @@ export const clearBuildingCatalogMetricRangesCommand = (): TriggerCommand =>
   createTriggerCommand("ClearBuildingCatalogMetricRanges");
 export const searchChangedCommand = (value: string): TriggerCommand => createTriggerCommand("SearchChanged", value);
 
+/** Whether a sort's first click puts the highest first, which C# says per sort (SortDefaults). */
+const startsDescending = (column: SortColumn): boolean =>
+  (SORT_FIRST_DESCENDING as readonly string[]).includes(column);
+
+/** A new column starts best first; a click on the sort already chosen reverses it. */
 export function nextSortState(current: SortState, column: SortColumn): SortState {
   return {
     column,
-    descending: column === current.column ? !current.descending : false,
+    descending: column === current.column ? !current.descending : startsDescending(column),
   };
 }
 

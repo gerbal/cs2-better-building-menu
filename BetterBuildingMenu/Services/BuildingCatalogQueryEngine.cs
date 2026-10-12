@@ -469,6 +469,7 @@ namespace BetterBuildingMenu.Services
 				"upkeep" => ThenNullable(seed, x => x.Upkeep, query.Descending),
 				"workers" => ThenNullable(seed, x => x.Workers, query.Descending),
 				"capacity" => ThenNullable(seed, x => x.Capacity, query.Descending),
+				"households" => ThenNullable(seed, x => x.Households, query.Descending),
 				"electricity" or "electricityconsumption" => ThenNullable(seed, x => x.ElectricityConsumption, query.Descending),
 				"water" or "waterconsumption" => ThenNullable(seed, x => x.WaterConsumption, query.Descending),
 				"garbage" or "garbageaccumulation" => ThenNullable(seed, x => x.GarbageAccumulation, query.Descending),
@@ -481,6 +482,18 @@ namespace BetterBuildingMenu.Services
 					? seed.ThenByDescending(x => x.Name, StringComparer.OrdinalIgnoreCase)
 					: seed.ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase),
 			};
+
+			// A sort by a number leaves ties among equal values: they go to the cheaper
+			// building, rows with a cost first, then to the game's own order. The id last, so
+			// no two rows swap between refreshes.
+			if (SortDefaults.BreaksTiesByCost(query.EffectiveSortColumn))
+			{
+				ordered = ordered
+					.ThenBy(entry => entry.ConstructionCost.HasValue ? 0 : 1)
+					.ThenBy(entry => entry.ConstructionCost)
+					.ThenBy(entry => entry.UIOrder)
+					.ThenBy(entry => entry.Name, StringComparer.OrdinalIgnoreCase);
+			}
 
 			return ordered.ThenBy(x => x.Id);
 		}
@@ -508,6 +521,7 @@ namespace BetterBuildingMenu.Services
 				"upkeep" => entry.Upkeep,
 				"workers" => entry.Workers,
 				"capacity" => entry.Capacity,
+				"households" => entry.Households,
 				"electricity" or "electricityconsumption" => entry.ElectricityConsumption,
 				"water" or "waterconsumption" => entry.WaterConsumption,
 				"garbage" or "garbageaccumulation" => entry.GarbageAccumulation,

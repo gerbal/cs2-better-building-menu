@@ -30,6 +30,9 @@ const SORT_LABELS: Readonly<Record<SortColumn, string>> = {
   Upkeep: "Upkeep",
   Workers: "Workers",
   Capacity: "Capacity",
+  Households: "Households",
+  WaterCapacity: "Water capacity",
+  SewageCapacity: "Sewage capacity",
   // "Lot", not a bare "Width": beside Cost and Workers that reads as a
   // dimension of the building, and the figure sorted on is the lot's.
   LotWidth: "Lot width",

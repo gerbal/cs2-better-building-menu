@@ -12,6 +12,9 @@ export const SORT_COLUMNS = [
   "Upkeep",
   "Workers",
   "Capacity",
+  "Households",
+  "WaterCapacity",
+  "SewageCapacity",
   "LotWidth",
   "LotDepth",
   "BuildingLevel",
@@ -19,6 +22,15 @@ export const SORT_COLUMNS = [
 ] as const;
 
 export type SortColumn = (typeof SORT_COLUMNS)[number];
+
+/** SortDefaults.BestFirstDescending: the sorts whose first click puts the highest first. */
+export const SORT_FIRST_DESCENDING = [
+  "Workers",
+  "Capacity",
+  "Households",
+  "WaterCapacity",
+  "SewageCapacity",
+] as const;
 
 /** BuildingCatalogGrouping.Dimensions, in the picker's order. */
 export const GROUP_DIMENSION_IDS = [

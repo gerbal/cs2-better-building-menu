@@ -69,7 +69,8 @@ namespace BetterBuildingMenu.Domain
 			// so it is named for what it is rather than for a field.
 			"Default",
 			"Name", "Category", "ConstructionCost", "Upkeep", "Workers",
-			"Capacity", "LotWidth", "LotDepth", "BuildingLevel", "HasParking",
+			"Capacity", "Households", "WaterCapacity", "SewageCapacity",
+			"LotWidth", "LotDepth", "BuildingLevel", "HasParking",
 		};
 
 		public int EffectiveOffset => Offset < 0 ? 0 : Offset;

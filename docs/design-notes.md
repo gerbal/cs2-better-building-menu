@@ -373,6 +373,17 @@ place in the order) and as `BestMatchId`; `AllMatchesLocked` says a search match
 cannot be placed. The UI arms the id through `SetCurrentPrefab` whether or not its row is loaded,
 once the page answers the search in the box.
 
+**A sort starts best first.** One C# table, `SortDefaults.BestFirstDescending`, generated as
+`SORT_FIRST_DESCENDING`, says which sorts start highest first: workers, capacity, households, and
+water and sewage capacity. Every other sort starts lowest first, which for cost and upkeep is the
+cheapest. The UI reads the table where a click becomes a column and a direction
+(`nextSortState`); a second click on the same sort reverses it. Households, water capacity and
+sewage capacity are offered where they can move a row.
+
+**Ties.** A sort by a number breaks its ties by cost, rows with a cost first, then by the game's
+own order (`UIOrder`), the name and the id, so equal capacities show the cheaper building first.
+The game's order and the name and category sorts keep their own ties.
+
 ## Hand-rolled floating surfaces in Cohtml
 
 The filter rail's dropdown surface (`filterRail.module.scss`, `.menu`) states size

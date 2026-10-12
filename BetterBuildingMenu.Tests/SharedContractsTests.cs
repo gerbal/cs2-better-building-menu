@@ -89,6 +89,9 @@ namespace BetterBuildingMenu.Tests
 			AppendArray(ts, "SORT_COLUMNS", BuildingCatalogQuery.OfferedSortColumns);
 			ts.Append("\nexport type SortColumn = (typeof SORT_COLUMNS)[number];\n");
 
+			ts.Append("\n/** SortDefaults.BestFirstDescending: the sorts whose first click puts the highest first. */\n");
+			AppendArray(ts, "SORT_FIRST_DESCENDING", SortDefaults.BestFirstDescending);
+
 			ts.Append("\n/** BuildingCatalogGrouping.Dimensions, in the picker's order. */\n");
 			AppendArray(ts, "GROUP_DIMENSION_IDS", BuildingCatalogGrouping.Dimensions);
 			ts.Append("\nexport type GroupDimensionId = (typeof GROUP_DIMENSION_IDS)[number];\n");

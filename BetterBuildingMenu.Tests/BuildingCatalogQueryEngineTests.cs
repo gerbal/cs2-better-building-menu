@@ -216,7 +216,7 @@ public sealed class BuildingCatalogQueryEngineTests
                 PlacementFlags: new[] { "RequireRoad" },
                 SortColumn: "BuildingLevel"));
 
-        Assert.Equal(new[] { 6, 7 }, page.Items.Select(item => item.Id).ToArray());
+        Assert.Equal(new[] { 6, 7 }, page.Items.Select(item => item.Id).OrderBy(id => id).ToArray());
         Assert.Equal(2, page.TotalCount);
     }
 
@@ -339,8 +339,9 @@ public sealed class BuildingCatalogQueryEngineTests
     }
 
     [Fact]
-    public void Query_NumericSortAndStableIdTieBreak_WorkInBothDirections()
+    public void Query_NumericSortTiesGoToTheCheaperBuildingInBothDirections()
     {
+        // Lot width ties 3 (cost 45,000) with 4 (5,000), and level ties them too.
         BuildingCatalogPage ascending = BuildingCatalogQueryEngine.Query(
             SampleEntries,
             new BuildingCatalogQuery(SortColumn: "LotWidth"));
@@ -348,8 +349,8 @@ public sealed class BuildingCatalogQueryEngineTests
             SampleEntries,
             new BuildingCatalogQuery(SortColumn: "BuildingLevel", Descending: true));
 
-        Assert.Equal(new[] { 2, 3, 4, 1, 5 }, ascending.Items.Select(item => item.Id).ToArray());
-        Assert.Equal(new[] { 5, 1, 3, 4, 2 }, descending.Items.Select(item => item.Id).ToArray());
+        Assert.Equal(new[] { 2, 4, 3, 1, 5 }, ascending.Items.Select(item => item.Id).ToArray());
+        Assert.Equal(new[] { 5, 1, 4, 3, 2 }, descending.Items.Select(item => item.Id).ToArray());
     }
 
     [Fact]
@@ -618,8 +619,10 @@ public sealed class BuildingCatalogQueryEngineTests
 	}
 
     [Fact]
-    public void Query_AnalyticalSortKeepsMissingValuesLastAndUsesIdTieBreak()
+    public void Query_AnalyticalSortKeepsMissingValuesLastAndBreaksTiesByCostThenName()
     {
+        // Small Clinic and Same cost tie at 5,000 and in the game's order, so the name decides;
+        // the two with no upkeep tie, and the one with a cost goes first.
         BuildingCatalogEntry missing = Entry(6, "NoCost", "No cost", "Buildings", "", 1, 1, 1, false, "");
         BuildingCatalogEntry sameCost = Entry(7, "SameCost", "Same cost", "Buildings", "", 1, 1, 1, false, "") with { ConstructionCost = 5000 };
 
@@ -630,8 +633,8 @@ public sealed class BuildingCatalogQueryEngineTests
             SampleEntries.Concat(new[] { missing, sameCost }),
             new BuildingCatalogQuery(SortColumn: "Upkeep", Descending: true));
 
-        Assert.Equal(new[] { 4, 7, 5, 2, 3, 1, 6 }, ascending.Items.Select(item => item.Id).ToArray());
-        Assert.Equal(new[] { 1, 3, 5, 2, 4, 6, 7 }, descending.Items.Select(item => item.Id).ToArray());
+        Assert.Equal(new[] { 7, 4, 5, 2, 3, 1, 6 }, ascending.Items.Select(item => item.Id).ToArray());
+        Assert.Equal(new[] { 1, 3, 5, 2, 4, 7, 6 }, descending.Items.Select(item => item.Id).ToArray());
     }
 
     [Fact]
