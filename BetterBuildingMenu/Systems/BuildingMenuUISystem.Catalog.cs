@@ -44,7 +44,7 @@ namespace BetterBuildingMenu.Systems
 
 			// One view, built once; every publish below reads it. See CatalogView.
 			var menu = _assetMenu.Menu;
-			var menuHasCategories = source.Index.GetMenuCategories(string.IsNullOrEmpty(menu) ? null : menu).Count > 0;
+			var menuHasCategories = source.Index.GetMenuCategories(menu).Count > 0;
 			var view = _buildingCatalogAdapter.Build(
 				source,
 				_assetMenu.Query,

@@ -64,6 +64,26 @@ namespace BetterBuildingMenu.Tests
 			Entry(43, "Cemetery", "ServiceBuildings", "Health", "HealthcareDeathcare") with { DevTreeBranch = "Deathcare" },
 		};
 
+		/// <summary>Several menus, unscoped: zones in two densities, a service in two branches, and a road.</summary>
+		private static readonly BuildingCatalogEntry[] Everything =
+		{
+			Entry(51, "Starter Home", "Buildings", "Zones", "ZonesResidential") with { ZoneType = ZoneTypeFilter.Low },
+			Entry(52, "Tower Block", "Buildings", "Zones", "ZonesResidential") with { ZoneType = ZoneTypeFilter.High },
+			Entry(53, "Wind Turbine", "ServiceBuildings", "Electricity", "Electricity") with { DevTreeBranch = "Wind" },
+			Entry(54, "Wind Farm", "ServiceBuildings", "Electricity", "Electricity") with { DevTreeBranch = "Wind" },
+			Entry(55, "Gas Plant", "ServiceBuildings", "Electricity", "Electricity") with { DevTreeBranch = "Gas", DevTreeBranchDepth = 1 },
+			Entry(56, "Small Road", "Networks", "Roads", "RoadsSmallRoads"),
+		};
+
+		/// <summary>The whole catalog as the adapter builds it: no menu, so no tabs, and the system's default grouping.</summary>
+		private static CatalogView Unscoped(BuildingCatalogQuery query, System.Func<IReadOnlyList<BuildingCatalogEntry>>? packScope = null) =>
+			new(
+				Everything,
+				query,
+				packScope,
+				built => BuildingCatalogGrouping.Effective(query.GroupBy, false, built.StripAxis, false, built.GroupDimensions),
+				menuCategories: System.Array.Empty<string>());
+
 		private static BuildingCatalogQuery LockedIn(string menu) => new(UiMenu: menu, Availability: new[] { Locked });
 
 		[Fact]
@@ -310,6 +330,74 @@ namespace BetterBuildingMenu.Tests
 
 			var education = new CatalogView(Fixture, new BuildingCatalogQuery(UiMenu: "Education & Research"), educationMenu: true);
 			Assert.Equal(new[] { ("2", 1) }, education.TierBracket.Tiers.Select(t => (t.Id, t.Count)));
+		}
+
+		[Fact]
+		public void TheWholeCatalogPublishesNoTabsAndKeepsItsDefaultGrouping()
+		{
+			// The row draws All alone with no menu, so a tab there is work nothing shows. The strip's
+			// axis still answers, because the default grouping reads it.
+			foreach (var query in new[] { new BuildingCatalogQuery(), new BuildingCatalogQuery(SearchText: "a") })
+			{
+				var view = Unscoped(query);
+
+				Assert.Empty(view.StripTabs);
+				Assert.Empty(view.ExpandedCategories);
+				Assert.Equal(StripAxes.Development, view.StripAxis);
+				Assert.Equal(BuildingCatalogGrouping.Development, view.EffectiveGroupBy);
+			}
+		}
+
+		[Fact]
+		public void TheStripsAxisIsChosenWithoutLookingUpATabsPicture()
+		{
+			// Only a tab's picture reads the whole menu, which the pack scope supplies when a pack is
+			// picked: a count of its calls counts the picture lookups.
+			var lookups = 0;
+			IReadOnlyList<BuildingCatalogEntry> Whole() { lookups++; return Everything; }
+
+			var unscoped = Unscoped(new BuildingCatalogQuery(SearchText: "Wind"), Whole);
+			_ = unscoped.StripAxis; _ = unscoped.EffectiveGroupBy; _ = unscoped.StripTabs; _ = unscoped.ExpandedCategories;
+			var power = new CatalogView(Power, new BuildingCatalogQuery(UiMenu: "Electricity"), packScope: Whole);
+			_ = power.StripAxis;
+
+			Assert.Equal(0, lookups);
+			Assert.Equal(StripAxes.Development, power.StripAxis);
+
+			// The tabs themselves look their pictures up, from the one whole menu.
+			_ = power.StripTabs;
+			Assert.Equal(1, lookups);
+		}
+
+		[Fact]
+		public void EveryDrawnTabIsCountedInOneWalkAsAClickMatchesIt()
+		{
+			// Branches, asset types and densities in one row, some rows spelt in another case than
+			// their tab, and one tab nothing matches.
+			var rows = new[]
+			{
+				Entry(61, "Low A", "Buildings", "Zones", "ZonesResidential") with { ZoneType = ZoneTypeFilter.Low, DevTreeBranch = "Housing" },
+				Entry(62, "Low B", "Buildings", "Zones", "zonesresidential") with { ZoneType = ZoneTypeFilter.Low },
+				Entry(63, "High", "Buildings", "Zones", "ZonesResidential") with { ZoneType = ZoneTypeFilter.High },
+				Entry(64, "Pipe", "Networks", "Water", "Water") with { DevTreeBranch = "housing" },
+				Entry(65, "Pump", "ServiceBuildings", "Water", "Water"),
+			};
+			var tabs = new[]
+			{
+				"Housing",
+				StripAxes.NetworkValue,
+				StripAxes.BuildingValue,
+				StripAxes.DensityTab.Format("ZonesResidential", BuildingCatalogLabels.DensityTier(ZoneTypeFilter.Low)),
+				StripAxes.DensityTab.Format("ZonesResidential", BuildingCatalogLabels.DensityTier(ZoneTypeFilter.Medium)),
+				"Nothing",
+			};
+			var counting = new CountingList(rows);
+
+			var counts = BuildingCatalogQueryEngine.StripCounts(counting, tabs);
+
+			Assert.Equal(tabs.Select(tab => rows.Count(row => BuildingCatalogQueryEngine.StripMatches(row, tab))), counts);
+			Assert.Equal(new[] { 2, 1, 4, 2, 0, 0 }, counts);
+			Assert.Equal(1, counting.Walks);
 		}
 
 		[Fact]

@@ -75,6 +75,9 @@ namespace BetterBuildingMenu.Services
 		/// </remarks>
 		public string EffectiveGroupBy => _effectiveGroupBy ??= _groupByResolver?.Invoke(this) ?? _query.GroupBy;
 
+		/// <summary>Whether the view stands in for one of the game's menus; without one the row draws All alone.</summary>
+		private bool Scoped => !string.IsNullOrWhiteSpace(_query.UiMenu);
+
 		/// <summary>The query with the search and every metric range cleared; the facet selections stay.</summary>
 		private BuildingCatalogQuery Unsearched => BuildingCatalogMetricRange.Clear(_query) with { SearchText = string.Empty };
 
@@ -234,9 +237,10 @@ namespace BetterBuildingMenu.Services
 		}
 
 		/// <summary>The tabs drawn in a category's place, zones' densities or a service's branches, each counting what it lists.</summary>
-		public IReadOnlyList<MenuCategoryTabs> ExpandedCategories => _expanded ??= ComputeExpandedCategories()
-			.Select(category => category with { Tabs = Drawn(category.Tabs, FilteredMenuSet) })
-			.ToArray();
+		/// <remarks>None without a menu, where the row draws no tab to hold them.</remarks>
+		public IReadOnlyList<MenuCategoryTabs> ExpandedCategories => _expanded ??= Scoped
+			? ComputeExpandedCategories().Select(category => category with { Tabs = Drawn(category.Tabs, FilteredMenuSet) }).ToArray()
+			: Array.Empty<MenuCategoryTabs>();
 
 		private IReadOnlyList<MenuCategoryTabs> ComputeExpandedCategories()
 		{
@@ -262,6 +266,7 @@ namespace BetterBuildingMenu.Services
 		/// categories expands. A menu vanilla never split takes the axis that cuts most
 		/// evenly — smallest largest bucket — among a short hand-picked list of cuts the
 		/// game itself authored; an axis yielding fewer than two groups is not a choice.
+		/// Judged on the buckets' sizes alone, so choosing an axis looks up no tab's picture.
 		/// </remarks>
 		public string StripAxis => _axis ??= ComputeStripAxis();
 
@@ -277,14 +282,14 @@ namespace BetterBuildingMenu.Services
 
 			foreach (var axis in new[] { StripAxes.Development, StripAxes.AssetType })
 			{
-				var tabs = StripTabsFor(TabSet, axis);
+				var sizes = StripBuckets(TabSet, axis).Select(bucket => bucket.Count()).ToArray();
 
-				if (tabs.Count < 2)
+				if (sizes.Length < 2)
 				{
 					continue;
 				}
 
-				var largest = tabs.Max(tab => tab.Count);
+				var largest = sizes.Max();
 
 				if (largest < bestLargest)
 				{
@@ -297,7 +302,10 @@ namespace BetterBuildingMenu.Services
 		}
 
 		/// <summary>The strip's tabs, on the axis the present set gives, each counting what it lists.</summary>
-		public IReadOnlyList<MenuBranchCount> StripTabs => _stripTabs ??= Drawn(ComputeStripTabs(), FilteredTabSet);
+		/// <remarks>None without a menu, where the row draws All alone.</remarks>
+		public IReadOnlyList<MenuBranchCount> StripTabs => _stripTabs ??= Scoped
+			? Drawn(ComputeStripTabs(), FilteredTabSet)
+			: Array.Empty<MenuBranchCount>();
 
 		private IReadOnlyList<MenuBranchCount> ComputeStripTabs()
 		{
@@ -330,11 +338,15 @@ namespace BetterBuildingMenu.Services
 				.ToArray();
 		}
 
+		/// <summary>The set cut along an axis, one bucket per value, entries with none left out.</summary>
+		private static IEnumerable<IGrouping<string, BuildingCatalogEntry>> StripBuckets(IEnumerable<BuildingCatalogEntry> set, string axis) =>
+			set
+				.GroupBy(entry => BuildingCatalogQueryEngine.StripValue(entry, axis))
+				.Where(group => group.Key.Length > 0);
+
 		private IReadOnlyList<MenuBranchCount> StripTabsFor(IEnumerable<BuildingCatalogEntry> set, string axis)
 		{
-			var tabs = set
-				.GroupBy(entry => BuildingCatalogQueryEngine.StripValue(entry, axis))
-				.Where(group => group.Key.Length > 0)
+			var tabs = StripBuckets(set, axis)
 				.Select(group => new
 				{
 					Tab = new MenuBranchCount(
@@ -398,14 +410,15 @@ namespace BetterBuildingMenu.Services
 		/// included, with a picture the row can show.
 		/// </summary>
 		/// <remarks>Matched as a click matches, whichever axis a tab is on: a branch, an asset type or a density.</remarks>
-		private MenuBranchCount[] Drawn(IEnumerable<MenuBranchCount> tabs, IReadOnlyList<BuildingCatalogEntry> listed) =>
-			tabs
-				.Select(tab => tab with
-				{
-					Count = listed.Count(entry => BuildingCatalogQueryEngine.StripMatches(entry, tab.Id)),
-					Icon = CategoryIcon.Chain(tab.Icon, _menuIcon),
-				})
+		private MenuBranchCount[] Drawn(IEnumerable<MenuBranchCount> tabs, IReadOnlyList<BuildingCatalogEntry> listed)
+		{
+			var drawn = tabs.ToArray();
+			var counts = BuildingCatalogQueryEngine.StripCounts(listed, drawn.Select(tab => tab.Id).ToArray());
+
+			return drawn
+				.Select((tab, at) => tab with { Count = counts[at], Icon = CategoryIcon.Chain(tab.Icon, _menuIcon) })
 				.ToArray();
+		}
 
 		/// <summary>
 		/// The menu whatever the player has narrowed: no category, tab, tier, search, facets or

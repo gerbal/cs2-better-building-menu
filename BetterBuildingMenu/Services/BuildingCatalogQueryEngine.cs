@@ -286,6 +286,65 @@ namespace BetterBuildingMenu.Services
 			|| DensityMatches(entry, tab);
 
 		/// <summary>
+		/// How many entries answer to each tab, as <see cref="StripMatches"/> matches them, in one walk
+		/// over the entries.
+		/// </summary>
+		/// <remarks>
+		/// An entry can only match a tab named by a value it carries, its branch, its asset type or its
+		/// density, so each tab is found by those values and StripMatches confirms it. A count per tab
+		/// would walk the entries once for every tab.
+		/// </remarks>
+		public static int[] StripCounts(IEnumerable<BuildingCatalogEntry> entries, IReadOnlyList<string> tabs)
+		{
+			var counts = new int[tabs.Count];
+			var byValue = new Dictionary<string, List<int>>(StringComparer.OrdinalIgnoreCase);
+			var densities = false;
+
+			for (var tab = 0; tab < tabs.Count; tab++)
+			{
+				if (!byValue.TryGetValue(tabs[tab], out var named))
+				{
+					byValue[tabs[tab]] = named = new List<int>();
+				}
+
+				named.Add(tab);
+				densities |= StripAxes.DensityTab.TryParse(tabs[tab], out _, out _);
+			}
+
+			var counted = new HashSet<int>();
+
+			foreach (var entry in entries)
+			{
+				counted.Clear();
+				Count(entry, entry.DevTreeBranch);
+				Count(entry, AssetTypeOf(entry));
+
+				if (densities)
+				{
+					Count(entry, StripAxes.DensityTab.Format(entry.UiCategory ?? string.Empty, BuildingCatalogLabels.DensityTier(entry.ZoneType)));
+				}
+			}
+
+			return counts;
+
+			void Count(BuildingCatalogEntry entry, string? value)
+			{
+				if (value is null || !byValue.TryGetValue(value, out var candidates))
+				{
+					return;
+				}
+
+				foreach (var tab in candidates)
+				{
+					if (StripMatches(entry, tabs[tab]) && counted.Add(tab))
+					{
+						counts[tab]++;
+					}
+				}
+			}
+		}
+
+		/// <summary>
 		/// A density tab, which carries its family as well as its tier.
 		/// </summary>
 		/// <remarks>

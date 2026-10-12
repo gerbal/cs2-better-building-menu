@@ -481,6 +481,21 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void NoMenuHasNoTabsHoweverItIsSpelt()
+		{
+			// Null, empty and blank all mean the whole catalog, even where a walk recorded a menu with
+			// no name, so every caller can pass the scope as the state holds it.
+			var index = ReadyIndex(Menus(
+				System.Array.Empty<(int, string, string)>(),
+				new() { [""] = new() { Tab("Nameless") }, ["Transportation"] = new() { Tab("TransportationTram") } }));
+
+			Assert.Empty(index.GetMenuCategories(null));
+			Assert.Empty(index.GetMenuCategories(""));
+			Assert.Empty(index.GetMenuCategories("   "));
+			Assert.Single(index.GetMenuCategories("Transportation"));
+		}
+
+		[Fact]
 		public void RoadsWithoutTabsOfItsOwnGetsNoExtras()
 		{
 			var tram = TestPrefabs.Entry(31, PrefabCategory.Networks, PrefabSubCategory.Networks_Tracks);

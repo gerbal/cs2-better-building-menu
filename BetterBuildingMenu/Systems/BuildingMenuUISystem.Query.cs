@@ -60,8 +60,7 @@ namespace BetterBuildingMenu.Systems
 		/// <summary>The scope bindings, from the one state that owns them.</summary>
 		private void PublishScope()
 		{
-			_AssetMenuCategoriesBinding.Value = _indexer.Index.GetMenuCategories(
-				string.IsNullOrEmpty(_assetMenu.Menu) ? null : _assetMenu.Menu).ToArray();
+			_AssetMenuCategoriesBinding.Value = _indexer.Index.GetMenuCategories(_assetMenu.Menu).ToArray();
 			_AssetMenuBinding.Value = _assetMenu.Menu;
 			_AssetMenusBinding.Value = _indexer.Index.Menus.AssetMenus().ToArray();
 			_AssetMenuCategoryBinding.Value = _assetMenu.Category;
