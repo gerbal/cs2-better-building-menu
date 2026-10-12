@@ -17,9 +17,7 @@ namespace BetterBuildingMenu.Utilities
 		{
 			try
 			{
-				var stampExists = File.Exists(Path.Combine(folder, SilhouetteIconCache.FolderName, SilhouetteIconCache.StampFileName));
-				var path = Path.Combine(folder, ReleaseMarker.FileName);
-				var existing = ReleaseMarker.Read(File.Exists(path) ? File.ReadAllText(path) : null);
+				var (existing, stampExists) = ReadFolder(folder);
 
 				if (existing.State == ReleaseMarkerState.Corrupt)
 				{
@@ -32,7 +30,7 @@ namespace BetterBuildingMenu.Utilities
 				}
 
 				Directory.CreateDirectory(folder);
-				AtomicFile.WriteAllText(path, ReleaseMarker.Write(marker));
+				AtomicFile.WriteAllText(Path.Combine(folder, ReleaseMarker.FileName), ReleaseMarker.Write(marker));
 
 				return marker;
 			}
@@ -42,6 +40,34 @@ namespace BetterBuildingMenu.Utilities
 
 				return null;
 			}
+		}
+
+		/// <summary>What the folder held before this load writes the marker or the stamp. Never throws.</summary>
+		/// <remarks>
+		/// Read first in OnLoad. A folder that cannot be read reads as nothing, silently: the marker
+		/// update that follows meets the same folder and warns.
+		/// </remarks>
+		public static PriorInstall ReadPrior(string folder)
+		{
+			try
+			{
+				var (marker, stampExists) = ReadFolder(folder);
+
+				return PriorInstall.From(marker, stampExists);
+			}
+			catch (Exception)
+			{
+				return PriorInstall.Nothing;
+			}
+		}
+
+		/// <summary>The marker as the file holds it, and whether the silhouettes stamp exists.</summary>
+		private static (ReleaseMarkerRead Marker, bool StampExists) ReadFolder(string folder)
+		{
+			var stampExists = File.Exists(Path.Combine(folder, SilhouetteIconCache.FolderName, SilhouetteIconCache.StampFileName));
+			var path = Path.Combine(folder, ReleaseMarker.FileName);
+
+			return (ReleaseMarker.Read(File.Exists(path) ? File.ReadAllText(path) : null), stampExists);
 		}
 	}
 }

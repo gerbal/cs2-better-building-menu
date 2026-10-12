@@ -213,6 +213,40 @@ marker's guard, since its static constructor creates the folder and can fail. Th
 through `release.json.tmp`, then `File.Replace`, or `File.Move` when there is no file yet: the
 mod runs on net48, where `File.Move` cannot overwrite.
 
+## Who is an upgrader
+
+A player who ran a release before the Width steps, 0.1.0 to 0.2.5, keeps the width they had; a
+new player gets the game's own. `UpgraderTest.Decide` tells them apart from the signs earlier
+releases left. It answers only while the stored settings version is below 2, before this release
+has saved anything. The first sign that answers decides, and the answer names it:
+
+1. **`SettingsVersion` 1,** which 0.2.5 writes.
+2. **A `release.json` whose `first` is a release before 0.3.0,** the first with the Width steps. A
+   marker this release or a later one wrote is no sign: a first launch whose settings save never
+   landed leaves one. A `first` that is not one to three whole numbers answers nothing.
+3. **A key an earlier release wrote,** among the key names the settings file holds: the six 0.2.4
+   declares (`AssetMenuHeight`, `AssetMenuCatalogWidth`, `ControlPaneShown`,
+   `ReplaceVanillaBuildMenu`, `AutoWidenSearch`, `AssetMenuTileSize`), 0.1.0-0.2.2's
+   `BuildingLensPanelHeight` and `BuildingLensTileSize`, 0.1.0-0.1.3's `ShowCoverageOverlay`,
+   `SelectPrefabOnOpen` and `HideRandomAssets`, and 0.2.5's `AssetMenuViewMode`. Development
+   builds before 0.1.0 also wrote `ApplyMimic` and `DefaultAlignmentStyle`, which no release
+   declared, so those are no sign.
+4. **The silhouettes stamp as it stood before any release with the Width steps ran:** the marker's
+   `stampBefore` when there is a marker, else whether the stamp existed when `OnLoad` began. Every
+   release since 0.1.0 writes the stamp at load, so it finds a 0.2.4 player whose file holds no key.
+
+Otherwise the player is new.
+
+**Read before anything writes.** `ReleaseMarkerFile.ReadPrior` reads the marker and the stamp
+first in `OnLoad`, before the marker is written and before the silhouette cache writes its stamp.
+A marker that is corrupt or in a newer format reads as none. The key names come from the parsed
+settings file (`SettingsFileKeys`): the fragments the game keeps on its setting asset, else the
+file's own text, whose first line names the setting.
+
+**What it cannot tell.** A 0.2.4 player whose file holds no key and whose ModsData folder is gone
+reads as new; anyone who once ran 0.1 or later reads as an upgrader, however long ago.
+
+
 ## The remembered view
 
 The view the player picks in the control pane (Cards, List, Grid or Table) is kept in the hidden

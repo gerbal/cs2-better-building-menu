@@ -49,6 +49,47 @@ namespace BetterBuildingMenu.Domain
 		public static string ReleaseOf(System.Version? version) =>
 			version is null ? "0.0.0" : $"{version.Major}.{version.Minor}.{Math.Max(version.Build, 0)}";
 
+		/// <summary>Whether one release is earlier than another, by its numbers.</summary>
+		/// <remarks>A release that is not one to three whole numbers is earlier than nothing and later than nothing.</remarks>
+		public static bool IsBefore(string? release, string other)
+		{
+			if (!TryParts(release, out var mine) || !TryParts(other, out var theirs))
+			{
+				return false;
+			}
+
+			for (var i = 0; i < mine.Length; i++)
+			{
+				if (mine[i] != theirs[i])
+				{
+					return mine[i] < theirs[i];
+				}
+			}
+
+			return false;
+		}
+
+		private static bool TryParts(string? release, out int[] parts)
+		{
+			parts = new int[3];
+			var pieces = release?.Trim().Split('.') ?? Array.Empty<string>();
+
+			if (pieces.Length < 1 || pieces.Length > parts.Length)
+			{
+				return false;
+			}
+
+			for (var i = 0; i < pieces.Length; i++)
+			{
+				if (!int.TryParse(pieces[i], NumberStyles.None, CultureInfo.InvariantCulture, out parts[i]))
+				{
+					return false;
+				}
+			}
+
+			return true;
+		}
+
 		/// <summary>The marker in this text, or null for no file.</summary>
 		public static ReleaseMarkerRead Read(string? json)
 		{

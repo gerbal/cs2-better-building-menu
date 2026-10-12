@@ -105,6 +105,34 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal("0.0.0", ReleaseMarker.ReleaseOf(null));
 		}
 
+		[Theory]
+		[InlineData("0.2.5", "0.3.0", true)]
+		[InlineData("0.2.10", "0.3.0", true)]
+		[InlineData("0.1.0", "0.3.0", true)]
+		[InlineData("0.2", "0.3.0", true)]
+		[InlineData(" 0.2.5 ", "0.3.0", true)]
+		[InlineData("0.3.0", "0.3.0", false)]
+		[InlineData("0.3.1", "0.3.0", false)]
+		[InlineData("0.10.0", "0.3.0", false)]
+		[InlineData("1.0", "0.3.0", false)]
+		public void AReleaseIsEarlierByItsThreeNumbers(string release, string other, bool before)
+		{
+			Assert.Equal(before, ReleaseMarker.IsBefore(release, other));
+		}
+
+		[Theory]
+		[InlineData(null)]
+		[InlineData("")]
+		[InlineData("beta")]
+		[InlineData("0.2.5-rc1")]
+		[InlineData("0.2.5.1")]
+		[InlineData("-1.0.0")]
+		public void AReleaseThatIsNotThreeNumbersIsEarlierThanNothingAndLaterThanNothing(string? release)
+		{
+			Assert.False(ReleaseMarker.IsBefore(release, "0.3.0"));
+			Assert.False(ReleaseMarker.IsBefore("0.2.5", release ?? string.Empty));
+		}
+
 		[Fact]
 		public void TheMarkerNamesTheReleaseTheProjectDeclares()
 		{
