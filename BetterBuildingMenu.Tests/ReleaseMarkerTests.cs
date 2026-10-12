@@ -4,7 +4,6 @@ using BetterBuildingMenu.Utilities;
 using Game.Settings;
 
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 using Xunit;
@@ -42,9 +41,6 @@ namespace BetterBuildingMenu.Tests
 			Directory.CreateDirectory(silhouettes);
 			File.WriteAllText(Path.Combine(silhouettes, SilhouetteIconCache.StampFileName), "tint=#191919");
 		}
-
-		private static string ModFile(string name, [CallerFilePath] string testFile = "") =>
-			Path.GetFullPath(Path.Combine(Path.GetDirectoryName(testFile)!, "..", "BetterBuildingMenu", name));
 
 		[Fact]
 		public void AnAbsentMarkerIsFirstWrittenByThisRelease()
@@ -136,7 +132,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void TheMarkerNamesTheReleaseTheProjectDeclares()
 		{
-			var declared = Regex.Match(File.ReadAllText(ModFile("BetterBuildingMenu.csproj")), "<Version>([^<]+)</Version>").Groups[1].Value;
+			var declared = Regex.Match(ModSource.Text("BetterBuildingMenu.csproj"), "<Version>([^<]+)</Version>").Groups[1].Value;
 
 			Assert.Equal(declared, ReleaseMarker.ReleaseOf(typeof(Mod).Assembly.GetName().Version));
 		}
@@ -150,11 +146,17 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(typeof(int), property!.PropertyType);
 			Assert.True(property.IsDefined(typeof(SettingsUIHiddenAttribute), inherit: false));
 
-			var source = File.ReadAllText(ModFile("Setting.cs"));
-
 			// No initializer: the default object's 0 is what makes the game write the migration's version.
-			Assert.Matches(@"public int SettingsVersion \{ get; set; \}\r?\n", source);
-			Assert.DoesNotContain("SettingsVersion", source.Substring(source.IndexOf("public override void SetDefaults()", StringComparison.Ordinal)));
+			Assert.Matches(@"public int SettingsVersion \{ get; set; \}\r?\n", ModSource.Text("Setting.cs"));
+
+			// SetDefaults is SettingsDefaults.Apply, which leaves the version to Reset.
+			var values = new FakeSettings { SettingsVersion = 1 };
+
+			SettingsDefaults.Apply(values);
+			Assert.Equal(1, values.SettingsVersion);
+
+			SettingsDefaults.Reset(values);
+			Assert.Equal(SettingsMigration.Current, values.SettingsVersion);
 		}
 
 		[Fact]
@@ -192,7 +194,7 @@ namespace BetterBuildingMenu.Tests
 		public void TheMarkerIsWrittenBeforeTheSilhouetteCacheIsBuilt()
 		{
 			// The cache writes the stamp as it is built, and the marker records whether one was there before.
-			var source = File.ReadAllText(ModFile("Mod.cs"));
+			var source = ModSource.Text("Mod.cs");
 			var marker = source.IndexOf("WriteReleaseMarker();", StringComparison.Ordinal);
 			var cache = source.IndexOf("new SilhouetteIconCache(", StringComparison.Ordinal);
 

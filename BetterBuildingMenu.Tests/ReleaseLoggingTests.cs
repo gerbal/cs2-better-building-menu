@@ -1,6 +1,5 @@
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using Xunit;
 
@@ -20,13 +19,10 @@ namespace BetterBuildingMenu.Tests
 			"Systems/PrefabIndexingSystem.cs: Mod.Log.Info(summary);",
 		};
 
-		private static string ModSourceRoot([CallerFilePath] string testFile = "") =>
-			Path.GetFullPath(Path.Combine(Path.GetDirectoryName(testFile)!, "..", "BetterBuildingMenu"));
-
 		[Fact]
 		public void LogsAtInfoOnlyAtLoadAndOncePerFullPass()
 		{
-			var root = ModSourceRoot();
+			var root = ModSource.Folder();
 			var calls = Directory.EnumerateFiles(root, "*.cs", SearchOption.AllDirectories)
 				.Where(path => !path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}")
 					&& !path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}"))

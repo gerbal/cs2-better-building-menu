@@ -3,7 +3,6 @@ using BetterBuildingMenu.Domain;
 using Game.Settings;
 
 using System.IO;
-using System.Runtime.CompilerServices;
 
 using Xunit;
 
@@ -24,9 +23,6 @@ namespace BetterBuildingMenu.Tests
 
 		private static PriorInstall MarkerFirstWrittenBy(string release, bool stampBefore, bool stamp) =>
 			new(new ReleaseMarkerData(ReleaseMarker.Version, release, release, stampBefore), stamp);
-
-		private static string ModFile(string name, [CallerFilePath] string testFile = "") =>
-			Path.GetFullPath(Path.Combine(Path.GetDirectoryName(testFile)!, "..", "BetterBuildingMenu", name));
 
 		/// <summary>Two launches: the first migrates and saves by the game's rule, the second loads that save.</summary>
 		private static (SettingsMigrationResult First, FakeSettings After, SettingsFile Loaded, string Saved) TwoLoads(
@@ -117,18 +113,19 @@ namespace BetterBuildingMenu.Tests
 
 		public static IEnumerable<object[]> InterimFiles() => new[]
 		{
-			new object[] { SettingsFixtures.Version1Only },
-			new object[] { SettingsFixtures.Version1ViewList },
+			new object[] { SettingsFixtures.Version1Only, AssetMenuViewMode.None },
+			new object[] { SettingsFixtures.Version1ViewList, "list" },
 		};
 
 		[Theory]
 		[MemberData(nameof(InterimFiles))]
-		public void TheInterimWithNothingMovedIsAnUpgraderAtTheStepNearest1091(string file)
+		public void TheInterimWithNothingMovedIsAnUpgraderAtTheStepNearest1091(string file, string view)
 		{
 			var (first, after, _, _) = TwoLoads(file, PriorInstall.Nothing);
 
+			// The view the interim kept is the player's: no step of this version moves it.
 			Assert.Equal(UpgraderSignal.SettingsVersion, first.Decision!.Value.Signal);
-			Assert.Equal(new FakeSettings { SettingsVersion = 2, Upgrader = true, AssetMenuWidthStep = 3 }, after);
+			Assert.Equal(new FakeSettings { SettingsVersion = 2, Upgrader = true, AssetMenuWidthStep = 3, AssetMenuViewMode = view }, after);
 		}
 
 		[Fact]
@@ -346,30 +343,6 @@ namespace BetterBuildingMenu.Tests
 			Assert.Empty(failures);
 		}
 
-		[Fact]
-		public void TheTestSettingsStartWhereTheSettingsClassDoes()
-		{
-			var source = File.ReadAllText(ModFile("Setting.cs"));
-
-			Assert.Contains("public float AssetMenuHeight { get; set; } = Domain.AssetMenuHeight.Default;", source);
-			Assert.Contains("public float AssetMenuCatalogWidth { get; set; } = Domain.AssetMenuCatalogWidth.Default;", source);
-			Assert.Contains("public int AssetMenuWidthStep { get; set; } = Domain.WidthSteps.DefaultStep;", source);
-			Assert.Matches(@"public bool Upgrader \{ get; set; \}\r?\n", source);
-			Assert.Matches(@"public int SettingsVersion \{ get; set; \}\r?\n", source);
-		}
-
-		[Fact]
-		public void SetDefaultsPutsTheNewValuesBackButNeverTheLegacyWidth()
-		{
-			var source = File.ReadAllText(ModFile("Setting.cs"));
-			var setDefaults = source.Substring(source.IndexOf("public override void SetDefaults()", StringComparison.Ordinal));
-
-			Assert.Contains("AssetMenuHeight = Domain.AssetMenuHeight.Default;", setDefaults);
-			Assert.Contains("AssetMenuWidthStep = Domain.WidthSteps.DefaultStep;", setDefaults);
-			Assert.Contains("Upgrader = false;", setDefaults);
-			Assert.DoesNotContain("AssetMenuCatalogWidth", setDefaults);
-		}
-
 		[Theory]
 		[InlineData(nameof(BetterBuildingMenuSettings.AssetMenuWidthStep))]
 		[InlineData(nameof(BetterBuildingMenuSettings.Upgrader))]
@@ -398,7 +371,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void WhatEarlierReleasesLeftIsReadBeforeTheMarkerIsWritten()
 		{
-			var source = File.ReadAllText(ModFile("Mod.cs"));
+			var source = ModSource.Text("Mod.cs");
 			var prior = source.IndexOf("ReadPriorInstall();", StringComparison.Ordinal);
 			var marker = source.IndexOf("WriteReleaseMarker();", StringComparison.Ordinal);
 
@@ -409,7 +382,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void TheMigrationRunsAfterTheSettingsLoadAndBeforeTheSystems()
 		{
-			var source = File.ReadAllText(ModFile("Mod.cs"));
+			var source = ModSource.Text("Mod.cs");
 			var load = source.IndexOf("AssetDatabase.global.LoadSettings(", StringComparison.Ordinal);
 			var migrate = source.IndexOf("MigrateSettings(prior);", StringComparison.Ordinal);
 			var systems = source.IndexOf("updateSystem.UpdateAt<", StringComparison.Ordinal);

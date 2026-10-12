@@ -3,12 +3,13 @@ using BetterBuildingMenu.Domain;
 using Colossal.Json;
 
 using System.Globalization;
+using System.Reflection;
 
 namespace BetterBuildingMenu.Tests
 {
-	/// <summary>The settings the migration reads and writes, on a plain object.</summary>
+	/// <summary>Every setting the settings class stores, on a plain object, for the migration and Reset to run on.</summary>
 	/// <remarks>
-	/// Its initializers are the settings class's, which SettingsMigrationTests holds together by
+	/// Its initializers are the settings class's, which SettingsShapeTests holds together by
 	/// reading Setting.cs. A record, so two loads' values compare whole.
 	/// </remarks>
 	internal sealed record FakeSettings : ISettingsValues
@@ -22,11 +23,25 @@ namespace BetterBuildingMenu.Tests
 		public float AssetMenuCatalogWidth { get; set; } = Domain.AssetMenuCatalogWidth.Default;
 
 		public int AssetMenuWidthStep { get; set; } = WidthSteps.DefaultStep;
+
+		public bool ControlPaneShown { get; set; } = SettingsDefaults.ControlPaneShown;
+
+		public string AssetMenuViewMode { get; set; } = Domain.AssetMenuViewMode.None;
+
+		public bool ReplaceVanillaBuildMenu { get; set; } = SettingsDefaults.ReplaceVanillaBuildMenu;
+
+		public bool AutoWidenSearch { get; set; }
+
+		public int AssetMenuTileSize { get; set; } = SettingsDefaults.TileSize;
 	}
 
 	/// <summary>A settings file as a load reads it: the values, the key names, and how many keys no property reads.</summary>
 	internal sealed record SettingsFile(FakeSettings Values, IReadOnlyCollection<string> Keys, int UnknownKeys)
 	{
+		/// <summary>The values a file can set, by key: every one the migration and Reset reach.</summary>
+		private static readonly IReadOnlyDictionary<string, PropertyInfo> Readable = typeof(ISettingsValues).GetProperties()
+			.ToDictionary(property => property.Name, property => typeof(FakeSettings).GetProperty(property.Name)!, StringComparer.Ordinal);
+
 		/// <summary>The game's format: the setting's name on the first line, then its JSON.</summary>
 		public static string Text(string json) => "BetterBuildingMenu\r\n" + json + "\r\n";
 
@@ -43,38 +58,42 @@ namespace BetterBuildingMenu.Tests
 
 				foreach (var key in keys)
 				{
-					var value = json[key];
-
-					switch (key)
+					if (Readable.TryGetValue(key, out var property))
 					{
-						case nameof(ISettingsValues.SettingsVersion):
-							values.SettingsVersion = (int)value.ToDouble(CultureInfo.InvariantCulture);
-							break;
-						case nameof(ISettingsValues.Upgrader):
-							values.Upgrader = value.ToBoolean(CultureInfo.InvariantCulture);
-							break;
-						case nameof(ISettingsValues.AssetMenuHeight):
-							values.AssetMenuHeight = (float)value.ToDouble(CultureInfo.InvariantCulture);
-							break;
-						case nameof(ISettingsValues.AssetMenuCatalogWidth):
-							values.AssetMenuCatalogWidth = (float)value.ToDouble(CultureInfo.InvariantCulture);
-							break;
-						case nameof(ISettingsValues.AssetMenuWidthStep):
-							values.AssetMenuWidthStep = (int)value.ToDouble(CultureInfo.InvariantCulture);
-							break;
-						default:
-							// Read by another setting, or by none: the game drops those at the next save.
-							if (typeof(BetterBuildingMenuSettings).GetProperty(key) is null)
-							{
-								unknown++;
-							}
-
-							break;
+						property.SetValue(values, FromJson(json[key], property.PropertyType));
+					}
+					else if (typeof(BetterBuildingMenuSettings).GetProperty(key) is null)
+					{
+						// Read by no setting: the game drops those at the next save.
+						unknown++;
 					}
 				}
 			}
 
 			return new SettingsFile(values, keys, unknown);
+		}
+
+		/// <summary>A JSON value as the setting's own type, boxed as that type, so an int stays an int.</summary>
+		private static object FromJson(Variant value, Type type)
+		{
+			if (type == typeof(bool))
+			{
+				return value.ToBoolean(CultureInfo.InvariantCulture);
+			}
+
+			if (type == typeof(int))
+			{
+				return (int)value.ToDouble(CultureInfo.InvariantCulture);
+			}
+
+			if (type == typeof(float))
+			{
+				return (float)value.ToDouble(CultureInfo.InvariantCulture);
+			}
+
+			return type == typeof(string)
+				? value.ToString(CultureInfo.InvariantCulture)
+				: throw new NotSupportedException("No fixture reads a " + type.Name);
 		}
 	}
 
@@ -82,7 +101,7 @@ namespace BetterBuildingMenu.Tests
 	/// What the game's save writes, by its rule: every key the file held, at its current value, and
 	/// every other value that differs from the default object's.
 	/// </summary>
-	/// <remarks>The game's own diff needs an assembly the test run does not load, so this states its rule for the values the migration touches.</remarks>
+	/// <remarks>The game's own diff needs an assembly the test run does not load, so this states its rule for the values the migration and Reset touch.</remarks>
 	internal static class GameSave
 	{
 		public static string Write(IReadOnlyCollection<string> fileKeys, FakeSettings values)
@@ -100,7 +119,8 @@ namespace BetterBuildingMenu.Tests
 			bool flag => flag ? "true" : "false",
 			float number => number.ToString(CultureInfo.InvariantCulture),
 			int number => number.ToString(CultureInfo.InvariantCulture),
-			_ => "null",
+			string text => "\"" + text.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"",
+			_ => throw new NotSupportedException("The save writes no " + value?.GetType().Name),
 		};
 	}
 

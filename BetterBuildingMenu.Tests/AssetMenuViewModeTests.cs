@@ -3,7 +3,6 @@ using BetterBuildingMenu.Domain;
 using Game.Settings;
 
 using System.IO;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 
 using Xunit;
@@ -13,9 +12,6 @@ namespace BetterBuildingMenu.Tests
 	/// <summary>The view the player picked in the control pane, as the settings file keeps it.</summary>
 	public sealed class AssetMenuViewModeTests
 	{
-		private static string RepoFile(string relative, [CallerFilePath] string testFile = "") =>
-			Path.GetFullPath(Path.Combine(Path.GetDirectoryName(testFile)!, "..", relative));
-
 		[Theory]
 		[InlineData("grid")]
 		[InlineData("list")]
@@ -52,7 +48,7 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void TheKindsAreTheViewsTheUiDraws()
 		{
-			var source = File.ReadAllText(RepoFile("BetterBuildingMenu/UI/src/mods/GroupedResults/GroupedResults.tsx"));
+			var source = ModSource.Text("UI/src/mods/GroupedResults/GroupedResults.tsx");
 			var union = Regex.Match(source, @"export type CatalogViewMode = ([^;]+);").Groups[1].Value;
 			var uiKinds = Regex.Matches(union, "\"(\\w+)\"").Select(match => match.Groups[1].Value);
 
@@ -63,7 +59,7 @@ namespace BetterBuildingMenu.Tests
 		public void SanitizeReadsTheKindsRatherThanSpellingThem()
 		{
 			// Kinds is the list tied to the UI above; a second spelling in Sanitize could drift from it.
-			var source = File.ReadAllText(RepoFile("BetterBuildingMenu/Domain/AssetMenuViewMode.cs"));
+			var source = ModSource.Text("Domain/AssetMenuViewMode.cs");
 			var start = source.IndexOf("public static string Sanitize", StringComparison.Ordinal);
 			var body = source.Substring(start, source.IndexOf(';', start) - start);
 
@@ -76,19 +72,12 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void TheSettingIsHiddenStartsUnpickedAndSetDefaultsForgetsThePick()
+		public void TheSettingIsHidden()
 		{
 			var property = typeof(BetterBuildingMenuSettings).GetProperty(nameof(BetterBuildingMenuSettings.AssetMenuViewMode));
 
 			Assert.NotNull(property);
 			Assert.True(property!.IsDefined(typeof(SettingsUIHiddenAttribute), inherit: false));
-
-			var source = File.ReadAllText(RepoFile("BetterBuildingMenu/Setting.cs"));
-
-			Assert.Contains("public string AssetMenuViewMode { get; set; } = Domain.AssetMenuViewMode.None;", source);
-			Assert.Contains(
-				"AssetMenuViewMode = Domain.AssetMenuViewMode.None;",
-				source.Substring(source.IndexOf("public override void SetDefaults()", StringComparison.Ordinal)));
 		}
 	}
 }

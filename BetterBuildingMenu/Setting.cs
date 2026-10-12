@@ -17,8 +17,6 @@ namespace BetterBuildingMenu
 		public const string BEHAVIOR = "Behavior";
 		public const string UIUX = "UIUX";
 
-		private const int DefaultTileSize = 100;
-
 		public BetterBuildingMenuSettings(IMod mod) : base(mod)
 		{
 
@@ -49,7 +47,7 @@ namespace BetterBuildingMenu
 
 		/// <summary>Whether the control pane beside the build menu is shown, toggled from the menu's header.</summary>
 		[SettingsUIHidden]
-		public bool ControlPaneShown { get; set; } = true;
+		public bool ControlPaneShown { get; set; } = Domain.SettingsDefaults.ControlPaneShown;
 
 		/// <summary>
 		/// The settings file's format version: 0 in a file no release has stepped, stored at
@@ -93,7 +91,7 @@ namespace BetterBuildingMenu
 		// On by default: replacing the build menu is what this mod is for. Turning it off
 		// restores the vanilla menu wholesale, including the Zones button's own hierarchy.
 		[SettingsUISection(SETTINGS, BEHAVIOR)]
-		public bool ReplaceVanillaBuildMenu { get; set; } = true;
+		public bool ReplaceVanillaBuildMenu { get; set; } = Domain.SettingsDefaults.ReplaceVanillaBuildMenu;
 
 		// A search that finds nothing in the current section offers to widen by
 		// default rather than widening on its own, so the section scope is not
@@ -109,24 +107,16 @@ namespace BetterBuildingMenu
 		// Step 4, not 8: 64 + 8k never lands on the default, so a player who nudged the
 		// slider could not get back to the shipped width.
 		[SettingsUISlider(min = 64, max = 144, step = 4, scalarMultiplier = 1, unit = Unit.kInteger)]
-		public int AssetMenuTileSize { get; set; } = DefaultTileSize;
+		public int AssetMenuTileSize { get; set; } = Domain.SettingsDefaults.TileSize;
 
 		/// <summary>Puts every option back to the value it ships with.</summary>
 		/// <remarks>
-		/// The same values as the initializers above, which apply before anything can call this.
-		/// Not the settings version, which records the migration, nor the legacy width, which only
-		/// the migration reads.
+		/// The initializers above read the same constants. See docs/design-notes.md, "Reset the
+		/// build menu".
 		/// </remarks>
 		public override void SetDefaults()
 		{
-			AssetMenuHeight = Domain.AssetMenuHeight.Default;
-			AssetMenuWidthStep = Domain.WidthSteps.DefaultStep;
-			Upgrader = false;
-			ControlPaneShown = true;
-			AssetMenuViewMode = Domain.AssetMenuViewMode.None;
-			ReplaceVanillaBuildMenu = true;
-			AutoWidenSearch = false;
-			AssetMenuTileSize = DefaultTileSize;
+			Domain.SettingsDefaults.Apply(this);
 		}
 	}
 }

@@ -293,6 +293,25 @@ setting `AssetMenuViewMode`, so the next session opens in it. Until the player p
 - **Reset menu forgets it.** It sends `""`, so the next session opens in Cards; the store holds
   Cards for the rest of this one.
 
+## Reset the build menu
+
+Every setting's shipped value lives in `SettingsDefaults`, whose constants the settings class's
+initializers read, so the two cannot drift; `SetDefaults` is `SettingsDefaults.Apply`.
+
+- **What a reset puts back.** `Apply` writes every stored setting's shipped value: the height,
+  the Width step, the upgrader flag, the control pane, the remembered view, Replace the vanilla
+  build menu, Searching widens automatically and Tile size. It leaves `SettingsVersion`, which
+  records the migration, and the legacy `AssetMenuCatalogWidth`, which only the migration reads.
+- **Then the version.** `SettingsDefaults.Reset` stores this release's settings version after the
+  shipped values, keeping a later release's, so the next load migrates nothing: an upgrader put
+  back to a new player's values stays put back, even in a file whose migration never ran.
+- **What it leaves.** It touches no file but the settings: `history.json` and `release.json`
+  stay as they are.
+- **Pure.** Both work on `ISettingsValues`, which holds every setting the class stores; a test
+  holds the two lists equal, so a setting a reset would miss fails the tests.
+- **The control pane.** `ControlPaneShown` ships on and Reset puts it back on; increment 7
+  will split the two (initializer on, Reset off) and name the exception in the defaults shape test.
+
 ## The placement history
 
 The mod keeps, in `ModsData/BetterBuildingMenu/history.json`, how often the player places each

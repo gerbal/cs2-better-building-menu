@@ -1,9 +1,10 @@
 namespace BetterBuildingMenu.Domain
 {
-	/// <summary>The settings the migration reads and writes.</summary>
+	/// <summary>Every setting the settings class stores, which the migration and Reset read and write.</summary>
 	/// <remarks>
 	/// The settings class implements it, and tests implement it on a plain object: building the
-	/// settings class writes a static table the game owns.
+	/// settings class writes a static table the game owns. SettingsShapeTests holds it to every
+	/// setting the class stores, so a reset cannot miss one.
 	/// </remarks>
 	public interface ISettingsValues
 	{
@@ -17,5 +18,15 @@ namespace BetterBuildingMenu.Domain
 		float AssetMenuCatalogWidth { get; }
 
 		int AssetMenuWidthStep { get; set; }
+
+		bool ControlPaneShown { get; set; }
+
+		string AssetMenuViewMode { get; set; }
+
+		bool ReplaceVanillaBuildMenu { get; set; }
+
+		bool AutoWidenSearch { get; set; }
+
+		int AssetMenuTileSize { get; set; }
 	}
 }

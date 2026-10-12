@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Domain.Enums;
@@ -207,7 +206,7 @@ namespace BetterBuildingMenu.Tests
 			// Reads BuildingCatalogQueryEngine.cs as text: every key the engine orders by a number,
 			// in Order and SortValueOf, must be in SortDefaults.Numeric, and nothing else may be.
 			// A numeric sort added to the engine without joining the set fails here.
-			var source = File.ReadAllText(EngineFile());
+			var source = ModSource.Text("Services/BuildingCatalogQueryEngine.cs");
 			var words = new[] { "default", "category", "subcategory" };
 			var labels = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
 			foreach (Match arm in Regex.Matches(source, @"^\s*((?:""[a-z]+""(?:\s+or\s+)?)+)\s*=>", RegexOptions.Multiline))
@@ -226,7 +225,5 @@ namespace BetterBuildingMenu.Tests
 			Assert.Empty(SortDefaults.Numeric.Except(labels, StringComparer.OrdinalIgnoreCase));
 		}
 
-		private static string EngineFile([CallerFilePath] string testFile = "") =>
-			Path.GetFullPath(Path.Combine(Path.GetDirectoryName(testFile)!, "..", "BetterBuildingMenu", "Services", "BuildingCatalogQueryEngine.cs"));
 	}
 }
