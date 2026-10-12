@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { ASSET_MENU_MIN_HEIGHT, ASSET_MENU_RESIZE_HANDLE_HEIGHT } from "../src/domain/assetMenuLayout.ts";
-import { declarationsOf, everyDeclaration, moduleSheets, rem, selectorsOf, sides } from "./harness/compiledCss.ts";
+import { declarationsOf, everyDeclaration, moduleSheets, rem, resolvedOn, selectorsOf, sides } from "./harness/compiledCss.ts";
 
 /**
  * Stylesheet contracts: layout rules Cohtml gets wrong or the design pins,
@@ -185,6 +185,17 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(tabs["flex-wrap"], "nowrap");
     assert.equal(tabs.height, "26rem");
     assert.equal(tabs.overflow, "hidden");
+  });
+
+  it("draws the lit tab's count in the lit text while a search is typed", () => {
+    // During a search every count is a match count in the search's mark, but the lit cell keeps
+    // its own text colour: the mark's light cyan drops out against the lit gradient.
+    const count = (...cell: string[]) => resolvedOn(TAB_ROW, [["tabRow"], ["cell", ...cell], ["count"]], "color");
+
+    assert.equal(count("lit", "matches"), "var(--bbm-armText)");
+    assert.equal(count("lit"), "var(--bbm-armText)");
+    assert.equal(count("matches"), "var(--bbm-entMark)");
+    assert.equal(count(), "var(--bbm-tabCount)");
   });
 
   it("squares the list's bottom corners, which the tab row's band rounds", () => {

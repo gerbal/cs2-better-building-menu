@@ -107,6 +107,11 @@
   font-weight: 600;
 }
 
+// The lit cell keeps its own text: the mark's light cyan drops out against the lit gradient.
+.lit.matches .count {
+  color: var(--bbm-armText);
+}
+
 // Education's tab and its levels, one plate.
 .segment {
   flex: 0 0 auto;
