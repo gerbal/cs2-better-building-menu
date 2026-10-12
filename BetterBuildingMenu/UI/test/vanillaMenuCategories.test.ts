@@ -19,28 +19,38 @@ const category = (id: string, priority = 0): VanillaMenuCategory => ({
 
 describe("category strip visibility", () => {
   it("hides the strip when the menu has no categories", () => {
-    assert.equal(shouldShowCategoryStrip([], "Roads"), false);
-    assert.equal(shouldShowCategoryStrip(null, "Roads"), false);
-    assert.equal(shouldShowCategoryStrip(undefined, "Roads"), false);
+    assert.equal(shouldShowCategoryStrip([], null, "Roads"), false);
+    assert.equal(shouldShowCategoryStrip(null, null, "Roads"), false);
+    assert.equal(shouldShowCategoryStrip(undefined, undefined, "Roads"), false);
   });
 
   it("hides the strip at exactly one category, as vanilla does", () => {
     // Water & Sewage and Zones each have exactly one, so this is not a corner
     // case — it fires on real menus.
-    assert.equal(shouldShowCategoryStrip([category("Water")], "Water & Sewage"), false);
+    assert.equal(shouldShowCategoryStrip([category("Water")], null, "Water & Sewage"), false);
   });
 
   it("shows the strip from two categories up", () => {
-    assert.equal(shouldShowCategoryStrip([category("Road"), category("Train")], "Roads"), true);
+    assert.equal(shouldShowCategoryStrip([category("Road"), category("Train")], null, "Roads"), true);
+  });
+
+  it("counts the categories the menu fills, as C# does, once their counts arrive", () => {
+    // C# sends no count for a tab the menu never fills, and draws a menu with one filled tab as
+    // its strip; the row must agree, or it draws one tab where C# sent the strip.
+    const declared = [category("Road"), category("Train")];
+
+    assert.equal(shouldShowCategoryStrip(declared, [{ id: "Road", count: 12 }], "Roads"), false);
+    assert.equal(shouldShowCategoryStrip(declared, [{ id: "Road", count: 12 }, { id: "Train", count: 0 }], "Roads"), true);
+    assert.equal(shouldShowCategoryStrip(declared, [], "Roads"), true);
   });
 
   it("hides the strip while the asset menu is unscoped", () => {
     // All menus publishes every category of every menu — about seventy — and
     // the strip wrapped to four rows of icon-only tabs. The categories are
     // still the group headings there; the strip has nothing to add.
-    assert.equal(shouldShowCategoryStrip([category("Road"), category("Train")], ""), false);
-    assert.equal(shouldShowCategoryStrip([category("Road"), category("Train")], "   "), false);
-    assert.equal(shouldShowCategoryStrip([category("Road"), category("Train")], undefined), false);
+    assert.equal(shouldShowCategoryStrip([category("Road"), category("Train")], null, ""), false);
+    assert.equal(shouldShowCategoryStrip([category("Road"), category("Train")], null, "   "), false);
+    assert.equal(shouldShowCategoryStrip([category("Road"), category("Train")], null, undefined), false);
   });
 });
 
@@ -101,8 +111,9 @@ describe("Menu category counts", () => {
     assert.equal(categoryCount(counts, "Terraforming"), 9);
   });
 
-  it("sums the tabs for All, which has no share of its own", () => {
-    assert.equal(categoryCount(counts, ALL_CATEGORIES_ID), 31);
+  it("has no share for All, whose count C# sends on its own", () => {
+    // A row no tab answers to counts in All and in no tab, so the tabs' sum is not All's count.
+    assert.equal(categoryCount(counts, ALL_CATEGORIES_ID), 0);
   });
 
   it("says nothing rather than zero when the count has not arrived", () => {

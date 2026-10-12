@@ -59,17 +59,20 @@ const TabIcon = ({ src, plate }: { src: string; plate: boolean }) => {
 export const TabRow = ({ width }: { width: number }) => {
   const { translate } = useLocalization();
   const page = useValue(BuildingCatalog$);
+  // During a load the index has counted nothing yet: no count has arrived, nor the total.
+  const indexing = page?.status === "indexing";
   const textScale = useTextScale();
   const menu = useValue(AssetMenu$) ?? "";
   const menus = useValue(AssetMenus$) ?? [];
   const categories = useValue(AssetMenuCategories$) ?? [];
   const counts = useValue(AssetMenuCategoryCounts$) ?? [];
   // Negative until C# sends the counts, which the row draws blank.
-  const allCount = arrivedCount(useValue(AssetMenuAllCount$));
+  const sentAllCount = useValue(AssetMenuAllCount$);
+  const allCount = indexing ? null : arrivedCount(sentAllCount);
   const selectedCategory = useValue(AssetMenuCategory$) ?? "";
   const expanded = useValue(AssetMenuExpandedCategories$) ?? [];
   const stripTabs = useValue(AssetMenuStripTabs$) ?? [];
-  // A list, because the filter rail writes the same state and can hold several.
+  // A list on the wire; only a strip tab's pick writes it, one tab at a time.
   const selectedStripTabs = useValue(AssetMenuStripTab$) ?? [];
   const bracket = useValue(AssetMenuTierBracket$) ?? NO_TIER_BRACKET;
   const selectedTier = useValue(AssetMenuSchoolTier$) ?? -1;
@@ -93,11 +96,12 @@ export const TabRow = ({ width }: { width: number }) => {
     bracket,
     selectedTier,
     categoryLabel,
+    indexing,
   });
 
   const format = (count: number) => groupDigits(count, separators);
   // The window the list holds, with the true total, so a list that stops is never silent.
-  const range = readoutRange(
+  const range = indexing ? "" : readoutRange(
     page?.items?.length ?? 0,
     page?.totalCount ?? 0,
     translate("Tooltip.LABEL[BetterBuildingMenu.ReadoutRange]", "1–{0} of {1}") ?? "1–{0} of {1}",

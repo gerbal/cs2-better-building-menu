@@ -192,4 +192,16 @@ describe("the readout", () => {
 
     assert.match(render(), /<span class="count"><\/span>/);
   });
+
+  it("draws no count and no total while the catalog is still being indexed", () => {
+    // During a load the index has counted nothing yet, so a 0 there would be a claim it cannot make.
+    set("CurrentSearch", "four");
+    set("BuildingCatalog", { items: [], totalCount: 0, status: "indexing" });
+    const html = render();
+
+    assert.match(html, /<span class="range"><\/span>/);
+    assert.doesNotMatch(html, /<span class="count">[^<]/);
+    assert.doesNotMatch(html, / here</);
+    assert.match(html, /aria-label="SmallRoads"/);
+  });
 });

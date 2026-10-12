@@ -73,17 +73,24 @@ export interface TabRowInput {
   selectedTier: number;
   /** A category's name in the player's language. */
   categoryLabel: (category: VanillaMenuCategory) => string;
+  /** The catalog is still being indexed: nothing is counted yet, so no count has arrived. */
+  indexing: boolean;
 }
 
 export interface TabRowView {
   items: TabRowItem[];
-  /** The lit cell's name, which the readout gives. */
+  /** The lit cell's name, else the picked category's, which the readout gives. */
   place: string;
 }
 
 /** Every cell of a row, Education's plate opened up. */
 export function cellsOf(items: readonly TabRowItem[]): TabCell[] {
   return items.flatMap((item) => (item.kind === "bracket" ? [item.parent, ...item.tiers] : [item]));
+}
+
+/** The row with every cell changed by `change`, Education's plate kept whole. */
+function eachCell(items: readonly TabRowItem[], change: (cell: TabCell) => TabCell): TabRowItem[] {
+  return items.map((item) => (item.kind === "bracket" ? { ...item, parent: change(item.parent), tiers: item.tiers.map(change) } : change(item)));
 }
 
 const cell = (key: string, kind: TabCellKind, id: string, label: string, icon: string, count: number | null, lit: boolean): TabCell =>
@@ -94,7 +101,10 @@ const cell = (key: string, kind: TabCellKind, id: string, label: string, icon: s
  * in its place, Education's tab opened into its levels), or a one-category menu's strip; then which
  * cells say their names, and the lit cell's name.
  */
-export function tabRow(input: TabRowInput): TabRowView {
+export function tabRow(sent: TabRowInput): TabRowView {
+  // While indexing, C#'s counts cover only what the index has reached, so the row draws as before
+  // any count arrives: every declared tab, each count blank.
+  const input = sent.indexing ? { ...sent, counts: [] } : sent;
   const scoped = isAssetMenuScoped(input.menu);
   const items: TabRowItem[] = [
     cell(
@@ -103,17 +113,20 @@ export function tabRow(input: TabRowInput): TabRowView {
     ),
   ];
 
-  if (scoped && shouldShowCategoryStrip(input.categories, input.menu)) {
+  if (scoped && shouldShowCategoryStrip(input.categories, input.counts, input.menu)) {
     items.push(...presentCategories(input.categories, input.counts).flatMap((category) => categoryItems(input, category)));
   } else if (scoped && input.stripTabs.length > 1) {
     items.push(...input.stripTabs.map((tab) => branchCell(tab, branchTabTooltip(tab, ""), input.selectedStripTabs)));
   }
 
   const named = nameUntoldPictures(items, input.menuIcon);
-  const cells = cellsOf(named);
+  const drawn = input.indexing ? eachCell(named, (candidate) => ({ ...candidate, count: null, empty: false })) : named;
+  const cells = cellsOf(drawn);
   const lit = cells.find((candidate) => candidate.kind === "tier" && candidate.lit) ?? cells.find((candidate) => candidate.lit);
+  // A category picked in the pane and drawn here as its branches lights no cell; the list is still its.
+  const picked = input.categories.find((category) => category.id === input.selectedCategory);
 
-  return { items: named, place: lit?.label ?? input.allLabel };
+  return { items: drawn, place: lit?.label ?? (picked ? input.categoryLabel(picked) : input.allLabel) };
 }
 
 /** A category's place in the row: its own cell, its branches, or Education's plate. */
@@ -167,7 +180,7 @@ function nameUntoldPictures(items: readonly TabRowItem[], menuIcon: string): Tab
     return { ...candidate, named };
   };
 
-  return items.map((item) => (item.kind === "bracket" ? { ...item, parent: name(item.parent), tiers: item.tiers.map(name) } : name(item)));
+  return eachCell(items, name);
 }
 
 /** A picture's size in its slot, as fractions of the slot's side. */

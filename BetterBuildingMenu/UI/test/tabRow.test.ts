@@ -21,6 +21,7 @@ const roads = (over: Partial<TabRowInput> = {}): TabRowInput => ({
   bracket: NO_TIER_BRACKET,
   selectedTier: -1,
   categoryLabel: (entry) => entry.name,
+  indexing: false,
   ...over,
 });
 
@@ -46,6 +47,16 @@ const education = (over: Partial<TabRowInput> = {}): TabRowInput => roads({
       { id: "4", count: 9, icon: "", label: "University" },
     ],
   },
+  ...over,
+});
+
+/** Health with two tabs, the first split into two branches the row draws in its place. */
+const health = (over: Partial<TabRowInput> = {}): TabRowInput => roads({
+  menu: "Health",
+  categories: [category("Healthcare"), category("Deathcare")],
+  counts: [{ id: "Healthcare", count: 9 }, { id: "Deathcare", count: 2 }],
+  expanded: [{ categoryId: "Healthcare", tabs: [{ id: "Basic", count: 4, icon: "Basic.svg" }, { id: "Hospitals", count: 5, icon: "Hospitals.svg" }] }],
+  allCount: 11,
   ...over,
 });
 
@@ -108,15 +119,21 @@ describe("the tab row's cells", () => {
   });
 
   it("draw a split category's branches in its place", () => {
-    const health = roads({
-      menu: "Health",
-      categories: [category("Healthcare"), category("Deathcare")],
-      counts: [{ id: "Healthcare", count: 9 }, { id: "Deathcare", count: 2 }],
-      expanded: [{ categoryId: "Healthcare", tabs: [{ id: "Basic", count: 4, icon: "Basic.svg" }, { id: "Hospitals", count: 5, icon: "Hospitals.svg" }] }],
-      allCount: 11,
+    assert.deepEqual(row(health()), ["all::11:lit", "branch:Basic:4", "branch:Hospitals:5", "category:Deathcare:2"]);
+  });
+
+  it("draw a menu as its strip when C# counted one of its tabs, as C# does", () => {
+    // Two tabs declared and one filled is a one-tab menu: C# sends its strip, and no count for
+    // the tab the menu never fills.
+    const power = roads({
+      menu: "Electricity",
+      categories: [category("Electricity"), category("Unfilled")],
+      counts: [{ id: "Electricity", count: 17 }],
+      stripTabs: [{ id: "Wind", count: 6, icon: "Wind.svg", label: "Wind" }, { id: "Gas", count: 11, icon: "Gas.svg", label: "Gas" }],
+      allCount: 17,
     });
 
-    assert.deepEqual(row(health), ["all::11:lit", "branch:Basic:4", "branch:Hospitals:5", "category:Deathcare:2"]);
+    assert.deepEqual(row(power), ["all::17:lit", "branch:Wind:6", "branch:Gas:11"]);
   });
 
   it("open Education's tab into its levels, worded, and light both for a level", () => {
@@ -140,6 +157,32 @@ describe("the tab row's cells", () => {
   it("give the readout the lit cell's name, and All's while nothing narrower is lit", () => {
     assert.equal(tabRow(roads({ selectedCategory: "MediumRoads" })).place, "MediumRoads");
     assert.equal(tabRow(roads()).place, "All");
+  });
+
+  it("give the readout a category picked from the pane, which the row draws as its branches", () => {
+    // No cell stands for the whole category, so none is lit, but the list is that category's.
+    const view = tabRow(health({ selectedCategory: "Healthcare", categoryLabel: (entry) => `${entry.name} services` }));
+
+    assert.ok(cellsOf(view.items).every((cell) => !cell.lit));
+    assert.equal(view.place, "Healthcare services");
+  });
+
+  it("draw every count blank, and every declared tab, while the catalog is still being indexed", () => {
+    // An index still being built has counted nothing yet: its counts are ones that have not
+    // arrived, so no tab drops out or reads a faint 0 until it is done.
+    const indexing = roads({
+      counts: [{ id: "SmallRoads", count: 3 }],
+      stripTabs: [],
+      indexing: true,
+    });
+
+    assert.deepEqual(row(indexing), [
+      "all::null:lit", "category:SmallRoads:null", "category:MediumRoads:null", "category:Highways:null",
+    ]);
+    assert.deepEqual(row(health({ indexing: true })), [
+      "all::null:lit", "branch:Basic:null", "branch:Hospitals:null", "category:Deathcare:null",
+    ]);
+    assert.deepEqual(row(education({ indexing: true })).slice(1, 3), ["tierParent:Education:null", "tier:1:null:named"]);
   });
 });
 

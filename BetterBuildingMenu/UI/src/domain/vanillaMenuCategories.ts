@@ -16,12 +16,14 @@ export const ALL_CATEGORIES_ID = "";
  * Whether the tab row draws the menu's categories. Vanilla's rule and vanilla's
  * reason: a row offering one choice is not a choice. Ours carries an extra
  * "All" tab, so two real categories still make three and are worth showing.
+ * Counted over the tabs the menu fills, as C# counts them when it picks the strip instead.
  */
 export function shouldShowCategoryStrip(
   categories: readonly VanillaMenuCategory[] | null | undefined,
+  counts: readonly MenuCategoryCount[] | null | undefined,
   menu: string | null | undefined
 ): boolean {
-  return isAssetMenuScoped(menu) && (categories?.length ?? 0) >= 2;
+  return isAssetMenuScoped(menu) && presentCategories(categories, counts).length >= 2;
 }
 
 /**
@@ -64,7 +66,8 @@ export interface MenuCategoryCount {
 /**
  * How many assets sit behind a tab, or null when the backend has not said —
  * collapsing null into 0 would flash zeroes across the tab row on every menu
- * change. A tab missing from a table that HAS arrived reads 0, not null.
+ * change. A tab missing from a table that HAS arrived reads 0, not null. All is
+ * not a tab here: C# sends its count on its own.
  */
 export function categoryCount(
   counts: readonly MenuCategoryCount[] | null | undefined,
@@ -74,10 +77,6 @@ export function categoryCount(
 
   if (table.length === 0) {
     return null;
-  }
-
-  if (categoryId === ALL_CATEGORIES_ID) {
-    return table.reduce((total, entry) => total + (entry.count ?? 0), 0);
   }
 
   const found = table.find((entry) => entry.id === categoryId);
