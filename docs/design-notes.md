@@ -369,8 +369,9 @@ menu's slots. It stays on the player's computer; nothing is sent anywhere.
   A prefab is its prefab name, so a prefab a mod renames starts again. Every city shares one
   history.
 - **Slots.** The first two prefabs placed in a menu hold its slots, most placed first. A newcomer
-  takes the weaker slot once its count reaches 1.25 times that holder's (5 against 4), so two close
-  favourites do not trade places.
+  takes the weaker slot once its count exceeds 1.25 times that holder's (more than 5 against 4), so
+  two close favourites do not trade places. In developer mode the Slot margin knob sets the 25%
+  (see "Developer knobs").
 - **Ageing.** Once a launch, as the file is read, every count halves, counts under a half go, and
   each menu keeps its eight most placed; the latest and the holders are never cut, and count
   towards the eight. Recent habits outweigh old ones, and a miscount fades. The halving alone
@@ -417,6 +418,22 @@ history, whatever "Replace the vanilla build menu" holds: it watches the tools, 
   or prefab, or leaves the tool.
 - **Never in the way.** A failure warns once a session and the game goes on. The flushes are the
   placement history's: on a close of the build menu, at a load, every two minutes and at quit.
+
+## Developer knobs
+
+Options › Better Building Menu › Tuning holds values a developer tunes while the menu is built. A
+knob's row carries `[SettingsUIDeveloper]`, so the game draws it only in developer mode
+(`--developerMode`), and `[SettingsUISearchHidden]`, so the options search never finds it.
+
+- **One rule reads every knob.** `Knobs.Value` passes the stored value and the shipped constant to
+  `Tuning.Value`, which returns the stored one only in developer mode: a value left from tuning
+  does nothing in a normal run, and before the settings load the shipped one holds.
+- **Reset puts them back** with every other setting. The knobs stay live whatever Replace the
+  vanilla build menu holds: they never wait for it.
+- **Slot margin** (0 to 50%, step 5, ships 25): how many more placements than a menu's weaker slot
+  holder a newcomer needs to take its slot (see "The placement history"). The newcomer must exceed
+  the holder by the margin, so at 0 a tie keeps the holder. A stored value outside 0 to 50, as a
+  hand edit could leave, reads as the nearer end.
 
 ## Search and sort over the whole result
 

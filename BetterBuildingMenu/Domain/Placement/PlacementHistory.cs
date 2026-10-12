@@ -16,6 +16,7 @@ namespace BetterBuildingMenu.Domain.Placement
 		public const int HolderCount = 2;
 
 		/// <summary>A newcomer takes the weaker holder's slot once its count is this many times the holder's.</summary>
+		/// <remarks>The shipped margin. In developer mode the Slot margin knob sets it, through <see cref="MarginOf"/>.</remarks>
 		public const float SlotMargin = 1.25f;
 
 		/// <summary>After the launch's halving, a count under this goes, unless it is the latest or a holder.</summary>
@@ -39,8 +40,14 @@ namespace BetterBuildingMenu.Domain.Placement
 		/// <summary>Whether there is a placement the file does not have yet.</summary>
 		public bool IsDirty { get; private set; }
 
+		/// <summary>The slot margin the Slot margin knob's percent asks for, held to the knob's range.</summary>
+		/// <remarks>A hand edit can leave any number in the settings file.</remarks>
+		public static float MarginOf(int percent) =>
+			1f + Math.Max(Tuning.SlotMarginMin, Math.Min(Tuning.SlotMarginMax, percent)) / 100f;
+
 		/// <summary>One placement: a count of 1, the latest, and the slots checked again.</summary>
-		public void Record(string menu, string prefab)
+		/// <param name="slotMargin">How many times the weaker holder's count a newcomer must exceed to take its slot.</param>
+		public void Record(string menu, string prefab, float slotMargin = SlotMargin)
 		{
 			if (IsReadOnly)
 			{
@@ -53,7 +60,7 @@ namespace BetterBuildingMenu.Domain.Placement
 				_menus[menu] = history;
 			}
 
-			history.Record(prefab);
+			history.Record(prefab, slotMargin);
 			IsDirty = true;
 		}
 

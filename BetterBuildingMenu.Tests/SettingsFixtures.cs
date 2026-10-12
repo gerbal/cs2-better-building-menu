@@ -33,6 +33,8 @@ namespace BetterBuildingMenu.Tests
 		public bool AutoWidenSearch { get; set; }
 
 		public int AssetMenuTileSize { get; set; } = SettingsDefaults.TileSize;
+
+		public int DevSlotMargin { get; set; } = Tuning.SlotMarginPercent;
 	}
 
 	/// <summary>A settings file as a load reads it: the values, the key names, and how many keys no property reads.</summary>

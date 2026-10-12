@@ -118,6 +118,7 @@ namespace BetterBuildingMenu.Tests
 			Assert.Contains("public string AssetMenuViewMode { get; set; } = Domain.AssetMenuViewMode.None;", source);
 			Assert.Contains("public bool ReplaceVanillaBuildMenu { get; set; } = Domain.SettingsDefaults.ReplaceVanillaBuildMenu;", source);
 			Assert.Contains("public int AssetMenuTileSize { get; set; } = Domain.SettingsDefaults.TileSize;", source);
+			Assert.Contains("public int DevSlotMargin { get; set; } = Domain.Tuning.SlotMarginPercent;", source);
 
 			// No initializer: false or 0, as FakeSettings has them.
 			foreach (var bare in new[] { "int SettingsVersion", "bool Upgrader", "bool AutoWidenSearch" })
@@ -212,6 +213,41 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(
 				"Put every Better Building Menu setting, the width, the view and the menu's size back to how they ship? The buildings you have placed are kept.",
 				ModSource.English("Options.WARNING[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.ResetBuildMenu]"));
+		}
+
+		[Fact]
+		public void AKnobCountsOnlyInDeveloperMode()
+		{
+			Assert.Equal(0, Tuning.Value(developerMode: true, stored: 0, shipped: Tuning.SlotMarginPercent));
+			Assert.Equal(Tuning.SlotMarginPercent, Tuning.Value(developerMode: false, stored: 0, shipped: Tuning.SlotMarginPercent));
+			Assert.Equal(Tuning.SlotMarginPercent, Tuning.Value(developerMode: false, stored: 50, shipped: Tuning.SlotMarginPercent));
+		}
+
+		[Fact]
+		public void TheDeveloperKnobsShowOnlyInDeveloperModeUnderTuning()
+		{
+			var knobs = typeof(BetterBuildingMenuSettings)
+				.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+				.Where(property => property.Name.StartsWith("Dev", StringComparison.Ordinal))
+				.ToList();
+
+			Assert.Contains(knobs, knob => knob.Name == nameof(BetterBuildingMenuSettings.DevSlotMargin));
+			Assert.All(knobs, knob =>
+			{
+				Assert.Equal(BetterBuildingMenuSettings.TUNING, knob.GetCustomAttribute<SettingsUISectionAttribute>()?.simpleGroup);
+				Assert.True(knob.IsDefined(typeof(SettingsUIDeveloperAttribute)), knob.Name + " shows outside developer mode");
+				Assert.True(knob.IsDefined(typeof(SettingsUISearchHiddenAttribute)), knob.Name + " shows in the options search");
+				Assert.False(knob.IsDefined(typeof(SettingsUIDisableByConditionAttribute)), knob.Name + " waits for Replace");
+			});
+		}
+
+		[Fact]
+		public void TheTuningGroupComesLastAndIsNamed()
+		{
+			var groups = new[] { BetterBuildingMenuSettings.BEHAVIOR, BetterBuildingMenuSettings.UIUX, BetterBuildingMenuSettings.TUNING };
+
+			Assert.Equal(groups, typeof(BetterBuildingMenuSettings).GetCustomAttribute<SettingsUIGroupOrderAttribute>()!.groups);
+			Assert.Equal(groups, typeof(BetterBuildingMenuSettings).GetCustomAttribute<SettingsUIShowGroupNameAttribute>()!.groups);
 		}
 	}
 }

@@ -10,13 +10,14 @@ namespace BetterBuildingMenu
 {
     [FileLocation(nameof(BetterBuildingMenu))]
 	[SettingsUITabOrder(SETTINGS)]
-	[SettingsUIGroupOrder(BEHAVIOR, UIUX)]
-	[SettingsUIShowGroupName(BEHAVIOR, UIUX)]
+	[SettingsUIGroupOrder(BEHAVIOR, UIUX, TUNING)]
+	[SettingsUIShowGroupName(BEHAVIOR, UIUX, TUNING)]
 	public class BetterBuildingMenuSettings : ModSetting, Domain.ISettingsValues
 	{
 		public const string SETTINGS = "Settings";
 		public const string BEHAVIOR = "Behavior";
 		public const string UIUX = "UIUX";
+		public const string TUNING = "Tuning";
 
 		public BetterBuildingMenuSettings(IMod mod) : base(mod)
 		{
@@ -135,6 +136,17 @@ namespace BetterBuildingMenu
 				ApplyAndSave();
 			}
 		}
+
+		/// <summary>
+		/// Developer only: how many more placements, in percent, a building needs than a menu's
+		/// weaker slot holder to take its slot.
+		/// </summary>
+		/// <remarks>Read through Utilities.Knobs, so it counts only in developer mode. See docs/design-notes.md, "Developer knobs".</remarks>
+		[SettingsUISection(SETTINGS, TUNING)]
+		[SettingsUIDeveloper]
+		[SettingsUISearchHidden]
+		[SettingsUISlider(min = Domain.Tuning.SlotMarginMin, max = Domain.Tuning.SlotMarginMax, step = 5, scalarMultiplier = 1, unit = Unit.kPercentage)]
+		public int DevSlotMargin { get; set; } = Domain.Tuning.SlotMarginPercent;
 
 		/// <summary>Puts every option back to the value it ships with.</summary>
 		/// <remarks>

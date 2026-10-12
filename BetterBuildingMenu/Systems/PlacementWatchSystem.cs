@@ -1,3 +1,4 @@
+using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Domain.Placement;
 using BetterBuildingMenu.Utilities;
 
@@ -128,7 +129,7 @@ namespace BetterBuildingMenu.Systems
 
 			if (key is { } placed)
 			{
-				_history.Record(placed.Menu, placed.Prefab);
+				_history.Record(placed.Menu, placed.Prefab, PlacementHistory.MarginOf(Knobs.Value(settings => settings.DevSlotMargin, Tuning.SlotMarginPercent)));
 			}
 
 			if (Mod.Log.isDebugEnabled)

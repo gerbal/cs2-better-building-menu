@@ -15,11 +15,11 @@ namespace BetterBuildingMenu.Domain.Placement
 		/// <summary>The two prefabs that hold this menu's slots, most placed first.</summary>
 		public IReadOnlyList<string> Held => _held;
 
-		internal void Record(string prefab)
+		internal void Record(string prefab, float slotMargin)
 		{
 			_counts[prefab] = (_counts.TryGetValue(prefab, out var count) ? count : 0f) + 1f;
 			Latest = prefab;
-			Hold(prefab);
+			Hold(prefab, slotMargin);
 		}
 
 		internal void Restore(IEnumerable<KeyValuePair<string, float>> counts, string? latest, IEnumerable<string> held)
@@ -80,7 +80,7 @@ namespace BetterBuildingMenu.Domain.Placement
 
 		private bool IsKept(string prefab) => prefab == Latest || _held.Contains(prefab);
 
-		private void Hold(string prefab)
+		private void Hold(string prefab, float slotMargin)
 		{
 			if (!_held.Contains(prefab))
 			{
@@ -88,9 +88,9 @@ namespace BetterBuildingMenu.Domain.Placement
 				{
 					_held.Add(prefab);
 				}
-				else if (_counts[prefab] >= _counts[_held[_held.Count - 1]] * PlacementHistory.SlotMargin)
+				else if (_counts[prefab] > _counts[_held[_held.Count - 1]] * slotMargin)
 				{
-					// Only from the margin up, so two close favourites do not trade a slot back and forth.
+					// Only past the margin, so two close favourites do not trade a slot back and forth.
 					_held[_held.Count - 1] = prefab;
 				}
 			}

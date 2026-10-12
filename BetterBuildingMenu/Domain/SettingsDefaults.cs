@@ -30,6 +30,7 @@ namespace BetterBuildingMenu.Domain
 			values.ReplaceVanillaBuildMenu = ReplaceVanillaBuildMenu;
 			values.AutoWidenSearch = false;
 			values.AssetMenuTileSize = TileSize;
+			values.DevSlotMargin = Tuning.SlotMarginPercent;
 		}
 
 		/// <summary>The button: every setting as it ships, then a settings version the next load does not migrate.</summary>

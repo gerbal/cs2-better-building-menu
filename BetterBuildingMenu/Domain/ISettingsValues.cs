@@ -28,5 +28,7 @@ namespace BetterBuildingMenu.Domain
 		bool AutoWidenSearch { get; set; }
 
 		int AssetMenuTileSize { get; set; }
+
+		int DevSlotMargin { get; set; }
 	}
 }
