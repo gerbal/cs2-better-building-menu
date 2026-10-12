@@ -328,6 +328,10 @@ rounding and the list's bottom corners are square: a rounded list above the band
 would notch the seam.
 
 **The cell.** At least 28 wide, 5 each side of its count, 2 from the next, and the full row tall.
+A cell is the game's `Button`, whose one class pins 24 × 24, so the cell states its own width
+(`auto`) and height with two classes, which outrank it whichever sheet loads last. Cohtml sizes the
+row from each cell's own width and skips a min-width, so the 28 floor sits in the content: the icon
+slot is 18 wide, the picture centred in it.
 Its icon takes what the count leaves of the row, `26 − 10 × text scale`, over a count of
 `10 × text scale`: 16 over 10 at 100%, 13 over 13 at 130%, 11 over 15 at 150%. A worded cell's
 name is `11 × text scale`, 4 from its count, and Education's plate keeps 4 more from the cells

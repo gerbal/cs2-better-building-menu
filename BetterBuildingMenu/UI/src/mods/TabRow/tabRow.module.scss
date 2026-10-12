@@ -32,7 +32,6 @@
   flex-direction: column;
   align-items: center;
   min-width: $tab-cell-min-width;
-  height: $tab-row-height;
   padding: 0 $tab-cell-padding;
   // Each corner's longhand: Cohtml drops a border-radius shorthand fed by var().
   border-bottom-left-radius: var(--bbm-tabRadius);
@@ -40,6 +39,13 @@
   background-color: var(--bbm-tabUnlit);
   // A line box rounds up to whole pixels and can run past the row: the cell cuts it.
   overflow: hidden;
+}
+
+// The cell is the game's Button, whose one class pins 24 x 24: two classes outrank it whichever
+// sheet loads last, so a cell is as wide as its picture or its name and the row as wide as them.
+.cells .cell {
+  width: auto;
+  height: $tab-row-height;
 }
 
 .cell:hover {
@@ -66,12 +72,14 @@
 // The icon takes what the count leaves of the row, so it shrinks as the text grows.
 $icon-side: calc(#{$tab-row-height} - #{$tab-count-size} * var(--fontScale));
 
+// Its width is the cell's floor: Cohtml sizes the row from each cell's own width and skips its
+// min-width, so the floor sits in the content, where the row sees it.
 .iconSlot {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: $icon-side;
+  width: $tab-cell-min-width - 2 * $tab-cell-padding;
   height: $icon-side;
 }
 

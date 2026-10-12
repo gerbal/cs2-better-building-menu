@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { ASSET_MENU_MIN_HEIGHT, ASSET_MENU_RESIZE_HANDLE_HEIGHT } from "../src/domain/assetMenuLayout.ts";
-import { declarationsOf, everyDeclaration, moduleSheets, rem, resolvedOn, selectorsOf, sides } from "./harness/compiledCss.ts";
+import { ASSET_MENU_MIN_HEIGHT, ASSET_MENU_RESIZE_HANDLE_HEIGHT, TAB_CELL_MIN_WIDTH, TAB_CELL_PADDING } from "../src/domain/assetMenuLayout.ts";
+import { declarationsOf, everyDeclaration, moduleSheets, rem, resolvedOn, selectorsOf, sides, winnerOn } from "./harness/compiledCss.ts";
 
 /**
  * Stylesheet contracts: layout rules Cohtml gets wrong or the design pins,
@@ -185,6 +185,26 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(tabs["flex-wrap"], "nowrap");
     assert.equal(tabs.height, "26rem");
     assert.equal(tabs.overflow, "hidden");
+  });
+
+  it("sizes a tab cell itself, over the game's Button and its square", () => {
+    // A cell is the game's Button, whose one class pins 24 x 24. The cell's own size outranks it
+    // with two classes whichever sheet loads last, so a cell is as wide as its picture or its name.
+    const cell = [["tabRow"], ["cells"], ["cell"]];
+    const width = winnerOn(TAB_ROW, cell, "width");
+    const height = winnerOn(TAB_ROW, cell, "height");
+
+    assert.equal(width?.value, "auto");
+    assert.equal(height?.value, "26rem");
+    for (const size of [width, height]) assert.ok((size?.classes ?? 0) >= 2 || size?.important, JSON.stringify(size));
+  });
+
+  it("puts a picture cell's least width in its slot, where the row's width sees it", () => {
+    // Cohtml sizes the row of cells from each cell's own width and skips its min-width, so a cell
+    // narrower than its floor would be cut. The slot's stated width makes the floor the content's.
+    const slot = rem(declarationsOf(TAB_ROW, ".iconSlot").width);
+
+    assert.equal(slot + 2 * TAB_CELL_PADDING, TAB_CELL_MIN_WIDTH);
   });
 
   it("draws the lit tab's count in the lit text while a search is typed", () => {

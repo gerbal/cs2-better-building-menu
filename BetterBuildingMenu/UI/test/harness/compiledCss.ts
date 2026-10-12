@@ -150,32 +150,43 @@ function matchesPath(compounds: readonly string[][], elements: readonly (readonl
   return true;
 }
 
+/** The declaration the cascade picks for a property, with what it weighs: its classes, and whether it is `!important`. */
+export interface Winner {
+  value: string;
+  classes: number;
+  important: boolean;
+}
+
 /**
- * The value `prop` resolves to on an element at rest, as the cascade picks it: an `!important`
- * first, then the declaration of the most classes, the later of two equal. `elements` is each
- * element's classes, from an ancestor down to the element. Only plain class selectors match, so a
- * state (`:hover`) never applies.
+ * The declaration `prop` resolves to on an element at rest, as the cascade picks it: an
+ * `!important` first, then the declaration of the most classes, the later of two equal. `elements`
+ * is each element's classes, from an ancestor down to the element. Only plain class selectors
+ * match, so a state (`:hover`) never applies.
  */
-export function resolvedOn(path: string, elements: readonly (readonly string[])[], prop: string): string | undefined {
-  let winner: { weight: number; value: string } | undefined;
+export function winnerOn(path: string, elements: readonly (readonly string[])[], prop: string): Winner | undefined {
+  let winner: (Winner & { weight: number }) | undefined;
 
   for (const rule of topLevelRules(compiledSheet(path))) {
     for (const selector of rule.selectors) {
       const compounds = plainCompounds(selector);
       if (!compounds || !matchesPath(compounds, elements)) continue;
 
-      const specificity = compounds.reduce((sum, compound) => sum + compound.length, 0);
+      const classes = compounds.reduce((sum, compound) => sum + compound.length, 0);
       rule.walkDecls(prop, (declaration) => {
-        const weight = specificity + (declaration.important ? 1000 : 0);
+        const weight = classes + (declaration.important ? 1000 : 0);
         if (declaration.parent === rule && (!winner || weight >= winner.weight)) {
-          winner = { weight, value: declaration.value };
+          winner = { value: declaration.value, classes, important: declaration.important, weight };
         }
       });
     }
   }
 
-  return winner?.value;
+  return winner && { value: winner.value, classes: winner.classes, important: winner.important };
 }
+
+/** The value `prop` resolves to on an element at rest, as `winnerOn` picks it. */
+export const resolvedOn = (path: string, elements: readonly (readonly string[])[], prop: string): string | undefined =>
+  winnerOn(path, elements, prop)?.value;
 
 /** Every declaration in a sheet, with the selectors of the rule that holds it. */
 export function everyDeclaration(path: string): { selectors: string[]; prop: string; value: string }[] {
