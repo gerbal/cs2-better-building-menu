@@ -4,6 +4,7 @@ using Game.Input;
 using Game.Modding;
 using Game.Settings;
 using Game.UI;
+using Game.UI.Localization;
 
 namespace BetterBuildingMenu
 {
@@ -97,6 +98,8 @@ namespace BetterBuildingMenu
 		// default rather than widening on its own, so the section scope is not
 		// silently discarded. Players who mostly search globally can flip it.
 		[SettingsUISection(SETTINGS, BEHAVIOR)]
+		[SettingsUIDisableByCondition(typeof(BetterBuildingMenuSettings), nameof(ReplaceVanillaBuildMenu), true)]
+		[SettingsUIDescription(typeof(BetterBuildingMenuSettings), nameof(AutoWidenSearchDescription))]
 		public bool AutoWidenSearch { get; set; }
 
 		/// <summary>
@@ -107,7 +110,31 @@ namespace BetterBuildingMenu
 		// Step 4, not 8: 64 + 8k never lands on the default, so a player who nudged the
 		// slider could not get back to the shipped width.
 		[SettingsUISlider(min = 64, max = 144, step = 4, scalarMultiplier = 1, unit = Unit.kInteger)]
+		[SettingsUIDisableByCondition(typeof(BetterBuildingMenuSettings), nameof(ReplaceVanillaBuildMenu), true)]
+		[SettingsUIDescription(typeof(BetterBuildingMenuSettings), nameof(AssetMenuTileSizeDescription))]
 		public int AssetMenuTileSize { get; set; } = Domain.SettingsDefaults.TileSize;
+
+		/// <summary>
+		/// The Reset the build menu… button: every setting back to how it ships, once the player
+		/// confirms.
+		/// </summary>
+		/// <remarks>
+		/// A setter and no getter, so the game draws a button and never saves it. See
+		/// docs/design-notes.md, "Reset the build menu".
+		/// </remarks>
+		[SettingsUISection(SETTINGS, UIUX)]
+		[SettingsUIButton]
+		[SettingsUIConfirmation]
+		[SettingsUIDisableByCondition(typeof(BetterBuildingMenuSettings), nameof(ReplaceVanillaBuildMenu), true)]
+		[SettingsUIDescription(typeof(BetterBuildingMenuSettings), nameof(ResetBuildMenuDescription))]
+		public bool ResetBuildMenu
+		{
+			set
+			{
+				Domain.SettingsDefaults.Reset(this);
+				ApplyAndSave();
+			}
+		}
 
 		/// <summary>Puts every option back to the value it ships with.</summary>
 		/// <remarks>
@@ -118,5 +145,16 @@ namespace BetterBuildingMenu
 		{
 			Domain.SettingsDefaults.Apply(this);
 		}
+
+		/// <summary>A row's description while Replace is on or off. See <see cref="Domain.OptionRows"/>.</summary>
+		/// <remarks>The game calls a description getter with no arguments, so each row that waits for Replace has its own below.</remarks>
+		private LocalizedString RowDescription(string row) =>
+			LocalizedString.Id(Domain.OptionRows.DescriptionId(ReplaceVanillaBuildMenu, GetOptionDescLocaleID(row)));
+
+		private LocalizedString AutoWidenSearchDescription() => RowDescription(nameof(AutoWidenSearch));
+
+		private LocalizedString AssetMenuTileSizeDescription() => RowDescription(nameof(AssetMenuTileSize));
+
+		private LocalizedString ResetBuildMenuDescription() => RowDescription(nameof(ResetBuildMenu));
 	}
 }

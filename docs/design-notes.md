@@ -312,6 +312,19 @@ initializers read, so the two cannot drift; `SetDefaults` is `SettingsDefaults.A
 - **The control pane.** `ControlPaneShown` ships on and Reset puts it back on; increment 7
   will split the two (initializer on, Reset off) and name the exception in the defaults shape test.
 
+**The button.** Options › Better Building Menu › UI / UX ends with Reset the build menu…, which the
+game draws as a button that asks first (`[SettingsUIButton]`, `[SettingsUIConfirmation]`, the
+question under its `Options.WARNING` key). Its property has a setter and no getter: the game's
+settings diff skips what it cannot read, so the button is never saved. The setter resets, then
+saves once.
+
+**Rows that wait for Replace.** While Replace the vanilla build menu is off, every other row is
+greyed out (`[SettingsUIDisableByCondition]` on Replace, inverted) and its description reads
+"Off while Replace the vanilla build menu is off." The game asks a description getter with no
+arguments and redraws it every frame, so each such row has its own one-line getter, through
+`OptionRows.DescriptionId`. The developer knobs stay live: the pick log and the placement history
+watch the game's tools whatever Replace holds.
+
 ## The placement history
 
 The mod keeps, in `ModsData/BetterBuildingMenu/history.json`, how often the player places each

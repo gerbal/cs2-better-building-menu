@@ -1,4 +1,6 @@
 using BetterBuildingMenu.Domain;
+using Game.Settings;
+using Game.UI.Localization;
 
 using System.Reflection;
 
@@ -18,6 +20,12 @@ namespace BetterBuildingMenu.Tests
 		private static IEnumerable<PropertyInfo> StoredSettings() => typeof(BetterBuildingMenuSettings)
 			.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
 			.Where(property => property.GetMethod?.IsPublic == true && property.SetMethod?.IsPublic == true);
+
+		/// <summary>The rows a player sees in Options: every property in the Behavior or UI / UX group.</summary>
+		private static IEnumerable<PropertyInfo> PlayerRows() => typeof(BetterBuildingMenuSettings)
+			.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
+			.Where(property => property.GetCustomAttribute<SettingsUISectionAttribute>() is { } section
+				&& (section.simpleGroup == BetterBuildingMenuSettings.BEHAVIOR || section.simpleGroup == BetterBuildingMenuSettings.UIUX));
 
 		/// <summary>Every value the migration and Reset reach, each moved off how it ships.</summary>
 		private static FakeSettings EveryValueMoved()
@@ -124,6 +132,86 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(
 				"public override void SetDefaults() { Domain.SettingsDefaults.Apply(this); }",
 				ModSource.Member(ModSource.Text("Setting.cs"), "public override void SetDefaults()"));
+		}
+
+		[Fact]
+		public void ResetTheBuildMenuIsAButtonThatAsksFirstAndIsNeverSaved()
+		{
+			var reset = typeof(BetterBuildingMenuSettings).GetProperty(nameof(BetterBuildingMenuSettings.ResetBuildMenu))!;
+
+			Assert.Equal(typeof(bool), reset.PropertyType);
+			// No getter: the game's settings diff skips what it cannot read, so the button is never saved.
+			Assert.False(reset.CanRead);
+			Assert.True(reset.CanWrite);
+			Assert.True(reset.IsDefined(typeof(SettingsUIButtonAttribute)));
+			Assert.True(reset.IsDefined(typeof(SettingsUIConfirmationAttribute)));
+			Assert.Equal(BetterBuildingMenuSettings.UIUX, reset.GetCustomAttribute<SettingsUISectionAttribute>()!.simpleGroup);
+		}
+
+		[Fact]
+		public void TheButtonResetsThenSavesOnce()
+		{
+			Assert.Equal(
+				"public bool ResetBuildMenu { set { Domain.SettingsDefaults.Reset(this); ApplyAndSave(); } }",
+				ModSource.Member(ModSource.Text("Setting.cs"), "public bool ResetBuildMenu"));
+		}
+
+		[Fact]
+		public void EveryRowButReplaceWaitsForReplace()
+		{
+			var replace = typeof(BetterBuildingMenuSettings).GetProperty(nameof(BetterBuildingMenuSettings.ReplaceVanillaBuildMenu))!;
+			var waiting = PlayerRows().Where(row => row.Name != replace.Name).ToList();
+
+			Assert.Contains(waiting, row => row.Name == nameof(BetterBuildingMenuSettings.ResetBuildMenu));
+			Assert.Null(replace.GetCustomAttribute<SettingsUIDisableByConditionAttribute>());
+			Assert.All(waiting, row =>
+			{
+				var condition = row.GetCustomAttribute<SettingsUIDisableByConditionAttribute>();
+
+				Assert.True(condition is not null, row.Name + " stays live while Replace is off");
+				Assert.Equal(typeof(BetterBuildingMenuSettings), condition!.checkType);
+				Assert.Equal(replace.Name, condition.checkMethod);
+				Assert.True(condition.invert, row.Name + " is greyed out while Replace is on");
+			});
+		}
+
+		[Fact]
+		public void ARowWaitingForReplaceSaysWhyWhileItIsOff()
+		{
+			var waiting = PlayerRows().Where(row => row.IsDefined(typeof(SettingsUIDisableByConditionAttribute))).ToList();
+
+			Assert.NotEmpty(waiting);
+			Assert.All(waiting, row =>
+			{
+				var description = row.GetCustomAttribute<SettingsUIDescriptionAttribute>();
+
+				Assert.True(description is not null, row.Name + " has no description getter");
+				Assert.Equal(typeof(BetterBuildingMenuSettings), description!.getterType);
+				Assert.Equal(row.Name + "Description", description.getterMethod);
+
+				// The game finds the getter by name and calls it with no arguments, every frame.
+				var getter = typeof(BetterBuildingMenuSettings).GetMethod(description.getterMethod, BindingFlags.Instance | BindingFlags.NonPublic);
+
+				Assert.True(getter is not null && getter.ReturnType == typeof(LocalizedString) && getter.GetParameters().Length == 0, description.getterMethod);
+			});
+		}
+
+		[Fact]
+		public void ARowsDescriptionIsItsOwnWhileReplaceIsOnAndTheOffLineWhileItIsOff()
+		{
+			const string Own = "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.AutoWidenSearch]";
+
+			Assert.Equal(Own, OptionRows.DescriptionId(replaceOn: true, Own));
+			Assert.Equal(OptionRows.OffWhileReplaceOffId, OptionRows.DescriptionId(replaceOn: false, Own));
+		}
+
+		[Fact]
+		public void TheOffLineAndTheResetQuestionReadAsShipped()
+		{
+			Assert.Equal("Off while Replace the vanilla build menu is off.", ModSource.English(OptionRows.OffWhileReplaceOffId));
+			Assert.Equal(
+				"Put every Better Building Menu setting, the width, the view and the menu's size back to how they ship? The buildings you have placed are kept.",
+				ModSource.English("Options.WARNING[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.ResetBuildMenu]"));
 		}
 	}
 }
