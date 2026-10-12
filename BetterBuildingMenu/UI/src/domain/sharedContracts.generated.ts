@@ -63,7 +63,7 @@ export const CATALOG_WINDOW_STEP = 100;
 /** AssetMenuHeight: the catalog height the player drags between, and where it starts. */
 export const ASSET_MENU_MIN_HEIGHT = 108;
 export const ASSET_MENU_MAX_HEIGHT = 960;
-export const ASSET_MENU_DEFAULT_HEIGHT = 149;
+export const ASSET_MENU_DEFAULT_HEIGHT = 144.25;
 
 /** WidthSteps: the build menu's five Width steps. A step is 706 plus its share, over 769, of the room beyond 706, and the room runs from the tool options' edge to 1 rem short of the social column. */
 export const LAYOUT_HEIGHT = 1080;

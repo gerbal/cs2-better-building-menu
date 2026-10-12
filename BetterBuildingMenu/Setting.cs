@@ -25,8 +25,8 @@ namespace BetterBuildingMenu
 		}
 
 		/// <summary>
-		/// The height of the catalog and the tab row under it, in the same rem-like
-		/// units as the width, set by dragging the asset menu's top edge.
+		/// The height of the asset menu's body, in the same rem-like units as the width, set by
+		/// dragging the asset menu's top edge. The box is this and 63.75 for its top row and tab row.
 		/// </summary>
 		/// <remarks>
 		/// Hidden like the width: it is a direct-manipulation value, and a slider in the options
@@ -48,8 +48,13 @@ namespace BetterBuildingMenu
 		public float AssetMenuCatalogWidth { get; set; } = Domain.AssetMenuCatalogWidth.Default;
 
 		/// <summary>Whether the control pane beside the build menu is shown, toggled from the menu's header.</summary>
+		/// <remarks>
+		/// Starts shown, 0.2.4's default, so a file without the key reads shown, as 0.2.4 reads it. A new
+		/// player's off comes from the defaults and the settings migration. See docs/design-notes.md,
+		/// "The settings migration".
+		/// </remarks>
 		[SettingsUIHidden]
-		public bool ControlPaneShown { get; set; } = Domain.SettingsDefaults.ControlPaneShown;
+		public bool ControlPaneShown { get; set; } = Domain.SettingsDefaults.ControlPaneShownWhenMissing;
 
 		/// <summary>
 		/// The settings file's format version: 0 in a file no release has stepped, stored at

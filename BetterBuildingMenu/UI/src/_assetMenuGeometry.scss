@@ -69,3 +69,7 @@ $tab-name-size: 11rem;
 $tab-name-gap: 4rem;
 // Each side of Education's plate, between it and the cells beside it.
 $tab-segment-margin: 4rem;
+
+// The box less its body, in every look: the top row's band (2 + 28 + 4) and the tab row's
+// (1.5 + 26 + 2.25). The stored height is the body's, so the box is it and this.
+$box-chrome: 63.75rem;

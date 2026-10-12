@@ -67,7 +67,9 @@ namespace BetterBuildingMenu.Tests
 
 			SettingsDefaults.Apply(values);
 
-			Assert.Equal(new FakeSettings { SettingsVersion = 7, AssetMenuCatalogWidth = Domain.AssetMenuCatalogWidth.Default + 7f }, values);
+			Assert.Equal(
+				new FakeSettings { SettingsVersion = 7, AssetMenuCatalogWidth = Domain.AssetMenuCatalogWidth.Default + 7f, ControlPaneShown = SettingsDefaults.ControlPaneShown },
+				values);
 		}
 
 		[Fact]
@@ -77,7 +79,14 @@ namespace BetterBuildingMenu.Tests
 
 			SettingsDefaults.Reset(values);
 
-			Assert.Equal(new FakeSettings { SettingsVersion = SettingsMigration.Current, AssetMenuCatalogWidth = Domain.AssetMenuCatalogWidth.Default + 7f }, values);
+			Assert.Equal(
+				new FakeSettings
+				{
+					SettingsVersion = SettingsMigration.Current,
+					AssetMenuCatalogWidth = Domain.AssetMenuCatalogWidth.Default + 7f,
+					ControlPaneShown = SettingsDefaults.ControlPaneShown,
+				},
+				values);
 		}
 
 		[Fact]
@@ -87,7 +96,26 @@ namespace BetterBuildingMenu.Tests
 
 			SettingsDefaults.Reset(values);
 
-			Assert.Equal(new FakeSettings { SettingsVersion = SettingsMigration.Current + 5 }, values);
+			Assert.Equal(new FakeSettings { SettingsVersion = SettingsMigration.Current + 5, ControlPaneShown = SettingsDefaults.ControlPaneShown }, values);
+		}
+
+		[Fact]
+		public void TheControlPaneIsTheOneSettingWhoseShippedValueIsNotItsInitializer()
+		{
+			// The initializer reads a file without the key as 0.2.4 read it, shown; a new player's
+			// pane ships off. Every other setting starts where Reset puts it.
+			var start = new FakeSettings();
+			var shipped = new FakeSettings();
+
+			SettingsDefaults.Apply(shipped);
+
+			var differs = typeof(ISettingsValues).GetProperties()
+				.Where(property => !Equals(property.GetValue(start), property.GetValue(shipped)))
+				.Select(property => property.Name);
+
+			Assert.Equal(new[] { nameof(ISettingsValues.ControlPaneShown) }, differs);
+			Assert.True(start.ControlPaneShown);
+			Assert.False(shipped.ControlPaneShown);
 		}
 
 		[Fact]
@@ -104,7 +132,7 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.False(next.Changed, "the next load changed " + string.Join("; ", next.Changes));
 			Assert.Null(next.Decision);
-			Assert.Equal(new FakeSettings { SettingsVersion = SettingsMigration.Current }, reloaded.Values);
+			Assert.Equal(new FakeSettings { SettingsVersion = SettingsMigration.Current, ControlPaneShown = SettingsDefaults.ControlPaneShown }, reloaded.Values);
 		}
 
 		[Fact]

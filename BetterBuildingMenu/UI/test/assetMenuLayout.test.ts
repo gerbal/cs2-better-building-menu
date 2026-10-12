@@ -26,6 +26,9 @@ import {
   catalogLayoutWidth,
   drawnBodyHeight,
   TAB_ROW_BAND,
+  ASSET_MENU_BOX_CHROME,
+  assetMenuBoxHeight,
+  TOP_CHROME_HEIGHT,
 } from "../src/domain/assetMenuLayout.ts";
 
 // 0.2.4's row at step 3, the box and the pane beside it: what the table's arithmetic was tuned at.
@@ -374,12 +377,24 @@ describe("the table's columns at a narrow build menu", () => {
 });
 
 describe("the list under the tab row", () => {
-  it("is the box less the tab row's band, so the box keeps vanilla's 208", () => {
+  it("is the box less the chrome as drawn, so the box keeps vanilla's 208 at the default", () => {
+    assert.equal(TAB_ROW_BAND, 29.75);
+    assert.equal(assetMenuBoxHeight(ASSET_MENU_DEFAULT_HEIGHT), 208);
+    for (const stored of [ASSET_MENU_DEFAULT_HEIGHT, 200, 300]) {
+      assert.equal(TOP_CHROME_HEIGHT + drawnBodyHeight(stored) + TAB_ROW_BAND, assetMenuBoxHeight(stored), String(stored));
+    }
+  });
+
+  it("draws above the body the chrome the stylesheets draw", () => {
     const header = rem(declarationsOf("mods/BuildingMenu/buildingMenuHeader.module.scss", ".headerRow").height);
 
-    assert.equal(TAB_ROW_BAND, 29.75);
-    assert.equal(drawnBodyHeight(ASSET_MENU_DEFAULT_HEIGHT), 119.25);
-    assert.equal(ASSET_MENU_RESIZE_HANDLE_HEIGHT + header + drawnBodyHeight(ASSET_MENU_DEFAULT_HEIGHT) + TAB_ROW_BAND, 208);
+    assert.equal(TOP_CHROME_HEIGHT, ASSET_MENU_RESIZE_HANDLE_HEIGHT + header);
+  });
+
+  it("is a dragged height and 63.75, in every look", () => {
+    assert.equal(ASSET_MENU_BOX_CHROME, 63.75);
+    assert.equal(assetMenuBoxHeight(300), 363.75);
+    assert.equal(assetMenuBoxHeight(ASSET_MENU_MAX_HEIGHT), ASSET_MENU_MAX_HEIGHT + 63.75);
   });
 
   it("never draws below the drag's floor", () => {

@@ -318,12 +318,9 @@ Until C# sends the menu's counts a tab's count draws blank rather than as a fain
 change does not flash zeroes across the row.
 
 **The box keeps its height.** The band is 29.75 rem: a 1.5 gap under the list, the 26 rem row, a
-2.25 pad above the bar. The list draws at the stored height less the band, never below the drag's
-floor (`drawnBodyHeight`): 119.25 at the default 149, so the box stays 14 + 45 + 119.25 + 29.75 =
-208. The row is one line of a fixed height that cuts at the box's edge rather than wrap, and the
-header above is one row of a fixed height, so no menu's tabs grow the box. The stored height keeps
-its meaning, the room under the header for the list and the band, for the drag, the settings and
-the upgrades panel's cap. The band is the box's bottom edge, so it carries the box's bottom
+2.25 pad above the bar, and the body gives it up (see "The box's height"). The row is one line of
+a fixed height that cuts at the box's edge rather than wrap, so no menu's tabs grow the box. The
+band is the box's bottom edge, so it carries the box's bottom
 rounding and the list's bottom corners are square: a rounded list above the band's square top
 would notch the seam.
 
@@ -352,6 +349,18 @@ By that estimate a Roads with All and nineteen tabs keeps one line at the first 
 scale the game offers, the name going from 110% and the last tabs clipping from 130%. "+N ▾", which
 folds the last tabs into a list, is increment 20's. The All count, like the others, draws blank
 until C# sends it: its binding starts negative.
+
+## The box's height
+
+The box is the stored height and 63.75 rem, in every look. The stored height (`AssetMenuHeight`)
+is the body's, as Standard draws it; 63.75 is the top row's band (a 2 rem pad, the 28 rem row, a 4
+rem gap) and the tab row's (29.75). The default body, 144.25, makes the box 208, the game's own
+menu's height. The body draws at the box less the chrome the box draws (`drawnBodyHeight`), never
+below the drag's floor of 108, so a look that spends its chrome differently changes its body,
+never the box. Until the top row replaces the 14 rem strip and the 45 rem header, that chrome is
+88.75 and the body draws 25 rem short of the stored height. The upgrades panel keeps the stored
+height as its cap. The settings migration's version 3 moves version 2's default, 149, to 144.25
+(see "The settings migration").
 
 ## The release marker and the settings version
 
@@ -436,6 +445,20 @@ On every load of a file at this version or earlier, a stored Width step outside 
   screen: the third step on 16:9, the second on 21:9 and 32:9. A dragged width gives the step
   nearest it, 735 the first. Everyone else gets the first step.
 
+**Version 3, the top row.**
+- A height within 0.1 of version 2's 149 becomes 144.25: the body that makes the box, under its top
+  row's band and above its tab row's, as tall as the game's own, 208 (see "The box's height"). Any
+  other height is the player's and is kept, at least the drag's floor of 108.
+- The control pane stays an upgrader's as loaded, and goes off for everyone else. The settings
+  class starts the pane shown (`ControlPaneShownWhenMissing`), so an upgrader whose file never held
+  the key keeps the pane 0.2.4 showed them; `SettingsDefaults` ships it off, the one setting whose
+  shipped value is not its initializer, which the shape tests name. A new player's off differs from
+  the initializer, so the game writes the key, and the next load reads it.
+- Each step is gated on its own version and the target, so a test runs one step alone; version 3
+  reads the upgrader flag version 2 stored, in the same run or an earlier one. Version 2 moves an
+  earlier default to its own 149, and version 3 moves 149 on, so a file from before version 2 logs
+  both moves.
+
 **It cannot tell a choice from an old default.** A player who chose 420, 155 or 735 by hand moves
 with the defaults, once.
 
@@ -486,8 +509,9 @@ initializers read, so the two cannot drift; `SetDefaults` is `SettingsDefaults.A
   stay as they are.
 - **Pure.** Both work on `ISettingsValues`, which holds every setting the class stores; a test
   holds the two lists equal, so a setting a reset would miss fails the tests.
-- **The control pane.** `ControlPaneShown` ships on and Reset puts it back on; increment 7
-  will split the two (initializer on, Reset off) and name the exception in the defaults shape test.
+- **The control pane.** `ControlPaneShown` starts shown, so a file without the key reads as 0.2.4's
+  did, and Reset puts it off, a new player's value: the one setting whose shipped value is not its
+  initializer, which `SettingsShapeTests` names.
 
 **The button.** Options › Better Building Menu › UI / UX ends with Reset the build menu…, which the
 game draws as a button that asks first (`[SettingsUIButton]`, `[SettingsUIConfirmation]`, the

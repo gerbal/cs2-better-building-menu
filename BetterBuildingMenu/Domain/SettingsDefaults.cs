@@ -10,7 +10,15 @@ namespace BetterBuildingMenu.Domain
 	{
 		public const bool ReplaceVanillaBuildMenu = true;
 
-		public const bool ControlPaneShown = true;
+		/// <summary>A new player's control pane: hidden, since the top row holds every control.</summary>
+		public const bool ControlPaneShown = false;
+
+		/// <summary>
+		/// What a settings file without the pane's key reads as: shown, 0.2.4's default. The settings
+		/// class starts here, so an upgrader's missing key keeps the pane, and the migration turns it
+		/// off for everyone else.
+		/// </summary>
+		public const bool ControlPaneShownWhenMissing = true;
 
 		/// <summary>The grid's tile width: one of the Tile size slider's 64 + 4k.</summary>
 		public const int TileSize = 100;

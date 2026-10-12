@@ -9,9 +9,10 @@ using Xunit;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// The settings migration's step to version 2 over the files earlier releases left: who is an
-	/// upgrader, the height, and the width as a Width step. Every file is loaded twice, as two
-	/// launches load it, and the second load changes nothing.
+	/// The settings migration over the files earlier releases left: who is an upgrader, the height
+	/// and the width as a Width step (version 2), then the body under the top row and the control
+	/// pane (version 3). Every file is loaded twice, as two launches load it, and the second load
+	/// changes nothing.
 	/// </summary>
 	public sealed class SettingsMigrationTests
 	{
@@ -42,25 +43,28 @@ namespace BetterBuildingMenu.Tests
 			return (first, values, loaded, saved);
 		}
 
+		// A new player ends at version 3 with the pane off.
 		[Fact]
-		public void AFreshInstallIsANewPlayerAtTheGamesOwnSize()
+		public void AFreshInstallIsANewPlayerAtTheGamesOwnSizeWithThePaneOff()
 		{
 			var (first, after, _, _) = TwoLoads(null, PriorInstall.Nothing);
 
 			Assert.Equal(new UpgraderDecision(UpgraderSignal.None, string.Empty), first.Decision);
-			Assert.Equal(new FakeSettings { SettingsVersion = 2 }, after);
-			Assert.Equal(new[] { "SettingsVersion 0 -> 2" }, first.Changes);
+			Assert.Equal(new FakeSettings { SettingsVersion = 3, ControlPaneShown = false }, after);
+			Assert.Equal(new[] { "ControlPaneShown True -> False", "SettingsVersion 0 -> 3" }, first.Changes);
 		}
 
+		// An upgrader's pane, shown with no key, stays.
 		[Fact]
 		public void TheStampAloneMakesAnUpgraderAtTheStepNearestThe1091TheyHad()
 		{
 			var (first, after, _, _) = TwoLoads(null, StampOnly);
 
 			Assert.Equal(UpgraderSignal.Stamp, first.Decision!.Value.Signal);
-			Assert.Equal(new FakeSettings { SettingsVersion = 2, Upgrader = true, AssetMenuWidthStep = 3 }, after);
+			Assert.Equal(new FakeSettings { SettingsVersion = 3, Upgrader = true, AssetMenuWidthStep = 3 }, after);
 		}
 
+		// The height ends at the default, which the test reads.
 		[Theory]
 		[InlineData(SixteenNine, 3)]
 		[InlineData(TwentyOneNine, 2)]
@@ -75,31 +79,37 @@ namespace BetterBuildingMenu.Tests
 			Assert.True(after.Upgrader);
 		}
 
+		// 420 moves to version 2's 149, then to version 3's 144.25, and the log says both.
 		[Fact]
-		public void ADraggedNarrowestWidthOpensAtTheFirstStepAndTheDefaultHeightMoves()
+		public void ADraggedNarrowestWidthOpensAtTheFirstStepAndTheDefaultHeightMovesTwice()
 		{
 			var (first, after, _, _) = TwoLoads(SettingsFixtures.Width735Height420, PriorInstall.Nothing);
 
 			Assert.Equal(UpgraderSignal.SettingsKey, first.Decision!.Value.Signal);
 			Assert.Equal(
-				new FakeSettings { SettingsVersion = 2, Upgrader = true, AssetMenuHeight = 149, AssetMenuCatalogWidth = 735, AssetMenuWidthStep = 1 },
+				new FakeSettings { SettingsVersion = 3, Upgrader = true, AssetMenuHeight = 144.25f, AssetMenuCatalogWidth = 735, AssetMenuWidthStep = 1 },
 				after);
-			Assert.Equal(new[] { "Upgrader False -> True", "AssetMenuHeight 420 -> 149", "SettingsVersion 0 -> 2" }, first.Changes);
+			Assert.Equal(
+				new[] { "Upgrader False -> True", "AssetMenuHeight 420 -> 149", "AssetMenuHeight 149 -> 144.25", "SettingsVersion 0 -> 3" },
+				first.Changes);
 		}
 
+		// From version 3, a later version moves nothing but the version.
 		[Fact]
-		public void AVersionTwoFileMigratedToALaterVersionOnlyMovesTheVersion()
+		public void AFileAtThisVersionMigratedToALaterOneOnlyMovesTheVersion()
 		{
-			var values = new FakeSettings { SettingsVersion = 2, Upgrader = true, AssetMenuHeight = 149, AssetMenuWidthStep = 4 };
+			var values = new FakeSettings { SettingsVersion = 3, Upgrader = true, AssetMenuHeight = 149, AssetMenuWidthStep = 4 };
 
 			var result = SettingsMigration.Migrate(values, new[] { "SettingsVersion" }, PriorInstall.Nothing, SixteenNine, SettingsMigration.Current + 1);
 
 			Assert.Null(result.Decision);
+			Assert.Equal(149, values.AssetMenuHeight);
 			Assert.Equal(4, values.AssetMenuWidthStep);
 			Assert.True(values.Upgrader);
-			Assert.Equal(new[] { "SettingsVersion 2 -> 3" }, result.Changes);
+			Assert.Equal(new[] { "SettingsVersion 3 -> 4" }, result.Changes);
 		}
 
+		// The file's version 1 moves to 3 with the height at the default.
 		[Fact]
 		public void TheSameFileAfterTheInterimIsAnUpgraderByItsVersion()
 		{
@@ -107,8 +117,8 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.Equal(new UpgraderDecision(UpgraderSignal.SettingsVersion, "1"), first.Decision);
 			Assert.Equal(1, after.AssetMenuWidthStep);
-			Assert.Equal(149, after.AssetMenuHeight);
-			Assert.Equal("SettingsVersion 1 -> 2", first.Changes.Last());
+			Assert.Equal(144.25f, after.AssetMenuHeight);
+			Assert.Equal("SettingsVersion 1 -> 3", first.Changes.Last());
 		}
 
 		public static IEnumerable<object[]> InterimFiles() => new[]
@@ -123,9 +133,9 @@ namespace BetterBuildingMenu.Tests
 		{
 			var (first, after, _, _) = TwoLoads(file, PriorInstall.Nothing);
 
-			// The view the interim kept is the player's: no step of this version moves it.
+			// The view the interim kept is the player's: no step of these versions moves it.
 			Assert.Equal(UpgraderSignal.SettingsVersion, first.Decision!.Value.Signal);
-			Assert.Equal(new FakeSettings { SettingsVersion = 2, Upgrader = true, AssetMenuWidthStep = 3, AssetMenuViewMode = view }, after);
+			Assert.Equal(new FakeSettings { SettingsVersion = 3, Upgrader = true, AssetMenuWidthStep = 3, AssetMenuViewMode = view }, after);
 		}
 
 		[Fact]
@@ -138,13 +148,14 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(3, after.AssetMenuWidthStep);
 		}
 
+		// A new player, so the pane goes off.
 		[Fact]
 		public void TheRedesignsOwnFirstLaunchWhoseSaveNeverLandedStaysNew()
 		{
 			var (first, after, _, _) = TwoLoads(null, MarkerFirstWrittenBy(UpgraderTest.FirstRedesignRelease, stampBefore: false, stamp: true));
 
 			Assert.Equal(UpgraderSignal.None, first.Decision!.Value.Signal);
-			Assert.Equal(new FakeSettings { SettingsVersion = 2 }, after);
+			Assert.Equal(new FakeSettings { SettingsVersion = 3, ControlPaneShown = false }, after);
 		}
 
 		[Fact]
@@ -164,6 +175,7 @@ namespace BetterBuildingMenu.Tests
 			new object[] { SettingsFixtures.NegativeWidth },
 		};
 
+		// An upgrader's pane is as they left it, hidden only where they hid it.
 		[Theory]
 		[MemberData(nameof(OneKeyFiles))]
 		public void AnyKeyAnEarlierReleaseDeclaredMakesAnUpgraderAtTheStepNearest1091(string file)
@@ -173,6 +185,7 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(UpgraderSignal.SettingsKey, first.Decision!.Value.Signal);
 			Assert.Equal(3, after.AssetMenuWidthStep);
 			Assert.True(after.Upgrader);
+			Assert.True(after.ControlPaneShown == (file != SettingsFixtures.PaneHiddenWidth0), "an upgrader keeps the pane as they left it");
 		}
 
 		[Fact]
@@ -182,7 +195,7 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.Equal(new UpgraderDecision(UpgraderSignal.SettingsKey, "ReplaceVanillaBuildMenu"), first.Decision);
 			Assert.Equal(4, loaded.UnknownKeys);
-			Assert.Equal(new FakeSettings { SettingsVersion = 2, Upgrader = true, AssetMenuWidthStep = 3 }, after);
+			Assert.Equal(new FakeSettings { SettingsVersion = 3, Upgrader = true, AssetMenuWidthStep = 3 }, after);
 		}
 
 		[Theory]
@@ -203,9 +216,10 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(5, TwoLoads(SettingsFixtures.FullWidthPaneHidden, PriorInstall.Nothing).After.AssetMenuWidthStep);
 		}
 
+		// An earlier release's default ends at the default through both steps.
 		[Theory]
-		[InlineData(420.05f, 149f)]
-		[InlineData(155.09f, 149f)]
+		[InlineData(420.05f, 144.25f)]
+		[InlineData(155.09f, 144.25f)]
 		[InlineData(419.8f, 419.8f)]
 		[InlineData(200f, 200f)]
 		public void OnlyAHeightAnEarlierReleaseShippedMoves(float stored, float expected)
@@ -219,6 +233,7 @@ namespace BetterBuildingMenu.Tests
 			new object[] { SettingsFixtures.MigratedHeight420, 420f },
 		};
 
+		// At version 3, a 149 chosen after the migration stays.
 		[Theory]
 		[MemberData(nameof(MigratedFiles))]
 		public void AFileAtThisVersionIsLeftAlone(string file, float height)
@@ -241,26 +256,31 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(420, after.AssetMenuHeight);
 		}
 
+		// The pane's off, which differs from the initializer's on, reaches the file too.
 		[Fact]
-		public void TheVersionReachesTheFileAndNothingElseOfANewPlayers()
+		public void TheVersionAndThePaneReachANewPlayersFileAndNothingElse()
 		{
 			var (_, _, _, saved) = TwoLoads(null, PriorInstall.Nothing);
 
-			Assert.Contains("\"SettingsVersion\": 2", saved);
+			Assert.Contains("\"SettingsVersion\": 3", saved);
+			Assert.Contains("\"ControlPaneShown\": false", saved);
 			Assert.DoesNotContain("AssetMenuWidthStep", saved);
 			Assert.DoesNotContain("AssetMenuHeight", saved);
 			Assert.DoesNotContain("Upgrader", saved);
 		}
 
+		// An upgrader's pane, shown as the initializer has it, writes no key.
 		[Fact]
-		public void AnUpgradersStepAndFlagReachTheFile()
+		public void AnUpgradersStepAndFlagReachTheFileAndTheirPaneNeedsNoKey()
 		{
 			var (_, _, _, saved) = TwoLoads(null, StampOnly);
 
 			Assert.Contains("\"AssetMenuWidthStep\": 3", saved);
 			Assert.Contains("\"Upgrader\": true", saved);
+			Assert.DoesNotContain("ControlPaneShown", saved);
 		}
 
+		// Both steps' moves, in order.
 		[Fact]
 		public void TheLogLineNamesWhatTheLoadFoundTheSignAndEveryChange()
 		{
@@ -268,8 +288,9 @@ namespace BetterBuildingMenu.Tests
 			var result = SettingsMigration.Migrate(loaded.Values, loaded.Keys, PriorInstall.Nothing, SixteenNine);
 
 			Assert.Equal(
-				"version 0 -> 2; keys AssetMenuCatalogWidth,AssetMenuHeight,ControlPaneShown,ReplaceVanillaBuildMenu; marker none; stamp False; "
-				+ "upgrader SettingsKey(AssetMenuHeight); changed Upgrader False -> True; AssetMenuHeight 155 -> 149; AssetMenuWidthStep 1 -> 3; SettingsVersion 0 -> 2",
+				"version 0 -> 3; keys AssetMenuCatalogWidth,AssetMenuHeight,ControlPaneShown,ReplaceVanillaBuildMenu; marker none; stamp False; "
+				+ "upgrader SettingsKey(AssetMenuHeight); changed Upgrader False -> True; AssetMenuHeight 155 -> 149; AssetMenuWidthStep 1 -> 3; "
+				+ "AssetMenuHeight 149 -> 144.25; SettingsVersion 0 -> 3",
 				SettingsMigration.Describe(loaded.Keys, PriorInstall.Nothing, result));
 		}
 
@@ -277,17 +298,17 @@ namespace BetterBuildingMenu.Tests
 		public void TheLogLineSaysWhenNothingWasAsked()
 		{
 			var prior = MarkerFirstWrittenBy("0.3.0", stampBefore: false, stamp: true);
-			var result = SettingsMigration.Migrate(new FakeSettings { SettingsVersion = 2 }, Array.Empty<string>(), prior, SixteenNine);
+			var result = SettingsMigration.Migrate(new FakeSettings { SettingsVersion = SettingsMigration.Current }, Array.Empty<string>(), prior, SixteenNine);
 
 			Assert.Equal(
-				"version 2 -> 2; keys none; marker first=0.3.0 stampBefore=False; stamp True; upgrader not asked; changed nothing",
+				"version 3 -> 3; keys none; marker first=0.3.0 stampBefore=False; stamp True; upgrader not asked; changed nothing",
 				SettingsMigration.Describe(Array.Empty<string>(), prior, result));
 		}
 
 		[Fact]
 		public void AStepOutsideTheRangeBecomesTheFirstEvenAtThisVersion()
 		{
-			var values = new FakeSettings { SettingsVersion = 2, AssetMenuWidthStep = 9 };
+			var values = new FakeSettings { SettingsVersion = SettingsMigration.Current, AssetMenuWidthStep = 9 };
 			var result = SettingsMigration.Migrate(values, Array.Empty<string>(), StampOnly, SixteenNine);
 
 			Assert.True(result.Changed);
@@ -361,11 +382,63 @@ namespace BetterBuildingMenu.Tests
 			Assert.True(typeof(ISettingsValues).IsAssignableFrom(typeof(BetterBuildingMenuSettings)));
 		}
 
+		// The box is the top row's band (2 + 28 + 4), the body and the tab row's band (1.5 + 26 + 2.25).
 		[Fact]
 		public void TheDefaultHeightMakesTheMenuTheGamesOwnHeight()
 		{
-			// The box is the top strip, the header and the catalog.
-			Assert.Equal(208f - 14f - 45f, AssetMenuHeight.Default);
+			Assert.Equal(208f - 34f - 29.75f, AssetMenuHeight.Default);
+		}
+
+		// Version 2's height makes the menu the game's own under a 14 rem strip and a 45 rem header.
+		[Fact]
+		public void VersionTwosHeightIsTheGamesOwnUnderTheEarlierChrome()
+		{
+			Assert.Equal(208f - 14f - 45f, SettingsMigration.WidthStepsHeight);
+		}
+
+		// Version 3 moves version 2's 149 and only it; any other height is kept, at least 108.
+		[Theory]
+		[InlineData(149f, 144.25f)]
+		[InlineData(149.05f, 144.25f)]
+		[InlineData(148.95f, 144.25f)]
+		[InlineData(300f, 300f)]
+		[InlineData(100f, 108f)]
+		public void TheSecondStepMovesOnlyTheHeightVersionTwoShipped(float stored, float expected)
+		{
+			var (first, after, _, _) = TwoLoads(SettingsFixtures.Version2(stored, upgrader: true), PriorInstall.Nothing);
+
+			Assert.Null(first.Decision);
+			Assert.Equal(expected, after.AssetMenuHeight);
+			Assert.Equal(SettingsMigration.ControlPaneVersion, after.SettingsVersion);
+		}
+
+		// An upgrader keeps the pane as loaded, which is shown when the key is missing; everyone else's goes off.
+		[Theory]
+		[InlineData(true, "", true)]
+		[InlineData(true, "false", false)]
+		[InlineData(false, "true", false)]
+		[InlineData(false, "", false)]
+		public void TheSecondStepKeepsAnUpgradersPaneAndTurnsEveryoneElsesOff(bool upgrader, string paneKey, bool shown)
+		{
+			var (_, after, _, _) = TwoLoads(SettingsFixtures.Version2(149f, upgrader, paneKey), PriorInstall.Nothing);
+
+			Assert.Equal(shown, after.ControlPaneShown);
+			Assert.Equal(SettingsMigration.ControlPaneVersion, after.SettingsVersion);
+		}
+
+		// Each step runs alone up to its own version, the later one reading the flag the earlier one set.
+		[Fact]
+		public void EachStepRunsAloneAtItsOwnVersion()
+		{
+			var values = new FakeSettings();
+
+			var widthSteps = SettingsMigration.Migrate(values, Array.Empty<string>(), PriorInstall.Nothing, SixteenNine, SettingsMigration.WidthStepsVersion);
+			Assert.Equal(new[] { "SettingsVersion 0 -> 2" }, widthSteps.Changes);
+			Assert.True(values.ControlPaneShown, "the pane is version 3's");
+
+			var controlPane = SettingsMigration.Migrate(values, Array.Empty<string>(), PriorInstall.Nothing, SixteenNine);
+			Assert.Null(controlPane.Decision);
+			Assert.Equal(new[] { "ControlPaneShown True -> False", "SettingsVersion 2 -> 3" }, controlPane.Changes);
 		}
 
 		[Fact]

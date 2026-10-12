@@ -71,7 +71,7 @@ namespace BetterBuildingMenu.Tests
 			Assert.Contains("export const WIDTH_ROOM_RIGHT_OFFSET = 49;", ts);
 			Assert.Contains("export const SOCIAL_COLUMN_RIGHT_OFFSET = 48;", ts);
 			Assert.Contains("  \"16:9\": [706, 893, 1091, 1280, 1475],", ts);
-			Assert.Contains("export const ASSET_MENU_DEFAULT_HEIGHT = 149;", ts);
+			Assert.Contains("export const ASSET_MENU_DEFAULT_HEIGHT = 144.25;", ts);
 			Assert.DoesNotContain("ASSET_MENU_MAX_WIDTH", ts);
 			Assert.DoesNotContain("ASSET_MENU_CATALOG", ts);
 		}

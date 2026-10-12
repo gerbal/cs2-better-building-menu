@@ -24,7 +24,7 @@ namespace BetterBuildingMenu.Tests
 
 		public int AssetMenuWidthStep { get; set; } = WidthSteps.DefaultStep;
 
-		public bool ControlPaneShown { get; set; } = SettingsDefaults.ControlPaneShown;
+		public bool ControlPaneShown { get; set; } = SettingsDefaults.ControlPaneShownWhenMissing;
 
 		public string AssetMenuViewMode { get; set; } = Domain.AssetMenuViewMode.None;
 
@@ -176,10 +176,10 @@ namespace BetterBuildingMenu.Tests
 		/// <summary>0.2.4 with the pane hidden and the width dragged to the end of the room.</summary>
 		public static readonly string FullWidthPaneHidden = SettingsFile.Text("{\"AssetMenuCatalogWidth\": 1476, \"ControlPaneShown\": false}");
 
-		/// <summary>Already migrated, at the new default, and at a height chosen afterwards.</summary>
-		public static readonly string MigratedHeight149 = SettingsFile.Text("{\"SettingsVersion\": 2, \"AssetMenuHeight\": 149}");
+		/// <summary>At this release's version, at version 2's default and at a height chosen afterwards: both are the player's.</summary>
+		public static readonly string MigratedHeight149 = SettingsFile.Text("{\"SettingsVersion\": 3, \"AssetMenuHeight\": 149}");
 
-		public static readonly string MigratedHeight420 = SettingsFile.Text("{\"SettingsVersion\": 2, \"AssetMenuHeight\": 420}");
+		public static readonly string MigratedHeight420 = SettingsFile.Text("{\"SettingsVersion\": 3, \"AssetMenuHeight\": 420}");
 
 		/// <summary>A later release's version.</summary>
 		public static readonly string LaterVersion = SettingsFile.Text("{\"SettingsVersion\": 7, \"AssetMenuHeight\": 420}");
@@ -187,5 +187,12 @@ namespace BetterBuildingMenu.Tests
 		/// <summary>0.2.4 with only a height.</summary>
 		public static string Height(float height) =>
 			SettingsFile.Text("{\"AssetMenuHeight\": " + height.ToString(CultureInfo.InvariantCulture) + "}");
+
+		/// <summary>A file version 2 left: a height, the upgrader flag, and the pane's key at a value or, with "", none.</summary>
+		public static string Version2(float height, bool upgrader, string paneKey = "") =>
+			SettingsFile.Text(
+				"{\"SettingsVersion\": 2, \"AssetMenuHeight\": " + height.ToString(CultureInfo.InvariantCulture)
+				+ ", \"Upgrader\": " + (upgrader ? "true" : "false")
+				+ (paneKey.Length > 0 ? ", \"ControlPaneShown\": " + paneKey : string.Empty) + "}");
 	}
 }

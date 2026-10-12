@@ -21,21 +21,30 @@ namespace BetterBuildingMenu.Domain
 	/// </summary>
 	/// <remarks>
 	/// Pure, over <see cref="ISettingsValues"/>, so tests never build the settings class. Only a
-	/// value that was an earlier release's default moves. A per-load sanitiser also brings a
-	/// Width step outside its range to the first, but only in a file at this version or earlier:
-	/// a later release's file is left whole. See docs/design-notes.md, "The settings
-	/// migration".
+	/// value that was an earlier release's default moves, and a new player's control pane goes off.
+	/// A per-load sanitiser also brings a Width step outside its range to the first, but only in a
+	/// file at this version or earlier: a later release's file is left whole. See
+	/// docs/design-notes.md, "The settings migration".
 	/// </remarks>
 	public static class SettingsMigration
 	{
-		/// <summary>This release's settings version: 1 is 0.2.5's, 2 the Width steps'.</summary>
-		public const int Current = 2;
+		/// <summary>This release's settings version: 1 is 0.2.5's, 2 the Width steps', 3 the top row's.</summary>
+		public const int Current = 3;
 
 		/// <summary>The version that introduced the Width steps, and the one question the upgrader test is asked for.</summary>
-		private const int WidthStepsVersion = 2;
+		internal const int WidthStepsVersion = 2;
+
+		/// <summary>The version that gave the box its top row: a shorter default body, and the control pane an upgrader's choice.</summary>
+		internal const int ControlPaneVersion = 3;
 
 		/// <summary>The heights earlier releases shipped as their default: 420, from 0.2.3 to 0.2.5, and an unreleased build's 155.</summary>
 		public static readonly IReadOnlyList<float> EarlierDefaultHeights = new[] { 420f, 155f };
+
+		/// <summary>
+		/// The height version 2 moves an earlier default to, and version 3 moves on: the game's own
+		/// 208 under the 14 rem strip and the 45 rem header the box had then.
+		/// </summary>
+		public const float WidthStepsHeight = 149f;
 
 		/// <summary>How near an earlier default a stored height must be to count as it: the height commit's own tolerance.</summary>
 		public const float HeightTolerance = 0.1f;
@@ -48,19 +57,25 @@ namespace BetterBuildingMenu.Domain
 		public static SettingsMigrationResult Migrate(ISettingsValues values, IReadOnlyCollection<string> fileKeys, PriorInstall prior, double aspect) =>
 			Migrate(values, fileKeys, prior, aspect, Current);
 
-		/// <summary>Migrates to a given version, so a test can run the steps a later release will add.</summary>
+		/// <summary>Migrates to a given version, so a test can run one step alone or the steps a later release will add.</summary>
 		internal static SettingsMigrationResult Migrate(ISettingsValues values, IReadOnlyCollection<string> fileKeys, PriorInstall prior, double aspect, int target)
 		{
 			var from = values.SettingsVersion;
 			var changes = new List<string>();
 			UpgraderDecision? decision = null;
 
-			if (from < WidthStepsVersion)
+			if (from < WidthStepsVersion && WidthStepsVersion <= target)
 			{
 				// Below version 2 the test always answers, so the default is never read.
 				var asked = UpgraderTest.Decide(from, prior, fileKeys, UpgraderTest.FirstRedesignRelease).GetValueOrDefault();
 				decision = asked;
 				ToWidthSteps(values, asked.IsUpgrader, aspect, changes);
+			}
+
+			// Reads the flag version 2 stored, in this run or an earlier one.
+			if (from < ControlPaneVersion && ControlPaneVersion <= target)
+			{
+				ToTopRow(values, changes);
 			}
 
 			// On every load at this version or earlier: a hand edit or a bad write can leave a step
@@ -112,11 +127,30 @@ namespace BetterBuildingMenu.Domain
 
 			if (EarlierDefaultHeights.Any(height => Math.Abs(values.AssetMenuHeight - height) < HeightTolerance))
 			{
-				Set(nameof(ISettingsValues.AssetMenuHeight), values.AssetMenuHeight, AssetMenuHeight.Default, value => values.AssetMenuHeight = value, changes);
+				Set(nameof(ISettingsValues.AssetMenuHeight), values.AssetMenuHeight, WidthStepsHeight, value => values.AssetMenuHeight = value, changes);
 			}
 
 			var step = upgrader ? WidthSteps.Nearest(WidthTheyHad(values.AssetMenuCatalogWidth), aspect) : WidthSteps.DefaultStep;
 			Set(nameof(ISettingsValues.AssetMenuWidthStep), values.AssetMenuWidthStep, step, value => values.AssetMenuWidthStep = value, changes);
+		}
+
+		/// <summary>
+		/// Version 3, the top row: version 2's height becomes the body under the new chrome, any other
+		/// height is kept, at least the floor; the control pane stays an upgrader's as loaded, and goes
+		/// off for everyone else.
+		/// </summary>
+		private static void ToTopRow(ISettingsValues values, List<string> changes)
+		{
+			var height = Math.Abs(values.AssetMenuHeight - WidthStepsHeight) < HeightTolerance
+				? AssetMenuHeight.Default
+				: AssetMenuHeight.Clamp(values.AssetMenuHeight);
+			Set(nameof(ISettingsValues.AssetMenuHeight), values.AssetMenuHeight, height, value => values.AssetMenuHeight = value, changes);
+
+			// An upgrader's file without the key loads shown, as 0.2.4 read it, and stays so.
+			if (!values.Upgrader)
+			{
+				Set(nameof(ISettingsValues.ControlPaneShown), values.ControlPaneShown, false, value => values.ControlPaneShown = value, changes);
+			}
 		}
 
 		/// <summary>The width a 0.2.4 player had: the width they dragged to, or for the default, the room beside the pane.</summary>

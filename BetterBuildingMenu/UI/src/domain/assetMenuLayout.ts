@@ -383,11 +383,22 @@ export const TAB_NAME_SIZE = sheetRem("tabNameSize");
 export const TAB_NAME_GAP = sheetRem("tabNameGap");
 export const TAB_SEGMENT_MARGIN = sheetRem("tabSegmentMargin");
 
+/** The box less its body in every look, so the box is the stored height and this: see _assetMenuGeometry.scss. */
+export const ASSET_MENU_BOX_CHROME = sheetRem("boxChrome");
+
+/** What the box draws above its body: the top strip and the header, until the top row takes their place. */
+export const TOP_CHROME_HEIGHT = ASSET_MENU_RESIZE_HANDLE_HEIGHT + sheetRem("headerHeight");
+
+/** The box's height: the stored body height and the chrome, the same in every look. */
+export function assetMenuBoxHeight(storedHeight: number): number {
+  return clampAssetMenuHeight(storedHeight) + ASSET_MENU_BOX_CHROME;
+}
+
 /**
- * The list's height as drawn: the stored height less the tab row's band, so the band fits inside
- * the box's height rather than adding to it, never below the drag's floor. The stored height keeps
- * its meaning for the drag and the settings. See docs/design-notes.md, "The tab row".
+ * The body's height as drawn: the box less the chrome it draws, never below the drag's floor. The
+ * stored height keeps its meaning for the drag, the settings and the upgrades panel's cap. See
+ * docs/design-notes.md, "The box's height".
  */
 export function drawnBodyHeight(storedHeight: number): number {
-  return Math.max(ASSET_MENU_MIN_HEIGHT, clampAssetMenuHeight(storedHeight) - TAB_ROW_BAND);
+  return Math.max(ASSET_MENU_MIN_HEIGHT, assetMenuBoxHeight(storedHeight) - TOP_CHROME_HEIGHT - TAB_ROW_BAND);
 }
