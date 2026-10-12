@@ -384,6 +384,11 @@ sewage capacity are offered where they can move a row.
 own order (`UIOrder`), the name and the id, so equal capacities show the cheaper building first.
 The game's order and the name and category sorts keep their own ties.
 
+**A list that stops says so.** The window grows from 100 rows toward a ceiling of 2,000. Whenever
+fewer rows are loaded than the result holds, the footer says "Showing X of Y", with the true
+total. While the window can grow it offers Load more; once it is at the ceiling with rows past it
+(`Capped`), it says how to narrow the list instead: a tab, the search or a filter.
+
 ## Hand-rolled floating surfaces in Cohtml
 
 The filter rail's dropdown surface (`filterRail.module.scss`, `.menu`) states size

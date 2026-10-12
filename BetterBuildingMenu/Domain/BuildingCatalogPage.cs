@@ -44,7 +44,9 @@ namespace BetterBuildingMenu.Domain
 		/// <remarks><see cref="BestMatchId"/> is its id, for the readers that take only that.</remarks>
 		BuildingCatalogBestMatch? BestMatch = null,
 		/// <summary>Whether a search matched rows and none of them can be placed, so Enter does nothing.</summary>
-		bool AllMatchesLocked = false) : IJsonWritable
+		bool AllMatchesLocked = false,
+		/// <summary>Whether the window is at its ceiling with rows past it, so the list stops and must say so.</summary>
+		bool Capped = false) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -83,6 +85,8 @@ namespace BetterBuildingMenu.Domain
 			if (BestMatch is null) writer.WriteNull(); else BestMatch.Write(writer);
 			writer.PropertyName("allMatchesLocked");
 			writer.Write(AllMatchesLocked);
+			writer.PropertyName("capped");
+			writer.Write(Capped);
 			if (Status is not null)
 			{
 				writer.PropertyName("status");

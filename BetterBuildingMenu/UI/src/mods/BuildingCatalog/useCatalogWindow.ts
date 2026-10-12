@@ -23,6 +23,8 @@ export interface CatalogWindow {
   limit: number;
   status: BuildingCatalogPageStatus;
   hasMore: boolean;
+  /** The window is at its ceiling with rows past it; see BuildingCatalogPage. */
+  capped: boolean;
   /** The row Enter arms while a search is active; see BuildingCatalogPage. */
   bestMatchId: number | null;
   /** The search this page answers, which trails the box by a debounce. */
@@ -47,6 +49,7 @@ export function useCatalogWindow(
   const status: BuildingCatalogPageStatus = page?.status
     ?? (page ? (totalCount === 0 ? "empty" : "ready") : "indexing");
   const hasMore = page?.hasMore ?? false;
+  const capped = page?.capped ?? false;
   const bestMatchId = page?.bestMatchId ?? null;
   const searchText = page?.searchText ?? "";
 
@@ -124,5 +127,5 @@ export function useCatalogWindow(
     };
   }, [rootRef, hasMore, items.length, scope.viewMode, scope.groupBy]);
 
-  return { items, totalCount, offset, limit, status, hasMore, bestMatchId, searchText, loadMore };
+  return { items, totalCount, offset, limit, status, hasMore, capped, bestMatchId, searchText, loadMore };
 }

@@ -97,7 +97,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   // The root every DOM measurement below is scoped to. The hooks find the
   // rows and the scroller beneath it and never look above it.
   const rootRef = useRef<HTMLDivElement>(null);
-  const { items, totalCount, status, hasMore, bestMatchId, searchText: pageSearch, loadMore } = useCatalogWindow(rootRef, { viewMode, groupBy });
+  const { items, totalCount, status, hasMore, capped, bestMatchId, searchText: pageSearch, loadMore } = useCatalogWindow(rootRef, { viewMode, groupBy });
   useRevealExpandedRow(rootRef, expandedId, styles.rowDetails);
   const facets = useValue(AssetMenuFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
@@ -278,28 +278,40 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
 
   /*
    * The end of the feed, rendered as the last child INSIDE whichever element
-   * owns the scroll — which differs by view mode, so it is passed down. It
-   * names both ends, so a truncated list reads as one rather than as the whole.
+   * owns the scroll — which differs by view mode, so it is passed down. Whenever
+   * fewer rows show than the result holds it names both ends, so a truncated
+   * list reads as one; Load more only while the window can grow, and at the
+   * ceiling, how to narrow the list instead.
    */
   const remaining = catalogWindowRemaining({ shown: items.length, total: totalCount });
   const separators = useMemo(() => getNumberSeparators(translate), [translate]);
   // Memoised with what it shows, so the views it is handed to can skip a render.
-  const catalogFooter = useMemo(() => hasMore ? (
-    <div className={styles.loadMoreRow}>
-      <span className={styles.windowState}>
-        {(translate("Tooltip.LABEL[BetterBuildingMenu.ShowingOfTotal]", "Showing {0} of {1}")
-          ?? "Showing {0} of {1}")
-          .replace("{0}", groupDigits(items.length, separators))
-          .replace("{1}", groupDigits(totalCount, separators))}
-      </span>
-      <Button className={styles.loadMore} variant="flat" onSelect={loadMore}>
-        {remaining === null
-          ? translate("Tooltip.LABEL[BetterBuildingMenu.LoadMore]", "Load more") ?? "Load more"
-          : (translate("Tooltip.LABEL[BetterBuildingMenu.LoadMoreCount]", "Load {0} more")
-            ?? "Load {0} more").replace("{0}", `${loadMoreCount(remaining)}`)}
-      </Button>
-    </div>
-  ) : null, [hasMore, items.length, totalCount, remaining, translate, separators, loadMore]);
+  const catalogFooter = useMemo(() => {
+    if (items.length >= totalCount) return null;
+
+    const showing = capped
+      ? translate("Tooltip.LABEL[BetterBuildingMenu.ShowingOfTotalCapped]", "Showing {0} of {1} · narrow with a tab, the search or a filter")
+        ?? "Showing {0} of {1} · narrow with a tab, the search or a filter"
+      : translate("Tooltip.LABEL[BetterBuildingMenu.ShowingOfTotal]", "Showing {0} of {1}") ?? "Showing {0} of {1}";
+
+    return (
+      <div className={styles.loadMoreRow}>
+        <span className={classNames(styles.windowState, capped && styles.windowStateCapped)}>
+          {showing
+            .replace("{0}", groupDigits(items.length, separators))
+            .replace("{1}", groupDigits(totalCount, separators))}
+        </span>
+        {hasMore && (
+          <Button className={styles.loadMore} variant="flat" onSelect={loadMore}>
+            {remaining === null
+              ? translate("Tooltip.LABEL[BetterBuildingMenu.LoadMore]", "Load more") ?? "Load more"
+              : (translate("Tooltip.LABEL[BetterBuildingMenu.LoadMoreCount]", "Load {0} more")
+                ?? "Load {0} more").replace("{0}", `${loadMoreCount(remaining)}`)}
+          </Button>
+        )}
+      </div>
+    );
+  }, [hasMore, capped, items.length, totalCount, remaining, translate, separators, loadMore]);
 
   return (
     <div

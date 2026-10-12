@@ -544,6 +544,41 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.False(roomToSpare.HasMore);
     }
 
+    private static BuildingCatalogEntry[] Props(int count) =>
+        Enumerable.Range(1, count)
+            .Select(id => SampleEntries[0] with { Id = id, PrefabName = $"Prop{id}", Name = $"Prop {id:D5}" })
+            .ToArray();
+
+    [Fact]
+    public void Query_AWindowAtTheCeilingWithRowsPastItIsCappedAndKeepsTheTrueTotal()
+    {
+        // The whole catalog with nothing typed can hold far more rows than one window may.
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(Props(14876), new BuildingCatalogQuery(Limit: BuildingCatalogQuery.MaxLimit));
+
+        Assert.Equal(14876, page.TotalCount);
+        Assert.Equal(BuildingCatalogQuery.MaxLimit, page.Items.Count);
+        Assert.False(page.HasMore);
+        Assert.True(page.Capped);
+    }
+
+    [Fact]
+    public void Query_AWindowThatCanStillGrowIsNotCapped()
+    {
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(Props(2500), new BuildingCatalogQuery(Limit: 100));
+
+        Assert.True(page.HasMore);
+        Assert.False(page.Capped);
+    }
+
+    [Fact]
+    public void Query_AResultTheCeilingHoldsWholeIsNotCapped()
+    {
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(Props(BuildingCatalogQuery.MaxLimit), new BuildingCatalogQuery(Limit: BuildingCatalogQuery.MaxLimit));
+
+        Assert.False(page.HasMore);
+        Assert.False(page.Capped);
+    }
+
     [Fact]
     public void Query_EmptyAndMissingFields_ReturnEmptyWithoutThrowing()
     {
@@ -683,7 +718,7 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.Equal(
             new[] { "items", "id", "prefabName", "name", "category", "subCategory", "categoryLabel", "subCategoryLabel", "thumbnail", "fallbackThumbnail", "silhouetteThumbnail", "lotWidth", "lotDepth", "buildingLevel", "zoneType", "hasParking", "isVanilla", "isLocked",
             "isUnique",
-            "isAlreadyBuilt", "unlockMilestone", "devTreeBranch", "devTreeBranchDepth", "unlockRequirements", "bonuses", "costIsPerDistance", "parkingSlots", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "supportedUpgrades", "constructionCost", "upkeep", "workers", "households", "capacity", "serviceRange", "serviceFacts", "footprints", "footprintOverflow", "serviceTextFacts", "speedLimit", "networkWidth", "leisureType", "leisureEfficiency", "electricityConsumption", "waterConsumption", "garbageAccumulation", "telecomNeed", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "groupPath", "groupLabelId", "reorderableSortColumns", "totalCount", "offset", "limit", "hasMore", "bestMatchId", "searchText", "bestMatch", "allMatchesLocked" },
+            "isAlreadyBuilt", "unlockMilestone", "devTreeBranch", "devTreeBranchDepth", "unlockRequirements", "bonuses", "costIsPerDistance", "parkingSlots", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "supportedUpgrades", "constructionCost", "upkeep", "workers", "households", "capacity", "serviceRange", "serviceFacts", "footprints", "footprintOverflow", "serviceTextFacts", "speedLimit", "networkWidth", "leisureType", "leisureEfficiency", "electricityConsumption", "waterConsumption", "garbageAccumulation", "telecomNeed", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "groupPath", "groupLabelId", "reorderableSortColumns", "totalCount", "offset", "limit", "hasMore", "bestMatchId", "searchText", "bestMatch", "allMatchesLocked", "capped" },
             writer.PropertyNames);
         Assert.Contains("Write:Int32:1", writer.Tokens);
         Assert.Contains("Write:String:Coal Power Plant", writer.Tokens);

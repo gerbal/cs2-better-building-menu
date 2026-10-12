@@ -47,6 +47,7 @@
   "Tooltip.LABEL[BetterBuildingMenu.LoadMore]": "Load more",
   "Tooltip.LABEL[BetterBuildingMenu.LoadMoreCount]": "Load {0} more",
   "Tooltip.LABEL[BetterBuildingMenu.ShowingOfTotal]": "Showing {0} of {1}",
+  "Tooltip.LABEL[BetterBuildingMenu.ShowingOfTotalCapped]": "Showing {0} of {1} · narrow with a tab, the search or a filter",
   "Tooltip.LABEL[BetterBuildingMenu.Networks_Waterways]": "Seaways",
   "Tooltip.LABEL[BetterBuildingMenu.Networks_PowerLines]": "Power Lines",
   "Tooltip.LABEL[BetterBuildingMenu.Networks_Pipes]": "Pipes",

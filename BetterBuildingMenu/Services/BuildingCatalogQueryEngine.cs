@@ -96,7 +96,9 @@ namespace BetterBuildingMenu.Services
 				BestMatchId: bestMatch?.Id,
 				SearchText: query.SearchText ?? string.Empty,
 				BestMatch: bestMatch,
-				AllMatchesLocked: !string.IsNullOrWhiteSpace(query.SearchText) && totalCount > 0 && bestMatch is null);
+				AllMatchesLocked: !string.IsNullOrWhiteSpace(query.SearchText) && totalCount > 0 && bestMatch is null,
+				// At the ceiling with rows past it, Load more cannot reach them: the UI says so instead.
+				Capped: limit >= BuildingCatalogQuery.MaxLimit && offset + items.Length < totalCount);
 		}
 
 		/// <summary>

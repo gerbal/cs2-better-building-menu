@@ -144,6 +144,12 @@ export interface BuildingCatalogPage {
   hasMore?: boolean;
 
   /**
+   * Whether the window is at its ceiling with rows past it: the list stops, and
+   * the footer says how to narrow it, since Load more cannot reach them.
+   */
+  capped?: boolean;
+
+  /**
    * The row Enter arms while a search is active; null without a search or a
    * match that can be placed. C#'s answer, chosen from the whole result, because
    * only it scores and only it sees past the window.

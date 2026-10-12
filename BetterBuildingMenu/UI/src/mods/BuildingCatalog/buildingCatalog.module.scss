@@ -872,3 +872,11 @@
   font-size: var(--fontSizeS);
   white-space: nowrap;
 }
+
+// The cap line is a sentence, wider than the row at the game's own width and large text,
+// so it wraps where the count alone stays on one line.
+.windowStateCapped {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: normal;
+}

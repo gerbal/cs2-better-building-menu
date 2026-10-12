@@ -79,6 +79,38 @@ describe("the catalog container", () => {
     assert.doesNotMatch(render(), /class="loadMoreRow"/);
   });
 
+  it("says a list stopped at the ceiling, with its true total and how to narrow it, and offers no Load more", () => {
+    setAssetMenuView({ viewMode: "table" });
+    page({ hasMore: false, capped: true, totalCount: 14876 });
+    const html = render();
+
+    assert.ok(
+      html.includes(`Showing 2 of ${groupDigits(14876, FALLBACK_SEPARATORS)} · narrow with a tab, the search or a filter`),
+      "the cap line");
+    assert.match(html, /windowState windowStateCapped/);
+    assert.doesNotMatch(html, /class="loadMore"/);
+  });
+
+  it("names the window and offers Load more while it can still grow", () => {
+    setAssetMenuView({ viewMode: "list" });
+    page({ hasMore: true, totalCount: 403 });
+    const html = render();
+
+    assert.match(html, /Showing 2 of 403/);
+    assert.doesNotMatch(html, /narrow with a tab/);
+    assert.match(html, /Load 100 more/);
+  });
+
+  for (const mode of ["table", "grid", "list", "cards"]) {
+    it(`draws the cap line inside the scroll in ${mode} mode`, () => {
+      setAssetMenuView({ viewMode: mode });
+      page({ hasMore: false, capped: true, totalCount: 14876 });
+      const html = render();
+
+      assert.ok(html.indexOf('class="loadMoreRow"') > html.indexOf('data-scrollable="true"'), mode);
+    });
+  }
+
   it("obeys the chosen view mode at every Width step", () => {
     // Overridden to "grid" at the resting height, pressing Table would light
     // the button, change nothing, and say nothing about why.
