@@ -39,6 +39,12 @@
   background-color: rgba(255, 255, 255, 0.18);
 }
 
+// A tab the filters or the search empty: kept where it was, so the row never shifts under the
+// pointer. C# sends no count for a tab the menu never fills, and the strip leaves that one out.
+.tabEmpty {
+  opacity: 0.35;
+}
+
 // The All tab carries a word rather than a glyph, so it opts out of the
 // ToolButton's square the same way every other worded control in this mod does.
 .allTab {

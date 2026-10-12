@@ -123,19 +123,19 @@ describe("the chip row", () => {
     assert.deepEqual(sent(), [["SetAssetMenuCategory", "SmallRoads"]]);
   });
 
-  it("leaves out a category the strip hides for having nothing in it", () => {
+  it("lists the tabs the row draws: one the filters emptied stays, one the menu never fills goes", () => {
     seed({ menuCategory: "Highways" });
     setBinding("BetterBuildingMenu", "AssetMenuCategories", [
       category("Highways", 2), category("SmallRoads", 1), category("Roundabouts", 3),
     ]);
-    // By id, as the backend sends them, so the picker's own order is what is pinned.
+    // C# sends a count for each tab the row draws: Roundabouts at 0 is emptied, SmallRoads has none.
     setBinding("BetterBuildingMenu", "AssetMenuCategoryCounts", [
-      { id: "Highways", count: 2 }, { id: "Roundabouts", count: 0 }, { id: "SmallRoads", count: 4 },
+      { id: "Highways", count: 2 }, { id: "Roundabouts", count: 0 },
     ]);
     render();
 
     press("Highways");
-    assert.deepEqual(pickerItems(), ["SmallRoads", "Highways"]);
+    assert.deepEqual(pickerItems(), ["Highways", "Roundabouts"]);
   });
 
   it("lists every category until the counts arrive", () => {

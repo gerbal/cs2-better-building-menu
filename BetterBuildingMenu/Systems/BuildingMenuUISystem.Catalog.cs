@@ -97,6 +97,7 @@ namespace BetterBuildingMenu.Systems
 			// too, and a tab that cannot say how much is behind it is the same
 			// dead end as a facet option that cannot.
 			_AssetMenuCategoryCounts.Value = view.MenuCategoryCounts.ToArray();
+			_AssetMenuAllCount.Value = view.AllCount;
 			var countsMs = Lap();
 			// Resolved ahead of the tabs counted on it, so the log times the two apart.
 			_ = view.StripAxis;

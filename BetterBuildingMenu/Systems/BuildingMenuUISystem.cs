@@ -108,6 +108,8 @@ namespace BetterBuildingMenu.Systems
 		// Sidecar to the above. See MenuCategoryCount for why it is not a field
 		// on the category record.
 		private ValueBindingHelper<MenuCategoryCount[]> _AssetMenuCategoryCounts = null!;
+		// The All cell's count: every row the filters and the search leave in the menu.
+		private ValueBindingHelper<int> _AssetMenuAllCount = null!;
 		// The strip's fallback axis for menus vanilla gives no categories: the tabs, which tab
 		// is picked, and WHICH AXIS they are — published so the row can say so, because the axis
 		// varies per menu and a tab row whose meaning changes silently is not learnable.
@@ -222,6 +224,7 @@ namespace BetterBuildingMenu.Systems
 				SetBuildingCatalogSortDescending);
 			_AssetMenuCategoriesBinding = CreateBinding("AssetMenuCategories", Array.Empty<VanillaMenuCategory>());
 			_AssetMenuCategoryCounts = CreateBinding("AssetMenuCategoryCounts", Array.Empty<MenuCategoryCount>());
+			_AssetMenuAllCount = CreateBinding("AssetMenuAllCount", 0);
 			_AssetMenuStripTabs = CreateBinding("AssetMenuStripTabs", Array.Empty<MenuBranchCount>());
 			_AssetMenuExpandedCategories = CreateBinding("AssetMenuExpandedCategories", Array.Empty<MenuCategoryTabs>());
 			// A plain value binding plus its own trigger, rather than the

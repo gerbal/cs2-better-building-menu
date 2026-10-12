@@ -3,7 +3,7 @@ import { useLocalization } from "cs2/l10n";
 import { Button, Scrollable } from "cs2/ui";
 import classNames from "classnames";
 import { useState } from "react";
-import { visibleCategories } from "domain/vanillaMenuCategories";
+import { presentCategories } from "domain/vanillaMenuCategories";
 import { isScopedToMenu, assetMenuScopeChipsFor } from "domain/assetMenuScopeChips";
 import {
   ALL_CATEGORIES_KEYS,
@@ -109,9 +109,8 @@ export const ChipRow = () => {
     toolTip: menuLabel(entry.id),
   }));
 
-  // The categories the strip shows. It hides one with nothing behind it, and
-  // this is the same choice reached another way, so it is left out here too.
-  const categoryTabs: VanillaBuildMenuTab[] = visibleCategories(menuCategories, menuCategoryCounts).map((category) => ({
+  // The categories the tab row draws, so the two agree on which tabs exist.
+  const categoryTabs: VanillaBuildMenuTab[] = presentCategories(menuCategories, menuCategoryCounts).map((category) => ({
     id: category.id,
     icon: category.icon,
     toolTip: categoryLabel(category.id),

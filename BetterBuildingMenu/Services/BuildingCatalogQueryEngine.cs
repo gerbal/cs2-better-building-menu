@@ -42,6 +42,31 @@ namespace BetterBuildingMenu.Services
 			return entries.Where(entry => Matches(entry, unfiltered));
 		}
 
+		/// <summary>
+		/// The entries the query matches, its facets included: what a count of the rows a tab
+		/// lists counts.
+		/// </summary>
+		/// <remarks>
+		/// InScope's other half. InScope ignores the facet selections, because the facet lists are
+		/// counted over it; the tab counts must follow them, as the list does.
+		/// </remarks>
+		public static IEnumerable<BuildingCatalogEntry> Matching(
+			IEnumerable<BuildingCatalogEntry> entries,
+			BuildingCatalogQuery query)
+		{
+			if (entries is null)
+			{
+				throw new ArgumentNullException(nameof(entries));
+			}
+
+			if (query is null)
+			{
+				throw new ArgumentNullException(nameof(query));
+			}
+
+			return entries.Where(entry => Matches(entry, query));
+		}
+
 		public static BuildingCatalogPage Query(
 			IEnumerable<BuildingCatalogEntry> entries,
 			BuildingCatalogQuery query)

@@ -31,6 +31,108 @@ namespace BetterBuildingMenu.Tests
 			Entry(6, "High School", "ServiceBuildings", "Education & Research", "Education") with { EducationLevel = 2 },
 		};
 
+		private const string Locked = BuildingCatalogFacetSelection.Availability.Locked;
+
+		/// <summary>The Roads menu's tabs in the game's order; nothing in the menu answers to RoadsParking.</summary>
+		private static readonly string[] RoadTabs = { "RoadsSmallRoads", "RoadsMediumRoads", "RoadsHighways", "RoadsParking" };
+
+		private static BuildingCatalogEntry Road(int id, string tab, bool locked = false) =>
+			Entry(id, "Road " + id, "Networks", "Roads", tab) with { IsLocked = locked };
+
+		private static readonly BuildingCatalogEntry[] Roads =
+		{
+			Road(21, "RoadsSmallRoads"),
+			Road(22, "RoadsSmallRoads", locked: true),
+			Road(23, "RoadsMediumRoads", locked: true),
+			Road(24, "RoadsHighways"),
+			Road(25, "RoadsHighways"),
+		};
+
+		/// <summary>One category, so the strip draws the development tree: Wind, then Gas. Gas's branch icon is a content hash.</summary>
+		private static readonly BuildingCatalogEntry[] Power =
+		{
+			Entry(31, "Wind Turbine", "ServiceBuildings", "Electricity", "Electricity") with { DevTreeBranch = "Wind", IsLocked = true },
+			Entry(32, "Small Wind Farm", "ServiceBuildings", "Electricity", "Electricity") with { DevTreeBranch = "Wind" },
+			Entry(33, "Gas Plant", "ServiceBuildings", "Electricity", "Electricity") with { DevTreeBranch = "Gas", DevTreeBranchDepth = 1, DevTreeBranchIcon = "assetdb://global/9f2c" },
+		};
+
+		/// <summary>Two categories, the first split into two branches the row draws in its place.</summary>
+		private static readonly BuildingCatalogEntry[] Health =
+		{
+			Entry(41, "Clinic", "ServiceBuildings", "Health", "HealthcareHealthcare") with { DevTreeBranch = "Basic", IsLocked = true },
+			Entry(42, "Hospital", "ServiceBuildings", "Health", "HealthcareHealthcare") with { DevTreeBranch = "Hospitals", DevTreeBranchDepth = 1 },
+			Entry(43, "Cemetery", "ServiceBuildings", "Health", "HealthcareDeathcare") with { DevTreeBranch = "Deathcare" },
+		};
+
+		private static BuildingCatalogQuery LockedIn(string menu) => new(UiMenu: menu, Availability: new[] { Locked });
+
+		[Fact]
+		public void ATabCountsWhatItListsWithTheFiltersOn()
+		{
+			var view = new CatalogView(Roads, LockedIn("Roads"), menuCategories: RoadTabs);
+
+			// The menu's own order, and Highways at 0 rather than gone: the filter emptied it, the
+			// menu did not. Parking has no count, because the menu holds nothing for it.
+			Assert.Equal(
+				new[] { ("RoadsSmallRoads", 1), ("RoadsMediumRoads", 1), ("RoadsHighways", 0) },
+				view.MenuCategoryCounts.Select(count => (count.Id, count.Count)));
+
+			foreach (var count in view.MenuCategoryCounts)
+			{
+				Assert.Equal(count.Count, new CatalogView(Roads, LockedIn("Roads") with { UiCategory = count.Id }).Page.TotalCount);
+			}
+		}
+
+		[Fact]
+		public void AllCountsEveryRowTheFiltersLeaveInTheMenu()
+		{
+			Assert.Equal(2, new CatalogView(Roads, LockedIn("Roads"), menuCategories: RoadTabs).AllCount);
+			Assert.Equal(5, new CatalogView(Roads, new BuildingCatalogQuery(UiMenu: "Roads"), menuCategories: RoadTabs).AllCount);
+		}
+
+		[Fact]
+		public void ATypedSearchCountsMatchesAndKeepsATabWithNoneInPlace()
+		{
+			var view = new CatalogView(Roads, new BuildingCatalogQuery(UiMenu: "Roads", SearchText: "Road 24"), menuCategories: RoadTabs);
+
+			Assert.Equal(
+				new[] { ("RoadsSmallRoads", 0), ("RoadsMediumRoads", 0), ("RoadsHighways", 1) },
+				view.MenuCategoryCounts.Select(count => (count.Id, count.Count)));
+		}
+
+		[Fact]
+		public void AStripTabKeepsItsPlaceAndCountsZeroWhenTheFiltersEmptyIt()
+		{
+			var locked = new CatalogView(Power, LockedIn("Electricity"));
+			var typed = new CatalogView(Power, new BuildingCatalogQuery(UiMenu: "Electricity", SearchText: "Gas"));
+
+			Assert.Equal(new[] { ("Wind", 1), ("Gas", 0) }, locked.StripTabs.Select(tab => (tab.Id, tab.Count)));
+			// The search must not take the strip away under the player: the axis comes from the
+			// menu, and only the counts follow what is typed.
+			Assert.Equal(new[] { ("Wind", 0), ("Gas", 1) }, typed.StripTabs.Select(tab => (tab.Id, tab.Count)));
+		}
+
+		[Fact]
+		public void ABranchInItsCategorysPlaceCountsWhatItListsWithTheFiltersOn()
+		{
+			var expanded = Assert.Single(new CatalogView(Health, LockedIn("Health")).ExpandedCategories);
+
+			Assert.Equal("HealthcareHealthcare", expanded.CategoryId);
+			Assert.Equal(new[] { ("Basic", 1), ("Hospitals", 0) }, expanded.Tabs.Select(tab => (tab.Id, tab.Count)));
+		}
+
+		[Fact]
+		public void TheTabCountsAddUpToAllWhenEveryRowSitsInOneTab()
+		{
+			// Every Roads row answers to exactly one of the menu's tabs, so the tabs partition the menu.
+			foreach (var query in new[] { new BuildingCatalogQuery(UiMenu: "Roads"), LockedIn("Roads"), new BuildingCatalogQuery(UiMenu: "Roads", SearchText: "Road 2") })
+			{
+				var view = new CatalogView(Roads, query, menuCategories: RoadTabs);
+
+				Assert.Equal(view.AllCount, view.MenuCategoryCounts.Sum(count => count.Count));
+			}
+		}
+
 		[Theory]
 		[InlineData(false)]
 		[InlineData(true)]

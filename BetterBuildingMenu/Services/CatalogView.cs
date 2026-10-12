@@ -9,9 +9,10 @@ namespace BetterBuildingMenu.Services
 	/// Every answer one refresh needs, from one pass over the snapshot.
 	/// </summary>
 	/// <remarks>
-	/// The snapshot is scoped to the menu ONCE (<see cref="MenuSet"/>); every other answer is a
+	/// The snapshot is scoped to the menu ONCE (<see cref="PresentSet"/>); every other answer is a
 	/// pass over that much smaller array, computed once and kept, so a refresh does not re-derive
-	/// the same scope for each question it asks.
+	/// the same scope for each question it asks. Which tabs a row draws comes from the present set,
+	/// and every count from <see cref="FilteredMenuSet"/>. See docs/design-notes.md, "Tab counts".
 	/// </remarks>
 	public sealed class CatalogView
 	{
@@ -23,10 +24,11 @@ namespace BetterBuildingMenu.Services
 		private readonly IReadOnlyDictionary<int, string>? _schoolTierNames;
 		private readonly bool _educationMenu;
 		private readonly bool _vanillaSelected;
+		private readonly IReadOnlyList<string>? _menuCategories;
 		private string? _effectiveGroupBy;
 		private string[]? _dimensions;
 
-		private BuildingCatalogEntry[]? _menuSet, _viewSet, _tabSet, _tierSet, _wholeMenu;
+		private BuildingCatalogEntry[]? _presentSet, _menuSet, _filteredMenuSet, _viewSet, _tabSet, _filteredTabSet, _tierSet, _wholeMenu;
 		private BuildingCatalogPage? _page;
 		private BuildingCatalogMetricRangeState? _bounds;
 		private BuildingCatalogFacetState? _facets;
@@ -35,6 +37,7 @@ namespace BetterBuildingMenu.Services
 		private IReadOnlyList<MenuBranchCount>? _expandedTabs, _stripTabs, _tiers;
 		private IReadOnlyList<MenuCategoryTabs>? _expanded;
 
+		/// <param name="menuCategories">The menu's tabs in the game's order, which the counts follow; null orders them by id.</param>
 		public CatalogView(
 			IReadOnlyList<BuildingCatalogEntry> snapshot,
 			BuildingCatalogQuery query,
@@ -43,7 +46,8 @@ namespace BetterBuildingMenu.Services
 			IReadOnlyList<string>? milestoneNames = null,
 			bool educationMenu = false,
 			bool vanillaSelected = false,
-			IReadOnlyDictionary<int, string>? schoolTierNames = null)
+			IReadOnlyDictionary<int, string>? schoolTierNames = null,
+			IReadOnlyList<string>? menuCategories = null)
 		{
 			_snapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
 			_query = query ?? throw new ArgumentNullException(nameof(query));
@@ -53,6 +57,7 @@ namespace BetterBuildingMenu.Services
 			_educationMenu = educationMenu;
 			_vanillaSelected = vanillaSelected;
 			_schoolTierNames = schoolTierNames;
+			_menuCategories = menuCategories;
 		}
 
 		/// <summary>The dimension ids the picker should offer for this menu set.</summary>
@@ -65,15 +70,46 @@ namespace BetterBuildingMenu.Services
 		/// </remarks>
 		public string EffectiveGroupBy => _effectiveGroupBy ??= _groupByResolver?.Invoke(this) ?? _query.GroupBy;
 
-		/// <summary>The menu, with category, strip tab and school tier cleared. The one pass over the snapshot.</summary>
+		/// <summary>The query with the search and every metric range cleared; the facet selections stay.</summary>
+		private BuildingCatalogQuery Unsearched => BuildingCatalogMetricRange.Clear(_query) with { SearchText = string.Empty };
+
+		/// <summary>The query as the game's toolbar row leaves the menu: no tab, strip tab, level, search or range.</summary>
+		private BuildingCatalogQuery PresentQuery => Unsearched with { UiCategory = string.Empty, StripTabs = null, SchoolTier = -1 };
+
+		/// <summary>
+		/// The menu as the game's toolbar row leaves it: no tab, strip tab, level, search, facet or
+		/// range. The one pass over the snapshot.
+		/// </summary>
+		/// <remarks>Which tabs a row draws comes from here, so a filter or a keystroke never moves a tab.</remarks>
+		public BuildingCatalogEntry[] PresentSet => _presentSet ??= BuildingCatalogQueryEngine.InScope(_snapshot, PresentQuery).ToArray();
+
+		/// <summary>The menu, with category, strip tab and school tier cleared, the facets ignored.</summary>
 		public BuildingCatalogEntry[] MenuSet => _menuSet ??=
-			BuildingCatalogQueryEngine.InScope(_snapshot, _query with { UiCategory = string.Empty, StripTabs = null, SchoolTier = -1 }).ToArray();
+			BuildingCatalogQueryEngine.InScope(PresentSet, _query with { UiCategory = string.Empty, StripTabs = null, SchoolTier = -1 }).ToArray();
+
+		/// <summary>
+		/// The menu with the search, every facet and every range applied, and no tab, strip tab or
+		/// level: what every count counts, so a tab's count is what a click on it lists.
+		/// </summary>
+		public BuildingCatalogEntry[] FilteredMenuSet => _filteredMenuSet ??= BuildingCatalogQueryEngine
+			.Matching(MenuSet, _query with { UiCategory = string.Empty, StripTabs = null, SchoolTier = -1 })
+			.ToArray();
+
+		/// <summary>The All cell's count: every row the filters and the search leave in the menu.</summary>
+		public int AllCount => FilteredMenuSet.Length;
 
 		/// <summary>What the page is drawn from: menu, category, tab and tier, facets cleared.</summary>
 		public BuildingCatalogEntry[] ViewSet => _viewSet ??= BuildingCatalogQueryEngine.InScope(MenuSet, _query).ToArray();
 
-		/// <summary>Menu, category and tier, but no strip tab — what the strip counts.</summary>
-		public BuildingCatalogEntry[] TabSet => _tabSet ??= BuildingCatalogQueryEngine.InScope(MenuSet, _query with { StripTabs = null }).ToArray();
+		/// <summary>The present set at the picked category and level, with no strip tab: which strip tabs draw, and on which axis.</summary>
+		public BuildingCatalogEntry[] TabSet => _tabSet ??= BuildingCatalogQueryEngine
+			.InScope(PresentSet, Unsearched with { StripTabs = null })
+			.ToArray();
+
+		/// <summary>The menu at the picked category and level, with the search, the facets and the ranges, and no strip tab: what the strip tabs count.</summary>
+		private BuildingCatalogEntry[] FilteredTabSet => _filteredTabSet ??= BuildingCatalogQueryEngine
+			.Matching(MenuSet, _query with { StripTabs = null })
+			.ToArray();
 
 		/// <summary>Menu and strip tab, no category or tier — what the school tiers count.</summary>
 		public BuildingCatalogEntry[] TierSet => _tierSet ??= BuildingCatalogQueryEngine.InScope(MenuSet, _query with { SchoolTier = -1, UiCategory = string.Empty }).ToArray();
@@ -112,19 +148,34 @@ namespace BetterBuildingMenu.Services
 			_vanillaSelected);
 
 		/// <summary>
-		/// How many assets each of the menu's category tabs holds.
+		/// One count per tab the row draws, in the menu's order: a tab draws while the menu holds rows
+		/// for it before the filters and the search, and counts what it lists after them, zero included.
 		/// </summary>
 		/// <remarks>
-		/// Over <see cref="MenuSet"/>, so the category's own axis is excluded and choosing
-		/// one tab does not read every other as empty. Search counts; the facet selections do
-		/// not. Counted against the category the entry answers to IN THIS MENU rather than its
-		/// own UiCategory.
+		/// The category's own pick is ignored, so choosing one tab does not read every other as
+		/// empty. Each entry counts under the tab it answers to IN THIS MENU, so Roads' gathered
+		/// networks count under their extra tab and the tabs add up to All.
 		/// </remarks>
-		public IReadOnlyList<MenuCategoryCount> MenuCategoryCounts => _counts ??= MenuSet
-			.GroupBy(entry => NetworkMenuExtension.EffectiveCategory(entry, _query.UiMenu) ?? string.Empty)
-			.Select(group => new MenuCategoryCount(group.Key, group.Count()))
-			.OrderBy(count => count.Id, StringComparer.Ordinal)
-			.ToArray();
+		public IReadOnlyList<MenuCategoryCount> MenuCategoryCounts => _counts ??= ComputeMenuCategoryCounts();
+
+		private IReadOnlyList<MenuCategoryCount> ComputeMenuCategoryCounts()
+		{
+			var present = new HashSet<string>(PresentSet.Select(TabOf), StringComparer.Ordinal);
+			var listed = FilteredMenuSet
+				.GroupBy(TabOf, StringComparer.Ordinal)
+				.ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
+			var order = _menuCategories ?? present.OrderBy(id => id, StringComparer.Ordinal).ToArray();
+
+			return order
+				.Distinct(StringComparer.Ordinal)
+				.Where(id => id.Length > 0 && present.Contains(id))
+				.Select(id => new MenuCategoryCount(id, listed.TryGetValue(id, out var count) ? count : 0))
+				.ToArray();
+		}
+
+		/// <summary>The tab an entry answers to in this menu, empty for none.</summary>
+		private string TabOf(BuildingCatalogEntry entry) =>
+			NetworkMenuExtension.EffectiveCategory(entry, _query.UiMenu) ?? string.Empty;
 
 		public string ExpandedCategoryId => _expandedId ??= ComputeExpandedCategoryId();
 
@@ -137,9 +188,9 @@ namespace BetterBuildingMenu.Services
 				return string.Empty;
 			}
 
-			return MenuSet
+			return PresentSet
 				.Where(entry => !string.IsNullOrEmpty(entry.DevTreeBranch))
-				.GroupBy(entry => NetworkMenuExtension.EffectiveCategory(entry, _query.UiMenu) ?? string.Empty)
+				.GroupBy(TabOf)
 				.Where(group => group.Key.Length > 0
 					&& group.Select(entry => entry.DevTreeBranch).Distinct(StringComparer.Ordinal).Count() > 1)
 				.OrderByDescending(group => group.Count())
@@ -159,9 +210,9 @@ namespace BetterBuildingMenu.Services
 				return Array.Empty<MenuBranchCount>();
 			}
 
-			// The menu set narrowed to that category, tier kept, tabs cleared.
+			// The present set narrowed to that category, tier kept, tabs cleared.
 			var tabs = BuildingCatalogQueryEngine
-				.InScope(MenuSet, _query with { UiCategory = category, StripTabs = null })
+				.InScope(PresentSet, Unsearched with { UiCategory = category, StripTabs = null })
 				.GroupBy(entry => entry.DevTreeBranch ?? string.Empty)
 				.Where(group => group.Key.Length > 0)
 				.OrderBy(group => group.Min(entry => entry.DevTreeBranchDepth))
@@ -177,11 +228,14 @@ namespace BetterBuildingMenu.Services
 			return Disambiguate(tabs, tab => BranchIcon(category, tab.Id, allowCategoryGlyph: false));
 		}
 
-		public IReadOnlyList<MenuCategoryTabs> ExpandedCategories => _expanded ??= ComputeExpandedCategories();
+		/// <summary>The tabs drawn in a category's place, zones' densities or a service's branches, each counting what it lists.</summary>
+		public IReadOnlyList<MenuCategoryTabs> ExpandedCategories => _expanded ??= ComputeExpandedCategories()
+			.Select(category => category with { Tabs = Drawn(category.Tabs, FilteredMenuSet) })
+			.ToArray();
 
 		private IReadOnlyList<MenuCategoryTabs> ComputeExpandedCategories()
 		{
-			var density = BuildingCatalogAdapter.BuildDensityTabs(MenuSet, _query.UiMenu);
+			var density = BuildingCatalogAdapter.BuildDensityTabs(PresentSet, _query.UiMenu);
 
 			if (density.Count > 0)
 			{
@@ -237,7 +291,8 @@ namespace BetterBuildingMenu.Services
 			return best;
 		}
 
-		public IReadOnlyList<MenuBranchCount> StripTabs => _stripTabs ??= ComputeStripTabs();
+		/// <summary>The strip's tabs, on the axis the present set gives, each counting what it lists.</summary>
+		public IReadOnlyList<MenuBranchCount> StripTabs => _stripTabs ??= Drawn(ComputeStripTabs(), FilteredTabSet);
 
 		private IReadOnlyList<MenuBranchCount> ComputeStripTabs()
 		{
@@ -333,18 +388,22 @@ namespace BetterBuildingMenu.Services
 				.ToArray();
 		}
 
+		/// <summary>Tabs as the row draws them: in their place, each counting what a click on it lists, zero included.</summary>
+		/// <remarks>Matched as a click matches, whichever axis a tab is on: a branch, an asset type or a density.</remarks>
+		private static MenuBranchCount[] Drawn(IEnumerable<MenuBranchCount> tabs, IReadOnlyList<BuildingCatalogEntry> listed) =>
+			tabs
+				.Select(tab => tab with { Count = listed.Count(entry => BuildingCatalogQueryEngine.StripMatches(entry, tab.Id)) })
+				.ToArray();
+
 		/// <summary>
-		/// The menu whatever the player has narrowed: no category, tab, tier, search or facets, and
-		/// the pack-ignored projection where the toolbar's packs narrowed it. What a tab's icon is
-		/// chosen from, so it names the same thing in every state.
+		/// The menu whatever the player has narrowed: no category, tab, tier, search, facets or
+		/// ranges, and the pack-ignored projection where the toolbar's packs narrowed it. What a
+		/// tab's icon is chosen from, so it names the same thing in every state.
 		/// </summary>
-		private BuildingCatalogEntry[] WholeMenu => _wholeMenu ??= BuildingCatalogQueryEngine
-			.InScope(
-				// The menu set is the one walk over the snapshot; only a pack
-				// selection makes a second projection worth reading.
-				_packScope?.Invoke() ?? MenuSet,
-				_query with { UiCategory = string.Empty, StripTabs = null, SchoolTier = -1, SearchText = string.Empty })
-			.ToArray();
+		private BuildingCatalogEntry[] WholeMenu => _wholeMenu ??= _packScope is null
+			? PresentSet
+			// Only a pack selection makes a second projection worth reading.
+			: BuildingCatalogQueryEngine.InScope(_packScope(), PresentQuery).ToArray();
 
 		/// <summary>
 		/// A development branch's tab icon, chosen from the whole category rather

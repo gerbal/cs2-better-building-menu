@@ -213,6 +213,24 @@ game's Tooltip, since the game draws no `title` attribute; it says the edge snap
 game, both the width and the height drag end as a release does, so the step or the
 height the player dragged to is kept.
 
+## Tab counts
+
+The menu's tabs, its strip, and the tabs drawn in a category's place (zones' densities, a service's
+branches) each show a count, and every count is what a click on that tab lists: the search, every
+facet and every range applied. `CatalogView` answers all of them from two sets.
+
+- **`PresentSet`**: the menu as the game's toolbar row leaves it, with no tab, level, search, facet
+  or range. Which tabs draw, in what order, and on which strip axis comes from here, so a filter or
+  a keystroke never moves a tab under the pointer: a tab they empty stays where it was, at 0, drawn
+  faint. A tab the menu never fills gets no count, and the row leaves it out, as the game does. The
+  pane's category picker reads the same list, so the two agree on which tabs exist.
+- **`FilteredMenuSet`**: the menu with the search, the facets and the ranges, and no tab. Every count
+  counts here; the All cell's is its length. Each entry counts under the tab it answers to in this
+  menu, so Roads' gathered networks count under their extra tab and the tabs add up to All.
+
+C# sends a count for each tab the row draws, in the menu's order (`menuCategories`), rather than for
+every tab the menu declares: 0 then means "emptied by the filters", and no count "never filled".
+
 ## The release marker and the settings version
 
 A release leaves two signs that it ran, so a later release can tell a player who upgraded from

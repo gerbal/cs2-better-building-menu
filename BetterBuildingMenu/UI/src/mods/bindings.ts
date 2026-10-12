@@ -48,6 +48,8 @@ export const AssetMenus$ = bindValue<VanillaMenuCategory[]>(mod.id, "AssetMenus"
 export const AssetMenuCategories$ = bindValue<VanillaMenuCategory[]>(mod.id, "AssetMenuCategories", []);
 export const AssetMenuCategory$ = bindValue<string>(mod.id, "AssetMenuCategory", "");
 export const AssetMenuCategoryCounts$ = bindValue<MenuCategoryCount[]>(mod.id, "AssetMenuCategoryCounts", []);
+/** The All cell's count: every row the filters and the search leave in the menu. */
+export const AssetMenuAllCount$ = bindValue<number>(mod.id, "AssetMenuAllCount", 0);
 export const AssetMenuSchoolTier$ = bindValue<number>(mod.id, "AssetMenuSchoolTier", -1);
 export const AssetMenuSchoolTierCounts$ = bindValue<MenuBranchCount[]>(mod.id, "AssetMenuSchoolTierCounts", []);
 export const AssetMenuStripTabs$ = bindValue<MenuBranchCount[]>(mod.id, "AssetMenuStripTabs", []);

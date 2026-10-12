@@ -44,4 +44,18 @@ describe("the category strip", () => {
 
     assert.equal(html, "", `expected no strip, got ${html.slice(0, 120)}`);
   });
+
+  it("says the All count C# sends, not a sum of the tabs", () => {
+    seed("Roads");
+    setBinding("BetterBuildingMenu", "AssetMenuAllCount", 37);
+
+    assert.match(render(), /aria-label="All \(37\)"/);
+  });
+
+  it("keeps a tab the filters empty where it was, faint", () => {
+    seed("Roads");
+    setBinding("BetterBuildingMenu", "AssetMenuCategoryCounts", [{ id: "Small Roads", count: 0 }, { id: "Medium Roads", count: 16 }]);
+
+    assert.match(render(), /class="[^"]*tabEmpty[^"]*"[^>]*aria-label="Small Roads \(0\)"/);
+  });
 });

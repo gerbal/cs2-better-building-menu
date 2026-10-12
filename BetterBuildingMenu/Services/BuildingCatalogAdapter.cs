@@ -402,7 +402,9 @@ namespace BetterBuildingMenu.Services
 				selection.VanillaSelected,
 				// From the whole index, not the snapshot: a filter that hides the base-game
 				// school must not turn its tier's name back into English. Only where the tiers are.
-				educationMenu ? source.Index.SchoolTierNames() : null);
+				educationMenu ? source.Index.SchoolTierNames() : null,
+				// The counts follow the menu's own tab order, Roads' extra tabs included.
+				menuCategories: source.Index.GetMenuCategories(query.UiMenu).Select(category => category.Id).ToArray());
 		}
 
 		/// <summary>

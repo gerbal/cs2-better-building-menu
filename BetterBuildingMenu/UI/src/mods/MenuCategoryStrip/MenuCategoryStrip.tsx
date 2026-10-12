@@ -3,10 +3,9 @@ import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import {
   ALL_CATEGORIES_ID,
-  allTabTotal,
   categoryCount,
   isCategorySelected,
-  visibleCategories,
+  presentCategories,
   shouldShowCategoryStrip,
   isAssetMenuScoped,
   type VanillaMenuCategory,
@@ -18,6 +17,7 @@ import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaC
 import styles from "./menuCategoryStrip.module.scss";
 import {
   AssetMenuExpandedCategories$,
+  AssetMenuAllCount$,
   AssetMenu$,
   AssetMenuCategories$,
   AssetMenuCategory$,
@@ -51,6 +51,7 @@ export const MenuCategoryStrip = () => {
   const selectedStripTabs = useValue(AssetMenuStripTab$) ?? [];
   const noStripTab = selectedStripTabs.length === 0;
   const expandedCategories = useValue(AssetMenuExpandedCategories$) ?? [];
+  const allCount = useValue(AssetMenuAllCount$) ?? 0;
 
   // Vanilla hides its own row below two categories, and a strip offering one
   // choice is not a choice. The branch fallback below carries the strip on the
@@ -90,17 +91,15 @@ export const MenuCategoryStrip = () => {
 
   const allLabel = resolveVanillaLabel(ALL_CATEGORIES_KEYS, (key) => translate(key, null), "All");
   // The count rides in the tooltip whatever the width, because a narrow strip
-  // still leaves the player asking how much is behind a glyph.
+  // still leaves the player asking how much is behind a glyph. All's is C#'s
+  // own count of the filtered menu, whichever axis the row draws.
   const withCount = (text: string, id: string) => {
-    const n = categoryCount(counts, id);
+    const n = id === ALL_CATEGORIES_ID ? allCount : categoryCount(counts, id);
 
     return n === null ? text : `${text} (${n})`;
   };
-  // One number for "All" whichever axis the row draws — see allTabTotal for
-  // why the branch tabs cannot supply it.
-  const allTotal = allTabTotal(counts, stripTabs);
   const withBranchCount = (text: string, id: string) =>
-    `${text} (${id === "" ? allTotal : categoryCount(stripTabs, id) ?? 0})`;
+    `${text} (${id === "" ? allCount : categoryCount(stripTabs, id) ?? 0})`;
 
   const { ToolButton, toolButtonTheme, FOCUS_DISABLED } = VanillaComponentResolver.instance;
 
@@ -141,16 +140,14 @@ export const MenuCategoryStrip = () => {
             truncation is otherwise invisible. */}
         <span className={styles.allLabel}>
           {allLabel}
-          {categoryCount(counts, ALL_CATEGORIES_ID) !== null && (
-            <span className={styles.allCount}>{categoryCount(counts, ALL_CATEGORIES_ID)}</span>
-          )}
+          <span className={styles.allCount}>{allCount}</span>
         </span>
       </ToolButton>
 
       {/* The school levels stand in for the Education category, in ITS place,
           so the menu stays one row of choices. They partition that category
           exactly, so nothing is lost by drawing them instead of it. */}
-      {visibleCategories(categories, counts).flatMap((category) =>
+      {presentCategories(categories, counts).flatMap((category) =>
         showSchoolTiers && isSchoolCategory(category.id)
           ? schoolTiers.map((tier) => (
               <ToolButton
@@ -163,7 +160,8 @@ export const MenuCategoryStrip = () => {
                 className={classNames(
                   toolButtonTheme.button,
                   styles.tab,
-                  selectedSchoolTier === tier.level && styles.tabSelected
+                  selectedSchoolTier === tier.level && styles.tabSelected,
+                tier.count === 0 && styles.tabEmpty
                 )}
                 aria-label={`${tier.label} (${tier.count})`}
               >
@@ -185,7 +183,8 @@ export const MenuCategoryStrip = () => {
                 className={classNames(
                   toolButtonTheme.button,
                   styles.tab,
-                  selectedStripTabs.includes(branch.id) && styles.tabSelected
+                  selectedStripTabs.includes(branch.id) && styles.tabSelected,
+                branch.count === 0 && styles.tabEmpty
                 )}
                 aria-label={`${branchTabTooltip(branch, label(category))} (${branch.count})`}
               >
@@ -213,7 +212,8 @@ export const MenuCategoryStrip = () => {
             isCategorySelected(category.id, selected) &&
               selectedSchoolTier < 0 &&
               noStripTab &&
-              styles.tabSelected
+              styles.tabSelected,
+            categoryCount(counts, category.id) === 0 && styles.tabEmpty
           )}
           aria-label={withCount(label(category), category.id)}
         >
@@ -245,7 +245,7 @@ export const MenuCategoryStrip = () => {
           >
             <span className={styles.allLabel}>
               {allLabel}
-              <span className={styles.allCount}>{allTotal}</span>
+              <span className={styles.allCount}>{allCount}</span>
             </span>
           </ToolButton>
 
@@ -263,7 +263,8 @@ export const MenuCategoryStrip = () => {
                 toolButtonTheme.button,
                 styles.tab,
 
-                selectedStripTabs.includes(branch.id) && styles.tabSelected
+                selectedStripTabs.includes(branch.id) && styles.tabSelected,
+                branch.count === 0 && styles.tabEmpty
               )}
               aria-label={withBranchCount(branch.id, branch.id)}
             >

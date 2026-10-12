@@ -86,33 +86,16 @@ export function categoryCount(
 }
 
 /**
- * What the strip's "All" tab counts. The category table is counted across the
- * whole scope with its own selection dropped, so its sum IS the result set;
- * branch tabs are no partition, and their sum is only a first-frame fallback.
+ * The tabs a row draws: those C# sent a count for. It sends one for each tab the menu fills before
+ * the filters and the search, so a tab they empty stays, at 0, and one the menu never fills is
+ * left out. Before the counts land the full list is kept, so the row cannot flicker.
  */
-export function allTabTotal(
-  counts: readonly MenuCategoryCount[] | null | undefined,
-  stripTabs: readonly { count: number }[] | null | undefined
-): number {
-  const fromCounts = categoryCount(counts, ALL_CATEGORIES_ID);
-
-  return fromCounts ?? (stripTabs ?? []).reduce((total, tab) => total + (tab.count ?? 0), 0);
-}
-
-/**
- * The tabs worth drawing: the ones with something behind them, since the tab
- * list and the membership rule answer different questions and can disagree.
- * Before the counts land the full list is kept, so the strip cannot flicker.
- */
-export function visibleCategories(
+export function presentCategories(
   categories: readonly VanillaMenuCategory[] | null | undefined,
   counts: readonly MenuCategoryCount[] | null | undefined
 ): VanillaMenuCategory[] {
   const ordered = orderedCategories(categories);
+  const sent = new Set((counts ?? []).map((entry) => entry.id));
 
-  if ((counts ?? []).length === 0) {
-    return ordered;
-  }
-
-  return ordered.filter((category) => (categoryCount(counts, category.id) ?? 0) > 0);
+  return sent.size === 0 ? ordered : ordered.filter((category) => sent.has(category.id));
 }

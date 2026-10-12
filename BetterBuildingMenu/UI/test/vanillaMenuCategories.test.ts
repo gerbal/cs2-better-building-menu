@@ -7,7 +7,7 @@ import {
   shouldShowCategoryStrip,
   type VanillaMenuCategory,
   categoryCount,
-  visibleCategories,
+  presentCategories,
 } from "../src/domain/vanillaMenuCategories.ts";
 
 const category = (id: string, priority = 0): VanillaMenuCategory => ({
@@ -123,43 +123,27 @@ describe("Menu category counts", () => {
   });
 });
 
-describe("Which category tabs are worth drawing", () => {
+describe("Which tabs the row draws", () => {
   const tab = (id: string) => ({ id, name: id, icon: "", priority: 0 });
 
-  it("drops the tabs with nothing behind them", () => {
-    // Roads carries ten of these: tab list and membership come from two
-    // different questions, and they disagree by exactly the extra networks.
-    const categories = [tab("SmallRoads"), tab("Ship"), tab("PowerLines")];
-    const counts = [{ id: "SmallRoads", count: 24 }];
+  it("keeps a tab C# counted at zero, in its place, and drops one it sent nothing for", () => {
+    // C# sends a count for each tab the menu fills before the filters: 0 is a tab the filters
+    // emptied, which stays where it was; no count is a tab the menu never fills.
+    const categories = [tab("SmallRoads"), tab("Ship"), tab("Highways")];
+    const counts = [{ id: "SmallRoads", count: 24 }, { id: "Highways", count: 0 }];
 
-    assert.deepEqual(
-      visibleCategories(categories, counts).map((c) => c.id),
-      ["SmallRoads"]
-    );
+    assert.deepEqual(presentCategories(categories, counts).map((c) => c.id), ["SmallRoads", "Highways"]);
   });
 
   it("keeps every tab until the counts arrive", () => {
-    // Otherwise the strip collapses to nothing and springs back on every menu
-    // change, which reads as a flicker rather than a filter.
     const categories = [tab("SmallRoads"), tab("Ship")];
 
-    assert.deepEqual(visibleCategories(categories, []).map((c) => c.id), ["SmallRoads", "Ship"]);
-    assert.deepEqual(visibleCategories(categories, null).map((c) => c.id), ["SmallRoads", "Ship"]);
-  });
-
-  it("keeps a tab the backend counted as zero only when it said nothing", () => {
-    // An explicit 0 is an answer; absence from a populated table is too. Both
-    // mean the tab is a dead end.
-    const categories = [tab("A"), tab("B")];
-
-    assert.deepEqual(
-      visibleCategories(categories, [{ id: "A", count: 3 }, { id: "B", count: 0 }]).map((c) => c.id),
-      ["A"]
-    );
+    assert.deepEqual(presentCategories(categories, []).map((c) => c.id), ["SmallRoads", "Ship"]);
+    assert.deepEqual(presentCategories(categories, null).map((c) => c.id), ["SmallRoads", "Ship"]);
   });
 
   it("survives a missing category list", () => {
-    assert.deepEqual(visibleCategories(null, [{ id: "A", count: 1 }]), []);
-    assert.deepEqual(visibleCategories(undefined, null), []);
+    assert.deepEqual(presentCategories(null, [{ id: "A", count: 1 }]), []);
+    assert.deepEqual(presentCategories(undefined, null), []);
   });
 });
