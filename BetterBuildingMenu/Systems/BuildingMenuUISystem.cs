@@ -118,9 +118,11 @@ namespace BetterBuildingMenu.Systems
 		// Which category the strip draws as its development branches, and those
 		// branches. Empty on the menus that expand nothing.
 		private ValueBindingHelper<MenuCategoryTabs[]> _AssetMenuExpandedCategories = null!;
-		// The tier segment's other axis. Education navigates by level, not by
-		// the milestone the school unlocked at.
-		private ValueBindingHelper<MenuBranchCount[]> _AssetMenuSchoolTierCounts = null!;
+		// Education's levels, as chips beside the tab that holds its schools. Education
+		// navigates by level, not by the milestone the school unlocked at.
+		private ValueBindingHelper<TierBracket> _AssetMenuTierBracket = null!;
+		// That tab, as the last refresh found it: a level's pick lights it too.
+		private string _tierParent = string.Empty;
 		private ValueBindingHelper<int> _AssetMenuSchoolTierBinding = null!;
 		private ValueBindingHelper<string> _AssetMenuCategoryBinding = null!;
 		/// <summary>
@@ -231,7 +233,7 @@ namespace BetterBuildingMenu.Systems
 			// two-in-one form: the value is the LIST both controls share, while
 			// the trigger takes the single tab the row clicked.
 			_AssetMenuStripTabBinding = CreateBinding("AssetMenuStripTab", Array.Empty<string>());
-			_AssetMenuSchoolTierCounts = CreateBinding("AssetMenuSchoolTierCounts", Array.Empty<MenuBranchCount>());
+			_AssetMenuTierBracket = CreateBinding("AssetMenuTierBracket", TierBracket.Empty);
 			_AssetMenuSchoolTierBinding = CreateBinding(
 				"AssetMenuSchoolTier",
 				"SetAssetMenuSchoolTier",

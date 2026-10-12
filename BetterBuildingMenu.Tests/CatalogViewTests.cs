@@ -278,10 +278,10 @@ namespace BetterBuildingMenu.Tests
 			// One category, two branches: the development axis, tabs by depth then name.
 			Assert.Equal(StripAxes.Development, electricity.StripAxis);
 			Assert.Equal(new[] { ("Electricity", 2), ("Gas Power Plant", 1) }, electricity.StripTabs.Select(t => (t.Id, t.Count)));
-			Assert.Empty(electricity.SchoolTierCounts);
+			Assert.Empty(electricity.TierBracket.Tiers);
 
-			var education = new CatalogView(Fixture, new BuildingCatalogQuery(UiMenu: "Education & Research"));
-			Assert.Equal(new[] { ("2", 1) }, education.SchoolTierCounts.Select(t => (t.Id, t.Count)));
+			var education = new CatalogView(Fixture, new BuildingCatalogQuery(UiMenu: "Education & Research"), educationMenu: true);
+			Assert.Equal(new[] { ("2", 1) }, education.TierBracket.Tiers.Select(t => (t.Id, t.Count)));
 		}
 
 		[Fact]
@@ -293,7 +293,7 @@ namespace BetterBuildingMenu.Tests
 			var view = new CatalogView(counting, new BuildingCatalogQuery(UiMenu: "Electricity"));
 
 			_ = view.Page; _ = view.MetricBounds; _ = view.FacetState; _ = view.MenuCategoryCounts;
-			_ = view.StripAxis; _ = view.StripTabs; _ = view.ExpandedCategories; _ = view.SchoolTierCounts;
+			_ = view.StripAxis; _ = view.StripTabs; _ = view.ExpandedCategories; _ = view.TierBracket;
 			_ = view.StripAxis; _ = view.MenuCategoryCounts; _ = view.Page;
 
 			Assert.Equal(1, counting.Walks);

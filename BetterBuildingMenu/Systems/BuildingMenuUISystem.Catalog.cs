@@ -112,7 +112,8 @@ namespace BetterBuildingMenu.Systems
 			// single (category, tabs) pair could not describe.
 			_AssetMenuExpandedCategories.Value = view.ExpandedCategories.ToArray();
 			var expandedMs = Lap();
-			_AssetMenuSchoolTierCounts.Value = view.SchoolTierCounts.ToArray();
+			_AssetMenuTierBracket.Value = view.TierBracket;
+			_tierParent = view.TierBracket.ParentCategory;
 			var tiersMs = Lap();
 			refreshTimer.Stop();
 			// Every refresh, and named by its caller: one line per user action is the only way

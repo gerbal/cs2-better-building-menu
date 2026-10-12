@@ -28,13 +28,14 @@ namespace BetterBuildingMenu.Services
 		private string? _effectiveGroupBy;
 		private string[]? _dimensions;
 
-		private BuildingCatalogEntry[]? _presentSet, _menuSet, _filteredMenuSet, _viewSet, _tabSet, _filteredTabSet, _tierSet, _wholeMenu;
+		private BuildingCatalogEntry[]? _presentSet, _menuSet, _filteredMenuSet, _viewSet, _tabSet, _filteredTabSet, _wholeMenu;
 		private BuildingCatalogPage? _page;
 		private BuildingCatalogMetricRangeState? _bounds;
 		private BuildingCatalogFacetState? _facets;
 		private IReadOnlyList<MenuCategoryCount>? _counts;
 		private string? _expandedId, _axis;
-		private IReadOnlyList<MenuBranchCount>? _expandedTabs, _stripTabs, _tiers;
+		private IReadOnlyList<MenuBranchCount>? _expandedTabs, _stripTabs;
+		private TierBracket? _bracket;
 		private IReadOnlyList<MenuCategoryTabs>? _expanded;
 
 		/// <param name="menuCategories">The menu's tabs in the game's order, which the counts follow; null orders them by id.</param>
@@ -85,14 +86,17 @@ namespace BetterBuildingMenu.Services
 
 		/// <summary>The menu, with category, strip tab and school tier cleared, the facets ignored.</summary>
 		public BuildingCatalogEntry[] MenuSet => _menuSet ??=
-			BuildingCatalogQueryEngine.InScope(PresentSet, _query with { UiCategory = string.Empty, StripTabs = null, SchoolTier = -1 }).ToArray();
+			BuildingCatalogQueryEngine.InScope(PresentSet, TabFreeQuery).ToArray();
+
+		/// <summary>The query with no tab, strip tab or level: the menu as every count sees it.</summary>
+		private BuildingCatalogQuery TabFreeQuery => _query with { UiCategory = string.Empty, StripTabs = null, SchoolTier = -1 };
 
 		/// <summary>
 		/// The menu with the search, every facet and every range applied, and no tab, strip tab or
 		/// level: what every count counts, so a tab's count is what a click on it lists.
 		/// </summary>
 		public BuildingCatalogEntry[] FilteredMenuSet => _filteredMenuSet ??= BuildingCatalogQueryEngine
-			.Matching(MenuSet, _query with { UiCategory = string.Empty, StripTabs = null, SchoolTier = -1 })
+			.Matching(MenuSet, TabFreeQuery)
 			.ToArray();
 
 		/// <summary>The All cell's count: every row the filters and the search leave in the menu.</summary>
@@ -110,9 +114,6 @@ namespace BetterBuildingMenu.Services
 		private BuildingCatalogEntry[] FilteredTabSet => _filteredTabSet ??= BuildingCatalogQueryEngine
 			.Matching(MenuSet, _query with { StripTabs = null })
 			.ToArray();
-
-		/// <summary>Menu and strip tab, no category or tier — what the school tiers count.</summary>
-		public BuildingCatalogEntry[] TierSet => _tierSet ??= BuildingCatalogQueryEngine.InScope(MenuSet, _query with { SchoolTier = -1, UiCategory = string.Empty }).ToArray();
 
 		public BuildingCatalogPage Page => _page ??= WithGroupLabels(BuildingCatalogQueryEngine.Query(MenuSet, _query with { GroupBy = EffectiveGroupBy }));
 
@@ -438,15 +439,43 @@ namespace BetterBuildingMenu.Services
 				: BuildingCatalogAdapter.TabIcon(whole, axis == StripAxes.Development, allowCategoryGlyph);
 		}
 
-		public IReadOnlyList<MenuBranchCount> SchoolTierCounts => _tiers ??= TierSet
-			.Where(entry => entry.EducationLevel is >= 1 and <= 4)
-			.GroupBy(entry => entry.EducationLevel.GetValueOrDefault())
-			.Select(group => new MenuBranchCount(
-				group.Key.ToString(System.Globalization.CultureInfo.InvariantCulture),
-				group.Count(),
-				BuildingCatalogAdapter.SchoolTierIcon,
-				BuildingCatalogGrouping.SchoolTierLabel(group.Key, _schoolTierNames) ?? string.Empty))
-			.OrderBy(count => count.Id, StringComparer.Ordinal)
-			.ToArray();
+		/// <summary>Education's levels beside the tab that holds its schools; empty outside Education.</summary>
+		/// <remarks>
+		/// The tab and its levels come from the present set, so neither a filter nor the search moves
+		/// them; each level counts what a click lists, the tab's own schools at that level.
+		/// </remarks>
+		public TierBracket TierBracket => _bracket ??= ComputeTierBracket();
+
+		private TierBracket ComputeTierBracket()
+		{
+			IGrouping<string, BuildingCatalogEntry>? parent = _educationMenu
+				? PresentSet
+					.Where(entry => entry.EducationLevel is >= 1 and <= 4)
+					.GroupBy(TabOf, StringComparer.Ordinal)
+					.Where(group => group.Key.Length > 0)
+					.OrderByDescending(group => group.Count())
+					.ThenBy(group => group.Key, StringComparer.Ordinal)
+					.FirstOrDefault()
+				: null;
+
+			if (parent is null)
+			{
+				return TierBracket.Empty;
+			}
+
+			var listed = FilteredMenuSet.Where(entry => string.Equals(TabOf(entry), parent.Key, StringComparison.Ordinal)).ToArray();
+			var tiers = parent
+				.Select(entry => entry.EducationLevel.GetValueOrDefault())
+				.Distinct()
+				.OrderBy(level => level)
+				.Select(level => new MenuBranchCount(
+					level.ToString(System.Globalization.CultureInfo.InvariantCulture),
+					listed.Count(entry => entry.EducationLevel == level),
+					BuildingCatalogAdapter.SchoolTierIcon,
+					BuildingCatalogGrouping.SchoolTierLabel(level, _schoolTierNames) ?? string.Empty))
+				.ToArray();
+
+			return new TierBracket(parent.Key, listed.Length, tiers);
+		}
 	}
 }

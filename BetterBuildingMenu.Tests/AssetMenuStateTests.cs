@@ -148,6 +148,15 @@ public sealed class AssetMenuStateTransitionTests
     }
 
     [Fact]
+    public void ALevelPickedWithItsTabLightsTheTabToo()
+    {
+        var tiered = S().SelectMenu("Education").SelectSchoolTier(2, "Education");
+
+        Assert.Equal(2, tiered.SchoolTier);
+        Assert.Equal("Education", tiered.Category);
+    }
+
+    [Fact]
     public void BlankTabsAndCategoriesClearRatherThanSelect()
     {
         var state = S().SelectMenu("Roads").SelectStripTab("Bridges").SelectStripTab("");

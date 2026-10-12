@@ -26,8 +26,8 @@ namespace BetterBuildingMenu.Systems
 		/// </remarks>
 		private void SetAssetMenuStripTab(string tab) => ApplyTabPick(_assetMenu.SelectStripTab(tab));
 
-		/// <summary>Narrows the education menu to one school tier.</summary>
-		private void SetAssetMenuSchoolTier(int tier) => ApplyTabPick(_assetMenu.SelectSchoolTier(tier));
+		/// <summary>Narrows the education menu to one school tier, in the tab that holds the levels.</summary>
+		private void SetAssetMenuSchoolTier(int tier) => ApplyTabPick(_assetMenu.SelectSchoolTier(tier, _tierParent));
 
 		/// <summary>A tab, strip tab or school tier the player picks: the pick logger counts it, then it applies.</summary>
 		/// <remarks>Each of the three triggers is a click in the strip or the chip row, so each counts.</remarks>

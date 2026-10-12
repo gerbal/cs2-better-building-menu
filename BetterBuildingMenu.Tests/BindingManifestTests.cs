@@ -111,6 +111,15 @@ namespace BetterBuildingMenu.Tests
 			Assert.Contains("AssetMenuAllCount", TypeScriptNames());
 		}
 
+		[Fact]
+		public void TheTierBracketReplacesTheTierCounts()
+		{
+			Assert.Contains("AssetMenuTierBracket", CSharpNames());
+			Assert.Contains("AssetMenuTierBracket", TypeScriptNames());
+			Assert.DoesNotContain("AssetMenuSchoolTierCounts", CSharpNames());
+			Assert.DoesNotContain("AssetMenuSchoolTierCounts", TypeScriptNames());
+		}
+
 		// Matches CreateBinding, CreateTrigger and the two-name CreateBinding
 		// overload. The generic argument may not contain parentheses, which
 		// keeps a lazy match from spanning one call into the next.

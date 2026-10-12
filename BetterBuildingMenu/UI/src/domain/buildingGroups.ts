@@ -55,15 +55,6 @@ export const GROUP_DIMENSIONS: readonly GroupDimension[] = GROUP_DIMENSION_IDS.m
 }));
 
 /**
- * The category whose assets the school levels stand in for. On the education
- * menu the four levels partition it exactly, so the strip draws them INSTEAD
- * of it. Matched on the id, which is the category prefab's own name.
- */
-export function isSchoolCategory(id: string | null | undefined): boolean {
-  return /education/i.test(id ?? "");
-}
-
-/**
  * The menu whose assets carry a school tier. Matched loosely on the menu's own
  * prefab name — UIAssetMenuPrefab.name, never display text — so a rename or a
  * variant still resolves. C# makes the same test in VanillaMenus.IsEducation.

@@ -58,4 +58,21 @@ describe("the category strip", () => {
 
     assert.match(render(), /class="[^"]*tabEmpty[^"]*"[^>]*aria-label="Small Roads \(0\)"/);
   });
+
+  it("draws Education's levels in the place of the tab C# names as theirs", () => {
+    // Named by the bracket, not guessed from the id: a tab called anything holds them.
+    setBinding("BetterBuildingMenu", "AssetMenu", "Education & Research");
+    setBinding("BetterBuildingMenu", "AssetMenuCategories", [category("Schools"), category("Research")]);
+    setBinding("BetterBuildingMenu", "AssetMenuCategoryCounts", [{ id: "Schools", count: 5 }, { id: "Research", count: 2 }]);
+    setBinding("BetterBuildingMenu", "AssetMenuCategory", "");
+    setBinding("BetterBuildingMenu", "AssetMenuTierBracket", {
+      parentCategory: "Schools",
+      parentCount: 5,
+      tiers: [{ id: "1", count: 3, icon: "", label: "Elementary School" }, { id: "2", count: 2, icon: "", label: "High School" }],
+    });
+    const html = render();
+
+    assert.match(html, /aria-label="Elementary School \(3\)"/);
+    assert.doesNotMatch(html, /aria-label="Schools \(5\)"/);
+  });
 });

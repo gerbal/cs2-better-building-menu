@@ -72,10 +72,14 @@ namespace BetterBuildingMenu.Domain
 			}),
 		};
 
-		/// <summary>One school tier (1–4); anything below zero is "all". Excludes a category.</summary>
-		public AssetMenuState SelectSchoolTier(int tier) => this with
+		/// <summary>One school tier (1–4); anything below zero is "all".</summary>
+		/// <remarks>
+		/// With the tab that holds the levels, the tab is picked too, so both read lit and the list is
+		/// that tab's schools at that level. Without one, the category is cleared.
+		/// </remarks>
+		public AssetMenuState SelectSchoolTier(int tier, string? parent = null) => this with
 		{
-			Query = ResetWindow(Query with { UiCategory = string.Empty, SchoolTier = tier < 0 ? -1 : tier }),
+			Query = ResetWindow(Query with { UiCategory = parent?.Trim() ?? string.Empty, SchoolTier = tier < 0 ? -1 : tier }),
 		};
 
 		// --- Order, grouping, window ------------------------------------------

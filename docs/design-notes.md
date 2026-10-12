@@ -231,6 +231,14 @@ facet and every range applied. `CatalogView` answers all of them from two sets.
 C# sends a count for each tab the row draws, in the menu's order (`menuCategories`), rather than for
 every tab the menu declares: 0 then means "emptied by the filters", and no count "never filled".
 
+**Education's levels** (`TierBracket`) draw as chips beside the tab that holds the schools. That tab
+is found from the data, the one with the most rows carrying a level of 1-4, so a menu whose schools
+sit under another name still gets its levels. Each level counts that tab's own schools under the
+filters and the search, so the levels add up to the tab, and a level the filters empty reads 0. A
+level's pick sets the tab as well as the level, so both read lit and the tab's own pick shows them
+all; a school a mod files under another tab therefore leaves that level's list and count. C# keeps
+the tab from the last refresh (`_tierParent`), so the trigger needs only the level.
+
 ## The release marker and the settings version
 
 A release leaves two signs that it ran, so a later release can tell a player who upgraded from

@@ -135,7 +135,7 @@ namespace BetterBuildingMenu.Tests
 					new CatalogSource(index, new PlacedUniques(), 1),
 					new BuildingCatalogQuery(UiMenu: education, DlcIds: new[] { "7" }),
 					VanillaToolbarSelection.None)
-				.SchoolTierCounts;
+				.TierBracket.Tiers;
 
 			Assert.Equal(new[] { ("1", 1, "Grundschule") }, tiers.Select(tab => (tab.Id, tab.Count, tab.DisplayLabel)));
 		}
@@ -158,7 +158,7 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.Equal(
 				new[] { ("1", "Grundschule"), ("2", "Gymnasium"), ("3", "College") },
-				view.SchoolTierCounts.Select(tab => (tab.Id, tab.DisplayLabel)));
+				view.TierBracket.Tiers.Select(tab => (tab.Id, tab.DisplayLabel)));
 		}
 
 		[Fact]

@@ -18,6 +18,17 @@ export interface MenuCategoryTabs {
   tabs: MenuBranchCount[];
 }
 
+/** Education's levels, drawn beside the tab that holds its schools. See TierBracket.cs. */
+export interface TierBracket {
+  /** The tab the levels sit in; empty outside Education. */
+  parentCategory: string;
+  parentCount: number;
+  tiers: MenuBranchCount[];
+}
+
+/** No levels: every menu but Education, and the first frame before C# answers. */
+export const NO_TIER_BRACKET: TierBracket = { parentCategory: "", parentCount: 0, tiers: [] };
+
 /**
  * The sub-tabs that stand in for one category, or none. A lookup rather than a
  * single expanded id, because zone families need three expanded at once.

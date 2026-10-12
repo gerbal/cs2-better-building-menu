@@ -6,7 +6,7 @@ import type { SortColumn, SortState } from "domain/buildingCatalogContracts";
 import type { AssetMenuFacetState } from "domain/buildingCatalogFacets";
 import type { AssetMenuMetricRangeState } from "domain/assetMenuFilterSummary";
 import type { Command } from "domain/command";
-import type { MenuBranchCount, MenuCategoryTabs } from "domain/menuProgression";
+import { NO_TIER_BRACKET, type MenuBranchCount, type MenuCategoryTabs, type TierBracket } from "domain/menuProgression";
 import { ASSET_MENU_DEFAULT_HEIGHT, WIDTH_STEP_DEFAULT } from "domain/sharedContracts.generated";
 import type { ToolbarEntity } from "domain/toolbarEntity";
 import { UPSTREAM_FINDIT_GROUP, UPSTREAM_SHOW_PANEL } from "domain/upstreamFindIt";
@@ -51,7 +51,7 @@ export const AssetMenuCategoryCounts$ = bindValue<MenuCategoryCount[]>(mod.id, "
 /** The All cell's count: every row the filters and the search leave in the menu. */
 export const AssetMenuAllCount$ = bindValue<number>(mod.id, "AssetMenuAllCount", 0);
 export const AssetMenuSchoolTier$ = bindValue<number>(mod.id, "AssetMenuSchoolTier", -1);
-export const AssetMenuSchoolTierCounts$ = bindValue<MenuBranchCount[]>(mod.id, "AssetMenuSchoolTierCounts", []);
+export const AssetMenuTierBracket$ = bindValue<TierBracket>(mod.id, "AssetMenuTierBracket", NO_TIER_BRACKET);
 export const AssetMenuStripTabs$ = bindValue<MenuBranchCount[]>(mod.id, "AssetMenuStripTabs", []);
 export const AssetMenuStripTab$ = bindValue<string[]>(mod.id, "AssetMenuStripTab", []);
 export const AssetMenuExpandedCategories$ = bindValue<MenuCategoryTabs[]>(mod.id, "AssetMenuExpandedCategories", []);

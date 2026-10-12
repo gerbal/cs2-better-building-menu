@@ -10,8 +10,8 @@ import {
   isAssetMenuScoped,
   type VanillaMenuCategory,
 } from "domain/vanillaMenuCategories";
-import { expandedTabsFor, branchTabTooltip, schoolTierTabs, romanNumeral } from "domain/menuProgression";
-import { isEducationMenu, isSchoolCategory } from "domain/buildingGroups";
+import { expandedTabsFor, branchTabTooltip, schoolTierTabs, romanNumeral, NO_TIER_BRACKET } from "domain/menuProgression";
+import { isEducationMenu } from "domain/buildingGroups";
 import { ALL_CATEGORIES_KEYS, resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 import styles from "./menuCategoryStrip.module.scss";
@@ -23,7 +23,7 @@ import {
   AssetMenuCategory$,
   AssetMenuCategoryCounts$,
   AssetMenuSchoolTier$,
-  AssetMenuSchoolTierCounts$,
+  AssetMenuTierBracket$,
   AssetMenuStripTab$,
   AssetMenuStripTabs$,
   send,
@@ -42,7 +42,7 @@ export const MenuCategoryStrip = () => {
   // conditionally, and React #300 takes the whole view down on any menu the
   // strip hides itself for. A test asserts the ordering on this file's source.
   const counts = useValue(AssetMenuCategoryCounts$) ?? [];
-  const schoolTierCounts = useValue(AssetMenuSchoolTierCounts$) ?? [];
+  const bracket = useValue(AssetMenuTierBracket$) ?? NO_TIER_BRACKET;
   const selectedSchoolTier = useValue(AssetMenuSchoolTier$) ?? -1;
   const menu = useValue(AssetMenu$) ?? "";
   const stripTabs = useValue(AssetMenuStripTabs$) ?? [];
@@ -63,7 +63,7 @@ export const MenuCategoryStrip = () => {
   // Education navigates by LEVEL, not by the milestone a school unlocked at:
   // with several region packs the level is what has dozens behind it, and the
   // milestone they share cuts nothing.
-  const schoolTiers = schoolTierTabs(schoolTierCounts);
+  const schoolTiers = schoolTierTabs(bracket.tiers);
   const showSchoolTiers = scoped && isEducationMenu(menu) && schoolTiers.length > 1;
   // The fallback, and why the strip exists on a service menu at all: vanilla
   // gives some menus one category and no way to cut them. The development tree
@@ -148,7 +148,7 @@ export const MenuCategoryStrip = () => {
           so the menu stays one row of choices. They partition that category
           exactly, so nothing is lost by drawing them instead of it. */}
       {presentCategories(categories, counts).flatMap((category) =>
-        showSchoolTiers && isSchoolCategory(category.id)
+        showSchoolTiers && category.id === bracket.parentCategory
           ? schoolTiers.map((tier) => (
               <ToolButton
                 key={`tier-${tier.level}`}
