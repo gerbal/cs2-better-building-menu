@@ -72,7 +72,7 @@
 }
 
 .breadcrumbActive {
-  border-color: var(--accentColorNormal);
+  @include _base.border-colors(var(--accentColorNormal));
 }
 
 .breadcrumbLabel {

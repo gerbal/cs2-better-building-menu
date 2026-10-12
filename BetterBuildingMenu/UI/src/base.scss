@@ -169,3 +169,12 @@ $mark-inset: 0.147;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
+/// Every side's border colour. Cohtml drops a `border-color` shorthand fed by
+/// var(), so a token colours each side's longhand.
+@mixin border-colors($color) {
+  border-top-color: $color;
+  border-right-color: $color;
+  border-bottom-color: $color;
+  border-left-color: $color;
+}

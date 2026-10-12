@@ -168,7 +168,7 @@
 .metricRangeToggleActive {
   color: var(--accentColorNormal);
   background-color: rgba(255, 255, 255, 0.1);
-  border-color: var(--accentColorNormal);
+  @include _base.border-colors(var(--accentColorNormal));
 }
 
 .metricRangeSelectionCount {
@@ -328,7 +328,7 @@
 
 // An invalid range must not read as an applied one.
 .metricRangeInput[data-invalid="true"] {
-  border-color: var(--negativeColor);
+  @include _base.border-colors(var(--negativeColor));
 }
 
 .metricRangeNotice {
@@ -351,7 +351,9 @@
   padding: 6rem 8rem;
   border-radius: 3rem;
   background-color: rgba(255, 255, 255, 0.08);
-  border: 1rem solid var(--accentColorNormal);
+  border-width: 1rem;
+  border-style: solid;
+  @include _base.border-colors(var(--accentColorNormal));
 }
 
 .scopeNoticeText {

@@ -38,7 +38,8 @@ const KIND: Readonly<Record<string, Kind>> = {
 const LENGTH = "(?:0|-?\\d*\\.?\\d+rem)";
 const PATTERN: Readonly<Record<Kind, RegExp>> = {
   colour: /^(?:rgba?\(.+\)|#[0-9a-f]{3,8}|transparent|var\(--[\w-]+\))$/i,
-  length: new RegExp(`^${LENGTH}(?: ${LENGTH}){0,3}$`),
+  // One length: a radius token feeds one corner's longhand, since Cohtml drops a shorthand fed by var().
+  length: new RegExp(`^${LENGTH}$`),
   shadow: new RegExp(`^(?:none|(?:inset )?${LENGTH} ${LENGTH} .+)$`),
   gradient: /^linear-gradient\(.+\)$/,
   filter: /^(?:none|var\(--panelBlur\))$/,

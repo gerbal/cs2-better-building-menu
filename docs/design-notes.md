@@ -276,8 +276,11 @@ looks; only Standard's tokens are written here.
 
 - **One kind of value per key.** Each key holds a colour, a gradient, a shadow, a length or a filter
   in every look and every style, and is read by one longhand: a gradient by `background-image`, a
-  colour by `background-color` or `color`, never by the `background` shorthand, which is not
-  measured with `var()` in Cohtml. `lookTokens.test.ts` holds this.
+  colour by `background-color` or `color`, never by the `background` shorthand. Cohtml drops any
+  border or background shorthand a `var()` feeds (`border-color`, `border-radius`, `border`,
+  `background`) with a UI.log warning, so a radius token is one length read by each corner's
+  longhand, and a colour reaches a border through `border-colors`, which writes each side's.
+  `lookTokens.test.ts` and the stylesheet guard in `stylesheetContracts.test.ts` hold this.
 - **The game's interface styles.** The game puts `style--<name>` on the body, and its Bright blue and
   Dark grey-orange styles redefine its panel, ink and accent tokens. Under either, the root's
   `followStyle` class applies one follow map (`$standard-follow`): the list from

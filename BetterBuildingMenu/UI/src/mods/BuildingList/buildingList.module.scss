@@ -35,7 +35,7 @@
 
 .item:hover {
   background-color: rgba(255, 255, 255, 0.14);
-  border-color: var(--accentColorNormal);
+  @include _base.border-colors(var(--accentColorNormal));
 }
 
 // The row whose tool is active. Vanilla's tile does this with its own
@@ -44,7 +44,7 @@
 .itemSelected,
 .itemSelected:hover {
   background-color: rgba(255, 255, 255, 0.2);
-  border-color: var(--accentColorNormal);
+  @include _base.border-colors(var(--accentColorNormal));
 }
 
 // The picture and its badge share this box, so the margin lives here rather

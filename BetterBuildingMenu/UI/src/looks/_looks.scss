@@ -54,7 +54,8 @@ $standard: (
   tabUnlit: transparent,
   tabHover: rgba(98, 128, 138, 0.2),
   tabSeg: rgba(98, 128, 138, 0.2),
-  tabRadius: 0 0 4rem 4rem,
+  // The cells hang from the band: their bottom corners round, their top ones stay square.
+  tabRadius: 4rem,
   tabIcon: ink(0.72),
   tabCount: ink(0.55),
   // Text.

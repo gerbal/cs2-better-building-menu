@@ -245,6 +245,11 @@ describe("Asset menu stylesheet contracts", () => {
  * `text-overflow: ellipsis` is deliberately NOT here: it is a no-op on a FLEX
  * ITEM and works normally elsewhere. tileLabel.ts elides in JS where it matters.
  */
+/** Shorthands Cohtml drops whole when a var() feeds any part of them. */
+const VAR_FED_SHORTHANDS = new Set([
+  "border", "border-top", "border-right", "border-bottom", "border-left",
+  "border-color", "border-width", "border-style", "border-radius", "background",
+]);
 const UNSUPPORTED: { matches: (prop: string, value: string) => boolean; declaration: string; why: string }[] = [
   {
     matches: (prop, value) => (prop === "align-items" || prop === "align-self") && value === "baseline",
@@ -269,6 +274,14 @@ const UNSUPPORTED: { matches: (prop: string, value: string) => boolean; declarat
     why:
       "Cohtml has no two-argument var(): it logs an unresolved-variable warning for every element "
       + "carrying one and drops the declaration. Name a token the game always defines.",
+  },
+  {
+    matches: (prop, value) => VAR_FED_SHORTHANDS.has(prop) && /var\(/.test(value),
+    declaration: "a border or background shorthand fed by var()",
+    why:
+      "Cohtml logs `Custom CSS expressions are not supported in shorthand declaration` and drops it: "
+      + "the colour or radius never draws. Write each longhand (border-top-color, "
+      + "border-bottom-left-radius, background-color) with the var() instead.",
   },
 ];
 

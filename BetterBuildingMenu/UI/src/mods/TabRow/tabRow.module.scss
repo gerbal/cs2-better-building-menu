@@ -34,7 +34,9 @@
   min-width: $tab-cell-min-width;
   height: $tab-row-height;
   padding: 0 $tab-cell-padding;
-  border-radius: var(--bbm-tabRadius);
+  // Each corner's longhand: Cohtml drops a border-radius shorthand fed by var().
+  border-bottom-left-radius: var(--bbm-tabRadius);
+  border-bottom-right-radius: var(--bbm-tabRadius);
   background-color: var(--bbm-tabUnlit);
   // A line box rounds up to whole pixels and can run past the row: the cell cuts it.
   overflow: hidden;
@@ -119,7 +121,8 @@
   flex-direction: row;
   gap: $tab-cell-gap;
   margin: 0 $tab-segment-margin;
-  border-radius: var(--bbm-tabRadius);
+  border-bottom-left-radius: var(--bbm-tabRadius);
+  border-bottom-right-radius: var(--bbm-tabRadius);
   background-color: var(--bbm-tabSeg);
 }
 
