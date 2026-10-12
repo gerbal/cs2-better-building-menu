@@ -39,7 +39,7 @@ namespace BetterBuildingMenu.Domain
 		/// The icon for one tier tab, or empty when the game ships none.
 		/// </summary>
 		/// <remarks>
-		/// Empty rather than a guess: the strip falls back to the category's own icon,
+		/// Empty rather than a guess: a tab with no icon draws the menu's and says its name,
 		/// where a derived path like ZoneIndustrialLow would render as a silent hole.
 		/// </remarks>
 		public static string For(string? uiCategory, ZoneTypeFilter density)

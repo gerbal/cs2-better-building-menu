@@ -51,5 +51,15 @@ namespace BetterBuildingMenu.Tests
 		{
 			Assert.Equal(string.Empty, CategoryIcon.Resolve(null, null));
 		}
+
+		[Theory]
+		[InlineData("Media/Game/Icons/Ship.svg", "Media/Game/Icons/Transportation.svg", "Media/Game/Icons/Ship.svg")]
+		[InlineData("assetdb://global/2de3e193e05bcb956df54c75445d9c5c", "Media/Game/Icons/Transportation.svg", "Media/Game/Icons/Transportation.svg")]
+		[InlineData("", "Media/Game/Icons/Transportation.svg", "Media/Game/Icons/Transportation.svg")]
+		[InlineData(null, "assetdb://global/abc", CategoryIcon.Placeholder)]
+		public void ATabDrawsItsOwnIconThenItsMenusThenTheGamesPlaceholder(string? own, string? menu, string drawn)
+		{
+			Assert.Equal(drawn, CategoryIcon.Chain(own, menu));
+		}
 	}
 }

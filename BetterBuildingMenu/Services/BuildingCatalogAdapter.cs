@@ -154,9 +154,8 @@ namespace BetterBuildingMenu.Services
 								category.Key,
 								BuildingCatalogLabels.DensityTier(tier.Key)),
 							tier.Count(),
-						// Vanilla's own zoning icon for this family AND tier, falling
-						// back to the category's icon in the strip when the game ships
-						// none rather than deriving a mark it never authored.
+						// Vanilla's own zoning icon for this family AND tier; a tab with none
+						// draws the menu's icon and says its name, rather than a derived mark.
 							ZoneDensityIcons.For(category.Key, tier.Key),
 							BuildingCatalogLabels.DensityTier(tier.Key)))
 						.ToArray()))
@@ -232,8 +231,11 @@ namespace BetterBuildingMenu.Services
 		}
 
 		/// <summary>A rendered asset picture, as opposed to an authored glyph.</summary>
+		/// <remarks>Asset Icon Library hands the development tree a building render for a node, a PNG under its own host; its SVGs are glyphs.</remarks>
 		internal static bool IsPhotograph(string icon) =>
-			icon.StartsWith("thumbnail://", StringComparison.OrdinalIgnoreCase);
+			icon.StartsWith("thumbnail://", StringComparison.OrdinalIgnoreCase)
+			|| (icon.StartsWith("coui://ail/", StringComparison.OrdinalIgnoreCase)
+				&& icon.EndsWith(".png", StringComparison.OrdinalIgnoreCase));
 
 		/// <summary>
 		/// The same arithmetic over a set of entries, without a World.
@@ -404,7 +406,8 @@ namespace BetterBuildingMenu.Services
 				// school must not turn its tier's name back into English. Only where the tiers are.
 				educationMenu ? source.Index.SchoolTierNames() : null,
 				// The counts follow the menu's own tab order, Roads' extra tabs included.
-				menuCategories: source.Index.GetMenuCategories(query.UiMenu).Select(category => category.Id).ToArray());
+				menuCategories: source.Index.GetMenuCategories(query.UiMenu).Select(category => category.Id).ToArray(),
+				menuIcon: source.Index.Menus.MenuIcon(query.UiMenu));
 		}
 
 		/// <summary>

@@ -92,5 +92,19 @@ namespace BetterBuildingMenu.Tests
 				"thumbnail://ParkingHall02?width=128",
 				expanded.Tabs.Single(t => t.Id == "Underground Parking").Icon);
 		}
+
+		[Fact]
+		public void AnAssetIconLibraryRenderIsAPhotographNotAGlyph()
+		{
+			// Asset Icon Library hands the development tree a building render for a node. A row of
+			// glyphs takes the category's glyph instead; the library's own glyphs stay glyphs.
+			var coal = E(1, "Coal Plant", "ServiceBuildings", "ElectricityElectricity", "Coal", 0, null, "Media/Game/Icons/Electricity.svg")
+				with { DevTreeBranchIcon = "coui://ail/ColoredPropless/BuildingPrefab.CoalPowerPlant01.png" };
+
+			Assert.Equal("Media/Game/Icons/Electricity.svg", BuildingCatalogAdapter.TabIcon(new[] { coal }, authored: true));
+			Assert.Equal(
+				"coui://ail/Electricity.svg",
+				BuildingCatalogAdapter.TabIcon(new[] { coal with { DevTreeBranchIcon = "coui://ail/Electricity.svg" } }, authored: true));
+		}
 	}
 }

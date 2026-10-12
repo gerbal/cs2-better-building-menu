@@ -122,6 +122,34 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void AStripTabWithNoPictureOfItsOwnDrawsTheMenusIconNeverAHashOrNothing()
+		{
+			// Wind has no art at all, and Gas's branch icon is a content hash: neither can be drawn.
+			var view = new CatalogView(Power, new BuildingCatalogQuery(UiMenu: "Electricity"), menuIcon: "Media/Game/Icons/Electricity.svg");
+
+			Assert.Equal(
+				new[] { ("Wind", "Media/Game/Icons/Electricity.svg"), ("Gas", "Media/Game/Icons/Electricity.svg") },
+				view.StripTabs.Select(tab => (tab.Id, tab.Icon)));
+		}
+
+		[Fact]
+		public void ABranchInItsCategorysPlaceDrawsTheMenusIconWhenItHasNone()
+		{
+			var view = new CatalogView(Health, new BuildingCatalogQuery(UiMenu: "Health"), menuIcon: "Media/Game/Icons/Healthcare.svg");
+
+			Assert.All(Assert.Single(view.ExpandedCategories).Tabs, tab => Assert.Equal("Media/Game/Icons/Healthcare.svg", tab.Icon));
+		}
+
+		[Fact]
+		public void EveryTierInTheBracketCarriesAnIconTheRowCanDraw()
+		{
+			var education = new CatalogView(Fixture, new BuildingCatalogQuery(UiMenu: "Education & Research"), educationMenu: true);
+
+			Assert.NotEmpty(education.TierBracket.Tiers);
+			Assert.All(education.TierBracket.Tiers, tier => Assert.True(CategoryIcon.IsResolvable(tier.Icon)));
+		}
+
+		[Fact]
 		public void TheTabCountsAddUpToAllWhenEveryRowSitsInOneTab()
 		{
 			// Every Roads row answers to exactly one of the menu's tabs, so the tabs partition the menu.

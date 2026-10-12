@@ -239,6 +239,25 @@ level's pick sets the tab as well as the level, so both read lit and the tab's o
 all; a school a mod files under another tab therefore leaves that level's list and count. C# keeps
 the tab from the last refresh (`_tierParent`), so the trigger needs only the level.
 
+## Tab icons
+
+Every tab draws the picture its binding carries, and every tab binding passes through one chain,
+`CategoryIcon.Chain`: the tab's own icon when it can be drawn, else its menu's, else the game's own
+placeholder (`Media/Placeholder.svg`). "Can be drawn" is `CategoryIcon.IsResolvable`: not empty and
+not an `assetdb://global/` content hash, which an `<img>` cannot load. The game's categories
+(`GetMenuCategories`, Roads' extra tabs included), the strip tabs, the tabs drawn in a category's
+place, and each menu's own icon (`AssetMenus`, which the All cell draws) all pass through it, so no
+binding publishes a blank or a hash. Where the game's toolbar would draw its placeholder for a
+category with no icon, the row draws the menu's.
+
+A tab left with its menu's picture, or one that would repeat another tab's, says its name on the row
+instead, so no two cells show one picture with nothing to tell them apart; the All cell draws the
+menu's icon on a round plate, which tells it from the rest.
+
+A development branch's tab takes the category's glyph rather than a photograph: `IsPhotograph`
+refuses a `thumbnail://` render and Asset Icon Library's PNG building renders (`coui://ail/...png`),
+which that library hands the game's development tree for its nodes. Its SVGs stay glyphs.
+
 ## The release marker and the settings version
 
 A release leaves two signs that it ran, so a later release can tell a player who upgraded from

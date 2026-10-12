@@ -129,13 +129,11 @@ namespace BetterBuildingMenu.Domain.Catalog
 		public IReadOnlyList<VanillaMenuCategory> GetMenuCategories(string? menu)
 		{
 			var tabs = Menus.CategoriesOf(menu);
+			var all = NetworkMenuExtension.IsExtended(menu) && tabs.Count > 0 ? tabs.Concat(ExtraNetworkCategories()) : tabs;
+			var menuIcon = Menus.MenuIcon(menu);
 
-			if (!NetworkMenuExtension.IsExtended(menu) || tabs.Count == 0)
-			{
-				return tabs;
-			}
-
-			return tabs.Concat(ExtraNetworkCategories()).ToArray();
+			// Every tab a picture its row can draw: its own, else its menu's. See CategoryIcon.Chain.
+			return all.Select(tab => tab with { Icon = CategoryIcon.Chain(tab.Icon, menuIcon) }).ToArray();
 		}
 
 		/// <summary>The school each level is named after, by level: the plain school the base game

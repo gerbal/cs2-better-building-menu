@@ -25,6 +25,7 @@ namespace BetterBuildingMenu.Services
 		private readonly bool _educationMenu;
 		private readonly bool _vanillaSelected;
 		private readonly IReadOnlyList<string>? _menuCategories;
+		private readonly string? _menuIcon;
 		private string? _effectiveGroupBy;
 		private string[]? _dimensions;
 
@@ -39,6 +40,7 @@ namespace BetterBuildingMenu.Services
 		private IReadOnlyList<MenuCategoryTabs>? _expanded;
 
 		/// <param name="menuCategories">The menu's tabs in the game's order, which the counts follow; null orders them by id.</param>
+		/// <param name="menuIcon">The menu's own icon, which a tab with no picture of its own draws.</param>
 		public CatalogView(
 			IReadOnlyList<BuildingCatalogEntry> snapshot,
 			BuildingCatalogQuery query,
@@ -48,7 +50,8 @@ namespace BetterBuildingMenu.Services
 			bool educationMenu = false,
 			bool vanillaSelected = false,
 			IReadOnlyDictionary<int, string>? schoolTierNames = null,
-			IReadOnlyList<string>? menuCategories = null)
+			IReadOnlyList<string>? menuCategories = null,
+			string? menuIcon = null)
 		{
 			_snapshot = snapshot ?? throw new ArgumentNullException(nameof(snapshot));
 			_query = query ?? throw new ArgumentNullException(nameof(query));
@@ -59,6 +62,7 @@ namespace BetterBuildingMenu.Services
 			_vanillaSelected = vanillaSelected;
 			_schoolTierNames = schoolTierNames;
 			_menuCategories = menuCategories;
+			_menuIcon = menuIcon;
 		}
 
 		/// <summary>The dimension ids the picker should offer for this menu set.</summary>
@@ -389,11 +393,18 @@ namespace BetterBuildingMenu.Services
 				.ToArray();
 		}
 
-		/// <summary>Tabs as the row draws them: in their place, each counting what a click on it lists, zero included.</summary>
+		/// <summary>
+		/// Tabs as the row draws them: in their place, each counting what a click on it lists, zero
+		/// included, with a picture the row can show.
+		/// </summary>
 		/// <remarks>Matched as a click matches, whichever axis a tab is on: a branch, an asset type or a density.</remarks>
-		private static MenuBranchCount[] Drawn(IEnumerable<MenuBranchCount> tabs, IReadOnlyList<BuildingCatalogEntry> listed) =>
+		private MenuBranchCount[] Drawn(IEnumerable<MenuBranchCount> tabs, IReadOnlyList<BuildingCatalogEntry> listed) =>
 			tabs
-				.Select(tab => tab with { Count = listed.Count(entry => BuildingCatalogQueryEngine.StripMatches(entry, tab.Id)) })
+				.Select(tab => tab with
+				{
+					Count = listed.Count(entry => BuildingCatalogQueryEngine.StripMatches(entry, tab.Id)),
+					Icon = CategoryIcon.Chain(tab.Icon, _menuIcon),
+				})
 				.ToArray();
 
 		/// <summary>
