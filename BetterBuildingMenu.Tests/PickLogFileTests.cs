@@ -93,5 +93,30 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.False(File.Exists(LogPath));
 		}
+
+		[Fact]
+		public void AFullLogRollsWhenNoRolledLogExistsYet()
+		{
+			var full = new string('x', (int)PickLogFile.MaxBytes - 2);
+			File.WriteAllText(LogPath, full);
+
+			Log().Append(new[] { "abc" });
+
+			Assert.Equal(full, File.ReadAllText(RolledPath));
+			Assert.Equal("abc\n", File.ReadAllText(LogPath));
+		}
+
+		[Fact]
+		public void ARollThatFailsThrowsNothingAndWarnsOnce()
+		{
+			File.WriteAllText(LogPath, new string('x', (int)PickLogFile.MaxBytes - 2));
+			Directory.CreateDirectory(RolledPath);
+			var log = Log();
+
+			log.Append(new[] { "abc" });
+			log.Append(new[] { "abc" });
+
+			Assert.Single(_warnings);
+		}
 	}
 }

@@ -1,5 +1,6 @@
 using BetterBuildingMenu.Domain.Placement;
 
+using System.Globalization;
 using System.Text.Json;
 
 namespace BetterBuildingMenu.Tests
@@ -217,6 +218,59 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.Equal("Parks & Recreation", line.GetProperty("menu").GetString());
 			Assert.Equal("The \"Big\"\nPark", line.GetProperty("prefab").GetString());
+		}
+
+		[Fact]
+		public void BackslashesControlCharactersNonAsciiAndALoneSurrogateRoundTrip()
+		{
+			var menu = "Back\\slash \u0001 caf\u00e9";
+			var prefab = "Pair \ud83c\udfd7 \u2603";
+			var line = Parsed(new PickArm(1, menu, prefab, PickSource.Bbm));
+
+			Assert.Equal(menu, line.GetProperty("menu").GetString());
+			Assert.Equal(prefab, line.GetProperty("prefab").GetString());
+		}
+
+		[Fact]
+		public void ALoneSurrogateBecomesTheReplacementCharacterSoTheLineParses()
+		{
+			var line = Parsed(new PickArm(1, "Roads", "Lone \ud800 high, \udc00 low", PickSource.Bbm));
+
+			Assert.Equal("Lone \ufffd high, \ufffd low", line.GetProperty("prefab").GetString());
+		}
+
+		[Fact]
+		public void ACommaDecimalCultureStillWritesDotDecimals()
+		{
+			var before = CultureInfo.CurrentCulture;
+
+			try
+			{
+				CultureInfo.CurrentCulture = new CultureInfo("de-DE");
+				var pick = new PickPlace(1.256, "Roads", "Small Road", new ScreenPoint(812.4, 530.1), false, BoxState.Open, 0, 1);
+				var text = PickLogJson.Line(pick);
+				var line = Parsed(pick);
+
+				Assert.Contains("812.4", text);
+				Assert.Equal(812.4, line.GetProperty("x").GetDouble());
+				Assert.Equal(1.26, line.GetProperty("t").GetDouble());
+			}
+			finally
+			{
+				CultureInfo.CurrentCulture = before;
+			}
+		}
+
+		[Fact]
+		public void ANonFiniteCoordinateLeavesTheFieldOutAndTheLineValid()
+		{
+			var at = ScreenPoint.FromPixels(float.NaN, float.PositiveInfinity, 1080);
+			var line = Parsed(new PickPlace(double.NaN, "Roads", "Small Road", at, false, BoxState.Open, 0, 1));
+
+			Assert.False(line.TryGetProperty("x", out _));
+			Assert.False(line.TryGetProperty("y", out _));
+			Assert.False(line.TryGetProperty("t", out _));
+			Assert.Equal("place", line.GetProperty("event").GetString());
 		}
 	}
 }
