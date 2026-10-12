@@ -66,7 +66,10 @@ namespace BetterBuildingMenu.Services
 				.ToArray();
 			var totalCount = matching.Length;
 			var offset = ClampOffset(query.EffectiveOffset, totalCount, limit);
-			var items = Order(matching, query)
+			// The whole result in display order: the window is a slice of it, and Enter's target
+			// is chosen from all of it, wherever its row is.
+			var ordered = Order(matching, query).ToArray();
+			var items = ordered
 				.Skip(offset)
 				.Take(limit)
 				.ToArray();
@@ -81,6 +84,8 @@ namespace BetterBuildingMenu.Services
 			var usableColumns = ReorderableSortColumns(
 				matching, query, BuildingCatalogQuery.OfferedSortColumns);
 
+			var bestMatch = FindBestMatch(ordered, query.SearchText);
+
 			return new BuildingCatalogPage(
 				items,
 				totalCount,
@@ -88,28 +93,36 @@ namespace BetterBuildingMenu.Services
 				limit,
 				HasMore: hasMore,
 				ReorderableSortColumns: usableColumns,
-				BestMatchId: FindBestMatchId(items, query.SearchText),
-				SearchText: query.SearchText ?? string.Empty);
+				BestMatchId: bestMatch?.Id,
+				SearchText: query.SearchText ?? string.Empty,
+				BestMatch: bestMatch,
+				AllMatchesLocked: !string.IsNullOrWhiteSpace(query.SearchText) && totalCount > 0 && bestMatch is null);
 		}
 
 		/// <summary>
-		/// The best-scoring row of this window that can be placed: by relevance, then the shorter
-		/// name, then page order, as a group orders. Locked and already-built rows are skipped,
-		/// because Enter on them does nothing.
+		/// Enter's target: the best-scoring row of the whole result that can be placed, by
+		/// relevance, then the shorter name, then display order. Locked and already-built rows
+		/// are skipped, because Enter on them does nothing.
 		/// </summary>
-		private static int? FindBestMatchId(IReadOnlyList<BuildingCatalogEntry> items, string? searchText)
+		/// <remarks>
+		/// Over every match, not the window, so a target past the loaded rows, or under a sort
+		/// or a grouping that does not lead with it, is still the one armed.
+		/// </remarks>
+		private static BuildingCatalogBestMatch? FindBestMatch(IReadOnlyList<BuildingCatalogEntry> ordered, string? searchText)
 		{
 			if (string.IsNullOrWhiteSpace(searchText))
 			{
 				return null;
 			}
 
-			BuildingCatalogEntry? best = null;
+			var best = -1;
 			var bestScore = 0;
 			var bestLength = 0;
 
-			foreach (var entry in items)
+			for (var index = 0; index < ordered.Count; index++)
 			{
+				var entry = ordered[index];
+
 				if (entry.IsLocked || entry.IsAlreadyBuilt)
 				{
 					continue;
@@ -118,15 +131,22 @@ namespace BetterBuildingMenu.Services
 				var score = BuildingCatalogRelevance.Score(entry, searchText);
 				var length = (entry.Name ?? string.Empty).Length;
 
-				if (best is null || score > bestScore || (score == bestScore && length < bestLength))
+				if (best < 0 || score > bestScore || (score == bestScore && length < bestLength))
 				{
-					best = entry;
+					best = index;
 					bestScore = score;
 					bestLength = length;
 				}
 			}
 
-			return best?.Id;
+			if (best < 0)
+			{
+				return null;
+			}
+
+			var match = ordered[best];
+
+			return new BuildingCatalogBestMatch(match.Id, match.Name ?? string.Empty, match.UiMenu ?? string.Empty, best);
 		}
 
 		/// <summary>

@@ -360,6 +360,19 @@ history, whatever "Replace the vanilla build menu" holds: it watches the tools, 
 - **Never in the way.** A failure warns once a session and the game goes on. The flushes are the
   placement history's: on a close of the build menu, at a load, every two minutes and at quit.
 
+## Search and sort over the whole result
+
+The window the UI draws is a slice of the whole ordered result, so what Enter arms, how a sort
+starts and what a list that stops says are decided over the whole result, in C#.
+
+**Enter.** `BuildingCatalogQueryEngine` chooses Enter's target from every match of the search,
+before the window is cut, whatever the sort and the grouping: the best relevance, then the
+shorter name, then the first in display order. Locked rows and built uniques are skipped, since
+Enter on them does nothing. The page names the target as `BestMatch` (its id, name, menu and
+place in the order) and as `BestMatchId`; `AllMatchesLocked` says a search matched only rows that
+cannot be placed. The UI arms the id through `SetCurrentPrefab` whether or not its row is loaded,
+once the page answers the search in the box.
+
 ## Hand-rolled floating surfaces in Cohtml
 
 The filter rail's dropdown surface (`filterRail.module.scss`, `.menu`) states size

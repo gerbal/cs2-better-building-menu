@@ -95,6 +95,20 @@ describe("Enter in the catalog", () => {
     assert.deepEqual(armed(), [1]);
   });
 
+  it("arms the best match by id when its row is past the ones loaded", () => {
+    // C# chose it from the whole result; the window holds only the first rows.
+    setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage(
+      [entry(2, { name: "Parking Lot 001" })],
+      { bestMatchId: 240, searchText: "parking" }
+    ));
+    typed("parking");
+    mount();
+
+    enter();
+
+    assert.deepEqual(armed(), [240]);
+  });
+
   it("holds an Enter pressed before the page catches up, and arms when it does", () => {
     // Type and press Enter inside the search debounce: the page is still the
     // unsearched one, and its first tile is not what was asked for.

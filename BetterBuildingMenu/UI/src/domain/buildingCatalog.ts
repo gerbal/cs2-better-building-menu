@@ -145,10 +145,16 @@ export interface BuildingCatalogPage {
 
   /**
    * The row Enter arms while a search is active; null without a search or a
-   * result. C#'s answer, because only it scores, and a grouped page is ordered
-   * by group before relevance.
+   * match that can be placed. C#'s answer, chosen from the whole result, because
+   * only it scores and only it sees past the window.
    */
   bestMatchId?: number | null;
+
+  /** The same target with its name, its menu and its place in the result's order. */
+  bestMatch?: { id: number; name: string; menu: string; index: number } | null;
+
+  /** Whether a search matched only rows that cannot be placed, so Enter does nothing. */
+  allMatchesLocked?: boolean;
 
   /** The search this page answers; it trails the box by the search debounce. */
   searchText?: string;

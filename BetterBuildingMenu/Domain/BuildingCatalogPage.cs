@@ -39,7 +39,12 @@ namespace BetterBuildingMenu.Domain
 		/// The box echoes a keystroke at once and the page follows a debounce later, so Enter
 		/// holds until the two agree rather than arming the previous search's match.
 		/// </remarks>
-		string? SearchText = null) : IJsonWritable
+		string? SearchText = null,
+		/// <summary>Enter's target with its name, menu and place in the order; null without a search or an armable match.</summary>
+		/// <remarks><see cref="BestMatchId"/> is its id, for the readers that take only that.</remarks>
+		BuildingCatalogBestMatch? BestMatch = null,
+		/// <summary>Whether a search matched rows and none of them can be placed, so Enter does nothing.</summary>
+		bool AllMatchesLocked = false) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -74,6 +79,10 @@ namespace BetterBuildingMenu.Domain
 			if (BestMatchId.HasValue) writer.Write(BestMatchId.Value); else writer.WriteNull();
 			writer.PropertyName("searchText");
 			writer.Write(SearchText ?? string.Empty);
+			writer.PropertyName("bestMatch");
+			if (BestMatch is null) writer.WriteNull(); else BestMatch.Write(writer);
+			writer.PropertyName("allMatchesLocked");
+			writer.Write(AllMatchesLocked);
 			if (Status is not null)
 			{
 				writer.PropertyName("status");

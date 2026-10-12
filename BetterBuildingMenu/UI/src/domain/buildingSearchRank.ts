@@ -26,18 +26,19 @@ export function getSearchScopeNotice(state: {
   return { elsewhere: state.elsewhere, canWiden: true };
 }
 
-/** Arm this entry, wait for the page that answers this search, or do nothing. */
-export type EnterDecision<T> = { arm: T } | { wait: string } | null;
+/** Arm this prefab, wait for the page that answers this search, or do nothing. */
+export type EnterDecision = { arm: number } | { wait: string } | null;
 
 /**
- * What Enter does: arm the backend's best match for an active search, since a
- * grouped page's first row need not be it. The page trails the box by a
- * debounce, so until it answers the search in the box, Enter waits for it.
+ * What Enter does: arm the backend's best match for an active search, by id,
+ * whether or not its row is loaded: C# chooses it from the whole result, whatever
+ * the sort. The page trails the box by a debounce, so until it answers the search
+ * in the box, Enter waits for it.
  */
-export function enterDecision<T extends { id: number }>(
-  page: { items: readonly T[]; bestMatchId?: number | null; searchText?: string | null },
+export function enterDecision(
+  page: { bestMatchId?: number | null; searchText?: string | null },
   rawQuery: string
-): EnterDecision<T> {
+): EnterDecision {
   const query = rawQuery.trim();
   if (!query) {
     return null;
@@ -47,8 +48,7 @@ export function enterDecision<T extends { id: number }>(
     return { wait: query };
   }
 
-  const target = page.bestMatchId == null ? undefined : page.items.find((item) => item.id === page.bestMatchId);
-  return target ? { arm: target } : null;
+  return page.bestMatchId == null ? null : { arm: page.bestMatchId };
 }
 
 /** Enter, by code: Cohtml leaves `key` empty for some keys. */

@@ -680,7 +680,7 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.Equal(
             new[] { "items", "id", "prefabName", "name", "category", "subCategory", "categoryLabel", "subCategoryLabel", "thumbnail", "fallbackThumbnail", "silhouetteThumbnail", "lotWidth", "lotDepth", "buildingLevel", "zoneType", "hasParking", "isVanilla", "isLocked",
             "isUnique",
-            "isAlreadyBuilt", "unlockMilestone", "devTreeBranch", "devTreeBranchDepth", "unlockRequirements", "bonuses", "costIsPerDistance", "parkingSlots", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "supportedUpgrades", "constructionCost", "upkeep", "workers", "households", "capacity", "serviceRange", "serviceFacts", "footprints", "footprintOverflow", "serviceTextFacts", "speedLimit", "networkWidth", "leisureType", "leisureEfficiency", "electricityConsumption", "waterConsumption", "garbageAccumulation", "telecomNeed", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "groupPath", "groupLabelId", "reorderableSortColumns", "totalCount", "offset", "limit", "hasMore", "bestMatchId", "searchText" },
+            "isAlreadyBuilt", "unlockMilestone", "devTreeBranch", "devTreeBranchDepth", "unlockRequirements", "bonuses", "costIsPerDistance", "parkingSlots", "pdxModsId", "educationLevel", "buildingType", "provenance", "dlcId", "theme", "assetPacks", "placementFlags", "extensions", "supportedUpgrades", "constructionCost", "upkeep", "workers", "households", "capacity", "serviceRange", "serviceFacts", "footprints", "footprintOverflow", "serviceTextFacts", "speedLimit", "networkWidth", "leisureType", "leisureEfficiency", "electricityConsumption", "waterConsumption", "garbageAccumulation", "telecomNeed", "waterCapacity", "sewageCapacity", "groundPollution", "airPollution", "noisePollution", "groupPath", "groupLabelId", "reorderableSortColumns", "totalCount", "offset", "limit", "hasMore", "bestMatchId", "searchText", "bestMatch", "allMatchesLocked" },
             writer.PropertyNames);
         Assert.Contains("Write:Int32:1", writer.Tokens);
         Assert.Contains("Write:String:Coal Power Plant", writer.Tokens);
@@ -899,6 +899,138 @@ public sealed class BuildingCatalogQueryEngineTests
         Assert.Null(BuildingCatalogQueryEngine.Query(SampleEntries, new BuildingCatalogQuery()).BestMatchId);
         Assert.Null(BuildingCatalogQueryEngine.Query(SampleEntries, new BuildingCatalogQuery(SearchText: "   ")).BestMatchId);
         Assert.Null(BuildingCatalogQueryEngine.Query(SampleEntries, new BuildingCatalogQuery(SearchText: "nothing-matches-this")).BestMatchId);
+    }
+
+    [Fact]
+    public void Query_BestMatchIsChosenFromTheWholeResultNotTheWindow()
+    {
+        // 120 prefix matches in an earlier group fill the first window; the exact match
+        // sits in a later group, at row 120, past it.
+        var entries = Enumerable.Range(1, 120)
+            .Select(i => SampleEntries[0] with { Id = i, PrefabName = $"Lot{i}", Name = $"Parking Lot {i:D3}", Category = "Buildings" })
+            .Append(SampleEntries[0] with { Id = 500, PrefabName = "Parking", Name = "Parking", Category = "ServiceBuildings" })
+            .ToArray();
+
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+            entries,
+            new BuildingCatalogQuery(SearchText: "parking", GroupBy: "category", Limit: 100));
+
+        Assert.DoesNotContain(page.Items, item => item.Id == 500);
+        Assert.Equal(500, page.BestMatchId);
+        Assert.Equal(new BuildingCatalogBestMatch(500, "Parking", string.Empty, 120), page.BestMatch);
+    }
+
+    [Fact]
+    public void Query_UnderACostSortTheBestRelevanceStillWinsOverTheCheapest()
+    {
+        // Relevance leads under any sort, so 110 locked exact matches fill the first window
+        // and the three that can be placed follow. The cost sort runs cheapest first among
+        // those three, which are equally relevant: the armed one is the first in that order.
+        var entries = Enumerable.Range(1, 110)
+            .Select(i => SampleEntries[0] with { Id = i, PrefabName = $"Locked{i}", Name = "Parking", IsLocked = true, ConstructionCost = 50 })
+            .Concat(new[]
+            {
+                SampleEntries[0] with { Id = 501, PrefabName = "ParkingA", Name = "Parking Lot A", ConstructionCost = 500 },
+                SampleEntries[0] with { Id = 502, PrefabName = "ParkingB", Name = "Parking Lot B", ConstructionCost = 9000 },
+                SampleEntries[0] with { Id = 503, PrefabName = "ParkingC", Name = "Parking Lot C", ConstructionCost = 100 },
+            })
+            .ToArray();
+
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(
+            entries,
+            new BuildingCatalogQuery(SearchText: "parking", SortColumn: "ConstructionCost", Limit: 100));
+
+        Assert.All(page.Items, item => Assert.True(item.IsLocked));
+        Assert.Equal(503, page.BestMatchId);
+        Assert.Equal(new BuildingCatalogBestMatch(503, "Parking Lot C", string.Empty, 110), page.BestMatch);
+    }
+
+    [Fact]
+    public void Query_TheOnlyArmableOfTwoHundredFiftyMatchesIsFoundAtRow240()
+    {
+        var entries = Enumerable.Range(0, 250)
+            .Select(i => SampleEntries[0] with { Id = 1000 + i, PrefabName = $"Park{i}", Name = $"Park {i:D3}", UIOrder = i, IsLocked = i != 240 })
+            .ToArray();
+
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(entries, new BuildingCatalogQuery(SearchText: "park", Limit: 100));
+
+        Assert.Equal(1240, page.BestMatchId);
+        Assert.Equal(240, page.BestMatch!.Index);
+        Assert.False(page.AllMatchesLocked);
+    }
+
+    [Fact]
+    public void Query_WhenEveryMatchIsLockedOrBuiltNoneIsNamedAndThePageSaysSo()
+    {
+        var entries = new[]
+        {
+            SampleEntries[0] with { Id = 1, Name = "Hospital", IsLocked = true },
+            SampleEntries[0] with { Id = 2, Name = "Hospital Wing", IsUnique = true, IsAlreadyBuilt = true },
+        };
+
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(entries, new BuildingCatalogQuery(SearchText: "hospital"));
+
+        Assert.Null(page.BestMatch);
+        Assert.Null(page.BestMatchId);
+        Assert.True(page.AllMatchesLocked);
+    }
+
+    [Fact]
+    public void Query_ASearchThatMatchesNothingOrNoSearchIsNotAllLocked()
+    {
+        Assert.False(BuildingCatalogQueryEngine.Query(SampleEntries, new BuildingCatalogQuery(SearchText: "nothing-matches-this")).AllMatchesLocked);
+        Assert.False(BuildingCatalogQueryEngine.Query(SampleEntries, new BuildingCatalogQuery()).AllMatchesLocked);
+    }
+
+    [Fact]
+    public void Query_ATieInRelevanceAndLengthGoesToTheFirstInDisplayOrder()
+    {
+        var entries = new[]
+        {
+            SampleEntries[0] with { Id = 1, Name = "Clinic A", Category = "ServiceBuildings" },
+            SampleEntries[0] with { Id = 2, Name = "Clinic B", Category = "Buildings" },
+        };
+
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(entries, new BuildingCatalogQuery(SearchText: "clinic", GroupBy: "category"));
+
+        Assert.Equal(2, page.Items[0].Id);
+        Assert.Equal(new BuildingCatalogBestMatch(2, "Clinic B", string.Empty, 0), page.BestMatch);
+    }
+
+    [Fact]
+    public void Query_TheBestMatchNamesTheMenuItIsPlacedFrom()
+    {
+        var entries = new[] { SampleEntries[0] with { Id = 7, Name = "Small Road", UiMenu = "Roads", UiCategory = "RoadsSmallRoads" } };
+
+        BuildingCatalogPage page = BuildingCatalogQueryEngine.Query(entries, new BuildingCatalogQuery(SearchText: "small"));
+
+        Assert.Equal(new BuildingCatalogBestMatch(7, "Small Road", "Roads", 0), page.BestMatch);
+    }
+
+    [Fact]
+    public void PageWrite_WritesTheBestMatchAsAnObject()
+    {
+        BuildingCatalogPage page = new(
+            Array.Empty<BuildingCatalogEntry>(),
+            TotalCount: 300,
+            Offset: 0,
+            Limit: 100,
+            BestMatchId: 42,
+            SearchText: "parking",
+            BestMatch: new BuildingCatalogBestMatch(42, "Parking", "Roads", 120));
+        RecordingJsonWriter writer = new();
+
+        page.Write(writer);
+
+        var at = writer.Tokens.IndexOf("PropertyName:bestMatch");
+        Assert.Equal(
+            new[]
+            {
+                "PropertyName:bestMatch", "TypeBegin:" + typeof(BuildingCatalogBestMatch).FullName,
+                "PropertyName:id", "Write:Int32:42", "PropertyName:name", "Write:String:Parking",
+                "PropertyName:menu", "Write:String:Roads", "PropertyName:index", "Write:Int32:120", "TypeEnd",
+            },
+            writer.Tokens.Skip(at).Take(11));
     }
 
     private static BuildingCatalogEntry Entry(

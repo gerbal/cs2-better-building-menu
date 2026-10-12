@@ -204,6 +204,17 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   // the table means nothing in the grid.
   const anchorKey = getAssetMenuAnchorKey({ list: "catalog", viewMode, groupBy });
 
+  // Arms a prefab by id, loaded or not: Enter's target can sit past the window.
+  const armById = useCallback((id: number): void => {
+    // Placing unmounts the whole asset menu, so this is the last moment the scroll
+    // position exists — and the building just chosen is what to come back to.
+    setAssetMenuAnchor(anchorKey, id);
+
+    // The backend resolves this id through its prefab index and activates the
+    // normal prefab tool.
+    assetMenuPort.activatePrefab({ prefabId: id });
+  }, [anchorKey]);
+
   // Stable across renders, like every callback a row receives, so a memoised
   // row skips the re-render its parent does on each keystroke.
   const activate = useCallback((entry: BuildingCatalogEntry): void => {
@@ -212,14 +223,8 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
     // arrow-key navigation also calls and must step past a locked tile.
     if (!canPlace(entry)) return;
 
-    // Placing unmounts the whole asset menu, so this is the last moment the scroll
-    // position exists — and the building just chosen is what to come back to.
-    setAssetMenuAnchor(anchorKey, entry.id);
-
-    // The backend resolves this id through its prefab index and activates the
-    // normal prefab tool.
-    assetMenuPort.activatePrefab({ prefabId: entry.id });
-  }, [anchorKey]);
+    armById(entry.id);
+  }, [armById]);
 
   const setSort = useCallback(
     (column: SortColumn): void => sendSort({ column: sortColumn, descending }, column),
@@ -228,18 +233,19 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
 
   useScrollAnchor(rootRef, anchorKey, items.length);
 
-  // Enter arms the backend's best match, so a search can be finished without
-  // leaving the keyboard. One listener for every view, on the document because
-  // the search field is the header's; the ref keeps it reading this render.
-  // An Enter pressed before the page catches up with the box is held for it.
+  // Enter arms the backend's best match by id, wherever its row is, so a search
+  // can be finished without leaving the keyboard. One listener for every view, on
+  // the document because the search field is the header's; the ref keeps it
+  // reading this render. An Enter pressed before the page catches up with the box
+  // is held for it.
   const pendingEnter = useRef<string | null>(null);
   const onEnter = useRef<(event: KeyboardEvent) => void>(() => undefined);
   onEnter.current = (event) => {
     if (!isEnterForSearch(event.target, isSearchField(event.target))) return;
 
-    const decision = enterDecision({ items, bestMatchId, searchText: pageSearch }, currentSearch ?? "");
+    const decision = enterDecision({ bestMatchId, searchText: pageSearch }, currentSearch ?? "");
     pendingEnter.current = decision && "wait" in decision ? decision.wait : null;
-    if (decision && "arm" in decision) activate(decision.arm);
+    if (decision && "arm" in decision) armById(decision.arm);
   };
   useEffect(() => {
     const waiting = pendingEnter.current;
@@ -251,12 +257,12 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
       return;
     }
 
-    const decision = enterDecision({ items, bestMatchId, searchText: pageSearch }, waiting);
+    const decision = enterDecision({ bestMatchId, searchText: pageSearch }, waiting);
     if (decision && "wait" in decision) return;
 
     pendingEnter.current = null;
-    if (decision) activate(decision.arm);
-  }, [items, bestMatchId, pageSearch, currentSearch, activate]);
+    if (decision) armById(decision.arm);
+  }, [bestMatchId, pageSearch, currentSearch, armById]);
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (isPlainEnter(event)) onEnter.current(event);
