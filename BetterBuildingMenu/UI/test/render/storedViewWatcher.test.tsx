@@ -37,7 +37,8 @@ describe("the stored-view watcher", () => {
   });
 
   it("drops the session's pick when the first answer is empty, a reset made while it was unmounted", () => {
-    // No binding is set: the first answer is "", though a pick exists.
+    // The stored view is empty when the watcher mounts, though a pick exists.
+    stored("");
     const root = mounted("table");
     act(() => root.unmount());
 
