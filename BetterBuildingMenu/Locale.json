@@ -118,7 +118,7 @@
   "Options.LABEL[BetterBuildingMenu.LotWidth]": "Lot Width",
   "Options.LABEL[BetterBuildingMenu.LotDepth]": "Lot Depth",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.ReplaceVanillaBuildMenu]": "Replace the vanilla build menu",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.ReplaceVanillaBuildMenu]": "When you click a toolbar menu such as Electricity or Roads, opens the panel already filtered to that menu instead of the vanilla asset grid. Turn off to get the stock icon row back.",
+  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.ReplaceVanillaBuildMenu]": "When you click a toolbar menu such as Electricity or Roads, opens the panel already filtered to that menu instead of the vanilla asset grid. Turn off to get the stock icon row back. With a controller, the game's own build menu shows.",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.AutoWidenSearch]": "Searching widens automatically",
   "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.AutoWidenSearch]": "When a search finds nothing in the current category, drop the category and search every menu at once. Off by default: the panel offers to widen instead, so the category you were browsing is kept.",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.AssetMenuTileSize]": "Tile size",

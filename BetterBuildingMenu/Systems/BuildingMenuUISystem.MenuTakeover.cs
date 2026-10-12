@@ -2,12 +2,70 @@
 using BetterBuildingMenu.Services;
 using BetterBuildingMenu.Utilities;
 
+using Game.Input;
+
 using Unity.Entities;
 
 namespace BetterBuildingMenu.Systems
 {
     internal partial class BuildingMenuUISystem : ExtendedUISystemBase
 	{
+		// The toolbar menu BBM has given the game's own while a gamepad is in use, to take back
+		// when the mouse returns, or 0 for none.
+		private int _gamepadMenuIndex;
+
+		// Set once the handler has warned, so a failing handler logs once per session.
+		private bool _controlSchemeWarned;
+
+		/// <summary>
+		/// Gives the menu BBM stands in for to the game's own when the player picks up a gamepad,
+		/// and takes it back, on the same menu, when the mouse returns.
+		/// </summary>
+		/// <remarks>
+		/// The toolbar's selection is left alone both ways. Runs inside the game's input code, so
+		/// it does nothing once the settings are gone and never throws. See docs/design-notes.md,
+		/// "The game's own menu under a gamepad".
+		/// </remarks>
+		private void OnControlSchemeChanged(InputManager.ControlScheme scheme)
+		{
+			if (Mod.Settings is null)
+			{
+				return;
+			}
+
+			try
+			{
+				var recorded = _gamepadMenuIndex;
+				var handOff = MenuOwnership.SchemeChanged(
+					scheme == InputManager.ControlScheme.Gamepad,
+					Mod.Settings.ReplaceVanillaBuildMenu,
+					_OwnsCurrentMenu.Value ? _appliedMenuIndex : 0,
+					recorded);
+
+				_gamepadMenuIndex = handOff.Recorded;
+
+				switch (handOff.Action)
+				{
+					case HandOffAction.Yield:
+						YieldMenuToVanilla();
+						break;
+					case HandOffAction.Reopen:
+						// A fresh open, which the echo guard must not take for the game's echo.
+						_appliedMenuFrame = null;
+						VanillaMenuSelected(recorded);
+						break;
+				}
+			}
+			catch (System.Exception ex)
+			{
+				if (!_controlSchemeWarned)
+				{
+					_controlSchemeWarned = true;
+					Mod.Log.Warn(ex, "Could not hand the build menu over for a control scheme change");
+				}
+			}
+		}
+
 		/// <summary>
 		/// Closes the asset menu and, when it was standing in for a vanilla menu,
 		/// releases that menu's selection on the toolbar.
@@ -85,6 +143,16 @@ namespace BetterBuildingMenu.Systems
 				return;
 			}
 
+			// Under a gamepad the game's own menu serves, and this one is taken back for the mouse.
+			var handOff = MenuOwnership.MenuSelected(InputManager.instance?.isGamepadControlSchemeActive == true, menuEntityIndex);
+
+			if (handOff.Action == HandOffAction.Yield)
+			{
+				_gamepadMenuIndex = handOff.Recorded;
+				YieldMenuToVanilla();
+				return;
+			}
+
 			// Opening the asset menu makes the game re-assert the armed tool's menu, so one
 			// click arrives as two selections.
 			if (MenuEchoGuard.IsEcho(_appliedMenuFrame, _appliedMenuIndex, UnityEngine.Time.frameCount, menuEntityIndex))
@@ -145,6 +213,10 @@ namespace BetterBuildingMenu.Systems
 		/// </remarks>
 		private void VanillaMenuDeselected()
 		{
+			// Before the check below: a menu closing under a gamepad is the game's, and leaves
+			// nothing to take back.
+			_gamepadMenuIndex = 0;
+
 			if (!Mod.Settings.ReplaceVanillaBuildMenu || !_OwnsCurrentMenu)
 			{
 				return;

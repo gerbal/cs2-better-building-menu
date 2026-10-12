@@ -70,6 +70,30 @@ renders (the screen paints no background behind it) and stays hit-testable.
 Moving the chirper's toasts out of the pane's way would make this unnecessary; see
 [issue #104](https://github.com/gerbal/cs2-better-building-menu/issues/104).
 
+## The game's own menu under a gamepad
+
+BBM's menu has nothing a gamepad can reach: on PC the game never mounts its console menu, and BBM's
+controls take no focus. So while the player uses a gamepad, the game's own build menu stands in for
+the toolbar's open menu, and moving the mouse brings BBM's back on the same menu.
+
+- **Picking up a gamepad.** `InputManager.EventControlSchemeChanged` reports it. If BBM stands in
+  for a menu, it records that menu's toolbar index and gives it up (`YieldMenuToVanilla`):
+  `OwnsCurrentMenu` goes false, and the UI, which draws the game's menu whenever it is false, draws
+  it. The toolbar's selection is left alone, so the game's menu opens on the same menu.
+- **Under the gamepad.** A menu the toolbar opens is recorded and left to the game; a menu it
+  closes clears the record, before anything else `VanillaMenuDeselected` checks.
+- **Back to the mouse.** A recorded menu is opened again as a fresh open, past the echo guard, and
+  the record goes. With Replace the vanilla build menu off, nothing reopens.
+- **The rule** is `MenuOwnership`, which is pure: BBM stands in for a menu only while Replace is on
+  and the scheme is not the gamepad.
+- **Where each menu sits.** The game's keeps its own place, x 607 at the game's text size, while
+  BBM's starts beside the tool options, so at the first Width step the hand-off moves the menu
+  sideways until BBM's box takes the game's place.
+- **A nudged stick** flips the scheme, and BBM follows each change as the game does. If that makes
+  the menus flicker, the fallback is to wait for a scheme to hold 250 ms before handing over.
+- **The handler runs inside the game's input code**, so it does nothing once the settings are gone
+  and logs one warning per session if it fails.
+
 ## The Width steps
 
 The build menu draws at one of five widths, the same rectangle in every menu. The setting holds
