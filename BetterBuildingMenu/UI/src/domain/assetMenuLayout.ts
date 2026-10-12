@@ -368,3 +368,15 @@ export function assetMenuRowWidth(menuWidth: number, paneShown: boolean): number
 export function catalogLayoutWidth(menuWidth: number): number {
   return menuWidth + CONTROL_PANE_TOTAL;
 }
+
+/** The tab row's band under the list: the gap, the row and the pad above the bar. */
+export const TAB_ROW_BAND = sheetRem("tabRowBand");
+
+/**
+ * The list's height as drawn: the stored height less the tab row's band, so the band fits inside
+ * the box's height rather than adding to it, never below the drag's floor. The stored height keeps
+ * its meaning for the drag and the settings. See docs/design-notes.md, "The tab row".
+ */
+export function drawnBodyHeight(storedHeight: number): number {
+  return Math.max(ASSET_MENU_MIN_HEIGHT, clampAssetMenuHeight(storedHeight) - TAB_ROW_BAND);
+}

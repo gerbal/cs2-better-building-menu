@@ -46,7 +46,7 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   { key: key("ViewCards"), english: "Cards", source: "BuildingCatalog", plumbed: true },
   { key: key("ViewTable"), english: "Table", source: "BuildingCatalog", plumbed: true },
   { key: key("GroupBy_none"), english: "None", source: "buildingGroups", plumbed: true },
-  // The game's own categories — the dimension the tab strip shows.
+  // The game's own categories — the dimension the tab row shows.
   { key: key("GroupBy_menuCategory"), english: "Category", source: "buildingGroups", plumbed: true },
   // Ours: Buildings, Networks, Service Buildings. Not "Category", which is the
   // game's word for a different idea.

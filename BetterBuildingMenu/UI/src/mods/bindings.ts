@@ -41,7 +41,7 @@ export const BuildingCatalogMetricBounds$ = bindValue<AssetMenuMetricRangeState 
 export const ActivePrefabId$ = bindValue<number>(mod.id, "ActivePrefabId", 0);
 export const AssetMenuMilestones$ = bindValue<string[]>(mod.id, "AssetMenuMilestones", []);
 
-// --- The menu and its strip -------------------------------------------------
+// --- The menu and its tabs --------------------------------------------------
 
 export const AssetMenu$ = bindValue<string>(mod.id, "AssetMenu", "");
 export const AssetMenus$ = bindValue<VanillaMenuCategory[]>(mod.id, "AssetMenus", []);

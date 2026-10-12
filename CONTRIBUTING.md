@@ -133,8 +133,8 @@ or the reader, in a sentence.
 
 | Term | Meaning |
 |---|---|
-| Asset menu | Vanilla's name for one of its toolbar menus (Roads, Zones, Police & Administration and so on) and for what opens from it. This mod draws its own in place of vanilla's asset grid (`AssetMenu`, bindings and types named `AssetMenu*`): the build menu, with the strip and the results, beside the control pane. The menu the player opens decides what it lists. |
-| Strip | The category tabs across the top of the asset menu (`MenuCategoryStrip`): vanilla's second tier, or tiers and branches where those cut a menu better. |
+| Asset menu | Vanilla's name for one of its toolbar menus (Roads, Zones, Police & Administration and so on) and for what opens from it. This mod draws its own in place of vanilla's asset grid (`AssetMenu`, bindings and types named `AssetMenu*`): the build menu, with the results and the tab row under them, beside the control pane. The menu the player opens decides what it lists. |
+| Tab row | The menu's tabs along the asset menu's bottom edge, under the results (`TabRow`): All, then vanilla's second tier, with branches or school levels where those cut a menu better. A branch tab is a strip tab in the code (`StripAxes`, `SetAssetMenuStripTab`). |
 | Control pane | The column beside the results with the count, Group by, Sort by and view mode (`ControlPane`). |
 | Filter rail | The row of filter icons, each opening a dropdown of one facet's options (`FilterRail`). |
 | Facet | One filter dimension, such as role, source, availability, content, theme or placement, with its options. Computed in C# (`BuildingCatalogFacet*`). |

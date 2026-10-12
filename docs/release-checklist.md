@@ -57,7 +57,7 @@ On a developed save:
    `0 missing from the index`, and the `[MENU-AUDIT]` census line does not end
    in `NOT CLEAN`.
 3. **Menus.** Open Roads, Zones, Landscaping and a service menu. For each:
-   - the asset menu replaces the grid, with the category strip across the top;
+   - the asset menu replaces the grid, with the tab row along its bottom edge;
    - tiles draw their icons, with no placeholders;
    - a search finds an asset, and Enter arms the best match;
    - a long menu offers Load more, and a list past 2,000 rows says how to narrow it;

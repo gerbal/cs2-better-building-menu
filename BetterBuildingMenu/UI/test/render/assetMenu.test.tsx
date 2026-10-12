@@ -209,3 +209,21 @@ describe("the asset menu's look", () => {
     assert.match(render(), /class="toolContainer standard" style=/);
   });
 });
+
+describe("the asset menu's tab row", () => {
+  beforeEach(() => {
+    resetBindings();
+    resetAssetMenuView();
+  });
+
+  it("draws the tab row under the list, inside the box", () => {
+    const html = render();
+
+    assert.ok(html.indexOf('class="band"') > html.indexOf('class="content'), "under the list");
+    assert.ok(html.indexOf('class="band"') < html.indexOf('class="pane"'), "inside the box, before the pane beside it");
+  });
+
+  it("gives the list the box less the tab row's band, so the box keeps vanilla's 208", () => {
+    assert.match(render(), /class="content [^"]*" style="height:119\.25rem"/);
+  });
+});

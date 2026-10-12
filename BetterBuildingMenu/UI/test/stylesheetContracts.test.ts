@@ -19,6 +19,7 @@ const PICKER = "mods/ExtensionMenu/extensionMenu.module.scss";
 const RESIZE = "mods/AssetMenuResizeHandle/assetMenuResizeHandle.module.scss";
 const LIST = "mods/BuildingList/buildingList.module.scss";
 const GRID = "mods/BuildingGrid/buildingGrid.module.scss";
+const TAB_ROW = "mods/TabRow/tabRow.module.scss";
 
 const catalog = (selector: string) => declarationsOf(CATALOG, selector);
 const pane = (selector: string) => declarationsOf(PANE, selector);
@@ -173,17 +174,29 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(grip.width, "75rem");
   });
 
-  it("lets the catalog strip grow rather than slicing a wrapped row of tabs", () => {
-    // The strip wraps when its tabs outrun the width left beside the search
-    // field. Pinned to a height with overflow: hidden, the second line is cut
-    // through the middle; stopping the wrap costs the player five categories.
-    const row = declarationsOf(HEADER, ".catalogStripRow");
-    const tabs = declarationsOf(HEADER, ".catalogStripTabs");
+  it("keeps the header one row high and the tab row one line", () => {
+    // The box keeps vanilla's height whatever a menu holds, so nothing in it may wrap or grow.
+    // The tabs live in the tab row, which cuts at the box's edge rather than wrap.
+    const header = declarationsOf(HEADER, ".headerRow");
+    const tabs = declarationsOf(TAB_ROW, ".tabRow");
 
-    assert.ok(row["min-height"], "the row has a floor");
-    assert.equal(row.height, undefined);
-    assert.notEqual(row.overflow, "hidden");
-    assert.notEqual(tabs.overflow, "hidden");
+    assert.equal(header.height, "45rem");
+    assert.equal(header["min-height"], undefined);
+    assert.equal(tabs["flex-wrap"], "nowrap");
+    assert.equal(tabs.height, "26rem");
+    assert.equal(tabs.overflow, "hidden");
+  });
+
+  it("squares the list's bottom corners, which the tab row's band rounds", () => {
+    // The band under the list is the box's bottom edge, so it carries the rounding. A rounded
+    // list above the band's square top would notch the seam between them.
+    const list = declarationsOf(ASSET_MENU, ".content");
+    const band = declarationsOf(TAB_ROW, ".band");
+
+    assert.equal(list["border-bottom-left-radius"], "0");
+    assert.equal(list["border-bottom-right-radius"], "0");
+    assert.equal(band["border-bottom-left-radius"], "var(--bbm-boxRadius)");
+    assert.equal(band["border-bottom-right-radius"], "var(--bbm-boxRadius)");
   });
 
   it("matches the vanilla options bank it sits opposite", () => {
@@ -399,13 +412,16 @@ describe("the extension picker wears the same panel frame as the build menu", ()
   });
 
   it("gives the body the content surface", () => {
-    // The build menu's own body, surface for surface.
+    // The build menu's own body, surface for surface. The picker has no tab row under its body,
+    // so the body rounds the frame's bottom corners itself.
     const body = picker(".content");
     const buildMenuBody = declarationsOf(ASSET_MENU, ".content");
-    for (const property of ["background-color", "backdrop-filter", "background-image", "border-bottom-left-radius", "border-bottom-right-radius"]) {
+    for (const property of ["background-color", "backdrop-filter", "background-image"]) {
       assert.ok(body[property], `the picker's body has no ${property}`);
       assert.equal(body[property], buildMenuBody[property], property);
     }
+    assert.equal(body["border-bottom-left-radius"], "var(--panelRadius)");
+    assert.equal(body["border-bottom-right-radius"], "var(--panelRadius)");
   });
 
   it("takes the pointer only where it draws", () => {

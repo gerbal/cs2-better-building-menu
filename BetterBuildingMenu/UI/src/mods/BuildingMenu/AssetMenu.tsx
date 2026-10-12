@@ -5,13 +5,14 @@ import type { CSSProperties } from "react";
 import { BuildingCatalogComponent } from "mods/BuildingCatalog/BuildingCatalog";
 import { ControlPane } from "mods/ControlPane/ControlPane";
 import { BuildingMenuHeader } from "mods/BuildingMenu/BuildingMenuHeader";
+import { TabRow } from "mods/TabRow/TabRow";
 import { AssetMenuResizeHandle, useAssetMenuHeight } from "mods/AssetMenuResizeHandle/AssetMenuResizeHandle";
 import { AssetMenuWidthHandle, AssetMenuWidthReach, useAssetMenuWidthDrag } from "mods/AssetMenuWidthHandle/AssetMenuWidthHandle";
 import { VanillaTabBarHost } from "mods/VanillaTabBarHost/VanillaTabBarHost";
 import { useVanillaLayoutForAssetMenu } from "mods/BuildingMenu/vanillaLayout";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
 import { AssetMenuTuning$ } from "mods/bindings";
-import { ASSET_MENU_WIDTH_HANDLE_REACH, assetMenuRowWidth, catalogLayoutWidth } from "domain/assetMenuLayout";
+import { ASSET_MENU_WIDTH_HANDLE_REACH, assetMenuRowWidth, catalogLayoutWidth, drawnBodyHeight } from "domain/assetMenuLayout";
 import { surfaceAlphaStyle } from "domain/looks";
 import { useInterfaceTransparency } from "domain/interfaceTransparencySetting";
 import looks from "looks/looks.module.scss";
@@ -75,7 +76,7 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
           </div>
           <div
             className={classNames(styles.content, AssetMenuTheme.assetPanel)}
-            style={{ height: `${catalogHeight}rem` }}
+            style={{ height: `${drawnBodyHeight(catalogHeight)}rem` }}
           >
             <BuildingCatalogComponent />
             <AssetMenuWidthHandle
@@ -85,6 +86,9 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
               onBeginResize={widthDrag.beginResize}
             />
           </div>
+          {/* The tabs, on the box's bottom edge next to the bar. The list above is the box less
+              their band, so the box keeps its height. See docs/design-notes.md, "The tab row". */}
+          <TabRow />
           {/* Only beside the pane: with it hidden the menu may reach the room's
               edge, and nothing may go past that over the social icons. */}
           {paneShown && (

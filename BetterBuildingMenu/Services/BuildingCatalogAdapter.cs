@@ -163,12 +163,12 @@ namespace BetterBuildingMenu.Services
 		}
 
 		/// <summary>
-		/// The glyph every school-level tab is built on.
+		/// The icon every school level carries in the tier bracket.
 		/// </summary>
 		/// <remarks>
-		/// A school's level is the attainment it grants, so one mortarboard carries every
-		/// level with the rank drawn over it as a roman numeral: the row says what kind of
-		/// thing a tab is before it says how much, and four glyphs read as four subjects.
+		/// A school's level is the attainment it grants, so one mortarboard stands for every
+		/// level. The tab row draws the levels as words beside their tab, not as this icon:
+		/// one picture for four levels would tell none of them apart.
 		/// </remarks>
 		internal const string SchoolTierIcon = "Media/Game/Icons/Education.svg";
 

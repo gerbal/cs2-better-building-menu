@@ -1,12 +1,13 @@
 namespace BetterBuildingMenu.Domain
 {
 	/// <summary>
-	/// How tall the asset menu catalog is drawn — one number the player sets
-	/// by dragging, and the asset menu then keeps.
+	/// How tall the asset menu's catalog and its tab row are drawn together — one
+	/// number the player sets by dragging, and the asset menu then keeps.
 	/// </summary>
 	/// <remarks>
 	/// The UI clamps its drag with the same three numbers, generated from these into
-	/// sharedContracts.generated.ts: see SharedContractsTests.
+	/// sharedContracts.generated.ts: see SharedContractsTests. The catalog draws at the
+	/// height less the tab row's band, never below <see cref="Min"/>.
 	/// </remarks>
 	public static class AssetMenuHeight
 	{

@@ -24,6 +24,8 @@ import {
   visibleTableMetrics,
   assetMenuRowWidth,
   catalogLayoutWidth,
+  drawnBodyHeight,
+  TAB_ROW_BAND,
 } from "../src/domain/assetMenuLayout.ts";
 
 // 0.2.4's row at step 3, the box and the pane beside it: what the table's arithmetic was tuned at.
@@ -368,5 +370,20 @@ describe("the table's columns at a narrow build menu", () => {
   it("gives the columns it keeps their comfortable widths", () => {
     assert.deepEqual(columnWidthsAt(at(735), 1, visibleTableMetrics(at(735))), { cost: 100, upkeep: 116 });
     assert.deepEqual(columnWidthsAt(at(1091), 1, ALL as never), COMFORTABLE_COLUMNS);
+  });
+});
+
+describe("the list under the tab row", () => {
+  it("is the box less the tab row's band, so the box keeps vanilla's 208", () => {
+    const header = rem(declarationsOf("mods/BuildingMenu/buildingMenuHeader.module.scss", ".headerRow").height);
+
+    assert.equal(TAB_ROW_BAND, 29.75);
+    assert.equal(drawnBodyHeight(ASSET_MENU_DEFAULT_HEIGHT), 119.25);
+    assert.equal(ASSET_MENU_RESIZE_HANDLE_HEIGHT + header + drawnBodyHeight(ASSET_MENU_DEFAULT_HEIGHT) + TAB_ROW_BAND, 208);
+  });
+
+  it("never draws below the drag's floor", () => {
+    assert.equal(drawnBodyHeight(ASSET_MENU_MIN_HEIGHT), ASSET_MENU_MIN_HEIGHT);
+    assert.equal(drawnBodyHeight(Number.NaN), drawnBodyHeight(ASSET_MENU_DEFAULT_HEIGHT));
   });
 });

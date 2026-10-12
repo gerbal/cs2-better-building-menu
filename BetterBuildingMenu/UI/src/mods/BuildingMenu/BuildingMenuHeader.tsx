@@ -7,7 +7,6 @@ import { memo, useRef } from "react";
 
 import find from "images/find.svg";
 import { searchChangedCommand } from "domain/buildingCatalogContracts";
-import { MenuCategoryStrip } from "mods/MenuCategoryStrip/MenuCategoryStrip";
 import { VanillaComponentResolver } from "mods/VanillaComponentResolver/VanillaComponentResolver";
 
 import styles from "mods/BuildingMenu/buildingMenuHeader.module.scss";
@@ -20,7 +19,7 @@ import { GameTextInput, gameClasses } from "mods/gameModules";
 const TextInputTheme = gameClasses("game-ui/editor/widgets/item/editor-item.module.scss");
 
 export interface BuildingMenuHeaderProps {
-  /** Narrow asset menu: the strip and the field share a tighter row. */
+  /** Narrow asset menu. */
   small?: boolean;
   /** Wide asset menu. */
   large?: boolean;
@@ -32,8 +31,8 @@ export interface BuildingMenuHeaderProps {
 }
 
 /**
- * The build menu's own header: the category strip, the search field and the
- * game's close X, on one row.
+ * The build menu's own header: the search field, the control pane's switch and
+ * the game's close X, on one row. The tabs are the tab row's, under the list.
  */
 export const BuildingMenuHeader = memo(function BuildingMenuHeader({ small, large, onClose }: BuildingMenuHeaderProps) {
   const { translate } = useLocalization();
@@ -61,15 +60,10 @@ export const BuildingMenuHeader = memo(function BuildingMenuHeader({ small, larg
 
   return (
     <div className={classNames(large && styles.large, small && styles.small)}>
-      <div className={styles.catalogStripRow}>
-        {/* Wrapped rather than styled directly: MenuCategoryStrip owns its own
-            class and sizes itself flex: 0 0 auto. The wrapper holds the tabs at
-            the left and the search at the right even when the strip draws
-            nothing, which a menu with fewer than two categories does. */}
-        <div className={styles.catalogStripTabs}>
-          <MenuCategoryStrip />
-        </div>
-        <div className={styles.catalogStripSearch}>
+      <div className={styles.headerRow}>
+        {/* Holds the search field at the right, beside the pane switch and the close. */}
+        <div className={styles.headerSpacer} />
+        <div className={styles.headerSearch}>
           {IsSearchLoading && (
             <img
               style={{ maskImage: "url(coui://uil/Standard/HalfCircleProgress.svg)" }}

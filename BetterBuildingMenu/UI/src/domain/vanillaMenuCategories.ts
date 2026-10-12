@@ -13,8 +13,8 @@ export interface VanillaMenuCategory {
 export const ALL_CATEGORIES_ID = "";
 
 /**
- * Whether the strip is worth drawing at all. Vanilla's rule and vanilla's
- * reason: a strip offering one choice is not a choice. Ours carries an extra
+ * Whether the tab row draws the menu's categories. Vanilla's rule and vanilla's
+ * reason: a row offering one choice is not a choice. Ours carries an extra
  * "All" tab, so two real categories still make three and are worth showing.
  */
 export function shouldShowCategoryStrip(
@@ -26,15 +26,15 @@ export function shouldShowCategoryStrip(
 
 /**
  * Whether the asset menu stands in for one of the game's menus. Unscoped — Search
- * everything — the strip would carry every category of every menu across four
- * wrapped rows, and the group headings already say the same thing.
+ * everything — the tab row would carry every category of every menu, and the
+ * group headings already say the same thing.
  */
 export function isAssetMenuScoped(menu: string | null | undefined): boolean {
   return (menu ?? "").trim() !== "";
 }
 
 /**
- * Tabs in the order the strip draws them, by the game's own m_Priority. Sorted
+ * Tabs in the order the tab row draws them, by the game's own m_Priority. Sorted
  * again here because the binding is a plain array; ties keep their incoming
  * order, which matters because m_Priority defaults to 0.
  */
@@ -63,7 +63,7 @@ export interface MenuCategoryCount {
 
 /**
  * How many assets sit behind a tab, or null when the backend has not said —
- * collapsing null into 0 would flash zeroes across the strip on every menu
+ * collapsing null into 0 would flash zeroes across the tab row on every menu
  * change. A tab missing from a table that HAS arrived reads 0, not null.
  */
 export function categoryCount(

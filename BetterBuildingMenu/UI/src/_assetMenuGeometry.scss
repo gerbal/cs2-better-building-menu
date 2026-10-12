@@ -48,3 +48,24 @@ $width-handle-width: 8rem;
 // Past the menu's edge the strip can also be grabbed across the gap beside the
 // pane, and no further.
 $width-handle-reach: $pane-gap;
+
+// The header above the list: one row, of a fixed height, so the box keeps its own.
+$header-height: 45rem;
+
+// The tab row along the box's bottom edge: a gap under the list, the row, a pad above the bar.
+$tab-row-gap-above: 1.5rem;
+$tab-row-height: 26rem;
+$tab-row-pad-below: 2.25rem;
+// Its cells sit this far inside the box's side edges.
+$tab-row-inset: 4rem;
+// A cell: at least this wide, padded each side of its count, this far from the next.
+$tab-cell-min-width: 28rem;
+$tab-cell-padding: 5rem;
+$tab-cell-gap: 2rem;
+// A cell's count at 100% text; its icon takes what the count leaves of the row.
+$tab-count-size: 10rem;
+// A worded cell's name at 100% text, and its gap to the count beside it.
+$tab-name-size: 11rem;
+$tab-name-gap: 4rem;
+// Each side of Education's plate, between it and the cells beside it.
+$tab-segment-margin: 4rem;

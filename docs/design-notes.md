@@ -296,6 +296,41 @@ looks; only Standard's tokens are written here.
 - **Plain selectors.** The tokens' rules use class selectors only: Cohtml has no grid, `:not()`,
   `:has()`, `:is()` or `an+b` selectors, and no `text-overflow` on a flex item.
 
+## The tab row
+
+The menu's tabs sit in a band along the box's bottom edge, under the list, next to the bar: All
+first, the menu's icon on a round plate over the menu's count; then the game's tabs in its order,
+each its icon over its count; a category split into branches draws the branches in its place, and
+Education's tab and its levels draw as one plate, the levels as worded chips. A cell whose picture
+would not tell it apart (none, the menu's own, or another cell's) says its name instead, with its
+count on the same line. A click sends the cell's pick (`SetAssetMenuCategory`,
+`SetAssetMenuStripTab` or `SetAssetMenuSchoolTier`), and All's clears every narrowing. Hover labels
+are the game's Tooltip ("Medium Roads · 34"): `title` never draws in Cohtml. A tab the filters or
+the search empty draws faint, where it was; while a search is typed the counts are match counts.
+Until C# sends the menu's counts a tab's count draws blank rather than as a faint 0, so a menu
+change does not flash zeroes across the row.
+
+**The box keeps its height.** The band is 29.75 rem: a 1.5 gap under the list, the 26 rem row, a
+2.25 pad above the bar. The list draws at the stored height less the band, never below the drag's
+floor (`drawnBodyHeight`): 119.25 at the default 149, so the box stays 14 + 45 + 119.25 + 29.75 =
+208. The row is one line of a fixed height that cuts at the box's edge rather than wrap, and the
+header above is one row of a fixed height, so no menu's tabs grow the box. The stored height keeps
+its meaning, the room under the header for the list and the band, for the drag, the settings and
+the upgrades panel's cap. The band is the box's bottom edge, so it carries the box's bottom
+rounding and the list's bottom corners are square: a rounded list above the band's square top
+would notch the seam.
+
+**The cell.** At least 28 wide, 5 each side of its count, 2 from the next, and the full row tall.
+Its icon takes what the count leaves of the row, `26 − 10 × text scale`, over a count of
+`10 × text scale`: 16 over 10 at 100%, 13 over 13 at 130%, 11 over 15 at 150%. A worded cell's
+name is `11 × text scale`, 4 from its count, and Education's plate keeps 4 more from the cells
+beside it. A line box rounds up to whole pixels, so a count can run half a rem past the row; the
+cell cuts it. A picture gets an explicit size: square until it loads, then fitted by its long side,
+since Cohtml has no `object-fit` and a mod's picture need not be square. The picture is keyed by
+its source, so a new menu's picture starts square rather than at the fit of the one before it.
+Every one of these lengths is stated once, in `_assetMenuGeometry.scss`: the stylesheet draws
+them, and the layout arithmetic reads the ones it needs through `assetMenuLayout.module.scss`.
+
 ## The release marker and the settings version
 
 A release leaves two signs that it ran, so a later release can tell a player who upgraded from
@@ -371,8 +406,9 @@ On every load of a file at this version or earlier, a stored Width step outside 
 **Version 2, the Width steps.**
 - The hidden `Upgrader` is set for an upgrader (see "Who is an upgrader").
 - A height within 0.1 of an earlier release's default, 420 (0.2.3 to 0.2.5) or 155 (an unreleased
-  build's), becomes 149: the catalog height that makes the menu, under its 14 rem top strip and
-  45 rem header, as tall as the game's own, 208. Any other height is the player's and is kept.
+  build's), becomes 149: the height under the menu's 14 rem top strip and 45 rem header, the list
+  and the tab row's band together, that makes the menu as tall as the game's own, 208. Any other
+  height is the player's and is kept.
 - An upgrader's width becomes the Width step nearest the one they had, on this screen. The legacy
   `AssetMenuCatalogWidth` of 0, 0.2.4's default, drew the room beside the pane, 1,091 on any
   screen: the third step on 16:9, the second on 21:9 and 32:9. A dragged width gives the step

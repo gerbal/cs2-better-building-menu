@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   schoolTierTabs,
-  romanNumeral,
   expandedTabsFor,
   branchTabTooltip,
 } from "../src/domain/menuProgression.ts";
@@ -64,22 +63,6 @@ describe("education tier tabs", () => {
   it("survives a missing binding", () => {
     assert.deepEqual(schoolTierTabs(null), []);
     assert.deepEqual(schoolTierTabs(undefined), []);
-  });
-});
-
-describe("school level rank", () => {
-  it("numbers the four levels in roman", () => {
-    // Roman, because the arabic numeral would be read as a count — every other
-    // number on that row is one, including the badge in the opposite corner of
-    // the same tab.
-    assert.deepEqual([1, 2, 3, 4].map(romanNumeral), ["I", "II", "III", "IV"]);
-  });
-
-  it("falls back to the plain number outside the game's range", () => {
-    // Four levels is the whole range SchoolLevel has, so this is not a general
-    // converter and does not pretend to be one.
-    assert.equal(romanNumeral(0), "0");
-    assert.equal(romanNumeral(5), "5");
   });
 });
 

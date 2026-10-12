@@ -133,7 +133,7 @@ export const ChipRow = () => {
     setPicker(null);
   };
 
-  // The same word the strip's extra tab carries, because they are the same
+  // The same word the tab row's All cell carries, because they are the same
   // choice reached two ways.
   const allCategoriesLabel = resolveVanillaLabel(ALL_CATEGORIES_KEYS, lookup, "All");
   const allMenusLabel = label("Tooltip.LABEL[BetterBuildingMenu.AllMenus]", "All menus");
@@ -153,8 +153,8 @@ export const ChipRow = () => {
             scopedToMenu ? () => fire({ method: "ClearAssetMenuScope", args: [] }) : null
           )}
 
-        {/* The category within it, which the strip also picks. Two ways to one
-            state on purpose: the strip is the fast one, and the chip is what
+        {/* The category within it, which the tab row also picks. Two ways to one
+            state on purpose: the tab row is the fast one, and the chip is what
             makes this row a complete account of the scope. */}
         {chips.menuCategory
           && renderBreadcrumb(

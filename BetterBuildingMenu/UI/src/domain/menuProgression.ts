@@ -12,7 +12,7 @@ export interface MenuBranchCount {
   label?: string;
 }
 
-/** One category's sub-tabs, drawn in its place in the strip. */
+/** One category's sub-tabs, drawn in its place in the tab row. */
 export interface MenuCategoryTabs {
   categoryId: string;
   tabs: MenuBranchCount[];
@@ -117,26 +117,5 @@ export function schoolTierLabel(level: number): string {
       return "University";
     default:
       return `Level ${level}`;
-  }
-}
-
-
-/**
- * The rank a school-level tab draws over its glyph. Roman, because an arabic
- * numeral would read as a COUNT — every other number on this row is one. Stops
- * at IV, the game's whole range, rather than pretend to be a converter.
- */
-export function romanNumeral(level: number): string {
-  switch (level) {
-    case 1:
-      return "I";
-    case 2:
-      return "II";
-    case 3:
-      return "III";
-    case 4:
-      return "IV";
-    default:
-      return String(level);
   }
 }

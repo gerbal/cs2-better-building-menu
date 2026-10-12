@@ -25,8 +25,8 @@ namespace BetterBuildingMenu
 		}
 
 		/// <summary>
-		/// The catalog's height, in the same rem-like units as the width, set
-		/// by dragging the asset menu's top edge.
+		/// The height of the catalog and the tab row under it, in the same rem-like
+		/// units as the width, set by dragging the asset menu's top edge.
 		/// </summary>
 		/// <remarks>
 		/// Hidden like the width: it is a direct-manipulation value, and a slider in the options

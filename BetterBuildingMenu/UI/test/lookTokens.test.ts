@@ -13,7 +13,7 @@ const FOLLOW = [
   ":global(.style--dark-grey-orange) .standard.followStyle",
 ];
 /** The sheets that declare or read the tokens; each sheet that starts reading them joins this list. */
-const TOKEN_SHEETS = [LOOKS];
+const TOKEN_SHEETS = [LOOKS, "mods/TabRow/tabRow.module.scss"];
 
 /** A rule's --bbm-* tokens by key, without the panel alphas the root overrides. */
 function tokens(selector: string): Record<string, string> {

@@ -1,0 +1,124 @@
+@use "../../assetMenuGeometry" as *;
+
+// The tab row: a band along the box's bottom edge, under the list, holding the menu's tabs on one
+// line. It never wraps and never grows, so the box keeps its height however many tabs a menu has.
+// See docs/design-notes.md, "The tab row".
+.band {
+  flex: 0 0 auto;
+  padding-top: $tab-row-gap-above;
+  padding-right: $tab-row-inset;
+  padding-bottom: $tab-row-pad-below;
+  padding-left: $tab-row-inset;
+  background-color: var(--bbm-head);
+  // The box's bottom edge, so the band rounds it; the list above it is square.
+  border-bottom-left-radius: var(--bbm-boxRadius);
+  border-bottom-right-radius: var(--bbm-boxRadius);
+}
+
+.tabRow {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: $tab-cell-gap;
+  height: $tab-row-height;
+  overflow: hidden;
+}
+
+// A cell: its icon over its count. The count is in flow, so a long one widens the cell.
+.cell {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: $tab-cell-min-width;
+  height: $tab-row-height;
+  padding: 0 $tab-cell-padding;
+  border-radius: var(--bbm-tabRadius);
+  background-color: var(--bbm-tabUnlit);
+  // A line box rounds up to whole pixels and can run past the row: the cell cuts it.
+  overflow: hidden;
+}
+
+.cell:hover {
+  background-color: var(--bbm-tabHover);
+}
+
+// The game's highlight gradient, which no interface style changes.
+.lit {
+  background-image: var(--bbm-tabLit);
+}
+
+// Nothing in it under the filters or the search: faint, where it was.
+.empty {
+  opacity: 0.35;
+}
+
+// A worded cell, its name and count on one line, which fits the row at every text size.
+.inline {
+  flex-direction: row;
+  justify-content: center;
+  gap: $tab-name-gap;
+}
+
+// The icon takes what the count leaves of the row, so it shrinks as the text grows.
+.iconSlot {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(#{$tab-row-height} - #{$tab-count-size} * var(--fontScale));
+  height: calc(#{$tab-row-height} - #{$tab-count-size} * var(--fontScale));
+}
+
+// The All cell's plate, which tells the menu's own icon from a tab that draws it.
+.plate {
+  border-radius: 50%;
+  background-color: var(--bbm-tabSeg);
+}
+
+// Sized inline from its natural size: Cohtml draws an unsized picture at its own pixels.
+.icon {
+  flex: 0 0 auto;
+}
+
+.name {
+  color: var(--bbm-tabCount);
+  font-size: calc(#{$tab-name-size} * var(--fontScale));
+  white-space: nowrap;
+}
+
+.count {
+  flex: 0 0 auto;
+  color: var(--bbm-tabCount);
+  font-size: calc(#{$tab-count-size} * var(--fontScale));
+  line-height: calc(#{$tab-count-size} * var(--fontScale));
+  white-space: nowrap;
+}
+
+.lit .name,
+.lit .count {
+  color: var(--bbm-armText);
+}
+
+// While a search is typed the counts are match counts, in the search's own mark.
+.matches .count {
+  color: var(--bbm-entMark);
+  font-weight: 600;
+}
+
+// Education's tab and its levels, one plate.
+.segment {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: row;
+  gap: $tab-cell-gap;
+  margin: 0 $tab-segment-margin;
+  border-radius: var(--bbm-tabRadius);
+  background-color: var(--bbm-tabSeg);
+}
+
+.spacer {
+  flex: 1 1 0;
+  min-width: 0;
+}

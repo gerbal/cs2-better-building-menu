@@ -45,8 +45,10 @@
 // extension picker.
 
 .content {
-  border-bottom-left-radius: var(--panelRadius);
-  border-bottom-right-radius: var(--panelRadius);
+  // Square: the tab row's band below owns the box's bottom rounding, and a curved list above its
+  // square top would notch the seam between them.
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
   background-color: var(--panelColorNormal);
   backdrop-filter: var(--panelBlur);
   background-image: linear-gradient( var(--panelGradientStart) , var(--panelGradientEnd) );

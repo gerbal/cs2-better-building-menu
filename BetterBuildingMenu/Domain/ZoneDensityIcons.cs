@@ -10,7 +10,7 @@ namespace BetterBuildingMenu.Domain
 	/// </summary>
 	/// <remarks>
 	/// Vanilla ships one icon per pair, in the colours the zoning map paints, so the
-	/// strip uses the marks a player already knows. Keyed on the pair, not the tier
+	/// tab row uses the marks a player already knows. Keyed on the pair, not the tier
 	/// alone: "Low" sits under three families, each with its own icon.
 	/// </remarks>
 	public static class ZoneDensityIcons
