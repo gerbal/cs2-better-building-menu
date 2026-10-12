@@ -8,8 +8,9 @@ using System.Text.RegularExpressions;
 namespace BetterBuildingMenu.Tests
 {
 	/// <summary>
-	/// The pick logger between frames: an arm lasts while its tool stays in hand, BBM's note marks
-	/// the arm it asks for, and the watcher reads the knob and keeps the logger's failures apart.
+	/// The pick logger between frames: an arm is what the placing tool in hand holds, BBM's note
+	/// marks the next frame's arm, and the watcher reads the knob and keeps the logger's failures
+	/// apart.
 	/// </summary>
 	public sealed class PickWatchTests
 	{
@@ -18,13 +19,15 @@ namespace BetterBuildingMenu.Tests
 		private const int LineId = 60;
 		private const int SmallRoadId = 10;
 		private const int MediumRoadId = 11;
+		private const int SchoolId = 30;
 
 		private static readonly CatalogIndex Index = TestPrefabs.ReadyIndex(
 			Filed(DistrictId, "Areas", "District"),
 			Filed(ParkId, "Areas", "Park"),
 			Filed(LineId, "Transportation", "Bus Line"),
 			Filed(SmallRoadId, "Roads", "Small Road"),
-			Filed(MediumRoadId, "Roads", "Medium Road"));
+			Filed(MediumRoadId, "Roads", "Medium Road"),
+			Filed(SchoolId, "Education", "Elementary School"));
 
 		private static readonly CameraPose Still = new(100, 50, 200, 0, -0.6f, 0.8f);
 
@@ -49,15 +52,16 @@ namespace BetterBuildingMenu.Tests
 
 			public IEnumerable<int> SinceArm => Lines.OfType<PickPlace>().Select(place => place.SinceArm);
 
-			public Session Frame(PlacementTool tool, int prefabId, CameraPose? camera = null)
+			/// <summary>A frame: what the placing tool in hand holds, 0 for no placing tool.</summary>
+			public Session Frame(int prefabId, CameraPose? camera = null)
 			{
-				Lines.AddRange(Watch.Frame(++_seconds, tool, prefabId, camera ?? Still, Index));
+				Lines.AddRange(Watch.Frame(++_seconds, prefabId, camera ?? Still, Index));
 
 				return this;
 			}
 
-			/// <summary>Frames in which the tool in hand reads as nothing armed, as the area and route tools do between placements.</summary>
-			public Session Idle(PlacementTool tool) => Frame(tool, 0).Frame(tool, 0).Frame(tool, 0);
+			/// <summary>Frames with the same building held: the area and route tools hold theirs between placements.</summary>
+			public Session Held(int prefabId) => Frame(prefabId).Frame(prefabId).Frame(prefabId);
 
 			public Session Place(int prefabId)
 			{
@@ -75,13 +79,13 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Theory]
-		[InlineData(PlacementTool.Area, DistrictId)]
-		[InlineData(PlacementTool.Route, LineId)]
-		public void TheToolIdleBetweenTwoPlacementsKeepsOneArm(PlacementTool tool, int prefabId)
+		[InlineData(DistrictId)]
+		[InlineData(LineId)]
+		public void TheToolIdleBetweenTwoPlacementsKeepsOneArm(int prefabId)
 		{
 			var session = new Session()
-				.Idle(tool).Frame(tool, prefabId).Place(prefabId)
-				.Idle(tool).Frame(tool, prefabId).Place(prefabId);
+				.Held(prefabId).Place(prefabId)
+				.Held(prefabId).Place(prefabId);
 
 			Assert.Single(session.Arms);
 			Assert.Equal(new[] { 1, 2 }, session.SinceArm);
@@ -91,75 +95,40 @@ namespace BetterBuildingMenu.Tests
 		public void PuttingTheToolDownEndsTheArm()
 		{
 			var session = new Session()
-				.Frame(PlacementTool.Area, DistrictId).Place(DistrictId)
-				.Frame(PlacementTool.None, 0)
-				.Idle(PlacementTool.Area).Frame(PlacementTool.Area, DistrictId).Place(DistrictId);
+				.Held(DistrictId).Place(DistrictId)
+				.Frame(0)
+				.Held(DistrictId).Place(DistrictId);
 
 			Assert.Equal(new[] { "District", "District" }, session.Arms.Select(arm => arm.Prefab));
-			Assert.Equal(new[] { 1, 1 }, session.SinceArm);
-		}
-
-		[Fact]
-		public void AnotherToolEndsTheArmSoTheNextIsNoSwap()
-		{
-			var session = new Session()
-				.Frame(PlacementTool.Area, DistrictId).Place(DistrictId)
-				.Frame(PlacementTool.Net, SmallRoadId)
-				.Idle(PlacementTool.Area).Frame(PlacementTool.Area, DistrictId).Place(DistrictId);
-
-			Assert.Equal(new[] { "District", "Small Road", "District" }, session.Arms.Select(arm => arm.Prefab));
 			Assert.Empty(session.Lines.OfType<PickSwap>());
 			Assert.Equal(new[] { 1, 1 }, session.SinceArm);
 		}
 
 		[Fact]
-		public void AnotherBuildingInTheSameToolIsASwap()
+		public void ARoadNeverPlacedThenABuildingIsASwap()
 		{
-			var session = new Session().Frame(PlacementTool.Net, SmallRoadId).Frame(PlacementTool.Net, MediumRoadId);
+			// The net tool hands straight over to the object tool: no frame with nothing armed between.
+			var session = new Session().Held(SmallRoadId).Held(SchoolId);
 
-			Assert.Equal(new[] { new PickSwap(2, "Roads", "Medium Road", "Small Road") }, session.Lines.OfType<PickSwap>());
+			Assert.Equal(new[] { new PickSwap(4, "Education", "Elementary School", "Small Road") }, session.Lines.OfType<PickSwap>());
 		}
 
 		[Fact]
-		public void BbmsNoteComesWithTheToolItPutsInHand()
+		public void ADistrictNeverDrawnThenAParkIsASwap()
 		{
-			// BBM's arm puts the area tool in hand at once; the district shows only once it is drawn.
-			var session = new Session()
-				.Frame(PlacementTool.None, 0)
-				.Note(DistrictId).Idle(PlacementTool.Area).Frame(PlacementTool.Area, DistrictId);
+			var session = new Session().Held(DistrictId).Held(ParkId);
 
-			Assert.Equal(new[] { PickSource.Bbm }, session.Arms.Select(arm => arm.Source));
+			Assert.Equal(new[] { new PickSwap(4, "Areas", "Park", "District") }, session.Lines.OfType<PickSwap>());
 		}
 
 		[Fact]
-		public void BbmsNoteOutlastsTheIdleFramesBetweenPlacements()
+		public void BbmsNoteMarksOnlyTheNextFramesArm()
 		{
 			var session = new Session()
-				.Frame(PlacementTool.Area, DistrictId).Place(DistrictId)
-				.Note(ParkId).Idle(PlacementTool.Area).Frame(PlacementTool.Area, ParkId);
-
-			Assert.Equal(new[] { PickSource.Game, PickSource.Bbm }, session.Arms.Select(arm => arm.Source));
-		}
-
-		[Fact]
-		public void BbmsNoteEndsWithTheToolItArmed()
-		{
-			var session = new Session()
-				.Frame(PlacementTool.None, 0)
-				.Note(DistrictId).Idle(PlacementTool.Area)
-				.Frame(PlacementTool.None, 0)
-				.Idle(PlacementTool.Area).Frame(PlacementTool.Area, DistrictId);
-
-			Assert.Equal(new[] { PickSource.Game }, session.Arms.Select(arm => arm.Source));
-		}
-
-		[Fact]
-		public void OnlyTheArmAfterBbmsNoteIsBbms()
-		{
-			var session = new Session()
-				.Note(SmallRoadId).Frame(PlacementTool.Net, SmallRoadId).Place(SmallRoadId)
-				.Frame(PlacementTool.Net, MediumRoadId).Place(MediumRoadId)
-				.Frame(PlacementTool.Net, SmallRoadId);
+				.Note(SmallRoadId).Held(SmallRoadId).Place(SmallRoadId)
+				.Held(MediumRoadId)
+				// A note whose next frame arms nothing new marks nothing after it.
+				.Note(SmallRoadId).Held(MediumRoadId).Held(SmallRoadId);
 
 			Assert.Equal(new[] { PickSource.Bbm, PickSource.Game, PickSource.Game }, session.Arms.Select(arm => arm.Source));
 		}
@@ -167,11 +136,11 @@ namespace BetterBuildingMenu.Tests
 		[Fact]
 		public void AResetForgetsBbmsNoteAndWhatIsArmed()
 		{
-			var session = new Session().Note(DistrictId).Frame(PlacementTool.Area, 0);
+			var session = new Session().Held(DistrictId).Note(DistrictId);
 			session.Watch.Reset();
-			session.Frame(PlacementTool.Area, DistrictId).Place(DistrictId);
+			session.Held(DistrictId).Place(DistrictId);
 
-			Assert.Equal(new[] { PickSource.Game }, session.Arms.Select(arm => arm.Source));
+			Assert.Equal(new[] { PickSource.Game, PickSource.Game }, session.Arms.Select(arm => arm.Source));
 			Assert.Equal(new[] { 1 }, session.SinceArm);
 		}
 
@@ -180,11 +149,25 @@ namespace BetterBuildingMenu.Tests
 		{
 			var moved = Still with { X = 120 };
 			var session = new Session()
-				.Frame(PlacementTool.Net, SmallRoadId).Place(SmallRoadId)
-				.Frame(PlacementTool.Net, SmallRoadId, moved).Place(SmallRoadId)
-				.Frame(PlacementTool.Net, MediumRoadId, moved).Place(MediumRoadId);
+				.Frame(SmallRoadId).Place(SmallRoadId)
+				.Frame(SmallRoadId, moved).Place(SmallRoadId)
+				.Frame(MediumRoadId, moved).Place(MediumRoadId);
 
 			Assert.Equal(new[] { false, true, false }, session.Lines.OfType<PickPlace>().Select(place => place.CameraMoved));
+		}
+
+		[Fact]
+		public void TheArmIsWhatThePlacingToolInHandHoldsWhateverItIsDoing()
+		{
+			var source = ModSource.Text("Systems/PlacementWatchSystem.cs");
+			var snapshot = ModSource.Member(source, "private ToolSnapshot Snapshot(");
+			var placingTool = snapshot.IndexOf("if (placementTool == PlacementTool.None) { return ToolSnapshot.None; }", StringComparison.Ordinal);
+			var armed = snapshot.IndexOf("armedPrefabId = PrefabId(_toolSystem.activePrefab);", StringComparison.Ordinal);
+
+			// Only the four placing tools, and before the counter's filter drops an idle area or route tool.
+			Assert.InRange(placingTool, 0, armed);
+			Assert.InRange(armed, 0, snapshot.IndexOf("if (kind == PlacementKind.Ignored)", StringComparison.Ordinal));
+			Assert.Contains("_picks.Frame(Seconds(), armedPrefabId, camera, _indexer.Index)", ModSource.Member(source, "private void ObservePicks("));
 		}
 
 		[Fact]
@@ -194,7 +177,7 @@ namespace BetterBuildingMenu.Tests
 			var observe = ModSource.Member(source, "private void ObservePicks(");
 
 			// PreTool runs every frame, before the frame's ApplyTool counts.
-			Assert.Contains("ObservePicks(snapshot, inHand);", ModSource.Member(source, "protected override void OnUpdate()"));
+			Assert.Contains("ObservePicks(armedPrefabId);", ModSource.Member(source, "protected override void OnUpdate()"));
 			Assert.Contains("var on = Knobs.Value(settings => settings.DevPickLogger, Tuning.PickLogger);", observe);
 			Assert.Single(Regex.Matches(source, @"_picksOn = "));
 			Assert.Contains("_picksOn = on;", observe);
@@ -212,7 +195,7 @@ namespace BetterBuildingMenu.Tests
 
 			// At PreTool, before the two-minute flush.
 			var update = ModSource.Member(source, "protected override void OnUpdate()");
-			var observed = update.IndexOf("try { ObservePicks(snapshot, inHand); " + Caught, StringComparison.Ordinal);
+			var observed = update.IndexOf("try { ObservePicks(armedPrefabId); " + Caught, StringComparison.Ordinal);
 			Assert.InRange(observed, 0, update.IndexOf("FlushIfDirty();", StringComparison.Ordinal));
 
 			// At ApplyTool, after the history counts the placement.

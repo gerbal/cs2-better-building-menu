@@ -99,14 +99,14 @@ namespace BetterBuildingMenu.Systems
 					return;
 				}
 
-				var snapshot = Snapshot(out var inHand);
+				var snapshot = Snapshot(out var armedPrefabId);
 				_counter.Observe(frame, snapshot);
 
 				// The logger's own catch, here and at each of its calls: its failure leaves the
 				// counting, the flush and the counting's warning alone.
 				try
 				{
-					ObservePicks(snapshot, inHand);
+					ObservePicks(armedPrefabId);
 				}
 				catch (Exception ex)
 				{
@@ -206,9 +206,9 @@ namespace BetterBuildingMenu.Systems
 			}
 		}
 
-		/// <summary>The pick logger's frame: whether it is on, then the tool in hand, what it has armed and where the camera stands.</summary>
-		/// <remarks>What is armed is read from the frame, as the counter reads it: the tool's own event misses an arm of the prefab it holds.</remarks>
-		private void ObservePicks(ToolSnapshot snapshot, PlacementTool inHand)
+		/// <summary>The pick logger's frame: whether it is on, then what the placing tool in hand holds and where the camera stands.</summary>
+		/// <remarks>What is armed is read from the frame: the tool's own event misses an arm of the prefab it holds.</remarks>
+		private void ObservePicks(int armedPrefabId)
 		{
 			var on = Knobs.Value(settings => settings.DevPickLogger, Tuning.PickLogger);
 
@@ -227,10 +227,10 @@ namespace BetterBuildingMenu.Systems
 			var direction = _camera.direction;
 			var camera = new CameraPose(position.x, position.y, position.z, direction.x, direction.y, direction.z);
 
-			Write(_picks.Frame(Seconds(), inHand, snapshot.PrefabId, camera, _indexer.Index));
+			Write(_picks.Frame(Seconds(), armedPrefabId, camera, _indexer.Index));
 		}
 
-		/// <summary>A load, or the knob switching: no tool in hand, nothing armed, no camera seen, no note kept.</summary>
+		/// <summary>A load, or the knob switching: nothing armed, no camera seen, no note kept.</summary>
 		private void ForgetPicks() => _picks.Reset();
 
 		/// <summary>The pick logger's own warning, once a session.</summary>
@@ -300,7 +300,11 @@ namespace BetterBuildingMenu.Systems
 		}
 
 		/// <summary>The last control point of the object, net, area or route tool; null for any other tool, or when the list is empty.</summary>
-		private static float3? LastControlPoint(ToolBaseSystem? tool)
+		private static float3? LastControlPoint(ToolBaseSystem? tool) =>
+			ControlPoints(tool) is { IsCreated: true, Length: > 0 } points ? points[points.Length - 1].m_Position : null;
+
+		/// <summary>The object, net, area or route tool's control points, once its jobs are done with them; null for any other tool.</summary>
+		private static NativeList<ControlPoint>? ControlPoints(ToolBaseSystem? tool)
 		{
 			NativeList<ControlPoint> points;
 			JobHandle dependencies;
@@ -325,13 +329,16 @@ namespace BetterBuildingMenu.Systems
 
 			dependencies.Complete();
 
-			return points.IsCreated && points.Length > 0 ? points[points.Length - 1].m_Position : null;
+			return points;
 		}
 
-		/// <param name="inHand">The placing tool in hand in a city, whatever it is doing; None for any other tool.</param>
-		private ToolSnapshot Snapshot(out PlacementTool inHand)
+		/// <param name="armedPrefabId">
+		/// What the placing tool in hand in a city holds, whatever it is doing, for the pick logger;
+		/// 0 for any other tool or nothing held.
+		/// </param>
+		private ToolSnapshot Snapshot(out int armedPrefabId)
 		{
-			inHand = PlacementTool.None;
+			armedPrefabId = 0;
 
 			// In a city only: the editors use the same tools.
 			if (!_toolSystem.actionMode.IsGame() || _toolSystem.activeTool is not { } tool)
@@ -340,7 +347,14 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			var placementTool = PlacementFilter.ToolOf(tool.GetType());
-			inHand = placementTool;
+
+			if (placementTool == PlacementTool.None)
+			{
+				return ToolSnapshot.None;
+			}
+
+			// The area and route tools hold their prefab between placements, which the filter below drops.
+			armedPrefabId = PrefabId(_toolSystem.activePrefab);
 			var kind = tool switch
 			{
 				ObjectToolSystem objectTool when placementTool == PlacementTool.Object => PlacementFilter.ObjectKind(objectTool.actualMode, objectTool.state),
@@ -357,7 +371,7 @@ namespace BetterBuildingMenu.Systems
 
 			var open = _counter.WantsOpenState && IsOpen(tool);
 
-			return new ToolSnapshot(placementTool, kind, PrefabId(_toolSystem.activePrefab), open);
+			return new ToolSnapshot(placementTool, kind, armedPrefabId, open);
 		}
 
 		private int PrefabId(PrefabBase? prefab)
@@ -394,10 +408,7 @@ namespace BetterBuildingMenu.Systems
 		{
 			try
 			{
-				var points = netTool.GetControlPoints(out var dependencies);
-				dependencies.Complete();
-
-				return points.IsCreated && points.Length >= 2;
+				return ControlPoints(netTool) is { IsCreated: true, Length: >= 2 };
 			}
 			catch (Exception ex)
 			{

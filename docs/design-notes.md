@@ -449,8 +449,8 @@ menu the building is filed under) and `prefab` (its prefab name):
 - **`arm`**: a placing tool armed with a building in a game menu, as the placement history counts
   them, with `source`: `bbm` when BBM's menu asks for it, `game` for any other arm (the game's own
   menu, its re-arm, another mod).
-- **`swap`**, after an arm that replaces a building the same tool holds and nothing is placed
-  with: `from` names it.
+- **`swap`**, after an arm that replaces an armed building nothing is placed with, in the same
+  tool or another: `from` names it.
 - **`place`**: a placement the history counts, with `x` and `y` (where on screen, in rem from the
   top left: the tool's last point through the camera, else the pointer), `cameraMoved` (since the
   arm), `box` (`open` or `closed`: BBM's menu on screen), `tabSwitches` (in BBM's menu since the
@@ -458,22 +458,24 @@ menu the building is filed under) and `prefab` (its prefab name):
 
 **How it reads them.** `PlacementWatchSystem` feeds `PickWatch`, which keeps what lies between
 frames, and `PickLog`, which writes the lines; both are pure, and fed only while the knob is on in
-developer mode. At PreTool each frame it compares the placing tool in hand, what it has armed and
-where the camera stands (`CameraUpdateSystem`) with the frame before. It reads the arm from the
-frame rather than from the tool's prefab event, which does not fire when a tool is armed again with
-the prefab it holds.
+developer mode. At PreTool each frame it compares what is armed and where the camera stands
+(`CameraUpdateSystem`) with the frame before. It reads the arm from the frame rather than from the
+tool's prefab event, which does not fire when a tool is armed again with the prefab it holds.
 
-- **An arm lasts while its tool stays in hand.** The area and route tools read as nothing armed
-  until a district or line is begun, and again between one and the next: their arm is written
-  when the first is begun, and the frames between change nothing. Putting the tool down or taking
-  another ends the arm, so a building armed after it is no swap.
-- **BBM's own arms.** BBM's menu notes the prefab it asks the tool for, so the arm that follows
-  reads as BBM's. The note lasts until that arm, through the area tool's idle frames, and ends
-  when the player puts that tool down or takes another. Its tab triggers count the switches; its
-  open and close set `box`.
+- **What is armed** is the prefab the object, net, area or route tool in hand holds, whatever it
+  is doing, read before the placement filter. The area and route tools hold theirs between one
+  district or line and the next, so their arm is written when the district or line is picked. A
+  pick switches straight to the new tool, with no frame of nothing armed between, so a road armed
+  and never placed, then a school, is a swap. The default tool, any other tool, and the object
+  tool moving or upgrading hold nothing: the arm ends, and a building armed after it is no swap.
+- **BBM's own arms.** BBM's menu notes the prefab it asks the tool for. The tool takes it at once,
+  so the next frame's arm reads as BBM's, and the note marks that frame only. Its tab triggers
+  count the switches; its open and close set `box`.
 - **Where on screen.** At a placement the object, net, area and route tools' last control point
-  goes through the camera. Any other tool, an empty list, a point behind the camera or a read that
-  fails leaves the pointer.
+  goes through the camera. For a district, surface or transit line that is the pointer's ground
+  point, not the area or line placed: after the apply that finishes it, the tool's list holds only
+  the point under the cursor. Any other tool, an empty list, a point behind the camera or a read
+  that fails leaves the pointer.
 
 **The file.** A line is appended as each event happens. At 5 MB the file moves to
 `picks.1.jsonl`, replacing the one before. A write that fails warns once a session and its lines
