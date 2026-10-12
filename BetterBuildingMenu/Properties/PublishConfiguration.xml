@@ -70,6 +70,9 @@ Changes
 * Options › Better Building Menu has Reset the build menu…: after asking, it puts the options, the menu's width, height and view back to how they ship. The buildings you have placed are kept.
 * While Replace the vanilla build menu is off, the other options are greyed out and say why.
 * With a controller, the game's own build menu shows. Move the mouse and this menu comes back, on the same menu.
+* The menu's tabs sit along its bottom edge, next to the toolbar: All with the menu's icon, then each tab's icon over its count. The counts follow your filters and your search, and a tab they empty stays in its place.
+* Education's school levels are named chips beside the Education tab.
+* The menu follows the game's Interface style and Interface transparency.
 
 Fixed
 * A list that stops at 2,000 buildings says so, and how to narrow it.

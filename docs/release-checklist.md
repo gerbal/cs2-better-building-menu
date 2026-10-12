@@ -57,7 +57,9 @@ On a developed save:
    `0 missing from the index`, and the `[MENU-AUDIT]` census line does not end
    in `NOT CLEAN`.
 3. **Menus.** Open Roads, Zones, Landscaping and a service menu. For each:
-   - the asset menu replaces the grid, with the tab row along its bottom edge;
+   - the asset menu replaces the grid, with its tabs along its bottom edge, each with its
+     count, on one line (at large text the range stays and the last tabs clip), and the menu
+     208 tall at its Width step;
    - tiles draw their icons, with no placeholders;
    - a search finds an asset, and Enter arms the best match;
    - a long menu offers Load more, and a list past 2,000 rows says how to narrow it;
@@ -75,3 +77,7 @@ On a developed save:
 8. **Controller.** On a release that touches the hand-off, with a gamepad:
    the game's own build menu shows, and moving the mouse brings this one
    back on the same menu.
+9. **Interface style.** On a release that touches the menu's colours: with the game's
+   legacy interface on, switch Interface style to Bright blue and to Dark grey-orange,
+   and move Interface transparency to 0% and 100%. No dark text on a dark panel, no
+   light text on a light one, and the lit tab keeps the game's blue.
