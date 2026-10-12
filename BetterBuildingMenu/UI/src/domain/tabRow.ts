@@ -75,6 +75,8 @@ export interface TabRowInput {
   categoryLabel: (category: VanillaMenuCategory) => string;
   /** The catalog is still being indexed: nothing is counted yet, so no count has arrived. */
   indexing: boolean;
+  /** Pictures the page could not load, which give way to the next in the chain. */
+  failedIcons: ReadonlySet<string>;
 }
 
 export interface TabRowView {
@@ -92,6 +94,9 @@ export function cellsOf(items: readonly TabRowItem[]): TabCell[] {
 function eachCell(items: readonly TabRowItem[], change: (cell: TabCell) => TabCell): TabRowItem[] {
   return items.map((item) => (item.kind === "bracket" ? { ...item, parent: change(item.parent), tiers: item.tiers.map(change) } : change(item)));
 }
+
+/** What the game's toolbar draws for a tab with no picture of its own. */
+export const TAB_PLACEHOLDER = "Media/Placeholder.svg";
 
 const cell = (key: string, kind: TabCellKind, id: string, label: string, icon: string, count: number | null, lit: boolean): TabCell =>
   ({ key, kind, id, label, icon, count, lit, empty: count === 0, named: false });
@@ -119,7 +124,7 @@ export function tabRow(sent: TabRowInput): TabRowView {
     items.push(...input.stripTabs.map((tab) => branchCell(tab, branchTabTooltip(tab, ""), input.selectedStripTabs)));
   }
 
-  const named = nameUntoldPictures(items, input.menuIcon);
+  const named = nameUntoldPictures(eachCell(items, (candidate) => ({ ...candidate, icon: shownIcon(candidate.icon, input) })), input.menuIcon);
   const drawn = input.indexing ? eachCell(named, (candidate) => ({ ...candidate, count: null, empty: false })) : named;
   const cells = cellsOf(drawn);
   const lit = cells.find((candidate) => candidate.kind === "tier" && candidate.lit) ?? cells.find((candidate) => candidate.lit);
@@ -162,8 +167,18 @@ function branchCell(tab: MenuBranchCount, label: string, selected: readonly stri
 }
 
 /**
+ * The picture a cell draws: its own, unless the page could not load it, then the menu's, then the
+ * game's placeholder, the chain C# follows for a picture it can tell will not draw.
+ */
+function shownIcon(icon: string, input: TabRowInput): string {
+  if (!input.failedIcons.has(icon)) return icon;
+  return input.menuIcon !== "" && !input.failedIcons.has(input.menuIcon) ? input.menuIcon : TAB_PLACEHOLDER;
+}
+
+/**
  * A cell says its name where its picture would not tell it apart: no picture, the menu's own (the
- * All cell draws that on its plate), or one another cell draws too. A level always says its name.
+ * All cell draws that on its plate), the game's placeholder, or one another cell draws too. A level
+ * always says its name.
  */
 function nameUntoldPictures(items: readonly TabRowItem[], menuIcon: string): TabRowItem[] {
   const uses = new Map<string, number>();
@@ -176,7 +191,7 @@ function nameUntoldPictures(items: readonly TabRowItem[], menuIcon: string): Tab
     if (candidate.kind === "tier") return candidate;
     const named = candidate.kind === "all"
       ? candidate.icon === ""
-      : candidate.icon === "" || candidate.icon === menuIcon || (uses.get(candidate.icon) ?? 0) > 1;
+      : candidate.icon === "" || candidate.icon === menuIcon || candidate.icon === TAB_PLACEHOLDER || (uses.get(candidate.icon) ?? 0) > 1;
     return { ...candidate, named };
   };
 

@@ -3,7 +3,7 @@ import { FOCUS_DISABLED } from "cs2/input";
 import { useLocalization } from "cs2/l10n";
 import { Button, Tooltip } from "cs2/ui";
 import classNames from "classnames";
-import { useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { getNumberSeparators, groupDigits } from "domain/assetMenuMetricFormat";
 import { useTextScale } from "domain/textScaleSetting";
@@ -33,11 +33,26 @@ import styles from "./tabRow.module.scss";
  * A picture in a cell's icon slot, drawn as a background, whole at its own aspect: Cohtml has no
  * object-fit and reports no picture's natural size, and a mod's picture need not be square.
  */
-const TabIcon = ({ src, plate }: { src: string; plate: boolean }) => (
-  <span className={styles.iconSlot}>
-    <span className={classNames(styles.picture, plate && styles.plate)} style={{ backgroundImage: cssUrl(src) }} />
-  </span>
-);
+const TabIcon = ({ src, plate, onFail }: { src: string; plate: boolean; onFail: (src: string) => void }) => {
+  // A background says nothing when its picture fails, so a picture of BBM's own finds out.
+  useEffect(() => {
+    if (typeof Image !== "function") return undefined;
+    const probe = new Image();
+    probe.onerror = () => onFail(src);
+    probe.src = src;
+    return () => {
+      probe.onerror = null;
+    };
+  }, [src, onFail]);
+
+  return (
+    <span className={styles.iconSlot}>
+      <span className={classNames(styles.picture, plate && styles.plate)} style={{ backgroundImage: cssUrl(src) }} />
+    </span>
+  );
+};
+
+const NONE_FAILED: ReadonlySet<string> = new Set();
 
 /**
  * The menu's tabs along the box's bottom edge, under the list: All, then the game's tabs with their
@@ -65,6 +80,9 @@ export const TabRow = ({ width }: { width: number }) => {
   const selectedTier = useValue(AssetMenuSchoolTier$) ?? -1;
   const searching = (useValue(CurrentSearch$) ?? "").trim() !== "";
   const separators = useMemo(() => getNumberSeparators(translate), [translate]);
+  // A picture that would not load, which the row then draws as the next in the chain.
+  const [failedIcons, setFailedIcons] = useState(NONE_FAILED);
+  const fail = useCallback((src: string) => setFailedIcons((failed) => (failed.has(src) ? failed : new Set(failed).add(src))), []);
 
   // A category's own prefab name is its id, and the game ships its string under it.
   const categoryLabel = (category: VanillaMenuCategory) =>
@@ -84,6 +102,7 @@ export const TabRow = ({ width }: { width: number }) => {
     selectedTier,
     categoryLabel,
     indexing,
+    failedIcons,
   });
 
   const format = (count: number) => groupDigits(count, separators);
@@ -121,7 +140,7 @@ export const TabRow = ({ width }: { width: number }) => {
           aria-current={cell.lit ? "true" : undefined}
           onSelect={() => select(cell)}
         >
-          {worded ? <span className={styles.name}>{cell.label}</span> : <TabIcon src={cell.icon} plate={cell.kind === "all"} />}
+          {worded ? <span className={styles.name}>{cell.label}</span> : <TabIcon src={cell.icon} plate={cell.kind === "all"} onFail={fail} />}
           <span className={styles.count}>{count}</span>
         </Button>
       </Tooltip>

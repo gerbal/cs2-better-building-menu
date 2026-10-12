@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { arrivedCount, cellsOf, planTabRow, readoutRange, tabRow, type TabRowInput } from "../src/domain/tabRow.ts";
+import { arrivedCount, cellsOf, planTabRow, readoutRange, TAB_PLACEHOLDER, tabRow, type TabRowInput } from "../src/domain/tabRow.ts";
 import { NO_TIER_BRACKET } from "../src/domain/menuProgression.ts";
 
 const ROADS_ICON = "Media/Game/Icons/Roads.svg";
@@ -22,6 +22,7 @@ const roads = (over: Partial<TabRowInput> = {}): TabRowInput => ({
   selectedTier: -1,
   categoryLabel: (entry) => entry.name,
   indexing: false,
+  failedIcons: new Set(),
   ...over,
 });
 
@@ -99,6 +100,22 @@ describe("the tab row's cells", () => {
     const named = cellsOf(tabRow(roads({ categories, counts })).items).filter((cell) => cell.named).map((cell) => cell.id);
 
     assert.deepEqual(named, ["SmallRoads", "Ship", "Ferry"]);
+  });
+
+  it("give a picture the page could not load the menu's icon, and say the tab's name", () => {
+    const [all, small, medium] = cellsOf(tabRow(roads({ failedIcons: new Set(["Media/Game/Icons/SmallRoads.svg"]) })).items);
+
+    assert.equal(all.icon, ROADS_ICON);
+    assert.deepEqual([small.icon, small.named], [ROADS_ICON, true]);
+    assert.deepEqual([medium.icon, medium.named], ["Media/Game/Icons/MediumRoads.svg", false]);
+  });
+
+  it("give the game's placeholder where the menu's icon will not load either, and say the tab's name", () => {
+    const failed = new Set(["Media/Game/Icons/SmallRoads.svg", ROADS_ICON]);
+    const [all, small] = cellsOf(tabRow(roads({ failedIcons: failed })).items);
+
+    assert.equal(all.icon, TAB_PLACEHOLDER);
+    assert.deepEqual([small.icon, small.named], [TAB_PLACEHOLDER, true]);
   });
 
   it("draw All alone, by its name, while the menu is unscoped", () => {

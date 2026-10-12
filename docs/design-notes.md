@@ -257,8 +257,13 @@ place, and each menu's own icon (`AssetMenus`, which the All cell draws) all pas
 binding publishes a blank or a hash. Where the game's toolbar would draw its placeholder for a
 category with no icon, the row draws the menu's.
 
-A tab left with its menu's picture, or one that would repeat another tab's, says its name on the row
-instead, so no two cells show one picture with nothing to tell them apart; the All cell draws the
+C# cannot tell that a well-formed address names a file that is missing, such as a mod's PNG that
+was never shipped, so the row finds out: each picture is drawn as a background, which says nothing
+when it fails, and probed with a detached `Image` of BBM's own, whose `onerror` moves that cell to
+the chain's next step, the menu's icon, then the placeholder.
+
+A tab left with its menu's picture or the placeholder, or one that would repeat another tab's, says
+its name on the row instead, so no two cells show one picture with nothing to tell them apart; the All cell draws the
 menu's icon on a round plate, which tells it from the rest.
 
 A development branch's tab takes the category's glyph rather than a photograph: `IsPhotograph`

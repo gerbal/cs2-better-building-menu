@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { beforeEach, describe, it } from "node:test";
+import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { renderHtml } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
@@ -37,6 +37,17 @@ function seedEducation(): void {
 }
 
 const render = () => renderHtml(<TabRow width={706} />);
+
+/** The page's Image, as far as a picture's probe uses it: every one made, to fail by hand. */
+class FakeImage {
+  static made: FakeImage[] = [];
+  onerror: (() => void) | null = null;
+  src = "";
+
+  constructor() {
+    FakeImage.made.push(this);
+  }
+}
 
 /** The row mounted, as the game mounts it. */
 function mount(): ReactTestRenderer {
@@ -135,6 +146,29 @@ describe("the tab row", () => {
     set("AssetMenuCategories", [category("SmallRoads", 'coui://ail/BuildingPrefab.JP_Wastewater Treatment "2".png'), category("MediumRoads")]);
 
     assert.ok(render().includes(picture('coui://ail/BuildingPrefab.JP_Wastewater Treatment \\&quot;2\\&quot;.png')));
+  });
+});
+
+describe("a picture that will not load", () => {
+  beforeEach(() => {
+    resetBindings();
+    FakeImage.made = [];
+    (globalThis as { Image?: unknown }).Image = FakeImage;
+  });
+  afterEach(() => delete (globalThis as { Image?: unknown }).Image);
+
+  it("gives way to the menu's icon, and the tab says its name", () => {
+    seedRoads();
+    // Rows other tests left mounted probe their own pictures too.
+    const first = FakeImage.made.length;
+    const root = mount();
+    const named = () => root.root.findAll((node) => node.type === "span" && node.props.className === "name").map((node) => node.props.children);
+
+    assert.deepEqual(named(), ["Highways"]);
+    act(() => FakeImage.made.slice(first).find((probe) => probe.src === "Media/Game/Icons/SmallRoads.svg")!.onerror!());
+
+    assert.deepEqual(named(), ["SmallRoads", "Highways"]);
+    act(() => root.unmount());
   });
 });
 
