@@ -34,7 +34,8 @@ namespace BetterBuildingMenu.Utilities
 		public static bool ShouldRoll(long size, long adding) => size > 0 && size + adding > MaxBytes;
 
 		/// <summary>Appends lines, one per event. Never throws.</summary>
-		public void Append(IEnumerable<string> lines)
+		/// <remarks>Built lines, not a query: a line that fails to build is the caller's fault, not a failed write.</remarks>
+		public void Append(IReadOnlyList<string> lines)
 		{
 			try
 			{

@@ -247,7 +247,9 @@ namespace BetterBuildingMenu.Systems
 		{
 			if (events.Count > 0)
 			{
-				_picksFile?.Append(events.Select(PickLogJson.Line));
+				// Built here, inside the logger's catch, so a line that fails to build warns as the
+				// logger's failure rather than as a failed write.
+				_picksFile?.Append(events.Select(PickLogJson.Line).ToList());
 			}
 		}
 

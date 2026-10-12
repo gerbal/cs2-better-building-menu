@@ -87,6 +87,15 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void TheFileTakesBuiltLinesNotAQuery()
+		{
+			// A lazy query would be built inside the file's catch, and warn as a failed write.
+			var lines = typeof(PickLogFile).GetMethod(nameof(PickLogFile.Append))!.GetParameters();
+
+			Assert.Equal(typeof(IReadOnlyList<string>), Assert.Single(lines).ParameterType);
+		}
+
+		[Fact]
 		public void NothingToAppendWritesNoFile()
 		{
 			Log().Append(Array.Empty<string>());
