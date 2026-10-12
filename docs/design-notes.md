@@ -322,8 +322,7 @@ saves once.
 greyed out (`[SettingsUIDisableByCondition]` on Replace, inverted) and its description reads
 "Off while Replace the vanilla build menu is off." The game asks a description getter with no
 arguments and redraws it every frame, so each such row has its own one-line getter, through
-`OptionRows.DescriptionId`. The developer knobs stay live: the pick log and the placement history
-watch the game's tools whatever Replace holds.
+`OptionRows.DescriptionId`.
 
 ## The placement history
 
