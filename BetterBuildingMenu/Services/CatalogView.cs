@@ -162,7 +162,7 @@ namespace BetterBuildingMenu.Services
 		/// <remarks>
 		/// The category's own pick is ignored, so choosing one tab does not read every other as
 		/// empty. Each entry counts under the tab it answers to IN THIS MENU, so Roads' gathered
-		/// networks count under their extra tab and the tabs add up to All.
+		/// networks count under their extra tab; the tabs add up to All when every row answers to one.
 		/// </remarks>
 		public IReadOnlyList<MenuCategoryCount> MenuCategoryCounts => _counts ??= ComputeMenuCategoryCounts();
 

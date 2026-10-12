@@ -226,10 +226,17 @@ facet and every range applied. `CatalogView` answers all of them from two sets.
   pane's category picker reads the same list, so the two agree on which tabs exist.
 - **`FilteredMenuSet`**: the menu with the search, the facets and the ranges, and no tab. Every count
   counts here; the All cell's is its length. Each entry counts under the tab it answers to in this
-  menu, so Roads' gathered networks count under their extra tab and the tabs add up to All.
+  menu, so Roads' gathered networks count under their extra tab. The tabs add up to All only when
+  every row answers to a tab the menu declares: a row filed under no tab, or under one the menu does
+  not declare, counts in All and in no tab.
 
 C# sends a count for each tab the row draws, in the menu's order (`menuCategories`), rather than for
 every tab the menu declares: 0 then means "emptied by the filters", and no count "never filled".
+
+**The Content facet narrows the menu before the row.** Its packs and DLCs choose which assets the
+menu holds at all, as the game's own pack filter does, so they apply before `PresentSet` is taken,
+where the rail's other facets apply after it. A pack or DLC pick that leaves a tab nothing therefore
+removes the tab rather than drawing it at 0.
 
 **Education's levels** (`TierBracket`) draw as chips beside the tab that holds the schools. That tab
 is found from the data, the one with the most rows carrying a level of 1-4, so a menu whose schools

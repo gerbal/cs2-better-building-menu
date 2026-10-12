@@ -76,5 +76,6 @@ Changes
 
 Fixed
 * A list that stops at 2,000 buildings says so, and how to narrow it.
+* Under Metric filters, a min or max that is not a number is outlined in red.
 </ChangeLog>
 </Publish>
