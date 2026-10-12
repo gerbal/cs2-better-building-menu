@@ -11,7 +11,10 @@
           "If you used an earlier version, the menu opens at the width nearest the one you had.",
           "Enter in the search arms the best match, wherever it sits in the list and however the list is sorted.",
           "A sort's first click puts the best first: the most Capacity, Workers, Households, Water capacity or Sewage capacity, the lowest Cost or Upkeep. Equal values go to the cheaper building.",
-          "Sort by Households, Water capacity or Sewage capacity."
+          "Sort by Households, Water capacity or Sewage capacity.",
+          "Options › Better Building Menu has Reset the build menu…: after asking, it puts the options, the menu's width, height and view back to how they ship. The buildings you have placed are kept.",
+          "While Replace the vanilla build menu is off, the other options are greyed out and say why.",
+          "With a controller, the game's own build menu shows. Move the mouse and this menu comes back, on the same menu."
         ]
       },
       {

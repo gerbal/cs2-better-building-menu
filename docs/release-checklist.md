@@ -66,6 +66,12 @@ On a developed save:
    top edge, and drag the right edge: it settles on a width.
 5. **Place.** Arm an asset from a tile and place it. Escape closes the asset menu.
 6. **Options.** Flip each option under Options › Better Building Menu with a
-   menu open, and see it take effect.
+   menu open, and see it take effect. With Replace the vanilla build menu
+   off, every other row is greyed out and says why. Reset the build menu…
+   asks first, then puts the options, the width, the height and the view
+   back.
 7. **Upgrades.** On a release that touches them, open the upgrades picker from
    a placed service building.
+8. **Controller.** On a release that touches the hand-off, with a gamepad:
+   the game's own build menu shows, and moving the mouse brings this one
+   back on the same menu.
