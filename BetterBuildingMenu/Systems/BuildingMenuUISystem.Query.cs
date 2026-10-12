@@ -15,7 +15,7 @@ namespace BetterBuildingMenu.Systems
 		/// The empty string is "every category in this menu", the state a menu opens in.
 		/// Vanilla has no such tab, but the asset menu can show a whole menu at once.
 		/// </remarks>
-		private void SetAssetMenuCategory(string category) => Apply(_assetMenu.SelectCategory(category));
+		private void SetAssetMenuCategory(string category) => ApplyTabPick(_assetMenu.SelectCategory(category));
 
 		/// <summary>
 		/// Narrows the menu to one branch of its service's development tree.
@@ -24,10 +24,18 @@ namespace BetterBuildingMenu.Systems
 		/// The strip's fallback axis. Single-select, like the category and
 		/// progression tabs beside it — the strip asks one question per segment.
 		/// </remarks>
-		private void SetAssetMenuStripTab(string tab) => Apply(_assetMenu.SelectStripTab(tab));
+		private void SetAssetMenuStripTab(string tab) => ApplyTabPick(_assetMenu.SelectStripTab(tab));
 
 		/// <summary>Narrows the education menu to one school tier.</summary>
-		private void SetAssetMenuSchoolTier(int tier) => Apply(_assetMenu.SelectSchoolTier(tier));
+		private void SetAssetMenuSchoolTier(int tier) => ApplyTabPick(_assetMenu.SelectSchoolTier(tier));
+
+		/// <summary>A tab, strip tab or school tier the player picks: the pick logger counts it, then it applies.</summary>
+		/// <remarks>Each of the three triggers is a click in the strip or the chip row, so each counts.</remarks>
+		private void ApplyTabPick(AssetMenuState next)
+		{
+			_placementWatch.TabSwitched();
+			Apply(next);
+		}
 
 		/// <summary>
 		/// Scopes the asset menu to a vanilla menu chosen from the filters.

@@ -1,3 +1,4 @@
+using BetterBuildingMenu.Domain;
 using BetterBuildingMenu.Domain.Placement;
 
 using System.Globalization;
@@ -35,6 +36,17 @@ namespace BetterBuildingMenu.Tests
 		public void AnArmIsBbmsOnlyWhenItIsThePrefabBbmAskedFor(int armed, int asked, PickSource source)
 		{
 			Assert.Equal(source, PickLog.SourceOf(armed, asked));
+		}
+
+		[Theory]
+		[InlineData(true, true, true)]
+		[InlineData(true, false, false)]
+		[InlineData(false, true, false)]
+		[InlineData(false, false, false)]
+		public void TheLoggerWritesOnlyInDeveloperModeWithTheKnobOn(bool developerMode, bool stored, bool writes)
+		{
+			// Off as it ships, and a knob left on does nothing outside developer mode.
+			Assert.Equal(writes, Tuning.Value(developerMode, stored, Tuning.PickLogger));
 		}
 
 		[Fact]

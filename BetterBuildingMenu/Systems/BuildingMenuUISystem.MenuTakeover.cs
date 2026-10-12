@@ -248,6 +248,8 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			_assetMenuOpen = visible;
+			// The pick logger writes it at each placement.
+			_placementWatch.BoxOpen = visible;
 
 			if (!visible)
 			{

@@ -138,6 +138,16 @@ namespace BetterBuildingMenu
 		}
 
 		/// <summary>
+		/// Developer only: writes a line for each building armed, each swap and each placement to
+		/// picks.jsonl in the mod's ModsData folder, on this computer.
+		/// </summary>
+		/// <remarks>Read through Utilities.Knobs, so it counts only in developer mode. See docs/design-notes.md, "The pick logger".</remarks>
+		[SettingsUISection(SETTINGS, TUNING)]
+		[SettingsUIDeveloper]
+		[SettingsUISearchHidden]
+		public bool DevPickLogger { get; set; }
+
+		/// <summary>
 		/// Developer only: how many more placements, in percent, a building needs than a menu's
 		/// weaker slot holder to take its slot.
 		/// </summary>

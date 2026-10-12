@@ -30,5 +30,7 @@ namespace BetterBuildingMenu.Domain
 		int AssetMenuTileSize { get; set; }
 
 		int DevSlotMargin { get; set; }
+
+		bool DevPickLogger { get; set; }
 	}
 }

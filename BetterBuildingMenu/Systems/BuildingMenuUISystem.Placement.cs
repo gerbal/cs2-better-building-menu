@@ -25,6 +25,8 @@ namespace BetterBuildingMenu.Systems
 		{
 			settingPrefab = true;
 			_toolSystem.ActivatePrefabTool(prefabBase);
+			// So the pick logger can tell this arm from the game's.
+			_placementWatch.NoteBbmArm(id);
 			_ActivePrefabId.Value = id;
 			settingPrefab = false;
 		}

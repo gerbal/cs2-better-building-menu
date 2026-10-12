@@ -121,7 +121,7 @@ namespace BetterBuildingMenu.Tests
 			Assert.Contains("public int DevSlotMargin { get; set; } = Domain.Tuning.SlotMarginPercent;", source);
 
 			// No initializer: false or 0, as FakeSettings has them.
-			foreach (var bare in new[] { "int SettingsVersion", "bool Upgrader", "bool AutoWidenSearch" })
+			foreach (var bare in new[] { "int SettingsVersion", "bool Upgrader", "bool AutoWidenSearch", "bool DevPickLogger" })
 			{
 				Assert.Matches("public " + bare + @" \{ get; set; \}\r?\n", source);
 			}
@@ -232,6 +232,7 @@ namespace BetterBuildingMenu.Tests
 				.ToList();
 
 			Assert.Contains(knobs, knob => knob.Name == nameof(BetterBuildingMenuSettings.DevSlotMargin));
+			Assert.Contains(knobs, knob => knob.Name == nameof(BetterBuildingMenuSettings.DevPickLogger));
 			Assert.All(knobs, knob =>
 			{
 				Assert.Equal(BetterBuildingMenuSettings.TUNING, knob.GetCustomAttribute<SettingsUISectionAttribute>()?.simpleGroup);
