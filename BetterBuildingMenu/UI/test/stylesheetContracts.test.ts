@@ -239,6 +239,13 @@ const UNSUPPORTED: { matches: (prop: string, value: string) => boolean; declarat
     declaration: "object-fit",
     why: "Never implemented in Cohtml (no changelog row through 3.1; the parser rejects it). Size the picture's box instead.",
   },
+  {
+    matches: (_, value) => /var\(\s*--[\w-]+\s*,/.test(value),
+    declaration: "var(--name, fallback)",
+    why:
+      "Cohtml has no two-argument var(): it logs an unresolved-variable warning for every element "
+      + "carrying one and drops the declaration. Name a token the game always defines.",
+  },
 ];
 
 describe("the catalog's floor is one row of cards", () => {

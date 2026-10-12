@@ -22,7 +22,7 @@ export async function resolve(specifier, context, next) {
   if (cs2) return { url: pathToFileURL(path.join(STUBS, `cs2-${cs2[1]}.tsx`)).href, shortCircuit: true };
 
   // The bundler's baseUrl=src aliases.
-  const aliased = specifier.match(/^(domain|mods|images)\/(.+)$/);
+  const aliased = specifier.match(/^(domain|mods|images|looks)\/(.+)$/);
   if (aliased) {
     const file = withExtension(path.join(SRC, specifier));
     if (file) return { url: pathToFileURL(file).href, shortCircuit: true };

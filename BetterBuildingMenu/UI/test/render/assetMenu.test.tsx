@@ -9,7 +9,7 @@ import { AssetMenu } from "../../src/mods/BuildingMenu/AssetMenu";
 
 // The widths AssetMenu writes inline, read off the markup by class.
 const widthOf = (html: string, className: string): number =>
-  Number(new RegExp(`class="${className}"[^>]*style="width:\\s*([0-9.]+)rem`).exec(html)?.[1]);
+  Number(new RegExp(`class="${className}(?: [^"]*)?"[^>]*style="width:\\s*([0-9.]+)rem`).exec(html)?.[1]);
 const render = () => renderHtml(<AssetMenu onClose={() => {}} />);
 
 describe("the asset menu's row", () => {
@@ -135,7 +135,8 @@ describe("a drag on the asset menu's right edge", () => {
   let saved: unknown;
   let frames: Array<() => void> = [];
   let root: ReactTestRenderer | undefined;
-  const styleWidth = (className: string) => String(root!.root.find((node) => node.props.className === className).props.style.width);
+  const styleWidth = (className: string) =>
+    String(root!.root.find((node) => String(node.props.className ?? "").split(" ")[0] === className).props.style.width);
 
   beforeEach(() => {
     resetBindings();
@@ -180,5 +181,25 @@ describe("a drag on the asset menu's right edge", () => {
 
     act(() => setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 2));
     assert.equal(styleWidth("toolContainer"), "893rem");
+  });
+});
+
+describe("the asset menu's look", () => {
+  beforeEach(() => {
+    resetBindings();
+    resetAssetMenuView();
+  });
+
+  it("puts the look's tokens on the box, following the game's style, at the look's own alphas", () => {
+    assert.match(
+      render(),
+      /class="toolContainer standard followStyle" style="width:706rem;--bbm-a-head:0\.96;--bbm-a-body:0\.92;--bbm-a-popBg:0\.97"/
+    );
+  });
+
+  it("follows the game's interface transparency", () => {
+    setBinding("options", "interfaceTransparency", 1);
+
+    assert.match(render(), /--bbm-a-head:0\.598;--bbm-a-body:0\.526;--bbm-a-popBg:0\.604/);
   });
 });

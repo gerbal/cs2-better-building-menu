@@ -1,0 +1,15 @@
+@use "looks" as *;
+
+// The menu root's look: its tokens, and its panels' own alphas, which the root overrides from the
+// game's transparency. See docs/design-notes.md, "The looks' tokens".
+.standard {
+  @include tokens($standard);
+  @include alphas($standard-alphas);
+}
+
+// The game puts style--<name> on the body. Its two styles redefine every token the follow map
+// reads, so one map serves both; the root drops followStyle under the developer knob.
+:global(.style--bright-blue) .standard.followStyle,
+:global(.style--dark-grey-orange) .standard.followStyle {
+  @include tokens(follow($standard, $standard-follow));
+}

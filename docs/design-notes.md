@@ -258,6 +258,44 @@ A development branch's tab takes the category's glyph rather than a photograph: 
 refuses a `thumbnail://` render and Asset Icon Library's PNG building renders (`coui://ail/...png`),
 which that library hands the game's development tree for its nodes. Its SVGs stay glyphs.
 
+## The looks' tokens
+
+A look is one class of `--bbm-*` custom properties on the build menu's root (`looks/looks.module.scss`,
+built from the maps in `looks/_looks.scss`). The menu's sheets read the tokens, not the game's own
+colours, so a look change is a class change and nothing remounts. Standard is the first look; the
+tab row and its readout are the first sheets to read it, and the other sheets move to it as their
+increment restyles them. The per-look geometry table waits for the increments that add the other
+looks; only Standard's tokens are written here.
+
+- **One kind of value per key.** Each key holds a colour, a gradient, a shadow, a length or a filter
+  in every look and every style, and is read by one longhand: a gradient by `background-image`, a
+  colour by `background-color` or `color`, never by the `background` shorthand, which is not
+  measured with `var()` in Cohtml. `lookTokens.test.ts` holds this.
+- **The game's interface styles.** The game puts `style--<name>` on the body, and its Bright blue and
+  Dark grey-orange styles redefine its panel, ink and accent tokens. Under either, the root's
+  `followStyle` class applies one follow map (`$standard-follow`): the list from
+  `--panelColorNormal`, its plates from `--menuPanel1-3`, the ink on them from `--menuText1Normal`
+  and `--menuText2Normal`, the head and the popovers from `--panelColorDark`, the accents from
+  `--accentColor*`. Ink pairs with the surface under it: Bright blue turns the list light and its
+  ink dark, while the head, and the tab row and readout on it, stay dark under every style and keep
+  the look's light ink. The armed fill and the lit tab's gradient are game tokens no style changes
+  (`--selectedColor`, `--gradientHighlight*`). The map leaves the entity ring to the look, and its
+  selector names the two style classes without `body`, which the game puts them on. Plates under
+  each interface style are settled with the restyle of the list.
+- **The game's interface transparency.** The game sets `--panelOpacityNormal` and
+  `--panelOpacityDark` from its slider, and its own panels carry them. A look's panels would draw far
+  lighter than designed if they took those values as they are, so `surfaceAlphas` scales each
+  panel's own alpha by the game's opacity against its value at the default 50%, capped at 1, and
+  the root carries the result as `--bbm-a-head`, `--bbm-a-body` and `--bbm-a-popBg`, which the panel
+  tokens read inside `rgba()`. At 0% the panels are opaque; at 100% they keep a little over half
+  their alpha. The class declares the look's own alphas, so the panels draw as designed before the
+  root sets them. Transparency reaches the stylesheet as root variables set from script, because
+  `calc()` inside a colour is not measured in Cohtml. The blur follows already: `bodyBlur` is
+  `var(--panelBlur)`, which the game sets to `none` at 0%. Under a style the panels are the game's
+  own, which carry its opacity already.
+- **Plain selectors.** The tokens' rules use class selectors only: Cohtml has no grid, `:not()`,
+  `:has()`, `:is()` or `an+b` selectors, and no `text-overflow` on a flex item.
+
 ## The release marker and the settings version
 
 A release leaves two signs that it ran, so a later release can tell a player who upgraded from

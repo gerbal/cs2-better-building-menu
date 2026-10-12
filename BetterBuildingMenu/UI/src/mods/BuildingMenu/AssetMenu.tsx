@@ -1,4 +1,5 @@
 import classNames from "classnames";
+import type { CSSProperties } from "react";
 
 import { BuildingCatalogComponent } from "mods/BuildingCatalog/BuildingCatalog";
 import { ControlPane } from "mods/ControlPane/ControlPane";
@@ -9,6 +10,9 @@ import { VanillaTabBarHost } from "mods/VanillaTabBarHost/VanillaTabBarHost";
 import { useVanillaLayoutForAssetMenu } from "mods/BuildingMenu/vanillaLayout";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
 import { ASSET_MENU_WIDTH_HANDLE_REACH, assetMenuRowWidth, catalogLayoutWidth } from "domain/assetMenuLayout";
+import { surfaceAlphaStyle } from "domain/looks";
+import { useInterfaceTransparency } from "domain/interfaceTransparencySetting";
+import looks from "looks/looks.module.scss";
 
 import styles from "mods/BuildingMenu/assetMenu.module.scss";
 import { gameClasses } from "mods/gameModules";
@@ -33,6 +37,7 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
   const { step, menuWidth, paneShown, snaps } = useAssetMenuLayout();
   const { height: catalogHeight, isResizing, beginResize, blocker } = useAssetMenuHeight();
   const widthDrag = useAssetMenuWidthDrag({ menuWidth, step, snaps });
+  const transparency = useInterfaceTransparency();
   // The box follows a width drag, and keeps the snapped width until the stored step comes back.
   const shownWidth = widthDrag.liveWidth ?? menuWidth;
   const rowWidth = assetMenuRowWidth(shownWidth, paneShown);
@@ -54,7 +59,12 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
           It is the build menu and the pane and nothing more, so no empty
           stretch of it is left to take the mouse. */}
       <div className={classNames(styles.assetMenuRow)} style={{ width: rowWidth + "rem" }}>
-        <div className={styles.toolContainer} style={{ width: shownWidth + "rem" }}>
+        {/* The box carries the look: its tokens, the game's interface style followed, and its
+            panels' alphas under the game's transparency. See docs/design-notes.md, "The looks' tokens". */}
+        <div
+          className={classNames(styles.toolContainer, looks.standard, looks.followStyle)}
+          style={{ width: shownWidth + "rem", ...surfaceAlphaStyle(transparency) } as CSSProperties}
+        >
           <AssetMenuResizeHandle active={isResizing} onBeginResize={beginResize} />
           <div className={styles.topBar}>
             <BuildingMenuHeader small={headerWidth <= 685} large={headerWidth >= 850} onClose={onClose} />
