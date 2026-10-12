@@ -483,7 +483,8 @@ tool's prefab event, which does not fire when a tool is armed again with the pre
   goes through the camera. For a district, surface or transit line that is the pointer's ground
   point, not the area or line placed: after the apply that finishes it, the tool's list holds only
   the point under the cursor. Any other tool, an empty list, a point behind the camera or a read
-  that fails leaves the pointer.
+  that fails leaves the pointer. Under a gamepad that pointer is the game's gamepad pointer
+  position, the centre of the screen, and the line cannot tell it from a mouse resting there.
 
 **The file.** A line is appended as each event happens. At 5 MB the file moves to
 `picks.1.jsonl`, replacing the one before. A write that fails warns once a session and its lines
