@@ -1,6 +1,29 @@
 [
   {
     "Stable": true,
+    "Version": "0.3.0",
+    "Date": "2026-10-12",
+    "ChangeGroups": [
+      {
+        "Name": "Changes",
+        "Changes": [
+          "The build menu opens at the size of the game's own, with the control pane beside it. Drag its right edge to widen it: the edge settles on one of five widths, and every menu opens at the same one.",
+          "If you used an earlier version, the menu opens at the width nearest the one you had.",
+          "Enter in the search arms the best match, wherever it sits in the list and however the list is sorted.",
+          "A sort's first click puts the best first: the most Capacity, Workers, Households, Water capacity or Sewage capacity, the lowest Cost or Upkeep. Equal values go to the cheaper building.",
+          "Sort by Households, Water capacity or Sewage capacity."
+        ]
+      },
+      {
+        "Name": "Fixed",
+        "Changes": [
+          "A list that stops at 2,000 buildings says so, and how to narrow it."
+        ]
+      }
+    ]
+  },
+  {
+    "Stable": true,
     "Version": "0.2.5",
     "Date": "2026-10-08",
     "ChangeGroups": [

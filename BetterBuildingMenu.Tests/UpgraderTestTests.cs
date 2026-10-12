@@ -163,6 +163,15 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void ThisBuildIsTheRedesignsFirstReleaseOrLater()
+		{
+			// Its own marker must read as the redesign's, or a fresh install would read as an upgrader.
+			var release = ReleaseMarker.ReleaseOf(typeof(Mod).Assembly.GetName().Version);
+
+			Assert.False(ReleaseMarker.IsBefore(release, UpgraderTest.FirstRedesignRelease), release);
+		}
+
+		[Fact]
 		public void FromKeepsOnlyAMarkerThisReleaseReads()
 		{
 			var marker = FirstWrittenBy("0.2.5", stampBefore: true);

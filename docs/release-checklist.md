@@ -60,9 +60,10 @@ On a developed save:
    - the asset menu replaces the grid, with the category strip across the top;
    - tiles draw their icons, with no placeholders;
    - a search finds an asset, and Enter arms the best match;
-   - a long menu offers Load more.
-4. **Views.** Switch through grid, list, cards and table, and drag the
-   resize edge.
+   - a long menu offers Load more, and a list past 2,000 rows says how to narrow it;
+   - every menu opens at the same width, the stored Width step.
+4. **Views.** Switch through grid, list, cards and table, drag the
+   top edge, and drag the right edge: it settles on a width.
 5. **Place.** Arm an asset from a tile and place it. Escape closes the asset menu.
 6. **Options.** Flip each option under Options › Better Building Menu with a
    menu open, and see it take effect.
