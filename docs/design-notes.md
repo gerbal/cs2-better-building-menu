@@ -290,8 +290,12 @@ setting `AssetMenuViewMode`, so the next session opens in it. Until the player p
   or `""` for anything else, and saves only when the stored value changes. The binding is
   read/write, like the sort's, so the stored view reaches the UI on its first frame; nothing is
   sent back from an effect, which would answer C#'s own echo.
-- **Reset menu forgets it.** It sends `""`, so the next session opens in Cards; the store holds
-  Cards for the rest of this one.
+- **A reset forgets it.** The pane's Reset menu sends `""`, and Reset the build menu… stores it,
+  so the next session opens in Cards. This session's pick goes too: `StoredViewWatcher`, mounted
+  for the whole session because Options opens while the menu is closed, drops it when the stored
+  view empties (`sessionPickAfterStored`). No pick sends `""`, so nothing else empties it. The
+  watcher lives in a city only, so its first answer counts too: empty beside a pick is a reset
+  made at the main menu.
 
 ## Reset the build menu
 

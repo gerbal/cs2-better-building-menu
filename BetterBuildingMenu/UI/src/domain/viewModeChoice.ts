@@ -21,3 +21,16 @@ export function chooseViewMode(
   if (isViewModeKind(stored)) return stored;
   return fallback;
 }
+
+/**
+ * This session's pick once the stored view moves. The stored view emptying is a reset, from
+ * Options or the pane, so the pick goes with it; no pick sends "", so nothing else empties it.
+ * Filling, an echo of a pick, or another kind keeps the pick, which C# is about to echo.
+ */
+export function sessionPickAfterStored(
+  previous: string | null | undefined,
+  next: string | null | undefined,
+  sessionPick: string
+): string {
+  return isViewModeKind(previous) && !isViewModeKind(next) ? "" : sessionPick;
+}

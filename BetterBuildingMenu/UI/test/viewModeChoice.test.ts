@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { VIEW_MODE_KINDS, chooseViewMode } from "../src/domain/viewModeChoice.ts";
+import { VIEW_MODE_KINDS, chooseViewMode, sessionPickAfterStored } from "../src/domain/viewModeChoice.ts";
 import { DEFAULT_VIEW_MODE, VIEW_MODES } from "../src/mods/GroupedResults/ViewModeBar.tsx";
 
 describe("which view the build menu draws", () => {
@@ -24,5 +24,17 @@ describe("which view the build menu draws", () => {
 
   it("knows the kinds the view bar offers, and no others", () => {
     assert.deepEqual([...VIEW_MODE_KINDS].sort(), VIEW_MODES.map((option) => option.id).sort());
+  });
+
+  it("drops this session's pick when the stored view empties, as only a reset empties it", () => {
+    assert.equal(sessionPickAfterStored("list", "", "table"), "");
+    assert.equal(sessionPickAfterStored("cards", null, "table"), "");
+  });
+
+  it("keeps this session's pick while the stored view fills, moves, or was never a kind", () => {
+    assert.equal(sessionPickAfterStored("", "list", "table"), "table");
+    assert.equal(sessionPickAfterStored("list", "grid", "table"), "table");
+    assert.equal(sessionPickAfterStored("tiles", "", "table"), "table");
+    assert.equal(sessionPickAfterStored(undefined, "", "table"), "table");
   });
 });
