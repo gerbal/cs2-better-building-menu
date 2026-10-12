@@ -3,6 +3,7 @@ using Game.Settings;
 using Game.UI.Localization;
 
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace BetterBuildingMenu.Tests
 {
@@ -21,11 +22,11 @@ namespace BetterBuildingMenu.Tests
 			.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
 			.Where(property => property.GetMethod?.IsPublic == true && property.SetMethod?.IsPublic == true);
 
-		/// <summary>The rows a player sees in Options: every property in the Behavior or UI / UX group.</summary>
+		/// <summary>The rows a player sees in Options: every property not hidden, outside the developer knobs' Tuning group.</summary>
 		private static IEnumerable<PropertyInfo> PlayerRows() => typeof(BetterBuildingMenuSettings)
 			.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-			.Where(property => property.GetCustomAttribute<SettingsUISectionAttribute>() is { } section
-				&& (section.simpleGroup == BetterBuildingMenuSettings.BEHAVIOR || section.simpleGroup == BetterBuildingMenuSettings.UIUX));
+			.Where(property => !property.IsDefined(typeof(SettingsUIHiddenAttribute))
+				&& property.GetCustomAttribute<SettingsUISectionAttribute>()?.simpleGroup != BetterBuildingMenuSettings.TUNING);
 
 		/// <summary>Every value the migration and Reset reach, each moved off how it ships.</summary>
 		private static FakeSettings EveryValueMoved()
@@ -110,21 +111,31 @@ namespace BetterBuildingMenu.Tests
 		public void TheTestSettingsStartWhereTheSettingsClassDoes()
 		{
 			var source = ModSource.Text("Setting.cs");
+			var start = new FakeSettings();
 
-			Assert.Contains("public float AssetMenuHeight { get; set; } = Domain.AssetMenuHeight.Default;", source);
-			Assert.Contains("public float AssetMenuCatalogWidth { get; set; } = Domain.AssetMenuCatalogWidth.Default;", source);
-			Assert.Contains("public int AssetMenuWidthStep { get; set; } = Domain.WidthSteps.DefaultStep;", source);
-			Assert.Contains("public bool ControlPaneShown { get; set; } = Domain.SettingsDefaults.ControlPaneShown;", source);
-			Assert.Contains("public string AssetMenuViewMode { get; set; } = Domain.AssetMenuViewMode.None;", source);
-			Assert.Contains("public bool ReplaceVanillaBuildMenu { get; set; } = Domain.SettingsDefaults.ReplaceVanillaBuildMenu;", source);
-			Assert.Contains("public int AssetMenuTileSize { get; set; } = Domain.SettingsDefaults.TileSize;", source);
-			Assert.Contains("public int DevSlotMargin { get; set; } = Domain.Tuning.SlotMarginPercent;", source);
-
-			// No initializer: false or 0, as FakeSettings has them.
-			foreach (var bare in new[] { "int SettingsVersion", "bool Upgrader", "bool AutoWidenSearch", "bool DevPickLogger" })
+			Assert.All(StoredSettings(), setting =>
 			{
-				Assert.Matches("public " + bare + @" \{ get; set; \}\r?\n", source);
-			}
+				// A Domain constant, or no initializer: a start the plain object can be held to.
+				var declared = Regex.Match(source, @"public \S+ " + setting.Name + @" \{ get; set; \}(?: = Domain\.(?<owner>\w+)\.(?<constant>\w+);)?\r?\n");
+
+				Assert.True(declared.Success, setting.Name + " starts at something other than a Domain constant or the default");
+
+				var shipped = declared.Groups["owner"].Success
+					? DomainConstant(declared.Groups["owner"].Value, declared.Groups["constant"].Value)
+					: setting.PropertyType.IsValueType ? Activator.CreateInstance(setting.PropertyType) : null;
+
+				Assert.Equal(shipped, typeof(FakeSettings).GetProperty(setting.Name)!.GetValue(start));
+			});
+		}
+
+		/// <summary>The value of a constant declared in a Domain type, failing the test for anything but a constant.</summary>
+		private static object? DomainConstant(string owner, string name)
+		{
+			var field = typeof(SettingsDefaults).Assembly.GetType("BetterBuildingMenu.Domain." + owner)?.GetField(name, BindingFlags.Public | BindingFlags.Static);
+
+			Assert.True(field is { IsLiteral: true }, $"Domain.{owner}.{name} is not a constant");
+
+			return field!.GetRawConstantValue();
 		}
 
 		[Fact]
