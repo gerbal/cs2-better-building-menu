@@ -57,18 +57,13 @@ namespace BetterBuildingMenu.Tests
 
 			history.Record(Roads, "Large Road");
 
-			// 4.75 against 4 falls short: the margin asks for more than 4 x 1.25 = 5.
+			// 4.75 against 4 falls short: the margin asks for 4 x 1.25 = 5.
 			Assert.Equal(new[] { "Small Road", "Medium Road" }, history.Menus[Roads].Held);
 
-			var atMargin = Placed(Repeat("Small Road", 4).Concat(Repeat("Medium Road", 4)).Concat(Repeat("Large Road", 5)).ToArray());
+			var placed = Placed(Repeat("Small Road", 4).Concat(Repeat("Medium Road", 4)).Concat(Repeat("Large Road", 5)).ToArray());
 
-			// Five against four is the margin exactly, and the holder keeps the slot.
-			Assert.Equal(new[] { "Small Road", "Medium Road" }, atMargin.Menus[Roads].Held);
-
-			var past = Placed(Repeat("Small Road", 4).Concat(Repeat("Medium Road", 4)).Concat(Repeat("Large Road", 6)).ToArray());
-
-			// Six against four is past it, and takes the slot.
-			Assert.Equal(new[] { "Large Road", "Small Road" }, past.Menus[Roads].Held);
+			// Five against four is the margin exactly, and takes the slot.
+			Assert.Equal(new[] { "Large Road", "Small Road" }, placed.Menus[Roads].Held);
 		}
 
 		[Fact]
@@ -88,27 +83,23 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void AtNoMarginANewcomerNeedsOnlyToExceedAHolder()
+		public void AtNoMarginANewcomerTakesTheSlotAtATie()
 		{
-			PlacementHistory Holding(float large)
+			PlacementHistory Holding()
 			{
 				var history = new PlacementHistory();
-				history.Restore(Roads, new[] { Count("Small Road", 4f), Count("Medium Road", 4f), Count("Large Road", large) }, "Small Road", new[] { "Small Road", "Medium Road" });
+				history.Restore(Roads, new[] { Count("Small Road", 4f), Count("Medium Road", 4f), Count("Large Road", 3f) }, "Small Road", new[] { "Small Road", "Medium Road" });
 				return history;
 			}
 
-			var tie = Holding(3f);
-			tie.Record(Roads, "Large Road", PlacementHistory.MarginOf(0));
-			var above = Holding(3.5f);
-			above.Record(Roads, "Large Road", PlacementHistory.MarginOf(0));
-			var shipped = Holding(3.5f);
+			var shipped = Holding();
 			shipped.Record(Roads, "Large Road");
+			var noMargin = Holding();
+			noMargin.Record(Roads, "Large Road", PlacementHistory.MarginOf(0));
 
-			// Four against four is a tie, and the holder keeps the slot.
-			Assert.Equal(new[] { "Small Road", "Medium Road" }, tie.Menus[Roads].Held);
-			// 4.5 against 4 exceeds it at no margin, and falls short of the shipped 5.
-			Assert.Equal(new[] { "Large Road", "Small Road" }, above.Menus[Roads].Held);
+			// Four against four: the shipped margin asks for five.
 			Assert.Equal(new[] { "Small Road", "Medium Road" }, shipped.Menus[Roads].Held);
+			Assert.Equal(new[] { "Small Road", "Large Road" }, noMargin.Menus[Roads].Held);
 		}
 
 		[Fact]

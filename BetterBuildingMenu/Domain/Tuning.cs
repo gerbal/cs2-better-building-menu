@@ -11,7 +11,7 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>The slot margin's shipped value, in percent: a newcomer needs 1.25 times a holder's placements.</summary>
 		public const int SlotMarginPercent = 25;
 
-		/// <summary>The lowest slot margin the knob offers, in percent: a newcomer needs only to exceed the holder.</summary>
+		/// <summary>The lowest slot margin the knob offers, in percent: a newcomer takes a slot at a tie.</summary>
 		public const int SlotMarginMin = 0;
 
 		/// <summary>The highest slot margin the knob offers, in percent.</summary>

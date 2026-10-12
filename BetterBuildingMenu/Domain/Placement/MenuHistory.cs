@@ -88,9 +88,9 @@ namespace BetterBuildingMenu.Domain.Placement
 				{
 					_held.Add(prefab);
 				}
-				else if (_counts[prefab] > _counts[_held[_held.Count - 1]] * slotMargin)
+				else if (_counts[prefab] >= _counts[_held[_held.Count - 1]] * slotMargin)
 				{
-					// Only past the margin, so two close favourites do not trade a slot back and forth.
+					// Only from the margin up, so two close favourites do not trade a slot back and forth.
 					_held[_held.Count - 1] = prefab;
 				}
 			}

@@ -369,8 +369,8 @@ menu's slots. It stays on the player's computer; nothing is sent anywhere.
   A prefab is its prefab name, so a prefab a mod renames starts again. Every city shares one
   history.
 - **Slots.** The first two prefabs placed in a menu hold its slots, most placed first. A newcomer
-  takes the weaker slot once its count exceeds 1.25 times that holder's (more than 5 against 4), so
-  two close favourites do not trade places. In developer mode the Slot margin knob sets the 25%
+  takes the weaker slot once its count reaches 1.25 times that holder's (5 against 4), so two close
+  favourites do not trade places. In developer mode the Slot margin knob sets the 25%
   (see "Developer knobs").
 - **Ageing.** Once a launch, as the file is read, every count halves, counts under a half go, and
   each menu keeps its eight most placed; the latest and the holders are never cut, and count
@@ -431,8 +431,8 @@ knob's row carries `[SettingsUIDeveloper]`, so the game draws it only in develop
 - **Reset puts them back** with every other setting. The knobs stay live whatever Replace the
   vanilla build menu holds: they never wait for it.
 - **Slot margin** (0 to 50%, step 5, ships 25): how many more placements than a menu's weaker slot
-  holder a newcomer needs to take its slot (see "The placement history"). The newcomer must exceed
-  the holder by the margin, so at 0 a tie keeps the holder. A stored value outside 0 to 50, as a
+  holder a newcomer needs to take its slot (see "The placement history"). At 0 a tie
+  is enough. A stored value outside 0 to 50, as a
   hand edit could leave, reads as the nearer end.
 
 ## Search and sort over the whole result

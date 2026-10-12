@@ -129,7 +129,7 @@
   "Options.WARNING[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.ResetBuildMenu]": "Put every Better Building Menu setting, the width, the view and the menu's size back to how they ship? The buildings you have placed are kept.",
   "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.OffWhileReplaceOff]": "Off while Replace the vanilla build menu is off.",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.DevSlotMargin]": "Slot margin",
-  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.DevSlotMargin]": "Developer mode only. How many more placements, in percent, a building needs than the less placed of a menu's two slots to take its place. 25 ships; at 0 it needs only to exceed it.",
+  "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.DevSlotMargin]": "Developer mode only. How many more placements, in percent, a building needs than the less placed of a menu's two slots to take its place. 25 ships; at 0 a tie is enough.",
   "Tooltip.LABEL[BetterBuildingMenu.GroupBy]": "Group by",
   "Tooltip.LABEL[BetterBuildingMenu.GroupedBy]": "Grouped by {0}",
   "Tooltip.LABEL[BetterBuildingMenu.SortedBy]": "Sorted by {0}, {1}",

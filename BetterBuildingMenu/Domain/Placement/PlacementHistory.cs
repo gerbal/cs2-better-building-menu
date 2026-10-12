@@ -46,7 +46,7 @@ namespace BetterBuildingMenu.Domain.Placement
 			1f + Math.Max(Tuning.SlotMarginMin, Math.Min(Tuning.SlotMarginMax, percent)) / 100f;
 
 		/// <summary>One placement: a count of 1, the latest, and the slots checked again.</summary>
-		/// <param name="slotMargin">How many times the weaker holder's count a newcomer must exceed to take its slot.</param>
+		/// <param name="slotMargin">How many times the weaker holder's count a newcomer needs to take its slot.</param>
 		public void Record(string menu, string prefab, float slotMargin = SlotMargin)
 		{
 			if (IsReadOnly)
