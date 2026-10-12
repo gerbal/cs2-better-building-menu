@@ -12,6 +12,20 @@ const widthOf = (html: string, className: string): number =>
   Number(new RegExp(`class="${className}(?: [^"]*)?"[^>]*style="width:\\s*([0-9.]+)rem`).exec(html)?.[1]);
 const render = () => renderHtml(<AssetMenu onClose={() => {}} />);
 
+/** The box's classes and inline style, read off the markup one property at a time. */
+const boxOf = (html: string): { classes: string[]; style: Record<string, string> } => {
+  const [, classes = "", style = ""] = /class="(toolContainer(?: [^"]*)?)" style="([^"]*)"/.exec(html) ?? [];
+  const declarations = style.split(";").filter((declaration) => declaration.includes(":"));
+
+  return {
+    classes: classes.split(" "),
+    style: Object.fromEntries(declarations.map((declaration) => {
+      const colon = declaration.indexOf(":");
+      return [declaration.slice(0, colon).trim(), declaration.slice(colon + 1).trim()];
+    })),
+  };
+};
+
 describe("the asset menu's row", () => {
   beforeEach(() => {
     resetBindings();
@@ -191,22 +205,30 @@ describe("the asset menu's look", () => {
   });
 
   it("puts the look's tokens on the box, following the game's style, at the look's own alphas", () => {
-    assert.match(
-      render(),
-      /class="toolContainer standard followStyle" style="width:706rem;--bbm-a-head:0\.96;--bbm-a-body:0\.92;--bbm-a-popBg:0\.97"/
-    );
+    const box = boxOf(render());
+
+    assert.ok(box.classes.includes("standard") && box.classes.includes("followStyle"), box.classes.join(" "));
+    assert.equal(box.style.width, "706rem");
+    assert.equal(box.style["--bbm-a-head"], "0.96");
+    assert.equal(box.style["--bbm-a-body"], "0.92");
+    assert.equal(box.style["--bbm-a-popBg"], "0.97");
   });
 
   it("follows the game's interface transparency", () => {
     setBinding("options", "interfaceTransparency", 1);
+    const box = boxOf(render());
 
-    assert.match(render(), /--bbm-a-head:0\.598;--bbm-a-body:0\.526;--bbm-a-popBg:0\.604/);
+    assert.equal(box.style["--bbm-a-head"], "0.598");
+    assert.equal(box.style["--bbm-a-body"], "0.526");
+    assert.equal(box.style["--bbm-a-popBg"], "0.604");
   });
 
   it("keeps the look's own colours under every style while the knob says so", () => {
     setBinding("BetterBuildingMenu", "AssetMenuTuning", { developerMode: true, interfaceStyles: false });
+    const box = boxOf(render());
 
-    assert.match(render(), /class="toolContainer standard" style=/);
+    assert.ok(box.classes.includes("standard"), box.classes.join(" "));
+    assert.ok(!box.classes.includes("followStyle"), box.classes.join(" "));
   });
 });
 
