@@ -124,6 +124,10 @@ export interface BuildingCatalogEntry {
   groupLabelId?: string;
   /** The word that tells this row apart from its nearest look-alike in the whole view; "" for none. */
   distinctWord?: string;
+  /** The trailing word this row varies by within its family of three or more ("05", "2x"); "" for none. */
+  familyToken?: string;
+  /** The stem the row's family shares ("Boulder"), the same for every member; "" for none. */
+  familyKey?: string;
 }
 
 /**

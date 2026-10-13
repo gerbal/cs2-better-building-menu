@@ -1401,8 +1401,17 @@ for Four-Lane Road 2. A row with no look-alike, or that is all of what it shares
 whatever their case and however many spaces part them. C# finds it over the whole result, as a
 look-alike past the window still decides which word a cut name keeps, and counts each run of leading
 words once in one pass over the rows' words, so a refresh sorts nothing more. A page only counted, the
-count of a scoped search's matches elsewhere and the menu shares' All, carries neither the words nor
-the view's facts (`WithFacts`), as nobody reads its rows.
+count of a scoped search's matches elsewhere and the menu shares' All, carries neither the words, nor
+the families, nor the view's facts (`WithFacts`), as nobody reads its rows.
+
+**Families.** Names that differ only in a trailing variant token are a family where three rows or more
+of the result share the stem before it (`Families`): "Boulder 01" to "Boulder 08". A variant token is a
+number with an optional letter ("05", "2b"), a single letter, or a size ("2x", "1x1"), as the name's last
+word or as digits closing it ("BeachRaft01"). Each member carries its token, which the icons' pill says,
+and its family's key, the stem as the family's first row spells it, the same for every member, which a
+grouping by family reads. A row whose name ends in no token ("Boulder Random") is a look-alike, never a
+member. Stems match whatever their case, and C# finds them over the whole result, beside the pass that
+finds the distinguishing word, so a family runs past the window as a look-alike does.
 
 **The planner** (`planName`) lays a name out in a box of a width and a number of lines, at the box's
 own font, from the one advance table (`textWidth`), and draws each line as a box of its own

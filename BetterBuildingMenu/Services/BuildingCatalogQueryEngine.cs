@@ -70,6 +70,9 @@ namespace BetterBuildingMenu.Services
 		/// <summary>No row's distinguishing word: a page only counted carries none.</summary>
 		private static readonly IReadOnlyDictionary<int, string> NoWords = new Dictionary<int, string>();
 
+		/// <summary>No row's family: a page only counted carries none.</summary>
+		private static readonly IReadOnlyDictionary<int, Families.Member> NoFamilies = new Dictionary<int, Families.Member>();
+
 		/// <param name="labelsOf">A row's headings under the page's grouping, which name its groups' labels; null names each by its key.</param>
 		public static BuildingCatalogPage Query(
 			IEnumerable<BuildingCatalogEntry> entries,
@@ -116,13 +119,15 @@ namespace BetterBuildingMenu.Services
 			var anchorIndex = query.AnchorId > 0 ? Array.FindIndex(visible, entry => entry.Id == query.AnchorId) : -1;
 			var limit = query.CoveringAnchor(anchorIndex).EffectiveLimit;
 			var offset = ClampOffset(query.EffectiveOffset, visible.Length, limit);
-			// Each row's distinguishing word, against every look-alike in the result, not the window's alone;
-			// none on a page only counted.
+			// Each row's distinguishing word and family, against every look-alike in the result, not the
+			// window's alone; none on a page only counted.
 			var distinct = query.WithFacts ? DistinctWords.Of(matching) : NoWords;
+			var families = query.WithFacts ? Families.Of(matching) : NoFamilies;
 			var items = visible
 				.Skip(offset)
 				.Take(limit)
 				.Select(entry => distinct.TryGetValue(entry.Id, out var word) ? entry with { DistinctWord = word } : entry)
+				.Select(entry => families.TryGetValue(entry.Id, out var member) ? entry with { FamilyToken = member.Token, FamilyKey = member.Key } : entry)
 				.ToArray();
 			// Both halves, because the window has a ceiling as well as an end. At MaxLimit
 			// growing it is a guaranteed no-op, and a Load more button that stays lit and does
