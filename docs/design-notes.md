@@ -1152,7 +1152,8 @@ are collapsed). Two kinds:
 - **The locked rows.** In a tab (not All), in the game's own order with no search, where half the
   rows or more are locked and the tab has no groups to split, the buildable rows come first, then a
   "Locked N" label, then the locked rows by milestone, each milestone in the game's order
-  (`BuildingCatalogQueryEngine.ListsLockedLast`). Elsewhere locked rows keep their place, dimmed: a sort
+  (`BuildingCatalogQueryEngine.ListsLockedLast`). A row the development tree alone holds, its
+  milestone reached or none, sorts first among them, as the nearest to opening. Elsewhere locked rows keep their place, dimmed: a sort
   the player picked keeps its order, and a search ranks a locked match where it falls. A click on the
   label collapses the locked rows out of the window (`SetCatalogSectionCollapsed`, kept in
   `BuildingCatalogQuery.LockedCollapsed`); the label stays, with its count, and any new start or

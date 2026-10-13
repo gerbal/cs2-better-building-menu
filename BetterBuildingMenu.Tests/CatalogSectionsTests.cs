@@ -86,10 +86,100 @@ namespace BetterBuildingMenu.Tests
 			Assert.Empty(page.Sections);
 		}
 
+		[Fact]
+		public void ATabExactlyHalfLockedListsItsLockedRowsLast()
+		{
+			// Two of four: half is enough.
+			var page = BuildingCatalogQueryEngine.Query(Parking.Take(4), new BuildingCatalogQuery(UiMenu: "Roads", UiCategory: "RoadsParking"));
+
+			Assert.Equal(new[] { 12, 14, 13, 11 }, page.Items.Select(entry => entry.Id));
+			var locked = Assert.Single(page.Sections);
+			Assert.Equal((CatalogSection.Locked, 2, 2), (locked.Kind, locked.Start, locked.Count));
+		}
+
+		[Fact]
+		public void ATabJustUnderHalfLockedKeepsTheGamesOrder()
+		{
+			// Two of five: under half.
+			var mostlyOpen = Parking.Select(entry => entry.Id == 15 ? entry with { IsLocked = false } : entry).ToArray();
+
+			var page = BuildingCatalogQueryEngine.Query(mostlyOpen, new BuildingCatalogQuery(UiMenu: "Roads", UiCategory: "RoadsParking"));
+
+			Assert.Equal(new[] { 11, 12, 13, 14, 15 }, page.Items.Select(entry => entry.Id));
+			Assert.Empty(page.Sections);
+		}
+
+		[Fact]
+		public void ATabUnderItsMenusOwnGroupingStillListsItsLockedRowsLast()
+		{
+			// The game's view groups a tabbed menu by tab, and a tab is one group of it.
+			var page = BuildingCatalogQueryEngine.Query(
+				Parking,
+				new BuildingCatalogQuery(UiMenu: "Roads", UiCategory: "RoadsParking", GroupBy: BuildingCatalogGrouping.MenuCategory),
+				TabLabels);
+
+			Assert.Equal(new[] { 12, 14, 13, 15, 11 }, page.Items.Select(entry => entry.Id));
+			Assert.Equal(CatalogSection.Locked, Assert.Single(page.Sections).Kind);
+		}
+
+		[Fact]
+		public void ATabAGroupingSplitsKeepsItsGroupsAndNoLockedOrder()
+		{
+			var priced = Parking.Select(entry => entry with { ConstructionCost = entry.Id <= 12 ? 1_000d : 50_000d }).ToArray();
+
+			var page = BuildingCatalogQueryEngine.Query(
+				priced,
+				new BuildingCatalogQuery(UiMenu: "Roads", UiCategory: "RoadsParking", GroupBy: BuildingCatalogGrouping.Cost));
+
+			Assert.Equal(new[] { 11, 12, 13, 14, 15 }, page.Items.Select(entry => entry.Id));
+			Assert.Collection(
+				page.Sections,
+				cheap => Assert.Equal((CatalogSection.Group, 0, 2), (cheap.Kind, cheap.Start, cheap.Count)),
+				dear => Assert.Equal((CatalogSection.Group, 2, 3), (dear.Kind, dear.Start, dear.Count)));
+		}
+
+		[Fact]
+		public void AStripTabOrASchoolLevelStandsForATab()
+		{
+			var branched = Parking.Select(entry => entry with { DevTreeBranch = "Basic", EducationLevel = 2 }).ToArray();
+
+			var strip = BuildingCatalogQueryEngine.Query(branched, new BuildingCatalogQuery(UiMenu: "Roads", StripTabs: new[] { "Basic" }));
+			var level = BuildingCatalogQueryEngine.Query(branched, new BuildingCatalogQuery(UiMenu: "Roads", SchoolTier: 2));
+
+			Assert.Equal(new[] { 12, 14, 13, 15, 11 }, strip.Items.Select(entry => entry.Id));
+			Assert.Equal(new[] { 12, 14, 13, 15, 11 }, level.Items.Select(entry => entry.Id));
+		}
+
+		[Fact]
+		public void RowsLockedBehindTheTreeAloneLeadTheLockedRows()
+		{
+			// A locked row whose milestone is reached, or that has none, waits on the tree: nearest to opening.
+			var withTreeRow = Parking.Append(Entry(16, "RoadsParking", 6, locked: true, milestone: 0)).ToArray();
+
+			var page = BuildingCatalogQueryEngine.Query(withTreeRow, new BuildingCatalogQuery(UiMenu: "Roads", UiCategory: "RoadsParking"));
+
+			Assert.Equal(new[] { 12, 14, 16, 13, 15, 11 }, page.Items.Select(entry => entry.Id));
+		}
+
+		[Fact]
+		public void AWhollyLockedTabFoldedKeepsItsLabelAndItsCount()
+		{
+			var allLocked = Parking.Select(entry => entry with { IsLocked = true }).ToArray();
+
+			var page = BuildingCatalogQueryEngine.Query(allLocked, new BuildingCatalogQuery(UiMenu: "Roads", UiCategory: "RoadsParking", LockedCollapsed: true));
+
+			Assert.Empty(page.Items);
+			Assert.Equal((5, 0, false), (page.TotalCount, page.VisibleCount, page.HasMore));
+			var locked = Assert.Single(page.Sections);
+			Assert.Equal((0, 5, true), (locked.Start, locked.Count, locked.Collapsed));
+			Assert.Equal(AssetMenuState.Ready, AssetMenuState.GetPageStatus(true, page.TotalCount));
+		}
+
 		[Theory]
 		[InlineData("", "Default", false, "")]
 		[InlineData("RoadsParking", "ConstructionCost", false, "")]
 		[InlineData("RoadsParking", "Default", true, "")]
+		[InlineData("RoadsParking", "Default", false, "road")]
 		[InlineData("RoadsParking", "Match", false, "road")]
 		public void ALockedOrderWaitsForATabTheGamesOwnOrderAndNoSearch(string tab, string sort, bool descending, string search)
 		{
@@ -147,6 +237,7 @@ namespace BetterBuildingMenu.Tests
 			Assert.False(collapsed.SetGroupBy(BuildingCatalogGrouping.MenuCategory).Query.LockedCollapsed);
 			Assert.False(collapsed.OpenMenu("Roads", _ => new MenuOpening("RoadsParking", -1, 0)).Query.LockedCollapsed);
 			Assert.True(collapsed.LoadMore().Query.LockedCollapsed);
+			Assert.True(collapsed.SetScreenSlots(40).Query.LockedCollapsed);
 		}
 
 		[Fact]

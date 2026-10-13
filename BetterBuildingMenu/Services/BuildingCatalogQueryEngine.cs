@@ -94,8 +94,8 @@ namespace BetterBuildingMenu.Services
 			// The whole result in display order: the window is a slice of it, and Enter's target
 			// is chosen from all of it, wherever its row is. A half-locked tab lists its locked rows last.
 			var ordered = Order(matching, query).ToArray();
-			var lockedLast = ListsLockedLast(ordered, query);
-			var lockedCount = lockedLast ? ordered.Count(entry => entry.IsLocked) : 0;
+			var lockedCount = LockedLastCount(ordered, query);
+			var lockedLast = lockedCount > 0;
 
 			if (lockedLast)
 			{
@@ -163,7 +163,12 @@ namespace BetterBuildingMenu.Services
 		/// A sort the player picked keeps its order, and a search ranks locked matches in place, dimmed.
 		/// See docs/design-notes.md, "Label plates".
 		/// </remarks>
-		public static bool ListsLockedLast(IReadOnlyList<BuildingCatalogEntry> ordered, BuildingCatalogQuery query)
+		public static bool ListsLockedLast(IReadOnlyList<BuildingCatalogEntry> ordered, BuildingCatalogQuery query) =>
+			LockedLastCount(ordered, query) > 0;
+
+		/// <summary>How many locked rows a tab lists last, as <see cref="ListsLockedLast"/> decides; 0 where it does not.</summary>
+		/// <remarks>The locked share is counted before the groups: it is the cheaper test.</remarks>
+		private static int LockedLastCount(IReadOnlyList<BuildingCatalogEntry> ordered, BuildingCatalogQuery query)
 		{
 			var inTab = !string.IsNullOrWhiteSpace(query.UiCategory) || query.StripTabs is { Count: > 0 } || query.SchoolTier >= 0;
 
@@ -173,16 +178,23 @@ namespace BetterBuildingMenu.Services
 				|| query.Descending
 				|| !string.Equals(query.EffectiveSortColumn, BuildingCatalogQuery.DefaultSort, StringComparison.OrdinalIgnoreCase))
 			{
-				return false;
+				return 0;
+			}
+
+			var lockedCount = ordered.Count(entry => entry.IsLocked);
+
+			if (lockedCount * 2 < ordered.Count)
+			{
+				return 0;
 			}
 
 			if (BuildingCatalogGrouping.IsGrouped(query.GroupBy)
 				&& ordered.Select(entry => BuildingCatalogGrouping.PrimaryKey(entry, query.GroupBy)).Distinct(StringComparer.OrdinalIgnoreCase).Skip(1).Any())
 			{
-				return false;
+				return 0;
 			}
 
-			return ordered.Count(entry => entry.IsLocked) * 2 >= ordered.Count;
+			return lockedCount;
 		}
 
 		/// <summary>One label per group of the page's grouping, each with where it starts and its true count; none for fewer than two groups.</summary>
@@ -199,19 +211,23 @@ namespace BetterBuildingMenu.Services
 
 			var sections = new List<CatalogSection>();
 			var start = 0;
+			// The current group's key, kept so each row's key is built once.
+			var key = BuildingCatalogGrouping.PrimaryKey(visible[0], groupBy);
 
 			for (var index = 1; index <= visible.Count; index++)
 			{
-				if (index < visible.Count
-					&& string.Equals(BuildingCatalogGrouping.PrimaryKey(visible[index], groupBy), BuildingCatalogGrouping.PrimaryKey(visible[start], groupBy), StringComparison.OrdinalIgnoreCase))
+				var next = index < visible.Count ? BuildingCatalogGrouping.PrimaryKey(visible[index], groupBy) : null;
+
+				if (next is not null && string.Equals(next, key, StringComparison.OrdinalIgnoreCase))
 				{
 					continue;
 				}
 
 				var labels = labelsOf?.Invoke(visible[start]);
-				var label = labels is { Path.Length: > 0 } named ? named.Path[0] : BuildingCatalogGrouping.PrimaryKey(visible[start], groupBy);
+				var label = labels is { Path.Length: > 0 } named ? named.Path[0] : key;
 				sections.Add(new CatalogSection("group:" + sections.Count, CatalogSection.Group, label, labels?.LabelId ?? string.Empty, start, index - start, false));
 				start = index;
+				key = next ?? string.Empty;
 			}
 
 			return sections.Count < 2 ? Array.Empty<CatalogSection>() : sections.ToArray();
