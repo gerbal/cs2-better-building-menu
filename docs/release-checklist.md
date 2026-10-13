@@ -91,9 +91,17 @@ On a developed save:
    - a name too long for its plate is cut once, with …, keeping the words that tell it apart, and never
      runs into its cost; at 130% text no plate shows part of a third name line, and each picture is
      whole; Zones' tiles that look alike carry a tag saying what tells them apart;
+   - Landscaping opens as icons, 45 in the game's own size, more columns at a wider Width; Props
+     Nature's Boulder 01 to 08 carry their numbers on pills and share a shade; a locked icon is dark
+     with MS n;
+   - point at a building in Roads and in Landscaping's icons: after a moment a small card just above
+     the pointer names it with its cost, upkeep and key number, clear of the chirper at the widest
+     Width, and it goes when the pointer leaves or a list opens; Options › Hover card › The game's
+     detail slot draws the wide card above the menu, and Status line only names the building at the
+     tabs' right end;
    - every menu opens at the same width, the stored Width step.
 4. **Views.** Open Sort, Filter, Group and View in turn and pick from each: one list at a
-   time, and a click elsewhere closes it. Pick List, Tiles and Cards in View: the menu keeps
+   time, and a click elsewhere closes it. Pick List, Icons, Tiles and Cards in View: the menu keeps
    its pick, with a dot, and another menu keeps its own; Default view takes it away. Pick a
    Group: the next open of that menu keeps it, another menu does not. Pick Cards in Roads at
    Width 3: cards as wide as their names, three rows, 11 or more, the tabs' labels among them;
