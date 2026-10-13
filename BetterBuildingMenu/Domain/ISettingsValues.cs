@@ -19,6 +19,10 @@ namespace BetterBuildingMenu.Domain
 
 		int AssetMenuWidthStep { get; set; }
 
+		string DefaultView { get; set; }
+
+		string AtLargeText { get; set; }
+
 		bool ControlPaneShown { get; set; }
 
 		string AssetMenuViewMode { get; set; }

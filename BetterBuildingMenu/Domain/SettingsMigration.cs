@@ -28,14 +28,17 @@ namespace BetterBuildingMenu.Domain
 	/// </remarks>
 	public static class SettingsMigration
 	{
-		/// <summary>This release's settings version: 1 is 0.2.5's, 2 the Width steps', 3 the top row's.</summary>
-		public const int Current = 3;
+		/// <summary>This release's settings version: 1 is 0.2.5's, 2 the Width steps', 3 the top row's, 4 the bodies'.</summary>
+		public const int Current = 4;
 
 		/// <summary>The version that introduced the Width steps, and the one question the upgrader test is asked for.</summary>
 		internal const int WidthStepsVersion = 2;
 
 		/// <summary>The version that gave the box its top row: a shorter default body, and the control pane an upgrader's choice.</summary>
 		internal const int ControlPaneVersion = 3;
+
+		/// <summary>The version that gave each menu its body: Tile size's new default, and the view 0.2.5 kept as Default view.</summary>
+		internal const int BodiesVersion = 4;
 
 		/// <summary>The heights earlier releases shipped as their default: 420, from 0.2.3 to 0.2.5, and an unreleased build's 155.</summary>
 		public static readonly IReadOnlyList<float> EarlierDefaultHeights = new[] { 420f, 155f };
@@ -78,11 +81,20 @@ namespace BetterBuildingMenu.Domain
 				ToTopRow(values, changes);
 			}
 
-			// On every load at this version or earlier: a hand edit or a bad write can leave a step
-			// the UI has no width for. A later release's file is left alone, its steps included.
+			// Reads the flag version 2 stored, and the view 0.2.5 kept.
+			if (from < BodiesVersion && BodiesVersion <= target)
+			{
+				ToBodies(values, changes);
+			}
+
+			// On every load at this version or earlier: a hand edit or a bad write can leave a step the
+			// UI has no width for, or a row a value it does not offer. A later release's file is left
+			// alone, its values included.
 			if (from <= target)
 			{
 				Set(nameof(ISettingsValues.AssetMenuWidthStep), values.AssetMenuWidthStep, WidthSteps.Sanitize(values.AssetMenuWidthStep), value => values.AssetMenuWidthStep = value, changes);
+				Set(nameof(ISettingsValues.DefaultView), values.DefaultView, BodyViews.SanitizeDefault(values.DefaultView), value => values.DefaultView = value, changes);
+				Set(nameof(ISettingsValues.AtLargeText), values.AtLargeText, LargeText.Sanitize(values.AtLargeText), value => values.AtLargeText = value, changes);
 			}
 
 			if (from < target)
@@ -151,6 +163,19 @@ namespace BetterBuildingMenu.Domain
 			{
 				Set(nameof(ISettingsValues.ControlPaneShown), values.ControlPaneShown, false, value => values.ControlPaneShown = value, changes);
 			}
+		}
+
+		/// <summary>
+		/// Version 4, the bodies: every Tile size becomes the new default, and the view 0.2.5 kept becomes
+		/// Default view, mapped; with none kept, an upgrader opens in Cards, as 0.2.4 did, and a new player
+		/// in Auto.
+		/// </summary>
+		private static void ToBodies(ISettingsValues values, List<string> changes)
+		{
+			Set(nameof(ISettingsValues.AssetMenuTileSize), values.AssetMenuTileSize, SettingsDefaults.TileSize, value => values.AssetMenuTileSize = value, changes);
+
+			var view = BodyViews.FromRemembered(values.AssetMenuViewMode) ?? (values.Upgrader ? BodyViews.Cards : BodyViews.Auto);
+			Set(nameof(ISettingsValues.DefaultView), values.DefaultView, view, value => values.DefaultView = value, changes);
 		}
 
 		/// <summary>The width a 0.2.4 player had: the width they dragged to, or for the default, the room beside the pane.</summary>

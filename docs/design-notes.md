@@ -689,7 +689,8 @@ settings are saved once, only if a value moved. It works on `ISettingsValues`, w
 class implements, so its tests never build the settings class. A second load finds the version
 current and changes nothing; a version above this release's, a later release's, is left alone.
 On every load of a file at this version or earlier, a stored Width step outside 1 to 5 becomes
-1 and is saved; a later release's file is not touched.
+1, and a Default view or At large text the rows do not offer reads as shipped, and is saved; a later
+release's file is not touched.
 
 **Version 2, the Width steps.**
 - The hidden `Upgrader` is set for an upgrader (see "Who is an upgrader").
@@ -715,6 +716,15 @@ On every load of a file at this version or earlier, a stored Width step outside 
   reads the upgrader flag version 2 stored, in the same run or an earlier one. Version 2 moves an
   earlier default to its own 149, and version 3 moves 149 on, so a file from before version 2 logs
   both moves.
+
+**Version 4, the bodies.**
+- Every stored Tile size becomes 64, the new default, which draws two rows of ten tiles in the game's
+  own box; 0.2.x shipped 100 for its grid, a picture with a label under it.
+- The view 0.2.5 kept becomes Default view, mapped: Cards stays Cards, Grid draws as Tiles, List and
+  Table as List. With none kept, an upgrader opens in Cards, as 0.2.4 did, and a new player in Auto.
+  The view's key stays in the file, and this step is the only reader of it.
+
+**This changes 0.2.x:** every player's Tile size moves to 64, once.
 
 **It cannot tell a choice from an old default.** A player who chose 420, 155 or 735 by hand moves
 with the defaults, once.

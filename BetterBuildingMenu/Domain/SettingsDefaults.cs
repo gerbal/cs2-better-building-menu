@@ -21,8 +21,14 @@ namespace BetterBuildingMenu.Domain
 		/// </summary>
 		public const bool ControlPaneShownWhenMissing = true;
 
-		/// <summary>The grid's tile width: one of the Tile size slider's 64 + 4k.</summary>
-		public const int TileSize = 100;
+		/// <summary>The Tiles view's tile width: one of the Tile size slider's 64 + 4k, two rows of ten in the game's own menu size.</summary>
+		public const int TileSize = 64;
+
+		/// <summary>A new player's Default view: the look's own rule picks each menu's body.</summary>
+		public const string DefaultView = BodyViews.Auto;
+
+		/// <summary>Above 100% text, the list keeps more buildings and shortens long names.</summary>
+		public const string AtLargeText = LargeText.MoreBuildings;
 
 		/// <summary>Every stored setting back to how it ships.</summary>
 		/// <remarks>
@@ -33,6 +39,8 @@ namespace BetterBuildingMenu.Domain
 		{
 			values.AssetMenuHeight = AssetMenuHeight.Default;
 			values.AssetMenuWidthStep = WidthSteps.DefaultStep;
+			values.DefaultView = DefaultView;
+			values.AtLargeText = AtLargeText;
 			values.Upgrader = false;
 			values.ControlPaneShown = ControlPaneShown;
 			values.AssetMenuViewMode = AssetMenuViewMode.None;

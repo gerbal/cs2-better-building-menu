@@ -19,6 +19,22 @@ namespace BetterBuildingMenu.Domain
 			"Options.LABEL[BetterBuildingMenu.WidthStep5]",
 		};
 
+		/// <summary>The Default view row's labels, one per value of <see cref="BodyViews.DefaultViews"/>.</summary>
+		public static readonly IReadOnlyList<string> DefaultViewLabelIds = new[]
+		{
+			"Options.LABEL[BetterBuildingMenu.DefaultViewAuto]",
+			"Options.LABEL[BetterBuildingMenu.DefaultViewList]",
+			"Options.LABEL[BetterBuildingMenu.DefaultViewTiles]",
+			"Options.LABEL[BetterBuildingMenu.DefaultViewCards]",
+		};
+
+		/// <summary>The At large text row's labels, one per value of <see cref="LargeText.Values"/>.</summary>
+		public static readonly IReadOnlyList<string> AtLargeTextLabelIds = new[]
+		{
+			"Options.LABEL[BetterBuildingMenu.AtLargeTextMoreBuildings]",
+			"Options.LABEL[BetterBuildingMenu.AtLargeTextWholeNames]",
+		};
+
 		/// <summary>A row's description: its own while Replace is on, else the line saying why it is greyed out.</summary>
 		public static string DescriptionId(bool replaceOn, string ownId) => replaceOn ? ownId : OffWhileReplaceOffId;
 

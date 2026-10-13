@@ -104,8 +104,19 @@ namespace BetterBuildingMenu
 		public int AssetMenuWidthStep { get; set; } = Domain.WidthSteps.DefaultStep;
 
 		/// <summary>
-		/// Grid tile width, in the units the tile label budget also uses: the single number the
-		/// tile and its label both size themselves from.
+		/// The body every menu without a VIEW pick of its own draws: Auto, the look's rule per menu, or
+		/// one body for all.
+		/// </summary>
+		/// <remarks>A string, so a body a later release retires reads as another. See <see cref="Domain.BodyViews"/>.</remarks>
+		[SettingsUISection(SETTINGS, UIUX)]
+		[SettingsUIDropdown(typeof(BetterBuildingMenuSettings), nameof(DefaultViewItems))]
+		[SettingsUIDisableByCondition(typeof(BetterBuildingMenuSettings), nameof(ReplaceVanillaBuildMenu), true)]
+		[SettingsUIDescription(typeof(BetterBuildingMenuSettings), nameof(DefaultViewDescription))]
+		public string DefaultView { get; set; } = Domain.SettingsDefaults.DefaultView;
+
+		/// <summary>
+		/// The Tiles view's tile width, in the units the tile label budget also uses: the single number
+		/// the tile and its label both size themselves from.
 		/// </summary>
 		[SettingsUISection(SETTINGS, UIUX)]
 		// Step 4, not 8: 64 + 8k never lands on the default, so a player who nudged the
@@ -114,6 +125,14 @@ namespace BetterBuildingMenu
 		[SettingsUIDisableByCondition(typeof(BetterBuildingMenuSettings), nameof(ReplaceVanillaBuildMenu), true)]
 		[SettingsUIDescription(typeof(BetterBuildingMenuSettings), nameof(AssetMenuTileSizeDescription))]
 		public int AssetMenuTileSize { get; set; } = Domain.SettingsDefaults.TileSize;
+
+		/// <summary>Above 100% text: the list's more buildings with long names shortened, or fewer with every name whole.</summary>
+		/// <remarks>See <see cref="Domain.LargeText"/>.</remarks>
+		[SettingsUISection(SETTINGS, UIUX)]
+		[SettingsUIDropdown(typeof(BetterBuildingMenuSettings), nameof(AtLargeTextItems))]
+		[SettingsUIDisableByCondition(typeof(BetterBuildingMenuSettings), nameof(ReplaceVanillaBuildMenu), true)]
+		[SettingsUIDescription(typeof(BetterBuildingMenuSettings), nameof(AtLargeTextDescription))]
+		public string AtLargeText { get; set; } = Domain.SettingsDefaults.AtLargeText;
 
 		/// <summary>Whether the control pane beside the build menu shows Sort, Filter, Group and View again.</summary>
 		/// <remarks>
@@ -214,12 +233,26 @@ namespace BetterBuildingMenu
 
 		private LocalizedString ControlPaneShownDescription() => RowDescription(nameof(ControlPaneShown));
 
+		private LocalizedString DefaultViewDescription() => RowDescription(nameof(DefaultView));
+
+		private LocalizedString AtLargeTextDescription() => RowDescription(nameof(AtLargeText));
+
 		/// <summary>The Width row's choices: the five steps, by their labels.</summary>
 		/// <remarks>Static, so a test reads it without building the settings class.</remarks>
 		private static DropdownItem<int>[] WidthStepItems() =>
 			Domain.OptionRows.WidthStepLabelIds
 				.Select((id, index) => new DropdownItem<int> { value = index + 1, displayName = LocalizedString.Id(id) })
 				.ToArray();
+
+		/// <summary>The Default view row's choices: Auto, then each body, by their labels.</summary>
+		/// <remarks>Static, so a test reads it without building the settings class.</remarks>
+		private static DropdownItem<string>[] DefaultViewItems() => StringItems(Domain.BodyViews.DefaultViews, Domain.OptionRows.DefaultViewLabelIds);
+
+		/// <summary>The At large text row's two choices, by their labels.</summary>
+		private static DropdownItem<string>[] AtLargeTextItems() => StringItems(Domain.LargeText.Values, Domain.OptionRows.AtLargeTextLabelIds);
+
+		private static DropdownItem<string>[] StringItems(IReadOnlyList<string> values, IReadOnlyList<string> labelIds) =>
+			values.Select((value, index) => new DropdownItem<string> { value = value, displayName = LocalizedString.Id(labelIds[index]) }).ToArray();
 
 		private LocalizedString ResetBuildMenuDescription() => RowDescription(nameof(ResetBuildMenu));
 	}
