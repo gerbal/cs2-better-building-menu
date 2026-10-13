@@ -871,6 +871,13 @@ knob's row carries `[SettingsUIDeveloper]`, so the game draws it only in develop
   - **Name lines** (the form's own, as it ships, or 1 or 2): the lines a list name takes.
   - **Tile name line** (on, as it ships, or off): the line naming the pointed or armed tile under the
     tiles.
+  - **Block labels** (inline, as it ships, or own line): a label plate takes one slot in line with the
+    buildings, or starts a line and takes the whole of it (see "The bodies").
+  - **Card height** (46, as it ships, or 50): a card's height at 100% text; 46 makes three rows in the
+    game's own body, 50 two.
+  - **Small menus grow** (on, as it ships, or off): a list in a menu with few rows grows its plates.
+  - **Search flow on wide boxes** (nearest the field first, as it ships, or row order): where a typed
+    search's results fill at the wider Width steps.
 
 ## The pick logger
 

@@ -100,6 +100,14 @@ export interface AssetMenuTuning {
   nameLines?: number;
   /** Whether the Tiles view names the armed or pointed tile under its rows. */
   tileNameLine?: boolean;
+  /** A label in a body: "inline", one slot in line, or "ownLine", a line of its own. */
+  blockLabels?: string;
+  /** A card's height at 100% text, in rem: 46, or 50. */
+  cardHeight?: number;
+  /** Whether a list in a menu with few rows grows its plates. */
+  smallMenusGrow?: boolean;
+  /** Search results at a wider step: "nearField", the first step's columns first, or "rowOrder". */
+  searchFlow?: string;
 }
 
 /**
@@ -117,6 +125,10 @@ export const SHIPPED_TUNING: Required<AssetMenuTuning> = {
   listPlateHeight: 27.25,
   nameLines: 0,
   tileNameLine: true,
+  blockLabels: "inline",
+  cardHeight: 46,
+  smallMenusGrow: true,
+  searchFlow: "nearField",
 };
 
 export const AssetMenuTuning$ = bindValue<AssetMenuTuning>(mod.id, "AssetMenuTuning", SHIPPED_TUNING);

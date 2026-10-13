@@ -68,6 +68,27 @@ namespace BetterBuildingMenu.Domain
 			"Options.LABEL[BetterBuildingMenu.NameLines2]",
 		};
 
+		/// <summary>The Block labels knob's labels, one per value of <see cref="Tuning.BlockLabelsValues"/>.</summary>
+		public static readonly IReadOnlyList<string> BlockLabelsLabelIds = new[]
+		{
+			"Options.LABEL[BetterBuildingMenu.BlockLabelsInline]",
+			"Options.LABEL[BetterBuildingMenu.BlockLabelsOwnLine]",
+		};
+
+		/// <summary>The Card height knob's labels, one per value of <see cref="Tuning.CardHeightValues"/>.</summary>
+		public static readonly IReadOnlyList<string> CardHeightLabelIds = new[]
+		{
+			"Options.LABEL[BetterBuildingMenu.CardHeight46]",
+			"Options.LABEL[BetterBuildingMenu.CardHeight50]",
+		};
+
+		/// <summary>The Search flow knob's labels, one per value of <see cref="Tuning.SearchFlowValues"/>.</summary>
+		public static readonly IReadOnlyList<string> SearchFlowLabelIds = new[]
+		{
+			"Options.LABEL[BetterBuildingMenu.SearchFlowNearField]",
+			"Options.LABEL[BetterBuildingMenu.SearchFlowRowOrder]",
+		};
+
 		/// <summary>A row's description: its own while Replace is on, else the line saying why it is greyed out.</summary>
 		public static string DescriptionId(bool replaceOn, string ownId) => replaceOn ? ownId : OffWhileReplaceOffId;
 

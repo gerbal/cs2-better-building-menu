@@ -18,13 +18,14 @@ namespace BetterBuildingMenu.Tests
 			new TuningValues(DeveloperMode: true, InterfaceStyles: false, TabNames: true).Write(writer);
 
 			Assert.Equal(
-				new[] { "developerMode", "interfaceStyles", "tabNames", "listShare", "whatCounts", "autoLargeText", "cardsFrom", "listPlateHeight", "nameLines", "tileNameLine" },
+				new[] { "developerMode", "interfaceStyles", "tabNames", "listShare", "whatCounts", "autoLargeText", "cardsFrom", "listPlateHeight", "nameLines", "tileNameLine", "blockLabels", "cardHeight", "smallMenusGrow", "searchFlow" },
 				writer.PropertyNames);
 			Assert.Equal(
 				new[]
 				{
 					"Write:Boolean:True", "Write:Boolean:False", "Write:Boolean:True", "Write:Int32:50", "Write:String:costOrCapacity",
 					"Write:String:lookOwn", "Write:Int32:0", "Write:Single:27.25", "Write:Int32:0", "Write:Boolean:True",
+					"Write:String:inline", "Write:Int32:46", "Write:Boolean:True", "Write:String:nearField",
 				},
 				writer.Tokens.Where(token => token.StartsWith("Write:", StringComparison.Ordinal)));
 		}
@@ -55,6 +56,10 @@ namespace BetterBuildingMenu.Tests
 		[InlineData("ListPlateHeight", "Tuning.ListPlateHeightOf(Knobs.Value(settings => settings.DevListPlateHeight, Tuning.ListPlateHeight))")]
 		[InlineData("NameLines", "Tuning.OneOf(Tuning.NameLinesValues, Knobs.Value(settings => settings.DevNameLines, Tuning.NameLines), Tuning.NameLines)")]
 		[InlineData("TileNameLine", "Knobs.Value(settings => settings.DevTileNameLine, Tuning.TileNameLine)")]
+		[InlineData("BlockLabels", "Tuning.OneOf(Tuning.BlockLabelsValues, Knobs.Value(settings => settings.DevBlockLabels, Tuning.BlockLabels), Tuning.BlockLabels)")]
+		[InlineData("CardHeight", "Tuning.OneOf(Tuning.CardHeightValues, Knobs.Value(settings => settings.DevCardHeight, Tuning.CardHeight), Tuning.CardHeight)")]
+		[InlineData("SmallMenusGrow", "Knobs.Value(settings => settings.DevSmallMenusGrow, Tuning.SmallMenusGrow)")]
+		[InlineData("SearchFlow", "Tuning.OneOf(Tuning.SearchFlowValues, Knobs.Value(settings => settings.DevSearchFlow, Tuning.SearchFlow), Tuning.SearchFlow)")]
 		public void EachBodyKnobIsReadThroughTheOneRuleIntoItsOwnField(string field, string read)
 		{
 			Assert.Contains($"{field}: {read}", ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.cs"), "private static TuningValues CurrentTuning()"));
@@ -73,6 +78,17 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void TheLayoutKnobsShipAsTheSpecSetsThem()
+		{
+			// Labels inline in one slot; cards three rows tall in the game's own body; small menus grow;
+			// search results nearest the field first.
+			Assert.Equal("inline", Tuning.BlockLabels);
+			Assert.Equal(46, Tuning.CardHeight);
+			Assert.True(Tuning.SmallMenusGrow);
+			Assert.Equal("nearField", Tuning.SearchFlow);
+		}
+
+		[Fact]
 		public void TheUisFallbackForEachBodyKnobIsWhatShips()
 		{
 			// The UI draws the shipped knobs until C# answers, so the two must agree.
@@ -86,6 +102,10 @@ namespace BetterBuildingMenu.Tests
 			Assert.Contains("listPlateHeight: 27.25,", fallback);
 			Assert.Contains($"nameLines: {Tuning.NameLines},", fallback);
 			Assert.Contains("tileNameLine: true,", fallback);
+			Assert.Contains($"blockLabels: \"{Tuning.BlockLabels}\",", fallback);
+			Assert.Contains($"cardHeight: {Tuning.CardHeight},", fallback);
+			Assert.Contains("smallMenusGrow: true,", fallback);
+			Assert.Contains($"searchFlow: \"{Tuning.SearchFlow}\",", fallback);
 		}
 
 		[Theory]
@@ -116,6 +136,9 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(Tuning.WhatCounts, Tuning.OneOf(Tuning.WhatCountsValues, "all", Tuning.WhatCounts));
 			Assert.Equal(Tuning.CardsFrom, Tuning.OneOf(Tuning.CardsFromValues, 1, Tuning.CardsFrom));
 			Assert.Equal(2, Tuning.OneOf(Tuning.NameLinesValues, 2, Tuning.NameLines));
+			Assert.Equal(Tuning.CardHeight, Tuning.OneOf(Tuning.CardHeightValues, 48, Tuning.CardHeight));
+			Assert.Equal(Tuning.BlockLabels, Tuning.OneOf(Tuning.BlockLabelsValues, "chips", Tuning.BlockLabels));
+			Assert.Equal("rowOrder", Tuning.OneOf(Tuning.SearchFlowValues, "rowOrder", Tuning.SearchFlow));
 		}
 
 		public static IEnumerable<object[]> Dropdowns() => new[]
@@ -124,6 +147,9 @@ namespace BetterBuildingMenu.Tests
 			new object[] { nameof(BetterBuildingMenuSettings.DevAutoLargeText), Tuning.AutoLargeTextValues.Cast<object>().ToArray(), OptionRows.AutoLargeTextLabelIds },
 			new object[] { nameof(BetterBuildingMenuSettings.DevCardsFrom), Tuning.CardsFromValues.Cast<object>().ToArray(), OptionRows.CardsFromLabelIds },
 			new object[] { nameof(BetterBuildingMenuSettings.DevNameLines), Tuning.NameLinesValues.Cast<object>().ToArray(), OptionRows.NameLinesLabelIds },
+			new object[] { nameof(BetterBuildingMenuSettings.DevBlockLabels), Tuning.BlockLabelsValues.Cast<object>().ToArray(), OptionRows.BlockLabelsLabelIds },
+			new object[] { nameof(BetterBuildingMenuSettings.DevCardHeight), Tuning.CardHeightValues.Cast<object>().ToArray(), OptionRows.CardHeightLabelIds },
+			new object[] { nameof(BetterBuildingMenuSettings.DevSearchFlow), Tuning.SearchFlowValues.Cast<object>().ToArray(), OptionRows.SearchFlowLabelIds },
 		};
 
 		[Theory]

@@ -17,7 +17,11 @@ namespace BetterBuildingMenu.Domain
 		int CardsFrom = Tuning.CardsFrom,
 		float ListPlateHeight = Tuning.ListPlateHeight,
 		int NameLines = Tuning.NameLines,
-		bool TileNameLine = Tuning.TileNameLine) : IJsonWritable
+		bool TileNameLine = Tuning.TileNameLine,
+		string BlockLabels = Tuning.BlockLabels,
+		int CardHeight = Tuning.CardHeight,
+		bool SmallMenusGrow = Tuning.SmallMenusGrow,
+		string SearchFlow = Tuning.SearchFlow) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -42,6 +46,14 @@ namespace BetterBuildingMenu.Domain
 			writer.Write(NameLines);
 			writer.PropertyName("tileNameLine");
 			writer.Write(TileNameLine);
+			writer.PropertyName("blockLabels");
+			writer.Write(BlockLabels);
+			writer.PropertyName("cardHeight");
+			writer.Write(CardHeight);
+			writer.PropertyName("smallMenusGrow");
+			writer.Write(SmallMenusGrow);
+			writer.PropertyName("searchFlow");
+			writer.Write(SearchFlow);
 			writer.TypeEnd();
 		}
 	}

@@ -58,5 +58,13 @@ namespace BetterBuildingMenu.Domain
 		int DevNameLines { get; set; }
 
 		bool DevTileNameLine { get; set; }
+
+		string DevBlockLabels { get; set; }
+
+		int DevCardHeight { get; set; }
+
+		bool DevSmallMenusGrow { get; set; }
+
+		string DevSearchFlow { get; set; }
 	}
 }

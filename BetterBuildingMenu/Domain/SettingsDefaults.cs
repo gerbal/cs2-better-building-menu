@@ -62,6 +62,10 @@ namespace BetterBuildingMenu.Domain
 			values.DevListPlateHeight = Tuning.ListPlateHeight;
 			values.DevNameLines = Tuning.NameLines;
 			values.DevTileNameLine = Tuning.TileNameLine;
+			values.DevBlockLabels = Tuning.BlockLabels;
+			values.DevCardHeight = Tuning.CardHeight;
+			values.DevSmallMenusGrow = Tuning.SmallMenusGrow;
+			values.DevSearchFlow = Tuning.SearchFlow;
 		}
 
 		/// <summary>The button: every setting as it ships, then a settings version the next load does not migrate.</summary>

@@ -275,6 +275,37 @@ namespace BetterBuildingMenu
 		[SettingsUISearchHidden]
 		public bool DevTileNameLine { get; set; } = Domain.Tuning.TileNameLine;
 
+		/// <summary>Developer only: whether a label in a body takes one slot in line, or a line of its own.</summary>
+		/// <remarks>Read through Utilities.Knobs. See docs/design-notes.md, "Developer knobs".</remarks>
+		[SettingsUISection(SETTINGS, TUNING)]
+		[SettingsUIDeveloper]
+		[SettingsUISearchHidden]
+		[SettingsUIDropdown(typeof(BetterBuildingMenuSettings), nameof(BlockLabelsItems))]
+		public string DevBlockLabels { get; set; } = Domain.Tuning.BlockLabels;
+
+		/// <summary>Developer only: a card's height at 100% text, 46 rem or 50.</summary>
+		/// <remarks>Read through Utilities.Knobs. See docs/design-notes.md, "Developer knobs".</remarks>
+		[SettingsUISection(SETTINGS, TUNING)]
+		[SettingsUIDeveloper]
+		[SettingsUISearchHidden]
+		[SettingsUIDropdown(typeof(BetterBuildingMenuSettings), nameof(CardHeightItems))]
+		public int DevCardHeight { get; set; } = Domain.Tuning.CardHeight;
+
+		/// <summary>Developer only: whether a list whose menu holds few rows grows its plates.</summary>
+		/// <remarks>Read through Utilities.Knobs. See docs/design-notes.md, "Developer knobs".</remarks>
+		[SettingsUISection(SETTINGS, TUNING)]
+		[SettingsUIDeveloper]
+		[SettingsUISearchHidden]
+		public bool DevSmallMenusGrow { get; set; } = Domain.Tuning.SmallMenusGrow;
+
+		/// <summary>Developer only: whether search results at a wider Width step fill near the field first, or run along each row.</summary>
+		/// <remarks>Read through Utilities.Knobs. See docs/design-notes.md, "Developer knobs".</remarks>
+		[SettingsUISection(SETTINGS, TUNING)]
+		[SettingsUIDeveloper]
+		[SettingsUISearchHidden]
+		[SettingsUIDropdown(typeof(BetterBuildingMenuSettings), nameof(SearchFlowItems))]
+		public string DevSearchFlow { get; set; } = Domain.Tuning.SearchFlow;
+
 		/// <summary>Puts every option back to the value it ships with.</summary>
 		/// <remarks>
 		/// The initializers above read the same constants, except the control pane's: its
@@ -325,6 +356,12 @@ namespace BetterBuildingMenu
 		private static DropdownItem<int>[] CardsFromItems() => IntItems(Domain.Tuning.CardsFromValues, Domain.OptionRows.CardsFromLabelIds);
 
 		private static DropdownItem<int>[] NameLinesItems() => IntItems(Domain.Tuning.NameLinesValues, Domain.OptionRows.NameLinesLabelIds);
+
+		private static DropdownItem<string>[] BlockLabelsItems() => StringItems(Domain.Tuning.BlockLabelsValues, Domain.OptionRows.BlockLabelsLabelIds);
+
+		private static DropdownItem<int>[] CardHeightItems() => IntItems(Domain.Tuning.CardHeightValues, Domain.OptionRows.CardHeightLabelIds);
+
+		private static DropdownItem<string>[] SearchFlowItems() => StringItems(Domain.Tuning.SearchFlowValues, Domain.OptionRows.SearchFlowLabelIds);
 
 		private static DropdownItem<int>[] IntItems(IReadOnlyList<int> values, IReadOnlyList<string> labelIds) =>
 			values.Select((value, index) => new DropdownItem<int> { value = value, displayName = LocalizedString.Id(labelIds[index]) }).ToArray();

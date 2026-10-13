@@ -71,6 +71,39 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>The Tiles view names the armed or pointed tile on a line under its rows, as it ships.</summary>
 		public const bool TileNameLine = true;
 
+		/// <summary>A label in a body takes one slot in line with the buildings, as it ships, or a line of its own.</summary>
+		public const string BlockLabels = Inline;
+
+		/// <summary>A label takes one slot, in line with the buildings around it.</summary>
+		public const string Inline = "inline";
+
+		/// <summary>A label starts a line and takes the whole of it, so no line holds two blocks.</summary>
+		public const string OwnLine = "ownLine";
+
+		/// <summary>The Block labels knob's values, in its order.</summary>
+		public static readonly IReadOnlyList<string> BlockLabelsValues = new[] { Inline, OwnLine };
+
+		/// <summary>A card's height at 100% text, in rem: three rows in the game's own body height, as it ships.</summary>
+		public const int CardHeight = 46;
+
+		/// <summary>The Card height knob's values, in its order: three rows, then two.</summary>
+		public static readonly IReadOnlyList<int> CardHeightValues = new[] { CardHeight, 50 };
+
+		/// <summary>A list whose menu holds few enough rows grows its plates into the lines they leave, as it ships.</summary>
+		public const bool SmallMenusGrow = true;
+
+		/// <summary>Search results at a wider Width step fill the columns under the field first, as it ships, or run along each row.</summary>
+		public const string SearchFlow = NearField;
+
+		/// <summary>The first screen's results fill the first step's columns, under the field, then the columns a wider step adds.</summary>
+		public const string NearField = "nearField";
+
+		/// <summary>Results run along each whole row, left to right, then down.</summary>
+		public const string RowOrder = "rowOrder";
+
+		/// <summary>The Search flow knob's values, in its order.</summary>
+		public static readonly IReadOnlyList<string> SearchFlowValues = new[] { NearField, RowOrder };
+
 		/// <summary>The slot margin's shipped value, in percent: a newcomer needs 1.25 times a holder's placements.</summary>
 		public const int SlotMarginPercent = 25;
 
