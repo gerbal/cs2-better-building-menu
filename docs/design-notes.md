@@ -378,6 +378,9 @@ looks; only Standard's tokens are written here.
   own, which carry its opacity already.
 - **Plain selectors.** The tokens' rules use class selectors only: Cohtml has no grid, `:not()`,
   `:has()`, `:is()` or `an+b` selectors, and no `text-overflow` on a flex item.
+- **No Unicode property escape.** Cohtml builds no regular expression with `\p{...}` or `\P{...}`: it throws
+  "Invalid property name" and the menu fails to load, where Node and Chromium accept it. The UI's source spells such a
+  class out (`opening` in `namePlan.ts`), and a test fails on an escape anywhere under `UI/src`.
 
 ## The tab row
 

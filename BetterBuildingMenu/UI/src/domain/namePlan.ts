@@ -171,8 +171,32 @@ function holdsNumber(word: string): boolean {
 /** Whether a word says nothing alone: a single letter, a word like "of", or a separator. A cut never keeps one for itself. */
 const saysNothing = (word: string): boolean => [...word].length < 2 || STOP_WORDS.has(word.toLowerCase());
 
-/** The word as typed words begin it: lower case, any opening bracket or quote left off. */
-const opening = (word: string): string => word.toLowerCase().replace(/^[^\p{L}\p{N}]+/u, "");
+/** The scripts whose letters have no case, as code point ranges: Hebrew, Arabic, the Indic scripts, Thai, Hangul, Hiragana, Katakana and CJK. */
+const UNCASED_LETTERS: readonly (readonly [number, number])[] = [
+  [0x05d0, 0x05ea], [0x0620, 0x064a], [0x066e, 0x06d3], [0x0904, 0x0dff], [0x0e01, 0x0e3a], [0x0e40, 0x0e4e], [0x1100, 0x11ff], [0x3041, 0x3096], [0x309d, 0x309f], [0x30a1, 0x30fa], [0x30fc, 0x30ff],
+  [0x3400, 0x4dbf], [0x4e00, 0x9fff], [0xa960, 0xa97c], [0xac00, 0xd7a3], [0xf900, 0xfaff], [0xff66, 0xff9f], [0x20000, 0x3134f],
+];
+
+/**
+ * Whether a character is a letter or a digit. Cohtml builds no Unicode property escape, so a cased letter is one whose
+ * upper and lower case differ, a digit is 0-9, and a letter of a script without case is one of `UNCASED_LETTERS`.
+ */
+const isWordChar = (char: string): boolean => {
+  if (char.toLowerCase() !== char.toUpperCase() || (char >= "0" && char <= "9")) return true;
+  const point = char.codePointAt(0) ?? 0;
+  return UNCASED_LETTERS.some(([from, to]) => point >= from && point <= to);
+};
+
+/** The word as typed words begin it: lower case, any opening bracket, quote or other mark left off. */
+export function opening(word: string): string {
+  const lower = word.toLowerCase();
+  let from = 0;
+  for (const char of lower) {
+    if (isWordChar(char)) break;
+    from += char.length;
+  }
+  return lower.slice(from);
+}
 
 /** How hard a cut holds a word, the least first: a cut drops or cuts the words it holds least. */
 const PLAIN = 0;

@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { bodyGrid } from "../src/domain/bodyGeometry";
 import { NAME_FONT, plateNameRoom } from "../src/domain/listPlate";
-import { AFTER_SPAN, CUT_MARK, nameRuns, planFits, planName, STOP_WORDS } from "../src/domain/namePlan";
+import { AFTER_SPAN, CUT_MARK, nameRuns, opening, planFits, planName, STOP_WORDS } from "../src/domain/namePlan";
 import { ASSET_MENU_DEFAULT_HEIGHT } from "../src/domain/sharedContracts.generated";
 import { textWidth } from "../src/domain/textWidth";
 
@@ -393,5 +393,44 @@ describe("a line with the typed word in a span", () => {
   it("is one plain run without a query, or where the line does not hold it", () => {
     assert.deepEqual(nameRuns("Four-Lane Road", ""), [{ text: "Four-Lane Road", typed: false }]);
     assert.deepEqual(nameRuns("Four-Lane Road", "tram"), [{ text: "Four-Lane Road", typed: false }]);
+  });
+});
+
+describe("a word as typed words begin it", () => {
+  it("lower-cases the word and leaves a letter or a digit of any script where it stands", () => {
+    assert.equal(opening("Éclair"), "éclair");
+    assert.equal(opening("Žižkov"), "žižkov");
+    assert.equal(opening("Москва"), "москва");
+    assert.equal(opening("Αθήνα"), "αθήνα");
+    assert.equal(opening("東京駅"), "東京駅");
+    assert.equal(opening("ひらがな"), "ひらがな");
+    assert.equal(opening("カタカナ"), "カタカナ");
+    assert.equal(opening("한국"), "한국");
+    assert.equal(opening("ไทย"), "ไทย");
+    assert.equal(opening("שלום"), "שלום");
+    assert.equal(opening("مدينة"), "مدينة");
+    assert.equal(opening("नगर"), "नगर");
+    assert.equal(opening("4-Lane"), "4-lane");
+    assert.equal(opening("2x2"), "2x2");
+  });
+
+  it("leaves off every opening mark that is neither a letter nor a digit", () => {
+    assert.equal(opening("(Large)"), "large)");
+    assert.equal(opening("\"Quoted\""), "quoted\"");
+    assert.equal(opening("\u2018Quoted"), "quoted");
+    assert.equal(opening("-Lane"), "lane");
+    assert.equal(opening("\u2014Lane"), "lane");
+    assert.equal(opening("[(\u00AB Garage"), "garage");
+    assert.equal(opening("(\u00C9clair"), "\u00E9clair");
+    assert.equal(opening("(\u6771\u4EAC"), "\u6771\u4EAC");
+    assert.equal(opening("(42)"), "42)");
+    assert.equal(opening("\u{1F6A7}Roadworks"), "roadworks");
+    assert.equal(opening("\u{1F6A7}\u{1F6A7}"), "");
+  });
+
+  it("is empty for a word of marks alone", () => {
+    assert.equal(opening("\u2014"), "");
+    assert.equal(opening("- -"), "");
+    assert.equal(opening(""), "");
   });
 });
