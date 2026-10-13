@@ -164,6 +164,20 @@ namespace BetterBuildingMenu.Tests
 			Assert.DoesNotContain("Refresh", block);
 		}
 
+		[Fact]
+		public void AResetThatMovesAGroupPickAndSaidOnceAtRedrawsTheOpenMenuOnce()
+		{
+			// The regroup's refresh reads the new share, so the share's own refresh is skipped where it ran.
+			var applied = ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.cs"), "private void OnSettingsApplied(");
+			var regroup = applied.IndexOf("Apply(_assetMenu.SetGroupBy(regroup));", StringComparison.Ordinal);
+			var share = applied.IndexOf("if (saidOnceAt != _appliedSaidOnceAt)", StringComparison.Ordinal);
+
+			Assert.True(regroup >= 0 && share > regroup, "the regroup runs before the share's refresh");
+			Assert.Contains("redrawn = !ReferenceEquals(before, _assetMenu);", applied);
+			Assert.Contains("if (_assetMenuOpen && !redrawn)", applied.Substring(share));
+			Assert.Equal(1, Count(applied.Substring(share), "RefreshBuildingCatalog();"));
+		}
+
 		private static int Count(string text, string needle)
 		{
 			var count = 0;

@@ -759,7 +759,8 @@ initializers read, so the two cannot drift; `SetDefaults` is `SettingsDefaults.A
   them, the menu takes its stored pick at once, its own grouping where there is none
   (`MenuPicks.Regroup`, from the settings pass), not at its next open. A pick of the player's is
   drawn before it is saved, so its own save finds the menu drawing it and regroups nothing again: one
-  refresh a pick. A small menu of one tab, which draws no groups by default, regroups to none.
+  refresh a pick. A small menu of one tab, which draws no groups by default, regroups to none. A reset
+  that also moves Said once at redraws the open menu once: the regroup's redraw reads the new share.
 
 **The button.** Options › Better Building Menu › UI / UX ends with Reset the build menu…, which the
 game draws as a button that asks first (`[SettingsUIButton]`, `[SettingsUIConfirmation]`, the

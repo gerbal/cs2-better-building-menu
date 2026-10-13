@@ -119,7 +119,8 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.Contains("_appliedSaidOnceAt = CurrentSaidOnceAt();", system);
 			Assert.Contains("if (saidOnceAt != _appliedSaidOnceAt)", applied);
-			Assert.Contains("if (_assetMenuOpen)", applied);
+			// Unless a regroup in the same pass redrew it already, with the share it reads.
+			Assert.Contains("if (_assetMenuOpen && !redrawn)", applied);
 			Assert.Contains("RefreshBuildingCatalog();", applied);
 		}
 

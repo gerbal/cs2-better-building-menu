@@ -412,6 +412,9 @@ namespace BetterBuildingMenu.Systems
 				_AssetMenuViews.Value = BodyViews.PicksOf(Mod.Settings.MenuViews);
 			}
 
+			// Whether this pass redrew the open menu already: a Reset that moves a GROUP pick and Said once at
+			// redraws it once.
+			var redrawn = false;
 			if (!string.Equals(_publishedMenuGroups, Mod.Settings.MenuGroups, StringComparison.Ordinal))
 			{
 				_publishedMenuGroups = Mod.Settings.MenuGroups;
@@ -422,7 +425,9 @@ namespace BetterBuildingMenu.Systems
 					&& _assetMenu.Menu.Length > 0
 					&& MenuPicks.Regroup(MenuPicks.Get(Mod.Settings.MenuGroups, _assetMenu.Menu), _assetMenu.Query.GroupBy, _menuDefaultGroup) is { } regroup)
 				{
+					var before = _assetMenu;
 					Apply(_assetMenu.SetGroupBy(regroup));
+					redrawn = !ReferenceEquals(before, _assetMenu);
 				}
 			}
 
@@ -443,12 +448,13 @@ namespace BetterBuildingMenu.Systems
 				YieldMenuToVanilla();
 			}
 
-			// A share moved in Options changes what the open menu says once, so it redraws now.
+			// A share moved in Options changes what the open menu says once, so it redraws now, unless the
+			// regroup's redraw above already read it.
 			var saidOnceAt = CurrentSaidOnceAt();
 			if (saidOnceAt != _appliedSaidOnceAt)
 			{
 				_appliedSaidOnceAt = saidOnceAt;
-				if (_assetMenuOpen)
+				if (_assetMenuOpen && !redrawn)
 				{
 					RefreshBuildingCatalog();
 				}
