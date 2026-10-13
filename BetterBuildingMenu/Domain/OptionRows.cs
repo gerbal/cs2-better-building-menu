@@ -24,6 +24,7 @@ namespace BetterBuildingMenu.Domain
 		{
 			"Options.LABEL[BetterBuildingMenu.DefaultViewAuto]",
 			"Options.LABEL[BetterBuildingMenu.DefaultViewList]",
+			"Options.LABEL[BetterBuildingMenu.DefaultViewIcons]",
 			"Options.LABEL[BetterBuildingMenu.DefaultViewTiles]",
 			"Options.LABEL[BetterBuildingMenu.DefaultViewCards]",
 		};

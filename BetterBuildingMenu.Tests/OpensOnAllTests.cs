@@ -37,7 +37,8 @@ namespace BetterBuildingMenu.Tests
 		[InlineData("Roads=cards", "auto", true)]
 		[InlineData("", "cards", true)]
 		[InlineData("Roads=list", "cards", false)]
-		[InlineData("Roads=icons", "cards", true)]
+		[InlineData("Roads=icons", "cards", false)]
+		[InlineData("Roads=grid", "cards", true)]
 		[InlineData("Parks & Recreation=cards", "auto", false)]
 		[InlineData("", "auto", false)]
 		public void AMenuWhoseViewIsCardsOpensOnAll(string menuViews, string defaultView, bool onAll)

@@ -113,6 +113,33 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>A search result's name draws the typed word as the rest of it, as it ships, or dims it.</summary>
 		public const bool DimTypedWord = false;
 
+		/// <summary>Auto draws icons for a menu holding more rows than this where too few carry a cost or a capacity, as it ships.</summary>
+		public const int IconsAbove = 200;
+
+		/// <summary>The fewest rows the Icons above knob offers.</summary>
+		public const int IconsAboveMin = 100;
+
+		/// <summary>The most rows the Icons above knob offers.</summary>
+		public const int IconsAboveMax = 2000;
+
+		/// <summary>An icon's side in the Icons view at 100% text, in rem, as it ships: three lines of them in the game's own body.</summary>
+		public const int IconSize = 44;
+
+		/// <summary>The smallest icon the knob offers, in rem.</summary>
+		public const int IconSizeMin = 36;
+
+		/// <summary>The largest icon the knob offers, in rem.</summary>
+		public const int IconSizeMax = 56;
+
+		/// <summary>How long the pointer rests on a building before its hover card shows, in milliseconds, as it ships.</summary>
+		public const int HoverDelay = 150;
+
+		/// <summary>The shortest delay the knob offers: the card shows at once.</summary>
+		public const int HoverDelayMin = 0;
+
+		/// <summary>The longest delay the knob offers, in milliseconds.</summary>
+		public const int HoverDelayMax = 500;
+
 		/// <summary>The slot margin's shipped value, in percent: a newcomer needs 1.25 times a holder's placements.</summary>
 		public const int SlotMarginPercent = 25;
 
@@ -126,7 +153,10 @@ namespace BetterBuildingMenu.Domain
 		public static T Value<T>(bool developerMode, T stored, T shipped) => developerMode ? stored : shipped;
 
 		/// <summary>A share a hand edit left outside the knob's range reads as the nearer end.</summary>
-		public static int ListShareOf(int stored) => Math.Min(ListShareMax, Math.Max(ListShareMin, stored));
+		public static int ListShareOf(int stored) => Within(stored, ListShareMin, ListShareMax);
+
+		/// <summary>A slider knob's value: one a hand edit left outside the knob's range reads as the nearer end.</summary>
+		public static int Within(int stored, int min, int max) => Math.Min(max, Math.Max(min, stored));
 
 		/// <summary>A plate height outside the knob's range reads as the nearer end, and one that is no number as shipped.</summary>
 		public static float ListPlateHeightOf(float stored) =>

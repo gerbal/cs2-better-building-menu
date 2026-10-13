@@ -892,6 +892,12 @@ knob's row carries `[SettingsUIDeveloper]`, so the game draws it only in develop
     shared values over the whole view.
   - **Dim the typed word** (off, as it ships, or on): a search result's name dims what was typed, so the
     rest of the name stands out (see "Names").
+  - **Icons above** (100 to 2,000 rows, step 100, ships 200): Auto draws icons for a menu holding more
+    rows than this where fewer than the List share carry a cost or a capacity (see "The icons").
+  - **Icon size** (36 to 56, step 2, ships 44): an icon's side at 100% text; 44 draws three lines of
+    them in the game's own body.
+  - **Hover delay** (0 to 500 ms, step 50, ships 150): how long the pointer rests on a building before
+    its hover card shows (see "The hover card").
 
 ## The pick logger
 
@@ -1011,8 +1017,9 @@ inherits another's.
   read over the whole menu, not the open tab (`CatalogView.GroupFor`), so a menu with no pick draws
   one grouping on every tab, and a pick means the same on each.
 - **VIEW** is kept in the hidden setting `MenuViews`, a `Menu=kind` line per menu with a pick of its
-  own, the kind one of `list`, `tiles` and `cards` (`BodyViews.SanitizePick`; a stored `icons` reads as
-  none until the icons have a body of their own, as Default view's does). VIEW's first row, "Default
+  own, the kind one of `list`, `icons`, `tiles` and `cards` (`BodyViews.SanitizePick`), or in developer
+  mode `iconsNamed`, the icons with each name under its picture, which reads as none outside it, so a
+  player never meets it. VIEW's first row, "Default
   view · <body>", names the body Default view gives the menu and is lit while the menu has no pick; a
   press on it takes the menu's pick away (`SetAssetMenuView("")`). A press on a body keeps it as the
   menu's pick, saved once; the save re-pushes `AssetMenuViews`, which redraws the body. The control

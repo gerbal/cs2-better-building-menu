@@ -321,6 +321,30 @@ namespace BetterBuildingMenu
 		[SettingsUISearchHidden]
 		public bool DevDimTypedWord { get; set; } = Domain.Tuning.DimTypedWord;
 
+		/// <summary>Developer only: how many rows a menu holds, at the least, for Auto to draw it as icons where few carry a cost or a capacity.</summary>
+		/// <remarks>Read through Utilities.Knobs. See docs/design-notes.md, "Developer knobs".</remarks>
+		[SettingsUISection(SETTINGS, TUNING)]
+		[SettingsUIDeveloper]
+		[SettingsUISearchHidden]
+		[SettingsUISlider(min = Domain.Tuning.IconsAboveMin, max = Domain.Tuning.IconsAboveMax, step = 100, scalarMultiplier = 1, unit = Unit.kInteger)]
+		public int DevIconsAbove { get; set; } = Domain.Tuning.IconsAbove;
+
+		/// <summary>Developer only: an icon's side in the Icons view at 100% text, in rem.</summary>
+		/// <remarks>Read through Utilities.Knobs. See docs/design-notes.md, "Developer knobs".</remarks>
+		[SettingsUISection(SETTINGS, TUNING)]
+		[SettingsUIDeveloper]
+		[SettingsUISearchHidden]
+		[SettingsUISlider(min = Domain.Tuning.IconSizeMin, max = Domain.Tuning.IconSizeMax, step = 2, scalarMultiplier = 1, unit = Unit.kInteger)]
+		public int DevIconSize { get; set; } = Domain.Tuning.IconSize;
+
+		/// <summary>Developer only: how long the pointer rests on a building before its hover card shows, in milliseconds.</summary>
+		/// <remarks>Read through Utilities.Knobs. See docs/design-notes.md, "Developer knobs".</remarks>
+		[SettingsUISection(SETTINGS, TUNING)]
+		[SettingsUIDeveloper]
+		[SettingsUISearchHidden]
+		[SettingsUISlider(min = Domain.Tuning.HoverDelayMin, max = Domain.Tuning.HoverDelayMax, step = 50, scalarMultiplier = 1, unit = Unit.kInteger)]
+		public int DevHoverDelay { get; set; } = Domain.Tuning.HoverDelay;
+
 		/// <summary>Puts every option back to the value it ships with.</summary>
 		/// <remarks>
 		/// The initializers above read the same constants, except the control pane's: its

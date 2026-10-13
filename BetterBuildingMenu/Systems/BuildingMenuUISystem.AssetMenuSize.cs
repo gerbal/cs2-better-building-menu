@@ -71,7 +71,7 @@ namespace BetterBuildingMenu.Systems
 		/// <remarks>The save re-pushes the picks, which redraws the body. See docs/design-notes.md, "Each menu's own view and group".</remarks>
 		private void SetAssetMenuView(string kind)
 		{
-			var kept = MenuPicks.With(Mod.Settings.MenuViews, _assetMenu.Menu, BodyViews.SanitizePick(kind));
+			var kept = MenuPicks.With(Mod.Settings.MenuViews, _assetMenu.Menu, BodyViews.SanitizePick(kind, Knobs.DeveloperMode));
 
 			if (_assetMenu.Menu.Length == 0 || string.Equals(kept, Mod.Settings.MenuViews, StringComparison.Ordinal))
 			{

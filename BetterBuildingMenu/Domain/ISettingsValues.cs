@@ -70,5 +70,11 @@ namespace BetterBuildingMenu.Domain
 		int DevSaidOnceAt { get; set; }
 
 		bool DevDimTypedWord { get; set; }
+
+		int DevIconsAbove { get; set; }
+
+		int DevIconSize { get; set; }
+
+		int DevHoverDelay { get; set; }
 	}
 }

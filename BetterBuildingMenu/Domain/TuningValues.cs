@@ -22,7 +22,10 @@ namespace BetterBuildingMenu.Domain
 		int CardHeight = Tuning.CardHeight,
 		bool SmallMenusGrow = Tuning.SmallMenusGrow,
 		string SearchFlow = Tuning.SearchFlow,
-		bool DimTypedWord = Tuning.DimTypedWord) : IJsonWritable
+		bool DimTypedWord = Tuning.DimTypedWord,
+		int IconsAbove = Tuning.IconsAbove,
+		int IconSize = Tuning.IconSize,
+		int HoverDelay = Tuning.HoverDelay) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -57,6 +60,12 @@ namespace BetterBuildingMenu.Domain
 			writer.Write(SearchFlow);
 			writer.PropertyName("dimTypedWord");
 			writer.Write(DimTypedWord);
+			writer.PropertyName("iconsAbove");
+			writer.Write(IconsAbove);
+			writer.PropertyName("iconSize");
+			writer.Write(IconSize);
+			writer.PropertyName("hoverDelay");
+			writer.Write(HoverDelay);
 			writer.TypeEnd();
 		}
 	}

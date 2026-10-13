@@ -19,20 +19,23 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>0.2.4's card, which only a pick shows: Auto never does.</summary>
 		public const string Cards = "cards";
 
+		/// <summary>The icons with each name under its picture: a developer's pick, for the timed check against the icons.</summary>
+		public const string IconsNamed = "iconsNamed";
+
 		/// <summary>What a menu's own pick can be.</summary>
 		public static readonly IReadOnlyList<string> Kinds = new[] { List, Icons, Tiles, Cards };
 
 		/// <summary>The Default view row's values, in its order: Auto, then each body this release draws.</summary>
-		public static readonly IReadOnlyList<string> DefaultViews = new[] { Auto, List, Tiles, Cards };
+		public static readonly IReadOnlyList<string> DefaultViews = new[] { Auto, List, Icons, Tiles, Cards };
 
-		/// <summary>A menu's own pick: one of the kinds, exactly, or "" for none.</summary>
-		/// <remarks>Icons joins VIEW with its body, as it joins the Default view row; until then a stored Icons pick reads as none.</remarks>
-		public static string SanitizePick(string? value) =>
-			value is not null && value != Icons && Kinds.Contains(value) ? value : MenuPicks.None;
+		/// <summary>A menu's own pick: one of the kinds, exactly, or in developer mode the icons with names; else "" for none.</summary>
+		/// <remarks>A stored icons-with-names pick reads as none outside developer mode, so a player never meets it.</remarks>
+		public static string SanitizePick(string? value, bool developerMode = false) =>
+			value is not null && (Kinds.Contains(value) || (developerMode && value == IconsNamed)) ? value : MenuPicks.None;
 
 		/// <summary>Each menu's own VIEW as the UI reads it: the stored picks, less any that reads as none.</summary>
-		public static MenuPick[] PicksOf(string? stored) =>
-			MenuPicks.Parse(stored).Where(pick => SanitizePick(pick.Value).Length > 0).ToArray();
+		public static MenuPick[] PicksOf(string? stored, bool developerMode = false) =>
+			MenuPicks.Parse(stored).Where(pick => SanitizePick(pick.Value, developerMode).Length > 0).ToArray();
 
 		/// <summary>One of the Default view row's values, exactly; anything else reads as Auto.</summary>
 		public static string SanitizeDefault(string? value) =>

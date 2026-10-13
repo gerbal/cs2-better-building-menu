@@ -110,6 +110,12 @@ export interface AssetMenuTuning {
   searchFlow?: string;
   /** Whether a search result's name dims the typed word. */
   dimTypedWord?: boolean;
+  /** Auto draws icons for a menu of more rows than this where too few carry a cost or a capacity. */
+  iconsAbove?: number;
+  /** An icon's side in the Icons view at 100% text, in rem. */
+  iconSize?: number;
+  /** How long the pointer rests on a building before its hover card shows, in milliseconds. */
+  hoverDelay?: number;
 }
 
 /**
@@ -132,6 +138,9 @@ export const SHIPPED_TUNING: Required<AssetMenuTuning> = {
   smallMenusGrow: true,
   searchFlow: "nearField",
   dimTypedWord: false,
+  iconsAbove: 200,
+  iconSize: 44,
+  hoverDelay: 150,
 };
 
 export const AssetMenuTuning$ = bindValue<AssetMenuTuning>(mod.id, "AssetMenuTuning", SHIPPED_TUNING);

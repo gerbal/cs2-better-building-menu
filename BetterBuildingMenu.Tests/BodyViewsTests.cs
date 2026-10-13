@@ -34,6 +34,7 @@ namespace BetterBuildingMenu.Tests
 		[Theory]
 		[InlineData("auto")]
 		[InlineData("list")]
+		[InlineData("icons")]
 		[InlineData("tiles")]
 		[InlineData("cards")]
 		public void TheDefaultViewRowKeepsItsValues(string value)
@@ -41,11 +42,11 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(value, BodyViews.SanitizeDefault(value));
 		}
 
-		// Icons joins the row with its body; until then a stored Icons reads as Auto, which picks it.
+		// The icons with names are a developer's pick for one menu, never every menu's view.
 		[Theory]
 		[InlineData(null)]
 		[InlineData("")]
-		[InlineData("icons")]
+		[InlineData("iconsNamed")]
 		[InlineData("grid")]
 		[InlineData("List")]
 		public void AnyOtherDefaultViewReadsAsAuto(string? value)
@@ -57,7 +58,8 @@ namespace BetterBuildingMenu.Tests
 		[InlineData("list", "list")]
 		[InlineData("tiles", "tiles")]
 		[InlineData("cards", "cards")]
-		[InlineData("icons", "")]
+		[InlineData("icons", "icons")]
+		[InlineData("iconsNamed", "")]
 		[InlineData("auto", "")]
 		[InlineData("grid", "")]
 		[InlineData(null, "")]
@@ -70,8 +72,18 @@ namespace BetterBuildingMenu.Tests
 		public void TheUiReadsOnlyThePicksABodyDraws()
 		{
 			Assert.Equal(
-				new[] { new MenuPick("Roads", "list"), new MenuPick("Parks & Recreation", "cards") },
-				BodyViews.PicksOf("Roads=list\nLandscaping=icons\nZones=grid\nParks & Recreation=cards"));
+				new[] { new MenuPick("Roads", "list"), new MenuPick("Landscaping", "icons"), new MenuPick("Parks & Recreation", "cards") },
+				BodyViews.PicksOf("Roads=list\nLandscaping=icons\nZones=grid\nParks & Recreation=cards\nSignatures=iconsNamed"));
+		}
+
+		[Fact]
+		public void TheIconsWithNamesAreAPickOnlyInDeveloperMode()
+		{
+			Assert.Equal("iconsNamed", BodyViews.SanitizePick("iconsNamed", developerMode: true));
+			Assert.Equal("", BodyViews.SanitizePick("iconsNamed", developerMode: false));
+			Assert.Equal(
+				new[] { new MenuPick("Landscaping", "iconsNamed") },
+				BodyViews.PicksOf("Landscaping=iconsNamed\nZones=grid", developerMode: true));
 		}
 
 		[Fact]
@@ -188,13 +200,13 @@ namespace BetterBuildingMenu.Tests
 		{
 			var pick = ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.AssetMenuSize.cs"), "private void SetAssetMenuView(");
 
-			Assert.Contains("MenuPicks.With(Mod.Settings.MenuViews, _assetMenu.Menu, BodyViews.SanitizePick(kind))", pick);
+			Assert.Contains("MenuPicks.With(Mod.Settings.MenuViews, _assetMenu.Menu, BodyViews.SanitizePick(kind, Knobs.DeveloperMode))", pick);
 			Assert.Contains("if (_assetMenu.Menu.Length == 0 || string.Equals(kept, Mod.Settings.MenuViews, StringComparison.Ordinal)) { return; }", pick);
 			Assert.Contains("Mod.Settings.ApplyAndSave();", pick);
 		}
 
 		[Theory]
-		[InlineData("_AssetMenuViews.Value = BodyViews.PicksOf(Mod.Settings.MenuViews);")]
+		[InlineData("_AssetMenuViews.Value = BodyViews.PicksOf(Mod.Settings.MenuViews, Knobs.DeveloperMode);")]
 		[InlineData("_AssetMenuDefaultView.Value = BodyViews.SanitizeDefault(Mod.Settings.DefaultView);")]
 		public void WhatPicksTheBodyFollowsOptionsAtOnce(string push)
 		{

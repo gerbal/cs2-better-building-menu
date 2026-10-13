@@ -326,6 +326,9 @@ namespace BetterBuildingMenu.Tests
 			Assert.Contains(knobs, knob => knob.Name == nameof(BetterBuildingMenuSettings.DevSearchFlow));
 			Assert.Contains(knobs, knob => knob.Name == nameof(BetterBuildingMenuSettings.DevSaidOnceAt));
 			Assert.Contains(knobs, knob => knob.Name == nameof(BetterBuildingMenuSettings.DevDimTypedWord));
+			Assert.Contains(knobs, knob => knob.Name == nameof(BetterBuildingMenuSettings.DevIconsAbove));
+			Assert.Contains(knobs, knob => knob.Name == nameof(BetterBuildingMenuSettings.DevIconSize));
+			Assert.Contains(knobs, knob => knob.Name == nameof(BetterBuildingMenuSettings.DevHoverDelay));
 			Assert.All(knobs, knob =>
 			{
 				Assert.Equal(BetterBuildingMenuSettings.TUNING, knob.GetCustomAttribute<SettingsUISectionAttribute>()?.simpleGroup);

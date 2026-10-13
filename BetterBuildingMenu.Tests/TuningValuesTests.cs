@@ -18,7 +18,7 @@ namespace BetterBuildingMenu.Tests
 			new TuningValues(DeveloperMode: true, InterfaceStyles: false, TabNames: true).Write(writer);
 
 			Assert.Equal(
-				new[] { "developerMode", "interfaceStyles", "tabNames", "listShare", "whatCounts", "autoLargeText", "cardsFrom", "listPlateHeight", "nameLines", "tileNameLine", "blockLabels", "cardHeight", "smallMenusGrow", "searchFlow", "dimTypedWord" },
+				new[] { "developerMode", "interfaceStyles", "tabNames", "listShare", "whatCounts", "autoLargeText", "cardsFrom", "listPlateHeight", "nameLines", "tileNameLine", "blockLabels", "cardHeight", "smallMenusGrow", "searchFlow", "dimTypedWord", "iconsAbove", "iconSize", "hoverDelay" },
 				writer.PropertyNames);
 			Assert.Equal(
 				new[]
@@ -26,6 +26,7 @@ namespace BetterBuildingMenu.Tests
 					"Write:Boolean:True", "Write:Boolean:False", "Write:Boolean:True", "Write:Int32:50", "Write:String:costOrCapacity",
 					"Write:String:lookOwn", "Write:Int32:0", "Write:Single:27.25", "Write:Int32:0", "Write:Boolean:True",
 					"Write:String:inline", "Write:Int32:46", "Write:Boolean:True", "Write:String:nearField", "Write:Boolean:False",
+					"Write:Int32:200", "Write:Int32:44", "Write:Int32:150",
 				},
 				writer.Tokens.Where(token => token.StartsWith("Write:", StringComparison.Ordinal)));
 		}
@@ -61,6 +62,9 @@ namespace BetterBuildingMenu.Tests
 		[InlineData("SmallMenusGrow", "Knobs.Value(settings => settings.DevSmallMenusGrow, Tuning.SmallMenusGrow)")]
 		[InlineData("SearchFlow", "Tuning.OneOf(Tuning.SearchFlowValues, Knobs.Value(settings => settings.DevSearchFlow, Tuning.SearchFlow), Tuning.SearchFlow)")]
 		[InlineData("DimTypedWord", "Knobs.Value(settings => settings.DevDimTypedWord, Tuning.DimTypedWord)")]
+		[InlineData("IconsAbove", "Tuning.Within(Knobs.Value(settings => settings.DevIconsAbove, Tuning.IconsAbove), Tuning.IconsAboveMin, Tuning.IconsAboveMax)")]
+		[InlineData("IconSize", "Tuning.Within(Knobs.Value(settings => settings.DevIconSize, Tuning.IconSize), Tuning.IconSizeMin, Tuning.IconSizeMax)")]
+		[InlineData("HoverDelay", "Tuning.Within(Knobs.Value(settings => settings.DevHoverDelay, Tuning.HoverDelay), Tuning.HoverDelayMin, Tuning.HoverDelayMax)")]
 		public void EachBodyKnobIsReadThroughTheOneRuleIntoItsOwnField(string field, string read)
 		{
 			Assert.Contains($"{field}: {read}", ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.cs"), "private static TuningValues CurrentTuning()"));
@@ -96,6 +100,39 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(67, Tuning.SaidOnceAt);
 			Assert.Equal(new[] { 67, 0, 50, 60, 75, 80, 90 }, Tuning.SaidOnceAtValues);
 			Assert.False(Tuning.DimTypedWord);
+		}
+
+		[Fact]
+		public void TheIconAndHoverKnobsShipAsTheSpecSetsThem()
+		{
+			// Icons for a menu of more than 200 rows where few carry a cost or a capacity; 44 rem icons; a card after 150 ms.
+			Assert.Equal((200, 100, 2000), (Tuning.IconsAbove, Tuning.IconsAboveMin, Tuning.IconsAboveMax));
+			Assert.Equal((44, 36, 56), (Tuning.IconSize, Tuning.IconSizeMin, Tuning.IconSizeMax));
+			Assert.Equal((150, 0, 500), (Tuning.HoverDelay, Tuning.HoverDelayMin, Tuning.HoverDelayMax));
+		}
+
+		[Theory]
+		[InlineData(nameof(BetterBuildingMenuSettings.DevIconsAbove), Tuning.IconsAboveMin, Tuning.IconsAboveMax, Tuning.IconsAbove)]
+		[InlineData(nameof(BetterBuildingMenuSettings.DevIconSize), Tuning.IconSizeMin, Tuning.IconSizeMax, Tuning.IconSize)]
+		[InlineData(nameof(BetterBuildingMenuSettings.DevHoverDelay), Tuning.HoverDelayMin, Tuning.HoverDelayMax, Tuning.HoverDelay)]
+		public void EachSliderKnobRunsOverItsRangeWithItsShippedValueOnAStep(string name, int min, int max, int shipped)
+		{
+			var slider = typeof(BetterBuildingMenuSettings).GetProperty(name)!.GetCustomAttribute<SettingsUISliderAttribute>();
+
+			Assert.True(slider is not null, name + " is not a slider");
+			Assert.Equal((float)min, slider!.min);
+			Assert.Equal((float)max, slider.max);
+			// A player who nudged the slider gets back to the shipped value.
+			Assert.Equal(0f, (shipped - min) % slider.step);
+		}
+
+		[Theory]
+		[InlineData(50, 100)]
+		[InlineData(300, 300)]
+		[InlineData(5000, 2000)]
+		public void AValueOutsideASliderKnobsRangeReadsAsTheNearerEnd(int stored, int read)
+		{
+			Assert.Equal(read, Tuning.Within(stored, Tuning.IconsAboveMin, Tuning.IconsAboveMax));
 		}
 
 		[Fact]
@@ -143,6 +180,9 @@ namespace BetterBuildingMenu.Tests
 			Assert.Contains("smallMenusGrow: true,", fallback);
 			Assert.Contains($"searchFlow: \"{Tuning.SearchFlow}\",", fallback);
 			Assert.Contains("dimTypedWord: false,", fallback);
+			Assert.Contains($"iconsAbove: {Tuning.IconsAbove},", fallback);
+			Assert.Contains($"iconSize: {Tuning.IconSize},", fallback);
+			Assert.Contains($"hoverDelay: {Tuning.HoverDelay},", fallback);
 		}
 
 		[Theory]

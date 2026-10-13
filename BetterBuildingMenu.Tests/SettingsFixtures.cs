@@ -75,6 +75,12 @@ namespace BetterBuildingMenu.Tests
 		public int DevSaidOnceAt { get; set; } = Tuning.SaidOnceAt;
 
 		public bool DevDimTypedWord { get; set; } = Tuning.DimTypedWord;
+
+		public int DevIconsAbove { get; set; } = Tuning.IconsAbove;
+
+		public int DevIconSize { get; set; } = Tuning.IconSize;
+
+		public int DevHoverDelay { get; set; } = Tuning.HoverDelay;
 	}
 
 	/// <summary>A settings file as a load reads it: the values, the key names, and how many keys no property reads.</summary>

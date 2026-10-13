@@ -68,6 +68,9 @@ namespace BetterBuildingMenu.Domain
 			values.DevSearchFlow = Tuning.SearchFlow;
 			values.DevSaidOnceAt = Tuning.SaidOnceAt;
 			values.DevDimTypedWord = Tuning.DimTypedWord;
+			values.DevIconsAbove = Tuning.IconsAbove;
+			values.DevIconSize = Tuning.IconSize;
+			values.DevHoverDelay = Tuning.HoverDelay;
 		}
 
 		/// <summary>The button: every setting as it ships, then a settings version the next load does not migrate.</summary>

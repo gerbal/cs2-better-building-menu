@@ -214,7 +214,7 @@ namespace BetterBuildingMenu.Systems
 				SetAssetMenuWidthStep);
 			_ControlPaneShown = CreateBinding("ControlPaneShown", Mod.Settings.ControlPaneShown);
 			// Seeded here like the pane, so the first frame draws each menu's body.
-			_AssetMenuViews = CreateBinding("AssetMenuViews", BodyViews.PicksOf(Mod.Settings.MenuViews));
+			_AssetMenuViews = CreateBinding("AssetMenuViews", BodyViews.PicksOf(Mod.Settings.MenuViews, Knobs.DeveloperMode));
 			_publishedMenuViews = Mod.Settings.MenuViews;
 			_AssetMenuDefaultView = CreateBinding("AssetMenuDefaultView", BodyViews.SanitizeDefault(Mod.Settings.DefaultView));
 			_AssetMenuAtLargeText = CreateBinding("AssetMenuAtLargeText", LargeText.Sanitize(Mod.Settings.AtLargeText));
@@ -409,7 +409,7 @@ namespace BetterBuildingMenu.Systems
 			if (!string.Equals(_publishedMenuViews, Mod.Settings.MenuViews, StringComparison.Ordinal))
 			{
 				_publishedMenuViews = Mod.Settings.MenuViews;
-				_AssetMenuViews.Value = BodyViews.PicksOf(Mod.Settings.MenuViews);
+				_AssetMenuViews.Value = BodyViews.PicksOf(Mod.Settings.MenuViews, Knobs.DeveloperMode);
 			}
 
 			// Whether this pass redrew the open menu already: a Reset that moves a GROUP pick and Said once at
@@ -478,7 +478,10 @@ namespace BetterBuildingMenu.Systems
 				CardHeight: Tuning.OneOf(Tuning.CardHeightValues, Knobs.Value(settings => settings.DevCardHeight, Tuning.CardHeight), Tuning.CardHeight),
 				SmallMenusGrow: Knobs.Value(settings => settings.DevSmallMenusGrow, Tuning.SmallMenusGrow),
 				SearchFlow: Tuning.OneOf(Tuning.SearchFlowValues, Knobs.Value(settings => settings.DevSearchFlow, Tuning.SearchFlow), Tuning.SearchFlow),
-				DimTypedWord: Knobs.Value(settings => settings.DevDimTypedWord, Tuning.DimTypedWord));
+				DimTypedWord: Knobs.Value(settings => settings.DevDimTypedWord, Tuning.DimTypedWord),
+				IconsAbove: Tuning.Within(Knobs.Value(settings => settings.DevIconsAbove, Tuning.IconsAbove), Tuning.IconsAboveMin, Tuning.IconsAboveMax),
+				IconSize: Tuning.Within(Knobs.Value(settings => settings.DevIconSize, Tuning.IconSize), Tuning.IconSizeMin, Tuning.IconSizeMax),
+				HoverDelay: Tuning.Within(Knobs.Value(settings => settings.DevHoverDelay, Tuning.HoverDelay), Tuning.HoverDelayMin, Tuning.HoverDelayMax));
 
 		protected override void OnUpdate()
 		{
