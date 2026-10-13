@@ -223,6 +223,24 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(popover.bottom, undefined);
   });
 
+  it("paints the pane's lists over the box's top row and top edge, and under the popovers", () => {
+    // The pane's blur makes it a stacking context, so its lists, which open left over the box, paint
+    // at the pane's own order: above the top row's band and the top edge, below a popover.
+    const shown = pane(".pane");
+    const order = (sheet: string, selector: string) => Number(declarationsOf(sheet, selector)["z-index"]);
+
+    assert.equal(shown["backdrop-filter"], "var(--bbm-bodyBlur)");
+    assert.equal(shown.position, "relative");
+    assert.ok(Number(shown["z-index"]) > order(TOP_ROW, ".topBand"), "over the top row's band");
+    assert.ok(Number(shown["z-index"]) > order(TOP_EDGE, ".topEdge"), "over the top edge");
+    assert.ok(Number(shown["z-index"]) < order(POPOVER, ".popover"), "under the popovers");
+    assert.ok(order(POPOVER, ".popover") > order(TOP_EDGE, ".topEdge"), "the popovers still over the top edge");
+    assert.ok(order(TOP_EDGE, ".topEdge") > order(TOP_ROW, ".topBand"), "the top edge still over the top row");
+    // The lists keep their own anchor: each picker is positioned, so the pane's position moves none.
+    assert.equal(pane(".picker").position, "relative");
+    assert.equal(pane(".pickerOptions").position, "absolute");
+  });
+
   it("draws the box's surfaces in the look's material: the bands its head, the body its list under its blur", () => {
     // One material for the whole box: the game's translucent list between the look's bands shows a seam.
     assert.equal(declarationsOf(TOP_ROW, ".topBand")["background-color"], "var(--bbm-head)");

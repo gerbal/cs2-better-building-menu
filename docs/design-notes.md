@@ -512,7 +512,12 @@ control sits over it (`topRowRightInset`).
   and Group by, Sort by and View as summaries that open theirs over the pane, on the popovers'
   surface. One of its lists is open at a time, and a press outside leaves it open, since the pane's
   lists are not popovers. While a search is typed, its caption names it ("Results for road"). A
-  summary cuts its value inside itself, so a row's label is whole at every text size. Its root
+  summary cuts its value inside itself, so a row's label is whole at every text size. Its lists,
+  VIEW's Width sub-list furthest, open left over the box's top row; the pane's blur makes it a
+  stacking context, so they paint at the pane's own order, z-index 46: over the top row's band (40)
+  and the top edge (45), under the popovers (50). The pane is beside the box, never over it, so
+  nothing else moves. The game's dropdowns are portalled outside the menu's own stacking order, as
+  over the top row, so the pane's order stays under them. Its root
   carries the look's class (`useLookRoot`), since custom properties reach only a root's own
   children, and the pane sits beside the box, not inside it; its own surface is the look's `body`,
   the box's beside it. The row labels, the chips and the summaries sit on that body, which Bright

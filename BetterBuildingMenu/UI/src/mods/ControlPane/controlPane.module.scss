@@ -28,6 +28,10 @@
   // The look's list material under its blur, the box's body beside it: one material.
   background-color: var(--bbm-body);
   backdrop-filter: var(--bbm-bodyBlur);
+  // The blur makes the pane a stacking context, so its lists, which open left over the box, paint at
+  // the pane's order: over the top row's band (40) and the top edge (45), under a popover (50).
+  position: relative;
+  z-index: 46;
   color: rgba(255, 255, 255, 1);
   pointer-events: auto;
 }
