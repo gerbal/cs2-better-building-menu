@@ -40,8 +40,9 @@ export interface KeyFigure {
 export type UnitMode = "glyph" | "word";
 
 /**
- * A look's unit marks: by glyph; or in words, with the word a count of workers takes ("jobs"), and the
- * word a capacity takes where the game has no unit for it ("capacity").
+ * A look's unit marks: by glyph; or in words, each after its number, with the word a count of workers
+ * takes ("jobs"), and the word a capacity takes where the game has no unit for it ("capacity"), none
+ * where a label beside it names the capacity already, as the hover card's does.
  */
 export type UnitMarks = { mode: "glyph" } | { mode: "word"; workersUnit: string; capacityUnit: string };
 
@@ -151,7 +152,7 @@ export function keyFigure(entry: BuildingCatalogEntry, kind: KeyKind, separators
       return { text: formatSpeedLimit(entry.speedLimit, separators), glyph: null };
     case "capacity": {
       const said = capacityText(entry, entry.capacity, separators) ?? figure.text;
-      return { text: said === figure.text ? `${figure.text} ${marks.capacityUnit}` : said, glyph: null };
+      return { text: said !== figure.text ? said : marks.capacityUnit === "" ? figure.text : `${figure.text} ${marks.capacityUnit}`, glyph: null };
     }
     case "workers":
       return { text: `${figure.text} ${marks.workersUnit}`, glyph: null };

@@ -58,6 +58,8 @@ describe("a row's key number", () => {
 
     assert.deepEqual(keyFigure(crematorium, "capacity", FALLBACK_SEPARATORS), { text: groupDigits(1_500, FALLBACK_SEPARATORS), glyph: "person" });
     assert.deepEqual(keyFigure(crematorium, "capacity", FALLBACK_SEPARATORS, words), { text: `${groupDigits(1_500, FALLBACK_SEPARATORS)} capacity`, glyph: null });
+    // Under a label that names the capacity, the hover card's, the count takes no word after it.
+    assert.deepEqual(keyFigure(crematorium, "capacity", FALLBACK_SEPARATORS, { ...words, capacityUnit: "" }), { text: groupDigits(1_500, FALLBACK_SEPARATORS), glyph: null });
   });
 
   it("is nothing for a row without the kind's value, or a view whose rows show none", () => {

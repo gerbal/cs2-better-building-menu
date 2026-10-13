@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { FALLBACK_SEPARATORS, formatBuildingMetric, groupDigits } from "../src/domain/assetMenuMetricFormat";
 import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog";
-import { bodyGrid } from "../src/domain/bodyGeometry";
-import { NAME_FONT, oneNumber, plateNameRoom, plateNumbers } from "../src/domain/listPlate";
+import { bodyGrid, type BodyGrid } from "../src/domain/bodyGeometry";
+import { drawnPlateNumbers, NAME_FONT, oneNumber, plateNameRoom, plateNumbers } from "../src/domain/listPlate";
 import { textWidth } from "../src/domain/textWidth";
 import { declarationsOf, rem, sides } from "./harness/compiledCss";
 
@@ -109,6 +109,17 @@ describe("a list plate's numbers in words", () => {
     assert.deepEqual([plateNumbers(row(), null, FALLBACK_SEPARATORS, "Locked", 0, "workers", [], words).second], ["20 jobs"]);
     // The lot the name says, printed where the readout states another, keeps no glyph in words.
     assert.equal(plateNumbers(lot, null, FALLBACK_SEPARATORS, "Locked", 0, "lot", [{ kind: "lot", value: 2, depth: 2 }], words).glyph, null);
+  });
+
+  it("say the key number with its unit on a one-line plate, where the readout said the cost", () => {
+    const words = { mode: "word", workersUnit: "jobs", capacityUnit: "capacity" } as const;
+    const road = row({ speedLimit: 80, capacity: null, costIsPerDistance: true, constructionCost: 5000 });
+    const plate1 = { form: "plate1" } as BodyGrid;
+    const said = [{ kind: "cost", value: 5000, depth: 0, perCell: true, unit: "" }] as const;
+
+    assert.deepEqual(drawnPlateNumbers(road, plate1, null, FALLBACK_SEPARATORS, "Locked", 0, "speed", said, words), {
+      first: "80 km/h", second: null, glyph: null, locked: false, firstIsKey: true,
+    });
   });
 });
 

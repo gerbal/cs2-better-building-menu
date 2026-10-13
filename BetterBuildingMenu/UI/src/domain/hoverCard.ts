@@ -1,10 +1,11 @@
 /**
  * What the hover card beside the pointer says of a building: its cost, its upkeep, the view's key number
- * by its glyph and the lot where the name does not say it, each under the hover card's own word, and for
+ * with its unit in words, its glyph where the look draws them, and the lot where the name does not say
+ * it, each under the hover card's own word, and for
  * a locked building the milestone it waits for. A network's money reads per kilometre, as the game's own
  * panels state it. Pure. See docs/design-notes.md, "The hover card".
  */
-import { formatBuildingMetric, formatCapacity, formatLotDimensions, formatSpeedLimit, groupDigits, hasFootprint, type NumberSeparators } from "./assetMenuMetricFormat";
+import { formatBuildingMetric, formatLotDimensions, groupDigits, hasFootprint, type NumberSeparators } from "./assetMenuMetricFormat";
 import type { BuildingCatalogEntry } from "./buildingCatalog";
 import { isEntryLocked, lockedFact } from "./buildingLockState";
 import type { HoverCardLabels } from "./hoverCardLines";
@@ -44,19 +45,25 @@ export interface PointerCardWords {
 
 const present = (value: number | null | undefined): value is number => typeof value === "number" && Number.isFinite(value) && value !== 0;
 
-/** The key number's line: the kind the view's rows show second, under the hover card's word, with its unit; its glyph only in a look that draws them. */
+/**
+ * The key number's line: the kind the view's rows show second, under the hover card's word, said with its
+ * unit by the rows' own word rule (`keyFigure`), a count the game gives no unit bare under its label; its
+ * glyph only in a look that draws them.
+ */
 function keyRow(entry: BuildingCatalogEntry, kind: KeyKind, separators: NumberSeparators, labels: HoverCardLabels, units: UnitMode): CardRow | null {
   const glyph = units === "word" ? null : keyFigure(entry, kind, separators)?.glyph ?? null;
+  const said = (label: string): CardRow | null => {
+    const figure = keyFigure(entry, kind, separators, { mode: "word", workersUnit: labels.workersUnit, capacityUnit: "" });
+    return figure === null ? null : { key: "key", label, value: figure.text, glyph };
+  };
 
   switch (kind) {
     case "capacity":
-      return present(entry.capacity) ? { key: "key", label: labels.capacity, value: formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators), glyph } : null;
-    case "speed": {
-      const speed = formatSpeedLimit(entry.speedLimit, separators);
-      return speed === "" ? null : { key: "key", label: labels.speed, value: speed, glyph };
-    }
+      return said(labels.capacity);
+    case "speed":
+      return said(labels.speed);
     case "workers":
-      return present(entry.workers) ? { key: "key", label: labels.workers, value: `${groupDigits(entry.workers, separators)} ${labels.workersUnit}`, glyph } : null;
+      return said(labels.workers);
     default:
       // A view with no key kind of its own, or the lot's, which the lot line says: a home says its households.
       return present(entry.households) ? { key: "key", label: labels.households, value: `${groupDigits(entry.households, separators)} ${labels.householdsUnit}`, glyph: null } : null;

@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { getNumberSeparators } from "../src/domain/assetMenuMetricFormat";
+import { getNumberSeparators, groupDigits } from "../src/domain/assetMenuMetricFormat";
 import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog";
 import { textWidth } from "../src/domain/textWidth";
 import { hoverCardForm, pointerCardText, statusLine, type PointerCardWords } from "../src/domain/hoverCard";
 import { hoverCardLabels } from "../src/domain/hoverCardLines";
+import { keyFigure, type KeyKind, type UnitMarks } from "../src/domain/rowNumbers";
 
 const english = (_key: string, fallback?: string | null) => fallback ?? null;
 const separators = getNumberSeparators(english);
@@ -31,6 +32,18 @@ describe("what the hover card beside the pointer says", () => {
 
     assert.deepEqual(text.rows.map((row) => row.glyph), [null, null, null, null]);
     assert.equal(text.rows[2].value, lines(building({})).rows[2].value);
+  });
+
+  it("says the key number as a row in words says it, by the rows' word rule, a count the game gives no unit bare under its label", () => {
+    const marks: UnitMarks = { mode: "word", workersUnit: words.labels.workersUnit, capacityUnit: "capacity" };
+    const road = building({ name: "Four-Lane Road", category: "Networks", speedLimit: 80, capacity: null, lotWidth: 0, lotDepth: 0 });
+    const crematorium = building({ subCategory: "ServiceBuildings_Deathcare", buildingType: "DeathcareFacility", capacity: 1_500 });
+    const keyOf = (entry: BuildingCatalogEntry, kind: KeyKind) => lines(entry, kind).rows.find((row) => row.key === "key")?.value;
+
+    for (const [entry, kind] of [[building({}), "capacity"], [road, "speed"], [building({ workers: 20 }), "workers"]] as const) {
+      assert.equal(keyOf(entry, kind), keyFigure(entry, kind, separators, marks)?.text, kind);
+    }
+    assert.equal(keyOf(crematorium, "capacity"), groupDigits(1_500, separators));
   });
 
   it("reads a road's money per kilometre, as the game's own panels state it, and its speed in a view keyed by speed", () => {

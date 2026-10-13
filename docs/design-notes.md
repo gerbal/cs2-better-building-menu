@@ -1484,10 +1484,13 @@ the readout now says it once and only the rows that differ print it.
 
 **Units in words.** A look marks a key number's unit one way (`Look.units`): Standard by its glyph,
 Plates in words after the number, "80 km/h", "400 patients", "20 jobs", a count the game gives no unit
-"1,500 capacity", a lot by its two sides (`UnitMarks`, read once per body by `useUnitMarks`), so no row
-prints a bare number. In words a plate draws no glyph; the readout says each value as its rows do, in
-every form, never its digits alone, and names no kind alone, since every row says its own unit; and the
-hover card draws no glyph by its key number, whose line already says it.
+"1,500 capacity", a lot by its two sides (`UnitMarks`, held still by `useUnitMarks` for every body and
+the readout), so no row prints a bare number. The word always follows the number, joined by a space
+rather than placed by a template, so a language that puts it first, or inflects it, still reads it
+after; the strings ship in English only. In words a plate draws no glyph; the readout says each value as
+its rows do, in every form, never its digits alone, and names no kind alone, since every row says its
+own unit; and the hover card draws no glyph by its key number, whose line says it by the same word rule
+(`keyFigure`), a count the game gives no unit bare under the card's "Capacity".
 
 ## Names
 

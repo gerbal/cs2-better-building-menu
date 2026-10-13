@@ -529,7 +529,11 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.False(result.Changed);
 			Assert.Equal(Looks.Line, values.MenuLook);
-			// What the binding publishes, at load and after Options: this release offers no Line.
+			// What the binding publishes, at load and after Options, which reads the setting through Sanitize: this
+			// release offers no Line.
+			var system = ModSource.Text("Systems/BuildingMenuUISystem.cs");
+			Assert.Contains("CreateBinding(\"AssetMenuLook\", \"SetAssetMenuLook\", Looks.Sanitize(Mod.Settings.MenuLook)", system, StringComparison.Ordinal);
+			Assert.Contains("_AssetMenuLook.Value = Looks.Sanitize(Mod.Settings.MenuLook);", ModSource.Member(system, "private void OnSettingsApplied("), StringComparison.Ordinal);
 			Assert.Equal(Looks.Standard, Looks.Sanitize(values.MenuLook));
 		}
 

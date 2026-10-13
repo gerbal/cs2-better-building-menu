@@ -64,8 +64,8 @@ export function oneNumber(numbers: PlateNumbers, sortedMetric: AssetMenuMetric |
 
 /**
  * A one-line plate's one number: under a sort by a value that value; else the cost, or where the
- * readout said the cost once, the key number by its glyph, so the row still says something of its own.
- * Blank only where the readout said both.
+ * readout said the cost once, the key number as the look marks its unit, so the row still says
+ * something of its own. Blank only where the readout said both.
  */
 export function oneLineNumber(entry: BuildingCatalogEntry, numbers: PlateNumbers, sortedMetric: AssetMenuMetric | null, said: readonly SharedValue[]): PlateNumbers {
   if (sortsByValue(sortedMetric) || numbers.locked || !holdsBack(entry, said, "cost")) return oneNumber(numbers, sortedMetric);
