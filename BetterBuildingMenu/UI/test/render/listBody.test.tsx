@@ -9,6 +9,7 @@ import { bodyGrid, PLATE1_HEIGHT, type BodyGridInput } from "../../src/domain/bo
 import type { BuildingCatalogEntry, CatalogSection } from "../../src/domain/buildingCatalog";
 import { getAssetMenuView, resetAssetMenuView, setReadoutSaid } from "../../src/domain/assetMenuViewStore";
 import { ListBody } from "../../src/mods/Bodies/ListBody";
+import { textWidth } from "../../src/domain/textWidth";
 
 const grid = (over: Partial<BodyGridInput> = {}) => bodyGrid({
   body: "list", boxWidth: 706, bodyHeight: 144.25, textScale: 1, atLargeText: "moreBuildings", tileSize: 64, plateHeight: 27.25, nameLines: 0, ...over,
@@ -398,5 +399,104 @@ describe("the list's Locked label under a press", () => {
     act(() => root!.root.find((node) => node.props["data-bbm-label"] === "locked" && typeof node.props.onSelect === "function").props.onSelect());
 
     assert.deepEqual(triggers.at(-1), { group: "BetterBuildingMenu", name: "SetCatalogSectionCollapsed", args: ["locked", false] });
+  });
+});
+
+describe("the list's names as the game draws them, a frame after each render", () => {
+  let root: ReactTestRenderer | undefined;
+  const globals = globalThis as unknown as Record<string, unknown>;
+  let saved: Record<string, unknown>;
+  const frames = new Map<number, () => void>();
+  let nextFrame = 0;
+
+  /** The names a body plans, in the order their boxes mount, with the room the body gave each. */
+  const planned = () => root!.root.findAll((node) => typeof node.props.name === "string" && typeof node.props.width === "number" && typeof node.props.font === "number");
+  const linesOf = (name: ReturnType<typeof planned>[number]) => name.findAll((node) => node.props.className === "line").map((node) => node.children.join(""));
+  /** The game drawing: each name's box as wide as the body's room, each line as wide as its text, clipped at the box. */
+  const boxes: number[] = [];
+  const drawnBox = (element: { type: unknown; props: Record<string, unknown> }) => {
+    if (element.type !== "span" || !String(element.props.className ?? "").startsWith("planned")) return null;
+    const at = boxes.push(boxes.length) - 1;
+    const name = () => planned()[at];
+    return {
+      get drawn() { return linesOf(name()).join("\n"); },
+      get clientWidth() { return name().props.width as number; },
+      get children() {
+        const box = name().props.width as number;
+        return linesOf(name()).map((line) => ({ clientWidth: box, offsetWidth: box, scrollWidth: Math.max(box, textWidth(line, name().props.font as number)) }));
+      },
+    };
+  };
+  /** Each box an observer watches, and the lines it drew when the observer last told of it. */
+  const watched = new Map<{ drawn: string }, { told: string | null; tell: () => void }>();
+  /** The game's observer: it tells of a box once it is watched, and again each frame its lines are laid out anew. */
+  class DrawnObserver {
+    constructor(private readonly tell: () => void) {}
+    observe(box: { drawn: string }) { watched.set(box, { told: null, tell: this.tell }); }
+    disconnect() { for (const [box, watch] of watched) if (watch.tell === this.tell) watched.delete(box); }
+  }
+  /** Every frame the names ask for, and every box laid out anew, until none asks for another. */
+  const settle = () => {
+    for (let pass = 0; pass < 40; pass += 1) {
+      for (const [box, watch] of watched) {
+        if (watch.told === box.drawn) continue;
+        watch.told = box.drawn;
+        watch.tell();
+      }
+      if (frames.size === 0) return;
+      const due = [...frames.values()];
+      frames.clear();
+      act(() => due.forEach((frame) => frame()));
+    }
+  };
+
+  beforeEach(() => {
+    resetBindings();
+    boxes.length = 0;
+    frames.clear();
+    watched.clear();
+    saved = { requestAnimationFrame: globals.requestAnimationFrame, cancelAnimationFrame: globals.cancelAnimationFrame, window: globals.window, ResizeObserver: globals.ResizeObserver };
+    globals.ResizeObserver = DrawnObserver;
+    globals.requestAnimationFrame = (frame: () => void) => {
+      frames.set((nextFrame += 1), frame);
+      return nextFrame;
+    };
+    globals.cancelAnimationFrame = (id: number) => frames.delete(id);
+    // A rem a pixel, so a drawn width in pixels reads as rem.
+    globals.window = { innerHeight: 1080 };
+  });
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    root = undefined;
+    Object.assign(globals, saved);
+  });
+
+  it("keeps every line of a long name inside its box after a one-letter search is cleared at 130%", () => {
+    setBinding("options", "textScale", 1.3);
+    const schools: [string, string][] = [
+      ["Lakeside Small Elementary School (5x3)", "(5x3)"],
+      ["Lakeside Small Elementary School No.2 (4x6)", "(4x6)"],
+      ["Lakeside Small Elementary School No.2 (6x9)", "(6x9)"],
+      ["Red Maple Elementary School", ""],
+      ["Lakeside Small Elementary School (7x6)", "(7x6)"],
+    ];
+    const entries = schools.map(([name, distinctWord], at) => entry(at + 1, { name, distinctWord, constructionCost: 450_000, capacity: 1_000, buildingType: "School" }));
+    const at130 = (typed: string) => body(entries, { over: { textScale: 1.3 }, typed });
+    const overruns = () => planned().flatMap((name) => linesOf(name)
+      .filter((line) => textWidth(line, name.props.font as number) > (name.props.width as number))
+      .map((line) => `${name.props.name}: "${line}" in ${name.props.width}`));
+
+    act(() => { root = create(at130(""), { createNodeMock: drawnBox }); });
+    settle();
+    assert.deepEqual(overruns(), []);
+
+    act(() => root!.update(at130("a")));
+    settle();
+    act(() => root!.update(at130("")));
+    settle();
+
+    assert.equal(planned().length, schools.length);
+    assert.deepEqual(overruns(), []);
   });
 });
