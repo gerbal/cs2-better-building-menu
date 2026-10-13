@@ -46,7 +46,6 @@
   "Tooltip.LABEL[BetterBuildingMenu.MenuRoadsAndNetworks]": "Roads & Networks",
   "Tooltip.LABEL[BetterBuildingMenu.LoadMore]": "Load more",
   "Tooltip.LABEL[BetterBuildingMenu.LoadMoreCount]": "Load {0} more",
-  "Tooltip.LABEL[BetterBuildingMenu.ShowingOfTotal]": "Showing {0} of {1}",
   "Tooltip.LABEL[BetterBuildingMenu.ShowingOfTotalCapped]": "Showing {0} of {1} · narrow with a tab, the search or a filter",
   "Tooltip.LABEL[BetterBuildingMenu.ReadoutRange]": "1–{0} of {1}",
   "Tooltip.LABEL[BetterBuildingMenu.ReadoutHere]": "{0} here",

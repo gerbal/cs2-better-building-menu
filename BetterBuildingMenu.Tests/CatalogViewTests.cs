@@ -241,6 +241,38 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(listed.Count, listed.Distinct().Count());
 		}
 
+		[Theory]
+		[InlineData(false)]
+		[InlineData(true)]
+		public void ATabWithARowOnNoBranchDrawsWholeAndItsCellsAddUpToAll(bool locked)
+		{
+			// Splitting Healthcare would draw Basic and Hospitals and leave the clinic annex, which sits
+			// on no branch, in no cell: the tab stays one cell and lists every row it holds.
+			var annex = Entry(44, "Clinic Annex", "ServiceBuildings", "Health", "HealthcareHealthcare");
+			var entries = Health.Append(annex).ToArray();
+			var shown = AssetMenuState.Initial.SelectMenu("Health");
+			var query = locked ? shown.Query with { Availability = new[] { Locked } } : shown.Query;
+			var view = new CatalogView(entries, query, menuCategories: HealthTabs);
+
+			Assert.Equal(string.Empty, view.ExpandedCategoryId);
+			Assert.Empty(view.ExpandedCategoryTabs);
+			Assert.Empty(view.ExpandedCategories);
+
+			var listed = new List<int>();
+
+			foreach (var count in view.MenuCategoryCounts)
+			{
+				var rows = new CatalogView(entries, (shown with { Query = query }).SelectCategory(count.Id).Query, menuCategories: HealthTabs)
+					.Page.Items.Select(entry => entry.Id).ToArray();
+
+				Assert.Equal(count.Count, rows.Length);
+				listed.AddRange(rows);
+			}
+
+			Assert.Equal(view.AllCount, listed.Count);
+			Assert.Equal(listed.Count, listed.Distinct().Count());
+		}
+
 		[Fact]
 		public void ATabSplitsOnlyIntoBranchesNoOtherTabShares()
 		{

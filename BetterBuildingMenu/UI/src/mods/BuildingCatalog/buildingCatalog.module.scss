@@ -858,9 +858,8 @@
   font-size: var(--fontSizeXS);
 }
 
-// The footer states the window at both ends: what is on screen on the left,
-// what the button adds on the right. One row, because they are one fact said
-// twice for the two questions a player has.
+// The list's end: Load more while the window can grow, and at the ceiling how
+// to narrow the list. The tab row's readout states the window itself.
 .loadMoreRow {
   display: flex;
   flex-direction: row;

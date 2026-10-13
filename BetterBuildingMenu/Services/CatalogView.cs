@@ -197,25 +197,29 @@ namespace BetterBuildingMenu.Services
 			}
 
 			return PresentSet
-				.Where(entry => !string.IsNullOrEmpty(entry.DevTreeBranch))
 				.GroupBy(TabOf)
 				.Where(group => group.Key.Length > 0)
-				.Select(group => new { Tab = group.Key, Size = group.Count(), Branches = group.GroupBy(entry => entry.DevTreeBranch!, StringComparer.Ordinal).ToArray() })
-				.Where(candidate => candidate.Branches.Length > 1 && OwnsItsBranches(candidate.Branches))
+				.Select(group => new { Tab = group.Key, Size = group.Count(), Branches = group.Where(entry => !string.IsNullOrEmpty(entry.DevTreeBranch)).GroupBy(entry => entry.DevTreeBranch!, StringComparer.Ordinal).ToArray() })
+				.Where(candidate => candidate.Branches.Length > 1 && OwnsItsBranches(candidate.Size, candidate.Branches))
 				.OrderByDescending(candidate => candidate.Size)
 				.ThenBy(candidate => candidate.Tab, StringComparer.Ordinal)
 				.Select(candidate => candidate.Tab)
 				.FirstOrDefault() ?? string.Empty;
 		}
 
-		/// <summary>Whether a click on each of a tab's branches lists that tab's rows and no other's.</summary>
+		/// <summary>Whether a click on each of a tab's branches lists that tab's rows and no other's, and the branches list all of them.</summary>
 		/// <remarks>
 		/// A branch another tab's rows share (Train's station on the subway's node) would draw a second
-		/// tab of that tab's name, counting a slice of it: the tab then stays whole, as the game draws
-		/// it. See docs/design-notes.md, "Tab counts".
+		/// tab of that tab's name, counting a slice of it; a row on no branch would land in no cell.
+		/// Either way the tab stays whole, as the game draws it. See docs/design-notes.md, "Tab counts".
 		/// </remarks>
-		private bool OwnsItsBranches(IGrouping<string, BuildingCatalogEntry>[] branches)
+		private bool OwnsItsBranches(int tabSize, IGrouping<string, BuildingCatalogEntry>[] branches)
 		{
+			if (branches.Sum(branch => branch.Count()) != tabSize)
+			{
+				return false;
+			}
+
 			var menuWide = BuildingCatalogQueryEngine.StripCounts(PresentSet, branches.Select(branch => branch.Key).ToArray());
 
 			return branches.Select((branch, at) => menuWide[at] == branch.Count()).All(own => own);

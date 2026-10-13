@@ -238,12 +238,13 @@ facet and every range applied. `CatalogView` answers all of them from two sets.
 
 **A tab splits into its branches only when they are its own.** A service tab whose rows sit on two
 or more development-tree branches draws them in its place, each counting and listing its rows (a
-branch's click picks the branch across the menu). That holds only while no other tab's rows sit on
-any of those branches: the game files a train station on the subway's node under Train, and a split
-Train would draw a second "Subway" tab counting that station alone beside the Subway tab, and its
-click would list both tabs' subway rows. So `ExpandedCategoryId` passes over a tab with a shared
-branch, which then draws whole, as the game draws it, and every row of the menu is in exactly one
-cell: the cells add up to All.
+branch's click picks the branch across the menu). That holds only while every row of the tab sits on
+a branch (a row on none would land in no cell) and no other tab's rows sit on any of those branches:
+the game files a train station on the subway's node under Train, and a split Train would draw a
+second "Subway" tab counting that station alone beside the Subway tab, and its click would list both
+tabs' subway rows. So `ExpandedCategoryId` passes over a tab with a shared branch or a row on none,
+which then draws whole, as the game draws it, and every row of the menu is in exactly one cell: the
+cells add up to All.
 
 C# sends a count for each tab the row draws, in the menu's order (`menuCategories`), rather than for
 every tab the menu declares: 0 then means "emptied by the filters", and no count "never filled".
@@ -820,10 +821,10 @@ sewage capacity are offered where they can move a row.
 own order (`UIOrder`), the name and the id, so equal capacities show the cheaper building first.
 The game's order and the name and category sorts keep their own ties.
 
-**A list that stops says so.** The window grows from 100 rows toward a ceiling of 2,000. Whenever
-fewer rows are loaded than the result holds, the footer says "Showing X of Y", with the true
-total. While the window can grow it offers Load more; once it is at the ceiling with rows past it
-(`Capped`), it says how to narrow the list instead: a tab, the search or a filter.
+**A list that stops says so.** The window grows from 100 rows toward a ceiling of 2,000. The tab
+row's readout states the window with the true total ("1–100 of 779"), so the list's end says only
+what the readout cannot: while the window can grow it offers Load more; once it is at the ceiling
+with rows past it (`Capped`), it says how to narrow the list instead: a tab, the search or a filter.
 
 ## Hand-rolled floating surfaces in Cohtml
 

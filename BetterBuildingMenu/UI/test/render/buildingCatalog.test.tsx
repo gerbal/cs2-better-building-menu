@@ -36,7 +36,9 @@ describe("the catalog container", () => {
 
       assert.ok(scroll >= 0, `${mode}: expected a scroll container`);
       assert.ok(more > scroll, `${mode}: the load-more must sit inside the scroll`);
-      assert.match(html, /Showing 2 of 403/);
+      // The tab row's readout states the window; the end of the list offers to grow it.
+      assert.match(html, /Load 100 more/);
+      assert.doesNotMatch(html, /Showing/);
     });
 
     it(`offers to widen a scoped miss in ${mode} mode`, () => {
@@ -53,14 +55,14 @@ describe("the catalog container", () => {
     });
   }
 
-  it("groups the digits of the window count like every other number in the asset menu", () => {
-    // Built by hand, the count read "Showing 1200 of 4206" beside cells that
+  it("groups the digits of the cap line's count like every other number in the asset menu", () => {
+    // Built by hand, the count read "Showing 2000 of 4206" beside cells that
     // group theirs. toLocaleString would group it under node and not in Cohtml.
     setAssetMenuView({ viewMode: "table" });
-    page({ hasMore: true, totalCount: 4206 });
+    page({ hasMore: false, capped: true, totalCount: 4206 });
     const html = render();
 
-    assert.ok(html.includes(`Showing 2 of ${groupDigits(4206, FALLBACK_SEPARATORS)}`));
+    assert.ok(html.includes(`Showing 2 of ${groupDigits(4206, FALLBACK_SEPARATORS)} · `));
     assert.doesNotMatch(html, /4206/);
   });
 
@@ -91,14 +93,13 @@ describe("the catalog container", () => {
     assert.doesNotMatch(html, /class="loadMore"/);
   });
 
-  it("names the window and offers Load more while it can still grow", () => {
+  it("offers Load more while the window can still grow, and leaves the window to the readout", () => {
     setAssetMenuView({ viewMode: "list" });
     page({ hasMore: true, totalCount: 403 });
     const html = render();
 
-    assert.match(html, /Showing 2 of 403/);
-    assert.doesNotMatch(html, /narrow with a tab/);
     assert.match(html, /Load 100 more/);
+    assert.doesNotMatch(html, /Showing/);
   });
 
   for (const mode of ["table", "grid", "list", "cards"]) {

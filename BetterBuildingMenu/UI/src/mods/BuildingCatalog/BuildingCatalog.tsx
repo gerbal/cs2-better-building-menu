@@ -277,29 +277,25 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
 
   /*
    * The end of the feed, rendered as the last child INSIDE whichever element
-   * owns the scroll — which differs by view mode, so it is passed down. Whenever
-   * fewer rows show than the result holds it names both ends, so a truncated
-   * list reads as one; Load more only while the window can grow, and at the
+   * owns the scroll — which differs by view mode, so it is passed down. The tab
+   * row's readout states the window and its true total, so this says only what
+   * the readout cannot: Load more while the window can grow, and at the
    * ceiling, how to narrow the list instead.
    */
   const remaining = catalogWindowRemaining({ shown: items.length, total: totalCount });
   const separators = useMemo(() => getNumberSeparators(translate), [translate]);
   // Memoised with what it shows, so the views it is handed to can skip a render.
   const catalogFooter = useMemo(() => {
-    if (items.length >= totalCount) return null;
+    if (!hasMore && !capped) return null;
 
-    const showing = capped
-      ? translate("Tooltip.LABEL[BetterBuildingMenu.ShowingOfTotalCapped]", "Showing {0} of {1} · narrow with a tab, the search or a filter")
-        ?? "Showing {0} of {1} · narrow with a tab, the search or a filter"
-      : translate("Tooltip.LABEL[BetterBuildingMenu.ShowingOfTotal]", "Showing {0} of {1}") ?? "Showing {0} of {1}";
+    const capLine = (translate("Tooltip.LABEL[BetterBuildingMenu.ShowingOfTotalCapped]", "Showing {0} of {1} · narrow with a tab, the search or a filter")
+      ?? "Showing {0} of {1} · narrow with a tab, the search or a filter")
+      .replace("{0}", groupDigits(items.length, separators))
+      .replace("{1}", groupDigits(totalCount, separators));
 
     return (
       <div className={styles.loadMoreRow}>
-        <span className={classNames(styles.windowState, capped && styles.windowStateCapped)}>
-          {showing
-            .replace("{0}", groupDigits(items.length, separators))
-            .replace("{1}", groupDigits(totalCount, separators))}
-        </span>
+        {capped && <span className={classNames(styles.windowState, styles.windowStateCapped)}>{capLine}</span>}
         {hasMore && (
           <Button className={styles.loadMore} variant="flat" onSelect={loadMore}>
             {remaining === null
