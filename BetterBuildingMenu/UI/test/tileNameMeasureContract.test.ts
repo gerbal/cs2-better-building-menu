@@ -10,10 +10,9 @@ import { describe, it } from "node:test";
  * scrollWidth in the same tick, and a brand-new line reads 0. Measuring
  * synchronously after every re-render shrinks the budget to its floor.
  */
-const grid = readFileSync(new URL("../src/mods/BuildingGrid/BuildingGrid.tsx", import.meta.url), "utf8");
-const tileName = grid.slice(grid.indexOf("const TileName"), grid.indexOf("export const BuildingGrid"));
+const tileName = readFileSync(new URL("../src/mods/Bodies/FittedName.tsx", import.meta.url), "utf8");
 
-describe("the tile name measures what Cohtml has laid out", () => {
+describe("a fitted name measures what Cohtml has laid out", () => {
   it("never reads the lines in the same tick as the render that changed them", () => {
     assert.doesNotMatch(tileName, /\n\s*measure\(\);/, "a bare measure() call reads the previous text's layout");
   });

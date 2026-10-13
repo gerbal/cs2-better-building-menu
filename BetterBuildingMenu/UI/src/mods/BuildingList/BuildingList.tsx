@@ -46,8 +46,8 @@ interface BuildingListProps {
 export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId }: BuildingListProps) => {
   const { translate } = useLocalization();
   const separators = getNumberSeparators(translate, useUnitSystem());
-  // The same card the grid and the table show, so which facts a building
-  // states does not depend on which view mode the player is in.
+  // The same card every body shows, so which facts a building states does not
+  // depend on the body the menu draws.
   const hoverCard = useHoverCardContext();
   const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
   // The words every body says why a building cannot be placed with.
@@ -55,7 +55,7 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId
   const cards = variant === "cards";
 
   const place = (entry: BuildingCatalogEntry) => {
-    // See BuildingGrid: locked assets are shown and refused, not hidden.
+    // Locked assets are shown and refused, not hidden, as vanilla refuses them.
     if (!canPlace(entry)) return;
 
     onPlace(entry);
@@ -120,14 +120,17 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId
               data-locked={isEntryLocked(entry) ? "true" : undefined}
               data-vector-thumb={hasVectorThumbnail(entry.thumbnail) ? "true" : "false"}
               data-already-built={isEntryAlreadyBuilt(entry) ? "true" : undefined}
+              // A card is a building the live check and the render tests count; the upgrades panel's are not.
+              data-bbm-item={cards ? "true" : undefined}
             >
-              {/* The picture and its badge share a box, as the tile's do, so
+              {/* The picture and its badge share a box, as the tiles' do, so
                   the mark sits ON the building. Sized from base.scss's ratio,
-                  so it reads the same against a row icon and a grid tile. */}
+                  so it reads the same against a row icon, a card and a tile. */}
               {entry.thumbnail
                 ? <span className={classNames(styles.artwork, cards && styles.artworkLarge)}>
                     <img
                       className={classNames(styles.icon, cards && styles.iconLarge)}
+                      data-bbm-pic={cards ? "true" : undefined}
                       src={lockedThumbnail(entry, isEntryLocked(entry) || isEntryAlreadyBuilt(entry))}
                       onError={thumbnailErrorHandler(entry.fallbackThumbnail)}
                       alt=""
@@ -150,12 +153,12 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId
                   </span>
                 : <span className={classNames(styles.iconPlaceholder, cards && styles.iconLarge)} aria-hidden="true" />}
               <span className={styles.text}>
-                <span className={styles.name}>{label}</span>
+                <span className={styles.name} data-bbm-name={cards ? fullName.length : undefined}>{label}</span>
                 {/* A zone's own figures arrive as service facts and are drawn
                     on the hover card, where there is room for a phrase. This
                     row stays size, cost and one key number. */}
                 {cards && (
-                  <span className={styles.facts}>
+                  <span className={styles.facts} data-bbm-fact="true">
                     {/* Footprint first, and always: whether the thing fits the
                         gap in front of you is asked before anything else. */}
                     {/* Separators are characters, not spacing: the dot is

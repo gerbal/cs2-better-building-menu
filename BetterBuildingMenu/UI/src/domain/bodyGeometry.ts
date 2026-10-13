@@ -25,6 +25,9 @@ export const PLATE1_HEIGHT = 22.375;
 /** A whole-name plate's height above 100% text: four lines and three gaps make the game's own body. */
 export const PLATE_WHOLE_HEIGHT = 34.56;
 
+/** The Tiles view's name line needs this much room under the tiles, or it drops. */
+export const TILE_NAME_LINE_MIN = 14;
+
 export interface BodyGrid {
   /** The list's form, or the tiles. */
   form: ListForm | "tile";

@@ -19,6 +19,7 @@ import { GroupedResults } from "mods/GroupedResults/GroupedResults";
 import { type GroupDimensionId } from "domain/buildingGroups";
 import { useCatalogWindow } from "./useCatalogWindow";
 import { ListBody } from "mods/Bodies/ListBody";
+import { TilesBody } from "mods/Bodies/TilesBody";
 import { useBodyGrid } from "./useBodyGrid";
 import { useRevealEnterTarget } from "./useRevealEnterTarget";
 import { useScrollAnchor } from "./useScrollAnchor";
@@ -227,7 +228,8 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   }, [hasMore, capped, items.length, totalCount, remaining, translate, separators, loadMore]);
 
   return (
-    <div ref={rootRef} className={classNames(styles.catalog, grid !== null && styles.slotted)}>
+    // Cards pack their own rows under the root, which is then the region a body's markers are counted in.
+    <div ref={rootRef} className={classNames(styles.catalog, grid !== null && styles.slotted)} data-bbm-view={grid === null ? "cards" : undefined}>
       {/* No controls here: Sort, Filter, Group and View are the top row's, and the
           control pane's while it shows, so this component draws results and nothing else. */}
       {scopeNoticeBlock}
@@ -241,16 +243,11 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
               // about it; a second line would say it twice and contradict it.
               ? null
               : <div className={styles.empty}>{emptyStateMessage}</div>)
-          : body === "list" && grid !== null
-            ? <ListBody entries={items} grid={grid} enterId={enterId} onPlace={activate} footer={catalogFooter} />
-            : (
-              <GroupedResults
-                entries={items}
-                viewMode={body === "tiles" ? "grid" : body}
-                onPlace={activate}
-                footer={catalogFooter}
-              />
-            )}
+          : grid !== null
+            ? (grid.form === "tile"
+                ? <TilesBody entries={items} grid={grid} onPlace={activate} footer={catalogFooter} />
+                : <ListBody entries={items} grid={grid} enterId={enterId} onPlace={activate} footer={catalogFooter} />)
+            : <GroupedResults entries={items} onPlace={activate} footer={catalogFooter} />}
     </div>
   );
 });

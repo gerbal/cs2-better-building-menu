@@ -1,7 +1,7 @@
 @use "../../base.scss" as _base;
 
 // Wrapped rows rather than a column: the whole point is fitting many readable
-// names on a screen, and one name per row would fit fewer than the table does.
+// names on a screen, and one name per row fits far fewer.
 .list {
   display: flex;
   flex-direction: row;
@@ -98,8 +98,8 @@
   color: var(--menuText1Normal);
 }
 
-// A larger icon and one line of facts. Still wrapped rows, so this sits
-// between the compact list and the table rather than becoming another table.
+// A larger icon and one line of facts. Still wrapped rows: a card is a
+// compact row with its facts under the name.
 
 .itemCard {
   height: auto;
@@ -187,9 +187,9 @@
   opacity: 0.75;
 }
 
-// Milestone-locked, and already-built with it: the same treatment as the grid
-// tile and vanilla's own item grid, with hover still answering so the row
-// reads as disabled rather than dead. Rasters only; see hasVectorThumbnail.
+// Milestone-locked, and already-built with it: the same treatment as the tiles
+// and vanilla's own item grid, with hover still answering so the row reads as
+// disabled rather than dead. Rasters only; see hasVectorThumbnail.
 .item[data-locked="true"][data-vector-thumb="false"] .icon,
 .item[data-locked="true"][data-vector-thumb="false"] .iconLarge,
 .item[data-already-built="true"][data-vector-thumb="false"] .icon,

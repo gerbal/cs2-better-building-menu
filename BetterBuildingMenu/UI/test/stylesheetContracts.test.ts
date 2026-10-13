@@ -19,7 +19,6 @@ const CARD = "mods/BuildingHoverCard/buildingHoverCard.module.scss";
 const PICKER = "mods/ExtensionMenu/extensionMenu.module.scss";
 const RESIZE = "mods/AssetMenuResizeHandle/assetMenuResizeHandle.module.scss";
 const LIST = "mods/BuildingList/buildingList.module.scss";
-const GRID = "mods/BuildingGrid/buildingGrid.module.scss";
 const TAB_ROW = "mods/TabRow/tabRow.module.scss";
 const FILTER_PANEL = "mods/Pickers/filterPanel.module.scss";
 const PICKER_LIST = "mods/Pickers/pickerList.module.scss";
@@ -488,16 +487,6 @@ describe("a wrapping row of cards keeps each card its own height", () => {
     assert.ok(!selectorsOf(LIST).includes(".list::after"));
   });
 
-  it("spaces the grid's tiles with gap, for the same reason", () => {
-    // Two tiles in a group sized for two stacked into a column, three went
-    // two and one, while five fit their row: the same zero-slack rounding,
-    // flipping per group.
-    const tiles = declarationsOf(GRID, ".tiles");
-
-    assert.equal(tiles.gap, "4rem");
-    assert.equal(tiles["margin-left"], undefined);
-    assert.equal(tiles["margin-top"], undefined);
-  });
 });
 
 describe("Cohtml stylesheet support", () => {

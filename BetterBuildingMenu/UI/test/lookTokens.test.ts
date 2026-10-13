@@ -116,6 +116,17 @@ describe("the looks' tokens", () => {
     }
   });
 
+  it("draw the tiles' milestone in the look's amber on the tag, whose dark ground no style turns light", () => {
+    const tiles = "mods/Bodies/tilesBody.module.scss";
+
+    assert.equal(declarationsOf(tiles, ".milestone").color, "var(--bbm-amber)");
+    assert.equal(declarationsOf(tiles, ".tag")["background-color"], "var(--bbm-tagBg)");
+    for (const selector of [STANDARD, ...FOLLOW]) {
+      const map = tokens(selector);
+      assert.ok(!turnsLight(map.tagBg) && !styleInk(map.amber), selector);
+    }
+  });
+
   it("keep the top row's ink light under every style, since its band stays dark", () => {
     // The head is the style's dark panel, so no ink on it may be the style's own, which Bright blue
     // turns dark for its light list.

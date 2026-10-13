@@ -4,56 +4,9 @@ import {
   LIST_NAME_MAX_CHARS,
   listLabel,
   shortenTileLabel,
-  stripRedundantNamePrefix,
   tileLabelLineBudget,
   wrapTileLabel,
 } from "../src/domain/tileLabel.ts";
-
-const COMMERCIAL = { category: "Buildings", subCategory: "Commercial", theme: "European" };
-
-describe("redundant name prefixes", () => {
-  it("drops the theme and category the tile's own context already states", () => {
-    assert.equal(
-      stripRedundantNamePrefix("EU Commercial Gas Station 01 - L1 2x2", COMMERCIAL),
-      "Gas Station 01 - L1 2x2"
-    );
-  });
-
-  it("keeps buildings distinguishable that a middle elision would have merged", () => {
-    // Both of the tile's lines.
-    const budget = tileLabelLineBudget(88) * 2;
-    const gas = shortenTileLabel(
-      stripRedundantNamePrefix("EU Commercial Gas Station 01 - L1 2x2", COMMERCIAL),
-      budget
-    );
-    const high = shortenTileLabel(
-      stripRedundantNamePrefix("EU Commercial High 01 - L1 2x2", COMMERCIAL),
-      budget
-    );
-    assert.notEqual(gas, high);
-  });
-
-  it("leaves a name that does not start with its own category alone", () => {
-    assert.equal(stripRedundantNamePrefix("Auto Center", COMMERCIAL), "Auto Center");
-    assert.equal(stripRedundantNamePrefix("Activity Plaza", COMMERCIAL), "Activity Plaza");
-  });
-
-  it("strips a theme prefix even without theme context", () => {
-    assert.equal(stripRedundantNamePrefix("NA Commercial Low 01", { subCategory: "Commercial" }), "Low 01");
-  });
-
-  it("never strips a name down to nothing or to a bare number", () => {
-    assert.equal(stripRedundantNamePrefix("EU Commercial", COMMERCIAL), "Commercial");
-    assert.equal(stripRedundantNamePrefix("EU Commercial 01", COMMERCIAL), "EU Commercial 01");
-  });
-
-  it("survives missing context, stripping only what it can still be sure of", () => {
-    assert.equal(stripRedundantNamePrefix("Auto Center"), "Auto Center");
-    // "EU" is a known theme prefix so it goes; "Commercial" stays, because with
-    // no category context there is nothing saying it is redundant.
-    assert.equal(stripRedundantNamePrefix("EU Commercial Gas Station", {}), "Commercial Gas Station");
-  });
-});
 
 describe("grid tile label shortening", () => {
   it("leaves a name that already fits alone", () => {
@@ -119,7 +72,7 @@ describe("grid tile label shortening", () => {
   });
 
   it("keeps a usable budget for nonsense tile sizes", () => {
-    // Falls back to DEFAULT_TILE_SIZE (100rem), which budgets 12 per line.
+    // Falls back to the width the figure was measured at (100rem), which budgets 12 per line.
     assert.equal(tileLabelLineBudget(Number.NaN), 12);
     assert.equal(tileLabelLineBudget(0), 12);
     assert.ok(tileLabelLineBudget(1) >= 4);

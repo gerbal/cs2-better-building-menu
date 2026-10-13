@@ -5,12 +5,11 @@ import { declarationsOf, rem } from "./harness/compiledCss.ts";
 
 const base = readFileSync(new URL("../src/base.scss", import.meta.url), "utf8");
 
-const GRID = "mods/BuildingGrid/buildingGrid.module.scss";
 const LIST = "mods/BuildingList/buildingList.module.scss";
+const TILES = "mods/Bodies/tilesBody.module.scss";
 
 /** Each mode's badge, the picture it is measured against and the box it sits in. */
 const MODES = [
-  { mode: "grid", sheet: GRID, badge: ".tile .artwork .uniqueAsset", picture: ".tile .artwork .thumb", frame: ".tile .artwork" },
   { mode: "list", sheet: LIST, badge: ".artwork .uniqueAsset", picture: ".artwork .icon", frame: ".artwork" },
   { mode: "cards", sheet: LIST, badge: ".artworkLarge .uniqueAssetLarge", picture: ".artworkLarge .iconLarge", frame: ".artworkLarge" },
 ];
@@ -18,7 +17,7 @@ const MODES = [
 /**
  * The badge has to read the same size against the building in every mode.
  *
- * Three modes draw one catalogue at three picture sizes, so "the same size" can
+ * The modes draw one catalogue at different picture sizes, so "the same size" can
  * only mean the same RATIO. This pins the single definition, and that every
  * mode derives from it.
  */
@@ -55,5 +54,18 @@ describe("unique mark scale", () => {
     for (const [i, ratio] of ratios.entries()) {
       assert.ok(Math.abs(ratio - ratios[0]) < 1e-6, `${MODES[i].mode} draws its badge at ${ratio} of the picture, not ${ratios[0]}`);
     }
+  });
+
+  it("is the same fraction of a tile's picture, which Tile size sizes, as a share of the box the picture fills", () => {
+    const list = MODES[0];
+    const ratio = rem(declarationsOf(list.sheet, list.badge).width) / rem(declarationsOf(list.sheet, list.picture).width);
+    const mark = declarationsOf(TILES, ".artwork .mark");
+    const share = (length: string) => Number(/^(-?[\d.]+)%$/.exec(length)?.[1] ?? NaN) / 100;
+
+    assert.equal(mark.position, "absolute");
+    assert.equal(mark.height, mark.width, "square");
+    assert.equal(mark.top, mark.left, "inset the same on both axes");
+    assert.ok(Math.abs(share(mark.width) - ratio) < 1e-6, `the tiles draw their badge at ${mark.width} of the picture, not ${ratio}`);
+    assert.ok(Math.abs(share(mark.top) - (1 - share(mark.width)) / 2) < 1e-6, `centred: ${mark.top}`);
   });
 });

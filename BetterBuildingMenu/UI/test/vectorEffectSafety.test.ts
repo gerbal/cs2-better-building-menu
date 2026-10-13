@@ -17,7 +17,7 @@ import { declarationsOf, everyDeclaration } from "./harness/compiledCss.ts";
  * selector is written out in full there, however the source nests it.
  */
 const SHEETS = [
-  ["grid", "mods/BuildingGrid/buildingGrid.module.scss"],
+  ["tiles", "mods/Bodies/tilesBody.module.scss"],
   ["list", "mods/BuildingList/buildingList.module.scss"],
 ] as const;
 
@@ -52,10 +52,10 @@ describe("no compositing effect over a vector", () => {
   }
 
   it("the padlock is not a masked vector", () => {
-    const masks = Object.keys(declarationsOf("mods/BuildingGrid/buildingGrid.module.scss", ".lockGlyph")).filter((property) => property.includes("mask"));
+    const masks = Object.keys(declarationsOf("mods/Bodies/tilesBody.module.scss", ".lockGlyph")).filter((property) => property.includes("mask"));
     assert.deepEqual(masks, [], "lockGlyph regained a mask");
 
-    const tsx = readFileSync(new URL("../src/mods/BuildingGrid/BuildingGrid.tsx", import.meta.url), "utf8");
+    const tsx = readFileSync(new URL("../src/mods/Bodies/TilesBody.tsx", import.meta.url), "utf8");
     assert.ok(
       !/maskImage:\s*"url\(assetdb:\/\/gameui\/Media\/Glyphs\/Lock\.svg\)"/.test(tsx),
       "the padlock is masking Lock.svg again"

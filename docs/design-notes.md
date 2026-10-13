@@ -1033,10 +1033,11 @@ each count.
 
 **Grid and Table leave.** VIEW offers Default view, List, Tiles and Cards; the table, its columns and
 their arithmetic are gone, and with them `flattenGroupedRows`, which laid the table's group headings out
-as lines with their counts (the unused-export guard allows no export without a caller). Until the
-tiles get a body of their own, Grid's drawing stands in for them, and `stripRedundantNamePrefix`, which
-tells look-alike names apart on Grid's name line, stays with it; it leaves when Grid's drawing does. The
-bodies' label plates and name planner derive what each did again.
+as lines with their counts (the unused-export guard allows no export without a caller). Grid's drawing
+(`BuildingGrid`) is gone too, the tiles drawing in its place, and with it `stripRedundantNamePrefix`,
+which told look-alike names apart on Grid's tiles by dropping the theme and category words a name
+repeats. The bodies' label plates and name planner derive what each did again; until then the tiles'
+name line tells look-alikes apart.
 
 **Slots.** The list and the tiles place each building from its index alone (`bodyGrid`,
 `slotPosition`): left to right, then down, a cell and a 2 rem gap apart, inside the box less 8 rem
@@ -1077,13 +1078,29 @@ the slots' box are one mixin (`_bodyShell.scss`), as the locked and already-buil
 separators are one hook each (`useStateWords`, `useNumberSeparators`), for every body that places its
 buildings in slots.
 
-**Labels wait.** The list draws no group names and no "Locked N" yet; its order still follows the
-grouping.
+**Labels wait.** The list and the tiles draw no group names and no "Locked N" yet; their order still
+follows the grouping.
 
 **Markers.** The live check and the render tests count what a body shows through these markers:
 `data-bbm-view` on the visible region, and on each building `data-bbm-item`, with `data-bbm-pic`,
 `data-bbm-name` (the whole name's length) and `data-bbm-fact` inside it. No count reads
 `data-bbm-fact` yet; it marks the numbers for the said-once rule to come.
+
+**The tiles.** Each building a picture tile of Tile size, the picture 4 rem smaller and inset 2, the
+cost on a tag at its foot; a locked building's milestone ("MS 4", by the list's rule, `lockedFact`) or
+the locked word on the tag in the look's amber, which reads on the tag because the tag stays dark under
+every interface style, with a padlock that is a raster, since a masked vector is what Cohtml cannot
+draw; a unique carries the game's own mark, sized from base.scss's ratio as a share of the picture's
+box (Tile size moves the picture), and one the city holds the already-built mark, as 0.2.x's Grid drew
+them; locked and built tiles in their silhouette, rasters only. Under the tiles, where 14 rem or more
+are left (`TILE_NAME_LINE_MIN`: two lines of 64 leave 14.25, 68 leaves 6.25) and the Tile name line
+knob is on, a line names the tile the pointer is on, else the armed one, then the numbers a tile does
+not show, its capacity, upkeep and lot (`tileFacts`); the name takes up to 60% of the line and is
+fitted to it from the widths drawn (`FittedName`). Look-alike tags wait for the name planner.
+
+**The cards.** 0.2.4's card, under the headings of the grouping that orders them (`GroupedResults`):
+All under its tabs, a 40 rem picture, the whole name, the lot, cost and capacity, the sorted value's
+column, the unique and built marks. Its root is the region the markers are counted in.
 
 **This changes 0.2.x:** one view, picked in VIEW, drew every menu, and every session opened in Cards
 (0.2.5 kept the pick); each menu now draws the body its pick, Default view or Auto gives it, and Grid

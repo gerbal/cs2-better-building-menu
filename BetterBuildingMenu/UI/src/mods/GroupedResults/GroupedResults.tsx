@@ -14,17 +14,11 @@ import {
 } from "domain/buildingGroups";
 import { resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 import { useLocalization } from "cs2/l10n";
-import { BuildingGrid } from "mods/BuildingGrid/BuildingGrid";
 import { BuildingList } from "mods/BuildingList/BuildingList";
 import styles from "./groupedResults.module.scss";
 
-/** Grid recognises, List scans, Cards weighs. */
-
-export type CatalogViewMode = "grid" | "list" | "cards";
-
 interface GroupedResultsProps {
   entries: BuildingCatalogEntry[];
-  viewMode: CatalogViewMode;
   onPlace: (entry: BuildingCatalogEntry) => void;
   /**
    * Rendered as the last child INSIDE the scroll, below every group. Passed
@@ -183,7 +177,7 @@ const GroupBox = ({
 /**
  * A row of sibling groups, each reserving the TALLEST heading on the line it
  * wrapped onto (headingBands). Tighter per-group reserves would leave
- * neighbouring tiles off a shared baseline, which reads as a broken grid;
+ * neighbouring cards off a shared baseline, which reads as a broken row;
  * padding cannot re-wrap, so the lines it is measured against settle.
  */
 const GroupRow = ({
@@ -272,13 +266,12 @@ const GroupRow = ({
 };
 
 /**
- * Headings over a result set, rendered in whichever mode is active. Zones come
- * through here too, mapped onto catalog entries, so there is one grouped
- * renderer.
+ * The Cards body: 0.2.4's cards under the headings of the grouping that orders
+ * them, All under its tabs. Zones come through here too, mapped onto catalog
+ * entries, so there is one grouped renderer.
  */
 export const GroupedResults = memo(function GroupedResults({
   entries,
-  viewMode,
   onPlace,
   footer,
 }: GroupedResultsProps) {
@@ -303,19 +296,9 @@ export const GroupedResults = memo(function GroupedResults({
         node.label
       );
 
-  const renderLeaf = (leaf: BuildingCatalogEntry[]): JSX.Element => {
-    if (viewMode === "list" || viewMode === "cards") {
-      return (
-        <BuildingList
-          entries={leaf}
-          onPlace={onPlace}
-          variant={viewMode === "cards" ? "cards" : "compact"}
-        />
-      );
-    }
-
-    return <BuildingGrid entries={leaf} onPlace={onPlace} standalone={false} />;
-  };
+  const renderLeaf = (leaf: BuildingCatalogEntry[]): JSX.Element => (
+    <BuildingList entries={leaf} onPlace={onPlace} variant="cards" />
+  );
 
   const renderNodes = (
     nodes: GroupNode<BuildingCatalogEntry>[],
@@ -380,19 +363,8 @@ export const GroupedResults = memo(function GroupedResults({
     return <GroupRow className={styles.groupRow} groups={boxes} />;
   };
 
-  // The ungrouped grid keeps its own scroll; anything else gets one scroll
-  // around the whole result, because a scrollbar per heading makes the set
-  // impossible to read as one thing.
-  if (groups.length === 0 && viewMode === "grid") {
-    return (
-      <BuildingGrid
-        entries={entries}
-        onPlace={onPlace}
-        footer={footer}
-      />
-    );
-  }
-
+  // One scroll around the whole result, because a scrollbar per heading makes
+  // the set impossible to read as one thing.
   return (
     <Scrollable
       className={styles.groupScroll}

@@ -1,6 +1,6 @@
-// Headings over the result set, in every mode. Grouping is a property of the
-// result rather than of a mode, so the grid, the list and the table all
-// render the same tree.
+// The Cards body's headings over the result set. Grouping is a property of the
+// result rather than of a body: the list and the tiles draw the same order,
+// which their label plates will head.
 
 // Sibling groups share a line where they fit. A wrapping row, not a column: a
 // full-width band whatever it holds spends most of a menu's height on headings
@@ -125,9 +125,9 @@
 }
 
 
-// One scroll for the whole grouped result: the grid and the list are each
-// written as the catalog's only flex child, so nested in a group with no free
-// space they collapse. Sizes to content, capped by the catalog's max-height.
+// One scroll for the whole grouped result: the cards are written as the
+// catalog's only flex child, so nested in a group with no free space they
+// would collapse. Sizes to content, capped by the catalog's max-height.
 .groupScroll {
   flex: 0 1 auto;
   min-height: 0;

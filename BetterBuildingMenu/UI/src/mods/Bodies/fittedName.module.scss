@@ -1,0 +1,23 @@
+@use "../../base.scss" as _base;
+
+// A name drawn over its lines, each line one element: tileLabel.ts decides the breaks, where it is
+// testable, and the last line is cut by the rule that keeps a distinguishing suffix.
+.fitted {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.line {
+  display: block;
+  // Belt and braces: wrapTileLabel already fits each line, but if it is ever out by a character the
+  // cut should read as a cut.
+  @include _base.truncate;
+}
+
+// A line wrapTileLabel already cut: its ellipsis is a real character in the string, put where the
+// information is, so the engine must not mark the same line a second time at its right edge.
+.elided {
+  text-overflow: clip;
+}

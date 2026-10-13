@@ -1,0 +1,144 @@
+@use "../../base.scss" as _base;
+@use "../../assetMenuGeometry" as *;
+@use "bodyShell" as *;
+
+// The tiles: picture tiles placed from their slot index, in the look's tokens, and the name line
+// under them. See docs/design-notes.md, "The bodies".
+
+@include body-shell;
+
+// The tiles' window above the name line.
+.body {
+  display: flex;
+  flex-direction: column;
+}
+
+// The body less its name line, or all of it, so the tiles scroll above the line.
+.window {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+// Vanilla's glass, the picture inset 2 on every side.
+.tile {
+  position: absolute;
+  padding: 2rem;
+  box-sizing: border-box;
+  overflow: hidden;
+  // Longhands: Cohtml drops a shorthand fed by var().
+  border-top-left-radius: var(--bbm-radiusTile);
+  border-top-right-radius: var(--bbm-radiusTile);
+  border-bottom-left-radius: var(--bbm-radiusTile);
+  border-bottom-right-radius: var(--bbm-radiusTile);
+  background-color: var(--bbm-tile);
+  pointer-events: auto;
+}
+
+.tile:hover {
+  background-color: var(--bbm-plateHover);
+}
+
+// A building that cannot be placed, locked or a unique the city holds.
+.unplaceable,
+.unplaceable:hover {
+  background-color: var(--bbm-tileLocked);
+}
+
+// The one armed building: solid.
+.armed,
+.armed:hover {
+  background-color: var(--bbm-arm);
+}
+
+// The picture and its mark, sized inline from Tile size: the mark is a share of the box, by
+// base.scss's one ratio, so it sizes from the picture whatever the tile.
+.artwork {
+  position: absolute;
+  left: 2rem;
+  top: 2rem;
+
+  .picture {
+    display: block;
+  }
+
+  .mark {
+    @include _base.unique-mark(100%);
+  }
+}
+
+// 0.2.x's states: a unique shows its mark faintly under the pointer, a unique the city holds always.
+.uniqueMark {
+  opacity: 0;
+}
+
+.tile:hover .uniqueMark {
+  opacity: 0.5;
+}
+
+.builtMark {
+  opacity: 1;
+}
+
+// The silhouette, rasters only: Cohtml re-rasterises a vector for every composite drawn over it and
+// does not survive doing so. Keyed off "false", since Cohtml's selector engine rejects :not().
+.unplaceable[data-vector-thumb="false"] .picture {
+  filter: grayscale(100%) contrast(80%) brightness(0%);
+}
+
+.lockGlyph {
+  position: absolute;
+  right: 3rem;
+  top: 3rem;
+  width: 14rem;
+  height: 14rem;
+}
+
+// The cost, on a tag at the tile's foot.
+.tag {
+  position: absolute;
+  left: 2rem;
+  bottom: 2rem;
+  height: 13rem;
+  padding: 0 3rem;
+  font-size: calc(10rem * var(--fontScale));
+  line-height: 13rem;
+  white-space: nowrap;
+  border-top-left-radius: var(--bbm-tagRadius);
+  border-top-right-radius: var(--bbm-tagRadius);
+  border-bottom-left-radius: var(--bbm-tagRadius);
+  border-bottom-right-radius: var(--bbm-tagRadius);
+  background-color: var(--bbm-tagBg);
+  color: var(--bbm-tagText);
+}
+
+// The tag stays dark under every interface style, so the look's own amber reads on it.
+.milestone {
+  color: var(--bbm-amber);
+}
+
+// Under the tiles: the pointed or armed tile's name, then the numbers a tile does not show.
+.nameLine {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6rem;
+  margin: 0 $body-side-margin;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.lineName {
+  flex: 0 1 auto;
+  font-size: calc(11rem * var(--fontScale));
+  color: var(--bbm-tName);
+}
+
+.lineFacts {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-size: calc(10rem * var(--fontScale));
+  color: var(--bbm-tNum2);
+}
