@@ -112,13 +112,14 @@ namespace BetterBuildingMenu.Systems
 
 			var kept = MenuPicks.WithGroup(Mod.Settings.MenuGroups, _assetMenu.Menu, BuildingCatalogGrouping.IsDimension(groupBy) ? groupBy.Trim() : MenuPicks.None, _menuDefaultGroup);
 
+			// Drawn before it is saved: the save's settings pass then finds the open menu drawing its pick.
+			Apply(_assetMenu.SetGroupBy(groupBy));
+
 			if (_assetMenu.Menu.Length > 0 && !string.Equals(kept, Mod.Settings.MenuGroups, StringComparison.Ordinal))
 			{
 				Mod.Settings.MenuGroups = kept;
 				Mod.Settings.ApplyAndSave();
 			}
-
-			Apply(_assetMenu.SetGroupBy(groupBy));
 		}
 
 		/// <remarks>Same idempotence guard as the group-by above, and kept per menu as the column is.</remarks>

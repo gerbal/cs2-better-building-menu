@@ -1,4 +1,5 @@
 using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Services;
 
 namespace BetterBuildingMenu.Tests
 {
@@ -94,6 +95,85 @@ namespace BetterBuildingMenu.Tests
 			new MenuPick("Roads", "tiles").Write(writer);
 
 			Assert.Equal(new[] { "menu", "value" }, writer.PropertyNames);
+		}
+
+		[Theory]
+		// Reset took the open menu's pick away while it drew it: the menu's own grouping again, now.
+		[InlineData("", "cost", "category", "")]
+		// Options wrote a pick the open menu does not draw.
+		[InlineData("theme", "", "category", "theme")]
+		[InlineData("theme", "cost", "category", "theme")]
+		// A menu with no groups by default: no pick is none, whatever it drew.
+		[InlineData("", "cost", "", "")]
+		public void TheOpenMenuRegroupsWhereItsStoredPickDrawsAnotherGrouping(string stored, string drawn, string menuDefault, string regroup)
+		{
+			Assert.Equal(regroup, MenuPicks.Regroup(stored, drawn, menuDefault));
+		}
+
+		[Theory]
+		// The pick just saved, already drawn: the menu's default stored as no pick draws the same.
+		[InlineData("", "category", "category")]
+		[InlineData("", "", "category")]
+		[InlineData("cost", "cost", "category")]
+		[InlineData("", "", "")]
+		public void TheOpenMenuKeepsItsGroupingWhereItsStoredPickDrawsTheSame(string stored, string drawn, string menuDefault)
+		{
+			Assert.Null(MenuPicks.Regroup(stored, drawn, menuDefault));
+		}
+
+		[Fact]
+		public void AResetOnASmallMenuOfOneTabRegroupsToNoneNotToItsAxis()
+		{
+			// The default is the one the refresh notes: the view's own GroupFor, with the menu drawn as a list
+			// with no groups. A menu drawing a pick returns to none, not to the axis the whole menu groups by.
+			var view = new CatalogView(new BuildingCatalogEntry[0], new BuildingCatalogQuery(UiMenu: "Mixed"));
+			var menuDefault = view.GroupFor(string.Empty, null, drawsNoGroups: true);
+
+			Assert.Equal(BuildingCatalogGrouping.None, menuDefault);
+			Assert.NotEqual(BuildingCatalogGrouping.None, view.GroupFor(string.Empty, null));
+			Assert.Equal(MenuPicks.None, MenuPicks.Regroup(MenuPicks.None, BuildingCatalogGrouping.Development, menuDefault));
+			Assert.Null(MenuPicks.Regroup(MenuPicks.None, BuildingCatalogGrouping.None, menuDefault));
+		}
+
+		[Fact]
+		public void AStoredGroupChangeRegroupsTheOpenMenuAndAPickIsDrawnBeforeItIsSaved()
+		{
+			// Reset clears every pick and saves: the open menu follows at once, not on its next open. A pick
+			// of the player's is drawn before it is saved, so its own save regroups nothing a second time.
+			var system = ModSource.Text("Systems/BuildingMenuUISystem.cs");
+			var applied = ModSource.Member(system, "private void OnSettingsApplied(");
+			var pick = ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.Query.cs"), "private void SetBuildingCatalogGroupBy(");
+
+			Assert.Contains("MenuPicks.Regroup(MenuPicks.Get(Mod.Settings.MenuGroups, _assetMenu.Menu), _assetMenu.Query.GroupBy, _menuDefaultGroup)", applied);
+			Assert.True(
+				pick.IndexOf("Apply(_assetMenu.SetGroupBy(groupBy));", StringComparison.Ordinal) < pick.IndexOf("Mod.Settings.ApplyAndSave();", StringComparison.Ordinal),
+				"the pick is drawn before it is saved");
+		}
+
+		[Fact]
+		public void AResetRefreshesTheOpenMenuOnceAndAClosedMenuNotAtAll()
+		{
+			// The regroup is one Apply, which refreshes once and not at all where nothing changed, and only
+			// an open menu takes it: a closed menu reads its stored pick when it opens.
+			var applied = ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.cs"), "private void OnSettingsApplied(");
+			var start = applied.IndexOf("if (_assetMenuOpen", StringComparison.Ordinal);
+			var block = applied.Substring(start, applied.IndexOf("Apply(_assetMenu.SetGroupBy(regroup));", StringComparison.Ordinal) - start);
+
+			Assert.Contains("MenuPicks.Regroup(", block);
+			Assert.Equal(1, Count(applied, "Apply(_assetMenu.SetGroupBy("));
+			Assert.DoesNotContain("Refresh", block);
+		}
+
+		private static int Count(string text, string needle)
+		{
+			var count = 0;
+
+			for (var at = text.IndexOf(needle, StringComparison.Ordinal); at >= 0; at = text.IndexOf(needle, at + needle.Length, StringComparison.Ordinal))
+			{
+				count++;
+			}
+
+			return count;
 		}
 	}
 }

@@ -755,6 +755,11 @@ initializers read, so the two cannot drift; `SetDefaults` is `SettingsDefaults.A
 - **The control pane.** `ControlPaneShown` starts shown, so a file without the key reads as 0.2.4's
   did, and Reset puts it off, a new player's value: the one setting whose shipped value is not its
   initializer, which `SettingsShapeTests` names.
+- **The open menu follows.** When the stored GROUP picks change under an open menu, as a reset clears
+  them, the menu takes its stored pick at once, its own grouping where there is none
+  (`MenuPicks.Regroup`, from the settings pass), not at its next open. A pick of the player's is
+  drawn before it is saved, so its own save finds the menu drawing it and regroups nothing again: one
+  refresh a pick. A small menu of one tab, which draws no groups by default, regroups to none.
 
 **The button.** Options › Better Building Menu › UI / UX ends with Reset the build menu…, which the
 game draws as a button that asks first (`[SettingsUIButton]`, `[SettingsUIConfirmation]`, the

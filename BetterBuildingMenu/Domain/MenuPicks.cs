@@ -75,5 +75,18 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>A GROUP pick as stored: the menu's default takes the menu's own pick away, so the menu draws it unmarked.</summary>
 		public static string WithGroup(string? stored, string? menu, string? picked, string menuDefault) =>
 			With(stored, menu, string.Equals(picked, menuDefault, StringComparison.Ordinal) ? None : picked);
+
+		/// <summary>
+		/// The grouping an open menu takes when its stored GROUP pick changes under it, as Reset takes it
+		/// away: the stored pick, or <see cref="None"/> for the menu's own; null where the stored pick draws
+		/// what the menu draws already, no pick and the menu's default reading alike.
+		/// </summary>
+		/// <remarks>The menu's default is the one the refresh notes, which a small menu of one tab draws as none.</remarks>
+		public static string? Regroup(string stored, string drawn, string menuDefault)
+		{
+			string Drawn(string pick) => string.IsNullOrEmpty(pick) ? menuDefault : pick;
+
+			return string.Equals(Drawn(stored), Drawn(drawn), StringComparison.Ordinal) ? null : stored;
+		}
 	}
 }

@@ -416,6 +416,14 @@ namespace BetterBuildingMenu.Systems
 			{
 				_publishedMenuGroups = Mod.Settings.MenuGroups;
 				_AssetMenuGroups.Value = MenuPicks.Parse(Mod.Settings.MenuGroups).ToArray();
+
+				// The open menu follows its stored GROUP now, as after Reset; a closed menu reads it as it opens.
+				if (_assetMenuOpen
+					&& _assetMenu.Menu.Length > 0
+					&& MenuPicks.Regroup(MenuPicks.Get(Mod.Settings.MenuGroups, _assetMenu.Menu), _assetMenu.Query.GroupBy, _menuDefaultGroup) is { } regroup)
+				{
+					Apply(_assetMenu.SetGroupBy(regroup));
+				}
 			}
 
 			// Whoever has the menu: with the setting off the watcher sends no deselect, so a menu
