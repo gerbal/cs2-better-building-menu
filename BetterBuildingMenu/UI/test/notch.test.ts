@@ -4,6 +4,7 @@ import { NOTCH_TOP_WIDTH } from "../src/domain/assetMenuLayout.ts";
 import { notchLeft } from "../src/domain/notch.ts";
 import { findLitToolbarButton } from "../src/mods/BuildingMenu/vanillaLayout.ts";
 import { FakeElement } from "./harness/fakeElement.ts";
+import { resetModules, setModule } from "./harness/stubs/cs2-modding";
 
 const globals = globalThis as unknown as Record<string, unknown>;
 /** A rem in a 720-pixel-tall page, as the game's 1280 × 720 UI draws it: a screen is 1,080 rem tall. */
@@ -27,6 +28,13 @@ describe("where the notch sits", () => {
     near(notchLeft({ ...roads, buttonLeftPx: px(500) }), 0);
   });
 
+  it("is held inside the box's span as its rectangle measures it, and its drawn width before that", () => {
+    // A box drawn narrower than its width says: the measured span is the one the notch stays in.
+    near(notchLeft({ ...roads, buttonLeftPx: px(1400), boxWidthPx: px(500) }), 500 - 38.4);
+    // A rectangle not laid out yet measures nothing, so the drawn width holds.
+    near(notchLeft({ ...roads, buttonLeftPx: px(1400), boxWidthPx: 0 }), 706 - 38.4);
+  });
+
   it("is nowhere while a rectangle reads as unmeasured", () => {
     // Cohtml answers a rectangle asked for before layout with zeroes.
     assert.equal(notchLeft({ ...roads, buttonWidthPx: 0 }), null);
@@ -47,6 +55,7 @@ describe("the lit bar button", () => {
 
   after(() => {
     globals.HTMLElement = saved;
+    resetModules();
   });
 
   it("is the button the game lights in the bar's button strip", () => {
@@ -64,5 +73,25 @@ describe("the lit bar button", () => {
 
     const screen = new FakeElement(["vanilla-gameMainScreen"], [new FakeElement(["vanilla-toolbar"])]);
     assert.equal(findLitToolbarButton({ querySelector: () => screen } as unknown as Document), null);
+  });
+
+  it("is nothing, without searching the bar, when the game names no button strip class", () => {
+    const toolbar = new FakeElement(["vanilla-toolbar"]);
+    toolbar.found[LIT] = new FakeElement(["selected"]);
+    let searched = 0;
+    const search = toolbar.querySelector.bind(toolbar);
+    toolbar.querySelector = (selector) => {
+      searched += 1;
+      return search(selector);
+    };
+    const screen = new FakeElement(["vanilla-gameMainScreen"], [toolbar]);
+    setModule("game-ui/game/components/toolbar/top/toolbar-button-strip/toolbar-button-strip.module.scss", "classes", {});
+
+    try {
+      assert.equal(findLitToolbarButton({ querySelector: () => screen } as unknown as Document), null);
+      assert.equal(searched, 0, "the bar is not searched for a class the game does not name");
+    } finally {
+      resetModules();
+    }
   });
 });

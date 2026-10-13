@@ -27,6 +27,8 @@ export interface NotchProps {
 export const Notch = ({ boxRef, boxWidth, offset }: NotchProps) => {
   const selected = useValue(SelectedAssetMenu$);
   const textScale = useTextScale();
+  // A resize moves the bar's buttons, whichever side of the screen changes.
+  const width = typeof window === "undefined" ? 0 : window.innerWidth;
   const height = typeof window === "undefined" ? 0 : window.innerHeight;
   const [left, setLeft] = useState<number | null>(null);
 
@@ -47,7 +49,14 @@ export const Notch = ({ boxRef, boxWidth, offset }: NotchProps) => {
       const boxRect = box.getBoundingClientRect();
       const buttonRect = button.getBoundingClientRect();
 
-      return notchLeft({ buttonLeftPx: buttonRect.left, buttonWidthPx: buttonRect.width, boxLeftPx: boxRect.left, boxWidth, innerHeight: height });
+      return notchLeft({
+        buttonLeftPx: buttonRect.left,
+        buttonWidthPx: buttonRect.width,
+        boxLeftPx: boxRect.left,
+        boxWidth,
+        boxWidthPx: boxRect.width,
+        innerHeight: height,
+      });
     };
 
     // A few frames, keeping the last good reading: rectangles read zero before layout.
@@ -77,7 +86,7 @@ export const Notch = ({ boxRef, boxWidth, offset }: NotchProps) => {
       cancelled = true;
       cancelAnimationFrame(handle);
     };
-  }, [boxRef, boxWidth, offset, selected, textScale, height]);
+  }, [boxRef, boxWidth, offset, selected, textScale, width, height]);
 
   return left === null ? null : <div className={styles.notch} style={{ left: `${left}rem` }} aria-hidden="true" />;
 };

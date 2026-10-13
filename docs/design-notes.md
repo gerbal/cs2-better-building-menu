@@ -609,11 +609,12 @@ Its place is read, not computed. The button is the game's own: inside the bar (`
 the button strip, matched on its stylesheet module's class, then its `button.selected`, which the
 game sets on the button whose menu is open (`findLitToolbarButton`); a prefix match on a hashed class
 name could also match BBM's own. Its rectangle and the box's are read over ten frames whenever the
-game's selected menu, the text scale, the screen's height, or the box's width or place changes (the
-bar relights its button a frame or two after the binding moves, and a rectangle reads zero before
-layout), keeping the last good reading, and turned into rem by the screen's 1,080 rem height
-(`notchLeft`). Centred on the button, the notch is held inside the box's ends, so at the first step a
-button right of the box (Communications, Landscaping) puts it at the box's right end. With no lit
+game's selected menu, the text scale, the screen's width or height, or the box's width or place
+changes (the bar relights its button a frame or two after the binding moves, and a rectangle reads
+zero before layout), keeping the last good reading, and turned into rem by the screen's 1,080 rem
+height (`notchLeft`). Centred on the button, the notch is held inside the box's ends, as the box's
+rectangle measures them (its drawn width until the rectangle reads above zero), so at the first step
+a button right of the box (Communications, Landscaping) puts it at the box's right end. With no lit
 button found it draws nothing. A look that sets `notchLine` draws its line with that look.
 
 ## The release marker and the settings version
