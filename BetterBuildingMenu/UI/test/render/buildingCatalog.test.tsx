@@ -59,7 +59,7 @@ describe("the catalog container", () => {
   }
 
   it("grows a small menu's list to hold its Locked label too, its slots no taller than the body", () => {
-    // Water's 16 in its tab, the locked half after D24's label: 17 slots, more than 4 grown lines hold.
+    // Water's 16 in its tab, the locked half after its Locked label: 17 slots, more than 4 grown lines hold.
     const menu = "Water & Sewage";
     showBody("list", menu);
     setBinding("BetterBuildingMenu", "MenuShares", [{ menu, rows: 16, costOrCapacity: 16, capacity: 16, locked: 8 }]);
