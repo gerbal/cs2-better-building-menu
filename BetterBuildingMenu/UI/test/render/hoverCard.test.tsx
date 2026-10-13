@@ -138,6 +138,17 @@ describe("the hover card", () => {
     assert.deepEqual([...new Set(queried)], ['[data-catalog-entry="1"]']);
   });
 
+  it("draws the key number's glyph in Standard and none in Plates, whose words say the unit", () => {
+    mount();
+    point();
+    wait(150);
+    assert.match(says(), /person\.svg/);
+
+    act(() => setBinding("BetterBuildingMenu", "AssetMenuLook", "plates"));
+    assert.doesNotMatch(says(), /person\.svg/);
+    assert.match(says(), /20 patients/);
+  });
+
   it("waits the Hover delay knob's time", () => {
     setBinding("BetterBuildingMenu", "AssetMenuTuning", { developerMode: true, interfaceStyles: true, tabNames: true, hoverDelay: 400 });
     mount();

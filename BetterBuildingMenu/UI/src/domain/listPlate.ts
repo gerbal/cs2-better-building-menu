@@ -8,7 +8,7 @@ import type { AssetMenuMetric } from "./assetMenuLayout";
 import { LARGE_PICTURE, type BodyGrid } from "./bodyGeometry";
 import type { BuildingCatalogEntry, SharedValue } from "./buildingCatalog";
 import { isEntryLocked, lockedFact } from "./buildingLockState";
-import { costText, keyFigure, sortedText, sortsByValue, type KeyKind, type UnitGlyph } from "./rowNumbers";
+import { costText, GLYPH_MARKS, keyFigure, sortedText, sortsByValue, type KeyKind, type UnitGlyph, type UnitMarks } from "./rowNumbers";
 import { holdsBack, missingCost, missingFigure, NOTHING_SAID } from "./saidOnce";
 import { textWidth } from "./textWidth";
 
@@ -27,9 +27,9 @@ export interface PlateNumbers {
 
 /**
  * The plate's numbers. Under a sort by a number the second is the value sorted by, with its unit, so
- * the order reads down the column; otherwise the view's key number, by its glyph. A value the readout
- * said once is left blank, and a row with no value of a stated kind says "–": a blank cell only ever
- * means the readout's value.
+ * the order reads down the column; otherwise the view's key number, by its glyph, or in a look that
+ * writes units in words with its unit. A value the readout said once is left blank, and a row with no
+ * value of a stated kind says "–": a blank cell only ever means the readout's value.
  */
 export function plateNumbers(
   entry: BuildingCatalogEntry,
@@ -39,6 +39,7 @@ export function plateNumbers(
   achievedMilestone: number,
   keyKind: KeyKind = "capacity",
   said: readonly SharedValue[] = NOTHING_SAID,
+  marks: UnitMarks = GLYPH_MARKS,
 ): PlateNumbers {
   const locked = isEntryLocked(entry);
   const first = locked ? lockedFact(entry, lockedWord, achievedMilestone) : holdsBack(entry, said, "cost") ? "" : costText(entry, separators) ?? missingCost(said);
@@ -47,8 +48,8 @@ export function plateNumbers(
     return { first, second: sortedText(entry, sortedMetric, separators), glyph: null, locked };
   }
 
-  const key = holdsBack(entry, said, keyKind, separators) ? null : keyFigure(entry, keyKind, separators) ?? missingFigure(entry, said, keyKind);
-  return { first, second: key?.text ?? null, glyph: key?.glyph ?? null, locked };
+  const key = holdsBack(entry, said, keyKind, separators) ? null : keyFigure(entry, keyKind, separators, marks) ?? missingFigure(entry, said, keyKind);
+  return { first, second: key?.text ?? null, glyph: marks.mode === "word" ? null : key?.glyph ?? null, locked };
 }
 
 /**
@@ -72,7 +73,7 @@ export function oneLineNumber(entry: BuildingCatalogEntry, numbers: PlateNumbers
   return { first: numbers.second ?? "", second: null, glyph: numbers.second === null ? null : numbers.glyph, locked: false, firstIsKey: true };
 }
 
-/** A plate's numbers as it draws them: both, or on a one-line plate its one. */
+/** A plate's numbers as it draws them: both, or on a one-line plate its one; their units as the look marks them. */
 export function drawnPlateNumbers(
   entry: BuildingCatalogEntry,
   grid: BodyGrid,
@@ -82,8 +83,9 @@ export function drawnPlateNumbers(
   achievedMilestone: number,
   keyKind: KeyKind,
   said: readonly SharedValue[],
+  marks: UnitMarks = GLYPH_MARKS,
 ): PlateNumbers {
-  const both = plateNumbers(entry, sortedMetric, separators, lockedWord, achievedMilestone, keyKind, said);
+  const both = plateNumbers(entry, sortedMetric, separators, lockedWord, achievedMilestone, keyKind, said, marks);
   // A one-line plate is one number tall: two would be cut at its top and foot.
   return grid.form === "plate1" ? oneLineNumber(entry, both, sortedMetric, said) : both;
 }

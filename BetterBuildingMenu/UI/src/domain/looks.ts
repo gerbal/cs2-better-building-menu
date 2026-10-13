@@ -4,6 +4,7 @@
  * docs/design-notes.md, "The looks" and "The looks' tokens".
  */
 import type { CSSProperties } from "react";
+import type { UnitMode } from "./rowNumbers";
 
 /** A look's id, as the settings store it. */
 export type LookId = "standard" | "glass" | "plates" | "line" | "cards";
@@ -22,6 +23,8 @@ export interface Look {
   name: string;
   /** Each panel's own alpha at the game's default transparency, as its class declares them. */
   alphas: Readonly<Record<Surface, number>>;
+  /** How its key numbers say their unit: Standard by a glyph, Plates in words ("80 km/h"). */
+  units: UnitMode;
 }
 
 /** A look not yet finished: named so the settings keep its id, never drawn. */
@@ -32,9 +35,9 @@ export interface UnfinishedLook {
 
 /** Every look the settings name, in the Look row's order; a look joins the row once its checks pass. C# keeps the same. */
 export const LOOKS: readonly (Look | UnfinishedLook)[] = [
-  { id: "standard", released: true, nameKey: "Tooltip.LABEL[BetterBuildingMenu.LookStandard]", name: "Standard", alphas: STANDARD_SURFACE_ALPHAS },
+  { id: "standard", released: true, nameKey: "Tooltip.LABEL[BetterBuildingMenu.LookStandard]", name: "Standard", alphas: STANDARD_SURFACE_ALPHAS, units: "glyph" },
   { id: "glass", released: false },
-  { id: "plates", released: true, nameKey: "Tooltip.LABEL[BetterBuildingMenu.LookPlates]", name: "Plates", alphas: STANDARD_SURFACE_ALPHAS },
+  { id: "plates", released: true, nameKey: "Tooltip.LABEL[BetterBuildingMenu.LookPlates]", name: "Plates", alphas: STANDARD_SURFACE_ALPHAS, units: "word" },
   { id: "line", released: false },
   { id: "cards", released: false },
 ];

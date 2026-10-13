@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { FALLBACK_SEPARATORS, formatCapacity, formatLotDimensions, UnitSystem } from "../src/domain/assetMenuMetricFormat";
+import { FALLBACK_SEPARATORS, formatCapacity, formatLotDimensions, groupDigits, UnitSystem } from "../src/domain/assetMenuMetricFormat";
 import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog";
-import { costText, keepsUnit, keyFigure, nameHoldsLot, sortedText } from "../src/domain/rowNumbers";
+import { costText, keepsUnit, keyFigure, nameHoldsLot, sortedText, type UnitMarks } from "../src/domain/rowNumbers";
 
 const row = (over: Partial<BuildingCatalogEntry> = {}): BuildingCatalogEntry => ({
   id: 1, name: "Building", category: "ServiceBuildings", subCategory: "ServiceBuildings_Health", buildingType: "Hospital",
@@ -37,6 +37,27 @@ describe("a row's key number", () => {
     assert.deepEqual(keyFigure(row(), "workers", FALLBACK_SEPARATORS), { text: "20", glyph: "case" });
     assert.deepEqual(keyFigure(row(), "lot", FALLBACK_SEPARATORS), { text: formatLotDimensions(4, 6), glyph: "grid" });
     assert.equal(keyFigure(row({ name: "Small Underground Parking Lot 4x6", lotWidth: 4, lotDepth: 6 }), "lot", FALLBACK_SEPARATORS), null);
+  });
+
+  it("says its unit in words in a look that writes them, with no glyph: 80 km/h, 400 patients, 20 jobs, the lot's two sides", () => {
+    const words: UnitMarks = { mode: "word", workersUnit: "jobs", capacityUnit: "capacity" };
+    const plant = row({ subCategory: "ServiceBuildings_Electricity", buildingType: "PowerPlant", capacity: 245_000 });
+
+    assert.deepEqual(keyFigure(row({ speedLimit: 80 }), "speed", FALLBACK_SEPARATORS, words), { text: "80 km/h", glyph: null });
+    assert.deepEqual(keyFigure(row({ speedLimit: 100 }), "speed", imperial, words), { text: "62 mph", glyph: null });
+    assert.deepEqual(keyFigure(row(), "capacity", FALLBACK_SEPARATORS, words), { text: "400 patients", glyph: null });
+    assert.deepEqual(keyFigure(plant, "capacity", FALLBACK_SEPARATORS, words), keyFigure(plant, "capacity", FALLBACK_SEPARATORS));
+    assert.deepEqual(keyFigure(row(), "workers", FALLBACK_SEPARATORS, words), { text: "20 jobs", glyph: null });
+    assert.deepEqual(keyFigure(row(), "lot", FALLBACK_SEPARATORS, words), { text: formatLotDimensions(4, 6), glyph: null });
+    assert.equal(keyFigure(row({ speedLimit: null }), "speed", FALLBACK_SEPARATORS, words), null);
+  });
+
+  it("never prints a bare number in words: a count the game gives no unit says the capacity word", () => {
+    const words: UnitMarks = { mode: "word", workersUnit: "jobs", capacityUnit: "capacity" };
+    const crematorium = row({ subCategory: "ServiceBuildings_Deathcare", buildingType: "DeathcareFacility", capacity: 1_500 });
+
+    assert.deepEqual(keyFigure(crematorium, "capacity", FALLBACK_SEPARATORS), { text: groupDigits(1_500, FALLBACK_SEPARATORS), glyph: "person" });
+    assert.deepEqual(keyFigure(crematorium, "capacity", FALLBACK_SEPARATORS, words), { text: `${groupDigits(1_500, FALLBACK_SEPARATORS)} capacity`, glyph: null });
   });
 
   it("is nothing for a row without the kind's value, or a view whose rows show none", () => {

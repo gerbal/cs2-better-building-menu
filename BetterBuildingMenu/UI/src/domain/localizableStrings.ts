@@ -43,6 +43,7 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   { key: key("Households"), english: "Households", source: "BuildingHoverCard", plumbed: true },
   { key: key("HouseholdsUnit"), english: "households", source: "BuildingHoverCard", plumbed: true },
   { key: key("WorkersUnit"), english: "jobs", source: "BuildingHoverCard", plumbed: true },
+  { key: key("CapacityUnit"), english: "capacity", source: "useBodyWords", plumbed: true },
   { key: key("UnlocksAtMilestone"), english: "Unlocks at milestone {0}", source: "HoverCard", plumbed: true },
   // Vanilla's menus close from an X in the top-right corner; the asset menu stands
   // in for one, so it offers the same way out.

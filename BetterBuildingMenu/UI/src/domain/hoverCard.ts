@@ -9,7 +9,7 @@ import type { BuildingCatalogEntry } from "./buildingCatalog";
 import { isEntryLocked, lockedFact } from "./buildingLockState";
 import type { HoverCardLabels } from "./hoverCardLines";
 import { planName } from "./namePlan";
-import { keyFigure, nameHoldsLot, type KeyKind, type UnitGlyph } from "./rowNumbers";
+import { keyFigure, nameHoldsLot, type KeyKind, type UnitGlyph, type UnitMode } from "./rowNumbers";
 import { textWidth } from "./textWidth";
 
 /** The hover card's three forms, as the Hover card row stores them. */
@@ -44,9 +44,9 @@ export interface PointerCardWords {
 
 const present = (value: number | null | undefined): value is number => typeof value === "number" && Number.isFinite(value) && value !== 0;
 
-/** The key number's line: the kind the view's rows show second, under the hover card's word, with its unit. */
-function keyRow(entry: BuildingCatalogEntry, kind: KeyKind, separators: NumberSeparators, labels: HoverCardLabels): CardRow | null {
-  const glyph = keyFigure(entry, kind, separators)?.glyph ?? null;
+/** The key number's line: the kind the view's rows show second, under the hover card's word, with its unit; its glyph only in a look that draws them. */
+function keyRow(entry: BuildingCatalogEntry, kind: KeyKind, separators: NumberSeparators, labels: HoverCardLabels, units: UnitMode): CardRow | null {
+  const glyph = units === "word" ? null : keyFigure(entry, kind, separators)?.glyph ?? null;
 
   switch (kind) {
     case "capacity":
@@ -63,15 +63,15 @@ function keyRow(entry: BuildingCatalogEntry, kind: KeyKind, separators: NumberSe
   }
 }
 
-/** The card's lines for a building, in the view whose key kind is `kind`. */
-export function pointerCardText(entry: BuildingCatalogEntry, kind: KeyKind, separators: NumberSeparators, words: PointerCardWords, achievedMilestone: number): PointerCardText {
+/** The card's lines for a building, in the view whose key kind is `kind`, its key number's glyph as the look marks units. */
+export function pointerCardText(entry: BuildingCatalogEntry, kind: KeyKind, separators: NumberSeparators, words: PointerCardWords, achievedMilestone: number, units: UnitMode = "glyph"): PointerCardText {
   const { labels } = words;
   const rows: (CardRow | null)[] = [
     typeof entry.constructionCost === "number"
       ? { key: "cost", label: labels.cost, value: formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance), glyph: null }
       : null,
     present(entry.upkeep) ? { key: "upkeep", label: labels.upkeep, value: formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance), glyph: null } : null,
-    keyRow(entry, kind, separators, labels),
+    keyRow(entry, kind, separators, labels, units),
     // Read off the name the card draws, the prefab's where the building has none.
     hasFootprint(entry.lotWidth, entry.lotDepth) && !nameHoldsLot(entry.name || entry.prefabName || "", entry.lotWidth, entry.lotDepth)
       ? { key: "lot", label: labels.lot, value: formatLotDimensions(entry.lotWidth, entry.lotDepth), glyph: null }

@@ -36,6 +36,7 @@ import {
   send,
 } from "mods/bindings";
 import { UNIT_GLYPHS } from "mods/Bodies/unitGlyphs";
+import { useUnitMarks } from "mods/Bodies/useBodyWords";
 import { useStatusLine } from "mods/HoverCard/HoverCard";
 import { useAssetMenuView } from "mods/useAssetMenuView";
 import { useMenuBody } from "mods/useMenuBody";
@@ -156,12 +157,14 @@ export const TabRow = ({ width }: { width: number }) => {
   const shown = useMemo(() => shownKinds(body, bodyForm, sortedMetric, keyKind), [body, bodyForm, sortedMetric, keyKind]);
   const stated = useMemo(() => (facts === undefined || indexing ? NOTHING_SAID : statedValues(facts, shown)), [facts, indexing, shown]);
   const items = page?.items;
+  // Standard says a unit by its glyph; Plates writes it after each value, as its rows do.
+  const marks = useUnitMarks();
   const legends = useMemo(
     () => LEGEND_FORMS.reduce<Partial<Record<LegendForm, LegendPart[]>>>(
-      (all, legendForm) => ({ ...all, [legendForm]: legendParts(stated, keyKind, shown, items ?? [], separators, words, legendForm) }),
+      (all, legendForm) => ({ ...all, [legendForm]: legendParts(stated, keyKind, shown, items ?? [], separators, words, legendForm, marks) }),
       {}
     ),
-    [stated, keyKind, shown, items, separators, words]
+    [stated, keyKind, shown, items, separators, words, marks]
   );
   // Named above the first step where every tab fits so. See docs/design-notes.md, "The tab row".
   const form = tabForm(row.items, { place, range, legends }, width, textScale, format, namesAllowed);

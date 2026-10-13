@@ -292,6 +292,7 @@
   "Tooltip.LABEL[BetterBuildingMenu.Households]": "Households",
   "Tooltip.LABEL[BetterBuildingMenu.HouseholdsUnit]": "households",
   "Tooltip.LABEL[BetterBuildingMenu.WorkersUnit]": "jobs",
+  "Tooltip.LABEL[BetterBuildingMenu.CapacityUnit]": "capacity",
   "Tooltip.LABEL[BetterBuildingMenu.UnlocksAtMilestone]": "Unlocks at milestone {0}",
   "Requirement.OBJECT_BUILT": "build a {0}",
   "Tooltip.LABEL[BetterBuildingMenu.ZoneHeight]": "Height",

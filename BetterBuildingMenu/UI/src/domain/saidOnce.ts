@@ -9,7 +9,7 @@ import type { AssetMenuMetric } from "./assetMenuLayout";
 import type { ListForm } from "./bodyGeometry";
 import type { BodyKind } from "./bodyChoice";
 import type { BuildingCatalogEntry, SharedValue, ViewFacts } from "./buildingCatalog";
-import { capacityText, costText, keyFigure, lotText, sortsByValue, type KeyFigure, type KeyKind, type UnitGlyph } from "./rowNumbers";
+import { capacityText, costText, GLYPH_MARKS, keyFigure, lotText, sortsByValue, type KeyFigure, type KeyKind, type UnitGlyph, type UnitMarks } from "./rowNumbers";
 
 /** Nothing said: every row prints every value it shows. */
 export const NOTHING_SAID: readonly SharedValue[] = [];
@@ -125,14 +125,18 @@ const sayer = (value: SharedValue, entries: readonly BuildingCatalogEntry[], sep
     capacity: value.value,
   } as BuildingCatalogEntry);
 
-/** A value as the readout says it: with its unit, or its digits alone, which the glyph and the rows' own say. */
-function valueText(value: SharedValue, entries: readonly BuildingCatalogEntry[], separators: NumberSeparators, words: LegendWords, bare: boolean): string {
+/**
+ * A value as the readout says it: with its unit, or its digits alone, which the glyph and the rows' own
+ * say; in words a capacity as its rows say it.
+ */
+function valueText(value: SharedValue, entries: readonly BuildingCatalogEntry[], separators: NumberSeparators, words: LegendWords, bare: boolean, marks: UnitMarks): string {
   const row = sayer(value, entries, separators);
 
   switch (value.kind) {
     case "speed":
       return bare ? speedNumber(value.value, separators) : formatSpeedLimit(value.value, separators);
     case "capacity": {
+      if (marks.mode === "word") return keyFigure(row, "capacity", separators, marks)?.text ?? groupDigits(value.value, separators);
       const key = keyFigure(row, "capacity", separators);
       // A measure keeps its unit even bare: only a count's unit is the glyph's to say.
       return bare && key !== null ? key.text : capacityText(row, value.value, separators) ?? groupDigits(value.value, separators);
@@ -166,8 +170,9 @@ function glyphOf(kind: ShownKind, value: SharedValue | null, entries: readonly B
 
 /**
  * The legend in a form: each value said once, by its glyph ("100 km/h unless shown", "others 100 km/h",
- * "others 100"); with none said, the key kind's glyph and name, where the body shows it. Empty in the
- * form "none", and where there is nothing to say.
+ * "others 100"); with none said, the key kind's glyph and name, where the body shows it. In a look that
+ * writes units in words, each value keeps its unit in every form and draws no glyph, and no kind is
+ * named alone: every row says its own unit. Empty in the form "none", and where there is nothing to say.
  */
 export function legendParts(
   stated: readonly SharedValue[],
@@ -177,17 +182,19 @@ export function legendParts(
   separators: NumberSeparators,
   words: LegendWords,
   form: LegendForm,
+  marks: UnitMarks = GLYPH_MARKS,
 ): LegendPart[] {
   if (form === "none") return [];
+  const inWords = marks.mode === "word";
 
   if (stated.length === 0) {
-    return keyKind !== "" && shown.includes(keyKind) ? [{ glyph: glyphOf(keyKind, null, entries, separators), text: words.kinds[keyKind] }] : [];
+    return !inWords && keyKind !== "" && shown.includes(keyKind) ? [{ glyph: glyphOf(keyKind, null, entries, separators), text: words.kinds[keyKind] }] : [];
   }
 
   return stated.map((value) => {
-    const text = valueText(value, entries, separators, words, form === "bare");
+    const text = valueText(value, entries, separators, words, form === "bare" && !inWords, marks);
     return {
-      glyph: glyphOf(value.kind, value, entries, separators),
+      glyph: inWords ? null : glyphOf(value.kind, value, entries, separators),
       text: (form === "full" ? words.unlessShown : words.others).replace("{0}", text),
     };
   });

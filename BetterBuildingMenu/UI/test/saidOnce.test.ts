@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { FALLBACK_SEPARATORS, formatCapacity, formatCostPerCell, formatLotDimensions } from "../src/domain/assetMenuMetricFormat";
+import { FALLBACK_SEPARATORS, formatCapacity, formatCostPerCell, formatLotDimensions, groupDigits } from "../src/domain/assetMenuMetricFormat";
 import type { BuildingCatalogEntry, SharedValue } from "../src/domain/buildingCatalog";
 import { oneLineNumber, plateNumbers } from "../src/domain/listPlate";
 import { holdsBack, legendParts, shownKinds, statedValues, type LegendWords } from "../src/domain/saidOnce";
@@ -167,6 +167,22 @@ describe("the readout's legend", () => {
       assert.equal(printed(one) === printed(other), alike, `${role} ${one} ${other}: ${printed(one)} ${printed(other)}`);
       assert.equal(holdsBack(row({ capacity: other, buildingType: role, category: "Services", subCategory: "Services" }), [said], "capacity"), alike, `${role} ${one} ${other}`);
     }
+  });
+
+  it("in a look that writes units in words, says each value with its unit and no glyph, even short of room, and names no kind alone", () => {
+    const marks = { mode: "word", workersUnit: "jobs", capacityUnit: "capacity" } as const;
+    const say = (form: "full" | "short" | "bare") => legendParts([speed], "speed", ["cost", "speed"], window, FALLBACK_SEPARATORS, words, form, marks);
+    const stored: SharedValue = { kind: "capacity", value: 1_500, depth: 0, perCell: false, unit: "DeathcareFacility" };
+
+    assert.deepEqual(say("full"), [{ glyph: null, text: "100 km/h unless shown" }]);
+    assert.deepEqual(say("short"), [{ glyph: null, text: "others 100 km/h" }]);
+    assert.deepEqual(say("bare"), [{ glyph: null, text: "others 100 km/h" }]);
+    assert.deepEqual(legendParts([], "speed", ["cost", "speed"], window, FALLBACK_SEPARATORS, words, "full", marks), []);
+    // A count the game gives no unit, said as its rows say it.
+    assert.deepEqual(
+      legendParts([stored], "capacity", ["cost", "capacity"], [], FALLBACK_SEPARATORS, words, "bare", marks),
+      [{ glyph: null, text: `others ${groupDigits(1_500, FALLBACK_SEPARATORS)} capacity` }],
+    );
   });
 
   it("names the key kind by its glyph where nothing is said once, and nothing where the body shows no key number", () => {

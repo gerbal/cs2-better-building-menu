@@ -1,8 +1,12 @@
+import { useValue } from "cs2/api";
 import { useLocalization } from "cs2/l10n";
 import { useMemo } from "react";
 
 import { getNumberSeparators, type NumberSeparators } from "domain/assetMenuMetricFormat";
+import { lookOf } from "domain/looks";
+import { GLYPH_MARKS, type UnitMarks } from "domain/rowNumbers";
 import { useUnitSystem } from "domain/unitSettings";
+import { AssetMenuLook$ } from "mods/bindings";
 
 /** Why a building cannot be placed, in words; the words every body's buildings say it with. */
 export interface StateWords {
@@ -29,4 +33,21 @@ export function useNumberSeparators(): NumberSeparators {
   const unitSystem = useUnitSystem();
 
   return useMemo(() => getNumberSeparators(translate, unitSystem), [translate, unitSystem]);
+}
+
+/** How the look marks a key number's unit, read once per body: Standard's glyphs, or Plates' words. */
+export function useUnitMarks(): UnitMarks {
+  const { translate } = useLocalization();
+  const units = lookOf(useValue(AssetMenuLook$)).units;
+
+  return useMemo(
+    () => (units === "word"
+      ? {
+          mode: "word",
+          workersUnit: translate("Tooltip.LABEL[BetterBuildingMenu.WorkersUnit]", "jobs") ?? "jobs",
+          capacityUnit: translate("Tooltip.LABEL[BetterBuildingMenu.CapacityUnit]", "capacity") ?? "capacity",
+        }
+      : GLYPH_MARKS),
+    [units, translate]
+  );
 }

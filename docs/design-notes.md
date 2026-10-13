@@ -1453,6 +1453,13 @@ it is blank only where the readout said both (`oneLineNumber`).
 **This changes 0.2.x:** every row printed every number; where most of a view's open rows share one,
 the readout now says it once and only the rows that differ print it.
 
+**Units in words.** A look marks a key number's unit one way (`Look.units`): Standard by its glyph,
+Plates in words after the number, "80 km/h", "400 patients", "20 jobs", a count the game gives no unit
+"1,500 capacity", a lot by its two sides (`UnitMarks`, read once per body by `useUnitMarks`), so no row
+prints a bare number. In words a plate draws no glyph; the readout says each value as its rows do, in
+every form, never its digits alone, and names no kind alone, since every row says its own unit; and the
+hover card draws no glyph by its key number, whose line already says it.
+
 ## Names
 
 **The distinguishing word.** Each row of a page carries the word that tells it apart from its nearest

@@ -26,6 +26,13 @@ describe("what the hover card beside the pointer says", () => {
     assert.equal(text.unlock, null);
   });
 
+  it("draws no glyph by the key number in a look that writes units in words, its value the same", () => {
+    const text = pointerCardText(building({}), "capacity", separators, words, 0, "word");
+
+    assert.deepEqual(text.rows.map((row) => row.glyph), [null, null, null, null]);
+    assert.equal(text.rows[2].value, lines(building({})).rows[2].value);
+  });
+
   it("reads a road's money per kilometre, as the game's own panels state it, and its speed in a view keyed by speed", () => {
     const road = building({ name: "Four-Lane Road", category: "Networks", constructionCost: 5_500, upkeep: 120, costIsPerDistance: true, speedLimit: 100, capacity: null, lotWidth: 0, lotDepth: 0 });
     const text = lines(road, "speed");

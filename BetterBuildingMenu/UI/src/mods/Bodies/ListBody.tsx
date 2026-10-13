@@ -15,7 +15,7 @@ import type { BuildingCatalogEntry, CatalogSection, SharedValue } from "domain/b
 import { entryStateWord, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { drawnPlateNumbers, NAME_FONT, plateNameRoom } from "domain/listPlate";
 import { wordsApart, type ApartHints } from "domain/platesApart";
-import type { KeyKind } from "domain/rowNumbers";
+import type { KeyKind, UnitMarks } from "domain/rowNumbers";
 import { sortedMetricFor } from "domain/sortedMetric";
 import { useTextScale } from "domain/textScaleSetting";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
@@ -29,7 +29,7 @@ import { PlannedName } from "./PlannedName";
 import { UniqueMark } from "./UniqueMark";
 import { UNIT_GLYPHS } from "./unitGlyphs";
 import { useBodyCells, useNearField } from "./useBodyCells";
-import { useNumberSeparators, useStateWords, type StateWords } from "./useBodyWords";
+import { useNumberSeparators, useStateWords, useUnitMarks, type StateWords } from "./useBodyWords";
 
 interface PlateProps {
   entry: BuildingCatalogEntry;
@@ -43,6 +43,8 @@ interface PlateProps {
   keyKind: KeyKind;
   /** The values the readout says once, which this plate leaves blank where it holds them. */
   said: readonly SharedValue[];
+  /** How the look marks the key number's unit. */
+  marks: UnitMarks;
   /** The query the page answers, whose words the name keeps; "" without one. */
   typed: string;
   /** Whether the typed words draw dimmed. */
@@ -61,9 +63,9 @@ interface PlateProps {
  * Enter's target. The live check and the render tests count what a body shows through the data-bbm
  * markers.
  */
-const Plate = memo(function Plate({ entry, grid, slot, armed, enter, sortedMetric, keyKind, said, typed, dim, textScale, separators, stateWords, achievedMilestone, apart, onPlace }: PlateProps) {
+const Plate = memo(function Plate({ entry, grid, slot, armed, enter, sortedMetric, keyKind, said, marks, typed, dim, textScale, separators, stateWords, achievedMilestone, apart, onPlace }: PlateProps) {
   const name = entry.name || entry.prefabName;
-  const numbers = drawnPlateNumbers(entry, grid, sortedMetric, separators, stateWords.locked, achievedMilestone, keyKind, said);
+  const numbers = drawnPlateNumbers(entry, grid, sortedMetric, separators, stateWords.locked, achievedMilestone, keyKind, said, marks);
   const { left, top } = slotPosition(grid, slot);
   const word = entryStateWord(entry, stateWords.locked, stateWords.built);
   // A cell that goes from under the pointer sends no leave: it takes its own building away as it goes.
@@ -178,6 +180,7 @@ export interface ListBodyProps {
 export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SECTIONS, offset = 0, typed = "", keyKind = "capacity", enterId, onPlace, footer }: ListBodyProps) {
   const separators = useNumberSeparators();
   const stateWords = useStateWords();
+  const marks = useUnitMarks();
   const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
   const armedId = useValue(ActivePrefabId$);
   // "MS n" only for a milestone ahead of the city: past it, only the development tree holds a building back.
@@ -200,11 +203,11 @@ export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SE
     name: entry.name || entry.prefabName,
     distinct: entry.distinctWord ?? "",
     room: {
-      width: plateNameRoom(grid, drawnPlateNumbers(entry, grid, sortedMetric, separators, stateWords.locked, achievedMilestone, keyKind, said), entry.id === enterId, textScale),
+      width: plateNameRoom(grid, drawnPlateNumbers(entry, grid, sortedMetric, separators, stateWords.locked, achievedMilestone, keyKind, said, marks), entry.id === enterId, textScale),
       lines: grid.nameLines,
       font: NAME_FONT * textScale,
     },
-  })), typed.split(/\s+/)), [entries, grid, sortedMetric, separators, stateWords.locked, achievedMilestone, keyKind, said, enterId, textScale, typed]);
+  })), typed.split(/\s+/)), [entries, grid, sortedMetric, separators, stateWords.locked, achievedMilestone, keyKind, said, marks, enterId, textScale, typed]);
 
   return (
     <div className={styles.body} data-bbm-view="list">
@@ -223,6 +226,7 @@ export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SE
               sortedMetric={sortedMetric}
               keyKind={keyKind}
               said={said}
+              marks={marks}
               typed={typed}
               dim={dim}
               textScale={textScale}

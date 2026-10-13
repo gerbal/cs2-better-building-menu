@@ -113,6 +113,15 @@ describe("the list", () => {
     assert.match(html, /<img class="unitGlyph" style="mask-image:url\(gauge\.svg\)"[^>]*><span class="second">100<\/span>/);
   });
 
+  it("says the key number with its unit and draws no glyph in Plates, which writes units in words", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuLook", "plates");
+    const road = rows(1, () => ({ constructionCost: 5500, costIsPerDistance: true, capacity: null, speedLimit: 80 } as Partial<BuildingCatalogEntry>));
+    const html = renderHtml(<ListBody entries={road} grid={grid()} keyKind="speed" enterId={null} onPlace={() => undefined} />);
+
+    assert.match(html, /<span class="secondLine"><span class="second">80 km\/h<\/span>/);
+    assert.doesNotMatch(html, /unitGlyph/);
+  });
+
   it("leaves blank only the numbers the readout says once, and prints every other", () => {
     setReadoutSaid([{ kind: "speed", value: 100, depth: 0 }]);
     const roads = rows(2, (id) => ({ constructionCost: 5500, costIsPerDistance: true, capacity: null, speedLimit: id === 1 ? 100 : 80 } as Partial<BuildingCatalogEntry>));

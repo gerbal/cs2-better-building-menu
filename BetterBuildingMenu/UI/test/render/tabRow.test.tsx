@@ -290,6 +290,17 @@ describe("the readout", () => {
     assert.deepEqual(getAssetMenuView().said, []);
   });
 
+  it("says a value once with its unit and no glyph in Plates, and names no kind alone where nothing is said once", () => {
+    set("AssetMenuLook", "plates");
+    set("BuildingCatalog", { items: [{ id: 1, speedLimit: 100 }], totalCount: 34, facts: { sharedValues: [{ kind: "speed", value: 100, depth: 0 }], keyKind: "speed" } });
+    const said = render();
+
+    assert.match(said, /<span class="saidText">100 km\/h unless shown<\/span>/);
+    assert.doesNotMatch(said, /saidGlyph/);
+    set("BuildingCatalog", { items: [{ id: 1, speedLimit: 100 }], totalCount: 1, facts: { sharedValues: [], keyKind: "speed" } });
+    assert.doesNotMatch(render(), /class="said"/);
+  });
+
   it("names the key kind by its glyph where nothing is said once, and says nothing of a value the cards do not show", () => {
     set("BuildingCatalog", { items: [{ id: 1, speedLimit: 100 }], totalCount: 1, facts: { sharedValues: [], keyKind: "speed" } });
     assert.match(render(), /<span class="saidText">Speed limit<\/span>/);

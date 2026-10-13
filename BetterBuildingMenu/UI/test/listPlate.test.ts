@@ -99,6 +99,19 @@ describe("a list plate's numbers", () => {
   });
 });
 
+describe("a list plate's numbers in words", () => {
+  it("say the key number with its unit and no glyph, a lot its name holds included", () => {
+    const words = { mode: "word", workersUnit: "jobs", capacityUnit: "capacity" } as const;
+    const road = row({ speedLimit: 80, capacity: null, costIsPerDistance: true });
+    const lot = row({ name: "Parking Lot 4x6", lotWidth: 4, lotDepth: 6 });
+
+    assert.deepEqual([plateNumbers(road, null, FALLBACK_SEPARATORS, "Locked", 0, "speed", [], words).second, plateNumbers(road, null, FALLBACK_SEPARATORS, "Locked", 0, "speed", [], words).glyph], ["80 km/h", null]);
+    assert.deepEqual([plateNumbers(row(), null, FALLBACK_SEPARATORS, "Locked", 0, "workers", [], words).second], ["20 jobs"]);
+    // The lot the name says, printed where the readout states another, keeps no glyph in words.
+    assert.equal(plateNumbers(lot, null, FALLBACK_SEPARATORS, "Locked", 0, "lot", [{ kind: "lot", value: 2, depth: 2 }], words).glyph, null);
+  });
+});
+
 describe("the one number, where there is room for one", () => {
   it("is the cost, or why a locked building waits, under no sort by a value", () => {
     assert.deepEqual(oneNumber(plateNumbers(row(), null, FALLBACK_SEPARATORS, "Locked", 0), null), {

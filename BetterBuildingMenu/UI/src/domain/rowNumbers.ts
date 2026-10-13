@@ -11,6 +11,7 @@ import {
   formatCostPerCell,
   formatLotDimensions,
   formatMonthlyUpkeepPerCell,
+  formatSpeedLimit,
   formatUpkeepPerCell,
   getCapacityUnitLabel,
   groupDigits,
@@ -34,6 +35,18 @@ export interface KeyFigure {
   text: string;
   glyph: UnitGlyph | null;
 }
+
+/** How a look says a key number's unit: by its glyph, the readout naming the unit once, or in words after it. */
+export type UnitMode = "glyph" | "word";
+
+/**
+ * A look's unit marks: by glyph; or in words, with the word a count of workers takes ("jobs"), and the
+ * word a capacity takes where the game has no unit for it ("capacity").
+ */
+export type UnitMarks = { mode: "glyph" } | { mode: "word"; workersUnit: string; capacityUnit: string };
+
+/** Standard's marks, the glyphs. */
+export const GLYPH_MARKS: UnitMarks = { mode: "glyph" };
 
 const known = (text: string): string | null => (text === "" || text === METRIC_NO_DATA ? null : text);
 
@@ -125,9 +138,30 @@ export function nameHoldsLot(name: string, width: number, depth: number): boolea
 /**
  * A row's key number: its speed by a gauge, its workers by a case, its lot by a grid, a capacity that
  * counts by a person, each its digits alone, as the readout names the unit; a measured capacity says
- * its own unit and draws no glyph. Null where the row has none, or its name already says its lot.
+ * its own unit and draws no glyph. In words, each says its unit after it and draws no glyph ("80 km/h",
+ * "400 patients", "20 jobs", a count the game gives no unit "1,500 capacity"; a lot its two sides), so
+ * no row prints a bare number. Null where the row has none, or its name already says its lot.
  */
-export function keyFigure(entry: BuildingCatalogEntry, kind: KeyKind, separators: NumberSeparators): KeyFigure | null {
+export function keyFigure(entry: BuildingCatalogEntry, kind: KeyKind, separators: NumberSeparators, marks: UnitMarks = GLYPH_MARKS): KeyFigure | null {
+  const figure = glyphFigure(entry, kind, separators);
+  if (figure === null || figure.glyph === null || marks.mode === "glyph") return figure;
+
+  switch (kind) {
+    case "speed":
+      return { text: formatSpeedLimit(entry.speedLimit, separators), glyph: null };
+    case "capacity": {
+      const said = capacityText(entry, entry.capacity, separators) ?? figure.text;
+      return { text: said === figure.text ? `${figure.text} ${marks.capacityUnit}` : said, glyph: null };
+    }
+    case "workers":
+      return { text: `${figure.text} ${marks.workersUnit}`, glyph: null };
+    default:
+      return { text: figure.text, glyph: null };
+  }
+}
+
+/** A row's key number by its glyph. */
+function glyphFigure(entry: BuildingCatalogEntry, kind: KeyKind, separators: NumberSeparators): KeyFigure | null {
   switch (kind) {
     case "speed": {
       const speed = typeof entry.speedLimit === "number" && entry.speedLimit > 0 ? speedNumber(entry.speedLimit, separators) : "";
