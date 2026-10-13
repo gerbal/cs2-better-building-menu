@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { bodyGrid } from "../src/domain/bodyGeometry";
 import { NAME_FONT, plateNameRoom } from "../src/domain/listPlate";
-import { AFTER_SPAN, CUT_MARK, nameRuns, planFits, planName } from "../src/domain/namePlan";
+import { AFTER_SPAN, CUT_MARK, nameRuns, planFits, planName, STOP_WORDS } from "../src/domain/namePlan";
 import { ASSET_MENU_DEFAULT_HEIGHT } from "../src/domain/sharedContracts.generated";
 import { textWidth } from "../src/domain/textWidth";
 
@@ -68,6 +68,11 @@ describe("a name planned in its box", () => {
     assert.deepEqual(planName(name, plate(110, 1), { typed: ["round"] }).lines, [`Large Roundabout${CUT_MARK}`]);
     assert.deepEqual(planName(name, plate(110, 1), { typed: ["ound"] }), plain);
     assert.deepEqual(planName(name, plate(110, 1), { keep: ["Round"] }), plain);
+  });
+
+  it("never drops a distinguishing word that is a number, where a number the row shares can go instead", () => {
+    // Read through a leading mark rather than lose the size that tells the row apart.
+    assert.deepEqual(planName("Elementary School 2x2 Variant", plate(70, 1), { keep: ["2x2"] }).lines, [`${CUT_MARK}2x2 Variant`]);
   });
 
   it("drops a word before a number, and cuts a word inside before it cuts a number", () => {
@@ -197,6 +202,52 @@ describe("the base game's names in a plate's room", () => {
   /** The base game's names, each with its distinguishing word in its menu. */
   const names: [string, string][] = JSON.parse(readFileSync(new URL("./fixtures/baseGameNames.json", import.meta.url), "utf8"));
   const forms = [[1, "moreBuildings"], [1.1, "moreBuildings"], [1.3, "moreBuildings"], [1.5, "moreBuildings"], [1.1, "wholeNames"], [1.3, "wholeNames"], [1.5, "wholeNames"]] as const;
+
+  /** A plate's name room in a form, at its text scale, with a cost beside it. */
+  const roomOf = (textScale: number, atLargeText: string) => {
+    const grid = bodyGrid({ body: "list", boxWidth: 706, bodyHeight: ASSET_MENU_DEFAULT_HEIGHT, textScale, atLargeText, tileSize: 64, plateHeight: 27.25, nameLines: 0 });
+    const numbers = grid.form === "plate2" ? { first: "¢12,500", second: "1,200", glyph: "person" as const, locked: false } : { first: "¢12,500", second: null, glyph: null, locked: false };
+    return { width: plateNameRoom(grid, numbers, false, textScale), lines: grid.nameLines, font: NAME_FONT * textScale };
+  };
+
+  it("keeps each decoration's size, a number that tells it apart, at large text", () => {
+    const sizes = ["1x1", "1x3", "2x2", "2x4"];
+
+    for (const textScale of [1.3, 1.5]) {
+      const box = roomOf(textScale, "moreBuildings");
+      const plans = sizes.map((size) => planName(`Industrial Manufacturing Decoration 01 ${size} Agriculture`, box, { keep: [size] }).lines.join(" "));
+
+      plans.forEach((plan, at) => assert.ok(plan.split(" ").includes(sizes[at]), `${textScale}: ${plan}`));
+      assert.equal(new Set(plans).size, sizes.length, `${textScale}: ${plans.join(" | ")}`);
+    }
+  });
+
+  it("never draws two look-alikes alike where a cut keeping each one's distinguishing word fits", () => {
+    for (const [textScale, atLargeText] of forms) {
+      const box = roomOf(textScale, atLargeText);
+      // Look-alikes: rows whose names agree up to the word that tells each apart.
+      const drawn = new Map<string, string[]>();
+
+      for (const [name, distinct] of names) {
+        const words = name.split(/\s+/);
+        const at = words.findIndex((word) => word.toLowerCase() === distinct.toLowerCase());
+        const plan = planName(name, box, { keep: [distinct] }).lines.join(" ");
+        // A single letter or a word like "with" is never kept: it tells nothing apart.
+        if (at <= 0 || STOP_WORDS.has(distinct.toLowerCase()) || ([...distinct].length < 2 && !/\d/u.test(distinct))) continue;
+        // The shortest cut that keeps the word: the mark, the word, and a mark where words follow it.
+        if (textWidth(`${CUT_MARK}${distinct}${at < words.length - 1 ? CUT_MARK : ""}`, box.font) > box.width) continue;
+
+        const tokens = plan.split(" ").map((token) => token.replace(/^…|…$/gu, ""));
+        const head = distinct.split("-")[0];
+        assert.ok(tokens.includes(distinct) || (distinct.includes("-") && plan.split(" ").some((token) => token.replace(/^…/u, "") === `${head}${CUT_MARK}`)), `${name} at ${textScale} ${atLargeText}: ${plan}`);
+
+        const key = `${words.slice(0, at).join(" ").toLowerCase()}\u0001${plan}`;
+        drawn.set(key, [...(drawn.get(key) ?? []), name]);
+      }
+
+      for (const [key, alike] of drawn) assert.equal(alike.length, 1, `${textScale} ${atLargeText}: ${alike.join(" | ")} draw ${key.split("\u0001")[1]}`);
+    }
+  });
 
   it("never draws a line wider than its room, nor more than two marks in one, with or without a search", () => {
     for (const [textScale, atLargeText] of forms) {

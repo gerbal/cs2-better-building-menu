@@ -1409,20 +1409,23 @@ so the renders and the game draw the same lines. In order:
    A single letter, a word like "a", "and" or "with", or a separator is never kept: it tells nothing
    apart, and kept it would hold most of a name after one keystroke. The head never ends on a word like
    "of" or "and"; a cut keeping a number comes first, so a number goes only where no word could go in
-   its place; then one keeping the last word, where catalog names say which of a family a building is;
+   its place, and a number that is the distinguishing word never goes; then one keeping the last word, where catalog names say which of a family a building is;
    then the one keeping the most. Twins that differ in their last word get one shape ("Wide… Road 1",
    "Wide… Road 2"). The tail never opens on a separator ("Small… Mirrored", not "… - Mirrored"), and no
    line opens with one: a lone "-", "–" or "," stays with the word before it.
 3. **At a hyphen,** whole, only where every cut keeps under 60% of the name.
 4. **Inside a word,** its head and its tail kept (`shortenTileLabel`), to a letter each side of the mark
    at the least; a hyphenated word only to a head of two letters or more ("Four…"), or whole, as "F…e"
-   could be Five-Lane. The plain words go first, then the typed words, and the distinguishing word and
-   the numbers ("01", "L1", "2x2") last, which cut would read as another building: "Two… Wooden / Covered
-   Bridge", and with no plain word left, "Four-Lane / Extradosed B…e" for a search of "bridge". Of the
-   cuts that fit, the one keeping most of the words held hardest, then the fewest marks, never more than
-   two in a line. Only where none fits is the whole name cut inside its words, then the mark put first,
-   the head dropped ("…Bridge"); where not even the mark fits, no line is drawn. The planner never draws
-   a line wider than its room, so a one-word name never runs into the numbers beside it.
+   could be Five-Lane. The plain words go first, then the typed words, then the numbers ("01", "L1",
+   "2x2") the row shares with its look-alikes, cut or dropped, and the distinguishing word last, which
+   cut would read as another building: "Two… Wooden / Covered Bridge", and with no plain word left,
+   "Four-Lane / Extradosed B…e" for a search of "bridge". Of the cuts that fit, the one keeping most of
+   the words held hardest, then the fewest marks, never more than two in a line. Before the
+   distinguishing word is cut inside, the mark goes first with the word whole, the head dropped and the
+   words after it where they must be ("…Angled P…ng Road", "…Perpendicular…"): look-alikes that lose
+   it read alike. Only where none of these fits is the whole name cut inside its words, then the mark
+   put first; where not even the mark fits, no line is drawn. The planner never draws a line wider than
+   its room, so a one-word name never runs into the numbers beside it.
 
 The room is the body's estimate (a plate's width less its padding, picture, gaps and number column,
 `plateNameRoom`) until a frame has drawn the name; then it is the name's box as drawn, which the plate's

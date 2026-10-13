@@ -168,47 +168,75 @@ const saysNothing = (word: string): boolean => [...word].length < 2 || STOP_WORD
 /** The word as typed words begin it: lower case, any opening bracket or quote left off. */
 const opening = (word: string): string => word.toLowerCase().replace(/^[^\p{L}\p{N}]+/u, "");
 
+/** How hard a cut holds a word, the least first: a cut drops or cuts the words it holds least. */
+const PLAIN = 0;
+/** A name word a typed word of two characters or more begins, as a search matches it. */
+const TYPED = 1;
+/** A number, a level or a size the row is not told apart by: its look-alikes share it. */
+const NUMBER = 2;
+/** The word that tells the row apart from its look-alikes, a number or not: cut inside last, never dropped. */
+const DISTINCT = 3;
+
 /**
- * How hard a cut holds a word: 2 for a number or the distinguishing word, whole; 1 for a word a typed
- * word of two characters or more begins, as a search matches it (a hyphenated word's parts each begin
- * one); 0 for any other, which a cut drops or cuts first.
+ * How hard a cut holds a word: the distinguishing word, matched whole; else a number; else a word a
+ * typed word begins (each part of a hyphenated word); else none. A single letter or a
+ * word like "of" is held only as a number.
  */
 function holdOf(word: string, keep: readonly string[], typed: readonly string[]): number {
-  if (holdsNumber(word)) return 2;
-  if (saysNothing(word)) return 0;
   const lower = word.toLowerCase();
-  if (keep.some((wanted) => wanted.toLowerCase() === lower)) return 2;
+  const number = holdsNumber(word);
+  if ((number || !saysNothing(word)) && keep.some((wanted) => wanted.toLowerCase() === lower)) return DISTINCT;
+  if (number) return NUMBER;
+  if (saysNothing(word)) return PLAIN;
   const starts = lower.split("-").map(opening);
-  return typed.some((wanted) => !saysNothing(wanted) && starts.some((start) => start.startsWith(wanted.toLowerCase()))) ? 1 : 0;
+  return typed.some((wanted) => !saysNothing(wanted) && starts.some((start) => start.startsWith(wanted.toLowerCase()))) ? TYPED : PLAIN;
 }
 
-/** Which words a cut keeps, `head` words and the words from `from` on; none is dropped where they meet. */
+/**
+ * Which words a cut keeps: `head` words, and the words from `from` up to `end`; none is dropped where the
+ * head meets the rest. Only a cut whose mark leads drops words after `end` too, with a mark of its own.
+ */
 interface Shape {
   head: number;
   from: number;
+  end: number;
 }
+
+/** Whether a shape keeps the word at `index`. */
+const keeps = (shape: Shape, index: number): boolean => index < shape.head || (index >= shape.from && index < shape.end);
 
 /**
  * The shapes a cut of the words may take, the whole first: a head and a tail with the dropped words
  * between, dropping no word `guarded` holds, the head never ending on a stop word nor the tail opening
- * on a separator. With `leading` only the shapes that drop the head, the mark opening the name.
+ * on a separator. With `leading` only the shapes that drop the head, the mark opening the name: their
+ * words run on to the end, or stop with a mark of their own, never on a stop word or a separator.
  */
 function shapes(words: readonly string[], guarded: (index: number) => boolean, leading: boolean): Shape[] {
-  const out: Shape[] = leading ? [] : [{ head: words.length, from: words.length }];
-  const seen = new Set<number>();
+  const count = words.length;
+  const out: Shape[] = leading ? [] : [{ head: count, from: count, end: count }];
+  const seen = new Set<string>();
+  const add = (shape: Shape) => {
+    const key = `${shape.head} ${shape.from} ${shape.end}`;
+    if (seen.has(key) || words.some((_, index) => !keeps(shape, index) && guarded(index))) return;
+    seen.add(key);
+    out.push(shape);
+  };
 
-  for (let head = leading ? 0 : words.length - 1; head >= (leading ? 0 : 1); head -= 1) {
+  for (let head = leading ? 0 : count - 1; head >= (leading ? 0 : 1); head -= 1) {
     if (head > 0 && STOP_WORDS.has(words[head - 1].toLowerCase())) continue;
 
-    for (let tail = head + 1; tail <= words.length; tail += 1) {
+    for (let tail = head + 1; tail <= count; tail += 1) {
       // A separator the dropped words leave at the tail's front goes with them.
       let from = tail;
-      while (from < words.length && SEPARATORS.has(words[from])) from += 1;
-      if (words.slice(head, from).some((_, at) => guarded(head + at))) continue;
-      if (head === 0 && from === words.length) continue;
-      if (seen.has(head * 1000 + from)) continue;
-      seen.add(head * 1000 + from);
-      out.push({ head, from });
+      while (from < count && SEPARATORS.has(words[from])) from += 1;
+      if (head === 0 && from === count) continue;
+      if (!leading) {
+        add({ head, from, end: count });
+        continue;
+      }
+      for (let end = count; end > from; end -= 1) {
+        if (end === count || !STOP_WORDS.has(words[end - 1].toLowerCase())) add({ head, from, end });
+      }
     }
   }
 
@@ -220,12 +248,15 @@ function shapes(words: readonly string[], guarded: (index: number) => boolean, l
  * Where the head ends on a word cut to its head ("Four…") its mark says the words dropped after it
  * too; without `merges`, where one mark would say two cuts, null.
  */
-function shaped(forms: readonly string[], { head, from }: Shape, merges: boolean): string | null {
-  if (head === from) return forms.join(" ");
+function shaped(forms: readonly string[], { head, from, end }: Shape, merges: boolean): string | null {
+  if (head === from && end === forms.length) return forms.join(" ");
+  const ended = (text: string): string | null => (!text.endsWith(CUT_MARK) ? `${text}${CUT_MARK}` : merges ? text : null);
   const front = forms.slice(0, head).join(" ");
-  const back = forms.slice(from).join(" ");
+  const kept = forms.slice(from, end).join(" ");
+  const back = end === forms.length ? kept : ended(kept);
+  if (back === null) return null;
   if (front === "") return `${CUT_MARK}${back}`;
-  const marked = !front.endsWith(CUT_MARK) ? `${front}${CUT_MARK}` : merges ? front : null;
+  const marked = ended(front);
   return marked === null ? null : back === "" ? marked : `${marked} ${back}`;
 }
 
@@ -281,13 +312,13 @@ const keptOf = (form: string): number => form.length - marks(form) * CUT_MARK.le
 /** A cut that fits, scored; null where a line carries more marks than `most`. */
 function scored(lines: string[], forms: readonly string[], shape: Shape, holds: readonly number[], most: number): Scored | null {
   if (lines.some((line) => marks(line) > most)) return null;
-  const keptWords = forms.map((_, index) => index).filter((index) => index < shape.head || index >= shape.from);
+  const keptWords = forms.map((_, index) => index).filter((index) => keeps(shape, index));
   const keptAt = (hold: number) => keptWords.filter((index) => holds[index] === hold).reduce((sum, index) => sum + keptOf(forms[index]), 0);
-  const tail = shape.head === shape.from ? 0 : forms.slice(shape.from).join(" ").length;
+  const tail = shape.head === shape.from ? 0 : forms.slice(shape.from, shape.end).join(" ").length;
   const last = keptWords.includes(forms.length - 1) ? 1 : 0;
   const total = keptWords.reduce((sum, index) => sum + keptOf(forms[index]), 0);
 
-  return { lines, score: [keptAt(2), keptAt(1), -lines.reduce((sum, line) => sum + marks(line), 0), last, total, tail] };
+  return { lines, score: [keptAt(DISTINCT), keptAt(NUMBER), keptAt(TYPED), -lines.reduce((sum, line) => sum + marks(line), 0), last, total, tail] };
 }
 
 /**
@@ -315,20 +346,21 @@ function bestCut(words: readonly string[], box: NameBox, guarded: (index: number
 }
 
 /**
- * The best cut that fits with words cut inside them, the least held first: for each hold, the cuts that
- * cut no word held harder, of which the best; null where none fits. In each shape each word alone is cut
- * to the longest form that fits, and the words in turn, the least held and the widest first, each as
- * far as it must. A shape whose words cannot fit its lines even at their shortest is passed over.
+ * The best cut that fits with words cut inside them, the least held first: for each hold from `least` to
+ * `most`, the cuts that cut no word held harder, of which the best; null where none fits. From the
+ * numbers' hold on, a number the row is not told apart by may be dropped too. In each shape each word
+ * alone is cut to the longest form that fits, and the words in turn, the least held and the widest first,
+ * each as far as it must. A shape whose words cannot fit its lines even at their shortest is passed over.
  */
-function cutInside(words: readonly string[], box: NameBox, holds: readonly number[], most: number, leading: boolean, mostMarks: number): string[] | null {
-  const best: (Scored | null)[] = [null, null, null];
+function cutInside(words: readonly string[], box: NameBox, holds: readonly number[], least: number, most: number, leading: boolean, mostMarks: number): string[] | null {
   const cuts = words.map(cutsOf);
   // One mark saying two cuts only where a line may carry two.
   const merges = mostMarks > 1;
-  const consider = (forms: readonly string[], shape: Shape, level: number) => {
+  let best: Scored | null = null;
+  const consider = (forms: readonly string[], shape: Shape) => {
     const lines = laidOut(forms, shape, box, merges);
     const candidate = lines === null ? null : scored(lines, forms, shape, holds, mostMarks);
-    if (candidate !== null && better(candidate, best[level])) best[level] = candidate;
+    if (candidate !== null && better(candidate, best)) best = candidate;
   };
   const fits = (forms: readonly string[], shape: Shape) => laidOut(forms, shape, box, merges) !== null;
   // The longest of a word's forms that fits, by halves: a shorter form never fits where a longer does not.
@@ -353,35 +385,41 @@ function cutInside(words: readonly string[], box: NameBox, holds: readonly numbe
   const space = runWidth(" ", box);
   const shortest = (index: number, level: number) => runWidth(holds[index] <= level && cuts[index].length > 0 ? cuts[index][cuts[index].length - 1] : words[index], box);
 
-  for (const shape of shapes(words, (index) => holds[index] > 0, leading)) {
-    const kept = words.map((_, index) => index).filter((index) => index < shape.head || index >= shape.from);
-    const room = box.lines * box.width - Math.max(0, kept.length - box.lines) * space;
+  const held = shapes(words, (index) => holds[index] > PLAIN, leading);
+  const numbersFree = shapes(words, (index) => holds[index] > PLAIN && holds[index] !== NUMBER, leading);
 
-    for (let level = 0; level <= most; level += 1) {
+  for (let level = least; level <= most; level += 1) {
+    for (const shape of level >= NUMBER ? numbersFree : held) {
+      const kept = words.map((_, index) => index).filter((index) => keeps(shape, index));
+      const room = box.lines * box.width - Math.max(0, kept.length - box.lines) * space;
       // Not even every word at its shortest fits the lines: no cut of this shape does. An ideograph is a
       // piece of its own, so a word holding one may break across lines.
       if (kept.some((index) => !WIDE.test(words[index]) && shortest(index, level) > box.width) || kept.reduce((sum, index) => sum + shortest(index, level), 0) > room) continue;
 
       for (const index of kept) {
-        if (holds[index] !== level) continue;
+        if (holds[index] > level) continue;
         const forms = [...words];
-        if (longest(forms, index, shape) >= 0) consider(forms, shape, level);
+        if (longest(forms, index, shape) >= 0) consider(forms, shape);
       }
+      // Whole words alone: a number dropped may be all the shape needs.
+      if (laidOut(words, shape, box, merges) !== null) consider(words, shape);
 
       const order = kept.filter((index) => holds[index] <= level && cuts[index].length > 0)
         .sort((one, other) => holds[one] - holds[other] || runWidth(words[other], box) - runWidth(words[one], box));
       const forms = [...words];
       for (const index of order) {
         if (longest(forms, index, shape) >= 0) {
-          consider(forms, shape, level);
+          consider(forms, shape);
           break;
         }
         forms[index] = cuts[index][cuts[index].length - 1];
       }
     }
+
+    if (best !== null) return (best as Scored).lines;
   }
 
-  return best.find((scoredCut) => scoredCut !== null)?.lines ?? null;
+  return null;
 }
 
 /**
@@ -406,18 +444,27 @@ function charCut(name: string, box: NameBox, leads: boolean): string[] | null {
 
 /**
  * Where no cut of whole words fits: the plain words cut inside them; then the typed words too; then the
- * distinguishing word and the numbers. Then the whole name cut inside its words, then the mark leading,
- * the head dropped, then the whole name cut to its tail; and where not even the mark fits, no line.
- * Without `further`, only the plain words are cut, and once: no line where that does not fit and a word
- * is held.
+ * numbers, cut or dropped. Then, where the row has a distinguishing word, the mark leading with that word
+ * whole, before it is cut inside, as two look-alikes that lose it read alike; then the whole name cut
+ * inside its words, then the mark leading, then the whole name cut to its tail; and where not even the
+ * mark fits, no line. Without `further`, only the plain words are cut, and once: no line where that does
+ * not fit and a word is held.
  */
 function lastResort(name: string, words: readonly string[], box: NameBox, holds: readonly number[], further: boolean): string[] {
-  const inside = cutInside(words, box, holds, further ? 2 : 0, false, further ? MOST_MARKS : 1);
-  if (inside !== null) return inside;
-  if (!further && holds.some((hold) => hold > 0)) return [];
+  if (!further) {
+    const inside = cutInside(words, box, holds, PLAIN, PLAIN, false, 1);
+    if (inside !== null) return inside;
+    if (holds.some((hold) => hold > PLAIN)) return [];
+    return charCut(name, box, false) ?? charCut(name, box, true) ?? (runWidth(CUT_MARK, box) <= box.width ? [CUT_MARK] : []);
+  }
 
-  return charCut(name, box, false)
-    ?? (further ? cutInside(words, box, holds, 2, true, MOST_MARKS) : null)
+  const told = holds.includes(DISTINCT);
+  return cutInside(words, box, holds, PLAIN, NUMBER, false, MOST_MARKS)
+    ?? (told ? cutInside(words, box, holds, PLAIN, NUMBER, true, MOST_MARKS) : null)
+    ?? cutInside(words, box, holds, DISTINCT, DISTINCT, false, MOST_MARKS)
+    ?? (told ? cutInside(words, box, holds, DISTINCT, DISTINCT, true, MOST_MARKS) : null)
+    ?? charCut(name, box, false)
+    ?? (told ? null : cutInside(words, box, holds, PLAIN, DISTINCT, true, MOST_MARKS))
     ?? charCut(name, box, true)
     ?? (runWidth(CUT_MARK, box) <= box.width ? [CUT_MARK] : []);
 }
@@ -464,7 +511,7 @@ function planOnce(name: string, room: NameBox, hints: NameHints): NamePlan {
   const words = whole.split(/\s+/);
   const holds = words.map((word) => holdOf(word, hints.keep ?? [], hints.typed ?? []));
   // A number goes only where no word could go in its place.
-  const cut = bestCut(words, box, (index) => holds[index] > 0) ?? bestCut(words, box, (index) => holds[index] > 0 && !holdsNumber(words[index]));
+  const cut = bestCut(words, box, (index) => holds[index] > PLAIN) ?? bestCut(words, box, (index) => holds[index] > PLAIN && holds[index] !== NUMBER);
   const keptShare = cut === null ? 0 : (cut.join(" ").length - CUT_MARK.length) / whole.length;
 
   // A hyphen breaks only when every cut keeps too little of the name.
