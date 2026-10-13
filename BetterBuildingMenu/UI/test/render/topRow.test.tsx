@@ -172,6 +172,16 @@ describe("the top row's controls", () => {
     assert.doesNotMatch(html, /class="controlGlyph"/);
   });
 
+  it("keep their words in close's room when the game hands the row no close", () => {
+    const worded = (width: number, withClose: boolean) =>
+      /<span class="word">/.test(renderHtml(<TopRow width={width} rightInset={4} open={null} onToggle={() => undefined} onClose={withClose ? () => {} : undefined} />));
+    const widths = Array.from({ length: 120 }, (_, at) => 706 - at * 3);
+
+    // Somewhere the row narrows past the words with close beside them, but not without it.
+    assert.ok(widths.some((width) => worded(width, false) && !worded(width, true)), "close's room is given back");
+    assert.ok(widths.every((width) => worded(width, false) || !worded(width, true)), "never fewer words without close");
+  });
+
   it("fold each to a glyph and its value from 110% text", () => {
     setBinding("options", "textScale", 1.1);
     const html = render();

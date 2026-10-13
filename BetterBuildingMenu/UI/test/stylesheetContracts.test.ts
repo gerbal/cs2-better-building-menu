@@ -367,6 +367,16 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(pane(".caret").color, "var(--bbm-bodyCtlDim)");
   });
 
+  it("draws a list row that is lit and dimmed at once in the selected fill's ink, faded, never the dim ink on that fill", () => {
+    const row = (...states: string[]) => [["list"], ["row", ...states]];
+
+    assert.equal(resolvedOn(PICKER_LIST, row("lit", "dim"), "color"), "var(--bbm-armText)");
+    assert.equal(resolvedOn(PICKER_LIST, row("lit", "dim"), "opacity"), "0.7");
+    assert.equal(resolvedOn(PICKER_LIST, row("lit", "dim"), "background-color"), "var(--bbm-popOn)");
+    assert.equal(resolvedOn(PICKER_LIST, row("dim"), "color"), "var(--bbm-tDim)");
+    assert.equal(resolvedOn(PICKER_LIST, row("lit"), "opacity"), undefined);
+  });
+
   it("opens Width, every menu each way by one fixed offset, so neither way unsets the other's", () => {
     const up = declarationsOf(PICKER_LIST, ".widthList.up");
     const down = declarationsOf(PICKER_LIST, ".widthList.down");

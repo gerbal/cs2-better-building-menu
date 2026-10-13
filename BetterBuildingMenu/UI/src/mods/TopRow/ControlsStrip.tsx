@@ -1,4 +1,3 @@
-import { useValue } from "cs2/api";
 import { FOCUS_DISABLED } from "cs2/input";
 import { useLocalization } from "cs2/l10n";
 import { Button, Tooltip } from "cs2/ui";
@@ -9,9 +8,9 @@ import filterGlyph from "images/filter.svg";
 import groupGlyph from "images/group.svg";
 import sortGlyph from "images/sort.svg";
 import viewGlyph from "images/view.svg";
-import { buildFilterChips, removableChipCount } from "domain/filterChips";
+import { removableChipCount } from "domain/filterChips";
 import { CONTROLS_MARK, type ControlCell, type ControlForm, type ControlKind } from "domain/topRow";
-import { AssetMenuFacets$, BuildingCatalogMetricRanges$ } from "mods/bindings";
+import { useFilterChips } from "mods/Pickers/FilterPanel";
 import { useGroupOptions } from "mods/Pickers/GroupList";
 import { useSortOptions } from "mods/Pickers/SortList";
 import { useViewOptions } from "mods/Pickers/ViewList";
@@ -21,10 +20,7 @@ const GLYPHS: Readonly<Record<ControlKind, string>> = { sort: sortGlyph, filter:
 
 /** The filters on now: the chips the filter panel shows as removable. */
 export function useActiveFilterCount(): number {
-  const facets = useValue(AssetMenuFacets$);
-  const metricRanges = useValue(BuildingCatalogMetricRanges$);
-
-  return removableChipCount(buildFilterChips({ facets, metricRanges }));
+  return removableChipCount(useFilterChips());
 }
 
 /** The four controls as this menu has them: each one's word, its value, every value it can show here, and whether it is set. */

@@ -52,9 +52,10 @@ export const TopRow = memo(function TopRow({ width, rightInset, open, onToggle, 
   const targetText = target === null
     ? null
     : target.kind === "match" ? target.name : label("Tooltip.LABEL[BetterBuildingMenu.AllMatchesLocked]", "All matches locked");
-  // The field first: the controls fold to keep its floor, and its whole Enter target while a query is typed.
+  // The field first: the controls fold to keep its floor, and its whole Enter target while a query is
+  // typed. Close's room only while close draws.
   const controls = planControls({
-    row: width - TOP_ROW_INSET - rightInset - CLOSE_GAP - CLOSE_SIZE,
+    row: width - TOP_ROW_INSET - rightInset - (onClose ? CLOSE_GAP + CLOSE_SIZE : 0),
     scale,
     cells,
     fieldNeeds: fieldNeeds(query, targetText, scale),

@@ -200,11 +200,12 @@ namespace BetterBuildingMenu.Services
 				.GroupBy(TabOf)
 				.Where(group => group.Key.Length > 0)
 				.Select(group => new { Tab = group.Key, Size = group.Count(), Branches = group.Where(entry => !string.IsNullOrEmpty(entry.DevTreeBranch)).GroupBy(entry => entry.DevTreeBranch!, StringComparer.Ordinal).ToArray() })
-				.Where(candidate => candidate.Branches.Length > 1 && OwnsItsBranches(candidate.Size, candidate.Branches))
+				.Where(candidate => candidate.Branches.Length > 1)
 				.OrderByDescending(candidate => candidate.Size)
 				.ThenBy(candidate => candidate.Tab, StringComparer.Ordinal)
-				.Select(candidate => candidate.Tab)
-				.FirstOrDefault() ?? string.Empty;
+				// Last, as it walks the whole present set: only the candidates down to the winner pay.
+				.FirstOrDefault(candidate => OwnsItsBranches(candidate.Size, candidate.Branches))
+				?.Tab ?? string.Empty;
 		}
 
 		/// <summary>Whether a click on each of a tab's branches lists that tab's rows and no other's, and the branches list all of them.</summary>

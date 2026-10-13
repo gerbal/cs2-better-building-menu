@@ -44,6 +44,13 @@
   color: var(--bbm-tDim);
 }
 
+// Stored, but not what draws here (a wide step beside the pane): the selected fill's ink, faded, since
+// the dim ink on that fill does not read.
+.list .lit.dim {
+  color: var(--bbm-armText);
+  opacity: 0.7;
+}
+
 .name {
   flex: 1 1 auto;
 }
