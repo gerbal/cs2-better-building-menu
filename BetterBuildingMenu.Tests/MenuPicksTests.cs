@@ -98,7 +98,7 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Theory]
-		// Reset took the open menu's pick away while it drew it: the menu's own grouping again, now.
+		// Reset takes the open menu's pick away while it draws it: the menu's own grouping again, now.
 		[InlineData("", "cost", "category", "")]
 		// Options wrote a pick the open menu does not draw.
 		[InlineData("theme", "", "category", "theme")]
@@ -145,6 +145,8 @@ namespace BetterBuildingMenu.Tests
 			var pick = ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.Query.cs"), "private void SetBuildingCatalogGroupBy(");
 
 			Assert.Contains("MenuPicks.Regroup(MenuPicks.Get(Mod.Settings.MenuGroups, _assetMenu.Menu), _assetMenu.Query.GroupBy, _menuDefaultGroup)", applied);
+			Assert.Contains("Apply(_assetMenu.SetGroupBy(groupBy));", pick);
+			Assert.Contains("Mod.Settings.ApplyAndSave();", pick);
 			Assert.True(
 				pick.IndexOf("Apply(_assetMenu.SetGroupBy(groupBy));", StringComparison.Ordinal) < pick.IndexOf("Mod.Settings.ApplyAndSave();", StringComparison.Ordinal),
 				"the pick is drawn before it is saved");
@@ -156,9 +158,15 @@ namespace BetterBuildingMenu.Tests
 			// The regroup is one Apply, which refreshes once and not at all where nothing changed, and only
 			// an open menu takes it: a closed menu reads its stored pick when it opens.
 			var applied = ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.cs"), "private void OnSettingsApplied(");
-			var start = applied.IndexOf("if (_assetMenuOpen", StringComparison.Ordinal);
-			var block = applied.Substring(start, applied.IndexOf("Apply(_assetMenu.SetGroupBy(regroup));", StringComparison.Ordinal) - start);
+			var apply = applied.IndexOf("Apply(_assetMenu.SetGroupBy(regroup));", StringComparison.Ordinal);
+			Assert.True(apply >= 0, "the open menu is regrouped by one Apply");
+			// The regroup's own gate: the last condition opened before its Apply.
+			var gate = applied.LastIndexOf("if (", apply, StringComparison.Ordinal);
+			Assert.True(gate >= 0, "the regroup has a gate");
+			var block = applied.Substring(gate, apply - gate);
 
+			Assert.Contains("_assetMenuOpen", block);
+			Assert.Contains("_assetMenu.Menu.Length > 0", block);
 			Assert.Contains("MenuPicks.Regroup(", block);
 			Assert.Equal(1, Count(applied, "Apply(_assetMenu.SetGroupBy("));
 			Assert.DoesNotContain("Refresh", block);
