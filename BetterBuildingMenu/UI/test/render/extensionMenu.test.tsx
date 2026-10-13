@@ -156,9 +156,16 @@ describe("the extension picker", () => {
 
   it("redraws in a new look in place: a drag under way on its top edge carries through the switch", () => {
     const globals = globalThis as unknown as Record<string, unknown>;
-    const saved = globals.document;
+    const saved = { document: globals.document, requestAnimationFrame: globals.requestAnimationFrame, cancelAnimationFrame: globals.cancelAnimationFrame };
+    // The globals the drag reaches for: the document's listeners, and the frame its height waits on.
     globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined };
+    globals.requestAnimationFrame = () => 1;
+    globals.cancelAnimationFrame = () => undefined;
     let root: ReactTestRenderer | undefined;
+    // Whatever React reports while the panel mounts, redraws and unmounts: nothing, its unmount included.
+    const reported: unknown[] = [];
+    const error = console.error;
+    console.error = (...args: unknown[]) => void reported.push(args);
 
     try {
       act(() => {
@@ -171,10 +178,31 @@ describe("the extension picker", () => {
       act(() => setBinding("BetterBuildingMenu", "AssetMenuLook", "plates"));
       assert.equal(panel().props["data-bbm-look"], "plates");
       assert.equal(root!.root.findAll((node) => node.props.className === "resizeBlocker").length, 1, "nothing mounted again");
+      act(() => root!.unmount());
+      root = undefined;
+      assert.deepEqual(reported, []);
     } finally {
       act(() => root?.unmount());
-      globals.document = saved;
+      console.error = error;
+      for (const [name, value] of Object.entries(saved)) {
+        if (value === undefined) delete globals[name];
+        else globals[name] = value;
+      }
     }
+  });
+
+  it("says a count the game gives no unit with the capacity word in Plates, as the build menu's rows say it", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuLook", "plates");
+    const unitless = { subCategory: "ServiceBuildings_Deathcare", buildingType: "DeathcareFacility", capacity: 1_500 };
+    setBinding("BetterBuildingMenu", "BuildingExtensionMenu", {
+      buildingName: "Crematorium",
+      entries: [entry(8, { prefabName: "Columbarium", name: "Columbarium", ...unitless }), entry(7, { prefabName: "HearseGarage", name: "Hearse Garage" })],
+    });
+
+    assert.match(render(), /<span class="fact">1[^<]?500 capacity<\/span>/);
+    // Standard keeps the count bare, as its rows did.
+    setBinding("BetterBuildingMenu", "AssetMenuLook", "standard");
+    assert.match(render(), /<span class="fact">1[^<]?500<\/span>/);
   });
 
   it("keeps the wrapper around the game's panel to its own hooks, which read no look", () => {

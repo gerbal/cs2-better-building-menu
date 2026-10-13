@@ -18,8 +18,9 @@
 }
 
 // The two states worth colouring: cannot afford, and a remaining shortfall.
-// Literal colours — the theme's resolve to black here. Under .lookInks they
-// colour the whole line, its label and its figure.
+// Each reaches the value as well as the line, or .cardValue's own ink wins on
+// specificity. Literal colours — the theme's resolve to black here. Under
+// .lookInks they colour the whole line, its label and its figure.
 $card-warn: rgb(232, 122, 122);
 $card-good: rgb(130, 205, 130);
 

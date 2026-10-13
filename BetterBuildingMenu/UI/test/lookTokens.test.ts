@@ -75,6 +75,12 @@ const INK_ON: readonly (readonly [ink: string, surface: string])[] = [
   ["tNum2", "plateLocked"], ["tCost", "plateLocked"], ["tName", "body"],
 ];
 
+/** Each fill and the surface it sits on: a style that turns the surface light must set the fill apart on it. */
+const FILL_ON: readonly (readonly [fill: string, surface: string])[] = [
+  // The upgrades panel's empty thumbnail square, which holds a row's baseline until its picture is drawn.
+  ["iconSlot", "plate"],
+];
+
 /** A surface an interface style can turn light: Bright blue makes these pale. */
 const turnsLight = (value: string): boolean => /--panelColorNormal|--menuPanel/.test(value);
 /** Ink that comes from the style itself, which Bright blue turns dark. */
@@ -107,6 +113,18 @@ describe("the looks' tokens", () => {
       for (const [key, value] of Object.entries(tokens(selector))) {
         const kind = KIND[key] ?? "colour";
         assert.match(value, PATTERN[kind], `${selector} --bbm-${key} is not a ${kind}`);
+      }
+    }
+  });
+
+  it("set each fill apart from the surface under it, in the style's own panels where the style turns that surface light", () => {
+    for (const selector of [...OWN, ...FOLLOW]) {
+      const map = tokens(selector);
+
+      for (const [fill, surface] of FILL_ON) {
+        const where = `${selector}: ${fill} on ${surface}`;
+        assert.notEqual(map[fill], map[surface], where);
+        if (turnsLight(map[surface])) assert.match(map[fill], /^var\(--menuPanel\d\)$/, where);
       }
     }
   });

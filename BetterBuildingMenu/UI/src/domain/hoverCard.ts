@@ -1,9 +1,9 @@
 /**
  * What the hover card beside the pointer says of a building: its cost, its upkeep, the view's key number
  * with its unit in words, its glyph where the look draws them, and the lot where the name does not say
- * it, each under the hover card's own word, and for
- * a locked building the milestone it waits for. A network's money reads per kilometre, as the game's own
- * panels state it. Pure. See docs/design-notes.md, "The hover card".
+ * it, each under the hover card's own word, and for a locked building the milestone it waits for. A
+ * network's money reads per kilometre, as the game's own panels state it. Pure. See
+ * docs/design-notes.md, "The hover card".
  */
 import { formatBuildingMetric, formatLotDimensions, groupDigits, hasFootprint, type NumberSeparators } from "./assetMenuMetricFormat";
 import type { BuildingCatalogEntry } from "./buildingCatalog";
@@ -53,7 +53,7 @@ const present = (value: number | null | undefined): value is number => typeof va
 function keyRow(entry: BuildingCatalogEntry, kind: KeyKind, separators: NumberSeparators, labels: HoverCardLabels, units: UnitMode): CardRow | null {
   const glyph = units === "word" ? null : keyFigure(entry, kind, separators)?.glyph ?? null;
   const said = (label: string): CardRow | null => {
-    const figure = keyFigure(entry, kind, separators, { mode: "word", workersUnit: labels.workersUnit, capacityUnit: "" });
+    const figure = keyFigure(entry, kind, separators, { mode: "word", workersUnit: labels.workersUnit, labelled: true });
     return figure === null ? null : { key: "key", label, value: figure.text, glyph };
   };
 

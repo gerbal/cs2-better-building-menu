@@ -121,6 +121,18 @@ function lowerName(entry: BuildingCatalogEntry): Lowered {
 }
 
 /**
+ * The work the passes have done: the names indexed, the loaded names a band was checked against (a whole
+ * name's count as one), and the texts counted, each tag indexed and each band or tag in each pass that
+ * turns a repeated band to its tag.
+ */
+const work = { indexed: 0, compared: 0, counted: 0 };
+
+/** The work the passes have done: a test seam, which holds a page's pass to its own size, never its square. */
+export function bandWork(): { indexed: number; compared: number; counted: number } {
+  return { ...work };
+}
+
+/**
  * The loaded tiles' names in lower case by id, with the ids whose name opens and whose name closes with
  * each word: a band's text is checked against the few names it could be, not every tile's.
  */
@@ -141,6 +153,7 @@ function nameIndex(entries: readonly BuildingCatalogEntry[]): NameIndex {
   };
 
   for (const entry of entries) {
+    work.indexed += 1;
     const { name, first, last } = lowerName(entry);
     if (name === "") continue;
     index.names.set(entry.id, name);
@@ -152,18 +165,10 @@ function nameIndex(entries: readonly BuildingCatalogEntry[]): NameIndex {
   return index;
 }
 
-/** How many loaded names the bands have been checked against, a whole name's count as one. */
-let compared = 0;
-
-/** How many loaded names the bands have been checked against: a test seam, which holds a page's check to its few candidates, never the page's square. */
-export function namesCompared(): number {
-  return compared;
-}
-
 /** Whether a band could be another loaded tile's name: that name whole, or one its head opens and its tail closes. */
 function couldBeAnother(index: NameIndex, id: number, band: Band): boolean {
   const { head, tail } = band;
-  compared += 1;
+  work.compared += 1;
   if (!band.cut) return (index.whole.get(head) ?? 0) > (index.names.get(id) === head ? 1 : 0);
 
   // A name the cut could be opens with the head's first word and closes with the tail's last: the fewer of the two.
@@ -172,7 +177,7 @@ function couldBeAnother(index: NameIndex, id: number, band: Band): boolean {
   const among = opening === undefined ? closing ?? [] : closing === undefined || opening.length <= closing.length ? opening : closing;
 
   return among.some((other) => {
-    compared += 1;
+    work.compared += 1;
     const name = index.names.get(other)!;
     return other !== id && name.length >= head.length + tail.length
       && (head === "" || name === head || name.startsWith(`${head} `))
@@ -223,8 +228,10 @@ export function tileBands(entries: readonly BuildingCatalogEntry[], tags: Readon
   // tag does. Each pass turns bands to tags only, so it ends.
   const tagOf = new Map<string, number>();
   for (const [id, tag] of tags) tagOf.set(tag.toLowerCase(), id);
+  work.counted += tags.size;
   for (let moved = true; moved;) {
     moved = false;
+    work.counted += said.length;
     const times = new Map<string, number>();
     const lower = said.map(({ text }) => text.toLowerCase());
     for (const key of lower) times.set(key, (times.get(key) ?? 0) + 1);

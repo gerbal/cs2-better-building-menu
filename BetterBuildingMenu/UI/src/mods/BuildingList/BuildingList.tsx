@@ -16,7 +16,8 @@ import { listLabel } from "domain/tileLabel";
 import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
 import { useUnitSystem } from "domain/unitSettings";
-import { useStateWords } from "mods/Bodies/useBodyWords";
+import { useStateWords, useUnitMarks } from "mods/Bodies/useBodyWords";
+import { keyFigure } from "domain/rowNumbers";
 import type { LookRoot } from "mods/useLookRoot";
 import styles from "./buildingList.module.scss";
 import { BuildingCatalogSortColumn$ } from "mods/bindings";
@@ -55,6 +56,8 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", look, sele
   const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
   // The words every body says why a building cannot be placed with.
   const { locked: lockedLabel, built: builtLabel } = useStateWords();
+  // In a look that writes units in words, a capacity says its unit as the build menu's rows do.
+  const marks = useUnitMarks();
   const cards = variant === "cards";
 
   const place = (entry: BuildingCatalogEntry) => {
@@ -97,7 +100,8 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", look, sele
         const lotKnown = hasFootprint(entry.lotWidth, entry.lotDepth);
         // Category-aware, returning nothing where capacity means nothing, so
         // this needs no rule per category of its own.
-        const capacity = formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators);
+        const capacity = (marks.mode === "word" ? keyFigure(entry, "capacity", separators, marks)?.text : undefined)
+          ?? formatCapacity(entry.capacity, entry.category, entry.subCategory, entry.buildingType, separators);
         // Zero is not a capacity fact: an upgrade that adds no students is
         // common, and "0 students" reads as a figure while carrying nothing.
         const hasCapacity = capacity !== "" && capacity !== "—" && (entry.capacity ?? 0) !== 0;

@@ -58,8 +58,15 @@ describe("a row's key number", () => {
 
     assert.deepEqual(keyFigure(crematorium, "capacity", FALLBACK_SEPARATORS), { text: groupDigits(1_500, FALLBACK_SEPARATORS), glyph: "person" });
     assert.deepEqual(keyFigure(crematorium, "capacity", FALLBACK_SEPARATORS, words), { text: `${groupDigits(1_500, FALLBACK_SEPARATORS)} capacity`, glyph: null });
-    // Under a label that names the capacity, the hover card's, the count takes no word after it.
-    assert.deepEqual(keyFigure(crematorium, "capacity", FALLBACK_SEPARATORS, { ...words, capacityUnit: "" }), { text: groupDigits(1_500, FALLBACK_SEPARATORS), glyph: null });
+  });
+
+  it("says a count the game gives no unit bare under a label that names the capacity, as the hover card's, and every other unit as the rows do", () => {
+    const labelled: UnitMarks = { mode: "word", workersUnit: "jobs", labelled: true };
+    const crematorium = row({ subCategory: "ServiceBuildings_Deathcare", buildingType: "DeathcareFacility", capacity: 1_500 });
+
+    assert.deepEqual(keyFigure(crematorium, "capacity", FALLBACK_SEPARATORS, labelled), { text: groupDigits(1_500, FALLBACK_SEPARATORS), glyph: null });
+    assert.deepEqual(keyFigure(row(), "capacity", FALLBACK_SEPARATORS, labelled), { text: "400 patients", glyph: null });
+    assert.deepEqual(keyFigure(row(), "workers", FALLBACK_SEPARATORS, labelled), { text: "20 jobs", glyph: null });
   });
 
   it("is nothing for a row without the kind's value, or a view whose rows show none", () => {

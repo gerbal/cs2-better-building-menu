@@ -4,7 +4,7 @@ import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog";
 import { lookAlikeTags } from "../src/domain/lookAlikeTags";
 import { CUT_MARK, plansWorkedOut } from "../src/domain/namePlan";
 import { textWidth } from "../src/domain/textWidth";
-import { bandWidth, namesCompared, tileBands } from "../src/domain/tileBands";
+import { bandWidth, bandWork, tileBands } from "../src/domain/tileBands";
 import { TAG_FONT, TAG_PADDING, tagRoom } from "../src/domain/tileTag";
 
 const tile = (id: number, name: string, distinctWord = "", isLocked = false): BuildingCatalogEntry => ({ id, name, prefabName: `P${id}`, distinctWord, isLocked } as BuildingCatalogEntry);
@@ -106,20 +106,31 @@ describe("Plates' name bands", () => {
 
     for (const [what, page] of [["2,000 look-alikes", alike], ["1,806 tiles in runs", varied]] as const) {
       it(`names ${what}' bands in a bounded pass, and keeps them for a push of the same tiles`, () => {
-        for (const textScale of [1, 1.5]) {
-          const tagged = lookAlikeTags(page, 64, textScale);
-          const first = tileBands(page, tagged, 64, textScale);
+        // At 150% on the smallest tile few names fit a band, so the larger text is read on a wider tile, where
+        // the bands are checked as at 100%.
+        for (const [textScale, tileWidth] of [[1, 64], [1.5, 96]] as const) {
+          const at = `${textScale} on ${tileWidth}`;
+          const tagged = lookAlikeTags(page, tileWidth, textScale);
+          const first = tileBands(page, tagged, tileWidth, textScale);
 
           assert.equal(first.size, tagged.size);
           // The same tiles pushed again, a new array of new rows: the bands kept.
-          assert.equal(tileBands(page.map((entry) => ({ ...entry })), tagged, 64, textScale), first);
+          assert.equal(tileBands(page.map((entry) => ({ ...entry })), tagged, tileWidth, textScale), first);
           // A page whose tags were worked out again, as a Load more or a keystroke does, every name already
-          // cut: no name planned again, and each band checked against a few loaded names, not the page.
-          const [plannedBefore, comparedBefore] = [plansWorkedOut(), namesCompared()];
-          tileBands([...page], new Map(tagged), 64, textScale);
+          // cut: no name planned again; the page's names indexed once; each band checked against a few loaded
+          // names, not the page; and the bands said twice turned to tags in a few passes over them, not one
+          // pass a band.
+          const [plannedBefore, before] = [plansWorkedOut(), bandWork()];
+          tileBands([...page], new Map(tagged), tileWidth, textScale);
+          const after = bandWork();
+          const checked = [...first].filter(([id, text]) => text !== tagged.get(id)).length;
 
-          assert.equal(plansWorkedOut(), plannedBefore, `plans at ${textScale}`);
-          assert.ok(namesCompared() - comparedBefore <= 4 * tagged.size, `${namesCompared() - comparedBefore} names compared for ${tagged.size} bands at ${textScale}`);
+          assert.equal(plansWorkedOut(), plannedBefore, `plans at ${at}`);
+          assert.ok(checked >= tagged.size / 4, `${checked} of ${tagged.size} bands say a name at ${at}`);
+          assert.ok(after.indexed - before.indexed <= page.length, `${after.indexed - before.indexed} names indexed of ${page.length} at ${at}`);
+          assert.ok(after.compared - before.compared >= checked, `${after.compared - before.compared} names compared for ${checked} named bands at ${at}`);
+          assert.ok(after.compared - before.compared <= 4 * tagged.size, `${after.compared - before.compared} names compared for ${tagged.size} bands at ${at}`);
+          assert.ok(after.counted - before.counted <= 4 * tagged.size, `${after.counted - before.counted} texts counted for ${tagged.size} bands at ${at}`);
         }
       });
     }

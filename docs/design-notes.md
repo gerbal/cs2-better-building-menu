@@ -240,8 +240,8 @@ the strip does, and it is absent with the pane hidden, so nothing reaches past t
   nothing until the mouse is on them, then a white fill (10 %, 15 % while dragging, whether or not
   the mouse is still on them). Their pills are the scrollbar thumb's at rest and brighten in white
   as it does, at once, never in the accent. The upgrades panel's strip is painted as the header
-  under it, the look's head. The build menu's top edge draws nothing at rest and a pill under the mouse (see
-  "The top edge").
+  under it, the look's head. The build menu's top edge draws nothing at rest and a pill under the
+  mouse (see "The top edge").
 - At rest the width pill looks like a scrollbar thumb; the white fill under the
   mouse is what marks it as a handle. The owner chose that over a dark band, which
   the game draws nowhere.
@@ -368,14 +368,18 @@ The upgrades panel follows the Look too. It mounts outside the build menu, so it
 look's class, read in the panel (`ExtensionMenuPanel`), never in the wrapper around the game's panel,
 whose hooks stay as they are: a hook added there blanks the UI when the mod loads mid-session. Its
 frame is the look's head over the look's list, its rows the look's plates and inks, the armed one in
-the armed fill. The game draws a row's tooltip outside the panel, so the card's content carries the
+the armed fill; in a look that writes units in words a row's capacity says its unit as the build menu's
+rows do ("1,500 capacity"), and its empty thumbnail square follows the style, apart from the plate. The game draws a row's tooltip outside the panel, so the card's content carries the
 look's class itself and draws in the look's light inks (`lookInks`), as the detail slot does: the
 game's tooltip ground (`--tooltipColor`) stays dark under every interface style.
 
-**This changes 0.2.x:** the upgrades panel drew the game's own panel, its rows on dark glass with an
-accent edge under the pointer, and its card coloured only the figure of a warn or good line; it now
-draws in the Look, its rows on the look's plates, and its card colours such a line whole, its label and
-its figure, as the detail slot does.
+**This changes 0.2.x:** the upgrades panel drew the game's own panel, a gradient on its body; its rows
+on dark glass with a hairline, an accent edge under the pointer and on the row being placed, which was
+held lit in white; a locked or built row's name dimmed; and its card coloured only the figure of a warn
+or good line. It now draws in the Look: its body the look's list with no gradient, its rows on the
+look's plates with no hairline or accent edge, the row being placed in the armed fill, a locked or
+built row's name in the look's locked ink, and its card colours such a line whole, its label and its
+figure, as the detail slot does.
 
 ## The looks' tokens
 
@@ -1477,8 +1481,8 @@ there (`missingCost`, `missingFigure`; a lot its name already says prints), so a
 means the readout's value. C# counts a row that lacks the kind against the share, so a stated kind can
 still be missing from a few open rows. A legend short of room says nothing, and every row prints its
 own. A locked building's slot still says why it waits. A one-line plate shows one number: under a sort
-by a value that value; else the cost, or where the readout said the cost, the key number by its glyph;
-it is blank only where the readout said both (`oneLineNumber`).
+by a value that value; else the cost, or where the readout said the cost, the key number as the look
+marks its unit; it is blank only where the readout said both (`oneLineNumber`).
 
 **This changes 0.2.x:** every row printed every number; where most of a view's open rows share one,
 the readout now says it once and only the rows that differ print it.

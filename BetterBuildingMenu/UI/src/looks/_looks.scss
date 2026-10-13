@@ -156,6 +156,8 @@ $standard-follow: (
   iconAlt2: var(--menuPanel2),
   // The style's panels give the two tones and the lit plate: a locked icon's plate is bare, on the body.
   iconLocked: transparent,
+  // The empty thumbnail square on a plate: the style's second panel, apart from the plate's first.
+  iconSlot: var(--menuPanel2),
   track: var(--menuPanel2),
   thumb: var(--menuText2Normal),
   tName: var(--menuText1Normal),
