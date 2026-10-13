@@ -162,6 +162,25 @@ describe("the tab row", () => {
       html.includes(`${picture("Media/Game/Icons/SmallRoads.svg")}></span></span><span class="name">SmallRoads</span><span class="count">30</span>`),
       html,
     );
+    // Highways already says its name: it keeps its name beside its count, and draws no picture.
+    assert.ok(
+      html.includes('<button class="cell inline empty" data-has-select="true" aria-label="Highways · 0"><span class="name">Highways</span><span class="count">0</span></button>'),
+      html,
+    );
+  });
+
+  it("keeps Education's plate in its own form when the row is named", () => {
+    seedEducation();
+    const html = renderHtml(<TabRow width={893} />);
+
+    assert.match(html, /data-tab-form="named"/);
+    assert.ok(html.includes(`${picture("Media/Game/Icons/Research.svg")}></span></span><span class="name">Research</span>`), html);
+    // The plate's tab: its picture over its count, as at the first step.
+    assert.ok(
+      html.includes(`<span class="iconSlot"><span class="picture" ${picture("Media/Game/Icons/Education.svg")}></span></span><span class="count">65</span>`),
+      html,
+    );
+    assert.doesNotMatch(html, /<span class="name">Education<\/span>/);
   });
 
   it("keeps each picture over its count at the first step", () => {

@@ -357,4 +357,19 @@ describe("the tabs' names at the wider steps", () => {
     assert.equal(planTabRow(plate, levels, 479, 1, plain, "named").clipped, true);
     assert.equal(planTabRow(plate, levels, 479, 1, plain, "stack").clipped, true);
   });
+
+  it("budgets a cell that already says its name the same in either form", () => {
+    // Highways draws the menu's own picture, so it says its name in both forms.
+    const worded = tabRow(roads({ categories: [category("SmallRoads"), category("MediumRoads"), category("Highways", ROADS_ICON)] }))
+      .items.filter((item) => item.kind === "category" && item.named);
+    /** The narrowest whole box the row fits in this form. */
+    const fitsFrom = (form: "stack" | "named") => {
+      let width = 0;
+      while (planTabRow(worded, readout, width, 1, plain, form).clipped) width += 1;
+      return width;
+    };
+
+    assert.equal(worded.length, 1);
+    assert.equal(fitsFrom("named"), fitsFrom("stack"));
+  });
 });

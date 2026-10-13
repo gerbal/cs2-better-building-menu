@@ -84,8 +84,9 @@ $icon-side: calc(#{$tab-row-height} - #{$tab-count-size} * var(--fontScale));
   height: $icon-side;
 }
 
-// In a named tab the picture sits beside the name, in a slot no wider than the picture.
-.iconInline {
+// In a named tab the picture sits beside the name, in a slot no wider than the picture. Compound,
+// so it outranks the slot's width wherever the sheet puts it.
+.iconSlot.iconInline {
   width: $icon-side;
 }
 

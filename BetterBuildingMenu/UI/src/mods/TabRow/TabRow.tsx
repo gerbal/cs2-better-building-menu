@@ -130,12 +130,12 @@ export const TabRow = ({ width }: { width: number }) => {
     else send({ method: "SetAssetMenuCategory", args: [cell.id] });
   };
 
-  const renderCell = (cell: TabCell, form: TabForm) => {
+  const renderCell = (cell: TabCell, cellForm: TabForm) => {
     const count = cell.count === null ? "" : format(cell.count);
     const label = cell.count === null ? cell.label : `${cell.label} · ${count}`;
     const worded = cell.named || cell.kind === "tier";
     // A picture cell in the named form: its picture, its name and its count in a line.
-    const named = !worded && form === "named";
+    const named = !worded && cellForm === "named";
 
     return (
       <Tooltip key={cell.key} tooltip={label}>
