@@ -5,28 +5,37 @@ import { Button, Scrollable } from "cs2/ui";
 import classNames from "classnames";
 import { memo, useState, type ReactNode } from "react";
 
-import { formatBuildingMetric, METRIC_NO_DATA, type NumberSeparators } from "domain/assetMenuMetricFormat";
+import type { NumberSeparators } from "domain/assetMenuMetricFormat";
+import type { AssetMenuMetric } from "domain/assetMenuLayout";
 import { screenSlots, slotPosition, slotsHeight, TILE_NAME_LINE_MIN, type BodyGrid } from "domain/bodyGeometry";
 import type { BuildingCatalogEntry } from "domain/buildingCatalog";
-import { entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedFact, lockedThumbnail } from "domain/buildingLockState";
+import { entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
+import { sortedMetricFor } from "domain/sortedMetric";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { tileLabelLineBudget } from "domain/tileLabel";
 import { tileFacts } from "domain/tileNameLine";
+import { tagRoom, tileTag } from "domain/tileTag";
 import { useTextScale } from "domain/textScaleSetting";
-import { ActivePrefabId$, AssetMenuTuning$, SHIPPED_TUNING } from "mods/bindings";
+import { ActivePrefabId$, AssetMenuTuning$, BuildingCatalogSortColumn$, SHIPPED_TUNING } from "mods/bindings";
 import { BuildingHoverCard, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { FittedName } from "./FittedName";
 import styles from "./tilesBody.module.scss";
+import { UniqueMark } from "./UniqueMark";
 import { useNumberSeparators, useStateWords, type StateWords } from "./useBodyWords";
 
 /** The share of the line under the tiles the name may take; the numbers after it take the rest. */
 const NAME_SHARE = 0.6;
+
+/** The name line's font at 100% text: tilesBody.module.scss's `.lineName`. */
+const LINE_NAME_FONT = 11;
 
 interface TileProps {
   entry: BuildingCatalogEntry;
   grid: BodyGrid;
   index: number;
   armed: boolean;
+  sortedMetric: AssetMenuMetric | null;
+  textScale: number;
   separators: NumberSeparators;
   stateWords: StateWords;
   achievedMilestone: number;
@@ -36,16 +45,16 @@ interface TileProps {
 }
 
 /**
- * One building as a picture tile, its cost on a tag at the foot, or why a locked one waits. The live
- * check and the render tests count what a body shows through the data-bbm markers.
+ * One building as a picture tile, with a tag at its foot: its cost, or why a locked one waits, or under
+ * a sort by a value that value. Its name is the line's under the tiles. The live check and the render
+ * tests count what a body shows through the data-bbm markers.
  */
-const Tile = memo(function Tile({ entry, grid, index, armed, separators, stateWords, achievedMilestone, hoverCard, onPlace, onPoint }: TileProps) {
+const Tile = memo(function Tile({ entry, grid, index, armed, sortedMetric, textScale, separators, stateWords, achievedMilestone, hoverCard, onPlace, onPoint }: TileProps) {
   const name = entry.name || entry.prefabName;
   const locked = isEntryLocked(entry);
   const built = isEntryAlreadyBuilt(entry);
   const { left, top } = slotPosition(grid, index);
-  const cost = formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance);
-  const tag = locked ? lockedFact(entry, stateWords.locked, achievedMilestone) : cost === METRIC_NO_DATA ? "" : cost;
+  const tag = tileTag(entry, sortedMetric, separators, stateWords.locked, achievedMilestone, grid.cellWidth, textScale);
   const word = entryStateWord(entry, stateWords.locked, stateWords.built);
   // Inset 2 on every side; inline, as Tile size sizes it.
   const picture = { width: `${grid.cellWidth - 4}rem`, height: `${grid.cellHeight - 4}rem` };
@@ -80,18 +89,16 @@ const Tile = memo(function Tile({ entry, grid, index, armed, separators, stateWo
             aria-hidden="true"
             data-bbm-pic="true"
           />
-          {entry.isUnique === true && (
-            <img
-              className={classNames(styles.mark, built ? styles.builtMark : styles.uniqueMark)}
-              src={built ? "Media/Game/Icons/AlreadyBuilt.svg" : "Media/Game/Icons/Unique.svg"}
-              alt=""
-              aria-hidden="true"
-            />
-          )}
+          <UniqueMark entry={entry} built={built} className={classNames(styles.mark, built ? styles.builtMark : styles.uniqueMark)} />
         </span>
         {/* A raster, because a masked vector is what this engine cannot draw. */}
         {locked && <img className={styles.lockGlyph} src="coui://betterbuildingmenu/LockRaster.png" alt="" aria-hidden="true" />}
-        {tag !== "" && <span className={classNames(styles.tag, locked && styles.milestone)} data-bbm-fact="true">{tag}</span>}
+        {tag.text !== "" && (
+          // Bounded inline, as Tile size sizes the tile: a figure the tag cannot hold is cut with an ellipsis, never silently.
+          <span className={classNames(styles.tag, tag.locked && styles.milestone)} style={{ maxWidth: `${tagRoom(grid.cellWidth)}rem` }} data-bbm-fact="true">
+            {tag.text}
+          </span>
+        )}
       </Button>
     </BuildingHoverCard>
   );
@@ -115,6 +122,7 @@ export const TilesBody = memo(function TilesBody({ entries, grid, onPlace, foote
   const separators = useNumberSeparators();
   const stateWords = useStateWords();
   const textScale = useTextScale();
+  const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
   const armedId = useValue(ActivePrefabId$);
   const lineKnob = useValue(AssetMenuTuning$).tileNameLine ?? SHIPPED_TUNING.tileNameLine;
   const hoverCard = useHoverCardContext();
@@ -141,6 +149,8 @@ export const TilesBody = memo(function TilesBody({ entries, grid, onPlace, foote
                 grid={grid}
                 index={index}
                 armed={armedId !== 0 && entry.id === armedId}
+                sortedMetric={sortedMetric}
+                textScale={textScale}
                 separators={separators}
                 stateWords={stateWords}
                 achievedMilestone={achievedMilestone}
@@ -160,7 +170,7 @@ export const TilesBody = memo(function TilesBody({ entries, grid, onPlace, foote
               <FittedName
                 className={styles.lineName}
                 label={named.name || named.prefabName}
-                budget={tileLabelLineBudget(grid.cellWidth * grid.cols * NAME_SHARE, textScale)}
+                budget={tileLabelLineBudget(grid.cellWidth * grid.cols * NAME_SHARE, textScale, LINE_NAME_FONT)}
                 lines={1}
               />
               <span className={styles.lineFacts}>{tileFacts(named, separators)}</span>

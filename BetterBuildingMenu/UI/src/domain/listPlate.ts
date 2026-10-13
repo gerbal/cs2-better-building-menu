@@ -20,6 +20,11 @@ export interface PlateNumbers {
 
 const known = (text: string): string | null => (text === "" || text === METRIC_NO_DATA ? null : text);
 
+/** Whether a sort orders by a value of its own to say: a number, but not the cost, said already, nor the lot. */
+export function sortsByValue(sortedMetric: AssetMenuMetric | null): sortedMetric is AssetMenuMetric {
+  return sortedMetric !== null && sortedMetric !== "cost" && sortedMetric !== "lot";
+}
+
 /**
  * The plate's numbers. Under a sort by a number the second is the value sorted by, so the order
  * reads down the column; otherwise the capacity, where the building has one that is not zero.
@@ -35,7 +40,7 @@ export function plateNumbers(
   const cost = known(formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance)) ?? "";
   const first = locked ? lockedFact(entry, lockedWord, achievedMilestone) : cost;
 
-  if (sortedMetric !== null && sortedMetric !== "cost" && sortedMetric !== "lot") {
+  if (sortsByValue(sortedMetric)) {
     const value = sortedMetricValue(entry, sortedMetric);
     const second = value === null
       ? null

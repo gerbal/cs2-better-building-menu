@@ -17,6 +17,7 @@ import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { ActivePrefabId$, BuildingCatalogSortColumn$ } from "mods/bindings";
 import { BuildingHoverCard, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import styles from "./listBody.module.scss";
+import { UniqueMark } from "./UniqueMark";
 import { useNumberSeparators, useStateWords, type StateWords } from "./useBodyWords";
 
 interface PlateProps {
@@ -71,14 +72,7 @@ const Plate = memo(function Plate({ entry, grid, index, armed, enter, sortedMetr
             aria-hidden="true"
             data-bbm-pic="true"
           />
-          {entry.isUnique === true && (
-            <img
-              className={classNames(styles.mark, built ? styles.builtMark : styles.uniqueMark)}
-              src={built ? "Media/Game/Icons/AlreadyBuilt.svg" : "Media/Game/Icons/Unique.svg"}
-              alt=""
-              aria-hidden="true"
-            />
-          )}
+          <UniqueMark entry={entry} built={built} className={classNames(styles.mark, built ? styles.builtMark : styles.uniqueMark)} />
         </span>
         {/* Plain text, no spans: Cohtml drops the space after an inline element, and never breaks at a hyphen. */}
         <p className={classNames(styles.name, grid.nameLines === 1 && styles.oneLine)} data-bbm-name={name.length} {...{ cohinline: "" }}>

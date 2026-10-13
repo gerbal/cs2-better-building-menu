@@ -1086,17 +1086,32 @@ follows the grouping.
 `data-bbm-name` (the whole name's length) and `data-bbm-fact` inside it. No count reads
 `data-bbm-fact` yet; it marks the numbers for the said-once rule to come.
 
-**The tiles.** Each building a picture tile of Tile size, the picture 4 rem smaller and inset 2, the
-cost on a tag at its foot; a locked building's milestone ("MS 4", by the list's rule, `lockedFact`) or
-the locked word on the tag in the look's amber, which reads on the tag because the tag stays dark under
-every interface style, with a padlock that is a raster, since a masked vector is what Cohtml cannot
-draw; a unique carries the game's own mark, sized from base.scss's ratio as a share of the picture's
-box (Tile size moves the picture), and one the city holds the already-built mark, as 0.2.x's Grid drew
-them; locked and built tiles in their silhouette, rasters only. Under the tiles, where 14 rem or more
-are left (`TILE_NAME_LINE_MIN`: two lines of 64 leave 14.25, 68 leaves 6.25) and the Tile name line
-knob is on, a line names the tile the pointer is on, else the armed one, then the numbers a tile does
-not show, its capacity, upkeep and lot (`tileFacts`); the name takes up to 60% of the line and is
-fitted to it from the widths drawn (`FittedName`). Look-alike tags wait for the name planner.
+**The tiles.** Each building is a picture tile of Tile size, the picture 4 rem smaller and inset 2. A
+tag at its foot says the plate's first number (`plateNumbers`, `tileTag`): the cost, or for a locked
+building its milestone ("MS 4", by the list's rule, `lockedFact`) or the locked word, in the look's
+amber, which reads on the tag because the tag stays dark under every interface style. Under a sort by a
+value other than the cost or the lot the tag says the value sorted by, as 0.2.x's Grid did, so a re-sort
+says why the tiles moved. A money figure the tag cannot hold whole at the text scale is said in
+thousands or millions with one decimal, in the game's own money template ("¢1.2M", "¢4.8k/km"): a cut
+figure reads as another number, a rounded one as itself. The fit is judged from the glyph advances of the
+game's own fonts, the wider of Overpass and Noto Sans per character, so it errs toward the short form;
+anything else too wide is bounded to the tile and cut with an ellipsis.
+
+A locked tile draws a padlock that is a raster, since a masked vector is what Cohtml cannot draw. A unique
+carries the game's own mark (`UniqueMark`, and the `unique-mark-states` mixin the list shares), sized
+from base.scss's ratio as a share of the picture's box, since Tile size moves the picture, and one the city
+holds the already-built mark, as 0.2.x's Grid drew them; locked and built tiles in their silhouette,
+rasters only.
+
+Under the tiles, where 14 rem or more are left (`TILE_NAME_LINE_MIN`: two lines of 64 leave 14.25, 68
+leaves 6.25) and the Tile name line knob is on, a line names the tile the pointer is on, else the armed
+one, then the numbers a tile does not show, its capacity, upkeep and lot (`tileFacts`). The name takes up
+to 60% of the line and is fitted to it from the widths drawn (`FittedName`), its character budget taken
+at the line's own font. Look-alike tags wait for the name planner.
+
+**This changes 0.2.x:** Grid drew each tile's name under its picture; a tile now draws only its picture
+and its tag, and the name is the line's under the tiles, for the tile pointed at or armed. Under a sort by
+the lot Grid said the lot on each tile; the tag says the cost there, and the lot is the name line's.
 
 **The cards.** 0.2.4's card, under the headings of the grouping that orders them (`GroupedResults`):
 All under its tabs, a 40 rem picture, the whole name, the lot, cost and capacity, the sorted value's

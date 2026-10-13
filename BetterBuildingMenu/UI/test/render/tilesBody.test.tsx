@@ -36,17 +36,45 @@ describe("the tiles", () => {
   it("put the cost on a tag at the tile's foot, and a locked building's milestone there with a padlock", () => {
     const html = render([entry(1, { constructionCost: 1000 }), entry(2, { isLocked: true, unlockMilestone: 4 } as Partial<BuildingCatalogEntry>)]);
 
-    assert.match(html, /<span class="tag" data-bbm-fact="true">¢1[^<]*000<\/span>/);
-    assert.match(html, /<span class="tag milestone" data-bbm-fact="true">MS 4<\/span>/);
+    assert.match(html, /<span class="tag" style="max-width:62rem" data-bbm-fact="true">¢1[^<]*000<\/span>/);
+    assert.match(html, /<span class="tag milestone" style="max-width:62rem" data-bbm-fact="true">MS 4<\/span>/);
     assert.equal(count(html, /LockRaster\.png/), 1);
-    assert.match(render([entry(3, { isLocked: true, unlockMilestone: 0 } as Partial<BuildingCatalogEntry>)]), /<span class="tag milestone" data-bbm-fact="true">Locked<\/span>/);
+    assert.match(render([entry(3, { isLocked: true, unlockMilestone: 0 } as Partial<BuildingCatalogEntry>)]), /<span class="tag milestone"[^>]*>Locked<\/span>/);
     assert.match(html, /class="tile unplaceable"[^>]*data-catalog-entry="2"[^>]*data-vector-thumb="false"/);
   });
 
   it("say the locked word on the tag once the city has reached the building's milestone", () => {
     setBinding("milestone", "achievedMilestone", 4);
 
-    assert.match(render([entry(1, { isLocked: true, unlockMilestone: 4 } as Partial<BuildingCatalogEntry>)]), /<span class="tag milestone" data-bbm-fact="true">Locked<\/span>/);
+    assert.match(render([entry(1, { isLocked: true, unlockMilestone: 4 } as Partial<BuildingCatalogEntry>)]), /<span class="tag milestone"[^>]*>Locked<\/span>/);
+  });
+
+  it("say a cost too wide for the tag in millions, at 100% text and above it", () => {
+    assert.match(render([entry(1, { constructionCost: 12_500_000 })]), /<span class="tag"[^>]*>¢12\.5M<\/span>/);
+    setBinding("options", "textScale", 1.3);
+    assert.match(render([entry(1, { constructionCost: 1_200_000 })]), /<span class="tag"[^>]*>¢1\.2M<\/span>/);
+    assert.match(render([entry(1, { constructionCost: 48_000 })]), /<span class="tag"[^>]*>¢48[^<]*000<\/span>/);
+  });
+
+  it("bound the tag to the tile on a larger Tile size too", () => {
+    assert.match(render(rows(1), { tileSize: 80 }), /<span class="tag" style="max-width:78rem"/);
+  });
+
+  it("say the value sorted by on the tag under a sort by a value, as 0.2.x's Grid did, and the cost again under the cost", () => {
+    setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", "Capacity");
+    const sorted = render([entry(1, { capacity: 300 })]);
+
+    assert.match(sorted, /<span class="tag"[^>]*>300[^<]*<\/span>/);
+    assert.doesNotMatch(sorted, /<span class="tag"[^>]*>¢/);
+    setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", "ConstructionCost");
+    assert.match(render([entry(1, { capacity: 300 })]), /<span class="tag"[^>]*>¢1[^<]*000<\/span>/);
+  });
+
+  it("draw no name on a tile, only its tag: the name is the line's under them", () => {
+    const tiles = [...render(rows(2)).matchAll(/<button class="tile[^"]*"[^>]*>(.*?)<\/button>/g)].map(([, inner]) => inner.replace(/<[^>]*>/g, ""));
+
+    assert.equal(tiles.length, 2);
+    for (const text of tiles) assert.match(text, /^¢1[^A-Za-z]*000$/);
   });
 
   it("keep the game's unique mark on a unique tile, shown on hover as 0.2.x's grid did", () => {

@@ -87,7 +87,6 @@ export function hoverCardLabels(translate: Translate): HoverCardLabels {
     // in every language. A network's cost too: PlaceableNetCostBinder passes
     // Common.ASSET_CONSTRUCTION_COST, which no locale carries (checked in
     // game), so the card takes ConstructionCostBinder's key, the same word.
-    // The table's narrower columns keep ours.
     cost: translate("Properties.CONSTRUCTION_COST", "Cost") ?? "Cost",
     upkeep: translate("Properties.UPKEEP", "Upkeep") ?? "Upkeep",
     capacity: translate("Tooltip.LABEL[BetterBuildingMenu.Capacity]", "Capacity") ?? "Capacity",

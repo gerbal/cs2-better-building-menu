@@ -68,18 +68,7 @@
   }
 }
 
-// 0.2.x's states: a unique shows its mark faintly under the pointer, a unique the city holds always.
-.uniqueMark {
-  opacity: 0;
-}
-
-.tile:hover .uniqueMark {
-  opacity: 0.5;
-}
-
-.builtMark {
-  opacity: 1;
-}
+@include unique-mark-states(".tile");
 
 // The silhouette, rasters only: Cohtml re-rasterises a vector for every composite drawn over it and
 // does not survive doing so. Keyed off "false", since Cohtml's selector engine rejects :not().
@@ -95,16 +84,18 @@
   height: 14rem;
 }
 
-// The cost, on a tag at the tile's foot.
+// The cost or the sorted value, on a tag at the tile's foot. Its font and padding are tileTag.ts's, which
+// decides when a figure is said short; the width is bounded inline, and a cut reads as a cut.
 .tag {
   position: absolute;
   left: 2rem;
   bottom: 2rem;
+  box-sizing: border-box;
   height: 13rem;
   padding: 0 3rem;
   font-size: calc(10rem * var(--fontScale));
   line-height: 13rem;
-  white-space: nowrap;
+  @include _base.truncate;
   border-top-left-radius: var(--bbm-tagRadius);
   border-top-right-radius: var(--bbm-tagRadius);
   border-bottom-left-radius: var(--bbm-tagRadius);
@@ -129,6 +120,7 @@
   white-space: nowrap;
 }
 
+// Its font is TilesBody's, which budgets the name's characters by it.
 .lineName {
   flex: 0 1 auto;
   font-size: calc(11rem * var(--fontScale));

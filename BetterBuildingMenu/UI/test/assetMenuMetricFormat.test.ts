@@ -6,6 +6,7 @@ import {
   getNumberSeparators,
   formatBuildingMetric,
   formatCapacity,
+  formatCompactMoney,
   applyMoneyTemplate,
   FALLBACK_MONEY,
   FALLBACK_SEPARATORS,
@@ -470,5 +471,26 @@ describe("a telecom facility's capacity is a data rate", () => {
 
     assert.match(formatCapacity(2.5, "ServiceBuildings", "ServiceBuildings_Communications", "TelecomFacility"), /^2[.,]5 Gbit\/s$/);
     assert.match(formatCapacity(2.5, "ServiceBuildings", "ServiceBuildings_Communications", "TelecomFacility", imperial), /^2[.,]5 Gbit\/s$/);
+  });
+});
+
+describe("compact money", () => {
+  const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+
+  it("says thousands and millions with one decimal at most, in the game's money template", () => {
+    assert.equal(formatCompactMoney(850_000, "cost"), "¢850k");
+    assert.equal(formatCompactMoney(1_200_000, "cost"), "¢1.2M");
+    assert.equal(formatCompactMoney(12_500_000, "cost"), "¢12.5M");
+    assert.equal(formatCompactMoney(1_250, "upkeep"), applyMoneyTemplate(FALLBACK_MONEY.perMonth, "1.3k"));
+  });
+
+  it("says millions where thousands would round to a thousand of them", () => {
+    assert.equal(formatCompactMoney(999_950, "cost"), "¢1M");
+    assert.equal(formatCompactMoney(999_000, "cost"), "¢999k");
+  });
+
+  it("keeps a rate's own template, and moves a per-kilometre rate to miles with the unit", () => {
+    assert.equal(formatCompactMoney(4_800, "cost", FALLBACK_SEPARATORS, true), applyMoneyTemplate(FALLBACK_MONEY.perKilometre, "4.8k"));
+    assert.equal(formatCompactMoney(10_000, "cost", imperial, true), applyMoneyTemplate(FALLBACK_MONEY.perMile, "16.1k"));
   });
 });

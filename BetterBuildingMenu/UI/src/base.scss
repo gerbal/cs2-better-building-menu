@@ -108,9 +108,9 @@
   }
 }
 
-// Unique-asset marks, at one scale across every view mode. Four modes draw one
-// catalogue at four picture sizes, so the badge is stated as a RATIO of the
-// picture and kept here rather than repeated per module.
+// Unique-asset marks, at one scale across every body. The bodies draw one
+// catalogue at different picture sizes, so the badge is stated as a RATIO of
+// the picture and kept here rather than repeated per module.
 
 // Vanilla pins the badge inside the item and leaves its size auto, which the
 // engine resolves to the SVG's own pixels; ours states the size and this
@@ -127,8 +127,8 @@ $mark-inset: 0.147;
 }
 
 /// The inset that leaves the badge at the picture's ratio, expressed in the
-/// FRAME's coordinates. Reduces to mark-inset when the two are the same,
-/// which is every mode but the table.
+/// FRAME's coordinates. Reduces to mark-inset when the two are the same, as
+/// they are wherever the picture fills its box.
 @function mark-frame-inset($picture, $frame) {
   @return math.div($frame - ($picture - 2 * mark-inset($picture)), 2);
 }

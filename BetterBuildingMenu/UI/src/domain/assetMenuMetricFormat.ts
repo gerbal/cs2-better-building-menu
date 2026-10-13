@@ -290,6 +290,34 @@ export function groupDigits(value: number, separators: NumberSeparators = FALLBA
 export const PER_DISTANCE_SUFFIX = "/km";
 export const PER_MILE_SUFFIX = "/mi";
 
+/**
+ * A per-kilometre rate becomes a per-MILE rate, so the figure has to move with
+ * the unit or a road's cost is understated by more than a third. Money is
+ * rounded because it is whole everywhere else on the card.
+ */
+function perUnitDistance(value: number, isMoney: boolean, separators: NumberSeparators, perDistance: boolean): number {
+  if (!perDistance || separators.unitSystem !== UnitSystem.Freedom) return value;
+
+  return isMoney ? Math.round(value * KILOMETRES_PER_MILE) : value * KILOMETRES_PER_MILE;
+}
+
+/**
+ * The game's own template for a money figure: a total, a monthly bill, or a
+ * rate per kilometre or mile, suffix and all, so a rate is stated the way
+ * vanilla states it rather than by bolting our "/km" onto a number.
+ */
+function moneyTemplate(metric: "cost" | "upkeep", separators: NumberSeparators, perDistance: boolean): string {
+  const money = separators.money ?? FALLBACK_MONEY;
+
+  if (perDistance) {
+    return separators.unitSystem === UnitSystem.Freedom
+      ? (metric === "upkeep" ? money.perMilePerMonth : money.perMile)
+      : (metric === "upkeep" ? money.perKilometrePerMonth : money.perKilometre);
+  }
+
+  return metric === "upkeep" ? money.perMonth : money.plain;
+}
+
 export function formatBuildingMetric(
   value: number | null | undefined,
   metric: AssetMenuMetric,
@@ -300,30 +328,16 @@ export function formatBuildingMetric(
     return METRIC_NO_DATA;
   }
 
-  const money = separators.money ?? FALLBACK_MONEY;
   const isMoney = metric === "cost" || metric === "upkeep";
   const imperial = separators.unitSystem === UnitSystem.Freedom;
-  // A per-kilometre rate becomes a per-MILE rate, so the figure has to move
-  // with the unit or a road's cost is understated by more than a third. Money
-  // is rounded because it is whole everywhere else on the card.
-  const scaled = perDistance && imperial
-    ? (isMoney ? Math.round(value * KILOMETRES_PER_MILE) : value * KILOMETRES_PER_MILE)
-    : value;
-  const digits = groupDigits(scaled, separators);
+  const digits = groupDigits(perUnitDistance(value, isMoney, separators, perDistance), separators);
 
   if (perDistance) {
     // Free is a statement about a total, so it has no meaning for a rate — a
     // road that costs nothing per kilometre costs nothing at all, and "0/km"
     // says that without implying the asset is a gift.
     if (isMoney) {
-      // The game has its own per-kilometre money forms, suffix and all, so the
-      // rate is stated the way vanilla states it rather than by bolting our
-      // "/km" onto a number.
-      const perDistanceTemplate = imperial
-        ? (metric === "upkeep" ? money.perMilePerMonth : money.perMile)
-        : (metric === "upkeep" ? money.perKilometrePerMonth : money.perKilometre);
-
-      return applyMoneyTemplate(perDistanceTemplate, digits);
+      return applyMoneyTemplate(moneyTemplate(metric, separators, perDistance), digits);
     }
 
     return `${digits}${imperial ? PER_MILE_SUFFIX : PER_DISTANCE_SUFFIX}`;
@@ -334,15 +348,39 @@ export function formatBuildingMetric(
       // The game bills upkeep monthly; without this the column is a bare
       // number the player cannot compare against anything. Its own template
       // carries both the symbol and the localized "per month".
-      return applyMoneyTemplate(money.perMonth, digits);
+      return applyMoneyTemplate(moneyTemplate(metric, separators, false), digits);
     case "cost":
       // A zero here is real: the indexer nulls the cost when there is no
       // PlaceableObjectData. Naming it keeps the dash meaning only "not known",
       // instead of a lone "0" reading as a third kind of nothing.
-      return value === 0 ? METRIC_FREE : applyMoneyTemplate(money.plain, digits);
+      return value === 0 ? METRIC_FREE : applyMoneyTemplate(moneyTemplate(metric, separators, false), digits);
     default:
       return digits;
   }
+}
+
+/** A magnitude's short form: millions from where a thousands figure would round to 1000k. */
+const COMPACT_STEPS: readonly { from: number; unit: number; suffix: string }[] = [
+  { from: 999_950, unit: 1_000_000, suffix: "M" },
+  { from: 1_000, unit: 1_000, suffix: "k" },
+];
+
+/**
+ * A money figure in thousands or millions, one decimal at most, in the game's
+ * own template ("¢1.2M", "¢4.8k/km"), for a place too narrow for every digit:
+ * rounded rather than cut, since a cut figure reads as another number.
+ */
+export function formatCompactMoney(
+  value: number,
+  metric: "cost" | "upkeep",
+  separators: NumberSeparators = FALLBACK_SEPARATORS,
+  perDistance: boolean = false,
+): string {
+  const scaled = perUnitDistance(value, true, separators, perDistance);
+  const step = COMPACT_STEPS.find(({ from }) => Math.abs(scaled) >= from);
+  const short = step === undefined ? scaled : Math.round((scaled / step.unit) * 10) / 10;
+
+  return applyMoneyTemplate(moneyTemplate(metric, separators, perDistance), `${groupDigits(short, separators)}${step?.suffix ?? ""}`);
 }
 
 /**

@@ -19,6 +19,7 @@ const CARD = "mods/BuildingHoverCard/buildingHoverCard.module.scss";
 const PICKER = "mods/ExtensionMenu/extensionMenu.module.scss";
 const RESIZE = "mods/AssetMenuResizeHandle/assetMenuResizeHandle.module.scss";
 const LIST = "mods/BuildingList/buildingList.module.scss";
+const TILES = "mods/Bodies/tilesBody.module.scss";
 const TAB_ROW = "mods/TabRow/tabRow.module.scss";
 const FILTER_PANEL = "mods/Pickers/filterPanel.module.scss";
 const PICKER_LIST = "mods/Pickers/pickerList.module.scss";
@@ -487,6 +488,24 @@ describe("a wrapping row of cards keeps each card its own height", () => {
     assert.ok(!selectorsOf(LIST).includes(".list::after"));
   });
 
+});
+
+describe("a tile's tag and name line are the sizes the UI budgets them at", () => {
+  it("draws the tag in the font and padding tileTag.ts measures it by, cut as a cut where it still runs over", () => {
+    const tag = declarationsOf(TILES, ".tag");
+
+    assert.equal(tag["font-size"], "calc(10rem * var(--fontScale))");
+    assert.equal(tag.padding, "0 3rem");
+    assert.equal(tag.left, "2rem");
+    assert.equal(tag["box-sizing"], "border-box");
+    assert.equal(tag.overflow, "hidden");
+    assert.equal(tag["white-space"], "nowrap");
+    assert.equal(tag["text-overflow"], "ellipsis");
+  });
+
+  it("draws the name line's name in the font TilesBody budgets its characters by", () => {
+    assert.equal(declarationsOf(TILES, ".lineName")["font-size"], "calc(11rem * var(--fontScale))");
+  });
 });
 
 describe("Cohtml stylesheet support", () => {

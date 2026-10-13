@@ -8,7 +8,7 @@ import {
   wrapTileLabel,
 } from "../src/domain/tileLabel.ts";
 
-describe("grid tile label shortening", () => {
+describe("drawn name shortening", () => {
   it("leaves a name that already fits alone", () => {
     assert.equal(shortenTileLabel("Auto Center", 20), "Auto Center");
   });
@@ -65,10 +65,17 @@ describe("grid tile label shortening", () => {
     assert.ok(!shortenTileLabel("Auto Center", 20).includes("…"));
   });
 
-  it("scales the budget with the configured tile size", () => {
+  it("scales the budget with the width it is given", () => {
     assert.equal(tileLabelLineBudget(88), 11);
     assert.ok(tileLabelLineBudget(132) > tileLabelLineBudget(88));
     assert.ok(tileLabelLineBudget(60) < tileLabelLineBudget(88));
+  });
+
+  it("budgets a font the caller draws by its own size, grown by the text scale", () => {
+    // Measured at fontSizeM, 16 rem: a line drawn at 11 rem holds 16/11 as many.
+    assert.equal(tileLabelLineBudget(100, 1, 11), 17);
+    assert.equal(tileLabelLineBudget(100, 1.3, 11), 13);
+    assert.ok(tileLabelLineBudget(384, 1, 11) > tileLabelLineBudget(384));
   });
 
   it("keeps a usable budget for nonsense tile sizes", () => {

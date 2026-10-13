@@ -30,3 +30,19 @@
     margin: 0 $body-side-margin;
   }
 }
+
+// 0.2.x's unique-mark states, on the item class a body gives: a unique shows its mark faintly under the
+// pointer, a unique the city holds always.
+@mixin unique-mark-states($item) {
+  .uniqueMark {
+    opacity: 0;
+  }
+
+  #{$item}:hover .uniqueMark {
+    opacity: 0.5;
+  }
+
+  .builtMark {
+    opacity: 1;
+  }
+}

@@ -32,7 +32,7 @@ const NO_MILESTONE_NAMES: string[] = [];
 
 export const useHoverCardContext = (): HoverCardContext => {
   const { translate } = useLocalization();
-  // One subscription per grid, like the milestones below — the whole reason
+  // One subscription per body, like the milestones below — the whole reason
   // this context exists rather than each card reading its own.
   const unitSystem = useUnitSystem();
   const milestoneNames = useValue(AssetMenuMilestones$) ?? NO_MILESTONE_NAMES;
@@ -41,9 +41,8 @@ export const useHoverCardContext = (): HoverCardContext => {
   // a render; translate holds still until the language changes.
   return useMemo(() => ({
     milestoneNames,
-    // Clamped here, not in the resolver: the expanded table row shows the same
-    // description where there is room for all of it, and shortening it there
-    // would be the card dictating to the table.
+    // Clamped here, not in the resolver: the card has room for a few lines,
+    // and a caller with more room may want the whole description.
     describe: (prefabName) => clampAssetDescription(resolveAssetDescription(prefabName, translate)),
     // Resolved up here for the same reason describe is: translate belongs to
     // the component that holds the localization hook, not to the card.

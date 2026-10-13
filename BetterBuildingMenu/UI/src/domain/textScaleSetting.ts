@@ -2,7 +2,7 @@ import { bindValue, useValue } from "cs2/api";
 
 /**
  * The player's text scale, from the game's own ("options", "textScale")
- * binding, which re-fires as the slider moves so an open grid re-lays itself
+ * binding, which re-fires as the slider moves so an open body re-lays itself
  * out. Not a mod setting, for the same reason the unit system is not.
  */
 const TextScale$ = bindValue<number>("options", "textScale", 1);

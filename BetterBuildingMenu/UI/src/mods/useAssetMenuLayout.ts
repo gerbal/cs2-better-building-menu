@@ -27,9 +27,9 @@ function screenAspect(): number {
 }
 
 /**
- * One reading of what decides the asset menu's widths, from the stored step. The catalog
- * budgets its table with it; the asset menu draws it too, except while a width drag has the
- * box following the pointer, when the table keeps the stored step until the release.
+ * One reading of what decides the asset menu's widths, from the stored step. The bodies place
+ * their slots by it; the asset menu draws it too, except while a width drag has the box
+ * following the pointer, when the bodies keep the stored step until the release.
  */
 export function useAssetMenuLayout(): AssetMenuLayout {
   const step = sanitizeWidthStep(useValue(AssetMenuWidthStep$));

@@ -70,18 +70,7 @@
   }
 }
 
-// 0.2.x's states: a unique shows its mark faintly under the pointer, a unique the city holds always.
-.uniqueMark {
-  opacity: 0;
-}
-
-.plate:hover .uniqueMark {
-  opacity: 0.5;
-}
-
-.builtMark {
-  opacity: 1;
-}
+@include unique-mark-states(".plate");
 
 .name {
   flex: 1 1 auto;

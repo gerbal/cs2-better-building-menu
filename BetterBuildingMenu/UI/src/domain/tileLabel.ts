@@ -15,6 +15,8 @@ import { fontSizeRatio } from "./textScale";
 const CHARS_AT_MEASURED_WIDTH = 12;
 /** The width that figure was taken at; a budget for another width scales from it. */
 const MEASURED_WIDTH = 100;
+/** The font that figure was taken in: the game's fontSizeM at 100% text, in rem. */
+const MEASURED_FONT = 16;
 
 /**
  * Two lines unless the caller says otherwise, because one cannot hold names
@@ -24,14 +26,15 @@ const MEASURED_WIDTH = 100;
 const TILE_LABEL_LINES = 2;
 
 /**
- * Characters on a single line of a box this wide.
+ * Characters on a single line of a box this wide, in fontSizeM unless the
+ * caller draws a font of its own size (rem at 100% text, grown by the scale).
  */
-export const tileLabelLineBudget = (width: number, textScale = 1): number => {
+export const tileLabelLineBudget = (width: number, textScale = 1, font = MEASURED_FONT): number => {
   const size = Number.isFinite(width) && width > 0 ? width : MEASURED_WIDTH;
-  // The name line is fontSizeM; at a larger text scale fewer characters fit the
-  // same box — see domain/textScale.ts. The unscaled budget is rounded as it was
-  // measured; a scaled one is floored, since the base already fills the line.
-  const ratio = fontSizeRatio("m", textScale);
+  // fontSizeM grows by vanilla's own calc() — see domain/textScale.ts; any other
+  // font grows with the scale. The budget at the measured font is rounded as it
+  // was measured; any other is floored, since the base already fills the line.
+  const ratio = font === MEASURED_FONT ? fontSizeRatio("m", textScale) : (font * textScale) / MEASURED_FONT;
   const unscaled = (size / MEASURED_WIDTH) * CHARS_AT_MEASURED_WIDTH;
   return Math.max(4, ratio === 1 ? Math.round(unscaled) : Math.floor(unscaled / ratio));
 };
