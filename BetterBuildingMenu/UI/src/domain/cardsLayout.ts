@@ -91,7 +91,7 @@ const capacityOf = (entry: BuildingCatalogEntry, value: number | null | undefine
   typeof value === "number" && value !== 0 ? known(formatCapacity(value, entry.category, entry.subCategory, entry.buildingType, separators)) : null;
 
 /**
- * A card's words: the whole name (cut only past the list's longest), the lot, the cost and the
+ * A card's words: the whole name (cut only past the list's cap on a name), the lot, the cost and the
  * capacity, each where the building has it; a locked card keeps its cost, its milestone beside the
  * lock; under a sort by a number, the value sorted by.
  */
@@ -152,7 +152,8 @@ export function labelWidth(label: string, count: string, textScale: number): num
   const font = LABEL_FONT * textScale;
   const caps = label.toUpperCase();
 
-  return 2 * LABEL_PADDING + textWidth(caps, font) + caps.length * LABEL_TRACKING + LABEL_GAP + textWidth(count, font) + TEXT_SLACK;
+  // The plate tracks every character it draws, the count's too.
+  return 2 * LABEL_PADDING + textWidth(caps, font) + LABEL_GAP + textWidth(count, font) + (caps.length + count.length) * LABEL_TRACKING + TEXT_SLACK;
 }
 
 /** A cell the packer places: its width, and whether it starts a row of its own and takes the whole of it. */

@@ -6,7 +6,6 @@
  * docs/design-notes.md, "Label plates".
  */
 import type { BuildingCatalogEntry, CatalogSection } from "./buildingCatalog";
-import { resolveVanillaLabel, vanillaCategoryNameKeys } from "./vanillaServiceLabels";
 
 /** No labels: one array, so a page without sections keeps a body's memo. */
 export const NO_SECTIONS: readonly CatalogSection[] = [];
@@ -55,15 +54,6 @@ export function bodyOrder(entries: readonly BuildingCatalogEntry[], sections: re
   }
 
   return out;
-}
-
-/**
- * The words a label draws: the locked word over the locked rows; over a group, the game's word for its
- * category where the game has one, the name C# sends otherwise. One reading, so a plate is sized from
- * the words it draws, in the player's language.
- */
-export function sectionLabel(section: CatalogSection, translate: (key: string) => string | null | undefined, lockedWord: string): string {
-  return section.kind === "locked" ? lockedWord : resolveVanillaLabel(vanillaCategoryNameKeys(section.labelId), translate, section.label);
 }
 
 /** The order placed in slots: a label one slot in line, or a fresh line of its own and the whole of it. */

@@ -5,11 +5,12 @@ import { useMemo } from "react";
 
 import { BODY_SIDE_MARGIN, drawnBodyHeight } from "domain/assetMenuLayout";
 import { groupDigits } from "domain/assetMenuMetricFormat";
-import { bodyOrder, NO_SECTIONS, sectionLabel } from "domain/bodyCells";
+import { bodyOrder, NO_SECTIONS } from "domain/bodyCells";
 import type { DrawnBody } from "domain/bodyChoice";
 import type { BuildingCatalogEntry, CatalogSection } from "domain/buildingCatalog";
 import { cardGeometry, cardText, cardWidth, labelWidth, packCards, type CardGeometry, type CardText } from "domain/cardsLayout";
 import { sortedMetricFor } from "domain/sortedMetric";
+import { sectionLabel } from "domain/vanillaServiceLabels";
 import { useTextScale } from "domain/textScaleSetting";
 import { useBlockLabels } from "mods/Bodies/useBodyCells";
 import { useNumberSeparators, useStateWords } from "mods/Bodies/useBodyWords";
@@ -37,6 +38,8 @@ export interface CardsLayout {
   /** How many buildings one screen of the body shows: the cards in its rows. */
   screen: number;
 }
+
+const thousandths = (rem: number): number => Math.round(rem * 1000) / 1000;
 
 /**
  * The Cards body's cells, each placed by the row packer from the words it draws, at the box's width,
@@ -77,7 +80,13 @@ export function useCardsLayout(
           width: labelWidth(sectionLabel(next.section, (key) => translate(key, null), lockedWord), groupDigits(next.section.count, separators), textScale),
           ownLine: blockLabels === "ownLine",
         }), rowWidth);
-    const placeOf = (at: number): CardPlace => ({ left: packed[at].left, top: geometry.y0 + packed[at].row * geometry.pitchY, width: packed[at].width, height: geometry.height });
+    // Whole thousandths of a rem: the widths' sums carry float noise into the inline style.
+    const placeOf = (at: number): CardPlace => ({
+      left: thousandths(packed[at].left),
+      top: thousandths(geometry.y0 + packed[at].row * geometry.pitchY),
+      width: thousandths(packed[at].width),
+      height: thousandths(geometry.height),
+    });
     const cells: CardCell[] = order.map((next, at) => next.kind === "item"
       ? { kind: "item", entry: next.entry, text: next.text, place: placeOf(at) }
       : { kind: "label", section: next.section, place: placeOf(at) });

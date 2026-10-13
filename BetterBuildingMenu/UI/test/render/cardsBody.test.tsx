@@ -32,6 +32,19 @@ describe("the cards", () => {
     assert.equal(count(html, /data-bbm-fact="true"/), 3);
   });
 
+  it("place each card after the last, a gap apart, and start the next row a row's pitch down, in whole thousandths of a rem", () => {
+    const html = render(rows(4), { sections: [group(0, "Small Roads", 66)] });
+    const places = [...html.matchAll(/style="left:([\d.]+)rem;top:([\d.]+)rem;width:([\d.]+)rem/g)].map((m) => m.slice(1).map(Number));
+
+    const after = (at: number) => Math.round((places[at][0] + places[at][2] + 4) * 1000) / 1000;
+
+    // The label and two cards fill the game's own 690 rem row; the third card starts the next.
+    assert.deepEqual([places[1][0], places[2][0]], [after(0), after(1)]);
+    assert.deepEqual([places[3][0], places[3][1]], [0, 49.125]);
+    assert.deepEqual([places[4][0], places[4][1]], [after(3), 49.125]);
+    assert.doesNotMatch(html, /\d\.\d{4,}rem/);
+  });
+
   it("say the lot, the cost and the capacity, each in a box of its own, a dot between", () => {
     const html = render(rows(1));
 

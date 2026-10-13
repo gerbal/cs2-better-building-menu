@@ -5,9 +5,9 @@ import classNames from "classnames";
 import { memo } from "react";
 
 import { groupDigits } from "domain/assetMenuMetricFormat";
-import { sectionLabel } from "domain/bodyCells";
 import type { CatalogSection } from "domain/buildingCatalog";
 import { setSectionCollapsedCommand } from "domain/buildingCatalogContracts";
+import { sectionLabel } from "domain/vanillaServiceLabels";
 import { send } from "mods/bindings";
 import styles from "./labelPlate.module.scss";
 import { useNumberSeparators, useStateWords } from "./useBodyWords";

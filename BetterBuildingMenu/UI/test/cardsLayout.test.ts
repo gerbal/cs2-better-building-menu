@@ -1,12 +1,16 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { formatLotDimensions } from "../src/domain/assetMenuMetricFormat";
+import { bodyLines, SLOT_GAP } from "../src/domain/bodyGeometry";
 import { cardGeometry, cardText, cardWidth, CARD_GAP, labelWidth, packCards } from "../src/domain/cardsLayout";
+import { pageScrollTop } from "../src/domain/catalogWindow";
 import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog";
+import { fontSizeRatio } from "../src/domain/textScale";
 import { textWidth } from "../src/domain/textWidth";
 import { declarationsOf, rem, sides } from "./harness/compiledCss";
 
 const CARDS = "mods/Bodies/cardsBody.module.scss";
+const LABELS = "mods/Bodies/labelPlate.module.scss";
 const separators = { group: ",", decimal: "." };
 const lot = formatLotDimensions(4, 3);
 const near = (actual: number, expected: number) => assert.ok(Math.abs(actual - expected) < 1e-9, `${actual} is not ${expected}`);
@@ -30,6 +34,16 @@ describe("the cards' geometry", () => {
 
     assert.ok(large.height > 46, `${large.height}`);
     assert.equal(large.lines, 2);
+  });
+
+  it("pages by whole rows: from the top of the game's own body a page moves three rows of 46", () => {
+    const lines = bodyLines(null, cardGeometry(46, 144.25, 1));
+
+    assert.deepEqual(lines, { pitch: 49.125, gap: 3.125 });
+    assert.equal(pageScrollTop(0, 144.25, 1000, 1, lines.pitch, lines.gap, 1), 147.375);
+    // The list and the tiles page by their slots, a slot's gap apart; with no body, a screen.
+    assert.equal(bodyLines(null, null).pitch, 0);
+    assert.equal(SLOT_GAP, bodyLines(null, null).gap);
   });
 
   it("forgives the device pixel the game's scroller reports short, as the list and the tiles do", () => {
@@ -82,14 +96,38 @@ describe("a card's width", () => {
     near(cardWidth(sorted, 1) - cardWidth(plain, 1), rem(declarationsOf(CARDS, ".sorted")["padding-left"]) + textWidth("20 patients", 14));
   });
 
+  it("counts a locked card's lock, its gap, its milestone and the dot after it, as the stylesheet draws them", () => {
+    const plain = cardText(entry({ name: "A" }), null, separators, "Locked", 0);
+    const locked = cardText(entry({ name: "A", isLocked: true, unlockMilestone: 4 }), null, separators, "Locked", 0);
+    const lock = rem(/calc\(([\d.]+rem)/.exec(declarationsOf(CARDS, ".lockGlyph").width)![1]);
+    const lockGap = rem(declarationsOf(CARDS, ".lockGlyph")["margin-right"]);
+    const dot = textWidth("·", 12) + 2 * rem(sides(declarationsOf(CARDS, ".factDot").padding)[1]);
+
+    near(cardWidth(locked, 1) - cardWidth(plain, 1), lock + lockGap + textWidth("MS 4", 12) + dot);
+  });
+
+  it("grows a card's height from the lines its name and facts draw at", () => {
+    const line = (selector: string) => rem(/calc\(([\d.]+rem)/.exec(declarationsOf(CARDS, selector)["line-height"])![1]);
+    const lines = Math.round(line(".name") * fontSizeRatio("s", 1.5) * 10) / 10 + Math.round(line(".facts") * fontSizeRatio("xs", 1.5) * 10) / 10;
+
+    assert.equal(cardGeometry(46, 144.25, 1.5).height, Math.ceil(46 - 40 + lines));
+  });
+
   it("grows with the text scale", () => {
     const text = cardText(entry(), null, separators, "Locked", 0);
 
     assert.ok(cardWidth(text, 1.3) > cardWidth(text, 1));
   });
 
-  it("puts a label's name and count in caps on a plate of their own", () => {
+  it("puts a label's name and count in caps on a plate of their own, tracked and padded as the stylesheet draws them", () => {
+    const plate = declarationsOf(LABELS, ".label");
+    const font = rem(/calc\(([\d.]+rem)/.exec(plate["font-size"])![1]);
+    const tracking = rem(plate["letter-spacing"]);
+
     assert.ok(labelWidth("Small Roads", "66", 1) > textWidth("SMALL ROADS", 10));
+    // Every character is tracked, the count's too.
+    near(labelWidth("Small Roads", "66", 1),
+      2 * rem(sides(plate.padding)[1]) + textWidth("SMALL ROADS", font) + rem(plate.gap) + textWidth("66", font) + 13 * tracking + 2);
   });
 });
 

@@ -38,8 +38,8 @@ function press(key: string, keyCode: number, target: unknown = fakeSearchField()
 
 const moves = () => triggers.filter((call) => call.name === "MoveEnterTarget").map((call) => call.args[0]);
 
-const Probe = ({ list, canMove, answered = "rail\n0", pitch = 0 }: { list: RefObject<HTMLElement>; canMove: boolean; answered?: string; pitch?: number }) => {
-  useSearchFieldKeys(list, canMove, answered, pitch);
+const Probe = ({ list, canMove, answered = "rail\n0", pitch = 0, gap }: { list: RefObject<HTMLElement>; canMove: boolean; answered?: string; pitch?: number; gap?: number }) => {
+  useSearchFieldKeys(list, canMove, answered, pitch, gap);
   return null;
 };
 
@@ -158,6 +158,24 @@ describe("the search field's keys", () => {
 
     // All five lines, 58.5 pixels apart: the last needs no gap below it.
     assert.equal(down, 292.5);
+  });
+
+  it("pages whole rows of cards, their own gap between: three rows from the top at the default height", () => {
+    const savedWindow = globals.window;
+    // 1,080 pixels tall: a rem is a pixel, and the scroller is the game's own 144.25 body.
+    globals.window = { innerHeight: 1080 };
+    const list = fakeList(50);
+    list.scroller.clientHeight = 144.25;
+    act(() => {
+      root = create(<Probe list={list.ref} canMove pitch={49.125} gap={3.125} />);
+    });
+
+    press("PageDown", 34);
+    const down = list.scroller.scrollTop;
+    globals.window = savedWindow;
+
+    // Three 46 rem rows 3.125 apart fill the body: the page lands the fourth row on the top edge.
+    assert.equal(down, 147.375);
   });
 
   it("moves nothing while there is no target to move", () => {

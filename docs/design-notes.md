@@ -1144,7 +1144,7 @@ and Table are gone, Grid's place taken by Tiles and Table's by List.
 ## The cards
 
 The Cards body draws each building on a card in the look's tokens: a 40 rem picture, the whole name on
-one line at the game's `fontSizeS` (cut only past the list's longest name), and under it one facts line
+one line at the game's `fontSizeS` (cut only past the list's cap on a name), and under it one facts line
 at `fontSizeXS`, the lot, the cost and the capacity where the building has each, a "·" between; under a
 sort by a number, the lot and the cost among them, the value sorted by in a column at the card's right,
 so the order reads down the rows. A locked card keeps its cost and says its milestone beside a padlock
@@ -1165,11 +1165,13 @@ tag judges its fit from the same table, the wider of the two fonts.
 **Its height** is the Card height knob's: 46 rem, three rows in the game's own 144.25 body a little over
 3 apart; or 50, two rows 4 apart, the block centred. Above 100% text a card grows where its two lines
 need more. The rows a screen shows are counted as the list's lines are (`wholeLines`, a device pixel
-forgiven), then spread at most 4 apart. The labels (see "Label plates") sit in the rows with the cards,
-at a card's height, each as wide as the words its plate draws (`sectionLabel`, so the game's word in the
-player's language sizes its own plate); under the Block labels knob's own line a label takes a row of
-its own. The catalog lays the cards out (`useCardsLayout`) and tells C# how many buildings a screen's
-rows hold; the cards fill the rows the packer gives them, so a screen holds more short names than long.
+forgiven), then spread at most 4 apart; a page steps by whole rows and their gap, so the rows keep the
+place the page found them in, a 50 rem block's centring offset with them. The labels (see "Label
+plates") sit in the rows with the cards, at a card's height, each as wide as the words its plate draws
+(`sectionLabel`, so the game's word in the player's language sizes its own plate); under the Block
+labels knob's own line a label takes a row of its own. The catalog lays the cards out (`useCardsLayout`)
+and tells C# how many buildings a screen's rows hold; the cards fill the rows the packer gives them, so
+a screen holds more short names than long.
 
 **This changes 0.2.x:** 0.2.4's cards were 50 rem tall in two rows, under headings that took a row of
 their own; they are 46 tall in three rows, the headings label plates in the rows. The Card height knob
@@ -1261,7 +1263,7 @@ field's.
 - **PageUp and PageDown** scroll the list a screen of the body's whole lines, counted as the body
   counts them (`wholeLines`: the last line needs no gap below it, and a device pixel of shortfall is forgiven, since
   the scroller reports its height in whole pixels), so lines land on the top edge as
-  they were (a screen of the scroller for the cards, which have no lines), held inside its ends
+  they were (the cards' whole rows and the gap between them, `bodyLines`), held inside its ends
   (`pageScrollTop`); a page that reaches the end lets the window load more, as scrolling there does.
 
 **This changes 0.2.x:** in the search field Up and Down now move Enter's target and no longer move the

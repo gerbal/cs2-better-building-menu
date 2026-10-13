@@ -159,6 +159,16 @@ export function labelPlace(grid: BodyGrid, slot: number, span: number): { left: 
   return { left, top, width: span <= 1 ? grid.cellWidth : span * grid.pitchX - SLOT_GAP, height: grid.cellHeight };
 }
 
+/**
+ * The lines a page of the body steps by, so a page lands them on the top edge as it found them: the
+ * slots' pitch and gap, or the cards' rows and the gap between them; none where neither is drawn.
+ */
+export function bodyLines(grid: BodyGrid | null, cards: { pitchY: number; rowGap: number } | null): { pitch: number; gap: number } {
+  if (grid !== null) return { pitch: grid.pitchY, gap: SLOT_GAP };
+  if (cards !== null) return { pitch: cards.pitchY, gap: cards.rowGap };
+  return { pitch: 0, gap: SLOT_GAP };
+}
+
 /** The slots' height for this many buildings: the scroller's whole content. */
 export function slotsHeight(grid: BodyGrid, count: number): number {
   return count <= 0 ? 0 : grid.y0 + Math.ceil(count / grid.cols) * grid.pitchY - SLOT_GAP;

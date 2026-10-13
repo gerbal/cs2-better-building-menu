@@ -10,14 +10,14 @@ import { isSearchField } from "mods/TopRow/searchField";
 import { listScroller } from "./catalogDom";
 
 /** The list a screen down or up, on the element that scrolls it: whole lines of the body, where it has lines. */
-function pageList(root: HTMLElement | null, direction: 1 | -1, linePitchRem: number): void {
+function pageList(root: HTMLElement | null, direction: 1 | -1, linePitchRem: number, lineGapRem: number): void {
   const scroller = root ? listScroller(root) : null;
 
   if (scroller) {
     // The pitch and the gap in pixels, as the scroller measures: the layout is LAYOUT_HEIGHT rem tall.
     // It reads its height in whole pixels, so a line forgives one pixel of shortfall.
     const pxPerRem = typeof window === "undefined" || !(window.innerHeight > 0) ? 0 : window.innerHeight / LAYOUT_HEIGHT;
-    scroller.scrollTop = pageScrollTop(scroller.scrollTop, scroller.clientHeight, scroller.scrollHeight, direction, linePitchRem * pxPerRem, SLOT_GAP * pxPerRem, 1);
+    scroller.scrollTop = pageScrollTop(scroller.scrollTop, scroller.clientHeight, scroller.scrollHeight, direction, linePitchRem * pxPerRem, lineGapRem * pxPerRem, 1);
   }
 }
 
@@ -32,12 +32,14 @@ const MOVE_WAIT_MS = 250;
  * changes (the page landed) or a moment passes, so a key held down costs one refresh at a time. See
  * docs/design-notes.md, "The search field's keys".
  */
-export function useSearchFieldKeys(rootRef: RefObject<HTMLElement>, canMove: boolean, answered: string, linePitchRem = 0): void {
+export function useSearchFieldKeys(rootRef: RefObject<HTMLElement>, canMove: boolean, answered: string, linePitchRem = 0, lineGapRem = SLOT_GAP): void {
   // Read at the press, so the one listener sees this render's page and body.
   const movable = useRef(canMove);
   movable.current = canMove;
   const pitch = useRef(linePitchRem);
   pitch.current = linePitchRem;
+  const gap = useRef(lineGapRem);
+  gap.current = lineGapRem;
   const inFlight = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const release = () => {
@@ -62,7 +64,7 @@ export function useSearchFieldKeys(rootRef: RefObject<HTMLElement>, canMove: boo
       event.preventDefault();
 
       if (key === "pageUp" || key === "pageDown") {
-        pageList(rootRef.current, key === "pageDown" ? 1 : -1, pitch.current);
+        pageList(rootRef.current, key === "pageDown" ? 1 : -1, pitch.current, gap.current);
       } else if (movable.current && inFlight.current === null) {
         send(moveEnterTargetCommand(key === "down" ? 1 : -1));
         inFlight.current = setTimeout(release, MOVE_WAIT_MS);

@@ -10,7 +10,7 @@ import { getAssetMenuEmptyStateMessage } from "domain/assetMenuFilterSummary";
 import { assetMenuPort } from "domain/assetMenuPort";
 import { enterDecision, getSearchScopeNotice, isEnterForSearch, isPlainEnter, pageAnswers } from "domain/buildingSearchRank";
 import { blurSearchField, isSearchField } from "mods/TopRow/searchField";
-import { screenSlots } from "domain/bodyGeometry";
+import { bodyLines, screenSlots } from "domain/bodyGeometry";
 import { setCatalogScreenCommand } from "domain/buildingCatalogContracts";
 import { canPlace } from "domain/buildingLockState";
 import { getAssetMenuAnchorKey, setAssetMenuAnchor } from "domain/assetMenuViewStore";
@@ -141,7 +141,9 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   // field names a target, the page answering the query in it. A move is answered by a new step or
   // by a page for a new query.
   const answering = pageAnswers({ searchText: pageSearch }, currentSearch ?? "");
-  useSearchFieldKeys(rootRef, bestMatchId !== null && answering, `${pageSearch}\n${enterStep}`, grid?.pitchY ?? 0);
+  // A page steps by the body's whole lines: the slots', or the cards' rows.
+  const lines = bodyLines(grid, cards?.geometry ?? null);
+  useSearchFieldKeys(rootRef, bestMatchId !== null && answering, `${pageSearch}\n${enterStep}`, lines.pitch, lines.gap);
   // Enter's target, marked on its row while the page answers the query, and brought on screen when the keys move it.
   const enterId = answering && (currentSearch ?? "").trim() !== "" ? bestMatchId : null;
   useRevealEnterTarget(rootRef, enterId, enterStep);

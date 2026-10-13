@@ -4,6 +4,8 @@
  * silently renders a prefab id, so both are tried in order.
  */
 
+import type { CatalogSection } from "./buildingCatalog";
+
 /**
  * The one menu whose contents the asset menu changes, so the one whose game-supplied
  * name does not describe it: Roads gathers every network. Only the LABEL
@@ -68,4 +70,13 @@ export function resolveVanillaLabel(
   }
 
   return fallback;
+}
+
+/**
+ * The words a label draws: the locked word over the locked rows; over a group, the game's word for its
+ * category where the game has one, the name C# sends otherwise. One reading, so a plate is sized from
+ * the words it draws, in the player's language.
+ */
+export function sectionLabel(section: CatalogSection, translate: (key: string) => string | null | undefined, lockedWord: string): string {
+  return section.kind === "locked" ? lockedWord : resolveVanillaLabel(vanillaCategoryNameKeys(section.labelId), translate, section.label);
 }

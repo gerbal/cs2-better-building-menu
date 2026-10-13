@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { ASSET_MENU_MIN_HEIGHT, ASSET_MENU_RESIZE_HANDLE_HEIGHT, NOTCH_TOP_WIDTH, TAB_CELL_MIN_WIDTH, TAB_CELL_PADDING } from "../src/domain/assetMenuLayout.ts";
+import { cardGeometry } from "../src/domain/cardsLayout.ts";
 import { declarationsOf, everyDeclaration, moduleSheets, rem, resolvedOn, selectorsOf, sides, winnerOn } from "./harness/compiledCss.ts";
 
 /**
@@ -57,6 +58,8 @@ describe("Asset menu stylesheet contracts", () => {
     // below the screen, present in the DOM and never drawn.
     for (const sheet of ["mods/Bodies/listBody.module.scss", "mods/Bodies/tilesBody.module.scss", CARDS]) {
       assert.equal(declarationsOf(sheet, ".body")["min-height"], "0", sheet);
+      // A zero basis resolves against nothing in the catalog, whose height is a cap: no height at all.
+      assert.doesNotMatch(declarationsOf(sheet, ".body").flex, /(^|\s)0(px|rem)?\s*$/, sheet);
       assert.equal(declarationsOf(sheet, ".scroller.scroller")["max-height"], "100%", sheet);
     }
   });
@@ -443,12 +446,10 @@ describe("the catalog's floor is one row of cards", () => {
   // again as a min-height; this keeps the stylesheet honest.
   it("is a floor guard: it holds a row of the tallest card and a line of the shipped tiles, every body placing its own cells", () => {
     // The catalog adds nothing around a body; the floor holds one row of the Card height knob's
-    // taller 50 rem cards, and one line of 64 rem tiles.
-    const floor = rem(declarationsOf(ASSET_MENU, ".content")["min-height"]);
-
+    // taller 50 rem cards, and one line of 64 rem tiles. The next case holds the sheet to the floor.
     assert.equal(catalog(".catalog").padding, "0");
-    assert.equal(floor, ASSET_MENU_MIN_HEIGHT);
-    assert.ok(floor >= 50 && floor >= 64, `${floor}`);
+    assert.ok(cardGeometry(50, ASSET_MENU_MIN_HEIGHT, 1).height <= ASSET_MENU_MIN_HEIGHT, `${ASSET_MENU_MIN_HEIGHT}`);
+    assert.ok(64 <= ASSET_MENU_MIN_HEIGHT, `${ASSET_MENU_MIN_HEIGHT}`);
   });
 
   it("states the same floor in the stylesheet", () => {
