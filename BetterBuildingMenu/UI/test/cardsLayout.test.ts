@@ -81,6 +81,13 @@ describe("a card's words", () => {
     assert.equal(cardText(entry(), "lot", separators, "Locked", 0).sorted, lot);
     assert.equal(cardText(entry({ upkeep: null }), "upkeep", separators, "Locked", 0).sorted, null);
   });
+
+  it("carry a road's upkeep per cell under a sort by upkeep, as its cost", () => {
+    const road = entry({ upkeep: 4_612, constructionCost: 5_500, costIsPerDistance: true });
+
+    assert.equal(cardText(road, "upkeep", separators, "Locked", 0).sorted, "¢36.9/c");
+    assert.ok(cardText(road, "upkeep", separators, "Locked", 0).facts.includes("¢44/c"));
+  });
 });
 
 describe("a card's width", () => {

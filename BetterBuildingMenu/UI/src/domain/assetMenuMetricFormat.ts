@@ -306,6 +306,16 @@ export function formatCostPerCell(perKilometre: number, separators: NumberSepara
 }
 
 /**
+ * A network's monthly upkeep per cell, from its per-kilometre figure, to one decimal, since a cell's
+ * share of a cheap road's bill is under a coin; in the template for a total, the month Sort's to say.
+ */
+export function formatUpkeepPerCell(perKilometre: number, separators: NumberSeparators = FALLBACK_SEPARATORS): string {
+  const money = separators.money ?? FALLBACK_MONEY;
+
+  return applyMoneyTemplate(money.plain, groupDigits(perKilometre / NET_CELLS_PER_KILOMETRE, separators)) + PER_CELL_SUFFIX;
+}
+
+/**
  * A network's money figure per cell, its cost or its monthly upkeep, from its per-kilometre figure, in
  * its short forms as compactMoneyForms says a total, each keeping its cell: the cell tells a network's
  * figure from a building's whole one.

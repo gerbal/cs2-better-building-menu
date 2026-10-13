@@ -56,6 +56,12 @@ describe("the value sorted by", () => {
     assert.equal(sortedText(row(), "lot", FALLBACK_SEPARATORS), formatLotDimensions(4, 6));
     assert.equal(sortedText(row(), null, FALLBACK_SEPARATORS), null);
   });
+
+  it("is a network's upkeep per cell, a cell's share to one decimal; the hover card keeps its kilometre", () => {
+    assert.equal(sortedText(row({ upkeep: 4_612, costIsPerDistance: true }), "upkeep", FALLBACK_SEPARATORS), "¢36.9/c");
+    assert.equal(sortedText(row({ upkeep: 500, costIsPerDistance: true }), "upkeep", FALLBACK_SEPARATORS), "¢4/c");
+    assert.equal(sortedText(row({ upkeep: null, costIsPerDistance: true }), "upkeep", FALLBACK_SEPARATORS), null);
+  });
 });
 
 describe("a unit that scales with its size", () => {

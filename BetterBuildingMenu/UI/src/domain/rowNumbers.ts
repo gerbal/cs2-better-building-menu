@@ -8,6 +8,7 @@ import {
   formatCapacity,
   formatCostPerCell,
   formatLotDimensions,
+  formatUpkeepPerCell,
   getCapacityUnitLabel,
   groupDigits,
   hasFootprint,
@@ -63,13 +64,15 @@ export function lotText(entry: BuildingCatalogEntry): string | null {
   return hasFootprint(entry.lotWidth, entry.lotDepth) ? formatLotDimensions(entry.lotWidth, entry.lotDepth) : null;
 }
 
-/** The value a sort orders by, with its unit, which Sort names; null under no sort by a number, or where the row has none. */
+/** The value a sort orders by, with its unit, which Sort names, a network's upkeep per cell; null under no sort by a number, or where the row has none. */
 export function sortedText(entry: BuildingCatalogEntry, sortedMetric: AssetMenuMetric | null, separators: NumberSeparators): string | null {
   if (sortedMetric === null) return null;
   if (sortedMetric === "lot") return lotText(entry);
 
   const value = sortedMetricValue(entry, sortedMetric);
   if (value === null) return null;
+  // A network's upkeep per cell, as its cost; the hover card keeps the kilometre the game's panels state.
+  if (sortedMetric === "upkeep" && isPerCell(entry) && Number.isFinite(value)) return formatUpkeepPerCell(value, separators);
 
   return sortedMetric === "capacity" ? capacityText(entry, value, separators) : known(formatBuildingMetric(value, sortedMetric, separators, entry.costIsPerDistance));
 }

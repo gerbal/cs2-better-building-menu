@@ -1317,13 +1317,16 @@ functions.
 
 A network's cost is said per cell (`formatCostPerCell`): the index carries a kilometre's worth, 125
 cells, and a row divides it back, "¢44/c", short enough to leave a road's name the room for two whole
-lines, and the same in miles. The hover card keeps the per-kilometre figure the game's own panels
-state. A tile's tag short of room shortens the number as it shortens a total and keeps the cell
-("¢10k/c" past ten thousand a cell), and under a sort by upkeep says a road's monthly bill per cell too.
+lines, and the same in miles. Under a sort by upkeep a network's monthly bill is said per cell too, in
+the list, the cards and the tiles' tag, to one decimal since a cell's share of a cheap road's bill is
+under a coin ("¢0.3/c", `formatUpkeepPerCell`), the month Sort's to say. The hover card keeps the
+per-kilometre figures the game's own panels state. A tile's tag short of room shortens the number as it
+shortens a total and keeps the cell ("¢10k/c" past ten thousand a cell).
 
 **This changes 0.2.x:** a list row said its capacity with its unit word ("400 patients"); it now says
-the view's key number, a road its speed, by the glyph for its unit. A road's cost read per kilometre
-in the list, the tiles and the cards; they now say it per cell.
+the view's key number, a road its speed, by the glyph for its unit. A road's cost, and its upkeep
+under a sort by upkeep, read per kilometre in the list, the tiles and the cards; they now say them per
+cell.
 
 ## Names
 

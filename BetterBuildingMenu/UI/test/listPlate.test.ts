@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { FALLBACK_SEPARATORS, groupDigits } from "../src/domain/assetMenuMetricFormat";
+import { FALLBACK_SEPARATORS, formatBuildingMetric, groupDigits } from "../src/domain/assetMenuMetricFormat";
 import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog";
 import { oneNumber, plateNumbers } from "../src/domain/listPlate";
 
@@ -50,6 +50,13 @@ describe("a list plate's numbers", () => {
     // With its unit, which Sort names, and no glyph.
     assert.equal(plateNumbers(row(), "capacity", FALLBACK_SEPARATORS, "Locked", 0).second, "400 patients");
     assert.equal(plateNumbers(row(), "capacity", FALLBACK_SEPARATORS, "Locked", 0).glyph, null);
+  });
+
+  it("say a road's upkeep per cell under a sort by upkeep, as its cost, a building's in its monthly template", () => {
+    const road = row({ upkeep: 38, constructionCost: 5_500, costIsPerDistance: true, capacity: null });
+
+    assert.deepEqual([plateNumbers(road, "upkeep", FALLBACK_SEPARATORS, "Locked", 0).first, plateNumbers(road, "upkeep", FALLBACK_SEPARATORS, "Locked", 0).second], ["¢44/c", "¢0.3/c"]);
+    assert.equal(plateNumbers(row(), "upkeep", FALLBACK_SEPARATORS, "Locked", 0).second, formatBuildingMetric(1_200, "upkeep"));
   });
 
   it("keep the capacity under a sort by cost, which the first already says", () => {
