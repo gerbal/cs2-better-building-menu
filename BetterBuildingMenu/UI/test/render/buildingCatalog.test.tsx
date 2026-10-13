@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { beforeEach, describe, it } from "node:test";
+import { afterEach, beforeEach, describe, it } from "node:test";
+import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { renderHtml, entry, catalogPage, showBody } from "../harness/render";
 import { setBinding, resetBindings } from "../harness/stubs/cs2-api";
 import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
@@ -221,4 +222,77 @@ describe("the catalog container", () => {
       assert.match(html, /data-catalog-entry="2"/);
     });
   }
+});
+
+describe("a small menu's first open", () => {
+  let root: ReactTestRenderer | undefined;
+  const globals = globalThis as unknown as Record<string, unknown>;
+  const GARBAGE = "Garbage Management";
+  const rows = (first: number, count: number) => Array.from({ length: count }, (_, at) => entry(first + at));
+  const drawn = () => ({
+    labels: root!.root.findAll((node) => node.type === "div" && node.props["data-bbm-label"] !== undefined).length,
+    cells: root!.root.findAll((node) => node.type === "button" && node.props["data-catalog-entry"] !== undefined).map((node) => node.props["data-catalog-entry"] as number),
+    big: root!.root.findAll((node) => node.type === "button" && /\bbig\b/.test(String(node.props.className))).length,
+  });
+
+  beforeEach(() => {
+    resetBindings();
+    resetAssetMenuView();
+    globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined };
+    globals.requestAnimationFrame = () => 0;
+    globals.cancelAnimationFrame = () => undefined;
+  });
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    root = undefined;
+  });
+
+  it("never draws the page grouped before C# has been told the menu draws no groups: the last body holds, then the grown form", () => {
+    // The last menu's page, under its own grouping.
+    setBinding("BetterBuildingMenu", "AssetMenu", "Electricity");
+    setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage(rows(101, 17)));
+    act(() => { root = create(<BuildingCatalogComponent />); });
+    assert.equal(drawn().cells.length, 17);
+
+    // Garbage opens: C# counts its share with its first page, grouped by its default before the UI can
+    // name it a small menu that draws no groups.
+    act(() => {
+      setBinding("BetterBuildingMenu", "AssetMenu", GARBAGE);
+      setBinding("BetterBuildingMenu", "MenuShares", [{ menu: GARBAGE, rows: 7, costOrCapacity: 7, capacity: 7, locked: 0 }]);
+      setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage(rows(1, 7), {
+        sections: [0, 2, 4, 6].map((start, at) => ({ id: `group:${at}`, kind: "group", label: `Group ${at}`, labelId: "", start, count: at === 3 ? 1 : 2, collapsed: false })),
+      }));
+    });
+    const grouped = drawn();
+
+    act(() => setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage(rows(1, 7))));
+    const grown = drawn();
+
+    assert.equal(grouped.labels, 0);
+    assert.deepEqual(grouped.cells, rows(101, 17).map((row) => row.id));
+    assert.deepEqual(grown.cells, [1, 2, 3, 4, 5, 6, 7]);
+    assert.equal(grown.big, 7);
+  });
+
+  it("draws a grouped page all the same where C# answers it grouped again, or the player picked the grouping", () => {
+    setBinding("BetterBuildingMenu", "AssetMenu", GARBAGE);
+    setBinding("BetterBuildingMenu", "MenuShares", [{ menu: GARBAGE, rows: 7, costOrCapacity: 7, capacity: 7, locked: 0 }]);
+    const groupedPage = () => catalogPage(rows(1, 7), { sections: [{ id: "group:0", kind: "group", label: "Group", labelId: "", start: 0, count: 7, collapsed: false }] });
+    setBinding("BetterBuildingMenu", "BuildingCatalog", groupedPage());
+    act(() => { root = create(<BuildingCatalogComponent />); });
+    // Held: nothing was drawn before it.
+    assert.equal(drawn().cells.length, 0);
+
+    // A second grouped page: C# was told and grouped it all the same, so it draws.
+    act(() => setBinding("BetterBuildingMenu", "BuildingCatalog", groupedPage()));
+    assert.equal(drawn().labels, 1);
+    assert.equal(drawn().cells.length, 7);
+
+    // The player's own GROUP pick draws its groups at once.
+    act(() => root!.unmount());
+    setBinding("BetterBuildingMenu", "AssetMenuGroups", [{ menu: GARBAGE, value: "development" }]);
+    act(() => { root = create(<BuildingCatalogComponent />); });
+    assert.equal(drawn().labels, 1);
+  });
 });

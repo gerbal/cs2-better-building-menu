@@ -1124,7 +1124,11 @@ groups by none (`BuildingCatalogGrouping.DefaultDimension`): Garbage, Water and 
 development branches add little in a menu of one category. The UI names these menus too
 (`menusDrawingNoGroups`, `SetMenusDrawingNoGroups`), since which body a menu draws is its rule; C#
 counts each menu's tabs with its share (`MenuShare.Tabs`), and the open menu redraws when it joins or
-leaves them. A small menu with two tabs or more keeps All's labels naming them, as All names each
+leaves them. C# counts a menu's share with its first page, so on a menu's first open the UI names it
+only once that page has arrived grouped by its default; the body drawn before holds over that one page
+(`useAwaitsNoGroups`, `useHeld`) until the page without groups arrives a frame later, so the menu's first
+frame is its grown form, never its labels over small plates. A second grouped page draws, so nothing
+waits on C# twice. A small menu with two tabs or more keeps All's labels naming them, as All names each
 tab, and their slots count toward the screen it must fit. A GROUP pick of the player's still applies,
 and its labels take their slots, so the list grows less or not at all; its dot shows only for a pick
 other than "No groups", which these menus draw unpicked. The set is judged at 100% text and the first

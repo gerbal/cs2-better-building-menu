@@ -23,6 +23,7 @@ import { ListBody } from "mods/Bodies/ListBody";
 import { TilesBody } from "mods/Bodies/TilesBody";
 import { useBodyGrid } from "./useBodyGrid";
 import { useCardsLayout } from "./useCardsLayout";
+import { useAwaitsNoGroups, useHeld } from "./useHeldBody";
 import { useRevealEnterTarget } from "./useRevealEnterTarget";
 import { useScrollAnchor } from "./useScrollAnchor";
 import { useSearchFieldKeys } from "./useSearchFieldKeys";
@@ -233,29 +234,37 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
     );
   }, [hasMore, capped, items.length, totalCount, remaining, translate, separators, loadMore]);
 
+  // A small menu's grouped first page draws nothing new: the body drawn before holds until the page
+  // without groups arrives, so the menu's first frame is its grown form. See useAwaitsNoGroups.
+  const held = useAwaitsNoGroups(items, sections, pageSearch.trim() !== "");
+  // Filters compose, so an empty intersection is easy to reach by accident, and silence there reads as a
+  // broken asset menu.
+  const results = useHeld(
+    status === "indexing" && items.length === 0
+      ? <div className={styles.empty}>{translate("Tooltip.LABEL[BetterBuildingMenu.IndexingBuildings]", "Indexing buildings…")}</div>
+      // A tab whose rows are all locked and folded away draws its Locked label, never "nothing here".
+      : items.length === 0 && sections.length === 0
+        ? (scopeNotice
+            // The notice above already says the set is empty AND what to do
+            // about it; a second line would say it twice and contradict it.
+            ? null
+            : <div className={styles.empty}>{emptyStateMessage}</div>)
+        : cards !== null
+          ? <CardsBody layout={cards} enterId={enterId} onPlace={activate} footer={catalogFooter} />
+          : grid !== null && grid.form === "tile"
+            ? <TilesBody entries={items} grid={grid} sections={sections} offset={offset} onPlace={activate} footer={catalogFooter} />
+            : grid !== null && grid.form === "icon"
+              ? <IconsBody entries={items} grid={grid} sections={sections} offset={offset} named={named} onPlace={activate} footer={catalogFooter} />
+              : grid !== null && <ListBody entries={items} grid={grid} sections={sections} offset={offset} typed={pageSearch} keyKind={facts.keyKind} enterId={enterId} onPlace={activate} footer={catalogFooter} />,
+    held,
+  );
+
   return (
     <div ref={rootRef} className={styles.catalog}>
       {/* No controls here: Sort, Filter, Group and View are the top row's, and the
           control pane's while it shows, so this component draws results and nothing else. */}
       {scopeNoticeBlock}
-      {/* Filters compose, so an empty intersection is easy to reach by
-          accident, and silence there reads as a broken asset menu. */}
-      {status === "indexing" && items.length === 0
-        ? <div className={styles.empty}>{translate("Tooltip.LABEL[BetterBuildingMenu.IndexingBuildings]", "Indexing buildings…")}</div>
-        // A tab whose rows are all locked and folded away draws its Locked label, never "nothing here".
-        : items.length === 0 && sections.length === 0
-          ? (scopeNotice
-              // The notice above already says the set is empty AND what to do
-              // about it; a second line would say it twice and contradict it.
-              ? null
-              : <div className={styles.empty}>{emptyStateMessage}</div>)
-          : cards !== null
-            ? <CardsBody layout={cards} enterId={enterId} onPlace={activate} footer={catalogFooter} />
-            : grid !== null && grid.form === "tile"
-              ? <TilesBody entries={items} grid={grid} sections={sections} offset={offset} onPlace={activate} footer={catalogFooter} />
-              : grid !== null && grid.form === "icon"
-                ? <IconsBody entries={items} grid={grid} sections={sections} offset={offset} named={named} onPlace={activate} footer={catalogFooter} />
-                : grid !== null && <ListBody entries={items} grid={grid} sections={sections} offset={offset} typed={pageSearch} keyKind={facts.keyKind} enterId={enterId} onPlace={activate} footer={catalogFooter} />}
+      {results}
     </div>
   );
 });
