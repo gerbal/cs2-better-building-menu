@@ -131,6 +131,21 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void EachMenuKeepsTheGenerationItWasCountedOn()
+		{
+			var ledger = new MenuShareLedger();
+			var spy = new Spy();
+			ledger.Count("Roads", 1, spy.Rows(Row(1, 50)));
+			ledger.Count("Zones", 2, spy.Rows(Row(2, null)));
+
+			// Zones counted on 2 says nothing of Roads, last counted on 1.
+			Assert.True(ledger.Count("Roads", 2, spy.Rows(Row(1, 50), Row(3, 70))));
+
+			Assert.Equal(3, spy.Reads);
+			Assert.Equal(new MenuShare("Roads", 2, 2, 0, 0), ledger.Shares[0]);
+		}
+
+		[Fact]
 		public void ACountThatThrowsIsCountedAgainNextTime()
 		{
 			var ledger = new MenuShareLedger();
