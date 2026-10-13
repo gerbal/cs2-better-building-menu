@@ -1161,7 +1161,8 @@ field's.
   row. A typed search's best match needs no reveal: it is the list's first row under Match, where the
   search's start puts the list.
 - **PageUp and PageDown** scroll the list a screen of the body's whole lines, counted as the body
-  counts them (`wholeLines`: the last line needs no gap below it), so lines land on the top edge as
+  counts them (`wholeLines`: the last line needs no gap below it, and a device pixel of shortfall is forgiven, since
+  the scroller reports its height in whole pixels), so lines land on the top edge as
   they were (a screen of the scroller for the cards, which have no lines), held inside its ends
   (`pageScrollTop`); a page that reaches the end lets the window load more, as scrolling there does.
 

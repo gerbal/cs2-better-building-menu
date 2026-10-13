@@ -118,8 +118,8 @@ export function lineOneScrollTop(currentScrollTop: number, rowTop: number, conta
  * as it found them; a pitch of 0 pages the screen. The gap has no default, so no caller pages a line
  * short.
  */
-export function pageScrollTop(scrollTop: number, clientHeight: number, scrollHeight: number, direction: 1 | -1, linePitch: number, lineGap: number): number {
-  const page = linePitch > 0 ? wholeLines(clientHeight, linePitch, lineGap) * linePitch : clientHeight;
+export function pageScrollTop(scrollTop: number, clientHeight: number, scrollHeight: number, direction: 1 | -1, linePitch: number, lineGap: number, pixel: number): number {
+  const page = linePitch > 0 ? wholeLines(clientHeight, linePitch, lineGap, pixel) * linePitch : clientHeight;
 
   return Math.max(0, Math.min(scrollHeight - clientHeight, scrollTop + direction * page));
 }

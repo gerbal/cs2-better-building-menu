@@ -6,6 +6,7 @@
  */
 
 import { BODY_SIDE_MARGIN } from "./assetMenuLayout";
+import { LAYOUT_HEIGHT } from "./sharedContracts.generated";
 
 /** The list's three forms: two-line plates at 100% text; above it one-line plates, or two-line ones whole. */
 export type ListForm = "plate2" | "plate1" | "plateWhole";
@@ -53,6 +54,8 @@ export interface BodyGridInput {
   boxWidth: number;
   /** The body's drawn height. */
   bodyHeight: number;
+  /** A device pixel in rem (`deviceRem`), the shortfall a line forgives; none when left out. */
+  pixelRem?: number;
   textScale: number;
   /** At large text: "moreBuildings" or "wholeNames". */
   atLargeText: string;
@@ -75,10 +78,17 @@ const across = (room: number, least: number): number => Math.max(1, Math.floor((
 /**
  * The whole lines of this pitch a height shows, at least one: the last line needs no gap below it.
  * The one line count, so paging steps by the lines the body draws. A height in pixels takes its gap
- * in pixels too.
+ * in pixels too. The game's scroller reports its height in whole device pixels, up to one short of
+ * the height drawn, so `tolerance` (a device pixel, in the height's unit) is the shortfall a line
+ * forgives before it drops.
  */
-export function wholeLines(height: number, pitch: number, gap: number = SLOT_GAP): number {
-  return Math.max(1, Math.floor((height + gap) / pitch));
+export function wholeLines(height: number, pitch: number, gap: number = SLOT_GAP, tolerance: number = 0): number {
+  return Math.max(1, Math.floor((height + gap + tolerance) / pitch));
+}
+
+/** A device pixel in rem at this screen height: the layout is LAYOUT_HEIGHT rem tall; 0 where the screen is unknown. */
+export function deviceRem(innerHeight: number): number {
+  return innerHeight > 0 && Number.isFinite(innerHeight) ? LAYOUT_HEIGHT / innerHeight : 0;
 }
 
 /** The slots for a body at this box, height, text scale and settings. */
@@ -90,7 +100,7 @@ export function bodyGrid(input: BodyGridInput): BodyGrid {
     const side = input.tileSize;
     const pitch = side + SLOT_GAP;
     const cols = across(room, side);
-    const lines = wholeLines(height, pitch);
+    const lines = wholeLines(height, pitch, SLOT_GAP, input.pixelRem);
 
     return {
       form: "tile",
@@ -117,7 +127,7 @@ export function bodyGrid(input: BodyGridInput): BodyGrid {
   return {
     form,
     cols,
-    lines: wholeLines(height, pitchY),
+    lines: wholeLines(height, pitchY, SLOT_GAP, input.pixelRem),
     cellWidth,
     cellHeight,
     pitchX: cellWidth + SLOT_GAP,

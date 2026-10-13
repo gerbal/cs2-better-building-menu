@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { bodyGrid, listForm, screenSlots, slotPosition, slotsHeight, wholeLines, type BodyGridInput } from "../src/domain/bodyGeometry";
+import { bodyGrid, deviceRem, listForm, screenSlots, slotPosition, slotsHeight, wholeLines, type BodyGridInput } from "../src/domain/bodyGeometry";
 import { CATALOG_WINDOW_SCROLL_THRESHOLD, CATALOG_WINDOW_STEP, shouldLoadMore } from "../src/domain/catalogWindow";
 import { ASSET_MENU_DEFAULT_HEIGHT, ASSET_MENU_MIN_HEIGHT } from "../src/domain/sharedContracts.generated";
 import { REFERENCE_ASPECT, widthStepWidths } from "../src/domain/widthSteps";
@@ -143,6 +143,28 @@ describe("the line count", () => {
   it("takes the gap in the height's own unit", () => {
     // 1.5 px a rem: the game's own body and its pitch in pixels, with the gap in pixels too.
     assert.equal(wholeLines(144.25 * 1.5, 29.25 * 1.5, 2 * 1.5), 5);
+  });
+
+  it("allows a device pixel of shortfall: the scroller reports whole pixels, 96 px for 144.25 rem at 720p", () => {
+    // A pixel is 1.5 rem at 720p: 96 px reads back as 144.0 rem, and the next whole pixel down, 95 px, as 142.5.
+    const pixel = deviceRem(720);
+
+    assert.equal(pixel, 1.5);
+    assert.equal(wholeLines(144, 29.25, 2, pixel), 5);
+    assert.equal(wholeLines(142.5, 29.25, 2, pixel), 4);
+    assert.equal(wholeLines(144, 29.25, 2), 4);
+  });
+
+  it("reads a device pixel in rem from the screen, none without one", () => {
+    assert.equal(deviceRem(1080), 1);
+    assert.equal(deviceRem(0), 0);
+    assert.equal(deviceRem(Number.NaN), 0);
+  });
+
+  it("is the count the body draws: the grid takes the same pixel", () => {
+    assert.equal(bodyGrid(input({ bodyHeight: 144, pixelRem: 1.5 })).lines, 5);
+    assert.equal(bodyGrid(input({ bodyHeight: 142.5, pixelRem: 1.5 })).lines, 4);
+    assert.equal(bodyGrid(input({ bodyHeight: 144 })).lines, 4);
   });
 });
 

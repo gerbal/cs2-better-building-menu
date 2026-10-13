@@ -15,8 +15,9 @@ function pageList(root: HTMLElement | null, direction: 1 | -1, linePitchRem: num
 
   if (scroller) {
     // The pitch and the gap in pixels, as the scroller measures: the layout is LAYOUT_HEIGHT rem tall.
+    // It reads its height in whole pixels, so a line forgives one pixel of shortfall.
     const pxPerRem = typeof window === "undefined" || !(window.innerHeight > 0) ? 0 : window.innerHeight / LAYOUT_HEIGHT;
-    scroller.scrollTop = pageScrollTop(scroller.scrollTop, scroller.clientHeight, scroller.scrollHeight, direction, linePitchRem * pxPerRem, SLOT_GAP * pxPerRem);
+    scroller.scrollTop = pageScrollTop(scroller.scrollTop, scroller.clientHeight, scroller.scrollHeight, direction, linePitchRem * pxPerRem, SLOT_GAP * pxPerRem, 1);
   }
 }
 

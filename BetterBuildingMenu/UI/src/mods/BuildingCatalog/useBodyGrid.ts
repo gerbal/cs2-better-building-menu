@@ -3,7 +3,7 @@ import { useMemo } from "react";
 
 import { drawnBodyHeight } from "domain/assetMenuLayout";
 import type { DrawnBody } from "domain/bodyChoice";
-import { bodyGrid, type BodyGrid } from "domain/bodyGeometry";
+import { bodyGrid, deviceRem, type BodyGrid } from "domain/bodyGeometry";
 import { useTextScale } from "domain/textScaleSetting";
 import { AssetMenuAtLargeText$, AssetMenuHeight$, AssetMenuTileSize$, AssetMenuTuning$, SHIPPED_TUNING } from "mods/bindings";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
@@ -21,11 +21,12 @@ export function useBodyGrid(body: DrawnBody): BodyGrid | null {
   const tuning = useValue(AssetMenuTuning$);
   const plateHeight = tuning.listPlateHeight ?? SHIPPED_TUNING.listPlateHeight;
   const nameLines = tuning.nameLines ?? SHIPPED_TUNING.nameLines;
+  const pixelRem = deviceRem(typeof window === "undefined" ? 0 : window.innerHeight);
 
   return useMemo(
     () => (body === "cards"
       ? null
-      : bodyGrid({ body, boxWidth: menuWidth, bodyHeight, textScale, atLargeText, tileSize, plateHeight, nameLines })),
-    [body, menuWidth, bodyHeight, textScale, atLargeText, tileSize, plateHeight, nameLines]
+      : bodyGrid({ body, boxWidth: menuWidth, bodyHeight, textScale, atLargeText, tileSize, plateHeight, nameLines, pixelRem })),
+    [body, menuWidth, bodyHeight, textScale, atLargeText, tileSize, plateHeight, nameLines, pixelRem]
   );
 }
