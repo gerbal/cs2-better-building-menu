@@ -84,7 +84,7 @@ namespace BetterBuildingMenu.Tests
 		{
 			var pick = ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.Query.cs"), "private void SetBuildingCatalogGroupBy(");
 
-			// The binding took the pick before its handler ran, and no refresh follows to put the page's None back.
+			// The binding takes the pick before its handler runs, and no refresh follows to put the page's None back.
 			Assert.Contains("if (!string.IsNullOrWhiteSpace(_assetMenu.Query.SearchText)) { _BuildingCatalogGroupBy.Value = BuildingCatalogGrouping.None; return; }", pick);
 		}
 
