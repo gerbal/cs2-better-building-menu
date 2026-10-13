@@ -49,13 +49,21 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void CountsTheTabsTheMenusRowDraws()
+		{
+			// A small menu with no tabs of its own draws no groups in its list; one with tabs keeps them.
+			Assert.Equal(2, MenuShare.Of("Communications", new[] { Row(1, 50, null) }, null, tabs: 2).Tabs);
+			Assert.Equal(0, MenuShare.Of("Garbage Management", new[] { Row(1, 50, null) }).Tabs);
+		}
+
+		[Fact]
 		public void EachShareReachesTheUiByName()
 		{
 			var writer = new RecordingJsonWriter();
 
 			new MenuShare("Roads", 779, 600, 3, 40).Write(writer);
 
-			Assert.Equal(new[] { "menu", "rows", "costOrCapacity", "capacity", "locked", "groupRows" }, writer.PropertyNames);
+			Assert.Equal(new[] { "menu", "rows", "costOrCapacity", "capacity", "locked", "groupRows", "tabs" }, writer.PropertyNames);
 		}
 
 		[Fact]
@@ -66,7 +74,7 @@ namespace BetterBuildingMenu.Tests
 			// With the toolbar's row untouched this query is the refresh's own snapshot, from the cache.
 			Assert.Contains("_buildingCatalogAdapter.Build(source, new BuildingCatalogQuery(UiMenu: _assetMenu.Menu), VanillaToolbarSelection.None, built => built.DefaultGroupBy)", publish);
 			// All's labels in the menu's own grouping, the ones a menu opening on All draws.
-			Assert.Contains("_menuShares.Count(_assetMenu.Menu, source.Generation, () => All().MenuSet, () => All().Page.Sections)", publish);
+			Assert.Contains("_menuShares.Count(_assetMenu.Menu, source.Generation, () => All().MenuSet, () => All().Page.Sections, () => All().MenuCategoryCounts.Count)", publish);
 			Assert.Contains("_MenuShares.Value = _menuShares.Shares;", publish);
 			Assert.DoesNotContain("AssetMenus()", publish);
 			Assert.Contains("PublishMenuShares(source);", ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.Catalog.cs"), "private void RefreshBuildingCatalog("));
@@ -129,6 +137,16 @@ namespace BetterBuildingMenu.Tests
 			Assert.True(ledger.Count("Roads", 1, new Spy().Rows(Row(1, 50), Row(2, null)), () => sections));
 
 			Assert.Equal(new[] { 1, 1 }, ledger.Shares[0].GroupRows);
+		}
+
+		[Fact]
+		public void ACountCarriesTheTabsTheMenusRowDrawsWhereItIsGivenThem()
+		{
+			var ledger = new MenuShareLedger();
+
+			Assert.True(ledger.Count("Roads", 1, new Spy().Rows(Row(1, 50)), null, () => 16));
+
+			Assert.Equal(16, ledger.Shares[0].Tabs);
 		}
 
 		[Fact]

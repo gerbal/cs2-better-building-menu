@@ -24,6 +24,8 @@ export interface MenuShare {
   locked: number;
   /** The rows under each label the menu's All draws, in order; none where it draws no label. */
   groupRows?: number[];
+  /** The tabs the menu's row draws over its whole menu. */
+  tabs?: number;
 }
 
 /** The developer knobs the Auto rule reads, as AssetMenuTuning carries them; a missing one is its shipped value. */

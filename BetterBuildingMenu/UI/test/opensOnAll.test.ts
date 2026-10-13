@@ -65,11 +65,22 @@ describe("the small menus whose list draws no groups unless picked", () => {
   // Electricity's 17 rows under its 8 development branches take 25 slots, past the list's 20.
   const electricity = { ...share("Electricity", 17), groupRows: [10, 1, 1, 1, 1, 1, 1, 1] };
 
-  it("are the small menus drawn as a list with Small menus grow on, whose labels then take no slot", () => {
+  it("are the small menus of one tab drawn as a list with Small menus grow on, whose labels then take no slot", () => {
     const branches = input({ shares: [share("Garbage Management", 7), electricity, share("Communications", 21), share("Areas", 3, 0)] });
 
     assert.deepEqual(menusDrawingNoGroups(branches), ["Electricity", "Garbage Management"]);
     assert.deepEqual(menusOpeningOnAll(branches), ["Areas", "Electricity", "Garbage Management"]);
+  });
+
+  it("leave out a small menu with tabs of its own, which keeps All's tab labels and counts their slots", () => {
+    // 19 rows in two tabs: under their two labels 21 slots, past the list's 20, so it opens on its tab.
+    const twoTabs = (tabs: number) => input({ shares: [{ ...share("Two Tabs", 19), groupRows: [10, 9], tabs }] });
+
+    assert.deepEqual(menusDrawingNoGroups(twoTabs(2)), []);
+    assert.deepEqual(menusOpeningOnAll(twoTabs(2)), []);
+    // The same rows in one tab, under its development branches: no labels, and they fit.
+    assert.deepEqual(menusDrawingNoGroups(twoTabs(1)), ["Two Tabs"]);
+    assert.deepEqual(menusOpeningOnAll(twoTabs(1)), ["Two Tabs"]);
   });
 
   it("leave out a menu whose rows do not fit one screen", () => {

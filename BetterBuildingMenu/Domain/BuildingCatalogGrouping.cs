@@ -131,9 +131,9 @@ namespace BetterBuildingMenu.Domain
 		/// <remarks>
 		/// The strip and the headings answer the same question, so they must not open on different
 		/// answers: the education menu draws school levels in its category's place and is asked
-		/// first, then a menu with categories of its own, then the strip's axis. A small menu drawn as a
-		/// list with Small menus grow on, which the UI names, draws no groups: its labels would take the
-		/// slots it grows into. See docs/design-notes.md, "The bodies".
+		/// first, then a menu with categories of its own, then the strip's axis. A small menu of one tab
+		/// drawn as a list with Small menus grow on, which the UI names, draws no groups: its labels would
+		/// take the slots it grows into. See docs/design-notes.md, "The bodies".
 		/// </remarks>
 		public static string DefaultDimension(bool menuHasCategories, string? stripAxis, bool educationMenu, bool drawsNoGroups = false)
 		{

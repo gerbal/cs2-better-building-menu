@@ -164,7 +164,7 @@ namespace BetterBuildingMenu.Systems
 
 			try
 			{
-				if (!_menuShares.Count(_assetMenu.Menu, source.Generation, () => All().MenuSet, () => All().Page.Sections))
+				if (!_menuShares.Count(_assetMenu.Menu, source.Generation, () => All().MenuSet, () => All().Page.Sections, () => All().MenuCategoryCounts.Count))
 				{
 					return false;
 				}

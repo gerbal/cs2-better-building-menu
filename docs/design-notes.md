@@ -876,7 +876,7 @@ knob's row carries `[SettingsUIDeveloper]`, so the game draws it only in develop
   - **Card height** (46, as it ships, or 50): a card's height at 100% text; 46 makes three rows in the
     game's own body, 50 two.
   - **Small menus grow** (on, as it ships, or off): a list in a menu with few rows grows its plates,
-    and draws no groups unless picked.
+    and in a menu of one tab draws no groups unless picked.
   - **Search flow on wide boxes** (nearest the field first, as it ships, or row order): where a typed
     search's results fill at the wider Width steps.
 
@@ -1086,13 +1086,16 @@ not grow. The Small menus grow knob turns it off, to compare.
 **A small menu's list draws no groups unless picked.** The growth is the point of a small menu, and
 its labels take the slots it grows into: Garbage's 7 rows under its four development branches take 11
 slots, three lines of small plates where its rows alone take two lines of the big form. So a small
-menu (one that opens on All, below) drawn as a list with Small menus grow on groups by none
-(`BuildingCatalogGrouping.DefaultDimension`); the UI names these menus too (`menusDrawingNoGroups`,
-`SetMenusDrawingNoGroups`), since which body a menu draws is its rule, and the open menu redraws when it
-joins or leaves them. A GROUP pick of the player's still applies, and its labels take their slots, so
-the list grows less or not at all; its dot shows only for that pick. In the tiles, or with the knob
-off, the menu's own grouping stands. **This changes 0.2.x:** 0.2.x grouped these menus by default,
-by their development branches, or by their tabs where they have two.
+menu (one that opens on All, below) with no tabs of its own, drawn as a list with Small menus grow on,
+groups by none (`BuildingCatalogGrouping.DefaultDimension`): Garbage, Water and Electricity, whose
+development branches add little in a menu of one category. The UI names these menus too
+(`menusDrawingNoGroups`, `SetMenusDrawingNoGroups`), since which body a menu draws is its rule; C#
+counts each menu's tabs with its share (`MenuShare.Tabs`), and the open menu redraws when it joins or
+leaves them. A small menu with two tabs or more keeps All's labels naming them, as All names each
+tab, and their slots count toward the screen it must fit. A GROUP pick of the player's still applies,
+and its labels take their slots, so the list grows less or not at all; its dot shows only for that
+pick. In the tiles, or with the knob off, the menu's own grouping stands. **This changes 0.2.x:**
+0.2.x grouped these menus by their development branches by default.
 
 **The window holds a screen.** The UI tells C# how many buildings one screen of the drawn body holds
 (`SetCatalogScreen`); the cards say how many the packer puts in a screen's rows. The window reaches two
@@ -1347,8 +1350,8 @@ height (`menusOpeningOnAll`), so neither the text scale, the Width nor a drag ch
 on. The rows and All's labels must fit together: C# counts the rows under each label All draws in the
 menu's own grouping with its share (`MenuShare.GroupRows`), and the set places them as the open body
 would (`bodyCells`), so a menu of two tabs that would scroll on All by its labels opens on its tab. A
-list with Small menus grow on draws no labels unless picked (see "The bodies"), so there its rows alone
-must fit.
+menu of one tab drawn as a list with Small menus grow on draws no labels unless picked (see "The
+bodies"), so there its rows alone must fit.
 Which body a menu draws is the UI's rule, so the UI names the small menus (`SetMenusOpeningOnAll`, one
 name a line), from the menu watcher, which is mounted before any menu opens; it names only the menus C#
 has counted, so a small menu opens on its tab the first time a session opens it, and on All from then

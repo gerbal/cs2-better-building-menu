@@ -2,8 +2,8 @@
  * The small menus, which open on All: those whose rows all fit one screen of the body they draw, at 100%
  * text, the first Width step and the game's own body height, so neither the text scale, the Width nor a
  * drag changes which tab a menu opens on. All draws a label over each of its groups, so the rows and
- * those labels must fit; but a small menu drawn as a list with Small menus grow on draws no groups
- * unless the player picks one, so its rows alone must. A menu whose view is Cards opens on All in C#, whatever its size, and is
+ * those labels must fit; but a small menu of one tab drawn as a list with Small menus grow on draws no
+ * groups unless the player picks one, so its rows alone must. A menu whose view is Cards opens on All in C#, whatever its size, and is
  * left out here. Pure. See docs/design-notes.md, "Opening on the building's tab" and "The bodies".
  */
 import { drawnBodyHeight } from "./assetMenuLayout";
@@ -31,7 +31,7 @@ export function menusOpeningOnAll(input: OnAllInput): string[] {
     .sort();
 }
 
-/** The small menus drawn as a list with Small menus grow on, which draw no groups unless picked: C# groups their All by none. */
+/** The small menus of one tab drawn as a list with Small menus grow on, which draw no groups unless picked: C# groups their All by none. */
 export function menusDrawingNoGroups(input: OnAllInput): string[] {
   return smallMenus(input)
     .filter((small) => small.noGroups)
@@ -39,7 +39,7 @@ export function menusDrawingNoGroups(input: OnAllInput): string[] {
     .sort();
 }
 
-/** Each small menu, and whether it draws no groups unless picked: a list with Small menus grow on. */
+/** Each small menu, and whether it draws no groups unless picked: one tab, drawn as a list with Small menus grow on. */
 function smallMenus({ shares, views, defaultView, tuning, tileSize, atLargeText }: OnAllInput): { menu: string; noGroups: boolean }[] {
   return shares.flatMap((share) => {
     const body = drawnBody(menuView({ menuPick: menuPickOf(views, share.menu), defaultView, auto: autoBody({ share, textScale: 1, step: 1, knobs: tuning }) }));
@@ -48,8 +48,9 @@ function smallMenus({ shares, views, defaultView, tuning, tileSize, atLargeText 
       return [];
     }
 
-    // The growth is the point of a small menu, and labels take the slots it grows into.
-    const noGroups = body === "list" && tuning.smallMenusGrow;
+    // The growth is the point of a small menu, and labels take the slots it grows into; a menu with
+    // tabs of its own keeps All's labels naming them.
+    const noGroups = body === "list" && tuning.smallMenusGrow && (share.tabs ?? 0) < 2;
     const input: BodyGridInput = {
       body,
       boxWidth: WIDTH_STEP_VANILLA,
