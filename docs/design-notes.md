@@ -239,8 +239,8 @@ the strip does, and it is absent with the pane hidden, so nothing reaches past t
 - The width strip and the upgrades panel's top strip draw as the game's one panel resizer does:
   nothing until the mouse is on them, then a white fill (10 %, 15 % while dragging, whether or not
   the mouse is still on them). Their pills are the scrollbar thumb's at rest and brighten in white
-  as it does, at once, never in the accent. The upgrades panel's strip keeps the dark paint of the
-  header under it. The build menu's top edge draws nothing at rest and a pill under the mouse (see
+  as it does, at once, never in the accent. The upgrades panel's strip is painted as the header
+  under it, the look's head. The build menu's top edge draws nothing at rest and a pill under the mouse (see
   "The top edge").
 - At rest the width pill looks like a scrollbar thumb; the white fill under the
   mouse is what marks it as a handle. The owner chose that over a dark band, which
@@ -362,6 +362,19 @@ mark, where a tag, only as wide as its text, does not. Each tile's band is worke
 name, room and lock, and checked only against the loaded names that open and close as its cut does, so
 a push of the same tiles costs a lookup each. Its cost tag keeps the tag's place and room and rounds
 its ends.
+
+The upgrades panel follows the Look too. It mounts outside the build menu, so its own root carries the
+look's class, read in the panel (`ExtensionMenuPanel`), never in the wrapper around the game's panel,
+whose hooks stay as they are: a hook added there blanks the UI when the mod loads mid-session. Its
+frame is the look's head over the look's list, its rows the look's plates and inks, the armed one in
+the armed fill. The game draws a row's tooltip outside the panel, so the card's content carries the
+look's class itself and draws in the look's light inks (`lookInks`), as the detail slot does: the
+game's tooltip ground (`--tooltipColor`) stays dark under every interface style.
+
+**This changes 0.2.x:** the upgrades panel drew the game's own panel, its rows on dark glass with an
+accent edge under the pointer, and its card coloured only the figure of a warn or good line; it now
+draws in the Look, its rows on the look's plates, and its card colours such a line whole, its label and
+its figure, as the detail slot does.
 
 ## The looks' tokens
 

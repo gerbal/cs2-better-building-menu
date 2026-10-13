@@ -70,6 +70,9 @@ const INK_ON: readonly (readonly [ink: string, surface: string])[] = [
   ["entMark", "badgeBg"],
   // The hover card: its name and figures, their words and the key number's glyph, a locked building's milestone.
   ["tStateSet", "popBg"], ["tWord", "popBg"], ["amber", "popBg"],
+  // The upgrades panel: a row's inks under the pointer, a locked row's too, and the list's own ink on its body.
+  ["tName", "plateHover"], ["tNum2", "plateHover"], ["tCost", "plateHover"], ["tLocked", "plateHover"],
+  ["tNum2", "plateLocked"], ["tCost", "plateLocked"], ["tName", "body"],
 ];
 
 /** A surface an interface style can turn light: Bright blue makes these pale. */
@@ -214,6 +217,40 @@ describe("the looks' tokens", () => {
       const map = tokens(selector);
       assert.ok(!turnsLight(map.tagBg) && !styleInk(map.amber), selector);
     }
+  });
+
+  it("keep the hover card's inks light under every style, on the game's tooltip, which no style turns light", () => {
+    // The game's tooltip is its own dark --tooltipColor, which neither style redefines; the upgrades panel's
+    // card draws on it in these inks, as the detail slot's does on the dark popover panel.
+    const card = "mods/BuildingHoverCard/buildingHoverCard.module.scss";
+    const inks = [...new Set(everyDeclaration(card)
+      .filter(({ selectors, prop }) => prop === "color" && selectors.some((selector) => selector.includes(".lookInks")))
+      .map(({ value }) => /^var\(--bbm-(\w+)\)$/.exec(value)?.[1])
+      .filter((key): key is string => key !== undefined))];
+
+    assert.deepEqual(inks.sort(), ["tStateSet", "tWord"]);
+    for (const selector of FOLLOW) for (const ink of inks) assert.ok(!styleInk(tokens(selector)[ink]), `${selector}: --bbm-${ink}`);
+  });
+
+  it("draw the upgrades panel's head in light inks no style turns dark, and its rows on the plates in the plates' inks", () => {
+    const panel = (selector: string) => declarationsOf("mods/ExtensionMenu/extensionMenu.module.scss", selector);
+    const rows = (selector: string) => declarationsOf("mods/BuildingList/buildingList.module.scss", selector);
+
+    for (const ink of [panel(".title").color, panel(".kind").color, panel(".closeGlyph")["background-color"]]) {
+      const key = /^var\(--bbm-(\w+)\)$/.exec(ink ?? "")?.[1] ?? "";
+      for (const selector of FOLLOW) assert.ok(key !== "" && !styleInk(tokens(selector)[key]), `${selector}: ${ink}`);
+    }
+    assert.deepEqual(
+      [rows(".item")["background-color"], rows(".name").color, rows(".facts").color, rows(".sortedMetric").color],
+      ["var(--bbm-plate)", "var(--bbm-tName)", "var(--bbm-tNum2)", "var(--bbm-tCost)"],
+    );
+    assert.deepEqual([rows(".itemSelected")["background-color"], rows(".itemSelected .name").color], ["var(--bbm-arm)", "var(--bbm-armText)"]);
+    // Under the pointer, locked, and the list's own ink on its body: each pair INK_ON pins.
+    assert.deepEqual(
+      [rows(".item:hover")["background-color"], rows(".item[data-locked=true]")["background-color"], rows(".item[data-locked=true] .name").color],
+      ["var(--bbm-plateHover)", "var(--bbm-plateLocked)", "var(--bbm-tLocked)"],
+    );
+    assert.deepEqual([panel(".content")["background-color"], panel(".content").color], ["var(--bbm-body)", "var(--bbm-tName)"]);
   });
 
   it("keep the top row's ink light under every style, since its band stays dark", () => {

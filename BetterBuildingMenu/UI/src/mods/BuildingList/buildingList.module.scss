@@ -27,24 +27,33 @@
   width: auto !important;
   height: 26rem;
   padding: 0 8rem 0 4rem !important;
-  border-radius: 3rem;
-  background-color: rgba(0, 0, 0, 0.25);
-  border: 1rem solid rgba(255, 255, 255, 0.08);
+  // On the look's plate, as the build menu's cards. Longhands: Cohtml drops a shorthand fed by var().
+  border-top-left-radius: var(--bbm-radiusItem);
+  border-top-right-radius: var(--bbm-radiusItem);
+  border-bottom-left-radius: var(--bbm-radiusItem);
+  border-bottom-right-radius: var(--bbm-radiusItem);
+  background-color: var(--bbm-plate);
   justify-content: flex-start;
 }
 
 .item:hover {
-  background-color: rgba(255, 255, 255, 0.14);
-  @include _base.border-colors(var(--accentColorNormal));
+  background-color: var(--bbm-plateHover);
 }
 
-// The row whose tool is active. Vanilla's tile does this with its own
-// selected state; here it is the hover look held, so the row the player just
-// clicked stays lit while they place it.
+// The row whose tool is active, as vanilla's tile marks it: the look's armed fill, held while the player
+// places it.
 .itemSelected,
 .itemSelected:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-  @include _base.border-colors(var(--accentColorNormal));
+  background-color: var(--bbm-arm);
+}
+
+.itemSelected .name {
+  color: var(--bbm-armText);
+}
+
+.itemSelected .facts,
+.itemSelected .sortedMetric {
+  color: var(--bbm-armNum);
 }
 
 // The picture and its badge share this box, so the margin lives here rather
@@ -86,7 +95,7 @@
   height: 20rem;
   margin-right: 5rem;
   border-radius: 2rem;
-  background-color: rgba(255, 255, 255, 0.06);
+  background-color: var(--bbm-iconSlot);
 }
 
 .name {
@@ -95,7 +104,7 @@
   // shorter. Only a runaway name is cut, by length, in listLabel.
   white-space: nowrap;
   font-size: var(--fontSizeS);
-  color: var(--menuText1Normal);
+  color: var(--bbm-tName);
 }
 
 // A larger icon and one line of facts. Still wrapped rows: a card is a
@@ -136,7 +145,7 @@
 .sortedMetric {
   margin-left: auto;
   padding-left: 8rem;
-  color: var(--menuText2Normal);
+  color: var(--bbm-tCost);
   font-size: var(--fontSizeS);
   white-space: nowrap;
 }
@@ -148,7 +157,7 @@
   > * + * {
     margin-left: 7rem;
   }
-  color: var(--menuText2Normal);
+  color: var(--bbm-tNum2);
   font-size: var(--fontSizeXS);
 }
 
@@ -159,7 +168,6 @@
 // A real character rather than spacing, which this engine would not draw.
 .factDot {
   padding: 0 5rem;
-  color: var(--menuText2Normal);
   opacity: 0.6;
 }
 
@@ -199,14 +207,14 @@
 
 .item[data-locked="true"],
 .item[data-already-built="true"] {
-  background-color: rgba(255, 255, 255, 0.08);
+  background-color: var(--bbm-plateLocked);
 
   .name {
-    opacity: 0.55;
+    color: var(--bbm-tLocked);
   }
 }
 
 .item[data-locked="true"]:hover,
 .item[data-already-built="true"]:hover {
-  background-color: rgba(255, 255, 255, 0.13);
+  background-color: var(--bbm-plateHover);
 }

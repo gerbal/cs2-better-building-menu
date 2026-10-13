@@ -688,8 +688,8 @@ describe("the game's detail slot is the size placeSlotCard places it at", () => 
     assert.equal(rem(card(".onPanel")["max-width"]), SLOT_WIDTH);
   });
 
-  it("draws the game's card on the panel in the look's inks, its warn and good figures in the tones the upgrades panel draws them in, and their lines' labels too", () => {
-    const on = (...path: string[][]) => resolvedOn(CARD, [["card", "onPanel"], ...path], "color");
+  it("draws the game's card in the look's inks, on the panel and on the game's tooltip, its warn and good figures in their own tones, and their lines' labels too", () => {
+    const on = (...path: string[][]) => resolvedOn(CARD, [["card", "lookInks"], ...path], "color");
     const off = (...path: string[][]) => resolvedOn(CARD, [["card"], ...path], "color");
 
     assert.deepEqual(
@@ -818,21 +818,22 @@ describe("hover card figures line up", () => {
   });
 });
 
-describe("the extension picker wears the game's panel frame", () => {
+describe("the extension picker wears the look's panel frame", () => {
   // The picker's rows sit in the slot where vanilla draws a framed Panel. The
-  // frame is three of the game's surfaces: the resize strip with the top
-  // corners rounded, a dark header square beneath it, and a normal body with
-  // the gradient.
-  it("gives the header the game's dark surface, square under the resize strip", () => {
+  // frame is the look's, as the build menu's: the resize strip with the top
+  // corners rounded and a header square beneath it on the look's head, over
+  // the look's list.
+  it("gives the header the look's head, square under the resize strip", () => {
     const header = picker(".header");
-    assert.equal(header["background-color"], "var(--panelColorDark)");
-    assert.equal(header["backdrop-filter"], "var(--panelBlur)");
+    assert.equal(header["background-color"], "var(--bbm-head)");
+    assert.equal(header["backdrop-filter"], "var(--bbm-bodyBlur)");
+    assert.equal(resize(".resizeHandle")["background-color"], "var(--bbm-head)");
     // The strip owns the rounding; a rounded header beneath it would stack
     // two curved edges.
     assert.equal(header["border-top-left-radius"], "0");
     assert.equal(header["border-top-right-radius"], "0");
-    assert.equal(resize(".resizeHandle")["border-top-left-radius"], "var(--panelRadius)");
-    assert.equal(resize(".resizeHandle")["border-top-right-radius"], "var(--panelRadius)");
+    assert.equal(resize(".resizeHandle")["border-top-left-radius"], "var(--bbm-boxRadius)");
+    assert.equal(resize(".resizeHandle")["border-top-right-radius"], "var(--bbm-boxRadius)");
   });
 
   it("scrolls its body inside the dragged height rather than growing past it", () => {
@@ -843,16 +844,15 @@ describe("the extension picker wears the game's panel frame", () => {
     assert.equal(picker(".content")["overflow-y"], "auto");
   });
 
-  it("keeps the game's own body surface until it takes the look", () => {
-    // The build menu's body is the look's; the picker takes the look with its own restyle. It has
-    // no tab row under its body, so the body rounds the frame's bottom corners itself.
+  it("takes the look's list as its body, rounding the frame's bottom corners itself", () => {
+    // It has no tab row under its body, so the body rounds the frame's bottom corners itself.
     const body = picker(".content");
 
-    assert.equal(body["background-color"], "var(--panelColorNormal)");
-    assert.equal(body["backdrop-filter"], "var(--panelBlur)");
-    assert.match(body["background-image"] ?? "", /linear-gradient/);
-    assert.equal(body["border-bottom-left-radius"], "var(--panelRadius)");
-    assert.equal(body["border-bottom-right-radius"], "var(--panelRadius)");
+    assert.equal(body["background-color"], "var(--bbm-body)");
+    assert.equal(body["backdrop-filter"], "var(--bbm-bodyBlur)");
+    assert.equal(body["background-image"], undefined);
+    assert.equal(body["border-bottom-left-radius"], "var(--bbm-boxRadius)");
+    assert.equal(body["border-bottom-right-radius"], "var(--bbm-boxRadius)");
   });
 
   it("takes the pointer only where it draws", () => {

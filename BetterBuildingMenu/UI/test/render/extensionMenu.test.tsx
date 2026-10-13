@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { beforeEach, describe, it } from "node:test";
+import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { renderHtml, entry } from "../harness/render";
 import { setBinding, setMapBinding, resetBindings, triggers } from "../harness/stubs/cs2-api";
 import { ExtensionMenuComponent } from "../../src/mods/ExtensionMenu/ExtensionMenu";
@@ -141,5 +143,48 @@ describe("the extension picker", () => {
     assert.match(html, /aria-label="Close"/);
     assert.equal(closed, 0);
     assert.equal(triggers.length, 0);
+  });
+
+  it("carries the look on its own root, outside the build menu's: Plates' class, the game's style followed, the panels' alphas", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuLook", "plates");
+    const root = /<div class="([^"]*panel[^"]*)" style="([^"]*)" data-extension-menu="true" data-bbm-look="plates">/.exec(render());
+
+    assert.ok(root, "the panel's root names its look");
+    assert.deepEqual(root[1].split(" ").sort(), ["followStyle", "panel", "plates", "toolPanel"]);
+    assert.match(root[2], /--bbm-a-body:0\.92/);
+  });
+
+  it("redraws in a new look in place: a drag under way on its top edge carries through the switch", () => {
+    const globals = globalThis as unknown as Record<string, unknown>;
+    const saved = globals.document;
+    globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined };
+    let root: ReactTestRenderer | undefined;
+
+    try {
+      act(() => {
+        root = create(<Ours focusKey="upgrades" className="toolPanel" onClose={() => {}} />);
+      });
+      const panel = () => root!.root.find((node) => node.props["data-extension-menu"] === "true");
+      act(() => root!.root.findByProps({ className: "resizeHandle" }).props.onMouseDown({ button: 0, clientY: 500, preventDefault: () => undefined, stopPropagation: () => undefined }));
+      assert.equal(root!.root.findAll((node) => node.props.className === "resizeBlocker").length, 1, "the drag is under way");
+
+      act(() => setBinding("BetterBuildingMenu", "AssetMenuLook", "plates"));
+      assert.equal(panel().props["data-bbm-look"], "plates");
+      assert.equal(root!.root.findAll((node) => node.props.className === "resizeBlocker").length, 1, "nothing mounted again");
+    } finally {
+      act(() => root?.unmount());
+      globals.document = saved;
+    }
+  });
+
+  it("keeps the wrapper around the game's panel to its own hooks, which read no look", () => {
+    // A hook added to a wrapper around a vanilla component blanks the UI when the mod loads mid-session.
+    const source = readFileSync(new URL("../../src/mods/ExtensionMenu/ExtensionMenu.tsx", import.meta.url), "utf8");
+    // The whole wrapper, to the panel's props: a hook after the comment inside it escapes nothing.
+    const wrapper = source.slice(source.indexOf("function UpgradesMenuOrOurs"), source.indexOf("interface ExtensionMenuPanelProps"));
+
+    assert.ok(wrapper.indexOf("Do not put any Hooks") >= 0 && wrapper.indexOf("Do not put any Hooks") < wrapper.indexOf("decideExtensionMenu("), "the comment precedes the decision");
+    assert.deepEqual([...wrapper.matchAll(/\b(use\w+)\(/g)].map((match) => match[1]), ["useValue", "useValue", "useMapValue", "useValue", "useValue"]);
+    assert.doesNotMatch(wrapper, /Look/);
   });
 });

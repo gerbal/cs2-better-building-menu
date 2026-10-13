@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { beforeEach, describe, it } from "node:test";
 import { renderHtml, entry } from "../harness/render";
+import type { CSSProperties } from "react";
 import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
 import type { BuildingCatalogEntry } from "../../src/domain/buildingCatalog";
 import { BuildingHoverCard, useHoverCardContext } from "../../src/mods/BuildingHoverCard/BuildingHoverCard";
@@ -11,7 +12,7 @@ const Card = ({ subject }: { subject: BuildingCatalogEntry }) => {
   const context = useHoverCardContext();
 
   return (
-    <BuildingHoverCard entry={subject} context={context}>
+    <BuildingHoverCard entry={subject} context={context} look={{ id: "plates", className: "plates followStyle", style: { "--bbm-a-popBg": "0.97" } as CSSProperties }}>
       <span>anchor</span>
     </BuildingHoverCard>
   );
@@ -28,6 +29,12 @@ const cardOf = (subject: BuildingCatalogEntry): string => {
 
 describe("the hover card", () => {
   beforeEach(() => resetBindings());
+
+  it("carries the upgrades panel's look on the card's content, which the game draws outside the panel, in the look's own inks", () => {
+    const card = cardOf(entry(1, { name: "Clinic" }));
+
+    assert.match(card, /<div class="plates followStyle" style="--bbm-a-popBg:0\.97" data-bbm-look="plates"><div class="card lookInks">/);
+  });
 
   it("names the building and lists the upgrades it supports", () => {
     // supportedUpgrades, never extensions: extensions is a self-tag, empty for

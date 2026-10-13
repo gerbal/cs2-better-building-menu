@@ -21,10 +21,11 @@
   // its cursors itself and maps no CSS keyword past default/pointer/none, so
   // ns-resize showed nothing and the edge never announced itself.
   cursor: url(cursor://vertical-can-resize);
-  background-color: var(--panelColorDark);
-  backdrop-filter: var(--panelBlur);
-  border-top-left-radius: var(--panelRadius);
-  border-top-right-radius: var(--panelRadius);
+  // The panel's head, in the look.
+  background-color: var(--bbm-head);
+  backdrop-filter: var(--bbm-bodyBlur);
+  border-top-left-radius: var(--bbm-boxRadius);
+  border-top-right-radius: var(--bbm-boxRadius);
 }
 
 // The game's resizer fills white under the mouse and while dragging; laid over the

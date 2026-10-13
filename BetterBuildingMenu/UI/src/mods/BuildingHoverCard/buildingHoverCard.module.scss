@@ -18,8 +18,8 @@
 }
 
 // The two states worth colouring: cannot afford, and a remaining shortfall.
-// Both have to reach the value as well as the line, or .cardValue's own colour
-// wins on specificity. Literal colours — the theme's resolve to black here.
+// Literal colours — the theme's resolve to black here. Under .lookInks they
+// colour the whole line, its label and its figure.
 $card-warn: rgb(232, 122, 122);
 $card-good: rgb(130, 205, 130);
 
@@ -164,12 +164,9 @@ $card-good: rgb(130, 205, 130);
   }
 }
 
-// On the build menu's own panel, the game's detail slot: dark under every interface style, so the look's
-// own inks, which no style turns dark. Its cap is the slot's width, so its column sets the width: Cohtml
-// takes no `none` here.
-.onPanel {
-  max-width: 706rem;
-
+// In the look's own inks, which no style turns dark: on the game's tooltip, which no style lightens, and on
+// the build menu's own dark panel.
+.lookInks {
   .cardName,
   .cardValue,
   .cardDescription {
@@ -193,4 +190,10 @@ $card-good: rgb(130, 205, 130);
   .cardGood .cardValue {
     color: $card-good;
   }
+}
+
+// The game's detail slot: its cap is the slot's width, so its column sets the width. Cohtml takes no
+// `none` here.
+.onPanel {
+  max-width: 706rem;
 }

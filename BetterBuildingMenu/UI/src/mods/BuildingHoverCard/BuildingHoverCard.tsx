@@ -13,6 +13,7 @@ import { useUnitSystem } from "domain/unitSettings";
 import { overflowsBox } from "domain/measuredFit";
 import styles from "./buildingHoverCard.module.scss";
 import { AssetMenuMilestones$ } from "mods/bindings";
+import type { LookRoot } from "mods/useLookRoot";
 
 export interface HoverCardContext extends HoverCardLineContext {
   /**
@@ -127,18 +128,21 @@ const CardLine = ({ line }: { line: TileTooltipLine }) => {
 /**
  * One card body, shared by the upgrades panel's tooltip and the build menu's detail slot, rendered only
  * when it is shown. Its own component ON PURPOSE: React does not invoke the function until then, so the
- * lines are worked out on hover, not once per tile. `onPanel` draws it on the build menu's own dark panel,
- * in the look's inks. `rows` draws only its first rows, in their order (each marked `data-card-row`): the
- * name, the description, the game's lines, BBM's, the footprints.
+ * lines are worked out on hover, not once per tile. `lookInks` draws it in the look's light inks, on the
+ * game's tooltip or the build menu's panel, both dark under every interface style; `onPanel`, the detail
+ * slot, also takes the slot's width. `rows` draws only its first rows, in their order (each marked
+ * `data-card-row`): the name, the description, the game's lines, BBM's, the footprints.
  */
 export const HoverCardContent = ({
   entry,
   context,
+  lookInks = false,
   onPanel = false,
   rows = Number.POSITIVE_INFINITY,
 }: {
   entry: BuildingCatalogEntry;
   context: HoverCardContext;
+  lookInks?: boolean;
   onPanel?: boolean;
   rows?: number;
 }) => {
@@ -163,7 +167,7 @@ export const HoverCardContent = ({
   const renderLine = (line: TileTooltipLine) => <CardLine key={line.key} line={line} />;
 
   return (
-    <div className={classNames(styles.card, onPanel && styles.onPanel)}>
+    <div className={classNames(styles.card, (lookInks || onPanel) && styles.lookInks, onPanel && styles.onPanel)}>
       {name !== undefined && <div className={styles.cardName} data-card-row="name">{name}</div>}
       {description && <div className={styles.cardDescription} data-card-row="description">{description}</div>}
       {/* Two across where they fit, so short figures do not each take a whole
@@ -209,18 +213,21 @@ export const HoverCardContent = ({
 
 /**
  * Wraps a tile so hovering it explains the asset. Deliberately does no work of
- * its own: see HoverCardContent.
+ * its own: see HoverCardContent. The game draws the tooltip outside the panel,
+ * so its content carries the panel's look itself.
  */
 export const BuildingHoverCard = ({
   entry,
   context,
+  look,
   children,
 }: {
   entry: BuildingCatalogEntry;
   context: HoverCardContext;
+  look: LookRoot;
   children: JSX.Element;
 }) => (
-  <Tooltip tooltip={<HoverCardContent entry={entry} context={context} />}>
+  <Tooltip tooltip={<div className={look.className} style={look.style} data-bbm-look={look.id}><HoverCardContent entry={entry} context={context} lookInks /></div>}>
     {children}
   </Tooltip>
 );

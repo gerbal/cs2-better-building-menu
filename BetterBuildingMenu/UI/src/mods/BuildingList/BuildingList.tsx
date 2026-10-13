@@ -17,6 +17,7 @@ import { BuildingHoverCard, useHoverCardContext } from "mods/BuildingHoverCard/B
 import { sortedMetricFor, sortedMetricValue } from "domain/sortedMetric";
 import { useUnitSystem } from "domain/unitSettings";
 import { useStateWords } from "mods/Bodies/useBodyWords";
+import type { LookRoot } from "mods/useLookRoot";
 import styles from "./buildingList.module.scss";
 import { BuildingCatalogSortColumn$ } from "mods/bindings";
 
@@ -31,6 +32,8 @@ interface BuildingListProps {
   entries: BuildingCatalogEntry[];
   onPlace: (entry: BuildingCatalogEntry) => void;
   variant?: BuildingListVariant;
+  /** The look of the panel the list draws in, which its tooltip's card carries outside the panel. */
+  look: LookRoot;
   /**
    * The entry whose tool is active, where the caller knows it — the extension
    * menu does, from vanilla's own selectedUpgrade. The build menu passes none.
@@ -43,7 +46,7 @@ interface BuildingListProps {
  * what a building is called among hundreds. Cards adds one line of constraints
  * (does it fit, can I afford it), never comparisons.
  */
-export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId }: BuildingListProps) => {
+export const BuildingList = ({ entries, onPlace, variant = "compact", look, selectedId }: BuildingListProps) => {
   const { translate } = useLocalization();
   const separators = getNumberSeparators(translate, useUnitSystem());
   // The same card every body shows, so which facts a building states does not
@@ -100,7 +103,7 @@ export const BuildingList = ({ entries, onPlace, variant = "compact", selectedId
         const hasCapacity = capacity !== "" && capacity !== "—" && (entry.capacity ?? 0) !== 0;
 
         return (
-          <BuildingHoverCard key={entry.id} entry={entry} context={hoverCard}>
+          <BuildingHoverCard key={entry.id} entry={entry} context={hoverCard} look={look}>
             <Button
               className={classNames(styles.item, cards && styles.itemCard, selectedId === entry.id && styles.itemSelected)}
               variant="icon"

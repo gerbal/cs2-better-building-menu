@@ -368,7 +368,7 @@ describe("the hover card", () => {
     assert.match(says(), /Modern Architecture/);
     assert.equal(root!.root.findAll((node) => typeof node.props.title === "string").length, 0);
     // On the panel, in the look's inks.
-    assert.equal(root!.root.findAll((node) => node.type === "div" && node.props.className === "card onPanel").length, 1);
+    assert.equal(root!.root.findAll((node) => node.type === "div" && node.props.className === "card lookInks onPanel").length, 1);
   });
 
   for (const scale of [1, 1.3]) {
