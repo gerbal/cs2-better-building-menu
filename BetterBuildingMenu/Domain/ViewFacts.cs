@@ -103,7 +103,7 @@ namespace BetterBuildingMenu.Domain
 					&& tally.BestCount >= SaidOnceFloor
 					&& Percent.FromFraction((float)tally.BestCount / open) >= saidOnceAt)
 				{
-					shared.Add(new SharedValue(SaidKinds[at], tally.Best.Value, tally.Best.Depth));
+					shared.Add(new SharedValue(SaidKinds[at], tally.Best.Value, tally.Best.Depth, tally.Best.PerCell, tally.Best.Unit));
 				}
 			}
 
@@ -121,15 +121,22 @@ namespace BetterBuildingMenu.Domain
 			_ => false,
 		};
 
-		/// <summary>A row's value of a kind as the rows print it: a speed in whole km/h, a lot as its two sides.</summary>
-		private static (double Value, int Depth) ValueOf(BuildingCatalogEntry row, string kind) => kind switch
+		/// <summary>
+		/// A row's value of a kind as the rows print it: a speed in whole km/h, a lot as its two sides, a cost
+		/// with its basis (a network's per cell), a capacity with the role its unit follows. Rows that print one
+		/// figure in two units hold two values.
+		/// </summary>
+		private static Figure ValueOf(BuildingCatalogEntry row, string kind) => kind switch
 		{
-			Speed => (Math.Round(row.SpeedLimit ?? 0), 0),
-			Capacity => (row.Capacity ?? 0, 0),
-			Workers => (row.Workers ?? 0, 0),
-			Lot => (row.LotWidth, row.LotDepth),
-			_ => (row.ConstructionCost ?? 0, 0),
+			Speed => new Figure(Math.Round(row.SpeedLimit ?? 0), 0, false, string.Empty),
+			Capacity => new Figure(row.Capacity ?? 0, 0, false, row.BuildingType ?? string.Empty),
+			Workers => new Figure(row.Workers ?? 0, 0, false, string.Empty),
+			Lot => new Figure(row.LotWidth, row.LotDepth, false, string.Empty),
+			_ => new Figure(row.ConstructionCost ?? 0, 0, row.CostIsPerDistance, string.Empty),
 		};
+
+		/// <summary>A value as the rows print it: the figure, a lot's depth, its basis and its unit's role.</summary>
+		private readonly record struct Figure(double Value, int Depth, bool PerCell, string Unit);
 
 		/// <summary>The kind a sort orders by, whose value every row then prints; null for a sort by none of them.</summary>
 		private static string? SortedKind(string? sortColumn) => sortColumn switch
@@ -146,13 +153,13 @@ namespace BetterBuildingMenu.Domain
 		/// <remarks>At a tie the smaller value is the commonest, so the answer never rests on the rows' order.</remarks>
 		private sealed class Tally
 		{
-			private readonly Dictionary<(double Value, int Depth), int> _counts = new();
+			private readonly Dictionary<Figure, int> _counts = new();
 
-			public (double Value, int Depth) Best { get; private set; }
+			public Figure Best { get; private set; }
 
 			public int BestCount { get; private set; }
 
-			public void Add((double Value, int Depth) value)
+			public void Add(Figure value)
 			{
 				_counts.TryGetValue(value, out var count);
 				_counts[value] = ++count;
@@ -163,10 +170,13 @@ namespace BetterBuildingMenu.Domain
 				}
 			}
 
-			private static bool Smaller((double Value, int Depth) one, (double Value, int Depth) other)
+			private static bool Smaller(Figure one, Figure other)
 			{
 				var byValue = one.Value.CompareTo(other.Value);
-				return byValue < 0 || (byValue == 0 && one.Depth < other.Depth);
+				if (byValue != 0) return byValue < 0;
+				if (one.Depth != other.Depth) return one.Depth < other.Depth;
+				if (one.PerCell != other.PerCell) return !one.PerCell;
+				return string.CompareOrdinal(one.Unit, other.Unit) < 0;
 			}
 		}
 
@@ -186,8 +196,12 @@ namespace BetterBuildingMenu.Domain
 		}
 	}
 
-	/// <summary>A value the readout says once: its kind, and the value, or for a lot its width with its depth.</summary>
-	public sealed record SharedValue(string Kind, double Value, int Depth) : IJsonWritable
+	/// <summary>
+	/// A value the readout says once: its kind, and the value, or for a lot its width with its depth; whether
+	/// it is a network's figure, which the rows print per cell; and the role a capacity's unit follows. The
+	/// UI reads the unit from these where no loaded row holds the value.
+	/// </summary>
+	public sealed record SharedValue(string Kind, double Value, int Depth, bool PerCell = false, string Unit = "") : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -198,6 +212,10 @@ namespace BetterBuildingMenu.Domain
 			writer.Write(Value);
 			writer.PropertyName("depth");
 			writer.Write(Depth);
+			writer.PropertyName("perCell");
+			writer.Write(PerCell);
+			writer.PropertyName("unit");
+			writer.Write(Unit);
 			writer.TypeEnd();
 		}
 	}

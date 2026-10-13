@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { FALLBACK_SEPARATORS, formatLotDimensions } from "../src/domain/assetMenuMetricFormat";
+import { FALLBACK_SEPARATORS, formatCapacity, formatLotDimensions } from "../src/domain/assetMenuMetricFormat";
 import type { BuildingCatalogEntry, SharedValue } from "../src/domain/buildingCatalog";
 import { oneLineNumber, plateNumbers } from "../src/domain/listPlate";
 import { holdsBack, legendParts, shownKinds, statedValues, type LegendWords } from "../src/domain/saidOnce";
@@ -82,8 +82,8 @@ describe("a row's cell left blank", () => {
     const one = (entry: BuildingCatalogEntry, said: readonly SharedValue[], sorted: "workers" | null = null) =>
       oneLineNumber(entry, plateNumbers(entry, sorted, FALLBACK_SEPARATORS, "Locked", 0, "speed", said), sorted, said);
 
-    assert.deepEqual(one(row(), [cost]), { first: "100", second: null, glyph: "gauge", locked: false });
-    assert.deepEqual(one(row(), [cost, speed]), { first: "", second: null, glyph: null, locked: false });
+    assert.deepEqual(one(row(), [cost]), { first: "100", second: null, glyph: "gauge", locked: false, firstIsKey: true });
+    assert.deepEqual(one(row(), [cost, speed]), { first: "", second: null, glyph: null, locked: false, firstIsKey: true });
     // A cost the readout did not say prints, and nothing said prints the cost.
     assert.deepEqual(one(row({ constructionCost: 4_000 }), [cost]), { first: "¢32/c", second: null, glyph: null, locked: false });
     assert.equal(one(row(), []).first, "¢44/c");
@@ -106,6 +106,24 @@ describe("the readout's legend", () => {
   it("says a cost in the game's own template, a road's per cell, and a lot by its two sides", () => {
     assert.equal(legendParts([cost], "speed", ["cost"], window, FALLBACK_SEPARATORS, words, "full")[0].text, "¢44/c unless shown");
     assert.equal(legendParts([{ kind: "lot", value: 4, depth: 4 }], "lot", ["cost", "lot"], [], FALLBACK_SEPARATORS, words, "full")[0].text, `${formatLotDimensions(4, 4)} unless shown`);
+  });
+
+  it("says a value no loaded row holds in the unit its rows print it in, from the basis and unit C# sends", () => {
+    const roadCost: SharedValue = { kind: "cost", value: 5_500, depth: 0, perCell: true, unit: "" };
+    const plantOutput: SharedValue = { kind: "capacity", value: 4_500, depth: 0, perCell: false, unit: "PowerPlant" };
+
+    assert.deepEqual(legendParts([roadCost], "speed", ["cost"], [], FALLBACK_SEPARATORS, words, "full"), [{ glyph: null, text: "¢44/c unless shown" }]);
+    const output = legendParts([plantOutput], "capacity", ["cost", "capacity"], [], FALLBACK_SEPARATORS, words, "full")[0];
+    assert.deepEqual(output, { glyph: null, text: `${formatCapacity(4_500, "", "", "PowerPlant")} unless shown` });
+  });
+
+  it("leaves blank only a row whose figure has the stated basis and unit", () => {
+    const roadCost: SharedValue = { kind: "cost", value: 5_500, depth: 0, perCell: true, unit: "" };
+
+    assert.ok(holdsBack(row(), [roadCost], "cost"));
+    assert.ok(!holdsBack(row({ costIsPerDistance: false }), [roadCost], "cost"));
+    assert.ok(!holdsBack(row({ capacity: 300, buildingType: "Hospital" }), [{ kind: "capacity", value: 300, depth: 0, perCell: false, unit: "School" }], "capacity"));
+    assert.ok(holdsBack(row({ capacity: 300, buildingType: "School" }), [{ kind: "capacity", value: 300, depth: 0, perCell: false, unit: "School" }], "capacity"));
   });
 
   it("names the key kind by its glyph where nothing is said once, and nothing where the body shows no key number", () => {

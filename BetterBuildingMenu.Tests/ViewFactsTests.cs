@@ -158,6 +158,33 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void ASharedValueCarriesTheBasisAndTheUnitItsRowsPrintIn()
+		{
+			// A network's cost is per distance, which the rows print per cell; a capacity's unit follows its role.
+			var roads = MediumRoads.Select(road => road with { ConstructionCost = 5000 }).ToArray();
+			var schools = new[] { School(1, 300), School(2, 300), School(3, 300) }.Select(school => school with { BuildingType = "School" }).ToArray();
+
+			var cost = Assert.Single(BuildingCatalogQueryEngine.Query(roads, new BuildingCatalogQuery(UiMenu: "Roads")).Facts.SharedValues, value => value.Kind == ViewFacts.Cost);
+			var capacity = Assert.Single(BuildingCatalogQueryEngine.Query(schools, new BuildingCatalogQuery(UiMenu: "Education")).Facts.SharedValues, value => value.Kind == ViewFacts.Capacity);
+
+			Assert.Equal((5000d, true, string.Empty), (cost.Value, cost.PerCell, cost.Unit));
+			Assert.Equal((300d, false, "School"), (capacity.Value, capacity.PerCell, capacity.Unit));
+		}
+
+		[Fact]
+		public void ANetworkAndABuildingAtOneFigureAreNotOneValue()
+		{
+			// Three roads per distance and three buildings whole, all at 5,000: two values of three rows each, half the view.
+			var rows = new[] { Road(1, 80), Road(2, 90), Road(3, 110) }.Select(road => road with { ConstructionCost = 5000 })
+				.Concat(new[] { School(4, null), School(5, null), School(6, null) }.Select(school => school with { ConstructionCost = 5000, UiMenu = "Roads" }))
+				.ToArray();
+
+			var facts = BuildingCatalogQueryEngine.Query(rows, new BuildingCatalogQuery(UiMenu: "Roads")).Facts;
+
+			Assert.DoesNotContain(facts.SharedValues, value => value.Kind == ViewFacts.Cost);
+		}
+
+		[Fact]
 		public void TheRowsAreReadInOnePass()
 		{
 			var rows = new CountingRows(MediumRoads);
@@ -186,6 +213,8 @@ namespace BetterBuildingMenu.Tests
 			Assert.Contains("facts", writer.PropertyNames);
 			Assert.Contains("sharedValues", writer.PropertyNames);
 			Assert.Contains("keyKind", writer.PropertyNames);
+			Assert.Contains("perCell", writer.PropertyNames);
+			Assert.Contains("unit", writer.PropertyNames);
 			Assert.Contains("Write:String:speed", writer.Tokens);
 		}
 

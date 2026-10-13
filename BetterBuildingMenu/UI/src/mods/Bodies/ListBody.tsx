@@ -79,7 +79,7 @@ const Plate = memo(function Plate({ entry, grid, slot, armed, enter, sortedMetri
           {numbers.second === null && numbers.glyph !== null && (
             <img className={styles.unitGlyph} style={{ maskImage: `url(${UNIT_GLYPHS[numbers.glyph]})` }} alt="" aria-hidden="true" />
           )}
-          <span className={classNames(styles.first, numbers.locked && styles.milestone)}>{numbers.first}</span>
+          <span className={classNames(styles.first, numbers.locked && styles.milestone, numbers.firstIsKey && styles.keyNumber)}>{numbers.first}</span>
         </span>
         {numbers.second !== null && (
           // The glyph beside the number, never in its run: the readout names the unit it stands for.

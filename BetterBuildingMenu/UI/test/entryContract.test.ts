@@ -107,7 +107,7 @@ describe("the page's view facts' two halves agree", () => {
 
   it("finds both halves at all, so a rename cannot make this vacuous", () => {
     assert.deepEqual(factsWritten, ["sharedValues", "keyKind"]);
-    assert.deepEqual(valueWritten, ["kind", "value", "depth"]);
+    assert.deepEqual(valueWritten, ["kind", "value", "depth", "perCell", "unit"]);
   });
 
   it("names the same kinds on both sides", () => {

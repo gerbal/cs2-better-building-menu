@@ -155,6 +155,11 @@
   color: var(--bbm-tNum2);
 }
 
+// A one-line plate's key number in the cost's place, where the readout said the cost: the key number's ink.
+.keyNumber {
+  color: var(--bbm-tNum2);
+}
+
 .armed .first,
 .armed .second {
   color: var(--bbm-armNum);

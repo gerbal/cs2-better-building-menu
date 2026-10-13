@@ -150,6 +150,10 @@ export interface SharedValue {
   kind: "speed" | "capacity" | "workers" | "lot" | "cost";
   value: number;
   depth: number;
+  /** Whether it is a network's figure, which the rows print per cell; absent, the value alone is compared. */
+  perCell?: boolean;
+  /** The role a capacity's unit follows, as the rows format it; absent, the value alone is compared. */
+  unit?: string;
 }
 
 /** What the page says of its whole view: the values said once, and the kind each row's second number shows, "" for none. */

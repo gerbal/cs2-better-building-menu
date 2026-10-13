@@ -24,6 +24,7 @@ const RESIZE = "mods/AssetMenuResizeHandle/assetMenuResizeHandle.module.scss";
 const LIST = "mods/BuildingList/buildingList.module.scss";
 const TILES = "mods/Bodies/tilesBody.module.scss";
 const TAB_ROW = "mods/TabRow/tabRow.module.scss";
+const LIST_BODY = "mods/Bodies/listBody.module.scss";
 const FILTER_PANEL = "mods/Pickers/filterPanel.module.scss";
 const PICKER_LIST = "mods/Pickers/pickerList.module.scss";
 const POPOVER = "mods/ControlPopover/controlPopover.module.scss";
@@ -277,6 +278,17 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(count("lit"), "var(--bbm-armText)");
     assert.equal(count("matches"), "var(--bbm-entMark)");
     assert.equal(count(), "var(--bbm-tabCount)");
+  });
+
+  it("draws a one-line plate's key number in the cost's place in the key number's ink", () => {
+    // Where the readout said the cost, the key number moves to the first line; it keeps its own ink, as
+    // on the armed and the built plate.
+    const ink = (...plate: string[]) => resolvedOn(LIST_BODY, [["plate", ...plate], ["numbers"], ["firstLine"], ["first", "keyNumber"]], "color");
+
+    assert.equal(ink(), resolvedOn(LIST_BODY, [["plate"], ["numbers"], ["secondLine"], ["second"]], "color"));
+    assert.equal(ink(), "var(--bbm-tNum2)");
+    assert.equal(ink("armed"), "var(--bbm-armNum)");
+    assert.equal(ink("built"), "var(--bbm-tLocked)");
   });
 
   it("sizes the readout's legend as the tab row's plan counts it", () => {

@@ -19,6 +19,8 @@ export interface PlateNumbers {
   glyph: UnitGlyph | null;
   /** Whether the first says why the building is locked, in the locked ink. */
   locked: boolean;
+  /** Whether the first is the key number, moved to a one-line plate's cost's place: in the key number's ink. */
+  firstIsKey?: boolean;
 }
 
 /**
@@ -65,5 +67,5 @@ export function oneNumber(numbers: PlateNumbers, sortedMetric: AssetMenuMetric |
 export function oneLineNumber(entry: BuildingCatalogEntry, numbers: PlateNumbers, sortedMetric: AssetMenuMetric | null, said: readonly SharedValue[]): PlateNumbers {
   if (sortsByValue(sortedMetric) || numbers.locked || !holdsBack(entry, said, "cost")) return oneNumber(numbers, sortedMetric);
 
-  return { first: numbers.second ?? "", second: null, glyph: numbers.second === null ? null : numbers.glyph, locked: false };
+  return { first: numbers.second ?? "", second: null, glyph: numbers.second === null ? null : numbers.glyph, locked: false, firstIsKey: true };
 }

@@ -68,13 +68,13 @@ export function holdsBack(entry: BuildingCatalogEntry, said: readonly SharedValu
       // Half up where C# rounds half to even: a row between the two prints its speed, which stays true.
       return typeof entry.speedLimit === "number" && Math.round(entry.speedLimit) === value.value;
     case "capacity":
-      return entry.capacity === value.value;
+      return entry.capacity === value.value && (value.unit === undefined || value.unit === (entry.buildingType ?? ""));
     case "workers":
       return entry.workers === value.value;
     case "lot":
       return entry.lotWidth === value.value && entry.lotDepth === value.depth;
     default:
-      return entry.constructionCost === value.value;
+      return entry.constructionCost === value.value && (value.perCell === undefined || value.perCell === entry.costIsPerDistance);
   }
 }
 
@@ -103,24 +103,39 @@ export function missingFigure(entry: BuildingCatalogEntry, said: readonly Shared
 const holder = (value: SharedValue, entries: readonly BuildingCatalogEntry[]): BuildingCatalogEntry | null =>
   entries.find((entry) => holdsBack(entry, [value], value.kind)) ?? null;
 
+/**
+ * A row that says the value as its rows do: one of the window that holds it, else one built from what C#
+ * sends of it, its basis and the role its unit follows, so a legend no loaded row holds says the same unit.
+ */
+const sayer = (value: SharedValue, entries: readonly BuildingCatalogEntry[]): BuildingCatalogEntry =>
+  holder(value, entries) ?? ({
+    name: "",
+    category: "",
+    subCategory: "",
+    buildingType: value.unit ?? "",
+    constructionCost: value.value,
+    costIsPerDistance: value.perCell === true,
+    capacity: value.value,
+  } as BuildingCatalogEntry);
+
 /** A value as the readout says it: with its unit, or its digits alone, which the glyph and the rows' own say. */
 function valueText(value: SharedValue, entries: readonly BuildingCatalogEntry[], separators: NumberSeparators, words: LegendWords, bare: boolean): string {
-  const row = holder(value, entries);
+  const row = sayer(value, entries);
 
   switch (value.kind) {
     case "speed":
       return bare ? speedNumber(value.value, separators) : formatSpeedLimit(value.value, separators);
     case "capacity": {
-      const key = row === null ? null : keyFigure(row, "capacity", separators);
+      const key = keyFigure(row, "capacity", separators);
       // A measure keeps its unit even bare: only a count's unit is the glyph's to say.
-      return bare && key !== null ? key.text : (row === null ? null : capacityText(row, value.value, separators)) ?? groupDigits(value.value, separators);
+      return bare && key !== null ? key.text : capacityText(row, value.value, separators) ?? groupDigits(value.value, separators);
     }
     case "workers":
       return bare ? groupDigits(value.value, separators) : `${groupDigits(value.value, separators)} ${words.workersUnit}`;
     case "lot":
       return formatLotDimensions(value.value, value.depth);
     default:
-      return (row === null ? null : costText(row, separators)) ?? formatBuildingMetric(value.value, "cost", separators);
+      return costText(row, separators) ?? formatBuildingMetric(value.value, "cost", separators);
   }
 }
 
@@ -134,7 +149,7 @@ function glyphOf(kind: ShownKind, value: SharedValue | null, entries: readonly B
     case "lot":
       return "grid";
     case "capacity": {
-      const row = value === null ? entries.find((entry) => typeof entry.capacity === "number" && entry.capacity > 0) ?? null : holder(value, entries);
+      const row = value === null ? entries.find((entry) => typeof entry.capacity === "number" && entry.capacity > 0) ?? null : sayer(value, entries);
       return row === null ? "person" : keyFigure(row, "capacity", separators)?.glyph ?? null;
     }
     default:

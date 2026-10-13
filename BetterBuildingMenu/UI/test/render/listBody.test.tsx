@@ -100,9 +100,9 @@ describe("the list", () => {
 
     // One line, the glyph a sibling of the number in it.
     assert.equal(count(html, /class="second"/), 0);
-    assert.match(html, /<span class="firstLine"><img class="unitGlyph" style="mask-image:url\(gauge\.svg\)"[^>]*><span class="first">100<\/span><\/span><\/div>/);
-    assert.match(both, /data-catalog-entry="1"[^]*?<span class="firstLine"><img class="unitGlyph"[^>]*><span class="first">100<\/span>/);
-    assert.match(both, /data-catalog-entry="2"[^]*?<span class="firstLine"><span class="first"><\/span><\/span><\/div>/);
+    assert.match(html, /<span class="firstLine"><img class="unitGlyph" style="mask-image:url\(gauge\.svg\)"[^>]*><span class="first keyNumber">100<\/span><\/span><\/div>/);
+    assert.match(both, /data-catalog-entry="1"[^]*?<span class="firstLine"><img class="unitGlyph"[^>]*><span class="first keyNumber">100<\/span>/);
+    assert.match(both, /data-catalog-entry="2"[^]*?<span class="firstLine"><span class="first keyNumber"><\/span><\/span><\/div>/);
   });
 
   it("tells the readout the form it draws, a grown small menu's big plate among them, and nothing once it goes", () => {

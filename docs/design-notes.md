@@ -1302,7 +1302,10 @@ filters, or a search's result, since the UI only ever sees a window of it:
   in the readout costs more than two numbers. Locked rows count on neither side, as their slot says why
   they wait. None while a search is typed, whose rows each print their own, and none for the kind the
   list is sorted by, whose order every row's value explains. Only C# counts the share, so moving Said
-  once at in Options redraws the open menu at once.
+  once at in Options redraws the open menu at once. A value carries what its unit follows, as the
+  rows print it: whether it is a network's figure, which they print per cell, and the role a
+  capacity's unit follows. A network and a building at one figure, or two capacities in different
+  units, are two values, and a legend no loaded row holds still says the rows' unit.
 
 **One reading of each figure.** A body reads every figure it draws of a row through `rowNumbers`: the
 cost, the capacity, the lot, the value sorted by, and the key number. A list plate's second number is
