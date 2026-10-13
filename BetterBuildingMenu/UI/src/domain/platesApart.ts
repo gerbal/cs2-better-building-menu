@@ -38,11 +38,13 @@ const tells = (word: string): boolean => !SEPARATORS.has(word) && !STOP_WORDS.ha
 /** A plan's lines as one text, which two plates draw alike where it is the same. */
 const drawnText = (lines: readonly string[]): string => lines.join("\n");
 
+/** A mark opening or closing a word. */
+const MARKS = new RegExp(`^${CUT_MARK}|${CUT_MARK}$`, "gu");
+
 /** Whether a plan's lines hold a word whole: as a word of its own, a mark at most either side. */
 function holdsWhole(lines: readonly string[], word: string): boolean {
   const wanted = word.toLowerCase();
-  const strip = new RegExp(`^${CUT_MARK}|${CUT_MARK}$`, "gu");
-  return lines.some((line) => line.split(" ").some((token) => token.replace(strip, "").toLowerCase() === wanted));
+  return lines.some((line) => line.split(" ").some((token) => token.replace(MARKS, "").toLowerCase() === wanted));
 }
 
 /** The most plans a pass asks for with hints: a page of thousands drawn alike tells its first plates apart, never costing a plan each. */
@@ -56,16 +58,16 @@ let last: { key: string; found: ReadonlyMap<number, ApartHints> } | null = null;
  * where each of its words that tells is held by every name. `holders` counts, for each lower-cased word,
  * the group's names that hold it: one pass over the group, then one over this name's words.
  */
-function rarestWord(words: readonly string[], holders: ReadonlyMap<string, number>, names: number): string | null {
+function rarestWord(words: readonly string[], lower: readonly string[], holders: ReadonlyMap<string, number>, names: number): string | null {
   let best: string | null = null;
   let fewest = names;
-  for (const word of words) {
-    const held = holders.get(word.toLowerCase()) ?? names;
-    if (tells(word) && held < fewest) {
+  words.forEach((word, at) => {
+    const held = holders.get(lower[at]) ?? names;
+    if (held < fewest && tells(word)) {
       best = word;
       fewest = held;
     }
-  }
+  });
   return best;
 }
 
@@ -99,21 +101,25 @@ export function wordsApart(plates: readonly PlateName[], typed: readonly string[
   groups: for (const ats of byText.values()) {
     if (ats.length < 2) continue;
 
-    // Each of the group's names once, its words once; how many of those names hold each word.
-    const names = new Map<string, string[]>();
-    for (const at of ats) {
-      const lower = plates[at].name.toLowerCase();
-      if (!names.has(lower)) names.set(lower, wordsOf(plates[at].name));
-    }
+    // Each of the group's names once, its words once, as written and lower-cased; how many of those names
+    // hold each word.
+    const names = new Map<string, { words: string[]; lower: string[] }>();
+    const nameOf = ats.map((at) => plates[at].name.toLowerCase());
+    nameOf.forEach((lower, index) => {
+      if (names.has(lower)) return;
+      const words = wordsOf(plates[ats[index]].name);
+      names.set(lower, { words, lower: words.map((word) => word.toLowerCase()) });
+    });
     if (names.size < 2) continue;
     const holders = new Map<string, number>();
-    for (const words of names.values()) {
-      for (const word of new Set(words.map((each) => each.toLowerCase()))) holders.set(word, (holders.get(word) ?? 0) + 1);
+    for (const { lower } of names.values()) {
+      for (const word of new Set(lower)) holders.set(word, (holders.get(word) ?? 0) + 1);
     }
 
-    for (const at of ats) {
+    for (const [index, at] of ats.entries()) {
       const plate = plates[at];
-      const own = rarestWord(names.get(plate.name.toLowerCase())!, holders, names.size);
+      const { words, lower } = names.get(nameOf[index])!;
+      const own = rarestWord(words, lower, holders, names.size);
       const before = texts[at];
       const hinted: ApartHints[] = [
         ...(own !== null ? [{ keep: [own], leads: false }] : []),
