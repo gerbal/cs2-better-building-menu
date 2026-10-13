@@ -5,6 +5,8 @@ import {
   nextWindowLimit,
   shouldLoadMore,
   catalogWindowRemaining,
+  isOnLineOne,
+  lineOneScrollTop,
 } from "../src/domain/catalogWindow.ts";
 import { ASSET_MENU_MIN_CATALOG_HEIGHT } from "../src/domain/assetMenuLayout.ts";
 
@@ -413,5 +415,24 @@ describe("revealing a row that grew past the fold", () => {
       }),
       42,
     );
+  });
+});
+
+describe("putting a row on the list's first line", () => {
+  it("scrolls by the row's distance from the top of the list's viewport", () => {
+    // The row is 350 px down a viewport that starts at 50, with the list already 100 in.
+    assert.equal(lineOneScrollTop(100, 350, 50), 400);
+  });
+
+  it("never asks to scroll above the start of the list", () => {
+    assert.equal(lineOneScrollTop(10, 20, 50), 0);
+  });
+
+  it("counts a row within a pixel of the first line as on it, and no further", () => {
+    // Cohtml rounds line boxes to whole device pixels.
+    assert.equal(isOnLineOne({ containerTop: 50, containerHeight: 100, rowTop: 51, rowHeight: 20 }), true);
+    assert.equal(isOnLineOne({ containerTop: 50, containerHeight: 100, rowTop: 52, rowHeight: 20 }), false);
+    assert.equal(lineOneScrollTop(Number.NaN, 350, 50), Number.NaN);
+    assert.equal(lineOneScrollTop(100, Number.NaN, 50), 100);
   });
 });

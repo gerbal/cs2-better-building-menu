@@ -5,10 +5,12 @@ import {
   getAssetMenuAnchor,
   getAssetMenuAnchorKey,
   getAssetMenuDisclosure,
+  getAssetMenuListStart,
   getAssetMenuView,
   resetAssetMenuView,
   setAssetMenuAnchor,
   setAssetMenuDisclosure,
+  setAssetMenuListStart,
   setAssetMenuView,
   subscribeAssetMenuView,
 } from "../src/domain/assetMenuViewStore.ts";
@@ -17,7 +19,7 @@ describe("Asset menu view store", () => {
   beforeEach(() => resetAssetMenuView());
 
   it("starts with nothing chosen", () => {
-    assert.deepEqual(getAssetMenuView(), { viewMode: "", expandedId: null, disclosures: {}, anchors: {} });
+    assert.deepEqual(getAssetMenuView(), { viewMode: "", expandedId: null, disclosures: {}, anchors: {}, listStart: null });
   });
 
   it("tells a subscriber when a field moves, and not when it does not", () => {
@@ -106,6 +108,16 @@ describe("Asset menu scroll anchor", () => {
   const tableByCategory = getAssetMenuAnchorKey({ list: "catalog", viewMode: "table", groupBy: "category" });
 
   beforeEach(() => resetAssetMenuView());
+
+  it("remembers the start it put the list in place for across a remount", () => {
+    // Placing a building unmounts the menu; the page it comes back to is the same start, not a new one.
+    assert.equal(getAssetMenuListStart(), null);
+
+    setAssetMenuListStart(7);
+
+    assert.equal(getAssetMenuListStart(), 7);
+    assert.equal(getAssetMenuView().listStart, 7);
+  });
 
   it("has no anchor until a row has been seen", () => {
     assert.equal(getAssetMenuAnchor(tableByCategory), null);

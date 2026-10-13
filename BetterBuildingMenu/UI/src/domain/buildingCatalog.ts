@@ -149,6 +149,15 @@ export interface BuildingCatalogPage {
    */
   capped?: boolean;
 
+  /** The row the list starts at, as an entry id, or 0 for none: the armed building on an open or a tab pick. */
+  anchorId?: number;
+
+  /** That row's place in the result's order, or -1 when the result does not hold it. */
+  anchorIndex?: number;
+
+  /** Which start of the list this page answers: it moves on an open, a tab pick and a sort. */
+  listStart?: number;
+
   /**
    * The row Enter arms while a search is active; null without a search or a
    * match that can be placed. C#'s answer, chosen from the whole result, because

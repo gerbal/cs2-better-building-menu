@@ -14,9 +14,11 @@ export interface AssetMenuView {
   disclosures: Readonly<Record<string, boolean>>;
   /** Where the player was in each list, by getAssetMenuAnchorKey — an entry id, never a pixel offset. */
   anchors: Readonly<Record<string, number>>;
+  /** The start the list was last put in place for (BuildingCatalogPage.listStart), so a remount does not redo it. */
+  listStart: number | null;
 }
 
-const initial = (): AssetMenuView => ({ viewMode: "", expandedId: null, disclosures: {}, anchors: {} });
+const initial = (): AssetMenuView => ({ viewMode: "", expandedId: null, disclosures: {}, anchors: {}, listStart: null });
 
 let state: AssetMenuView = initial();
 
@@ -108,6 +110,15 @@ export function setAssetMenuAnchor(key: string, entryId: number | null): void {
   }
 
   setAssetMenuView({ anchors });
+}
+
+/** The start the list was last put in place for, or null before the first. */
+export function getAssetMenuListStart(): number | null {
+  return state.listStart;
+}
+
+export function setAssetMenuListStart(start: number | null): void {
+  setAssetMenuView({ listStart: start });
 }
 
 export const ASSET_MENU_DISCLOSURE_KEYS = {

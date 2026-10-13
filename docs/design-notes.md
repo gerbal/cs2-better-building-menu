@@ -459,11 +459,11 @@ control sits over it (`topRowRightInset`).
   controls never triggers (`isWithin`, by the marks `data-bbm-popover` and `data-bbm-controls`).
 - **The SORT and GROUP lists.** SORT lists Default and the sorts that can move this menu's rows, the
   current one lit with its direction (▲ or ▼), which picking it again flips; GROUP lists the
-  groupings the menu offers, its own lit. A pick closes either. A sort keeps the results' scroll
-  position: scrolling the results to their top on a sort arrives with the list's anchor rule, in a
-  later increment. **This changes 0.2.x:** the pane's separate reverse-sort button is gone, since
-  the lit row flips the direction; and the first grouping is named "By tab" and the last "No
-  groups", in the strip, the popover and the pane alike, where the pane said "Category" and "None".
+  groupings the menu offers, its own lit. A pick closes either. A sort starts the list at its
+  top (see "Opening on the building's tab"). **This changes 0.2.x:** the pane's separate
+  reverse-sort button is gone, since the lit row flips the direction; and the first grouping is
+  named "By tab" and the last "No groups", in the strip, the popover and the pane alike, where the
+  pane said "Category" and "None".
 - **FILTER** holds the filter rail of the game's dropdowns, then a chip for each filter on and
   Clear filters once two are (`FilterPanel`), scrolling past 300 rem. A pick keeps it open, since a
   filter is often one of several. The game draws a dropdown's menu outside the popover, so while one
@@ -871,8 +871,20 @@ player has it. A counter rather than a flag on one page, because two pages can l
 The UI's own anchor, the first visible row as scrolling settles (`SetCatalogAnchor`), waits for
 windows that move by offset, which know that row.
 
+**In the UI** (`planListScroll`, `useScrollAnchor`), a page whose start the list has not been put
+in place for moves it once: the anchored row onto line 1 when the window holds it, else the list to
+its top; in the list's last screen the row stays in view where the scroll stops. The start is
+recorded only when the move is done, so a page that lands mid-move plans it again. Placing a
+building unmounts the menu, so the view store keeps the row last armed, or last put on line 1, per
+list; a remount within the same start brings it back into view once, on the mount's first page with
+rows, a third of the way down when it is off the first screen. A row armed after that page is kept
+for the next remount, not brought back by a search, a filter or more rows. Cohtml has no scroll
+event: each move is a frame loop over `scrollTop` on the element that scrolls, found by walking up
+from a row, within the restore's budget of frames.
+
 **This changes 0.2.x:** every menu opened on All and kept the search; a tab pick and a sort left
-the scroll where it was.
+the scroll where it was; a restore forgot the row it brought back, so the next placement's remount
+opened at the top, where now each remount within a start comes back to the kept row, once.
 
 ## Hand-rolled floating surfaces in Cohtml
 

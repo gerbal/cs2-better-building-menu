@@ -1,14 +1,17 @@
-import { useEffect, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import {
   CATALOG_ANCHOR_MAX_FRAMES,
   anchorScrollTop,
   isAnchorMeasurable,
   isAnchorOnScreen,
+  isOnLineOne,
   isScrollContainer,
+  lineOneScrollTop,
   revealScrollTop,
 } from "domain/catalogWindow";
 import type { AnchorGeometry } from "domain/catalogWindow";
-import { getAssetMenuAnchor, setAssetMenuAnchor } from "domain/assetMenuViewStore";
+import { getAssetMenuAnchor, getAssetMenuListStart, setAssetMenuAnchor, setAssetMenuListStart } from "domain/assetMenuViewStore";
+import { planListScroll, type ListScroll } from "domain/listScroll";
 import { findScrollContainer, lastCatalogRow } from "./catalogDom";
 
 /**
@@ -17,16 +20,97 @@ import { findScrollContainer, lastCatalogRow } from "./catalogDom";
  */
 const EXPANDED_ROW_REVEAL_MARGIN = 6;
 
-/**
- * Put the player back where they were, over as many frames as it takes. A
- * retry loop, not one measurement: Cohtml lays out asynchronously and the
- * window is still arriving from C#, so neither has settled by the first effect.
- */
-export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: string, itemCount: number): void {
-  useEffect(() => {
-    const anchored = getAssetMenuAnchor(anchorKey);
+/** What a page says about where its list starts; see BuildingCatalogPage. */
+export interface ListStartPage {
+  /** Which start of the list the page answers, or null before C# sends one. */
+  listStart: number | null;
+  anchorId: number;
+  anchorIndex: number;
+  itemCount: number;
+}
 
-    if (anchored === null || itemCount === 0) {
+type Move = Exclude<ListScroll, { kind: "none" }>;
+
+/**
+ * One frame of a move: true once the list is where the move puts it. A row that has not rendered,
+ * or rects still at Cohtml's pre-layout zeroes, are worth another frame.
+ */
+function moveList(root: HTMLElement | null, move: Move): boolean {
+  const row = root ? lastCatalogRow(root, move.kind === "top" ? undefined : move.id) : null;
+
+  if (!root || !row) {
+    return false;
+  }
+
+  const scroller = findScrollContainer(row, root, isScrollContainer);
+
+  if (move.kind === "top") {
+    // A list that fits has nothing to scroll.
+    if (scroller) scroller.scrollTop = 0;
+    return true;
+  }
+
+  if (!scroller) {
+    return false;
+  }
+
+  const rowRect = row.getBoundingClientRect();
+  const scrollerRect = scroller.getBoundingClientRect();
+  const geometry: AnchorGeometry = {
+    containerTop: scrollerRect.top,
+    containerHeight: scroller.clientHeight,
+    rowTop: rowRect.top,
+    rowHeight: rowRect.height,
+  };
+
+  if (!isAnchorMeasurable(geometry)) {
+    return false;
+  }
+
+  if (move.kind === "restore") {
+    if (isAnchorOnScreen(geometry)) return true;
+
+    scroller.scrollTop = anchorScrollTop(scroller.scrollTop, geometry.rowTop, geometry.containerTop, geometry.containerHeight);
+    return false;
+  }
+
+  if (isOnLineOne(geometry)) {
+    return true;
+  }
+
+  const before = scroller.scrollTop;
+  scroller.scrollTop = lineOneScrollTop(before, geometry.rowTop, geometry.containerTop);
+
+  // In the list's last screen the row cannot reach line 1: in view, where the scroll stops, is in place.
+  return scroller.scrollTop === before && isAnchorOnScreen(geometry);
+}
+
+/**
+ * Puts the list in place when a page lands, over as many frames as it takes: at a new start (an
+ * open, a tab pick, a sort) the anchored row on line 1, or the list at its top; on a remount, the
+ * kept row back in view, once. A retry loop, not one measurement: Cohtml lays out asynchronously and
+ * the window is still arriving from C#. See docs/design-notes.md, "Opening on the building's tab".
+ */
+export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: string, page: ListStartPage): void {
+  // Per mount: a remount brings its row back once, and a start in this mount puts that aside.
+  const settled = useRef(false);
+  const { listStart, anchorId, anchorIndex, itemCount } = page;
+
+  useEffect(() => {
+    const move = planListScroll({
+      listStart,
+      positioned: getAssetMenuListStart(),
+      anchorId,
+      anchorIndex,
+      itemCount,
+      stored: getAssetMenuAnchor(anchorKey),
+      settled: settled.current,
+    });
+
+    // The mount's first page with rows is its one chance to restore: a row armed after it is not a
+    // remount. A restore in flight stays unsettled until it ends, so a page landing mid-move redoes it.
+    if (move.kind === "none") {
+      if (itemCount > 0) settled.current = true;
       return;
     }
 
@@ -34,38 +118,14 @@ export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: stri
     let handle = 0;
     let cancelled = false;
 
-    // Cleared only when the loop finishes: clearing up front would lose the
-    // anchor to the first frame's zero-height rects.
+    // Recorded only when the loop ends: a page that lands mid-move plans the same move again.
     const finish = () => {
-      setAssetMenuAnchor(anchorKey, null);
-    };
+      settled.current = true;
 
-    const measure = (): { scroller: HTMLElement; geometry: AnchorGeometry } | null => {
-      const root = rootRef.current;
-      const row = root ? lastCatalogRow(root, anchored) : null;
-
-      if (!root || !row) {
-        return null;
+      if (move.kind !== "restore") {
+        setAssetMenuListStart(move.start);
+        setAssetMenuAnchor(anchorKey, move.kind === "lineOne" ? move.id : null);
       }
-
-      const scroller = findScrollContainer(row, root, isScrollContainer);
-
-      if (!scroller) {
-        return null;
-      }
-
-      const rowRect = row.getBoundingClientRect();
-      const scrollerRect = scroller.getBoundingClientRect();
-
-      return {
-        scroller,
-        geometry: {
-          containerTop: scrollerRect.top,
-          containerHeight: scroller.clientHeight,
-          rowTop: rowRect.top,
-          rowHeight: rowRect.height,
-        },
-      };
     };
 
     const step = () => {
@@ -73,42 +133,12 @@ export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: stri
         return;
       }
 
-      if (frame++ >= CATALOG_ANCHOR_MAX_FRAMES) {
-        // The row never became reachable — a predicate changed while the asset menu
-        // was down, or it sits beyond a window that stopped growing. Top of
-        // the list is the honest answer, and where we already are.
+      // Out of budget, the list stays where it is: a row that never rendered is not worth chasing.
+      if (frame++ >= CATALOG_ANCHOR_MAX_FRAMES || moveList(rootRef.current, move)) {
         finish();
         return;
       }
 
-      const measured = measure();
-
-      if (measured === null) {
-        // Not rendered yet, or not in this match set at all. Both look the
-        // same from here and both are worth another frame, up to the budget.
-        handle = requestAnimationFrame(step);
-        return;
-      }
-
-      if (!isAnchorMeasurable(measured.geometry)) {
-        handle = requestAnimationFrame(step);
-        return;
-      }
-
-      if (isAnchorOnScreen(measured.geometry)) {
-        finish();
-        return;
-      }
-
-      measured.scroller.scrollTop = anchorScrollTop(
-        measured.scroller.scrollTop,
-        measured.geometry.rowTop,
-        measured.geometry.containerTop,
-        measured.geometry.containerHeight,
-      );
-
-      // Verify next frame rather than trusting the arithmetic: it is computed
-      // against a list still being filled, so the row it aims at moves.
       handle = requestAnimationFrame(step);
     };
 
@@ -118,10 +148,9 @@ export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: stri
       cancelled = true;
       cancelAnimationFrame(handle);
     };
-    // itemCount rather than the items array: the effect has to wait for the
-    // rows to be in the document before it can find one, and a new array
-    // identity every publish would re-run it on data that has not moved.
-  }, [rootRef, anchorKey, itemCount]);
+    // The page's numbers rather than its rows: a new array every publish would restart the move on
+    // data that has not moved.
+  }, [rootRef, anchorKey, listStart, anchorId, anchorIndex, itemCount]);
 }
 
 /**

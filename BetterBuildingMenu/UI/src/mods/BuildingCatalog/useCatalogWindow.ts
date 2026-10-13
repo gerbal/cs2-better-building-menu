@@ -29,6 +29,11 @@ export interface CatalogWindow {
   bestMatchId: number | null;
   /** The search this page answers, which trails the box by a debounce. */
   searchText: string;
+  /** The row the list starts at, and its place in the result; see BuildingCatalogPage. */
+  anchorId: number;
+  anchorIndex: number;
+  /** Which start of the list this page answers, or null before C# sends one. */
+  listStart: number | null;
   loadMore(): void;
 }
 
@@ -52,6 +57,9 @@ export function useCatalogWindow(
   const capped = page?.capped ?? false;
   const bestMatchId = page?.bestMatchId ?? null;
   const searchText = page?.searchText ?? "";
+  const anchorId = page?.anchorId ?? 0;
+  const anchorIndex = page?.anchorIndex ?? -1;
+  const listStart = page?.listStart ?? null;
 
   /**
    * Asks the backend for the next chunk, by the limit wanted rather than "one
@@ -127,5 +135,5 @@ export function useCatalogWindow(
     };
   }, [rootRef, hasMore, items.length, scope.viewMode, scope.groupBy]);
 
-  return { items, totalCount, offset, limit, status, hasMore, capped, bestMatchId, searchText, loadMore };
+  return { items, totalCount, offset, limit, status, hasMore, capped, bestMatchId, searchText, anchorId, anchorIndex, listStart, loadMore };
 }

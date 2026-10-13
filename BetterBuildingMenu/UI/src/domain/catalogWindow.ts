@@ -99,6 +99,23 @@ export function anchorScrollTop(
 }
 
 /**
+ * Where to scroll so a row sits on the list's first line, as an open puts the armed building.
+ * Never negative, for the reason anchorScrollTop is not.
+ */
+export function lineOneScrollTop(currentScrollTop: number, rowTop: number, containerTop: number): number {
+  if (![currentScrollTop, rowTop, containerTop].every(Number.isFinite)) {
+    return currentScrollTop;
+  }
+
+  return Math.max(0, currentScrollTop + rowTop - containerTop);
+}
+
+/** Whether a row sits on the first line, to a pixel: Cohtml rounds line boxes to whole device pixels. */
+export function isOnLineOne({ containerTop, rowTop }: AnchorGeometry): boolean {
+  return Math.abs(rowTop - containerTop) <= 1;
+}
+
+/**
  * How many frames the restore is allowed to keep trying for. A budget, not a
  * safety net — the first attempt always fails, see {@link isAnchorMeasurable} —
  * and short enough to give up before the player has scrolled somewhere else.
