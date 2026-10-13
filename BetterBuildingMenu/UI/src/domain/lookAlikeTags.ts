@@ -1,7 +1,7 @@
 /**
- * The tiles' look-alike tags: each tile drawn that shares its first word with another gets a tag saying
- * what tells it apart, from its distinguishing word, unique on the screen or not drawn. Pure. See
- * docs/design-notes.md, "Names".
+ * The tiles' look-alike tags: each tile drawn that shares its first word or its family with another gets
+ * a tag saying what tells it apart, from its family's word or its distinguishing word, unique on the
+ * screen or not drawn. Pure. See docs/design-notes.md, "Names".
  */
 import type { BuildingCatalogEntry } from "./buildingCatalog";
 import { isEntryLocked } from "./buildingLockState";
@@ -15,6 +15,15 @@ function tagWord(word: string): string {
 }
 
 const wordsOf = (entry: BuildingCatalogEntry): string[] => (entry.name || entry.prefabName).split(/\s+/).filter(Boolean);
+
+/**
+ * The run a tile stands in: its family's first word, so "BeachRaft01" and "BeachRaft02" are one run as
+ * "Boulder 01" and "Boulder Random" are; else its own first word. "" for a tile with no words.
+ */
+function runOf(entry: BuildingCatalogEntry, words: readonly string[]): string {
+  const family = (entry.familyKey ?? "").split(/\s+/).find(Boolean);
+  return (family ?? words[0] ?? "").toLowerCase();
+}
 
 /** Whether a word says something alone: not one that only parts two others, nor one like "with". */
 const says = (word: string): boolean => !SEPARATORS.has(word) && !STOP_WORDS.has(word.toLowerCase());
@@ -73,8 +82,8 @@ interface TagBox {
 }
 
 /**
- * A tile's tags as worked out once for its name, distinguishing word and lock at a tile width and text
- * scale: the forms in words that fit, and its cut once tried (null for none).
+ * A tile's tags as worked out once for its name, distinguishing word, family's word and lock at a tile
+ * width and text scale: the forms in words that fit, and its cut once tried (null for none).
  */
 interface Forms {
   forms: readonly string[];
@@ -103,9 +112,9 @@ interface Member {
 }
 
 /**
- * A member's tags in words, each that fits: its whole name, the word that tells it apart unless that is
- * a word like "with", that word and the next, the run's word and that word. A member none of them fits
- * takes its cut at once; with no cut either it is null, and untagged.
+ * A member's tags in words, each that fits: its whole name, its family's word ("#02", "2x2"), the word
+ * that tells it apart unless that is a word like "with", that word and the next, the run's word and that
+ * word. A member none of them fits takes its cut at once; with no cut either it is null, and untagged.
  */
 function memberOf(entry: BuildingCatalogEntry, box: TagBox): Member | null {
   const locked = isEntryLocked(entry);
@@ -115,11 +124,11 @@ function memberOf(entry: BuildingCatalogEntry, box: TagBox): Member | null {
   return member.forms.length > 0 || addCut(member, box) ? member : null;
 }
 
-/** A tile's forms in words, worked out once for its name, distinguishing word, lock, tile width and text scale. */
+/** A tile's forms in words, worked out once for its name, distinguishing word, family's word, lock, tile width and text scale. */
 function formsOf(entry: BuildingCatalogEntry, locked: boolean, box: TagBox): Forms {
   let byTile = worked.get(box.fits);
   if (byTile === undefined) worked.set(box.fits, (byTile = new Map()));
-  const key = `${entry.name || entry.prefabName}\u0001${entry.distinctWord ?? ""}\u0001${locked ? 1 : 0}\u0001${box.tileWidth}\u0001${box.textScale}`;
+  const key = `${entry.name || entry.prefabName}\u0001${entry.distinctWord ?? ""}\u0001${entry.familyToken ?? ""}\u0001${locked ? 1 : 0}\u0001${box.tileWidth}\u0001${box.textScale}`;
   const known = byTile.get(key);
   if (known !== undefined) {
     byTile.delete(key);
@@ -132,6 +141,7 @@ function formsOf(entry: BuildingCatalogEntry, locked: boolean, box: TagBox): For
   const telling = own >= 0 && says(words[own]);
   const candidates = [
     words.join(" "),
+    entry.familyToken ? tagWord(entry.familyToken) : "",
     telling ? tagWord(words[own]) : "",
     own >= 0 ? pairOf(words, own) : "",
     telling && own > 0 ? `${words[0]} ${tagWord(words[own])}` : "",
@@ -175,11 +185,13 @@ function cutOf(member: Member, box: TagBox): string | null {
 }
 
 /**
- * What the tags read from a page: each tile's id, name, distinguishing word and lock, so a page pushed
- * again with the same tiles keeps its tags.
+ * What the tags read from a page: each tile's id, name, distinguishing word, family and lock, so a page
+ * pushed again with the same tiles keeps its tags.
  */
 export function lookAlikeKey(entries: readonly BuildingCatalogEntry[]): string {
-  return entries.map((entry) => `${entry.id}\u0001${entry.name || entry.prefabName}\u0001${entry.distinctWord ?? ""}\u0001${isEntryLocked(entry) ? 1 : 0}`).join("\u0002");
+  return entries
+    .map((entry) => [entry.id, entry.name || entry.prefabName, entry.distinctWord ?? "", entry.familyKey ?? "", entry.familyToken ?? "", isEntryLocked(entry) ? 1 : 0].join("\u0001"))
+    .join("\u0002");
 }
 
 /**
@@ -195,9 +207,9 @@ export function lookAlikeTags(entries: readonly BuildingCatalogEntry[], tileWidt
   for (const entry of entries) {
     const words = wordsOf(entry);
     if (words.length === 0) continue;
-    const first = words[0].toLowerCase();
-    const run = runs.get(first);
-    if (run === undefined) runs.set(first, [entry]);
+    const key = runOf(entry, words);
+    const run = runs.get(key);
+    if (run === undefined) runs.set(key, [entry]);
     else run.push(entry);
     const name = words.join(" ").toLowerCase();
     names.set(name, (names.get(name) ?? 0) + 1);

@@ -1506,9 +1506,11 @@ its lines and cut once, keeping the words that tell it apart, with "…" where w
 
 **Look-alike tags.** On the tiles drawn, those that share a first word, whatever its case, are a run of
 look-alikes, whose pictures alone do not tell them apart (the theme and density families of Zones: "NA
-Low Density Housing", "NA Low Density Waterfront Housing"). Every member gets a tag at its top left,
-in the cost tag's face, saying what tells it apart (`lookAlikeTags`), the first of these that fits the
-tag and no other tag says: its whole name; its distinguishing word; that word and the next; the run's
+Low Density Housing", "NA Low Density Waterfront Housing"); a family's members are one run by their
+family's first word, glued tokens too ("BeachRaft01", "BeachRaft02"). Every member gets a tag at its top
+left, in the cost tag's face, saying what tells it apart (`lookAlikeTags`), the first of these that fits
+the tag and no other tag says: its whole name; a family member's word ("#02", "2x2"); its distinguishing
+word; that word and the next; the run's
 word and that word ("NA Row" beside "EU Row"), which tells two runs apart; its name cut once by
 the planner, that word and every number whole, or where that word alone is wider than the tag, the word
 cut inside it, two letters at least each side of the mark, a hyphenated word only to its head
@@ -1524,7 +1526,7 @@ smallest tile and at large text, where a tag holds a word or less, fewer tiles a
 counted over every tile the body draws, which holds every tile on the screen, so a tag can change, or
 drop, when Load more draws a look-alike, even one scrolled out of sight. A cut starts from the tag's
 room at the text scale and narrows by what it runs over, stopping where the planner cannot fit the kept
-word, and the tags are worked out again only when the tiles' names, distinguishing words or locks, the
+word, and the tags are worked out again only when the tiles' names, distinguishing words, families or locks, the
 tile's width or the text scale change. Each tile's forms are kept by those, so a Load more works out only
 the new tiles' forms; only the pass that keeps every tag unique runs over every tile. On a locked tile the tag's room ends at the lock glyph, which it
 never covers, and its forms are measured in that room. A tile with no look-alike drawn with it draws no

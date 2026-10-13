@@ -49,6 +49,35 @@ describe("the tiles' look-alike tags", () => {
     assert.equal(Object.keys(run).length, 3);
   });
 
+  it("say a family member's word first, whose run its family's first word is, glued tokens and sizes alike", () => {
+    const member = (id: number, name: string, familyKey: string, familyToken: string): BuildingCatalogEntry =>
+      ({ ...tile(id, name, name), familyKey, familyToken } as BuildingCatalogEntry);
+
+    assert.deepEqual(
+      tags([member(1, "BeachRaft01", "BeachRaft", "01"), member(2, "BeachRaft02", "BeachRaft", "02"), member(3, "BeachRaft03", "BeachRaft", "03"), tile(4, "BeachBoat01")]),
+      { 1: "#01", 2: "#02", 3: "#03" },
+    );
+    assert.deepEqual(
+      tags([member(1, "Boardwalk 2x2", "Boardwalk", "2x2"), member(2, "Boardwalk 3x4", "Boardwalk", "3x4"), member(3, "Boardwalk 6x5", "Boardwalk", "6x5")]),
+      { 1: "2x2", 2: "3x4", 3: "6x5" },
+    );
+  });
+
+  it("key a page's tags on its families too", () => {
+    const page = [tile(1, "Cairn 01", "01"), tile(2, "Cairn 02", "02")];
+
+    assert.notEqual(lookAlikeKey([{ ...page[0], familyKey: "Cairn", familyToken: "01" }, page[1]]), lookAlikeKey(page));
+  });
+
+  it("work a tile's forms again when its family token changes under the same name", () => {
+    const member = (id: number, name: string, familyToken: string): BuildingCatalogEntry =>
+      ({ ...tile(id, name), familyKey: "Reed Mat Long Name", familyToken } as BuildingCatalogEntry);
+    const run = (first: string) => tags([member(1, "Reed Mat Long Name", first), member(2, "Reed Mat Long Name", "02"), member(3, "Reed Mat Long Name", "03")]);
+
+    assert.deepEqual(run("01"), { 1: "#01", 2: "#02", 3: "#03" });
+    assert.deepEqual(run("07"), { 1: "#07", 2: "#02", 3: "#03" });
+  });
+
   it("are never a bare number: a number says #02", () => {
     assert.deepEqual(tags([tile(1, "Four-Lane Road 1", "1"), tile(2, "Four-Lane Road 2", "2")]), { 1: "#01", 2: "#02" });
     assert.equal(tags([tile(1, "Plaza Corner 5b", "5b"), tile(2, "Plaza Corner 6b", "6b")])[1], "#05b");
