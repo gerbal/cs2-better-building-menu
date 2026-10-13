@@ -38,6 +38,8 @@ namespace BetterBuildingMenu.Tests
 		[InlineData("Beach Raft02b", "Beach Raft", "02b")]
 		[InlineData("Mk-2", "Mk", "2")]
 		[InlineData("Street-lamp-01", "Street-lamp", "01")]
+		[InlineData(" Garden \t Bench  03 ", "Garden Bench", "03")]
+		[InlineData("Caf\u00e9  Table02", "Caf\u00e9 Table", "02")]
 		public void AVariantTokenIsANumberWithALetterALetterOrASize(string name, string stem, string token)
 		{
 			Assert.True(Families.TrySplit(name, out var split, out var word));

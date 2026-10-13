@@ -661,7 +661,7 @@ describe("the game's detail slot is the size placeSlotCard places it at", () => 
     assert.equal(rem(card(".onPanel")["max-width"]), SLOT_WIDTH);
   });
 
-  it("draws the game's card on the panel in the look's inks, its warn and good figures in the tones the upgrades panel draws them in", () => {
+  it("draws the game's card on the panel in the look's inks, its warn and good figures in the tones the upgrades panel draws them in, and their lines' labels too", () => {
     const on = (...path: string[][]) => resolvedOn(CARD, [["card", "onPanel"], ...path], "color");
     const off = (...path: string[][]) => resolvedOn(CARD, [["card"], ...path], "color");
 
@@ -675,6 +675,10 @@ describe("the game's detail slot is the size placeSlotCard places it at", () => 
       assert.match(String(value), /^rgb\(/, tone);
       assert.equal(on(["cardLine", tone], ["cardValue"]), value, tone);
       assert.equal(on(["cardLines", "cardLinesExtra"], ["cardLine", tone], ["cardValue"]), value, `${tone} in the extra tier`);
+      // On the panel the line's own ink too, which its label draws in: a label in the panel's word ink beside
+      // a red figure reads as a figure alone in trouble.
+      assert.equal(on(["cardLine", tone]), value, `${tone}'s line`);
+      assert.equal(on(["cardLines", "cardLinesExtra"], ["cardLine", tone]), value, `${tone}'s line in the extra tier`);
     }
   });
 });

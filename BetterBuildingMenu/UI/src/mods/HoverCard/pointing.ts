@@ -12,24 +12,32 @@ export function pointAt(entry: BuildingCatalogEntry, element: { getBoundingClien
   setPointed({ entry, cell: remRect(element?.getBoundingClientRect?.(), typeof window === "undefined" ? 0 : window.innerHeight) });
 }
 
-/** What the box draws now, in screen rem: the box, the cells its body's field shows, and the pointed cell where it sits, null while it draws none. */
+/**
+ * What the box draws now, in screen rem: the box, the pointed cell where it sits (null while it draws none),
+ * and how to read the cells its body's field shows, which reads them once, on the first call.
+ */
 export interface DrawnCells {
   box: Rect;
-  cells: Rect[];
+  cells: () => Rect[];
   cell: Rect | null;
 }
 
 /**
  * Reads the box as drawn, for a card to place itself against: only the cells meeting the body's
  * scroller, as a cell scrolled out of it sits above or below the body. A body that fits scrolls none out.
- * With `withCells` false it reads the box and the pointed cell alone, for a card that gives way to no cell.
+ * The cells are read only when a card asks for them: up to a window's worth of rectangles, and a card that
+ * fits above the box, or gives way to no cell, needs none.
  */
-export function drawnCells(box: HTMLElement, pointedId: number, innerHeight: number, withCells = true): DrawnCells {
+export function drawnCells(box: HTMLElement, pointedId: number, innerHeight: number): DrawnCells {
   const pointed = lastCatalogRow(box, pointedId);
+  let cells: Rect[] | null = null;
 
   return {
     box: remRect(box.getBoundingClientRect(), innerHeight),
-    cells: withCells ? cellsDrawn(box, innerHeight) : [],
+    cells: () => {
+      if (cells === null) cells = cellsDrawn(box, innerHeight);
+      return cells;
+    },
     cell: pointed === null ? null : remRect(pointed.getBoundingClientRect(), innerHeight),
   };
 }

@@ -122,6 +122,21 @@ describe("the hover card", () => {
     assert.equal(root!.root.findAll((node) => typeof node.props.title === "string").length, 0);
   });
 
+  it("reads no other cell where its place above the box fits, as nothing there can cover one", () => {
+    const queried: string[] = [];
+    const query = box.querySelectorAll;
+    box.querySelectorAll = (selector: string) => { queried.push(selector); return query(selector); };
+    mount();
+    point();
+    wait(150);
+    frame();
+    frame();
+    box.querySelectorAll = query;
+
+    assert.deepEqual(card()[0].props.style, { left: "8rem", top: "-104rem" });
+    assert.deepEqual([...new Set(queried)], ['[data-catalog-entry="1"]']);
+  });
+
   it("waits the Hover delay knob's time", () => {
     setBinding("BetterBuildingMenu", "AssetMenuTuning", { developerMode: true, interfaceStyles: true, tabNames: true, hoverDelay: 400 });
     mount();

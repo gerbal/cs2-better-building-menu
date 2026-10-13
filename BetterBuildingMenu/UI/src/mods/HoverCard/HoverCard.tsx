@@ -181,21 +181,20 @@ interface PlacedCard {
  * A card drawn unseen first, then, two frames on, measured and placed against the box, in the box's own
  * rem (`useAfterLayout`), again whenever the page changes or what the box draws may have moved, and waits
  * for a new place when `drawn` (what the card draws) changes. Where the pointed cell no longer lies under
- * the pointer the building goes instead (`stillPointed`). `withCells` false reads no cell but the pointed
- * one, for a card that gives way to none.
+ * the pointer the building goes instead (`stillPointed`).
  */
-function usePlacedCard(pointed: Pointed, boxRef: RefObject<HTMLElement>, pointer: PointerAt, placer: Placer, drawn: unknown = null, withCells = true): PlacedCard {
+function usePlacedCard(pointed: Pointed, boxRef: RefObject<HTMLElement>, pointer: PointerAt, placer: Placer, drawn: unknown = null): PlacedCard {
   const page = useValue(BuildingCatalog$);
   const cardRef = useRef<HTMLDivElement>(null);
   const [place, setPlace] = useState<{ id: number; drawn: unknown; left: number; top: number } | null>(null);
-  const restart = useMemo(() => [pointed, page, drawn, withCells], [pointed, page, drawn, withCells]);
+  const restart = useMemo(() => [pointed, page, drawn], [pointed, page, drawn]);
 
   useAfterLayout(boxRef, cardRef, (box) => {
     const card = cardRef.current;
     if (!card) return;
     const id = pointed.entry.id;
     const height = window.innerHeight;
-    const cells = drawnCells(box, id, height, withCells);
+    const cells = drawnCells(box, id, height);
     if (!stillPointed(cells.cell, pointed, pointer, height)) return;
     const at = placer(
       remRect(card.getBoundingClientRect(), height),
@@ -222,7 +221,7 @@ function StatusCheck({ pointed, boxRef, pointer }: CardProps) {
 
   useAfterLayout(boxRef, null, (box) => {
     const height = window.innerHeight;
-    stillPointed(drawnCells(box, pointed.entry.id, height, false).cell, pointed, pointer, height);
+    stillPointed(drawnCells(box, pointed.entry.id, height).cell, pointed, pointer, height);
   }, restart);
 
   return null;
@@ -309,7 +308,7 @@ const SlotCard = memo(function SlotCard({ pointed, boxRef, pointer }: CardProps)
   const columnRef = useRef<HTMLSpanElement>(null);
   const [measured, setMeasured] = useState<SlotRows | null>(null);
   const { cardRef, placed, entry } = usePlacedCard(pointed, boxRef, pointer, (card, drawn, screen) =>
-    placeSlotCard({ cell: drawn.cell, height: card.h, box: drawn.box, screen }), measured, false);
+    placeSlotCard({ cell: drawn.cell, height: card.h, box: drawn.box, screen }), measured);
   const rows = measured !== null && measured.entry === entry && measured.textScale === textScale ? measured : null;
   const packs = (entry.assetPacks ?? []).join(" · ");
 

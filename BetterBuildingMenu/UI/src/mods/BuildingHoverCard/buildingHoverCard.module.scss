@@ -182,11 +182,14 @@ $card-good: rgb(130, 205, 130);
     color: var(--bbm-tWord);
   }
 
-  // The figures keep their tones, which read on the dark panel: these come after the inks above.
+  // A line that cannot be afforded or falls short keeps its tone, its label and its figure, which read on
+  // the dark panel: these come after the inks above.
+  .cardWarn,
   .cardWarn .cardValue {
     color: $card-warn;
   }
 
+  .cardGood,
   .cardGood .cardValue {
     color: $card-good;
   }

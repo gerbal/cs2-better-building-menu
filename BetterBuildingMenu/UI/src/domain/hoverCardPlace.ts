@@ -121,16 +121,25 @@ export interface SlotCardInput {
 /**
  * The game's detail slot: `SLOT_WIDTH` wide, its bottom `CARD_GAP` above the box, centred over the pointed
  * cell and held inside the box's span, so at the first Width step it is the box's own left edge, and on
- * screen; raised over any HUD piece it would meet (the chirper at the widest steps).
+ * screen; raised over any HUD piece it would meet (the chirper at the widest steps). Where a box dragged
+ * tall leaves no room above it, over the box, its bottom `CARD_GAP` above the pointed cell, else its top
+ * `CARD_GAP` under it, so it never hides the building it describes; where neither fits, held on screen.
  */
 export function placeSlotCard({ cell, height, box, screen, hud = hudPieces(screen.w) }: SlotCardInput): Rect {
   const w = Math.min(SLOT_WIDTH, screen.w - 2 * MARGIN);
   const h = Math.min(height, SLOT_MAX_HEIGHT);
   const inBox = Math.min(Math.max(box.x, cell.x + cell.w / 2 - w / 2), Math.max(box.x, box.x + box.w - w));
   const x = Math.min(Math.max(MARGIN, inBox), screen.w - MARGIN - w);
-  const y = raisedOver({ x, y: box.y - CARD_GAP - h, w, h }, hud);
+  const at = (y: number): Rect => ({ x, y: raisedOver({ x, y, w, h }, hud), w, h });
+  const above = at(box.y - CARD_GAP - h);
+  if (above.y >= MARGIN) return above;
 
-  return { x, y: Math.max(MARGIN, y), w, h };
+  const overCell = at(cell.y - CARD_GAP - h);
+  if (overCell.y >= MARGIN) return overCell;
+  const underCell = at(cell.y + cell.h + CARD_GAP);
+  if (overlap(underCell, cell) < TOUCH && underCell.y + h <= screen.h - MARGIN) return underCell;
+
+  return { ...above, y: MARGIN };
 }
 
 export interface PointerCardInput {
@@ -140,8 +149,11 @@ export interface PointerCardInput {
   card: { w: number; h: number };
   box: Rect;
   screen: { w: number; h: number };
-  /** Every cell the body draws, the pointed one among them. */
-  cells: readonly Rect[];
+  /**
+   * Every cell the body draws in its field inside the box, the pointed one among them, or how to read them:
+   * read only where a place beside the cell is weighed, as a place above the box covers none.
+   */
+  cells: readonly Rect[] | (() => readonly Rect[]);
   hud?: readonly HudPiece[];
 }
 
@@ -162,14 +174,21 @@ export function placePointerCard({ cell, card, box, screen, cells, hud = hudPiec
     { x: cell.x + cell.w + CARD_GAP, y: besideY, ...card, how: "right", fitted: true },
     { x: cell.x - CARD_GAP - card.w, y: besideY, ...card, how: "left", fitted: true },
   ];
+  const fits = (place: CardPlace) => place.x >= MARGIN && place.y >= MARGIN && place.x + place.w <= screen.w - MARGIN
+    && place.y + place.h <= screen.h - MARGIN && !hud.some((piece) => meets(place, piece)) && overlap(place, cell) < TOUCH;
+  const outside = (place: CardPlace) => (place.x < box.x - TOUCH || place.x + place.w > box.x + box.w + TOUCH ? 1 : 0);
+  // A place above the box that fits inside its span covers no cell and is first of the rest: no cell is read.
+  const free = places.slice(0, 2).find((place) => fits(place) && outside(place) === 0);
+  if (free !== undefined) return free;
+
+  const drawn = typeof cells === "function" ? cells() : cells;
   const scored = places.map((place, index) => ({
     place,
     index,
-    fits: place.x >= MARGIN && place.y >= MARGIN && place.x + place.w <= screen.w - MARGIN && place.y + place.h <= screen.h - MARGIN
-      && !hud.some((piece) => meets(place, piece)) && overlap(place, cell) < TOUCH,
+    fits: fits(place),
     // The pointed cell is the one that shares its own rectangle.
-    covers: cells.filter((other) => overlap(other, cell) < TOUCH && overlap(place, other) > TOUCH).length,
-    outside: place.x < box.x - TOUCH || place.x + place.w > box.x + box.w + TOUCH ? 1 : 0,
+    covers: drawn.filter((other) => overlap(other, cell) < TOUCH && overlap(place, other) > TOUCH).length,
+    outside: outside(place),
   }));
   const best = scored.filter((each) => each.fits).sort((a, b) => a.covers - b.covers || a.outside - b.outside || a.index - b.index)[0];
   if (best !== undefined) return best.place;

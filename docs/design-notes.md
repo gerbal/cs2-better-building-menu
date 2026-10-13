@@ -1453,7 +1453,9 @@ last word or as digits closing it ("BeachRaft01", "Mk-2"), whose stem leaves out
 family's first row spells it, the same for every member, which a grouping by family reads. A row whose
 name ends in no token ("Boulder Random") is a look-alike, never a member. Stems match whatever their
 case, and C# finds them over the whole result, beside the pass that finds the distinguishing word, so a
-family runs past the window as a look-alike does.
+family runs past the window as a look-alike does. A search over every building splits each matching name
+on each keystroke, so the split reads a name character by character, with no regular expression, and
+builds a string only for a name that ends in a token: its stem, and a member's token.
 
 **The planner** (`planName`) lays a name out in a box of a width and a number of lines, at the box's
 own font, from the one advance table (`textWidth`), and draws each line as a box of its own
@@ -1599,7 +1601,8 @@ Any other stored value reads as beside the pointer, on every load.
 - **The cells drawn, and when it places itself again.** Only the cells meeting the body's scroller count
   (`cellsInField`, read by `drawnCells`): a cell scrolled out of the body is still in the page, under the
   top row and over the box where the card's first place is, and counted it would push the card down over
-  the cells shown. The scroller is found by walking up from a row (`listScroller`), as the game's
+  the cells shown. The cells are read only where no place above the box fits inside its span, as a place
+  above the box covers none: up to a window's worth of rectangles, which every wheel would read otherwise. The scroller is found by walking up from a row (`listScroller`), as the game's
   Scrollable drops any marker. Each card says the building as the page has it now, and places itself
   again, against the pointed cell where it is drawn then, when the page changes, when the screen, the
   box or the card change size, on a wheel over the box and on a key: Cohtml sends no scroll event, a
@@ -1614,11 +1617,13 @@ Any other stored value reads as beside the pointer, on every load.
 - **The game's detail slot.** A wide card above the box, 706 wide and at most 191 tall, its bottom 6 rem
   over the box, where the game's own detail shows (`placeSlotCard`): at the first Width step at the box's
   left edge; in a wider box centred over the pointed cell and held inside the box's span, and on screen;
-  raised over any HUD piece it meets, so at the widest steps it clears the chirper. It draws the game's own
+  raised over any HUD piece it meets, so at the widest steps it clears the chirper. Where a box dragged tall
+  leaves no room above it, it sits over the box, its bottom 6 rem over the pointed cell, else its top 6 rem
+  under it, so it never hides the building it describes. It draws the game's own
   card's lines (`HoverCardContent`: the description, the game's figures and BBM's, every condition a locked
   building waits on, the footprints) beside a 150 picture, then the building's packs, in the look's inks on
   the popovers' panel, a figure that cannot be afforded or falls short keeping the upgrades panel's red or
-  green. Its content has the slot's height less its padding (`SLOT_ROOM`). Cohtml has no line clamp, so
+  green, and its label with it. Its content has the slot's height less its padding (`SLOT_ROOM`). Cohtml has no line clamp, so
   the card is drawn unseen with every row, measured two frames on, then drawn with only the leading rows
   whose bottoms fit (`slotRowsKept`) and placed as drawn: a long card drops its last rows whole, the packs
   first, its order kept, and the clip never cuts a row. A drawn row that grows (a line too long for its

@@ -56,8 +56,6 @@ describe("the hover card beside the pointer", () => {
     assert.equal(drawn.length, 16);
     assert.ok(drawn.every((cell) => cell.y >= field.y && cell.y < field.y + field.h), JSON.stringify(drawn));
     assert.deepEqual([place.how, place.x, place.y], ["above", pointed.x, 746 - 6 - 98]);
-    // Counted whole, the cells scrolled away above the body would move it.
-    assert.notEqual(placePointerCard({ cell: pointed, card: CARD, box: STEP1, screen: SCREEN, cells: scrolled }).how, "above");
   });
 
   it("sits beside the cell where a box dragged tall leaves no room above it", () => {
@@ -66,6 +64,20 @@ describe("the hover card beside the pointer", () => {
     const place = placePointerCard({ cell, card: CARD, box: tall, screen: SCREEN, cells: [cell] });
 
     assert.deepEqual([place.how, place.x], ["right", 612 + 171 + 6]);
+  });
+
+  it("reads the cells drawn only where no place above the box fits inside its span, as a place above the box covers none", () => {
+    let reads = 0;
+    const counted = (cells: Rect[]) => () => {
+      reads += 1;
+      return cells;
+    };
+    const above = placePointerCard({ cell: plates(STEP1)[5], card: CARD, box: STEP1, screen: SCREEN, cells: counted(plates(STEP1)) });
+    assert.deepEqual([above.how, reads], ["above", 0]);
+
+    const cell = { x: 612, y: 400, w: 171, h: 27.25 };
+    const beside = placePointerCard({ cell, card: CARD, box: { x: 604, y: 60, w: 706, h: 894 }, screen: SCREEN, cells: counted([cell]) });
+    assert.deepEqual([beside.how, reads], ["right", 1]);
   });
 
   it("still draws on screen, at the first place, where every place is blocked", () => {
@@ -103,6 +115,20 @@ describe("the hover card beside the pointer", () => {
     const place = placeSlotCard({ cell: { x: SCREEN.w - 180, y: 805, w: 171, h: 27.25 }, height: 191, box: narrow, screen: SCREEN, hud: [] });
 
     assert.deepEqual([place.x, place.x + place.w], [SCREEN.w - 4 - 706, SCREEN.w - 4]);
+  });
+
+  it("keeps the slot off the pointed cell where a box dragged tall leaves no room above it: over the box above the cell, else under it", () => {
+    const tall: Rect = { x: 604, y: 20, w: 706, h: 934 };
+    const low = { x: 612, y: 700, w: 171, h: 27.25 };
+    const high = { x: 612, y: 79, w: 171, h: 27.25 };
+    const over = placeSlotCard({ cell: low, height: 191, box: tall, screen: SCREEN });
+    const under = placeSlotCard({ cell: high, height: 191, box: tall, screen: SCREEN });
+
+    assert.deepEqual([over.y, over.h], [700 - 6 - 191, 191]);
+    assert.equal(under.y, 79 + 27.25 + 6);
+    assert.equal(overlap(over, low) + overlap(under, high), 0);
+    // Clear of the HUD's bottom bar, and on screen.
+    assert.ok(under.y + under.h <= 960 - 4, JSON.stringify(under));
   });
 
   it("keeps the slot's leading rows whose bottoms fit its room, and the first always", () => {
