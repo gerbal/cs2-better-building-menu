@@ -52,7 +52,7 @@ const Plate = memo(function Plate({ entry, grid, index, armed, enter, sortedMetr
   return (
     <BuildingHoverCard entry={entry} context={hoverCard}>
       <Button
-        className={classNames(styles.plate, grid.form !== "plate2" && styles.largeText, armed && styles.armed, locked && styles.locked, built && styles.built)}
+        className={classNames(styles.plate, grid.form !== "plate2" && styles.largeText, grid.form === "plate1" && styles.oneLinePlate, armed && styles.armed, locked && styles.locked, built && styles.built)}
         // Inline, over the game's Button and its own square: the slot is the plate's place and size.
         style={{ left: `${left}rem`, top: `${top}rem`, width: `${grid.cellWidth}rem`, height: `${grid.cellHeight}rem` }}
         variant="flat"

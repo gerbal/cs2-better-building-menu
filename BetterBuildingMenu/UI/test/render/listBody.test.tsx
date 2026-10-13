@@ -103,7 +103,7 @@ describe("the list", () => {
     const more = render(rows(1), { over: { textScale: 1.3 } });
     const whole = render(rows(1), { over: { textScale: 1.3, atLargeText: "wholeNames" } });
 
-    assert.match(more, /class="plate largeText"[^>]*style="left:0rem;top:0rem;width:228\.6666/);
+    assert.match(more, /class="plate largeText oneLinePlate"[^>]*style="left:0rem;top:0rem;width:228\.6666/);
     assert.match(more, /class="name oneLine"/);
     assert.match(whole, /height:34\.56rem/);
     assert.match(whole, /<p class="name" /);
@@ -129,6 +129,15 @@ describe("the list", () => {
       assert.ok(scaled(".oneLine", "max-height", scale) <= PLATE1_HEIGHT);
     });
   }
+
+  it("draws a one-line plate's picture inside the plate, whole", () => {
+    const html = render(rows(1), { over: { textScale: 1.5 } });
+    const side = (selector: string) => Number(/^(\d*\.?\d+)rem$/.exec(declarationsOf("mods/Bodies/listBody.module.scss", selector).height ?? "")?.[1]);
+
+    assert.match(html, /class="plate largeText oneLinePlate"/);
+    assert.ok(side(".oneLinePlate .artwork") <= PLATE1_HEIGHT);
+    assert.ok(side(".oneLinePlate .artwork .picture") <= PLATE1_HEIGHT);
+  });
 
   it("says the sorted value as a one-line plate's number under a sort by a number, in the cost's place", () => {
     setBinding("BetterBuildingMenu", "BuildingCatalogSortColumn", "Capacity");
