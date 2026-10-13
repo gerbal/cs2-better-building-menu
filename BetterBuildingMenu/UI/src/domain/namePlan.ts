@@ -488,8 +488,8 @@ function lastResort(name: string, words: readonly string[], box: NameBox, holds:
 /** The plans made lately, the latest last: a page plans the same names again at each render and keystroke. */
 const plans = new Map<string, NamePlan>();
 
-/** The most plans kept: a few screens' names at a few rooms. */
-const MOST_PLANS = 2048;
+/** The most plans kept: a window's 2,000 names in the list, and its tiles' tags cut at a few rooms each. */
+const MOST_PLANS = 8192;
 
 /**
  * How a name draws in a box: whole where it fits, else its best cut, never a line wider than the box.

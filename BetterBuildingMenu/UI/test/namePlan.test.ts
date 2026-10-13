@@ -176,7 +176,7 @@ describe("a name planned in its box", () => {
     assert.deepEqual(planName("PARKS", square), { lines: ["PARKS"], whole: true });
   });
 
-  it("plans the same name in the same room once, and forgets the oldest past a few screens' names", () => {
+  it("plans the same name in the same room once, and forgets the oldest past a window's names, list and tags", () => {
     const name = "Four-Lane Perpendicular Parking Road";
     const plan = planName(name, plate(95));
 
@@ -187,7 +187,13 @@ describe("a name planned in its box", () => {
     assert.ok(planFits(planName("Small Elementary School", plate(57.004, 1)).lines, plate(57.004, 1)));
     assert.ok(planFits(planName("Small Elementary School", plate(57.0, 1)).lines, plate(57.0, 1)));
 
-    for (let at = 0; at < 2_100; at += 1) planName(`Plaza ${at}`, plate(95));
+    // A window's 2,000 names in the list and its tiles' tags, cut at a few rooms each, keep their plans:
+    // a switch between the two draws no name planned again.
+    for (let at = 0; at < 2_000; at += 1) planName(`Plaza ${at}`, plate(95));
+    for (let at = 0; at < 6_000; at += 1) planName(`Plaza ${at % 2_000}`, { width: 40 + Math.floor(at / 2_000), lines: 1, font: 10 }, { lastResort: false });
+    assert.equal(planName(name, plate(95)), plan);
+
+    for (let at = 0; at < 8_200; at += 1) planName(`Square ${at}`, plate(95));
     const again = planName(name, plate(95));
     assert.notEqual(again, plan);
     assert.deepEqual(again, plan);

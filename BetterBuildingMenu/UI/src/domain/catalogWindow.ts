@@ -4,6 +4,7 @@
  * placing a building unmounts the asset menu and an accumulator would go with it.
  */
 import { wholeLines } from "./bodyGeometry";
+import type { BuildingCatalogEntry } from "./buildingCatalog";
 import { CATALOG_WINDOW_STEP } from "./sharedContracts.generated";
 
 /**
@@ -229,4 +230,35 @@ export function catalogWindowRemaining({ shown, total }: CatalogWindowState): nu
   const remaining = total - shown;
 
   return remaining > 0 ? remaining : null;
+}
+
+/** Whether two values the page carries say the same: a number, a string, or arrays and objects of them. */
+function sameValue(one: unknown, other: unknown): boolean {
+  if (one === other) return true;
+  if (typeof one !== "object" || typeof other !== "object" || one === null || other === null) return false;
+  if (Array.isArray(one)) return Array.isArray(other) && one.length === other.length && one.every((value, at) => sameValue(value, other[at]));
+  if (Array.isArray(other)) return false;
+  const keys = Object.keys(one);
+  return keys.length === Object.keys(other).length
+    && keys.every((key) => key in other && sameValue((one as Record<string, unknown>)[key], (other as Record<string, unknown>)[key]));
+}
+
+/** The rows of the last page, by id, as `keptRows` handed them on. */
+let lastRows = new Map<number, BuildingCatalogEntry>();
+
+/**
+ * A page's rows, each one the last page carried the same row for kept as that page's object: every page
+ * arrives as new objects, and a body's rows are memoised on theirs, so a Load more draws only its new
+ * rows, not every row loaded again.
+ */
+export function keptRows(rows: readonly BuildingCatalogEntry[]): BuildingCatalogEntry[] {
+  const next = new Map<number, BuildingCatalogEntry>();
+  const kept = rows.map((row) => {
+    const last = lastRows.get(row.id);
+    const same = last !== undefined && sameValue(last, row) ? last : row;
+    next.set(row.id, same);
+    return same;
+  });
+  lastRows = next;
+  return kept;
 }

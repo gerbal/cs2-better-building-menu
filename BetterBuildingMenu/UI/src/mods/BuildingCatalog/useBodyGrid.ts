@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { drawnBodyHeight } from "domain/assetMenuLayout";
 import { bodyCells } from "domain/bodyCells";
 import type { BodyKind } from "domain/bodyChoice";
-import { bodyGrid, deviceRem, type BodyGrid, type BodyGridInput } from "domain/bodyGeometry";
+import { bodyGrid, deviceRem, sameGrid, type BodyGrid, type BodyGridInput } from "domain/bodyGeometry";
 import type { BuildingCatalogEntry, CatalogSection } from "domain/buildingCatalog";
 import { useTextScale } from "domain/textScaleSetting";
 import { AssetMenuAtLargeText$, AssetMenuHeight$, AssetMenuTileSize$, AssetMenuTuning$, SHIPPED_TUNING } from "mods/bindings";
@@ -57,8 +57,11 @@ export function useBodyGrid(
     [plain, entries, sections, blockLabels, offset]
   );
 
-  return useMemo(
-    () => (input === null || plain === null || plain.form === "tile" || plain.form === "icon" ? plain : bodyGrid({ ...input, drawnSlots })),
-    [input, plain, drawnSlots]
-  );
+  // The grown grid where the slots grow it; else the plain one, the very object, so a page that draws
+  // more slots of the same grid redraws none of the cells already drawn.
+  return useMemo(() => {
+    if (input === null || plain === null || plain.form === "tile" || plain.form === "icon") return plain;
+    const grown = bodyGrid({ ...input, drawnSlots });
+    return sameGrid(grown, plain) ? plain : grown;
+  }, [input, plain, drawnSlots]);
 }

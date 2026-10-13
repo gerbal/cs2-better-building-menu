@@ -1067,6 +1067,13 @@ which told look-alike names apart on Grid's tiles by dropping the theme and cate
 repeats. The label plates derive the first again from the page's sections (`bodyCells`, see "Label
 plates"), and the tiles' look-alike tags the second from each row's distinguishing word (see "Names").
 
+**A Load more draws only its new rows.** Every page reaches the UI as new objects, the rows loaded
+before with it, and a body memoises each cell on its row: the catalog keeps the last page's object for
+each row that says the same (`keptRows`), and the grid its very object where more slots place every
+cell alike (`sameGrid`), so a step draws only the rows it adds, plans only their names in the list, and
+works out only their tags on the tiles. The planner keeps a window's names and its tiles' tags, so a
+switch between the list and the tiles plans no name again.
+
 **Slots.** The list and the tiles place each building from its index alone (`bodyGrid`,
 `slotPosition`): left to right, then down, a cell and a 2 rem gap apart, inside the box less 8 rem
 each side. Cohtml has no CSS grid, and a slot is an exact place. Wider boxes add columns, never lines:

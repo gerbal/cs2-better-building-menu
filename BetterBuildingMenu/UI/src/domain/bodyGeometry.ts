@@ -149,6 +149,11 @@ export function deviceRem(innerHeight: number): number {
   return innerHeight > 0 && Number.isFinite(innerHeight) ? LAYOUT_HEIGHT / innerHeight : 0;
 }
 
+/** Whether two grids place every slot alike: each of their numbers the same. */
+export function sameGrid(one: BodyGrid, other: BodyGrid): boolean {
+  return (Object.keys(one) as (keyof BodyGrid)[]).every((key) => one[key] === other[key]);
+}
+
 /** The slots for a body at this box, height, text scale and settings. */
 export function bodyGrid(input: BodyGridInput): BodyGrid {
   const room = Math.max(0, input.boxWidth - 2 * BODY_SIDE_MARGIN);

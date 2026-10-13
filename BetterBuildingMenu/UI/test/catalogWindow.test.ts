@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   CATALOG_WINDOW_SCROLL_THRESHOLD,
+  keptRows,
   nextWindowLimit,
   shouldLoadMore,
   catalogWindowRemaining,
@@ -10,6 +11,7 @@ import {
   pageScrollTop,
   revealScrollTop,
 } from "../src/domain/catalogWindow.ts";
+import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog.ts";
 import { bodyGrid, bodyLines } from "../src/domain/bodyGeometry.ts";
 
 describe("when the growing window asks for more", () => {
@@ -440,5 +442,38 @@ describe("bringing Enter's target on screen", () => {
   it("never asks for a scroll above the top, and keeps its place on a reading it cannot use", () => {
     assert.equal(revealScrollTop(10, 40, 27, 100, 144, 0), 0);
     assert.equal(revealScrollTop(300, Number.NaN, 27, 100, 144, 0), 300);
+  });
+});
+
+describe("a page's rows, kept from the last page", () => {
+  const row = (id: number, over: Record<string, unknown> = {}) =>
+    ({ id, name: `Plaza ${id}`, constructionCost: 1_000, assetPacks: ["Pack"], serviceFacts: [{ key: "range", value: 3 }], ...over }) as unknown as BuildingCatalogEntry;
+  // Each page arrives as new objects, as the binding's JSON does.
+  const fresh = (rows: BuildingCatalogEntry[]) => JSON.parse(JSON.stringify(rows)) as BuildingCatalogEntry[];
+
+  it("keeps the last page's object for a row that says the same, and takes the new one for a row that moved", () => {
+    const first = keptRows(fresh([row(1), row(2), row(3)]));
+    const next = keptRows(fresh([row(1), row(2, { constructionCost: 2_000 }), row(3, { serviceFacts: [{ key: "range", value: 4 }] }), row(4)]));
+
+    assert.equal(next[0], first[0]);
+    assert.notEqual(next[1], first[1]);
+    assert.equal(next[1].constructionCost, 2_000);
+    assert.notEqual(next[2], first[2]);
+    assert.equal(next.length, 4);
+  });
+
+  it("forgets a row the last page did not carry", () => {
+    const first = keptRows(fresh([row(1)]));
+    keptRows(fresh([row(2)]));
+
+    assert.notEqual(keptRows(fresh([row(1)]))[0], first[0]);
+  });
+
+  it("tells a field gone from one that is there, and an array from an object", () => {
+    const first = keptRows(fresh([row(1, { theme: "EU" })]));
+
+    assert.notEqual(keptRows(fresh([row(1)]))[0], first[0]);
+    const listed = keptRows(fresh([row(2)]))[0];
+    assert.notEqual(keptRows(fresh([row(2, { assetPacks: { 0: "Pack" } })]))[0], listed);
   });
 });

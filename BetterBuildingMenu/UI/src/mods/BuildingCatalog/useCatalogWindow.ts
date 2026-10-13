@@ -1,10 +1,10 @@
 import { useValue } from "cs2/api";
-import { useCallback, useEffect, useRef, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, type RefObject } from "react";
 import type { BuildingCatalogEntry, CatalogSection, ViewFacts } from "domain/buildingCatalog";
 import { NO_SECTIONS } from "domain/bodyCells";
 import { loadMoreCatalogCommand } from "domain/buildingCatalogContracts";
 import { getAssetMenuListStart } from "domain/assetMenuViewStore";
-import { CATALOG_WINDOW_STEP, nextWindowLimit, shouldLoadMore } from "domain/catalogWindow";
+import { CATALOG_WINDOW_STEP, keptRows, nextWindowLimit, shouldLoadMore } from "domain/catalogWindow";
 import { pendingStart } from "domain/listScroll";
 import { BuildingCatalog$, send, type BuildingCatalogPageStatus } from "mods/bindings";
 import { listScroller } from "./catalogDom";
@@ -61,7 +61,9 @@ export function useCatalogWindow(
   scope: { viewMode: string; groupBy: string }
 ): CatalogWindow {
   const page = useValue(BuildingCatalog$);
-  const items = page?.items ?? [];
+  // A row the last page carried as it is keeps that page's object, so a body redraws only what moved.
+  const pageItems = page?.items;
+  const items = useMemo(() => keptRows(pageItems ?? []), [pageItems]);
   const totalCount = page?.totalCount ?? 0;
   const visibleCount = page?.visibleCount ?? totalCount;
   const offset = page?.offset ?? 0;
