@@ -27,6 +27,16 @@ describe("the small menus, which open on All", () => {
     assert.deepEqual(menusOpeningOnAll(input({ views, tileSize: 100 })), ["Areas"]);
   });
 
+  it("follow the icons' screen of 45, a label two icons wide", () => {
+    const icons = (rows: number, groupRows: number[] = []) => input({ shares: [{ ...share("Props", rows, 0), groupRows }], views: [{ menu: "Props", value: "icons" }] });
+
+    assert.deepEqual(menusOpeningOnAll(icons(45)), ["Props"]);
+    assert.deepEqual(menusOpeningOnAll(icons(46)), []);
+    // 42 rows under two labels take 46 slots: past the screen.
+    assert.deepEqual(menusOpeningOnAll(icons(42, [21, 21])), []);
+    assert.deepEqual(menusOpeningOnAll(icons(40, [20, 20])), ["Props"]);
+  });
+
   it("leave out a menu whose view is Cards, which opens on All whatever its size", () => {
     assert.deepEqual(menusOpeningOnAll(input({ views: [{ menu: "Garbage Management", value: "cards" }] })), ["Areas", "Electricity"]);
     assert.deepEqual(menusOpeningOnAll(input({ defaultView: "cards" })), []);

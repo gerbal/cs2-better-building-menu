@@ -186,7 +186,7 @@ export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SE
   const said = useAssetMenuView((view) => view.said);
   // The form it draws, which decides the numbers the readout may say once; none once it goes. Before
   // the paint, as the readout's own publish.
-  const drawnForm = grid.form === "tile" ? null : grid.form;
+  const drawnForm = grid.form === "tile" || grid.form === "icon" ? null : grid.form;
   useLayoutEffect(() => setDrawnForm(drawnForm), [drawnForm]);
   useLayoutEffect(() => () => setDrawnForm(null), []);
   const { cells, slots } = useBodyCells(entries, sections, grid.cols, offset, flow);

@@ -23,7 +23,7 @@ export function useNearField(searching: boolean, firstCols: number, lines: numbe
 
 /**
  * A body's cells under the Block labels knob, placed again only when the window, its labels, its
- * columns, the knob or a search's flow change.
+ * columns, the knob, a search's flow or the slots a label takes change.
  */
 export function useBodyCells(
   entries: readonly BuildingCatalogEntry[],
@@ -31,8 +31,12 @@ export function useBodyCells(
   cols: number,
   offset: number,
   flow?: NearField,
+  labelSpan = 1,
 ): BodyCells {
   const blockLabels = useBlockLabels();
 
-  return useMemo(() => bodyCells(entries, sections, cols, blockLabels, offset, flow), [entries, sections, cols, blockLabels, offset, flow]);
+  return useMemo(
+    () => bodyCells(entries, sections, cols, blockLabels, offset, flow, labelSpan),
+    [entries, sections, cols, blockLabels, offset, flow, labelSpan]
+  );
 }

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { autoBody, chooseBody, drawnBody, ICONS_ABOVE, menuView, type MenuShare } from "../src/domain/bodyChoice";
+import { autoBody, chooseBody, ICONS_ABOVE, ICONS_NAMED, menuView, namesIcons, type MenuShare } from "../src/domain/bodyChoice";
 
 // The shares of the 2026-10-06 capture's menus: rows, then how many carry a cost or a capacity, a capacity, a lock.
 const share = (menu: string, rows: number, costOrCapacity: number, capacity: number, locked = 0): MenuShare =>
@@ -82,6 +82,11 @@ describe("Standard's Auto", () => {
     assert.equal(auto(share("Small", 50, 0, 0)), "tiles");
   });
 
+  it("draws icons from the row count the Icons above knob sets", () => {
+    assert.equal(auto(share("Props", 150, 0, 0), { knobs: { iconsAbove: 100 } }), "icons");
+    assert.equal(auto(CAPTURE.extraAssets, { knobs: { iconsAbove: 300 } }), "tiles");
+  });
+
   it("draws the list for a menu C# has not counted yet, or one with nothing in it", () => {
     assert.equal(auto(null), "list");
     assert.equal(auto(share("Empty", 0, 0, 0)), "list");
@@ -113,9 +118,11 @@ describe("what a menu draws", () => {
     assert.equal(menuView({ menuPick: "", defaultView: "auto", auto: "tiles" }), "tiles");
   });
 
-  it("draws Icons as Tiles while Icons has no body of its own", () => {
-    assert.equal(drawnBody("icons"), "tiles");
-    assert.equal(drawnBody("list"), "list");
-    assert.equal(drawnBody("cards"), "cards");
+  it("draws the icons for the icons with names, which name their pictures until a query is typed", () => {
+    assert.equal(chooseBody({ searching: false, menuPick: ICONS_NAMED, defaultView: "list", auto: "list" }), "icons");
+    assert.equal(chooseBody({ searching: true, menuPick: ICONS_NAMED, defaultView: "list", auto: "list" }), "list");
+    assert.equal(namesIcons(ICONS_NAMED, "icons"), true);
+    assert.equal(namesIcons(ICONS_NAMED, "list"), false);
+    assert.equal(namesIcons("icons", "icons"), false);
   });
 });

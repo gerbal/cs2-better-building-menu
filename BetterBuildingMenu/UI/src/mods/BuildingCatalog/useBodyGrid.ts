@@ -3,7 +3,7 @@ import { useMemo } from "react";
 
 import { drawnBodyHeight } from "domain/assetMenuLayout";
 import { bodyCells } from "domain/bodyCells";
-import type { DrawnBody } from "domain/bodyChoice";
+import type { BodyKind } from "domain/bodyChoice";
 import { bodyGrid, deviceRem, type BodyGrid, type BodyGridInput } from "domain/bodyGeometry";
 import type { BuildingCatalogEntry, CatalogSection } from "domain/buildingCatalog";
 import { useTextScale } from "domain/textScaleSetting";
@@ -23,7 +23,7 @@ export function screenPixelRem(): number {
  * grown list how many slots it draws.
  */
 export function useBodyGrid(
-  body: DrawnBody,
+  body: BodyKind,
   entries: readonly BuildingCatalogEntry[],
   sections: readonly CatalogSection[],
   offset: number,
@@ -37,6 +37,7 @@ export function useBodyGrid(
   const plateHeight = tuning.listPlateHeight ?? SHIPPED_TUNING.listPlateHeight;
   const nameLines = tuning.nameLines ?? SHIPPED_TUNING.nameLines;
   const smallMenusGrow = tuning.smallMenusGrow ?? SHIPPED_TUNING.smallMenusGrow;
+  const iconSize = tuning.iconSize ?? SHIPPED_TUNING.iconSize;
   const pixelRem = screenPixelRem();
   // The open menu's whole row count, fixed per menu, so no tab or filter resizes a small menu's plates.
   const menuRows = useOpenMenuShare().share?.rows ?? 0;
@@ -45,19 +46,19 @@ export function useBodyGrid(
   const input = useMemo<BodyGridInput | null>(
     () => (body === "cards"
       ? null
-      : { body, boxWidth: menuWidth, bodyHeight, textScale, atLargeText, tileSize, plateHeight, nameLines, pixelRem, menuRows, smallMenusGrow }),
-    [body, menuWidth, bodyHeight, textScale, atLargeText, tileSize, plateHeight, nameLines, pixelRem, menuRows, smallMenusGrow]
+      : { body, boxWidth: menuWidth, bodyHeight, textScale, atLargeText, tileSize, iconSize, plateHeight, nameLines, pixelRem, menuRows, smallMenusGrow }),
+    [body, menuWidth, bodyHeight, textScale, atLargeText, tileSize, iconSize, plateHeight, nameLines, pixelRem, menuRows, smallMenusGrow]
   );
   const plain = useMemo(() => (input === null ? null : bodyGrid(input)), [input]);
   // The columns never depend on the growth, so the slots counted at them hold for the grown grid; a
   // count, so a new page that draws as many slots keeps the grid.
   const drawnSlots = useMemo(
-    () => (plain === null || plain.form === "tile" ? 0 : bodyCells(entries, sections, plain.cols, blockLabels, offset).slots),
+    () => (plain === null || plain.form === "tile" || plain.form === "icon" ? 0 : bodyCells(entries, sections, plain.cols, blockLabels, offset).slots),
     [plain, entries, sections, blockLabels, offset]
   );
 
   return useMemo(
-    () => (input === null || plain === null || plain.form === "tile" ? plain : bodyGrid({ ...input, drawnSlots })),
+    () => (input === null || plain === null || plain.form === "tile" || plain.form === "icon" ? plain : bodyGrid({ ...input, drawnSlots })),
     [input, plain, drawnSlots]
   );
 }

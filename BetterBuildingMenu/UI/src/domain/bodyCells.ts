@@ -88,9 +88,10 @@ export function nearFieldSlot(index: number, cols: number, flow: NearField): num
 }
 
 /**
- * The order placed in slots: a label one slot in line, or a fresh line of its own and the whole of it;
- * the buildings in the next slots, or, given a flow, nearest the field where the box has more columns
- * than the first step and no label is drawn.
+ * The order placed in slots: a label in line, in `labelSpan` slots of one line, moved to the next line
+ * rather than split; or a fresh line of its own and the whole of it; the buildings in the next slots,
+ * or, given a flow, nearest the field where the box has more columns than the first step and no label
+ * is drawn.
  */
 export function bodyCells(
   entries: readonly BuildingCatalogEntry[],
@@ -99,6 +100,7 @@ export function bodyCells(
   blockLabels: BlockLabels,
   offset = 0,
   flow?: NearField,
+  labelSpan = 1,
 ): BodyCells {
   const across = Math.max(1, cols);
   const near = flow !== undefined && sections.length === 0 && flow.firstCols > 0 && flow.firstCols < across ? flow : null;
@@ -118,8 +120,11 @@ export function bodyCells(
       slot += across;
       end = slot;
     } else {
-      cells.push({ ...next, slot, span: 1 });
-      slot += 1;
+      const span = Math.max(1, Math.min(labelSpan, across));
+      // A label too wide for what is left of its line starts the next.
+      if ((slot % across) + span > across) slot += across - (slot % across);
+      cells.push({ ...next, slot, span });
+      slot += span;
       end = slot;
     }
   }

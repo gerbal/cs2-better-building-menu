@@ -1043,12 +1043,12 @@ strongest first (`chooseBody`):
 3. **Default view** in Options, unless it is Auto: one body for every menu without a pick.
 4. **The look's Auto rule** (`autoBody`), over the menu's share: the list where at least half its rows
    (the List share knob) carry a cost or a capacity (a capacity only, by the What counts knob); the
-   icons for a menu over 200 rows where fewer carry either, a prop catalogue; the tiles otherwise. Auto
-   never draws the cards, which hold fewer buildings than a screen of the list or the tiles, unless the
-   Cards from width knob names a step. Above 100% text the Auto at large text knob can force Roads and
-   Parks to the list or the tiles.
+   icons for a menu over 200 rows (the Icons above knob) where fewer carry either, a prop catalogue;
+   the tiles otherwise. Auto never draws the cards, which hold fewer buildings than a screen of the
+   list or the tiles, unless the Cards from width knob names a step. Above 100% text the Auto at large
+   text knob can force Roads and Parks to the list or the tiles.
 
-The icons draw as the tiles until they have a body of their own.
+The icons are a body of their own (see "The icons").
 
 **The shares.** `MenuShares` holds, for every menu, its rows and how many carry a cost or a capacity, a
 capacity, or a lock (`MenuShare.Of`), counted over the whole menu as the catalog lists it, with nothing
@@ -1213,6 +1213,30 @@ the lot Grid said the lot on each tile; the tag says the cost there, and the lot
 **This changes 0.2.x:** one view, picked in VIEW, drew every menu, and every session opened in Cards
 (0.2.5 kept the pick); each menu now draws the body its pick, Default view or Auto gives it, and Grid
 and Table are gone, Grid's place taken by Tiles and Table's by List.
+
+## The icons
+
+The icons draw each building as its picture alone on a plate, for the big prop catalogues whose rows
+carry few numbers to read (Landscaping, Signatures, Extra Assets): 44 on a 46 pitch, 15 across and 3 down
+in the game's own box, 45 a screen, the block centred in the body's width and height, so the lines never
+scroll by a sliver; each wider Width step adds columns, never lines (19, 23, 27, 31). The Icon size knob
+sets the side; the text scale leaves it. The picture is 42, a rem inside the plate.
+
+- **Names and numbers** are the hover card's: an icon draws none, and the readout says nothing once in
+  the icons (`shownKinds`).
+- **A family member** (see "Names") carries its varying word on a pill at its foot, centred, in the
+  pill's tokens; a word too wide for the icon is left off, never cut. The plate's tone alternates with
+  each run of one family's members (`familyTones`), a class, as Cohtml has no `:nth-child(an+b)`, so a run
+  reads as one: icons in no family keep the tone of the run they stand in.
+- **A locked icon** is dark, its lock over the milestone it waits for ("MS n", else the locked word);
+  the armed one is solid.
+- **A label** takes two icons' slots, 90 × 44, its name over its count, and starts the next line rather
+  than split across two (`bodyCells`' label span, `labelSlots`).
+- **The icons with names**, a developer's VIEW pick (`iconsNamed`), draw each name planned over two lines
+  in a band over the icon's foot, in place of the pill: the body the timed check compares with the icons.
+
+A small menu drawn as icons opens on All where its rows and labels fit the 45 (see "Opening on the
+building's tab").
 
 ## The cards
 

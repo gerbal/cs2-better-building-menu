@@ -31,6 +31,7 @@ const FILTER_PANEL = "mods/Pickers/filterPanel.module.scss";
 const PICKER_LIST = "mods/Pickers/pickerList.module.scss";
 const POPOVER = "mods/ControlPopover/controlPopover.module.scss";
 const PLANNED = "mods/Bodies/plannedName.module.scss";
+const ICONS = "mods/Bodies/iconsBody.module.scss";
 
 const catalog = (selector: string) => declarationsOf(CATALOG, selector);
 const pane = (selector: string) => declarationsOf(PANE, selector);
@@ -564,6 +565,23 @@ describe("a tile's tag and name line are the sizes the UI budgets them at", () =
 
   it("draws the name line's name in the font TilesBody budgets its characters by", () => {
     assert.equal(declarationsOf(TILES, ".lineName")["font-size"], "calc(11rem * var(--fontScale))");
+  });
+});
+
+describe("an icon's pill and name band are the sizes the UI budgets them at", () => {
+  it("draws the pill in the font and padding pillText measures it by: 10, and 10 across both sides", () => {
+    const pill = declarationsOf(ICONS, ".pillWord");
+
+    assert.equal(pill["font-size"], "calc(10rem * var(--fontScale))");
+    assert.equal(pill.padding, "0 5rem");
+  });
+
+  it("draws the icons' names in the font and room IconsBody plans them by: 10, and 4 across both sides", () => {
+    const band = declarationsOf(ICONS, ".nameBand");
+    const [, right, , left] = sides(band.padding);
+
+    assert.equal(band["font-size"], "calc(10rem * var(--fontScale))");
+    assert.equal(rem(band.left) + rem(band.right) + rem(left) + rem(right), 4);
   });
 });
 

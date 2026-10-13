@@ -7,7 +7,7 @@
 import { costPerCell, FALLBACK_SEPARATORS, formatBuildingMetric, formatLotDimensions, formatSpeedLimit, groupDigits, speedNumber, type NumberSeparators } from "./assetMenuMetricFormat";
 import type { AssetMenuMetric } from "./assetMenuLayout";
 import type { ListForm } from "./bodyGeometry";
-import type { DrawnBody } from "./bodyChoice";
+import type { BodyKind } from "./bodyChoice";
 import type { BuildingCatalogEntry, SharedValue, ViewFacts } from "./buildingCatalog";
 import { capacityText, costText, keyFigure, lotText, sortsByValue, type KeyFigure, type KeyKind, type UnitGlyph } from "./rowNumbers";
 
@@ -43,12 +43,13 @@ export interface LegendWords {
 
 /**
  * The kinds of value the body shows a row's number of, which the readout may say once: none in the
- * cards, whose card says each of its own; one number on a one-line plate or a tile's tag, the cost
- * (none under a sort by a value, which takes its place); else the cost and the key number, or the cost
- * alone where a sort by a value takes the key number's place.
+ * cards, whose card says each of its own, nor in the icons, which show none; one number on a
+ * one-line plate or a tile's tag, the cost (none under a sort by a value, which takes its place);
+ * else the cost and the key number, or the cost alone where a sort by a value takes the key
+ * number's place.
  */
-export function shownKinds(body: DrawnBody, form: ListForm, sortedMetric: AssetMenuMetric | null, keyKind: KeyKind): readonly ShownKind[] {
-  if (body === "cards") return [];
+export function shownKinds(body: BodyKind, form: ListForm, sortedMetric: AssetMenuMetric | null, keyKind: KeyKind): readonly ShownKind[] {
+  if (body === "cards" || body === "icons") return [];
   if (body === "tiles" || form === "plate1") return sortsByValue(sortedMetric) ? [] : ["cost"];
   return keyKind === "" || sortsByValue(sortedMetric) ? ["cost"] : ["cost", keyKind];
 }

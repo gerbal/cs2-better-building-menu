@@ -70,4 +70,18 @@ describe("the cells a body places", () => {
     assert.deepEqual(layout(cells), ["L0@0x4", "1@4", "2@5", "3@6", "L3@8x4", "4@12", "5@13"]);
     assert.equal(slots, 14);
   });
+
+  it("puts a label of two slots in line, moved to the next line rather than split at a line's end", () => {
+    const { cells, slots } = bodyCells(rows(5), [section(0, 3), section(3, 2)], 4, "inline", 0, undefined, 2);
+
+    // The second label would take the first line's last slot and the next line's first: it starts the next.
+    assert.deepEqual(layout(cells), ["L0@0x2", "1@2", "2@3", "3@4", "L3@5x2", "4@7", "5@8"]);
+    assert.deepEqual(layout(bodyCells(rows(3), [section(0, 1), section(1, 2)], 4, "inline", 0, undefined, 2).cells), ["L0@0x2", "1@2", "L1@4x2", "2@6", "3@7"]);
+    assert.equal(slots, 9);
+  });
+
+  it("gives a label no more slots than a line holds", () => {
+    assert.deepEqual(layout(bodyCells(rows(1), [section(0, 1)], 2, "inline", 0, undefined, 3).cells), ["L0@0x2", "1@2"]);
+    assert.deepEqual(layout(bodyCells(rows(1), [section(0, 1)], 1, "inline", 0, undefined, 2).cells), ["L0@0x1", "1@1"]);
+  });
 });

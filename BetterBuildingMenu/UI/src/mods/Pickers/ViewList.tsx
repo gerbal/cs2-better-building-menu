@@ -1,50 +1,58 @@
+import { useValue } from "cs2/api";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import { useState } from "react";
 
-import { drawnBody, VIEW_ROWS, type BodyKind, type DrawnBody } from "domain/bodyChoice";
+import { ICONS_NAMED, VIEW_ROWS, type BodyKind } from "domain/bodyChoice";
 import { WIDTH_STEP_DEFAULT } from "domain/sharedContracts.generated";
 import { coversTheChirper, WIDTH_STEP_NUMBERS } from "domain/widthSteps";
-import { send } from "mods/bindings";
+import { AssetMenuTuning$, send } from "mods/bindings";
 import popover from "mods/ControlPopover/controlPopover.module.scss";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
 import { useMenuBody } from "mods/useMenuBody";
 import { PickerRow } from "./PickerRow";
 import styles from "./pickerList.module.scss";
 
-/** Each body's name in VIEW, its string's key and its English. */
-const BODY_LABELS: Readonly<Record<DrawnBody, { key: string; fallback: string }>> = {
+/** A pick VIEW offers: a body, or in developer mode the icons with names. */
+type ViewPick = BodyKind | typeof ICONS_NAMED;
+
+/** Each pick's name in VIEW, its string's key and its English. */
+const BODY_LABELS: Readonly<Record<ViewPick, { key: string; fallback: string }>> = {
   list: { key: "Tooltip.LABEL[BetterBuildingMenu.ViewList]", fallback: "List" },
+  icons: { key: "Tooltip.LABEL[BetterBuildingMenu.ViewIcons]", fallback: "Icons" },
   tiles: { key: "Tooltip.LABEL[BetterBuildingMenu.ViewTiles]", fallback: "Tiles" },
   cards: { key: "Tooltip.LABEL[BetterBuildingMenu.ViewCards]", fallback: "Cards" },
+  [ICONS_NAMED]: { key: "Tooltip.LABEL[BetterBuildingMenu.ViewIconsNamed]", fallback: "Icons with names" },
 };
 
 export interface ViewOption {
-  /** The pick a row sends: a body, or "" for Default view. */
-  id: BodyKind | "";
+  /** The pick a row sends: a body, the icons with names, or "" for Default view. */
+  id: ViewPick | "";
   label: string;
   selected: boolean;
 }
 
 /**
  * VIEW's rows for the open menu: "Default view · <body>", lit while the menu has no pick of its own,
- * then each body, the menu's own pick lit; the drawn body's name for the control; and the pick, which
- * C# keeps for the menu and echoes, redrawing the body. With no menu open, as under Search everything,
- * there is no menu to keep a pick, so the list offers none.
+ * then each body, and in developer mode the icons with names, the menu's own pick lit; the drawn body's
+ * name for the control; and the pick, which C# keeps for the menu and echoes, redrawing the body. With
+ * no menu open, as under Search everything, there is no menu to keep a pick, so the list offers none.
  */
-export function useViewOptions(): { current: string; changed: boolean; options: ViewOption[]; offered: boolean; pick: (kind: BodyKind | "") => void } {
+export function useViewOptions(): { current: string; changed: boolean; options: ViewOption[]; offered: boolean; pick: (kind: ViewPick | "") => void } {
   const { translate } = useLocalization();
   const body = useMenuBody();
-  const name = (kind: DrawnBody): string => translate(BODY_LABELS[kind].key, BODY_LABELS[kind].fallback) ?? BODY_LABELS[kind].fallback;
+  const developerMode = useValue(AssetMenuTuning$).developerMode;
+  const name = (kind: ViewPick): string => translate(BODY_LABELS[kind].key, BODY_LABELS[kind].fallback) ?? BODY_LABELS[kind].fallback;
   const byDefault = (translate("Tooltip.LABEL[BetterBuildingMenu.DefaultViewRow]", "Default view · {0}") ?? "Default view · {0}")
-    .replace("{0}", name(drawnBody(body.byDefault)));
+    .replace("{0}", name(body.byDefault));
+  const rows: readonly ViewPick[] = developerMode ? [...VIEW_ROWS, ICONS_NAMED] : VIEW_ROWS;
 
   return {
-    current: name(body.drawn),
+    current: name(body.named ? ICONS_NAMED : body.drawn),
     changed: body.pick !== "",
     options: [
       { id: "", label: byDefault, selected: body.pick === "" },
-      ...VIEW_ROWS.map((kind) => ({ id: kind, label: name(kind), selected: body.pick === kind })),
+      ...rows.map((kind) => ({ id: kind, label: name(kind), selected: body.pick === kind })),
     ],
     offered: body.menu !== "",
     pick: (kind) => send({ method: "SetAssetMenuView", args: [kind] }),

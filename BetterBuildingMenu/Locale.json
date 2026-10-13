@@ -230,6 +230,8 @@
   "Tooltip.LABEL[BetterBuildingMenu.SortDirectionAscending]": "ascending",
   "Tooltip.LABEL[BetterBuildingMenu.SortDirectionDescending]": "descending",
   "Tooltip.LABEL[BetterBuildingMenu.ViewList]": "List",
+  "Tooltip.LABEL[BetterBuildingMenu.ViewIcons]": "Icons",
+  "Tooltip.LABEL[BetterBuildingMenu.ViewIconsNamed]": "Icons with names",
   "Tooltip.LABEL[BetterBuildingMenu.ViewTiles]": "Tiles",
   "Tooltip.LABEL[BetterBuildingMenu.DefaultViewRow]": "Default view · {0}",
   "Tooltip.LABEL[BetterBuildingMenu.GroupBy_none]": "No groups",

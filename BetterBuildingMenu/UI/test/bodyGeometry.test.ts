@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { bodyCells, type BlockLabels } from "../src/domain/bodyCells";
-import { bodyGrid, deviceRem, listForm, screenSlots, slotPosition, slotsHeight, wholeLines, type BodyGridInput } from "../src/domain/bodyGeometry";
+import { bodyGrid, deviceRem, labelPlace, labelSlots, listForm, screenSlots, slotPosition, slotsHeight, wholeLines, type BodyGridInput } from "../src/domain/bodyGeometry";
 import type { BuildingCatalogEntry, CatalogSection } from "../src/domain/buildingCatalog";
 import { CATALOG_WINDOW_SCROLL_THRESHOLD, CATALOG_WINDOW_STEP, shouldLoadMore } from "../src/domain/catalogWindow";
 import { ASSET_MENU_DEFAULT_HEIGHT, ASSET_MENU_MIN_HEIGHT } from "../src/domain/sharedContracts.generated";
@@ -145,6 +145,37 @@ describe("the tiles", () => {
   it("leave 14.25 under two lines of 64 for the name line, and too little under 68", () => {
     assert.equal(bodyGrid(input({ body: "tiles" })).nameLine, 14.25);
     assert.ok(bodyGrid(input({ body: "tiles", tileSize: 68 })).nameLine < 14);
+  });
+});
+
+describe("the icons", () => {
+  it("draw 15 × 3 of 44 on a 46 pitch at the game's own width, the block centred: 45 a screen", () => {
+    const grid = bodyGrid(input({ body: "icons" }));
+
+    assert.equal(grid.form, "icon");
+    assert.deepEqual([grid.cols, grid.lines, grid.cellWidth, grid.pitchX, grid.picture, grid.x0, grid.y0], [15, 3, 44, 46, 42, 1, 4.125]);
+    assert.equal(screenSlots(grid), 45);
+    // The 136 rem block sits 4.125 from the body's top and foot: no sliver scrolls.
+    assert.equal(slotsHeight(grid, 45), ASSET_MENU_DEFAULT_HEIGHT);
+  });
+
+  it("add columns at the wider steps, never lines: Landscaping shows 45 / 57 / 69 / 81 / 93", () => {
+    assert.deepEqual(STEPS.map((boxWidth) => shown({ body: "icons", boxWidth }, 1806)), [45, 57, 69, 81, 93]);
+  });
+
+  it("follow the Icon size knob, whatever the text scale", () => {
+    assert.equal(shown({ body: "icons", iconSize: 36 }, 1806), 18 * 3);
+    assert.equal(shown({ body: "icons", iconSize: 56 }, 1806), 11 * 2);
+    assert.equal(shown({ body: "icons", textScale: 1.3 }, 1806), 45);
+  });
+
+  it("give a label two icons' slots, 90 × 44; the list and the tiles one", () => {
+    const icons = bodyGrid(input({ body: "icons" }));
+
+    assert.equal(labelSlots(icons), 2);
+    assert.deepEqual(labelPlace(icons, 0, labelSlots(icons)), { left: 1, top: 4.125, width: 90, height: 44 });
+    assert.equal(labelSlots(bodyGrid(input({ body: "tiles" }))), 1);
+    assert.equal(labelSlots(bodyGrid(input())), 1);
   });
 });
 

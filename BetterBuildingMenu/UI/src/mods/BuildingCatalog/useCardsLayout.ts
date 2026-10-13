@@ -6,7 +6,7 @@ import { useMemo } from "react";
 import { BODY_SIDE_MARGIN, drawnBodyHeight } from "domain/assetMenuLayout";
 import { groupDigits } from "domain/assetMenuMetricFormat";
 import { bodyOrder, NO_SECTIONS } from "domain/bodyCells";
-import type { DrawnBody } from "domain/bodyChoice";
+import type { BodyKind } from "domain/bodyChoice";
 import type { BuildingCatalogEntry, CatalogSection } from "domain/buildingCatalog";
 import { cardGeometry, cardText, cardWidth, labelWidth, packCards, type CardGeometry, type CardText } from "domain/cardsLayout";
 import { sortedMetricFor } from "domain/sortedMetric";
@@ -48,7 +48,7 @@ const thousandths = (rem: number): number => Math.round(rem * 1000) / 1000;
  * catalog, which tells C# the screen, and drawn by the body. See docs/design-notes.md, "The cards".
  */
 export function useCardsLayout(
-  body: DrawnBody,
+  body: BodyKind,
   entries: readonly BuildingCatalogEntry[],
   sections: readonly CatalogSection[] = NO_SECTIONS,
   offset: number = 0,

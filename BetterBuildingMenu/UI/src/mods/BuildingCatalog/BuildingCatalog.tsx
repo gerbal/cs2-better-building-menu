@@ -18,6 +18,7 @@ import { useMenuBody } from "mods/useMenuBody";
 import { type GroupDimensionId } from "domain/buildingGroups";
 import { useCatalogWindow } from "./useCatalogWindow";
 import { CardsBody } from "mods/Bodies/CardsBody";
+import { IconsBody } from "mods/Bodies/IconsBody";
 import { ListBody } from "mods/Bodies/ListBody";
 import { TilesBody } from "mods/Bodies/TilesBody";
 import { useBodyGrid } from "./useBodyGrid";
@@ -46,7 +47,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   const currentSearch = useValue(CurrentSearch$);
   // The menu's body: a typed search's, its own VIEW pick, Default view, or the look's Auto. See
   // docs/design-notes.md, "The bodies".
-  const body = useMenuBody().drawn;
+  const { drawn: body, named } = useMenuBody();
   const groupBy = (useValue(BuildingCatalogGroupBy$) || "category") as GroupDimensionId;
   // The root every DOM measurement below is scoped to. The hooks find the
   // rows and the scroller beneath it and never look above it.
@@ -252,7 +253,9 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
             ? <CardsBody layout={cards} enterId={enterId} onPlace={activate} footer={catalogFooter} />
             : grid !== null && grid.form === "tile"
               ? <TilesBody entries={items} grid={grid} sections={sections} offset={offset} onPlace={activate} footer={catalogFooter} />
-              : grid !== null && <ListBody entries={items} grid={grid} sections={sections} offset={offset} typed={pageSearch} keyKind={facts.keyKind} enterId={enterId} onPlace={activate} footer={catalogFooter} />}
+              : grid !== null && grid.form === "icon"
+                ? <IconsBody entries={items} grid={grid} sections={sections} offset={offset} named={named} onPlace={activate} footer={catalogFooter} />
+                : grid !== null && <ListBody entries={items} grid={grid} sections={sections} offset={offset} typed={pageSearch} keyKind={facts.keyKind} enterId={enterId} onPlace={activate} footer={catalogFooter} />}
     </div>
   );
 });

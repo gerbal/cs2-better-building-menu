@@ -9,11 +9,14 @@ export const BODY_KINDS = ["list", "icons", "tiles", "cards"] as const;
 
 export type BodyKind = (typeof BODY_KINDS)[number];
 
-/** The bodies drawn: Icons draws as Tiles while it has no body of its own. */
-export type DrawnBody = Exclude<BodyKind, "icons">;
-
 /** VIEW's rows after Default view, in their order: the bodies drawn. */
-export const VIEW_ROWS: readonly DrawnBody[] = ["list", "tiles", "cards"];
+export const VIEW_ROWS: readonly BodyKind[] = BODY_KINDS;
+
+/**
+ * The icons with each name under its picture: a menu's pick C# hands over only in developer mode, for
+ * the timed check against the icons, which draws the icons body.
+ */
+export const ICONS_NAMED = "iconsNamed";
 
 /** What the Auto rule reads of one menu: its rows, and how many carry a cost or a capacity, a capacity, a lock (MenuShare.cs). */
 export interface MenuShare {
@@ -34,12 +37,13 @@ export interface AutoKnobs {
   whatCounts?: string;
   autoLargeText?: string;
   cardsFrom?: number;
+  iconsAbove?: number;
 }
 
 /** The menus whose body the Auto at large text knob speaks for. */
 export const LARGE_TEXT_MENUS: readonly string[] = ["Roads", "Parks & Recreation"];
 
-/** Auto draws icons for a menu holding more rows than this, where too few carry what counts. */
+/** Auto draws icons for a menu holding more rows than this, where too few carry what counts, as the Icons above knob ships. */
 export const ICONS_ABOVE = 200;
 
 const SHIPPED_LIST_SHARE = 50;
@@ -89,7 +93,7 @@ export function autoBody({ share, textScale, step, knobs }: AutoInput): BodyKind
   }
 
   // A prop catalogue: big, and few of its rows have a cost or a capacity at all.
-  return share.rows > ICONS_ABOVE && !holds(share.costOrCapacity) ? "icons" : "tiles";
+  return share.rows > (knobs.iconsAbove ?? ICONS_ABOVE) && !holds(share.costOrCapacity) ? "icons" : "tiles";
 }
 
 export interface BodyInput {
@@ -103,9 +107,11 @@ export interface BodyInput {
   auto: BodyKind;
 }
 
-/** The menu's view: its own pick, else Default view unless it is Auto, else Auto. */
+/** The menu's view: its own pick, the icons for the icons with names, else Default view unless it is Auto, else Auto. */
 export function menuView({ menuPick, defaultView, auto }: Omit<BodyInput, "searching">): BodyKind {
-  return isBodyKind(menuPick) ? menuPick : isBodyKind(defaultView) ? defaultView : auto;
+  const picked = menuPick === ICONS_NAMED ? "icons" : menuPick;
+
+  return isBodyKind(picked) ? picked : isBodyKind(defaultView) ? defaultView : auto;
 }
 
 /** What the menu draws: its view, or while a query is typed the list, kept as Cards where its view is Cards. */
@@ -115,7 +121,7 @@ export function chooseBody(input: BodyInput): BodyKind {
   return input.searching && view !== "cards" ? "list" : view;
 }
 
-/** The body drawn for a kind: Icons as Tiles while it has no body of its own. */
-export function drawnBody(kind: BodyKind): DrawnBody {
-  return kind === "icons" ? "tiles" : kind;
+/** Whether the icons draw each name under its picture: the menu's own pick says so, and no query is typed. */
+export function namesIcons(menuPick: string, drawn: BodyKind): boolean {
+  return menuPick === ICONS_NAMED && drawn === "icons";
 }

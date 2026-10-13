@@ -1,6 +1,6 @@
 import { useValue } from "cs2/api";
 
-import { autoBody, chooseBody, drawnBody, menuView, type BodyKind, type DrawnBody, type MenuShare } from "domain/bodyChoice";
+import { autoBody, chooseBody, menuView, namesIcons, type BodyKind, type MenuShare } from "domain/bodyChoice";
 import { menuPickOf } from "domain/menuPicks";
 import { useTextScale } from "domain/textScaleSetting";
 import { AssetMenu$, AssetMenuDefaultView$, AssetMenuTuning$, AssetMenuViews$, CurrentSearch$, MenuShares$ } from "mods/bindings";
@@ -17,7 +17,9 @@ export interface MenuBody {
   /** The menu's view, unsearched. */
   view: BodyKind;
   /** What it draws now: its view, or a typed search's. */
-  drawn: DrawnBody;
+  drawn: BodyKind;
+  /** Whether the icons draw each name under its picture: the developer's pick, for the timed check. */
+  named: boolean;
 }
 
 /** The open menu, or "" for none, and its share: what C# counts over the whole menu, once it has. */
@@ -39,12 +41,14 @@ export function useMenuBody(): MenuBody {
   const searching = (useValue(CurrentSearch$) ?? "").trim() !== "";
   const auto = autoBody({ share, textScale, step: drawnStep, knobs });
   const byDefault = menuView({ menuPick: "", defaultView, auto });
+  const drawn = chooseBody({ searching, menuPick: pick, defaultView, auto });
 
   return {
     menu,
     pick,
     byDefault,
     view: menuView({ menuPick: pick, defaultView, auto }),
-    drawn: drawnBody(chooseBody({ searching, menuPick: pick, defaultView, auto })),
+    drawn,
+    named: namesIcons(pick, drawn),
   };
 }

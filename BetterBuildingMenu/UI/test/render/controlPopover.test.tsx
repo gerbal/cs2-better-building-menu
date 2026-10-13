@@ -271,12 +271,23 @@ describe("a control's popover", () => {
     set("AssetMenu", "Roads");
     mount({ kind: "view", left: 0 });
 
-    assert.deepEqual(rows().map((node) => node.props["aria-label"]), ["Default view · List", "List", "Tiles", "Cards", "Width · 1", "More options…"]);
+    assert.deepEqual(rows().map((node) => node.props["aria-label"]), ["Default view · List", "List", "Icons", "Tiles", "Cards", "Width · 1", "More options…"]);
     assert.equal(rows().find((node) => node.props["aria-current"] === "true")!.props["aria-label"], "Default view · List");
     pick("Tiles");
 
     assert.deepEqual(sent("SetAssetMenuView"), [["tiles"]]);
     assert.equal(closed, 1);
+  });
+
+  it("adds the icons with names after the bodies in developer mode only, and sends their pick", () => {
+    set("AssetMenu", "Landscaping");
+    set("AssetMenuTuning", { developerMode: true, interfaceStyles: true, tabNames: true });
+    mount({ kind: "view", left: 0 });
+
+    assert.deepEqual(rows().map((node) => node.props["aria-label"]).slice(1, 6), ["List", "Icons", "Tiles", "Cards", "Icons with names"]);
+    pick("Icons with names");
+
+    assert.deepEqual(sent("SetAssetMenuView"), [["iconsNamed"]]);
   });
 
   it("lists no body with no menu open, as under Search everything, where a pick would have no menu to keep it", () => {

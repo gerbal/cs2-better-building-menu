@@ -26,6 +26,10 @@ describe("the kinds a body shows, which the readout may say once", () => {
     assert.deepEqual(shownKinds("list", "plate2", null, ""), ["cost"]);
   });
 
+  it("are none in the icons, which show no number", () => {
+    assert.deepEqual(shownKinds("icons", "plate2", null, "capacity"), []);
+  });
+
   it("follow the sort on a two-number plate, whose second number is then the value sorted by", () => {
     assert.deepEqual(shownKinds("list", "plate2", "workers", "speed"), ["cost"]);
     assert.deepEqual(shownKinds("list", "plateWhole", "upkeep", "capacity"), ["cost"]);

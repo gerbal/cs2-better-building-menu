@@ -41,6 +41,12 @@ export const PLATE_WHOLE_HEIGHT = 34.56;
 /** The Tiles view's name line needs this much room under the tiles, or it drops. */
 export const TILE_NAME_LINE_MIN = 14;
 
+/** An icon's side as the Icon size knob ships: three lines of them in the game's own body. */
+export const ICON_SIZE = 44;
+
+/** The slots a label takes in the icons: two, side by side, so its name has room. */
+const ICON_LABEL_SLOTS = 2;
+
 /** A big plate's picture at its largest; a shorter plate's is its height less 4. */
 const BIG_PICTURE_MAX = 66;
 
@@ -58,8 +64,8 @@ const GROWN_SPARE = 10;
 const FIRST_STEP_ROOM = WIDTH_STEP_VANILLA - 2 * BODY_SIDE_MARGIN;
 
 export interface BodyGrid {
-  /** The list's form, or the tiles. */
-  form: ListForm | "tile";
+  /** The list's form, the tiles, or the icons. */
+  form: ListForm | "tile" | "icon";
   cols: number;
   /** Whole lines one screen of the body shows. */
   lines: number;
@@ -72,11 +78,11 @@ export interface BodyGrid {
   y0: number;
   /** How many lines a list name may take. */
   nameLines: number;
-  /** Under the tiles, the room left for the line naming the armed or pointed tile; 0 in the list. */
+  /** Under the tiles, the room left for the line naming the armed or pointed tile; 0 in the list and the icons. */
   nameLine: number;
   /**
-   * The picture's side: the big form's, as tall as the plate allows; the tiles' own; 0 in the other
-   * list forms, whose stylesheet sets it.
+   * The picture's side: the big form's, as tall as the plate allows; the tiles' and the icons' own; 0
+   * in the other list forms, whose stylesheet sets it.
    */
   picture: number;
   /**
@@ -87,7 +93,7 @@ export interface BodyGrid {
 }
 
 export interface BodyGridInput {
-  body: "list" | "tiles";
+  body: "list" | "icons" | "tiles";
   /** The box's drawn width. */
   boxWidth: number;
   /** The body's drawn height. */
@@ -99,6 +105,8 @@ export interface BodyGridInput {
   atLargeText: string;
   /** Tile size, the Tiles view's tile side. */
   tileSize: number;
+  /** The Icon size knob, the icons' side; as it ships where left out. */
+  iconSize?: number;
   /** The two-line plate's height at 100% text, the List plate height knob. */
   plateHeight: number;
   /** The Name lines knob: 0 the form's own, else 1 or 2. */
@@ -145,6 +153,30 @@ export function deviceRem(innerHeight: number): number {
 export function bodyGrid(input: BodyGridInput): BodyGrid {
   const room = Math.max(0, input.boxWidth - 2 * BODY_SIDE_MARGIN);
   const height = Math.max(0, input.bodyHeight);
+
+  if (input.body === "icons") {
+    const side = input.iconSize ?? ICON_SIZE;
+    const pitch = side + SLOT_GAP;
+    const cols = across(room, side);
+    const lines = wholeLines(height, pitch, SLOT_GAP, input.pixelRem);
+
+    // The block of lines centred in the body's height, as across its width: the icons never scroll by a sliver.
+    return {
+      form: "icon",
+      cols,
+      lines,
+      cellWidth: side,
+      cellHeight: side,
+      pitchX: pitch,
+      pitchY: pitch,
+      x0: (room - (cols * pitch - SLOT_GAP)) / 2,
+      y0: Math.max(0, (height - (lines * pitch - SLOT_GAP)) / 2),
+      nameLines: 2,
+      nameLine: 0,
+      picture: side - 2,
+      firstCols: across(FIRST_STEP_ROOM, side),
+    };
+  }
 
   if (input.body === "tiles") {
     const side = input.tileSize;
@@ -248,6 +280,11 @@ export function slotPosition(grid: BodyGrid, index: number): { left: number; top
     left: grid.x0 + (index % grid.cols) * grid.pitchX,
     top: grid.y0 + Math.floor(index / grid.cols) * grid.pitchY,
   };
+}
+
+/** The slots a label takes in line: two in the icons, whose square is too small for its name; else one. */
+export function labelSlots(grid: BodyGrid): number {
+  return grid.form === "icon" ? ICON_LABEL_SLOTS : 1;
 }
 
 /** Where a label plate sits and how big it is: its slot, or across this many slots of its line. */

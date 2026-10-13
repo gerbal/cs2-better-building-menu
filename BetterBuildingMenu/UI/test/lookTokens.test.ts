@@ -55,6 +55,8 @@ const INK_ON: readonly (readonly [ink: string, surface: string])[] = [
   ["bodyChipText", "bodyChipBg"], ["bodyChipDim", "bodyChipBg"], ["bodyWord", "bodyChipBg"],
   ["bodyCtlText", "bodyCtl"], ["bodyCtlDim", "bodyCtl"], ["bodyLabel", "body"],
   ["bodyMilestone", "plateLocked"], ["bodyEntMark", "plate"],
+  // The icons: a locked icon's "MS n" on its dark plate.
+  ["bodyMilestone", "tileLocked"],
   // The label plates: a group's name, its count, and Locked.
   ["bodyWord", "labBg"], ["bodyChipDim", "labBg"], ["bodyMilestone", "labBg"],
   // The cards: Enter's mark on its badge.
@@ -150,6 +152,16 @@ describe("the looks' tokens", () => {
     assert.equal(declarationsOf(cards, ".enterBadge")["background-color"], "var(--bbm-badgeBg)");
     assert.equal(declarationsOf(cards, ".enterMark")["background-color"], "var(--bbm-entMark)");
     for (const selector of [STANDARD, ...FOLLOW]) assert.ok(!turnsLight(tokens(selector).badgeBg), selector);
+  });
+
+  it("draw the icons' milestone in the body's ink on the locked plate a style can turn light, a family's word on its dark pill", () => {
+    const icons = "mods/Bodies/iconsBody.module.scss";
+
+    assert.equal(declarationsOf(icons, ".milestone").color, "var(--bbm-bodyMilestone)");
+    assert.equal(declarationsOf(icons, ".unplaceable")["background-color"], "var(--bbm-tileLocked)");
+    assert.equal(declarationsOf(icons, ".pillWord")["background-color"], "var(--bbm-pillBg)");
+    assert.equal(declarationsOf(icons, ".pillWord").color, "var(--bbm-pillText)");
+    for (const selector of [STANDARD, ...FOLLOW]) assert.ok(!turnsLight(tokens(selector).pillBg), selector);
   });
 
   it("draw the tiles' milestone in the look's amber on the tag, whose dark ground no style turns light", () => {
