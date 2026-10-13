@@ -108,6 +108,8 @@ export interface AssetMenuTuning {
   smallMenusGrow?: boolean;
   /** Search results at a wider step: "nearField", the first step's columns first, or "rowOrder". */
   searchFlow?: string;
+  /** Whether a search result's name dims the typed word. */
+  dimTypedWord?: boolean;
 }
 
 /**
@@ -129,6 +131,7 @@ export const SHIPPED_TUNING: Required<AssetMenuTuning> = {
   cardHeight: 46,
   smallMenusGrow: true,
   searchFlow: "nearField",
+  dimTypedWord: false,
 };
 
 export const AssetMenuTuning$ = bindValue<AssetMenuTuning>(mod.id, "AssetMenuTuning", SHIPPED_TUNING);

@@ -18,14 +18,14 @@ namespace BetterBuildingMenu.Tests
 			new TuningValues(DeveloperMode: true, InterfaceStyles: false, TabNames: true).Write(writer);
 
 			Assert.Equal(
-				new[] { "developerMode", "interfaceStyles", "tabNames", "listShare", "whatCounts", "autoLargeText", "cardsFrom", "listPlateHeight", "nameLines", "tileNameLine", "blockLabels", "cardHeight", "smallMenusGrow", "searchFlow" },
+				new[] { "developerMode", "interfaceStyles", "tabNames", "listShare", "whatCounts", "autoLargeText", "cardsFrom", "listPlateHeight", "nameLines", "tileNameLine", "blockLabels", "cardHeight", "smallMenusGrow", "searchFlow", "dimTypedWord" },
 				writer.PropertyNames);
 			Assert.Equal(
 				new[]
 				{
 					"Write:Boolean:True", "Write:Boolean:False", "Write:Boolean:True", "Write:Int32:50", "Write:String:costOrCapacity",
 					"Write:String:lookOwn", "Write:Int32:0", "Write:Single:27.25", "Write:Int32:0", "Write:Boolean:True",
-					"Write:String:inline", "Write:Int32:46", "Write:Boolean:True", "Write:String:nearField",
+					"Write:String:inline", "Write:Int32:46", "Write:Boolean:True", "Write:String:nearField", "Write:Boolean:False",
 				},
 				writer.Tokens.Where(token => token.StartsWith("Write:", StringComparison.Ordinal)));
 		}
@@ -60,6 +60,7 @@ namespace BetterBuildingMenu.Tests
 		[InlineData("CardHeight", "Tuning.OneOf(Tuning.CardHeightValues, Knobs.Value(settings => settings.DevCardHeight, Tuning.CardHeight), Tuning.CardHeight)")]
 		[InlineData("SmallMenusGrow", "Knobs.Value(settings => settings.DevSmallMenusGrow, Tuning.SmallMenusGrow)")]
 		[InlineData("SearchFlow", "Tuning.OneOf(Tuning.SearchFlowValues, Knobs.Value(settings => settings.DevSearchFlow, Tuning.SearchFlow), Tuning.SearchFlow)")]
+		[InlineData("DimTypedWord", "Knobs.Value(settings => settings.DevDimTypedWord, Tuning.DimTypedWord)")]
 		public void EachBodyKnobIsReadThroughTheOneRuleIntoItsOwnField(string field, string read)
 		{
 			Assert.Contains($"{field}: {read}", ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.cs"), "private static TuningValues CurrentTuning()"));
@@ -89,6 +90,27 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void TheNumberAndNameKnobsShipAsTheSpecSetsThem()
+		{
+			// A value two thirds of a view's unlocked rows share is said once; the typed word is not dimmed.
+			Assert.Equal(67, Tuning.SaidOnceAt);
+			Assert.Equal(new[] { 67, 0, 50, 60, 75, 80, 90 }, Tuning.SaidOnceAtValues);
+			Assert.False(Tuning.DimTypedWord);
+		}
+
+		[Fact]
+		public void TheSaidOnceShareIsReadThroughTheOneRuleIntoTheQueryEveryRefreshRuns()
+		{
+			// C# reads it, as it counts the shared values over the whole view; the UI never sees the share.
+			var refresh = ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.Catalog.cs"), "private void RefreshBuildingCatalog(");
+
+			Assert.Contains("_assetMenu.Query with { SaidOnceAt = CurrentSaidOnceAt() }", refresh);
+			Assert.Contains(
+				"Tuning.OneOf(Tuning.SaidOnceAtValues, Knobs.Value(settings => settings.DevSaidOnceAt, Tuning.SaidOnceAt), Tuning.SaidOnceAt)",
+				ModSource.Text("Systems/BuildingMenuUISystem.Catalog.cs"));
+		}
+
+		[Fact]
 		public void TheUisFallbackForEachBodyKnobIsWhatShips()
 		{
 			// The UI draws the shipped knobs until C# answers, so the two must agree.
@@ -106,6 +128,7 @@ namespace BetterBuildingMenu.Tests
 			Assert.Contains($"cardHeight: {Tuning.CardHeight},", fallback);
 			Assert.Contains("smallMenusGrow: true,", fallback);
 			Assert.Contains($"searchFlow: \"{Tuning.SearchFlow}\",", fallback);
+			Assert.Contains("dimTypedWord: false,", fallback);
 		}
 
 		[Theory]
@@ -139,6 +162,8 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(Tuning.CardHeight, Tuning.OneOf(Tuning.CardHeightValues, 48, Tuning.CardHeight));
 			Assert.Equal(Tuning.BlockLabels, Tuning.OneOf(Tuning.BlockLabelsValues, "chips", Tuning.BlockLabels));
 			Assert.Equal("rowOrder", Tuning.OneOf(Tuning.SearchFlowValues, "rowOrder", Tuning.SearchFlow));
+			Assert.Equal(Tuning.SaidOnceAt, Tuning.OneOf(Tuning.SaidOnceAtValues, 66, Tuning.SaidOnceAt));
+			Assert.Equal(0, Tuning.OneOf(Tuning.SaidOnceAtValues, 0, Tuning.SaidOnceAt));
 		}
 
 		public static IEnumerable<object[]> Dropdowns() => new[]
@@ -150,6 +175,7 @@ namespace BetterBuildingMenu.Tests
 			new object[] { nameof(BetterBuildingMenuSettings.DevBlockLabels), Tuning.BlockLabelsValues.Cast<object>().ToArray(), OptionRows.BlockLabelsLabelIds },
 			new object[] { nameof(BetterBuildingMenuSettings.DevCardHeight), Tuning.CardHeightValues.Cast<object>().ToArray(), OptionRows.CardHeightLabelIds },
 			new object[] { nameof(BetterBuildingMenuSettings.DevSearchFlow), Tuning.SearchFlowValues.Cast<object>().ToArray(), OptionRows.SearchFlowLabelIds },
+			new object[] { nameof(BetterBuildingMenuSettings.DevSaidOnceAt), Tuning.SaidOnceAtValues.Cast<object>().ToArray(), OptionRows.SaidOnceAtLabelIds },
 		};
 
 		[Theory]

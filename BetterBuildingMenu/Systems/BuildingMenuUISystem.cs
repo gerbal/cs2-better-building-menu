@@ -444,7 +444,8 @@ namespace BetterBuildingMenu.Systems
 				BlockLabels: Tuning.OneOf(Tuning.BlockLabelsValues, Knobs.Value(settings => settings.DevBlockLabels, Tuning.BlockLabels), Tuning.BlockLabels),
 				CardHeight: Tuning.OneOf(Tuning.CardHeightValues, Knobs.Value(settings => settings.DevCardHeight, Tuning.CardHeight), Tuning.CardHeight),
 				SmallMenusGrow: Knobs.Value(settings => settings.DevSmallMenusGrow, Tuning.SmallMenusGrow),
-				SearchFlow: Tuning.OneOf(Tuning.SearchFlowValues, Knobs.Value(settings => settings.DevSearchFlow, Tuning.SearchFlow), Tuning.SearchFlow));
+				SearchFlow: Tuning.OneOf(Tuning.SearchFlowValues, Knobs.Value(settings => settings.DevSearchFlow, Tuning.SearchFlow), Tuning.SearchFlow),
+				DimTypedWord: Knobs.Value(settings => settings.DevDimTypedWord, Tuning.DimTypedWord));
 
 		protected override void OnUpdate()
 		{

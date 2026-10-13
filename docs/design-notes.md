@@ -879,6 +879,11 @@ knob's row carries `[SettingsUIDeveloper]`, so the game draws it only in develop
     and in a menu of one tab draws no groups unless picked.
   - **Search flow on wide boxes** (nearest the field first, as it ships, or row order): where a typed
     search's results fill at the wider Width steps.
+  - **Said once at** (67%, as it ships, off, or 50 to 90%): the share of a view's unlocked rows one value
+    must hold for the readout to say it once (see "Numbers said once"). C# reads it, as it counts the
+    shared values over the whole view.
+  - **Dim the typed word** (off, as it ships, or on): a search result's name dims what was typed, so the
+    rest of the name stands out (see "Names").
 
 ## The pick logger
 

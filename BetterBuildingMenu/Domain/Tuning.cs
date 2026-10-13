@@ -104,6 +104,15 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>The Search flow knob's values, in its order.</summary>
 		public static readonly IReadOnlyList<string> SearchFlowValues = new[] { NearField, RowOrder };
 
+		/// <summary>The share of a view's unlocked rows, in percent, that one value must hold for the readout to say it once, as it ships: two thirds.</summary>
+		public const int SaidOnceAt = 67;
+
+		/// <summary>The Said once at knob's values, in its order: as it ships, off, then the other shares.</summary>
+		public static readonly IReadOnlyList<int> SaidOnceAtValues = new[] { SaidOnceAt, 0, 50, 60, 75, 80, 90 };
+
+		/// <summary>A search result's name draws the typed word as the rest of it, as it ships, or dims it.</summary>
+		public const bool DimTypedWord = false;
+
 		/// <summary>The slot margin's shipped value, in percent: a newcomer needs 1.25 times a holder's placements.</summary>
 		public const int SlotMarginPercent = 25;
 

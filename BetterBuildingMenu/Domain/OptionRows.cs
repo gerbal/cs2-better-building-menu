@@ -89,6 +89,18 @@ namespace BetterBuildingMenu.Domain
 			"Options.LABEL[BetterBuildingMenu.SearchFlowRowOrder]",
 		};
 
+		/// <summary>The Said once at knob's labels, one per value of <see cref="Tuning.SaidOnceAtValues"/>.</summary>
+		public static readonly IReadOnlyList<string> SaidOnceAtLabelIds = new[]
+		{
+			"Options.LABEL[BetterBuildingMenu.SaidOnceAt67]",
+			"Options.LABEL[BetterBuildingMenu.SaidOnceAtOff]",
+			"Options.LABEL[BetterBuildingMenu.SaidOnceAt50]",
+			"Options.LABEL[BetterBuildingMenu.SaidOnceAt60]",
+			"Options.LABEL[BetterBuildingMenu.SaidOnceAt75]",
+			"Options.LABEL[BetterBuildingMenu.SaidOnceAt80]",
+			"Options.LABEL[BetterBuildingMenu.SaidOnceAt90]",
+		};
+
 		/// <summary>A row's description: its own while Replace is on, else the line saying why it is greyed out.</summary>
 		public static string DescriptionId(bool replaceOn, string ownId) => replaceOn ? ownId : OffWhileReplaceOffId;
 

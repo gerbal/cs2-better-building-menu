@@ -306,6 +306,21 @@ namespace BetterBuildingMenu
 		[SettingsUIDropdown(typeof(BetterBuildingMenuSettings), nameof(SearchFlowItems))]
 		public string DevSearchFlow { get; set; } = Domain.Tuning.SearchFlow;
 
+		/// <summary>Developer only: the share of a view's unlocked rows, in percent, one value must hold to be said once. 0 says none.</summary>
+		/// <remarks>Read through Utilities.Knobs. See docs/design-notes.md, "Developer knobs".</remarks>
+		[SettingsUISection(SETTINGS, TUNING)]
+		[SettingsUIDeveloper]
+		[SettingsUISearchHidden]
+		[SettingsUIDropdown(typeof(BetterBuildingMenuSettings), nameof(SaidOnceAtItems))]
+		public int DevSaidOnceAt { get; set; } = Domain.Tuning.SaidOnceAt;
+
+		/// <summary>Developer only: whether a search result's name dims the typed word.</summary>
+		/// <remarks>Read through Utilities.Knobs. See docs/design-notes.md, "Developer knobs".</remarks>
+		[SettingsUISection(SETTINGS, TUNING)]
+		[SettingsUIDeveloper]
+		[SettingsUISearchHidden]
+		public bool DevDimTypedWord { get; set; } = Domain.Tuning.DimTypedWord;
+
 		/// <summary>Puts every option back to the value it ships with.</summary>
 		/// <remarks>
 		/// The initializers above read the same constants, except the control pane's: its
@@ -362,6 +377,8 @@ namespace BetterBuildingMenu
 		private static DropdownItem<int>[] CardHeightItems() => IntItems(Domain.Tuning.CardHeightValues, Domain.OptionRows.CardHeightLabelIds);
 
 		private static DropdownItem<string>[] SearchFlowItems() => StringItems(Domain.Tuning.SearchFlowValues, Domain.OptionRows.SearchFlowLabelIds);
+
+		private static DropdownItem<int>[] SaidOnceAtItems() => IntItems(Domain.Tuning.SaidOnceAtValues, Domain.OptionRows.SaidOnceAtLabelIds);
 
 		private static DropdownItem<int>[] IntItems(IReadOnlyList<int> values, IReadOnlyList<string> labelIds) =>
 			values.Select((value, index) => new DropdownItem<int> { value = value, displayName = LocalizedString.Id(labelIds[index]) }).ToArray();

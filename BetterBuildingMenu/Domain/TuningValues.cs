@@ -21,7 +21,8 @@ namespace BetterBuildingMenu.Domain
 		string BlockLabels = Tuning.BlockLabels,
 		int CardHeight = Tuning.CardHeight,
 		bool SmallMenusGrow = Tuning.SmallMenusGrow,
-		string SearchFlow = Tuning.SearchFlow) : IJsonWritable
+		string SearchFlow = Tuning.SearchFlow,
+		bool DimTypedWord = Tuning.DimTypedWord) : IJsonWritable
 	{
 		public void Write(IJsonWriter writer)
 		{
@@ -54,6 +55,8 @@ namespace BetterBuildingMenu.Domain
 			writer.Write(SmallMenusGrow);
 			writer.PropertyName("searchFlow");
 			writer.Write(SearchFlow);
+			writer.PropertyName("dimTypedWord");
+			writer.Write(DimTypedWord);
 			writer.TypeEnd();
 		}
 	}

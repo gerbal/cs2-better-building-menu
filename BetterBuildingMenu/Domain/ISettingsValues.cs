@@ -66,5 +66,9 @@ namespace BetterBuildingMenu.Domain
 		bool DevSmallMenusGrow { get; set; }
 
 		string DevSearchFlow { get; set; }
+
+		int DevSaidOnceAt { get; set; }
+
+		bool DevDimTypedWord { get; set; }
 	}
 }

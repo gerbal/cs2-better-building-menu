@@ -68,7 +68,10 @@ namespace BetterBuildingMenu.Domain
 		int ScreenSlots = 0,
 		// Whether a half-locked tab's locked rows are left out of the window, their label alone showing. Any
 		// new start or narrowing shows them again. See docs/design-notes.md, "Label plates".
-		bool LockedCollapsed = false)
+		bool LockedCollapsed = false,
+		// The share of the view's unlocked rows, in percent, one value must hold for the readout to say it once;
+		// 0 says none. The Said once at knob's. Not a predicate. See docs/design-notes.md, "Numbers said once".
+		int SaidOnceAt = Tuning.SaidOnceAt)
 	{
 		/// <summary>
 		/// The sort fields the picker offers, in its order.

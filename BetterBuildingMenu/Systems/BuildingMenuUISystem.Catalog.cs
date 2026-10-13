@@ -47,9 +47,10 @@ namespace BetterBuildingMenu.Systems
 			// One view, built once; every publish below reads it. See CatalogView.
 			var menu = _assetMenu.Menu;
 			var noGroups = _menusDrawingNoGroups.Contains(menu);
+			// The said-once share is C#'s alone: the shared values are counted over the whole view.
 			var view = _buildingCatalogAdapter.Build(
 				source,
-				_assetMenu.Query,
+				_assetMenu.Query with { SaidOnceAt = CurrentSaidOnceAt() },
 				_toolbarSelection,
 				built => built.GroupFor(_assetMenu.Query.GroupBy, _assetMenu.Query.SearchText, noGroups));
 			BuildingCatalogPage page = view.Page;
@@ -184,6 +185,10 @@ namespace BetterBuildingMenu.Systems
 
 			return true;
 		}
+
+		/// <summary>The Said once at knob, through the one rule every knob is read by: a share in percent, 0 for none.</summary>
+		private static int CurrentSaidOnceAt() =>
+			Tuning.OneOf(Tuning.SaidOnceAtValues, Knobs.Value(settings => settings.DevSaidOnceAt, Tuning.SaidOnceAt), Tuning.SaidOnceAt);
 
 		/// <summary>Publishes the milestone names the UI labels locked assets with.</summary>
 		private void RefreshAssetMenuNavigation()
