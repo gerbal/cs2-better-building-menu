@@ -38,8 +38,8 @@ function press(key: string, keyCode: number, target: unknown = fakeSearchField()
 
 const moves = () => triggers.filter((call) => call.name === "MoveEnterTarget").map((call) => call.args[0]);
 
-const Probe = ({ list, canMove, answered }: { list: RefObject<HTMLElement>; canMove: boolean; answered: string }) => {
-  useSearchFieldKeys(list, canMove, answered);
+const Probe = ({ list, canMove, answered = "rail\n0", pitch = 0 }: { list: RefObject<HTMLElement>; canMove: boolean; answered?: string; pitch?: number }) => {
+  useSearchFieldKeys(list, canMove, answered, pitch);
   return null;
 };
 
@@ -123,6 +123,41 @@ describe("the search field's keys", () => {
     } finally {
       mock.timers.reset();
     }
+  });
+
+  it("pages whole lines of the body, where the body has lines", () => {
+    const savedWindow = globals.window;
+    // 1,080 pixels tall: a rem is a pixel.
+    globals.window = { innerHeight: 1080 };
+    const list = fakeList(50);
+    act(() => {
+      root = create(<Probe list={list.ref} canMove pitch={29.25} />);
+    });
+
+    press("PageDown", 34);
+    const down = list.scroller.scrollTop;
+    globals.window = savedWindow;
+
+    // Three whole 29.25 lines fit the 100-pixel screen.
+    assert.equal(down, 87.75);
+  });
+
+  it("pages the body's lines and their gaps in pixels, however tall the screen", () => {
+    const savedWindow = globals.window;
+    // 2,160 pixels tall: a rem is two pixels, so the game's own 144.25 rem body is 288.5.
+    globals.window = { innerHeight: 2160 };
+    const list = fakeList(50);
+    list.scroller.clientHeight = 288.5;
+    act(() => {
+      root = create(<Probe list={list.ref} canMove pitch={29.25} />);
+    });
+
+    press("PageDown", 34);
+    const down = list.scroller.scrollTop;
+    globals.window = savedWindow;
+
+    // All five lines, 58.5 pixels apart: the last needs no gap below it.
+    assert.equal(down, 292.5);
   });
 
   it("moves nothing while there is no target to move", () => {

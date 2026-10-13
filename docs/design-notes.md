@@ -1058,6 +1058,28 @@ a fresh result's first window, and an anchored start's from its row. So a body d
 tiles (22 × 14 = 308 a screen) always has rows below its screen to scroll to, and the poll that loads
 more can see the bottom coming. A screen is no predicate and no start: it only grows the window.
 
+**The list.** Each building on a plate: its picture, 25 rem (24 above 100% text); its name, as plain
+text in an inline paragraph (`<p cohinline>`), on up to two lines at 100% text and one under More
+buildings, cut where it runs past them; and a right-aligned number column, the cost over the capacity,
+or under a sort by a number the value sorted by, so the order reads down the column (`plateNumbers`),
+with a locked building's milestone ("MS 7") in the cost's place, in amber, or the locked word where
+only the development tree or another requirement holds it back (`lockedFact`; never "MS 0"). The
+armed building is filled. Enter's target carries "↵" beside its numbers while the page answers the
+query in the box. Names are plain text, never in spans: Cohtml drops the space after an inline element
+and never breaks at a hyphen. The game's Scrollable scrolls the slots, its track over the box's right
+margin and its thumb on the slots' right edge, clear of the width strip; the region, the scroller and
+the slots' box are one mixin (`_bodyShell.scss`), as the locked and already-built words and the digit
+separators are one hook each (`useStateWords`, `useNumberSeparators`), for every body that places its
+buildings in slots.
+
+**Labels wait.** The list draws no group names and no "Locked N" yet; its order still follows the
+grouping.
+
+**Markers.** The live check and the render tests count what a body shows through these markers:
+`data-bbm-view` on the visible region, and on each building `data-bbm-item`, with `data-bbm-pic`,
+`data-bbm-name` (the whole name's length) and `data-bbm-fact` inside it. No count reads
+`data-bbm-fact` yet; it marks the numbers for the said-once rule to come.
+
 **This changes 0.2.x:** one view, picked in VIEW, drew every menu, and every session opened in Cards
 (0.2.5 kept the pick); each menu now draws the body its pick, Default view or Auto gives it, and Grid
 and Table are gone, Grid's place taken by Tiles and Table's by List.
@@ -1084,9 +1106,16 @@ field's.
   of a second when a move past an end changes no page; the repeats in between are dropped, and still
   kept from the caret, so a held key moves at the refresh's pace. A move is no start: the window and
   the list's place stay. The field names the moved target and Enter arms it, by id, wherever its row
-  is; no row is marked and the list does not scroll to the target.
-- **PageUp and PageDown** scroll the list a screen, held inside its ends (`pageScrollTop`); a page that
-  reaches the end lets the window load more, as scrolling there does.
+  is. Its row carries "↵", and when the keys move the target its row comes wholly on screen, the list
+  moving as little as it takes (`revealScrollTop`, `useRevealEnterTarget`); a target past the window is
+  armed by id all the same, and the list stays. The reveal follows the page that answers a move (a new
+  step), never a dropped repeat, and sets the scroll once, on the first frame it can measure: plates
+  are placed by slot, so a late wrap moves no row. A typed search's best match needs no reveal: it is
+  the list's first row under Match.
+- **PageUp and PageDown** scroll the list a screen of the body's whole lines, counted as the body
+  counts them (`wholeLines`: the last line needs no gap below it), so lines land on the top edge as
+  they were (a screen of the scroller for the cards, which have no lines), held inside its ends
+  (`pageScrollTop`); a page that reaches the end lets the window load more, as scrolling there does.
 
 **This changes 0.2.x:** in the search field Up and Down now move Enter's target and no longer move the
 caret, and PageUp and PageDown, which did nothing, scroll the list.

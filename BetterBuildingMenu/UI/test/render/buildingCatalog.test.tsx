@@ -130,7 +130,7 @@ describe("the catalog container", () => {
     const html = render();
 
     assert.doesNotMatch(html, /itemCard/);
-    assert.doesNotMatch(html, /class="item"/);
+    assert.doesNotMatch(html, /data-bbm-view="list"/);
   });
 
   it("draws the list while a query is typed, whatever the menu's tiles", () => {
@@ -138,7 +138,7 @@ describe("the catalog container", () => {
     setBinding("BetterBuildingMenu", "CurrentSearch", "four");
     page();
 
-    assert.match(render(), /class="item"/);
+    assert.match(render(), /data-bbm-view="list"/);
   });
 
   it("keeps Cards while a query is typed in a menu whose view is Cards", () => {

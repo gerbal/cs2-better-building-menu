@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { canPlace, entryStateWord, isEntryAlreadyBuilt, isEntryLocked, listLockConditions } from "../src/domain/buildingLockState.ts";
+import { canPlace, entryStateWord, isEntryAlreadyBuilt, isEntryLocked, listLockConditions, lockedFact } from "../src/domain/buildingLockState.ts";
 
 describe("lock state", () => {
   it("reports a locked entry as locked", () => {
@@ -96,6 +96,17 @@ describe("lock conditions", () => {
   it("does not index past the milestone table it was given", () => {
     assert.deepEqual(listLockConditions({ isLocked: true, unlockMilestone: 99 }, names, "Locked"), ["Locked"]);
     assert.deepEqual(listLockConditions({ isLocked: true, unlockMilestone: 2 }, null, "Locked"), ["Locked"]);
+  });
+});
+
+describe("what stands in a locked building's cost", () => {
+  it("is the milestone it waits on", () => {
+    assert.equal(lockedFact({ isLocked: true, unlockMilestone: 7 }, "Locked"), "MS 7");
+  });
+
+  it("is the locked word where no milestone holds it back, never MS 0", () => {
+    assert.equal(lockedFact({ isLocked: true, unlockMilestone: 0 }, "Locked"), "Locked");
+    assert.equal(lockedFact({ isLocked: true }, "Locked"), "Locked");
   });
 });
 

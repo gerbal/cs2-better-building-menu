@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { bodyGrid, listForm, screenSlots, wholeLines, type BodyGridInput } from "../src/domain/bodyGeometry";
+import { bodyGrid, listForm, screenSlots, slotPosition, slotsHeight, wholeLines, type BodyGridInput } from "../src/domain/bodyGeometry";
 import { CATALOG_WINDOW_SCROLL_THRESHOLD, CATALOG_WINDOW_STEP, shouldLoadMore } from "../src/domain/catalogWindow";
 import { ASSET_MENU_DEFAULT_HEIGHT, ASSET_MENU_MIN_HEIGHT } from "../src/domain/sharedContracts.generated";
 import { REFERENCE_ASPECT, widthStepWidths } from "../src/domain/widthSteps";
@@ -106,6 +106,30 @@ describe("the tiles", () => {
   it("leave 14.25 under two lines of 64 for the name line, and too little under 68", () => {
     assert.equal(bodyGrid(input({ body: "tiles" })).nameLine, 14.25);
     assert.ok(bodyGrid(input({ body: "tiles", tileSize: 68 })).nameLine < 14);
+  });
+});
+
+describe("a slot's place", () => {
+  it("runs left to right, then down", () => {
+    const grid = bodyGrid(input());
+
+    assert.deepEqual(slotPosition(grid, 0), { left: 0, top: 0 });
+    assert.deepEqual(slotPosition(grid, 3), { left: 3 * 173, top: 0 });
+    assert.deepEqual(slotPosition(grid, 5), { left: 173, top: 29.25 });
+  });
+
+  it("makes the slots as tall as their lines, and nothing for none", () => {
+    const grid = bodyGrid(input());
+
+    assert.equal(slotsHeight(grid, 20), ASSET_MENU_DEFAULT_HEIGHT);
+    assert.equal(slotsHeight(grid, 21), ASSET_MENU_DEFAULT_HEIGHT + 29.25);
+    assert.equal(slotsHeight(grid, 0), 0);
+  });
+
+  it("keeps a body too narrow or too short for one slot at one column and one line", () => {
+    const grid = bodyGrid(input({ boxWidth: 100, bodyHeight: 5 }));
+
+    assert.deepEqual([grid.cols, grid.lines], [1, 1]);
   });
 });
 

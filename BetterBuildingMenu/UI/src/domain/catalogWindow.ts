@@ -3,6 +3,7 @@
  * stays at zero and the window grows by asking for a larger limit, because
  * placing a building unmounts the asset menu and an accumulator would go with it.
  */
+import { wholeLines } from "./bodyGeometry";
 import { CATALOG_WINDOW_STEP } from "./sharedContracts.generated";
 
 /**
@@ -110,9 +111,34 @@ export function lineOneScrollTop(currentScrollTop: number, rowTop: number, conta
   return Math.max(0, currentScrollTop + rowTop - containerTop);
 }
 
-/** The scroll a screen down, or up, from here, held inside the list's ends: an engine need not clamp a scroll set past them. */
-export function pageScrollTop(scrollTop: number, clientHeight: number, scrollHeight: number, direction: 1 | -1): number {
-  return Math.max(0, Math.min(scrollHeight - clientHeight, scrollTop + direction * clientHeight));
+/**
+ * The scroll a screen down, or up, from here, held inside the list's ends: an engine need not clamp a
+ * scroll set past them. With a line pitch, the screen is the whole lines that fit it, counted as the
+ * body counts them (`wholeLines`, the gap in the height's unit), so a page lands lines on the top edge
+ * as it found them.
+ */
+export function pageScrollTop(scrollTop: number, clientHeight: number, scrollHeight: number, direction: 1 | -1, linePitch = 0, lineGap = 0): number {
+  const page = linePitch > 0 ? wholeLines(clientHeight, linePitch, lineGap) * linePitch : clientHeight;
+
+  return Math.max(0, Math.min(scrollHeight - clientHeight, scrollTop + direction * page));
+}
+
+/**
+ * Where to scroll so a row is wholly on screen, moving as little as it takes: up to its top, or down
+ * until its bottom meets the list's foot; where it already is, nowhere. Never negative.
+ */
+export function revealScrollTop(scrollTop: number, rowTop: number, rowHeight: number, containerTop: number, containerHeight: number): number {
+  if (![scrollTop, rowTop, rowHeight, containerTop, containerHeight].every(Number.isFinite)) {
+    return scrollTop;
+  }
+
+  if (rowTop < containerTop) {
+    return Math.max(0, scrollTop + rowTop - containerTop);
+  }
+
+  const overrun = rowTop + rowHeight - (containerTop + containerHeight);
+
+  return overrun > 0 ? scrollTop + overrun : scrollTop;
 }
 
 /** Whether a row sits on the first line, to a pixel: Cohtml rounds line boxes to whole device pixels. */

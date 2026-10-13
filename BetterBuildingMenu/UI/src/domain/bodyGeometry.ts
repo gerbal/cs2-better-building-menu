@@ -131,3 +131,15 @@ export function screenSlots(grid: BodyGrid): number {
   return grid.cols * grid.lines;
 }
 
+/** Where slot k sits: left to right, then down. */
+export function slotPosition(grid: BodyGrid, index: number): { left: number; top: number } {
+  return {
+    left: grid.x0 + (index % grid.cols) * grid.pitchX,
+    top: grid.y0 + Math.floor(index / grid.cols) * grid.pitchY,
+  };
+}
+
+/** The slots' height for this many buildings: the scroller's whole content. */
+export function slotsHeight(grid: BodyGrid, count: number): number {
+  return count <= 0 ? 0 : grid.y0 + Math.ceil(count / grid.cols) * grid.pitchY - SLOT_GAP;
+}

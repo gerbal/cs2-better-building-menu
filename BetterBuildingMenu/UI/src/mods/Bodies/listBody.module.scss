@@ -1,0 +1,119 @@
+@use "bodyShell" as *;
+
+// The list: plates placed from their slot index, in the look's tokens. See docs/design-notes.md,
+// "The bodies".
+
+@include body-shell;
+
+.plate {
+  position: absolute;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 3rem;
+  padding: 0 4rem 0 1rem;
+  box-sizing: border-box;
+  overflow: hidden;
+  // Longhands: Cohtml drops a shorthand fed by var().
+  border-top-left-radius: var(--bbm-radiusItem);
+  border-top-right-radius: var(--bbm-radiusItem);
+  border-bottom-left-radius: var(--bbm-radiusItem);
+  border-bottom-right-radius: var(--bbm-radiusItem);
+  background-color: var(--bbm-plate);
+  color: var(--bbm-tName);
+  pointer-events: auto;
+}
+
+.plate:hover {
+  background-color: var(--bbm-plateHover);
+}
+
+.locked {
+  background-color: var(--bbm-plateLocked);
+}
+
+// The one armed building: solid, with its own inks.
+.armed,
+.armed:hover {
+  background-color: var(--bbm-arm);
+}
+
+.picture {
+  flex: 0 0 auto;
+  width: 25rem;
+  height: 25rem;
+}
+
+// Above 100% text the picture keeps 24 rem, as the plates' own height shrinks.
+.largeText .picture {
+  width: 24rem;
+  height: 24rem;
+}
+
+.name {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: calc(11rem * var(--fontScale));
+  line-height: calc(12.5rem * var(--fontScale));
+  // Two lines, whole device pixels each: whatever a third line holds is cut.
+  max-height: calc(27rem * var(--fontScale));
+  overflow: hidden;
+  color: var(--bbm-tName);
+}
+
+.oneLine {
+  max-height: calc(14rem * var(--fontScale));
+  white-space: nowrap;
+}
+
+.locked .name {
+  color: var(--bbm-tLocked);
+}
+
+.armed .name {
+  color: var(--bbm-armText);
+}
+
+// The cost over the second number, right-aligned, so the column reads down the list.
+.numbers {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: calc(10rem * var(--fontScale));
+  line-height: calc(12rem * var(--fontScale));
+  white-space: nowrap;
+}
+
+.first {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 2rem;
+  color: var(--bbm-tCost);
+}
+
+.milestone {
+  color: var(--bbm-amber);
+}
+
+.second {
+  color: var(--bbm-tNum2);
+}
+
+.armed .first,
+.armed .second {
+  color: var(--bbm-armNum);
+}
+
+// A sibling of the number, never inside a run of text: a mask there draws nothing.
+.enterMark {
+  flex: 0 0 auto;
+  width: calc(10rem * var(--fontScale));
+  height: calc(10rem * var(--fontScale));
+  background-color: var(--bbm-entMark);
+  mask-size: contain;
+  mask-position: 50% 50%;
+  mask-repeat: no-repeat;
+}

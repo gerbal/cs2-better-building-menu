@@ -1,0 +1,32 @@
+@use "../../assetMenuGeometry" as *;
+
+// What every body that places its buildings in slots draws around them: the visible region, the
+// game's Scrollable filling it, and the slots' box inside the side margins. See docs/design-notes.md,
+// "The bodies".
+@mixin body-shell {
+  // The body's visible region, which the scroller fills.
+  .body {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  // The game's Scrollable, its track over the box's right margin rather than beside the slots: no
+  // room is kept for it, and its thumb sits on the slots' right edge, clear of the width strip.
+  .scroller.scroller {
+    --scrollbarPadding: 0rem;
+    --scrollbarSize: #{2 * $body-side-margin};
+    --scrollbarThumbSize: 3rem;
+    --contentPadding: 0rem;
+    height: 100%;
+    max-height: 100%;
+  }
+
+  // The slots' box, as wide as the box less its side margins; each building sits in it by its slot.
+  .slots {
+    position: relative;
+    margin: 0 $body-side-margin;
+  }
+}

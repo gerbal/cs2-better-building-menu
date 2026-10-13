@@ -18,6 +18,11 @@
   color: var(--menuTitleNormal);
 }
 
+// A body that places its own slots takes the whole height, and its own side margins.
+.catalog.slotted {
+  padding: 0;
+}
+
 // The end of the feed, inside the scroll. As wide as the count beside it allows,
 // so it is unmissable, and its own rule so the rows beside it keep their own look.
 .loadMore {

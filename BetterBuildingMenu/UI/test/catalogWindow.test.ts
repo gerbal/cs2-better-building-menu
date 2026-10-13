@@ -8,6 +8,7 @@ import {
   isOnLineOne,
   lineOneScrollTop,
   pageScrollTop,
+  revealScrollTop,
 } from "../src/domain/catalogWindow.ts";
 
 describe("when the growing window asks for more", () => {
@@ -340,5 +341,42 @@ describe("a page of the list", () => {
     assert.equal(pageScrollTop(50, 100, 1000, -1), 0);
     // A list that fits has nowhere to go.
     assert.equal(pageScrollTop(0, 100, 80, 1), 0);
+  });
+});
+
+describe("a page of a body's lines", () => {
+  it("is the whole lines that fit the screen, so lines land on the top edge as they were", () => {
+    // 29.25-pixel lines in a 100-pixel screen: three whole lines a page.
+    assert.equal(pageScrollTop(0, 100, 1000, 1, 29.25), 87.75);
+    assert.equal(pageScrollTop(87.75, 100, 1000, -1, 29.25), 0);
+  });
+
+  it("is at least one line, however short the screen", () => {
+    assert.equal(pageScrollTop(0, 20, 1000, 1, 29.25), 29.25);
+  });
+
+  it("counts the lines as the body does, the last needing no gap below it", () => {
+    // The game's own body, 144.25 tall, holds five 27.25 plates 2 apart: a page is all five.
+    assert.equal(pageScrollTop(0, 144.25, 1000, 1, 29.25, 2), 146.25);
+  });
+
+  it("keeps inside the list's ends", () => {
+    assert.equal(pageScrollTop(880, 100, 1000, 1, 29.25), 900);
+  });
+});
+
+describe("bringing Enter's target on screen", () => {
+  it("leaves a row already wholly on screen where it is", () => {
+    assert.equal(revealScrollTop(300, 150, 27, 100, 144), 300);
+  });
+
+  it("scrolls up to a row above the screen, and down until a row below meets the foot", () => {
+    assert.equal(revealScrollTop(300, 60, 27, 100, 144), 260);
+    assert.equal(revealScrollTop(300, 230, 27, 100, 144), 313);
+  });
+
+  it("never asks for a scroll above the top, and keeps its place on a reading it cannot use", () => {
+    assert.equal(revealScrollTop(10, 40, 27, 100, 144), 0);
+    assert.equal(revealScrollTop(300, Number.NaN, 27, 100, 144), 300);
   });
 });
