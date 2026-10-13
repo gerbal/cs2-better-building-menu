@@ -46,9 +46,9 @@ export function useViewOptions(): { current: string; options: ViewOption[]; pick
 /**
  * "Width, every menu", to the VIEW list's left: the five steps, the stored one lit, beside the pane
  * the ones that do not fit dimmed (a stored one among them draws as the widest that fits). A click
- * stores a step and keeps both lists open.
+ * stores a step and keeps both lists open. It opens the way its VIEW list does.
  */
-const WidthList = () => {
+const WidthList = ({ opensDown }: { opensDown: boolean }) => {
   const { translate } = useLocalization();
   const label = (key: string, fallback: string): string => translate(key, fallback) ?? fallback;
   const { step, snaps } = useAssetMenuLayout();
@@ -59,7 +59,7 @@ const WidthList = () => {
   };
 
   return (
-    <div className={classNames(popover.popover, styles.list, styles.widthList)}>
+    <div className={classNames(popover.popover, styles.list, styles.widthList, opensDown ? styles.down : styles.up)}>
       <div className={styles.header}>{label("Tooltip.LABEL[BetterBuildingMenu.WidthEveryMenu]", "Width, every menu")}</div>
       {WIDTH_STEP_NUMBERS.map((candidate) => (
         <PickerRow
@@ -78,9 +78,9 @@ const WidthList = () => {
 /**
  * VIEW's list, in a popover or the control pane: the four views, the drawn one lit, a pick closing
  * it; then the doors to what applies to every menu, Width with its sub-list beside it and More
- * options…, which opens the mod's page.
+ * options…, which opens the mod's page. `opensDown` when its popover hangs from under the top row.
  */
-export const ViewList = ({ onPicked }: { onPicked: () => void }) => {
+export const ViewList = ({ onPicked, opensDown = false }: { onPicked: () => void; opensDown?: boolean }) => {
   const { translate } = useLocalization();
   const label = (key: string, fallback: string): string => translate(key, fallback) ?? fallback;
   const view = useViewOptions();
@@ -113,7 +113,7 @@ export const ViewList = ({ onPicked }: { onPicked: () => void }) => {
           onPicked();
         }}
       />
-      {widthOpen && <WidthList />}
+      {widthOpen && <WidthList opensDown={opensDown} />}
     </div>
   );
 };

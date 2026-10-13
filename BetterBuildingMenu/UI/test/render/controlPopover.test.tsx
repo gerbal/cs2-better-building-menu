@@ -7,7 +7,7 @@ import { Dropdown, DropdownItem } from "../harness/stubs/cs2-ui";
 import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { ASSET_MENU_SORT_OPTIONS } from "../../src/domain/assetMenuSortPresentation";
 import { SORT_FIRST_DESCENDING } from "../../src/domain/sharedContracts.generated";
-import type { OpenPopover } from "../../src/domain/topRow";
+import type { OpenPopover, PopoverAnchor } from "../../src/domain/topRow";
 import { ControlPopover } from "../../src/mods/ControlPopover/ControlPopover";
 import { PickerRow } from "../../src/mods/Pickers/PickerRow";
 
@@ -22,8 +22,8 @@ let captures: unknown[] = [];
 let root: ReactTestRenderer | undefined;
 let closed = 0;
 
-const mount = (open: OpenPopover | null, limit = 706) => act(() => {
-  root = create(<ControlPopover open={open} limit={limit} bottom={210.25} onClose={() => { closed += 1; }} />);
+const mount = (open: OpenPopover | null, limit = 706, anchor: PopoverAnchor = { bottom: 210.25 }) => act(() => {
+  root = create(<ControlPopover open={open} limit={limit} anchor={anchor} onClose={() => { closed += 1; }} />);
 });
 const popover = () => root!.root.find((node) => node.props["data-bbm-popover"] === "true");
 const rows = () => root!.root.findAll((node) => typeof node.props["aria-label"] === "string" && typeof node.props.onSelect === "function");
@@ -76,6 +76,25 @@ describe("a control's popover", () => {
 
     // 706 less its 240: the box's right edge.
     assert.deepEqual(popover().props.style, { left: "466rem", bottom: "210.25rem" });
+  });
+
+  it("hangs from its top under the top row when anchored there, opening down over the body", () => {
+    mount({ kind: "sort", left: 600 }, 706, { top: 34 });
+
+    assert.deepEqual(popover().props.style, { left: "466rem", top: "34rem" });
+  });
+
+  it("opens Width, every menu downward beside the VIEW list when the popover hangs from its top, and upward above the box", () => {
+    const widthList = () => root!.root.find((node) => node.type === "div" && classes(node).includes("widthList"));
+
+    mount({ kind: "view", left: 0 }, 706, { top: 34 });
+    pick("Width · 1");
+    assert.ok(classes(widthList()).includes("down"));
+    act(() => root!.unmount());
+
+    mount({ kind: "view", left: 0 });
+    pick("Width · 1");
+    assert.equal(classes(widthList()).includes("down"), false);
   });
 
   it("ends at the limit when its control could not be measured", () => {

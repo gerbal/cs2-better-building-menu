@@ -367,6 +367,15 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(pane(".caret").color, "var(--bbm-bodyCtlDim)");
   });
 
+  it("opens Width, every menu each way by one fixed offset, so neither way unsets the other's", () => {
+    const up = declarationsOf(PICKER_LIST, ".widthList.up");
+    const down = declarationsOf(PICKER_LIST, ".widthList.down");
+
+    assert.ok(up.bottom && up.top === undefined, "upward from its bottom");
+    assert.ok(down.top && down.bottom === undefined, "downward from its top");
+    assert.equal(declarationsOf(PICKER_LIST, ".widthList").bottom, undefined);
+  });
+
   it("opens the pane's menus upward, away from the bottom bar", () => {
     // The pane is bottom-aligned against the bottom bar, so a menu growing
     // downward opens off the screen.

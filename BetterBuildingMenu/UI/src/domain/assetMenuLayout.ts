@@ -412,9 +412,29 @@ export const CONTROL_DIVIDER = sheetRem("controlDivider");
 export const POPOVER_WIDTH = sheetRem("popoverWidth");
 export const POPOVER_GAP = sheetRem("popoverGap");
 
+/** FILTER's height, which its list scrolls past: the tallest a popover draws, so the room one needs. */
+export const POPOVER_FILTER_HEIGHT = sheetRem("popoverFilterHeight");
+
+/**
+ * The box's bottom edge on the layout's 1080-tall frame, where vanilla's own menu ends above the
+ * toolbar. The UI never reads the game's slot, so the frame above this edge stands for it.
+ */
+export const BOX_BOTTOM = 954;
+
+/** The band along the screen's top that the game's HUD holds, with a margin: no popover opens into it. */
+export const TOP_HUD_ALLOWANCE = 60;
+
 /** The box's height: the stored body height and the chrome, the same in every look. */
 export function assetMenuBoxHeight(storedHeight: number): number {
   return clampAssetMenuHeight(storedHeight) + ASSET_MENU_BOX_CHROME;
+}
+
+/**
+ * The box's height as drawn: its height, squeezed by its `max-height: 100%` to the slot, which the
+ * frame above the box's bottom edge stands for (`BOX_BOTTOM`).
+ */
+export function drawnBoxHeight(storedHeight: number): number {
+  return Math.min(assetMenuBoxHeight(storedHeight), BOX_BOTTOM);
 }
 
 /**

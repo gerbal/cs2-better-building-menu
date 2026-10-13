@@ -12,9 +12,9 @@ import { AssetMenuWidthHandle, AssetMenuWidthReach, useAssetMenuWidthDrag } from
 import { useVanillaLayoutForAssetMenu } from "mods/BuildingMenu/vanillaLayout";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
 import { useLookRoot } from "mods/useLookRoot";
-import { ASSET_MENU_WIDTH_HANDLE_REACH, assetMenuBoxHeight, drawnBodyHeight, POPOVER_GAP, TOP_EDGE_HEIGHT } from "domain/assetMenuLayout";
+import { ASSET_MENU_WIDTH_HANDLE_REACH, drawnBodyHeight, drawnBoxHeight, TOP_EDGE_HEIGHT } from "domain/assetMenuLayout";
 import { WIDTH_STEP_VANILLA } from "domain/sharedContracts.generated";
-import { controlLeftRem, toggleList, type ControlKind, type OpenList } from "domain/topRow";
+import { controlLeftRem, popoverAnchor, toggleList, type ControlKind, type OpenList } from "domain/topRow";
 import { boxPlacement, popoverRightLimit, topRowRightInset } from "domain/widthSteps";
 
 import styles from "mods/BuildingMenu/assetMenu.module.scss";
@@ -118,11 +118,12 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
               onBeginResize={(event) => widthDrag.beginResize(event, ASSET_MENU_WIDTH_HANDLE_REACH)}
             />
           )}
-          {/* The open control's popover, above the box, inside its root so it takes the look. */}
+          {/* The open control's popover, above the box or, for a tall box, under the top row,
+              inside its root so it takes the look. */}
           <ControlPopover
             open={popover}
             limit={popoverRightLimit(placement, shownWidth, screen.aspect)}
-            bottom={assetMenuBoxHeight(catalogHeight) + POPOVER_GAP}
+            anchor={popoverAnchor(drawnBoxHeight(catalogHeight))}
             onClose={closeList}
           />
           {/* Last, so it paints over the top row's upper edge, under the popovers. See

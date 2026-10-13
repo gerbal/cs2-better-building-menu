@@ -447,7 +447,10 @@ control sits over it (`topRowRightInset`).
   another control switches. One list is open at a time across the top row and the pane: opening
   either home's list closes the other's (`toggleList`). A popover is 240 wide, a child of the box so
   it takes the look, opening upward from 2.25 rem above the box, anchored by a fixed bottom offset
-  as the pane's own menus are (a surface hung from `bottom: 100%` is untried on this engine). Its
+  as the pane's own menus are (a surface hung from `bottom: 100%` is untried on this engine). A box
+  too tall for that, whose top edge leaves less than FILTER's 300 rem and the gap below the top
+  HUD's 60, hangs it by a fixed top offset under the top row instead, opening down over the body;
+  VIEW's Width sub-list follows its list (`popoverAnchor`, on the box as drawn). Its
   left edge sits under its control's, as drawn at the press, pulled left to end at the box's right
   edge or 6 rem short of the chirper (`popoverRightLimit`); a control that cannot be measured
   right-aligns it there. It sits over the top edge's strip and the top row (z-index 50 over 45 and
@@ -851,7 +854,8 @@ already carries:
 Both held on Cohtml 1.64 (game 1.6.0). Cohtml 2.2 (game 1.6.2) lays out flex with a new
 algorithm, and the two surfaces the mod builds by hand paint in full, text included, with
 neither workaround: `ControlPane`'s `.pickerOptions` and the top row's popovers
-(`controlPopover.module.scss`), each anchored by a fixed `bottom` offset. A surface anchored by
+(`controlPopover.module.scss`), each anchored by a fixed `bottom` offset (the popovers, under a
+tall box, by a fixed `top`). A surface anchored by
 `bottom: 100%` has not been tried on 2.2, so anchor a new one by `top` or a fixed `bottom` offset.
 
 ## The card against vanilla

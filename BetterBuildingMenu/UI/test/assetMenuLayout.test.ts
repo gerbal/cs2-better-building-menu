@@ -29,6 +29,7 @@ import {
   assetMenuBoxHeight,
   TOP_CHROME_HEIGHT,
   TOP_EDGE_HEIGHT,
+  POPOVER_FILTER_HEIGHT,
 } from "../src/domain/assetMenuLayout.ts";
 
 // 0.2.4's row at step 3, the box and the pane beside it: what the table's arithmetic was tuned at.
@@ -273,6 +274,14 @@ describe("sizes the stylesheets draw", () => {
     const reach = declarationsOf("mods/AssetMenuWidthHandle/assetMenuWidthHandle.module.scss", ".widthReach");
 
     assert.equal(ASSET_MENU_WIDTH_HANDLE_REACH, rem(reach.width));
+  });
+
+  it("a popover's room is budgeted at FILTER's height, which its list scrolls past", () => {
+    const sheet = "mods/ControlPopover/controlPopover.module.scss";
+    const drawn = rem(declarationsOf(sheet, ".filterBody")["max-height"]) + 2 * rem(declarationsOf(sheet, ".popover").padding);
+
+    assert.equal(POPOVER_FILTER_HEIGHT, 300);
+    assert.equal(POPOVER_FILTER_HEIGHT, drawn);
   });
 });
 

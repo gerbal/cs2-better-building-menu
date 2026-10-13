@@ -4,6 +4,7 @@
  * test. Widths are the tab row's estimate, erring wide. See docs/design-notes.md, "The top row".
  */
 import {
+  BOX_BOTTOM,
   CONTROL_CARET,
   CONTROL_CARET_GAP,
   CONTROL_DIVIDER,
@@ -17,7 +18,11 @@ import {
   FIELD_GLYPH,
   FIELD_MIN_WIDTH,
   FIELD_PADDING,
+  POPOVER_FILTER_HEIGHT,
+  POPOVER_GAP,
   POPOVER_WIDTH,
+  TOP_CHROME_HEIGHT,
+  TOP_HUD_ALLOWANCE,
   TOP_ROW_TEXT,
 } from "./assetMenuLayout";
 import { LAYOUT_HEIGHT } from "./sharedContracts.generated";
@@ -220,6 +225,20 @@ export function popoverLeft(controlLeft: number | null, limit: number): number {
   const latest = limit - POPOVER_WIDTH;
 
   return Math.max(0, controlLeft === null || !Number.isFinite(controlLeft) ? latest : Math.min(controlLeft, latest));
+}
+
+/** How a popover hangs in the box: a fixed offset from its bottom edge, or from its top. */
+export type PopoverAnchor = { bottom: number } | { top: number };
+
+/**
+ * How a popover hangs, from the box's drawn height: above the box while the room over its top edge,
+ * short of the top HUD, holds FILTER's height and the gap; else from under the top row, opening down
+ * over the body. Both are fixed offsets, which Cohtml draws. See docs/design-notes.md, "The top row".
+ */
+export function popoverAnchor(drawnHeight: number): PopoverAnchor {
+  const roomAbove = BOX_BOTTOM - drawnHeight - TOP_HUD_ALLOWANCE;
+
+  return roomAbove >= POPOVER_GAP + POPOVER_FILTER_HEIGHT ? { bottom: drawnHeight + POPOVER_GAP } : { top: TOP_CHROME_HEIGHT };
 }
 
 /** A control's left edge in the box, in rem, from two drawn rectangles' pixels; null when either is missing. */

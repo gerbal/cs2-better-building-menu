@@ -10,6 +10,7 @@ import {
   isWithin,
   planControls,
   planField,
+  popoverAnchor,
   popoverLeft,
   searchPlaceholder,
   toggleList,
@@ -17,6 +18,7 @@ import {
   type ControlKind,
 } from "../src/domain/topRow.ts";
 import { textWidth } from "../src/domain/tabRow.ts";
+import { ASSET_MENU_BOX_CHROME, BOX_BOTTOM, drawnBoxHeight, POPOVER_FILTER_HEIGHT, POPOVER_GAP, TOP_CHROME_HEIGHT, TOP_HUD_ALLOWANCE } from "../src/domain/assetMenuLayout.ts";
 
 const FONT = 11;
 const TEMPLATE = "Search {0}";
@@ -181,6 +183,30 @@ describe("a popover's place", () => {
     // At 720p a rem is two thirds of a pixel.
     assert.equal(controlLeftRem(500, 300, 720), 300);
     assert.equal(controlLeftRem(undefined, 300, 720), null);
+  });
+});
+
+describe("where a popover hangs", () => {
+  const anchorAt = (stored: number) => popoverAnchor(drawnBoxHeight(stored));
+  // The tallest box whose top edge leaves the top HUD a list and its gap above it.
+  const lastAbove = BOX_BOTTOM - TOP_HUD_ALLOWANCE - POPOVER_FILTER_HEIGHT - POPOVER_GAP - ASSET_MENU_BOX_CHROME;
+
+  it("opens above the default box, from its gap over the box's top edge", () => {
+    assert.deepEqual(anchorAt(144.25), { bottom: 208 + POPOVER_GAP });
+  });
+
+  it("opens under the top row, down over the body, once the room above the box cannot hold a list", () => {
+    assert.deepEqual(anchorAt(800), { top: TOP_CHROME_HEIGHT });
+  });
+
+  it("opens under the top row at the drag's ceiling, where the box is squeezed to the frame above its bottom edge", () => {
+    assert.equal(drawnBoxHeight(960), BOX_BOTTOM);
+    assert.deepEqual(anchorAt(960), { top: TOP_CHROME_HEIGHT });
+  });
+
+  it("stays above the box while the room holds a list exactly, and goes under the top row past it", () => {
+    assert.deepEqual(anchorAt(lastAbove), { bottom: lastAbove + ASSET_MENU_BOX_CHROME + POPOVER_GAP });
+    assert.deepEqual(anchorAt(lastAbove + 0.25), { top: TOP_CHROME_HEIGHT });
   });
 });
 

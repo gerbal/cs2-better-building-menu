@@ -4,7 +4,7 @@ import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { renderHtml } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
-import { ASSET_MENU_WIDTH_HANDLE_REACH, ASSET_MENU_WIDTH_HANDLE_WIDTH, TOP_EDGE_HEIGHT } from "../../src/domain/assetMenuLayout";
+import { ASSET_MENU_WIDTH_HANDLE_REACH, ASSET_MENU_WIDTH_HANDLE_WIDTH, TOP_CHROME_HEIGHT, TOP_EDGE_HEIGHT } from "../../src/domain/assetMenuLayout";
 import { AssetMenu } from "../../src/mods/BuildingMenu/AssetMenu";
 
 // The lengths AssetMenu writes inline, read off the markup by the element's first class.
@@ -396,6 +396,19 @@ describe("the asset menu's controls", () => {
 
     act(() => control("Group").props.onSelect());
     assert.equal(popovers().length, 0);
+  });
+
+  it("opens a popover above the default box, and under the top row once the box is too tall to hold one above it", () => {
+    mount();
+    act(() => control("Sort").props.onSelect());
+    assert.deepEqual(Object.keys(popovers()[0].props.style).sort(), ["bottom", "left"]);
+    act(() => root!.unmount());
+
+    setBinding("BetterBuildingMenu", "AssetMenuHeight", 800);
+    mount();
+    act(() => control("Sort").props.onSelect());
+    assert.equal(popovers()[0].props.style.top, `${TOP_CHROME_HEIGHT}rem`);
+    assert.equal(popovers()[0].props.style.bottom, undefined);
   });
 
   it("closes an open popover on a press outside it and the controls", () => {
