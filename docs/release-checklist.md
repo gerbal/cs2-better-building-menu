@@ -78,11 +78,18 @@ On a developed save:
    - a locked building says MS n while the city has not reached it, else Locked; a unique and an
      already-built building keep their marks; at a small Tile size a long cost shows as k or M, and
      under a sort by a number the tile's tag shows that number;
+   - Roads' All names each tab on a plate with its count; Roads › Parking, mostly locked, lists what
+     can be built first, then Locked and its count: a click folds the locked ones away, another
+     brings them back;
+   - Garbage shows its buildings bigger, two lines of them, and opens on All;
+   - at Width 3, type in Roads: the fifth result sits under the first, not along the row;
    - every menu opens at the same width, the stored Width step.
 4. **Views.** Open Sort, Filter, Group and View in turn and pick from each: one list at a
    time, and a click elsewhere closes it. Pick List, Tiles and Cards in View: the menu keeps
    its pick, with a dot, and another menu keeps its own; Default view takes it away. Pick a
-   Group: the next open of that menu keeps it, another menu does not. Pick a Width in View,
+   Group: the next open of that menu keeps it, another menu does not. Pick Cards in Roads at
+   Width 3: cards as wide as their names, three rows, 11 or more, the tabs' labels among them;
+   pick a building, then open Roads again: it opens on All, at that card. Pick a Width in View,
    drag the top edge, and drag the right edge: it settles on a width. At
    the wider Widths, the tool options sit left of the menu with none of their buttons under it.
 5. **Place.** Arm an asset from a tile and place it. Escape closes the asset menu. Arm a
@@ -95,7 +102,7 @@ On a developed save:
    width, the height and each menu's View and Group back.
 7. **An upgrader.** Start from a settings file 0.2.4 wrote, with the pane shown in
    it: the pane stays shown, and the menu opens at the Width step nearest the
-   width it had.
+   width it had, in Cards, on All.
 8. **Upgrades.** On a release that touches them, open the upgrades picker from
    a placed service building.
 9. **Controller.** On a release that touches the hand-off, with a gamepad:
