@@ -24,7 +24,7 @@ describe("the hover card", () => {
   /** The plates drawn, by entry id, where the page reports each: a test moves one as a scroll or a new page would. */
   let plates = new Map<number, { x: number; y: number }>();
   /** What the box and the window listen for, by event, and what the observer watches. */
-  let heard = new Map<string, () => void>();
+  let heard = new Map<string, (event?: { clientX: number; clientY: number }) => void>();
   let observers = new Set<() => void>();
   // The box at the first Width step, with list plates drawn in its body's scroller, 59 down and overflowing.
   const box = {
@@ -73,6 +73,10 @@ describe("the hover card", () => {
     plates = new Map([[1, { x: 612, y: 805 }]]);
     heard = new Map();
     observers = new Set();
+    globals.document = {
+      addEventListener: (type: string, run: () => void) => heard.set(`document ${type}`, run),
+      removeEventListener: (type: string) => heard.delete(`document ${type}`),
+    };
     globals.window = {
       innerWidth: 1920,
       innerHeight: 1080,
@@ -175,10 +179,11 @@ describe("the hover card", () => {
 
   for (const [trigger, run] of [
     ["a wheel over the box", () => heard.get("box wheel")!()],
+    ["a key, as PageUp and PageDown scroll the body", () => heard.get("document keydown")!()],
     ["a screen resize", () => heard.get("window resize")!()],
     ["the box or the card resizing", () => observers.forEach((run) => run())],
   ] as const) {
-    it(`places itself again on ${trigger}, against the pointed cell where it is drawn now`, () => {
+    it(`places itself again on ${trigger}, against the pointed cell where it is drawn now, while it is still under the pointer`, () => {
       mount();
       point();
       wait(150);
@@ -186,16 +191,51 @@ describe("the hover card", () => {
       frame();
       assert.equal(card()[0].props.style.left, "8rem");
 
+      // Moved, but still under the pointer, which rests on the plate's middle.
+      plates.set(1, { x: 650, y: 805 });
+      act(() => run());
+      frame();
+      frame();
+
+      assert.equal(card()[0].props.style.left, "46rem");
+      assert.equal(getAssetMenuView().pointed?.entry.id, 1);
+    });
+
+    it(`goes on ${trigger} that moves the pointed cell from under a resting pointer, rather than following the building`, () => {
+      mount();
+      point();
+      wait(150);
+      frame();
+      frame();
+      assert.equal(card().length, 1);
+
       plates.set(1, { x: 785, y: 805 });
       act(() => run());
       frame();
       frame();
 
-      assert.equal(card()[0].props.style.left, "181rem");
+      assert.equal(card().length, 0);
+      assert.equal(getAssetMenuView().pointed, null);
     });
   }
 
-  it("says the page's own building and places itself again when the page changes under a resting pointer", () => {
+  it("reads where the pointer is now, as it moves over the box, rather than where it entered the cell", () => {
+    mount();
+    point();
+    wait(150);
+    frame();
+    frame();
+    // The pointer moves to the plate's right end; the body then scrolls the plate right by 100.
+    act(() => heard.get("box mousemove")!({ clientX: 780, clientY: 815 }));
+    plates.set(1, { x: 712, y: 805 });
+    act(() => heard.get("box wheel")!());
+    frame();
+    frame();
+
+    assert.equal(card()[0].props.style.left, "108rem");
+  });
+
+  it("says the page's own building, and goes when a new page moves its cell from under the resting pointer", () => {
     setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1, { name: "Elementary School" })]));
     mount();
     point();
@@ -204,14 +244,21 @@ describe("the hover card", () => {
     frame();
     assert.match(says(), /¢1\D?000"/);
 
-    // A new page puts the building, still drawn under the pointer, in another slot, at a new cost.
+    // A new page keeps the building under the pointer, at a new cost.
+    act(() => setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1, { name: "Elementary School", constructionCost: 2000 })])));
+    frame();
+    frame();
+    assert.match(says(), /¢2\D?000"/);
+    assert.equal(card()[0].props.style.left, "8rem");
+
+    // Another puts it in another slot, as typing re-orders the rows.
     plates.set(1, { x: 785, y: 805 });
     act(() => setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(2), entry(1, { name: "Elementary School", constructionCost: 2000 })])));
     frame();
     frame();
 
-    assert.match(says(), /¢2\D?000"/);
-    assert.equal(card()[0].props.style.left, "181rem");
+    assert.equal(card().length, 0);
+    assert.equal(getAssetMenuView().pointed, null);
   });
 
   it("draws the game's detail slot, the game's card beside a 150 picture, above the box at its left edge", () => {
@@ -308,13 +355,22 @@ describe("the hover card", () => {
     });
   }
 
-  it("draws no card for Status line only, whose readout says the building", () => {
+  it("draws no card for Status line only, whose readout says the building until a wheel moves its cell from under the pointer", () => {
     setBinding("BetterBuildingMenu", "AssetMenuHoverCard", "status");
     mount();
     point();
     wait(150);
+    frame();
+    frame();
 
     assert.equal(card().length, 0);
+    assert.equal(getAssetMenuView().pointed?.entry.id, 1);
+
+    plates.set(1, { x: 785, y: 805 });
+    act(() => heard.get("box wheel")!());
+    frame();
+    frame();
+    assert.equal(getAssetMenuView().pointed, null);
   });
 
   it("goes when the pointed tile goes from under a resting pointer, as typing turns the tiles into the list", () => {

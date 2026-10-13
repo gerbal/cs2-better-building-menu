@@ -62,6 +62,14 @@ export function cellsInField(cells: readonly Rect[], field: Rect): Rect[] {
   return cells.filter((cell) => overlap(cell, field) > TOUCH);
 }
 
+/** What rem's rounding may put a point on a rectangle's edge past it by. */
+const EDGE = 0.01;
+
+/** Whether a point lies on a rectangle, its edges included. */
+export function coversPoint(rect: Rect, point: { x: number; y: number }): boolean {
+  return point.x >= rect.x - EDGE && point.x <= rect.x + rect.w + EDGE && point.y >= rect.y - EDGE && point.y <= rect.y + rect.h + EDGE;
+}
+
 /** Whether a rectangle comes within the margin of a HUD piece. */
 const meets = (rect: Rect, piece: Rect): boolean =>
   rect.x < piece.x + piece.w + MARGIN && rect.x + rect.w > piece.x - MARGIN && rect.y < piece.y + piece.h + MARGIN && rect.y + rect.h > piece.y - MARGIN;

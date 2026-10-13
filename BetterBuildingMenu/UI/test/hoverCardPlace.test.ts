@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { cellsInField, hudPieces, overlap, placePointerCard, placeSlotCard, remRect, slotRowsKept, type Rect } from "../src/domain/hoverCardPlace";
+import { cellsInField, coversPoint, hudPieces, overlap, placePointerCard, placeSlotCard, remRect, slotRowsKept, type Rect } from "../src/domain/hoverCardPlace";
 
 const SCREEN = { w: 1920, h: 1080 };
 /** The box at the first Width step and at the fifth, on 16:9: its top at 746, 208 tall. */
@@ -116,6 +116,13 @@ describe("the hover card beside the pointer", () => {
 
   it("keeps the HUD at the screen's right edge on a wider screen", () => {
     assert.deepEqual(hudPieces(2520).find((piece) => piece.name === "chirper"), { name: "chirper", x: 2106, y: 733, w: 337, h: 114 });
+  });
+
+  it("finds a point on a cell, its edges included, and off it a rem's hundredth past them", () => {
+    const cell: Rect = { x: 612, y: 805, w: 171, h: 27.25 };
+
+    assert.deepEqual([{ x: 612, y: 805 }, { x: 783, y: 832.25 }, { x: 700, y: 820 }].map((at) => coversPoint(cell, at)), [true, true, true]);
+    assert.deepEqual([{ x: 611.9, y: 820 }, { x: 700, y: 832.3 }, { x: 785, y: 820 }].map((at) => coversPoint(cell, at)), [false, false, false]);
   });
 
   it("reads a rectangle the page reports in pixels in screen rem, 1,080 a screen", () => {

@@ -2,14 +2,14 @@ import { useValue } from "cs2/api";
 import { milestone } from "cs2/bindings";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
-import { memo, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { memo, useEffect, useMemo, useRef, useState, type MutableRefObject, type RefObject } from "react";
 
 import { clearPointed, type Pointed } from "domain/assetMenuViewStore";
 import { isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { TAB_COUNT_SIZE, TAB_NAME_SIZE } from "domain/assetMenuLayout";
 import { hoverCardForm, pointerCardText, statusLine, type PointerCardWords, type StatusLine } from "domain/hoverCard";
 import { hoverCardLabels } from "domain/hoverCardLines";
-import { placePointerCard, placeSlotCard, remRect, SLOT_ROOM, slotRowsKept, type Rect } from "domain/hoverCardPlace";
+import { coversPoint, placePointerCard, placeSlotCard, remRect, SLOT_ROOM, slotRowsKept, type Rect } from "domain/hoverCardPlace";
 import type { BuildingCatalogEntry, BuildingCatalogPage } from "domain/buildingCatalog";
 import type { KeyKind } from "domain/rowNumbers";
 import { readoutSepWidth } from "domain/tabRow";
@@ -97,9 +97,72 @@ export function useStatusLine(room: () => number, keyKind: KeyKind): StatusLine 
   }, textScale > 1);
 }
 
+/** Where the pointer last moved over the box, in the page's pixels; null until it has moved there. */
+type PointerAt = MutableRefObject<{ x: number; y: number } | null>;
+
 interface CardProps {
   pointed: Pointed;
   boxRef: RefObject<HTMLElement>;
+  pointer: PointerAt;
+}
+
+/**
+ * Runs `run` two frames on, never in the tick of a render or an event, where Cohtml reports the previous
+ * layout's sizes: now, again when `restart` changes, and whenever what the box draws may have moved under
+ * the pointer. That is the screen, the box or `cardRef`'s card changing size; a wheel over the box, as
+ * Cohtml sends no scroll event and a wheel scrolls the body; and a key, as PageUp and PageDown scroll it
+ * and Up and Down reveal Enter's target.
+ */
+function useAfterLayout(boxRef: RefObject<HTMLElement>, cardRef: RefObject<HTMLElement> | null, run: (box: HTMLElement) => void, restart: unknown): void {
+  const runRef = useRef(run);
+  runRef.current = run;
+
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!box) return undefined;
+    const card = cardRef?.current ?? null;
+    const keys = typeof document === "undefined" ? null : document;
+    let outer = 0;
+    let inner = 0;
+    const schedule = () => {
+      cancelAnimationFrame(outer);
+      cancelAnimationFrame(inner);
+      outer = requestAnimationFrame(() => {
+        inner = requestAnimationFrame(() => runRef.current(box));
+      });
+    };
+    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(schedule) : null;
+    observer?.observe(box);
+    if (card) observer?.observe(card);
+    box.addEventListener("wheel", schedule);
+    window.addEventListener("resize", schedule);
+    // Captured, as the app container stops a key from bubbling.
+    keys?.addEventListener("keydown", schedule, true);
+    schedule();
+    return () => {
+      observer?.disconnect();
+      box.removeEventListener("wheel", schedule);
+      window.removeEventListener("resize", schedule);
+      keys?.removeEventListener("keydown", schedule, true);
+      cancelAnimationFrame(outer);
+      cancelAnimationFrame(inner);
+    };
+  }, [boxRef, cardRef, restart]);
+}
+
+/**
+ * Whether the pointed building's cell, as drawn now, still lies under the pointer: where the pointer last
+ * moved over the box, else the middle of the cell it entered. Where it does not, the building is pointed at
+ * no more. Content that moves under a resting pointer (a wheel, a key, a new page) may send no leave, and a
+ * card that followed the building would name one the pointer has left. See docs/design-notes.md, "The hover card".
+ */
+function stillPointed(cell: Rect | null, pointed: Pointed, pointer: PointerAt, innerHeight: number): cell is Rect {
+  const at = pointer.current === null
+    ? { x: pointed.cell.x + pointed.cell.w / 2, y: pointed.cell.y + pointed.cell.h / 2 }
+    : remRect({ left: pointer.current.x, top: pointer.current.y, width: 0, height: 0 }, innerHeight);
+  if (cell !== null && coversPoint(cell, at)) return true;
+  clearPointed(pointed.entry.id);
+  return false;
 }
 
 /** Where a card goes, in screen rem, from its drawn size, the box as drawn with the pointed cell in it, and the screen. */
@@ -116,60 +179,33 @@ interface PlacedCard {
 
 /**
  * A card drawn unseen first, then, two frames on, measured and placed against the box, in the box's own
- * rem: never in the tick of a render or an event, where Cohtml reports the previous layout's sizes. It
- * places itself again when the page, the screen, the box or the card change size, and on a wheel over the
- * box, and waits for a new place when `drawn` (what the card draws) changes. `withCells` false reads no
- * cell but the pointed one, for a card that gives way to none.
+ * rem (`useAfterLayout`), again whenever the page changes or what the box draws may have moved, and waits
+ * for a new place when `drawn` (what the card draws) changes. Where the pointed cell no longer lies under
+ * the pointer the building goes instead (`stillPointed`). `withCells` false reads no cell but the pointed
+ * one, for a card that gives way to none.
  */
-function usePlacedCard(pointed: Pointed, boxRef: RefObject<HTMLElement>, placer: Placer, drawn: unknown = null, withCells = true): PlacedCard {
+function usePlacedCard(pointed: Pointed, boxRef: RefObject<HTMLElement>, pointer: PointerAt, placer: Placer, drawn: unknown = null, withCells = true): PlacedCard {
   const page = useValue(BuildingCatalog$);
   const cardRef = useRef<HTMLDivElement>(null);
   const [place, setPlace] = useState<{ id: number; drawn: unknown; left: number; top: number } | null>(null);
-  const placerRef = useRef(placer);
-  placerRef.current = placer;
+  const restart = useMemo(() => [pointed, page, drawn, withCells], [pointed, page, drawn, withCells]);
 
-  useEffect(() => {
+  useAfterLayout(boxRef, cardRef, (box) => {
     const card = cardRef.current;
-    const box = boxRef.current;
-    if (!card || !box) return undefined;
+    if (!card) return;
     const id = pointed.entry.id;
-    const place = () => {
-      const height = window.innerHeight;
-      const cells = drawnCells(box, id, height, withCells);
-      const at = placerRef.current(
-        remRect(card.getBoundingClientRect(), height),
-        // Where the cell is drawn now, or where the pointer entered it while it is not.
-        { ...cells, cell: cells.cell ?? pointed.cell },
-        { w: (window.innerWidth * LAYOUT_HEIGHT) / height, h: LAYOUT_HEIGHT },
-      );
-      const left = at.x - cells.box.x;
-      const top = at.y - cells.box.y;
-      setPlace((last) => (last !== null && last.id === id && last.drawn === drawn && last.left === left && last.top === top ? last : { id, drawn, left, top }));
-    };
-    let outer = 0;
-    let inner = 0;
-    const schedule = () => {
-      cancelAnimationFrame(outer);
-      cancelAnimationFrame(inner);
-      outer = requestAnimationFrame(() => {
-        inner = requestAnimationFrame(place);
-      });
-    };
-    // Cohtml sends no scroll event: a wheel over the box is what scrolls its body.
-    const observer = typeof ResizeObserver === "function" ? new ResizeObserver(schedule) : null;
-    observer?.observe(box);
-    observer?.observe(card);
-    box.addEventListener("wheel", schedule);
-    window.addEventListener("resize", schedule);
-    schedule();
-    return () => {
-      observer?.disconnect();
-      box.removeEventListener("wheel", schedule);
-      window.removeEventListener("resize", schedule);
-      cancelAnimationFrame(outer);
-      cancelAnimationFrame(inner);
-    };
-  }, [pointed, boxRef, page, drawn, withCells]);
+    const height = window.innerHeight;
+    const cells = drawnCells(box, id, height, withCells);
+    if (!stillPointed(cells.cell, pointed, pointer, height)) return;
+    const at = placer(
+      remRect(card.getBoundingClientRect(), height),
+      { ...cells, cell: cells.cell },
+      { w: (window.innerWidth * LAYOUT_HEIGHT) / height, h: LAYOUT_HEIGHT },
+    );
+    const left = at.x - cells.box.x;
+    const top = at.y - cells.box.y;
+    setPlace((last) => (last !== null && last.id === id && last.drawn === drawn && last.left === left && last.top === top ? last : { id, drawn, left, top }));
+  }, restart);
 
   return {
     cardRef,
@@ -179,12 +215,25 @@ function usePlacedCard(pointed: Pointed, boxRef: RefObject<HTMLElement>, placer:
   };
 }
 
+/** Status line only draws no card, but the building still goes when its cell moves from under the pointer. */
+function StatusCheck({ pointed, boxRef, pointer }: CardProps) {
+  const page = useValue(BuildingCatalog$);
+  const restart = useMemo(() => [pointed, page], [pointed, page]);
+
+  useAfterLayout(boxRef, null, (box) => {
+    const height = window.innerHeight;
+    stillPointed(drawnCells(box, pointed.entry.id, height, false).cell, pointed, pointer, height);
+  }, restart);
+
+  return null;
+}
+
 /**
  * The card beside the pointer, placed by `placePointerCard` against the box, the screen's HUD and the
  * cells drawn. It says the building as the page has it now.
  */
-const PointerCard = memo(function PointerCard({ pointed, boxRef }: CardProps) {
-  const { cardRef, placed, page, entry } = usePlacedCard(pointed, boxRef, (card, drawn, screen) =>
+const PointerCard = memo(function PointerCard({ pointed, boxRef, pointer }: CardProps) {
+  const { cardRef, placed, page, entry } = usePlacedCard(pointed, boxRef, pointer, (card, drawn, screen) =>
     placePointerCard({ cell: drawn.cell, card: { w: card.w, h: card.h }, box: drawn.box, screen, cells: drawn.cells }));
   const separators = useNumberSeparators();
   const words = useCardWords();
@@ -254,12 +303,12 @@ interface SlotRows {
  * row, measured two frames on, then drawn with the leading rows that fit `SLOT_ROOM` whole (`slotRowsKept`)
  * and placed as drawn, so a long card drops its last rows, the packs first, and never cuts one.
  */
-const SlotCard = memo(function SlotCard({ pointed, boxRef }: CardProps) {
+const SlotCard = memo(function SlotCard({ pointed, boxRef, pointer }: CardProps) {
   const context = useHoverCardContext();
   const textScale = useTextScale();
   const columnRef = useRef<HTMLSpanElement>(null);
   const [measured, setMeasured] = useState<SlotRows | null>(null);
-  const { cardRef, placed, entry } = usePlacedCard(pointed, boxRef, (card, drawn, screen) =>
+  const { cardRef, placed, entry } = usePlacedCard(pointed, boxRef, pointer, (card, drawn, screen) =>
     placeSlotCard({ cell: drawn.cell, height: card.h, box: drawn.box, screen }), measured, false);
   const rows = measured !== null && measured.entry === entry && measured.textScale === textScale ? measured : null;
   const packs = (entry.assetPacks ?? []).join(" · ");
@@ -342,10 +391,24 @@ export interface HoverCardProps {
 export const HoverCard = ({ boxRef, hidden }: HoverCardProps) => {
   const form = hoverCardForm(useValue(AssetMenuHoverCard$));
   const pointed = usePointedAfterDelay();
+  const pointer: PointerAt = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => () => clearPointed(), []);
 
-  if (hidden || pointed === null || form === "status") return null;
+  useEffect(() => {
+    const box = boxRef.current;
+    if (!box) return undefined;
+    const moved = (event: MouseEvent) => {
+      pointer.current = { x: event.clientX, y: event.clientY };
+    };
+    box.addEventListener("mousemove", moved);
+    return () => box.removeEventListener("mousemove", moved);
+  }, [boxRef]);
 
-  return form === "slot" ? <SlotCard pointed={pointed} boxRef={boxRef} /> : <PointerCard pointed={pointed} boxRef={boxRef} />;
+  if (hidden || pointed === null) return null;
+  if (form === "status") return <StatusCheck pointed={pointed} boxRef={boxRef} pointer={pointer} />;
+
+  return form === "slot"
+    ? <SlotCard pointed={pointed} boxRef={boxRef} pointer={pointer} />
+    : <PointerCard pointed={pointed} boxRef={boxRef} pointer={pointer} />;
 };

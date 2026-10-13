@@ -1602,9 +1602,15 @@ Any other stored value reads as beside the pointer, on every load.
   the cells shown. The scroller is found by walking up from a row (`listScroller`), as the game's
   Scrollable drops any marker. Each card says the building as the page has it now, and places itself
   again, against the pointed cell where it is drawn then, when the page changes, when the screen, the
-  box or the card change size, and on a wheel over the box: Cohtml sends no scroll event, and a wheel is
-  what scrolls the body. Both cards share this measure and place (`usePlacedCard`), and neither carries a
-  cell's marks, so neither is read as a cell.
+  box or the card change size, on a wheel over the box and on a key: Cohtml sends no scroll event, a
+  wheel is what scrolls the body, and PageUp, PageDown and Enter's reveal scroll it from the keys
+  (`useAfterLayout`). Where the pointed cell no longer lies under the pointer then (where it last moved
+  over the box, else the middle of the cell it entered), the building is pointed at no more and the card
+  goes (`stillPointed`): content that moves under a resting pointer may send no leave, and a card that
+  followed its building would name one the pointer has left. The next building's card shows once the
+  pointer enters a cell. Under Status line only the readout's building goes the same way. Both cards
+  share this measure and place (`usePlacedCard`), and neither carries a cell's marks, so neither is read
+  as a cell.
 - **The game's detail slot.** A wide card above the box, 706 wide and at most 191 tall, its bottom 6 rem
   over the box, where the game's own detail shows (`placeSlotCard`): at the first Width step at the box's
   left edge; in a wider box centred over the pointed cell and held inside the box's span, and on screen;
