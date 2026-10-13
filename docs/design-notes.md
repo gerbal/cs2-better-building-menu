@@ -62,8 +62,8 @@ because a stylesheet rule would restyle the game for the whole session, and for 
 looking at the same node. A missing module or class makes the patch a silent no-op.
 
 **The game's own centring is left alone.** Vanilla centres its side + main + side trio, which puts
-its 706 rem menu at x 607 on 16:9. The asset menu's row keeps that 706 layout width at every Width
-step, so the game centres it in the same place, and the box and the pane draw at an offset from it
+its build menu's slot, 712 rem wide, at x 604 on 16:9. The asset menu's row keeps a 706 layout width
+at every Width step and sits at the slot's left, and the box and the pane draw at an offset from it
 (see "The box at its Width step, and the control pane"). The box places itself, so nothing about
 the trio needs to change.
 
@@ -101,9 +101,10 @@ the toolbar's open menu, and moving the mouse brings BBM's back on the same menu
 - **The rule** is `MenuOwnership`, which is pure: BBM stands in for a menu only while Replace is on
   and the scheme is not the gamepad. `GamepadMenuRecord`, pure too, keeps the record through each
   event that sets or forgets it.
-- **Where each menu sits.** At the first Width step BBM's box takes the game's own rectangle, x
-  607-1,313 at the game's text size, so the hand-off moves nothing. At a wider step the game's menu
-  draws at its own 706, and the switch is a visible jump.
+- **Where each menu sits.** At the first Width step BBM's box takes the game's own slot's left and
+  bottom, x 604-1,310 at the game's text size, so the hand-off moves only the right edge, by the 6
+  rem the game's 712 slot is wider. At a wider step the game's menu draws at its own 712, and the
+  switch is a visible jump.
 - **A nudged stick** flips the scheme, and BBM follows each change as the game does. If that makes
   the menus flicker, the fallback is to wait for a scheme to hold 250 ms before handing over.
 - **The handler runs inside the game's input code**, so it does nothing once the settings are gone
@@ -137,18 +138,18 @@ The step is Options › Width (`AssetMenuWidthStep`, a dropdown of the five, "1 
 while Replace is off and pushed to its binding whenever Options applies. The UI turns the step into
 a width on this screen, in `widthSteps.ts`.
 
-**Where the box sits.** A step keeps vanilla's left edge, x 607 on 16:9, while its right edge stays
-6 rem short of the chirper (x 1,500); a wider step grows left from there, never past the tool
-options' edge (x 396 at the game's own text size, 415 at 110%, 453 at 130%; that column is 380
-wide and grows by half the text scale's increase). On 16:9 that is 607-1,313, 607-1,500,
-409-1,500, 396-1,676 and 396-1,871. Beside the shown pane the box grows right only as far as leaves
-the pane room before the social column (x 1,487), so step 2 sits at 594 and step 3 at 396, which
-is 0.2.4's own row. Wider screens follow the same rule from vanilla's centred box: x 907 on 21:9,
-1,567 on 32:9. The row the game lays out keeps vanilla's 706 width, so the game centres it where
-its own menu sits, and the box and the pane draw at the offset `boxPlacement` gives, negative for a
-box that reaches left of the slot. The box never starts left of the tool options, even on a screen
-where vanilla's own box would. Vanilla's slot is taken to sit at the screen's centre at every text
-scale.
+**Where the box sits.** A step keeps the left edge of the game's slot for its build menu, x 604 on
+16:9 (the slot is 712 wide, centred, 6 rem wider than step 1), while its right edge stays 6 rem
+short of the chirper (x 1,500); a wider step grows left from there, never past the tool options'
+edge (x 396 at the game's own text size, 415 at 110%, 453 at 130%; that column is 380 wide and
+grows by half the text scale's increase). On 16:9 that is 604-1,310, 604-1,497, 409-1,500,
+396-1,676 and 396-1,871. Beside the shown pane the box grows right only as far as leaves the pane
+room before the social column (x 1,487), so step 2 sits at 594 and step 3 at 396, which is 0.2.4's
+own row. Wider screens follow the same rule from the game's centred slot: x 904 on 21:9, 1,564 on
+32:9. The row the game lays out keeps a 706 width at the slot's left, and the box and the pane draw
+at the offset `boxPlacement` gives, negative for a box that reaches left of the slot. The box never
+starts left of the tool options, even on a screen where the game's own slot would. The game's slot
+sits at the screen's centre at every text scale.
 
 **Where a step stops.**
 - Steps 1 to 3 stop 6 rem short of the chirper, which starts 414 rem from the screen's right edge

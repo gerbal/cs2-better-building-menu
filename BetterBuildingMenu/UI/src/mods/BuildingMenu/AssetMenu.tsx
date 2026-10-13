@@ -70,7 +70,7 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
     <>
       {blocker}
       {widthDrag.blocker}
-      {/* The row keeps vanilla's 706 layout width, so the game centres it where its own menu
+      {/* The row keeps a 706 layout width at the left of the game's slot, where its own menu
           sits, and moves by the step's offset; the box and the pane overflow it to the right,
           which the slot's `overflow: visible` allows. Every step is at least 706, so no stretch
           of the row lies beside the box to take the mouse. */}

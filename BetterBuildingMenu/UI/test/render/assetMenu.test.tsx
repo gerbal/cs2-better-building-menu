@@ -53,8 +53,8 @@ describe("the asset menu's row", () => {
     const html = render();
 
     assert.equal(widthOf(html, "toolContainer"), 1091);
-    // x 396, the tool options' edge, less vanilla's 607.
-    assert.equal(leftOf(html, "assetMenuRow"), -211);
+    // x 396, the tool options' edge, less the game's slot's 604.
+    assert.equal(leftOf(html, "assetMenuRow"), -208);
     assert.match(html, PANE);
   });
 
@@ -64,7 +64,7 @@ describe("the asset menu's row", () => {
 
     assert.equal(widthOf(html, "toolContainer"), 1091);
     // x 409, so the box ends at 1,500, 6 rem short of the chirper.
-    assert.equal(leftOf(html, "assetMenuRow"), -198);
+    assert.equal(leftOf(html, "assetMenuRow"), -195);
   });
 
   it("gives the widest step the whole room when the pane is hidden", () => {
@@ -72,7 +72,7 @@ describe("the asset menu's row", () => {
     const html = render();
 
     assert.equal(widthOf(html, "toolContainer"), 1475);
-    assert.equal(leftOf(html, "assetMenuRow"), -211);
+    assert.equal(leftOf(html, "assetMenuRow"), -208);
   });
 
   it("keeps the row at vanilla's 706 at every step, never wider than the box, so nothing beside it takes the mouse", () => {

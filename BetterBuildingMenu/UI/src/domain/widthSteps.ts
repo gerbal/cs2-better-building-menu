@@ -112,20 +112,23 @@ export function drawnStep(step: number, screen: WidthStepScreen): number {
   return drawn;
 }
 
-/** Where vanilla's build menu starts: the game centres its 706 rem box on the screen. */
+/** The game's slot for its build menu, which it centres on the screen: 6 rem wider than step 1. */
+export const VANILLA_SLOT_WIDTH = 712;
+
+/** Where the game's slot starts, and so where the box at offset 0 draws: step 1 sits at its left. */
 export function vanillaBoxLeft(aspect: number): number {
-  return (screenWidth(aspect) - WIDTH_STEP_VANILLA) / 2;
+  return (screenWidth(aspect) - VANILLA_SLOT_WIDTH) / 2;
 }
 
-/** Where the box draws: its left edge on the screen, and that edge less vanilla's. */
+/** Where the box draws: its left edge on the screen, and that edge less the game's slot's. */
 export interface BoxPlacement {
   left: number;
-  /** Negative for a box that reaches left of vanilla's slot. */
+  /** Negative for a box that reaches left of the game's slot. */
   offset: number;
 }
 
 /**
- * Where a box this wide sits: at vanilla's left edge while its right edge stays short of the
+ * Where a box this wide sits: at the game's slot's left edge while its right edge stays short of the
  * chirper's clearance, or beside the shown pane short of the pane's room; then growing left, never
  * past the tool options' edge, even on a screen where vanilla's own box would.
  */

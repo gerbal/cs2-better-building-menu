@@ -132,15 +132,16 @@ describe("the step a stored step draws as", () => {
 });
 
 describe("where a step sits", () => {
-  it("keeps vanilla's left edge, grows right to 6 rem short of the chirper, then left: on 16:9", () => {
-    assert.equal(vanillaBoxLeft(SIXTEEN_NINE), 607);
-    nearPairs(placed(), [[607, 1313], [607, 1500], [409, 1500], [396, 1676], [396, 1871]], "16:9");
+  it("keeps the game's slot's left edge, grows right to 6 rem short of the chirper, then left: on 16:9", () => {
+    // The game's slot is 712 wide, centred: x 604, where step 1's 706 starts too.
+    assert.equal(vanillaBoxLeft(SIXTEEN_NINE), 604);
+    nearPairs(placed(), [[604, 1310], [604, 1497], [409, 1500], [396, 1676], [396, 1871]], "16:9");
   });
 
   it("beside the shown pane, grows right only as far as leaves the pane room before the social column", () => {
     const rows = placed({ paneShown: true });
 
-    nearPairs(rows, [[607, 1313], [594, 1487], [396, 1487], [396, 1487], [396, 1487]], "beside the pane");
+    nearPairs(rows, [[604, 1310], [594, 1487], [396, 1487], [396, 1487], [396, 1487]], "beside the pane");
     // The pane, 6 rem past the box and 379 wide, ends on the social column's edge at step 3: 0.2.4's row.
     near(rows[2][1] + CONTROL_PANE_TOTAL, 1872);
   });
@@ -149,29 +150,29 @@ describe("where a step sits", () => {
     for (const [scale, edge] of [[1.1, 415], [1.15, 424.5], [1.3, 453]]) {
       const rows = placed({ textScale: scale });
 
-      near(rows[0][0], 607, `${scale} step 1`);
-      near(rows[1][0], 607, `${scale} step 2`);
+      near(rows[0][0], 604, `${scale} step 1`);
+      near(rows[1][0], 604, `${scale} step 2`);
       near(rows[2][0], edge, `${scale} step 3 left`);
       near(rows[2][1], 1500, `${scale} step 3 right`);
     }
   });
 
-  it("places 21:9's and 32:9's steps from vanilla's centred box", () => {
-    assert.equal(vanillaBoxLeft(TWENTY_ONE_NINE), 907);
-    assert.equal(vanillaBoxLeft(THIRTY_TWO_NINE), 1567);
-    nearPairs(placed({ aspect: TWENTY_ONE_NINE }), [[907, 1613], [907, 1946], [709, 2100], [396, 2124], [396, 2471]], "21:9");
-    nearPairs(placed({ aspect: THIRTY_TWO_NINE }), [[1567, 2273], [1567, 2927], [1368, 3420], [707, 3420], [396, 3791]], "32:9");
+  it("places 21:9's and 32:9's steps from the game's centred slot", () => {
+    assert.equal(vanillaBoxLeft(TWENTY_ONE_NINE), 904);
+    assert.equal(vanillaBoxLeft(THIRTY_TWO_NINE), 1564);
+    nearPairs(placed({ aspect: TWENTY_ONE_NINE }), [[904, 1610], [904, 1943], [709, 2100], [396, 2124], [396, 2471]], "21:9");
+    nearPairs(placed({ aspect: THIRTY_TWO_NINE }), [[1564, 2270], [1564, 2924], [1368, 3420], [707, 3420], [396, 3791]], "32:9");
   });
 
   it("draws from vanilla's slot at an offset, negative for a box that reaches left of it", () => {
     const offsets = [1, 2, 3, 4, 5].map((step) => boxPlacement(drawnStepWidth(step, screen()), screen()).offset);
 
-    assert.deepEqual(offsets, [0, 0, -198, -211, -211]);
+    assert.deepEqual(offsets, [0, 0, -195, -208, -208]);
   });
 
   it("never starts left of the tool options, even where vanilla's own box would", () => {
-    // On 4:3 vanilla's 706 box would start at 367, inside the tool options' column.
-    assert.equal(vanillaBoxLeft(1440 / 1080), 367);
+    // On 4:3 the game's slot would start at 364, inside the tool options' column.
+    assert.equal(vanillaBoxLeft(1440 / 1080), 364);
     assert.equal(boxPlacement(706, screen({ aspect: 1440 / 1080 })).left, 396);
   });
 });
@@ -241,16 +242,16 @@ describe("the right edge's drag", () => {
   });
 
   it("keeps the drawn right edge under the pointer across all five steps, where the box grows left too", () => {
-    // 16:9, the pane hidden: the edge is at 1,313 for step 1 and 1,500 for steps 2 and 3, and 1,676 and
-    // 1,871 for 4 and 5. Between 2 and 3 the box grows left, its edge fixed, so a width that follows
-    // the pointer's distance alone would leave the edge short of the pointer from there on.
+    // 16:9, the pane hidden: the edge is at 1,310 for step 1, 1,497 for step 2, 1,500 for step 3, and
+    // 1,676 and 1,871 for 4 and 5. Past 1,500 the box grows left, its edge fixed, so a width that
+    // follows the pointer's distance alone would leave the edge short of the pointer from there on.
     const open = screen();
     const hidden = snapTargets(open);
     const edgeAt = (width: number) => boxPlacement(width, open).left + width;
 
-    for (const travelled of [50, 150, 187, 250, 363, 400, 500, 558]) {
+    for (const travelled of [50, 150, 187, 190, 250, 366, 400, 500, 561]) {
       const width = draggedStepWidth(706, 500, 500 + travelled, hidden, open, 1);
-      near(edgeAt(width), 1313 + travelled, `${travelled} rem on`);
+      near(edgeAt(width), 1310 + travelled, `${travelled} rem on`);
     }
   });
 
@@ -260,8 +261,8 @@ describe("the right edge's drag", () => {
     const besideSnaps = snapTargets(beside);
     const edgeAt = (width: number) => boxPlacement(width, beside).left + width;
 
-    for (const travelled of [50, 100, 150, 174]) {
-      near(edgeAt(draggedStepWidth(706, 500, 500 + travelled, besideSnaps, beside, 1)), 1313 + travelled, `${travelled} rem on`);
+    for (const travelled of [50, 100, 150, 177]) {
+      near(edgeAt(draggedStepWidth(706, 500, 500 + travelled, besideSnaps, beside, 1)), 1310 + travelled, `${travelled} rem on`);
     }
     assert.equal(draggedStepWidth(706, 500, 500 + 300, besideSnaps, beside, 1), 1091, "held at the widest step");
   });
@@ -284,15 +285,15 @@ describe("the right edge's drag", () => {
 
     // Step 3's edge is at 1,500: a pointer 100 rem on puts the edge at 1,600, a box 1,204 wide.
     near(draggedStepWidth(1091, 900, 1000, hidden, open, 1), 1204);
-    near(draggedStepWidth(1091, 900, 800, hidden, open, 1), 1400 - 607, "100 rem back, short of the flat stretch");
+    near(draggedStepWidth(1091, 900, 800, hidden, open, 1), 1400 - 604, "100 rem back, short of the flat stretch");
   });
 
   it("takes the widest width for an edge at the flat stretch's end, and the narrower for one a pixel short", () => {
     const open = screen();
     const hidden = snapTargets(open);
 
-    assert.equal(draggedStepWidth(706, 500, 500 + 187, hidden, open, 1), 1104);
-    assert.equal(draggedStepWidth(706, 500, 500 + 186, hidden, open, 1), 893 - 1);
+    assert.equal(draggedStepWidth(706, 500, 500 + 190, hidden, open, 1), 1104);
+    assert.equal(draggedStepWidth(706, 500, 500 + 189, hidden, open, 1), 896 - 1);
   });
 
   it("lands on the nearest step, a tie on the narrower", () => {

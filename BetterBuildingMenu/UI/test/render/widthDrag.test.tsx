@@ -105,11 +105,11 @@ describe("dragging the build menu's right edge", () => {
   });
 
   it("sends the narrower step for a release halfway between two", () => {
-    // Beside the pane step 2's edge is at 1,487: 80.5 rem back puts it at 1,406.5, a box 799.5 wide,
-    // halfway to 706.
+    // Beside the pane step 2's edge is at 1,487: 83.5 rem back puts it at 1,403.5, a box 799.5 wide
+    // from the slot's 604, halfway to 706.
     mount(893, 2);
     press();
-    move(419.5);
+    move(416.5);
     release();
 
     assert.deepEqual(steps(), [1]);
@@ -179,14 +179,15 @@ describe("dragging the build menu's right edge", () => {
     move(480);
     nextFrame();
 
-    assert.equal(drag.liveWidth, 860, "from the snapped 893, whose edge is at 1,487, not the stored 706");
+    assert.equal(drag.liveWidth, 863, "from the snapped 893, whose edge is at 1,487, not the stored 706");
   });
 
   it("puts the drawn right edge under the pointer, where the box grows left to hold its edge", () => {
-    // Pane hidden on 16:9, so steps 2 and 3 share the edge at 1,500 and 4 and 5 run on to 1,676 and 1,871.
+    // Pane hidden on 16:9: step 1's edge is at 1,310, the box grows left to hold its edge at 1,500,
+    // and 4 and 5 run on to 1,676 and 1,871.
     mount(706, 1, PANE_HIDDEN, 1, SCREEN_PANE_HIDDEN);
     press();
-    move(500 + 363);
+    move(500 + 366);
     nextFrame();
 
     assert.equal(drag.liveWidth, 1280, "step 4's box, whose edge is the pointer's");
