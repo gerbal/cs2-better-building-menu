@@ -927,9 +927,8 @@ field's.
 - **PageUp and PageDown** scroll the list a screen, held inside its ends (`pageScrollTop`); a page that
   reaches the end lets the window load more, as scrolling there does.
 
-**This changes 0.2.x:** in the search field Up and Down moved the caret and PageUp and PageDown did
-nothing; now they move Enter's target and scroll the list, and Up and Down no longer move the caret in
-the field.
+**This changes 0.2.x:** in the search field Up and Down now move Enter's target and no longer move the
+caret, and PageUp and PageDown, which did nothing, scroll the list.
 
 ## Opening on the building's tab
 

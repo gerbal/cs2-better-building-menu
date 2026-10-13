@@ -165,12 +165,13 @@ describe("Enter in the catalog", () => {
   it("moves the target with Down only once the page answers the query, and from the search field", () => {
     const down = () => press({ key: "ArrowDown", keyCode: 40, target: fakeSearchField(), preventDefault: () => undefined });
     const moves = () => triggers.filter((call) => call.name === "MoveEnterTarget").map((call) => call.args[0]);
-    groupedPage("", null);
+    // The page names a target, but for the search before the last letter.
+    groupedPage("clini", 1);
     typed("clinic");
     mount();
 
     down();
-    assert.deepEqual(moves(), [], "the page still answers the empty search");
+    assert.deepEqual(moves(), [], "the page still answers the older search");
 
     groupedPage("clinic", 1);
     rerender();

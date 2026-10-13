@@ -72,6 +72,9 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(2, Moved(3).EnterStep);
 			Assert.Equal(2, Moved(9).EnterStep);
 			Assert.Equal(-2, MovedGrouped(-9).EnterStep);
+			// However far a caller asks, the walk ends at the list's ends.
+			Assert.Equal(2, Moved(int.MaxValue).EnterStep);
+			Assert.Equal(-2, MovedGrouped(int.MinValue).EnterStep);
 			// Past either end from the best match: it stays, and no step is taken.
 			Assert.Equal(1, Moved(-1).BestMatch!.Id);
 			Assert.Equal(0, Moved(-1).EnterStep);
@@ -137,7 +140,7 @@ namespace BetterBuildingMenu.Tests
 		}
 	}
 
-	/// <summary>The keys reach the state through one trigger, and the state keeps the step each page served.</summary>
+	/// <summary>The keys reach the state through one trigger, and the state keeps the step each page serves.</summary>
 	public sealed class EnterTargetWiringTests
 	{
 		[Fact]
@@ -146,7 +149,7 @@ namespace BetterBuildingMenu.Tests
 			var refresh = ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.Catalog.cs"), "private void RefreshBuildingCatalog(");
 			var kept = refresh.IndexOf("_assetMenu = _assetMenu.KeepEnterStep(page.EnterStep);", StringComparison.Ordinal);
 
-			Assert.True(kept >= 0, "the refresh never keeps the step the page served");
+			Assert.True(kept >= 0, "the refresh never keeps the step the page serves");
 			Assert.True(
 				kept < refresh.IndexOf("_BuildingCatalogBinding.Value = page with", StringComparison.Ordinal),
 				"the state must hold the step before the page goes out");

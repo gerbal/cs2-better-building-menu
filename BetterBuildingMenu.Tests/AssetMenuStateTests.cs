@@ -665,7 +665,7 @@ public sealed class AssetMenuEnterStepTests
     [Fact]
     public void TheStateKeepsTheStepThePageServedSoAKeyPastAnEndMovesBackAtOnce()
     {
-        // Three presses down where only two rows lie below: the page served 2.
+        // Three presses down where only two rows lie below: the page serves 2.
         var pressed = Searched().MoveEnterTarget(1).MoveEnterTarget(1).MoveEnterTarget(1);
         var kept = pressed.KeepEnterStep(2);
 
@@ -701,6 +701,7 @@ public sealed class AssetMenuEnterStepTests
             ("a grouping", s => s.SetGroupBy("cost")),
             ("a tab", s => s.SelectCategory("RoadsHighways")),
             ("another menu", s => s.SelectMenu("Parks & Recreation")),
+            ("an open", s => s.OpenMenu("Roads", _ => new MenuOpening("RoadsHighways", -1, 0))),
         };
 
         Assert.All(changes, change => Assert.True(change.Change(moved).Query.EnterStep == 0, change.Name + " kept the moved target"));

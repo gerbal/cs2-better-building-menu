@@ -194,7 +194,7 @@ namespace BetterBuildingMenu.Domain
 				? this
 				: this with { Query = Query with { EnterStep = Query.EnterStep + Math.Sign(direction) } };
 
-		/// <summary>The step the page served, which stops at the list's ends, so a key pressed past one moves back at once.</summary>
+		/// <summary>The step the page serves, which stops at the list's ends, so a key pressed past one moves back at once.</summary>
 		public AssetMenuState KeepEnterStep(int served) =>
 			Query.EnterStep == served ? this : this with { Query = Query with { EnterStep = served } };
 
