@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { ASSET_MENU_MIN_HEIGHT, ASSET_MENU_RESIZE_HANDLE_HEIGHT, NOTCH_TOP_WIDTH, TAB_CELL_MIN_WIDTH, TAB_CELL_PADDING } from "../src/domain/assetMenuLayout.ts";
+import { LARGE_PICTURE } from "../src/domain/bodyGeometry.ts";
 import { cardGeometry } from "../src/domain/cardsLayout.ts";
 import { READOUT_GLYPH, READOUT_GLYPH_GAP, READOUT_SEP_PADDING } from "../src/domain/tabRow.ts";
 import { tagRoom } from "../src/domain/tileTag.ts";
@@ -322,6 +323,8 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(resolvedOn(LIST_BODY, [["body"], ["scroller"]], "overflow"), undefined);
     assert.equal(resolvedOn(LIST_BODY, [["body"], ["scroller"], ["slots"]], "overflow"), undefined);
     assert.equal(resolvedOn(LIST_BODY, [["plate", "largeText"], ["artwork"]], "overflow"), undefined);
+    // The overhang the body keeps room for is the sheet's own picture's.
+    assert.equal(rem(declarationsOf(LIST_BODY, ".largeText .artwork").width), LARGE_PICTURE);
   });
 
   it("squares the list's bottom corners, which the tab row's band rounds", () => {

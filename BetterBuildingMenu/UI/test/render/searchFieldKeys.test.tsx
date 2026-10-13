@@ -195,7 +195,7 @@ describe("the search field's keys", () => {
 
     press("PageDown", 34);
     const down = list.scroller.scrollTop;
-    // A body dragged to 166 pixels still holds six: a seventh line and its picture's rem below need 170.
+    // A body dragged to 166 pixels still holds six: a seventh line and its pictures' rems need 168.
     list.scroller.clientHeight = 166;
     press("PageDown", 34);
     const tall = list.scroller.scrollTop - down;

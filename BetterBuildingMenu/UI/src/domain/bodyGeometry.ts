@@ -23,12 +23,17 @@ export const PLATE_MIN_WIDTH = 171;
 /** The narrowest a large-text plate may be: three across the game's own 706. */
 export const LARGE_PLATE_MIN_WIDTH = 228;
 
+/** The picture's side on a plate above 100% text (listBody.module.scss's `.largeText .artwork`). */
+export const LARGE_PICTURE = 24;
+
 /**
- * A one-line plate's height above 100% text, and the room its 24 rem picture overhangs it by above and
- * below: six plates a picture apart, the first a rem down, hold six whole pictures in the game's own body.
+ * A one-line plate's height above 100% text: six plates a picture apart, the first a rem down, hold
+ * six whole pictures in the game's own body.
  */
 export const PLATE1_HEIGHT = 22;
-const PLATE1_OVERHANG = 1;
+
+/** How far a one-line plate's picture overhangs it above and below, into the gaps. */
+const PLATE1_OVERHANG = (LARGE_PICTURE - PLATE1_HEIGHT) / 2;
 
 /** A whole-name plate's height above 100% text: four lines and three gaps make the game's own body. */
 export const PLATE_WHOLE_HEIGHT = 34.56;

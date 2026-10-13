@@ -5,7 +5,7 @@
  */
 import type { NumberSeparators } from "./assetMenuMetricFormat";
 import type { AssetMenuMetric } from "./assetMenuLayout";
-import type { BodyGrid } from "./bodyGeometry";
+import { LARGE_PICTURE, type BodyGrid } from "./bodyGeometry";
 import type { BuildingCatalogEntry, SharedValue } from "./buildingCatalog";
 import { isEntryLocked, lockedFact } from "./buildingLockState";
 import { costText, keyFigure, sortedText, sortsByValue, type KeyKind, type UnitGlyph } from "./rowNumbers";
@@ -78,9 +78,8 @@ const PLATE_GAP = 3;
 const BIG_PADDING = 2 + 6;
 const BIG_GAP = 6;
 
-/** The picture's side: 25 at 100% text, 24 above it; a big plate's is the grid's. */
+/** The picture's side: 25 at 100% text, LARGE_PICTURE above it; a big plate's is the grid's. */
 const PICTURE = 25;
-const LARGE_PICTURE = 24;
 
 /**
  * The number column's type, and a glyph's and ↵'s side, at 100% text, all growing with the text; the

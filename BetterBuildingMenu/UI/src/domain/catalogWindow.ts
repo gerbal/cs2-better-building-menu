@@ -146,10 +146,13 @@ export function revealScrollTop(scrollTop: number, rowTop: number, rowHeight: nu
 
 /**
  * Whether a row sits on the first line, `edge` below the list's top (see `lineOneScrollTop`), to a
- * pixel: Cohtml rounds line boxes to whole device pixels.
+ * pixel: Cohtml rounds line boxes to whole device pixels. Above line 1 only by half a pixel where a
+ * picture overhangs its plate, so a row never counts with its picture above the top.
  */
 export function isOnLineOne({ containerTop, rowTop }: AnchorGeometry, edge: number): boolean {
-  return Math.abs(rowTop - containerTop - edge) <= 1;
+  const off = rowTop - containerTop - edge;
+
+  return off <= 1 && off >= (edge > 0 ? -0.5 : -1);
 }
 
 /**

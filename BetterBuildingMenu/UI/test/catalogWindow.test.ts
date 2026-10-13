@@ -340,6 +340,17 @@ describe("putting a row on the list's first line", () => {
     // The first row is on line 1 at the list's top.
     assert.equal(lineOneScrollTop(0, 52, 50, 2), 0);
   });
+
+  it("never counts a one-line plate as on line 1 with its picture above the top, whatever the pixel's rounding", () => {
+    const at = (rowTop: number, edge: number) => isOnLineOne({ containerTop: 50, containerHeight: 100, rowTop, rowHeight: 22 }, edge);
+
+    // 1080p: the overhang is a pixel, as much as the rounding the line forgives below it.
+    assert.deepEqual([at(50, 1), at(51, 1), at(52, 1)], [false, true, true]);
+    // 720p: two thirds of a pixel.
+    assert.deepEqual([at(50, 2 / 3), at(50 + 2 / 3, 2 / 3), at(51 + 2 / 3, 2 / 3)], [false, true, true]);
+    // With no overhang a line forgives a pixel either way.
+    assert.deepEqual([at(49, 0), at(51, 0)], [true, true]);
+  });
 });
 
 describe("a page of the list", () => {
@@ -386,8 +397,8 @@ describe("a page of a body's lines", () => {
   });
 
   it("pages a one-line plate's lines inside the room their pictures overhang into, at both ends", () => {
-    // At 1080p a rem is a pixel. Six lines of 24 and a rem above and below hold 146 of a 166-pixel screen;
-    // a seventh needs 170. Counted without the room, the page would step seven and pass a line unseen.
+    // At 1080p a rem is a pixel. Six lines and a rem above and below take 144 of a 166-pixel screen; a
+    // seventh needs 168, 167 with the pixel forgiven. Counted without the room, the page would step seven.
     assert.equal(pageScrollTop(0, 166, 10000, 1, 24, 2, 1, 1), 6 * 24);
     assert.equal(pageScrollTop(0, 166, 10000, 1, 24, 2, 1, 0), 7 * 24);
   });
