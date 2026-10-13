@@ -1,10 +1,10 @@
 /**
  * What a tile's tag says: the plate's first number (the cost, or why a locked building waits), or under
  * a sort by a value the value sorted by, as 0.2.x's Grid drew it, so a re-sort says why the tiles moved.
- * A money figure too wide for the tag is said in thousands or millions rather than cut. Pure. See
- * docs/design-notes.md, "The bodies".
+ * A money figure too wide for the tag is said in thousands or millions, shortened a step at a time,
+ * rather than cut. Pure. See docs/design-notes.md, "The bodies".
  */
-import { formatCompactMoney, type NumberSeparators } from "./assetMenuMetricFormat";
+import { compactMoneyForms, type NumberSeparators } from "./assetMenuMetricFormat";
 import type { AssetMenuMetric } from "./assetMenuLayout";
 import type { BuildingCatalogEntry } from "./buildingCatalog";
 import { oneNumber, plateNumbers, sortsByValue } from "./listPlate";
@@ -75,8 +75,13 @@ export function tileTag(
   // Money has a short form.
   const money = bySort ? (sortedMetric === "upkeep" ? sortedMetricValue(entry, "upkeep") : null) : locked ? null : entry.constructionCost;
 
+  // The most exact short form that fits; where none does, the narrowest, which the stylesheet cuts least.
   if (typeof money === "number" && Number.isFinite(money) && money !== 0) {
-    return { text: formatCompactMoney(money, bySort ? "upkeep" : "cost", separators, entry.costIsPerDistance), locked };
+    const forms = compactMoneyForms(money, bySort ? "upkeep" : "cost", separators, entry.costIsPerDistance);
+    const fits = forms.find((form) => tagFits(form, tileWidth, textScale));
+    const narrowest = forms.reduce((least, form) => (tagTextWidth(form, 1) < tagTextWidth(least, 1) ? form : least));
+
+    return { text: fits ?? narrowest, locked };
   }
 
   // A sorted value keeps its whole number and drops its unit, which the Sort control names: a cut word

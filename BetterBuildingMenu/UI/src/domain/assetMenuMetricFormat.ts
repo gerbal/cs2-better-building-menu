@@ -359,28 +359,64 @@ export function formatBuildingMetric(
   }
 }
 
-/** A magnitude's short form: millions from where a thousands figure would round to 1000k. */
-const COMPACT_STEPS: readonly { from: number; unit: number; suffix: string }[] = [
-  { from: 999_950, unit: 1_000_000, suffix: "M" },
-  { from: 1_000, unit: 1_000, suffix: "k" },
+/** The units a money figure is said in, each a thousand of the one before. */
+const COMPACT_UNITS: readonly { unit: number; suffix: string }[] = [
+  { unit: 1, suffix: "" },
+  { unit: 1_000, suffix: "k" },
+  { unit: 1_000_000, suffix: "M" },
 ];
 
+/** The own unit: millions from where a thousands figure would round to 1000k, thousands from 1000. */
+const ownUnit = (scaled: number): number => (Math.abs(scaled) >= 999_950 ? 2 : Math.abs(scaled) >= 1_000 ? 1 : 0);
+
+/** A figure to this many decimals, trailing zeros dropped, with the reader's own marks. */
+function fixedDigits(value: number, decimals: number, separators: NumberSeparators): string {
+  const [whole, fraction = ""] = Math.abs(value).toFixed(decimals).split(".");
+  const digits = groupDigits(Number(whole), separators) + (/[1-9]/.test(fraction) ? `${separators.decimal}${fraction.replace(/0+$/, "")}` : "");
+
+  return value < 0 ? `-${digits}` : digits;
+}
+
 /**
- * A money figure in thousands or millions, one decimal at most, in the game's
- * own template ("¢1.2M", "¢4.8k/km"), for a place too narrow for every digit:
- * rounded rather than cut, since a cut figure reads as another number.
+ * A money figure's short forms, the most exact first, for a place too narrow for every digit: in
+ * thousands or millions to one decimal, to none, then in the next unit up to the fewest decimals
+ * that are not zero; each in the game's template ("¢16.5k/km"), then each without its rate or
+ * month, which that place says otherwise. Rounded rather than cut, since a cut figure reads as
+ * another number.
  */
-export function formatCompactMoney(
+export function compactMoneyForms(
   value: number,
   metric: "cost" | "upkeep",
   separators: NumberSeparators = FALLBACK_SEPARATORS,
   perDistance: boolean = false,
-): string {
+): string[] {
   const scaled = perUnitDistance(value, true, separators, perDistance);
-  const step = COMPACT_STEPS.find(({ from }) => Math.abs(scaled) >= from);
-  const short = step === undefined ? scaled : Math.round((scaled / step.unit) * 10) / 10;
+  const own = ownUnit(scaled);
+  const figures: string[] = [];
+  const add = (figure: string) => {
+    if (!figures.includes(figure)) figures.push(figure);
+  };
+  const at = (index: number, decimals: number) => fixedDigits(scaled / COMPACT_UNITS[index].unit, decimals, separators);
 
-  return applyMoneyTemplate(moneyTemplate(metric, separators, perDistance), `${groupDigits(short, separators)}${step?.suffix ?? ""}`);
+  add(at(own, 1) + COMPACT_UNITS[own].suffix);
+  // A thousand of a unit is the next unit's to say.
+  if (own === COMPACT_UNITS.length - 1 || Math.abs(Math.round(scaled / COMPACT_UNITS[own].unit)) < 1_000) {
+    add(at(own, 0) + COMPACT_UNITS[own].suffix);
+  }
+  if (own < COMPACT_UNITS.length - 1) {
+    const decimals = [0, 1, 2].find((places) => /[1-9]/.test(at(own + 1, places)));
+    if (decimals !== undefined) add(at(own + 1, decimals) + COMPACT_UNITS[own + 1].suffix);
+  }
+
+  const templates = [moneyTemplate(metric, separators, perDistance), moneyTemplate("cost", separators, false)];
+  const forms: string[] = [];
+  for (const template of templates) {
+    for (const figure of figures) {
+      const form = applyMoneyTemplate(template, figure);
+      if (!forms.includes(form)) forms.push(form);
+    }
+  }
+  return forms;
 }
 
 /**

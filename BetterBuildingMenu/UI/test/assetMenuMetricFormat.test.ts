@@ -6,7 +6,7 @@ import {
   getNumberSeparators,
   formatBuildingMetric,
   formatCapacity,
-  formatCompactMoney,
+  compactMoneyForms,
   applyMoneyTemplate,
   FALLBACK_MONEY,
   FALLBACK_SEPARATORS,
@@ -476,21 +476,38 @@ describe("a telecom facility's capacity is a data rate", () => {
 
 describe("compact money", () => {
   const imperial = { ...FALLBACK_SEPARATORS, unitSystem: UnitSystem.Freedom };
+  const first = (...args: Parameters<typeof compactMoneyForms>) => compactMoneyForms(...args)[0];
 
   it("says thousands and millions with one decimal at most, in the game's money template", () => {
-    assert.equal(formatCompactMoney(850_000, "cost"), "¢850k");
-    assert.equal(formatCompactMoney(1_200_000, "cost"), "¢1.2M");
-    assert.equal(formatCompactMoney(12_500_000, "cost"), "¢12.5M");
-    assert.equal(formatCompactMoney(1_250, "upkeep"), applyMoneyTemplate(FALLBACK_MONEY.perMonth, "1.3k"));
+    assert.equal(first(850_000, "cost"), "¢850k");
+    assert.equal(first(1_200_000, "cost"), "¢1.2M");
+    assert.equal(first(12_500_000, "cost"), "¢12.5M");
+    assert.equal(first(1_250, "upkeep"), applyMoneyTemplate(FALLBACK_MONEY.perMonth, "1.3k"));
   });
 
   it("says millions where thousands would round to a thousand of them", () => {
-    assert.equal(formatCompactMoney(999_950, "cost"), "¢1M");
-    assert.equal(formatCompactMoney(999_000, "cost"), "¢999k");
+    assert.equal(first(999_950, "cost"), "¢1M");
+    assert.equal(first(999_000, "cost"), "¢999k");
   });
 
   it("keeps a rate's own template, and moves a per-kilometre rate to miles with the unit", () => {
-    assert.equal(formatCompactMoney(4_800, "cost", FALLBACK_SEPARATORS, true), applyMoneyTemplate(FALLBACK_MONEY.perKilometre, "4.8k"));
-    assert.equal(formatCompactMoney(10_000, "cost", imperial, true), applyMoneyTemplate(FALLBACK_MONEY.perMile, "16.1k"));
+    assert.equal(first(4_800, "cost", FALLBACK_SEPARATORS, true), applyMoneyTemplate(FALLBACK_MONEY.perKilometre, "4.8k"));
+    assert.equal(first(10_000, "cost", imperial, true), applyMoneyTemplate(FALLBACK_MONEY.perMile, "16.1k"));
+  });
+
+  it("shortens a figure step by step: one decimal, none, the next unit up, then each without the rate", () => {
+    assert.deepEqual(compactMoneyForms(16_500, "cost", FALLBACK_SEPARATORS, true), [
+      "¢16.5k/km", "¢17k/km", "¢0.02M/km", "¢16.5k", "¢17k", "¢0.02M",
+    ]);
+    // Not "¢0M": the next unit up is left out where two decimals still say nothing.
+    assert.deepEqual(compactMoneyForms(1_250, "upkeep"), [
+      applyMoneyTemplate(FALLBACK_MONEY.perMonth, "1.3k"), applyMoneyTemplate(FALLBACK_MONEY.perMonth, "1k"), "¢1.3k", "¢1k",
+    ]);
+  });
+
+  it("never says a thousand thousands, and says a whole figure in the next unit up", () => {
+    // 999.6k to no decimal is 1000k: the next unit says it.
+    assert.deepEqual(compactMoneyForms(999_600, "cost"), ["¢999.6k", "¢1M"]);
+    assert.deepEqual(compactMoneyForms(950, "cost", FALLBACK_SEPARATORS, true), ["¢950/km", "¢1k/km", "¢950", "¢1k"]);
   });
 });

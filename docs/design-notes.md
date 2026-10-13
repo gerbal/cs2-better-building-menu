@@ -1096,7 +1096,11 @@ amber, which reads on the tag because the tag stays dark under every interface s
 value other than the cost or the lot the tag says the value sorted by, as 0.2.x's Grid did, so a re-sort
 says why the tiles moved. A money figure the tag cannot hold whole at the text scale is said in
 thousands or millions with one decimal, in the game's own money template ("¢1.2M", "¢4.8k/km"): a cut
-figure reads as another number, a rounded one as itself. A sorted value whose unit does not fit beside it
+figure reads as another number, a rounded one as itself. Where that is still too wide, as large text
+makes it on the smallest tile, the figure shortens a step at a time before the tag cuts anything: to no
+decimal ("¢6k/km"), then the next unit up ("¢1M"), then each without the rate or month the tab and the
+Sort control already say, so a road at 150% reads "¢16.5k" (`compactMoneyForms`): a rounder figure, never
+one cut in its unit. A sorted value whose unit does not fit beside it
 keeps its whole number and drops the unit ("1 000", not "1 000 stu…"), which the Sort control names;
 a tag never shows a cut word. The fit is judged from the glyph advances of the
 game's own fonts, the wider of Overpass and Noto Sans per character, so it errs toward the short form;
