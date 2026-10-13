@@ -7,6 +7,7 @@ import type { AssetMenuFacetState } from "domain/buildingCatalogFacets";
 import type { AssetMenuMetricRangeState } from "domain/assetMenuFilterSummary";
 import type { Command } from "domain/command";
 import { NO_TIER_BRACKET, type MenuBranchCount, type MenuCategoryTabs, type TierBracket } from "domain/menuProgression";
+import type { MenuPick } from "domain/menuPicks";
 import { ASSET_MENU_DEFAULT_HEIGHT, WIDTH_STEP_DEFAULT } from "domain/sharedContracts.generated";
 import type { ToolbarEntity } from "domain/toolbarEntity";
 import { UPSTREAM_FINDIT_GROUP, UPSTREAM_SHOW_PANEL } from "domain/upstreamFindIt";
@@ -35,6 +36,8 @@ export const BuildingCatalogSortColumn$ = bindValue<SortColumn>(mod.id, "Buildin
 export const BuildingCatalogSortDescending$ = bindValue<boolean>(mod.id, "BuildingCatalogSortDescending", false);
 export const BuildingCatalogGroupBy$ = bindValue<string>(mod.id, "BuildingCatalogGroupBy", "category");
 export const AssetMenuGroupDimensions$ = bindValue<string[]>(mod.id, "AssetMenuGroupDimensions", []);
+/** Each menu's own GROUP, as the settings keep it: a menu not in it groups by its default. */
+export const AssetMenuGroups$ = bindValue<MenuPick[]>(mod.id, "AssetMenuGroups", []);
 export const AssetMenuFacets$ = bindValue<AssetMenuFacetState | null>(mod.id, "AssetMenuFacets", null);
 export const BuildingCatalogMetricRanges$ = bindValue<AssetMenuMetricRangeState | null>(mod.id, "BuildingCatalogMetricRanges", null);
 /** The spread each metric has in the current view, in the selection's shape. */

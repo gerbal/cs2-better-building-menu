@@ -76,10 +76,18 @@ namespace BetterBuildingMenu.Domain
 			// BuildingCatalogEntry.UIOrder — which no other column reproduces,
 			// so it is named for what it is rather than for a field.
 			"Default",
+			// While a query is typed: the best match first, then the game's own order. The UI offers it then only.
+			MatchSort,
 			"Name", "Category", "ConstructionCost", "Upkeep", "Workers",
 			"Capacity", "Households", "WaterCapacity", "SewageCapacity",
 			"LotWidth", "LotDepth", "BuildingLevel", "HasParking",
 		};
+
+		/// <summary>The game's own order, which a menu opens on until the player sorts it.</summary>
+		public const string DefaultSort = "Default";
+
+		/// <summary>A typed search's order: relevance across the whole menu, then the game's own order.</summary>
+		public const string MatchSort = "Match";
 
 		public int EffectiveOffset => Offset < 0 ? 0 : Offset;
 

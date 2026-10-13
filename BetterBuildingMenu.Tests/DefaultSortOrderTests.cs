@@ -194,7 +194,7 @@ namespace BetterBuildingMenu.Tests
 		{
 			foreach (var column in BuildingCatalogQuery.OfferedSortColumns)
 			{
-				var words = column is "Default" or "Name" or "Category";
+				var words = column is "Default" or "Match" or "Name" or "Category";
 
 				Assert.True(SortDefaults.BreaksTiesByCost(column) != words, column);
 			}
@@ -207,7 +207,7 @@ namespace BetterBuildingMenu.Tests
 			// in Order and SortValueOf, must be in SortDefaults.Numeric, and nothing else may be.
 			// A numeric sort added to the engine without joining the set fails here.
 			var source = ModSource.Text("Services/BuildingCatalogQueryEngine.cs");
-			var words = new[] { "default", "category", "subcategory" };
+			var words = new[] { "default", "match", "category", "subcategory" };
 			var labels = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
 			foreach (Match arm in Regex.Matches(source, @"^\s*((?:""[a-z]+""(?:\s+or\s+)?)+)\s*=>", RegexOptions.Multiline))
 			{

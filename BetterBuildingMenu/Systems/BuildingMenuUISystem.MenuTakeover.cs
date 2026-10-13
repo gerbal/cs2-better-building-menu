@@ -181,9 +181,11 @@ namespace BetterBuildingMenu.Systems
 				return;
 			}
 
-			// The tab and the row the open rule picks, over the menu as it opens. See CatalogView.Opening.
+			// The tab and the row the open rule picks, over the menu as it opens, with the menu's own GROUP
+			// and its SORT this session. See CatalogView.Opening.
 			var armed = ArmedEntryId();
-			_assetMenu = _assetMenu.OpenMenu(menuName, opened => _buildingCatalogAdapter.Build(_indexer.Source, opened, _toolbarSelection).Opening(armed));
+			var memory = _sessionSorts.For(menuName, MenuPicks.Get(Mod.Settings.MenuGroups, menuName));
+			_assetMenu = _assetMenu.OpenMenu(menuName, opened => _buildingCatalogAdapter.Build(_indexer.Source, opened, _toolbarSelection).Opening(armed), memory);
 			// Vanilla drops a category's highlight as its selection moves off it; the asset menu never
 			// moves that selection, so an open clears the menu's highlights, whichever tab it opens on.
 			ClearVanillaMenuHighlights(menuName);

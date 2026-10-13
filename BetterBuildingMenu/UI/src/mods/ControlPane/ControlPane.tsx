@@ -103,7 +103,7 @@ export const ControlPane = memo(function ControlPane({ open, onToggle, onClose }
       </PickerSummary>
       <PickerSummary
         label={label("Tooltip.LABEL[BetterBuildingMenu.SortBy]", "Sort by")}
-        value={`${sort.current} ${sort.indicator}`}
+        value={sort.indicator === "" ? sort.current : `${sort.current} ${sort.indicator}`}
         open={open === "sort"}
         onToggle={() => onToggle("sort")}
       >

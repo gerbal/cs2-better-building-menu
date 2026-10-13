@@ -75,6 +75,9 @@ namespace BetterBuildingMenu.Services
 		/// </remarks>
 		public string EffectiveGroupBy => _effectiveGroupBy ??= _groupByResolver?.Invoke(this) ?? _query.GroupBy;
 
+		/// <summary>The grouping this menu opens with when it has no pick of its own, held to the dimensions it offers.</summary>
+		public string DefaultGroupBy => BuildingCatalogGrouping.Effective(string.Empty, _menuCategories is { Count: > 0 }, StripAxis, _educationMenu, GroupDimensions);
+
 		/// <summary>Whether the view stands in for one of the game's menus; without one the row draws All alone.</summary>
 		private bool Scoped => !string.IsNullOrWhiteSpace(_query.UiMenu);
 

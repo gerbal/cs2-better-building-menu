@@ -570,6 +570,9 @@ namespace BetterBuildingMenu.Services
 
 			IOrderedEnumerable<BuildingCatalogEntry> ordered = query.EffectiveSortColumn.ToLowerInvariant() switch
 			{
+				// A search's own order: after the relevance seeded above, the game's tabs in their order, then
+				// its order within each, as Default reads it.
+				"match" => seed.ThenBy(x => x.UiCategoryTab).ThenBy(x => x.UIOrder).ThenBy(x => x.Name, StringComparer.OrdinalIgnoreCase),
 				// The game's own order, and the only sort here that is not a field the
 				// player can see. Name second, so two assets vanilla gave the same
 				// priority do not swap under the cursor.

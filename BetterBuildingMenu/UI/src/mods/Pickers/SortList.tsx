@@ -10,7 +10,7 @@ export interface SortOptions {
   column: SortColumn;
   /** The current sort's name. */
   current: string;
-  /** Its direction, ▲ or ▼. */
+  /** Its direction, ▲ or ▼, or "" for Match, which has none. */
   indicator: string;
   options: AssetMenuSortChoice[];
   pick: (column: SortColumn) => void;
@@ -20,9 +20,9 @@ export interface SortOptions {
 export function useSortOptions(): SortOptions {
   const column = useValue(BuildingCatalogSortColumn$) ?? "Name";
   const descending = useValue(BuildingCatalogSortDescending$) ?? false;
-  // Only for which sorts can move these results: see BuildingCatalogPage.
+  // Only for which sorts can move these results, and whether they answer a typed query: see BuildingCatalogPage.
   const page = useValue(BuildingCatalog$);
-  const presentation = getAssetMenuSortPresentation({ column, descending }, page?.reorderableSortColumns ?? []);
+  const presentation = getAssetMenuSortPresentation({ column, descending }, page?.reorderableSortColumns ?? [], (page?.searchText ?? "") !== "");
 
   return {
     column,
@@ -34,8 +34,9 @@ export function useSortOptions(): SortOptions {
 }
 
 /**
- * SORT's list, in a popover or the control pane: Default, then the sorts that can move this menu's
- * rows; the current one lit with its direction, which picking it again flips.
+ * SORT's list, in a popover or the control pane: Default, then Match while a query is typed, then the
+ * sorts that can move this menu's rows; the current one lit with its direction, which picking it
+ * again flips.
  */
 export const SortList = ({ onPicked }: { onPicked: () => void }) => {
   const sort = useSortOptions();
@@ -47,7 +48,7 @@ export const SortList = ({ onPicked }: { onPicked: () => void }) => {
           key={option.key}
           label={option.label}
           lit={option.selected}
-          note={option.selected ? sort.indicator : undefined}
+          note={option.selected && sort.indicator !== "" ? sort.indicator : undefined}
           onSelect={() => {
             sort.pick(option.key);
             onPicked();

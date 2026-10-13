@@ -181,6 +181,11 @@ namespace BetterBuildingMenu.Domain
 			return candidates.FirstOrDefault(offered.Contains) ?? None;
 		}
 
+		/// <summary>The grouping a page is ordered by: none while a query is typed, so the whole menu ranks as one list.</summary>
+		/// <remarks>The player's choice is kept in the query, and applies again when the search clears.</remarks>
+		public static string WhileSearching(string effective, string? searchText) =>
+			string.IsNullOrWhiteSpace(searchText) ? effective : None;
+
 		/// <summary>
 		/// Outermost group key. Empty when the dimension is unknown or "none",
 		/// which leaves the ordering to the chosen sort alone.

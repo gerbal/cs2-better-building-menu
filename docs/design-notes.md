@@ -961,6 +961,50 @@ row's readout states the window with the true total ("1–100 of 779"), so the l
 what the readout cannot: while the window can grow it offers Load more; once it is at the ceiling
 with rows past it (`Capped`), it says how to narrow the list instead: a tab, the search or a filter.
 
+## Search over the whole menu
+
+A search runs over the whole menu, ranked, so a strong match in a later tab ranks above weak ones in
+an earlier tab, and the best match is the list's first row.
+
+- **The first letter** keeps the tab, level and strip tab the search began on and the menu's sort
+  (`SearchStart`), then clears the tab, so the search covers every tab, and turns the sort to Match.
+- **Match** is relevance over the whole menu, then the shorter name, then the game's own order: its
+  tabs in their order (`UiCategoryTab`), then its order within each (`UIOrder`). The Sort list offers
+  it second, after Default, while a query is typed, and its control draws no dot for it. Relevance has
+  no reverse, so Match has no direction: Sort draws no arrow beside it, and picking it again changes
+  nothing.
+- **Groups wait.** While a query is typed the page is ordered by no grouping
+  (`BuildingCatalogGrouping.WhileSearching`), and the Group control says so; the player's choice is
+  kept, and applies again when the search clears.
+- **Under Match every new query is a start:** the list goes back to its top, its best match first,
+  however the open or the player had placed it. A sort picked during the search keeps the list where
+  it is as the query narrows, as any narrowing does.
+- **A tab picked during the search** narrows it to that tab, its list at the top.
+- **Clearing the search** brings back the tab and the sort it began on, the list starting at the armed
+  building as a tab pick does. A search whose start was forgotten, by Search everything dropping the
+  menu, clears to the game's own order.
+
+**This changes 0.2.x:** a search ran within the open tab, kept the sort and the grouping, and ranked
+only inside each group; typing now searches the whole menu as one ranked list, and clearing brings the
+tab back.
+
+## Each menu's own view and group
+
+Each menu keeps its own GROUP across sessions, and its own sort for the session, so no menu inherits
+another's.
+
+- **GROUP** is kept in the hidden setting `MenuGroups`, one `Menu=grouping` line per menu with a pick
+  of its own (`MenuPicks`; a line splits on its last `=`, since menu names hold spaces and `&`). A pick
+  saves once, and a pick of the menu's own default grouping takes the menu's pick away, so the control
+  marks only a grouping set away from how the menu opens (its dot). An open sets the menu's own, or its
+  default (`OpenMenu`'s `MenuMemory`). `AssetMenuGroups` carries the picks to the UI.
+- **SORT** is kept per menu for the session (`SessionSorts`): an open brings back the sort the menu last
+  had, and every launch starts each at the game's own order. A sort picked while a query is typed is
+  the search's, and is not kept. Reset the build menu… leaves this session's sorts; they end with it.
+
+**This changes 0.2.x:** the grouping and the sort followed the player from menu to menu; each menu now
+keeps its own.
+
 ## The search field's keys
 
 The game masks its keyboard while a text field has focus, so while the search field has focus the

@@ -49,9 +49,12 @@ namespace BetterBuildingMenu.Systems
 				source,
 				_assetMenu.Query,
 				_toolbarSelection,
-				built => BuildingCatalogGrouping.Effective(
-					_assetMenu.Query.GroupBy, menuHasCategories, built.StripAxis, VanillaMenus.IsEducation(menu), built.GroupDimensions));
+				built => BuildingCatalogGrouping.WhileSearching(
+					BuildingCatalogGrouping.Effective(_assetMenu.Query.GroupBy, menuHasCategories, built.StripAxis, VanillaMenus.IsEducation(menu), built.GroupDimensions),
+					_assetMenu.Query.SearchText));
 			BuildingCatalogPage page = view.Page;
+			// What a GROUP pick is compared with: the menu's own grouping, which takes a menu's own pick away.
+			_menuDefaultGroup = view.DefaultGroupBy;
 
 			// A search that matches nothing in the current section reads as "this building does
 			// not exist" when it usually means "not here". With auto-widen on a scoped miss drops

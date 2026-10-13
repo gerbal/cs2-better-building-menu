@@ -232,6 +232,16 @@ describe("the top row's controls", () => {
     assert.match(html, /<span class="value set" style="width:[0-9.]+rem">1 on<\/span>/);
   });
 
+  it("mark the open menu's own group with the dot, and a search's Match with none", () => {
+    set("AssetMenu", "Roads");
+    set("AssetMenuGroups", [{ menu: "Parks & Recreation", value: "cost" }]);
+    set("BuildingCatalogSortColumn", "Match");
+    assert.equal(count(render(), /class="dot"/), 0);
+
+    set("AssetMenuGroups", [{ menu: "Parks & Recreation", value: "cost" }, { menu: "Roads", value: "theme" }]);
+    assert.equal(count(render(), /class="dot"/), 1);
+  });
+
   it("ask to open a control's popover on a press, and draw the open one as open", () => {
     const asked: string[] = [];
     let root: ReturnType<typeof create> | undefined;

@@ -16,13 +16,15 @@ namespace BetterBuildingMenu.Domain
 	/// <see cref="ListStart"/> for the UI, which puts the list in place once per start.
 	/// </remarks>
 	/// <param name="ListStart">
-	/// How many times the list has started over at its anchor or its top: an open, a tab pick or a
-	/// sort. See docs/design-notes.md, "Opening on the building's tab".
+	/// How many times the list has started over at its anchor or its top: an open, a tab pick, a sort
+	/// or a typed search under Match. See docs/design-notes.md, "Opening on the building's tab".
 	/// </param>
+	/// <param name="PreSearch">The tab and sort a search began on, which clearing it brings back; null while none is typed.</param>
 	public sealed record AssetMenuState(
 		BuildingCatalogQuery Query,
 		string SearchText = "",
-		int ListStart = 0)
+		int ListStart = 0,
+		SearchStart? PreSearch = null)
 	{
 		public const string Indexing = "indexing";
 		public const string Ready = "ready";
@@ -57,6 +59,7 @@ namespace BetterBuildingMenu.Domain
 			return this with
 			{
 				Query = ResetWindow(Query with { UiMenu = trimmed, UiCategory = string.Empty, SchoolTier = -1, StripTabs = null, AnchorId = 0 }),
+				PreSearch = null,
 			};
 		}
 
@@ -64,12 +67,17 @@ namespace BetterBuildingMenu.Domain
 		public AssetMenuState ClearMenuScope() => this with
 		{
 			Query = ResetWindow(Query with { UiMenu = string.Empty, UiCategory = string.Empty, SchoolTier = -1, StripTabs = null, AnchorId = 0 }),
+			PreSearch = null,
 		};
 
-		/// <summary>A bar open or a menu switch: the search clears, and the list starts on the tab and row the open rule picks.</summary>
+		/// <summary>
+		/// A bar open or a menu switch: the search clears, the menu's own GROUP and SORT come back, and the
+		/// list starts on the tab and row the open rule picks.
+		/// </summary>
 		/// <param name="opening">The open rule, asked about the menu as it opens: no tab and no search. See CatalogView.Opening.</param>
+		/// <param name="memory">The menu's own GROUP and its SORT this session; null keeps the query's.</param>
 		/// <remarks>A blank name clears the scope, as <see cref="SelectMenu"/> does, without asking the rule.</remarks>
-		public AssetMenuState OpenMenu(string? name, Func<BuildingCatalogQuery, MenuOpening> opening)
+		public AssetMenuState OpenMenu(string? name, Func<BuildingCatalogQuery, MenuOpening> opening, MenuMemory? memory = null)
 		{
 			var scoped = SelectMenu(name);
 
@@ -78,7 +86,10 @@ namespace BetterBuildingMenu.Domain
 				return scoped;
 			}
 
-			var unsearched = scoped.Query with { SearchText = string.Empty };
+			var remembered = memory is null
+				? scoped.Query
+				: scoped.Query with { GroupBy = memory.GroupBy, SortColumn = memory.SortColumn, Descending = memory.Descending };
+			var unsearched = remembered with { SearchText = string.Empty };
 			var picked = opening(unsearched);
 
 			return scoped.Started(unsearched with
@@ -138,8 +149,9 @@ namespace BetterBuildingMenu.Domain
 				: Started(Query with { SortColumn = column, AnchorId = 0 });
 		}
 
+		/// <remarks>Match has no direction: relevance has no reverse, so a flip under it would move the list and change nothing.</remarks>
 		public AssetMenuState SetDescending(bool descending) =>
-			Query.Descending == descending ? this : Started(Query with { Descending = descending, AnchorId = 0 });
+			Query.Descending == descending || IsMatch(Query.SortColumn) ? this : Started(Query with { Descending = descending, AnchorId = 0 });
 
 		/// <summary>The player's grouping choice; empty means the menu's default.</summary>
 		/// <remarks>Not a start: the anchor goes, as a narrowing's does, so the window is the first chunk.</remarks>
@@ -230,17 +242,73 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>What the player typed, with the line breaks a paste can carry removed.</summary>
 		/// <remarks>
-		/// The query gets it trimmed and the box keeps it as typed: trimming what the box
-		/// echoes would eat the space typed between two words.
+		/// The query gets it trimmed and the box keeps it as typed: trimming what the box echoes would
+		/// eat the space typed between two words. A search runs over the whole menu, ranked: its first
+		/// letter keeps the tab and the sort it began on and clears the tab, the sort turns to Match,
+		/// and under Match every new query starts the list at its top, its best first. Clearing it
+		/// brings the tab and the sort back, the list starting at the armed building as a tab pick
+		/// does. See docs/design-notes.md, "Search over the whole menu".
 		/// </remarks>
-		public AssetMenuState Search(string? text)
+		/// <param name="armed">The prefab the game has armed, which the list starts at when the search clears.</param>
+		public AssetMenuState Search(string? text, int armed = 0)
 		{
 			var next = (text ?? string.Empty).Replace("\r", string.Empty).Replace("\n", string.Empty);
 
-			return string.Equals(SearchText, next, StringComparison.Ordinal)
-				? this
-				: this with { SearchText = next, Query = Narrowed(Query with { SearchText = next.Trim() }) };
+			if (string.Equals(SearchText, next, StringComparison.Ordinal))
+			{
+				return this;
+			}
+
+			var typed = next.Trim();
+			var was = Query.SearchText ?? string.Empty;
+
+			if (string.Equals(typed, was, StringComparison.Ordinal))
+			{
+				return this with { SearchText = next };
+			}
+
+			if (was.Length == 0)
+			{
+				return Started(Query with
+				{
+					SearchText = typed,
+					UiCategory = string.Empty,
+					SchoolTier = -1,
+					StripTabs = null,
+					SortColumn = BuildingCatalogQuery.MatchSort,
+					Descending = false,
+					AnchorId = 0,
+				}) with { SearchText = next, PreSearch = new SearchStart(Query.UiCategory, Query.SchoolTier, Query.StripTabs, Query.EffectiveSortColumn, Query.Descending) };
+			}
+
+			if (typed.Length == 0)
+			{
+				var back = PreSearch ?? new SearchStart(
+					Query.UiCategory,
+					Query.SchoolTier,
+					Query.StripTabs,
+					IsMatch(Query.SortColumn) ? BuildingCatalogQuery.DefaultSort : Query.EffectiveSortColumn,
+					Query.Descending);
+
+				return Started(Query with
+				{
+					SearchText = string.Empty,
+					UiCategory = back.Category,
+					SchoolTier = back.SchoolTier,
+					StripTabs = back.StripTabs,
+					SortColumn = back.SortColumn,
+					Descending = back.Descending,
+					AnchorId = Math.Max(0, armed),
+				}) with { SearchText = next, PreSearch = null };
+			}
+
+			return IsMatch(Query.SortColumn)
+				? Started(Query with { SearchText = typed, AnchorId = 0 }) with { SearchText = next }
+				: this with { SearchText = next, Query = Narrowed(Query with { SearchText = typed }) };
 		}
+
+		private static bool IsMatch(string? column) =>
+			string.Equals(column, BuildingCatalogQuery.MatchSort, StringComparison.OrdinalIgnoreCase);
 
 		// --- The query to run -------------------------------------------------
 
@@ -297,4 +365,14 @@ namespace BetterBuildingMenu.Domain
 			return ReferenceEquals(reset, next) ? next : reset with { AnchorId = 0 };
 		}
 	}
+
+	/// <summary>A menu's own GROUP, or "" for its default, and its SORT this session, which an open brings back.</summary>
+	public sealed record MenuMemory(string GroupBy, string SortColumn, bool Descending)
+	{
+		/// <summary>A menu with no pick of either: its default grouping and the game's own order.</summary>
+		public static MenuMemory Defaults => new(string.Empty, BuildingCatalogQuery.DefaultSort, false);
+	}
+
+	/// <summary>The tab, level, strip tab and sort a search began on.</summary>
+	public sealed record SearchStart(string Category, int SchoolTier, IReadOnlyList<string>? StripTabs, string SortColumn, bool Descending);
 }

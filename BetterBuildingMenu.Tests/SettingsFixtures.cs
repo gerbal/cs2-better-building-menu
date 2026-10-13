@@ -28,6 +28,8 @@ namespace BetterBuildingMenu.Tests
 
 		public string AtLargeText { get; set; } = SettingsDefaults.AtLargeText;
 
+		public string MenuGroups { get; set; } = SettingsDefaults.NoPicks;
+
 		public bool ControlPaneShown { get; set; } = SettingsDefaults.ControlPaneShownWhenMissing;
 
 		public string AssetMenuViewMode { get; set; } = Domain.AssetMenuViewMode.None;

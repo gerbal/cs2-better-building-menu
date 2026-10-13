@@ -23,6 +23,8 @@ namespace BetterBuildingMenu.Domain
 
 		string AtLargeText { get; set; }
 
+		string MenuGroups { get; set; }
+
 		bool ControlPaneShown { get; set; }
 
 		string AssetMenuViewMode { get; set; }

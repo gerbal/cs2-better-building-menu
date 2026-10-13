@@ -1,3 +1,4 @@
+import { useValue } from "cs2/api";
 import { FOCUS_DISABLED } from "cs2/input";
 import { useLocalization } from "cs2/l10n";
 import { Button, Tooltip } from "cs2/ui";
@@ -8,12 +9,15 @@ import filterGlyph from "images/filter.svg";
 import groupGlyph from "images/group.svg";
 import sortGlyph from "images/sort.svg";
 import viewGlyph from "images/view.svg";
+import { isSortSet } from "domain/assetMenuSortPresentation";
 import { removableChipCount } from "domain/filterChips";
+import { menuPickOf } from "domain/menuPicks";
 import { CONTROLS_MARK, type ControlCell, type ControlForm, type ControlKind } from "domain/topRow";
 import { useFilterChips } from "mods/Pickers/FilterPanel";
 import { useGroupOptions } from "mods/Pickers/GroupList";
 import { useSortOptions } from "mods/Pickers/SortList";
 import { useViewOptions } from "mods/Pickers/ViewList";
+import { AssetMenu$, AssetMenuGroups$ } from "mods/bindings";
 import styles from "./topRow.module.scss";
 
 const GLYPHS: Readonly<Record<ControlKind, string>> = { sort: sortGlyph, filter: filterGlyph, group: groupGlyph, view: viewGlyph };
@@ -31,6 +35,8 @@ export function useControlCells(): ControlCell[] {
   const group = useGroupOptions();
   const view = useViewOptions();
   const filters = useActiveFilterCount();
+  // A menu's own GROUP is the one set away from how it opens: its default takes the pick away.
+  const groupPicked = menuPickOf(useValue(AssetMenuGroups$), useValue(AssetMenu$)) !== "";
   const none = label("Tooltip.LABEL[BetterBuildingMenu.FilterNone]", "None");
   const filtersOn = (count: number) => label("Tooltip.LABEL[BetterBuildingMenu.FiltersOn]", "{0} on").replace("{0}", String(count));
 
@@ -40,7 +46,7 @@ export function useControlCells(): ControlCell[] {
       word: label("Tooltip.LABEL[BetterBuildingMenu.ControlSort]", "Sort"),
       value: sort.current,
       values: sort.options.map((option) => option.label),
-      changed: sort.column !== "Default",
+      changed: isSortSet(sort.column),
     },
     {
       kind: "filter",
@@ -55,7 +61,7 @@ export function useControlCells(): ControlCell[] {
       word: label("Tooltip.LABEL[BetterBuildingMenu.ControlGroup]", "Group"),
       value: group.current,
       values: group.options.map((option) => option.label),
-      changed: false,
+      changed: groupPicked,
     },
     {
       kind: "view",

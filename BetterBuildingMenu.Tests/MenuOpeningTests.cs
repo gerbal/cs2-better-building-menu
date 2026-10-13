@@ -174,12 +174,12 @@ namespace BetterBuildingMenu.Tests
 	public sealed class MenuOpeningWiringTests
 	{
 		[Fact]
-		public void AMenuOpensThroughTheOpenRuleWithTheArmedBuilding()
+		public void AMenuOpensThroughTheOpenRuleWithTheArmedBuildingAndItsOwnGroupAndSort()
 		{
 			var selected = ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.MenuTakeover.cs"), "private void VanillaMenuSelected(int menuEntityIndex)");
 
 			Assert.Contains(
-				"var armed = ArmedEntryId(); _assetMenu = _assetMenu.OpenMenu(menuName, opened => _buildingCatalogAdapter.Build(_indexer.Source, opened, _toolbarSelection).Opening(armed));",
+				"var armed = ArmedEntryId(); var memory = _sessionSorts.For(menuName, MenuPicks.Get(Mod.Settings.MenuGroups, menuName)); _assetMenu = _assetMenu.OpenMenu(menuName, opened => _buildingCatalogAdapter.Build(_indexer.Source, opened, _toolbarSelection).Opening(armed), memory);",
 				selected);
 			Assert.DoesNotContain("SelectMenu(", selected);
 		}

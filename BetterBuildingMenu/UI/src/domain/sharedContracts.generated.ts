@@ -6,6 +6,7 @@
 /** BuildingCatalogQuery.OfferedSortColumns, in the picker's order. */
 export const SORT_COLUMNS = [
   "Default",
+  "Match",
   "Name",
   "Category",
   "ConstructionCost",

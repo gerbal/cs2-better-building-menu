@@ -291,8 +291,8 @@ public sealed class AssetMenuStateTransitionTests
     {
         var state = S()
             .SelectMenu("Education & Research")
-            .SelectSchoolTier(2)
             .Search("school")
+            .SelectSchoolTier(2)
             .SetMetricRange("cost", "1000", "5000")
             .SetMetricRange("lotWidth", "2", "6");
 
@@ -546,14 +546,13 @@ public sealed class AssetMenuAnchorTests
     }
 
     [Fact]
-    public void SearchingFilteringRangingAndGroupingClearTheAnchorAndStartNothing()
+    public void FilteringRangingAndGroupingClearTheAnchorAndStartNothing()
     {
         // The open's start is served: these leave the list where the player has it, and the window
         // grows only for a page that answers a start.
         var opened = Opened(OnHighways).CoverAnchor(899);
         var moves = new[]
         {
-            opened.Search("four"),
             opened.ToggleFacet(FacetIds.Availability, BuildingCatalogFacetSelection.Availability.Locked),
             opened.SetMetricRange("cost", "1000", "5000"),
             opened.SetGroupBy(BuildingCatalogGrouping.Theme),
@@ -697,7 +696,6 @@ public sealed class AssetMenuEnterStepTests
             ("a filter", s => s.ToggleFacet("theme", "European")),
             ("a range", s => s.SetMetricRange("upkeep", "10", "")),
             ("a sort", s => s.SetSortColumn("Upkeep")),
-            ("a direction", s => s.SetDescending(true)),
             ("a grouping", s => s.SetGroupBy("cost")),
             ("a tab", s => s.SelectCategory("RoadsHighways")),
             ("another menu", s => s.SelectMenu("Parks & Recreation")),
@@ -705,6 +703,8 @@ public sealed class AssetMenuEnterStepTests
         };
 
         Assert.All(changes, change => Assert.True(change.Change(moved).Query.EnterStep == 0, change.Name + " kept the moved target"));
+        // Match has no direction, so the reversal is of a sort picked during the search.
+        Assert.Equal(0, Searched().SetSortColumn("Upkeep").MoveEnterTarget(1).SetDescending(true).Query.EnterStep);
     }
 
     [Fact]
@@ -716,5 +716,191 @@ public sealed class AssetMenuEnterStepTests
         Assert.Equal(1, moved.CoverAnchor(150).Query.EnterStep);
         // A trailing space is the same search.
         Assert.Equal(1, moved.Search("lane ").Query.EnterStep);
+    }
+}
+
+/// <summary>A search over the whole menu under Match, and each menu's own GROUP and SORT brought back by an open.</summary>
+public sealed class AssetMenuSearchTests
+{
+    private const string Roads = "Roads";
+    private static readonly MenuOpening OnHighways = new("RoadsHighways", -1, 4206);
+
+    private static AssetMenuState Opened(MenuOpening opening, MenuMemory? memory = null) =>
+        AssetMenuState.Initial.OpenMenu(Roads, _ => opening, memory);
+
+    // Binding: the best match is the list's first row, so a typed search must show the top, wherever
+    // the open put the armed building.
+    [Fact]
+    public void ATypedSearchStartsTheListAtItsTopUnderMatch()
+    {
+        var opened = Opened(OnHighways).CoverAnchor(899);
+
+        var typed = opened.Search("four");
+
+        Assert.Equal(opened.ListStart + 1, typed.ListStart);
+        Assert.Equal(0, typed.Anchor);
+        Assert.Equal(BuildingCatalogQuery.MatchSort, typed.Query.SortColumn);
+        Assert.False(typed.Query.Descending);
+        Assert.Equal(0, typed.Query.Offset);
+        Assert.Equal(BuildingCatalogQuery.DefaultLimit, typed.Query.Limit);
+    }
+
+    [Fact]
+    public void UnderMatchEveryNewQueryStartsTheListAtItsTopAgain()
+    {
+        var typed = Opened(OnHighways).Search("four");
+
+        var on = typed.Search("four l");
+
+        Assert.Equal(typed.ListStart + 1, on.ListStart);
+        Assert.Equal("four l", on.Query.SearchText);
+    }
+
+    // Relevance has no reverse: picking the lit Match row again must neither flip an arrow over an
+    // unchanged list nor send it back to its top.
+    [Fact]
+    public void MatchHasNoDirection()
+    {
+        var typed = Opened(OnHighways).Search("four");
+
+        Assert.Same(typed, typed.SetDescending(true));
+    }
+
+    [Fact]
+    public void ASearchRunsOverTheWholeMenuAndKeepsTheTabAndSortItBeganOn()
+    {
+        var sorted = Opened(OnHighways).SetSortColumn("Capacity").SetDescending(true);
+
+        var typed = sorted.Search("four");
+
+        Assert.Equal(string.Empty, typed.Category);
+        Assert.Equal(-1, typed.SchoolTier);
+        Assert.Null(typed.Query.StripTabs);
+        Assert.Equal(new SearchStart("RoadsHighways", -1, null, "Capacity", true), typed.PreSearch);
+    }
+
+    [Fact]
+    public void ASortPickedDuringASearchNarrowsTheNextQueryWithoutAStart()
+    {
+        var picked = Opened(OnHighways).Search("four").SetSortColumn("ConstructionCost");
+
+        var on = picked.Search("four l");
+
+        Assert.Equal(picked.ListStart, on.ListStart);
+        Assert.Equal("ConstructionCost", on.Query.SortColumn);
+        Assert.Equal(BuildingCatalogQuery.DefaultLimit, on.Query.Limit);
+    }
+
+    [Fact]
+    public void ClearingTheSearchBringsBackTheTabAndTheSortAtTheArmedBuilding()
+    {
+        var typed = Opened(OnHighways).SetSortColumn("Capacity").Search("four").SelectCategory("RoadsSmallRoads", armed: 4206);
+
+        var cleared = typed.Search("", armed: 77);
+
+        Assert.Equal("RoadsHighways", cleared.Category);
+        Assert.Equal("Capacity", cleared.Query.SortColumn);
+        Assert.Equal(77, cleared.Anchor);
+        Assert.Equal(typed.ListStart + 1, cleared.ListStart);
+        Assert.Null(cleared.PreSearch);
+        Assert.Equal(string.Empty, cleared.Query.SearchText);
+    }
+
+    [Fact]
+    public void ClearingASearchTypedOnALevelBringsTheLevelBack()
+    {
+        var level = AssetMenuState.Initial.OpenMenu("Education & Research", _ => new MenuOpening("Education", 2, 0));
+
+        var cleared = level.Search("school").Search("");
+
+        Assert.Equal("Education", cleared.Category);
+        Assert.Equal(2, cleared.SchoolTier);
+        Assert.Equal(BuildingCatalogQuery.DefaultSort, cleared.Query.SortColumn);
+    }
+
+    [Fact]
+    public void ASearchWhoseStartWasForgottenClearsToTheGamesOwnOrder()
+    {
+        // Search everything drops the menu, and its start with it; the search goes on unscoped.
+        var everywhere = Opened(OnHighways).Search("four").ClearMenuScope();
+
+        var cleared = everywhere.Search("");
+
+        Assert.Null(everywhere.PreSearch);
+        Assert.Equal(BuildingCatalogQuery.DefaultSort, cleared.Query.SortColumn);
+        Assert.Equal(string.Empty, cleared.Category);
+    }
+
+    [Fact]
+    public void AnOpenForgetsTheSearchAndItsStart()
+    {
+        var typed = Opened(OnHighways).Search("four");
+
+        var reopened = typed.OpenMenu(Roads, _ => OnHighways);
+
+        Assert.Null(reopened.PreSearch);
+        Assert.Equal(string.Empty, reopened.Query.SearchText);
+    }
+
+    [Fact]
+    public void AnOpenBringsBackTheMenusOwnGroupAndSort()
+    {
+        var other = AssetMenuState.Initial.SetSortColumn("Name").SetGroupBy(BuildingCatalogGrouping.Theme);
+
+        var opened = other.OpenMenu(Roads, _ => OnHighways, new MenuMemory(BuildingCatalogGrouping.Cost, "Capacity", true));
+
+        Assert.Equal(BuildingCatalogGrouping.Cost, opened.Query.GroupBy);
+        Assert.Equal("Capacity", opened.Query.SortColumn);
+        Assert.True(opened.Query.Descending);
+    }
+
+    [Fact]
+    public void AMenuWithNoPicksOpensOnItsDefaultGroupAndTheGamesOrder()
+    {
+        var other = AssetMenuState.Initial.SetSortColumn("Name").SetGroupBy(BuildingCatalogGrouping.Theme);
+
+        var opened = other.OpenMenu(Roads, _ => OnHighways, MenuMemory.Defaults);
+
+        Assert.Equal(string.Empty, opened.Query.GroupBy);
+        Assert.Equal(BuildingCatalogQuery.DefaultSort, opened.Query.SortColumn);
+        Assert.False(opened.Query.Descending);
+    }
+}
+
+/// <summary>Each menu's sort this session.</summary>
+public sealed class SessionSortsTests
+{
+    private static AssetMenuState In(string menu) => AssetMenuState.Initial.OpenMenu(menu, _ => MenuOpening.All, MenuMemory.Defaults);
+
+    [Fact]
+    public void AMenuOpensOnTheSortItLastHadThisSession()
+    {
+        var sorts = new SessionSorts();
+
+        sorts.Keep(In("Roads").SetSortColumn("ConstructionCost").SetDescending(true));
+
+        Assert.Equal(new MenuMemory("cost", "ConstructionCost", true), sorts.For("Roads", "cost"));
+        Assert.Equal(MenuMemory.Defaults, sorts.For("Parks & Recreation", string.Empty));
+    }
+
+    [Fact]
+    public void ASortPickedDuringASearchIsNotKept()
+    {
+        var sorts = new SessionSorts();
+
+        sorts.Keep(In("Roads").Search("four").SetSortColumn("Capacity"));
+
+        Assert.Equal(MenuMemory.Defaults, sorts.For("Roads", string.Empty));
+    }
+
+    [Fact]
+    public void NoMenuKeepsNothing()
+    {
+        var sorts = new SessionSorts();
+
+        sorts.Keep(AssetMenuState.Initial.SetSortColumn("Capacity"));
+
+        Assert.Equal(MenuMemory.Defaults, sorts.For(string.Empty, string.Empty));
+        Assert.Equal(MenuMemory.Defaults, sorts.For(null, string.Empty));
     }
 }

@@ -27,6 +27,9 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>A new player's Default view: the look's own rule picks each menu's body.</summary>
 		public const string DefaultView = BodyViews.Auto;
 
+		/// <summary>No menu has a pick of its own: each draws its default.</summary>
+		public const string NoPicks = MenuPicks.None;
+
 		/// <summary>Above 100% text, the list keeps more buildings and shortens long names.</summary>
 		public const string AtLargeText = LargeText.MoreBuildings;
 
@@ -41,6 +44,7 @@ namespace BetterBuildingMenu.Domain
 			values.AssetMenuWidthStep = WidthSteps.DefaultStep;
 			values.DefaultView = DefaultView;
 			values.AtLargeText = AtLargeText;
+			values.MenuGroups = NoPicks;
 			values.Upgrader = false;
 			values.ControlPaneShown = ControlPaneShown;
 			values.AssetMenuViewMode = AssetMenuViewMode.None;

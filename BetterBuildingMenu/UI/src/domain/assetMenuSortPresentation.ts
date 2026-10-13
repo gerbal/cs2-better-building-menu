@@ -14,7 +14,8 @@ export interface AssetMenuSortChoice extends AssetMenuSortOption {
 export interface AssetMenuSortPresentation {
   compact: AssetMenuSortOption & {
     direction: "ascending" | "descending";
-    indicator: "▲" | "▼";
+    /** ▲ or ▼, or none under Match, whose relevance has no reverse. */
+    indicator: "▲" | "▼" | "";
   };
   expanded: AssetMenuSortChoice[];
 }
@@ -24,6 +25,8 @@ const SORT_LABELS: Readonly<Record<SortColumn, string>> = {
   // The game's own UIObject.m_Priority order, authored per asset and
   // derivable from nothing the player can see — hence "Default".
   Default: "Default",
+  // A typed search's order: the best match first. Offered only while a query is typed.
+  Match: "Match",
   Name: "Name",
   Category: "Category",
   ConstructionCost: "Cost",
@@ -78,29 +81,43 @@ export function getAssetMenuColumnSortIndicator(
   return state.descending ? "▼" : "▲";
 }
 
+/** The order a typed search switches to, and the one the menu opens on. */
+export const MATCH_SORT: SortColumn = "Match";
+export const DEFAULT_SORT: SortColumn = "Default";
+
+/** Whether a sort is set away from how the menu opens: neither the game's own order nor a search's Match. */
+export function isSortSet(column: SortColumn): boolean {
+  return column !== DEFAULT_SORT && column !== MATCH_SORT;
+}
+
 /**
  * The sort fields worth offering for the current results: one that ties across
  * the whole set responds while the list does not move, which reads as broken.
  * Never drops the current selection; an empty answer means "not said yet".
+ * Match only while a query is typed, the one time it differs from the game's
+ * own order.
  */
 export function usableSortOptions(
   reorderable: readonly string[] | null | undefined,
-  selected: SortColumn
+  selected: SortColumn,
+  searching = false
 ): readonly AssetMenuSortOption[] {
   const usable = reorderable ?? [];
+  const offered = ASSET_MENU_SORT_OPTIONS.filter((option) => option.key !== MATCH_SORT || searching || option.key === selected);
 
   if (usable.length === 0) {
-    return ASSET_MENU_SORT_OPTIONS;
+    return offered;
   }
 
-  return ASSET_MENU_SORT_OPTIONS.filter(
-    (option) => option.key === selected || usable.includes(option.key)
+  return offered.filter(
+    (option) => option.key === selected || option.key === MATCH_SORT || usable.includes(option.key)
   );
 }
 
 export function getAssetMenuSortPresentation(
   state: SortState,
-  reorderable: readonly string[] | null | undefined = null
+  reorderable: readonly string[] | null | undefined = null,
+  searching = false
 ): AssetMenuSortPresentation {
   const selectedOption = ASSET_MENU_SORT_OPTIONS.find((option) => option.key === state.column)
     ?? ASSET_MENU_SORT_OPTIONS[0];
@@ -110,9 +127,9 @@ export function getAssetMenuSortPresentation(
     compact: {
       ...selectedOption,
       direction,
-      indicator: state.descending ? "▼" : "▲",
+      indicator: selectedOption.key === MATCH_SORT ? "" : state.descending ? "▼" : "▲",
     },
-    expanded: usableSortOptions(reorderable, selectedOption.key).map((option) => ({
+    expanded: usableSortOptions(reorderable, selectedOption.key, searching).map((option) => ({
       ...option,
       selected: option.key === selectedOption.key,
     })),

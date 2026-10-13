@@ -31,6 +31,11 @@ namespace BetterBuildingMenu.Systems
 		// transition per trigger. Each trigger handler applies a transition,
 		// PublishScope() mirrors it to the bindings, RefreshBuildingCatalog runs it.
 		private AssetMenuState _assetMenu = AssetMenuState.Initial;
+		// Each menu's sort this session, which its next open brings back.
+		private readonly SessionSorts _sessionSorts = new();
+		// The open menu's grouping without a pick of its own, from the last refresh: a GROUP pick of it
+		// takes the menu's own pick away.
+		private string _menuDefaultGroup = string.Empty;
 
 		private ToolSystem _toolSystem = null!;
 		private PrefabSystem _prefabSystem = null!;
@@ -62,6 +67,8 @@ namespace BetterBuildingMenu.Systems
 		private int? _appliedMenuFrame;
 		private int _appliedMenuIndex;
 		private ValueBindingHelper<string> _BuildingCatalogGroupBy = null!;
+		// Each menu's own GROUP, as the settings keep it, for the control's dot.
+		private ValueBindingHelper<MenuPick[]> _AssetMenuGroups = null!;
 		// The grouping dimensions that can act on the current menu set; the picker lists these.
 		private ValueBindingHelper<string[]> _AssetMenuGroupDimensions = null!;
 		// Whether the menu the toolbar currently has open is one the asset menu takes
@@ -217,6 +224,7 @@ namespace BetterBuildingMenu.Systems
 			// persistent query, so a write-only trigger would leave the picker
 			// showing "Nothing" over grouped rows after any remount.
 			_AssetMenuGroupDimensions = CreateBinding("AssetMenuGroupDimensions", Array.Empty<string>());
+			_AssetMenuGroups = CreateBinding("AssetMenuGroups", MenuPicks.Parse(Mod.Settings.MenuGroups).ToArray());
 			_BuildingCatalogGroupBy = CreateBinding(
 				"BuildingCatalogGroupBy",
 				"SetBuildingCatalogGroupBy",
@@ -343,6 +351,7 @@ namespace BetterBuildingMenu.Systems
 			_ControlPaneShown.Value = Mod.Settings.ControlPaneShown;
 			_AssetMenuViewMode.Value = AssetMenuViewMode.Sanitize(Mod.Settings.AssetMenuViewMode);
 			_AssetMenuTuning.Value = CurrentTuning();
+			_AssetMenuGroups.Value = MenuPicks.Parse(Mod.Settings.MenuGroups).ToArray();
 
 			// Whoever has the menu: with the setting off the watcher sends no deselect, so a menu
 			// given up under the gamepad could outlive its close and reopen once switched back on.

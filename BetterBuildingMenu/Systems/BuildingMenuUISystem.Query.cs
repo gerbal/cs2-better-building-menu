@@ -83,20 +83,41 @@ namespace BetterBuildingMenu.Systems
 			RefreshAssetMenu();
 		}
 
-		private void SetBuildingCatalogSortColumn(string column) => Apply(_assetMenu.SetSortColumn(column));
+		/// <summary>A sort pick, which the open menu keeps for this session.</summary>
+		private void SetBuildingCatalogSortColumn(string column)
+		{
+			Apply(_assetMenu.SetSortColumn(column));
+			_sessionSorts.Keep(_assetMenu);
+		}
 
 		/// <summary>
-		/// Chooses the heading dimension, which is also the query's primary key.
+		/// Chooses the heading dimension, which is also the query's primary key, and keeps it as the open
+		/// menu's own, saved once; the menu's default takes its own pick away.
 		/// </summary>
 		/// <remarks>
 		/// The window shrinks back to the base chunk because grouping reorders the whole result.
 		/// Returns early when nothing changed. A change drops the open's anchor, so only the group
-		/// list's pick sends it, never a menu open.
+		/// list's pick sends it; a menu open brings the menu's own back through OpenMenu.
 		/// </remarks>
-		private void SetBuildingCatalogGroupBy(string groupBy) => Apply(_assetMenu.SetGroupBy(groupBy));
+		private void SetBuildingCatalogGroupBy(string groupBy)
+		{
+			var kept = MenuPicks.WithGroup(Mod.Settings.MenuGroups, _assetMenu.Menu, groupBy, _menuDefaultGroup);
 
-		/// <remarks>Same idempotence guard as the group-by above.</remarks>
-		private void SetBuildingCatalogSortDescending(bool descending) => Apply(_assetMenu.SetDescending(descending));
+			if (_assetMenu.Menu.Length > 0 && !string.Equals(kept, Mod.Settings.MenuGroups, StringComparison.Ordinal))
+			{
+				Mod.Settings.MenuGroups = kept;
+				Mod.Settings.ApplyAndSave();
+			}
+
+			Apply(_assetMenu.SetGroupBy(groupBy));
+		}
+
+		/// <remarks>Same idempotence guard as the group-by above, and kept per menu as the column is.</remarks>
+		private void SetBuildingCatalogSortDescending(bool descending)
+		{
+			Apply(_assetMenu.SetDescending(descending));
+			_sessionSorts.Keep(_assetMenu);
+		}
 
 		/// <summary>
 		/// Grows the window to the limit the UI asked for, by one step at most, keeping the
@@ -123,7 +144,7 @@ namespace BetterBuildingMenu.Systems
 
 		private void SearchChanged(string text)
 		{
-			var next = _assetMenu.Search(text);
+			var next = _assetMenu.Search(text, ArmedEntryId());
 
 			if (ReferenceEquals(next, _assetMenu))
 			{

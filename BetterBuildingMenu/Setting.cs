@@ -77,6 +77,11 @@ namespace BetterBuildingMenu
 		[SettingsUIHidden]
 		public string AssetMenuViewMode { get; set; } = Domain.AssetMenuViewMode.None;
 
+		/// <summary>Each menu's own GROUP, one "Menu=grouping" line per menu with a pick; a menu with none groups by its default.</summary>
+		/// <remarks>Hidden: GROUP on the menu is where it is set. See <see cref="Domain.MenuPicks"/>.</remarks>
+		[SettingsUIHidden]
+		public string MenuGroups { get; set; } = Domain.SettingsDefaults.NoPicks;
+
 		// On by default: replacing the build menu is what this mod is for. Turning it off
 		// restores the vanilla menu wholesale, including the Zones button's own hierarchy.
 		[SettingsUISection(SETTINGS, BEHAVIOR)]
