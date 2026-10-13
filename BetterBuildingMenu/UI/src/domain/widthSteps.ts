@@ -139,6 +139,21 @@ export function boxPlacement(width: number, screen: WidthStepScreen): BoxPlaceme
   return { left, offset: left - vanilla };
 }
 
+/** The game's margin either side of its slot: its tool options column ends this far short of it. */
+const VANILLA_SLOT_MARGIN = 6;
+
+/**
+ * How far the game's tool options column moves, in rem, for a box drawn here: none while the box
+ * keeps the slot's left edge, and once it reaches left of it, to where the width model puts the
+ * column, ending at the tool options' edge, so the box never covers it. See docs/design-notes.md,
+ * "Patching vanilla's layout for the asset menu".
+ */
+export function toolOptionsShift(placement: BoxPlacement, screen: WidthStepScreen): number | null {
+  const shift = toolOptionsEdge(screen.textScale) - (vanillaBoxLeft(screen.aspect) - VANILLA_SLOT_MARGIN);
+
+  return placement.offset < 0 && shift < 0 ? shift : null;
+}
+
 /** The first three steps' limit: where a box stops growing right and starts growing left. */
 const growsTo = (screen: WidthStepScreen): number => rightLimit(LAST_STEP_CLEAR_OF_THE_CHIRPER, screen);
 

@@ -62,7 +62,7 @@ describe("vanilla's own layout", () => {
   it("keeps its centring, so the asset menu's slot sits where the game's own menu does", () => {
     const source = readFileSync(new URL("../src/mods/BuildingMenu/vanillaLayout.ts", import.meta.url), "utf8");
 
-    assert.doesNotMatch(source, /justifyContent|toolLayout/);
+    assert.doesNotMatch(source, /justifyContent/);
     assert.match(source, /setInlineStyle\(toolbar, "zIndex", "-1"\)/);
   });
 });

@@ -15,7 +15,7 @@ import { useLookRoot } from "mods/useLookRoot";
 import { ASSET_MENU_WIDTH_HANDLE_REACH, drawnBodyHeight, drawnBoxHeight, TOP_EDGE_HEIGHT } from "domain/assetMenuLayout";
 import { WIDTH_STEP_VANILLA } from "domain/sharedContracts.generated";
 import { controlLeftRem, popoverAnchor, toggleList, type ControlKind, type OpenList } from "domain/topRow";
-import { boxPlacement, popoverRightLimit, topRowRightInset } from "domain/widthSteps";
+import { boxPlacement, popoverRightLimit, toolOptionsShift, topRowRightInset } from "domain/widthSteps";
 
 import styles from "mods/BuildingMenu/assetMenu.module.scss";
 import { gameClasses } from "mods/gameModules";
@@ -62,9 +62,9 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
   const closeList = useCallback(() => setList(null), []);
   const popover = list?.home === "popover" ? list : null;
 
-  // The one patch on vanilla's own layout, the toolbar sunk beneath the box and the pane, lives
-  // with its reason in vanillaLayout.ts.
-  useVanillaLayoutForAssetMenu();
+  // The patches on vanilla's own layout, the toolbar sunk beneath the box and the pane and the tool
+  // options moved clear of a box that reaches left of the slot, live with their reason in vanillaLayout.ts.
+  useVanillaLayoutForAssetMenu(toolOptionsShift(placement, screen));
 
   return (
     <>

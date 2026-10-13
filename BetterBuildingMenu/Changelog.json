@@ -9,6 +9,7 @@
         "Changes": [
           "The build menu opens where the game's own does, at its size. Pick a Width under Options › Better Building Menu, or drag the menu's right edge: it settles on one of five widths, and every menu opens at the same one.",
           "If you used an earlier version, the menu opens at the width nearest the one you had.",
+          "At the wider Widths, the tool options move to the left edge of the screen to make room for the menu.",
           "The search, Sort, Filter, Group and View sit along the menu's top edge, with the close button. Each control opens its own list, and a click elsewhere closes it. View also offers Width and More options…, which opens this mod's options.",
           "The search box names the building Enter will place, or says All matches locked.",
           "The control pane is now an option, Control pane, under Options › Better Building Menu, with the same Sort, Filter, Group and View. It starts off; if you used an earlier version, it stays as you had it.",

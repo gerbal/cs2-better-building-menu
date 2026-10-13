@@ -212,6 +212,75 @@ describe("a drag on the asset menu's right edge", () => {
   });
 });
 
+describe("the game's tool options column beside the box", () => {
+  const globals = globalThis as unknown as Record<string, unknown>;
+  let saved: unknown;
+  let root: ReactTestRenderer | undefined;
+  let removed: string[] = [];
+  let column: { classList: { contains(name: string): boolean }; style: Record<string, unknown> };
+  let otherColumn: typeof column;
+
+  const sideColumn = () => ({
+    classList: { contains: (name: string) => name === "vanilla-toolSideColumn" },
+    style: { removeProperty: (name: string) => removed.push(name) } as Record<string, unknown>,
+  });
+  const mount = () => act(() => {
+    root = create(<AssetMenu onClose={() => {}} />);
+  });
+
+  beforeEach(() => {
+    resetBindings();
+    resetAssetMenuView();
+    removed = [];
+    column = sideColumn();
+    otherColumn = sideColumn();
+    // The game's tool layout: the tool options column, the slot, and the empty column right of it.
+    const layout = { children: [column, { classList: { contains: () => false }, style: {} }, otherColumn] };
+    saved = globals.document;
+    globals.document = {
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      querySelector: (selector: string) => (selector === ".vanilla-toolLayout" ? layout : null),
+    };
+    globals.requestAnimationFrame = () => 0;
+    globals.cancelAnimationFrame = () => undefined;
+  });
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    root = undefined;
+    globals.document = saved;
+  });
+
+  it("stays where the game puts it while the box keeps the slot's left edge", () => {
+    mount();
+
+    assert.equal(column.style.left, undefined);
+    assert.deepEqual(removed, []);
+  });
+
+  it("moves left of a box that reaches left of the slot, and back when the menu closes", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 3);
+    mount();
+
+    assert.equal(column.style.left, "-202rem");
+    assert.equal(otherColumn.style.left, undefined, "the column right of the slot holds nothing to move");
+
+    act(() => root?.unmount());
+    root = undefined;
+    assert.deepEqual(removed, ["left"]);
+  });
+
+  it("goes back when the box comes back to the slot's left edge", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 4);
+    mount();
+    assert.equal(column.style.left, "-202rem");
+
+    act(() => setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 1));
+    assert.deepEqual(removed, ["left"]);
+  });
+});
+
 describe("the asset menu's look", () => {
   beforeEach(() => {
     resetBindings();

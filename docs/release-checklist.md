@@ -69,7 +69,8 @@ On a developed save:
    - every menu opens at the same width, the stored Width step.
 4. **Views.** Open Sort, Filter, Group and View in turn and pick from each: one list at a
    time, and a click elsewhere closes it. Switch through Cards, List, Grid and Table in View,
-   pick a Width there, drag the top edge, and drag the right edge: it settles on a width.
+   pick a Width there, drag the top edge, and drag the right edge: it settles on a width. At
+   the wider Widths, the tool options sit left of the menu with none of their buttons under it.
 5. **Place.** Arm an asset from a tile and place it. Escape closes the asset menu. Arm a
    terraforming brush from Landscaping: the menu stays, and answers a search.
 6. **Options.** Flip each option under Options › Better Building Menu with a

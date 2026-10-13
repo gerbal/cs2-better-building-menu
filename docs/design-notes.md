@@ -56,16 +56,39 @@ drives.
 
 ## Patching vanilla's layout for the asset menu
 
-`useVanillaLayoutForAssetMenu` in `mods/BuildingMenu/vanillaLayout.ts` makes one change to an
-element the game owns, applied on mount and undone on unmount: imperative and scoped to the mount,
-because a stylesheet rule would restyle the game for the whole session, and for any other mod
-looking at the same node. A missing module or class makes the patch a silent no-op.
+`useVanillaLayoutForAssetMenu` in `mods/BuildingMenu/vanillaLayout.ts` makes two changes to
+elements the game owns, each applied while it is needed and undone when it is not and on unmount:
+imperative and scoped to the mount, because a stylesheet rule would restyle the game for the whole
+session, and for any other mod looking at the same node. A missing module or class makes a patch a
+silent no-op.
 
 **The game's own centring is left alone.** Vanilla centres its side + main + side trio, which puts
 its build menu's slot, 712 rem wide, at x 604 on 16:9. The asset menu's row keeps a 706 layout width
 at every Width step and sits at the slot's left, and the box and the pane draw at an offset from it
 (see "The box at its Width step, and the control pane"). The box places itself, so nothing about
 the trio needs to change.
+
+**The tool options column moved left of a box that reaches left of the slot.** The game's
+`toolLayout` (`game-main-screen.module.scss`) centres its children, a `toolSideColumn`, the slot and
+a second `toolSideColumn`, with 6 rem either side of the slot. So the tool options column sits right
+beside the slot, ending at x 598 on 16:9, and grows left with the text scale: 380 wide at the game's
+own size, wider by half the scale's increase. The Width steps' room (see "The Width steps") takes
+the column to run from x 16 to the tool options' edge, 396 at the game's own size, growing right,
+which is where 0.2.x put it by left-aligning the whole `toolLayout`. Without a move, steps 3 to 5,
+and step 2 beside the pane, which reach left of the slot, would cover the column's buttons.
+
+- **Only the column moves, and only then.** While the box draws left of the slot
+  (`BoxPlacement.offset < 0`), `toolOptionsShift` in `widthSteps.ts` gives the column a `left` that
+  ends it at the tool options' edge, so it runs from x 16 to that edge at every text scale; where the
+  box keeps the slot's left edge the game's layout is untouched. It is the first child of
+  `toolLayout` carrying the module's `toolSideColumn` class. The game's stylesheet gives the column
+  `position: relative`, so a `left` moves it without moving anything else.
+- **Why not left-align `toolLayout` again.** That moves the slot too, by an amount that changes with
+  the text scale, so `boxPlacement`'s offsets would have to measure from a slot that is no longer at
+  the screen's centre. Moving the column alone keeps the slot where the game centres it, so the
+  placement, its tests and the game's own menu under a gamepad all keep one slot.
+- **The column right of the slot holds nothing.** The game renders it empty, a spacer that keeps
+  the slot centred, so the steps that grow right cover nothing there and it is left alone.
 
 **The toolbar sunk to `z-index: -1`.** The chirper hangs off `toolbar` and the
 asset menu hangs off `main-container`. Both are children of `game-main-screen` at

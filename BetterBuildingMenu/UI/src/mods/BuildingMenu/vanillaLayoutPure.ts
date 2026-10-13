@@ -4,11 +4,12 @@
  * `cs2/modding` here, so the test runner can load it.
  */
 
-/** The property the asset menu patches on vanilla's elements. */
-export type PatchedProperty = "zIndex";
+/** The properties the asset menu patches on vanilla's elements. */
+export type PatchedProperty = "zIndex" | "left";
 
 const CSS_NAME: Record<PatchedProperty, string> = {
   zIndex: "z-index",
+  left: "left",
 };
 
 export interface StyledElement {

@@ -17,6 +17,7 @@ import {
   sanitizeWidthStep,
   snapTargets,
   toolOptionsEdge,
+  toolOptionsShift,
   topRowRightInset,
   vanillaBoxLeft,
   widthStepWidths,
@@ -336,5 +337,55 @@ describe("the steps by number", () => {
   it("are one to five, and only the two past the chirper's clearance cover it", () => {
     assert.deepEqual([...WIDTH_STEP_NUMBERS], [1, 2, 3, 4, 5]);
     assert.deepEqual(WIDTH_STEP_NUMBERS.filter(coversTheChirper), [4, 5]);
+  });
+});
+
+describe("the game's tool options beside a box that reaches left of the game's slot", () => {
+  const shifts = (over: Partial<WidthStepScreen> = {}) =>
+    [1, 2, 3, 4, 5].map((step) => {
+      const width = drawnStepWidth(step, screen(over));
+      return toolOptionsShift(boxPlacement(width, screen(over)), screen(over));
+    });
+
+  it("stay where the game puts them while the box keeps the slot's left edge", () => {
+    assert.deepEqual(shifts().slice(0, 2), [null, null]);
+  });
+
+  it("move left for steps 3 to 5, and beside the pane for step 2 too, which grows left to leave it room", () => {
+    assert.deepEqual(shifts().slice(2), [-202, -202, -202]);
+    assert.deepEqual(shifts({ paneShown: true }), [null, -202, -202, -202, -202]);
+  });
+
+  it("move to where the width model puts them, 16 to the tool options' edge, at every text scale", () => {
+    // Where the game draws the column on 16:9: its right edge 6 rem short of the slot, at x 598, its
+    // left edge further left the larger the text.
+    for (const [scale, gameLeft] of [[1, 218], [1.1, 199], [1.3, 161], [1.5, 123]]) {
+      const [, , shift] = shifts({ textScale: scale });
+
+      near(gameLeft + (shift ?? 0), 16, `${scale} left`);
+      near(598 + (shift ?? 0), toolOptionsEdge(scale), `${scale} right`);
+    }
+  });
+
+  it("never sit under the box once moved", () => {
+    for (const textScale of [1, 1.1, 1.3, 1.5]) {
+      for (const paneShown of [false, true]) {
+        for (const step of [1, 2, 3, 4, 5]) {
+          const over = { textScale, paneShown };
+          const width = drawnStepWidth(step, screen(over));
+          const placement = boxPlacement(width, screen(over));
+          const shift = toolOptionsShift(placement, screen(over));
+
+          assert.ok(598 + (shift ?? 0) <= placement.left, `${textScale} ${paneShown} step ${step}`);
+        }
+      }
+    }
+  });
+
+  it("follow the game's slot on a wider screen", () => {
+    // 21:9: the slot starts at 904, so the column ends at 898.
+    const [, , shift] = shifts({ aspect: TWENTY_ONE_NINE });
+
+    assert.equal(shift, 396 - 898);
   });
 });
