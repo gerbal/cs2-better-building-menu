@@ -1,14 +1,15 @@
 /**
  * The said-once rule: which of a view's shared values the readout says, what it says of them, and which
- * cells a row leaves blank because the readout said them. A blank number cell only ever means the
- * readout's value. Pure. See docs/design-notes.md, "Numbers said once".
+ * cells a row leaves blank because the readout said them. A row with no value of a stated kind says
+ * "–" there, so a blank number cell only ever means the readout's value. Pure. See
+ * docs/design-notes.md, "Numbers said once".
  */
 import { formatBuildingMetric, formatLotDimensions, formatSpeedLimit, groupDigits, speedNumber, type NumberSeparators } from "./assetMenuMetricFormat";
 import type { AssetMenuMetric } from "./assetMenuLayout";
 import type { ListForm } from "./bodyGeometry";
 import type { DrawnBody } from "./bodyChoice";
 import type { BuildingCatalogEntry, SharedValue, ViewFacts } from "./buildingCatalog";
-import { capacityText, costText, keyFigure, sortsByValue, type KeyKind, type UnitGlyph } from "./rowNumbers";
+import { capacityText, costText, keyFigure, lotText, sortsByValue, type KeyFigure, type KeyKind, type UnitGlyph } from "./rowNumbers";
 
 /** Nothing said: every row prints every value it shows. */
 export const NOTHING_SAID: readonly SharedValue[] = [];
@@ -64,6 +65,7 @@ export function holdsBack(entry: BuildingCatalogEntry, said: readonly SharedValu
 
   switch (value.kind) {
     case "speed":
+      // Half up where C# rounds half to even: a row between the two prints its speed, which stays true.
       return typeof entry.speedLimit === "number" && Math.round(entry.speedLimit) === value.value;
     case "capacity":
       return entry.capacity === value.value;
@@ -74,6 +76,27 @@ export function holdsBack(entry: BuildingCatalogEntry, said: readonly SharedValu
     default:
       return entry.constructionCost === value.value;
   }
+}
+
+/** What a cell says of a row with no value of a kind the readout states, unlike the blank of one it said. */
+const NO_VALUE = "–";
+
+const states = (said: readonly SharedValue[], kind: ShownKind): boolean => said.some((value) => value.kind === kind);
+
+/** A cost cell for a row with no cost: a dash while the readout states a cost, else blank. */
+export function missingCost(said: readonly SharedValue[]): string {
+  return states(said, "cost") ? NO_VALUE : "";
+}
+
+/**
+ * A key-number cell for a row that shows no figure of a kind the readout states: a lot its name already
+ * says, by its grid, since it is not the stated one; else a dash. Null while the kind is not stated.
+ */
+export function missingFigure(entry: BuildingCatalogEntry, said: readonly SharedValue[], kind: KeyKind): KeyFigure | null {
+  if (kind === "" || !states(said, kind)) return null;
+
+  const lot = kind === "lot" ? lotText(entry) : null;
+  return lot === null ? { text: NO_VALUE, glyph: null } : { text: lot, glyph: "grid" };
 }
 
 /** A row of the window that holds the value, whose own unit and glyph say it; null where none does. */

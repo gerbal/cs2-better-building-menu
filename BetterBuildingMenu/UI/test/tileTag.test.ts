@@ -176,6 +176,8 @@ describe("a tile's tag", () => {
     assert.deepEqual(tileTag(row(), null, FALLBACK_SEPARATORS, "Locked", 0, 64, 1, said), { text: "", locked: false });
     assert.deepEqual(tileTag(row({ isLocked: true, unlockMilestone: 4 } as Partial<BuildingCatalogEntry>), null, FALLBACK_SEPARATORS, "Locked", 0, 64, 1, said), { text: "MS 4", locked: true });
     assert.equal(tileTag(row({ constructionCost: 48_000 }), null, FALLBACK_SEPARATORS, "Locked", 0, 64, 1, said).text, formatBuildingMetric(48_000, "cost"));
+    // A building with no cost says so with a dash while the readout states one.
+    assert.equal(tileTag(row({ constructionCost: null } as Partial<BuildingCatalogEntry>), null, FALLBACK_SEPARATORS, "Locked", 0, 64, 1, said).text, "–");
   });
 
   it("says nothing for a building with no cost", () => {

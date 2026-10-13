@@ -79,6 +79,16 @@ describe("the list", () => {
     assert.equal(count(html, /<span class="first">¢44\/c<\/span>/), 2);
   });
 
+  it("marks a row with no value of a kind the readout says with a dash, never the said blank", () => {
+    setReadoutSaid([{ kind: "speed", value: 100, depth: 0 }]);
+    const roads = rows(2, (id) => ({ constructionCost: 5500, costIsPerDistance: true, capacity: null, speedLimit: id === 1 ? 100 : null } as Partial<BuildingCatalogEntry>));
+    const html = renderHtml(<ListBody entries={roads} grid={grid()} keyKind="speed" enterId={null} onPlace={() => undefined} />);
+    resetAssetMenuView();
+
+    assert.equal(count(html, /class="second"/), 1);
+    assert.match(html, /data-catalog-entry="2"[^]*?<span class="secondLine"><span class="second">–<\/span><\/span>/);
+  });
+
   it("says a one-line plate's key number by its glyph where the readout says the cost once, and nothing where it says both", () => {
     const roads = rows(2, (id) => ({ constructionCost: 5500, costIsPerDistance: true, capacity: null, speedLimit: id === 1 ? 100 : 80 } as Partial<BuildingCatalogEntry>));
     const plate1 = grid({ textScale: 1.3 });

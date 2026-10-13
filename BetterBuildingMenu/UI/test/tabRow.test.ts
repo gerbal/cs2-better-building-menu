@@ -370,6 +370,33 @@ describe("the tabs' names at the wider steps", () => {
     }
   });
 
+  it("never names the tabs at the cost of the legend: a wider step keeps the legend's form or a longer one", () => {
+    const EIGHT = ["SmallRoads", "MediumRoads", "LargeRoads", "Highways", "Intersections", "Bridges", "Parking", "Roundabouts"];
+    const eight = tabRow(roads({
+      categories: EIGHT.map((id) => category(id)),
+      counts: EIGHT.map((id, index) => ({ id, count: 12 + index })),
+      allCount: 159,
+    })).items;
+    const speed = { full: "100 km/h unless shown", short: "others 100 km/h", bare: "others 100" };
+    const cost = { full: "¢44/c unless shown", short: "others ¢44/c", bare: "others ¢44/c" };
+    const legends = (parts: number) => Object.assign({}, ...(["full", "short", "bare"] as const).map((form) => ({
+      [form]: [{ glyph: "gauge" as const, text: speed[form] }, ...(parts > 1 ? [{ glyph: null, text: cost[form] }] : [])],
+    })));
+    const forms = ["full", "short", "bare", "none"];
+
+    for (const [scale, parts] of [[1.1, 1], [1.5, 2]]) {
+      const said = { ...readout, legends: legends(parts) };
+      const drawn = [1, 2, 3, 4, 5].map((number) => {
+        const width = step(number, scale);
+        return planTabRow(eight, said, width, scale, plain, tabForm(eight, said, width, scale, plain, true)).legend;
+      });
+
+      for (let at = 1; at < drawn.length; at++) {
+        assert.ok(forms.indexOf(drawn[at]) <= forms.indexOf(drawn[at - 1]), `at ${scale}: ${drawn.join(" ")}`);
+      }
+    }
+  });
+
   it("names nothing with the Tab names knob on Never", () => {
     assert.equal(tabForm(tabRow(roads()).items, readout, step(5, 1), 1, plain, false), "stack");
   });

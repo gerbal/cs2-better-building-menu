@@ -61,6 +61,23 @@ describe("a row's cell left blank", () => {
     assert.equal(plateNumbers(row({ isLocked: true, unlockMilestone: 3 }), null, FALLBACK_SEPARATORS, "Locked", 0, "speed", [cost]).first, "MS 3");
   });
 
+  it("says a dash where a row has no value of a kind the readout states, so a blank only ever means the stated value", () => {
+    const numbers = (entry: BuildingCatalogEntry, said: readonly SharedValue[], keyKind: "speed" | "lot" = "speed") =>
+      plateNumbers(entry, null, FALLBACK_SEPARATORS, "Locked", 0, keyKind, said);
+
+    assert.deepEqual([numbers(row({ speedLimit: null }), [speed]).second, numbers(row({ speedLimit: null }), [speed]).glyph], ["–", null]);
+    assert.equal(numbers(row({ constructionCost: null }), [cost]).first, "–");
+    // Nothing stated, nothing marked: the cell is blank as ever.
+    assert.equal(numbers(row({ speedLimit: null }), []).second, null);
+    assert.equal(numbers(row({ constructionCost: null }), [speed]).first, "");
+    // A lot the name already says prints where it differs from the one stated.
+    const parking = row({ name: "Parking Lot 4x6", lotWidth: 4, lotDepth: 6 });
+    assert.deepEqual([numbers(parking, [{ kind: "lot", value: 4, depth: 4 }], "lot").second, numbers(parking, [{ kind: "lot", value: 4, depth: 4 }], "lot").glyph], [formatLotDimensions(4, 6), "grid"]);
+    // On a one-line plate too.
+    assert.equal(oneLineNumber(row({ constructionCost: null }), numbers(row({ constructionCost: null }), [cost]), null, [cost]).first, "–");
+    assert.equal(oneLineNumber(row({ speedLimit: null }), numbers(row({ speedLimit: null }), [cost, speed]), null, [cost, speed]).first, "–");
+  });
+
   it("on a one-line plate gives the cost's place to the key number where the readout said the cost, and is blank only where it said both", () => {
     const one = (entry: BuildingCatalogEntry, said: readonly SharedValue[], sorted: "workers" | null = null) =>
       oneLineNumber(entry, plateNumbers(entry, sorted, FALLBACK_SEPARATORS, "Locked", 0, "speed", said), sorted, said);

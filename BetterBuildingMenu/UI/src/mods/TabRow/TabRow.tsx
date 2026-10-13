@@ -3,7 +3,7 @@ import { FOCUS_DISABLED } from "cs2/input";
 import { useLocalization } from "cs2/l10n";
 import { Button, Tooltip } from "cs2/ui";
 import classNames from "classnames";
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 
 import { getNumberSeparators, groupDigits } from "domain/assetMenuMetricFormat";
 import { setReadoutSaid } from "domain/assetMenuViewStore";
@@ -151,21 +151,26 @@ export const TabRow = ({ width }: { width: number }) => {
   // the key kind named. See docs/design-notes.md, "Numbers said once".
   const facts = page?.facts;
   const keyKind = facts?.keyKind ?? "";
-  const shown = shownKinds(body, drawnForm ?? listForm(textScale, atLargeText), sortedMetric, keyKind);
-  const stated = facts === undefined || indexing ? NOTHING_SAID : statedValues(facts, shown);
-  const items = page?.items ?? [];
-  const legends = LEGEND_FORMS.reduce<Partial<Record<LegendForm, LegendPart[]>>>(
-    (all, legendForm) => ({ ...all, [legendForm]: legendParts(stated, keyKind, shown, items, separators, words, legendForm) }),
-    {}
+  const bodyForm = drawnForm ?? listForm(textScale, atLargeText);
+  const shown = useMemo(() => shownKinds(body, bodyForm, sortedMetric, keyKind), [body, bodyForm, sortedMetric, keyKind]);
+  const stated = useMemo(() => (facts === undefined || indexing ? NOTHING_SAID : statedValues(facts, shown)), [facts, indexing, shown]);
+  const items = page?.items;
+  const legends = useMemo(
+    () => LEGEND_FORMS.reduce<Partial<Record<LegendForm, LegendPart[]>>>(
+      (all, legendForm) => ({ ...all, [legendForm]: legendParts(stated, keyKind, shown, items ?? [], separators, words, legendForm) }),
+      {}
+    ),
+    [stated, keyKind, shown, items, separators, words]
   );
   // Named above the first step where every tab fits so. See docs/design-notes.md, "The tab row".
   const form = tabForm(row.items, { place, range, legends }, width, textScale, format, namesAllowed);
   const plan = planTabRow(row.items, { place, range, legends }, width, textScale, format, form);
   const legend = legends[plan.legend] ?? [];
   // The rows leave blank only what the readout says: a legend short of room says nothing, and they print it.
+  // Before the paint, so the rows' blanks and the legend change on the same frame.
   const said = plan.legend === "none" ? NOTHING_SAID : stated;
-  useEffect(() => setReadoutSaid(said), [said]);
-  useEffect(() => () => setReadoutSaid(NOTHING_SAID), []);
+  useLayoutEffect(() => setReadoutSaid(said), [said]);
+  useLayoutEffect(() => () => setReadoutSaid(NOTHING_SAID), []);
 
   const select = (cell: TabCell) => {
     if (cell.kind === "branch") send({ method: "SetAssetMenuStripTab", args: [cell.id] });

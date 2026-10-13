@@ -297,6 +297,24 @@ describe("the readout", () => {
     assert.doesNotMatch(render(), /class="said"/);
   });
 
+  it("tells the rows nothing is said where the legend has no room, so they print every value", () => {
+    set("BuildingCatalog", {
+      items: [{ id: 1, speedLimit: 100 }, { id: 2, speedLimit: 100 }, { id: 3, speedLimit: 100 }],
+      totalCount: 3,
+      facts: { sharedValues: [{ kind: "speed", value: 100, depth: 0 }], keyKind: "speed" },
+    });
+    let root: ReactTestRenderer | undefined;
+    act(() => {
+      root = create(<TabRow width={260} />);
+    });
+    const html = JSON.stringify(root!.toJSON());
+    const said = getAssetMenuView().said;
+    act(() => root!.unmount());
+
+    assert.doesNotMatch(html, /"className":"said"/);
+    assert.deepEqual(said, []);
+  });
+
   it("explains the key number on the plates the list draws: none on a one-line plate, the kind on a grown small menu's big plate", () => {
     setBinding("options", "textScale", 1.3);
     set("BuildingCatalog", { items: [{ id: 1, speedLimit: 100 }], totalCount: 1, facts: { sharedValues: [], keyKind: "speed" } });

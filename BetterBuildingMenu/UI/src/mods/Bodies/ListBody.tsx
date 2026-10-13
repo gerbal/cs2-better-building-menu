@@ -3,7 +3,7 @@ import { milestone } from "cs2/bindings";
 import { FOCUS_DISABLED } from "cs2/input";
 import { Button, Scrollable } from "cs2/ui";
 import classNames from "classnames";
-import { memo, useEffect, type ReactNode } from "react";
+import { memo, useLayoutEffect, type ReactNode } from "react";
 
 import enterMark from "images/enter.svg";
 import type { NumberSeparators } from "domain/assetMenuMetricFormat";
@@ -167,10 +167,11 @@ export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SE
   const flow = useNearField(searching, grid.firstCols, grid.lines);
   // What the readout says once, which the rows that hold it leave blank. See docs/design-notes.md, "Numbers said once".
   const said = useAssetMenuView((view) => view.said);
-  // The form it draws, which decides the numbers the readout may say once; none once it goes.
+  // The form it draws, which decides the numbers the readout may say once; none once it goes. Before
+  // the paint, as the readout's own publish.
   const drawnForm = grid.form === "tile" ? null : grid.form;
-  useEffect(() => setDrawnForm(drawnForm), [drawnForm]);
-  useEffect(() => () => setDrawnForm(null), []);
+  useLayoutEffect(() => setDrawnForm(drawnForm), [drawnForm]);
+  useLayoutEffect(() => () => setDrawnForm(null), []);
   const { cells, slots } = useBodyCells(entries, sections, grid.cols, offset, flow);
 
   return (

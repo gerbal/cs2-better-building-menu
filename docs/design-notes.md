@@ -430,16 +430,18 @@ scale the game offers, the name going from 110% and the last tabs clipping from 
 folds the last tabs into a list, is increment 20's. The All count, like the others, draws blank
 until C# sends it: its binding starts negative.
 
-**Named tabs.** Above the first Width step, the box drawn wider than the first step's 706, where every tab
-fits with its name and the readout's range still fits beside them (`tabForm`, on the same estimate
+**Named tabs.** Above the first Width step, the box drawn wider than the first step's 706, where every
+tab fits with its name and the readout's range still fits beside them (`tabForm`, on the same estimate
 as the rest of the row), each picture cell draws its picture, its name and its count in a line: the
-row's 5 rem padding, the picture in a slot as wide as it is, 4, the name at the worded cells' size,
-4, the count. The All cell names itself on its plate; a cell that already says its name keeps its
-form, and Education's plate keeps its own. Short of room the row keeps the picture over the count,
-never part named and part not, so names never push out the range, which always shows. The form
-follows the drawn width, so a stored step drawn narrower beside the pane, and a width drag, read as
-what is on screen. The developer knob Tab names turns the names off at every width. "New N", which
-then draws right after All, is increment 15's.
+row's 5 rem padding, the picture in a slot as wide as it is, 4, the name at the worded cells' size, 4,
+the count. The All cell names itself on its plate; a cell that already says its name keeps its form,
+and Education's plate keeps its own. Short of room the row keeps the picture over the count, never part
+named and part not, so names never push out the range, which always shows. Nor do they take the
+legend's room (see "Numbers said once"): the tabs are named only where the legend keeps the form it has
+beside them as pictures, since a name is the row's look and the legend decides what the rows print, so
+a wider box never drops it. The form follows the drawn width, so a stored step drawn narrower beside
+the pane, and a width drag, read as what is on screen. The developer knob Tab names turns the names off
+at every width. "New N", which then draws right after All, is increment 15's.
 
 ## The box's height
 
@@ -1338,12 +1340,15 @@ where a sort by a value takes the key number's place, on a one-line plate or a t
 tells the readout the form it draws (`setDrawnForm`), so a small menu's grown plate, which keeps both
 numbers at large text, has its key number explained. Each value is said by its glyph: "100 km/h unless
 shown". Where it says none, it names the key kind by its glyph and the hover card's word ("Speed
-limit"), so a row's second number is never unexplained. Short of room it shortens a step at a time
-("others 100 km/h", then "others 100"), then drops the legend, then the place line, and only then do
-the last tabs clip (`planTabRow`). The legend's widths come from the tab row's own estimate, as the
-rest of the row's do. What the readout says it puts in the view store (`setReadoutSaid`), and the rows
-read it there: a row leaves blank only a cell whose value the readout said (`holdsBack`), so a blank
-cell only ever means the readout's value. A legend short of room says nothing, and every row prints its
+limit"); where it says values, a key number of a kind it does not state is explained by its glyph
+alone. Short of room it shortens a step at a time ("others 100 km/h", then "others 100"), then drops
+the legend, then the place line, and only then do the last tabs clip (`planTabRow`). The legend's
+widths come from the tab row's own estimate, as the rest of the row's do. What the readout says it puts
+in the view store (`setReadoutSaid`), and the rows read it there: a row leaves blank only a cell whose
+value the readout said (`holdsBack`), and a row with no value of a kind the readout states says "–"
+there (`missingCost`, `missingFigure`; a lot its name already says prints), so a blank cell only ever
+means the readout's value. C# counts a row that lacks the kind against the share, so a stated kind can
+still be missing from a few open rows. A legend short of room says nothing, and every row prints its
 own. A locked building's slot still says why it waits. A one-line plate shows one number: under a sort
 by a value that value; else the cost, or where the readout said the cost, the key number by its glyph;
 it is blank only where the readout said both (`oneLineNumber`).

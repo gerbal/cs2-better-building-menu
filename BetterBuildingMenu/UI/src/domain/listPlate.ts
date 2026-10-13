@@ -8,7 +8,7 @@ import type { AssetMenuMetric } from "./assetMenuLayout";
 import type { BuildingCatalogEntry, SharedValue } from "./buildingCatalog";
 import { isEntryLocked, lockedFact } from "./buildingLockState";
 import { costText, keyFigure, sortedText, sortsByValue, type KeyKind, type UnitGlyph } from "./rowNumbers";
-import { holdsBack, NOTHING_SAID } from "./saidOnce";
+import { holdsBack, missingCost, missingFigure, NOTHING_SAID } from "./saidOnce";
 
 export interface PlateNumbers {
   /** The cost, or for a locked building "MS n" or the locked word; "" when it has neither. */
@@ -24,7 +24,8 @@ export interface PlateNumbers {
 /**
  * The plate's numbers. Under a sort by a number the second is the value sorted by, with its unit, so
  * the order reads down the column; otherwise the view's key number, by its glyph. A value the readout
- * said once is left blank: a blank cell only ever means the readout's value.
+ * said once is left blank, and a row with no value of a stated kind says "–": a blank cell only ever
+ * means the readout's value.
  */
 export function plateNumbers(
   entry: BuildingCatalogEntry,
@@ -36,13 +37,13 @@ export function plateNumbers(
   said: readonly SharedValue[] = NOTHING_SAID,
 ): PlateNumbers {
   const locked = isEntryLocked(entry);
-  const first = locked ? lockedFact(entry, lockedWord, achievedMilestone) : holdsBack(entry, said, "cost") ? "" : costText(entry, separators) ?? "";
+  const first = locked ? lockedFact(entry, lockedWord, achievedMilestone) : holdsBack(entry, said, "cost") ? "" : costText(entry, separators) ?? missingCost(said);
 
   if (sortsByValue(sortedMetric)) {
     return { first, second: sortedText(entry, sortedMetric, separators), glyph: null, locked };
   }
 
-  const key = holdsBack(entry, said, keyKind) ? null : keyFigure(entry, keyKind, separators);
+  const key = holdsBack(entry, said, keyKind) ? null : keyFigure(entry, keyKind, separators) ?? missingFigure(entry, said, keyKind);
   return { first, second: key?.text ?? null, glyph: key?.glyph ?? null, locked };
 }
 

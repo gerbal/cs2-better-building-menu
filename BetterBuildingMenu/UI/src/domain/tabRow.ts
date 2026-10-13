@@ -315,9 +315,10 @@ export function planTabRow(
 
 /**
  * How the tabs draw in a box this wide: above the first Width step, where every tab fits named with
- * the readout's range beside them, each says its name; else each draws its picture over its count,
- * never part named and part not. Off by the developer knob, never named. See docs/design-notes.md,
- * "The tab row".
+ * the readout's range beside them, and the legend keeps the form it has with the tabs as pictures,
+ * each says its name; else each draws its picture over its count, never part named and part not. A
+ * name is the row's look; the legend decides what the rows print, so a wider box never loses it. Off
+ * by the developer knob, never named. See docs/design-notes.md, "The tab row".
  */
 export function tabForm(
   items: readonly TabRowItem[],
@@ -329,7 +330,10 @@ export function tabForm(
 ): TabForm {
   if (!namesAllowed || boxWidth <= WIDTH_STEP_VANILLA) return "stack";
 
-  return planTabRow(items, readout, boxWidth, scale, format, "named").clipped ? "stack" : "named";
+  const named = planTabRow(items, readout, boxWidth, scale, format, "named");
+  const stacked = planTabRow(items, readout, boxWidth, scale, format, "stack");
+
+  return named.clipped || LEGEND_FORMS.indexOf(named.legend) > LEGEND_FORMS.indexOf(stacked.legend) ? "stack" : "named";
 }
 
 /** The readout's second line: the window the list holds, with the true total; the total alone while nothing is loaded. */
