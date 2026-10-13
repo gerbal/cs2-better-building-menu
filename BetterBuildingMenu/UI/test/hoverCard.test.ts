@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { getNumberSeparators } from "../src/domain/assetMenuMetricFormat";
 import type { BuildingCatalogEntry } from "../src/domain/buildingCatalog";
-import { hoverCardForm, pointerCardText, type PointerCardWords } from "../src/domain/hoverCard";
+import { hoverCardForm, pointerCardText, statusLine, type PointerCardWords } from "../src/domain/hoverCard";
 import { hoverCardLabels } from "../src/domain/hoverCardLines";
 
 const english = (_key: string, fallback?: string | null) => fallback ?? null;
@@ -50,5 +50,39 @@ describe("what the hover card beside the pointer says", () => {
 
   it("reads the Hover card row's form, anything else beside the pointer", () => {
     assert.deepEqual(["pointer", "slot", "status", "", "Slot", undefined].map((value) => hoverCardForm(value)), ["pointer", "slot", "status", "pointer", "pointer", "pointer"]);
+  });
+});
+
+describe("what Status line only says in the readout", () => {
+  const fonts = { name: 11, line: 10, sep: 8 };
+  const say = (entry: BuildingCatalogEntry, room: number, kind: Parameters<typeof pointerCardText>[1] = "capacity", achieved = 0) =>
+    statusLine(entry, kind, separators, words, achieved, room, fonts);
+
+  it("names the building, then its cost, upkeep, key number and lot, with their units in words", () => {
+    const road = building({ name: "Four-Lane Road", category: "Networks", constructionCost: 5_500, upkeep: 120, costIsPerDistance: true, speedLimit: 100, capacity: null, lotWidth: 0, lotDepth: 0 });
+    const line = say(road, 400, "speed");
+
+    assert.equal(line.name, "Four-Lane Road");
+    assert.equal(line.parts.length, 3);
+    assert.match(line.parts[0], /\/km$/);
+    assert.match(line.parts[2], /100 km\/h/);
+    assert.deepEqual(say(building({}), 400).parts.map((part) => part.split(" ")[0]).slice(-1), ["Lot"]);
+  });
+
+  it("drops the lot first, then the upkeep, then the key number, then the cost, and keeps a locked building's milestone", () => {
+    const school = building({ isLocked: true, unlockMilestone: 6 } as Partial<BuildingCatalogEntry>);
+    const [milestone, cost, upkeep, key, lot] = say(school, 400).parts;
+
+    assert.equal(milestone, "MS 6");
+    assert.match(upkeep, /\/mo$/);
+    assert.match(lot, /^Lot /);
+    assert.deepEqual(say(school, 200).parts, [milestone, cost, key]);
+    assert.deepEqual(say(school, 120).parts, [milestone, cost]);
+    assert.deepEqual(say(school, 60).parts, [milestone]);
+    assert.deepEqual(say(school, 20).parts, [milestone]);
+  });
+
+  it("cuts a name too long for the readout's room once", () => {
+    assert.match(say(building({ name: "Wide Quay With Four-Lane Road Over A Canal" }), 90).name, /…/);
   });
 });

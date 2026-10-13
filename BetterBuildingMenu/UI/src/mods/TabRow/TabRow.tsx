@@ -13,7 +13,7 @@ import { LEGEND_FORMS, legendParts, NOTHING_SAID, shownKinds, statedValues, type
 import { sortedMetricFor } from "domain/sortedMetric";
 import { useTextScale } from "domain/textScaleSetting";
 import { NO_TIER_BRACKET } from "domain/menuProgression";
-import { arrivedCount, cssUrl, planTabRow, readoutRange, tabForm, tabRow, type TabCell, type TabForm } from "domain/tabRow";
+import { arrivedCount, cssUrl, planTabRow, readoutRange, readoutRoom, tabForm, tabRow, type TabCell, type TabForm } from "domain/tabRow";
 import type { VanillaMenuCategory } from "domain/vanillaMenuCategories";
 import { ALL_CATEGORIES_KEYS, resolveVanillaLabel, vanillaCategoryNameKeys } from "domain/vanillaServiceLabels";
 import {
@@ -36,6 +36,7 @@ import {
   send,
 } from "mods/bindings";
 import { UNIT_GLYPHS } from "mods/Bodies/unitGlyphs";
+import { useStatusLine } from "mods/HoverCard/HoverCard";
 import { useAssetMenuView } from "mods/useAssetMenuView";
 import { useMenuBody } from "mods/useMenuBody";
 import styles from "./tabRow.module.scss";
@@ -166,6 +167,9 @@ export const TabRow = ({ width }: { width: number }) => {
   const form = tabForm(row.items, { place, range, legends }, width, textScale, format, namesAllowed);
   const plan = planTabRow(row.items, { place, range, legends }, width, textScale, format, form);
   const legend = legends[plan.legend] ?? [];
+  // Status line only: the building pointed at, in the readout's room. The rows keep the blanks the legend
+  // said, and the legend comes back when the pointer leaves. See docs/design-notes.md, "The hover card".
+  const status = useStatusLine(readoutRoom(row.items, width, textScale, format, form), keyKind);
   // The rows leave blank only what the readout says: a legend short of room says nothing, and they print it.
   // Before the paint, so the rows' blanks and the legend change on the same frame.
   const said = plan.legend === "none" ? NOTHING_SAID : stated;
@@ -216,24 +220,38 @@ export const TabRow = ({ width }: { width: number }) => {
           )}
         </div>
         <div className={styles.spacer} />
-        <div className={styles.readout} data-readout={plan.readout}>
-          {plan.readout === "full" && <span className={styles.place}>{place}</span>}
-          {/* The legend, then the range: each part in a box of its own, the glyph its sibling, "·" after it. */}
-          <span className={styles.line}>
-            {legend.map((part, index) => (
-              <Fragment key={index}>
-                <span className={styles.said}>
-                  {part.glyph !== null && (
-                    <img className={styles.saidGlyph} style={{ maskImage: `url(${UNIT_GLYPHS[part.glyph]})` }} alt="" aria-hidden="true" />
-                  )}
-                  <span className={styles.saidText}>{part.text}</span>
-                </span>
-                <span className={styles.sep}>·</span>
-              </Fragment>
-            ))}
-            <span className={styles.range}>{range}</span>
-          </span>
-        </div>
+        {status !== null ? (
+          <div className={styles.readout} data-readout="status">
+            <span className={styles.place}>{status.name}</span>
+            <span className={styles.line}>
+              {status.parts.map((part, index) => (
+                <Fragment key={index}>
+                  {index > 0 && <span className={styles.sep}>·</span>}
+                  <span className={styles.range}>{part}</span>
+                </Fragment>
+              ))}
+            </span>
+          </div>
+        ) : (
+          <div className={styles.readout} data-readout={plan.readout}>
+            {plan.readout === "full" && <span className={styles.place}>{place}</span>}
+            {/* The legend, then the range: each part in a box of its own, the glyph its sibling, "·" after it. */}
+            <span className={styles.line}>
+              {legend.map((part, index) => (
+                <Fragment key={index}>
+                  <span className={styles.said}>
+                    {part.glyph !== null && (
+                      <img className={styles.saidGlyph} style={{ maskImage: `url(${UNIT_GLYPHS[part.glyph]})` }} alt="" aria-hidden="true" />
+                    )}
+                    <span className={styles.saidText}>{part.text}</span>
+                  </span>
+                  <span className={styles.sep}>·</span>
+                </Fragment>
+              ))}
+              <span className={styles.range}>{range}</span>
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

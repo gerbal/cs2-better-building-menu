@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { Profiler } from "react";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
-import { renderHtml } from "../harness/render";
+import { entry, renderHtml } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { clearPointed, getAssetMenuView, resetAssetMenuView, setDrawnForm, setPointed } from "../../src/domain/assetMenuViewStore";
 import type { BuildingCatalogEntry } from "../../src/domain/buildingCatalog";
@@ -377,4 +377,72 @@ describe("the tab row as the pointer crosses the cells", () => {
       act(() => root!.unmount());
     });
   }
+
+  it("draws again as the pointer crosses cells under Status line only, the one form whose row says the building", () => {
+    seedRoads();
+    set("AssetMenuHoverCard", "status");
+    let commits = 0;
+    let root: ReactTestRenderer | undefined;
+    act(() => {
+      root = create(
+        <Profiler id="tabRow" onRender={() => { commits += 1; }}>
+          <TabRow width={706} />
+        </Profiler>,
+      );
+    });
+    const mounted = commits;
+
+    act(() => setPointed({ entry: { id: 1 } as BuildingCatalogEntry, cell: { x: 678, y: 805, w: 64, h: 64 } }));
+
+    assert.ok(commits > mounted);
+    act(() => clearPointed(1));
+    act(() => root!.unmount());
+  });
+});
+
+describe("the readout under Status line only", () => {
+  const globals = globalThis as unknown as Record<string, unknown>;
+  let saved: Record<string, unknown>;
+  let timers: (() => void)[] = [];
+  let root: ReactTestRenderer | undefined;
+  const readout = () => root!.root.find((node) => node.type === "div" && node.props["data-readout"] !== undefined);
+  const text = (node: ReturnType<typeof readout>): string => node.children.map((child) => (typeof child === "string" ? child : text(child))).join("");
+
+  beforeEach(() => {
+    resetBindings();
+    resetAssetMenuView();
+    seedRoads();
+    set("AssetMenuHoverCard", "status");
+    set("BuildingCatalog", { items: [], totalCount: 34, facts: { sharedValues: [], keyKind: "speed" } });
+    timers = [];
+    saved = { setTimeout: globals.setTimeout, clearTimeout: globals.clearTimeout };
+    globals.setTimeout = (run: () => void) => timers.push(run);
+    globals.clearTimeout = () => undefined;
+    root = mount();
+  });
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    Object.assign(globals, saved);
+  });
+
+  it("names the building pointed at and its figures once the pointer has rested, and says its own text again when it leaves", () => {
+    const road = entry(9, { name: "Four-Lane Road", category: "Networks", constructionCost: 5_500, upkeep: 120, costIsPerDistance: true, speedLimit: 100, capacity: null, lotWidth: 0, lotDepth: 0 });
+    act(() => setPointed({ entry: road, cell: { x: 0, y: 0, w: 171, h: 27.25 } }));
+    act(() => timers.splice(0).forEach((run) => run()));
+
+    assert.equal(readout().props["data-readout"], "status");
+    assert.match(text(readout()), /^Four-Lane Road.*\/km.*100 km\/h/);
+
+    act(() => clearPointed(9));
+    assert.notEqual(readout().props["data-readout"], "status");
+  });
+
+  it("keeps the readout's own text under the other forms", () => {
+    set("AssetMenuHoverCard", "pointer");
+    act(() => setPointed({ entry: entry(9), cell: { x: 0, y: 0, w: 171, h: 27.25 } }));
+    act(() => timers.splice(0).forEach((run) => run()));
+
+    assert.notEqual(readout().props["data-readout"], "status");
+  });
 });

@@ -6,10 +6,13 @@ import { memo, useEffect, useMemo, useRef, useState, type RefObject } from "reac
 
 import { clearPointed, type Pointed } from "domain/assetMenuViewStore";
 import { isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
-import { hoverCardForm, pointerCardText } from "domain/hoverCard";
+import { TAB_COUNT_SIZE, TAB_NAME_SIZE } from "domain/assetMenuLayout";
+import { hoverCardForm, pointerCardText, statusLine, type PointerCardWords, type StatusLine } from "domain/hoverCard";
 import { hoverCardLabels } from "domain/hoverCardLines";
 import { placePointerCard, placeSlotCard, remRect, type Rect } from "domain/hoverCardPlace";
 import type { KeyKind } from "domain/rowNumbers";
+import { READOUT_SEP_PADDING } from "domain/tabRow";
+import { textWidth } from "domain/textWidth";
 import { LAYOUT_HEIGHT } from "domain/sharedContracts.generated";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { useTextScale } from "domain/textScaleSetting";
@@ -31,10 +34,11 @@ const NAME_LINES = 3;
 /**
  * The building the pointer rests on, once it has rested the Hover delay knob's time; null at once when it
  * leaves. A move from one cell to the next takes the first away at once, and shows the next once it has
- * rested as long.
+ * rested as long. With `active` false it reads nothing from the store, so a component that only sometimes
+ * says the building never draws again as the pointer crosses cells.
  */
-export function usePointedAfterDelay(): Pointed | null {
-  const pointed = useAssetMenuView((view) => view.pointed);
+export function usePointedAfterDelay(active = true): Pointed | null {
+  const pointed = useAssetMenuView((view) => (active ? view.pointed : null));
   const delay = useValue(AssetMenuTuning$).hoverDelay ?? SHIPPED_TUNING.hoverDelay;
   const [shown, setShown] = useState<Pointed | null>(null);
 
@@ -48,6 +52,44 @@ export function usePointedAfterDelay(): Pointed | null {
   }, [pointed, delay]);
 
   return pointed !== null && shown !== null && shown.entry.id === pointed.entry.id ? pointed : null;
+}
+
+/** The words the card and the status line say beyond the figures: the hover card's labels, the unlock line, the locked word. */
+function useCardWords(): PointerCardWords {
+  const { translate } = useLocalization();
+  const stateWords = useStateWords();
+
+  return useMemo(() => ({
+    labels: hoverCardLabels((key, fallback) => translate(key, fallback)),
+    unlocksAt: translate("Tooltip.LABEL[BetterBuildingMenu.UnlocksAtMilestone]", "Unlocks at milestone {0}") ?? "Unlocks at milestone {0}",
+    lockedWord: stateWords.locked,
+  }), [translate, stateWords.locked]);
+}
+
+/**
+ * Status line only: what the readout says of the building pointed at, in the room the tabs leave it, the
+ * tabs never moving; null while nothing is pointed at, or the Hover card row picks another form. It reads
+ * the pointed building only under that form, and says it as the page has it now.
+ * See docs/design-notes.md, "The hover card".
+ */
+export function useStatusLine(room: number, keyKind: KeyKind): StatusLine | null {
+  const status = hoverCardForm(useValue(AssetMenuHoverCard$)) === "status";
+  const pointed = usePointedAfterDelay(status);
+  const page = useValue(BuildingCatalog$);
+  const words = useCardWords();
+  const separators = useNumberSeparators();
+  const textScale = useTextScale();
+  const achievedMilestone = useValue(milestone.achievedMilestone$) ?? 0;
+
+  if (!status || pointed === null) return null;
+
+  const entry = page?.items?.find((row) => row.id === pointed.entry.id) ?? pointed.entry;
+  const line = TAB_COUNT_SIZE * textScale;
+  return statusLine(entry, keyKind, separators, words, achievedMilestone, room, {
+    name: TAB_NAME_SIZE * textScale,
+    line,
+    sep: textWidth("·", line) + 2 * READOUT_SEP_PADDING,
+  });
 }
 
 interface CardProps {
@@ -123,20 +165,14 @@ function usePlacedCard(pointed: Pointed, boxRef: RefObject<HTMLElement>, page: u
 const PointerCard = memo(function PointerCard({ pointed, boxRef }: CardProps) {
   const page = useValue(BuildingCatalog$);
   const entry = page?.items?.find((row) => row.id === pointed.entry.id) ?? pointed.entry;
-  const { translate } = useLocalization();
   const separators = useNumberSeparators();
-  const stateWords = useStateWords();
+  const words = useCardWords();
   const textScale = useTextScale();
   // The view's key kind, which the card names the key number by; capacity before a page has said.
   const keyKind = (page?.facts?.keyKind ?? "capacity") as KeyKind;
   const achievedMilestone = useValue(milestone.achievedMilestone$) ?? 0;
   const { cardRef, placed } = usePlacedCard(pointed, boxRef, page, (card, drawn, screen) =>
     placePointerCard({ cell: drawn.cell, card: { w: card.w, h: card.h }, box: drawn.box, screen, cells: drawn.cells }));
-  const words = useMemo(() => ({
-    labels: hoverCardLabels((key, fallback) => translate(key, fallback)),
-    unlocksAt: translate("Tooltip.LABEL[BetterBuildingMenu.UnlocksAtMilestone]", "Unlocks at milestone {0}") ?? "Unlocks at milestone {0}",
-    lockedWord: stateWords.locked,
-  }), [translate, stateWords.locked]);
   const text = pointerCardText(entry, keyKind, separators, words, achievedMilestone);
   const locked = isEntryLocked(entry);
 

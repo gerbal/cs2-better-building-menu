@@ -281,6 +281,14 @@ function itemWidth(item: TabRowItem, scale: number, format: (count: number) => s
     + (cells.length - 1) * TAB_CELL_GAP;
 }
 
+/** The room the row leaves its readout in a box this wide, beside the tabs in a form: the tabs never give it more. */
+export function readoutRoom(items: readonly TabRowItem[], boxWidth: number, scale: number, format: (count: number) => string, form: TabForm = "stack"): number {
+  const widths = items.map((item) => itemWidth(item, scale, format, form));
+  const cells = widths.reduce((sum, width) => sum + width, 0) + Math.max(0, widths.length - 1) * TAB_CELL_GAP;
+  // The spacer and the readout each sit a gap past what comes before them.
+  return boxWidth - TAB_ROW_INSET - TAB_ROW_INSET_RIGHT - cells - 2 * TAB_CELL_GAP;
+}
+
 /**
  * How the row fits a box this wide, in a form. The legend before the range shortens a step at a time,
  * then goes, its values printed by the rows again; then the place line goes, which fits the row only
@@ -295,10 +303,7 @@ export function planTabRow(
   format: (count: number) => string,
   form: TabForm = "stack"
 ): TabRowPlan {
-  const widths = items.map((item) => itemWidth(item, scale, format, form));
-  const cells = widths.reduce((sum, width) => sum + width, 0) + Math.max(0, widths.length - 1) * TAB_CELL_GAP;
-  // The spacer and the readout each sit a gap past what comes before them.
-  const room = boxWidth - TAB_ROW_INSET - TAB_ROW_INSET_RIGHT - cells - 2 * TAB_CELL_GAP;
+  const room = readoutRoom(items, boxWidth, scale, format, form);
   const range = textWidth(readout.range, TAB_COUNT_SIZE * scale);
   const place = textWidth(readout.place, TAB_NAME_SIZE * scale);
   const line = (legend: LegendForm) => legendWidth(readout.legends?.[legend] ?? [], scale) + range;

@@ -1612,6 +1612,16 @@ Any other stored value reads as beside the pointer, on every load.
   (`HoverCardContent`: the description, the game's figures and BBM's, every condition a locked building
   waits on, the footprints) beside a 150 picture, then the building's packs, in the look's inks on the
   popovers' panel. Who made a mod's building waits for the mod facet, which names it.
+- **Status line only.** No card: the readout at the tabs' right end names the building on its first line,
+  planned to the room the tabs leave it and cut once where it runs over, and says its figures on the second
+  with their units in words (`statusLine`): a locked building's milestone, the cost, the upkeep, the key
+  number, the lot. Short of room the lot goes first, then the upkeep, then the key number, then the cost;
+  the milestone stays. The room is what the tab row leaves its readout (`readoutRoom`, the one number
+  `planTabRow` reads too), so the tabs never move. While the readout names a building the rows keep the
+  blanks the legend said: blanks that followed the pointer would flicker with every crossing, so the
+  legend, with the readout's own text, comes back when the pointer leaves. The tab row reads the pointed
+  building only under this form (`useStatusLine`), so under the other two it never draws again as the
+  pointer crosses cells.
 
 **This changes 0.2.x:** pointing at a building drew the game's tooltip over that building alone, its
 description, every figure, the footprints; one card now says the building beside the pointer in a few
