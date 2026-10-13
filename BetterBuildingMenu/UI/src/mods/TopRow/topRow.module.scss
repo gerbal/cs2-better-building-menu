@@ -101,8 +101,9 @@
   white-space: nowrap;
 }
 
-// The one target under 24 rem.
-.clear {
+// The one target under 24 rem. The game's icon Button pins its own size and paints a background with
+// one class: two classes outrank it whichever sheet loads last.
+.field .clear {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
@@ -110,6 +111,7 @@
   width: $field-clear;
   height: $field-clear;
   padding: 0;
+  background-color: transparent;
 }
 
 .clearGlyph {

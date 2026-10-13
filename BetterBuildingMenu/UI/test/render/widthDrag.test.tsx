@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { resetBindings, triggers } from "../harness/stubs/cs2-api";
 import { ASSET_MENU_WIDTH_HANDLE_REACH, ASSET_MENU_WIDTH_HANDLE_WIDTH } from "../../src/domain/assetMenuLayout";
-import { snapTargets, type WidthSnap } from "../../src/domain/widthSteps";
+import { snapTargets, type WidthSnap, type WidthStepScreen } from "../../src/domain/widthSteps";
 import {
   AssetMenuWidthHandle,
   AssetMenuWidthReach,
@@ -12,8 +12,10 @@ import {
 } from "../../src/mods/AssetMenuWidthHandle/AssetMenuWidthHandle";
 
 // 16:9 at the game's own text size: beside the pane the edge snaps to 706, 893 and 1,091.
-const BESIDE_THE_PANE = snapTargets({ aspect: 16 / 9, textScale: 1, paneShown: true });
-const PANE_HIDDEN = snapTargets({ aspect: 16 / 9, textScale: 1, paneShown: false });
+const SCREEN_BESIDE_THE_PANE: WidthStepScreen = { aspect: 16 / 9, textScale: 1, paneShown: true };
+const SCREEN_PANE_HIDDEN: WidthStepScreen = { aspect: 16 / 9, textScale: 1, paneShown: false };
+const BESIDE_THE_PANE = snapTargets(SCREEN_BESIDE_THE_PANE);
+const PANE_HIDDEN = snapTargets(SCREEN_PANE_HIDDEN);
 const globals = globalThis as unknown as Record<string, unknown>;
 let frames: Array<(() => void) | null> = [];
 const nextFrame = () => act(() => {
@@ -23,8 +25,16 @@ const nextFrame = () => act(() => {
 });
 
 let drag: AssetMenuWidthDrag;
-const Probe = ({ width, step, snaps }: { width: number; step: number; snaps: readonly WidthSnap[] }) => {
-  drag = useAssetMenuWidthDrag({ menuWidth: width, step, snaps });
+interface ProbeProps {
+  width: number;
+  step: number;
+  drawnStep?: number;
+  snaps: readonly WidthSnap[];
+  screen?: WidthStepScreen;
+}
+
+const Probe = ({ width, step, drawnStep = step, snaps, screen = SCREEN_BESIDE_THE_PANE }: ProbeProps) => {
+  drag = useAssetMenuWidthDrag({ menuWidth: width, step, drawnStep, snaps, screen });
   return drag.blocker;
 };
 
@@ -36,8 +46,8 @@ const press = (clientX = 500, button = 0) =>
 
 describe("dragging the build menu's right edge", () => {
   let root: ReactTestRenderer | undefined;
-  const mount = (width = 706, step = 1, snaps: readonly WidthSnap[] = BESIDE_THE_PANE) => act(() => {
-    root = create(<Probe width={width} step={step} snaps={snaps} />);
+  const mount = (width = 706, step = 1, snaps: readonly WidthSnap[] = BESIDE_THE_PANE, drawnStep = step, screen = SCREEN_BESIDE_THE_PANE) => act(() => {
+    root = create(<Probe width={width} step={step} drawnStep={drawnStep} snaps={snaps} screen={screen} />);
   });
   const update = (width: number, step: number) => act(() => {
     root!.update(<Probe width={width} step={step} snaps={BESIDE_THE_PANE} />);
@@ -95,16 +105,18 @@ describe("dragging the build menu's right edge", () => {
   });
 
   it("sends the narrower step for a release halfway between two", () => {
-    mount();
+    // Beside the pane step 2's edge is at 1,487: 80.5 rem back puts it at 1,406.5, a box 799.5 wide,
+    // halfway to 706.
+    mount(893, 2);
     press();
-    move(593.5);
+    move(419.5);
     release();
 
     assert.deepEqual(steps(), [1]);
   });
 
   it("snaps to the widest step with the pane hidden", () => {
-    mount(706, 1, PANE_HIDDEN);
+    mount(706, 1, PANE_HIDDEN, 1, SCREEN_PANE_HIDDEN);
     press();
     move(5000);
     release();
@@ -123,13 +135,24 @@ describe("dragging the build menu's right edge", () => {
     assert.equal(drag.liveWidth, null);
   });
 
-  it("draws the stored width at once when the release lands on the step already stored", () => {
+  it("sends nothing when the release lands on the step the box already draws", () => {
     mount(893, 2);
+    press();
+    move(490);
+    release();
+
+    assert.deepEqual(steps(), []);
+    assert.equal(drag.liveWidth, null);
+  });
+
+  it("keeps a stored step the pane hides when a nudge lands on the step it draws as", () => {
+    // Stored 5 draws as 3 beside the pane; a few pixels on the edge must not store 3 over it.
+    mount(1091, 5, BESIDE_THE_PANE, 3);
     press();
     move(510);
     release();
 
-    assert.deepEqual(steps(), [2]);
+    assert.deepEqual(steps(), []);
     assert.equal(drag.liveWidth, null);
   });
 
@@ -153,10 +176,20 @@ describe("dragging the build menu's right edge", () => {
     move(650);
     release();
     press(500);
-    move(510);
+    move(490);
     nextFrame();
 
-    assert.equal(drag.liveWidth, 903, "from the snapped 893, not the stored 706");
+    assert.equal(drag.liveWidth, 870, "from the snapped 893, whose edge is at 1,487, not the stored 706");
+  });
+
+  it("puts the drawn right edge under the pointer, where the box grows left to hold its edge", () => {
+    // Pane hidden on 16:9, so steps 2 and 3 share the edge at 1,500 and 4 and 5 run on to 1,676 and 1,871.
+    mount(706, 1, PANE_HIDDEN, 1, SCREEN_PANE_HIDDEN);
+    press();
+    move(500 + 363);
+    nextFrame();
+
+    assert.equal(drag.liveWidth, 1280, "step 4's box, whose edge is the pointer's");
   });
 
   it("changes nothing on a press and release that never moved", () => {
@@ -232,6 +265,17 @@ describe("dragging the build menu's right edge", () => {
     assert.deepEqual(names(), []);
   });
 
+  it("sends nothing when the menu goes away after a drag back onto the step it draws", () => {
+    mount(1091, 5, BESIDE_THE_PANE, 3);
+    press();
+    move(450);
+    move(500);
+    act(() => root!.unmount());
+    root = undefined;
+
+    assert.deepEqual(names(), []);
+  });
+
   it("leaves a press with any button but the left alone", () => {
     mount();
     press(500, 2);
@@ -278,7 +322,7 @@ describe("the width strip", () => {
 describe("the width strip and its reach under the mouse", () => {
   let hook: AssetMenuWidthDrag;
   const Both = () => {
-    hook = useAssetMenuWidthDrag({ menuWidth: 706, step: 1, snaps: BESIDE_THE_PANE });
+    hook = useAssetMenuWidthDrag({ menuWidth: 706, step: 1, drawnStep: 1, snaps: BESIDE_THE_PANE, screen: SCREEN_BESIDE_THE_PANE });
     return (
       <>
         <AssetMenuWidthHandle active={hook.isResizing} hovered={hook.isHovered} hoverProps={hook.hoverProps} onBeginResize={hook.beginResize} />

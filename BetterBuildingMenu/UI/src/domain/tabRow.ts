@@ -11,6 +11,7 @@ import {
   TAB_NAME_SIZE,
   TAB_ROW_HEIGHT,
   TAB_ROW_INSET,
+  TAB_ROW_INSET_RIGHT,
   TAB_SEGMENT_MARGIN,
 } from "./assetMenuLayout";
 import { isEducationMenu } from "./buildingGroups";
@@ -260,7 +261,7 @@ export function planTabRow(
   const widths = items.map((item) => itemWidth(item, scale, format));
   const cells = widths.reduce((sum, width) => sum + width, 0) + Math.max(0, widths.length - 1) * TAB_CELL_GAP;
   // The spacer and the readout each sit a gap past what comes before them.
-  const room = boxWidth - 2 * TAB_ROW_INSET - cells - 2 * TAB_CELL_GAP;
+  const room = boxWidth - TAB_ROW_INSET - TAB_ROW_INSET_RIGHT - cells - 2 * TAB_CELL_GAP;
   const range = textWidth(readout.range, TAB_COUNT_SIZE * scale);
   const place = textWidth(readout.place, TAB_NAME_SIZE * scale);
   const full = scale <= 1 && Math.max(place, range) <= room;

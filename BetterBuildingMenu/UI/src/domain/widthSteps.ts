@@ -87,13 +87,21 @@ const fitsBesideThePane = (step: number, widths: readonly number[], screen: Widt
  */
 export function drawnStepWidth(step: number, screen: WidthStepScreen): number {
   const widths = widthStepWidths(screen.aspect);
+  const drawn = drawnStep(step, screen);
+
+  return Math.max(widths[0], Math.min(widths[drawn - 1], roomAt(drawn, screen)));
+}
+
+/** The step a stored step draws as: itself, or beside the shown pane the widest step that fits. */
+export function drawnStep(step: number, screen: WidthStepScreen): number {
+  const widths = widthStepWidths(screen.aspect);
   let drawn = sanitizeWidthStep(step);
 
   while (screen.paneShown && !fitsBesideThePane(drawn, widths, screen)) {
     drawn -= 1;
   }
 
-  return Math.max(widths[0], Math.min(widths[drawn - 1], roomAt(drawn, screen)));
+  return drawn;
 }
 
 /** Where vanilla's build menu starts: the game centres its 706 rem box on the screen. */
@@ -115,12 +123,13 @@ export interface BoxPlacement {
  */
 export function boxPlacement(width: number, screen: WidthStepScreen): BoxPlacement {
   const vanilla = vanillaBoxLeft(screen.aspect);
-  // The first three steps' limit: where a box stops growing right and starts growing left.
-  const growsTo = rightLimit(LAST_STEP_CLEAR_OF_THE_CHIRPER, screen);
-  const left = Math.max(toolOptionsEdge(screen.textScale), Math.min(vanilla, growsTo - width));
+  const left = Math.max(toolOptionsEdge(screen.textScale), Math.min(vanilla, growsTo(screen) - width));
 
   return { left, offset: left - vanilla };
 }
+
+/** The first three steps' limit: where a box stops growing right and starts growing left. */
+const growsTo = (screen: WidthStepScreen): number => rightLimit(LAST_STEP_CLEAR_OF_THE_CHIRPER, screen);
 
 /** How much further short of the chirper the top row stops than the box: its controls stay off the chirper's edge. */
 const TOP_ROW_CHIRPER_GAP = 4;
@@ -154,17 +163,31 @@ export function nearestSnapStep(width: number, snaps: readonly WidthSnap[]): num
 }
 
 /**
- * The width a drag from `startX` to `currentX` shows, held between the narrowest and the
- * widest step the edge snaps to. `pxPerRem` is measured off the strip as it was pressed.
+ * The widest box whose drawn right edge is no further right than `edge`. A box grows left, its
+ * edge fixed, once it reaches the first three steps' limit, so the edge only moves again past
+ * the width that fills the room: an edge at the limit or beyond takes that width.
+ */
+function widthWithEdgeAt(edge: number, screen: WidthStepScreen): number {
+  const reach = edge >= growsTo(screen) ? Infinity : edge - vanillaBoxLeft(screen.aspect);
+
+  return Math.min(edge - toolOptionsEdge(screen.textScale), reach);
+}
+
+/**
+ * The width a drag from `startX` to `currentX` shows, held between the narrowest and the widest
+ * step the edge snaps to: the box whose drawn right edge sits under the pointer, as far from it as
+ * the press was. `pxPerRem` is measured off the strip as it was pressed.
  */
 export function draggedStepWidth(
   startWidth: number,
   startX: number,
   currentX: number,
   snaps: readonly WidthSnap[],
+  screen: WidthStepScreen,
   pxPerRem?: number
 ): number {
-  const raw = startWidth + dragDistanceRem(startX, currentX, pxPerRem);
+  const startEdge = boxPlacement(startWidth, screen).left + startWidth;
+  const raw = widthWithEdgeAt(startEdge + dragDistanceRem(startX, currentX, pxPerRem), screen);
   if (!Number.isFinite(raw) || snaps.length === 0) return startWidth;
 
   const widths = snaps.map((snap) => snap.width);

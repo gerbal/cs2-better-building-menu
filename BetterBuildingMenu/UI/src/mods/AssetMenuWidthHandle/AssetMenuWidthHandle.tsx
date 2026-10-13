@@ -4,7 +4,7 @@ import classNames from "classnames";
 import { useEffect, useRef, useState } from "react";
 
 import { ASSET_MENU_WIDTH_HANDLE_WIDTH, isPrimaryPress, pxPerRemFrom } from "domain/assetMenuLayout";
-import { draggedStepWidth, nearestSnapStep, type WidthSnap } from "domain/widthSteps";
+import { draggedStepWidth, nearestSnapStep, type WidthSnap, type WidthStepScreen } from "domain/widthSteps";
 import { send } from "mods/bindings";
 import styles from "mods/AssetMenuWidthHandle/assetMenuWidthHandle.module.scss";
 
@@ -44,7 +44,11 @@ export interface AssetMenuWidthHoverProps {
 export interface AssetMenuWidthBounds {
   menuWidth: number;
   step: number;
+  /** The step the box draws: the stored one, or beside the pane the widest that fits. */
+  drawnStep: number;
   snaps: readonly WidthSnap[];
+  /** Where the box sits on this screen, which the drag follows with the box's right edge. */
+  screen: WidthStepScreen;
 }
 
 /**
@@ -52,7 +56,7 @@ export interface AssetMenuWidthBounds {
  * widest step the edge snaps to, and the release sends the nearest step, once. See
  * docs/design-notes.md, "The box at its Width step, and the control pane".
  */
-export function useAssetMenuWidthDrag({ menuWidth, step, snaps }: AssetMenuWidthBounds): AssetMenuWidthDrag {
+export function useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps, screen }: AssetMenuWidthBounds): AssetMenuWidthDrag {
   const [isResizing, setIsResizing] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [dragWidth, setDragWidth] = useState<number | null>(null);
@@ -81,10 +85,12 @@ export function useAssetMenuWidthDrag({ menuWidth, step, snaps }: AssetMenuWidth
     }
   }
 
-  // What a release snaps among, read when the asset menu goes away, after the render
-  // that last set it.
+  // What a release snaps among, and the step the box draws, read when the asset menu goes away,
+  // after the render that last set them.
   const room = useRef(snaps);
   room.current = snaps;
+  const drawn = useRef(drawnStep);
+  drawn.current = drawnStep;
 
   useEffect(() => {
     if (settling !== null && settling.step === step) {
@@ -103,7 +109,8 @@ export function useAssetMenuWidthDrag({ menuWidth, step, snaps }: AssetMenuWidth
     pending.current = { frame: 0, width: null };
     if (!state.moved) return;
 
-    send({ method: "SetAssetMenuWidthStep", args: [nearestSnapStep(state.last, room.current)] });
+    const next = nearestSnapStep(state.last, room.current);
+    if (next !== drawn.current) send({ method: "SetAssetMenuWidthStep", args: [next] });
   }, []);
 
   function beginResize(event: any, widthRem: number = ASSET_MENU_WIDTH_HANDLE_WIDTH): void {
@@ -131,7 +138,7 @@ export function useAssetMenuWidthDrag({ menuWidth, step, snaps }: AssetMenuWidth
     if (!state.moved && Math.abs(event.clientX - state.startX) < DRAG_THRESHOLD_PX) return;
 
     state.moved = true;
-    state.last = draggedStepWidth(state.startWidth, state.startX, event.clientX, snaps, state.pxPerRem);
+    state.last = draggedStepWidth(state.startWidth, state.startX, event.clientX, snaps, screen, state.pxPerRem);
     pending.current.width = state.last;
 
     if (pending.current.frame === 0) {
@@ -154,6 +161,10 @@ export function useAssetMenuWidthDrag({ menuWidth, step, snaps }: AssetMenuWidth
     if (!state.moved) return;
 
     const next = nearestSnapStep(state.last, snaps);
+    // A release on the step the box already draws changes nothing: beside the pane a stored 4 or 5
+    // draws as 3, and sending 3 would lose the step the pane keeps for later.
+    if (next === drawnStep) return;
+
     setSettling(snaps.find((snap) => snap.step === next) ?? null);
     send({ method: "SetAssetMenuWidthStep", args: [next] });
   }
@@ -185,7 +196,7 @@ export interface AssetMenuWidthHandleProps {
 }
 
 /**
- * The strip on the build menu's right edge: drag for the width, which snaps to the
+ * The strip down the box's right edge, from under the top row to its bottom: drag for the width, which snaps to the
  * steps. Its hint is the game's Tooltip: the game draws no title
  * attribute.
  */
@@ -202,9 +213,9 @@ export const AssetMenuWidthHandle = ({ active, hovered = false, hoverProps, onBe
 );
 
 /**
- * The strip's grab area past the menu's edge, across the gap beside the pane, from
- * the header down to the menu's bottom. Separate from the strip because the catalog's box clips
- * what the strip draws; it lights and hints as the strip does.
+ * The strip's grab area past the box's edge, across the gap beside the pane, as far down as the
+ * strip runs. Separate from the strip because it lies outside the box; it lights and hints as the
+ * strip does.
  */
 export const AssetMenuWidthReach = ({ active, hovered = false, hoverProps, onBeginResize }: AssetMenuWidthHandleProps) => (
   <Tooltip tooltip={useWidthHint()}>

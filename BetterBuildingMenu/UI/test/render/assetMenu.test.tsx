@@ -4,7 +4,7 @@ import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { renderHtml } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
-import { ASSET_MENU_WIDTH_HANDLE_REACH } from "../../src/domain/assetMenuLayout";
+import { ASSET_MENU_WIDTH_HANDLE_REACH, ASSET_MENU_WIDTH_HANDLE_WIDTH, TOP_EDGE_HEIGHT } from "../../src/domain/assetMenuLayout";
 import { AssetMenu } from "../../src/mods/BuildingMenu/AssetMenu";
 
 // The lengths AssetMenu writes inline, read off the markup by the element's first class.
@@ -139,13 +139,15 @@ describe("the asset menu's width strip", () => {
     assert.equal(root!.root.findAll((node) => node.props.className === "widthReach").length, 0);
   });
 
-  it("draws the strip down the catalog's side, below the header", () => {
+  it("draws the strip down the box's side, outside the body, so it reaches past the tab row", () => {
     act(() => {
       root = create(<AssetMenu onClose={() => {}} />);
     });
     const content = root!.root.find((node) => node.type === "div" && String(node.props.className ?? "").split(" ").includes("content"));
+    const box = root!.root.find((node) => node.type === "div" && String(node.props.className ?? "").split(" ")[0] === "toolContainer");
 
-    assert.equal(content.findAll((node) => node.props.className === "widthHandle").length, 1);
+    assert.equal(content.findAll((node) => node.props.className === "widthHandle").length, 0);
+    assert.equal(box.findAll((node) => node.props.className === "widthHandle").length, 1);
   });
 });
 
@@ -195,7 +197,7 @@ describe("a drag on the asset menu's right edge", () => {
 
   it("snaps to the nearest step on release, and keeps that width until the stored step comes back", () => {
     const strip = root!.root.find((node) => node.props.className === "widthHandle");
-    act(() => strip.props.onMouseDown({ button: 0, clientX: 500, currentTarget: { getBoundingClientRect: () => ({ width: 8 }) } }));
+    act(() => strip.props.onMouseDown({ button: 0, clientX: 500, currentTarget: { getBoundingClientRect: () => ({ width: ASSET_MENU_WIDTH_HANDLE_WIDTH }) } }));
     const blocker = root!.root.find((node) => node.props.className === "widthBlocker");
     act(() => blocker.props.onMouseMove({ clientX: 650, buttons: 1 }));
     act(() => blocker.props.onMouseUp());
@@ -275,9 +277,57 @@ describe("the asset menu's top row and top edge", () => {
     assert.ok(box.lastIndexOf('class="topEdge"') > box.lastIndexOf('class="band"'), "the edge after the tab row");
   });
 
+  it("keeps the top edge the box's last child after the width strip's reach, with the pane shown", () => {
+    setBinding("BetterBuildingMenu", "ControlPaneShown", true);
+    const html = render();
+    const box = html.slice(html.indexOf('class="toolContainer'));
+
+    assert.ok(box.indexOf('class="widthReach') >= 0, "the reach is drawn beside the shown pane");
+    assert.ok(box.lastIndexOf('class="topEdge"') > box.lastIndexOf('class="widthReach'), "the edge after the reach");
+    assert.ok(box.lastIndexOf('class="topEdge"') > box.lastIndexOf('class="widthHandle'), "the edge after the strip");
+  });
+
   it("ends the top row 10 rem short of the chirper where the box runs over it", () => {
     setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 5);
 
     assert.match(render(), /class="topRow" style="margin-right:375rem"/);
+  });
+});
+
+describe("a drag on the asset menu's top edge", () => {
+  const globals = globalThis as unknown as Record<string, unknown>;
+  let saved: unknown;
+  let frames: Array<() => void> = [];
+  let root: ReactTestRenderer | undefined;
+
+  beforeEach(() => {
+    resetBindings();
+    resetAssetMenuView();
+    saved = globals.document;
+    globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined, querySelector: () => null };
+    frames = [];
+    globals.requestAnimationFrame = (callback: () => void) => frames.push(callback);
+    globals.cancelAnimationFrame = () => undefined;
+    act(() => {
+      root = create(<AssetMenu onClose={() => {}} />);
+    });
+  });
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    root = undefined;
+    globals.document = saved;
+  });
+
+  it("changes the height one for one with the pointer, measured against the edge's own height", () => {
+    const edge = root!.root.find((node) => node.props.className === "topEdge");
+    // Drawn as many pixels tall as it is rem, so a pixel is a rem.
+    act(() => edge.props.onMouseDown({ button: 0, clientY: 500, currentTarget: { getBoundingClientRect: () => ({ height: TOP_EDGE_HEIGHT }) } }));
+    const blocker = root!.root.find((node) => node.props.className === "resizeBlocker");
+    act(() => blocker.props.onMouseMove({ clientY: 490, buttons: 1 }));
+    act(() => frames.splice(0).forEach((callback) => callback()));
+
+    // The default height is 144.25: ten pixels up is ten rem taller.
+    assert.deepEqual(triggers.filter((call) => call.name === "SetAssetMenuHeight").map((call) => call.args[0]), [154.25]);
   });
 });

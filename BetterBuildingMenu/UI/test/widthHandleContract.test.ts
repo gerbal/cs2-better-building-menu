@@ -11,7 +11,6 @@ const topFill = (selector: string) => declarationsOf(HEIGHT, selector)["backgrou
 // The game draws no grips. Its one panel resizer fills white under the mouse and
 // while dragging, and its drag thumbs brighten in white, never in the accent.
 describe("the grab strips", () => {
-  const topStrip = declarationsOf(HEIGHT, ".resizeHandle");
   const topGrip = declarationsOf(HEIGHT, ".resizeGrip");
   const strip = declarationsOf(WIDTH, ".widthHandle");
   const grip = declarationsOf(WIDTH, ".widthGrip");
@@ -71,11 +70,25 @@ describe("the grab strips", () => {
     assert.equal(content["padding-right"], undefined, "the catalog is not pushed in");
   });
 
-  it("run the catalog's full height at its right edge, above it", () => {
-    assert.equal(strip.top, "0");
+  it("run the box's right edge from under the top row to its bottom, past the tab row, above the body", () => {
+    // Clear of close, which ends on the top row's inner edge, and down past the tab row's band.
+    const topBand = declarationsOf("mods/TopRow/topRow.module.scss", ".topBand");
+    const topRow = declarationsOf("mods/TopRow/topRow.module.scss", ".topRow");
+
+    assert.equal(rem(strip.top), rem(topBand["padding-top"]) + rem(topRow.height));
     assert.equal(strip.bottom, "0");
     assert.equal(strip.right, "0");
     assert.equal(strip["z-index"], "1");
+  });
+
+  it("is 6 rem wide, so a body's 3 rem scroll track at the box's edge stays clear", () => {
+    assert.equal(strip.width, "6rem");
+  });
+
+  it("lie clear of the tab row's readout: the band's right padding is at least the strip's width", () => {
+    const band = declarationsOf("mods/TabRow/tabRow.module.scss", ".band");
+
+    assert.ok(rem(band["padding-right"]) >= rem(strip.width), `${band["padding-right"]} under ${strip.width}`);
   });
 
   it("carry a side pill as long as the top one, half as thick", () => {
@@ -84,10 +97,10 @@ describe("the grab strips", () => {
     assert.equal(rem(grip["border-radius"]), rem(grip.width) / 2);
   });
 
-  it("reach across the gap beside the pane, below the top strip, taking presses", () => {
+  it("reach across the gap beside the pane, as far down as the strip, taking presses", () => {
     assert.equal(reach.width, pane["margin-left"]);
     assert.equal(reach.right, `-${pane["margin-left"]}`);
-    assert.equal(reach.top, topStrip.height);
+    assert.equal(reach.top, strip.top);
     assert.equal(reach.bottom, "0");
     assert.equal(reach["pointer-events"], "auto");
     assert.equal(reach["z-index"], "30");

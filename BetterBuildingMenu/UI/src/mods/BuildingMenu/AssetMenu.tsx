@@ -39,9 +39,9 @@ export interface AssetMenuProps {
 }
 
 export const AssetMenu = ({ onClose }: AssetMenuProps) => {
-  const { step, menuWidth, paneShown, snaps, screen } = useAssetMenuLayout();
+  const { step, drawnStep, menuWidth, paneShown, snaps, screen } = useAssetMenuLayout();
   const { height: catalogHeight, isResizing, beginResize, blocker } = useAssetMenuHeight();
-  const widthDrag = useAssetMenuWidthDrag({ menuWidth, step, snaps });
+  const widthDrag = useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps, screen });
   const transparency = useInterfaceTransparency();
   const tuning = useValue(AssetMenuTuning$);
   // The box follows a width drag, and keeps the snapped width until the stored step comes back.
@@ -76,16 +76,18 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
             style={{ height: `${drawnBodyHeight(catalogHeight)}rem` }}
           >
             <BuildingCatalogComponent />
-            <AssetMenuWidthHandle
-              active={widthDrag.isResizing}
-              hovered={widthDrag.isHovered}
-              hoverProps={widthDrag.hoverProps}
-              onBeginResize={widthDrag.beginResize}
-            />
           </div>
           {/* The tabs, on the box's bottom edge next to the bar. The list above is the box less
               their band, so the box keeps its height. See docs/design-notes.md, "The tab row". */}
           <TabRow width={shownWidth} />
+          {/* Down the box's right edge from under the top row to its bottom, past the tab row:
+              a child of the box, not of the body, whose box would cut it. */}
+          <AssetMenuWidthHandle
+            active={widthDrag.isResizing}
+            hovered={widthDrag.isHovered}
+            hoverProps={widthDrag.hoverProps}
+            onBeginResize={widthDrag.beginResize}
+          />
           {/* Only beside the pane: with it hidden the menu may reach the room's
               edge, and nothing may go past that over the social icons. */}
           {paneShown && (

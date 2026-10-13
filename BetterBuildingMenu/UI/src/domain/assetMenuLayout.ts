@@ -367,6 +367,7 @@ export const TAB_ROW_BAND = sheetRem("tabRowBand");
 /** The tab row's own numbers, which its sheet draws and its plan budgets: see _assetMenuGeometry.scss. */
 export const TAB_ROW_HEIGHT = sheetRem("tabRowHeight");
 export const TAB_ROW_INSET = sheetRem("tabRowInset");
+export const TAB_ROW_INSET_RIGHT = sheetRem("tabRowInsetRight");
 export const TAB_CELL_MIN_WIDTH = sheetRem("tabCellMinWidth");
 export const TAB_CELL_PADDING = sheetRem("tabCellPadding");
 export const TAB_CELL_GAP = sheetRem("tabCellGap");

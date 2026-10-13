@@ -7,6 +7,7 @@ import {
   REFERENCE_ASPECT,
   boxPlacement,
   draggedStepWidth,
+  drawnStep,
   drawnStepWidth,
   nearestSnapStep,
   sanitizeWidthStep,
@@ -116,6 +117,16 @@ const nearPairs = (actual: number[][], expected: number[][], what: string) =>
     near(right, expected[index][1], `${what} step ${index + 1} right`);
   });
 
+describe("the step a stored step draws as", () => {
+  it("is itself where it fits, and beside the pane the widest that fits", () => {
+    const drawnSteps = (over: Partial<WidthStepScreen>) => [1, 2, 3, 4, 5].map((step) => drawnStep(step, screen(over)));
+
+    assert.deepEqual(drawnSteps({}), [1, 2, 3, 4, 5]);
+    assert.deepEqual(drawnSteps({ paneShown: true }), [1, 2, 3, 3, 3]);
+    assert.deepEqual(drawnSteps({ aspect: THIRTY_TWO_NINE, paneShown: true }), [1, 2, 3, 4, 4]);
+  });
+});
+
 describe("where a step sits", () => {
   it("keeps vanilla's left edge, grows right to 6 rem short of the chirper, then left: on 16:9", () => {
     assert.equal(vanillaBoxLeft(SIXTEEN_NINE), 607);
@@ -214,13 +225,46 @@ describe("the right edge's drag", () => {
   const snaps = snapTargets(screen({ paneShown: true }));
 
   it("follows the pointer between the narrowest and the widest step it snaps to", () => {
-    assert.equal(draggedStepWidth(706, 500, 650, snaps, 1), 856);
-    assert.equal(draggedStepWidth(706, 500, -5000, snaps, 1), 706);
-    assert.equal(draggedStepWidth(706, 500, 5000, snaps, 1), 1091);
+    const shown = screen({ paneShown: true });
+
+    assert.equal(draggedStepWidth(706, 500, 650, snaps, shown, 1), 856);
+    assert.equal(draggedStepWidth(706, 500, -5000, snaps, shown, 1), 706);
+    assert.equal(draggedStepWidth(706, 500, 5000, snaps, shown, 1), 1091);
   });
 
   it("falls back to the 720p scale when the strip could not be measured", () => {
-    assert.equal(draggedStepWidth(706, 500, 520, snaps), 706 + 20 / (2 / 3));
+    near(draggedStepWidth(706, 500, 520, snaps, screen({ paneShown: true })), 706 + 20 / (2 / 3));
+  });
+
+  it("keeps the drawn right edge under the pointer across all five steps, where the box grows left too", () => {
+    // 16:9, the pane hidden: the edge is at 1,313 for step 1 and 1,500 for steps 2 and 3, and 1,676 and
+    // 1,871 for 4 and 5. Between 2 and 3 the box grows left, its edge fixed, so a width that follows
+    // the pointer's distance alone would leave the edge short of the pointer from there on.
+    const open = screen();
+    const hidden = snapTargets(open);
+    const edgeAt = (width: number) => boxPlacement(width, open).left + width;
+
+    for (const travelled of [50, 150, 187, 250, 363, 400, 500, 558]) {
+      const width = draggedStepWidth(706, 500, 500 + travelled, hidden, open, 1);
+      near(edgeAt(width), 1313 + travelled, `${travelled} rem on`);
+    }
+  });
+
+  it("starts from where the box is drawn, so a drag from step 3 follows its edge too", () => {
+    const open = screen();
+    const hidden = snapTargets(open);
+
+    // Step 3's edge is at 1,500: a pointer 100 rem on puts the edge at 1,600, a box 1,204 wide.
+    near(draggedStepWidth(1091, 900, 1000, hidden, open, 1), 1204);
+    near(draggedStepWidth(1091, 900, 800, hidden, open, 1), 1400 - 607, "100 rem back, short of the flat stretch");
+  });
+
+  it("takes the widest width for an edge at the flat stretch's end, and the narrower for one a pixel short", () => {
+    const open = screen();
+    const hidden = snapTargets(open);
+
+    assert.equal(draggedStepWidth(706, 500, 500 + 187, hidden, open, 1), 1104);
+    assert.equal(draggedStepWidth(706, 500, 500 + 186, hidden, open, 1), 893 - 1);
   });
 
   it("lands on the nearest step, a tie on the narrower", () => {

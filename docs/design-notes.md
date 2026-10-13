@@ -155,29 +155,31 @@ scale.
 **The right edge snaps.** A drag shows the box following the pointer, between the narrowest and
 the widest step the edge can snap to; beside the pane those are only the steps that fit. The
 release snaps to the nearest step, a tie to the narrower, and sends one `SetAssetMenuWidthStep`,
-which C# keeps and saves only when it changes. The box keeps the snapped width until the stored
-step comes back from C#, so it does not flash the old width for the round trip. The drag is the
-hook's own state, so the catalog's table, which budgets its columns from the stored step, moves
+which C# keeps and saves only when it changes. A release on the step the box already draws sends
+nothing: beside the pane a stored step 4 or 5 draws as 3, and a nudge of the edge would otherwise
+store 3 over the step the pane keeps for later. A menu closed mid-drag follows the same rule. The
+box keeps the snapped width until the stored
+step comes back from C#, so it does not flash the old width for the round trip. The dragged box is
+the one whose drawn right edge is under the pointer, as far from it as the press was: where the box
+grows left with its edge fixed, as between steps 2 and 3 on 16:9, no width moves the edge, so a
+pointer at that edge or past it takes the widest box that holds it. The drag is the hook's own state, so the catalog's table, which budgets its columns from the stored step, moves
 its columns at the release.
 
-**The width strip lies in the catalog's own margin.** An 8 rem strip down the
-catalog's right side over the catalog's right padding, so the catalog keeps its
-width and the table's arithmetic is untouched; the compact density's right padding
-is 8 rem for it too. It carries the top strip's pill on its side, as long and half
-as thick to fit the margin. While the pane is shown, the grab area continues across
-the 6 rem gap to the pane, from the header down to the menu's bottom: beside the
-header, and above the pane where the pane is the shorter, so that 6 rem column of
-city takes no world click. It stops at the top strip; nothing grabs beside or above
-that. The catalog's box clips what the strip draws, so that part is its own
-element; it lights, hints and measures a press as the strip does, and it is absent
-with the pane hidden, so nothing reaches past the room's edge.
+**The width strip runs down the box's right edge.** A 6 rem strip from under the top row, so close
+keeps its presses, to the box's bottom, past the tab row's band: a child of the box, not of the
+body, whose box would cut it short. 6 rem lies inside the catalog's own right margin, and leaves a
+body's 3 rem scroll track at the box's edge clear. It carries the top edge's pill on its side. While
+the pane is shown, the grab area continues across the 6 rem gap to the pane, as far down as the
+strip runs, so that column of city takes no world click; it lights, hints and measures a press as
+the strip does, and it is absent with the pane hidden, so nothing reaches past the room's edge.
 
 **The controls follow the game's own UI.** Audited against the game's stylesheet:
-- The grab strips draw as the game's one panel resizer does: nothing until the mouse
-  is on them, then a white fill (10 %, 15 % while dragging, whether or not the mouse
-  is still on them). Their pills are the scrollbar thumb's at rest and brighten in
-  white as it does, at once, never in the accent. The upgrades panel's top strip
-  keeps the dark paint of the header under it.
+- The width strip and the upgrades panel's top strip draw as the game's one panel resizer does:
+  nothing until the mouse is on them, then a white fill (10 %, 15 % while dragging, whether or not
+  the mouse is still on them). Their pills are the scrollbar thumb's at rest and brighten in white
+  as it does, at once, never in the accent. The upgrades panel's strip keeps the dark paint of the
+  header under it. The build menu's top edge draws nothing at rest and a pill under the mouse (see
+  "The top edge").
 - At rest the width pill looks like a scrollbar thumb; the white fill under the
   mouse is what marks it as a handle. The owner chose that over a dark band, which
   the game draws nowhere.
@@ -363,7 +365,8 @@ them, and the layout arithmetic reads the ones it needs through `assetMenuLayout
 the true total ("Medium Roads" over "1–100 of 779"), so a list that stops is never silent; while a
 search is typed its first line reads "37 here". Until increment 9's bodies, which place every cell
 from a slot index, the range is the window the list has loaded rather than the rows on screen. Its
-two lines fit the 26 rem row only at 100% text, so from 110% it keeps the range alone.
+two lines fit the 26 rem row only at 100% text, so from 110% it keeps the range alone. The row ends
+6 rem inside the box's right edge, clear of the width strip that lies over the band's last 6 rem.
 
 **When the row is short of room** (`planTabRow`), the readout's name gives way first, leaving its
 range, which always stays. Only then do the last tabs run past the room the range leaves, where the

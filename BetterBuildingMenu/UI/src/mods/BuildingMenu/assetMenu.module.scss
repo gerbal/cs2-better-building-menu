@@ -63,9 +63,8 @@
   flex-direction: column;
   overflow: hidden;
   position: relative;
-  // Explicit, and below the chip row's 30. Both are positioned siblings, and
-  // with z-index auto the later one in the DOM wins on paint order — the
-  // zoning tiles then paint straight over the section picker.
+  // Explicit, and below the width strip's 1 and the top row's 40: with z-index auto a positioned
+  // sibling later in the DOM wins the paint order.
   z-index: 0;
 
   // Grow to the cap the parent sets, shrink below it.

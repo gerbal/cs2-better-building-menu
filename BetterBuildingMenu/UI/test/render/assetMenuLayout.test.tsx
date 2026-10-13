@@ -34,11 +34,21 @@ describe("the asset menu's layout", () => {
   it("opens a new player at the game's own width, with no pane beside it", () => {
     assert.deepEqual(read(), {
       step: 1,
+      drawnStep: 1,
       menuWidth: 706,
       paneShown: false,
       snaps: [706, 893, 1091, 1280, 1475].map((width, index) => ({ step: index + 1, width })),
       screen: { aspect: 16 / 9, textScale: 1, paneShown: false },
     });
+  });
+
+  it("reads the step the box draws apart from the stored one beside the pane", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 5);
+    setBinding("BetterBuildingMenu", "ControlPaneShown", true);
+    const layout = read();
+
+    assert.equal(layout.step, 5);
+    assert.equal(layout.drawnStep, 3);
   });
 
   it("draws step 3 beside the pane as 0.2.4's row: the pane ends at the social column", () => {

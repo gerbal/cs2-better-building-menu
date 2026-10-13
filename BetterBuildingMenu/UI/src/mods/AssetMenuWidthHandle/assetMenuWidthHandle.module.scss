@@ -1,13 +1,13 @@
 @use "../../assetMenuGeometry" as *;
 
-// The width drag: a strip down the catalog's right side, over the catalog's own
-// right margin so it takes nothing from the catalog. Drawn as the game draws its
-// resizer, as nothing until the mouse is on it, plus the top strip's pill on its
-// side, as long and half as thick to fit the margin.
+// The width drag: a strip down the box's right edge, from under the top row to the box's bottom,
+// over the catalog's own right margin and the tab row's end. Drawn as the game draws its resizer,
+// as nothing until the mouse is on it, plus the top edge's pill on its side.
 
 .widthHandle {
   position: absolute;
-  top: 0;
+  // Under the top row, so close keeps its presses.
+  top: $top-band-pad + $top-row-height;
   bottom: 0;
   right: 0;
   width: $width-handle-width;
@@ -20,8 +20,8 @@
   // The game's own cursor, as on the height strip: the game draws its cursors and
   // maps no CSS keyword past default/pointer/none.
   cursor: url(cursor://horizontal-can-resize);
-  // The menu's bottom corner, for the fill below.
-  border-bottom-right-radius: var(--panelRadius);
+  // The box's bottom corner, for the fill below.
+  border-bottom-right-radius: var(--bbm-boxRadius);
 }
 
 // The game's resizer fills white under the mouse and more while dragging. The
@@ -56,13 +56,11 @@
   background-color: rgba(var(--scrollbarColor), 1);
 }
 
-// More of the strip to grab, past the menu's edge across the gap to the pane, from
-// the header down to the menu's bottom (never beside the top strip), so beside the
-// header and above a shorter pane too:
-// nothing until the mouse is on it, so the gap still shows the city.
+// More of the strip to grab, past the box's edge across the gap to the pane, as far down as the
+// strip runs: nothing until the mouse is on it, so the gap still shows the city.
 .widthReach {
   position: absolute;
-  top: $handle-height;
+  top: $top-band-pad + $top-row-height;
   bottom: 0;
   right: -$width-handle-reach;
   width: $width-handle-reach;

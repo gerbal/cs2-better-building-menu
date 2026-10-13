@@ -6,7 +6,8 @@
 .band {
   flex: 0 0 auto;
   padding-top: $tab-row-gap-above;
-  padding-right: $tab-row-inset;
+  // Clear of the width strip, which lies over the band's last 6 rem.
+  padding-right: $tab-row-inset-right;
   padding-bottom: $tab-row-pad-below;
   padding-left: $tab-row-inset;
   background-color: var(--bbm-head);
