@@ -120,9 +120,9 @@ const Tile = memo(function Tile({ entry, grid, slot, armed, sortedMetric, said, 
 });
 
 /**
- * The tiles drawn that share a first word, each tagged with what tells it apart, worked out again only
- * when the tiles, their names, distinguishing words or locks, the tile's width or the text scale change:
- * a page pushed again with the same tiles keeps its tags.
+ * The tiles drawn that share a first word or a family, each tagged with what tells it apart, worked out
+ * again only when the tiles, their names, distinguishing words, families or locks, the tile's width or the
+ * text scale change: a page pushed again with the same tiles keeps its tags.
  */
 function useLookAlikeTags(entries: readonly BuildingCatalogEntry[], tileWidth: number, textScale: number): ReadonlyMap<number, string> {
   const tiles = useMemo(() => lookAlikeKey(entries), [entries]);

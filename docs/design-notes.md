@@ -1442,17 +1442,18 @@ for Four-Lane Road 2. A row with no look-alike, or that is all of what it shares
 whatever their case and however many spaces part them. C# finds it over the whole result, as a
 look-alike past the window still decides which word a cut name keeps, and counts each run of leading
 words once in one pass over the rows' words, so a refresh sorts nothing more. A page only counted, the
-count of a scoped search's matches elsewhere and the menu shares' All, carries not
-the words, the families or the view's facts (`WithFacts`), as nobody reads its rows.
+count of a scoped search's matches elsewhere and the menu shares' All, carries not the words, the
+families or the view's facts (`WithFacts`), as nobody reads its rows.
 
 **Families.** Names that differ only in a trailing variant token are a family where three rows or more
 of the result share the stem before it (`Families`): "Boulder 01" to "Boulder 08". A variant token is a
-number with an optional letter ("05", "2b"), a single letter, or a size ("2x", "1x1"), as the name's last
-word or as digits closing it ("BeachRaft01", "Mk-2"), whose stem leaves out the mark before them
-("Mk"). Each member carries its token, which the icons' pill says, and its family's key, the stem as the family's first row spells it, the same for every member, which a
-grouping by family reads. A row whose name ends in no token ("Boulder Random") is a look-alike, never a
-member. Stems match whatever their case, and C# finds them over the whole result, beside the pass that
-finds the distinguishing word, so a family runs past the window as a look-alike does.
+number with an optional letter ("05", "2b"), a single letter, or a size ("2x", "1x1"), as the name's
+last word or as digits closing it ("BeachRaft01", "Mk-2"), whose stem leaves out the mark before them
+("Mk"). Each member carries its token, which the icons' pill says, and its family's key, the stem as the
+family's first row spells it, the same for every member, which a grouping by family reads. A row whose
+name ends in no token ("Boulder Random") is a look-alike, never a member. Stems match whatever their
+case, and C# finds them over the whole result, beside the pass that finds the distinguishing word, so a
+family runs past the window as a look-alike does.
 
 **The planner** (`planName`) lays a name out in a box of a width and a number of lines, at the box's
 own font, from the one advance table (`textWidth`), and draws each line as a box of its own
@@ -1531,32 +1532,32 @@ its lines and cut once, keeping the words that tell it apart, with "…" where w
 **Look-alike tags.** On the tiles drawn, those that share a first word, whatever its case, are a run of
 look-alikes, whose pictures alone do not tell them apart (the base game's Electricity: Small Coal Power
 Plant is tagged "Coal" beside Small Wind Turbine's "Wind", and Coal Power Plant, whose first word no
-other tile there shares, draws no tag); a family's members are one run by their
-family's first word, glued tokens too ("BeachRaft01", "BeachRaft02"). Every member gets a tag at its top
-left, in the cost tag's face, saying what tells it apart (`lookAlikeTags`), the first of these that fits
-the tag and no other tag says: its whole name; a family member's word ("#02", "2x2"); its distinguishing
-word; that word and the next; the run's
-word and that word ("NA Row" beside "EU Row"), which tells two runs apart; its name cut once by
-the planner, that word and every number whole, or where that word alone is wider than the tag, the word
-cut inside it, two letters at least each side of the mark, a hyphenated word only to its head
-("Mansard…" for Mansard-Roof). A tag is cut once, with one mark, and never cuts a number or the
-distinguishing word inside: where only such a cut fits, the tile is not tagged. A number is never bare: it says
-"#02". No tag opens or ends on a separator, and a word like "with" never stands alone: the word after it
-tells the tile apart ("Median" for "Five-Lane Road with Median"). Every tag is unique on the screen:
-members whose tags would read alike, in a run or across two, each take their next form, and a tag
-another drawn tile would also say is dropped from every tile that shares it, as is one that says another
-drawn tile's name, which would read as that tile. A shared tag tells two look-alikes apart by nothing
-and suggests they are the same; the line under the tiles and the hover card still name them. So at the
-smallest tile and at large text, where a tag holds a word or less, fewer tiles are tagged. The tags are
-counted over every tile the body draws, which holds every tile on the screen, so a tag can change, or
-drop, when Load more draws a look-alike, even one scrolled out of sight. A cut starts from the tag's
-room at the text scale and narrows by what it runs over, stopping where the planner cannot fit the kept
-word, and the tags are worked out again only when the tiles' names, distinguishing words, families or locks, the
-tile's width or the text scale change. Each tile's forms are kept by those, so a Load more works out only
-the new tiles' forms; only the pass that keeps every tag unique runs over every tile. On a locked tile the tag's room ends at the lock glyph, which it
-never covers, and its forms are measured in that room. A tile with no look-alike drawn with it draws no
-tag at its top: the line under the tiles names it. A tag carries `data-bbm-tag`, so the live check and
-the render tests count the tags drawn.
+other tile there shares, draws no tag); a family's members are one run by their family's first word,
+glued tokens too ("BeachRaft01", "BeachRaft02"). Every member gets a tag at its top left, in the cost
+tag's face, saying what tells it apart (`lookAlikeTags`), the first of these that fits the tag and no
+other tag says: its whole name; a family member's word ("#02", "2x2"); its distinguishing word; that
+word and the next; the run's word and that word ("NA Row" beside "EU Row"), which tells two runs apart;
+its name cut once by the planner, that word and every number whole, or where that word alone is wider
+than the tag, the word cut inside it, two letters at least each side of the mark, a hyphenated word only
+to its head ("Mansard…" for Mansard-Roof). A tag is cut once, with one mark, and never cuts a number or
+the distinguishing word inside: where only such a cut fits, the tile is not tagged. A number is never
+bare: it says "#02". No tag opens or ends on a separator, and a word like "with" never stands alone: the
+word after it tells the tile apart ("Median" for "Five-Lane Road with Median"). Every tag is unique on
+the screen: members whose tags would read alike, in a run or across two, each take their next form, and
+a tag another drawn tile would also say is dropped from every tile that shares it, as is one that says
+another drawn tile's name, which would read as that tile. A shared tag tells two look-alikes apart by
+nothing and suggests they are the same; the line under the tiles and the hover card still name them. So
+at the smallest tile and at large text, where a tag holds a word or less, fewer tiles are tagged. The
+tags are counted over every tile the body draws, which holds every tile on the screen, so a tag can
+change, or drop, when Load more draws a look-alike, even one scrolled out of sight. A cut starts from
+the tag's room at the text scale and narrows by what it runs over, stopping where the planner cannot fit
+the kept word, and the tags are worked out again only when the tiles' names, distinguishing words,
+families or locks, the tile's width or the text scale change. Each tile's forms are kept by those, so a
+Load more works out only the new tiles' forms; only the pass that keeps every tag unique runs over every
+tile. On a locked tile the tag's room ends at the lock glyph, which it never covers, and its forms are
+measured in that room. A tile with no look-alike drawn with it draws no tag at its top: the line under
+the tiles names it. A tag carries `data-bbm-tag`, so the live check and the render tests count the tags
+drawn.
 
 **This changes 0.2.x:** Grid drew each tile's name with its repeated theme and category words dropped,
 which kept two look-alikes from reading alike; a tile with a look-alike drawn beside it now says only

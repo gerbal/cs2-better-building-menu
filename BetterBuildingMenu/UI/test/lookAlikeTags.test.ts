@@ -63,10 +63,23 @@ describe("the tiles' look-alike tags", () => {
     );
   });
 
-  it("key a page's tags on its families too", () => {
+  it("key a page's tags on each of its family fields", () => {
     const page = [tile(1, "Cairn 01", "01"), tile(2, "Cairn 02", "02")];
+    const keyed = (over: Partial<BuildingCatalogEntry> = {}) => lookAlikeKey([{ ...page[0], familyKey: "Cairn", familyToken: "01", ...over }, page[1]]);
 
-    assert.notEqual(lookAlikeKey([{ ...page[0], familyKey: "Cairn", familyToken: "01" }, page[1]]), lookAlikeKey(page));
+    // Each alone moves the key: the family's stem, and the member's token under the same stem.
+    assert.notEqual(keyed({ familyKey: "Cairn Stone" }), keyed());
+    assert.notEqual(keyed({ familyToken: "07" }), keyed());
+  });
+
+  it("say a family member's whole name first where the tile has room for it", () => {
+    const member = (id: number, name: string, familyToken: string): BuildingCatalogEntry =>
+      ({ ...tile(id, name, name), familyKey: "BeachRaft", familyToken } as BuildingCatalogEntry);
+
+    assert.deepEqual(
+      tags([member(1, "BeachRaft01", "01"), member(2, "BeachRaft02", "02"), member(3, "BeachRaft03", "03"), tile(4, "BeachBoat01")], 300),
+      { 1: "BeachRaft01", 2: "BeachRaft02", 3: "BeachRaft03" },
+    );
   });
 
   it("work a tile's forms again when its family token changes under the same name", () => {
