@@ -67,6 +67,9 @@ namespace BetterBuildingMenu.Services
 			return entries.Where(entry => Matches(entry, query));
 		}
 
+		/// <summary>No row's distinguishing word: a page only counted carries none.</summary>
+		private static readonly IReadOnlyDictionary<int, string> NoWords = new Dictionary<int, string>();
+
 		/// <param name="labelsOf">A row's headings under the page's grouping, which name its groups' labels; null names each by its key.</param>
 		public static BuildingCatalogPage Query(
 			IEnumerable<BuildingCatalogEntry> entries,
@@ -113,8 +116,9 @@ namespace BetterBuildingMenu.Services
 			var anchorIndex = query.AnchorId > 0 ? Array.FindIndex(visible, entry => entry.Id == query.AnchorId) : -1;
 			var limit = query.CoveringAnchor(anchorIndex).EffectiveLimit;
 			var offset = ClampOffset(query.EffectiveOffset, visible.Length, limit);
-			// Each row's distinguishing word, against every look-alike in the result, not the window's alone.
-			var distinct = DistinctWords.Of(matching);
+			// Each row's distinguishing word, against every look-alike in the result, not the window's alone;
+			// none on a page only counted.
+			var distinct = query.WithFacts ? DistinctWords.Of(matching) : NoWords;
 			var items = visible
 				.Skip(offset)
 				.Take(limit)
@@ -155,7 +159,7 @@ namespace BetterBuildingMenu.Services
 			{
 				VisibleCount = visible.Length,
 				// Over every match, the folded rows' too: a fold hides rows, it does not change the view.
-				Facts = ViewFacts.Of(matching, query.SaidOnceAt, !string.IsNullOrWhiteSpace(query.SearchText), query.EffectiveSortColumn),
+				Facts = query.WithFacts ? ViewFacts.Of(matching, query.SaidOnceAt, !string.IsNullOrWhiteSpace(query.SearchText), query.EffectiveSortColumn) : ViewFacts.None,
 			};
 		}
 

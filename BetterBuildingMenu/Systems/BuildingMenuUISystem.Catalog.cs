@@ -73,10 +73,10 @@ namespace BetterBuildingMenu.Systems
 			}
 
 			// Counted over the query "Search everywhere" runs, so the notice promises what
-			// the button delivers.
+			// the button delivers. Only counted: no row's word nor the view's facts.
 			_BuildingCatalogMatchesElsewhere.Value =
 				page.TotalCount == 0 && !string.IsNullOrWhiteSpace(_assetMenu.Query.SearchText)
-					? _buildingCatalogAdapter.Build(source, _assetMenu.EverywhereQuery(), _toolbarSelection).Page.TotalCount
+					? _buildingCatalogAdapter.Build(source, _assetMenu.EverywhereQuery() with { WithFacts = false }, _toolbarSelection).Page.TotalCount
 					: 0;
 			var pageMs = Lap();
 			// The window the page served is the one the state keeps, so Load more grows from the anchored row.
@@ -159,10 +159,10 @@ namespace BetterBuildingMenu.Systems
 		/// </remarks>
 		private bool PublishMenuShares(CatalogSource source)
 		{
-			// The menu's All in its own grouping, built once and only when the ledger counts. Said once at is off, as
-			// nothing reads this page's facts.
+			// The menu's All in its own grouping, built once and only when the ledger counts. Without its facts and
+			// words, as nothing reads this page's rows.
 			CatalogView? all = null;
-			CatalogView All() => all ??= _buildingCatalogAdapter.Build(source, new BuildingCatalogQuery(UiMenu: _assetMenu.Menu, SaidOnceAt: 0), VanillaToolbarSelection.None, built => built.DefaultGroupBy);
+			CatalogView All() => all ??= _buildingCatalogAdapter.Build(source, new BuildingCatalogQuery(UiMenu: _assetMenu.Menu, WithFacts: false), VanillaToolbarSelection.None, built => built.DefaultGroupBy);
 
 			try
 			{

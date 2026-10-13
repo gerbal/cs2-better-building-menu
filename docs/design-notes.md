@@ -1391,7 +1391,9 @@ neighbour, and the row's word is the one after those. "Pedestrian" against Cover
 for Four-Lane Road 2. A row with no look-alike, or that is all of what it shares, has none. Words match
 whatever their case and however many spaces part them. C# finds it over the whole result, as a
 look-alike past the window still decides which word a cut name keeps, and counts each run of leading
-words once in one pass over the rows' words, so a refresh sorts nothing more.
+words once in one pass over the rows' words, so a refresh sorts nothing more. A page only counted, the
+count of a scoped search's matches elsewhere and the menu shares' All, carries neither the words nor
+the view's facts (`WithFacts`), as nobody reads its rows.
 
 **The planner** (`planName`) lays a name out in a box of a width and a number of lines, at the box's
 own font, from the one advance table (`textWidth`), and draws each line as a box of its own

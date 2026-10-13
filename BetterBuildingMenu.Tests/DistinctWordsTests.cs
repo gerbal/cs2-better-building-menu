@@ -69,6 +69,28 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void APageOnlyCountedCarriesNoWordsNorFacts()
+		{
+			var rows = new[] { Row(1, "Wide Quay With Four-Lane Road 1"), Row(2, "Alley"), Row(3, "Wide Quay With Four-Lane Road 2") };
+
+			var page = BuildingCatalogQueryEngine.Query(rows, new BuildingCatalogQuery(UiMenu: "Roads", WithFacts: false));
+
+			Assert.Equal(3, page.TotalCount);
+			Assert.All(page.Items, item => Assert.Null(item.DistinctWord));
+			Assert.Same(ViewFacts.None, page.Facts);
+		}
+
+		[Fact]
+		public void TheCountsNobodyReadsTheRowsOfSkipTheWordsAndTheFacts()
+		{
+			// The scoped miss's count of every match elsewhere, and the menu shares' All: only counted.
+			var catalog = ModSource.Text("Systems/BuildingMenuUISystem.Catalog.cs");
+
+			Assert.Contains("_buildingCatalogAdapter.Build(source, _assetMenu.EverywhereQuery() with { WithFacts = false }, _toolbarSelection).Page.TotalCount", catalog);
+			Assert.Contains("new BuildingCatalogQuery(UiMenu: _assetMenu.Menu, WithFacts: false)", ModSource.Member(catalog, "private bool PublishMenuShares("));
+		}
+
+		[Fact]
 		public void AnEntryWritesItsWordForTheUi()
 		{
 			var writer = new RecordingJsonWriter();

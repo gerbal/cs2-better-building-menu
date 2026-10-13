@@ -71,7 +71,10 @@ namespace BetterBuildingMenu.Domain
 		bool LockedCollapsed = false,
 		// The share of the view's unlocked rows, in percent, one value must hold for the readout to say it once;
 		// 0 says none. The Said once at knob's. Not a predicate. See docs/design-notes.md, "Numbers said once".
-		int SaidOnceAt = Tuning.SaidOnceAt)
+		int SaidOnceAt = Tuning.SaidOnceAt,
+		// Whether the page carries its view's facts and each row's distinguishing word: false for a page only
+		// counted, whose rows nobody reads. Not a predicate.
+		bool WithFacts = true)
 	{
 		/// <summary>
 		/// The sort fields the picker offers, in its order.
