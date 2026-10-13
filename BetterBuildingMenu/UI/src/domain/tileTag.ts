@@ -5,7 +5,7 @@
  * rather than cut; a tag drops only a unit every tile beside it shares. Pure. See docs/design-notes.md,
  * "The bodies".
  */
-import { compactCostPerCellForms, compactMoneyForms, compactUnitForms, formatBuildingMetric, type NumberSeparators } from "./assetMenuMetricFormat";
+import { compactCostPerCellForms, compactMoneyForms, compactUnitForms, type NumberSeparators } from "./assetMenuMetricFormat";
 import type { AssetMenuMetric } from "./assetMenuLayout";
 import type { BuildingCatalogEntry } from "./buildingCatalog";
 import { oneNumber, plateNumbers, sortsByValue } from "./listPlate";
@@ -49,21 +49,19 @@ export function tileTag(
 ): TileTag {
   const { first: text, locked } = oneNumber(plateNumbers(entry, sortedMetric, separators, lockedWord, achievedMilestone), sortedMetric);
   const bySort = sortsByValue(sortedMetric);
-  // A tag keeps every unit that tells its tiles apart and drops one they all share: under Sort › Upkeep
-  // every bill is monthly, so the month goes, and a network's stays per cell, as its cost is.
-  const upkeep = sortedMetric === "upkeep";
 
-  if (!upkeep && tagFits(text, tileWidth, textScale)) {
+  // The plate's text keeps every unit that tells the tiles apart: a network's cell, an upkeep without
+  // the month every tile shares.
+  if (tagFits(text, tileWidth, textScale)) {
     return { text, locked };
   }
 
   // Money has short forms: a network's per cell, a building's whole.
-  const money = upkeep ? sortedMetricValue(entry, "upkeep") : bySort || locked ? null : entry.constructionCost;
+  const money = bySort ? (sortedMetric === "upkeep" ? sortedMetricValue(entry, "upkeep") : null) : locked ? null : entry.constructionCost;
 
   // The most exact form that fits; where none does, the narrowest, which the stylesheet cuts least.
-  if (typeof money === "number" && Number.isFinite(money) && (upkeep || money !== 0)) {
-    const whole = upkeep && !isPerCell(entry) && money !== 0 ? [formatBuildingMetric(money, "cost", separators)] : [];
-    const forms = isPerCell(entry) ? compactCostPerCellForms(money, separators) : [...whole, ...compactMoneyForms(money, separators)];
+  if (typeof money === "number" && Number.isFinite(money) && money !== 0) {
+    const forms = isPerCell(entry) ? compactCostPerCellForms(money, separators) : compactMoneyForms(money, separators);
     const fits = forms.find((form) => tagFits(form, tileWidth, textScale));
     const narrowest = forms.reduce((least, form) => (textWidth(form, 1, "wider") < textWidth(least, 1, "wider") ? form : least));
 

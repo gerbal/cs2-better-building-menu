@@ -88,6 +88,10 @@ describe("a card's words", () => {
     assert.equal(cardText(road, "upkeep", separators, "Locked", 0).sorted, "¢36.9/c");
     assert.ok(cardText(road, "upkeep", separators, "Locked", 0).facts.includes("¢44/c"));
   });
+
+  it("carry a building's upkeep without the month Sort names under a sort by upkeep, as a road's", () => {
+    assert.equal(cardText(entry({ upkeep: 1_200 }), "upkeep", separators, "Locked", 0).sorted, "¢1,200");
+  });
 });
 
 describe("a card's width", () => {

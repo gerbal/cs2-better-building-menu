@@ -316,6 +316,23 @@ export function formatUpkeepPerCell(perKilometre: number, separators: NumberSepa
 }
 
 /**
+ * A network's monthly upkeep per cell with its month, where nothing beside it names the month: the
+ * game's per-kilometre monthly template with the cell in the kilometre's place, in the game's own
+ * spacing ("¢3.9 /c/mo."). Where that template does not hold the kilometre's unit, the month's template.
+ */
+export function formatMonthlyUpkeepPerCell(perKilometre: number, separators: NumberSeparators = FALLBACK_SEPARATORS): string {
+  const money = separators.money ?? FALLBACK_MONEY;
+  const digits = groupDigits(perKilometre / NET_CELLS_PER_KILOMETRE, separators);
+  // What the per-kilometre template sets after the value, " /km", and the same with the cell, " /c".
+  const kilometre = money.perKilometre.split("{VALUE}")[1] ?? "";
+  const cell = kilometre.replace(/[^\s/]+$/u, PER_CELL_SUFFIX.slice(1));
+
+  return kilometre !== "" && cell !== kilometre && money.perKilometrePerMonth.includes(kilometre)
+    ? applyMoneyTemplate(money.perKilometrePerMonth.replace(kilometre, cell), digits)
+    : applyMoneyTemplate(money.perMonth, digits + PER_CELL_SUFFIX);
+}
+
+/**
  * A network's money figure per cell, its cost or its monthly upkeep, from its per-kilometre figure, in
  * its short forms as compactMoneyForms says a total, each keeping its cell: the cell tells a network's
  * figure from a building's whole one.

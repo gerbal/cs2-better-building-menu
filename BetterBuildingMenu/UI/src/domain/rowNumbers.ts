@@ -4,10 +4,13 @@
  * that stands for the unit the readout names. Pure. See docs/design-notes.md, "Numbers said once".
  */
 import {
+  applyMoneyTemplate,
+  FALLBACK_MONEY,
   formatBuildingMetric,
   formatCapacity,
   formatCostPerCell,
   formatLotDimensions,
+  formatMonthlyUpkeepPerCell,
   formatUpkeepPerCell,
   getCapacityUnitLabel,
   groupDigits,
@@ -52,11 +55,13 @@ export function capacityText(entry: BuildingCatalogEntry, value: number | null |
   return typeof value === "number" && value > 0 ? known(formatCapacity(value, entry.category, entry.subCategory, entry.buildingType, separators)) : null;
 }
 
-/** An upkeep in the game's monthly template, a network's per kilometre, where the building has one that is not 0. */
+/**
+ * An upkeep with its month, where nothing beside it names the month: a building's in the game's monthly
+ * template, a network's per cell; null where the building has none that is not 0.
+ */
 export function upkeepText(entry: BuildingCatalogEntry, separators: NumberSeparators): string | null {
-  return typeof entry.upkeep === "number" && entry.upkeep !== 0
-    ? known(formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance))
-    : null;
+  if (typeof entry.upkeep !== "number" || !Number.isFinite(entry.upkeep) || entry.upkeep === 0) return null;
+  return isPerCell(entry) ? formatMonthlyUpkeepPerCell(entry.upkeep, separators) : known(formatBuildingMetric(entry.upkeep, "upkeep", separators));
 }
 
 /** A lot as its two sides, where the building has both. */
@@ -64,15 +69,19 @@ export function lotText(entry: BuildingCatalogEntry): string | null {
   return hasFootprint(entry.lotWidth, entry.lotDepth) ? formatLotDimensions(entry.lotWidth, entry.lotDepth) : null;
 }
 
-/** The value a sort orders by, with its unit, which Sort names, a network's upkeep per cell; null under no sort by a number, or where the row has none. */
+/**
+ * The value a sort orders by, with its unit, which Sort names; an upkeep without the month every row
+ * shares, a network's per cell. Null under no sort by a number, or where the row has none.
+ */
 export function sortedText(entry: BuildingCatalogEntry, sortedMetric: AssetMenuMetric | null, separators: NumberSeparators): string | null {
   if (sortedMetric === null) return null;
   if (sortedMetric === "lot") return lotText(entry);
 
   const value = sortedMetricValue(entry, sortedMetric);
   if (value === null) return null;
-  // A network's upkeep per cell, as its cost; the hover card keeps the kilometre the game's panels state.
-  if (sortedMetric === "upkeep" && isPerCell(entry) && Number.isFinite(value)) return formatUpkeepPerCell(value, separators);
+  if (sortedMetric === "upkeep" && Number.isFinite(value)) {
+    return isPerCell(entry) ? formatUpkeepPerCell(value, separators) : applyMoneyTemplate((separators.money ?? FALLBACK_MONEY).plain, groupDigits(value, separators));
+  }
 
   return sortedMetric === "capacity" ? capacityText(entry, value, separators) : known(formatBuildingMetric(value, sortedMetric, separators, entry.costIsPerDistance));
 }

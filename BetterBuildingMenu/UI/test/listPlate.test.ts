@@ -52,11 +52,12 @@ describe("a list plate's numbers", () => {
     assert.equal(plateNumbers(row(), "capacity", FALLBACK_SEPARATORS, "Locked", 0).glyph, null);
   });
 
-  it("say a road's upkeep per cell under a sort by upkeep, as its cost, a building's in its monthly template", () => {
+  it("say every row's upkeep without the month Sort names under a sort by upkeep, a road's per cell as its cost", () => {
     const road = row({ upkeep: 38, constructionCost: 5_500, costIsPerDistance: true, capacity: null });
 
     assert.deepEqual([plateNumbers(road, "upkeep", FALLBACK_SEPARATORS, "Locked", 0).first, plateNumbers(road, "upkeep", FALLBACK_SEPARATORS, "Locked", 0).second], ["¢44/c", "¢0.3/c"]);
-    assert.equal(plateNumbers(row(), "upkeep", FALLBACK_SEPARATORS, "Locked", 0).second, formatBuildingMetric(1_200, "upkeep"));
+    assert.equal(plateNumbers(row(), "upkeep", FALLBACK_SEPARATORS, "Locked", 0).second, formatBuildingMetric(1_200, "cost"));
+    assert.equal(plateNumbers(row({ upkeep: 0 }), "upkeep", FALLBACK_SEPARATORS, "Locked", 0).second, "¢0");
   });
 
   it("keep the capacity under a sort by cost, which the first already says", () => {

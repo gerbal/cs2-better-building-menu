@@ -1307,26 +1307,29 @@ cost, the capacity, the lot, the value sorted by, and the key number. A list pla
 the view's key number, its digits beside a glyph for the unit the readout names once: a gauge for a
 speed, a person for a capacity that counts people or things, a case for workers, a grid for a lot.
 The glyph is BBM's own picture drawn as a mask, in a box of its own beside the number, never inside a
-run of text, in the glyph ink, a step behind the number's digits. A capacity that is a measure (power, weight, water, data) says its
-own unit and draws no glyph, and the lot is left out where the name already says it ("Parking Lot
+run of text, in the glyph ink, a step behind the number's digits. A capacity that is a measure (power,
+weight, water, data) says its own unit and draws no glyph, and the lot is left out where the name already says it ("Parking Lot
 1x3"). Under a sort by a number the second is the value sorted by, with its unit, as Sort names the
-kind. A unit that scales with its size (kW or MW, t or kt) is never dropped: where a tile's tag is
+kind; under a sort by upkeep without the month every row shares, one convention for the list, the cards
+and the tiles' tags ("¢1,200", "¢3.9/c"). A unit that scales with its size (kW or MW, t or kt) is never dropped: where a tile's tag is
 short of room the number loses its decimals instead (`compactUnitForms`), since two such figures bare
 side by side read as one scale. The cards and the tiles' name line read their figures through the same
 functions.
 
 A network's cost is said per cell (`formatCostPerCell`): the index carries a kilometre's worth, 125
 cells, and a row divides it back, "¢44/c", short enough to leave a road's name the room for two whole
-lines, and the same in miles. Under a sort by upkeep a network's monthly bill is said per cell too, in
-the list, the cards and the tiles' tag, to one decimal since a cell's share of a cheap road's bill is
-under a coin ("¢0.3/c", `formatUpkeepPerCell`), the month Sort's to say. The hover card keeps the
-per-kilometre figures the game's own panels state. A tile's tag short of room shortens the number as it
+lines, and the same in miles. A network's monthly bill is said per cell too, to one decimal since a
+cell's share of a cheap road's bill is under a coin: under a sort by upkeep in the list, the cards and
+the tiles' tag without the month Sort names ("¢0.3/c", `formatUpkeepPerCell`), and on the tiles' name
+line, which no Sort stands beside, with its month in the game's own spacing ("¢3.9 /c/mo.",
+`formatMonthlyUpkeepPerCell`). The hover card keeps the per-kilometre figures the game's own panels
+state. A tile's tag short of room shortens the number as it
 shortens a total and keeps the cell ("¢10k/c" past ten thousand a cell).
 
 **This changes 0.2.x:** a list row said its capacity with its unit word ("400 patients"); it now says
-the view's key number, a road its speed, by the glyph for its unit. A road's cost, and its upkeep
-under a sort by upkeep, read per kilometre in the list, the tiles and the cards; they now say them per
-cell.
+the view's key number, a road its speed, by the glyph for its unit. A road's cost and upkeep read per
+kilometre in the list, the tiles and the cards; they now say them per cell. Under a sort by upkeep a
+building's bill read with its month in the list; every row's now reads without it.
 
 ## Names
 
