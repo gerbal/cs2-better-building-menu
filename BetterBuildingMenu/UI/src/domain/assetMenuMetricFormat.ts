@@ -10,26 +10,6 @@ import type { AssetMenuMetric } from "./assetMenuLayout";
 export const METRIC_NO_DATA = "—";
 
 /**
- * Rendered when a metric does not apply to this KIND of thing. Deliberately not
- * the dash: both states show in one row, and printing them alike says the
- * building might have a level we failed to read.
- */
-export const METRIC_NOT_APPLICABLE = "·";
-
-/**
- * A building's level, or a mark saying it has none. Zone buildings run 1 to 5,
- * so a 0 is the game saying this kind of thing has no levels; a null is the
- * wire failing to send one at all, which is a real gap and gets the dash.
- */
-export function formatBuildingLevel(level: number | null | undefined): string {
-  if (typeof level !== "number" || !Number.isFinite(level)) {
-    return METRIC_NO_DATA;
-  }
-
-  return level >= 1 ? String(level) : METRIC_NOT_APPLICABLE;
-}
-
-/**
  * A construction cost of exactly zero — real, and different from unknown.
  * English rather than a locale key because this module is pure and cannot call
  * `translate`; `localizableStrings` registers it as debt.
@@ -575,112 +555,6 @@ export function formatCapacity(
     return volume === "" ? formatted : volume;
   }
   return unit === "" ? formatted : `${formatted} ${unit}`;
-}
-
-export interface BuildingDetailMetric {
-  key: string;
-  label: string;
-  value: string;
-}
-
-/**
- * Everything the indexer projected about one asset, ready to draw. A detail
- * view cannot know less than the row it expands from, so every field is a
- * candidate; absent stays absent, and formatting is delegated, never re-derived.
- */
-export function getBuildingDetailMetrics(entry: {
-  constructionCost?: number | null;
-  upkeep?: number | null;
-  costIsPerDistance?: boolean;
-  capacity?: number | null;
-  category?: string;
-  subCategory?: string;
-  buildingType?: string;
-  workers?: number | null;
-  households?: number | null;
-  parkingSlots?: number | null;
-  lotWidth?: number | null;
-  lotDepth?: number | null;
-  buildingLevel?: number | null;
-  electricityConsumption?: number | null;
-  waterConsumption?: number | null;
-  garbageAccumulation?: number | null;
-  telecomNeed?: number | null;
-  waterCapacity?: number | null;
-  sewageCapacity?: number | null;
-  groundPollution?: number | null;
-  airPollution?: number | null;
-  noisePollution?: number | null;
-}, separators: NumberSeparators = FALLBACK_SEPARATORS): BuildingDetailMetric[] {
-  const details: BuildingDetailMetric[] = [];
-
-  /** A metric this entry carries a number for. */
-  const add = (key: string, label: string, value: number | null | undefined, text: string) => {
-    if (value === null || value === undefined || !Number.isFinite(value)) return;
-    details.push({ key, label, value: text });
-  };
-
-  // Money first, because it changes what everything under it means.
-  add("cost", "Cost", entry.constructionCost,
-    formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance ?? false));
-  add("upkeep", "Upkeep", entry.upkeep,
-    formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance ?? false));
-
-  // Then what it buys.
-  add("capacity", "Capacity", entry.capacity,
-    formatCapacity(entry.capacity, entry.category ?? "", entry.subCategory ?? "", entry.buildingType, separators));
-  add("workers", "Workers", entry.workers, `${groupDigits(entry.workers as number, separators)} jobs`);
-  add("households", "Households", entry.households,
-    `${groupDigits(entry.households as number, separators)} households`);
-
-  // No bays is not a bay count.
-  if (typeof entry.parkingSlots === "number" && Number.isFinite(entry.parkingSlots) && entry.parkingSlots > 0) {
-    details.push({
-      key: "parking",
-      label: "Parking",
-      value: `${groupDigits(entry.parkingSlots, separators)} bays`,
-    });
-  }
-
-  // Then what it occupies. A road measures 0 x 0, which is not a footprint.
-  if (hasFootprint(entry.lotWidth, entry.lotDepth)) {
-    details.push({
-      key: "lot",
-      label: "Lot",
-      value: formatLotDimensions(entry.lotWidth, entry.lotDepth),
-    });
-  }
-
-  // A level of 0 means the asset has no level, not that it is level zero.
-  if (typeof entry.buildingLevel === "number" && Number.isFinite(entry.buildingLevel) && entry.buildingLevel > 0) {
-    details.push({ key: "level", label: "Level", value: String(entry.buildingLevel) });
-  }
-
-  // Then what it draws and what it emits.
-  const measured: Array<{ key: string; label: string; value: number | null | undefined; unit?: string; text?: (value: number) => string }> = [
-    // The three consumption figures in the game's own units: power in
-    // hundreds of watts, water in m³ a month, garbage in kilograms a month.
-    { key: "electricity", label: "Electricity", value: entry.electricityConsumption, text: (v) => formatPower(v, separators) },
-    { key: "water", label: "Water", value: entry.waterConsumption, text: (v) => formatVolumePerMonth(v, separators) },
-    { key: "garbage", label: "Garbage", value: entry.garbageAccumulation, text: (v) => formatWeightPerMonth(v, separators) },
-    { key: "telecom", label: "Telecom", value: entry.telecomNeed },
-    { key: "waterCapacity", label: "Water capacity", value: entry.waterCapacity, text: (v) => formatVolumePerMonth(v, separators) },
-    { key: "sewageCapacity", label: "Sewage capacity", value: entry.sewageCapacity, text: (v) => formatVolumePerMonth(v, separators) },
-    { key: "groundPollution", label: "Ground pollution", value: entry.groundPollution },
-    { key: "airPollution", label: "Air pollution", value: entry.airPollution },
-    { key: "noisePollution", label: "Noise pollution", value: entry.noisePollution },
-  ];
-
-  for (const candidate of measured) {
-    add(candidate.key, candidate.label, candidate.value,
-      candidate.text && typeof candidate.value === "number"
-        ? candidate.text(candidate.value)
-        : candidate.unit
-          ? `${groupDigits(candidate.value as number, separators)} ${candidate.unit}`
-          : groupDigits(candidate.value as number, separators));
-  }
-
-  return details;
 }
 
 /**

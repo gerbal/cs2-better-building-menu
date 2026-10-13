@@ -267,15 +267,29 @@ describe("a control's popover", () => {
     assert.equal(closed, 1);
   });
 
-  it("lists the four views, the drawn one lit, then Width and More options, and closes on a view", () => {
+  it("lists Default view and the bodies, the menu's own pick lit, then Width and More options, and closes on a body", () => {
+    set("AssetMenu", "Roads");
     mount({ kind: "view", left: 0 });
 
-    assert.deepEqual(rows().map((node) => node.props["aria-label"]), ["Cards", "List", "Grid", "Table", "Width · 1", "More options…"]);
-    assert.equal(rows().find((node) => node.props["aria-current"] === "true")!.props["aria-label"], "Cards");
-    pick("List");
+    assert.deepEqual(rows().map((node) => node.props["aria-label"]), ["Default view · List", "List", "Tiles", "Cards", "Width · 1", "More options…"]);
+    assert.equal(rows().find((node) => node.props["aria-current"] === "true")!.props["aria-label"], "Default view · List");
+    pick("Tiles");
 
-    assert.deepEqual(sent("SetAssetMenuViewMode"), [["list"]]);
+    assert.deepEqual(sent("SetAssetMenuView"), [["tiles"]]);
     assert.equal(closed, 1);
+  });
+
+  it("lights the menu's own pick, and sends none back from Default view", () => {
+    set("AssetMenu", "Roads");
+    set("AssetMenuViews", [{ menu: "Parks & Recreation", value: "list" }, { menu: "Roads", value: "cards" }]);
+    set("AssetMenuDefaultView", "tiles");
+    mount({ kind: "view", left: 0 });
+
+    assert.equal(rows().find((node) => node.props["aria-current"] === "true")!.props["aria-label"], "Cards");
+    assert.equal(rows()[0].props["aria-label"], "Default view · Tiles");
+    pick("Default view · Tiles");
+
+    assert.deepEqual(sent("SetAssetMenuView"), [[""]]);
   });
 
   it("opens Width, every menu beside the list and keeps both open on a step; More options asks for the mod's page and closes", () => {

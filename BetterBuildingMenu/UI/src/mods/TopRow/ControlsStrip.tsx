@@ -67,8 +67,9 @@ export function useControlCells(): ControlCell[] {
       kind: "view",
       word: label("Tooltip.LABEL[BetterBuildingMenu.ControlView]", "View"),
       value: view.current,
-      values: view.options.map((option) => option.label),
-      changed: false,
+      // The bodies' names: the value is always one of them, never the Default view row's.
+      values: view.options.filter((option) => option.id !== "").map((option) => option.label),
+      changed: view.changed,
     },
   ];
 }

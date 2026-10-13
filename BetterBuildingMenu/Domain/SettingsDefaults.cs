@@ -35,8 +35,8 @@ namespace BetterBuildingMenu.Domain
 
 		/// <summary>Every stored setting back to how it ships.</summary>
 		/// <remarks>
-		/// Not the settings version, which records the migration, nor the legacy width, which only
-		/// the migration reads.
+		/// Not the settings version, which records the migration, nor the legacy width and view, which
+		/// only the migration reads.
 		/// </remarks>
 		public static void Apply(ISettingsValues values)
 		{
@@ -45,9 +45,9 @@ namespace BetterBuildingMenu.Domain
 			values.DefaultView = DefaultView;
 			values.AtLargeText = AtLargeText;
 			values.MenuGroups = NoPicks;
+			values.MenuViews = NoPicks;
 			values.Upgrader = false;
 			values.ControlPaneShown = ControlPaneShown;
-			values.AssetMenuViewMode = AssetMenuViewMode.None;
 			values.ReplaceVanillaBuildMenu = ReplaceVanillaBuildMenu;
 			values.AutoWidenSearch = false;
 			values.AssetMenuTileSize = TileSize;

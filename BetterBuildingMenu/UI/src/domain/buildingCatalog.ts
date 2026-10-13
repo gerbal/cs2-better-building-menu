@@ -122,15 +122,6 @@ export interface BuildingCatalogEntry {
   groupLabelId?: string;
 }
 
-export function formatBuildingCatalogLabels(
-  entry: Pick<BuildingCatalogEntry, "category" | "subCategory" | "categoryLabel" | "subCategoryLabel">
-): string {
-  const category = entry.categoryLabel?.trim() || entry.category;
-  const subCategory = entry.subCategoryLabel?.trim() || entry.subCategory;
-
-  return [category, subCategory].filter((value) => value.length > 0).join(" · ");
-}
-
 export interface BuildingCatalogPage {
   items: BuildingCatalogEntry[];
   totalCount: number;

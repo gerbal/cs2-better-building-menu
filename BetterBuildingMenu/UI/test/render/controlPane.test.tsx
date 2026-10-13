@@ -64,7 +64,7 @@ describe("the control pane", () => {
     assert.equal(count(html, /class="pickerSummary"/), 3, "a summary each for Group by, Sort by and View");
     assert.match(html, /class="pickerLabel">By tab</);
     assert.match(html, /class="pickerLabel">Name ▲</);
-    assert.match(html, /class="pickerLabel">Cards</);
+    assert.match(html, /class="pickerLabel">List</);
     // The game draws no title attribute: the summaries carry their labels as aria-labels.
     assert.doesNotMatch(html, / title="/);
   });
@@ -151,7 +151,7 @@ describe("the control pane", () => {
 
 describe("the control pane's view", () => {
   let root: ReactTestRenderer | undefined;
-  const sent = () => triggers.filter((call) => call.name === "SetAssetMenuViewMode").map((call) => call.args);
+  const sent = () => triggers.filter((call) => call.name === "SetAssetMenuView").map((call) => call.args);
   const shown = () => String(summaryOf(root!, "View").props["aria-label"]).slice("View · ".length);
   const pick = (label: string) => {
     act(() => summaryOf(root!, "View").props.onSelect());
@@ -164,37 +164,26 @@ describe("the control pane's view", () => {
     seed();
   });
 
-  it("opens on the view C# kept while nothing was picked this session", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuViewMode", "list");
+  it("opens on the menu's own pick, and sends nothing back for reading it", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuViews", [{ menu: "Roads", value: "tiles" }]);
     act(() => { root = create(<Pane />); });
 
-    assert.equal(shown(), "List");
-    assert.deepEqual(sent(), [], "reading the kept view sends nothing back");
+    assert.equal(shown(), "Tiles");
+    assert.deepEqual(sent(), [], "reading the pick sends nothing back");
     act(() => root?.unmount());
   });
 
-  it("draws a pick at once, sends it to C# once, and closes the list", () => {
-    setBinding("BetterBuildingMenu", "AssetMenuViewMode", "list");
+  it("sends a pick to C# once and closes the list, and draws it when C# keeps it", () => {
     act(() => { root = create(<Pane />); });
-    pick("Table");
+    pick("Cards");
 
-    assert.equal(shown(), "Table");
-    assert.deepEqual(sent(), [["table"]]);
+    assert.deepEqual(sent(), [["cards"]]);
     assert.equal(root!.root.findAllByType(ViewList).length, 0);
 
-    // C#'s echo of the same value redraws nothing and sends nothing.
-    act(() => setBinding("BetterBuildingMenu", "AssetMenuViewMode", "table"));
-    assert.equal(shown(), "Table");
-    assert.deepEqual(sent(), [["table"]]);
-    act(() => root?.unmount());
-  });
-
-  it("keeps the session's pick over a stale value C# pushes later", () => {
-    act(() => { root = create(<Pane />); });
-    pick("Grid");
-    act(() => setBinding("BetterBuildingMenu", "AssetMenuViewMode", "list"));
-
-    assert.equal(shown(), "Grid");
+    // C#'s answer, the menu's pick kept, redraws the control.
+    act(() => setBinding("BetterBuildingMenu", "AssetMenuViews", [{ menu: "Roads", value: "cards" }]));
+    assert.equal(shown(), "Cards");
+    assert.deepEqual(sent(), [["cards"]]);
     act(() => root?.unmount());
   });
 });

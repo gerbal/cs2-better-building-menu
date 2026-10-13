@@ -17,7 +17,7 @@ describe("the render harness", () => {
 
   it("answers what a stylesheet exports with :export with the compiled value", () => {
     // So a size TS reads from a sheet is the sheet's, sass arithmetic done.
-    assert.match(sizes.tableRowFurniture, /^\d+rem$/);
+    assert.match(sizes.paneTotal, /^\d+rem$/);
     assert.equal(sizes.notExported, "notExported");
   });
 

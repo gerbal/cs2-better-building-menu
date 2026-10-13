@@ -9,7 +9,6 @@ import { AssetMenuToolOptions } from "mods/AssetMenuToolOptions/AssetMenuToolOpt
 
 import { VanillaMenuWatcher } from "mods/VanillaMenuWatcher/VanillaMenuWatcher";
 import { VanillaToolbarWatcher } from "mods/VanillaMenuWatcher/VanillaToolbarWatcher";
-import { StoredViewWatcher } from "mods/StoredViewWatcher/StoredViewWatcher";
 import { safeAppend, safeExtension } from "mods/ExtensionBoundary";
 
 const register: ModRegistrar = (moduleRegistry) => {
@@ -49,9 +48,6 @@ const register: ModRegistrar = (moduleRegistry) => {
   // Also renders nothing; forwards the game's own theme/pack/Vanilla/Mods row
   // so the catalog hides what the vanilla grid would hide.
   moduleRegistry.append("Game", safeAppend("VanillaToolbarWatcher", VanillaToolbarWatcher));
-  // Also renders nothing; drops this session's view pick when a reset in Options, made while
-  // the menu is closed, empties the stored view.
-  moduleRegistry.append("Game", safeAppend("StoredViewWatcher", StoredViewWatcher));
 
 };
 

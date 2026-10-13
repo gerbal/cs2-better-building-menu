@@ -1,5 +1,4 @@
 import type { SortColumn, SortState } from "./buildingCatalogContracts";
-import type { AssetMenuMetric } from "./assetMenuLayout";
 import { SORT_COLUMNS } from "./sharedContracts.generated";
 
 export interface AssetMenuSortOption {
@@ -49,37 +48,6 @@ export const ASSET_MENU_SORT_OPTIONS: readonly AssetMenuSortOption[] = SORT_COLU
   key,
   label: SORT_LABELS[key],
 }));
-
-/**
- * Which sort each metric column drives when its header is clicked, sorting a
- * table by its headers being the convention players know. `lot` renders both
- * dimensions and sorts by width; `LotDepth` stays in the sort list.
- */
-export const ASSET_MENU_COLUMN_SORT: Readonly<Record<AssetMenuMetric, SortColumn>> = {
-  cost: "ConstructionCost",
-  upkeep: "Upkeep",
-  workers: "Workers",
-  capacity: "Capacity",
-  lot: "LotWidth",
-  level: "BuildingLevel",
-  parking: "HasParking",
-};
-
-/**
- * The direction glyph for a column header, or "" when that column is not the
- * active sort. Only the sorted column shows an indicator, so the header row
- * cannot imply several simultaneous orderings.
- */
-export function getAssetMenuColumnSortIndicator(
-  metric: AssetMenuMetric,
-  state: SortState,
-): "▲" | "▼" | "" {
-  if (ASSET_MENU_COLUMN_SORT[metric] !== state.column) {
-    return "";
-  }
-
-  return state.descending ? "▼" : "▲";
-}
 
 /** The order a typed search switches to, and the one the menu opens on. */
 export const MATCH_SORT: SortColumn = "Match";

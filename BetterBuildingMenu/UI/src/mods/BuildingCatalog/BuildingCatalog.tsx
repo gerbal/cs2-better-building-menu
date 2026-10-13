@@ -3,107 +3,52 @@ import { Button } from "cs2/ui";
 import { useLocalization } from "cs2/l10n";
 import { memo, useCallback, useEffect, useMemo, useRef } from "react";
 import classNames from "classnames";
-import { tableLabelCharBudget } from "domain/tileLabel";
-import { useTextScale } from "domain/textScaleSetting";
 import { BuildingCatalogEntry } from "domain/buildingCatalog";
-import {
-  ASSET_MENU_CHROME_WIDTH,
-  catalogLayoutWidth,
-  getAssetMenuCatalogMaxHeight,
-  ASSET_MENU_IDENTITY_MIN,
-  CONTROL_PANE_TOTAL,
-  ASSET_MENU_TABLE_ROW_FURNITURE,
-  getAssetMenuColumnWidths,
-  getAssetMenuDensity,
-  getAssetMenuRowGeometry,
-  getAssetMenuMetricTextScale,
-  visibleTableMetrics,
-} from "domain/assetMenuLayout";
-import type { AssetMenuColumnWidths, AssetMenuDensityTier, AssetMenuMetric } from "domain/assetMenuLayout";
 import { catalogWindowRemaining, loadMoreCount } from "domain/catalogWindow";
 import { getNumberSeparators, groupDigits } from "domain/assetMenuMetricFormat";
-import type { SortColumn } from "domain/buildingCatalogContracts";
-import { sortedMetricFor } from "domain/sortedMetric";
 import { getAssetMenuEmptyStateMessage } from "domain/assetMenuFilterSummary";
 import { assetMenuPort } from "domain/assetMenuPort";
 import { enterDecision, getSearchScopeNotice, isEnterForSearch, isPlainEnter, pageAnswers } from "domain/buildingSearchRank";
 import { blurSearchField, isSearchField } from "mods/TopRow/searchField";
 import { canPlace } from "domain/buildingLockState";
-import { getAssetMenuAnchorKey, getAssetMenuView, setAssetMenuAnchor, setAssetMenuView } from "domain/assetMenuViewStore";
-// The view mode is shared with the control plane, which is a sibling of this
-// asset menu rather than a descendant, so it goes through the subscribing hook.
-import { useAssetMenuView } from "mods/useAssetMenuView";
-import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
-import { GroupedResults, type CatalogViewMode } from "mods/GroupedResults/GroupedResults";
-import { chooseViewMode, DEFAULT_VIEW_MODE } from "domain/viewModeChoice";
-import {
-  type GroupDimensionId,
-} from "domain/buildingGroups";
-import { TableView } from "./TableView";
+import { getAssetMenuAnchorKey, setAssetMenuAnchor } from "domain/assetMenuViewStore";
+import { useMenuBody } from "mods/useMenuBody";
+import { GroupedResults } from "mods/GroupedResults/GroupedResults";
+import { type GroupDimensionId } from "domain/buildingGroups";
 import { useCatalogWindow } from "./useCatalogWindow";
-import { useRevealExpandedRow, useScrollAnchor } from "./useScrollAnchor";
+import { useScrollAnchor } from "./useScrollAnchor";
 import { useSearchFieldKeys } from "./useSearchFieldKeys";
 import {
   BuildingCatalogGroupBy$,
   BuildingCatalogMatchesElsewhere$,
   BuildingCatalogMetricRanges$,
-  BuildingCatalogSortColumn$,
-  BuildingCatalogSortDescending$,
   AssetMenuFacets$,
-  AssetMenuViewMode$,
   CurrentSearch$,
   send,
-  sendSort,
 } from "mods/bindings";
 import styles from "./buildingCatalog.module.scss";
-
-/** Grid recognises, List scans, Table compares. */
-type ViewMode = CatalogViewMode;
-
-const densityClassNames: Record<AssetMenuDensityTier, string> = {
-  compact: styles.densityCompact,
-  default: styles.densityDefault,
-  expanded: styles.densityExpanded,
-};
 
 /**
  * Memoised, and takes no props: it re-renders on its own bindings only, not on
  * every height-drag echo or keystroke that re-renders the asset menu around it.
- * A width drag does re-render it, since the table's columns follow the width.
  */
 export const BuildingCatalogComponent = memo(function BuildingCatalogComponent() {
   const { translate } = useLocalization();
-  // The build menu as drawn, plus the pane: the row the table arithmetic was tuned
-  // against, which subtracts the pane itself.
-  const layoutWidth = catalogLayoutWidth(useAssetMenuLayout().menuWidth);
   const currentSearch = useValue(CurrentSearch$);
-  const sortColumn = useValue(BuildingCatalogSortColumn$) ?? "Name";
-  const descending = useValue(BuildingCatalogSortDescending$) ?? false;
-  // In the shared store, not useState: the control plane is a sibling of this
-  // asset menu rather than a descendant, and the choice has to survive the remount
-  // that placing a building causes.
-  const sessionViewMode = useAssetMenuView((view) => view.viewMode);
-  const storedViewMode = useValue(AssetMenuViewMode$);
-  // Obeyed at every asset menu height. A control that lights up and changes nothing
-  // is the same defect as a control that is missing, and the height is the
-  // player's to set.
-  const viewMode: ViewMode = chooseViewMode(sessionViewMode, storedViewMode, DEFAULT_VIEW_MODE);
-  const tableMode = viewMode === "table";
+  // The menu's body: a typed search's, its own VIEW pick, Default view, or the look's Auto. See
+  // docs/design-notes.md, "The bodies".
+  const body = useMenuBody().drawn;
   const groupBy = (useValue(BuildingCatalogGroupBy$) || "category") as GroupDimensionId;
-  // In the store rather than useState so the open row survives the remount
-  // that placing a building causes, the way the anchor does.
-  const expandedId = useAssetMenuView((view) => view.expandedId);
 
   // The root every DOM measurement below is scoped to. The hooks find the
   // rows and the scroller beneath it and never look above it.
   const rootRef = useRef<HTMLDivElement>(null);
-  const { items, totalCount, status, hasMore, capped, bestMatchId, searchText: pageSearch, enterStep, anchorId, anchorIndex, listStart, loadMore } = useCatalogWindow(rootRef, { viewMode, groupBy });
-  useRevealExpandedRow(rootRef, expandedId, styles.rowDetails);
+  const { items, totalCount, status, hasMore, capped, bestMatchId, searchText: pageSearch, enterStep, anchorId, anchorIndex, listStart, loadMore } = useCatalogWindow(rootRef, { viewMode: body, groupBy });
   const facets = useValue(AssetMenuFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
   const matchesElsewhere = useValue(BuildingCatalogMatchesElsewhere$);
 
-  // Names the constraints that actually emptied the table, rather than always
+  // Names the constraints that actually emptied the list, rather than always
   // blaming search and category.
   const emptyStateMessage = getAssetMenuEmptyStateMessage({
     searchText: currentSearch,
@@ -111,49 +56,6 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
     metricRanges,
   });
 
-  const density = getAssetMenuDensity(layoutWidth);
-  // One set of numbers for the header and every row: a table with no CSS grid
-  // lines up only because both read the same widths. Figures do not scale with
-  // the build menu but do with the game's text scale.
-  const textScale = useTextScale();
-  // The columns the table draws at this width: a narrow menu drops the least
-  // asked-for rather than clip their figures, and never the one sorted by.
-  const sortedMetric = sortedMetricFor(sortColumn);
-  // Kept by value, not by width: a width drag changes the width every frame, and
-  // new column props would redraw every memoised row even where nothing moved.
-  const metricsKey = visibleTableMetrics(layoutWidth, textScale, sortedMetric).join(",");
-  const tableMetrics = useMemo(() => metricsKey.split(",") as AssetMenuMetric[], [metricsKey]);
-  const widthsKey = JSON.stringify(getAssetMenuColumnWidths(layoutWidth, textScale, tableMetrics));
-  const columnWidths = useMemo(() => JSON.parse(widthsKey) as AssetMenuColumnWidths, [widthsKey]);
-  // The widths are estimates and stay estimates: the row is a flex layout whose
-  // column bases already exceed the room beside the name, so cells shrink to
-  // what the row allows and an inline width is not what gets drawn.
-  const columnStyle = useCallback((metric: AssetMenuMetric) => ({
-    width: `${columnWidths[metric]}rem`,
-    flexBasis: `${columnWidths[metric]}rem`,
-  }), [columnWidths]);
-  // The width the NAME actually gets: the layout width less the pane and the
-  // chrome is the build menu, then the columns and the row's furniture come off.
-  // Erring small shortens sooner, never later.
-  const nameWidth = Math.max(
-    ASSET_MENU_IDENTITY_MIN - ASSET_MENU_TABLE_ROW_FURNITURE,
-    layoutWidth
-      - ASSET_MENU_CHROME_WIDTH
-      - CONTROL_PANE_TOTAL
-      - Object.values(columnWidths).reduce<number>((total, width) => total + (width ?? 0), 0)
-      - ASSET_MENU_TABLE_ROW_FURNITURE
-  );
-  const nameBudget = tableLabelCharBudget(nameWidth, textScale);
-  const rowGeometry = getAssetMenuRowGeometry(density);
-  const catalogMaxHeight = getAssetMenuCatalogMaxHeight(typeof window === "undefined" ? 720 : window.innerHeight);
-  // Row and filter name the same asset the same way: the entry carries raw ids
-  // while the facet groups hold the display names, so resolving through those
-  // beats a second lookup table that would drift.
-  const resolveFacetLabel = useCallback((groupId: string, value: string): string | null => {
-    const group = facets?.groups?.find((candidate) => candidate.id === groupId);
-
-    return group?.options?.find((option) => option.id === value)?.label ?? null;
-  }, [facets]);
   const scopeNotice = getSearchScopeNotice({
     searchText: currentSearch ?? "",
     shown: items.length,
@@ -170,8 +72,8 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
     ?? "Search everything";
   /**
    * "Nothing here, {n} elsewhere" and the button that goes there. Built once
-   * and rendered by every view mode: widening is the whole answer to a scoped
-   * miss, and which mode the player is in has nothing to do with it.
+   * and rendered by every body: widening is the whole answer to a scoped
+   * miss, and which body the menu draws has nothing to do with it.
    */
   const scopeNoticeBlock = scopeNotice ? (
     <div className={styles.scopeNotice}>
@@ -187,22 +89,11 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
       </Button>
     </div>
   ) : null;
-  // What the table draws with no rows: the indexing notice, or the scope
-  // notice, or the message naming the constraints that emptied it.
-  const emptyState = status === "indexing"
-    ? <div className={styles.empty}>
-        {translate("Tooltip.LABEL[BetterBuildingMenu.IndexingBuildings]", "Indexing buildings…")}
-      </div>
-    : scopeNoticeBlock ?? <div className={styles.empty}>{emptyStateMessage}</div>;
 
-  const toggleExpanded = useCallback((id: number): void => {
-    setAssetMenuView({ expandedId: getAssetMenuView().expandedId === id ? null : id });
-  }, []);
-
-  // Scoped to the list and the layout, because which element owns the scroll
+  // Scoped to the list and the body, because which element owns the scroll
   // and how tall its children are both depend on them: an offset remembered in
-  // the table means nothing in the grid.
-  const anchorKey = getAssetMenuAnchorKey({ list: "catalog", viewMode, groupBy });
+  // the tiles means nothing in the list.
+  const anchorKey = getAssetMenuAnchorKey({ list: "catalog", viewMode: body, groupBy });
 
   // Arms a prefab by id, loaded or not: Enter's target can sit past the window.
   const armById = useCallback((id: number): void => {
@@ -229,11 +120,6 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
 
     armById(entry.id);
   }, [armById]);
-
-  const setSort = useCallback(
-    (column: SortColumn): void => sendSort({ column: sortColumn, descending }, column),
-    [sortColumn, descending]
-  );
 
   useScrollAnchor(rootRef, anchorKey, { listStart, anchorId, anchorIndex, itemCount: items.length });
 
@@ -326,60 +212,28 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   }, [hasMore, capped, items.length, totalCount, remaining, translate, separators, loadMore]);
 
   return (
-    <div
-      ref={rootRef}
-      className={classNames(styles.catalog, densityClassNames[density])}
-      data-density={density}
-      data-row-height={rowGeometry.rowHeight}
-      data-selector-height={rowGeometry.selectorHeight}
-      data-metric-text-scale={getAssetMenuMetricTextScale(density)}
-      // Published as data, not applied as a max-height: the asset menu states its
-      // own height and .catalog is flex: 1 1 auto inside it, so a second
-      // ceiling here could only cut the asset menu short.
-      data-catalog-max-height={catalogMaxHeight}
-    >
+    <div ref={rootRef} className={styles.catalog}>
       {/* No controls here: Sort, Filter, Group and View are the top row's, and the
           control pane's while it shows, so this component draws results and nothing else. */}
-
-      {tableMode ? (
-        <TableView
-          items={items}
-          emptyState={emptyState}
-          density={density}
-          metrics={tableMetrics}
-          columnStyle={columnStyle}
-          nameBudget={nameBudget}
-          resolveFacetLabel={resolveFacetLabel}
-          sortColumn={sortColumn}
-          descending={descending}
-          onSort={setSort}
-          expandedId={expandedId}
-          onToggleExpanded={toggleExpanded}
-          onPlace={activate}
-          footer={catalogFooter}
-        />
-      ) : (
-        <>
-          {scopeNoticeBlock}
-          {/* Filters compose, so an empty intersection is easy to reach by
-              accident, and silence there reads as a broken asset menu. */}
-          {items.length === 0
-            ? (scopeNotice
-                // The notice above already says the set is empty AND what to do
-                // about it; a second line would say it twice and contradict it.
-                ? null
-                : <div className={styles.empty}>{emptyStateMessage}</div>)
-            : (
-              <GroupedResults
-                entries={items}
-                viewMode={viewMode}
-                onPlace={activate}
-                footer={catalogFooter}
-              />
-            )}
-        </>
-      )}
-
+      {scopeNoticeBlock}
+      {/* Filters compose, so an empty intersection is easy to reach by
+          accident, and silence there reads as a broken asset menu. */}
+      {status === "indexing" && items.length === 0
+        ? <div className={styles.empty}>{translate("Tooltip.LABEL[BetterBuildingMenu.IndexingBuildings]", "Indexing buildings…")}</div>
+        : items.length === 0
+          ? (scopeNotice
+              // The notice above already says the set is empty AND what to do
+              // about it; a second line would say it twice and contradict it.
+              ? null
+              : <div className={styles.empty}>{emptyStateMessage}</div>)
+          : (
+            <GroupedResults
+              entries={items}
+              viewMode={body === "tiles" ? "grid" : body}
+              onPlace={activate}
+              footer={catalogFooter}
+            />
+          )}
     </div>
   );
 });

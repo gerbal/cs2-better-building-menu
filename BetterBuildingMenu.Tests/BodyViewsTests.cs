@@ -4,6 +4,7 @@ using Game.Settings;
 using Game.UI.Widgets;
 
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace BetterBuildingMenu.Tests
 {
@@ -50,6 +51,42 @@ namespace BetterBuildingMenu.Tests
 		public void AnyOtherDefaultViewReadsAsAuto(string? value)
 		{
 			Assert.Equal(BodyViews.Auto, BodyViews.SanitizeDefault(value));
+		}
+
+		[Theory]
+		[InlineData("list", "list")]
+		[InlineData("tiles", "tiles")]
+		[InlineData("cards", "cards")]
+		[InlineData("icons", "")]
+		[InlineData("auto", "")]
+		[InlineData("grid", "")]
+		[InlineData(null, "")]
+		public void AMenusOwnPickIsOneOfTheKindsOrNone(string? value, string pick)
+		{
+			Assert.Equal(pick, BodyViews.SanitizePick(value));
+		}
+
+		[Fact]
+		public void TheUiReadsOnlyThePicksABodyDraws()
+		{
+			Assert.Equal(
+				new[] { new MenuPick("Roads", "list"), new MenuPick("Parks & Recreation", "cards") },
+				BodyViews.PicksOf("Roads=list\nLandscaping=icons\nZones=grid\nParks & Recreation=cards"));
+		}
+
+		[Fact]
+		public void TheUiKindsAreTheKindsCSharpStores()
+		{
+			var source = ModSource.Text("UI/src/domain/bodyChoice.ts");
+			var kinds = Regex.Match(source, @"export const BODY_KINDS = \[([^\]]+)\]").Groups[1].Value;
+			var whatCounts = Regex.Matches(source, "whatCounts === \"(\\w+)\"").Select(match => match.Groups[1].Value).ToList();
+			var largeText = Regex.Matches(source, "forced === \"(\\w+)\"").Select(match => match.Groups[1].Value).ToList();
+
+			Assert.Equal(BodyViews.Kinds, Regex.Matches(kinds, "\"(\\w+)\"").Select(match => match.Groups[1].Value));
+			Assert.NotEmpty(whatCounts);
+			Assert.All(whatCounts, value => Assert.Contains(value, Tuning.WhatCountsValues));
+			Assert.NotEmpty(largeText);
+			Assert.All(largeText, value => Assert.Contains(value, Tuning.AutoLargeTextValues));
 		}
 
 		[Theory]
@@ -121,6 +158,37 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(
 				"Sizes the Tiles view. 64 shows 2 rows of 10, 68 shows 2 rows of 9; above 68 the menu shows one row unless you drag it taller.",
 				ModSource.English("Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.AssetMenuTileSize]"));
+		}
+	}
+
+	/// <summary>The system keeps each menu's own VIEW and hands the UI what picks its body.</summary>
+	public sealed class MenuViewWiringTests
+	{
+		[Fact]
+		public void AViewPickIsTheOpenMenusOwnSavedOnlyWhenItChanges()
+		{
+			var pick = ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.AssetMenuSize.cs"), "private void SetAssetMenuView(");
+
+			Assert.Contains("MenuPicks.With(Mod.Settings.MenuViews, _assetMenu.Menu, BodyViews.SanitizePick(kind))", pick);
+			Assert.Contains("if (_assetMenu.Menu.Length == 0 || string.Equals(kept, Mod.Settings.MenuViews, StringComparison.Ordinal)) { return; }", pick);
+			Assert.Contains("Mod.Settings.ApplyAndSave();", pick);
+		}
+
+		[Theory]
+		[InlineData("_AssetMenuViews.Value = BodyViews.PicksOf(Mod.Settings.MenuViews);")]
+		[InlineData("_AssetMenuDefaultView.Value = BodyViews.SanitizeDefault(Mod.Settings.DefaultView);")]
+		public void WhatPicksTheBodyFollowsOptionsAtOnce(string push)
+		{
+			Assert.Contains(push, ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.cs"), "private void OnSettingsApplied("));
+		}
+
+		[Fact]
+		public void TheMenuViewsSettingIsHidden()
+		{
+			var property = typeof(BetterBuildingMenuSettings).GetProperty(nameof(BetterBuildingMenuSettings.MenuViews))!;
+
+			Assert.True(property.IsDefined(typeof(SettingsUIHiddenAttribute), inherit: false));
+			Assert.Equal(typeof(string), property.PropertyType);
 		}
 	}
 }

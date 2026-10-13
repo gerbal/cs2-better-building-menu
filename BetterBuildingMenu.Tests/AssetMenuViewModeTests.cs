@@ -2,14 +2,11 @@ using BetterBuildingMenu.Domain;
 
 using Game.Settings;
 
-using System.IO;
-using System.Text.RegularExpressions;
-
 using Xunit;
 
 namespace BetterBuildingMenu.Tests
 {
-	/// <summary>The view the player picked in the control pane, as the settings file keeps it.</summary>
+	/// <summary>The view 0.2.5 kept, as the settings file holds it for the migration to read.</summary>
 	public sealed class AssetMenuViewModeTests
 	{
 		[Theory]
@@ -33,26 +30,10 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(AssetMenuViewMode.None, AssetMenuViewMode.Sanitize(value));
 		}
 
-		[Theory]
-		[InlineData("list", "list", false)]
-		[InlineData("", "", false)]
-		[InlineData("list", "grid", true)]
-		[InlineData("", "cards", true)]
-		[InlineData("list", "", true)]
-		[InlineData("tiles", "", true)]
-		public void SavesOnlyWhenThePickChangesWhatIsStored(string stored, string picked, bool save)
-		{
-			Assert.Equal(save, AssetMenuViewMode.ShouldSave(stored, picked));
-		}
-
 		[Fact]
-		public void TheKindsAreTheViewsTheUiDraws()
+		public void EveryKindTheInterimKeptBecomesABody()
 		{
-			var source = ModSource.Text("UI/src/mods/GroupedResults/GroupedResults.tsx");
-			var union = Regex.Match(source, @"export type CatalogViewMode = ([^;]+);").Groups[1].Value;
-			var uiKinds = Regex.Matches(union, "\"(\\w+)\"").Select(match => match.Groups[1].Value);
-
-			Assert.Equal(uiKinds.OrderBy(kind => kind, StringComparer.Ordinal), AssetMenuViewMode.Kinds.OrderBy(kind => kind, StringComparer.Ordinal));
+			Assert.All(AssetMenuViewMode.Kinds, kind => Assert.Contains(BodyViews.FromRemembered(kind), BodyViews.Kinds));
 		}
 
 		[Fact]

@@ -21,8 +21,7 @@ export interface SortedMetricEntry {
 
 /**
  * The metric a sort column is ordering by, or null when there is nothing to
- * show. The inverse of ASSET_MENU_COLUMN_SORT, plus the two columns that
- * have no column of their own.
+ * show.
  */
 export function sortedMetricFor(column: SortColumn | null | undefined): AssetMenuMetric | null {
   switch (column) {

@@ -741,23 +741,10 @@ held, the marker and the stamp as they stood, the sign that decided, and each va
 
 ## The remembered view
 
-The view the player picks in VIEW (Cards, List, Grid or Table), on the top row or in the control
-pane, is kept in the hidden setting `AssetMenuViewMode`, so the next session opens in it. Until the
-player picks one it holds `""`, and the menu opens in Cards.
-
-- **This session's pick draws first.** The UI's store keeps it, so a pick redraws at once, with
-  no round trip. `chooseViewMode` draws that pick, else the stored view, else Cards, and both the
-  catalog and the control pane read it, so they cannot disagree. A stored value the UI does not
-  know, from a file edited by hand, draws Cards.
-- **A pick saves once.** The click sends `SetAssetMenuViewMode`. C# keeps one of the four kinds,
-  or `""` for anything else, and saves only when the stored value changes. The binding is
-  read/write, like the sort's, so the stored view reaches the UI on its first frame; nothing is
-  sent back from an effect, which would answer C#'s own echo.
-- **A reset forgets it.** Reset the build menu… stores `""`, so the next session opens in Cards.
-  This session's pick goes too: `StoredViewWatcher`, mounted for the whole session because Options
-  opens while the menu is closed, drops it when the stored view empties (`sessionPickAfterStored`).
-  No pick sends `""`, so nothing else empties it. The watcher lives in a city only, so its first
-  answer counts too: empty beside a pick is a reset made at the main menu.
+0.2.5 kept the view the player last picked, Cards, List, Grid or Table, in the hidden setting
+`AssetMenuViewMode`. The settings migration's version 4 reads it once into Default view (see "The
+settings migration"); nothing else reads it and nothing writes it, and it stays declared so the game
+keeps its key until then. Each menu's own VIEW took its place (see "Each menu's own view and group").
 
 ## Reset the build menu
 
@@ -765,9 +752,10 @@ Every setting's shipped value lives in `SettingsDefaults`, whose constants the s
 initializers read, so the two cannot drift; `SetDefaults` is `SettingsDefaults.Apply`.
 
 - **What a reset puts back.** `Apply` writes every stored setting's shipped value: the height,
-  the Width step, the upgrader flag, the control pane, the remembered view, Replace the vanilla
-  build menu, Searching widens automatically and Tile size. It leaves `SettingsVersion`, which
-  records the migration, and the legacy `AssetMenuCatalogWidth`, which only the migration reads.
+  the Width step, the upgrader flag, the control pane, Default view, At large text, each menu's own
+  VIEW and GROUP, Replace the vanilla build menu, Searching widens automatically, Tile size and the
+  knobs. It leaves `SettingsVersion`, which records the migration, and the legacy
+  `AssetMenuCatalogWidth` and `AssetMenuViewMode`, which only the migration reads.
 - **Then the version.** `SettingsDefaults.Reset` stores this release's settings version after the
   shipped values, keeping a later release's, so the next load migrates nothing: an upgrader put
   back to a new player's values stays put back, even in a file whose migration never ran.
@@ -889,7 +877,7 @@ knob's row carries `[SettingsUIDeveloper]`, so the game draws it only in develop
     menu's rows carry what counts.
   - **What counts** (cost or capacity, as it ships, or capacity only): what a row needs to count toward
     the list.
-  - **Auto at large text** (the look's own, as it ships, the list, or the tiles): from 110% text, the
+  - **Auto at large text** (the look's own, as it ships, the list, or the tiles): above 100% text, the
     body Roads and Parks draw.
   - **Cards from width** (never, as it ships, or steps 2 to 5): the step from which Auto draws Cards.
   - **List plate height** (23 to 34, step 0.25, ships 27.25): the list plate's height at 100% text.
@@ -1004,8 +992,8 @@ tab back.
 
 ## Each menu's own view and group
 
-Each menu keeps its own GROUP across sessions, and its own sort for the session, so no menu inherits
-another's.
+Each menu keeps its own VIEW and GROUP across sessions, and its own sort for the session, so no menu
+inherits another's.
 
 - **GROUP** is kept in the hidden setting `MenuGroups`, one `Menu=grouping` line per menu with a pick
   of its own (`MenuPicks`; a line splits on its last `=`, since menu names hold spaces and `&`). A pick
@@ -1014,12 +1002,53 @@ another's.
   default (`OpenMenu`'s `MenuMemory`). `AssetMenuGroups` carries the picks to the UI. The default is
   read over the whole menu, not the open tab (`CatalogView.GroupFor`), so a menu with no pick draws
   one grouping on every tab, and a pick means the same on each.
+- **VIEW** is kept in the hidden setting `MenuViews`, a `Menu=kind` line per menu with a pick of its
+  own, the kind one of `list`, `tiles` and `cards` (`BodyViews.SanitizePick`; a stored `icons` reads as
+  none until the icons have a body of their own, as Default view's does). VIEW's first row, "Default
+  view · <body>", names the body Default view gives the menu and is lit while the menu has no pick; a
+  press on it takes the menu's pick away (`SetAssetMenuView("")`). A press on a body keeps it as the
+  menu's pick, saved once; the save re-pushes `AssetMenuViews`, which redraws the body. The control
+  names the body drawn, with its dot while the menu has a pick of its own. Reset the build menu… takes
+  every menu's pick away.
 - **SORT** is kept per menu for the session (`SessionSorts`): an open brings back the sort the menu last
   had, and every launch starts each at the game's own order. A sort picked while a query is typed is
   the search's, and is not kept; nor is Match, which only a query gives meaning. Reset the build menu… leaves this session's sorts; they end with it.
 
 **This changes 0.2.x:** the grouping and the sort followed the player from menu to menu; each menu now
 keeps its own.
+
+## The bodies
+
+A menu draws its buildings in one of four bodies: the list, the icons, the tiles or the cards. Which,
+strongest first (`chooseBody`):
+
+1. **A typed search** draws the list, or the cards where the menu's view is Cards.
+2. **The menu's own VIEW pick** (see "Each menu's own view and group").
+3. **Default view** in Options, unless it is Auto: one body for every menu without a pick.
+4. **The look's Auto rule** (`autoBody`), over the menu's share: the list where at least half its rows
+   (the List share knob) carry a cost or a capacity (a capacity only, by the What counts knob); the
+   icons for a menu over 200 rows where fewer carry either, a prop catalogue; the tiles otherwise. Auto
+   never draws the cards, which hold fewer buildings than a screen of the list or the tiles, unless the
+   Cards from width knob names a step. Above 100% text the Auto at large text knob can force Roads and
+   Parks to the list or the tiles.
+
+The icons draw as the tiles until they have a body of their own.
+
+**The shares.** `MenuShares` holds, for every menu, its rows and how many carry a cost or a capacity, a
+capacity, or a lock (`MenuShare.Of`), counted over the whole menu as the catalog lists it, with nothing
+of the toolbar's row, a filter or a search, so a filter never changes a body. C# counts them on the
+first refresh after the index moves (`PublishMenuShares`), the refresh's `shares=` stage, logged on a
+line of its own so its cost shows apart from the refresh's.
+
+**Grid and Table leave.** VIEW offers Default view, List, Tiles and Cards; the table, its columns and
+their arithmetic are gone. Two helpers go with them, as the unused-export guard requires:
+`flattenGroupedRows`, which laid the table's group headings out as lines with their counts, and, with
+Grid's name line, `stripRedundantNamePrefix`, which told look-alike names apart there. The bodies' label
+plates and name planner derive what each did again.
+
+**This changes 0.2.x:** one view, picked in VIEW, drew every menu, and every session opened in Cards
+(0.2.5 kept the pick); each menu now draws the body its pick, Default view or Auto gives it, and Grid
+and Table are gone, Grid's place taken by Tiles and Table's by List.
 
 ## The search field's keys
 

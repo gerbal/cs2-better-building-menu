@@ -1,9 +1,8 @@
 namespace BetterBuildingMenu.Domain
 {
-	/// <summary>The view the player last picked in the control pane, kept across sessions.</summary>
+	/// <summary>The view 0.2.5 kept, which only the settings migration reads, once, into Default view.</summary>
 	/// <remarks>
-	/// The kinds are the UI's (GroupedResults.tsx, CatalogViewMode), spelled as it spells
-	/// them. See docs/design-notes.md, "The remembered view".
+	/// The kinds are 0.2.5's four views, as it spelled them. See docs/design-notes.md, "The remembered view".
 	/// </remarks>
 	public static class AssetMenuViewMode
 	{
@@ -15,9 +14,5 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>One of the four kinds, exactly, or <see cref="None"/>.</summary>
 		public static string Sanitize(string? value) =>
 			value is not null && Kinds.Contains(value) ? value : None;
-
-		/// <summary>Whether a pick changes what the settings file holds, which is when it is saved.</summary>
-		public static bool ShouldSave(string stored, string picked) =>
-			!string.Equals(stored, Sanitize(picked), StringComparison.Ordinal);
 	}
 }

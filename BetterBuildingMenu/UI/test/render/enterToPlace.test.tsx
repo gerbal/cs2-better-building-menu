@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { fakeSearchField, keysPage, type KeysPage } from "../harness/fakeKeys";
-import { catalogPage, entry } from "../harness/render";
+import { catalogPage, entry, showBody } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
-import { resetAssetMenuView, setAssetMenuView } from "../../src/domain/assetMenuViewStore";
+import { resetAssetMenuView } from "../../src/domain/assetMenuViewStore";
 import { BuildingCatalogComponent } from "../../src/mods/BuildingCatalog/BuildingCatalog";
 
 // Mounted, not rendered to markup: the Enter listener is an effect. Node has no
@@ -71,9 +71,9 @@ describe("Enter in the catalog", () => {
     root!.update(<BuildingCatalogComponent />);
   });
 
-  for (const mode of ["grid", "list", "cards", "table"]) {
-    it(`arms the best match exactly once in ${mode} mode`, () => {
-      setAssetMenuView({ viewMode: mode });
+  for (const body of ["tiles", "list", "cards"]) {
+    it(`arms the best match exactly once in the ${body} body`, () => {
+      showBody(body);
       groupedPage("clinic", 1);
       typed("clinic");
       mount();

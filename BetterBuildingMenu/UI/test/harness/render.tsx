@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import type { ReactElement } from "react";
 import type { BuildingCatalogEntry } from "domain/buildingCatalog";
+import { setBinding } from "./stubs/cs2-api";
 import { installVanillaRegistry } from "./vanillaRegistry";
 
 // Every render test imports this module, so the resolver is seeded once.
@@ -76,3 +77,9 @@ export function catalogPage(items: BuildingCatalogEntry[], over: Record<string, 
 /** How many times a pattern occurs in the markup. */
 export const count = (html: string, pattern: RegExp): number =>
   (html.match(new RegExp(pattern.source, "g")) ?? []).length;
+
+/** The open menu and its own VIEW pick, as C# publishes them; "" for none, so Default view and Auto decide. */
+export function showBody(kind: string, menu = "Roads"): void {
+  setBinding("BetterBuildingMenu", "AssetMenu", menu);
+  setBinding("BetterBuildingMenu", "AssetMenuViews", kind === "" ? [] : [{ menu, value: kind }]);
+}

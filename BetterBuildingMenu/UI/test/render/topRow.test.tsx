@@ -242,6 +242,20 @@ describe("the top row's controls", () => {
     assert.equal(count(render(), /class="dot"/), 1);
   });
 
+  it("mark the open menu's own view with the dot, and name the body it draws", () => {
+    set("AssetMenu", "Roads");
+    set("BuildingCatalogSortColumn", "Default");
+    set("AssetMenuViews", [{ menu: "Parks & Recreation", value: "cards" }]);
+    let html = render();
+    assert.equal(count(html, /class="dot"/), 0);
+    assert.match(html, /aria-label="View · List"/);
+
+    set("AssetMenuViews", [{ menu: "Roads", value: "tiles" }]);
+    html = render();
+    assert.equal(count(html, /class="dot"/), 1);
+    assert.match(html, /aria-label="View · Tiles"/);
+  });
+
   it("ask to open a control's popover on a press, and draw the open one as open", () => {
     const asked: string[] = [];
     let root: ReturnType<typeof create> | undefined;

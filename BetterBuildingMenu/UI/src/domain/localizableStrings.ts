@@ -33,7 +33,9 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   { key: key("SortByOption"), english: "Sort by {0}", source: "BuildingCatalog", plumbed: true },
   { key: key("SortDirectionAscending"), english: "ascending", source: "BuildingCatalog", plumbed: true },
   { key: key("SortDirectionDescending"), english: "descending", source: "BuildingCatalog", plumbed: true },
-  { key: key("ViewGrid"), english: "Grid", source: "BuildingCatalog", plumbed: true },
+  { key: key("ViewTiles"), english: "Tiles", source: "ViewList", plumbed: true },
+  // VIEW's first row: the body Default view gives this menu, ticked while the menu has no pick of its own.
+  { key: key("DefaultViewRow"), english: "Default view · {0}", source: "ViewList", plumbed: true },
   // Households is its own line because Capacity is derived from SERVICE
   // components, which a residential building does not carry.
   { key: key("Households"), english: "Households", source: "BuildingHoverCard", plumbed: true },
@@ -42,9 +44,8 @@ export const LOCALIZABLE_STRINGS: readonly LocalizableString[] = [
   // Vanilla's menus close from an X in the top-right corner; the asset menu stands
   // in for one, so it offers the same way out.
   { key: key("CloseMenu"), english: "Close", source: "TopRow", plumbed: true },
-  { key: key("ViewList"), english: "List", source: "BuildingCatalog", plumbed: true },
-  { key: key("ViewCards"), english: "Cards", source: "BuildingCatalog", plumbed: true },
-  { key: key("ViewTable"), english: "Table", source: "BuildingCatalog", plumbed: true },
+  { key: key("ViewList"), english: "List", source: "ViewList", plumbed: true },
+  { key: key("ViewCards"), english: "Cards", source: "ViewList", plumbed: true },
   { key: key("GroupBy_none"), english: "No groups", source: "buildingGroups", plumbed: true },
   // The game's own categories — the dimension the tab row shows.
   { key: key("GroupBy_menuCategory"), english: "By tab", source: "buildingGroups", plumbed: true },

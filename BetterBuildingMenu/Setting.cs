@@ -70,12 +70,19 @@ namespace BetterBuildingMenu
 		public bool Upgrader { get; set; }
 
 		/// <summary>
-		/// The view the player last picked in the control pane, or <see
-		/// cref="Domain.AssetMenuViewMode.None"/> before any pick.
+		/// The view 0.2.5 kept, or <see cref="Domain.AssetMenuViewMode.None"/> for none.
 		/// </summary>
-		/// <remarks>Hidden: the control pane is where it is set.</remarks>
+		/// <remarks>
+		/// Legacy: only the settings migration reads it, once, into Default view, and nothing writes it.
+		/// Declared so the game keeps the key in the file until then.
+		/// </remarks>
 		[SettingsUIHidden]
 		public string AssetMenuViewMode { get; set; } = Domain.AssetMenuViewMode.None;
+
+		/// <summary>Each menu's own VIEW, one "Menu=kind" line per menu with a pick; a menu with none draws Default view's body.</summary>
+		/// <remarks>Hidden: VIEW on the menu is where it is set. See <see cref="Domain.MenuPicks"/>.</remarks>
+		[SettingsUIHidden]
+		public string MenuViews { get; set; } = Domain.SettingsDefaults.NoPicks;
 
 		/// <summary>Each menu's own GROUP, one "Menu=grouping" line per menu with a pick; a menu with none groups by its default.</summary>
 		/// <remarks>Hidden: GROUP on the menu is where it is set. See <see cref="Domain.MenuPicks"/>.</remarks>

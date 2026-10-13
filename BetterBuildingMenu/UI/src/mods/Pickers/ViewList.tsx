@@ -1,45 +1,51 @@
-import { useValue } from "cs2/api";
 import { useLocalization } from "cs2/l10n";
 import classNames from "classnames";
 import { useState } from "react";
 
-import { setAssetMenuView } from "domain/assetMenuViewStore";
+import { drawnBody, VIEW_ROWS, type BodyKind, type DrawnBody } from "domain/bodyChoice";
 import { WIDTH_STEP_DEFAULT } from "domain/sharedContracts.generated";
-import { chooseViewMode, DEFAULT_VIEW_MODE, VIEW_MODES, type ViewModeKind } from "domain/viewModeChoice";
 import { coversTheChirper, WIDTH_STEP_NUMBERS } from "domain/widthSteps";
-import { AssetMenuViewMode$, send } from "mods/bindings";
+import { send } from "mods/bindings";
 import popover from "mods/ControlPopover/controlPopover.module.scss";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
-import { useAssetMenuView } from "mods/useAssetMenuView";
+import { useMenuBody } from "mods/useMenuBody";
 import { PickerRow } from "./PickerRow";
 import styles from "./pickerList.module.scss";
 
+/** Each body's name in VIEW, its string's key and its English. */
+const BODY_LABELS: Readonly<Record<DrawnBody, { key: string; fallback: string }>> = {
+  list: { key: "Tooltip.LABEL[BetterBuildingMenu.ViewList]", fallback: "List" },
+  tiles: { key: "Tooltip.LABEL[BetterBuildingMenu.ViewTiles]", fallback: "Tiles" },
+  cards: { key: "Tooltip.LABEL[BetterBuildingMenu.ViewCards]", fallback: "Cards" },
+};
+
 export interface ViewOption {
-  id: ViewModeKind;
+  /** The pick a row sends: a body, or "" for Default view. */
+  id: BodyKind | "";
   label: string;
   selected: boolean;
 }
 
 /**
- * The views, the one drawn lit, and the pick: the store first, so it redraws now, then C#, which
- * keeps it for the next session. Only from a click: an effect would answer C#'s own echo.
+ * VIEW's rows for the open menu: "Default view · <body>", lit while the menu has no pick of its own,
+ * then each body, the menu's own pick lit; the drawn body's name for the control; and the pick, which
+ * C# keeps for the menu and echoes, redrawing the body.
  */
-export function useViewOptions(): { current: string; options: ViewOption[]; pick: (view: ViewModeKind) => void } {
+export function useViewOptions(): { current: string; changed: boolean; options: ViewOption[]; pick: (kind: BodyKind | "") => void } {
   const { translate } = useLocalization();
-  const chosen = chooseViewMode(useAssetMenuView((view) => view.viewMode), useValue(AssetMenuViewMode$), DEFAULT_VIEW_MODE);
-  const options = VIEW_MODES.map((mode) => ({
-    id: mode.id,
-    label: translate(mode.localizationKey, mode.fallback) ?? mode.fallback,
-    selected: mode.id === chosen,
-  }));
+  const body = useMenuBody();
+  const name = (kind: DrawnBody): string => translate(BODY_LABELS[kind].key, BODY_LABELS[kind].fallback) ?? BODY_LABELS[kind].fallback;
+  const byDefault = (translate("Tooltip.LABEL[BetterBuildingMenu.DefaultViewRow]", "Default view · {0}") ?? "Default view · {0}")
+    .replace("{0}", name(drawnBody(body.byDefault)));
 
   return {
-    current: options.find((option) => option.selected)?.label ?? options[0].label,
-    options,
-    pick: (view) => {
-      setAssetMenuView({ viewMode: view });
-      send({ method: "SetAssetMenuViewMode", args: [view] });
-    },
+    current: name(body.drawn),
+    changed: body.pick !== "",
+    options: [
+      { id: "", label: byDefault, selected: body.pick === "" },
+      ...VIEW_ROWS.map((kind) => ({ id: kind, label: name(kind), selected: body.pick === kind })),
+    ],
+    pick: (kind) => send({ method: "SetAssetMenuView", args: [kind] }),
   };
 }
 
@@ -76,9 +82,9 @@ const WidthList = ({ opensDown }: { opensDown: boolean }) => {
 };
 
 /**
- * VIEW's list, in a popover or the control pane: the four views, the drawn one lit, a pick closing
- * it; then the doors to what applies to every menu, Width with its sub-list beside it and More
- * options…, which opens the mod's page. `opensDown` when its popover hangs from under the top row.
+ * VIEW's list, in a popover or the control pane: Default view and the bodies, the menu's own pick lit,
+ * a pick closing it; then the doors to what applies to every menu, Width with its sub-list beside it
+ * and More options…, which opens the mod's page. `opensDown` when its popover hangs from under the top row.
  */
 export const ViewList = ({ onPicked, opensDown = false }: { onPicked: () => void; opensDown?: boolean }) => {
   const { translate } = useLocalization();
@@ -91,7 +97,7 @@ export const ViewList = ({ onPicked, opensDown = false }: { onPicked: () => void
     <div className={classNames(styles.list, styles.viewList)}>
       {view.options.map((option) => (
         <PickerRow
-          key={option.id}
+          key={option.id || "default"}
           label={option.label}
           lit={option.selected}
           onSelect={() => {

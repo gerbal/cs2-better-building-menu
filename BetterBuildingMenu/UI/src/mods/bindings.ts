@@ -7,6 +7,7 @@ import type { AssetMenuFacetState } from "domain/buildingCatalogFacets";
 import type { AssetMenuMetricRangeState } from "domain/assetMenuFilterSummary";
 import type { Command } from "domain/command";
 import { NO_TIER_BRACKET, type MenuBranchCount, type MenuCategoryTabs, type TierBracket } from "domain/menuProgression";
+import type { MenuShare } from "domain/bodyChoice";
 import type { MenuPick } from "domain/menuPicks";
 import { ASSET_MENU_DEFAULT_HEIGHT, WIDTH_STEP_DEFAULT } from "domain/sharedContracts.generated";
 import type { ToolbarEntity } from "domain/toolbarEntity";
@@ -69,8 +70,12 @@ export const AssetMenuHeight$ = bindValue<number>(mod.id, "AssetMenuHeight", ASS
 export const AssetMenuWidthStep$ = bindValue<number>(mod.id, "AssetMenuWidthStep", WIDTH_STEP_DEFAULT);
 /** Whether the control pane is shown beside the build menu: a new player's off until C# answers. */
 export const ControlPaneShown$ = bindValue<boolean>(mod.id, "ControlPaneShown", false);
-/** The view the player last picked, kept across sessions; "" while none is. See BuildingMenuUISystem.SetAssetMenuViewMode. */
-export const AssetMenuViewMode$ = bindValue<string>(mod.id, "AssetMenuViewMode", "");
+/** Each menu's own VIEW, as the settings keep it: a menu not in it draws Default view's body. */
+export const AssetMenuViews$ = bindValue<MenuPick[]>(mod.id, "AssetMenuViews", []);
+/** Default view: "auto", the look's rule per menu, or one body for every menu without a pick. */
+export const AssetMenuDefaultView$ = bindValue<string>(mod.id, "AssetMenuDefaultView", "auto");
+/** What the look's Auto rule reads of every menu, counted over the whole menu once per index generation. */
+export const MenuShares$ = bindValue<MenuShare[]>(mod.id, "MenuShares", []);
 
 /** What the UI reads of the developer knobs, resolved in C#: a knob counts only in developer mode. See TuningValues.cs. */
 export interface AssetMenuTuning {
@@ -83,7 +88,7 @@ export interface AssetMenuTuning {
   listShare?: number;
   /** What Auto counts: "costOrCapacity" or "capacityOnly". */
   whatCounts?: string;
-  /** From 110% text, Roads and Parks: "lookOwn", "list" or "tiles". */
+  /** Above 100% text, Roads and Parks: "lookOwn", "list" or "tiles". */
   autoLargeText?: string;
   /** The Width step from which Auto draws Cards; 0 never. */
   cardsFrom?: number;

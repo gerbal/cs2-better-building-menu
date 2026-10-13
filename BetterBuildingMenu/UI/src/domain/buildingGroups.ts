@@ -218,64 +218,6 @@ export function groupDimensionLabel(id: GroupDimensionId): string {
   return GROUP_DIMENSIONS.find((dimension) => dimension.id === id)?.label ?? id;
 }
 
-/** One line of a grouped table: a heading band, or a data row. */
-export type GroupedRow<T> =
-  | { kind: "heading"; key: string; label: string; labelId?: string; depth: number; count: number }
-  | { kind: "row"; key: string; entry: T };
-
-/**
- * Flatten a group tree into the sequence a table renders. Interleaved headings
- * rather than nested sections, because the table's columns line up only under
- * one flex geometry. Nothing here re-sorts; the backend's order is kept.
- */
-export function flattenGroupedRows<T extends GroupedEntry>(
-  entries: readonly T[] | null | undefined,
-  keyOf: (entry: T) => string,
-): GroupedRow<T>[] {
-  const source = entries ?? [];
-  const nodes = groupTreeFromPaths(source);
-
-  // "None", or a dimension that grouped nothing: the table is a flat list.
-  if (nodes.length === 0) {
-    return source.map((entry) => ({ kind: "row", key: keyOf(entry), entry }));
-  }
-
-  const out: GroupedRow<T>[] = [];
-
-  const walk = (level: readonly GroupNode<T>[], depth: number): void => {
-    // Decided PER LEVEL, as GroupedResults does: a lone heading at one level
-    // says nothing, but the level below it can still be worth labelling, and
-    // judging the whole tree by its root would suppress those too.
-    const withHeadings = shouldShowHeading(level);
-
-    for (const node of level) {
-      if (withHeadings && headsGroup(node, depth)) {
-        out.push({
-          kind: "heading",
-          key: `h:${node.path.join("/")}`,
-          label: node.label,
-          labelId: node.labelId,
-          depth,
-          count: node.count,
-        });
-      }
-
-      if (node.children.length > 0) {
-        walk(node.children, depth + 1);
-        continue;
-      }
-
-      for (const entry of node.entries) {
-        out.push({ kind: "row", key: keyOf(entry), entry });
-      }
-    }
-  };
-
-  walk(nodes, 0);
-
-  return out;
-}
-
 /**
  * A heading that fits the width its tiles give it. Cohtml reports
  * `text-overflow: ellipsis` as computed and then draws a hard cut, so the "…"

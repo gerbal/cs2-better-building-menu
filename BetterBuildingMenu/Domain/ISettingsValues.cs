@@ -25,6 +25,8 @@ namespace BetterBuildingMenu.Domain
 
 		string MenuGroups { get; set; }
 
+		string MenuViews { get; set; }
+
 		bool ControlPaneShown { get; set; }
 
 		string AssetMenuViewMode { get; set; }

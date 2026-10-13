@@ -1,8 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { fontSizeRatio } from "../src/domain/textScale.ts";
-import { tileLabelLineBudget, tableLabelCharBudget } from "../src/domain/tileLabel.ts";
-import { catalogLayoutWidth, getAssetMenuColumnWidths, ASSET_MENU_COLUMN_MAX, ASSET_MENU_CHROME_WIDTH, CONTROL_PANE_TOTAL, ASSET_MENU_IDENTITY_MIN, ASSET_MENU_TABLE_ROW_FURNITURE } from "../src/domain/assetMenuLayout.ts";
+import { tileLabelLineBudget } from "../src/domain/tileLabel.ts";
 
 // The game's Interface › Text scale setting (100–150 %) reaches the page as
 // --fontScale and --fontScaleChange, and every --fontSize* is a calc() of the
@@ -27,39 +26,4 @@ describe("the game's text scale", () => {
     assert.equal(tileLabelLineBudget(144, 1.25), 11);
   });
 
-  it("shrinks the table's name budget with the S size", () => {
-    assert.ok(tableLabelCharBudget(276, 1.25) < tableLabelCharBudget(276));
-    assert.equal(tableLabelCharBudget(276, 1.25), Math.max(8, Math.round(276 / 100 * 12 / fontSizeRatio("s", 1.25))));
-  });
-
-  it("widens the table's metric columns with the S size", () => {
-    // Wide enough that the room beside the name never caps the ratio.
-    const base = getAssetMenuColumnWidths(3000);
-    const scaled = getAssetMenuColumnWidths(3000, 1.25);
-
-    assert.deepEqual(base, ASSET_MENU_COLUMN_MAX);
-    assert.equal(scaled.upkeep, Math.round(ASSET_MENU_COLUMN_MAX.upkeep * fontSizeRatio("s", 1.25)));
-  });
-});
-
-describe("the table's columns at a large text scale and a narrow build menu", () => {
-  // Scaling the columns by the full ratio at the narrowest build menu pushes the
-  // name cell below its own minimum. The columns scale as far as the build menu
-  // allows and no further; what does not fit clips inside its cell.
-  it("never squeezes the name below its minimum", () => {
-    // The menu at step 3 and the pane: the figure the catalog passes.
-    const outer = catalogLayoutWidth(1091);
-    for (const scale of [1.25, 1.5]) {
-      const widths = getAssetMenuColumnWidths(outer, scale);
-      const columns = Object.values(widths).reduce((a, b) => a + b, 0);
-      const name = outer - ASSET_MENU_CHROME_WIDTH - CONTROL_PANE_TOTAL - columns - ASSET_MENU_TABLE_ROW_FURNITURE;
-
-      assert.ok(name >= ASSET_MENU_IDENTITY_MIN - 1, `at ${scale}: name would get ${name}rem of ${ASSET_MENU_IDENTITY_MIN}`);
-    }
-  });
-
-  it("still scales fully where there is room", () => {
-    const scaled = getAssetMenuColumnWidths(3000, 1.25);
-    assert.equal(scaled.upkeep, Math.round(ASSET_MENU_COLUMN_MAX.upkeep * fontSizeRatio("s", 1.25)));
-  });
 });

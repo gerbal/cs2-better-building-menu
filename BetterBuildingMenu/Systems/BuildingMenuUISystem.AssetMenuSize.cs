@@ -67,19 +67,18 @@ namespace BetterBuildingMenu.Systems
 			}
 		}
 
-		private void SetAssetMenuViewMode(string picked)
+		/// <summary>The open menu's own VIEW, kept across sessions, saved once; "" or a kind no body draws goes back to Default view.</summary>
+		/// <remarks>The save re-pushes the picks, which redraws the body. See docs/design-notes.md, "Each menu's own view and group".</remarks>
+		private void SetAssetMenuView(string kind)
 		{
-			// The binding helper has already published what the UI sent: publish the kept
-			// value over it, then save only a pick that changes the file.
-			var view = AssetMenuViewMode.Sanitize(picked);
-			_AssetMenuViewMode.Value = view;
+			var kept = MenuPicks.With(Mod.Settings.MenuViews, _assetMenu.Menu, BodyViews.SanitizePick(kind));
 
-			if (!AssetMenuViewMode.ShouldSave(Mod.Settings.AssetMenuViewMode, view))
+			if (_assetMenu.Menu.Length == 0 || string.Equals(kept, Mod.Settings.MenuViews, StringComparison.Ordinal))
 			{
 				return;
 			}
 
-			Mod.Settings.AssetMenuViewMode = view;
+			Mod.Settings.MenuViews = kept;
 			Mod.Settings.ApplyAndSave();
 		}
 	}

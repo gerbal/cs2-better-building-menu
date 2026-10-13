@@ -74,6 +74,9 @@ namespace BetterBuildingMenu.Systems
 		private string? _publishedMenuGroups;
 		// The grouping dimensions that can act on the current menu set; the picker lists these.
 		private ValueBindingHelper<string[]> _AssetMenuGroupDimensions = null!;
+		// What the look's Auto rule reads of each menu, from the index generation it was counted on.
+		private ValueBindingHelper<MenuShare[]> _MenuShares = null!;
+		private int _menuSharesGeneration;
 		// Whether the menu the toolbar currently has open is one the asset menu takes
 		// over. Lets the vanilla menu stay hidden after the asset menu is closed, so
 		// closing means closed rather than revealing the grid underneath.
@@ -82,7 +85,11 @@ namespace BetterBuildingMenu.Systems
 		private ValueBindingHelper<float> _AssetMenuHeight = null!;
 		private ValueBindingHelper<int> _AssetMenuWidthStep = null!;
 		private ValueBindingHelper<bool> _ControlPaneShown = null!;
-		private ValueBindingHelper<string> _AssetMenuViewMode = null!;
+		// Each menu's own VIEW and Default view, as the settings keep them: the UI picks the body.
+		private ValueBindingHelper<MenuPick[]> _AssetMenuViews = null!;
+		// The text those picks were parsed from, so a settings apply that left them alone pushes nothing.
+		private string? _publishedMenuViews;
+		private ValueBindingHelper<string> _AssetMenuDefaultView = null!;
 		// The developer knobs the UI reads, resolved: a stored value counts only in developer mode.
 		private ValueBindingHelper<TuningValues> _AssetMenuTuning = null!;
 		private ValueBindingHelper<string> _CurrentSearch = null!;
@@ -195,13 +202,12 @@ namespace BetterBuildingMenu.Systems
 				WidthSteps.Sanitize(Mod.Settings.AssetMenuWidthStep),
 				SetAssetMenuWidthStep);
 			_ControlPaneShown = CreateBinding("ControlPaneShown", Mod.Settings.ControlPaneShown);
-			// Read/write like the sort, so the UI can draw the stored view until the player
-			// picks one, and seeded here like the pane.
-			_AssetMenuViewMode = CreateBinding(
-				"AssetMenuViewMode",
-				"SetAssetMenuViewMode",
-				AssetMenuViewMode.Sanitize(Mod.Settings.AssetMenuViewMode),
-				SetAssetMenuViewMode);
+			// Seeded here like the pane, so the first frame draws each menu's body.
+			_AssetMenuViews = CreateBinding("AssetMenuViews", BodyViews.PicksOf(Mod.Settings.MenuViews));
+			_publishedMenuViews = Mod.Settings.MenuViews;
+			_AssetMenuDefaultView = CreateBinding("AssetMenuDefaultView", BodyViews.SanitizeDefault(Mod.Settings.DefaultView));
+			// The open menu's own VIEW, from the VIEW list; "" goes back to Default view.
+			CreateTrigger<string>("SetAssetMenuView", SetAssetMenuView);
 			_AssetMenuTuning = CreateBinding("AssetMenuTuning", CurrentTuning());
 			// Only now, with every binding OnSettingsApplied re-pushes created.
 			Mod.Settings.onSettingsApplied += OnSettingsApplied;
@@ -229,6 +235,7 @@ namespace BetterBuildingMenu.Systems
 			_AssetMenuGroupDimensions = CreateBinding("AssetMenuGroupDimensions", Array.Empty<string>());
 			_AssetMenuGroups = CreateBinding("AssetMenuGroups", MenuPicks.Parse(Mod.Settings.MenuGroups).ToArray());
 			_publishedMenuGroups = Mod.Settings.MenuGroups;
+			_MenuShares = CreateBinding("MenuShares", Array.Empty<MenuShare>());
 			_BuildingCatalogGroupBy = CreateBinding(
 				"BuildingCatalogGroupBy",
 				"SetBuildingCatalogGroupBy",
@@ -353,8 +360,14 @@ namespace BetterBuildingMenu.Systems
 			_AssetMenuHeight.Value = AssetMenuHeight.Clamp(Mod.Settings.AssetMenuHeight);
 			_AssetMenuWidthStep.Value = WidthSteps.Sanitize(Mod.Settings.AssetMenuWidthStep);
 			_ControlPaneShown.Value = Mod.Settings.ControlPaneShown;
-			_AssetMenuViewMode.Value = AssetMenuViewMode.Sanitize(Mod.Settings.AssetMenuViewMode);
+			_AssetMenuDefaultView.Value = BodyViews.SanitizeDefault(Mod.Settings.DefaultView);
 			_AssetMenuTuning.Value = CurrentTuning();
+			if (!string.Equals(_publishedMenuViews, Mod.Settings.MenuViews, StringComparison.Ordinal))
+			{
+				_publishedMenuViews = Mod.Settings.MenuViews;
+				_AssetMenuViews.Value = BodyViews.PicksOf(Mod.Settings.MenuViews);
+			}
+
 			if (!string.Equals(_publishedMenuGroups, Mod.Settings.MenuGroups, StringComparison.Ordinal))
 			{
 				_publishedMenuGroups = Mod.Settings.MenuGroups;

@@ -9,7 +9,6 @@ import { declarationsOf } from "./harness/compiledCss.ts";
  * present in the DOM and invisible on screen.
  */
 const SCROLL_CONTAINERS: { file: string; selector: string }[] = [
-  { file: "mods/BuildingCatalog/buildingCatalog.module.scss", selector: ".rows" },
   { file: "mods/GroupedResults/groupedResults.module.scss", selector: ".groupScroll" },
 ];
 

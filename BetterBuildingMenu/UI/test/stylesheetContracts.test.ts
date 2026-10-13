@@ -59,25 +59,6 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(groups(".groupHeading")["align-items"], "flex-start");
   });
 
-  it("stops the expanded row's chevron resolving its height against the whole row", () => {
-    // .rowDetailsButton sets `height: 100%` so it fills the collapsed row,
-    // which has a definite height to resolve against. Expanded, the row is
-    // `height: auto` and that percentage resolves against the WRAPPED row.
-    assert.equal(catalog(".row[data-expanded=true] .rowDetailsButton").height, "auto");
-    // And the collapsed rule it is overriding must still be the percentage,
-    // so this contract keeps pointing at something real.
-    assert.equal(catalog(".rowDetailsButton").height, "100%");
-  });
-
-  it("keeps a details label-value pair on one line and wraps it as a unit", () => {
-    // A .rowDetail is a flex item in a wrapping row; left free to shrink it
-    // narrows to its longest word and the label wraps, and the engine does not
-    // grow the line, so the text overflows into what is drawn beneath it.
-    assert.equal(catalog(".rowDetail").flex, "0 0 auto");
-    assert.equal(catalog(".rowDetail")["white-space"], "nowrap");
-    assert.equal(catalog(".rowDetailLabel")["white-space"], "nowrap");
-  });
-
   it("pairs the hover card's figures two across, and lets a list take the row", () => {
     // The pairing is left to the flow: each row is exactly half and does not
     // grow, so two fit, a third cannot, and only a stack of values takes a
@@ -100,43 +81,6 @@ describe("Asset menu stylesheet contracts", () => {
     // container pulling the first row's back off.
     assert.equal(card(".cardLines").gap, undefined);
     assert.equal(rem(card(".cardLines")["margin-top"]), -rem(card(".cardLine")["margin-top"]));
-  });
-
-  it("reserves in the header exactly what a row spends right of its last cell", () => {
-    // The header and the rows are two flex containers describing one table,
-    // so a column lines up only if both reserve the same space: the row's
-    // own right padding, the chevron, the outer padding, and ONE gap — the
-    // one between the select and the chevron. A control added to the row and
-    // not to the reserve steps every header off the cells it heads.
-    const spent = rem(sides(catalog(".rowSelect").padding)[1])
-      + rem(catalog(".rowDetailsButton").width)
-      + rem(sides(catalog(".row").padding)[1])
-      + rem(catalog(".row > * + *")["margin-left"]);
-
-    assert.equal(rem(sides(catalog(".columnHeader").padding)[1]), spent);
-    // And on the left, the header starts where the row's select does.
-    assert.equal(sides(catalog(".columnHeader").padding)[3], sides(catalog(".rowSelect").padding)[3]);
-  });
-
-  it("spaces the header's columns as the rows space their cells", () => {
-    // .columnHeader > * + * gives each header the rows' gap, and .metricHeader's
-    // button-chrome reset (`margin: 0`, same specificity, later) takes it
-    // straight back, stepping every header left of the cells it heads.
-    const gap = catalog(".rowSelect > * + *")["margin-left"];
-
-    assert.equal(catalog(".columnHeader > * + *")["margin-left"], gap);
-    assert.equal(sides(catalog(".metricHeader").margin)[3], gap, "a margin reset discards the column gap");
-  });
-
-  it("makes the row Place hint visible for hover and keyboard focus", () => {
-    const hidden = catalog(".placeHint");
-    for (const state of [".rowSelect:hover .placeHint", ".rowSelect:focus .placeHint"]) {
-      assert.notDeepEqual(catalog(state), {}, `${state} draws nothing`);
-      assert.ok(
-        Object.entries(catalog(state)).some(([property, value]) => hidden[property] !== value),
-        `${state} leaves the hint as it was`
-      );
-    }
   });
 
   it("gives the height drag a target worth aiming at", () => {

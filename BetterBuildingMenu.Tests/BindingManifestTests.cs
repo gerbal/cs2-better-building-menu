@@ -79,12 +79,18 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void TheRememberedViewIsNamedOnBothSides()
+		public void EachMenusOwnViewIsNamedOnBothSidesAndTheOneRememberedViewIsGone()
 		{
-			foreach (var name in new[] { "AssetMenuViewMode", "SetAssetMenuViewMode" })
+			foreach (var name in new[] { "AssetMenuViews", "SetAssetMenuView", "AssetMenuDefaultView", "AssetMenuGroups", "MenuShares" })
 			{
 				Assert.Contains(name, CSharpNames());
 				Assert.Contains(name, TypeScriptNames());
+			}
+
+			foreach (var name in new[] { "AssetMenuViewMode", "SetAssetMenuViewMode" })
+			{
+				Assert.DoesNotContain(name, CSharpNames());
+				Assert.DoesNotContain(name, TypeScriptNames());
 			}
 		}
 

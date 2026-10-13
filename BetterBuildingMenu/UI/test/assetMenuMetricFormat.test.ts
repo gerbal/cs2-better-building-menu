@@ -14,7 +14,6 @@ import {
   formatVolume,
   formatWeight,
   formatWeightPerMonth,
-  getBuildingDetailMetrics,
   formatPerMonth,
   formatPower,
   formatEnergy,
@@ -118,166 +117,6 @@ describe("Asset menu metric formatting", () => {
     assert.equal(formatCapacity(1200, "ServiceBuildings", "Education"), "1\u00a0200 students");
     assert.equal(formatCapacity(null, "ServiceBuildings", "Education"), METRIC_NO_DATA);
     assert.equal(formatCapacity(40, "Buildings", "Industrial"), "40");
-  });
-});
-
-describe("Building level", () => {
-  it("shows a zone building's real level", async () => {
-    const { formatBuildingLevel } = await import("../src/domain/assetMenuMetricFormat.ts");
-
-    assert.equal(formatBuildingLevel(1), "1");
-    assert.equal(formatBuildingLevel(5), "5");
-  });
-
-  it("marks a building with no level as not applicable, not as zero", async () => {
-    // Service buildings have no level, so a bare "0" would sit beside the "—"
-    // in Workers that means "not known": two absences rendering as two lies.
-    const { formatBuildingLevel, METRIC_NOT_APPLICABLE } = await import(
-      "../src/domain/assetMenuMetricFormat.ts"
-    );
-
-    assert.equal(formatBuildingLevel(0), METRIC_NOT_APPLICABLE);
-  });
-
-  it("keeps not-applicable distinguishable from not-known", async () => {
-    // Not just "render a dash": the table uses a different mark for each, and
-    // Parking makes the same distinction.
-    const { METRIC_NOT_APPLICABLE, METRIC_NO_DATA } = await import(
-      "../src/domain/assetMenuMetricFormat.ts"
-    );
-
-    // Both asserted non-empty first: comparing an undefined export against a
-    // real one passes without either existing, which is a test that reports
-    // success for a reason it does not name.
-    assert.equal(typeof METRIC_NOT_APPLICABLE, "string");
-    assert.ok(METRIC_NOT_APPLICABLE.length > 0);
-    assert.equal(typeof METRIC_NO_DATA, "string");
-    assert.ok(METRIC_NO_DATA.length > 0);
-    assert.notEqual(METRIC_NOT_APPLICABLE, METRIC_NO_DATA);
-  });
-
-  it("falls back to not-known when the level never arrived", async () => {
-    // Defensive: the wire always sends a number, but a null here means the
-    // projection failed, which is a gap rather than a fact about the building.
-    const { formatBuildingLevel, METRIC_NO_DATA } = await import(
-      "../src/domain/assetMenuMetricFormat.ts"
-    );
-
-    assert.equal(formatBuildingLevel(null), METRIC_NO_DATA);
-    assert.equal(formatBuildingLevel(undefined), METRIC_NO_DATA);
-    assert.equal(formatBuildingLevel(Number.NaN), METRIC_NO_DATA);
-  });
-});
-
-describe("Asset menu detail metrics", () => {
-  it("surfaces the projected metrics the table never rendered", async () => {
-    const { getBuildingDetailMetrics } = await import("../src/domain/assetMenuMetricFormat.ts");
-
-    const details = getBuildingDetailMetrics({
-      electricityConsumption: 1200,
-      waterConsumption: 30,
-      groundPollution: 15,
-      airPollution: 0,
-    });
-
-    assert.deepEqual(details.map((detail) => detail.key), [
-      "electricity",
-      "water",
-      "groundPollution",
-      "airPollution",
-    ]);
-    // 1200 in the game's hundreds-of-watts figure is 120 kW — vanilla's Power
-    // rule, not the raw number wearing "MW".
-    assert.equal(details[0].value, "120 kW");
-    // A real zero is a fact worth showing; only absent metrics are dropped.
-    assert.equal(details[3].value, "0");
-  });
-
-  it("shows the whole projected entry, not just the utility subset", async () => {
-    // The detail view is where an asset is compared properly, so it cannot
-    // know less than the row above it: offered only utilities and pollution,
-    // a building with neither expands to an empty box.
-    const { getBuildingDetailMetrics } = await import("../src/domain/assetMenuMetricFormat.ts");
-
-    const keys = getBuildingDetailMetrics({
-      constructionCost: 45000,
-      upkeep: 1500,
-      capacity: 1000,
-      workers: 12,
-      households: 180,
-      parkingSlots: 12,
-      lotWidth: 3,
-      lotDepth: 4,
-      buildingLevel: 2,
-      electricityConsumption: 30,
-      groundPollution: 5,
-    }).map((detail) => detail.key);
-
-    // Money first, then what it buys, then what it occupies, then what it
-    // draws and emits — the order the hover card already reads in.
-    assert.deepEqual(keys, [
-      "cost",
-      "upkeep",
-      "capacity",
-      "workers",
-      "households",
-      "parking",
-      "lot",
-      "level",
-      "electricity",
-      "groundPollution",
-    ]);
-  });
-
-  it("keeps a real zero and drops a not-applicable one", async () => {
-    // A pollution of zero is a measurement. A building LEVEL of zero is not a
-    // level — service buildings have none — and printing "0" beside dashes
-    // that mean "unknown" is a lie. No parking bays is not a bay count.
-    const { getBuildingDetailMetrics } = await import("../src/domain/assetMenuMetricFormat.ts");
-
-    const details = getBuildingDetailMetrics({
-      airPollution: 0,
-      buildingLevel: 0,
-      parkingSlots: 0,
-      constructionCost: 0,
-    });
-
-    const keys = details.map((detail) => detail.key);
-    assert.ok(keys.includes("airPollution"), "a measured zero stays");
-    assert.ok(keys.includes("cost"), "free is a real price");
-    assert.ok(!keys.includes("level"), "level 0 means no level");
-    assert.ok(!keys.includes("parking"), "0 bays is not a bay count");
-  });
-
-  it("names a network's cost as the rate it is", async () => {
-    // A road prices by length. 12,500 for a road and 12,500 for a hospital are
-    // not the same kind of number, and the existing formatter already says so —
-    // the detail view has to use it rather than printing the bare figure.
-    const { getBuildingDetailMetrics } = await import("../src/domain/assetMenuMetricFormat.ts");
-
-    const [cost] = getBuildingDetailMetrics({ constructionCost: 12500, costIsPerDistance: true });
-
-    assert.ok(/km/.test(cost.value), `expected a per-kilometre rate, got ${cost.value}`);
-  });
-
-  it("draws no lot for something without a footprint", async () => {
-    // Networks and zones measure 0 x 0. "0 × 0" is a confident measurement of
-    // something that does not exist.
-    const { getBuildingDetailMetrics } = await import("../src/domain/assetMenuMetricFormat.ts");
-
-    const keys = getBuildingDetailMetrics({ lotWidth: 0, lotDepth: 0, workers: 4 }).map((d) => d.key);
-
-    assert.deepEqual(keys, ["workers"]);
-  });
-
-  it("omits metrics that were never projected rather than showing empty rows", async () => {
-    const { getBuildingDetailMetrics } = await import("../src/domain/assetMenuMetricFormat.ts");
-
-    assert.deepEqual(getBuildingDetailMetrics({}), []);
-    assert.deepEqual(
-      getBuildingDetailMetrics({ electricityConsumption: null, noisePollution: 5 }).map((d) => d.key),
-      ["noisePollution"],
-    );
   });
 });
 
@@ -574,16 +413,6 @@ describe("rates follow the game's own per-month rules", () => {
   it("a plain count per month", () => {
     assert.match(formatPerMonth(1200), /^1.200 \/mo\.$/);
     assert.equal(formatPerMonth(0), "");
-  });
-});
-
-describe("the details table shows the game's units", () => {
-  // ConsumptionData.m_GarbageAccumulation is kilograms per month, and vanilla
-  // shows it as WeightPerMonth.
-  it("garbage produced is a weight per month", () => {
-    const details = getBuildingDetailMetrics({ garbageAccumulation: 100000 } as never);
-    const garbage = details.find((d) => d.key === "garbage");
-    assert.equal(garbage && garbage.value, "100 t/mo.");
   });
 });
 

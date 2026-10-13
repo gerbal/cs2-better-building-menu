@@ -25,6 +25,15 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>The Default view row's values, in its order: Auto, then each body this release draws.</summary>
 		public static readonly IReadOnlyList<string> DefaultViews = new[] { Auto, List, Tiles, Cards };
 
+		/// <summary>A menu's own pick: one of the kinds, exactly, or "" for none.</summary>
+		/// <remarks>Icons joins VIEW with its body, as it joins the Default view row; until then a stored Icons pick reads as none.</remarks>
+		public static string SanitizePick(string? value) =>
+			value is not null && value != Icons && Kinds.Contains(value) ? value : MenuPicks.None;
+
+		/// <summary>Each menu's own VIEW as the UI reads it: the stored picks, less any that reads as none.</summary>
+		public static MenuPick[] PicksOf(string? stored) =>
+			MenuPicks.Parse(stored).Where(pick => SanitizePick(pick.Value).Length > 0).ToArray();
+
 		/// <summary>One of the Default view row's values, exactly; anything else reads as Auto.</summary>
 		public static string SanitizeDefault(string? value) =>
 			value is not null && DefaultViews.Contains(value) ? value : Auto;

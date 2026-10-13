@@ -63,10 +63,8 @@ describe("the grab strips", () => {
     }
   });
 
-  it("fit the catalog's right margin in every density, so the catalog keeps its width", () => {
-    for (const selector of [".catalog", ".densityDefault", ".densityExpanded", ".densityCompact"]) {
-      assert.ok(rem(strip.width) <= rightPadding(selector), `${selector}: ${strip.width} over ${rightPadding(selector)}rem`);
-    }
+  it("fit the catalog's right margin, so the catalog keeps its width", () => {
+    assert.ok(rem(strip.width) <= rightPadding(".catalog"), `.catalog: ${strip.width} over ${rightPadding(".catalog")}rem`);
     assert.equal(content["padding-right"], undefined, "the catalog is not pushed in");
   });
 

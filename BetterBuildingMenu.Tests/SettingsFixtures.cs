@@ -30,6 +30,8 @@ namespace BetterBuildingMenu.Tests
 
 		public string MenuGroups { get; set; } = SettingsDefaults.NoPicks;
 
+		public string MenuViews { get; set; } = SettingsDefaults.NoPicks;
+
 		public bool ControlPaneShown { get; set; } = SettingsDefaults.ControlPaneShownWhenMissing;
 
 		public string AssetMenuViewMode { get; set; } = Domain.AssetMenuViewMode.None;

@@ -31,39 +31,6 @@ describe("Asset menu sort presentation", () => {
     });
   });
 
-  it("maps every metric column to the sort its header drives", async () => {
-    const loaded = await loadSortPresentationModule();
-    if ("error" in loaded) {
-      assert.fail(`sort presentation helper is unavailable: ${String(loaded.error)}`);
-    }
-
-    assert.deepEqual(loaded.module.ASSET_MENU_COLUMN_SORT, {
-      cost: "ConstructionCost",
-      upkeep: "Upkeep",
-      workers: "Workers",
-      capacity: "Capacity",
-      lot: "LotWidth",
-      level: "BuildingLevel",
-      parking: "HasParking",
-    });
-  });
-
-  it("marks only the sorted column, so the header row shows one ordering", async () => {
-    const loaded = await loadSortPresentationModule();
-    if ("error" in loaded) {
-      assert.fail(`sort presentation helper is unavailable: ${String(loaded.error)}`);
-    }
-
-    const { getAssetMenuColumnSortIndicator } = loaded.module;
-    const state = { column: "ConstructionCost", descending: false };
-
-    assert.equal(getAssetMenuColumnSortIndicator("cost", state), "▲");
-    assert.equal(getAssetMenuColumnSortIndicator("cost", { ...state, descending: true }), "▼");
-    assert.equal(getAssetMenuColumnSortIndicator("upkeep", state), "");
-    // Name/Category are not metric columns, so no header claims them.
-    assert.equal(getAssetMenuColumnSortIndicator("capacity", { column: "Name", descending: false }), "");
-  });
-
   it("exposes every sort choice, Default first, with the current choice selected", async () => {
     const loaded = await loadSortPresentationModule();
     if (!("module" in loaded)) {

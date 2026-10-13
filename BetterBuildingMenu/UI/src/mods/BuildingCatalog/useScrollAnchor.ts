@@ -7,18 +7,11 @@ import {
   isOnLineOne,
   isScrollContainer,
   lineOneScrollTop,
-  revealScrollTop,
 } from "domain/catalogWindow";
 import type { AnchorGeometry } from "domain/catalogWindow";
 import { getAssetMenuAnchor, getAssetMenuListStart, setAssetMenuAnchor, setAssetMenuListStart } from "domain/assetMenuViewStore";
 import { planListScroll, type ListScroll, type StartMove } from "domain/listScroll";
 import { findScrollContainer, lastCatalogRow } from "./catalogDom";
-
-/**
- * Breathing room under a revealed detail, in CSS pixels. Small on purpose: it
- * keeps the last line clear of the asset menu's edge, not centred.
- */
-const EXPANDED_ROW_REVEAL_MARGIN = 6;
 
 /** What a page says about where its list starts; see BuildingCatalogPage. */
 export interface ListStartPage {
@@ -173,72 +166,4 @@ export function useScrollAnchor(rootRef: RefObject<HTMLElement>, anchorKey: stri
     // The page's numbers rather than its rows: a new array every publish would restart the move on
     // data that has not moved.
   }, [rootRef, anchorKey, listStart, anchorId, anchorIndex, itemCount]);
-}
-
-/**
- * Bring a freshly expanded row's detail into view, since expanding grows the
- * row downward and the list does not follow. A ResizeObserver, not a rAF:
- * Cohtml lays out a frame late, so a rAF reads the pre-expansion height.
- */
-export function useRevealExpandedRow(
-  rootRef: RefObject<HTMLElement>,
-  expandedId: number | null,
-  detailClassName: string
-): void {
-  useEffect(() => {
-    const root = rootRef.current;
-
-    if (expandedId === null || !root) {
-      return;
-    }
-
-    const row = lastCatalogRow(root, expandedId);
-
-    if (!row) {
-      return;
-    }
-
-    const detail = row.querySelector(`.${detailClassName}`) ?? row;
-    const scroller = findScrollContainer(row, root, isScrollContainer);
-
-    if (!scroller || !(detail instanceof HTMLElement)) {
-      return;
-    }
-
-    let done = false;
-    const observer = new ResizeObserver(() => {
-      if (done) {
-        return;
-      }
-
-      const rowRect = row.getBoundingClientRect();
-      const detailRect = detail.getBoundingClientRect();
-      const scrollerRect = scroller.getBoundingClientRect();
-
-      // Nothing has laid out yet; wait for the next notification rather than
-      // computing a reveal from zeroes.
-      if (detailRect.height === 0) {
-        return;
-      }
-
-      const next = revealScrollTop({
-        currentScrollTop: scroller.scrollTop,
-        rowTop: rowRect.top,
-        detailBottom: detailRect.top + detailRect.height,
-        containerTop: scrollerRect.top,
-        containerHeight: scroller.clientHeight,
-        margin: EXPANDED_ROW_REVEAL_MARGIN,
-      });
-
-      done = true;
-
-      if (next !== scroller.scrollTop) {
-        scroller.scrollTop = next;
-      }
-    });
-
-    observer.observe(detail);
-
-    return () => observer.disconnect();
-  }, [rootRef, expandedId, detailClassName]);
 }

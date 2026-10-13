@@ -1,4 +1,5 @@
 ﻿using BetterBuildingMenu.Domain;
+using BetterBuildingMenu.Domain.Catalog;
 using BetterBuildingMenu.Utilities;
 using System;
 using System.Linq;
@@ -121,6 +122,11 @@ namespace BetterBuildingMenu.Systems
 			_AssetMenuTierBracket.Value = view.TierBracket;
 			_tierParent = view.TierBracket.ParentCategory;
 			var tiersMs = Lap();
+			// Read before the shares' own builds add theirs: the line below times this refresh's projection.
+			var projectionMs = _buildingCatalogAdapter.LastProjectionMs;
+			var projectionWasHit = _buildingCatalogAdapter.LastProjectionWasHit;
+			var sharesCounted = PublishMenuShares(source);
+			var sharesMs = Lap();
 			refreshTimer.Stop();
 			// Every refresh, and named by its caller: one line per user action is the only way
 			// a redundant refresh is visible at all. At Debug, which a development build turns
@@ -129,10 +135,36 @@ namespace BetterBuildingMenu.Systems
 			if (Mod.Log.isLevelEnabled(Colossal.Logging.Level.Debug))
 			{
 				Mod.Log.Debug($"[ASSET-MENU-REFRESH] {(int)refreshTimer.ElapsedMilliseconds}ms "
-					+ $"proj={_buildingCatalogAdapter.LastProjectionMs}ms({(_buildingCatalogAdapter.LastProjectionWasHit ? "hit" : "miss")}) "
-					+ $"page={pageMs} bounds={boundsMs} facets={facetsMs} counts={countsMs} axis={axisMs} tabs={tabsMs} expanded={expandedMs} tiers={tiersMs} "
+					+ $"proj={projectionMs}ms({(projectionWasHit ? "hit" : "miss")}) "
+					+ $"page={pageMs} bounds={boundsMs} facets={facetsMs} counts={countsMs} axis={axisMs} tabs={tabsMs} expanded={expandedMs} tiers={tiersMs} shares={sharesMs} "
 					+ $"menu='{_assetMenu.Menu}' total={page.TotalCount} from={caller}");
+
+				// On a line of its own, as it runs once per index generation: its cost shows apart from the refresh's.
+				if (sharesCounted)
+				{
+					Mod.Log.Debug($"[ASSET-MENU-SHARES] {sharesMs}ms menus={_MenuShares.Value?.Length ?? 0} generation={source.Generation}");
+				}
 			}
+		}
+
+		/// <summary>What the look's Auto rule reads of every menu, counted once per index generation; true when it counted.</summary>
+		/// <remarks>
+		/// Over each menu as the catalog lists it, with nothing of the toolbar's row, a filter or a search:
+		/// a filter never changes a menu's body. See docs/design-notes.md, "The bodies".
+		/// </remarks>
+		private bool PublishMenuShares(CatalogSource source)
+		{
+			if (_menuSharesGeneration == source.Generation)
+			{
+				return false;
+			}
+
+			_menuSharesGeneration = source.Generation;
+			_MenuShares.Value = source.Index.Menus.AssetMenus()
+				.Select(menu => MenuShare.Of(menu.Id, _buildingCatalogAdapter.Build(source, new BuildingCatalogQuery(UiMenu: menu.Id), VanillaToolbarSelection.None).MenuSet))
+				.ToArray();
+
+			return true;
 		}
 
 		/// <summary>Publishes the milestone names the UI labels locked assets with.</summary>

@@ -1,0 +1,58 @@
+using Colossal.UI.Binding;
+
+namespace BetterBuildingMenu.Domain
+{
+	/// <summary>
+	/// What the look's Auto rule reads of one menu: its rows, and how many carry a cost or a capacity,
+	/// a capacity, or a lock. Over the whole menu, no filter or search or tab, so a filter never
+	/// changes a menu's body.
+	/// </summary>
+	/// <remarks>See docs/design-notes.md, "The bodies".</remarks>
+	public sealed record MenuShare(string Menu, int Rows, int CostOrCapacity, int Capacity, int Locked) : IJsonWritable
+	{
+		/// <summary>One menu's share, over its rows as the catalog lists it.</summary>
+		public static MenuShare Of(string menu, IEnumerable<BuildingCatalogEntry> rows)
+		{
+			int count = 0, costOrCapacity = 0, capacity = 0, locked = 0;
+
+			foreach (var row in rows)
+			{
+				count++;
+				var hasCapacity = row.Capacity is > 0;
+
+				if (hasCapacity)
+				{
+					capacity++;
+				}
+
+				if (hasCapacity || row.ConstructionCost is > 0)
+				{
+					costOrCapacity++;
+				}
+
+				if (row.IsLocked)
+				{
+					locked++;
+				}
+			}
+
+			return new MenuShare(menu, count, costOrCapacity, capacity, locked);
+		}
+
+		public void Write(IJsonWriter writer)
+		{
+			writer.TypeBegin(GetType().FullName);
+			writer.PropertyName("menu");
+			writer.Write(Menu);
+			writer.PropertyName("rows");
+			writer.Write(Rows);
+			writer.PropertyName("costOrCapacity");
+			writer.Write(CostOrCapacity);
+			writer.PropertyName("capacity");
+			writer.Write(Capacity);
+			writer.PropertyName("locked");
+			writer.Write(Locked);
+			writer.TypeEnd();
+		}
+	}
+}

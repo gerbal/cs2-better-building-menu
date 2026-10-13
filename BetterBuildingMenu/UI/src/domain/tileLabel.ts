@@ -35,24 +35,6 @@ export const tileLabelLineBudget = (tileSize: number, textScale = 1): number => 
 };
 
 /**
- * The table's own characters-per-100rem figure. Erring short is the safe
- * direction for a cell that clips.
- */
-const CHARS_PER_100REM_TABLE = 12;
-
-/**
- * Characters on the table's single-line name, from the width actually DRAWABLE:
- * the caller knows what the row spends on thumbnails, buttons and gutters, and
- * a budget taken from the column width instead never shortens anything.
- */
-export const tableLabelCharBudget = (drawableWidth: number, textScale = 1): number => {
-  const width = Number.isFinite(drawableWidth) && drawableWidth > 0 ? drawableWidth : DEFAULT_TILE_SIZE;
-
-  // The table's name cell is fontSizeS.
-  return Math.max(8, Math.round((width / DEFAULT_TILE_SIZE) * CHARS_PER_100REM_TABLE / fontSizeRatio("s", textScale)));
-};
-
-/**
  * Theme prefixes the catalog puts in front of a name. These say which art set a
  * building belongs to, which the tile is not sorted or grouped by and which
  * every neighbouring tile repeats.

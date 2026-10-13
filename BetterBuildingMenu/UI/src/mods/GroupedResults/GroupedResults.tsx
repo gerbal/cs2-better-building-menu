@@ -18,9 +18,9 @@ import { BuildingGrid } from "mods/BuildingGrid/BuildingGrid";
 import { BuildingList } from "mods/BuildingList/BuildingList";
 import styles from "./groupedResults.module.scss";
 
-/** Grid recognises, List scans, Cards weighs, Table compares. */
+/** Grid recognises, List scans, Cards weighs. */
 
-export type CatalogViewMode = "grid" | "list" | "cards" | "table";
+export type CatalogViewMode = "grid" | "list" | "cards";
 
 interface GroupedResultsProps {
   entries: BuildingCatalogEntry[];
@@ -274,7 +274,7 @@ const GroupRow = ({
 /**
  * Headings over a result set, rendered in whichever mode is active. Zones come
  * through here too, mapped onto catalog entries, so there is one grouped
- * renderer. Table is not handled here: it flattens headings into its own rows.
+ * renderer.
  */
 export const GroupedResults = memo(function GroupedResults({
   entries,

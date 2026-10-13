@@ -19,7 +19,6 @@ import { declarationsOf, everyDeclaration } from "./harness/compiledCss.ts";
 const SHEETS = [
   ["grid", "mods/BuildingGrid/buildingGrid.module.scss"],
   ["list", "mods/BuildingList/buildingList.module.scss"],
-  ["table", "mods/BuildingCatalog/buildingCatalog.module.scss"],
 ] as const;
 
 describe("no compositing effect over a vector", () => {

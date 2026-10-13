@@ -7,24 +7,18 @@ const base = readFileSync(new URL("../src/base.scss", import.meta.url), "utf8");
 
 const GRID = "mods/BuildingGrid/buildingGrid.module.scss";
 const LIST = "mods/BuildingList/buildingList.module.scss";
-const TABLE = "mods/BuildingCatalog/buildingCatalog.module.scss";
 
-/**
- * Each mode's badge, the picture it is measured against and the box it sits
- * in. The table frames its 60rem picture in a 68rem tinted tile, the one mode
- * where picture and frame differ.
- */
+/** Each mode's badge, the picture it is measured against and the box it sits in. */
 const MODES = [
   { mode: "grid", sheet: GRID, badge: ".tile .artwork .uniqueAsset", picture: ".tile .artwork .thumb", frame: ".tile .artwork" },
   { mode: "list", sheet: LIST, badge: ".artwork .uniqueAsset", picture: ".artwork .icon", frame: ".artwork" },
   { mode: "cards", sheet: LIST, badge: ".artworkLarge .uniqueAssetLarge", picture: ".artworkLarge .iconLarge", frame: ".artworkLarge" },
-  { mode: "table", sheet: TABLE, badge: ".thumbnail .uniqueAsset", picture: ".thumbnail .picture", frame: ".thumbnail" },
 ];
 
 /**
  * The badge has to read the same size against the building in every mode.
  *
- * Four modes draw one catalogue at four picture sizes, so "the same size" can
+ * Three modes draw one catalogue at three picture sizes, so "the same size" can
  * only mean the same RATIO. This pins the single definition, and that every
  * mode derives from it.
  */

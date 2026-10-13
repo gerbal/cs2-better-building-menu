@@ -1,15 +1,10 @@
 /**
  * The one store for the asset menu's visual state, which has to outlive a React
  * unmount but has no bearing on the query. One object, because two subtrees read
- * it. It keeps this session only: a picked view is also sent to C#, which keeps
- * it across sessions, and viewModeChoice.ts decides which of the two is drawn.
+ * it. It keeps this session only; each menu's view is C#'s.
  */
 
 export interface AssetMenuView {
-  /** Grid, list, cards or table: this session's pick, or "" until the player picks one this session. */
-  viewMode: string;
-  /** The table row opened to its full height, by entry id. */
-  expandedId: number | null;
   /** Drawer open/closed by key; absent means "use the fallback". */
   disclosures: Readonly<Record<string, boolean>>;
   /** Where the player was in each list, by getAssetMenuAnchorKey — an entry id, never a pixel offset. */
@@ -27,7 +22,7 @@ export interface SlotReading {
   left: number;
 }
 
-const initial = (): AssetMenuView => ({ viewMode: "", expandedId: null, disclosures: {}, anchors: {}, listStart: null, slot: null });
+const initial = (): AssetMenuView => ({ disclosures: {}, anchors: {}, listStart: null, slot: null });
 
 let state: AssetMenuView = initial();
 

@@ -62,14 +62,20 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
-		public void TheDefaultsPutEveryValueBackButTheVersionAndTheLegacyWidth()
+		public void TheDefaultsPutEveryValueBackButTheVersionAndTheLegacyWidthAndView()
 		{
 			var values = EveryValueMoved();
 
 			SettingsDefaults.Apply(values);
 
 			Assert.Equal(
-				new FakeSettings { SettingsVersion = 7, AssetMenuCatalogWidth = Domain.AssetMenuCatalogWidth.Default + 7f, ControlPaneShown = SettingsDefaults.ControlPaneShown },
+				new FakeSettings
+				{
+					SettingsVersion = 7,
+					AssetMenuCatalogWidth = Domain.AssetMenuCatalogWidth.Default + 7f,
+					AssetMenuViewMode = Domain.AssetMenuViewMode.None + "x",
+					ControlPaneShown = SettingsDefaults.ControlPaneShown,
+				},
 				values);
 		}
 
@@ -85,6 +91,7 @@ namespace BetterBuildingMenu.Tests
 				{
 					SettingsVersion = SettingsMigration.Current,
 					AssetMenuCatalogWidth = Domain.AssetMenuCatalogWidth.Default + 7f,
+					AssetMenuViewMode = Domain.AssetMenuViewMode.None + "x",
 					ControlPaneShown = SettingsDefaults.ControlPaneShown,
 				},
 				values);
@@ -282,7 +289,7 @@ namespace BetterBuildingMenu.Tests
 		{
 			Assert.Equal("Off while Replace the vanilla build menu is off.", ModSource.English(OptionRows.OffWhileReplaceOffId));
 			Assert.Equal(
-				"Put every Better Building Menu setting, the width, the view and the menu's size back to how they ship? The buildings you have placed are kept.",
+				"Put every Better Building Menu setting, the width, each menu's own view and group and the menu's size back to how they ship? The buildings you have placed are kept.",
 				ModSource.English("Options.WARNING[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.ResetBuildMenu]"));
 		}
 

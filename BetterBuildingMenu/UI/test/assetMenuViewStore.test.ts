@@ -21,45 +21,41 @@ describe("Asset menu view store", () => {
   beforeEach(() => resetAssetMenuView());
 
   it("starts with nothing chosen", () => {
-    assert.deepEqual(getAssetMenuView(), { viewMode: "", expandedId: null, disclosures: {}, anchors: {}, listStart: null, slot: null });
+    assert.deepEqual(getAssetMenuView(), { disclosures: {}, anchors: {}, listStart: null, slot: null });
   });
 
   it("tells a subscriber when a field moves, and not when it does not", () => {
     // The control pane and the catalog are siblings, not ancestor and
-    // descendant; the subscription is what keeps the view mode one value
-    // rather than two copies.
+    // descendant; the subscription is what keeps a field one value rather
+    // than two copies.
     let fired = 0;
     const unsubscribe = subscribeAssetMenuView(() => { fired += 1; });
 
-    setAssetMenuView({ viewMode: "table" });
+    setAssetMenuView({ listStart: 3 });
     assert.equal(fired, 1);
-    assert.equal(getAssetMenuView().viewMode, "table");
+    assert.equal(getAssetMenuView().listStart, 3);
 
-    setAssetMenuView({ viewMode: "table" });
+    setAssetMenuView({ listStart: 3 });
     assert.equal(fired, 1);
-
-    setAssetMenuView({ expandedId: 4206 });
-    assert.equal(fired, 2);
-    assert.equal(getAssetMenuView().expandedId, 4206);
 
     unsubscribe();
-    setAssetMenuView({ viewMode: "grid" });
-    assert.equal(fired, 2);
+    setAssetMenuView({ listStart: 4 });
+    assert.equal(fired, 1);
   });
 
   it("keeps the fields it was not asked to change", () => {
-    setAssetMenuView({ viewMode: "list" });
-    setAssetMenuView({ expandedId: 7 });
+    setAssetMenuView({ listStart: 2 });
+    setAssetMenuView({ disclosures: { facets: true } });
 
-    assert.equal(getAssetMenuView().viewMode, "list");
-    assert.equal(getAssetMenuView().expandedId, 7);
+    assert.equal(getAssetMenuView().listStart, 2);
+    assert.deepEqual(getAssetMenuView().disclosures, { facets: true });
   });
 
   it("hands out the same snapshot until something changes", () => {
     // useSyncExternalStore compares snapshots by identity; a fresh object per
     // read would re-render for ever.
     const before = getAssetMenuView();
-    setAssetMenuView({ viewMode: "" });
+    setAssetMenuView({ listStart: null });
 
     assert.equal(getAssetMenuView(), before);
   });
