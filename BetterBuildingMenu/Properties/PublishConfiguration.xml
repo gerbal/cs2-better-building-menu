@@ -80,7 +80,7 @@ Changes
 * At the right end of the tabs, the tab you are on sits over how many buildings the list holds of how many match. The end of the list shows only the button that loads more.
 * Education's school levels are named chips beside the Education tab.
 * A menu opens on the tab of the building you last picked from it, with that building at the top of the list. With nothing picked, it opens on its first tab, and Education on its first school level. Opening a menu clears the search.
-* Picking a sort, or clicking the tab that is already lit, takes the list back to its top. Going back to a tab brings the building you picked back to the top.
+* Picking a sort, or clicking the tab that is already lit, takes the list back to its top. Going back to that building's tab brings it back to the top.
 * The menu follows the game's Interface style and Interface transparency.
 
 Fixed
