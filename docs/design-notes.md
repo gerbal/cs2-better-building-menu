@@ -1070,13 +1070,14 @@ prefab's milestone stays whatever the city reaches). The amber and the "↵" mar
 (`bodyMilestone`, `bodyEntMark`) that follow an interface style to its own ink, dark on Bright blue's
 light plates. A unique carries the game's own mark on its picture, faint under the pointer, and one
 the city already holds the already-built mark, as 0.2.x's list drew them; a plate that cannot be
-placed, locked or built, keeps its dim plate under the pointer. The armed building is filled. Enter's target carries "↵" beside its numbers while the page answers the
-query in the box. Names are plain text, never in spans: Cohtml drops the space after an inline element
-and never breaks at a hyphen. The game's Scrollable scrolls the slots, its track over the box's right
-margin and its thumb on the slots' right edge, clear of the width strip; the region, the scroller and
-the slots' box are one mixin (`_bodyShell.scss`), as the locked and already-built words and the digit
-separators are one hook each (`useStateWords`, `useNumberSeparators`), for every body that places its
-buildings in slots.
+placed, locked or built, keeps its dim plate under the pointer. The armed building is filled. Enter's
+target carries "↵" beside its numbers while the page answers the query in the box. Names are plain
+text, never in spans: Cohtml drops the space after an inline element and never breaks at a hyphen.
+The game's Scrollable scrolls the slots, its track over the box's right margin and its thumb on the
+slots' right edge, clear of the width strip; the region, the scroller and the slots' box are
+one mixin (`_bodyShell.scss`), as the locked and already-built words and the digit separators are
+one hook each (`useStateWords`, `useNumberSeparators`), for every body that places its buildings in
+slots.
 
 **Labels wait.** The list and the tiles draw no group names and no "Locked N" yet; their order still
 follows the grouping.

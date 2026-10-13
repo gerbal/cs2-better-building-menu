@@ -74,7 +74,7 @@ Changes
 * Enter in the search arms the best match, wherever it sits in the list and however the list is sorted.
 * A sort's first click puts the best first: the most Capacity, Workers, Households, Water capacity or Sewage capacity, the lowest Cost or Upkeep. Equal values go to the cheaper building.
 * Sort by Households, Water capacity or Sewage capacity.
-* Options › Better Building Menu has Reset the build menu…: after asking, it puts the options, the menu's width, height and view back to how they ship. The buildings you have placed are kept.
+* Options › Better Building Menu has Reset the build menu…: after asking, it puts the options, the menu's width and height and each menu's View and Group back to how they ship. The buildings you have placed are kept.
 * While Replace the vanilla build menu is off, the other options are greyed out and say why.
 * With a controller, the game's own build menu shows. Move the mouse and this menu comes back, on the same menu.
 * The menu's tabs sit along its bottom edge, next to the toolbar: All with the menu's icon, then each tab's icon over its count. The counts follow your filters and your search, and a tab they empty stays in its place.
@@ -82,11 +82,19 @@ Changes
 * Education's school levels are named chips beside the Education tab.
 * A menu opens on the tab of the building you last picked from it, with that building at the top of the list. With nothing picked, it opens on its first tab, and Education on its first school level. Opening a menu clears the search.
 * Picking a sort, or clicking the tab that is already lit, takes the list back to its top. Going back to that building's tab brings it back to the top.
-* While you type in the search box, Up and Down change the building Enter places, and Page Up and Page Down scroll the list. Esc closes an open list, then clears the search, then closes the menu.
+* While you type in the search box, Up and Down change the building Enter places, marked ↵ in the list, and Page Up and Page Down scroll the list. Esc closes an open list, then clears the search, then closes the menu.
 * The search box lets go of the arrow keys after Enter, picking a building or closing the menu, so they move the camera again. It shows an outline while you are typing in it.
 * On a wider menu, each tab shows its name beside its icon when they all fit.
 * A small mark under the menu points to its toolbar button.
 * The menu follows the game's Interface style and Interface transparency.
+* Each menu remembers its own View: List, Tiles or Cards. Options › Default view sets what each menu draws until you pick its View; it starts at Auto. Auto draws a list for most menus and tiles for zones and prop catalogues. Grid is now Tiles, Table is now List.
+* If you used an earlier version, Default view starts at your View: Grid as Tiles, Table as List.
+* List puts each building on a plate with its picture, name and cost, 20 a screen, more columns when wider. Above 100% text, Options › At large text picks More buildings or Whole names.
+* Tiles shows pictures with their cost, and names the one you point at. Options › Tile size is set to 64, once; a size you pick after that stays.
+* On the tiles, a cost too wide for its tile shows in thousands or millions, and under a sort by a number the tag shows that number.
+* The list and tiles say Locked for a building held back by something other than a milestone, and MS n only while the city has not reached it. Unique and already-built buildings keep their marks.
+* Each menu remembers its Group, and its Sort until you quit.
+* Typing searches the whole menu, best match first, and Sort reads Match. Clearing it brings back your tab and sort.
 
 Fixed
 * A list that stops at 2,000 buildings says so, and how to narrow it.

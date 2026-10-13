@@ -70,10 +70,19 @@ On a developed save:
      clears the search, and a second Esc closes the menu; after Enter the arrow keys move the camera;
    - at a wider Width a menu with a few tabs names each one, and the mark under the menu sits under
      its toolbar button;
+   - Roads and a service menu draw the list, 20 plates in the game's own size, each with its picture,
+     name and cost; Zones draws the tiles, 20 pictures with their cost; a wider Width adds columns;
+   - type in Roads: the list ranks every tab's matches as one, the best first, and Sort reads Match;
+     clear it: the tab and the sort come back;
+   - a locked building says MS n while the city has not reached it, else Locked; a unique and an
+     already-built building keep their marks; at a small Tile size a long cost shows as k or m, and
+     under a sort by a number the tile's tag shows that number;
    - every menu opens at the same width, the stored Width step.
 4. **Views.** Open Sort, Filter, Group and View in turn and pick from each: one list at a
-   time, and a click elsewhere closes it. Switch through Cards, List, Grid and Table in View,
-   pick a Width there, drag the top edge, and drag the right edge: it settles on a width. At
+   time, and a click elsewhere closes it. Pick List, Tiles and Cards in View: the menu keeps
+   its pick, with a dot, and another menu keeps its own; Default view takes it away. Pick a
+   Group: the next open of that menu keeps it, another menu does not. Pick a Width in View,
+   drag the top edge, and drag the right edge: it settles on a width. At
    the wider Widths, the tool options sit left of the menu with none of their buttons under it.
 5. **Place.** Arm an asset from a tile and place it. Escape closes the asset menu. Arm a
    terraforming brush from Landscaping: the menu stays, and answers a search.
@@ -82,7 +91,7 @@ On a developed save:
    same Sort, Filter, Group and View, and View › More options… opens this page.
    With Replace the vanilla build menu off, every other row is greyed out and
    says why. Reset the build menu… asks first, then puts the options, the
-   width, the height and the view back.
+   width, the height and each menu's View and Group back.
 7. **An upgrader.** Start from a settings file 0.2.4 wrote, with the pane shown in
    it: the pane stays shown, and the menu opens at the Width step nearest the
    width it had.
