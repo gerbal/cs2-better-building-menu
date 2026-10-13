@@ -25,7 +25,7 @@ export type KeyKind = "speed" | "capacity" | "workers" | "lot" | "";
 /** The glyph a key number draws beside it, for the unit the readout names once. */
 export type UnitGlyph = "gauge" | "person" | "case" | "grid";
 
-/** A key number: its digits, and its glyph; null for a figure that says its own unit, a scaled one. */
+/** A key number: its digits, and its glyph; null for a figure that says its own unit, a measured one. */
 export interface KeyFigure {
   text: string;
   glyph: UnitGlyph | null;
@@ -33,9 +33,14 @@ export interface KeyFigure {
 
 const known = (text: string): string | null => (text === "" || text === METRIC_NO_DATA ? null : text);
 
+/** Whether a row's money is a network's, which a body says per cell; a building's is whole. */
+export function isPerCell(entry: BuildingCatalogEntry): boolean {
+  return entry.costIsPerDistance;
+}
+
 /** A cost in the game's own template, "Free" for none, a network's per cell; null where it is not known. */
 export function costText(entry: BuildingCatalogEntry, separators: NumberSeparators): string | null {
-  if (entry.costIsPerDistance && typeof entry.constructionCost === "number" && Number.isFinite(entry.constructionCost)) {
+  if (isPerCell(entry) && typeof entry.constructionCost === "number" && Number.isFinite(entry.constructionCost)) {
     return formatCostPerCell(entry.constructionCost, separators);
   }
   return known(formatBuildingMetric(entry.constructionCost, "cost", separators, entry.costIsPerDistance));
@@ -44,6 +49,13 @@ export function costText(entry: BuildingCatalogEntry, separators: NumberSeparato
 /** A capacity with its unit, where the building has one above 0. */
 export function capacityText(entry: BuildingCatalogEntry, value: number | null | undefined, separators: NumberSeparators): string | null {
   return typeof value === "number" && value > 0 ? known(formatCapacity(value, entry.category, entry.subCategory, entry.buildingType, separators)) : null;
+}
+
+/** An upkeep in the game's monthly template, a network's per kilometre, where the building has one that is not 0. */
+export function upkeepText(entry: BuildingCatalogEntry, separators: NumberSeparators): string | null {
+  return typeof entry.upkeep === "number" && entry.upkeep !== 0
+    ? known(formatBuildingMetric(entry.upkeep, "upkeep", separators, entry.costIsPerDistance))
+    : null;
 }
 
 /** A lot as its two sides, where the building has both. */

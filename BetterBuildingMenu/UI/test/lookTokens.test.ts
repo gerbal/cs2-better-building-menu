@@ -120,11 +120,11 @@ describe("the looks' tokens", () => {
     }
   });
 
-  it("draw a list plate's unit glyph in its number's ink, dim on a built plate and the armed ink on the armed", () => {
+  it("draw a list plate's unit glyph in the glyph ink, dim on a built plate and the armed ink on the armed, as its number", () => {
     const list = "mods/Bodies/listBody.module.scss";
     const ink = (selector: string, prop: string) => declarationsOf(list, selector)[prop];
 
-    assert.equal(ink(".unitGlyph", "background-color"), ink(".second", "color"));
+    assert.equal(ink(".unitGlyph", "background-color"), "var(--bbm-tGlyph)");
     assert.equal(ink(".built .unitGlyph", "background-color"), ink(".built .second", "color"));
     assert.equal(ink(".armed .unitGlyph", "background-color"), ink(".armed .second", "color"));
   });

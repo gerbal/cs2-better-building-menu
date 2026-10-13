@@ -1150,15 +1150,17 @@ building its milestone ("MS 4", by the list's rule, `lockedFact`) or the locked 
 amber, which reads on the tag because the tag stays dark under every interface style. Under a sort by a
 value other than the cost or the lot the tag says the value sorted by, as 0.2.x's Grid did, so a re-sort
 says why the tiles moved. A money figure the tag cannot hold whole at the text scale is said in
-thousands or millions with one decimal, in the game's own money template ("¢1.2M", "¢1.3k/mo"): a cut
+thousands or millions with one decimal, in the game's own template for a total ("¢1.2M"): a cut
 figure reads as another number, a rounded one as itself. Where that is still too wide, as large text
 makes it on the smallest tile, the figure shortens a step at a time before the tag cuts anything: to no
-decimal, then the next unit up ("¢1M"), then a monthly bill without the month the Sort control already
-says (`compactMoneyForms`): a rounder figure, never one cut in its unit. A rate keeps its unit in every
-form, a road's cost per cell ("¢44/c") and its upkeep per kilometre, since a rate read bare reads as a
-total. A sorted value whose unit does not fit beside it
-keeps its whole number and drops the unit ("1 000", not "1 000 stu…"), which the Sort control names;
-a tag never shows a cut word. The fit is judged from the glyph advances of the
+decimal, then the next unit up ("¢1M") (`compactMoneyForms`). A tag drops a unit only where every tile
+beside it shares it, and keeps every unit that tells tiles apart: under a sort by upkeep every bill is
+monthly, so a building's reads without its month ("¢4,612", "¢16.5k"); a network's cost and upkeep read
+per cell ("¢44/c", "¢36.9/c"), the cell telling a network's figure from a building's whole one. A road's
+cost or upkeep and a building's bill fit the smallest tile at every text scale; only a mod's road dearer
+than ten thousand a cell outruns the tag at 150%, where the stylesheet cuts it. A sorted value whose unit
+does not fit beside it keeps its whole number and drops the unit ("1 000", not "1 000 stu…"), which the
+Sort control names, unless the unit scales with its size (see "Numbers said once"). The fit is judged from the glyph advances of the
 game's own fonts, the wider of Overpass and Noto Sans per character, so it errs toward the short form;
 anything else too wide is bounded to the tile and cut with an ellipsis. The advances are the one table
 the cards are sized from (`textWidth`, see "The cards"), so every letter of a unit counts its own
@@ -1305,7 +1307,7 @@ cost, the capacity, the lot, the value sorted by, and the key number. A list pla
 the view's key number, its digits beside a glyph for the unit the readout names once: a gauge for a
 speed, a person for a capacity that counts people or things, a case for workers, a grid for a lot.
 The glyph is BBM's own picture drawn as a mask, in a box of its own beside the number, never inside a
-run of text, in the number's ink. A capacity that is a measure (power, weight, water, data) says its
+run of text, in the glyph ink, a step behind the number's digits. A capacity that is a measure (power, weight, water, data) says its
 own unit and draws no glyph, and the lot is left out where the name already says it ("Parking Lot
 1x3"). Under a sort by a number the second is the value sorted by, with its unit, as Sort names the
 kind. A unit that scales with its size (kW or MW, t or kt) is never dropped: where a tile's tag is
@@ -1316,10 +1318,8 @@ functions.
 A network's cost is said per cell (`formatCostPerCell`): the index carries a kilometre's worth, 125
 cells, and a row divides it back, "¢44/c", short enough to leave a road's name the room for two whole
 lines, and the same in miles. The hover card keeps the per-kilometre figure the game's own panels
-state. A rate never drops its unit, the cell included: a tile's tag short of room shortens the number
-as it shortens a total ("¢10k/c" past ten thousand a cell) and keeps the rate, and a per-kilometre
-rate's short forms close the space the game's template puts before "/km". A rate read bare reads as a
-total.
+state. A tile's tag short of room shortens the number as it shortens a total and keeps the cell
+("¢10k/c" past ten thousand a cell), and under a sort by upkeep says a road's monthly bill per cell too.
 
 **This changes 0.2.x:** a list row said its capacity with its unit word ("400 patients"); it now says
 the view's key number, a road its speed, by the glyph for its unit. A road's cost read per kilometre

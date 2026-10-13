@@ -305,9 +305,13 @@ export function formatCostPerCell(perKilometre: number, separators: NumberSepara
   return applyMoneyTemplate(money.plain, groupDigits(Math.round(perKilometre / NET_CELLS_PER_KILOMETRE), separators)) + PER_CELL_SUFFIX;
 }
 
-/** A network's cost per cell in its short forms, as compactMoneyForms says a total, each keeping its cell: a rate read bare reads as a total. */
+/**
+ * A network's money figure per cell, its cost or its monthly upkeep, from its per-kilometre figure, in
+ * its short forms as compactMoneyForms says a total, each keeping its cell: the cell tells a network's
+ * figure from a building's whole one.
+ */
 export function compactCostPerCellForms(perKilometre: number, separators: NumberSeparators = FALLBACK_SEPARATORS): string[] {
-  return compactMoneyForms(perKilometre / NET_CELLS_PER_KILOMETRE, "cost", separators).map((form) => form + PER_CELL_SUFFIX);
+  return compactMoneyForms(perKilometre / NET_CELLS_PER_KILOMETRE, separators).map((form) => form + PER_CELL_SUFFIX);
 }
 
 /**
@@ -379,9 +383,6 @@ export function formatBuildingMetric(
   }
 }
 
-/** The space a template puts before a rate's unit, " /km", which a short form closes. */
-const RATE_UNIT_SPACE = /\s+\//gu;
-
 /** The units a money figure is said in, each a thousand of the one before. */
 const COMPACT_UNITS: readonly { unit: number; suffix: string }[] = [
   { unit: 1, suffix: "" },
@@ -403,28 +404,20 @@ function fixedDigits(value: number, decimals: number, separators: NumberSeparato
 /**
  * A money figure's short forms, the most exact first, for a place too narrow for every digit: in
  * thousands or millions to one decimal, to none, then in the next unit up to the fewest decimals
- * that are not zero; each in the game's template ("¢16.5k/km"). A monthly bill's then come without
- * the month, which that place says otherwise; a rate's never come without its unit, since a rate
- * read bare reads as a total, and close the space the game's template puts before it. Rounded rather
- * than cut, since a cut figure reads as another number.
+ * that are not zero, in the game's template for a total ("¢16.5k"). Rounded rather than cut, since a
+ * cut figure reads as another number. Any unit the place says is the caller's to add.
  */
-export function compactMoneyForms(
-  value: number,
-  metric: "cost" | "upkeep",
-  separators: NumberSeparators = FALLBACK_SEPARATORS,
-  perDistance: boolean = false,
-): string[] {
-  const scaled = perUnitDistance(value, true, separators, perDistance);
-  const own = ownUnit(scaled);
+export function compactMoneyForms(value: number, separators: NumberSeparators = FALLBACK_SEPARATORS): string[] {
+  const own = ownUnit(value);
   const figures: string[] = [];
   const add = (figure: string) => {
     if (!figures.includes(figure)) figures.push(figure);
   };
-  const at = (index: number, decimals: number) => fixedDigits(scaled / COMPACT_UNITS[index].unit, decimals, separators);
+  const at = (index: number, decimals: number) => fixedDigits(value / COMPACT_UNITS[index].unit, decimals, separators);
 
   add(at(own, 1) + COMPACT_UNITS[own].suffix);
   // A thousand of a unit is the next unit's to say.
-  if (own === COMPACT_UNITS.length - 1 || Math.abs(Math.round(scaled / COMPACT_UNITS[own].unit)) < 1_000) {
+  if (own === COMPACT_UNITS.length - 1 || Math.abs(Math.round(value / COMPACT_UNITS[own].unit)) < 1_000) {
     add(at(own, 0) + COMPACT_UNITS[own].suffix);
   }
   if (own < COMPACT_UNITS.length - 1) {
@@ -432,16 +425,8 @@ export function compactMoneyForms(
     if (decimals !== undefined) add(at(own + 1, decimals) + COMPACT_UNITS[own + 1].suffix);
   }
 
-  const templates = perDistance ? [moneyTemplate(metric, separators, true)] : [moneyTemplate(metric, separators, false), moneyTemplate("cost", separators, false)];
-  const forms: string[] = [];
-  for (const template of templates) {
-    for (const figure of figures) {
-      const applied = applyMoneyTemplate(template, figure);
-      const form = perDistance ? applied.replace(RATE_UNIT_SPACE, "/") : applied;
-      if (!forms.includes(form)) forms.push(form);
-    }
-  }
-  return forms;
+  const plain = (separators.money ?? FALLBACK_MONEY).plain;
+  return figures.map((figure) => applyMoneyTemplate(plain, figure));
 }
 
 /**

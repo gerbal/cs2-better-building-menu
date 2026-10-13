@@ -160,10 +160,10 @@
   color: var(--bbm-armNum);
 }
 
-// A sibling of the number, in the number's ink.
+// A sibling of the number, in the glyph ink, a step behind the number's digits.
 .unitGlyph {
   @include _base.mask-glyph(9rem);
-  background-color: var(--bbm-tNum2);
+  background-color: var(--bbm-tGlyph);
 }
 
 .armed .unitGlyph {
