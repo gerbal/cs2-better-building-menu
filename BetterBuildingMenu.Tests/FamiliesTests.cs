@@ -36,6 +36,8 @@ namespace BetterBuildingMenu.Tests
 		[InlineData("Flag B", "Flag", "B")]
 		[InlineData("BeachRaft01", "BeachRaft", "01")]
 		[InlineData("Beach Raft02b", "Beach Raft", "02b")]
+		[InlineData("Mk-2", "Mk", "2")]
+		[InlineData("Street-lamp-01", "Street-lamp", "01")]
 		public void AVariantTokenIsANumberWithALetterALetterOrASize(string name, string stem, string token)
 		{
 			Assert.True(Families.TrySplit(name, out var split, out var word));
@@ -48,6 +50,8 @@ namespace BetterBuildingMenu.Tests
 		[InlineData("Stadium Light 70ft")]
 		[InlineData("05")]
 		[InlineData("GTZBench")]
+		[InlineData("Boulder \u0661\u0662")]
+		[InlineData("Raft\u0661\u0662")]
 		[InlineData("")]
 		[InlineData(null)]
 		public void ANameEndingInNoTokenOrAllTokenSplitsNot(string? name)
@@ -76,6 +80,28 @@ namespace BetterBuildingMenu.Tests
 
 			Assert.Equal("01", first.FamilyToken);
 			Assert.Equal("Cairn", first.FamilyKey);
+		}
+
+		[Fact]
+		public void RowsFoldedAwayAsLockedStillCountTowardAFamily()
+		{
+			// Two of the three Cairns, and the Alley, are locked: folded away, they leave the window but not the count.
+			var rows = new[] { Row(1, "Cairn 01"), Row(2, "Cairn 02") with { IsLocked = true }, Row(3, "Cairn 03") with { IsLocked = true }, Row(4, "Alley") with { IsLocked = true } };
+
+			var page = BuildingCatalogQueryEngine.Query(rows, new BuildingCatalogQuery(UiMenu: "Landscaping", UiCategory: "PropsNature", LockedCollapsed: true));
+			var shown = Assert.Single(page.Items);
+
+			Assert.Equal(1, shown.Id);
+			Assert.Equal(("01", "Cairn"), (shown.FamilyToken, shown.FamilyKey));
+		}
+
+		[Fact]
+		public void ANullRowAndANullListAreNoFamilyAndNoError()
+		{
+			var rows = new[] { Row(1, "Cairn 01"), null!, Row(2, "Cairn 02"), Row(3, "Cairn 03") };
+
+			Assert.Equal(3, Families.Of(rows).Count);
+			Assert.Empty(Families.Of(null!));
 		}
 
 		[Fact]

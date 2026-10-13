@@ -18,7 +18,7 @@ export interface MenuBody {
   view: BodyKind;
   /** What it draws now: its view, or a typed search's. */
   drawn: BodyKind;
-  /** Whether the icons draw each name under its picture: the developer's pick, for the timed check. */
+  /** Whether the icons draw each name under its picture: the menu's own pick of the icons with names, developer mode only. */
   named: boolean;
 }
 

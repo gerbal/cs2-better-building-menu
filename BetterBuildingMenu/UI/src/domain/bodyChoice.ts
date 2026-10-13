@@ -13,8 +13,8 @@ export type BodyKind = (typeof BODY_KINDS)[number];
 export const VIEW_ROWS: readonly BodyKind[] = BODY_KINDS;
 
 /**
- * The icons with each name under its picture: a menu's pick C# hands over only in developer mode, for
- * the timed check against the icons, which draws the icons body.
+ * The icons with each name under its picture: a menu's pick C# hands over only in developer mode. It
+ * draws the icons body, each name planned under its picture.
  */
 export const ICONS_NAMED = "iconsNamed";
 

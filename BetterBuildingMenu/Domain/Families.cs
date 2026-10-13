@@ -10,8 +10,8 @@ namespace BetterBuildingMenu.Domain
 	/// <remarks>
 	/// A variant token is a number with an optional letter ("05", "2b"), a single letter ("B"), or a size
 	/// ("2x", "1x1"), as the name's last word or as digits closing it ("BeachRaft01"). Over the whole
-	/// view, beside <see cref="DistinctWords"/>: the UI sees a window, and a family runs past it. One
-	/// pass and no sort. See docs/design-notes.md, "Names".
+	/// view, beside <see cref="DistinctWords"/>: the UI sees a window, and a family runs past it. It sorts
+	/// nothing: one loop over the rows, one over the stems. See docs/design-notes.md, "Names".
 	/// </remarks>
 	public static class Families
 	{
@@ -21,10 +21,10 @@ namespace BetterBuildingMenu.Domain
 		/// <summary>A family member's own word, which its pill says, and its family's key, which a later grouping reads.</summary>
 		public readonly record struct Member(string Token, string Key);
 
-		private static readonly Regex Token = new Regex(@"^(\d+[A-Za-z]?|[A-Za-z]|\d+[xX]\d*)$", RegexOptions.CultureInvariant);
+		private static readonly Regex Token = new Regex(@"^([0-9]+[A-Za-z]?|[A-Za-z]|[0-9]+[xX][0-9]*)$", RegexOptions.CultureInvariant);
 
-		/// <summary>Digits, with an optional letter, closing a word that starts with a letter.</summary>
-		private static readonly Regex Closing = new Regex(@"^(\p{L}[^\d]*)(\d+[A-Za-z]?)$", RegexOptions.CultureInvariant);
+		/// <summary>Digits, with an optional letter, closing a word that starts with a letter; its stem ends on a letter, not on the mark before the digits.</summary>
+		private static readonly Regex Closing = new Regex(@"^(\p{L}(?:[^0-9]*\p{L})?)[^0-9\p{L}]*([0-9]+[A-Za-z]?)$", RegexOptions.CultureInvariant);
 
 		/// <summary>Each family member by its id; a row in no family has none.</summary>
 		public static IReadOnlyDictionary<int, Member> Of(IReadOnlyList<BuildingCatalogEntry> rows)
