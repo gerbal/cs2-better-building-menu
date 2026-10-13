@@ -230,6 +230,15 @@ facet and every range applied. `CatalogView` answers all of them from two sets.
   every row answers to a tab the menu declares: a row filed under no tab, or under one the menu does
   not declare, counts in All and in no tab.
 
+**A tab splits into its branches only when they are its own.** A service tab whose rows sit on two
+or more development-tree branches draws them in its place, each counting and listing its rows (a
+branch's click picks the branch across the menu). That holds only while no other tab's rows sit on
+any of those branches: the game files a train station on the subway's node under Train, and a split
+Train would draw a second "Subway" tab counting that station alone beside the Subway tab, and its
+click would list both tabs' subway rows. So `ExpandedCategoryId` passes over a tab with a shared
+branch, which then draws whole, as the game draws it, and every row of the menu is in exactly one
+cell: the cells add up to All.
+
 C# sends a count for each tab the row draws, in the menu's order (`menuCategories`), rather than for
 every tab the menu declares: 0 then means "emptied by the filters", and no count "never filled".
 

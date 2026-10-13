@@ -64,6 +64,26 @@ namespace BetterBuildingMenu.Tests
 			Entry(43, "Cemetery", "ServiceBuildings", "Health", "HealthcareDeathcare") with { DevTreeBranch = "Deathcare" },
 		};
 
+		private static readonly string[] HealthTabs = { "HealthcareHealthcare", "HealthcareDeathcare" };
+
+		/// <summary>
+		/// Three tabs, the second holding two development branches, one of which is also the third
+		/// tab's: the game files a station on the subway's node under Train.
+		/// </summary>
+		private static readonly BuildingCatalogEntry[] Transport =
+		{
+			Entry(71, "Bus Depot", "ServiceBuildings", "Transportation", "TransportationBus") with { DevTreeBranch = "Bus" },
+			Entry(72, "Bus Station", "ServiceBuildings", "Transportation", "TransportationBus") with { DevTreeBranch = "Bus" },
+			Entry(73, "Train Depot", "ServiceBuildings", "Transportation", "TransportationTrain") with { DevTreeBranch = "Train" },
+			Entry(74, "Train Station", "ServiceBuildings", "Transportation", "TransportationTrain") with { DevTreeBranch = "Train" },
+			Entry(75, "Cargo Station", "ServiceBuildings", "Transportation", "TransportationTrain") with { DevTreeBranch = "Train", IsLocked = true },
+			Entry(76, "Train-Subway Hub", "ServiceBuildings", "Transportation", "TransportationTrain") with { DevTreeBranch = "Subway", DevTreeBranchDepth = 1 },
+			Entry(77, "Subway Depot", "ServiceBuildings", "Transportation", "TransportationSubway") with { DevTreeBranch = "Subway", DevTreeBranchDepth = 1 },
+			Entry(78, "Subway Station", "ServiceBuildings", "Transportation", "TransportationSubway") with { DevTreeBranch = "Subway", DevTreeBranchDepth = 1, IsLocked = true },
+		};
+
+		private static readonly string[] TransportTabs = { "TransportationBus", "TransportationTrain", "TransportationSubway" };
+
 		/// <summary>Several menus, unscoped: zones in two densities, a service in two branches, and a road.</summary>
 		private static readonly BuildingCatalogEntry[] Everything =
 		{
@@ -179,6 +199,55 @@ namespace BetterBuildingMenu.Tests
 
 				Assert.Equal(view.AllCount, view.MenuCategoryCounts.Sum(count => count.Count));
 			}
+		}
+
+		public static IEnumerable<object[]> MenusWithABranchedTab()
+		{
+			foreach (var locked in new[] { false, true })
+			{
+				yield return new object[] { "Health", locked };
+				yield return new object[] { "Transportation", locked };
+			}
+		}
+
+		[Theory]
+		[MemberData(nameof(MenusWithABranchedTab))]
+		public void EveryRowIsInOneCellOfTheRowAndEachCellCountsWhatItsClickLists(string menu, bool locked)
+		{
+			var (entries, tabs) = menu == "Health" ? (Health, HealthTabs) : (Transport, TransportTabs);
+			var shown = AssetMenuState.Initial.SelectMenu(menu);
+			var query = locked ? shown.Query with { Availability = new[] { Locked } } : shown.Query;
+			var view = new CatalogView(entries, query, menuCategories: tabs);
+			var listed = new List<int>();
+
+			// The row as the UI draws it: a split tab's branches in its place, every other tab itself.
+			foreach (var count in view.MenuCategoryCounts)
+			{
+				var branches = view.ExpandedCategories.SingleOrDefault(category => category.CategoryId == count.Id)?.Tabs;
+				var cells = branches is { Length: > 1 }
+					? branches.Select(branch => (branch.Count, Click: (shown with { Query = query }).SelectStripTab(branch.Id)))
+					: new[] { (count.Count, Click: (shown with { Query = query }).SelectCategory(count.Id)) };
+
+				foreach (var (drawn, click) in cells)
+				{
+					var rows = new CatalogView(entries, click.Query, menuCategories: tabs).Page.Items.Select(entry => entry.Id).ToArray();
+					Assert.Equal(drawn, rows.Length);
+					listed.AddRange(rows);
+				}
+			}
+
+			// No row in two cells, and none in no cell: no two cells count one set, and they add up to All.
+			Assert.Equal(view.AllCount, listed.Count);
+			Assert.Equal(listed.Count, listed.Distinct().Count());
+		}
+
+		[Fact]
+		public void ATabSplitsOnlyIntoBranchesNoOtherTabShares()
+		{
+			// Train's subway station would draw a second Subway tab, counting one row of the Subway
+			// tab's three: Train stays one tab, as the game draws it. Health's branches are its own.
+			Assert.Equal(string.Empty, new CatalogView(Transport, new BuildingCatalogQuery(UiMenu: "Transportation"), menuCategories: TransportTabs).ExpandedCategoryId);
+			Assert.Equal("HealthcareHealthcare", new CatalogView(Health, new BuildingCatalogQuery(UiMenu: "Health"), menuCategories: HealthTabs).ExpandedCategoryId);
 		}
 
 		[Theory]
