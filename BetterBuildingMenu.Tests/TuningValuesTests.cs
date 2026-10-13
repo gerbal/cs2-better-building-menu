@@ -111,6 +111,19 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void ASaidOnceShareMovedInOptionsRedrawsTheOpenMenuAtOnce()
+		{
+			// The share is counted in C#, so the UI cannot redraw for it: the open menu is refreshed when it moves.
+			var system = ModSource.Text("Systems/BuildingMenuUISystem.cs");
+			var applied = ModSource.Member(system, "private void OnSettingsApplied(");
+
+			Assert.Contains("_appliedSaidOnceAt = CurrentSaidOnceAt();", system);
+			Assert.Contains("if (saidOnceAt != _appliedSaidOnceAt)", applied);
+			Assert.Contains("if (_assetMenuOpen)", applied);
+			Assert.Contains("RefreshBuildingCatalog();", applied);
+		}
+
+		[Fact]
 		public void TheUisFallbackForEachBodyKnobIsWhatShips()
 		{
 			// The UI draws the shipped knobs until C# answers, so the two must agree.

@@ -68,6 +68,10 @@ namespace BetterBuildingMenu.Domain
 		/// <remarks>What Load more counts against, so it never offers folded rows; the total still counts them. See docs/design-notes.md, "Label plates".</remarks>
 		public int VisibleCount { get; init; } = TotalCount;
 
+		/// <summary>The values said once over the whole view, and the kind each row's second number shows.</summary>
+		/// <remarks>Over the whole result, as the sections are. See ViewFacts.</remarks>
+		public ViewFacts Facts { get; init; } = ViewFacts.None;
+
 		public void Write(IJsonWriter writer)
 		{
 			writer.TypeBegin(GetType().FullName);
@@ -124,6 +128,8 @@ namespace BetterBuildingMenu.Domain
 				section.Write(writer);
 			}
 			writer.ArrayEnd();
+			writer.PropertyName("facts");
+			Facts.Write(writer);
 			if (Status is not null)
 			{
 				writer.PropertyName("status");

@@ -141,6 +141,19 @@ export interface CatalogSection {
   collapsed: boolean;
 }
 
+/** A value the readout says once: its kind, and the value, or for a lot its width with its depth. */
+export interface SharedValue {
+  kind: "speed" | "capacity" | "workers" | "lot" | "cost";
+  value: number;
+  depth: number;
+}
+
+/** What the page says of its whole view: the values said once, and the kind each row's second number shows, "" for none. */
+export interface ViewFacts {
+  sharedValues: SharedValue[];
+  keyKind: "speed" | "capacity" | "workers" | "lot" | "";
+}
+
 export interface BuildingCatalogPage {
   items: BuildingCatalogEntry[];
   totalCount: number;
@@ -172,6 +185,9 @@ export interface BuildingCatalogPage {
 
   /** The labels over the whole result, each with its true count; none where the result draws none. */
   sections?: CatalogSection[];
+
+  /** The view's facts, over the whole result: the values said once, and the key kind. */
+  facts?: ViewFacts;
 
   /** How many rows that can be placed Enter's target sits past the best match: Up and Down move it, C# stops it at the list's ends. */
   enterStep?: number;

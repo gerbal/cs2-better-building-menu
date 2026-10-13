@@ -151,6 +151,8 @@ namespace BetterBuildingMenu.Services
 				Sections: sections)
 			{
 				VisibleCount = visible.Length,
+				// Over every match, the folded rows' too: a fold hides rows, it does not change the view.
+				Facts = ViewFacts.Of(matching, query.SaidOnceAt, !string.IsNullOrWhiteSpace(query.SearchText), query.EffectiveSortColumn),
 			};
 		}
 

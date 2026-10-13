@@ -101,6 +101,8 @@ namespace BetterBuildingMenu.Systems
 		private ValueBindingHelper<string> _AssetMenuAtLargeText = null!;
 		// The developer knobs the UI reads, resolved: a stored value counts only in developer mode.
 		private ValueBindingHelper<TuningValues> _AssetMenuTuning = null!;
+		// The Said once at share as Options last applied it: a change redraws the open menu, as only C# counts it.
+		private int _appliedSaidOnceAt;
 		private ValueBindingHelper<string> _CurrentSearch = null!;
 		private ValueBindingHelper<BuildingCatalogPage> _BuildingCatalogBinding = null!;
 		/// <summary>
@@ -219,6 +221,7 @@ namespace BetterBuildingMenu.Systems
 			// The open menu's own VIEW, from the VIEW list; "" goes back to Default view.
 			CreateTrigger<string>("SetAssetMenuView", SetAssetMenuView);
 			_AssetMenuTuning = CreateBinding("AssetMenuTuning", CurrentTuning());
+			_appliedSaidOnceAt = CurrentSaidOnceAt();
 			// Only now, with every binding OnSettingsApplied re-pushes created.
 			Mod.Settings.onSettingsApplied += OnSettingsApplied;
 			_CurrentSearch = CreateBinding("CurrentSearch", string.Empty);
@@ -430,6 +433,17 @@ namespace BetterBuildingMenu.Systems
 				_appliedMenuFrame = null;
 				ReleaseMenuScope();
 				YieldMenuToVanilla();
+			}
+
+			// A share moved in Options changes what the open menu says once, so it redraws now.
+			var saidOnceAt = CurrentSaidOnceAt();
+			if (saidOnceAt != _appliedSaidOnceAt)
+			{
+				_appliedSaidOnceAt = saidOnceAt;
+				if (_assetMenuOpen)
+				{
+					RefreshBuildingCatalog();
+				}
 			}
 		}
 

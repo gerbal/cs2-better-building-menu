@@ -1283,6 +1283,22 @@ its buildable rows now come first. 0.2.x's List and Grid drew a heading over eac
 of a group; the list and the tiles now label the outer groups only, in a slot of the body, and a tab's
 tiers keep their order without a label.
 
+## Numbers said once
+
+A page carries its view's facts (`ViewFacts`), counted over the whole result, the tab or All with the
+filters, or a search's result, since the UI only ever sees a window of it:
+
+- **The key kind,** the number each row shows second: capacity where half the view's rows carry one,
+  else the first of speed, workers and lot that half carry, else none. Each tab, All and each search
+  result has its own.
+- **The shared values.** For speed (in whole km/h), capacity, workers, the lot (its two sides) and the
+  cost, the value the Said once at share of the view's unlocked rows hold, two thirds as it ships,
+  counted as the game rounds a percentage (half to even), and held by three rows at least: a statement
+  in the readout costs more than two numbers. Locked rows count on neither side, as their slot says why
+  they wait. None while a search is typed, whose rows each print their own, and none for the kind the
+  list is sorted by, whose order every row's value explains. Only C# counts the share, so moving Said
+  once at in Options redraws the open menu at once.
+
 ## The search field's keys
 
 The game masks its keyboard while a text field has focus, so while the search field has focus the
