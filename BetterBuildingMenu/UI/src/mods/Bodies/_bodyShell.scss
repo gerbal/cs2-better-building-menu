@@ -31,6 +31,27 @@
   }
 }
 
+// A cell a body places by its slot: its corners and its fill the look's, its place and size set inline.
+// Longhands: Cohtml drops a shorthand fed by var().
+@mixin cell-face($radius, $fill) {
+  position: absolute;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-top-left-radius: $radius;
+  border-top-right-radius: $radius;
+  border-bottom-left-radius: $radius;
+  border-bottom-right-radius: $radius;
+  background-color: $fill;
+  pointer-events: auto;
+}
+
+// A cell that can be pressed, on the item class a body gives: lit under the pointer.
+@mixin cell-lit($item) {
+  #{$item}:hover {
+    background-color: var(--bbm-plateHover);
+  }
+}
+
 // 0.2.x's unique-mark states, on the item class a body gives: a unique shows its mark faintly under the
 // pointer, a unique the city holds always.
 @mixin unique-mark-states($item) {

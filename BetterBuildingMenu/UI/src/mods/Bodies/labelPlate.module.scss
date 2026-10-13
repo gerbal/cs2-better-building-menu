@@ -1,0 +1,55 @@
+@use "../../base.scss" as _base;
+@use "bodyShell" as *;
+
+// A label plate in a body: a group's name or Locked, then its count, in a slot or a line of its own.
+// See docs/design-notes.md, "Label plates".
+
+.label {
+  @include cell-face(var(--bbm-radiusItem), var(--bbm-labBg));
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4rem;
+  padding: 0 6rem;
+  font-size: calc(10rem * var(--fontScale));
+  line-height: calc(12rem * var(--fontScale));
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.4rem;
+}
+
+// On the body, which an interface style can turn light: body inks that follow it. A name too long for
+// its plate is cut on its one line, its count kept whole.
+.labelText {
+  flex: 1 1 auto;
+  min-width: 0;
+  @include _base.truncate;
+  color: var(--bbm-bodyWord);
+}
+
+.labelCount {
+  flex: 0 0 auto;
+  color: var(--bbm-bodyChipDim);
+}
+
+// The locked rows' label says Locked in the milestone's ink, as their plates say "MS n", and lights
+// under the pointer as a plate does, since a press folds them.
+.lockedLabel .labelText {
+  color: var(--bbm-bodyMilestone);
+}
+
+@include cell-lit(".lockedLabel");
+
+// In a tile's square: the name over the count, the name on as many lines as it takes.
+.stacked {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0 4rem;
+
+  .labelText {
+    flex: 0 1 auto;
+    white-space: normal;
+  }
+}

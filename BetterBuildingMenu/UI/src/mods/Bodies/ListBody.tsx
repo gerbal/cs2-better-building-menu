@@ -8,22 +8,26 @@ import { memo, type ReactNode } from "react";
 import enterMark from "images/enter.svg";
 import type { NumberSeparators } from "domain/assetMenuMetricFormat";
 import type { AssetMenuMetric } from "domain/assetMenuLayout";
-import { slotPosition, slotsHeight, type BodyGrid } from "domain/bodyGeometry";
-import type { BuildingCatalogEntry } from "domain/buildingCatalog";
+import { NO_SECTIONS } from "domain/bodyCells";
+import { labelPlace, slotPosition, slotsHeight, type BodyGrid } from "domain/bodyGeometry";
+import type { BuildingCatalogEntry, CatalogSection } from "domain/buildingCatalog";
 import { entryStateWord, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { oneNumber, plateNumbers } from "domain/listPlate";
 import { sortedMetricFor } from "domain/sortedMetric";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { ActivePrefabId$, BuildingCatalogSortColumn$ } from "mods/bindings";
 import { BuildingHoverCard, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
+import { LabelPlate } from "./LabelPlate";
 import styles from "./listBody.module.scss";
 import { UniqueMark } from "./UniqueMark";
+import { useBodyCells } from "./useBodyCells";
 import { useNumberSeparators, useStateWords, type StateWords } from "./useBodyWords";
 
 interface PlateProps {
   entry: BuildingCatalogEntry;
   grid: BodyGrid;
-  index: number;
+  /** The slot the plate sits in, which the labels before it push on. */
+  slot: number;
   armed: boolean;
   enter: boolean;
   sortedMetric: AssetMenuMetric | null;
@@ -39,12 +43,12 @@ interface PlateProps {
  * Enter's target. The live check and the render tests count what a body shows through the data-bbm
  * markers.
  */
-const Plate = memo(function Plate({ entry, grid, index, armed, enter, sortedMetric, separators, stateWords, achievedMilestone, hoverCard, onPlace }: PlateProps) {
+const Plate = memo(function Plate({ entry, grid, slot, armed, enter, sortedMetric, separators, stateWords, achievedMilestone, hoverCard, onPlace }: PlateProps) {
   const name = entry.name || entry.prefabName;
   const both = plateNumbers(entry, sortedMetric, separators, stateWords.locked, achievedMilestone);
   // A one-line plate is one number tall: two would be cut at its top and foot.
   const numbers = grid.form === "plate1" ? oneNumber(both, sortedMetric) : both;
-  const { left, top } = slotPosition(grid, index);
+  const { left, top } = slotPosition(grid, slot);
   const word = entryStateWord(entry, stateWords.locked, stateWords.built);
   const locked = isEntryLocked(entry);
   const built = isEntryAlreadyBuilt(entry);
@@ -96,6 +100,10 @@ const Plate = memo(function Plate({ entry, grid, index, armed, enter, sortedMetr
 export interface ListBodyProps {
   entries: BuildingCatalogEntry[];
   grid: BodyGrid;
+  /** The labels over the result, counted over the whole of it; none by default. */
+  sections?: readonly CatalogSection[];
+  /** Where the window starts in the result's order, which the sections' starts count from. */
+  offset?: number;
   /** Enter's target, while the page answers the query in the box; null otherwise. */
   enterId: number | null;
   onPlace: (entry: BuildingCatalogEntry) => void;
@@ -104,11 +112,11 @@ export interface ListBodyProps {
 }
 
 /**
- * The list: each building on a plate, placed from its slot index, in the page's order. The game's
- * Scrollable draws the track at the box's right edge, inside its margin. See docs/design-notes.md,
- * "The bodies".
+ * The list: each building on a plate, placed from its slot index, in the page's order, with the label
+ * plates over its groups and its locked rows in slots of their own. The game's Scrollable draws the track
+ * at the box's right edge, inside its margin. See docs/design-notes.md, "The bodies".
  */
-export const ListBody = memo(function ListBody({ entries, grid, enterId, onPlace, footer }: ListBodyProps) {
+export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SECTIONS, offset = 0, enterId, onPlace, footer }: ListBodyProps) {
   const separators = useNumberSeparators();
   const stateWords = useStateWords();
   const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
@@ -116,19 +124,22 @@ export const ListBody = memo(function ListBody({ entries, grid, enterId, onPlace
   const hoverCard = useHoverCardContext();
   // "MS n" only for a milestone ahead of the city: past it, only the development tree holds a building back.
   const achievedMilestone = useValue(milestone.achievedMilestone$) ?? 0;
+  const { cells, slots } = useBodyCells(entries, sections, offset, grid.cols);
 
   return (
     <div className={styles.body} data-bbm-view="list">
       <Scrollable className={styles.scroller} vertical trackVisibility="scrollable">
-        <div className={styles.slots} style={{ height: `${slotsHeight(grid, entries.length)}rem` }}>
-          {entries.map((entry, index) => (
+        <div className={styles.slots} style={{ height: `${slotsHeight(grid, slots)}rem` }}>
+          {cells.map((cell) => cell.kind === "label" ? (
+            <LabelPlate key={cell.section.id} section={cell.section} place={labelPlace(grid, cell.slot, cell.span)} stacked={false} />
+          ) : (
             <Plate
-              key={entry.id}
-              entry={entry}
+              key={cell.entry.id}
+              entry={cell.entry}
               grid={grid}
-              index={index}
-              armed={entry.id === armedId}
-              enter={entry.id === enterId}
+              slot={cell.slot}
+              armed={cell.entry.id === armedId}
+              enter={cell.entry.id === enterId}
               sortedMetric={sortedMetric}
               separators={separators}
               stateWords={stateWords}

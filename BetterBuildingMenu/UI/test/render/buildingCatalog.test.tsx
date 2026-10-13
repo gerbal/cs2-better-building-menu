@@ -101,6 +101,22 @@ describe("the catalog container", () => {
     assert.match(render(), /class="empty"/);
   });
 
+  it("draws the Locked label, not the empty line, for a tab whose rows are all locked and folded away", () => {
+    showBody("list");
+    page({ items: [], totalCount: 5, visibleCount: 0, sections: [{ id: "locked", kind: "locked", label: "", labelId: "", start: 0, count: 5, collapsed: true }] });
+    const html = render();
+
+    assert.match(html, /data-bbm-label="locked"/);
+    assert.doesNotMatch(html, /class="empty"/);
+  });
+
+  it("offers to load only the rows a fold leaves, never the folded ones", () => {
+    showBody("list");
+    page({ hasMore: true, totalCount: 403, visibleCount: 52 });
+
+    assert.match(render(), /Load 50 more/);
+  });
+
   it("says the menu is still being indexed while no row has come", () => {
     showBody("list");
     page({ items: [], totalCount: 0, status: "indexing" });

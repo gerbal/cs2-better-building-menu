@@ -7,27 +7,16 @@
 @include body-shell;
 
 .plate {
-  position: absolute;
+  @include cell-face(var(--bbm-radiusItem), var(--bbm-plate));
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 3rem;
   padding: 0 4rem 0 1rem;
-  box-sizing: border-box;
-  overflow: hidden;
-  // Longhands: Cohtml drops a shorthand fed by var().
-  border-top-left-radius: var(--bbm-radiusItem);
-  border-top-right-radius: var(--bbm-radiusItem);
-  border-bottom-left-radius: var(--bbm-radiusItem);
-  border-bottom-right-radius: var(--bbm-radiusItem);
-  background-color: var(--bbm-plate);
   color: var(--bbm-tName);
-  pointer-events: auto;
 }
 
-.plate:hover {
-  background-color: var(--bbm-plateHover);
-}
+@include cell-lit(".plate");
 
 // A building that cannot be placed, locked or a unique the city holds: its own plate, which a pointer
 // does not light as it lights one that places.

@@ -129,6 +129,8 @@ $standard-follow: (
   plateHover: var(--menuPanel3),
   tile: var(--menuPanel1),
   tileLocked: var(--menuPanel2),
+  // The label plates, whose inks are body inks that follow the style with them.
+  labBg: var(--menuPanel2),
   icon: var(--menuPanel1),
   iconAlt: var(--menuPanel2),
   iconAlt2: var(--menuPanel2),

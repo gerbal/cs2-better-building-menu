@@ -44,6 +44,10 @@ export const moveEnterTargetCommand = (direction: 1 | -1): TriggerCommand => cre
 export const setCatalogScreenCommand = (slots: number): TriggerCommand =>
   createTriggerCommand("SetCatalogScreen", Number.isFinite(slots) ? Math.max(0, Math.floor(slots)) : 0);
 
+// A press on the Locked label: the locked rows leave the window, or come back. C# collapses only those.
+export const setSectionCollapsedCommand = (id: string, collapsed: boolean): TriggerCommand =>
+  createTriggerCommand("SetCatalogSectionCollapsed", id, collapsed);
+
 /** Whether a sort's first click puts the highest first, which C# says per sort (SortDefaults). */
 const startsDescending = (column: SortColumn): boolean =>
   (SORT_FIRST_DESCENDING as readonly string[]).includes(column);

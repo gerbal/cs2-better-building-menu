@@ -1044,8 +1044,9 @@ their arithmetic are gone, and with them `flattenGroupedRows`, which laid the ta
 as lines with their counts (the unused-export guard allows no export without a caller). Grid's drawing
 (`BuildingGrid`) is gone too, the tiles drawing in its place, and with it `stripRedundantNamePrefix`,
 which told look-alike names apart on Grid's tiles by dropping the theme and category words a name
-repeats. The bodies' label plates and name planner derive what each did again; until then the tiles'
-name line tells look-alikes apart.
+repeats. The label plates derive the first again from the page's sections (`bodyCells`, see "Label
+plates"); the name planner will derive the second, and until then the tiles' name line tells
+look-alikes apart.
 
 **Slots.** The list and the tiles place each building from its index alone (`bodyGrid`,
 `slotPosition`): left to right, then down, a cell and a 2 rem gap apart, inside the box less 8 rem
@@ -1089,8 +1090,8 @@ one mixin (`_bodyShell.scss`), as the locked and already-built words and the dig
 one hook each (`useStateWords`, `useNumberSeparators`), for every body that places its buildings in
 slots.
 
-**Labels wait.** The list and the tiles draw no group names and no "Locked N" yet; their order still
-follows the grouping.
+**Labels.** The list and the tiles draw a label plate in a slot of its own before each section's
+first building: the groups' names in All, and "Locked N" in a half-locked tab (see "Label plates").
 
 **Markers.** The live check and the render tests count what a body shows through these markers:
 `data-bbm-view` on the visible region, and on each building `data-bbm-item`, with `data-bbm-pic`,
@@ -1161,8 +1162,33 @@ are collapsed). Two kinds:
   folded, the page's `VisibleCount` is its total less the locked rows: the window, Load more and
   Enter's target count over it, and `TotalCount` still counts every row.
 
+**The plates.** The list and the tiles place their cells with `bodyCells`, from the page's sections
+rather than the window's own headings (`bodyOrder` is the one interleave): a label goes in the slot
+before its section's first row once the window has reached that row, and every building after it moves
+a slot on. A section's start counts from the result's first row, so it is read less the page's offset.
+After the window's last row only a collapsed section's label is drawn, which is all a fold leaves; a
+group whose first row the window has not reached waits for it, so no label sits above Load more with
+nothing under it. A tab whose rows are all locked and folded draws its Locked label alone, never the
+empty line. A plate says the group's name, in the game's words where the game has one
+(`resolveVanillaLabel`, from the section's label id), or the locked word, in caps at 10 rem, cut on
+its one line where it runs past the plate, then the count. It sits on the label plate's fill (`labBg`),
+which follows an interface style, in body inks that follow it too (`bodyWord`, `bodyChipDim`; Locked in
+`bodyMilestone`, the ink of "MS n"). In the tiles it takes a tile's square, its name over its count. The
+Locked plate is a button that lights under the pointer as a plate does: a press collapses the locked
+rows, another brings them back. The plate reads its words and digit separators itself, so every body
+draws it from its section and its place alone (`LabelPlate`, `labelPlace`); the cells and the Block
+labels knob are one hook (`useBodyCells`). A label is no building: it carries `data-bbm-label`, never
+`data-bbm-item`.
+
+- **Inline, one slot,** as it ships: a list of four across and five down loses one building a screen
+  per label, never a line. The Block labels knob's other value, own line, starts each label on a fresh
+  line and gives it the whole line, so no line holds two blocks, at the cost of the slots it leaves
+  empty.
+
 **This changes 0.2.x:** a half-locked tab listed its rows in the game's order, locked among buildable;
-its buildable rows now come first.
+its buildable rows now come first. 0.2.x's List and Grid drew a heading over each group and each tier
+of a group; the list and the tiles now label the outer groups only, in a slot of the body, and a tab's
+tiers keep their order without a label.
 
 ## The search field's keys
 

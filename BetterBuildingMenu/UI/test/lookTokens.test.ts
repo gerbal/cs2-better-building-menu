@@ -46,16 +46,18 @@ const PATTERN: Readonly<Record<Kind, RegExp>> = {
   filter: /^(?:none|var\(--panelBlur\))$/,
 };
 
-/** The surface each ink sits on, as the frame draws it. */
-const INK_ON: Readonly<Record<string, string>> = {
-  tName: "plate", tCost: "plate", tNum2: "plate", tGlyph: "plate", tLocked: "plateLocked", thumb: "track",
-  tWord: "head", tState: "head", tStateSet: "head", tDim: "head", tRead1: "head", tRead2: "head",
-  tabCount: "head", tabIcon: "head", amber: "head", tQuery: "fieldBg",
-  armText: "arm", armNum: "arm", pillText: "pillBg", tagText: "tagBg",
-  bodyChipText: "bodyChipBg", bodyChipDim: "bodyChipBg", bodyWord: "bodyChipBg",
-  bodyCtlText: "bodyCtl", bodyCtlDim: "bodyCtl", bodyLabel: "body",
-  bodyMilestone: "plateLocked", bodyEntMark: "plate",
-};
+/** Each ink and a surface it sits on, as the frame draws them: an ink can sit on more than one. */
+const INK_ON: readonly (readonly [ink: string, surface: string])[] = [
+  ["tName", "plate"], ["tCost", "plate"], ["tNum2", "plate"], ["tGlyph", "plate"], ["tLocked", "plateLocked"], ["thumb", "track"],
+  ["tWord", "head"], ["tState", "head"], ["tStateSet", "head"], ["tDim", "head"], ["tRead1", "head"], ["tRead2", "head"],
+  ["tabCount", "head"], ["tabIcon", "head"], ["amber", "head"], ["tQuery", "fieldBg"],
+  ["armText", "arm"], ["armNum", "arm"], ["pillText", "pillBg"], ["tagText", "tagBg"],
+  ["bodyChipText", "bodyChipBg"], ["bodyChipDim", "bodyChipBg"], ["bodyWord", "bodyChipBg"],
+  ["bodyCtlText", "bodyCtl"], ["bodyCtlDim", "bodyCtl"], ["bodyLabel", "body"],
+  ["bodyMilestone", "plateLocked"], ["bodyEntMark", "plate"],
+  // The label plates: a group's name, its count, and Locked.
+  ["bodyWord", "labBg"], ["bodyChipDim", "labBg"], ["bodyMilestone", "labBg"],
+];
 
 /** A surface an interface style can turn light: Bright blue makes these pale. */
 const turnsLight = (value: string): boolean => /--panelColorNormal|--menuPanel/.test(value);
@@ -83,7 +85,7 @@ describe("the looks' tokens", () => {
     for (const selector of [STANDARD, ...FOLLOW]) {
       const map = tokens(selector);
 
-      for (const [ink, surface] of Object.entries(INK_ON)) {
+      for (const [ink, surface] of INK_ON) {
         const where = `${selector}: ${ink} on ${surface}`;
         if (turnsLight(map[surface])) assert.ok(styleInk(map[ink]), where);
         else assert.ok(!/--menuText1Normal|--menuText2Normal/.test(map[ink]), where);
@@ -114,6 +116,16 @@ describe("the looks' tokens", () => {
       assert.equal(tokens(selector).bodyMilestone, "var(--menuText1Normal)", selector);
       assert.equal(tokens(selector).bodyEntMark, "var(--menuText1Normal)", selector);
     }
+  });
+
+  it("draw the label plates in body inks on a plate that follows the style, Locked in the milestone's ink", () => {
+    const labels = "mods/Bodies/labelPlate.module.scss";
+
+    assert.equal(declarationsOf(labels, ".label")["background-color"], "var(--bbm-labBg)");
+    assert.equal(declarationsOf(labels, ".labelText").color, "var(--bbm-bodyWord)");
+    assert.equal(declarationsOf(labels, ".labelCount").color, "var(--bbm-bodyChipDim)");
+    assert.equal(declarationsOf(labels, ".lockedLabel .labelText").color, "var(--bbm-bodyMilestone)");
+    for (const selector of FOLLOW) assert.equal(tokens(selector).labBg, "var(--menuPanel2)", selector);
   });
 
   it("draw the tiles' milestone in the look's amber on the tag, whose dark ground no style turns light", () => {

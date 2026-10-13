@@ -1,10 +1,12 @@
 import assert from "node:assert/strict";
-import { beforeEach, describe, it } from "node:test";
+import { afterEach, beforeEach, describe, it } from "node:test";
+import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { declarationsOf } from "../harness/compiledCss";
 import { count, entry, renderHtml } from "../harness/render";
-import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
+import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
+import { resetTranslations, setTranslation } from "../harness/stubs/cs2-l10n";
 import { bodyGrid, PLATE1_HEIGHT, type BodyGridInput } from "../../src/domain/bodyGeometry";
-import type { BuildingCatalogEntry } from "../../src/domain/buildingCatalog";
+import type { BuildingCatalogEntry, CatalogSection } from "../../src/domain/buildingCatalog";
 import { ListBody } from "../../src/mods/Bodies/ListBody";
 
 const grid = (over: Partial<BodyGridInput> = {}) => bodyGrid({
@@ -12,8 +14,15 @@ const grid = (over: Partial<BodyGridInput> = {}) => bodyGrid({
 });
 const rows = (n: number, over: (id: number) => Partial<BuildingCatalogEntry> = () => ({})) =>
   Array.from({ length: n }, (_, at) => entry(at + 1, over(at + 1)));
-const render = (entries: BuildingCatalogEntry[], options: { enterId?: number | null; over?: Partial<BodyGridInput> } = {}) =>
-  renderHtml(<ListBody entries={entries} grid={grid(options.over)} enterId={options.enterId ?? null} onPlace={() => undefined} footer={<div className="loadMoreRow" />} />);
+const body = (entries: BuildingCatalogEntry[], options: { enterId?: number | null; over?: Partial<BodyGridInput>; sections?: CatalogSection[] } = {}) =>
+  <ListBody entries={entries} grid={grid(options.over)} sections={options.sections} enterId={options.enterId ?? null} onPlace={() => undefined} footer={<div className="loadMoreRow" />} />;
+const render = (entries: BuildingCatalogEntry[], options: { enterId?: number | null; over?: Partial<BodyGridInput>; sections?: CatalogSection[] } = {}) =>
+  renderHtml(body(entries, options));
+const group = (start: number, label: string, count: number, labelId = ""): CatalogSection =>
+  ({ id: `group:${start}`, kind: "group", label, labelId, start, count, collapsed: false });
+const locked = (start: number, count: number, collapsed = false): CatalogSection =>
+  ({ id: "locked", kind: "locked", label: "", labelId: "", start, count, collapsed });
+const LABELS = "mods/Bodies/labelPlate.module.scss";
 
 describe("the list", () => {
   beforeEach(() => resetBindings());
@@ -152,5 +161,82 @@ describe("the list", () => {
 
   it("draws no title, which Cohtml never shows", () => {
     assert.doesNotMatch(render(rows(2)), / title="/);
+  });
+
+  it("draws each group's label plate in a slot of its own, with its true count, and the buildings after it a slot on", () => {
+    const html = render(rows(3), { sections: [group(0, "Small Roads", 66), group(2, "Medium Roads", 34)] });
+
+    assert.match(html, /<div class="label" style="left:0rem;top:0rem;width:171rem;height:27\.25rem" data-bbm-label="group"><span class="labelText">Small Roads<\/span><span class="labelCount">66<\/span><\/div>/);
+    assert.match(html, /left:173rem;top:0rem;width:171rem;height:27\.25rem[^>]*data-catalog-entry="1"/);
+    assert.match(html, /left:519rem;top:0rem[^>]*data-bbm-label="group"><span class="labelText">Medium Roads/);
+    assert.match(html, /left:0rem;top:29\.25rem[^>]*data-catalog-entry="3"/);
+    // A label is no building: the live check counts buildings only.
+    assert.equal(count(html, /data-bbm-item="true"/), 3);
+  });
+
+  it("says a group's name in the game's words where the game has them, and the name C# sends where it has none", () => {
+    setTranslation("SubServices.NAME[RoadsSmallRoads]", "Petites routes\n");
+    try {
+      const html = render(rows(2), { sections: [group(0, "Small Roads", 1, "RoadsSmallRoads"), group(1, "Medium Roads", 1, "RoadsMediumRoads")] });
+
+      assert.match(html, /<span class="labelText">Petites routes<\/span>/);
+      assert.match(html, /<span class="labelText">Medium Roads<\/span>/);
+      assert.doesNotMatch(html, />Small Roads</);
+    } finally {
+      resetTranslations();
+    }
+  });
+
+  it("cuts a long name on one line with an ellipsis, its count kept whole beside it", () => {
+    const text = declarationsOf(LABELS, ".labelText");
+
+    assert.equal(text["text-overflow"], "ellipsis");
+    assert.equal(text["white-space"], "nowrap");
+    assert.equal(text.overflow, "hidden");
+    assert.equal(text["min-width"], "0");
+    assert.equal(declarationsOf(LABELS, ".labelCount").flex, "0 0 auto");
+  });
+
+  it("says Locked and the locked rows' count on a plate that can be pressed, in the milestone's ink", () => {
+    // The window has reached the locked rows: the label sits before the first of them.
+    const html = render(rows(3), { sections: [locked(2, 77)] });
+
+    assert.match(html, /<button class="label lockedLabel" style="left:346rem;top:0rem;width:171rem;height:27\.25rem" data-has-select="true" aria-expanded="true" data-bbm-label="locked"><span class="labelText">Locked<\/span><span class="labelCount">77<\/span><\/button>/);
+    assert.match(render(rows(2), { sections: [locked(2, 77, true)] }), /aria-expanded="false"/);
+    // The milestone's ink, as a locked plate's "MS n" says it, on the label plate, which a pointer lights.
+    assert.equal(declarationsOf(LABELS, ".lockedLabel .labelText").color, "var(--bbm-bodyMilestone)");
+    assert.equal(declarationsOf(LABELS, ".lockedLabel:hover")["background-color"], "var(--bbm-plateHover)");
+  });
+
+  it("gives a label the whole line under the Block labels knob's own line, the buildings starting the next", () => {
+    setBinding("BetterBuildingMenu", "AssetMenuTuning", { developerMode: true, interfaceStyles: true, tabNames: true, blockLabels: "ownLine" });
+    const html = render(rows(2), { sections: [group(0, "Small Roads", 1), group(1, "Medium Roads", 1)] });
+
+    assert.match(html, /class="label" style="left:0rem;top:0rem;width:690rem;height:27\.25rem"/);
+    assert.match(html, /left:0rem;top:29\.25rem[^>]*data-catalog-entry="1"/);
+    assert.match(html, /class="label" style="left:0rem;top:58\.5rem;width:690rem/);
+    assert.match(html, /left:0rem;top:87\.75rem[^>]*data-catalog-entry="2"/);
+  });
+});
+
+describe("the list's Locked label under a press", () => {
+  let root: ReactTestRenderer | undefined;
+
+  beforeEach(() => resetBindings());
+  afterEach(() => {
+    act(() => root?.unmount());
+    root = undefined;
+  });
+
+  it("collapses the locked rows, and a press on a collapsed label opens them", () => {
+    act(() => { root = create(body(rows(3), { sections: [locked(2, 77)] })); });
+    act(() => root!.root.find((node) => node.props["data-bbm-label"] === "locked" && typeof node.props.onSelect === "function").props.onSelect());
+
+    assert.deepEqual(triggers.at(-1), { group: "BetterBuildingMenu", name: "SetCatalogSectionCollapsed", args: ["locked", true] });
+
+    act(() => root!.update(body(rows(2), { sections: [locked(2, 77, true)] })));
+    act(() => root!.root.find((node) => node.props["data-bbm-label"] === "locked" && typeof node.props.onSelect === "function").props.onSelect());
+
+    assert.deepEqual(triggers.at(-1), { group: "BetterBuildingMenu", name: "SetCatalogSectionCollapsed", args: ["locked", false] });
   });
 });

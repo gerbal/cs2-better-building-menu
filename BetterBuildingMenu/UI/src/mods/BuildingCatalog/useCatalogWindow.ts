@@ -1,6 +1,7 @@
 import { useValue } from "cs2/api";
 import { useCallback, useEffect, useRef, type RefObject } from "react";
-import type { BuildingCatalogEntry } from "domain/buildingCatalog";
+import type { BuildingCatalogEntry, CatalogSection } from "domain/buildingCatalog";
+import { NO_SECTIONS } from "domain/bodyCells";
 import { loadMoreCatalogCommand } from "domain/buildingCatalogContracts";
 import { getAssetMenuListStart } from "domain/assetMenuViewStore";
 import { CATALOG_WINDOW_STEP, nextWindowLimit, shouldLoadMore } from "domain/catalogWindow";
@@ -21,6 +22,8 @@ const LOAD_MORE_POLL_MS = 100;
 export interface CatalogWindow {
   items: BuildingCatalogEntry[];
   totalCount: number;
+  /** The rows the window can reach, which Load more counts against; see BuildingCatalogPage. */
+  visibleCount: number;
   offset: number;
   limit: number;
   status: BuildingCatalogPageStatus;
@@ -38,6 +41,8 @@ export interface CatalogWindow {
   anchorIndex: number;
   /** Which start of the list this page answers, or null before C# sends one. */
   listStart: number | null;
+  /** The labels over the whole result; see BuildingCatalogPage. */
+  sections: readonly CatalogSection[];
   loadMore(): void;
 }
 
@@ -53,6 +58,7 @@ export function useCatalogWindow(
   const page = useValue(BuildingCatalog$);
   const items = page?.items ?? [];
   const totalCount = page?.totalCount ?? 0;
+  const visibleCount = page?.visibleCount ?? totalCount;
   const offset = page?.offset ?? 0;
   const limit = page?.limit ?? 100;
   const status: BuildingCatalogPageStatus = page?.status
@@ -65,6 +71,7 @@ export function useCatalogWindow(
   const anchorId = page?.anchorId ?? 0;
   const anchorIndex = page?.anchorIndex ?? -1;
   const listStart = page?.listStart ?? null;
+  const sections = page?.sections ?? NO_SECTIONS;
 
   /**
    * Asks the backend for the next chunk, by the limit wanted rather than "one
@@ -75,8 +82,8 @@ export function useCatalogWindow(
       return;
     }
 
-    send(loadMoreCatalogCommand(nextWindowLimit(limit, CATALOG_WINDOW_STEP, totalCount)));
-  }, [hasMore, limit, totalCount]);
+    send(loadMoreCatalogCommand(nextWindowLimit(limit, CATALOG_WINDOW_STEP, visibleCount)));
+  }, [hasMore, limit, visibleCount]);
 
   // The poll below outlives the render it started in; through the ref it always
   // asks from the page on screen, not the one it started under.
@@ -141,5 +148,5 @@ export function useCatalogWindow(
     };
   }, [rootRef, hasMore, items.length, scope.viewMode, scope.groupBy]);
 
-  return { items, totalCount, offset, limit, status, hasMore, capped, bestMatchId, searchText, enterStep, anchorId, anchorIndex, listStart, loadMore };
+  return { items, totalCount, visibleCount, offset, limit, status, hasMore, capped, bestMatchId, searchText, enterStep, anchorId, anchorIndex, listStart, sections, loadMore };
 }

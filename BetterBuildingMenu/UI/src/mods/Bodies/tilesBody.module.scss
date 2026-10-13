@@ -23,22 +23,11 @@
 
 // Vanilla's glass, the picture inset 2 on every side.
 .tile {
-  position: absolute;
+  @include cell-face(var(--bbm-radiusTile), var(--bbm-tile));
   padding: 2rem;
-  box-sizing: border-box;
-  overflow: hidden;
-  // Longhands: Cohtml drops a shorthand fed by var().
-  border-top-left-radius: var(--bbm-radiusTile);
-  border-top-right-radius: var(--bbm-radiusTile);
-  border-bottom-left-radius: var(--bbm-radiusTile);
-  border-bottom-right-radius: var(--bbm-radiusTile);
-  background-color: var(--bbm-tile);
-  pointer-events: auto;
 }
 
-.tile:hover {
-  background-color: var(--bbm-plateHover);
-}
+@include cell-lit(".tile");
 
 // A building that cannot be placed, locked or a unique the city holds.
 .unplaceable,

@@ -152,6 +152,13 @@ export function slotPosition(grid: BodyGrid, index: number): { left: number; top
   };
 }
 
+/** Where a label plate sits and how big it is: its slot, or across this many slots of its line. */
+export function labelPlace(grid: BodyGrid, slot: number, span: number): { left: number; top: number; width: number; height: number } {
+  const { left, top } = slotPosition(grid, slot);
+
+  return { left, top, width: span <= 1 ? grid.cellWidth : span * grid.pitchX - SLOT_GAP, height: grid.cellHeight };
+}
+
 /** The slots' height for this many buildings: the scroller's whole content. */
 export function slotsHeight(grid: BodyGrid, count: number): number {
   return count <= 0 ? 0 : grid.y0 + Math.ceil(count / grid.cols) * grid.pitchY - SLOT_GAP;

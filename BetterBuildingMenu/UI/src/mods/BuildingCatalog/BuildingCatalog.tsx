@@ -55,7 +55,7 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
   // The root every DOM measurement below is scoped to. The hooks find the
   // rows and the scroller beneath it and never look above it.
   const rootRef = useRef<HTMLDivElement>(null);
-  const { items, totalCount, status, hasMore, capped, bestMatchId, searchText: pageSearch, enterStep, anchorId, anchorIndex, listStart, loadMore } = useCatalogWindow(rootRef, { viewMode: body, groupBy });
+  const { items, totalCount, visibleCount, offset, status, hasMore, capped, bestMatchId, searchText: pageSearch, enterStep, anchorId, anchorIndex, listStart, sections, loadMore } = useCatalogWindow(rootRef, { viewMode: body, groupBy });
   const facets = useValue(AssetMenuFacets$);
   const metricRanges = useValue(BuildingCatalogMetricRanges$);
   const matchesElsewhere = useValue(BuildingCatalogMatchesElsewhere$);
@@ -201,7 +201,8 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
    * the readout cannot: Load more while the window can grow, and at the
    * ceiling, how to narrow the list instead.
    */
-  const remaining = catalogWindowRemaining({ shown: items.length, total: totalCount });
+  // Against the rows the window can reach: a fold's rows are the label's, never Load more's.
+  const remaining = catalogWindowRemaining({ shown: items.length, total: visibleCount });
   const separators = useMemo(() => getNumberSeparators(translate), [translate]);
   // Memoised with what it shows, so the views it is handed to can skip a render.
   const catalogFooter = useMemo(() => {
@@ -237,7 +238,8 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
           accident, and silence there reads as a broken asset menu. */}
       {status === "indexing" && items.length === 0
         ? <div className={styles.empty}>{translate("Tooltip.LABEL[BetterBuildingMenu.IndexingBuildings]", "Indexing buildings…")}</div>
-        : items.length === 0
+        // A tab whose rows are all locked and folded away draws its Locked label, never "nothing here".
+        : items.length === 0 && sections.length === 0
           ? (scopeNotice
               // The notice above already says the set is empty AND what to do
               // about it; a second line would say it twice and contradict it.
@@ -245,8 +247,8 @@ export const BuildingCatalogComponent = memo(function BuildingCatalogComponent()
               : <div className={styles.empty}>{emptyStateMessage}</div>)
           : grid !== null
             ? (grid.form === "tile"
-                ? <TilesBody entries={items} grid={grid} onPlace={activate} footer={catalogFooter} />
-                : <ListBody entries={items} grid={grid} enterId={enterId} onPlace={activate} footer={catalogFooter} />)
+                ? <TilesBody entries={items} grid={grid} sections={sections} offset={offset} onPlace={activate} footer={catalogFooter} />
+                : <ListBody entries={items} grid={grid} sections={sections} offset={offset} enterId={enterId} onPlace={activate} footer={catalogFooter} />)
             : <GroupedResults entries={items} onPlace={activate} footer={catalogFooter} />}
     </div>
   );

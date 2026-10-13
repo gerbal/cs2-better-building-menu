@@ -293,6 +293,8 @@ namespace BetterBuildingMenu.Systems
 			CreateTrigger<int>("MoveEnterTarget", MoveEnterTarget);
 			// How many buildings one screen of the drawn body holds, so the window reaches past it.
 			CreateTrigger<int>("SetCatalogScreen", SetCatalogScreen);
+			// A press on the Locked label: a half-locked tab's locked rows leave the window, or come back.
+			CreateTrigger<string, bool>("SetCatalogSectionCollapsed", SetCatalogSectionCollapsed);
 				CreateTrigger<string, string, string>("SetBuildingCatalogMetricRange", SetBuildingCatalogMetricRange);
 				CreateTrigger("ClearBuildingCatalogMetricRanges", ClearBuildingCatalogMetricRanges);
 				CreateTrigger<string, string>("ToggleAssetMenuFacet", ToggleAssetMenuFacet);

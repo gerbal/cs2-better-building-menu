@@ -4,7 +4,7 @@ import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { count, entry, renderHtml } from "../harness/render";
 import { resetBindings, setBinding } from "../harness/stubs/cs2-api";
 import { bodyGrid, type BodyGridInput } from "../../src/domain/bodyGeometry";
-import type { BuildingCatalogEntry } from "../../src/domain/buildingCatalog";
+import type { BuildingCatalogEntry, CatalogSection } from "../../src/domain/buildingCatalog";
 import { TilesBody } from "../../src/mods/Bodies/TilesBody";
 import { GroupedResults } from "../../src/mods/GroupedResults/GroupedResults";
 
@@ -128,6 +128,18 @@ describe("the tiles", () => {
 
   it("draw no title, which Cohtml never shows", () => {
     assert.doesNotMatch(render(rows(2)), / title="/);
+  });
+
+  it("draw a group's label in a tile's slot, its name over its count, and the tiles after it a slot on", () => {
+    const sections: CatalogSection[] = [
+      { id: "group:0", kind: "group", label: "Residential", labelId: "", start: 0, count: 62, collapsed: false },
+      { id: "group:1", kind: "group", label: "Commercial", labelId: "", start: 1, count: 20, collapsed: false },
+    ];
+    const html = renderHtml(<TilesBody entries={rows(2)} grid={grid()} sections={sections} onPlace={() => undefined} />);
+
+    assert.match(html, /<div class="label stacked" style="left:16rem;top:0rem;width:64rem;height:64rem" data-bbm-label="group"><span class="labelText">Residential<\/span><span class="labelCount">62<\/span><\/div>/);
+    assert.match(html, /left:82rem;top:0rem;width:64rem;height:64rem[^>]*data-catalog-entry="1"/);
+    assert.match(html, /left:148rem;top:0rem[^>]*data-bbm-label="group"/);
   });
 });
 

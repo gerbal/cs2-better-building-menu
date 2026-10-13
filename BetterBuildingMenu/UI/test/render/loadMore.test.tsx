@@ -42,4 +42,16 @@ describe("Load more", () => {
     const requests = triggers.filter((call) => call.name === "LoadMoreBuildingCatalog").map((call) => call.args);
     assert.deepEqual(requests, [[400], [400]]);
   });
+
+  it("asks for no more than the rows a fold leaves", () => {
+    showBody("list");
+    setBinding("BetterBuildingMenu", "BuildingCatalog", catalogPage([entry(1), entry(2)], { hasMore: true, totalCount: 403, visibleCount: 150, limit: 100 }));
+    act(() => {
+      root = create(<BuildingCatalogComponent />);
+    });
+
+    act(() => root!.root.find((node) => node.props.className === "loadMore" && typeof node.props.onSelect === "function").props.onSelect());
+
+    assert.deepEqual(triggers.filter((call) => call.name === "LoadMoreBuildingCatalog").at(-1)?.args, [150]);
+  });
 });

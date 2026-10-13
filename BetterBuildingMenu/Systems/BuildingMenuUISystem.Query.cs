@@ -155,6 +155,9 @@ namespace BetterBuildingMenu.Systems
 			_assetMenu = next;
 		}
 
+		/// <summary>A press on the Locked label: the locked rows leave the window, or come back, the list staying where it is.</summary>
+		private void SetCatalogSectionCollapsed(string id, bool collapsed) => Apply(_assetMenu.CollapseSection(id, collapsed));
+
 		/// <summary>Up or Down in the search field: Enter's target a row that can be placed further down, or up.</summary>
 		private void MoveEnterTarget(int direction) => Apply(_assetMenu.MoveEnterTarget(direction));
 

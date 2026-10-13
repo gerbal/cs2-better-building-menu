@@ -122,9 +122,30 @@ export interface BuildingCatalogEntry {
   groupLabelId?: string;
 }
 
+/**
+ * A label over a run of the result, counted over the whole of it: a group's name, or a half-locked
+ * tab's locked rows, which a press collapses. See CatalogSection.cs.
+ */
+export interface CatalogSection {
+  id: string;
+  kind: "group" | "locked";
+  /** A group's heading; empty for the locked rows, which the body names. */
+  label: string;
+  /** The game's id behind a group's heading, so it can be said in the game's language; "" for none. */
+  labelId: string;
+  /** Where its first row sits in the result's order, counted from the result's first row. */
+  start: number;
+  /** How many rows it holds, collapsed or not. */
+  count: number;
+  /** Whether its rows are left out of the window, its label alone showing. */
+  collapsed: boolean;
+}
+
 export interface BuildingCatalogPage {
   items: BuildingCatalogEntry[];
   totalCount: number;
+  /** The rows the window can reach: the total less any rows a fold leaves out. Load more counts against it. */
+  visibleCount?: number;
   offset: number;
   limit: number;
   /**
@@ -148,6 +169,9 @@ export interface BuildingCatalogPage {
 
   /** Which start of the list this page answers: it moves on an open, a tab pick and a sort. */
   listStart?: number;
+
+  /** The labels over the whole result, each with its true count; none where the result draws none. */
+  sections?: CatalogSection[];
 
   /** How many rows that can be placed Enter's target sits past the best match: Up and Down move it, C# stops it at the list's ends. */
   enterStep?: number;
