@@ -559,3 +559,72 @@ describe("the asset menu's open list and Escape", () => {
     assert.equal(root!.root.findAll((node) => node.props["data-bbm-popover"] === "true").length, 0);
   });
 });
+
+describe("the game's slot as the box measures it", () => {
+  const globals = globalThis as unknown as Record<string, unknown>;
+  let saved: { document: unknown; window: unknown };
+  let frames: Array<() => void> = [];
+  let root: ReactTestRenderer | undefined;
+  // Where the slot the row sits in starts, in pixels: 1 px per rem on a 1920 × 1080 screen.
+  let slotLeftPx = 608;
+  const rowLeft = () =>
+    String(root!.root.find((node) => String(node.props.className ?? "").split(" ")[0] === "assetMenuRow").props.style.left);
+  const runFrames = () => {
+    for (let pass = 0; pass < 40 && frames.length > 0; pass++) act(() => frames.splice(0).forEach((callback) => callback()));
+  };
+  const mount = () => act(() => {
+    root = create(<AssetMenu onClose={() => {}} />, {
+      createNodeMock: (element) =>
+        String(element.props.className ?? "").split(" ")[0] === "assetMenuRow"
+          ? { parentElement: { getBoundingClientRect: () => ({ left: slotLeftPx, width: 704 }) } }
+          : null,
+    });
+  });
+
+  beforeEach(() => {
+    resetBindings();
+    resetAssetMenuView();
+    saved = { document: globals.document, window: globals.window };
+    globals.document = { addEventListener: () => undefined, removeEventListener: () => undefined, querySelector: () => null };
+    globals.window = { innerWidth: 1920, innerHeight: 1080 };
+    frames = [];
+    slotLeftPx = 608;
+    globals.requestAnimationFrame = (callback: () => void) => frames.push(callback);
+    globals.cancelAnimationFrame = () => undefined;
+  });
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    root = undefined;
+    globals.document = saved.document;
+    globals.window = saved.window;
+  });
+
+  it("places the box from the slot it reads, over the 712 that stands for it before the first layout", () => {
+    // Step 3 ends 6 rem short of the chirper, at x 1,500: from a slot at 608 its 1,091 start 199 left of it.
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 3);
+    mount();
+    assert.equal(rowLeft(), "-195rem");
+
+    runFrames();
+
+    assert.equal(rowLeft(), "-199rem");
+  });
+
+  it("reads the slot again when the screen changes size", () => {
+    // 1280 × 720 first, 1.5 rem to a pixel: a slot at 402 px starts at x 603.
+    globals.window = { innerWidth: 1280, innerHeight: 720 };
+    slotLeftPx = 402;
+    setBinding("BetterBuildingMenu", "AssetMenuWidthStep", 3);
+    mount();
+    runFrames();
+    assert.equal(rowLeft(), "-194rem");
+
+    globals.window = { innerWidth: 1920, innerHeight: 1080 };
+    slotLeftPx = 608;
+    act(() => root!.update(<AssetMenu onClose={() => {}} />));
+    runFrames();
+
+    assert.equal(rowLeft(), "-199rem");
+  });
+});

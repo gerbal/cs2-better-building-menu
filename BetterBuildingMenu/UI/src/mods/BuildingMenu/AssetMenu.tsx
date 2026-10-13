@@ -9,6 +9,7 @@ import { useAssetMenuHeight } from "mods/AssetMenuResizeHandle/AssetMenuResizeHa
 import { TopEdge } from "mods/TopEdge/TopEdge";
 import { TopRow } from "mods/TopRow/TopRow";
 import { AssetMenuWidthHandle, AssetMenuWidthReach, useAssetMenuWidthDrag } from "mods/AssetMenuWidthHandle/AssetMenuWidthHandle";
+import { useGameSlotLeft } from "mods/BuildingMenu/useGameSlotLeft";
 import { useVanillaLayoutForAssetMenu } from "mods/BuildingMenu/vanillaLayout";
 import { setOpenListCloser } from "mods/BuildingMenu/openListCloser";
 import { useAssetMenuLayout } from "mods/useAssetMenuLayout";
@@ -38,7 +39,11 @@ export interface AssetMenuProps {
 }
 
 export const AssetMenu = ({ onClose }: AssetMenuProps) => {
-  const { step, drawnStep, menuWidth, paneShown, snaps, screen } = useAssetMenuLayout();
+  const { step, drawnStep, menuWidth, paneShown, snaps, screen: unmeasured } = useAssetMenuLayout();
+  // The box draws from the game's slot as the row reads it, and from the centred fallback until it does.
+  const row = useRef<HTMLDivElement>(null);
+  const slotLeft = useGameSlotLeft(row, unmeasured.textScale);
+  const screen = slotLeft === undefined ? unmeasured : { ...unmeasured, slotLeft };
   // The top edge drags from the body as drawn, which a tall stored height exceeds under the top HUD.
   const { height: catalogHeight, isResizing, beginResize, blocker } = useAssetMenuHeight(drawnBodyHeight);
   const widthDrag = useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps, screen });
@@ -83,7 +88,7 @@ export const AssetMenu = ({ onClose }: AssetMenuProps) => {
           sits, and moves by the step's offset; the box and the pane overflow it to the right,
           which the slot's `overflow: visible` allows. Every step is at least 706, so no stretch
           of the row lies beside the box to take the mouse. */}
-      <div className={styles.assetMenuRow} style={{ width: `${WIDTH_STEP_VANILLA}rem`, left: `${placement.offset}rem` }}>
+      <div ref={row} className={styles.assetMenuRow} style={{ width: `${WIDTH_STEP_VANILLA}rem`, left: `${placement.offset}rem` }}>
         {/* The box carries the look: its tokens, the game's interface style followed, and its
             panels' alphas under the game's transparency. See docs/design-notes.md, "The looks' tokens". */}
         <div

@@ -340,6 +340,67 @@ describe("the steps by number", () => {
   });
 });
 
+describe("from the game's slot as measured", () => {
+  // The slot's rem width follows the pixel ratio: 704 wide at x 608 at 1 px per rem, 712 at x 604 at 1.5.
+  const SLOTS: Array<[number, number]> = [[704, 608], [712, 604]];
+  // Where the box draws on the screen: the row sits in the game's slot and moves by the offset.
+  const drawnAt = (over: Partial<WidthStepScreen> & { slotLeft: number }): number[][] =>
+    [1, 2, 3, 4, 5].map((step) => {
+      const width = drawnStepWidth(step, screen(over));
+      const left = over.slotLeft + boxPlacement(width, screen(over)).offset;
+      return [left, left + width];
+    });
+
+  it("keeps a 704 slot's left edge for step 1, and draws steps 2 to 5 at the same screen edges", () => {
+    // Step 2 from x 608 would end past 1,500, so it grows left a rem.
+    nearPairs(drawnAt({ slotLeft: 608 }), [[608, 1314], [607, 1500], [409, 1500], [396, 1676], [396, 1871]], "704");
+  });
+
+  it("draws a 712 slot as the centred one it stands in for before the first layout", () => {
+    assert.deepEqual(drawnAt({ slotLeft: 604 }), placed());
+  });
+
+  it("holds the tool options' floor and every step's right limit at either width", () => {
+    for (const [width, slotLeft] of SLOTS) {
+      for (const textScale of [1, 1.1, 1.3, 1.5]) {
+        for (const paneShown of [false, true]) {
+          const over = { slotLeft, textScale, paneShown };
+          drawnAt(over).forEach(([left, right], index) => {
+            const what = `${width} ${textScale} ${paneShown} step ${index + 1}`;
+            const limit = paneShown ? 1872 - CONTROL_PANE_TOTAL : index < 3 ? 1500 : 1871;
+
+            assert.ok(left >= toolOptionsEdge(textScale) - 1e-9, `${what} left ${left}`);
+            assert.ok(right <= limit + 1e-9, `${what} right ${right}`);
+          });
+        }
+      }
+    }
+  });
+
+  it("ends step 5, and its right-edge strip, short of the social column at 1080p", () => {
+    // The social column starts 48.4 rem from a 1920-wide screen's right edge; the strip is the box's last rem.
+    const [, right] = drawnAt({ slotLeft: 608 })[4];
+
+    assert.ok(right < 1920 - 48.4, `step 5 ends at ${right}`);
+  });
+
+  it("moves the tool options so they end at the tool options' edge, from either slot", () => {
+    for (const [, slotLeft] of SLOTS) {
+      const over = { slotLeft };
+      const shift = toolOptionsShift(boxPlacement(drawnStepWidth(3, screen(over)), screen(over)), screen(over));
+
+      // The game's column ends 6 rem short of its slot.
+      near(slotLeft - 6 + (shift ?? 0), 396, `${slotLeft}`);
+    }
+  });
+
+  it("leaves the tool options where the game puts them for step 2's rem left of a 704 slot, which covers none of them", () => {
+    const over = { slotLeft: 608 };
+
+    assert.equal(toolOptionsShift(boxPlacement(drawnStepWidth(2, screen(over)), screen(over)), screen(over)), null);
+  });
+});
+
 describe("the game's tool options beside a box that reaches left of the game's slot", () => {
   const shifts = (over: Partial<WidthStepScreen> = {}) =>
     [1, 2, 3, 4, 5].map((step) => {

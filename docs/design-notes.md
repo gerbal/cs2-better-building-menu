@@ -77,24 +77,25 @@ session, and for any other mod looking at the same node. A missing module or cla
 silent no-op.
 
 **The game's own centring is left alone.** Vanilla centres its side + main + side trio, which puts
-its build menu's slot, 712 rem wide, at x 604 on 16:9. The asset menu's row keeps a 706 layout width
-at every Width step and sits at the slot's left, and the box and the pane draw at an offset from it
-(see "The box at its Width step, and the control pane"). The box places itself, so nothing about
+its build menu's slot at the screen's centre. Its rem width follows the pixel ratio: 704 at x 608 on a
+1920 × 1080 screen (1 px per rem), 712 at x 604 in a 1280 × 720 window (1.5 rem per px). The asset
+menu's row keeps a 706 layout width at every Width step and sits at the slot's left, and the box and
+the pane draw at an offset from it (see "The box at its Width step, and the control pane"). The box places itself, so nothing about
 the trio needs to change.
 
 **The tool options column moved left of a box that reaches left of the slot.** The game's
 `toolLayout` (`game-main-screen.module.scss`) centres its children, a `toolSideColumn`, the slot and
 a second `toolSideColumn`, with 6 rem either side of the slot. So the tool options column sits right
-beside the slot, ending at x 598 on 16:9, and grows left with the text scale: 380 wide at the game's
+beside the slot, ending 6 rem short of it (x 602 at 1 px per rem, 598 at 1.5 rem per px), and grows left with the text scale: 380 wide at the game's
 own size, wider by half the scale's increase. The Width steps' room (see "The Width steps") takes
 the column to run from x 16 to the tool options' edge, 396 at the game's own size, growing right,
 which is where 0.2.x put it by left-aligning the whole `toolLayout`. Without a move, steps 3 to 5,
 and step 2 beside the pane, which reach left of the slot, would cover the column's buttons.
 
-- **Only the column moves, and only then.** While the box draws left of the slot
-  (`BoxPlacement.offset < 0`), `toolOptionsShift` in `widthSteps.ts` gives the column a `left` that
+- **Only the column moves, and only then.** While the box reaches past the column's right edge,
+  `toolOptionsShift` in `widthSteps.ts` gives the column a `left` that
   ends it at the tool options' edge, so it runs from x 16 to that edge at every text scale; where the
-  box keeps the slot's left edge the game's layout is untouched. It is the first child of
+  box stays clear of it the game's layout is untouched, step 2's rem left of a 704 slot included. It is the first child of
   `toolLayout` carrying the module's `toolSideColumn` class. The game's stylesheet gives the column
   `position: relative`, so a `left` moves it without moving anything else.
 - **Why not left-align `toolLayout` again.** That moves the slot too, by an amount that changes with
@@ -139,9 +140,9 @@ the toolbar's open menu, and moving the mouse brings BBM's back on the same menu
   and the scheme is not the gamepad. `GamepadMenuRecord`, pure too, keeps the record through each
   event that sets or forgets it.
 - **Where each menu sits.** At the first Width step BBM's box takes the game's own slot's left and
-  bottom, x 604-1,310 at the game's text size, so the hand-off moves only the right edge, by the 6
-  rem the game's 712 slot is wider. At a wider step the game's menu draws at its own 712, and the
-  switch is a visible jump.
+  bottom, x 608-1,314 on a 1920 × 1080 screen, so the hand-off moves only the right edge, by the
+  2 rem the game's 704 slot is narrower (6 rem wider at 712 in a 1280 × 720 window). At a wider
+  step the game's menu draws at its own width, and the switch is a visible jump.
 - **A nudged stick** flips the scheme, and BBM follows each change as the game does. If that makes
   the menus flicker, the fallback is to wait for a scheme to hold 250 ms before handing over.
 - **The handler runs inside the game's input code**, so it does nothing once the settings are gone
@@ -156,7 +157,7 @@ the step's number, 1 to 5, never a width, because the widths follow the screen: 
 - **The room** runs from the tool options' right edge at the game's own text size (x 396) to 1 rem
   short of the social column, which starts 48 rem from the screen's right edge. On 16:9 it is
   1,475 wide.
-- **A step's width** is 706, drawn at the left of the game's 712-wide slot, plus its share of the room beyond 706,
+- **A step's width** is 706, drawn at the left of the game's slot, plus its share of the room beyond 706,
   rounded to the whole rem. The shares are the 16:9 steps' exact ones, 0, 187, 385, 574 and 769
   over 769, so 16:9 gives 706, 893, 1,091, 1,280 and 1,475; 21:9 gives 706, 1,039, 1,391, 1,728
   and 2,075; 32:9 gives 706, 1,360, 2,052, 2,713 and 3,395. The first step is 706 on every screen,
@@ -175,18 +176,24 @@ The step is Options › Width (`AssetMenuWidthStep`, a dropdown of the five, "1 
 while Replace is off and pushed to its binding whenever Options applies. The UI turns the step into
 a width on this screen, in `widthSteps.ts`.
 
-**Where the box sits.** A step keeps the left edge of the game's slot for its build menu, x 604 on
-16:9 (the slot is 712 wide, centred, 6 rem wider than step 1), while its right edge stays 6 rem
-short of the chirper (x 1,500); a wider step grows left from there, never past the tool options'
-edge (x 396 at the game's own text size, 415 at 110%, 453 at 130%; that column is 380 wide and
-grows by half the text scale's increase). On 16:9 that is 604-1,310, 604-1,497, 409-1,500,
-396-1,676 and 396-1,871. Beside the shown pane the box grows right only as far as leaves the pane
-room before the social column (x 1,487), so step 2 sits at 594 and step 3 at 396, which is 0.2.4's
-own row. Wider screens follow the same rule from the game's centred slot: x 904 on 21:9, 1,564 on
-32:9. The row the game lays out keeps a 706 width at the slot's left, and the box and the pane draw
-at the offset `boxPlacement` gives, negative for a box that reaches left of the slot. The box never
-starts left of the tool options, even on a screen where the game's own slot would. The game's slot
-sits at the screen's centre at every text scale.
+**Where the box sits.** A step keeps the left edge of the game's slot for its build menu while its
+right edge stays 6 rem short of the chirper (x 1,500 on 16:9); a wider step grows left from there,
+never past the tool options' edge (x 396 at the game's own text size, 415 at 110%, 453 at 130%; that
+column is 380 wide and grows by half the text scale's increase). The slot is measured, not assumed:
+the game centres it, but its rem width follows the pixel ratio, 704 at 1 px per rem and 712 at 1.5
+rem per px, so `useGameSlotLeft` reads the left edge of the element the row sits in, again when the
+screen or the text scale changes, and the placement takes it as an input (`WidthStepScreen.slotLeft`).
+Until the first reading the centred 712 (`VANILLA_SLOT_WIDTH`) stands for it. On a 1920 × 1080
+screen, a slot at x 608, the steps draw at 608-1,314, 607-1,500, 409-1,500, 396-1,676 and
+396-1,871; from the 712 slot at x 604 step 1 is 604-1,310 and step 2 604-1,497, the rest the same,
+so steps 3 to 5 sit at the same screen edges whatever the slot. Beside the shown pane the box grows
+right only as far as leaves the pane room before the social column (x 1,487), so step 2 sits at 594
+and step 3 at 396, which is 0.2.4's own row. Wider screens follow the same rule from the game's
+centred slot: 704 wide at x 928 on 2560 × 1080 and 1,568 on 3840 × 1080. The row the game lays out
+keeps a 706 width at the slot's left, and the box and the pane draw at the offset `boxPlacement`
+gives, negative for a box that reaches left of the slot. The box never starts left of the tool
+options, even on a screen where the game's own slot would. The game's slot sits at the screen's
+centre at every text scale.
 
 **Where a step stops.**
 - Steps 1 to 3 stop 6 rem short of the chirper, which starts 414 rem from the screen's right edge

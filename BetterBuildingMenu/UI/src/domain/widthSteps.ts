@@ -44,6 +44,11 @@ export interface WidthStepScreen {
   /** The game's text scale, which widens the tool options column the box starts beside. */
   textScale: number;
   paneShown: boolean;
+  /**
+   * Where the game's slot starts, in rem, read off the screen: its rem width follows the pixel
+   * ratio. Absent before the first layout, when the centred VANILLA_SLOT_WIDTH stands for it.
+   */
+  slotLeft?: number;
 }
 
 /** A step the right edge can snap to, and the width it draws at. */
@@ -112,12 +117,26 @@ export function drawnStep(step: number, screen: WidthStepScreen): number {
   return drawn;
 }
 
-/** The game's slot for its build menu, which it centres on the screen: 6 rem wider than step 1. */
+/**
+ * The game's slot for its build menu, which it centres on the screen, at its widest: the fallback
+ * until the slot is measured. See docs/design-notes.md, "The box at its Width step, and the control pane".
+ */
 export const VANILLA_SLOT_WIDTH = 712;
 
-/** Where the game's slot starts, and so where the box at offset 0 draws: step 1 sits at its left. */
+/** Where the game's slot starts before it is measured: centred at VANILLA_SLOT_WIDTH. */
 export function vanillaBoxLeft(aspect: number): number {
   return (screenWidth(aspect) - VANILLA_SLOT_WIDTH) / 2;
+}
+
+/** Where the game's slot starts, and so where the box at offset 0 draws: step 1 sits at its left. */
+const slotLeft = (screen: WidthStepScreen): number =>
+  screen.slotLeft !== undefined && Number.isFinite(screen.slotLeft) ? screen.slotLeft : vanillaBoxLeft(screen.aspect);
+
+/** The game's slot's left edge in rem, from its rect in pixels; null for a rect not laid out yet. */
+export function measuredSlotLeft(rect: { left: number; width: number } | null | undefined, innerHeight: number): number | null {
+  if (!rect || !Number.isFinite(rect.left) || !(rect.width > 0) || !(innerHeight > 0)) return null;
+
+  return (rect.left * LAYOUT_HEIGHT) / innerHeight;
 }
 
 /** Where the box draws: its left edge on the screen, and that edge less the game's slot's. */
@@ -133,7 +152,7 @@ export interface BoxPlacement {
  * past the tool options' edge, even on a screen where vanilla's own box would.
  */
 export function boxPlacement(width: number, screen: WidthStepScreen): BoxPlacement {
-  const vanilla = vanillaBoxLeft(screen.aspect);
+  const vanilla = slotLeft(screen);
   const left = Math.max(toolOptionsEdge(screen.textScale), Math.min(vanilla, growsTo(screen) - width));
 
   return { left, offset: left - vanilla };
@@ -144,14 +163,15 @@ const VANILLA_SLOT_MARGIN = 6;
 
 /**
  * How far the game's tool options column moves, in rem, for a box drawn here: none while the box
- * keeps the slot's left edge, and once it reaches left of it, to where the width model puts the
- * column, ending at the tool options' edge, so the box never covers it. See docs/design-notes.md,
- * "Patching vanilla's layout for the asset menu".
+ * stays clear of the column, which ends a margin short of the slot, and once it reaches past that,
+ * to where the width model puts the column, ending at the tool options' edge, so the box never
+ * covers it. See docs/design-notes.md, "Patching vanilla's layout for the asset menu".
  */
 export function toolOptionsShift(placement: BoxPlacement, screen: WidthStepScreen): number | null {
-  const shift = toolOptionsEdge(screen.textScale) - (vanillaBoxLeft(screen.aspect) - VANILLA_SLOT_MARGIN);
+  const columnEnd = slotLeft(screen) - VANILLA_SLOT_MARGIN;
+  const shift = toolOptionsEdge(screen.textScale) - columnEnd;
 
-  return placement.offset < 0 && shift < 0 ? shift : null;
+  return placement.left < columnEnd && shift < 0 ? shift : null;
 }
 
 /** The first three steps' limit: where a box stops growing right and starts growing left. */
@@ -198,7 +218,7 @@ export function nearestSnapStep(width: number, snaps: readonly WidthSnap[]): num
  * the width that fills the room: an edge at the limit or beyond takes that width.
  */
 function widthWithEdgeAt(edge: number, screen: WidthStepScreen): number {
-  const reach = edge >= growsTo(screen) ? Infinity : edge - vanillaBoxLeft(screen.aspect);
+  const reach = edge >= growsTo(screen) ? Infinity : edge - slotLeft(screen);
 
   return Math.min(edge - toolOptionsEdge(screen.textScale), reach);
 }

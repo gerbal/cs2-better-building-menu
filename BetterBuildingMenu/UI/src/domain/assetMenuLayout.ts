@@ -417,7 +417,7 @@ export const POPOVER_FILTER_HEIGHT = sheetRem("popoverFilterHeight");
 
 /**
  * The box's bottom edge on the layout's 1080-tall frame, where vanilla's own menu ends above the
- * toolbar. The UI never reads the game's slot, so the frame above this edge stands for it.
+ * toolbar. The UI reads only the game's slot's left edge, so the frame above this edge stands for its bottom.
  */
 export const BOX_BOTTOM = 954;
 
