@@ -24,6 +24,10 @@ describe("where the list goes when a page lands", () => {
     assert.deepEqual(planListScroll(page({ anchorIndex: -1 })), { kind: "top", start: 2 });
   });
 
+  it("starts at the top when the start names no row, whatever place the page gives it", () => {
+    assert.deepEqual(planListScroll(page({ anchorId: 0 })), { kind: "top", start: 2 });
+  });
+
   it("starts at the top when the anchored row is past the rows the window holds", () => {
     // Past the 2,000-row ceiling: the list says it stops, and starts at its first row.
     assert.deepEqual(planListScroll(page({ anchorIndex: 2499, itemCount: 2000 })), { kind: "top", start: 2 });

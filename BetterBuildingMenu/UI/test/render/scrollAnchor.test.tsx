@@ -67,14 +67,22 @@ const Probe = ({ list, page }: { list: RefObject<HTMLElement>; page: ListStartPa
 
 describe("where the list goes when a page lands", () => {
   let root: ReactTestRenderer | undefined;
-  let frames: Array<() => void> = [];
+  let frames = new Map<number, () => void>();
+  let handles = 0;
+  // Whether cancelAnimationFrame drops nothing, as a frame already queued in an engine can still run.
+  let cancelMisses = false;
 
-  /** The frames the hook asks for, run as the engine runs them, up to a bound. */
+  /** One frame: the callbacks asked for before it, run as the engine runs them. */
+  const tick = () => {
+    const due = [...frames.values()];
+    frames = new Map();
+    due.forEach((frame) => frame());
+  };
+
+  /** The frames the hook asks for, up to a bound. */
   const flush = () => {
-    for (let pass = 0; pass < 60 && frames.length > 0; pass++) {
-      const due = frames;
-      frames = [];
-      due.forEach((frame) => frame());
+    for (let pass = 0; pass < 60 && frames.size > 0; pass++) {
+      tick();
     }
   };
 
@@ -90,9 +98,15 @@ describe("where the list goes when a page lands", () => {
 
   beforeEach(() => {
     resetAssetMenuView();
-    frames = [];
-    globals.requestAnimationFrame = (callback: () => void) => frames.push(callback);
-    globals.cancelAnimationFrame = () => undefined;
+    frames = new Map();
+    cancelMisses = false;
+    globals.requestAnimationFrame = (callback: () => void) => {
+      frames.set(++handles, callback);
+      return handles;
+    };
+    globals.cancelAnimationFrame = (handle: number) => {
+      if (!cancelMisses) frames.delete(handle);
+    };
   });
 
   afterEach(() => {
@@ -166,10 +180,12 @@ describe("where the list goes when a page lands", () => {
     assert.equal(list.scroller.scrollTop, 250 * ROW - VIEWPORT);
     assert.equal(getAssetMenuListStart(), 1);
   });
+
   it("leaves the list alone when a tile armed after the mount's first page is kept, and a page lands", () => {
     // The mount's first page planned nothing; arming writes the store, and a search, a filter or
     // Load more is not a remount.
     const list = fakeList(400);
+    list.scroller.scrollTop = 600;
     setAssetMenuListStart(4);
 
     mount(list, { listStart: 4, anchorId: 0, anchorIndex: -1, itemCount: 250 });
@@ -178,7 +194,7 @@ describe("where the list goes when a page lands", () => {
     land(list, { listStart: 4, anchorId: 0, anchorIndex: -1, itemCount: 350 });
     flush();
 
-    assert.equal(list.scroller.scrollTop, 0);
+    assert.equal(list.scroller.scrollTop, 600);
   });
 
   it("still brings the kept row back when a page lands mid-restore", () => {
@@ -194,4 +210,41 @@ describe("where the list goes when a page lands", () => {
     const offset = list.offsetOf(120);
     assert.ok(offset >= 0 && offset < VIEWPORT, `row 120 at ${offset}`);
   });
+
+  for (const misses of [false, true]) {
+    const where = misses ? ", even where the engine's cancel misses a queued frame" : "";
+
+    it(`stops a move when the menu unmounts mid-move${where}`, () => {
+      // Placing a building unmounts the menu; a frame left running would record a start nobody saw.
+      cancelMisses = misses;
+      const list = fakeList(250);
+
+      mount(list, { listStart: 1, anchorId: 150, anchorIndex: 149, itemCount: 250 });
+      tick();
+      act(() => root?.unmount());
+      root = undefined;
+
+      if (!misses) assert.equal(frames.size, 0);
+      flush();
+
+      assert.equal(getAssetMenuListStart(), null);
+      assert.equal(getAssetMenuAnchor(KEY), null);
+    });
+
+    it(`lets a new start that lands during a restore win${where}`, () => {
+      // A sort while the remount's restore is still running: the restore stops, the list goes to its top.
+      cancelMisses = misses;
+      const list = fakeList(250);
+      setAssetMenuListStart(3);
+      setAssetMenuAnchor(KEY, 120);
+
+      mount(list, { listStart: 3, anchorId: 120, anchorIndex: 119, itemCount: 250 });
+      land(list, { listStart: 4, anchorId: 0, anchorIndex: -1, itemCount: 250 });
+      flush();
+
+      assert.equal(list.scroller.scrollTop, 0);
+      assert.equal(getAssetMenuAnchor(KEY), null);
+      assert.equal(getAssetMenuListStart(), 4);
+    });
+  }
 });

@@ -116,9 +116,10 @@ export function isOnLineOne({ containerTop, rowTop }: AnchorGeometry): boolean {
 }
 
 /**
- * How many frames the restore is allowed to keep trying for. A budget, not a
- * safety net — the first attempt always fails, see {@link isAnchorMeasurable} —
- * and short enough to give up before the player has scrolled somewhere else.
+ * How many frames each move of the list may take: a start's row onto line 1 or
+ * list to its top, or a remount's restore. Room for Cohtml's pre-layout zeroes,
+ * see {@link isAnchorMeasurable}, and short enough to give up before the player
+ * has scrolled somewhere else.
  */
 export const CATALOG_ANCHOR_MAX_FRAMES = 30;
 
