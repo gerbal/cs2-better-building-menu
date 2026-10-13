@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, it } from "node:test";
 import { act, create, type ReactTestRenderer } from "react-test-renderer";
 import { renderHtml } from "../harness/render";
 import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
+import { getAssetMenuView, resetAssetMenuView, setDrawnForm } from "../../src/domain/assetMenuViewStore";
 import { TabRow } from "../../src/mods/TabRow/TabRow";
 
 const set = (name: string, value: unknown) => setBinding("BetterBuildingMenu", name, value);
@@ -234,13 +235,14 @@ describe("a picture that will not load", () => {
 describe("the readout", () => {
   beforeEach(() => {
     resetBindings();
+    resetAssetMenuView();
     seedRoads();
   });
 
   it("names the lit tab over the window the list holds, with the true total", () => {
     set("BuildingCatalog", { items: Array.from({ length: 100 }, (_, id) => ({ id })), totalCount: 779 });
 
-    assert.match(render(), /data-readout="full"><span class="place">MediumRoads<\/span><span class="range">1–100 of 779<\/span>/);
+    assert.match(render(), /data-readout="full"><span class="place">MediumRoads<\/span><span class="line"><span class="range">1–100 of 779<\/span><\/span>/);
   });
 
   it("counts the matches here while a search is typed", () => {
@@ -255,14 +257,53 @@ describe("the readout", () => {
     setBinding("options", "textScale", 1.1);
     set("BuildingCatalog", { items: [], totalCount: 64 });
 
-    assert.match(render(), /data-readout="range"><span class="range">64<\/span><\/div>/);
+    assert.match(render(), /data-readout="range"><span class="line"><span class="range">64<\/span><\/span><\/div>/);
   });
 
   it("keeps its range at 150% text", () => {
     setBinding("options", "textScale", 1.5);
     set("BuildingCatalog", { items: [], totalCount: 64 });
 
-    assert.match(render(), /data-readout="range"><span class="range">64<\/span>/);
+    assert.match(render(), /data-readout="range"><span class="line"><span class="range">64<\/span>/);
+  });
+
+  it("says a value most of the view's open rows share once, by its glyph, and tells the rows it said it", () => {
+    const road = (id: number, speedLimit: number) => ({ id, name: `Road ${id}`, speedLimit, costIsPerDistance: true, constructionCost: 5000 + id });
+    set("BuildingCatalog", {
+      items: [road(1, 100), road(2, 100), road(3, 80), road(4, 100)],
+      totalCount: 34,
+      facts: { sharedValues: [{ kind: "speed", value: 100, depth: 0 }], keyKind: "speed" },
+    });
+    let root: ReactTestRenderer | undefined;
+    act(() => {
+      root = create(<TabRow width={1091} />);
+    });
+    const html = JSON.stringify(root!.toJSON());
+
+    assert.match(html, /"className":"saidGlyph","style":\{"maskImage":"url\(gauge\.svg\)"\}/);
+    assert.match(html, /"className":"saidText"[^\]]*\["100 km\/h unless shown"\]/);
+    assert.deepEqual(getAssetMenuView().said, [{ kind: "speed", value: 100, depth: 0 }]);
+    // Gone, it tells the rows to print every value again.
+    act(() => root!.unmount());
+    assert.deepEqual(getAssetMenuView().said, []);
+  });
+
+  it("names the key kind by its glyph where nothing is said once, and says nothing of a value the cards do not show", () => {
+    set("BuildingCatalog", { items: [{ id: 1, speedLimit: 100 }], totalCount: 1, facts: { sharedValues: [], keyKind: "speed" } });
+    assert.match(render(), /<span class="saidText">Speed limit<\/span>/);
+
+    set("AssetMenuViews", [{ menu: "Roads", value: "cards" }]);
+    set("BuildingCatalog", { items: [{ id: 1, speedLimit: 100 }], totalCount: 1, facts: { sharedValues: [{ kind: "speed", value: 100, depth: 0 }], keyKind: "speed" } });
+    assert.doesNotMatch(render(), /class="said"/);
+  });
+
+  it("explains the key number on the plates the list draws: none on a one-line plate, the kind on a grown small menu's big plate", () => {
+    setBinding("options", "textScale", 1.3);
+    set("BuildingCatalog", { items: [{ id: 1, speedLimit: 100 }], totalCount: 1, facts: { sharedValues: [], keyKind: "speed" } });
+    assert.doesNotMatch(render(), /class="said"/);
+
+    setDrawnForm("big");
+    assert.match(render(), /<span class="saidText">Speed limit<\/span>/);
   });
 
   it("draws the All count blank before C# sends it", () => {

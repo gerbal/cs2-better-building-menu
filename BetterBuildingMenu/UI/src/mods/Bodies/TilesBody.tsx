@@ -9,7 +9,7 @@ import type { NumberSeparators } from "domain/assetMenuMetricFormat";
 import type { AssetMenuMetric } from "domain/assetMenuLayout";
 import { NO_SECTIONS } from "domain/bodyCells";
 import { labelPlace, screenSlots, slotPosition, slotsHeight, TILE_NAME_LINE_MIN, type BodyGrid } from "domain/bodyGeometry";
-import type { BuildingCatalogEntry, CatalogSection } from "domain/buildingCatalog";
+import type { BuildingCatalogEntry, CatalogSection, SharedValue } from "domain/buildingCatalog";
 import { entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
 import { sortedMetricFor } from "domain/sortedMetric";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
@@ -18,6 +18,7 @@ import { tileFacts } from "domain/tileNameLine";
 import { tagRoom, tileTag } from "domain/tileTag";
 import { useTextScale } from "domain/textScaleSetting";
 import { ActivePrefabId$, AssetMenuTuning$, BuildingCatalogSortColumn$, SHIPPED_TUNING } from "mods/bindings";
+import { useAssetMenuView } from "mods/useAssetMenuView";
 import { BuildingHoverCard, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { FittedName } from "./FittedName";
 import { LabelPlate } from "./LabelPlate";
@@ -39,6 +40,8 @@ interface TileProps {
   slot: number;
   armed: boolean;
   sortedMetric: AssetMenuMetric | null;
+  /** The values the readout says once: a tag that would say one is left off. */
+  said: readonly SharedValue[];
   textScale: number;
   separators: NumberSeparators;
   stateWords: StateWords;
@@ -53,12 +56,12 @@ interface TileProps {
  * a sort by a value that value. Its name is the line's under the tiles. The live check and the render
  * tests count what a body shows through the data-bbm markers.
  */
-const Tile = memo(function Tile({ entry, grid, slot, armed, sortedMetric, textScale, separators, stateWords, achievedMilestone, hoverCard, onPlace, onPoint }: TileProps) {
+const Tile = memo(function Tile({ entry, grid, slot, armed, sortedMetric, said, textScale, separators, stateWords, achievedMilestone, hoverCard, onPlace, onPoint }: TileProps) {
   const name = entry.name || entry.prefabName;
   const locked = isEntryLocked(entry);
   const built = isEntryAlreadyBuilt(entry);
   const { left, top } = slotPosition(grid, slot);
-  const tag = tileTag(entry, sortedMetric, separators, stateWords.locked, achievedMilestone, grid.cellWidth, textScale);
+  const tag = tileTag(entry, sortedMetric, separators, stateWords.locked, achievedMilestone, grid.cellWidth, textScale, said);
   const word = entryStateWord(entry, stateWords.locked, stateWords.built);
   // Inset 2 on every side; inline, as Tile size sizes it.
   const picture = { width: `${grid.cellWidth - 4}rem`, height: `${grid.cellHeight - 4}rem` };
@@ -134,6 +137,7 @@ export const TilesBody = memo(function TilesBody({ entries, grid, sections = NO_
   const armedId = useValue(ActivePrefabId$);
   const lineKnob = useValue(AssetMenuTuning$).tileNameLine ?? SHIPPED_TUNING.tileNameLine;
   const { cells, slots } = useBodyCells(entries, sections, grid.cols, offset);
+  const said = useAssetMenuView((view) => view.said);
   const hoverCard = useHoverCardContext();
   // "MS n" only for a milestone ahead of the city: past it, only the development tree holds a building back.
   const achievedMilestone = useValue(milestone.achievedMilestone$) ?? 0;
@@ -162,6 +166,7 @@ export const TilesBody = memo(function TilesBody({ entries, grid, sections = NO_
                 slot={cell.slot}
                 armed={armedId !== 0 && cell.entry.id === armedId}
                 sortedMetric={sortedMetric}
+                said={said}
                 textScale={textScale}
                 separators={separators}
                 stateWords={stateWords}

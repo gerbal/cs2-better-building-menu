@@ -1,3 +1,6 @@
+import type { ListForm } from "./bodyGeometry";
+import type { SharedValue } from "./buildingCatalog";
+
 /**
  * The one store for the asset menu's visual state, which has to outlive a React
  * unmount but has no bearing on the query. One object, because two subtrees read
@@ -13,6 +16,10 @@ export interface AssetMenuView {
   listStart: number | null;
   /** The game's slot's left edge as last read, and the window it was read in, so a remount starts there. */
   slot: SlotReading | null;
+  /** The values the readout says once, which the rows that hold them leave blank; none while it says none. */
+  said: readonly SharedValue[];
+  /** The form the list draws its plates in, which decides the numbers the readout may say; null while no list draws. */
+  drawnForm: ListForm | null;
 }
 
 /** Where the game's slot starts, in rem, on a window of this size in pixels. */
@@ -22,7 +29,7 @@ export interface SlotReading {
   left: number;
 }
 
-const initial = (): AssetMenuView => ({ disclosures: {}, anchors: {}, listStart: null, slot: null });
+const initial = (): AssetMenuView => ({ disclosures: {}, anchors: {}, listStart: null, slot: null, said: [], drawnForm: null });
 
 let state: AssetMenuView = initial();
 
@@ -144,3 +151,19 @@ export const ASSET_MENU_DISCLOSURE_KEYS = {
   facets: "facets",
   metricRanges: "metricRanges",
 } as const;
+
+/** Says which values the readout says once; the same values said again tell no subscriber. */
+export function setReadoutSaid(said: readonly SharedValue[]): void {
+  const key = (values: readonly SharedValue[]) => values.map((value) => `${value.kind}:${value.value}:${value.depth}`).join("|");
+
+  if (key(said) === key(state.said)) {
+    return;
+  }
+
+  setAssetMenuView({ said });
+}
+
+/** Says which form the list draws its plates in; null once it draws none. */
+export function setDrawnForm(form: ListForm | null): void {
+  setAssetMenuView({ drawnForm: form });
+}

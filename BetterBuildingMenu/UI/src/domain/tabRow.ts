@@ -16,6 +16,7 @@ import {
 } from "./assetMenuLayout";
 import { isEducationMenu } from "./buildingGroups";
 import { branchTabTooltip, expandedTabsFor, schoolTierTabs, type MenuBranchCount, type MenuCategoryTabs, type TierBracket } from "./menuProgression";
+import { LEGEND_FORMS, type LegendForm, type LegendPart } from "./saidOnce";
 import { WIDTH_STEP_VANILLA } from "./sharedContracts.generated";
 import {
   ALL_CATEGORIES_ID,
@@ -224,8 +225,30 @@ export type ReadoutForm = "full" | "range";
 
 export interface TabRowPlan {
   readout: ReadoutForm;
+  /** The legend before the range: the values said once in full, short, by their digits alone, or none. */
+  legend: LegendForm;
   /** The last tabs run past the room the readout leaves, and the row cuts them. */
   clipped: boolean;
+}
+
+/** What the readout says: its place, its range, and its legend in each form it can take. */
+export interface ReadoutText {
+  place: string;
+  range: string;
+  legends?: Readonly<Partial<Record<LegendForm, readonly LegendPart[]>>>;
+}
+
+/** A legend glyph's side and its gap to its text, and the room each side of the "·" after a part, at 100% text: tabRow.module.scss. */
+export const READOUT_GLYPH = 9;
+export const READOUT_GLYPH_GAP = 2;
+export const READOUT_SEP_PADDING = 3;
+
+/** A legend's width on the range's line: each part's glyph, which scales with the text, its words, then a "·". */
+function legendWidth(parts: readonly LegendPart[], scale: number): number {
+  const font = TAB_COUNT_SIZE * scale;
+  const sep = textWidth("·", font) + 2 * READOUT_SEP_PADDING;
+
+  return parts.reduce((sum, part) => sum + (part.glyph === null ? 0 : READOUT_GLYPH * scale + READOUT_GLYPH_GAP) + textWidth(part.text, font) + sep, 0);
 }
 
 /** How the tabs draw: each picture over its count, or, at a wider step, its picture, name and count in a line. */
@@ -259,13 +282,14 @@ function itemWidth(item: TabRowItem, scale: number, format: (count: number) => s
 }
 
 /**
- * How the row fits a box this wide, in a form. The readout's place line gives way first: the two
- * lines fit the row only at 100% text. Its range always stays, and the last tabs run past the room
- * it leaves, where the row cuts them: it never wraps.
+ * How the row fits a box this wide, in a form. The legend before the range shortens a step at a time,
+ * then goes, its values printed by the rows again; then the place line goes, which fits the row only
+ * at 100% text. The range always stays, and the last tabs run past the room it leaves, where the row
+ * cuts them: it never wraps.
  */
 export function planTabRow(
   items: readonly TabRowItem[],
-  readout: { place: string; range: string },
+  readout: ReadoutText,
   boxWidth: number,
   scale: number,
   format: (count: number) => string,
@@ -277,9 +301,16 @@ export function planTabRow(
   const room = boxWidth - TAB_ROW_INSET - TAB_ROW_INSET_RIGHT - cells - 2 * TAB_CELL_GAP;
   const range = textWidth(readout.range, TAB_COUNT_SIZE * scale);
   const place = textWidth(readout.place, TAB_NAME_SIZE * scale);
-  const full = scale <= 1 && Math.max(place, range) <= room;
+  const line = (legend: LegendForm) => legendWidth(readout.legends?.[legend] ?? [], scale) + range;
+  const steps = scale <= 1
+    ? [...LEGEND_FORMS.map((legend) => ({ full: true, legend })), { full: false, legend: "none" as const }]
+    : LEGEND_FORMS.map((legend) => ({ full: false, legend }));
+  const step = steps.find(({ full, legend }) => Math.max(full ? place : 0, line(legend)) <= room) ?? { full: false, legend: "none" as const };
 
-  return { readout: full ? "full" : "range", clipped: range > room };
+  // A form with nothing in it says nothing: the rows print every value.
+  const legend = (readout.legends?.[step.legend]?.length ?? 0) > 0 ? step.legend : "none";
+
+  return { readout: step.full ? "full" : "range", legend, clipped: range > room };
 }
 
 /**
@@ -290,7 +321,7 @@ export function planTabRow(
  */
 export function tabForm(
   items: readonly TabRowItem[],
-  readout: { place: string; range: string },
+  readout: ReadoutText,
   boxWidth: number,
   scale: number,
   format: (count: number) => string,

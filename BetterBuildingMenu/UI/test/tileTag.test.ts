@@ -170,6 +170,14 @@ describe("a tile's tag", () => {
     assert.equal(tag(plant(4_500), 1.3, "capacity").text, "450 kW");
   });
 
+  it("says nothing where the readout says the cost once, and the milestone of a locked building still", () => {
+    const said = [{ kind: "cost" as const, value: 125_000, depth: 0 }];
+
+    assert.deepEqual(tileTag(row(), null, FALLBACK_SEPARATORS, "Locked", 0, 64, 1, said), { text: "", locked: false });
+    assert.deepEqual(tileTag(row({ isLocked: true, unlockMilestone: 4 } as Partial<BuildingCatalogEntry>), null, FALLBACK_SEPARATORS, "Locked", 0, 64, 1, said), { text: "MS 4", locked: true });
+    assert.equal(tileTag(row({ constructionCost: 48_000 }), null, FALLBACK_SEPARATORS, "Locked", 0, 64, 1, said).text, formatBuildingMetric(48_000, "cost"));
+  });
+
   it("says nothing for a building with no cost", () => {
     assert.deepEqual(tag(row({ constructionCost: null } as Partial<BuildingCatalogEntry>)), { text: "", locked: false });
   });

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { ASSET_MENU_MIN_HEIGHT, ASSET_MENU_RESIZE_HANDLE_HEIGHT, NOTCH_TOP_WIDTH, TAB_CELL_MIN_WIDTH, TAB_CELL_PADDING } from "../src/domain/assetMenuLayout.ts";
 import { cardGeometry } from "../src/domain/cardsLayout.ts";
+import { READOUT_GLYPH, READOUT_GLYPH_GAP, READOUT_SEP_PADDING } from "../src/domain/tabRow.ts";
 import { declarationsOf, everyDeclaration, moduleSheets, rem, resolvedOn, selectorsOf, sides, winnerOn } from "./harness/compiledCss.ts";
 
 /**
@@ -276,6 +277,21 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(count("lit"), "var(--bbm-armText)");
     assert.equal(count("matches"), "var(--bbm-entMark)");
     assert.equal(count(), "var(--bbm-tabCount)");
+  });
+
+  it("sizes the readout's legend as the tab row's plan counts it", () => {
+    // planTabRow budgets the legend from these: a glyph that scales with the text, a fixed gap to its
+    // words, a fixed room each side of the dot, and the words and the dot in the range's font.
+    const glyph = declarationsOf(TAB_ROW, ".saidGlyph");
+    const [, right, , left] = sides(declarationsOf(TAB_ROW, ".sep").padding);
+    const range = declarationsOf(TAB_ROW, ".range")["font-size"];
+
+    assert.equal(glyph.width, `calc(${READOUT_GLYPH}rem * var(--fontScale))`);
+    assert.equal(glyph.height, glyph.width);
+    assert.equal(rem(declarationsOf(TAB_ROW, ".said").gap), READOUT_GLYPH_GAP);
+    assert.deepEqual([rem(right), rem(left)], [READOUT_SEP_PADDING, READOUT_SEP_PADDING]);
+    assert.equal(declarationsOf(TAB_ROW, ".saidText")["font-size"], range);
+    assert.equal(declarationsOf(TAB_ROW, ".sep")["font-size"], range);
   });
 
   it("draws a tab's picture whole at its own aspect, without measuring it", () => {

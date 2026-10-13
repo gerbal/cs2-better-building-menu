@@ -69,6 +69,11 @@ export function lotText(entry: BuildingCatalogEntry): string | null {
   return hasFootprint(entry.lotWidth, entry.lotDepth) ? formatLotDimensions(entry.lotWidth, entry.lotDepth) : null;
 }
 
+/** Whether a sort orders by a value of its own to say: a number, but not the cost, said already, nor the lot. */
+export function sortsByValue(sortedMetric: AssetMenuMetric | null): sortedMetric is AssetMenuMetric {
+  return sortedMetric !== null && sortedMetric !== "cost" && sortedMetric !== "lot";
+}
+
 /**
  * The value a sort orders by, with its unit, which Sort names; an upkeep without the month every row
  * shares, a network's per cell. Null under no sort by a number, or where the row has none.

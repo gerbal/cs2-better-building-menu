@@ -3,20 +3,22 @@ import { milestone } from "cs2/bindings";
 import { FOCUS_DISABLED } from "cs2/input";
 import { Button, Scrollable } from "cs2/ui";
 import classNames from "classnames";
-import { memo, type ReactNode } from "react";
+import { memo, useEffect, type ReactNode } from "react";
 
 import enterMark from "images/enter.svg";
 import type { NumberSeparators } from "domain/assetMenuMetricFormat";
 import type { AssetMenuMetric } from "domain/assetMenuLayout";
+import { setDrawnForm } from "domain/assetMenuViewStore";
 import { NO_SECTIONS } from "domain/bodyCells";
 import { labelPlace, slotPosition, slotsHeight, type BodyGrid } from "domain/bodyGeometry";
-import type { BuildingCatalogEntry, CatalogSection } from "domain/buildingCatalog";
+import type { BuildingCatalogEntry, CatalogSection, SharedValue } from "domain/buildingCatalog";
 import { entryStateWord, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
-import { oneNumber, plateNumbers } from "domain/listPlate";
+import { oneLineNumber, plateNumbers } from "domain/listPlate";
 import type { KeyKind } from "domain/rowNumbers";
 import { sortedMetricFor } from "domain/sortedMetric";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { ActivePrefabId$, BuildingCatalogSortColumn$ } from "mods/bindings";
+import { useAssetMenuView } from "mods/useAssetMenuView";
 import { BuildingHoverCard, useHoverCardContext, type HoverCardContext } from "mods/BuildingHoverCard/BuildingHoverCard";
 import { LabelPlate } from "./LabelPlate";
 import styles from "./listBody.module.scss";
@@ -35,6 +37,8 @@ interface PlateProps {
   sortedMetric: AssetMenuMetric | null;
   /** The kind of number the view's rows show second. */
   keyKind: KeyKind;
+  /** The values the readout says once, which this plate leaves blank where it holds them. */
+  said: readonly SharedValue[];
   separators: NumberSeparators;
   stateWords: StateWords;
   achievedMilestone: number;
@@ -47,11 +51,11 @@ interface PlateProps {
  * Enter's target. The live check and the render tests count what a body shows through the data-bbm
  * markers.
  */
-const Plate = memo(function Plate({ entry, grid, slot, armed, enter, sortedMetric, keyKind, separators, stateWords, achievedMilestone, hoverCard, onPlace }: PlateProps) {
+const Plate = memo(function Plate({ entry, grid, slot, armed, enter, sortedMetric, keyKind, said, separators, stateWords, achievedMilestone, hoverCard, onPlace }: PlateProps) {
   const name = entry.name || entry.prefabName;
-  const both = plateNumbers(entry, sortedMetric, separators, stateWords.locked, achievedMilestone, keyKind);
+  const both = plateNumbers(entry, sortedMetric, separators, stateWords.locked, achievedMilestone, keyKind, said);
   // A one-line plate is one number tall: two would be cut at its top and foot.
-  const numbers = grid.form === "plate1" ? oneNumber(both, sortedMetric) : both;
+  const numbers = grid.form === "plate1" ? oneLineNumber(entry, both, sortedMetric, said) : both;
   const { left, top } = slotPosition(grid, slot);
   const word = entryStateWord(entry, stateWords.locked, stateWords.built);
   const locked = isEntryLocked(entry);
@@ -71,6 +75,10 @@ const Plate = memo(function Plate({ entry, grid, slot, armed, enter, sortedMetri
             row. */}
         <span className={styles.firstLine}>
           {enter && <img className={styles.enterMark} style={{ maskImage: `url(${enterMark})` }} alt="" aria-hidden="true" />}
+          {/* A one-line plate's key number, where the readout said the cost, keeps its glyph. */}
+          {numbers.second === null && numbers.glyph !== null && (
+            <img className={styles.unitGlyph} style={{ maskImage: `url(${UNIT_GLYPHS[numbers.glyph]})` }} alt="" aria-hidden="true" />
+          )}
           <span className={classNames(styles.first, numbers.locked && styles.milestone)}>{numbers.first}</span>
         </span>
         {numbers.second !== null && (
@@ -157,6 +165,12 @@ export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SE
   // "MS n" only for a milestone ahead of the city: past it, only the development tree holds a building back.
   const achievedMilestone = useValue(milestone.achievedMilestone$) ?? 0;
   const flow = useNearField(searching, grid.firstCols, grid.lines);
+  // What the readout says once, which the rows that hold it leave blank. See docs/design-notes.md, "Numbers said once".
+  const said = useAssetMenuView((view) => view.said);
+  // The form it draws, which decides the numbers the readout may say once; none once it goes.
+  const drawnForm = grid.form === "tile" ? null : grid.form;
+  useEffect(() => setDrawnForm(drawnForm), [drawnForm]);
+  useEffect(() => () => setDrawnForm(null), []);
   const { cells, slots } = useBodyCells(entries, sections, grid.cols, offset, flow);
 
   return (
@@ -175,6 +189,7 @@ export const ListBody = memo(function ListBody({ entries, grid, sections = NO_SE
               enter={cell.entry.id === enterId}
               sortedMetric={sortedMetric}
               keyKind={keyKind}
+              said={said}
               separators={separators}
               stateWords={stateWords}
               achievedMilestone={achievedMilestone}

@@ -7,9 +7,10 @@
  */
 import { compactCostPerCellForms, compactMoneyForms, compactUnitForms, type NumberSeparators } from "./assetMenuMetricFormat";
 import type { AssetMenuMetric } from "./assetMenuLayout";
-import type { BuildingCatalogEntry } from "./buildingCatalog";
-import { oneNumber, plateNumbers, sortsByValue } from "./listPlate";
-import { isPerCell, keepsUnit } from "./rowNumbers";
+import type { BuildingCatalogEntry, SharedValue } from "./buildingCatalog";
+import { oneNumber, plateNumbers } from "./listPlate";
+import { isPerCell, keepsUnit, sortsByValue } from "./rowNumbers";
+import { NOTHING_SAID } from "./saidOnce";
 import { sortedMetricValue } from "./sortedMetric";
 import { textWidth } from "./textWidth";
 
@@ -46,8 +47,10 @@ export function tileTag(
   achievedMilestone: number,
   tileWidth: number,
   textScale: number,
+  said: readonly SharedValue[] = NOTHING_SAID,
 ): TileTag {
-  const { first: text, locked } = oneNumber(plateNumbers(entry, sortedMetric, separators, lockedWord, achievedMilestone), sortedMetric);
+  // A cost the readout said once leaves the tag blank, as a list plate's cell.
+  const { first: text, locked } = oneNumber(plateNumbers(entry, sortedMetric, separators, lockedWord, achievedMilestone, "capacity", said), sortedMetric);
   const bySort = sortsByValue(sortedMetric);
 
   // The plate's text keeps every unit that tells the tiles apart: a network's cell, an upkeep without

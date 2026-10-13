@@ -7,6 +7,7 @@ import { resetBindings, setBinding, triggers } from "../harness/stubs/cs2-api";
 import { resetTranslations, setTranslation } from "../harness/stubs/cs2-l10n";
 import { bodyGrid, PLATE1_HEIGHT, type BodyGridInput } from "../../src/domain/bodyGeometry";
 import type { BuildingCatalogEntry, CatalogSection } from "../../src/domain/buildingCatalog";
+import { getAssetMenuView, resetAssetMenuView, setReadoutSaid } from "../../src/domain/assetMenuViewStore";
 import { ListBody } from "../../src/mods/Bodies/ListBody";
 
 const grid = (over: Partial<BodyGridInput> = {}) => bodyGrid({
@@ -64,6 +65,48 @@ describe("the list", () => {
     const html = renderHtml(<ListBody entries={road} grid={grid()} keyKind="speed" enterId={null} onPlace={() => undefined} />);
 
     assert.match(html, /<img class="unitGlyph" style="mask-image:url\(gauge\.svg\)"[^>]*><span class="second">100<\/span>/);
+  });
+
+  it("leaves blank only the numbers the readout says once, and prints every other", () => {
+    setReadoutSaid([{ kind: "speed", value: 100, depth: 0 }]);
+    const roads = rows(2, (id) => ({ constructionCost: 5500, costIsPerDistance: true, capacity: null, speedLimit: id === 1 ? 100 : 80 } as Partial<BuildingCatalogEntry>));
+    const html = renderHtml(<ListBody entries={roads} grid={grid()} keyKind="speed" enterId={null} onPlace={() => undefined} />);
+    resetAssetMenuView();
+
+    assert.equal(count(html, /class="second"/), 1);
+    assert.match(html, /<span class="second">80<\/span>/);
+    // Both costs print: the readout said only the speed.
+    assert.equal(count(html, /<span class="first">¢44\/c<\/span>/), 2);
+  });
+
+  it("says a one-line plate's key number by its glyph where the readout says the cost once, and nothing where it says both", () => {
+    const roads = rows(2, (id) => ({ constructionCost: 5500, costIsPerDistance: true, capacity: null, speedLimit: id === 1 ? 100 : 80 } as Partial<BuildingCatalogEntry>));
+    const plate1 = grid({ textScale: 1.3 });
+    setReadoutSaid([{ kind: "cost", value: 5500, depth: 0 }]);
+    const html = renderHtml(<ListBody entries={roads} grid={plate1} keyKind="speed" enterId={null} onPlace={() => undefined} />);
+    setReadoutSaid([{ kind: "cost", value: 5500, depth: 0 }, { kind: "speed", value: 80, depth: 0 }]);
+    const both = renderHtml(<ListBody entries={roads} grid={plate1} keyKind="speed" enterId={null} onPlace={() => undefined} />);
+    resetAssetMenuView();
+
+    // One line, the glyph a sibling of the number in it.
+    assert.equal(count(html, /class="second"/), 0);
+    assert.match(html, /<span class="firstLine"><img class="unitGlyph" style="mask-image:url\(gauge\.svg\)"[^>]*><span class="first">100<\/span><\/span><\/div>/);
+    assert.match(both, /data-catalog-entry="1"[^]*?<span class="firstLine"><img class="unitGlyph"[^>]*><span class="first">100<\/span>/);
+    assert.match(both, /data-catalog-entry="2"[^]*?<span class="firstLine"><span class="first"><\/span><\/span><\/div>/);
+  });
+
+  it("tells the readout the form it draws, a grown small menu's big plate among them, and nothing once it goes", () => {
+    let root: ReactTestRenderer | undefined;
+    act(() => {
+      root = create(body(rows(3), { over: { menuRows: 3, smallMenusGrow: true, textScale: 1.3, bodyHeight: 200 } }));
+    });
+    const drawn = getAssetMenuView().drawnForm;
+    act(() => root!.unmount());
+    const gone = getAssetMenuView().drawnForm;
+    resetAssetMenuView();
+
+    assert.equal(drawn, "big");
+    assert.equal(gone, null);
   });
 
   it("fills the armed building, and only it", () => {

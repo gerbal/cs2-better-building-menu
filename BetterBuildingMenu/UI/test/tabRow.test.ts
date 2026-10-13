@@ -217,18 +217,18 @@ describe("the row at the first step", () => {
   const plain = (count: number) => String(count);
 
   it("keeps All and nineteen tabs on one line at 100% text, with the readout whole", () => {
-    assert.deepEqual(planTabRow(nineteen(), readout, 706, 1, plain), { readout: "full", clipped: false });
+    assert.deepEqual(planTabRow(nineteen(), readout, 706, 1, plain), { readout: "full", legend: "none", clipped: false });
   });
 
   it("keeps the readout's range alone from 110% text, where its two lines no longer fit the row", () => {
-    assert.deepEqual(planTabRow(nineteen(), readout, 706, 1.1, plain), { readout: "range", clipped: false });
+    assert.deepEqual(planTabRow(nineteen(), readout, 706, 1.1, plain), { readout: "range", legend: "none", clipped: false });
   });
 
   it("keeps the range at 130% and at 150% text, where the last tabs clip instead", () => {
     for (const scale of [1.3, 1.5]) {
       const plan = planTabRow(nineteen(), readout, 706, scale, plain);
 
-      assert.deepEqual(plan, { readout: "range", clipped: true }, `at ${scale}`);
+      assert.deepEqual(plan, { readout: "range", legend: "none", clipped: true }, `at ${scale}`);
     }
   });
 
@@ -238,13 +238,13 @@ describe("the row at the first step", () => {
       counts: Array.from({ length: 40 }, (_, index) => ({ id: `Tab${index}`, count: 100 + index })),
     })).items;
 
-    assert.deepEqual(planTabRow(forty, readout, 706, 1, plain), { readout: "range", clipped: true });
+    assert.deepEqual(planTabRow(forty, readout, 706, 1, plain), { readout: "range", legend: "none", clipped: true });
   });
 
   it("fits Education's plate and its four worded levels with the readout whole", () => {
     const levels = tabRow(education()).items;
 
-    assert.deepEqual(planTabRow(levels, { place: "Elementary School", range: "1–22 of 22" }, 706, 1, plain), { readout: "full", clipped: false });
+    assert.deepEqual(planTabRow(levels, { place: "Elementary School", range: "1–22 of 22" }, 706, 1, plain), { readout: "full", legend: "none", clipped: false });
   });
 
   it("budgets the row's two insets, 4 rem on the left and the width strip's 6 on the right", () => {
@@ -257,10 +257,37 @@ describe("the row at the first step", () => {
     assert.equal(planTabRow([], readout, fits - 0.01, 1, plain).clipped, true);
   });
 
+  it("shortens the legend a step at a time, then drops it, and only then the place", () => {
+    // Three tabs at the first step: room for the readout to shrink through every form.
+    const three = tabRow(roads({
+      categories: Array.from({ length: 3 }, (_, index) => category(`Tab${index}`)),
+      counts: Array.from({ length: 3 }, (_, index) => ({ id: `Tab${index}`, count: 12 + index })),
+    })).items;
+    const legends = {
+      full: [{ glyph: "gauge" as const, text: "100 km/h unless shown" }],
+      short: [{ glyph: "gauge" as const, text: "others 100 km/h" }],
+      bare: [{ glyph: "gauge" as const, text: "others 100" }],
+    };
+    const said = { ...readout, legends };
+    const forms = [400, 320, 290, 240, 200, 180].map((width) => {
+      const plan = planTabRow(three, said, width, 1, plain);
+      return `${plan.readout}:${plan.legend}`;
+    });
+
+    assert.deepEqual(forms, ["full:full", "full:short", "full:bare", "full:none", "range:none", "range:none"]);
+    assert.equal(planTabRow(three, said, 180, 1, plain).clipped, true);
+    // Above 100% text the place never shows, and the legend still shortens before it goes.
+    assert.equal(planTabRow(three, said, 706, 1.3, plain).legend, "full");
+  });
+
+  it("says no legend where the form it fits has nothing in it", () => {
+    assert.equal(planTabRow([], { ...readout, legends: { full: [], short: [], bare: [] } }, 706, 1, plain).legend, "none");
+  });
+
   it("budgets a count that has not arrived as blank", () => {
     const blank = tabRow(roads({ counts: [], allCount: null })).items;
 
-    assert.deepEqual(planTabRow(blank, readout, 706, 1, plain), { readout: "full", clipped: false });
+    assert.deepEqual(planTabRow(blank, readout, 706, 1, plain), { readout: "full", legend: "none", clipped: false });
   });
 });
 

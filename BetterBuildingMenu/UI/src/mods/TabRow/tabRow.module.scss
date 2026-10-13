@@ -1,4 +1,5 @@
 @use "../../assetMenuGeometry" as *;
+@use "../../base.scss" as _base;
 
 // The tab row: a band along the box's bottom edge, under the list, holding the menu's tabs on one
 // line. It never wraps and never grows, so the box keeps its height however many tabs a menu has.
@@ -183,9 +184,45 @@ $icon-side: calc(#{$tab-row-height} - #{$tab-count-size} * var(--fontScale));
   white-space: nowrap;
 }
 
+// The second line: the legend, then the range, side by side.
+.line {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  white-space: nowrap;
+}
+
 .range {
   color: var(--bbm-tRead2);
   font-size: calc(#{$tab-count-size} * var(--fontScale));
   line-height: 12rem;
   white-space: nowrap;
+}
+
+// A value said once, or the key kind named: its glyph beside its words, in the place line's brighter ink.
+.said {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 2rem;
+}
+
+.saidText {
+  color: var(--bbm-tRead1);
+  font-size: calc(#{$tab-count-size} * var(--fontScale));
+  line-height: 12rem;
+  white-space: nowrap;
+}
+
+// A sibling of the words, never inside a run of text: a mask there draws nothing.
+.saidGlyph {
+  @include _base.mask-glyph(9rem);
+  background-color: var(--bbm-tRead1);
+}
+
+.sep {
+  padding: 0 3rem;
+  color: var(--bbm-tRead2);
+  font-size: calc(#{$tab-count-size} * var(--fontScale));
+  line-height: 12rem;
 }

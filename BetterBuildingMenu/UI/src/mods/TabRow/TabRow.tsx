@@ -3,9 +3,14 @@ import { FOCUS_DISABLED } from "cs2/input";
 import { useLocalization } from "cs2/l10n";
 import { Button, Tooltip } from "cs2/ui";
 import classNames from "classnames";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 
 import { getNumberSeparators, groupDigits } from "domain/assetMenuMetricFormat";
+import { setReadoutSaid } from "domain/assetMenuViewStore";
+import { listForm } from "domain/bodyGeometry";
+import { hoverCardLabels } from "domain/hoverCardLines";
+import { LEGEND_FORMS, legendParts, NOTHING_SAID, shownKinds, statedValues, type LegendForm, type LegendPart, type LegendWords } from "domain/saidOnce";
+import { sortedMetricFor } from "domain/sortedMetric";
 import { useTextScale } from "domain/textScaleSetting";
 import { NO_TIER_BRACKET } from "domain/menuProgression";
 import { arrivedCount, cssUrl, planTabRow, readoutRange, tabForm, tabRow, type TabCell, type TabForm } from "domain/tabRow";
@@ -14,6 +19,7 @@ import { ALL_CATEGORIES_KEYS, resolveVanillaLabel, vanillaCategoryNameKeys } fro
 import {
   AssetMenu$,
   AssetMenuAllCount$,
+  AssetMenuAtLargeText$,
   AssetMenuCategories$,
   AssetMenuCategory$,
   AssetMenuCategoryCounts$,
@@ -25,9 +31,13 @@ import {
   AssetMenuTierBracket$,
   AssetMenuTuning$,
   BuildingCatalog$,
+  BuildingCatalogSortColumn$,
   CurrentSearch$,
   send,
 } from "mods/bindings";
+import { UNIT_GLYPHS } from "mods/Bodies/unitGlyphs";
+import { useAssetMenuView } from "mods/useAssetMenuView";
+import { useMenuBody } from "mods/useMenuBody";
 import styles from "./tabRow.module.scss";
 
 /**
@@ -54,6 +64,18 @@ const TabIcon = ({ src, plate, inline, onFail }: { src: string; plate: boolean; 
 };
 
 const NONE_FAILED: ReadonlySet<string> = new Set();
+
+/** The legend's words: BBM's own two, and the hover card's names for each kind and for jobs. */
+function legendWords(translate: (id: string, fallback?: string | null) => string | null): LegendWords {
+  const labels = hoverCardLabels(translate);
+
+  return {
+    unlessShown: translate("Tooltip.LABEL[BetterBuildingMenu.ReadoutUnlessShown]", "{0} unless shown") ?? "{0} unless shown",
+    others: translate("Tooltip.LABEL[BetterBuildingMenu.ReadoutOthers]", "others {0}") ?? "others {0}",
+    workersUnit: labels.workersUnit,
+    kinds: { speed: labels.speed, capacity: labels.capacity, workers: labels.workers, lot: labels.lot },
+  };
+}
 
 /**
  * The menu's tabs along the box's bottom edge, under the list: All, then the game's tabs with their
@@ -83,6 +105,12 @@ export const TabRow = ({ width }: { width: number }) => {
   // On unless C# says Never: the binding's fallback is the shipped value.
   const namesAllowed = useValue(AssetMenuTuning$)?.tabNames !== false;
   const separators = useMemo(() => getNumberSeparators(translate), [translate]);
+  const words = useMemo(() => legendWords(translate), [translate]);
+  const body = useMenuBody().drawn;
+  const atLargeText = useValue(AssetMenuAtLargeText$);
+  // The form the list draws, a small menu's grown plate among them; before it draws, its text scale's.
+  const drawnForm = useAssetMenuView((view) => view.drawnForm);
+  const sortedMetric = sortedMetricFor(useValue(BuildingCatalogSortColumn$));
   // A picture that would not load, which the row then draws as the next in the chain.
   const [failedIcons, setFailedIcons] = useState(NONE_FAILED);
   const fail = useCallback((src: string) => setFailedIcons((failed) => (failed.has(src) ? failed : new Set(failed).add(src))), []);
@@ -119,9 +147,25 @@ export const TabRow = ({ width }: { width: number }) => {
   const place = searching && allCount !== null
     ? (translate("Tooltip.LABEL[BetterBuildingMenu.ReadoutHere]", "{0} here") ?? "{0} here").replace("{0}", format(allCount))
     : row.place;
+  // The values said once, of the kinds the body shows, in each of the legend's forms; with none said,
+  // the key kind named. See docs/design-notes.md, "Numbers said once".
+  const facts = page?.facts;
+  const keyKind = facts?.keyKind ?? "";
+  const shown = shownKinds(body, drawnForm ?? listForm(textScale, atLargeText), sortedMetric, keyKind);
+  const stated = facts === undefined || indexing ? NOTHING_SAID : statedValues(facts, shown);
+  const items = page?.items ?? [];
+  const legends = LEGEND_FORMS.reduce<Partial<Record<LegendForm, LegendPart[]>>>(
+    (all, legendForm) => ({ ...all, [legendForm]: legendParts(stated, keyKind, shown, items, separators, words, legendForm) }),
+    {}
+  );
   // Named above the first step where every tab fits so. See docs/design-notes.md, "The tab row".
-  const form = tabForm(row.items, { place, range }, width, textScale, format, namesAllowed);
-  const plan = planTabRow(row.items, { place, range }, width, textScale, format, form);
+  const form = tabForm(row.items, { place, range, legends }, width, textScale, format, namesAllowed);
+  const plan = planTabRow(row.items, { place, range, legends }, width, textScale, format, form);
+  const legend = legends[plan.legend] ?? [];
+  // The rows leave blank only what the readout says: a legend short of room says nothing, and they print it.
+  const said = plan.legend === "none" ? NOTHING_SAID : stated;
+  useEffect(() => setReadoutSaid(said), [said]);
+  useEffect(() => () => setReadoutSaid(NOTHING_SAID), []);
 
   const select = (cell: TabCell) => {
     if (cell.kind === "branch") send({ method: "SetAssetMenuStripTab", args: [cell.id] });
@@ -169,7 +213,21 @@ export const TabRow = ({ width }: { width: number }) => {
         <div className={styles.spacer} />
         <div className={styles.readout} data-readout={plan.readout}>
           {plan.readout === "full" && <span className={styles.place}>{place}</span>}
-          <span className={styles.range}>{range}</span>
+          {/* The legend, then the range: each part in a box of its own, the glyph its sibling, "·" after it. */}
+          <span className={styles.line}>
+            {legend.map((part, index) => (
+              <Fragment key={index}>
+                <span className={styles.said}>
+                  {part.glyph !== null && (
+                    <img className={styles.saidGlyph} style={{ maskImage: `url(${UNIT_GLYPHS[part.glyph]})` }} alt="" aria-hidden="true" />
+                  )}
+                  <span className={styles.saidText}>{part.text}</span>
+                </span>
+                <span className={styles.sep}>·</span>
+              </Fragment>
+            ))}
+            <span className={styles.range}>{range}</span>
+          </span>
         </div>
       </div>
     </div>

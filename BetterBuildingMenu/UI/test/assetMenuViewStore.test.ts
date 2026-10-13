@@ -21,7 +21,7 @@ describe("Asset menu view store", () => {
   beforeEach(() => resetAssetMenuView());
 
   it("starts with nothing chosen", () => {
-    assert.deepEqual(getAssetMenuView(), { disclosures: {}, anchors: {}, listStart: null, slot: null });
+    assert.deepEqual(getAssetMenuView(), { disclosures: {}, anchors: {}, listStart: null, slot: null, said: [], drawnForm: null });
   });
 
   it("tells a subscriber when a field moves, and not when it does not", () => {

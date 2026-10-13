@@ -214,6 +214,8 @@
   "Options.LABEL[BetterBuildingMenu.SaidOnceAt90]": "90%",
   "Options.OPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.DevDimTypedWord]": "Dim the typed word",
   "Options.OPTION_DESCRIPTION[BetterBuildingMenu.BetterBuildingMenu.Mod.BetterBuildingMenuSettings.DevDimTypedWord]": "Developer mode only. Off, as it ships, a search result's name draws what you typed like the rest of it. On, it dims it, so the rest of the name stands out.",
+  "Tooltip.LABEL[BetterBuildingMenu.ReadoutUnlessShown]": "{0} unless shown",
+  "Tooltip.LABEL[BetterBuildingMenu.ReadoutOthers]": "others {0}",
   "Tooltip.LABEL[BetterBuildingMenu.GroupBy]": "Group by",
   "Tooltip.LABEL[BetterBuildingMenu.GroupedBy]": "Grouped by {0}",
   "Tooltip.LABEL[BetterBuildingMenu.SortedBy]": "Sorted by {0}, {1}",

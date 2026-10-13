@@ -1331,6 +1331,26 @@ the view's key number, a road its speed, by the glyph for its unit. A road's cos
 kilometre in the list, the tiles and the cards; they now say them per cell. Under a sort by upkeep a
 building's bill read with its month in the list; every row's now reads without it.
 
+**The readout's legend.** Before the range, the readout says the shared values of the kinds the body
+shows (`shownKinds`): the cost and the key number on a list plate with two numbers, the cost alone
+where a sort by a value takes the key number's place, on a one-line plate or a tile's tag the cost
+(nothing under a sort by a value), and nothing in the cards, whose card says each of its own. The list
+tells the readout the form it draws (`setDrawnForm`), so a small menu's grown plate, which keeps both
+numbers at large text, has its key number explained. Each value is said by its glyph: "100 km/h unless
+shown". Where it says none, it names the key kind by its glyph and the hover card's word ("Speed
+limit"), so a row's second number is never unexplained. Short of room it shortens a step at a time
+("others 100 km/h", then "others 100"), then drops the legend, then the place line, and only then do
+the last tabs clip (`planTabRow`). The legend's widths come from the tab row's own estimate, as the
+rest of the row's do. What the readout says it puts in the view store (`setReadoutSaid`), and the rows
+read it there: a row leaves blank only a cell whose value the readout said (`holdsBack`), so a blank
+cell only ever means the readout's value. A legend short of room says nothing, and every row prints its
+own. A locked building's slot still says why it waits. A one-line plate shows one number: under a sort
+by a value that value; else the cost, or where the readout said the cost, the key number by its glyph;
+it is blank only where the readout said both (`oneLineNumber`).
+
+**This changes 0.2.x:** every row printed every number; where most of a view's open rows share one,
+the readout now says it once and only the rows that differ print it.
+
 ## Names
 
 **The distinguishing word.** Each row of a page carries the word that tells it apart from its nearest
