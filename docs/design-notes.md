@@ -603,7 +603,9 @@ Under the box's bottom edge a small trapezoid marks the lit bar button: 38.4 rem
 26.4 at its foot, 4 tall, in the look's `notch`, the game's selected colour, which no interface style
 changes. It is a child of the box at `top: 100%`, so it follows the box at every Width step and
 height, and it takes no presses. It is drawn with borders, a 4 rem top border in the colour and 6 rem
-transparent sides, each a longhand, since Cohtml drops a border shorthand fed by `var()`.
+transparent sides, each a longhand, since Cohtml drops a border shorthand fed by `var()`. Cohtml has
+no `content-box`, so the box is sized border-box: its width is the 38.4 top with the sides inside it,
+which leaves the 26.4 foot, and the stylesheet guard rejects `content-box` anywhere.
 
 Its place is read, not computed. The button is the game's own: inside the bar (`findVanillaToolbar`),
 the button strip, matched on its stylesheet module's class, then its `button.selected`, which the

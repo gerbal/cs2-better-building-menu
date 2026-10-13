@@ -225,9 +225,11 @@ describe("Asset menu stylesheet contracts", () => {
     assert.equal(notch.position, "absolute");
     assert.equal(notch.top, "100%");
     assert.equal(notch["pointer-events"], "none");
-    assert.equal(notch["box-sizing"], "content-box");
-    // Its foot and both sides make its top, 4 tall, in the look's notch.
-    assert.ok(Math.abs(rem(notch.width) + 2 * rem(notch["border-left-width"]) - NOTCH_TOP_WIDTH) < 1e-9);
+    // Cohtml sizes every box border-box, so the width is the drawn top, the side borders inside it:
+    // the foot is what is left between them, 4 tall, in the look's notch.
+    assert.equal(notch["box-sizing"], "border-box");
+    assert.ok(Math.abs(rem(notch.width) - NOTCH_TOP_WIDTH) < 1e-9, "the width is the top notch.ts places");
+    assert.ok(Math.abs(rem(notch.width) - 2 * rem(notch["border-left-width"]) - 26.4) < 1e-9, "the foot is what the borders leave");
     assert.equal(notch["border-right-width"], notch["border-left-width"]);
     assert.equal(notch["border-top-width"], "4rem");
     assert.equal(notch["border-top-color"], "var(--bbm-notch)");
@@ -464,6 +466,13 @@ const UNSUPPORTED: { matches: (prop: string, value: string) => boolean; declarat
     matches: (prop) => prop === "object-fit",
     declaration: "object-fit",
     why: "Never implemented in Cohtml (no changelog row through 3.1; the parser rejects it). Size the picture's box instead.",
+  },
+  {
+    matches: (prop, value) => prop === "box-sizing" && value === "content-box",
+    declaration: "box-sizing: content-box",
+    why:
+      "Cohtml 2.2 has no content-box: it sizes every box border-box, so a width meant as the content's "
+      + "draws that much narrower by the padding and borders. Size the box as border-box.",
   },
   {
     matches: (_, value) => /var\(\s*--[\w-]+\s*,/.test(value),
