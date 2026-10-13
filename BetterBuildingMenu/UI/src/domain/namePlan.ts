@@ -40,13 +40,13 @@ export const CUT_MARK = "…";
 /** The share of its characters below which a cut keeps too little, and a hyphen may break instead. */
 const HYPHEN_SHARE = 0.6;
 
-/** Words a head never ends on: it would read as unfinished. */
-const STOP_WORDS: ReadonlySet<string> = new Set([
+/** Words a head never ends on, nor a tag says alone: it would read as unfinished. */
+export const STOP_WORDS: ReadonlySet<string> = new Set([
   "a", "an", "and", "at", "by", "de", "del", "der", "des", "die", "du", "for", "in", "la", "le", "of", "on", "the", "to", "und", "von", "with", "w/", "&", "+", "-", "–", "—", ",",
 ]);
 
-/** A word that only parts two others: it never opens a line, nor a cut's tail. */
-const SEPARATORS: ReadonlySet<string> = new Set(["-", "–", "—", ","]);
+/** A word that only parts two others: it never opens a line, nor a cut's tail, nor a tag. */
+export const SEPARATORS: ReadonlySet<string> = new Set(["-", "–", "—", ","]);
 
 /** A unit a line is laid out in: its text, and whether a space comes before it. */
 interface Piece {

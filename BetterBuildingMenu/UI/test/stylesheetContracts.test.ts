@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { ASSET_MENU_MIN_HEIGHT, ASSET_MENU_RESIZE_HANDLE_HEIGHT, NOTCH_TOP_WIDTH, TAB_CELL_MIN_WIDTH, TAB_CELL_PADDING } from "../src/domain/assetMenuLayout.ts";
 import { cardGeometry } from "../src/domain/cardsLayout.ts";
 import { READOUT_GLYPH, READOUT_GLYPH_GAP, READOUT_SEP_PADDING } from "../src/domain/tabRow.ts";
+import { tagRoom } from "../src/domain/tileTag.ts";
 import { declarationsOf, everyDeclaration, moduleSheets, rem, resolvedOn, selectorsOf, sides, winnerOn } from "./harness/compiledCss.ts";
 
 /**
@@ -532,6 +533,20 @@ describe("a tile's tag and name line are the sizes the UI budgets them at", () =
     assert.equal(tag["box-sizing"], "border-box");
     assert.equal(tag.overflow, "hidden");
     assert.equal(tag["white-space"], "nowrap");
+  });
+
+  it("draws a look-alike's tag in the cost tag's face at the tile's top, its room on a locked tile ending at the lock glyph", () => {
+    const tag = declarationsOf(TILES, ".tag");
+    const lookAlike = declarationsOf(TILES, ".lookAlike");
+    const lock = declarationsOf(TILES, ".lockGlyph");
+
+    for (const property of ["font-size", "padding", "left", "box-sizing", "height", "line-height", "overflow", "white-space", "background-color", "color"]) {
+      assert.equal(lookAlike[property], tag[property], property);
+    }
+    assert.equal(lookAlike.top, "2rem");
+    assert.equal(lookAlike.bottom, undefined);
+    // The tag's right edge, its left plus its room, meets the glyph's left edge and never passes it.
+    assert.equal(rem(tag.left) + tagRoom(64, true), 64 - rem(lock.right) - rem(lock.width));
   });
 
   it("draws the name line's name in the font TilesBody budgets its characters by", () => {

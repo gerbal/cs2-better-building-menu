@@ -22,15 +22,21 @@ const TAG_PADDING = 6;
 /** The tag's left edge, inset from the tile's as the picture is. */
 const TAG_LEFT = 2;
 
-/** The widest a tag may be on a tile this wide: from its left edge to the tile's, which clips it. */
-export function tagRoom(tileWidth: number): number {
-  return tileWidth - TAG_LEFT;
+/** What a locked tile's lock glyph takes at its top right, from the tile's edge: tilesBody.module.scss's `.lockGlyph`. */
+const LOCK_GLYPH_ROOM = 17;
+
+/**
+ * The widest a tag may be on a tile this wide: from its left edge to the tile's, which clips it; at the
+ * top of a locked tile, to its lock glyph, which a tag never covers.
+ */
+export function tagRoom(tileWidth: number, besideLock = false): number {
+  return tileWidth - TAG_LEFT - (besideLock ? LOCK_GLYPH_ROOM : 0);
 }
 
 /** Whether a tag saying this fits a tile this wide, at this text scale, padding and all. */
-export function tagFits(text: string, tileWidth: number, textScale: number): boolean {
+export function tagFits(text: string, tileWidth: number, textScale: number, besideLock = false): boolean {
   // The wider of the game's two fonts: erring wide only says a figure short that would have fitted.
-  return TAG_PADDING + textWidth(text, TAG_FONT * textScale, "wider") <= tagRoom(tileWidth);
+  return TAG_PADDING + textWidth(text, TAG_FONT * textScale, "wider") <= tagRoom(tileWidth, besideLock);
 }
 
 export interface TileTag {
@@ -86,17 +92,23 @@ export function tileTag(
   return { text: number ?? cutToTag(text, tileWidth, textScale), locked };
 }
 
-/**
- * A tag's words that fit it, cut once by the name planner where they run over: "…" where they were cut,
- * never a clip, as Cohtml draws no CSS ellipsis. The planner measures one font and the tag the wider of
- * two, so the room narrows until the cut fits both.
- */
+/** A tag's words that fit it, cut once by the name planner where they run over. */
 function cutToTag(text: string, tileWidth: number, textScale: number): string {
-  if (tagFits(text, tileWidth, textScale)) return text;
+  return cutToFit(text, (line) => tagFits(line, tileWidth, textScale), [], TAG_FONT * textScale, tagRoom(tileWidth) - TAG_PADDING);
+}
 
-  for (let room = tagRoom(tileWidth) - TAG_PADDING; room > 0; room -= 1) {
-    const [line = ""] = planName(text, { width: room, lines: 1, font: TAG_FONT * textScale }).lines;
-    if (tagFits(line, tileWidth, textScale)) return line;
+/**
+ * Words that fit a tag, cut once by the name planner where they run over: "…" where they were cut,
+ * never a clip, as Cohtml draws no CSS ellipsis, every word `keep` holds and every number whole. The
+ * planner measures one font and a tag the wider of two, so the room narrows from `from` until the cut
+ * fits both.
+ */
+export function cutToFit(text: string, fits: (line: string) => boolean, keep: readonly string[] = [], font = TAG_FONT, from = textWidth(text, font)): string {
+  if (fits(text)) return text;
+
+  for (let room = from; room > 0; room -= 1) {
+    const [line = ""] = planName(text, { width: room, lines: 1, font }, { keep }).lines;
+    if (fits(line)) return line;
   }
 
   // No letter fits beside the mark: the mark alone still says a word was cut.

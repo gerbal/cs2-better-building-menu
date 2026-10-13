@@ -1053,7 +1053,7 @@ as lines with their counts (the unused-export guard allows no export without a c
 (`BuildingGrid`) is gone too, the tiles drawing in its place, and with it `stripRedundantNamePrefix`,
 which told look-alike names apart on Grid's tiles by dropping the theme and category words a name
 repeats. The label plates derive the first again from the page's sections (`bodyCells`, see "Label
-plates"); until the name planner derives the second, the tiles' name line tells look-alikes apart.
+plates"), and the tiles' look-alike tags the second from each row's distinguishing word (see "Names").
 
 **Slots.** The list and the tiles place each building from its index alone (`bodyGrid`,
 `slotPosition`): left to right, then down, a cell and a 2 rem gap apart, inside the box less 8 rem
@@ -1184,7 +1184,8 @@ to 60% of the line and is planned on it at the line's own font (see "Names"); it
 the numbers follow the name, and only a line drawn past the box narrows its room.
 
 **This changes 0.2.x:** Grid drew each tile's name under its picture; a tile now draws only its picture
-and its tag, and the name is the line's under the tiles, for the tile pointed at or armed. Under a sort by
+and its tag, with a look-alike's tag at its top (see "Names"), and the name is the line's under the
+tiles, for the tile pointed at or armed. Under a sort by
 the lot Grid said the lot on each tile; the tag says the cost there, and the lot is the name line's.
 
 **The cards** draw each building on a card as wide as its words (see "The cards").
@@ -1427,6 +1428,31 @@ opens with U+200B before its space (`nameRuns`, `AFTER_SPAN`), which keeps it.
 
 **This changes 0.2.x:** a list row's name was drawn whole and clipped at its box; it is now planned to
 its lines and cut once, keeping the words that tell it apart, with "…" where words were dropped.
+
+**Look-alike tags.** On the tiles drawn, those that share a first word, whatever its case, are a run of
+look-alikes, whose pictures alone do not tell them apart (the theme and density families of Zones: "NA
+Low Density Basic Housing", "NA Low Density Classic Housing"). Every member gets a tag at its top left,
+in the cost tag's face, saying what tells it apart (`lookAlikeTags`), the first of these that fits the
+tag and no other tag says: its whole name; its distinguishing word; that word and the next; the run's
+word and that word ("UK Medium" beside "CHI Medium"), which tells two runs apart; its name cut once by
+the planner, that word and every number whole, or where that word alone is wider than the tag, the word
+cut inside it ("Gam…Roof"). A number is never bare: it says "#02". No tag opens or ends on a separator,
+and a word like "with" never stands alone: the word after it tells the tile apart ("Median" for
+"Five-Lane Road with Median"). The tags are unique on the screen where a form can make them so: members
+whose tags would read alike, in a run or across two, each take their next form. They are counted over
+every tile the body draws, which holds every tile on the screen, so a tag can change when Load more
+draws a look-alike. A tag cuts the word that tells it apart only where that word alone is wider than the
+tag: where no form that keeps it whole both fits and differs (two families' "Housing" on the smallest
+tile, or a road's "#01" at 150% text), each says that word, never a longer form that tells no more, and
+those two read alike. A tag never says another drawn tile's name, which would read as that tile: a
+member left with no other form goes untagged. On a locked tile the tag's room ends at the lock glyph,
+which it never covers, and its forms are measured in that room. A tile with no look-alike drawn with it
+draws no tag at its top: the line under the tiles names it. A tag carries `data-bbm-tag`, so the live
+check and the render tests count the tags drawn.
+
+**This changes 0.2.x:** Grid drew each tile's name with its repeated theme and category words dropped,
+which kept two look-alikes from reading alike; a tile with a look-alike drawn beside it now says only
+what tells it apart.
 
 ## The search field's keys
 

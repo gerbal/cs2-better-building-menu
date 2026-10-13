@@ -3,7 +3,7 @@ import { milestone } from "cs2/bindings";
 import { FOCUS_DISABLED } from "cs2/input";
 import { Button, Scrollable } from "cs2/ui";
 import classNames from "classnames";
-import { memo, useState, type ReactNode } from "react";
+import { memo, useMemo, useState, type ReactNode } from "react";
 
 import type { NumberSeparators } from "domain/assetMenuMetricFormat";
 import type { AssetMenuMetric } from "domain/assetMenuLayout";
@@ -11,10 +11,11 @@ import { NO_SECTIONS } from "domain/bodyCells";
 import { labelPlace, screenSlots, slotPosition, slotsHeight, TILE_NAME_LINE_MIN, type BodyGrid } from "domain/bodyGeometry";
 import type { BuildingCatalogEntry, CatalogSection, SharedValue } from "domain/buildingCatalog";
 import { entryStateWord, hasVectorThumbnail, isEntryAlreadyBuilt, isEntryLocked, lockedThumbnail } from "domain/buildingLockState";
+import { lookAlikeTags } from "domain/lookAlikeTags";
 import { sortedMetricFor } from "domain/sortedMetric";
 import { thumbnailErrorHandler } from "domain/thumbnailFallback";
 import { tileFacts } from "domain/tileNameLine";
-import { tagRoom, tileTag } from "domain/tileTag";
+import { tagFits, tagRoom, tileTag } from "domain/tileTag";
 import { useTextScale } from "domain/textScaleSetting";
 import { ActivePrefabId$, AssetMenuTuning$, BuildingCatalogSortColumn$, SHIPPED_TUNING } from "mods/bindings";
 import { useAssetMenuView } from "mods/useAssetMenuView";
@@ -41,6 +42,8 @@ interface TileProps {
   sortedMetric: AssetMenuMetric | null;
   /** The values the readout says once: a tag that would say one is left off. */
   said: readonly SharedValue[];
+  /** What tells this tile apart from the look-alikes drawn with it; null where none is drawn. */
+  lookAlike: string | null;
   textScale: number;
   separators: NumberSeparators;
   stateWords: StateWords;
@@ -52,10 +55,11 @@ interface TileProps {
 
 /**
  * One building as a picture tile, with a tag at its foot: its cost, or why a locked one waits, or under
- * a sort by a value that value. Its name is the line's under the tiles. The live check and the render
- * tests count what a body shows through the data-bbm markers.
+ * a sort by a value that value; and where a look-alike is drawn with it, a tag at its top saying what
+ * tells it apart. Its name is the line's under the tiles. The live check and the render tests count what
+ * a body shows through the data-bbm markers.
  */
-const Tile = memo(function Tile({ entry, grid, slot, armed, sortedMetric, said, textScale, separators, stateWords, achievedMilestone, hoverCard, onPlace, onPoint }: TileProps) {
+const Tile = memo(function Tile({ entry, grid, slot, armed, sortedMetric, said, lookAlike, textScale, separators, stateWords, achievedMilestone, hoverCard, onPlace, onPoint }: TileProps) {
   const name = entry.name || entry.prefabName;
   const locked = isEntryLocked(entry);
   const built = isEntryAlreadyBuilt(entry);
@@ -99,8 +103,14 @@ const Tile = memo(function Tile({ entry, grid, slot, armed, sortedMetric, said, 
         </span>
         {/* A raster, because a masked vector is what this engine cannot draw. */}
         {locked && <img className={styles.lockGlyph} src="coui://betterbuildingmenu/LockRaster.png" alt="" aria-hidden="true" />}
+        {lookAlike !== null && (
+          // Bounded inline, on a locked tile short of its lock glyph, which it never covers.
+          <span className={styles.lookAlike} style={{ maxWidth: `${tagRoom(grid.cellWidth, locked)}rem` }} data-bbm-tag="true">
+            {lookAlike}
+          </span>
+        )}
         {tag.text !== "" && (
-          // Bounded inline, as Tile size sizes the tile: a figure the tag cannot hold is cut with an ellipsis, never silently.
+          // Bounded inline, as Tile size sizes the tile: a figure the tag cannot hold is said short, never cut.
           <span className={classNames(styles.tag, tag.locked && styles.milestone)} style={{ maxWidth: `${tagRoom(grid.cellWidth)}rem` }} data-bbm-fact="true">
             {tag.text}
           </span>
@@ -137,6 +147,11 @@ export const TilesBody = memo(function TilesBody({ entries, grid, sections = NO_
   const lineKnob = useValue(AssetMenuTuning$).tileNameLine ?? SHIPPED_TUNING.tileNameLine;
   const { cells, slots } = useBodyCells(entries, sections, grid.cols, offset);
   const said = useAssetMenuView((view) => view.said);
+  // The tiles drawn that share a first word, each tagged with what tells it apart, in its own tile's room.
+  const lookAlikes = useMemo(
+    () => lookAlikeTags(entries, (text, entry) => tagFits(text, grid.cellWidth, textScale, isEntryLocked(entry))),
+    [entries, grid.cellWidth, textScale],
+  );
   const hoverCard = useHoverCardContext();
   // "MS n" only for a milestone ahead of the city: past it, only the development tree holds a building back.
   const achievedMilestone = useValue(milestone.achievedMilestone$) ?? 0;
@@ -166,6 +181,7 @@ export const TilesBody = memo(function TilesBody({ entries, grid, sections = NO_
                 armed={armedId !== 0 && cell.entry.id === armedId}
                 sortedMetric={sortedMetric}
                 said={said}
+                lookAlike={lookAlikes.get(cell.entry.id) ?? null}
                 textScale={textScale}
                 separators={separators}
                 stateWords={stateWords}

@@ -73,13 +73,11 @@
   height: 14rem;
 }
 
-// The cost or the sorted value, on a tag at the tile's foot. Its font and padding are tileTag.ts's, which
-// decides when a figure is said short and cuts one that still runs over with "…"; the width is bounded
-// inline.
-.tag {
+// A tag's face: its font and padding are tileTag.ts's, which decides when a figure is said short and
+// cuts words that still run over with "…"; the width is bounded inline.
+@mixin tag-face {
   position: absolute;
   left: 2rem;
-  bottom: 2rem;
   box-sizing: border-box;
   height: 13rem;
   padding: 0 3rem;
@@ -93,6 +91,19 @@
   border-bottom-right-radius: var(--bbm-tagRadius);
   background-color: var(--bbm-tagBg);
   color: var(--bbm-tagText);
+}
+
+// The cost or the sorted value, on a tag at the tile's foot.
+.tag {
+  @include tag-face;
+  bottom: 2rem;
+}
+
+// What tells a look-alike apart from the others drawn, on a tag at the tile's top, clear of a lock
+// glyph. See docs/design-notes.md, "Names".
+.lookAlike {
+  @include tag-face;
+  top: 2rem;
 }
 
 // The tag stays dark under every interface style, so the look's own amber reads on it.

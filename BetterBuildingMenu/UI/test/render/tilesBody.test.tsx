@@ -77,11 +77,35 @@ describe("the tiles", () => {
     assert.match(render([entry(1, { capacity: 300 })]), /<span class="tag"[^>]*>¢1[^<]*000<\/span>/);
   });
 
-  it("draw no name on a tile, only its tag: the name is the line's under them", () => {
-    const tiles = [...render(rows(2)).matchAll(/<button class="tile[^"]*"[^>]*>(.*?)<\/button>/g)].map(([, inner]) => inner.replace(/<[^>]*>/g, ""));
+  it("draw no name on a tile that has no look-alike drawn with it, only its tag: the name is the line's under them", () => {
+    const named = rows(2, (id) => ({ name: id === 1 ? "Clinic" : "Hospital" }));
+    const tiles = [...render(named).matchAll(/<button class="tile[^"]*"[^>]*>(.*?)<\/button>/g)].map(([, inner]) => inner.replace(/<[^>]*>/g, ""));
 
     assert.equal(tiles.length, 2);
     for (const text of tiles) assert.match(text, /^¢1[^A-Za-z]*000$/);
+  });
+
+  it("tag look-alikes at their top with the word that tells each apart, a whole name where it fits", () => {
+    const zones = [
+      { name: "NA Low Density Basic Housing", distinctWord: "Basic" },
+      { name: "NA Low Density Classic Housing", distinctWord: "Classic" },
+      { name: "NA Pack", distinctWord: "Pack" },
+      { name: "Modern Brick SF Rowhomes" },
+    ];
+    const html = render(rows(4, (id) => zones[id - 1]));
+
+    assert.equal(count(html, /class="lookAlike"/), 3);
+    // Marked, so the live check and the render tests can count them.
+    assert.match(html, /<span class="lookAlike" style="max-width:62rem" data-bbm-tag="true">Basic<\/span>/);
+    assert.match(html, /<span class="lookAlike" style="max-width:62rem" data-bbm-tag="true">NA Pack<\/span>/);
+    assert.doesNotMatch(html, /lookAlike" [^>]*>Modern/);
+  });
+
+  it("keep a locked look-alike's tag clear of its lock glyph, measured in the room left beside it", () => {
+    const html = render(rows(2, (id) => ({ name: id === 1 ? "NA Pack" : "NA Mobile Homes", distinctWord: id === 1 ? "Pack" : "Mobile", isLocked: id === 1 } as Partial<BuildingCatalogEntry>)));
+
+    assert.match(html, /<img class="lockGlyph"[^>]*><span class="lookAlike" style="max-width:45rem" data-bbm-tag="true">Pack<\/span>/);
+    assert.match(html, /<span class="lookAlike" style="max-width:62rem" data-bbm-tag="true">Mobile<\/span>/);
   });
 
   it("keep the game's unique mark on a unique tile, shown on hover as 0.2.x's grid did", () => {
