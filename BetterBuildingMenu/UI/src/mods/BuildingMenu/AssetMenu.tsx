@@ -38,7 +38,8 @@ export interface AssetMenuProps {
 
 export const AssetMenu = ({ onClose }: AssetMenuProps) => {
   const { step, drawnStep, menuWidth, paneShown, snaps, screen } = useAssetMenuLayout();
-  const { height: catalogHeight, isResizing, beginResize, blocker } = useAssetMenuHeight();
+  // The top edge drags from the body as drawn, which a tall stored height exceeds under the top HUD.
+  const { height: catalogHeight, isResizing, beginResize, blocker } = useAssetMenuHeight(drawnBodyHeight);
   const widthDrag = useAssetMenuWidthDrag({ menuWidth, step, drawnStep, snaps, screen });
   const look = useLookRoot();
   // The box follows a width drag, and keeps the snapped width until the stored step comes back.

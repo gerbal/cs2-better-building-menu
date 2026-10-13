@@ -28,12 +28,16 @@ export interface AssetMenuHeight {
   blocker: JSX.Element | null;
 }
 
+const asStored = (height: number): number => height;
+
 /**
  * One height for both panels. The drag runs through the live binding and only
  * the release writes the settings file; the game owns the number, so the
- * build menu and the extension picker cannot disagree about it.
+ * build menu and the extension picker cannot disagree about it. `drawnAt` is the
+ * height a panel draws a stored height at: a drag starts there and stops at its
+ * ceiling, so the edge moves at once from where it is drawn.
  */
-export function useAssetMenuHeight(): AssetMenuHeight {
+export function useAssetMenuHeight(drawnAt: (height: number) => number = asStored): AssetMenuHeight {
   const [isResizing, setIsResizing] = useState(false);
   const resizeState = useRef<{ active: boolean; startY: number; startHeight: number; pxPerRem?: number }>({
     active: false,
@@ -80,7 +84,7 @@ export function useAssetMenuHeight(): AssetMenuHeight {
     // measured off the strip just pressed: drawn, and a known rem tall.
     const pressed = event.currentTarget as Element | null | undefined;
     const pxPerRem = pxPerRemFrom(pressed?.getBoundingClientRect?.().height, heightRem);
-    resizeState.current = { active: true, startY: event.clientY, startHeight: height, pxPerRem };
+    resizeState.current = { active: true, startY: event.clientY, startHeight: drawnAt(height), pxPerRem };
     setIsResizing(true);
   }
 
@@ -93,7 +97,7 @@ export function useAssetMenuHeight(): AssetMenuHeight {
       return;
     }
 
-    pending.current.height = draggedAssetMenuHeight(state.startHeight, state.startY, event.clientY, state.pxPerRem);
+    pending.current.height = drawnAt(draggedAssetMenuHeight(state.startHeight, state.startY, event.clientY, state.pxPerRem));
 
     if (pending.current.frame === 0) {
       pending.current.frame = requestAnimationFrame(flushHeight);

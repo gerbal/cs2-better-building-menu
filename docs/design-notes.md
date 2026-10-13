@@ -434,7 +434,10 @@ The upgrades panel keeps the stored height as its cap. The settings migration's 
 room between its bottom edge (954 on the layout's frame) and the top HUD's band (`TOP_HUD_ALLOWANCE`,
 60), whichever is less (`drawnBoxHeight`), and the body at that less the chrome. So the top row
 never sits under the HUD: a stored body past 830.25 draws at 830.25. The stored height and the
-drag's ceiling of 960 are kept, and the popovers hang from the box as drawn. The HUD's 60 is an
+drag's ceiling of 960 are kept, and the popovers hang from the box as drawn. The top edge drags from
+the body as drawn and stops at the room (`useAssetMenuHeight(drawnBodyHeight)`), so the edge moves
+at once from where it is drawn, and a stored height above the room comes down to where the first
+drag lands. The upgrades panel drags from the stored height, as before. The HUD's 60 is an
 estimate, to be measured in game.
 
 ## The top row

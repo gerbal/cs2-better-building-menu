@@ -8,6 +8,7 @@ import {
   ASSET_MENU_MIN_HEIGHT,
   clampAssetMenuHeight,
   draggedAssetMenuHeight,
+  drawnBodyHeight,
   TOP_EDGE_HEIGHT,
 } from "../../src/domain/assetMenuLayout";
 import { AssetMenuResizeHandle, useAssetMenuHeight, type AssetMenuHeight } from "../../src/mods/AssetMenuResizeHandle/AssetMenuResizeHandle";
@@ -197,5 +198,60 @@ describe("the resize strip", () => {
     strip(false, (received) => pressed.push(received)).root.findByProps({ className: "resizeHandle" }).props.onMouseDown(event);
 
     assert.deepEqual(pressed, [event]);
+  });
+});
+
+describe("dragging the build menu's top edge from a stored height above the room under the top HUD", () => {
+  let root: ReactTestRenderer | undefined;
+  let menu: AssetMenuHeight;
+  // The build menu's own hook: the drag starts from, and stops at, the body as drawn.
+  const DrawnProbe = () => {
+    menu = useAssetMenuHeight(drawnBodyHeight);
+    return menu.blocker;
+  };
+
+  beforeEach(() => {
+    resetBindings();
+    frames = [];
+    globals.requestAnimationFrame = (callback: () => void) => frames.push(callback);
+    globals.cancelAnimationFrame = (handle: number) => {
+      if (handle > 0) frames[handle - 1] = null;
+    };
+    setBinding("BetterBuildingMenu", "AssetMenuHeight", 900);
+    act(() => {
+      root = create(<DrawnProbe />);
+    });
+    // The edge is drawn as many pixels tall as it is rem, so a pixel is a rem here.
+    act(() => menu.beginResize({ clientY: 500, currentTarget: { getBoundingClientRect: () => ({ height: TOP_EDGE_HEIGHT }) } }, TOP_EDGE_HEIGHT));
+  });
+
+  afterEach(() => {
+    act(() => root?.unmount());
+    root = undefined;
+  });
+
+  const move = (clientY: number) => act(() => root!.root.find((node) => node.props.onMouseMove).props.onMouseMove({ clientY, buttons: 1 }));
+  const release = () => act(() => root!.root.find((node) => node.props.onMouseUp).props.onMouseUp());
+
+  it("is drawn at the room, 830.25, so the drag starts there", () => {
+    assert.equal(drawnBodyHeight(900), 830.25);
+  });
+
+  it("moves the edge at once from where it is drawn, and the release writes where it lands", () => {
+    move(510);
+    nextFrame();
+    assert.deepEqual(heights(), [820.25], "10 rem down from the drawn 830.25, not from the stored 900");
+
+    release();
+    assert.deepEqual(heights(), [820.25]);
+    assert.equal(names().at(-1), "CommitAssetMenuHeight");
+  });
+
+  it("holds a drag up at the room's height", () => {
+    move(490);
+    nextFrame();
+    release();
+
+    assert.deepEqual(heights(), [830.25]);
   });
 });
