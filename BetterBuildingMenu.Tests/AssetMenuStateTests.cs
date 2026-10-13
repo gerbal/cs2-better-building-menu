@@ -766,6 +766,16 @@ public sealed class AssetMenuSearchTests
         Assert.Same(typed, typed.SetDescending(true));
     }
 
+    // The UI sends the column and then the direction, and the direction is swallowed under Match, so
+    // the column itself must clear a direction a sort picked during the search left set.
+    [Fact]
+    public void PickingMatchClearsTheDirection()
+    {
+        var matched = Opened(OnHighways).Search("four").SetSortColumn("Name").SetDescending(true).SetSortColumn(BuildingCatalogQuery.MatchSort);
+
+        Assert.False(matched.Query.Descending);
+    }
+
     [Fact]
     public void ASearchRunsOverTheWholeMenuAndKeepsTheTabAndSortItBeganOn()
     {
@@ -787,6 +797,7 @@ public sealed class AssetMenuSearchTests
         var on = picked.Search("four l");
 
         Assert.Equal(picked.ListStart, on.ListStart);
+        Assert.Equal(0, on.Anchor);
         Assert.Equal("ConstructionCost", on.Query.SortColumn);
         Assert.Equal(BuildingCatalogQuery.DefaultLimit, on.Query.Limit);
     }
@@ -804,6 +815,19 @@ public sealed class AssetMenuSearchTests
         Assert.Equal(typed.ListStart + 1, cleared.ListStart);
         Assert.Null(cleared.PreSearch);
         Assert.Equal(string.Empty, cleared.Query.SearchText);
+    }
+
+    [Fact]
+    public void ClearingBringsBackTheDirectionAndTheStripTabAndDropsASortPickedDuringTheSearch()
+    {
+        var stripped = Opened(OnHighways).SelectStripTab("Highways").SetSortColumn("Capacity").SetDescending(true);
+        var typed = stripped.Search("four").SetSortColumn("Name");
+
+        var cleared = typed.Search("");
+
+        Assert.Equal(stripped.Query.StripTabs, cleared.Query.StripTabs);
+        Assert.Equal("Capacity", cleared.Query.SortColumn);
+        Assert.True(cleared.Query.Descending);
     }
 
     [Fact]
@@ -829,6 +853,17 @@ public sealed class AssetMenuSearchTests
         Assert.Null(everywhere.PreSearch);
         Assert.Equal(BuildingCatalogQuery.DefaultSort, cleared.Query.SortColumn);
         Assert.Equal(string.Empty, cleared.Category);
+    }
+
+    [Fact]
+    public void AForgottenStartClearsToTheGamesOwnOrderWhateverWasPickedDuringTheSearch()
+    {
+        var everywhere = Opened(OnHighways).Search("four").SetSortColumn("Capacity").SetDescending(true).ClearMenuScope();
+
+        var cleared = everywhere.Search("");
+
+        Assert.Equal(BuildingCatalogQuery.DefaultSort, cleared.Query.SortColumn);
+        Assert.False(cleared.Query.Descending);
     }
 
     [Fact]
@@ -891,6 +926,26 @@ public sealed class SessionSortsTests
         sorts.Keep(In("Roads").Search("four").SetSortColumn("Capacity"));
 
         Assert.Equal(MenuMemory.Defaults, sorts.For("Roads", string.Empty));
+    }
+
+    [Fact]
+    public void MatchIsNeverKeptForAMenu()
+    {
+        var sorts = new SessionSorts();
+
+        sorts.Keep(In("Roads").SetSortColumn(BuildingCatalogQuery.MatchSort));
+
+        Assert.Equal(MenuMemory.Defaults, sorts.For("Roads", string.Empty));
+    }
+
+    [Fact]
+    public void AMenuIsKeptAndReadByTheSameTrimmedName()
+    {
+        var sorts = new SessionSorts();
+
+        sorts.Keep(In(" Roads ").SetSortColumn("Capacity"));
+
+        Assert.Equal("Capacity", sorts.For(" Roads ", string.Empty).SortColumn);
     }
 
     [Fact]

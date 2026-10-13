@@ -136,7 +136,11 @@ namespace BetterBuildingMenu.Domain
 		// --- Order, grouping, window ------------------------------------------
 
 		/// <summary>A sort starts the list at its top: the anchor goes, so the first rows are the new order's best.</summary>
-		/// <remarks>The lit column again is the same state, so reversing it by that pick is one start, made by <see cref="SetDescending"/>.</remarks>
+		/// <remarks>
+		/// The lit column again is the same state, so reversing it by that pick is one start, made by
+		/// <see cref="SetDescending"/>. Match clears the direction here, as it has none and the direction
+		/// sent after it is swallowed.
+		/// </remarks>
 		public AssetMenuState SetSortColumn(string? column)
 		{
 			if (column?.Trim() is not { Length: > 0 })
@@ -146,7 +150,7 @@ namespace BetterBuildingMenu.Domain
 
 			return string.Equals(Query.SortColumn, column, StringComparison.Ordinal)
 				? this
-				: Started(Query with { SortColumn = column, AnchorId = 0 });
+				: Started(Query with { SortColumn = column, Descending = !IsMatch(column) && Query.Descending, AnchorId = 0 });
 		}
 
 		/// <remarks>Match has no direction: relevance has no reverse, so a flip under it would move the list and change nothing.</remarks>
@@ -283,12 +287,8 @@ namespace BetterBuildingMenu.Domain
 
 			if (typed.Length == 0)
 			{
-				var back = PreSearch ?? new SearchStart(
-					Query.UiCategory,
-					Query.SchoolTier,
-					Query.StripTabs,
-					IsMatch(Query.SortColumn) ? BuildingCatalogQuery.DefaultSort : Query.EffectiveSortColumn,
-					Query.Descending);
+				// A forgotten start (Search everything dropped the menu) clears to the game's own order.
+				var back = PreSearch ?? new SearchStart(Query.UiCategory, Query.SchoolTier, Query.StripTabs, BuildingCatalogQuery.DefaultSort, false);
 
 				return Started(Query with
 				{

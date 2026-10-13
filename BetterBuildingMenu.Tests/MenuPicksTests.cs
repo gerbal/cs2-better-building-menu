@@ -27,6 +27,18 @@ namespace BetterBuildingMenu.Tests
 		}
 
 		[Fact]
+		public void ALineAHandEditEndedWithACarriageReturnReadsAsItsValue()
+		{
+			Assert.Equal(new[] { new MenuPick("Roads", "theme"), new MenuPick("Zones", "cost") }, MenuPicks.Parse("Roads=theme\r\nZones=cost\r\n"));
+		}
+
+		[Fact]
+		public void AMenusPickIsReadByItsTrimmedName()
+		{
+			Assert.Equal("theme", MenuPicks.Get("Roads=theme", " Roads "));
+		}
+
+		[Fact]
 		public void AMenuNamedTwiceKeepsItsLastPick()
 		{
 			Assert.Equal(new[] { new MenuPick("Roads", "cards") }, MenuPicks.Parse("Roads=list\nRoads=cards"));
@@ -61,6 +73,7 @@ namespace BetterBuildingMenu.Tests
 		[InlineData("Roads", "")]
 		[InlineData("Ro\nads", "list")]
 		[InlineData("Roads", "li\nst")]
+		[InlineData("Roads", "li=st")]
 		public void APickThatCannotBeALineIsNotStored(string menu, string value)
 		{
 			Assert.Equal("Zones=list", MenuPicks.With("Zones=list", menu, value));

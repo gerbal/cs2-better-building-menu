@@ -35,8 +35,10 @@ namespace BetterBuildingMenu.Domain
 		{
 			var picks = new List<MenuPick>();
 
-			foreach (var line in (stored ?? None).Split('\n'))
+			foreach (var raw in (stored ?? None).Split('\n'))
 			{
+				// A hand edit on Windows ends each line with a carriage return.
+				var line = raw.TrimEnd('\r');
 				var at = line.LastIndexOf('=');
 
 				if (at <= 0 || at == line.Length - 1)
@@ -52,16 +54,17 @@ namespace BetterBuildingMenu.Domain
 			return picks;
 		}
 
-		/// <summary>A menu's pick, or <see cref="None"/>.</summary>
+		/// <summary>A menu's pick, or <see cref="None"/>; the menu is read by its trimmed name, as the state stores it.</summary>
 		public static string Get(string? stored, string? menu) =>
-			Parse(stored).FirstOrDefault(pick => string.Equals(pick.Menu, menu, StringComparison.Ordinal))?.Value ?? None;
+			Parse(stored).FirstOrDefault(pick => string.Equals(pick.Menu, menu?.Trim(), StringComparison.Ordinal))?.Value ?? None;
 
 		/// <summary>The stored text with one menu's pick set, or taken away for <see cref="None"/>; the others keep their order.</summary>
+		/// <remarks>A pick that would not read back as its own line, one with a line break or a value holding "=", is not stored.</remarks>
 		public static string With(string? stored, string? menu, string? value)
 		{
 			var picks = Parse(stored).Where(pick => !string.Equals(pick.Menu, menu, StringComparison.Ordinal)).ToList();
 
-			if (!string.IsNullOrEmpty(menu) && !string.IsNullOrEmpty(value) && menu!.IndexOf('\n') < 0 && value!.IndexOf('\n') < 0)
+			if (!string.IsNullOrEmpty(menu) && !string.IsNullOrEmpty(value) && menu!.IndexOf('\n') < 0 && value!.IndexOf('\n') < 0 && value.IndexOf('=') < 0)
 			{
 				picks.Add(new MenuPick(menu, value));
 			}

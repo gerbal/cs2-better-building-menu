@@ -97,11 +97,18 @@ namespace BetterBuildingMenu.Systems
 		/// <remarks>
 		/// The window shrinks back to the base chunk because grouping reorders the whole result.
 		/// Returns early when nothing changed. A change drops the open's anchor, so only the group
-		/// list's pick sends it; a menu open brings the menu's own back through OpenMenu.
+		/// list's pick sends it; a menu open brings the menu's own back through OpenMenu. While a query
+		/// is typed the groups wait and the list lights None, so a pick then is ignored rather than kept
+		/// as the menu's own.
 		/// </remarks>
 		private void SetBuildingCatalogGroupBy(string groupBy)
 		{
-			var kept = MenuPicks.WithGroup(Mod.Settings.MenuGroups, _assetMenu.Menu, groupBy, _menuDefaultGroup);
+			if (!string.IsNullOrWhiteSpace(_assetMenu.Query.SearchText))
+			{
+				return;
+			}
+
+			var kept = MenuPicks.WithGroup(Mod.Settings.MenuGroups, _assetMenu.Menu, BuildingCatalogGrouping.IsDimension(groupBy) ? groupBy.Trim() : MenuPicks.None, _menuDefaultGroup);
 
 			if (_assetMenu.Menu.Length > 0 && !string.Equals(kept, Mod.Settings.MenuGroups, StringComparison.Ordinal))
 			{
@@ -151,8 +158,10 @@ namespace BetterBuildingMenu.Systems
 				return;
 			}
 
+			// A typed search clears the tab and the level, and clearing it brings them back, so the tab row
+			// is told as the field is.
 			_assetMenu = next;
-			_CurrentSearch.Value = _assetMenu.SearchText;
+			PublishScope();
 			_CurrentSearch.ForceUpdate();
 			TriggerSearch();
 		}

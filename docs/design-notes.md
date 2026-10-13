@@ -971,11 +971,12 @@ an earlier tab, and the best match is the list's first row.
 - **Match** is relevance over the whole menu, then the shorter name, then the game's own order: its
   tabs in their order (`UiCategoryTab`), then its order within each (`UIOrder`). The Sort list offers
   it second, after Default, while a query is typed, and its control draws no dot for it. Relevance has
-  no reverse, so Match has no direction: Sort draws no arrow beside it, and picking it again changes
-  nothing.
+  no reverse, so Match has no direction: Sort draws no arrow beside it, picking it clears the direction
+  a sort picked during the search left, and picking it again changes nothing.
 - **Groups wait.** While a query is typed the page is ordered by no grouping
   (`BuildingCatalogGrouping.WhileSearching`), and the Group control says so; the player's choice is
-  kept, and applies again when the search clears.
+  kept, and applies again when the search clears. A GROUP pick while a query is typed is ignored, so
+  the None the control lights then is never stored as the menu's own.
 - **Under Match every new query is a start:** the list goes back to its top, its best match first,
   however the open or the player had placed it. A sort picked during the search keeps the list where
   it is as the query narrows, as any narrowing does.
@@ -1000,7 +1001,7 @@ another's.
   default (`OpenMenu`'s `MenuMemory`). `AssetMenuGroups` carries the picks to the UI.
 - **SORT** is kept per menu for the session (`SessionSorts`): an open brings back the sort the menu last
   had, and every launch starts each at the game's own order. A sort picked while a query is typed is
-  the search's, and is not kept. Reset the build menu… leaves this session's sorts; they end with it.
+  the search's, and is not kept; nor is Match, which only a query gives meaning. Reset the build menu… leaves this session's sorts; they end with it.
 
 **This changes 0.2.x:** the grouping and the sort followed the player from menu to menu; each menu now
 keeps its own.

@@ -75,8 +75,32 @@ namespace BetterBuildingMenu.Tests
 		{
 			var pick = ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.Query.cs"), "private void SetBuildingCatalogGroupBy(");
 
-			Assert.Contains("MenuPicks.WithGroup(Mod.Settings.MenuGroups, _assetMenu.Menu, groupBy, _menuDefaultGroup)", pick);
+			Assert.Contains("MenuPicks.WithGroup(Mod.Settings.MenuGroups, _assetMenu.Menu, BuildingCatalogGrouping.IsDimension(groupBy) ? groupBy.Trim() : MenuPicks.None, _menuDefaultGroup)", pick);
 			Assert.Contains("Mod.Settings.ApplyAndSave();", pick);
+		}
+
+		[Fact]
+		public void AGroupPickWaitsOutATypedQueryAsTheGroupsDo()
+		{
+			var pick = ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.Query.cs"), "private void SetBuildingCatalogGroupBy(");
+
+			Assert.Contains("if (!string.IsNullOrWhiteSpace(_assetMenu.Query.SearchText)) { return; }", pick);
+		}
+
+		[Fact]
+		public void ATypedSearchRepublishesTheTabAndLevelItClearsOrBringsBack()
+		{
+			var search = ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.Query.cs"), "private void SearchChanged(");
+
+			Assert.Contains("_assetMenu = next; PublishScope();", search);
+		}
+
+		[Fact]
+		public void TheGroupPicksArePushedOnlyWhenTheirTextChanges()
+		{
+			var applied = ModSource.Member(ModSource.Text("Systems/BuildingMenuUISystem.cs"), "private void OnSettingsApplied(");
+
+			Assert.Contains("if (!string.Equals(_publishedMenuGroups, Mod.Settings.MenuGroups, StringComparison.Ordinal))", applied);
 		}
 
 		[Fact]

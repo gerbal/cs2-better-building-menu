@@ -69,6 +69,9 @@ namespace BetterBuildingMenu.Systems
 		private ValueBindingHelper<string> _BuildingCatalogGroupBy = null!;
 		// Each menu's own GROUP, as the settings keep it, for the control's dot.
 		private ValueBindingHelper<MenuPick[]> _AssetMenuGroups = null!;
+		// The text those picks were parsed from: a new array never equals the last, so a settings apply
+		// that left them alone, a width drag's save among them, pushes nothing.
+		private string? _publishedMenuGroups;
 		// The grouping dimensions that can act on the current menu set; the picker lists these.
 		private ValueBindingHelper<string[]> _AssetMenuGroupDimensions = null!;
 		// Whether the menu the toolbar currently has open is one the asset menu takes
@@ -225,6 +228,7 @@ namespace BetterBuildingMenu.Systems
 			// showing "Nothing" over grouped rows after any remount.
 			_AssetMenuGroupDimensions = CreateBinding("AssetMenuGroupDimensions", Array.Empty<string>());
 			_AssetMenuGroups = CreateBinding("AssetMenuGroups", MenuPicks.Parse(Mod.Settings.MenuGroups).ToArray());
+			_publishedMenuGroups = Mod.Settings.MenuGroups;
 			_BuildingCatalogGroupBy = CreateBinding(
 				"BuildingCatalogGroupBy",
 				"SetBuildingCatalogGroupBy",
@@ -351,7 +355,11 @@ namespace BetterBuildingMenu.Systems
 			_ControlPaneShown.Value = Mod.Settings.ControlPaneShown;
 			_AssetMenuViewMode.Value = AssetMenuViewMode.Sanitize(Mod.Settings.AssetMenuViewMode);
 			_AssetMenuTuning.Value = CurrentTuning();
-			_AssetMenuGroups.Value = MenuPicks.Parse(Mod.Settings.MenuGroups).ToArray();
+			if (!string.Equals(_publishedMenuGroups, Mod.Settings.MenuGroups, StringComparison.Ordinal))
+			{
+				_publishedMenuGroups = Mod.Settings.MenuGroups;
+				_AssetMenuGroups.Value = MenuPicks.Parse(Mod.Settings.MenuGroups).ToArray();
+			}
 
 			// Whoever has the menu: with the setting off the watcher sends no deselect, so a menu
 			// given up under the gamepad could outlive its close and reopen once switched back on.
