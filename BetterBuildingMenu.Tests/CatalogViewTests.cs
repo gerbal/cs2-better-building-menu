@@ -433,6 +433,39 @@ namespace BetterBuildingMenu.Tests
 			Assert.Equal(new[] { ("2", 1) }, education.TierBracket.Tiers.Select(t => (t.Id, t.Count)));
 		}
 
+		/// <summary>One tab, and entries that answer to none: the tab alone cuts one way, the whole menu another.</summary>
+		private static readonly BuildingCatalogEntry[] OneTabAndTheRest =
+		{
+			Entry(61, "Tab A1", "ServiceBuildings", "Mixed", "MixedTab") with { DevTreeBranch = "A" },
+			Entry(62, "Tab A2", "ServiceBuildings", "Mixed", "MixedTab") with { DevTreeBranch = "A" },
+			Entry(63, "Tab B", "ServiceBuildings", "Mixed", "MixedTab") with { DevTreeBranch = "B" },
+			Entry(64, "Loose 1", "Networks", "Mixed", "") with { DevTreeBranch = "A" },
+			Entry(65, "Loose 2", "Networks", "Mixed", "") with { DevTreeBranch = "A" },
+			Entry(66, "Loose 3", "Networks", "Mixed", "") with { DevTreeBranch = "A" },
+			Entry(67, "Loose 4", "Networks", "Mixed", "") with { DevTreeBranch = "A" },
+		};
+
+		[Fact]
+		public void AMenusDefaultGroupingIsTheSameWhateverTabIsOpen()
+		{
+			// The default is what a pick is compared with, so it is the menu's, not the open tab's:
+			// otherwise one pick is dropped or kept depending on where it was made.
+			var all = new CatalogView(OneTabAndTheRest, new BuildingCatalogQuery(UiMenu: "Mixed"));
+			var tab = new CatalogView(OneTabAndTheRest, new BuildingCatalogQuery(UiMenu: "Mixed", UiCategory: "MixedTab"));
+
+			Assert.Empty(all.MenuCategoryCounts.Skip(1));
+			Assert.NotEqual(all.StripAxis, tab.StripAxis);
+			Assert.Equal(all.DefaultGroupBy, tab.DefaultGroupBy);
+		}
+
+		[Fact]
+		public void AMenusDefaultGroupingFollowsTheAxisItsWholeCutsBest()
+		{
+			var tab = new CatalogView(OneTabAndTheRest, new BuildingCatalogQuery(UiMenu: "Mixed", UiCategory: "MixedTab"));
+
+			Assert.Equal(BuildingCatalogGrouping.Effective(string.Empty, false, StripAxes.AssetType, false, tab.GroupDimensions), tab.DefaultGroupBy);
+		}
+
 		[Fact]
 		public void TheWholeCatalogPublishesNoTabsAndKeepsItsDefaultGrouping()
 		{

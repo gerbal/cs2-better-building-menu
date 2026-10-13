@@ -34,7 +34,7 @@ namespace BetterBuildingMenu.Services
 		private BuildingCatalogMetricRangeState? _bounds;
 		private BuildingCatalogFacetState? _facets;
 		private IReadOnlyList<MenuCategoryCount>? _counts;
-		private string? _expandedId, _axis;
+		private string? _expandedId, _axis, _wholeAxis;
 		private IReadOnlyList<MenuBranchCount>? _expandedTabs, _stripTabs;
 		private TierBracket? _bracket;
 		private IReadOnlyList<MenuCategoryTabs>? _expanded;
@@ -76,7 +76,8 @@ namespace BetterBuildingMenu.Services
 		public string EffectiveGroupBy => _effectiveGroupBy ??= _groupByResolver?.Invoke(this) ?? _query.GroupBy;
 
 		/// <summary>The grouping this menu opens with when it has no pick of its own, held to the dimensions it offers.</summary>
-		public string DefaultGroupBy => BuildingCatalogGrouping.Effective(string.Empty, _menuCategories is { Count: > 0 }, StripAxis, _educationMenu, GroupDimensions);
+		/// <remarks>Read over the whole menu, so it is the same whichever tab is open; a pick is compared with it.</remarks>
+		public string DefaultGroupBy => BuildingCatalogGrouping.Effective(string.Empty, _menuCategories is { Count: > 0 }, WholeMenuAxis, _educationMenu, GroupDimensions);
 
 		/// <summary>Whether the view stands in for one of the game's menus; without one the row draws All alone.</summary>
 		private bool Scoped => !string.IsNullOrWhiteSpace(_query.UiMenu);
@@ -339,9 +340,12 @@ namespace BetterBuildingMenu.Services
 		/// game itself authored; an axis yielding fewer than two groups is not a choice.
 		/// Judged on the buckets' sizes alone, so choosing an axis looks up no tab's picture.
 		/// </remarks>
-		public string StripAxis => _axis ??= ComputeStripAxis();
+		public string StripAxis => _axis ??= ComputeStripAxis(TabSet);
 
-		private string ComputeStripAxis()
+		/// <summary>The axis the strip would cut the whole menu on, with no tab or level picked.</summary>
+		private string WholeMenuAxis => _wholeAxis ??= ComputeStripAxis(PresentSet);
+
+		private string ComputeStripAxis(BuildingCatalogEntry[] set)
 		{
 			if (MenuCategoryCounts.Count(category => category.Id.Length > 0) > 1)
 			{
@@ -353,7 +357,7 @@ namespace BetterBuildingMenu.Services
 
 			foreach (var axis in new[] { StripAxes.Development, StripAxes.AssetType })
 			{
-				var sizes = StripBuckets(TabSet, axis).Select(bucket => bucket.Count()).ToArray();
+				var sizes = StripBuckets(set, axis).Select(bucket => bucket.Count()).ToArray();
 
 				if (sizes.Length < 2)
 				{
