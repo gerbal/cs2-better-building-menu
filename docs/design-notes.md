@@ -142,7 +142,7 @@ the step's number, 1 to 5, never a width, because the widths follow the screen: 
 - **The room** runs from the tool options' right edge at the game's own text size (x 396) to 1 rem
   short of the social column, which starts 48 rem from the screen's right edge. On 16:9 it is
   1,475 wide.
-- **A step's width** is 706, the game's own build menu's, plus its share of the room beyond 706,
+- **A step's width** is 706, drawn at the left of the game's 712-wide slot, plus its share of the room beyond 706,
   rounded to the whole rem. The shares are the 16:9 steps' exact ones, 0, 187, 385, 574 and 769
   over 769, so 16:9 gives 706, 893, 1,091, 1,280 and 1,475; 21:9 gives 706, 1,039, 1,391, 1,728
   and 2,075; 32:9 gives 706, 1,360, 2,052, 2,713 and 3,395. The first step is 706 on every screen,
@@ -225,7 +225,7 @@ the strip does, and it is absent with the pane hidden, so nothing reaches past t
 - The filter rail's count badge is the game's number badge (`_numberBadge.scss`): light bold text on
   the accent with a soft shadow, sized by the text scale.
 
-**The row is never wider than the box.** It keeps vanilla's 706 at every step, and every step is at
+**The row is never wider than the box.** It keeps step 1's 706 at every step, and every step is at
 least 706, so no stretch of the row lies beside the box to take a click meant for the city.
 
 **The table's arithmetic still counts the pane.** The column widths, the density tier

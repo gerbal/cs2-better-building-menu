@@ -90,8 +90,8 @@ namespace BetterBuildingMenu.Systems
 		/// </summary>
 		/// <remarks>
 		/// The window shrinks back to the base chunk because grouping reorders the whole result.
-		/// Returns early when nothing changed: the UI derives this value from the menu, so it
-		/// re-sends it on every menu open.
+		/// Returns early when nothing changed. A change drops the open's anchor, so only the group
+		/// list's pick sends it, never a menu open.
 		/// </remarks>
 		private void SetBuildingCatalogGroupBy(string groupBy) => Apply(_assetMenu.SetGroupBy(groupBy));
 
